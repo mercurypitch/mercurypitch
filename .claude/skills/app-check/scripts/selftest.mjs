@@ -6,7 +6,7 @@
 //   node <skill>/scripts/selftest.mjs        (cwd = a MercuryPitch checkout)
 // Exit 0 only when every planted defect is caught and the clean page passes.
 
-import { VIEWPORTS, contrastOf, onTop, launch, loadPlaywright, probeFocus, probeLayout, } from './lib.mjs'
+import { VIEWPORTS, contrastOf, hitBox, onTop, launch, loadPlaywright, probeFocus, probeLayout, } from './lib.mjs'
 
 const BAD = `<!doctype html><html><head><meta name="viewport" content="width=device-width,initial-scale=1"><style>
   body { margin: 0; font-family: Georgia, serif; }
@@ -27,6 +27,8 @@ const BAD = `<!doctype html><html><head><meta name="viewport" content="width=dev
   <p class="faint" id="faint">Faint text</p>
   <div class="bar1">Tab bar</div><div class="bar2">Cookie bar</div>
   <div id="toast" style="position:fixed;bottom:50px;left:8px;right:8px;height:30px;pointer-events:none;z-index:0;background:#060;color:#fff">Toast under the bar</div>
+  <div id="round" style="position:fixed;top:300px;left:8px;right:8px;height:56px;border-radius:14.4px;background:#036;color:#fff">Rounded bar</div>
+  <div style="position:fixed;top:300px;left:8px;width:28px;height:28px;z-index:3;background:#a00"></div>
 </body></html>`
 
 const GOOD = `<!doctype html><html><head><meta name="viewport" content="width=device-width,initial-scale=1"><style>
@@ -40,6 +42,10 @@ const GOOD = `<!doctype html><html><head><meta name="viewport" content="width=de
   <button>One</button> <button>Two</button>
   <div class="bar1">Tab bar</div>
   <div id="toast" style="position:fixed;bottom:70px;left:8px;right:8px;height:30px;pointer-events:none;z-index:5;background:#060;color:#fff">Toast above the bar</div>
+  <div id="round" style="position:fixed;top:300px;left:8px;right:8px;height:56px;border-radius:14.4px;background:#036;color:#fff">Rounded bar</div>
+  <div id="pill" style="position:fixed;top:380px;left:8px;width:160px;height:36px;border-radius:9999px;background:#036;color:#fff">Pill</div>
+  <div id="dot" style="position:fixed;top:440px;left:8px;width:40px;height:40px;border-radius:50%;background:#036"></div>
+  <div id="mixed" style="position:fixed;top:500px;left:8px;width:60px;height:60px;border-radius:calc(50% + 2px);background:#036"></div>
 </body></html>`
 
 const pw = loadPlaywright()
@@ -88,6 +94,16 @@ try {
       `${label}: pointer-events:none toast ${defects ? 'covered' : 'on top'}`,
       top === !defects,
     )
+    // A corner sample 4 px in lies outside a 14.4 px radius, so onTop has to
+    // read the radius or a rounded bar that is on top looks covered. Pill,
+    // circle and a mixed calc() radius take the other branches of that reading.
+    for (const id of defects ? ['round'] : ['round', 'pill', 'dot', 'mixed']) {
+      const on = await onTop(page.locator(`#${id}`))
+      expect(
+        `${label}: rounded #${id} ${defects ? 'covered' : 'on top'}`,
+        on === !defects,
+      )
+    }
     await ctx.close()
     const dctx = await browser.newContext(VIEWPORTS.desktop)
     const dpage = await dctx.newPage()
@@ -100,6 +116,24 @@ try {
     )
     await dctx.close()
   }
+  // hitBox looks 60 px either way unless told otherwise, so 121 px wide
+  // means "at least 121": the result says so (capped) and maxReach looks further.
+  const hctx = await browser.newContext(VIEWPORTS.desktop)
+  const hpage = await hctx.newPage()
+  await hpage.setContent(
+    '<!doctype html><body style="margin:0"><button id="wide" style="display:block;margin-top:100px;width:300px;height:40px;padding:0;border:0">Wide</button></body>',
+  )
+  const hb = await hitBox(hpage.locator('#wide'))
+  expect(
+    `hitBox: a 300 px button reads ${hb.hit[0]} wide (capped ${hb.capped[0]}), 121 expected`,
+    hb.hit[0] === 121 && hb.capped[0] === true && hb.capped[1] === false,
+  )
+  const far = await hitBox(hpage.locator('#wide'), { maxReach: 200 })
+  expect(
+    `hitBox: maxReach 200 reads ${far.hit[0]} wide (capped ${far.capped[0]}), 300 expected`,
+    far.hit[0] >= 299 && far.hit[0] <= 301 && far.capped[0] === false,
+  )
+  await hctx.close()
 } finally {
   await browser.close()
 }

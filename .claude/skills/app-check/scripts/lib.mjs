@@ -196,7 +196,10 @@ export async function launch(pw) {
  *  vp: 'phone' | 'desktop'; theme: 'light' | 'dark'
  *  returning: skip First Light and the survey (default true)
  *  testMode: set window.E2E_TEST_MODE (hides ambient popups; default true)
- *  timezoneId: 'Europe/Zagreb' to get the cookie bar on a consent build
+ *  timezoneId: the clock (default 'UTC'). On a consent build (the stub build,
+ *    dev) the cookie bar opens on UTC and on any European clock
+ *  consent: 'denied' | 'granted' answers the cookie bar before the page loads
+ *    (default 'none': a consent build opens the bar, on a UTC clock too)
  *  storage: extra localStorage entries { key: value }
  *  allow: extra hostnames allowed through (dev hosts are allowed for a dev base)
  */
@@ -761,7 +764,8 @@ export function intersect(a, b) {
   return w > 0 && h > 0 ? Math.round(w * h) : 0
 }
 
-/** Is the topmost element at the centre of `locator` the element itself? */
+/** Is the topmost element at the centre and in each corner of `locator` the
+ *  element itself? The corner samples sit inside a rounded corner. */
 export async function onTop(locator) {
   return locator.first().evaluate((el) => {
     // elementFromPoint skips pointer-events: none, and toasts use it: lend
@@ -770,10 +774,49 @@ export async function onTop(locator) {
     const prevPri = el.style.getPropertyPriority('pointer-events')
     el.style.setProperty('pointer-events', 'auto', 'important')
     const r = el.getBoundingClientRect()
+    // A corner sample sits 4 px in from the edges, or further in on a rounded
+    // corner. 4 px in from a 14.4 px radius (the cookie bar) lies outside the
+    // shape, where elementFromPoint sees what is behind the element. A point
+    // a * R in from both edges of a corner of radius R is inside it from
+    // a = 0.293 on; 0.35 leaves room.
+    const cs = getComputedStyle(el)
+    // A radius left as a mixed calc() reads as the roundest the box allows,
+    // which never puts a sample outside the shape.
+    const roundest = Math.min(r.width, r.height) / 2
+    const len = (s, side) => {
+      const n = s.endsWith('%') ? (parseFloat(s) / 100) * side : parseFloat(s)
+      return Number.isFinite(n) ? n : roundest
+    }
+    const radii = [
+      'borderTopLeftRadius',
+      'borderTopRightRadius',
+      'borderBottomRightRadius',
+      'borderBottomLeftRadius',
+    ].map((prop) => {
+      const [h, v = h] = cs[prop].split(' ')
+      return [len(h, r.width), len(v, r.height)]
+    })
+    // CSS shrinks every radius by one factor when two would overlap (a
+    // 9999px pill is as round as its box allows); do the same here.
+    const shrink = (side, sum) => (sum > side ? side / sum : 1)
+    const [tl, tr, br, bl] = radii
+    const f = Math.min(
+      shrink(r.width, tl[0] + tr[0]),
+      shrink(r.width, bl[0] + br[0]),
+      shrink(r.height, tl[1] + bl[1]),
+      shrink(r.height, tr[1] + br[1]),
+    )
+    // how far in from each corner (x, y) the sample sits
+    const [tlIn, trIn, brIn, blIn] = radii.map(([rx, ry]) => [
+      Math.min(Math.max(4, 0.35 * rx * f), r.width / 2),
+      Math.min(Math.max(4, 0.35 * ry * f), r.height / 2),
+    ])
     const pts = [
       [r.left + r.width / 2, r.top + r.height / 2],
-      [r.left + 4, r.top + 4],
-      [r.right - 4, r.bottom - 4],
+      [r.left + tlIn[0], r.top + tlIn[1]],
+      [r.right - trIn[0], r.top + trIn[1]],
+      [r.right - brIn[0], r.bottom - brIn[1]],
+      [r.left + blIn[0], r.bottom - blIn[1]],
     ]
     const ok = pts.every(([x, y]) => {
       const t = document.elementFromPoint(x, y)
@@ -825,9 +868,14 @@ export class Report {
 
 /** Effective hit box of a control: how far taps at its centre row and
  *  column still land on it. Counts pseudo-element hit areas, which a
- *  bounding box misses. */
-export async function hitBox(locator) {
-  return locator.first().evaluate((el) => {
+ *  bounding box misses.
+ *
+ *  It looks `maxReach` px either way (60 unless told otherwise), so a hit of
+ *  2 * maxReach + 1 (121 by default) means "at least that". `capped` says,
+ *  per axis, whether a side ran into the limit; pass a larger `maxReach` to
+ *  measure further. */
+export async function hitBox(locator, { maxReach = 60 } = {}) {
+  return locator.first().evaluate((el, maxReach) => {
     const r = el.getBoundingClientRect()
     const cx = r.left + r.width / 2
     const cy = r.top + r.height / 2
@@ -836,21 +884,36 @@ export async function hitBox(locator) {
       return t !== null && (t === el || el.contains(t))
     }
     if (!on(cx, cy))
-      return { box: [r.width, r.height], hit: [0, 0], covered: true }
+      return {
+        box: [r.width, r.height],
+        hit: [0, 0],
+        capped: [false, false],
+        covered: true,
+      }
     const reach = (dx, dy) => {
       let n = 0
-      for (let s = 1; s <= 60; s++) {
+      for (let s = 1; s <= maxReach; s++) {
         if (!on(cx + dx * s, cy + dy * s)) break
         n = s
       }
       return n
     }
+    const [left, right, up, down] = [
+      reach(-1, 0),
+      reach(1, 0),
+      reach(0, -1),
+      reach(0, 1),
+    ]
     return {
       box: [Math.round(r.width), Math.round(r.height)],
-      hit: [reach(-1, 0) + reach(1, 0) + 1, reach(0, -1) + reach(0, 1) + 1],
+      hit: [left + right + 1, up + down + 1],
+      capped: [
+        left === maxReach || right === maxReach,
+        up === maxReach || down === maxReach,
+      ],
       covered: false,
     }
-  })
+  }, maxReach)
 }
 
 /** Focus `locator` by keyboard (Shift+Tab then Tab), so :focus-visible
