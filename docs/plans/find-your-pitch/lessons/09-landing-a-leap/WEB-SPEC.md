@@ -334,7 +334,7 @@ States:
      chart's summary says where do is ("Do is D3"), in Lesson 4's spelling (FACTS 22). The ladder
      choice and Move do can change before Start and before Again, never during a take.
    - Start: with sound on, it asks for the microphone (`listen('lesson-09', Sound.context())`,
-     `kit/listen.ts:53-56`), then Merc sings the chosen ladder, each slot's band lighting as he
+     `kit/listen.ts:54-57`), then Merc sings the chosen ladder, each slot's band lighting as he
      sings it (Listen), then, at least 0.4 s after his last note ends, the take opens. With sound
      off, Start and Play Merc's ladder play nothing and ask for nothing, and the hint shows: "Sound
      is off, so nothing played. Turn sound on to hear Merc's ladder, then press Start." That is
@@ -343,7 +343,7 @@ States:
 6. **Take**: the status reads "Your turn: start on do when you're ready. Move on each time the next
    band lights up." The take waits up to 6 s for the first voiced frame, then runs one 1.5 s slot a
    note from that frame, 6.0 s for the full ladder and 7.5 s for the smaller (`takeFrames`,
-   `kit/listen.ts:153-180`, with `wait: 6` and `run` the ladder's length, `:88-103`; FACTS 76).
+   `kit/listen.ts:168-195`, with `wait: 6` and `run` the ladder's length, `:89-110`; FACTS 76).
    Before the voice starts, do's band glows; from the first voiced frame, each slot's band glows in
    turn, every 1.5 s: that is the guide, on the chart itself, so the page needs no ring or countdown
    beside it. The violet line draws live, folded around the glowing rung's note (its cents from the
@@ -365,7 +365,7 @@ States:
    6's page (PR #1149) gives `mountFeelings` a `changeable` option for its sweeps, which this page
    leaves off.
    - Easy or Workable: the count, and "If that felt tricky, good: that's learning." when fewer than
-     all the heard notes landed (`trickyAfter`, `kit/take.ts:157-159`); then, if the visit's one
+     all the heard notes landed (`trickyAfter`, `kit/take.ts:165-167`); then, if the visit's one
      Again is unused and fewer than three takes have been made, **Again** (the same ladder, named
      "Again: do-mi-so-do" or "Again: the smaller ladder") and, after the full ladder, **Again,
      smaller** too (named "Again, on the smaller ladder"); either uses the one Again. Then **Done
@@ -416,7 +416,7 @@ Reading a ladder (`kit/take.ts`, extended with `readLadder` and `rungLine`; pure
 
 - Input: the take's raw frames, the ladder's rungs as MIDI notes in sung order (from do D3: 50, 54,
   57, 62, or 50, 54, 57, 54, 50), and the slot length, 1.5 s. A frame is voiced when Voice Mirror's
-  `preprocess` keeps it, as `readTake` takes them (`kit/take.ts:98-120`).
+  `preprocess` keeps it, as `readTake` takes them (`kit/take.ts:106-128`).
 - No voiced frame gives `{ heard: false }`, the "didn't hear you start" line (state 7).
 - The slots start at the first voiced frame: slot k holds the raw frames from 1.5k s to 1.5(k + 1) s
   after it. Each slot is read by the kit's own `readTake` against its rung, unchanged: its first 0.3
@@ -428,21 +428,21 @@ Reading a ladder (`kit/take.ts`, extended with `readLadder` and `rungLine`; pure
 - The line for a slot, `rungLine(label, reading)`: the rung's label ("Do", "Mi", "So", "Top do"; on
   the smaller ladder "Do", "Mi", "So", "Mi again", "Do again"), a middle dot, then the reading:
   "Right in the middle: …", "In the band: …" or "Close: …", each with the kit's gap words
-  (`readingLine`, `kit/take.ts:70-78`), without its "Listen again, then aim a touch higher." on a
+  (`readingLine`, `kit/take.ts:78-86`), without its "Listen again, then aim a touch higher." on a
   close note; beyond 60 cents, "{About a semitone below}, nearer a different note."
-  (`semitonesAway`, `:61-68`), without the kit's "Listen again, then slide up to the band." (FACTS
+  (`semitonesAway`, `:69-76`), without the kit's "Listen again, then slide up to the band." (FACTS
   79); a slot without steady voice, "We didn't hear a steady note there." (new,
   `NOT_STEADY_RUNG_LINE`), without the kit's "Try again at about speaking volume."
-  (`NOT_STEADY_LINE`, `:56-57`); and the octave line, when there is one, as a second sentence
-  (`octaveLine`, `:80-86`).
+  (`NOT_STEADY_LINE`, `:64-65`); and the octave line, when there is one, as a second sentence
+  (`octaveLine`, `:88-94`).
 - The count's line is the kit's `countLine` ("This time, 3 of your 4 notes landed in the band.", or
   "… of the 3 notes we heard …"), or `NONE_HEARD_LINE` when voice came but no note was steady
-  (`kit/take.ts:146-155`).
+  (`kit/take.ts:154-163`).
 - Every template passes `validateGuidedDynamicClaim` (`src/lib/guided-voice/claims.ts`, surface
   `finding`) in a unit test, as Lesson 3's lines do.
 
 Listening: Lesson 3's `kit/listen.ts`, unchanged: `micManager.acquire('lesson-09')` for the take
-(`:58`), released when it ends, on leaving the section, on `pagehide` and when the tab is hidden
+(`:59`), released when it ends, on leaving the section, on `pagehide` and when the tab is hidden
 (`:18-22`); the YIN-only F0 stream (`src/lib/pitch-f0-stream.ts`); one AudioContext through
 `Sound.context()`, so every note Merc sings and every frame the take hears share a clock; nothing
 plays while a take is open. Nothing is recorded or kept, nothing leaves the device, and no event
@@ -500,7 +500,7 @@ kit's sound module and its house envelopes (`.claude/memory/audio-pop-free-playb
 started only by a tap: Merc's notes, leaps, paths and ladders in Merc's "ooh"; the illustrated
 landing, the recall's two notes and the rung taps in free play in the soft tone (FACTS 90 to 96). A
 leap is two notes, each its own voice, so a repeated note is heard as two; Step 5's slide is one
-voice that glides, the kit's `contourVoice` (`kit/sound.ts:299`). Nothing autoplays, nothing plays
+voice that glides, the kit's `contourVoice` (`kit/sound.ts:318`). Nothing autoplays, nothing plays
 while a take is open, and the page has no music bed.
 
 One sound plays at a time, page-wide. Every source, the cold open, the Four words, the step toys,
@@ -586,7 +586,7 @@ paused off screen, and the still images when WebGL fails or would run on the CPU
 
 ## Explorer and season data
 
-- **Season data**: Lesson 9's entry in `kit/season.ts` (`:322-339`) gains a plain `minutes: 16` and
+- **Season data**: Lesson 9's entry in `kit/season.ts` (`:325-342`) gains a plain `minutes: 16` and
   `page: '/learn/09'` after its topics, in every build, under the comment Lesson 5's entry carries,
   `// A draft until its sign-off (drafts.ts), as Lesson 3 is.` (`season.ts:254`), as Lesson 3's own
   are written (`season.ts:212-215`; FACTS 5, 62, 63). Whether the page is live is `kit/publish.ts`'s
@@ -599,10 +599,10 @@ paused off screen, and the still images when WebGL fails or would run on the CPU
   tap Arpeggio Jumper", as Lesson 4's reads "Exercises, then tap Scale Runner" (`season.ts:240-245`,
   `explorer.ts:178`). The note is in the learner's words (`season.ts:27-34`); `needs` keeps
   "Interval Trainer (sing) and Arpeggio Jumper" for the team, and no card draws it. Its topics
-  stay. Its hook is the entry's, the default (`season.ts:331`); its alternative, `'harder'`, and its
+  stay. Its hook is the entry's, the default (`season.ts:334`); its alternative, `'harder'`, and its
   tease, which Lesson 8's card draws, are `kit/lesson-copy.ts`'s (`:103-112`), as FACTS 1 records:
   this spec changes no hook or tease line. `EDGES` already holds [3, 9] and [6, 9]
-  (`season.ts:422-423`).
+  (`season.ts:425-426`).
 - **The explorer card**: what the kit draws for a lesson with a page and no published film: its
   state and main action from `kit/lesson-state.ts` ("Start lesson", "Continue: step N" or "Read
   again"), its minutes, no Watch button (`kit/season.ts:23-25`), and the learner's fields only,
@@ -685,10 +685,10 @@ table):
    `og:image` it names is in `public/`, at the pixel size its `og:image:width` and `og:image:height`
    give.
 4. First-paint ceilings for `learn/09.html` in `scripts/assert-first-paint-budgets.mjs`, one in its
-   JavaScript table and one in its stylesheet table, beside Lesson 3's (`:102-111`, `:181-184`).
-   Every build emits every lesson page, and the check fails a document with no ceiling (`:403-407`),
+   JavaScript table and one in its stylesheet table, beside Lesson 3's (`:102-120`, `:206-209`).
+   Every build emits every lesson page, and the check fails a document with no ceiling (`:437-441`),
    so without them the Browser jobs fail before any spec runs, as Lesson 6's did on PR #1149. Each
-   is the page's measured first paint plus about a quarter, the tables' rule (`:46-57`, `:137-147`),
+   is the page's measured first paint plus about a quarter, the tables' rule (`:46-57`, `:162-172`),
    measured in `build:e2e`, where the check runs (`package.json:20`): a build of Lesson 6's page
    alone weighed it about 8 KB lighter. As on Lesson 3, the listener, the pitch detector and Voice
    Mirror's scorer arrive through a dynamic import when Start is pressed
@@ -722,11 +722,12 @@ table):
     copy in its own module (`lesson-06/sing-guide.ts`, its `MOVE_MAX` and `clampMove`), so this page
     would make a third. The kit's part keeps Lesson 4's control word for word: four semitones each
     way, the two buttons and their disabled ends.
-11. The four-words strip, promoted from Lesson 1's page (`lesson-01/words.ts`) if no earlier page
-    has: Lesson 6's page (PR #1149) keeps its own in `lesson-06/words.ts`.
+11. The four-words strip: built, promoted from Lesson 1's page (`lesson-01/words.ts`) into
+    `kit/words-strip.ts` with Lesson 7's page; Lesson 6's page (PR #1149) keeps its own in
+    `lesson-06/words.ts`.
 12. `kit/merc-duo.ts`: `mercHop`, proposed (Mercs).
 13. `src/e2e/helpers/tone-wav.ts`: proposed `writeStepsWav(steps, leadSilence)`, steady tones in
-    sequence after a stretch of silence, beside `writeToneWav` (`:29`), for the end-to-end ladder
+    sequence after a stretch of silence, beside `writeToneWav` (`:76`), for the end-to-end ladder
     test (Tests, end to end 6).
 14. App: the `intervals` launch field and a minor third for `/exercises/leap-ladder`, the optional
     Arpeggio Jumper slug, the App content item, and the Ascent week 4 rewrite (Practice links).
@@ -867,8 +868,8 @@ parts:
     `l09-q4`, with `lesson: 9`.
 12. Season data: Lesson 9's entry has `minutes: 16` and `page: '/learn/09'` in every build,
     whichever way `VITE_DRAFT_LESSONS` reads, as `season.test.ts` checks Lessons 3 to 5's
-    (`:231-256`), and the same file's check of every page in the repository then covers it
-    (`:258-275`); `seasonFor(LESSONS, defaultPageState(false))` gives Lesson 9 no page and no
+    (`:241-266`), and the same file's check of every page in the repository then covers it
+    (`:268-285`); `seasonFor(LESSONS, defaultPageState(false))` gives Lesson 9 no page and no
     reading time while its line is in `drafts.ts`, and `seasonFor(LESSONS, defaultPageState(true))`
     keeps both, as `publish.test.ts` checks a lesson held back and one published (`:57-82`). That
     file's example of a lesson with no page is Lesson 9 (`:44-55`): it moves to one the test finds,
@@ -909,7 +910,7 @@ End to end (Playwright, at 390 x 844 and 1440 x 900, on the e2e build, which sho
    variant's note the same way, and `src/e2e/learn-cold-open-fold.spec.ts` holds its title on the
    first screen at seven sizes and reports where Play Merc's leap and the three choices sit
    (`:176-203`).
-6. Sing it, with the fake microphone (`src/e2e/helpers/tone-wav.ts`, `fakeMicArgs`, `:80`): with
+6. Sing it, with the fake microphone (`src/e2e/helpers/tone-wav.ts`, `fakeMicArgs`, `:115`): with
    sound off, Start asks for no microphone and the hint says sound is off; with sound on, a steady
    A3 (`writeToneWav(220)`) on the lower full ladder reads so "Right in the middle" and the other
    three far from their bands, with "This time, 1 of your 4 notes landed in the band." and the
@@ -935,7 +936,7 @@ End to end (Playwright, at 390 x 844 and 1440 x 900, on the e2e build, which sho
 10. The Wrap's next card names Lesson 10, says "Coming later" and leads to the map, never to a page,
     as `src/e2e/learn-next-card.spec.ts` checks a card for a lesson not written yet; its tease,
     Lesson 10's line, sits one line above the hook, the card's words in the order eyebrow, tease,
-    hook and way on, as that spec checks Lesson 1's card (`:84-101`).
+    hook and way on, as that spec checks Lesson 1's card (`:96-113`).
 11. With reduced motion emulated, an arc and a trace draw at once, the guide's bands light in place,
     and nothing moves on its own.
 12. After a full run, storage holds only the keys in the Contract.

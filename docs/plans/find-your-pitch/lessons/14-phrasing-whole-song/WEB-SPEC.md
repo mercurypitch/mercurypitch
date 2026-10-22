@@ -340,7 +340,7 @@ song, takes, swell, endings, listen back and still, plus live mode at the checkp
   (Audio). While a take sounds the predict ignores its own two buttons (`:165`), so in the cold open
   a take is cut short only from outside it: another source taking the page's one "now playing" owner
   (a Four words play, say, on a screen tall enough to show both), the Sound toggle going off, or the
-  tab going hidden, both of which stop every voice (`Sound.stopAll`, `kit/sound.ts:446`, `:456`)
+  tab going hidden, both of which stop every voice (`Sound.stopAll`, `kit/sound.ts:465`, `:475`)
   without telling the source. The page's `play` resolves `false` in each of the three cases, so it
   must notice the last two itself (Audio).
 - The hints, each true in every state the kit shows it in (until the reveal, the kit shows `silent`
@@ -432,7 +432,7 @@ States:
      never during a take; a take made before a move is redrawn against the bands it was sung to,
      since the chart keeps each take's own do.
    - **Start take 1**: with sound on, it asks for the microphone
-     (`listen('lesson-14', Sound.context())`, `kit/listen.ts:53-56`), then Merc sings the phrase,
+     (`listen('lesson-14', Sound.context())`, `kit/listen.ts:54-57`), then Merc sings the phrase,
      take 2 (90), the chart lighting each band as he sings it, then Lesson 4's count-in, do once and
      softly (89), then the take opens. **Start take 2**, and Again, give the count-in and the take,
      with Play Merc's phrase there before them for anyone who wants it again. With sound off, Start
@@ -446,9 +446,9 @@ States:
 6. **Take**: the status reads "Take 1: sing the phrase when you're ready, and follow the bands as
    they light." (take 2: "Take 2: breathe, then sing through to "star", and breathe after it."). The
    take waits up to 6 s for the first voiced frame, then runs until 1.2 s of quiet or 8 s from that
-   frame (`takeFrames`, `kit/listen.ts:153-180`, with `wait: 6`, `run: 8` and `quiet: 1.2`,
-   `:88-103`; 72), so the 0.3 s breath the phrase asks for never ends it. Before the voice starts,
-   do's band glows; from the first voiced frame (`onFrame`'s `voicedAt`, `:99-100`), a playhead runs
+   frame (`takeFrames`, `kit/listen.ts:168-195`, with `wait: 6`, `run: 8` and `quiet: 1.2`,
+   `:89-110`; 72), so the 0.3 s breath the phrase asks for never ends it. Before the voice starts,
+   do's band glows; from the first voiced frame (`onFrame`'s `voicedAt`, `:106-107`), a playhead runs
    along the line at 80 beats a minute and each band lights as it passes: that is the guide, on the
    chart itself, so the page needs no ring or countdown beside it. The violet line draws live at the
    playhead, folded around the band under it (its cents from that band through `foldCents`,
@@ -537,9 +537,9 @@ pure and unit-tested; 53):
 
 - Input: the take's raw frames, the take's number, and Merc's do and la as MIDI notes (from do D3:
   50 and 59). A frame is voiced when Voice Mirror's `preprocess` keeps it, as `readTake` takes them
-  (`kit/take.ts:98-120`).
+  (`kit/take.ts:106-128`).
 - Under 1.5 s of voiced frames gives `{ heard: false }` and `NOT_HEARD_PHRASE_LINE`, "We didn't hear
-  the phrase that time.", the kit's `NOT_STEADY_LINE` (`:56-57`) with "the phrase" for "a steady
+  the phrase that time.", the kit's `NOT_STEADY_LINE` (`:64-65`) with "the phrase" for "a steady
   note" and without its "Try again at about speaking volume.", since the takes stop at three.
 - Otherwise the 10th and the 90th percentiles of the voiced frames' pitch, each taken to its nearest
   note (`nearestNote`, `kit/band-words.ts:69`) and spelled in the app's sharps, give "Take 1, drawn
@@ -549,12 +549,12 @@ pure and unit-tested; 53):
   swell.
 - The octave line, as a second sentence, only when both notes, moved by the same whole number of
   octaves, are Merc's do and la: the kit's octave words in the plural, "You sang it an octave lower:
-  same notes." (`octaveLine`, `kit/take.ts:80-86`, whose "two octaves" form carries over).
+  same notes." (`octaveLine`, `kit/take.ts:88-94`, whose "two octaves" form carries over).
 - Every template passes `validateGuidedDynamicClaim` (`src/lib/guided-voice/claims.ts`, surface
   `finding`) in a unit test, as Lesson 3's lines do (95).
 
 Listening: Lesson 3's `kit/listen.ts`, with one addition: `micManager.acquire('lesson-14')` for the
-take (`:58`), released when it ends, on leaving the section, on `pagehide` and when the tab is
+take (`:59`), released when it ends, on leaving the section, on `pagehide` and when the tab is
 hidden (`:18-22`); the YIN-only F0 stream (`src/lib/pitch-f0-stream.ts`); one AudioContext through
 `Sound.context()`, so every note Merc sings and every frame the take hears share a clock; nothing
 plays while a take is open. The addition is `Listener.media`, the stream the listener already holds
@@ -576,7 +576,7 @@ Recording (`kit/record.ts`, proposed; 51, 52):
 - Playback applies one gain to the whole take: the gain takes the take's peak to one set level, the
   same for every take, so a take sung quietly and one sung louder play back at the same peak, and it
   never changes during the take. Nothing compresses the take or sets its gain as it plays: it goes
-  past the master bus's compressor (`kit/sound.ts:89-98`), and through no automatic gain, so a swell
+  past the master bus's compressor (`kit/sound.ts:107-116`), and through no automatic gain, so a swell
   keeps its shape.
 - The stream it records is the listener's, the mic manager's analysis stream, with the browser's
   echo cancellation, noise suppression and automatic gain control off (`ANALYSIS_CONSTRAINTS`,
@@ -640,7 +640,7 @@ Every tone is synthesised in the page with Web Audio at the frequencies in 82, t
 sound module and its house envelopes (`.claude/memory/audio-pop-free-playback.md`), and started only
 by a tap: Merc's takes, phrases and the song in Merc's "ooh"; the chords and the count-in in the
 soft tone (83 to 90). A sung line is one voice from breath to breath, the kit's `contourVoice`
-(`kit/sound.ts:292-325`), its level a share of Merc's 0.2 and its ramps exponential; a repeated note
+(`kit/sound.ts:311-344`), its level a share of Merc's 0.2 and its ramps exponential; a repeated note
 dips to 0.6 of its level for about 0.06 s, never to silence, so two notes are heard as two within
 one voice; a chord is three soft voices at 0.05 each, held for its minim (87). A breath is a 0.3 s
 gap, not a sound, because the kit's noise cannot be stopped once started (84). The one recorded
@@ -714,7 +714,7 @@ paused off screen, and the still images when WebGL fails or would run on the CPU
 
 ## Explorer and season data
 
-- **Season data**: Lesson 14's entry in `kit/season.ts` (`:387-402`) gains a plain `minutes: 18` and
+- **Season data**: Lesson 14's entry in `kit/season.ts` (`:390-405`) gains a plain `minutes: 18` and
   `page: '/learn/14'` after its topics, in every build, under the comment Lesson 5's entry carries,
   `// A draft until its sign-off (drafts.ts), as Lesson 3 is.` (`season.ts:254`), as Lesson 3's own
   are written (`season.ts:212-215`) and Lesson 6's (`:275-277`; 8, 12). Whether the page is live is
@@ -722,11 +722,11 @@ paused off screen, and the still images when WebGL fails or would run on the CPU
   and no reading time (`:102-124`), so the entry reads neither `DRAFT_LESSONS` nor `DRAFTS_SHOWN`,
   which `kit/drafts.test.ts` keeps to the publishing rules alone (`:57-67`). Its link stays as it
   is, `href: '/karaoke-night?lesson=14'`, `addr: 'mercurypitch.com/karaoke-night'` and
-  `label: 'Karaoke Night'` (`season.ts:395-401`), with no `needs`. Its topics stay; its hook is the
-  entry's, the default (`:393`), and its tease, which Lesson 13's card draws, is
+  `label: 'Karaoke Night'` (`season.ts:398-404`), with no `needs`. Its topics stay; its hook is the
+  entry's, the default (`:396`), and its tease, which Lesson 13's card draws, is
   `kit/lesson-copy.ts`'s (`:152`), with the old ones kept as `compelling` and `band` (`:144-160`),
   as 1 and 2 record. `EDGES` already holds [5, 14], [8, 14], [9, 14] and [12, 14]
-  (`season.ts:428-431`).
+  (`season.ts:431-434`).
 - **The explorer card**: what the kit draws for a lesson with a page and no published film: its
   state and main action from `kit/lesson-state.ts` ("Start lesson", "Continue: step N" or "Read
   again"), its hook, its topics, the lessons it builds on, its practise link and its minutes
@@ -746,8 +746,8 @@ among them (PR #1149), and in Lesson 9's spec, beyond the parts Lessons 2 to 9 p
    input and routes its clean path (`tools/draft-lessons.ts:1-18`; `lessonPages`, `:74-83`;
    `lessonInputs` and `lessonPaths`, `:106-119`; `vite.config.ts:306`, `:474`), so the page needs no
    build change. Its line in `kit/drafts.ts`,
-   `14: "the vocal coach's sign-off (MASTER-PLAN § 12 item 8)"`, beside Lessons 3, 4, 5 and 6's
-   (`:30-36`), makes it a draft: production's `LESSON_DRAFTS`, "0", holds it back, and the dev
+   `14: "the vocal coach's sign-off (MASTER-PLAN § 12 item 8)"`, beside Lessons 3 to 7's
+   (`:30-37`), makes it a draft: production's `LESSON_DRAFTS`, "0", holds it back, and the dev
    site's and the previews', "1", show it (`wrangler.jsonc:165-167`, `:188-190`, `:231-232`), until
    the console sets it either way, and the Content Studio's Lessons page names that reason when
    asked to publish it (11). `/learn/14` and `/learn/14.html` go in `STANDALONE_DOCUMENT_PATHS`
@@ -828,13 +828,13 @@ among them (PR #1149), and in Lesson 9's spec, beyond the parts Lessons 2 to 9 p
    orange Merc. It shows no swell, no light and no breath mark, so it does not answer the cold
    open's predict.
 4. First-paint ceilings for `learn/14.html` in `scripts/assert-first-paint-budgets.mjs`, one in its
-   JavaScript table and one in its stylesheet table, beside Lessons 3 and 6's (`:102-114`,
-   `:129-137`; `:193-196`, `:206-210`). Every build emits every lesson page, and the check fails a
-   document with no ceiling (`:420-424`), so without them the Browser jobs fail before any spec
+   JavaScript table and one in its stylesheet table, beside Lessons 3 and 6's (`:102-120`,
+   `:135-143`; `:206-209`, `:219-223`). Every build emits every lesson page, and the check fails a
+   document with no ceiling (`:437-441`), so without them the Browser jobs fail before any spec
    runs, as Lesson 6's did on PR #1149. Each is the page's measured first paint plus about a
-   quarter, the tables' rule (`:46-57`, `:149-159`), measured in `build:e2e`, where the check runs
+   quarter, the tables' rule (`:46-57`, `:162-172`), measured in `build:e2e`, where the check runs
    (`package.json:20`), as Lesson 6's entry warns, since a build of one page alone weighs it lighter
-   (`assert-first-paint-budgets.mjs:134-136`). As on Lesson 3, the listener, the pitch detector and
+   (`assert-first-paint-budgets.mjs:140-142`). As on Lesson 3, the listener, the pitch detector and
    Voice Mirror's scorer arrive through a dynamic import when Start is pressed
    (`scripts/assert-first-paint-budgets.mjs:106-110`), and the record module and the app's recorder
    with them, so the ceiling holds only while that boundary does.
@@ -883,16 +883,16 @@ among them (PR #1149), and in Lesson 9's spec, beyond the parts Lessons 2 to 9 p
     would gain the shorter line beside its own (`lesson-copy.ts:168-174`), kept free of the team's
     words as the test asks (`lesson-copy.test.ts:300-308`). Its unit test and End to end 11 check it
     (Tests), and so does Page QA.
-13. A stoppable noise (84), proposed: `playNoise` returns nothing to stop (`kit/sound.ts:409-443`),
+13. A stoppable noise (84), proposed: `playNoise` returns nothing to stop (`kit/sound.ts:428-462`),
     so a page cannot cut an in-breath when the viewer leaves a step. Until it returns a voice like
     every other sound, a breath is a gap, as here.
-14. The four-words strip, promoted from Lesson 1's page (`lesson-01/words.ts`) if no earlier page
-    has, as Lesson 9's spec proposes (11, there); and `recallStepHref`, which Lessons 9 and 14 both
-    borrow from Lesson 5's module (`lesson-05/quiz-questions.ts:19-21`), moved into the kit's quiz
-    beside `away`.
+14. The four-words strip, built: promoted from Lesson 1's page (`lesson-01/words.ts`) into
+    `kit/words-strip.ts` with Lesson 7's page. Still needed, `recallStepHref`, which Lessons 9 and
+    14 both borrow from Lesson 5's module (`lesson-05/quiz-questions.ts:19-21`), moved into the
+    kit's quiz beside `away`.
 15. The hook and the tease: done in this PR (1, 2).
 16. `src/e2e/helpers/tone-wav.ts`: Lesson 9's proposed `writeStepsWav(steps, leadSilence)`, steady
-    tones in sequence after a stretch of silence, beside `writeToneWav` (`:29`), here for the phrase
+    tones in sequence after a stretch of silence, beside `writeToneWav` (`:76`), here for the phrase
     with take 2's breath, D3 D3 A3 A3 B3 B3 at 0.75 s, A3 for 1.2 s and 0.3 s of silence (Tests, end
     to end 6).
 17. App: the App content items for Dynamic Swell and the routines (Practice links).
@@ -1083,8 +1083,8 @@ parts:
     `l14-q4`, with `lesson: 14`.
 14. Season data: Lesson 14's entry has `minutes: 18` and `page: '/learn/14'` in every build,
     whichever way `VITE_DRAFT_LESSONS` reads, as `season.test.ts` checks Lessons 3 to 5's
-    (`:231-256`), and the same file's check of every page in the repository then covers it
-    (`:258-275`); `seasonFor(LESSONS, defaultPageState(false))` gives Lesson 14 no page and no
+    (`:241-266`), and the same file's check of every page in the repository then covers it
+    (`:268-285`); `seasonFor(LESSONS, defaultPageState(false))` gives Lesson 14 no page and no
     reading time while its line is in `drafts.ts`, and `seasonFor(LESSONS, defaultPageState(true))`
     keeps both, as `publish.test.ts` checks a lesson held back and one published (`:57-82`); if that
     file's example of a lesson with no page still names a lesson that now has one (`:44-55`), it
@@ -1137,7 +1137,7 @@ End to end (Playwright, at 390 x 844 and 1440 x 900, on the e2e build, which sho
    `src/e2e/learn-no-planning-text.spec.ts` reads it for the team's planning words and every
    variant's note the same way, and `src/e2e/learn-cold-open-fold.spec.ts` holds its title on the
    first screen at seven sizes and reports where Play take 1 and the two choices sit (`:176-203`).
-6. Sing it, with the fake microphone (`src/e2e/helpers/tone-wav.ts`, `fakeMicArgs`, `:80`): with
+6. Sing it, with the fake microphone (`src/e2e/helpers/tone-wav.ts`, `fakeMicArgs`, `:115`): with
    sound off, Start asks for no microphone and the hint says sound is off; with sound on, a steady
    A3 (`writeToneWav(220)`) reads "Take 1, drawn over Merc's bands: your line stayed at about A3.";
    "Easy" offers Start take 2; after take 2 and "Easy", Play your take 1 and Play your take 2 each

@@ -128,7 +128,7 @@ and 89). Three run longer, for these reasons:
 
 - The band chart (Merc's band at A3) with the level strip and a held voice, drawn violet. One
   slider, **Push**, 0 to 100, starting at 50, moves the voice's level and pitch together through
-  the kit's `setGain` and `setFreq` (`sound.ts:148-155`): ±6 dB and ±60 cents at the ends (FACTS
+  the kit's `setGain` and `setFreq` (`sound.ts:166-173`): ±6 dB and ±60 cents at the ends (FACTS
   73). The line draws in a scrolling 4-second window while the note sounds.
 - Sounding the note: `holdToPlay` sounds it while a pointer holds the slider, or for 0.7 s after
   the last arrow key (`kit/toy-helpers.ts:17-63`); it handles no Space or Enter, so on its own a
@@ -368,7 +368,7 @@ Tests:
   celebrates only after Easy or Workable and at least 80 % in the band.
 - End to end, with the fake microphone's steady A3 (`src/e2e/helpers/tone-wav.ts`,
   `writeToneWav(220, 20)`, `fakeMicArgs`; 20 s rather than the helper's default of 5,
-  `tone-wav.ts:29`, so one file outlasts a whole fifteen-second take without relying on the fake
+  `tone-wav.ts:76`, so one file outlasts a whole fifteen-second take without relying on the fake
   device's loop, as `src/e2e/guided-voice-check.spec.ts:17-20` does): the lower voice on A reads
   "In the band for all 10 seconds" and asks "How did that feel?" before any longer hold; "Easy"
   shows Rest with Hold for 15 seconds, Again and Done for today; the fifteen-second hold reads

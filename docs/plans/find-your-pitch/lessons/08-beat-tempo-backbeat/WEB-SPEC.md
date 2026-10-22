@@ -139,7 +139,7 @@ section's heading, and the line above it, are in LESSON.md ("Section headings").
    `kit/lesson-copy.test.ts:372-381` requires of every page from its first commit), the meta as
    three chips ("15 minutes", FACTS 4; "Also useful: Lesson 6, Intervals", a plain chip, not a link,
    as Lesson 3's "Also useful" chip is, `learn/03.html:261-264`, FACTS 2; Sound on) and the promise,
-   from LESSON.md. The title is the season's hook (`kit/season.ts:313`, FACTS 1); it says the song
+   from LESSON.md. The title is the season's hook (`kit/season.ts:316`, FACTS 1); it says the song
    feels different and never says where the claps land, so it answers nothing the predict asks.
 3. **The stage**: orange's and blue's bubbles over the two Mercs on the floor line, with the beat
    machine in its compact state between them (Toys 1), and under the machine the two plays: "Play
@@ -550,7 +550,7 @@ the page is hidden, whatever is playing stops (`lesson-03/sing.ts:366-382`).
 - **Stopping.** Stop, or leaving the card or the page, ends the take with no line: "Stopped. Press
   Start to tap again."
 - **Sound off.** The take needs the groove: with sound off, Start shows the kit's toast
-  (`kit/sound.ts:459-471`, `canPlay`) and does not start, and the status reads "Sound is off, so
+  (`kit/sound.ts:478-490`, `canPlay`) and does not start, and the status reads "Sound is off, so
   the take didn't start. Turn sound on, then press Start." With no Web Audio at all, Start and Play
   the groove are `aria-disabled`, with "This browser can't play the page's sounds, so the take
   can't run."
@@ -723,7 +723,7 @@ sounding first. A sound so stopped, or stopped by leaving its step, never counts
   Each run plays into its own gain node on the kit's master bus, so Stop fades that node out over 30
   ms and drops it, and any hit already scheduled goes silent with it. The frame loop runs on
   `requestAnimationFrame`, which a hidden tab pauses, and the kit stops every sound when the page is
-  hidden (`kit/sound.ts:445-447`), so a hidden page plays nothing.
+  hidden (`kit/sound.ts:464-466`), so a hidden page plays nothing.
 - **The two clocks.** The beat clock maps an audio-clock time to the page's clock with
   `getOutputTimestamp()` (FACTS 38), read on every frame, using the latest reading whose
   `performanceTime` is above 0; with none, it pairs `currentTime` with `performance.now()` at the
@@ -733,14 +733,14 @@ sounding first. A sound so stopped, or stopped by leaving its step, never counts
 - **Levels** (FACTS 72 to 76): the click 0.09 high and 0.06 plain; Kick 0.8 (March's accent
   1.0), Clap 0.7, Hi-hat 0.5; the viewer's claps in the take 0.7; under the sung line every drum
   at half its gain; Merc's "ooh" at the kit's level, 0.2, and in the cold open 0.2 on beat 1, 0.17
-  on beat 3 and 0.14 on 2 and 4 (`kit/sound.ts:160`; FACTS 30c); the count-in do at 0.065.
+  on beat 3 and 0.14 on 2 and 4 (`kit/sound.ts:178`; FACTS 30c); the count-in do at 0.065.
 - **What the kit's sound module has, and needs** (What the kit and the app still need): a voice
   and a burst of noise already start at a time ahead on the audio clock (`at`, `kit/sound.ts:39-43`,
-  `:148`; `playNoise`, `:376-443`), and `contourVoice` releases on it (`:299-325`). Still needed:
+  `:166`; `playNoise`, `:395-462`), and `contourVoice` releases on it (`:318-344`). Still needed:
   the master bus offered to a caller, so the drums play into it and obey the Sound switch and the
-  hush (it is module-private, `:59`, made at `:89-98`); `tick` with a start time, where today it
-  sounds at once (`:361-374`); and a voice given a length stopped on the audio clock, where today a
-  timer stops it (`:240-246`, `:244`).
+  hush (it is module-private, `:77`, made at `:107-116`); `tick` with a start time, where today it
+  sounds at once (`:380-393`); and a voice given a length stopped on the audio clock, where today a
+  timer stops it (`:259-265`, `:263`).
 
 ## Mercs
 
@@ -802,11 +802,11 @@ paused off screen, and the still images when WebGL fails or would run on the CPU
 
 ## Explorer and season data
 
-Lesson 8's entry (`kit/season.ts:307-324`; FACTS 58), proposed for when this page is built:
+Lesson 8's entry (`kit/season.ts:310-327`; FACTS 58), proposed for when this page is built:
 
 - `minutes: 15` and `page: '/learn/08'`, written plainly with Lesson 5's comment, "A draft until its
   sign-off (drafts.ts), as Lesson 3 is." (`season.ts:254-256`). Every build keeps a draft's page and
-  reading time (`kit/season.test.ts:231-256`); where the page's state holds the lesson back, every
+  reading time (`kit/season.test.ts:241-266`); where the page's state holds the lesson back, every
   list draws it with neither, as a lesson coming later (`kit/publish.ts:94-124`).
 
 - `pr.link`: `href` `/drum-night?drawer=learn&lesson=08`, so the card's link opens First Pocket on
@@ -819,10 +819,10 @@ Lesson 8's entry (`kit/season.ts:307-324`; FACTS 58), proposed for when this pag
   beats 2 and 4" (`kit/explorer-figures.ts:203`), is the kit's and stays: the card's arm swings in
   CSS at a fixed rate that names no tempo, 1.1 s a side (`lesson-sections.css:878-889`), and the
   caption describes the drawing, which claims no tempo (FACTS 58, Illustrations without claims).
-- The hook stays word for word (`season.ts:313`; FACTS 1), with no alternative, and the tease
+- The hook stays word for word (`season.ts:316`; FACTS 1), with no alternative, and the tease
   stays as `kit/lesson-copy.ts:102` has it: "Same song, same speed. Only the claps move.", which
   Lesson 7's card shows (FACTS 6a). Lesson 9's entry carries the hook this page's card shows
-  (`season.ts:331`), and its copy the tease (`kit/lesson-copy.ts:111`), with its earlier hook as an
+  (`season.ts:334`), and its copy the tease (`kit/lesson-copy.ts:111`), with its earlier hook as an
   alternative (`:103-110`); all three are Lesson 9's, not this page's (FACTS 6).
 
 ## What the kit and the app still need
@@ -843,11 +843,11 @@ table). Every item is proposed.
    (`runtime/useDrumNightRuntime.ts:8-9`): the house rule keeps a feature out of a sibling
    feature's code (`.dependency-cruiser.cjs:101-109`, "Shared code belongs in src/lib or
    src/components").
-5. `kit/sound.ts`: the master bus offered to a caller (it is module-private, `:59`, made at
-   `:89-98`), so drum hits play into it and obey the Sound switch, the hush and the hidden-page
-   stop; `tick` with a start time (`:361-374`); a voice given a length stopped on the audio clock
-   (`:240-246`); and the clock map, if the beat clock does not keep it itself. Voices and noise
-   already take a start time (`:39-43`, `:376-443`).
+5. `kit/sound.ts`: the master bus offered to a caller (it is module-private, `:77`, made at
+   `:107-116`), so drum hits play into it and obey the Sound switch, the hush and the hidden-page
+   stop; `tick` with a start time (`:380-393`); a voice given a length stopped on the audio clock
+   (`:259-265`); and the clock map, if the beat clock does not keep it itself. Voices and noise
+   already take a start time (`:39-43`, `:395-462`).
 6. `kit/explorer-figures.ts`: `metronomeSVG(id)`, a gradient id per copy (`:20-28`), with a test
    that two copies on one page have distinct ids.
 7. `kit/ear-game.ts`, Lesson 2's game promoted and generalised on #1149 (Toys 4), with two more
@@ -864,7 +864,7 @@ table). Every item is proposed.
 9. The next card's tease and Lesson 9's hook need nothing: the curiosity plan's kit work is on main
    (`8cba5c3d9`, `e364eeaa6`). The card draws Lesson 9's tease, "One note, two ways up: step by
    step, or one leap." (`kit/lesson-copy.ts:111`), above its new hook, "How do you land a note you
-   have to leap to?" (`season.ts:331`), under `.next-tease` (`kit/next-card.ts:142`;
+   have to leap to?" (`season.ts:334`), under `.next-tease` (`kit/next-card.ts:142`;
    `lesson-sections.css:198-204`), and the old hook stays in `kit/lesson-copy.ts:103-110` as the
    admin console's alternative (CURIOSITY-MOMENTS § 5). This page adds only its tease figure to the
    slot (Toys 9).
@@ -943,7 +943,7 @@ table). Every item is proposed.
     (`src/tests/lesson-pages.test.ts:185-220`). When its line leaves `drafts.ts`, the release adds a
     line to each static file (`public/llms.txt`'s Lessons list, `:66-81`), as `kit/drafts.ts:18-21`
     asks and `lesson-pages.test.ts:149-155` checks. The first-paint budget comes with the page,
-    beside Lessons 3 and 5's (`scripts/assert-first-paint-budgets.mjs:102-119`), since every build
+    beside Lessons 3 and 5's (`scripts/assert-first-paint-budgets.mjs:102-128`), since every build
     carries every lesson page.
 17. The App content items under Practice links.
 18. From #1149's fix pass, both needed before this page's predicts and plays are built:
@@ -954,7 +954,7 @@ table). Every item is proposed.
 
 ## Edge cases
 
-- **Sound off, unset or missing.** Every play obeys the kit's `canPlay` (`kit/sound.ts:459-471`):
+- **Sound off, unset or missing.** Every play obeys the kit's `canPlay` (`kit/sound.ts:478-490`):
   the first tap turns sound on, sound off plays the visuals silently with the kit's toast, and no
   Web Audio leaves the page readable with every play `aria-disabled` and its line saying why. The
   predicts' reveals and Start the guide wait for heard sound (Toys 2, 6); the take does not start
@@ -1047,8 +1047,8 @@ parts:
     the grid takes its compact layout, which fits 140 px (FACTS 80).
 13. `metronomeSVG(id)`: two copies have distinct gradient ids.
 14. The season entry: Lesson 8 keeps `page` and `minutes` in every build, as Lessons 3 and 5 do
-    (`kit/season.test.ts:231-256`), and the season gives the page its entry, as it must every lesson
-    document in `learn/` (`kit/season.test.ts:258-275`); a state that holds it back draws it with
+    (`kit/season.test.ts:241-266`), and the season gives the page its entry, as it must every lesson
+    document in `learn/` (`kit/season.test.ts:268-285`); a state that holds it back draws it with
     neither (`kit/publish.test.ts:58-73`); its link's `note` matches none of the backlog words
     (`kit/season.test.ts:177-190`).
 15. Step 5's lock: before the predict's choice, Play, March, Rock and Tempo are `disabled` and none
@@ -1119,8 +1119,8 @@ draft shown as `build:e2e` shows it):
 10. Every practice link carries `?lesson=08` before any hash: `/drum-night?drawer=learn&lesson=08`
     and `/ear-lab?lesson=08`.
 11. The next-lesson card: a row for `/learn/08` in `src/e2e/learn-next-card.spec.ts`'s `CARDS`
-    (`:27-58`), `['/learn/08', 'Next lesson 09 · Landing a leap Coming later', '#explorer', 'See it
-on the map']`, while Lesson 9 has no page; a test as the spec's Lesson 1 test is (`:84-101`):
+    (`:27-70`), `['/learn/08', 'Next lesson 09 · Landing a leap Coming later', '#explorer', 'See it
+on the map']`, while Lesson 9 has no page; a test as the spec's Lesson 1 test is (`:96-113`):
     `.next-tease` reads `LESSON_COPY[9].tease`, and the card's words run eyebrow, `next-tease`,
     `q2`, `chip`; and its tease figure, after the words, holds no button.
 12. No planning words: the kit's `src/e2e/learn-no-planning-text.spec.ts` reads every built lesson,
