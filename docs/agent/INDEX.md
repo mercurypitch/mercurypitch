@@ -75,8 +75,8 @@ These are the rules that break things when ignored.
 | Module | Entry point | LOC | What it is |
 |---|---|---|---|
 | `guitar-night` | [guitar-night-score-voice-commands.ts](../../src/features/guitar-night/guitar-night-score-voice-commands.ts) | 43.9k | Guitar Night score voice commands — hands-free Rehearse controls The score room and its command overlay share this one capability-shaped... |
-| `lessons` | [range-toy.ts](../../src/features/lessons/lesson-07/range-toy.ts) | 35.5k | Lesson 7 range toy — the steps' chart in its five states, and free play's One range chart (kit/range-chart.ts) under its own rows of cont... |
-| `drum-night` | [index.ts](../../src/features/drum-night/session/index.ts) | 32.3k | Drum Night session boundary — import, score, kit, and evidence coaching. |
+| `lessons` | [range-toy.ts](../../src/features/lessons/lesson-07/range-toy.ts) | 40.1k | Lesson 7 range toy — the steps' chart in its five states, and free play's One range chart (kit/range-chart.ts) under its own rows of cont... |
+| `drum-night` | [index.ts](../../src/features/drum-night/session/index.ts) | 32.2k | Drum Night session boundary — import, score, kit, and evidence coaching. |
 | `stem-mixer` | [stem-mixer-voice-commands.ts](../../src/features/stem-mixer/stem-mixer-voice-commands.ts) | 17.5k | StemMixer voice commands — the karaoke tab's own spoken set Registered by StemMixer for exactly its mount lifetime, which ends the global... |
 | `ear-lab` | [ThresholdDrillView.tsx](../../src/features/ear-lab/ThresholdDrillView.tsx) | 17.1k | ThresholdDrillView — every Ruler-A drill on the stage. |
 | `exercises` | [ExerciseShell.tsx](../../src/features/exercises/ExerciseShell.tsx) | 14.0k | ExerciseShell — shared chrome for every exercise runner Owns the layout that used to be duplicated across all 18 exercise components: the... |
@@ -145,7 +145,7 @@ These are the rules that break things when ignored.
 | `jam` | [jam-net-stats.ts](../../src/lib/jam/jam-net-stats.ts) | 10.8k | ── Jam network stats One RTCStatsReport, reduced to the numbers that decide whether two people can play together. |
 | `guided-voice` | [index.ts](../../src/lib/guided-voice/index.ts) | 4.7k | Guided Voice — local assessment science and safety foundation |
 | `merc` | [renderer.ts](../../src/lib/merc/renderer.ts) | 4.5k | Merc renderer — one canvas, one WebGL2 context, one simulated Merc mount() draws Merc into a container. |
-| `ear` | [banks.ts](../../src/lib/ear/banks.ts) | 4.3k | Ear Lab — identification item banks (Leap, Stack, Contour). |
+| `ear` | [banks.ts](../../src/lib/ear/banks.ts) | 4.4k | Ear Lab — identification item banks (Leap, Stack, Contour). |
 | `backgrounds` | [background-catalog.ts](../../src/lib/backgrounds/background-catalog.ts) | 3.2k | Background catalog — one typed registry for every performance environment Supporter sources are opaque protected keys, never public asset... |
 | `mirror` | [metrics.ts](../../src/lib/mirror/metrics.ts) | 2.6k | Voice Mirror — pure metrics over F0 frame streams. |
 | `transcription` | [transcription-score.ts](../../src/lib/transcription/transcription-score.ts) | 2.4k | Scoring a transcription against a tab Shared by `node scripts/transcribe-bench.mjs` and the Lab's transcription bench, so a number on scr... |
@@ -165,6 +165,7 @@ These are the rules that break things when ignored.
 | `key-detection` | [index.ts](../../src/lib/key-detection/index.ts) | 300 | Key Detection — barrel for musical-key estimation Krumhansl-Schmuckler profile correlation over a pitch-class histogram. |
 | `platform` | [index.ts](../../src/lib/platform/index.ts) | 200 | Platform services — web implementations. |
 | `pitch-measurements` | [index.ts](../../src/lib/pitch-measurements/index.ts) | 150 | Pitch measurements — shared neutral F0 primitives |
+| `timing` | [input-latency.ts](../../src/lib/timing/input-latency.ts) | 100 | Drum Night latency calibration — bounded robust estimates, never guesses. |
 | `gpu` | [webgpu-device.ts](../../src/lib/gpu/webgpu-device.ts) | 50 | WebGPU device acquisition (seam for the planned TypeGPU backend) Adapted from the chaos-master project's WebgpuAdapter: a single shared d... |
 
 #### Core library files (`src/lib/*.ts`, 400+ LOC)
