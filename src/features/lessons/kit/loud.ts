@@ -140,6 +140,11 @@ export function mountLoud(root: HTMLElement, opts: LoudOptions = {}): Loud {
   let v: Voice | null = null
   let playing = false
   let flagT = 0
+  // the pitch the flag last spoke from: an arrow key moves "how fast" by a
+  // fraction of a hertz, under the flag's half-hertz bar, so each step is
+  // measured from here and not from the step before, or a keyboard never
+  // hears "Pitch: climbing" (L1-01)
+  let flagFrom = 0
   // what the flag last said aloud, until it fades
   let said = ''
   if (flag !== null) announcer()
@@ -162,7 +167,6 @@ export function mountLoud(root: HTMLElement, opts: LoudOptions = {}): Loud {
   }
 
   function update(which?: 'amp' | 'fast'): void {
-    const pf = f
     a = Number(amp.value) / 100
     f = 110 * Math.pow(8, Number(fast.value) / 1000)
     rangeFill(amp)
@@ -176,9 +180,11 @@ export function mountLoud(root: HTMLElement, opts: LoudOptions = {}): Loud {
     amp.setAttribute('aria-valuetext', `${Math.round(a * 100)} percent`)
     fast.setAttribute('aria-valuetext', `${Math.round(f)} hertz`)
     if (which === 'amp') showFlag(flags.far, COLOR.chrome)
-    if (which === 'fast' && Math.abs(f - pf) > 0.5) {
-      showFlag(f > pf ? flags.up : flags.down, COLOR.aqua)
+    if (which === 'fast' && Math.abs(f - flagFrom) > 0.5) {
+      showFlag(f > flagFrom ? flags.up : flags.down, COLOR.aqua)
+      flagFrom = f
     }
+    if (which === undefined) flagFrom = f
     if (v) {
       v.setFreq(f, 0.015)
       v.setGain(0.03 + 0.2 * a, 0.03)

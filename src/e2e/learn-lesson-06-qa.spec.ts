@@ -220,21 +220,22 @@ test.describe('page QA (WEB-SPEC, Tests and Contract)', () => {
       'D 4, you',
       'C 4, are',
     ].map((n, g) => `Note ${g + 1} of 14, ${n}`)
+    // each gap's name starts with what it draws: its size over its word
     const gaps = [
-      'the same note again',
-      'up 7 semitones, a leap',
-      'the same note again',
-      'up 2 semitones, a step',
-      'the same note again',
-      'down 2 semitones, a step',
-      'down 2 semitones, a step',
-      'the same note again',
-      'down 1 semitone, a step',
-      'the same note again',
-      'down 2 semitones, a step',
-      'the same note again',
-      'down 2 semitones, a step',
-    ].map((n, g) => `Gap ${g + 1}: ${n}`)
+      ['0, same', 'the same note again'],
+      ['7, leap', 'up 7 semitones'],
+      ['0, same', 'the same note again'],
+      ['2, step', 'up 2 semitones'],
+      ['0, same', 'the same note again'],
+      ['\u22122, step', 'down 2 semitones'],
+      ['\u22122, step', 'down 2 semitones'],
+      ['0, same', 'the same note again'],
+      ['\u22121, step', 'down 1 semitone'],
+      ['0, same', 'the same note again'],
+      ['\u22122, step', 'down 2 semitones'],
+      ['0, same', 'the same note again'],
+      ['\u22122, step', 'down 2 semitones'],
+    ].map(([drawn, n], g) => `${drawn}: gap ${g + 1}, ${n}`)
 
     await page.locator(`${TOY} [data-tune-play]`).focus()
     await page.keyboard.press('Tab')

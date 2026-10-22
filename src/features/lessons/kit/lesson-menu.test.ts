@@ -211,6 +211,44 @@ describe('createLessonMenu on a page the worker served (page-state.ts)', () => {
     vi.resetModules()
   })
 
+  it('names its button by the label on screen, the season too where it shows, then what it opens', async () => {
+    // Arrange: a phone first, then a screen wide enough for "Season 1 · "
+    let wide = false
+    const listeners: (() => void)[] = []
+    vi.spyOn(window, 'matchMedia').mockImplementation(
+      (query: string) =>
+        ({
+          get matches() {
+            return query === '(min-width: 1021px)' ? wide : false
+          },
+          media: query,
+          addEventListener: (_: string, fn: () => void) => listeners.push(fn),
+          removeEventListener: () => undefined,
+        }) as unknown as MediaQueryList,
+    )
+    const built: typeof Menu = await import('./lesson-menu')
+    document.body.innerHTML = '<span class="mast-ep">Lesson 01</span>'
+    built.createLessonMenu({
+      lesson: 1,
+      deck,
+      label: document.querySelector('.mast-ep') as HTMLElement,
+      sections: [],
+    })
+    const button = document.querySelector('.lm-btn')
+    const onPhone = button?.getAttribute('aria-label')
+
+    // Act
+    wide = true
+    listeners.forEach((fn) => fn())
+
+    // Assert
+    expect(onPhone).toBe('Lesson 01, What is a note? All 14 lessons')
+    expect(button?.getAttribute('aria-label')).toBe(
+      'Season 1 · Lesson 01, What is a note? All 14 lessons',
+    )
+    vi.restoreAllMocks()
+  })
+
   it('lists the lessons as the state has them: a draft it publishes linked, a lesson it holds back coming later', async () => {
     // Arrange: a production bundle, Lesson 3 published and Lesson 2 held back
     vi.stubEnv('VITE_DRAFT_LESSONS', '0')
