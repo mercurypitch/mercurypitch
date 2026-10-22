@@ -395,7 +395,7 @@ taken further without forking it (`spiral.ts:22-26`):
   not free (`:106-124`).
 - **Cold open.** The choices are [ Mi ] [ So ] (FACTS 41). Its three plays sit under the spiral on
   the hero's stage, outside the predict card, and are handed to the predict as its `plays`
-  (`predict.ts:67-68`). "Play the chord" (`chord-c`) is a free play (`data-free`, `:14-15`): it sets
+  (`predict.ts:67-68`). "Play the chord" (`chord-c`) is a free play (`data-free`, `:15-16`): it sets
   up the question and answers nothing. "Move mi down" (`move-mi`) and "Move so down" (`move-so`)
   wait for the choice, and the reveal waits until both have been heard, since it compares them:
   `revealOn: ['move-mi', 'move-so']` with `revealAfter: 'all'` (`:52-58`). The two must be passed
@@ -406,7 +406,7 @@ taken further without forking it (`spiral.ts:22-26`):
   down, for the answer."; with sound off, `hints.silent` is LESSON.md's "Sound is off, so nothing
   played. Turn sound on to hear the chord, then play it again."; after the reveal, `hints.again`
   reads "Move either note again, or play the chord." The reveal's "You said" line is the kit's
-  `guess` (`:52-53`): "You said: mi" or "You said: so", never "right" or "wrong". As it shows, mi's
+  `guess` (`:59-60`): "You said: mi" or "You said: so", never "right" or "wrong". As it shows, mi's
   halo glows gold once (Toys 2) and orange celebrates (Mercs). The reveal's last line makes the
   other choice a fair guess (CURIOSITY-MOMENTS § 1, rule 2; FACTS 41).
 - **Step 5.** The choices are [ Just one: mi ] [ Three ] (FACTS 44). Both plays, "Play C major"
@@ -907,7 +907,7 @@ CURIOSITY-MOMENTS § 5 item 2.
    until then (Toys 6).
 9. **The quizzes' play buttons in the kit quiz's slot**, which keeps a slot's controls across
    answers (`quiz.ts:52-58`; Toys 8). Lesson 6's spec says the kit rebuilds the questions on every
-   answer (`docs/plans/find-your-pitch/lessons/06-intervals/WEB-SPEC.md:415-416`): that line is out
+   answer (`docs/plans/find-your-pitch/lessons/06-intervals/WEB-SPEC.md:459-460`): that line is out
    of date.
 10. **The coach's volume line.** "Sing at about speaking volume." stays, the series' line; "or a
     little softer, never a whisper" is a safe addition for the coach to make (LESSON.md, For the

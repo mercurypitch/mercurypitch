@@ -781,8 +781,8 @@ and the four-words strip in the kit.
    (`src/lesson-gate.ts:22-24`). Then `src/tests/lesson-pages.test.ts` holds the page to the
    release's checks (`:213-240`). `datePublished` is set in the commit that deletes the `drafts.ts`
    line or in one straight after the console publishes it, as the owner picks, and indexing is
-   requested on the day the console publishes it, not at the release (SEARCH.md § 3.2, `:146-153`; §
-   12, `:396-420`).
+   requested on the day the console publishes it, not at the release (`SEARCH.md` § 3.2, `:146-153`;
+   § 12, `:396-420`).
 2. The page's head, written in full from its first commit:
    `src/features/lessons/kit/lesson-copy.test.ts` reads every `learn/NN.html`, drafts included
    (`lesson-copy.test.ts:325-360`), and `src/tests/lesson-pages.test.ts` holds every lesson
