@@ -377,6 +377,7 @@ test('fails a page that downloads the key-change engine before first paint, what
   assert.match(problems[0], /room\.html downloads the key-change engine/)
   assert.match(problems[0], /signalsmith-stretch/)
   assert.match(problems[0], /assets\/vendor-abc\.js/)
+  assert.match(problems[0], /give it a chunk of its own/)
 })
 
 test('passes a page that leaves the engine behind its dynamic import', () => {
@@ -432,4 +433,49 @@ test('the key-change engine is on the on-demand list, and its wrapper is not', (
   )
   assert.equal(hits('../../src/lib/key-shift/pitch-shift-node.ts').length, 0)
   assert.equal(hits('../../src/workers/pitch-shift-live-input.ts').length, 0)
+})
+
+// The lessons' team notes as a build names them in a source map.
+const TEAM_NOTES_SOURCE = '../../src/features/lessons/kit/team-notes.ts'
+
+test("fails a lesson page that downloads the lessons' team notes, whatever its budget", () => {
+  const problems = judgeFirstPaint(
+    new Map([
+      [
+        'learn/04.html',
+        built(
+          ['../../src/features/lessons/lesson-04/main.ts', TEAM_NOTES_SOURCE],
+          'assets/lesson04-abc.js',
+        ),
+      ],
+    ]),
+    { 'learn/04.html': 5000 },
+    {},
+  )
+
+  assert.equal(problems.length, 1)
+  assert.match(
+    problems[0],
+    /learn\/04\.html downloads the lessons' team notes before first paint/,
+  )
+  assert.match(
+    problems[0],
+    /kit\/team-notes\.ts rides assets\/lesson04-abc\.js/,
+  )
+  assert.match(problems[0], /Only the admin console may import it/)
+  assert.doesNotMatch(problems[0], /give it a chunk of its own/)
+})
+
+test('the team notes are on the on-demand list, and the copy every lesson page carries is not', () => {
+  const hits = (source) =>
+    FIRST_PAINT_FORBIDDEN_SOURCES.filter((rule) => rule.pattern.test(source))
+
+  assert.equal(hits(TEAM_NOTES_SOURCE).length, 1)
+  assert.equal(hits('../src/features/lessons/kit/team-notes.ts').length, 1)
+  assert.equal(hits('../../src/features/lessons/kit/season.ts').length, 0)
+  assert.equal(hits('../../src/features/lessons/kit/lesson-copy.ts').length, 0)
+  assert.equal(
+    hits('../../src/features/lessons/kit/team-notes.test-fixtures.ts').length,
+    0,
+  )
 })
