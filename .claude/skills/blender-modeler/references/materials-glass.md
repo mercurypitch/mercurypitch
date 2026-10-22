@@ -41,20 +41,21 @@ Subsurface and Glass or Refraction BSDF nodes are not exported at all: use
 
 ## Presets (`bkit.materials`) and the numbers that read
 
-| Use         | Settings                                                                                                                                                                                        | Optics block                                                                                          |
-| ----------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------- |
-| Opal glass  | white base, roughness 0.20, transmission 0.35, IOR 1.47, thin film 420 nm, film IOR 1.55, sheen 0.5 `#dccbf2`, **no coat**; colour from pastel COLOR_0 patches (`vertex_tint`, `paint_corners`) | volume thickness 0.02, attenuation `[0.82,0.94,0.90]` at 0.3 m; iridescence 1.0, IOR 1.55, 100-430 nm |
-| Clear glass | roughness 0.03, transmission 1.0, IOR 1.5                                                                                                                                                       | volume thickness 1-2 times the wall                                                                   |
-| Cut faces   | the glass a touch rougher (0.14), transmission 0.8                                                                                                                                              | thickness 0.03                                                                                        |
-| Gold        | metallic 1, sRGB `#e0b65e`, roughness 0.26-0.30; `textures.hammered_normal` for hand-worked gold                                                                                                | none                                                                                                  |
-| Jade        | sRGB `#3f6a4b` (the concept's lit midtone, hue 129, saturation 0.27), roughness 0.26, transmission 0.08, IOR 1.61, coat 0.3; `textures.marbled` veins at one image per three tiles              | thickness 0.04, attenuation `[0.2,0.55,0.35]` at 0.05 m                                               |
-| Marble      | sRGB `#efe9df`, roughness 0.34, coat 0.25                                                                                                                                                       | none                                                                                                  |
+| Use         | Settings                                                                                                                                                                                                                                                                              | Optics block                                                                                          |
+| ----------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------- |
+| Opal glass  | white base, roughness 0.20, transmission 0.35, IOR 1.47, thin film 420 nm, film IOR 1.55, sheen 0.5 `#dccbf2`, **no coat**; colour from distinct pastel COLOR_0 patches, saturation about 0.27 (`vertex_tint`, `paint_corners`, a soft-max palette as in the amphora's `opal_colour`) | volume thickness 0.02, attenuation `[0.82,0.94,0.90]` at 0.3 m; iridescence 1.0, IOR 1.55, 100-430 nm |
+| Clear glass | roughness 0.03, transmission 1.0, IOR 1.5                                                                                                                                                                                                                                             | volume thickness 1-2 times the wall                                                                   |
+| Cut faces   | the glass a touch rougher (0.14), transmission 0.8                                                                                                                                                                                                                                    | thickness 0.03                                                                                        |
+| Gold        | **metallic 0.75**, sRGB `#ecc878`, roughness 0.30; `textures.hammered_normal` for hand-worked gold. A gold inlay line: metallic 0.6, `#eec674`                                                                                                                                        | none                                                                                                  |
+| Jade        | sRGB `#3f6a4b` (the concept's lit midtone, hue 129, saturation 0.27), roughness 0.26, transmission 0.08, IOR 1.61, coat 0.3; `textures.marbled` veins at one image per three tiles                                                                                                    | thickness 0.04, attenuation `[0.2,0.55,0.35]` at 0.05 m                                               |
+| Marble      | sRGB `#efe9df`, roughness 0.34, coat 0.25                                                                                                                                                                                                                                             | none                                                                                                  |
 
 Pearl and texture:
 
 - Sheen (`principled(..., sheen=0.6, sheen_tint='#dccbf2')`) exports as
   `KHR_materials_sheen`: a soft tinted glow toward grazing angles, the pearl on
-  opal glass.
+  opal glass. The exporter ignores Sheen Weight, so `principled` scales the tint
+  by it.
 - Hammered gold is a normal map, not geometry (`craft-rules.md` § 13); the
   exporter then needs tangents.
 
@@ -72,8 +73,25 @@ Notes that cost a round to learn:
 - A cut material per part: glass breaks into rougher glass, gold into gold,
   stone into stone.
 
+## The museum's light
+
+The game lights the museum with the golden-coast HDR at intensity 0.65 (blue
+sky, luminance about 1.0; a warm sun band at the horizon; a brown ground at
+0.20), a hemisphere light (sky `#cceaff`, ground `#243e42`), a warm key from
+above front left and a cyan rim. Two consequences, both measured on the
+amphora:
+
+- A pure metal facing below the horizon mirrors the brown ground and renders
+  copper. Gold at metallic 0.75 (0.6 for a thin inlay line) keeps its colour
+  from the key light's diffuse.
+- The blue sky pulls pale tints toward aqua and halves their saturation. Pick
+  vertex-colour patches about twice as saturated as the concept's, and a mint
+  at hue 115 to read as the concept's hue 130.
+
 ## Checking
 
 The matids panel shows which faces carry which material. The material panel
-(Cycles) is a guide, not the truth: confirm glass in the runtime proof, where
-milky glass can turn chalky and clear glass can vanish.
+(Cycles) is a guide, not the truth: tune in `three_preview.mjs` (`--set` to try
+a value, `--env room` to take the museum's light out of the question), and
+confirm in the runtime proof, where milky glass can turn chalky and clear glass
+can vanish.

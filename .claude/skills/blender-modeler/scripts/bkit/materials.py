@@ -30,7 +30,11 @@ def principled(name, color, *, metallic=0.0, roughness=0.5, transmission=0.0, io
     """New material with one Principled BSDF; `color` and `sheen_tint` are sRGB (hex or tuple).
 
     Sheen exports as KHR_materials_sheen: a soft tinted glow toward grazing angles,
-    the pearl on opal glass. Thin film needs gltf_finish.py to reach three.js.
+    the pearl on opal glass. The exporter writes Sheen Tint as sheenColorFactor and
+    drops Sheen Weight, so the weight is folded into the tint here (weight 1, tint
+    x sheen): Cycles renders the same product, and three.js gets the intended
+    strength instead of full sheen, which darkened an inlaid gold line to copper.
+    Thin film needs gltf_finish.py to reach three.js.
     """
     mat = bpy.data.materials.new(name)
     if mat.node_tree is None:  # older builds; 5.x creates the tree already
@@ -47,8 +51,8 @@ def principled(name, color, *, metallic=0.0, roughness=0.5, transmission=0.0, io
         'Coat Roughness': coat_roughness,
         'Thin Film Thickness': thin_film_nm,
         'Thin Film IOR': thin_film_ior,
-        'Sheen Weight': sheen,
-        'Sheen Tint': (*srgb(sheen_tint), 1.0),
+        'Sheen Weight': 1.0 if sheen else 0.0,
+        'Sheen Tint': (*(c * sheen for c in srgb(sheen_tint)), 1.0),
         'Sheen Roughness': sheen_roughness,
     }
     for socket, value in values.items():
@@ -84,9 +88,14 @@ def jade(name='jade_stone', color='#3f8a66'):
                       coat_roughness=0.08)
 
 
-def gold(name='gold_trim', color='#e8c27a', roughness=0.26):
-    """Champagne gold; raise roughness for a hammered finish."""
-    return principled(name, color, metallic=1.0, roughness=roughness)
+def gold(name='gold_trim', color='#e8c27a', roughness=0.26, metallic=1.0):
+    """Champagne gold; raise roughness for a hammered finish.
+
+    Pure metal shows only what it reflects. Under the museum's HDR, whose ground is
+    a fifth as bright as its sky and brown, gold on any surface that faces the floor
+    renders copper; metallic 0.75 lets the key light's diffuse keep it gold
+    (`materials-glass.md`, measured against the concept)."""
+    return principled(name, color, metallic=metallic, roughness=roughness)
 
 
 def marble(name='marble_ivory', color='#efe9df'):
@@ -126,8 +135,10 @@ def paint_corners(obj, colour_at, only, attribute='Col'):
     """Fill a corner colour attribute: colour_at(world position) -> sRGB on faces whose
     material is named in `only`, white on every other face."""
     me = obj.data
-    layer = me.color_attributes.get(attribute) or me.color_attributes.new(attribute, 'BYTE_COLOR', 'CORNER')
     names = [slot.material.name if slot.material else None for slot in obj.material_slots]
+    if not any(names[p.material_index] in only for p in me.polygons if p.material_index < len(names)):
+        return None  # nothing here uses the tint: no attribute, so nothing is written for it
+    layer = me.color_attributes.get(attribute) or me.color_attributes.new(attribute, 'BYTE_COLOR', 'CORNER')
     world = obj.matrix_world
     for poly in me.polygons:
         tinted = names[poly.material_index] in only if poly.material_index < len(names) else False

@@ -16,21 +16,21 @@ holds this file). Pass its absolute path to every subagent you spawn.
 
 ## The pieces
 
-| Piece                   | What it gives you                                                                  | Where                                                   |
-| ----------------------- | ---------------------------------------------------------------------------------- | ------------------------------------------------------- |
-| This file               | The pipeline and its non-negotiables                                               | `SKILL.md`                                              |
-| `bkit`                  | Tested bpy library: profiles, lathes, sweeps, trims, materials, fracture, validate | `scripts/bkit/`, tests in `scripts/tests/test_bkit.py`  |
-| Pipeline runner         | Build, finish, contract, Khronos and silhouette gates, sheets, one summary         | `scripts/asset_pipeline.py`                             |
-| QA scripts              | Contact sheets, silhouette gate, measurement renders, runtime proof                | `scripts/`, `references/qa.md`                          |
-| `model-critic` subagent | The fresh critic                                                                   | `.claude/agents/model-critic.md` in the repository root |
-| Craft rules             | What makes an asset look made by an artist, and how to do each in bkit             | `references/craft-rules.md`                             |
-| Recipes                 | Vessel, handle, fracture, step by step                                             | `references/recipes/`                                   |
-| Materials               | Glass, gold, jade and marble that survive glTF and read in three.js                | `references/materials-glass.md`                         |
-| Blender 5 gotchas       | API changes and export traps that break bpy written from memory                    | `references/blender-5-gotchas.md`                       |
-| House rules             | The Glassworks contract: names, extras, units, budgets, files, commits             | `references/house-rules.md`                             |
-| Generators              | When Meshy and friends help, and when they cannot                                  | `references/generators.md`                              |
-| Lessons                 | This skill's own mistakes log; read before a first build                           | `references/lessons.md`                                 |
-| Brief template          | What to know before the first vertex                                               | `ASSET-BRIEF.md`                                        |
+| Piece                   | What it gives you                                                                     | Where                                                   |
+| ----------------------- | ------------------------------------------------------------------------------------- | ------------------------------------------------------- |
+| This file               | The pipeline and its non-negotiables                                                  | `SKILL.md`                                              |
+| `bkit`                  | Tested bpy library: profiles, lathes, sweeps, trims, materials, fracture, validate    | `scripts/bkit/`, tests in `scripts/tests/test_bkit.py`  |
+| Pipeline runner         | Build, finish, contract, Khronos and silhouette gates, sheets, one summary            | `scripts/asset_pipeline.py`                             |
+| QA scripts              | Contact sheets, silhouette gate, measurement renders, three.js preview, runtime proof | `scripts/`, `references/qa.md`                          |
+| `model-critic` subagent | The fresh critic                                                                      | `.claude/agents/model-critic.md` in the repository root |
+| Craft rules             | What makes an asset look made by an artist, and how to do each in bkit                | `references/craft-rules.md`                             |
+| Recipes                 | Vessel, handle, fracture, step by step                                                | `references/recipes/`                                   |
+| Materials               | Glass, gold, jade and marble that survive glTF and read in three.js                   | `references/materials-glass.md`                         |
+| Blender 5 gotchas       | API changes and export traps that break bpy written from memory                       | `references/blender-5-gotchas.md`                       |
+| House rules             | The Glassworks contract: names, extras, units, budgets, files, commits                | `references/house-rules.md`                             |
+| Generators              | When Meshy and friends help, and when they cannot                                     | `references/generators.md`                              |
+| Lessons                 | This skill's own mistakes log; read before a first build                              | `references/lessons.md`                                 |
+| Brief template          | What to know before the first vertex                                                  | `ASSET-BRIEF.md`                                        |
 
 The worked example is the Opaline Echo Amphora in
 `art/glass-adventure/procedural/opaline-echo-amphora/`: brief, build script,
@@ -103,8 +103,9 @@ self-intersections, triangles inside the budget. Then a critic round.
 Bands, cuffs, inlays and lips as geometry where they read at gameplay size,
 within budget; Principled materials from `bkit.materials`, and the extensions
 the exporter drops (volume, iridescence) in `optics.json` for `gltf_finish.py`.
-Look at the matids panel: every span the material the concept shows. Critic
-round.
+Look at the matids panel: every span the material the concept shows. Then tune
+in the game's renderer, not in Cycles: `three_preview.mjs` with `--set`, colours
+compared as numbers against the concept (`references/qa.md`). Critic round.
 
 ## 6. Fracture
 

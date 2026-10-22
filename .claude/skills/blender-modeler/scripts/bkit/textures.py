@@ -139,9 +139,45 @@ def _image(name, rgb, colour):
     return image
 
 
+def _segments(strokes, width, period_shifts):
+    """Flatten polylines into segment arrays, drawn once per period shift so the tile wraps.
+
+    strokes: [(points, half_widths[, heights])]; heights default to 1 per point.
+    """
+    a, b, wa, wb, ha, hb = [], [], [], [], [], []
+    for stroke in strokes:
+        points, half = stroke[0], stroke[1]
+        heights = stroke[2] if len(stroke) > 2 else [1.0] * len(points)
+        if np.isscalar(heights):
+            heights = [float(heights)] * len(points)
+        for shift in period_shifts:
+            for i in range(len(points) - 1):
+                a.append((points[i][0] + shift * width, points[i][1]))
+                b.append((points[i + 1][0] + shift * width, points[i + 1][1]))
+                wa.append(half[i])
+                wb.append(half[i + 1])
+                ha.append(heights[i])
+                hb.append(heights[i + 1])
+    return tuple(np.array(x, dtype=float) for x in (a, b, wa, wb, ha, hb))
+
+
+def _nearest(p, segs):
+    """For points p (n, 2): distance to, parameter on and index of the nearest segment, the
+    interpolated half width and height there, and which hand of it each point is on."""
+    a, b, wa, wb, ha, hb = segs
+    ab = b - a
+    ab_len2 = np.maximum((ab ** 2).sum(axis=1), 1e-18)
+    ap = p[:, None, :] - a[None, :, :]
+    t = np.clip((ap * ab[None]).sum(axis=2) / ab_len2[None], 0, 1)
+    q = a[None] + t[..., None] * ab[None]
+    d = np.sqrt(((p[:, None, :] - q) ** 2).sum(axis=2))
+    w = wa[None] + t * (wb - wa)[None]
+    return d, t, w, ap, ab, ha[None] + t * (hb - ha)[None]
+
+
 def inlay(name, strokes, width, height, *, cols=512, rows=256, ground='#d6efe4', line='#e0b65e',
           ground_trm=(0.35, 0.20, 0.0), line_trm=(0.0, 0.30, 1.0), ridge=0.0008, relief=0.0,
-          reach=0.022, side=-1, period_shifts=(-1, 0, 1, 2)):
+          reach=0.022, side=-1, period_shifts=(-1, 0, 1, 2), ridges=(), ground_low=None, light=0.0):
     """Inlaid metal lines and the relief they ride on, as three tileable images for one material.
 
     strokes: [(points, half_widths)], points (s, z) in metres inside a tile `width`
@@ -152,54 +188,62 @@ def inlay(name, strokes, width, height, *, cols=512, rows=256, ground='#d6efe4',
     ridge: height of the line's rounded crown. relief: height of a raised roll on
     `side` of each stroke (-1 is its right hand as it travels: below a crest that
     runs left to right, inside a clockwise curl), fading out over `reach` metres.
+    ridges: [(points, half_widths, heights)], glass ridges with no metal: a smooth
+    bump of each point's height and half width (heights fade a ridge in and out).
+    ground_low, light: the relief's shading baked into the ground colour, so it
+    reads at gameplay size and under flat light: where the surface turns down
+    (away from a light above) the ground moves toward `ground_low`; where it turns
+    up it brightens by up to `light`. The metal line is not shaded.
     Map it with UVs s / width across and z / height up; the tangent frame must
     come from those same UVs.
     """
-    seg_a, seg_b, wa, wb = [], [], [], []
-    for points, half in strokes:
-        for shift in period_shifts:
-            for i in range(len(points) - 1):
-                seg_a.append((points[i][0] + shift * width, points[i][1]))
-                seg_b.append((points[i + 1][0] + shift * width, points[i + 1][1]))
-                wa.append(half[i])
-                wb.append(half[i + 1])
-    a, b = np.array(seg_a), np.array(seg_b)
-    wa, wb = np.array(wa), np.array(wb)
-    ab = b - a
-    ab_len2 = np.maximum((ab ** 2).sum(axis=1), 1e-18)
+    line_segs = _segments(strokes, width, period_shifts)
+    ridge_segs = _segments(ridges, width, period_shifts) if ridges else None
     s_axis = (np.arange(cols) + 0.5) / cols * width
     z_axis = (np.arange(rows) + 0.5) / rows * height
     coverage = np.zeros((rows, cols))
-    crown = np.zeros((rows, cols))
-    roll = np.zeros((rows, cols))
+    h = np.zeros((rows, cols))
     texel = min(width / cols, height / rows)
+    idx = np.arange(cols)
     for r in range(rows):  # one row at a time keeps memory flat
         p = np.stack((s_axis, np.full(cols, z_axis[r])), axis=1)
-        ap = p[:, None, :] - a[None, :, :]
-        t = np.clip((ap * ab[None]).sum(axis=2) / ab_len2[None], 0, 1)
-        q = a[None] + t[..., None] * ab[None]
-        d = np.sqrt(((p[:, None, :] - q) ** 2).sum(axis=2))
-        w = wa[None] + t * (wb - wa)[None]
+        d, _, w, ap, ab, _ = _nearest(p, line_segs)
         inside = d - w
         k = np.argmin(inside, axis=1)
-        idx = np.arange(cols)
-        edge = inside[idx, k]
-        coverage[r] = np.clip(0.5 - edge / texel, 0, 1)
+        coverage[r] = np.clip(0.5 - inside[idx, k] / texel, 0, 1)
         dk, wk = d[idx, k], np.maximum(w[idx, k], 1e-6)
-        crown[r] = ridge * np.sqrt(np.clip(1 - (dk / wk) ** 2, 0, 1))
+        h[r] = ridge * np.sqrt(np.clip(1 - (dk / wk) ** 2, 0, 1))
         if relief:
-            near = np.argmin(d, axis=1)
-            cross = ab[near, 0] * ap[idx, near, 1] - ab[near, 1] * ap[idx, near, 0]
-            dn = d[idx, near]
-            on_side = np.sign(cross) == side
-            roll[r] = np.where(on_side, relief * (1 - np.exp(-dn / 0.004)) * np.exp(-(dn / reach) ** 2), 0.0)
-    h = crown + roll
+            # Every segment's roll on its own side, the strongest kept. Taking only the nearest
+            # segment's side left a cliff wherever the nearest segment changed hands: between the
+            # turns of a curl and out from a stroke's end.
+            length = np.sqrt(np.maximum((ab ** 2).sum(axis=1), 1e-18))[None]
+            along = (ap * ab[None]).sum(axis=2) / length
+            past_end = np.maximum(np.maximum(-along, along - length), 0)
+            across = side * (ab[None, :, 0] * ap[..., 1] - ab[None, :, 1] * ap[..., 0]) / length
+            on_side = np.clip(across / 0.0015, 0, 1)
+            roll = (relief * (1 - np.exp(-d / 0.004)) * np.exp(-(d / reach) ** 2)
+                    * on_side * on_side * (3 - 2 * on_side) * np.exp(-(past_end / (0.5 * reach)) ** 2))
+            h[r] += roll.max(axis=1)
+        if ridge_segs is not None:
+            d, _, w, _, _, hh = _nearest(p, ridge_segs)
+            bump = hh * np.cos(np.pi / 2 * np.clip(d / np.maximum(w, 1e-6), 0, 1)) ** 2
+            h[r] += bump.max(axis=1)
     dh_ds = np.gradient(h, width / cols, axis=1)
     dh_dz = np.gradient(h, height / rows, axis=0)
     normal = np.dstack((-dh_ds, -dh_dz, np.ones_like(h)))
     normal /= np.linalg.norm(normal, axis=2, keepdims=True)
     g, l = np.array(srgb(ground)), np.array(srgb(line))
-    colour = g[None, None] * (1 - coverage[..., None]) + l[None, None] * coverage[..., None]
+    ground_map = np.broadcast_to(g, (rows, cols, 3)).copy()
+    if ground_low is not None or light:
+        key = np.array([0.0, 0.5, 0.866])  # a light above, 30 degrees off the surface normal
+        lit = normal @ key - key[2]  # 0 on flat ground, below 0 where the relief turns down
+        if ground_low is not None:
+            low = np.array(srgb(ground_low))
+            shadow = np.clip(-lit / 0.35, 0, 1)[..., None]
+            ground_map = ground_map * (1 - shadow) + low[None, None] * shadow
+        ground_map *= 1 + light * np.clip(lit / (1 - key[2]), 0, 1)[..., None]
+    colour = ground_map * (1 - coverage[..., None]) + l[None, None] * coverage[..., None]
     gt, lt = np.array(ground_trm), np.array(line_trm)
     trm = gt[None, None] * (1 - coverage[..., None]) + lt[None, None] * coverage[..., None]
     return {'color': _image(f'{name}_color', colour, True), 'trm': _image(f'{name}_trm', trm, False),

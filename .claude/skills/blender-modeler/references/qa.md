@@ -62,15 +62,15 @@ outline is its front edge, not its side, and this mapping does not hold.
 
 `render_views.py` panels, composed by `compose_sheet.py`:
 
-| Mode     | Shows                                   | Catches                                                     |
-| -------- | --------------------------------------- | ----------------------------------------------------------- |
-| clay     | studio light, cavity                    | form, proportion, joins, sunk or floating parts             |
-| zebra    | horizontal reflection stripes           | dents, wobble and broken curvature (stripes kink or break)  |
-| wire     | Cycles wireframe                        | density, slivers, wasted rings                              |
-| ids      | flat colour per object                  | detached parts                                              |
-| matids   | flat colour per material, with a legend | a band, cuff or lining in the wrong material                |
-| material | Cycles with the asset's materials       | how the materials read (a guide; the runtime proof decides) |
-| game     | 128 px, enlarged without smoothing      | what survives at gameplay size                              |
+| Mode     | Shows                                   | Catches                                                                            |
+| -------- | --------------------------------------- | ---------------------------------------------------------------------------------- |
+| clay     | studio light, cavity                    | form, proportion, joins, sunk or floating parts                                    |
+| zebra    | horizontal reflection stripes           | dents, wobble and broken curvature (stripes kink or break)                         |
+| wire     | Cycles wireframe                        | density, slivers, wasted rings                                                     |
+| ids      | flat colour per object                  | detached parts                                                                     |
+| matids   | flat colour per material, with a legend | a band, cuff or lining in the wrong material                                       |
+| material | Cycles with the asset's materials       | how the materials read (a guide; `three_preview.mjs` and the runtime proof decide) |
+| game     | 128 px, enlarged without smoothing      | what survives at gameplay size                                                     |
 
 Views: three_quarter and low (perspective), front, side and top
 (orthographic). Collision proxies are always hidden; shards are hidden unless
@@ -80,6 +80,25 @@ Views: three_quarter and low (perspective), front, side and top
 
 `measure_views.py` and `annotate_measure.py` slice the mesh and label radii at
 heights: the "dots and measurements" view to compare with a concept by eye.
+
+## Material preview in the game's renderer
+
+Cycles is not three.js. Tune materials in `three_preview.mjs`, which renders a
+GLB with the game's own three.js build, tone mapping, museum HDR and lights in
+about ten seconds:
+
+```bash
+node scripts/three_preview.mjs <out_dir>/<asset>.glb preview.png [--views front,three_quarter,side]
+node scripts/three_preview.mjs x.glb dump.png --dump                       # materials as three.js loaded them
+node scripts/three_preview.mjs x.glb try.png --set gold_trim.metalness=0.75,glass_waves.normalScale=2.5
+node scripts/three_preview.mjs x.glb room.png --env room                   # neutral light, no museum sky
+```
+
+`--set` changes a loaded material for one render, so a value can be found
+before it goes into `build.py`. `--env room` separates a material fault from
+what the museum's sky and ground put into it. Compare colours as numbers:
+the hue, saturation and value of a region's midtones (the middle half of its
+pixels by value) against the same region of the concept.
 
 ## Runtime proof
 

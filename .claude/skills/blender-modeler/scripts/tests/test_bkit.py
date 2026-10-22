@@ -154,6 +154,56 @@ def test_tiled_uvs_keep_texture_size_across_parts():
     assert any(n.type == 'MAPPING' for n in jade.node_tree.nodes)
 
 
+def test_inlay_draws_metal_line_glass_ridge_and_baked_shading():
+    scene.reset()
+    width, height, cols, rows = 0.10, 0.05, 100, 50  # 1 mm texels
+    line = ([(0.0, 0.035), (0.10, 0.035)], [0.002, 0.002])
+    ridge = ([(0.0, 0.020), (0.10, 0.020)], [0.006, 0.006], [0.002, 0.002])
+    maps = textures.inlay('inlay_test', [line], width, height, cols=cols, rows=rows, ground='#808080',
+                          line='#e0b65e', ground_trm=(0.35, 0.2, 0.0), line_trm=(0.0, 0.3, 0.6),
+                          ridges=[ridge], ground_low='#204030', light=0.2)
+
+    def pixel(image, z, s=0.05):
+        px = image.pixels
+        r, c = int(z / height * rows), int(s / width * cols)
+        i = (r * cols + c) * 4
+        return px[i], px[i + 1], px[i + 2]
+
+    gold, trm = pixel(maps['color'], 0.035), pixel(maps['trm'], 0.035)
+    assert gold[0] > gold[1] > gold[2] and gold[0] > 0.8, ('line is gold', gold)
+    assert abs(trm[2] - 0.6) < 0.02 and trm[0] < 0.02, ('line is metal, not glass', trm)
+    flat, below, above = (pixel(maps['color'], z) for z in (0.005, 0.0165, 0.0235))
+    assert max(abs(c - flat[0]) for c in flat) < 0.01, ('ground far from the relief is unshaded', flat)
+    assert below[1] > below[0] and below[0] < flat[0] - 0.1, ('the down-facing flank moves to ground_low', below)
+    assert above[0] > flat[0] + 0.02, ('the up-facing flank is lit', above)
+    assert pixel(maps['trm'], 0.0165)[0] > 0.3, 'the ridge is glass'
+    n_up, n_down = pixel(maps['normal'], 0.0235), pixel(maps['normal'], 0.0165)
+    assert n_up[1] > 0.55 and n_down[1] < 0.45, ('the ridge tilts its normals up and down', n_up, n_down)
+    first, last = pixel(maps['normal'], 0.0165, 0.0005), pixel(maps['normal'], 0.0165, 0.0995)
+    assert max(abs(a - b) for a, b in zip(first, last)) < 0.02, 'the tile wraps'
+
+
+def test_inlay_relief_has_no_cliffs_between_turns_or_past_an_end():
+    scene.reset()
+    width, height, n = 0.10, 0.06, 100  # 1 mm texels
+    # a clockwise curl round (0.05, 0.03), one and a quarter turns, shrinking inward, ending inside
+    points = [(0.05 + (0.022 - 0.010 * j / 60) * math.cos(math.pi / 2 - 2.5 * math.pi * j / 60),
+               0.03 + (0.022 - 0.010 * j / 60) * math.sin(math.pi / 2 - 2.5 * math.pi * j / 60)) for j in range(61)]
+    half = [0.0015] * len(points)
+    maps = textures.inlay('relief_test', [(points, half)], width, height, cols=n, rows=int(height * 1000),
+                          relief=0.0015, reach=0.02, side=-1, period_shifts=(0,))
+    px = maps['normal'].pixels
+    rows = int(height * 1000)
+    worst = 1.0
+    for r in range(rows):
+        for c in range(n):
+            s, z = (c + 0.5) / 1000, (r + 0.5) / 1000
+            if min(math.hypot(s - x, z - y) for x, y in points) < 0.0045:
+                continue  # the line's own crown is steep on purpose
+            worst = min(worst, 2 * px[(r * n + c) * 4 + 2] - 1)
+    assert worst > 0.93, ('a cliff in the relief tilts a normal to', worst)  # 0.97 smooth, 0.79 with cliffs
+
+
 def test_sweep_tube_is_closed_and_frames_are_orthonormal():
     scene.reset()
     pts = sweep.path([(0, 0, 0), (0.1, 0, 0.1), (0.15, 0, 0.25), (0.05, 0, 0.35)], 30)

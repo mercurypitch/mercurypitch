@@ -13,8 +13,17 @@ import struct
 import bpy
 
 
-def glb(path, objects, *, tangents=False):
-    """Export exactly `objects` (and their parents' hierarchy) to a binary glTF."""
+def glb(path, objects, *, tangents=False, meshopt=False):
+    """Export exactly `objects` (and their parents' hierarchy) to a binary glTF.
+
+    meshopt=True compresses geometry with EXT_meshopt_compression, about half the
+    file for the same triangles; the game's loader decodes it and Blender's
+    importer reads it back. It is lossy: positions go through meshopt's
+    exponential filter, and micron shifts can make a shard's near-coplanar cut
+    faces cross. Run every gate on the compressed file before shipping it.
+    Only colour attributes a material uses are written (the exporter's default
+    writes every attribute again as COLOR_1).
+    """
     os.makedirs(os.path.dirname(os.path.abspath(path)), exist_ok=True)
     for obj in bpy.context.scene.objects:
         obj.select_set(obj in objects)
@@ -28,6 +37,8 @@ def glb(path, objects, *, tangents=False):
         export_texcoords=True,
         export_normals=True,
         export_tangents=tangents,
+        export_all_vertex_colors=False,
+        export_meshopt_compression_enable=meshopt,
         export_materials='EXPORT',
         export_cameras=False,
         export_lights=False,

@@ -3,6 +3,30 @@
 This skill's own mistakes, newest first. Read before a first build; add a line
 whenever a gate or a critic catches something a rule should have prevented.
 
+- **Pure metal shows the sky it faces.** The museum HDR's ground is brown and a
+  fifth as bright as its sky (luminance 0.20 against 1.0), and every smooth gold
+  surface that faces the floor mirrors it: the amphora's wave line rendered
+  copper (hue 30, value 0.43) where the concept's gold is hue 39, value 0.64.
+  Under `--env room` the same line was gold, which located the fault. Gold trim at
+  metallic 0.75 and the inlay line at 0.6, on a lighter base, measured within two
+  degrees of the concept.
+- **A soft blend of tints is one tint.** The first opal palette mixed five
+  pastels with sinusoids; every corner averaged to the same pale blue and the
+  body rendered porcelain (saturation 0.056 where the concept has 0.121). A
+  soft-max over drifting fields keeps distinct patches. The museum's blue sky
+  also pulls every tint toward aqua, so the dominant mint sits at hue 115.
+- **Test the cause before writing it down.** The copper line was first blamed on
+  iridescence and the film was removed; a render with the film back changed the
+  line's hue by one degree. Change one thing per render and measure it.
+- **The exporter drops Sheen Weight.** Blender 5.2.2 writes Sheen Tint as
+  `sheenColorFactor` and ignores the weight, so a sheen of 0.2 shipped at full
+  strength; `materials.principled` scales the tint by the weight.
+- **Meshopt compression is lossy.** The exporter's meshopt option quantises
+  positions and made a clean shard self-intersect. Export uncompressed: the
+  amphora is 1.5 MB, the Meshy file it replaces 3.8 MB.
+- **One colour attribute, not two.** With all vertex colours exported, two shards
+  carried COLOR_0 and COLOR_1; `export.glb` exports only the active set, and
+  `paint_corners` skips meshes with no tinted face.
 - **Clear glass is not opal.** Round 1 had transmission 0.82: the body took its
   colour from whatever was behind it, grey below and clipped white above. Milky
   glass keeps its own colour at transmission 0.35 or less and roughness about
