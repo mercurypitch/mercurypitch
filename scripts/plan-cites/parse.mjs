@@ -39,8 +39,10 @@ const IDENT =
   /^(?:(?:export|async|function|interface|const)\s+)*([A-Za-z_$][\w$]*)(?:\(\))?(?:\s*=.*)?$/
 const PIN = /^\s*,?\s*at\s+`([0-9a-f]{7,40})`/
 const SEPARATOR = /^\s*,?\s*(?:(?:and|or)\s+)?$/
-// what may stand between a quote and its citation: `"q" at \`:5\`` too
-const CONNECT = /^[\s,]*(?:(?:and|or|at)\s+)?$/
+// what may stand between a citation and a quote after it
+const CONNECT = /^[\s,]*(?:(?:and|or)\s+)?$/
+// and between a quote and a citation after it: `"q" at \`:5\`` too
+const CONNECT_NEXT = /^[\s,]*(?:(?:and|or|at)\s+)?$/
 const SECTION =
   /§\s*(\d+(?:\.\d+)*)(?:,?\s+items?\s+(\d+)(?:(?:,\s*\d+)*,?\s*(?:and|to|-)\s*(\d+))?)?|\brules?\s+(\d+)(?:(?:,\s*\d+)*,?\s*(?:and|to|-)\s*(\d+))?/g
 const SUPERSEDED = /\bSuperseded by \d+[a-z]?\b/
@@ -332,7 +334,7 @@ function parseCell(text, mask2, a, b, allSpans, allQuotes) {
     let prev = q
     for (let i = list.indexOf(q) + 1; i < list.length; i++) {
       const it = list[i]
-      if (!CONNECT.test(text.slice(prev.end, it.start))) return null
+      if (!CONNECT_NEXT.test(text.slice(prev.end, it.start))) return null
       if (isCite(it)) return ['quotes', it]
       if (it.kind === 'group') return leads(it) ? ['quotes', first(it)] : null
       if (it.kind !== 'quote') return null
@@ -342,10 +344,11 @@ function parseCell(text, mask2, a, b, allSpans, allQuotes) {
   }
 
   // The citation whose parentheses or colon hold the quote, or that it
-  // follows as closely as nextOwner's; else the one it follows further on in
-  // the same clause, at the same depth, which cannot claim it. A quote after
-  // a citation's own closed parentheses, or in parentheses of its own, is
-  // the document's next words.
+  // follows with nothing but commas, "and", "or" or other quotes between
+  // (not "at", which leads to the next citation); else the one it follows
+  // further on in the same clause, at the same depth, which cannot claim it.
+  // A quote after a citation's own closed parentheses, or in parentheses of
+  // its own, is the document's next words.
   function backOwner(q) {
     const list = levels.get(q.level)
     let crossed = false

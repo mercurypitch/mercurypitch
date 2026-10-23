@@ -170,13 +170,14 @@ const { events, moved, already } = reanchor(repo, base, docs, {
   skip: isSnapshot,
 })
 for (const e of events) report(e)
-for (const m of moved)
+// a shift keeps a wrong citation wrong, on a re-run as on the first run
+for (const m of [...moved, ...already])
   checkCitation(repo, m.doc, m.cite, m.from, m.to).forEach(report)
 // everything but a move is for a person to read
 const hand = total - moved.length
 delete counts.moved
 console.error(
-  `plan-cites: from ${base}, ${moved.length} moved, ${already} already re-anchored, ` +
+  `plan-cites: from ${base}, ${moved.length} moved, ${already.length} already re-anchored, ` +
     `${hand} reported${hand ? ` (${summary()})` : ''}` +
     `${flags.has('--write') && moved.length ? `; wrote ${moved.length}` : ''}`,
 )

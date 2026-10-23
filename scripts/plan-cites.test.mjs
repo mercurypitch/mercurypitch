@@ -177,6 +177,9 @@ test('a quote written after its citation any other way is not attached, and says
   assert.deepEqual([c.quotes, c.unattached], [[], ['one two three']])
   const [d] = parseDoc('(`src/a.ts:1`, `name`, "one two three")')
   assert.deepEqual([d.quotes, d.unattached], [[], ['one two three']])
+  // "at" leads to the citation after a quote, never back to the one before
+  const [g] = parseDoc('`src/a.ts:5`, at "one two three" the loop ends')
+  assert.deepEqual([g.quotes, g.unattached], [[], ['one two three']])
   // the document's own words, after the citation's closed parentheses or a
   // clause's end, are neither
   for (const s of [
@@ -589,8 +592,29 @@ test('reanchor: a renamed file is reported, and so is a citation new since the b
   assert.deepEqual(out.lines, [
     `${DOC}:1: renamed: \`src/a.ts:4\` src/a.ts was renamed to src/c.ts since ${r.base}; check by hand`,
     `${DOC}:1: moved: \`src/b.ts:4\` -> 5`,
-    `${DOC}:3: edited: \`src/b.ts:5\` its line was written or edited since ${r.base}, so no citation there places it ` +
+    `${DOC}:3: edited: \`src/b.ts:5\` 0 citations to this file here at ${r.base}, 1 now, so none is paired ` +
       '(the base must be the last commit at which the docs matched the code); check by hand',
+  ])
+  assert.equal(out.status, 1)
+})
+
+test('reanchor: a file gone from the index and a doc new since the base are reported', (t) => {
+  const r = makeRepo(t, {
+    'src/a.ts': code(10),
+    'src/b.ts': code(10),
+    [DOC]: '`src/a.ts:4` and `src/b.ts:4`\n',
+  })
+  // renamed with a plain mv: git sees a.ts deleted and c.ts untracked
+  r.write({ 'src/a.ts': null, 'src/c.ts': code(10) })
+  r.write({
+    'src/b.ts': `const n = 0\n${code(10)}`,
+    [`${PLAN}/NEW.md`]: '`src/b.ts:4`\n',
+  })
+  const out = r.run('reanchor', '--base', r.base)
+  assert.deepEqual(out.lines, [
+    `${DOC}:1: deleted: \`src/a.ts:4\` src/a.ts was deleted (or renamed and not staged) since ${r.base}; check by hand`,
+    `${DOC}:1: moved: \`src/b.ts:4\` -> 5`,
+    `${PLAN}/NEW.md:1: edited: \`src/b.ts:4\` ${PLAN}/NEW.md is new since ${r.base}, so nothing there places it; check by hand`,
   ])
   assert.equal(out.status, 1)
 })
@@ -676,4 +700,16 @@ test('reanchor: a shift keeps a wrong citation wrong, so a moved one is checked 
     `${DOC}:1: quote: \`src/a.ts:4\` "const v5 = 5" is not in src/a.ts:5`,
   ])
   assert.equal(out.status, 1)
+
+  // written, then run again from the same base: still checked, still wrong
+  r.run('reanchor', '--base', r.base, '--write')
+  const again = r.run('reanchor', '--base', r.base)
+  assert.deepEqual(again.lines, [
+    `${DOC}:1: quote: \`src/a.ts:5\` "const v5 = 5" is not in src/a.ts:5`,
+  ])
+  assert.equal(again.status, 1)
+  assert.equal(
+    again.stderr.trim(),
+    `plan-cites: from ${r.base}, 0 moved, 2 already re-anchored, 1 reported (quote 1)`,
+  )
 })
