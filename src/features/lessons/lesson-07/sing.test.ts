@@ -10,9 +10,10 @@
 // microphone listens only and keeps the Vocal Range Test card; a steady A3
 // reads as its one note, "Easy" offers Again once, and after a second take
 // it is gone; "Uncomfortable" takes the band away; a tab hidden while the
-// microphone opens starts no take and lets it go; and storage holds
-// nothing but `fyp-voice` and `fyp-l07-warmup`. The listener is a double:
-// its takes are synthetic frames, read by the real siren reader.
+// microphone opens starts no take, lets it go, and counts it, the third
+// leaving Done for today; and storage holds nothing but `fyp-voice` and
+// `fyp-l07-warmup`. The listener is a double: its takes are synthetic
+// frames, read by the real siren reader.
 
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import '@/features/lessons/kit/browser-doubles.test-fixtures'
@@ -80,6 +81,12 @@ async function load() {
 type Page = Awaited<ReturnType<typeof load>>
 
 const shown = (p: Page, selector: string): boolean => !p.el(selector).hidden
+/** Shown on the card: neither it nor any box around it hidden. */
+function onCard(p: Page, selector: string): boolean {
+  for (let el: HTMLElement | null = p.el(selector); el; el = el.parentElement)
+    if (el.hidden) return false
+  return true
+}
 const status = (p: Page): string => p.el('#singStatus').textContent ?? ''
 
 /** Whether the test's browser has Web Audio: the page only asks whether it is there. */
@@ -408,6 +415,29 @@ describe("Lesson 7's Sing it: the takes", () => {
     expect(status(p)).toBe('Stopped listening: the microphone is off.')
     expect(shown(p, '[data-panel="prepare"]')).toBe(true)
     expect(shown(p, '[data-sing="start"]')).toBe(true)
+  })
+
+  it('counts a take ended by a hidden tab: after the third, no Start, and Done for today', async () => {
+    // Arrange
+    vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] })
+    const p = await load()
+    p.el('[data-comfort="sing"]').click()
+    p.el('[data-panel="voice"] [data-voice="lower"]').click()
+    await playMerc(p)
+    takes.opening = hideTab
+
+    // Act: Start three times, the tab hidden each time the microphone opens
+    await sing(p, p.el('[data-sing="start"]'), steady(57, 3))
+    await sing(p, p.el('[data-sing="start"]'), steady(57, 3))
+    const afterTwo = shown(p, '[data-sing="start"]')
+    await sing(p, p.el('[data-sing="start"]'), steady(57, 3))
+
+    // Assert
+    expect(takes.opened).toBe(0)
+    expect(afterTwo).toBe(true)
+    expect(shown(p, '[data-sing="start"]')).toBe(false)
+    expect(onCard(p, '[data-take-actions] [data-sing="today"]')).toBe(true)
+    expect(shown(p, '[data-take-actions] [data-sing="again"]')).toBe(false)
   })
 
   it('stores nothing but the voice and the warm-up’s Skip', async () => {

@@ -5,7 +5,8 @@
 // The WEB-SPEC's Tests 7: Start waits for Merc's siren and says why; a take
 // with no voice asks nothing and leaves the visit's one Again; "Easy" and
 // "Workable" offer Again once a visit; "Try again" never shows without
-// Again; an abandoned take counts, and uses the one Again if it had voice;
+// Again; an abandoned take counts, uses the one Again if it had voice, and
+// leaves Done for today when it was the visit's last;
 // "Effortful" and "Uncomfortable" end the singing and pick the rest card,
 // and a later "Easy" brings none of it back. A walk over every sequence of
 // takes and answers never reaches a fourth take or a third sung siren.
@@ -148,6 +149,20 @@ describe('after a take', () => {
     expect(offers(run([took('band'), feel('easy')], voiced)).again).toBe(false)
     expect(silent.againUsed).toBe(false)
     expect(offers(run([took('band'), feel('easy')], silent)).again).toBe(true)
+  })
+
+  it('offers Done for today in Start’s place once an abandoned take leaves none to take', () => {
+    // Act: three takes, the last abandoned; two sung, the second abandoned
+    const three = offers(
+      run([SING, HEARD, took('none'), took('none'), took('leftSilent')]),
+    )
+    const sung = offers(
+      run([SING, HEARD, took('band'), feel('easy'), AGAIN, took('leftVoiced')]),
+    )
+
+    // Assert
+    expect([three.start, three.again, three.done]).toEqual([false, false, true])
+    expect([sung.start, sung.again, sung.done]).toEqual([false, false, true])
   })
 
   it('ends the singing after "Effortful", with the rest card, keeping the band', () => {
