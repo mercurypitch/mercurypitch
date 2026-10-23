@@ -14,9 +14,9 @@
 // leaving Done for today, and the section scrolled away starts none either,
 // though once it is back in view Start starts one; the ring rests once a
 // take ends, with motion or without, and beside Done for today, and Merc's
-// siren ends on "Rest" once the takes are spent; and storage holds nothing
-// but `fyp-voice` and `fyp-l07-warmup`. The listener is a double: its takes
-// are synthetic frames, read by the real siren reader.
+// siren ends on "Rest" in a listen-only visit; and storage holds nothing but
+// `fyp-voice` and `fyp-l07-warmup`. The listener is a double: its takes are
+// synthetic frames, read by the real siren reader.
 
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { scrollIntoViewAgain, scrollOutOfView, } from '@/features/lessons/kit/browser-doubles.test-fixtures'
@@ -197,11 +197,14 @@ afterEach(() => {
   localStorage.clear()
 })
 
-/** Merc's siren played to its end with the sound on. */
-async function playMerc(p: Page): Promise<void> {
+/** Merc's siren played to its end with the sound on, by the button in `from`. */
+async function playMerc(
+  p: Page,
+  from = '[data-panel="prepare"]',
+): Promise<void> {
   vi.spyOn(p.Sound, 'canPlay').mockReturnValue(true)
   vi.spyOn(p.Sound, 'state', 'get').mockReturnValue('on')
-  p.el('[data-panel="prepare"] [data-merc-siren]').click()
+  p.el(`${from} [data-merc-siren]`).click()
   await vi.advanceTimersByTimeAsync(6200)
 }
 
@@ -629,8 +632,27 @@ describe("Lesson 7's Sing it: the ring at rest", () => {
     expect(ringSays(p)).toBe('Rest')
   })
 
-  it("ends Merc's siren on Rest once the takes are spent", async () => {
-    // Arrange: three Starts abandoned as the microphone opened, and Done for today alone
+  it('ends Merc\'s siren on Rest after "Just listen today", with no take to be ready for', async () => {
+    // Arrange: a listen-only visit, on a ring the frame loop draws
+    vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] })
+    const p = await load()
+    const draw = await drawnRing(p)
+    p.el('[data-comfort="listen"]').click()
+    p.el('[data-panel="voice"] [data-voice="lower"]').click()
+
+    // Act: Merc's siren from the listen-only card, run to its end
+    await playMerc(p, '[data-listen-play]')
+    draw(10)
+
+    // Assert
+    expect(shown(p, '[data-listen-play]')).toBe(true)
+    expect(ringSays(p)).toBe('Rest')
+  })
+
+  it("ends Merc's siren on Rest once a refused microphone leaves the visit listening only", async () => {
+    // Arrange: Merc's siren heard, then Start with no audio context to open
+    // the microphone in, as the refused-microphone test reaches it: the
+    // visit turns listen-only ('nomic')
     vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] })
     const p = await load()
     const draw = await drawnRing(p)
@@ -638,15 +660,16 @@ describe("Lesson 7's Sing it: the ring at rest", () => {
     p.el('[data-panel="voice"] [data-voice="lower"]').click()
     await playMerc(p)
     draw(10)
-    takes.opening = hideTab
-    for (let i = 0; i < 3; i += 1)
-      await sing(p, p.el('[data-sing="start"]'), steady(57, 3))
+    vi.spyOn(p.Sound, 'context').mockReturnValue(null)
+    p.el('[data-sing="start"]').click()
+    await vi.advanceTimersByTimeAsync(100)
 
-    // Act: Merc's siren once more, by the briefing's button the card now holds hidden
-    await playMerc(p)
+    // Act: Merc's siren again, from the listen-only card, run to its end
+    await playMerc(p, '[data-listen-play]')
     draw(10)
 
     // Assert
+    expect(shown(p, '[data-listen-why="nomic"]')).toBe(true)
     expect(ringSays(p)).toBe('Rest')
   })
 })
