@@ -16,10 +16,10 @@
 // its beads in turn. A shape may ask for its buttons as one grid
 // (`TuneShape.grid`, WAI-ARIA's layout grid): a row for each line's
 // brackets, beads and gaps, top to bottom, and one Tab stop, the button
-// last focused, from which the arrows, Home and End move. It draws only
-// when what it shows has changed (a run, a slide, a fade, a new shape,
-// start, overlay or names, a new size, pixel ratio or font) and while that
-// change moves; idle, it asks the page's frame loop for nothing
+// last focused or pressed, from which the arrows, Home and End move. It
+// draws only when what it shows has changed (a run, a slide, a fade, a new
+// shape, start, overlay or names, a new size, pixel ratio or font) and
+// while that change moves; idle, it asks the page's frame loop for nothing
 // (frame-loop.ts, `wants`). On a page that plays one sound at a time, a run
 // claims the page's owner (now-playing.ts), so it stops the sound before
 // it, and a newer one elsewhere stops it. Words belong to the page: the
@@ -75,8 +75,8 @@ export interface TuneShape {
   readonly ghost: number | null
   /**
    * The buttons as one grid, a single Tab stop that lands on the button last
-   * focused (the first, before any), rather than a Tab stop each. Off by
-   * default.
+   * focused or pressed (the first, before any), rather than a Tab stop each.
+   * Off by default.
    */
   readonly grid?: boolean
 }
@@ -544,12 +544,15 @@ export function mountTuneLine(opts: TuneLineOptions): TuneLine {
     if (el === null) return
     const b = buttons.find((x) => x.el === el)
     if (b === undefined) return
+    // Safari, on iOS and the Mac, focuses no button that is clicked or
+    // tapped, so no focusin comes: the press itself moves a grid's Tab stop
+    if (shape.grid === true) rove(b)
     if (b.kind === 'note') opts.onNote?.(b.g)
     else if (b.kind === 'gap') opts.onGap?.(b.g)
     else opts.onBracket?.(b.g)
   })
 
-  // in a grid, the button that takes the focus, by key, tap or script, is
+  // in a grid, the button that takes the focus, by key, click or script, is
   // its Tab stop, and the arrows, Home and End move the focus between them
   opts.hits?.addEventListener('focusin', (e) => {
     if (shape.grid !== true) return
