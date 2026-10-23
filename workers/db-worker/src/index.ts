@@ -1432,12 +1432,30 @@ async function mirrorEventGate(
 
 /**
  * When an event row says it happened. A lesson answer keeps only its UTC day
- * (the day's midnight, in the same ISO form), so its row cannot be lined up
- * with anything else the Worker saw at that moment.
+ * (the day's midnight, in the same ISO form), not its time of day; its place
+ * in the table says nothing of the time either (mirrorEventInsert).
  */
 function mirrorEventCreatedAt(lessonAnswer: boolean): string {
   const now = new Date().toISOString()
   return lessonAnswer ? `${now.slice(0, 10)}T00:00:00.000Z` : now
+}
+
+/**
+ * The statement that saves an event row. SQLite numbers a new row one past
+ * the largest rowid in its table, so a lesson answer numbered that way would
+ * sit between the app's own events, which keep their time to the millisecond
+ * and their device's client id, and its place would tell when it came. A
+ * lesson answer takes a random negative rowid instead, drawn by SQLite: the
+ * lesson rows sort in no order of their coming, and the app's rows, numbered
+ * from the largest rowid, go on counting from their own. The draw stays
+ * within JavaScript's safe integers, -1 to -(2^53 - 1). One that lands on a
+ * rowid already taken (one chance in 9 x 10^15 for each lesson row kept)
+ * fails the insert, as any D1 error does.
+ */
+function mirrorEventInsert(lessonAnswer: boolean): string {
+  return lessonAnswer
+    ? 'INSERT INTO mirrorEvents (rowid, id, createdAt, clientId, event, metricsJson) VALUES (-1 - abs(random() % 9007199254740991), ?, ?, ?, ?, ?)'
+    : 'INSERT INTO mirrorEvents (id, createdAt, clientId, event, metricsJson) VALUES (?, ?, ?, ?, ?)'
 }
 
 async function handleMirrorEvent(
@@ -1502,9 +1520,7 @@ async function handleMirrorEvent(
 
   const metricsJson = cleanMirrorMetrics(event, metrics)
 
-  await env.DB.prepare(
-    'INSERT INTO mirrorEvents (id, createdAt, clientId, event, metricsJson) VALUES (?, ?, ?, ?, ?)',
-  )
+  await env.DB.prepare(mirrorEventInsert(lessonAnswer))
     .bind(
       crypto.randomUUID(),
       mirrorEventCreatedAt(lessonAnswer),
