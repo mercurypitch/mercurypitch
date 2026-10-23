@@ -130,7 +130,8 @@ in LESSON.md has none. The recall check (item 4) starts with Lesson 2.
    shown with their stored answers, so the page measures delayed retrieval (MASTER-PLAN § 9);
    Lesson 2's page asks two of them again (§ 4.2 item 4). In the preview nothing leaves the browser;
    on the public host, since this PR, each question's first answer in a visit goes out as an
-   anonymous `lesson_answer` event (`kit/telemetry.ts`), unless the viewer declined consent.
+   anonymous `lesson_answer` event (`kit/telemetry.ts`), never after a no, and from the EEA, the UK
+   and Switzerland only after a yes (the owner, 23 October 2026).
 7. **Wrap**: the three recap lines, the one-sentence challenge, and the next lesson's hook from
    LESSON.md ("Musicians only use seven letters, so where do the other five notes come from?") on
    the kit's next-lesson card (`kit/next-card.ts`), which takes Lesson 2's state from the season in

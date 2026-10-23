@@ -115,8 +115,9 @@ are Lesson, Watch and Explorer. Each section's heading, and the line above it, a
    Lesson 2 done. The kit rebuilds the questions on every answer, so question 2's play button is
    handled by a listener on `#qs`, as the step links are. Answers stay in the viewer's browser
    (localStorage); since this PR each question's first answer in a visit also goes out as an
-   anonymous `lesson_answer` event, unless the viewer declined consent (`kit/telemetry.ts`). A later
-   visit asks them afresh, and Lessons 3 and 4 will each open with two of them.
+   anonymous `lesson_answer` event, never after a no, and from the EEA, the UK and Switzerland only
+   after a yes (`kit/telemetry.ts`; the owner, 23 October 2026). A later visit asks them afresh, and
+   Lessons 3 and 4 will each open with two of them.
 8. **Wrap**: the three recap lines and the challenge, then:
    - **The practice card** (LESSON.md): Lesson 1's app card, with Leap's text, today's caveat and
      Contour as an optional first drill; the address line "Practise it free:

@@ -515,9 +515,9 @@ the item is marked decided here and the Phase 1 Decisions track closes when ever
    stays the proof preview.
 10. **Decided (22 October 2026): later, after Season 1 launches.** Orange Merc as a first-class app
     palette (MERC-BIBLE backlog items 1 and 2) and its pinned shader hash.
-11. **Decided (22 October 2026): yes,** a payload exception: anonymous per-question events (§ 7), in
-    the lesson events PR, not yet merged. Decided (23 October 2026): in the EEA, the UK and
-    Switzerland a page sends nothing without a recorded yes; elsewhere it sends, marked never asked.
+11. **Decided (22 and 23 October 2026): yes,** a payload exception to counts-only analytics
+    (`src/lib/analytics.ts`), built as `lesson_answer` (§ 9): anonymous, and from the EEA, the UK
+    and Switzerland only after a recorded yes; elsewhere it sends, marked never asked.
 12. **Decided (19 October 2026): do-based minor.** Minor is sung do-me-so, and the natural minor
     scale do re me fa so le te do. Do stays home, as Lesson 4 teaches it, and a minor third is one
     changed syllable. The app's Ear Lab already sings minor this way (`MINOR_SOLFEGE`,
