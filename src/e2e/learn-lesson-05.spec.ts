@@ -371,9 +371,14 @@ test.describe('Sing it, on a steady A3 from the fake microphone', () => {
     for (const b of ['hold15', 'again', 'today', 'done'])
       await expect(after.locator(`[data-sing="${b}"]`)).toBeHidden()
     await expect(page.locator('#singLive')).toBeHidden()
+    await expect(page.locator('#practiseCard .eyebrow')).toHaveText(
+      'Rest today',
+    )
     await expect(
       page.locator('#practiseCard [data-ending="rest"]'),
-    ).toContainText('Rest today.')
+    ).toContainText(
+      'Voice Mirror will be here when your voice feels comfortable',
+    )
     await expect(page.locator('#practiseCard')).not.toContainText(
       'Ten minutes',
       { useInnerText: true },

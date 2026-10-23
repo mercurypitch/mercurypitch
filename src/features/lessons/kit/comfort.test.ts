@@ -145,7 +145,7 @@ describe('mountPractiseCard', () => {
     a.href = '/mirror?lesson=03'
     a.target = '_blank'
     a.innerHTML =
-      '<p class="eyebrow"><span class="fig">Practise it</span> in MercuryPitch</p><div data-ending="practise">Sing along</div><div data-ending="rest" hidden>Rest today.</div><span class="addr">mercurypitch.com/mirror</span>'
+      '<p class="eyebrow"><span class="fig">Practise it</span> in MercuryPitch</p><div data-ending="practise">Sing along</div><div data-ending="rest" hidden>Voice Mirror will be here.</div><span class="addr">mercurypitch.com/mirror</span>'
     document.body.appendChild(a)
     return a
   }
@@ -165,7 +165,7 @@ describe('mountPractiseCard', () => {
     expect(a.hasAttribute('href')).toBe(false)
     expect(a.hasAttribute('target')).toBe(false)
     expect(a.querySelector('.eyebrow')?.textContent).toBe('Rest today')
-    expect(shown).toEqual(['Rest today.'])
+    expect(shown).toEqual(['Voice Mirror will be here.'])
     expect(a.querySelector<HTMLElement>('.addr')?.hidden).toBe(true)
     VisitEnding.set('practise')
     document.body.textContent = ''
