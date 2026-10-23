@@ -128,6 +128,16 @@ def _face_islands(bm):
     return islands
 
 
+def _reverse(obj):
+    """Flip every face of obj: a closed piece whose signed volume came out negative."""
+    bm = bmesh.new()
+    bm.from_mesh(obj.data)
+    bmesh.ops.reverse_faces(bm, faces=bm.faces[:])
+    bm.to_mesh(obj.data)
+    bm.free()
+    obj.data.update()
+
+
 def _split_loose(obj):
     """One object per connected island of obj (UVs and materials kept); obj is reused for the first."""
     bm = bmesh.new()
@@ -189,7 +199,11 @@ def fracture(parts, count, *, cut_materials, seed=1, attempts=24, seed_on=None, 
     Pieces smaller than `min_piece_fraction` of their own part's volume are dropped
     as slivers before grouping (invisible chips that only cost triangles). The
     fraction is per part, so a thin gold inlay keeps its pieces on every shard
-    instead of vanishing next to a heavy body.
+    instead of vanishing next to a heavy body. A piece the cut left open reseeds:
+    it has no volume, and dropping it as a sliver would leave a hole unreported. A
+    piece whose normals came out inward (negative volume) is turned the right way:
+    the urn's round 5 dropped 656 cm3 of shoulder glass that way, its shards all
+    closed and every gate green.
     """
     seed_on = seed_on or [max(parts, key=lambda o: validate.report(o, intersections=False)['volume_m3'] or 0)]
     lo, hi = scene.bounds(parts)
@@ -200,12 +214,12 @@ def fracture(parts, count, *, cut_materials, seed=1, attempts=24, seed_on=None, 
     for attempt in range(attempts):
         rng = random.Random(seed + attempt)
         seeds = spread(surface_samples(seed_on, 3000, rng), count, rng)
-        created, shards, ok = [], [], True
+        created, shards, ok, dropped = [], [], True, []
         for i, s in enumerate(seeds):
             cutter = cell(s, [o for j, o in enumerate(seeds) if j != i], lo, hi, f'_cell_{i:03d}')
             created.append(cutter)
             clo, chi = scene.bounds([cutter])
-            pieces = []
+            pieces, opened = [], None
             for part in parts:
                 if not _bbox_overlaps(part, clo, chi):
                     continue
@@ -213,12 +227,24 @@ def fracture(parts, count, *, cut_materials, seed=1, attempts=24, seed_on=None, 
                 if piece is None:
                     continue
                 for loose in _split_loose(piece):
-                    vol = validate.report(loose, intersections=False)['volume_m3'] or 0.0
-                    if vol < min_piece_fraction * (volumes[part.name] or total_volume):
+                    vol = validate.report(loose, intersections=False)['volume_m3']
+                    if vol is None:  # an open piece has no volume; the cell reseeds below
+                        opened = part.name
+                    elif vol < 0:  # recalculated normals turned a folded piece inside out
+                        _reverse(loose)
+                        log(f'attempt {attempt}: cell {i}: a piece of {part.name} turned the right way out '
+                            f'({-vol * 1e6:.0f} cm3)')
+                        vol = -vol
+                    if vol is None or vol < min_piece_fraction * (volumes[part.name] or total_volume):
+                        dropped.append(vol or 0.0)
                         bpy.data.objects.remove(loose)
                         continue
                     pieces.append(loose)
             created.extend(pieces)
+            if opened:
+                log(f'attempt {attempt}: cell {i} cut {opened} open, reseeding')
+                ok = False
+                break
             groups = _groups(pieces) if pieces else []
             if len(groups) != 1:
                 names = ' | '.join(', '.join(sorted(q.name.split('.')[0] for q in g)) for g in groups)
@@ -249,6 +275,7 @@ def fracture(parts, count, *, cut_materials, seed=1, attempts=24, seed_on=None, 
                 bpy.data.objects.remove(obj)
             continue
         recovered = sum(validate.report(s, intersections=False)['volume_m3'] or 0.0 for s in result)
-        log(f'fracture: attempt {attempt}, {len(result)} shards, volume {recovered / total_volume:.4f} of intact')
+        log(f'fracture: attempt {attempt}, {len(result)} shards, volume {recovered / total_volume:.4f} of intact; '
+            f'{len(dropped)} slivers dropped, {sum(dropped) * 1e6:.0f} cm3')
         return result
     raise RuntimeError(f'no seed set gave {count} connected shards in {attempts} attempts')

@@ -3,6 +3,26 @@
 This skill's own mistakes, newest first. Read before a first build; add a line
 whenever a gate or a critic catches something a rule should have prevented.
 
+- **Read the fracture's volume, not just its closure.** A cut piece of the urn's
+  shoulder came back inside out (normals recalculated inward on a folded shape),
+  so its volume read negative and the fracture dropped it as a sliver: 656 cm3
+  of glass gone, every shard closed, every gate green at a volume ratio of 0.992.
+  The fracture now turns such a piece the right way, reseeds on an open one and
+  reports the slivers it drops; a ratio off 1.000 by more than a few parts in a
+  thousand is a hole until shown otherwise.
+- **`pgrep -f` and `pkill -f` match the shell that runs them.** A wait loop on
+  `pgrep -f "runtime_proof.mjs.*u21"` matched its own command line and never
+  ended, and held up every other wait on the same name; `pkill -f "full.sh u23"`
+  killed the shell that sent it. Kill by PID, and let `runtime_proof.mjs`'s port
+  lock do the queueing.
+
+- **Frost the transmission, not the surface.** Clear glass in this game shows the
+  room through it: the urn's lower lobes carried the gallery's black wainscot as a
+  brown band and the cup's far edge as a line, two rounds running. Roughness 0.4
+  under a clear coat of 0.5 (coat roughness 0.03) blurs what lies behind while the
+  highlights stay sharp; the colour then comes from the base and volume colours
+  (probed: hue 30 against the concept's 30, from 26).
+
 - **A critic's fix is a hypothesis; probe it in the game.** Round 3 asked for the
   urn's laurel leaves at metallic 1.0 and roughness 0.25. Built, the shoulder band,
   which faces the ceiling, mirrored it dark: median luminance 93 against the

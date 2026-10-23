@@ -393,6 +393,16 @@ def test_validate_counts_pieces_that_float_free():
     assert any('float free' in p for p in validate.failures(rep, uv=False)), validate.failures(rep, uv=False)
 
 
+def test_fracture_turns_an_inside_out_piece_the_right_way():
+    scene.reset()
+    obj = lathe.lathe('piece', [V(0, 0), V(0.1, 0), V(0.1, 0.1), V(0, 0.1)], 16)
+    volume = validate.report(obj, intersections=False)['volume_m3']
+    fracture._reverse(obj)
+    assert validate.report(obj, intersections=False)['volume_m3'] < 0
+    fracture._reverse(obj)
+    assert abs(validate.report(obj, intersections=False)['volume_m3'] - volume) < 1e-9
+
+
 def test_fracture_gives_exact_count_of_closed_connected_shards_and_keeps_volume():
     scene.reset()
     outer, closed = closed_jar()

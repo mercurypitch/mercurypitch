@@ -141,3 +141,9 @@ a material has: an opaque amber read 63/110/129 against the concept's
 48/110/200), the median colour, Lab means, the chroma spread (play of colour)
 and hue shares in the bins the eye uses. Aim each number at the concept's, one
 change at a time.
+
+Glass measures the room behind it as much as itself. When the shot shows what
+stands behind (a dark wainscot as a band through the lower half, the far side
+of a part inside), frost the transmission rather than lower it: roughness about
+0.4 under a clear coat of 0.5 blurs the room and keeps the highlights, then set
+the hue with the base and volume colours (`lessons.md`, the urn's round 5).
