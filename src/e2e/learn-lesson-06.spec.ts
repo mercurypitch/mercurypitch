@@ -21,7 +21,7 @@ import { expect, test } from '@playwright/test'
 import { LESSON_COPY } from '../features/lessons/kit/lesson-copy'
 
 // 60 characters at most (src/tests/lesson-pages.test.ts): the lesson's number is in its kicker
-const TITLE = 'Intervals: the distance between notes | MercuryPitch'
+const TITLE = 'Intervals: the distance between two notes | MercuryPitch'
 
 test('a hard load of /learn/06 answers 200 with the lesson @smoke', async ({
   page,

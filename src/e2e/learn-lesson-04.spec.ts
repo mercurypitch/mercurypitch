@@ -16,7 +16,7 @@ import type { Locator, Page } from '@playwright/test'
 import { expect, test } from '@playwright/test'
 
 // 60 characters at most (src/tests/lesson-pages.test.ts): the lesson's number is in its kicker
-const TITLE = 'The major scale and home · Find Your Pitch | MercuryPitch'
+const TITLE = 'The major scale: do-re-mi and the home note | MercuryPitch'
 
 /** The steps' staircase, and its parts. */
 const TOY = '#toyStairs'

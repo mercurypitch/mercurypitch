@@ -16,7 +16,7 @@ import type { Locator, Page } from '@playwright/test'
 import { expect, test } from '@playwright/test'
 import { filmSources } from '../features/lessons/kit/films'
 
-const TITLE = 'Twelve notes: Find Your Pitch, Lesson 2 | MercuryPitch'
+const TITLE = 'Why twelve notes? Sharps, flats and semitones | MercuryPitch'
 
 /** A2, the kit's lowest note: the canvases' slider values count semitones from it. */
 const LO = 45

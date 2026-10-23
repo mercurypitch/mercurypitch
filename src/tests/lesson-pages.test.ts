@@ -125,7 +125,7 @@ describe.each(DOCUMENTS)('lesson document %i', (n) => {
     expect(meta(document, 'robots')).toBe(
       'index, follow, max-image-preview:large',
     )
-    expect(document.title).toContain('MercuryPitch')
+    expect(document.title).toMatch(/\S \| MercuryPitch$/)
     expect(document.title.length).toBeLessThanOrEqual(60)
     // Google cuts a description near 160 characters; the tail is lost.
     const description = meta(document, 'description') ?? ''
@@ -158,7 +158,7 @@ describe.each(DOCUMENTS)('lesson document %i', (n) => {
     // Repeats the page, never a second version of it.
     expect(article.description).toBe(meta(document, 'description'))
     expect(article.image).toBe(meta(document, 'og:image'))
-    expect(document.title).toContain(String(article.headline))
+    expect(meta(document, 'og:title')).toContain(String(article.headline))
   })
 
   it('gives search a trail back to the home page', () => {
