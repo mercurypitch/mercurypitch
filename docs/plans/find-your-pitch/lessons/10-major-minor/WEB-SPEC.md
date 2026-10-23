@@ -99,26 +99,26 @@ FACTS 5a). Each section's heading, and the line above it, are in LESSON.md ("Sec
 
 1. **Masthead**: Lesson 4's (wordmark, "Season 1 · Lesson 10", anchors Lesson, Sing and Explorer,
    the Sound toggle off by default, Pause animations with its reduced-motion lock), through
-   `initMasthead` (`src/features/lessons/kit/page-chrome.ts:107-138`) with Lesson 4's map of
+   `initMasthead` (`src/features/lessons/kit/page-chrome.ts:109-140`) with Lesson 4's map of
    sections and `{ lesson: 10, deck }` (`lesson-04/main.ts:99-110`), which draws the lesson menu,
    remembers the steps the viewer reaches and first settles the page's links to other lessons for
-   the state it was served with (`followPageState`, `src/features/lessons/kit/page-chrome.ts:111`).
+   the state it was served with (`followPageState`, `src/features/lessons/kit/page-chrome.ts:113`).
 2. **Hero, with the cold open**, laid out as Lesson 2's (`learn/02.html:320-493`). Its copy holds
    the kicker, the hook question as the title (the `<h1 class="hook" id="hook">` every lesson page
-   has, `learn/04.html:319`), the meta as three chips, the promise and the sound gate from
+   has, `learn/04.html:320`), the meta as three chips, the promise and the sound gate from
    LESSON.md. The chips are "17 minutes" (FACTS 3), "After Lesson 6: Intervals: the distance between
    notes", a link to `/learn/06` as Lesson 4's prerequisite chip links Lesson 2
-   (`learn/04.html:326-330`; FACTS 2), which stays a plain chip wherever Lesson 6 is not live
+   (`learn/04.html:327-331`; FACTS 2), which stays a plain chip wherever Lesson 6 is not live
    (`src/features/lessons/kit/page-state.ts:16-17`), and "Sound on". Its stage holds orange's and
-   blue's bubbles (`learn/02.html:374`) over the two Mercs on the floor line, the hero's own copy of
-   the spiral between them (`:395`; Toys 2), and under the spiral the cold open's three plays: "Play
+   blue's bubbles (`learn/02.html:375`) over the two Mercs on the floor line, the hero's own copy of
+   the spiral between them (`:396`; Toys 2), and under the spiral the cold open's three plays: "Play
    the chord", which works from the start, and "Move mi down" and "Move so down", locked until a
-   choice. The predict card sits under the stage, as Lesson 2's does (`:439`): LESSON.md's predict,
+   choice. The predict card sits under the stage, as Lesson 2's does (`:440`): LESSON.md's predict,
    its two choices, the lock hint and the reveal (Toys 3). On a phone the hero's parts run kicker,
    title, meta, the stage, the gate, the predict, then the promise
    (`src/features/lessons/kit/lesson-stage.css:354-397`), so the title and the first Play come
    before anything asks for an answer (CURIOSITY-MOMENTS § 3.1, "Above the fold"; FACTS 5a).
-3. **Recall from Lesson 6**, straight after the hero (`learn/02.html:496`): Lesson 6's questions 2
+3. **Recall from Lesson 6**, straight after the hero (`learn/02.html:497`): Lesson 6's questions 2
    and 3, shown to everyone, since Lesson 6 is a prerequisite (Toys 8; FACTS 7).
 4. **Four words you'll meet**: third, triad, quality and natural minor, each with its definition, a
    small figure and a play button (Toys 4).
@@ -156,7 +156,7 @@ FACTS 5a). Each section's heading, and the line above it, are in LESSON.md ("Sec
    chord-bead control on one card (Toys 1; playbook rule 17), keeping the card's place after the
    challenge and the practice card (CURIOSITY-MOMENTS § 3.1).
 9. **Lesson explorer**: the kit's, `createExplorer({ current: 10 })`
-   (`src/features/lessons/kit/explorer.ts:250`), with Lesson 10 as the current node. Under its
+   (`src/features/lessons/kit/explorer.ts:253`), with Lesson 10 as the current node. Under its
    heading is Lesson 1's line, which names no lesson's state: the legend and the cards say it, from
    the season data. Its cards show only learner information: "Ready", "Coming later" or "Done", and
    "Ready · read" for a lesson with no film, with no signature, no backlog and no topic codes
@@ -276,7 +276,7 @@ draw its triads with it; it moves into the kit when Lesson 12 needs it.
   fa so le te do, the do-based minor the series sings (FACTS 8, 26). The letters come from
   `spellScale` (`notes.ts:165-177`; FACTS 27). Major · Minor waits for the predict's choice: in Step
   5 the toy draws it disabled until the predict's `onChoice` says a choice is in, and the predict's
-  `unlocks` enables it (`src/features/lessons/kit/predict.ts:63-66`), so the stage cannot answer the
+  `unlocks` enables it (`src/features/lessons/kit/predict.ts:64-67`), so the stage cannot answer the
   predict first.
 - **Free play** (Wrap): its own copy of the toy in a card, as Lesson 4's is
   (`lesson-04/main.ts:90-92`), with every control: Root lower and Root higher, Major · Minor, Chord
@@ -285,7 +285,7 @@ draw its triads with it; it moves into the kit when Lesson 12 needs it.
   rather than its fast one) and the names switch. Spread into a scale on a root slid to B4, it
   reaches B5, 987.77 Hz, the scale's top do (FACTS 70a), in the scale's own window (Layout and
   targets). Nothing locks: the guided steps come first on the page (playbook rule 17).
-- **Readouts** sit inside the figure, as Lesson 1's do (`learn/01.html:605-627`, `.readout`), so no
+- **Readouts** sit inside the figure, as Lesson 1's do (`learn/01.html:604-626`, `.readout`), so no
   status line takes height.
 - **Layout and targets** (FACTS 82). Rows are 15 px a semitone, so the closest two beads, a minor
   third apart, sit 45 px apart, and their 44 px targets never overlap; the two gap buttons' centres
@@ -352,19 +352,19 @@ draw its triads with it; it moves into the kit when Lesson 12 needs it.
 
 The hero's stage holds a spiral of its own, the kit's (`src/features/lessons/kit/spiral.ts`),
 mounted as Lesson 2's hero copy is (`lesson-02/spiral-copy.ts`; `lesson-02/cold-open.ts:39-58`) and
-taken further without forking it (`spiral.ts:22-26`):
+taken further without forking it (`spiral.ts:28-32`):
 
 - **Seen from above.** `setView('top')` at mount looks straight down the axis, so one turn is a ring
-  of twelve (`spiral.ts:132-133`), and `ring: 60` keeps the turn from C4 lit from above (`:96-97`),
-  so do, mi and so, C4, E4 and G4, sit on it. `setTurning(false)` holds it still (`:130-131`). Every
+  of twelve (`spiral.ts:141-142`), and `ring: 60` keeps the turn from C4 lit from above (`:105-106`),
+  so do, mi and so, C4, E4 and G4, sit on it. `setTurning(false)` holds it still (`:139-140`). Every
   name on the spiral follows the page's sharps-or-flats choice (`spiral.ts:19-20`), which the page
   sets to Flats at load (`Names`, `kit/names.ts:84-88`), so the ring names every black key by its
   flat, D♭, E♭, G♭, A♭ and B♭, and each move lands on the letter it left, E♭ or G♭ (FACTS 10). The
   page shows no switch for it, and the chord beads, which spell through `spellOn`, never read it
   (`src/features/lessons/kit/notes.ts:151-177`). A black key's bead is a "?" until it is lit on that
-  copy (`spiral.ts:13-14`), so the page lights the turn's five with `light` (`:122-123`), and the
+  copy (`spiral.ts:19-20`), so the page lights the turn's five with `light` (`:131-132`), and the
   moving bead lands on a named note, E♭ or G♭.
-- **The page's marks**, drawn each frame in the spiral's `overlay` (`spiral.ts:90-91`) from where
+- **The page's marks**, drawn each frame in the spiral's `overlay` (`spiral.ts:99-100`) from where
   the beads landed (`BeadHit`, `src/features/lessons/kit/spiral-draw.ts:31-37`), as Lesson 2's trail
   is (`lesson-02/spiral-copy.ts:38-40`): a chrome halo round do, mi and so, each carrying its
   syllable; a thin chrome triangle joining the three; and, from the reveal on, the chord's name in
@@ -382,17 +382,17 @@ taken further without forking it (`spiral.ts:22-26`):
   slider works as the kit's does, A2 to A5 (FACTS 70a). The three plays are buttons under the
   spiral, at least 44 px tall.
 - **Speaking for it.** The drawing is a slider for the notes, as Lesson 2's hero copy is
-  (`role="slider"`, `learn/02.html:395-400`), its values set by the kit; a polite live region beside
+  (`role="slider"`, `learn/02.html:396-401`), its values set by the kit; a polite live region beside
   it speaks for the moves: "C, E and G together." as the chord plays, and LESSON.md's "Mi moved down
   a semitone: C, E flat, G." or "So moved down a semitone: C, E, G flat." as a move lands.
 
 ### 3. Predict widgets
 
-- Both are the kit's predict (`src/features/lessons/kit/predict.ts:29-71`, `mountPredict` at `:79`):
+- Both are the kit's predict (`src/features/lessons/kit/predict.ts:30-72`, `mountPredict` at `:80`):
   the choice locks, the play buttons unlock, the reveal appears after the sound and never calls a
   choice wrong; two choices each, every button at least 44 px tall. The plays start disabled in the
   markup, all but a free one, and the choice enables them and moves the focus to the first that is
-  not free (`:106-124`).
+  not free (`:113-131`).
 - **Cold open.** The choices are [ Mi ] [ So ] (FACTS 41). Its three plays sit under the spiral on
   the hero's stage, outside the predict card, and are handed to the predict as its `plays`
   (`predict.ts:67-68`). "Play the chord" (`chord-c`) is a free play (`data-free`, `:15-16`): it sets
@@ -504,7 +504,7 @@ States:
 
 1. **Comfort check**, always first and asked every visit (never stored): Lesson 3's line, its list
    naming all six of REQ-GVC-020's conditions, and its two buttons, through `mountComfort`
-   (`src/features/lessons/kit/comfort.ts:111-119`; FACTS 57).
+   (`src/features/lessons/kit/comfort.ts:146-154`; FACTS 57).
 2. **Voice choice**, after either comfort answer: Lesson 3's two buttons with the Mercs' stills
    (`aria-pressed`, at least 44 px), read from and stored in `fyp-voice` through `VoiceChoice` and
    `bindVoiceButtons` (`src/features/lessons/kit/voice-choice.ts:30-47`, `:60-77`; FACTS 59). Its
@@ -522,7 +522,7 @@ States:
    sits in one place, on its own line above the buttons. **Play Merc's notes** sings do-mi-so, then
    do-me-so, on do = E3 (lower) or E4 (higher), in Merc's "ooh", 10.0 s (FACTS 63, 65, 80), the path
    lighting in amber in step while the ring shows the singing Merc's still. **Move do** is Lesson
-   4's group, "Move do:" with lower and higher (`learn/04.html:1243-1252`), moved into the kit (What
+   4's group, "Move do:" with lower and higher (`learn/04.html:1242-1251`), moved into the kit (What
    the kit and the app still need, item 7): a semitone each, up to four either way (`MOVE_MAX`,
    `lesson-04/sing.ts:32-35`, `:168-176`), moving Merc's notes, the guide's count-in and its readout
    together, from "do is C3" to "do is A♭3" for the lower voice (spoken "do is A flat 3"), or C4 to
@@ -540,7 +540,7 @@ States:
    and focus never moves to a button when a state changes, only to its text (REQ-GVC-080, as
    `lesson-03/sing-view.ts:1-9` does). When the sweep ends, the feeling question follows.
 6. **How did that feel?** appears under the guide each time a sweep ends, asked afresh with no
-   answer pressed: Lesson 3's four answers through `mountFeelings` (`comfort.ts:121-152`; FACTS 67).
+   answer pressed: Lesson 3's four answers through `mountFeelings` (`comfort.ts:156-187`; FACTS 67).
    The kit locks the answer once given, until the next sweep resets it; Lesson 6's page passes the
    kit's new `changeable`, so its answer can change until then (`mountFeelings`, `comfort.ts` on
    `feat/lesson-06-page`). This page keeps the lock until the coach settles it for the series
@@ -583,10 +583,10 @@ home"; under Step 4's, "Happy and sad at once", "Tempo first" and "The other way
 ### 8. Recall and quick check
 
 Two quizzes share this page through the kit's quiz (`src/features/lessons/kit/quiz.ts`, `createQuiz`
-at `:205`), with the options it already has (`:73-97`): an id prefix for each quiz's elements;
+at `:211`), with the options it already has (`:73-97`): an id prefix for each quiz's elements;
 `lesson` optional; a question `id`, the telemetry's `question_id`; a slot for a question's own
 controls (`:52-58`); and, for a question from another lesson, a step link that reads "Try Lesson 6,
-Step 5 again" and opens in a new tab, through `away` (`:87-94`, `linkAway` at `:173-203`), which
+Step 5 again" and opens in a new tab, through `away` (`:87-94`, `linkAway` at `:179-209`), which
 keeps a link's words and drops the link wherever that lesson is not live.
 
 - **Recall**: Lesson 6's questions 2 and 3, word for word with their feedback (LESSON.md; FACTS 7),
@@ -606,7 +606,7 @@ keeps a link's words and drops the link wherever that lesson is not live.
   `fyp-l10-quiz-v1`, and `lesson: 10`, so answering all four marks Lesson 10 done in the explorer.
   Three answers each, shuffled per question from the stored seed, one-line feedback for every
   answer, and a check icon and ink (not gold) on the right one. The kit prints "Right." or "Not
-  quite." before each line (`quiz.ts:278`), so no feedback line starts with "Right", "Yes" or
+  quite." before each line (`quiz.ts:293`), so no feedback line starts with "Right", "Yes" or
   "Correct". Question 2's slot holds its play button, D4, F4 and A4 together for 1.4 s, a D minor
   triad (FACTS 79), named "Play the question's chord", so it never shares a name with the cold
   open's Play the chord; the kit keeps a slot's controls across answers, and the page handles them
@@ -621,9 +621,9 @@ in the card after its words (`kit/next-card.ts:27-30`, as Lesson 2's figures sit
 never red, with no words or notes on it (CURIOSITY-MOMENTS § 2, Lesson 10, Tease; FACTS,
 Illustrations without claims). The seam's place and width are drawn, not measured. It holds no
 button, since the card is a link, and it plays no sound. Its styles go under a class of its own: not
-Lesson 2's `.tease` (`src/features/lessons/lesson-02/lesson-02.css:477`), which
+Lesson 2's `.tease` (`src/features/lessons/lesson-02/lesson-02.css:495`), which
 `learn-next-card.spec.ts` tests, and not the tease line's `.next-tease`
-(`src/features/lessons/kit/lesson-sections.css:198-200`); in the kit's shared still styles, if the
+(`src/features/lessons/kit/lesson-sections.css:226-228`); in the kit's shared still styles, if the
 page that first adds them (CURIOSITY-MOMENTS § 3.1, "one still per card") lands first, else in this
 page's stylesheet. It does not move.
 
@@ -777,10 +777,10 @@ at `85e23a1af` changed there, and that page's own lines are cited at `d59c00ad6`
    layout helper for the targets and the compact layout.
 4. `lesson-10/cold-open.ts`, new (Toys 2): the hero's spiral, its overlay and the bead slide. The
    kit's spiral needs nothing: `setView('top')`, `ring`, `overlay`, `light` and `setTurning` are on
-   main (`kit/spiral.ts:73-98`, `:111-138`).
+   main (`kit/spiral.ts:82-107`, `:111-138`).
 5. The names switch (Toys 1): Lesson 4's (`lesson-04/stairs-words.ts`), promoted into the kit with a
    choice of modes and the page's own syllables, as Lesson 6's spec lists it. Lesson 6's page keeps
-   its two modes on its own page (`NamesMode` and `NAMES_MODES`, `lesson-06/tune-words.ts:19-21`,
+   its two modes on its own page (`NamesMode` and `NAMES_MODES`, `lesson-06/tune-words.ts:21-23`,
    its store at `lesson-06/main.ts:70-71`, on `feat/lesson-06-page`), so this page moves the switch
    into the kit and takes Lesson 6's modes with it; if this page lands first, Lesson 6's page takes
    the kit's. The page-wide store is the kit's already (`createModeStore`, `kit/names.ts:27`).
@@ -802,10 +802,10 @@ at `85e23a1af` changed there, and that page's own lines are cited at `d59c00ad6`
    `slide-guide.ts` on `feat/lesson-06-page`). Until that lands, the gap alone shows where to
    breathe (FACTS 66); if this page lands first, it adds the mark in that form.
 9. `kit/quiz.ts`: `recallStepHref`, built: Lesson 8's page moved it into the kit beside
-   `lessonPageHref` (`:128-130`, `:124-126`), and Lessons 3, 4 and 5 take it from there
+   `lessonPageHref` (`:134-136`, `:130-132`), and Lessons 3, 4 and 5 take it from there
    (`lesson-03/quiz-questions.ts:24`, `lesson-04/quiz-questions.ts:32`,
    `lesson-05/quiz-questions.ts:20`), as this page will. The quiz needs nothing else: its prefix,
-   slot and away links are on main (`quiz.ts:52-58`, `:73-97`, `:173-203`).
+   slot and away links are on main (`quiz.ts:52-58`, `:73-97`, `:179-209`).
 10. `kit/comfort.ts` needs nothing: this page's `sing-flow.ts` picks the rest card after
     "Effortful", as Lesson 6's does, leaving the kit's default for the coach (`comfort.ts:58-67`),
     and it keeps the kit's lock on the feeling answer, where Lesson 6's page passes the new
@@ -907,7 +907,7 @@ CURIOSITY-MOMENTS § 5 item 2.
    until then (Toys 6).
 9. **The quizzes' play buttons in the kit quiz's slot**, which keeps a slot's controls across
    answers (`quiz.ts:52-58`; Toys 8). Lesson 6's spec says the kit rebuilds the questions on every
-   answer (`docs/plans/find-your-pitch/lessons/06-intervals/WEB-SPEC.md:459-460`): that line is out
+   answer (`docs/plans/find-your-pitch/lessons/06-intervals/WEB-SPEC.md:460-461`): that line is out
    of date.
 10. **The coach's volume line.** "Sing at about speaking volume." stays, the series' line; "or a
     little softer, never a whisper" is a safe addition for the coach to make (LESSON.md, For the
@@ -947,7 +947,7 @@ CURIOSITY-MOMENTS § 5 item 2.
   console's question before it publishes a draft names Lesson 6's page, but nothing checks it
   (Decisions for the owner, item 3). Published first, it would break nothing: its chip would stay as
   a plain chip, and its recall's step links would keep their words with no link
-  (`src/features/lessons/kit/page-state.ts:84-108`; `src/features/lessons/kit/quiz.ts:173-203`). But
+  (`src/features/lessons/kit/page-state.ts:84-108`; `src/features/lessons/kit/quiz.ts:179-209`). But
   the recall would ask about a lesson the learner cannot open.
 - **The admin console's hook.** The console can switch Lesson 10's hook to its alternative,
   `bright-dark`, "Which single note turns a bright major chord into a dark minor one?"
@@ -1025,7 +1025,7 @@ parts it adds:
     served, with `VITE_DRAFT_LESSONS` stubbed to '0' and the modules reloaded (`vi.stubEnv`,
     `vi.resetModules`), Lesson 1's explorer shows Lesson 10 as "Coming later", with no link to
     `/learn/10` and its practice link kept, and with '1' links it to read, as
-    `src/features/lessons/kit/explorer.test.ts:354-379` checks Lesson 5 (the block, `:311-380`). Its
+    `src/features/lessons/kit/explorer.test.ts:451-476` checks Lesson 5 (the block, `:408-477`). Its
     link's `note` matches none of the backlog words (`/needs|slug|deep link|for now/i`).
 13. The names switch: under Minor, Do-re-mi names the staircase do re me fa so le te do, and under
     Major do re mi fa so la ti do (FACTS 8, 26); Letters gives `spellScale`'s names on every root
@@ -1068,7 +1068,7 @@ bundle, which no site worker serves and which shows drafts: `build:e2e` sets `VI
    with Stack still offered, and answering "Easy" later does not bring the practice card back on
    this visit.
 8. No call to `navigator.mediaDevices.getUserMedia` at any point (a spy, as
-   `src/e2e/learn-lesson-03.spec.ts:318-327` sets one).
+   `src/e2e/learn-lesson-03.spec.ts:323-332` sets one).
 9. The recall: shown open to everyone, with an empty `fyp-done` too; its answers mark nothing done;
    its step links are `<a href="/learn/06#step-5" target="_blank">` and `/learn/06#step-2`;
    answering all four quick-check questions marks Lesson 10 done in the explorer; each feedback line
@@ -1107,7 +1107,7 @@ words only. The page stores the quiz seeds and records (`fyp-l10-recall-seed`, `
 `fyp-voice` (`voice-choice.ts:20`), the masthead's Pause animations choice, `fyp-motion`
 (`src/features/lessons/kit/motion-switch.ts:12`), and the steps the viewer reached, the kit's
 `fyp-pos` (`src/features/lessons/kit/position.ts:20`), which `initMasthead` keeps
-(`page-chrome.ts:107-138`); nothing from the toys, the ear game or Sing it but the voice.
+(`page-chrome.ts:109-140`); nothing from the toys, the ear game or Sing it but the voice.
 
 Page QA before publishing (PRODUCTION-PIPELINE § 5) adds, for this page, every check against a local
 or dev build, never production:

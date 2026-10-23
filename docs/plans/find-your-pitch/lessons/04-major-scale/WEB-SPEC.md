@@ -127,7 +127,7 @@ transforms is one object on the page.
 - **One action per tap.** A tap on a stair plays its note in the soft tone, in every state but the
   compact one. A tap on a key of the strip plays that key in steps 1 and 2; from step 3 on, and in
   free play, it makes that key do instead. A pointer that moves more than 6 px before it lifts is a
-  drag, not a tap, as on Lesson 1's spiral (`kit/spiral.ts:421`).
+  drag, not a tap, as on Lesson 1's spiral (`kit/spiral.ts:459`).
 - **Play up** and **Play down** (FACTS 57) light each stair and key as it sounds; **Slow** doubles
   every length (MASTER-PLAN § 4.2 item 5).
 - **Step sizes** (step 1): the T and S labels show, and the two semitone steps light gold once
@@ -247,8 +247,8 @@ Two quizzes share this page, so it depends on the three changes Lesson 2 makes t
 - a question `id`, the telemetry's `question_id`, which `QuizQuestion` lacked.
 
 If Lesson 2's page has not landed them when this one is built, this page lands them, in the shape
-Lesson 2 describes. All three are on main: the id `prefix` (`kit/quiz.ts:81-86`, `:207-211`), an
-optional `lesson` (`:75-76`, `:307-312`) and the question `id` (`:43-47`).
+Lesson 2 describes. All three are on main: the id `prefix` (`kit/quiz.ts:81-86`, `:213-217`), an
+optional `lesson` (`:75-76`, `:322-327`) and the question `id` (`:43-47`).
 
 - **Recall**: Lesson 2's questions 1 and 3, word for word with their feedback (LESSON.md; FACTS
   30), under their Lesson 2 ids, `l02-q1` and `l02-q3`. It is reshuffled from a seed of its own
@@ -262,8 +262,8 @@ optional `lesson` (`:75-76`, `:307-312`) and the question `id` (`:43-47`).
   `fyp-l04-quiz-v1`, and `lesson: 4`, so answering all four marks Lesson 4 done in the explorer.
   Three answers each, shuffled per question from the stored seed, one-line feedback for every
   answer, and a check icon and ink (not gold) on the right one. Question 3's play button plays
-  `stop-c` (FACTS 58). The kit rebuilds the questions on every answer (`kit/quiz.ts:264-267`,
-  `:284-285`), so that button is handled by a listener on the quiz's root (`#qs` today), as the step
+  `stop-c` (FACTS 58). The kit rebuilds the questions on every answer (`kit/quiz.ts:279-282`,
+  `:299-300`), so that button is handled by a listener on the quiz's root (`#qs` today), as the step
   links are. "Try Step 1 again" and "Try Step 3 again" use the kit's `data-goto-step`. Answers stay
   in the viewer's browser until the telemetry track exists.
 
@@ -352,7 +352,7 @@ main's.
   graph read the same field. On main the chip reads "Ready · read" unless the lesson's film is
   published (`kit/explorer.ts:150-157`).
 - `kit/explorer.ts`, the current lesson: it selected Lesson 1 when it opened (`let sel = 1`).
-  Lesson 2's page added the option, `current` (`kit/explorer.ts:48-49`, `:256-260`), and this page
+  Lesson 2's page added the option, `current` (`kit/explorer.ts:48-49`, `:259-263`), and this page
   passes 4 (`lesson-04/main.ts:96`).
 - `kit/explorer.ts`, links between pages: a ready card's actions were the same-page anchors
   `#watch` and `#lesson`, right only for the page's own lesson, so a card for another ready lesson

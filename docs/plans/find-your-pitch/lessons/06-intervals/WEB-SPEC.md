@@ -432,8 +432,8 @@ shows a number instead of breathing.
 
 Two quizzes share this page, so it depends on the three changes Lesson 2 makes to `kit/quiz.ts`
 (its WEB-SPEC, "What the kit and the app still need"), which are on main: an id prefix for the
-elements each quiz binds and writes (`kit/quiz.ts:81-86`, `:207-211`); `lesson` optional, since the
-kit marks `lesson` done once every question has an answer (`:75-76`, `:307-312`); and a question
+elements each quiz binds and writes (`kit/quiz.ts:81-86`, `:213-217`); `lesson` optional, since the
+kit marks `lesson` done once every question has an answer (`:75-76`, `:322-327`); and a question
 `id`, the telemetry's `question_id` (`:43-47`).
 
 - **Recall**: Lesson 4's questions 1 and 4, word for word with their feedback (LESSON.md; FACTS
@@ -453,12 +453,12 @@ kit marks `lesson` done once every question has an answer (`:75-76`, `:307-312`)
   `fyp-l06-quiz-v1`, and `lesson: 6`, so answering all four marks Lesson 6 done in the explorer.
   Three answers each, shuffled per question from the stored seed, one-line feedback for every
   answer, and a check icon and ink (not gold) on the right one. The kit prints "Right." or "Not
-  quite." before each line (`kit/quiz.ts:278`), so no feedback line starts with "Right", "Yes" or
+  quite." before each line (`kit/quiz.ts:293`), so no feedback line starts with "Right", "Yes" or
   "Correct". Question 1's play button plays `line-c`, then `line-fs`, and question 3's plays C4 then
   F4 (FACTS 63, 69). Each sits in the kit's slot after a question's heading (`slot`,
-  `kit/quiz.ts:52-58`, `:293-294`), outside the `<h3>` that labels its answers (`:291`), so the
+  `kit/quiz.ts:52-58`, `:308-309`), outside the `<h3>` that labels its answers (`:306`), so the
   button is not part of every answer's name. The kit rebuilds the questions on every answer
-  (`kit/quiz.ts:264-267`, `:284-285`), so those buttons are handled by a listener on the quiz's
+  (`kit/quiz.ts:279-282`, `:299-300`), so those buttons are handled by a listener on the quiz's
   root, as the step links are. "Try Step 2 again", "Try Step 3 again", "Try Step 4 again" and "Try
   Step 5 again" use the kit's `data-goto-step`. Answers stay in the viewer's browser until the
   telemetry track exists.
@@ -569,12 +569,12 @@ and the line references are main's.
   direction rule.
 - Lesson 3's comfort check (`kit/comfort.ts`), usable without its microphone steps, and its voice
   choice, reading and writing `fyp-voice`. On main: the check binds its two answers to the page's
-  own handlers (`kit/comfort.ts:104-119`), and the choice reads and writes `fyp-voice`
+  own handlers (`kit/comfort.ts:139-154`), and the choice reads and writes `fyp-voice`
   (`kit/voice-choice.ts:20`).
 - Lesson 4's scale guide, generalised to any number of rows and any path, with its count-in and
   Move do (Toys 6), and the feeling question as a kit part shared with Lesson 3. On main: the guide
   takes any rows and any path, with its count-in (`mountGuide`, `kit/slide-guide.ts:378`), and the
-  feeling question is the kit's (`mountFeelings`, `kit/comfort.ts:127`); Move do is still Lesson
+  feeling question is the kit's (`mountFeelings`, `kit/comfort.ts:162`); Move do is still Lesson
   4's (`lesson-04/sing.ts`).
 - `vite.config.ts`: `/learn/06` served from `learn/06.html` in dev and preview, and `learn/06.html`
   as a build input. On main every `learn/NN.html` is both, with no entry of its own

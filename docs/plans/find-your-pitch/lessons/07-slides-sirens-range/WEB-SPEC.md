@@ -465,8 +465,8 @@ word "Listening", and the Mercs skip their reactions (REQ-GVC-083).
 
 Two quizzes share this page, so it depends on the three changes Lesson 2 makes to `kit/quiz.ts`
 (its WEB-SPEC, "What the kit and the app still need"), which are on main: an id prefix for the
-elements each quiz binds and writes (`kit/quiz.ts:81-86`, `:207-211`); `lesson` optional, since the
-kit marks `lesson` done once every question has an answer (`:75-76`, `:307-312`); and a question
+elements each quiz binds and writes (`kit/quiz.ts:81-86`, `:213-217`); `lesson` optional, since the
+kit marks `lesson` done once every question has an answer (`:75-76`, `:322-327`); and a question
 `id` (`:42-47`).
 
 - **Recall**: Lesson 3's questions 1 and 4, word for word with their feedback (LESSON.md; FACTS 3),
@@ -478,12 +478,12 @@ kit marks `lesson` done once every question has an answer (`:75-76`, `:307-312`)
   the viewer keeps their place here, as Lesson 5's recall links them: the quiz's `away.href` is
   `recallStepHref` (`lesson-05/quiz-questions.ts:19-20`, `lesson-05/recall.ts:21`), where the kit's
   default would open `/learn/03#lesson` (`kit/quiz.ts:87-94`). It is never `data-goto-step`, which
-  would move this page's own deck (`kit/quiz.ts:315-332`). Question 4 has no step link.
+  would move this page's own deck (`kit/quiz.ts:330-347`). Question 4 has no step link.
 - **Quick check**: LESSON.md's four questions, ids `l07-q1` to `l07-q4`, keys `fyp-l07-seed` and
   `fyp-l07-quiz-v1`, and `lesson: 7`, so answering all four marks Lesson 7 done in the explorer.
   Three answers each, shuffled per question from the stored seed, one-line feedback for every
   answer, and a check icon and ink (not gold) on the right one. The kit prints "Right." or "Not
-  quite." before each line (`kit/quiz.ts:278`), so no feedback line starts with "Right", "Yes" or
+  quite." before each line (`kit/quiz.ts:293`), so no feedback line starts with "Right", "Yes" or
   "Correct". "Try Step 1 again", "Try Step 2 again", "Try Step 4 again" and "Try Step 5 again" use
   the kit's `data-goto-step`. Answers stay in the viewer's browser until the telemetry track
   exists.
