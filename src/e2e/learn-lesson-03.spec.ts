@@ -22,7 +22,7 @@ import type { Page } from '@playwright/test'
 import { expect, test } from '@playwright/test'
 import { fakeMicArgs, writeToneWav } from './helpers/tone-wav'
 
-const TITLE = 'Match a note: Find Your Pitch, Lesson 3 | MercuryPitch'
+const TITLE = 'How to match pitch and sing in tune | MercuryPitch'
 const TONE_WAV = writeToneWav(220)
 
 test.use({

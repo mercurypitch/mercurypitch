@@ -13,7 +13,7 @@ import { expect, test } from '@playwright/test'
 import { filmSources } from '../features/lessons/kit/films'
 import { dismissOverlays } from './helpers/ui'
 
-const TITLE = 'What is a note? Find Your Pitch, Lesson 1 | MercuryPitch'
+const TITLE = 'What is a note? Pitch, hertz and the octave | MercuryPitch'
 
 test('a hard load of /learn/01 answers 200 with the lesson @smoke', async ({
   page,
