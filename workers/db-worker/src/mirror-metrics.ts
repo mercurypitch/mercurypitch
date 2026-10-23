@@ -37,11 +37,29 @@ export const TOUR_METRIC_KEYS: ReadonlySet<string> = new Set([
   'of',
 ])
 
+/**
+ * A lesson page's answer (src/features/lessons/kit/telemetry.ts): the page it
+ * came from, the question's lesson and number (`l04-q1` is 4 and 1), whether
+ * the visit's first answer to it was right (1 or 0), its number of options
+ * for the guess correction (MASTER-PLAN § 9), the visit, and the consent it
+ * was sent under (1 granted, 2 never asked).
+ */
+export const LESSON_ANSWER_METRIC_KEYS: ReadonlySet<string> = new Set([
+  'page',
+  'qLesson',
+  'q',
+  'firstTry',
+  'k',
+  'visit',
+  'consent',
+])
+
 // Typed against the catalog: renaming `results_view` breaks the typecheck here
 // instead of silently dropping its metrics. The tour entries are built from
 // TOUR_FUNNEL_EVENTS, so they follow a rename by construction.
 const METRIC_KEYS_BY_EVENT = new Map<FunnelEventName, ReadonlySet<string>>([
   ['results_view', MIRROR_METRIC_KEYS],
+  ['lesson_answer', LESSON_ANSWER_METRIC_KEYS],
   ...TOUR_FUNNEL_EVENTS.map((event): [FunnelEventName, ReadonlySet<string>] => [
     event,
     TOUR_METRIC_KEYS,
