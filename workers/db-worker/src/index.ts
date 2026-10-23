@@ -1414,6 +1414,23 @@ function lessonAnswerUnwanted(request: Request, metrics: unknown): boolean {
 }
 
 /**
+ * What answers a mirror event before its remaining checks, or null to go on.
+ * A lesson answer from the consent regions without a yes is answered as a
+ * stored answer is, so the page cannot tell, and nothing is kept: no row,
+ * and the limiter is not spent. Any other event meets its limiter.
+ */
+async function mirrorEventGate(
+  request: Request,
+  env: Env,
+  lessonAnswer: boolean,
+  metrics: unknown,
+): Promise<Response | null> {
+  if (!lessonAnswer) return mirrorEventRefusal(request, env)
+  if (lessonAnswerUnwanted(request, metrics)) return mirrorEventStored()
+  return lessonAnswerRefusal(request, env)
+}
+
+/**
  * When an event row says it happened. A lesson answer keeps only its UTC day
  * (the day's midnight, in the same ISO form), so its row cannot be lined up
  * with anything else the Worker saw at that moment.
@@ -1467,15 +1484,8 @@ async function handleMirrorEvent(
     event === 'lesson_answer' &&
     clientId === LESSON_CLIENT_ID &&
     lessonAnswerInBounds(metrics)
-  // Answered as a stored answer is, so the page cannot tell, and nothing is
-  // kept: no row, and the limiter is not spent.
-  if (lessonAnswer && lessonAnswerUnwanted(request, metrics)) {
-    return mirrorEventStored()
-  }
-  const refused = lessonAnswer
-    ? await lessonAnswerRefusal(request, env)
-    : await mirrorEventRefusal(request, env)
-  if (refused !== null) return refused
+  const gated = await mirrorEventGate(request, env, lessonAnswer, metrics)
+  if (gated !== null) return gated
 
   // The client always sends a UUID (or the literal 'no-storage', or the
   // lesson pages' 'lesson-anonymous') — enforce the shape so the clientId
