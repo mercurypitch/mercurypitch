@@ -139,6 +139,13 @@ export function initTake(card: HTMLElement): Take {
     NowPlaying.release(stopTake)
   }
 
+  /** A sound-off line, untrue once the take or the groove runs, gives way to `next`. */
+  function clearSoundOff(next: string): void {
+    const now = status.textContent
+    if (now === TAKE_STATUS.soundOff || now === TAKE_STATUS.grooveSoundOff)
+      say(status, next)
+  }
+
   function finish(r: Run): void {
     take = null
     tapBus?.close(0.3)
@@ -189,6 +196,8 @@ export function initTake(card: HTMLElement): Take {
       onFrame: (spot: Spot) => strip.light(spot.beat),
     })
     take = r
+    // the count-in is what comes, 0.6 s on; a sound-off line is no longer true
+    clearSoundOff(TAKE_STATUS.countIn)
     setOn(startBtn, true, startLabel)
     pad.focus()
     void r.done.then((finished) => {
@@ -217,9 +226,8 @@ export function initTake(card: HTMLElement): Take {
       book: bookHit,
     })
     groove = r
-    // the line that said it didn't play is no longer true
-    if (status.textContent === TAKE_STATUS.grooveSoundOff)
-      say(status, TAKE_STATUS.ready)
+    // a line that said the groove or the take didn't run is no longer true
+    clearSoundOff(TAKE_STATUS.ready)
     setOn(grooveBtn, true, grooveLabel)
     void r.done.then(() => {
       if (groove === r) stopGroove()
