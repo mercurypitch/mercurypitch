@@ -27,6 +27,8 @@ function stamped<E extends Event>(event: E, ms: number): E {
 const key = (type: 'keydown' | 'keyup', name: string, ms: number): Event =>
   stamped(new KeyboardEvent(type, { key: name }), ms)
 const click = (ms: number): Event => stamped(new MouseEvent('click'), ms)
+const pointer = (type: 'pointerdown' | 'pointerup', ms: number): Event =>
+  stamped(new MouseEvent(type, { button: 0, cancelable: true }), ms)
 
 describe('bindTapPad', () => {
   it("takes a primary pointer down at the event's own time, and flashes for 110 ms", () => {
@@ -88,6 +90,25 @@ describe('bindTapPad', () => {
     el.dispatchEvent(key('keyup', ' ', 2000))
     el.dispatchEvent(click(2050))
     expect(taps).toEqual([1050, 2000])
+  })
+
+  it("takes a click 300 ms after a pointer up as the pointer's echo, and one 300 ms after a Space keyup, 1,100 ms after a pointer up or after nothing as a tap", () => {
+    const { el, taps } = pad()
+    // a finger, and its click stamped late on a busy main thread
+    el.dispatchEvent(pointer('pointerdown', 1000))
+    el.dispatchEvent(pointer('pointerup', 1000))
+    el.dispatchEvent(click(1300))
+    // Space, then a click 300 ms after its keyup
+    el.dispatchEvent(key('keydown', ' ', 5000))
+    el.dispatchEvent(key('keyup', ' ', 5000))
+    el.dispatchEvent(click(5300))
+    // a finger, then a click 1,100 ms after it
+    el.dispatchEvent(pointer('pointerdown', 10000))
+    el.dispatchEvent(pointer('pointerup', 10000))
+    el.dispatchEvent(click(11100))
+    // a click alone
+    el.dispatchEvent(click(20000))
+    expect(taps).toEqual([1000, 5000, 5300, 10000, 11100, 20000])
   })
 })
 

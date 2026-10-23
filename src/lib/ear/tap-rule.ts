@@ -14,9 +14,10 @@
 // how a screen reader activates the pad (VoiceOver's VO+Space, NVDA's Enter
 // in browse mode), and how a switch or voice control does, all of which
 // send the click alone. A click that follows a pointer, or Space or Enter,
-// is that gesture's own echo, already taken. Only those keys make a click,
-// so only they time an echo: the Control and Option of a quick VO+Space
-// may reach the page, and VoiceOver's click after them is a tap.
+// is that gesture's own echo, already taken; a pointer's echo is given far
+// longer than a key's. Only those keys make a click, so only they time an
+// echo: the Control and Option of a quick VO+Space may reach the page, and
+// VoiceOver's click after them is a tap.
 
 /** How long a pad flashes after a tap, ms. */
 export const TAP_FLASH_MS = 110
@@ -50,22 +51,43 @@ export function keyTap(event: KeyTapEvent): number | null {
   return event.timeStamp
 }
 
-/** A click this soon after the pad's last pointer up, or Space or Enter down or up, is that gesture's echo, ms. */
+/** A click this soon after the pad's last Space or Enter, down or up, is that key's echo, ms. */
 export const CLICK_ECHO_MS = 100
+
+/**
+ * A click this soon after the pad's last pointer up is that pointer's echo,
+ * ms. It is long because WebKit (iOS Safari and the native app) seems to
+ * stamp the click it makes of a tap when it makes it, so a main thread busy
+ * around the tap, as on an old iPhone drawing a drill, lands the click well
+ * after the pointer up. Every click that follows a pointer is that
+ * pointer's echo: only screen readers, switches and voice control send a
+ * click alone, and none of them follows a finger by under a second.
+ */
+export const POINTER_ECHO_MS = 1000
 
 /** The parts of a click the rule reads. */
 export interface ClickTapEvent {
   readonly timeStamp: number
 }
 
+/** When the pad last saw each gesture that makes a click, ms on the page's clock; -Infinity for never. */
+export interface LastGestures {
+  /** Its latest pointer up. */
+  readonly pointerUp: number
+  /** Its latest Space or Enter, down or up. */
+  readonly key: number
+}
+
 /**
  * A click's tap time, ms on the page's clock, or null when it echoes the
- * gesture at `lastGesture` (the pad's latest pointer up, or Space or Enter
- * down or up), which was already a tap.
+ * pad's latest pointer up or its latest Space or Enter, each already a tap.
  */
 export function clickTap(
   event: ClickTapEvent,
-  lastGesture: number,
+  last: LastGestures,
 ): number | null {
-  return event.timeStamp - lastGesture < CLICK_ECHO_MS ? null : event.timeStamp
+  const at = event.timeStamp
+  if (at - last.pointerUp < POINTER_ECHO_MS) return null
+  if (at - last.key < CLICK_ECHO_MS) return null
+  return at
 }

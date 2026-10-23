@@ -12,6 +12,8 @@ const key = (type: 'keydown' | 'keyup', name: string, ms: number) =>
   stamped(new KeyboardEvent(type, { key: name, bubbles: true }), ms)
 const click = (ms: number) =>
   stamped(new MouseEvent('click', { bubbles: true }), ms)
+const pointer = (type: 'pointerdown' | 'pointerup', ms: number) =>
+  stamped(new MouseEvent(type, { button: 0, bubbles: true }), ms)
 
 describe('TapPad', () => {
   afterEach(() => cleanup())
@@ -55,6 +57,34 @@ describe('TapPad', () => {
     pad.dispatchEvent(key('keyup', ' ', 2000))
     pad.dispatchEvent(click(2050))
     expect(onTap.mock.calls).toEqual([[1050], [2000]])
+  })
+
+  it("takes a click 300 ms after a pointer up as the pointer's echo, and one 300 ms after a Space keyup, 1,100 ms after a pointer up or after nothing as a tap", () => {
+    const onTap = vi.fn()
+    render(() => <TapPad label="Tap" onTap={onTap} />)
+    const pad = screen.getByTestId('ear-tap-pad')
+    // a finger, and its click stamped late on a busy main thread
+    pad.dispatchEvent(pointer('pointerdown', 1000))
+    pad.dispatchEvent(pointer('pointerup', 1000))
+    pad.dispatchEvent(click(1300))
+    // Space, then a click 300 ms after its keyup
+    pad.dispatchEvent(key('keydown', ' ', 5000))
+    pad.dispatchEvent(key('keyup', ' ', 5000))
+    pad.dispatchEvent(click(5300))
+    // a finger, then a click 1,100 ms after it
+    pad.dispatchEvent(pointer('pointerdown', 10000))
+    pad.dispatchEvent(pointer('pointerup', 10000))
+    pad.dispatchEvent(click(11100))
+    // a click alone
+    pad.dispatchEvent(click(20000))
+    expect(onTap.mock.calls).toEqual([
+      [1000],
+      [5000],
+      [5300],
+      [10000],
+      [11100],
+      [20000],
+    ])
   })
 
   it('ignores secondary mouse buttons', () => {

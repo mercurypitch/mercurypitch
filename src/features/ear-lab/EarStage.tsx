@@ -562,9 +562,10 @@ interface TapPadProps {
 export function TapPad(props: TapPadProps): JSX.Element {
   const [hit, setHit] = createSignal(false)
   let flash: ReturnType<typeof setTimeout> | undefined
-  // the pad's latest pointer up, or Space or Enter: the click it makes of
-  // itself is no second tap
-  let gesture = -Infinity
+  // the pad's latest pointer up and its latest Space or Enter: the click
+  // each makes of itself is no second tap
+  let pointerUp = -Infinity
+  let keyAt = -Infinity
   onCleanup(() => clearTimeout(flash))
   const register = (atMs: number) => {
     props.onTap(atMs)
@@ -590,10 +591,10 @@ export function TapPad(props: TapPadProps): JSX.Element {
         register(at)
       }}
       onPointerUp={(event) => {
-        gesture = event.timeStamp
+        pointerUp = event.timeStamp
       }}
       onKeyDown={(event) => {
-        if (isTapKey(event.key)) gesture = event.timeStamp
+        if (isTapKey(event.key)) keyAt = event.timeStamp
         // Space or Enter, a held key's repeats ignored (src/lib/ear/tap-rule.ts).
         const at = keyTap(event)
         if (at === null) return
@@ -601,10 +602,10 @@ export function TapPad(props: TapPadProps): JSX.Element {
         register(at)
       }}
       onKeyUp={(event) => {
-        if (isTapKey(event.key)) gesture = event.timeStamp
+        if (isTapKey(event.key)) keyAt = event.timeStamp
       }}
       onClick={(event) => {
-        const at = clickTap(event, gesture)
+        const at = clickTap(event, { pointerUp, key: keyAt })
         if (at !== null) register(at)
       }}
     >
