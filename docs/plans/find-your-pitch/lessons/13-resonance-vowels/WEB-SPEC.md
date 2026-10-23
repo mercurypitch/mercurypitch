@@ -853,15 +853,15 @@ and the four-words strip in the kit.
    (`lesson-06/page.test.ts:126-141`); the shared test makes a page test of this page's own
    unnecessary.
 4. First-paint ceilings for `learn/13.html` in `scripts/assert-first-paint-budgets.mjs`, one in its
-   JavaScript table and one in its stylesheet table, beside Lessons 5 and 6's (`:134`, `:152`;
-   `:229`, `:239`). Every build emits every lesson page, and the check fails a document with no
-   ceiling (`:521`, `:553`), so without them the Browser jobs fail before any spec runs. Each is the
-   page's measured first paint plus about a quarter, the tables' rule (`:47-58`, `:178-188`),
+   JavaScript table and one in its stylesheet table, beside Lessons 5 and 6's (`:143`, `:166`;
+   `:243`, `:253`). Every build emits every lesson page, and the check fails a document with no
+   ceiling (`:535`, `:567`), so without them the Browser jobs fail before any spec runs. Each is the
+   page's measured first paint plus about a quarter, the tables' rule (`:47-58`, `:192-202`),
    measured in `build:e2e`, where the check runs (`package.json:20`): a build of Lesson 6's page
-   alone weighed it about 8 KB lighter (`assert-first-paint-budgets.mjs:149-151`). The vowel model
+   alone weighed it about 8 KB lighter (`assert-first-paint-budgets.mjs:163-165`). The vowel model
    and the strip load at first paint, since the hero's still needs them; the listener and the hold
    reader arrive through a dynamic import when Start is pressed, as on Lesson 5
-   (`assert-first-paint-budgets.mjs:130-133`), and the ceiling holds only while that boundary does.
+   (`assert-first-paint-budgets.mjs:139-142`), and the ceiling holds only while that boundary does.
 5. `kit/sound.ts`, proposed: two options on `VoiceOptions` (`:30-46`), `partials` and
    `resonators` (Audio). `partials` gives a voice's source amplitudes whatever its `kind` (today
    `build` picks the wave from the kind, `:172-173`); `resonators`, a list of `{ hz, q }` built as

@@ -828,13 +828,13 @@ among them (PR #1149), and in Lesson 9's spec, beyond the parts Lessons 2 to 9 p
    Tavi. It shows no swell, no light and no breath mark, so it does not answer the cold
    open's predict.
 4. First-paint ceilings for `learn/14.html` in `scripts/assert-first-paint-budgets.mjs`, one in its
-   JavaScript table and one in its stylesheet table, beside Lessons 3 and 6's (`:103-126`,
-   `:144-152`; `:222-225`, `:235-239`). Every build emits every lesson page, and the check fails a
-   document with no ceiling (`:480-484`), so without them the Browser jobs fail before any spec
+   JavaScript table and one in its stylesheet table, beside Lessons 3 and 6's (`:103-135`,
+   `:158-166`; `:236-239`, `:249-253`). Every build emits every lesson page, and the check fails a
+   document with no ceiling (`:494-498`), so without them the Browser jobs fail before any spec
    runs, as Lesson 6's did on PR #1149. Each is the page's measured first paint plus about a
-   quarter, the tables' rule (`:47-58`, `:178-188`), measured in `build:e2e`, where the check runs
+   quarter, the tables' rule (`:47-58`, `:192-202`), measured in `build:e2e`, where the check runs
    (`package.json:20`), as Lesson 6's entry warns, since a build of one page alone weighs it lighter
-   (`assert-first-paint-budgets.mjs:149-151`). As on Lesson 3, the listener, the pitch detector and
+   (`assert-first-paint-budgets.mjs:163-165`). As on Lesson 3, the listener, the pitch detector and
    Voice Mirror's scorer arrive through a dynamic import when Start is pressed
    (`scripts/assert-first-paint-budgets.mjs:107-111`), and the record module and the app's recorder
    with them, so the ceiling holds only while that boundary does.
