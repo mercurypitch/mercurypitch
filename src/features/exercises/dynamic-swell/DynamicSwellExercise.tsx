@@ -142,8 +142,8 @@ const DynamicSwellExercise: Component<DynamicSwellExerciseProps> = (props) => {
       idlePlaceholder={
         <div class="exercise-idle-placeholder">
           <p>
-            Hold a note and swell your volume from soft to loud and back. Master
-            pitch stability under dynamic change.
+            Hold a note and swell your volume from soft to loud and back. Scored
+            on staying in tune and how wide the swell is.
           </p>
           <span class="idle-hint">
             4 rounds · 8-second holds · Varying pitches

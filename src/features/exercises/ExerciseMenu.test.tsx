@@ -13,7 +13,9 @@
 import { cleanup, render } from '@solidjs/testing-library'
 import { afterEach, describe, expect, it } from 'vitest'
 import { validateGuidedDynamicClaim } from '@/lib/guided-voice/claims'
+import { EXERCISE_HELP } from './exercise-help'
 import ExerciseMenu from './ExerciseMenu'
+import { EXERCISE_DYNAMIC_SWELL } from './types'
 
 afterEach(cleanup)
 
@@ -66,7 +68,9 @@ describe('the exercise cards', () => {
         'Hold a note and swell it soft to loud and back. Scored on staying in tune and how wide the swell is.',
       tags: ['Dynamics', 'Intonation'],
     })
-    const words = [swell.description, ...swell.tags]
+    // Its help says the same.
+    const help = EXERCISE_HELP[EXERCISE_DYNAMIC_SWELL]
+    const words = [swell.description, ...swell.tags, help.summary, ...help.body]
     expect(words.filter((text) => /breath|master/iu.test(text))).toEqual([])
     expect(
       words.flatMap(
