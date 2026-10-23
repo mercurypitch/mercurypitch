@@ -11,13 +11,13 @@
 // reads as its one note, "Easy" offers Again once, and after a second take
 // it is gone; "Uncomfortable" takes the band away; a tab hidden while the
 // microphone opens starts no take, lets it go, and counts it, the third
-// leaving Done for today, and the section scrolled away starts none either;
-// and storage holds nothing but `fyp-voice` and `fyp-l07-warmup`. The
-// listener is a double: its takes are synthetic frames, read by the real
-// siren reader.
+// leaving Done for today, and the section scrolled away starts none either,
+// though once it is back in view Start starts one; and storage holds
+// nothing but `fyp-voice` and `fyp-l07-warmup`. The listener is a double:
+// its takes are synthetic frames, read by the real siren reader.
 
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { scrollOutOfView } from '@/features/lessons/kit/browser-doubles.test-fixtures'
+import { scrollIntoViewAgain, scrollOutOfView, } from '@/features/lessons/kit/browser-doubles.test-fixtures'
 import type * as ListenModule from '@/features/lessons/kit/listen'
 import type { F0Frame } from '@/lib/mirror/metrics'
 import { DEFAULT_HOP_SEC } from '@/lib/mirror/metrics'
@@ -118,11 +118,16 @@ function hideTab(): void {
   document.dispatchEvent(new Event('visibilitychange'))
 }
 
-/** The section scrolled away as the microphone opens, and kept away past the page's 600 ms. */
-function leaveSection(): void {
+/** The page's Sing it section, which its leave watch observes. */
+function singSection(): Element {
   const section = document.querySelector('#sing')
   if (section === null) throw new Error('no #sing')
-  scrollOutOfView(section)
+  return section
+}
+
+/** The section scrolled away as the microphone opens, and kept away past the page's 600 ms. */
+function leaveSection(): void {
+  scrollOutOfView(singSection())
   vi.advanceTimersByTime(600)
 }
 
@@ -449,6 +454,25 @@ describe("Lesson 7's Sing it: the takes", () => {
     expect(status(p)).toBe('Stopped listening: the microphone is off.')
     expect(shown(p, '[data-panel="prepare"]')).toBe(true)
     expect(shown(p, '[data-sing="start"]')).toBe(true)
+  })
+
+  it('starts a take after Start once the section, away past its 600 ms, is back in view', async () => {
+    // Arrange
+    vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] })
+    const p = await load()
+    p.el('[data-comfort="sing"]').click()
+    p.el('[data-panel="voice"] [data-voice="lower"]').click()
+    await playMerc(p)
+    leaveSection()
+    scrollIntoViewAgain(singSection())
+
+    // Act
+    await sing(p, p.el('[data-sing="start"]'), steady(57, 3))
+
+    // Assert: one take, read and asked about, and the microphone let go once, as it ended
+    expect(takes.opened).toBe(1)
+    expect([takes.released, takes.releasedNow]).toEqual([1, 0])
+    expect(shown(p, '[data-panel="feel"]')).toBe(true)
   })
 
   it('counts a take ended by a hidden tab: after the third, no Start, and Done for today', async () => {

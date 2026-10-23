@@ -391,7 +391,9 @@ export function initSing(stills: RingStills): void {
   let left = false
   new IntersectionObserver((entries) => {
     window.clearTimeout(away)
-    if (entries.some((e) => !e.isIntersecting))
+    // only #sing is watched, so a report's last entry is where it stands now
+    const last = entries[entries.length - 1]
+    if (last !== undefined && !last.isIntersecting)
       away = window.setTimeout(() => {
         left = true
         leave(false)

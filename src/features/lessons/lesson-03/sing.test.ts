@@ -4,13 +4,14 @@
 //
 // The card's own tests load learn/03.html's body into jsdom and drive
 // initSing as the page does, and leave it as the microphone opens: the tab
-// hidden, or the section scrolled away. The listener is a double that
-// counts the takes it opens and the times the microphone is let go.
+// hidden, or the section scrolled away; and scroll the section away and back
+// before Start. The listener is a double that counts the takes it opens and
+// the times the microphone is let go.
 
 import { readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { scrollOutOfView } from '@/features/lessons/kit/browser-doubles.test-fixtures'
+import { scrollAwayAndBack, scrollIntoViewAgain, scrollOutOfView, } from '@/features/lessons/kit/browser-doubles.test-fixtures'
 import type * as ListenModule from '@/features/lessons/kit/listen'
 import type { TakeReading } from '@/features/lessons/kit/take'
 import { notesFor } from './sing'
@@ -159,7 +160,7 @@ describe("the chart's words after a take (REQ-GVC-085)", () => {
 // each case loads the page's modules afresh (vi.resetModules) and parses
 // learn/03.html into jsdom: up to 1.7 s measured on a loaded 4-core machine
 describe(
-  'Sing it left while the microphone opens: the tab hidden, the section scrolled away',
+  'Sing it left while the microphone opens, or away and back before Start',
   { timeout: 15_000 },
   () => {
     beforeEach(() => {
@@ -238,6 +239,33 @@ describe(
       expect(scrolled).not.toHaveBeenCalled()
       expect(el('#singLive').hidden).toBe(true)
       expect(el('[data-panel="prepare"]').hidden).toBe(false)
+    })
+
+    it('starts a take after Start once the section, away past its 600 ms, is back in view', async () => {
+      // Arrange
+      await loadCard()
+      leaveSection()
+      scrollIntoViewAgain(el('#sing'))
+
+      // Act
+      await press('[data-sing="start"]')
+
+      // Assert: one take, and the microphone let go once, as it ended
+      expect(mic.opened).toBe(1)
+      expect([mic.released, mic.releasedNow]).toEqual([1, 0])
+    })
+
+    it('reads a report by its last entry: the section away and back in one report is in view', async () => {
+      // Arrange
+      await loadCard()
+      scrollAwayAndBack(el('#sing'))
+      vi.advanceTimersByTime(600)
+
+      // Act
+      await press('[data-sing="start"]')
+
+      // Assert
+      expect(mic.opened).toBe(1)
     })
   },
 )
