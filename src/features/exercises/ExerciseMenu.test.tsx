@@ -7,6 +7,8 @@
 // longest hold (Lesson 3 and 5 WEB-SPECs, App content; REQ-GVC-070), no
 // breath-support promise (REQ-GVC-071), and only the direction Interval
 // Trainer plays (Lesson 6 FACTS 40 and 48: the second note is always above).
+// Dynamic Swell is held to the same rules so that a later lesson can link
+// it (Lesson 14 FACTS 58).
 
 import { cleanup, render } from '@solidjs/testing-library'
 import { afterEach, describe, expect, it } from 'vitest'
@@ -52,6 +54,26 @@ describe('the exercise cards', () => {
     expect(card('Interval Trainer').description).toBe(
       'Sing specific intervals above a reference note. Train your ear to internalize musical distances.',
     )
+  })
+
+  it('says what Dynamic Swell does and what its score measures, and no more', () => {
+    const swell = card('Dynamic Swell')
+    // Its score is how near the held note stays to the target, in cents,
+    // and the swell's width in decibels (swell-dynamics.ts); it measures
+    // nothing of the breath.
+    expect(swell).toEqual({
+      description:
+        'Hold a note and swell it soft to loud and back. Scored on staying in tune and how wide the swell is.',
+      tags: ['Dynamics', 'Intonation'],
+    })
+    const words = [swell.description, ...swell.tags]
+    expect(words.filter((text) => /breath|master/iu.test(text))).toEqual([])
+    expect(
+      words.flatMap(
+        (text) =>
+          validateGuidedDynamicClaim({ surface: 'finding', text }).violations,
+      ),
+    ).toEqual([])
   })
 
   it('makes no claim on the two hold cards that the claims rules forbid', () => {
