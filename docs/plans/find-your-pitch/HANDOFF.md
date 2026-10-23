@@ -87,7 +87,10 @@ are the mobile app's builds. The next `v` tag carries both pages.
    back as drafts. If the release carries the lesson answer events, the privacy notice on
    about.mercurypitch.com (another repository) first needs a line on them: what a lesson page sends,
    that it is anonymous, and that in the EEA, the UK and Switzerland it sends nothing without a
-   recorded yes (you asked for this reminder on 23 October 2026).
+   recorded yes (you asked for this reminder on 23 October 2026). It must also say what Cloudflare
+   keeps outside the database: its request logs hold each request's address and time for up to 7
+   days, and D1's point-in-time recovery can show the minute a row was added for up to 30
+   (`kit/telemetry.ts`).
 
 ### On the day
 
