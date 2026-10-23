@@ -50,7 +50,7 @@ headings").
    Sound toggle off by default, Pause animations with its reduced-motion lock). `initMasthead`
    takes any map of anchors, and the page's lesson and step deck for the lesson menu
    (`{ lesson: 4, deck }`), so dropping Watch needs no kit change (`kit/page-chrome.ts`).
-2. **Hero**: kicker; the hook question as the title; the meta as three chips (10 minutes; "After
+2. **Hero**: kicker; the hook question as the title; the meta as three chips (14 minutes; "After
    Lesson 2: Twelve notes", the prerequisite chip, a link to `/learn/02`; Sound on); the promise;
    the sound gate from LESSON.md, in the hero copy as Lesson 1's is; Merc and Tavi live on the
    floor line either side of the staircase, shown on C with do marked home, and its Play button
@@ -346,7 +346,7 @@ main's.
 - `kit/explorer.ts`, shared with Lesson 3 and worded as its WEB-SPEC words it ("New engineering,
   in one list", item 4), with this page's address: an explorer state for a lesson with a page and
   no film: its card offers "Read the lesson" (`/learn/04`) without "Watch the episode" and shows
-  "10 minutes" (`kit/explorer.ts` knows only done, ready and planned). One optional field on
+  "14 minutes" (`kit/explorer.ts` knows only done, ready and planned). One optional field on
   `Lesson` serves both lessons, added by whichever page ships first; the card's status line,
   "Ready · watch and read" on 18 October, then reads "Ready · read", and the phone list and the
   graph read the same field. On main the chip reads "Ready · read" unless the lesson's film is
@@ -382,8 +382,8 @@ main's.
   it is a still of the hero: the title over the staircase on C, do's house glyph lit.
 - The page's head, as Lesson 1's (`learn/01.html:9-60`):
   - title: "The major scale: do-re-mi and the home note | MercuryPitch";
-  - meta description: "Why does do-re-mi sound finished when it lands on do, and restless when
-    it stops on ti? A ten-minute lesson with live sound toys: the major scale's pattern of steps,
+  - meta description: "Why does do-re-mi sound finished when it lands on do, and restless when it
+    stops on ti? A fourteen-minute lesson with live sound toys: the major scale's pattern of steps,
     starting it on any note, naming its notes do to ti, and hearing ti lean towards home. With the
     Season 1 map.";
   - canonical and `og:url`: `https://mercurypitch.com/learn/04`; `og:image`: the share card, with

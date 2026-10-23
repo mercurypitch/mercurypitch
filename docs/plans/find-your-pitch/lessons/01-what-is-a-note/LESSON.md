@@ -12,7 +12,7 @@ Each step names its toy (the interactive visual it sits beside); the page spec i
 - Kicker: FIND YOUR PITCH · SEASON 1 · LESSON 01
 - Title (the hook question): **If 440 Hz shakes the air twice as fast as 220 Hz, why do musicians
   call them the same note?**
-- Meta: 10 minutes · no theory needed · sound on
+- Meta: 8 minutes · no theory needed · sound on
 - Promise: By the end you'll know what a note really is, why notes come back an octave higher,
   and how to read names like A4 and C4.
 

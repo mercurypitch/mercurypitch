@@ -14,7 +14,7 @@ the end.
 - Kicker: FIND YOUR PITCH · SEASON 1 · LESSON 04
 - Title (the hook question): **Why does do-re-mi sound finished when it lands on do, and restless
   when it stops on ti?**
-- Meta, as three chips: 10 minutes · After Lesson 2: Twelve notes (the prerequisite chip, a link
+- Meta, as three chips: 14 minutes · After Lesson 2: Twelve notes (the prerequisite chip, a link
   to Lesson 2's page) · Sound on
 - Promise: By the end you'll build a major scale from its pattern of steps, start it on any note,
   name its notes do to ti, and hear ti lean towards home.

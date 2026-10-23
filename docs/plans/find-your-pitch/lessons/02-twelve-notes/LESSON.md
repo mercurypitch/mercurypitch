@@ -17,7 +17,7 @@ lesson is answered in DECISIONS ("Written lesson, review 1 response").
 - Kicker: FIND YOUR PITCH · SEASON 1 · LESSON 02
 - Title (the hook question): **Musicians only use seven letters, so where do the other five notes
   come from?**
-- Meta, as three chips: 10 minutes · After Lesson 1: What is a note? (the prerequisite chip, a link
+- Meta, as three chips: 13 minutes · After Lesson 1: What is a note? (the prerequisite chip, a link
   to Lesson 1's page) · Sound on
 - Promise: By the end you'll find all twelve notes on a keyboard, tell a semitone from a tone by
   ear, know why one key has two names, and know what a cent is.
@@ -324,9 +324,9 @@ The page's head, its share text and its footer, exactly (WEB-SPEC, Footer; Lesso
 
 - `<title>`: Why twelve notes? Sharps, flats and semitones | MercuryPitch
 - Description: "Musicians only use seven letters, so where do the other five notes come from? A
-  ten-minute lesson with live sound toys: find the twelve notes on a keyboard, tell a semitone from
-  a tone by ear, see why one key has two names, and learn what a cent is. With the Season 1 map."
-  Once the film is published, its last sentence reads "With the episode and the Season 1 map."
+  thirteen-minute lesson with live sound toys: find the twelve notes on a keyboard, tell a semitone
+  from a tone by ear, see why one key has two names, and learn what a cent is. With the Season 1
+  map." Once the film is published, its last sentence reads "With the episode and the Season 1 map."
 - Canonical address: https://mercurypitch.com/learn/02
 - og:title and twitter:title: Twelve notes: Find Your Pitch, Lesson 2
 - og:description: "Musicians only use seven letters, so where do the other five notes come from?
