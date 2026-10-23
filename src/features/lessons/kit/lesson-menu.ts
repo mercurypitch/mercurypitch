@@ -109,6 +109,9 @@ const SEASON = 'Season 1'
 /** Where the button shows "Season 1 · " before its lesson (lesson-menu.css hides it at 1020 px and under). */
 const SEASON_SHOWN = '(min-width: 1021px)'
 
+/** The series' hub, every lesson on one page, which the menu's foot ends on. */
+const HUB = '/learn/'
+
 /** A row's right-hand text; this page's lesson counts the step showing. */
 function metaOf(v: LessonView, deck: DeckNow): string {
   if (v.state === 'here')
@@ -293,7 +296,7 @@ function seasonMarkup(season: string): string {
     : `${season.slice(0, at)}<span class="lm-size">${season.slice(at)}</span>`
 }
 
-/** The panel's contents: heading, season bar, sections (phones), where the viewer is, the lessons, the foot. */
+/** The panel's contents: heading, season bar, sections (phones), where the viewer is, the lessons, the foot and its last link, the hub. */
 export function menuMarkup(
   m: MenuModel,
   sections: readonly Section[],
@@ -328,7 +331,7 @@ export function menuMarkup(
     foot.practise === null
       ? ''
       : `<a class="btn sm" href="${esc(foot.practise)}" target="_blank" rel="noopener">Practise in MercuryPitch${icon('i-out')}<span class="sr">, opens in a new tab</span></a>`
-  return `<div class="lm-in"><div class="lm-head"><h2 id="lessonMenuTitle">Find Your Pitch <small>${seasonMarkup(m.season)}</small></h2><p class="lm-count">${m.count}</p><button class="btn icon lm-x" type="button" data-close aria-label="Close">${icon('i-x')}</button></div><div class="lm-bar" aria-hidden="true">${bars}</div>${onPage}<a class="lm-here" href="${m.here.href}" aria-label="${esc(m.here.label)}">${ring(m.here.fill)}<span class="lm-here-t"><b>${esc(m.here.title)}</b><span>${esc(m.here.line)}</span></span><span class="btn primary sm" aria-hidden="true">Continue</span></a><nav class="lm-season" aria-label="${SEASON} lessons">${arcs}</nav><div class="lm-foot">${map}${practise}<a class="btn sm" href="/">MercuryPitch home</a></div></div>`
+  return `<div class="lm-in"><div class="lm-head"><h2 id="lessonMenuTitle">Find Your Pitch <small>${seasonMarkup(m.season)}</small></h2><p class="lm-count">${m.count}</p><button class="btn icon lm-x" type="button" data-close aria-label="Close">${icon('i-x')}</button></div><div class="lm-bar" aria-hidden="true">${bars}</div>${onPage}<a class="lm-here" href="${m.here.href}" aria-label="${esc(m.here.label)}">${ring(m.here.fill)}<span class="lm-here-t"><b>${esc(m.here.title)}</b><span>${esc(m.here.line)}</span></span><span class="btn primary sm" aria-hidden="true">Continue</span></a><nav class="lm-season" aria-label="${SEASON} lessons">${arcs}</nav><div class="lm-foot">${map}${practise}<a class="btn sm" href="/">MercuryPitch home</a><a class="btn sm" href="${HUB}">All lessons</a></div></div>`
 }
 
 // ---------------------------------------------------------------- the menu on a page

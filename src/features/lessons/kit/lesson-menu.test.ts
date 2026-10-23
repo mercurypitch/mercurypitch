@@ -6,7 +6,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 import './browser-doubles.test-fixtures'
 import type * as Menu from './lesson-menu'
 import type { DeckNow, MenuModel, MenuRow } from './lesson-menu'
-import { menuModel } from './lesson-menu'
+import { menuMarkup, menuModel } from './lesson-menu'
 import { defaultPageState, seasonFor } from './publish'
 import { LESSONS } from './season'
 import type { StepDeck } from './step-deck'
@@ -167,6 +167,29 @@ describe('menuModel', () => {
       ['Hear it', 'Lessons 1 to 7', [1, 2, 3, 4, 5, 6, 7]],
       ['Shape it', 'Lessons 8 to 14', [8, 9, 10, 11, 12, 13, 14]],
     ])
+  })
+})
+
+describe('menuMarkup', () => {
+  it('ends its foot on the hub, every lesson on one page, styled as the links before it', () => {
+    // Arrange
+    const m = menuModel(LESSONS, [], {}, 2, DECK)
+
+    // Act
+    const html = menuMarkup(m, [], {
+      map: '#explorer',
+      practise: '/ear-lab?lesson=02',
+    })
+
+    // Assert
+    const foot = new DOMParser()
+      .parseFromString(html, 'text/html')
+      .querySelector('.lm-foot')
+    const links = Array.from(foot?.querySelectorAll('a') ?? [])
+    expect(links.at(-1)?.textContent).toBe('All lessons')
+    expect(links.at(-1)?.getAttribute('href')).toBe('/learn/')
+    expect(foot?.lastElementChild).toBe(links.at(-1))
+    expect(new Set(links.map((a) => a.className))).toEqual(new Set(['btn sm']))
   })
 })
 
