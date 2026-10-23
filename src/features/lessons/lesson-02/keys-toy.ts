@@ -11,6 +11,7 @@
 //                      selected white tile, writing the name it gives
 //   [data-both-ways]   C4 to C♯4, then D4 to D♭4 (FACTS 49), with the arrows
 //   [data-rare]        Show the rare ones (B♯, C♭, E♯, F♭)
+//   [data-names-lock]  what unlocks the three above, then what to do
 //   [data-names]       the page-wide Sharps · Flats · Both toggle
 //   [data-keys-pan]    on a phone narrower than 386 px, one key at a time
 // The page's examples play on it too (`play`): each note lights its key or
@@ -72,7 +73,10 @@ export interface KeysToy {
   ): Promise<void>
   /** Step 5's opening: the two arrows to the one key, silently, and its gold ring. */
   signature(): void
-  /** Enables Sharp, Flat and Show the rare ones (step 5's predict unlocks them). */
+  /**
+   * Enables Sharp, Flat and Show the rare ones, and hides the line that says
+   * they wait (step 5's predict unlocks them).
+   */
   unlock(): void
 }
 
@@ -337,6 +341,7 @@ export function mountKeysToy(root: HTMLElement, o: KeysToyOptions): KeysToy {
     unlock() {
       for (const b of [sharpBtn, flatBtn, rareBtn])
         if (b !== null) b.disabled = false
+      root.querySelector('[data-names-lock]')?.classList.add('is-open')
     },
   }
 }
