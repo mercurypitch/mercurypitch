@@ -12,7 +12,7 @@
 // registers nothing.
 
 import { acquireSharedAudioContext, holdSharedAudioContextInBackground, } from '@irchiinnuss/audio-io'
-import { claimNowPlaying, keepAwake, micStopsOtherApps, onAudioOutput, onMediaAction, onNowPlayingHoldsAudio, onPictureInPicture, onTvLyrics, pictureInPictureNeedsLyrics, readAudioOutput, readTvLyrics, setNowPlaying, setPictureInPictureAutoEnter, setPictureInPictureLyrics, } from '@irchiinnuss/mobile-runtime/platform'
+import { claimNowPlaying, keepAwake, micStopsOtherApps, onAudioOutput, onAudioRoute, onMediaAction, onNowPlayingHoldsAudio, onPictureInPicture, onTvLyrics, pictureInPictureNeedsLyrics, readAudioOutput, readTvLyrics, setNowPlaying, setPictureInPictureAutoEnter, setPictureInPictureLyrics, } from '@irchiinnuss/mobile-runtime/platform'
 import { standUnlockClipAside } from '@/lib/audio-unlock'
 import type { NativeDeviceApi } from '@/stores/native-shell-store'
 import { createTvStage } from './native-tv-stage'
@@ -79,10 +79,12 @@ export function createNativeDevice(): NativeDeviceApi {
     // A TV showing the same lyrics, on the phone whose window draws them.
     ...(pictureInPictureNeedsLyrics() ? { onTvLyrics: watchTvLyrics } : {}),
     // The volume and the route: read only, and none on a phone without
-    // the plugin (both answer null and nothing).
+    // the plugin (both answer null and nothing). The route alone as well,
+    // which the latency offset follows for as long as the app runs.
     audioOutput: {
       read: () => readAudioOutput(),
       watch: (handler) => onAudioOutput(handler),
+      watchRoute: (handler) => onAudioRoute(handler),
     },
   }
 }

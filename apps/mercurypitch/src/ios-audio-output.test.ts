@@ -63,6 +63,19 @@ describe('the plugin', () => {
     expect(JS_SIDE).toContain("'audioOutputChange'")
   })
 
+  // The latency offset follows the route for as long as the app runs, so a
+  // new route, and the app back in front, go out under an event of their own.
+  it('sends a new route under an event of its own, which the JavaScript side listens to', () => {
+    expect(PLUGIN).toMatch(
+      /if reason == "route" \|\| reason == "app in front" \{\s*notifyListeners\("audioRouteChange", data: data\)/u,
+    )
+    expect(PLUGIN).toContain('changed("route", extra)')
+    expect(PLUGIN).toContain(
+      '(UIApplication.didBecomeActiveNotification, "app in front")',
+    )
+    expect(JS_SIDE).toContain("'audioRouteChange'")
+  })
+
   it('hears the volume keys and the route', () => {
     expect(PLUGIN).toContain('.observe(\\.outputVolume')
     expect(PLUGIN).toContain('AVAudioSession.routeChangeNotification')
@@ -155,6 +168,15 @@ describe('the second volume, and what the session went through', () => {
       expect(decide).toContain('if needsLooking()')
       expect(decide).toContain('startLooking()')
       expect(decide).toContain('stopLooking()')
+    })
+
+    // The route's own listener stays for the whole session: it must not keep
+    // the slider looked at four times a second.
+    it('needs it for no page that hears the route alone', () => {
+      expect(fn('private func needsLooking()')).not.toBe('')
+      expect(fn('private func needsLooking()')).not.toContain(
+        'audioRouteChange',
+      )
     })
 
     it('decides again on every tick, so it stops on its own once nobody listens', () => {

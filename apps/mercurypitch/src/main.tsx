@@ -99,6 +99,7 @@ import { initDeviceTier } from '@/lib/device-tier'
 import { initGlobalErrorHandlers } from '@/lib/global-error-handler'
 import { KARAOKE_IMPORT } from '@/lib/native-build'
 import { abandonStoragePort, hydrateStoragePort, installStoragePort, } from '@/lib/storage-port'
+import { followAudioRoute } from '@/stores/audio-route-store'
 import { nativeDeviceApi, registerNativeDevice, } from '@/stores/native-shell-store'
 import { initTheme } from '@/stores/theme-store'
 import { createNativeDevice, standUnlockClipAsideForNowPlaying, } from './infrastructure/native-device'
@@ -142,6 +143,10 @@ installNativeHaptics()
 // that cannot import either (the Karaoke room). Before the first render, so
 // a room never mounts without them.
 registerNativeDevice(createNativeDevice())
+// Where the sound goes, for the latency offset: a TV on AirPlay or HDMI
+// plays the song well behind the phone's speaker, so its offset is its own
+// (audio-route-store.ts, mic-latency-store.ts).
+followAudioRoute(nativeDeviceApi()?.audioOutput)
 // The lock screen's song on iOS brings a silent element of its own; the
 // unlock clip stands aside while that element holds the playback session.
 standUnlockClipAsideForNowPlaying()

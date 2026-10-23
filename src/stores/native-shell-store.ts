@@ -324,12 +324,17 @@ export type NativeMediaAction =
   | NativeMediaSeek
   | NativeMediaSkip
 
-/** Where the phone's sound goes, by kind. */
+/**
+ * Where the phone's sound goes, by kind. AirPlay and HDMI take it to a TV or
+ * a receiver, which plays it with a delay of its own.
+ */
 export type NativeAudioRoute =
   | 'speaker'
   | 'receiver'
   | 'headphones'
   | 'bluetooth'
+  | 'airplay'
+  | 'hdmi'
   | 'other'
   | 'none'
 
@@ -364,6 +369,13 @@ export interface NativeAudioOutput {
   read: () => Promise<NativeAudioOutputReading | null>
   /** Returns the unsubscribe. */
   watch: (handler: (reading: NativeAudioOutputReading) => void) => () => void
+  /**
+   * Every change of route alone, for what follows the route for as long as
+   * the app runs (audio-route-store.ts). Unlike `watch`, a listener here
+   * keeps nothing running on the phone between changes. Returns the
+   * unsubscribe. Absent where the app cannot say.
+   */
+  watchRoute?: (handler: (route: NativeAudioRoute) => void) => () => void
 }
 
 export interface NativeDeviceApi {

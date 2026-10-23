@@ -3,23 +3,28 @@
 // ============================================================
 //
 // S6 7a: the Latency row says when its number was measured. The number is
-// the wizard's, kept per input; the phone keeps the day beside it, for the
-// same input, and forgets it when the offset is cleared.
+// the wizard's, kept per input, and per route on a TV over AirPlay; the
+// phone keeps the day beside it, under the same key, and forgets it when the
+// offset is cleared.
 
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { micManager } from '@/lib/mic-manager'
+import { setAudioRouteForTests } from '@/stores/audio-route-store'
 import { forgetLatencyMeasured, latencyMeasuredAt, measuredLine, recordLatencyMeasured, resetLatencyMeasured, } from './latency-measured'
 
 const DAY = new Date(2026, 8, 21, 12, 0, 0)
+const LATER = new Date(2026, 9, 22, 12, 0, 0)
 
 beforeEach(() => {
   localStorage.clear()
   resetLatencyMeasured()
+  setAudioRouteForTests(null)
   vi.spyOn(micManager, 'getPreferredDevice').mockReturnValue(null)
   vi.spyOn(micManager, 'getResolvedDevice').mockReturnValue('built-in')
 })
 
 afterEach(() => {
+  setAudioRouteForTests(null)
   vi.restoreAllMocks()
 })
 
@@ -52,6 +57,31 @@ describe('the day of the measurement', () => {
     forgetLatencyMeasured()
 
     expect(latencyMeasuredAt()).toBeNull()
+  })
+
+  it('is kept for a TV on AirPlay apart from the phone’s own outputs', () => {
+    recordLatencyMeasured(DAY)
+    setAudioRouteForTests('airplay')
+    const beforeRun = latencyMeasuredAt()
+
+    recordLatencyMeasured(LATER)
+
+    expect(beforeRun).toBeNull()
+    expect(latencyMeasuredAt()?.getTime()).toBe(LATER.getTime())
+    setAudioRouteForTests('speaker')
+    expect(latencyMeasuredAt()?.getTime()).toBe(DAY.getTime())
+  })
+
+  it('goes for the TV alone when the TV’s offset is cleared', () => {
+    recordLatencyMeasured(DAY)
+    setAudioRouteForTests('airplay')
+    recordLatencyMeasured(LATER)
+
+    forgetLatencyMeasured()
+
+    expect(latencyMeasuredAt()).toBeNull()
+    setAudioRouteForTests(null)
+    expect(latencyMeasuredAt()?.getTime()).toBe(DAY.getTime())
   })
 
   it('reads as the mock writes it', () => {

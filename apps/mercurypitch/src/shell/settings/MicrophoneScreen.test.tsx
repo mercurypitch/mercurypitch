@@ -15,7 +15,8 @@ import { createSignal } from 'solid-js'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { autoCalibrateSensitivity } from '@/features/mic-feedback/auto-calibrate'
 import { setSingMicGranted } from '@/features/sing-room/sing-room-settings'
-import { setMicLatencyByDevice } from '@/stores/mic-latency-store'
+import { setAudioRouteForTests } from '@/stores/audio-route-store'
+import { setMicLatencyByDevice, setMicLatencyByRoute, } from '@/stores/mic-latency-store'
 import { applySensitivityPreset } from '@/stores/settings-store'
 import { actAsIpad } from '@/tests/helpers/ipad-navigator'
 import type { RenderedShell } from '../render-for-test'
@@ -150,6 +151,8 @@ beforeEach(() => {
   resetLatencySheet()
   resetRunShell()
   setMicLatencyByDevice({})
+  setMicLatencyByRoute({})
+  setAudioRouteForTests(null)
   applySensitivityPreset('home')
   setSingMicGranted(true)
   holder.opensAs = 'live'
@@ -166,6 +169,8 @@ afterEach(() => {
   resetLatencySheet()
   resetRunShell()
   setMicLatencyByDevice({})
+  setMicLatencyByRoute({})
+  setAudioRouteForTests(null)
 })
 
 describe('the input and its level', () => {
@@ -256,6 +261,41 @@ describe('timing', () => {
     expect(row('mic-latency')?.textContent).toContain('18 ms')
     expect(row('mic-latency')?.textContent).toContain(
       'Measured 21 September 2026',
+    )
+    expect(
+      document.querySelector('[data-testid="latency-measure"]')?.textContent,
+    ).toBe('Measure latency again')
+  })
+
+  it('says a TV on AirPlay has no number of its own yet, and offers to measure it there', async () => {
+    setMicLatencyByDevice({ default: 18 })
+    recordLatencyMeasured(new Date(2026, 8, 21, 12))
+    setAudioRouteForTests('airplay')
+
+    await open()
+
+    expect(row('mic-latency')?.textContent).toContain('18 ms')
+    expect(row('mic-latency')?.textContent).toContain(
+      'Not yet measured on AirPlay',
+    )
+    expect(row('mic-latency')?.textContent).not.toContain('Measured')
+    expect(
+      document.querySelector('[data-testid="latency-measure"]')?.textContent,
+    ).toBe('Measure latency for AirPlay')
+  })
+
+  it("shows the TV's own number, with its own day, once measured there", async () => {
+    setMicLatencyByDevice({ default: 18 })
+    recordLatencyMeasured(new Date(2026, 8, 21, 12))
+    setAudioRouteForTests('airplay')
+    setMicLatencyByRoute({ 'airplay:default': 240 })
+    recordLatencyMeasured(new Date(2026, 9, 22, 12))
+
+    await open()
+
+    expect(row('mic-latency')?.textContent).toContain('240 ms')
+    expect(row('mic-latency')?.textContent).toContain(
+      'Measured 22 October 2026',
     )
     expect(
       document.querySelector('[data-testid="latency-measure"]')?.textContent,

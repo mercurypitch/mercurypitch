@@ -19,6 +19,12 @@
 //  - It needs speakers. On headphones the mic never hears the clicks and the
 //    run reports that rather than inventing a number.
 //
+// A TV on AirPlay or HDMI, and Bluetooth, play the sound with a delay of
+// their own, so a run there is kept for that route alone, and the number in
+// use there is the phone's own outputs' until one is (mic-latency-store.ts).
+// The wizard says which, and offers to clear only a number measured where
+// the sound goes now.
+//
 // The math is in @/lib/mic-latency; this file is capture, playback and copy.
 
 import type { JSX } from 'solid-js'
@@ -27,7 +33,7 @@ import type { LatencyResult } from '@/lib/mic-latency'
 import { detectOnsets, LATENCY_CLICK_COUNT, LATENCY_CLICK_INTERVAL_SEC, LATENCY_LEAD_IN_SEC, matchOnsetDeltas, summariseLatency, } from '@/lib/mic-latency'
 import { micManager } from '@/lib/mic-manager'
 import { buildClickSchedule } from '@/lib/tap-calibration'
-import { clearMicLatency, micLatencyMs, setMicLatencyMeasurement, } from '@/stores/mic-latency-store'
+import { clearMicLatency, currentLatencyRoute, LATENCY_ROUTE_NAMES, micLatencyMeasuredOnRoute, micLatencyMs, setMicLatencyMeasurement, } from '@/stores/mic-latency-store'
 import { showNotification } from '@/stores/notifications-store'
 import styles from './MicLatencyWizard.module.css'
 
@@ -103,6 +109,21 @@ export function MicLatencyWizard(props: MicLatencyWizardProps) {
   }
 
   onCleanup(teardown)
+
+  /** The route the number is kept for, by name, or null for the phone's own outputs. */
+  const routeName = (): string | null => {
+    const route = currentLatencyRoute()
+    return route === null ? null : LATENCY_ROUTE_NAMES[route]
+  }
+
+  /** What follows the number in use: for this input, and on which route. */
+  const currentWhere = (): string => {
+    const name = routeName()
+    if (name === null) return ' for this input.'
+    return micLatencyMeasuredOnRoute()
+      ? ` for this input on ${name}.`
+      : ` for this input, not yet measured on ${name}. A run now keeps one for ${name} alone.`
+  }
 
   /** Short sine burst with ramps at both ends — a bare start/stop pops. */
   const scheduleClick = (audio: AudioContext, at: number): void => {
@@ -210,8 +231,11 @@ export function MicLatencyWizard(props: MicLatencyWizardProps) {
     const measured = measurement?.latencyMs
     if (measured == null) return
     setMicLatencyMeasurement(measured, measurement?.spreadMs ?? null)
+    const name = routeName()
     showNotification(
-      `Microphone latency set to ${measured} ms for this input.`,
+      name === null
+        ? `Microphone latency set to ${measured} ms for this input.`
+        : `Microphone latency set to ${measured} ms for this input on ${name}.`,
       'success',
     )
     props.onApplied?.(measured)
@@ -219,8 +243,14 @@ export function MicLatencyWizard(props: MicLatencyWizardProps) {
   }
 
   const clear = (): void => {
+    const name = routeName()
     clearMicLatency()
-    showNotification('Microphone latency offset cleared.', 'info')
+    showNotification(
+      name === null
+        ? 'Microphone latency offset cleared.'
+        : `Microphone latency offset cleared for ${name}.`,
+      'info',
+    )
     props.onCleared?.()
     props.onClose()
   }
@@ -278,8 +308,8 @@ export function MicLatencyWizard(props: MicLatencyWizardProps) {
         </p>
         <Show when={micLatencyMs() > 0}>
           <p class={styles.current}>
-            Currently set to <strong>{micLatencyMs()} ms</strong> for this
-            input.
+            Currently set to <strong>{micLatencyMs()} ms</strong>
+            {currentWhere()}
           </p>
         </Show>
         <Show when={error() !== null}>
@@ -295,7 +325,7 @@ export function MicLatencyWizard(props: MicLatencyWizardProps) {
           >
             Start
           </button>
-          <Show when={micLatencyMs() > 0}>
+          <Show when={micLatencyMs() > 0 && micLatencyMeasuredOnRoute()}>
             <button type="button" class={styles.secondary} onClick={clear}>
               Clear offset
             </button>

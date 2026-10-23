@@ -31,6 +31,7 @@ const platform = vi.hoisted(() => ({
   micStopsOtherApps: vi.fn(() => false),
   readAudioOutput: vi.fn(async () => Promise.resolve(null as unknown)),
   onAudioOutput: vi.fn((_handler: (reading: unknown) => void) => vi.fn()),
+  onAudioRoute: vi.fn((_handler: (route: string) => void) => vi.fn()),
   readTvLyrics: vi.fn(async () =>
     Promise.resolve(
       null as { enabled: boolean; connected: boolean; showing: boolean } | null,
@@ -273,6 +274,20 @@ describe('the device a room reaches through the bridge', () => {
     unsubscribe?.()
 
     expect(handler).toHaveBeenCalledWith(reading)
+    expect(stop).toHaveBeenCalledTimes(1)
+  })
+
+  it('passes every change of route through on its own, with its unsubscribe', () => {
+    const stop = vi.fn()
+    platform.onAudioRoute.mockReturnValueOnce(stop)
+    const output = createNativeDevice().audioOutput
+    const handler = vi.fn()
+
+    const unsubscribe = output?.watchRoute?.(handler)
+    platform.onAudioRoute.mock.calls[0]?.[0]('airplay')
+    unsubscribe?.()
+
+    expect(handler).toHaveBeenCalledWith('airplay')
     expect(stop).toHaveBeenCalledTimes(1)
   })
 

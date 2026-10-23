@@ -19,6 +19,8 @@ export const ROUTE_NAMES: Readonly<Record<NativeAudioRoute, string>> = {
   receiver: 'Receiver (the earpiece)',
   headphones: 'Headphones',
   bluetooth: 'Bluetooth',
+  airplay: 'AirPlay',
+  hdmi: 'HDMI',
   other: 'Other',
   none: 'Nothing',
 }

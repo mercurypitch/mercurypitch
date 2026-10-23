@@ -15,6 +15,11 @@
 // belongs to the input, not to the permission (7c). While the wizard's sheet
 // is up the level check steps aside, so the wizard has the microphone and
 // the speaker to itself.
+//
+// On a TV over AirPlay or HDMI, or on Bluetooth, the latency is the route's
+// own once it is measured there (mic-latency-store.ts); until then the row
+// shows the number the route borrows from the phone's own outputs and says
+// it is not yet measured there, and the button offers to measure it.
 
 import { onAppState, openAppSettings, } from '@irchiinnuss/mobile-runtime/platform'
 import type { JSX } from 'solid-js'
@@ -25,7 +30,7 @@ import { MicLatencyWizard } from '@/features/mic-feedback/MicLatencyWizard'
 import { setSingMicGranted, singMicGranted, } from '@/features/sing-room/sing-room-settings'
 import { deviceNoun } from '@/lib/device-noun'
 import { describeSensitivityPosition } from '@/lib/sensitivity-scale'
-import { micLatencyMs } from '@/stores/mic-latency-store'
+import { currentLatencyRoute, LATENCY_ROUTE_NAMES, micLatencyMeasuredOnRoute, micLatencyMs, } from '@/stores/mic-latency-store'
 import { sensitivityPosition } from '@/stores/settings-store'
 import { ExternalIcon, MicIcon, TimerIcon, TuneIcon, WaveIcon } from '../icons'
 import { pushScreen } from '../run-shell-store'
@@ -125,10 +130,28 @@ function LevelCard(props: {
   )
 }
 
+/** A route with a delay of its own that has no number of its own yet, by name. */
+function routeStillToMeasure(): string | null {
+  const route = currentLatencyRoute()
+  return route === null || micLatencyMeasuredOnRoute()
+    ? null
+    : LATENCY_ROUTE_NAMES[route]
+}
+
+/** The measure button's words: again, or for a route still to measure. */
+function measureLabel(): string {
+  const route = routeStillToMeasure()
+  if (route !== null) return `Measure latency for ${route}`
+  return micLatencyMs() > 0 ? 'Measure latency again' : 'Measure latency'
+}
+
 function LatencyRow(): JSX.Element {
   const measured = (): string | undefined => {
+    if (micLatencyMs() === 0) return undefined
+    const route = routeStillToMeasure()
+    if (route !== null) return `Not yet measured on ${route}`
     const at = latencyMeasuredAt()
-    return micLatencyMs() > 0 && at !== null ? measuredLine(at) : undefined
+    return at === null ? undefined : measuredLine(at)
   }
   return (
     <SettingsRow
@@ -302,7 +325,7 @@ export function MicrophoneScreen(): JSX.Element {
           data-testid="latency-measure"
           onClick={openLatencySheet}
         >
-          {micLatencyMs() > 0 ? 'Measure latency again' : 'Measure latency'}
+          {measureLabel()}
         </button>
       </Show>
       <LatencySheet />

@@ -22,6 +22,7 @@ vi.mock('@capacitor/core', () => ({ Capacitor: capacitor, registerPlugin }))
 
 const {
   onAudioOutput,
+  onAudioRoute,
   readAudioOutput,
   resetAudioOutputForTests,
   toAudioOutputReading,
@@ -106,8 +107,11 @@ describe('toAudioOutputReading', () => {
     ['bluetooth-a2dp', 'bluetooth'],
     ['ble-headset', 'bluetooth'],
     ['builtin-speaker', 'speaker'],
-    ['AirPlay', 'other'],
-    ['hdmi', 'other'],
+    ['AirPlay', 'airplay'],
+    ['HDMI', 'hdmi'],
+    ['hdmi', 'hdmi'],
+    ['CarAudio', 'other'],
+    ['type-25', 'other'],
   ])('names a %s port %s', (type, route) => {
     expect(
       toAudioOutputReading({ outputVolume: 1, outputs: [{ type }] })?.route,
@@ -321,5 +325,65 @@ describe('onAudioOutput', () => {
     )
     stop()
     expect(remove).toHaveBeenCalled()
+  })
+})
+
+// A route change on its own, for what follows the route for as long as the
+// app runs: the latency offset. An iPhone sends it as AirPlay starts, and as
+// the app comes back to the front.
+describe('onAudioRoute', () => {
+  it('hears nothing on the web, and registers no plugin', () => {
+    const handler = vi.fn()
+    onAudioRoute(handler)()
+    expect(registerPlugin).not.toHaveBeenCalled()
+    expect(handler).not.toHaveBeenCalled()
+  })
+
+  it('hands on the route of each change, and stops when unsubscribed', async () => {
+    capacitor.isNativePlatform.mockReturnValue(true)
+    capacitor.getPlatform.mockReturnValue('ios')
+    let send: (event: Record<string, unknown>) => void = () => undefined
+    const remove = vi.fn(() => Promise.resolve())
+    plugin.addListener.mockImplementation(
+      (_name: string, listener: (event: Record<string, unknown>) => void) => {
+        send = listener
+        return Promise.resolve({ remove })
+      },
+    )
+    const handler = vi.fn()
+
+    const stop = onAudioRoute(handler)
+    await Promise.resolve()
+    await Promise.resolve()
+    send({
+      ...IOS_SPEAKER,
+      outputs: [{ type: 'AirPlay', name: 'Living Room TV' }],
+      reason: 'route',
+    })
+    send({ ...IOS_SPEAKER, reason: 'app in front' })
+    send({ reason: 'route' })
+    stop()
+
+    expect(plugin.addListener).toHaveBeenCalledWith(
+      'audioRouteChange',
+      expect.any(Function),
+    )
+    expect(handler.mock.calls).toEqual([['airplay'], ['speaker'], ['none']])
+    expect(remove).toHaveBeenCalled()
+  })
+
+  it('hears nothing from an app without the plugin', async () => {
+    capacitor.isNativePlatform.mockReturnValue(true)
+    plugin.addListener.mockRejectedValue(new Error('Unimplemented'))
+    const handler = vi.fn()
+
+    const stop = onAudioRoute(handler)
+    await Promise.resolve()
+    await Promise.resolve()
+
+    expect(() => {
+      stop()
+    }).not.toThrow()
+    expect(handler).not.toHaveBeenCalled()
   })
 })
