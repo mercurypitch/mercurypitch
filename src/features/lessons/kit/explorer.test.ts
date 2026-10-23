@@ -1,13 +1,21 @@
 // ============================================================
 // Lesson explorer tests — a card's links from any lesson's page
 // ============================================================
+//
+// And the explorer on the page's frame loop: Lesson 13's plate shakes its
+// sand every frame while motion plays; held still, it paints once for each
+// change, and a card with no plate asks for no frame at all.
 
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import './browser-doubles.test-fixtures'
+import type { Explorer } from './explorer'
 import { cardActions, createExplorer } from './explorer'
 import { filmSources } from './films'
+import type { HandLoop } from './frame-loop.test-fixtures'
+import { handLoop } from './frame-loop.test-fixtures'
 import type { LessonView } from './lesson-state'
 import { lessonViews } from './lesson-state'
+import type { Motion } from './motion-switch'
 import type { StepMarks } from './position'
 import { Positions } from './position'
 import { Done } from './progress'
@@ -82,6 +90,7 @@ const PLANNING =
   /Signature|deep link|\bslug\b|In production|\bplanned\b|durationSec|launch field|placeholder|still rendering|\b[TS]\d\d\b/i
 
 afterEach(() => {
+  vi.useRealTimers()
   vi.restoreAllMocks()
   localStorage.clear()
   document.body.textContent = ''
@@ -543,5 +552,119 @@ describe("Lesson 1's map on a page the worker served (page-state.ts)", () => {
     expect(openCard()?.querySelector('.hookq')?.textContent).toBe(
       LESSONS[3].hookAlts?.[0]?.text,
     )
+  })
+})
+
+describe("the explorer on the page's frame loop", () => {
+  /** The explorer on Lesson 1's page, its card on screen, settled; under reduced motion unless `reduce` is false. */
+  async function settledExplorer(reduce = true): Promise<
+    HandLoop & {
+      explorer: Explorer
+      motion: typeof Motion
+      /** Selects Lesson 13, whose card shows the plate, and counts the plate's paints. */
+      plate(): { canvas: HTMLCanvasElement; painted: () => number }
+    }
+  > {
+    const hand = await handLoop(reduce)
+    const { createExplorer: create } = await import('./explorer')
+    const { Motion: motion } = await import('./motion-switch')
+    explorerPage()
+    const explorer = create({ current: 1 })
+    const host = document.querySelector('#exCardHost')
+    if (host === null) throw new Error('no card host')
+    hand.see(host)
+    hand.settle()
+    return {
+      ...hand,
+      explorer,
+      motion,
+      plate() {
+        explorer.select(13, false)
+        const canvas = document.querySelector<HTMLCanvasElement>(
+          '#exCardHost .plate canvas',
+        )
+        if (canvas === null) throw new Error('no plate')
+        return { canvas, painted: hand.paints(canvas) }
+      },
+    }
+  }
+
+  it('asks for no frame on a card with no plate', async () => {
+    // Arrange + Act
+    const { asked } = await settledExplorer()
+
+    // Assert
+    expect(asked).toHaveLength(0)
+  })
+
+  it('paints a still plate once, then asks for none, and paints nothing in a frame another drawer asks for', async () => {
+    // Arrange: reduced motion holds the sand still
+    const { asked, loop, plate, settle } = await settledExplorer()
+
+    // Act
+    const { painted } = plate()
+    settle()
+    const first = painted()
+    loop.wake()
+    settle()
+
+    // Assert
+    expect(first).toBe(1)
+    expect(painted()).toBe(1)
+    expect(asked).toHaveLength(0)
+  })
+
+  it('paints a still plate once for each change: a new size, a new pixel ratio, a pixel ratio that changed with no word of it', async () => {
+    // Arrange
+    const { asked, loop, plate, resize, settle, zoom } = await settledExplorer()
+    const { canvas, painted } = plate()
+    settle()
+    const ratio = window.devicePixelRatio
+    const changes: (() => void)[] = [
+      () => resize(canvas),
+      zoom,
+      () => {
+        vi.stubGlobal('devicePixelRatio', 2)
+        loop.wake()
+      },
+    ]
+
+    // Act
+    const each = changes.map((change) => {
+      const before = painted()
+      change()
+      settle()
+      return painted() - before
+    })
+    vi.stubGlobal('devicePixelRatio', ratio)
+
+    // Assert
+    expect(each).toEqual([1, 1, 1])
+    expect(asked).toHaveLength(0)
+  })
+
+  it('shakes the sand every frame while motion plays, and rests once motion is paused or reduced, or the plate goes', async () => {
+    // Arrange: no reduced motion, and nothing paused
+    const { asked, explorer, motion, plate, reduceMotion, settle } =
+      await settledExplorer(false)
+    const { painted } = plate()
+
+    // Act
+    const shaking = settle(100)
+    const stillAsking = asked.length
+    motion.set(true)
+    const paused = settle()
+    motion.set(false)
+    const resumed = settle(100)
+    reduceMotion(true)
+    const reduced = settle()
+    explorer.select(2, false)
+    const gone = settle()
+
+    // Assert: a plate held still draws one last frame; another card has none
+    expect([shaking, stillAsking]).toEqual([100, 1])
+    expect([paused, resumed, reduced, gone]).toEqual([1, 100, 1, 1])
+    expect(painted()).toBe(202)
+    expect(asked).toHaveLength(0)
   })
 })
