@@ -138,7 +138,7 @@ transforms is one object on the page.
 - **Slide** (steps 3 to 5, and free play): Start lower and Start higher (a semitone each), a tap on
   a key of the strip, or, with a mouse or pen, a vertical drag on the staircase; starts run from C4
   to B4. On touch the stage keeps `touch-action: pan-y`, as Lesson 1's does
-  (`kit/lesson-stage.css:769-776`), so a vertical swipe still scrolls the page, and the buttons
+  (`kit/lesson-stage.css:780-787`), so a vertical swipe still scrolls the page, and the buttons
   and keys do the sliding. A slide is silent: Play up plays the scale from its new start. The
   staircase keeps its shape: only its height, its letters and the lit keys change. On desktop the
   stage shows all twenty-five rows from C4 to C6, so the climb is visible; on a phone it shows the
@@ -219,7 +219,7 @@ button (FACTS 61).
 - **Play Merc's scale** (do = D3) and **Play it an octave up** (do = D4) sing in Merc's "ooh". The
   path lights in step as each plays, while the breathing ring beside the guide shows the still of
   the Merc singing it, Merc for D3 and Tavi for D4, as Lesson 1's ring does
-  (`kit/sing.ts:251-257`).
+  (`kit/sing.ts:261-267`).
 - **Start the guide** is enabled once either scale has played (hear it first: playbook rule 16);
   until then it is `aria-disabled`, with the hint "Play Merc's scale first". It is the viewer's
   turn, so nothing of the app's drawing stays, as in Lesson 2 (its DECISIONS 68): the amber goes,
@@ -350,18 +350,18 @@ main's.
   `Lesson` serves both lessons, added by whichever page ships first; the card's status line,
   "Ready · watch and read" on 18 October, then reads "Ready · read", and the phone list and the
   graph read the same field. On main the chip reads "Ready · read" unless the lesson's film is
-  published (`kit/explorer.ts:150-157`).
+  published (`kit/explorer.ts:153-160`).
 - `kit/explorer.ts`, the current lesson: it selected Lesson 1 when it opened (`let sel = 1`).
-  Lesson 2's page added the option, `current` (`kit/explorer.ts:48-49`, `:259-263`), and this page
+  Lesson 2's page added the option, `current` (`kit/explorer.ts:51-52`, `:262-266`), and this page
   passes 4 (`lesson-04/main.ts:96`).
 - `kit/explorer.ts`, links between pages: a ready card's actions were the same-page anchors
   `#watch` and `#lesson`, right only for the page's own lesson, so a card for another ready lesson
   links to that lesson's page, `/learn/NN` (Lesson 2 lists the same gap). On main it does
-  (`cardActions`, `kit/explorer.ts:187-203`).
+  (`cardActions`, `kit/explorer.ts:190-206`).
 - `kit/season.ts`, Lesson 4's entry: the practice link, `href` `/pitch-training?lesson=04`,
   `addr` `mercurypitch.com/pitch-training`, `label` "Exercises" and `note` "then tap Scale
   Runner", which the card prints as "Exercises, then tap Scale Runner" after the address
-  (`practiseMarkup`, `kit/explorer.ts:174-179`). It keeps its `needs` until the slug ships. Its
+  (`practiseMarkup`, `kit/explorer.ts:177-182`). It keeps its `needs` until the slug ships. Its
   `sig` becomes "A staircase with two short steps that slides to start on any note.", since "two
   uneven steps" did not say which. On main the entry reads so (`kit/season.ts:224-243`), and the
   signature is the team's (`kit/team-notes.ts:36`).
@@ -375,7 +375,7 @@ main's.
   (`vite.config.ts:78-87`, `:147-149`, `:489`).
 - `src/lib/sw-runtime.ts`: `/learn/04` and `/learn/04.html` in `STANDALONE_DOCUMENT_PATHS`, as
   `/learn/01` is (`sw-runtime.ts:131-135`), so the service worker leaves the lesson alone. On main
-  they are there (`:138-139`).
+  they are there (`:144-145`).
 - `public/sitemap.xml` and `public/llms.txt` (its "Lessons" list): Lesson 4's entry, at its release.
   Held back as a draft (`kit/drafts.ts`), it is in neither; the site worker lists it while published.
 - `public/learn/lesson-04-og.jpg`: the share card, 1200 x 630. With no film to cut a frame from,

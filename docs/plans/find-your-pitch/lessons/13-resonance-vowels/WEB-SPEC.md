@@ -85,9 +85,9 @@ section's heading, and the line above it, are in LESSON.md ("Section headings").
 
 1. **Masthead**: Lesson 1's (wordmark, "Season 1 · Lesson 13", anchors Lesson, Sing and Explorer,
    the Sound toggle off by default, Pause animations with its reduced-motion lock), through
-   `initMasthead(sections, { lesson: 13, deck })` (`kit/page-chrome.ts:109-140`): before anything
+   `initMasthead(sections, { lesson: 13, deck })` (`kit/page-chrome.ts:119-150`): before anything
    else the page's links to other lessons follow the state it was served with (`followPageState`,
-   `:113`; `kit/page-state.ts:64-108`; Edge cases), then "Season 1 · Lesson 13" opens the lesson
+   `:123`; `kit/page-state.ts:64-108`; Edge cases), then "Season 1 · Lesson 13" opens the lesson
    menu (`kit/lesson-menu.ts`), and the page's steps are remembered as the viewer moves through
    them (`kit/position.ts`).
 2. **Hero**, laid out as Lesson 2's is (`learn/02.html:329-502`). The hero copy holds the kicker;
@@ -108,7 +108,7 @@ section's heading, and the line above it, are in LESSON.md ("Section headings").
    in landscape (1024 x 640) the stage and the choices too (CURIOSITY-MOMENTS § 3.1, "Above the
    fold", `docs/plans/find-your-pitch/CURIOSITY-MOMENTS.md:300-302`). Of the plan's levers, the
    recall's place is already used, since it follows the predict; the others are Merc and Tavi's size
-   (`--merc`, `kit/lesson-stage.css:193`) and the hook's length, and this hook, at 97 characters,
+   (`--merc`, `kit/lesson-stage.css:204`) and the hook's length, and this hook, at 97 characters,
    is a long one: on a phone the strip's gloss may go under the stage's fold before the choices
    do, and the gloss is the line to move below the choices if End to end 5 reports them off the
    first screen. `src/e2e/learn-cold-open-fold.spec.ts` holds the title on the first screen at its
@@ -204,7 +204,7 @@ the strip draws is the one `verify13.py` asserted (FACTS 40 to 42).
   (FACTS 42): the tallest bar, then the tallest bar above it that stands at least one segment over
   both its neighbours, each with the cap and the chevron (Look).
 - **Heights.** The figure is the kit's `.viz.tall`, 380 px beside the text, 340 px in the deck and
-  310 px at 420 px wide and under (`kit/lesson-stage.css:785-787`, `:1076-1078`, `:1087-1089`). The
+  310 px at 420 px wide and under (`kit/lesson-stage.css:796-798`, `:1087-1089`, `:1098-1100`). The
   plot takes 30 % of it, rounded, the bar numbers an 18 px row, and 28 px go to the insets, 12 above
   the plot, 8 between plot and strip and 8 under the numbers; the strip takes the rest: at 380 px a
   114 px plot and a 220 px strip, a segment every 18.3 px (16.3 lit); at 340 px, 102 and 192, every
@@ -239,7 +239,7 @@ the strip draws is the one `verify13.py` asserted (FACTS 40 to 42).
   after the 18th its next press starts again from the 1st alone. **All** plays all 18, 2.0 s, and
   lights all 18. No peak is capped in this state, since the source has none. Merc's line draws
   level through every play (the step's Notice). The readout at the plot's top left
-  (`.viz .readout`, `kit/lesson-stage.css:788-795`) reads "A3 · 220 Hz apart" and, under it,
+  (`.viz .readout`, `kit/lesson-stage.css:799-806`) reads "A3 · 220 Hz apart" and, under it,
   "harmonics: 3 of 18". The live region: "Harmonics 1 to 3 of A 3: 220, 440 and 660 hertz, 220
   hertz apart." (up to the 18th, "Harmonics 1 to 18 of A 3, up to 3,960 hertz, 220 hertz apart.");
   after All, "All 18 harmonics of A 3, 220 hertz apart. The line stayed level."
@@ -322,7 +322,7 @@ that file's unless it says otherwise.
   ‘ee’, then ‘ah’ has been heard to its end with sound on (`heard`, `:146-160`). The page's `play`
   claims the page's sound owner before it sounds and resolves `false` when another sound, or a
   stop, cuts it short (`:30-40`; Audio), as Lesson 6's cold open does
-  (`lesson-06/cold-open.ts:101-118`), and the kit then reveals nothing and leaves the hint as it
+  (`lesson-06/cold-open.ts:97-114`), and the kit then reveals nothing and leaves the hint as it
   was (`kit/predict.ts:184-188`). A play with sound off that draws its strip to its end resolves
   `true`, so the kit can say that nothing was heard (`:162-165`).
 - The hints. The page's own lock hint, in the markup, is LESSON.md's "Choose an answer to unlock
@@ -441,7 +441,7 @@ States:
    "Before you sing: how is your voice today?" (`learn/05.html:1326`), LESSON.md's head line,
    "Sore, hoarse or unwell today? Just listen along.", Lesson 3's list naming all six of
    REQ-GVC-020's conditions, and its two buttons (FACTS 45, 46), through the kit's `mountComfort`
-   (`kit/comfort.ts:146-154`).
+   (`kit/comfort.ts:158-166`).
 2. **Voice choice**, after either comfort answer: Lesson 3's two buttons with Merc and Tavi's stills
    (`aria-pressed`, at least 44 px), under LESSON.md's line in its two forms, "Choose a voice to
    sing with. If you chose one in an earlier lesson, pick it again:" with none stored and "Keep the
@@ -469,7 +469,7 @@ States:
    FACTS 57), LESSON.md's Listen · Breathe · Sing paragraph with the stop line, and **Start**, the
    only control that asks for the microphone (MASTER-PLAN § 4.2 item 2).
 7. **Hold**, ten seconds, in three phases shown on the ring as **Listen · Breathe · Sing**, as on
-   Lesson 5 (`kit/sing.ts:1-14`; FACTS 53). Listen: Merc sings the five vowels on the note, 2.0 s
+   Lesson 5 (`kit/sing.ts:1-17`; FACTS 53). Listen: Merc sings the five vowels on the note, 2.0 s
    each with 0.25 s glides, 10.0 s, the singing Merc in `sing` and the other listening; the strip
    lights and the names row lights with each vowel. Breathe: the ring breathes once over 2 s from
    the end of Merc's demonstration, with "Breathe in, low and quiet"; nothing counts down. Sing: the
@@ -498,11 +498,11 @@ States:
    in the band for 8.4 of 10 seconds, settled after 0.5 seconds", Lesson 5's form (REQ-GVC-085),
    and names no vowel.
 9. **How did that feel?**: Lesson 3's four answers (`aria-pressed`, at least 44 px, a 2 x 2 grid on
-   phones), through `mountFeelings` (`kit/comfort.ts:156-187`) with its default, an answer that
+   phones), through `mountFeelings` (`kit/comfort.ts:168-199`) with its default, an answer that
    locks, asked after each take with voice (FACTS 54): a press disables all four, and `reset()`
    frees them for the next take, so an answer cannot be changed once it has set what follows.
    Lesson 6's `changeable` option is left off. What each answer allows comes from `afterFeeling`
-   (`:48-76`) with the proposed `restAfterEffort` (needs 10).
+   (`:56-87`) with its `restAfterEffort`, proposed here and built by this PR (needs 10).
    - Easy or Workable: Merc `celebrate`s if the take was in the band for at least 80 % of its ten
      seconds, at most once a visit; rule 15's line, "If that felt tricky, good: that's learning."
      (`TRICKY_LINE`, `kit/take.ts:155`), if it was in the band for under half; then Lesson 5's
@@ -520,7 +520,7 @@ States:
      REQ-GVC-024, REQ-GVC-055).
    - Once "Effortful" or "Uncomfortable" has been answered, no further hold and the rest card stay
      so for the visit. The page keeps the ending in memory for the visit, never in storage
-     (`VisitEnding`, `kit/comfort.ts:84-102`).
+     (`VisitEnding`, `kit/comfort.ts:95-114`).
 10. **Done for today** ends the checkpoint with the status "Done for today." and leaves the Wrap's
     card as the answers so far have set it.
 11. **No microphone** (refused, no device, or the listener failed to load): listen-only mode with
@@ -743,7 +743,7 @@ paused off screen, and the still images when WebGL fails or would run on the CPU
   ```
 
   It is printed on every page's explorer card for Lesson 13 (`practiseMarkup`,
-  `kit/explorer.ts:174-179`); `needs` keeps "Long Note on vowels" for the team, and no card draws it
+  `kit/explorer.ts:177-182`); `needs` keeps "Long Note on vowels" for the team, and no card draws it
   (`kit/season.ts:27-31`). The link lands with the page, not before it: every lesson page's explorer
   prints it, and only this page says why the hold is suggested on vowels. Its hook is the entry's
   (`kit/season.ts:378`), and its tease is `kit/lesson-copy.ts`'s (`:118`), with no alternative hook,
@@ -774,12 +774,12 @@ and the four-words strip in the kit.
    `:232`), until the console sets it either way, and the Content Studio's Lessons page names that
    reason when asked to publish it (`src/features/admin/AdminLessonsPage.tsx:186-207`; FACTS 9).
    `/learn/13` and `/learn/13.html` go in `STANDALONE_DOCUMENT_PATHS` (`src/lib/sw-runtime.ts:93`,
-   the lessons `:131-156`), so the service worker never serves the app shell in the lesson's place;
-   `src/tests/lesson-pages.test.ts` checks a draft for them too (`:301-305`). On release: delete the
+   the lessons `:131-157`), so the service worker never serves the app shell in the lesson's place;
+   `src/tests/lesson-pages.test.ts` checks a draft for them too (`:339-343`). On release: delete the
    `drafts.ts` line, and add the page to `public/sitemap.xml` and to `public/llms.txt`'s Lessons
    list (`:66-80`); until then the site worker adds the page to both only while it is published
    (`src/lesson-gate.ts:22-24`). Then `src/tests/lesson-pages.test.ts` holds the page to the
-   release's checks (`:240-267`). `datePublished` is set in the commit that deletes the `drafts.ts`
+   release's checks (`:278-305`). `datePublished` is set in the commit that deletes the `drafts.ts`
    line or in one straight after the console publishes it, as the owner picks, and indexing is
    requested on the day the console publishes it, not at the release (`SEARCH.md` § 3.2, `:146-153`;
    § 12, `:400-424`).
@@ -787,16 +787,16 @@ and the four-words strip in the kit.
    `src/features/lessons/kit/lesson-copy.test.ts` reads every `learn/NN.html`, drafts included
    (`lesson-copy.test.ts:323-358`), and `src/tests/lesson-pages.test.ts` holds every lesson
    document, a draft's included, to its head, its share card, its structured data and its legal
-   links (`:122-237`), since a draft the console publishes goes live with the head it was built with
+   links (`:139-275`), since a draft the console publishes goes live with the head it was built with
    (`:13-18`). The hook's copies are the ones the site worker rewrites when the console picks
    another hook (`HOOK_COPIES`, `src/lesson-gate.ts:452-468`, and the structured data after it);
    only the meta description and the Article's description, which repeat each other, may shorten the
    hook, and every other copy carries it whole. As Lesson 2's head has them (`learn/02.html:3-145`):
    - the title, "Resonance and vowels: why ee and ah differ | MercuryPitch" (57 characters, under
-     the test's ceiling of 60, `lesson-pages.test.ts:137-138`), SEARCH.md § 4's draft for Lesson 13
+     the test's ceiling of 60, `lesson-pages.test.ts:154-155`), SEARCH.md § 4's draft for Lesson 13
      (`SEARCH.md:231`), in the query-led form the owner chose for Lessons 1 to 8 on 22 October 2026.
      Until #1187 the title had to hold the Article's headline, which `og:title` holds now
-     (`lesson-pages.test.ts:167-171`), and this spec kept the series' name for the owner,
+     (`lesson-pages.test.ts:184-188`), and this spec kept the series' name for the owner,
      "Resonance and vowels · Find Your Pitch | MercuryPitch" (53), Lessons 4 and 5's form then,
      since the full form, with "Lesson 13", runs to 63 (Decisions 1). "Why ee and ah differ" says
      only what the hook says, that the two differ, and nothing of what the peaks do. The worker
@@ -804,7 +804,7 @@ and the four-words strip in the kit.
      (`lesson-copy.test.ts:323-332`; Hero);
    - the meta description, "Same note, ‘ee’ or ‘ah’: what makes them sound different? A free
      lesson with sound toys: harmonics, resonance, and one note held through five vowels." (149
-     characters, inside the test's 80 to 160, `lesson-pages.test.ts:139-142`). It does not quote
+     characters, inside the test's 80 to 160, `lesson-pages.test.ts:156-159`). It does not quote
      the hook, so the worker leaves it as it is;
    - `og:title` and `twitter:title`, "Resonance and vowels: Find Your Pitch, Lesson 13" (48;
      `learn/02.html:26-29`, `:45-48`);
@@ -815,26 +815,26 @@ and the four-words strip in the kit.
      `learn/02.html:49-52`), so both descriptions the worker rewrites fit 80 to 160 (FACTS 1);
    - canonical and `og:url` `https://mercurypitch.com/learn/13`, `robots` "index, follow,
      max-image-preview:large" and `twitter:card` "summary_large_image"
-     (`lesson-pages.test.ts:126-144`);
+     (`lesson-pages.test.ts:143-161`);
    - `og:image` and `twitter:image`, `https://mercurypitch.com/learn/lesson-13-og.jpg` (item 3),
      with `og:image:width` 1200 and `og:image:height` 630, and as `og:image:alt` and
      `twitter:image:alt` "The title card: Find Your Pitch, Lesson 13, Resonance and vowels, above an
      amber pitch line held level over a strip of bars, two of them marked, between Merc and
-     Tavi." (`learn/02.html:34-43`, `:53-60`; `lesson-pages.test.ts:189-209`);
+     Tavi." (`learn/02.html:34-43`, `:53-60`; `lesson-pages.test.ts:227-247`);
    - the Article node, in the head's first `application/ld+json` script and as a single object,
      since the test reads `alternativeHeadline` there and checks it only when present
      (`lesson-copy.test.ts:338-346`, `:356`), and `lesson-pages.test.ts` asks for the Article
-     first (`:152-154`): `@id` `https://mercurypitch.com/learn/13#lesson` and
-     `url` `https://mercurypitch.com/learn/13` (`lesson-pages.test.ts:156-157`); the headline
+     first (`:169-171`): `@id` `https://mercurypitch.com/learn/13#lesson` and
+     `url` `https://mercurypitch.com/learn/13` (`lesson-pages.test.ts:173-174`); the headline
      "Resonance and vowels"; `alternativeHeadline`, the hook exactly; `description`, the meta
-     description's words, and `image`, the `og:image` URL (`:165-166`); `position: 13`,
+     description's words, and `image`, the `og:image` URL (`:182-183`); `position: 13`,
      `learningResourceType` "Lesson", `timeRequired` "PT16M", `inLanguage` "en-GB", free, the
-     series as `isPartOf`, and the organization as author and publisher (`:158-163`), as in Lesson
+     series as `isPartOf`, and the organization as author and publisher (`:175-180`), as in Lesson
      2's (`learn/02.html:69-111`). It has no `datePublished` yet, as the built pages leave it out
      until they go live (`learn/04.html:61-68`; item 1);
-   - a BreadcrumbList from the home page to the headline (`lesson-pages.test.ts:174-187`;
+   - a BreadcrumbList from the home page to the headline (`lesson-pages.test.ts:212-225`;
      `learn/02.html:112-136`); and the legal links, privacy, terms and imprint, in a `nav` labelled
-     "Legal" (`lesson-pages.test.ts:227-237`).
+     "Legal" (`lesson-pages.test.ts:265-275`).
 
    None of it answers the predict: the title, the hook and the descriptions say that ‘ee’ and ‘ah’
    differ on one note, never what the peaks do, and "Watch Merc's line, then make your guess." is
@@ -843,7 +843,7 @@ and the four-words strip in the kit.
 3. The share image the head names, `public/learn/lesson-13-og.jpg`, in the page's first commit:
    `src/tests/lesson-pages.test.ts` holds every lesson document, a draft's included, to its own
    card, a file in `public/` at the pixel size `og:image:width` and `og:image:height` give, with
-   both alts set and the same (`:189-209`), so the page fails the unit tests without it. It is 1200
+   both alts set and the same (`:227-247`), so the page fails the unit tests without it. It is 1200
    x 630, a baseline JPEG as Lessons 3, 4 and 5's cards are (`public/learn/lesson-04-og.jpg`), drawn
    with the page's own kit so that it looks like the page it opens: the title, Lesson 13 and the
    wordmark over the vowel figure's compact still, Merc's amber line level over ‘ee’'s strip with
@@ -896,7 +896,7 @@ and the four-words strip in the kit.
    passes its two-second note, unchanged.
 10. `kit/comfort.ts`: an option that sends "Effortful" to the rest card,
     `afterFeeling(f, { restAfterEffort: true })`, since `afterFeeling` leaves it to the coach
-    (`:58-67`) and Lessons 6, 7, 9, 10, 11 and 13 all choose it, as Lesson 11's spec proposes (its
+    (`:69-78`) and Lessons 6, 7, 9, 10, 11 and 13 all choose it, as Lesson 11's spec proposes (its
     needs 9). Built by this PR: Lessons 6, 7 and 8 pass it, and so will this page.
 11. `recallStepHref` in `kit/quiz.ts`, built: Lesson 8's page moved it there (`:134-136`), and
     Lessons 3, 4 and 5 take it from the kit (`lesson-03/quiz-questions.ts:24`,
@@ -1016,7 +1016,7 @@ What the page does where nothing above says:
 - **Lesson 13 published while Lesson 11 is held back**: nothing stops it, since the publish order is
   a rule for whoever uses the console (the intro), so the page follows the state it is served with.
   The site worker, and then the masthead's `followPageState`, make every link to a lesson that is
-  not live no link (`kit/page-state.ts:64-108`, called by `initMasthead`, `kit/page-chrome.ts:113`):
+  not live no link (`kit/page-state.ts:64-108`, called by `initMasthead`, `kit/page-chrome.ts:123`):
   the "After Lesson 11" chip stays as a plain chip, and any other link keeps its words. The kit's
   quiz does the same for the recall's step links, which keep their words, "Try Lesson 11, Step 2
   again", with no link (`kit/quiz.ts:199-202`). The recall still shows, and the explorer and the
@@ -1094,7 +1094,7 @@ parts:
     one published. Lesson 13's practise link carries `?lesson=13`, and `EDGES` holds [11, 13].
 14. The kit's new options: `afterFeeling('effortful', { restAfterEffort: true })` is today's answer
     with `rest: true`, and every other answer, with or without it, gives what `afterFeeling(f)`
-    gives today (`kit/comfort.ts:48-76`); `kit/sound.ts` without `partials` and `resonators` builds
+    gives today (`kit/comfort.ts:56-87`); `kit/sound.ts` without `partials` and `resonators` builds
     every voice as today, and with them takes the given source and filters; `recallStepHref` from
     the kit gives Lessons 3 and 5's recalls the addresses they gave before (done with Lesson 8's
     page, `kit/quiz.test.ts:317-322`); Lesson 5's hold runner from the kit plays its two-second note

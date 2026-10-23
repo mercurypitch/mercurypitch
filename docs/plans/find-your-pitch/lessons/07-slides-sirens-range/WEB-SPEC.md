@@ -179,7 +179,7 @@ live and free play.
   (`kit/tune-line.ts`), and the song must sit on the column's rows. Do runs from the
   column's bottom to 15 semitones up, so the tune never leaves the column, and opens on E3 (or E4)
   (FACTS 84). With a mouse or pen a vertical drag also slides it; on touch the stage keeps
-  `touch-action: pan-y`, as Lesson 1's does (`kit/lesson-stage.css:776`), so a swipe scrolls
+  `touch-action: pan-y`, as Lesson 1's does (`kit/lesson-stage.css:787`), so a swipe scrolls
   the page and the buttons slide. The beads carry no names. A readout names the move and the place,
   never the key: "Moved up 2 semitones: all of it in the lit middle", "reaching into the dimmed top
   end" or "reaching into the dimmed bottom end", so no note needs a key's spelling. From E3 the tune
@@ -643,10 +643,10 @@ Lessons 2 to 6 promote into the kit (Toys table). Read again on main at `31b7f53
    with its sign and in words (`sharpOf`, `signName`, `wordName`, `kit/notes.ts:157-197`).
 6. Lesson 3's kit parts are on main: `comfort.ts` with the feeling question, `listen.ts`, `take.ts`,
    the voice choice on `fyp-voice` (`voice-choice.ts`) and the warm-up cards (`warm-up.ts`); so is
-   Lesson 1's predict widget (`kit/predict.ts`). Still needed: Lesson 6's rest card after
-   "Effortful", which the kit leaves to the coach (`kit/comfort.ts:65-66`); Lesson 6's tune line;
-   and Lesson 1's words strip, promoted (`lesson-01/words.ts`). Built: the words strip, promoted to
-   `kit/words-strip.ts`, which Lesson 1's page now uses too.
+   Lesson 1's predict widget (`kit/predict.ts`). Still needed: Lesson 6's tune line. Built: Lesson
+   6's rest card after "Effortful", left to the coach by default (`kit/comfort.ts:76-77`), a kit
+   option since this PR (`restAfterEffort`); and Lesson 1's words strip, promoted
+   (`lesson-01/words.ts`) to `kit/words-strip.ts`, which Lesson 1's page now uses too.
 7. `kit/quiz.ts`: Lesson 2's three changes (Toys 5), on main.
 8. `kit/explorer.ts`: the text-only state and the current lesson (Explorer and season data). Both
    are on main.

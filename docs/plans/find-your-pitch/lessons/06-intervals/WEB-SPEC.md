@@ -223,7 +223,7 @@ and keeps its identity" (`research/brand-motion.md` § 3.3), and playbook rule 6
   notes and lights them (FACTS 64). In Steps 3 and 4 the gap numbers are labels in the same strip.
 - **Slide** (Step 3, and free play): Start lower and Start higher (a semitone each), or, with a
   mouse or pen, a vertical drag on the line; starts run from C4 to B4. On touch the stage keeps
-  `touch-action: pan-y`, as Lesson 1's does (`kit/lesson-stage.css:769-776`), so a swipe still
+  `touch-action: pan-y`, as Lesson 1's does (`kit/lesson-stage.css:780-787`), so a swipe still
   scrolls the page and the buttons do the sliding. A slide is the signature move: the line lifts
   (a soft shadow, the rows dim), travels, and settles on its new rows, where the letters change and
   the gap numbers glow gold once, unchanged. A faint chrome ghost of the line on C stays in place
@@ -382,7 +382,7 @@ States:
    **Play the first version** sings do = D3 (lower) or D4 (higher), and **Play the second
    version** three semitones higher, in Merc's "ooh", the path lighting in step while the ring
    beside the guide shows the still of the Merc singing, Merc for the lower voice and Tavi for the
-   higher, as Lesson 1's ring does (`kit/sing.ts:251-257`). **Move do** is two buttons, Lower
+   higher, as Lesson 1's ring does (`kit/sing.ts:261-267`). **Move do** is two buttons, Lower
    and Higher, a semitone each, up to four either way, moving both versions together (FACTS 57);
    the readout and the path's row labels follow. A press of any of Sing it's controls while a
    version or a sweep runs stops it, then acts: a version cut short has not been played, and a
@@ -551,7 +551,7 @@ and the line references are main's.
 - `kit/season.ts`, Lesson 6's entry (`:264-284`): `minutes: 17` (FACTS 3). The practice link
   stays Ear Lab's (`href` `/ear-lab?lesson=06`, `addr` `mercurypitch.com/ear-lab`, `label` "Ear
   Lab"), and its `note` stays "then tap Leap to name them", printed "Ear Lab, then tap Leap to name
-  them" by `practiseMarkup` (`kit/explorer.ts:174-179`): the `?lesson=` step-aside has shipped
+  them" by `practiseMarkup` (`kit/explorer.ts:177-182`): the `?lesson=` step-aside has shipped
   (FACTS 44a), so the note needs no first-visit form. Its `needs` stays until the slug ships. A
   second proposal only, for the director: link Interval Trainer instead, the Wrap's lead drill
   (`href` `/pitch-training?lesson=06`, `label` "Exercises", `note` "then tap Interval Trainer").
@@ -569,12 +569,12 @@ and the line references are main's.
   direction rule.
 - Lesson 3's comfort check (`kit/comfort.ts`), usable without its microphone steps, and its voice
   choice, reading and writing `fyp-voice`. On main: the check binds its two answers to the page's
-  own handlers (`kit/comfort.ts:139-154`), and the choice reads and writes `fyp-voice`
+  own handlers (`kit/comfort.ts:151-166`), and the choice reads and writes `fyp-voice`
   (`kit/voice-choice.ts:20`).
 - Lesson 4's scale guide, generalised to any number of rows and any path, with its count-in and
   Move do (Toys 6), and the feeling question as a kit part shared with Lesson 3. On main: the guide
-  takes any rows and any path, with its count-in (`mountGuide`, `kit/slide-guide.ts:378`), and the
-  feeling question is the kit's (`mountFeelings`, `kit/comfort.ts:162`); Move do is still Lesson
+  takes any rows and any path, with its count-in (`mountGuide`, `kit/slide-guide.ts:381`), and the
+  feeling question is the kit's (`mountFeelings`, `kit/comfort.ts:174`); Move do is still Lesson
   4's (`lesson-04/sing.ts`).
 - `vite.config.ts`: `/learn/06` served from `learn/06.html` in dev and preview, and `learn/06.html`
   as a build input. On main every `learn/NN.html` is both, with no entry of its own
