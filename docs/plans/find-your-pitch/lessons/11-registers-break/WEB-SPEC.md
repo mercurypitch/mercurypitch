@@ -673,7 +673,7 @@ paused off screen, and the still images when WebGL fails or would run on the CPU
     line, so a glide sung smoothly at the dot's pace earned nothing from the 30 % slide part, and a
     flip or a tracking error could earn it (FACTS 41). Proposed: measure the glide itself
     (`computeDirectness`, over each round's window). Done in this PR with `computeGlideCoverage`
-    instead (`vocal-analyzer.ts:537-587`): `computeDirectness` ranks a jump above a glide.
+    instead (`vocal-analyzer.ts:537-608`): `computeDirectness` ranks a jump above a glide.
   - optionally, the octave glide fitted so that it no longer starts on the preset's lowest note, for
     example by centring the glides two semitones higher before the shift into the preset
     (`use-siren-controller.ts:89-100`).
@@ -872,8 +872,8 @@ the others take it.
     down, for the end-to-end test that nothing marks a flip on the viewer's line
     (Tests, end to end 6).
 15. `kit/merc-duo.ts`: `ride` and `hum`, proposed, as Lesson 7's spec proposes (Merc and Tavi).
-16. App: the Siren exercise's help, menu card and slide score, the optional octave fitting, and the
-    `/exercises/siren` slug (Practice links).
+16. App: the Siren exercise's help and menu card, the optional octave fitting, and the
+    `/exercises/siren` slug (Practice links); its slide score was here too until this PR fixed it.
 
 Lesson 6's page (#1149) also brought kit parts this page does not use: the ear game
 (`kit/ear-game.ts`), the tune line (`kit/tune-line.ts`, with its layout, drawing and motion modules)
