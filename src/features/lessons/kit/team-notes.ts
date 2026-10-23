@@ -57,6 +57,10 @@ export const HOOK_NOTES: Readonly<Partial<Record<number, VariantNotes>>> = {
     tested:
       'The default from 20 October. Its "Tested, most could" all but answers the cold open\'s predict, which sits under the title.',
   },
+  5: {
+    steady:
+      'The default without "If that doesn\'t mean pushing", which leans towards the predict\'s answer, that pushing moves the note. Added on 22 October 2026; the owner picks which goes live.',
+  },
   7: {
     'two-questions':
       'The original hook: two questions in one, and its first half invites counting notes, which the lesson steers away from.',

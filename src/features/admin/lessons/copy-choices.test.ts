@@ -150,6 +150,24 @@ describe('copyChoicesFor', () => {
     expect(hooks.slice(1).every((choice) => choice.note !== '')).toBe(true)
   })
 
+  it("offers Lesson 5's neutral hook, `steady`, after its own, with the team's note", () => {
+    const L5 = seasonLesson((lesson) => lesson.n === 5, 'the number 5')
+
+    const { hooks } = copyChoicesFor(L5)
+
+    expect(hooks.map((choice) => [choice.id, choice.isDefault])).toEqual([
+      [DEFAULT_ID, true],
+      ['steady', false],
+    ])
+    expect(hooks[1]).toEqual({
+      id: 'steady',
+      text: 'Singers are told to “support” a long note. What keeps it steady?',
+      note: HOOK_NOTES[5]?.steady,
+      isDefault: false,
+    })
+    expect(hooks[1].note).not.toBe('')
+  })
+
   it("gives each tease alternative the team's note from the tease notes", () => {
     const { teases } = copyChoicesFor(TEASE_VARIED)
 

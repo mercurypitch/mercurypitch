@@ -132,8 +132,9 @@ are the mobile app's builds. The next `v` tag carries both pages.
    numbers. Its note did not say so; since this PR it does.
 6. **Lesson 5's hook** leans a little towards its predict's answer. "Singers are told to “support” a
    long note. If that doesn't mean pushing, what keeps it steady?" suggests that pushing is not what
-   keeps a note steady. It is your approved wording, so it stays; say if you want an alternative
-   drafted.
+   keeps a note steady. It is your approved wording, so it stays the default. Since this PR the
+   console also holds a neutral alternative, `steady`, "Singers are told to “support” a long note.
+   What keeps it steady?"; you pick which goes live.
 7. **Lesson 8 in the lesson menu.** On Lesson 1's own page, before Lesson 1 is done, the menu
    offers Lesson 8 as "up next" wherever Lesson 8 is live. The menu skips the page's own lesson,
    and Lesson 8 builds on no lesson: `EDGES` in `kit/season.ts` follows CURRICULUM § 3.3, which

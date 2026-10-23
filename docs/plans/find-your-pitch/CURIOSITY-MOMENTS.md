@@ -124,8 +124,8 @@ Each entry gives the **Opening** (the first 10 to 30 s; it plants the predict's 
 - **Opening (exists):** Orange "So if I push the air out harder, the note holds steadier?" Blue "Let's listen.
   Here's one note, sung easily."; then the predict [Settle, steadier than before] [Get louder and drift higher].
   Question: if pushing moves the note, what keeps it steady? On phones an open recall comes first (§3.1).
-- **Promise, changed on 22 October 2026:** "By the end you'll know what pushing does to a note", which said "why
-  pushing moves a note" and so told the predict under it which way the line goes (rule 4).
+- **Promise, changed on 22 October 2026:** "By the end you'll know what pushing does to a note"; "why pushing moves a
+  note" gave the predict away (rule 4). A neutral hook, `steady`, is the alternative (HANDOFF § 3).
 - **Visual:** the band chart and loudness strip (`kit/band-chart.ts`, `kit/loud.ts`, exist). **Payoff:** Step 1
   (pushing moves the note), Steps 2 to 4 (breathe in low, start easily), Step 5 and the hold in Sing it.
 - **Tease:** seven beads on faint semitone rows, "Twinkle"'s first line unnamed, and a dashed copy six rows up with

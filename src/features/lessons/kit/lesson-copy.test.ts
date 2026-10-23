@@ -266,17 +266,19 @@ describe("the season's copy", () => {
       expect(text).not.toMatch(/\bhundreds\b|\b(?:bright|dark|sad|happy)\b/i)
   })
 
-  it('keeps the current wording of every changed hook as an alternative', () => {
+  it("keeps the current wording of every changed hook as an alternative, and Lesson 5's neutral one", () => {
     // Act
     const kept = LESSONS.flatMap((L) =>
       (L.hookAlts ?? []).map((v) => [L.n, v.id] as const),
     )
 
     // Assert: the owner's answer to the plan's § 5 item 2, less the five
-    // the owner dropped on 22 October 2026 for breaking the copy rules
+    // the owner dropped on 22 October 2026 for breaking the copy rules,
+    // and with Lesson 5's `steady`, added that day
     expect(kept).toEqual([
       [3, 'figures'],
       [3, 'tested'],
+      [5, 'steady'],
       [7, 'two-questions'],
     ])
   })
