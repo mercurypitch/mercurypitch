@@ -203,7 +203,11 @@ Mirroring latency is not a fixed figure: capture, encode, transport, decode
 and display each add delay. Third-party measurements put Chromecast screen
 mirroring at 300-600 ms, AirPlay at 100-200 ms and Miracast at 20-100 ms.
 Treat these as indicative only; phase P0 measures them on the devices in the
-house.
+house. Sending the sound alone over AirPlay, without the picture, is another
+matter: receiver implementers report about 2 s of buffering there, which
+mirroring does not have, so karaoke over AirPlay means mirroring the screen
+(an assumption for P0 to confirm; `REQ-TV-096` names such a delay rather
+than keeping it).
 
 ### 2.4 What mirroring does to scoring, and why calibration fixes it
 
@@ -378,7 +382,7 @@ live-trail lag, setup friction, phone freedom and robustness.
 
 | Option | Effort (points)                      | UX  | UX notes                                                                                           | Maintenance                                                      | Platform reach                                                                                                                        | Store exposure                                  |
 | ------ | ------------------------------------ | --- | -------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------- |
-| **M**  | 16 (13-19), high conf.               | 2.6 | Phone layout on a big screen unless the landscape layout is chosen; phone tied up; lag by protocol | Low                                                              | Widest: any TV the phone can mirror to. iPhone to AirPlay; Pixel to Cast devices; Samsung to Miracast TVs; laptops by Chrome Cast tab | None beyond a normal iOS update                 |
+| **M**  | 19 (15-23), high conf.               | 2.6 | Phone layout on a big screen unless the landscape layout is chosen; phone tied up; lag by protocol | Low                                                              | Widest: any TV the phone can mirror to. iPhone to AirPlay; Pixel to Cast devices; Samsung to Miracast TVs; laptops by Chrome Cast tab | None beyond a normal iOS update                 |
 | **W**  | 66 (53-92), medium                   | 3.6 | Real TV layout; phone free; setup is "open the TV browser, scan"; browser engines vary             | Medium: frozen TV engines                                        | Any TV with a capable browser (Chromium 79+; streaming needs 94+)                                                                     | None                                            |
 | **G**  | 92 (74-129), medium; +26 on top of W | 4.2 | Installed app with a launcher tile, remote and media keys; USB mic or phone                        | Medium: one codebase, a TV shell, a TV review per TV release     | Google TV and Android TV sets and boxes; Fire OS later with the same build                                                            | Play TV review, isolated by the dedicated track |
 | **N**  | about 132 (92-264), low              | 4.4 | Best possible feel and audio path                                                                  | High: a second codebase, feature parity drift for ever           | Same as G                                                                                                                             | Play TV review                                  |
@@ -516,6 +520,7 @@ Confidence ranges on totals: high is -20% to +20%, medium -20% to +40%, low
 | 1.3 | Prompt to calibrate on a new route; spread guard falls back to lyrics only                                                                                                              | 3   | M     | 093                     |
 | 1.4 | Landscape big-screen sing layout under mirroring; native external-display detection; manual toggle on the web                                                                           | 3   | M     | 094                     |
 | 1.5 | Help: "Sing on your TV today"; the karaoke page FAQ                                                                                                                                     | 1   | H     | -                       |
+| 1.6 | The wizard hears a TV: each click held to its own threshold; replies up to 1 s, from clicks spaced so no reply passes for another's; a longer delay named, not kept                     | 3   | M     | 096                     |
 | 2.1 | Back keys (Escape, Android Back, webOS 461, Tizen 10009): close before navigating                                                                                                       | 2   | H     | 013                     |
 | 2.2 | Focus manager for the stage, the library and dialogs, independent of engine spatial navigation                                                                                          | 5   | M     | 010, 016, 017           |
 | 2.3 | The mixer's stylesheet as `.css?inline` (tv-apps-and-phone-mic.md 3.2)                                                                                                                  | 3   | M     | -                       |
@@ -555,17 +560,17 @@ Confidence ranges on totals: high is -20% to +20%, medium -20% to +40%, low
 | Phase                               | Points              |
 | ----------------------------------- | ------------------- |
 | P0 Device checks                    | 9                   |
-| P1 Mirroring done right             | 13                  |
+| P1 Mirroring done right             | 16                  |
 | P2 TV stage and browser foundations | 28 (+5 conditional) |
 | P3 Phone as the mic                 | 29                  |
 | P4 Google TV app                    | 26                  |
 | P5 iOS second screen                | 14                  |
 | P6 Google Cast                      | 34                  |
-| **All of P0-P6**                    | **153 (+5)**        |
+| **All of P0-P6**                    | **156 (+5)**        |
 
 | Option          | Made of                                   | Points | Marginal on top of earlier phases |
 | --------------- | ----------------------------------------- | ------ | --------------------------------- |
-| M               | 0.4, 0.5, P1                              | 16     | -                                 |
+| M               | 0.4, 0.5, P1                              | 19     | -                                 |
 | W               | P0, P2, P3                                | 66     | -                                 |
 | G               | P0, P2 without 2.7, P3, P4                | 92     | 26 (P4) after W                   |
 | G, USB mic only | P0, P2 without 2.7, P4                    | 63     | -                                 |
@@ -696,7 +701,7 @@ WebView version and `AudioDecoder` on the Google TV; peak memory of a
 streamed song on a 1 GB set; #8648 reproduced or ruled out (done: reproduced
 on the LG C2 before the fix and gone with mp-v0.8.40, 2026-10-22).
 
-### P1 Mirroring done right (13) **[in progress]**, parallel with P0
+### P1 Mirroring done right (16) **[in progress]**, parallel with P0
 
 1. The iOS role guard (1.1). **Done**: merged in PR #1157, confirmed on the
    LG C2 with mp-v0.8.40 (2026-10-22).
@@ -706,12 +711,22 @@ on the LG C2 before the fix and gone with mp-v0.8.40, 2026-10-22).
    own offsets per input; until measured, a route borrows the input's offset
    and claims no spread; a route-only plugin event keeps the route current
    without the volume polling; the wizard and the Microphone screen say
-   which number is in use. Then the route prompt with the spread guard
-   (1.3), whose tolerance the P0 latency spreads decide.
-3. The landscape layout under mirroring (1.4) and the help page (1.5), which
+   which number is in use.
+3. The wizard that hears a TV (1.6), **next**, since a route is no use to
+   calibrate while the wizard cannot measure it. In the 0.8.41 test it
+   found no number over AirPlay to the LG C2 (Test 5): the TV played the
+   first click loud and the rest quieter, and the wizard holds every click
+   to a quarter of the loudest. It also credits no reply later than 375 ms
+   and keeps no number over 500 ms, while the figures in section 2.3 put
+   AirPlay mirroring alone at 100-200 ms and Chromecast's at 300-600 ms,
+   before the phone's own input and the TV's sound processing; and its
+   evenly spaced clicks would let a round trip longer than their 0.75 s
+   spacing pass for a short one (`REQ-TV-096`). Then the route prompt with
+   the spread guard (1.3), whose tolerance the P0 latency spreads decide.
+4. The landscape layout under mirroring (1.4) and the help page (1.5), which
    says what P0 found works.
 
-Exit: `REQ-TV-090..095` pass; on an AirPlay TV a song scores within the same
+Exit: `REQ-TV-090..096` pass; on an AirPlay TV a song scores within the same
 tolerance as on the phone's speaker once calibrated; at Chromecast-like
 spread the app offers lyrics only and says why.
 
@@ -781,6 +796,16 @@ phone shows its controls; disconnecting leaves one web view.
    package name for Cast Connect (6.5). Nothing before P6 needs the account,
    and it is not what a TV app is published through: a Google TV app goes
    through the Play Console the phone app already uses (P4).
+   **Done 2026-10-23:** the account is open, with two Custom Receiver
+   applications: the dev one, ID `01A75FA0`, for test builds, at
+   `https://dev.mercurypitch.com/cast-receiver` (the dev site, which is
+   public, and the extensionless path, since `.html` redirects there); and
+   the production one, ID `D7DF12C6`, for store builds, whose URL is
+   `https://mercurypitch.com/cast-receiver` by the time it is published.
+   Recommended for both: audio-only devices off (karaoke needs a screen) and
+   relay casting off (songs and pitch frames need the same Wi-Fi). An
+   application ID is not a secret: every sender carries it. No test device
+   is registered yet; the LG C2 cannot receive Cast.
 1. Spike (6.0). Stop here if the stage cannot hold its frame cap or its memory
    on the older Chromecast with Google TV.
 2. Receiver (6.1), then senders (6.2-6.4), then Cast Connect into G (6.5) and
@@ -808,6 +833,7 @@ Not re-estimated here.
 | WebView focus traps                              | Remote stuck on a row                  | Own focus manager on stage and dialogs; a D-pad-only Playwright walk (2.2)     |
 | The TV's sound in the phone's mic                | False pitch in the singer's silences   | Clarity gate 0.2, then reference rejection; coach "hold the phone close" (3.6) |
 | Mirroring jitter                                 | Unscorable                             | Spread guard and lyrics-only mode (1.3)                                        |
+| The wizard on a TV route                         | No number, or a long delay read short  | Per-click thresholds, alias-proof spacing, a long delay named (1.6)            |
 | An upstream Capacitor fix for #8648              | Merge conflict on upgrade              | Pin the role guard with a test; re-check on each Capacitor bump                |
 | Community Cast plugins expose media loading only | No custom channel                      | Own small sender plugins (6.3, 6.4)                                            |
 | Guest or isolated Wi-Fi                          | No Cast or AirPlay discovery           | W's relay still carries the mic; a phone's song needs a direct route (2.8)     |
@@ -950,6 +976,12 @@ Flagged so they are checked, not trusted.
   `src/lib/portable/portable-audio.ts`,
   `src/db/services/portable-bundle-service.ts`, `src/db/entities.ts`
   (`SongAudioQuality`).
+- Device test, 2026-10-23: TestFlight mp-v0.8.41 (build 1321) on the
+  owner's iPhone 13 Pro (iOS 27) and the LG C2 (Test 5). Read for
+  `REQ-TV-096`: `src/lib/mic-latency.ts` (`detectOnsets`,
+  `matchOnsetDeltas`, `summariseLatency`) and
+  `src/features/mic-feedback/MicLatencyWizard.tsx` (the click schedule and
+  the recording's tail).
 - GitHub: issue #489; PRs #485, #488, #501, #890, #1108, #1157, #1175, #1179,
   #1181, #1182.
 
@@ -1013,7 +1045,10 @@ Checked on 2026-10-21.
   [Android features Google dropped (How-To Geek)](https://www.howtogeek.com/android-features-google-abandoned-and-why-were-worse-off-for-it/),
   [Mirroring latency by protocol (1001TVs, indicative)](https://www.1001tvs.com/how-to-play-mobile-games-on-tv-with-low-latency-2026-guide/),
   [Protocol comparison (MirrorScreen)](https://mirrorscreen.tv/reviews/miracast-vs-airplay-vs-chromecast-complete-technical-comparison),
-  [AirPlay 2 TV makers (SmartTVs.org)](https://smarttvs.org/how-to-mirror-your-android-phone-to-tv/).
+  [AirPlay 2 TV makers (SmartTVs.org)](https://smarttvs.org/how-to-mirror-your-android-phone-to-tv/),
+  [AirPlay sound alone buffered about 2 s, mirroring not (IINA #4540, checked 2026-10-23)](https://github.com/iina/iina/issues/4540),
+  [AirPlay mirroring about 150 ms (airplay2-rs notes, indicative, checked 2026-10-23)](https://github.com/jburnhams/airplay2-rs/blob/main/airplay-specs.md),
+  [iPhone mirroring sound 100-500 ms, mostly 200-300 (AirBeamTV, a vendor, indicative, checked 2026-10-23)](https://www.airbeam.tv/why-does-iphone-screen-mirroring-audio-lag-behind-video-content/).
 - Cloudflare:
   [Durable Objects pricing](https://developers.cloudflare.com/durable-objects/platform/pricing/),
   [Workers pricing](https://developers.cloudflare.com/workers/platform/pricing/),
