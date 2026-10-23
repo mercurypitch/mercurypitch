@@ -151,8 +151,8 @@ Every lesson document follows this, in addition to its WEB-SPEC.
   deletes the lesson's `drafts.ts` line or in a commit straight after the
   console publishes it; the owner picks which. `dateModified` when its
   teaching changes (the LEDGER says when).
-- **`author`.** A `Person` with a `url` once the page shows a byline (§3.3).
-  Until then, the organization.
+- **`author`.** MercuryPitch, the organization, as decided on 22 October 2026
+  (§13 item 2), and the vocal coach as reviewer on the voice lessons.
 - **Once the hub exists,** the breadcrumb gains its middle step (Home, then Find
   Your Pitch, then the lesson), and `isPartOf` gains the hub's URL.
 - **No `VideoObject` on a lesson page.** It belongs on the watch page (§6).
@@ -242,9 +242,9 @@ Notes on the table:
 
 ---
 
-## 5. The hub: `/learn/` **[open]**
+## 5. The hub: `/learn/` **[next]**
 
-A crawlable index of the series is worth building when Lesson 2 ships.
+Decided on 22 October 2026 (§13 item 3): a crawlable index of the series.
 
 - **Path.** `learn/index.html`, served at `/learn/`; Cloudflare's `html_handling`
   redirects `/learn` there. Add a dev rewrite beside the lessons'.

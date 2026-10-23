@@ -918,8 +918,8 @@ was built on.
     since this page is its fourth user after Lessons 3, 4 and 5, whose own copies became
     re-exports of the kit's (`lesson-03/quiz-questions.ts:23-24`, `lesson-04/quiz-questions.ts:31-32`,
     used at `lesson-04/main.ts:41` and `:64`, and `lesson-05/quiz-questions.ts:19-20`). #1149's
-    `recallHref` (`lesson-06/quiz-questions.ts:30-32`) opens a page, never a step, and stays its
-    own. The quiz needs nothing else: its prefix, slot and away links are on main
+    `recallHref` (`lesson-06/quiz-questions.ts:30-32` at `b7093a0a4`) opened a page, never a step;
+    this PR deleted it. The quiz needs nothing else: its prefix, slot and away links are on main
     (`kit/quiz.ts:73-97`, `:179-209`).
 11. `kit/comfort.ts` needs nothing: this page's `sing-flow.ts` picks the rest card after
     "Effortful", as Lesson 6's does, leaving the kit's default for the coach

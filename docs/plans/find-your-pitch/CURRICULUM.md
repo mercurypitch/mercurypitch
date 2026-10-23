@@ -449,23 +449,23 @@ The explorer draws lessons, not topics. Each lesson needs the lessons that teach
 prerequisites; an edge already implied through another prerequisite is left out, so the explorer
 draws the fewest lines. Every prerequisite is an earlier Season 1 lesson.
 
-| Lesson                            | Needs       | Because                                                                                                                             |
-| --------------------------------- | ----------- | ----------------------------------------------------------------------------------------------------------------------------------- |
-| 0 Find your pitch (trailer)       | none        | It previews every lesson                                                                                                            |
-| 1 What is a note?                 | none        | T01 and T02 start the graph                                                                                                         |
-| 2 Twelve notes                    | 1           | T03 needs T02                                                                                                                       |
-| 3 Match a note                    | 1           | S01 needs T01; S05 needs T02. Lesson 2 helps, but Lesson 3 explains the cent again                                                  |
-| 4 The major scale and home        | 2           | T09 needs T03                                                                                                                       |
-| 5 Breath and a steady note        | 2, 3        | S06 needs T04 (cents in 2, in tune in 3) and S05 (3); S02 needs S01 (3)                                                             |
-| 6 Intervals                       | 4           | T11 needs T10; T12 needs T09                                                                                                        |
-| 7 Slides, sirens and your range   | 3           | S07 and S08 need S05                                                                                                                |
-| 8 Beat, tempo and the backbeat    | 1           | T05 has no prerequisite, so rhythm starts fresh; it comes after Lesson 1 so the menu never offers it first (owner, 22 October 2026) |
-| 9 Landing a leap                  | 3, 6        | S09 needs S05 (3) and T09 (4, via 6); S10 needs T12 (6)                                                                             |
-| 10 Major and minor                | 6           | T14 needs T12 (6); T15a needs T09 (4, via 6)                                                                                        |
-| 11 Registers and the break        | 7           | S12 needs S07 and S08                                                                                                               |
-| 12 Chords and the four-chord song | 10          | T19 needs T14 (10); T20 needs T10 (4, via 10)                                                                                       |
-| 13 Resonance and vowels           | 11          | S13 needs S12 (11); T28 needs T01 (1, via 11)                                                                                       |
-| 14 Phrasing                       | 5, 8, 9, 12 | S16 needs S03 (5), T06 (8) and S09 (9); S17 needs S03 and S06 (5); T22 needs T20 (12)                                               |
+| Lesson                            | Needs       | Because                                                                               |
+| --------------------------------- | ----------- | ------------------------------------------------------------------------------------- |
+| 0 Find your pitch (trailer)       | none        | It previews every lesson                                                              |
+| 1 What is a note?                 | none        | T01 and T02 start the graph                                                           |
+| 2 Twelve notes                    | 1           | T03 needs T02                                                                         |
+| 3 Match a note                    | 1           | S01 needs T01; S05 needs T02. Lesson 2 helps, but Lesson 3 explains the cent again    |
+| 4 The major scale and home        | 2           | T09 needs T03                                                                         |
+| 5 Breath and a steady note        | 2, 3        | S06 needs T04 (cents in 2, in tune in 3) and S05 (3); S02 needs S01 (3)               |
+| 6 Intervals                       | 4           | T11 needs T10; T12 needs T09                                                          |
+| 7 Slides, sirens and your range   | 3           | S07 and S08 need S05                                                                  |
+| 8 Beat, tempo and the backbeat    | 1           | T05 needs nothing; after 1 so the menu never offers it first (owner, 22 October 2026) |
+| 9 Landing a leap                  | 3, 6        | S09 needs S05 (3) and T09 (4, via 6); S10 needs T12 (6)                               |
+| 10 Major and minor                | 6           | T14 needs T12 (6); T15a needs T09 (4, via 6)                                          |
+| 11 Registers and the break        | 7           | S12 needs S07 and S08                                                                 |
+| 12 Chords and the four-chord song | 10          | T19 needs T14 (10); T20 needs T10 (4, via 10)                                         |
+| 13 Resonance and vowels           | 11          | S13 needs S12 (11); T28 needs T01 (1, via 11)                                         |
+| 14 Phrasing                       | 5, 8, 9, 12 | S16 needs S03 (5), T06 (8) and S09 (9); S17 needs S03 and S06 (5); T22 needs T20 (12) |
 
 A lesson's recall check asks about an earlier lesson. When that lesson is a prerequisite (Lesson 4
 recalls Lesson 2), the recall shows to everyone: it checks what the lesson builds on and links

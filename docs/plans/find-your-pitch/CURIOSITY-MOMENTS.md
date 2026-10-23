@@ -39,7 +39,7 @@ lesson's question, posed the same way. The facts and animations added later go i
    §8). A wonder fact is about the idea and never precedes the question (pedagogy-research §1.7; rule 12).
 8. **House rules bind.** Orange asks deep questions or makes sincere guesses; blue never mocks; no labels (rule 21).
    "Sore, hoarse or unwell today? Just listen along." comes before holds, sirens and range; never reward range or
-   length. Voice lessons (3, 5, 7, 9, 11, 13, 14) need the coach; orange has no name or pronoun (MASTER-PLAN §12 item
+   length. Voice lessons (3, 5, 7, 9, 11, 13, 14) need the coach; orange is Tavi, she (23 October, MASTER-PLAN §12 item
    1). Sound is synthesised (MASTER-PLAN D9); tunes are public domain (L6 FACTS 28 to 30) or written for the lesson.
 
 **Later facts and animations** go in the reveal card (one fact about the idea, with its FACTS ID), the Go deeper
@@ -381,8 +381,8 @@ row, the previous lesson's next-lesson line and FACTS row, `next-card.test.ts` w
 
 New tracking means counts-only events from the lesson pages (which load no first-party analytics today), new names in
 `src/lib/funnel-event-catalog.ts`, and the owner's call on consent and the privacy notice: the banner covers only GA4
-and Ads, and MASTER-PLAN §12 item 11's lesson-telemetry exception is only proposed. Build none of it before then. Quiz
-answers stay on the device. Baseline: Lessons 1 and 2 as uploaded; a YouTube re-cut is a new video (Phase 4).
+and Ads, and MASTER-PLAN §12 item 11's lesson-telemetry exception is decided (22 October 2026): anonymous, with consent.
+Quiz answers stay on the device. Baseline: Lessons 1 and 2 as uploaded; a YouTube re-cut is a new video (Phase 4).
 
 ## 5. Open questions for the owner
 
@@ -392,8 +392,7 @@ teases to be easy to change, with a switch for them in the admin console. So:
 - items 1, 3 and 4 follow their recommendations;
 - for item 2, each proposed hook goes live with the current wording kept as an alternative. The admin console
   switches between them, and a hook that needs a source keeps its current wording until FACTS.md has one;
-- item 5 was answered on 22 October 2026: yes, anonymous per-question events with consent
-  (MASTER-PLAN § 12 item 11), built in their own PR; until then the lesson pages send none.
+- item 5, answered on 22 October 2026: yes, anonymous events with consent, in their own PR (MASTER-PLAN § 12 item 11).
 
 The questions as they were put:
 

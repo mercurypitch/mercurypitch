@@ -109,11 +109,11 @@ heading, and the line above it, are in LESSON.md ("Section headings").
    (CURIOSITY-MOMENTS § 3.1, "Above the fold",
    `docs/plans/find-your-pitch/CURIOSITY-MOMENTS.md:300-302`). Of the plan's levers, the recall's
    place is already used, since it follows the predict; the others are the Mercs' size (`--merc`,
-   `kit/lesson-stage.css:193`) and the hook's length, 58 characters, and 90 with `compelling` (1).
-   The seven chips take five rows on a 360 px phone, one a row for each lesson chip
-   (3), so this page's stage starts lower than Lesson 9's; `src/e2e/learn-cold-open-fold.spec.ts`
-   holds the title on the first screen at its seven sizes and reports where the first control and
-   the choices sit (End to end 5).
+   `kit/lesson-stage.css:193`) and the hook's length, 58 characters (1), since the owner dropped its
+   alternative, `compelling`, on 22 October 2026. The seven chips take five rows on a 360 px phone,
+   one a row for each lesson chip (3), so this page's stage starts lower than Lesson 9's;
+   `src/e2e/learn-cold-open-fold.spec.ts` holds the title on the first screen at its seven sizes and
+   reports where the first control and the choices sit (End to end 5).
 3. **Recall from Lesson 5**: Lesson 5's questions 2 and 4, for everyone (Toys 5).
 4. **Four words you'll meet**: phrase, legato, swell and cadence, each with its definition, a small
    figure and a play button (Toys 3).
