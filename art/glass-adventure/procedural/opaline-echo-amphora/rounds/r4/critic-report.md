@@ -33,10 +33,10 @@
    | Concept      | 10.4          | 10.4    |
    | Shipped file | 9.1           | 6.6-8.5 |
    | Candidate    | 3.6           | 5.4-5.8 |
-
    - At runtime there are no lavender or warm patches. a* peaks at +0.4 (concept +8) and b* at +3 (concept +12).
    - Cause: the body's vertex colours (glass_shell COLOR_0) span only sRGB 0.73-0.93.
-   - Fix: keep the average and push each patch about 2.5 times further from it. Push saturation, not lightness; round 3 found that lightening goes flat white. Include lavender (a* +6 to +8), cream (b* +8 to +12) and mint (a* -12) patches. Target a spread of at least 9 in three_preview.
+   - Fix: keep the average and push each patch about 2.5 times further from it. Push saturation, not lightness; round 3 found that lightening goes flat white. Include lavender (a* +6 to +8), cream (b* +8 to +12) and mint (a\* -12) patches. Target a spread of at least 9 in three_preview.
+
 2. **The wave register reads as a mint stripe** (z 0.26-0.42).
    - At runtime the band's saturation is 0.24 against the body's 0.16. In the concept the band matches the body (0.12 against 0.11) and is only 15% mint.
    - `waves_color` is a flat (166,203,169) with no wave bodies painted in, so only the gold line survives at gameplay size.

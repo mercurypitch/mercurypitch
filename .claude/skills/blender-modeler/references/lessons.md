@@ -3,6 +3,11 @@
 This skill's own mistakes, newest first. Read before a first build; add a line
 whenever a gate or a critic catches something a rule should have prevented.
 
+- **Format every file a round adds.** CI's changed-file check runs Prettier on
+  everything the branch touches, receipts included: two of the amphora's critic
+  reports, copied in as written, failed the PR gate. Run `pnpm run pr:validate`
+  (with `PR_PREPARE_BASE` set to the merge base) before pushing a round.
+
 - **Read the fracture's volume, not just its closure.** A cut piece of the urn's
   shoulder came back inside out (normals recalculated inward on a folded shape),
   so its volume read negative and the fracture dropped it as a sliver: 656 cm3
