@@ -375,6 +375,34 @@ describe('createExplorer', () => {
     expect(linked.said).not.toContain('card below')
     expect(status()).toBe(`Lesson 3, ${LESSONS[3].title}: card below`)
   })
+
+  it('empties the status line when a link follows a card the list opened', () => {
+    // Arrange: Lesson 3 from the list, so the line names its card
+    vi.spyOn(window, 'scrollBy').mockImplementation(() => undefined)
+    explorerPage()
+    createExplorer({ current: 1 })
+    const status = (): string =>
+      document.getElementById('exStatus')?.textContent ?? ''
+    const row = document.querySelector<HTMLButtonElement>(
+      '#exList [data-n="3"] .it',
+    )
+    row?.focus()
+    row?.click()
+    const listed = status()
+    const link = document.querySelector<HTMLButtonElement>(
+      '#exCardHost [data-go]',
+    )
+    link?.focus()
+
+    // Act: a Builds on or Opens link on Lesson 3's card
+    link?.click()
+
+    // Assert
+    expect(listed).toBe(`Lesson 3, ${LESSONS[3].title}: card below`)
+    expect(link).not.toBeNull()
+    expect(document.activeElement?.tagName).toBe('H3')
+    expect(status()).toBe('')
+  })
 })
 
 // A page no worker served (`pnpm dev`, the e2e bundle) carries no state, so

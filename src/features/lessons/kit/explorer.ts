@@ -522,10 +522,12 @@ export function createExplorer(opts: ExplorerOptions): Explorer {
     refresh()
     const L = lessons[n]
     // a Builds on or Opens link puts focus on the new card's title, which
-    // says the lesson itself, and the card is no longer below
+    // says the lesson itself, and the card is no longer below; the line
+    // empties so an earlier card's words are not left in it
     const onTitle = document.activeElement?.matches('.ex-card h3') === true
-    if (!onTitle)
-      status.textContent = `${L.n === 0 ? 'Trailer' : `Lesson ${L.n}`}, ${L.title}: card below`
+    status.textContent = onTitle
+      ? ''
+      : `${L.n === 0 ? 'Trailer' : `Lesson ${L.n}`}, ${L.title}: card below`
     if (scrollCard) reveal()
   }
 
