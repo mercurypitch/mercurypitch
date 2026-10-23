@@ -159,9 +159,10 @@ are the mobile app's builds. The next `v` tag carries both pages.
    MASTER-PLAN § 12 and SEARCH.md § 13 now record: orange Merc's name and pronouns (item 1; Decided
    (23 October 2026): Tavi, she, where 22 October left her unnamed); whether the lessons are free
    (3); 1080p or 4K (4); where the lessons live in the app (6); orange Merc as an app palette (10);
-   the lesson telemetry exception (11). SEARCH.md § 13: titles, bylines, the hub, watch pages,
-   articles, the lesson licence and aggregate data. CURIOSITY-MOMENTS § 5 item 5, whether lesson
-   pages send events at all: yes, with consent, built in their own PR (MASTER-PLAN § 12 item 11).
+   the lesson telemetry exception (11). SEARCH.md § 13: titles, bylines, the hub (built in this PR),
+   watch pages, articles, the lesson licence and aggregate data. CURIOSITY-MOMENTS § 5 item 5,
+   whether lesson pages send events at all: yes, with consent, built in their own PR (MASTER-PLAN
+   § 12 item 11).
 10. **Run times past the budget.** Most lessons run past MASTER-PLAN § 4.2's 8 to 12 minutes of
     active time. Decided (22 October 2026): none is trimmed to fit. Decided (23 October 2026): every
     lesson's chip states its real run time, Lessons 1, 2 and 4 included, whose chips read an
