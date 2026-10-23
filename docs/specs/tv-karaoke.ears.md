@@ -18,8 +18,9 @@ adds `104` and `105`, behind a test build's switch. Updated 2026-10-23:
 `034` is added and `115` corrected. The server keeps no songs, so a TV that
 plays a song gets it from the phone (plan section 2.9). Updated again after
 the merges: `092` and `095` shipped in TestFlight mp-v0.8.41 (PR #1175), the
-POC-3 slices are merged (PR #1179), and `035` is added (the quality bar,
-plan section 2.10).
+POC-3 slices are merged (PR #1179), `035` is added (the quality bar,
+plan section 2.10), and `096` (the wizard that hears a TV, from the 0.8.41
+device test).
 
 **Source (existing):** `src/lib/device-tier.ts` — device class and tier;
 `src/styles/performance-mode.css` — the TV focus ring;
@@ -568,7 +569,7 @@ paywall _(planned)_.
 
 ---
 
-## Mirroring — `REQ-TV-090..095`
+## Mirroring — `REQ-TV-090..096`
 
 ### REQ-TV-090 — An external display mirrors by default **[done]**
 
@@ -635,6 +636,35 @@ one route leaves another route's day alone.
 _Tests:_ `src/tests/mic-latency-wizard.test.tsx` ("the route the number is
 for"); `apps/mercurypitch/src/shell/settings/MicrophoneScreen.test.tsx` and
 `latency-measured.test.ts` (the AirPlay cases).
+
+### REQ-TV-096 — The wizard hears a TV **[next]**
+
+**WHEN** the latency wizard runs on a route with a delay of its own (AirPlay,
+HDMI, Bluetooth), it shall hear a click whose reply comes back quieter than
+the first click's, shall keep a round trip of up to 1,000 ms, and shall not
+take one click's reply for another's at any round trip up to 2.5 s.
+**IF** the round trip is longer than 1,000 ms, **THEN** it shall keep no
+number, say how late the TV plays the sound, and suggest mirroring the
+screen rather than sending the sound alone. **IF** fewer clicks than it
+needs are heard, **THEN** it shall say so, and suggest holding the phone
+nearer the TV's speaker and turning off the TV's automatic volume.
+_Why:_ in the 0.8.41 test the wizard found no number over AirPlay to the
+LG C2. The TV played the first click loud and the rest quieter, and the
+wizard holds every click to a quarter of the loudest (`detectOnsets`,
+`src/lib/mic-latency.ts`). It also credits no reply later than half the
+0.75 s between clicks (`MAX_ONSET_DISTANCE_SEC`) and keeps no number over
+500 ms (`MAX_LATENCY_MS`), while mirroring alone is reported at up to
+600 ms (Chromecast's; AirPlay's at 100-200 ms); and with evenly spaced
+clicks a round trip longer than the spacing can pass for a short one (1.6 s
+reads as 100 ms). Each of these was
+reproduced on synthetic recordings against the current functions
+(2026-10-23): replies at a fifth of the first click's level match 1 click
+of 8; a steady 450 ms matches none; 1.6 s gives 100 ms from 6 clicks with
+a 1 ms spread. Sending the sound alone over AirPlay is reported at about
+2 s (plan section 2.3; to confirm in P0).
+_Tests:_ `src/lib/mic-latency.test.ts` _(planned cases: replies that fade
+after the first; a reply at 600 ms; a reply at 1.6 s, which keeps no number
+and is not read as 100 ms)_.
 
 ---
 
