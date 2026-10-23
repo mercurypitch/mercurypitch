@@ -1,6 +1,7 @@
 // Game device diagnostics — reuse the portable console and record bounded graphics lifecycle clues.
 import { Capacitor, registerPlugin } from '@capacitor/core'
 import { getGraphicsCanvasDiagnostic } from '@irchiinnuss/glass-game/graphics-diagnostics'
+import { onAppState } from '@irchiinnuss/mobile-runtime/platform'
 import { setupPortableConsole } from '../../../../src/components/PortableConsole'
 import { flushPortableConsole } from '../../../../src/lib/portable-console'
 import { BUILD } from '../build-info'
@@ -37,6 +38,22 @@ export function setupGameDiagnostics(): void {
     pixelRatio: window.devicePixelRatio,
   })
   flushPortableConsole()
+  // This module is installed once for the portable app lifetime. Native
+  // inactivity can arrive without a document visibility change on iOS.
+  let previousAppState: 'active' | 'background' | undefined
+  onAppState((state) => {
+    if (state === previousAppState) return
+    previousAppState = state
+    console.info('[Beside Cue app state]', {
+      bootId: boot.id,
+      state,
+      at: Date.now(),
+      elapsedMs: Math.round(performance.now()),
+      visibility: document.visibilityState,
+      focused: document.hasFocus(),
+    })
+    flushPortableConsole()
+  })
   if (Capacitor.getPlatform() === 'ios') {
     const native = registerPlugin<{ read(): Promise<unknown> }>(
       'BesideCueGameDiagnostics',

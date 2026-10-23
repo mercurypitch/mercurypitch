@@ -21,6 +21,7 @@ import type { AdventureVoiceSnapshot } from './adventure-voice-challenge'
 import { createAdventureVoiceChallenge } from './adventure-voice-challenge'
 import { createAdventureVoicePresentation } from './adventure-voice-presentation'
 import { createArchiveHushAdventure } from './archive-hush-adventure'
+import { reportArchiveOutcome } from './archive-outcome-diagnostics'
 import { AUTOMATIC_SINGING_PREFERENCE, createAutomaticVoiceEngagement, createAutomaticVoicePreparationOwner, readAutomaticSingingPreference, serializeAutomaticSingingPreference, } from './automatic-voice-engagement'
 import { createCameraComfortPreference } from './camera-comfort-preference'
 import { handleCameraModeShortcut, toggleCameraMode } from './camera-mode'
@@ -239,6 +240,12 @@ export function useAdventure(
         // Save earned progress before either completion presentation releases voice.
         host.saveProgress(game.saveProgress())
         voiceChallenge.completeBreak()
+        if (
+          import.meta.env.VITE_PORTABLE_CONSOLE === 'true' &&
+          isArchive &&
+          event.type === 'awaken'
+        )
+          reportArchiveOutcome(level.id, event.id, 'awaken')
         const item = level.breakables.find(
           (candidate) => candidate.id === event.id,
         )

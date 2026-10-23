@@ -49,3 +49,35 @@ export function createGraphicsRenderer(
     else Object.defineProperty(canvas, 'addEventListener', ownAdd)
   }
 }
+
+/** Roll back a partially constructed graphics scene while retaining its original error. */
+export function constructGraphicsScene<T>(
+  construct: (
+    registerCleanup: (cleanup: () => void) => void,
+    registerFailureReporter: (report: () => void) => void,
+  ) => T,
+): T {
+  const partialCleanups: (() => void)[] = []
+  let reportConstructionFailure: (() => void) | undefined
+  try {
+    return construct(
+      (cleanup) => partialCleanups.push(cleanup),
+      (report) => {
+        reportConstructionFailure = report
+      },
+    )
+  } catch (error) {
+    try {
+      reportConstructionFailure?.()
+    } catch {
+      // Diagnostics must not interrupt rollback or replace the construction error.
+    }
+    for (const cleanup of partialCleanups.reverse())
+      try {
+        cleanup()
+      } catch {
+        // Preserve the construction failure that explains why loading stopped.
+      }
+    throw error
+  }
+}

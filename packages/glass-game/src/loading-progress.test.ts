@@ -1,8 +1,42 @@
 // Loading progress ledger regression — fixed plans advance once and freeze on failure.
 
-import { expect, it, vi } from 'vitest'
+import { afterEach, expect, it, vi } from 'vitest'
 import type { LoadingProgress } from './loading-progress'
 import { createLoadingProgressLedger } from './loading-progress'
+
+afterEach(() => vi.unstubAllEnvs())
+
+it('copies bounded pending logical IDs without changing progress or exposing mutable state', () => {
+  vi.stubEnv('VITE_PORTABLE_CONSOLE', 'true')
+  const ids = Array.from(
+    { length: 12 },
+    (_, index) => `asset:${index}:${'x'.repeat(110)}`,
+  )
+  const onProgress = vi.fn()
+  const ledger = createLoadingProgressLedger(ids, onProgress)
+  ledger.complete(ids[0]!)
+  const snapshot = ledger.diagnosticSnapshot!()
+  expect(snapshot).toEqual({
+    completedUnits: 1,
+    totalUnits: 12,
+    lastCompletedUnitId: ids[0]!.slice(0, 100),
+    pendingCount: 11,
+    pendingUnitIds: ids.slice(1, 9).map((id) => id.slice(0, 100)),
+  })
+  snapshot.pendingUnitIds.length = 0
+  expect(ledger.diagnosticSnapshot!().pendingUnitIds).toHaveLength(8)
+  ledger.freeze()
+  ledger.complete(ids[1]!)
+  expect(ledger.diagnosticSnapshot!().completedUnits).toBe(1)
+  expect(onProgress).toHaveBeenCalledTimes(2)
+})
+
+it('does not create diagnostic state outside the portable build', () => {
+  vi.stubEnv('VITE_PORTABLE_CONSOLE', '')
+  expect(
+    createLoadingProgressLedger(['merc:model'], vi.fn()).diagnosticSnapshot,
+  ).toBeUndefined()
+})
 
 it('deduplicates the fixed plan and completes each logical unit once', () => {
   const updates: LoadingProgress[] = []

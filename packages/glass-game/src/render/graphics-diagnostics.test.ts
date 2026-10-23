@@ -1,7 +1,31 @@
 // Graphics diagnostics tests — original failures stay actionable and arbitrary payloads stay private.
-import { expect, it, vi } from 'vitest'
+import { afterEach, expect, it, vi } from 'vitest'
 import type { GraphicsCanvasSnapshot } from './graphics-diagnostics'
-import { getGraphicsCanvasDiagnostic, registerGraphicsCanvas, reportGraphicsFailure, retireGraphicsCanvas, updateGraphicsCanvasSnapshot, } from './graphics-diagnostics'
+import { getActiveGraphicsCanvasCounts, getGraphicsCanvasDiagnostic, registerGraphicsCanvas, reportGraphicsFailure, retireGraphicsCanvas, updateGraphicsCanvasSnapshot, } from './graphics-diagnostics'
+
+afterEach(() => vi.unstubAllEnvs())
+
+it('balances portable owner counts on re-registration and duplicate retirement', () => {
+  vi.stubEnv('VITE_PORTABLE_CONSOLE', 'true')
+  const baseline = getActiveGraphicsCanvasCounts()
+  const canvas = {} as HTMLCanvasElement
+  const preview = {} as HTMLCanvasElement
+  registerGraphicsCanvas(canvas, 'gallery')
+  registerGraphicsCanvas(preview, 'loading-merc')
+  expect(getActiveGraphicsCanvasCounts()).toMatchObject({
+    gallery: baseline.gallery + 1,
+    'loading-merc': baseline['loading-merc'] + 1,
+  })
+  registerGraphicsCanvas(canvas, 'gallery')
+  expect(getActiveGraphicsCanvasCounts().gallery).toBe(baseline.gallery + 1)
+  registerGraphicsCanvas(canvas, 'museum-map')
+  expect(getActiveGraphicsCanvasCounts().gallery).toBe(baseline.gallery)
+  retireGraphicsCanvas(canvas)
+  retireGraphicsCanvas(canvas)
+  retireGraphicsCanvas(preview)
+  retireGraphicsCanvas(preview)
+  expect(getActiveGraphicsCanvasCounts()).toEqual(baseline)
+})
 
 it('keeps renderer ownership distinct across retry and retirement snapshots', () => {
   const first = {} as HTMLCanvasElement
