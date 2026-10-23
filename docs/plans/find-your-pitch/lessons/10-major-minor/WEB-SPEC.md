@@ -957,8 +957,8 @@ CURIOSITY-MOMENTS § 5 item 2.
   (`src/features/admin/lessons/LessonControls.tsx:447-451`, at `d59c00ad6`). The page's markup keeps
   the default; picked, the alternative goes wherever the hook goes. The site worker writes it into
   the page's h1, into every head copy that quotes the hook, the description and the og and twitter
-  descriptions, and into the structured data (`src/lesson-gate.ts:14-21`, `:454-470`, `:486-497`,
-  `:571-604`). Its list takes in the og and twitter titles too, but they carry the lesson's name,
+  descriptions, and into the structured data (`src/lesson-gate.ts:14-21`, `:452-468`, `:484-495`,
+  `:569-602`). Its list takes in the og and twitter titles too, but they carry the lesson's name,
   not the hook (What the kit and the app still need, item 12), and it never touches `<title>`. The
   page state gives it to every list (`src/features/lessons/kit/publish.ts:22-25`; `seasonFor`,
   `src/features/lessons/kit/publish.ts:108-124`): Lesson 10's card in every lesson page's explorer

@@ -94,7 +94,7 @@ section's heading, and the line above it, are in LESSON.md ("Section headings").
    the hook question as the title, `<h1 class="hook" id="hook">` in its default wording, the
    season's, which `src/features/lessons/kit/lesson-copy.test.ts` holds every page's title to
    (`:323-332`), with no variant's team note anywhere in the markup (`src/features/lessons/kit/team-notes.test.ts:85-101`; FACTS 1), and the
-   element the site worker writes a picked hook into (`src/lesson-gate.ts:592-593`); the meta as
+   element the site worker writes a picked hook into (`src/lesson-gate.ts:590-591`); the meta as
    four chips ("16 minutes", FACTS 5; "After Lesson 11: Registers and the break", a link to
    `/learn/11`, wholly the link, as Lesson 2's `a.chip.chip-link` is, `learn/02.html:347-352`, so
    that it stays as a plain chip where Lesson 11 is not live; Sound on; Microphone optional); the
@@ -789,7 +789,7 @@ and the four-words strip in the kit.
    document, a draft's included, to its head, its share card, its structured data and its legal
    links (`:122-237`), since a draft the console publishes goes live with the head it was built with
    (`:13-18`). The hook's copies are the ones the site worker rewrites when the console picks
-   another hook (`HOOK_COPIES`, `src/lesson-gate.ts:454-470`, and the structured data after it);
+   another hook (`HOOK_COPIES`, `src/lesson-gate.ts:452-468`, and the structured data after it);
    only the meta description and the Article's description, which repeat each other, may shorten the
    hook, and every other copy carries it whole. As Lesson 2's head has them (`learn/02.html:3-145`):
    - the title, "Resonance and vowels: why ee and ah differ | MercuryPitch" (57 characters, under
