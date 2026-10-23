@@ -171,20 +171,65 @@ describe('fitStems', () => {
 })
 
 describe('needsStreamingMessage', () => {
-  it("names a phone's software on a phone", () => {
-    expect(needsStreamingMessage()).toBe(
-      "This song needs a newer version of this phone's software to play here. Update it, then open the song again.",
+  // It said "a newer version of this phone's software", which the owner read
+  // as "update Mercury Pitch" (mp-v0.8.41, 2026-10-23). Each sentence now
+  // names the reason and the system by its name, and ends on another song,
+  // which the stage's card offers as a button.
+  const IPHONE = {
+    userAgent:
+      'Mozilla/5.0 (iPhone; CPU iPhone OS 27_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Mobile/15E148',
+    maxTouchPoints: 5,
+    platform: 'iPhone',
+  }
+  const ANDROID = {
+    userAgent:
+      'Mozilla/5.0 (Linux; Android 15; Pixel 8) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/90.0 Mobile Safari/537.36',
+    maxTouchPoints: 5,
+    platform: 'Linux armv8l',
+  }
+
+  it('names the Developer switch when it is what took the stream away', () => {
+    expect(needsStreamingMessage('switched-off', IPHONE)).toBe(
+      'This song is too big for this phone to play in one piece. It would stream, but streaming is switched off: Developer, Karaoke audio, "Force the no-streaming path". Switch that off, or choose another song.',
     )
   })
 
-  it("names the iPad's software on an iPad", () => {
+  it('names iOS and where to update it on an iPhone with no decoder', () => {
+    expect(needsStreamingMessage('no-decoder', IPHONE)).toBe(
+      'This song is too big for this phone to play in one piece. iOS 26 or later streams it: update iOS in Settings, General, Software Update. Or choose another song.',
+    )
+  })
+
+  it('names iPadOS on an iPad', () => {
     const restore = actAsIpad()
     try {
-      expect(needsStreamingMessage()).toBe(
-        "This song needs a newer version of this iPad's software to play here. Update it, then open the song again.",
+      expect(needsStreamingMessage('no-decoder', navigator)).toBe(
+        'This song is too big for this iPad to play in one piece. iPadOS 26 or later streams it: update iPadOS in Settings, General, Software Update. Or choose another song.',
       )
     } finally {
       restore()
+    }
+  })
+
+  it('names Android System WebView on Android', () => {
+    expect(needsStreamingMessage('no-decoder', ANDROID)).toBe(
+      'This song is too big for this phone to play in one piece. An updated Android System WebView streams it: update it in Google Play. Or choose another song.',
+    )
+  })
+
+  it('names no system it cannot recognise, and still offers another song', () => {
+    expect(needsStreamingMessage('no-decoder', null)).toBe(
+      'This song is too big for this phone to play in one piece. Choose another song.',
+    )
+  })
+
+  it('never asks for Mercury Pitch to be updated', () => {
+    for (const why of ['switched-off', 'no-decoder'] as const) {
+      for (const nav of [IPHONE, ANDROID, null]) {
+        expect(needsStreamingMessage(why, nav)).not.toMatch(
+          /Mercury Pitch|newer version of this/u,
+        )
+      }
     }
   })
 })

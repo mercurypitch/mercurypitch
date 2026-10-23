@@ -65,6 +65,7 @@ import { detectVocalOnsets } from '@/lib/vocal-onsets'
 import { sliderToGain } from '@/lib/volume-curve'
 import * as playlist from '@/stores/karaoke-playlist-store'
 import { karaokeKeyKeepDrums } from '@/stores/karaoke-settings-store'
+import { nativeShellApi } from '@/stores/native-shell-store'
 import { removeNotificationsByChannel, showNotification, } from '@/stores/notifications-store'
 import { activeTab, karaokeFocus, karaokeZen, setKaraokeFocus, setKaraokeZen, } from '@/stores/ui-store'
 import { recordActivity } from '@/stores/usage-store'
@@ -1108,6 +1109,18 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
   // browser's reload button. A room's song refused for good (a phone that
   // cannot stream it) has none: loading it again lands on the same refusal,
   // and the library is the way on.
+  /**
+   * The Developer screen's Karaoke audio, for a song the room refused because
+   * it cannot stream it: its "Force the no-streaming path" and its decode
+   * past the guard are the switches that change that answer. Only where the
+   * shell has a Developer screen (a test build); a store build has none.
+   */
+  const audioSettingsForRefusal = (): (() => void) | undefined => {
+    if (audio.loadRefusal() === null) return undefined
+    const open = nativeShellApi()?.openDeveloperSection
+    return open === undefined ? undefined : () => open('karaoke-audio')
+  }
+
   const retryLoad = (): (() => void) | undefined =>
     hosted !== undefined && !audio.loadErrorRetryable()
       ? undefined
@@ -2732,6 +2745,9 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
             totalBytes={audio.totalBytes}
             // A retry, or none for a song refused for good (retryLoad).
             onRetryLoad={retryLoad()}
+            // A song refused because it cannot stream: the switches that
+            // could change that, on a test build that has them.
+            onOpenAudioSettings={audioSettingsForRefusal()}
             elapsed={audio.elapsed}
             lyricsElapsed={audio.audibleElapsed}
             duration={audio.duration}
