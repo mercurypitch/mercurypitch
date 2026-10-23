@@ -4,10 +4,10 @@
 //
 // The cold open's stage: the kit's stars (kit/hero-sky.ts), then a
 // five-line staff pinned at both ends (sin(pi x)) that breathes while idle
-// and rings when a Merc sings, blue's side at 220 Hz and orange's twice as
-// fast and twice as dense, then the two Mercs either side of a log-scale
+// and rings when a Merc sings, Merc's side at 220 Hz and Tavi's twice as
+// fast and twice as dense, then Merc and Tavi either side of a log-scale
 // pitch rail (110 to 880 Hz, octaves equally spaced). The entrance pushes
-// the camera in: the far sky moves least, the staff more, the Mercs in the
+// the camera in: the far sky moves least, the staff more, Merc and Tavi in the
 // DOM most (`heroCamera`).
 
 import { lerp, q, svg, TAU } from '@/features/lessons/kit/dom'
@@ -50,7 +50,7 @@ export function initHero(): void {
         const rate = energy[k] > shown[k] ? 7 : 2.4
         shown[k] += (energy[k] - shown[k]) * (1 - Math.exp(-dt * rate))
       }
-      // the living staff, fitted to the Mercs
+      // the living staff, fitted to Merc and Tavi
       const merc = blue.offsetWidth || 200
       const sp = merc * 0.062
       const y0 = shot.offsetTop + duo.offsetTop + merc * 0.44 - 2 * sp
@@ -110,7 +110,7 @@ export function initHero(): void {
   buildRail()
 }
 
-/** The rail between the Mercs: log scale 110 to 880 Hz, with blue's A at 220 and orange's at 440. */
+/** The rail between Merc and Tavi: log scale 110 to 880 Hz, with Merc's A at 220 and Tavi's at 440. */
 function buildRail(): void {
   const rail = q<SVGSVGElement>('#heroRail')
   const box = rail.parentElement

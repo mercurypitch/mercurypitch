@@ -29,7 +29,7 @@ import { Sound } from '@/features/lessons/kit/sound'
 import { COUNT_IN_SEC, countIn, GUIDE_SEC, guidePath, singModel, TI_HOLD, } from './examples'
 import { SOLFEGE } from './stairs-words'
 
-/** Merc's do, and orange Merc's an octave up (FACTS 52 and 63). */
+/** Merc's do, and Tavi's an octave up (FACTS 52 and 63). */
 const MERC_DO = 50
 /** Move do's reach either way, semitones (FACTS 52). */
 const MOVE_MAX = 4

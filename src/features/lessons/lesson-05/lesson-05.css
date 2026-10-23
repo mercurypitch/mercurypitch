@@ -1,10 +1,10 @@
 /* ============================================================
    Lesson 5 — "Breath and a steady note": the hook stage, the toys, the holds
    ============================================================
-   What only this page draws: a long hook in a smaller face, the two Mercs
+   What only this page draws: a long hook in a smaller face, Merc and Tavi
    either side of the hook's band chart with its level strip, the breath
    toy's two views, the three starts' key, the figures' heights for the
-   stage budget, orange Merc's line beside her still, the note finder and
+   stage budget, Tavi's line beside her still, the note finder and
    the hold's phases on the checkpoint card, and the free-play stage. */
 
 /* ---------------------------------------------------------------- the hero */
@@ -21,16 +21,16 @@
 .l05-hero .duo {
   --merc: clamp(120px, 13vw, 188px);
   grid-template-columns: var(--merc) minmax(0, 1fr) var(--merc);
-  /* room for the chart and its level strip under blue Merc's bubble */
+  /* room for the chart and its level strip under Merc's bubble */
   height: calc(var(--merc) * 1.32);
 }
-/* the band chart between the Mercs, with room under its plot for the level strip */
+/* the band chart between Merc and Tavi, with room under its plot for the level strip */
 .hook-chart {
   position: relative;
   z-index: 1;
   align-self: center;
   height: calc(var(--merc) * 1.02);
-  /* clear of blue Merc's bubble, which reaches over the middle column */
+  /* clear of Merc's bubble, which reaches over the middle column */
   margin-top: calc(var(--merc) * 0.24);
   border-radius: var(--r-md);
   border: 1px solid var(--hair);
@@ -247,7 +247,7 @@ div.reveal p:last-child {
 .predict.in-step .pq {
   font-size: clamp(20px, 2vw, 26px);
 }
-/* orange Merc's line after the reveal: a bubble beside her still */
+/* Tavi's line after the reveal: a bubble beside her still */
 .merc-says {
   display: flex;
   align-items: center;

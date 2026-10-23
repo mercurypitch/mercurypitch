@@ -50,7 +50,7 @@ describe('mountSing', () => {
     // Act
     button(a, '.high').click()
 
-    // Assert: the orange Merc sings A4 in card A; card B is untouched
+    // Assert: Tavi sings A4 in card A; card B is untouched
     expect(text(a, '.ring-note')).toBe('A4 · 440 Hz')
     expect(text(a, '.ring-state')).toBe('Listen')
     expect(a.querySelector('img')?.getAttribute('src')).toBe(STILLS.orange)

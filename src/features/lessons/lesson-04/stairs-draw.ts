@@ -4,10 +4,10 @@
 //
 // Paints one frame of the staircase from its layout (stairs-geometry.ts)
 // and a scene the toy keeps. The colour code is the series': every stair
-// and key is chrome until a voice lights it, blue where blue Merc sings it
-// and orange where orange Merc does; gold marks only the two semitone
+// and key is chrome until a voice lights it, blue where Merc sings it
+// and orange where Tavi does; gold marks only the two semitone
 // steps, in steps 1 and 2 (WEB-SPEC, Look); do, home, is a house glyph,
-// never a colour. Orange's guess in step 3, the white keys from the start,
+// never a colour. Tavi's guess in step 3, the white keys from the start,
 // is dashed ink-2 with a "?", since violet belongs to the singer on this
 // page. Each part draws in its own small function, in paint order.
 
@@ -257,7 +257,7 @@ function paintHomes(
   }
 }
 
-// ---------------------------------------------------------------- orange's guess: the white keys
+// ---------------------------------------------------------------- Tavi's guess: the white keys
 
 /** The guess's treads: stair i as many rows above do as its key is above the start. */
 function overlayPoints(

@@ -164,7 +164,7 @@ describe('tuneLayout', () => {
   })
 
   it('fits every note of a line with no buttons on it: eight crotchets in 176 px', () => {
-    // Act: the hero's compact line between the Mercs on a 390 px phone
+    // Act: the hero's compact line between Merc and Tavi on a 390 px phone
     const T = tuneLayout({
       width: 176,
       height: 150,

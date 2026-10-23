@@ -1,16 +1,16 @@
 // ============================================================
-// Merc duo — blue and orange Merc, live on the lesson's stage
+// Merc duo — Merc and Tavi, live on the lesson's stage
 // ============================================================
 //
 // The app's own shader Merc, twice: blue as shipped, orange through the warm
 // look (merc-warm.ts). The renderer loads after first paint, so the page
-// opens on the two still images and the live Mercs take over once each has
-// drawn a frame. One WebGL context per Merc. They pause while the stage is
-// off screen and while animations are paused, except when a tap has asked
-// one to sing; reduced motion and failures leave the stills in place.
+// opens on the two still images and live Merc and Tavi take over once each
+// has drawn a frame. One WebGL context per Merc. They pause while the stage is
+// off screen and while animations are paused, except when a tap has asked one
+// to sing; reduced motion and failures leave the stills in place.
 //
 // So does a WebGL that would run on the CPU (SwiftShader, llvmpipe: no GPU,
-// or one the browser has blocklisted). Two Mercs drawn there hold the main
+// or one the browser has blocklisted). Merc and Tavi drawn there hold the main
 // thread for seconds at a time, and the lesson under them stops answering.
 
 import type { MercMountOptions, MercRenderer } from '@/lib/merc/renderer'
@@ -125,7 +125,7 @@ export interface MercDuoOptions {
   readonly sparkles?: SparkleSide
 }
 
-/** Loads the renderer and mounts both Mercs; the stills stay if anything fails. */
+/** Loads the renderer and mounts Merc and Tavi; the stills stay if anything fails. */
 export async function initMercs(
   stage: HTMLElement,
   o: MercDuoOptions = {},
@@ -179,7 +179,7 @@ export function mercSing(which: Which, midi: number, on: boolean): void {
     singing[which] = true
     syncPause()
   } else {
-    // let him settle back to idle before he pauses
+    // let the singer settle back to idle before pausing
     timers[`${which}p`] = window.setTimeout(() => {
       singing[which] = false
       syncPause()

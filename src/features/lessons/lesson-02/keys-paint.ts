@@ -18,7 +18,7 @@ import { COLOR, isBlack, nameOf, rgba, signName, } from '@/features/lessons/kit/
 import { KEY_LOOK, roundedRect } from '@/features/lessons/kit/spiral-keys'
 import type { Rect } from './keys-geometry'
 
-/** A3 and A4, blue Merc's and orange Merc's. */
+/** A3 and A4, Merc's and Tavi's. */
 const A3 = 57
 const A4 = 69
 

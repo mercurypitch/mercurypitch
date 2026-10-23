@@ -2,13 +2,13 @@
    Lesson 7 — Slides, sirens and your range: the page's own figures
    ============================================================
    Everything else is the kit's (lesson-base, lesson-sections, lesson-stage,
-   lesson-parts and lesson-voice). Here: the compact range chart between the
-   Mercs, the range chart's heights for the stage budget, its rows of
+   lesson-parts and lesson-voice). Here: the compact range chart between Merc
+   and Tavi, the range chart's heights for the stage budget, its rows of
    controls (WEB-SPEC, Toys 1, "Layout and targets": every target 44 px, 8 px
    apart, from 344 px up), the scrub bar, the push gauge and its handle,
    Sing it's live chart beside its ring, and the Wrap's cards and free play. */
 
-/* ---------------------------------------------------------------- hero: the column between the Mercs */
+/* ---------------------------------------------------------------- hero: the column between Merc and Tavi */
 .l7-duo {
   --merc: clamp(120px, 11vw, 168px);
   --line-h: clamp(190px, 17vw, 240px);
@@ -17,7 +17,7 @@
   height: calc(var(--line-h) + var(--merc) * 0.165);
   margin-top: 6px;
 }
-/* the floor line runs under the column's foot, where the Mercs stand */
+/* the floor line runs under the column's foot, where Merc and Tavi stand */
 .l7-duo .floor {
   top: var(--line-h);
 }
@@ -65,7 +65,7 @@
     margin-top: 14px;
   }
 }
-/* on a phone the Mercs stand smaller either side of the column */
+/* on a phone Merc and Tavi stand smaller either side of the column */
 @media (max-width: 560px) {
   .l7-duo {
     --merc: min(20vw, 80px);

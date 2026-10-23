@@ -2,13 +2,13 @@
 // Lesson 2 cold open — the hero spiral, the climb and the first predict
 // ============================================================
 //
-// The hero's stage holds a spiral copy of its own (DECISIONS 81) between the
-// two Mercs, under the kit's stars, with orange's guess and blue's reply in
+// The hero's stage holds a spiral copy of its own (DECISIONS 81) between Merc
+// and Tavi, under the kit's stars, with Tavi's guess and Merc's reply in
 // the bubbles over it. The predict card under the stage asks whether every
 // gap between the letters holds a note; a choice unlocks Play the climb,
 // which plays the thirteen notes A3 to A4 on the hero spiral, lighting each
-// bead and counting the steps, blue Merc singing along on A3 and orange on
-// A4. The reveal follows the climb (twelve steps, not fourteen), and orange
+// bead and counting the steps, Merc singing along on A3 and Tavi on
+// A4. The reveal follows the climb (twelve steps, not fourteen), and Tavi
 // celebrates once. Which gaps hold no note, and why, is left to steps 3 and
 // 4, so step 3's predict is not given away.
 
@@ -22,7 +22,7 @@ import type { NoteEvent } from './examples'
 import type { SpiralCopy } from './spiral-copy'
 import { mountSpiralCopy } from './spiral-copy'
 
-/** The climb's first note is blue's A3, its last orange's A4. */
+/** The climb's first note is Merc's A3, its last Tavi's A4. */
 function singAlong(e: NoteEvent): void {
   const which: Which | null =
     e.midi === 57 ? 'blue' : e.midi === 69 ? 'orange' : null

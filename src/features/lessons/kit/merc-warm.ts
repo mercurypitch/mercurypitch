@@ -1,12 +1,12 @@
 // ============================================================
-// Warm Merc — orange Merc's gradient and the light he casts
+// Warm Merc — Tavi's gradient and the light she casts
 // ============================================================
 //
-// Orange Merc is the shipped Merc with two changes. His gradient runs gold
-// base, orange (#ff7448) belly, rose crown, mirrored from blue Merc's aqua,
+// Tavi is the shipped Merc with two changes. Her gradient runs gold
+// base, orange (#ff7448) belly, rose crown, mirrored from Merc's aqua,
 // azure and violet; that is an ordinary setLook. But the shader also bakes in
 // a cool light (the floor pool, foot streaks, landing rings, key light, hot
-// core, eye crescent, sound arcs), and left alone it would have him cast cyan
+// core, eye crescent, sound arcs), and left alone it would have her cast cyan
 // on the floor. `warmFragment` swaps those constants for amber in the GLSL
 // text at compile time, through the renderer's `fragmentPatch` hook, so the
 // approved shader text in src/lib/merc never changes. Every swap must match

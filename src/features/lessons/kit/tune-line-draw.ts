@@ -4,8 +4,8 @@
 //
 // Paints one frame of a tune line from its layout (tune-line-layout.ts) and
 // a scene the core keeps (tune-line.ts). The series' colour code: every
-// bead is chrome until a voice lights it, blue where blue Merc sings it and
-// orange where orange Merc does; gold marks only the gap numbers that stay
+// bead is chrome until a voice lights it, blue where Merc sings it and
+// orange where Tavi does; gold marks only the gap numbers that stay
 // the same as the line lands from a slide, glowing once; the contrast case
 // (Lesson 6's swapped version) is dashed ink-2 with a "?", since violet is
 // the singer's in the app's canvas set. Step and leap are words beside the

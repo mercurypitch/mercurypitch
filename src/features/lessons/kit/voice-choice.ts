@@ -3,7 +3,7 @@
 // ============================================================
 //
 // A voice lesson asks once which A sits nearer the viewer's voice: lower,
-// singing with blue Merc around A3, or higher, singing with orange Merc
+// singing with Merc around A3, or higher, singing with Tavi
 // around A4 (Lesson 3 WEB-SPEC, Toys 5). The answer is a convenience kept
 // in localStorage under `fyp-voice`, which every later voice lesson reads,
 // never a measurement: both choices hold the same notes an octave apart.

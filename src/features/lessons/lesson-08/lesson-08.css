@@ -3,12 +3,12 @@
    ============================================================
    Everything else is the kit's (lesson-base, lesson-sections, lesson-stage,
    lesson-guide, lesson-parts, lesson-voice, lesson-ear-game and
-   lesson-beat-machine). Here: the compact strip between the Mercs, the beat
-   machine's height for the stage budget, the step rows' labels, orange
-   Merc's line in Step 5, Sing it's two parts on one card, and the Wrap's
+   lesson-beat-machine). Here: the compact strip between Merc and Tavi, the beat
+   machine's height for the stage budget, the step rows' labels, Tavi's
+   line in Step 5, Sing it's two parts on one card, and the Wrap's
    cards, free play and the tease figure. */
 
-/* ---------------------------------------------------------------- hero: the strip between the Mercs */
+/* ---------------------------------------------------------------- hero: the strip between Merc and Tavi */
 .l8-duo {
   --merc: clamp(96px, 9vw, 132px);
   grid-template-columns: var(--merc) minmax(0, 1fr) var(--merc);
@@ -17,7 +17,7 @@
   height: auto;
   margin-top: 6px;
 }
-/* the floor runs under the Mercs' feet and the strip's last row */
+/* the floor runs under Merc and Tavi's feet and the strip's last row */
 .l8-duo .floor {
   top: auto;
   bottom: calc(var(--merc) * 0.165);
@@ -58,7 +58,7 @@
   }
 }
 /* on a phone the strip takes the stage's whole width, on its own row under
-   the Mercs, so every beat keeps a cell of 35 px or more (FACTS 80) */
+   Merc and Tavi, so every beat keeps a cell of 35 px or more (FACTS 80) */
 @media (max-width: 720px) {
   .l8-duo {
     --merc: min(24vw, 112px);
@@ -132,7 +132,7 @@
 }
 
 /* ---------------------------------------------------------------- the step text */
-/* orange Merc's line in Step 5, after the reveal: a bubble beside her still */
+/* Tavi's line in Step 5, after the reveal: a bubble beside her still */
 .l8-says {
   display: flex;
   align-items: center;

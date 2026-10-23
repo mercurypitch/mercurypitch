@@ -5,8 +5,8 @@
 // The band chart on a pitch axis from F3 to C5, a tick per semitone, A3 and
 // A4 named (WEB-SPEC, Toys 5): Merc's amber band at A3 and a dashed one an
 // octave up at A4, the same note (FACTS 27). The kit's predict opens the
-// step: a choice unlocks Play blue's A3, Play orange's A4 and Play both, and
-// the reveal comes only once Play both has been heard. Orange's reply then
+// step: a choice unlocks Play Merc's A3, Play Tavi's A4 and Play both, and
+// the reveal comes only once Play both has been heard. Tavi's reply then
 // stays drawn as a violet line landing in the A4 band, with the series' one
 // gold, the bracket "same note, an octave apart". Under reduced motion the
 // line lands whole.
@@ -23,11 +23,11 @@ import { mountPredict } from '@/features/lessons/kit/predict'
 import { playTone } from '@/features/lessons/kit/sound'
 
 const NOTE_SEC = 1.3
-/** Where orange's reply draws across the chart's window, seconds. */
+/** Where Tavi's reply draws across the chart's window, seconds. */
 const REPLY_AT = 1.4
 const OCTAVE = 1200
 
-/** Orange's reply landing in the A4 band: from 60 cents under, settled in 0.4 s. */
+/** Tavi's reply landing in the A4 band: from 60 cents under, settled in 0.4 s. */
 export function replyCents(t: number): number {
   return OCTAVE - 60 * Math.exp(-Math.max(0, t) / 0.12)
 }
@@ -56,7 +56,7 @@ export function mountOctaves(
   const seen = watch(root)
   let drawing: number | null = null
 
-  // the reply draws while orange sings; whole at once under reduced motion
+  // the reply draws while Tavi sings; whole at once under reduced motion
   addDrawer({
     active: () => drawing !== null && seen(),
     draw(now) {
@@ -99,10 +99,10 @@ export function mountOctaves(
     play,
     revealOn: ['both'],
     hints: {
-      chosen: "Locked in. Now press Play both: blue's A3, then orange's A4.",
+      chosen: "Locked in. Now press Play both: Merc's A3, then Tavi's A4.",
       silent:
         'Sound is off, so nothing played. Turn sound on to hear them, then press Play both.',
-      next: "Now press Play both: blue's A3, then orange's A4.",
+      next: "Now press Play both: Merc's A3, then Tavi's A4.",
       again: 'Play them again, one at a time or both.',
     },
     onReveal: () => {
@@ -112,7 +112,7 @@ export function mountOctaves(
       chart.scene.head = head === undefined ? null : { t: head.t, c: head.c }
       chart.scene.bracket = 'same note, an octave apart'
       chart.describe(
-        "Merc's band at A3, and the same note an octave up at A4; orange's reply lands in the A4 band: the same note, an octave apart",
+        "Merc's band at A3, and the same note an octave up at A4; Tavi's reply lands in the A4 band: the same note, an octave apart",
       )
       mercCelebrate('orange', 1600)
     },

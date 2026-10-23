@@ -9,7 +9,7 @@
 // and the season map. A written lesson with no film, so there is no Watch
 // section and the masthead's anchors are Lesson and Explorer. Every part is
 // the shared kit's, mounted per root, or this lesson's own toy built on it.
-// The Mercs' renderer loads last, as its own chunk, so the page reads and
+// Merc and Tavi's renderer loads last, as its own chunk, so the page reads and
 // plays before it arrives.
 
 import '@fontsource-variable/inter'

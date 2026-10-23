@@ -1,13 +1,13 @@
 // ============================================================
-// Lesson 2 entrance — the copy reads in, the Mercs land, the bubbles speak
+// Lesson 2 entrance — the copy reads in, Merc and Tavi land, the bubbles speak
 // ============================================================
 //
 // One short shot on the night stage: the kicker, the question and the rest
 // of the copy rise in reading order, the stage pushes in a little, the
-// floor line draws out under the hero spiral, and the two Mercs drop onto
-// it (blue first, orange about 0.4 s later, each with a squash and a ring on
+// floor line draws out under the hero spiral, and Merc and Tavi drop onto
+// it (Merc first, Tavi about 0.4 s later, each with a squash and a ring on
 // the floor) once their live mounts settle, or after 1.4 s with the stills.
-// Then the bubbles speak in the film's order, orange's guess and blue's
+// Then the bubbles speak in the film's order, Tavi's guess and Merc's
 // reply. A deep link, a page already scrolled or reduced motion skips all of
 // it, and the stills settle in place.
 
@@ -91,7 +91,7 @@ function dropMercs(stage: HTMLElement, duo: HTMLElement): void {
         { duration: 900, delay: (start + 0.48) * 1000, easing: EASE.power2Out },
       )
     })
-    // orange speaks first, blue answers about 1.4 s later
+    // Tavi speaks first, Merc answers about 1.4 s later
     bubbles.forEach((b, i) => {
       b.style.opacity = ''
       b.animate(

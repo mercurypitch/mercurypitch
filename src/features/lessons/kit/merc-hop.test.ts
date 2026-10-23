@@ -21,7 +21,7 @@ async function hopModules(reduce: boolean): Promise<{
   return { hop, motion }
 }
 
-/** Both Mercs on the stage, each with a recorded `animate`. */
+/** Merc and Tavi on the stage, each with a recorded `animate`. */
 function stage(): {
   blue: ReturnType<typeof vi.fn>
   orange: ReturnType<typeof vi.fn>

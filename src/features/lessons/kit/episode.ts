@@ -319,7 +319,7 @@ export function createEpisode(opts: EpisodeOptions): void {
       if (!p.sfx && p.who !== null) {
         const w = document.createElement('span')
         w.className = `who ${p.who}`
-        w.textContent = p.who === 'blue' ? 'Blue Merc' : 'Orange Merc'
+        w.textContent = p.who === 'blue' ? 'Merc' : 'Tavi'
         el.appendChild(w)
       }
       el.appendChild(document.createTextNode(p.text))

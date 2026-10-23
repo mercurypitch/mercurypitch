@@ -2,7 +2,7 @@
 // Lesson 5 cold open — the hook stage, its two takes and the predict
 // ============================================================
 //
-// The two Mercs either side of a band chart with one amber band at A3 and,
+// Merc and Tavi either side of a band chart with one amber band at A3 and,
 // under it, a level strip that grows with loudness (WEB-SPEC, Toys 1). At
 // rest the chart holds a still of the hold demo, a violet line settling
 // into Merc's band: the lesson's signature. Two takes in the kit's "ooh",
@@ -11,11 +11,11 @@
 // pushing harder unlocks once a choice is in. The reveal waits until the
 // pushed take has been heard (with sound off the hint says so, as Lesson
 // 1's rule has it: the reveal describes what was heard), then the small
-// print and the kind line; it never calls a choice wrong. Both Mercs listen
-// to the takes. Under reduced motion a take's line lands whole while its
+// print and the kind line; it never calls a choice wrong. Merc and Tavi both
+// listen to the takes. Under reduced motion a take's line lands whole while its
 // sound plays.
 //
-// The sky is the kit's stars, drawn still: on this page only the two Mercs'
+// The sky is the kit's stars, drawn still: on this page only Merc and Tavi's
 // idle loops move on their own.
 
 import type { BandChart, CentsTick, LevelPoint, TracePoint, } from '@/features/lessons/kit/band-chart'
@@ -32,7 +32,7 @@ import { playContour } from '@/features/lessons/kit/sound'
 import type { Take } from './lines'
 import { demoCents, TAKE_SEC, takeCents, takeContour, takeLevel } from './lines'
 
-/** The small chart between the Mercs names only the semitone either side. */
+/** The small chart between Merc and Tavi names only the semitone either side. */
 const HOOK_TICKS: readonly CentsTick[] = [
   { c: 100, label: '100: a semitone' },
   { c: 35, label: '' },

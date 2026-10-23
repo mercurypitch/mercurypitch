@@ -31,7 +31,7 @@ export const KEY_LOOK = {
   /** A white key's face, top to bottom. */
   whiteTop: '#dfe6ee',
   whiteBottom: '#b9c3ce',
-  /** Blue Merc's A3 and orange Merc's A4. */
+  /** Merc's A3 and Tavi's A4. */
   a3: '#9cc8ff',
   a4: '#ffb196',
   black: '#0d1117',
