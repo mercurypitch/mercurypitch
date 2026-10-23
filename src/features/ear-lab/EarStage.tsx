@@ -19,7 +19,7 @@ import type { JSX } from 'solid-js'
 import { createEffect, createSignal, For, onCleanup, onMount, Show, useContext, } from 'solid-js'
 import { EngineContext } from '@/contexts/EngineContext'
 import { activateAudioPlayback, unlockAudio } from '@/lib/audio-unlock'
-import { clickTap, keyTap, pointerTap, TAP_FLASH_MS } from '@/lib/ear/tap-rule'
+import { clickTap, isTapKey, keyTap, pointerTap, TAP_FLASH_MS, } from '@/lib/ear/tap-rule'
 import { earAutoAdvance, setEarAutoAdvance } from '@/stores/ear-lab-store'
 import { removeNotificationsByChannel, TOUR_OFFER_CHANNEL, } from '@/stores/notifications-store'
 import { IconBack, IconCheck, IconClose, IconStop, IconTap } from './ear-icons'
@@ -562,7 +562,8 @@ interface TapPadProps {
 export function TapPad(props: TapPadProps): JSX.Element {
   const [hit, setHit] = createSignal(false)
   let flash: ReturnType<typeof setTimeout> | undefined
-  // the pad's latest gesture: the click it makes of itself is no second tap
+  // the pad's latest pointer up, or Space or Enter: the click it makes of
+  // itself is no second tap
   let gesture = -Infinity
   onCleanup(() => clearTimeout(flash))
   const register = (atMs: number) => {
@@ -592,7 +593,7 @@ export function TapPad(props: TapPadProps): JSX.Element {
         gesture = event.timeStamp
       }}
       onKeyDown={(event) => {
-        gesture = event.timeStamp
+        if (isTapKey(event.key)) gesture = event.timeStamp
         // Space or Enter, a held key's repeats ignored (src/lib/ear/tap-rule.ts).
         const at = keyTap(event)
         if (at === null) return
@@ -600,7 +601,7 @@ export function TapPad(props: TapPadProps): JSX.Element {
         register(at)
       }}
       onKeyUp={(event) => {
-        gesture = event.timeStamp
+        if (isTapKey(event.key)) gesture = event.timeStamp
       }}
       onClick={(event) => {
         const at = clickTap(event, gesture)

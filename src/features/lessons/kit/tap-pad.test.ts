@@ -18,6 +18,16 @@ function pointerDown(button: number): Event {
   return e
 }
 
+/** `event`, stamped `ms` on the page's clock, as the browser stamps it. */
+function stamped<E extends Event>(event: E, ms: number): E {
+  Object.defineProperty(event, 'timeStamp', { value: ms })
+  return event
+}
+
+const key = (type: 'keydown' | 'keyup', name: string, ms: number): Event =>
+  stamped(new KeyboardEvent(type, { key: name }), ms)
+const click = (ms: number): Event => stamped(new MouseEvent('click'), ms)
+
 describe('bindTapPad', () => {
   it("takes a primary pointer down at the event's own time, and flashes for 110 ms", () => {
     vi.useFakeTimers()
@@ -66,6 +76,18 @@ describe('bindTapPad', () => {
     el.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter' }))
     el.dispatchEvent(new MouseEvent('click'))
     expect(taps).toHaveLength(2)
+  })
+
+  it('takes a click 50 ms after a Control keydown as a tap, and not one 50 ms after a Space keyup', () => {
+    const { el, taps } = pad()
+    // VoiceOver's Control, then its click
+    el.dispatchEvent(key('keydown', 'Control', 1000))
+    el.dispatchEvent(click(1050))
+    // Space taps on its keydown, and its keyup's click is the echo
+    el.dispatchEvent(key('keydown', ' ', 2000))
+    el.dispatchEvent(key('keyup', ' ', 2000))
+    el.dispatchEvent(click(2050))
+    expect(taps).toEqual([1050, 2000])
   })
 })
 

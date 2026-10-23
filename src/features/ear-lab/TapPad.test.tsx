@@ -2,6 +2,17 @@ import { cleanup, fireEvent, render, screen } from '@solidjs/testing-library'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { TapPad } from './EarStage'
 
+/** `event`, stamped `ms` on the page's clock, as the browser stamps it. */
+function stamped<E extends Event>(event: E, ms: number): E {
+  Object.defineProperty(event, 'timeStamp', { value: ms })
+  return event
+}
+
+const key = (type: 'keydown' | 'keyup', name: string, ms: number) =>
+  stamped(new KeyboardEvent(type, { key: name, bubbles: true }), ms)
+const click = (ms: number) =>
+  stamped(new MouseEvent('click', { bubbles: true }), ms)
+
 describe('TapPad', () => {
   afterEach(() => cleanup())
 
@@ -30,6 +41,20 @@ describe('TapPad', () => {
     fireEvent.pointerUp(pad, { button: 0 })
     fireEvent.click(pad)
     expect(onTap).toHaveBeenCalledTimes(2)
+  })
+
+  it('takes a click 50 ms after a Control keydown as a tap, and not one 50 ms after a Space keyup', () => {
+    const onTap = vi.fn()
+    render(() => <TapPad label="Tap" onTap={onTap} />)
+    const pad = screen.getByTestId('ear-tap-pad')
+    // VoiceOver's Control, then its click
+    pad.dispatchEvent(key('keydown', 'Control', 1000))
+    pad.dispatchEvent(click(1050))
+    // Space taps on its keydown, and its keyup's click is the echo
+    pad.dispatchEvent(key('keydown', ' ', 2000))
+    pad.dispatchEvent(key('keyup', ' ', 2000))
+    pad.dispatchEvent(click(2050))
+    expect(onTap.mock.calls).toEqual([[1050], [2000]])
   })
 
   it('ignores secondary mouse buttons', () => {
