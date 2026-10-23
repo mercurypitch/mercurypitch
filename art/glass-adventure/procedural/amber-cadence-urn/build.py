@@ -95,17 +95,16 @@ def palette(laurel_maps, shoulder_maps):
         'marble': textures.attach_color(
             materials.principled('marble_cream', '#fbd6ab', roughness=0.30, coat=0.35, coat_roughness=0.10),
             marble_veins, scale=1 / 4),
-        # Amber glass, set in the game from ten probes (`glb_patch.py`). At transmission 0.9 on a
-        # pale base it read pale and smoky (saturation 0.5); at 0.35-0.5 on a saturated base it held
-        # the concept's median colour but read as milky pottery to two critics. At 0.9 on #ffbe55 it
-        # reads as glass: the room shows through, the lower lobes go deep amber, dark tones match
-        # (p5 58 against 53-60), median (143, 81, 40) against (166, 100, 32). Its colour gathers over
-        # 15 cm (optics.json): over 5 cm it read browner, hue 26 and median luminance 85 against the
-        # concept's 30 and 110 (15 cm: 31 and 93). COLOR_0 only leans the valleys toward the thicker
-        # glass's colour (colours.py, rule 11). A clear coat of 0.5: at 1.0 it laid the room's blue
-        # over the creases. The game ignores emission on it.
+        # Amber glass, set in the game from 25 probes (`glb_patch.py`). Transmission 0.9 reads as glass
+        # (0.35-0.5 read as milky pottery to two critics), but sharp it showed the gallery's black
+        # wainscot through the lower lobes as a brown band, and the cup's far edge with it. At
+        # roughness 0.4 under a clear coat of 0.5 the room behind blurs away and the highlights stay
+        # sharp; a yellower base and volume colour (#ffcc4d, #fbe08a over 6 cm, optics.json) bring
+        # the hue to the concept's: lower lobe L*a*b* 41/14/33, hue 30, against 48/23/48, hue 30
+        # (round 4: 28/8/17, hue 26). COLOR_0 only leans the valleys toward the thicker glass's
+        # colour (colours.py, rule 11). The game ignores emission on it.
         'amber': materials.vertex_tint(
-            materials.principled('amber_glass', '#ffbe55', roughness=0.04, transmission=0.90, ior=1.52,
+            materials.principled('amber_glass', '#ffcc4d', roughness=0.40, transmission=0.90, ior=1.52,
                                  coat=0.5, coat_roughness=0.03)),
         # Warmer than the amphora's: this concept's gold midtone is hue 33, saturation 0.59. Full metal
         # here: the warm gallery's probe has no dark ground to mirror (the amphora's museum HDR did).
@@ -119,7 +118,7 @@ def palette(laurel_maps, shoulder_maps):
         # the target, because the room pulls greens toward cyan.
         'jade': materials.principled('jade_stone', '#48551e', roughness=0.12, transmission=0.10, ior=1.61,
                                      coat=0.6, coat_roughness=0.05),
-        'amber_cut': materials.principled('amber_cut', '#e8a64a', roughness=0.22, transmission=0.70, ior=1.52),
+        'amber_cut': materials.principled('amber_cut', '#ffcc4d', roughness=0.40, transmission=0.90, ior=1.52),
     }
 
 
