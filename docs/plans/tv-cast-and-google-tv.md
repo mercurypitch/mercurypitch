@@ -3,7 +3,9 @@
 **Status:** proposed, 2026-10-21; the owner's decisions of the same day are in
 section 9, and section 7 follows them. Updated 2026-10-22 after the first
 device test (POC-1 confirmed on the LG C2), with 1.2 in review (PR #1175)
-and POC-3, the stage on the TV, in review (PR #1179). Nothing here is built
+and POC-3, the stage on the TV, in review (PR #1179). Updated 2026-10-23
+with section 2.9: the server keeps no songs, so a TV that plays one gets it
+from the phone. Nothing here is built
 unless marked
 **[shipped]**. It continues [tv-apps-and-phone-mic.md](tv-apps-and-phone-mic.md),
 which stays the record for the TV platforms, the issue #489 items and the
@@ -287,6 +289,40 @@ says the same of `#/link:` and `#/sync:`). Use `/mic/CODE`, answered by the web
 too, and claim `/mic/*`, `/link/*` and `/sync/*` in one `assetlinks.json` and
 AASA change.
 
+### 2.9 Where a TV that plays the song gets it **[next]**
+
+Mirroring and the iOS second screen (M, S) need no song on the TV. The phone
+plays it, so every song the phone can play works: an imported MP3, a song
+separated in the app, a demo. Each route where the TV plays the song (W, G,
+C) has to get the audio, and the server has no library to hand it:
+
+- Separated stems pass through R2 on their way to the phone and expire a day
+  after they are written. The app's own path to them stops resolving within
+  the hour (`docs/claude/RUNPOD.md`, "Stem storage lifecycle";
+  `STEMS_KEPT_DAYS` in `src/features/karaoke-room/karaoke-songs.ts`). The
+  stems live on the phone, in IndexedDB.
+- The user's audio must never transit or rest on our servers
+  ([device-sync.md](device-sync.md), `src/db/adapters/hybrid-adapter.ts`). An
+  upload relay for the TV is therefore ruled out, and device sync refuses a
+  relayed WebRTC route (`awaitDirectRoute` in `src/stores/sync-store.ts`).
+- A plain-HTTP server on the phone does not reach a Cast receiver. The
+  receiver is an HTTPS page, and a `fetch()` from it to `http://` is blocked
+  as mixed content. Chrome's Local Network Access lets a request to a private
+  IP through only after a permission prompt, which a TV cannot be counted on
+  to show.
+
+So demo songs come by their public URL (`/api/demo-songs`; the stems are on
+a public R2 bucket). Every other song comes from the phone over device sync
+(PR #501), pulled part by part and verified, on a direct connection. A TV
+has no room for a library, so the transport needs device-sync.md's open
+"stream one song" mode (send this one, play it, keep nothing; its D11). That
+is work item 2.8, shared by W, G and C (`REQ-TV-034`). The phone app also
+needs its send side, which native builds hide today (tv-apps-and-phone-mic.md
+section 3.3). On a Cast receiver it is gated by WebRTC: Google documents
+WebRTC on Chromecast with Google TV for camera streams, not data channels
+(spike 6.0). On Wi-Fi that isolates its clients, the mic relay still works,
+but only demo songs and songs the TV already keeps can play.
+
 ---
 
 ## 3. The options
@@ -314,11 +350,11 @@ live-trail lag, setup friction, phone freedom and robustness.
 | Option | Effort (points)                      | UX  | UX notes                                                                                           | Maintenance                                                      | Platform reach                                                                                                                        | Store exposure                                  |
 | ------ | ------------------------------------ | --- | -------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------- |
 | **M**  | 16 (13-19), high conf.               | 2.6 | Phone layout on a big screen unless the landscape layout is chosen; phone tied up; lag by protocol | Low                                                              | Widest: any TV the phone can mirror to. iPhone to AirPlay; Pixel to Cast devices; Samsung to Miracast TVs; laptops by Chrome Cast tab | None beyond a normal iOS update                 |
-| **W**  | 61 (49-85), medium                   | 3.6 | Real TV layout; phone free; setup is "open the TV browser, scan"; browser engines vary             | Medium: frozen TV engines                                        | Any TV with a capable browser (Chromium 79+; streaming needs 94+)                                                                     | None                                            |
-| **G**  | 87 (70-122), medium; +26 on top of W | 4.2 | Installed app with a launcher tile, remote and media keys; USB mic or phone                        | Medium: one codebase, a TV shell, a TV review per TV release     | Google TV and Android TV sets and boxes; Fire OS later with the same build                                                            | Play TV review, isolated by the dedicated track |
+| **W**  | 66 (53-92), medium                   | 3.6 | Real TV layout; phone free; setup is "open the TV browser, scan"; browser engines vary             | Medium: frozen TV engines                                        | Any TV with a capable browser (Chromium 79+; streaming needs 94+)                                                                     | None                                            |
+| **G**  | 92 (74-129), medium; +26 on top of W | 4.2 | Installed app with a launcher tile, remote and media keys; USB mic or phone                        | Medium: one codebase, a TV shell, a TV review per TV release     | Google TV and Android TV sets and boxes; Fire OS later with the same build                                                            | Play TV review, isolated by the dedicated track |
 | **N**  | about 132 (92-264), low              | 4.4 | Best possible feel and audio path                                                                  | High: a second codebase, feature parity drift for ever           | Same as G                                                                                                                             | Play TV review                                  |
 | **S**  | 28 (22-39), medium                   | 3.8 | TV layout from Control Center mirroring; phone is the controller; AirPlay lag on the trail         | Medium: native iOS scene code and a second web entry             | Apple TV and AirPlay 2 TVs, iPhone and iPad senders                                                                                   | Normal App Review                               |
-| **C**  | 47 (33-94), low                      | 4.2 | One tap on Cast; the TV plays and scores locally; fragile on guest or isolated Wi-Fi               | Medium-high: a hosted receiver, three sender SDKs, device spread | Google TV devices, Chromecast, Cast built-in TVs (Sony, TCL, Hisense, Philips Google TV), LG from webOS 24 (to verify); not Samsung   | Cast receiver publishing, plus both app stores  |
+| **C**  | 52 (36-104), low                     | 4.2 | One tap on Cast; the TV plays and scores locally; fragile on guest or isolated Wi-Fi               | Medium-high: a hosted receiver, three sender SDKs, device spread | Google TV devices, Chromecast, Cast built-in TVs (Sony, TCL, Hisense, Philips Google TV), LG from webOS 24 (to verify); not Samsung   | Cast receiver publishing, plus both app stores  |
 
 UX axes behind the scores:
 
@@ -458,6 +494,7 @@ Confidence ranges on totals: high is -20% to +20%, medium -20% to +40%, low
 | 2.5 | Handoff remainder: action on the TV notice, room-sized QR, Receive by default                                                                                                           | 3   | H     | 024, 025, 030, 031      |
 | 2.6 | TV stage entry, host and view modes, overscan-safe, legible at 3 m                                                                                                                      | 8   | M     | 020-027                 |
 | 2.7 | Overview waveform cache, only if 0.1 or 0.3 shows the stutter (conditional)                                                                                                             | 5   | L     | -                       |
+| 2.8 | One song from the phone to a TV that plays it: device sync's "stream one song" (keep nothing), the phone app's send side in native builds, direct routes only (section 2.9)             | 5   | M     | 034                     |
 | 3.1 | Pitch-source seam in Karaoke and the Sing room                                                                                                                                          | 5   | M     | 058                     |
 | 3.2 | Frame protocol, a batched `pitch` message on the jam Durable Object, roles                                                                                                              | 5   | M     | 050-052, 064            |
 | 3.3 | Pairing: `/mic/CODE` path and hash fallback, QR on the TV, `assetlinks.json` and AASA, `appUrlOpen` routing                                                                             | 5   | M     | 006, 053-055, 067, 069  |
@@ -476,8 +513,8 @@ Confidence ranges on totals: high is -20% to +20%, medium -20% to +40%, low
 | 5.2 | Native bridge from the main web view to the stage (snapshots and commands)                                                                                                              | 5   | M     | 101                     |
 | 5.3 | Connect and disconnect, release on disconnect, overscan; a missing or failed stage page leaves the TV mirroring                                                                         | 2   | M     | 102, 104                |
 | 5.4 | Verify the audio route on device; reuse per-route offsets; the picture offset until then                                                                                                | 2   | M     | 103, 105                |
-| 6.0 | Spike: the stage as a Custom Web Receiver on a Google TV Streamer, an older Chromecast with Google TV and a Cast built-in TV: Web Audio, memory, WebSocket, WebRTC                      | 5   | L     | -                       |
-| 6.1 | Receiver: Cast framework wrapper, namespace, song delivery, idle and teardown, registration, publishing                                                                                 | 8   | L     | 110, 111, 115-117       |
+| 6.0 | Spike: the stage as a Custom Web Receiver on a Google TV Streamer, an older Chromecast with Google TV and a Cast built-in TV: Web Audio, memory, WebSocket, a WebRTC data channel       | 5   | L     | -                       |
+| 6.1 | Receiver: Cast framework wrapper, namespace, song delivery (demos by URL, the rest by 2.8), idle and teardown, registration, publishing                                                 | 8   | L     | 110, 111, 115-117       |
 | 6.2 | Web sender in Chrome                                                                                                                                                                    | 3   | M     | 112                     |
 | 6.3 | Android sender plugin with a custom channel                                                                                                                                             | 5   | M     | 112                     |
 | 6.4 | iOS sender plugin with a custom channel and the local-network keys                                                                                                                      | 5   | M     | 112, 113                |
@@ -490,21 +527,21 @@ Confidence ranges on totals: high is -20% to +20%, medium -20% to +40%, low
 | ----------------------------------- | ------------------- |
 | P0 Device checks                    | 9                   |
 | P1 Mirroring done right             | 13                  |
-| P2 TV stage and browser foundations | 23 (+5 conditional) |
+| P2 TV stage and browser foundations | 28 (+5 conditional) |
 | P3 Phone as the mic                 | 29                  |
 | P4 Google TV app                    | 26                  |
 | P5 iOS second screen                | 14                  |
 | P6 Google Cast                      | 34                  |
-| **All of P0-P6**                    | **148 (+5)**        |
+| **All of P0-P6**                    | **153 (+5)**        |
 
 | Option          | Made of                                   | Points | Marginal on top of earlier phases |
 | --------------- | ----------------------------------------- | ------ | --------------------------------- |
 | M               | 0.4, 0.5, P1                              | 16     | -                                 |
-| W               | P0, P2, P3                                | 61     | -                                 |
-| G               | P0, P2 without 2.7, P3, P4                | 87     | 26 (P4) after W                   |
-| G, USB mic only | P0, P2 without 2.7, P4                    | 58     | -                                 |
+| W               | P0, P2, P3                                | 66     | -                                 |
+| G               | P0, P2 without 2.7, P3, P4                | 92     | 26 (P4) after W                   |
+| G, USB mic only | P0, P2 without 2.7, P4                    | 63     | -                                 |
 | S               | 1.1, 1.2, 2.6, P5                         | 28     | 14 (P5) after M and the stage     |
-| C               | 2.6, 3.2, P6                              | 47     | 34 (P6) after W; 6.5 also needs G |
+| C               | 2.6, 2.8, 3.2, P6                         | 52     | 34 (P6) after W; 6.5 also needs G |
 | N               | a native rewrite, P0, and P3's phone side | ~132   | not recommended                   |
 
 N's estimate, for comparison only: shell and library 13, audio engine 21,
@@ -648,15 +685,16 @@ Exit: `REQ-TV-090..095` pass; on an AirPlay TV a song scores within the same
 tolerance as on the phone's speaker once calibrated; at Chromecast-like
 spread the app offers lyrics only and says why.
 
-### P2 TV stage and browser foundations (23) **[next]**
+### P2 TV stage and browser foundations (28) **[next]**
 
 1. Back keys and the focus manager (2.1, 2.2).
 2. The mixer stylesheet and tier-capped art (2.3, 2.4).
 3. The TV stage entry in both modes (2.6). Keep it free of Capacitor plugins,
    and give any new dependency its own chunk (MISTAKES.md on `manualChunks`).
-4. The handoff remainder (2.5). The waveform cache (2.7) only if P0 asks.
+4. The handoff remainder (2.5), and one song streamed from the phone (2.8).
+   The waveform cache (2.7) only if P0 asks.
 
-Exit: `REQ-TV-010..013`, `016..027`, `030..031`; the app-check skill passes the stage at
+Exit: `REQ-TV-010..013`, `016..027`, `030..031`, `034`; the app-check skill passes the stage at
 1920x1080 with the D-pad only; every tour step on touched pages still resolves.
 
 ### P3 Phone as the mic (29) **[next]**
@@ -723,7 +761,7 @@ Not re-estimated here.
 | Mirroring jitter                                 | Unscorable                             | Spread guard and lyrics-only mode (1.3)                                        |
 | An upstream Capacitor fix for #8648              | Merge conflict on upgrade              | Pin the role guard with a test; re-check on each Capacitor bump                |
 | Community Cast plugins expose media loading only | No custom channel                      | Own small sender plugins (6.3, 6.4)                                            |
-| Guest or isolated Wi-Fi                          | No Cast or AirPlay discovery           | W's internet relay still works; say so in help                                 |
+| Guest or isolated Wi-Fi                          | No Cast or AirPlay discovery           | W's relay still carries the mic; a phone's song needs a direct route (2.8)     |
 
 ---
 
@@ -731,9 +769,12 @@ Not re-estimated here.
 
 1. **Order:** decided 2026-10-21, iOS first: P5 before P3, P4 and P6
    (section 7).
-2. **Cast receiver songs:** cloud-library songs only at first, or peer to peer
-   from the phone too? Cloud-only is simpler, but this app's pitch is private
-   karaoke separated on the device.
+2. **Cast receiver songs:** the server keeps no song library (section 2.9),
+   so a receiver can fetch only the demo songs by itself. Every other song,
+   imported or separated, comes from the phone over device sync (2.8). Ship
+   Cast with demo songs alone, or wait for 2.8 so that every song casts?
+   Recommended: wait. This app's pitch is private karaoke separated on the
+   device, and 2.8 serves the TV browser and the Google TV app as well.
 3. **Picture-in-picture:** decided 2026-10-21, keep it. Phones go on entering
    it by themselves while a song plays; on a TV it opens only when the user
    asks, with its usage metadata (TV-IE, TV-IC; `REQ-TV-074`).
@@ -761,8 +802,9 @@ Flagged so they are checked, not trusted.
    figures are indicative only.
 5. Custom Web Receivers on current Google TV hardware support Web Audio and
    WebSocket. Some older Cast devices lack `AudioContext.outputLatency`, and
-   newer audio-only Cast devices lack the Web Audio APIs. WebRTC on receivers
-   is unknown. Spike 6.0.
+   newer audio-only Cast devices lack the Web Audio APIs. Google documents
+   WebRTC on Chromecast with Google TV for camera streams; a data channel on
+   a receiver, which 2.8 needs, is unknown. Spike 6.0.
 6. The account is on Workers Paid: confirmed by the owner, 2026-10-21.
 7. The Android bundle contains no native libraries. Verify with `unzip -l` on
    the AAB in CI (4.7).
@@ -792,10 +834,10 @@ Flagged so they are checked, not trusted.
   and external displays. 1.1 is merged and device-confirmed (2026-10-22). The
   entry is drafted and waits to be appended (the file is too large for the
   tooling that wrote this plan to rewrite safely).
-- **Beside Cue** has the same template bug:
-  `apps/beside-cue/ios/App/App/AppDelegate.swift` gives `SceneDelegate` to
-  every role and `SceneDelegate` has no role guard. Port the 1.1 fix and its
-  test when the owner says so.
+- **Beside Cue** had the same template bug:
+  `apps/beside-cue/ios/App/App/AppDelegate.swift` gave `SceneDelegate` to
+  every role and `SceneDelegate` had no role guard. The 1.1 fix and its test
+  are ported in PR #1182.
 - **docs/agent/DEVICE-DEBUGGING.md:** a TestFlight Subscribe asks for the
   Apple Account password every time (sandbox purchases do not take Face ID),
   and a password manager's AutoFill can fail in that system prompt; a known
@@ -842,6 +884,13 @@ Flagged so they are checked, not trusted.
   `src/features/stem-mixer/useStemMixerMicController.ts`,
   `src/features/karaoke-room/KaraokeRoomStage.tsx`,
   `apps/beside-cue/ios/App/App/AppDelegate.swift`.
+- Read for section 2.9, 2026-10-23, at `main` `dfa8208`:
+  `docs/claude/RUNPOD.md` ("Stem storage lifecycle"),
+  `src/features/karaoke-room/karaoke-songs.ts`, `device-sync.md` (context,
+  TV section, D11), `src/lib/sync/sync-protocol.ts`,
+  `src/lib/sync/sync-peer.ts`, `src/stores/sync-store.ts`,
+  `src/features/karaoke-night/demo-song.ts`, `bundled-examples.ts`,
+  `public/karaoke-demo-song.json`.
 - GitHub: issue #489; PRs #485, #488, #501, #890, #1108, #1157, #1175, #1179.
 
 ## Sources
@@ -880,7 +929,12 @@ Checked on 2026-10-21.
   [Cast Connect core features](https://developers.google.com/cast/docs/android_tv_receiver/core_features),
   [Cast Connect codelab](https://developers.google.com/cast/codelabs/cast-connect-atv),
   [Presentation API with Cast sample](https://googlechrome.github.io/samples/presentation-api/cast.html),
-  [Cast receivers and Web Audio APIs (Music Assistant)](https://github.com/music-assistant/support/issues/5297).
+  [Cast receivers and Web Audio APIs (Music Assistant)](https://github.com/music-assistant/support/issues/5297),
+  [Cast developer registration fee (checked 2026-10-23)](https://support.google.com/cast-developer/answer/4512496),
+  [WebRTC on Chromecast with Google TV, camera streams (checked 2026-10-23)](https://developers.home.google.com/cloud-to-cloud/traits/camerastream).
+- A song's way to a receiver (checked 2026-10-23):
+  [Mixed content (MDN)](https://developer.mozilla.org/en-US/docs/Web/Security/Defenses/Mixed_content),
+  [Local Network Access permission (Chrome)](https://developer.chrome.com/blog/local-network-access).
 - AirPlay and iOS:
   [Presenting content on an external display](https://developer.apple.com/library/archive/documentation/WindowsViews/Conceptual/WindowAndScreenGuide/UsingExternalDisplay/UsingExternalDisplay.html),
   [QA1803: audio session category and AirPlay](https://developer.apple.com/library/archive/qa/qa1803/_index.html),

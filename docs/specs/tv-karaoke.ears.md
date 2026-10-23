@@ -14,7 +14,9 @@ named so the first PR that builds a requirement knows where it goes; a path
 marked _(planned)_ does not exist yet. Updated 2026-10-22: `REQ-TV-090` is
 done; `092` and `095` are in review (PR #1175); POC-3 (PR #1179) builds
 view-mode slices of `020`-`022`, `026`, `027`, `091` and `100`-`102`, and
-adds `104` and `105`, behind a test build's switch.
+adds `104` and `105`, behind a test build's switch. Updated 2026-10-23:
+`034` is added and `115` corrected. The server keeps no songs, so a TV that
+plays a song gets it from the phone (plan section 2.9).
 
 **Source (existing):** `src/lib/device-tier.ts` — device class and tier;
 `src/styles/performance-mode.css` — the TV focus ring;
@@ -237,7 +239,7 @@ room imports too, in a small chunk the two entries share.
 
 ---
 
-## Songs on the TV — `REQ-TV-030..033`
+## Songs on the TV — `REQ-TV-030..034`
 
 ### REQ-TV-030 — Never a dead upload button **[shipped notice, next action]**
 
@@ -268,6 +270,18 @@ sentence that says why and what works instead, and shall not attempt a full
 decode.
 _Tests:_ `src/features/stem-mixer/stem-stream-source.test.ts` _(planned
 case)_.
+
+### REQ-TV-034 — One song from the phone, through no server **[next]**
+
+**WHEN** the phone sends a song to a TV that plays it (the TV browser, the
+Google TV app or a Cast receiver), the audio shall cross only a direct peer
+connection between the two, and the TV shall be able to play the song without
+saving it. **IF** only a relayed connection is possible, **THEN** the phone
+shall not send the song and shall say why. Demo songs are exempt: the TV
+fetches them from their public URL.
+_Tests:_ `src/lib/sync/sync-protocol.test.ts` _(planned case: play without
+keeping)_; the relay refusal as `src/tests/sync-store.test.ts` pins it for
+sync today; a two-device run on the jam-two-peer harness.
 
 ---
 
@@ -711,11 +725,11 @@ starts a session, the Google TV app shall open instead of the web receiver.
 **IF** the app declines the launch, **THEN** the web receiver shall load.
 _Tests:_ a device check with a Play-installed build.
 
-### REQ-TV-115 — No public copy of a private song **[open]**
+### REQ-TV-115 — No server copy of a private song **[open]**
 
-The receiver shall load a song only from the user's cloud library or directly
-from the sender over a peer connection. It shall not require placing a local
-song at a public URL.
+The receiver shall load a demo song from its public URL, and any other song
+only from the sender over a direct peer connection (`REQ-TV-034`). It shall
+not require the user's audio to be placed on a server, not even for a moment.
 _Tests:_ `cast-receiver/song-source.test.ts` _(planned)_.
 
 ### REQ-TV-116 — Session end **[open]**
