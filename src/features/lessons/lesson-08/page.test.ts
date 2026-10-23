@@ -149,6 +149,28 @@ describe("Lesson 8's page", () => {
     expect(links).toContain('/ear-lab?lesson=08')
   })
 
+  it("names Count the bar's answers apart from the Bars toggles beside them, each by its key", () => {
+    // Arrange
+    const doc = new DOMParser().parseFromString(PAGE, 'text/html')
+    const names = (selector: string): (string | null)[] =>
+      Array.from(doc.querySelectorAll(selector), (b) =>
+        b.getAttribute('aria-label'),
+      )
+
+    // Act
+    const answers = names('[data-eg-answer]')
+    const toggles = names('[data-bars]')
+
+    // Assert: step 3 holds both, so no name is shared
+    expect(answers).toEqual([
+      '2: answer bars of 2',
+      '3: answer bars of 3',
+      '4: answer bars of 4',
+    ])
+    expect(toggles.length).toBeGreaterThan(0)
+    for (const t of toggles) expect(answers).not.toContain(t)
+  })
+
   it('writes "time signature" in lower case, never the team word "Signature"', () => {
     expect(PAGE).toMatch(/time signature/)
     expect(PAGE).not.toMatch(/Signature/)
