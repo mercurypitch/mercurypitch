@@ -71,7 +71,7 @@ function focusText(el: HTMLElement | null): void {
 /**
  * The shown panel's first line on show. The voice panel opens on a line a
  * first visit never sees ("Keep the voice you chose before"), hidden, and
- * focus sent there fell to the page (L8-04).
+ * focus sent there fell to the page.
  */
 function shownLine(card: HTMLElement): HTMLElement | null {
   const lines = card.querySelectorAll<HTMLElement>(

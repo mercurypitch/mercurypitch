@@ -92,7 +92,7 @@ export function initOctaveToy(deck: StepDeck): void {
     let val = Number(input.value) / 100
     // A soft detent at the octave, for a drag only: an arrow key or a screen
     // reader's swipe moves one step at a time, and the detent pulled every
-    // step off 2.00 straight back to it (L1-03).
+    // step off 2.00 straight back to it.
     if (dragging && Math.abs(val - 2) < 0.035 && val !== 2) {
       val = 2
       input.value = '200'
@@ -122,7 +122,7 @@ export function initOctaveToy(deck: StepDeck): void {
     dragging = false
   })
   // "Try 1.26", "Back to 2" and "Try 3" move a slider the keyboard is not
-  // on: what it now says is spoken, as the flag shows it (L1-01)
+  // on: what it now says is spoken, as the flag shows it
   announcer()
   qa('[data-ratio]').forEach((b) =>
     b.addEventListener('click', () => {

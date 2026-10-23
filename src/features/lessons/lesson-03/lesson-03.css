@@ -48,7 +48,7 @@
 }
 /* The tested figure answers the predict under the stage, so it keeps its
    place but stays out of sight, and out of a screen reader's reading, until
-   a choice is in (L3-11). */
+   a choice is in. */
 .stat.held {
   visibility: hidden;
 }

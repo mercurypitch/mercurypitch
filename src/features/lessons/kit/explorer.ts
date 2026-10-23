@@ -329,7 +329,7 @@ export function createExplorer(opts: ExplorerOptions): Explorer {
 
   function renderCard(): void {
     // the card is rebuilt whole, and the focused button goes with it: the
-    // keyboard would drop to the page (S-02)
+    // keyboard would drop to the page
     const slot = focusedSlot()
     const el = card(lessons[sel])
     if (narrow.matches) {

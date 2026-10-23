@@ -510,7 +510,7 @@ export function mountBeatMachine(o: BeatMachineOptions): BeatMachine {
     if (state === 'free') {
       free = resizePattern(choice.pattern, choice.pattern.beats)
       freeBpm = choice.bpm
-      // the pattern just loaded is the one pressed, as the live line says (L8-03)
+      // the pattern just loaded is the one pressed, as the live line says
       chosen = name
       syncTempos()
       layout()
@@ -599,7 +599,7 @@ export function mountBeatMachine(o: BeatMachineOptions): BeatMachine {
     })
     // The readout is drawn in the figure's hidden layer, so the tapped tempo
     // is spoken on the live line too: at most every TAPS_SAID_MS, and once
-    // more after the taps stop, never a word a tap (L8-02).
+    // more after the taps stop, never a word a tap.
     let tapWords = ''
     let tapTimer = 0
     const sayTaps = (): void => {

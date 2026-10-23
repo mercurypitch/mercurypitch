@@ -143,7 +143,7 @@ export function mountLoud(root: HTMLElement, opts: LoudOptions = {}): Loud {
   // the pitch the flag last spoke from: an arrow key moves "how fast" by a
   // fraction of a hertz, under the flag's half-hertz bar, so each step is
   // measured from here and not from the step before, or a keyboard never
-  // hears "Pitch: climbing" (L1-01)
+  // hears "Pitch: climbing"
   let flagFrom = 0
   // what the flag last said aloud, until it fades
   let said = ''

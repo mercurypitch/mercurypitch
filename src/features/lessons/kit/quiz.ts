@@ -266,8 +266,8 @@ export function createQuiz(opts: QuizOptions): Quiz {
       } else b.classList.add('dim')
       // Both cards say what they are in words, seen and heard: the brightest
       // card is the right answer, and a learner who missed must still find
-      // their own pick (G-01). The words are the name's end, so no name is
-      // built from the option's markup (S-07).
+      // their own pick. The words are the name's end, so no name is built
+      // from the option's markup.
       const tag = answerTag(chosen === j, option.correct === true)
       if (tag !== null)
         b.insertAdjacentHTML(
