@@ -667,4 +667,58 @@ describe("the explorer on the page's frame loop", () => {
     expect(painted()).toBe(202)
     expect(asked).toHaveLength(0)
   })
+
+  it('rests once a phone folds the card away, and shakes the sand again once its row opens it', async () => {
+    // Arrange: a phone, where the card opens in the list under its row;
+    // motion plays, and the list is on screen
+    const { asked, paints, see, settle } = await handLoop(false)
+    const media = window.matchMedia.bind(window)
+    vi.spyOn(window, 'matchMedia').mockImplementation(
+      (query) =>
+        (query === '(max-width: 860px)'
+          ? { ...media(query), matches: true }
+          : media(query)) as MediaQueryList,
+    )
+    vi.spyOn(window, 'scrollBy').mockImplementation(() => undefined)
+    const { createExplorer: create } = await import('./explorer')
+    explorerPage()
+    const explorer = create({ current: 1 })
+    const list = document.querySelector('#exList')
+    if (list === null) throw new Error('no list')
+    see(list)
+    settle()
+    const plateNow = (): HTMLCanvasElement | null =>
+      document.querySelector('#exList .ex-detail .plate canvas')
+    const tapRow = (): void =>
+      document
+        .querySelector<HTMLButtonElement>('#exList [data-n="13"] button.it')
+        ?.click()
+    explorer.select(13, false)
+    const plate = plateNow()
+    if (plate === null) throw new Error('no plate')
+    const painted = paints(plate)
+    const shaking = settle(100)
+    const shakingAsks = asked.length
+
+    // Act: a second tap on Lesson 13's open row, then a third
+    tapRow()
+    const folded = document.querySelectorAll('#exList .ex-detail').length
+    const toRest = settle()
+    const foldedAsks = asked.length
+    const foldedPaints = painted()
+    tapRow()
+    const back = plateNow()
+    const paintedBack = back === null ? () => 0 : paints(back)
+    const again = settle(100)
+
+    // Assert: the fold takes the plate off the page, and its frames with it
+    expect([shaking, shakingAsks, foldedPaints]).toEqual([100, 1, 100])
+    expect(folded).toBe(0)
+    expect(toRest).toBeLessThanOrEqual(2)
+    expect(foldedAsks).toBe(0)
+    expect(painted()).toBe(100)
+    expect(back).not.toBeNull()
+    expect([again, paintedBack()]).toEqual([100, 100])
+    expect(asked).toHaveLength(1)
+  })
 })
