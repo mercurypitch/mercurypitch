@@ -709,8 +709,8 @@ paused off screen, and the still images when WebGL fails or would run on the CPU
   Ascent's weeks (`CURRICULUM.md:510-514`), so that a later lesson can link it: a swell scored by
   its width in decibels rewards a louder swell, which this lesson's "grow only to about speaking
   volume" would not, so its score would change or its result would say what it measures; and the two
-  routines' descriptions, which promise gains in the breath and in range (59), the same way. Until
-  then no lesson links them.
+  routines' descriptions, which promised gains in the breath and in range (59), the same way. Until
+  then no lesson links them. The copy changed in this PR (58, 59); the score did not.
 
 ## Explorer and season data
 

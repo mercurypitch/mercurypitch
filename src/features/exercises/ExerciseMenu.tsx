@@ -191,9 +191,9 @@ const CARDS: ExerciseCardDef[] = [
     type: EXERCISE_DYNAMIC_SWELL,
     title: 'Dynamic Swell',
     description:
-      'Hold a note with controlled crescendo and decrescendo. Master breath support and dynamic control.',
+      'Hold a note and swell it soft to loud and back. Scored on staying in tune and how wide the swell is.',
     icon: () => <IconExpand size={24} />,
-    tags: ['Dynamics', 'Breath Control'],
+    tags: ['Dynamics', 'Intonation'],
     available: true,
   },
   {

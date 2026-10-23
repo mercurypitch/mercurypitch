@@ -32,7 +32,7 @@ export const dailyRoutines: RoutineTemplate[] = [
     id: 'long-note-focus',
     name: 'Breath & Stability',
     description:
-      'Build breath support and pitch stability with sustained notes',
+      'Hold sustained notes for a set time, keeping the pitch steady',
     segments: [
       {
         type: 'warmup',
@@ -212,7 +212,7 @@ export const dailyRoutines: RoutineTemplate[] = [
     id: 'range-focus',
     name: 'Range & Dynamics',
     description:
-      'Expand your range and control your dynamics with sirens and swells',
+      'Glide between two notes, then swell a held note soft to loud and back',
     segments: [
       {
         type: 'warmup',
