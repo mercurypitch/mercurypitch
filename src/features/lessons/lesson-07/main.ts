@@ -81,6 +81,14 @@ initWrap()
 createNextCard(7)
 createExplorer({ current: 7 })
 
+// the last screen's way back to the plan, for someone who answered its
+// questions: a chunk of its own, after first paint (one that cannot load
+// leaves the link hidden)
+void import('@/features/lessons/kit/plan-back').then(
+  ({ bootPlanBackLink }) => bootPlanBackLink(document),
+  () => undefined,
+)
+
 engraveClefs(G_CLEF_PATH)
 initMasthead(
   {

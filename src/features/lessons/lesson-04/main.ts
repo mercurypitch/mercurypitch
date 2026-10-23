@@ -93,6 +93,15 @@ mountStairsToy(freePlay, { active: watch(freePlay), names }).setStep('free')
 
 // the next lesson's card first: the explorer binds its link to the map
 createNextCard(4)
+
+// the last screen's way back to the plan, for someone who answered its
+// questions: a chunk of its own, after first paint (one that cannot load
+// leaves the link hidden)
+void import('@/features/lessons/kit/plan-back').then(
+  ({ bootPlanBackLink }) => bootPlanBackLink(document),
+  () => undefined,
+)
+
 createExplorer({ current: 4 })
 
 engraveClefs(G_CLEF_PATH)
