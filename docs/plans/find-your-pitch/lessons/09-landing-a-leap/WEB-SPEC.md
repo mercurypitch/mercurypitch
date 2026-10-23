@@ -70,7 +70,7 @@ heading, and the line above it, are in LESSON.md ("Section headings").
 
 1. **Masthead**: Lesson 1's (wordmark, "Season 1 · Lesson 09", anchors Lesson, Sing and Explorer,
    the Sound toggle off by default, Pause animations with its reduced-motion lock), through
-   `initMasthead(sections, { lesson: 9, deck })` (`kit/page-chrome.ts:97-111`): before anything else
+   `initMasthead(sections, { lesson: 9, deck })` (`kit/page-chrome.ts:99-113`): before anything else
    the page's links to other lessons follow the state it was served with (`followPageState`,
    `kit/page-state.ts:84-108`; Edge cases), then "Season 1 · Lesson 09" opens the lesson menu
    (`kit/lesson-menu.ts`), and the page's steps are remembered as the viewer moves through them
@@ -82,7 +82,7 @@ heading, and the line above it, are in LESSON.md ("Section headings").
    element the site worker writes a picked hook into (`src/lesson-gate.ts:582-583`); the meta as
    five chips ("16 minutes", FACTS 5; "After Lesson 3: Match a note", a link to `/learn/03`; "After
    Lesson 6: Intervals: the distance between notes", a link to `/learn/06`, each chip wholly the
-   link, as Lesson 2's `a.chip.chip-link` is, `learn/02.html:338-343`, so that it stays as a plain
+   link, as Lesson 2's `a.chip.chip-link` is, `learn/02.html:339-344`, so that it stays as a plain
    chip where its lesson is not live; Sound on; Microphone optional); the promise; and the sound
    gate from LESSON.md. Beside it, the stage: the bubbles, and the two Mercs on the floor line
    either side of the ladder chart in its compact state, whose still before any play is do's and
@@ -99,7 +99,7 @@ heading, and the line above it, are in LESSON.md ("Section headings").
 4. **Four words you'll meet**: leap, third, arpeggio and landing zone, each with its definition, a
    small figure and a play or show button (Toys 3).
 5. **The steps**: Lesson 1's sticky stage and step deck ("N of 5", Previous and Next), every step on
-   the one ladder chart (`toyFor: () => 1`, `kit/step-deck.ts:43-48`), in five states (Toys 1):
+   the one ladder chart (`toyFor: () => 1`, `kit/step-deck.ts:49-54`), in five states (Toys 1):
    1. Why is a leap harder than a step? Step and Leap, with the slowed folds.
    2. Can I aim a leap, then? The illustrated copy, Hear it first and Leap; the mix-up card.
    3. What's the ladder for? Climb, and two leaps over the climb.
@@ -120,7 +120,7 @@ heading, and the line above it, are in LESSON.md ("Section headings").
    it picks (`:14-20`), since the card reads the season as the page's state shows it (`:185`). The
    tease's figure, a still of the pitch spiral with do, mi and so lit and one "?" over all three,
    not over mi, sits in the page's `[data-next-card]` mark, whose children the kit keeps in the card
-   after its words (`:27-29`, `:184`, `:205`), as Lesson 2's figures are (`learn/02.html:1776`). The
+   after its words (`:27-29`, `:184`, `:205`), as Lesson 2's figures are (`learn/02.html:1798`). The
    card is a link, so the figure holds no button. The practice card is the Arpeggio Jumper and
    Interval Trainer card, with "Ten minutes, gently, most days" under it; after "Effortful",
    "Uncomfortable" or "Just listen today" it is the rest card instead, without that line (Toys 4).
@@ -234,7 +234,7 @@ step, hear, ladder, order, landing and free play, plus live mode at the checkpoi
   (`kit/step-deck.ts:15-17`; `fitStage`, `kit/stage-fit.ts:38`), and the figure, the kit's `.viz`
   (330 px beside the text; 280 px in the deck, 250 px at 420 px wide and under), gives way to it
   down to `--viz-min`, which this page sets to 210 px on the ladder chart, as Lesson 3's band chart
-  does (`lesson-03/lesson-03.css:171-176`), because its rung names and rows collide any lower; a
+  does (`lesson-03/lesson-03.css:177-182`), because its rung names and rows collide any lower; a
   stage still over budget scrolls inside itself, by 60 px at most (PRODUCTION-PIPELINE § 5). Keep
   each step's chrome, its stage less the figure, under about 375 px at 1133 px wide: each step's
   controls are one row of `btn sm` buttons where they fit, wrapping on a phone as the kit's rows do,
@@ -258,9 +258,9 @@ step, hear, ladder, order, landing and free play, plus live mode at the checkpoi
 
 ### 2. Predict widget
 
-- The kit's predict as it is (`mountPredict`, `kit/predict.ts:79`; FACTS 11), which takes two to
+- The kit's predict as it is (`mountPredict`, `kit/predict.ts:80`; FACTS 11), which takes two to
   four choices: here three `.choice` buttons, `data-choice` "re", "mi" and "fa", each at least 44 px
-  tall. The choice locks (`:106-124`) and unlocks the three plays, `data-play` "re", "mi" and "fa",
+  tall. The choice locks (`:113-131`) and unlocks the three plays, `data-play` "re", "mi" and "fa",
   labelled "Play do, re, so", "Play do, mi, so" and "Play do, fa, so", which start disabled.
 - **Play Merc's leap** is a `data-free` play inside the predict's root: it works before the choice,
   so the sound comes first (playbook rule 5), and it never reveals, since it is the leap the
@@ -283,7 +283,7 @@ step, hear, ladder, order, landing and free play, plus live mode at the checkpoi
 - States: waiting for a choice, with Play Merc's leap working; the choice locked and the plays open;
   one or two paths heard, with the `next` hint; all three heard, and the reveal shown. With sound
   off a play draws its path and shows the `silent` hint, and the reveal does not come.
-- Under reduced motion the reveal appears without its rise (`kit/predict.ts:135`).
+- Under reduced motion the reveal appears without its rise (`kit/predict.ts:149`).
 
 ### 3. Four words
 
@@ -295,7 +295,7 @@ Arpeggio plays do, mi, so and the top do; Landing zone lights so's band and play
 
 The ladder chart in live mode, inside Sing it's card, with Merc's rungs as the target and the
 viewer's line drawn against them. It is the kit's `.sing-chart` (240 px; 210 px at 420 px wide and
-under), a band chart as on Lessons 3 and 5 (`learn/03.html:1488`), so the full ladder's 14-semitone
+under), a band chart as on Lessons 3 and 5 (`learn/03.html:1485`), so the full ladder's 14-semitone
 window gives 15.1 px a semitone (13.0 at 210 px) and the smaller ladder's 9 gives 23.6 (20.2) (FACTS
 97). Every state has a visible status line that is also announced (`aria-live="polite"`).
 
@@ -303,12 +303,12 @@ States:
 
 1. **Comfort check**, always first and asked every visit (never stored): Lesson 3's comfort line,
    its list naming all six of REQ-GVC-020's conditions, and its two buttons (FACTS 64, 65), through
-   the kit's `mountComfort` (`kit/comfort.ts:111-119`).
+   the kit's `mountComfort` (`kit/comfort.ts:146-154`).
 2. **Voice choice**, after either comfort answer: Lesson 3's two buttons with the Mercs' stills
    (`aria-pressed`, at least 44 px), under LESSON.md's line in its two forms, "Choose a voice to
    sing with. If you chose one in an earlier lesson, pick it again:" with none stored and "Keep the
    voice you chose before, or change it:" with one, as Lessons 5 to 7 word it, the first as Lesson
-   5's page prints it (`learn/05.html:1374-1377`; FACTS 69). It reads and writes `fyp-voice` through
+   5's page prints it (`learn/05.html:1373-1376`; FACTS 69). It reads and writes `fyp-voice` through
    `VoiceChoice` (`kit/voice-choice.ts:20-48`). A stored choice shows pressed and can be changed;
    with none stored, neither is pressed and the next state waits for a choice, before "Just listen
    today" plays anything too, because the voice picks the Merc who sings.
@@ -327,7 +327,7 @@ States:
    (MASTER-PLAN § 4.2 item 2).
    - The ladder choice: two buttons with `aria-pressed`, "Do-mi-so-do: up to the top do" (pressed at
      first) and "Smaller: do-mi-so-mi-do". The chart shows the pressed ladder's slots, faint.
-   - **Move do**: Lesson 4's control, word for word (`learn/04.html:1243-1252`): a group labelled
+   - **Move do**: Lesson 4's control, word for word (`learn/04.html:1242-1251`): a group labelled
      "Move do:" with two buttons, "lower" and "higher", a semitone a tap, up to four each way from
      D3 (or D4), each disabled at its end, as Lesson 4's are (`lesson-04/sing.ts:34-35`, `:90-97`,
      `:168-176`; FACTS 75). The rungs, their names and the chart's window move with it, and the
@@ -359,7 +359,7 @@ States:
    today**, and no feeling question, since nothing was sung. Otherwise the count follows the lines
    (below) and **How did that feel?** follows at once (REQ-GVC-022).
 8. **How did that feel?**: Lesson 3's four answers (`aria-pressed`, at least 44 px, two a row on
-   phones), through `mountFeelings` (`kit/comfort.ts:121-152`) with its default, an answer that
+   phones), through `mountFeelings` (`kit/comfort.ts:156-187`) with its default, an answer that
    locks, asked after each take with voice (FACTS 82): a press disables all four, and `reset()`
    frees them for the next take, so an answer cannot be changed once it has set what follows. Lesson
    6's page (PR #1149) gives `mountFeelings` a `changeable` option for its sweeps, which this page
@@ -463,10 +463,10 @@ pulse, and the Mercs skip their reactions (REQ-GVC-083).
 
 The kit's quiz as it stands carries everything two quizzes on one page need (`kit/quiz.ts`): an id
 `prefix` for each quiz's elements (`:81-86`), question ids, from which a question's lesson is read
-(`:42-47`, `lessonOfQuestion` `:118-122`), an optional `lesson` (`:75-76`), a `slot` for a
+(`:42-47`, `lessonOfQuestion` `:124-128`), an optional `lesson` (`:75-76`), a `slot` for a
 question's own controls (`:52-58`), and links that leave this page for a question from another
-lesson (`linkAway`, `:173-203`), which keep their words and drop the link where that lesson is not
-live (`:173-177`).
+lesson (`linkAway`, `:179-209`), which keep their words and drop the link where that lesson is not
+live (`:179-183`).
 
 - **Recall**: Lesson 6's questions 2 and 3, word for word with their feedback (LESSON.md; FACTS 4),
   under their Lesson 6 ids, `l06-q2` and `l06-q3`, with the prefix `rc-`, as Lessons 3 and 5's
@@ -475,20 +475,20 @@ live (`:173-177`).
   4 and 5's are, `lesson-04/main.ts:61`); earlier answers are never shown, so the answers measure
   delayed retrieval (MASTER-PLAN § 9). It takes no `lesson`, so it marks nothing done. Question 2's
   slot holds a Play button for Lesson 6's sound, C4 then F4 (FACTS 96), handled by a listener on the
-  quiz's host, since the kit builds each slot once and keeps it across answers (`quiz.ts:222-229`).
+  quiz's host, since the kit builds each slot once and keeps it across answers (`quiz.ts:228-235`).
   The kit turns "Try Step 5 again" and "Try Step 2 again" into "Try Lesson 6, Step 5 again" and "Try
   Lesson 6, Step 2 again", links that open Lesson 6's page at that step, `/learn/06#step-5` and
   `/learn/06#step-2`, in a new tab so the viewer keeps their place here, never `data-goto-step`,
-  which would move this page's own deck (`quiz.ts:173-203`); where Lesson 6 is not live, each keeps
-  its words with no link (`:193-196`; Edge cases). The address is the quiz's `away.href`
-  (`quiz.ts:87-94`), the kit's `recallStepHref` (`:128-130`) in place of the default
+  which would move this page's own deck (`quiz.ts:179-209`); where Lesson 6 is not live, each keeps
+  its words with no link (`:199-202`; Edge cases). The address is the quiz's `away.href`
+  (`quiz.ts:87-94`), the kit's `recallStepHref` (`:134-136`) in place of the default
   `/learn/06#lesson`, and the kit's step deck opens at the step an address names
-  (`kit/step-deck.ts:18-23`, `:269-277`).
+  (`kit/step-deck.ts:18-23`, `:284-292`).
 - **Quick check**: LESSON.md's four questions, ids `l09-q1` to `l09-q4`, keys `fyp-l09-seed` and
   `fyp-l09-quiz-v1` (`lesson-04/main.ts:84`), and `lesson: 9`, so answering all four marks Lesson 9
   done in the explorer. Three answers each, shuffled per question from the stored seed, one-line
   feedback for every answer, and a check icon and ink (not gold) on the right one. The kit prints
-  "Right." or "Not quite." before each line (`quiz.ts:278`), so no feedback line starts with
+  "Right." or "Not quite." before each line (`quiz.ts:293`), so no feedback line starts with
   "Right", "Yes" or "Correct". "Try Step 2 again", "Try Step 3 again", "Try Step 4 again" and "Try
   Step 5 again" use the kit's `data-goto-step`. LESSON.md's note on the shuffle is editorial and
   never printed. Answers stay in the viewer's browser until the telemetry track exists.
@@ -509,8 +509,8 @@ the owner stops whatever was sounding, so a new tap stops the last, whichever co
 Leaving a step stops its sound and anything it has queued, the rest of a sequence or a replay,
 whatever the route: Previous or Next, a swipe, the wide page's scroll, the lesson menu's jump, a
 `#step-N` address and a quick-check step link all reach the deck's `show`, which calls each toy's
-`onStep(step, previous)` (`kit/step-deck.ts:39-41`, `:130-162`), and the page stops the step's sound
-whenever `step` differs from `previous`; a layout switch calls it with the same step (`:178-181`)
+`onStep(step, previous)` (`kit/step-deck.ts:45-47`, `:140-172`), and the page stops the step's sound
+whenever `step` differs from `previous`; a layout switch calls it with the same step (`:188-191`)
 and stops nothing. A play cut short, by a new play or a stop, never counts as heard: the cold open's
 `play` resolves `false` for it, and the predict counts only a play that runs to its end (Toys 2).
 Both rules' kit parts come with PR #1149's fix pass, from Lesson 6's page review: the owner, and
@@ -684,10 +684,10 @@ table):
    between blue Merc and orange Merc. It shows no middle note, so it does not answer the cold open's
    predict.
 4. First-paint ceilings for `learn/09.html` in `scripts/assert-first-paint-budgets.mjs`, one in its
-   JavaScript table and one in its stylesheet table, beside Lesson 3's (`:103-122`, `:218-221`).
-   Every build emits every lesson page, and the check fails a document with no ceiling (`:476-480`),
+   JavaScript table and one in its stylesheet table, beside Lesson 3's (`:103-122`, `:222-225`).
+   Every build emits every lesson page, and the check fails a document with no ceiling (`:480-484`),
    so without them the Browser jobs fail before any spec runs, as Lesson 6's did on PR #1149. Each
-   is the page's measured first paint plus about a quarter, the tables' rule (`:47-58`, `:174-184`),
+   is the page's measured first paint plus about a quarter, the tables' rule (`:47-58`, `:178-188`),
    measured in `build:e2e`, where the check runs (`package.json:20`): a build of Lesson 6's page
    alone weighed it about 8 KB lighter. As on Lesson 3, the listener, the pitch detector and Voice
    Mirror's scorer arrive through a dynamic import when Start is pressed
@@ -712,7 +712,7 @@ table):
    8).
 9. The two sound rules' kit parts (Audio), which PR #1149's fix pass brings from Lesson 6's page
    review: `kit/predict.ts`'s `play` may resolve `false` for a play cut short, which the predict
-   then never counts as heard, while a `void` result keeps today's meaning (`:30-40`, `:170-174`);
+   then never counts as heard, while a `void` result keeps today's meaning (`:31-41`, `:184-188`);
    and a page-wide "now playing" owner that every sound source takes before it sounds, which stops
    the sound before it. If that pass keeps the owner in Lesson 6's own modules, it moves into the
    kit before this page is built, as Move do does (item 10).
@@ -795,10 +795,10 @@ What the page does where nothing above says:
   is a rule for whoever uses the console (the intro), so the page follows the state it is served
   with. The site worker, and then the masthead's `followPageState`, make every link to a lesson that
   is not live no link (`src/lesson-gate.ts:515-525`, `:539-559`; `kit/page-state.ts:64-108`, called
-  by `initMasthead`, `kit/page-chrome.ts:111`): the "After Lesson 3" or "After Lesson 6" chip stays
+  by `initMasthead`, `kit/page-chrome.ts:113`): the "After Lesson 3" or "After Lesson 6" chip stays
   as a plain chip, and any other link keeps its words. The kit's quiz does the same for the recall's
   step links, which keep their words, "Try Lesson 6, Step 5 again", with no link
-  (`kit/quiz.ts:173-203`). The recall still shows, and the explorer and the lesson menu draw the
+  (`kit/quiz.ts:179-209`). The recall still shows, and the explorer and the lesson menu draw the
   lesson held back as coming later. End to end 13 holds it.
 - **Reduced motion**: Look, Toys 1 and Toys 4 give the end states; nothing moves on its own.
 

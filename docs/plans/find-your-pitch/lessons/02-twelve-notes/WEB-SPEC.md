@@ -161,7 +161,7 @@ are Lesson, Watch and Explorer. Each section's heading, and the line above it, a
 11. **Footer**: Lesson 1's, with every string as LESSON.md gives it ("Head and footer"): "Season 1
     · Lesson 02 · Twelve notes"; the practice link, printed `mercurypitch.com/ear-lab` and linking
     `/ear-lab?lesson=02`, with "Ear Lab is free: tap Leap."; and the credits as Lesson 1's built
-    footer words them ("Voices in the episode: ElevenLabs (Eleven v3).", `learn/01.html:1568-1572`),
+    footer words them ("Voices in the episode: ElevenLabs (Eleven v3).", `learn/01.html:1595-1599`),
     with the episode's sung notes, its synthesised examples and this page's synthesised sound
     (FACTS 41, 50, 51; FACTS, Labels).
 
@@ -255,7 +255,7 @@ step 4's; step 5's; and free play's.
   return. Under reduced motion both land in their end state at once.
 - **Keyboard** (step 3): Lesson 1's Unroll button and keyboard (A2 to A5 on a wide stage, low notes
   left, A3 blue, A4 orange; its labels "Unroll the spiral" and "Roll it back up",
-  `kit/spiral.ts:163-166`), now with every key lit and playable, the black keys named by
+  `kit/spiral.ts:175-178`), now with every key lit and playable, the black keys named by
   the toggle. Two keys played one after the other draw a step bar between them, a notch per
   semitone, labelled with its number of semitones: "1" and "2" as the film's bars are, and "3" and
   up the same way. Phones show the octave A3 to A4 ("On phones", below).
@@ -291,7 +291,7 @@ figure.
   the 51 px below the black keys, and wherever no black key's zone reaches. Names sit on the keys;
   step bars draw under them, y 256 to 300. On a phone narrower than 386 px the keyboard shows as
   many white keys as fit at 44 px or wider (seven from 342 px up), from A3, and two 44 px buttons
-  under it pan one white key at a time, where Lesson 1's pan an octave (`kit/spiral.ts:298-310`).
+  under it pan one white key at a time, where Lesson 1's pan an octave (`kit/spiral.ts:314-326`).
 - **Straighten**, and step 4's row: thirteen equal tiles across the same 356 px, 27.4 px each. On
   phones they are a picture, not targets: they light as notes play, and every control is a 44 px
   button. A tile narrower than 44 px takes no taps; on the desktop stage the tiles are about 50 px
@@ -532,7 +532,7 @@ what it must do. The kit items move Lesson 1's code into `src/features/lessons/k
    accessible names read it and redraw when it changes.
 7. **Lit beads, per copy.** Each spiral copy keeps its own; they are not in any shared store
    (DECISIONS 81).
-8. **`kit/step-deck.ts`**: one toy per step stays (`toyFor`, `step-deck.ts:44-45`); the ear game is
+8. **`kit/step-deck.ts`**: one toy per step stays (`toyFor`, `step-deck.ts:50-51`); the ear game is
    in step 4's text, not on the stage (DECISIONS 82). Optional: open at the step a `#step-N` address
    names, so Lessons 3 and 4's recall links can open a step here (Lesson 3 WEB-SPEC, "New
    engineering", 6).
@@ -541,7 +541,7 @@ what it must do. The kit items move Lesson 1's code into `src/features/lessons/k
    optional, so the recall check marks no lesson done (it marks `lesson` done once every question
    has an answer); and a question `id`, the telemetry's `question_id` (`QuizQuestion` had none,
    FACTS 35a). And two more, for this page and the pages that reuse its questions: a slot after a
-   question's heading, outside the `<h3>` that labels its answers (`quiz.ts:291`), for the
+   question's heading, outside the `<h3>` that labels its answers (`quiz.ts:306`), for the
    question's own controls, so question 2's Play the two steps and its "1st" and "2nd" chips do not
    become part of every answer's name (Lesson 3's recall asks question 2 with its button too); and
    a rule for a question reused on another lesson's page: there its "Try Step N again" is a plain
