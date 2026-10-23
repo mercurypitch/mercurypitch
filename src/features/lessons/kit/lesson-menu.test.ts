@@ -73,8 +73,9 @@ describe('menuModel', () => {
         .map((r) => r.n),
     )
 
-    // Assert: Lessons 2 and 3 both build on Lesson 1, and Lesson 8 on no lesson
-    expect(before).toEqual([8])
+    // Assert: Lessons 2, 3 and 8 all build on Lesson 1, so nothing comes
+    // before it, and Lesson 2 is first after it
+    expect(before).toEqual([])
     expect(after).toEqual([2])
   })
 

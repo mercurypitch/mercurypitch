@@ -9,15 +9,15 @@ the rules behind the checkpoint's lines. This is a theory lesson and a text-only
 has no film yet, so the page has no Watch section. Each step's heading is orange Merc's question
 (playbook rule 4). The page opens as Lesson 2's does: the hook, the stage, the sound gate and the
 cold open's predict, then the recall (MASTER-PLAN § 4.2 and § 12 item 13; CURIOSITY-MOMENTS § 3.1).
-The lesson has no prerequisite (CURRICULUM § 3.3: rhythm starts fresh), but its checkpoint ends with
-one sung line, so it carries the singing lines of Lessons 3, 5, 6 and 7 and lists them for the vocal
-coach at the end. Where this page shares a line with them (the comfort check, "Just listen today",
-the voice choice, the stop line, the four feelings with their gentle and enough-for-today lines, the
-doctor lines and the rest card), it is their current text, word for word, with only the exercise and
-its address changed. Its checkpoint takes taps, not claps: a page cannot hear a clap without the
-microphone, and nothing on this page listens (FACTS 34, 35). The page publishes only after Lesson
-6's page, `/learn/06`, is published, because its recall check links there, and it stays a draft,
-held back on mercurypitch.com, until the vocal coach signs off its sung line (FACTS 7).
+The lesson comes after Lesson 1 (CURRICULUM § 3.3; rhythm starts fresh), and its checkpoint ends
+with one sung line, so it carries the singing lines of Lessons 3, 5, 6 and 7 and lists them for the
+vocal coach at the end. Where this page shares a line with them (the comfort check, "Just listen
+today", the voice choice, the stop line, the four feelings with their gentle and enough-for-today
+lines, the doctor lines and the rest card), it is their current text, word for word, with only the
+exercise and its address changed. Its checkpoint takes taps, not claps: a page cannot hear a clap
+without the microphone, and nothing on this page listens (FACTS 34, 35). The page publishes only
+after Lesson 6's page, `/learn/06`, is published, because its recall check links there, and it stays
+a draft, held back on mercurypitch.com, until the vocal coach signs off its sung line (FACTS 7).
 
 ---
 

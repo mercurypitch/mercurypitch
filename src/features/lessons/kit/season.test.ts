@@ -34,8 +34,8 @@ describe('unlocks', () => {
     // Act
     const opened = unlocks(1)
 
-    // Assert
-    expect(opened).toEqual([2, 3])
+    // Assert: 8 needs 1 directly
+    expect(opened).toEqual([2, 3, 8])
   })
 
   it('opens nothing from the trailer or the finale', () => {
@@ -123,7 +123,7 @@ describe('lessonPath', () => {
     const lit = litEdges(1)
 
     // Assert
-    expect(lit).toEqual({ '1-2': 'out', '1-3': 'out' })
+    expect(lit).toEqual({ '1-2': 'out', '1-3': 'out', '1-8': 'out' })
   })
 
   it('lights every edge into the finale, and none for the trailer', () => {
