@@ -320,7 +320,7 @@ const WEB_PAGE_HEADER = {
   // its tap surface and the six door buttons a screen reader walks.
   rooms: {
     gone: [
-      '[data-testid="home-learn"]',
+      '[data-testid="home-lessons"]',
       '[data-testid="home-whats-new"]',
       '[data-testid="home-heading"]',
       '[data-destination]',
