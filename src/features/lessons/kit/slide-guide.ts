@@ -21,14 +21,17 @@
 // with no rest to breathe in can carry breath marks (Lesson 6's, after
 // "star"): a small tick over the path in its own colour with the word
 // "breathe", lit as the voice or the sweep reaches it. A page whose run can
-// be cut short ends it where it stands (`stop`), and the guide rests.
+// be cut short ends it where it stands (`stop`), and the guide rests. It
+// draws only when what it shows has changed (a run's phase, new rows or a
+// new path, a new size, pixel ratio or font) and through a run; at rest it
+// asks the page's frame loop for nothing (frame-loop.ts, `wants`).
 //
 // Mounted on a root holding a `canvas` and a `[data-guide-rows]` box, into
 // which the row labels are written as markup (so a ♯ is spoken), each at its
 // row's height.
 
 import { clamp, q } from './dom'
-import { addDrawer, surface, watch } from './frame-loop'
+import { addDrawer, surface, wake, watch, watchPixelRatio } from './frame-loop'
 import { reducedMotion } from './motion-switch'
 import { COLOR, rgba } from './notes'
 
@@ -376,7 +379,8 @@ function placeLabels(box: HTMLElement, rows: readonly GuideRow[]): void {
 }
 
 export function mountGuide(root: HTMLElement, opts: GuideOptions): Guide {
-  const cv = surface(q<HTMLCanvasElement>('canvas', root))
+  const canvas = q<HTMLCanvasElement>('canvas', root)
+  const cv = surface(canvas)
   const box = q('[data-guide-rows]', root)
   let rows = opts.rows
   let path = opts.path
@@ -386,7 +390,21 @@ export function mountGuide(root: HTMLElement, opts: GuideOptions): Guide {
   let wait = 0
   let timers: number[] = []
   let settle: (() => void) | null = null
+  // something the guide shows has changed since its last frame
+  let dirty = true
+  // the size and pixel ratio of its last frame
+  let drawnAt = ''
   placeLabels(box, rows)
+
+  /** The canvas's size and pixel ratio now, as its next frame would draw them. */
+  const sizeNow = (): string =>
+    `${canvas.clientWidth}x${canvas.clientHeight}@${window.devicePixelRatio || 1}`
+
+  /** Something the guide shows has changed: it draws on the next frame. */
+  function changed(): void {
+    dirty = true
+    wake()
+  }
 
   /** The breath marks in the path's colour now, lit as far as the voice or the sweep has come. */
   function marks(ctx: CanvasRenderingContext2D, f: Frame, s: number): void {
@@ -419,6 +437,7 @@ export function mountGuide(root: HTMLElement, opts: GuideOptions): Guide {
   }
 
   function draw(now: number): void {
+    dirty = false
     const { ctx, w: W, h: H } = cv.fit()
     const f = guideFrame(W, H, rows, path)
     drawRows(ctx, f, rows)
@@ -429,9 +448,22 @@ export function mountGuide(root: HTMLElement, opts: GuideOptions): Guide {
     else if (mode === 'sweep') drawSweep(ctx, f, path, s - wait, H)
     else rest(ctx, f)
     marks(ctx, f, s)
+    drawnAt = sizeNow()
   }
 
-  addDrawer({ active: opts.active ?? watch(root), draw })
+  addDrawer({
+    active: opts.active ?? watch(root),
+    // a run moves every frame; at rest only a change has a frame to draw,
+    // and a size or pixel ratio that moved without a word still counts
+    wants: () => dirty || mode !== 'rest' || sizeNow() !== drawnAt,
+    draw,
+  })
+  // a new size or pixel ratio draws again, and so does a font that loads
+  // after a frame drew the breath marks' words in another
+  new ResizeObserver(changed).observe(canvas)
+  watchPixelRatio(changed)
+  void document.fonts?.ready.then(changed)
+  document.fonts?.addEventListener('loadingdone', changed)
 
   /** Runs `phases` in turn on timers (so a run ends on time even off screen), then rests. */
   function run(
@@ -440,6 +472,7 @@ export function mountGuide(root: HTMLElement, opts: GuideOptions): Guide {
   ): Promise<void> {
     wait = countIn
     t0 = performance.now()
+    changed()
     return new Promise((resolve) => {
       settle = resolve
       let at = 0
@@ -447,6 +480,7 @@ export function mountGuide(root: HTMLElement, opts: GuideOptions): Guide {
         timers.push(
           window.setTimeout(() => {
             mode = phase
+            changed()
           }, at * 1000),
         )
         at += seconds
@@ -454,6 +488,7 @@ export function mountGuide(root: HTMLElement, opts: GuideOptions): Guide {
       timers.push(
         window.setTimeout(() => {
           mode = 'rest'
+          changed()
           timers = []
           settle = null
           resolve()
@@ -471,6 +506,7 @@ export function mountGuide(root: HTMLElement, opts: GuideOptions): Guide {
       path = nextPath
       if (nextBreaths !== undefined) breaths = nextBreaths
       placeLabels(box, rows)
+      changed()
     },
     model() {
       mode = 'model'
@@ -490,6 +526,7 @@ export function mountGuide(root: HTMLElement, opts: GuideOptions): Guide {
       timers.forEach((id) => window.clearTimeout(id))
       timers = []
       mode = 'rest'
+      changed()
       const done = settle
       settle = null
       done?.()

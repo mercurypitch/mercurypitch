@@ -1,10 +1,15 @@
 // ============================================================
 // Lesson slide guide tests — the path's pitch, the rows, and the two runs
 // ============================================================
+//
+// And the guide on the page's frame loop: it paints every frame of a run
+// and once for each change at rest, and otherwise asks for no frame.
 
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import './browser-doubles.test-fixtures'
-import type { GuidePoint, GuideRow } from './slide-guide'
+import type { HandLoop } from './frame-loop.test-fixtures'
+import { handLoop } from './frame-loop.test-fixtures'
+import type { Guide, GuidePoint, GuideRow } from './slide-guide'
 import { breathAt, guideFrame, inGap, mountGuide, pathLength, pathPieces, pitchAt, } from './slide-guide'
 
 /** Lesson 2's slide on A3 (FACTS 50): hold, up a semitone, hold, back, hold. */
@@ -38,6 +43,7 @@ const labels = (root: HTMLElement): string[] =>
 
 afterEach(() => {
   vi.useRealTimers()
+  vi.restoreAllMocks()
   document.body.textContent = ''
 })
 
@@ -224,5 +230,159 @@ describe('mountGuide', () => {
 
     // Assert
     expect(labels(root)).toEqual(['G♯4', 'A4', 'A♯4', 'B4'])
+  })
+})
+
+describe("the guide on the page's frame loop", () => {
+  /** A guide on screen, its paints counted from before its first frame, settled. */
+  async function settledGuide(): Promise<
+    HandLoop & { root: HTMLElement; guide: Guide; painted: () => number }
+  > {
+    const hand = await handLoop()
+    const { mountGuide: mount } = await import('./slide-guide')
+    const root = guideRoot()
+    const canvas = root.querySelector('canvas')
+    if (canvas === null) throw new Error('no canvas')
+    const painted = hand.paints(canvas)
+    const guide = mount(root, { rows: LANES, path: SLIDE })
+    hand.see(root)
+    hand.settle()
+    return { ...hand, root, guide, painted }
+  }
+
+  it('paints its first frame, then asks for none, and paints nothing in a frame another drawer asks for', async () => {
+    // Arrange
+    const { asked, loop, settle, painted } = await settledGuide()
+    const first = painted()
+    const resting = asked.length
+
+    // Act: another drawer's frame
+    loop.wake()
+    settle()
+
+    // Assert
+    expect(first).toBe(1)
+    expect(resting).toBe(0)
+    expect(painted()).toBe(1)
+  })
+
+  it("paints every frame of Merc's model, its rest at the end, and then asks for none", async () => {
+    // Arrange
+    const { asked, guide, settle, painted } = await settledGuide()
+
+    // Act: the slide's 4.2 s
+    const done = guide.model()
+    const frames = settle()
+    await done
+
+    // Assert: a frame every 16 ms, the last of them drawn at rest
+    expect(frames).toBe(Math.ceil(4200 / 16))
+    expect(painted()).toBe(1 + frames)
+    expect(guide.busy).toBe(false)
+    expect(asked).toHaveLength(0)
+  })
+
+  it('paints every frame of the count-in and the sweep, then its rest, and then asks for none', async () => {
+    // Arrange
+    const { asked, guide, settle, painted } = await settledGuide()
+
+    // Act: a one-second count-in, then the 4.2 s sweep
+    const done = guide.sweep(1)
+    const frames = settle()
+    await done
+
+    // Assert
+    expect(frames).toBe(Math.ceil(5200 / 16))
+    expect(painted()).toBe(1 + frames)
+    expect(asked).toHaveLength(0)
+  })
+
+  it('paints its rest once when a run is stopped where it stands, then asks for none', async () => {
+    // Arrange: a model ten frames in
+    const { asked, frame, guide, settle, painted } = await settledGuide()
+    void guide.model()
+    for (let i = 0; i < 10; i += 1) frame()
+    const before = painted()
+
+    // Act
+    guide.stop()
+    const after = settle()
+
+    // Assert
+    expect(after).toBe(1)
+    expect(painted() - before).toBe(1)
+    expect(asked).toHaveLength(0)
+  })
+
+  it('paints once for each change at rest: new rows and path, a new size, a new pixel ratio, a font loaded', async () => {
+    // Arrange
+    const { asked, guide, root, settle, painted, resize, zoom, fontsLoad } =
+      await settledGuide()
+    const canvas = root.querySelector('canvas')
+    if (canvas === null) throw new Error('no canvas')
+    const up = LANES.map((r) => ({ ...r, midi: r.midi + 12 }))
+    const changes: (() => void)[] = [
+      () =>
+        guide.set(
+          up,
+          SLIDE.map((p) => ({ ...p, midi: p.midi + 12 })),
+        ),
+      () => resize(canvas),
+      zoom,
+      fontsLoad,
+    ]
+
+    // Act
+    const each = changes.map((change) => {
+      const before = painted()
+      change()
+      settle()
+      return painted() - before
+    })
+
+    // Assert
+    expect(each).toEqual([1, 1, 1, 1])
+    expect(asked).toHaveLength(0)
+  })
+
+  it('paints a pixel ratio that changed with no word of it in the next frame the page asks for', async () => {
+    // Arrange
+    const { asked, loop, settle, painted } = await settledGuide()
+    const before = painted()
+
+    // Act: a new ratio, and another drawer's frame
+    const ratio = window.devicePixelRatio
+    vi.stubGlobal('devicePixelRatio', 2)
+    loop.wake()
+    settle()
+    vi.stubGlobal('devicePixelRatio', ratio)
+
+    // Assert
+    expect(painted() - before).toBe(1)
+    expect(asked).toHaveLength(0)
+  })
+
+  it('paints the rest of a run that ended off screen once the guide is seen again', async () => {
+    // Arrange: a model under way, then the guide scrolled away
+    const { asked, frame, guide, root, see, settle, painted } =
+      await settledGuide()
+    const done = guide.model()
+    for (let i = 0; i < 10; i += 1) frame()
+    see(root, false)
+    settle()
+    const away = painted()
+
+    // Act: the model ends on its timer, off screen; then the guide comes back
+    vi.advanceTimersByTime(5000)
+    await done
+    settle()
+    const endedAway = painted() - away
+    see(root)
+    settle()
+
+    // Assert
+    expect(endedAway).toBe(0)
+    expect(painted() - away).toBe(1)
+    expect(asked).toHaveLength(0)
   })
 })
