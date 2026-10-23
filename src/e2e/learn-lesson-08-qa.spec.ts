@@ -13,7 +13,7 @@
 // live region; at 390 x 844 every cell is at least 44 px square with none
 // overlapping. The take counts in and walks its two parts' status lines,
 // says so when no tap lines up, stops on Stop, and with sound off does not
-// start. Under reduced motion the arm holds still and the Mercs never hop.
+// start. Under reduced motion the arm holds still and neither Merc nor Tavi hops.
 // Nothing asks for the microphone.
 
 import type { Locator, Page } from '@playwright/test'
@@ -346,7 +346,7 @@ test.describe('page QA (WEB-SPEC, Tests)', () => {
     )
   })
 
-  test('under reduced motion the arm holds still while the metronome runs, and the Mercs never hop', async ({
+  test('under reduced motion the arm holds still while the metronome runs, and neither Merc nor Tavi hops', async ({
     page,
   }) => {
     /** Watches every frame for `ms`: the arm's transforms seen, and the most animations on either Merc. */
