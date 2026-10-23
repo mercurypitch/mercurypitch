@@ -103,7 +103,7 @@ FACTS 5a). Each section's heading, and the line above it, are in LESSON.md ("Sec
    sections and `{ lesson: 10, deck }` (`lesson-04/main.ts:99-110`), which draws the lesson menu,
    remembers the steps the viewer reaches and first settles the page's links to other lessons for
    the state it was served with (`followPageState`, `src/features/lessons/kit/page-chrome.ts:113`).
-2. **Hero, with the cold open**, laid out as Lesson 2's (`learn/02.html:320-493`). Its copy holds
+2. **Hero, with the cold open**, laid out as Lesson 2's (`learn/02.html:321-494`). Its copy holds
    the kicker, the hook question as the title (the `<h1 class="hook" id="hook">` every lesson page
    has, `learn/04.html:320`), the meta as three chips, the promise and the sound gate from
    LESSON.md. The chips are "17 minutes" (FACTS 3), "After Lesson 6: Intervals: the distance between
@@ -145,7 +145,7 @@ FACTS 5a). Each section's heading, and the line above it, are in LESSON.md ("Sec
    "Effortful", "Uncomfortable" or "Just listen today" it is the rest card instead, with Drone
    Intonation named and Stack still offered, since Stack needs no voice (Toys 6; FACTS 67). Both
    links open in a new tab. The two versions sit in one `#practiseCard`, shown by the visit's
-   ending, as Lesson 5's are (`src/features/lessons/lesson-05/wrap.ts:22-29`). The next lesson's
+   ending, as Lesson 5's are (`lesson-05/wrap.ts:23-25`; `comfort.ts:114-137`). The next lesson's
    card is the kit's, drawn from the season by `createNextCard(10)` before
    `createExplorer({ current: 10 })`, as Lesson 4's page draws its own (`lesson-04/main.ts:94-96`;
    `kit/next-card.ts:181-209`, from the season as the page's state shows it). Its eyebrow reads
@@ -355,15 +355,15 @@ mounted as Lesson 2's hero copy is (`lesson-02/spiral-copy.ts`; `lesson-02/cold-
 taken further without forking it (`spiral.ts:28-32`):
 
 - **Seen from above.** `setView('top')` at mount looks straight down the axis, so one turn is a ring
-  of twelve (`spiral.ts:141-142`), and `ring: 60` keeps the turn from C4 lit from above (`:105-106`),
-  so do, mi and so, C4, E4 and G4, sit on it. `setTurning(false)` holds it still (`:139-140`). Every
-  name on the spiral follows the page's sharps-or-flats choice (`spiral.ts:19-20`), which the page
-  sets to Flats at load (`Names`, `kit/names.ts:84-88`), so the ring names every black key by its
-  flat, D♭, E♭, G♭, A♭ and B♭, and each move lands on the letter it left, E♭ or G♭ (FACTS 10). The
-  page shows no switch for it, and the chord beads, which spell through `spellOn`, never read it
-  (`src/features/lessons/kit/notes.ts:151-177`). A black key's bead is a "?" until it is lit on that
-  copy (`spiral.ts:19-20`), so the page lights the turn's five with `light` (`:131-132`), and the
-  moving bead lands on a named note, E♭ or G♭.
+  of twelve (`spiral.ts:141-142`), and `ring: 60` keeps the turn from C4 lit from above
+  (`:105-106`), so do, mi and so, C4, E4 and G4, sit on it. `setTurning(false)` holds it still
+  (`:139-140`). Every name on the spiral follows the page's sharps-or-flats choice
+  (`spiral.ts:25-26`), which the page sets to Flats at load (`Names`, `kit/names.ts:84-88`), so the
+  ring names every black key by its flat, D♭, E♭, G♭, A♭ and B♭, and each move lands on the letter
+  it left, E♭ or G♭ (FACTS 10). The page shows no switch for it, and the chord beads, which spell
+  through `spellOn`, never read it (`src/features/lessons/kit/notes.ts:151-177`). A black key's bead
+  is a "?" until it is lit on that copy (`spiral.ts:19-20`), so the page lights the turn's five with
+  `light` (`:131-132`), and the moving bead lands on a named note, E♭ or G♭.
 - **The page's marks**, drawn each frame in the spiral's `overlay` (`spiral.ts:99-100`) from where
   the beads landed (`BeadHit`, `src/features/lessons/kit/spiral-draw.ts:31-37`), as Lesson 2's trail
   is (`lesson-02/spiral-copy.ts:38-40`): a chrome halo round do, mi and so, each carrying its
@@ -395,18 +395,18 @@ taken further without forking it (`spiral.ts:28-32`):
   not free (`:113-131`).
 - **Cold open.** The choices are [ Mi ] [ So ] (FACTS 41). Its three plays sit under the spiral on
   the hero's stage, outside the predict card, and are handed to the predict as its `plays`
-  (`predict.ts:67-68`). "Play the chord" (`chord-c`) is a free play (`data-free`, `:15-16`): it sets
-  up the question and answers nothing. "Move mi down" (`move-mi`) and "Move so down" (`move-so`)
-  wait for the choice, and the reveal waits until both have been heard, since it compares them:
-  `revealOn: ['move-mi', 'move-so']` with `revealAfter: 'all'` (`:52-58`). The two must be passed
-  together: without `revealOn`, `'all'` waits on nothing (`:97-101`). Until a choice the lock hint,
-  in the markup, reads LESSON.md's "Choose an answer to unlock the two moves."; after one,
-  `hints.chosen` reads "Locked in. Move mi down, then move so down, and listen to each chord.";
+  (`kit/predict.ts:68-69`). "Play the chord" (`chord-c`) is a free play (`data-free`, `:15-16`): it
+  sets up the question and answers nothing. "Move mi down" (`move-mi`) and "Move so down"
+  (`move-so`) wait for the choice, and the reveal waits until both have been heard, since it
+  compares them: `revealOn: ['move-mi', 'move-so']` with `revealAfter: 'all'` (`:53-59`). The two
+  must be passed together: without `revealOn`, `'all'` waits on nothing (`:98-102`). Until a choice
+  the lock hint, in the markup, reads LESSON.md's "Choose an answer to unlock the two moves."; after
+  one, `hints.chosen` reads "Locked in. Move mi down, then move so down, and listen to each chord.";
   after a heard play that does not reveal, `hints.next` reads "Now hear both moves, mi down and so
   down, for the answer."; with sound off, `hints.silent` is LESSON.md's "Sound is off, so nothing
   played. Turn sound on to hear the chord, then play it again."; after the reveal, `hints.again`
   reads "Move either note again, or play the chord." The reveal's "You said" line is the kit's
-  `guess` (`:59-60`): "You said: mi" or "You said: so", never "right" or "wrong". As it shows, mi's
+  `guess` (`:60-61`): "You said: mi" or "You said: so", never "right" or "wrong". As it shows, mi's
   halo glows gold once (Toys 2) and orange celebrates (Mercs). The reveal's last line makes the
   other choice a fair guess (CURIOSITY-MOMENTS § 1, rule 2; FACTS 41).
 - **Step 5.** The choices are [ Just one: mi ] [ Three ] (FACTS 44). Both plays, "Play C major"
@@ -417,10 +417,10 @@ taken further without forking it (`spiral.ts:28-32`):
   "Sound is off, so nothing played. Turn sound on to hear them, then press Play C minor."; and
   `hints.again` "Play them again, or switch the names to do-re-mi." The plays sound on the stage's
   staircase, which shows the scale that is playing, each stair lighting as it sounds (FACTS 77). The
-  choice also unlocks the stage's Major · Minor (`unlocks`, `predict.ts:65-66`; Toys 1, Scale). The
-  guess lines are "You said: just one" and "You said: three".
+  choice also unlocks the stage's Major · Minor (`unlocks`, `kit/predict.ts:66-67`; Toys 1, Scale).
+  The guess lines are "You said: just one" and "You said: three".
 - With sound off the reveal waits: the reveal only ever describes a sound that was heard
-  (`predict.ts:5-10`).
+  (`kit/predict.ts:5-10`).
 - A play that is cut short is not heard. A new play, a stop or leaving the step ends it early, and
   the reveal waits for plays that run to their end. A cut-short play resolves `false`, which tells
   the kit's predict "not heard"; `void` keeps today's meaning. Both come with #1149's fix pass.
@@ -777,7 +777,7 @@ at `85e23a1af` changed there, and that page's own lines are cited at `d59c00ad6`
    layout helper for the targets and the compact layout.
 4. `lesson-10/cold-open.ts`, new (Toys 2): the hero's spiral, its overlay and the bead slide. The
    kit's spiral needs nothing: `setView('top')`, `ring`, `overlay`, `light` and `setTurning` are on
-   main (`kit/spiral.ts:82-107`, `:111-138`).
+   main (`kit/spiral.ts:82-107`, `:120-149`).
 5. The names switch (Toys 1): Lesson 4's (`lesson-04/stairs-words.ts`), promoted into the kit with a
    choice of modes and the page's own syllables, as Lesson 6's spec lists it. Lesson 6's page keeps
    its two modes on its own page (`NamesMode` and `NAMES_MODES`, `lesson-06/tune-words.ts:21-23`,

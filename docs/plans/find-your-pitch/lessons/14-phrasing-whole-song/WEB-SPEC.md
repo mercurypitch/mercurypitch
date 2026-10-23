@@ -88,7 +88,7 @@ heading, and the line above it, are in LESSON.md ("Section headings").
    `kit/page-state.ts:84-108`; Edge cases), then "Season 1 · Lesson 14" opens the lesson menu
    (`kit/lesson-menu.ts`), and the page's steps are remembered as the viewer moves through them
    (`kit/position.ts`).
-2. **Hero**, laid out as Lesson 2's is (`learn/02.html:320-493`). The hero copy holds the kicker;
+2. **Hero**, laid out as Lesson 2's is (`learn/02.html:321-494`). The hero copy holds the kicker;
    the hook question as the title, `<h1 class="hook" id="hook">` in its default wording, the
    season's, which `src/features/lessons/kit/lesson-copy.test.ts` holds every page's title to
    (`:325-334`), with no variant's team note anywhere in the markup (`src/features/lessons/kit/team-notes.test.ts:85-101`; 1), and the element
@@ -365,7 +365,7 @@ song, takes, swell, endings, listen back and still, plus live mode at the checkp
   take 2 heard, and the reveal shown. With sound off a play draws its take and shows the `silent`
   hint, and the reveal does not come.
 - How the hint moves, as the kit has it (`heard`, `kit/predict.ts:158-174`). The kit's tests hold
-  the first two below (`src/features/lessons/kit/predict.test.ts:218-240`), the third (`:266-286`)
+  the first two below (`src/features/lessons/kit/predict.test.ts:240-264`), the third (`:266-286`)
   and the fourth (`:198-221`); the fifth has no kit test, so this page's unit test 12 holds it, and
   End to end 2 holds the first two on the page:
   - before a choice, take 1 played with sound off shows `silent` in place of the lock hint
@@ -828,7 +828,7 @@ among them (PR #1149), and in Lesson 9's spec, beyond the parts Lessons 2 to 9 p
    orange Merc. It shows no swell, no light and no breath mark, so it does not answer the cold
    open's predict.
 4. First-paint ceilings for `learn/14.html` in `scripts/assert-first-paint-budgets.mjs`, one in its
-   JavaScript table and one in its stylesheet table, beside Lessons 3 and 6's (`:103-122`,
+   JavaScript table and one in its stylesheet table, beside Lessons 3 and 6's (`:103-126`,
    `:144-152`; `:222-225`, `:235-239`). Every build emits every lesson page, and the check fails a
    document with no ceiling (`:480-484`), so without them the Browser jobs fail before any spec
    runs, as Lesson 6's did on PR #1149. Each is the page's measured first paint plus about a
@@ -888,8 +888,8 @@ among them (PR #1149), and in Lesson 9's spec, beyond the parts Lessons 2 to 9 p
     every other sound, a breath is a gap, as here.
 14. The four-words strip, built: promoted from Lesson 1's page (`lesson-01/words.ts`) into
     `kit/words-strip.ts` with Lesson 7's page. `recallStepHref`, built too: Lesson 8's page moved it
-    into the kit's quiz beside `lessonPageHref` (`kit/quiz.ts:134-136`), so Lessons 9 and 14 take it
-    from there.
+    into the kit's quiz (`kit/quiz.ts:134-136`), beside `lessonPageHref` (`:130-132`), so Lessons 9
+    and 14 take it from there.
 15. The hook and the tease: done in this package (1, 2).
 16. `src/e2e/helpers/tone-wav.ts`: Lesson 9's proposed `writeStepsWav(steps, leadSilence)`, steady
     tones in sequence after a stretch of silence, beside `writeToneWav` (`:76`), here for the phrase
@@ -934,7 +934,7 @@ What the page does where nothing above says:
 - **Sound off before a choice, then on again, still before a choice**: take 1 with sound off shows
   `silent`; take 1 again with sound on puts back the lock hint, "Choose an answer to unlock Play
   take 2.", exactly as the page wrote it, and take 2 stays locked (Toys 2; the kit's
-  `predict.test.ts:218-240`; End to end 2).
+  `predict.test.ts:240-264`; End to end 2).
 - **Take 2 cut short**, by another source taking the page's "now playing" owner, by the Sound toggle
   going off or by the tab going hidden: the page's `play` resolves `false`, so nothing is revealed
   and the hint stays as it was: `chosen`, or `silent` if the play before it was silent, whose "play

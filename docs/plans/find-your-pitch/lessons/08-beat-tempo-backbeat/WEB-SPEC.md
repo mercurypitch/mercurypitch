@@ -122,7 +122,7 @@ the Playground, unlocked in the Wrap; the mix-up card sits in the step whose toy
 practice card sits in the Wrap. No Watch section (§ 4.2 item 10). The page opens in Lesson 2's
 order: the hook, the stage, the sound gate and the cold open's predict, then the recall (§ 4.2
 items 3 and 4, and § 12 item 13; CURIOSITY-MOMENTS § 3.1, "the order to copy"). Items 2 to 5 are
-the hero, one `section.hero` laid out as Lesson 2's (`learn/02.html:320-493`). Above 1080 px it
+the hero, one `section.hero` laid out as Lesson 2's (`learn/02.html:321-494`). Above 1080 px it
 has two columns, the hero's copy and the gate on the left, the stage and the predict on the right
 (`lesson-stage.css:16-21`); at 1080 px and below it is one column in the order listed here, with
 the promise after the predict (`lesson-stage.css:354-397`). So on a phone the title and the first
@@ -236,7 +236,7 @@ recall and quiz questions, 60 s (FACTS 4).
 | 2. Predict widgets        | The kit's predict (`kit/predict.ts`), with a free play before the choice and a reveal after both of two plays                                                                                                                                                                               | Nothing                                                                                                                                                           |
 | 3. Four words             | Lesson 1's words strip, a ticket per word with its figure and play button, in the kit for Lesson 7 (`kit/words-strip.ts:1-12`)                                                                                                                                                              | Four new figures                                                                                                                                                  |
 | 4. Count the bar          | The kit's ear game (`kit/ear-game.ts`, on #1149): Lesson 2's Semitone or tone? promoted and generalised to N answers                                                                                                                                                                        | Three answers, 2, 3 and 4, on the keys 2, 3 and 4 (a key per answer, new in the kit); the clicks as the game's notes                                              |
-| 5. Tap pad and readout    | The Ear Lab's tap rule (`src/lib/ear/tap-rule.ts:13-39`, moved there from its `TapPad`, `src/features/ear-lab/EarStage.tsx:545-606`): pointer down, Space or Enter, the event's own time                                                                                                    | A plain-DOM pad in the kit; the taps-per-minute readout                                                                                                           |
+| 5. Tap pad and readout    | The Ear Lab's tap rule (`src/lib/ear/tap-rule.ts:22-52`, moved there from its `TapPad`, `src/features/ear-lab/EarStage.tsx:545-622`): pointer down, Space or Enter, the event's own time; since this PR, also a click no pointer or key made (`tap-rule.ts:81-93`)                          | A plain-DOM pad in the kit; the taps-per-minute readout                                                                                                           |
 | 6. Sing it                | Lesson 3's comfort check, voice choice and feeling question (`kit/comfort.ts`, `kit/voice-choice.ts`, `fyp-voice`); Lesson 6's rest card after "Effortful" and its pure flow rule; the Ear Lab's judge (`src/lib/ear/rhythm-take.ts`); Drum Night's latency estimator, moved into `src/lib` | The tap take and its lines; the sung line's guide on the beat machine; Move do in semitones                                                                       |
 | 7. Recall and quick check | The kit's quiz (`kit/quiz.ts`), with its prefix, slot and away links; Lesson 3's recall (`lesson-03/recall.ts`) and its step links; Lesson 6's question objects and quiz plays (on #1149), imported                                                                                         | Keys; the recall's `data-if-live` wrapper                                                                                                                         |
 | 8. Go deeper drawer       | Lesson 2's `details` drawer                                                                                                                                                                                                                                                                 | One item                                                                                                                                                          |
@@ -364,9 +364,9 @@ pan-y` (`lesson-stage.css:776`), so a swipe still scrolls; every action is a but
   (Step 5); free play, every control together. Any state can be playing or still. Leaving a step by
   any route stops the step's sound and anything queued to play after it, a miss's replay in Count
   the bar included (Toys 4). Every route goes through the deck's `show`, which tells each registered
-  toy the new step and the one before (`kit/step-deck.ts:167`): Next and Previous (`:195-204`), a
-  swipe (`:206-229`), scrolling another step into view on the wide page (`:194-203`), the lesson
-  menu's jump (`:259-262`, called at `kit/lesson-menu.ts:514`), a `#step-N` address
+  toy the new step and the one before (`kit/step-deck.ts:167`): Next and Previous (`:205-215`), a
+  swipe (`:217-243`), scrolling another step into view on the wide page (`:194-203`), the lesson
+  menu's jump (`:273-277`, called at `kit/lesson-menu.ts:514`), a `#step-N` address
   (`kit/step-deck.ts:255-262`, `:284-291`) and a quiz's step link (`kit/quiz.ts:339`, `:344`). The
   page registers one toy (`registerToy`, `kit/step-deck.ts:92-96`), as `lesson-03/main.ts:80-87`
   does, whose `onStep(step, previous)` (`kit/step-deck.ts:45-47`) stops the stage, Count the bar and
@@ -494,11 +494,11 @@ DECISIONS 82).
   Space" under it, that takes a tap on pointer down with the primary button (a click would arrive a
   frame or two late) and on Space or Enter, ignoring a held key's repeats, timed by the event's own
   `timeStamp`, and flashes for 110 ms: the Ear Lab's rule exactly. The rule moved out of the Ear
-  Lab's `TapPad` (`src/features/ear-lab/EarStage.tsx:545-606`) into a small shared module,
-  `src/lib/ear/tap-rule.ts` (`pointerTap`, `keyTap` and `TAP_FLASH_MS`, `:13-39`), that the Ear
+  Lab's `TapPad` (`src/features/ear-lab/EarStage.tsx:545-622`) into a small shared module,
+  `src/lib/ear/tap-rule.ts` (`pointerTap`, `keyTap` and `TAP_FLASH_MS`, `:22-52`), that the Ear
   Lab's pad and the kit's both call, so the two cannot drift (What the kit and the app still need,
-  item 3). The pad keeps
-  `touch-action: manipulation`, so a quick second tap is never read as a zoom.
+  item 3). Since this PR both pads also take a click no pointer or key made (`clickTap`, `:81-93`).
+  The pad keeps `touch-action: manipulation`, so a quick second tap is never read as a zoom.
 - **Steps 1 and 2.** The pad sits beside Start in one row. A tap there is silent and only flashes,
   so the clicks stay clear; Step 1 judges nothing. Start moves the focus to the pad while the
   metronome plays, and a polite live region says "Metronome started. Tap the pad, or press Space,
@@ -874,7 +874,7 @@ was built on.
    the audio-to-page clock map (Audio). Generic, with unit tests on a fake clock.
 2. `kit/beat-machine.ts`, new: the toy (Toys 1), generic over patterns and tempo.
 3. `kit/tap-pad.ts`, new (Toys 5), and the tap's timing rule moved out of the Ear Lab's `TapPad`
-   (`src/features/ear-lab/EarStage.tsx:545-606`) into `src/lib/ear/tap-rule.ts` as pure functions
+   (`src/features/ear-lab/EarStage.tsx:545-622`) into `src/lib/ear/tap-rule.ts` as pure functions
    that the Ear Lab's pad and the kit's both call.
 4. Drum Night's latency estimator, `estimateDrumInputLatency`, moved whole from
    `src/features/drum-night/runtime/drum-latency-calibration.ts` into `src/lib/timing/input-latency.ts`
@@ -991,7 +991,7 @@ was built on.
     (`src/tests/lesson-pages.test.ts:242-279`). When its line leaves `drafts.ts`, the release adds a
     line to each static file (`public/llms.txt`'s Lessons list, `:66-77`), as `kit/drafts.ts:18-21`
     asks and `lesson-pages.test.ts:217-225` checks. The first-paint budget comes with the page,
-    beside the other drafts' (`scripts/assert-first-paint-budgets.mjs:103-130`, Lessons 3 and 5),
+    beside the other drafts' (`scripts/assert-first-paint-budgets.mjs:103-134`, Lessons 3 and 5),
     at `:160-166`, and its CSS ceiling at `:244-247`, since every build carries every lesson page.
 17. The App content items under Practice links: the App and App content tracks' to weigh, and not
     built with the page.

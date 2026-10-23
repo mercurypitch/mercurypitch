@@ -112,7 +112,7 @@ FACTS 5a). Each section's heading, and the line above it, are in LESSON.md ("Sec
    sections and `{ lesson: 12, deck }` (`lesson-04/main.ts:99-110`), which draws the lesson menu,
    remembers the steps the viewer reaches and first settles the page's links to other lessons for
    the state it was served with (`followPageState`, `src/features/lessons/kit/page-chrome.ts:113`).
-2. **Hero, with the cold open**, laid out as Lesson 2's (`learn/02.html:320-493`). Its copy holds
+2. **Hero, with the cold open**, laid out as Lesson 2's (`learn/02.html:321-494`). Its copy holds
    the kicker, the hook question as the title (the `<h1 class="hook" id="hook">` every lesson page
    has, `learn/04.html:320`), the meta as three chips, the promise and the sound gate from
    LESSON.md. The chips are "15 minutes" (FACTS 3), "After Lesson 10: Major and minor", a link to
@@ -153,7 +153,7 @@ FACTS 5a). Each section's heading, and the line above it, are in LESSON.md ("Sec
    "Effortful", "Uncomfortable" or "Just listen today" it is the rest card instead, with Arpeggio
    Jumper named and Cadence still offered, since Cadence needs no voice (Toys 6; FACTS 63). Both
    links open in a new tab. The two versions sit in one `#practiseCard`, shown by the visit's
-   ending, as Lesson 5's are (`src/features/lessons/lesson-05/wrap.ts:22-29`). The next lesson's
+   ending, as Lesson 5's are (`lesson-05/wrap.ts:23-25`; `comfort.ts:114-137`). The next lesson's
    card is the kit's, drawn from the season by `createNextCard(12)` before
    `createExplorer({ current: 12 })`, as Lesson 4's page draws its own (`lesson-04/main.ts:94-96`;
    `kit/next-card.ts:181-209`, from the season as the page's state shows it). Its eyebrow reads
@@ -238,7 +238,7 @@ the stage-fit test reach every action.
   (`spiral.ts:103-104`). The notes sit at 30 degrees a semitone, A at the front
   (`spiral-draw.ts:127-128`), and the ring's radius is the smaller of 0.27 of the figure's width and
   0.29 of its height (`spiral-draw.ts:133`). Every name follows the page's sharps-or-flats choice
-  (`spiral.ts:19-20`), which the page leaves at its default, Sharps (`Names`, `kit/names.ts:84-88`),
+  (`spiral.ts:25-26`), which the page leaves at its default, Sharps (`Names`, `kit/names.ts:84-88`),
   so the black keys read C♯, D♯, F♯, G♯ and A♯, and G major's F♯ is spelled as its key spells it
   (FACTS 10). The page shows no switch for it. A black key's bead is a "?" until it is lit on that
   copy (`spiral.ts:18-20`; `spiral-draw.ts:12-14`), so the page lights the turn's five with `light`
@@ -403,38 +403,38 @@ further:
   (`:113-131`).
 - **Cold open.** The choices are [ Most of them ] [ Hardly any ] (FACTS 39). Its three plays sit
   under the spiral on the hero's stage, outside the predict card, and are handed to the predict as
-  its `plays` (`predict.ts:67-68`). "Play the four chords" (`loop-c`) is a free play (`data-free`,
-  `:14-16`): it sets up the question and answers nothing, since it plays no tune. "Play tune 1"
-  (`tune-1`) and "Play tune 2" (`tune-2`) wait for the choice, and the reveal waits until both have
-  been heard, since its counts are both tunes': `revealOn: ['tune-1', 'tune-2']` with
-  `revealAfter: 'all'` (`:52-58`). The two must be passed together: without `revealOn`, `'all'`
-  waits on nothing (`:97-101`). Until a choice the lock hint, in the markup, reads LESSON.md's
-  "Choose an answer to unlock the two tunes."; once a choice is in, `hints.chosen` reads "Locked in.
-  Play tune 1, then tune 2, and watch where the notes land." (`:120`). `hints.next` reads "Now hear
-  both tunes, 1 and 2, for the answer.": the kit shows it after a heard play that does not reveal,
-  and only once a choice is in (`:153-159`), so it follows the four chords as well as one tune, and
-  the line is true either way. Before a choice, the four chords heard with sound on put back the
-  markup's own lock hint (`:84`, `:153-156`). `hints.silent` reads "Sound is off: nothing played. Turn sound on,
-  then play it again.": the kit shows it after any play that sound off kept silent, before a choice
-  too (`:148-151`), so it names no tune, and "it" is whichever play was just tapped. After the
-  reveal, `hints.again` reads "Play either tune again, or just the four chords." (`:130`), and
-  neither of the others replaces it (`:147`). The same strings are LESSON.md's. The reveal's
-  "You said" line is the kit's `guess` (`:59-60`): "You said: most of them" or "You said: hardly
-  any", never "right" or "wrong". As it shows, orange celebrates (Mercs). The reveal's last line
-  makes the other choice a fair guess (CURIOSITY-MOMENTS § 1, rule 2; FACTS 39).
+  its `plays` (`kit/predict.ts:68-69`). "Play the four chords" (`loop-c`) is a free play
+  (`data-free`, `:14-16`): it sets up the question and answers nothing, since it plays no tune.
+  "Play tune 1" (`tune-1`) and "Play tune 2" (`tune-2`) wait for the choice, and the reveal waits
+  until both have been heard, since its counts are both tunes': `revealOn: ['tune-1', 'tune-2']`
+  with `revealAfter: 'all'` (`:53-59`). The two must be passed together: without `revealOn`, `'all'`
+  waits on nothing (`:98-102`). Until a choice the lock hint, in the markup, reads LESSON.md's
+  "Choose an answer to unlock the two tunes."; once a choice is in (`:127`), `hints.chosen` reads
+  "Locked in. Play tune 1, then tune 2, and watch where the notes land." `hints.next` reads "Now
+  hear both tunes, 1 and 2, for the answer.": the kit shows it after a heard play that does not
+  reveal, and only once a choice is in (`:167-173`), so it follows the four chords as well as one
+  tune, and the line is true either way. Before a choice, the four chords heard with sound on put
+  back the markup's own lock hint (`:85`, `:167-170`). `hints.silent` reads "Sound is off: nothing
+  played. Turn sound on, then play it again.": the kit shows it after any play that sound off kept
+  silent, before a choice too (`:162-165`), so it names no tune, and "it" is whichever play was just
+  tapped. After the reveal (`:137`), `hints.again` reads "Play either tune again, or just the four
+  chords.", and neither of the others replaces it (`:161`). The same strings are LESSON.md's. The
+  reveal's "You said" line is the kit's `guess` (`:60-61`): "You said: most of them" or "You said:
+  hardly any", never "right" or "wrong". As it shows, orange celebrates (Mercs). The reveal's last
+  line makes the other choice a fair guess (CURIOSITY-MOMENTS § 1, rule 2; FACTS 39).
 - With sound off the reveal waits: the reveal only ever describes a sound that was heard
-  (`predict.ts:5-10`). The plays' visuals still run, the walk and the gold included, as every play's
-  do with sound off.
+  (`kit/predict.ts:5-10`). The plays' visuals still run, the walk and the gold included, as every
+  play's do with sound off.
 - A play that is cut short is not heard, and the reveal waits for plays that run to their end. On
   main the kit's predict ignores its own play buttons while one of them plays (`busy`,
-  `predict.ts:165`): a tap on another of the hero's three does nothing until the first ends, so the
-  predict's own plays never cut each other short, and they carry no Stop, unlike the steps' tune toy
-  (Toys 5). Only a stop (the page hidden, or sound turned off: the kit then stops every voice,
+  `kit/predict.ts:179`): a tap on another of the hero's three does nothing until the first ends, so
+  the predict's own plays never cut each other short, and they carry no Stop, unlike the steps' tune
+  toy (Toys 5). Only a stop (the page hidden, or sound turned off: the kit then stops every voice,
   `sound.ts:475-477`, `:507`), a bead tap on the hero's ring or leaving the hero for a step ends a
   tune early. Two more kit parts, from Lesson 6's page (PR #1149), make that safe, and this page
   uses both. A page's `play` may resolve `false` for a play cut short, and the predict then skips
   its hint and its reveal, so that play reveals nothing and the hint stays as it was
-  (`predict.ts:30-40`, `:173-174`); `true` or nothing is a play heard to its end. And a page-wide
+  (`predict.ts:31-41`, `:187-188`); `true` or nothing is a play heard to its end. And a page-wide
   sound owner, `NowPlaying` (`kit/now-playing.ts:17-39`), stops a source's sound through that
   source's own stop when another source claims it, so a tune also ends early when any other sound on
   the page starts, a word's play or a step's. A tune cut short either way reveals nothing, and its
@@ -695,7 +695,7 @@ each note its own voice; the guide's count-in in the soft tone at half a tapped 
 
   The kit has the helpers for these, from Lesson 6's page: a page-wide "now playing" owner
   (`kit/now-playing.ts:17-39`), which every source here registers with, and a `play` that can
-  report "not heard" to the predict (`predict.ts:30-40`, `:173-174`).
+  report "not heard" to the predict (`kit/predict.ts:31-41`, `:187-188`).
 
 - **A chord** is three voices started in one task, so they share one start on the audio clock, each
   at 0.075 alone or at 0.05 under a tune or a voice (FACTS 74), through `playTone`
@@ -858,7 +858,7 @@ heard play (Toys 3; Edge cases) (`git diff --stat`).
    major key from its tonic (their notes, gaps, quality and numeral), each room's sides round the
    ring, a tune's notes against its chords (on a corner or between), and the strip's layout. The
    kit's spiral needs nothing: `setView('top')`, `ring`, `range`, `overlay`, `light`, `setLabels`
-   and `setTurning` are on main (`kit/spiral.ts:82-107`, `:111-138`).
+   and `setTurning` are on main (`kit/spiral.ts:82-107`, `:120-149`).
 4. `lesson-12/cold-open.ts`, new (Toys 2): the hero's ring, its rooms and the tunes' walk.
 5. The names switch (Toys 1): Lesson 4's (`lesson-04/stairs-words.ts`), with a choice of modes, as
    Lesson 10's spec moves it into the kit (its What the kit and the app still need, item 5). If
@@ -1075,23 +1075,23 @@ Each with the package's recommendation and the review's judgement (Lesson 12's r
 - **Leaving a step** stops the stage's sound; starting any play stops every other.
 - **Before a choice**, Play tune 1 and Play tune 2 are disabled, and the reveal stays hidden; Play
   the four chords and a tap on any bead still sound, and draw no walk.
-- **The four chords after a choice, before either tune**: the kit shows `hints.next`, "Now hear both
-  tunes, 1 and 2, for the answer." (`predict.ts:153-159`), which holds with no tune heard yet: it
-  asks for both and says nothing of what was heard.
+- **The four chords after a choice, before either tune**: the kit shows `hints.next`
+  (`kit/predict.ts:167-173`), "Now hear both tunes, 1 and 2, for the answer.", which holds with no
+  tune heard yet: it asks for both and says nothing of what was heard.
 - **Sound off before a choice**: Play the four chords runs its lights silently, and `hints.silent`,
   "Sound is off: nothing played. Turn sound on, then play it again.", replaces the lock hint
-  (`predict.ts:148-151`). Both tunes stay locked; "it" is the four chords, the one play open.
+  (`kit/predict.ts:162-165`). Both tunes stay locked; "it" is the four chords, the one play open.
 - **Sound on again, still before a choice**: once the four chords are heard with sound on, the kit
   puts the markup's lock hint back, "Choose an answer to unlock the two tunes.", since the tunes
   are still locked: a heard play with no choice in restores the hint the page wrote
-  (`predict.ts:84`, `:153-156`), as it does on Lessons 4 and 5 (PR #1160).
+  (`kit/predict.ts:85`, `:167-170`), as it does on Lessons 4 and 5 (PR #1160).
 - **One tune heard, then a wait**: the reveal stays hidden, with `hints.next` showing, until the
   other tune has been heard with sound on.
 - **A cold-open tune cut short**, by a stop, a bead tap on the hero's ring, leaving the hero for a
   step or, through the kit's sound owner, any other sound on the page (Toys 3): not heard, so it does
-  not count towards the reveal, and its hint stays (`predict.ts:173-174`); its walk and count stay
-  where they reached. A
-  tap on another of the hero's plays while one plays does nothing (`predict.ts:165`).
+  not count towards the reveal, and its hint stays (`kit/predict.ts:187-188`); its walk and count
+  stay where they reached. A
+  tap on another of the hero's plays while one plays does nothing (`predict.ts:179`).
 - **Step 5 before the cold open's choice**: the steps' tune toy locks nothing, as Lesson 10's steps
   lock nothing; a viewer who scrolls past the predict meets the tunes there, after the predict.
 - **The key switch mid-play**: switching key stops the play first, then turns the rooms; a chip

@@ -81,7 +81,7 @@ section's heading, and the line above it, are in LESSON.md ("Section headings").
    `:113`; `kit/page-state.ts:64-108`; Edge cases), then "Season 1 · Lesson 11" opens the lesson
    menu (`kit/lesson-menu.ts`), and the page's steps are remembered as the viewer moves through
    them (`kit/position.ts`).
-2. **Hero**, laid out as Lesson 2's is (`learn/02.html:320-493`). The hero copy holds the kicker;
+2. **Hero**, laid out as Lesson 2's is (`learn/02.html:321-494`). The hero copy holds the kicker;
    the hook question as the title, `<h1 class="hook" id="hook">` in its default wording, the
    season's, which `src/features/lessons/kit/lesson-copy.test.ts` holds every page's title to
    (`:325-334`), with no variant's team note anywhere in the markup (`src/features/lessons/kit/team-notes.test.ts:85-101`; FACTS 1), and the
@@ -370,7 +370,7 @@ that file's unless it says otherwise.
 
 - The kit's own tests hold these rules (`src/features/lessons/kit/predict.test.ts`): the sound-off
   hint after a choice (`:153-169`), the play cut short (`:198-221`), the lock hint back after a
-  free play heard before a choice (`:218-240`), `chosen` in place of `silent` after a choice
+  free play heard before a choice (`:240-264`), `chosen` in place of `silent` after a choice
   (`:266-286`), and a free play that never reveals (`:288-302`). The page's are unit test 10 and
   End to end 2, and Page QA's "The predict before a choice", "The predict after a choice" and "A
   siren cut short" check them by hand (Contract).
@@ -810,7 +810,7 @@ the others take it.
    carries no label on the seam and no word but the title's, so it says nothing of whether a flip is
    a mistake and does not answer the cold open's predict.
 4. First-paint ceilings for `learn/11.html` in `scripts/assert-first-paint-budgets.mjs`, one in its
-   JavaScript table and one in its stylesheet table, beside Lesson 3's (`:103-122`, `:222-225`).
+   JavaScript table and one in its stylesheet table, beside Lesson 3's (`:103-126`, `:222-225`).
    Every build emits every lesson page, and the check fails a document with no ceiling (`:479-485`),
    so without them the Browser jobs fail before any spec runs, as Lesson 6's did on PR #1149. Each
    is the page's measured first paint plus about a quarter, the tables' rule (`:47-58`, `:178-188`),
@@ -949,8 +949,8 @@ What the page does where nothing above says:
   reveal waits for blue Merc's siren to be heard with sound on (Toys 2); Start stays unavailable,
   with state 5's hint, and asks for no microphone.
 - **Sound off before a choice**: Play orange Merc's siren draws its line in silence, and the
-  sound-off hint takes the place of "Choose an answer to unlock blue Merc's siren."
-  (`kit/predict.ts:162-165`); blue's siren stays locked, and its play disabled. Page QA, "The
+  sound-off hint (`kit/predict.ts:162-165`) takes the place of "Choose an answer to unlock blue
+  Merc's siren."; blue's siren stays locked, and its play disabled. Page QA, "The
   predict before a choice".
 - **Sound on again, still before a choice**: orange's siren, heard this time, puts the lock hint
   back, since blue's siren is still locked (`kit/predict.ts:166-170`). Page QA, "The predict before

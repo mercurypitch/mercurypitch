@@ -90,7 +90,7 @@ section's heading, and the line above it, are in LESSON.md ("Section headings").
    `:113`; `kit/page-state.ts:64-108`; Edge cases), then "Season 1 · Lesson 13" opens the lesson
    menu (`kit/lesson-menu.ts`), and the page's steps are remembered as the viewer moves through
    them (`kit/position.ts`).
-2. **Hero**, laid out as Lesson 2's is (`learn/02.html:320-493`). The hero copy holds the kicker;
+2. **Hero**, laid out as Lesson 2's is (`learn/02.html:321-494`). The hero copy holds the kicker;
    the hook question as the title, `<h1 class="hook" id="hook">` in its default wording, the
    season's, which `src/features/lessons/kit/lesson-copy.test.ts` holds every page's title to
    (`:325-334`), with no variant's team note anywhere in the markup (`src/features/lessons/kit/team-notes.test.ts:85-101`; FACTS 1), and the
@@ -359,7 +359,7 @@ that file's unless it says otherwise.
 
 - The tests that hold each state. The kit's own (`src/features/lessons/kit/predict.test.ts`): a
   free play that works before a choice and never reveals (`:288-302`), the lock hint back after a
-  free play heard before a choice (`:218-240`), `chosen` in place of `silent` after a choice
+  free play heard before a choice (`:240-264`), `chosen` in place of `silent` after a choice
   (`:266-286`), the sound-off hint after a choice (`:153-169`) and the play cut short (`:198-221`).
   The page's: unit test 11 holds every state above, unit test 16 the play cut short, and End to
   end 2 the cold open in a browser (Tests).
@@ -400,8 +400,8 @@ an optional `lesson`, and links that leave this page for a question from another
   `lesson`, so it marks nothing done. Neither question plays a sound. The two questions come from
   Lesson 11's own module, `lesson-11/quiz-questions.ts`, once its page is built, filtered by id, so
   the recall cannot drift from Lesson 11's quiz, as Lesson 5's recall is held to Lesson 3's
-  (`lesson-05/quiz-questions.test.ts`). The kit turns "Try Step 2 again" and "Try Step 3 again"
-  into "Try Lesson 11, Step 2 again" and "Try Lesson 11, Step 3 again" (`quiz.ts:196-198`), links
+  (`lesson-05/quiz-questions.test.ts`). The kit (`quiz.ts:196-198`) turns "Try Step 2 again" and
+  "Try Step 3 again" into "Try Lesson 11, Step 2 again" and "Try Lesson 11, Step 3 again", links
   that open Lesson 11's page at that step, `/learn/11#step-2` and `/learn/11#step-3`, in a new tab
   so the viewer keeps their place here (`:203-207`), never `data-goto-step`, which would move this
   page's own deck; where Lesson 11 is not live, each keeps its words with no link (Edge cases). The
