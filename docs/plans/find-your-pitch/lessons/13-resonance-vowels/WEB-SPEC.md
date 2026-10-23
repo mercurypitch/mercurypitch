@@ -141,7 +141,7 @@ section's heading, and the line above it, are in LESSON.md ("Section headings").
    picked, the defaults until it picks (`:14-20`), since the card reads the season as the page's
    state shows it (`pageLessons`, `kit/page-state.ts:54-57`). The tease's figure (Toys 8) sits in
    the page's `[data-next-card]` mark, whose children the kit keeps in the card after its words
-   (`kit/next-card.ts:27-29`), as Lesson 2's figures are (`learn/02.html:1806`). The card is a link,
+   (`kit/next-card.ts:27-29`), as Lesson 2's figures are (`learn/02.html:1819`). The card is a link,
    so the figure holds no button. The practice card is the Voice Mirror card, with "Ten minutes,
    gently, most days" under it; after "Effortful", "Uncomfortable" or "Just listen today" it is the
    rest card instead, without that line or link (Toys 6). It links `/mirror?lesson=13` in a new tab.
@@ -322,7 +322,7 @@ that file's unless it says otherwise.
   ‘ee’, then ‘ah’ has been heard to its end with sound on (`heard`, `:146-160`). The page's `play`
   claims the page's sound owner before it sounds and resolves `false` when another sound, or a
   stop, cuts it short (`:30-40`; Audio), as Lesson 6's cold open does
-  (`lesson-06/cold-open.ts:97-114`), and the kit then reveals nothing and leaves the hint as it
+  (`lesson-06/cold-open.ts:96-113`), and the kit then reveals nothing and leaves the hint as it
   was (`kit/predict.ts:184-188`). A play with sound off that draws its strip to its end resolves
   `true`, so the kit can say that nothing was heard (`:162-165`).
 - The hints. The page's own lock hint, in the markup, is LESSON.md's "Choose an answer to unlock
