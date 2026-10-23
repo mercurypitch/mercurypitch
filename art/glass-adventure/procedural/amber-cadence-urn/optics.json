@@ -1,13 +1,14 @@
 {
   "amber_glass": {
     "KHR_materials_volume": {
-      "thicknessFactor": 0.08,
+      "thicknessFactor": 0.15,
       "attenuationColor": [
         0.965,
         0.745,
         0.254
       ],
-      "attenuationDistance": 0.06
+      "attenuationDistance": 0.06,
+      "thicknessTexCoord": 1
     }
   },
   "amber_cut": {

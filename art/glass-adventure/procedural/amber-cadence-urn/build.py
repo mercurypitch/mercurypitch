@@ -37,7 +37,7 @@ REPO = os.path.abspath(os.path.join(HERE, '..', '..', '..', '..'))
 sys.path.insert(0, os.path.join(REPO, '.claude', 'skills', 'blender-modeler', 'scripts'))
 sys.path.insert(0, HERE)
 from bkit import export, fracture, lathe, materials, profile, scene, textures, validate  # noqa: E402
-from colours import CUP, FRONT, amber_colour, cup_top, lobe_envelope, lobe_phase  # noqa: E402
+from colours import CUP, FRONT, LOBES, amber_colour, cup_top, lobe_envelope, lobe_phase  # noqa: E402
 from colours import smooth as _smooth  # noqa: E402
 
 V = profile.V
@@ -49,6 +49,7 @@ SHARDS = 16
 BODY_SEGMENTS = 64  # eight per lobe, so every crease falls on a vertex column
 SEGMENTS = 32  # the plain lathes: 1.2 mm of polygon on the foot (28 read polygonal); a column on the front
 FILLET_LO, FILLET_HI = 0.0060, 0.0045  # the shoulder band's half rounds, standing proud of its face
+STONE = (0.024, 0.027, 0.014)  # the cabochon's half width, half height and crown: the concept's 47 x 53 mm
 WALL = 0.010
 LAUREL_TILE = 0.09  # one repeat of the frieze: two leaf pairs, 4.5 cm apart as in the concept
 
@@ -75,7 +76,7 @@ LIP_INNER = 0.2070  # the opening's half width, read off the rim ellipse
 BORE = 0.1650  # the neck's bore, which is also the body's opening
 LOWER_BAND = (0.1190, 0.1740, 0.2575, 0.2525)  # z0, z1, fillet r, frieze r: fillets 5 mm proud
 SHOULDER_BAND = (0.5480, 0.6060)  # z0, z1 along the shoulder, up to the neck's foot
-CUP_RINGS = (0.178, 0.192, 0.204, 0.214, 0.224)  # where the creases grow, inside the cup
+CUP_RINGS = (0.170, 0.178, 0.192, 0.204, 0.214, 0.224)  # the cup step's corner; where the creases grow
 LOBE_RINGS = (0.240, 0.265, 0.295, 0.335, 0.375, 0.415, 0.455, 0.490, 0.516, 0.532, 0.548)  # to SHOULDER_BAND[0]
 LOBE_DEPTH = 0.13  # of the radius at a crease: the concept's creases read 12% of it or more
 TUCK = 0.005  # the glass under the cup's edge set in, so the cup holds the lobes' bottoms with a rim 5 mm proud
@@ -84,16 +85,41 @@ BAND_INSET = 0.0025  # the shoulder band's face inside the outline, so its fille
 GLASS_INSET = 0.0085  # the glass under the shoulder band, inside the outline: the band's 6 mm of gold on it
 
 
+def lobe_thickness(f):
+    """The amber's thickness map across one lobe, f from crown (0) through crease (0.5) to crown."""
+    return 0.2 + 0.8 * _smooth((2 * min(f, 1 - f) - 0.4) / 0.4)
+
+
+def lobe_uvs(obj):
+    """A second UV layer, LobeUV, for the thickness map: u runs once round each lobe, its crown at
+    whole numbers; v is the height in metres. The tiled UVMap stays first and active."""
+    me = obj.data
+    tiled = me.uv_layers.active
+    layer = me.uv_layers.new(name='LobeUV')
+    period = 2 * math.pi / LOBES
+    for poly in me.polygons:
+        ref = math.atan2(poly.center.y, poly.center.x)
+        for li in poly.loop_indices:
+            co = me.vertices[me.loops[li].vertex_index].co
+            theta = ref + (math.atan2(co.y, co.x) - ref + math.pi) % (2 * math.pi) - math.pi  # unwrapped
+            layer.data[li].uv = ((theta - FRONT) / period, co.z)
+    me.uv_layers.active = tiled
+    tiled.active_render = True
+    return obj
+
+
 def palette(laurel_maps, shoulder_maps):
     # Warm cream marble with bold tan veins: the room's light cools and greys marble, and round
     # 1's #ede4d3 read saturation 0.07 to 0.10 in the game against the concept's 0.31 to 0.44.
     # Soft tan veins 3-6 mm wide: round 2's hairlines read as crackle glaze and vanished in the game.
-    # Lighter and warmer in round 5: #e9c189 read hue 41 and L* 64 on the foot against 32 and 77.
-    marble_veins = textures.marbled('marble_veins', '#fbd6ab', '#96693c', dark='#d9a46a', size=256, veins=2,
-                                    turbulence=2.0, softness=0.35, seed=9)
+    # Lighter and warmer in round 5 (#e9c189 read hue 41 and L* 64 on the foot against 32 and 77),
+    # then overshot pale and cool (neck a*/b* 3/17 against 8/27): #f0d4ac. Veins that wander less:
+    # at turbulence 2 they looped into scribbles on the foot.
+    marble_veins = textures.marbled('marble_veins', '#f0d4ac', '#96693c', dark='#d4a066', size=256, veins=2,
+                                    turbulence=1.3, softness=0.35, seed=9)
     return {
         'marble': textures.attach_color(
-            materials.principled('marble_cream', '#fbd6ab', roughness=0.30, coat=0.35, coat_roughness=0.10),
+            materials.principled('marble_cream', '#f0d4ac', roughness=0.30, coat=0.35, coat_roughness=0.10),
             marble_veins, scale=1 / 4),
         # Amber glass, set in the game from 25 probes (`glb_patch.py`). Transmission 0.9 reads as glass
         # (0.35-0.5 read as milky pottery to two critics), but sharp it showed the gallery's black
@@ -103,9 +129,14 @@ def palette(laurel_maps, shoulder_maps):
         # the hue to the concept's: lower lobe L*a*b* 41/14/33, hue 30, against 48/23/48, hue 30
         # (round 4: 28/8/17, hue 26). COLOR_0 only leans the valleys toward the thicker glass's
         # colour (colours.py, rule 11). The game ignores emission on it.
-        'amber': materials.vertex_tint(
+        # Thin in each lobe's middle and thick toward its creases (LobeUV runs once a lobe, crown
+        # at 0): 0.03 m and 0.15 m with optics.json's thicknessFactor. Even through, frosted, it
+        # read as flat satin (centre lobe p5/p95 95/131 against the concept's 56/199).
+        'amber': textures.attach_thickness(materials.vertex_tint(
             materials.principled('amber_glass', '#ffcc4d', roughness=0.40, transmission=0.90, ior=1.52,
                                  coat=0.5, coat_roughness=0.03)),
+            textures.thickness_map('amber_thickness', lobe_thickness),
+            'LobeUV'),
         # Warmer than the amphora's: this concept's gold midtone is hue 33, saturation 0.59. Full metal
         # here: the warm gallery's probe has no dark ground to mirror (the amphora's museum HDR did).
         'gold': materials.gold('gold_polished', '#e6b46a', roughness=0.22, metallic=1.0),
@@ -214,8 +245,8 @@ def body(m):
 
     # Creases shade smooth, as the concept's rounded valleys do: at eight columns a lobe a 10 mm
     # round cannot be modelled, and a sharp edge there read as a V.
-    return lathe.lathe('body', pts, BODY_SEGMENTS, modulate=modulate, material=m['amber'], sharp_degrees=85,
-                       uv=TILE)
+    return lobe_uvs(lathe.lathe('body', pts, BODY_SEGMENTS, modulate=modulate, material=m['amber'],
+                                sharp_degrees=85, uv=TILE))
 
 
 def cup(m):
@@ -231,14 +262,17 @@ def cup(m):
         return profile.radius_at(BODY_LINE, z) - lobe_depth(theta, z) - tuck_depth(theta, z)
 
     # (height on a crown, metres out from the outline, or from the glass when `inside`). Its
-    # outside 0.5 mm proud of the outline, a rim rounded over 8 mm to an inner edge in the glass,
-    # its inside 5 mm in, which covers the chords of the body's rings where a crease grows. Offset
+    # outside 0.5 mm proud of the outline (a point midway up the skirt: one chord from foot to
+    # rim let the glass show through it on every scallop's flanks), a rim rounded over four
+    # points to an inner edge in the glass, its inside 5 mm in, which covers the chords of the
+    # body's rings where a crease grows. Offset
     # across from the outline while the glass moved along its normal (rounds 3 and 4), the cup
     # stood off the glass and the fracture split it from the body. The faces inside the glass are
     # amber: cream there showed through the lobes as a scalloped line.
-    section = [(z0, 0.0005, False), (rim, 0.0005, False), (base - 0.0025, 0.0, False),
-               (base + 0.0005, -0.0025, False), (base + 0.0025, -0.0055, False),
-               (base + 0.0015, -0.0040, True), (rim, -0.0050, True), (z0, -0.0050, True)]
+    section = [(z0, 0.0005, False), ((z0 + rim) / 2, 0.0005, False), (rim, 0.0005, False),
+               (base - 0.003, 0.0003, False), (base - 0.001, -0.0008, False), (base + 0.001, -0.0026, False),
+               (base + 0.0022, -0.0048, False), (base + 0.0015, -0.0040, True), (rim, -0.0050, True),
+               (z0, -0.0050, True)]
     pts = [V(profile.radius_at(BODY_LINE, z) + off, z) for z, off, _ in section]
 
     def place(theta, _z, i):
@@ -249,7 +283,7 @@ def cup(m):
         return (r - pts[i].x, z - pts[i].y)
 
     marble, amber = 0, 1
-    slots = [marble] * 5 + [amber] * 3  # outside and rim; then into the glass, the inner face, the bottom
+    slots = [marble] * 7 + [amber] * 3  # outside and rim; then into the glass, the inner face, the bottom
     return lathe.lathe('cup', pts, BODY_SEGMENTS, closed=True, modulate=place, material=[m['marble'], m['amber']],
                        span_materials=slots, sharp_degrees=60, uv=TILE)
 
@@ -323,15 +357,16 @@ def bead(m, name, r, z, radius, *, theta=FRONT, sink=0.45, segments=12, rings=6)
 def cabochon(m, mid, n_band):
     """An oval olive jade stone in a gold setting at the front of the shoulder band.
 
-    The concept draws the stone upright (8 x 9 px at 128 px); laid on the 21 degree shoulder it
-    read 8 x 3. It leans 35 degrees back from vertical, stood off the band so the lower edge of
-    its bezel meets the band's face, and the setting's back wall runs down to the band, cut to
-    its slope and sunk 4 mm (a wedge, deepest under the stone's top edge)."""
-    w, h, dome = 0.032, 0.040, 0.018  # half width, half height, crown height
-    lean = math.radians(35)
+    The concept draws the stone upright (8 x 9 px at 128 px, 47 x 53 mm); laid on the 21 degree
+    shoulder it read 8 x 3. It leans 40 degrees back from vertical, its bezel's lower edge 8 mm
+    into the band, and the setting's back wall runs down to the band, cut to its slope and sunk
+    12 mm (a wedge, deepest under the stone's top edge). Stood on the band's face at 64 x 80 mm
+    (rounds 1-5), its centre was 29 mm above the band and half of it covered the neck."""
+    w, h, dome = STONE
+    lean = math.radians(40)
     axis = V(math.cos(lean), math.sin(lean))  # (r, z): out and up
     up = V(-math.sin(lean), math.cos(lean))
-    centre = mid + n_band * (0.0015 + (h + 0.006) * up.dot(n_band))
+    centre = mid + n_band * (0.0015 + (h + 0.006) * up.dot(n_band) - 0.008)
     arc = [V(w * math.cos(math.pi / 2 * k / 6), dome * math.sin(math.pi / 2 * k / 6)) for k in range(7)]
     gem = lathe.lathe('cabochon', [V(0.0, -0.004), V(w, -0.004)] + arc[:-1] + [V(0.0, dome)], 16,
                       material=m['jade'], uv=TILE)
@@ -344,14 +379,15 @@ def cabochon(m, mid, n_band):
         obj.rotation_euler = (tilt, 0.0, 0.0)
         obj.location = front_point(centre.x, centre.y)
         scene.apply_transform(obj)
-    # Cut the setting's back to the band: slide each back corner along the stone's axis to 4 mm
+    # Cut the setting's back to the band: slide each back corner along the stone's axis to 12 mm
     # under the band's face (a plane at the front; the cone falls away 3 mm at the bezel's sides).
+    # 4 mm under it folded the setting once the stone sat 8 mm into the band.
     a3 = Vector((0.0, -axis.x, axis.y))
     n3 = Vector((0.0, -n_band.x, n_band.y))
     m3 = front_point(mid.x, mid.y)
     for v in bezel.data.vertices:
         if (v.co - m3).dot(n3) < -0.010:  # the back ring, well behind the band's face
-            t = ((v.co - m3).dot(n3) + 0.004) / a3.dot(n3)
+            t = ((v.co - m3).dot(n3) + 0.012) / a3.dot(n3)
             v.co = v.co - a3 * t
     bezel.data.update()
     return gem, bezel
@@ -427,13 +463,14 @@ def main():
     frieze_h = (z1 - z0) - 2 * 0.009
     # One row of 32 mm leaves running out from the bead along the stem, as the concept draws it;
     # two rows of small ones at 36 degrees read as a thin dark strip at 128 px.
-    # Both friezes' leaves at metallic 0.6, roughness 0.4, set in the game from probes: at 1.0 and
-    # 0.25 (rounds 3 and 4 asked for it) the shoulder band, facing the ceiling, mirrors it dark,
-    # median luminance 86-96 against the concept's 154 (0.6 and 0.4: 120-128). The leaves warmer
-    # (hue 34, a* up from 4.7 toward the concept's 10) and the recesses near black, as drawn.
+    # The shoulder frieze's leaves at metallic 0.6, roughness 0.4, set in the game from probes: at
+    # 1.0 and 0.25 (rounds 3 and 4 asked for it) the band, facing the ceiling, mirrors it dark,
+    # median luminance 86-96 against the concept's 154 (0.6 and 0.4: 120-128). The lower band
+    # faces the walls: full metal there, its recess near black (round 5 read it a pale braid,
+    # p5 66-73 against the concept's 45). The leaves warmer (hue 34, a* toward the concept's 10).
     maps = textures.laurel('laurel', LAUREL_TILE, frieze_h, pairs=3, cols=384, rows=96, leaf=(0.040, 0.014),
-                           angle=20, relief=0.0022, stem=0.0016, ground='#231709', leaf_colour='#e8a855',
-                           ground_trm=(0.0, 0.85, 0.20), leaf_trm=(0.0, 0.40, 0.60))
+                           angle=20, relief=0.0022, stem=0.0016, ground='#19120a', leaf_colour='#e8a855',
+                           ground_trm=(0.0, 0.85, 0.20), leaf_trm=(0.0, 0.25, 1.0))
     slope = profile.length(profile.between(BODY_LINE, *SHOULDER_BAND)) - 2 * (FILLET_LO + FILLET_HI)
     # Drawn for the camera: the 21 degree slope shows a frieze at under half its height from the
     # front, so leaves 71 mm long at 48 degrees read as the concept's 53 mm at 27, and fill 86%
@@ -453,7 +490,7 @@ def main():
     normal = V(face_dir.y, -face_dir.x)  # outward off the shoulder
     gem, bezel = cabochon(m, mid, normal)
     # The concept's small gold beads either side of the stone, sat on the frieze's centre line.
-    flank = 0.032 + 0.022
+    flank = STONE[0] + 0.022
     beads = [bead(m, f'bead_{side}', mid.x, mid.y, 0.009, theta=FRONT + sign * flank / mid.x, sink=0.4,
                   segments=10, rings=6) for side, sign in (('l', -1), ('r', 1))]
     seat = glass_line()[-1].y
@@ -475,6 +512,13 @@ def main():
     inside = {name: f'{count} vertices, {deep * 1000:.1f} mm' for name, (count, deep) in hollow.items() if count}
     if inside:
         raise SystemExit(f'parts inside the cavity: {inside}')
+    # Nor may the glass show through the cup: level rays in from outside meet the cup first
+    # wherever they meet both (round 5: specks of amber on every scallop's flanks and its foot).
+    through, rays = validate.show_through(next(p for p in parts if p.name == 'cup'), shell, z_min=CUP[0],
+                                          z_max=CUP[2] + 0.004)
+    facts['cup_show_through'] = [through, rays]
+    if through:
+        raise SystemExit(f'the glass shows through the cup on {through} of {rays} rays')
 
     root = scene.empty(ROOT)
     root['asset_id'] = ASSET_ID
