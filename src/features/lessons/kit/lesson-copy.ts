@@ -91,7 +91,15 @@ export const LESSON_COPY: Readonly<Partial<Record<number, CuriosityCopy>>> = {
     ],
   },
   4: { tease: 'Merc climbs seven stairs and stops, one short of home.' },
-  5: { tease: 'One long note, sung easily, then with a harder push.' },
+  5: {
+    hookAlts: [
+      {
+        id: 'steady',
+        text: 'Singers are told to “support” a long note. What keeps it steady?',
+      },
+    ],
+    tease: 'One long note, sung easily, then with a harder push.',
+  },
   6: { tease: 'Merc moves every single note of ‘Twinkle, Twinkle’ up.' },
   7: {
     hookAlts: [
