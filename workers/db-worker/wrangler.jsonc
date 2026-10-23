@@ -89,6 +89,23 @@
       "entrypoint": "JamHostVerifier",
     },
   ],
+  // The lesson pages' answers (POST /api/mirror/event, lesson_answer) are
+  // rate-limited by Cloudflare, not by the auth_ratelimit table, so an
+  // answer leaves no address in D1 (handleMirrorEvent in src/index.ts). 300
+  // per address per 60 s, the budget the D1 bucket had; the counters are
+  // kept per Cloudflare location and are approximate, which a flood guard
+  // can afford. A Worker without the binding refuses every lesson answer.
+  // Not inherited: each env block names its own, with a namespace_id of its
+  // own so one env's traffic never spends another's counters. 4101 is here
+  // (local `wrangler dev`), 4102 dev, 4103 prod, and 4104 the PR previews
+  // (wrangler.pr-preview.template.jsonc).
+  "ratelimits": [
+    {
+      "name": "LESSON_EVENT_LIMIT",
+      "namespace_id": "4101",
+      "simple": { "limit": 300, "period": 60 },
+    },
+  ],
   "observability": {
     "enabled": false,
     "logs": {
@@ -290,6 +307,14 @@
           "entrypoint": "JamHostVerifier",
         },
       ],
+      // The lesson answers' limiter: see the top-level entry.
+      "ratelimits": [
+        {
+          "name": "LESSON_EVENT_LIMIT",
+          "namespace_id": "4102",
+          "simple": { "limit": 300, "period": 60 },
+        },
+      ],
     },
     "prod": {
       "name": "mercury-pitch-db",
@@ -422,6 +447,14 @@
           "binding": "JAM_WORKER",
           "service": "mercury-pitch-jam",
           "entrypoint": "JamHostVerifier",
+        },
+      ],
+      // The lesson answers' limiter: see the top-level entry.
+      "ratelimits": [
+        {
+          "name": "LESSON_EVENT_LIMIT",
+          "namespace_id": "4103",
+          "simple": { "limit": 300, "period": 60 },
         },
       ],
     },

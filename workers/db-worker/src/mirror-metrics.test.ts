@@ -2,7 +2,7 @@
 // mirror-metrics tests — which numbers a funnel event may keep
 // ============================================================
 
-import { describe, expect, it } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 import { GUIDE_FUNNEL_EVENTS, TOUR_FUNNEL_EVENTS, } from '../../../src/lib/funnel-event-catalog'
 import type { Env } from './auth'
 import worker from './index'
@@ -151,18 +151,55 @@ describe('cleanMirrorMetrics', () => {
 })
 
 describe('POST /api/mirror/event', () => {
-  /** Enough of D1 to take the rate limit and one insert, recording the
-   *  mirrorEvents insert's bound values and each rate-limit bucket spent. */
-  function envRecordingInserts(): {
+  /** A lesson answer as the pages send it. */
+  const LESSON_ANSWER = {
+    clientId: 'lesson-anonymous',
+    event: 'lesson_answer',
+    metrics: {
+      page: 2,
+      qLesson: 1,
+      q: 4,
+      firstTry: 0,
+      k: 3,
+      visit: 1,
+      consent: 1,
+    },
+  }
+
+  /** A stand-in for the LESSON_EVENT_LIMIT binding, recording each key. */
+  function limiter(outcome: boolean | 'throws'): RateLimit & {
+    keys: string[]
+  } {
+    const keys: string[] = []
+    return {
+      keys,
+      limit: async ({ key }) => {
+        keys.push(key)
+        if (outcome === 'throws') throw new Error('limiter unavailable')
+        return { success: outcome }
+      },
+    }
+  }
+
+  /** Enough of D1 to take the rate limit and the inserts, recording the
+   *  mirrorEvents and funnelAcquisition inserts' bound values, each
+   *  rate-limit bucket spent, and every statement that names auth_ratelimit. */
+  function envRecordingInserts(lessonLimit?: RateLimit): {
     env: Env
     inserts: unknown[][]
+    acquisitions: unknown[][]
     buckets: unknown[]
+    rateLimitStatements: string[]
   } {
     const inserts: unknown[][] = []
+    const acquisitions: unknown[][] = []
     const buckets: unknown[] = []
+    const rateLimitStatements: string[] = []
     const env = {
+      LESSON_EVENT_LIMIT: lessonLimit,
       DB: {
         prepare: (sql: string) => {
+          if (sql.includes('auth_ratelimit')) rateLimitStatements.push(sql)
           let bound: unknown[] = []
           const statement = {
             bind: (...args: unknown[]) => {
@@ -179,6 +216,9 @@ describe('POST /api/mirror/event', () => {
               if (sql.startsWith('INSERT INTO mirrorEvents')) {
                 inserts.push(bound)
               }
+              if (sql.includes('INSERT INTO funnelAcquisition')) {
+                acquisitions.push(bound)
+              }
               return {}
             },
           }
@@ -186,18 +226,23 @@ describe('POST /api/mirror/event', () => {
         },
       },
     } as unknown as Env
-    return { env, inserts, buckets }
+    return { env, inserts, acquisitions, buckets, rateLimitStatements }
   }
 
-  const post = (env: Env, body: unknown) =>
+  const post = (env: Env, body: unknown, headers: HeadersInit = {}) =>
     worker.fetch(
       new Request('https://api.test/api/mirror/event', {
         method: 'POST',
+        headers,
         body: JSON.stringify(body),
       }),
       env,
       {} as ExecutionContext,
     )
+
+  afterEach(() => {
+    vi.useRealTimers()
+  })
 
   it('stores a tour event with its tour, step and steps shown as the metrics JSON', async () => {
     const { env, inserts } = envRecordingInserts()
@@ -218,20 +263,10 @@ describe('POST /api/mirror/event', () => {
   })
 
   it("stores a lesson answer under the lesson pages' one client id, its numbers alone", async () => {
-    const { env, inserts } = envRecordingInserts()
+    const { env, inserts } = envRecordingInserts(limiter(true))
     const response = await post(env, {
-      clientId: 'lesson-anonymous',
-      event: 'lesson_answer',
-      metrics: {
-        page: 2,
-        qLesson: 1,
-        q: 4,
-        firstTry: 0,
-        k: 3,
-        visit: 1,
-        consent: 1,
-        id: 'l01-q4',
-      },
+      ...LESSON_ANSWER,
+      metrics: { ...LESSON_ANSWER.metrics, id: 'l01-q4' },
     })
     expect(response.status).toBe(201)
     expect(inserts).toHaveLength(1)
@@ -242,14 +277,104 @@ describe('POST /api/mirror/event', () => {
     ])
   })
 
-  it("spends the lesson bucket on a lesson answer, never the funnel's own", async () => {
-    const { env, buckets } = envRecordingInserts()
-    await post(env, {
-      clientId: 'lesson-anonymous',
-      event: 'lesson_answer',
-      metrics: { page: 1, qLesson: 1, q: 1, firstTry: 1, k: 3, visit: 1 },
-    })
+  it("keeps a lesson answer's UTC day and no time of day; another event keeps its time", async () => {
+    vi.useFakeTimers({ toFake: ['Date'] })
+    vi.setSystemTime(Date.parse('2026-10-22T23:59:59.999Z'))
+    const { env, inserts } = envRecordingInserts(limiter(true))
+
+    await post(env, LESSON_ANSWER)
     await post(env, { clientId: 'client-0001', event: 'tour_start' })
-    expect(buckets).toEqual(['lesson-event', 'mirror-event'])
+
+    expect(inserts.map((bound) => bound[1])).toEqual([
+      '2026-10-22T00:00:00.000Z',
+      '2026-10-22T23:59:59.999Z',
+    ])
+  })
+
+  it("spends Cloudflare's limiter on a lesson answer, keyed by the address's limiter key, and writes no counter", async () => {
+    const lessonLimit = limiter(true)
+    const { env, inserts, rateLimitStatements } =
+      envRecordingInserts(lessonLimit)
+
+    const response = await post(env, LESSON_ANSWER, {
+      'CF-Connecting-IP': '2001:db8:1:2:3:4:5:6',
+    })
+
+    expect(response.status).toBe(201)
+    expect(inserts).toHaveLength(1)
+    expect(lessonLimit.keys).toEqual(['v6:2001:db8:1:2::/64'])
+    expect(rateLimitStatements).toEqual([])
+  })
+
+  it('refuses a lesson answer the limiter refuses, and stores nothing', async () => {
+    const { env, inserts, rateLimitStatements } = envRecordingInserts(
+      limiter(false),
+    )
+
+    const response = await post(env, LESSON_ANSWER)
+
+    expect(response.status).toBe(429)
+    expect(response.headers.get('Retry-After')).toBe('60')
+    expect(inserts).toEqual([])
+    expect(rateLimitStatements).toEqual([])
+  })
+
+  it('refuses every lesson answer when the binding is missing, never falling back to the D1 limiter', async () => {
+    const { env, inserts, rateLimitStatements } = envRecordingInserts()
+
+    const response = await post(env, LESSON_ANSWER)
+
+    expect(response.status).toBe(429)
+    expect(inserts).toEqual([])
+    expect(rateLimitStatements).toEqual([])
+  })
+
+  it('refuses a lesson answer when the limiter fails, and stores nothing', async () => {
+    const { env, inserts, rateLimitStatements } = envRecordingInserts(
+      limiter('throws'),
+    )
+
+    const response = await post(env, LESSON_ANSWER)
+
+    expect(response.status).toBe(429)
+    expect(inserts).toEqual([])
+    expect(rateLimitStatements).toEqual([])
+  })
+
+  it("spends the funnel's bucket on any other event, never the lesson limiter", async () => {
+    const lessonLimit = limiter(true)
+    const { env, buckets } = envRecordingInserts(lessonLimit)
+
+    const response = await post(env, {
+      clientId: 'client-0001',
+      event: 'tour_start',
+    })
+
+    expect(response.status).toBe(201)
+    expect(buckets).toEqual(['mirror-event'])
+    expect(lessonLimit.keys).toEqual([])
+  })
+
+  it("keeps no first-touch row for the lesson pages' shared id", async () => {
+    const { env, inserts, acquisitions } = envRecordingInserts(limiter(true))
+
+    const response = await post(env, {
+      ...LESSON_ANSWER,
+      acq: { gclid: 'CjwKCA-test', utmSource: 'google' },
+    })
+
+    expect(response.status).toBe(201)
+    expect(inserts).toHaveLength(1)
+    expect(acquisitions).toEqual([])
+  })
+
+  it("keeps no first-touch row for 'no-storage', and one for a device's own id", async () => {
+    const { env, acquisitions } = envRecordingInserts()
+    const acq = { gclid: 'CjwKCA-test', utmSource: 'google' }
+
+    await post(env, { clientId: 'no-storage', event: 'mirror_view', acq })
+    await post(env, { clientId: 'client-0001', event: 'mirror_view', acq })
+
+    expect(acquisitions.map((bound) => bound[0])).toEqual(['client-0001'])
   })
 })

@@ -14,7 +14,7 @@
 // Entities are validated against the TABLES allowlist; per-table access
 // rules force userId scoping from the JWT, never from the request body.
 
-import { FUNNEL_EVENT_NAMES } from '../../../src/lib/funnel-event-catalog'
+import { FUNNEL_EVENT_NAMES, LESSON_CLIENT_ID, } from '../../../src/lib/funnel-event-catalog'
 import { resolveAdmin, resolveAdminWithIdentity } from './access'
 import { handleAccountNoticeRoute } from './account-notices'
 import { handleConfirmReminderRoute } from './confirm-reminders'
@@ -1307,6 +1307,70 @@ export function sanitizeAcquisition(
   return Object.keys(clean).length > 0 ? clean : null
 }
 
+/**
+ * The client ids many visitors share, for which no first-touch row is kept.
+ * 'no-storage' is the literal id every storage-disabled browser sends, and
+ * LESSON_CLIENT_ID the one every lesson page sends. With first-wins
+ * semantics, one such visitor's source would become the recorded acquisition
+ * for all of them: a row that looks precise and means nothing.
+ */
+const SHARED_CLIENT_IDS: ReadonlySet<string> = new Set([
+  'no-storage',
+  LESSON_CLIENT_ID,
+])
+
+/** The 429 a refused event gets, from either limiter. */
+function mirrorEventRefused(retryAfter = 60): Response {
+  return respond(
+    { error: `Too many requests. Retry after ${retryAfter} seconds.` },
+    { status: 429, headers: { 'Retry-After': String(retryAfter) } },
+  )
+}
+
+/**
+ * The refusal for a lesson answer over its budget, or null to take it.
+ *
+ * Cloudflare's limiter (LESSON_EVENT_LIMIT), never the D1 one: checkRateLimit
+ * would keep the address in auth_ratelimit, beside the answer's own row. The
+ * key goes to `limit()` and is written nowhere. With no binding (a config
+ * without it), or one that fails, the answer is refused like one over its
+ * budget, so a lesson answer can never leave an address behind.
+ */
+async function lessonAnswerRefusal(
+  request: Request,
+  env: Env,
+): Promise<Response | null> {
+  const limiter = env.LESSON_EVENT_LIMIT
+  if (limiter === undefined) return mirrorEventRefused()
+  const key = ipRateLimitKey(request.headers.get('CF-Connecting-IP'))
+  try {
+    const { success } = await limiter.limit({ key })
+    return success ? null : mirrorEventRefused()
+  } catch {
+    return mirrorEventRefused()
+  }
+}
+
+/** The refusal for any other event over the funnel's bucket, or null. */
+async function mirrorEventRefusal(
+  request: Request,
+  env: Env,
+): Promise<Response | null> {
+  const ip = ipRateLimitKey(request.headers.get('CF-Connecting-IP'))
+  const rl = await checkRateLimit(env.DB, ip, 'mirror-event')
+  return rl.allowed ? null : mirrorEventRefused(rl.retryAfter)
+}
+
+/**
+ * When an event row says it happened. A lesson answer keeps only its UTC day
+ * (the day's midnight, in the same ISO form), so its row cannot be lined up
+ * with anything else the Worker saw at that moment.
+ */
+function mirrorEventCreatedAt(lessonAnswer: boolean): string {
+  const now = new Date().toISOString()
+  return lessonAnswer ? `${now.slice(0, 10)}T00:00:00.000Z` : now
+}
+
 async function handleMirrorEvent(
   request: Request,
   env: Env,
@@ -1342,20 +1406,14 @@ async function handleMirrorEvent(
     acq?: unknown
   }
 
-  // The lesson pages' answers have a bucket of their own (auth.ts), so a
-  // class behind one address neither loses answers nor starves the app's own
-  // events. The bucket is the event's, so the limit waits for the body.
-  const ip = ipRateLimitKey(request.headers.get('CF-Connecting-IP'))
-  const bucket = event === 'lesson_answer' ? 'lesson-event' : 'mirror-event'
-  const rl = await checkRateLimit(env.DB, ip, bucket)
-  if (!rl.allowed) {
-    return respond(
-      {
-        error: `Too many requests. Retry after ${rl.retryAfter ?? 60} seconds.`,
-      },
-      { status: 429, headers: { 'Retry-After': String(rl.retryAfter ?? 60) } },
-    )
-  }
+  // The lesson pages' answers have a limiter of their own, so a class behind
+  // one address neither loses answers nor starves the app's own events. The
+  // limiter is the event's, so the limit waits for the body.
+  const lessonAnswer = event === 'lesson_answer'
+  const refused = lessonAnswer
+    ? await lessonAnswerRefusal(request, env)
+    : await mirrorEventRefusal(request, env)
+  if (refused !== null) return refused
 
   // The client always sends a UUID (or the literal 'no-storage', or the
   // lesson pages' 'lesson-anonymous') — enforce the shape so the clientId
@@ -1374,7 +1432,7 @@ async function handleMirrorEvent(
   )
     .bind(
       crypto.randomUUID(),
-      new Date().toISOString(),
+      mirrorEventCreatedAt(lessonAnswer),
       clientId,
       event,
       metricsJson,
@@ -1385,13 +1443,11 @@ async function handleMirrorEvent(
   // stay cheap and harmless. ON CONFLICT keeps the first row per client, and
   // the whole thing is non-fatal on purpose: the Worker can deploy ahead of
   // the migration that creates the table, and a funnel that 500s over a
-  // reporting nicety would cost more than the reporting is worth.
-  // 'no-storage' is the literal id every storage-disabled browser shares.
-  // With first-wins semantics, one such visitor's source would become the
-  // recorded acquisition for all of them — a row that looks precise and
-  // means nothing. Better no row than that row.
-  const acquisition =
-    clientId === 'no-storage' ? null : sanitizeAcquisition(acq)
+  // reporting nicety would cost more than the reporting is worth. A shared
+  // id gets no row at all (SHARED_CLIENT_IDS).
+  const acquisition = SHARED_CLIENT_IDS.has(clientId)
+    ? null
+    : sanitizeAcquisition(acq)
   if (acquisition !== null) {
     try {
       await env.DB.prepare(

@@ -215,6 +215,82 @@ describe('funnel rows after 13 months', () => {
   })
 })
 
+describe('lesson answers, kept by their UTC day', () => {
+  /** One lesson answer through the route at `atMs`, as the pages send it,
+   *  with a stand-in for Cloudflare's limiter that takes it. */
+  async function lessonAnswer(atMs: number): Promise<void> {
+    vi.useFakeTimers({ toFake: ['Date'] })
+    vi.setSystemTime(atMs)
+    const response = await worker.fetch(
+      new Request('https://api.test/api/mirror/event', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'CF-Connecting-IP': '203.0.113.7',
+        },
+        body: JSON.stringify({
+          clientId: 'lesson-anonymous',
+          event: 'lesson_answer',
+          metrics: {
+            page: 2,
+            qLesson: 1,
+            q: 4,
+            firstTry: 1,
+            k: 3,
+            visit: 2,
+            consent: 2,
+          },
+          acq: { gclid: 'lesson-click', utmSource: 'google' },
+        }),
+      }),
+      {
+        ...env,
+        LESSON_EVENT_LIMIT: { limit: async () => ({ success: true }) },
+      },
+      {} as ExecutionContext,
+    )
+    vi.useRealTimers()
+    expect(response.status).toBe(201)
+  }
+
+  function lessonDays(): string[] {
+    return (
+      sqlite
+        .prepare(
+          "SELECT createdAt FROM mirrorEvents WHERE event = 'lesson_answer' ORDER BY createdAt",
+        )
+        .all() as Array<{ createdAt: string }>
+    ).map((row) => row.createdAt)
+  }
+
+  it('keeps the day in the ISO form the sweep compares, and no address or first-touch row', async () => {
+    await lessonAnswer(Date.parse('2026-10-22T16:43:12.345Z'))
+
+    expect(lessonDays()).toEqual(['2026-10-22T00:00:00.000Z'])
+    expect(count('auth_ratelimit')).toBe(0)
+    expect(count('funnelAcquisition')).toBe(0)
+  })
+
+  it('deletes a lesson answer once its 13 months are up, at most a day early', async () => {
+    // The cutoff is 06:17 on 11 September 2025: an answer a moment before
+    // it is due, one an hour after it shares its day and goes with it, and
+    // one from the next day stays.
+    await lessonAnswer(FUNNEL_CUTOFF - 1)
+    await lessonAnswer(FUNNEL_CUTOFF + 3_600_000)
+    await lessonAnswer(Date.parse('2025-09-12T00:00:00.000Z'))
+    expect(lessonDays()).toEqual([
+      '2025-09-11T00:00:00.000Z',
+      '2025-09-11T00:00:00.000Z',
+      '2025-09-12T00:00:00.000Z',
+    ])
+
+    const result = await sweepFunnelRetention(db, DEFAULTS, NOW)
+
+    expect(lessonDays()).toEqual(['2025-09-12T00:00:00.000Z'])
+    expect(result.mirrorEventsDeleted).toBe(2)
+  })
+})
+
 describe('click ids after 90 days', () => {
   it('clears the gclid and keeps the row and its campaign', async () => {
     acquisition('client-91-days', NOW - 91 * DAY)
