@@ -128,11 +128,25 @@ picture-in-picture lyrics work. Still to run on the Samsung.
 6. While mirroring, Clear offset in the wizard: only the TV's number should
    go; the speaker's stays.
 
-| Route                | Latency, result and spread | Score feels right? | Notes |
-| -------------------- | -------------------------- | ------------------ | ----- |
-| Phone speaker        |                            |                    |       |
-| AirPlay to the LG C2 |                            |                    |       |
-| AirPlay to Samsung   |                            |                    |       |
+**Run on the LG C2, 2026-10-23** (mp-v0.8.41, build 1321, iPhone 13 Pro on
+iOS 27): the phone's speaker measured 113 ms (91 ms before). Over AirPlay
+the wizard found no number: the first click came out of the TV loud and the
+rest quieter, even at TV volume 100, and too few clicks were heard. The
+likely cause is the wizard's detection rather than the route: it holds every
+click to a quarter of the loudest, credits no reply later than 375 ms and
+keeps no number over 500 ms; a fix is planned (plan 1.6, `REQ-TV-096`).
+Until it ships, a run may succeed with the TV's automatic volume and sound
+processing off (on the LG, for example Auto Volume and AI Sound Pro; names
+vary by model) and the phone held near the TV's speaker. Without a number
+the TV borrows the speaker's, which is probably 100 to 300 ms short of a
+mirrored round trip (the plan's section 2.3 figures), so a song may score
+late.
+
+| Route                | Latency, result and spread                                                      | Score feels right? | Notes                                        |
+| -------------------- | ------------------------------------------------------------------------------- | ------------------ | -------------------------------------------- |
+| Phone speaker        | 113 ms (91 ms before)                                                           |                    |                                              |
+| AirPlay to the LG C2 | No number: first click loud, the rest quieter even at volume 100; too few heard |                    | The wizard's detection; plan 1.6, REQ-TV-096 |
+| AirPlay to Samsung   |                                                                                 |                    |                                              |
 
 ## Test 6: the stage on the TV (PR #1179, TestFlight mp-v0.8.41, build 1321)
 
@@ -201,9 +215,9 @@ Face ID as usual.
 
 | Route                              | TV      | Sound on the TV? | Second copy on the TV?             | Latency, result and spread | Score feels right? | Notes |
 | ---------------------------------- | ------- | ---------------- | ---------------------------------- | -------------------------- | ------------------ | ----- |
-| iPhone, AirPlay mirroring          | LG C2   | Yes              | Before 0.8.40 yes; fixed in 0.8.40 |                            |                    |       |
+| iPhone, AirPlay mirroring          | LG C2   | Yes              | Before 0.8.40 yes; fixed in 0.8.40 | None in 0.8.41 (Test 5)    |                    |       |
 | iPhone, AirPlay mirroring          | Samsung |                  |                                    |                            |                    |       |
-| iPhone, phone speaker only         | none    | n/a              | n/a                                |                            |                    |       |
+| iPhone, phone speaker only         | none    | n/a              | n/a                                | 113 ms in 0.8.41 (Test 5)  |                    |       |
 | Android, Screen Cast               | Philips |                  | n/a                                |                            |                    |       |
 | Android, Screen Cast or Smart View | LG      |                  | n/a                                |                            |                    |       |
 | Samsung phone, Smart View          | Samsung |                  | n/a                                |                            |                    |       |
