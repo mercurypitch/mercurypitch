@@ -226,7 +226,7 @@ decided on 22 October 2026; rows 9 to 14 are drafts.
 | 8   | what is a backbeat, clap on 2 and 4, tempo           | Beat, tempo and the backbeat, explained \| MercuryPitch       | Drum Night                     |
 | 9   | how to sing big intervals in tune                    | Landing a leap: singing big intervals in tune \| MercuryPitch | Pitch training (intervals)     |
 | 10  | major vs minor, why minor sounds sad                 | Major and minor: the one note that changes \| MercuryPitch    | Ear Lab (chords), Piano Night  |
-| 11  | voice cracks when singing, chest and head voice      | Registers and the break: why voices flip \| MercuryPitch      | Voice type test                |
+| 11  | voice cracks when singing, chest and head voice      | Registers and the break: chest and head voice \| MercuryPitch | Voice type test                |
 | 12  | four chord song, I V vi IV                           | The four-chord song: how chords work \| MercuryPitch          | Piano Night, Guitar Night      |
 | 13  | singing vowels, resonance, formants                  | Resonance and vowels: why ee and ah differ \| MercuryPitch    | (no drill yet: CURRICULUM § 4) |
 | 14  | how to sing with emotion, phrasing                   | Phrasing in singing: breath, swell and shape \| MercuryPitch  | Karaoke Night, Jam Rooms       |
