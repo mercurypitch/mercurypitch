@@ -123,7 +123,16 @@ export const FIRST_PAINT_BUDGETS_KB = {
   // 130,362 with them, against 130,048 at 127. All 660 bytes are the kit's,
   // and Lesson 4 gains the same: the status line's words read from a copy
   // and emptied once spoken, and the toast's, deck's and explorer's fixes.
-  'learn/03.html': 128,
+  // Raised to 129 for the handoff's follow-ups: 129,977 bytes on main before
+  // them, 131,255 with them, against 131,072 at 128. 1,090 of the 1,278 are
+  // the kit's, on every lesson page: the frame loop, the explorer and Sing
+  // it's ring resting when nothing moves (kit/frame-loop.ts 432, explorer.ts
+  // 351, sing.ts 85), the sound gate keeping its height (page-chrome.ts,
+  // 116) and the sound-off lines (sound.ts, 104), 2 more the minifier's
+  // renaming. The other 188 are this page's: Sing it's fixes for a take cut
+  // short by leaving (lesson-03/sing.ts, 153), the rest card's
+  // (kit/comfort.ts, 25) and renaming.
+  'learn/03.html': 129,
   // Lesson 5, a draft too, built in every mode as Lesson 3 is. Measured 122
   // with the lesson menu and the next-lesson card (109 before them), and 129
   // with the page state.
@@ -139,8 +148,13 @@ export const FIRST_PAINT_BUDGETS_KB = {
   // import as Lesson 1's. Raised to 126 when Lesson 3's hook from 20
   // October stayed in the console as an alternative: 127,974 bytes on main
   // before it, 128,220 with it, against 128,000 at 125. It carries the
-  // season's copy as Lesson 3 does.
-  'learn/04.html': 126,
+  // season's copy as Lesson 3 does. Raised to 128 for the handoff's
+  // follow-ups: 128,332 bytes on main before them, 130,176 with them, against
+  // 129,024 at 126. The kit's 1,090 reach it as they reach Lesson 3; Move do
+  // and Merc's sing-along, kit parts now, come in chunks of their own, 672
+  // bytes there and 241 fewer in the page's module; and the slide guide's
+  // rest adds 323 (kit/slide-guide.ts).
+  'learn/04.html': 128,
   // Lesson 6, "Intervals: the distance between notes", a draft too, built
   // in every mode as Lesson 3 is: its own module on the kit, with the tune
   // line and the ear game it brings. Measured 125 with the lesson menu and
