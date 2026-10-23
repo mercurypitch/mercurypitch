@@ -53,10 +53,12 @@
 import type { Accessor, JSX } from 'solid-js'
 import { createEffect, createResource, createSignal, For, Match, on, onCleanup, onMount, Show, Switch, } from 'solid-js'
 import { Sheet } from '@/components/mobile/Sheet'
+import { Spinner } from '@/components/shared/Spinner'
 import { readMe } from '@/db/services/auth-me-service'
 import { accountHeld } from '@/db/services/auth-service'
 import { trackEvent } from '@/lib/analytics'
 import { deviceNoun, thisDeviceLower, yourDevice } from '@/lib/device-noun'
+import { isAppleTouchDevice } from '@/lib/device-tier'
 import { PRIVACY_URL, TERMS_URL } from '@/lib/legal-links'
 import type { KaraokeOffer } from '@/stores/native-shell-store'
 import { nativeShellApi } from '@/stores/native-shell-store'
@@ -92,6 +94,39 @@ export const CLOUD_TERMS =
  */
 export const HELD_ELSEWHERE_LINE =
   "You're already subscribed, on another account. Tap Restore purchase to move it here."
+
+/** The store a purchase waits on, by its name where the phone says which. */
+function storeName(): string {
+  if (typeof navigator === 'undefined') return 'the store'
+  if (isAppleTouchDevice(navigator)) return 'the App Store'
+  if (/\bAndroid\b/u.test(navigator.userAgent)) return 'Google Play'
+  return 'the store'
+}
+
+/**
+ * When a Subscribe still waiting earns its second line. The store's yes can
+ * take seconds after the password, most of all in the sandbox TestFlight
+ * buys in: the owner waited about 10 s on a button that only greyed out
+ * (mp-v0.8.41).
+ */
+export const SLOW_PURCHASE_MS = 8000
+
+/** Offline, Subscribe and Restore say so before they ask anything. */
+export const OFFLINE_LINE =
+  "You're offline. Connect to the internet, then try again."
+
+/** What the price's slot says while a Subscribe waits on the store. */
+export function purchaseWaitLine(slow: boolean): string {
+  const store = storeName()
+  return slow
+    ? `Still waiting for ${store}. A slow connection makes this take longer; your songs arrive as soon as it confirms.`
+    : `Waiting for ${store} to confirm…`
+}
+
+/** No connection at all, as the browser knows it. */
+function isOffline(): boolean {
+  return typeof navigator !== 'undefined' && navigator.onLine === false
+}
 
 /** One step of the path: what happens, then the detail it needs. */
 export interface CloudStep {
@@ -237,6 +272,9 @@ export function CloudOffer(props: CloudOfferProps): JSX.Element {
   const [price, setPrice] = createSignal<Price>({ kind: 'asking' })
   const [note, setNote] = createSignal<string | null>(null)
   const [buying, setBuying] = createSignal(false)
+  /** The store has taken longer than SLOW_PURCHASE_MS to answer. */
+  const [slow, setSlow] = createSignal(false)
+  const [restoring, setRestoring] = createSignal(false)
   const reduced = reducedMotion()
 
   const view = () => cloudOffer()?.view ?? null
@@ -307,6 +345,8 @@ export function CloudOffer(props: CloudOfferProps): JSX.Element {
 
   /** What the price's slot says beside it: today's sentences, unchanged. */
   const said = (): string => {
+    // While the store works, the line says so (purchaseWaitLine).
+    if (buying()) return purchaseWaitLine(slow())
     const told = note()
     if (told !== null) return told
     switch (price().kind) {
@@ -322,12 +362,20 @@ export function CloudOffer(props: CloudOfferProps): JSX.Element {
   const subscribe = async (): Promise<void> => {
     const api = nativeShellApi()?.karaokeSubscription
     setNote(null)
+    // Offline, the store cannot answer: say so now, not after a wait.
+    if (isOffline()) {
+      setNote(OFFLINE_LINE)
+      return
+    }
     setBuying(true)
     trackEvent('cloud_subscribe_tap')
+    const slowTimer = setTimeout(() => setSlow(true), SLOW_PURCHASE_MS)
     const outcome =
       api === undefined
         ? 'unavailable'
         : await api.subscribe().catch(() => 'failed' as const)
+    clearTimeout(slowTimer)
+    setSlow(false)
     setBuying(false)
     trackEvent(PURCHASE_EVENT[outcome])
     switch (outcome) {
@@ -350,7 +398,9 @@ export function CloudOffer(props: CloudOfferProps): JSX.Element {
         return
       case 'failed':
         setNote(
-          'The store could not complete the purchase. Try again in a moment.',
+          isOffline()
+            ? OFFLINE_LINE
+            : 'The store could not complete the purchase. Try again in a moment.',
         )
     }
   }
@@ -358,10 +408,16 @@ export function CloudOffer(props: CloudOfferProps): JSX.Element {
   const restore = async (): Promise<void> => {
     const api = nativeShellApi()?.karaokeSubscription
     setNote(null)
+    if (isOffline()) {
+      setNote(OFFLINE_LINE)
+      return
+    }
+    setRestoring(true)
     const outcome =
       api === undefined
         ? 'unavailable'
         : await api.restore().catch(() => 'failed' as const)
+    setRestoring(false)
     setNote(restoreNote(outcome))
     if (outcome !== 'restored') return
     const songs = await awaitSubscription(async () =>
@@ -504,7 +560,12 @@ export function CloudOffer(props: CloudOfferProps): JSX.Element {
                 aria-busy={buying() ? 'true' : undefined}
                 onClick={() => void subscribe()}
               >
-                Subscribe
+                <Show when={buying()} fallback="Subscribe">
+                  <span class={styles.subscribeBusy}>
+                    <Spinner size={18} />
+                    Subscribing…
+                  </span>
+                </Show>
               </button>
               <Show when={!accountHeld()}>
                 <button
@@ -519,8 +580,13 @@ export function CloudOffer(props: CloudOfferProps): JSX.Element {
             <div class={styles.fine}>
               <p class={styles.terms}>{CLOUD_TERMS}</p>
               <p class={styles.footer}>
-                <button type="button" onClick={() => void restore()}>
-                  Restore purchase
+                <button
+                  type="button"
+                  disabled={restoring() || buying()}
+                  aria-busy={restoring() ? 'true' : undefined}
+                  onClick={() => void restore()}
+                >
+                  {restoring() ? 'Restoring…' : 'Restore purchase'}
                 </button>
                 <span aria-hidden="true">·</span>
                 <a href={TERMS_URL} target="_blank" rel="noopener noreferrer">

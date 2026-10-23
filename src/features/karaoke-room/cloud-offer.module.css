@@ -346,6 +346,19 @@
   cursor: default;
 }
 
+/* Busy is not unavailable: the store is working on this tap, so the button
+   stays nearly full strength and says so beside the spinner. */
+.subscribe[aria-busy='true'] {
+  opacity: 0.85;
+}
+
+.subscribeBusy {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+}
+
 /* The one light across Subscribe, once (§4.4). At rest it waits off the
    button's left edge, clipped. */
 /* The light that crosses Subscribe once (§4.4). It travels inside the

@@ -97,7 +97,7 @@ import type { KaraokeSubscriptionApi } from '@/stores/native-shell-store'
 import { registerShellApi } from '@/stores/native-shell-store'
 import { actAsIpad } from '@/tests/helpers/ipad-navigator'
 import { closeCloudOffer, cloudOffer, cloudOfferGuest, openCloudOffer, resetCloudOfferForTests, setCloudOfferGuest, unaskedRefusal, } from './cloud-offer-store'
-import { CloudOffer } from './CloudOffer'
+import { CloudOffer, OFFLINE_LINE, SLOW_PURCHASE_MS } from './CloudOffer'
 import { karaokeSongs, resetKaraokeSongsForTests, songsOnTheWay, } from './karaoke-songs'
 
 /** The store's price for the month's plan, as the offer states it. */
@@ -331,6 +331,93 @@ describe('the price', () => {
     expect(slot.textContent).toBe('€4.99 a month')
     expect(offer$).toHaveBeenCalledTimes(2)
     expect(statusLine(offer)).toBe('')
+  })
+})
+
+describe('Subscribe, while the store works', () => {
+  // The store's yes can take seconds after the password, most of all in the
+  // sandbox TestFlight buys in: the owner waited about 10 s on a button that
+  // only greyed out (mp-v0.8.41). The button and the status line say so.
+  it('says it is subscribing, then that it still waits, then gives the button back', async () => {
+    let answer!: (outcome: 'pending') => void
+    const subscribe = vi.fn<KaraokeSubscriptionApi['subscribe']>(
+      () =>
+        new Promise((resolve) => {
+          answer = resolve
+        }),
+    )
+    withStore(store({ subscribe }))
+    const offer = await open()
+    await waitFor(() => expect(subscribeButton(offer).disabled).toBe(false))
+    vi.useFakeTimers()
+
+    fireEvent.click(subscribeButton(offer))
+    const busy = within(offer).getByRole('button', { name: 'Subscribing…' })
+    const waiting = [
+      busy.getAttribute('aria-busy'),
+      within(busy).queryByTestId('spinner') !== null,
+      statusLine(offer),
+    ]
+    vi.advanceTimersByTime(SLOW_PURCHASE_MS)
+    const stillWaiting = statusLine(offer)
+    vi.useRealTimers()
+    answer('pending')
+
+    expect(waiting).toEqual(['true', true, 'Waiting for the store to confirm…'])
+    expect(stillWaiting).toBe(
+      'Still waiting for the store. A slow connection makes this take longer; your songs arrive as soon as it confirms.',
+    )
+    await waitFor(() =>
+      expect(statusLine(offer)).toBe(
+        'The purchase is waiting for approval. The songs arrive once it is approved.',
+      ),
+    )
+    expect(subscribeButton(offer).disabled).toBe(false)
+  })
+
+  it('says it is offline at once, and asks the store nothing', async () => {
+    const subscribe = vi.fn<KaraokeSubscriptionApi['subscribe']>()
+    withStore(store({ subscribe }))
+    const offer = await open()
+    await waitFor(() => expect(subscribeButton(offer).disabled).toBe(false))
+    const online = vi.spyOn(navigator, 'onLine', 'get').mockReturnValue(false)
+    try {
+      fireEvent.click(subscribeButton(offer))
+
+      expect(statusLine(offer)).toBe(OFFLINE_LINE)
+      expect(subscribe).not.toHaveBeenCalled()
+    } finally {
+      online.mockRestore()
+    }
+  })
+
+  it('says Restoring while a restore waits on the store', async () => {
+    let answer!: (outcome: 'nothing') => void
+    const restore = vi.fn<KaraokeSubscriptionApi['restore']>(
+      () =>
+        new Promise((resolve) => {
+          answer = resolve
+        }),
+    )
+    withStore(store({ restore }))
+    const offer = await open()
+
+    fireEvent.click(
+      within(offer).getByRole('button', { name: 'Restore purchase' }),
+    )
+    const busy = within(offer).getByRole('button', { name: 'Restoring…' })
+    const state = [
+      busy.getAttribute('aria-busy'),
+      (busy as HTMLButtonElement).disabled,
+    ]
+    answer('nothing')
+
+    expect(state).toEqual(['true', true])
+    await waitFor(() =>
+      expect(
+        within(offer).getByRole('button', { name: 'Restore purchase' }),
+      ).not.toBeNull(),
+    )
   })
 })
 
