@@ -112,17 +112,17 @@ line above it, are in LESSON.md ("Section headings").
 
 ## Length
 
-The learner copy is 2,258 words by the review's count (FACTS 3), under the series' cap, Lesson 3's
-page at 2,355 on the same count, and the page runs about 15 minutes: 9.49 minutes of reading at 238
-words a minute and about 6 of sound, toys and tasks, 15.49 in all. That is past MASTER-PLAN § 4.2's
-8 to 12 minutes of active time, as Lessons 3 and 5 are (15 and 17 minutes: Lesson 3 FACTS 61,
-Lesson 5 FACTS 2). Each step's text, with its Try, its Notice and any predict, runs 88 to 119 words
-(Steps 1 to 5: 88, 119, 115, 103 and 95), inside § 4.2's 50 to 120 a step. Two steps carry more
-beside it, for these reasons:
+The learner copy is 2,591 words on today's default path (FACTS 3), over the series' cap, Lesson 3's
+page at 2,355 on the review's count; 2,258 was the text package's count. The page runs about 17
+minutes, though its chip says 15: 10.89 minutes of reading at 238 words a minute and about 6 of
+sound, toys and tasks, 16.89 in all. That is past MASTER-PLAN § 4.2's 8 to 12 minutes of active
+time, as Lessons 3 and 5 are (15 and 17 minutes: Lesson 3 FACTS 61, Lesson 5 FACTS 2). Each step's
+text, with its Try, its Notice and any predict, runs 88 to 174 words (Steps 1 to 5: 88, 119, 115,
+174 and 109), inside § 4.2's 50 to 120 a step but for Step 4. Two steps carry more beside it:
 
-- **Step 4, about 215 words.** Its mix-up card (about 100 words) sits in the step whose toy refutes
-  it, as in Lessons 2 to 5.
-- **Step 5, about 245 words.** Its table of five anchors (about 60 words) is what the anchor board
+- **Step 4, about 290 words.** Its hints and "You said" lines (about 70 words) take its text past
+  120; its mix-up card (about 100) sits in the step whose toy refutes it, as in Lessons 2 to 5.
+- **Step 5, about 240 words.** Its table of five anchors (about 60 words) is what the anchor board
   plays, and its Go deeper drawer (about 60) is closed by default.
 
 ## Toys: what each reuses, and what is new

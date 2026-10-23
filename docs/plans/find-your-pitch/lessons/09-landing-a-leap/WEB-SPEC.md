@@ -141,7 +141,7 @@ The learner copy is 2,350 words by the review's count (FACTS 5), 29 under the se
 Lesson 3's page on the same count at `a3d8048e1` is 2,454 words, 75 of them the note under its new
 title, which is not in editorial form, so the counter reads it. The page runs about 16 minutes: 9.87
 minutes of reading at 238 words a minute and about 6.4 of sound, toys and tasks, 16.3 in all. That
-is past MASTER-PLAN § 4.2's 8 to 12 minutes of active time, as Lessons 3, 5, 6 and 7 are (15, 17, 15
+is past MASTER-PLAN § 4.2's 8 to 12 minutes of active time, as Lessons 3, 5, 6 and 7 are (15, 17, 17
 and 16 minutes), and acceptable by their precedent. Each step's text, with its Try and its Notice,
 runs 106 to 120 words (Steps 1 to 5: 118, 119, 120, 119 and 106), inside § 4.2's 50 to 120 a step.
 One step carries more beside it: Step 2, about 200 words with its mix-up card (about 80 words),
