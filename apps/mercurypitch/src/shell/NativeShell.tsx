@@ -214,6 +214,23 @@ export const NativeShell: Component = () => {
         pushSettings: (section) => {
           pushSettingsSection(section)
         },
+        // A room's way to a test build's switches: the Karaoke stage's card
+        // for a song it refused (stem-memory.ts). The Developer screen, then
+        // its section brought into view once it has drawn.
+        ...(DEVELOPER_AVAILABLE
+          ? {
+              openDeveloperSection: (id: string) => {
+                pushScreen('developer')
+                requestAnimationFrame(() => {
+                  document
+                    .querySelector(
+                      `[data-developer-section="${CSS.escape(id)}"]`,
+                    )
+                    ?.scrollIntoView({ block: 'start' })
+                })
+              },
+            }
+          : {}),
         // The Sing room's denied state (3d) is the one caller: a refused
         // microphone can only be undone in the system's own Settings.
         openAppSettings: () => openAppSettings(),

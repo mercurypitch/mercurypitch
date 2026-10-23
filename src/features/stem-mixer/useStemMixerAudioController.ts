@@ -41,6 +41,7 @@ import { createStemKeyControl } from './stem-key-control'
 import { audibleSongTime as songTimeHeard, shiftDetectedPitch, } from './stem-key-timing'
 import type { SongPathLog } from './stem-load-path'
 import { createSongPathLog, PATH_SOURCE } from './stem-load-path'
+import type { StreamRefusal } from './stem-memory'
 import { decodedBudgetBytes, decodedStemBytes, fitStems, HOSTED_WHOLE_DECODE_MAX_BYTES, mb, needsStreamingMessage, stemLoadConcurrency, streamedStemBytes, } from './stem-memory'
 import { stemTrackIsAudible } from './stem-mix-state'
 import { fillPeakEnvelopeWindow, markEnvelopeWritten, } from './stem-peak-envelope'
@@ -48,7 +49,7 @@ import type { StemStream } from './stem-stream-source'
 import { canStreamStems, readStemShape } from './stem-stream-source'
 import type { StreamedStem } from './stem-streaming-load'
 import { loadStreamedStem } from './stem-streaming-load'
-import { decodePastGuard } from './stream-switches'
+import { decodePastGuard, noStreamForced } from './stream-switches'
 import type { StreamingStemVoice } from './streaming-stem-voice'
 import { createStreamingStemVoice } from './streaming-stem-voice'
 import type { PitchNote } from './types'
@@ -242,6 +243,12 @@ export interface StemMixerAudioController {
   /** False when loading again cannot change the answer (the device, not
    *  the network, is what stands in the way): no Retry is offered. */
   loadErrorRetryable: Accessor<boolean>
+  /**
+   * Why the song was refused rather than decoded whole, when it was: the
+   * stage then offers the way to the switch that can change it, where there
+   * is one (a test build's Developer screen). Null for any other outcome.
+   */
+  loadRefusal: Accessor<StreamRefusal | null>
   loadProgress: Accessor<number>
   /**
    * What the load is doing right now. `connecting` is the wait for the first
@@ -475,6 +482,7 @@ export const useStemMixerAudioController = (
   const [loading, setLoading] = createSignal(true)
   const [loadError, setLoadErrorLocal] = createSignal('')
   const [loadErrorRetryable, setLoadErrorRetryable] = createSignal(true)
+  const [loadRefusal, setLoadRefusal] = createSignal<StreamRefusal | null>(null)
   const [loadProgress, setLoadProgressLocal] = createSignal(0)
   const [loadPhase, setLoadPhaseLocal] =
     createSignal<StemLoadPhase>('connecting')
@@ -947,6 +955,7 @@ export const useStemMixerAudioController = (
     setLoading(true)
     setLoadErrorLocal('')
     setLoadErrorRetryable(true)
+    setLoadRefusal(null)
     setLoadProgressLocal(0)
     setLoadPhaseLocal('connecting')
     setLoadedBytesLocal(0)
@@ -999,6 +1008,7 @@ export const useStemMixerAudioController = (
     let streamedStemCost = 0
     /** Why a stem was refused rather than decoded whole, when one was. */
     let refused: string | null = null
+    let refusedWhy: StreamRefusal | null = null
     // Which way each stem is held, for the Developer screen's Karaoke audio
     // section and the audio record (stem-load-path.ts). A native test build's
     // hosted room only: the web and the store build fold all of it away.
@@ -1189,8 +1199,15 @@ export const useStemMixerAudioController = (
                 ...(await shapeOf(bytes)),
               })
             }
-            const message = needsStreamingMessage()
+            // The Developer switch said "no streaming" on a phone that has
+            // a decoder: say that, not "update the phone" (it is up to date).
+            const why: StreamRefusal =
+              IS_NATIVE_BUILD && noStreamForced()
+                ? 'switched-off'
+                : 'no-decoder'
+            const message = needsStreamingMessage(why)
             refused = message
+            refusedWhy = why
             throw new Error(message)
           }
         }
@@ -1405,6 +1422,7 @@ export const useStemMixerAudioController = (
       if (refused !== null && !disposed) {
         // Terminal: loading it again cannot stream either.
         setLoadErrorRetryable(false)
+        setLoadRefusal(refusedWhy)
         setLoadErrorLocal(refused)
         deps.showNotification(refused, 'warning')
       } else if (loadedCount === 0 && !disposed) {
@@ -2440,6 +2458,7 @@ export const useStemMixerAudioController = (
     streamsStems: streamStems,
     loadError,
     loadErrorRetryable,
+    loadRefusal,
     loadProgress,
     loadPhase,
     loadedBytes,

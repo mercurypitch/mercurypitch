@@ -67,6 +67,7 @@ vi.mock('@/features/stem-mixer/stem-stream-source', () => ({
 }))
 
 import { StemMixer } from '@/components/StemMixer'
+import { registerShellApi } from '@/stores/native-shell-store'
 
 function fakeContext() {
   const param = () => ({
@@ -420,9 +421,90 @@ describe('a song the room cannot play on this phone', () => {
 
     const alert = await screen.findByRole('alert')
     expect(alert.textContent).toContain(
-      "This song needs a newer version of this phone's software to play here.",
+      'This song is too big for this phone to play in one piece.',
     )
     expect(screen.queryByRole('button', { name: 'Try again' })).toBeNull()
+  })
+
+  // The card covers the stage, and the stage's song line is the room's only
+  // way to its library: the singer was left with a message and no way on
+  // (owner, mp-v0.8.41). The card offers another song itself.
+  it("offers another song, which opens the room's library", async () => {
+    streams.decoder = false
+    vi.stubGlobal('fetch', async () => ({
+      ok: false,
+      status: 0,
+      body: null,
+      headers: new Headers(),
+      arrayBuffer: async () => new ArrayBuffer(16 * 1024 * 1024),
+    }))
+    const { host } = hosting()
+    mountHosted(host)
+
+    await screen.findByRole('alert')
+    fireEvent.click(screen.getByRole('button', { name: 'Choose another song' }))
+
+    expect(host.stage.onOpenLibrary).toHaveBeenCalledTimes(1)
+    // A store build has no Developer screen, so no way to its switches.
+    expect(
+      screen.queryByRole('button', { name: 'Karaoke audio settings' }),
+    ).toBeNull()
+  })
+
+  // A test build has the switches that change the answer, on its Developer
+  // screen: the card opens it at Karaoke audio.
+  it('offers the Karaoke audio switches where the shell has a Developer screen', async () => {
+    streams.decoder = false
+    vi.stubGlobal('fetch', async () => ({
+      ok: false,
+      status: 0,
+      body: null,
+      headers: new Headers(),
+      arrayBuffer: async () => new ArrayBuffer(16 * 1024 * 1024),
+    }))
+    const openDeveloperSection = vi.fn()
+    const unregister = registerShellApi({
+      pushSettings: vi.fn(),
+      openDeveloperSection,
+    })
+    try {
+      const { host } = hosting()
+      mountHosted(host)
+
+      await screen.findByRole('alert')
+      fireEvent.click(
+        screen.getByRole('button', { name: 'Karaoke audio settings' }),
+      )
+
+      expect(openDeveloperSection).toHaveBeenCalledWith('karaoke-audio')
+    } finally {
+      unregister()
+    }
+  })
+
+  it('offers no switches for a load that failed on the network', async () => {
+    vi.stubGlobal('fetch', async () =>
+      Promise.reject(new TypeError('Failed to fetch')),
+    )
+    const unregister = registerShellApi({
+      pushSettings: vi.fn(),
+      openDeveloperSection: vi.fn(),
+    })
+    try {
+      const { host } = hosting()
+      mountHosted(host)
+
+      await screen.findByRole('alert')
+
+      expect(
+        screen.queryByRole('button', { name: 'Karaoke audio settings' }),
+      ).toBeNull()
+      expect(
+        screen.getByRole('button', { name: 'Choose another song' }),
+      ).not.toBeNull()
+    } finally {
+      unregister()
+    }
   })
 
   it('still offers Try again for a load that can succeed next time', async () => {

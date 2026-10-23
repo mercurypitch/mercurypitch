@@ -545,9 +545,13 @@ describe('the Karaoke room on a phone that cannot stream (no AudioDecoder)', () 
     await h.controller.loadStems()
 
     expect(decodeCalls).toBe(0)
+    // jsdom names no system, so the sentence names none either
+    // (stem-memory.test.ts has iOS's, iPadOS's and Android's).
     expect(h.controller.loadError()).toBe(
-      "This song needs a newer version of this phone's software to play here. Update it, then open the song again.",
+      'This song is too big for this phone to play in one piece. Choose another song.',
     )
+    // The platform has no decoder; no Developer switch took it away.
+    expect(h.controller.loadRefusal()).toBe('no-decoder')
     // Loading it again cannot stream either.
     expect(h.controller.loadErrorRetryable()).toBe(false)
     expect(h.notifications.some((m) => /could not be loaded/u.test(m))).toBe(

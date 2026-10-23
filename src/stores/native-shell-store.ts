@@ -137,6 +137,14 @@ export interface NativeShellApi {
    */
   pushSettings: (section?: SettingsSection) => void
   /**
+   * A test build's Developer screen, scrolled to one of its sections (the id
+   * `registerDeveloperSection` was given). Absent from a store build, which
+   * has no Developer screen, so a room offers no button for it there. The
+   * Karaoke room's stage asks for "karaoke-audio" when it refused a song that
+   * one of that section's switches could let it play.
+   */
+  openDeveloperSection?: (id: string) => void
+  /**
    * Open THIS APP's row in the system Settings — the one place a refused
    * microphone can be turned back on, because neither platform prompts twice.
    *

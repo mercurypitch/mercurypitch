@@ -19,8 +19,9 @@
 // So the size is computed before the decode is attempted, and a load that
 // cannot fit is trimmed and explained rather than run into the ceiling.
 
-import { thisDevicePossessive } from '@/lib/device-noun'
+import { deviceNoun, thisDeviceLower } from '@/lib/device-noun'
 import type { DeviceClass } from '@/lib/device-tier'
+import { isAppleTouchDevice } from '@/lib/device-tier'
 
 /** Web Audio decodes to 32-bit floats, one per sample per channel. */
 const BYTES_PER_SAMPLE = 4
@@ -156,9 +157,54 @@ export function fitStems(input: StemFitInput): StemFit {
  */
 export const HOSTED_WHOLE_DECODE_MAX_BYTES = 12 * 1024 * 1024
 
-/** What the room says instead of decoding a song it cannot hold. */
-export function needsStreamingMessage(): string {
-  return `This song needs a newer version of ${thisDevicePossessive()} software to play here. Update it, then open the song again.`
+/**
+ * Why a room that asked for the stream could not stream a song: a test
+ * build's Developer switch took the no-streaming path on purpose
+ * (stream-switches.ts), or the platform has no AudioDecoder.
+ */
+export type StreamRefusal = 'switched-off' | 'no-decoder'
+
+/** The system a refused song needs a newer version of, by its own name. */
+function systemName(
+  nav: Pick<Navigator, 'userAgent' | 'maxTouchPoints' | 'platform'>,
+): 'iOS' | 'iPadOS' | 'Android' | null {
+  if (isAppleTouchDevice(nav)) return deviceNoun() === 'iPad' ? 'iPadOS' : 'iOS'
+  if (/\bAndroid\b/u.test(nav.userAgent)) return 'Android'
+  return null
+}
+
+/**
+ * What the room says instead of decoding a song it cannot hold.
+ *
+ * It said "This song needs a newer version of this phone's software to play
+ * here", which the owner read as "update Mercury Pitch" (mp-v0.8.41 on an
+ * iPhone 13 Pro, 2026-10-23), and which on that iPhone was not even so: it
+ * runs iOS 27, and the Developer screen's "Force the no-streaming path" was
+ * on. So the sentence names the reason, names the system by its name with
+ * where to update it, and ends on "choose another song", which the stage's
+ * card offers as a button.
+ */
+export function needsStreamingMessage(
+  why: StreamRefusal,
+  nav: Pick<
+    Navigator,
+    'userAgent' | 'maxTouchPoints' | 'platform'
+  > | null = typeof navigator === 'undefined' ? null : navigator,
+): string {
+  const head = `This song is too big for ${thisDeviceLower()} to play in one piece.`
+  if (why === 'switched-off') {
+    return `${head} It would stream, but streaming is switched off: Developer, Karaoke audio, "Force the no-streaming path". Switch that off, or choose another song.`
+  }
+  const system = nav === null ? null : systemName(nav)
+  switch (system) {
+    case 'iOS':
+    case 'iPadOS':
+      return `${head} ${system} 26 or later streams it: update ${system} in Settings, General, Software Update. Or choose another song.`
+    case 'Android':
+      return `${head} An updated Android System WebView streams it: update it in Google Play. Or choose another song.`
+    default:
+      return `${head} Choose another song.`
+  }
 }
 
 // ── Streamed playback ────────────────────────────────────────

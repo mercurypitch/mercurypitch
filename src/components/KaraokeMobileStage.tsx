@@ -256,6 +256,10 @@ export interface KaraokeMobileStageProps {
       way on is the browser's own reload. Omit where a retry is meaningless
       (stems that were never remote in the first place). */
   onRetryLoad?: () => void
+  /** The switches that could let a refused song play: a test build's
+      Developer screen, at Karaoke audio. Given only for a song refused
+      because it cannot stream, and only where there is such a screen. */
+  onOpenAudioSettings?: () => void
 }
 
 const DEFAULT_VOCAL_VOLUME = 0.8
@@ -1302,11 +1306,23 @@ export const KaraokeMobileStage: Component<KaraokeMobileStageProps> = (
           </div>
         </div>
       </Show>
+      {/* The card covers the stage, and hosted, the stage's song line is
+          the room's only way to its library. A song that cannot play here
+          left the singer with a message and no way on (owner, mp-v0.8.41),
+          so the card itself offers another song, and the switches that
+          could change the answer where a test build has them. */}
       <Show when={props.loadError() !== ''}>
         <div class={styles.stateOverlay}>
           <div class={styles.loadCard} role="alert">
             <p>{props.loadError()}</p>
-            <Show when={props.onRetryLoad ?? backHandler()}>
+            <Show
+              when={
+                props.onRetryLoad ??
+                backHandler() ??
+                hosting ??
+                props.onOpenAudioSettings
+              }
+            >
               <div class={styles.stateActions}>
                 <Show when={props.onRetryLoad}>
                   <button
@@ -1315,6 +1331,30 @@ export const KaraokeMobileStage: Component<KaraokeMobileStageProps> = (
                     onClick={() => props.onRetryLoad?.()}
                   >
                     Try again
+                  </button>
+                </Show>
+                <Show when={hosting}>
+                  {(host) => (
+                    <button
+                      type="button"
+                      class={styles.stateAction}
+                      classList={{
+                        [styles.stateActionPrimary]:
+                          props.onRetryLoad === undefined,
+                      }}
+                      onClick={() => host().onOpenLibrary()}
+                    >
+                      Choose another song
+                    </button>
+                  )}
+                </Show>
+                <Show when={props.onOpenAudioSettings}>
+                  <button
+                    type="button"
+                    class={styles.stateAction}
+                    onClick={() => props.onOpenAudioSettings?.()}
+                  >
+                    Karaoke audio settings
                   </button>
                 </Show>
                 <Show when={backHandler()}>
