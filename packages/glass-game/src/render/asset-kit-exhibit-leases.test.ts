@@ -13,6 +13,7 @@ import { LIVING_GLASS_TRIAL } from '../content/living-glass-trial'
 import { RESONANCE_ROSEBUD_BUNDLE_ID, RESONANCE_ROSEBUD_DISPLAY_HEIGHT, RESONANCE_ROSEBUD_MATERIALS, RESONANCE_ROSEBUD_NODES, RESONANCE_ROSEBUD_SHARD_COUNT, } from '../content/resonance-rosebud-profile'
 import type { LevelDefinition } from '../contracts'
 import { loadMuseumAssets } from './asset-kit'
+import * as assetSceneLoader from './asset-scene-loader'
 import { MUSEUM_MATERIAL_CATALOG } from './catalog'
 import { disposeMaterials } from './dispose'
 import type { MuseumMaterials } from './materials'
@@ -63,11 +64,9 @@ async function setup(failSecond = false) {
         (bounds.max.y - bounds.min.y)
   })
   const loaded = vi
-    .spyOn(GLTFLoader.prototype, 'loadAsync')
+    .spyOn(assetSceneLoader, 'loadProfiledAssetScene')
     .mockImplementation(async (url) =>
-      String(url) === RESONANCE_ROSEBUD_BUNDLE_ID
-        ? source
-        : ({ scene: new Group() } as GLTF),
+      String(url) === RESONANCE_ROSEBUD_BUNDLE_ID ? source.scene : new Group(),
     )
   vi.spyOn(TextureLoader.prototype, 'loadAsync').mockImplementation(
     async () => new Texture(),

@@ -1,0 +1,201 @@
+diff --git a/build/three.cjs b/build/three.cjs
+index 8939a67dd76325ccd25ee8806fc4d22b1caea88a..68d97bcaa7710ea5752e3499d7867bab8b8a0223
+--- a/build/three.cjs
++++ b/build/three.cjs
+@@ -76266,6 +76266,7 @@ class WebGLRenderer {
+ 
+ 		let _isContextLost = false;
+ 		let _nodesHandler = null;
++		let _dfgLUT = null;
+ 
+ 		let _scratchFramebuffer = null;
+ 		let _srcFramebuffer = null;
+@@ -77052,6 +77053,7 @@ class WebGLRenderer {
+ 			background.dispose();
+ 			renderLists.dispose();
+ 			renderStates.dispose();
++			disposeDFGLUT();
+ 			properties.dispose();
+ 			environments.dispose();
+ 			objects.dispose();
+@@ -77068,6 +77070,18 @@ class WebGLRenderer {
+ 
+ 		};
+ 
++		// The lookup pixels are shared, but each renderer owns its GPU lifetime.
++		function disposeDFGLUT() {
++
++			if ( _dfgLUT !== null ) {
++
++				_dfgLUT.dispose();
++				_dfgLUT = null;
++
++			}
++
++		}
++
+ 		// Events
+ 
+ 		function onContextLost( event ) {
+@@ -77078,6 +77092,8 @@ class WebGLRenderer {
+ 
+ 			_isContextLost = true;
+ 
++			disposeDFGLUT();
++
+ 		}
+ 
+ 		function onContextRestore( /* event */ ) {
+@@ -77092,6 +77108,7 @@ class WebGLRenderer {
+ 			const shadowMapNeedsUpdate = shadowMap.needsUpdate;
+ 			const shadowMapType = shadowMap.type;
+ 
++			disposeDFGLUT();
+ 			initGLContext();
+ 
+ 			info.autoReset = infoAutoReset;
+@@ -78672,7 +78689,9 @@ class WebGLRenderer {
+ 			// Set DFG LUT for physically-based materials
+ 			if ( m_uniforms.dfgLUT !== undefined ) {
+ 
+-				m_uniforms.dfgLUT.value = getDFGLUT();
++				if ( _dfgLUT === null ) _dfgLUT = getDFGLUT().clone();
++
++				m_uniforms.dfgLUT.value = _dfgLUT;
+ 
+ 			}
+ 
+diff --git a/build/three.module.js b/build/three.module.js
+index ad13abf7d128bee607a7672646ca543327e258d3..3ecaa3b7fe19c4303072739cc6cec5ae7d8c86be
+--- a/build/three.module.js
++++ b/build/three.module.js
+@@ -16288,6 +16288,7 @@ class WebGLRenderer {
+ 
+ 		let _isContextLost = false;
+ 		let _nodesHandler = null;
++		let _dfgLUT = null;
+ 
+ 		let _scratchFramebuffer = null;
+ 		let _srcFramebuffer = null;
+@@ -17074,6 +17075,7 @@ class WebGLRenderer {
+ 			background.dispose();
+ 			renderLists.dispose();
+ 			renderStates.dispose();
++			disposeDFGLUT();
+ 			properties.dispose();
+ 			environments.dispose();
+ 			objects.dispose();
+@@ -17090,6 +17092,18 @@ class WebGLRenderer {
+ 
+ 		};
+ 
++		// The lookup pixels are shared, but each renderer owns its GPU lifetime.
++		function disposeDFGLUT() {
++
++			if ( _dfgLUT !== null ) {
++
++				_dfgLUT.dispose();
++				_dfgLUT = null;
++
++			}
++
++		}
++
+ 		// Events
+ 
+ 		function onContextLost( event ) {
+@@ -17100,6 +17114,8 @@ class WebGLRenderer {
+ 
+ 			_isContextLost = true;
+ 
++			disposeDFGLUT();
++
+ 		}
+ 
+ 		function onContextRestore( /* event */ ) {
+@@ -17114,6 +17130,7 @@ class WebGLRenderer {
+ 			const shadowMapNeedsUpdate = shadowMap.needsUpdate;
+ 			const shadowMapType = shadowMap.type;
+ 
++			disposeDFGLUT();
+ 			initGLContext();
+ 
+ 			info.autoReset = infoAutoReset;
+@@ -18694,7 +18711,9 @@ class WebGLRenderer {
+ 			// Set DFG LUT for physically-based materials
+ 			if ( m_uniforms.dfgLUT !== undefined ) {
+ 
+-				m_uniforms.dfgLUT.value = getDFGLUT();
++				if ( _dfgLUT === null ) _dfgLUT = getDFGLUT().clone();
++
++				m_uniforms.dfgLUT.value = _dfgLUT;
+ 
+ 			}
+ 
+diff --git a/src/renderers/WebGLRenderer.js b/src/renderers/WebGLRenderer.js
+index cc2f156939863f3ce3d524ea92bf206a740a6cdb..c34603a63322525cf04e492ea3a4b23e8b638255
+--- a/src/renderers/WebGLRenderer.js
++++ b/src/renderers/WebGLRenderer.js
+@@ -294,6 +294,7 @@ class WebGLRenderer {
+ 
+ 		let _isContextLost = false;
+ 		let _nodesHandler = null;
++		let _dfgLUT = null;
+ 
+ 		let _scratchFramebuffer = null;
+ 		let _srcFramebuffer = null;
+@@ -1080,6 +1081,7 @@ class WebGLRenderer {
+ 			background.dispose();
+ 			renderLists.dispose();
+ 			renderStates.dispose();
++			disposeDFGLUT();
+ 			properties.dispose();
+ 			environments.dispose();
+ 			objects.dispose();
+@@ -1096,6 +1098,18 @@ class WebGLRenderer {
+ 
+ 		};
+ 
++		// The lookup pixels are shared, but each renderer owns its GPU lifetime.
++		function disposeDFGLUT() {
++
++			if ( _dfgLUT !== null ) {
++
++				_dfgLUT.dispose();
++				_dfgLUT = null;
++
++			}
++
++		}
++
+ 		// Events
+ 
+ 		function onContextLost( event ) {
+@@ -1106,6 +1120,8 @@ class WebGLRenderer {
+ 
+ 			_isContextLost = true;
+ 
++			disposeDFGLUT();
++
+ 		}
+ 
+ 		function onContextRestore( /* event */ ) {
+@@ -1120,6 +1136,7 @@ class WebGLRenderer {
+ 			const shadowMapNeedsUpdate = shadowMap.needsUpdate;
+ 			const shadowMapType = shadowMap.type;
+ 
++			disposeDFGLUT();
+ 			initGLContext();
+ 
+ 			info.autoReset = infoAutoReset;
+@@ -2700,7 +2717,9 @@ class WebGLRenderer {
+ 			// Set DFG LUT for physically-based materials
+ 			if ( m_uniforms.dfgLUT !== undefined ) {
+ 
+-				m_uniforms.dfgLUT.value = getDFGLUT();
++				if ( _dfgLUT === null ) _dfgLUT = getDFGLUT().clone();
++
++				m_uniforms.dfgLUT.value = _dfgLUT;
+ 
+ 			}
+ 

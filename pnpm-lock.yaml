@@ -9,6 +9,9 @@ overrides:
   compression@<1.8.2: 1.8.2
   immutable@>=5.0.0 <5.1.8: 5.1.9
 
+patchedDependencies:
+  three@0.185.1: 1de360c127afb52667e50b5de2841335924d07041eba76557781202a07180942
+
 importers:
 
   .:
@@ -277,7 +280,7 @@ importers:
         version: 1.9.17
       three:
         specifier: ^0.185.1
-        version: 0.185.1
+        version: 0.185.1(patch_hash=1de360c127afb52667e50b5de2841335924d07041eba76557781202a07180942)
     devDependencies:
       '@capacitor/android':
         specifier: ^8.5.3
@@ -481,7 +484,7 @@ importers:
         version: link:../pitch-engine
       three:
         specifier: ^0.185.1
-        version: 0.185.1
+        version: 0.185.1(patch_hash=1de360c127afb52667e50b5de2841335924d07041eba76557781202a07180942)
     devDependencies:
       '@types/node':
         specifier: ^22.0.0
@@ -12147,7 +12150,7 @@ snapshots:
 
   text-hex@1.0.0: {}
 
-  three@0.185.1: {}
+  three@0.185.1(patch_hash=1de360c127afb52667e50b5de2841335924d07041eba76557781202a07180942): {}
 
   through2@4.0.2:
     dependencies:

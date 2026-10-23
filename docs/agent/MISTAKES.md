@@ -1064,6 +1064,20 @@ took about 0.38 seconds with pitch fixtures passing; keep bounded fail-safe queu
 **Rule:** profile each material slot before upload, register the replacement image for cleanup, and preserve sky orientation. Verify bitmap and canvas resizes by actual GPU readback, and hold a real asset request through context loss and Retry without replacing draw calls. Keep native acceptance separate.
 **See:** `packages/glass-game/src/render/asset-kit.ts`, `apps/beside-cue/e2e/glass-adventure-loading-recovery.e2e.ts`, `apps/beside-cue/e2e/glass-adventure-texture-orientation.e2e.ts`.
 
+### Give each renderer its own lighting lookup texture lifetime
+
+**Symptom:** returning to the menu after completed levels retained old canvases, scenes and asset buffers in the production build.
+**Cause:** Three 0.185.1's global DFG lookup texture kept each disposed renderer's texture-disposal callback, retaining its context and scene state. Deliberately losing a context did not remove that JavaScript root.
+**Rule:** keep lookup pixels shared but the texture renderer-owned; release it before resetting renderer properties, while a lost context is still lost, and defensively before restoration setup. Deleting old GPU handles after restoration causes GL errors. Patch the actual ESM/CJS entrypoints as well as source; test real draws, concurrent renderers and navigation. Desktop retention proof does not establish an iOS termination reason.
+**See:** `patches/three@0.185.1.patch`, `apps/beside-cue/e2e/glass-adventure-renderer-ownership.e2e.ts`.
+
+### Cancel an asset consumer without aborting shared parser requests
+
+**Symptom:** retiring a pending level could also reject its immediate replacement, and repeated retries could start new decodes while cancelled parses were still finishing.
+**Cause:** Three FileLoader shares pending URLs across LoadingManagers, so manager-wide abort crosses consumer ownership; per-attempt concurrency limits do not include retiring attempts.
+**Rule:** own the container fetch, let shared parser dependencies settle, and retire only the cancelled consumer's late scene. Hold global decode admission through parse, profiling and late cleanup; preserve Capacitor status-zero reads and relative dependency paths. These races are separate from completed-navigation retention.
+**See:** `packages/glass-game/src/render/asset-scene-loader.ts`, `packages/glass-game/src/render/asset-load-admission.ts`.
+
 ## Data and billing
 
 ### Share pending startup hydration, not just a ready flag
