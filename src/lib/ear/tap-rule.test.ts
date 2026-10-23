@@ -2,7 +2,7 @@
 // ============================================================
 
 import { describe, expect, it } from 'vitest'
-import { CLICK_ECHO_MS, clickTap, isTapKey, keyTap, pointerTap, TAP_FLASH_MS, } from './tap-rule'
+import { CLICK_ECHO_MS, clickTap, isTapKey, keyTap, POINTER_ECHO_MS, pointerTap, TAP_FLASH_MS, } from './tap-rule'
 
 describe('pointerTap', () => {
   it("takes the primary button, touch and pen at the event's own time", () => {
@@ -53,15 +53,29 @@ describe('isTapKey', () => {
   })
 })
 
+/** A pad that has seen no pointer up and no Space or Enter. */
+const NEVER = { pointerUp: -Infinity, key: -Infinity }
+
 describe('clickTap', () => {
   it('takes a click no gesture made, as a screen reader, switch or voice control sends it, at its own time', () => {
-    expect(clickTap({ timeStamp: 900 }, -Infinity)).toBe(900)
-    expect(clickTap({ timeStamp: 900 }, 900 - CLICK_ECHO_MS)).toBe(900)
+    expect(clickTap({ timeStamp: 900 }, NEVER)).toBe(900)
+    expect(
+      clickTap({ timeStamp: 900 }, { ...NEVER, key: 900 - CLICK_ECHO_MS }),
+    ).toBe(900)
+    expect(
+      clickTap(
+        { timeStamp: 900 },
+        { ...NEVER, pointerUp: 900 - POINTER_ECHO_MS },
+      ),
+    ).toBe(900)
   })
 
   it('ignores the click a pointer or key gesture makes of itself, already a tap', () => {
-    expect(clickTap({ timeStamp: 505 }, 500)).toBeNull()
-    expect(clickTap({ timeStamp: 599 }, 500)).toBeNull()
+    expect(clickTap({ timeStamp: 505 }, { ...NEVER, key: 500 })).toBeNull()
+    expect(clickTap({ timeStamp: 599 }, { ...NEVER, key: 500 })).toBeNull()
+    expect(
+      clickTap({ timeStamp: 505 }, { ...NEVER, pointerUp: 500 }),
+    ).toBeNull()
   })
 
   it('takes a click 50 ms after a Control keydown, which times no echo, and not one 50 ms after a Space keyup', () => {
@@ -69,11 +83,35 @@ describe('clickTap', () => {
     const since = (key: string): number => (isTapKey(key) ? 1000 : -Infinity)
 
     // Act
-    const afterControl = clickTap({ timeStamp: 1050 }, since('Control'))
-    const afterSpace = clickTap({ timeStamp: 1050 }, since(' '))
+    const afterControl = clickTap(
+      { timeStamp: 1050 },
+      { ...NEVER, key: since('Control') },
+    )
+    const afterSpace = clickTap(
+      { timeStamp: 1050 },
+      { ...NEVER, key: since(' ') },
+    )
 
     // Assert
     expect(afterControl).toBe(1050)
     expect(afterSpace).toBeNull()
+  })
+
+  it("gives a pointer's echo a second, so a click WebKit stamps late is still the pointer's, and a key's echo only its moment", () => {
+    // Act
+    const late = clickTap({ timeStamp: 1300 }, { ...NEVER, pointerUp: 1000 })
+    const afterKey = clickTap({ timeStamp: 1300 }, { ...NEVER, key: 1000 })
+    const longAfter = clickTap(
+      { timeStamp: 2100 },
+      { ...NEVER, pointerUp: 1000 },
+    )
+    const alone = clickTap({ timeStamp: 2100 }, NEVER)
+
+    // Assert: 300 ms after a pointer up is its echo; 300 ms after a
+    // Space keyup, 1,100 ms after a pointer up, or after nothing, a tap
+    expect(late).toBeNull()
+    expect(afterKey).toBe(1300)
+    expect(longAfter).toBe(2100)
+    expect(alone).toBe(2100)
   })
 })

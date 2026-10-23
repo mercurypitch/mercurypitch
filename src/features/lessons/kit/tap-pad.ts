@@ -40,24 +40,25 @@ export function bindTapPad(
     e.preventDefault()
     register(at)
   })
-  // the pad's latest pointer up, or Space or Enter: the click it makes of
-  // itself is no second tap
-  let gesture = -Infinity
+  // the pad's latest pointer up and its latest Space or Enter: the click
+  // each makes of itself is no second tap
+  let pointerUp = -Infinity
+  let keyAt = -Infinity
   pad.addEventListener('pointerup', (e) => {
-    gesture = e.timeStamp
+    pointerUp = e.timeStamp
   })
   pad.addEventListener('keyup', (e) => {
-    if (isTapKey(e.key)) gesture = e.timeStamp
+    if (isTapKey(e.key)) keyAt = e.timeStamp
   })
   pad.addEventListener('keydown', (e) => {
-    if (isTapKey(e.key)) gesture = e.timeStamp
+    if (isTapKey(e.key)) keyAt = e.timeStamp
     const at = keyTap(e)
     if (at === null) return
     e.preventDefault()
     if (pad.getAttribute('aria-disabled') !== 'true') register(at)
   })
   pad.addEventListener('click', (e) => {
-    const at = clickTap(e, gesture)
+    const at = clickTap(e, { pointerUp, key: keyAt })
     if (at === null || pad.getAttribute('aria-disabled') === 'true') return
     register(at)
   })
