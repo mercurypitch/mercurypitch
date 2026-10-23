@@ -462,11 +462,11 @@ pulse, and Merc and Tavi skip their reactions (REQ-GVC-083).
 ### 5. Recall and quick check
 
 The kit's quiz as it stands carries everything two quizzes on one page need (`kit/quiz.ts`): an id
-`prefix` for each quiz's elements (`:81-86`), question ids, from which a question's lesson is read
-(`:42-47`, `lessonOfQuestion` `:124-128`), an optional `lesson` (`:75-76`), a `slot` for a
+`prefix` for each quiz's elements (`:88-93`), question ids, from which a question's lesson is read
+(`:42-47`, `lessonOfQuestion` `:131-135`), an optional `lesson` (`:82-83`), a `slot` for a
 question's own controls (`:52-58`), and links that leave this page for a question from another
-lesson (`linkAway`, `:179-209`), which keep their words and drop the link where that lesson is not
-live (`:179-183`).
+lesson (`linkAway`, `:186-216`), which keep their words and drop the link where that lesson is not
+live (`:186-190`).
 
 - **Recall**: Lesson 6's questions 2 and 3, word for word with their feedback (LESSON.md; FACTS 4),
   under their Lesson 6 ids, `l06-q2` and `l06-q3`, with the prefix `rc-`, as Lessons 3 and 5's
@@ -475,20 +475,20 @@ live (`:179-183`).
   4 and 5's are, `lesson-04/main.ts:61`); earlier answers are never shown, so the answers measure
   delayed retrieval (MASTER-PLAN § 9). It takes no `lesson`, so it marks nothing done. Question 2's
   slot holds a Play button for Lesson 6's sound, C4 then F4 (FACTS 96), handled by a listener on the
-  quiz's host, since the kit builds each slot once and keeps it across answers (`quiz.ts:228-235`).
+  quiz's host, since the kit builds each slot once and keeps it across answers (`quiz.ts:237-244`).
   The kit turns "Try Step 5 again" and "Try Step 2 again" into "Try Lesson 6, Step 5 again" and "Try
   Lesson 6, Step 2 again", links that open Lesson 6's page at that step, `/learn/06#step-5` and
   `/learn/06#step-2`, in a new tab so the viewer keeps their place here, never `data-goto-step`,
-  which would move this page's own deck (`quiz.ts:179-209`); where Lesson 6 is not live, each keeps
-  its words with no link (`:199-202`; Edge cases). The address is the quiz's `away.href`
-  (`quiz.ts:87-94`), the kit's `recallStepHref` (`:134-136`) in place of the default
+  which would move this page's own deck (`quiz.ts:186-216`); where Lesson 6 is not live, each keeps
+  its words with no link (`:206-209`; Edge cases). The address is the quiz's `away.href`
+  (`quiz.ts:94-101`), the kit's `recallStepHref` (`:141-143`) in place of the default
   `/learn/06#lesson`, and the kit's step deck opens at the step an address names
   (`kit/step-deck.ts:18-23`, `:284-292`).
 - **Quick check**: LESSON.md's four questions, ids `l09-q1` to `l09-q4`, keys `fyp-l09-seed` and
   `fyp-l09-quiz-v1` (`lesson-04/main.ts:84`), and `lesson: 9`, so answering all four marks Lesson 9
   done in the explorer. Three answers each, shuffled per question from the stored seed, one-line
   feedback for every answer, and a check icon and ink (not gold) on the right one. The kit prints
-  "Right." or "Not quite." before each line (`quiz.ts:293`), so no feedback line starts with
+  "Right." or "Not quite." before each line (`quiz.ts:315`), so no feedback line starts with
   "Right", "Yes" or "Correct". "Try Step 2 again", "Try Step 3 again", "Try Step 4 again" and "Try
   Step 5 again" use the kit's `data-goto-step`. LESSON.md's note on the shuffle is editorial and
   never printed. Answers stay in the viewer's browser; since this PR each question's first answer in
@@ -799,7 +799,7 @@ What the page does where nothing above says:
   by `initMasthead`, `kit/page-chrome.ts:123`): the "After Lesson 3" or "After Lesson 6" chip stays
   as a plain chip, and any other link keeps its words. The kit's quiz does the same for the recall's
   step links, which keep their words, "Try Lesson 6, Step 5 again", with no link
-  (`kit/quiz.ts:179-209`). The recall still shows, and the explorer and the lesson menu draw the
+  (`kit/quiz.ts:186-216`). The recall still shows, and the explorer and the lesson menu draw the
   lesson held back as coming later. End to end 13 holds it.
 - **Reduced motion**: Look, Toys 1 and Toys 4 give the end states; nothing moves on its own.
 

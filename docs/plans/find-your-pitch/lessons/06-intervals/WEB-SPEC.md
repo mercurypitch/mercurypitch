@@ -432,8 +432,8 @@ shows a number instead of breathing.
 
 Two quizzes share this page, so it depends on the three changes Lesson 2 makes to `kit/quiz.ts`
 (its WEB-SPEC, "What the kit and the app still need"), which are on main: an id prefix for the
-elements each quiz binds and writes (`kit/quiz.ts:81-86`, `:213-217`); `lesson` optional, since the
-kit marks `lesson` done once every question has an answer (`:75-76`, `:322-327`); and a question
+elements each quiz binds and writes (`kit/quiz.ts:88-93`, `:220-224`); `lesson` optional, since the
+kit marks `lesson` done once every question has an answer (`:82-83`, `:344-349`); and a question
 `id`, the event's `qLesson` and `q` (`:43-47`).
 
 - **Recall**: Lesson 4's questions 1 and 4, word for word with their feedback (LESSON.md; FACTS 7),
@@ -453,12 +453,12 @@ kit marks `lesson` done once every question has an answer (`:75-76`, `:322-327`)
   `fyp-l06-quiz-v1`, and `lesson: 6`, so answering all four marks Lesson 6 done in the explorer.
   Three answers each, shuffled per question from the stored seed, one-line feedback for every
   answer, and a check icon and ink (not gold) on the right one. The kit prints "Right." or "Not
-  quite." before each line (`kit/quiz.ts:293`), so no feedback line starts with "Right", "Yes" or
+  quite." before each line (`kit/quiz.ts:315`), so no feedback line starts with "Right", "Yes" or
   "Correct". Question 1's play button plays `line-c`, then `line-fs`, and question 3's plays C4 then
   F4 (FACTS 63, 69). Each sits in the kit's slot after a question's heading (`slot`,
-  `kit/quiz.ts:52-58`, `:308-309`), outside the `<h3>` that labels its answers (`:306`), so the
+  `kit/quiz.ts:52-58`, `:330-331`), outside the `<h3>` that labels its answers (`:328`), so the
   button is not part of every answer's name. The kit rebuilds the questions on every answer
-  (`kit/quiz.ts:279-282`, `:299-300`), so those buttons are handled by a listener on the quiz's
+  (`kit/quiz.ts:301-304`, `:321-322`), so those buttons are handled by a listener on the quiz's
   root, as the step links are. "Try Step 2 again", "Try Step 3 again", "Try Step 4 again" and "Try
   Step 5 again" use the kit's `data-goto-step`. Answers stay in the viewer's browser; since this PR
   each question's first answer in a visit also goes out, anonymously.
@@ -543,7 +543,7 @@ and the line references are main's.
 
 - `kit/quiz.ts`: Lesson 2's three changes, which this page's two quizzes need, and its slot for a
   question's own controls, which quiz questions 1 and 3 need (Lesson 2 WEB-SPEC, "What the kit and
-  the app still need", item 9; Toys 7), all on main (`kit/quiz.ts:42-59`, `:73-86`).
+  the app still need", item 9; Toys 7), all on main (`kit/quiz.ts:42-59`, `:80-93`).
 - `kit/explorer.ts`, shared with Lessons 3 and 4, needs nothing new: a lesson with a page and no
   film reads "Ready · read", its card offers "Start lesson" (`/learn/06`) without "Watch the
   episode" and shows its Length, "17 min"; the page passes `current: 6`, and other lessons' cards

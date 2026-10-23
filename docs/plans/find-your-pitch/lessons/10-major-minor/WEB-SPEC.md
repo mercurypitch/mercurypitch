@@ -583,10 +583,10 @@ home"; under Step 4's, "Happy and sad at once", "Tempo first" and "The other way
 ### 8. Recall and quick check
 
 Two quizzes share this page through the kit's quiz (`src/features/lessons/kit/quiz.ts`, `createQuiz`
-at `:211`), with the options it already has (`:73-97`): an id prefix for each quiz's elements;
+at `:218`), with the options it already has (`:80-104`): an id prefix for each quiz's elements;
 `lesson` optional; a question `id`, the event's `qLesson` and `q`; a slot for a question's own
 controls (`:52-58`); and, for a question from another lesson, a step link that reads "Try Lesson 6,
-Step 5 again" and opens in a new tab, through `away` (`:87-94`, `linkAway` at `:179-209`), which
+Step 5 again" and opens in a new tab, through `away` (`:94-101`, `linkAway` at `:186-216`), which
 keeps a link's words and drops the link wherever that lesson is not live.
 
 - **Recall**: Lesson 6's questions 2 and 3, word for word with their feedback (LESSON.md; FACTS 7),
@@ -606,7 +606,7 @@ keeps a link's words and drops the link wherever that lesson is not live.
   `fyp-l10-quiz-v1`, and `lesson: 10`, so answering all four marks Lesson 10 done in the explorer.
   Three answers each, shuffled per question from the stored seed, one-line feedback for every
   answer, and a check icon and ink (not gold) on the right one. The kit prints "Right." or "Not
-  quite." before each line (`quiz.ts:293`), so no feedback line starts with "Right", "Yes" or
+  quite." before each line (`quiz.ts:315`), so no feedback line starts with "Right", "Yes" or
   "Correct". Question 2's slot holds its play button, D4, F4 and A4 together for 1.4 s, a D minor
   triad (FACTS 79), named "Play the question's chord", so it never shares a name with the cold
   open's Play the chord; the kit keeps a slot's controls across answers, and the page handles them
@@ -802,10 +802,10 @@ at `85e23a1af` changed there, and that page's own lines are cited at `d59c00ad6`
    `slide-guide.ts` on `feat/lesson-06-page`). Until that lands, the gap alone shows where to
    breathe (FACTS 66); if this page lands first, it adds the mark in that form.
 9. `kit/quiz.ts`: `recallStepHref`, built: Lesson 8's page moved it into the kit beside
-   `lessonPageHref` (`:134-136`, `:130-132`), and Lessons 3, 4 and 5 take it from there
+   `lessonPageHref` (`:141-143`, `:137-139`), and Lessons 3, 4 and 5 take it from there
    (`lesson-03/quiz-questions.ts:24`, `lesson-04/quiz-questions.ts:32`,
    `lesson-05/quiz-questions.ts:20`), as this page will. The quiz needs nothing else: its prefix,
-   slot and away links are on main (`quiz.ts:52-58`, `:73-97`, `:179-209`).
+   slot and away links are on main (`quiz.ts:52-58`, `:80-104`, `:186-216`).
 10. `kit/comfort.ts` needs nothing: this page's `sing-flow.ts` picks the rest card after "Effortful"
     with `restAfterEffort`, built by #1192, as Lesson 6's does now (by hand before), leaving the
     kit's default for the coach (`comfort.ts:69-78`); it keeps the kit's lock on the feeling answer,
@@ -947,7 +947,7 @@ CURIOSITY-MOMENTS § 5 item 2.
   console's question before it publishes a draft names Lesson 6's page, but nothing checks it
   (Decisions for the owner, item 3). Published first, it would break nothing: its chip would stay as
   a plain chip, and its recall's step links would keep their words with no link
-  (`src/features/lessons/kit/page-state.ts:84-108`; `src/features/lessons/kit/quiz.ts:179-209`). But
+  (`src/features/lessons/kit/page-state.ts:84-108`; `src/features/lessons/kit/quiz.ts:186-216`). But
   the recall would ask about a lesson the learner cannot open.
 - **The admin console's hook.** The console could switch Lesson 10's hook to its alternative,
   `bright-dark`, "Which single note turns a bright major chord into a dark minor one?"

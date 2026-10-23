@@ -388,9 +388,9 @@ LESSON.md's words, with no control.
 ### 5. Recall and quick check
 
 The kit's quiz as it stands carries everything two quizzes on one page need (`kit/quiz.ts`): an id
-`prefix` for each quiz's elements (`:81-86`), question ids, from which a question's lesson is read,
+`prefix` for each quiz's elements (`:88-93`), question ids, from which a question's lesson is read,
 an optional `lesson`, and links that leave this page for a question from another lesson (`linkAway`,
-`:179-209`), which keep their words and drop the link where that lesson is not live (`:199-202`).
+`:186-216`), which keep their words and drop the link where that lesson is not live (`:206-209`).
 
 - **Recall**: Lesson 11's questions 1 and 2, word for word with their feedback (LESSON.md; FACTS 4),
   under their Lesson 11 ids, `l11-q1` and `l11-q2`, with the prefix `rc-`, as Lessons 3 and 5's
@@ -400,19 +400,19 @@ an optional `lesson`, and links that leave this page for a question from another
   `lesson`, so it marks nothing done. Neither question plays a sound. The two questions come from
   Lesson 11's own module, `lesson-11/quiz-questions.ts`, once its page is built, filtered by id, so
   the recall cannot drift from Lesson 11's quiz, as Lesson 5's recall is held to Lesson 3's
-  (`lesson-05/quiz-questions.test.ts`). The kit (`quiz.ts:196-198`) turns "Try Step 2 again" and
+  (`lesson-05/quiz-questions.test.ts`). The kit (`quiz.ts:203-205`) turns "Try Step 2 again" and
   "Try Step 3 again" into "Try Lesson 11, Step 2 again" and "Try Lesson 11, Step 3 again", links
   that open Lesson 11's page at that step, `/learn/11#step-2` and `/learn/11#step-3`, in a new tab
-  so the viewer keeps their place here (`:203-207`), never `data-goto-step`, which would move this
+  so the viewer keeps their place here (`:210-214`), never `data-goto-step`, which would move this
   page's own deck; where Lesson 11 is not live, each keeps its words with no link (Edge cases). The
   address is the quiz's `away.href`, the kit's `recallStepHref`, which Lesson 8's page moved into
-  `kit/quiz.ts` (`:134-136`; needs 11), and the kit's step deck opens at the step an address names
+  `kit/quiz.ts` (`:141-143`; needs 11), and the kit's step deck opens at the step an address names
   (`stepFromHash`, `kit/step-deck.ts:84-90`), as Lesson 11's will.
 - **Quick check**: LESSON.md's four questions, ids `l13-q1` to `l13-q4`, keys `fyp-l13-seed` and
   `fyp-l13-quiz-v1`, and `lesson: 13`, so answering all four marks Lesson 13 done in the explorer.
   Three answers each, shuffled per question from the stored seed, one-line feedback for every
   answer, and a check icon and ink (not gold) on the right one. The kit prints "Right." or "Not
-  quite." before each line (`quiz.ts:293`), so no feedback line starts with "Right", "Yes" or
+  quite." before each line (`quiz.ts:315`), so no feedback line starts with "Right", "Yes" or
   "Correct". "Try Step 1 again", "Try Step 3 again" and "Try Step 4 again" use the kit's
   `data-goto-step`. No question plays a sound. LESSON.md's note on the shuffle is editorial and
   never printed. Answers stay in the viewer's browser; since this PR each question's first answer in
@@ -899,7 +899,7 @@ and the four-words strip in the kit.
     `afterFeeling(f, { restAfterEffort: true })`, since `afterFeeling` leaves it to the coach
     (`:69-78`) and Lessons 6, 7, 9, 10, 11 and 13 all choose it, as Lesson 11's spec proposes (its
     needs 9). Built by #1192: Lessons 6, 7 and 8 pass it, and so will this page.
-11. `recallStepHref` in `kit/quiz.ts`, built: Lesson 8's page moved it there (`:134-136`), and
+11. `recallStepHref` in `kit/quiz.ts`, built: Lesson 8's page moved it there (`:141-143`), and
     Lessons 3, 4 and 5 take it from the kit (`lesson-03/quiz-questions.ts:24`,
     `lesson-04/quiz-questions.ts:32`, `lesson-05/quiz-questions.ts:20`), so Lessons 7, 9, 11 and
     13's recalls take one address rule. The four-words strip is in the kit already, promoted from
@@ -1020,7 +1020,7 @@ What the page does where nothing above says:
   not live no link (`kit/page-state.ts:64-108`, called by `initMasthead`, `kit/page-chrome.ts:123`):
   the "After Lesson 11" chip stays as a plain chip, and any other link keeps its words. The kit's
   quiz does the same for the recall's step links, which keep their words, "Try Lesson 11, Step 2
-  again", with no link (`kit/quiz.ts:199-202`). The recall still shows, and the explorer and the
+  again", with no link (`kit/quiz.ts:206-209`). The recall still shows, and the explorer and the
   lesson menu draw the lesson held back as coming later. End to end 13 holds it.
 - **Reduced motion**: Look, Toys 1 and Toys 6 give the end states; nothing moves on its own.
 
@@ -1098,7 +1098,7 @@ parts:
     gives today (`kit/comfort.ts:56-87`); `kit/sound.ts` without `partials` and `resonators` builds
     every voice as today, and with them takes the given source and filters; `recallStepHref` from
     the kit gives Lessons 3 and 5's recalls the addresses they gave before (done with Lesson 8's
-    page, `kit/quiz.test.ts:317-322`); Lesson 5's hold runner from the kit plays its two-second note
+    page, `kit/quiz.test.ts:443-448`); Lesson 5's hold runner from the kit plays its two-second note
     as before.
 15. One sound at a time, and leaving a step (Audio), with fake timers and a spy on the kit's sound:
     starting any source while another sounds stops the first (a four words play over Step 4's five
