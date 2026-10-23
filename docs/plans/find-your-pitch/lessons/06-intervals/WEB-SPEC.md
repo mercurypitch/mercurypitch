@@ -112,13 +112,13 @@ line above it, are in LESSON.md ("Section headings").
 
 ## Length
 
-The learner copy is 2,591 words today, every branch counted (FACTS 3), 212 over the series' cap of
-2,379; the text package's was 2,258. That is an upper bound: one learner reads one branch of each,
-about 2,340 words, 15.8 minutes. The page runs about 17 minutes, as its chip says (15 until this
-PR): 10.89 minutes of reading and about 6 of sound, toys and tasks, 16.89 in all, past MASTER-PLAN
-§ 4.2's 8 to 12 minutes of active time, as Lessons 3 and 5 are (16 and 18 minutes). Each step's
-text, with its Try, its Notice and any predict, runs 88 to 174 words (Steps 1 to 5: 88, 119, 115,
-174 and 109), inside § 4.2's 50 to 120 a step but for Step 4. Two steps carry more beside it:
+The learner copy is 2,590 words today, every branch counted (FACTS 3; 2,591 at `1308fd2e7`), 211
+over the series' cap of 2,379; the text package's was 2,258. That is an upper bound: one branch of
+each is about 2,340 words, 15.8 minutes. The page runs about 17 minutes, as its chip says (15 until
+this PR): 10.88 minutes of reading and about 6 of sound, toys and tasks, 16.88 in all, past
+MASTER-PLAN § 4.2's 8 to 12 minutes of active time, as Lessons 3 and 5 are (16 and 18 minutes). Each
+step's text, with its Try, its Notice and any predict, runs 88 to 175 words (Steps 1 to 5: 88, 119,
+114, 175 and 109), inside § 4.2's 50 to 120 a step but for Step 4. Two steps carry more beside it:
 
 - **Step 4, about 290 words.** Its hints and "You said" lines (about 70 words) take its text past
   120; its mix-up card (about 100) sits in the step whose toy refutes it, as in Lessons 2 to 5.

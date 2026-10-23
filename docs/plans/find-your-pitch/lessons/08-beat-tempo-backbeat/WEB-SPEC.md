@@ -202,17 +202,17 @@ section's heading, and the line above it, are in LESSON.md ("Section headings").
 
 ## Length
 
-The learner copy is 2,502 words today, every branch counted (FACTS 4), 123 over the series' cap,
-Lesson 3's page at 2,379 words on the same count once the note under its title is marked Editorial
-(2,382 under its old title, at `616c97edb`); the text package's 2,328 was under it. The page runs
-about 16 minutes: 10.51 minutes of reading at 238 words a minute and 5.70 of sound, toys and tasks,
-16.21 in all. That is past MASTER-PLAN § 4.2's budget, "8 to 12 minutes of active time, 500 to 900
-words" (`MASTER-PLAN.md:137`), as Lessons 3, 5, 6 and 7 are (16, 18, 17 and 16 minutes: Lesson 3
-FACTS 61, Lesson 5 FACTS 2, Lesson 6 FACTS 3, Lesson 7 FACTS 4). The owner kept the longer lessons
-on 22 October 2026 (HANDOFF), so nothing is cut; were a cut wanted, the Go deeper drawer (45 words)
-and the ABRSM sentence (14 words) would go first. Each step's text, with its Try, its Notice and any
-predict, runs 91 to 120 words (Steps 1 to 5: 92, 91, 119, 120 and 116), inside § 4.2's 50 to 120 a
-step. Three parts carry more beside it, for these reasons:
+The learner copy is 2,534 words today, every branch counted (FACTS 4; 2,502 at `1308fd2e7`), 155
+over the series' cap, Lesson 3's page at 2,379 words on the same count once the note under its title
+is marked Editorial (2,382 under its old title, at `616c97edb`); the text package's 2,328 was under
+it. The page runs about 16 minutes: 10.65 minutes of reading at 238 words a minute and 5.70 of
+sound, toys and tasks, 16.35 in all. That is past MASTER-PLAN § 4.2's budget, "8 to 12 minutes of
+active time, 500 to 900 words" (`MASTER-PLAN.md:137`), as Lessons 3, 5, 6 and 7 are (16, 18, 17 and
+16 minutes: Lesson 3 FACTS 61, Lesson 5 FACTS 2, Lesson 6 FACTS 3, Lesson 7 FACTS 4). The owner kept
+the longer lessons on 22 October 2026 (HANDOFF), so nothing is cut; were a cut wanted, the Go deeper
+drawer (45 words) and the ABRSM sentence (14 words) would go first. Each step's text, with its Try,
+its Notice and any predict, runs 91 to 120 words (Steps 1 to 5: 92, 91, 119, 120 and 115), inside
+§ 4.2's 50 to 120 a step. Three parts carry more beside it, for these reasons:
 
 - **Step 3, 174 words with its drawer.** Its Go deeper drawer (45 words) says why bars of 2 and of 4
   are hard to tell apart by ear, and is closed by default; Count the bar, its ear game, is a card

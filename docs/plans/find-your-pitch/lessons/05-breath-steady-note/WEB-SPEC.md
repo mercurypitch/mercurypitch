@@ -81,14 +81,14 @@ above it, are in LESSON.md ("Section headings").
 
 ## Length
 
-The learner copy is 2,404 words on today's page, every branch counted (FACTS 2), 25 over the series'
-cap of 2,379; the text package's was 2,351. The page runs about 18 minutes, past MASTER-PLAN § 4.2's
-8 to 12 minutes of active time, as Lesson 3's 16 do; the holds, the warm-up and the six questions
-take about 4 of them. Each step's text, with its Try, its Notice and any predict, runs 90 to 163
-words (Steps 1 to 5: 101, 163, 130, 132 and 90), inside § 4.2's 50 to 120 a step but for Steps 2, 3
-and 4, for these reasons:
+The learner copy is 2,401 words today, every branch counted (FACTS 2; 2,404 at `1308fd2e7`), 22 over
+the series' cap of 2,379; the text package's was 2,351. The page runs about 18 minutes, past
+MASTER-PLAN § 4.2's 8 to 12 minutes of active time, as Lesson 3's 16 do; the holds, the warm-up and
+the six questions take about 4 of them. Each step's text, with its Try, its Notice and any predict,
+runs 90 to 162 words (Steps 1 to 5: 102, 162, 130, 132 and 90), inside § 4.2's 50 to 120 a step but
+for Steps 2, 3 and 4, for these reasons:
 
-- **Step 2, about 260 words.** Its text is 163: about 65 of its own, its Try and its Notice, and the
+- **Step 2, about 260 words.** Its text is 162: about 65 of its own, its Try and its Notice, and the
   lesson's second predict and its reveal with Tavi's one-line re-explanation (about 100). The
   mix-up card (about 85) sits in the step whose toy refutes it, as in Lessons 2 to 4.
 - **Step 3, about 250 words.** Its text, 130, holds the care and comfort lines that must come before

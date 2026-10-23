@@ -243,7 +243,7 @@ A suggested order: 9 (it brings the rungs and Move do), then 10, 12, 11, 13 and 
     `wants` touches every lesson page.
   - The layout sweeps show the masthead over the sticky stage at `#sing`, 691 by 59 pixels at
     1440x900, on Lessons 3 to 8 alike.
-  - Lesson 6's chip read 15 minutes from the text package's 2,258 words; today's 2,591 make it 17
+  - Lesson 6's chip read 15 minutes from the text package's 2,258 words; today's 2,590 make it 17
     (this PR). On 22 October 2026 the owner kept the longer lessons untrimmed: over the cap of 2,379
     words are Lessons 4 by 138, 5 by 25, 6 by 212, 7 by 101 and 8 by 123. On 23 October 2026 the
     owner chose real run times for every chip, Lessons 1, 2 and 4 included (this PR): 8, 13 and 14.
