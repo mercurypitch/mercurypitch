@@ -122,7 +122,7 @@ the Playground, unlocked in the Wrap; the mix-up card sits in the step whose toy
 practice card sits in the Wrap. No Watch section (§ 4.2 item 10). The page opens in Lesson 2's
 order: the hook, the stage, the sound gate and the cold open's predict, then the recall (§ 4.2
 items 3 and 4, and § 12 item 13; CURIOSITY-MOMENTS § 3.1, "the order to copy"). Items 2 to 5 are
-the hero, one `section.hero` laid out as Lesson 2's (`learn/02.html:321-494`). Above 1080 px it
+the hero, one `section.hero` laid out as Lesson 2's (`learn/02.html:329-502`). Above 1080 px it
 has two columns, the hero's copy and the gate on the left, the stage and the predict on the right
 (`lesson-stage.css:16-21`); at 1080 px and below it is one column in the order listed here, with
 the promise after the predict (`lesson-stage.css:354-397`). So on a phone the title and the first
@@ -138,7 +138,7 @@ section's heading, and the line above it, are in LESSON.md ("Section headings").
 2. **The hook**, the hero's copy: the kicker, the hook question as the title (`h1.hook#hook`, as
    `kit/lesson-copy.test.ts:323-332` requires of every page from its first commit), the meta as
    four chips ("15 minutes", FACTS 4; "After Lesson 1", a link; "Also useful: Lesson 6, Intervals",
-   a plain chip as Lesson 3's is, `learn/03.html:354-357`, FACTS 2; Sound on) and the promise, from
+   a plain chip as Lesson 3's is, `learn/03.html:362-365`, FACTS 2; Sound on) and the promise, from
    LESSON.md. The title is the season's hook (`kit/season.ts:312`, FACTS 1); it says the song feels
    different and never says where the claps land, so it answers nothing the predict asks.
 3. **The stage**: orange's and blue's bubbles over the two Mercs on the floor line, with the beat
@@ -149,10 +149,10 @@ section's heading, and the line above it, are in LESSON.md ("Section headings").
    stage and the predict, so its button comes before the choices in the reading order, as it does
    in the tab order (`lesson-stage.css:375-385`).
 5. **The cold open's predict**: the predict card, `#predict`, under the stage, as Lesson 2's is
-   (`learn/02.html:440`): LESSON.md's predict, its two `[data-choice]` buttons, the lock hint and
+   (`learn/02.html:448`): LESSON.md's predict, its two `[data-choice]` buttons, the lock hint and
    the reveal (Toys 2).
 6. **Recall from Lesson 6**, `section#recall`, straight after the hero, as Lesson 2's is
-   (`learn/02.html:497`): Lesson 6's questions 1 and 4, open once Lesson 6 is marked done; for
+   (`learn/02.html:505`): Lesson 6's questions 1 and 4, open once Lesson 6 is marked done; for
    anyone else the closed line "Done Lesson 6? Two questions from it". It sits inside
    `<div data-if-live="6">`, so it is left out while Lesson 6 is not live (Toys 7).
 7. **Four words you'll meet**: beat, tempo, bar and backbeat, each with its definition, a small
@@ -185,7 +185,7 @@ section's heading, and the line above it, are in LESSON.md ("Section headings").
     the map" while Lesson 9 has no published page, then "Start lesson" to `/learn/09` (FACTS 6). Its
     slot, the page's mark, `<div class="next-card card l08-next" data-next-card hidden>` in `#wrap`,
     holds the tease figure (Toys 9), which the card keeps after its words (`kit/next-card.ts:184`,
-    `:205`), as Lesson 2's mark keeps its figures (`learn/02.html:1798`). Free play unlocks after
+    `:205`), as Lesson 2's mark keeps its figures (`learn/02.html:1806`). Free play unlocks after
     the card: every beat-machine control on one card (Toys 1; playbook rule 17), keeping the card's
     place after the challenge and the practice card (CURIOSITY-MOMENTS § 3.1).
 12. **Lesson explorer**: the kit's, `createExplorer({ current: 8 })` (`kit/explorer.ts:253`), with
@@ -198,7 +198,7 @@ section's heading, and the line above it, are in LESSON.md ("Section headings").
     `mercurypitch.com/ear-lab`, with "Drum Night and Subdivide are free." and no first-visit line
     (FACTS 46, 47, 54, 57); Lesson 1's fonts line and "Every sound on this page is synthesised in
     your browser" (FACTS, Labels); no dateline; the legal links, as every lesson document closes
-    (`src/tests/lesson-pages.test.ts:218-229`). With no film there are no voices to credit.
+    (`src/tests/lesson-pages.test.ts:225-236`). With no film there are no voices to credit.
 
 ## Length
 
@@ -292,7 +292,7 @@ its patterns with it.
   predict's `unlocks`, which sets `disabled = false` on each as the choice locks
   (`kit/predict.ts:66-67`, `:124-126`). The Tempo slider is an `input`, which `unlocks` does not
   take, so the predict's `onChoice` enables it (`:65`, called at `:129`). Lesson 2's stage does the
-  same with Sharp and Flat: `disabled` in its markup (`learn/02.html:926`, `:931`) and enabled from
+  same with Sharp and Flat: `disabled` in its markup (`learn/02.html:934`, `:939`) and enabled from
   its predict's `onChoice` (`lesson-02/steps.ts:142`; `lesson-02/keys-toy.ts:337-340`). No
   `aria-disabled` is involved: a `disabled` control stays out of the tab order until the choice, and
   the choice locks for the visit, so the row stays open after it. This page is the first to pass
@@ -366,7 +366,7 @@ pan-y` (`lesson-stage.css:776`), so a swipe still scrolls; every action is a but
   the bar included (Toys 4). Every route goes through the deck's `show`, which tells each registered
   toy the new step and the one before (`kit/step-deck.ts:167`): Next and Previous (`:205-215`), a
   swipe (`:217-243`), scrolling another step into view on the wide page (`:194-203`), the lesson
-  menu's jump (`:273-277`, called at `kit/lesson-menu.ts:514`), a `#step-N` address
+  menu's jump (`:273-277`, called at `kit/lesson-menu.ts:517`), a `#step-N` address
   (`kit/step-deck.ts:255-262`, `:284-291`) and a quiz's step link (`kit/quiz.ts:339`, `:344`). The
   page registers one toy (`registerToy`, `kit/step-deck.ts:92-96`), as `lesson-03/main.ts:80-87`
   does, whose `onStep(step, previous)` (`kit/step-deck.ts:45-47`) stops the stage, Count the bar and
@@ -932,25 +932,25 @@ was built on.
     (`src/lib/sw-runtime.ts:93`), beside the drafts' entries and their comment (`:140-156`), so
     that where it is held back its address reaches the site worker's 404 page, never the app
     shell; the build takes `learn/08.html` by itself, in every mode (`tools/draft-lessons.ts:16-18`;
-    `vite.config.ts:306`, `:474`).
+    `vite.config.ts:318`, `:489`).
 14. The head, from `docs/plans/find-your-pitch/SEARCH.md` § 3 and Lesson 2's document
-    (`learn/02.html:3-137`), whole in the page's first commit. Two tests hold it: the kit's
+    (`learn/02.html:3-145`), whole in the page's first commit. Two tests hold it: the kit's
     `src/features/lessons/kit/lesson-copy.test.ts:323-358` reads every `learn/NN.html`, drafts
-    included, from its first commit, and `src/tests/lesson-pages.test.ts:113-230` holds every lesson
+    included, from its first commit, and `src/tests/lesson-pages.test.ts:122-237` holds every lesson
     document's head too. The copies of the hook that the first test reads are the ones the site
     worker rewrites when the console picks another hook (`src/lesson-gate.ts:17-19`).
     - The title, `h1.hook#hook`, the hook word for word (`lesson-copy.test.ts:323-332`).
     - The document title, at most 60 characters, ending in " | MercuryPitch"
-      (`lesson-pages.test.ts:128-129`): SEARCH.md § 4's draft, "Beat, tempo and the backbeat,
+      (`lesson-pages.test.ts:137-138`): SEARCH.md § 4's draft, "Beat, tempo and the backbeat,
       explained | MercuryPitch" (54 characters), which the owner chose on 22 October 2026 with the
       other query-led titles. Until #1187 the test wanted the headline in the title too; it now
-      wants it in `og:title` (`:161`).
-    - The description, 80 to 160 characters (`:130-133`): "Why does the same song feel different
+      wants it in `og:title` (`:167`).
+    - The description, 80 to 160 characters (`:139-142`): "Why does the same song feel different
       when you clap on 2 and 4? A fifteen-minute lesson on the beat, tempo, bars of 2, 3 and 4, and
       the backbeat." (145 characters). It shortens the hook, so it serves as `description` and as
-      the Article's description (`:159`) only, never as a copy of the hook.
+      the Article's description (`:165`) only, never as a copy of the hook.
     - Canonical and `og:url` `https://mercurypitch.com/learn/08`; robots
-      `index, follow, max-image-preview:large`; `twitter:card` `summary_large_image` (`:117-135`);
+      `index, follow, max-image-preview:large`; `twitter:card` `summary_large_image` (`:126-144`);
       `og:type` `article` and `og:site_name` "MercuryPitch" (`learn/02.html:23-24`).
     - `og:title` and `twitter:title`, "Beat, tempo and the backbeat: Find Your Pitch, Lesson 8", in
       the form of Lesson 2's (`learn/02.html:26-29`, `:45-48`).
@@ -966,12 +966,12 @@ was built on.
     - The Article block: `@id` `https://mercurypitch.com/learn/08#lesson`, headline "Beat, tempo and
       the backbeat", `alternativeHeadline` the hook exactly (`lesson-copy.test.ts:356`), the same
       description as the meta, `url` and `mainEntityOfPage` the canonical address, `image` the
-      og:image (`lesson-pages.test.ts:147-148`, `:159-160`), `inLanguage` `en-GB`,
+      og:image (`lesson-pages.test.ts:156-157`, `:165-166`), `inLanguage` `en-GB`,
       `learningResourceType` "Lesson", `educationalLevel` "Beginner", `timeRequired` `PT15M`,
       `teaches` ["The beat and the pulse", "Tempo in beats per minute", "Bars of 2, 3 and 4", "The
       backbeat"], `isAccessibleForFree`, `position` 8, `isPartOf` the series, and author and
-      publisher the organization (`:137-166`); and the BreadcrumbList ending on the headline
-      (`:168-180`).
+      publisher the organization (`:146-172`); and the BreadcrumbList ending on the headline
+      (`:174-187`).
     - No `datePublished` at first. The console publishes at run time and nothing writes the field
       then: the worker's rewrite puts the lesson state into the head and changes the hook's copies,
       the links and the `data-if-live` readings, and writes no date (`src/lesson-gate.ts:13-21`), so
@@ -990,9 +990,9 @@ was built on.
     in `sitemap.xml` and `llms.txt` as it serves them (`src/lesson-gate.ts:22-24`). While it is a
     draft, the static files keep it out: in neither `public/sitemap.xml` nor `public/llms.txt`,
     linked from no entry document, with its service-worker rule kept
-    (`src/tests/lesson-pages.test.ts:262-299`). When its line leaves `drafts.ts`, the release adds a
-    line to each static file (`public/llms.txt`'s Lessons list, `:66-77`), as `kit/drafts.ts:18-21`
-    asks and `lesson-pages.test.ts:237-245` checks. The first-paint budget comes with the page,
+    (`src/tests/lesson-pages.test.ts:269-306`). When its line leaves `drafts.ts`, the release adds a
+    line to each static file (`public/llms.txt`'s Lessons list, `:66-80`), as `kit/drafts.ts:18-21`
+    asks and `lesson-pages.test.ts:244-252` checks. The first-paint budget comes with the page,
     beside the other drafts' (`scripts/assert-first-paint-budgets.mjs:103-134`, Lessons 3 and 5),
     at `:160-166`, and its CSS ceiling at `:244-247`, since every build carries every lesson page.
 17. The App content items under Practice links: the App and App content tracks' to weigh, and not

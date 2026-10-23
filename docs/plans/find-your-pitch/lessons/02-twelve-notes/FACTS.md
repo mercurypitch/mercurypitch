@@ -172,7 +172,7 @@ Every example is synthesised in `tools/mix.py` at the frequencies in 6, with Les
   label is needed on screen.
 - The "10 minutes" chip and the description's "ten-minute lesson" are the page's estimate of its
   active time, inside MASTER-PLAN § 4.2's 8 to 12 minutes, as Lesson 1's page says of itself
-  (`learn/01.html:12`, `:332`).
+  (`learn/01.html:12`, `:340`).
 
 ## Unsupported, so left out of the script and the page
 

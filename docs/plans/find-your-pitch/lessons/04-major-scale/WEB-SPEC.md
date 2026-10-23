@@ -181,7 +181,7 @@ transforms is one object on the page.
   Play white keys from D and Play the pattern from D, each sliding the staircase to D first; with
   sound off, LESSON.md's hint shows and the reveal waits; the reveal never calls a choice wrong.
 - **The house glyph** is a new symbol, `#i-home`, in the page's inline icon sprite (Lesson 1's
-  sprite, `learn/01.html:139-232`, has no house). The glyph itself is `aria-hidden`; do's stair
+  sprite, `learn/01.html:147-240`, has no house). The glyph itself is `aria-hidden`; do's stair
   buttons say it instead ("Stair 1, do, D 4, home").
 - **Keyboard and screen readers.** The staircase is a group whose live summary names the scale,
   its notes and its steps: "D major: D, E, F sharp, G, A, B, C sharp, D. Tone, tone, semitone,
@@ -372,7 +372,7 @@ main's.
 - Lesson 1's predict widget, promoted into the kit if Lesson 2 has not done it (Toys 2).
 - `vite.config.ts`: `/learn/04` served from `learn/04.html` in dev and preview, and `learn/04.html`
   as a build input. On main every `learn/NN.html` is both, with no entry of its own
-  (`vite.config.ts:77-86`, `:138-140`, `:474`).
+  (`vite.config.ts:78-87`, `:147-149`, `:489`).
 - `src/lib/sw-runtime.ts`: `/learn/04` and `/learn/04.html` in `STANDALONE_DOCUMENT_PATHS`, as
   `/learn/01` is (`sw-runtime.ts:131-135`), so the service worker leaves the lesson alone. On main
   they are there (`:138-139`).

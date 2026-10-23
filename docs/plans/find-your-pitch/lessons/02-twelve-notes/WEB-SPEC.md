@@ -161,7 +161,7 @@ are Lesson, Watch and Explorer. Each section's heading, and the line above it, a
 11. **Footer**: Lesson 1's, with every string as LESSON.md gives it ("Head and footer"): "Season 1
     · Lesson 02 · Twelve notes"; the practice link, printed `mercurypitch.com/ear-lab` and linking
     `/ear-lab?lesson=02`, with "Ear Lab is free: tap Leap."; and the credits as Lesson 1's built
-    footer words them ("Voices in the episode: ElevenLabs (Eleven v3).", `learn/01.html:1595-1599`),
+    footer words them ("Voices in the episode: ElevenLabs (Eleven v3).", `learn/01.html:1603-1607`),
     with the episode's sung notes, its synthesised examples and this page's synthesised sound
     (FACTS 41, 50, 51; FACTS, Labels).
 
