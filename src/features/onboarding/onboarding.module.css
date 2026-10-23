@@ -504,6 +504,20 @@
   overflow-y: auto;
 }
 
+/* The plan beat (the four questions and the plan, BeatPlan) stands in the
+   frame's padding box, and the frame clips only at its own edges, the
+   screen's on every side but the top. So it lends the screens its padding
+   beside and below the beat's box: their scroll regions reach out into it,
+   and a picked card's glow or Next's shadow fades out there instead of
+   stopping at a line by the box's edge (PlanExits.tsx's header, the host
+   contract). The values are the frame's padding above: 22px each side,
+   40px below, and none below on a phone, where the frame gives that padding
+   up (the rule in the phone block). */
+.frame:has(> [data-beat='questions']) {
+  --pc-overhang-side: 22px;
+  --pc-overhang-end: 40px;
+}
+
 /* Focused by script when the flow opens (FirstLight), never by Tab
    (tabindex -1): no ring, the beat itself is the thing in focus. */
 .frame:focus {
@@ -1795,9 +1809,11 @@
      edge and the screens own the room under their last row, the home
      indicator's inset included. The beat's host is a direct child of the
      frame and carries `data-beat="questions"`; it adds no padding or inset
-     of its own (BeatPlan.module.css). */
+     of its own (BeatPlan.module.css). With no padding below the box, the
+     frame lends none there: the box's bottom is the screen's. */
   .frame:has(> [data-beat='questions']) {
     padding-bottom: 0;
+    --pc-overhang-end: 0px;
   }
 
   .twinBeat {

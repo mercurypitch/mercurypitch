@@ -47,6 +47,38 @@
 //   `env(safe-area-inset-bottom, 0px)` on top of its 6px, so the last row
 //   and Next clear the home indicator. A frame that kept its padding would
 //   stack it under both.
+// - The room it lends. A scroll region clips 6px outside its content,
+//   nearer than a glow fades out: a picked card's glow and Next's shadow
+//   need about 31px, and a clip line inside that draws a hard edge along
+//   them. Lending nothing is the default, and it leaves two visible cuts: a
+//   picked card's glow at a phone's sides, and Next's shadow under an
+//   overflowing Q3 on a short desktop window. So a host lends unless it has
+//   no room (a box whose sides and bottom are the screen's edges needs
+//   none). It lends the room beside and under its box where nothing clips
+//   (the box stands in padding of the host's own, and the next clip out is
+//   the screen's edge), by setting two custom properties on the box or an
+//   ancestor. The regions reach out into that room, wider and padded by as
+//   much, so their clip lines move out and the content does not move
+//   (plan-chrome.module.css).
+//   - Each property is a length with its unit: `0px`, never a bare `0`. A
+//     bare 0 makes the chrome's calc() invalid, so the declarations that
+//     read it (padding, margin, width) drop whole and the region collapses.
+//   - `--pc-overhang-side` is the room for each side, one value for both.
+//     With unequal room beside the box, lend the smaller.
+//   - `--pc-overhang-end` is the room below. Only the questions' region
+//     reaches there; the plan's region has its ways on under it.
+//   - Lend only room that is empty and unclipped, and no more than the box
+//     has, or the host's own scroller scrolls sideways or down: the regions
+//     take that room in layout and catch the pointer there.
+//   - A lend that stops short of the screen's edge leaves a fainter line,
+//     where its clip line falls within about 25px of the card.
+//   - Show me around's glow (PlanScreen.module.css:386 and :526) sits in the
+//     plan's ways-on row, outside the region, so it gets no reach. Hovered
+//     it runs 42px past its button, so a host must not clip within about
+//     42px under its box.
+//   - With neither set, both are 0px and nothing moves. First Light lends
+//     its frame's 22px sides and its 40px bottom, none below on a phone
+//     (onboarding.module.css).
 // - Merc directly above the screens. A question screen opens on Merc's
 //   speech bubble, its tail pointing up, and the screens add no room above
 //   it, so the host's one MercPresence goes directly above them. A host that

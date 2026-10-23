@@ -18,14 +18,19 @@
 // - Every composed name exists in the chrome. A misspelt one builds with exit
 //   0 and drops the shared class without a word.
 //
-// Each rule is tried on bad samples first, then run on the real sheets. The
-// reader takes flat CSS only: a nested rule throws, so the guard cannot pass
-// by skipping what it cannot read. It sees no inline style, and a property it
-// has no longhands for (LONGHANDS) collides only with itself.
+// Each rule is tried on bad samples first, then run on the real sheets, which
+// are also held to the compositions their screens depend on. The reader takes
+// flat CSS only: a nested rule throws, so the guard cannot pass by skipping
+// what it cannot read, and a `{` inside a string throws too (a false alarm,
+// never a false pass). A green run still says nothing about inline style, a
+// rule whose subject is not a class (`.root button`), a local class that
+// composes the chrome through another local class, or a shorthand LONGHANDS
+// lacks (`overscroll-behavior`), which collides only with itself.
 //
-// The last block pins three values the rulings fixed, which nothing else
+// The last block pins two values the rulings fixed, which nothing else
 // would notice losing: Vitest sees no CSS, so a test of the screens' markup
-// stays green when one of them goes.
+// stays green when one of them goes. The room a host lends the regions, in
+// their padding and scroll-padding, is pinned in plan-overhang.test.ts.
 
 import { readdirSync, readFileSync } from 'node:fs'
 import { join } from 'node:path'
@@ -534,6 +539,25 @@ describe('the real stylesheets', () => {
   it.each(composers())('%s composes only names the chrome defines', (name) => {
     expect(missingNames(read(CHROME_FILE), read(name))).toEqual([])
   })
+
+  // A `composes` line that goes is silent to both rules above.
+  it.each([
+    ['PlanScreen.module.css', 'root', ['root']],
+    ['PlanScreen.module.css', 'scroll', ['scroll']],
+    ['PlanScreen.module.css', 'headline', ['headline']],
+    ['PlanScreen.module.css', 'say', ['say']],
+    ['PlanScreen.module.css', 'lit', ['lit']],
+    ['PlanQuestions.module.css', 'root', ['root', 'scroll']],
+    ['PlanQuestions.module.css', 'question', ['headline']],
+    ['PlanQuestions.module.css', 'say', ['say']],
+    ['PlanQuestions.module.css', 'lit', ['lit']],
+  ])('%s: .%s composes %j from the chrome', (name, cls, names) => {
+    const composed = composesOf(rulesOf(read(name)))
+      .filter((c) => c.cls === cls && c.from === CHROME_PATH)
+      .flatMap((c) => c.names)
+
+    expect(composed).toEqual(expect.arrayContaining(names))
+  })
 })
 
 /** The last value a rule of this selector, outside any media query, gives a property. */
@@ -546,7 +570,8 @@ function valueOf(
     .filter((rule) => rule.selector === selector && rule.context === '')
     .flatMap((rule) => rule.decls)
     .filter((decl) => decl.prop === prop)
-    .at(-1)?.value
+    .at(-1)
+    ?.value.replace(/\s+/g, ' ')
 }
 
 describe('what the rulings fixed', () => {
@@ -554,12 +579,6 @@ describe('what the rulings fixed', () => {
     expect(
       valueOf(read('PlanScreen.module.css'), '.headline', '--pc-headline-max'),
     ).toBe('16ch')
-  })
-
-  it("keeps a keyboard focus clear of the region's edge by the room the ring needs", () => {
-    expect(valueOf(read(CHROME_FILE), '.scroll', 'scroll-padding')).toBe(
-      'var(--pc-bleed)',
-    )
   })
 
   it("pads the questions' region by the home indicator's inset, through the property the chrome pads with", () => {

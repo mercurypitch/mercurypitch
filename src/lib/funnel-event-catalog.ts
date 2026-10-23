@@ -394,9 +394,12 @@ export const GUIDE_FUNNEL_EVENTS = [
   'plan_q4_app',
   'plan_q4_along',
   'plan_q4_starting',
-  /** The questions were put in front of someone: a new visitor in First
-   *  Light, an existing user in the app (once), or a person who opened them
-   *  from Home or the Guide. */
+  /** The questions were put in front of someone. `new` is a new visitor in
+   *  First Light, counted once, when the shown record is first written: a
+   *  remount behind the auth modal counts nothing, and nor does a replay
+   *  after Skip the intro, whose skip wrote the record. `existing` is an
+   *  existing user in the app (once). `skipper` is a person who opened them
+   *  from Home or the Guide, counted at every opening. */
   'plan_shown_new',
   'plan_shown_existing',
   'plan_shown_skipper',

@@ -533,7 +533,9 @@ function declarations(
   return Object.fromEntries(
     body.split(';').flatMap((line) => {
       const [property, ...value] = line.split(':')
-      return value.length > 0 ? [[property.trim(), value.join(':').trim()]] : []
+      return value.length > 0
+        ? [[property.trim(), value.join(':').replace(/\s+/g, ' ').trim()]]
+        : []
     }),
   )
 }

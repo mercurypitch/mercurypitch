@@ -24,7 +24,12 @@
 //   to the screens (onboarding.module.css, next to the twin's), so the box
 //   reaches the frame's bottom edge and adds no padding or inset of its own.
 //   The host carries `data-beat="questions"`, which that rule and First
-//   Light's heading focus read.
+//   Light's heading focus read. The frame also lends the screens its padding
+//   beside and below the box, where it clips nothing (`--pc-overhang-side`
+//   22px, `--pc-overhang-end` 40px and 0px on a phone, set next to that rule;
+//   PlanExits.tsx holds the contract), so a picked card's glow and Next's
+//   shadow fade out at the screen's edge instead of stopping at a line 6px
+//   from them. The box itself sets none.
 // - Merc's size is the host's, in pixels, because MercPresence sets his box
 //   inline and a class could not win. The questions and the plan have their
 //   own sizes, each smaller on a phone, so the first question still fits

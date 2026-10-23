@@ -26,7 +26,10 @@
    - No padding of its own, at the bottom or anywhere: the frame's padding is
      the beat's margin, and on a phone the frame gives its bottom padding up
      (the rule beside the twin's, in onboarding.module.css) so the screens
-     own the room under their last row, home indicator included. */
+     own the room under their last row, home indicator included. The frame
+     lends its padding to the screens' scroll regions through
+     --pc-overhang-side and --pc-overhang-end (set there too), so this box
+     sets neither. */
 
 .host {
   position: relative;

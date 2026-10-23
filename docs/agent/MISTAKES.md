@@ -923,6 +923,13 @@ import handler, issue #813.
 **Rule:** a page outside the lessons takes the base through a stylesheet of its own that `@import`s it (`kit/lesson-hub.css`): the build inlines the import, so no chunk of the lessons changes. After a change to which documents or scripts take in a shared stylesheet, compare each `dist/learn/NN.html`'s stylesheet links with main's build: the same files, in the same order.
 **See:** `src/features/lessons/kit/lesson-hub.css`, `tools/learn-hub.test.ts`
 
+### A class that composes from another file must not set what the composed class sets
+
+**Symptom:** in a scratch Vite build of the plan screens' sheets (the repo's own CSS config), a wide-screen headline's `font-size: 46px`, set on a class that composes the shared headline, lost to the shared 31px. In the other screen the same kind of rule would have won. The build was silent and Vitest does not process CSS, so nothing else shows it. Caught in Plan 1A (Task 6) before it shipped.
+**Cause:** under Vite's CSS Modules (Lightning CSS, Vite 6.4.4), a class composed from another file lands after the first importer's own rules and before the next importer's, so a local declaration of the same property is not guaranteed to win. The order follows import order, and a lazy chunk repeats it.
+**Rule:** a class that composes from another file never sets a property the composed class sets, a longhand counting against its shorthand. Vary a shared value through a custom property the composed class reads with a fallback (`--pc-headline-max`): no order can undo that. `plan-chrome.test.ts` holds the plan's two sheets to this.
+**See:** `src/features/plan/plan-chrome.module.css`, `src/features/plan/plan-chrome.test.ts`
+
 ## Performance
 
 ### Preserve physical material units when baking decoded geometry

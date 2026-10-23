@@ -20,9 +20,12 @@
      and holds still; the root fills it and scrolls what does not fit, so an
      overflowing Q3 scrolls inside the screen while the buttons stay in the
      corners (an absolute child whose containing block is the host's box is
-     neither clipped nor scrolled by the root). The box also reaches the
-     bottom edge, so the root pads its end by the home indicator's inset
-     (`--pc-end`), and the last row and Next clear it.
+     neither clipped nor scrolled by the root). On a phone the box also
+     reaches the bottom edge, so the root pads its end by the home
+     indicator's inset (`--pc-end`), and the last row and Next clear it.
+     Where the host lends room below its box (`--pc-overhang-end`), the root
+     reaches into it (`--pc-reach`), so Next's shadow is not cut at the box's
+     edge when Q3 scrolls.
    - The hairline is the host's: First Light draws it across the top of its
      frame. These screens add the "Question N of 4" eyebrow, never a second
      hairline and never dots.
@@ -38,15 +41,20 @@
   composes: root scroll from './plan-chrome.module.css';
   /* The questions' own token: the rows' fill, a little see-through. */
   --pq-card: var(--ob-card, rgba(22, 27, 34, 0.74));
-  /* The region is the last thing in the host's box, which reaches the bottom
-     edge (PlanExits.tsx's header), so the room under the last row is the
-     region's own: the chrome's bleed and the home indicator's inset on top
-     of it. The chrome's padding reads this property. */
+  /* The region is the last thing in the host's box, which on a phone reaches
+     the bottom edge (PlanExits.tsx's header), so the room under the last row
+     is the region's own: the chrome's bleed and the home indicator's inset on
+     top of it. The chrome's padding reads this property. */
   --pc-end: calc(var(--pc-bleed) + env(safe-area-inset-bottom, 0px));
+  /* As the last thing in the box, the region may also reach into the room the
+     host lends below it, so Next's shadow fades out there instead of stopping
+     at a line under Next (the chrome's .scroll says how). */
+  --pc-reach: var(--pc-overhang-end, 0px);
 
-  /* The region fills the host's box and pulls its room above back, so it
-     still ends at the box's bottom edge. */
-  height: calc(100% + var(--pc-room));
+  /* The region fills the host's box and pulls its room above back, so its
+     margin box still ends at the box's bottom edge; its clip line ends the
+     room the host lends below. */
+  height: calc(100% + var(--pc-room) + var(--pc-reach));
 }
 
 /* ── Merc's line ──────────────────────────────────────────────── */
