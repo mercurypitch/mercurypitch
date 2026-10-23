@@ -10,10 +10,10 @@
 import { readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
 import { describe, expect, it } from 'vitest'
-import { LESSONS } from '../src/features/lessons/kit/season'
+import { LESSONS, minutesSpan } from '../src/features/lessons/kit/season'
 import { lessonDocument, lessonPages, lessonPath, liveByDefault, markLessonStates, } from './draft-lessons'
 import type { HubLesson } from './learn-hub'
-import { fillHub, HUB_DOCUMENT, hubLessons, minutesSpan, seasonMarkup, seriesParts, } from './learn-hub'
+import { fillHub, HUB_DOCUMENT, hubLessons, seasonMarkup, seriesParts, } from './learn-hub'
 import { lessonHeadline } from './lesson-links'
 
 const ROOT = resolve(__dirname, '..')
@@ -53,17 +53,27 @@ describe('the lessons the hub lists', () => {
     }
   })
 
-  it('take the span of reading times from the season', () => {
-    const times = LESSONS.flatMap((L) =>
-      L.minutes === undefined ? [] : [L.minutes],
-    )
-    expect(minutesSpan(lessons)).toBe(
-      `${Math.min(...times)} to ${Math.max(...times)}`,
-    )
+  it('carry the reading times the season gives them', () => {
+    for (const L of lessons)
+      expect(L.minutes, `Lesson ${L.n}`).toBe(
+        LESSONS.find((x) => x.n === L.n)?.minutes,
+      )
+  })
 
+  it('span their reading times from the shortest to the longest, or name the one they share', () => {
     const one: HubLesson = { n: 1, lane: 'theory', name: 'A', hook: 'B?' }
-    expect(minutesSpan([{ ...one, minutes: 10 }, one])).toBe('10')
-    expect(() => minutesSpan([one])).toThrow(/reading time/)
+    expect(
+      minutesSpan([
+        { ...one, minutes: 15 },
+        { ...one, minutes: 10 },
+        { ...one, minutes: 17 },
+      ]),
+    ).toBe('10 to 17')
+    expect(
+      minutesSpan([{ ...one, minutes: 10 }, one, { ...one, minutes: 10 }]),
+    ).toBe('10')
+    expect(minutesSpan([one])).toBeNull()
+    expect(minutesSpan([])).toBeNull()
   })
 })
 
@@ -102,14 +112,36 @@ describe('the season map', () => {
         continue
       }
       const link = item?.querySelector(`a[href="${L.page}"]`)
-      expect(words(link ?? null), `Lesson ${L.n}`).toBe('Start lesson')
+      const named = `Start lesson: Lesson ${L.n}, ${L.name}`
+      expect(words(link ?? null), `Lesson ${L.n}`).toBe(named)
       expect(link?.closest(`[data-if-live="${L.n}"]`)).not.toBeNull()
       expect(Array.from(live).map(words).join(' ')).toBe(
-        L.minutes === undefined
-          ? 'Start lesson'
-          : `${L.minutes} minutes Start lesson`,
+        L.minutes === undefined ? named : `${L.minutes} minutes ${named}`,
       )
     }
+  })
+
+  it("names each link's lesson in words only a screen reader hears, so no two links read alike", () => {
+    const links = Array.from(map.querySelectorAll('a'))
+    expect(links.length).toBeGreaterThan(0)
+    for (const a of links) {
+      expect(a.firstChild?.textContent).toBe('Start lesson')
+      expect(a.querySelector('.sr')).not.toBeNull()
+    }
+    const names = links.map(words)
+    expect(new Set(names).size).toBe(names.length)
+    // the hidden words take the kit's `sr` class, from the stylesheet the hub links
+    expect(repoFile('src/features/lessons/kit/lesson-base.css')).toMatch(
+      /^\.sr \{\n {2}position: absolute !important;\n {2}width: 1px;/m,
+    )
+  })
+
+  it("marks each hook with its lesson, for the site worker to ask the console's pick", () => {
+    for (const L of lessons)
+      expect(
+        words(map.querySelector(`.hub-hook[data-lesson="${L.n}"]`)),
+        `Lesson ${L.n}`,
+      ).toBe(L.hook)
   })
 
   it("writes its readings in the one form the build's marks, the worker and a page settle", () => {
@@ -130,7 +162,7 @@ describe('the filled hub', () => {
     // Assert
     expect(html).not.toMatch(/<!-- hub:|"hasPart": \[\]/)
     expect(words(doc.querySelector('.hub-time'))).toBe(
-      `Each lesson takes about ${minutesSpan(hubLessons(ROOT))} minutes.`,
+      `Each lesson takes about ${minutesSpan(hubLessons(ROOT).filter((L) => L.n <= 2))} minutes.`,
     )
     expect(doc.querySelectorAll('#season .hub-lesson')).toHaveLength(
       hubLessons(ROOT).length,
@@ -144,6 +176,38 @@ describe('the filled hub', () => {
       { '@id': 'https://mercurypitch.com/learn/01#lesson' },
       { '@id': 'https://mercurypitch.com/learn/02#lesson' },
     ])
+  })
+
+  it("spans the reading times of the lessons live by the build's default, and no other", () => {
+    const lessons = hubLessons(ROOT)
+    const timeIn = (live: readonly number[]): string =>
+      words(read(fillHub(hub, lessons, live)).querySelector('.hub-time'))
+    const over = (live: readonly number[]): string | null =>
+      minutesSpan(lessons.filter((L) => live.includes(L.n)))
+
+    // a production build: the released lessons alone
+    const released = liveByDefault(ROOT, false)
+    expect(timeIn(released)).toBe(
+      `Each lesson takes about ${over(released)} minutes.`,
+    )
+    // a build that shows drafts: every lesson with a page
+    const shown = liveByDefault(ROOT, true)
+    expect(timeIn(shown)).toBe(
+      `Each lesson takes about ${over(shown)} minutes.`,
+    )
+    // Lesson 1 alone, or with the longest lesson
+    expect(timeIn([1])).toBe(
+      `Each lesson takes about ${lessons[0]?.minutes} minutes.`,
+    )
+    const longest = lessons.reduce((a, b) =>
+      (b.minutes ?? 0) > (a.minutes ?? 0) ? b : a,
+    )
+    const first = lessons[0]?.minutes ?? 0
+    expect(timeIn([1, longest.n])).toBe(
+      `Each lesson takes about ${Math.min(first, longest.minutes ?? 0)} to ${longest.minutes} minutes.`,
+    )
+    // no lesson live with a reading time: nothing true to say
+    expect(() => fillHub(hub, lessons, [])).toThrow(/reading time/)
   })
 
   it('refuses a document that lacks a mark, or holds one twice', () => {

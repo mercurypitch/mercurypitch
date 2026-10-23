@@ -16,13 +16,13 @@ import { resolve } from 'node:path'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { LESSON_COPY } from '@/features/lessons/kit/lesson-copy'
 import type { PageState } from '@/features/lessons/kit/publish'
-import { LESSONS } from '@/features/lessons/kit/season'
+import { LESSONS, minutesSpan } from '@/features/lessons/kit/season'
 import type { LessonState } from '@/lib/lesson-state'
 import { isDraftLessonsShown, lessonDocument, lessonPages, liveByDefault, markLessonStates, } from '../tools/draft-lessons'
 import { fillHub, HUB_DOCUMENT, hubLessons } from '../tools/learn-hub'
 import { HtmlRewriterDouble } from './html-rewriter.test-fixtures'
 import type { LessonGateEnv, WaitUntil } from './lesson-gate'
-import { draftsShownBy, editLlms, editSitemap, FALLBACK_TTL_S, handleLessonRequest, lessonRewriter, settleSeries, STATE_TIMEOUT_MS, STATE_TTL_S, wrapItem, } from './lesson-gate'
+import { draftsShownBy, editLlms, editSitemap, FALLBACK_TTL_S, handleLessonRequest, hubRewriter, lessonRewriter, settleSeries, STATE_TIMEOUT_MS, STATE_TTL_S, wrapItem, } from './lesson-gate'
 
 const ROOT = resolve(__dirname, '..')
 const repoFile = (path: string): string =>
@@ -699,6 +699,17 @@ describe('the hub', () => {
     doc.getElementById(`lesson-${String(n).padStart(2, '0')}`)?.closest('li') ??
     null
 
+  /** The line on how long a lesson takes; '' when the page has none. */
+  const time = (doc: Document): string => words(doc.querySelector('.hub-time'))
+
+  /** How the line reads when the lessons `live` are the live ones. */
+  const timeFor = (live: readonly number[]): string =>
+    `Each lesson takes about ${minutesSpan(LESSONS.filter((L) => live.includes(L.n)))} minutes.`
+
+  /** Lesson `n`'s hook as the map asks it. */
+  const hookOf = (doc: Document, n: number): string =>
+    words(item(doc, n)?.querySelector('.hub-hook') ?? null)
+
   /** The lessons the series' structured data names, by number. */
   const parts = (doc: Document): number[] =>
     (
@@ -729,6 +740,8 @@ describe('the hub', () => {
         'Coming',
       )
     expect(parts(doc)).toEqual([])
+    // no lesson a learner can open, so no time to give
+    expect(doc.querySelector('.hub-time')).toBeNull()
     expect(head?.status).toBe(200)
     expect(await head?.text()).toBe('')
     // the document's own address is the asset layer's redirect to the hub
@@ -773,7 +786,12 @@ describe('the hub', () => {
     const one = item(doc, 1)
     expect(one?.querySelector('a')?.getAttribute('href')).toBe('/learn/01')
     expect(words(one?.querySelector('.hub-go') ?? null)).toBe(
-      `${LESSONS[1]?.minutes} minutes Start lesson`,
+      `${LESSONS[1]?.minutes} minutes Start lesson: Lesson 1, ${words(one?.querySelector('h4') ?? null)}`,
+    )
+    // the time is Lesson 1's alone, the one lesson live
+    expect(time(doc)).toBe(timeFor([1]))
+    expect(time(doc)).toBe(
+      `Each lesson takes about ${LESSONS[1]?.minutes} minutes.`,
     )
     // every reading settled: none left to mark, none hidden by the build
     expect(
@@ -802,6 +820,7 @@ describe('the hub', () => {
     )
     expect(doc.querySelector('a[href^="/learn/02"]')).toBeNull()
     expect(parts(doc)).toEqual([1, 3])
+    expect(time(doc)).toBe(timeFor([1, 3]))
     // the trail is left as it was
     const trail = blocks(doc).find((node) => node['@type'] === 'BreadcrumbList')
     expect(
@@ -819,6 +838,7 @@ describe('the hub', () => {
     // Assert
     const withPage = LESSONS.filter((L) => L.page !== undefined).map((L) => L.n)
     expect(parts(doc)).toEqual(withPage)
+    expect(time(doc)).toBe(timeFor(withPage))
     // the map draws lane by lane, so its links are compared as a set
     expect(
       Array.from(doc.querySelectorAll('#season a'))
@@ -827,11 +847,81 @@ describe('the hub', () => {
     ).toEqual(withPage.map((n) => `/learn/${String(n).padStart(2, '0')}`))
   })
 
+  it('says as much where the build showed drafts and mercurypitch.com holds them back', async () => {
+    // Arrange: the e2e build's hub, every lesson with a page live by its
+    // default, served where drafts are held back
+    const shown = liveByDefault(ROOT, true)
+    const asset = new Response(
+      markLessonStates(
+        fillHub(repoFile(HUB_DOCUMENT), hubLessons(ROOT), shown),
+        shown,
+      ),
+      { headers: { 'Content-Type': 'text/html' } },
+    )
+    const state: PageState = { ...stateOf({}, null), drafts: false }
+    const released = liveByDefault(ROOT, false)
+
+    // Act
+    const doc = read(await hubRewriter(state).transform(asset).text())
+
+    // Assert: the time, the links and the parts are the released lessons'
+    expect(time(doc)).toBe(timeFor(released))
+    expect(parts(doc)).toEqual(released)
+    expect(
+      Array.from(doc.querySelectorAll('#season a'))
+        .map((a) => a.getAttribute('href'))
+        .sort(),
+    ).toEqual(released.map((n) => `/learn/${String(n).padStart(2, '0')}`))
+  })
+
+  it('asks the hook the console picked, for a lesson live or held back', async () => {
+    // Arrange: Lesson 3's alternative picked, Lesson 7's picked while it is
+    // held back, as on mercurypitch.com
+    const alt = (n: number, id: string): string =>
+      LESSON_COPY[n]?.hookAlts?.find((v) => v.id === id)?.text ?? ''
+    const { ask } = gate({
+      state: stateOf({
+        3: { published: true, hook: 'figures' },
+        7: { hook: 'two-questions' },
+      }),
+      drafts: '0',
+    })
+
+    // Act
+    const doc = await page(await ask('/learn/'))
+
+    // Assert
+    expect(alt(3, 'figures')).not.toBe('')
+    expect(hookOf(doc, 3)).toBe(alt(3, 'figures'))
+    expect(hookOf(doc, 7)).toBe(alt(7, 'two-questions'))
+    for (const L of LESSONS.filter((x) => x.n >= 1 && x.n !== 3 && x.n !== 7))
+      expect(hookOf(doc, L.n), `Lesson ${L.n}`).toBe(L.hook)
+  })
+
+  it('writes a picked hook as text, never as markup', async () => {
+    // Arrange: a variant whose words hold every character markup cares about
+    const odd = 'Is 3 < 4 & "five" > 2, or <b>bold</b>?'
+    const copy = { 1: { hookAlts: [{ id: 'odd', text: odd }] } }
+    const asset = new Response(builtHub(), {
+      headers: { 'Content-Type': 'text/html' },
+    })
+    const state: PageState = {
+      ...stateOf({ 1: { hook: 'odd' } }),
+      drafts: false,
+    }
+
+    // Act
+    const doc = read(await hubRewriter(state, copy).transform(asset).text())
+
+    // Assert
+    expect(hookOf(doc, 1)).toBe(odd)
+    expect(item(doc, 1)?.querySelector('.hub-hook b')).toBeNull()
+  })
+
   it('leaves a block that is not the series, or is not JSON, as it came', () => {
-    const state: PageState = { ...stateOf({}), drafts: true }
     const trail = JSON.stringify({ '@type': 'BreadcrumbList' })
-    expect(settleSeries(trail, state)).toBe(trail)
-    expect(settleSeries('{ not json', state)).toBe('{ not json')
+    expect(settleSeries(trail, LESSONS)).toBe(trail)
+    expect(settleSeries('{ not json', LESSONS)).toBe('{ not json')
   })
 })
 

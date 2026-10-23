@@ -25,8 +25,9 @@
 // - the series' hub, /learn/ or /learn/index.html (GET or HEAD), which no
 //   state holds back. A whole page is rewritten as a lesson page's markup
 //   is, each link to a lesson that is not live unlinked and the true
-//   reading of each lesson's state kept, and its series' `hasPart` names
-//   the lessons live here (tools/learn-hub.ts writes the build's default).
+//   reading of each lesson's state kept; its span of reading times and its
+//   series' `hasPart` follow the lessons live here, and each lesson asks
+//   the hook the console picked (tools/learn-hub.ts writes the defaults).
 //
 // Published, live and the season as a page shows it are publish.ts's rules,
 // read by the pages too, so the worker and a page never disagree. A draft
@@ -53,7 +54,7 @@ import { hookFor, hookMarkup, isHookMarkup, LESSON_COPY, } from './features/less
 import type { PageState, Reading } from './features/lessons/kit/publish'
 import { isLive, isPublished, lessonOfHref, PAGE_STATE_ID, pageStateJson, readingHolds, readingLesson, seasonFor, } from './features/lessons/kit/publish'
 import type { Lesson } from './features/lessons/kit/season'
-import { LESSONS } from './features/lessons/kit/season'
+import { LESSONS, minutesSpan } from './features/lessons/kit/season'
 import type { LessonState } from './lib/lesson-state'
 import { parseLessonState } from './lib/lesson-state'
 
@@ -750,11 +751,11 @@ async function hubPage(
 }
 
 /**
- * The series' structured data with its `hasPart` the lessons live for
- * `state`, `<` escaped so it cannot close its script; any other block, or
- * text that is not JSON, as it came.
+ * The series' structured data with its `hasPart` the lessons `live`, `<`
+ * escaped so it cannot close its script; any other block, or text that is
+ * not JSON, as it came.
  */
-export function settleSeries(text: string, state: PageState): string {
+export function settleSeries(text: string, live: readonly Lesson[]): string {
   let node: unknown
   try {
     node = JSON.parse(text)
@@ -763,17 +764,48 @@ export function settleSeries(text: string, state: PageState): string {
   }
   if (typeof node !== 'object' || node === null) return text
   if ((node as { '@id'?: unknown })['@id'] !== SERIES_ID) return text
-  const hasPart = liveLessons(state).map((L) => ({
+  const hasPart = live.map((L) => ({
     '@id': `${SITE_ORIGIN}${L.page ?? ''}#lesson`,
   }))
   return JSON.stringify({ ...node, hasPart }, null, 2).replace(/</g, '\\u003c')
 }
 
-/** The hub for `state`: its links and readings settled as a lesson page's are, and its series' parts. */
-export function hubRewriter(state: PageState): Rewriter {
-  const rewriter = new HTMLRewriter().on(
-    'script[type="application/ld+json"]',
-    scriptsAs((text) => settleSeries(text, state)),
-  )
+/**
+ * The hub for `state`: its links and readings settled as a lesson page's
+ * are, and all else it says of the lessons for the same live lessons: the
+ * span of their reading times (the line goes while none is live) and the
+ * series' parts. Each lesson asks the hook its override picks from `copy`
+ * (lesson-copy.ts), written as text, as the lesson's own page asks it.
+ */
+export function hubRewriter(
+  state: PageState,
+  copy: Readonly<Partial<Record<number, CuriosityCopy>>> = LESSON_COPY,
+): Rewriter {
+  const live = liveLessons(state)
+  const span = minutesSpan(live)
+  const rewriter = new HTMLRewriter()
+    .on(
+      'script[type="application/ld+json"]',
+      scriptsAs((text) => settleSeries(text, live)),
+    )
+    .on('.hub-time', {
+      element: (p) => (span === null ? p.remove() : undefined),
+    })
+    .on('.hub-minutes', {
+      element: (el) =>
+        span === null || el.removed
+          ? undefined
+          : el.setInnerContent(span, { html: false }),
+    })
+    .on('.hub-hook[data-lesson]', {
+      element: (p) => {
+        const n = Number(p.getAttribute('data-lesson'))
+        const lesson = LESSONS.find((L) => L.n === n)
+        if (lesson === undefined) return
+        const picked = state.lessons[String(n)]?.hook
+        const hook = hookFor({ ...lesson, ...copy[n] }, picked).text
+        if (hook !== lesson.hook) p.setInnerContent(hook, { html: false })
+      },
+    })
   return followState(rewriter, state)
 }
