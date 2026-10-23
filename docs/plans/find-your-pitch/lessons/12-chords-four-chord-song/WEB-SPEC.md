@@ -56,7 +56,7 @@ nothing, and "publish after Lesson 10" is a rule for whoever uses it: nothing en
 for the owner). Releasing it is deleting its `drafts.ts` line (What the kit and the app still need,
 items 2 and 15). The curiosity plan's kit work is on main: Lesson 12's hook is the season's
 (`src/features/lessons/kit/season.ts:366`), its alternative and its tease are in the kit's lesson
-copy (`src/features/lessons/kit/lesson-copy.ts:133-141`), Lesson 13's tease is there too (`:142`),
+copy (`src/features/lessons/kit/lesson-copy.ts:133-141`), Lesson 13's tease is there too (`:118`),
 and the next-lesson card draws a tease above the next hook
 (`src/features/lessons/kit/next-card.ts:142-143`). So the page writes only its own title into its
 markup, and nothing of Lesson 13's (FACTS 1, 5).
@@ -173,7 +173,7 @@ FACTS 5a). Each section's heading, and the line above it, are in LESSON.md ("Sec
     practice links, printed `mercurypitch.com/pitch-training` and `mercurypitch.com/ear-lab`, with
     "Arpeggio Jumper and Cadence are free." and no first-visit line (FACTS 42, 43, 44); Lesson 1's
     fonts line and "Every sound on this page is synthesised in your browser" (FACTS 6, Labels); the
-    legal links, as every lesson document closes (`src/tests/lesson-pages.test.ts:200-209`). With
+    legal links, as every lesson document closes (`src/tests/lesson-pages.test.ts:216-225`). With
     no film there are no voices to credit.
 
 ## Length
@@ -816,7 +816,7 @@ built:
 - The signature stays as it is (`kit/team-notes.ts:44`). The entry has no `fig`, so the card draws no figure.
 - The hook stays word for word (`season.ts:366`; FACTS 1). The tease Lesson 11's card shows for this
   lesson, and Lesson 13's tease on this page's card, are the kit's lesson copy
-  (`kit/lesson-copy.ts:140`, `:142`; FACTS 5, 5b).
+  (`kit/lesson-copy.ts:140`, `:118`; FACTS 5, 5b).
 - The card reads "Ready · read", with "15 min", once the page is live (`explorer.ts:150-157`).
 
 ## What the kit and the app still need
@@ -893,10 +893,10 @@ heard play (Toys 3; Edge cases) (`git diff --stat`).
     the owner).
 11. `kit/season.ts`, Lesson 12's entry (Explorer and season data).
 12. The head, from SEARCH.md § 3 and Lesson 4's document (`learn/04.html:9-137`), held by
-    `src/features/lessons/kit/lesson-copy.test.ts:325-360` and `src/tests/lesson-pages.test.ts:112-210`
+    `src/features/lessons/kit/lesson-copy.test.ts:323-358` and `src/tests/lesson-pages.test.ts:112-210`
     on every page, a draft's included, from its first commit:
     - title, at most 60 characters, with "MercuryPitch" and the headline in it
-      (`lesson-pages.test.ts:127-128`, `:160`). The series' form that Lessons 1, 2, 3, 5 and 10 use,
+      (`lesson-pages.test.ts:128-129`, `:161`). The series' form that Lessons 1, 2, 3, 5 and 10 use,
       "Chords and the four-chord song: Find Your Pitch, Lesson 12 | MercuryPitch", is 73 characters,
       over the cap, and Lesson 4's, "· Find Your Pitch | MercuryPitch", 63. Recommended: "Chords and
       the four-chord song: Lesson 12 | MercuryPitch" (56 characters), until SEARCH.md § 13 item 1
@@ -921,9 +921,9 @@ heard play (Toys 3; Edge cases) (`git diff --stat`).
     - robots `index, follow, max-image-preview:large` and `twitter:card` `summary_large_image`;
     - the Article block, the head's first `application/ld+json` script and one object, since the
       test reads `alternativeHeadline` from the first script only and skips the check when it is
-      absent (`lesson-copy.test.ts:340-348`, `:358`): `@id`
+      absent (`lesson-copy.test.ts:338-346`, `:356`): `@id`
       `https://mercurypitch.com/learn/12#lesson`, `url` the canonical, `image` the same URL as
-      `og:image` (`lesson-pages.test.ts:146-147`, `:159`), headline "Chords and the four-chord
+      `og:image` (`lesson-pages.test.ts:147-148`, `:160`), headline "Chords and the four-chord
       song", `alternativeHeadline` the hook, the same description, `inLanguage` `en-GB`,
       `learningResourceType` "Lesson", `educationalLevel` "Beginner", `timeRequired` `PT15M`,
       `teaches` ["Building a key's chords from its scale", "Reading Roman numerals", "Hearing the
@@ -935,9 +935,9 @@ heard play (Toys 3; Edge cases) (`git diff --stat`).
       date, so a published draft is served without one. It is set either in the commit that
       deletes the page's `drafts.ts` line or in a commit straight after the console publishes it,
       and the owner picks which (SEARCH.md § 3.2). Last, the BreadcrumbList, ending on the
-      headline (`lesson-pages.test.ts:163-175`).
+      headline (`lesson-pages.test.ts:164-176`).
 13. `public/learn/lesson-12-og.jpg`: the share card, 1200 x 630, in the page's first commit, since
-    `lesson-pages.test.ts:177-196` fails a lesson document whose card is not in `public/` at the size
+    `lesson-pages.test.ts:178-197` fails a lesson document whose card is not in `public/` at the size
     its head gives, a draft's included. It is a still of the hero: the title over
     the ring of twelve seen from above, the loop's four rooms drawn in chrome, between blue Merc and
     orange Merc, with the alt text above. It draws no tune, no walk, no gold and no count, so the
@@ -953,7 +953,7 @@ heard play (Toys 3; Edge cases) (`git diff --stat`).
 15. On release (SEARCH.md § 12), once its `drafts.ts` line is deleted: `public/sitemap.xml` and
     `public/llms.txt` (its Lessons list, `:66-77`), one entry each. Until then the draft's rules
     hold on the repository: in neither file, linked from no entry document, its service-worker rule
-    kept (`src/tests/lesson-pages.test.ts:242-279`). While the console has it published, the site
+    kept (`src/tests/lesson-pages.test.ts:258-295`). While the console has it published, the site
     worker adds it to the sitemap and llms.txt it serves, and takes it out again if it is held back
     (`src/lesson-gate.ts:22-24`; `src/features/lessons/kit/drafts.ts:18-21`). So indexing is
     requested when the console publishes the page, not at the release.
@@ -1137,7 +1137,7 @@ Each with the package's recommendation and the review's judgement (Lesson 12's r
   so does Lesson 11's next-lesson card (`src/features/lessons/kit/next-card.ts:114-115`). So
   "hundreds", a count FACTS.md does not hold, would stand on every surface the hook reaches (FACTS
   1). The description would run to 158 characters and og:description to 141, inside their caps,
-  which `src/tests/lesson-pages.test.ts:129-132` checks only on the page as written. Neither hook
+  which `src/tests/lesson-pages.test.ts:130-133` checks only on the page as written. Neither hook
   says where a tune's notes fall, so the title never answers the predict (FACTS 1a). The owner
   dropped it on 22 October 2026 (this PR; Decisions for the owner, item 1).
 

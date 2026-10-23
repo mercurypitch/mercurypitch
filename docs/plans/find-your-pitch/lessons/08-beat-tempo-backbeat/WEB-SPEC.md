@@ -136,7 +136,7 @@ section's heading, and the line above it, are in LESSON.md ("Section headings").
    steps the viewer reaches, and first settles the page's own links to other lessons by the state
    the page was served with (`followPageState`, `kit/page-chrome.ts:113`).
 2. **The hook**, the hero's copy: the kicker, the hook question as the title (`h1.hook#hook`, as
-   `kit/lesson-copy.test.ts:325-334` requires of every page from its first commit), the meta as
+   `kit/lesson-copy.test.ts:323-332` requires of every page from its first commit), the meta as
    four chips ("15 minutes", FACTS 4; "After Lesson 1", a link; "Also useful: Lesson 6, Intervals",
    a plain chip as Lesson 3's is, `learn/03.html:354-357`, FACTS 2; Sound on) and the promise, from
    LESSON.md. The title is the season's hook (`kit/season.ts:312`, FACTS 1); it says the song feels
@@ -198,7 +198,7 @@ section's heading, and the line above it, are in LESSON.md ("Section headings").
     `mercurypitch.com/ear-lab`, with "Drum Night and Subdivide are free." and no first-visit line
     (FACTS 46, 47, 54, 57); Lesson 1's fonts line and "Every sound on this page is synthesised in
     your browser" (FACTS, Labels); no dateline; the legal links, as every lesson document closes
-    (`src/tests/lesson-pages.test.ts:198-209`). With no film there are no voices to credit.
+    (`src/tests/lesson-pages.test.ts:214-225`). With no film there are no voices to credit.
 
 ## Length
 
@@ -674,7 +674,7 @@ lesson is not live where the page is served, the words stay with no link, which 
   the very question objects Lesson 6's page asks, imported from `lesson-06/quiz-questions.ts` and
   filtered by their ids, `l06-q1` and `l06-q4`, never copied, as Lesson 4 imports Lesson 2's
   (`lesson-04/quiz-questions.ts:21`, `:28-29`) and Lesson 6 imports Lesson 4's (on #1149,
-  `lesson-06/quiz-questions.ts:20`, `:27-28`). They run in the module `lesson-08/recall.ts`, which
+  `lesson-06/quiz-questions.ts:21`, `:28-29`). They run in the module `lesson-08/recall.ts`, which
   is Lesson 3's recall (`lesson-03/recall.ts:1-10`, `:36-48`) with Lesson 6 for Lesson 2: open for a
   viewer who has marked Lesson 6 done (`Done.has(6)`, `kit/progress.ts:22-44`), and otherwise the
   closed `details` line "Done Lesson 6? Two questions from it", which opens the same two. Prefix
@@ -685,7 +685,7 @@ lesson is not live where the page is served, the words stay with no link, which 
   (`lesson-03/recall.ts:47`; `lesson-04/main.ts:64`; `lesson-05/recall.ts:21`); the kit's step deck
   opens a page at the step its address names (`kit/step-deck.ts:19-23`). Question 1's slot is Lesson
   6's own, a "Play" button with `data-quiz-play="lines"` (on #1149,
-  `lesson-06/quiz-questions.ts:35-36`, `:44`), which plays `line-c`, 0.6 s of silence, then
+  `lesson-06/quiz-questions.ts:37-38`, `:46`), which plays `line-c`, 0.6 s of silence, then
   `line-fs` (FACTS 78) through Lesson 6's `bindQuizPlays`, bound to the recall's `host`
   (`lesson-06/quiz-play.ts:14-33`); like every play here, it stops whatever else is sounding
   (Audio).
@@ -858,7 +858,7 @@ Lesson 8's entry (`kit/season.ts:303-324`; FACTS 58), as this page wrote it:
   CSS at a fixed rate that names no tempo, 1.1 s a side (`lesson-sections.css:914-925`), and the
   caption describes the drawing, which claims no tempo (FACTS 58, Illustrations without claims).
 - The hook stays word for word (`season.ts:312`; FACTS 1), with no alternative, and the tease stays
-  as `kit/lesson-copy.ts:105` has it: "Same song, same speed. Only the claps move.", which Lesson
+  as `kit/lesson-copy.ts:113` has it: "Same song, same speed. Only the claps move.", which Lesson
   7's card shows (FACTS 6a). Lesson 9's entry carries the hook this page's card shows
   (`season.ts:331`), and its copy the tease (`kit/lesson-copy.ts:113`), its earlier hook an
   alternative (`:106-112`) until this PR dropped it; all are Lesson 9's, not this page's (FACTS 6).
@@ -935,13 +935,13 @@ was built on.
     `vite.config.ts:306`, `:474`).
 14. The head, from `docs/plans/find-your-pitch/SEARCH.md` § 3 and Lesson 2's document
     (`learn/02.html:3-137`), whole in the page's first commit. Two tests hold it: the kit's
-    `src/features/lessons/kit/lesson-copy.test.ts:325-360` reads every `learn/NN.html`, drafts
+    `src/features/lessons/kit/lesson-copy.test.ts:323-358` reads every `learn/NN.html`, drafts
     included, from its first commit, and `src/tests/lesson-pages.test.ts:112-210` holds every lesson
     document's head too. The copies of the hook that the first test reads are the ones the site
     worker rewrites when the console picks another hook (`src/lesson-gate.ts:17-19`).
-    - The title, `h1.hook#hook`, the hook word for word (`lesson-copy.test.ts:325-334`).
+    - The title, `h1.hook#hook`, the hook word for word (`lesson-copy.test.ts:323-332`).
     - The document title, at most 60 characters, with "MercuryPitch" and the headline in it
-      (`lesson-pages.test.ts:127-128`, `:160`): SEARCH.md § 4's draft, "Beat, tempo and the
+      (`lesson-pages.test.ts:128-129`, `:161`): SEARCH.md § 4's draft, "Beat, tempo and the
       backbeat, explained | MercuryPitch" (54 characters), for the owner to decide.
     - The description, 80 to 160 characters (`:129-132`): "Why does the same song feel different
       when you clap on 2 and 4? A fifteen-minute lesson on the beat, tempo, bars of 2, 3 and 4, and
@@ -953,23 +953,23 @@ was built on.
     - `og:title` and `twitter:title`, "Beat, tempo and the backbeat: Find Your Pitch, Lesson 8", in
       the form of Lesson 2's (`learn/02.html:26-29`, `:45-48`).
     - `og:description`, the full hook and then one line, as Lesson 2's (`learn/02.html:30-33`),
-      since the kit's test wants it to start with the hook (`lesson-copy.test.ts:351-354`): "Why
+      since the kit's test wants it to start with the hook (`lesson-copy.test.ts:349-352`): "Why
       does the same song feel different when you clap on 2 and 4 instead of 1 and 3? Hear the claps
       move, then tap the backbeat."
     - `twitter:description`, the hook exactly (`learn/02.html:49-52`;
-      `lesson-copy.test.ts:355-357`).
+      `lesson-copy.test.ts:353-355`).
     - `og:image` and `twitter:image`, `https://mercurypitch.com/learn/lesson-08-og.jpg`, with
       `og:image:width` 1200 and `og:image:height` 630, and `og:image:alt` and `twitter:image:alt`
       naming the card (item 15; `learn/02.html:34-43`, `:53-60`).
     - The Article block: `@id` `https://mercurypitch.com/learn/08#lesson`, headline "Beat, tempo and
-      the backbeat", `alternativeHeadline` the hook exactly (`lesson-copy.test.ts:358`), the same
+      the backbeat", `alternativeHeadline` the hook exactly (`lesson-copy.test.ts:356`), the same
       description as the meta, `url` and `mainEntityOfPage` the canonical address, `image` the
-      og:image (`lesson-pages.test.ts:146-147`, `:158-159`), `inLanguage` `en-GB`,
+      og:image (`lesson-pages.test.ts:147-148`, `:159-160`), `inLanguage` `en-GB`,
       `learningResourceType` "Lesson", `educationalLevel` "Beginner", `timeRequired` `PT15M`,
       `teaches` ["The beat and the pulse", "Tempo in beats per minute", "Bars of 2, 3 and 4", "The
       backbeat"], `isAccessibleForFree`, `position` 8, `isPartOf` the series, and author and
-      publisher the organization (`:136-161`); and the BreadcrumbList ending on the headline
-      (`:163-175`).
+      publisher the organization (`:137-162`); and the BreadcrumbList ending on the headline
+      (`:164-176`).
     - No `datePublished` at first. The console publishes at run time and nothing writes the field
       then: the worker's rewrite puts the lesson state into the head and changes the hook's copies,
       the links and the `data-if-live` readings, and writes no date (`src/lesson-gate.ts:13-21`), so
@@ -988,9 +988,9 @@ was built on.
     in `sitemap.xml` and `llms.txt` as it serves them (`src/lesson-gate.ts:22-24`). While it is a
     draft, the static files keep it out: in neither `public/sitemap.xml` nor `public/llms.txt`,
     linked from no entry document, with its service-worker rule kept
-    (`src/tests/lesson-pages.test.ts:242-279`). When its line leaves `drafts.ts`, the release adds a
+    (`src/tests/lesson-pages.test.ts:258-295`). When its line leaves `drafts.ts`, the release adds a
     line to each static file (`public/llms.txt`'s Lessons list, `:66-77`), as `kit/drafts.ts:18-21`
-    asks and `lesson-pages.test.ts:217-225` checks. The first-paint budget comes with the page,
+    asks and `lesson-pages.test.ts:233-241` checks. The first-paint budget comes with the page,
     beside the other drafts' (`scripts/assert-first-paint-budgets.mjs:103-134`, Lessons 3 and 5),
     at `:160-166`, and its CSS ceiling at `:244-247`, since every build carries every lesson page.
 17. The App content items under Practice links: the App and App content tracks' to weigh, and not

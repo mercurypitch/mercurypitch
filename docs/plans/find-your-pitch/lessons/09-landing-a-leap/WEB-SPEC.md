@@ -78,7 +78,7 @@ heading, and the line above it, are in LESSON.md ("Section headings").
 2. **Hero**, laid out as Lesson 2's is (`learn/02.html:321-494`). The hero copy holds the kicker;
    the hook question as the title, `<h1 class="hook" id="hook">` in its default wording, the
    season's, which `src/features/lessons/kit/lesson-copy.test.ts` holds every page's title to
-   (`:325-334`), with no variant's team note anywhere in the markup (`src/features/lessons/kit/team-notes.test.ts:85-101`; FACTS 1), and the
+   (`:323-332`), with no variant's team note anywhere in the markup (`src/features/lessons/kit/team-notes.test.ts:85-101`; FACTS 1), and the
    element the site worker writes a picked hook into (`src/lesson-gate.ts:582-583`); the meta as
    five chips ("16 minutes", FACTS 5; "After Lesson 3: Match a note", a link to `/learn/03`; "After
    Lesson 6: Intervals: the distance between notes", a link to `/learn/06`, each chip wholly the
@@ -602,7 +602,7 @@ paused off screen, and the still images when WebGL fails or would run on the CPU
   stay. Its hook is the entry's, the default (`season.ts:331`); its tease, which Lesson 8's
   card draws, is `kit/lesson-copy.ts`'s, which held the alternative `'harder'` (`:106-114`)
   until this PR dropped it (FACTS 1). `EDGES` already holds [3, 9] and [6, 9]
-  (`season.ts:416-417`).
+  (`season.ts:417-418`).
 - **The explorer card**: what the kit draws for a lesson with a page and no published film: its
   state and main action from `kit/lesson-state.ts` ("Start lesson", "Continue: step N" or "Read
   again"), its minutes, no Watch button (`kit/season.ts:23-25`), and the learner's fields only,
@@ -625,36 +625,36 @@ table):
    it (FACTS 9). `/learn/09` and `/learn/09.html` go in `STANDALONE_DOCUMENT_PATHS`
    (`src/lib/sw-runtime.ts:93`, the lessons `:131-156`), so the service worker never serves the app
    shell in the lesson's place; `src/tests/lesson-pages.test.ts` checks a draft for them too
-   (`:274-278`). On release: delete the `drafts.ts` line, and add the page to `public/sitemap.xml`
+   (`:290-294`). On release: delete the `drafts.ts` line, and add the page to `public/sitemap.xml`
    and to `public/llms.txt`'s Lessons list (`:66-70`), whose intro already allows a page with no
    episode; until then the site worker adds the page to both only while it is published
    (`src/lesson-gate.ts:22-24`). Then `src/tests/lesson-pages.test.ts` holds the page to the
-   released checks (`:212-240`), and `tools/lesson-links.ts` links it from every entry document by
+   released checks (`:228-256`), and `tools/lesson-links.ts` links it from every entry document by
    its headline (FACTS 63).
 2. The page's head, written in full from its first commit:
    `src/features/lessons/kit/lesson-copy.test.ts` reads every `learn/NN.html`, drafts included
    (`:305-320`), and `src/tests/lesson-pages.test.ts` holds every lesson document's head and
-   structured data, a draft's included (`:112-210`), and a released lesson's listings (`:212-240`).
+   structured data, a draft's included (`:112-210`), and a released lesson's listings (`:228-256`).
    The hook's copies are the ones the site worker rewrites when the console picks an alternative
    hook (`src/lesson-gate.ts:17-19`, `:445-460`); only the meta description and the Article's
    description, which repeat each other, may shorten the hook, and every other copy carries it
    whole. As Lesson 2's head has them (`learn/02.html:9-128`):
    - the title, "Landing a leap: Find Your Pitch, Lesson 9 | MercuryPitch" (56 characters, under the
-     test's 60, `lesson-pages.test.ts:127-128`), which holds the Article's headline (`:160`), and
-     the h1, `h1.hook#hook`, the hook in its default wording (`lesson-copy.test.ts:325-334`; Hero);
+     test's 60, `lesson-pages.test.ts:128-129`), which holds the Article's headline (`:161`), and
+     the h1, `h1.hook#hook`, the hook in its default wording (`lesson-copy.test.ts:323-332`; Hero);
    - the meta description, "How do you land a note you have to leap to? Hear it first, aim at its
      band, and sing do-mi-so-do as a ladder. A free lesson in your browser." (140 characters, inside
-     the test's 80 to 160, `lesson-pages.test.ts:129-132`, and 157 with the alternative hook that
+     the test's 80 to 160, `lesson-pages.test.ts:130-133`, and 157 with the alternative hook that
      this PR dropped);
    - `og:title` and `twitter:title`, "Landing a leap: Find Your Pitch, Lesson 9"
      (`learn/02.html:26-29`, `:45-48`);
    - `og:description`, the full hook and one line, "How do you land a note you have to leap to? Hear
-     the landing note first, then aim at it." (`lesson-copy.test.ts:351-354`;
+     the landing note first, then aim at it." (`lesson-copy.test.ts:349-352`;
      `learn/02.html:30-33`), and `twitter:description`, the hook exactly
-     (`lesson-copy.test.ts:355-357`; `learn/02.html:49-52`);
+     (`lesson-copy.test.ts:353-355`; `learn/02.html:49-52`);
    - canonical and `og:url` `https://mercurypitch.com/learn/09`, `robots` "index, follow,
      max-image-preview:large" and `twitter:card` "summary_large_image"
-     (`lesson-pages.test.ts:116-134`);
+     (`lesson-pages.test.ts:117-135`);
    - `og:image` and `twitter:image`, `https://mercurypitch.com/learn/lesson-09-og.jpg` (item 3),
      with `og:image:width` 1200 and `og:image:height` 630, and as `og:image:alt` and
      `twitter:image:alt` "The title card: Find Your Pitch, Lesson 09, Landing a leap, above two
@@ -662,22 +662,22 @@ table):
      orange Merc." (`learn/02.html:34-43`, `:53-60`);
    - the Article node, in the head's first `application/ld+json` script and as a single object,
      since the test reads `alternativeHeadline` there and checks it only when present
-     (`lesson-copy.test.ts:340-348`, `:358`): `@id` `https://mercurypitch.com/learn/09#lesson` and
-     `url` `https://mercurypitch.com/learn/09` (`lesson-pages.test.ts:146-147`); the headline
+     (`lesson-copy.test.ts:338-346`, `:356`): `@id` `https://mercurypitch.com/learn/09#lesson` and
+     `url` `https://mercurypitch.com/learn/09` (`lesson-pages.test.ts:147-148`); the headline
      "Landing a leap"; `alternativeHeadline`, the hook exactly; `description`, the meta
-     description's words, and `image`, the `og:image` URL (`:158-159`); `position: 9`,
+     description's words, and `image`, the `og:image` URL (`:159-160`); `position: 9`,
      `learningResourceType` "Lesson", free, the series as `isPartOf`, and the organization as author
-     and publisher (`:148-156`), as in Lesson 2's (`learn/02.html:69-109`). It has no
+     and publisher (`:149-157`), as in Lesson 2's (`learn/02.html:69-109`). It has no
      `datePublished` yet, as the built pages leave it out until they go live
      (`learn/04.html:61-68`): the date is the day the page first goes live on mercurypitch.com,
      which nothing writes at run time, so it is set in the commit that deletes the page's
      `drafts.ts` line or in one straight after the console publishes it (SEARCH.md § 3.2);
-   - a BreadcrumbList from the home page to the headline (`lesson-pages.test.ts:163-175`;
+   - a BreadcrumbList from the home page to the headline (`lesson-pages.test.ts:164-176`;
      `learn/02.html:110-128`); and the legal links, privacy, terms and imprint, in a `nav` labelled
-     "Legal" (`lesson-pages.test.ts:198-209`).
+     "Legal" (`lesson-pages.test.ts:214-225`).
 3. The share image the head names, `public/learn/lesson-09-og.jpg`, which
    `src/tests/lesson-pages.test.ts` requires of every lesson document, a draft's included: in
-   `public/`, at the pixel size its `og:image:width` and `og:image:height` give (`:177-196`). It is
+   `public/`, at the pixel size its `og:image:width` and `og:image:height` give (`:178-197`). It is
    1200 x 630, a baseline JPEG as Lesson 4's card is (`public/learn/lesson-04-og.jpg`), drawn with
    the page's own kit so that it looks like the page it opens: the title, Lesson 09 and the wordmark
    over the ladder chart's compact still, do's and so's bands with Merc's amber arc between them,

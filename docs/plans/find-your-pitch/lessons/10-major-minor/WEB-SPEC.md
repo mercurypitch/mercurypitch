@@ -165,7 +165,7 @@ FACTS 5a). Each section's heading, and the line above it, are in LESSON.md ("Sec
     printed `mercurypitch.com/pitch-training` and `mercurypitch.com/ear-lab`, with "Drone Intonation
     and Stack are free." and no first-visit line (FACTS 45, 46, 47); Lesson 1's fonts line and
     "Every sound on this page is synthesised in your browser" (FACTS 6, Labels); the legal links, as
-    every lesson document closes (`src/tests/lesson-pages.test.ts:198-209`). With no film there are
+    every lesson document closes (`src/tests/lesson-pages.test.ts:214-225`). With no film there are
     no voices to credit.
 
 ## Length
@@ -812,7 +812,7 @@ at `85e23a1af` changed there, and that page's own lines are cited at `d59c00ad6`
     `changeable` (Toys 6; Decisions for the owner).
 11. `kit/season.ts`, Lesson 10's entry (Explorer and season data).
 12. The head, from SEARCH.md § 3 and Lesson 4's document (`learn/04.html:9-137`), held by
-    `src/features/lessons/kit/lesson-copy.test.ts:325-360` and
+    `src/features/lessons/kit/lesson-copy.test.ts:323-358` and
     `src/tests/lesson-pages.test.ts:112-210` on every page, a draft's included, from its first
     commit:
     - title, at most 60 characters with the headline in it: in the form Lessons 1, 2, 3 and 5 use,
@@ -833,7 +833,7 @@ at `85e23a1af` changed there, and that page's own lines are cited at `d59c00ad6`
     - canonical and `og:url` `https://mercurypitch.com/learn/10`;
     - robots `index, follow, max-image-preview:large` and `twitter:card` `summary_large_image`;
     - the Article block: `@id` `https://mercurypitch.com/learn/10#lesson`, `url` the canonical,
-      `image` the same URL as `og:image` (`lesson-pages.test.ts:146-147`, `:159`), headline "Major
+      `image` the same URL as `og:image` (`lesson-pages.test.ts:147-148`, `:160`), headline "Major
       and minor", `alternativeHeadline` the hook, the same description, `inLanguage` `en-GB`,
       `learningResourceType` "Lesson", `educationalLevel` "Beginner", `timeRequired` `PT17M`,
       `teaches` ["Major and minor thirds", "Building major and minor triads", "Telling a major from
@@ -858,7 +858,7 @@ at `85e23a1af` changed there, and that page's own lines are cited at `d59c00ad6`
 15. On release (SEARCH.md § 12), once its `drafts.ts` line is deleted: `public/sitemap.xml` and
     `public/llms.txt` (its Lessons list, `:66-77`), one line each. Until then the draft's rules hold
     on the repository: in neither file, linked from no entry document, its service-worker rule kept
-    (`src/tests/lesson-pages.test.ts:242-279`). While the console has it published, the site worker
+    (`src/tests/lesson-pages.test.ts:258-295`). While the console has it published, the site worker
     adds it to the sitemap and llms.txt it serves, and takes it out again if it is held back
     (`src/lesson-gate.ts:22-24`; `src/features/lessons/kit/drafts.ts:18-21`). So indexing is
     requested when the console publishes the page, not at the release.
@@ -966,7 +966,7 @@ CURIOSITY-MOMENTS § 5 item 2.
   so does Lesson 9's next-lesson card (`src/features/lessons/kit/next-card.ts:114-115`). So "bright"
   and "dark", mood labels, would stand on every surface the lesson's own rule covers, the rule it
   teaches (FACTS 1, 40). The description would run to 171 characters, over the 160 cap, which
-  `src/tests/lesson-pages.test.ts:129-132` checks only on the page as written. Neither hook names a
+  `src/tests/lesson-pages.test.ts:130-133` checks only on the page as written. Neither hook names a
   note, so the title never answers the predict (FACTS 1a). The owner dropped it on 22 October 2026
   (this PR; Decisions for the owner, item 1).
 
