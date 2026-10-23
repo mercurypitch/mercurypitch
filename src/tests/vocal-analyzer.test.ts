@@ -3,7 +3,7 @@
 // ============================================================
 
 import { describe, expect, it } from 'vitest'
-import { SIREN_GLIDE_PACE_LIMIT, SIREN_GUIDE_PERIOD_MS, sirenGuideMidi, } from '@/features/exercises/siren/use-siren-controller'
+import { SIREN_GUIDE_PERIOD_MS, sirenGlideMaxRate, sirenGuideMidi, } from '@/features/exercises/siren/use-siren-controller'
 import type { EnvelopePoint, FatigueCheckpoint } from '@/lib/vocal-analyzer'
 import { analyzeFatigue, approximateBreathiness, approximateResonance, approximateRichness, compareIntensity, computeGlideCoverage, computeHarmonicRichness, computeHNR, computePitchStability, computeRMSEnvelope, computeTonalQuality, detectResonance, detectSlides, detectVibrato, detectVocalRange, intensityFromPitchResults, } from '@/lib/vocal-analyzer'
 
@@ -438,9 +438,6 @@ describe('computeGlideCoverage', () => {
   const WINDOW_MS = 4000
   // The Siren's guide dot reaches the far note in half a period, 1.25 s.
   const PACE_MS = SIREN_GUIDE_PERIOD_MS / 2
-  // The limit the Siren passes for a round of this span, semitones a second.
-  const maxRate = (span: number) =>
-    (SIREN_GLIDE_PACE_LIMIT * Math.abs(span)) / (PACE_MS / 1000)
 
   /** The note sung `ms` into the window, or null where no frame is voiced. */
   type Line = (ms: number) => number | null
@@ -462,7 +459,12 @@ describe('computeGlideCoverage', () => {
   /** The take's score at each of the three rates. */
   const scores = ({ from, to, line }: Take) =>
     RATES.map((fps) =>
-      computeGlideCoverage(frames(fps, line), from, to, maxRate(to - from)),
+      computeGlideCoverage(
+        frames(fps, line),
+        from,
+        to,
+        sirenGlideMaxRate(from, to),
+      ),
     )
 
   // Glide at `k` times the dot's pace, then hold the second note.
@@ -575,7 +577,7 @@ describe('computeGlideCoverage', () => {
     // At 30 frames a second, two frames in every ten go missing.
     const dropped = frames(30, glide(60, 67)).filter((_, i) => i % 10 < 8)
     expect(
-      computeGlideCoverage(dropped, 60, 67, maxRate(7)),
+      computeGlideCoverage(dropped, 60, 67, sirenGlideMaxRate(60, 67)),
     ).toBeGreaterThanOrEqual(0.99)
   })
 
@@ -643,21 +645,26 @@ describe('computeGlideCoverage', () => {
     expect(
       scores({ label: '', from: 60, to: 60, line: glide(60, 67) }),
     ).toEqual([0, 0, 0])
-    expect(computeGlideCoverage([], 60, 67, maxRate(7))).toBe(0)
+    expect(computeGlideCoverage([], 60, 67, sirenGlideMaxRate(60, 67))).toBe(0)
     expect(
-      computeGlideCoverage([{ midi: 60, time: 0 }], 60, 67, maxRate(7)),
+      computeGlideCoverage(
+        [{ midi: 60, time: 0 }],
+        60,
+        67,
+        sirenGlideMaxRate(60, 67),
+      ),
     ).toBe(0)
     const nan = [
       { midi: NaN, time: 0 },
       { midi: 61, time: 1 / 60 },
     ]
-    expect(computeGlideCoverage(nan, 60, 67, maxRate(7))).toBe(0)
+    expect(computeGlideCoverage(nan, 60, 67, sirenGlideMaxRate(60, 67))).toBe(0)
     // A NaN frame inside a glide costs only the ground either side of it.
     const smooth = frames(60, glide(60, 67))
     smooth[40] = { midi: NaN, time: smooth[40].time }
-    expect(computeGlideCoverage(smooth, 60, 67, maxRate(7))).toBeGreaterThan(
-      0.95,
-    )
+    expect(
+      computeGlideCoverage(smooth, 60, 67, sirenGlideMaxRate(60, 67)),
+    ).toBeGreaterThan(0.95)
   })
 })
 
