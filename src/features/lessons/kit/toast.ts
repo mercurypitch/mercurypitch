@@ -50,7 +50,15 @@ export function toast(message: string, withButton = false): void {
       if (!(e.target instanceof Node && box.contains(e.target))) hideToast()
     }
     const escape = (e: KeyboardEvent): void => {
-      if (e.key === 'Escape') hideToast()
+      if (e.key !== 'Escape') return
+      const held = document.activeElement
+      hideToast()
+      // Escape hid the button that had focus. The one toast with a button is
+      // the sound one, so focus goes to the sound switch, as Turn on's does.
+      if (held instanceof Node && box.contains(held))
+        document
+          .querySelector<HTMLElement>('#soundSwitch')
+          ?.focus({ preventScroll: true })
     }
     document.addEventListener('pointerdown', away, true)
     document.addEventListener('keydown', escape)

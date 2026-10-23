@@ -12,7 +12,7 @@ const words = (): string =>
 beforeEach(() => {
   vi.useFakeTimers()
   document.body.innerHTML =
-    '<main><button type="button" id="elsewhere">Play</button></main><div class="toast" id="toast" role="status" aria-live="polite"><p id="toastText">Sound is off.</p><button type="button" id="toastBtn" hidden>Turn on</button></div>'
+    '<header><button type="button" id="soundSwitch" aria-pressed="false">Sound</button></header><main><button type="button" id="elsewhere">Play</button></main><div class="toast" id="toast" role="status" aria-live="polite"><p id="toastText">Sound is off.</p><button type="button" id="toastBtn" hidden>Turn on</button></div>'
 })
 
 afterEach(() => {
@@ -66,5 +66,31 @@ describe('toast', () => {
     // Assert
     expect(afterOwn).toBe(true)
     expect(box().classList.contains('on')).toBe(false)
+  })
+
+  it('hands focus to the sound switch when Escape hides the button that held it', () => {
+    // Arrange
+    toast('Sound is off.', true)
+    document.getElementById('toastBtn')?.focus()
+
+    // Act
+    document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' }))
+
+    // Assert
+    expect(box().classList.contains('on')).toBe(false)
+    expect(document.activeElement?.id).toBe('soundSwitch')
+  })
+
+  it('leaves focus where it was when Escape puts the toast away from outside it', () => {
+    // Arrange
+    toast('Sound is off.', true)
+    document.getElementById('elsewhere')?.focus()
+
+    // Act
+    document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' }))
+
+    // Assert
+    expect(box().classList.contains('on')).toBe(false)
+    expect(document.activeElement?.id).toBe('elsewhere')
   })
 })
