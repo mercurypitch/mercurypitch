@@ -376,6 +376,10 @@ States:
      Again away; once either has been picked, no further siren and the rest card stay so for the
      visit, whatever is picked after. The page keeps the ending in memory for the visit, never in
      storage.
+   - **Done for today** ends the takes, not the card: the question, its answer and its lines stay,
+     and an answer can still be changed, with its own lines, band and Wrap card as above, but no
+     Start, Again or Done for today comes back. Until this PR an answer changed after Done for
+     today emptied the card, the question with it, and left only the reading's line.
 9. **No microphone** (refused, no device, or the listener failed to load): listen-only mode with
    LESSON.md's line; Merc's siren still plays, and the Wrap keeps the Vocal Range Test card, since
    singing along with nothing listening is no report of effort (Lesson 3's rule). Without Web Audio
@@ -749,8 +753,10 @@ parts:
    over every sequence of take outcomes and answers never reaches a fourth take or a third sung
    siren, and never shows "Try again" without Again; "Effortful" and "Uncomfortable" end the
    singing for the visit and pick the rest card, and a later "Easy" brings back neither Again, Start
-   nor the Vocal Range Test card; "Uncomfortable" takes the band away; nothing is written to
-   storage but `fyp-voice` and `fyp-l07-warmup`.
+   nor the Vocal Range Test card; "Uncomfortable" takes the band away; after Done for today the
+   question, its answer and its lines stay, a changed answer changes the lines, and no Start, Again
+   or Done for today comes back, in every sequence the walk takes; nothing is written to storage
+   but `fyp-voice` and `fyp-l07-warmup`.
 8. Copy: every line of LESSON.md's page copy and every template in Toys 1 and 4 passes
    `validateGuidedDynamicClaim` (`src/lib/guided-voice/claims.ts`, surface `finding`); no quiz
    feedback line starts with "Right", "Yes" or "Correct"; no accessible name or live text holds a

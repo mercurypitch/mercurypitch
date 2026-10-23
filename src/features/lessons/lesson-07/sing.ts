@@ -16,14 +16,15 @@
 // What the card offers is the pure rule in siren-flow.ts, and the take is
 // sing-take.ts's, so this file draws what the rule says. "How did that
 // feel?" follows every take that heard a voice (REQ-GVC-022), an answer can
-// change until the next take, and nothing is scored or celebrated (FACTS
-// 59). The microphone is held only around a take: acquired on the tap that
-// starts one, released when it ends, when the viewer leaves the section,
-// when the tab is hidden and when the page goes. Refused, missing, or a
-// listener that fails to load: the page carries on listening only, with
-// "No microphone? ...". Nothing is recorded, kept or sent; only the voice
-// choice (`fyp-voice`) and the warm-up's Skip are stored. The ending picks
-// the Wrap's card for the visit, in memory only (kit/comfort.ts).
+// change until the next take, and after Done for today, and nothing is
+// scored or celebrated (FACTS 59). The microphone is held only around a
+// take: acquired on the tap that starts one, released when it ends, when
+// the viewer leaves the section, when the tab is hidden and when the page
+// goes. Refused, missing, or a listener that fails to load: the page
+// carries on listening only, with "No microphone? ...". Nothing is
+// recorded, kept or sent; only the voice choice (`fyp-voice`) and the
+// warm-up's Skip are stored. The ending picks the Wrap's card for the
+// visit, in memory only (kit/comfort.ts).
 
 import type { Feeling } from '@/features/lessons/kit/comfort'
 import { mountComfort, mountFeelings, VisitEnding, } from '@/features/lessons/kit/comfort'
@@ -157,8 +158,9 @@ export function initSing(stills: RingStills): void {
     const o = offers(visit)
     show(panelsNow(o))
     const listening = visit.mode === 'listen' || visit.mode === 'nomic'
-    // the visit's takes spent, the last abandoned: no Start, and Done for today alone
-    const spent = phase === 'idle' && o.done
+    // the visit's takes spent, the last abandoned: no Start, and Done for
+    // today alone, or pressed
+    const spent = phase === 'idle' && (o.done || visit.finished)
     // and the ring at rest beside it, unless Merc's siren is still running on it
     if (spent && !ring.busy) ring.stop('Rest')
     liveEl.hidden =
@@ -379,14 +381,14 @@ export function initSing(stills: RingStills): void {
     void startTake(true)
   }
 
-  /** Done for today: the checkpoint ends here, its last lines left as they are. */
+  /**
+   * Done for today: the takes end here, and the card keeps its question,
+   * its answer and its last lines. An answer can still change them, since
+   * the singer's report outranks every reading (REQ-GVC-024), but nothing
+   * offers a take again.
+   */
   function finish(): void {
-    visit = next(visit, { type: 'done' })
-    for (const b of qa<HTMLButtonElement>(
-      '[data-panel="after"] .sing-btns button, [data-take-actions] button',
-      card,
-    ))
-      b.hidden = true
+    dispatch({ type: 'done' })
     say(statusEl, STATUS.done)
     focusText(statusEl)
   }

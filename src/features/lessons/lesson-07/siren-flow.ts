@@ -22,9 +22,11 @@
 // "Effortful" or "Uncomfortable": once either has been picked, no Again and
 // no Start for the rest of the visit, and the Wrap shows the rest card, as
 // after "Just listen today" (REQ-GVC-021, REQ-GVC-023, REQ-GVC-055). An
-// answer can change until the next take; the strongest report the visit has
-// had decides the closing line, because the singer's report outranks every
-// reading (REQ-GVC-024). Nothing here is stored: the ending lasts the visit.
+// answer can change until the next take, and after Done for today, which
+// ends the takes and keeps the card's question and lines; the strongest
+// report the visit has had decides the closing line, because the singer's
+// report outranks every reading (REQ-GVC-024). Nothing here is stored: the
+// ending lasts the visit.
 
 import type { Feeling } from '@/features/lessons/kit/comfort'
 import { afterFeeling } from '@/features/lessons/kit/comfort'
@@ -170,6 +172,19 @@ export interface SirenOffers {
 
 /** What the card offers and says for the visit as it stands. */
 export function offers(v: SirenVisit): SirenOffers {
+  // Done for today ends the takes, not the card: the question and its lines
+  // stay as an answer leaves them, and a later answer still changes them,
+  // but nothing starts a take again, and Done for today itself is gone
+  if (v.finished)
+    return {
+      ...offers({ ...v, finished: false }),
+      start: false,
+      startReady: false,
+      startHint: null,
+      again: false,
+      done: false,
+      tryAgain: false,
+    }
   const last = v.takes[v.takes.length - 1]
   const restCard = v.mode === 'listen' || v.rest
   const base: SirenOffers = {
@@ -185,7 +200,7 @@ export function offers(v: SirenVisit): SirenOffers {
     keepBand: false,
     restCard,
   }
-  if (v.mode !== 'sing' || v.finished) return base
+  if (v.mode !== 'sing') return base
   // the briefing: before any take, or after one abandoned; Done for today
   // in Start's place once the visit allows no more
   if (last === undefined || last.abandoned) {
