@@ -159,6 +159,10 @@ describe.each(DOCUMENTS)('lesson document %i', (n) => {
     expect(article.description).toBe(meta(document, 'description'))
     expect(article.image).toBe(meta(document, 'og:image'))
     expect(meta(document, 'og:title')).toContain(String(article.headline))
+    // The <title> leads with what people search for; a share names the
+    // series, so a card seen out of context still says what it belongs to.
+    expect(meta(document, 'og:title')).toContain('Find Your Pitch')
+    expect(meta(document, 'twitter:title')).toBe(meta(document, 'og:title'))
   })
 
   it('gives search a trail back to the home page', () => {
