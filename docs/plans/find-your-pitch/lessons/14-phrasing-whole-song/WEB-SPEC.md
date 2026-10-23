@@ -753,14 +753,14 @@ among them (PR #1149), and in Lesson 9's spec, beyond the parts Lessons 2 to 9 p
    asked to publish it (11). `/learn/14` and `/learn/14.html` go in `STANDALONE_DOCUMENT_PATHS`
    (`src/lib/sw-runtime.ts:93`, the lessons `:131-156`), so the service worker never serves the app
    shell in the lesson's place. As a draft, `src/tests/lesson-pages.test.ts` holds the page to the
-   draft checks (`:258-295`): in neither the sitemap nor llms.txt (`lesson-pages.test.ts:273-276`),
-   linked from no entry document (`:278-288`), and its service-worker rule kept (`:290-294`). On
+   draft checks (`:262-299`): in neither the sitemap nor llms.txt (`lesson-pages.test.ts:277-280`),
+   linked from no entry document (`:282-292`), and its service-worker rule kept (`:294-298`). On
    release: delete the `drafts.ts` line, and add the page to `public/sitemap.xml` and to
    `public/llms.txt`'s Lessons list (`:66-77`), whose intro already allows a page with no episode
    (`:68-70`); until then the site worker adds the page to both only while it is published
    (`src/lesson-gate.ts:22-24`). Then `src/tests/lesson-pages.test.ts` holds the page to the release
-   checks instead (`:228-256`): listed in the sitemap, llms.txt and the service worker
-   (`lesson-pages.test.ts:233-241`), and linked from every generated entry document (`:243-255`) by
+   checks instead (`:232-260`): listed in the sitemap, llms.txt and the service worker
+   (`lesson-pages.test.ts:237-245`), and linked from every generated entry document (`:247-259`) by
    its headline, which `tools/lesson-links.ts` writes and the test reads
    (`lesson-pages.test.ts:75-91`). Nothing writes `datePublished` at run time, so a published draft
    is served without one; it is set in the commit that deletes the page's `drafts.ts` line or in one
@@ -770,8 +770,8 @@ among them (PR #1149), and in Lesson 9's spec, beyond the parts Lessons 2 to 9 p
    is a draft: `src/features/lessons/kit/lesson-copy.test.ts` reads every `learn/NN.html`, drafts
    included (`lesson-copy.test.ts:323-358`), and `src/tests/lesson-pages.test.ts` holds every lesson
    document, drafts included, to its head, its structured data, its breadcrumb, its share card and
-   its legal links (`:113-226`). So Lesson 14 meets all of the checks below as a draft; its release
-   adds only the listings and links of item 1 (`:228-256`). The hook's copies are the ones the site
+   its legal links (`:113-230`). So Lesson 14 meets all of the checks below as a draft; its release
+   adds only the listings and links of item 1 (`:232-260`). The hook's copies are the ones the site
    worker rewrites when the console picks another hook (`src/lesson-gate.ts:444-451`, `:565-594`);
    it never rewrites the title. Only the meta description and the Article's description, which
    repeat each other, may shorten the hook, and every other copy carries it whole. In Lesson 4's
@@ -782,8 +782,8 @@ among them (PR #1149), and in Lesson 9's spec, beyond the parts Lessons 2 to 9 p
    - the meta description, "If every note of a song is in tune, what is left to shape? Hear Merc
      sing one phrase twice, then sing it and listen back." (121 characters, inside the test's 81 to
      160, `lesson-pages.test.ts:130-133`, and 153 with `compelling`, since dropped);
-   - `og:title` and `twitter:title` in the series' form, "Phrasing: sing a whole song · Find Your
-     Pitch, Lesson 14", holding the headline, as the title did until this PR (`:160-164`);
+   - `og:title` and `twitter:title`, "Phrasing: sing a whole song · Find Your Pitch, Lesson 14",
+     hold the headline, as the title did until this PR (`lesson-pages.test.ts:161-165`);
    - `og:description`, the full hook and one line, "If every note of a song is in tune, what is left
      to shape? Hear one phrase sung twice, then sing it yourself." (109 characters; 141 with
      `compelling`, since dropped; `lesson-copy.test.ts:349-352`), and `twitter:description`, the
@@ -796,7 +796,7 @@ among them (PR #1149), and in Lesson 9's spec, beyond the parts Lessons 2 to 9 p
      `twitter:image:alt` "The title card: Find Your Pitch, Lesson 14, Phrasing: sing a whole song,
      above the first line of "Twinkle, Twinkle, Little Star" as seven amber bands with its words,
      between blue Merc and orange Merc." (`learn/04.html:34-43`, `:53-60`), which the test holds to
-     the file (`lesson-pages.test.ts:178-197`; item 3);
+     the file (`lesson-pages.test.ts:182-201`; item 3);
    - the Article node, in the head's first `application/ld+json` script and as a single object,
      since the test reads `alternativeHeadline` there and checks it only when present
      (`lesson-copy.test.ts:338-346`, `:356`), and the other test asks for the Article first
@@ -810,14 +810,14 @@ among them (PR #1149), and in Lesson 9's spec, beyond the parts Lessons 2 to 9 p
      softer", "How a phrase ends: perfect and imperfect cadences" and "Recording yourself and
      listening back", none of which says what a swell does to the line, as in Lesson 4's
      (`learn/04.html:69-109`). It has no `datePublished` (item 1);
-   - a BreadcrumbList from the home page to the headline (`lesson-pages.test.ts:164-176`;
+   - a BreadcrumbList from the home page to the headline (`lesson-pages.test.ts:168-180`;
      `learn/04.html:110-128`); and the legal links, privacy, terms and imprint, in a `nav` labelled
-     "Legal" (`lesson-pages.test.ts:214-225`).
+     "Legal" (`lesson-pages.test.ts:218-229`).
    - Before #1186 dropped `compelling`, picking it wrote it into every copy of the hook: every
      description stayed between 80 and 160 characters with either hook (13).
 3. The share image the head names, `public/learn/lesson-14-og.jpg`, which
    `src/tests/lesson-pages.test.ts` checks on every lesson document, drafts included, so from the
-   page's first commit (`:178-197`): `og:image` is
+   page's first commit (`:182-201`): `og:image` is
    `https://mercurypitch.com/learn/lesson-14-og.jpg`, the file is in `public/`, its pixel size, read
    from the JPEG's frame header (`:41-56`), is what `og:image:width` and `og:image:height` say,
    `og:image:alt` is not empty, and `twitter:image` and `twitter:image:alt` repeat the two. It is
