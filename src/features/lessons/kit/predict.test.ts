@@ -147,6 +147,7 @@ describe('mountPredict', () => {
     expect(document.querySelector('[data-announcer]')?.textContent).toBe(
       'You said: lower',
     )
+    expect(document.activeElement).toBe(both(root))
   })
 
   it('keeps the reveal back after a play that sound off kept silent', async () => {
