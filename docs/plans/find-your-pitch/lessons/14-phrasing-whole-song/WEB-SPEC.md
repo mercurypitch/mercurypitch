@@ -776,7 +776,7 @@ among them (PR #1149), and in Lesson 9's spec, beyond the parts Lessons 2 to 9 p
    it never rewrites the title. Only the meta description and the Article's description, which
    repeat each other, may shorten the hook, and every other copy carries it whole. In Lesson 4's
    form (`learn/04.html:9-128`), with the default hook (13):
-   - the title, "Phrasing: from singing correct to compelling | MercuryPitch" (59 characters, under
+   - the title, "Phrasing in singing: breath, swell and shape | MercuryPitch" (59 characters, under
      the test's 60, `lesson-pages.test.ts:128-129`), SEARCH.md § 4's draft (`SEARCH.md:232`), and
      the h1, `h1.hook#hook`, the hook in its default wording (`lesson-copy.test.ts:323-332`; Hero);
    - the meta description, "If every note of a song is in tune, what is left to shape? Hear Merc
