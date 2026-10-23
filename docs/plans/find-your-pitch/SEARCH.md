@@ -423,21 +423,26 @@ exist beyond a definition.
 
 ## 13. Owner decisions
 
-1. **Titles.** Query-led (the §4 drafts), or "Find Your Pitch, Lesson N" as
-   now. Recommended: query-led, with the series in the kicker, breadcrumb and
-   card.
-2. **Bylines.** Who is named as author, and the vocal coach as reviewer on
-   voice lessons.
-3. **The hub** at `/learn/` when Lesson 2 ships. Recommended: yes.
-4. **Watch pages.** After YouTube, if Search Console shows the lessons
-   ranking.
+1. **Titles.** Query-led (the §4 drafts), or "Find Your Pitch, Lesson N" as now.
+   Decided (22 October 2026): query-led titles, with the series in the kicker,
+   the breadcrumb, `og:title` and the structured data.
+2. **Bylines.** Who is named as author, and the vocal coach as reviewer on voice
+   lessons. Decided (22 October 2026): MercuryPitch as the author, and the vocal
+   coach named as reviewer on the voice lessons once they sign off.
+3. **The hub** at `/learn/` when Lesson 2 ships. Decided (22 October 2026): yes,
+   built in its own PR.
+4. **Watch pages.** After YouTube. Decided (22 October 2026): later, if Search
+   Console shows the lessons ranking.
 5. **Articles.** Whether to write them, how often, and who writes them; the
-   Markdown generator past three.
+   Markdown generator past three. Decided (22 October 2026): not yet, decided
+   once Search Console shows what people search for.
 6. **Licence for the lesson text and figures.** An open licence (for example CC
    BY-NC-SA) opens open-education directories and school links. All rights
-   reserved keeps control.
+   reserved keeps control. Decided (22 October 2026): all rights reserved for
+   now.
 7. **Aggregate data.** Whether anonymous aggregates from the app may be
-   published in an article (the privacy plan decides).
+   published in an article (the privacy plan decides). Decided (22 October
+   2026): later, with the lesson events.
 
 ---
 
