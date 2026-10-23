@@ -13,10 +13,12 @@ import { readFileSync } from 'node:fs'
 import ts from 'typescript'
 import { describe, expect, it } from 'vitest'
 
-// Later tasks add build-plan.ts, plan-record.ts and plan-events.ts to this list.
+// Later tasks add plan-record.ts and plan-events.ts to this list.
 const PURE_MODULES: [file: string, mayImport: 'nothing' | 'no store'][] = [
   ['plan-keys.ts', 'nothing'],
   ['questions.ts', 'no store'],
+  ['plan-copy.ts', 'no store'],
+  ['build-plan.ts', 'no store'],
 ]
 
 /** Every module a source file imports, as it is written there. */
