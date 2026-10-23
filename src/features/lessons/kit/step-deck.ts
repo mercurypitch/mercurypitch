@@ -233,8 +233,10 @@ export function createStepDeck(opts: StepDeckOptions): StepDeck {
       const dx = e.changedTouches[0].clientX - sx
       const dy = e.changedTouches[0].clientY - sy
       if (Math.abs(dx) > 60 && Math.abs(dx) > Math.abs(dy) * 1.6) {
+        const was = current
         show(current + (dx < 0 ? 1 : -1), { scroll: true })
-        sayStep()
+        // a swipe past either end stays put, and says nothing
+        if (current !== was) sayStep()
       }
     },
     { passive: true },

@@ -60,6 +60,23 @@ function deckPage(count: number): void {
   document.body.innerHTML = `<section id="lesson"><div class="progress"><i></i><i></i><i></i></div><div id="stepsText">${steps}</div><div id="stepsStage"><div class="stage-card">${toys}</div></div><b id="stepNow"></b><span id="deckNextLabel"></span></section><section id="quiz"></section>`
 }
 
+/** A swipe across the step text, `dx` px sideways: left (negative) is the next step. */
+function swipe(dx: number): void {
+  const text = document.getElementById('stepsText')
+  const touch = (type: string, list: string, x: number): Event => {
+    const e = new Event(type)
+    Object.defineProperty(e, list, { value: [{ clientX: x, clientY: 300 }] })
+    return e
+  }
+  text?.dispatchEvent(touch('touchstart', 'touches', 200))
+  text?.dispatchEvent(touch('touchend', 'changedTouches', 200 + dx))
+}
+
+const line = (): string =>
+  document.querySelector('[data-announcer]')?.textContent ?? ''
+const beat = (): Promise<void> =>
+  new Promise((r) => setTimeout(r, ANNOUNCE_DELAY_MS + 10))
+
 afterEach(() => {
   window.location.hash = ''
   document.body.textContent = ''
@@ -126,10 +143,6 @@ describe('createStepDeck', () => {
       toyFor: (n) => n,
       after: { label: 'The quick check', selector: '#quiz' },
     })
-    const line = (): string =>
-      document.querySelector('[data-announcer]')?.textContent ?? ''
-    const beat = (): Promise<void> =>
-      new Promise((r) => setTimeout(r, ANNOUNCE_DELAY_MS + 10))
 
     // Act: the scroll reaches step 3, then Next is pressed from step 1
     deck.show(3)
@@ -142,6 +155,53 @@ describe('createStepDeck', () => {
     // Assert
     expect(scrolled).toBe('')
     expect(line()).toBe('Step 2 of 3: Step 2')
+    vi.restoreAllMocks()
+  })
+
+  it('says the step a swipe moves to, and nothing new for a swipe past the last step', async () => {
+    // Arrange: a phone's deck, where the step text swipes
+    deckPage(3)
+    const media = vi
+      .spyOn(window, 'matchMedia')
+      .mockImplementation(onlyMatching(DECK_QUERY))
+    const deck = createStepDeck({
+      toyFor: (n) => n,
+      after: { label: 'The quick check', selector: '#quiz' },
+    })
+    media.mockRestore()
+
+    // Act: to step 2, then to the last step and past it
+    swipe(-100)
+    await beat()
+    const toTwo = line()
+    swipe(-100)
+    await beat()
+    swipe(-100)
+    const pastEnd = line()
+    await beat()
+
+    // Assert: the line was not emptied to say step 3 again
+    expect(toTwo).toBe('Step 2 of 3: Step 2')
+    expect(deck.current).toBe(3)
+    expect(pastEnd).toBe('Step 3 of 3: Step 3')
+    expect(line()).toBe('Step 3 of 3: Step 3')
+  })
+
+  it('says the step a jump from the lesson menu shows', async () => {
+    // Arrange: jsdom cannot scroll
+    vi.spyOn(window, 'scrollTo').mockImplementation(() => undefined)
+    deckPage(3)
+    const deck = createStepDeck({
+      toyFor: (n) => n,
+      after: { label: 'The quick check', selector: '#quiz' },
+    })
+
+    // Act
+    deck.jump(3)
+    await beat()
+
+    // Assert
+    expect(line()).toBe('Step 3 of 3: Step 3')
     vi.restoreAllMocks()
   })
 
