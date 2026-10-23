@@ -7,12 +7,14 @@
 // stopped part way, here by Move do, leaves its answer, its line and Again
 // itself, and the Again after it is still the visit's second guide; Again
 // hides with the feeling question while its guide runs, and the keyboard's
-// place moves to the status line, never to a button; and Again sits after
-// the four feelings, as the card's keyboard order has it.
+// place moves to the status line, never to a button; Again sits after the
+// four feelings, as the card's keyboard order has it; and Move do's button
+// at an end is disabled, the other not.
 
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import '@/features/lessons/kit/browser-doubles.test-fixtures'
 import type * as BeatClockModule from '@/features/lessons/kit/beat-clock'
+import { MOVE_MAX } from '@/features/lessons/kit/move-do'
 import { el, loadPage, resetRuns, runs, settle, soundOn, } from './page-dom.test-fixtures'
 import { initSing } from './sing'
 import { AFTER, STATUS } from './sing-flow'
@@ -125,5 +127,23 @@ describe("Lesson 8's sung line", () => {
       Node.DOCUMENT_POSITION_FOLLOWING,
     )
     expect(again.closest('[data-panel]')).toBe(el('[data-panel="feel"]'))
+  })
+
+  it("disables Move do's lower button at the lowest do and its higher one at the highest", async () => {
+    // Arrange
+    await ready()
+    const lower = el<HTMLButtonElement>('[data-move-do="-1"]')
+    const higher = el<HTMLButtonElement>('[data-move-do="1"]')
+    const ends = (): boolean[] => [lower.disabled, higher.disabled]
+
+    // Act: down to the lowest do, then up to the highest
+    for (let k = 0; k < MOVE_MAX; k++) lower.click()
+    const lowest = ends()
+    for (let k = 0; k < 2 * MOVE_MAX; k++) higher.click()
+    const highest = ends()
+
+    // Assert
+    expect(lowest).toEqual([true, false])
+    expect(highest).toEqual([false, true])
   })
 })
