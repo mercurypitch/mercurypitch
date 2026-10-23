@@ -177,6 +177,36 @@ Three lines to keep.`),
   assert.equal(count.total, 9)
 })
 
+test("Lesson 2's head and footer is the team's, down to the next heading", () => {
+  const count = countLesson(
+    lesson(`## Wrap
+
+Three lines to keep.
+
+## Head and footer
+
+The page's head, its share text and its footer, exactly.
+
+- \`<title>\`: A test: Find Your Pitch, Lesson 99 | MercuryPitch
+- Description: "A ten-minute lesson with live sound toys."
+- og:image:alt: Merc beside a keyboard.
+
+## Sing it
+
+Sing one note.`),
+  )
+  assert.deepEqual(
+    count.sections.map((s) => [s.title, s.words]),
+    [
+      // Wrap (1); Three lines to keep. (4).
+      ['Wrap', 5],
+      // Sing it (2); Sing one note. (3).
+      ['Sing it', 5],
+    ],
+  )
+  assert.equal(count.total, 10)
+})
+
 test('toy lines, stage directions, comments and code blocks are left out', () => {
   const count = countLesson(
     lesson(`## Step 1 of 5: What shape is a tune?

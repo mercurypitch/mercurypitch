@@ -8,12 +8,13 @@
 // which lived outside the repository; this is that counter, brought in, with
 // the rules below. They follow what the LESSON.md files actually mark.
 //
-// What counts: the page's copy on its default path, which is the page on a
-// first visit with sound on and the hook the admin console starts with.
-// Every branch a learner's own answer opens counts, as every package counts
-// it: each quiz answer's feedback, each "How did that feel?" line, both
-// "You said" lines, "Just listen today" and the practice card's "Instead"
-// version. The series' cap, Lesson 3's page, counts them too, so a count
+// What counts: the page's copy as a first visit with sound on shows it, with
+// the hook the admin console starts with, and every branch a learner's own
+// answer opens, as every package counts it: each quiz answer's feedback, each
+// "How did that feel?" line, both "You said" lines, "Just listen today", the
+// no-microphone line and the practice card's "Instead" version. One learner
+// reads one branch of each, so the count is an upper bound on what one
+// reads. The series' cap, Lesson 3's page, counts them too, so a count
 // without them would not compare with it. Headings count, and so do the
 // labels the files write the copy under ("Kicker:", "Feedback:",
 // "**[correct]**"), as the review counted them.
@@ -23,8 +24,9 @@
 // - The preamble, everything down to the file's first `---` rule: it is the
 //   package's note to the team.
 // - The team's sections, "For the vocal coach" (Lesson 5's "... and the
-//   owner" too), "Section headings" and "Footer", each down to the next `## `
-//   heading.
+//   owner" too), "Section headings", "Footer" and Lesson 2's "Head and
+//   footer" (its title, meta and share text, llms.txt line and credits), each
+//   down to the next `## ` heading.
 // - Notes: every italic note in square brackets, `_[...]_`, whether it opens
 //   "Editorial:" or not ("_[The default since ...]_", "_[After the cold open
 //   since ...]_"). The review's counter left out only the ones that open
@@ -62,7 +64,12 @@ import { existsSync, readFileSync, statSync } from 'node:fs'
 import { basename, dirname, join, relative, resolve } from 'node:path'
 import { pathToFileURL } from 'node:url'
 
-const TEAM_SECTIONS = ['For the vocal coach', 'Section headings', 'Footer']
+const TEAM_SECTIONS = [
+  'For the vocal coach',
+  'Section headings',
+  'Footer',
+  'Head and footer',
+]
 /** Whether a `## ` heading opens one of the team's sections ("For the vocal coach and the owner" too). */
 const isTeamSection = (title) =>
   typeof title === 'string' &&

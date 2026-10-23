@@ -245,7 +245,7 @@ A suggested order: 9 (it brings the rungs and Move do), then 10, 12, 11, 13 and 
     1440x900, on Lessons 3 to 8 alike.
   - Lesson 6's chip read 15 minutes from the text package's 2,258 words; today's 2,591 make it 17
     (this PR). On 22 October 2026 the owner kept the longer lessons untrimmed: over the cap of 2,379
-    words are Lessons 2 by 280, 4 by 138, 5 by 25, 6 by 212, 7 by 101 and 8 by 123.
+    words are Lessons 4 by 138, 5 by 25, 6 by 212, 7 by 101 and 8 by 123.
 
 ### 4.3 App fixes the lessons found
 
