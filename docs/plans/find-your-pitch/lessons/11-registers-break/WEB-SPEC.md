@@ -734,19 +734,19 @@ the others take it.
    asked to publish it (FACTS 9). `/learn/11` and `/learn/11.html` go in `STANDALONE_DOCUMENT_PATHS`
    (`src/lib/sw-runtime.ts:93`, the lessons `:131-156`), so the service worker never serves the app
    shell in the lesson's place; `src/tests/lesson-pages.test.ts` checks a draft for them too
-   (`:290-294`). On release: delete the `drafts.ts` line, and add the page to `public/sitemap.xml`
+   (`:294-298`). On release: delete the `drafts.ts` line, and add the page to `public/sitemap.xml`
    and to `public/llms.txt`'s Lessons list (`:66-70`), whose intro already allows a page with no
    episode; until then the site worker adds the page to both only while it is published
    (`src/lesson-gate.ts:22-24`). Then `src/tests/lesson-pages.test.ts` holds the page to a
    released lesson's listings, the sitemap, llms.txt, the service worker and a link from every
-   entry document (`lesson-pages.test.ts:228-256`), in place of a draft's (`:258-295`), and
+   entry document (`lesson-pages.test.ts:232-260`), in place of a draft's (`:262-299`), and
    `tools/lesson-links.ts` links it from every entry document by its headline (FACTS 48). Indexing
    is requested on the day the console publishes it, not at the release (SEARCH.md § 3.2).
 2. The page's head, written in full from its first commit:
    `src/features/lessons/kit/lesson-copy.test.ts` reads every `learn/NN.html`, drafts included
    (`:373-408`), and `src/tests/lesson-pages.test.ts` holds every lesson document's head, share
    card and structured data, a draft's included, since a draft the console publishes goes live
-   with the head it was built with (`:13-18`, `:113-226`). The hook's copies are the ones the site
+   with the head it was built with (`:13-18`, `:113-230`). The hook's copies are the ones the site
    worker rewrites when the console picks the alternative hook (`src/lesson-gate.ts:17-19`,
    `:445-460`); only the meta description and the Article's description, which repeat each other,
    may shorten the hook, and every other copy carries it whole. As Lesson 2's head has them
@@ -754,7 +754,7 @@ the others take it.
    - the title, "Registers and the break: chest and head voice | MercuryPitch" (60 characters, at
      the test's ceiling of 60, `lesson-pages.test.ts:128-129`), in the query-led form the owner
      chose for Lessons 1 to 8 on 22 October 2026. Until this PR the title had to hold the Article's
-     headline, which `og:title` holds now (`:160-164`), and this spec kept the series' form for the
+     headline, which `og:title` holds now (`:161-165`), and this spec kept the series' form for the
      owner, "Registers and the break: Find Your Pitch | MercuryPitch" (55). SEARCH.md § 4's draft
      for Lesson 11, "Registers and the break: why voices flip | MercuryPitch" (`SEARCH.md:229`), is
      not used: "why voices flip" leans on the predict's answer. The worker never rewrites a title.
@@ -791,9 +791,9 @@ the others take it.
      mercurypitch.com, which nothing writes at run time, so it is set in the commit that deletes the
      page's `drafts.ts` line or in one straight after the console publishes it, as the owner picks
      (SEARCH.md § 3.2);
-   - a BreadcrumbList from the home page to the headline (`lesson-pages.test.ts:164-176`;
+   - a BreadcrumbList from the home page to the headline (`lesson-pages.test.ts:168-180`;
      `learn/02.html:110-128`); and the legal links, privacy, terms and imprint, in a `nav` labelled
-     "Legal" (`lesson-pages.test.ts:216-225`).
+     "Legal" (`lesson-pages.test.ts:220-229`).
 
    None of it answers the predict: the title, the hook and the descriptions say a voice may flip,
    never whether a flip is a mistake, and "Hear Merc's siren flip" is the cold open's set-up
@@ -803,7 +803,7 @@ the others take it.
    `src/tests/lesson-pages.test.ts` asks of every lesson document, a draft's included, from its
    first commit: the `og:image` it names is in `public/`, at the pixel size its `og:image:width`
    and `og:image:height` give, with an `og:image:alt` that `twitter:image:alt` repeats
-   (`:178-197`). It is 1200 x 630, a baseline JPEG as Lesson 4's card is
+   (`:182-201`). It is 1200 x 630, a baseline JPEG as Lesson 4's card is
    (`public/learn/lesson-04-og.jpg`), drawn with the page's own kit so that it looks like the page
    it opens: the title, Lesson 11 and the wordmark over the range chart's compact still, orange
    Merc's amber siren thick, then thin across the grey seam, between blue Merc and orange Merc. It

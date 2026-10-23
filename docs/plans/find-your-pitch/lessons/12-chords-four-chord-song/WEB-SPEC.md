@@ -173,7 +173,7 @@ FACTS 5a). Each section's heading, and the line above it, are in LESSON.md ("Sec
     practice links, printed `mercurypitch.com/pitch-training` and `mercurypitch.com/ear-lab`, with
     "Arpeggio Jumper and Cadence are free." and no first-visit line (FACTS 42, 43, 44); Lesson 1's
     fonts line and "Every sound on this page is synthesised in your browser" (FACTS 6, Labels); the
-    legal links, as every lesson document closes (`src/tests/lesson-pages.test.ts:216-225`). With
+    legal links, as every lesson document closes (`src/tests/lesson-pages.test.ts:220-229`). With
     no film there are no voices to credit.
 
 ## Length
@@ -893,7 +893,7 @@ heard play (Toys 3; Edge cases) (`git diff --stat`).
     the owner).
 11. `kit/season.ts`, Lesson 12's entry (Explorer and season data).
 12. The head, from SEARCH.md § 3 and Lesson 4's document (`learn/04.html:9-137`), held by
-    `src/features/lessons/kit/lesson-copy.test.ts:323-358` and `src/tests/lesson-pages.test.ts:113-226`
+    `src/features/lessons/kit/lesson-copy.test.ts:323-358` and `src/tests/lesson-pages.test.ts:113-230`
     on every page, a draft's included, from its first commit:
     - title, at most 60 characters, ending " | MercuryPitch" (`lesson-pages.test.ts:128-129`):
       SEARCH.md § 4's draft, "The four-chord song: how chords work | MercuryPitch" (51 characters,
@@ -902,9 +902,9 @@ heard play (Toys 3; Edge cases) (`git diff --stat`).
       recommended "Chords and the four-chord song: Lesson 12 | MercuryPitch" (56): the series' form,
       "Chords and the four-chord song: Find Your Pitch, Lesson 12 | MercuryPitch", ran to 73, over
       the cap, and Lesson 4's then, "· Find Your Pitch | MercuryPitch", to 63. `og:title` holds the
-      headline now (`:160-164`), so the headline stays "Chords and the four-chord song", and this
-      spec's own query-led option, "Chords and the four-chord song: I-V-vi-IV | MercuryPitch" (56),
-      is not used (Decisions 2). The site worker never rewrites the title, whichever hook is picked;
+      headline now (`lesson-pages.test.ts:161`), so it stays "Chords and the four-chord song", and
+      this spec's query-led option, "Chords and the four-chord song: I-V-vi-IV | MercuryPitch" (56),
+      is not used (Decisions 2). The worker never rewrites the title, whichever hook is picked;
     - description, 80 to 160 characters: "How can two songs share the same four chords and still
       sound different? A fifteen-minute lesson with sound toys: chords, Roman numerals and
       I-V-vi-IV." (150 characters; 158 with the alternative hook, Edge cases). The numerals take
@@ -935,9 +935,9 @@ heard play (Toys 3; Edge cases) (`git diff --stat`).
       date, so a published draft is served without one. It is set either in the commit that
       deletes the page's `drafts.ts` line or in a commit straight after the console publishes it,
       and the owner picks which (SEARCH.md § 3.2). Last, the BreadcrumbList, ending on the
-      headline (`lesson-pages.test.ts:164-176`).
+      headline (`lesson-pages.test.ts:168-180`).
 13. `public/learn/lesson-12-og.jpg`: the share card, 1200 x 630, in the page's first commit, since
-    `lesson-pages.test.ts:178-197` fails a lesson document whose card is not in `public/` at the size
+    `lesson-pages.test.ts:182-201` fails a lesson document whose card is not in `public/` at the size
     its head gives, a draft's included. It is a still of the hero: the title over
     the ring of twelve seen from above, the loop's four rooms drawn in chrome, between blue Merc and
     orange Merc, with the alt text above. It draws no tune, no walk, no gold and no count, so the
@@ -953,7 +953,7 @@ heard play (Toys 3; Edge cases) (`git diff --stat`).
 15. On release (SEARCH.md § 12), once its `drafts.ts` line is deleted: `public/sitemap.xml` and
     `public/llms.txt` (its Lessons list, `:66-77`), one entry each. Until then the draft's rules
     hold on the repository: in neither file, linked from no entry document, its service-worker rule
-    kept (`src/tests/lesson-pages.test.ts:258-295`). While the console has it published, the site
+    kept (`src/tests/lesson-pages.test.ts:262-299`). While the console has it published, the site
     worker adds it to the sitemap and llms.txt it serves, and takes it out again if it is held back
     (`src/lesson-gate.ts:22-24`; `src/features/lessons/kit/drafts.ts:18-21`). So indexing is
     requested when the console publishes the page, not at the release.

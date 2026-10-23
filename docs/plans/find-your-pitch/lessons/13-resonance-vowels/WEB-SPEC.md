@@ -775,19 +775,19 @@ and the four-words strip in the kit.
    reason when asked to publish it (`src/features/admin/AdminLessonsPage.tsx:186-207`; FACTS 9).
    `/learn/13` and `/learn/13.html` go in `STANDALONE_DOCUMENT_PATHS` (`src/lib/sw-runtime.ts:93`,
    the lessons `:131-156`), so the service worker never serves the app shell in the lesson's place;
-   `src/tests/lesson-pages.test.ts` checks a draft for them too (`:290-294`). On release: delete the
+   `src/tests/lesson-pages.test.ts` checks a draft for them too (`:294-298`). On release: delete the
    `drafts.ts` line, and add the page to `public/sitemap.xml` and to `public/llms.txt`'s Lessons
    list (`:66-77`); until then the site worker adds the page to both only while it is published
    (`src/lesson-gate.ts:22-24`). Then `src/tests/lesson-pages.test.ts` holds the page to the
-   release's checks (`:229-256`). `datePublished` is set in the commit that deletes the `drafts.ts`
+   release's checks (`:233-260`). `datePublished` is set in the commit that deletes the `drafts.ts`
    line or in one straight after the console publishes it, as the owner picks, and indexing is
    requested on the day the console publishes it, not at the release (`SEARCH.md` § 3.2, `:146-153`;
-   § 12, `:396-420`).
+   § 12, `:400-424`).
 2. The page's head, written in full from its first commit:
    `src/features/lessons/kit/lesson-copy.test.ts` reads every `learn/NN.html`, drafts included
    (`lesson-copy.test.ts:323-358`), and `src/tests/lesson-pages.test.ts` holds every lesson
    document, a draft's included, to its head, its share card, its structured data and its legal
-   links (`:113-226`), since a draft the console publishes goes live with the head it was built with
+   links (`:113-230`), since a draft the console publishes goes live with the head it was built with
    (`:13-18`). The hook's copies are the ones the site worker rewrites when the console picks
    another hook (`HOOK_COPIES`, `src/lesson-gate.ts:444-460`, and the structured data after it);
    only the meta description and the Article's description, which repeat each other, may shorten the
@@ -796,7 +796,7 @@ and the four-words strip in the kit.
      the test's ceiling of 60, `lesson-pages.test.ts:128-129`), SEARCH.md § 4's draft for Lesson 13
      (`SEARCH.md:231`), in the query-led form the owner chose for Lessons 1 to 8 on 22 October 2026.
      Until this PR the title had to hold the Article's headline, which `og:title` holds now
-     (`lesson-pages.test.ts:160-164`), and this spec kept the series' name for the owner,
+     (`lesson-pages.test.ts:161-165`), and this spec kept the series' name for the owner,
      "Resonance and vowels · Find Your Pitch | MercuryPitch" (53), Lessons 4 and 5's form then,
      since the full form, with "Lesson 13", runs to 63 (Decisions 1). "Why ee and ah differ" says
      only what the hook says, that the two differ, and nothing of what the peaks do. The worker
@@ -820,7 +820,7 @@ and the four-words strip in the kit.
      with `og:image:width` 1200 and `og:image:height` 630, and as `og:image:alt` and
      `twitter:image:alt` "The title card: Find Your Pitch, Lesson 13, Resonance and vowels, above an
      amber pitch line held level over a strip of bars, two of them marked, between blue Merc and
-     orange Merc." (`learn/02.html:34-43`, `:53-60`; `lesson-pages.test.ts:178-198`);
+     orange Merc." (`learn/02.html:34-43`, `:53-60`; `lesson-pages.test.ts:182-202`);
    - the Article node, in the head's first `application/ld+json` script and as a single object,
      since the test reads `alternativeHeadline` there and checks it only when present
      (`lesson-copy.test.ts:338-346`, `:356`), and `lesson-pages.test.ts` asks for the Article
@@ -832,9 +832,9 @@ and the four-words strip in the kit.
      series as `isPartOf`, and the organization as author and publisher (`:149-157`), as in Lesson
      2's (`learn/02.html:69-109`). It has no `datePublished` yet, as the built pages leave it out
      until they go live (`learn/04.html:61-68`; item 1);
-   - a BreadcrumbList from the home page to the headline (`lesson-pages.test.ts:164-176`;
+   - a BreadcrumbList from the home page to the headline (`lesson-pages.test.ts:168-180`;
      `learn/02.html:110-128`); and the legal links, privacy, terms and imprint, in a `nav` labelled
-     "Legal" (`lesson-pages.test.ts:216-226`).
+     "Legal" (`lesson-pages.test.ts:220-230`).
 
    None of it answers the predict: the title, the hook and the descriptions say that ‘ee’ and ‘ah’
    differ on one note, never what the peaks do, and "Watch Merc's line, then make your guess." is
@@ -843,7 +843,7 @@ and the four-words strip in the kit.
 3. The share image the head names, `public/learn/lesson-13-og.jpg`, in the page's first commit:
    `src/tests/lesson-pages.test.ts` holds every lesson document, a draft's included, to its own
    card, a file in `public/` at the pixel size `og:image:width` and `og:image:height` give, with
-   both alts set and the same (`:178-198`), so the page fails the unit tests without it. It is 1200
+   both alts set and the same (`:182-202`), so the page fails the unit tests without it. It is 1200
    x 630, a baseline JPEG as Lessons 3, 4 and 5's cards are (`public/learn/lesson-04-og.jpg`), drawn
    with the page's own kit so that it looks like the page it opens: the title, Lesson 13 and the
    wordmark over the vowel figure's compact still, Merc's amber line level over ‘ee’'s strip with

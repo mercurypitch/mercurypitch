@@ -625,16 +625,16 @@ table):
    it (FACTS 9). `/learn/09` and `/learn/09.html` go in `STANDALONE_DOCUMENT_PATHS`
    (`src/lib/sw-runtime.ts:93`, the lessons `:131-156`), so the service worker never serves the app
    shell in the lesson's place; `src/tests/lesson-pages.test.ts` checks a draft for them too
-   (`:290-294`). On release: delete the `drafts.ts` line, and add the page to `public/sitemap.xml`
+   (`:294-298`). On release: delete the `drafts.ts` line, and add the page to `public/sitemap.xml`
    and to `public/llms.txt`'s Lessons list (`:66-70`), whose intro already allows a page with no
    episode; until then the site worker adds the page to both only while it is published
    (`src/lesson-gate.ts:22-24`). Then `src/tests/lesson-pages.test.ts` holds the page to the
-   released checks (`:228-256`), and `tools/lesson-links.ts` links it from every entry document by
+   released checks (`:232-260`), and `tools/lesson-links.ts` links it from every entry document by
    its headline (FACTS 63).
 2. The page's head, written in full from its first commit:
    `src/features/lessons/kit/lesson-copy.test.ts` reads every `learn/NN.html`, drafts included
    (`:305-320`), and `src/tests/lesson-pages.test.ts` holds every lesson document's head and
-   structured data, a draft's included (`:113-226`), and a released lesson's listings (`:228-256`).
+   structured data, a draft's included (`:113-230`), and a released lesson's listings (`:232-260`).
    The hook's copies are the ones the site worker rewrites when the console picks an alternative
    hook (`src/lesson-gate.ts:17-19`, `:445-460`); only the meta description and the Article's
    description, which repeat each other, may shorten the hook, and every other copy carries it
@@ -646,8 +646,8 @@ table):
      band, and sing do-mi-so-do as a ladder. A free lesson in your browser." (140 characters, inside
      the test's 80 to 160, `lesson-pages.test.ts:130-133`, and 157 with the alternative hook that
      #1186 dropped);
-   - `og:title` and `twitter:title` in the series' form, "Landing a leap: Find Your Pitch, Lesson
-     9", holding the headline, as the title did until this PR (`:160-164`; `learn/02.html:26-29`);
+   - `og:title` and `twitter:title`, "Landing a leap: Find Your Pitch, Lesson 9", hold the headline,
+     as the title did until this PR (`lesson-pages.test.ts:161-165`; `learn/02.html:26-29`);
    - `og:description`, the full hook and one line, "How do you land a note you have to leap to? Hear
      the landing note first, then aim at it." (`lesson-copy.test.ts:349-352`;
      `learn/02.html:30-33`), and `twitter:description`, the hook exactly
@@ -672,12 +672,12 @@ table):
      (`learn/04.html:61-68`): the date is the day the page first goes live on mercurypitch.com,
      which nothing writes at run time, so it is set in the commit that deletes the page's
      `drafts.ts` line or in one straight after the console publishes it (SEARCH.md § 3.2);
-   - a BreadcrumbList from the home page to the headline (`lesson-pages.test.ts:164-176`;
+   - a BreadcrumbList from the home page to the headline (`lesson-pages.test.ts:168-180`;
      `learn/02.html:110-128`); and the legal links, privacy, terms and imprint, in a `nav` labelled
-     "Legal" (`lesson-pages.test.ts:214-225`).
+     "Legal" (`lesson-pages.test.ts:218-229`).
 3. The share image the head names, `public/learn/lesson-09-og.jpg`, which
    `src/tests/lesson-pages.test.ts` requires of every lesson document, a draft's included: in
-   `public/`, at the pixel size its `og:image:width` and `og:image:height` give (`:178-197`). It is
+   `public/`, at the pixel size its `og:image:width` and `og:image:height` give (`:182-201`). It is
    1200 x 630, a baseline JPEG as Lesson 4's card is (`public/learn/lesson-04-og.jpg`), drawn with
    the page's own kit so that it looks like the page it opens: the title, Lesson 09 and the wordmark
    over the ladder chart's compact still, do's and so's bands with Merc's amber arc between them,

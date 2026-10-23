@@ -165,7 +165,7 @@ FACTS 5a). Each section's heading, and the line above it, are in LESSON.md ("Sec
     printed `mercurypitch.com/pitch-training` and `mercurypitch.com/ear-lab`, with "Drone Intonation
     and Stack are free." and no first-visit line (FACTS 45, 46, 47); Lesson 1's fonts line and
     "Every sound on this page is synthesised in your browser" (FACTS 6, Labels); the legal links, as
-    every lesson document closes (`src/tests/lesson-pages.test.ts:214-225`). With no film there are
+    every lesson document closes (`src/tests/lesson-pages.test.ts:218-229`). With no film there are
     no voices to credit.
 
 ## Length
@@ -813,14 +813,14 @@ at `85e23a1af` changed there, and that page's own lines are cited at `d59c00ad6`
 11. `kit/season.ts`, Lesson 10's entry (Explorer and season data).
 12. The head, from SEARCH.md § 3 and Lesson 4's document (`learn/04.html:9-137`), held by
     `src/features/lessons/kit/lesson-copy.test.ts:323-358` and
-    `src/tests/lesson-pages.test.ts:113-226` on every page, a draft's included, from its first
+    `src/tests/lesson-pages.test.ts:113-230` on every page, a draft's included, from its first
     commit:
-    - title, at most 60 characters, ending " | MercuryPitch" (`lesson-pages.test.ts:127-128`):
+    - title, at most 60 characters, ending " | MercuryPitch" (`lesson-pages.test.ts:128-129`):
       SEARCH.md § 4's draft, "Major and minor: the one note that changes | MercuryPitch" (57
       characters), in the query-led form the owner chose for Lessons 1 to 8 on 22 October 2026.
       Until this PR the title had to hold the headline, and this spec gave it the series' form,
       "Major and minor: Find Your Pitch, Lesson 10 | MercuryPitch"; `og:title` holds the headline
-      now (`:160-164`). The site worker never rewrites the title, whichever hook the console picks;
+      now (`:161-165`). The site worker never rewrites the title, whichever hook the console picks;
     - description, 80 to 160 characters: "Which single note turns a major chord into a minor one? A
       seventeen-minute lesson with sound toys: thirds, major and minor triads, and the natural minor
       scale." (159 characters; 171 with the alternative hook, Edge cases);
@@ -858,7 +858,7 @@ at `85e23a1af` changed there, and that page's own lines are cited at `d59c00ad6`
 15. On release (SEARCH.md § 12), once its `drafts.ts` line is deleted: `public/sitemap.xml` and
     `public/llms.txt` (its Lessons list, `:66-77`), one line each. Until then the draft's rules hold
     on the repository: in neither file, linked from no entry document, its service-worker rule kept
-    (`src/tests/lesson-pages.test.ts:258-295`). While the console has it published, the site worker
+    (`src/tests/lesson-pages.test.ts:262-299`). While the console has it published, the site worker
     adds it to the sitemap and llms.txt it serves, and takes it out again if it is held back
     (`src/lesson-gate.ts:22-24`; `src/features/lessons/kit/drafts.ts:18-21`). So indexing is
     requested when the console publishes the page, not at the release.

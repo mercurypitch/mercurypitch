@@ -198,7 +198,7 @@ section's heading, and the line above it, are in LESSON.md ("Section headings").
     `mercurypitch.com/ear-lab`, with "Drum Night and Subdivide are free." and no first-visit line
     (FACTS 46, 47, 54, 57); Lesson 1's fonts line and "Every sound on this page is synthesised in
     your browser" (FACTS, Labels); no dateline; the legal links, as every lesson document closes
-    (`src/tests/lesson-pages.test.ts:214-225`). With no film there are no voices to credit.
+    (`src/tests/lesson-pages.test.ts:218-229`). With no film there are no voices to credit.
 
 ## Length
 
@@ -936,7 +936,7 @@ was built on.
 14. The head, from `docs/plans/find-your-pitch/SEARCH.md` § 3 and Lesson 2's document
     (`learn/02.html:3-137`), whole in the page's first commit. Two tests hold it: the kit's
     `src/features/lessons/kit/lesson-copy.test.ts:323-358` reads every `learn/NN.html`, drafts
-    included, from its first commit, and `src/tests/lesson-pages.test.ts:113-226` holds every lesson
+    included, from its first commit, and `src/tests/lesson-pages.test.ts:113-230` holds every lesson
     document's head too. The copies of the hook that the first test reads are the ones the site
     worker rewrites when the console picks another hook (`src/lesson-gate.ts:17-19`).
     - The title, `h1.hook#hook`, the hook word for word (`lesson-copy.test.ts:323-332`).
@@ -945,12 +945,12 @@ was built on.
       explained | MercuryPitch" (54 characters), which the owner chose on 22 October 2026 with the
       other query-led titles. Until this PR the test wanted the headline in the title too; it now
       wants it in `og:title` (`:161`).
-    - The description, 80 to 160 characters (`:129-132`): "Why does the same song feel different
+    - The description, 80 to 160 characters (`:130-133`): "Why does the same song feel different
       when you clap on 2 and 4? A fifteen-minute lesson on the beat, tempo, bars of 2, 3 and 4, and
       the backbeat." (145 characters). It shortens the hook, so it serves as `description` and as
-      the Article's description (`:158`) only, never as a copy of the hook.
+      the Article's description (`:159`) only, never as a copy of the hook.
     - Canonical and `og:url` `https://mercurypitch.com/learn/08`; robots
-      `index, follow, max-image-preview:large`; `twitter:card` `summary_large_image` (`:116-134`);
+      `index, follow, max-image-preview:large`; `twitter:card` `summary_large_image` (`:117-135`);
       `og:type` `article` and `og:site_name` "MercuryPitch" (`learn/02.html:23-24`).
     - `og:title` and `twitter:title`, "Beat, tempo and the backbeat: Find Your Pitch, Lesson 8", in
       the form of Lesson 2's (`learn/02.html:26-29`, `:45-48`).
@@ -970,8 +970,8 @@ was built on.
       `learningResourceType` "Lesson", `educationalLevel` "Beginner", `timeRequired` `PT15M`,
       `teaches` ["The beat and the pulse", "Tempo in beats per minute", "Bars of 2, 3 and 4", "The
       backbeat"], `isAccessibleForFree`, `position` 8, `isPartOf` the series, and author and
-      publisher the organization (`:137-162`); and the BreadcrumbList ending on the headline
-      (`:164-176`).
+      publisher the organization (`:137-166`); and the BreadcrumbList ending on the headline
+      (`:168-180`).
     - No `datePublished` at first. The console publishes at run time and nothing writes the field
       then: the worker's rewrite puts the lesson state into the head and changes the hook's copies,
       the links and the `data-if-live` readings, and writes no date (`src/lesson-gate.ts:13-21`), so
@@ -990,9 +990,9 @@ was built on.
     in `sitemap.xml` and `llms.txt` as it serves them (`src/lesson-gate.ts:22-24`). While it is a
     draft, the static files keep it out: in neither `public/sitemap.xml` nor `public/llms.txt`,
     linked from no entry document, with its service-worker rule kept
-    (`src/tests/lesson-pages.test.ts:258-295`). When its line leaves `drafts.ts`, the release adds a
+    (`src/tests/lesson-pages.test.ts:262-299`). When its line leaves `drafts.ts`, the release adds a
     line to each static file (`public/llms.txt`'s Lessons list, `:66-77`), as `kit/drafts.ts:18-21`
-    asks and `lesson-pages.test.ts:233-241` checks. The first-paint budget comes with the page,
+    asks and `lesson-pages.test.ts:237-245` checks. The first-paint budget comes with the page,
     beside the other drafts' (`scripts/assert-first-paint-budgets.mjs:103-134`, Lessons 3 and 5),
     at `:160-166`, and its CSS ceiling at `:244-247`, since every build carries every lesson page.
 17. The App content items under Practice links: the App and App content tracks' to weigh, and not
