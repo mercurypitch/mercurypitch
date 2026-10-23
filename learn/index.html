@@ -1,0 +1,319 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0, viewport-fit=cover"
+    />
+    <title>Free singing and music theory lessons | MercuryPitch</title>
+    <meta
+      name="description"
+      content="Find Your Pitch: free lessons in singing and music theory, each built around sound toys you can play. No theory needed to start."
+    />
+    <link rel="canonical" href="https://mercurypitch.com/learn/" />
+    <meta name="robots" content="index, follow, max-image-preview:large" />
+
+    <link rel="icon" href="/favicon.ico" sizes="48x48" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <meta name="theme-color" content="#0d1117" />
+
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="MercuryPitch" />
+    <meta property="og:url" content="https://mercurypitch.com/learn/" />
+    <meta
+      property="og:title"
+      content="Find Your Pitch: free singing and music theory lessons"
+    />
+    <meta
+      property="og:description"
+      content="Find Your Pitch: free lessons in singing and music theory, each built around sound toys you can play. No theory needed to start."
+    />
+    <!-- Lesson 1's share card, until the hub has one of its own. -->
+    <meta
+      property="og:image"
+      content="https://mercurypitch.com/learn/lesson-01-og.jpg"
+    />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta
+      property="og:image:alt"
+      content="The title card: Find Your Pitch, Lesson 01, What is a note?, above a glowing five-line staff with a blue note, an orange note and chrome notes."
+    />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta
+      name="twitter:title"
+      content="Find Your Pitch: free singing and music theory lessons"
+    />
+    <meta
+      name="twitter:description"
+      content="Find Your Pitch: free lessons in singing and music theory, each built around sound toys you can play. No theory needed to start."
+    />
+    <meta
+      name="twitter:image"
+      content="https://mercurypitch.com/learn/lesson-01-og.jpg"
+    />
+    <meta
+      name="twitter:image:alt"
+      content="The title card: Find Your Pitch, Lesson 01, What is a note?, above a glowing five-line staff with a blue note, an orange note and chrome notes."
+    />
+    <!-- The series' hub, as a search engine or an assistant reads it: a trail
+         back to the home page, and the series every lesson's isPartOf names.
+         Its hasPart is filled in at build time with the lessons live by the
+         build's default (tools/learn-hub.ts), and the site worker settles it
+         to the lessons live where it serves the page (src/lesson-gate.ts). -->
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@type": "BreadcrumbList",
+        "itemListElement": [
+          {
+            "@type": "ListItem",
+            "position": 1,
+            "name": "MercuryPitch",
+            "item": "https://mercurypitch.com/"
+          },
+          {
+            "@type": "ListItem",
+            "position": 2,
+            "name": "Find Your Pitch",
+            "item": "https://mercurypitch.com/learn/"
+          }
+        ]
+      }
+    </script>
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@type": "CreativeWorkSeries",
+        "@id": "https://mercurypitch.com/learn/#series",
+        "name": "Find Your Pitch",
+        "url": "https://mercurypitch.com/learn/",
+        "description": "Find Your Pitch: free lessons in singing and music theory, each built around sound toys you can play. No theory needed to start.",
+        "inLanguage": "en-GB",
+        "publisher": {
+          "@type": "Organization",
+          "@id": "https://mercurypitch.com/#organization",
+          "name": "MercuryPitch",
+          "url": "https://mercurypitch.com/"
+        },
+        "hasPart": []
+      }
+    </script>
+    <!-- A plain document, like delete-account.html: no module script, so it
+         paints with the lesson pages' stylesheet and nothing else. Its words
+         about each lesson are not written here: the season map and the
+         reading time are filled in from season.ts and the lesson documents
+         (tools/learn-hub.ts), and the service worker leaves /learn/ alone
+         (STANDALONE_DOCUMENT_PATHS). -->
+    <link rel="stylesheet" href="/src/features/lessons/kit/lesson-base.css" />
+    <style>
+      .hub-hero {
+        padding-block: clamp(36px, 6vw, 80px) 0;
+      }
+      .hub-title {
+        margin: 18px 0 0;
+        font: 600 clamp(44px, 7vw, 88px)/1 var(--f-display);
+        letter-spacing: -0.035em;
+      }
+      .hub-lede {
+        margin: 22px 0 0;
+        max-width: 46ch;
+        color: var(--ink-2);
+      }
+      .hub-sec {
+        margin-top: clamp(48px, 7vw, 88px);
+      }
+      .hub-sec h2 {
+        margin: 0;
+        font: 600 var(--fs-30)/1.15 var(--f-display);
+        letter-spacing: -0.02em;
+      }
+      .hub-how {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(min(100%, 240px), 1fr));
+        gap: 12px;
+        margin: 22px 0 0;
+        padding: 0;
+        list-style: none;
+      }
+      .hub-how li {
+        padding: 16px 18px;
+        border: 1px solid var(--hair);
+        border-radius: var(--r-md);
+        background: var(--card);
+        color: var(--ink-2);
+        font-size: var(--fs-16);
+        line-height: 1.5;
+      }
+      .hub-time {
+        margin: 20px 0 0;
+        color: var(--ink-2);
+      }
+      .hub-lanes {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 32px 24px;
+        margin-top: 24px;
+      }
+      .hub-lane.both {
+        grid-column: 1 / -1;
+      }
+      .hub-lane h3 {
+        margin: 0 0 12px;
+      }
+      .hub-lane.theory h3 {
+        color: var(--signal-blue);
+      }
+      .hub-lane.voice h3 {
+        color: var(--orange);
+      }
+      .hub-lane.both h3 {
+        color: var(--chrome);
+      }
+      .hub-list {
+        display: grid;
+        gap: 12px;
+        margin: 0;
+        padding: 0;
+        list-style: none;
+      }
+      .hub-lesson {
+        padding: 18px 20px;
+        border: 1px solid var(--hair);
+        border-radius: var(--r-lg);
+        background: var(--card);
+      }
+      .hub-lesson h4 {
+        margin: 8px 0 0;
+        font: 600 var(--fs-22)/1.2 var(--f-display);
+        letter-spacing: -0.01em;
+      }
+      .hub-hook {
+        margin: 8px 0 0;
+        color: var(--ink-2);
+        font: italic 400 var(--fs-18)/1.4 var(--f-serif);
+      }
+      .hub-go {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 10px 16px;
+        margin: 14px 0 0;
+        color: var(--ink-3);
+        font-size: var(--fs-14);
+      }
+      .hub-home {
+        margin-left: auto;
+      }
+      @media (max-width: 760px) {
+        .hub-lanes {
+          grid-template-columns: minmax(0, 1fr);
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <a class="skip" href="#season">Skip to the lessons</a>
+
+    <header class="mast">
+      <div class="wrap mast-in">
+        <a
+          class="brand"
+          href="#top"
+          aria-label="Find Your Pitch, back to the top"
+        >
+          <svg viewBox="0 0 28 28" aria-hidden="true">
+            <defs>
+              <linearGradient id="bm" x1="0" x2="1">
+                <stop offset="0" stop-color="#58a6ff" />
+                <stop offset=".5" stop-color="#2dd4bf" />
+                <stop offset="1" stop-color="#bc8cff" />
+              </linearGradient>
+            </defs>
+            <rect
+              x="1"
+              y="1"
+              width="26"
+              height="26"
+              rx="8"
+              fill="#161b22"
+              stroke="rgba(195,204,214,.3)"
+            />
+            <path
+              d="M5 17c2.4 0 3-6 5.4-6s2.8 4 5 4 2.6-6 5.4-6"
+              fill="none"
+              stroke="url(#bm)"
+              stroke-width="2"
+              stroke-linecap="round"
+            />
+            <circle cx="21" cy="9" r="2.2" fill="#ff7448" />
+          </svg>
+          <span class="wm"
+            ><span class="m">Find Your</span> <span class="p">Pitch</span></span
+          >
+        </a>
+        <a class="btn sm hub-home" href="/">MercuryPitch home</a>
+      </div>
+    </header>
+
+    <main id="top">
+      <section class="wrap hub-hero" aria-labelledby="hub-title">
+        <p class="kicker">
+          <span>Find Your Pitch</span><span class="dot"></span
+          ><span class="hl">Season 1</span>
+        </p>
+        <h1 class="hub-title wm" id="hub-title">
+          <span class="m">Find Your</span> <span class="p">Pitch</span>
+        </h1>
+        <p class="hub-lede">
+          Free lessons in singing and music theory, for anyone who wants to sing
+          in tune or understand the music they hear. You need no theory to
+          start: Lesson 1 begins with what a note is.
+        </p>
+      </section>
+
+      <section class="wrap hub-sec" aria-labelledby="how">
+        <h2 id="how">How a lesson works</h2>
+        <ul class="hub-how">
+          <li>
+            It opens on a question, and you guess before you hear the answer.
+          </li>
+          <li>Sound toys let you hear each idea and play with it.</li>
+          <li>Some lessons ask you to sing, and show your pitch as you do.</li>
+          <li>Short questions at the end check what stuck.</li>
+        </ul>
+        <p class="hub-time">
+          Each lesson takes about
+          <!-- hub:minutes -->
+          minutes.
+        </p>
+      </section>
+
+      <section class="wrap hub-sec" id="season" aria-labelledby="season-title">
+        <h2 id="season-title">Season 1</h2>
+        <!-- hub:season -->
+      </section>
+    </main>
+
+    <footer class="foot">
+      <div class="wrap foot-grid">
+        <div>
+          <p class="wm" style="margin: 0">
+            <span class="m">Find Your</span> <span class="p">Pitch</span>
+          </p>
+          <p>Season 1 · Free lessons in singing and music theory</p>
+        </div>
+        <div>
+          <h4>MercuryPitch</h4>
+          <p><a href="/">MercuryPitch home</a></p>
+        </div>
+      </div>
+      <nav class="wrap foot-legal" aria-label="Legal">
+        <a href="https://about.mercurypitch.com/privacy/">Privacy</a>
+        <a href="https://about.mercurypitch.com/terms/">Terms</a>
+        <a href="https://about.mercurypitch.com/imprint/">Imprint</a>
+      </nav>
+    </footer>
+  </body>
+</html>

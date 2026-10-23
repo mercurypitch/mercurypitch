@@ -18,10 +18,11 @@ import { LESSON_COPY } from '@/features/lessons/kit/lesson-copy'
 import type { PageState } from '@/features/lessons/kit/publish'
 import { LESSONS } from '@/features/lessons/kit/season'
 import type { LessonState } from '@/lib/lesson-state'
-import { isDraftLessonsShown, lessonDocument, lessonPages, } from '../tools/draft-lessons'
+import { isDraftLessonsShown, lessonDocument, lessonPages, liveByDefault, markLessonStates, } from '../tools/draft-lessons'
+import { fillHub, HUB_DOCUMENT, hubLessons } from '../tools/learn-hub'
 import { HtmlRewriterDouble } from './html-rewriter.test-fixtures'
 import type { LessonGateEnv, WaitUntil } from './lesson-gate'
-import { draftsShownBy, editLlms, editSitemap, FALLBACK_TTL_S, handleLessonRequest, lessonRewriter, STATE_TIMEOUT_MS, STATE_TTL_S, wrapItem, } from './lesson-gate'
+import { draftsShownBy, editLlms, editSitemap, FALLBACK_TTL_S, handleLessonRequest, lessonRewriter, settleSeries, STATE_TIMEOUT_MS, STATE_TTL_S, wrapItem, } from './lesson-gate'
 
 const ROOT = resolve(__dirname, '..')
 const repoFile = (path: string): string =>
@@ -31,10 +32,20 @@ const SITE = 'https://mercurypitch.test'
 const API = 'https://api.mercurypitch.test'
 const ETAG = '"the-file-on-disk"'
 
+/** The hub as the production build writes it: filled in, its readings marked for drafts held back. */
+function builtHub(): string {
+  const live = liveByDefault(ROOT, false)
+  return markLessonStates(
+    fillHub(repoFile(HUB_DOCUMENT), hubLessons(ROOT), live),
+    live,
+  )
+}
+
 /** The files the stand-in asset layer serves, by address. */
 function filesByAddress(): Record<string, { body: string; type: string }> {
   const files: Record<string, { body: string; type: string }> = {
     '/404': { body: repoFile('404.html'), type: 'text/html; charset=utf-8' },
+    '/learn/': { body: builtHub(), type: 'text/html; charset=utf-8' },
     '/sitemap.xml': {
       body: repoFile('public/sitemap.xml'),
       type: 'application/xml',
@@ -68,6 +79,15 @@ function assetLayer() {
           headers: { Location: spelling[1] },
         })
       pathname = spelling[1]
+    }
+    if (pathname === '/learn/index.html') {
+      // The hub's document, which html_handling redirects to its address.
+      if (request.redirect === 'manual')
+        return new Response(null, {
+          status: 307,
+          headers: { Location: '/learn/' },
+        })
+      pathname = '/learn/'
     }
     const file = files[pathname]
     const headers = {
@@ -344,7 +364,8 @@ describe('a lesson page', () => {
 
     // Act + Assert
     for (const path of [
-      '/learn/',
+      '/learn',
+      '/learn/index',
       '/learn/3',
       '/learn/03/extra',
       '/learn/lesson-01-og.jpg',
@@ -666,6 +687,154 @@ describe("a page's links and readings", () => {
   })
 })
 
+describe('the hub', () => {
+  /** The structured-data blocks of a page, parsed. */
+  const blocks = (doc: Document): Record<string, unknown>[] =>
+    Array.from(doc.querySelectorAll('script[type="application/ld+json"]')).map(
+      (s) => JSON.parse(s.textContent ?? '') as Record<string, unknown>,
+    )
+
+  /** Lesson `n`'s item on the season map. */
+  const item = (doc: Document, n: number): Element | null =>
+    doc.getElementById(`lesson-${String(n).padStart(2, '0')}`)?.closest('li') ??
+    null
+
+  /** The lessons the series' structured data names, by number. */
+  const parts = (doc: Document): number[] =>
+    (
+      (blocks(doc).find((node) => node['@type'] === 'CreativeWorkSeries')
+        ?.hasPart ?? []) as { '@id': string }[]
+    ).map((part) => Number(/\/learn\/(\d{2})#lesson$/.exec(part['@id'])?.[1]))
+
+  it('is never the 404 page, whatever the state holds back', async () => {
+    // Arrange: every lesson held back, drafts held back too
+    const held = Object.fromEntries(
+      LESSONS.filter((L) => L.n >= 1).map((L) => [L.n, { published: false }]),
+    )
+    const { ask } = gate({ state: stateOf(held), drafts: '0' })
+
+    // Act
+    const response = await ask('/learn/')
+    const head = await ask('/learn/', { method: 'HEAD' })
+    const asDocument = await ask('/learn/index.html')
+
+    // Assert: the page, with no lesson linked and the series naming none
+    expect(response?.status).toBe(200)
+    expect(response?.headers.get('X-Robots-Tag')).toBeNull()
+    const doc = await page(response)
+    expect(words(doc.querySelector('h1'))).toBe('Find Your Pitch')
+    expect(doc.querySelectorAll('a[href^="/learn/0"]')).toHaveLength(0)
+    for (const L of LESSONS.filter((x) => x.n >= 1))
+      expect(words(item(doc, L.n)?.querySelector('.hub-go') ?? null)).toBe(
+        'Coming',
+      )
+    expect(parts(doc)).toEqual([])
+    expect(head?.status).toBe(200)
+    expect(await head?.text()).toBe('')
+    // the document's own address is the asset layer's redirect to the hub
+    expect(asDocument?.status).toBe(307)
+    expect(asDocument?.headers.get('Location')).toBe('/learn/')
+  })
+
+  it('answers as a lesson page does: no validators, revalidated each visit, no condition passed on', async () => {
+    // Arrange
+    const { ask, assets } = gate()
+
+    // Act
+    const response = await ask('/learn/', {
+      headers: { 'If-None-Match': ETAG },
+    })
+
+    // Assert
+    expect(response?.status).toBe(200)
+    expect(response?.headers.get('ETag')).toBeNull()
+    expect(response?.headers.get('Last-Modified')).toBeNull()
+    expect(response?.headers.get('Cache-Control')).toBe(
+      'public, max-age=0, must-revalidate',
+    )
+    const asked = assets.mock.calls.map(([request]) => request)
+    expect(asked.map((r) => r.headers.get('If-None-Match'))).toEqual([null])
+  })
+
+  it('unlinks a lesson that is not live, and keeps the true reading of each', async () => {
+    // Arrange: as on mercurypitch.com, with Lesson 2 held back
+    const { ask } = gate({
+      state: stateOf({ 2: { published: false } }),
+      drafts: '0',
+    })
+
+    // Act
+    const doc = await page(await ask('/learn/'))
+
+    // Assert
+    expect(doc.querySelector('a[href^="/learn/02"]')).toBeNull()
+    expect(words(item(doc, 2)?.querySelector('.hub-go') ?? null)).toBe('Coming')
+    expect(words(item(doc, 3)?.querySelector('.hub-go') ?? null)).toBe('Coming')
+    const one = item(doc, 1)
+    expect(one?.querySelector('a')?.getAttribute('href')).toBe('/learn/01')
+    expect(words(one?.querySelector('.hub-go') ?? null)).toBe(
+      `${LESSONS[1]?.minutes} minutes Start lesson`,
+    )
+    // every reading settled: none left to mark, none hidden by the build
+    expect(
+      doc.querySelectorAll('[data-if-live], [data-if-planned]'),
+    ).toHaveLength(0)
+    expect(doc.querySelectorAll('#season [hidden]')).toHaveLength(0)
+    expect(parts(doc)).toEqual([1])
+  })
+
+  it('links a published draft and names it in the series; a lesson held back leaves both', async () => {
+    // Arrange: drafts held back, Lesson 3 published and Lesson 2 held back
+    const { ask } = gate({
+      state: stateOf({ 3: { published: true }, 2: { published: false } }),
+      drafts: '0',
+    })
+
+    // Act
+    const doc = await page(await ask('/learn/'))
+
+    // Assert
+    expect(item(doc, 3)?.querySelector('a')?.getAttribute('href')).toBe(
+      '/learn/03',
+    )
+    expect(words(item(doc, 3)?.querySelector('.hub-go') ?? null)).not.toContain(
+      'Coming',
+    )
+    expect(doc.querySelector('a[href^="/learn/02"]')).toBeNull()
+    expect(parts(doc)).toEqual([1, 3])
+    // the trail is left as it was
+    const trail = blocks(doc).find((node) => node['@type'] === 'BreadcrumbList')
+    expect(
+      (trail?.itemListElement as { item: string }[]).map((step) => step.item),
+    ).toEqual(['https://mercurypitch.com/', 'https://mercurypitch.com/learn/'])
+  })
+
+  it('names every lesson with a page where drafts are shown, as the dev site has it', async () => {
+    // Arrange
+    const { ask } = gate({ drafts: '1' })
+
+    // Act
+    const doc = await page(await ask('/learn/'))
+
+    // Assert
+    const withPage = LESSONS.filter((L) => L.page !== undefined).map((L) => L.n)
+    expect(parts(doc)).toEqual(withPage)
+    // the map draws lane by lane, so its links are compared as a set
+    expect(
+      Array.from(doc.querySelectorAll('#season a'))
+        .map((a) => a.getAttribute('href'))
+        .sort(),
+    ).toEqual(withPage.map((n) => `/learn/${String(n).padStart(2, '0')}`))
+  })
+
+  it('leaves a block that is not the series, or is not JSON, as it came', () => {
+    const state: PageState = { ...stateOf({}), drafts: true }
+    const trail = JSON.stringify({ '@type': 'BreadcrumbList' })
+    expect(settleSeries(trail, state)).toBe(trail)
+    expect(settleSeries('{ not json', state)).toBe('{ not json')
+  })
+})
+
 describe('the sitemap and llms.txt', () => {
   const sitemap = repoFile('public/sitemap.xml')
   const llms = repoFile('public/llms.txt')
@@ -768,6 +937,40 @@ describe('the sitemap and llms.txt', () => {
     expect(await text?.text()).not.toContain('/learn/02')
     expect(head?.status).toBe(200)
     expect(await head?.text()).toBe('')
+  })
+
+  it('keep the hub whatever the state, ahead of the lessons', () => {
+    // Arrange: nothing changed; every lesson held back; every draft shown
+    const held = Object.fromEntries(
+      LESSONS.filter((L) => L.n >= 1).map((L) => [L.n, { published: false }]),
+    )
+    const states = [asPage({}), asPage(held), asPage({}, true)]
+
+    for (const state of states) {
+      // Act
+      const xml = editSitemap(sitemap, state)
+      const text = editLlms(llms, state)
+
+      // Assert: once each, and before the first lesson where one is listed
+      for (const [listing, hub, lesson] of [
+        [
+          xml,
+          '<loc>https://mercurypitch.com/learn/</loc>',
+          '<loc>https://mercurypitch.com/learn/0',
+        ],
+        [
+          text,
+          '](https://mercurypitch.com/learn/):',
+          '](https://mercurypitch.com/learn/0',
+        ],
+      ] as const) {
+        expect(listing.split(hub)).toHaveLength(2)
+        const first = listing.indexOf(lesson)
+        if (first !== -1) expect(listing.indexOf(hub)).toBeLessThan(first)
+      }
+    }
+    expect(editSitemap(sitemap, asPage(held))).not.toContain('/learn/0')
+    expect(editLlms(llms, asPage(held))).not.toContain('/learn/0')
   })
 
   it('wrap an item at its width, later lines indented two spaces and no word broken', () => {
@@ -940,6 +1143,20 @@ describe('the wrangler config', () => {
     expect(config.assets.run_worker_first).toEqual(
       expect.arrayContaining(['/learn/*', '/sitemap.xml', '/llms.txt']),
     )
+  })
+
+  it('runs the worker first for the hub at its address and as its document, but not for /learn, which the asset layer redirects', () => {
+    // A rule as wrangler's router reads it: `*` is any run of characters.
+    const literal = (part: string): string =>
+      part.replace(/[.*+?^${}()|[\]\\/-]/g, '\\$&')
+    const covered = (path: string): boolean =>
+      config.assets.run_worker_first.some((rule) =>
+        new RegExp(`^${rule.split('*').map(literal).join('.*')}$`).test(path),
+      )
+
+    expect(covered('/learn/')).toBe(true)
+    expect(covered('/learn/index.html')).toBe(true)
+    expect(covered('/learn')).toBe(false)
   })
 
   it("sets each environment's default for drafts: held back on mercurypitch.com, shown on dev, previews and a local run", () => {

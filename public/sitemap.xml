@@ -89,6 +89,13 @@
     <loc>https://mercurypitch.com/karaoke-app</loc>
     <lastmod>2026-10-20</lastmod>
   </url>
+  <!-- Find Your Pitch: the series' hub, then each released lesson. The site
+       worker adds a draft while it is published and takes out a lesson held
+       back (src/lesson-gate.ts); the hub stays whatever the state. -->
+  <url>
+    <loc>https://mercurypitch.com/learn/</loc>
+    <lastmod>2026-10-20</lastmod>
+  </url>
   <url>
     <loc>https://mercurypitch.com/learn/01</loc>
     <lastmod>2026-10-20</lastmod>
