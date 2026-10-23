@@ -309,10 +309,10 @@ is changing gear, not making a mistake.
   in Settings. Set your range there first, under Singing Voice Range ("Don't know? Find my voice"
   helps). Most of its score is how close you come to the second note. Its help asks for glides with
   no breaks between your low and high voice. If your voice flips anyway, let it: every voice changes
-  gear. Sore, hoarse or unwell today? Just listen along. Sing at about speaking volume, and stop
-  immediately if anything feels uncomfortable. Practise it free:
-  **mercurypitch.com/pitch-training**, then tap Siren / Range Explorer." Under it: "Ten minutes,
-  gently, most days. Missed a day? Just come back."
+  gear. A flip skips a few notes, so its glide score dips a bit: that's a flip, not a mistake. Sore,
+  hoarse or unwell today? Just listen along. Sing at about speaking volume, and stop immediately if
+  anything feels uncomfortable. Practise it free: **mercurypitch.com/pitch-training**, then tap
+  Siren / Range Explorer." Under it: "Ten minutes, gently, most days. Missed a day? Just come back."
 - Instead, after "Effortful", "Uncomfortable" or "Just listen today", with no "Ten minutes" line:
   "Rest today. The Siren exercise will be here when your voice feels comfortable:
   **mercurypitch.com/pitch-training**, then tap Siren / Range Explorer."
