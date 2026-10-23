@@ -22,7 +22,8 @@ import { isDraftLessonsShown, lessonDocument, lessonPages, liveByDefault, markLe
 import { fillHub, HUB_DOCUMENT, hubLessons } from '../tools/learn-hub'
 import { HtmlRewriterDouble } from './html-rewriter.test-fixtures'
 import type { LessonGateEnv, WaitUntil } from './lesson-gate'
-import { draftsShownBy, editLlms, editSitemap, FALLBACK_TTL_S, handleLessonRequest, hubRewriter, lessonRewriter, settleSeries, STATE_TIMEOUT_MS, STATE_TTL_S, wrapItem, } from './lesson-gate'
+import { draftsShownBy, FALLBACK_TTL_S, handleLessonRequest, hubRewriter, lessonRewriter, settleSeries, STATE_TIMEOUT_MS, STATE_TTL_S, } from './lesson-gate'
+import { editLlms, editSitemap, wrapItem } from './lesson-listings'
 
 const ROOT = resolve(__dirname, '..')
 const repoFile = (path: string): string =>
