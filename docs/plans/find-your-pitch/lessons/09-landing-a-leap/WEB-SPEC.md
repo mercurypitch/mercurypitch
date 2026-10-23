@@ -79,7 +79,7 @@ heading, and the line above it, are in LESSON.md ("Section headings").
    the hook question as the title, `<h1 class="hook" id="hook">` in its default wording, the
    season's, which `src/features/lessons/kit/lesson-copy.test.ts` holds every page's title to
    (`:323-332`), with no variant's team note anywhere in the markup (`src/features/lessons/kit/team-notes.test.ts:85-101`; FACTS 1), and the
-   element the site worker writes a picked hook into (`src/lesson-gate.ts:592-593`); the meta as
+   element the site worker writes a picked hook into (`src/lesson-gate.ts:590-591`); the meta as
    five chips ("16 minutes", FACTS 5; "After Lesson 3: Match a note", a link to `/learn/03`; "After
    Lesson 6: Intervals: the distance between notes", a link to `/learn/06`, each chip wholly the
    link, as Lesson 2's `a.chip.chip-link` is, `learn/02.html:347-352`, so that it stays as a plain
@@ -636,7 +636,7 @@ table):
    (`:305-320`), and `src/tests/lesson-pages.test.ts` holds every lesson document's head and
    structured data, a draft's included (`:122-237`), and a released lesson's listings (`:239-267`).
    The hook's copies are the ones the site worker rewrites when the console picks an alternative
-   hook (`src/lesson-gate.ts:17-19`, `:455-470`); only the meta description and the Article's
+   hook (`src/lesson-gate.ts:17-19`, `:453-468`); only the meta description and the Article's
    description, which repeat each other, may shorten the hook, and every other copy carries it
    whole. As Lesson 2's head has them (`learn/02.html:9-136`):
    - the title, "Landing a leap: singing big intervals in tune | MercuryPitch" (60 characters, the
@@ -794,7 +794,7 @@ What the page does where nothing above says:
 - **Lesson 9 published while Lesson 3 or 6 is held back**: nothing stops it, since the publish order
   is a rule for whoever uses the console (the intro), so the page follows the state it is served
   with. The site worker, and then the masthead's `followPageState`, make every link to a lesson that
-  is not live no link (`src/lesson-gate.ts:525-535`, `:549-569`; `kit/page-state.ts:64-108`, called
+  is not live no link (`src/lesson-gate.ts:523-533`, `:547-567`; `kit/page-state.ts:64-108`, called
   by `initMasthead`, `kit/page-chrome.ts:113`): the "After Lesson 3" or "After Lesson 6" chip stays
   as a plain chip, and any other link keeps its words. The kit's quiz does the same for the recall's
   step links, which keep their words, "Try Lesson 6, Step 5 again", with no link

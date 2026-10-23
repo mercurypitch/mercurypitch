@@ -85,7 +85,7 @@ section's heading, and the line above it, are in LESSON.md ("Section headings").
    the hook question as the title, `<h1 class="hook" id="hook">` in its default wording, the
    season's, which `src/features/lessons/kit/lesson-copy.test.ts` holds every page's title to
    (`:323-332`), with no variant's team note anywhere in the markup (`src/features/lessons/kit/team-notes.test.ts:85-101`; FACTS 1), and the
-   element the site worker writes a picked hook into (`src/lesson-gate.ts:592-593`); the meta as
+   element the site worker writes a picked hook into (`src/lesson-gate.ts:590-591`); the meta as
    four chips ("16 minutes", FACTS 5; "After Lesson 7: Slides, sirens and your range", a link to
    `/learn/07`, wholly the link, as Lesson 2's `a.chip.chip-link` is, `learn/02.html:347-352`, so
    that it stays as a plain chip where Lesson 7 is not live; Sound on; Microphone optional); the
@@ -748,7 +748,7 @@ the others take it.
    card and structured data, a draft's included, since a draft the console publishes goes live
    with the head it was built with (`:13-18`, `:122-237`). The hook's copies are the ones the site
    worker rewrites when the console picks the alternative hook (`src/lesson-gate.ts:17-19`,
-   `:455-470`); only the meta description and the Article's description, which repeat each other,
+   `:453-468`); only the meta description and the Article's description, which repeat each other,
    may shorten the hook, and every other copy carries it whole. As Lesson 2's head has them
    (`learn/02.html:9-136`):
    - the title, "Registers and the break: chest and head voice | MercuryPitch" (60 characters, at
@@ -984,14 +984,14 @@ What the page does where nothing above says:
 - **Lesson 11 published while Lesson 7 is held back**: nothing stops it, since the publish order is
   a rule for whoever uses the console (the intro), so the page follows the state it is served with.
   The site worker, and then the masthead's `followPageState`, make every link to a lesson that is
-  not live no link (`src/lesson-gate.ts:525-535`, `:549-569`; `kit/page-state.ts:64-108`, called by
+  not live no link (`src/lesson-gate.ts:523-533`, `:547-567`; `kit/page-state.ts:64-108`, called by
   `initMasthead`, `kit/page-chrome.ts:113`): the "After Lesson 7" chip stays as a plain chip, and
   any other link keeps its words. The kit's quiz does the same for the recall's step links, which
   keep their words, "Try Lesson 7, Step 1 again", with no link (`kit/quiz.ts:179-209`). The recall
   still shows, and the explorer and the lesson menu draw the lesson held back as coming later. End
   to end 13 holds it.
 - **The admin console's hook**: picking `same-note` wrote it into the h1, the head's copies of the
-  hook, every explorer card and Lesson 10's next card (`src/lesson-gate.ts:17-19`, `:455-470`); the
+  hook, every explorer card and Lesson 10's next card (`src/lesson-gate.ts:17-19`, `:453-468`); the
   meta description still fit, at 156 characters; and the page then claimed what FACTS 1 cannot
   support, which is why the owner dropped it (Decisions, 1).
 - **Reduced motion**: Look, Toys 1 and Toys 4 give the end states; nothing moves on its own.
