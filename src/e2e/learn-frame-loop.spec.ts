@@ -12,13 +12,18 @@
 // ring's drawing. A run of the figure (a sung note, Merc's slide, scale or
 // version, Merc's siren, Lesson 13's plate in the explorer) brings its
 // frames back, and once the run ends, or the motion switch holds the plate
-// still, they stop again.
+// still, they stop again, and the ring has no ripple left on it. On a
+// phone, where the explorer is a list, Lesson 8's whole page rests again
+// once a second tap on Lesson 13's row folds its card away.
 //
 // On Lessons 6, 7 and 8 every figure now says when it has nothing to draw,
 // so there the whole page asks for no frame at all at rest. Lessons 1 to 5
 // each have drawers of their own that still draw every frame (S-26 in
 // docs/plans/find-your-pitch/RELEASE-REVIEW.md), which keep their loop
 // running whatever these three do, so there only the figures are watched.
+// There the ring's checks pin only that it writes nothing at rest and leaves
+// no ripple: its `wants` is pinned where the whole page rests (Lessons 6
+// and 7) and by kit/sing.test.ts.
 
 import type { Page } from '@playwright/test'
 import { expect, test } from '@playwright/test'
