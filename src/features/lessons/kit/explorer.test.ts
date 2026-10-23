@@ -346,6 +346,35 @@ describe('createExplorer', () => {
     expect(now?.textContent).toBe(LESSONS[2].title)
     expect(now?.closest('.ex-card')?.getAttribute('data-card')).toBe('2')
   })
+
+  it('says a card an Opens link focuses once, by its title, and a card the list opens on the status line', () => {
+    // Arrange: Lesson 1's card opens Lesson 2; jsdom cannot scroll to it
+    vi.spyOn(window, 'scrollBy').mockImplementation(() => undefined)
+    explorerPage()
+    createExplorer({ current: 1 })
+    const status = (): string =>
+      document.getElementById('exStatus')?.textContent ?? ''
+    const opens = document.querySelector<HTMLButtonElement>(
+      '#exCardHost [data-go="2"]',
+    )
+    opens?.focus()
+
+    // Act: the Opens link
+    opens?.click()
+    const linked = { focus: document.activeElement?.tagName, said: status() }
+
+    // Act: Lesson 3 from the list, the keyboard on its row
+    const row = document.querySelector<HTMLButtonElement>(
+      '#exList [data-n="3"] .it',
+    )
+    row?.focus()
+    row?.click()
+
+    // Assert
+    expect(linked.focus).toBe('H3')
+    expect(linked.said).not.toContain('card below')
+    expect(status()).toBe(`Lesson 3, ${LESSONS[3].title}: card below`)
+  })
 })
 
 // A page no worker served (`pnpm dev`, the e2e bundle) carries no state, so
