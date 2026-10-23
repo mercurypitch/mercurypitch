@@ -14,6 +14,7 @@ import type { RepeatRange } from '@/lib/canonical-lrc'
 import { applyRepeatBlocks, buildCanonicalEntries } from '@/lib/canonical-lrc'
 import { buildLrcTextFromCanonical, buildWordLevelLrc, formatTimeLrc, } from '@/lib/lrc-generator'
 import { parseLrcTimingMetadata, withLrcTimingMetadata, } from '@/lib/lrc-timing-metadata'
+import { fetchLyricsByIdOutcome, lyricsFromMatch, lyricsPickFailureMessage, } from '@/lib/lrclib-record'
 import { lyricLineAt } from '@/lib/lyric-line-at'
 import type { SungNote } from '@/lib/lyric-sung-end'
 import { clampLineEndToVocal, synthesizeLastWordEnd, } from '@/lib/lyric-sung-end'
@@ -726,19 +727,39 @@ export function useStemMixerLyricsController(
     setLyricsSource('api')
   }
 
+  // A pick from LRCLIB's list. It used to close the list first and, when
+  // the record brought no lyrics, go back to the search box without a word
+  // (owner, mp-v0.8.41): nothing said whether LRCLIB had none, was busy, or
+  // could not be reached, and the list to pick another version from was gone.
+  // So the search's own copy of the lyrics is used when it has one (no second
+  // request to fail), the list stays until a pick works, and a pick that
+  // brings nothing says why, to the singer and to the console.
   const handleSongPick = async (match: LyricsSearchMatch) => {
-    setShowSongPicker(false)
-    setSongMatches([])
+    const title = `${match.artist} - ${match.title}`
+    const inHand = lyricsFromMatch(match)
+    if (inHand !== null) {
+      setShowSongPicker(false)
+      setSongMatches([])
+      applyLyricsResult(inHand, title)
+      return
+    }
     setLyricsLoading(true)
     try {
-      const lyrics = await fetchLyricsById(match.id)
-      if (lyrics) {
-        applyLyricsResult(lyrics, `${match.artist} - ${match.title}`)
-      } else {
-        setLyricsSource('none')
+      const outcome = await fetchLyricsByIdOutcome(match.id)
+      if (outcome.kind === 'found') {
+        setShowSongPicker(false)
+        setSongMatches([])
+        applyLyricsResult(outcome.result, title)
+        return
       }
-    } catch {
-      setLyricsSource('none')
+      const message = lyricsPickFailureMessage(outcome, match)
+      if (message === null) return
+      console.warn(
+        `[lyrics] LRCLIB record ${match.id} (${title}): ${outcome.kind}${
+          outcome.kind === 'http' ? ` ${outcome.status}` : ''
+        }`,
+      )
+      showNotification(message, 'warning')
     } finally {
       setLyricsLoading(false)
     }
@@ -900,7 +921,9 @@ export function useStemMixerLyricsController(
       const multiResults = await searchLyricsMulti(title, signal)
       if (multiResults.length === 1) {
         const match = multiResults[0]
-        const lyrics = await fetchLyricsById(match.id, signal)
+        // The search's own copy when it has one: no second request.
+        const lyrics =
+          lyricsFromMatch(match) ?? (await fetchLyricsById(match.id, signal))
         if (lyrics) {
           applyLyricsResult(lyrics, title)
           setLyricsLoading(false)
