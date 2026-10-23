@@ -1,4 +1,5 @@
 // Standalone museum preview — the exact shared game used by the BesideCue entry.
+import { parseSplatBackdropRequest } from '@irchiinnuss/glass-game'
 import type { SingingCurrentTrialPace } from '@irchiinnuss/glass-game/runner'
 import { configurePitchEngineAssets } from '@irchiinnuss/pitch-engine'
 import { render } from 'solid-js/web'
@@ -211,11 +212,16 @@ async function mount(): Promise<void> {
   const runner =
     hasDevelopmentGalleryAccess(BUILD.channel, search) &&
     query.get('layout') === 'singing-current'
+  // ?splats=procedural or ?splats=<.spz/.rad path>; development server only.
+  const splatBackdrop = import.meta.env.DEV
+    ? parseSplatBackdropRequest(query)
+    : undefined
   render(
     () => (
       <AdventureScreen
         assetBase="../games/"
         level={level}
+        splatBackdrop={splatBackdrop}
         runner={runner}
         runnerPace={runner ? selectedRunnerPace(query) : undefined}
         runnerObstacles={

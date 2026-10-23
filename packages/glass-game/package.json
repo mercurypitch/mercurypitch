@@ -37,6 +37,7 @@
     "@irchiinnuss/audio-io": "workspace:*",
     "@irchiinnuss/mobile-runtime": "workspace:*",
     "@irchiinnuss/pitch-engine": "workspace:*",
+    "@sparkjsdev/spark": "2.4.0",
     "three": "^0.185.1"
   },
   "peerDependencies": {

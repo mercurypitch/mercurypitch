@@ -25,6 +25,7 @@ import { AUTOMATIC_SINGING_PREFERENCE, createAutomaticVoiceEngagement, createAut
 import { createCameraComfortPreference } from './camera-comfort-preference'
 import { handleCameraModeShortcut, toggleCameraMode } from './camera-mode'
 import { createCameraModePreference } from './camera-mode-preference'
+import { hasDevelopmentTuning } from './development-tuning'
 import { createAdventureInput, isAdventureEditableTarget } from './input'
 import type { AdventureLoadingPhase } from './loading-lifecycle'
 import { createAdventureLoadingLifecycle } from './loading-lifecycle'
@@ -625,6 +626,9 @@ export function useAdventure(
         cameraMode: cameraMode(),
         renderQuality: renderQualityPreference(),
         assetProfile,
+        splatBackdrop: hasDevelopmentTuning(host)
+          ? host.developmentSplatBackdrop
+          : undefined,
         onLoadingProgress: (progress) => {
           loading.reportProgress(generation, progress)
         },

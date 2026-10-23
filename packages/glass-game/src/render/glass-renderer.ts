@@ -36,6 +36,7 @@ import { resolveResonanceExhibitPresentations } from './resonance-exhibit-layout
 import { createResonancePortal } from './resonance-portal'
 import { getMuseumSceneFrame, getMuseumVisualRecipe } from './scene-catalog'
 import { fitSkyBackdrop } from './sky-backdrop'
+import { createSplatBackdrop } from './splat-backdrop'
 import { createVessel } from './vessels'
 import { canRenderViewport } from './viewport'
 
@@ -203,6 +204,23 @@ function createGlassRendererInstance(
   })
   camera.camera.far = sceneFrame.cameraFar
   camera.camera.updateProjectionMatrix()
+  // Development preview: the splat world replaces the flat plate as the
+  // background, so it only applies where Cloudway projects a backdrop.
+  const splatBackdrop =
+    options.splatBackdrop !== undefined &&
+    isCloudwayLevel(level) &&
+    sceneRecipe.skyProjection === 'backdrop'
+      ? createSplatBackdrop(
+          options.splatBackdrop,
+          level,
+          renderer,
+          renderQuality.profile,
+        )
+      : undefined
+  registerPartialCleanup(() => splatBackdrop?.dispose())
+  splatBackdrop?.ready.catch((error: unknown) =>
+    options.onAssetError?.('splat-backdrop', error),
+  )
   const environment = createMuseumEnvironment(renderer, scene)
   registerPartialCleanup(() => environment.dispose())
   scene.environmentIntensity = 0.65
@@ -399,7 +417,11 @@ function createGlassRendererInstance(
       if (sceneRecipe.skyProjection === 'backdrop') {
         skyBackdrop = texture
         fitSkyBackdrop(texture, container.clientWidth, container.clientHeight)
-        scene.background = texture
+        if (splatBackdrop === undefined) scene.background = texture
+        else {
+          splatBackdrop.setSky(texture)
+          scene.background = splatBackdrop.texture
+        }
       }
     },
     () => disposed,
@@ -441,7 +463,10 @@ function createGlassRendererInstance(
       if (disposed || contextLost) return
       archiveRoom?.finishInstallation()
       if (isCloudwayLevel(level) && skyBackdrop !== undefined)
-        installBackdropFog(scene, skyBackdrop)
+        installBackdropFog(scene, splatBackdrop?.texture ?? skyBackdrop)
+      // The probe and the warm-up render sample the backdrop target, so it
+      // needs real pixels before either runs.
+      splatBackdrop?.render(renderer, camera.camera)
       if (!sceneRecipe.reflectionProbe) return
       const position = new Vector3().copy(sceneRecipe.reflectionProbe)
       try {
@@ -512,6 +537,7 @@ function createGlassRendererInstance(
       renderQualityPreference = preference
       renderQuality = next
       performanceGovernor.configure(preference, next.profile)
+      splatBackdrop?.setQuality(next.profile)
       applyPresentationQuality()
     },
     getRenderQuality: () => ({
@@ -727,6 +753,8 @@ function createGlassRendererInstance(
       )
         shadowCadence.invalidate()
       shadowTopology = nextShadowTopology
+      // Before the shadow request: the backdrop pass must not consume it.
+      splatBackdrop?.render(renderer, camera.camera)
       const updateShadow = shadowCadence.next()
       renderer.shadowMap.needsUpdate = updateShadow
       if (updateShadow) shadowUpdates++
@@ -774,6 +802,7 @@ function createGlassRendererInstance(
       disposeMaterials(Object.values(materials))
       releaseDecodedAssetImages()
       environment.dispose()
+      splatBackdrop?.dispose()
       key.shadow.dispose()
       renderer.dispose()
       renderer.forceContextLoss()

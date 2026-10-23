@@ -479,6 +479,9 @@ importers:
       '@irchiinnuss/pitch-engine':
         specifier: workspace:*
         version: link:../pitch-engine
+      '@sparkjsdev/spark':
+        specifier: 2.4.0
+        version: 2.4.0(three@0.185.1)
       three:
         specifier: ^0.185.1
         version: 0.185.1
@@ -2691,6 +2694,11 @@ packages:
     peerDependenciesMeta:
       '@solidjs/router':
         optional: true
+
+  '@sparkjsdev/spark@2.4.0':
+    resolution: {integrity: sha512-aUjgBfhwDRcF3nUwiAD6Nh7IwvxEmW9liz2qrAXIm2BlPYBmn81QbXIpGFLBSr/o0TKGvEXbNIsKujgPGV/7QQ==}
+    peerDependencies:
+      three: '>=0.180.0'
 
   '@speed-highlight/core@1.2.15':
     resolution: {integrity: sha512-BMq1K3DsElxDWawkX6eLg9+CKJrTVGCBAWVuHXVUV2u0s2711qiChLSId6ikYPfxhdYocLNt3wWwSvDiTvFabw==}
@@ -8595,6 +8603,10 @@ snapshots:
     dependencies:
       '@testing-library/dom': 10.4.1
       solid-js: 1.9.17
+
+  '@sparkjsdev/spark@2.4.0(three@0.185.1)':
+    dependencies:
+      three: 0.185.1
 
   '@speed-highlight/core@1.2.15': {}
 

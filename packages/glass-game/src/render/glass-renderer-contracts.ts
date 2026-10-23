@@ -6,8 +6,14 @@ import type { GameSnapshot, MovementReferenceKind, Vec3 } from '../contracts'
 import type { LoadingProgress } from '../loading-progress'
 import type { AdventureCameraMode, ChallengeCameraMetrics } from './camera'
 import type { GlassAssetQualityProfile, GlassRenderQualityPreference, GlassRenderQualityProfile, GlassShadowFrameInterval, } from './render-quality'
+import type { SplatBackdropRequest } from './splat-backdrop-request'
 
 export interface GlassRendererOptions {
+  /**
+   * Development preview: draw a Gaussian splat world behind a Cloudway level's
+   * sky plate. Other themes and production builds ignore it.
+   */
+  splatBackdrop?: SplatBackdropRequest
   shatterPlaybackSpeed?: number
   reducedMotion?: boolean
   followSmoothnessSeconds?: number

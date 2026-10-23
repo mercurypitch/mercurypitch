@@ -62,6 +62,12 @@ presentation, not a campaign transition, portrait reward or score mechanic.
 
 In a games-enabled Vite development server, open `/glass-game/?layout=straight` or `/glass-game/?layout=quarter-turn`. The default `/glass-game/` still opens Glassworks directly without BesideCue onboarding. Development proof content uses a separate package entry; the query selector is excluded from production. There is no public campaign selector, new voice judge, grade system or store-profile change in this milestone.
 
+### Splat backdrop preview (development spike)
+
+Add `splats=procedural` to a Cloudway layout (`/glass-game/?layout=cloudway&splats=procedural`, optional `splatsSeed`) to draw a procedural Gaussian splat archipelago beyond the fog, or `splats=<path or https URL>` to load a `.spz`, `.ply`, `.splat`, `.ksplat`, `.sog` or streamable `.rad` world, with optional `splatsScale` and `splatsY`. Files are assumed to use OpenCV axes, as Marble exports do.
+
+`render/splat-backdrop.ts` renders the sky plate and the splats into one sRGB target each frame and uses that target as both `scene.background` and the backdrop-fog source. Fogged platforms therefore dissolve into the splats behind them, and glass refracts them because three's transmission pass draws the background. Splats never sort against gameplay meshes. Spark (`@sparkjsdev/spark`) is imported only when `import.meta.env.DEV` is true, so production bundles contain no splat renderer, and only the standalone development entry reads the query. Shipping it would need a lazily loaded `vendor-spark` chunk, `worker-src 'self' blob:` in BesideCue's CSP (Spark sorts in a `blob:` worker), and splat files hosted outside the 25 MiB web asset limit.
+
 ## Add an exhibit or platform appearance
 
 Register a new breakable `variant` in `BREAKABLE_RENDER_CATALOG`. A recipe names its asset bundle, intact node, shard/persistent node prefixes, display height, glass parameters, optional portrait texture/material and fragment budget. Asset identifiers resolve through `host.assetUrl`; they are not product-specific URLs inside core data. Unknown recipe IDs fail explicitly.

@@ -1,5 +1,5 @@
 // BesideCue adventure host — the shared museum gets this app's lifecycle and local storage.
-import type { LevelDefinition } from '@irchiinnuss/glass-game'
+import type { LevelDefinition, SplatBackdropRequest, } from '@irchiinnuss/glass-game'
 import { glassGameAssetUrl } from '@irchiinnuss/glass-game/assets'
 import { createBrowserGlassHost } from '@irchiinnuss/glass-game/browser'
 import { GlassCampaign } from '@irchiinnuss/glass-game/campaign'
@@ -7,7 +7,7 @@ import type { SingingCurrentTrialPace } from '@irchiinnuss/glass-game/runner'
 import { SLIDE_CONTINUOUS_STUDY, SLIDE_LANES_STUDY, } from '@irchiinnuss/glass-game/runner'
 import { CURRENT_SINGING_COURSE, SINGING_CURRENT_CONTINUOUS_TRIAL, SINGING_CURRENT_CRYSTAL_CONTINUOUS_STUDY, SINGING_CURRENT_CRYSTAL_STUDY, SINGING_CURRENT_TRIALS, SongRunnerScreen, } from '@irchiinnuss/glass-game/runner'
 import { GlassAdventure } from '@irchiinnuss/glass-game/solid'
-import { Show } from 'solid-js'
+import { Show, untrack } from 'solid-js'
 import { BUILD } from '@/build-info'
 import { subscribeAppForeground } from '@/infrastructure/app-foreground'
 import { getBesideCuePlatform } from '@/infrastructure/mobile-runtime'
@@ -24,6 +24,8 @@ interface AdventureScreenProps {
   runnerSteering?: 'continuous'
   runnerCamera?: 'close' | 'angled'
   runnerObstacles?: 'crystal-study' | 'slide-study'
+  /** Development server only: a splat world behind Cloudway levels. */
+  splatBackdrop?: SplatBackdropRequest
 }
 export function AdventureScreen(props: AdventureScreenProps) {
   function runnerCourse() {
@@ -62,6 +64,7 @@ export function AdventureScreen(props: AdventureScreenProps) {
   const host = createBrowserGlassHost({
     storagePrefix: 'beside-cue:glass-adventure',
     developmentTuning: BUILD.channel === 'dev' || BUILD.channel === 'ci',
+    developmentSplatBackdrop: untrack(() => props.splatBackdrop),
     microphonePreferenceKey: 'beside-cue:input-device',
     assetUrl: (id) => glassGameAssetUrl(id, props.assetBase ?? 'games/'),
     subscribeForeground: subscribeAppForeground,

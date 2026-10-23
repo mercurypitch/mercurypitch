@@ -3,6 +3,7 @@ import type { BreakableDefinition, PitchObservation, SavedProgress, } from './co
 import type { CompiledMelody } from './core/melody-contour'
 import type { MelodyReferencePlayer } from './core/melody-reference'
 import type { MusicalMemoryPlayback, MusicalMemoryStore, } from './core/musical-memory'
+import type { SplatBackdropRequest } from './render/splat-backdrop-request'
 
 export interface GlassVoiceTake {
   isRecording?(): boolean
@@ -115,6 +116,8 @@ export interface GlassMercNarration {
 export interface GlassGameHost {
   /** Enables feel controls in compiled development hosts, independent of progression. */
   readonly developmentTuning?: boolean
+  /** Development preview of a splat world behind Cloudway; needs development tuning. */
+  readonly developmentSplatBackdrop?: SplatBackdropRequest
   assetUrl(id: string): string
   /**
    * Prepare Web Audio synchronously inside a gameplay gesture. This must not

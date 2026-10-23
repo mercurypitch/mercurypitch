@@ -3,6 +3,7 @@ import { micManager } from '@irchiinnuss/pitch-engine'
 import { exhibitShatterProfile } from '../content/shatter-sounds'
 import type { GlassGameHost } from '../host'
 import { parseReferenceNoteHold, REFERENCE_NOTE_HOLD, REFERENCE_NOTE_HOLD_PREFERENCE, } from '../reference-note'
+import type { SplatBackdropRequest } from '../render/splat-backdrop-request'
 import { createBrowserGlassSound } from './glass-sound'
 import { createBrowserMelodyReference } from './melody-reference'
 import { createBrowserMemoryPlayback } from './memory-playback'
@@ -15,6 +16,7 @@ import { createBrowserVoice, prepareBrowserVoiceGesture } from './voice-session'
 
 export interface BrowserHostOptions {
   developmentTuning?: boolean
+  developmentSplatBackdrop?: SplatBackdropRequest
   assetUrl(id: string): string
   storagePrefix: string
   /** Reuse a product's existing input preference when opening Glassworks directly. */
@@ -55,6 +57,7 @@ export function createBrowserGlassHost(
   return {
     assetUrl: options.assetUrl,
     developmentTuning: options.developmentTuning,
+    developmentSplatBackdrop: options.developmentSplatBackdrop,
     prepareVoiceGesture: prepareBrowserVoiceGesture,
     createVoice: () => createBrowserVoice(microphone.forStart()),
     microphoneInput: microphone.input,

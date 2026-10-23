@@ -2,6 +2,8 @@
 export type * from './contracts'
 export type * from './host'
 export { GLASSWORKS } from './content/glassworks'
+export { parseSplatBackdropRequest } from './render/splat-backdrop-request'
+export type { SplatBackdropRequest } from './render/splat-backdrop-request'
 export { composeLevel } from './authoring/compose-level'
 export { LevelAuthoringError } from './authoring/contracts'
 export type * from './authoring/contracts'
