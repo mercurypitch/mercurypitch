@@ -512,10 +512,10 @@ the take (`:59`), released when it ends, on leaving the section, on `pagehide` a
 hidden (`:18-22`); the YIN-only F0 stream (`src/lib/pitch-f0-stream.ts`); one AudioContext through
 `Sound.context()`, so every note Merc sings and every frame the take hears share a clock; nothing
 plays while a take is open. The frames are drawn and then dropped: nothing reads them, nothing is
-recorded or kept, nothing leaves the device, and no event carries a frame or an answer; at most a
-count-only "checkpoint finished" event once the Lesson telemetry track exists (REQ-GVC-090; FACTS
-69). The listener arrives through a dynamic import when Start is pressed, as on Lesson 3, so a page
-that is only read never loads it (`kit/listen.ts:5-8`).
+recorded or kept, nothing leaves the device, and no event carries a frame or an answer;
+`lesson_answer` covers only the quick check and the recall, and a count-only "checkpoint finished"
+event (REQ-GVC-090; FACTS 69) is not built. The listener arrives through a dynamic import when Start
+is pressed, as on Lesson 3, so a page that is only read never loads it (`kit/listen.ts:5-8`).
 
 Accessibility and motion: no state carries meaning in colour alone (REQ-GVC-082). After a take the
 chart's summary reads "Your siren, drawn as a line." and names no note, gear, flip or span

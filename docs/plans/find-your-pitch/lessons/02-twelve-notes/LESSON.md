@@ -52,9 +52,9 @@ order like the alphabet, so one note per gap was a fair guess.)
 ## Recall from Lesson 1
 
 Straight after the hero (DECISIONS 80). Two questions from last time, asked afresh (no earlier
-answers are shown). They are Lesson 1's quiz questions 2 and 4, word for word (FACTS 35a). Neither
-quiz has question ids yet, so the Lesson telemetry track gives Lesson 1's questions their ids
-(WEB-SPEC, Toys 6) before these answers can count as the delayed score (MASTER-PLAN § 9).
+answers are shown). They are Lesson 1's quiz questions 2 and 4, word for word (FACTS 35a). Both
+quizzes carry their ids (`l01-q2`, `l01-q4`), and their first answers in a visit are sent, so they
+count as the delayed score (MASTER-PLAN § 9).
 
 1. You double a note's frequency. What do you get?
    - The same note, one octave up **[correct]** · Feedback: "Exactly: two for one is an octave."

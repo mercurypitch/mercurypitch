@@ -584,7 +584,7 @@ home"; under Step 4's, "Happy and sad at once", "Tempo first" and "The other way
 
 Two quizzes share this page through the kit's quiz (`src/features/lessons/kit/quiz.ts`, `createQuiz`
 at `:211`), with the options it already has (`:73-97`): an id prefix for each quiz's elements;
-`lesson` optional; a question `id`, the telemetry's `question_id`; a slot for a question's own
+`lesson` optional; a question `id`, the event's `qLesson` and `q`; a slot for a question's own
 controls (`:52-58`); and, for a question from another lesson, a step link that reads "Try Lesson 6,
 Step 5 again" and opens in a new tab, through `away` (`:87-94`, `linkAway` at `:179-209`), which
 keeps a link's words and drops the link wherever that lesson is not live.

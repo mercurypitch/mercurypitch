@@ -10,7 +10,7 @@
 // and 6); question 2's two wrong answers both do, since "They're the same
 // size" is mix-up card 1's belief. Question 2 is answered by ear: its play
 // button and its "1st" and "2nd" chips sit in its slot (quiz-pair.ts).
-// The ids are the telemetry's question_id on every page that asks them;
+// The ids are the same on every page that asks them (telemetry.ts);
 // Lesson 3's recall check asks questions 2 and 4 as `l02-q2` and `l02-q4`.
 
 import { signsHtml } from '@/features/lessons/kit/notes'

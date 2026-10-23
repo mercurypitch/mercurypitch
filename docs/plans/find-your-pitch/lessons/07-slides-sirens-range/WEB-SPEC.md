@@ -454,8 +454,9 @@ in Lesson 3. As built, leaving the section is `#sing` out of view for 600 ms (`l
 and since a tall panel giving way to a short one can leave the card above the screen on a phone,
 after Start, the card brings its top back into view whenever its panels change, before that watch
 sees it gone, as Lesson 3's card does (`lesson-03/sing-view.ts`). Nothing is recorded or kept,
-nothing leaves the device, and no event carries the band, a note or an answer; at most a count-only
-"checkpoint finished" event once the Lesson telemetry track exists (REQ-GVC-090; FACTS 62).
+nothing leaves the device, and no event carries the band, a note or an answer. No checkpoint event:
+`lesson_answer` covers only the quick check and the recall; a count-only "checkpoint finished" event
+(REQ-GVC-090; FACTS 62) is not built.
 
 Accessibility and motion: the band is words plus the lit fill, never colour alone (REQ-GVC-082).
 After a take the chart's text summary reads, for example, "Your siren, drawn as a line; the middle

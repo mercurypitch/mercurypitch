@@ -566,10 +566,10 @@ leaving the section, on `pagehide` and when the tab is hidden (`:18-22`); the YI
 one AudioContext through `Sound.context()`, so every note Merc sings and every frame the take
 hears share a clock; nothing plays while a take is open. The frames are read for pitch and then
 dropped: nothing is recorded or kept, nothing leaves the device, and no event carries a frame, a
-reading or an answer; at most a count-only "checkpoint finished" event once the Lesson telemetry
-track exists (REQ-GVC-090; FACTS 57). The listener and the hold reader arrive through a dynamic
-import when Start is pressed, as on Lesson 5, so a page that is only read never loads them
-(`kit/listen.ts:5-8`).
+reading or an answer. No checkpoint event: `lesson_answer` covers only the quick check and the
+recall; a count-only "checkpoint finished" event (REQ-GVC-090; FACTS 57) is not built. The listener
+and the hold reader arrive through a dynamic import when Start is pressed, as on Lesson 5, so a page
+that is only read never loads them (`kit/listen.ts:5-8`).
 
 Accessibility and motion: no state carries meaning in colour alone (REQ-GVC-082). After a take the
 chart's summary names the note and the time in the band, never a vowel (REQ-GVC-085). Start, Again,

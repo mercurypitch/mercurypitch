@@ -87,7 +87,7 @@ These come from the app's guided-voice claims rules (`src/lib/guided-voice/claim
 Not by "that was so clear!": fluency inflates perceived learning (Carpenter et al. 2013). Judge by
 retrieval: the share of learners who answer the page's three or four quick-check questions
 correctly on the first try (Lesson 1 has four), and again at the next visit, when two are asked
-afresh. Each question has three or four options, so scores are reported guess-corrected
-(MASTER-PLAN § 9). The Phase 1 Lesson telemetry track collects them; until it exists, answers stay
-in the viewer's browser. YouTube retention and the page's step completion are engagement signals,
+afresh. Each question has three or four options, so scores are reported guess-corrected (MASTER-PLAN
+§ 9). Until this PR answers stayed in the viewer's browser; now each question's first answer in a
+visit is sent, anonymously. YouTube retention and the page's step completion are engagement signals,
 not learning signals.

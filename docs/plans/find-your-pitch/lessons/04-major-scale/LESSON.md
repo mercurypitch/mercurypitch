@@ -53,9 +53,9 @@ _[After the cold open since 20 October 2026, as on Lesson 2's page (MASTER-PLAN 
 Two questions from Lesson 2, asked afresh (no earlier answers are shown). They are Lesson 2's quiz
 questions 1 and 3, word for word, under their ids `l02-q1` and `l02-q3`; Lesson 3's draft asks the
 other two (FACTS 30). Their feedback is Lesson 2's, except that "Try Step N again" reads "Try
-Lesson 2, Step N again" and is a plain link to Lesson 2's page, not to a step on this one.
-The kit's quiz has no id field yet, so the Lesson telemetry track adds one before these answers
-count as the delayed score (MASTER-PLAN § 9).
+Lesson 2, Step N again" and is a plain link to Lesson 2's page, not to a step on this one. The kit's
+quiz has `QuizQuestion.id`, and since this PR these answers are sent and count as the delayed score
+(MASTER-PLAN § 9).
 
 1. How many semitones make an octave?
    - 12 **[correct]** · Feedback: "Seven letters and five notes between them: twelve equal steps."

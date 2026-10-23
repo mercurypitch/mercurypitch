@@ -665,7 +665,7 @@ another, which is the guide in either case, and the still stays still.
 
 Two quizzes share this page through the kit's quiz (`kit/quiz.ts`, `createQuiz` at `:211`), with
 the options it already has (`:73-97`): an id prefix for each quiz's elements; `lesson` optional; a
-question `id`, the telemetry's `question_id`; and a question from another lesson linking "Try Lesson
+question `id`, the event's `qLesson` and `q`; and a question from another lesson linking "Try Lesson
 M, Step N again" in a new tab, through `away` (`:87-94`, `linkAway` at `:184-209`). While that
 lesson is not live where the page is served, the words stay with no link, which would lead to the
 404 page (`:18-20`, `:190`, `:199-202`).
