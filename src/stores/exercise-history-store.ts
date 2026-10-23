@@ -14,7 +14,7 @@ import { saveSessionRecord } from '@/db/services/session-service'
 import { getUserId } from '@/db/services/user-service'
 import { recordChallengeAttempt } from '@/features/challenges/challenge-attempt'
 import { recordWeeklyAttempt } from '@/features/challenges/weekly-attempt'
-import { exerciseComparabilityKey, exerciseScoringVersion, } from '@/features/exercises/exercise-comparability'
+import { exerciseComparabilityKey, exerciseScoringVersion, onCurrentScoring, } from '@/features/exercises/exercise-comparability'
 import { noteTallyFromMetrics } from '@/features/exercises/exercise-note-tally'
 import { lastRunTrace } from '@/features/exercises/last-run-trace'
 import type { ExerciseType } from '@/features/exercises/types'
@@ -31,6 +31,9 @@ export interface ExerciseHistoryEntry {
   score: number
   metrics: Record<string, number>
   completedAt: number
+  /** The drill's scoring version when the run was recorded; runs recorded
+   *  before October 2026 have none. */
+  scoringVersion?: number
 }
 
 export interface ExerciseStats {
@@ -120,8 +123,12 @@ export function recordExerciseResult(
   options?: ExerciseResultRecordOptions,
 ): void {
   const ownerId = getUserId()
+  const stored: ExerciseHistoryEntry = {
+    ...entry,
+    scoringVersion: exerciseScoringVersion(entry.type),
+  }
   setHistory((prev) => {
-    const next = [entry, ...prev]
+    const next = [stored, ...prev]
     return next.slice(0, 100) // keep last 100 entries
   })
 
@@ -193,8 +200,15 @@ export function recordExerciseResult(
   void write.finally(() => inFlightWrites.delete(write))
 }
 
+/**
+ * A drill's stats from local history. The stats cover the runs scored the
+ * way the drill scores now, so a rescored drill starts again from its next
+ * run.
+ */
 export function getExerciseStats(type: ExerciseType): ExerciseStats {
-  const entries = history().filter((e) => e.type === type)
+  const entries = history().filter(
+    (e) => e.type === type && onCurrentScoring(e.type, e.scoringVersion),
+  )
   if (entries.length === 0) {
     return {
       bestScore: 0,
