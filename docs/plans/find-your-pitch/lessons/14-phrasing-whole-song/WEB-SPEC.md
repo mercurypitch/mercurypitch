@@ -724,7 +724,7 @@ paused off screen, and the still images when WebGL fails or would run on the CPU
   is, `href: '/karaoke-night?lesson=14'`, `addr: 'mercurypitch.com/karaoke-night'` and
   `label: 'Karaoke Night'` (`season.ts:389-395`), with no `needs`. Its topics stay; its hook is the
   entry's, the default (`:388`), and its tease, which Lesson 13's card draws, is
-  `kit/lesson-copy.ts`'s (`:120`), with the old tease kept as `band` (`:143-157`) and the old hook,
+  `kit/lesson-copy.ts`'s (`:120`), with the old tease kept as `band` (`:121-126`) and the old hook,
   `compelling`, dropped by this PR, as 1 and 2 record. `EDGES` already holds [5, 14], [8, 14], [9,
   14] and [12, 14] (`season.ts:423-426`).
 - **The explorer card**: what the kit draws for a lesson with a page and no published film: its
@@ -770,7 +770,7 @@ among them (PR #1149), and in Lesson 9's spec, beyond the parts Lessons 2 to 9 p
    is a draft: `src/features/lessons/kit/lesson-copy.test.ts` reads every `learn/NN.html`, drafts
    included (`lesson-copy.test.ts:323-358`), and `src/tests/lesson-pages.test.ts` holds every lesson
    document, drafts included, to its head, its structured data, its breadcrumb, its share card and
-   its legal links (`:112-210`). So Lesson 14 meets all of the checks below as a draft; its release
+   its legal links (`:113-226`). So Lesson 14 meets all of the checks below as a draft; its release
    adds only the listings and links of item 1 (`:228-256`). The hook's copies are the ones the site
    worker rewrites when the console picks another hook (`src/lesson-gate.ts:444-451`, `:565-594`);
    it never rewrites the title. Only the meta description and the Article's description, which

@@ -55,11 +55,11 @@ stands, naming what it waits on (`src/features/admin/AdminLessonsPage.tsx:186-20
 nothing, and "publish after Lesson 10" is a rule for whoever uses it: nothing enforces it (Decisions
 for the owner). Releasing it is deleting its `drafts.ts` line (What the kit and the app still need,
 items 2 and 15). The curiosity plan's kit work is on main: Lesson 12's hook is the season's
-(`src/features/lessons/kit/season.ts:366`), its alternative and its tease are in the kit's lesson
-copy (`src/features/lessons/kit/lesson-copy.ts:133-141`), Lesson 13's tease is there too (`:118`),
-and the next-lesson card draws a tease above the next hook
-(`src/features/lessons/kit/next-card.ts:142-143`). So the page writes only its own title into its
-markup, and nothing of Lesson 13's (FACTS 1, 5).
+(`src/features/lessons/kit/season.ts:366`), its tease is in the kit's lesson copy
+(`src/features/lessons/kit/lesson-copy.ts:117`), as its alternative was until this PR (`:133-141` at
+`b7093a0a4`), Lesson 13's tease is there too (`:118`), and the next-lesson card draws a tease above
+the next hook (`src/features/lessons/kit/next-card.ts:142-143`). So the page writes only its own
+title into its markup, and nothing of Lesson 13's (FACTS 1, 5).
 
 ## Look
 
@@ -816,7 +816,7 @@ built:
 - The signature stays as it is (`kit/team-notes.ts:44`). The entry has no `fig`, so the card draws no figure.
 - The hook stays word for word (`season.ts:366`; FACTS 1). The tease Lesson 11's card shows for this
   lesson, and Lesson 13's tease on this page's card, are the kit's lesson copy
-  (`kit/lesson-copy.ts:140`, `:118`; FACTS 5, 5b).
+  (`kit/lesson-copy.ts:117`, `:118`; FACTS 5, 5b).
 - The card reads "Ready · read", with "15 min", once the page is live (`explorer.ts:150-157`).
 
 ## What the kit and the app still need
@@ -893,7 +893,7 @@ heard play (Toys 3; Edge cases) (`git diff --stat`).
     the owner).
 11. `kit/season.ts`, Lesson 12's entry (Explorer and season data).
 12. The head, from SEARCH.md § 3 and Lesson 4's document (`learn/04.html:9-137`), held by
-    `src/features/lessons/kit/lesson-copy.test.ts:323-358` and `src/tests/lesson-pages.test.ts:112-210`
+    `src/features/lessons/kit/lesson-copy.test.ts:323-358` and `src/tests/lesson-pages.test.ts:113-226`
     on every page, a draft's included, from its first commit:
     - title, at most 60 characters, with "MercuryPitch" and the headline in it
       (`lesson-pages.test.ts:128-129`, `:161`). The series' form that Lessons 1, 2, 3, 5 and 10 use,
@@ -971,12 +971,12 @@ Each with the package's recommendation and the review's judgement (Lesson 12's r
 1. **The alternative hook, `hundreds`.** Decided: the owner dropped it on 22 October 2026 (this PR).
    The rules kept it unpicked: a variant's text is lesson copy held to "every claim in that lesson's
    FACTS.md" (`kit/lesson-copy.ts:31-34`); its own note asks for a counted source first
-   (`kit/team-notes.ts:77-78`); the owner's answer to CURIOSITY-MOMENTS § 5 item 2 holds back a hook
-   that needs a source until FACTS.md has one; and Ableton says "hundreds" and counts none, as
-   Hooktheory's analysis of 1,300 songs gives no count for this loop (FACTS 1; FACTS, Unsupported,
-   not used). What the console shows: under "Hook", with the line "The question Lesson 12 opens
-   with.", a second button holding its wording, its team note printed below it, and the tags
-   "Default" and "Chosen"; one click saves it, with no confirmation
+   (`kit/team-notes.ts:77-78` at `b7093a0a4`); the owner's answer to CURIOSITY-MOMENTS § 5 item 2
+   holds back a hook that needs a source until FACTS.md has one; and Ableton says "hundreds" and
+   counts none, as Hooktheory's analysis of 1,300 songs gives no count for this loop (FACTS 1;
+   FACTS, Unsupported, not used). What the console shows: under "Hook", with the line "The question
+   Lesson 12 opens with.", a second button holding its wording, its team note printed below it, and
+   the tags "Default" and "Chosen"; one click saves it, with no confirmation
    (`src/features/admin/lessons/LessonControls.tsx:333-463`, the Hook picker `:496-500`; `saveCopy`,
    `src/features/admin/AdminLessonsPage.tsx:214-222`). Picked, it would reach the h1; the
    description (158 characters) and og:description (141); twitter:description; the Article's
@@ -1122,9 +1122,9 @@ Each with the package's recommendation and the review's judgement (Lesson 12's r
   `#explorer` (`kit/next-card.ts:108-110`).
 - **The admin console's hook.** The console could switch Lesson 12's hook to its alternative,
   `hundreds`, "How can hundreds of songs share the same four chords and still sound different?"
-  (`kit/lesson-copy.ts:133-141`): the pick is the `hook` field of the lesson's override, set through
-  PUT `/api/admin/lessons/:n` (`src/lib/lesson-state.ts:41`, `:49-50`, `:182-189`) from the Content
-  Studio's hook picker, which prints the variant's note under it
+  (`kit/lesson-copy.ts:133-141` at `b7093a0a4`): the pick is the `hook` field of the lesson's
+  override, set through PUT `/api/admin/lessons/:n` (`src/lib/lesson-state.ts:41`, `:49-50`,
+  `:182-189`) from the Content Studio's hook picker, which prints the variant's note under it
   (`src/features/admin/lessons/LessonControls.tsx:447-451`). The page's markup keeps the default;
   picked, the alternative goes wherever the hook goes. The site worker writes it into the page's h1,
   into every head copy that quotes the hook, the description and the og and twitter descriptions,

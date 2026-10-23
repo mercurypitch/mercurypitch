@@ -49,11 +49,11 @@ it from the admin console puts it live on mercurypitch.com with no release
 (`src/features/lessons/kit/drafts.ts:13`); the console asks first while its `drafts.ts` line stands,
 naming what it waits on, but checks nothing, so the owner keeps the order above (Decisions for the
 owner). Releasing it is deleting its `drafts.ts` line (What the kit and the app still need, items 2
-and 15). The curiosity plan's kit work is on main at `85e23a1af`: Lesson 10's hook, its alternative
-and its tease are in the kit's lesson copy (`src/features/lessons/kit/lesson-copy.ts:115-123`),
-Lesson 11's tease is there too (`:131`), and the next-lesson card draws a tease above the next hook
-(`src/features/lessons/kit/next-card.ts:142-143`). So the page writes only its own title into its
-markup, and nothing of Lesson 11's (FACTS 1, 5).
+and 15). The curiosity plan's kit work is on main at `85e23a1af`: Lesson 10's tease is in the kit's
+lesson copy (`src/features/lessons/kit/lesson-copy.ts:115`), as its alternative hook was until this
+PR (`:115-123` at `b7093a0a4`), Lesson 11's tease is there too (`:116`), and the next-lesson card
+draws a tease above the next hook (`src/features/lessons/kit/next-card.ts:142-143`). So the page
+writes only its own title into its markup, and nothing of Lesson 11's (FACTS 1, 5).
 
 ## Look
 
@@ -747,7 +747,7 @@ built:
 - The signature stays as it is (`kit/team-notes.ts:42`). The entry has no `fig`, so the card draws no figure.
 - The hook stays word for word (`season.ts:348`; FACTS 1). The tease Lesson 9's card shows for this
   lesson, and Lesson 11's tease on this page's card, are the kit's lesson copy
-  (`kit/lesson-copy.ts:122`, `:131`; FACTS 5, 5b).
+  (`kit/lesson-copy.ts:115`, `:116`; FACTS 5, 5b).
 - The card reads "Ready · read", with "17 min", once the page is live (`explorer.ts:150-157`).
 
 ## What the kit and the app still need
@@ -813,7 +813,7 @@ at `85e23a1af` changed there, and that page's own lines are cited at `d59c00ad6`
 11. `kit/season.ts`, Lesson 10's entry (Explorer and season data).
 12. The head, from SEARCH.md § 3 and Lesson 4's document (`learn/04.html:9-137`), held by
     `src/features/lessons/kit/lesson-copy.test.ts:323-358` and
-    `src/tests/lesson-pages.test.ts:112-210` on every page, a draft's included, from its first
+    `src/tests/lesson-pages.test.ts:113-226` on every page, a draft's included, from its first
     commit:
     - title, at most 60 characters with the headline in it: in the form Lessons 1, 2, 3 and 5 use,
       "Major and minor: Find Your Pitch, Lesson 10 | MercuryPitch" (58 characters), until SEARCH.md
@@ -876,12 +876,12 @@ CURIOSITY-MOMENTS § 5 item 2.
 
 1. **The alternative hook, `bright-dark`.** Decided: the owner retired it on 22 October 2026 (this
    PR), for its mood labels. The answer to CURIOSITY-MOMENTS § 5 item 2 had kept every changed
-   hook's old wording (`src/features/lessons/kit/lesson-copy.test.ts:269-284`). The Content Studio's
-   hook picker offered it with its note, which names the mood labels. Picked, it put "bright" and
-   "dark" in the h1, the head's copies of the hook and the structured data, on Lesson 10's card in
-   every lesson page's explorer and on Lesson 9's next-lesson card, and ran the description to 171
-   characters (Edge cases, "The admin console's hook"). Recommended then: keep it switchable, and
-   leave it unpicked.
+   hook's old wording (`src/features/lessons/kit/lesson-copy.test.ts:269-284` at `b7093a0a4`). The
+   Content Studio's hook picker offered it with its note, which names the mood labels. Picked, it
+   put "bright" and "dark" in the h1, the head's copies of the hook and the structured data, on
+   Lesson 10's card in every lesson page's explorer and on Lesson 9's next-lesson card, and ran the
+   description to 171 characters (Edge cases, "The admin console's hook"). Recommended then: keep it
+   switchable, and leave it unpicked.
 2. **The page's title.** The series' form, "Major and minor: Find Your Pitch, Lesson 10 |
    MercuryPitch" (58 characters), until SEARCH.md § 13 item 1 settles titles for every lesson; then
    its answer, which is SEARCH.md § 4's query-led draft if the recommendation stands (What the kit
@@ -951,9 +951,9 @@ CURIOSITY-MOMENTS § 5 item 2.
   the recall would ask about a lesson the learner cannot open.
 - **The admin console's hook.** The console could switch Lesson 10's hook to its alternative,
   `bright-dark`, "Which single note turns a bright major chord into a dark minor one?"
-  (`kit/lesson-copy.ts:115-123`): the pick is the `hook` field of the lesson's override, set through
-  PUT `/api/admin/lessons/:n` (`src/lib/lesson-state.ts:41`, `:49-50`, `:182-189`) from the Content
-  Studio's hook picker, which prints the variant's note under it
+  (`kit/lesson-copy.ts:115-123` at `b7093a0a4`): the pick is the `hook` field of the lesson's
+  override, set through PUT `/api/admin/lessons/:n` (`src/lib/lesson-state.ts:41`, `:49-50`,
+  `:182-189`) from the Content Studio's hook picker, which prints the variant's note under it
   (`src/features/admin/lessons/LessonControls.tsx:447-451`, at `d59c00ad6`). The page's markup keeps
   the default; picked, the alternative goes wherever the hook goes. The site worker writes it into
   the page's h1, into every head copy that quotes the hook, the description and the og and twitter

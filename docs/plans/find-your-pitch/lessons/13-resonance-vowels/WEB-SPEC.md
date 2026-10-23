@@ -787,7 +787,7 @@ and the four-words strip in the kit.
    `src/features/lessons/kit/lesson-copy.test.ts` reads every `learn/NN.html`, drafts included
    (`lesson-copy.test.ts:323-358`), and `src/tests/lesson-pages.test.ts` holds every lesson
    document, a draft's included, to its head, its share card, its structured data and its legal
-   links (`:112-210`), since a draft the console publishes goes live with the head it was built with
+   links (`:113-226`), since a draft the console publishes goes live with the head it was built with
    (`:13-18`). The hook's copies are the ones the site worker rewrites when the console picks
    another hook (`HOOK_COPIES`, `src/lesson-gate.ts:444-460`, and the structured data after it);
    only the meta description and the Article's description, which repeat each other, may shorten the
