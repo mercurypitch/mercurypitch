@@ -218,8 +218,8 @@ describe('funnel rows after 13 months', () => {
 describe('lesson answers, kept by their UTC day', () => {
   /** One lesson answer through the route at `atMs`, as the pages send it
    *  for a reader who said yes, with a stand-in for Cloudflare's limiter
-   *  that takes it. */
-  async function lessonAnswer(atMs: number): Promise<void> {
+   *  that takes it. The page is the caller's; the other numbers are fixed. */
+  async function lessonAnswer(atMs: number, page = 2): Promise<void> {
     vi.useFakeTimers({ toFake: ['Date'] })
     vi.setSystemTime(atMs)
     const response = await worker.fetch(
@@ -233,7 +233,7 @@ describe('lesson answers, kept by their UTC day', () => {
           clientId: 'lesson-anonymous',
           event: 'lesson_answer',
           metrics: {
-            page: 2,
+            page,
             qLesson: 1,
             q: 4,
             firstTry: 1,
@@ -252,6 +252,43 @@ describe('lesson answers, kept by their UTC day', () => {
     )
     vi.useRealTimers()
     expect(response.status).toBe(201)
+  }
+
+  /** One of the app's own events through the route at `atMs`, from a
+   *  device with its own client id and a first-touch click id. */
+  async function appEvent(atMs: number): Promise<void> {
+    vi.useFakeTimers({ toFake: ['Date'] })
+    vi.setSystemTime(atMs)
+    const response = await worker.fetch(
+      new Request('https://api.test/api/mirror/event', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'CF-Connecting-IP': '203.0.113.7',
+        },
+        body: JSON.stringify({
+          clientId: '5f1c2e9a-1111-4b7e-9a3e-0c1d2e3f4a5b',
+          event: 'mirror_view',
+          acq: { gclid: 'person-click', utmSource: 'google' },
+        }),
+      }),
+      env,
+      {} as ExecutionContext,
+    )
+    vi.useRealTimers()
+    expect(response.status).toBe(201)
+  }
+
+  function rowsByRowid(): Array<{
+    rowid: number
+    event: string
+    page: number | null
+  }> {
+    return sqlite
+      .prepare(
+        "SELECT rowid AS rowid, event, json_extract(metricsJson, '$.page') AS page FROM mirrorEvents ORDER BY rowid",
+      )
+      .all() as Array<{ rowid: number; event: string; page: number | null }>
   }
 
   function lessonDays(): string[] {
@@ -289,6 +326,41 @@ describe('lesson answers, kept by their UTC day', () => {
 
     expect(lessonDays()).toEqual(['2025-09-12T00:00:00.000Z'])
     expect(result.mirrorEventsDeleted).toBe(2)
+  })
+
+  it('puts no lesson answer between the app events sent around it', async () => {
+    await appEvent(Date.parse('2026-10-22T16:43:10.100Z'))
+    await lessonAnswer(Date.parse('2026-10-22T16:43:12.345Z'))
+    await appEvent(Date.parse('2026-10-22T16:43:15.900Z'))
+
+    const rows = rowsByRowid()
+    expect(
+      rows.filter((row) => row.event === 'mirror_view').map((row) => row.rowid),
+    ).toEqual([1, 2])
+    const lessonRows = rows.filter((row) => row.event === 'lesson_answer')
+    expect(lessonRows).toHaveLength(1)
+    expect(lessonRows[0]?.rowid).toBeLessThan(0)
+    expect(Number.isSafeInteger(lessonRows[0]?.rowid)).toBe(true)
+  })
+
+  it('numbers lesson answers in no order of their coming', async () => {
+    const first = Date.parse('2026-10-22T09:01:00.000Z')
+    for (let page = 1; page <= 12; page += 1) {
+      await lessonAnswer(first + (page - 1) * 60_000, page)
+    }
+
+    const rows = rowsByRowid()
+    expect(rows).toHaveLength(12)
+    expect(new Set(rows.map((row) => row.rowid)).size).toBe(12)
+    for (const row of rows) {
+      expect(row.rowid).toBeLessThan(0)
+      expect(Number.isSafeInteger(row.rowid)).toBe(true)
+    }
+    // Not flaky: the two orders come up twice in 12! (once in 240 million).
+    const sent = Array.from({ length: 12 }, (_, i) => i + 1)
+    const pages = rows.map((row) => row.page)
+    expect(pages).not.toEqual(sent)
+    expect(pages).not.toEqual([...sent].reverse())
   })
 })
 
