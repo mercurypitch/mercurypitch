@@ -7,13 +7,14 @@
 // offers after each answer, and the claims check over every line the
 // checkpoint itself writes, beside the reader's own (hold-take.test.ts).
 // Then the card on learn/05.html's own markup, left while the microphone
-// opens, the tab hidden or the section scrolled away: the listener is a
-// double that counts the takes it opens and the times the microphone is let go.
+// opens, the tab hidden or the section scrolled away, or away and back before
+// Start: the listener is a double that counts the takes it opens and the
+// times the microphone is let go.
 
 import { readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { scrollOutOfView } from '@/features/lessons/kit/browser-doubles.test-fixtures'
+import { scrollIntoViewAgain, scrollOutOfView, } from '@/features/lessons/kit/browser-doubles.test-fixtures'
 import type { HoldReading } from '@/features/lessons/kit/hold-take'
 import { holdChartWords, holdSummary } from '@/features/lessons/kit/hold-take'
 import type * as ListenModule from '@/features/lessons/kit/listen'
@@ -209,7 +210,7 @@ function leaveSection(): void {
 // each case loads the page's modules afresh (vi.resetModules) and parses
 // learn/05.html into jsdom: up to 1.7 s measured on a loaded 4-core machine
 describe(
-  'Sing it left while the microphone opens: the tab hidden, the section scrolled away',
+  'Sing it left while the microphone opens, or away and back before Start',
   { timeout: 15_000 },
   () => {
     beforeEach(() => {
@@ -281,6 +282,20 @@ describe(
       expect(scrolled).not.toHaveBeenCalled()
       expect(el('#singLive').hidden).toBe(true)
       expect(el('[data-panel="prepare"]').hidden).toBe(false)
+    })
+
+    it('starts a take after Start once the section, away past its 600 ms, is back in view', async () => {
+      // Arrange
+      await loadCard()
+      leaveSection()
+      scrollIntoViewAgain(el('#sing'))
+
+      // Act
+      await press('[data-sing="start"]')
+
+      // Assert: one take, and the microphone let go once, as it ended
+      expect(mic.opened).toBe(1)
+      expect([mic.released, mic.releasedNow]).toEqual([1, 0])
     })
   },
 )
