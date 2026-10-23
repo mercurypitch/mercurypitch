@@ -309,8 +309,8 @@ the best singer.
   hoarse or unwell today? Just listen along. Free, in your browser:
   **mercurypitch.com/vocal-range-test**"
   Under it: "Ten minutes, gently, most days. Missed a day? Just come back."
-- Instead, after "Effortful", "Uncomfortable" or "Just listen today", with no "Ten minutes" line:
-  "Rest today. The Vocal Range Test will be here when your voice feels comfortable:
+- Instead, after "Effortful", "Uncomfortable" or "Just listen today", headed "Rest today", with no
+  "Ten minutes" line: "The Vocal Range Test will be here when your voice feels comfortable:
   **mercurypitch.com/vocal-range-test**"
 
 _[Editorial: the card's second drill, the Guided Warmup's lip trills, can't be linked yet. It needs

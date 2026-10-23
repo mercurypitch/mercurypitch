@@ -315,9 +315,9 @@ sounds like itself from any note.
 - Second drill: For your ear, Ear Lab's Leap plays two notes, going up or down, and you name the
   interval. It mixes all twelve intervals, from a semitone to an octave; listen for this lesson's
   m2, M2, P4, P5 and P8. Free: **mercurypitch.com/ear-lab**, then tap Leap.
-- Instead, after "Effortful", "Uncomfortable" or "Just listen today": "Rest today. Interval Trainer
-  will be here when your voice feels comfortable: **mercurypitch.com/pitch-training**, then tap
-  Interval Trainer." Then the second drill.
+- Instead, after "Effortful", "Uncomfortable" or "Just listen today", under the eyebrow
+  "Rest today": "Interval Trainer will be here when your voice feels comfortable:
+  **mercurypitch.com/pitch-training**, then tap Interval Trainer." Then the second drill.
 
 _[Editorial: when the `intervals` launch field ships (CURRICULUM § 4 item 2; WEB-SPEC, Practice
 links), the card's address becomes "Practise it free: mercurypitch.com/exercises/fourths-and-fifths"

@@ -375,7 +375,7 @@ vertical (pitch is height).
   tricky, good: that's learning" (rule 15). A count "7 of 10" at the end; no rating, no streak.
 - A switch **Up and down** mixes in falling steps, because Leap plays both (FACTS 32); off at
   first.
-- The two buttons sit side by side, each at least 44 px tall; keys 1 and 2 answer, Space replays.
+- Two 44 px buttons side by side; keys 1 and 2 answer ("Space replays" until this PR; it never did).
 
 ### 5. Slide guide (Sing it)
 

@@ -286,8 +286,8 @@ Merc's celebration (state 8 and 11) comes only after an Easy or Workable answer,
 hold, never after Effortful or Uncomfortable, and never because a hold was longer. The singer's
 answer outranks the reading (REQ-GVC-024). The page keeps the checkpoint's ending in memory for the
 visit, never in storage: after "Uncomfortable" or "Just listen today" the Wrap shows the rest card,
-"Rest today. Voice Mirror will be here when your voice feels comfortable", without "Ten minutes,
-gently, most days" (FACTS 54); otherwise, and when Sing it is skipped, the Voice Mirror card.
+"Voice Mirror will be here when your voice feels comfortable", without "Ten minutes, gently, most
+days" (FACTS 54); otherwise, and when Sing it is skipped, the Voice Mirror card.
 
 The flow is a pure rule (`lesson-05/hold-flow.ts`): from the hold, the take's reading, the answer
 and the takes so far, it gives the next state, the buttons and whether Merc celebrates, so every
