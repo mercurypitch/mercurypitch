@@ -12,7 +12,7 @@ const words = (): string =>
 beforeEach(() => {
   vi.useFakeTimers()
   document.body.innerHTML =
-    '<header><button type="button" id="soundSwitch" aria-pressed="false">Sound</button></header><main><button type="button" id="elsewhere">Play</button></main><div class="toast" id="toast" role="status" aria-live="polite"><p id="toastText">Sound is off.</p><button type="button" id="toastBtn" hidden>Turn on</button></div>'
+    '<header><button type="button" id="soundSwitch" aria-pressed="false">Sound</button></header><main><button type="button" id="elsewhere">Play</button></main><div class="toast" id="toast" role="status" aria-live="polite"><p id="toastText"></p><button type="button" id="toastBtn" hidden>Turn on</button></div>'
 })
 
 afterEach(() => {
