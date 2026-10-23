@@ -170,13 +170,13 @@ FACTS 5a). Each section's heading, and the line above it, are in LESSON.md ("Sec
 
 ## Length
 
-The learner copy is 2,376 words by the review's count (FACTS 3), under the series' cap, Lesson 3's
-page at 2,382 words on the same count at `616c97edb`. The page runs about 17 minutes: 9.98 minutes
-of reading at 238 words a minute and 7.0 of sound, toys and tasks, 16.98 in all. That is past
-MASTER-PLAN § 4.2's 8 to 12 minutes of active time, as Lessons 3, 5, 6 and 7 are (16, 18, 17 and 16
-minutes: Lesson 3 FACTS 61, Lesson 5 FACTS 2, Lesson 6 FACTS 3, Lesson 7 FACTS 4). Each step's text,
-with its Try, its Notice and any predict, runs 93 to 120 words (Steps 1 to 5: 103, 98, 120, 93 and
-114), inside § 4.2's 50 to 120 a step. Four parts carry more, for these reasons:
+The learner copy is 2,341 words today, every branch counted (FACTS 3; 2,376 on the review's count),
+under the series' cap, Lesson 3's page at 2,382 words on that count at `616c97edb`. It runs about 17
+minutes: 9.84 of reading at 238 words a minute and 7.0 of sound, toys and tasks, 16.84 in all. That
+is past MASTER-PLAN § 4.2's 8 to 12 minutes of active time, as Lessons 3, 5, 6 and 7 are (16, 18, 17
+and 16 minutes: Lesson 3 FACTS 61, Lesson 5 FACTS 2, Lesson 6 FACTS 3, Lesson 7 FACTS 4). Each
+step's text, with its Try, its Notice and any predict, runs 93 to 120 words (Steps 1 to 5: 103, 98,
+120, 93 and 114), inside § 4.2's 50 to 120 a step. Four parts carry more, for these reasons:
 
 - **Step 3, 168 words with its drawer.** Its Go deeper drawer (48 words) says why the predict keeps
   do at home, and is closed by default; Major or minor?, its ear game, is a card under the Notice.

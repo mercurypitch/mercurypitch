@@ -81,20 +81,20 @@ above it, are in LESSON.md ("Section headings").
 
 ## Length
 
-The learner copy is 2,404 words on today's default path (FACTS 2), 25 over the series' cap of
-2,379; the text package's was 2,351. The page runs about 18 minutes, past MASTER-PLAN § 4.2's 8 to
-12 minutes of active time, as Lesson 3's 16 do; the holds, the warm-up and the six questions take
-about 4 of them. On the text package's figures, Steps 1 and 5 sit inside § 4.2's 50 to 120 words
-a step (about 98 and 89). Three run longer, for these reasons:
+The learner copy is 2,404 words on today's page, every branch counted (FACTS 2), 25 over the series'
+cap of 2,379; the text package's was 2,351. The page runs about 18 minutes, past MASTER-PLAN § 4.2's
+8 to 12 minutes of active time, as Lesson 3's 16 do; the holds, the warm-up and the six questions
+take about 4 of them. Each step's text, with its Try, its Notice and any predict, runs 90 to 163
+words (Steps 1 to 5: 101, 163, 130, 132 and 90), inside § 4.2's 50 to 120 a step but for Steps 2, 3
+and 4, for these reasons:
 
-- **Step 2, about 234 words.** Its own text is 62 words; the rest is the lesson's second predict
-  and its reveal (with Tavi's one-line re-explanation, about 92 words) and the mix-up card
-  (about 80), which sits in the step whose toy refutes it, as in Lessons 2 to 4.
-- **Step 3, about 235 words.** Its text, Try and Notice come to about 98 words; it also carries the
-  care line and the comfort line, which must come before Step 4's first sung "hoo" (FACTS 48), and
-  the Go deeper drawer (about 110 words), closed by default.
-- **Step 4, about 121 words.** Its Try is the page's first sung exercise and must say the whole of
-  it.
+- **Step 2, about 260 words.** Its text is 163: about 65 of its own, its Try and its Notice, and the
+  lesson's second predict and its reveal with Tavi's one-line re-explanation (about 100). The
+  mix-up card (about 85) sits in the step whose toy refutes it, as in Lessons 2 to 4.
+- **Step 3, about 250 words.** Its text, 130, holds the care and comfort lines that must come before
+  Step 4's first sung "hoo" (FACTS 48); its Go deeper drawer (about 110) is closed.
+- **Step 4, about 140 words.** Its text is 132: the three starts, and a Try that, as the page's
+  first sung exercise, must say the whole of it.
 
 ## Toys: what each reuses, and what is new
 

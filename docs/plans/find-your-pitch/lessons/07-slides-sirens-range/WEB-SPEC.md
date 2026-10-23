@@ -110,7 +110,7 @@ line above it, are in LESSON.md ("Section headings").
 
 ## Length
 
-The learner copy is 2,480 words on today's default path (FACTS 4), 101 over the series' cap of
+The learner copy is 2,480 words today, every branch counted (FACTS 4), 101 over the series' cap of
 2,379; the text package's 2,361 was level with the cap then. The page runs about 16 minutes: 10.42
 minutes of reading at 238 words a minute and about 6 of sound, toys and tasks, 16.42 in all. That is
 past MASTER-PLAN § 4.2's 8 to 12 minutes of active time, as Lessons 3, 5 and 6 are (16, 18 and 17
