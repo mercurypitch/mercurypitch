@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { generateSirens, SIREN_GUIDE_PERIOD_MS, SIREN_PHASE_GLIDE, sirenGuideMidi, useSirenController, } from '@/features/exercises/siren/use-siren-controller'
+import { generateSirens, SIREN_GUIDE_PERIOD_MS, SIREN_PHASE_GLIDE, SIREN_PHASE_LISTEN, sirenGuideMidi, useSirenController, } from '@/features/exercises/siren/use-siren-controller'
 import type { ExerciseResult } from '@/features/exercises/types'
 import { EXERCISE_SIREN } from '@/features/exercises/types'
 import type { BaseExerciseController } from '@/features/exercises/use-base-exercise'
@@ -74,31 +74,41 @@ describe('sirenGuideMidi', () => {
   })
 })
 
-/** A singer: the MIDI note sung `sinceMs` into a glide window, or null. */
+/** A singer: the MIDI note sung `sinceMs` into a phase, or null. */
 type Singer = (from: number, to: number, sinceMs: number) => number | null
 
 /**
- * Run all six rounds against a mock base whose pitch history is whatever
- * `sing` returns, frame by frame at 60 a second, inside each glide window.
+ * Run all six rounds against a mock base whose pitch history, like the real
+ * one, keeps every frame of the run, at 60 a second: what `sing` returns in
+ * each glide window, and what `between` returns while the pair plays and the
+ * count-in runs, both timed from the start of their phase.
  */
-async function runSiren(sing: Singer): Promise<ExerciseResult> {
+async function runSiren(
+  sing: Singer,
+  between: Singer = () => null,
+): Promise<ExerciseResult> {
   const t0 = Date.now()
   const elapsed = () => Date.now() - t0
   let from = 0
   let to = 0
-  let windowFromMs = -1
+  // Each phase as it began: when, between which notes, and who sings it.
+  const phases: Array<{
+    atMs: number
+    from: number
+    to: number
+    singer: Singer
+  }> = []
   // A holder, not a `let`: TS cannot see the callback assign it.
   const done: { result: ExerciseResult | null } = { result: null }
   const base = {
     pitchHistory: () => {
-      if (windowFromMs < 0) return []
       const frames = []
-      for (
-        let ms = windowFromMs + 1000 / 60;
-        ms <= elapsed();
-        ms += 1000 / 60
-      ) {
-        const midi = sing(from, to, ms - windowFromMs)
+      for (let ms = 1000 / 60; ms <= elapsed(); ms += 1000 / 60) {
+        let phase = phases.length - 1
+        while (phase >= 0 && phases[phase].atMs >= ms) phase--
+        if (phase < 0) continue
+        const p = phases[phase]
+        const midi = p.singer(p.from, p.to, ms - p.atMs)
         if (midi === null) continue
         frames.push({
           freq: 440 * 2 ** ((midi - 69) / 12),
@@ -112,7 +122,13 @@ async function runSiren(sing: Singer): Promise<ExerciseResult> {
     _updateMetrics: (m: Record<string, number>) => {
       if (m.startMidi !== undefined) from = m.startMidi
       if (m.endMidi !== undefined) to = m.endMidi
-      if (m.phase === SIREN_PHASE_GLIDE) windowFromMs = m.glideFromMs ?? 0
+      // The count-in carries on the listening phase's singer.
+      if (m.phase === SIREN_PHASE_LISTEN) {
+        phases.push({ atMs: elapsed(), from, to, singer: between })
+      }
+      if (m.phase === SIREN_PHASE_GLIDE) {
+        phases.push({ atMs: m.glideFromMs ?? 0, from, to, singer: sing })
+      }
     },
     _setTargetPitch: () => {},
     _updateScore: () => {},
@@ -194,6 +210,15 @@ describe('the Siren glide score (30 % of the grade)', () => {
     // Three full glides and three zeros, averaged over all six rounds.
     expect(r.metrics.glideQuality).toBeGreaterThan(45)
     expect(r.metrics.glideQuality).toBeLessThanOrEqual(50)
+  })
+
+  it("scores each round on its own window's frames alone", async () => {
+    // Glide along while the pair plays and through the count-in, then hold
+    // the first note through the window. The history still holds those
+    // glides, and the rounds before, but the window itself glides nothing.
+    const r = await runSiren((from) => from, glideAndHold)
+    expect(r.metrics.voicedGlides).toBe(6)
+    expect(r.metrics.glideQuality).toBe(0)
   })
 
   it('scores silence 0, with the same metrics as a sung run', async () => {
