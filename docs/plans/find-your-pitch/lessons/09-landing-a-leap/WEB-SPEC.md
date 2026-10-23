@@ -491,7 +491,8 @@ live (`:179-183`).
   "Right." or "Not quite." before each line (`quiz.ts:293`), so no feedback line starts with
   "Right", "Yes" or "Correct". "Try Step 2 again", "Try Step 3 again", "Try Step 4 again" and "Try
   Step 5 again" use the kit's `data-goto-step`. LESSON.md's note on the shuffle is editorial and
-  never printed. Answers stay in the viewer's browser until the telemetry track exists.
+  never printed. Answers stay in the viewer's browser; since this PR each question's first answer in
+  a visit also goes out, anonymously.
 
 ## Audio
 

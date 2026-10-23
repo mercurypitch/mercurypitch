@@ -128,9 +128,9 @@ in LESSON.md has none. The recall check (item 4) starts with Lesson 2.
    the right answer marked with a check icon, a small score ("3 of 4"), answers remembered in
    localStorage (wrapped in try/catch). On a return visit the questions are asked afresh, not
    shown with their stored answers, so the page measures delayed retrieval (MASTER-PLAN § 9);
-   Lesson 2's page asks two of them again (§ 4.2 item 4). In the preview nothing leaves the
-   browser; on the public host each answer also goes out as a Lesson telemetry event (MASTER-PLAN
-   Phase 1, § 12 item 11), behind the viewer's consent.
+   Lesson 2's page asks two of them again (§ 4.2 item 4). In the preview nothing leaves the browser;
+   on the public host, since this PR, each question's first answer in a visit goes out as an
+   anonymous `lesson_answer` event (`kit/telemetry.ts`), unless the viewer declined consent.
 7. **Wrap**: the three recap lines, the one-sentence challenge, and the next lesson's hook from
    LESSON.md ("Musicians only use seven letters, so where do the other five notes come from?") on
    the kit's next-lesson card (`kit/next-card.ts`), which takes Lesson 2's state from the season in

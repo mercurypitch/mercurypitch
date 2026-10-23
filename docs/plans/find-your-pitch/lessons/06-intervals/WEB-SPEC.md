@@ -447,8 +447,8 @@ kit marks `lesson` done once every question has an answer (`:75-76`, `:322-327`)
   here, never `data-goto-step`, which would move this page's own deck: the rule Lesson 2's reviewed
   spec sets for a question reused on another lesson's page (its "What the kit and the app still
   need", item 9), which allows a step address once a step deck can open at one (Lesson 3 WEB-SPEC,
-  "New engineering, in one list", item 6) (FACTS 7). On the public host each answer is a telemetry
-  event with its `visit_index`.
+  "New engineering, in one list", item 6) (FACTS 7). On the public host, since this PR, each
+  question's first answer in a visit is an anonymous `lesson_answer` event with its visit.
 - **Quick check**: LESSON.md's four questions, ids `l06-q1` to `l06-q4`, keys `fyp-l06-seed` and
   `fyp-l06-quiz-v1`, and `lesson: 6`, so answering all four marks Lesson 6 done in the explorer.
   Three answers each, shuffled per question from the stored seed, one-line feedback for every
@@ -460,8 +460,8 @@ kit marks `lesson` done once every question has an answer (`:75-76`, `:322-327`)
   button is not part of every answer's name. The kit rebuilds the questions on every answer
   (`kit/quiz.ts:279-282`, `:299-300`), so those buttons are handled by a listener on the quiz's
   root, as the step links are. "Try Step 2 again", "Try Step 3 again", "Try Step 4 again" and "Try
-  Step 5 again" use the kit's `data-goto-step`. Answers stay in the viewer's browser until the
-  telemetry track exists.
+  Step 5 again" use the kit's `data-goto-step`. Answers stay in the viewer's browser; since this PR
+  each question's first answer in a visit also goes out, anonymously.
 
 ### 8. Go deeper drawer
 

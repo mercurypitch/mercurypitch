@@ -114,9 +114,9 @@ are Lesson, Watch and Explorer. Each section's heading, and the line above it, a
    storage keys `fyp-l02-seed` and `fyp-l02-quiz-v1`; `lesson: 2`, so answering all four marks
    Lesson 2 done. The kit rebuilds the questions on every answer, so question 2's play button is
    handled by a listener on `#qs`, as the step links are. Answers stay in the viewer's browser
-   (localStorage) until the Lesson telemetry track exists; then each first answer is a telemetry
-   event behind consent (MASTER-PLAN Phase 1). A later visit asks them afresh, and Lessons 3 and 4
-   will each open with two of them.
+   (localStorage); since this PR each question's first answer in a visit also goes out as an
+   anonymous `lesson_answer` event, unless the viewer declined consent (`kit/telemetry.ts`). A later
+   visit asks them afresh, and Lessons 3 and 4 will each open with two of them.
 8. **Wrap**: the three recap lines and the challenge, then:
    - **The practice card** (LESSON.md): Lesson 1's app card, with Leap's text, today's caveat and
      Contour as an optional first drill; the address line "Practise it free:
@@ -415,9 +415,9 @@ vertical (pitch is height).
   the first time the page anatomy's item 4 runs. Options are reshuffled from a seed of its own
   (keys `fyp-l02-recall-seed` and `fyp-l02-recall-v1`), not Lesson 1's, and earlier answers are
   never shown, so the answers measure delayed retrieval (MASTER-PLAN § 9). It marks no lesson done.
-  On the public host each answer is a telemetry event with its `visit_index`. The kit needs three
-  changes for it (What the kit and the app still need, 9): a second quiz on one page, no
-  done-marking, and question ids.
+  On the public host, since this PR, each question's first answer in a visit is an anonymous
+  `lesson_answer` event with its visit. The kit needs three changes for it (What the kit and the app
+  still need, 9): a second quiz on one page, no done-marking, and question ids.
 
 ### 7 and 8. Predicts and the Go deeper drawer
 

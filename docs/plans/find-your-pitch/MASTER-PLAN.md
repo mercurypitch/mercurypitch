@@ -372,9 +372,9 @@ twelve notes (see CURRICULUM § 5).
 | Craft      | Critic rounds to SHIP; factual corrections after publishing                                                                                                         | Three or fewer; zero                                      |
 
 Each question has three or four options, so a blind guess scores a third or a quarter; scores are
-reported guess-corrected, (raw - 1/k) / (1 - 1/k) for k options. The learning metric is collected
-by the Phase 1 Lesson telemetry track, on the lesson host (§ 12 items 9 and 11); until both exist,
-quiz answers stay in the viewer's browser and nothing reaches the team.
+reported guess-corrected, (raw - 1/k) / (1 - 1/k) for k options. Until this PR quiz answers stayed
+in the browser; now each question's first answer in a visit is an anonymous `lesson_answer` event
+(`page`, `qLesson`, `q`, `firstTry`, `k`, `visit`, `consent`). Predicts and checkpoints send none.
 
 Judge lessons by retrieval, not by "that was so clear": fluency inflates perceived learning.
 
