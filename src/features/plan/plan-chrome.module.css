@@ -1,0 +1,161 @@
+/* ============================================================
+   PlanChrome: what the question screens and the plan screen share
+   ============================================================
+
+   The tokens, Merc's line, the headline and the scroll region are what the
+   eye holds from the first question to the plan, so they are written once,
+   here, and PlanQuestions.module.css and PlanScreen.module.css `composes`
+   them. The look is the approved mock's (your-plan-in-four-taps.html,
+   19 Oct), in First Light's own tokens: each token First Light defines (the
+   three inks, the rule, blue, teal, violet and the ease) reads its --ob-*
+   value and falls back to the mock's, so the screens look the same in First
+   Light and in a layer that does not define them. The ink on the fills, the
+   display font and the two room sizes are the screens' own plain literals:
+   First Light has no token for them. The tints of the colours (borders,
+   halos, fills) are written out as literals too, as First Light's own sheet
+   writes them.
+
+   One rule keeps the sharing safe: a shared class and a rule of a screen's
+   own never set the same property on the same element. The build emits a
+   composed class's rules after the importing file's own for the first file
+   that imports them, and before them for the next one (Lightning CSS, as
+   Vite 6.4.4 runs it), so at equal specificity a screen's own rule would
+   win in one screen and lose in the other. Where a screen needs a value of
+   its own, the shared class reads a custom property with a fallback (the
+   headline's size and measure, the region's end padding) and the screen
+   sets that property. plan-chrome.test.ts holds the sheets to this.
+
+   Class names are camelCase, which is what the build exports them as
+   (`localsConvention: 'camelCaseOnly'`). */
+
+/* The root of a screen: the tokens and the type every part inherits. */
+.root {
+  --pc-ink: var(--ob-ink, #e6edf3);
+  --pc-ink-2: var(--ob-ink-2, #a8b3bf);
+  --pc-ink-3: var(--ob-ink-3, #7d8590);
+  --pc-rule: var(--ob-rule, #30363d);
+  --pc-blue: var(--ob-blue, #58a6ff);
+  --pc-teal: var(--ob-teal, #2dd4bf);
+  --pc-violet: var(--ob-violet, #bc8cff);
+  --pc-ease: var(--ob-ease, cubic-bezier(0.22, 0.61, 0.36, 1));
+  /* The ink on the blue-to-teal fills, as in the mock. */
+  --pc-on-fill: #06090f;
+  --pc-display: 'Outfit', 'Inter', system-ui, sans-serif;
+  /* What hangs out of the content, which a scroll region would clip: above,
+     Merc's bubble and its tail; beside and below, a focus ring. */
+  --pc-room: 14px;
+  --pc-bleed: 6px;
+
+  width: 100%;
+  max-width: 1000px;
+  color: var(--pc-ink);
+  font-size: 15px;
+  line-height: 1.45;
+  text-align: center;
+}
+
+/* A tap that lands twice (the second pick replaces the first) must not zoom
+   the page, and nothing on these screens waits for a double tap. */
+.root button {
+  touch-action: manipulation;
+}
+
+.root button:focus-visible,
+.root input:focus-visible {
+  outline: 2px solid var(--pc-blue);
+  outline-offset: 2px;
+}
+
+/* The scroll region: a screen's content, scrolling inside the host's box
+   without passing the scroll on to the page behind. A region clips at its
+   padding box, so the padding keeps what hangs out of the content (the
+   bubble and its tail above, a focus ring beside and below), and the
+   negative margin gives the room above back, so the bubble sits where it
+   would without a region. The sides and the bottom cost the content
+   --pc-bleed each, and scroll-padding is that same bleed, so a focus that
+   scrolls a card or a row flush to the region's edge keeps its ring inside
+   the region too. The questions' region is the last thing in the host's
+   box, so it sets --pc-end (the padding at the end of its content) to the
+   bleed and the home indicator's inset; the plan's region has its ways on
+   under it, and they carry the inset. The screen says how tall the region
+   is: the questions' root is the region and adds its height, the plan's
+   region fills what its ways on leave. What the pull-up needs from the
+   host's box (a flex or grid column of a definite height, with Merc or free
+   room above it) and who owns the bottom inset are the host contract, and
+   PlanExits.tsx's header holds it. */
+.scroll {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 14px;
+  box-sizing: border-box;
+  min-height: 0;
+  margin-top: calc(var(--pc-room) * -1);
+  padding: var(--pc-room) var(--pc-bleed) var(--pc-end, var(--pc-bleed));
+  scroll-padding: var(--pc-bleed);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+/* ── Merc's line ──────────────────────────────────────────────── */
+
+/* The bubble hangs under the host's Merc, so it pulls up a little and its
+   tail points up at him. */
+.say {
+  position: relative;
+  margin: -6px 0 2px;
+  max-width: 290px;
+  padding: 9px 14px;
+  border: 1px solid rgba(230, 237, 243, 0.12);
+  border-radius: 14px;
+  background: rgba(22, 27, 34, 0.95);
+  font-size: 14.5px;
+  line-height: 1.4;
+  color: var(--pc-ink);
+}
+
+.say::before {
+  content: '';
+  position: absolute;
+  top: -6px;
+  left: 50%;
+  width: 10px;
+  height: 10px;
+  margin-left: -5px;
+  transform: rotate(45deg);
+  border-top: 1px solid rgba(230, 237, 243, 0.12);
+  border-left: 1px solid rgba(230, 237, 243, 0.12);
+  background: rgb(22, 27, 34);
+}
+
+/* ── The headline ─────────────────────────────────────────────── */
+
+/* Focused by script when a screen opens, so a screen reader says where the
+   person landed. Not a control, so no ring. A wide screen sets its own size
+   and measure through the two properties, never on the class itself. */
+.headline {
+  margin: 0;
+  max-width: var(--pc-headline-max, 14ch);
+  font-family: var(--pc-display);
+  font-size: var(--pc-headline-size, 31px);
+  font-weight: 600;
+  line-height: 1.05;
+  letter-spacing: -0.03em;
+  text-wrap: balance;
+}
+
+.headline:focus {
+  outline: none;
+}
+
+.lit {
+  background: linear-gradient(
+    102deg,
+    var(--pc-blue),
+    var(--pc-teal) 52%,
+    var(--pc-violet)
+  );
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}

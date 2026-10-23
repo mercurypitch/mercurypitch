@@ -23,6 +23,30 @@
 //   and then jump to the next box. The screen's root, which holds the
 //   buttons in the DOM, sets no `position` and no transform of its own, for
 //   the same reason.
+// - A flex or grid column with a definite height. The question screens'
+//   root is their scroll region and pulls itself 14px up over what sits
+//   above it (`margin-top: -14px`, `height: calc(100% + 14px)`), so the
+//   region's padding has room for the bubble's tail and the bubble still
+//   sits where it would with no region (plan-chrome.module.css). In a plain
+//   block box that margin collapses through the box and moves it, and an
+//   indefinite height leaves the percentage at auto, so the root grows and
+//   does not scroll. Merc is `flex: none` above the root inside the same
+//   box, and the root shrinks to what he leaves; if he sits outside the
+//   box, nothing may clip the box's top edge. The plan's region pulls up
+//   the same 14px inside a flex root of its own, so its margin cannot
+//   collapse, but it needs the same definite height and the same room
+//   above.
+// - On a phone, the box reaches the bottom edge of the screen and adds no
+//   bottom padding of its own, so the screens own the room under their last
+//   row, the home indicator's inset included. First Light drops its frame's
+//   bottom padding for the plan beat as it does for the twin beat
+//   (`.frame:has(> [data-beat='questions'])` and `.frame:has(> .twinBeat)`,
+//   onboarding.module.css). The plan's ways on carry
+//   `calc(12px + env(safe-area-inset-bottom, 0px))` under their buttons, and
+//   a question screen's scroll region pads its end by
+//   `env(safe-area-inset-bottom, 0px)` on top of its 6px, so the last row
+//   and Next clear the home indicator. A frame that kept its padding would
+//   stack it under both.
 // - Merc directly above the screens. A question screen opens on Merc's
 //   speech bubble, its tail pointing up, and the screens add no room above
 //   it, so the host's one MercPresence goes directly above them. A host that

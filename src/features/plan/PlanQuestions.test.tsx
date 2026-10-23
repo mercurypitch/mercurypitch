@@ -7,8 +7,9 @@
 // the screens on the first question and taps what a singer would tap, by the
 // name a screen reader gives the control. The helpers are shared with
 // PlanQuestions.lines.test.tsx through PlanQuestions.fixture.tsx; this file
-// takes the four questions one by one, and that one takes the typed lines,
-// Not now, Merc and the answers the screens open on.
+// takes the four questions one by one, and checks that the way out comes
+// after the answers in the DOM, so Tab meets them first. That one takes the
+// typed lines, Not now, Merc and the answers the screens open on.
 //
 // The lines the brief spells out are written out: they are what the screens
 // must say. Everything else is read from questions.ts.
@@ -46,6 +47,15 @@ describe('the four questions', () => {
     next()
     expect(asked()).toBe('The last time you practiced, what did you use?')
     expect(mercSays()).toHaveTextContent(MERC_INTRO.q4)
+  })
+
+  it('puts the way out after the answers, so Tab meets the question first', () => {
+    open()
+
+    // Not now sits in the top corner on screen, and after the answers in the DOM.
+    expect(button('Guitar').compareDocumentPosition(button('Not now'))).toBe(
+      Node.DOCUMENT_POSITION_FOLLOWING,
+    )
   })
 })
 

@@ -35,10 +35,9 @@
 // the question either way. Back goes one question back with its answer still
 // picked; Not now says which question it came on. The hairline is the host's
 // (First Light's); the screens add the eyebrow. Back and Not now are
-// PlanExits', and what the host owes the screens (a positioned, height-bounded
-// box that holds still, Merc directly above) is written in that file's
-// header. The root fills that box and scrolls its own content, and each
-// question opens at the top of it.
+// PlanExits', and what the host owes the screens (the box, and where Merc
+// sits) is written in full in that file's header. The root fills that box and
+// scrolls its own content, and each question opens at the top of it.
 
 import type { Component, JSX } from 'solid-js'
 import { createMemo, createSignal, createUniqueId, For, Match, onCleanup, onMount, Show, Switch, untrack, } from 'solid-js'
