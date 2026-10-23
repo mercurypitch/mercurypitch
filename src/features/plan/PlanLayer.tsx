@@ -47,14 +47,18 @@
 //   because the app's shortcuts listen on `window` and the layer opens over
 //   live tabs: a Space would play or pause the singing behind it and swallow
 //   the press that should activate a button, M would toggle the microphone,
-//   and Escape would stop playback and close the sidebar. A stopped keydown
-//   never reaches the document, where Solid listens for delegated handlers,
-//   so nothing inside may use one: the screens' only key handler (Enter puts
-//   the keyboard away, in PlanQuestions) is bound natively for this, and a
-//   new one must be as well. Escape is not wired: leaving is Not now, which
-//   says what it does (a question's Not now turns the plan down, the plan's
-//   keeps the answers), and a key that left without saying would be a third
-//   way out the funnel could not tell.
+//   and Escape would stop playback and close the sidebar. That holds only for
+//   keys sent from inside, so the layer takes focus itself (tabindex -1, no
+//   ring) when a press lands on its words: a press on content that cannot
+//   take focus would drop it to the page, and Space and M would reach the
+//   shortcuts again. A stopped keydown never reaches the document, where
+//   Solid listens for delegated handlers, so nothing inside may use one: the
+//   screens' only key handler (Enter puts the keyboard away, in
+//   PlanQuestions) is bound natively for this, and a new one must be as well.
+//   Escape is not wired: leaving is Not now, which says what it does (a
+//   question's Not now turns the plan down, the plan's keeps the answers),
+//   and a key that left without saying would be a third way out the funnel
+//   could not tell.
 //
 // Merc's size and stills are plan-merc.ts's, shared with First Light's beat;
 // the layer only hands them to MercPresence.
@@ -113,6 +117,11 @@ export function PlanLayer(props: PlanLayerProps): JSX.Element {
       role="dialog"
       aria-modal="true"
       aria-label="Your plan"
+      // Takes focus from a press, never from Tab. A press on the layer's
+      // words (not a control) would otherwise drop focus to the page, and a
+      // key sent from there is not stopped by isolateKeyboard, which holds
+      // only for keys sent from inside. No ring: `.layer:focus`.
+      tabIndex={-1}
       // A stable hook for the E2E overlay helper: the class is a CSS module,
       // so its name is a build hash that nothing outside this file can match.
       data-plan-layer

@@ -149,6 +149,20 @@ describe("the layer's stylesheet", () => {
       height: '100dvh',
     })
   })
+
+  // A press on the layer's words focuses the layer itself (tabindex -1, see
+  // PlanLayer.tsx), so the keys after it are still sent from inside. It is no
+  // control and never a Tab stop, so it wears no ring, as First Light's
+  // overlay and frame do not.
+  it("wears no focus ring when a press focuses it, as First Light's overlay and frame do not", () => {
+    expect(declarations(css, '\\.layer:focus')).toEqual({ outline: 'none' })
+    expect(declarations(firstLight, '\\.overlay:focus')).toEqual({
+      outline: 'none',
+    })
+    expect(declarations(firstLight, '\\.frame:focus')).toEqual({
+      outline: 'none',
+    })
+  })
 })
 
 describe("the way to change the answers' stylesheet", () => {

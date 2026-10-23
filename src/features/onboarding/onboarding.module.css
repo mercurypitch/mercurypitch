@@ -524,6 +524,13 @@
   outline: none;
 }
 
+/* The overlay takes focus too, from a press on it outside the frame (the
+   picture behind the beat, the rail), so the next key is still sent from
+   inside the trap. Never by Tab (tabindex -1): no ring, as on the frame. */
+.overlay:focus {
+  outline: none;
+}
+
 /* The same for each beat's heading, focused by script on every beat change
    so a screen reader announces it. Not a control, so no ring. */
 .frame h1[tabindex='-1']:focus {

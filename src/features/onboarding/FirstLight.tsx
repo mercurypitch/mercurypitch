@@ -511,6 +511,12 @@ export const FirstLight: Component<FirstLightProps> = (props) => {
   let frameRef: HTMLDivElement | undefined
   useFocusTrap(() => overlayRef, {
     isOpen: () => true,
+    // The app's shortcuts listen on window and the flow opens over live tabs:
+    // Space would play the tab behind and kill a button's activation, M would
+    // toggle the microphone. A stopped keydown never reaches Solid's delegated
+    // listeners (on the document), so key handlers in here are native
+    // (`on:keydown`), as the Map's tour link is.
+    isolateKeyboard: true,
     initialFocus: () => frameRef,
   })
 
@@ -544,6 +550,12 @@ export const FirstLight: Component<FirstLightProps> = (props) => {
       role="dialog"
       aria-modal="true"
       aria-label="Welcome to MercuryPitch"
+      // Takes focus from a press, never from Tab. A press on the overlay
+      // outside the frame (the picture behind the beat, the rail) would drop
+      // focus to the page, and a key sent from there is not stopped by
+      // isolateKeyboard, which holds only for keys sent from inside. The frame
+      // does the same for its own words. No ring: `.overlay:focus`.
+      tabIndex={-1}
       // A stable hook for the E2E overlay helper. The class is a CSS
       // module, so its name is a build hash and nothing outside this file
       // can match on it — which is exactly how this flow ended up

@@ -33,6 +33,7 @@ import { exerciseHistory } from '@/stores/exercise-history-store'
 import { showNotification } from '@/stores/notifications-store'
 import { openAuthModal } from '@/stores/ui-store'
 import styles from './HomePage.module.css'
+import { HomePlanCardMount, startPlannedSession } from './HomePlanCardMount'
 
 function IconSnowflake(props: { size?: number }): JSX.Element {
   const s = () => props.size ?? 14
@@ -134,6 +135,10 @@ const HomePage: Component = () => {
     if (routine.resumable()) resumeBtn?.focus({ preventScroll: true })
   })
 
+  // Today's session card, for the plan's Start here row that is the session
+  // (HomePlanCardMount.tsx's startPlannedSession brings the card into view).
+  let sessionCard: HTMLDivElement | undefined
+
   return (
     <div class={styles.page}>
       {/* The page's heading, and on the web the only one: the band below
@@ -207,6 +212,18 @@ const HomePage: Component = () => {
       <ReturningSignIn />
 
       <div class={styles.grid}>
+        {/* ── Your plan ──────────────────────────────────────────
+            The first week's card, across both columns and first in the grid.
+            It draws nothing when there is nothing to say, so Home is as it was.
+            HomePlanCardMount holds how it is reached (lazily, and on the web
+            only) and keeps a dead chunk from costing Home more than the card.
+            Its Start here row that is today's session is Home's own, so Home
+            answers it: build the session, or take the person to the one in
+            progress, and never replace it. */}
+        <HomePlanCardMount
+          onHomeSession={() => startPlannedSession(routine, sessionCard)}
+        />
+
         {/* ── Streak ─────────────────────────────────────────── */}
         <section class={`${styles.card} home-streak-card`}>
           <div class={styles.streakTop}>
@@ -364,7 +381,10 @@ const HomePage: Component = () => {
               It was a separate card below, which pushed the rooms down
               the page. Home now leads with one status card: streak, the
               week's numbers, and what to do about it today. */}
-          <div class={`${styles.sessionInline} home-session-card`}>
+          <div
+            ref={sessionCard}
+            class={`${styles.sessionInline} home-session-card`}
+          >
             <div class={styles.sessionHead}>
               <h2 class={styles.cardTitle}>Today's session</h2>
               <Show when={routine.template()}>

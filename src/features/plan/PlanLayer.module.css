@@ -44,8 +44,11 @@
      at most 1000px wide, stand in the middle of a wide window.
    - Merc is `flex: none` directly above the screens, and his class sets only
      that: his still and his live canvas share one grid cell, so `display` is
-     MercPresence's own. PlanLayer.css.test.ts pins each of these, and
-     PlanLayer.test.tsx that the layer wears them. */
+     MercPresence's own.
+   - It takes focus from a press on its words (tabindex -1, PlanLayer.tsx), and
+     never from Tab, so it wears no ring: it is not a control, and the
+     screen's heading is where focus opens. PlanLayer.css.test.ts pins each of
+     these, and PlanLayer.test.tsx that the layer wears them. */
 
 .layer {
   --pc-overhang-side: 22px;
@@ -68,6 +71,10 @@
     ),
     #0d1117;
   color: #e6edf3;
+}
+
+.layer:focus {
+  outline: none;
 }
 
 @supports (height: 100dvh) {

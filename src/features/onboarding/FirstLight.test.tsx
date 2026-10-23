@@ -14,86 +14,51 @@
 // plan record is empty or only shown), and the Map once it has been answered
 // or turned down. The questions' own cases are in FirstLight.plan.test.tsx.
 //
-// Over 600 lines on purpose (TESTING.md 3.5): every case mounts the real flow
-// at one beat and reads what that beat does, so they share one harness (the
-// mic, the canvases, the promo and the funnel faked once), and splitting them
-// by beat would copy it into each part.
+// Every case mounts the real flow at one beat and reads what that beat does.
+// The harness these cases share with FirstLight.plan.test.tsx and
+// FirstLight.keys.test.tsx (the mic, the canvases, the promo and the funnel
+// faked once, and the voiceprints) is in FirstLight.fixture.tsx.
 
 import { cleanup, fireEvent, render, waitFor, within, } from '@solidjs/testing-library'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import type * as OnboardingFunnelModule from '@/features/onboarding/funnel'
 import { ONBOARDING_FUNNEL_EVENTS } from '@/lib/funnel-event-catalog'
-import type * as GpuGateModule from '@/lib/merc/gpu-gate'
-import type { MirrorResult } from '@/lib/mirror/metrics'
-import type { OpenResult, ProbeResult, VoiceSession } from '@/lib/voice-session'
-import type * as AppStoreModule from '@/stores/app-store'
 
-const mocks = vi.hoisted(() => ({
-  trackOnboarding: vi.fn(),
-  startPageTour: vi.fn(),
-}))
-
-vi.mock('@/lib/jam/media-errors', () => ({
-  micPermissionState: (): Promise<string> => Promise.resolve('granted'),
-}))
-
-vi.mock('@/lib/voice-session', () => ({
-  createVoiceSession: (): VoiceSession =>
-    ({
-      open: (): Promise<OpenResult> =>
-        Promise.resolve({ ok: true } as OpenResult),
-      probe: (): Promise<ProbeResult> => Promise.resolve('ok' as ProbeResult),
-      arm: (): void => {},
-      record: () => Promise.resolve([]),
-      latest: () => null,
-      latestSmoothed: () => null,
-      level: (): number => 0,
-      context: () => null,
-      isOpen: (): boolean => false,
-      devices: (): Promise<MediaDeviceInfo[]> => Promise.resolve([]),
-      useDevice: (): Promise<ProbeResult> =>
-        Promise.resolve('ok' as ProbeResult),
-      close: (): void => {},
-    }) as unknown as VoiceSession,
-}))
-
-// jsdom cannot draw: the canvases (the star field, the voiceprint's demo
-// and live trace) are stubbed out. None of them is an exit.
-vi.mock('./StarField', () => ({ StarField: () => null }))
-vi.mock('@/features/mirror/TaskDemo', () => ({ TaskDemo: () => null }))
-vi.mock('@/features/mirror/LiveViz', () => ({ LiveViz: () => null }))
-vi.mock('@/features/mirror/voiceprint-share', () => ({
-  renderVoiceprintCard: async () => null,
-}))
-
-vi.mock('@/features/onboarding/funnel', async (importOriginal) => {
-  const actual = await importOriginal<typeof OnboardingFunnelModule>()
-  return { ...actual, trackOnboarding: mocks.trackOnboarding }
-})
-
-vi.mock('@/stores/promo-store', async () => {
-  const { createSignal } = await import('solid-js')
-  const [offer] = createSignal(null)
-  return { offeredPromo: offer, loadFeaturedPromo: async () => {} }
-})
-
-vi.mock('@/stores/launch-gift-store', () => ({
-  giftWaiting: () => null,
-  rememberGiftOffered: () => {},
-  claimGiftNow: async () => {},
-}))
-
-// The questions' Merc asks the browser for WebGL, which jsdom cannot give.
-vi.mock('@/lib/merc/gpu-gate', async (importOriginal) => ({
-  ...(await importOriginal<typeof GpuGateModule>()),
-  canRunLiveMerc: (): boolean => false,
-}))
-
-// Starting a page tour opens a real walkthrough; the flow only has to ask.
-vi.mock('@/stores/app-store', async (importOriginal) => ({
-  ...(await importOriginal<typeof AppStoreModule>()),
-  startPageTour: mocks.startPageTour,
-}))
+// The flow's edges are faked once, in FirstLight.fixture.tsx: the mic, the
+// canvases (none of them is an exit), the funnel, the promo and gift stores,
+// the GPU gate and the page tours.
+vi.mock('@/lib/jam/media-errors', async () =>
+  (await import('./FirstLight.fixture')).fake.micPermission(),
+)
+vi.mock('@/lib/voice-session', async () =>
+  (await import('./FirstLight.fixture')).fake.voiceSession(),
+)
+vi.mock('./StarField', async () =>
+  (await import('./FirstLight.fixture')).fake.starField(),
+)
+vi.mock('@/features/mirror/TaskDemo', async () =>
+  (await import('./FirstLight.fixture')).fake.taskDemo(),
+)
+vi.mock('@/features/mirror/LiveViz', async () =>
+  (await import('./FirstLight.fixture')).fake.liveViz(),
+)
+vi.mock('@/features/mirror/voiceprint-share', async () =>
+  (await import('./FirstLight.fixture')).fake.voiceprintCard(),
+)
+vi.mock('@/features/onboarding/funnel', async (importOriginal) =>
+  (await import('./FirstLight.fixture')).fake.funnel(importOriginal),
+)
+vi.mock('@/stores/promo-store', async () =>
+  (await import('./FirstLight.fixture')).fake.promoStore(),
+)
+vi.mock('@/stores/launch-gift-store', async () =>
+  (await import('./FirstLight.fixture')).fake.giftStore(),
+)
+vi.mock('@/lib/merc/gpu-gate', async (importOriginal) =>
+  (await import('./FirstLight.fixture')).fake.gpuGate(importOriginal),
+)
+vi.mock('@/stores/app-store', async (importOriginal) =>
+  (await import('./FirstLight.fixture')).fake.appStore(importOriginal),
+)
 
 import { PLAN_OPENED_KEY, PLAN_RECORD_KEY } from '@/features/plan/plan-keys'
 import { savePlanAnswers } from '@/features/plan/plan-store'
@@ -102,26 +67,13 @@ import { currentBeat, flowOpen, openBeat, recordFirstNote, recordVoiceprint, res
 import { setActiveTab } from '@/stores/ui-store'
 import { VOICE_RIDGE } from './beats/KeepChips'
 import { FirstLight } from './FirstLight'
+import { mocks, SAVED_PRINT, VOICEPRINT } from './FirstLight.fixture'
 import type { Beat } from './flow'
 import { MAP_ROOM_EVENT } from './funnel'
 import type { Plate } from './plates'
 import { plateSrc } from './plates'
 import { ROOMS } from './rooms'
 import { ridgeShape } from './voice-strip'
-
-const VOICEPRINT: MirrorResult = {
-  range: {
-    lowMidi: 40,
-    highMidi: 67,
-    lowNote: 'E2',
-    highNote: 'G4',
-    semitones: 27,
-    qualifyingMidis: [40, 52, 67],
-    voiceHint: 'baritone',
-  },
-  accuracy: null,
-  steadiness: null,
-}
 
 function beat(name: Beat): HTMLElement | null {
   return document.querySelector<HTMLElement>(`[data-beat="${name}"]`)
@@ -285,15 +237,6 @@ describe('the pictures fetched ahead', () => {
     )
   })
 })
-
-/** One voiceprint already on this device, for the returning beats. */
-const SAVED_PRINT = {
-  id: 'saved-1',
-  takenAt: '2026-10-10T10:00:00.000Z',
-  twin: null,
-  source: 'mirror',
-  summary: { lowMidi: 43, highMidi: 72, semitones: 29 },
-}
 
 /** The ways out that used to sit inside a beat. Matched anywhere in a
  *  button's text, with no word boundary in front: a card button's title

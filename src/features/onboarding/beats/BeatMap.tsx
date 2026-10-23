@@ -235,7 +235,13 @@ export const BeatMap: Component<BeatMapProps> = (props) => {
                         room.id,
                       )
                     }}
-                    onKeyDown={(e) => {
+                    // Native, not Solid's delegated key prop: First Light
+                    // stops keydown at its root (isolateKeyboard), so a
+                    // delegated one, listening at the document, would never
+                    // hear it. FirstLight.keys.test.tsx pins the key, and
+                    // src/tests/trap-key-handlers.test.ts keeps delegated key
+                    // props out of everything First Light renders.
+                    on:keydown={(e) => {
                       if (e.key !== 'Enter' && e.key !== ' ') return
                       e.preventDefault()
                       e.stopPropagation()

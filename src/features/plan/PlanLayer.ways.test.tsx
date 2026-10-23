@@ -15,6 +15,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type * as GpuGateModule from '@/lib/merc/gpu-gate'
 import { activeTab } from '@/stores/ui-store'
 import type { PlanStop } from './build-plan'
+import type * as EnterStopModule from './enter-stop'
 import { planRecord } from './plan-store'
 import type { PlanLayerProps } from './PlanLayer'
 import type { Host } from './PlanLayer.fixture'
@@ -25,7 +26,13 @@ const mocks = vi.hoisted(() => ({
   enterStop: vi.fn<(stop: PlanStop, tour?: boolean) => void>(),
 }))
 
-vi.mock('./enter-stop', () => ({ enterStop: mocks.enterStop }))
+// enterStop is the fake. widenMenuFor stays real: the controller calls it before
+// it hands a stop on, and with the whole menu these cases open there is nothing
+// for it to widen.
+vi.mock('./enter-stop', async (importOriginal) => ({
+  ...(await importOriginal<typeof EnterStopModule>()),
+  enterStop: mocks.enterStop,
+}))
 
 // The server's promo is never asked.
 vi.mock('@/stores/promo-store', () => ({

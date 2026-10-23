@@ -44,6 +44,7 @@ import type { MercState } from '@/lib/merc/constants'
 import type { Plan, PlanStop, ScopeOffer } from './build-plan'
 import { PLAN_DESTS, planStops } from './build-plan'
 import { flyChips } from './fly-chips'
+import { KICKER } from './plan-copy'
 import type { CreditsLine } from './plan-credits'
 import { PlanExits } from './PlanExits'
 import styles from './PlanScreen.module.css'
@@ -51,13 +52,6 @@ import { MERC_INTRO } from './questions'
 
 /** Merc cheers as the plan opens; by now the chips have landed and he points. */
 export const CELEBRATE_MS = 1200
-
-/** What each kind of stop is called over its room. */
-const KICKER: Record<PlanStop['kind'], string> = {
-  start: 'Start here',
-  learn: 'Learn',
-  play: 'Play',
-}
 
 /** Under the menu switch: it changes a setting that stays changeable. */
 const SCOPE_NOTE = 'You can change it any time in Settings, App Mode.'

@@ -6,9 +6,10 @@
 // (usePlanFlowController) have tests of their own, and BeatPlan.test.tsx pins
 // the first host of them. What is pinned here is what only the layer decides:
 // that it is one dialog with one box and one Merc over the screens, that keys
-// stay inside it, which greeting each mode gets, what each mode tells the
-// funnel as it opens, and how it opens an answered plan and lets the person
-// change the answers. What each way out hands the app is in
+// stay inside it (and that a press on its words leaves the focus there, so the
+// keys after it do too), which greeting each mode gets, what each mode tells
+// the funnel as it opens, and how it opens an answered plan and lets the
+// person change the answers. What each way out hands the app is in
 // PlanLayer.ways.test.tsx, and the stylesheet is read as text in
 // PlanLayer.css.test.ts, since jsdom applies no CSS. The screens are the real
 // ones, tapped the way a singer taps them. Only the edges are faked: the
@@ -19,13 +20,21 @@
 import { fireEvent, screen } from '@solidjs/testing-library'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type * as GpuGateModule from '@/lib/merc/gpu-gate'
+import { APP_KEYS, overheard, press, stopOverhearing, } from '@/tests/utils/trap-keys'
+import type * as EnterStopModule from './enter-stop'
 import { planRecord } from './plan-store'
 import { answered, box, card, changeAnswers, dialog, fresh, open, opened, sent, setUp, tearDown, toThePlan, } from './PlanLayer.fixture'
 import styles from './PlanLayer.module.css'
 import { button, isOn, isPressed, mercSays, OTHER_FIELD, SOMETHING_ELSE, tap, toThirdQuestion, } from './PlanQuestions.fixture'
 import { EMPTY_CHOICES, MERC_INTRO } from './questions'
 
-vi.mock('./enter-stop', () => ({ enterStop: vi.fn() }))
+// enterStop is the fake: what each way out hands the app is in
+// PlanLayer.ways.test.tsx. The rest of the module stays real, since the
+// controller imports widenMenuFor from it.
+vi.mock('./enter-stop', async (importOriginal) => ({
+  ...(await importOriginal<typeof EnterStopModule>()),
+  enterStop: vi.fn(),
+}))
 
 // The server's promo is never asked.
 vi.mock('@/stores/promo-store', () => ({
@@ -58,24 +67,11 @@ function stubWidth(phone: boolean): void {
   }))
 }
 
-/** The app's own shortcuts listen on `window`; this is one that stops listening with the case. */
-let ears = new AbortController()
-
-/** The keys that reach the app behind the layer, in the order they came. */
-function overheard(): string[] {
-  const keys: string[] = []
-  window.addEventListener('keydown', (e) => keys.push(e.key), {
-    signal: ears.signal,
-  })
-  return keys
-}
-
 beforeEach(() => {
   setUp()
-  ears = new AbortController()
 })
 afterEach(() => {
-  ears.abort()
+  stopOverhearing()
   tearDown()
 })
 
@@ -145,14 +141,14 @@ describe('the layer', () => {
 describe('the keyboard', () => {
   it('keeps keys inside it: the app behind never hears a Space, an M or an Escape from a button', () => {
     open('skipper')
-    const heard = overheard()
+    const heard = overheard('key')
     // The control: the app does hear a key that comes from outside the layer.
     fireEvent.keyDown(document.body, { key: ' ' })
     expect(heard).toEqual([' '])
     heard.length = 0
 
     const pressOn = (target: HTMLElement): void => {
-      for (const key of [' ', 'm', 'Escape']) fireEvent.keyDown(target, { key })
+      for (const key of APP_KEYS) fireEvent.keyDown(target, key)
     }
     pressOn(button('Singing'))
     pressOn(button('Not now'))
@@ -168,12 +164,76 @@ describe('the keyboard', () => {
     toThirdQuestion()
     tap(SOMETHING_ELSE)
     const field = screen.getByRole('textbox', { name: OTHER_FIELD })
-    const heard = overheard()
+    const heard = overheard('key')
     expect(field).toHaveFocus()
 
     expect(fireEvent.keyDown(field, { key: 'Enter' })).toBe(false)
 
     expect(field).not.toHaveFocus()
+    expect(heard).toEqual([])
+  })
+
+  // isolateKeyboard stops a key only when it is sent from inside the layer. A
+  // press on content that cannot take focus drops focus to the page, and the
+  // keys sent there reach the app's shortcuts (ruling R68), so the layer takes
+  // that focus itself.
+  it('takes focus from a press on its words, never from Tab, and still opens on its heading', async () => {
+    open('skipper')
+
+    await Promise.resolve()
+
+    expect(dialog()).toHaveAttribute('tabindex', '-1')
+    expect(dialog()).not.toHaveFocus()
+    expect(document.activeElement).toBe(dialog().querySelector('h1'))
+  })
+
+  it('keeps a Space, an M and an Escape sent at the layer itself from the app behind', () => {
+    open('skipper')
+    const heard = overheard('key')
+
+    for (const key of APP_KEYS) fireEvent.keyDown(dialog(), key)
+
+    expect(heard).toEqual([])
+  })
+
+  it('keeps the focus in it when a press lands on its words, so the keys after the press are still stopped', async () => {
+    open('skipper')
+    await Promise.resolve()
+    // Merc's box: in the layer and no control, so nothing under it can take
+    // the focus but the layer.
+    const heard = overheard('key')
+
+    press(merc())
+
+    // Soft, so a miss reports the keys it let through as well.
+    expect.soft(dialog()).toHaveFocus()
+    for (const key of APP_KEYS) {
+      fireEvent.keyDown(document.activeElement ?? document.body, key)
+    }
+    expect(heard).toEqual([])
+  })
+
+  it('still cycles Tab from the layer itself: forward to its first control, back to its last', async () => {
+    open('skipper')
+    await Promise.resolve()
+    const stops = [
+      ...dialog().querySelectorAll<HTMLElement>(
+        'button, a[href], input, select, textarea, [tabindex]',
+      ),
+    ].filter((stop) => stop.tabIndex >= 0 && !stop.matches(':disabled'))
+    const [first, last] = [stops[0], stops[stops.length - 1]]
+    const heard = overheard('key')
+
+    dialog().focus()
+    expect(dialog()).toHaveFocus()
+    expect(fireEvent.keyDown(dialog(), { key: 'Tab' })).toBe(false)
+    expect(first).toHaveFocus()
+
+    dialog().focus()
+    expect(fireEvent.keyDown(dialog(), { key: 'Tab', shiftKey: true })).toBe(
+      false,
+    )
+    expect(last).toHaveFocus()
     expect(heard).toEqual([])
   })
 })

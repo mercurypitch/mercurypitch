@@ -16,65 +16,31 @@
 
 import { cleanup, fireEvent, render, screen, waitFor, within, } from '@solidjs/testing-library'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import type * as OnboardingFunnelModule from '@/features/onboarding/funnel'
-import type * as GpuGateModule from '@/lib/merc/gpu-gate'
-import type { MirrorResult } from '@/lib/mirror/metrics'
-import type * as AppStoreModule from '@/stores/app-store'
 
-const mocks = vi.hoisted(() => ({
-  trackOnboarding: vi.fn(),
-  startPageTour: vi.fn(),
-  /** What the star field was last told about being paused. */
-  starFieldPaused: null as boolean | null,
-}))
-
-// jsdom cannot draw: the star field's canvas is stubbed out. What it is told
-// about stepping aside is kept, since that is the one thing it is asked.
-vi.mock('./StarField', async () => {
-  const { createEffect } = await import('solid-js')
-  return {
-    StarField: (props: { paused?: boolean }) => {
-      createEffect(() => {
-        mocks.starFieldPaused = props.paused ?? false
-      })
-      return null
-    },
-  }
-})
-
-// The prints' cards are canvases, which jsdom cannot draw.
-vi.mock('@/features/mirror/voiceprint-share', () => ({
-  renderVoiceprintCard: async () => null,
-}))
-
-vi.mock('@/features/onboarding/funnel', async (importOriginal) => {
-  const actual = await importOriginal<typeof OnboardingFunnelModule>()
-  return { ...actual, trackOnboarding: mocks.trackOnboarding }
-})
-
-vi.mock('@/stores/promo-store', async () => {
-  const { createSignal } = await import('solid-js')
-  const [offer] = createSignal(null)
-  return { offeredPromo: offer, loadFeaturedPromo: async () => {} }
-})
-
-vi.mock('@/stores/launch-gift-store', () => ({
-  giftWaiting: () => null,
-  rememberGiftOffered: () => {},
-  claimGiftNow: async () => {},
-}))
-
-// The questions' Merc asks the browser for WebGL, which jsdom cannot give.
-vi.mock('@/lib/merc/gpu-gate', async (importOriginal) => ({
-  ...(await importOriginal<typeof GpuGateModule>()),
-  canRunLiveMerc: (): boolean => false,
-}))
-
-// Starting a page tour opens a real walkthrough; the flow only has to ask.
-vi.mock('@/stores/app-store', async (importOriginal) => ({
-  ...(await importOriginal<typeof AppStoreModule>()),
-  startPageTour: mocks.startPageTour,
-}))
+// The flow's edges are faked once, in FirstLight.fixture.tsx: the star field
+// (which keeps what it is told about stepping aside), the prints' cards, the
+// funnel, the promo and gift stores, the GPU gate and the page tours.
+vi.mock('./StarField', async () =>
+  (await import('./FirstLight.fixture')).fake.watchedStarField(),
+)
+vi.mock('@/features/mirror/voiceprint-share', async () =>
+  (await import('./FirstLight.fixture')).fake.voiceprintCard(),
+)
+vi.mock('@/features/onboarding/funnel', async (importOriginal) =>
+  (await import('./FirstLight.fixture')).fake.funnel(importOriginal),
+)
+vi.mock('@/stores/promo-store', async () =>
+  (await import('./FirstLight.fixture')).fake.promoStore(),
+)
+vi.mock('@/stores/launch-gift-store', async () =>
+  (await import('./FirstLight.fixture')).fake.giftStore(),
+)
+vi.mock('@/lib/merc/gpu-gate', async (importOriginal) =>
+  (await import('./FirstLight.fixture')).fake.gpuGate(importOriginal),
+)
+vi.mock('@/stores/app-store', async (importOriginal) =>
+  (await import('./FirstLight.fixture')).fake.appStore(importOriginal),
+)
 
 import { buildPlan } from '@/features/plan/build-plan'
 import { PLAN_OPENED_KEY, PLAN_RECORD_KEY } from '@/features/plan/plan-keys'
@@ -89,31 +55,9 @@ import { activeTab, setActiveTab } from '@/stores/ui-store'
 import * as COPY from './copy'
 import { pickFirstStop } from './first-stop'
 import { FirstLight } from './FirstLight'
+import { mocks, SAVED_PRINT, VOICEPRINT } from './FirstLight.fixture'
 import type { Beat } from './flow'
 import styles from './onboarding.module.css'
-
-const VOICEPRINT: MirrorResult = {
-  range: {
-    lowMidi: 40,
-    highMidi: 67,
-    lowNote: 'E2',
-    highNote: 'G4',
-    semitones: 27,
-    qualifyingMidis: [40, 52, 67],
-    voiceHint: 'baritone',
-  },
-  accuracy: null,
-  steadiness: null,
-}
-
-/** One voiceprint already on this device, for the Prints beat. */
-const SAVED_PRINT = {
-  id: 'saved-1',
-  takenAt: '2026-10-10T10:00:00.000Z',
-  twin: null,
-  source: 'mirror',
-  summary: { lowMidi: 43, highMidi: 72, semitones: 29 },
-}
 
 function beat(name: Beat): HTMLElement | null {
   return document.querySelector<HTMLElement>(`[data-beat="${name}"]`)

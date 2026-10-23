@@ -46,16 +46,15 @@ import type { Accessor } from 'solid-js'
 import { batch, createEffect, createMemo, createSignal, onCleanup, untrack, } from 'solid-js'
 import { accountHeld } from '@/db/services/auth-service'
 import { fetchBillingMe, fetchPricing } from '@/db/services/billing-service'
-import { isTabVisible } from '@/features/tabs/constants'
 import type { GuideFunnelEvent } from '@/lib/funnel-event-catalog'
 import { trackGuide } from '@/lib/guide-funnel'
 import type { MercState } from '@/lib/merc/constants'
 import { CAN_TAKE_PAYMENT } from '@/lib/native-build'
-import { showNotification } from '@/stores/notifications-store'
 import { loadFeaturedPromo, offeredPromo } from '@/stores/promo-store'
 import { practiceScope, setPracticeScope, uiMode, } from '@/stores/settings-store'
 import type { Plan, PlanStop, VoiceprintStop } from './build-plan'
-import { buildPlan, PLAN_DESTS, planStops } from './build-plan'
+import { buildPlan, planStops } from './build-plan'
+import { widenMenuFor } from './enter-stop'
 import type { CreditsInput, CreditsLine } from './plan-credits'
 import { planCreditsLine } from './plan-credits'
 import { planDeclinedEvents, planDoneEvents } from './plan-events'
@@ -138,10 +137,6 @@ const SHOWN: Record<
   existing: { via: 'layer', event: 'plan_shown_existing' },
   skipper: { via: 'layer', event: 'plan_shown_skipper' },
 }
-
-/** Said when a stop the menu hides is opened and the menu is made whole. */
-const MENU_WHOLE =
-  'Your menu shows every room again. You can change it in Settings, App Mode.'
 
 /** A plan opened without the questions before it: nothing to fly from. */
 const NO_PILLS: ReadonlyMap<string, DOMRect> = new Map()
@@ -347,23 +342,9 @@ export function usePlanFlowController(o: PlanFlowOptions): PlanFlowController {
     send(['scope_offer_accept'])
   }
 
-  /** The scope hides this stop's tab and showing every room would show it. */
-  const hiddenByScope = (stop: PlanStop): boolean => {
-    const { target } = PLAN_DESTS[stop.dest]
-    if (target.kind !== 'tab') return false
-    const mode = untrack(uiMode)
-    return (
-      !isTabVisible(target.tab, untrack(practiceScope), mode) &&
-      isTabVisible(target.tab, 'all', mode)
-    )
-  }
-
   /** Hands the stop to the host, with the menu whole first if it lacks the stop. */
   const enter = (stop: PlanStop, tour: boolean): void => {
-    if (hiddenByScope(stop)) {
-      setPracticeScope('all')
-      showNotification(MENU_WHOLE)
-    }
+    widenMenuFor(stop)
     exit({ to: 'stop', stop, tour })
   }
 

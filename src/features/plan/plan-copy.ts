@@ -185,6 +185,27 @@ export const SING_ALONG_TITLE = 'Sing along, scored'
 /** The chip a card carries when the voiceprint made it. */
 export const VOICEPRINT_CHIP = 'Your voiceprint'
 
+/**
+ * What each kind of stop is called over its room: on the plan's cards and in
+ * Home's card, which both read it from here. Keyed by the literal union, not
+ * by PlanStop['kind'], so this file keeps importing types from questions.ts
+ * only and no cycle with build-plan.ts appears.
+ */
+export const KICKER: Readonly<Record<'start' | 'learn' | 'play', string>> = {
+  start: 'Start here',
+  learn: 'Learn',
+  play: 'Play',
+}
+
+/**
+ * Said when a stop the menu hides is opened and the menu is made whole first.
+ * The plan layer's controller and Home's card both make the menu whole through
+ * widenMenuFor (enter-stop.ts), the one place that says it, so the sentence is
+ * written here once, beside the words over a room (plan-copy.test.ts holds both).
+ */
+export const MENU_WHOLE =
+  'Your menu shows every room again. You can change it in Settings, App Mode.'
+
 // ── Play ───────────────────────────────────────────────────────────────
 
 /** What in the answers asked for a Night or Jam. */

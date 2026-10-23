@@ -88,16 +88,16 @@ These are the rules that break things when ignored.
 | `progress` | [ProgressPage.tsx](../../src/features/progress/ProgressPage.tsx) | 7.3k | Progress — the Resonance Atlas THESIS: The Atlas is the interface: practice leaves physical pressure in a personal record, instead of bec... |
 | `guitar` | [guitar-room-band.ts](../../src/features/guitar/backing/guitar-room-band.ts) | 6.1k | Guitar room band schedules count-ins and synthesized grooves on the shared room buses. |
 | `voice-control` | [useVoiceControlController.ts](../../src/features/voice-control/useVoiceControlController.ts) | 6.1k | useVoiceControlController — voice control's dispatcher and lifecycle Owns the listener (started/stopped with the persisted enable flag, e... |
-| `onboarding` | [FirstLight.tsx](../../src/features/onboarding/FirstLight.tsx) | 5.9k | First Light — the beat orchestrator Owns the shared frame (sky, progress hairline, escape) and swaps the current beat inside it. |
+| `onboarding` | [FirstLight.tsx](../../src/features/onboarding/FirstLight.tsx) | 6.0k | First Light — the beat orchestrator Owns the shared frame (sky, progress hairline, escape) and swaps the current beat inside it. |
 | `piano` | [piano-sampled-instrument.ts](../../src/features/piano/instrument/piano-sampled-instrument.ts) | 5.7k | Piano sampled instrument — lazy Salamander playback on one bounded graph Construction is deliberately inert. |
 | `karaoke-room` | [karaoke-room-store.ts](../../src/features/karaoke-room/karaoke-room-store.ts) | 5.6k | The Karaoke room's memory: what it keeps across an unmount The room is a tab, and a tab unmounts every time the singer leaves it. |
+| `plan` | [PlanQuestions.tsx](../../src/features/plan/PlanQuestions.tsx) | 5.0k | PlanQuestions — the four question screens What Merc asks after First Light: the instrument (Q1), what the person is working toward (Q2),... |
 | `play-along` | [useSongController.ts](../../src/features/play-along/useSongController.ts) | 5.0k | Shared song selection controller owns lazy catalogs, stale-safe staging, and leases. |
 | `challenges` | [ChallengeStage.tsx](../../src/features/challenges/ChallengeStage.tsx) | 4.9k | ChallengeStage — the Legend Attempt performed on the zen canvas "Sing it" no longer runs the plain sight-singing drill: the challenge's m... |
 | `zen` | [ZenPitchStage.tsx](../../src/features/zen/ZenPitchStage.tsx) | 4.9k | _(no header comment)_ |
 | `glass` | [GlassApp.tsx](../../src/features/glass/GlassApp.tsx) | 4.7k | Glass — the shattering voice mirror (P2: self-voice loop). |
 | `long-note` | [long-note-machine.ts](../../src/features/long-note/long-note-machine.ts) | 4.7k | Long note's room states — a pure reducer intro → starting → listen → hold → result, and Again round through starting with the same note (... |
 | `guitar-tab-3d` | [GuitarTab3DView.tsx](../../src/features/guitar-tab-3d/GuitarTab3DView.tsx) | 4.4k | GuitarTab3DView — 3D-style falling-notes guitar tab playback A drop-in alternate renderer for the same falling-notes data the 2D "hero" v... |
-| `plan` | [PlanQuestions.tsx](../../src/features/plan/PlanQuestions.tsx) | 4.4k | PlanQuestions — the four question screens What Merc asks after First Light: the instrument (Q1), what the person is working toward (Q2),... |
 | `karaoke-night` | [KaraokeNightApp.tsx](../../src/features/karaoke-night/KaraokeNightApp.tsx) | 4.1k | KaraokeNightApp — the standalone Karaoke Night shell A separate entry surface from the in-app Karaoke tab: its own stage, song rails and... |
 | `sing-room` | [sing-room-store.ts](../../src/features/sing-room/sing-room-store.ts) | 4.0k | The Sing room's state, held where the room is not AT MODULE SCOPE, and that is the whole point. |
 | `lip-roll` | [useLipController.ts](../../src/features/lip-roll/useLipController.ts) | 3.9k | useLipController: one Lip roll run, from the tap to the result The glide rooms' core (room-kit glide/useGlideRoom.ts) runs the run: the m... |
@@ -273,11 +273,12 @@ These are the rules that break things when ignored.
 | File | LOC | What it is |
 |---|---|---|
 | [GuitarPage.tsx](../../src/pages/GuitarPage.tsx) | 1.3k | Original tab fingering (Guitar Pro imports) is preserved through load. |
-| [HomePage.tsx](../../src/pages/HomePage.tsx) | 650 | HomePage — the "today" landing surface One obvious next step: your streak (with forgiveness), today's generated 5–15 min session, this we... |
+| [HomePage.tsx](../../src/pages/HomePage.tsx) | 700 | HomePage — the "today" landing surface One obvious next step: your streak (with forgiveness), today's generated 5–15 min session, this we... |
 | [PianoPage.tsx](../../src/pages/PianoPage.tsx) | 400 | Route-neutral facade over the App-owned falling-notes runtime. |
 | [PathPage.tsx](../../src/pages/PathPage.tsx) | 350 | PathPage — The Ascent: the guided learning path A serpentine trail of celestial week-orbs climbing a night sky — week 1 at the foot, week... |
 | [ExercisesPage.tsx](../../src/pages/ExercisesPage.tsx) | 250 | The app's single pitch-frame stream. |
 | [EarLabPage.tsx](../../src/pages/EarLabPage.tsx) | 150 | EarLabPage — the Ear Lab tab: the Regulator Room around the bench and every drill stage. |
+| [HomePlanCardMount.tsx](../../src/pages/HomePlanCardMount.tsx) | 100 | HomePlanCardMount — how Home reaches its "Your plan" card, and what Home does for it "Your plan" is the first week's card (src/features/p... |
 | [LabPage.tsx](../../src/pages/LabPage.tsx) | 100 | Keep the real-mouse Lab specs runnable without putting a supporter token in CI. |
 | [AnalysisPage.tsx](../../src/pages/AnalysisPage.tsx) | 50 | One dashboard at every width. |
 | [ChallengesPage.tsx](../../src/pages/ChallengesPage.tsx) | 50 | Challenges tab (TAB_CHALLENGES). |

@@ -930,6 +930,13 @@ import handler, issue #813.
 **Rule:** a class that composes from another file never sets a property the composed class sets, a longhand counting against its shorthand. Vary a shared value through a custom property the composed class reads with a fallback (`--pc-headline-max`): no order can undo that. `plan-chrome.test.ts` holds the plan's two sheets to this.
 **See:** `src/features/plan/plan-chrome.module.css`, `src/features/plan/plan-chrome.test.ts`
 
+### Give a dialog that isolates the keyboard a root that takes focus from a press
+
+**Symptom:** behind a modal that stops every key (`isolateKeyboard`), a Space, an M or an Escape still reached the app's window shortcuts once a person had pressed on the modal's words: the tab behind played, the microphone toggled. A test that sends keys at the modal's controls cannot see it, because those keys start inside the root.
+**Cause:** the stop holds only for a key sent from inside the root, and a press on content that takes no focus drops the focus to the page, so the keys after it start outside. Measured in headless Chromium on a stand-in dialog: with no `tabindex`, `document.activeElement` was `BODY` after a press on the words; with `tabindex="-1"` on the root it stayed on the root. jsdom moves no focus on a press (a mousedown on the words left it on the button), so a test must supply the browser's move itself (`press()`) and proves the wiring, not the browser. The stop is also bubble-phase: a capture-phase listener on the window runs before it and hears every key (jsdom: window and document capture heard a Space, the document and window bubble listeners did not).
+**Rule:** the root of a dialog that passes `isolateKeyboard` gets `tabindex="-1"` and no focus ring (the trap does not count the root as a Tab stop or open on it), and a capture-phase window or document shortcut yields to `[role="dialog"]`, as `isInsideOverlay` does. Bind the dialog's own key handlers natively, as "Use native key handlers inside propagation-stopping dialogs" says; `trap-key-handlers.test.ts` scans the imports of every host that passes `isolateKeyboard` for the delegated ones, and fails when a new host is missing from its list.
+**See:** `isolateKeyboard` in `src/lib/use-focus-trap.ts`, `isInsideOverlay` in `src/lib/space-playback.ts`, `src/tests/utils/trap-keys.ts`, `src/tests/trap-key-handlers.test.ts`
+
 ## Performance
 
 ### Preserve physical material units when baking decoded geometry
