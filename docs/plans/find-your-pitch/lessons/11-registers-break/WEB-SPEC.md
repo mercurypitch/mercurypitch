@@ -752,10 +752,10 @@ the others take it.
    may shorten the hook, and every other copy carries it whole. As Lesson 2's head has them
    (`learn/02.html:9-128`):
    - the title, "Registers and the break: chest and head voice | MercuryPitch" (60 characters, at
-     the test's ceiling of 60, `lesson-pages.test.ts:128-129`), which holds the Article's headline
-     (`:161`), the query-led form SEARCH.md § 13 item 1 recommends; if the owner keeps the series'
-     form, "Registers and the break: Find Your Pitch | MercuryPitch" (55), since "Registers and the
-     break: Find Your Pitch, Lesson 11 | MercuryPitch" runs to 66 (Decisions). SEARCH.md § 4's draft
+     the test's ceiling of 60, `lesson-pages.test.ts:128-129`), in the query-led form the owner
+     chose for Lessons 1 to 8 on 22 October 2026. Until this PR the title had to hold the Article's
+     headline, which `og:title` holds now (`:160-164`), and this spec kept the series' form for the
+     owner, "Registers and the break: Find Your Pitch | MercuryPitch" (55). SEARCH.md § 4's draft
      for Lesson 11, "Registers and the break: why voices flip | MercuryPitch" (`SEARCH.md:229`), is
      not used: "why voices flip" leans on the predict's answer. The worker never rewrites a title.
      The h1 is `h1.hook#hook`, the hook in its default wording (`lesson-copy.test.ts:323-332`;
@@ -907,8 +907,8 @@ With the recommendation first:
    opposite of `same-note` ("a slide doesn't have to switch at one fixed note"), so the owner
    retired it.
 2. **The title** (item 2): recommended, the query-led "Registers and the break: chest and head voice
-   | MercuryPitch", as SEARCH.md § 13 item 1 recommends; the series' form fits only without "Lesson
-   11".
+   | MercuryPitch", in the form the owner chose for Lessons 1 to 8 on 22 October 2026, over the
+   series' form, which fits only without "Lesson 11".
 3. **How the gear change sounds** (Audio): the lower gear in Merc's "ooh", the upper in the soft
    tone's partials, both on "ng" through a 900 Hz lowpass with Merc's vibrato, the levels matched.
    Recommended: keep it, and tune it by ear before publishing; if the upper gear sounds like a

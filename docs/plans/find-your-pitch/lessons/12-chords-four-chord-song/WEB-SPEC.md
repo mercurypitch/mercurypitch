@@ -895,16 +895,16 @@ heard play (Toys 3; Edge cases) (`git diff --stat`).
 12. The head, from SEARCH.md § 3 and Lesson 4's document (`learn/04.html:9-137`), held by
     `src/features/lessons/kit/lesson-copy.test.ts:323-358` and `src/tests/lesson-pages.test.ts:113-226`
     on every page, a draft's included, from its first commit:
-    - title, at most 60 characters, with "MercuryPitch" and the headline in it
-      (`lesson-pages.test.ts:128-129`, `:161`). The series' form that Lessons 1, 2, 3, 5 and 10 use,
-      "Chords and the four-chord song: Find Your Pitch, Lesson 12 | MercuryPitch", is 73 characters,
-      over the cap, and Lesson 4's, "· Find Your Pitch | MercuryPitch", 63. Recommended: "Chords and
-      the four-chord song: Lesson 12 | MercuryPitch" (56 characters), until SEARCH.md § 13 item 1
-      settles titles for the series; if it settles them query-led, as it recommends, "Chords and the
-      four-chord song: I-V-vi-IV | MercuryPitch" (56), or SEARCH.md § 4's draft, "The four-chord
-      song: how chords work | MercuryPitch" (51), which needs the headline to be "The four-chord
-      song" (Decisions for the owner). The site worker never rewrites the title, whichever hook the
-      console picks;
+    - title, at most 60 characters, ending " | MercuryPitch" (`lesson-pages.test.ts:128-129`):
+      SEARCH.md § 4's draft, "The four-chord song: how chords work | MercuryPitch" (51 characters,
+      `SEARCH.md:230`), in the query-led form the owner chose for Lessons 1 to 8, on 22
+      October 2026. Until this PR the title had to hold the Article's headline, so this spec
+      recommended "Chords and the four-chord song: Lesson 12 | MercuryPitch" (56): the series' form,
+      "Chords and the four-chord song: Find Your Pitch, Lesson 12 | MercuryPitch", ran to 73, over
+      the cap, and Lesson 4's then, "· Find Your Pitch | MercuryPitch", to 63. `og:title` holds the
+      headline now (`:160-164`), so the headline stays "Chords and the four-chord song", and this
+      spec's own query-led option, "Chords and the four-chord song: I-V-vi-IV | MercuryPitch" (56),
+      is not used (Decisions 2). The site worker never rewrites the title, whichever hook is picked;
     - description, 80 to 160 characters: "How can two songs share the same four chords and still
       sound different? A fifteen-minute lesson with sound toys: chords, Roman numerals and
       I-V-vi-IV." (150 characters; 158 with the alternative hook, Edge cases). The numerals take
@@ -985,12 +985,12 @@ Each with the package's recommendation and the review's judgement (Lesson 12's r
    admin console's hook"). The lesson menu prints no hooks (`kit/lesson-menu.ts`), so that list is
    complete. Neither wording answers the predict (FACTS 1a). The review agreed, and added: if the
    owner wants a hard guard, retire it.
-2. **The page's title.** The series' form runs to 73 characters here, over the cap. Recommended:
-   "Chords and the four-chord song: Lesson 12 | MercuryPitch" (56) until SEARCH.md § 13 item 1
-   settles titles for every lesson; then its answer, which is a query-led title if the
-   recommendation stands (What the kit and the app still need, item 12). The review: acceptable, at
-   56 characters with the headline and "MercuryPitch" in it; the site worker never rewrites it,
-   whichever hook the console picks.
+2. **The page's title.** SEARCH.md § 4's draft, "The four-chord song: how chords work |
+   MercuryPitch" (51), in the query-led form the owner chose for Lessons 1 to 8, on 22
+   October 2026. Until this PR the title had to hold the headline, and the series' form ran to 73,
+   so this spec recommended "Chords and the four-chord song: Lesson 12 | MercuryPitch" (56; What the
+   kit and the app still need, item 12). The review found that one acceptable; the site worker
+   never rewrites the title, whichever hook the console picks.
 3. **The publish order.** Lesson 12 is published only after Lesson 10 is, because its recall asks
    Lesson 10's questions and its chip names Lesson 10 (Edge cases, "Lesson 10 not yet live").
    Nothing enforces it. The console asks before it publishes Lesson 12 while its draft line stands,

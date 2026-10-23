@@ -815,12 +815,12 @@ at `85e23a1af` changed there, and that page's own lines are cited at `d59c00ad6`
     `src/features/lessons/kit/lesson-copy.test.ts:323-358` and
     `src/tests/lesson-pages.test.ts:113-226` on every page, a draft's included, from its first
     commit:
-    - title, at most 60 characters with the headline in it: in the form Lessons 1, 2, 3 and 5 use,
-      "Major and minor: Find Your Pitch, Lesson 10 | MercuryPitch" (58 characters), until SEARCH.md
-      § 13 item 1 settles titles for the series; if it settles them query-led, as it recommends,
+    - title, at most 60 characters, ending " | MercuryPitch" (`lesson-pages.test.ts:127-128`):
       SEARCH.md § 4's draft, "Major and minor: the one note that changes | MercuryPitch" (57
-      characters) (Decisions for the owner). The site worker never rewrites the title, whichever
-      hook the console picks;
+      characters), in the query-led form the owner chose for Lessons 1 to 8 on 22 October 2026.
+      Until this PR the title had to hold the headline, and this spec gave it the series' form,
+      "Major and minor: Find Your Pitch, Lesson 10 | MercuryPitch"; `og:title` holds the headline
+      now (`:160-164`). The site worker never rewrites the title, whichever hook the console picks;
     - description, 80 to 160 characters: "Which single note turns a major chord into a minor one? A
       seventeen-minute lesson with sound toys: thirds, major and minor triads, and the natural minor
       scale." (159 characters; 171 with the alternative hook, Edge cases);
@@ -882,10 +882,10 @@ CURIOSITY-MOMENTS § 5 item 2.
    Lesson 10's card in every lesson page's explorer and on Lesson 9's next-lesson card, and ran the
    description to 171 characters (Edge cases, "The admin console's hook"). Recommended then: keep it
    switchable, and leave it unpicked.
-2. **The page's title.** The series' form, "Major and minor: Find Your Pitch, Lesson 10 |
-   MercuryPitch" (58 characters), until SEARCH.md § 13 item 1 settles titles for every lesson; then
-   its answer, which is SEARCH.md § 4's query-led draft if the recommendation stands (What the kit
-   and the app still need, item 12).
+2. **The page's title.** SEARCH.md § 4's draft, "Major and minor: the one note that changes |
+   MercuryPitch" (57 characters), in the query-led form the owner chose for Lessons 1 to 8 on 22
+   October 2026. Until then this spec gave it the series' form, "Major and minor: Find Your Pitch,
+   Lesson 10 | MercuryPitch" (58; What the kit and the app still need, item 12).
 3. **The publish order.** Lesson 10 is published only after Lesson 6 is, because its recall asks
    Lesson 6's questions and its chip names Lesson 6 (Edge cases, "Lesson 6 not yet live"). The
    console asks before it publishes Lesson 10 while its draft line stands, and the line names Lesson

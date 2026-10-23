@@ -127,7 +127,7 @@ Every lesson document follows this, in addition to its WEB-SPEC.
   - The series name belongs in the kicker, the breadcrumb, `og:title` and the
     structured data. Spent in the title, it costs 25 characters that
     searchers do not type.
-  - Drafts for Season 1 are in §4.
+  - Season 1's titles are in §4: rows 1 to 8 as decided, rows 9 to 14 as drafts.
 - **Description, 80 to 160 characters:** the hook, then what the lesson covers
   and how ("a ten-minute lesson with sound toys"). The test holds the length.
 - **Canonical, `og:url` and robots.** The canonical and `og:url` are the clean
@@ -211,10 +211,10 @@ What a reader, a crawler and an answer engine all need:
 
 ## 4. Season 1: what each lesson answers
 
-Each title is counted at 60 characters or fewer. They are drafts for the
-owner, not decisions.
+Each title is counted at 60 characters or fewer. Rows 1 to 8 are the pages' titles, as the owner
+decided on 22 October 2026; rows 9 to 14 are drafts.
 
-| #   | People search                                        | Title draft                                                   | Practises in                   |
+| #   | People search                                        | Title                                                         | Practises in                   |
 | --- | ---------------------------------------------------- | ------------------------------------------------------------- | ------------------------------ |
 | 1   | what is a note, what is an octave, what does A4 mean | What is a note? Pitch, hertz and the octave \| MercuryPitch   | Voice Mirror                   |
 | 2   | why 12 notes, sharps and flats, what is a semitone   | Why twelve notes? Sharps, flats and semitones \| MercuryPitch | Ear Lab                        |
@@ -240,9 +240,9 @@ Notes on the table:
   middle matters and how to use sirens. Each links the other.
 - **The trailer** is a YouTube piece. Its web home is the hub.
 - **Lessons 3 and 4** changed from their first drafts. Lesson 3's, "How to
-  match pitch, and why most people can", told the cold open's predict how the
-  tests came out (CURIOSITY-MOMENTS § 1 rule 4). Lesson 4's, "The major scale:
-  why do sounds like home", read with "do" as a verb.
+  match pitch, and why most people can", gave away the answer to the cold open's predict
+  (CURIOSITY-MOMENTS § 1 rule 4). Lesson 4's, "The major scale: why do sounds like home", read
+  with "do" as a verb.
 
 ---
 

@@ -794,11 +794,11 @@ and the four-words strip in the kit.
    hook, and every other copy carries it whole. As Lesson 2's head has them (`learn/02.html:3-137`):
    - the title, "Resonance and vowels: why ee and ah differ | MercuryPitch" (57 characters, under
      the test's ceiling of 60, `lesson-pages.test.ts:128-129`), SEARCH.md § 4's draft for Lesson 13
-     (`SEARCH.md:231`), which holds the Article's headline (`lesson-pages.test.ts:161`), the
-     query-led form SEARCH.md § 13 item 1 recommends; if the owner keeps the series' name in it,
-     "Resonance and vowels · Find Your Pitch | MercuryPitch" (53), the form Lessons 4 and 5 take
-     (`learn/04.html:9`, `learn/05.html:9`), since the full form, "Resonance and vowels: Find
-     Your Pitch, Lesson 13 | MercuryPitch", runs to 63 (Decisions 1). "Why ee and ah differ" says
+     (`SEARCH.md:231`), in the query-led form the owner chose for Lessons 1 to 8 on 22 October 2026.
+     Until this PR the title had to hold the Article's headline, which `og:title` holds now
+     (`lesson-pages.test.ts:160-164`), and this spec kept the series' name for the owner,
+     "Resonance and vowels · Find Your Pitch | MercuryPitch" (53), Lessons 4 and 5's form then,
+     since the full form, with "Lesson 13", runs to 63 (Decisions 1). "Why ee and ah differ" says
      only what the hook says, that the two differ, and nothing of what the peaks do. The worker
      never rewrites a title. The h1 is `h1.hook#hook`, the hook in its default wording
      (`lesson-copy.test.ts:323-332`; Hero);
@@ -948,9 +948,9 @@ With the recommendation first:
    ‘ah’ on one note draw the same line and sound different; both choices are a change, so it leans
    on neither, and "their places", a different vowel with different frequencies in it, is the
    misconception made visible. Recommended: keep. The title: recommended, the query-led "Resonance
-   and vowels: why ee and ah differ | MercuryPitch", as SEARCH.md § 13 item 1 recommends; the
-   series' name fits only in Lessons 4 and 5's short form, "Resonance and vowels · Find Your Pitch |
-   MercuryPitch", without "Lesson 13".
+   and vowels: why ee and ah differ | MercuryPitch", the form the owner chose for Lessons 1 to 8 on
+   22 October 2026; until then the series' name fit only in the short form Lessons 4 and 5 took,
+   "Resonance and vowels · Find Your Pitch | MercuryPitch", without "Lesson 13".
 2. **How the vowels sound** (Audio; FACTS 40): Merc's "ooh" voice with a 1/k source to 4 kHz
    through three resonances at the measured British means, every vowel at one power, the vibrato
    kept. Recommended: keep it, and tune it by ear before publishing on a phone's speaker and on
