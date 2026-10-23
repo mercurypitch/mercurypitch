@@ -647,7 +647,7 @@ table):
      the test's 80 to 160, `lesson-pages.test.ts:130-133`, and 157 with the alternative hook that
      #1186 dropped);
    - `og:title` and `twitter:title`, "Landing a leap: Find Your Pitch, Lesson 9", hold the headline,
-     as the title did until this PR (`lesson-pages.test.ts:161-165`; `learn/02.html:26-29`);
+     as the title did until #1187 (`lesson-pages.test.ts:161-165`; `learn/02.html:26-29`);
    - `og:description`, the full hook and one line, "How do you land a note you have to leap to? Hear
      the landing note first, then aim at it." (`lesson-copy.test.ts:349-352`;
      `learn/02.html:30-33`), and `twitter:description`, the hook exactly

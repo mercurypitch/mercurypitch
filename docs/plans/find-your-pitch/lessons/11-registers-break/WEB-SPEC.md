@@ -753,7 +753,7 @@ the others take it.
    (`learn/02.html:9-128`):
    - the title, "Registers and the break: chest and head voice | MercuryPitch" (60 characters, at
      the test's ceiling of 60, `lesson-pages.test.ts:128-129`), in the query-led form the owner
-     chose for Lessons 1 to 8 on 22 October 2026. Until this PR the title had to hold the Article's
+     chose for Lessons 1 to 8 on 22 October 2026. Until #1187 the title had to hold the Article's
      headline, which `og:title` holds now (`:161-165`), and this spec kept the series' form for the
      owner, "Registers and the break: Find Your Pitch | MercuryPitch" (55). SEARCH.md § 4's draft
      for Lesson 11, "Registers and the break: why voices flip | MercuryPitch" (`SEARCH.md:229`), is
