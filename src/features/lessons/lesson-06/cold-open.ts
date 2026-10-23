@@ -81,7 +81,7 @@ export function initColdOpen(): void {
     shape: COMPACT,
     active: watch(stage),
   })
-  // blue Merc sings along, and falls quiet when a play is cut short
+  // Merc sings along, and falls quiet when a play is cut short
   const sing = singAlong('blue')
 
   // the stops so far: a play stopped while its line still slides finds them changed

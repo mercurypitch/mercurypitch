@@ -35,7 +35,7 @@ vi.mock('@/lib/pitch-detector', () => ({
 
 const STILLS = { blue: '/stills/blue.webp', orange: '/stills/orange.webp' }
 
-/** The two Mercs and a ring on its own, in the page. */
+/** Merc, Tavi and a ring on its own, in the page. */
 function ringEl(): HTMLElement {
   const root = document.createElement('div')
   root.innerHTML = `<div id="mercBlue"></div><div id="mercOrange"></div><div class="ring"><svg><circle class="ring-progress" r="182"></circle><circle class="ring-breath" r="150"></circle><g class="ring-ripples"></g></svg><img class="ring-merc" alt=""><p class="ring-note"></p><p class="ring-state"></p></div>`
