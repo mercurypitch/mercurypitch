@@ -4,6 +4,7 @@
 
 import { afterEach, describe, expect, it } from 'vitest'
 import './browser-doubles.test-fixtures'
+import { ANNOUNCE_DELAY_MS } from './announce'
 import { mountLoud } from './loud'
 
 /** The toy's markup: the canvas, both sliders and the flag, "how fast" at 333 of 1000 (220 Hz). */
@@ -25,6 +26,11 @@ function stepUp(root: HTMLElement): void {
   fast.value = String(Number(fast.value) + 1)
   fast.dispatchEvent(new Event('input'))
 }
+
+const line = (): string =>
+  document.querySelector('[data-announcer]')?.textContent ?? ''
+const beat = (): Promise<void> =>
+  new Promise((r) => setTimeout(r, ANNOUNCE_DELAY_MS + 10))
 
 afterEach(() => {
   document.body.textContent = ''
@@ -58,5 +64,33 @@ describe('mountLoud', () => {
 
     // Assert
     expect(flag(root)).toBe('Pitch: unchanged')
+  })
+
+  it("says the flag's words through the status line, once for each change of words", async () => {
+    // Arrange
+    document.body.innerHTML = '<main></main>'
+    const root = loudRoot()
+    mountLoud(root)
+    const far = root.querySelector<HTMLInputElement>('[data-loud="far"]')
+
+    // Act: a climb, more of the same climb, then a move of how far
+    stepUp(root)
+    stepUp(root)
+    await beat()
+    const climbing = line()
+    stepUp(root)
+    stepUp(root)
+    const sameWords = { flag: flag(root), line: line() }
+    if (far !== null) far.value = '51'
+    far?.dispatchEvent(new Event('input'))
+    await beat()
+
+    // Assert: the same words again were not emptied out to be said twice
+    expect(climbing).toBe('Pitch: climbing')
+    expect(sameWords).toEqual({
+      flag: 'Pitch: climbing',
+      line: 'Pitch: climbing',
+    })
+    expect(line()).toBe('Pitch: unchanged')
   })
 })
