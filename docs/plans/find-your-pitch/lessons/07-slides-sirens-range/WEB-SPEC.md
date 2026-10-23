@@ -617,13 +617,14 @@ Lessons 2 to 6 promote into the kit (Toys table). Read again on main at `31b7f53
    the admin console publishes it, and its release adds it for good.
 2. The page's head, as Lesson 1's (`learn/01.html`). As built, held to the head checks of
    `src/tests/lesson-pages.test.ts` (a title of at most 60 characters, a description of at most
-   160): title "Slides, sirens and your range | MercuryPitch", and `og:title` "Slides, sirens and
-   your range · Find Your Pitch, Lesson 7"; meta description "Why is your comfortable middle worth
-   more than your highest note? A sixteen-minute lesson on gentle sirens, lip trills and “ng”, your
-   range and voice types."; canonical and `og:url` `https://mercurypitch.com/learn/07`; `og:image`
-   `public/learn/lesson-07-og.jpg`, 1200 x 630, the title card above the column alone, its middle
-   half lit and its ends dimmed, between blue Merc and orange Merc, which answers nothing the
-   predict asks, with alt text naming what it shows.
+   160): title "Your vocal range: slides, sirens and comfort | MercuryPitch" (SEARCH.md § 4; built
+   as "Slides, sirens and your range | MercuryPitch" until this PR), and `og:title` "Slides, sirens
+   and your range · Find Your Pitch, Lesson 7"; meta description "Why is your comfortable middle
+   worth more than your highest note? A sixteen-minute lesson on gentle sirens, lip trills and “ng”,
+   your range and voice types."; canonical and `og:url` `https://mercurypitch.com/learn/07`;
+   `og:image` `public/learn/lesson-07-og.jpg`, 1200 x 630, the title card above the column alone,
+   its middle half lit and its ends dimmed, between blue Merc and orange Merc, which answers nothing
+   the predict asks, with alt text naming what it shows.
 3. `kit/range-chart.ts`, new (Toys 1), generic over a window, a column and its lit band, lines,
    bands and range bars, so Lesson 11 (its signature, "the siren's line crossing a shaded seam")
    and Lesson 14 can use it. Built, with its layout and its drawing in `kit/range-chart-layout.ts`

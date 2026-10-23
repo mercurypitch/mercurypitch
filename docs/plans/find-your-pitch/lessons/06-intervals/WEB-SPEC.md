@@ -587,8 +587,8 @@ and the line references are main's.
 - The page's head, as Lesson 1's (`learn/01.html:9-60`). Like the cold open, nothing in it answers
   the predict before the reveal (CURIOSITY-MOMENTS rule 2): every copy a link preview or a search
   result shows says what the lesson asks, never what stays the same.
-  - title: "Intervals: the distance between notes | MercuryPitch", 60 characters at most; og:title
-    and twitter:title "Intervals: the distance between notes · Find Your Pitch, Lesson 6";
+  - title: "Intervals: the distance between two notes | MercuryPitch", 60 characters at most;
+    og:title and twitter:title "Intervals: the distance between notes · Find Your Pitch, Lesson 6";
   - meta description, and the structured data's: "Why can you start 'Twinkle, Twinkle' on any
     note and it is still the same tune? A fifteen-minute lesson on intervals, steps, leaps and
     transposing.";
