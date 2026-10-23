@@ -157,12 +157,12 @@ section's heading, and the line above it, are in LESSON.md ("Section headings").
 
 ## Length
 
-The learner copy is 2,374 words by the review's count (FACTS 5), 5 under the series' cap of 2,379.
-The page runs about 16 minutes: 9.97 minutes of reading at 238 words a minute and about 5.5 of
-sound, toys and tasks, 15.5 in all. That is past MASTER-PLAN § 4.2's 8 to 12 minutes of active
-time, as Lessons 3, 5, 6, 7, 9 and 11 are (16, 18, 17, 16, 16 and 16 minutes), and acceptable by
-their precedent. Each step's text, with its Try and its Notice, runs 96 to 117 words (Steps 1 to 5:
-117, 107, 110, 96 and 117), inside § 4.2's 50 to 120 a step. Two steps carry more beside it:
+The learner copy is 2,370 words on `pnpm lesson:words` (FACTS 5; the review's 2,374), 9 under the
+series' cap of 2,379. The page runs about 16 minutes: 9.96 of reading at 238 words a minute and
+about 5.5 of sound, toys and tasks, 15.5 in all. That is past MASTER-PLAN § 4.2's 8 to 12 minutes of
+active time, as Lessons 3, 5, 6, 7, 9 and 11 are (16, 18, 17, 16, 16 and 16 minutes), and acceptable
+by their precedent. Each step's text, with its Try and its Notice, runs 96 to 117 words (Steps 1 to
+5: 117, 107, 110, 96 and 117), inside § 4.2's 50 to 120 a step. Two steps carry more beside it:
 
 - **Step 2, about 185 words.** Its one-item Go deeper drawer (77 words) tells the sopranos'
   finding, and is closed by default.

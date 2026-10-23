@@ -163,17 +163,17 @@ heading, and the line above it, are in LESSON.md ("Section headings").
 
 ## Length
 
-The learner copy is 2,372 words by the review's count (8), 7 under the series' cap of 2,379: Lesson
-3's page on the same count is 2,454 words, 75 of them the note under its new title, which is not in
-editorial form, so the counter reads it. The page runs about 18 minutes: 9.97 minutes of reading at
-238 words a minute and about 8.1 of sound, toys and tasks, 18.1 in all, of which Sing it is about
-3.3. That is past MASTER-PLAN § 4.2's 8 to 12 minutes of active time, as Lessons 3, 5, 6, 7 and 9
-are (16, 18, 17, 16 and 16 minutes), and acceptable by their precedent for a lesson that closes the
-season and carries both lanes. Each step's text, with its Try and its Notice, runs 109 to 116 words
-(Steps 1 to 5: 112, 109, 116, 111 and 115), inside § 4.2's 50 to 120 a step. One step carries more
-beside it: Step 2, about 200 words with its mix-up card (90 words), which sits in the step whose toy
-refutes it, as in Lessons 2 to 9. The season recap the owner may add to the closing card is one
-line, not a step (LESSON.md, the Wrap's note). The page has no Go deeper drawer.
+The learner copy is 2,368 words on `pnpm lesson:words` (8; the review's 2,372), 11 under the series'
+cap of 2,379: Lesson 3's page on the same count is 2,454 words, 75 of them the note under its new
+title, which is not in editorial form, so the counter reads it. The page runs about 18 minutes: 9.95
+of reading at 238 words a minute and about 8.1 of sound, toys and tasks, 18.05 in all, of which Sing
+it is about 3.3. That is past MASTER-PLAN § 4.2's 8 to 12 minutes of active time, as Lessons 3, 5,
+6, 7 and 9 are (16, 18, 17, 16 and 16 minutes), and acceptable by their precedent for a lesson that
+closes the season and carries both lanes. Each step's text, with its Try and its Notice, runs 109 to
+116 words (Steps 1 to 5: 112, 109, 116, 111 and 115), inside § 4.2's 50 to 120 a step. One step
+carries more beside it: Step 2, about 200 words with its mix-up card (90 words), which sits in the
+step whose toy refutes it, as in Lessons 2 to 9. The season recap the owner may add to the closing
+card is one line, not a step (LESSON.md, the Wrap's note). The page has no Go deeper drawer.
 
 ## Toys: what each reuses, and what is new
 
