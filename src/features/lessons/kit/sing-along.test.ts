@@ -11,7 +11,7 @@ import { mercSing } from './merc-duo'
 import type { SungNote } from './sing-along'
 import { singAlong, stopSingAlong } from './sing-along'
 
-/** Whether blue Merc's bead on the rail is lit: he is singing. */
+/** Whether Merc's bead on the rail is lit: he is singing. */
 const singing = (): boolean =>
   document
     .querySelector('#heroRail [data-bead="blue"]')
