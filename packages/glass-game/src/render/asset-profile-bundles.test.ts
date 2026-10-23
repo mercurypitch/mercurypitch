@@ -1,14 +1,13 @@
 // Tiered bundle tests — visual bytes vary by profile while authored bundle/task identity stays stable.
 
 import { Group, MeshPhysicalMaterial, Texture, TextureLoader } from 'three'
-import type { GLTF } from 'three/addons/loaders/GLTFLoader.js'
-import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js'
 import { afterEach, expect, it, vi } from 'vitest'
 import { FROST_GOLD_ARCH_BUNDLE_IDS } from '../content/frost-gold-arch-profile'
 import { PEARL_QUARTER_TURN_BUNDLE_IDS } from '../content/pearl-quarter-turn-profile'
 import { CLOUDWAY_QUARTER_TURN_ART_STUDY } from '../content/quarter-turn-art-study'
 import { loadMuseumAssets } from './asset-kit'
 import { resolveAssetProfileBundle } from './asset-profile-bundles'
+import * as assetSceneLoader from './asset-scene-loader'
 import { MUSEUM_MATERIAL_CATALOG } from './catalog'
 import { CLOUDWAY_LAB_BUNDLE_IDS } from './cloudway-laboratory-catalog'
 import type { MuseumMaterials } from './materials'
@@ -40,10 +39,7 @@ it('resolves the reviewed quarter-turn tier without changing logical ownership',
   )
 
   const scene = new Group()
-  vi.spyOn(GLTFLoader.prototype, 'loadAsync').mockResolvedValue({
-    scene,
-    animations: [],
-  } as unknown as GLTF)
+  vi.spyOn(assetSceneLoader, 'loadProfiledAssetScene').mockResolvedValue(scene)
   vi.spyOn(TextureLoader.prototype, 'loadAsync').mockResolvedValue(
     new Texture() as Awaited<ReturnType<TextureLoader['loadAsync']>>,
   )
@@ -69,8 +65,12 @@ it('resolves the reviewed quarter-turn tier without changing logical ownership',
     (taskId) => installed.push(taskId),
     { assetProfile: 'mobile' },
   )
-  expect(GLTFLoader.prototype.loadAsync).toHaveBeenCalledWith(
+  expect(assetSceneLoader.loadProfiledAssetScene).toHaveBeenCalledWith(
     `/assets/${PEARL_QUARTER_TURN_BUNDLE_IDS.mobile}`,
+    expect.objectContaining({
+      assetProfile: 'mobile',
+      signal: expect.any(AbortSignal),
+    }),
   )
   expect(setKit).toHaveBeenCalledWith(
     scene,

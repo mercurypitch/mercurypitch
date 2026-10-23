@@ -42,3 +42,6 @@ apps/beside-cue/public/games/singing-current-walls-v1/*.glb filter=lfs diff=lfs 
 apps/beside-cue/public/games/runner-obstacles-v1/*.glb filter=lfs diff=lfs merge=lfs -text
 apps/beside-cue/public/games/journey-map-v11/*.webp filter=lfs diff=lfs merge=lfs -text
 apps/beside-cue/public/games/runner-collectibles-v1/*.webp filter=lfs diff=lfs merge=lfs -text
+
+# Unified-diff context preserves upstream tabs and blank context-line prefixes.
+patches/three@0.185.1.patch -whitespace

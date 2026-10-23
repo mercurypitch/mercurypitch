@@ -1,13 +1,12 @@
 // Required asset readiness — bounded downloads, cancellation and failures never reveal fallback museum proxies.
 
 import { Group, MeshPhysicalMaterial, Texture, TextureLoader } from 'three'
-import type { GLTF } from 'three/addons/loaders/GLTFLoader.js'
-import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js'
 import { afterEach, expect, it, vi } from 'vitest'
 import { GLASSWORKS } from '../content/glassworks'
 import type { LevelDefinition } from '../contracts'
 import { loadMuseumAssets, RequiredMuseumAssetError } from './asset-kit'
 import { createMuseumAssetLoadPlan } from './asset-load-plan'
+import * as assetSceneLoader from './asset-scene-loader'
 import { MUSEUM_MATERIAL_CATALOG } from './catalog'
 import type { MuseumMaterials } from './materials'
 import type { createMuseum } from './museum'
@@ -122,10 +121,6 @@ function materials(): MuseumMaterials {
   ) as MuseumMaterials
 }
 
-function gltf(scene = new Group()): GLTF {
-  return { scene, animations: [] } as unknown as GLTF
-}
-
 type LoadedTexture = Awaited<ReturnType<TextureLoader['loadAsync']>>
 
 function texture(): LoadedTexture {
@@ -175,7 +170,9 @@ it.each(['mobile', 'full'] as const)(
       return { width: 512, height: 512, close: vi.fn() }
     })
     vi.stubGlobal('createImageBitmap', resize)
-    vi.spyOn(GLTFLoader.prototype, 'loadAsync').mockResolvedValue(gltf())
+    vi.spyOn(assetSceneLoader, 'loadProfiledAssetScene').mockResolvedValue(
+      new Group(),
+    )
     const library = materials()
     const setSky = vi.fn()
 
@@ -249,7 +246,9 @@ it.each(['abort', 'disposed'] as const)(
       async (url) =>
         url === 'warm-carrara-roughness' ? pendingTexture : texture(),
     )
-    vi.spyOn(GLTFLoader.prototype, 'loadAsync').mockResolvedValue(gltf())
+    vi.spyOn(assetSceneLoader, 'loadProfiledAssetScene').mockResolvedValue(
+      new Group(),
+    )
     const attempt = new AbortController()
     let unavailable = false
     const registered = vi.fn()
@@ -304,9 +303,9 @@ it('releases an unpublished portrait once when its bundle prerequisite rejects a
   }))
   vi.stubGlobal('createImageBitmap', resize)
   let rejectBundle: ((error: Error) => void) | undefined
-  vi.spyOn(GLTFLoader.prototype, 'loadAsync').mockImplementation(
+  vi.spyOn(assetSceneLoader, 'loadProfiledAssetScene').mockImplementation(
     () =>
-      new Promise<GLTF>((_resolve, reject) => {
+      new Promise<Group>((_resolve, reject) => {
         rejectBundle = reject
       }),
   )
@@ -358,7 +357,9 @@ it('releases the current resized image exactly once when material installation r
     async (url) =>
       url === 'warm-carrara-roughness' ? rejectedTexture : texture(),
   )
-  vi.spyOn(GLTFLoader.prototype, 'loadAsync').mockResolvedValue(gltf())
+  vi.spyOn(assetSceneLoader, 'loadProfiledAssetScene').mockResolvedValue(
+    new Group(),
+  )
   const plan = createMuseumAssetLoadPlan(levelWithRequiredVisual())
   const target = plan.materialTextures.find(
     ({ recipe }) => recipe.asset === 'warm-carrara-roughness',
@@ -404,8 +405,8 @@ it('starts bundle and texture downloads together but rejects before installation
       return texture()
     })
   const bundleLoad = vi
-    .spyOn(GLTFLoader.prototype, 'loadAsync')
-    .mockResolvedValue(gltf())
+    .spyOn(assetSceneLoader, 'loadProfiledAssetScene')
+    .mockResolvedValue(new Group())
   const setKit = vi.fn()
   const onError = vi.fn()
 
@@ -421,7 +422,10 @@ it('starts bundle and texture downloads together but rejects before installation
   )
 
   expect(textureLoad).toHaveBeenCalled()
-  expect(bundleLoad).toHaveBeenCalledWith('museum-window-v4')
+  expect(bundleLoad).toHaveBeenCalledWith(
+    'museum-window-v4',
+    expect.objectContaining({ signal: expect.any(AbortSignal) }),
+  )
   await expect(pending).rejects.toMatchObject({
     name: 'RequiredMuseumAssetError',
     assetId: 'warm-carrara-normal',
@@ -437,7 +441,7 @@ it('rejects a required bundle and an installation failure instead of resolving w
   vi.spyOn(TextureLoader.prototype, 'loadAsync').mockImplementation(async () =>
     texture(),
   )
-  const bundleLoad = vi.spyOn(GLTFLoader.prototype, 'loadAsync')
+  const bundleLoad = vi.spyOn(assetSceneLoader, 'loadProfiledAssetScene')
   bundleLoad.mockRejectedValueOnce(new Error('window bundle unavailable'))
 
   await expect(
@@ -455,7 +459,7 @@ it('rejects a required bundle and an installation failure instead of resolving w
     assetId: 'museum-window-v4',
   })
 
-  bundleLoad.mockResolvedValueOnce(gltf())
+  bundleLoad.mockResolvedValueOnce(new Group())
   await expect(
     loadMuseumAssets(
       levelWithRequiredVisual(),
@@ -481,7 +485,9 @@ it('loads a required painting before installing its decoration bundle', async ()
   vi.spyOn(TextureLoader.prototype, 'loadAsync').mockImplementation(async () =>
     texture(),
   )
-  vi.spyOn(GLTFLoader.prototype, 'loadAsync').mockResolvedValue(gltf())
+  vi.spyOn(assetSceneLoader, 'loadProfiledAssetScene').mockResolvedValue(
+    new Group(),
+  )
   const setKit = vi.fn((_: Group, bundle: string) => {
     if (bundle === 'museum-decor-v5') order.push('bundle')
   })
@@ -514,7 +520,9 @@ it('rejects a missing required painting without installing its bundle', async ()
       return texture()
     },
   )
-  vi.spyOn(GLTFLoader.prototype, 'loadAsync').mockResolvedValue(gltf())
+  vi.spyOn(assetSceneLoader, 'loadProfiledAssetScene').mockResolvedValue(
+    new Group(),
+  )
   const setKit = vi.fn()
   const setDecorationTexture = vi.fn()
 
@@ -536,15 +544,14 @@ it('rejects a missing required painting without installing its bundle', async ()
   expect(setKit).not.toHaveBeenCalledWith(expect.any(Group), 'museum-decor-v5')
 })
 
-it('rejects a GLB that resolves after its loading manager reports a missing dependency', async () => {
+it('propagates a profiled bundle dependency failure before installation', async () => {
   vi.spyOn(TextureLoader.prototype, 'loadAsync').mockImplementation(async () =>
     texture(),
   )
-  vi.spyOn(GLTFLoader.prototype, 'loadAsync').mockImplementationOnce(
-    async function (this: GLTFLoader) {
-      this.manager.itemError('museum-window-basecolor.jpg')
-      return gltf()
-    },
+  vi.spyOn(assetSceneLoader, 'loadProfiledAssetScene').mockRejectedValueOnce(
+    new Error(
+      'Asset has unavailable dependencies: museum-window-basecolor.jpg',
+    ),
   )
 
   await expect(
@@ -577,7 +584,9 @@ it('disposes a late required texture without installing it after teardown', asyn
       return texture()
     },
   )
-  vi.spyOn(GLTFLoader.prototype, 'loadAsync').mockResolvedValue(gltf())
+  vi.spyOn(assetSceneLoader, 'loadProfiledAssetScene').mockResolvedValue(
+    new Group(),
+  )
   let unavailable = false
   const setSky = vi.fn()
   const pending = loadMuseumAssets(
@@ -608,10 +617,10 @@ it('declares one logical preferred/fallback bundle unit and completes it after i
     texture(),
   )
   const bundleLoad = vi
-    .spyOn(GLTFLoader.prototype, 'loadAsync')
+    .spyOn(assetSceneLoader, 'loadProfiledAssetScene')
     .mockImplementation(async (url) => {
       if (url === 'museum-kit-v2') throw new Error('preferred unavailable')
-      return gltf()
+      return new Group()
     })
   const order: string[] = []
   const installed: string[] = []
@@ -634,8 +643,14 @@ it('declares one logical preferred/fallback bundle unit and completes it after i
     },
   )
 
-  expect(bundleLoad).toHaveBeenCalledWith('museum-kit-v2')
-  expect(bundleLoad).toHaveBeenCalledWith('museum-kit')
+  expect(bundleLoad).toHaveBeenCalledWith(
+    'museum-kit-v2',
+    expect.objectContaining({ signal: expect.any(AbortSignal) }),
+  )
+  expect(bundleLoad).toHaveBeenCalledWith(
+    'museum-kit',
+    expect.objectContaining({ signal: expect.any(AbortSignal) }),
+  )
   expect(installed.filter((id) => id === 'bundle:museum-kit')).toHaveLength(1)
   expect(order).toEqual(['installed', 'completed'])
 })
@@ -648,15 +663,15 @@ it('bounds required GLB work so one renderer attempt cannot decode every bundle 
   let active = 0
   let maximumActive = 0
   const bundleLoad = vi
-    .spyOn(GLTFLoader.prototype, 'loadAsync')
+    .spyOn(assetSceneLoader, 'loadProfiledAssetScene')
     .mockImplementation(
       () =>
-        new Promise<GLTF>((resolve) => {
+        new Promise<Group>((resolve) => {
           active++
           maximumActive = Math.max(maximumActive, active)
           releases.push(() => {
             active--
-            resolve(gltf())
+            resolve(new Group())
           })
         }),
     )
@@ -688,10 +703,10 @@ it('aborts the active GLB and never starts queued work after renderer teardown',
     texture(),
   )
   const bundleLoad = vi
-    .spyOn(GLTFLoader.prototype, 'loadAsync')
-    .mockImplementation(function (this: GLTFLoader) {
-      return new Promise<GLTF>((_resolve, reject) => {
-        this.manager.abortController.signal.addEventListener(
+    .spyOn(assetSceneLoader, 'loadProfiledAssetScene')
+    .mockImplementation((_url, options) => {
+      return new Promise<Group>((_resolve, reject) => {
+        options.signal.addEventListener(
           'abort',
           () => reject(new DOMException('Aborted', 'AbortError')),
           { once: true },
@@ -736,7 +751,9 @@ it('invalidates a standalone texture request and releases its late decoded image
       return texture()
     },
   )
-  vi.spyOn(GLTFLoader.prototype, 'loadAsync').mockResolvedValue(gltf())
+  vi.spyOn(assetSceneLoader, 'loadProfiledAssetScene').mockResolvedValue(
+    new Group(),
+  )
   const attempt = new AbortController()
   const setSky = vi.fn()
   const pending = loadMuseumAssets(

@@ -512,6 +512,7 @@ jobs:
             narration,
             native-current,
             render-quality,
+            renderer-ownership,
             replay,
             resonance,
             runner-readiness,

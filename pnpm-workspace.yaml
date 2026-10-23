@@ -20,3 +20,6 @@ overrides:
   'compression@<1.8.2': 1.8.2
   # Sass accepts this patch but its existing resolution retained the vulnerable one.
   'immutable@>=5.0.0 <5.1.8': 5.1.9
+
+patchedDependencies:
+  three@0.185.1: patches/three@0.185.1.patch

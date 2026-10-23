@@ -51,6 +51,8 @@ public/drum-night/.drum-kits-backup-*/
 src/features/drum-night/audio/*.generated.json.backup-*
 
 **/**/*.patch
+# Pinned renderer ownership repair is an input to frozen CI installs.
+!patches/three@0.185.1.patch
 
 # Local DevSecOps audit telemetry (semgrep/gitleaks/nuclei/eslint scan output)
 .audit_telemetry/
