@@ -20,19 +20,10 @@
 //             { "name": "turn-left", "drag": [-220, 0], "settle": 2500 }]
 // }
 
-import { spawn } from 'node:child_process'
-import { closeSync, existsSync, mkdirSync, openSync, readFileSync, unlinkSync, writeFileSync, writeSync, } from 'node:fs'
-import { createRequire } from 'node:module'
-import { tmpdir } from 'node:os'
-import { dirname, join, resolve } from 'node:path'
+import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs'
+import { join, resolve } from 'node:path'
 import { setTimeout as sleep } from 'node:timers/promises'
-import { fileURLToPath } from 'node:url'
-
-const HERE = dirname(fileURLToPath(import.meta.url))
-const REPO = resolve(HERE, '../../../..')
-const APP = join(REPO, 'apps/beside-cue')
-const require = createRequire(join(APP, 'package.json'))
-const { chromium } = require('@playwright/test')
+import { acquirePortLock, cleanUpOnExit, launchSoftwareChromium, startGameServer, } from './game_server.mjs'
 
 const args = Object.fromEntries(
   process.argv.slice(2).reduce((pairs, arg, i, all) => {
@@ -47,77 +38,10 @@ if (candidate && !existsSync(candidate))
   throw new Error(`no candidate at ${candidate}`)
 mkdirSync(out, { recursive: true })
 const port = Number(process.env.PROOF_PORT ?? 5391)
-const base = `http://127.0.0.1:${port}`
-
-// One proof at a time on a port: a pipeline's proof, a probe batch and a critic's
-// run all want it, and two dev servers on one port fail. Wait for the lock; a lock
-// whose process has gone is stale.
-const lock = join(tmpdir(), `glassworks-proof-${port}.lock`)
-for (;;) {
-  try {
-    const fd = openSync(lock, 'wx')
-    writeSync(fd, String(process.pid))
-    closeSync(fd)
-    break
-  } catch (error) {
-    if (error.code !== 'EEXIST') throw error
-  }
-  const holder = Number(readFileSync(lock, 'utf8'))
-  let alive = !(Number.isInteger(holder) && holder > 0) // being written: wait
-  try {
-    if (!alive) alive = process.kill(holder, 0)
-  } catch {
-    alive = false
-  }
-  if (!alive) {
-    try {
-      unlinkSync(lock)
-    } catch {}
-    continue
-  }
-  await sleep(5000)
-}
-
-const server = spawn(
-  process.execPath,
-  [
-    join(APP, 'node_modules/vite/bin/vite.js'),
-    '--host',
-    '127.0.0.1',
-    '--port',
-    String(port),
-    '--strictPort',
-  ],
-  {
-    cwd: APP,
-    env: { ...process.env, VITE_BESIDE_CUE_GAMES: '1' },
-    stdio: ['ignore', 'pipe', 'pipe'],
-  },
-)
-let serverLog = ''
-process.on('exit', () => {
-  server.kill('SIGTERM')
-  try {
-    if (Number(readFileSync(lock, 'utf8')) === process.pid) unlinkSync(lock)
-  } catch {}
-})
-for (const signal of ['SIGINT', 'SIGTERM'])
-  process.on(signal, () => process.exit(130))
-server.stdout.on('data', (chunk) => (serverLog += chunk))
-server.stderr.on('data', (chunk) => (serverLog += chunk))
-
-async function waitForServer() {
-  for (let i = 0; i < 120; i += 1) {
-    try {
-      const response = await fetch(`${base}/glass-game/`)
-      if (response.ok) return
-    } catch {
-      // not up yet
-    }
-    await sleep(1000)
-  }
-  throw new Error(`Vite did not start:\n${serverLog.slice(-2000)}`)
-}
+const release = await acquirePortLock(port)
+const server = startGameServer(port)
+const base = server.base
+cleanUpOnExit(release, server)
 
 const summary = {
   candidate: candidate ?? null,
@@ -126,17 +50,8 @@ const summary = {
 }
 let browser
 try {
-  await waitForServer()
-  // Cloud containers ship one preinstalled Chromium; prefer it over a download.
-  const preinstalled = process.env.PROOF_CHROMIUM ?? '/opt/pw-browsers/chromium'
-  browser = await chromium.launch({
-    executablePath: existsSync(preinstalled) ? preinstalled : undefined,
-    args: [
-      '--use-angle=swiftshader',
-      '--enable-unsafe-swiftshader',
-      '--ignore-gpu-blocklist',
-    ],
-  })
+  await server.waitUntilUp('/glass-game/')
+  browser = await launchSoftwareChromium()
   for (const viewport of config.viewports) {
     const context = await browser.newContext({
       viewport: { width: viewport.width, height: viewport.height },
@@ -284,7 +199,7 @@ try {
   }
 } finally {
   if (browser) await browser.close()
-  server.kill('SIGTERM')
+  server.stop()
 }
 writeFileSync(join(out, 'runtime-proof.json'), JSON.stringify(summary, null, 2))
 console.log(JSON.stringify(summary, null, 2))

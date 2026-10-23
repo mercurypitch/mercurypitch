@@ -2,7 +2,7 @@
 // Adventure vessels — dimensional glass, an earned stress glow and bounded shatter.
 // ============================================================
 
-import type { BufferGeometry, Material, Texture, Vector3 } from 'three'
+import type { BufferGeometry, Material, MeshStandardMaterial, Texture, Vector3, } from 'three'
 import { Box3, DoubleSide, EdgesGeometry, Group, LineBasicMaterial, LineSegments, Mesh, MeshBasicMaterial, MeshPhysicalMaterial, PlaneGeometry, RingGeometry, } from 'three'
 import { DEFAULT_EXHIBIT_MOUNT_HEIGHT } from '../content/solid-props'
 import type { BreakableDefinition, BreakableSnapshot } from '../contracts'
@@ -12,6 +12,7 @@ import { disposeObject } from './dispose'
 import type { PreparedExhibitAssetLease } from './exhibit-geometry-pool'
 import type { FracturePiece } from './fracture'
 import { fractureGeometry } from './fracture'
+import { applyStressGlow, castsSolidShadow, isGlassSurface, } from './glass-surfaces'
 import type { MaterialLibrary } from './material-library'
 import { createMaterialLibrary } from './material-library'
 import type { ResonancePresentation, ResonanceRewardVisualFactory, } from './resonance-release'
@@ -242,7 +243,7 @@ function createVesselPresentation(
   ): VesselInstallation {
     const nextIntact = new Mesh(geometry, nextIntactMaterial)
     nextIntact.name = `vessel-intact-${target.id}`
-    nextIntact.castShadow = true
+    nextIntact.castShadow = castsSolidShadow(nextIntactMaterial)
     if (releaseSharedGeometry === undefined || geometry.boundingBox === null)
       geometry.computeBoundingBox()
     const nextBounds = (geometry.boundingBox ?? new Box3()).clone()
@@ -307,7 +308,9 @@ function createVesselPresentation(
       visiblePieces.forEach((piece, index) => {
         const mesh = new Mesh(piece.geometry, nextShardMaterial)
         mesh.position.copy(piece.centre)
-        mesh.castShadow = options.castShardShadows !== false
+        mesh.castShadow =
+          options.castShardShadows !== false &&
+          castsSolidShadow(nextShardMaterial)
         const motion = planShatterShardMotion(
           target.id,
           shatterProfile,
@@ -651,12 +654,13 @@ function createVesselPresentation(
               stress * RESONANCE_SURFACE_STRESS_TUNING.emissiveScale,
             )
       glass.emissiveIntensity = surfaceStress
-      for (const imported of materialLibrary.materials) {
-        const surface = imported as MeshPhysicalMaterial
-        if (!(surface.transmission > 0)) continue
-        surface.emissive.setHex(stressEmissive)
-        surface.emissiveIntensity = surfaceStress
-      }
+      for (const imported of materialLibrary.materials)
+        if (isGlassSurface(imported))
+          applyStressGlow(
+            imported as MeshStandardMaterial,
+            stressEmissive,
+            surfaceStress,
+          )
       const anticipation =
         age < 0 ? 0 : delay <= 0 ? 1 : Math.max(0, Math.min(1, age / delay))
       const crackReveal = awakening

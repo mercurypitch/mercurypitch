@@ -495,6 +495,13 @@ shots and the numbers, not a long report. Sizes are in working sessions.
 
 ### Phase 0: the bench and the fixes that need no asset (2 sessions)
 
+**Done 2026-10-23.** The bench is `apps/beside-cue/glass-bench.html`
+(`packages/glass-game/src/bench/`), captured with the skill's
+`bench_capture.mjs` and `bench_sheet.py`. `GlassMaterial`, the studios and the
+resident lights are in `packages/glass-game/src/render/`. Results and the
+before-and-after shots:
+[`glass-look-checkpoint0-2026-10-23/`](../../art/glass-adventure/proofs/glass-look-checkpoint0-2026-10-23/).
+
 - Branch `feat/glass-look-system`.
 - The bench page, its capture script and metrics.
 - `GlassMaterial` with the `studio` technique, the studio builder, and the

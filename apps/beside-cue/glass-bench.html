@@ -1,0 +1,31 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Glass bench</title>
+    <style>
+      html,
+      body {
+        margin: 0;
+        background: #101214;
+        color: #cfd6dc;
+        font: 12px/1.4 monospace;
+      }
+      canvas {
+        display: block;
+        width: 1024px;
+        height: 1024px;
+      }
+      #hud {
+        padding: 6px 10px;
+        white-space: pre;
+      }
+    </style>
+  </head>
+  <body>
+    <canvas></canvas>
+    <div id="hud">Loading the bench...</div>
+    <script type="module" src="/src/dev/glass-bench.ts"></script>
+  </body>
+</html>

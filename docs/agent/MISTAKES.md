@@ -2236,3 +2236,10 @@ that scoped formatting and lint both pass. Do not rerun every local gate.
 **Cause:** the banner opens only in a build with a Google tag and on a Europe clock. `pnpm dev`, `build:e2e` (tag ids emptied) and CI (UTC) never show it, so nothing anchored to the foot of a phone screen was ever seen beside it.
 **Rule:** the foot of the screen is a stack (tab bar, banner, confirm-email pill, toasts); each layer publishes its room on `<html>` with `publishFootSpace` and stands on the ones below. Anything else pinned to the bottom stands on `--consent-banner-space`, and on `--verify-banner-space` where the pill can be. To see the real banner, build with a tag id set and run the browser with `timezoneId: 'Europe/Zagreb'`. On a phone, use dev.mercurypitch.com or a PR preview: `build:dev` sets `VITE_CONSENT_PREVIEW=true`, so the bar shows with no Google tag (on a Europe clock, or from Settings › About › Cookie settings) and nothing is sent to Google. Clear `mp.consent.v1` in site storage to be asked again.
 **See:** `src/lib/foot-space.ts`, `src/e2e/toast-above-confirm-bar.spec.ts`, `src/tests/foot-stack-css.test.ts`, `src/components/ConsentBanner.preview.test.tsx`
+
+### Keep a Three material subclass's `type`
+
+**Symptom:** the glass bench threw "Cannot convert undefined or null to object" inside `onBeforeCompile` the first time a `GlassMaterial` rendered, while unit tests that patched `ShaderLib.physical` passed.
+**Cause:** the subclass set `type = 'GlassMaterial'`. Three picks the shader program and its uniforms by `material.type` (`shaderIDs` in `WebGLPrograms`); an unknown type is treated as a `ShaderMaterial`, which brings no uniforms.
+**Rule:** a subclass of a built-in material keeps the parent's `type` and identifies itself with a flag or `instanceof`. Assert the type in a test, and render a new material once in a real browser before trusting tests that only patch shader strings.
+**See:** `packages/glass-game/src/render/glass-material.ts`, `packages/glass-game/src/render/glass-material.test.ts`.

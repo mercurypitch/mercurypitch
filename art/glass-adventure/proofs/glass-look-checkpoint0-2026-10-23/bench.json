@@ -1,0 +1,418 @@
+{
+ "heroes": {
+  "urn-shipped": "/games/adventure-v6/amber-cadence-urn-qa-v2.glb",
+  "urn-rebuild": "<path to amber-cadence-urn.glb>",
+  "amphora-shipped": "/games/adventure-v6/opaline-echo-amphora-qa-v2.glb",
+  "amphora-rebuild": "<path to opaline-echo-amphora.glb>",
+  "decanter-shipped": "/games/adventure-v3/cut-crystal-decanter-qa-v2.glb"
+ },
+ "masks": true,
+ "scale": 2,
+ "shots": [
+  {
+   "name": "urn-shipped-authored-aces-room",
+   "hero": "urn-shipped",
+   "environment": "room",
+   "look": "authored",
+   "toneMapping": "aces",
+   "subject": "hero",
+   "camera": "three-quarter"
+  },
+  {
+   "name": "urn-shipped-authored-aces-grey",
+   "hero": "urn-shipped",
+   "environment": "grey",
+   "look": "authored",
+   "toneMapping": "aces",
+   "subject": "hero",
+   "camera": "three-quarter"
+  },
+  {
+   "name": "urn-shipped-authored-aces-hdr",
+   "hero": "urn-shipped",
+   "environment": "hdr",
+   "look": "authored",
+   "toneMapping": "aces",
+   "subject": "hero",
+   "camera": "three-quarter"
+  },
+  {
+   "name": "urn-shipped-authored-aces-gallery",
+   "hero": "urn-shipped",
+   "environment": "gallery",
+   "look": "authored",
+   "toneMapping": "aces",
+   "subject": "hero",
+   "camera": "three-quarter"
+  },
+  {
+   "name": "urn-shipped-authored-aces-kit",
+   "hero": "urn-shipped",
+   "environment": "kit",
+   "look": "authored",
+   "toneMapping": "aces",
+   "subject": "hero",
+   "camera": "three-quarter"
+  },
+  {
+   "name": "urn-rebuild-authored-aces-room",
+   "hero": "urn-rebuild",
+   "environment": "room",
+   "look": "authored",
+   "toneMapping": "aces",
+   "subject": "hero",
+   "camera": "three-quarter"
+  },
+  {
+   "name": "urn-rebuild-authored-aces-grey",
+   "hero": "urn-rebuild",
+   "environment": "grey",
+   "look": "authored",
+   "toneMapping": "aces",
+   "subject": "hero",
+   "camera": "three-quarter"
+  },
+  {
+   "name": "urn-rebuild-authored-aces-hdr",
+   "hero": "urn-rebuild",
+   "environment": "hdr",
+   "look": "authored",
+   "toneMapping": "aces",
+   "subject": "hero",
+   "camera": "three-quarter"
+  },
+  {
+   "name": "urn-rebuild-authored-aces-gallery",
+   "hero": "urn-rebuild",
+   "environment": "gallery",
+   "look": "authored",
+   "toneMapping": "aces",
+   "subject": "hero",
+   "camera": "three-quarter"
+  },
+  {
+   "name": "urn-rebuild-authored-aces-kit",
+   "hero": "urn-rebuild",
+   "environment": "kit",
+   "look": "authored",
+   "toneMapping": "aces",
+   "subject": "hero",
+   "camera": "three-quarter"
+  },
+  {
+   "name": "amphora-shipped-authored-aces-room",
+   "hero": "amphora-shipped",
+   "environment": "room",
+   "look": "authored",
+   "toneMapping": "aces",
+   "subject": "hero",
+   "camera": "three-quarter"
+  },
+  {
+   "name": "amphora-shipped-authored-aces-grey",
+   "hero": "amphora-shipped",
+   "environment": "grey",
+   "look": "authored",
+   "toneMapping": "aces",
+   "subject": "hero",
+   "camera": "three-quarter"
+  },
+  {
+   "name": "amphora-shipped-authored-aces-hdr",
+   "hero": "amphora-shipped",
+   "environment": "hdr",
+   "look": "authored",
+   "toneMapping": "aces",
+   "subject": "hero",
+   "camera": "three-quarter"
+  },
+  {
+   "name": "amphora-shipped-authored-aces-gallery",
+   "hero": "amphora-shipped",
+   "environment": "gallery",
+   "look": "authored",
+   "toneMapping": "aces",
+   "subject": "hero",
+   "camera": "three-quarter"
+  },
+  {
+   "name": "amphora-shipped-authored-aces-kit",
+   "hero": "amphora-shipped",
+   "environment": "kit",
+   "look": "authored",
+   "toneMapping": "aces",
+   "subject": "hero",
+   "camera": "three-quarter"
+  },
+  {
+   "name": "amphora-rebuild-authored-aces-room",
+   "hero": "amphora-rebuild",
+   "environment": "room",
+   "look": "authored",
+   "toneMapping": "aces",
+   "subject": "hero",
+   "camera": "three-quarter"
+  },
+  {
+   "name": "amphora-rebuild-authored-aces-grey",
+   "hero": "amphora-rebuild",
+   "environment": "grey",
+   "look": "authored",
+   "toneMapping": "aces",
+   "subject": "hero",
+   "camera": "three-quarter"
+  },
+  {
+   "name": "amphora-rebuild-authored-aces-hdr",
+   "hero": "amphora-rebuild",
+   "environment": "hdr",
+   "look": "authored",
+   "toneMapping": "aces",
+   "subject": "hero",
+   "camera": "three-quarter"
+  },
+  {
+   "name": "amphora-rebuild-authored-aces-gallery",
+   "hero": "amphora-rebuild",
+   "environment": "gallery",
+   "look": "authored",
+   "toneMapping": "aces",
+   "subject": "hero",
+   "camera": "three-quarter"
+  },
+  {
+   "name": "amphora-rebuild-authored-aces-kit",
+   "hero": "amphora-rebuild",
+   "environment": "kit",
+   "look": "authored",
+   "toneMapping": "aces",
+   "subject": "hero",
+   "camera": "three-quarter"
+  },
+  {
+   "name": "decanter-shipped-authored-aces-room",
+   "hero": "decanter-shipped",
+   "environment": "room",
+   "look": "authored",
+   "toneMapping": "aces",
+   "subject": "hero",
+   "camera": "three-quarter"
+  },
+  {
+   "name": "decanter-shipped-authored-aces-grey",
+   "hero": "decanter-shipped",
+   "environment": "grey",
+   "look": "authored",
+   "toneMapping": "aces",
+   "subject": "hero",
+   "camera": "three-quarter"
+  },
+  {
+   "name": "decanter-shipped-authored-aces-hdr",
+   "hero": "decanter-shipped",
+   "environment": "hdr",
+   "look": "authored",
+   "toneMapping": "aces",
+   "subject": "hero",
+   "camera": "three-quarter"
+  },
+  {
+   "name": "decanter-shipped-authored-aces-gallery",
+   "hero": "decanter-shipped",
+   "environment": "gallery",
+   "look": "authored",
+   "toneMapping": "aces",
+   "subject": "hero",
+   "camera": "three-quarter"
+  },
+  {
+   "name": "decanter-shipped-authored-aces-kit",
+   "hero": "decanter-shipped",
+   "environment": "kit",
+   "look": "authored",
+   "toneMapping": "aces",
+   "subject": "hero",
+   "camera": "three-quarter"
+  },
+  {
+   "name": "urn-rebuild-studio-amber-aces-room",
+   "hero": "urn-rebuild",
+   "environment": "room",
+   "look": "studio-amber",
+   "toneMapping": "aces",
+   "subject": "hero",
+   "camera": "three-quarter"
+  },
+  {
+   "name": "urn-rebuild-studio-amber-aces-grey",
+   "hero": "urn-rebuild",
+   "environment": "grey",
+   "look": "studio-amber",
+   "toneMapping": "aces",
+   "subject": "hero",
+   "camera": "three-quarter"
+  },
+  {
+   "name": "urn-rebuild-studio-amber-aces-hdr",
+   "hero": "urn-rebuild",
+   "environment": "hdr",
+   "look": "studio-amber",
+   "toneMapping": "aces",
+   "subject": "hero",
+   "camera": "three-quarter"
+  },
+  {
+   "name": "urn-rebuild-studio-amber-aces-gallery",
+   "hero": "urn-rebuild",
+   "environment": "gallery",
+   "look": "studio-amber",
+   "toneMapping": "aces",
+   "subject": "hero",
+   "camera": "three-quarter"
+  },
+  {
+   "name": "urn-rebuild-studio-amber-aces-kit",
+   "hero": "urn-rebuild",
+   "environment": "kit",
+   "look": "studio-amber",
+   "toneMapping": "aces",
+   "subject": "hero",
+   "camera": "three-quarter"
+  },
+  {
+   "name": "urn-rebuild-studio-amber-neutral-room",
+   "hero": "urn-rebuild",
+   "environment": "room",
+   "look": "studio-amber",
+   "toneMapping": "neutral",
+   "subject": "hero",
+   "camera": "three-quarter"
+  },
+  {
+   "name": "urn-rebuild-studio-amber-neutral-grey",
+   "hero": "urn-rebuild",
+   "environment": "grey",
+   "look": "studio-amber",
+   "toneMapping": "neutral",
+   "subject": "hero",
+   "camera": "three-quarter"
+  },
+  {
+   "name": "urn-rebuild-studio-amber-neutral-hdr",
+   "hero": "urn-rebuild",
+   "environment": "hdr",
+   "look": "studio-amber",
+   "toneMapping": "neutral",
+   "subject": "hero",
+   "camera": "three-quarter"
+  },
+  {
+   "name": "urn-rebuild-studio-amber-neutral-gallery",
+   "hero": "urn-rebuild",
+   "environment": "gallery",
+   "look": "studio-amber",
+   "toneMapping": "neutral",
+   "subject": "hero",
+   "camera": "three-quarter"
+  },
+  {
+   "name": "urn-rebuild-studio-amber-neutral-kit",
+   "hero": "urn-rebuild",
+   "environment": "kit",
+   "look": "studio-amber",
+   "toneMapping": "neutral",
+   "subject": "hero",
+   "camera": "three-quarter"
+  },
+  {
+   "name": "swatches-authored-aces-room",
+   "hero": "urn-rebuild",
+   "environment": "room",
+   "look": "authored",
+   "toneMapping": "aces",
+   "subject": "swatches",
+   "camera": "three-quarter"
+  },
+  {
+   "name": "swatches-authored-aces-grey",
+   "hero": "urn-rebuild",
+   "environment": "grey",
+   "look": "authored",
+   "toneMapping": "aces",
+   "subject": "swatches",
+   "camera": "three-quarter"
+  },
+  {
+   "name": "swatches-authored-aces-hdr",
+   "hero": "urn-rebuild",
+   "environment": "hdr",
+   "look": "authored",
+   "toneMapping": "aces",
+   "subject": "swatches",
+   "camera": "three-quarter"
+  },
+  {
+   "name": "swatches-authored-aces-gallery",
+   "hero": "urn-rebuild",
+   "environment": "gallery",
+   "look": "authored",
+   "toneMapping": "aces",
+   "subject": "swatches",
+   "camera": "three-quarter"
+  },
+  {
+   "name": "swatches-authored-aces-kit",
+   "hero": "urn-rebuild",
+   "environment": "kit",
+   "look": "authored",
+   "toneMapping": "aces",
+   "subject": "swatches",
+   "camera": "three-quarter"
+  },
+  {
+   "name": "swatches-studio-amber-neutral-room",
+   "hero": "urn-rebuild",
+   "environment": "room",
+   "look": "studio-amber",
+   "toneMapping": "neutral",
+   "subject": "swatches",
+   "camera": "three-quarter"
+  },
+  {
+   "name": "swatches-studio-amber-neutral-grey",
+   "hero": "urn-rebuild",
+   "environment": "grey",
+   "look": "studio-amber",
+   "toneMapping": "neutral",
+   "subject": "swatches",
+   "camera": "three-quarter"
+  },
+  {
+   "name": "swatches-studio-amber-neutral-hdr",
+   "hero": "urn-rebuild",
+   "environment": "hdr",
+   "look": "studio-amber",
+   "toneMapping": "neutral",
+   "subject": "swatches",
+   "camera": "three-quarter"
+  },
+  {
+   "name": "swatches-studio-amber-neutral-gallery",
+   "hero": "urn-rebuild",
+   "environment": "gallery",
+   "look": "studio-amber",
+   "toneMapping": "neutral",
+   "subject": "swatches",
+   "camera": "three-quarter"
+  },
+  {
+   "name": "swatches-studio-amber-neutral-kit",
+   "hero": "urn-rebuild",
+   "environment": "kit",
+   "look": "studio-amber",
+   "toneMapping": "neutral",
+   "subject": "swatches",
+   "camera": "three-quarter"
+  }
+ ]
+}

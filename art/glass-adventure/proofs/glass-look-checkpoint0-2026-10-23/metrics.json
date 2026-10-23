@@ -1,0 +1,442 @@
+{
+  "urn-shipped \u00b7 authored \u00b7 aces \u00b7 hero \u00b7 three-quarter": {
+    "cells": {
+      "room": {
+        "lab": [
+          73.48,
+          5.09,
+          35.67
+        ],
+        "chroma": 36.03,
+        "p95_luminance": 229.2,
+        "pixels": 204894,
+        "de2000_to_row_median": 9.23
+      },
+      "grey": {
+        "lab": [
+          54.02,
+          9.19,
+          32.65
+        ],
+        "chroma": 33.92,
+        "p95_luminance": 166.5,
+        "pixels": 204894,
+        "de2000_to_row_median": 7.82
+      },
+      "hdr": {
+        "lab": [
+          62.69,
+          11.01,
+          31.77
+        ],
+        "chroma": 33.62,
+        "p95_luminance": 205.1,
+        "pixels": 204894,
+        "de2000_to_row_median": 1.85
+      },
+      "gallery": {
+        "lab": [
+          60.77,
+          10.36,
+          34.13
+        ],
+        "chroma": 35.67,
+        "p95_luminance": 212.0,
+        "pixels": 204894,
+        "de2000_to_row_median": 1.85
+      },
+      "kit": {
+        "lab": [
+          68.03,
+          8.79,
+          33.58
+        ],
+        "chroma": 34.71,
+        "p95_luminance": 243.3,
+        "pixels": 204894,
+        "de2000_to_row_median": 4.38
+      }
+    },
+    "max_de2000_across_environments": 9.23
+  },
+  "urn-rebuild \u00b7 authored \u00b7 aces \u00b7 hero \u00b7 three-quarter": {
+    "cells": {
+      "room": {
+        "lab": [
+          69.74,
+          6.39,
+          32.55
+        ],
+        "chroma": 33.17,
+        "p95_luminance": 226.0,
+        "pixels": 185231,
+        "de2000_to_row_median": 11.28
+      },
+      "grey": {
+        "lab": [
+          49.01,
+          8.96,
+          27.44
+        ],
+        "chroma": 28.86,
+        "p95_luminance": 160.4,
+        "pixels": 185231,
+        "de2000_to_row_median": 8.0
+      },
+      "hdr": {
+        "lab": [
+          57.12,
+          10.47,
+          26.54
+        ],
+        "chroma": 28.53,
+        "p95_luminance": 202.2,
+        "pixels": 185231,
+        "de2000_to_row_median": 1.5
+      },
+      "gallery": {
+        "lab": [
+          54.34,
+          12.64,
+          29.61
+        ],
+        "chroma": 32.19,
+        "p95_luminance": 208.4,
+        "pixels": 185231,
+        "de2000_to_row_median": 3.09
+      },
+      "kit": {
+        "lab": [
+          62.99,
+          11.13,
+          30.44
+        ],
+        "chroma": 32.42,
+        "p95_luminance": 237.7,
+        "pixels": 185231,
+        "de2000_to_row_median": 5.18
+      }
+    },
+    "max_de2000_across_environments": 11.28
+  },
+  "amphora-shipped \u00b7 authored \u00b7 aces \u00b7 hero \u00b7 three-quarter": {
+    "cells": {
+      "room": {
+        "lab": [
+          74.5,
+          -5.76,
+          8.19
+        ],
+        "chroma": 10.01,
+        "p95_luminance": 229.6,
+        "pixels": 150985,
+        "de2000_to_row_median": 9.12
+      },
+      "grey": {
+        "lab": [
+          55.25,
+          -5.35,
+          7.63
+        ],
+        "chroma": 9.32,
+        "p95_luminance": 162.0,
+        "pixels": 150985,
+        "de2000_to_row_median": 7.27
+      },
+      "hdr": {
+        "lab": [
+          63.19,
+          -2.21,
+          4.36
+        ],
+        "chroma": 4.89,
+        "p95_luminance": 200.3,
+        "pixels": 150985,
+        "de2000_to_row_median": 3.05
+      },
+      "gallery": {
+        "lab": [
+          60.8,
+          -3.85,
+          7.23
+        ],
+        "chroma": 8.19,
+        "p95_luminance": 206.2,
+        "pixels": 150985,
+        "de2000_to_row_median": 2.07
+      },
+      "kit": {
+        "lab": [
+          71.61,
+          -3.8,
+          8.96
+        ],
+        "chroma": 9.73,
+        "p95_luminance": 245.4,
+        "pixels": 150985,
+        "de2000_to_row_median": 6.8
+      }
+    },
+    "max_de2000_across_environments": 9.12
+  },
+  "amphora-rebuild \u00b7 authored \u00b7 aces \u00b7 hero \u00b7 three-quarter": {
+    "cells": {
+      "room": {
+        "lab": [
+          79.33,
+          -4.81,
+          9.65
+        ],
+        "chroma": 10.79,
+        "p95_luminance": 230.3,
+        "pixels": 148942,
+        "de2000_to_row_median": 8.55
+      },
+      "grey": {
+        "lab": [
+          61.18,
+          -5.82,
+          11.06
+        ],
+        "chroma": 12.49,
+        "p95_luminance": 172.3,
+        "pixels": 148942,
+        "de2000_to_row_median": 6.51
+      },
+      "hdr": {
+        "lab": [
+          68.18,
+          -1.62,
+          7.19
+        ],
+        "chroma": 7.38,
+        "p95_luminance": 206.6,
+        "pixels": 148942,
+        "de2000_to_row_median": 2.96
+      },
+      "gallery": {
+        "lab": [
+          65.56,
+          -3.16,
+          10.75
+        ],
+        "chroma": 11.21,
+        "p95_luminance": 206.0,
+        "pixels": 148942,
+        "de2000_to_row_median": 2.11
+      },
+      "kit": {
+        "lab": [
+          76.04,
+          -2.52,
+          10.71
+        ],
+        "chroma": 11.0,
+        "p95_luminance": 245.9,
+        "pixels": 148942,
+        "de2000_to_row_median": 5.98
+      }
+    },
+    "max_de2000_across_environments": 8.55
+  },
+  "decanter-shipped \u00b7 authored \u00b7 aces \u00b7 hero \u00b7 three-quarter": {
+    "cells": {
+      "room": {
+        "lab": [
+          74.44,
+          -2.2,
+          0.67
+        ],
+        "chroma": 2.3,
+        "p95_luminance": 232.9,
+        "pixels": 36155,
+        "de2000_to_row_median": 9.14
+      },
+      "grey": {
+        "lab": [
+          56.04,
+          -2.62,
+          0.83
+        ],
+        "chroma": 2.75,
+        "p95_luminance": 179.0,
+        "pixels": 36155,
+        "de2000_to_row_median": 6.42
+      },
+      "hdr": {
+        "lab": [
+          62.95,
+          0.7,
+          -4.42
+        ],
+        "chroma": 4.47,
+        "p95_luminance": 206.0,
+        "pixels": 36155,
+        "de2000_to_row_median": 5.5
+      },
+      "gallery": {
+        "lab": [
+          61.01,
+          -0.85,
+          1.31
+        ],
+        "chroma": 1.56,
+        "p95_luminance": 176.0,
+        "pixels": 36155,
+        "de2000_to_row_median": 1.78
+      },
+      "kit": {
+        "lab": [
+          76.42,
+          -1.17,
+          2.16
+        ],
+        "chroma": 2.46,
+        "p95_luminance": 230.3,
+        "pixels": 36155,
+        "de2000_to_row_median": 10.53
+      }
+    },
+    "max_de2000_across_environments": 10.53
+  },
+  "urn-rebuild \u00b7 studio-amber \u00b7 aces \u00b7 hero \u00b7 three-quarter": {
+    "cells": {
+      "room": {
+        "lab": [
+          67.25,
+          7.02,
+          27.64
+        ],
+        "chroma": 28.52,
+        "p95_luminance": 225.1,
+        "pixels": 185231,
+        "de2000_to_row_median": 2.92
+      },
+      "grey": {
+        "lab": [
+          60.13,
+          7.82,
+          28.82
+        ],
+        "chroma": 29.86,
+        "p95_luminance": 218.1,
+        "pixels": 185231,
+        "de2000_to_row_median": 3.24
+      },
+      "hdr": {
+        "lab": [
+          63.57,
+          8.22,
+          26.05
+        ],
+        "chroma": 27.32,
+        "p95_luminance": 218.1,
+        "pixels": 185231,
+        "de2000_to_row_median": 0.79
+      },
+      "gallery": {
+        "lab": [
+          63.78,
+          7.65,
+          26.97
+        ],
+        "chroma": 28.04,
+        "p95_luminance": 218.3,
+        "pixels": 185231,
+        "de2000_to_row_median": 0.0
+      },
+      "kit": {
+        "lab": [
+          69.78,
+          6.68,
+          25.37
+        ],
+        "chroma": 26.23,
+        "p95_luminance": 237.5,
+        "pixels": 185231,
+        "de2000_to_row_median": 4.92
+      }
+    },
+    "max_de2000_across_environments": 4.92
+  },
+  "urn-rebuild \u00b7 studio-amber \u00b7 neutral \u00b7 hero \u00b7 three-quarter": {
+    "cells": {
+      "room": {
+        "lab": [
+          61.24,
+          11.7,
+          35.59
+        ],
+        "chroma": 37.46,
+        "p95_luminance": 215.5,
+        "pixels": 185231,
+        "de2000_to_row_median": 3.78
+      },
+      "grey": {
+        "lab": [
+          52.86,
+          11.12,
+          33.69
+        ],
+        "chroma": 35.48,
+        "p95_luminance": 203.9,
+        "pixels": 185231,
+        "de2000_to_row_median": 4.13
+      },
+      "hdr": {
+        "lab": [
+          56.86,
+          12.18,
+          31.42
+        ],
+        "chroma": 33.7,
+        "p95_luminance": 203.9,
+        "pixels": 185231,
+        "de2000_to_row_median": 1.01
+      },
+      "gallery": {
+        "lab": [
+          57.17,
+          11.81,
+          33.22
+        ],
+        "chroma": 35.25,
+        "p95_luminance": 206.1,
+        "pixels": 185231,
+        "de2000_to_row_median": 0.0
+      },
+      "kit": {
+        "lab": [
+          62.84,
+          11.85,
+          32.74
+        ],
+        "chroma": 34.82,
+        "p95_luminance": 220.9,
+        "pixels": 185231,
+        "de2000_to_row_median": 4.99
+      }
+    },
+    "max_de2000_across_environments": 4.99
+  },
+  "urn-rebuild \u00b7 authored \u00b7 aces \u00b7 swatches \u00b7 three-quarter": {
+    "cells": {
+      "room": null,
+      "grey": null,
+      "hdr": null,
+      "gallery": null,
+      "kit": null
+    },
+    "max_de2000_across_environments": null
+  },
+  "urn-rebuild \u00b7 studio-amber \u00b7 neutral \u00b7 swatches \u00b7 three-quarter": {
+    "cells": {
+      "room": null,
+      "grey": null,
+      "hdr": null,
+      "gallery": null,
+      "kit": null
+    },
+    "max_de2000_across_environments": null
+  }
+}

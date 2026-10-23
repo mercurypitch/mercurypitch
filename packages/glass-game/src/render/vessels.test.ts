@@ -241,7 +241,7 @@ describe('persistent glazed artwork', () => {
     vessel.dispose()
   })
 
-  it('keeps intact shadows while allowing a presentation to omit flying-shard shadows', () => {
+  it('casts no solid shadow from glass', () => {
     const target = GLASSWORKS_JOURNEY.breakables.find((item) =>
       item.id.endsWith('/archive/encounter/archive-glazing'),
     )!
@@ -252,26 +252,53 @@ describe('persistent glazed artwork', () => {
     const standardShards = standard.root.getObjectByName(
       `vessel-shards-${target.id}`,
     ) as Group
-    expect(standardIntact.castShadow).toBe(true)
-    expect(standardShards.children.every((child) => child.castShadow)).toBe(
-      true,
+    // Three's shadow map ignores transmission: glass would throw a solid shadow.
+    expect(standardIntact.castShadow).toBe(false)
+    expect(standardShards.children.some((child) => child.castShadow)).toBe(
+      false,
     )
     standard.dispose()
-
-    const runnerTarget = { ...target, id: `${target.id}-runner` }
-    const runner = createVessel(runnerTarget, false, {
-      castShardShadows: false,
-    })
-    const runnerIntact = runner.root.getObjectByName(
-      `vessel-intact-${runnerTarget.id}`,
-    ) as Mesh
-    const runnerShards = runner.root.getObjectByName(
-      `vessel-shards-${runnerTarget.id}`,
-    ) as Group
-    expect(runnerIntact.castShadow).toBe(true)
-    expect(runnerShards.children.every((child) => !child.castShadow)).toBe(true)
-    runner.dispose()
   })
+
+  it.each([true, false])(
+    'keeps opaque vessel shadows unless a presentation omits flying-shard shadows (%s)',
+    (castShardShadows) => {
+      const target = GLASSWORKS_JOURNEY.breakables[0]!
+      const geometry = new BoxGeometry(0.2, 0.3, 0.08)
+      const shard = new BoxGeometry(0.1, 0.1, 0.08)
+      const crack = new EdgesGeometry(shard)
+      const porcelain = new PhysicalMaterial({ transmission: 0 })
+      const vessel = createAuthoredVessel(
+        target,
+        false,
+        (library) => ({
+          geometry,
+          pieces: [{ geometry: shard, centre: new Vector3() }],
+          crackGeometries: [crack],
+          materials: [library.clone(porcelain)],
+          transform: new Matrix4(),
+          release: () => undefined,
+        }),
+        { castShardShadows },
+      )
+      const intact = vessel.root.getObjectByName(
+        `vessel-intact-${target.id}`,
+      ) as Mesh
+      const shards = vessel.root.getObjectByName(
+        `vessel-shards-${target.id}`,
+      ) as Group
+      expect(intact.castShadow).toBe(true)
+      expect(shards.children.length).toBeGreaterThan(0)
+      expect(shards.children.every((child) => child.castShadow)).toBe(
+        castShardShadows,
+      )
+      vessel.dispose()
+      geometry.dispose()
+      shard.dispose()
+      crack.dispose()
+      porcelain.dispose()
+    },
+  )
 })
 
 describe('authored vessel installation', () => {
