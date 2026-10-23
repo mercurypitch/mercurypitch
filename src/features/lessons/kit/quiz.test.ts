@@ -55,12 +55,21 @@ afterEach(async () => {
   window.history.replaceState(null, '', '/')
   vi.unstubAllEnvs()
   vi.unstubAllGlobals()
+  vi.restoreAllMocks()
 })
 
 /** A page the site worker served, with an API base: where the beacon sends. */
 function servedPage(): Mock<typeof fetch> {
   vi.stubEnv('VITE_API_BASE_URL', 'https://api.test')
   window.history.replaceState(null, '', '/learn/01')
+  // A clock outside the consent regions, where a reader never asked is sent
+  // (telemetry.ts lessonConsent).
+  vi.spyOn(Intl, 'DateTimeFormat').mockImplementation(
+    () =>
+      ({
+        resolvedOptions: () => ({ timeZone: 'America/New_York' }),
+      }) as unknown as Intl.DateTimeFormat,
+  )
   const tag = document.createElement('script')
   tag.type = 'application/json'
   tag.id = 'lesson-state'

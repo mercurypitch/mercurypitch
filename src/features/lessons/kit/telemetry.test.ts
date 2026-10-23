@@ -29,6 +29,16 @@ const consentRecord = (status: string, implicit = false): void =>
     JSON.stringify({ status, at: 1_760_000_000_000, implicit }),
   )
 
+/** The reader's clock, as Intl reports it to the page. */
+function zone(timeZone: string): void {
+  vi.spyOn(Intl, 'DateTimeFormat').mockImplementation(
+    () =>
+      ({
+        resolvedOptions: () => ({ timeZone }),
+      }) as unknown as Intl.DateTimeFormat,
+  )
+}
+
 /** The one request's body, parsed. */
 function sentBody(): Record<string, unknown> {
   expect(fetchMock).toHaveBeenCalledTimes(1)
@@ -41,6 +51,8 @@ beforeEach(() => {
   vi.stubEnv('VITE_API_BASE_URL', 'https://api.test')
   window.history.replaceState(null, '', '/learn/02')
   stateTag()
+  // A clock outside the consent regions, unless a test says otherwise.
+  zone('America/New_York')
   fetchMock = vi.fn<typeof fetch>(
     async () => new Response(null, { status: 201 }),
   )
@@ -52,6 +64,7 @@ afterEach(() => {
   window.history.replaceState(null, '', '/')
   vi.unstubAllEnvs()
   vi.unstubAllGlobals()
+  vi.restoreAllMocks()
 })
 
 describe('sendLessonAnswer', () => {
@@ -208,6 +221,101 @@ describe('sendLessonAnswer', () => {
 
     // Assert
     expect(send).not.toThrow()
+  })
+})
+
+describe('the consent regions (the owner, 23 October 2026)', () => {
+  it('sends nothing from a clock in the EEA, the UK or Switzerland without a yes', () => {
+    // Arrange
+    zone('Europe/Berlin')
+
+    // Act
+    sendLessonAnswer(ANSWER)
+
+    // Assert
+    expect(fetchMock).not.toHaveBeenCalled()
+  })
+
+  it('sends nothing from a clock that names no place, UTC', () => {
+    // Arrange
+    zone('UTC')
+
+    // Act
+    sendLessonAnswer(ANSWER)
+
+    // Assert
+    expect(fetchMock).not.toHaveBeenCalled()
+  })
+
+  it('sends nothing when the clock names no zone at all', () => {
+    // Arrange
+    zone('')
+
+    // Act
+    sendLessonAnswer(ANSWER)
+
+    // Assert
+    expect(fetchMock).not.toHaveBeenCalled()
+  })
+
+  it('sends nothing when the clock cannot be read', () => {
+    // Arrange
+    vi.spyOn(Intl, 'DateTimeFormat').mockImplementation(() => {
+      throw new RangeError('no time zone data')
+    })
+
+    // Act
+    sendLessonAnswer(ANSWER)
+
+    // Assert
+    expect(fetchMock).not.toHaveBeenCalled()
+  })
+
+  it('sends from a clock elsewhere, marked never asked', () => {
+    // Arrange
+    zone('America/New_York')
+
+    // Act
+    sendLessonAnswer(ANSWER)
+
+    // Assert
+    expect(sentBody().metrics).toMatchObject({ consent: 2 })
+  })
+
+  it('sends from a clock in the regions once the reader said yes, marked 1', () => {
+    // Arrange
+    zone('Europe/Berlin')
+    consentRecord('granted')
+
+    // Act
+    sendLessonAnswer(ANSWER)
+
+    // Assert
+    expect(sentBody().metrics).toMatchObject({ consent: 1 })
+  })
+
+  it('sends nothing from a clock elsewhere once the reader said no', () => {
+    // Arrange
+    zone('America/New_York')
+    consentRecord('denied')
+
+    // Act
+    sendLessonAnswer(ANSWER)
+
+    // Assert
+    expect(fetchMock).not.toHaveBeenCalled()
+  })
+
+  it('counts a silent grant from before October 2026 as no yes', () => {
+    // Arrange
+    zone('Europe/Berlin')
+    consentRecord('granted', true)
+
+    // Act
+    sendLessonAnswer(ANSWER)
+
+    // Assert
+    expect(fetchMock).not.toHaveBeenCalled()
   })
 })
 

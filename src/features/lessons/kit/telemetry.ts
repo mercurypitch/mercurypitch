@@ -18,12 +18,17 @@
 // Only a page the site worker served sends: a document with no
 // `#lesson-state` (page-state.ts: `pnpm dev`, the e2e bundle's static
 // server, a page saved from the browser) or a build with no API base sends
-// nothing, and neither does a visitor who declined consent.
+// nothing. Consent follows the app's rule (lessonConsent): nothing from a
+// visitor who declined, nor from one in the EEA, the UK or Switzerland who
+// never said yes; the db-worker checks the address as well as this clock.
 //
 // quiz.ts loads this module by dynamic import on a quiz's first answer, so
-// it is never first-paint work. It imports none of the app's analytics,
-// funnel or consent modules: they bring solid-js and package.json with them.
+// it is never first-paint work. It reads the consent regions from
+// consent-regions.ts, which imports nothing, and imports none of the app's
+// analytics, funnel or consent modules: they bring solid-js and package.json
+// with them.
 
+import { isRestrictedTimezone } from '@/lib/consent-regions'
 import type { LessonFunnelEvent } from '@/lib/funnel-event-catalog'
 import { LESSON_CLIENT_ID } from '@/lib/funnel-event-catalog'
 import { store } from './dom'
@@ -45,27 +50,37 @@ const EVENT: LessonFunnelEvent = 'lesson_answer'
 /** The app's consent record (src/lib/consent.ts), read raw here. */
 const CONSENT_KEY = 'mp.consent.v1'
 
+/** The reader's time zone, as consent.ts reads it: '' when none is given. */
+function timezone(): string {
+  try {
+    return Intl.DateTimeFormat().resolvedOptions().timeZone ?? ''
+  } catch {
+    return ''
+  }
+}
+
 /**
  * The consent an answer is sent under, or null when none may be sent.
  *
- * - declined (`status: 'denied'`): null, so nothing is sent;
- * - accepted (`status: 'granted'`): 1;
- * - never asked: 2. That is no record, one this cannot read, or a silent
- *   grant from before October 2026, which consent.ts counts as no choice.
- *   The lesson pages show no banner, and outside the consent regions the
- *   app never stores a choice.
+ * The owner's rule of 23 October 2026 is the app's own: in the EEA, the UK
+ * and Switzerland, by the reader's clock, a lesson page sends nothing unless
+ * the reader recorded a yes. Everywhere else it sends, marked never asked
+ * unless the reader accepted.
  *
- * The owner's rule, in this one place so an answer to it changes one place.
+ * - declined (`status: 'denied'`): null;
+ * - accepted (`status: 'granted'`): 1;
+ * - never asked (no record, one this cannot read, or a silent grant from
+ *   before October 2026, which consent.ts counts as no choice): null when
+ *   the clock is in the consent regions or names no place, else 2.
  */
 export function lessonConsent(): 1 | 2 | null {
   const stored = store.get<unknown>(CONSENT_KEY, null)
-  if (typeof stored !== 'object' || stored === null) return 2
-  const { status, implicit } = stored as {
-    status?: unknown
-    implicit?: unknown
-  }
+  const { status, implicit } = (
+    typeof stored === 'object' && stored !== null ? stored : {}
+  ) as { status?: unknown; implicit?: unknown }
   if (status === 'denied') return null
-  return status === 'granted' && implicit !== true ? 1 : 2
+  if (status === 'granted' && implicit !== true) return 1
+  return isRestrictedTimezone(timezone()) ? null : 2
 }
 
 /** A question's lesson and number, from its id: `l04-q1` is 4 and 1. */
