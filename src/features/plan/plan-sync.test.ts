@@ -16,13 +16,13 @@
 // the store reads storage once, as it loads. Only Date is faked.
 
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import type { PlanResponseV1 } from '@/db/services/survey-service'
 import { AUTH_TOKEN_KEY } from '@/lib/storage-port'
 import { PLAN_RECORD_KEY, PLAN_TEXT_KEY } from './plan-keys'
 import { readPlanTexts } from './plan-record'
 import type * as PlanStore from './plan-store'
 import type * as PlanSync from './plan-sync'
 import { FUTURE, LATER, LINES, NO_LINES, NOW, OTHER, SENT, sentFor, SYNCED, tokenFor, TYPED, } from './plan-sync.fixture'
+import { accepting, answered, fresh, pull } from './plan-sync.harness.fixture'
 import { EMPTY_CHOICES } from './questions'
 
 const mocks = vi.hoisted(() => ({
@@ -32,12 +32,6 @@ const mocks = vi.hoisted(() => ({
 vi.mock('@/db/services/survey-service', () => ({
   submitPlanResponse: mocks.submitPlanResponse,
 }))
-
-/** A writer that takes the response, and the account check saying `upgraded`. */
-function accepting(upgraded = true) {
-  const submit = vi.fn(async (_: PlanResponseV1): Promise<void> => undefined)
-  return { upgraded: () => upgraded, submit }
-}
 
 /** What a broken dependency does. */
 const boom = (): never => {
@@ -49,30 +43,6 @@ function held(deps: ReturnType<typeof accepting>) {
   const arrival = Promise.withResolvers<undefined>()
   deps.submit.mockImplementationOnce(async () => arrival.promise)
   return arrival
-}
-
-/** Fresh modules (the store reads storage once, as it loads) and the sync. */
-async function fresh(): Promise<{
-  store: typeof PlanStore
-  sync: typeof PlanSync
-}> {
-  vi.resetModules()
-  const store = await import('./plan-store')
-  const sync = await import('./plan-sync')
-  return { store, sync }
-}
-
-/** Fresh modules with TYPED and LINES answered at NOW, and a writer that takes them. */
-async function answered(upgraded = true) {
-  const { store, sync } = await fresh()
-  store.savePlanAnswers(TYPED, LINES, null, NOW)
-  return { store, sync, deps: accepting(upgraded) }
-}
-
-/** The settings pull: a record from another device arrives, as the pull applies it. */
-async function pull(record: unknown): Promise<void> {
-  const { applyPersistedValue } = await import('@/lib/storage')
-  applyPersistedValue(PLAN_RECORD_KEY, JSON.stringify(record))
 }
 
 /** The record as storage holds it, parsed. */
@@ -309,7 +279,10 @@ describe('what is sent', () => {
 })
 
 describe('the caller', () => {
-  it('does not come to depend on the record by asking for a sync', async () => {
+  // The read of the record comes after the pull's await, and that place is
+  // what keeps it out of the caller's effect: read ahead of the await, the
+  // effect would track the record and run again for every answer.
+  it('reads the record after the pull, so a caller asking for a sync does not come to depend on it', async () => {
     const { store, sync, deps } = await answered()
     const { createEffect, createRoot } = await import('solid-js')
     let runs = 0
@@ -353,14 +326,13 @@ describe('the caller', () => {
 describe('a send that is on its way', () => {
   it('marks the plan it sent, and not one answered while it was on the way', async () => {
     const { store, sync, deps } = await answered()
-    const arrival = held(deps)
-
-    const sending = sync.syncPlanToAccount(deps)
-    store.savePlanAnswers(OTHER, NO_LINES, null, LATER)
-    arrival.resolve(undefined)
+    // The person answers again while the first plan is on its way.
+    deps.submit.mockImplementationOnce(async () => {
+      store.savePlanAnswers(OTHER, NO_LINES, null, LATER)
+    })
 
     // The first plan did arrive, and the second has not been sent.
-    expect(await sending).toBe('synced')
+    expect(await sync.syncPlanToAccount(deps)).toBe('synced')
     expect(store.planRecord()?.at).toBe(LATER.toISOString())
     expect(store.planRecord()?.syncedAt).toBeUndefined()
 

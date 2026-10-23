@@ -32,6 +32,7 @@ import { SingingStatusBar } from '@/components/singing/SingingStatusBar'
 import { SingingCanvasHud } from '@/components/SingingCanvasHud'
 import { SyncHost } from '@/components/sync/SyncHost'
 import type { FirstLight as FirstLightFlow } from '@/features/onboarding/FirstLight'
+import type { OpeningTakeoverProps } from '@/features/plan/OpeningTakeover'
 import type { PlanLayerHost, PlanStoreModule, } from '@/features/plan/plan-layer-host'
 import { createPlanLayerHost } from '@/features/plan/plan-layer-host'
 import type { PlanLayerProps } from '@/features/plan/PlanLayer'
@@ -121,6 +122,17 @@ const PlanLayer: Component<PlanLayerProps> = IS_NATIVE_BUILD
   : lazy(async () =>
       import('@/features/plan/PlanLayer').then((m) => ({
         default: m.PlanLayer,
+      })),
+    )
+// The one takeover per visit (R32): the same fold as the layer. The component
+// draws nothing; it is where useOpeningTakeover runs, in a chunk of its own,
+// because the hook reads the plan store and App may not import that
+// statically (R9).
+const OpeningTakeover: Component<OpeningTakeoverProps> = IS_NATIVE_BUILD
+  ? () => null
+  : lazy(async () =>
+      import('@/features/plan/OpeningTakeover').then((m) => ({
+        default: m.OpeningTakeover,
       })),
     )
 const VoiceConstellationSurface = lazy(async () =>
@@ -300,6 +312,7 @@ import type { VoiceHistoryLeaveRequester } from '@/features/voice-history/VoiceH
 import { VoiceHistoryPage } from '@/features/voice-history/VoiceHistoryPage'
 import { createWhatsNewController } from '@/features/whats-new/use-whats-new'
 import { RELEASE_0_9 } from '@/features/whats-new/whats-new-content'
+import { routeSuppressesAnnouncement } from '@/features/whats-new/whats-new-release'
 import { WhatsNewPage } from '@/features/whats-new/WhatsNewPage'
 import { clampLoopB, isSeekOutsideLoop, shouldLoopBack } from '@/lib/ab-loop'
 import { trackEvent } from '@/lib/analytics'
@@ -350,7 +363,7 @@ import { setJamRoomToJoin } from '@/stores/jam-store'
 import { initKaraokePlaylistStore } from '@/stores/karaoke-playlist-store'
 import { melodyStore } from '@/stores/melody-store'
 import { micLatencyMs } from '@/stores/mic-latency-store'
-import { closeOnboarding, flowOpen, returningVisitor, } from '@/stores/onboarding-store'
+import { closeOnboarding, flowOpen, lessonArrival, returningVisitor, } from '@/stores/onboarding-store'
 import { startPracticeTimer } from '@/stores/practice-timer-store'
 import type { SavedMidiSong } from '@/stores/saved-midi-songs-store'
 import { savedMidiSongs } from '@/stores/saved-midi-songs-store'
@@ -539,6 +552,33 @@ const PlanLayerMount: Component<{ plan: PlanLayerHost }> = IS_NATIVE_BUILD
           </ErrorBoundary>
         )}
       </Show>
+    )
+
+/**
+ * The takeover's mount: the lazy component, behind a boundary that costs a
+ * visit its takeover and nothing else. A dead chunk (offline, or a deploy
+ * swapped the hashed assets) has nothing on screen to clean up: the next visit
+ * tries again. It says so once, and lets the tour offer go, since a takeover
+ * that will never open is not a reason to hold it back; a chunk that is only
+ * slow holds the offer for that visit, which spends nothing. The fallback takes
+ * the error so Solid calls it once, and the write waits a tick, as the layer's
+ * mount does: a fallback is render work. A component of its own, as the
+ * layer's mount is.
+ */
+const OpeningTakeoverMount: Component<OpeningTakeoverProps> = IS_NATIVE_BUILD
+  ? () => null
+  : (props) => (
+      <ErrorBoundary
+        fallback={(error: unknown) => {
+          console.warn('[takeover] The opening takeover was left out:', error)
+          queueMicrotask(props.onDecided)
+          return null
+        }}
+      >
+        <Suspense fallback={null}>
+          <OpeningTakeover {...props} />
+        </Suspense>
+      </ErrorBoundary>
     )
 
 const AppShell: Component<AppProps> = (props) => {
@@ -906,7 +946,40 @@ const AppShell: Component<AppProps> = (props) => {
   // one a lesson's link sent here for the first time. Not under the native
   // build, which has no What's New (use-whats-new.ts).
   const whatsNew = createWhatsNewController({ native: IS_NATIVE_BUILD })
-  onMount(() => whatsNew.announceIfNew(returningVisitor()))
+  // One takeover per visit: announcing to a returning visitor is the
+  // takeover's now (OpeningTakeoverMount, below), which picks between First
+  // Light, the plan and What's New. What stays here is the other half of what
+  // announceIfNew did on every boot: a visitor who is not returning is caught
+  // up on the release line, so their first announcement is the next real
+  // release. Asking is safe for them, since the page is never shown to one.
+  onMount(() => {
+    if (!returningVisitor()) whatsNew.announceIfNew(false)
+  })
+  // What this visit came for, read now and not when the takeover asks: the
+  // router rewrites the address in its first dispatch (it erases a Stripe
+  // return's one-shot hash), and a three-second wait for the account's settings
+  // ends long after. A link, a return from checkout and #/plan asked for that
+  // place; so did a lesson's practice link, whose welcome the lesson spent, and
+  // a restored #/whats-new, a full-screen page the visitor came back to. That
+  // one is named here and not on the announcement's list, because the list
+  // also decides whether the release is marked as told (use-whats-new.ts).
+  const arrivalRoute = parseHash(window.location.hash)
+  const takeoverSuppressed =
+    routeSuppressesAnnouncement(arrivalRoute) ||
+    arrivalRoute.type === 'whats-new' ||
+    lessonArrival() !== null
+  // Whether this visit began as a first run, read at the same moment and for
+  // the same reason. First Light is spent when somebody finishes or skips it,
+  // which can happen before the takeover's chunk lands, and a first-run visitor
+  // who read as "not a first run" by then would get the plan layer or What's
+  // New on top of it. `showWelcome` is settled by now: a storage read at load.
+  const takeoverWelcomeDue = showWelcome()
+  // Has the takeover chosen, and opened what it chose? The tour offer waits for
+  // it (below). The offer writes its once-per-tab key before its toast shows,
+  // and a pause that rises afterwards takes the toast down and keeps the key,
+  // so an offer made while the takeover was still choosing is spent unseen.
+  // The native build has no takeover, so it starts decided.
+  const [takeoverDecided, setTakeoverDecided] = createSignal(IS_NATIVE_BUILD)
 
   const closeVoiceConstellation = () => {
     const exit = leaveVoiceConstellation(activeTab())
@@ -2570,11 +2643,20 @@ const AppShell: Component<AppProps> = (props) => {
   // Not over First Light: the welcome screen is a first visit's whole
   // screen, and the toast spent Home's offer underneath it. Not over the
   // plan layer either (R83): the toast region stands above it, and its
-  // Start tour ran the tab's tour over the plan. The tab on screen when the
-  // layer closes gets its offer then, if it never had one.
+  // Start tour ran the tab's tour over the plan. Nor over What's New, the
+  // takeover that takes a visit when the plan does not: one takeover per
+  // visit. And not before the takeover has decided which of them it is: its
+  // surface opens after its chunk and the settings pull, and an offer made in
+  // that gap is spent and then taken down. The tab on screen when the layer
+  // closes gets its offer then, if it never had one.
   usePageTourOffer(
     activeTab,
-    () => showWelcome() || flowOpen() || plan.isOpen(),
+    () =>
+      showWelcome() ||
+      flowOpen() ||
+      plan.isOpen() ||
+      whatsNew.open() ||
+      !takeoverDecided(),
   )
 
   // Live mic insights → inline "can't hear you" / "too quiet" hints (Singing).
@@ -3359,6 +3441,17 @@ const AppShell: Component<AppProps> = (props) => {
 
         {/* The plan, as a layer over the app; not in the native build. */}
         <PlanLayerMount plan={plan} />
+        <OpeningTakeoverMount
+          routeSuppressed={takeoverSuppressed}
+          welcomeDue={takeoverWelcomeDue}
+          whatsNewDue={() => whatsNew.isDue(returningVisitor())}
+          announceWhatsNew={() => {
+            whatsNew.announceIfNew(returningVisitor())
+          }}
+          onDecided={() => {
+            setTakeoverDecided(true)
+          }}
+        />
 
         <Show when={whatsNew.open()}>
           <Suspense fallback={null}>

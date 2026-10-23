@@ -15,10 +15,12 @@ import type { ActiveTab } from '@/types'
  * A first-time user hopping across tabs no longer stacks a toast per page.
  *
  * Nothing is offered while `paused()` is true, and nothing is spent: App
- * passes the first run (First Light) here. A first visit used to get "New to
- * Home? Take a quick tour." about a second in, on top of the welcome screen,
- * which also spent Home's only offer where nobody could act on it. The tab on
- * screen when the pause lifts is offered then.
+ * passes whatever has the screen here, or is still choosing what will (First
+ * Light, the plan layer, What's New, and the opening takeover until it has
+ * decided). A first visit used to get "New to Home? Take a quick tour." about
+ * a second in, on top of the welcome screen, which also spent Home's only
+ * offer where nobody could act on it. The tab on screen when the pause lifts
+ * is offered then.
  */
 export function usePageTourOffer(
   activeTab: () => ActiveTab,

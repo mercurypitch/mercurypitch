@@ -10,6 +10,7 @@ import type { Accessor } from 'solid-js'
 import { createSignal } from 'solid-js'
 import { APP_VERSION } from '@/lib/defaults'
 import { navigateTo, parseHash } from '@/lib/hash-router'
+import { isE2ETestMode } from '@/lib/test-utils'
 import { releaseLine, routeSuppressesAnnouncement, shouldAnnounce, WHATS_NEW_SEEN_KEY, } from './whats-new-release'
 
 export interface WhatsNewController {
@@ -24,6 +25,12 @@ export interface WhatsNewController {
    * call on every boot; it is a no-op after the first.
    */
   announceIfNew: (returning: boolean) => void
+  /**
+   * Would announceIfNew open the panel now? Every check it makes, with nothing
+   * opened and no line recorded as told. The opening takeover asks before it
+   * chooses between this and the plan.
+   */
+  isDue: (returning: boolean) => boolean
 }
 
 function readSeen(): string | null {
@@ -80,34 +87,34 @@ export function createWhatsNewController(
     setOpen(false)
   }
 
-  const announceIfNew = (returning: boolean) => {
-    if (options.native === true) return
+  // May the panel come up on this visit at all? Not in the native build, not
+  // in an automated run, and not on a link that asked for a place.
+  const mayAnnounce = (): boolean => {
+    if (options.native === true) return false
     // Automated runs get no ambient surfaces. Every spec seeds
     // `pitchperfect_welcome_version` to skip onboarding, which makes every
     // spec a returning visitor — so without this the release page opens over
     // whatever the test was driving and swallows its clicks. Same seam the
     // UVR panel uses to skip model pre-init.
-    if (
-      (window as unknown as Record<string, unknown>)['E2E_TEST_MODE'] === true
-    ) {
-      return
-    }
+    if (isE2ETestMode()) return false
 
     // Somebody who followed a link to a particular place asked for THAT
     // place, and the announcement keeps until they arrive on their own terms.
     // The list of what counts lives next door — and is a denylist, because
     // the first cut allowlisted 'tab' and 'unknown' and so also refused
     // anyone the app restored into Settings or the Karaoke upload view.
-    if (routeSuppressesAnnouncement(parseHash(window.location.hash))) {
-      return
-    }
+    return !routeSuppressesAnnouncement(parseHash(window.location.hash))
+  }
 
-    if (
-      !shouldAnnounce({ current: APP_VERSION, seen: readSeen(), returning })
-    ) {
+  const isDue = (returning: boolean): boolean =>
+    mayAnnounce() &&
+    shouldAnnounce({ current: APP_VERSION, seen: readSeen(), returning })
+
+  const announceIfNew = (returning: boolean) => {
+    if (!isDue(returning)) {
       // A first-ever visitor is caught up by definition: record the line so
       // their first announcement is the next real release, not this one.
-      if (!returning) writeSeen()
+      if (!returning && mayAnnounce()) writeSeen()
       return
     }
     // Through the router, exactly like the Home header entry — NOT by setting
@@ -119,5 +126,5 @@ export function createWhatsNewController(
     show()
   }
 
-  return { open, setOpen, show, close, announceIfNew }
+  return { open, setOpen, show, close, announceIfNew, isDue }
 }

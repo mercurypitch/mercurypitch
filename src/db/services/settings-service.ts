@@ -169,22 +169,28 @@ function flushPendingPushes(): void {
   }
 }
 
-/** Restore this account's local progress first, then reconcile its cloud copy. */
-export async function pullCloudSettings(): Promise<void> {
-  if (API_BASE_URL == null || API_BASE_URL === '') return
+/**
+ * One pull. True once the account's rows were read and applied; false when it
+ * stopped short of that: no API, no usable sign-in, a newer pull or another
+ * identity took over, a progress reset, or a read that failed.
+ */
+async function pullOnce(): Promise<boolean> {
+  if (API_BASE_URL == null || API_BASE_URL === '') return false
   const revision = ++pullRevision
   // This happens even on sign-out or an expired token: A's work stays in A's
   // saved copy, while the newly active guest/account receives its own signals.
-  if (!activateProgress() || !cloudActive()) return
+  if (!activateProgress() || !cloudActive()) return false
   const identity = syncIdentity()
   try {
     const resetRevision = progressResetRevision()
     const db = await getDb()
-    if (!isCurrent(identity) || revision !== pullRevision) return
+    if (!isCurrent(identity) || revision !== pullRevision) return false
     const repo = db.getRepository<UserSetting>('userSettings')
     const rows = await repo.findAll({ throwOnError: true })
-    if (!isCurrent(identity) || revision !== pullRevision) return
-    if (!activateProgress() || progressResetRevision() !== resetRevision) return
+    if (!isCurrent(identity) || revision !== pullRevision) return false
+    if (!activateProgress() || progressResetRevision() !== resetRevision) {
+      return false
+    }
     const seen = new Set<string>()
     const pending = readPending(identity.userId)
     for (const row of rows) {
@@ -224,8 +230,50 @@ export async function pullCloudSettings(): Promise<void> {
       }
     }
     flushPendingPushes()
+    return true
   } catch (err) {
     console.warn('[settings-sync] pull failed:', err)
+    return false
+  }
+}
+
+// ── This page's first pull ───────────────────────────────────────────────
+//
+// What a caller waits on when a decision depends on the account's settings
+// (a plan answered on another device arrives with them). The answer is module
+// state because it belongs to this page load: callers mount after the pull has
+// begun, or after it has ended, and ask all the same.
+
+let settleFirstPull: (applied: boolean) => void = () => undefined
+const firstPull = new Promise<void>((resolve, reject) => {
+  settleFirstPull = (applied) => {
+    if (applied) resolve()
+    else reject(new Error('The first settings pull ended without the account'))
+  }
+})
+// A page nobody asks never reads it, and an unread rejection is reported.
+void firstPull.catch(() => undefined)
+
+/**
+ * Resolves when this page's first settings pull has applied the account's
+ * settings, and at once when sync is off (there is no pull to wait for).
+ * Rejects when that pull ended without reading them: no usable sign-in,
+ * offline, a newer pull took over, a progress reset. The first pull to finish
+ * decides, and a later one changes nothing. The wait is the caller's to
+ * bound (awaitSettingsPull in the plan's settings-pull-wait.ts does).
+ */
+export async function settingsPulled(): Promise<void> {
+  if (API_BASE_URL == null || API_BASE_URL === '') return
+  await firstPull
+}
+
+/** Restore this account's local progress first, then reconcile its cloud copy. */
+export async function pullCloudSettings(): Promise<void> {
+  let applied = false
+  try {
+    applied = await pullOnce()
+  } finally {
+    settleFirstPull(applied)
   }
 }
 

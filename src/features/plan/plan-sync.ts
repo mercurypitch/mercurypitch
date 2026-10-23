@@ -11,7 +11,7 @@
 // has pulled it sees the mark and sends nothing, which is "once per person,
 // not once per device".
 //
-// Six things are easy to break:
+// Seven things are easy to break:
 //
 // - Nothing leaves without a real account. The typed lines are free text, and
 //   the rule is that they reach the server only for someone who holds one, and
@@ -25,6 +25,12 @@
 //   while the first was on its way is not marked as sent, and is sent next.
 // - A send already on its way is joined, not repeated. A sign-in changes the
 //   auth token more than once, and each change asks for a sync.
+// - The record is read after the settings pull, not before it. A second
+//   device holds its own copy, unmarked, until the pull applies the account's
+//   marked one, and a sync that read first would send the plan again. The wait
+//   is bounded (settings-pull-wait.ts, the same one the takeover makes), and
+//   past the cap, or for a pull that ended without the account's settings, the
+//   record is read as it stands.
 // - A line goes only while the plan's own picks keep its option. The record
 //   syncs and the lines do not, so a record pulled from another device can
 //   pick differently from the lines this one holds; pickedLines is the one
@@ -41,13 +47,14 @@
 // or two devices that both send before either mark has synced, leave a second
 // row for the same plan. submitPlanResponse says how a reader counts them.
 
-import { untrack } from 'solid-js'
 import { hasUpgradedAccount } from '@/db/services/auth-service'
+import { settingsPulled } from '@/db/services/settings-service'
 import type { PlanResponseV1 } from '@/db/services/survey-service'
 import { submitPlanResponse } from '@/db/services/survey-service'
 import type { PlanRecordV1 } from './plan-record'
 import { pickedLines, readPlanTexts } from './plan-record'
 import { markPlanSynced, planRecord } from './plan-store'
+import { awaitSettingsPull } from './settings-pull-wait'
 
 /**
  * What a sync did: sent the plan, had nothing to send or no one to send it
@@ -60,6 +67,8 @@ export interface PlanSyncDeps {
   upgraded?: () => boolean
   /** Writes the response to the account, rejecting when it cannot. submitPlanResponse when not given. */
   submit?: (response: PlanResponseV1) => Promise<void>
+  /** Resolves when the settings pull has landed, rejecting when it ended without the account's settings. settingsPulled when not given. */
+  settingsPulled?: () => Promise<void>
 }
 
 /** An answered plan, which is the only kind that is sent. */
@@ -137,9 +146,11 @@ export async function syncPlanToAccount(
   try {
     const upgraded = deps.upgraded ?? hasUpgradedAccount
     if (!upgraded()) return 'skipped'
-    // A look, not a dependency: whatever calls this must not come to depend on
-    // the record by doing so.
-    const plan = untrack(planRecord)
+    // The account may hold this plan already, marked as sent, and only the
+    // pull brings that mark to this device: read the record after it.
+    await awaitSettingsPull(deps.settingsPulled ?? settingsPulled)
+    // Read after the await, so no effect that asked for a sync can track it.
+    const plan = planRecord()
     if (!isUnsent(plan)) return 'skipped'
     const underway = sending.get(plan.at)
     if (underway !== undefined) return await underway

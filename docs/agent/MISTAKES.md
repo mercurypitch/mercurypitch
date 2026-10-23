@@ -1993,6 +1993,13 @@ test's stand-in follow redirects for any other mode, as the runtime does.
 **Rule:** cross the observer/render lifecycle with two animation frames before starting the geometry poll. Preserve its assertions and deadlines; this synchronization does not diagnose or benchmark the underlying rendering cost.
 **See:** `apps/beside-cue/e2e/glass-adventure-icon-alignment.e2e.ts`.
 
+### Name a test helper that imports production code `*.fixture.ts`
+
+**Symptom:** `sync-for-account.test.ts` ("is the only place in the app that asks for plan-sync") failed with a second asker, `src/features/plan/plan-sync.harness.ts`, a helper the sync's two test files shared. No production code had changed.
+**Cause:** source-scan guards walk `src` and skip only `.test`, `.spec` and `.fixture` files, so a helper under any other name is production code to them. This one loaded `./plan-sync` with `import()`, the pattern that guard looks for.
+**Rule:** a test helper that imports a production module, or loads one with `import()`, is named `*.fixture.ts` (`plan-sync.harness.fixture.ts`), never `.harness.ts` or `.helpers.ts`, so a guard that scans sources can rely on the skip.
+**See:** `src/features/plan/sync-for-account.test.ts:138`, `src/features/plan/plan-sync.harness.fixture.ts`
+
 ## Process
 
 ### Validate native notation, not just the exporter importing its own bytes
