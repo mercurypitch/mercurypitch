@@ -154,7 +154,7 @@ section's heading, and the line above it, are in LESSON.md ("Section headings").
 The learner copy is 2,286 words by the review's count (FACTS 5), 93 under the series' cap of 2,379.
 The page runs about 16 minutes: 9.61 minutes of reading at 238 words a minute and about 6.5 of
 sound, toys and tasks, 16.1 in all. That is past MASTER-PLAN § 4.2's 8 to 12 minutes of active
-time, as Lessons 3, 5, 6, 7 and 9 are (15, 17, 15, 16 and 16 minutes), and acceptable by their
+time, as Lessons 3, 5, 6, 7 and 9 are (15, 17, 17, 16 and 16 minutes), and acceptable by their
 precedent. Each step's text, with its Try and its Notice, runs 93 to 116 words (Steps 1 to 5: 116,
 107, 114, 93 and 114), inside § 4.2's 50 to 120 a step. Three steps carry more beside it:
 

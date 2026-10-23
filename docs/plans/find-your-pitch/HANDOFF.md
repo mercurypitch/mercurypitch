@@ -243,9 +243,9 @@ A suggested order: 9 (it brings the rungs and Move do), then 10, 12, 11, 13 and 
     `wants` touches every lesson page.
   - The layout sweeps show the masthead over the sticky stage at `#sing`, 691 by 59 pixels at
     1440x900, on Lessons 3 to 8 alike.
-  - Lesson 6's FACTS 3 and its WEB-SPEC's Length still count 2,258 learner words, the text package's
-    count. LESSON.md now counts 2,665, because it holds the page's alternative lines, of which a
-    learner sees only some. The run time was not recomputed.
+  - Lesson 6's FACTS 3 and its WEB-SPEC's Length counted 2,258 learner words, the text package's
+    count, until this PR, which counts today's page with `scripts/lesson-words.mjs`: 2,591, so about
+    17 minutes. The meta chip and the season's `minutes` still say 15.
 
 ### 4.3 App fixes the lessons found
 

@@ -207,7 +207,7 @@ page at 2,379 words on the same count once the note under its title is marked Ed
 its old title, at `616c97edb`). The page runs about 15 minutes: 9.78 minutes of reading at 238 words
 a minute and 5.70 of sound, toys and tasks, 15.48 in all. That is past MASTER-PLAN § 4.2's budget,
 "8 to 12 minutes of active time, 500 to 900 words" (`MASTER-PLAN.md:137`), as Lessons 3, 5, 6 and 7
-are (15, 17, 15 and 16 minutes: Lesson 3 FACTS 61, Lesson 5 FACTS 2, Lesson 6 FACTS 3, Lesson 7
+are (15, 17, 17 and 16 minutes: Lesson 3 FACTS 61, Lesson 5 FACTS 2, Lesson 6 FACTS 3, Lesson 7
 FACTS 4). The series' cap is Lesson 3's page, not § 4.2's word budget, so nothing is cut; were a cut
 wanted, the Go deeper drawer (45 words) and the ABRSM sentence (14 words) would go first. Each
 step's text, with its Try, its Notice and any predict, runs 91 to 120 words (Steps 1 to 5: 92, 91,

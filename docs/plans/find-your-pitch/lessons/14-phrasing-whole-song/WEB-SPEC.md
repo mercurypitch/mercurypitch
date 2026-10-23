@@ -168,7 +168,7 @@ The learner copy is 2,372 words by the review's count (8), 7 under the series' c
 editorial form, so the counter reads it. The page runs about 18 minutes: 9.97 minutes of reading at
 238 words a minute and about 8.1 of sound, toys and tasks, 18.1 in all, of which Sing it is about
 3.3. That is past MASTER-PLAN § 4.2's 8 to 12 minutes of active time, as Lessons 3, 5, 6, 7 and 9
-are (15, 17, 15, 16 and 16 minutes), and acceptable by their precedent for a lesson that closes the
+are (15, 17, 17, 16 and 16 minutes), and acceptable by their precedent for a lesson that closes the
 season and carries both lanes. Each step's text, with its Try and its Notice, runs 109 to 116 words
 (Steps 1 to 5: 112, 109, 116, 111 and 115), inside § 4.2's 50 to 120 a step. One step carries more
 beside it: Step 2, about 200 words with its mix-up card (90 words), which sits in the step whose toy
