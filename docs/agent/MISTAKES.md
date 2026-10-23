@@ -1407,6 +1407,13 @@ advanced together; a request between renewal and sweeping can hide the bug.
 **Rule:** a reader of a `jsonCols` column accepts both forms, and its test puts one row in as text and one as an object.
 **See:** `src/db/services/survey-service.ts:70`, `workers/db-worker/src/tables.ts:117`.
 
+### Hide when a row came from its rowid too, not only from its date column
+
+**Symptom:** lesson answers were stored with only their UTC day, yet a real-SQLite test found each one between the app events sent just before and just after it, whose times are kept to the millisecond.
+**Cause:** `mirrorEvents` is a rowid table. SQLite numbers each new row one past the largest rowid, so a row's place orders it among every other row, whatever its own columns hold.
+**Rule:** a row that must not say when it came takes a random rowid outside the range the table's other rows count in (a lesson answer's is negative), or lives in a table of its own. Test it through the route against real SQLite, with timed rows on either side, and read `rowid`.
+**See:** `workers/db-worker/src/index.ts` (`mirrorEventInsert`), `workers/db-worker/node-tests/funnel-retention-integration.test.ts`
+
 ## Tooling and environment
 
 ### Ignore new generated entry documents
