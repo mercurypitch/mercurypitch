@@ -379,10 +379,10 @@ row, the previous lesson's next-lesson line and FACTS row, `next-card.test.ts` w
 | Did the reader play the opening, predict, scroll past it, open the next card?         | nothing                                      | needs new tracking                        |
 | Lesson-to-app clicks by `?lesson=NN`                                                  | nothing: it only steps First Light aside     | needs new tracking (CURRICULUM §4 item 6) |
 
-Quiz answers stayed on the device until this PR; now each question's first answer in a visit is an anonymous
-`lesson_answer` event (MASTER-PLAN § 9). The `?lesson=` attribution and the opening, predict, scroll and next-card
-measures are still not built: each needs counts-only events, a name in `src/lib/funnel-event-catalog.ts` and the owner's
-call on consent. Baseline: Lessons 1 and 2 as uploaded; a YouTube re-cut is a new video (Phase 4).
+Quiz answers stayed on the device until this PR; now each question's first answer in a visit is an anonymous event under
+the owner's consent rule of 23 October 2026 (MASTER-PLAN § 9, § 12 item 11). The `?lesson=` attribution and the opening,
+predict, scroll and next-card measures are still not built: each needs counts-only events and a name in
+`src/lib/funnel-event-catalog.ts`. Baseline: Lessons 1 and 2 as uploaded; a YouTube re-cut is a new video (Phase 4).
 
 ## 5. Open questions for the owner
 
@@ -392,7 +392,7 @@ teases to be easy to change, with a switch for them in the admin console. So:
 - items 1, 3 and 4 follow their recommendations;
 - for item 2, each proposed hook goes live with the current wording kept as an alternative. The admin console
   switches between them, and a hook that needs a source keeps its current wording until FACTS.md has one;
-- item 5 was answered on 22 October 2026: the lesson pages send each question's first answer in a visit, anonymously, and nothing else.
+- item 5 (22 and 23 October 2026): each question's first answer in a visit is sent anonymously, under the rule in §4.
 
 The questions as they were put:
 
