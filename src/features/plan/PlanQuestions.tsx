@@ -17,7 +17,7 @@
 //   "Something else" or "Another app" stays in the field while its option is
 //   tapped off, so it is there if the option comes back, but onDone hands
 //   back an empty line for an option that is not picked. The store blanks an
-//   unpicked line too (pickedLines in plan-store.ts); this filter is the
+//   unpicked line too (pickedLines in plan-record.ts); this filter is the
 //   second guard.
 // - The choices are one value that is replaced, never written into. Every
 //   change goes through pruneChoices, and `initial` is only read: it may be

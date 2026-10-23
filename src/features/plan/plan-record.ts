@@ -15,7 +15,8 @@
 // - The record holds ids only. What the person typed under "Something else"
 //   and "Another app", and the reason a voiceprint gave, are not in it. The
 //   lines live under PLAN_TEXT_KEY, which stays on this device; this file
-//   reads and writes them, cut to the limits the fields use.
+//   reads and writes them, cut to the limits the fields use, and says which of
+//   them a set of picks keeps (pickedLines).
 // - The known ids are not listed here by hand. They are read from the
 //   questions, so an option added to a column is accepted the day it can be
 //   picked, and an id no column offers is not.
@@ -247,4 +248,21 @@ export function readPlanTexts(): PlanTexts {
 /** Keeps the typed lines on this device, trimmed and cut to their limits. */
 export function writePlanTexts(t: PlanTexts): void {
   storageSet(PLAN_TEXT_KEY, keptTexts(t))
+}
+
+/**
+ * The typed lines whose option is picked. "Something else" (Q3) and "Another
+ * app" (Q4) are the only options a person types under, so a line is kept
+ * only while its option is among the picks, and is empty otherwise. The
+ * picks are the settled ones, as the record keeps them: a "Something else"
+ * that fell outside the two Q3 slots has no line either. The store blanks
+ * the lines by this as it saves, and the sync by the same rule as it sends,
+ * because a record can arrive from another device with other picks than the
+ * lines this device holds.
+ */
+export function pickedLines(c: PlanChoices, t: PlanTexts): PlanTexts {
+  return {
+    q3other: c.q3.includes('other') ? t.q3other : '',
+    q4app: c.q4.includes('app') ? t.q4app : '',
+  }
 }

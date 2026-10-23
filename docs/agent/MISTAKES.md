@@ -1400,6 +1400,13 @@ advanced together; a request between renewal and sweeping can hide the bug.
 **Rule:** display bounded result summaries without importing practice history. Retain the source run ID in `sessionId` for identity, and require `isPublic: true` when resolving a public link even for its signed-in owner.
 **See:** `src/db/services/share-service.ts` and `src/features/community/SharedRunResult.tsx`.
 
+### Read a JSON column as an object and as text
+
+**Symptom:** `hasSubmittedSurvey` passed every test against the local-only store, and would have counted every plan row as the survey for a real singer.
+**Cause:** the worker parses the columns in a table's `jsonCols` (`fromSql`), so the account returns `answersJson` as an object, while the local-only store returns the text it was given. Production reads the cloud table (`userSurveyResponses` is routed there in `src/db/adapters/hybrid-adapter.ts`), so the object is the form real singers meet. `UserSurveyResponse.answersJson` is still typed `string`, so the compiler says nothing.
+**Rule:** a reader of a `jsonCols` column accepts both forms, and its test puts one row in as text and one as an object.
+**See:** `src/db/services/survey-service.ts:70`, `workers/db-worker/src/tables.ts:117`.
+
 ## Tooling and environment
 
 ### Ignore new generated entry documents

@@ -240,7 +240,7 @@ import type { UvrView } from '@/components/UvrPanel'
 import { EngineProvider, useEngines } from '@/contexts/EngineContext'
 import { GuitarProvider, useGuitar } from '@/contexts/GuitarContext'
 import { PlaybackProvider } from '@/contexts/PlaybackContext'
-import { hasValidToken, takeGoogleRedirectResult, } from '@/db/services/auth-service'
+import { hasUpgradedAccount, hasValidToken, takeGoogleRedirectResult, } from '@/db/services/auth-service'
 import { takeExpectedCredits } from '@/db/services/billing-service'
 import { initSettingsSync } from '@/db/services/settings-service'
 import { authVersion } from '@/db/services/user-service'
@@ -496,6 +496,32 @@ const NO_PLAN: PlanLayerHost = {
 const createPlanHost: () => PlanLayerHost = IS_NATIVE_BUILD
   ? () => NO_PLAN
   : () => createPlanLayerHost(importPlanStore)
+
+// ── The plan's answers on the account ───────────────────────
+// plan-sync.ts reads the plan record, so it imports plan-store, which the
+// native build must not carry (see above): a static import, even one used only
+// in a dead branch, would put the store in the phone's bundle. The constant
+// picks the function before the `import()` is written, so the native build
+// holds one that does nothing and the web loads the module when a sign-in or a
+// load asks for a sync. App asks whether there is a real account before it
+// fetches the chunk, so a visitor with none loads nothing for a sync (the
+// plan's own screens bring the module when they open), and plan-sync.ts asks
+// again, because those screens call it too and it has to hold on its own. Past
+// that it is plan-sync.ts's to say whether there is anything to send. A check
+// that throws, or a chunk that fails to load (offline, or a deploy swapped the
+// hashed assets), costs one sync and nothing else: the next sign-in or load
+// tries again.
+const syncPlan: () => Promise<unknown> = IS_NATIVE_BUILD
+  ? async () => undefined
+  : async () => {
+      try {
+        if (!hasUpgradedAccount()) return
+        const sync = await import('@/features/plan/plan-sync')
+        await sync.syncPlanToAccount()
+      } catch {
+        // One sync lost: see above.
+      }
+    }
 
 /**
  * The plan, as a layer over the app: drawn while the host has a mode, and keyed
@@ -2465,6 +2491,9 @@ const AppShell: Component<AppProps> = (props) => {
     authVersion()
     void syncLocalVoiceprints()
     void adoptAfterGoogleSignup()
+    // The plan's answers go up on the same transition, once there is a real
+    // account to send them to (plan-sync.ts).
+    void syncPlan()
   })
 
   // Restore the imported song behind the current melody on reload. Melodies

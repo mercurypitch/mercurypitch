@@ -203,7 +203,7 @@ describe('bootPlanBackLink when storage is blocked', () => {
     expect(wayBackShowing(doc)).toBe(false)
   })
 
-  it('shows the way back again once storage can be read', () => {
+  it('shows the way back on a later boot once storage reads fine', () => {
     // Arrange: blocked for one boot, then released
     const blocked = vi
       .spyOn(window.localStorage, 'getItem')

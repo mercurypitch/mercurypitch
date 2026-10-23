@@ -9,8 +9,10 @@
 // run exited to.
 //
 // Only the edges are faked: the notice (a toast), the account and billing
-// calls, and the promo the server features. The plan store, the settings
-// store and the funnel are the real ones.
+// calls, the one write that sends the plan to the account, and the promo the
+// server features. The plan store, the plan sync, the settings store and the
+// funnel are the real ones, so a finished plan is seen to go, or not, the way
+// it would.
 //
 // The plan record, the stops opened and the menu are module signals that
 // `localStorage.clear()` does not reach, so each case puts them back.
@@ -18,8 +20,9 @@
 // Over 600 lines on purpose (TESTING.md 3.5): the controller is one rulebook
 // and this is its table, in describe blocks of one to nine short cases that
 // share one harness (the hosted run, the faked edges, the funnel's ring
-// buffer). Splitting it would copy that harness into every part. It is about
-// twice the controller's own length, not the 4x that would mean testing a copy.
+// buffer). Splitting it would copy that harness into every part. It is under
+// three times the controller's own length, not the 4x that would mean testing
+// a copy.
 
 import { createRoot } from 'solid-js'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
@@ -27,6 +30,7 @@ import type * as AuthServiceModule from '@/db/services/auth-service'
 import type * as BillingServiceModule from '@/db/services/billing-service'
 import type { Pricing, PricingPlan } from '@/db/services/billing-service'
 import { formatPrice } from '@/db/services/billing-service'
+import type * as SurveyServiceModule from '@/db/services/survey-service'
 import { GUIDE_FUNNEL_STORAGE_KEY } from '@/lib/guide-funnel'
 import { applyPersistedValue } from '@/lib/storage'
 import type * as NotificationsStoreModule from '@/stores/notifications-store'
@@ -35,7 +39,7 @@ import { buildPlan } from './build-plan'
 import { planCreditsLine } from './plan-credits'
 import { planDeclinedEvents, planDoneEvents } from './plan-events'
 import { PLAN_OPENED_KEY, PLAN_RECORD_KEY } from './plan-keys'
-import type { PlanTexts } from './plan-record'
+import type { PlanRecordV1, PlanTexts } from './plan-record'
 import { markPlanShown, planRecord, savePlanAnswers, stopOpened, } from './plan-store'
 import type { PlanChoices } from './questions'
 import type { PlanExit, PlanFlowController, PlanFlowMode, PlanFlowOptions, } from './usePlanFlowController'
@@ -44,6 +48,8 @@ import { usePlanFlowController } from './usePlanFlowController'
 const mocks = vi.hoisted(() => ({
   showNotification: vi.fn(),
   signedIn: false,
+  upgraded: vi.fn(() => false),
+  submitPlanResponse: vi.fn(async () => {}),
   fetchBillingMe: vi.fn(),
   fetchPricing: vi.fn(),
   loadFeaturedPromo: vi.fn(async () => {}),
@@ -58,6 +64,12 @@ vi.mock('@/stores/notifications-store', async (importOriginal) => ({
 vi.mock('@/db/services/auth-service', async (importOriginal) => ({
   ...(await importOriginal<typeof AuthServiceModule>()),
   accountHeld: (): boolean => mocks.signedIn,
+  hasUpgradedAccount: (): boolean => mocks.upgraded(),
+}))
+
+vi.mock('@/db/services/survey-service', async (importOriginal) => ({
+  ...(await importOriginal<typeof SurveyServiceModule>()),
+  submitPlanResponse: mocks.submitPlanResponse,
 }))
 
 vi.mock('@/db/services/billing-service', async (importOriginal) => ({
@@ -158,6 +170,8 @@ beforeEach(() => {
   setPracticeScope('all')
   setUiMode('advanced')
   mocks.signedIn = false
+  mocks.upgraded.mockReset()
+  mocks.submitPlanResponse.mockReset()
   mocks.promo = null
   mocks.fetchBillingMe.mockResolvedValue(null)
   mocks.fetchPricing.mockResolvedValue(null)
@@ -435,6 +449,84 @@ describe('when the answers are in', () => {
     c.setMercState('listen')
 
     expect(c.mercState()).toBe('listen')
+  })
+})
+
+describe('when the answers are in and the singer holds an account', () => {
+  it('sends the plan to the account at once, answered and not yet marked', async () => {
+    // The record the sync sees, at the moment it writes.
+    const seen: (PlanRecordV1 | null)[] = []
+    mocks.upgraded.mockReturnValue(true)
+    mocks.submitPlanResponse.mockImplementation(async () => {
+      seen.push(planRecord())
+    })
+    const { c } = start('new')
+
+    c.done(AUDITION, NO_TEXTS, NO_PILLS)
+    await settle()
+
+    const at = planRecord()?.at
+    expect(mocks.submitPlanResponse).toHaveBeenCalledTimes(1)
+    expect(mocks.submitPlanResponse).toHaveBeenCalledWith({
+      kind: 'plan',
+      v: 1,
+      status: 'answered',
+      choices: AUDITION,
+      texts: NO_TEXTS,
+      at,
+    })
+    expect(seen).toHaveLength(1)
+    expect(seen[0]).toMatchObject({ status: 'answered', choices: AUDITION, at })
+    expect(seen[0]?.syncedAt).toBeUndefined()
+    // Once the write has landed the record says so.
+    expect(planRecord()?.syncedAt).toBeDefined()
+  })
+
+  it('sends nothing for a singer with no account', async () => {
+    const { c } = start('new')
+
+    c.done(AUDITION, NO_TEXTS, NO_PILLS)
+    await settle()
+
+    expect(mocks.submitPlanResponse).not.toHaveBeenCalled()
+    expect(planRecord()?.syncedAt).toBeUndefined()
+  })
+
+  it.each<[string, () => void]>([
+    [
+      'the write fails',
+      () => {
+        mocks.upgraded.mockReturnValue(true)
+        mocks.submitPlanResponse.mockRejectedValue(new Error('offline'))
+      },
+    ],
+    [
+      'the account check throws',
+      () => {
+        mocks.upgraded.mockImplementation(() => {
+          throw new Error('storage is gone')
+        })
+      },
+    ],
+  ])('still reaches the plan when %s', async (_, breakIt) => {
+    vi.spyOn(console, 'warn').mockImplementation(() => undefined)
+    breakIt()
+    const { c } = start('new')
+
+    c.done(AUDITION, NO_TEXTS, NO_PILLS)
+    await settle()
+
+    expect(c.phase()).toBe('plan')
+    expect(planRecord()).toMatchObject({
+      status: 'answered',
+      choices: AUDITION,
+    })
+    expect(planRecord()?.syncedAt).toBeUndefined()
+    // The sync contained it and said so: nothing was left to reject unheard.
+    expect(console.warn).toHaveBeenCalledWith(
+      expect.stringContaining('[plan-sync]'),
+      expect.any(Error),
+    )
   })
 })
 

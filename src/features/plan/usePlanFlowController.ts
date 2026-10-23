@@ -5,9 +5,10 @@
 // The four questions, the plan they make and every way off the plan, as one
 // run with one set of rules. A host (First Light's questions beat, the plan
 // layer in the app) owns the screens and the places they lead to; this owns
-// what a tap means: what is saved, what the funnel is told, what happens to
-// the person's menu, and where the host is sent. The host draws the phase it
-// is given, gives the screens the callbacks below and answers an exit.
+// what a tap means: what is saved (and sent on to the account, for a singer
+// who holds one), what the funnel is told, what happens to the person's menu,
+// and where the host is sent. The host draws the phase it is given, gives the
+// screens the callbacks below and answers an exit.
 //
 // Five things are easy to break:
 //
@@ -61,6 +62,7 @@ import { planDeclinedEvents, planDoneEvents } from './plan-events'
 import type { PlanTexts, PlanVia } from './plan-record'
 import { readPlanTexts } from './plan-record'
 import { declinePlan, markPlanShown, markStopOpened, planRecord, savePlanAnswers, } from './plan-store'
+import { syncPlanToAccount } from './plan-sync'
 import type { PlanChoices, QuestionId } from './questions'
 import { EMPTY_CHOICES } from './questions'
 
@@ -296,6 +298,10 @@ export function usePlanFlowController(o: PlanFlowOptions): PlanFlowController {
 
   const done: PlanFlowController['done'] = (c, t, from) => {
     savePlanAnswers(c, t, found())
+    // A singer who already holds an account has no sign-in coming that would
+    // send these answers, so they go now. It sends nothing for anyone else,
+    // never throws and never rejects (plan-sync.ts), so nothing waits on it.
+    void syncPlanToAccount()
     batch(() => {
       setChoices(c)
       setTexts(t)

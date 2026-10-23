@@ -45,7 +45,7 @@ import { createPersistedSignal, storageGet } from '@/lib/storage'
 import type { PlanDest, VoiceprintStop } from './build-plan'
 import { PLAN_OPENED_KEY, PLAN_RECORD_KEY } from './plan-keys'
 import type { PlanRecordV1, PlanStatus, PlanTexts, PlanVia, } from './plan-record'
-import { isPlanRecordV1, writePlanTexts } from './plan-record'
+import { isPlanRecordV1, pickedLines, writePlanTexts } from './plan-record'
 import type { PlanChoices } from './questions'
 import { EMPTY_CHOICES, pruneChoices } from './questions'
 
@@ -132,20 +132,6 @@ function keptVoiceprint(
 ): PlanRecordV1['voiceprint'] {
   if (!voiceprint || !FINDING_ROOMS.has(voiceprint.room)) return undefined
   return { room: voiceprint.room, detail: voiceprint.detail }
-}
-
-/**
- * The typed lines whose option is picked. "Something else" (Q3) and "Another
- * app" (Q4) are the only options a person types under, so a line is kept
- * only while its option is among the picks, and is empty otherwise. The
- * picks are the settled ones, as the record keeps them: a "Something else"
- * that fell outside the two Q3 slots has no line either.
- */
-function pickedLines(c: PlanChoices, t: PlanTexts): PlanTexts {
-  return {
-    q3other: c.q3.includes('other') ? t.q3other : '',
-    q4app: c.q4.includes('app') ? t.q4app : '',
-  }
 }
 
 /**
