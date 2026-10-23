@@ -186,3 +186,155 @@ describe('runAnalysis, asked for in two ways at once', () => {
     ])
   })
 })
+
+// A phone streams the song, so there is no decoded vocal: the analysis
+// gathers one from the stream (streamed-vocal-samples.ts) and finds the
+// notes in that, which is how an imported song gets its pitch guide there.
+describe('runAnalysis, on a vocal that streams', () => {
+  /** A one-second stream at 8 Hz whose chunks say when they are read. */
+  function stream(reads: string[]) {
+    return {
+      sampleRate: 8,
+      durationSeconds: 1,
+      chunks(from: number) {
+        reads.push(`from ${from}`)
+        return (async function* () {
+          for (const [timestamp, values] of [
+            [0, [1, 2, 3, 4]],
+            [0.5, [5, 6, 7, 8]],
+          ] as const) {
+            await Promise.resolve()
+            yield {
+              timestamp,
+              buffer: {
+                sampleRate: 8,
+                length: values.length,
+                getChannelData: () => Float32Array.from(values),
+              } as unknown as AudioBuffer,
+            }
+          }
+        })()
+      },
+    }
+  }
+
+  function mountStreamed(reads: string[]) {
+    const showNotification = vi.fn<(message: string, type?: string) => void>()
+    const controller = createRoot((dispose) => {
+      disposeRoot = dispose
+      return useStemMixerPitchAnalysisController({
+        vocalBuffer: () => null,
+        vocalStream: () => stream(reads),
+        sampleRate: () => 48_000,
+        setPitchHistory: () => {},
+        showNotification,
+      })
+    })
+    return { controller, showNotification }
+  }
+
+  it('analyses channel 0 gathered from the stream, at its own rate', async () => {
+    fakes.analyze.mockResolvedValue(ANALYSED)
+    const reads: string[] = []
+    const { controller } = mountStreamed(reads)
+
+    expect(await controller.runAnalysis({ quiet: true })).toEqual({ ok: true })
+
+    expect(reads).toEqual(['from 0'])
+    const [samples, sampleRate, options] = fakes.analyze.mock
+      .calls[0] as unknown as [Float32Array, number, { bufferSize: number }]
+    expect([Array.from(samples), sampleRate, options.bufferSize]).toEqual([
+      [1, 2, 3, 4, 5, 6, 7, 8],
+      8,
+      1024,
+    ])
+  })
+
+  it('gives the walk the first part of the progress, and the detector the rest', async () => {
+    const seen: number[] = []
+    const { controller } = mountStreamed([])
+    fakes.analyze.mockImplementation((...args: unknown[]) => {
+      const run = args[3] as { onProgress?: (pct: number) => void }
+      // The walk is done by the time the detector starts.
+      seen.push(controller.progress())
+      run.onProgress?.(50)
+      seen.push(controller.progress())
+      run.onProgress?.(100)
+      seen.push(controller.progress())
+      return Promise.resolve(ANALYSED)
+    })
+
+    await controller.runAnalysis({ quiet: true })
+
+    expect(seen).toEqual([35, 68, 100])
+  })
+
+  it('says no vocal is loaded when there is neither a decoded one nor a stream', async () => {
+    const showNotification = vi.fn<(message: string, type?: string) => void>()
+    const controller = createRoot((dispose) => {
+      disposeRoot = dispose
+      return useStemMixerPitchAnalysisController({
+        vocalBuffer: () => null,
+        vocalStream: () => null,
+        sampleRate: () => 48_000,
+        setPitchHistory: () => {},
+        showNotification,
+      })
+    })
+
+    expect(await controller.runAnalysis({ quiet: true })).toEqual({
+      ok: false,
+      message: 'No vocal stem loaded',
+      shown: false,
+    })
+    expect(fakes.analyze).not.toHaveBeenCalled()
+  })
+})
+
+describe('canAnalyse', () => {
+  function controllerOver(
+    vocalBuffer: AudioBuffer | null,
+    stream: { sampleRate: number; durationSeconds: number } | null,
+  ) {
+    return createRoot((dispose) => {
+      disposeRoot = dispose
+      return useStemMixerPitchAnalysisController({
+        vocalBuffer: () => vocalBuffer,
+        vocalStream: () =>
+          stream === null
+            ? null
+            : {
+                ...stream,
+                chunks: () => ({
+                  async *[Symbol.asyncIterator]() {
+                    yield* []
+                  },
+                }),
+              },
+        sampleRate: () => 48_000,
+        setPitchHistory: () => {},
+        showNotification: () => {},
+      })
+    })
+  }
+
+  it('can, on a decoded vocal, and on a streamed one of a usual length', () => {
+    expect(controllerOver(VOCAL, null).canAnalyse()).toBe(true)
+    expect(
+      controllerOver(null, {
+        sampleRate: 44_100,
+        durationSeconds: 240,
+      }).canAnalyse(),
+    ).toBe(true)
+  })
+
+  it('cannot while there is no vocal, nor on a stream too long to gather', () => {
+    expect(controllerOver(null, null).canAnalyse()).toBe(false)
+    expect(
+      controllerOver(null, {
+        sampleRate: 48_000,
+        durationSeconds: 3600,
+      }).canAnalyse(),
+    ).toBe(false)
+  })
+})
