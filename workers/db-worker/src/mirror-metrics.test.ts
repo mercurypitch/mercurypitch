@@ -6,7 +6,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 import { GUIDE_FUNNEL_EVENTS, TOUR_FUNNEL_EVENTS, } from '../../../src/lib/funnel-event-catalog'
 import type { Env } from './auth'
 import worker from './index'
-import { cleanMirrorMetrics, LESSON_ANSWER_METRIC_KEYS, MIRROR_METRIC_KEYS, TOUR_METRIC_KEYS, } from './mirror-metrics'
+import { cleanMirrorMetrics, LESSON_ANSWER_BOUNDS, LESSON_ANSWER_METRIC_KEYS, lessonAnswerInBounds, MIRROR_METRIC_KEYS, TOUR_METRIC_KEYS, } from './mirror-metrics'
 
 describe('cleanMirrorMetrics', () => {
   it('keeps tour, step and of on a tour event and drops every other key', () => {
@@ -150,6 +150,66 @@ describe('cleanMirrorMetrics', () => {
   })
 })
 
+describe('lessonAnswerInBounds', () => {
+  /** A lesson answer as the pages send it. */
+  const ANSWER = {
+    page: 4,
+    qLesson: 3,
+    q: 2,
+    firstTry: 1,
+    k: 3,
+    visit: 2,
+    consent: 2,
+  }
+
+  it('takes every number at both ends of its range', () => {
+    for (const [key, [min, max]] of LESSON_ANSWER_BOUNDS) {
+      expect(lessonAnswerInBounds({ ...ANSWER, [key]: min })).toBe(true)
+      expect(lessonAnswerInBounds({ ...ANSWER, [key]: max })).toBe(true)
+    }
+  })
+
+  it('refuses any number one past either end of its range', () => {
+    for (const [key, [min, max]] of LESSON_ANSWER_BOUNDS) {
+      expect(lessonAnswerInBounds({ ...ANSWER, [key]: min - 1 })).toBe(false)
+      expect(lessonAnswerInBounds({ ...ANSWER, [key]: max + 1 })).toBe(false)
+    }
+  })
+
+  it('holds the ranges the pages send', () => {
+    expect(Object.fromEntries(LESSON_ANSWER_BOUNDS)).toEqual({
+      page: [1, 14],
+      qLesson: [1, 14],
+      q: [1, 4],
+      firstTry: [0, 1],
+      k: [2, 6],
+      visit: [1, 3],
+      consent: [1, 2],
+    })
+  })
+
+  it('refuses a number that is not an integer, or is missing', () => {
+    for (const key of LESSON_ANSWER_BOUNDS.keys()) {
+      for (const value of [1.5, '2', null, Number.NaN, Infinity, true]) {
+        expect(lessonAnswerInBounds({ ...ANSWER, [key]: value })).toBe(false)
+      }
+      const missing: Record<string, number> = { ...ANSWER }
+      delete missing[key]
+      expect(lessonAnswerInBounds(missing)).toBe(false)
+    }
+  })
+
+  it('refuses metrics that are not an object', () => {
+    for (const metrics of [null, undefined, 3, 'page=4', [4, 3, 2]]) {
+      expect(lessonAnswerInBounds(metrics)).toBe(false)
+    }
+  })
+
+  it('takes an answer with an extra key, which the store then drops', () => {
+    expect(lessonAnswerInBounds({ ...ANSWER, option: 1 })).toBe(true)
+  })
+})
+
 describe('POST /api/mirror/event', () => {
   /** A lesson answer as the pages send it. */
   const LESSON_ANSWER = {
@@ -239,6 +299,42 @@ describe('POST /api/mirror/event', () => {
       env,
       {} as ExecutionContext,
     )
+
+  /** A POST whose body streams in `chunkBytes` chunks with no
+   *  Content-Length, as a chunked upload arrives; `pulls` counts the chunks
+   *  the Worker asked for. */
+  function postStreamed(
+    env: Env,
+    totalBytes: number,
+    chunkBytes: number,
+    fill = ' ',
+  ): { response: Promise<Response>; pulls: () => number } {
+    let pulls = 0
+    let sent = 0
+    const stream = new ReadableStream<Uint8Array>({
+      pull(controller) {
+        pulls += 1
+        if (sent >= totalBytes) {
+          controller.close()
+          return
+        }
+        const size = Math.min(chunkBytes, totalBytes - sent)
+        controller.enqueue(new TextEncoder().encode(fill.repeat(size)))
+        sent += size
+      },
+    })
+    const init = {
+      method: 'POST',
+      body: stream,
+      duplex: 'half',
+    } as RequestInit
+    const response = worker.fetch(
+      new Request('https://api.test/api/mirror/event', init),
+      env,
+      {} as ExecutionContext,
+    )
+    return { response, pulls: () => pulls }
+  }
 
   afterEach(() => {
     vi.useRealTimers()
@@ -355,6 +451,36 @@ describe('POST /api/mirror/event', () => {
     expect(lessonLimit.keys).toEqual([])
   })
 
+  it.each([
+    [
+      'a number out of range',
+      { ...LESSON_ANSWER, metrics: { ...LESSON_ANSWER.metrics, q: 5 } },
+    ],
+    [
+      'a number that is not an integer',
+      { ...LESSON_ANSWER, metrics: { ...LESSON_ANSWER.metrics, k: 2.5 } },
+    ],
+    [
+      'a number sent as null',
+      { ...LESSON_ANSWER, metrics: { ...LESSON_ANSWER.metrics, visit: null } },
+    ],
+    ['no metrics', { clientId: 'lesson-anonymous', event: 'lesson_answer' }],
+    ["a device's own id", { ...LESSON_ANSWER, clientId: 'client-0001' }],
+  ])(
+    "refuses a lesson answer with %s, on the funnel's bucket",
+    async (_label, body) => {
+      const lessonLimit = limiter(true)
+      const { env, inserts, buckets } = envRecordingInserts(lessonLimit)
+
+      const response = await post(env, body)
+
+      expect(response.status).toBe(400)
+      expect(inserts).toEqual([])
+      expect(buckets).toEqual(['mirror-event'])
+      expect(lessonLimit.keys).toEqual([])
+    },
+  )
+
   it("keeps no first-touch row for the lesson pages' shared id", async () => {
     const { env, inserts, acquisitions } = envRecordingInserts(limiter(true))
 
@@ -376,5 +502,65 @@ describe('POST /api/mirror/event', () => {
     await post(env, { clientId: 'client-0001', event: 'mirror_view', acq })
 
     expect(acquisitions.map((bound) => bound[0])).toEqual(['client-0001'])
+  })
+
+  it('refuses a declared body over 4096 bytes unread', async () => {
+    const { env, inserts } = envRecordingInserts(limiter(true))
+
+    const response = await post(env, LESSON_ANSWER, {
+      'Content-Length': '4097',
+    })
+
+    expect(response.status).toBe(413)
+    expect(inserts).toEqual([])
+  })
+
+  it('stops reading a chunked body with no Content-Length at the first chunk past 4096 bytes', async () => {
+    const { env, inserts } = envRecordingInserts(limiter(true))
+
+    // 1 MB offered in 512-byte chunks: the read stops at the ninth.
+    const { response, pulls } = postStreamed(env, 1_048_576, 512)
+
+    expect((await response).status).toBe(413)
+    expect(inserts).toEqual([])
+    expect(pulls()).toBeLessThanOrEqual(10)
+  })
+
+  it('takes a chunked body of exactly 4096 bytes', async () => {
+    const { env, inserts } = envRecordingInserts(limiter(true))
+    const json = JSON.stringify(LESSON_ANSWER)
+    const padded = json + ' '.repeat(4096 - json.length)
+    let offset = 0
+    const stream = new ReadableStream<Uint8Array>({
+      pull(controller) {
+        if (offset >= padded.length) {
+          controller.close()
+          return
+        }
+        controller.enqueue(
+          new TextEncoder().encode(padded.slice(offset, offset + 1000)),
+        )
+        offset += 1000
+      },
+    })
+    const init = { method: 'POST', body: stream, duplex: 'half' } as RequestInit
+
+    const response = await worker.fetch(
+      new Request('https://api.test/api/mirror/event', init),
+      env,
+      {} as ExecutionContext,
+    )
+
+    expect(response.status).toBe(201)
+    expect(inserts).toHaveLength(1)
+  })
+
+  it('refuses a chunked body of 4097 bytes', async () => {
+    const { env, inserts } = envRecordingInserts(limiter(true))
+
+    const { response } = postStreamed(env, 4097, 1000)
+
+    expect((await response).status).toBe(413)
+    expect(inserts).toEqual([])
   })
 })

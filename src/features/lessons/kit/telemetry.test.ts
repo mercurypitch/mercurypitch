@@ -98,6 +98,25 @@ describe('sendLessonAnswer', () => {
     expect(visits).toEqual([1, 2, 3, 3, 3])
   })
 
+  it('sends nothing for a question whose id names no lesson', () => {
+    // Act
+    sendLessonAnswer({ ...ANSWER, id: 'warm-up-1' })
+
+    // Assert
+    expect(fetchMock).not.toHaveBeenCalled()
+  })
+
+  it('sends nothing from a page that is no lesson', () => {
+    // Arrange
+    window.history.replaceState(null, '', '/learn/')
+
+    // Act
+    sendLessonAnswer(ANSWER)
+
+    // Assert
+    expect(fetchMock).not.toHaveBeenCalled()
+  })
+
   it('posts JSON to the event route with keepalive and no credentials', () => {
     // Act
     sendLessonAnswer(ANSWER)
