@@ -10,8 +10,14 @@
 // drawer on the page has settled like that, the loop stops asking for
 // frames until one wakes it, or a figure comes into view or leaves it. A
 // drawer without `wants` draws every frame it is active and keeps the loop
-// running, as every drawer always has. A drawer that throws is retired
-// rather than taking the loop down with it.
+// running, as every drawer always has. Any input on the page (a pointer, a
+// key, a wheel, a focus that moves, a form control that changes), a new
+// window size and a change of the motion switch wake a settled loop too:
+// every drawer's `wants` is asked again, so one that compares what it shows
+// with what it last drew catches a change code made without waking it. A
+// drawer that throws is retired rather than taking the loop down with it.
+
+import { Motion } from './motion-switch'
 
 export interface Surface {
   readonly canvas: HTMLCanvasElement
@@ -147,6 +153,30 @@ export function wake(): void {
   last = performance.now()
   ask()
 }
+
+/** What a reader does that may change what a figure shows. */
+const INPUTS = [
+  'pointerdown',
+  'pointermove',
+  'pointerup',
+  'pointercancel',
+  'keydown',
+  'click',
+  'wheel',
+  'input',
+  'change',
+  'focusin',
+  'focusout',
+] as const
+
+// heard before any figure's own handler, and never in the way of a scroll
+for (const type of INPUTS)
+  document.addEventListener(type, () => wake(), {
+    capture: true,
+    passive: true,
+  })
+window.addEventListener('resize', () => wake(), { passive: true })
+Motion.subscribe(() => wake())
 
 export function startFrameLoop(): void {
   if (running) return
