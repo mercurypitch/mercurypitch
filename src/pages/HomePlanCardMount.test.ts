@@ -8,7 +8,10 @@
 // page: the chunk can be missing (offline, or a deploy swapped the hashed
 // assets) or the card can break as it draws, and in both Home goes on. The
 // native build never asks for the card at all. Home does not wait for the
-// card either, since it draws nothing in its place meanwhile.
+// card either: meanwhile it keeps a slot for the card, when a card is due, at
+// the height the card last drew at on this device (plan-card-slot.ts, whose
+// own cases read the storage behind it), and nothing otherwise. A read that
+// goes wrong costs Home the slot and nothing else.
 //
 // The second block is the one thing the card asks of Home: today's session,
 // for the Start here row that is Home's own. The card is faked here (what it
@@ -22,6 +25,7 @@
 
 import type { Mock, MockInstance } from 'vitest'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { PLAN_CARD_SLOT_KEY, PLAN_RECORD_KEY } from '@/features/plan/plan-keys'
 import type * as NativeBuild from '@/lib/native-build'
 import type { SessionRoutine } from './HomePlanCardMount'
 import { startPlannedSession } from './HomePlanCardMount'
@@ -37,6 +41,8 @@ const world = vi.hoisted(() => ({
   asked: 0,
   /** What the card was given, when it drew. */
   given: null as { onHomeSession: () => void } | null,
+  /** Makes Home's read of the slot throw. */
+  slotThrows: false,
   /** Lets a slow chunk arrive. */
   release: (): void => undefined,
   gate: Promise.resolve(),
@@ -87,7 +93,7 @@ function restOfHome(): HTMLElement {
 /** Home's card, in a page with the rest of Home beside it, as a fresh copy of the mount sees it. */
 async function mountedBeside(
   onHomeSession: () => void,
-  setUp: Partial<Pick<typeof world, 'native' | 'chunk'>> = {},
+  setUp: Partial<Pick<typeof world, 'native' | 'chunk' | 'slotThrows'>> = {},
 ): Promise<{
   container: HTMLElement
   card: () => HTMLElement | null
@@ -96,6 +102,13 @@ async function mountedBeside(
   Object.assign(world, setUp)
   vi.resetModules()
   vi.doMock('@/features/plan/HomePlanCard', chunkOfTheCase)
+  if (world.slotThrows) {
+    vi.doMock('@/features/plan/plan-card-slot', () => ({
+      readPlanCardSlot: () => {
+        throw new TypeError('rule.some is not a function')
+      },
+    }))
+  }
   const library = await import('@solidjs/testing-library')
   const { createComponent } = await import('solid-js')
   const { HomePlanCardMount } = await import('./HomePlanCardMount')
@@ -115,10 +128,32 @@ async function mountedBeside(
 
 const settle = (): Promise<void> => new Promise((r) => setTimeout(r, 0))
 
+/** An answered plan from yesterday, as the store writes it; its date. */
+function answeredYesterday(): string {
+  const at = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString()
+  localStorage.setItem(
+    PLAN_RECORD_KEY,
+    JSON.stringify({
+      v: 1,
+      status: 'answered',
+      choices: { q1: 'singing', q2: null, q3: [], q4: [] },
+      at,
+      via: 'layer',
+    }),
+  )
+  return at
+}
+
+/** The slot kept for the card, if any. */
+const keptSlot = (container: HTMLElement): HTMLElement | null =>
+  container.querySelector('[data-testid="home-plan-slot"]')
+
 beforeEach(() => {
+  localStorage.clear()
   world.native = false
   world.chunk = 'loads'
   world.asked = 0
+  world.slotThrows = false
   world.given = null
   world.gate = new Promise<void>((resolve) => {
     world.release = resolve
@@ -128,6 +163,7 @@ beforeEach(() => {
 afterEach(() => {
   cleanUp()
   vi.doUnmock('@/features/plan/HomePlanCard')
+  vi.doUnmock('@/features/plan/plan-card-slot')
   vi.restoreAllMocks()
 })
 
@@ -145,7 +181,7 @@ describe('the card on Home', () => {
     expect(onHomeSession).toHaveBeenCalledTimes(1)
   })
 
-  it('does not wait for the card: Home is drawn while the chunk is on its way, with nothing in its place', async () => {
+  it('does not wait for the card: Home is drawn while the chunk is on its way, with nothing in its slot', async () => {
     const { container, card } = await mountedBeside(vi.fn(), {
       chunk: 'is slow',
     })
@@ -157,6 +193,91 @@ describe('the card on Home', () => {
 
     world.release()
     await vi.waitFor(() => expect(card()).not.toBeNull())
+  })
+
+  it("keeps the card's slot while the chunk is on its way, at the height it last drew, then gives it to the card", async () => {
+    const at = answeredYesterday()
+    localStorage.setItem(
+      PLAN_CARD_SLOT_KEY,
+      JSON.stringify({ at, w: window.innerWidth, h: 259.2, dests: ['sing'] }),
+    )
+    const { container, card } = await mountedBeside(vi.fn(), {
+      chunk: 'is slow',
+    })
+    await settle()
+
+    const slot = keptSlot(container)
+    expect(card()).toBeNull()
+    expect(container.firstElementChild).toBe(slot)
+    expect(slot?.style.height).toBe('259.2px')
+    expect(slot?.dataset.kind).toBe('plan')
+    expect(slot?.getAttribute('aria-hidden')).toBe('true')
+
+    world.release()
+    await vi.waitFor(() => expect(card()).not.toBeNull())
+    expect(keptSlot(container)).toBeNull()
+    expect(container.firstElementChild).toBe(card())
+  })
+
+  it('keeps a slot of the size it guesses on a device that has never drawn the card', async () => {
+    answeredYesterday()
+    const { container } = await mountedBeside(vi.fn(), { chunk: 'is slow' })
+    await settle()
+
+    const slot = keptSlot(container)
+    expect(slot?.dataset.kind).toBe('plan')
+    expect(slot?.style.height).toBe('')
+  })
+
+  it('draws Home, and the slot, over a kept stop name an object inherits', async () => {
+    const at = answeredYesterday()
+    localStorage.setItem(
+      PLAN_CARD_SLOT_KEY,
+      JSON.stringify({
+        at,
+        w: window.innerWidth,
+        h: 193.4,
+        dests: ['constructor'],
+      }),
+    )
+    const { container } = await mountedBeside(vi.fn(), { chunk: 'is slow' })
+    await settle()
+
+    expect(container).toHaveTextContent('The rest of Home')
+    expect(keptSlot(container)?.style.height).toBe('193.4px')
+  })
+
+  it('costs Home the slot and nothing else when the read of it throws', async () => {
+    answeredYesterday()
+    const { container, card, warn } = await mountedBeside(vi.fn(), {
+      chunk: 'is slow',
+      slotThrows: true,
+    })
+    await settle()
+
+    expect(keptSlot(container)).toBeNull()
+    expect(container).toHaveTextContent('The rest of Home')
+    expect(warn).toHaveBeenCalledOnce()
+    expect(warn).toHaveBeenCalledWith(
+      '[home] Home kept no slot for the plan card:',
+      expect.any(TypeError),
+    )
+
+    world.release()
+    await vi.waitFor(() => expect(card()).not.toBeNull())
+  })
+
+  it('keeps no slot, and never asks for the card, in the native build', async () => {
+    answeredYesterday()
+    const { container } = await mountedBeside(vi.fn(), {
+      native: true,
+      chunk: 'is slow',
+    })
+    await settle()
+
+    expect(keptSlot(container)).toBeNull()
+    expect(container.children).toHaveLength(1)
+    expect(world.asked).toBe(0)
   })
 
   it('draws nothing, and never asks for the card, in the native build', async () => {

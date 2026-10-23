@@ -10,7 +10,14 @@
 // constant picks a stand-in that renders nothing before `lazy()` is ever
 // written, and the card draws inside a Suspense (so Home does not wait for it)
 // and an ErrorBoundary (so a dead chunk, offline or after a deploy swapped the
-// hashed assets, costs Home its card and not its page).
+// hashed assets, costs Home its card and not its page). Until the chunk is in,
+// the Suspense keeps a slot for the card (the PR 1.3 gate, H-4: a card landing
+// after Home's first paint pushed Home down), from plan-card-slot.ts, the one
+// plan module the mount takes at run time: it makes no signal and says no
+// words, and takes only the card's rules, the plan's keys, storage and first
+// values with it (plan-card-slot.test.ts and plan-card-rules.test.ts hold the
+// two to that). It is read only in the branch a web build keeps, and inside a
+// guard, so a read that throws costs Home the slot and not the page.
 //
 // A test that renders HomePage would need its whole world, and would not see a
 // static import slipped in beside the lazy one, so this reads the files the
@@ -142,9 +149,12 @@ function elementWith(
 // ── Neither file puts the plan in the native bundle ────────────────────
 
 describe('the files that reach the card', () => {
-  it.each([HOME, MOUNT])(
-    '%s imports nothing from the plan at run time, since a static import rides into the native bundle',
-    (file) => {
+  it.each([
+    [HOME, []],
+    [MOUNT, ['@/features/plan/plan-card-slot']],
+  ])(
+    '%s takes from the plan at run time only %j, since a static import rides into the native bundle',
+    (file, allowed) => {
       const imports = read(file)
         .source.statements.filter(ts.isImportDeclaration)
         .filter((declaration) =>
@@ -154,10 +164,15 @@ describe('the files that reach the card', () => {
         )
 
       expect(
-        imports.filter(
-          (declaration) => declaration.importClause?.isTypeOnly !== true,
-        ),
-      ).toEqual([])
+        imports
+          .filter(
+            (declaration) => declaration.importClause?.isTypeOnly !== true,
+          )
+          .map(
+            (declaration) =>
+              (declaration.moduleSpecifier as ts.StringLiteral).text,
+          ),
+      ).toEqual(allowed)
     },
   )
 })
@@ -189,7 +204,42 @@ describe('the mount', () => {
     )
   })
 
-  it('draws the card in a Suspense that shows nothing, inside an ErrorBoundary, and hands it what Home does for its session', () => {
+  it('reads the slot it keeps only in the branch a web build keeps', () => {
+    const reads = mount.all.filter(
+      (node): node is ts.CallExpression =>
+        ts.isCallExpression(node) &&
+        node.expression.getText(mount.source) === 'readPlanCardSlot',
+    )
+    const choice = reads[0] === undefined ? null : enclosingChoice(reads[0])
+
+    expect(reads).toHaveLength(1)
+    expect(choice?.conditional.condition.getText(mount.source)).toBe(
+      'IS_NATIVE_BUILD',
+    )
+    expect(choice?.branch).toBe('else')
+    expect(choice?.conditional.whenTrue.getText(mount.source)).toBe('null')
+  })
+
+  it('reads the slot inside a guard: a read that throws keeps no slot', () => {
+    const [read] = mount.all.filter(
+      (node): node is ts.CallExpression =>
+        ts.isCallExpression(node) &&
+        node.expression.getText(mount.source) === 'readPlanCardSlot',
+    )
+    let guard: ts.Node | undefined = read
+    while (guard !== undefined && !ts.isTryStatement(guard)) {
+      guard = guard.parent
+    }
+    const caught =
+      guard !== undefined && ts.isTryStatement(guard)
+        ? guard.catchClause?.block.statements
+        : undefined
+
+    expect(read).toBeDefined()
+    expect(caught?.at(-1)?.getText(mount.source)).toBe('return null')
+  })
+
+  it('draws the card in a Suspense that keeps its slot, inside an ErrorBoundary, and hands it what Home does for its session', () => {
     const boundary = mount.all.find(
       (node): node is ts.JsxElement =>
         ts.isJsxElement(node) && tagOf(node, mount.source) === 'ErrorBoundary',
@@ -200,10 +250,10 @@ describe('the mount', () => {
     const [suspense, ...others] = meaningfulChildren(boundary)
     expect(tagOf(suspense, mount.source)).toBe('Suspense')
     expect(others).toEqual([])
-    // Home does not wait for the card, and shows nothing in its place meanwhile.
+    // Home does not wait for the card, and keeps its slot meanwhile.
     expect(
       attributeOf(suspense as ts.JsxElement, 'fallback', mount.source),
-    ).toBe('{null}')
+    ).toBe('{<CardSlot slot={slot} />}')
     const [card, ...rest] = meaningfulChildren(suspense as ts.JsxElement)
     expect(tagOf(card, mount.source)).toBe('HomePlanCard')
     expect(rest).toEqual([])

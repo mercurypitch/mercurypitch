@@ -43,6 +43,7 @@ import type { Accessor } from 'solid-js'
 import { createSignal, untrack } from 'solid-js'
 import { createPersistedSignal, storageGet } from '@/lib/storage'
 import type { PlanDest, VoiceprintStop } from './build-plan'
+import { isNameList } from './plan-card-rules'
 import { PLAN_OPENED_KEY, PLAN_RECORD_KEY } from './plan-keys'
 import type { PlanRecordV1, PlanStatus, PlanTexts, PlanVia, } from './plan-record'
 import { isPlanRecordV1, pickedLines, writePlanTexts } from './plan-record'
@@ -185,11 +186,11 @@ export function markPlanSynced(recordAt: string, now: Date = new Date()): void {
 
 // ── The stops the person opened ────────────────────────────────────────
 
-function isNameList(val: unknown): val is string[] {
-  return Array.isArray(val) && val.every((name) => typeof name === 'string')
-}
-
-/** The plan's stops this person has opened, on this device. Not synced: the key starts `mp.`. */
+/**
+ * The plan's stops this person has opened, on this device. Not synced: the key
+ * starts `mp.`. What reads as a list of names is the card's rule
+ * (plan-card-rules.ts), which Home's slot reads from storage too.
+ */
 const [openedStops, setOpenedStops] = createPersistedSignal<string[]>(
   PLAN_OPENED_KEY,
   [],

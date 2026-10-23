@@ -19,7 +19,7 @@ import { cleanup, fireEvent, render, screen } from '@solidjs/testing-library'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { HomePlanCard } from './HomePlanCard'
 import { ago, answeredAgo, fresh, sent } from './plan-choices.fixture'
-import { PLAN_CARD_DISMISSED_KEY, PLAN_RECORD_KEY } from './plan-keys'
+import { PLAN_CARD_DISMISSED_KEY, PLAN_CARD_SLOT_KEY, PLAN_RECORD_KEY, } from './plan-keys'
 import { markPlanShown } from './plan-store'
 
 // ── Fixtures ───────────────────────────────────────────────────────────
@@ -108,7 +108,13 @@ describe('hiding the card', () => {
     expect(() => tap(hide())).not.toThrow()
 
     expect(container).toBeEmptyDOMElement()
-    expect(warn).toHaveBeenCalledOnce()
+    // Each refused write is said once: the hiding, and the slot Home would
+    // have kept for the card (none, now), which the card writes as it goes.
+    expect(warn.mock.calls.map((call) => String(call[0])).sort()).toEqual(
+      [PLAN_CARD_DISMISSED_KEY, PLAN_CARD_SLOT_KEY]
+        .map((key) => `[storage] Failed to write key "${key}":`)
+        .sort(),
+    )
   })
 
   it('shows the card when the device cannot say whether it was hidden', () => {

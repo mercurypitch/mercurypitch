@@ -35,6 +35,7 @@ import type { FirstLight as FirstLightFlow } from '@/features/onboarding/FirstLi
 import type { PlanLayerHost, PlanStoreModule, } from '@/features/plan/plan-layer-host'
 import { createPlanLayerHost } from '@/features/plan/plan-layer-host'
 import type { PlanLayerProps } from '@/features/plan/PlanLayer'
+import { syncPlanForAccount } from '@/features/plan/sync-for-account'
 import type { SingRoomCanvasOptions } from '@/features/sing-room/SingRoomStage'
 import { SingRoomStage } from '@/features/sing-room/SingRoomStage'
 import { IS_NATIVE_BUILD } from '@/lib/native-build'
@@ -240,7 +241,7 @@ import type { UvrView } from '@/components/UvrPanel'
 import { EngineProvider, useEngines } from '@/contexts/EngineContext'
 import { GuitarProvider, useGuitar } from '@/contexts/GuitarContext'
 import { PlaybackProvider } from '@/contexts/PlaybackContext'
-import { hasUpgradedAccount, hasValidToken, takeGoogleRedirectResult, } from '@/db/services/auth-service'
+import { hasValidToken, takeGoogleRedirectResult, } from '@/db/services/auth-service'
 import { takeExpectedCredits } from '@/db/services/billing-service'
 import { initSettingsSync } from '@/db/services/settings-service'
 import { authVersion } from '@/db/services/user-service'
@@ -499,29 +500,17 @@ const createPlanHost: () => PlanLayerHost = IS_NATIVE_BUILD
 
 // ── The plan's answers on the account ───────────────────────
 // plan-sync.ts reads the plan record, so it imports plan-store, which the
-// native build must not carry (see above): a static import, even one used only
-// in a dead branch, would put the store in the phone's bundle. The constant
-// picks the function before the `import()` is written, so the native build
-// holds one that does nothing and the web loads the module when a sign-in or a
-// load asks for a sync. App asks whether there is a real account before it
-// fetches the chunk, so a visitor with none loads nothing for a sync (the
-// plan's own screens bring the module when they open), and plan-sync.ts asks
-// again, because those screens call it too and it has to hold on its own. Past
-// that it is plan-sync.ts's to say whether there is anything to send. A check
-// that throws, or a chunk that fails to load (offline, or a deploy swapped the
-// hashed assets), costs one sync and nothing else: the next sign-in or load
-// tries again.
-const syncPlan: () => Promise<unknown> = IS_NATIVE_BUILD
+// native build must not carry (see above). The one gate in front of it,
+// syncPlanForAccount (sync-for-account.ts, R85), asks whether there is a real
+// account before it fetches the chunk, so a visitor with none loads nothing for
+// a sync; the plan's screens call the same gate when a plan is done. The
+// constant picks the function before anything is called, so the native build
+// holds one that does nothing and drops the gate with the import() inside it.
+// The gate never rejects: a failed sync costs that one sync, and the next
+// sign-in or load tries again.
+const syncPlan: () => Promise<void> = IS_NATIVE_BUILD
   ? async () => undefined
-  : async () => {
-      try {
-        if (!hasUpgradedAccount()) return
-        const sync = await import('@/features/plan/plan-sync')
-        await sync.syncPlanToAccount()
-      } catch {
-        // One sync lost: see above.
-      }
-    }
+  : syncPlanForAccount
 
 /**
  * The plan, as a layer over the app: drawn while the host has a mode, and keyed
@@ -2579,8 +2568,14 @@ const AppShell: Component<AppProps> = (props) => {
 
   // Offer a page's spotlight tour the first time it's visited.
   // Not over First Light: the welcome screen is a first visit's whole
-  // screen, and the toast spent Home's offer underneath it.
-  usePageTourOffer(activeTab, () => showWelcome() || flowOpen())
+  // screen, and the toast spent Home's offer underneath it. Not over the
+  // plan layer either (R83): the toast region stands above it, and its
+  // Start tour ran the tab's tour over the plan. The tab on screen when the
+  // layer closes gets its offer then, if it never had one.
+  usePageTourOffer(
+    activeTab,
+    () => showWelcome() || flowOpen() || plan.isOpen(),
+  )
 
   // Live mic insights → inline "can't hear you" / "too quiet" hints (Singing).
   const micInsights = useMicInsights({
@@ -3056,13 +3051,15 @@ const AppShell: Component<AppProps> = (props) => {
   }
 
   // True while any guide/tour surface is up: the guide-section dialog, the
-  // spotlight walkthrough, or the Learn chapter modals. The survey must never
-  // pop over these (it used to occlude a tour started from the welcome screen).
+  // spotlight walkthrough, the Learn chapter modals, or the plan layer (R83).
+  // The survey must never pop over these (it used to occlude a tour started
+  // from the welcome screen).
   const tourSurfaceOpen = () =>
     showGuideSelection() ||
     walkthroughActive() ||
     showSelection() ||
-    walkthroughModalOpen()
+    walkthroughModalOpen() ||
+    plan.isOpen()
 
   // Don't ask for feedback the moment a first-time visitor closes the welcome
   // screen: wait until they have genuinely used the app — enough cumulative

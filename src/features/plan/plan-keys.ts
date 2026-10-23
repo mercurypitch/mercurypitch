@@ -23,3 +23,6 @@ export const PLAN_CARD_DISMISSED_KEY = 'mp.plan.card.dismissed.v1'
 
 /** Which of the plan's stops the person has opened. */
 export const PLAN_OPENED_KEY = 'mp.plan.opened.v1'
+
+/** The height Home's plan card last drew at, so Home holds the card's slot before the card's chunk is in. */
+export const PLAN_CARD_SLOT_KEY = 'mp.plan.card.slot.v1'

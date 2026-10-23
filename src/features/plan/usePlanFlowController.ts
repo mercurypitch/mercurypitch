@@ -62,9 +62,9 @@ import { planDeclinedEvents, planDoneEvents } from './plan-events'
 import type { PlanTexts, PlanVia } from './plan-record'
 import { readPlanTexts } from './plan-record'
 import { declinePlan, markPlanShown, markStopOpened, planRecord, savePlanAnswers, } from './plan-store'
-import { syncPlanToAccount } from './plan-sync'
 import type { PlanChoices, QuestionId } from './questions'
 import { EMPTY_CHOICES } from './questions'
+import { syncPlanForAccount } from './sync-for-account'
 
 /**
  * How a run was opened. `new` is the questions inside First Light's walk;
@@ -299,9 +299,10 @@ export function usePlanFlowController(o: PlanFlowOptions): PlanFlowController {
   const done: PlanFlowController['done'] = (c, t, from) => {
     savePlanAnswers(c, t, found())
     // A singer who already holds an account has no sign-in coming that would
-    // send these answers, so they go now. It sends nothing for anyone else,
-    // never throws and never rejects (plan-sync.ts), so nothing waits on it.
-    void syncPlanToAccount()
+    // send these answers, so they go now, through the one gate
+    // (sync-for-account.ts, R85). It loads and sends nothing for anyone else,
+    // and never rejects, so nothing waits on it.
+    void syncPlanForAccount()
     batch(() => {
       setChoices(c)
       setTexts(t)

@@ -1,0 +1,42 @@
+/* ============================================================
+   HomePlanCardMount: the slot Home keeps for its plan card
+   ============================================================
+
+   Until the card's chunk is in, Home keeps a slot for it: the card's frame
+   (HomePlanCard.module.css's .card: one grid item across both columns, its
+   border, corners and ground), empty, so the card lands in it and nothing
+   below moves. HomePlanCardMount.css.test.ts holds the frame to the card's
+   and a guess to every kind of card. The mount sets the height the card
+   last drew at on this device (plan-card-slot.ts). Without one, these are
+   the card's own heights, measured on 23 Oct 2026 in a local build: on a
+   desktop the rows stand side by side, so a plan is one height (127.7 px)
+   and the ask another (114 px);
+   on a phone the rows stack, 65.75 px each (127.7, 193.4 and 259.2 px for
+   one to three), and the guess is two, a row off either way at most, and
+   the ask is 146.9 px. */
+
+.slot {
+  grid-column: 1 / -1;
+  box-sizing: border-box;
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  background: var(--bg-card);
+}
+
+.slot[data-kind='plan'] {
+  height: 127.7px;
+}
+
+.slot[data-kind='ask'] {
+  height: 114px;
+}
+
+@media (max-width: 640px) {
+  .slot[data-kind='plan'] {
+    height: 193.4px;
+  }
+
+  .slot[data-kind='ask'] {
+    height: 146.9px;
+  }
+}

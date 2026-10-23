@@ -6,7 +6,9 @@
    the plan, or Merc's line and a Start. Every target is 44 px. Small text is
    set in --accent-text, the accent made for text, and never --accent, which
    is a fill and does not clear 4.5:1 on a row's ground in the light theme.
-   HomePlanCard.css.test.ts holds the span, the targets and the colour. */
+   HomePlanCard.css.test.ts holds the span, the targets and the colour.
+   HomePlanCardMount.module.css copies .card's frame for the slot Home keeps
+   before this chunk is in; HomePlanCardMount.css.test.ts holds the copy. */
 
 .card {
   /* Across both columns of Home's grid, as the Ascent card is (AscentCard.module.css).

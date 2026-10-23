@@ -1,4 +1,4 @@
-import { createEffect, on } from 'solid-js'
+import { createEffect, createMemo, on } from 'solid-js'
 import { tabLabel } from '@/features/tabs/constants'
 import { trackTour } from '@/lib/guide-funnel'
 import { hasPageTour, pageTourKey, removeNotification, removeNotificationsByChannel, showActionNotification, startPageTour, TOUR_OFFER_CHANNEL, walkthroughActive, } from '@/stores'
@@ -29,9 +29,12 @@ export function usePageTourOffer(
   // which removed the toast it had just shown and, with the "offered" key
   // already written, never offered again — a phone after a factory reset
   // saw no tour offer on any page. The key is written only once the toast
-  // is really on screen.
+  // is really on screen. The pause is a memo for the same reason: App's
+  // reads the plan layer's host, which reads the plan store, and the store
+  // lands a moment after load with the pause unchanged.
+  const pausedNow = createMemo(paused)
   createEffect(
-    on([activeTab, paused], ([tab, isPaused], prev) => {
+    on([activeTab, pausedNow], ([tab, isPaused], prev) => {
       removeNotificationsByChannel(TOUR_OFFER_CHANNEL)
       if (isPaused) return
       // The pause has just lifted. First Light's Map closes the flow in
@@ -45,7 +48,7 @@ export function usePageTourOffer(
 
   function offer(tab: ActiveTab): void {
     // The microtask path can find the user elsewhere already.
-    if (activeTab() !== tab || paused()) return
+    if (activeTab() !== tab || pausedNow()) return
     if (!hasPageTour(tab)) return
     const key = `pitchperfect_page_tour_offered_${tab}`
     if (localStorage.getItem(key) === 'true') return

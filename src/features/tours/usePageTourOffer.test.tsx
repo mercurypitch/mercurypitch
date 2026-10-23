@@ -165,6 +165,30 @@ describe('usePageTourOffer', () => {
     dispose()
   })
 
+  // App's pause asks the plan layer's host whether the layer is up, and the
+  // host reads the plan store, which lands a moment after load: the pause is
+  // read again then, and says what it said before (PR 1.3 gate fix, R83).
+  it('keeps the toast when what the pause reads changes and the pause does not', () => {
+    const [tab] = createSignal<ActiveTab>('home' as ActiveTab)
+    const [storeLanded, setStoreLanded] = createSignal(false)
+    const paused = (): boolean => {
+      storeLanded()
+      return false
+    }
+    const dispose = createRoot((d) => {
+      usePageTourOffer(tab, paused)
+      return d
+    })
+    expect(store.showActionNotification).toHaveBeenCalledTimes(1)
+    store.removeNotificationsByChannel.mockClear()
+
+    setStoreLanded(true)
+
+    expect(store.removeNotificationsByChannel).not.toHaveBeenCalled()
+    expect(store.showActionNotification).toHaveBeenCalledTimes(1)
+    dispose()
+  })
+
   it('retires a shown offer when the pause returns', () => {
     const { setPaused, dispose } = mount('home' as ActiveTab)
     expect(store.showActionNotification).toHaveBeenCalledTimes(1)

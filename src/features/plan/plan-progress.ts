@@ -17,60 +17,40 @@
 //   it from the plan ticks nothing. Only a room that has no first value (Jam,
 //   the two lessons, Hear Yourself) is done by being opened from the plan,
 //   because an opening is all it has to go on. The rules are a Record over
-//   every destination, so a destination added to the plan fails to compile
-//   here until it says what finishes it. `stopDone` is reactive in the opened
-//   stops only: the first values are read from the device as it is asked, and
-//   a room that gives one is a room the person is in, which is not Home.
+//   every destination (DONE_WHEN, in plan-card-rules.ts, which Home reads
+//   before this file is loaded), so a destination added to the plan fails to
+//   compile there until it says what finishes it. `stopDone` is reactive in
+//   the opened stops only: the first values are read from the device as it is
+//   asked, and a room that gives one is a room the person is in, which is not
+//   Home.
 // - The week is counted from the record's own date (`at`), for the plan and
 //   for the ask alike, and it cannot run on for good. A date that does not read
 //   gives no card. Neither does one more than a week ahead of the clock (a
 //   device whose clock was wrong when it wrote the record), which would
 //   otherwise hold the card until the clock caught up. A date a little ahead
 //   is inside the week, as two devices that share a record never quite agree.
+//   That rule, and which card a record asks for, are plan-card-rules.ts's:
+//   Home reads them there before this file is loaded, to keep a slot for the
+//   card, so they are written once, there.
 // - The plan is rebuilt, never stored. The record keeps the answers and where
 //   a voiceprint pointed, and buildPlan makes the rows from them for the menu
 //   the person has now, so they are the rows the plan screen gave them except
 //   that a room the menu hides gets none. The clock, the menu and the way to
 //   tell a stop is done are all arguments, so each rule is tried on its own.
 
-import type { FirstValueKind } from '@/lib/first-value'
-import { firstValueSeen } from '@/lib/first-value'
 import type { Plan, PlanDest, PlanStop, PlanView } from './build-plan'
 import { buildPlan, planStops } from './build-plan'
+import { planCardKind, stopDoneBy } from './plan-card-rules'
 import type { PlanRecordV1 } from './plan-record'
 import { stopOpened } from './plan-store'
 
-/** How many days after a plan was answered, skipped or turned down Home's card stays. */
-export const PLAN_CARD_DAYS = 7
-
-const PLAN_CARD_MS = PLAN_CARD_DAYS * 24 * 60 * 60 * 1000
-
 /**
- * What finishes a stop: the first values that do, or `opened` for a room that
- * has none, which is done once it is opened from the plan.
+ * Is this stop done: its room has given a first value, or, for a room with
+ * none, it was opened. What finishes each stop is plan-card-rules.ts's
+ * (DONE_WHEN); the stops opened are the store's, so this is reactive in them.
  */
-const DONE_WHEN: Record<PlanDest, readonly FirstValueKind[] | 'opened'> = {
-  sing: ['sing'],
-  homeSession: ['sing', 'drill'],
-  ascent: ['sing', 'drill'],
-  exercises: ['drill'],
-  guitar: ['guitar'],
-  guitarNight: ['guitar'],
-  piano: ['piano'],
-  pianoNight: ['piano'],
-  earLab: ['ear'],
-  karaokeNight: ['karaoke'],
-  jam: 'opened',
-  lesson1: 'opened',
-  lesson2: 'opened',
-  hearYourself: 'opened',
-}
-
-/** Is this stop done: its room has given a first value, or, for a room with none, it was opened. */
 export function stopDone(dest: PlanDest): boolean {
-  const rule = DONE_WHEN[dest]
-  if (rule === 'opened') return stopOpened(dest)
-  return rule.some((kind) => firstValueSeen(kind))
+  return stopDoneBy(dest, stopOpened)
 }
 
 /** What Home's card shows: the plan's stops and which are done, the ask for the four questions, or nothing. */
@@ -92,14 +72,6 @@ interface HomePlanCardInput {
   done?: (d: PlanDest) => boolean
 }
 
-/**
- * Is `at`, a date written as text, within a week of `now`, on either side?
- * One that does not read parses to NaN, and no distance is less than NaN.
- */
-function withinTheWeek(at: string, now: number): boolean {
-  return Math.abs(now - Date.parse(at)) < PLAN_CARD_MS
-}
-
 /** The rows of an answered plan, rebuilt from what the record kept. */
 function rowsOf(
   record: PlanRecordV1,
@@ -114,16 +86,17 @@ function rowsOf(
 }
 
 /**
- * What Home's card shows. The first rule that fits wins: nothing for a card
- * that was hidden; the plan for an answered record in its week with a stop
- * not yet done; the ask for a record that is shown or declined, in its week;
- * otherwise nothing.
+ * What Home's card shows. Which card, if either, is the week's rule
+ * (planCardKind, in plan-card-rules.ts, which Home reads before this file
+ * is loaded): nothing for a card that was hidden or a record out of its week,
+ * the ask for a record that is shown or declined, the plan for an answered
+ * one. The plan is shown only while a stop of it is not done.
  */
 export function homePlanCardState(i: HomePlanCardInput): HomePlanCardState {
   const { record } = i
-  if (i.dismissed || record === null) return null
-  if (!withinTheWeek(record.at, i.now)) return null
-  if (record.status !== 'answered') return { kind: 'ask' }
+  const kind = planCardKind(i)
+  if (kind === null || record === null) return null
+  if (kind === 'ask') return { kind: 'ask' }
   const stops = rowsOf(record, i.view, i.done ?? stopDone)
   return stops.every((row) => row.done) ? null : { kind: 'plan', stops }
 }

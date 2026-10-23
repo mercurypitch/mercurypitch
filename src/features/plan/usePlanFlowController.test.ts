@@ -12,7 +12,9 @@
 // calls, the one write that sends the plan to the account, and the promo the
 // server features. The plan store, the plan sync, the settings store and the
 // funnel are the real ones, so a finished plan is seen to go, or not, the way
-// it would.
+// it would. The sync is loaded on demand, only for a singer with an account
+// (R84), so a case that waits for it waits for the module to arrive;
+// usePlanFlowController.sync.test.ts holds who loads it.
 //
 // The plan record, the stops opened and the menu are module signals that
 // `localStorage.clear()` does not reach, so each case puts them back.
@@ -463,7 +465,10 @@ describe('when the answers are in and the singer holds an account', () => {
     const { c } = start('new')
 
     c.done(AUDITION, NO_TEXTS, NO_PILLS)
-    await settle()
+    // The sync is loaded on demand (R84), which takes more than a turn.
+    await vi.waitFor(() => {
+      expect(planRecord()?.syncedAt).toBeDefined()
+    })
 
     const at = planRecord()?.at
     expect(mocks.submitPlanResponse).toHaveBeenCalledTimes(1)
@@ -514,7 +519,10 @@ describe('when the answers are in and the singer holds an account', () => {
     const { c } = start('new')
 
     c.done(AUDITION, NO_TEXTS, NO_PILLS)
-    await settle()
+    // The gate, or the sync it loads on demand (R84), says it went wrong.
+    await vi.waitFor(() => {
+      expect(console.warn).toHaveBeenCalled()
+    })
 
     expect(c.phase()).toBe('plan')
     expect(planRecord()).toMatchObject({
@@ -522,7 +530,8 @@ describe('when the answers are in and the singer holds an account', () => {
       choices: AUDITION,
     })
     expect(planRecord()?.syncedAt).toBeUndefined()
-    // The sync contained it and said so: nothing was left to reject unheard.
+    // The gate (sync-for-account.ts) contained it and said so: nothing was
+    // left to reject unheard.
     expect(console.warn).toHaveBeenCalledWith(
       expect.stringContaining('[plan-sync]'),
       expect.any(Error),

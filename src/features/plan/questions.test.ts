@@ -17,7 +17,7 @@
 import { existsSync } from 'node:fs'
 import { createStore } from 'solid-js/store'
 import { describe, expect, it } from 'vitest'
-import { PLAN_CARD_DISMISSED_KEY, PLAN_OPENED_KEY, PLAN_RECORD_KEY, PLAN_TEXT_KEY, } from './plan-keys'
+import { PLAN_CARD_DISMISSED_KEY, PLAN_CARD_SLOT_KEY, PLAN_OPENED_KEY, PLAN_RECORD_KEY, PLAN_TEXT_KEY, } from './plan-keys'
 import type { PlanChoices, PlanOption, Q1Answer, Q2Id } from './questions'
 import { EMPTY_CHOICES, EVERYTHING, INSTRUMENTS, MERC_INTRO, planColumn, pruneChoices, q1Label, q2Options, Q3_MAX, q3Options, q4Options, } from './questions'
 
@@ -582,10 +582,16 @@ describe('the storage keys', () => {
   // prefix on the text key would sync what they typed to the account.
   it('syncs the record to the account and keeps every other plan key on the device', () => {
     expect(PLAN_RECORD_KEY).toBe('pitchperfect_plan_v1')
-    expect([PLAN_TEXT_KEY, PLAN_CARD_DISMISSED_KEY, PLAN_OPENED_KEY]).toEqual([
+    expect([
+      PLAN_TEXT_KEY,
+      PLAN_CARD_DISMISSED_KEY,
+      PLAN_OPENED_KEY,
+      PLAN_CARD_SLOT_KEY,
+    ]).toEqual([
       'mp.plan.text.v1',
       'mp.plan.card.dismissed.v1',
       'mp.plan.opened.v1',
+      'mp.plan.card.slot.v1',
     ])
   })
 })

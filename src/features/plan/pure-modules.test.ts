@@ -22,6 +22,9 @@ const PURE_MODULES: [file: string, mayImport: 'nothing' | 'no store'][] = [
   ['build-plan.ts', 'no store'],
   ['plan-record.ts', 'no store'],
   ['plan-events.ts', 'no store'],
+  ['plan-card-rules.ts', 'no store'],
+  ['plan-card-slot.ts', 'no store'],
+  ['sync-for-account.ts', 'no store'],
 ]
 
 /** Every module a source file imports, as it is written there. */

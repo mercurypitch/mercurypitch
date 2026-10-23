@@ -9,12 +9,17 @@
 // nothing at all, so Home is as it was. Which of the three it is, and what a
 // tick means, are plan-progress.ts's; this draws what that says.
 //
-// Five things are easy to break:
+// Six things are easy to break:
 //
 // - Home reaches this file only through a lazy import behind IS_NATIVE_BUILD
 //   (src/pages/HomePlanCardMount.tsx, held by home-card-mount.test.ts): it
 //   makes the plan's store and words part of Home's chunk, and the native
 //   bundle has no plan.
+// - Home keeps a slot for the card until this chunk is in, at the height the
+//   card last drew at on this device (plan-card-slot.ts), so the card keeps
+//   that height for Home's next load once it settles, and keeps 0 for a
+//   record it draws nothing for (every stop done, or the X), or Home would
+//   hold a slot open for a card that is not coming.
 // - It is one grid item of Home's grid, so it draws no wrapper of its own, and
 //   an absent card leaves no hole: the Switch below renders nothing, not an
 //   empty element.
@@ -39,15 +44,17 @@
 // hides. It draws no Merc: the layer that the Start opens has the one Merc.
 
 import type { JSX } from 'solid-js'
-import { createMemo, createSignal, createUniqueId, Index, Match, Show, Switch, } from 'solid-js'
+import { createEffect, createMemo, createSignal, createUniqueId, Index, Match, onCleanup, Show, Switch, untrack, } from 'solid-js'
 import { CheckSmall, X } from '@/components/icons'
 import { trackGuide } from '@/lib/guide-funnel'
-import { storageGet, storageSet } from '@/lib/storage'
+import { storageSet } from '@/lib/storage'
 import { practiceScope, uiMode } from '@/stores/settings-store'
-import type { PlanStop } from './build-plan'
+import type { PlanDest, PlanStop } from './build-plan'
 import { PLAN_DESTS } from './build-plan'
 import { enterStop, widenMenuFor } from './enter-stop'
 import styles from './HomePlanCard.module.css'
+import { hiddenOnDevice } from './plan-card-rules'
+import { PLAN_CARD_SLOT_SETTLE_MS, rememberPlanCardSlot, } from './plan-card-slot'
 import { KICKER } from './plan-copy'
 import { PLAN_CARD_DISMISSED_KEY } from './plan-keys'
 import { homePlanCardState } from './plan-progress'
@@ -67,10 +74,6 @@ export interface HomePlanCardProps {
    */
   onHomeSession: () => void
 }
-
-/** Has the person hidden the card on this device? Storage that cannot be read says no. */
-const hiddenOnDevice = (): boolean =>
-  storageGet<unknown>(PLAN_CARD_DISMISSED_KEY) === true
 
 // ── Pieces of the card ─────────────────────────────────────────────────
 
@@ -134,10 +137,12 @@ function PlanCard(props: {
   rows: readonly Row[]
   onOpen: (stop: PlanStop) => void
   onHide: () => void
+  keep: (card: HTMLElement) => void
 }): JSX.Element {
   const headingId = createUniqueId()
   return (
     <section
+      ref={(el) => props.keep(el)}
       class={styles.card}
       aria-labelledby={headingId}
       data-testid="home-plan-card"
@@ -160,10 +165,14 @@ function PlanCard(props: {
 }
 
 /** For a skipper: Merc's line, and a Start that opens the four taps. */
-function AskCard(props: { onHide: () => void }): JSX.Element {
+function AskCard(props: {
+  onHide: () => void
+  keep: (card: HTMLElement) => void
+}): JSX.Element {
   const headingId = createUniqueId()
   return (
     <section
+      ref={(el) => props.keep(el)}
       class={styles.card}
       aria-labelledby={headingId}
       data-testid="home-plan-card"
@@ -216,6 +225,49 @@ export function HomePlanCard(props: HomePlanCardProps): JSX.Element {
     document.getElementById('main-content')?.focus({ preventScroll: true })
   }
 
+  // What Home keeps for the card on its next load, before this chunk is in:
+  // the height the card is drawn at, as it changes (a row the menu hides, a
+  // font that lands), and 0 for a record it draws nothing for. A height is
+  // kept once it has held for PLAN_CARD_SLOT_SETTLE_MS, so a window dragged
+  // wider writes once and not once a frame; one not yet settled is kept as the
+  // page goes away or Home does, unless the card has gone first (the X, or its
+  // last stop done), which keeps its 0. A card that is not laid out (a page
+  // that is not displayed) measures 0 and keeps nothing, so a hidden Home does
+  // not wipe what the card kept. Each keeps it for the record the card drew,
+  // which a store write gives the card before it is in storage.
+  const drawnStops = (): PlanDest[] =>
+    (untrack(rows) ?? []).map((row) => row.stop.dest)
+  const drawnAt = (): string | undefined => untrack(planRecord)?.at
+  const keep = (el: HTMLElement): void => {
+    if (typeof ResizeObserver === 'undefined') return
+    let settling: ReturnType<typeof setTimeout> | undefined
+    let unkept: { height: number; width: number } | null = null
+    const keepNow = (): void => {
+      clearTimeout(settling)
+      if (unkept === null || untrack(card) === null) return
+      rememberPlanCardSlot(unkept.height, unkept.width, drawnStops(), drawnAt())
+      unkept = null
+    }
+    const seen = new ResizeObserver(() => {
+      const { height } = el.getBoundingClientRect()
+      if (height <= 0) return
+      unkept = { height, width: window.innerWidth }
+      clearTimeout(settling)
+      settling = setTimeout(keepNow, PLAN_CARD_SLOT_SETTLE_MS)
+    })
+    seen.observe(el)
+    window.addEventListener('pagehide', keepNow)
+    onCleanup(() => {
+      seen.disconnect()
+      window.removeEventListener('pagehide', keepNow)
+      keepNow()
+    })
+  }
+  createEffect(() => {
+    const at = planRecord()?.at
+    if (card() === null) rememberPlanCardSlot(0, window.innerWidth, [], at)
+  })
+
   const open = (stop: PlanStop): void => {
     trackGuide(`plan_stop_${stop.kind}`)
     markStopOpened(stop.dest)
@@ -230,10 +282,12 @@ export function HomePlanCard(props: HomePlanCardProps): JSX.Element {
   return (
     <Switch>
       <Match when={rows()}>
-        {(stops) => <PlanCard rows={stops()} onOpen={open} onHide={hide} />}
+        {(stops) => (
+          <PlanCard rows={stops()} onOpen={open} onHide={hide} keep={keep} />
+        )}
       </Match>
       <Match when={asking()}>
-        <AskCard onHide={hide} />
+        <AskCard onHide={hide} keep={keep} />
       </Match>
     </Switch>
   )
