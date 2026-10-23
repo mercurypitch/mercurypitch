@@ -233,8 +233,11 @@ export function initSing(stills: RingStills): void {
 
   let asking = false
 
-  /** A fresh run of the three notes: the microphone first, asked inside the tap. */
-  async function startRun(): Promise<void> {
+  /**
+   * A fresh run of the three notes: the microphone first, asked inside the
+   * tap. `again` is the visit's one rerun, spent only once its run starts.
+   */
+  async function startRun(again = false): Promise<void> {
     const context = Sound.context()
     const v = VoiceChoice.voice
     if (asking) return
@@ -257,6 +260,11 @@ export function initSing(stills: RingStills): void {
       leave(hidden)
       view.status(STATUS.stopped)
       return
+    }
+    // a rerun cut short above leaves the feeling picked and its Again offered
+    if (again) {
+      rerunUsed = true
+      feelings.reset()
     }
     run = newRun(v)
     await takeNote()
@@ -297,9 +305,7 @@ export function initSing(stills: RingStills): void {
   /** The three notes once more from the start, offered once a visit after "Easy" or "Workable". */
   function rerun(): void {
     if (rerunUsed) return
-    rerunUsed = true
-    feelings.reset()
-    void startRun()
+    void startRun(true)
   }
 
   async function listenTo(i: number): Promise<void> {
