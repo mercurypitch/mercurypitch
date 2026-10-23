@@ -14,6 +14,7 @@
 // Entities are validated against the TABLES allowlist; per-table access
 // rules force userId scoping from the JWT, never from the request body.
 
+import { isRestrictedCountry } from '../../../src/lib/consent-regions'
 import { FUNNEL_EVENT_NAMES, LESSON_CLIENT_ID, } from '../../../src/lib/funnel-event-catalog'
 import { resolveAdmin, resolveAdminWithIdentity } from './access'
 import { handleAccountNoticeRoute } from './account-notices'
@@ -1391,6 +1392,27 @@ async function mirrorEventRefusal(
   return rl.allowed ? null : mirrorEventRefused(rl.retryAfter)
 }
 
+/** What a stored event is answered with, and an unwanted lesson answer too. */
+function mirrorEventStored(): Response {
+  return respond({ ok: true }, { status: 201 })
+}
+
+/**
+ * Whether a valid lesson answer comes from the consent regions without a
+ * yes, the owner's rule of 23 October 2026 (the app's own). The page decides
+ * by its clock (telemetry.ts), which can be wrong: a reader in Germany whose
+ * phone says America/New_York passes it. The address decides here, by
+ * Cloudflare's country for it; a request with none counts as in the regions.
+ */
+function lessonAnswerUnwanted(request: Request, metrics: unknown): boolean {
+  const { consent } = metrics as { consent: number }
+  const country = request.cf?.country
+  return (
+    consent !== 1 &&
+    isRestrictedCountry(typeof country === 'string' ? country : undefined)
+  )
+}
+
 /**
  * When an event row says it happened. A lesson answer keeps only its UTC day
  * (the day's midnight, in the same ISO form), so its row cannot be lined up
@@ -1445,6 +1467,11 @@ async function handleMirrorEvent(
     event === 'lesson_answer' &&
     clientId === LESSON_CLIENT_ID &&
     lessonAnswerInBounds(metrics)
+  // Answered as a stored answer is, so the page cannot tell, and nothing is
+  // kept: no row, and the limiter is not spent.
+  if (lessonAnswer && lessonAnswerUnwanted(request, metrics)) {
+    return mirrorEventStored()
+  }
   const refused = lessonAnswer
     ? await lessonAnswerRefusal(request, env)
     : await mirrorEventRefusal(request, env)
@@ -1511,7 +1538,7 @@ async function handleMirrorEvent(
     }
   }
 
-  return respond({ ok: true }, { status: 201 })
+  return mirrorEventStored()
 }
 
 // ── Weekly "Sing the Legend" challenges ──────────────────────────────

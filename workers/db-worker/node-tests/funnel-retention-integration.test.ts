@@ -216,8 +216,9 @@ describe('funnel rows after 13 months', () => {
 })
 
 describe('lesson answers, kept by their UTC day', () => {
-  /** One lesson answer through the route at `atMs`, as the pages send it,
-   *  with a stand-in for Cloudflare's limiter that takes it. */
+  /** One lesson answer through the route at `atMs`, as the pages send it
+   *  for a reader who said yes, with a stand-in for Cloudflare's limiter
+   *  that takes it. */
   async function lessonAnswer(atMs: number): Promise<void> {
     vi.useFakeTimers({ toFake: ['Date'] })
     vi.setSystemTime(atMs)
@@ -238,7 +239,7 @@ describe('lesson answers, kept by their UTC day', () => {
             firstTry: 1,
             k: 3,
             visit: 2,
-            consent: 2,
+            consent: 1,
           },
           acq: { gclid: 'lesson-click', utmSource: 'google' },
         }),
