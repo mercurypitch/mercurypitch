@@ -6,14 +6,16 @@
 // has a frame to draw. `handLoop` gives a fresh copy of the loop, running
 // (every kit module a test imports after it loads afresh over that copy),
 // whose frames the test runs by hand on a clock it turns; timers run on the
-// same clock. The browser's word on a figure comes from the test as well: a
-// figure is on screen, resized, zoomed or its fonts loaded, and the system
-// asks for reduced motion (on unless the test says otherwise), only when
-// the test says so (`document.fonts.ready` stays pending: `fontsLoad` is
-// the `loadingdone` a late font brings). A loop that asks for no frame has
-// every drawer at rest; a canvas's paints are counted by its `fit`, which
-// measures it once in every frame it draws. The test file calls
-// `vi.useRealTimers()` and `vi.restoreAllMocks()` after each test.
+// same clock. Each copy takes the last one's page listeners off as it
+// loads, so an input a test makes wakes only its own. The browser's word on
+// a figure comes from the test as well: a figure is on screen, resized,
+// zoomed or its fonts loaded, and the system asks for reduced motion (on
+// unless the test says otherwise), only when the test says so
+// (`document.fonts.ready` stays pending: `fontsLoad` is the `loadingdone` a
+// late font brings). A loop that asks for no frame has every drawer at
+// rest; a canvas's paints are counted by its `fit`, which measures it once
+// in every frame it draws. The test file calls `vi.useRealTimers()` and
+// `vi.restoreAllMocks()` after each test.
 
 import { vi } from 'vitest'
 import type * as FrameLoop from './frame-loop'
@@ -38,6 +40,28 @@ export interface HandLoop {
   fontsLoad(): void
   /** How many frames `canvas` is painted in from now (its measurements, 300 by 190 px). */
   paints(canvas: HTMLCanvasElement): () => number
+}
+
+// the page listeners the last copy of the loop added, taken off before the
+// next copy loads, so an input a test makes reaches only its own copy
+let unlisten: (() => void)[] = []
+
+/** Loads a fresh copy of the loop, keeping how to take off what it listens to on the page. */
+async function freshCopy(): Promise<typeof FrameLoop> {
+  unlisten.forEach((off) => off())
+  unlisten = []
+  const spies = ([document, window] as EventTarget[]).map((target) => {
+    const add = target.addEventListener.bind(target)
+    return vi
+      .spyOn(target, 'addEventListener')
+      .mockImplementation((type, fn, opts) => {
+        add(type, fn, opts)
+        unlisten.push(() => target.removeEventListener(type, fn, opts))
+      })
+  })
+  const loop = await import('./frame-loop')
+  spies.forEach((spy) => spy.mockRestore())
+  return loop
 }
 
 interface Listening {
@@ -139,7 +163,7 @@ export async function handLoop(reduce = true): Promise<HandLoop> {
     value: Object.assign(fonts, { ready: new Promise<never>(() => undefined) }),
   })
 
-  const loop = await import('./frame-loop')
+  const loop = await freshCopy()
   loop.startFrameLoop()
   const frame = (): boolean => {
     if (asked.length === 0) return false
