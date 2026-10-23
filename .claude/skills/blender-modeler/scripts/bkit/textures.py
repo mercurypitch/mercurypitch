@@ -216,6 +216,44 @@ def attach_color(material, image, scale=1.0):
     return material
 
 
+def thickness_map(name, fn, size=256):
+    """A non-colour map, `size` wide and 4 tall, of fn(f) for f across [0, 1): a thickness
+    that varies round a lobe, say, sampled with a UV layer whose u runs once per lobe.
+    Values are clipped to 0..1; thicknessFactor scales them to metres."""
+    f = (np.arange(size) + 0.5) / size
+    row = np.clip(np.array([fn(x) for x in f], dtype=float), 0.0, 1.0)
+    return _image(name, np.repeat(np.repeat(row[None, :, None], 4, axis=0), 3, axis=2), colour=False)
+
+
+def attach_thickness(material, image, uv_map):
+    """Feed `image` into KHR_materials_volume's thicknessTexture, sampled with UV layer `uv_map`.
+
+    The exporter reads volume thickness only from a node group named 'glTF Material Output'
+    with a 'Thickness' input, and keeps that group only if it also has an 'Occlusion' input:
+    otherwise it flattens the material's groups and the map is silently lost. So the group is
+    made by the exporter's own helper. The factor (thicknessFactor, metres for a texel of 1)
+    comes from optics.json, which gltf_finish.py merges over the exported block. three.js thins
+    the glass where the map is dark: less of the volume colour there, more at the edges, as
+    thick glass bends light (the urn's lobes read as flat satin without).
+    """
+    nt = material.node_tree
+    group = bpy.data.node_groups.get('glTF Material Output')
+    if group is None:
+        from io_scene_gltf2.blender.com.material_helpers import create_settings_group
+        group = create_settings_group('glTF Material Output')
+    node = nt.nodes.new('ShaderNodeGroup')
+    node.node_tree = group
+    tex = nt.nodes.new('ShaderNodeTexImage')
+    tex.image = image
+    tex.interpolation = 'Linear'
+    tex.extension = 'REPEAT'
+    uv = nt.nodes.new('ShaderNodeUVMap')
+    uv.uv_map = uv_map
+    nt.links.new(uv.outputs['UV'], tex.inputs['Vector'])
+    nt.links.new(tex.outputs['Color'], node.inputs['Thickness'])
+    return material
+
+
 def _image(name, rgb, colour):
     """Packed bpy image from an (rows, cols, 3) array whose row 0 is the bottom of the image."""
     rows, cols = rgb.shape[:2]

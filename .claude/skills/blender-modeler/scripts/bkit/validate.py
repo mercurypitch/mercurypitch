@@ -225,6 +225,33 @@ def touching(a, b, touch=0.0015):
     return hit
 
 
+def show_through(cover, under, *, z_min, z_max, rows=48, columns=256, tolerance=0.001):
+    """Level rays in from outside toward the Z axis, `rows` heights by `columns` angles: those
+    that meet `under` more than `tolerance` before `cover`, where they meet both. A part meant
+    to lie behind another (glass under a cup) that pokes out through it shows in the game as
+    specks of the wrong material, and no closure or crossing gate sees it: the parts are
+    separate. Rays stop at the axis, so the far side never counts. Returns (count, rays)."""
+    trees = []
+    for obj in (cover, under):
+        bm = _bm(obj)
+        trees.append(BVHTree.FromBMesh(bm))
+        bm.free()
+    count = rays = 0
+    for k in range(rows):
+        z = z_min + (z_max - z_min) * (k + 0.5) / rows
+        for j in range(columns):
+            theta = 2 * math.pi * j / columns
+            direction = Vector((-math.cos(theta), -math.sin(theta), 0.0))
+            origin = Vector((3.0 * math.cos(theta), 3.0 * math.sin(theta), z))
+            hit_cover, hit_under = (tree.ray_cast(origin, direction, 3.0) for tree in trees)
+            if hit_cover[0] is None or hit_under[0] is None:
+                continue
+            rays += 1
+            if hit_under[3] < hit_cover[3] - tolerance:
+                count += 1
+    return count, rays
+
+
 def cavity_intrusions(body, others, *, z_min, z_max, tolerance=1e-5):
     """Vertices of `others` inside the cavity of `body`, a hollow vessel lathed round Z.
 

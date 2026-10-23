@@ -5,7 +5,10 @@ python3 -I gltf_finish.py IN.glb OUT.glb --optics OPTICS.json [--allow-missing]
 The exporter writes KHR_materials_volume and KHR_materials_iridescence only from
 the glTF Material Output group node, which a scripted Principled material does
 not have, so glass loses its thickness and opal its colour play. OPTICS.json
-maps material names to the extension blocks to add:
+maps material names to the extension blocks to add; a block merges over what the
+exporter wrote (a thickness map from textures.attach_thickness stays, its factor
+set here). "thicknessTexCoord" names the UV set that map uses: Blender 5.2's
+exporter loses it (it writes `tex_ccord`), so a map on a second UV set needs it:
 
   {"glass_shell": {
      "KHR_materials_volume": {"thicknessFactor": 0.02,
@@ -82,7 +85,13 @@ def main():
         for name, block in blocks(spec).items():
             if name == 'KHR_materials_volume' and 'KHR_materials_transmission' not in ext:
                 raise SystemExit(f"{material['name']}: KHR_materials_volume needs transmission; set Transmission Weight")
-            ext[name] = block
+            block = dict(block)
+            tex_coord = block.pop('thicknessTexCoord', None)
+            ext[name] = {**ext.get(name, {}), **block}  # keeps the exporter's thickness map
+            if tex_coord is not None:  # Blender 5.2 drops it: it sets `tex_ccord` (materials.py:725)
+                if 'thicknessTexture' not in ext[name]:
+                    raise SystemExit(f"{material['name']}: thicknessTexCoord, but no thickness map was exported")
+                ext[name]['thicknessTexture']['texCoord'] = tex_coord
             used.add(name)
             applied.setdefault(material['name'], []).append(name)
     missing = sorted(set(optics) - set(applied))

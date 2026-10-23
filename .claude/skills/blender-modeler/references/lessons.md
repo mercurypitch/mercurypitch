@@ -3,6 +3,14 @@
 This skill's own mistakes, newest first. Read before a first build; add a line
 whenever a gate or a critic catches something a rule should have prevented.
 
+- **Blender's glTF exporter drops what it cannot place, silently.** A volume
+  thickness map comes only from a 'glTF Material Output' node group, and the
+  exporter keeps that group only if it has an 'Occlusion' input too; otherwise it
+  flattens the material and the map vanishes (`textures.attach_thickness` builds
+  the group with the exporter's own helper). Blender 5.2 then loses the map's UV
+  set (it writes `tex_ccord`): `optics.json`'s `thicknessTexCoord` restores it in
+  `gltf_finish.py`. Read the exported JSON for every extension you rely on.
+
 - **Format every file a round adds.** CI's changed-file check runs Prettier on
   everything the branch touches, receipts included: two of the amphora's critic
   reports, copied in as written, failed the PR gate. Run `pnpm run pr:validate`

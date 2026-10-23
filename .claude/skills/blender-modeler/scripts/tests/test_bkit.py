@@ -5,8 +5,10 @@
 Each test resets the scene. Exit code 1 on any failure.
 """
 
+import json
 import math
 import os
+import subprocess
 import sys
 import tempfile
 import traceback
@@ -377,6 +379,17 @@ def test_touching_counts_a_part_sunk_in_another_without_crossing():
     assert not validate.touching(wall, far)
 
 
+def test_show_through_finds_a_part_poking_out_of_its_cover():
+    scene.reset()
+    cup = lathe.lathe('cup', [V(0, 0), V(0.10, 0), V(0.10, 0.05), V(0, 0.05)], 32)
+    inside = lathe.lathe('inside', [V(0, 0.01), V(0.095, 0.01), V(0.095, 0.04), V(0, 0.04)], 32)
+    poking = lathe.lathe('poking', [V(0, 0.01), V(0.095, 0.01), V(0.095, 0.02), V(0.11, 0.025),
+                                    V(0.095, 0.03), V(0.095, 0.04), V(0, 0.04)], 32)
+    assert validate.show_through(cup, inside, z_min=0.005, z_max=0.045)[0] == 0
+    count, rays = validate.show_through(cup, poking, z_min=0.005, z_max=0.045)
+    assert count > 0 and rays > count, (count, rays)
+
+
 def test_validate_counts_pieces_that_float_free():
     scene.reset()
     square = [V(0, 0), V(0.1, 0), V(0.1, 0.1), V(0, 0.1)]
@@ -438,6 +451,24 @@ def test_export_keeps_names_extras_and_glass_extensions():
     assert names['asset_intact']['extras'] == {'role': 'intact'}, names
     assert names['asset_root']['extras'] == {'units': 'metres'}, names
     assert 'KHR_materials_transmission' in info['extensionsUsed'] and 'KHR_materials_ior' in info['extensionsUsed'], info
+
+
+def test_thickness_map_exports_on_a_second_uv_set():
+    scene.reset()
+    glass = materials.principled('thick_glass', '#ffcc4d', roughness=0.4, transmission=0.9)
+    textures.attach_thickness(glass, textures.thickness_map('thick', lambda f: f), 'LobeUV')
+    body = lathe.lathe('asset_intact', [V(0, 0), V(0.1, 0), V(0.1, 0.2), V(0, 0.2)], 24, material=glass)
+    body.data.uv_layers.new(name='LobeUV')
+    folder = tempfile.mkdtemp()
+    path, finished, optics = (os.path.join(folder, name) for name in ('raw.glb', 'asset.glb', 'optics.json'))
+    export.glb(path, [body])
+    assert 'thicknessTexture' in export.read_json(path)['materials'][0]['extensions']['KHR_materials_volume']
+    with open(optics, 'w') as handle:  # the exporter loses the UV set; gltf_finish puts it back
+        json.dump({'thick_glass': {'thicknessFactor': 0.15, 'thicknessTexCoord': 1}}, handle)
+    subprocess.run(['python3', '-I', os.path.join(os.path.dirname(HERE), 'gltf_finish.py'), path, finished,
+                    '--optics', optics], check=True, capture_output=True)  # plain Python, as the pipeline runs it
+    volume = export.read_json(finished)['materials'][0]['extensions']['KHR_materials_volume']
+    assert volume['thicknessTexture'].get('texCoord') == 1 and volume['thicknessFactor'] == 0.15, volume
 
 
 def main():
