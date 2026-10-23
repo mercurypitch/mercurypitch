@@ -173,6 +173,13 @@ export const STANDALONE_DOCUMENT_PATHS: ReadonlySet<string> = new Set([
   // place would be the studio where somebody came to delete their account.
   '/delete-account',
   '/delete-account.html',
+  // Find Your Pitch's hub (learn/index.html), a plain document like the one
+  // above: the shell in its place would be the studio where the season's
+  // map should be. /learn is its address in dev and preview, and a redirect
+  // to /learn/ on mercurypitch.com.
+  '/learn',
+  '/learn/',
+  '/learn/index.html',
 ])
 
 /**

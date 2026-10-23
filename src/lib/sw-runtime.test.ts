@@ -266,6 +266,14 @@ describe('the standalone documents', () => {
     }
   })
 
+  it("leaves the series' hub alone at /learn/, as its document, and at /learn", () => {
+    // learn/index.html is a build input of its own (tools/learn-hub.ts);
+    // /learn redirects to /learn/ on mercurypitch.com and is rewritten to
+    // the document in dev and preview.
+    for (const path of ['/learn', '/learn/', '/learn/index.html'])
+      expect(STANDALONE_DOCUMENT_PATHS.has(path), path).toBe(true)
+  })
+
   it('does not claim the app shell itself', () => {
     expect(STANDALONE_DOCUMENT_PATHS.has('/')).toBe(false)
     expect(STANDALONE_DOCUMENT_PATHS.has('/index.html')).toBe(false)

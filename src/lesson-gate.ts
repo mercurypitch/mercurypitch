@@ -5,7 +5,7 @@
 // Every build carries every Find Your Pitch lesson page (tools/draft-lessons.ts),
 // so whether one is live is answered here, per request, from the lesson state
 // the admin console keeps on the db-worker (src/lib/lesson-state.ts,
-// GET /api/lessons/state). src/worker.ts routes three kinds of request here:
+// GET /api/lessons/state). src/worker.ts routes four kinds of request here:
 //
 // - a lesson page, /learn/NN, /learn/NN.html or /learn/NN/ (GET or HEAD). A
 //   lesson that is not published answers with the 404 page: status 404,
@@ -22,6 +22,11 @@
 // - /sitemap.xml and /llms.txt, which list the released lessons as built.
 //   Each answers with a lesson that is not live taken out, and a published
 //   draft put in, in its file's own form.
+// - the series' hub, /learn/ or /learn/index.html (GET or HEAD), which no
+//   state holds back. A whole page is rewritten as a lesson page's markup
+//   is, each link to a lesson that is not live unlinked and the true
+//   reading of each lesson's state kept, and its series' `hasPart` names
+//   the lessons live here (tools/learn-hub.ts writes the build's default).
 //
 // Published, live and the season as a page shows it are publish.ts's rules,
 // read by the pages too, so the worker and a page never disagree. A draft
@@ -123,11 +128,14 @@ const SITE_ORIGIN = 'https://mercurypitch.com'
 
 const LESSON_PAGE = /^\/learn\/(\d{2})(?:\.html|\/)?$/
 
+/** The hub, at its address and as its document; the asset layer redirects the second. */
+const HUB_PAGE = /^\/learn\/(?:index\.html)?$/
+
 // ── Routing ──────────────────────────────────────────────────────────
 
 /**
- * The answer for a lesson page, /sitemap.xml or /llms.txt; null for any
- * other request, which src/worker.ts serves as before.
+ * The answer for a lesson page, the hub, /sitemap.xml or /llms.txt; null
+ * for any other request, which src/worker.ts serves as before.
  */
 export async function handleLessonRequest(
   request: Request,
@@ -138,6 +146,7 @@ export async function handleLessonRequest(
   const { pathname } = new URL(request.url)
   const page = LESSON_PAGE.exec(pathname)
   if (page !== null) return lessonPage(Number(page[1]), request, env, ctx)
+  if (HUB_PAGE.test(pathname)) return hubPage(request, env, ctx)
   if (pathname === '/sitemap.xml')
     return listing(request, env, ctx, editSitemap)
   if (pathname === '/llms.txt') return listing(request, env, ctx, editLlms)
@@ -486,8 +495,8 @@ export function retellJson(text: string, from: string, to: string): string {
   }
 }
 
-/** Gathers a script's text, which can arrive in chunks, and writes it back retold. */
-function retellScripts(from: string, to: string): Handlers {
+/** Gathers a script's text, which can arrive in chunks, and writes it back as `edit` has it. */
+function scriptsAs(edit: (text: string) => string): Handlers {
   let text = ''
   return {
     text(chunk) {
@@ -496,7 +505,7 @@ function retellScripts(from: string, to: string): Handlers {
         chunk.remove()
         return
       }
-      chunk.replace(retellJson(text, from, to), { html: true })
+      chunk.replace(edit(text), { html: true })
       text = ''
     },
   }
@@ -585,7 +594,10 @@ export function lessonRewriter(
       .on('head meta[content]', {
         element: (meta) => retellMeta(meta, from, to),
       })
-      .on('script[type="application/ld+json"]', retellScripts(from, to))
+      .on(
+        'script[type="application/ld+json"]',
+        scriptsAs((text) => retellJson(text, from, to)),
+      )
   }
   return followState(rewriter, state)
 }
@@ -715,4 +727,53 @@ export function editLlms(text: string, state: PageState): string {
       ]),
     () => null,
   )
+}
+
+// ── The hub ──────────────────────────────────────────────────────────
+
+/** The series' node, which the hub's structured data holds and every lesson's `isPartOf` names. */
+export const SERIES_ID = `${SITE_ORIGIN}/learn/#series`
+
+/** The hub, /learn/: never held back, whatever the state; a whole page is settled for it. */
+async function hubPage(
+  request: Request,
+  env: LessonGateEnv,
+  ctx: WaitUntil | undefined,
+): Promise<Response> {
+  const asset = await env.ASSETS.fetch(unconditional(request))
+  if (!isWholePage(asset)) return asset
+  const state = await pageStateFor(request, env, ctx)
+  return rewrite(asset, hubRewriter(state), request.method, {
+    status: 200,
+    cacheControl: REVALIDATE,
+  })
+}
+
+/**
+ * The series' structured data with its `hasPart` the lessons live for
+ * `state`, `<` escaped so it cannot close its script; any other block, or
+ * text that is not JSON, as it came.
+ */
+export function settleSeries(text: string, state: PageState): string {
+  let node: unknown
+  try {
+    node = JSON.parse(text)
+  } catch {
+    return text
+  }
+  if (typeof node !== 'object' || node === null) return text
+  if ((node as { '@id'?: unknown })['@id'] !== SERIES_ID) return text
+  const hasPart = liveLessons(state).map((L) => ({
+    '@id': `${SITE_ORIGIN}${L.page ?? ''}#lesson`,
+  }))
+  return JSON.stringify({ ...node, hasPart }, null, 2).replace(/</g, '\\u003c')
+}
+
+/** The hub for `state`: its links and readings settled as a lesson page's are, and its series' parts. */
+export function hubRewriter(state: PageState): Rewriter {
+  const rewriter = new HTMLRewriter().on(
+    'script[type="application/ld+json"]',
+    scriptsAs((text) => settleSeries(text, state)),
+  )
+  return followState(rewriter, state)
 }

@@ -17,6 +17,7 @@ import { writeEntryPages } from './tools/generate-entry-pages'
 import { writeErrorPages } from './tools/generate-error-pages'
 import { glassGameAssetsPlugin } from './tools/glass-game-assets'
 import { GLASSWORKS_LISTED_ENV, glassworksListingPlugin, isGlassworksListed, unlistedEntrySlugs, } from './tools/glassworks-listing'
+import { HUB_DOCUMENT, learnHubPlugin } from './tools/learn-hub'
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
 
@@ -84,6 +85,14 @@ const DELETE_ACCOUNT_PATH = '/delete-account'
 // mode, one still waiting on a sign-off (src/features/lessons/kit/drafts.ts)
 // included: whether a lesson is live is the site worker's to answer at run
 // time (src/lesson-gate.ts, tools/draft-lessons.ts).
+//
+// The series' hub, learn/index.html, is a plain document at /learn/: its
+// season map is filled in from season.ts and the lesson documents by
+// tools/learn-hub.ts. Production serves it at /learn/ through the site
+// worker (src/lesson-gate.ts) and html_handling, which redirects /learn and
+// /learn/index.html there; dev and preview need the rewrite below for both
+// /learn and /learn/.
+const LEARN_HUB_PATH = '/learn'
 
 // Clean path -> generated document, straight off the model in
 // src/seo/entry-pages.ts. Production does this at Cloudflare's asset layer
@@ -137,6 +146,9 @@ function standaloneEntryRewritePlugin(lessonPaths: readonly string[]) {
         }
         if (lessons.has(path)) {
           req.url = `${path}.html${search}`
+        }
+        if (path === LEARN_HUB_PATH) {
+          req.url = `${LEARN_HUB_PATH}/index.html${search}`
         }
         const entry = ENTRY_REWRITES.get(path)
         if (entry !== undefined) req.url = entry
@@ -304,6 +316,9 @@ export default defineConfig(({ command, mode }) => {
       // vertexFn/fragmentFn closures) — same setup as chaos-master.
       typegpuPlugin({}),
       standaloneEntryRewritePlugin(lessonPaths(__dirname)),
+      // The hub's season map, written in before the readings in it are
+      // marked just below.
+      learnHubPlugin(__dirname, liveByDefault(__dirname, draftsShown)),
       // A lesson page's words about which lessons are ready: both readings
       // stay for the worker and the page's script to settle, and the one
       // false by this build's default is marked hidden until they do.
@@ -472,6 +487,8 @@ export default defineConfig(({ command, mode }) => {
           // lessons still waiting on a sign-off included. Whether one is
           // live is the site worker's to answer (src/lesson-gate.ts).
           ...lessonInputs(__dirname),
+          // The series' hub, learn/index.html at /learn/: always served.
+          learnHub: resolve(__dirname, HUB_DOCUMENT),
         },
         output: {
           manualChunks(id) {
