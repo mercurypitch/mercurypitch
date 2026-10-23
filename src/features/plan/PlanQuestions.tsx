@@ -41,7 +41,6 @@
 
 import type { Component, JSX } from 'solid-js'
 import { createMemo, createSignal, createUniqueId, For, Match, onCleanup, onMount, Show, Switch, untrack, } from 'solid-js'
-import { Dynamic } from 'solid-js/web'
 import { CheckSmall, ChevronLeft, Ear, Guitar, Mic, PianoKeys, } from '@/components/icons'
 import type { MercState } from '@/lib/merc/constants'
 import type { PlanTexts } from './plan-record'
@@ -555,29 +554,35 @@ export function PlanQuestions(props: PlanQuestionsProps): JSX.Element {
       >
         <div class={styles.cards}>
           <For each={INSTRUMENTS}>
-            {(i) => (
-              <button
-                type="button"
-                class={styles.card}
-                aria-pressed={choices().q1 === i.id}
-                data-option={i.id}
-                onClick={() => pickFirst(i)}
-              >
-                <img
-                  class={styles.cardArt}
-                  src={i.art}
-                  alt=""
-                  draggable={false}
-                />
-                <span class={styles.cardGlyph} aria-hidden="true">
-                  <Dynamic component={GLYPH[i.id]} />
-                </span>
-                <span class={styles.cardCheck} aria-hidden="true">
-                  <CheckSmall size={15} />
-                </span>
-                <span class={styles.cardLabel}>{i.label}</span>
-              </button>
-            )}
+            {(i) => {
+              // A card's instrument never changes, so its icon is a plain
+              // component. Dynamic would grow the shared Solid chunk that
+              // every room loads on first paint.
+              const Glyph = GLYPH[i.id]
+              return (
+                <button
+                  type="button"
+                  class={styles.card}
+                  aria-pressed={choices().q1 === i.id}
+                  data-option={i.id}
+                  onClick={() => pickFirst(i)}
+                >
+                  <img
+                    class={styles.cardArt}
+                    src={i.art}
+                    alt=""
+                    draggable={false}
+                  />
+                  <span class={styles.cardGlyph} aria-hidden="true">
+                    <Glyph />
+                  </span>
+                  <span class={styles.cardCheck} aria-hidden="true">
+                    <CheckSmall size={15} />
+                  </span>
+                  <span class={styles.cardLabel}>{i.label}</span>
+                </button>
+              )
+            }}
           </For>
         </div>
         <button

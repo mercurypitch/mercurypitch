@@ -14,8 +14,9 @@
 // The lines the brief spells out are written out: they are what the screens
 // must say. Everything else is read from questions.ts.
 
-import { cleanup, screen, within } from '@solidjs/testing-library'
+import { cleanup, render, screen, within } from '@solidjs/testing-library'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { Ear, Guitar, Mic, PianoKeys } from '@/components/icons'
 import { PICK_ADVANCE_MS } from './PlanQuestions'
 import { ANOTHER_APP, APP_FIELD, button, isLocked, isOn, isPressed, later, mercSays, next, nextButton, NOTHING_YET, open, OTHER_FIELD, q2Label, q3Label, q3Line, q4Label, quiet, SKIP_THIS_ONE, SKIP_TO_PLAN, SOMETHING_ELSE, tap, toFourthQuestion, toThirdQuestion, } from './PlanQuestions.fixture'
 import { EVERYTHING, INSTRUMENTS, MERC_INTRO } from './questions'
@@ -60,6 +61,19 @@ describe('the four questions', () => {
 })
 
 describe('the first question', () => {
+  it("draws each instrument's own icon on its card", () => {
+    open()
+    const icons = { singing: Mic, guitar: Guitar, piano: PianoKeys, ear: Ear }
+
+    for (const [id, Icon] of Object.entries(icons)) {
+      const alone = render(() => <Icon />).container.querySelector('svg')
+      const card = document.querySelector(`[data-option="${id}"]`)
+      expect(
+        card?.querySelector('span[aria-hidden="true"] svg')?.outerHTML,
+      ).toBe(alone?.outerHTML)
+    }
+  })
+
   it('moves on a second after a single pick', () => {
     open()
     expect(PICK_ADVANCE_MS).toBe(1000)
