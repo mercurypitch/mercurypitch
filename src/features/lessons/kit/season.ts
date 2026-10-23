@@ -159,7 +159,7 @@ const ENTRIES: readonly Lesson[] = [
     title: 'What is a note?',
     short: 'What is a note?',
     topics: ['T01', 'T02'],
-    minutes: 10,
+    minutes: 8,
     len: '5:14',
     page: '/learn/01',
     film: filmState(1),
@@ -182,7 +182,7 @@ const ENTRIES: readonly Lesson[] = [
     title: 'Twelve notes',
     short: 'Twelve notes',
     topics: ['T03', 'T04'],
-    minutes: 10,
+    minutes: 13,
     len: '7:11',
     page: '/learn/02',
     film: filmState(2),
@@ -228,7 +228,7 @@ const ENTRIES: readonly Lesson[] = [
     short: 'Major scale',
     topics: ['T09', 'T10'],
     // A draft until the owner's go-ahead (drafts.ts); no film yet
-    minutes: 10,
+    minutes: 14,
     page: '/learn/04',
     hook: 'Why does do-re-mi sound finished when it lands on do, and restless when it stops on ti?',
     pr: {

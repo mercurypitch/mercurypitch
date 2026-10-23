@@ -73,6 +73,8 @@ const SERIES = {
 
 // A lesson's run time as its description writes it, "a ten-minute lesson".
 const MINUTE_WORDS: Partial<Record<number, string>> = {
+  8: 'eight',
+  9: 'nine',
   10: 'ten',
   11: 'eleven',
   12: 'twelve',

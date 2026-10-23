@@ -252,7 +252,7 @@ describe('a draft lesson (drafts.ts)', () => {
       ])
       expect([L4.page, L4.minutes, L4.film], drafts).toEqual([
         '/learn/04',
-        10,
+        14,
         undefined,
       ])
       expect([L5.page, L5.minutes, L5.film], drafts).toEqual([

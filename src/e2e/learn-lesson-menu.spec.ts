@@ -419,7 +419,7 @@ test("a ready lesson's row loads its page @smoke", async ({ page }) => {
   await page.goto('/learn/01')
   await trigger(page).click()
   const row = menu(page).getByRole('link', {
-    name: 'Lesson 4, The major scale and home, ready, 10 minutes',
+    name: 'Lesson 4, The major scale and home, ready, 14 minutes',
   })
   await expect(row).toHaveAttribute('href', '/learn/04')
 

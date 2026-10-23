@@ -38,7 +38,7 @@ describe('menuModel', () => {
         return [n, r?.state, r?.meta, r?.href]
       }),
     ).toEqual([
-      [1, 'done', 'Done · 10 min', '/learn/01'],
+      [1, 'done', 'Done · 8 min', '/learn/01'],
       [2, 'here', 'Step 3 of 6', '#top'],
       [3, 'next', 'Up next', '/learn/03'],
       [4, 'progress', 'Step 3 of 5', '/learn/04#step-3'],
@@ -53,7 +53,7 @@ describe('menuModel', () => {
 
     // Assert
     expect([1, 2, 3, 9].map((n) => row(m, n)?.label)).toEqual([
-      'Lesson 1, What is a note?, done, 10 minutes',
+      'Lesson 1, What is a note?, done, 8 minutes',
       'Lesson 2, Twelve notes, step 3 of 6',
       'Lesson 3, Match a note, up next',
       'Lesson 9, Landing a leap, coming later',

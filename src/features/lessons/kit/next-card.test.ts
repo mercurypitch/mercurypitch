@@ -39,7 +39,7 @@ describe('nextCard', () => {
       title: 'Twelve notes',
       tease: 'Seven letters, but twelve notes.',
       hook: 'Musicians only use seven letters, so where do the other five notes come from?',
-      state: 'Ready · 10 min',
+      state: 'Ready · 13 min',
       label: 'Start lesson',
       kind: 'start',
       href: '/learn/02',
@@ -65,7 +65,7 @@ describe('nextCard', () => {
 
     // Assert
     expect(way(c)).toEqual([
-      'Done · 10 min',
+      'Done · 13 min',
       'Read again',
       'again',
       '/learn/02',
@@ -288,7 +288,7 @@ describe('createNextCard', () => {
         e.textContent,
       ]),
     ).toEqual([
-      ['eyebrow', 'Next lesson 02 · Twelve notes Ready · 10 min'],
+      ['eyebrow', 'Next lesson 02 · Twelve notes Ready · 13 min'],
       ['next-tease', LESSONS[2].tease],
       ['q2', LESSONS[2].hook],
       ['chip', 'Start lesson'],
@@ -312,7 +312,7 @@ describe('createNextCard', () => {
       card?.querySelector('.chip')?.textContent,
       card?.classList.contains('is-again'),
       card?.getAttribute('href'),
-    ]).toEqual(['Done · 10 min', 'Read again', true, '/learn/02'])
+    ]).toEqual(['Done · 13 min', 'Read again', true, '/learn/02'])
   })
 
   it("links a lesson coming later to the map, as the explorer's lesson link", () => {
