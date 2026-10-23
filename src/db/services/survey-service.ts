@@ -3,15 +3,20 @@
 // ============================================================
 //
 // One table, `userSurveyResponses`, holds two kinds of row: the feedback
-// survey's answers (`{ background, usage, featureRequest }`) and, once there
-// is a real account, the plan's (`kind: 'plan'`, see PlanResponseV1).
+// survey's answers (`{ kind: 'gh97-v2', gotInTheWay }` today, and
+// `{ background, usage, featureRequest }` on the rows of the older survey)
+// and, once there is a real account, the plan's (`kind: 'plan'`, see
+// PlanResponseV1).
 //
 // Four things are easy to break:
 //
 // - hasSubmittedSurvey counts the survey and not the plan. A plan row that
 //   counted would answer "yes" for a singer who never saw the survey and
 //   silence it for good, and it reads every row, not the first, because a
-//   plan row can sit in front of the survey.
+//   plan row can sit in front of the survey. The survey's own row carries a
+//   `kind` now, so the plan's is told by `kind === 'plan'` and not by having
+//   one: a reader keyed on "has a kind" would stop counting the survey's row
+//   and ask a singer who has answered it again.
 // - A row's answers come back as an object from the account, because the
 //   worker parses the JSON columns it knows (fromSql in
 //   workers/db-worker/src/tables.ts), and as the text it was given from the
@@ -32,7 +37,15 @@ import type { UserSurveyResponse } from '@/db/entities'
 import { getUserId } from '@/db/seed'
 import { hasUpgradedAccount } from '@/db/services/auth-service'
 
+/**
+ * What the survey saves. The modal sends `kind: 'gh97-v2'` and `gotInTheWay`,
+ * the one question it asks now. The three fields of the older survey stay, so
+ * the rows it wrote still read.
+ */
 export interface SurveyAnswers {
+  kind?: 'gh97-v2'
+  /** What the singer was trying to do the last time the app got in their way. */
+  gotInTheWay?: string
   background?: string[]
   usage?: string[]
   featureRequest?: string

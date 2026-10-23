@@ -78,15 +78,26 @@ describe('surveyHasContent', () => {
     expect(surveyHasContent({ featureRequest: 'offline mode' })).toBe(true)
   })
 
+  // The one question the survey asks now. The three above are still counted
+  // so that an answer in the older shape is not turned away.
+  it('counts the new answer as content', () => {
+    expect(surveyHasContent({ gotInTheWay: 'load my own song' })).toBe(true)
+  })
+
   // An empty response is indistinguishable from a mis-click.
   it('rejects an empty response', () => {
     expect(surveyHasContent({})).toBe(false)
     expect(
       surveyHasContent({ background: [], usage: [], featureRequest: '' }),
     ).toBe(false)
+    expect(surveyHasContent({ gotInTheWay: '' })).toBe(false)
   })
 
   it('rejects whitespace-only text', () => {
     expect(surveyHasContent({ featureRequest: '   \n  ' })).toBe(false)
+  })
+
+  it('rejects a whitespace-only new answer', () => {
+    expect(surveyHasContent({ gotInTheWay: '   \n  ' })).toBe(false)
   })
 })

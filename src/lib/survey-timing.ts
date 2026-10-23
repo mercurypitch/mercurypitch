@@ -76,13 +76,20 @@ export function skipArmSecondsLeft(remainingMs: number): number {
   return Math.max(0, Math.ceil(remainingMs / 1000))
 }
 
-/** Does this response carry anything worth storing? */
+/**
+ * Does this response carry anything worth storing?
+ *
+ * The survey asks one question now, `gotInTheWay`. The three it used to ask
+ * still count, so an answer in their shape is not turned away.
+ */
 export function surveyHasContent(a: {
+  gotInTheWay?: string
   background?: string[]
   usage?: string[]
   featureRequest?: string
 }): boolean {
   return (
+    (a.gotInTheWay ?? '').trim().length > 0 ||
     (a.background?.length ?? 0) > 0 ||
     (a.usage?.length ?? 0) > 0 ||
     (a.featureRequest ?? '').trim().length > 0

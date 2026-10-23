@@ -23,7 +23,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { DexieAdapter } from '@/db/adapters/dexie-adapter'
 import type { UserSurveyResponse } from '@/db/entities'
-import type { PlanResponseV1 } from '@/db/services/survey-service'
+import type { PlanResponseV1, SurveyAnswers, } from '@/db/services/survey-service'
 
 const mocks = vi.hoisted(() => ({
   getDb: vi.fn(),
@@ -57,6 +57,12 @@ const PLAN: PlanResponseV1 = {
 }
 
 const SURVEY = { background: ['singer'], usage: ['practice'] }
+
+/** What the survey's modal saves today. */
+const ONE_QUESTION: SurveyAnswers = {
+  kind: 'gh97-v2',
+  gotInTheWay: 'load my own song',
+}
 
 let db: DexieAdapter
 
@@ -106,6 +112,18 @@ describe('has this singer filled in the survey', () => {
     ['text', JSON.stringify(SURVEY)],
     ['an object', SURVEY],
   ])('counts a survey row, read as %s', async (_, survey) => {
+    await put('a', survey)
+
+    expect(await hasSubmittedSurvey()).toBe(true)
+  })
+
+  // The one-question survey's row carries a `kind` too. A reader that told the
+  // plan's row by "has a kind" would stop counting this one and ask a singer
+  // who has answered again, so this pins that only `kind: 'plan'` is the plan's.
+  it.each([
+    ['text', JSON.stringify(ONE_QUESTION)],
+    ['an object', ONE_QUESTION],
+  ])('counts the one-question survey row, read as %s', async (_, survey) => {
     await put('a', survey)
 
     expect(await hasSubmittedSurvey()).toBe(true)

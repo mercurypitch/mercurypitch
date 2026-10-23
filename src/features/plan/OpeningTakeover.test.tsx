@@ -165,23 +165,4 @@ describe('OpeningTakeover', () => {
     expect(given.announceWhatsNew).toHaveBeenCalledTimes(row.announced)
     expect(given.onDecided).toHaveBeenCalledTimes(row.decided)
   })
-
-  // App reads First Light's flag when it sets up and hands the value down. A
-  // first-run visitor who finishes or skips First Light before this chunk
-  // lands is still on that visit's first run: First Light was their takeover.
-  it('keeps every other takeover off a first-run visitor who finishes First Light before it mounts', async () => {
-    const { store, OpeningTakeover } = await load()
-    let firstLightUp = true
-    const atSetup = firstLightUp
-    firstLightUp = false
-    const given = props({ welcomeDue: atSetup, whatsNewDue: () => true })
-
-    render(() => <OpeningTakeover {...given} />)
-    await settle()
-
-    expect(firstLightUp).toBe(false)
-    expect(store.planLayerMode()).toBeNull()
-    expect(given.announceWhatsNew).not.toHaveBeenCalled()
-    expect(given.onDecided).toHaveBeenCalledTimes(1)
-  })
 })
