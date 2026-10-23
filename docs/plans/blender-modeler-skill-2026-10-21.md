@@ -4,7 +4,9 @@
 skill is built and two vessels are rebuilt with it (`art/glass-adventure/procedural/`);
 the measured comparison with their Meshy files is in
 [`meshy-vs-procedural.md`](../../art/glass-adventure/proofs/modeling-audit-2026-10-21/meshy-vs-procedural.md).
-Nothing in the game changes until the owner swaps a file in.
+Nothing in the game changes until the owner swaps a file in. Both vessels
+stopped on their glass; the next step is
+[`glass-look-system-2026-10-23.md`](glass-look-system-2026-10-23.md).
 
 Evidence for every claim below is in
 [`art/glass-adventure/proofs/modeling-audit-2026-10-21/`](../../art/glass-adventure/proofs/modeling-audit-2026-10-21/):
