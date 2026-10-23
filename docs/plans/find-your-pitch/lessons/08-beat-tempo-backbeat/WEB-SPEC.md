@@ -97,7 +97,7 @@ and wordmark, and the motion rules. On this page:
   the claps on 2 and 4 turn gold.
 - The contrast case is dashed ink-2 `#a8b3bf` (MASTER-PLAN § 5): after the cold-open reveal, a
   faint dashed ghost of the claps on 1 and 3 stays beside the claps on 2 and 4 for comparison.
-- Blue `#58a6ff` lights the syllables blue Merc sings and orange `#ff7448` those orange Merc
+- Blue `#58a6ff` lights the syllables Merc sings and orange `#ff7448` those Tavi
   sings. The drums, the cells and the metronome are chrome `#c3ccd6`; the beat that is sounding is
   ink `#e6edf3`, lit.
 - In the steps, beat 1's click is the high click, and its number is drawn larger: beat 1 is marked
@@ -107,8 +107,8 @@ and wordmark, and the motion rules. On this page:
   no singer violet and no mint.
 
 Three things move: the Merc idle loops, and the metronome's arm and the lit beat while something
-the viewer started is playing; the Mercs' hops on the cold open's claps belong to the first.
-Nothing moves on its own except the Mercs. Under `prefers-reduced-motion` the Mercs stop and
+the viewer started is playing; Merc and Tavi's hops on the cold open's claps belong to the first.
+Nothing moves on its own except Merc and Tavi. Under `prefers-reduced-motion` Merc and Tavi stop and
 nothing hops; the arm holds still, upright, and the beat lamp lights in its place on each beat; the
 playhead is a lit cell, which changes state and never travels; and every transition this page adds
 (the morph, a pattern change, the cold-open slide) lands in its end state with no travel. What the
@@ -141,7 +141,7 @@ section's heading, and the line above it, are in LESSON.md ("Section headings").
    a plain chip as Lesson 3's is, `learn/03.html:362-365`, FACTS 2; Sound on) and the promise, from
    LESSON.md. The title is the season's hook (`kit/season.ts:312`, FACTS 1); it says the song feels
    different and never says where the claps land, so it answers nothing the predict asks.
-3. **The stage**: orange's and blue's bubbles over the two Mercs on the floor line, with the beat
+3. **The stage**: Tavi's and Merc's bubbles over Merc and Tavi on the floor line, with the beat
    machine in its compact state between them (Toys 1), and under the machine the two plays: "Play
    with claps on 1 and 3" (`twinkle-13`, FACTS 72), which works from the start, and "Play with
    claps on 2 and 4" (`twinkle-24`), locked until a choice (Toys 2).
@@ -313,7 +313,7 @@ its patterns with it.
   of the first row holds the small metronome. Its cells are drawings, never targets: 35 to 41 px
   wide on phones (FACTS 80). The drawing is `aria-hidden`, and a polite live region speaks for it:
   "Claps on 1 and 3" or "Claps moved to 2 and 4" as each version starts. Its cells light as Merc
-  sings them, blue or orange.
+  sings them, Merc or Tavi.
 - **Layout and targets** (FACTS 80). The figure is 250 px tall at every width, the kit's height on
   the narrowest phones (`lesson-stage.css:1083-1099`), set by this page's stylesheet, because the
   tallest drawing, the grid with its number strip and bar labels, is 182 px; the morph keeps that
@@ -410,11 +410,11 @@ pan-y` (`lesson-stage.css:776`), so a swipe still scrolls; every action is a but
   PR, "the sound"); after one, `hints.chosen` reads "Locked in. Play with claps on 2 and 4.", in
   Lesson 2's form; with sound off, `hints.silent` is LESSON.md's line. The play slides the claps one
   beat along on the compact grid (0.4 s; at once under reduced motion), then Merc sings, the
-  syllables on beat 1 loudest and those on 2 and 4 softest (FACTS 30c, 72), the Mercs hopping on
-  each clap (Mercs). The reveal's "You said" line is the kit's `guess`: "You said: strong beats" or
-  "You said: weak beats", never "right" or "wrong"; as it shows, the numbers 2 and 4 glow gold once
-  and beat 1's number grows (Look), and orange celebrates (Mercs). After it, `hints.again` reads
-  "Play either version again."
+  syllables on beat 1 loudest and those on 2 and 4 softest (FACTS 30c, 72), Merc and Tavi hopping on
+  each clap (Merc and Tavi). The reveal's "You said" line is the kit's `guess`: "You said: strong
+  beats" or "You said: weak beats", never "right" or "wrong"; as it shows, the numbers 2 and 4 glow
+  gold once and beat 1's number grows (Look), and Tavi celebrates (Merc and Tavi). After it,
+  `hints.again` reads "Play either version again."
 - **Step 5.** Both plays, "Play the march at 90" and "Play the rock beat", unlock after the choice,
   and the reveal waits until both have been heard to their ends (`revealAfter: 'all'`), since it
   compares them; after the first, the hint reads "Now play the other one." (`hints.next`); after the
@@ -576,7 +576,7 @@ the page is hidden, whatever is playing stops (`lesson-03/sing.ts:366-382`).
 **Part 2: the sung line.** The guide is the compact beat machine (Toys 1) cut to the first line,
 two bars of eight beat cells with the syllables "Twin kle twin kle lit tle star", "star" across
 the last two, and the claps on 2 and 4 in gold, with the still of the Merc singing beside it,
-blue for the lower voice and orange for the higher, never a microphone icon. Every state has its
+Merc for the lower voice and Tavi for the higher, never a microphone icon. Every state has its
 status line, LESSON.md's (Sing it, Status lines): the comfort check's "Before you sing: how is
 your voice today?"; the voice choice's "Choose the voice you'll sing with.", or "Choose a voice: it
 picks the Merc who sings." after "Just listen today"; "Just listening today: press Play Merc's line
@@ -591,7 +591,7 @@ States:
    line, its list naming all six of REQ-GVC-020's conditions, and its two buttons, through
    `mountComfort` (`kit/comfort.ts:146-154`; FACTS 60). The tap take before it needs no check: it
    uses no voice (FACTS 44).
-2. **Voice choice**, after either comfort answer: Lesson 3's two buttons with the Mercs' stills
+2. **Voice choice**, after either comfort answer: Lesson 3's two buttons with Merc and Tavi's stills
    (`aria-pressed`, at least 44 px), read from and stored in `fyp-voice` through `VoiceChoice` and
    `bindVoiceButtons` (`kit/voice-choice.ts:30-47`, `:60-77`; FACTS 62). Its line has the two forms
    Lessons 6 and 7 write: with none stored, "Choose a voice to sing with. If you chose one in an
@@ -761,8 +761,8 @@ sounding first. A sound so stopped, or stopped by leaving its step, never counts
   `getOutputTimestamp()` (FACTS 38), read on every frame, using the latest reading whose
   `performanceTime` is above 0; with none, it pairs `currentTime` with `performance.now()` at the
   start of the run, as the Ear Lab's Pulse does (`src/features/ear-lab/PulseDrill.tsx:137-138`).
-  Every lit beat, the arm's angle, the Mercs' hops and the take's beat times use that map, so the
-  picture follows the sound where the browser reports its output delay (FACTS 39).
+  Every lit beat, the arm's angle, Merc and Tavi's hops and the take's beat times use that map, so
+  the picture follows the sound where the browser reports its output delay (FACTS 39).
 - **Levels** (FACTS 72 to 76): the click 0.09 high and 0.06 plain; Kick 0.8 (March's accent
   1.0), Clap 0.7, Hi-hat 0.5; the viewer's claps in the take 0.7; under the sung line every drum
   at half its gain; Merc's "ooh" at the kit's level, 0.2, and in the cold open 0.2 on beat 1, 0.17
@@ -780,21 +780,21 @@ sounding first. A sound so stopped, or stopped by leaving its step, never counts
   booked ahead and released by the audio clock (`kit/sound-ahead.ts:68-100`), where a voice given
   a length is stopped by a timer (`kit/sound.ts:262-268`, `:266`).
 
-## Mercs
+## Merc and Tavi
 
 Lesson 1's setup through the kit (`kit/merc-duo.ts`, `kit/merc-warm.ts`): the app's renderer loaded
 after first paint, one WebGL context per Merc, medium quality on phones, turned towards each other,
 paused off screen, and the still images when WebGL fails or would run on the CPU.
 
 - They live in the hero, beside the cold open's compact machine, and are on screen while it plays.
-  Blue sings the cold open's two versions, a `mercSing` per syllable (`kit/merc-duo.ts:164`), and
-  orange listens (`mercListen`, `:206`). Both hop on every clap, a hop in place that lands on the
+  Merc sings the cold open's two versions, a `mercSing` per syllable (`kit/merc-duo.ts:164`), and
+  Tavi listens (`mercListen`, `:206`). Both hop on every clap, a hop in place that lands on the
   clap, started from the beat clock 0.53 s before it: a new kit cue (FACTS 30d; What the kit and
-  the app still need). Orange celebrates once as the reveal shows, the puzzled guesser who then
+  the app still need). Tavi celebrates once as the reveal shows, the puzzled guesser who then
   gets it (`mercCelebrate('orange', 1600)`, `:216`, as Lesson 2's cold open does; playbook rule
   15), with no sparkles: the page mounts the pair with `{ sparkles: 'none' }` (`MercDuoOptions`,
   `:120-126`). The page asks for no other state; the Merc who is not singing idles.
-- In the steps and in Sing it the Mercs appear as stills: the guide shows the still of the Merc
+- In the steps and in Sing it Merc and Tavi appear as stills: the guide shows the still of the Merc
   singing (Toys 6).
 - Under reduced motion or Pause animations each Merc holds a still frame, skips the reactions and
   does not hop.
@@ -899,14 +899,14 @@ was built on.
    stop that clears a miss's queued replay as well as the sound, which #1149's fix pass adds.
 8. `kit/merc-duo.ts`: a one-shot hop in place, `mercHop(which, atAudioTime)`, that lands at a time
    on the audio clock and plays over any state, singing included, and does nothing under reduced
-   motion or Pause animations (Mercs; FACTS 30d). The renderer's `hop` state loops round four stops
-   (`src/lib/merc/sim-choreo.ts:450-475`), so the cue is new; its timing is that hop's crouch and
-   flight (`:127-128`). If a hop over singing cannot be had, orange alone hops, and LESSON.md's
-   stage directions change to say so. Built as `mercHop(which)`, which lands `HOP_MS`, 530 ms, after
-   it is called (`kit/merc-hop.ts:14-40`, a module of its own that only this page imports, so no
-   other lesson's first paint carries it): the beat clock calls it that long before each clap,
-   on the page's clock as the audio clock maps to it (`early`, Audio), so the cue needs no audio
-   time of its own. It moves the whole figure, live or still, so both Mercs hop while blue sings.
+   motion or Pause animations (Merc and Tavi; FACTS 30d). The renderer's `hop` state loops round
+   four stops (`src/lib/merc/sim-choreo.ts:450-475`), so the cue is new; its timing is that hop's
+   crouch and flight (`:127-128`). If a hop over singing cannot be had, Tavi alone hops, and
+   LESSON.md's stage directions change to say so. Built as `mercHop(which)`, which lands `HOP_MS`,
+   530 ms, after it is called (`kit/merc-hop.ts:14-40`, a module of its own that only this page
+   imports, so no other lesson's first paint carries it): the beat clock calls it that long before
+   each clap, on the page's clock as the audio clock maps to it (`early`, Audio), so the cue needs
+   no audio time of its own. It moves the whole figure, live or still, so both hop while Merc sings.
 9. The next card's tease and Lesson 9's hook need nothing: the curiosity plan's kit work is on main
    (`8cba5c3d9`, `e364eeaa6`). The card draws Lesson 9's tease, "One note, two ways up: step by
    step, or one leap." (`kit/lesson-copy.ts:114`), above its new hook, "How do you land a note you
@@ -979,13 +979,13 @@ was built on.
       which: the one that deletes the page's `drafts.ts` line, or one straight after the console
       publishes the page.
 15. `public/learn/lesson-08-og.jpg`: the share card, 1200 x 630, a still of the hero before its
-    reveal: the title over the metronome and the compact grid, between the two Mercs as the hero
+    reveal: the title over the metronome and the compact grid, between Merc and Tavi as the hero
     and Lessons 6 and 7's cards stand them, the claps on 1 and 3 as plain dots and every beat number
     one size, so the card, which people see before the page, answers nothing the cold open asks
-    (Look). Its alt text, in the form of Lesson 2's (`learn/02.html:40-43`) and naming the Mercs as
-    Lesson 6's does (`learn/06.html:40-43`): "The title card: Find Your Pitch, Lesson 08, Beat,
+    (Look). Its alt text, in the form of Lesson 2's (`learn/02.html:40-43`) and naming Merc and Tavi
+    as Lesson 6's does (`learn/06.html:40-43`): "The title card: Find Your Pitch, Lesson 08, Beat,
     tempo and the backbeat, above a metronome and a grid of four bars of four beats, with claps as
-    dots under beats 1 and 3, between blue Merc and orange Merc."
+    dots under beats 1 and 3, between Merc and Tavi."
 16. Indexing, requested when the console publishes the page: from then on the site worker lists it
     in `sitemap.xml` and `llms.txt` as it serves them (`src/lesson-gate.ts:22-24`). While it is a
     draft, the static files keep it out: in neither `public/sitemap.xml` nor `public/llms.txt`,
@@ -1191,7 +1191,7 @@ on the map']`, while Lesson 9 has no page; a test as the spec's Lesson 1 test is
     The page aims for CURIOSITY-MOMENTS § 3.1's mark: at 390 x 844 the title and the first Play on
     the first screen, at 1024 x 640 the stage and the choices too. The app-check sweep screenshots
     it until the report is enforced.
-14. With reduced motion emulated, the arm does not move, the Mercs do not hop, the morph and the
+14. With reduced motion emulated, the arm does not move, Merc and Tavi do not hop, the morph and the
     pattern changes land in their end states, and nothing moves on its own.
 15. A visitor with the studio installed still gets the lesson, not the shell (the service worker's
     document list), as Lesson 3's spec checks.
@@ -1224,7 +1224,7 @@ Page QA before publishing (PRODUCTION-PIPELINE § 5) adds, for this page:
   and 375 px; at 1024 x 640 and 1133 x 631 every step's controls are on screen with the stage
   stuck, as the kit's stage-fit test checks, against a local or dev build, never production.
 - On a real phone, by ear and by eye (`docs/agent/DEVICE-DEBUGGING.md`): the arm reaches each side
-  as its click sounds; the Mercs land on the cold open's claps; the take with the phone's own
+  as its click sounds; Merc and Tavi land on the cold open's claps; the take with the phone's own
   speaker reads "All 8 landed on 2 and 4: a backbeat." for steady taps on 2 and 4; and the same
   with a wireless headset, noting the line it gives, for the Edge cases.
 - The network panel and the browser's microphone indicator stay quiet through Sing it: no request,

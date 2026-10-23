@@ -89,17 +89,17 @@ section's heading, and the line above it, are in LESSON.md ("Section headings").
    four chips ("16 minutes", FACTS 5; "After Lesson 7: Slides, sirens and your range", a link to
    `/learn/07`, wholly the link, as Lesson 2's `a.chip.chip-link` is, `learn/02.html:347-352`, so
    that it stays as a plain chip where Lesson 7 is not live; Sound on; Microphone optional); the
-   promise; and the sound gate from LESSON.md. Beside it, the stage: the bubbles, orange's "My voice
-   just flipped. Did I do it wrong?" and blue's "Let's slide again and listen.", and the two Mercs
+   promise; and the sound gate from LESSON.md. Beside it, the stage: the bubbles, Tavi's "My voice
+   just flipped. Did I do it wrong?" and Merc's "Let's slide again and listen.", and Merc and Tavi
    on the floor line either side of the range chart in its compact state, whose still before any
-   play is orange Merc's siren drawn whole, thick, then thin across the seam labelled "Merc's
+   play is Tavi's siren drawn whole, thick, then thin across the seam labelled "Merc's
    model": the signature. Under the stage, the cold open's predict card (Toys 2). On a phone
-   (390 x 844) the title and the opening's first control, Play orange Merc's siren, and the two
+   (390 x 844) the title and the opening's first control, Play Tavi's siren, and the two
    choices belong on the first screen, and on a tablet in landscape (1024 x 640) the stage and the
    choices too (CURIOSITY-MOMENTS § 3.1, "Above the fold",
    `docs/plans/find-your-pitch/CURIOSITY-MOMENTS.md:288-290`). Of the plan's levers, the recall's
-   place is already used, since it follows the predict; the others are the Mercs' size (`--merc`,
-   `kit/lesson-stage.css:193`) and the hook's length, and this hook is a short one.
+   place is already used, since it follows the predict; the others are Merc and Tavi's size
+   (`--merc`, `kit/lesson-stage.css:193`) and the hook's length, and this hook is a short one.
    `src/e2e/learn-cold-open-fold.spec.ts` holds the title on the first screen at its seven sizes and
    reports where the first control and the choices sit (End to end 5).
 3. **Recall from Lesson 7**: Lesson 7's questions 1 and 4, for everyone (Toys 5).
@@ -194,28 +194,28 @@ Lesson 7's column and its lit middle half.
   never under 2 px (centred on the jump where the floor applies). The key, "Thick line: lower gear.
   Thin line: upper gear.", sits under the plot in every state that draws the gears, and the caption
   "Merc's model" at its top right. The chart's spoken summary (`describe`) names what it shows in
-  words, never the sign: "Merc's model: orange Merc's siren, from D 4 up to B 4 and back, jumping
+  words, never the sign: "Merc's model: Tavi's siren, from D 4 up to B 4 and back, jumping
   across a seam between F 4 and G 4".
 - **Windows.** Every state but live: C3 to E5, 28 semitones, for either voice, so a change of voice
   moves the lines and never the axis; it holds every sound the steps and the cold open play, from
   E3 to B4, with 4 semitones to spare below and 5 above (FACTS 73 to 80). Live: Lesson 7's windows,
   E2 to C5 for the lower voice and F3 to C6 for the higher, which hold every preset of each group
   (FACTS 83).
-- **The voice.** `fyp-voice` if stored, else the lower: blue Merc sings the lower voice's lines and
-  orange Merc the higher's (FACTS 76 to 81), and the chart follows a change made in Sing it
+- **The voice.** `fyp-voice` if stored, else the lower: Merc sings the lower voice's lines and
+  Tavi the higher's (FACTS 76 to 81), and the chart follows a change made in Sing it
   (`VoiceChoice.subscribe`, `kit/voice-choice.ts:30-47`). The steps carry no voice switch; free play
   does (below). The cold open plays both voices, whatever is stored.
 - **Compact** (hero and cold open): the steps' window, with no row names and no controls on the
-  chart. Its still before any play is orange Merc's siren drawn whole, D4 up to B4 and back, thick,
+  chart. Its still before any play is Tavi's siren drawn whole, D4 up to B4 and back, thick,
   then thin above the seam from F4 to G4, then thick again below it, the seam labelled "Merc's
-  model". Play orange Merc's siren (Toys 2) clears the line and draws it again as it sounds (FACTS
-  75). After the choice, Play blue Merc's siren draws blue's siren under it, E3 up to C♯4 and back,
+  model". Play Tavi's siren (Toys 2) clears the line and draws it again as it sounds (FACTS
+  75). After the choice, Play Merc's siren draws Merc's siren under it, E3 up to C♯4 and back,
   with its own seam from G3 to A3, also labelled "Merc's model"; both lines and both seams then
   stay. At the reveal each seam's label changes to "the switch", and the key appears under the plot.
   The drawing is `aria-hidden`, and a polite live region speaks for it: before any play, "Merc's
-  model: a siren's line that jumps across a grey seam"; after orange's play, "Orange Merc's siren,
+  model: a siren's line that jumps across a grey seam"; after Tavi's play, "Tavi's siren,
   from D 4 up to B 4 and back. The line jumps across the seam between F 4 and G 4 on the way up, and
-  back on the way down."; after blue's, "Blue Merc's siren, from E 3 up to C sharp 4 and back,
+  back on the way down."; after Merc's, "Merc's siren, from E 3 up to C sharp 4 and back,
   jumping across its seam between G 3 and A 3."; after the reveal, "Each seam is now labelled the
   switch."
 - **Gears** (Step 1): no seam. **Lower gear** plays G♯3 (or F♯4) for 2.0 s in the lower gear and
@@ -325,41 +325,41 @@ that file's unless it says otherwise.
 - `mountPredict` (`kit/predict.ts:80`) takes two to four choices: here two `.choice` buttons,
   `data-choice` "mistake" and "every", labelled "A mistake" and "Every voice can", each at least
   44 px tall. The choice locks: the pressed one shows pressed and both are disabled (`:113-120`).
-  It opens the play `data-play` "blue", labelled "Play blue Merc's siren", which starts disabled in
+  It opens the play `data-play` "blue", labelled "Play Merc's siren", which starts disabled in
   the markup, and moves the focus to it (`:121-128`).
-- **Play orange Merc's siren** is a `data-free` play inside the predict's root: it works before the
+- **Play Tavi's siren** is a `data-free` play inside the predict's root: it works before the
   choice, so the sound comes first (playbook rule 5), and it never reveals, since it is the siren
   the question is about (`:14-16`, `:92-96`).
 - `revealOn: ['blue']`, with the default `revealAfter: 'any'` (`:52-58`): the reveal waits until
-  blue Merc's siren has been heard to its end with sound on (`heard`, `:144-160`). The page's
+  Merc's siren has been heard to its end with sound on (`heard`, `:144-160`). The page's
   `play` resolves `false` for a siren cut short, by another sound or a stop, and the kit then
   reveals nothing and leaves the hint as it was (`:30-40`, `:170-174`; Audio). A siren played with
   sound off that draws its line to its end resolves `true`, so the kit can say that nothing was
   heard (`:148-151`).
 - The hints. The page's own lock hint, in the markup, is LESSON.md's "Choose an answer to unlock
-  blue Merc's siren.", and the kit keeps it to put back (`:83-84`). The kit's three (`:41-51`):
-  `chosen`, "Locked in. Now play blue Merc's siren."; `silent`, LESSON.md's "Sound is off, so
+  Merc's siren.", and the kit keeps it to put back (`:83-84`). The kit's three (`:41-51`):
+  `chosen`, "Locked in. Now play Merc's siren."; `silent`, LESSON.md's "Sound is off, so
   nothing played. Turn sound on to hear the siren, then play it again."; and `again`, "Play either
   siren again." This page has no `next`, since one play reveals, so after a choice a heard play
-  that does not reveal, orange's siren, shows `chosen` (`:47-48`, `:159`).
+  that does not reveal, Tavi's siren, shows `chosen` (`:47-48`, `:159`).
 - `guess` gives "You said: a mistake" or "You said: every voice can", in Lesson 2's form
   (`lesson-02/cold-open.ts:34-37`), and the reveal's text is LESSON.md's for either choice. It
   answers "Every voice can" first; its "(Classical singers train to hide it, so "a mistake" was a
   fair guess.)" consoles the other choice; and no line says a flip rules anything out (FACTS 12).
-  `onReveal`: each seam's label changes to "the switch", the key appears, and orange celebrates
-  once (Mercs).
+  `onReveal`: each seam's label changes to "the switch", the key appears, and Tavi celebrates
+  once (Merc and Tavi).
 - States, and what a play that runs to its end does in each (`heard`, `kit/predict.ts:158-174`):
-  - **Waiting for a choice.** The lock hint shows. Play blue Merc's siren is disabled, and the kit
-    ignores it before a choice too (`:165`); Play orange Merc's siren works. Played with sound off,
-    orange's siren draws its line and `silent` takes the lock hint's place (`:148-151`). Heard with
-    sound on, still before a choice, it puts the page's lock hint back, since blue's siren is still
+  - **Waiting for a choice.** The lock hint shows. Play Merc's siren is disabled, and the kit
+    ignores it before a choice too (`:165`); Play Tavi's siren works. Played with sound off,
+    Tavi's siren draws its line and `silent` takes the lock hint's place (`:148-151`). Heard with
+    sound on, still before a choice, it puts the page's lock hint back, since Merc's siren is still
     locked (`:152-156`).
-  - **Choice made, blue's siren not heard yet.** The choice shows pressed and locked, Play blue
-    Merc's siren is open and has the focus, and the hint reads `chosen` (`:106-124`). Orange's siren
+  - **Choice made, Merc's siren not heard yet.** The choice shows pressed and locked, Play
+    Merc's siren is open and has the focus, and the hint reads `chosen` (`:106-124`). Tavi's siren
     heard with sound on shows `chosen` again, in place of `silent` if sound off had left it there
     (`:159`). Either siren played with sound off draws its line and shows `silent`. The reveal stays
     hidden.
-  - **Revealed.** Blue's siren heard to its end with sound on shows the reveal, with its "You said"
+  - **Revealed.** Merc's siren heard to its end with sound on shows the reveal, with its "You said"
     line, and the hint reads `again` (`:126-142`, `:157-158`). Later plays change neither (`:147`).
 
   In every state a play cut short reveals nothing and leaves the hint as it was
@@ -404,7 +404,7 @@ States:
    "Sore, hoarse or unwell today? Just listen along.", Lesson 3's list naming all six of
    REQ-GVC-020's conditions, and its two buttons (FACTS 52, 53), through the kit's `mountComfort`
    (`kit/comfort.ts:146-154`).
-2. **Voice choice**, after either comfort answer: Lesson 3's two buttons with the Mercs' stills
+2. **Voice choice**, after either comfort answer: Lesson 3's two buttons with Merc and Tavi's stills
    (`aria-pressed`, at least 44 px), under LESSON.md's line in its two forms, "Choose a voice to
    sing with. If you chose one in an earlier lesson, pick it again:" with none stored and "Keep the
    voice you chose before, or change it:" with one (FACTS 57). It reads and writes `fyp-voice`
@@ -445,7 +445,7 @@ States:
    tells none of them apart (FACTS 27). Merc's line stays on the chart, faint, for the shape.
    Lesson 7's ring turns slowly while the take is open, once every 8.5 s whatever the take's
    length, with the chosen voice's Merc at its centre and the word "Listening", and shows no
-   seconds, so it never reads as a time to fill. Both Mercs listen (`mercListen`,
+   seconds, so it never reads as a time to fill. Merc and Tavi both listen (`mercListen`,
    `kit/merc-duo.ts:206`). The microphone is released when the take ends.
 7. **After the take**: no reading. If no voice came within 6 s, the line is LESSON.md's, "We didn't
    hear you start that time. Hum "ng" as the ring turns.", with **Start again** while the visit has
@@ -524,7 +524,7 @@ feelings are real buttons of at least 44 px in a keyboard order that follows the
 flow does not offer is absent, not disabled, except Start's wait for Merc's siren and the feelings
 once answered, as the kit has them; Space never starts a take by itself (REQ-GVC-080). Under reduced
 motion the live line draws on a fixed frame that never scrolls, the ring holds still with the word
-"Listening", and the Mercs skip their reactions (REQ-GVC-083).
+"Listening", and Merc and Tavi skip their reactions (REQ-GVC-083).
 
 ### 5. Recall and quick check
 
@@ -623,17 +623,17 @@ would show the sound-off toast with no tap (`:514-522`). A play that is pressed 
 pauses it; a play pressed while another runs stops the other and starts. A live line is written to
 its region only when its text changes, so a screen reader does not hear the same line twice.
 
-## Mercs
+## Merc and Tavi
 
 Lesson 1's setup through the kit (`kit/merc-duo.ts`, `kit/merc-warm.ts`): the app's renderer loaded
 after first paint, one WebGL context per Merc, medium quality on phones, turned towards each other,
 paused off screen, and the still images when WebGL fails or would run on the CPU.
 
-- They live in the hero, and their reactions are the hero pair's: orange sings while orange's
-  siren sounds and blue while blue's does, and orange celebrates once at the cold open's reveal (no
+- They live in the hero, and their reactions are the hero pair's: Tavi sings while her
+  siren sounds and Merc while his does, and Tavi celebrates once at the cold open's reveal (no
   sparkles), the puzzled one who then gets it, whichever choice was made (playbook rule 15; FACTS
-  13). Elsewhere the Merc of the chart's voice sings while Merc's lines sound (blue for the lower
-  voice, orange for the higher).
+  13). Elsewhere the Merc of the chart's voice sings while Merc's lines sound (Merc for the lower
+  voice, Tavi for the higher).
 - `kit/merc-duo.ts` has `mercSing`, `mercListen` and `mercCelebrate` (`:164`, `:206`, `:216`): Merc
   sings his lines, and both listen during a take. Nothing celebrates in Sing it: a hum is never
   scored or celebrated, as on Lesson 7's page (FACTS 66). Proposed, as Lesson 7's spec proposes:
@@ -776,7 +776,7 @@ the others take it.
    - `og:image` and `twitter:image`, `https://mercurypitch.com/learn/lesson-11-og.jpg` (item 3),
      with `og:image:width` 1200 and `og:image:height` 630, and as `og:image:alt` and
      `twitter:image:alt` "The title card: Find Your Pitch, Lesson 11, Registers and the break, above
-     an amber siren line that jumps across a grey seam, between blue Merc and orange Merc."
+     an amber siren line that jumps across a grey seam, between Merc and Tavi."
      (`learn/02.html:34-43`, `:53-60`);
    - the Article node, in the head's first `application/ld+json` script and as a single object,
      since the test reads `alternativeHeadline` there and checks it only when present
@@ -805,8 +805,8 @@ the others take it.
    and `og:image:height` give, with an `og:image:alt` that `twitter:image:alt` repeats
    (`:189-208`). It is 1200 x 630, a baseline JPEG as Lesson 4's card is
    (`public/learn/lesson-04-og.jpg`), drawn with the page's own kit so that it looks like the page
-   it opens: the title, Lesson 11 and the wordmark over the range chart's compact still, orange
-   Merc's amber siren thick, then thin across the grey seam, between blue Merc and orange Merc. It
+   it opens: the title, Lesson 11 and the wordmark over the range chart's compact still, Tavi's
+   amber siren thick, then thin across the grey seam, between Merc and Tavi. It
    carries no label on the seam and no word but the title's, so it says nothing of whether a flip is
    a mistake and does not answer the cold open's predict.
 4. First-paint ceilings for `learn/11.html` in `scripts/assert-first-paint-budgets.mjs`, one in its
@@ -871,7 +871,7 @@ the others take it.
     jump, `{ atHz, semitones }`, that leaps the given semitones at that pitch on the way up and back
     down, for the end-to-end test that nothing marks a flip on the viewer's line
     (Tests, end to end 6).
-15. `kit/merc-duo.ts`: `ride` and `hum`, proposed, as Lesson 7's spec proposes (Mercs).
+15. `kit/merc-duo.ts`: `ride` and `hum`, proposed, as Lesson 7's spec proposes (Merc and Tavi).
 16. App: the Siren exercise's help, menu card and slide score, the optional octave fitting, and the
     `/exercises/siren` slug (Practice links).
 
@@ -946,16 +946,16 @@ What the page does where nothing above says:
   try/catch; the page works, asking the voice each visit, reseeding the quizzes and forgetting the
   warm-up's Skip.
 - **Sound off**: each play button draws what it would play and shows the kit's hint; the cold open's
-  reveal waits for blue Merc's siren to be heard with sound on (Toys 2); Start stays unavailable,
+  reveal waits for Merc's siren to be heard with sound on (Toys 2); Start stays unavailable,
   with state 5's hint, and asks for no microphone.
-- **Sound off before a choice**: Play orange Merc's siren draws its line in silence, and the
-  sound-off hint (`kit/predict.ts:162-165`) takes the place of "Choose an answer to unlock blue
-  Merc's siren."; blue's siren stays locked, and its play disabled. Page QA, "The
+- **Sound off before a choice**: Play Tavi's siren draws its line in silence, and the
+  sound-off hint (`kit/predict.ts:162-165`) takes the place of "Choose an answer to unlock
+  Merc's siren."; Merc's siren stays locked, and its play disabled. Page QA, "The
   predict before a choice".
-- **Sound on again, still before a choice**: orange's siren, heard this time, puts the lock hint
-  back, since blue's siren is still locked (`kit/predict.ts:166-170`). Page QA, "The predict before
+- **Sound on again, still before a choice**: Tavi's siren, heard this time, puts the lock hint
+  back, since Merc's siren is still locked (`kit/predict.ts:166-170`). Page QA, "The predict before
   a choice".
-- **Blue's siren cut short** (a Four words play over it, sound turned off, or the page hidden):
+- **Merc's siren cut short** (a Four words play over it, sound turned off, or the page hidden):
   the page's `play` resolves `false`, so nothing is revealed and the hint stays as it was
   (`kit/predict.ts:187-188`): `chosen`, or `silent` if the play before it was silent, whose "play
   it again" still holds now that sound is on. Played again to its end with sound on, it reveals.
@@ -979,7 +979,7 @@ What the page does where nothing above says:
   marker) on a first visit meets First Light, whose way out on its first beat is the × labelled
   "Skip the intro"; the page prints no line for it, since its links carry the marker (Lesson 9
   FACTS 56).
-- **No WebGL, or a slow device**: the Mercs' stills (`kit/merc-warm.ts`).
+- **No WebGL, or a slow device**: Merc and Tavi's stills (`kit/merc-warm.ts`).
 - **Lesson 7 never marked done**: the recall still shows, as a prerequisite's does.
 - **Lesson 11 published while Lesson 7 is held back**: nothing stops it, since the publish order is
   a rule for whoever uses the console (the intro), so the page follows the state it is served with.
@@ -1051,11 +1051,11 @@ parts:
    or ♭ sign; no two controls on a stage share an accessible name; and the take's status lines and
    the chart's summary after a take name no flip, gear, switch, break or register.
 9. Every fixed sound's frequency equals `hz(m)` for the notes of FACTS 73.
-10. The predict (Toys 2): the choice locks on the first press; before it only Play orange Merc's
+10. The predict (Toys 2): the choice locks on the first press; before it only Play Tavi's
     siren plays, a silent play of it shows the `silent` hint in place of the lock hint, and a heard
     one puts the lock hint back; after it, the hint reads `chosen`, the reveal stays hidden until
-    blue Merc's siren has been heard to its end with sound on, a silent play shows `silent`, and
-    orange's siren heard then shows `chosen` again; the reveal's line is "You said: every voice can"
+    Merc's siren has been heard to its end with sound on, a silent play shows `silent`, and
+    Tavi's siren heard then shows `chosen` again; the reveal's line is "You said: every voice can"
     or "You said: a mistake"; no hint and no line of the reveal says "right" or "wrong"; at the
     reveal each seam's label reads "the switch" (FACTS 11, 13).
 11. Quizzes: the recall's ids are `l07-q1` and `l07-q4`, it equals Lesson 7's two questions as its
@@ -1083,7 +1083,7 @@ parts:
     quick-check step link, stops them, and running the clock past their end starts no note; a layout
     switch, `onStep` with the same step, stops nothing.
 15. A play cut short never counts as heard (Audio; Toys 2): the cold open's `play` resolves `false`
-    when blue Merc's siren is stopped before its end, by another sound or a stop, and never when it
+    when Merc's siren is stopped before its end, by another sound or a stop, and never when it
     runs out; cut short, it leaves the reveal hidden, and played to its end it shows it, as the
     kit's own test does for a stopped run (`kit/predict.test.ts:198-221`).
 16. The kit's other new parts: `kit/sound.ts` without `wave` and `lowpass` builds every voice as
@@ -1098,10 +1098,10 @@ parts:
 End to end (Playwright, at 390 x 844 and 1440 x 900, on the e2e build, which shows drafts):
 
 1. No AudioContext before the first tap; nothing plays before a play button.
-2. Cold open: Play orange Merc's siren plays before a choice; with sound off it shows the sound-off
-   hint, and with sound on again it brings back "Choose an answer to unlock blue Merc's siren.";
-   Play blue Merc's siren stays disabled until a choice; the reveal appears only after blue Merc's
-   siren has played with sound on; with sound off, the hint shows and no reveal comes; blue's siren
+2. Cold open: Play Tavi's siren plays before a choice; with sound off it shows the sound-off
+   hint, and with sound on again it brings back "Choose an answer to unlock Merc's siren.";
+   Play Merc's siren stays disabled until a choice; the reveal appears only after Merc's
+   siren has played with sound on; with sound off, the hint shows and no reveal comes; Merc's siren
    cut short, by the Four words' Flip played over it, brings no reveal until it plays to its end
    (unit test 15); after the reveal each seam reads "the switch".
 3. The chart by keyboard alone: Tab reaches every control; the scrub bar moves by arrows, and Home
@@ -1114,7 +1114,7 @@ End to end (Playwright, at 390 x 844 and 1440 x 900, on the e2e build, which sho
    1024 x 640, 1133 x 631, 1280 x 680 and 1366 x 657 and on a phone held sideways (FACTS 83);
    `src/e2e/learn-no-planning-text.spec.ts` reads it for the team's planning words and every
    variant's note the same way, and `src/e2e/learn-cold-open-fold.spec.ts` holds its title on the
-   first screen at seven sizes and reports where Play orange Merc's siren and the two choices sit
+   first screen at seven sizes and reports where Play Tavi's siren and the two choices sit
    (`:176-203`).
 6. Sing it, with the fake microphone (`src/e2e/helpers/tone-wav.ts`, `fakeMicArgs`, `:115`): with
    sound off, Start stays `aria-disabled` after Play Merc's slow siren and the hint says sound is
@@ -1180,17 +1180,17 @@ Page QA before publishing (PRODUCTION-PIPELINE § 5) adds, for this page:
   console asks only about the sign-off, and nothing checks the rest (the intro).
 - The gear model is heard by ear on a phone's speaker and on headphones: one voice changing colour
   at the switch, the two gears equally loud, and no click at a crossfade (Audio; Decisions, 3).
-- **The predict before a choice** (Toys 2; Edge cases): with sound off, Play orange Merc's siren
+- **The predict before a choice** (Toys 2; Edge cases): with sound off, Play Tavi's siren
   draws its line and the hint reads "Sound is off, so nothing played. Turn sound on to hear the
-  siren, then play it again." in place of "Choose an answer to unlock blue Merc's siren."; with
-  sound on, played again, the lock hint comes back; Play blue Merc's siren stays disabled
+  siren, then play it again." in place of "Choose an answer to unlock Merc's siren."; with
+  sound on, played again, the lock hint comes back; Play Merc's siren stays disabled
   throughout.
-- **The predict after a choice** (Toys 2): the hint reads "Locked in. Now play blue Merc's siren."
-  and blue's siren has the focus; blue's siren with sound off shows the sound-off hint and no
-  reveal; orange's siren, then heard with sound on, puts "Locked in. Now play blue Merc's siren."
-  back; blue's siren heard to its end with sound on shows the reveal, its "You said" line and "Play
+- **The predict after a choice** (Toys 2): the hint reads "Locked in. Now play Merc's siren."
+  and Merc's siren has the focus; Merc's siren with sound off shows the sound-off hint and no
+  reveal; Tavi's siren, then heard with sound on, puts "Locked in. Now play Merc's siren."
+  back; Merc's siren heard to its end with sound on shows the reveal, its "You said" line and "Play
   either siren again.".
-- **A siren cut short** (Toys 2; Edge cases): blue's siren stopped before its end, by a Four words
+- **A siren cut short** (Toys 2; Edge cases): Merc's siren stopped before its end, by a Four words
   play, by turning sound off or by hiding the tab, reveals nothing and leaves the hint as it was;
   played again to its end with sound on, it reveals.
 - The Wrap's next card: its still shows the four rooms with no tune note, lit corner, bead or path

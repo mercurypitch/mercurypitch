@@ -28,7 +28,7 @@ lesson's question, posed the same way. The facts and animations added later go i
 2. **Predict, then reveal.** Use `kit/predict.ts` as it is: the choice locks, the answer plays only after a choice,
    the reveal waits until it is heard, no choice is called wrong, and the other choice is "a fair guess" (rules 2, 15).
 3. **Show, don't tell.** A sound and a figure, pitch drawn as height or the lesson's own object, with the words
-   beside it. The Mercs act; they don't decorate (rules 5, 10, 13, 20).
+   beside it. Merc and Tavi act; they don't decorate (rules 5, 10, 13, 20).
 4. **The title must not answer the predict,** which sits right under it, and nor must the promise between them.
    Lessons 3, 6 and 13 needed this fix for the title, and Lesson 5 for its promise; their entries say how.
 5. **Pay off within the lesson,** at a named step. Both films close their main loop at about 40 % and carry the next
@@ -37,7 +37,7 @@ lesson's question, posed the same way. The facts and animations added later go i
    then the next hook word for word (CURRICULUM principle 3).
 7. **No clickbait.** Every hook is answered, from FACTS.md: "legit bait", never a click trap (curriculum-benchmark §4,
    §8). A wonder fact is about the idea and never precedes the question (pedagogy-research §1.7; rule 12).
-8. **House rules bind.** Orange asks deep questions or makes sincere guesses; blue never mocks; no labels (rule 21).
+8. **House rules bind.** Tavi asks deep questions or makes sincere guesses; Merc never mocks; no labels (rule 21).
    "Sore, hoarse or unwell today? Just listen along." comes before holds, sirens and range; never reward range or
    length. Voice lessons (3, 5, 7, 9, 11, 13, 14) need the coach; orange is Tavi, she (23 October, MASTER-PLAN §12 item
    1). Sound is synthesised (MASTER-PLAN D9); tunes are public domain (L6 FACTS 28 to 30) or written for the lesson.
@@ -53,22 +53,22 @@ Each entry gives the **Opening** (the first 10 to 30 s; it plants the predict's 
 
 ### Trailer · Find your pitch · a 2 to 3 minute film; no script, page or FACTS.md · hook kept
 
-- **Opening:** a bright, finished frame 0, the amber band on the dark canvas. Blue Merc sings; the violet line rises
-  into the band and turns mint; the hook is on screen by 0:05. Orange "Wait. Is that line the note?" Blue "Every
+- **Opening:** a bright, finished frame 0, the amber band on the dark canvas. Merc sings; the violet line rises
+  into the band and turns mint; the hook is on screen by 0:05. Tavi "Wait. Is that line the note?" Merc "Every
   note, as you sing it."
 - **Visual:** the band chart's look (`kit/band-chart.ts`), then the explorer map (`kit/explorer.ts`) lighting each
   lesson's hook for about 5 s, over its opening where one exists; both exist. **Payoff:** the line, at once.
-- **Tease:** Lesson 1's first seconds, word for word (blue's A3, orange's A4, "Ha! Same note." "Is it?"), then the
+- **Tease:** Lesson 1's first seconds, word for word (Merc's A3, Tavi's A4, "Ha! Same note." "Is it?"), then the
   end screen with Lesson 1's video.
 - **Facts:** the voice as a line, L1 FACTS 21; the two As, L1 FACTS 7 and 12b; "free" only as YOUTUBE.md §C allows.
   The rest needs a source: write the trailer's FACTS.md before its script.
 
 ### Lesson 1 · What is a note? · page live; film made, not uploaded · hook kept
 
-- **Opening (exists):** Orange "Ha! Same note." Blue "Is it? Mine shook the air 220 times a second. Yours shook it
+- **Opening (exists):** Tavi "Ha! Same note." Merc "Is it? Mine shook the air 220 times a second. Yours shook it
   440."; the predict "Two different notes, or the same one?" unlocks the plays. Question: twice as fast, so how is
   it the same note?
-- **Visual:** the stage and the Mercs (exist). Optional: the film's gold "× 2" between the numbers (new, static).
+- **Visual:** the stage and Merc and Tavi (exist). Optional: the film's gold "× 2" between the numbers (new, static).
   **Payoff:** Step 4 (twice as fast: the peaks line up) and Step 5 (pitch is a spiral).
 - **Tease:** Step 5's Notice plants it. Add to the card a still of the kit's spiral with its five "?" beads, the
   frame Lesson 2's film opens on, and "Seven letters, but twelve notes." (new).
@@ -80,20 +80,20 @@ Each entry gives the **Opening** (the first 10 to 30 s; it plants the predict's 
 
 ### Lesson 2 · Twelve notes · page live; film made, not uploaded · hook kept
 
-- **Opening (exists):** Orange "Seven letters on the way round. Is there a hidden note between every two letters?"
-  Blue "Count the steps and find out."; the predict [Yes, every gap] [No, only some], with Play the climb.
+- **Opening (exists):** Tavi "Seven letters on the way round. Is there a hidden note between every two letters?"
+  Merc "Count the steps and find out."; the predict [Yes, every gap] [No, only some], with Play the climb.
   Question: if not every gap, which ones, and why?
 - **Visual:** Lesson 1's spiral and beads (`kit/spiral.ts`, exists). **Payoff:** Step 4, "So where do the other five
   come from?"
 - **Tease (exists):** the card's two figures, Asked 59 % of 1,105 and Tested 10–16 %: the precedent for the rest.
 - **Facts:** FACTS 13 to 15, 10 ("the smallest step a piano has", never "in music"); the tease, 36 and 36a.
-- **Film, keep:** frame 0 is Lesson 1's spiral with its "?" beads; a recall question, orange's seven dashed rings, "the
+- **Film, keep:** frame 0 is Lesson 1's spiral with its "?" beads; a recall question, Tavi's seven dashed rings, "the
   other five?" by 0:24, the payoff at about 2:58 of 7:11, a violet line edging to the band for Lesson 3. **Re-cut
   only:** a 12 to 15 s end card, lower-left third clear (YOUTUBE.md owner decision 8, open), for Lesson 3's video.
 
 ### Lesson 3 · Match a note · voice; page built, a draft until the coach signs off
 
-- **Opening (exists):** Orange "I can't sing." Blue "Lots of people say that. So two researchers tested it."; the
+- **Opening (exists):** Tavi "I can't sing." Merc "Lots of people say that. So two researchers tested it."; the
   two figures; Play: on the note and Play: a semitone off; the predict on 39 students who said they couldn't copy a
   note, [Most of them] [About as few as anyone else]. Question: if the ears are fine, why is the note off?
 - **Visual:** `kit/band-chart.ts` and Lesson 2's figures (exist). **Payoff:** the reveal (4 of 39), then Step 3 (why).
@@ -110,7 +110,7 @@ Each entry gives the **Opening** (the first 10 to 30 s; it plants the predict's 
 ### Lesson 4 · The major scale and home · page built, a draft until the owner's go-ahead · hook kept
 
 - **Opening (exists, placed too low):** the hero has the hook, a staircase on C and Play the scale; the cold open
-  (Play from C, Land on do; Orange "It just hangs there, waiting. Is that because we started on C?"; the predict
+  (Play from C, Land on do; Tavi "It just hangs there, waiting. Is that because we started on C?"; the predict
   from D) waits behind a full recall section (§3.1). Question: why does ti hang, and is it because of C?
 - **Visual:** the compact staircase and the house glyph (exist). **Payoff:** the reveal (home moves with the start)
   and Step 5, "Ti leans home".
@@ -121,7 +121,7 @@ Each entry gives the **Opening** (the first 10 to 30 s; it plants the predict's 
 
 ### Lesson 5 · Breath and a steady note · voice; page built, a draft until the coach signs off · hook kept
 
-- **Opening (exists):** Orange "So if I push the air out harder, the note holds steadier?" Blue "Let's listen.
+- **Opening (exists):** Tavi "So if I push the air out harder, the note holds steadier?" Merc "Let's listen.
   Here's one note, sung easily."; then the predict [Settle, steadier than before] [Get louder and drift higher].
   Question: if pushing moves the note, what keeps it steady? On phones an open recall comes first (§3.1).
 - **Promise, changed on 22 October 2026:** "By the end you'll know what pushing does to a note"; "why pushing moves a
@@ -134,8 +134,8 @@ Each entry gives the **Opening** (the first 10 to 30 s; it plants the predict's 
 
 ### Lesson 6 · Intervals: the distance between notes · page built, a draft until the owner and the coach sign off · hook kept
 
-- **Opening (LESSON.md):** Play from C on the compact tune line; Orange "If every note changes, isn't it a different
-  tune?" Blue "Let's change every one and listen."; Play from F♯ lifts the line six rows. Question: with every note
+- **Opening (LESSON.md):** Play from C on the compact tune line; Tavi "If every note changes, isn't it a different
+  tune?" Merc "Let's change every one and listen."; Play from F♯ lifts the line six rows. Question: with every note
   changed, what keeps it the same tune?
 - **Fix before building:** the title already says it is the same tune, which answers the written predict. Ask:
   "Merc moves the whole tune up six semitones. What will still match the version from C?" [Some of the notes] [The
@@ -148,7 +148,7 @@ Each entry gives the **Opening** (the first 10 to 30 s; it plants the predict's 
 
 ### Lesson 7 · Slides, sirens and your range · voice; page built, a draft until the owner and the coach sign off
 
-- **Opening (LESSON.md):** Orange "If I could reach more notes, would I be a better singer?" Blue "Let's see how many
+- **Opening (LESSON.md):** Tavi "If I could reach more notes, would I be a better singer?" Merc "Let's see how many
   a song asks for."; Play "Twinkle" by the two-octave column; the predict "How much of it does 'Twinkle, Twinkle'
   use?" [Most of it] [Less than half]. Question: a song needs only a slice, so where should it sit?
 - **Visual:** the range chart (new here; Lesson 11 reuses it). **Payoff:** Step 4, "So why is the middle worth
@@ -161,10 +161,10 @@ Each entry gives the **Opening** (the first 10 to 30 s; it plants the predict's 
 
 ### Lesson 8 · Beat, tempo and the backbeat · theory; page built, a draft until the coach signs off its sung line · hook kept
 
-- **Opening:** a metronome ticks under "Twinkle", claps on 1 and 3; the Mercs hop on the claps (no hands). Orange
-  "If it's no faster, can moving the claps change anything?" Blue "Let's move them and listen." Predict: "Same tune,
-  same speed. The claps move to 2 and 4. Musicians call some beats strong and some weak. Will the claps now land on
-  strong beats, or weak ones?" [Strong beats] [Weak beats].
+- **Opening:** a metronome ticks under "Twinkle", claps on 1 and 3; Merc and Tavi hop on the claps (no hands). Tavi "If
+  it's no faster, can moving the claps change anything?" Merc "Let's move them and listen." Predict: "Same tune, same
+  speed. The claps move to 2 and 4. Musicians call some beats strong and some weak. Will the claps now land on strong
+  beats, or weak ones?" [Strong beats] [Weak beats].
 - **Visual:** the metronome (explorer art in `kit/explorer-figures.ts`) whose arm becomes a beat grid (new);
   `Sound.tick` and `playNoise` (exist). **Payoff:** the backbeat step; the checkpoint, taps on 2 and 4.
 - **Tease:** two lines into the amber band, one stepping, one a dashed arc with a "?" (new): "One note, two ways up:
@@ -174,8 +174,8 @@ Each entry gives the **Opening** (the first 10 to 30 s; it plants the predict's 
 
 ### Lesson 9 · Landing a leap · voice; written; no page yet
 
-- **Opening:** Merc sings do, then leaps to so, drawn as an arc into the band. Orange "Can't I just jump to the top
-  note and hope?" Blue "Let's find something to aim with." Predict: "Merc sings do and so again, with one note in
+- **Opening:** Merc sings do, then leaps to so, drawn as an arc into the band. Tavi "Can't I just jump to the top
+  note and hope?" Merc "Let's find something to aim with." Predict: "Merc sings do and so again, with one note in
   between. Which one splits the leap most evenly?" [re] [mi] [fa] (the widget takes two to four choices).
 - **Visual:** `kit/band-chart.ts` (exists) with the arc and its landing zone (new). **Payoff:** the arpeggio as a
   ladder, slow leaps first; the checkpoint, do-mi-so-do, slowly.
@@ -188,8 +188,8 @@ Each entry gives the **Opening** (the first 10 to 30 s; it plants the predict's 
 
 ### Lesson 10 · Major and minor · theory; written; no page yet
 
-- **Opening:** do, mi and so lit on the spiral and played together (both exist). Orange "If one note moves a
-  semitone, can the whole chord change?" Blue "Choose one, and we'll move it." Predict: "Do stays home. Which note,
+- **Opening:** do, mi and so lit on the spiral and played together (both exist). Tavi "If one note moves a
+  semitone, can the whole chord change?" Merc "Choose one, and we'll move it." Predict: "Do stays home. Which note,
   moved down a semitone, makes the chord minor?" [mi] [so]. Keep do fixed: lowering it gives B, E, G, also minor.
 - **Visual:** the bead sliding and the chord's colour changing (new), never a "sad" blue. **Payoff:** the thirds
   step; the checkpoint, do-mi-so then do-me-so (do-based minor, decided).
@@ -203,7 +203,7 @@ Each entry gives the **Opening** (the first 10 to 30 s; it plants the predict's 
 ### Lesson 11 · Registers and the break · voice; written; no page yet
 
 - **Opening:** Merc's slow "ng" siren climbs the range chart; partway, the sound changes gear and the line crosses a
-  grey seam. Orange "My voice just flipped. Did I do it wrong?" Blue "Let's slide again and listen." Predict: "A flip
+  grey seam. Tavi "My voice just flipped. Did I do it wrong?" Merc "Let's slide again and listen." Predict: "A flip
   like that: a mistake, or something every voice can do?" [A mistake] [Every voice can]. The plan's "a sign something's
   wrong" made it a health question, and a lesson cannot tell anyone their voice is healthy, so the written lesson asks
   whether a flip is a mistake (Lesson 11 FACTS 11, 12).
@@ -222,7 +222,7 @@ Each entry gives the **Opening** (the first 10 to 30 s; it plants the predict's 
 ### Lesson 12 · Chords and the four-chord song · theory; written; no page yet
 
 - **Opening:** four faint rooms on the spiral seen from above; Merc plays the four chords, then sings one tune over
-  them, then another. Orange "Same four chords. Isn't it the same song, then?" Blue "Listen to both, and watch where
+  them, then another. Tavi "Same four chords. Isn't it the same song, then?" Merc "Listen to both, and watch where
   each tune lands." Predict: "Each chord lights a room on the ring, with its three notes as the corners. As Merc
   sings a tune over the chords, how many of its notes land on a corner of the lit room?" [Most of them] [Hardly
   any]. The plan's "One song or two?" is answered by the hook right above it, so the written lesson asks where a
@@ -239,7 +239,7 @@ Each entry gives the **Opening** (the first 10 to 30 s; it plants the predict's 
 ### Lesson 13 · Resonance and vowels · voice; written; no page yet · hook kept
 
 - **Opening:** Merc holds one note from "ee" to "ah"; the pitch line stays level while a strip under it shows the
-  harmonics. Orange "A different vowel must be a slightly different note, surely?" Blue "Watch the line, and
+  harmonics. Tavi "A different vowel must be a slightly different note, surely?" Merc "Watch the line, and
   listen." The title says the line stays put and the vowels sound different, so the predict asks what changes in
   the bars: "When 'ee' turns to 'ah', what will change in the bars under the line?" [Their heights] [Their places].
   The plan's [Stay where they are] [Move] was pointed to by the title, and the misconception picked "Move" too
@@ -259,8 +259,8 @@ Each entry gives the **Opening** (the first 10 to 30 s; it plants the predict's 
 ### Lesson 14 · Phrasing: sing a whole song · voice; written; no page yet
 
 - **Opening:** Merc sings the first line of "Twinkle, Twinkle, Little Star" twice on "ooh", every note in its band:
-  take 1 with a breath snatched inside the line, take 2 with the breath at its end and "star" swelling. Orange "If
-  every note is in tune, isn't the song finished?" Blue "Listen to it twice." Predict: "Merc sings it again, and this
+  take 1 with a breath snatched inside the line, take 2 with the breath at its end and "star" swelling. Tavi "If
+  every note is in tune, isn't the song finished?" Merc "Listen to it twice." Predict: "Merc sings it again, and this
   time "star" swells: soft, louder, soft. As it gets louder, what will its line do?" [It rises] [It stays level]. The
   plan's "Will they sound the same?" is answered by the hook right above it, so the written lesson asks what a swell
   does to the line instead (Lesson 14 FACTS 14).
@@ -339,10 +339,10 @@ seam and gear change (11), the four rooms (12), the spectrum strip and vowels (1
 - **First 5 seconds.** A finished, bright frame 0, never a logo (brand-motion §5.2, §6 item 14); a sound by 1 s (both
   films: 0:00.9); the question by 0:15, the promise by 0:30, then a sting of at most 5 s. YouTube's "Intro" moment is
   the share still watching at 0:30; the 15 s figure is a rule of thumb, not YouTube's (production-research §5.1).
-- **One puzzle in both media.** The cold open is the page's opening: the same sounds, figure and orange line. The
+- **One puzzle in both media.** The cold open is the page's opening: the same sounds, figure and Tavi line. The
   predict is the chapter's one "think about it" pause, at most 2 s (brand-motion §5.2).
-- **End-screen tease.** A 12 to 15 s end slate (production-research §5.4): blue's "Next time.", the tease line and
-  the next hook said aloud, the tease figure on screen, the Mercs to one side, the lower-left third clear for the
+- **End-screen tease.** A 12 to 15 s end slate (production-research §5.4): Merc's "Next time.", the tease line and
+  the next hook said aloud, the tease figure on screen, Merc and Tavi to one side, the lower-left third clear for the
   next lesson's video and room for Subscribe. YouTube allows elements only in the last 5 to 20 s.
 - **Title and thumbnail.** The title is the hook, or YOUTUBE.md §C's recommended form; the description's first line
   is the hook (MASTER-PLAN §4.1); the thumbnail's words are the question in short ("Same note?", "No black key?")

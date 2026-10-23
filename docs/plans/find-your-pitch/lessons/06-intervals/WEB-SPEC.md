@@ -24,7 +24,7 @@ and wordmark, and the motion rules. On this page:
 - Gold `#ffd84d` marks only the fit: the gap numbers that stay the same when the tune line slides
   (Step 3 and free play), glowing once as the line lands. The cold open's compact line shows no
   numbers (Toys 1), so its slide has no glow: the reveal says what stayed the same.
-- Blue `#58a6ff` lights the notes blue Merc sings and orange `#ff7448` those orange Merc sings;
+- Blue `#58a6ff` lights the notes Merc sings and orange `#ff7448` those Tavi sings;
   chrome is every other note.
 - The contrast case, Step 4's swapped version, is dashed ink-2 `#a8b3bf` with a "?" (MASTER-PLAN
   § 5), because the sing-along guide uses the app's canvas set, in which violet is the singer.
@@ -54,16 +54,16 @@ line above it, are in LESSON.md ("Section headings").
 2. **Hero**: kicker; the hook question as the title; the meta as three chips ("15 minutes", FACTS
    3; "After Lesson 4: The major scale and home", a link to `/learn/04`; Sound on); the promise; the
    sound gate from LESSON.md in the hero copy, as Lesson 1's is; and beside them the cold open (3):
-   the two Mercs on the floor line either side of the tune line on C, with Play from C under it
+   Merc and Tavi on the floor line either side of the tune line on C, with Play from C under it
    (`line-c`, FACTS 63). The line is the compact state (Toys 1: the first line, no names, numbers
-   or marks, its beads not buttons), whose beads light as blue Merc sings; it shares no lit state
+   or marks, its beads not buttons), whose beads light as Merc sings; it shares no lit state
    with the stage's, as Lesson 2's copies of its spiral keep their own (its DECISIONS 81). Its
    drawing is `aria-hidden`, and the Play button's name says what plays ("Play from C: 'Twinkle,
    Twinkle'").
 3. **Cold open: predict**, in the hero, in Lesson 2's order (CURIOSITY-MOMENTS § 3.1): the
-   bubbles over the two Mercs either side of the compact tune line (Toys 1), so the sound and the
-   line are on screen together (playbook rule 10). Play from C works from the start; orange's and
-   blue's lines from LESSON.md; the predict, "Merc moves the whole tune up six semitones. What will
+   bubbles over Merc and Tavi either side of the compact tune line (Toys 1), so the sound and the
+   line are on screen together (playbook rule 10). Play from C works from the start; Tavi's and
+   Merc's lines from LESSON.md; the predict, "Merc moves the whole tune up six semitones. What will
    still match the version from C?", with two choices, "Some of the notes" and "The gaps between
    the notes"; choosing unlocks Play from F♯, which lifts the compact line and slides it up six
    rows, announced "Twinkle from F sharp", before it plays. The reveal appears after Play from F♯
@@ -82,7 +82,7 @@ line above it, are in LESSON.md ("Section headings").
    1. What shape is a tune? The first line on C, with its contour marks.
    2. How far apart are the notes? Both lines, one above the other, the gaps numbered, steps and
       the leap labelled; the Step or leap? game (Toys 4).
-   3. What happens if I slide the whole tune? Orange's line, then Slide and the names switch.
+   3. What happens if I slide the whole tune? Tavi's line, then Slide and the names switch.
    4. So is it the ups and downs I remember? The second predict, whose choice unlocks Swap sizes;
       its reveal brings the mix-up card, the Try and the Notice, which answer it too.
    5. Do the distances have names? The named intervals, the anchor board (Toys 5) and the Name it
@@ -210,7 +210,7 @@ and keeps its identity" (`research/brand-motion.md` § 3.3), and playbook rule 6
   action), so the drawing is `aria-hidden` and a polite live region speaks for it: "Twinkle from C"
   or "Twinkle from F sharp" as each starts. With no button on it, it keeps no 44 px column: its
   crotchets share the line's width, so all seven notes show however narrow the phone, about 176 px
-  of line between the Mercs at 390 px (`kit/tune-line-layout.ts`). Play from F♯ lifts it and
+  of line between Merc and Tavi at 390 px (`kit/tune-line-layout.ts`). Play from F♯ lifts it and
   slides it up six rows first (below).
 - **Play** plays the line shown, lighting each bead as it sounds (`line-c`, `lines-c` or the
   current start, FACTS 63 to 65); **Slow** doubles every length (MASTER-PLAN § 4.2 item 5). A tap on
@@ -366,7 +366,7 @@ States:
 1. **Comfort check**, always first and asked every visit (never stored): Lesson 3's comfort line,
    its list naming all six of REQ-GVC-020's conditions, and its two buttons (FACTS 50), through the
    kit's comfort check that Lesson 3 adds (`kit/comfort.ts`), with no microphone step after it.
-2. **Voice choice**, after either comfort answer: Lesson 3's two buttons with the Mercs' stills
+2. **Voice choice**, after either comfort answer: Lesson 3's two buttons with Merc and Tavi's stills
    (`aria-pressed`, at least 44 px), under LESSON.md's line, in two forms: "Keep the voice you chose
    before, or change it:" with a choice stored, and "Choose a voice to sing with. If you chose one
    in an earlier lesson, pick it again:" with none. Read from and stored in `fyp-voice` inside
@@ -381,7 +381,7 @@ States:
 4. **Ready**: the four controls in LESSON.md's order, under the Your turn text and the stop line.
    **Play the first version** sings do = D3 (lower) or D4 (higher), and **Play the second
    version** three semitones higher, in Merc's "ooh", the path lighting in step while the ring
-   beside the guide shows the still of the Merc singing, blue for the lower voice and orange for the
+   beside the guide shows the still of the Merc singing, Merc for the lower voice and Tavi for the
    higher, as Lesson 1's ring does (`kit/sing.ts:251-257`). **Move do** is two buttons, Lower
    and Higher, a semitone each, up to four either way, moving both versions together (FACTS 57);
    the readout and the path's row labels follow. A press of any of Sing it's controls while a
@@ -481,14 +481,14 @@ four words, the quiz and Sing it) hands its sound to one owner (`kit/now-playing
 anywhere stops the sound before it, and a predict's play cut short reveals nothing. A step left
 behind keeps nothing sounding. The page has no music bed.
 
-## Mercs
+## Merc and Tavi
 
 Lesson 1's setup through the kit (`kit/merc-duo.ts`, `kit/merc-warm.ts`): the app's renderer
 loaded after first paint, one WebGL context per Merc, medium quality on phones, turned towards each
 other, paused off screen, and the still images when WebGL fails or would run on the CPU.
 
-- They live in the hero, and their reactions are the hero pair's: blue `sing` while the hero's
-  Play sounds and while the cold open's two plays sound; orange `celebrate` once after the
+- They live in the hero, and their reactions are the hero pair's: Merc `sing` while the hero's
+  Play sounds and while the cold open's two plays sound; Tavi `celebrate` once after the
   cold-open reveal (no sparkles), the puzzled guesser who then gets it (playbook rule 15).
 - `merc-duo.ts` has `mercSing` and `mercCelebrate` (`:164`, `:216`), and `mercListen` (`:206`)
   since Lesson 3's page; this page asks for no other state: the Merc who is not singing idles.

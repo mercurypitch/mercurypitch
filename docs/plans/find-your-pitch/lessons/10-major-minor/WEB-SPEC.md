@@ -74,19 +74,19 @@ and wordmark, and the motion rules. On this page:
 - The contrast case is dashed ink-2 `#a8b3bf` with a "?" (MASTER-PLAN § 5), because the sing-along
   guide uses the app's canvas set, in which violet is the singer: here C, E, G♭, the chord that is
   neither major nor minor, in the cold open after its reveal (FACTS 40, 41b).
-- Blue `#58a6ff` and orange `#ff7448` are the Mercs' own: their bubbles, and in Sing it the still of
-  the Merc who sings. The guide takes the app's canvas colours, target amber `#f59e0b` for Merc's
-  path while Merc sings; on the viewer's turn it turns plain chrome, as Lessons 2, 4 and 6's guides
-  do (Lesson 2 DECISIONS 68).
+- Blue `#58a6ff` and orange `#ff7448` are Merc and Tavi's own: their bubbles, and in Sing it the
+  still of the Merc who sings. The guide takes the app's canvas colours, target amber `#f59e0b` for
+  Merc's path while Merc sings; on the viewer's turn it turns plain chrome, as Lessons 2, 4 and 6's
+  guides do (Lesson 2 DECISIONS 68).
 - Major and minor are words on the toy, "major", "minor" and the chord's name, and the gaps carry
   their semitones as numbers. No meaning rests on colour alone, and the page passes MASTER-PLAN §
   5's colour-blindness gate (`docs/plans/find-your-pitch/MASTER-PLAN.md:214-216`).
 
 Three things move: the Merc idle loops; a bead while it slides, on the hero's spiral or on the chord
-beads; and the chord beads as they stack or spread. Only the Mercs move on their own. Under
-`prefers-reduced-motion` the Mercs stop, and every slide, stack and spread lands in its end state
-with no travel; what the viewer starts still sounds, and the beads still light as they sound. For
-everyone else the masthead's Pause animations toggle stops the same things (WCAG 2.2.2).
+beads; and the chord beads as they stack or spread. Only Merc and Tavi move on their own. Under
+`prefers-reduced-motion` Merc and Tavi stop, and every slide, stack and spread lands in its end
+state with no travel; what the viewer starts still sounds, and the beads still light as they sound.
+For everyone else the masthead's Pause animations toggle stops the same things (WCAG 2.2.2).
 
 ## Sections
 
@@ -109,8 +109,8 @@ FACTS 5a). Each section's heading, and the line above it, are in LESSON.md ("Sec
    LESSON.md. The chips are "17 minutes" (FACTS 3), "After Lesson 6: Intervals: the distance between
    notes", a link to `/learn/06` as Lesson 4's prerequisite chip links Lesson 2
    (`learn/04.html:335-339`; FACTS 2), which stays a plain chip wherever Lesson 6 is not live
-   (`src/features/lessons/kit/page-state.ts:16-17`), and "Sound on". Its stage holds orange's and
-   blue's bubbles (`learn/02.html:383`) over the two Mercs on the floor line, the hero's own copy of
+   (`src/features/lessons/kit/page-state.ts:16-17`), and "Sound on". Its stage holds Tavi's and
+   Merc's bubbles (`learn/02.html:383`) over Merc and Tavi on the floor line, the hero's own copy of
    the spiral between them (`:404`; Toys 2), and under the spiral the cold open's three plays: "Play
    the chord", which works from the start, and "Move mi down" and "Move so down", locked until a
    choice. The predict card sits under the stage, as Lesson 2's does (`:448`): LESSON.md's predict,
@@ -407,8 +407,8 @@ taken further without forking it (`spiral.ts:28-32`):
   played. Turn sound on to hear the chord, then play it again."; after the reveal, `hints.again`
   reads "Move either note again, or play the chord." The reveal's "You said" line is the kit's
   `guess` (`:60-61`): "You said: mi" or "You said: so", never "right" or "wrong". As it shows, mi's
-  halo glows gold once (Toys 2) and orange celebrates (Mercs). The reveal's last line makes the
-  other choice a fair guess (CURIOSITY-MOMENTS § 1, rule 2; FACTS 41).
+  halo glows gold once (Toys 2) and Tavi celebrates (Merc and Tavi). The reveal's last line makes
+  the other choice a fair guess (CURIOSITY-MOMENTS § 1, rule 2; FACTS 41).
 - **Step 5.** The choices are [ Just one: mi ] [ Three ] (FACTS 44). Both plays, "Play C major"
   (`scale-major`) and "Play C minor" (`scale-minor`), unlock after the choice, and the reveal waits
   until both have been heard (`revealOn` both, `revealAfter: 'all'`). The hints are LESSON.md's: the
@@ -495,7 +495,7 @@ between them: 10.0 s in all (FACTS 65). The path carries the kit's breath mark, 
 (`breaths`, `slide-guide.ts` on `feat/lesson-06-page`), at the start of the gap, 4.2 s in: a small
 tick in the path's own colour with the word "breathe" (FACTS 66). Beside the guide, the kit's
 breathing ring (`mountRing`, `src/features/lessons/kit/sing.ts:132`) shows the still of the Merc
-singing, blue for the lower voice and orange for the higher, never a microphone icon. Every state
+singing, Merc for the lower voice and Tavi for the higher, never a microphone icon. Every state
 has a visible status line that is also announced (`aria-live="polite"`). Lesson 3's rule for leaving
 holds, for what plays here: if the section stays off screen for 600 ms, or the page is hidden,
 whatever is playing stops (`src/features/lessons/lesson-03/sing.ts:366-382`).
@@ -505,7 +505,7 @@ States:
 1. **Comfort check**, always first and asked every visit (never stored): Lesson 3's line, its list
    naming all six of REQ-GVC-020's conditions, and its two buttons, through `mountComfort`
    (`src/features/lessons/kit/comfort.ts:146-154`; FACTS 57).
-2. **Voice choice**, after either comfort answer: Lesson 3's two buttons with the Mercs' stills
+2. **Voice choice**, after either comfort answer: Lesson 3's two buttons with Merc and Tavi's stills
    (`aria-pressed`, at least 44 px), read from and stored in `fyp-voice` through `VoiceChoice` and
    `bindVoiceButtons` (`src/features/lessons/kit/voice-choice.ts:30-47`, `:60-77`; FACTS 59). Its
    line has the two forms Lessons 5, 6 and 7 write: with none stored, "Choose a voice to sing with.
@@ -651,7 +651,7 @@ each note its own voice; the guide's count-in in the soft tone at half a tapped 
   Web Audio nothing sounds and the visuals still play. The kit stops every sound when the page is
   hidden (`sound.ts:475-477`).
 
-## Mercs
+## Merc and Tavi
 
 Lesson 1's setup through the kit (`src/features/lessons/kit/merc-duo.ts`,
 `src/features/lessons/kit/merc-warm.ts`): the app's renderer loaded after first paint, one WebGL
@@ -659,13 +659,13 @@ context per Merc, medium quality on phones, turned towards each other, paused of
 still images when WebGL fails or would run on the CPU.
 
 - They live in the hero, on either side of the spiral, and are on screen while the cold open plays.
-  Orange asks and blue answers in the bubbles (LESSON.md). While a chord sounds, both listen
-  (`mercListen`, `merc-duo.ts:206`); neither sings, since the chord is not sung. Orange celebrates
+  Tavi asks and Merc answers in the bubbles (LESSON.md). While a chord sounds, both listen
+  (`mercListen`, `merc-duo.ts:206`); neither sings, since the chord is not sung. Tavi celebrates
   once as the reveal shows, the puzzled guesser who then gets it (`mercCelebrate('orange', 1600)`,
   `:216`, as Lesson 2's cold open does, `lesson-02/cold-open.ts:56`; playbook rule 15), a quiet one,
   since the reveal calls no choice right: the page mounts the pair with `{ sparkles: 'none' }`
   (`MercDuoOptions`, `merc-duo.ts:120-126`). The page asks for no other state.
-- In Sing it the Mercs appear as stills, in the ring (Toys 6).
+- In Sing it Merc and Tavi appear as stills, in the ring (Toys 6).
 - Under reduced motion or Pause animations each Merc holds a still frame and skips the reactions.
 
 ## Practice links: what exists and what needs engineering
@@ -848,7 +848,7 @@ at `85e23a1af` changed there, and that page's own lines are cited at `d59c00ad6`
       on the headline.
 13. `public/learn/lesson-10-og.jpg`: the share card, 1200 x 630, a still of the hero: the title over
     the ring of twelve seen from above, do, mi and so in chrome joined by their triangle, between
-    blue Merc and orange Merc, with alt text naming it. It marks no note as the one that moves, so
+    Merc and Tavi, with alt text naming it. It marks no note as the one that moves, so
     the card does not answer the cold open's predict (FACTS 1a).
 14. The first-paint budget, in the change that adds the page: `learn/10.html` in both of
     `scripts/assert-first-paint-budgets.mjs`'s tables, its JavaScript and its render-blocking CSS,
@@ -1084,7 +1084,7 @@ bundle, which no site worker serves and which shows drafts: `build:e2e` sets `VI
     this one included (`lessonPages`, `:45-47`), for the team's words (`:22-40`), and the
     alternative hook's note never reaches the page (`:77-79`).
 13. With reduced motion emulated, no bead travels, the stack and the spread land in their end
-    states, the Mercs hold still, and nothing moves on its own.
+    states, Merc and Tavi hold still, and nothing moves on its own.
 14. A visitor with the studio installed still gets the lesson, not the shell (the service worker's
     document list), as Lesson 3's spec checks (`learn-lesson-03.spec.ts:154`).
 

@@ -97,23 +97,23 @@ heading, and the line above it, are in LESSON.md ("Section headings").
    9: Landing a leap" and "After Lesson 12: Chords", each a link to that lesson's page and wholly
    the link, as Lesson 2's `a.chip.chip-link` is, `learn/02.html:347-352`, so that it stays as a
    plain chip where its lesson is not live, 3; Sound on; Microphone optional); the promise; and the
-   sound gate from LESSON.md. Beside it, the stage: the bubbles, the two Mercs on the floor line,
+   sound gate from LESSON.md. Beside it, the stage: the bubbles, Merc and Tavi on the floor line,
    and under them, across the stage's whole width, the song line in its compact state (Toys 1). It
-   sits under the Mercs, not between them as Lesson 5's single band does, because a phrase of seven
-   notes with its words needs the width: between two 120 px Mercs on a 390 px phone it would have
-   about 66 px of plot (`.duo`, `lesson-05/lesson-05.css:21-26`, `:74-76`). Under the chart, its two
-   plays, then the label, "Both takes are Merc's, synthesised in your browser: a demonstration, not
-   a recording. Brighter means louder." (16), then the cold open's predict card (Toys 2). On a phone
-   (390 x 844) the title and the opening's first control, Play take 1, and the two choices belong on
-   the first screen, and on a tablet in landscape (1024 x 640) the stage and the choices too
-   (CURIOSITY-MOMENTS § 3.1, "Above the fold",
+   sits under Merc and Tavi, not between them as Lesson 5's single band does, because a phrase of
+   seven notes with its words needs the width: between Merc and Tavi at 120 px on a 390 px phone it
+   would have about 66 px of plot (`.duo`, `lesson-05/lesson-05.css:21-26`, `:74-76`). Under the
+   chart, its two plays, then the label, "Both takes are Merc's, synthesised in your browser: a
+   demonstration, not a recording. Brighter means louder." (16), then the cold open's predict card
+   (Toys 2). On a phone (390 x 844) the title and the opening's first control, Play take 1, and the
+   two choices belong on the first screen, and on a tablet in landscape (1024 x 640) the stage and
+   the choices too (CURIOSITY-MOMENTS § 3.1, "Above the fold",
    `docs/plans/find-your-pitch/CURIOSITY-MOMENTS.md:300-302`). Of the plan's levers, the recall's
-   place is already used, since it follows the predict; the others are the Mercs' size (`--merc`,
-   `kit/lesson-stage.css:193`) and the hook's length, 58 characters (1), since the owner dropped its
-   alternative, `compelling`, on 22 October 2026. The seven chips take five rows on a 360 px phone,
-   one a row for each lesson chip (3), so this page's stage starts lower than Lesson 9's;
-   `src/e2e/learn-cold-open-fold.spec.ts` holds the title on the first screen at its seven sizes and
-   reports where the first control and the choices sit (End to end 5).
+   place is already used, since it follows the predict; the others are Merc and Tavi's size
+   (`--merc`, `kit/lesson-stage.css:193`) and the hook's length, 58 characters (1), since the owner
+   dropped its alternative, `compelling`, on 22 October 2026. The seven chips take five rows on a
+   360 px phone, one a row for each lesson chip (3), so this page's stage starts lower than Lesson
+   9's; `src/e2e/learn-cold-open-fold.spec.ts` holds the title on the first screen at its seven
+   sizes and reports where the first control and the choices sit (End to end 5).
 3. **Recall from Lesson 5**: Lesson 5's questions 2 and 4, for everyone (Toys 5).
 4. **Four words you'll meet**: phrase, legato, swell and cadence, each with its definition, a small
    figure and a play button (Toys 3).
@@ -356,7 +356,7 @@ song, takes, swell, endings, listen back and still, plus live mode at the checkp
   (`lesson-02/cold-open.ts:34-37`), never "right" or "wrong", and the reveal's text is LESSON.md's
   for both choices. It states the answer first, "It stays level.", then why, then the other choice's
   reason in brackets, "(In Lesson 5, a harder push made a note louder and higher too, so "it rises"
-  was a fair guess.)" (15). `onReveal`: orange celebrates once (Mercs).
+  was a fair guess.)" (15). `onReveal`: Tavi celebrates once (Merc and Tavi).
 - Nothing before the reveal answers it (6): the title and the hook in either wording, the promise,
   the sound gate, the label, the head's descriptions and structured data (What the kit and the app
   still need, 2), the share card (3), and the previous card's tease in either wording (2).
@@ -404,7 +404,7 @@ States:
 1. **Comfort check**, always first and asked every visit (never stored): Lesson 3's comfort line,
    its list naming all six of REQ-GVC-020's conditions, and its two buttons (61), through the kit's
    `mountComfort` (`kit/comfort.ts:146-154`).
-2. **Voice choice**, after either comfort answer: Lesson 3's two buttons with the Mercs' stills
+2. **Voice choice**, after either comfort answer: Lesson 3's two buttons with Merc and Tavi's stills
    (`aria-pressed`, at least 44 px), under LESSON.md's line in its two forms, "Choose a voice to
    sing with. If you chose one in an earlier lesson, pick it again:" with none stored and "Keep the
    voice you chose before, or change it:" with one (65). It reads and writes `fyp-voice` through
@@ -459,9 +459,9 @@ States:
    measures or shows how loud the singer was, so whether "star" grew is the singer's to hear on
    playback (REQ-GVC-045; `src/lib/guided-voice/claims.ts`), and no level display is needed. For
    take 2 the chart shows the plan: the breath mark after "star", and "star"'s swell in faint light.
-   Both Mercs listen (`mercListen`, `kit/merc-duo.ts:206`). The recorder runs from the take's
-   opening to its end. The microphone is released when the take ends, and nothing sounds while a
-   take is open (`Sound.hush`, `kit/sound.ts`).
+   Merc and Tavi both listen (`mercListen`, `kit/merc-duo.ts:206`). The recorder runs from the
+   take's opening to its end. The microphone is released when the take ends, and nothing sounds
+   while a take is open (`Sound.hush`, `kit/sound.ts`).
 7. **The line**: one line under the chart, from the range reader (below), and the take's own line
    kept on the chart, take 1's faint once take 2 is drawn, each named at its end, "take 1" or "take
    2". If the take held under 1.5 s of voice, the line is "We didn't hear the phrase that time.",
@@ -601,7 +601,7 @@ stops a take while its Play button or the seek bar has focus, and is not taken p
 scrolls a long page: REQ-GVC-084 asks for Space outside editable controls on the app's Guided Check,
 one screen, and this page keeps Space for scrolling (an owner's decision, in the report). Under
 reduced motion the live line draws on a fixed frame that never scrolls, the guide's bands light
-without a playhead, and the Mercs skip their reactions (REQ-GVC-083).
+without a playhead, and Merc and Tavi skip their reactions (REQ-GVC-083).
 
 ### 5. Recall and quick check
 
@@ -670,14 +670,14 @@ before it plays and resolves `false` when another sound cut it short
 (`src/features/lessons/lesson-06/cold-open.ts:101-118`). The owner here covers a buffer as well as a
 synthesised voice, since the singer's takes play through it.
 
-## Mercs
+## Merc and Tavi
 
 Lesson 1's setup through the kit (`kit/merc-duo.ts`, `kit/merc-warm.ts`): the app's renderer loaded
 after first paint, one WebGL context per Merc, medium quality on phones, turned towards each other,
 paused off screen, and the still images when WebGL fails or would run on the CPU.
 
 - They live in the hero, and their reactions are the hero pair's: the Merc of the chosen voice sings
-  while Merc's notes sound (blue for the lower voice, orange for the higher), and orange celebrates
+  while Merc's notes sound (Merc for the lower voice, Tavi for the higher), and Tavi celebrates
   once at the cold open's reveal (no sparkles), the puzzled guesser who then gets it (playbook rule
   15). The same rule picks the singing Merc wherever Merc's notes sound.
 - `kit/merc-duo.ts` has `mercSing`, `mercListen` and `mercCelebrate` (`:164`, `:206`, `:216`): Merc
@@ -795,7 +795,7 @@ among them (PR #1149), and in Lesson 9's spec, beyond the parts Lessons 2 to 9 p
      with `og:image:width` 1200 and `og:image:height` 630, and as `og:image:alt` and
      `twitter:image:alt` "The title card: Find Your Pitch, Lesson 14, Phrasing: sing a whole song,
      above the first line of "Twinkle, Twinkle, Little Star" as seven amber bands with its words,
-     between blue Merc and orange Merc." (`learn/04.html:34-43`, `:53-60`), which the test holds to
+     between Merc and Tavi." (`learn/04.html:34-43`, `:53-60`), which the test holds to
      the file (`lesson-pages.test.ts:189-208`; item 3);
    - the Article node, in the head's first `application/ld+json` script and as a single object,
      since the test reads `alternativeHeadline` there and checks it only when present
@@ -824,8 +824,8 @@ among them (PR #1149), and in Lesson 9's spec, beyond the parts Lessons 2 to 9 p
    1200 x 630, the size `og:image:width` and `og:image:height` give, a baseline JPEG as Lesson 4's
    card is (`public/learn/lesson-04-og.jpg`), drawn with the page's own kit so that it looks like
    the page it opens: the title, Lesson 14 and the wordmark over line 1 of the song line, seven
-   amber bands with Merc's steady line through each and the words under them, between blue Merc and
-   orange Merc. It shows no swell, no light and no breath mark, so it does not answer the cold
+   amber bands with Merc's steady line through each and the words under them, between Merc and
+   Tavi. It shows no swell, no light and no breath mark, so it does not answer the cold
    open's predict.
 4. First-paint ceilings for `learn/14.html` in `scripts/assert-first-paint-budgets.mjs`, one in its
    JavaScript table and one in its stylesheet table, beside Lessons 3 and 6's (`:103-126`,
@@ -980,7 +980,7 @@ What the page does where nothing above says:
   notes, which a move does not change.
 - **Move do at an end**: that button is disabled, as Lesson 4's is, and the chart's summary says
   where do is.
-- **No WebGL, or a slow device**: the Mercs' stills (`kit/merc-warm.ts`).
+- **No WebGL, or a slow device**: Merc and Tavi's stills (`kit/merc-warm.ts`).
 - **Lesson 5 never marked done**: the recall still shows, as a prerequisite's does.
 - **Lesson 14 published while Lesson 5, 8, 9 or 12 is held back**: nothing stops it, since the
   publish order is a rule for whoever uses the console (the intro), so the page follows the state it

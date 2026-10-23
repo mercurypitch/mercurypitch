@@ -196,7 +196,7 @@ describe('Sim', () => {
   })
 
   it('celebrates with no sparkles at all when asked for none', () => {
-    // Arrange: a lesson's quiet celebration (Lesson 5 WEB-SPEC, Mercs)
+    // Arrange: a lesson's quiet celebration (Lesson 5 WEB-SPEC, Merc and Tavi)
     const sim = new Sim('idle')
     sim.sparkleSide = 'none'
 

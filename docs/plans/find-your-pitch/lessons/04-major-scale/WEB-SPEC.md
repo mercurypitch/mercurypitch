@@ -23,9 +23,9 @@ type and wordmark, and the motion rules. On this page:
 - Do, home, is marked by a house glyph (an SVG icon) and its label, never by a colour. The
   pitch-canvas set's tonic butter `#ffdf80` sits too close to gold to carry a second meaning on
   one page, so this page does not use it.
-- Blue `#58a6ff` lights the stairs blue Merc sings and orange `#ff7448` those orange Merc sings;
+- Blue `#58a6ff` lights the stairs Merc sings and orange `#ff7448` those Tavi sings;
   chrome is every other note.
-- The contrast case, step 3's white keys from D (orange's guess), is dashed ink-2 `#a8b3bf` with a
+- The contrast case, step 3's white keys from D (Tavi's guess), is dashed ink-2 `#a8b3bf` with a
   "?", as in Lesson 2's film (MASTER-PLAN § 5), because the scale guide uses the app's canvas set,
   in which violet is the singer.
 - The scale guide (Sing it) takes the app's canvas colours, target amber `#f59e0b` for Merc's
@@ -52,16 +52,16 @@ headings").
    (`{ lesson: 4, deck }`), so dropping Watch needs no kit change (`kit/page-chrome.ts`).
 2. **Hero**: kicker; the hook question as the title; the meta as three chips (10 minutes; "After
    Lesson 2: Twelve notes", the prerequisite chip, a link to `/learn/02`; Sound on); the promise;
-   the sound gate from LESSON.md, in the hero copy as Lesson 1's is; the two Mercs live on the
+   the sound gate from LESSON.md, in the hero copy as Lesson 1's is; Merc and Tavi live on the
    floor line either side of the staircase, shown on C with do marked home, and its Play button
    (`scale-c`, FACTS 57).
 3. **Cold open: predict**: the bubbles, each with its Merc's still, and beside them the compact
    staircase (Toys 1), so the sound and the stairs are on screen together (playbook rule 10). Play
-   from C and its Land on do work from the start; orange's and blue's lines from LESSON.md; the
+   from C and its Land on do work from the start; Tavi's and Merc's lines from LESSON.md; the
    two-choice predict; choosing unlocks Play from D, which slides the compact staircase to D,
    announced "Major scale from D", before it plays. The reveal appears after Play from D has
-   sounded; with sound off, LESSON.md's hint shows and the reveal waits. The live Mercs stay in the
-   hero (Mercs, below).
+   sounded; with sound off, LESSON.md's hint shows and the reveal waits. Merc and Tavi stay live in
+   the hero (Merc and Tavi, below).
 4. **Recall from Lesson 2**: Lesson 2's questions 1 and 3 (Toys 5), straight after the cold
    open, as on Lesson 2's page (MASTER-PLAN § 4.2, decided 20 October 2026).
 5. **Four words you'll meet**: scale, tonic, scale degree and solfège, each with its definition, a
@@ -71,7 +71,7 @@ headings").
    (`toyFor: () => 1`), in five states (Toys 1):
    1. Count the steps: on C, step sizes labelled, the two semitones lit gold.
    2. Two groups and a joint: Group.
-   3. Start anywhere: orange's line, the second predict, then Slide and White keys only; the
+   3. Start anywhere: Tavi's line, the second predict, then Slide and White keys only; the
       mix-up card.
    4. Name the stairs: the names switch.
    5. Ti leans home: Stop on ti and Land on do; the Go deeper drawer under the text (Toys 6).
@@ -177,7 +177,7 @@ transforms is one object on the page.
 - **Stop on ti** and **Land on do** (cold open, step 5, quiz question 3): Stop on ti plays up to
   ti and holds it (FACTS 58, 59), leaving the top stair an outline with an arrow up from ti; Land
   on do plays ti, then do, and the top stair fills, its house glyph lit.
-- **Predict** (step 3): after orange's line, Toys 2's widget with two choices; choosing unlocks
+- **Predict** (step 3): after Tavi's line, Toys 2's widget with two choices; choosing unlocks
   Play white keys from D and Play the pattern from D, each sliding the staircase to D first; with
   sound off, LESSON.md's hint shows and the reveal waits; the reveal never calls a choice wrong.
 - **The house glyph** is a new symbol, `#i-home`, in the page's inline icon sprite (Lesson 1's
@@ -199,7 +199,7 @@ transforms is one object on the page.
 - Both are Lesson 1's widget: the choice locks, the play buttons unlock, the reveal plays after
   the sound and never calls a choice wrong; two choices each, every button at least 44 px tall.
 - New: the cold open's Play from C (with its Land on do) works before the choice, because
-  orange's line answers it; only Play from D waits for the choice, and the reveal waits for Play
+  Tavi's line answers it; only Play from D waits for the choice, and the reveal waits for Play
   from D. With sound off the reveal waits too, and the hint says so (Lesson 1's rule: the reveal
   describes what was heard).
 
@@ -218,7 +218,7 @@ button (FACTS 61).
   target path (FACTS 63): up to so and back, a rest, up to ti, a 2 s hold on ti, then do.
 - **Play Merc's scale** (do = D3) and **Play it an octave up** (do = D4) sing in Merc's "ooh". The
   path lights in step as each plays, while the breathing ring beside the guide shows the still of
-  the Merc singing it, blue for D3 and orange for D4, as Lesson 1's ring does
+  the Merc singing it, Merc for D3 and Tavi for D4, as Lesson 1's ring does
   (`kit/sing.ts:251-257`).
 - **Start the guide** is enabled once either scale has played (hear it first: playbook rule 16);
   until then it is `aria-disabled`, with the hint "Play Merc's scale first". It is the viewer's
@@ -279,16 +279,16 @@ through the kit's sound module and its house envelopes
 Merc's singing in Merc's "ooh", and the guide's count-in in the soft tone at half a tap's level
 (FACTS, Sounds). Nothing autoplays, and the page has no music bed.
 
-## Mercs
+## Merc and Tavi
 
 Lesson 1's setup through the kit (`kit/merc-duo.ts`, `kit/merc-warm.ts`): the app's renderer
 loaded after first paint, one WebGL context per Merc, medium quality on phones, turned towards each
 other, paused off screen (`merc-duo.ts:43-53`), and the still images when WebGL fails or would run
 on the CPU.
 
-- They live in the hero, and their reactions are the hero pair's: blue `sing` while the hero's
-  Play sounds; in the cold open, blue `sing` while Play from C sounds and orange `sing` while Play
-  from D sounds; and orange `celebrate` once after the cold-open reveal (no sparkles).
+- They live in the hero, and their reactions are the hero pair's: Merc `sing` while the hero's
+  Play sounds; in the cold open, Merc `sing` while Play from C sounds and Tavi `sing` while Play
+  from D sounds; and Tavi `celebrate` once after the cold-open reveal (no sparkles).
 - The cold open sits below the hero, so the live pair is often off screen and paused while it
   plays. The bubbles carry each Merc's still, and the compact staircase carries the moment.
 - `merc-duo.ts` has `mercSing` and `mercCelebrate` (`:164`, `:216`), and `mercListen` (`:206`)

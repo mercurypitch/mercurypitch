@@ -1,7 +1,7 @@
 # Find Your Pitch
 
 MercuryPitch's music theory and singing tutorial series: a web lesson and a code-built YouTube
-explainer per lesson, hosted by blue Merc and orange Merc.
+explainer per lesson, hosted by Merc and Tavi.
 
 Start with [MASTER-PLAN.md](MASTER-PLAN.md).
 

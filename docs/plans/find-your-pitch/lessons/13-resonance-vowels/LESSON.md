@@ -6,7 +6,7 @@ The web lesson's copy, step by step. Every claim is in [FACTS.md](FACTS.md). Wri
 English (MASTER-PLAN § 12 item 5); the app's screens stay American. Each step names its toy (the
 interactive visual it sits beside); the page spec is [WEB-SPEC.md](WEB-SPEC.md), which also holds
 the rules behind the checkpoint's lines. This is a voice lesson and a text-only package: Lesson 13
-has no film yet, so the page has no Watch section. Each step's heading is orange Merc's question
+has no film yet, so the page has no Watch section. Each step's heading is Tavi's question
 (playbook rule 4). The page opens in Lesson 2's order: the title, the stage, the sound gate, the
 cold open's predict, then the recall (MASTER-PLAN § 4.2 and § 12 item 13). The vowels are written as
 the CURRICULUM card writes them, ‘ee’, ‘eh’, ‘ah’, ‘oh’ and ‘oo’, in the hook's single quotation
@@ -61,12 +61,12 @@ leans on neither, and "their places" is the misconception made visible (FACTS 1 
 
 [ Play Merc's ‘ee’ ]
 
-(Blue Merc holds A3 on ‘ee’ for two seconds, whichever voice is stored. Above, Merc's line glows
+(Merc holds A3 on ‘ee’ for two seconds, whichever voice is stored. Above, Merc's line glows
 amber, level on the chart. Under it, a strip of bars lights, one bar for each harmonic up to 4,000
 Hz, and the two peaks are marked and numbered: the 1st bar and the 10th.)
 
-Orange Merc: "A different vowel must be a slightly different note, surely?"
-Blue Merc: "Watch the line, and listen."
+Tavi: "A different vowel must be a slightly different note, surely?"
+Merc: "Watch the line, and listen."
 
 Under the line, each bar is one of the frequencies inside Merc's note, lowest on the left. Its
 height is how loud it is, and the marked bars are the peaks.
@@ -225,7 +225,7 @@ throat specialist). If it's very painful, or breathing or swallowing is hard, ge
 away."
 
 Choose a voice to sing with. If you chose one in an earlier lesson, pick it again:
-[ Lower: sing with blue Merc, around A3 ] [ Higher: sing with orange Merc, around A4 ]
+[ Lower: sing with Merc, around A3 ] [ Higher: sing with Tavi, around A4 ]
 
 (A stored voice shows pressed and can be changed, and the line above reads "Keep the voice you
 chose before, or change it:" instead. With none stored, this choice comes after either answer

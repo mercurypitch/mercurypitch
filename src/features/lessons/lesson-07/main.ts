@@ -94,5 +94,5 @@ initMasthead(
 )
 initReveals()
 startFrameLoop()
-// Merc celebrates with no sparkles on this page (WEB-SPEC, Mercs)
+// Merc celebrates with no sparkles on this page (WEB-SPEC, Merc and Tavi)
 void initMercs(q('#heroStage'), { sparkles: 'none' })

@@ -4,7 +4,7 @@ The web lesson's copy, step by step. Every claim is in [FACTS.md](FACTS.md). Wri
 English, as MASTER-PLAN § 12 item 5 decides; the app's screens stay American. Each step names its
 toy (the interactive visual it sits beside); the page spec is [WEB-SPEC.md](WEB-SPEC.md). This is
 a text-only package: Lesson 6 has no film yet, so the page has no Watch section. Each step's
-heading is orange Merc's question (playbook rule 4). It is a theory lesson, but its sing-along has
+heading is Tavi's question (playbook rule 4). It is a theory lesson, but its sing-along has
 the viewer sing one phrase from two different notes, so it carries Lesson 3's singing lines and
 lists them for the vocal coach at the end. Where this page shares a line with Lesson 3 (the comfort
 check, "Just listen today", the voice choice, the stop line, the feelings with their gentle and
@@ -32,15 +32,15 @@ is live, because its prerequisite chip and its recall check link there.
 
 ## Cold open: predict
 
-(In the hero. Between the two Mercs, the tune's line: the first line of "Twinkle, Twinkle" as
+(In the hero. Between Merc and Tavi, the tune's line: the first line of "Twinkle, Twinkle" as
 seven beads on faint rows, one row per semitone, with no names and no numbers.)
 
-Orange Merc: "If every note changes, isn't it a different tune?"
-Blue Merc: "Let's change every one and listen."
+Tavi: "If every note changes, isn't it a different tune?"
+Merc: "Let's change every one and listen."
 
 [ Play from C ]
 
-(Blue Merc sings the first line on "ooh", starting on C, and the beads light as Merc sings them.
+(Merc sings the first line on "ooh", starting on C, and the beads light as Merc sings them.
 Play from C works before a choice: it is the version the predict compares with.)
 
 **Predict before you listen.** Merc moves the whole tune up six semitones. What will still match
@@ -118,7 +118,7 @@ _Toys: the tune line with both lines and its gaps numbered; the Step or leap? ea
 
 ## Step 3 of 5: What happens if I slide the whole tune?
 
-Orange Merc: "If I slide the line up, won't the gaps stretch?"
+Tavi: "If I slide the line up, won't the gaps stretch?"
 
 Lift the line off the rows and slide it to a new start. Every note moves by the same number of
 semitones, so every interval stays the same. That's transposing, and it's why "Twinkle" was still
@@ -224,7 +224,7 @@ throat specialist). If it's very painful, or breathing or swallowing is hard, ge
 away."
 
 Choose a voice to sing with. If you chose one in an earlier lesson, pick it again:
-[ Lower: sing with blue Merc, around A3 ] [ Higher: sing with orange Merc, around A4 ]
+[ Lower: sing with Merc, around A3 ] [ Higher: sing with Tavi, around A4 ]
 
 (A stored voice shows pressed and can be changed, and the line above reads "Keep the voice you
 chose before, or change it:" instead. With none stored, this choice comes after either answer

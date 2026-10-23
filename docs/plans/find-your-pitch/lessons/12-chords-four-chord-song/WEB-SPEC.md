@@ -78,9 +78,9 @@ and wordmark, and the motion rules. On this page:
   without claims).
 - Chrome `#c3ccd6` is every room and every scale note; the bead that is sounding is ink `#e6edf3`,
   lit. The black keys' beads are lit and named, and drawn fainter than the scale's own notes.
-- Blue `#58a6ff` and orange `#ff7448` are the Mercs' own: their bubbles, blue Merc's walk through
+- Blue `#58a6ff` and orange `#ff7448` are Merc and Tavi's own: their bubbles, Merc's walk through
   the rooms as it sings a tune (the tune's line, bead to bead, in blue, as Lesson 6 lights the notes
-  blue Merc sings), and in Sing it the still of the Merc who sings. The guide takes the app's canvas
+  Merc sings), and in Sing it the still of the Merc who sings. The guide takes the app's canvas
   colours, target amber `#f59e0b` for Merc's path while Merc sings; on the viewer's turn it turns
   plain chrome, as Lessons 2, 4, 6 and 10's guides do (Lesson 2 DECISIONS 68).
 - Quality is a word and a shape on the toy, "major", "minor", "diminished" and the chord's numeral,
@@ -91,10 +91,10 @@ and wordmark, and the motion rules. On this page:
 
 Four things move: the Merc idle loops; a room's corner while it slides (Step 3); every room while
 the key switch turns them round the ring (Step 2); and a tune's walk as it is drawn, bead to bead.
-Only the Mercs move on their own. Under `prefers-reduced-motion` the Mercs stop, and every slide and
-turn lands in its end state with no travel; the walk is drawn a segment at a time as each note
-sounds, with no travel along it. What the viewer starts still sounds, and the beads still light as
-they sound. For everyone else the masthead's Pause animations toggle stops the same things (WCAG
+Only Merc and Tavi move on their own. Under `prefers-reduced-motion` Merc and Tavi stop, and every
+slide and turn lands in its end state with no travel; the walk is drawn a segment at a time as each
+note sounds, with no travel along it. What the viewer starts still sounds, and the beads still light
+as they sound. For everyone else the masthead's Pause animations toggle stops the same things (WCAG
 2.2.2).
 
 ## Sections
@@ -118,8 +118,8 @@ FACTS 5a). Each section's heading, and the line above it, are in LESSON.md ("Sec
    LESSON.md. The chips are "15 minutes" (FACTS 3), "After Lesson 10: Major and minor", a link to
    `/learn/10` as Lesson 4's prerequisite chip links Lesson 2 (`learn/04.html:335-339`; FACTS 2),
    which stays a plain chip wherever Lesson 10 is not live
-   (`src/features/lessons/kit/page-state.ts:16-17`), and "Sound on". Its stage holds orange's and
-   blue's bubbles (`learn/02.html:383`) over the two Mercs on the floor line, the hero's own copy of
+   (`src/features/lessons/kit/page-state.ts:16-17`), and "Sound on". Its stage holds Tavi's and
+   Merc's bubbles (`learn/02.html:383`) over Merc and Tavi on the floor line, the hero's own copy of
    the spiral between them (`:404`; Toys 2), and under the spiral the cold open's three plays: "Play
    the four chords", which works from the start, and "Play tune 1" and "Play tune 2", locked until a
    choice. The predict card sits under the stage, as Lesson 2's does (`:448`): LESSON.md's predict,
@@ -183,7 +183,7 @@ Lesson 3's page on the same counter less the editorial note under its title. The
 minutes: 9.84 minutes of reading at 238 words a minute and 5.25 of sound, toys and tasks, 15.09 in
 all. That is past MASTER-PLAN § 4.2's 8 to 12 minutes of active time, as Lessons 3, 5, 6, 7 and 10
 are (15, 17, 15, 16 and 17 minutes: Lesson 3 FACTS 61, Lesson 5 FACTS 2, Lesson 6 FACTS 3, Lesson 7
-FACTS 4, Lesson 10 FACTS 3). Each step's text, with its Try, its Notice and any orange line, runs 97
+FACTS 4, Lesson 10 FACTS 3). Each step's text, with its Try, its Notice and any Tavi line, runs 97
 to 118 words (Steps 1 to 5: 115, 118, 118, 111 and 97), inside § 4.2's 50 to 120 a step. Six
 parts carry more, by the same counter with their headings left out, for these reasons:
 
@@ -377,7 +377,7 @@ further:
 - **Play the four chords** (`loop-c`, free) lights each room while its chord sounds, 2.0 s each
   (FACTS 68).
 - **Play tune 1** (`tune-1`) and **Play tune 2** (`tune-2`), after the choice, play the loop with
-  blue Merc singing the tune over it (Toys 5): each room lights with its chord, each sung note
+  Merc singing the tune over it (Toys 5): each room lights with its chord, each sung note
   pulses its bead and a blue line joins it to the note before, and a note that lands on a corner of
   the lit room glows gold and grows a ring. The count under the ring, "On a corner: 1 of 1", rises
   as each note lands and ends on "On a corner: 11 of 15" for tune 1 and "On a corner: 10 of 12" for
@@ -420,8 +420,8 @@ further:
   tapped. After the reveal (`:137`), `hints.again` reads "Play either tune again, or just the four
   chords.", and neither of the others replaces it (`:161`). The same strings are LESSON.md's. The
   reveal's "You said" line is the kit's `guess` (`:60-61`): "You said: most of them" or "You said:
-  hardly any", never "right" or "wrong". As it shows, orange celebrates (Mercs). The reveal's last
-  line makes the other choice a fair guess (CURIOSITY-MOMENTS § 1, rule 2; FACTS 39).
+  hardly any", never "right" or "wrong". As it shows, Tavi celebrates (Merc and Tavi). The reveal's
+  last line makes the other choice a fair guess (CURIOSITY-MOMENTS § 1, rule 2; FACTS 39).
 - With sound off the reveal waits: the reveal only ever describes a sound that was heard
   (`kit/predict.ts:5-10`). The plays' visuals still run, the walk and the gold included, as every
   play's do with sound off.
@@ -461,7 +461,7 @@ for 1.2 s (FACTS 70). Under reduced motion the corners light in turn, with no ot
 ### 5. The tune toy
 
 Two tunes over the loop, on Toys 1's ring in Step 5 and free play, and on the hero's ring in the
-cold open (Toys 2): blue Merc sings each in Merc's "ooh" while the loop plays under it, one chord a
+cold open (Toys 2): Merc sings each in Merc's "ooh" while the loop plays under it, one chord a
 bar of four crotchets, 0.5 s a crotchet, 8.0 s a play (FACTS 35 to 37, 68).
 
 - **Tune 1** plays E5 D5 C5 E5 | D5 C5 B4 D5 | C5 B4 A4 C5 | A4 G4 F4, crotchets, the last note a
@@ -479,8 +479,8 @@ bar of four crotchets, 0.5 s a crotchet, 8.0 s a play (FACTS 35 to 37, 68).
   stays at its end, "11 of 15", "10 of 12" or, for Even notes, "10 of 12", until the next play.
 - **Slow** (`aria-pressed`) doubles every length, the loop's with the tune's, 16.0 s.
 - Under the tune the chord's voices sound at 0.05 each, so the tune stands clear of them (FACTS 74).
-- Blue Merc sings in the hero (`mercSing('blue', midi, true)` as each note starts and `false` as it
-  ends, `src/features/lessons/kit/merc-duo.ts:164`) while orange listens (`mercListen`, `:206`); on
+- Merc sings in the hero (`mercSing('blue', midi, true)` as each note starts and `false` as it
+  ends, `src/features/lessons/kit/merc-duo.ts:164`) while Tavi listens (`mercListen`, `:206`); on
   the steps' ring no Merc is on screen, and the walk alone carries it.
 - Its accessible names are "Play tune 1", "Play tune 2" and "Play tune 2 with even notes"; the live
   region speaks the start and the count, as in Toys 2.
@@ -501,7 +501,7 @@ all (FACTS 61). The path carries the kit's breath mark, from Lesson 6's page (`b
 path's own colour with the word "breathe" (FACTS 62). Under Merc's notes and under the guide the
 chords play, I, V, vi, IV and I, 2.0 s each, so each chord starts with its root (FACTS 73). Beside
 the guide, the kit's breathing ring (`mountRing`, `src/features/lessons/kit/sing.ts:132`) shows the
-still of the Merc singing, blue for the lower voice and orange for the higher, never a microphone
+still of the Merc singing, Merc for the lower voice and Tavi for the higher, never a microphone
 icon. Every state has a visible status line that is also announced (`aria-live="polite"`). Lesson
 3's rule for leaving holds, for what plays here: if the section stays off screen for 600 ms, or the
 page is hidden, whatever is playing stops (`src/features/lessons/lesson-03/sing.ts:366-382`).
@@ -545,7 +545,7 @@ States:
 1. **Comfort check**, always first and asked every visit (never stored): Lesson 3's line, its list
    naming all six of REQ-GVC-020's conditions, and its two buttons, through `mountComfort`
    (`src/features/lessons/kit/comfort.ts:146-154`; FACTS 53).
-2. **Voice choice**, after either comfort answer: Lesson 3's two buttons with the Mercs' stills
+2. **Voice choice**, after either comfort answer: Lesson 3's two buttons with Merc and Tavi's stills
    (`aria-pressed`, at least 44 px), read from and stored in `fyp-voice` through `VoiceChoice` and
    `bindVoiceButtons` (`src/features/lessons/kit/voice-choice.ts:30-47`, `:60-77`; FACTS 55). Its
    line has the two forms Lessons 5, 6, 7 and 10 write: with none stored, "Choose a voice to sing
@@ -718,7 +718,7 @@ each note its own voice; the guide's count-in in the soft tone at half a tapped 
   Web Audio nothing sounds and the visuals still play. The kit stops every sound when the page is
   hidden (`sound.ts:475-477`).
 
-## Mercs
+## Merc and Tavi
 
 Lesson 1's setup through the kit (`src/features/lessons/kit/merc-duo.ts`,
 `src/features/lessons/kit/merc-warm.ts`): the app's renderer loaded after first paint, one WebGL
@@ -726,14 +726,14 @@ context per Merc, medium quality on phones, turned towards each other, paused of
 still images when WebGL fails or would run on the CPU.
 
 - They live in the hero, on either side of the spiral, and are on screen while the cold open plays.
-  Orange asks and blue answers in the bubbles (LESSON.md). While the four chords sound, both listen
-  (`mercListen`, `merc-duo.ts:206`). While a tune plays, blue sings it (`mercSing`, `:164`), note by
-  note, and orange listens: blue said "Listen to both", and sings them. Orange celebrates once as
+  Tavi asks and Merc answers in the bubbles (LESSON.md). While the four chords sound, both listen
+  (`mercListen`, `merc-duo.ts:206`). While a tune plays, Merc sings it (`mercSing`, `:164`), note by
+  note, and Tavi listens: Merc said "Listen to both", and sings them. Tavi celebrates once as
   the reveal shows, the puzzled guesser who then gets it (`mercCelebrate('orange', 1600)`, `:216`,
   as Lesson 2's cold open does, `lesson-02/cold-open.ts:56`; playbook rule 15), a quiet one, since
   the reveal calls no choice right: the page mounts the pair with `{ sparkles: 'none' }`
   (`MercDuoOptions`, `merc-duo.ts:120-126`). The page asks for no other state.
-- In Sing it the Mercs appear as stills, in the ring (Toys 6).
+- In Sing it Merc and Tavi appear as stills, in the ring (Toys 6).
 - Under reduced motion or Pause animations each Merc holds a still frame and skips the reactions.
 
 ## Practice links: what exists and what needs engineering
@@ -916,7 +916,7 @@ heard play (Toys 3; Edge cases) (`git diff --stat`).
       exactly;
     - `og:image` and `twitter:image` the share card (item 13), with `og:image:width` 1200,
       `og:image:height` 630, and `og:image:alt` and `twitter:image:alt` "Four chord shapes on a ring
-      of twelve notes, between blue Merc and orange Merc", as on Lesson 2 (`learn/02.html:34-60`);
+      of twelve notes, between Merc and Tavi", as on Lesson 2 (`learn/02.html:34-60`);
     - canonical and `og:url` `https://mercurypitch.com/learn/12`;
     - robots `index, follow, max-image-preview:large` and `twitter:card` `summary_large_image`;
     - the Article block, the head's first `application/ld+json` script and one object, since the
@@ -939,8 +939,8 @@ heard play (Toys 3; Edge cases) (`git diff --stat`).
 13. `public/learn/lesson-12-og.jpg`: the share card, 1200 x 630, in the page's first commit, since
     `lesson-pages.test.ts:189-208` fails a lesson document whose card is not in `public/` at the size
     its head gives, a draft's included. It is a still of the hero: the title over
-    the ring of twelve seen from above, the loop's four rooms drawn in chrome, between blue Merc and
-    orange Merc, with the alt text above. It draws no tune, no walk, no gold and no count, so the
+    the ring of twelve seen from above, the loop's four rooms drawn in chrome, between Merc and
+    Tavi, with the alt text above. It draws no tune, no walk, no gold and no count, so the
     card does not answer the cold open's predict (FACTS 1a).
 14. The first-paint budget, in the change that adds the page: `learn/12.html` in both of
     `scripts/assert-first-paint-budgets.mjs`'s tables, its JavaScript (`FIRST_PAINT_BUDGETS_KB`,
@@ -949,7 +949,7 @@ heard play (Toys 3; Edge cases) (`git diff --stat`).
     (`scripts/assert-first-paint-budgets.mjs:103-105`), and a document it emits with no budget
     fails the check (`assert-first-paint-budgets.mjs:517-521`, and for CSS `:547-553`; FACTS 76),
     which `build:e2e` runs (`package.json:20`). The page's WebGL renderer, as on every lesson page,
-    arrives after first paint (Mercs).
+    arrives after first paint (Merc and Tavi).
 15. On release (SEARCH.md § 12), once its `drafts.ts` line is deleted: `public/sitemap.xml` and
     `public/llms.txt` (its Lessons list, `:66-80`), one entry each. Until then the draft's rules
     hold on the repository: in neither file, linked from no entry document, its service-worker rule
@@ -1266,7 +1266,7 @@ bundle, which no site worker serves and which shows drafts: `build:e2e` sets `VI
     this one included (`lessonPages`, `:45-47`), for the team's words (`:22-40`), and the
     alternative hook's note never reaches the page (`:77-79`).
 13. With reduced motion emulated, no corner slides, the rooms turn at once, the walk draws a segment
-    at a time with no travel, the Mercs hold still, and nothing moves on its own.
+    at a time with no travel, Merc and Tavi hold still, and nothing moves on its own.
 14. A visitor with the studio installed still gets the lesson, not the shell (the service worker's
     document list), as Lesson 3's spec checks (`learn-lesson-03.spec.ts:154`).
 

@@ -6,7 +6,7 @@ The web lesson's copy, step by step. Every claim is in [FACTS.md](FACTS.md). Wri
 English (MASTER-PLAN § 12 item 5); the app's screens stay American. Each step names its toy (the
 interactive visual it sits beside); the page spec is [WEB-SPEC.md](WEB-SPEC.md), which also holds
 the rules behind the checkpoint's lines. This is a theory lesson and a text-only package: Lesson 8
-has no film yet, so the page has no Watch section. Each step's heading is orange Merc's question
+has no film yet, so the page has no Watch section. Each step's heading is Tavi's question
 (playbook rule 4). The page opens as Lesson 2's does: the hook, the stage, the sound gate and the
 cold open's predict, then the recall (MASTER-PLAN § 4.2 and § 12 item 13; CURIOSITY-MOMENTS § 3.1).
 The lesson comes after Lesson 1 (CURRICULUM § 3.3; rhythm starts fresh), and its checkpoint ends
@@ -43,17 +43,17 @@ page runs the hook, the stage, the gate, the predict, then the recall: WEB-SPEC,
 ## Cold open: predict
 
 (In the hero, as Lesson 2's cold open sits: the bubbles over the stage, the predict card under it.
-On the stage, between the two Mercs, the compact beat machine: the metronome beside the first two
+On the stage, between Merc and Tavi, the compact beat machine: the metronome beside the first two
 lines of "Twinkle, Twinkle", one syllable to a beat, the beats numbered 1 to 4 and the claps drawn
 as dots on 1 and 3.)
 
 [ Play with claps on 1 and 3 ]
 
-(Blue Merc sings the two lines on "ooh" at 90 beats a minute, over plain clicks, with a clap on
-beats 1 and 3 of every bar. The Mercs hop on every clap. This play works before any choice.)
+(Merc sings the two lines on "ooh" at 90 beats a minute, over plain clicks, with a clap on
+beats 1 and 3 of every bar. Merc and Tavi hop on every clap. This play works before any choice.)
 
-Orange Merc: "If it's no faster, can moving the claps change anything?"
-Blue Merc: "Let's move them and listen."
+Tavi: "If it's no faster, can moving the claps change anything?"
+Merc: "Let's move them and listen."
 
 **Predict before you listen.** Same tune, same speed. The claps move to 2 and 4. Musicians call
 some beats strong and some weak. Will the claps now land on strong beats, or weak ones?
@@ -62,7 +62,7 @@ some beats strong and some weak. Will the claps now land on strong beats, or wea
 Until a choice: "Choose an answer to unlock the play button."
 
 (After a choice, Play with claps on 2 and 4 unlocks. The dots slide one beat along before Merc
-sings, and the Mercs hop on the new claps. With sound off, the hint reads: "Sound is off, so
+sings, and Merc and Tavi hop on the new claps. With sound off, the hint reads: "Sound is off, so
 nothing played. Turn sound on to hear it, then press Play with claps on 2 and 4." The reveal waits
 for the sound.)
 
@@ -172,14 +172,14 @@ march tempo. Slowed to the rock beat's 90, is it the rock beat?
 (After a choice: Play the march at 90 · Play the rock beat, with the hint "Locked in. Play both,
 and watch the grid."; after the first play, "Now play the other one."; after the reveal, "Play them
 again, or swap the tempos on the stage." With sound off, the hint reads: "Sound is off, so nothing
-played. Turn sound on to hear them, then press Play the march at 90." Orange Merc's line, the
+played. Turn sound on to hear them, then press Play the march at 90." Tavi's line, the
 mix-up card, the Try and the Notice below each state the reveal's answer, so they come with it,
 once both plays have been heard.)
 
 Reveal: No. It's slower, but still BOOM on 1 and whack on 2, 3 and 4. The rock beat claps on 2
 and 4 only. The tempo changed, not the rhythm. (They now share a speed, so "yes" was a fair guess.)
 
-Orange Merc: "So the tempo is the speed, and the rhythm is what happens on the beats."
+Tavi: "So the tempo is the speed, and the rhythm is what happens on the beats."
 
 > **Common mix-up:** "Rhythm is just how fast the song goes."
 > **Why it seems right:** a faster song does sound different, and a tempo is one easy number.
@@ -230,7 +230,7 @@ throat specialist). If it's very painful, or breathing or swallowing is hard, ge
 away."
 
 Choose a voice to sing with. If you chose one in an earlier lesson, pick it again:
-[ Lower: sing with blue Merc, around A3 ] [ Higher: sing with orange Merc, around A4 ]
+[ Lower: sing with Merc, around A3 ] [ Higher: sing with Tavi, around A4 ]
 
 (A stored voice shows pressed and can be changed, and the line above reads "Keep the voice you
 chose before, or change it:" instead. With none stored, this choice comes after either answer
@@ -456,7 +456,7 @@ Also changed, though they are not voice instructions:
 
 - The cold open's predict asks whether the moved claps land on strong or weak beats, since the
   title already says the song feels different (FACTS 30b).
-- Step 5's orange Merc line, mix-up card, Try and Notice wait for its reveal, since each answers
+- Step 5's Tavi line, mix-up card, Try and Notice wait for its reveal, since each answers
   its predict; the words are unchanged.
 - Its reveal says that claps on 2 and 4 make those weak beats stand out, as the backbeat's sources
   say, where it said that a clap stresses any beat it lands on, which no source says; Step 4 says

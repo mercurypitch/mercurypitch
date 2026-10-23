@@ -28,7 +28,7 @@ means the singer only.
 
 Only the two Merc idle loops move on their own. Everything else moves because the viewer started
 it: the folds' vibration, the chase, a tone's line, the live line. Under `prefers-reduced-motion`
-the Mercs hold a still frame, every transition lands in its end state, the band chart never
+Merc and Tavi hold a still frame, every transition lands in its end state, the band chart never
 scrolls, and what the viewer starts still sounds. For everyone else, the masthead's Pause
 animations toggle stops the Merc loops (WCAG 2.2.2).
 
@@ -41,14 +41,14 @@ the Wrap. New: there is no Watch section until a film exists, and the checkpoint
 1. **Masthead**: Lesson 1's, with "Season 1 · Lesson 03" and the anchors Lesson, Sing and Explorer.
 2. **Hero**: kicker, title, LESSON.md's meta as chips ("15 minutes", FACTS 61; the Lesson 1 chip,
    a link to `/learn/01`; "Also useful: Lesson 2"; Sound on; Microphone optional), the promise, and
-   the two Mercs either side of the hook stage (Toys, 1).
+   Merc and Tavi either side of the hook stage (Toys, 1).
 3. **Recall from Lesson 2**, open only when Lesson 2 is marked done (Toys, 8).
 4. **Cold open: predict**: the bubbles, the two figures, the sound pair, the predict and the reveal
    (Toys, 1).
 5. **Three words you'll meet**, each with a play button (Merc's "ooh" on A3; Lesson 2's 100-cent
    glide) or, for the band, a small band that lights.
 6. **The steps**: Lesson 1's sticky stage and step deck (`kit/step-deck.ts`, "N of 5"), each step
-   with its heading (orange's question), text, "Try:", "Notice:" and toy: 1, the vocal folds (Toys,
+   with its heading (Tavi's question), text, "Try:", "Notice:" and toy: 1, the vocal folds (Toys,
    2); 2, louder or higher and the care card (Toys, 3); 3, match it by ear, the mix-up card and the
    Go deeper drawer (Toys, 4 and 9); 4, two octaves, its predict first and the voice choice last
    (Toys, 5); 5, the band chart (Toys, 6).
@@ -88,10 +88,10 @@ the Wrap. New: there is no Watch section until a film exists, and the checkpoint
   "TESTED 10–16 %" over "a semitone or more off" (FACTS 1 to 4, 44a), with LESSON.md's semitone line
   under them (FACTS 39). Between them, the band chart (toy 6) with one amber band at A3.
 - **Play: on the note** and **Play: a semitone off** are live from the start, as sound before the
-  numbers: Merc's A3 (1.6 s, blue Merc in `sing`), then the reply (1.6 s) on A3 or G♯3 (FACTS 43,
+  numbers: Merc's A3 (1.6 s, Merc in `sing`), then the reply (1.6 s) on A3 or G♯3 (FACTS 43,
   46), drawn as a violet line inside the band or a semitone under it, labelled "0 cents" or "100
   cents below: a semitone". The reply belongs to no Merc.
-- The predict widget: orange's bubble ("I can't sing.") and blue's reply, then LESSON.md's question
+- The predict widget: Tavi's bubble ("I can't sing.") and Merc's reply, then LESSON.md's question
   about the 39 students who said they couldn't copy a note, with its two choices (FACTS 6). Choosing
   shows the three cards one after another, then the answer line, whose bracket speaks to "Most of
   them" without calling it wrong; no choice is ever marked wrong. Under reduced motion the cards
@@ -153,12 +153,12 @@ the Wrap. New: there is no Watch section until a film exists, and the checkpoint
   with a tick per semitone, letters on the natural notes and A3 and A4 named in full: Merc's amber
   band at A3, and a dashed amber band one octave up at A4.
 - The predict opens the step: two choices (Yes, it counts · No, it's a different note); choosing
-  unlocks Play blue's A3, Play orange's A4 and Play both. Once Play both has been heard, the reveal
+  unlocks Play Merc's A3, Play Tavi's A4 and Play both. Once Play both has been heard, the reveal
   (LESSON.md) appears, as in Lesson 1's predict, which never describes a sound the viewer has not
-  heard; orange's reply is drawn as a violet line landing in the A4 band, with a gold bracket
+  heard; Tavi's reply is drawn as a violet line landing in the A4 band, with a gold bracket
   between the bands, "same note, an octave apart".
-- The voice choice: two buttons with the Mercs' stills, "Lower: sing with blue Merc, around A3" and
-  "Higher: sing with orange Merc, around A4" (`aria-pressed`, at least 44 px), kept in localStorage
+- The voice choice: two buttons with Merc and Tavi's stills, "Lower: sing with Merc, around A3" and
+  "Higher: sing with Tavi, around A4" (`aria-pressed`, at least 44 px), kept in localStorage
   inside try/catch (`fyp-voice`, which later voice lessons share). Sing it reads the choice, and
   asks for one before the warm-up if none is stored.
 - States: waiting for a choice; play buttons unlocked; revealed; a voice chosen or not.
@@ -220,7 +220,7 @@ States:
    2.0 s, the singing Merc in `sing`. **Your turn**: the take waits up to 6 s for the first voiced
    frame, then runs 3 s; the violet line draws live, folded into Merc's octave, with a small
    "octave lower" or "octave higher" tag while it sits within 50 cents of Merc's note; the gap
-   readout follows it; both Mercs `listen`; Lesson 1's breathing ring counts the time.
+   readout follows it; Merc and Tavi both `listen`; Lesson 1's breathing ring counts the time.
 6. **Reading**: one line from LESSON.md's set, chosen by the take's reading (below), then **Again**
    (the same note and timing: REQ-GVC-014) while the note has had fewer than three tries, and
    **Next note** (after note 3, **Done**). A note's first take in the band brings one `celebrate`
@@ -301,7 +301,7 @@ Accessibility and motion:
   least 44 px, in a keyboard order that follows the flow; Space never starts a take by itself
   (REQ-GVC-080).
 - Under reduced motion the window never scrolls (the line draws across a fixed frame), the ring
-  shows a number instead of breathing, and the Mercs skip their reactions (REQ-GVC-083).
+  shows a number instead of breathing, and Merc and Tavi skip their reactions (REQ-GVC-083).
 
 Tests:
 
@@ -360,11 +360,11 @@ the house envelope rules, started only by a tap. Merc's notes use the kit's "ooh
 the slider match uses the kit's steady soft tone. Nothing autoplays, there is no music bed, and
 nothing plays while a take is open.
 
-## Mercs
+## Merc and Tavi
 
 Lesson 1's setup (`kit/merc-duo.ts`, `kit/merc-warm.ts`): the app's renderer, loaded after first
-paint, one WebGL context each, stills when WebGL fails or would run on the CPU. Reactions: blue
-sings A3, G3 and B3 for the lower voice, orange sings A4, G4 and B4 for the higher; the other Merc
+paint, one WebGL context each, stills when WebGL fails or would run on the CPU. Reactions: Merc
+sings A3, G3 and B3 for the lower voice, Tavi sings A4, G4 and B4 for the higher; the other Merc
 `listen`s; both `listen` while the viewer sings; the singing Merc `celebrate`s once for a note's
 first take in the band (no sparkles), and never after "Effortful" or "Uncomfortable". Under reduced
 motion or Pause animations each Merc holds a still frame and skips the reactions.
