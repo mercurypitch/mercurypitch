@@ -27,7 +27,7 @@ const card = (page: Page): Locator => page.locator('#wrap a.next-card')
 const CARDS = [
   [
     '/learn/01',
-    'Next lesson 02 · Twelve notes Ready · 10 min',
+    'Next lesson 02 · Twelve notes Ready · 13 min',
     '/learn/02',
     'Start lesson',
   ],
@@ -39,7 +39,7 @@ const CARDS = [
   ],
   [
     '/learn/03',
-    'Next lesson 04 · The major scale and home Ready · 10 min',
+    'Next lesson 04 · The major scale and home Ready · 14 min',
     '/learn/04',
     'Start lesson',
   ],
@@ -187,7 +187,7 @@ test('reads the next lesson again once it is done', async ({ page }) => {
 
   // Assert
   const c = card(page)
-  await expect(c.locator('.tempo')).toHaveText('Done · 10 min')
+  await expect(c.locator('.tempo')).toHaveText('Done · 13 min')
   await expect(c.locator('.chip')).toHaveText('Read again')
   await expect(c).toHaveAttribute('href', '/learn/02')
 })

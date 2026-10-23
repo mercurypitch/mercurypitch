@@ -273,8 +273,8 @@ describe('createExplorer', () => {
     explorer.setLength(1, '5:14')
 
     // Assert
-    expect(before).toBe('10 min')
-    expect(cardRows().Length).toBe('10 min · film 5:14')
+    expect(before).toBe('8 min')
+    expect(cardRows().Length).toBe('8 min · film 5:14')
   })
 
   it('draws a lesson with no drill to link without a Practise row, and one coming later without a Length row', () => {
