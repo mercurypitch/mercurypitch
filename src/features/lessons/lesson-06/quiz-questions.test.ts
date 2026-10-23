@@ -4,9 +4,9 @@
 
 import { describe, expect, it } from 'vitest'
 import '@/features/lessons/kit/browser-doubles.test-fixtures'
-import { lessonOfQuestion, linkAway, recallStepHref, } from '@/features/lessons/kit/quiz'
+import { lessonOfQuestion, linkAway } from '@/features/lessons/kit/quiz'
 import { QUIZ_QUESTIONS as LESSON_4 } from '@/features/lessons/lesson-04/quiz-questions'
-import { QUIZ_QUESTIONS, RECALL_QUESTIONS } from './quiz-questions'
+import { QUIZ_QUESTIONS, RECALL_AWAY, RECALL_QUESTIONS } from './quiz-questions'
 
 /** Markup as the eye reads it: the signs shown, the spoken words dropped. */
 const seen = (html: string): string =>
@@ -70,8 +70,8 @@ describe('the recall (FACTS 7)', () => {
     const box = document.createElement('p')
     box.innerHTML = RECALL_QUESTIONS[0].options[1].feedback
 
-    // Act
-    linkAway(box, 4, { href: recallStepHref })
+    // Act: with the links main.ts gives the recall's quiz
+    linkAway(box, 4, RECALL_AWAY)
 
     // Assert
     const a = box.querySelector('a')
