@@ -3,7 +3,7 @@
 // ============================================================
 
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { announce, ANNOUNCE_DELAY_MS, announcer, spokenText } from './announce'
+import { announce, ANNOUNCE_CLEAR_MS, ANNOUNCE_DELAY_MS, announcer, spokenText, } from './announce'
 
 const lines = (): HTMLElement[] =>
   Array.from(document.querySelectorAll<HTMLElement>('[data-announcer]'))
@@ -79,6 +79,37 @@ describe('announce', () => {
     vi.advanceTimersByTime(ANNOUNCE_DELAY_MS)
 
     // Assert
+    expect(announcer().textContent).toBe('')
+  })
+
+  it('holds the words until the clear delay, then empties the line, so the page keeps no stale news', () => {
+    // Arrange
+    announce('Step 4 of 6: Seven letters')
+    vi.advanceTimersByTime(ANNOUNCE_DELAY_MS)
+
+    // Act
+    vi.advanceTimersByTime(ANNOUNCE_CLEAR_MS - 1)
+    const held = announcer().textContent
+    vi.advanceTimersByTime(1)
+
+    // Assert
+    expect(held).toBe('Step 4 of 6: Seven letters')
+    expect(announcer().textContent).toBe('')
+  })
+
+  it("keeps a second announce's words for their own full delay when they come before the first's clear", () => {
+    // Arrange: the first words, most of their delay gone
+    announce('Pitch: climbing')
+    vi.advanceTimersByTime(ANNOUNCE_DELAY_MS + ANNOUNCE_CLEAR_MS - 1000)
+
+    // Act
+    announce('Pitch: falling')
+    vi.advanceTimersByTime(ANNOUNCE_DELAY_MS + ANNOUNCE_CLEAR_MS - 1)
+    const held = announcer().textContent
+    vi.advanceTimersByTime(1)
+
+    // Assert
+    expect(held).toBe('Pitch: falling')
     expect(announcer().textContent).toBe('')
   })
 })

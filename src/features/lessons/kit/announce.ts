@@ -12,9 +12,12 @@
 
 /** The pause between emptying the line and writing it, so the same words twice still count as a change. */
 export const ANNOUNCE_DELAY_MS = 60
+/** How long written words stay before the line empties, so a screen reader reading the page later finds no stale news. */
+export const ANNOUNCE_CLEAR_MS = 5000
 
 let line: HTMLElement | null = null
 let pending: number | undefined
+let clearing: number | undefined
 
 /**
  * The status line, made on first use. A module that will speak calls this
@@ -31,14 +34,22 @@ export function announcer(): HTMLElement {
   return line
 }
 
-/** Speaks `text` politely, after whatever is being said. Empty text says nothing. */
+/**
+ * Speaks `text` politely, after whatever is being said, then empties the
+ * line. Empty text says nothing. A screen reader queues the words as they
+ * are written, so emptying the line later cuts nothing off.
+ */
 export function announce(text: string): void {
   const el = announcer()
   window.clearTimeout(pending)
+  window.clearTimeout(clearing)
   el.textContent = ''
   if (text === '') return
   pending = window.setTimeout(() => {
     el.textContent = text
+    clearing = window.setTimeout(() => {
+      el.textContent = ''
+    }, ANNOUNCE_CLEAR_MS)
   }, ANNOUNCE_DELAY_MS)
 }
 
