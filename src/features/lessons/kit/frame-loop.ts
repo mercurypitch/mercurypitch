@@ -68,6 +68,24 @@ export function watch(el: Element): () => boolean {
 
 export const isSeen = (el: Element): boolean => seen.get(el) === true
 
+/**
+ * Calls `fn` whenever the screen's pixel ratio changes (a zoom, or another
+ * screen): a canvas that rests draws again at the new ratio.
+ */
+export function watchPixelRatio(fn: () => void): void {
+  const query = window.matchMedia(
+    `(resolution: ${window.devicePixelRatio || 1}dppx)`,
+  )
+  query.addEventListener(
+    'change',
+    () => {
+      fn()
+      watchPixelRatio(fn)
+    },
+    { once: true },
+  )
+}
+
 export interface Drawer {
   active(): boolean
   draw(now: number, dt: number): void
