@@ -254,7 +254,7 @@ test("the Wrap's links carry lesson=07, and its card leads to Lesson 8's page", 
 
   const card = page.locator('#wrap a.next-card')
   await expect(card).toHaveAttribute('href', '/learn/08')
-  await expect(card.locator('.tempo')).toHaveText('Ready · 15 min')
+  await expect(card.locator('.tempo')).toHaveText('Ready · 16 min')
   await expect(card.locator('.chip')).toHaveText('Start lesson')
   await expect(card.locator('.next-tease')).toHaveText(
     LESSON_COPY[8]?.tease ?? 'Lesson 8 has a tease',

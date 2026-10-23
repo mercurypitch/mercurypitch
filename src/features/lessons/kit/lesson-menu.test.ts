@@ -42,7 +42,7 @@ describe('menuModel', () => {
       [2, 'here', 'Step 3 of 6', '#top'],
       [3, 'next', 'Up next', '/learn/03'],
       [4, 'progress', 'Step 3 of 5', '/learn/04#step-3'],
-      [5, 'ready', 'Ready · 17 min', '/learn/05'],
+      [5, 'ready', 'Ready · 18 min', '/learn/05'],
       [9, 'later', 'Coming later', null],
     ])
   })

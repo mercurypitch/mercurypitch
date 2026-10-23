@@ -209,7 +209,7 @@ const ENTRIES: readonly Lesson[] = [
     topics: ['S01', 'S05'],
     // A draft until its sign-off (drafts.ts): built in every mode, and live
     // where the page state publishes it (publish.ts).
-    minutes: 15,
+    minutes: 16,
     page: '/learn/03',
     hook: "Asked, most students said they couldn't copy a tune. What happened when researchers tested it?",
     pr: {
@@ -248,7 +248,7 @@ const ENTRIES: readonly Lesson[] = [
     short: 'Steady note',
     topics: ['S02', 'S03', 'S04', 'S06'],
     // A draft until its sign-off (drafts.ts), as Lesson 3 is.
-    minutes: 17,
+    minutes: 18,
     page: '/learn/05',
     hook: "Singers are told to “support” a long note. If that doesn't mean pushing, what keeps it steady?",
     pr: {
@@ -268,7 +268,7 @@ const ENTRIES: readonly Lesson[] = [
     short: 'Intervals',
     topics: ['T11', 'T12'],
     // A draft until the owner's review and the vocal coach's look at Sing it (drafts.ts).
-    minutes: 15,
+    minutes: 17,
     page: '/learn/06',
     hook: 'Why can you start ‘Twinkle, Twinkle’ on any note and it is still the same tune?',
     pr: {
@@ -307,7 +307,7 @@ const ENTRIES: readonly Lesson[] = [
     short: 'Beat and tempo',
     topics: ['T05', 'T06'],
     // A draft until its sign-off (drafts.ts), as Lesson 3 is.
-    minutes: 15,
+    minutes: 16,
     page: '/learn/08',
     hook: 'Why does the same song feel different when you clap on 2 and 4 instead of 1 and 3?',
     pr: {

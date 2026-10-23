@@ -39,7 +39,7 @@ Playground, the mix-up card sits inside the step whose toy refutes it, and the p
 the Wrap. New: there is no Watch section until a film exists, and the checkpoint listens.
 
 1. **Masthead**: Lesson 1's, with "Season 1 · Lesson 03" and the anchors Lesson, Sing and Explorer.
-2. **Hero**: kicker, title, LESSON.md's meta as chips ("15 minutes", FACTS 61; the Lesson 1 chip,
+2. **Hero**: kicker, title, LESSON.md's meta as chips ("16 minutes", FACTS 61; the Lesson 1 chip,
    a link to `/learn/01`; "Also useful: Lesson 2"; Sound on; Microphone optional), the promise, and
    Merc and Tavi either side of the hook stage (Toys, 1).
 3. **Recall from Lesson 2**, open only when Lesson 2 is marked done (Toys, 8).
@@ -61,8 +61,8 @@ the Wrap. New: there is no Watch section until a film exists, and the checkpoint
    here: the folds, the slider match with its rounds on C4 and F3, and the band chart in drag mode
    on one stage (playbook rule 17).
 10. **Lesson explorer**: Lesson 1's, with Lesson 3 current and marked done when its quick check is
-    finished (the recall marks nothing). Its card reads "Ready · read", with a Length of 15 min
-    (`minutes: 15`), and offers "Start lesson" with no film (New engineering, 4); its practise link
+    finished (the recall marks nothing). Its card reads "Ready · read", with a Length of 16 min
+    (`minutes: 16`), and offers "Start lesson" with no film (New engineering, 4); its practise link
     is already `season.ts`'s (`/mirror?lesson=03`).
 11. **Footer**: the practise link, the font credits, and "Every sound on this page is synthesised in
     your browser" (FACTS, Labels).
@@ -418,7 +418,7 @@ motion or Pause animations each Merc holds a still frame and skips the reactions
    own page, a poster per lesson): a state for a lesson with a page and no film, whose card offers
    "Read the lesson" (`/learn/03`) without "Watch the episode" (`kit/explorer.ts` knows only done,
    ready and planned, and a ready card's buttons are same-page anchors); and Lesson 3's `len` in
-   `season.ts`, "15 minutes" (FACTS 61), built as its `minutes: 15` (`season.ts:212`).
+   `season.ts`, "16 minutes" (FACTS 61), built as its `minutes: 16` (`season.ts:212`).
 5. The quiz: Lesson 2's three changes to `kit/quiz.ts` and its slot for a question's own controls
    (Toys, 8), if its page has not shipped them, and the recall's rule of showing only after
    Lesson 2.

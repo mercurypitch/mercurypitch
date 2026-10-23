@@ -20,7 +20,7 @@ is live, because its prerequisite chip and its recall check link there.
 - Kicker: FIND YOUR PITCH · SEASON 1 · LESSON 06
 - Title (the hook question): **Why can you start "Twinkle, Twinkle" on any note and it is still
   the same tune?**
-- Meta, as three chips: 15 minutes · After Lesson 4: The major scale and home · Sound on
+- Meta, as three chips: 17 minutes · After Lesson 4: The major scale and home · Sound on
 - Promise: By the end you'll know what keeps a tune the same on any note and tell a step from a
   leap. You'll also name a few intervals by tunes you know, and sing one phrase from two different
   notes.

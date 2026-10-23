@@ -110,19 +110,19 @@ line above it, are in LESSON.md ("Section headings").
 
 ## Length
 
-The learner copy is 2,361 words by the review's count (FACTS 4), level with the series' cap, Lesson
-3's page at 2,361 on the same count, and the page runs about 16 minutes: 9.92 minutes of reading at
-238 words a minute and about 6 of sound, toys and tasks, 15.9 in all. That is past MASTER-PLAN
-§ 4.2's 8 to 12 minutes of active time, as Lessons 3, 5 and 6 are (15, 17 and 17 minutes: Lesson 3
-FACTS 61, Lesson 5 FACTS 2, Lesson 6 FACTS 3). Each step's text, with its Try, its Notice and any
-predict, runs 98 to 120 words (Steps 1 to 5: 112, 120, 109, 98 and 120), inside § 4.2's 50 to 120
-a step. Three steps carry more beside it, for these reasons:
+The learner copy is 2,480 words on today's default path (FACTS 4), 101 over the series' cap of
+2,379; the text package's 2,361 was level with the cap then. The page runs about 16 minutes: 10.42
+minutes of reading at 238 words a minute and about 6 of sound, toys and tasks, 16.42 in all. That is
+past MASTER-PLAN § 4.2's 8 to 12 minutes of active time, as Lessons 3, 5 and 6 are (16, 18 and 17
+minutes: Lesson 3 FACTS 61, Lesson 5 FACTS 2, Lesson 6 FACTS 3). Each step's text, with its Try, its
+Notice and any predict, runs 99 to 132 words (Steps 1 to 5: 112, 132, 111, 99 and 125), inside
+§ 4.2's 50 to 120 a step but for Steps 2 and 5. Three steps carry more beside it, for these reasons:
 
-- **Step 2, about 180 words.** Its Go deeper drawer (about 60 words) names the evidence behind
+- **Step 2, about 200 words.** Its Go deeper drawer (about 60 words) names the evidence behind
   "Studies that test singers are still few", and is closed by default.
-- **Step 4, about 215 words.** Its mix-up card (about 90 words) sits in the step whose toy refutes
+- **Step 4, about 235 words.** Its mix-up card (about 90 words) sits in the step whose toy refutes
   it, as in Lessons 2 to 6, and its one-item Go deeper drawer is closed by default.
-- **Step 5, about 170 words.** Its predict and reveal, the lesson's second, come before the text,
+- **Step 5, about 185 words.** Its predict and reveal, the lesson's second, come before the text,
   and its one-item Go deeper drawer is closed by default.
 
 ## Toys: what each reuses, and what is new

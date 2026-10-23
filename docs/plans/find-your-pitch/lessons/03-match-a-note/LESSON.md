@@ -26,7 +26,7 @@ check links there. What the vocal coach signs off is listed at the end.
   season's longest at 163 characters: "In a survey, most of 1,105 students said they couldn't copy a
   tune. In tests, only about one in ten to one in six missed by a semitone or more. So what's
   going on?" Its figures stay on the cold open's stage.]_
-- Meta, as chips: 15 minutes · After Lesson 1: What is a note? (the prerequisite chip, a link to
+- Meta, as chips: 16 minutes · After Lesson 1: What is a note? (the prerequisite chip, a link to
   Lesson 1's page) · Also useful: Lesson 2, Twelve notes · Sound on · Microphone optional
 - Promise: By the end you'll know how your voice makes a note, how to look after it and what "in
   tune" means, and you can sing three notes back to Merc.

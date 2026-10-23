@@ -28,7 +28,7 @@ a draft, held back on mercurypitch.com, until the vocal coach signs off its sung
   instead of 1 and 3?** _[Editorial: the hook is kept (CURIOSITY-MOMENTS § 2), with no
   alternative in `kit/lesson-copy.ts`. That file holds this lesson's tease, "Same song, same speed.
   Only the claps move.", which Lesson 7's next-lesson card shows above this hook (FACTS 1, 6a).]_
-- Meta: 15 minutes · After Lesson 1: What is a note? · Also useful: Lesson 6, Intervals · Sound on
+- Meta: 16 minutes · After Lesson 1: What is a note? · Also useful: Lesson 6, Intervals · Sound on
 - Promise: By the end you'll find the beat and its tempo, count bars of 2, 3 and 4, tap a backbeat
   on 2 and 4, and sing a line on the beat.
 

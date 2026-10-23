@@ -243,9 +243,9 @@ A suggested order: 9 (it brings the rungs and Move do), then 10, 12, 11, 13 and 
     `wants` touches every lesson page.
   - The layout sweeps show the masthead over the sticky stage at `#sing`, 691 by 59 pixels at
     1440x900, on Lessons 3 to 8 alike.
-  - Lesson 6's FACTS 3 and its WEB-SPEC's Length counted 2,258 learner words, the text package's
-    count, until this PR, which counts today's page with `scripts/lesson-words.mjs`: 2,591, so about
-    17 minutes. The meta chip and the season's `minutes` still say 15.
+  - Lesson 6's chip read 15 minutes from the text package's 2,258 words; today's 2,591 make it 17
+    (this PR). On 22 October 2026 the owner kept the longer lessons untrimmed: over the cap of 2,379
+    words are Lessons 2 by 280, 4 by 138, 5 by 25, 6 by 212, 7 by 101 and 8 by 123.
 
 ### 4.3 App fixes the lessons found
 
@@ -335,15 +335,15 @@ other page first needs what theirs have: the Watch section, its masthead link an
   citations on main. Nearly every finding came from the review, not from the writer's own checks,
   and nearly all were of three kinds: a predict's answer leaking, a citation that no longer pointed
   at what it meant, and a claim with no source. Keep the reviewer separate.
-- **The review scripts are not in the repository.** The word counters, the citation printer, the
-  compare, re-anchor and content checks, and each lesson's verifier were written for this run and
-  lived outside the repository. The rules they applied are in it: the house rules for claims and
-  safety in [TEACHING-PLAYBOOK.md](TEACHING-PLAYBOOK.md), and the copy rules in
-  `kit/lesson-copy.ts`'s header. If the series goes on this way, bring the word counter and the
-  citation tools into `scripts/` with tests first, starting with the blind spots above: they are
-  what make a rebase safe for a package. The tool that wrote re-anchored numbers back once rewrote
-  each whole line as it stood before the change, which undid the numbers its other half had just
-  set; a test would have caught it on the first run.
+- **Most review scripts are not in the repository.** The citation printer, the compare, re-anchor
+  and content checks, and each lesson's verifier were written for this run and lived outside the
+  repository; the word counter is now `pnpm lesson:words` (`scripts/lesson-words.mjs`, this PR).
+  The rules they applied are in it: the house rules for claims and safety in
+  [TEACHING-PLAYBOOK.md](TEACHING-PLAYBOOK.md), and the copy rules in `kit/lesson-copy.ts`'s header.
+  If the series goes on this way, bring the citation tools into `scripts/` with tests too, starting
+  with the blind spots above: they are what make a rebase safe for a package. The tool that wrote
+  re-anchored numbers back once rewrote each whole line as it stood before the change, which undid
+  the numbers its other half had just set; a test would have caught it on the first run.
 
 ## 6. Working on the series
 

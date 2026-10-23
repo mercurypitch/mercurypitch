@@ -20,7 +20,7 @@ there. What the vocal coach and the owner decide is listed at the end.
 - Kicker: FIND YOUR PITCH · SEASON 1 · LESSON 05
 - Title (the hook question): **Singers are told to "support" a long note. If that doesn't mean
   pushing, what keeps it steady?**
-- Meta, as chips: 17 minutes · After Lesson 2: Twelve notes · After Lesson 3: Match a note ·
+- Meta, as chips: 18 minutes · After Lesson 2: Twelve notes · After Lesson 3: Match a note ·
   Sound on · Microphone optional
 - Promise: By the end you'll know what pushing does to a note, how to breathe in low and start
   easily, and you'll hold a comfortable note for ten seconds, then fifteen if that felt easy.

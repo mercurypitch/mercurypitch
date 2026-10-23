@@ -78,7 +78,7 @@ describe('seasonFor', () => {
 
     // Assert
     expect([season[8].page, season[8].minutes]).toEqual([undefined, undefined])
-    expect([LESSONS[8].page, LESSONS[8].minutes]).toEqual(['/learn/08', 15])
+    expect([LESSONS[8].page, LESSONS[8].minutes]).toEqual(['/learn/08', 16])
   })
 
   it('keeps every page where everything is published, the same objects as the season', () => {
