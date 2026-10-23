@@ -12,7 +12,7 @@ import type { SessionExportStemType, SessionZipInspection, } from '@/db/services
 import { exportAllSessions, exportGroup, importSessionsFromZip, inspectSessionLibraryExport, inspectSessionZip, isZipFile, } from '@/db/services/session-export-service'
 import { deletePitchAnalysisFromDb } from '@/db/services/session-pitch-analysis-service'
 import { authVersion, getAuthToken } from '@/db/services/user-service'
-import { deleteAllUvrSessionsFromDb, getOriginalFileBlob, getStemBlobUrl, hydrateStemUrls, saveStemBlobDurable, saveStemFingerprintData, } from '@/db/services/uvr-service'
+import { getOriginalFileBlob, getStemBlobUrl, hydrateStemUrls, saveStemBlobDurable, saveStemFingerprintData, } from '@/db/services/uvr-service'
 import { ensureSessionHydrated, useKaraokePlaylistRunner, } from '@/features/stem-mixer/karaoke-playlist-runner'
 import type { PlayAlongPreset, PlayAlongStemKey, } from '@/features/stem-mixer/play-along'
 import { offerTourOnce } from '@/features/tours/offerTourOnce'
@@ -2061,7 +2061,6 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
     setShowClearStorageConfirm(false)
     setDeleteAllToast('Storage cleared (all sessions and stems deleted)')
     setTimeout(() => setDeleteAllToast(''), 2500)
-    void deleteAllUvrSessionsFromDb()
   }
 
   // Refresh session outputs from API

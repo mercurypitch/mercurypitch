@@ -678,134 +678,150 @@ function dbRecordToSession(rec: UvrSessionRecord): UvrSession {
   }
 }
 
-// Per-session write chain so a fire-and-forget progress write can't race a
-// durable completion write and create a DUPLICATE record (both findAll → 0 →
-// create). Serializing per session id keeps upsert genuinely idempotent.
+// Ordinary writes are ordered per session. Whole-list replacements and wipes
+// also affect IDs absent from their input, so they form an exclusive barrier.
+// Register every operation synchronously before awaiting any database work.
 const sessionWriteChains = new Map<string, Promise<void>>()
+let sessionListWriteBarrier: Promise<void> = Promise.resolve()
 
-async function waitForSessionWrites(sessionIds: string[]): Promise<void> {
-  await Promise.all(
-    sessionIds.map(
-      (sessionId) => sessionWriteChains.get(sessionId) ?? Promise.resolve(),
-    ),
+function enqueueSessionWrite<T>(
+  sessionId: string,
+  write: () => Promise<T>,
+): Promise<T> {
+  const next = Promise.all([
+    sessionListWriteBarrier,
+    sessionWriteChains.get(sessionId),
+  ]).then(write)
+  const settled = next.then(
+    () => undefined,
+    () => undefined,
   )
+  sessionWriteChains.set(sessionId, settled)
+  void settled.then(() => {
+    if (sessionWriteChains.get(sessionId) === settled) {
+      sessionWriteChains.delete(sessionId)
+    }
+  })
+  return next
 }
 
-/** Raw upsert of one session record — throws on failure. Serialized per
- *  session id so concurrent writes for the same session run in order. */
-function upsertSessionRecord(session: UvrSession): Promise<void> {
-  const run = async (): Promise<void> => {
-    if (deletedSessionIds.has(session.sessionId)) return
-    const durableSession =
-      session.groupId !== undefined && deletedGroupIds.has(session.groupId)
-        ? { ...session, groupId: undefined }
-        : session
-    const db = await getDb()
-    const repo = db.getRepository<UvrSessionRecord>('uvrSessions')
-    const existing = await repo.findAll({
-      where: {
-        appSessionId: durableSession.sessionId,
-      } as Record<string, unknown>,
-      limit: 1,
-    })
-    if (existing.length > 0) {
-      await repo.update(existing[0].id, sessionToDbRecord(durableSession))
-    } else {
-      await repo.create(sessionToDbRecord(durableSession))
-    }
-  }
-  // Run after whatever is already queued for this session (success or failure).
-  const prev = sessionWriteChains.get(session.sessionId) ?? Promise.resolve()
-  const next = prev.then(run, run)
-  sessionWriteChains.set(
-    session.sessionId,
-    next.then(
-      () => undefined,
-      () => undefined,
-    ),
+function enqueueSessionListWrite(write: () => Promise<void>): Promise<void> {
+  const next = Promise.all([
+    sessionListWriteBarrier,
+    ...sessionWriteChains.values(),
+  ]).then(write)
+  sessionListWriteBarrier = next.then(
+    () => undefined,
+    () => undefined,
   )
   return next
 }
 
-/** Best-effort persist (fire-and-forget) — for frequent, non-critical updates
- *  like progress ticks. Terminal states use persistSessionDurable instead. */
+async function waitForSessionWrites(sessionIds: string[]): Promise<void> {
+  await Promise.all([
+    sessionListWriteBarrier,
+    ...sessionIds.map((sessionId) => sessionWriteChains.get(sessionId)),
+  ])
+}
+
+/** Raw write, called only inside a session queue or whole-list barrier. */
+async function upsertSessionRecord(
+  record: ReturnType<typeof sessionToDbRecord>,
+  bulkExisting?: UvrSessionRecord[],
+): Promise<void> {
+  if (deletedSessionIds.has(record.appSessionId)) return
+  const db = await getDb()
+  const repo = db.getRepository<UvrSessionRecord>('uvrSessions')
+  const existing =
+    bulkExisting ??
+    (await repo.findAll({
+      where: { appSessionId: record.appSessionId },
+      // A failed existence check must not be mistaken for a missing record.
+      throwOnError: true,
+    }))
+  const durableRecord =
+    record.groupId !== undefined && deletedGroupIds.has(record.groupId)
+      ? { ...record, groupId: undefined }
+      : record
+  if (existing.length === 0) {
+    await repo.create(durableRecord)
+  } else {
+    try {
+      await repo.update(existing[0].id, durableRecord)
+    } catch (error) {
+      // Import/prune cascades can delete rows outside the store queue. A bulk
+      // snapshot must leave such a row deleted and continue its remaining work.
+      if (
+        bulkExisting !== undefined &&
+        (await repo.findById(existing[0].id)) === null
+      )
+        return
+      throw error
+    }
+    // Repair old duplicates only after the authoritative update succeeds.
+    for (const duplicate of existing.slice(1)) {
+      await repo.delete(duplicate.id)
+    }
+  }
+}
+
+/** Best-effort persist for frequent updates, using an immutable DB snapshot. */
 function persistSessionToDb(session: UvrSession): void {
-  void upsertSessionRecord(session).catch((err) => {
+  void (async () => {
+    const record = sessionToDbRecord(session)
+    await enqueueSessionWrite(session.sessionId, () =>
+      upsertSessionRecord(record),
+    )
+  })().catch((err) => {
     if (IS_DEV) console.warn('[SessionStore] persistSessionToDb failed:', err)
   })
 }
 
-/** Durable persist — awaited + retried. Returns whether the record actually
- *  reached IndexedDB, so the completion flow can refuse to report "done" until
- *  it has. This is the fix for "completed session vanishes on reload". */
+/** Await persistence and its bounded retry before allowing a newer write. */
 export async function persistSessionDurable(
   session: UvrSession,
 ): Promise<boolean> {
-  const res = await durableWrite('persist session record', () =>
-    upsertSessionRecord(session),
-  )
-  return res.ok
+  try {
+    const record = sessionToDbRecord(session)
+    return await enqueueSessionWrite(session.sessionId, async () => {
+      const res = await durableWrite('persist session record', () =>
+        upsertSessionRecord(record),
+      )
+      return res.ok
+    })
+  } catch (error) {
+    console.error('[SessionStore] could not snapshot session record:', error)
+    return false
+  }
 }
 
 /** Persist the entire sessions list to DB (replaces all). */
 function persistAllSessionsToDb(sessions: UvrSession[]): void {
   void (async () => {
-    try {
+    const records = sessions.map(sessionToDbRecord)
+    await enqueueSessionListWrite(async () => {
       const db = await getDb()
       const repo = db.getRepository<UvrSessionRecord>('uvrSessions')
-
-      // Get all existing records
-      const existing = await repo.findAll({})
+      const existing = await repo.findAll({ throwOnError: true })
       const existingByAppId = new Map<string, UvrSessionRecord[]>()
-
-      for (const rec of existing) {
-        const arr = existingByAppId.get(rec.appSessionId) || []
-        arr.push(rec)
-        existingByAppId.set(rec.appSessionId, arr)
+      const activeIds = new Set(records.map((record) => record.appSessionId))
+      for (const record of existing) {
+        const rows = existingByAppId.get(record.appSessionId) ?? []
+        rows.push(record)
+        existingByAppId.set(record.appSessionId, rows)
+        if (!activeIds.has(record.appSessionId)) await repo.delete(record.id)
       }
-
-      const activeIds = new Set(sessions.map((s) => s.sessionId))
-
-      // Delete records not in the new list
-      for (const rec of existing) {
-        if (!activeIds.has(rec.appSessionId)) {
-          await repo.delete(rec.id)
-        }
+      for (const record of records) {
+        await upsertSessionRecord(
+          record,
+          existingByAppId.get(record.appSessionId),
+        )
       }
-
-      // Upsert each session
-      for (const session of sessions) {
-        // A whole-list persist can be carrying a snapshot taken before a
-        // delete; its create branch would resurrect the deleted row.
-        if (deletedSessionIds.has(session.sessionId)) continue
-        const recs = existingByAppId.get(session.sessionId)
-        if (recs && recs.length > 0) {
-          // Update the first one
-          try {
-            await repo.update(recs[0].id, sessionToDbRecord(session))
-          } catch (error) {
-            // The snapshot above goes stale while this loop awaits: a delete
-            // or prune cascade can remove the row mid-persist, and updating a
-            // row that is gone throws. Leave it deleted — re-creating here
-            // would resurrect a session the user just removed, and one that
-            // is still live is written by the create branch on the next
-            // persist. Any other failure is real and belongs to the caller.
-            if ((await repo.findById(recs[0].id)) !== null) throw error
-            continue
-          }
-          // Delete any duplicates
-          for (let i = 1; i < recs.length; i++) {
-            await repo.delete(recs[i].id)
-          }
-        } else {
-          await repo.create(sessionToDbRecord(session))
-        }
-      }
-    } catch (err) {
-      if (IS_DEV)
-        console.warn('[SessionStore] persistAllSessionsToDb failed:', err)
-    }
-  })()
+    })
+  })().catch((err) => {
+    if (IS_DEV)
+      console.warn('[SessionStore] persistAllSessionsToDb failed:', err)
+  })
 }
 
 // ── Update the cache + persist ──────────────────────────────────────
@@ -1531,11 +1547,11 @@ export function deleteAllUvrSessions(): void {
   bumpGroups()
   // Fire-and-forget: wipe all session-scoped data from IndexedDB.
   // deleteAllUvrSessionsFromDb also empties each group's sessionIds in the DB.
-  lastSessionWipe = (async () => {
+  lastSessionWipe = enqueueSessionListWrite(async () => {
     await deleteAllUvrSessionsFromDb()
     await deleteAllLyricsFromDb()
     await deleteAllTranscriptionsFromDb()
-  })()
+  })
   void lastSessionWipe
 }
 

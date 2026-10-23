@@ -211,8 +211,8 @@ These are the rules that break things when ignored.
 |---|---|---|
 | [jam-store.ts](../../src/stores/jam-store.ts) | 3.3k | ── Jam store Reactive state management for P2P jam sessions. |
 | [app-store.ts](../../src/stores/app-store.ts) | 2.4k | App Store — audio-engine singleton, key/scale, and ALL guided-tour content Two unrelated things share this file for historical reasons: 1. |
+| [uvr-store.ts](../../src/stores/uvr-store.ts) | 1.8k | UVR Store — stem separation: settings, job status, and session records Covers both processing modes: `local` (ONNX in-browser, WebGPU whe... |
 | [melody-store.ts](../../src/stores/melody-store.ts) | 1.7k | Melody Store — Melody items and scale data (in-memory) |
-| [uvr-store.ts](../../src/stores/uvr-store.ts) | 1.7k | UVR Store — stem separation: settings, job status, and session records Covers both processing modes: `local` (ONNX in-browser, WebGPU whe... |
 | [sync-store.ts](../../src/stores/sync-store.ts) | 1.4k | ── Sync store One person, two devices, a room code between them. |
 | [drive-sync-store.ts](../../src/stores/drive-sync-store.ts) | 850 | ── Drive sync store The user's own Google Drive as the place a library survives. |
 | [settings-store.ts](../../src/stores/settings-store.ts) | 850 | Settings Store — every persisted user preference, plus its defaults `SettingsConfig` is the shape; `DEFAULT_SETTINGS` is the fallback use... |
@@ -406,13 +406,13 @@ Grep for the symbol and read the surrounding range instead.
 | [src/features/guitar-night/useGuitarListeningController.ts](../../src/features/guitar-night/useGuitarListeningController.ts) | 1.9k |
 | [src/features/stem-mixer/useStemMixerCanvasController.ts](../../src/features/stem-mixer/useStemMixerCanvasController.ts) | 1.9k |
 | [src/features/guitar/backing/guitar-room-band.ts](../../src/features/guitar/backing/guitar-room-band.ts) | 1.8k |
+| [src/stores/uvr-store.ts](../../src/stores/uvr-store.ts) | 1.8k |
 | [src/features/drum-night/audio/drum-kit-player.ts](../../src/features/drum-night/audio/drum-kit-player.ts) | 1.7k |
 | [src/features/guitar-night/GuitarNightRoom.tsx](../../src/features/guitar-night/GuitarNightRoom.tsx) | 1.7k |
 | [src/features/guitar-night/GuitarNightStage.tsx](../../src/features/guitar-night/GuitarNightStage.tsx) | 1.7k |
 | [src/features/guitar/backing/guitar-backing-transport.ts](../../src/features/guitar/backing/guitar-backing-transport.ts) | 1.7k |
 | [src/features/stem-mixer/useLrcGenController.ts](../../src/features/stem-mixer/useLrcGenController.ts) | 1.7k |
 | [src/stores/melody-store.ts](../../src/stores/melody-store.ts) | 1.7k |
-| [src/stores/uvr-store.ts](../../src/stores/uvr-store.ts) | 1.7k |
 | [src/features/admin/exercises/ExerciseEditor.tsx](../../src/features/admin/exercises/ExerciseEditor.tsx) | 1.6k |
 | [src/features/play-along/stem-mix-engine.ts](../../src/features/play-along/stem-mix-engine.ts) | 1.6k |
 | [src/features/voice-history/GuidedVoiceCheck.tsx](../../src/features/voice-history/GuidedVoiceCheck.tsx) | 1.6k |
