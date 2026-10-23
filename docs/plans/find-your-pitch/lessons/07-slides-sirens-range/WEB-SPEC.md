@@ -385,14 +385,15 @@ States:
 
 The retry rules, all in the flow rule below (FACTS 58):
 
-- A visit allows at most three takes. Every take counts: one with no voice, an unsteady one, and
-  one abandoned when the page was hidden.
+- A visit allows at most three takes. Every take counts: one with no voice, an unsteady one, and one
+  abandoned when the page was hidden or the section left.
 - Again after "Easy" or "Workable" is offered at most once a visit, whatever the take's reading, so
   the retry that follows an unsteady take is the visit's one Again: a not-steady take uses it up
   only if Again is pressed after it.
 - A take with no voice asks no feeling question; its Again is a fresh start and leaves the visit's
-  one Again unused. A take abandoned when the page was hidden asks none either, and Start comes back
-  while takes remain, but if it had voice it uses the one Again up (Edge cases).
+  one Again unused. A take abandoned when the page was hidden or the section left asks none either,
+  and Start comes back while takes remain, but if it had voice it uses the one Again up (Edge
+  cases).
 - Never a retry after "Effortful" or "Uncomfortable": once either has been picked, no Again and no
   Start appear for the rest of the visit.
 - "Try again at about speaking volume." shows only beside an offered Again. So a visit holds at most
@@ -683,9 +684,9 @@ What the page does where nothing above says:
 - **No microphone, a refusal, or a listener that fails to load**: state 9 of Toys 4.
 - **The tab hidden, or the section left, during a take or as the microphone opens for one**: the
   take is abandoned, the microphone released; no reading or feeling question follows; it counts
-  towards the three. The briefing returns, with Start while the visit has had under three takes and
-  no "Effortful" or "Uncomfortable", else Done for today; a take abandoned after voice was heard
-  uses up the visit's one Again, so a visit holds at most two sung sirens (Toys 4, the retry rules).
+  towards the three. The briefing returns, with Start while takes and sung sirens remain and no
+  "Effortful" or "Uncomfortable" has been picked, else Done for today; a take abandoned after voice
+  was heard uses up the visit's one Again, so a visit holds at most two sung sirens (Toys 4).
 - **A voice outside the window**: the line pins to the edge with an arrow; the reading still names
   the band from the notes the take held, and the window does not move. A lit band past the edge is
   drawn to the edge, or as a strip along it, with the arrow (Toys 4, state 7).
