@@ -451,6 +451,13 @@ must import the inventory in a child Node process as well as through Vitest.
 **Rule:** for decode-recovery tests, fixture only the separator worker's initialization handshake, retain the real invalid-audio decoder and recovery assertions, assert interception, and reject unexpected inference. Test model readiness separately.
 **See:** `src/e2e/guitar-night-stopped-preparation.spec.ts` and `src/lib/uvr-processing-pipeline.ts`.
 
+### Space latency clicks unevenly where the round trip can pass their spacing
+
+**Symptom:** over AirPlay to an LG C2 (mp-v0.8.41) the latency wizard found no number; on synthetic recordings the same maths read a 1.6 s round trip as 100 ms, from six clicks that agreed within 1 ms.
+**Cause:** evenly spaced clicks (0.75 s) matched to the nearest reply after each: a reply later than the spacing lines up with an earlier click, and the half-interval window hides that only while round trips stay short, as on a phone's speaker. One threshold for the run, a quarter of the loudest click, also lost every click after a TV's loud first one.
+**Rule:** where the sound can be late by more than the spacing (a TV, Bluetooth), space the clicks unevenly, take the lag most clicks agree on, refuse when another lag is nearly as well supported, and time each reply against its own peak. Guitar Night's calibration (`useGuitarListeningController.ts`) still uses the even schedule.
+**See:** `src/lib/mic-latency-route.ts`, `MAX_ONSET_DISTANCE_SEC` in `src/lib/mic-latency.ts`.
+
 ## Framework
 
 ### Format CSS before verifying a standalone production build
