@@ -26,8 +26,8 @@
 // ============================================================
 
 import { createSignal } from 'solid-js'
-import { CONSENT_PREVIEW, GA4_MEASUREMENT_ID, GOOGLE_ADS_TAG_ID, IS_TEST, } from '@/lib/defaults'
 import { isRestrictedTimezone, RESTRICTED_COUNTRIES, } from '@/lib/consent-regions'
+import { CONSENT_PREVIEW, GA4_MEASUREMENT_ID, GOOGLE_ADS_TAG_ID, IS_TEST, } from '@/lib/defaults'
 import { ga4TrafficParams } from '@/lib/internal-traffic'
 
 export type ConsentStatus = 'granted' | 'denied'
