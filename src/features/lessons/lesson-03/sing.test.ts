@@ -178,7 +178,7 @@ describe(
       localStorage.clear()
     })
 
-    it('starts no take after Start in a hidden tab, lets the microphone go at once, and offers the note again', async () => {
+    it('starts no take after Start in a hidden tab, lets the microphone go at once, and offers Start again', async () => {
       // Arrange
       await loadCard()
       mic.opening = hideTab
@@ -189,11 +189,11 @@ describe(
       // Assert
       expect(mic.opened).toBe(0)
       expect(mic.releasedNow).toBe(1)
-      expect(el('[data-note-head]').textContent).toBe('Note 1 of 3')
       expect(el('#singStatus').textContent).toBe(
         'Stopped listening: the microphone is off.',
       )
-      expect(el('[data-sing="again"]').hidden).toBe(false)
+      expect(el('#singLive').hidden).toBe(true)
+      expect(el('[data-panel="prepare"]').hidden).toBe(false)
     })
 
     it('starts no take after Next note in a hidden tab, lets the microphone go at once, and offers the note again', async () => {
@@ -215,9 +215,15 @@ describe(
       expect(el('[data-sing="again"]').hidden).toBe(false)
     })
 
-    it('starts no take after Start with the section scrolled away, lets the microphone go, and offers the note again', async () => {
-      // Arrange
+    it('starts no take after Start with the section scrolled away, keeps the page where it is, lets the microphone go, and offers Start again', async () => {
+      // Arrange: the card off screen, where the viewer scrolled it
       await loadCard()
+      const card = el('#singCard')
+      const scrolled = vi.fn()
+      card.scrollIntoView = scrolled
+      vi.spyOn(card, 'getBoundingClientRect').mockReturnValue(
+        DOMRect.fromRect({ x: 0, y: -2000, width: 360, height: 900 }),
+      )
       mic.opening = leaveSection
 
       // Act
@@ -226,11 +232,12 @@ describe(
       // Assert: let go as leaving the section lets go, after the linger
       expect(mic.opened).toBe(0)
       expect([mic.released, mic.releasedNow]).toEqual([1, 0])
-      expect(el('[data-note-head]').textContent).toBe('Note 1 of 3')
       expect(el('#singStatus').textContent).toBe(
         'Stopped listening: the microphone is off.',
       )
-      expect(el('[data-sing="again"]').hidden).toBe(false)
+      expect(scrolled).not.toHaveBeenCalled()
+      expect(el('#singLive').hidden).toBe(true)
+      expect(el('[data-panel="prepare"]').hidden).toBe(false)
     })
   },
 )
