@@ -1,0 +1,10 @@
+/* ============================================================
+   Lesson hub — the stylesheet of the series' hub, learn/index.html
+   ============================================================
+   The lesson pages' base and nothing else, by an @import the build inlines.
+   The hub must not link lesson-base.css itself. A second page that links it
+   takes it out of the stylesheet the lessons share, which it opens, into a
+   sheet of its own that each lesson page links after its own and most of
+   the kit's: its rules then win over the ones written to refine them, and a
+   choice button loses its padding and its wrap. */
+@import './lesson-base.css';

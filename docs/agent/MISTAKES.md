@@ -909,6 +909,13 @@ import handler, issue #813.
 **Rule:** give `SceneDelegate` to `.windowApplication` alone, guard `scene(_:willConnectTo:)` on the role too, and recheck both after every Capacitor upgrade or template migration. A deliberate second screen gets its own delegate and a plain web view, never a second bridge.
 **See:** `apps/mercurypitch/ios/App/App/AppDelegate.swift`, `apps/mercurypitch/ios/App/App/SceneDelegate.swift`, `apps/mercurypitch/src/ios-external-display.test.ts`
 
+### Take the lessons' base stylesheet into another page by `@import`, never by a link
+
+**Symptom:** once the series' hub was added, Lesson 6 scrolled sideways at 360 and 375 px, and on every lesson page the choice buttons lost their padding and stopped wrapping. The hub's own tests passed; only Lesson 6's width checks failed.
+**Cause:** the hub's document linked `kit/lesson-base.css`, which every lesson's script imports. Shared with the hub, it left the chunk the eight lessons share, whose stylesheet it had opened, for a chunk of CSS alone, and Vite links such a chunk after the page's own stylesheet. Its rules then came after the kit's and the lesson's, and won every tie of specificity with the rules written to refine them.
+**Rule:** a page outside the lessons takes the base through a stylesheet of its own that `@import`s it (`kit/lesson-hub.css`): the build inlines the import, so no chunk of the lessons changes. After a change to which documents or scripts take in a shared stylesheet, compare each `dist/learn/NN.html`'s stylesheet links with main's build: the same files, in the same order.
+**See:** `src/features/lessons/kit/lesson-hub.css`, `tools/learn-hub.test.ts`
+
 ## Performance
 
 ### Preserve physical material units when baking decoded geometry
