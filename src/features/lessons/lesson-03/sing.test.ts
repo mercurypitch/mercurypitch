@@ -241,6 +241,40 @@ describe(
       expect(el('[data-panel="prepare"]').hidden).toBe(false)
     })
 
+    it('keeps the rerun offered, and the feeling picked, when the section is left as its microphone opens', async () => {
+      // Arrange: the three notes, then a feeling that offers the rerun
+      await loadCard()
+      await press('[data-sing="start"]')
+      await press('[data-sing="next"]')
+      await press('[data-sing="next"]')
+      await press('[data-sing="done"]')
+      el('[data-feel="easy"]').click()
+      mic.released = 0
+      mic.opening = leaveSection
+
+      // Act
+      await press('[data-sing="rerun"]')
+
+      // Assert: nothing started, and nothing on the card changed
+      expect(mic.opened).toBe(3)
+      expect([mic.released, mic.releasedNow]).toEqual([1, 0])
+      expect(el('#singStatus').textContent).toBe(
+        'Stopped listening: the microphone is off.',
+      )
+      expect(el('[data-panel="after"]').hidden).toBe(false)
+      expect(el('[data-sing="rerun"]').hidden).toBe(false)
+      expect(el('[data-feel="easy"]').getAttribute('aria-pressed')).toBe('true')
+
+      // Act: the rerun again, back in view
+      mic.opening = null
+      scrollIntoViewAgain(el('#sing'))
+      await press('[data-sing="rerun"]')
+
+      // Assert: note 1's take opened
+      expect(mic.opened).toBe(4)
+      expect(el('[data-note-head]').textContent).toBe('Note 1 of 3')
+    })
+
     it('starts a take after Start once the section, away past its 600 ms, is back in view', async () => {
       // Arrange
       await loadCard()
