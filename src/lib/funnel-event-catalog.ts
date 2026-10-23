@@ -332,9 +332,10 @@ export const TOUR_FUNNEL_EVENTS = [
 ] as const
 
 /**
- * Guided tours and first-value moments. Web only: a native build sends none
- * of them. The room a first-value event is about is in its name, since those
- * events carry no metrics.
+ * Guided tours, first-value moments and the plan. Web only: a native build
+ * sends none of them. The room a first-value event is about is in its name,
+ * since those events carry no metrics, and so is the option a plan answer
+ * names.
  */
 export const GUIDE_FUNNEL_EVENTS = [
   ...TOUR_FUNNEL_EVENTS,
@@ -348,6 +349,85 @@ export const GUIDE_FUNNEL_EVENTS = [
   'first_value_ear',
   'first_value_guitar',
   'first_value_piano',
+  // The plan: the four questions after First Light, and what comes of them
+  // (src/features/plan). That module derives its names from the questions,
+  // and plan-events.test.ts holds this list to them. They are written out
+  // here as plain literals because the worker imports this file.
+  /** Q1, the first answer. These events carry no metrics, so which option it
+   *  was has to be in the name. The answers are sent once, when the flow ends
+   *  (Done, or Not now on a question), so Back and a changed pick never count
+   *  twice. */
+  'plan_q1_singing',
+  'plan_q1_guitar',
+  'plan_q1_piano',
+  'plan_q1_ear',
+  'plan_q1_everything',
+  /** Q2, what the person is working toward. Ear training has five goals of
+   *  its own, and the other columns share five. */
+  'plan_q2_song',
+  'plan_q2_together',
+  'plan_q2_audition',
+  'plan_q2_basics',
+  'plan_q2_fun',
+  'plan_q2_tune',
+  'plan_q2_intervals',
+  'plan_q2_exam',
+  'plan_q2_by_ear',
+  'plan_q2_curious',
+  /** Q3, what gets in the way: up to two a person, in the order tapped.
+   *  `other` counts "Something else"; what is typed there stays on the
+   *  device and is never in an event. */
+  'plan_q3_time',
+  'plan_q3_progress',
+  'plan_q3_what',
+  'plan_q3_tune',
+  'plan_q3_difference',
+  'plan_q3_tempo',
+  'plan_q3_setup',
+  'plan_q3_shy',
+  'plan_q3_alone',
+  'plan_q3_other',
+  /** Q4, what the person has tried before. `app` counts "Another app"; the
+   *  name typed there stays on the device. */
+  'plan_q4_video',
+  'plan_q4_teacher',
+  'plan_q4_app',
+  'plan_q4_along',
+  'plan_q4_starting',
+  /** The questions were put in front of someone: a new visitor in First
+   *  Light, an existing user in the app (once), or a person who opened them
+   *  from Home or the Guide. */
+  'plan_shown_new',
+  'plan_shown_existing',
+  'plan_shown_skipper',
+  /** A question passed with nothing picked (Skip, or Next with no pick),
+   *  sent with the answers when the flow ends. */
+  'plan_skipped_q1',
+  'plan_skipped_q2',
+  'plan_skipped_q3',
+  'plan_skipped_q4',
+  /** Not now on a question, which ends the flow. Named apart from the
+   *  skips above, which would not tell it from a question passed. */
+  'plan_declined_q1',
+  'plan_declined_q2',
+  'plan_declined_q3',
+  'plan_declined_q4',
+  /** Not now on the plan itself, after the answers were counted. */
+  'plan_skipped_plan',
+  /** The answers were given and the plan built: once a flow. */
+  'plan_done',
+  /** "See every room", on the plan. */
+  'plan_rooms',
+  /** A stop of the plan opened, one name for its kind. */
+  'plan_stop_start',
+  'plan_stop_learn',
+  'plan_stop_play',
+  /** The plan's menu switch was turned on. */
+  'scope_offer_accept',
+  /** Merc's showcase, the walk along the tab bar that "Show me around"
+   *  starts: seen to its end, or skipped. */
+  'showcase_done',
+  'showcase_skipped',
 ] as const
 
 /**

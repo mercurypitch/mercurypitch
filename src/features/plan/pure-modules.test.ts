@@ -13,12 +13,15 @@ import { readFileSync } from 'node:fs'
 import ts from 'typescript'
 import { describe, expect, it } from 'vitest'
 
-// Later tasks add plan-record.ts and plan-events.ts to this list.
+// The plan store (plan-store.ts) is not on this list: it is the store, so it
+// holds state and is the one module here that is not pure.
 const PURE_MODULES: [file: string, mayImport: 'nothing' | 'no store'][] = [
   ['plan-keys.ts', 'nothing'],
   ['questions.ts', 'no store'],
   ['plan-copy.ts', 'no store'],
   ['build-plan.ts', 'no store'],
+  ['plan-record.ts', 'no store'],
+  ['plan-events.ts', 'no store'],
 ]
 
 /** Every module a source file imports, as it is written there. */
