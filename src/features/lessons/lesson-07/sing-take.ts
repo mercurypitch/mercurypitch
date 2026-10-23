@@ -284,6 +284,7 @@ export async function takeOne(c: TakeContext): Promise<TakeEnd> {
     Sound.hush(false)
     mercListen('blue', false)
     mercListen('orange', false)
-    c.ring.stop()
+    // the take over, the ring rests: "Listening" would say the microphone is still on
+    c.ring.stop('Rest')
   }
 }

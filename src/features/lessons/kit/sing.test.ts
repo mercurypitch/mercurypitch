@@ -4,7 +4,7 @@
 
 import { afterEach, describe, expect, it } from 'vitest'
 import './browser-doubles.test-fixtures'
-import type { RingRun } from './sing'
+import type { Ring, RingRun } from './sing'
 import { mountRing, mountSing, ringPhase, swellAt } from './sing'
 import { Sound } from './sound'
 
@@ -131,5 +131,61 @@ describe("a run's phases (Lesson 5's Listen · Breathe · Sing)", () => {
     expect(settle[1]).toBeCloseTo(0.5, 9)
     expect(settle[2]).toBeCloseTo(0, 9)
     expect(settle[3]).toBeCloseTo(0, 9)
+  })
+})
+
+describe('a run ended where it stands (`stop`)', () => {
+  /** A ring on its own, as a lesson's own page drives it. */
+  function lone(): { root: HTMLElement; ring: Ring } {
+    const root = document.createElement('div')
+    root.innerHTML = `<div class="ring"><svg><circle class="ring-progress" r="182"></circle><circle class="ring-breath" r="150"></circle><g class="ring-ripples"></g></svg><img class="ring-merc" alt=""><p class="ring-note"></p><p class="ring-state"></p></div>`
+    document.body.appendChild(root)
+    const ringEl = root.querySelector<HTMLElement>('.ring')
+    if (ringEl === null) throw new Error('no ring')
+    return { root, ring: mountRing(ringEl, { stills: STILLS }) }
+  }
+
+  const take: RingRun = {
+    which: 'blue',
+    label: 'One siren',
+    listen: 0,
+    turn: 6,
+    words: { turn: () => 'Listening', done: 'Listening' },
+  }
+
+  it('says the word it is given once the run is over', () => {
+    // Arrange
+    const { root, ring } = lone()
+    void ring.run(take)
+
+    // Act
+    ring.stop('Rest')
+
+    // Assert
+    expect(text(root, '.ring-state')).toBe('Rest')
+    expect(ring.busy).toBe(false)
+  })
+
+  it("leaves the run's own last word when given none, as it always has", () => {
+    // Arrange
+    const { root, ring } = lone()
+    void ring.run({ ...take, words: { done: 'Ready' } })
+
+    // Act
+    ring.stop()
+
+    // Assert
+    expect(text(root, '.ring-state')).toBe('Ready')
+  })
+
+  it('says the word it is given with no run to end', () => {
+    // Arrange
+    const { root, ring } = lone()
+
+    // Act
+    ring.stop('Rest')
+
+    // Assert
+    expect(text(root, '.ring-state')).toBe('Rest')
   })
 })
