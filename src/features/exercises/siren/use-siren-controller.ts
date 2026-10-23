@@ -36,7 +36,10 @@ export const SIREN_PHASE_READY = 3
 /** How long the guide dot takes to travel start → end → start. */
 export const SIREN_GUIDE_PERIOD_MS = 2500
 
-/** A glide moves at most 6 times the dot's pace: twice a quick glide's speed, slower than a jump. */
+/**
+ * A glide moves at most 6 times the dot's pace: twice a quick glide's speed,
+ * slower than a jump.
+ */
 export const SIREN_GLIDE_PACE_LIMIT = 6
 
 /**

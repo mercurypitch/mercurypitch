@@ -562,8 +562,10 @@ const GLIDE_MAX_GAP_S = 0.12
  * dot's pace at 30 frames a second. The Siren sets the rate from its guide's
  * pace, so it grows with the span, not one rate for every round: a 3-semitone
  * jump moves about as fast as an octave glide at twice the dot's pace. The
- * cost is wide vibrato on the smallest span: ±1 semitone on a 3-semitone
- * round scores about 0.31.
+ * cost is wide vibrato on the smaller spans, measured on synthetic frames at
+ * 30, 60 and 120 a second: on a 3-semitone round ±1 semitone scores about 0.3
+ * to 0.4 and ±0.5 about 0.5 to 0.75, and ±1 still scores only about 0.5 to
+ * 0.75 on the 5- and 7-semitone rounds.
  */
 export function computeGlideCoverage(
   samples: Array<{ midi: number; time: number }>,
