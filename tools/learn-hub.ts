@@ -15,15 +15,15 @@
 // what every nav calls it, or by its season title while it has no
 // document, and asks its default hook in `<p class="hub-hook"
 // data-lesson="N">`. Each lesson with a document writes both readings of
-// its state (tools/draft-lessons.ts): its reading time and "Start lesson"
-// in `<span data-if-live="N">`, "Coming" in `<span data-if-planned="N">`.
-// Its reading time goes with its link, since a lesson held back is drawn as
-// one not written yet, as publish.ts `seasonFor` has it. The link's hidden
-// words name the lesson, so a screen reader's list of links tells them
-// apart; since a reading span cannot hold a span, the link's reading is the
-// block form, `<div data-if-live="N">`. lessonStatesPlugin, which runs after this, marks hidden the
-// reading that is false under the build's defaults. A lesson with no
-// document is "Coming" in every environment.
+// its state (tools/draft-lessons.ts): its reading time in `<span
+// data-if-live="N">`, its "Start lesson" in `<div data-if-live="N">` (the
+// block form, as a reading span cannot hold a span, and the link's hidden
+// words, which name the lesson so a screen reader's list of links tells
+// them apart, are one), and "Coming" in `<span data-if-planned="N">`. Its
+// reading time goes with its link, since a lesson held back is drawn as one
+// not written yet, as publish.ts `seasonFor` has it. lessonStatesPlugin,
+// which runs after this, marks hidden the reading that is false under the
+// build's defaults. A lesson with no document is "Coming" in every environment.
 //
 // The span of reading times and `hasPart` follow the build's defaults as
 // well: the lessons live by default, which are the released lessons in a
