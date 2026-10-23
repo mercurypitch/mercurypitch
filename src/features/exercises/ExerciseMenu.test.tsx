@@ -13,6 +13,7 @@
 import { cleanup, render } from '@solidjs/testing-library'
 import { afterEach, describe, expect, it } from 'vitest'
 import { validateGuidedDynamicClaim } from '@/lib/guided-voice/claims'
+import DynamicSwellExercise from './dynamic-swell/DynamicSwellExercise'
 import { EXERCISE_HELP } from './exercise-help'
 import ExerciseMenu from './ExerciseMenu'
 import { EXERCISE_DYNAMIC_SWELL } from './types'
@@ -33,6 +34,21 @@ function card(title: string): { description: string; tags: string[] } {
   }
   cleanup()
   return result
+}
+
+/** What Dynamic Swell's idle screen says before a run starts. */
+function swellIdleCopy(): string {
+  const { container } = render(() => (
+    <DynamicSwellExercise
+      audioEngine={{ stopTone: () => {} } as never}
+      practiceEngine={{ isMicActive: () => false, stopMic: () => {} } as never}
+      onBack={() => {}}
+    />
+  ))
+  const copy =
+    container.querySelector('.exercise-idle-placeholder p')?.textContent ?? ''
+  cleanup()
+  return copy
 }
 
 describe('the exercise cards', () => {
@@ -68,9 +84,19 @@ describe('the exercise cards', () => {
         'Hold a note and swell it soft to loud and back. Scored on staying in tune and how wide the swell is.',
       tags: ['Dynamics', 'Intonation'],
     })
-    // Its help says the same.
+    // Its idle screen and its help say the same.
+    const idle = swellIdleCopy()
+    expect(idle).toBe(
+      'Hold a note and swell your volume from soft to loud and back. Scored on staying in tune and how wide the swell is.',
+    )
     const help = EXERCISE_HELP[EXERCISE_DYNAMIC_SWELL]
-    const words = [swell.description, ...swell.tags, help.summary, ...help.body]
+    const words = [
+      swell.description,
+      ...swell.tags,
+      idle,
+      help.summary,
+      ...help.body,
+    ]
     expect(words.filter((text) => /breath|master/iu.test(text))).toEqual([])
     expect(
       words.flatMap(
