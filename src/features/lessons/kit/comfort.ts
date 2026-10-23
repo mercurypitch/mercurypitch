@@ -93,9 +93,10 @@ const endingListeners = new Set<(e: Ending) => void>()
 let ending: Ending = 'practise'
 
 /**
- * The visit's ending, in memory only: "Uncomfortable" or "Just listen today"
- * set the rest card; skipping Sing it, or singing along with no microphone,
- * leaves the Voice Mirror card.
+ * The visit's ending, in memory only: "Uncomfortable" or "Just listen today",
+ * or "Effortful" where the page asks (`restAfterEffort`), set the rest card;
+ * skipping Sing it, or singing along with no microphone, leaves the Voice
+ * Mirror card.
  */
 export const VisitEnding = {
   get ending(): Ending {

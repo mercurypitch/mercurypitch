@@ -7,6 +7,7 @@
 
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import './browser-doubles.test-fixtures'
+import { mercSing } from './merc-duo'
 import type { SungNote } from './sing-along'
 import { singAlong, stopSingAlong } from './sing-along'
 
@@ -74,6 +75,20 @@ describe('singAlong', () => {
 
     // Assert
     expect(cut).toBe(false)
+    expect(singing()).toBe(true)
+  })
+
+  it('leaves no quiet behind a run cut short, with no replay after it', () => {
+    // Arrange: the last note cut short 0.3 s in, then Merc set singing by hand
+    singAlong('blue')(note(71, 1.2), 6, 7)
+    vi.advanceTimersByTime(300)
+    stopSingAlong('blue', 71)
+    mercSing('blue', 64, true)
+
+    // Act: past the end the cut note would have had
+    vi.advanceTimersByTime(1000)
+
+    // Assert
     expect(singing()).toBe(true)
   })
 })
