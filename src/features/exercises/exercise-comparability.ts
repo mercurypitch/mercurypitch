@@ -39,6 +39,25 @@ export function exerciseScoringVersion(type: ExerciseType): number {
 }
 
 /**
+ * Runs recorded before the version was stamped were scored on version 1,
+ * except the interval trainer's, which mix its two versions and keep
+ * counting as its second, as they always have.
+ */
+const UNSTAMPED_VERSION: Partial<Record<ExerciseType, number>> = {
+  [EXERCISE_INTERVAL_TRAINER]: 2,
+}
+
+/** Whether a recorded run was scored the way its drill scores now. */
+export function onCurrentScoring(
+  type: ExerciseType,
+  recorded: number | undefined,
+): boolean {
+  return (
+    (recorded ?? UNSTAMPED_VERSION[type] ?? 1) === exerciseScoringVersion(type)
+  )
+}
+
+/**
  * The persisted key that lets two plain runs of the same drill compare
  * like for like. Same shape family as the challenge/weekly keys
  * (`voice:challenge:<id>:v<n>:<sig>`), scoped by drill type and its

@@ -11,6 +11,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { exerciseComparabilityKey } from '@/features/exercises/exercise-comparability'
 import { EXERCISE_INTERVAL_TRAINER, EXERCISE_LONG_NOTE, EXERCISE_PITCH_HOLD, EXERCISE_SIREN, } from '@/features/exercises/types'
+import { applyPersistedValue } from '@/lib/storage'
 
 const saveSessionRecord = vi.fn(async (..._args: unknown[]) => null)
 
@@ -85,5 +86,101 @@ describe('recordExerciseResult persists the key', () => {
     // Without this, no repeat of a drill ever forms a Skill Thread and the
     // row is stamped "cannot be compared like for like".
     expect(payload.comparabilityKey).toBe('voice:exercise:long-note:v1')
+  })
+})
+
+describe('local bests compare only runs scored the same way', () => {
+  // The result screen's best and last, the menu card and the score chip
+  // read local history, which recorded no scoring version until October
+  // 2026: a Siren run scored the new way was held against the old ones.
+  const seed = (entries: object[]) =>
+    applyPersistedValue(
+      'mercurypitch_exercise_history',
+      JSON.stringify(entries),
+    )
+
+  beforeEach(() => {
+    localStorage.clear()
+    seed([])
+  })
+
+  it("stores a recorded run with its drill's current version", async () => {
+    const {
+      exerciseHistory,
+      flushExerciseHistoryWrites,
+      recordExerciseResult,
+    } = await import('@/stores/exercise-history-store')
+    recordExerciseResult({
+      type: EXERCISE_SIREN,
+      score: 70,
+      metrics: {},
+      completedAt: 2,
+    })
+    recordExerciseResult({
+      type: EXERCISE_LONG_NOTE,
+      score: 82,
+      metrics: {},
+      completedAt: 3,
+    })
+    await flushExerciseHistoryWrites()
+    expect(exerciseHistory().map((e) => [e.type, e.scoringVersion])).toEqual([
+      [EXERCISE_LONG_NOTE, 1],
+      [EXERCISE_SIREN, 2],
+    ])
+  })
+
+  it('leaves unstamped Siren runs out of the stats, and counts a stamped one', async () => {
+    const { getExerciseStats } = await import('@/stores/exercise-history-store')
+    // Scored before the Siren's glide part was rescored, and never stamped.
+    const old = [
+      { type: EXERCISE_SIREN, score: 90, metrics: {}, completedAt: 2 },
+      { type: EXERCISE_SIREN, score: 80, metrics: {}, completedAt: 1 },
+    ]
+    seed(old)
+    expect(getExerciseStats(EXERCISE_SIREN).totalPlays).toBe(0)
+
+    seed([
+      {
+        type: EXERCISE_SIREN,
+        score: 60,
+        metrics: {},
+        completedAt: 3,
+        scoringVersion: 2,
+      },
+      ...old,
+    ])
+    expect(getExerciseStats(EXERCISE_SIREN)).toEqual({
+      bestScore: 60,
+      totalPlays: 1,
+      lastScore: 60,
+      lastPlayedAt: 3,
+      avgScore: 60,
+    })
+  })
+
+  it('still counts unstamped interval-trainer runs', async () => {
+    const { getExerciseStats } = await import('@/stores/exercise-history-store')
+    // They mix its two scorings and have always counted as its second.
+    seed([
+      {
+        type: EXERCISE_INTERVAL_TRAINER,
+        score: 75,
+        metrics: {},
+        completedAt: 1,
+      },
+    ])
+    expect(getExerciseStats(EXERCISE_INTERVAL_TRAINER)).toMatchObject({
+      bestScore: 75,
+      totalPlays: 1,
+    })
+  })
+
+  it('counts an unstamped run of a drill still on version 1', async () => {
+    const { getExerciseStats } = await import('@/stores/exercise-history-store')
+    seed([{ type: EXERCISE_LONG_NOTE, score: 82, metrics: {}, completedAt: 1 }])
+    expect(getExerciseStats(EXERCISE_LONG_NOTE)).toMatchObject({
+      bestScore: 82,
+      totalPlays: 1,
+    })
   })
 })
