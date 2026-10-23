@@ -50,8 +50,8 @@ it from the admin console puts it live on mercurypitch.com with no release
 naming what it waits on, but checks nothing, so the owner keeps the order above (Decisions for the
 owner). Releasing it is deleting its `drafts.ts` line (What the kit and the app still need, items 2
 and 15). The curiosity plan's kit work is on main at `85e23a1af`: Lesson 10's tease is in the kit's
-lesson copy (`src/features/lessons/kit/lesson-copy.ts:115`), as its alternative hook was until this
-PR (`:115-123` at `b7093a0a4`), Lesson 11's tease is there too (`:116`), and the next-lesson card
+lesson copy (`src/features/lessons/kit/lesson-copy.ts:115`), as its alternative hook was until #1186
+(`:115-123` at `b7093a0a4`), Lesson 11's tease is there too (`:116`), and the next-lesson card
 draws a tease above the next hook (`src/features/lessons/kit/next-card.ts:142-143`). So the page
 writes only its own title into its markup, and nothing of Lesson 11's (FACTS 1, 5).
 
@@ -874,8 +874,8 @@ Each with the package's recommendation. The review of 20 October came to the sam
 item it weighed, items 2 to 11; item 1 follows from its findings and from the owner's answer to
 CURIOSITY-MOMENTS § 5 item 2.
 
-1. **The alternative hook, `bright-dark`.** Decided: the owner retired it on 22 October 2026 (this
-   PR), for its mood labels. The answer to CURIOSITY-MOMENTS § 5 item 2 had kept every changed
+1. **The alternative hook, `bright-dark`.** Decided: the owner retired it on 22 October 2026
+   (#1186), for its mood labels. The answer to CURIOSITY-MOMENTS § 5 item 2 had kept every changed
    hook's old wording (`src/features/lessons/kit/lesson-copy.test.ts:269-284` at `b7093a0a4`). The
    Content Studio's hook picker offered it with its note, which names the mood labels. Picked, it
    put "bright" and "dark" in the h1, the head's copies of the hook and the structured data, on
@@ -968,7 +968,7 @@ CURIOSITY-MOMENTS § 5 item 2.
   teaches (FACTS 1, 40). The description would run to 171 characters, over the 160 cap, which
   `src/tests/lesson-pages.test.ts:130-133` checks only on the page as written. Neither hook names a
   note, so the title never answers the predict (FACTS 1a). The owner dropped it on 22 October 2026
-  (this PR; Decisions for the owner, item 1).
+  (#1186; Decisions for the owner, item 1).
 
 ## Tests
 

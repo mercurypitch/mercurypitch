@@ -960,7 +960,7 @@ None found.
   - Where: MERC-BIBLE section 8; learn/01.html, learn/02.html footer
   - Fix: Owner: decide before the films publish; until then drop the film credits from the pages.
   - Standard: MASTER-PLAN 12 items 1, 10
-  - **Status (Partly decided):** Decided 23 Oct: orange Merc is Tavi, she, which overtakes 22 Oct's unnamed, with no pronoun (this PR records both). Decided 16 Oct: the owner holds the rights to the voices and Merc's sung notes (MASTER-PLAN § 12 item 1). Still open: the film credits on the live pages (L1-08).
+  - **Status (Partly decided):** Decided 23 Oct: orange Merc is Tavi, she, which overtakes 22 Oct's unnamed, with no pronoun (#1186 records both). Decided 16 Oct: the owner holds the rights to the voices and Merc's sung notes (MASTER-PLAN § 12 item 1). Still open: the film credits on the live pages (L1-08).
 
 ## Device test plan
 

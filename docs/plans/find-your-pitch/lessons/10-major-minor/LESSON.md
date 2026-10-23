@@ -41,7 +41,7 @@ live, so the owner keeps that order (FACTS 7).
   "Which single note turns a bright major chord into a dark minor one?", was kept in
   `kit/lesson-copy.ts` as the alternative `bright-dark`, as the owner's answer to CURIOSITY-MOMENTS
   § 5 item 2 kept every changed hook's old wording, until the owner dropped it on 22 October 2026
-  for its mood labels (this PR). Picked, it went wherever the hook goes. The site worker writes it
+  for its mood labels (#1186). Picked, it went wherever the hook goes. The site worker writes it
   into the page's h1 and into every copy of the hook in its head: the description, the og and
   twitter descriptions and the structured data. The page state gives it to Lesson 10's card in every
   lesson page's explorer, even while Lesson 10 is "Coming later", and to Lesson 9's next-lesson

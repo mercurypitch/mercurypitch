@@ -56,7 +56,7 @@ nothing, and "publish after Lesson 10" is a rule for whoever uses it: nothing en
 for the owner). Releasing it is deleting its `drafts.ts` line (What the kit and the app still need,
 items 2 and 15). The curiosity plan's kit work is on main: Lesson 12's hook is the season's
 (`src/features/lessons/kit/season.ts:366`), its tease is in the kit's lesson copy
-(`src/features/lessons/kit/lesson-copy.ts:117`), as its alternative was until this PR (`:133-141` at
+(`src/features/lessons/kit/lesson-copy.ts:117`), as its alternative was until #1186 (`:133-141` at
 `b7093a0a4`), Lesson 13's tease is there too (`:118`), and the next-lesson card draws a tease above
 the next hook (`src/features/lessons/kit/next-card.ts:142-143`). So the page writes only its own
 title into its markup, and nothing of Lesson 13's (FACTS 1, 5).
@@ -968,7 +968,7 @@ heard play (Toys 3; Edge cases) (`git diff --stat`).
 Each with the package's recommendation and the review's judgement (Lesson 12's review, 21 October
 2026); where this pass's view differs from the review's, it says so.
 
-1. **The alternative hook, `hundreds`.** Decided: the owner dropped it on 22 October 2026 (this PR).
+1. **The alternative hook, `hundreds`.** Decided: the owner dropped it on 22 October 2026 (#1186).
    The rules kept it unpicked: a variant's text is lesson copy held to "every claim in that lesson's
    FACTS.md" (`kit/lesson-copy.ts:31-34`); its own note asks for a counted source first
    (`kit/team-notes.ts:77-78` at `b7093a0a4`); the owner's answer to CURIOSITY-MOMENTS § 5 item 2
@@ -1139,7 +1139,7 @@ Each with the package's recommendation and the review's judgement (Lesson 12's r
   1). The description would run to 158 characters and og:description to 141, inside their caps,
   which `src/tests/lesson-pages.test.ts:130-133` checks only on the page as written. Neither hook
   says where a tune's notes fall, so the title never answers the predict (FACTS 1a). The owner
-  dropped it on 22 October 2026 (this PR; Decisions for the owner, item 1).
+  dropped it on 22 October 2026 (#1186; Decisions for the owner, item 1).
 
 ## Tests
 

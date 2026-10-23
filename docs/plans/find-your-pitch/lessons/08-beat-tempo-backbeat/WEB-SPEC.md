@@ -860,7 +860,7 @@ Lesson 8's entry (`kit/season.ts:303-324`; FACTS 58), as this page wrote it:
 - The hook stays word for word (`season.ts:312`; FACTS 1), with no alternative, and the tease stays
   as `kit/lesson-copy.ts:113` has it: "Same song, same speed. Only the claps move.", which Lesson
   7's card shows (FACTS 6a). Lesson 9's entry carries the hook this page's card shows
-  (`season.ts:331`), and its copy the tease (`kit/lesson-copy.ts:114`) and, until this PR, its old
+  (`season.ts:331`), and its copy the tease (`kit/lesson-copy.ts:114`) and, until #1186, its old
   hook as an alternative (`:106-112` at `b7093a0a4`); all are Lesson 9's, not this page's (FACTS 6).
 
 ## What the kit and the app still need
@@ -912,14 +912,14 @@ was built on.
    step, or one leap." (`kit/lesson-copy.ts:114`), above its new hook, "How do you land a note you
    have to leap to?" (`season.ts:331`), under `.next-tease` (`kit/next-card.ts:142`;
    `lesson-sections.css:226-232`), and the old hook was the admin console's alternative in
-   `kit/lesson-copy.ts:106-112` at `b7093a0a4` until this PR dropped it. This page adds only its
+   `kit/lesson-copy.ts:106-112` at `b7093a0a4` until #1186 dropped it. This page adds only its
    tease figure to the slot (Toys 9).
 10. `kit/quiz.ts`: `recallStepHref` promoted beside `lessonPageHref` (`:134-136`, `:130-132`),
     since this page is its fourth user after Lessons 3, 4 and 5, whose own copies became
     re-exports of the kit's (`lesson-03/quiz-questions.ts:23-24`, `lesson-04/quiz-questions.ts:31-32`,
     used at `lesson-04/main.ts:41` and `:64`, and `lesson-05/quiz-questions.ts:19-20`). #1149's
     `recallHref` (`lesson-06/quiz-questions.ts:30-32` at `b7093a0a4`) opened a page, never a step;
-    this PR deleted it. The quiz needs nothing else: its prefix, slot and away links are on main
+    #1186 deleted it. The quiz needs nothing else: its prefix, slot and away links are on main
     (`kit/quiz.ts:73-97`, `:179-209`).
 11. `kit/comfort.ts` needs nothing: this page's `sing-flow.ts` picks the rest card after
     "Effortful", as Lesson 6's does, leaving the kit's default for the coach

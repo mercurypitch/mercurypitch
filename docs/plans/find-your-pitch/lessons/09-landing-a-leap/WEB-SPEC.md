@@ -601,7 +601,7 @@ paused off screen, and the still images when WebGL fails or would run on the CPU
   "Interval Trainer (sing) and Arpeggio Jumper" for the team, and no card draws it. Its topics
   stay. Its hook is the entry's, the default (`season.ts:331`); its tease, which Lesson 8's card
   draws, is `kit/lesson-copy.ts`'s (`:114`), whose entry held the alternative `'harder'` (`:106-114`
-  at `b7093a0a4`) until this PR dropped it (FACTS 1). `EDGES` already holds [3, 9] and [6, 9]
+  at `b7093a0a4`) until #1186 dropped it (FACTS 1). `EDGES` already holds [3, 9] and [6, 9]
   (`season.ts:417-418`).
 - **The explorer card**: what the kit draws for a lesson with a page and no published film: its
   state and main action from `kit/lesson-state.ts` ("Start lesson", "Continue: step N" or "Read
@@ -645,7 +645,7 @@ table):
    - the meta description, "How do you land a note you have to leap to? Hear it first, aim at its
      band, and sing do-mi-so-do as a ladder. A free lesson in your browser." (140 characters, inside
      the test's 80 to 160, `lesson-pages.test.ts:130-133`, and 157 with the alternative hook that
-     this PR dropped);
+     #1186 dropped);
    - `og:title` and `twitter:title`, "Landing a leap: Find Your Pitch, Lesson 9"
      (`learn/02.html:26-29`, `:45-48`);
    - `og:description`, the full hook and one line, "How do you land a note you have to leap to? Hear
