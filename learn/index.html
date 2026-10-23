@@ -101,12 +101,12 @@
       }
     </script>
     <!-- A plain document, like delete-account.html: no module script, so it
-         paints with the lesson pages' stylesheet and nothing else. Its words
-         about each lesson are not written here: the season map and the
-         reading time are filled in from season.ts and the lesson documents
-         (tools/learn-hub.ts), and the service worker leaves /learn/ alone
-         (STANDALONE_DOCUMENT_PATHS). -->
-    <link rel="stylesheet" href="/src/features/lessons/kit/lesson-base.css" />
+         paints with the lesson pages' base, by kit/lesson-hub.css, and
+         nothing else. Its words about each lesson are not written here: the
+         season map and the reading time are filled in from season.ts and the
+         lesson documents (tools/learn-hub.ts), and the service worker leaves
+         /learn/ alone (STANDALONE_DOCUMENT_PATHS). -->
+    <link rel="stylesheet" href="/src/features/lessons/kit/lesson-hub.css" />
     <style>
       .hub-hero {
         padding-block: clamp(36px, 6vw, 80px) 0;

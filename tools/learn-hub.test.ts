@@ -130,7 +130,7 @@ describe('the season map', () => {
     }
     const names = links.map(words)
     expect(new Set(names).size).toBe(names.length)
-    // the hidden words take the kit's `sr` class, from the stylesheet the hub links
+    // the hidden words take the kit's `sr` class, from the base the hub imports
     expect(repoFile('src/features/lessons/kit/lesson-base.css')).toMatch(
       /^\.sr \{\n {2}position: absolute !important;\n {2}width: 1px;/m,
     )
@@ -270,7 +270,7 @@ describe('the hub document', () => {
     )
   })
 
-  it("runs no script, and links only the lesson pages' stylesheet", () => {
+  it("runs no script, and links one stylesheet, which imports the lesson pages' base", () => {
     expect(
       doc.querySelectorAll('script:not([type="application/ld+json"])'),
     ).toHaveLength(0)
@@ -278,7 +278,13 @@ describe('the hub document', () => {
       Array.from(doc.querySelectorAll('link[rel="stylesheet"]')).map((l) =>
         l.getAttribute('href'),
       ),
-    ).toEqual(['/src/features/lessons/kit/lesson-base.css'])
+    ).toEqual(['/src/features/lessons/kit/lesson-hub.css'])
+    // never lesson-base.css itself: linked by a second page, it leaves the
+    // sheet the lessons share, and every lesson page then loads it after its own
+    const sheet = repoFile('src/features/lessons/kit/lesson-hub.css')
+    expect(sheet.replace(/\/\*[\s\S]*?\*\//g, '').trim()).toBe(
+      "@import './lesson-base.css';",
+    )
   })
 
   it('gives search a trail home, and the series every lesson is part of', () => {
