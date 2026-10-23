@@ -286,13 +286,15 @@ export function usePlanFlowController(o: PlanFlowOptions): PlanFlowController {
   } else {
     const shown = SHOWN[o.mode]
     markPlanShown(shown.via)
-    // A new visitor is counted once, when the shown record is first written.
-    // First Light mounts this again behind the auth modal and after a Google
-    // resume, and then the record is already there. The layer's modes are
-    // counted at every opening: the skip at the welcome leaves a record, so a
-    // skipper's first opening of the questions finds one too.
+    // A new visitor and an existing user are each counted once, when the
+    // shown record is first written. First Light mounts this again behind the
+    // auth modal and after a Google resume, and the takeover is mounted again
+    // by the same, or by a reload in the middle of it; the record is already
+    // there each time. A skipper is counted at every opening: each one is a
+    // tap, and the skip at the welcome leaves a record, so a skipper's first
+    // opening of the questions finds one too.
     const wrote = record === null && untrack(planRecord) !== null
-    if (o.mode !== 'new' || wrote) send([shown.event])
+    if (o.mode === 'skipper' || wrote) send([shown.event])
   }
 
   // ── The screens' callbacks ──

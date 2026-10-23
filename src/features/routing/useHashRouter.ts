@@ -80,6 +80,12 @@ export interface UseHashRouterDeps {
   closeResetPassword: () => void
   /** Replay the First Light Map (#/map). */
   openOnboardingMap: () => void
+  /** Open the plan layer (#/plan). */
+  openPlan: () => void
+  /** Close it whenever browser navigation leaves its route. */
+  closePlan: () => void
+  /** Whether the layer is open (keeps the tab-to-hash sync off its route). */
+  planOpen: Accessor<boolean>
   /** Open or close the route-backed Voice Mirror constellation surface. */
   setVoiceConstellationOpen: (open: boolean) => void
   /** Keep state-to-hash sync from erasing the constellation deep link. */
@@ -97,6 +103,28 @@ export interface UseHashRouterDeps {
   walkthroughModalOpen: Accessor<boolean>
   showGuideSelection: Accessor<boolean>
   selectedWalkthrough: Accessor<string | null>
+}
+
+/**
+ * The plan layer follows its route: up at #/plan, closed on every other. It is
+ * inert under the native build, like the map: the layer is folded out of it,
+ * and opening it there would leave a surface up with nothing on screen. The
+ * welcome goes first, or a first-ever visitor on this address gets First Light
+ * and the layer together. A function of its own, so the route table in
+ * applyRoute does not grow a branch for it.
+ *
+ * Order at boot: the first dispatch runs in this router's `onMount`, and it
+ * closes a layer that was opened earlier during the mount, as it does on every
+ * address but this one. So anything that opens the layer other than this route
+ * (a takeover, a Home card) opens it after that dispatch, not before it.
+ * plan-layer-host.ts says the same on the other side.
+ */
+function followPlanRoute(route: HashRoute, deps: UseHashRouterDeps): void {
+  if (route.type !== 'plan') deps.closePlan()
+  else if (!IS_NATIVE_BUILD) {
+    deps.dismissWelcome()
+    deps.openPlan()
+  }
 }
 
 /** A numbering id for the position stamps of one page load. */
@@ -210,6 +238,7 @@ export function useHashRouter(deps: UseHashRouterDeps): void {
           : null
     setSharedRunRequest(resultRequest)
     if (route.type !== 'reset-password') deps.closeResetPassword()
+    followPlanRoute(route, deps)
     if (resultRequest) {
       deps.dismissWelcome()
       deps.setActiveTab(TAB_COMMUNITY)
@@ -517,7 +546,8 @@ export function useHashRouter(deps: UseHashRouterDeps): void {
       deps.showAdminContentStudio() ||
       deps.showResetPassword() ||
       deps.voiceConstellationOpen() ||
-      deps.whatsNewOpen()
+      deps.whatsNewOpen() ||
+      deps.planOpen()
     if (!initialized() || hashSyncing || restoring) return
     if (resultRequest) {
       if (tab === TAB_COMMUNITY) {

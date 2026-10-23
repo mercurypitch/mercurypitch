@@ -97,10 +97,10 @@ These are the rules that break things when ignored.
 | `glass` | [GlassApp.tsx](../../src/features/glass/GlassApp.tsx) | 4.7k | Glass — the shattering voice mirror (P2: self-voice loop). |
 | `long-note` | [long-note-machine.ts](../../src/features/long-note/long-note-machine.ts) | 4.7k | Long note's room states — a pure reducer intro → starting → listen → hold → result, and Again round through starting with the same note (... |
 | `guitar-tab-3d` | [GuitarTab3DView.tsx](../../src/features/guitar-tab-3d/GuitarTab3DView.tsx) | 4.4k | GuitarTab3DView — 3D-style falling-notes guitar tab playback A drop-in alternate renderer for the same falling-notes data the 2D "hero" v... |
+| `plan` | [PlanQuestions.tsx](../../src/features/plan/PlanQuestions.tsx) | 4.4k | PlanQuestions — the four question screens What Merc asks after First Light: the instrument (Q1), what the person is working toward (Q2),... |
 | `karaoke-night` | [KaraokeNightApp.tsx](../../src/features/karaoke-night/KaraokeNightApp.tsx) | 4.1k | KaraokeNightApp — the standalone Karaoke Night shell A separate entry surface from the in-app Karaoke tab: its own stage, song rails and... |
 | `sing-room` | [sing-room-store.ts](../../src/features/sing-room/sing-room-store.ts) | 4.0k | The Sing room's state, held where the room is not AT MODULE SCOPE, and that is the whole point. |
 | `lip-roll` | [useLipController.ts](../../src/features/lip-roll/useLipController.ts) | 3.9k | useLipController: one Lip roll run, from the tap to the result The glide rooms' core (room-kit glide/useGlideRoom.ts) runs the run: the m... |
-| `plan` | [PlanQuestions.tsx](../../src/features/plan/PlanQuestions.tsx) | 3.9k | PlanQuestions — the four question screens What Merc asks after First Light: the instrument (Q1), what the person is working toward (Q2),... |
 | `warm-up` | [warm-up-store.ts](../../src/features/warm-up/warm-up-store.ts) | 3.9k | The Warm-up's store: today's run, on this device The path screen is gone while a room is up (ShellScreens draws only the top screen), so... |
 | `lab` | [LabSurface.tsx](../../src/features/lab/LabSurface.tsx) | 3.5k | Lab — hidden audio-research surface Not in TAB_GROUPS, so it never appears in the tab bar. |
 | `piano-project` | [piano-project.ts](../../src/features/piano-project/piano-project.ts) | 3.1k | PianoProject — lossless-enough, tick-native Standard MIDI authority Source-track order and absolute ticks stay authoritative. |
@@ -388,7 +388,7 @@ Grep for the symbol and read the surrounding range instead.
 | [src/components/StemMixer.tsx](../../src/components/StemMixer.tsx) | 7.5k |
 | [src/lib/piano-roll.ts](../../src/lib/piano-roll.ts) | 6.0k |
 | [src/features/drum-night/DrumNightApp.tsx](../../src/features/drum-night/DrumNightApp.tsx) | 5.3k |
-| [src/App.tsx](../../src/App.tsx) | 4.8k |
+| [src/App.tsx](../../src/App.tsx) | 4.9k |
 | [workers/db-worker/src/auth.ts](../../workers/db-worker/src/auth.ts) | 4.6k |
 | [src/components/UvrPanel.tsx](../../src/components/UvrPanel.tsx) | 3.6k |
 | [src/stores/jam-store.ts](../../src/stores/jam-store.ts) | 3.3k |

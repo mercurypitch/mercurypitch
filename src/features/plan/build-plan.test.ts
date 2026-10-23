@@ -22,10 +22,11 @@
 // the menu (what a narrower menu drops, when the switch is offered), the plan
 // as a value (nothing written to, new objects each time), where the stops go
 // (real tabs, pages and covers), every answer (the honesty rules over all of
-// them) and the store build (no store-only words). About 490 lines are the
-// approved copy as rows of data, which pin every line of it.
+// them) and the store build (no store-only words in the plan, and the plan's
+// own words held to the plan, which the native check rejects). About 490 lines
+// are the approved copy as rows of data, which pin every line of it.
 
-import { existsSync, readdirSync, readFileSync } from 'node:fs'
+import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs'
 import { describe, expect, it } from 'vitest'
 import { DRAFT_LESSONS } from '@/features/lessons/kit/drafts'
 import type { FirstStop } from '@/features/onboarding/first-stop'
@@ -1635,7 +1636,7 @@ describe('the store build', () => {
     'utf8',
   )
 
-  function listed(name: 'FORBIDDEN' | 'LAUNCH_OFFER'): string[] {
+  function listed(name: 'FORBIDDEN' | 'LAUNCH_OFFER' | 'PLAN_WORDS'): string[] {
     const body =
       new RegExp(`const ${name} = \\[([\\s\\S]*?)\\n\\]`, 'u').exec(
         checker,
@@ -1669,6 +1670,71 @@ describe('the store build', () => {
       expect.arrayContaining(['Stripe', 'extra credits']),
     )
     expect(found('Sing along, scored')).toEqual([])
+  })
+
+  // The plan's words are the other list: the plan has them, and the native
+  // bundle, which has no plan, must not (assert-bundle.mjs, PLAN_WORDS).
+  describe('the plan words', () => {
+    const PLAN_WORDS = listed('PLAN_WORDS')
+
+    const planSources = () =>
+      readdirSync('src/features/plan')
+        .filter(
+          (name) =>
+            /\.(tsx?|css)$/u.test(name) &&
+            !/\.(test|fixture)\.tsx?$/u.test(name),
+        )
+        .map((name) => readFileSync(`src/features/plan/${name}`, 'utf8'))
+
+    /** What a build could carry from outside the plan: not a test, a spec or a fixture, and not the plan. */
+    function outsideThePlan(): string[] {
+      return ['src', 'apps/mercurypitch/src'].flatMap((root) =>
+        readdirSync(root, { recursive: true, encoding: 'utf8' })
+          .filter(
+            (name) =>
+              /\.(tsx?|css|json|md|vtt|svg|html)$/u.test(name) &&
+              !/\.(test|spec|fixture)\./u.test(name) &&
+              !`${root}/${name}`.startsWith('src/features/plan/') &&
+              !`${root}/${name}`.startsWith('src/e2e/'),
+          )
+          .map((name) => `${root}/${name}`)
+          .filter((file) => statSync(file).isFile()),
+      )
+    }
+
+    it('are the three the native check rejects, read from it', () => {
+      expect(PLAN_WORDS).toEqual([
+        'mp.plan.text.v1',
+        'Change my answers',
+        'Four quick questions',
+      ])
+    })
+
+    it('are checked: a loop over the list stands in the checker', () => {
+      expect(checker).toMatch(/for \(const \[needle, what\] of PLAN_WORDS\)/u)
+    })
+
+    it('are each in the plan, so the list cannot guard a word that was renamed away', () => {
+      const plan = planSources().join('\n')
+
+      expect(PLAN_WORDS.length).toBeGreaterThan(0)
+      expect(PLAN_WORDS.filter((word) => !plan.includes(word))).toEqual([])
+    })
+
+    it('are in nothing outside the plan, so a native bundle that holds one holds the plan', () => {
+      const files = outsideThePlan()
+      const wrong = files.flatMap((file) => {
+        const text = readFileSync(file, 'utf8')
+        return PLAN_WORDS.filter((word) => text.includes(word)).map(
+          (word) => `${file} says "${word}"`,
+        )
+      })
+
+      expect(PLAN_WORDS.length).toBeGreaterThan(0)
+      expect(files.length).toBeGreaterThan(1000)
+      expect(files).toContain('src/components/GuideSelection.tsx')
+      expect(wrong).toEqual([])
+    })
   })
 
   it('keeps store-only words out of the plan copy', () => {

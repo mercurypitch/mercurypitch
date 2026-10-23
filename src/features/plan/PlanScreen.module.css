@@ -16,18 +16,18 @@
 
    - The screen fills the host's box and scrolls its own content; what the
      host owes the screens is written in PlanExits.tsx. The root is a flex
-     column. The scroll region (Merc's line, the headline, the cards and the
-     menu switch) takes the height the ways on leave and scrolls what does
-     not fit, and Show me around and See every room are a row under it. That
-     row is not pinned over the cards with `position: sticky`: a sticky row
-     is an overlay, so some card is always partly under it, and it stops
-     short of its scroller's bottom padding (docs/agent/MISTAKES.md, "Give a
-     pinned footer its own row"). From 900 px the region is only as tall as
-     its cards, so the row follows them, and the region scrolls only when
-     the box is shorter than that. On a phone the host's box reaches the
-     bottom edge, so the row carries the home indicator's inset under its
-     buttons (PlanExits.tsx). It carries the inset up to 899 px and none
-     from 900 px.
+     column. The scroll region (Merc's line, the headline, the cards, the
+     menu switch and, in a review, Change my answers) takes the height the
+     ways on leave and scrolls what does not fit, and Show me around and See
+     every room are a row under it. That row is not pinned over the cards
+     with `position: sticky`: a sticky row is an overlay, so some card is
+     always partly under it, and it stops short of its scroller's bottom
+     padding (docs/agent/MISTAKES.md, "Give a pinned footer its own row").
+     From 900 px the region is only as tall as its cards, so the row follows
+     them, and the region scrolls only when the box is shorter than that. On
+     a phone the host's box reaches the bottom edge, so the row carries the
+     home indicator's inset under its buttons (PlanExits.tsx). It carries
+     the inset up to 899 px and none from 900 px.
    - The root sets no `position` and no transform. Not now is PlanExits': it
      sits in the top right corner of the host's nearest positioned box,
      where the questions put it, and is neither clipped nor scrolled by the
@@ -418,6 +418,13 @@
   text-decoration-color: rgba(125, 133, 144, 0.5);
   text-underline-offset: 3px;
   cursor: pointer;
+}
+
+/* A review's way back to the questions: the last thing in the scroll region,
+   and the same quiet link as See every room (a hint, 44 px tall, with its
+   hover), so it composes that class and sets nothing of its own. */
+.change {
+  composes: skip;
 }
 
 /* ── Hover, only where there is a pointer to move away ─────────── */

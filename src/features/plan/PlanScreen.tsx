@@ -25,14 +25,15 @@
 //   as the plan opens and `point`, at Start here, a moment later.
 // - The screen fills the host's box and scrolls its own content (what the
 //   host owes the screens is in PlanExits.tsx's header). The cards and the
-//   switch are in the scroll region; Show me around and See every room are a
-//   row under it, never pinned over it, so no card is partly under them. Not
-//   now is PlanExits': it sits in the corner of the host's box, outside the
-//   region, and comes last in the DOM, so Tab meets the plan first.
+//   switch are in the scroll region, and so is Change my answers, last in it,
+//   when the host gives a way to change them; Show me around and See every
+//   room are a row under it, never pinned over it, so no card is partly under
+//   them. Not now is PlanExits': it sits in the corner of the host's box,
+//   outside the region, and comes last in the DOM, so Tab meets the plan first.
 //
 // What the host sees: onOpenStop with the card's own stop; onScopeChange with
 // what the switch should now be (it is the host's to keep); onShowMeAround,
-// onSeeEveryRoom and onNotNow with nothing.
+// onSeeEveryRoom, onChangeAnswers and onNotNow with nothing.
 
 import type { JSX } from 'solid-js'
 import { createMemo, createUniqueId, For, onCleanup, onMount, Show, } from 'solid-js'
@@ -81,6 +82,13 @@ export interface PlanScreenProps {
   onShowMeAround: () => void
   onOpenStop: (stop: PlanStop) => void
   onSeeEveryRoom: () => void
+  /**
+   * Back to the questions, on the answers given. Given only where an answered
+   * plan is looked at again (the layer's review): then "Change my answers"
+   * ends the scroll region, after the cards and before the ways on. First
+   * Light's plan, which has just been answered, never gives it.
+   */
+  onChangeAnswers?: () => void
   onNotNow: () => void
 }
 
@@ -286,6 +294,15 @@ export function PlanScreen(props: PlanScreenProps): JSX.Element {
             </div>
           </Show>
         </div>
+        <Show when={props.onChangeAnswers !== undefined}>
+          <button
+            type="button"
+            class={styles.change}
+            onClick={() => props.onChangeAnswers?.()}
+          >
+            Change my answers
+          </button>
+        </Show>
       </div>
       <div class={styles.actions}>
         <button

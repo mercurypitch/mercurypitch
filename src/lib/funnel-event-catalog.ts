@@ -398,8 +398,10 @@ export const GUIDE_FUNNEL_EVENTS = [
    *  First Light, counted once, when the shown record is first written: a
    *  remount behind the auth modal counts nothing, and nor does a replay
    *  after Skip the intro, whose skip wrote the record. `existing` is an
-   *  existing user in the app (once). `skipper` is a person who opened them
-   *  from Home or the Guide, counted at every opening. */
+   *  existing user in the app, counted once on the same rule: a takeover
+   *  mounted again (the auth modal, a Google resume, a reload in the middle
+   *  of it) finds the record and counts nothing. `skipper` is a person who
+   *  opened them from Home or the Guide, counted at every opening. */
   'plan_shown_new',
   'plan_shown_existing',
   'plan_shown_skipper',

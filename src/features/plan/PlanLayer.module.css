@@ -1,0 +1,98 @@
+/* ============================================================
+   PlanLayer: the box the questions and the plan stand in, as a layer
+   ============================================================
+
+   What the screens need of their host is written in PlanExits.tsx. This is
+   that box in a layer of its own over the app; First Light's beat
+   (BeatPlan.module.css) is the same box inside First Light's frame.
+
+   - The layer covers the window and stands level with First Light's overlay
+     (3000): over the app's chrome, sheets and modals, under the toasts and
+     the consent bar (z-scale.test.ts keeps the band between them empty). It
+     paints First Light's ground and its faint wash of blue, so the screens'
+     ink (they fall back on the mock's own tokens where First Light's --ob-*
+     are not set) reads on it whatever theme the app wears.
+   - It pads the box 24px above, with the top safe area on top of it, 22px
+     each side and 40px below. The sides and the bottom are First Light's
+     frame padding. The top is the layer's own choice: First Light's frame
+     pads 24px above in a wide window and 40px on a phone, and has no top
+     inset, while the layer keeps 24px on both and clears the status bar and
+     the notch by the inset it reads. On a phone it gives the bottom padding
+     up, so the box reaches the bottom edge and the screens own the room
+     under their last row, the home indicator's inset included. The box adds
+     no padding or inset of its own.
+   - It is as tall as what can be seen. iOS retracts its toolbars over a
+     `position: fixed; inset: 0` box, so a layer sized by its insets alone
+     would run taller than the visible window and its last rows (Next, and the
+     plan's ways on) would sit under the browser bar, as First Light's
+     "Keep my voiceprint" did (owner testing, iPhone). The dynamic viewport
+     unit follows the bars as they come and go, so `100dvh` is set where the
+     browser knows it, as First Light's overlay does.
+   - The padding beside and below the box is empty and clipped by nothing
+     but the window's edge, so the layer lends it to the screens' scroll
+     regions (--pc-overhang-side, --pc-overhang-end), which reach out into it
+     and clip there: a picked card's glow and Next's shadow fade out by the
+     window's edge and not at a line 6px from them. Each lend equals the
+     padding it lends, in px (a bare 0 would make the chrome's calc() invalid
+     and collapse the region), and none is lent below on a phone, where none
+     is padded.
+   - The box is positioned, a flex column, of a definite height
+     (`flex: 1 1 0; min-height: 0` in a fixed column), and neither scrolled
+     nor transformed, filtered or animated: Back and Not now sit in its
+     corners, and a transform on it would hand them to the layer for as long
+     as it lasted. It is centred, as the beat's is, so the screens, which are
+     at most 1000px wide, stand in the middle of a wide window.
+   - Merc is `flex: none` directly above the screens, and his class sets only
+     that: his still and his live canvas share one grid cell, so `display` is
+     MercPresence's own. PlanLayer.css.test.ts pins each of these, and
+     PlanLayer.test.tsx that the layer wears them. */
+
+.layer {
+  --pc-overhang-side: 22px;
+  --pc-overhang-end: 40px;
+
+  position: fixed;
+  inset: 0;
+  z-index: 3000;
+  display: flex;
+  flex-direction: column;
+  box-sizing: border-box;
+  padding: calc(24px + env(safe-area-inset-top, 0px)) 22px 40px;
+  overflow: hidden;
+  isolation: isolate;
+  background:
+    radial-gradient(
+      68% 52% at 50% 46%,
+      rgba(88, 166, 255, 0.1),
+      transparent 68%
+    ),
+    #0d1117;
+  color: #e6edf3;
+}
+
+@supports (height: 100dvh) {
+  .layer {
+    height: 100dvh;
+  }
+}
+
+@media (max-width: 640px) {
+  .layer {
+    padding-bottom: 0;
+    --pc-overhang-end: 0px;
+  }
+}
+
+.box {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  flex: 1 1 0;
+  width: 100%;
+  min-height: 0;
+}
+
+.merc {
+  flex: none;
+}

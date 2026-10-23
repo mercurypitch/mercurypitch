@@ -216,22 +216,56 @@ describe('when a run begins', () => {
     expect(sent()).toEqual([])
   })
 
-  it.each<[PlanFlowMode, string]>([
-    ['existing', 'plan_shown_existing'],
-    ['skipper', 'plan_shown_skipper'],
-  ])(
-    'says %s every time it opens, whatever the record: the skip at the welcome leaves one',
-    (mode, event) => {
-      // Arrange: somebody who skipped the intro was marked as shown.
-      markPlanShown('welcome-skip')
+  it('says skipper every time it opens, whatever the record: the skip at the welcome leaves one', () => {
+    // Arrange: somebody who skipped the intro was marked as shown.
+    markPlanShown('welcome-skip')
 
-      // Act
-      start(mode)
+    // Act: Home or the Guide opens the four taps, twice.
+    start('skipper')
+    start('skipper')
 
-      // Assert
-      expect(sent()).toEqual([event])
-    },
-  )
+    // Assert: each opening is a tap, and each is counted.
+    expect(sent()).toEqual(['plan_shown_skipper', 'plan_shown_skipper'])
+  })
+
+  it('counts an existing user once, as a new visitor is: a run that opens on the shown record says nothing', () => {
+    // Arrange: the takeover was shown, then mounted again (behind the auth
+    // modal, after a Google resume, or by a reload in the middle of it).
+    start('existing')
+    expect(sent()).toEqual(['plan_shown_existing'])
+
+    // Act
+    const { c } = start('existing')
+
+    // Assert
+    expect(sent()).toEqual(['plan_shown_existing'])
+    expect(planRecord()).toMatchObject({ status: 'shown', via: 'layer' })
+    expect(c.phase()).toBe('questions')
+  })
+
+  it('says nothing for an existing user who already has a record: only the run that writes the first one counts', () => {
+    // Arrange: somebody who skipped the intro was marked as shown.
+    markPlanShown('welcome-skip')
+
+    // Act
+    start('existing')
+
+    // Assert
+    expect(sent()).toEqual([])
+  })
+
+  it('says nothing for an existing user whose stored record cannot be read: nothing was written', () => {
+    // Arrange: a newer client's record, which this one reads as no plan and
+    // never writes over.
+    localStorage.setItem(PLAN_RECORD_KEY, JSON.stringify({ v: 99 }))
+
+    // Act
+    start('existing')
+
+    // Assert
+    expect(planRecord()).toBeNull()
+    expect(sent()).toEqual([])
+  })
 
   it('opens a review on the plan, built from the answers stored, and sends nothing', () => {
     // Arrange: an answered plan, kept with the finding it was led by.

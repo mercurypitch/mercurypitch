@@ -187,6 +187,26 @@ describe('parseHash', () => {
     expect(parseHash('#/whats-new')).toEqual({ type: 'whats-new' })
   })
 
+  // The plan layer: deep-linkable so Guide's first row, a link to it and a
+  // reload all land on the one destination.
+  it('routes #/plan to the plan layer', () => {
+    expect(parseHash('#/plan')).toEqual({ type: 'plan' })
+  })
+
+  // The two routes that are one fixed address share a lookup in the parser.
+  it('routes #/map to the First Light Map, and neither with anything after it', () => {
+    expect(parseHash('#/map')).toEqual({ type: 'onboarding-map' })
+    expect(parseHash('#/map/x')).toEqual({ type: 'unknown' })
+    expect(parseHash('#/plan/x')).toEqual({ type: 'unknown' })
+  })
+
+  it('hands back a route of its own each time, so no caller can change the next one', () => {
+    const first = parseHash('#/plan')
+    Object.assign(first, { type: 'unknown' })
+
+    expect(parseHash('#/plan')).toEqual({ type: 'plan' })
+  })
+
   it('parses UVR session route with session ID', () => {
     const result = parseHash('#/uvr/session/abc123-def')
     expect(result).toEqual({ type: 'uvr-session', sessionId: 'abc123-def' })
@@ -473,6 +493,10 @@ describe('buildHash', () => {
     expect(buildHash({ type: 'whats-new' })).toBe('/whats-new')
   })
 
+  it('builds the plan hash', () => {
+    expect(buildHash({ type: 'plan' })).toBe('/plan')
+  })
+
   it('builds UVR session hash', () => {
     expect(buildHash({ type: 'uvr-session', sessionId: 'abc123' })).toBe(
       '/karaoke/session/abc123',
@@ -589,6 +613,8 @@ describe('parseHash ↔ buildHash round-trip', () => {
     '#/guide/practice',
     '#/guide/editor',
     '#/voice-constellation',
+    '#/map',
+    '#/plan',
     '#/s/abc123XYZ0',
     '#/reset-password',
     '#/reset-password?token=tok_abc-123',

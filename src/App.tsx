@@ -32,6 +32,9 @@ import { SingingStatusBar } from '@/components/singing/SingingStatusBar'
 import { SingingCanvasHud } from '@/components/SingingCanvasHud'
 import { SyncHost } from '@/components/sync/SyncHost'
 import type { FirstLight as FirstLightFlow } from '@/features/onboarding/FirstLight'
+import type { PlanLayerHost, PlanStoreModule, } from '@/features/plan/plan-layer-host'
+import { createPlanLayerHost } from '@/features/plan/plan-layer-host'
+import type { PlanLayerProps } from '@/features/plan/PlanLayer'
 import type { SingRoomCanvasOptions } from '@/features/sing-room/SingRoomStage'
 import { SingRoomStage } from '@/features/sing-room/SingRoomStage'
 import { IS_NATIVE_BUILD } from '@/lib/native-build'
@@ -106,6 +109,17 @@ const FirstLight: LazyFirstLight = IS_NATIVE_BUILD
   : lazy(async () =>
       import('@/features/onboarding/FirstLight').then((m) => ({
         default: m.FirstLight,
+      })),
+    )
+// The plan layer: lazy like First Light, and not in the native bundle at all
+// (the constant picks a function that renders nothing before `lazy()` is
+// ever written, so the native build has neither the call nor the layer's
+// chunk: the controller, the screens, the credits words).
+const PlanLayer: Component<PlanLayerProps> = IS_NATIVE_BUILD
+  ? () => null
+  : lazy(async () =>
+      import('@/features/plan/PlanLayer').then((m) => ({
+        default: m.PlanLayer,
       })),
     )
 const VoiceConstellationSurface = lazy(async () =>
@@ -453,6 +467,64 @@ const GuitarGlyph = () => (
     </g>
   </svg>
 )
+
+// ── The plan layer's open state ─────────────────────────────
+// The plan record and the layer's mode live in plan-store, which the native
+// build must not carry: a module-level createPersistedSignal is a side effect
+// Rollup keeps, so even a static import used only in a dead branch would put
+// the store, and what it pulls in, in the phone's bundle. As First Light's
+// does above, the constant picks a function before the `import()` is written,
+// so App holds the store only as a module it has loaded, on the web.
+//
+// What says whether the layer is open is plan-layer-host.ts, which App imports
+// statically: it has no side effect, says no word and takes the store as a
+// type only, so it costs the native bundle nothing. The constant picks the
+// host as well, so only the web builds one; the native build gets a stand-in
+// that is never open and has nothing answered.
+const importPlanStore: () => Promise<PlanStoreModule> = IS_NATIVE_BUILD
+  ? async () => Promise.reject(new Error('The plan is not in this build'))
+  : async () => import('@/features/plan/plan-store')
+
+const NO_PLAN: PlanLayerHost = {
+  mode: () => null,
+  answered: () => false,
+  isOpen: () => false,
+  open: () => undefined,
+  close: () => undefined,
+}
+
+const createPlanHost: () => PlanLayerHost = IS_NATIVE_BUILD
+  ? () => NO_PLAN
+  : () => createPlanLayerHost(importPlanStore)
+
+/**
+ * The plan, as a layer over the app: drawn while the host has a mode, and keyed
+ * by it, so a layer opened in another mode is a new run. Not in the native
+ * bundle, which has no plan: the constant picks a component that draws
+ * nothing, so the layer's chunk stays out of the phone's bundle. A component of
+ * its own, so AppShell's body does not carry the mount.
+ */
+const PlanLayerMount: Component<{ plan: PlanLayerHost }> = IS_NATIVE_BUILD
+  ? () => null
+  : (props) => (
+      <Show when={props.plan.mode()} keyed>
+        {(mode) => (
+          <ErrorBoundary
+            fallback={() => {
+              // A dead chunk (offline, or a deploy swapped the hashed
+              // assets) must not leave the layer open with nothing on
+              // screen. Deferred a tick: this is a write, not render work.
+              queueMicrotask(props.plan.close)
+              return null
+            }}
+          >
+            <Suspense fallback={null}>
+              <PlanLayer mode={mode} onClose={props.plan.close} />
+            </Suspense>
+          </ErrorBoundary>
+        )}
+      </Show>
+    )
 
 const AppShell: Component<AppProps> = (props) => {
   const { audioEngine, playbackRuntime, practiceEngine } = useEngines()
@@ -834,6 +906,12 @@ const AppShell: Component<AppProps> = (props) => {
   // aside by now: index.tsx does that before the render.
   const firstLight = useFirstLight(voiceConstellationOpen)
 
+  // ── The plan layer ──────────────────────────────────────────
+  // Opened by its route, by Guide's first row and, on the web, by Home's card
+  // and the existing user's takeover; see plan-layer-host.ts, which says when
+  // an opener may open at boot.
+  const plan = createPlanHost()
+
   const startGuideTour = (sectionIds: string[]) => {
     // Start before closing the dialog so a tour surface stays open across the
     // hand-off (the deferred survey checks for one — see tourSurfaceOpen).
@@ -844,6 +922,19 @@ const AppShell: Component<AppProps> = (props) => {
       setGuideFromWelcome(false)
       dismissWelcome()
     }
+  }
+
+  // Guide's first row. Committed to the plan, like a tour: the welcome is
+  // retired for good. The Guide closes BEFORE the address goes in: closed
+  // after, the address sync would rewrite #/plan to the tab's own before the
+  // hashchange had read it, and the plan would never open.
+  const openPlanFromGuide = () => {
+    if (guideFromWelcome()) {
+      setGuideFromWelcome(false)
+      dismissWelcome()
+    }
+    setShowGuideSelection(false)
+    navigateTo({ type: 'plan' })
   }
 
   // ── Swipe to Change Tabs ──────────────────────────────────
@@ -1265,6 +1356,9 @@ const AppShell: Component<AppProps> = (props) => {
     showResetPassword: () => resetPasswordView() != null,
     closeResetPassword: () => setResetPasswordView(null),
     openOnboardingMap: firstLight.openMap,
+    openPlan: plan.open,
+    closePlan: plan.close,
+    planOpen: plan.isOpen,
     setVoiceConstellationOpen,
     voiceConstellationOpen,
     setWhatsNewOpen: whatsNew.setOpen,
@@ -3237,6 +3331,9 @@ const AppShell: Component<AppProps> = (props) => {
           </Show>
         )}
 
+        {/* The plan, as a layer over the app; not in the native build. */}
+        <PlanLayerMount plan={plan} />
+
         <Show when={whatsNew.open()}>
           <Suspense fallback={null}>
             <WhatsNewPage release={RELEASE_0_9} onClose={whatsNew.close} />
@@ -3266,6 +3363,8 @@ const AppShell: Component<AppProps> = (props) => {
           isOpen={showGuideSelection()}
           onClose={closeGuideSelection}
           onStartTour={startGuideTour}
+          onOpenPlan={IS_NATIVE_BUILD ? undefined : openPlanFromGuide}
+          planAnswered={plan.answered}
         />
 
         {/* Guide Tour — Interactive spotlight overlay */}
