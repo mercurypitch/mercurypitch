@@ -472,11 +472,11 @@ in § 2; a lesson's own choices stay in its DECISIONS.md). Each item is marked *
 **Proposed**: a recommendation, or none yet, awaiting the owner's answer. When the owner answers,
 the item is marked decided here and the Phase 1 Decisions track closes when every item is.
 
-1. **Partly decided (16 October 2026).** The owner holds the rights to the ElevenLabs voices,
-   which covers the D2 voice's commercial terms and Merc's sung notes in Lesson 1 (the Echo set
-   the app withholds from its store build, `src/features/echo/merc-voice-set.ts`): they stay for
-   now, and a voice actor replaces them later (Phase 1 Voices track). Still open: orange Merc's
-   name and pronouns.
+1. **Partly decided (16 October 2026).** The owner holds the rights to the ElevenLabs voices, which
+   covers the D2 voice's commercial terms and Merc's sung notes in Lesson 1 (the Echo set the app
+   withholds from its store build, `src/features/echo/merc-voice-set.ts`): they stay for now, and a
+   voice actor replaces them later (Phase 1 Voices track). Decided (22 October 2026): orange Merc
+   stays unnamed, with no pronoun, through Season 1. Names can be proposed later.
 2. **Decided (16 October 2026): a private repository.** It is `disjoint-colliders`, package
    `packages/learn` (17 October 2026). The film sources go there; source media (the Merc passes,
    the voice takes) goes to a private R2 bucket listed in a `media.json` manifest, never into git.
@@ -484,19 +484,19 @@ the item is marked decided here and the Phase 1 Decisions track closes when ever
    milestone. (The lesson documents stay in this repo, in `lessons/`.) The film tools become a
    shared, versioned film kit vendored into that repository with a drift check; until then tool
    changes stay small and are logged in the film's `tools/CHANGES.md`.
-3. **Proposed: the lessons are free**, the top of the funnel (`docs/plans/premium.md:48`: pitch
-   training never premium; `docs/specs/guided-voice-check.ears.md` REQ-GVC-025: safety never
-   paid). Still open: whether premium stays the Merc practice rooms, which already sit uneasily with
-   `premium.md:3-8` (everything that runs on the device is free forever).
-4. **Proposed, no recommendation yet.** 1080p or 4K delivery. (The frame rate is decided: D10.)
+3. **Decided (22 October 2026): the lessons are free**, the top of the funnel (pitch training never
+   premium, `docs/plans/premium.md:48`; safety never paid, `docs/specs/guided-voice-check.ears.md`
+   REQ-GVC-025). Still open: whether premium stays the Merc practice rooms, which already sit
+   uneasily with `premium.md:3-8` (everything that runs on the device is free forever).
+4. **Decided (22 October 2026): 1080p for Season 1; 4K is looked at again for Season 2.**
 5. **Decided (16 October 2026): British English in general,** with American wording where the
    owner prefers it, case by case. Narration and lesson copy stay as drafted ("semitone" and "tone"
    lead, "half step" and "whole step" are the alternates), so nothing re-voices. The app's screens
    (0.9.18) stay American; the lesson pages are their own documents.
-6. **Proposed: the Learn chapters** (`#/learn/<chapterId>`), the natural home for the lessons
-   inside the app once their errors are fixed, with voice lessons also linked from their matching
-   Ascent weeks (§ 4.4). Whether the in-app lessons live in Learn chapters, the Ascent, or a new
-   Lessons surface.
+6. **Decided (22 October 2026): the Learn chapters** (`#/learn/<chapterId>`), the natural home for
+   the lessons inside the app once their errors are fixed, with voice lessons also linked from their
+   matching Ascent weeks (§ 4.4). Whether the in-app lessons live in Learn chapters, the Ascent, or
+   a new Lessons surface.
 7. **Decided (16 October 2026): self-hosted on R2.** The page plays its own copy of the episode, an
    MP4 at 1080p with a 720p copy for phones, from the R2 bucket the site's security policy already
    allows (`media-src` in `public/_headers`); a re-cut replaces the file in place. Updated 17
@@ -506,18 +506,18 @@ the item is marked decided here and the Phase 1 Decisions track closes when ever
    with a "Watch on YouTube" link and no YouTube embed: iOS WebViews send no Referer, so YouTube
    embeds fail with Error 153, and the app's COEP header blocks YouTube iframes. The film files are
    never committed (renders stay out of git, and the asset layer serves no file over 25 MiB).
-8. **Proposed, no recommendation yet.** Who the vocal coach is. (That a coach signs off every
-   voice lesson at the day-1 and day-6 gates is fixed: § 7.)
+8. **The owner's (22 October 2026):** the owner finds the vocal coach and publishes each lesson from
+   the admin console as they see fit. (That a coach signs off every voice lesson at the day-1 and
+   day-6 gates is fixed: § 7.)
 9. **Decided (16 October 2026): `mercurypitch.com/learn/NN`.** The public web lessons are the
    app's own documents, Lesson 1 at `/learn/01`. The app's origin shares its analytics, its
    accounts (explorer progress on sign-in) and the `?lesson=` marker; the private preview page
    stays the proof preview.
-10. **Proposed, no recommendation yet.** Whether orange Merc becomes a first-class palette in the
-    app (MERC-BIBLE backlog items 1 and 2), including approval of the new pinned shader hash that
-    the accent uniforms need.
-11. **Proposed: yes.** A payload exception for lesson telemetry: anonymous per-question events
-    (`lesson_id`, `question_id`, `first_try_correct`, `visit_index`, `consent`) through the
-    db-worker, where the app's analytics carry counts only today (`src/lib/analytics.ts`).
+10. **Decided (22 October 2026): later, after Season 1 launches.** Orange Merc as a first-class app
+    palette (MERC-BIBLE backlog items 1 and 2) and its pinned shader hash.
+11. **Decided (22 October 2026): yes.** A payload exception for lesson telemetry: anonymous
+    per-question events (`lesson_id`, `question_id`, `first_try_correct`, `visit_index`, `consent`)
+    through the db-worker, built in its own PR; until then the lesson pages send no events.
 12. **Decided (19 October 2026): do-based minor.** Minor is sung do-me-so, and the natural minor
     scale do re me fa so le te do. Do stays home, as Lesson 4 teaches it, and a minor third is one
     changed syllable. The app's Ear Lab already sings minor this way (`MINOR_SOLFEGE`,

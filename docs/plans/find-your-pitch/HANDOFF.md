@@ -111,9 +111,11 @@ are the mobile app's builds. The next `v` tag carries both pages.
    coach" list in their LESSON.md. Lessons 4, 6, 8, 10 and 12 are theory lessons, which the coach's
    gates do not bind, but each has a sung part: Lesson 8's page stays a draft until the coach signs
    off its sung line, and Lessons 6, 10 and 12 wait on the coach's look at theirs. Lesson 4's list
-   is for a look only: its page waits on your go-ahead alone (item 2). This is the season's
-   critical path.
-2. **Lesson 4** waits on your go-ahead (held back on 21 October, before the release).
+   is for a look only: its page waits on your go-ahead alone (item 2). This is the season's critical
+   path. Decided (22 October 2026): you find the coach.
+2. **Lesson 4** waited on your go-ahead (held back on 21 October, before the release). Decided (22
+   October 2026): you publish it from the console a few days after Lessons 1 and 2, once the release
+   carrying the handoff follow-ups is out.
 3. **Hook alternatives that break the copy rules.** Under your rule of 20 October, a changed hook
    stayed in the console as an alternative. Five of them broke the copy rules in
    `kit/lesson-copy.ts`'s header: `harder` (Lesson 9), `same-note` (11), `hundreds` (12) and
@@ -122,7 +124,9 @@ are the mobile app's builds. The next `v` tag carries both pages.
    this PR deletes them and their notes. Each lesson keeps its tease, and Lesson 14 its tease
    alternative `band`.
 4. **"Compelling" in two drafts.** YouTube row 14's title 3 and SEARCH.md § 4's draft title for
-   Lesson 14 still use the old hook's word, which no source defines. Your call.
+   Lesson 14 used the old hook's word, which no source defines. Decided (22 October 2026): drop it.
+   This PR makes title 3 "Beyond in tune: phrasing a whole song" and the draft "Phrasing in singing:
+   breath, swell and shape | MercuryPitch".
 5. **Lesson 3's hook changed on 22 October** (#1168). It is now "Asked, most students said they
    couldn't copy a tune. What happened when researchers tested it?" The hook you approved on 20
    October, "Asked, most students said they couldn't copy a tune. Tested, most could. So what's
@@ -130,12 +134,13 @@ are the mobile app's builds. The next `v` tag carries both pages.
    stays in the console as the alternative `tested` if you prefer it. Lesson 5's promise had the
    same fault and was reworded in the same PR. The older alternative, `figures` ("In tests, only
    about one in ten to one in six missed by a semitone or more"), gives the same answer away with
-   numbers. Its note did not say so; since this PR it does.
+   numbers. Its note did not say so. Decided (22 October 2026): both stay as alternatives, and since
+   this PR the note on `figures` warns of it.
 6. **Lesson 5's hook** leans a little towards its predict's answer. "Singers are told to “support” a
    long note. If that doesn't mean pushing, what keeps it steady?" suggests that pushing is not what
-   keeps a note steady. It is your approved wording, so it stays the default. Since this PR the
-   console also holds a neutral alternative, `steady`, "Singers are told to “support” a long note.
-   What keeps it steady?"; you pick which goes live.
+   keeps a note steady. Decided (22 October 2026): it stays the default, as your approved wording,
+   and since this PR the console also holds a neutral alternative, `steady`, "Singers are told to
+   “support” a long note. What keeps it steady?"; you pick which goes live.
 7. **Lesson 8 in the lesson menu.** On Lesson 1's own page, before Lesson 1 was done, the menu
    offered Lesson 8 as "up next" wherever Lesson 8 was live: the menu skips the page's own lesson,
    and Lesson 8 built on no lesson. Decided: Lesson 8 comes after Lesson 1. This PR adds the edge
@@ -143,13 +148,17 @@ are the mobile app's builds. The next `v` tag carries both pages.
    Lesson 1 to Lesson 8, and `kit/lesson-menu.test.ts` records the new order. Lesson 6 only helps,
    so Lesson 8's recall still shows once Lesson 6 is done; its page shows no chip for Lesson 1.
 8. **Recall links, one rule or two.** Lessons 3, 4, 5, 7 and 8 open the earlier lesson at the step a
-   question comes from (`/learn/02#step-5`). Lesson 6 opens Lesson 4's page at its top, as its brief
-   asked (its WEB-SPEC, Toys 7), though the step address would work there too. Both open a new tab.
-9. **Open since before this run** (MASTER-PLAN § 12): orange Merc's name and pronouns (item 1);
-   whether the lessons are free (3); 1080p or 4K (4); where the lessons live in the app (6); orange
-   Merc as an app palette (10); the lesson telemetry exception (11). SEARCH.md § 13: titles,
-   bylines, the hub, watch pages, articles, the lesson licence and aggregate data. CURIOSITY-MOMENTS
-   § 5 item 5: whether lesson pages send events at all.
+   question comes from (`/learn/02#step-5`). Lesson 6 opened Lesson 4's page at its top, as its
+   brief asked (its WEB-SPEC, Toys 7), though the step address would work there too. Both open a new
+   tab. Decided (22 October 2026): one rule. Since this PR Lesson 6 opens Lesson 4's page at the
+   step too (`/learn/04#step-1`).
+9. **Open since before this run** (MASTER-PLAN § 12), each decided on 22 October 2026, as
+   MASTER-PLAN § 12 and SEARCH.md § 13 now record: orange Merc's name and pronouns (item 1); whether
+   the lessons are free (3); 1080p or 4K (4); where the lessons live in the app (6); orange Merc as
+   an app palette (10); the lesson telemetry exception (11). SEARCH.md § 13: titles, bylines, the
+   hub, watch pages, articles, the lesson licence and aggregate data. CURIOSITY-MOMENTS § 5 item 5,
+   whether lesson pages send events at all: yes, with consent, built in their own PR (MASTER-PLAN
+   § 12 item 11).
 
 ## 4. Left for later, on purpose
 

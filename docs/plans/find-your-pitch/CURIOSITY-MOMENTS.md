@@ -392,7 +392,8 @@ teases to be easy to change, with a switch for them in the admin console. So:
 - items 1, 3 and 4 follow their recommendations;
 - for item 2, each proposed hook goes live with the current wording kept as an alternative. The admin console
   switches between them, and a hook that needs a source keeps its current wording until FACTS.md has one;
-- item 5 waits for a later conversation, so the lesson pages send no events.
+- item 5 was answered on 22 October 2026: yes, anonymous per-question events with consent
+  (MASTER-PLAN § 12 item 11), built in their own PR; until then the lesson pages send none.
 
 The questions as they were put:
 
