@@ -205,8 +205,10 @@ function createGlassRendererInstance(
   camera.camera.far = sceneFrame.cameraFar
   camera.camera.updateProjectionMatrix()
   // Development preview: the splat world replaces the flat plate as the
-  // background, so it only applies where Cloudway projects a backdrop.
+  // background, so it only applies where Cloudway projects a backdrop. The
+  // DEV check lets production builds drop the whole module.
   const splatBackdrop =
+    import.meta.env.DEV &&
     options.splatBackdrop !== undefined &&
     isCloudwayLevel(level) &&
     sceneRecipe.skyProjection === 'backdrop'
