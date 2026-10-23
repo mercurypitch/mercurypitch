@@ -160,6 +160,21 @@
 .controls.rows .row {
   display: contents;
 }
+/* the line under step 5's controls: what unlocks them, then what to do with
+   them. Both lines hold one box, so the stage keeps its height as they swap. */
+.lock-hint.names-lock {
+  display: grid;
+}
+.names-lock > span {
+  grid-area: 1 / 1;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.names-lock:not(.is-open) > [data-names-open],
+.names-lock.is-open > [data-names-locked] {
+  visibility: hidden;
+}
 @media (max-width: 960px) {
   /* step 5's stage: the toggle, then its note, then the figure (WEB-SPEC Toys 1, "On phones") */
   .names-bar {

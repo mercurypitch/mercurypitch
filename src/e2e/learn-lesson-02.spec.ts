@@ -232,7 +232,7 @@ test.describe('page QA (WEB-SPEC, Contract)', () => {
   test.describe('at 390 x 844', () => {
     test.use({ viewport: { width: 390, height: 844 } })
 
-    const HEIGHTS: Readonly<Record<number, number>> = { 3: 478, 4: 478, 5: 680 }
+    const HEIGHTS: Readonly<Record<number, number>> = { 3: 478, 4: 478, 5: 738 }
 
     for (const step of [3, 4, 5]) {
       test(`step ${step}'s stage is ${HEIGHTS[step]} px, every control at least 44 px`, async ({
@@ -320,6 +320,67 @@ test.describe('page QA (WEB-SPEC, Contract)', () => {
       }
     })
   })
+})
+
+test("step 5's Sharp, Flat and Show the rare ones wait for the predict and look it; one box says why, then what to do", async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 1440, height: 900 })
+  await page.emulateMedia({ reducedMotion: 'reduce' })
+  await page.goto('/learn/02#step-5')
+  await expect(page.locator('#stepNow')).toHaveText('5')
+  const stage = page.locator('#toyNames')
+  // the step opens on its signature, C sharp and D flat on one key: it has
+  // landed before the switch is pressed, or its line would replace the switch's
+  const said = stage.locator('[data-tiles-said]')
+  await expect(said).toHaveText('One key, two names: C sharp 4 and D flat 4.')
+  const rare = stage.locator('[data-rare]')
+  const locked = [
+    stage.locator('[data-sharp]'),
+    stage.locator('[data-flat]'),
+    rare,
+  ]
+  const lock = stage.locator('[data-names-lock]')
+  const why = lock.locator('[data-names-locked]')
+  const next = lock.locator('[data-names-open]')
+  for (const b of locked) await expect(b).toBeDisabled()
+  // the switch is dimmed as the two buttons beside it are, and the stage says why
+  await expect(rare).toHaveCSS('opacity', '0.42')
+  await expect(why).toBeVisible()
+  await expect(why).toHaveText(
+    'Answer the predict to unlock Sharp, Flat and the rare ones.',
+  )
+  await expect(next).toBeHidden()
+  const tall = (await lock.boundingBox())?.height
+
+  await page.locator('#predictE [data-choice="white"]').click()
+  for (const b of locked) await expect(b).toBeEnabled()
+  await expect(rare).toHaveCSS('opacity', '1')
+  // the line says what to do now, in the same box: nothing under the stage moves
+  await expect(why).toBeHidden()
+  await expect(next).toBeVisible()
+  await expect(next).toHaveText(
+    'Unlocked: pick a white tile, then press Sharp or Flat.',
+  )
+  expect((await lock.boundingBox())?.height).toBe(tall)
+
+  // the switch writes the rare names on the tiles: the figure changes once it has come to rest
+  const canvas = stage.locator('canvas')
+  let before = await canvas.screenshot()
+  await expect
+    .poll(async () => {
+      const now = await canvas.screenshot()
+      const still = now.equals(before)
+      before = now
+      return still
+    })
+    .toBe(true)
+  await rare.click()
+  await expect(rare).toHaveAttribute('aria-pressed', 'true')
+  await expect(said).toHaveText(/^The rare names show/)
+  await expect
+    .poll(async () => (await canvas.screenshot()).equals(before))
+    .toBe(false)
 })
 
 test('dragging the ruler marker with a real mouse slides the pitch up @smoke', async ({

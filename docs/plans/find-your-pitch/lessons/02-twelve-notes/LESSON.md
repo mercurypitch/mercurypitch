@@ -156,7 +156,9 @@ like C#4.
 **Predict:** one semitone up from E: a black key or a white key?
 [ A black key ] [ A white key ]
 
-(After a choice: Play E to F; on the stage, Sharp, Flat and Show the rare ones unlock.)
+(Until a choice, the stage says under them: "Answer the predict to unlock Sharp, Flat and the rare
+ones." After a choice: Play E to F; on the stage, Sharp, Flat and Show the rare ones unlock, and
+the line says "Unlocked: pick a white tile, then press Sharp or Flat.")
 
 > **The evidence** (once E to F has played): one semitone up from E is F, a white key, so E♯ is F.
 > **The better idea:** a sharp or a flat is a direction, not a colour: it can land on any key.

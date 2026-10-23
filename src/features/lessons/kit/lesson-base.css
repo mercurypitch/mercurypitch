@@ -618,6 +618,11 @@ button {
   transform: translateX(14px);
   background: var(--aqua);
 }
+/* a switch that waits on a predict's guess looks it, as a locked button does */
+.switch[disabled] {
+  cursor: not-allowed;
+  opacity: 0.42;
+}
 
 /* ---------------------------------------------------------------- masthead */
 .mast {

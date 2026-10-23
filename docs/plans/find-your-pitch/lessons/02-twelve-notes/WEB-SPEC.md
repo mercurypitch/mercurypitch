@@ -310,10 +310,12 @@ figure.
     step's text below the stage.
   - Step 4, 478 px. Under the figure, one row: Lift out the five (Drop back). The ear game is in
     the step's text.
-  - Step 5, 680 px. Above the figure: the names toggle (Sharps · Flats · Both, three 44 px segments
+  - Step 5, 738 px. Above the figure: the names toggle (Sharps · Flats · Both, three 44 px segments
     in one row) and its note, "MercuryPitch's pitch line shows sharps", on two lines. Under the
-    figure, three rows: Sharp and Flat; Play both ways; the Show the rare ones switch. The predict
-    and Play E to F are in the step's text.
+    figure, three rows: Sharp and Flat; Play both ways; the Show the rare ones switch. Under them,
+    12 px down, the line on what unlocks them, then what to do: two 23 px lines at this width
+    (`.lock-hint`, `kit/lesson-stage.css:339-346`). The predict and Play E to F are in the step's
+    text.
   - Each stays under the 786 px a 390 x 844 screen leaves below the 58 px masthead (`--mast`,
     `kit/lesson-base.css:94`). That is the phone's budget only: beside the text the stage is
     stuck, and every step's stage also fits 1024 x 640 with the masthead, the kit's landscape
@@ -358,7 +360,10 @@ vertical (pitch is height).
   on the dark tile, another steps one semitone down from D and writes D♭ under it, and the gold
   ring settles round the tile; beside it, **Play both ways** sounds C4 to C♯4, then D4 to D♭4
   (FACTS 49), and runs the arrows again. On step 5's stage, Sharp, Flat and Show the rare ones stay
-  locked until the step's predict has a choice (Toys, 7). From E, Sharp lands on F and writes E♯
+  locked until the step's predict has a choice (Toys, 7): all three dimmed (the switch only since
+  this PR), and under them a line, "Answer the predict to unlock Sharp, Flat and the rare ones.",
+  that says once they unlock "Unlocked: pick a white tile, then press Sharp or Flat.", both in one
+  box, so the stage keeps its height as they swap. From E, Sharp lands on F and writes E♯
   above F's own letter, where the film writes it (the predict's evidence); from F, Flat lands on E
   and writes F♭ above E's (the step's Try). A switch **Show the rare ones** adds the four white-key
   second names (E♯ on F, F♭ on E, B♯ on C, C♭ on B; FACTS 20), each above its key's letter.
