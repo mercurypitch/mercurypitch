@@ -125,16 +125,16 @@ items 3 and 4, and § 12 item 13; CURIOSITY-MOMENTS § 3.1, "the order to copy")
 the hero, one `section.hero` laid out as Lesson 2's (`learn/02.html:329-502`). Above 1080 px it
 has two columns, the hero's copy and the gate on the left, the stage and the predict on the right
 (`lesson-stage.css:16-21`); at 1080 px and below it is one column in the order listed here, with
-the promise after the predict (`lesson-stage.css:354-397`). So on a phone the title and the first
+the promise after the predict (`lesson-stage.css:365-408`). So on a phone the title and the first
 Play come before anything asks for an answer (CURIOSITY-MOMENTS § 3.1, "Above the fold"). Each
 section's heading, and the line above it, are in LESSON.md ("Section headings").
 
 1. **Masthead**: Lesson 3's (wordmark, "Season 1 · Lesson 08", anchors Lesson, Sing and Explorer,
    the Sound toggle off by default, Pause animations with its reduced-motion lock), through
-   `initMasthead` (`kit/page-chrome.ts:109-140`) with Lesson 3's map of sections and
+   `initMasthead` (`kit/page-chrome.ts:119-150`) with Lesson 3's map of sections and
    `{ lesson: 8, deck }` (`lesson-03/main.ts:104-112`), which draws the lesson menu, remembers the
    steps the viewer reaches, and first settles the page's own links to other lessons by the state
-   the page was served with (`followPageState`, `kit/page-chrome.ts:113`).
+   the page was served with (`followPageState`, `kit/page-chrome.ts:123`).
 2. **The hook**, the hero's copy: the kicker, the hook question as the title (`h1.hook#hook`, as
    `kit/lesson-copy.test.ts:323-332` requires of every page from its first commit), the meta as
    four chips ("16 minutes", FACTS 4; "After Lesson 1", a link; "Also useful: Lesson 6, Intervals",
@@ -147,7 +147,7 @@ section's heading, and the line above it, are in LESSON.md ("Section headings").
    claps on 2 and 4" (`twinkle-24`), locked until a choice (Toys 2).
 4. **The sound gate**: LESSON.md's line and its button. At 1080 px and below it sits between the
    stage and the predict, so its button comes before the choices in the reading order, as it does
-   in the tab order (`lesson-stage.css:375-385`).
+   in the tab order (`lesson-stage.css:386-396`).
 5. **The cold open's predict**: the predict card, `#predict`, under the stage, as Lesson 2's is
    (`learn/02.html:448`): LESSON.md's predict, its two `[data-choice]` buttons, the lock hint and
    the reveal (Toys 2).
@@ -188,7 +188,7 @@ section's heading, and the line above it, are in LESSON.md ("Section headings").
     `:205`), as Lesson 2's mark keeps its figures (`learn/02.html:1806`). Free play unlocks after
     the card: every beat-machine control on one card (Toys 1; playbook rule 17), keeping the card's
     place after the challenge and the practice card (CURIOSITY-MOMENTS § 3.1).
-12. **Lesson explorer**: the kit's, `createExplorer({ current: 8 })` (`kit/explorer.ts:253`), with
+12. **Lesson explorer**: the kit's, `createExplorer({ current: 8 })` (`kit/explorer.ts:256`), with
     Lesson 8 as the current node. Under its heading is Lesson 1's line, which names no lesson's
     state: the legend and the cards say it, from the season data. Its cards show only learner
     information: "Ready", "Coming later" or "Done", no signature, no backlog and no topic codes
@@ -198,7 +198,7 @@ section's heading, and the line above it, are in LESSON.md ("Section headings").
     `mercurypitch.com/ear-lab`, with "Drum Night and Subdivide are free." and no first-visit line
     (FACTS 46, 47, 54, 57); Lesson 1's fonts line and "Every sound on this page is synthesised in
     your browser" (FACTS, Labels); no dateline; the legal links, as every lesson document closes
-    (`src/tests/lesson-pages.test.ts:225-236`). With no film there are no voices to credit.
+    (`src/tests/lesson-pages.test.ts:263-274`). With no film there are no voices to credit.
 
 ## Length
 
@@ -315,20 +315,20 @@ its patterns with it.
   "Claps on 1 and 3" or "Claps moved to 2 and 4" as each version starts. Its cells light as Merc
   sings them, Merc or Tavi.
 - **Layout and targets** (FACTS 80). The figure is 250 px tall at every width, the kit's height on
-  the narrowest phones (`lesson-stage.css:1083-1099`), set by this page's stylesheet, because the
+  the narrowest phones (`lesson-stage.css:1094-1110`), set by this page's stylesheet, because the
   tallest drawing, the grid with its number strip and bar labels, is 182 px; the morph keeps that
   height in every state. On phones (below 961 px, where the stage sits above the text) the figure
-  spans the card's inner width (`.viz.wide`, `lesson-stage.css:1272-1282`), 356 px at 390 x 844.
+  spans the card's inner width (`.viz.wide`, `lesson-stage.css:1283-1293`), 356 px at 390 x 844.
   The grid's four beat columns sit beside the 56 px label column with 4 px between, so a cell is 72
   px wide at 390 px, 60.5 px at 344 px and never under 44 px at any width from 344 to 1440 px, and
   each lane is 44 px tall: every cell is a target of at least 44 x 44 px, and none overlaps
   another. Where the kit caps the figure under 182 px, on a phone held sideways (162 px at 844 x
-  390, `lesson-stage.css:1100-1117`), the bar labels go and the numbers move into the cells' top
+  390, `lesson-stage.css:1111-1128`), the bar labels go and the numbers move into the cells' top
   corners, so the grid needs 140 px (FACTS 80). On touch the figure keeps the kit's `touch-action:
 pan-y` (`lesson-stage.css:776`), so a swipe still scrolls; every action is a button.
 - **The stuck stage** (FACTS 80). Beside the text the kit gives the stage the room the window
   leaves under the masthead and caps the figure at that room less the rest of the stage, which
-  `stage-fit.ts` measures (`lesson-stage.css:651-693`; `stage-fit.ts:22-44`). The beat machine's
+  `stage-fit.ts` measures (`lesson-stage.css:662-704`; `stage-fit.ts:22-44`). The beat machine's
   stages, from the kit's stylesheets with a model that reproduces three measured stages, are at
   1024 px wide:
 
@@ -515,7 +515,7 @@ DECISIONS 82).
 Two parts on one card, each with a visible status line that is also announced (`role="status"`):
 first the backbeat, tapped, with no voice; then the line, sung, with Lesson 3's comfort check
 before it. Lesson 3's rule for leaving holds for both: if the card stays off screen for 600 ms, or
-the page is hidden, whatever is playing stops (`lesson-03/sing.ts:374-396`).
+the page is hidden, whatever is playing stops (`lesson-03/sing.ts:388-412`).
 
 **Part 1: the tap take.** The card holds Play the groove, Start, the pad (Toys 5), the take strip
 (the compact beat machine cut to one bar of four, with 2 and 4 marked) and the line.
@@ -589,7 +589,7 @@ States:
 
 1. **Comfort check**, always first in this part and asked every visit (never stored): Lesson 3's
    line, its list naming all six of REQ-GVC-020's conditions, and its two buttons, through
-   `mountComfort` (`kit/comfort.ts:146-154`; FACTS 60). The tap take before it needs no check: it
+   `mountComfort` (`kit/comfort.ts:158-166`; FACTS 60). The tap take before it needs no check: it
    uses no voice (FACTS 44).
 2. **Voice choice**, after either comfort answer: Lesson 3's two buttons with Merc and Tavi's stills
    (`aria-pressed`, at least 44 px), read from and stored in `fyp-voice` through `VoiceChoice` and
@@ -603,7 +603,7 @@ States:
    65); **Play Merc's line** sings it on a tap in the chosen voice, the guide lighting as it plays;
    Start the guide and Move do are not shown, and nothing asks the viewer to sing (REQ-GVC-021).
    The answer holds for the visit, and the Wrap shows the rest card (`VisitEnding`,
-   `kit/comfort.ts:78-101`).
+   `kit/comfort.ts:89-114`).
 4. **Ready**: the controls in LESSON.md's order, under the Your turn text and the stop line, which
    sits in one place, on its own line above the buttons. **Play Merc's line** plays the guide's
    count-in bar, then Merc's "ooh" on the line's seven syllables over the groove, 8.0 s (FACTS 68,
@@ -624,7 +624,7 @@ States:
    does). When the guide ends, the line counts as sung, and Start the guide gives way to the feeling
    question: from then on the only way to sing again is Again, so a visit holds at most two guides.
 6. **How did that feel?** appears under the guide each time it ends, asked afresh with no answer
-   pressed: Lesson 3's four answers through `mountFeelings` (`kit/comfort.ts:162-187`; FACTS 66).
+   pressed: Lesson 3's four answers through `mountFeelings` (`kit/comfort.ts:174-199`; FACTS 66).
    - Easy or Workable shows LESSON.md's line, "That's it: one line over the backbeat, done.", which
      names the task, never the voice or how the line went, since nothing listened; and **Again**,
      the guide once more, once a visit (Lesson 7 FACTS 58), so a visit holds at most two sung
@@ -632,9 +632,9 @@ States:
    - Effortful shows Lesson 3's gentle line, "Keep it gentle: rest before you sing again.", and
      puts the guide, Again and Move do away (REQ-GVC-021: a report of effort suppresses
      immediate-repeat encouragement). Play Merc's line still plays, at the do Move do last set. The
-     Wrap shows the rest card (REQ-GVC-055; FACTS 66), which this page sets itself, since the
-     kit's `afterFeeling` leaves "Effortful" off the rest card for the coach to decide
-     (`kit/comfort.ts:58-67`); LESSON.md's coach list asks the coach to confirm the wording.
+     Wrap shows the rest card (REQ-GVC-055; FACTS 66), set by hand until this PR, as the kit's
+     `afterFeeling` leaves "Effortful" off it for the coach; this page now asks (`restAfterEffort`,
+     `kit/comfort.ts:69-78`); LESSON.md's coach list asks the coach to confirm the wording.
    - Uncomfortable shows Lesson 3's enough-for-today line, "Thanks for saying so. That's enough
      singing for today: rest your voice.", and the doctor lines, puts the guide, Again and Move do
      away, and the Wrap shows the rest card (REQ-GVC-023, REQ-GVC-055).
@@ -694,7 +694,7 @@ lesson is not live where the page is served, the words stay with no link, which 
   `<div data-if-live="6">`. Where Lesson 6 is not live, the site worker takes out the wrapper and
   the section in it (`src/lesson-gate.ts:20-21`), and on a page no worker served `followPageState`
   does the same as the page boots (`kit/page-state.ts:84-108`, run first in `initMasthead`,
-  `kit/page-chrome.ts:113`); where it is live, the wrapper goes and the section stays. The build
+  `kit/page-chrome.ts:123`); where it is live, the wrapper goes and the section stays. The build
   marks the wrapper's tag `hidden` where its build's default holds Lesson 6 back, as it marks a
   reading's span, so a page no worker served reads right before its script runs: this page taught
   the build's marker that `<div>` form (`tools/draft-lessons.ts:134`, in `markLessonStates`,
@@ -750,7 +750,7 @@ sounding first. A sound so stopped, or stopped by leaving its step, never counts
 - **The beat clock**, `kit/beat-clock.ts`, new. A run is a list of events (a click, a drum hit, a
   note, a Merc's hop), each with a beat and a level, at a tempo, started at an audio-clock time a
   lead after the tap that starts it (0.1 s, or the take's 0.6 s). On every frame of the kit's frame
-  loop (`kit/frame-loop.ts:71-131`) it schedules each event that falls within the next 0.1 s, at its
+  loop (`kit/frame-loop.ts:95-155`) it schedules each event that falls within the next 0.1 s, at its
   exact time on the audio clock, with `start(when)` (FACTS 36); an event whose time has already
   passed when it comes up is skipped, never played late. A tempo change applies from the next beat.
   Each run plays into its own gain node on the kit's master bus, so Stop fades that node out over 30
@@ -851,7 +851,7 @@ Lesson 8's entry (`kit/season.ts:303-324`; FACTS 58), as this page wrote it:
   a phone too (FACTS 49); `addr` `mercurypitch.com/drum-night?drawer=learn`, the address the page
   prints, so a learner who types it lands on the panel too; `label` stays "Drum Night"; and a
   learner `note`, "then press Play First Pocket", printed "Drum Night, then press Play First
-  Pocket" by `practiseMarkup` (`kit/explorer.ts:174-179`). `pr.needs`, "Ear Lab Time (an ear-drill
+  Pocket" by `practiseMarkup` (`kit/explorer.ts:177-182`). `pr.needs`, "Ear Lab Time (an ear-drill
   link)", stays as it is: it is admin only, never drawn on a lesson page (`season.ts:102-103`).
 - The signature (`kit/team-notes.ts:40`) and `fig: 'metronome'` stay as they are. The card's figure caption, "A metronome, its arm on
   beats 2 and 4" (`kit/explorer-figures.ts:207`), is the kit's and stays: the card's arm swings in
@@ -921,30 +921,30 @@ was built on.
     `recallHref` (`lesson-06/quiz-questions.ts:30-32` at `b7093a0a4`) opened a page, never a step;
     #1186 deleted it. The quiz needs nothing else: its prefix, slot and away links are on main
     (`kit/quiz.ts:73-97`, `:179-209`).
-11. `kit/comfort.ts` needs nothing: this page's `sing-flow.ts` picks the rest card after
-    "Effortful", as Lesson 6's does, leaving the kit's default for the coach
-    (`kit/comfort.ts:58-67`).
+11. `kit/comfort.ts`, built by this PR: `restAfterEffort`, which this page's flow passes
+    (`lesson-08/sing-flow.ts:121`) to pick the rest card after "Effortful", as Lesson 6's does; both
+    picked it by hand before. The kit's default stays the coach's (`kit/comfort.ts:69-78`).
 12. `src/features/lessons/kit/drafts.ts:30-38`: Lesson 8's line, "the vocal coach's sign-off
     (MASTER-PLAN § 12 item 8)", in the form of Lessons 3 and 5's, and the season entry above. The
     console puts the page live on mercurypitch.com by publishing it, with no release
     (`kit/drafts.ts:13`); releasing it in code means deleting that line (`drafts.ts:18-24`).
 13. The service worker: `/learn/08` and `/learn/08.html` in `STANDALONE_DOCUMENT_PATHS`
-    (`src/lib/sw-runtime.ts:93`), beside the drafts' entries and their comment (`:140-156`), so
+    (`src/lib/sw-runtime.ts:93`), beside the drafts' entries and their comment (`:138-157`), so
     that where it is held back its address reaches the site worker's 404 page, never the app
     shell; the build takes `learn/08.html` by itself, in every mode (`tools/draft-lessons.ts:16-18`;
     `vite.config.ts:318`, `:489`).
 14. The head, from `docs/plans/find-your-pitch/SEARCH.md` § 3 and Lesson 2's document
     (`learn/02.html:3-145`), whole in the page's first commit. Two tests hold it: the kit's
     `src/features/lessons/kit/lesson-copy.test.ts:323-358` reads every `learn/NN.html`, drafts
-    included, from its first commit, and `src/tests/lesson-pages.test.ts:122-237` holds every lesson
+    included, from its first commit, and `src/tests/lesson-pages.test.ts:139-275` holds every lesson
     document's head too. The copies of the hook that the first test reads are the ones the site
     worker rewrites when the console picks another hook (`src/lesson-gate.ts:17-19`).
     - The title, `h1.hook#hook`, the hook word for word (`lesson-copy.test.ts:323-332`).
     - The document title, at most 60 characters, ending in " | MercuryPitch"
-      (`lesson-pages.test.ts:137-138`): SEARCH.md § 4's draft, "Beat, tempo and the backbeat,
+      (`lesson-pages.test.ts:154-155`): SEARCH.md § 4's draft, "Beat, tempo and the backbeat,
       explained | MercuryPitch" (54 characters), which the owner chose on 22 October 2026 with the
       other query-led titles. Until #1187 the test wanted the headline in the title too; it now
-      wants it in `og:title` (`:167`).
+      wants it in `og:title` (`:184`).
     - The description, 80 to 160 characters (`:139-142`): "Why does the same song feel different
       when you clap on 2 and 4? A sixteen-minute lesson on the beat, tempo, bars of 2, 3 and 4, and
       the backbeat." (145 characters). It shortens the hook, so it serves as `description` and as
@@ -966,12 +966,12 @@ was built on.
     - The Article block: `@id` `https://mercurypitch.com/learn/08#lesson`, headline "Beat, tempo and
       the backbeat", `alternativeHeadline` the hook exactly (`lesson-copy.test.ts:356`), the same
       description as the meta, `url` and `mainEntityOfPage` the canonical address, `image` the
-      og:image (`lesson-pages.test.ts:156-157`, `:165-166`), `inLanguage` `en-GB`,
+      og:image (`lesson-pages.test.ts:173-174`, `:182-183`), `inLanguage` `en-GB`,
       `learningResourceType` "Lesson", `educationalLevel` "Beginner", `timeRequired` `PT16M`,
       `teaches` ["The beat and the pulse", "Tempo in beats per minute", "Bars of 2, 3 and 4", "The
       backbeat"], `isAccessibleForFree`, `position` 8, `isPartOf` the series, and author and
-      publisher the organization (`:146-172`); and the BreadcrumbList ending on the headline
-      (`:174-187`).
+      publisher the organization (`:163-189`); and the BreadcrumbList ending on the headline
+      (`:212-225`).
     - No `datePublished` at first. The console publishes at run time and nothing writes the field
       then: the worker's rewrite puts the lesson state into the head and changes the hook's copies,
       the links and the `data-if-live` readings, and writes no date (`src/lesson-gate.ts:13-21`), so
@@ -990,9 +990,9 @@ was built on.
     in `sitemap.xml` and `llms.txt` as it serves them (`src/lesson-gate.ts:22-24`). While it is a
     draft, the static files keep it out: in neither `public/sitemap.xml` nor `public/llms.txt`,
     linked from no entry document, with its service-worker rule kept
-    (`src/tests/lesson-pages.test.ts:269-306`). When its line leaves `drafts.ts`, the release adds a
+    (`src/tests/lesson-pages.test.ts:307-344`). When its line leaves `drafts.ts`, the release adds a
     line to each static file (`public/llms.txt`'s Lessons list, `:66-80`), as `kit/drafts.ts:18-21`
-    asks and `lesson-pages.test.ts:244-252` checks. The first-paint budget comes with the page,
+    asks and `lesson-pages.test.ts:282-290` checks. The first-paint budget comes with the page,
     beside the other drafts' (`scripts/assert-first-paint-budgets.mjs:103-134`, Lessons 3 and 5),
     at `:160-166`, and its CSS ceiling at `:244-247`, since every build carries every lesson page.
 17. The App content items under Practice links: the App and App content tracks' to weigh, and not
@@ -1213,7 +1213,7 @@ figures' accessible names and every live region use words only. The page stores 
 records (`fyp-l08-recall-seed`, `fyp-l08-recall-v1`, `fyp-l08-seed`, `fyp-l08-quiz-v1`),
 `fyp-done`, `fyp-voice`, the masthead's Pause animations choice, `fyp-motion`
 (`kit/motion-switch.ts:12`), and the steps the viewer reached, the kit's `fyp-pos`
-(`kit/position.ts:20`), which `initMasthead` keeps (`kit/page-chrome.ts:109-140`); nothing from the
+(`kit/position.ts:20`), which `initMasthead` keeps (`kit/page-chrome.ts:119-150`); nothing from the
 toys, the take or Sing it but the voice.
 
 Page QA before publishing (PRODUCTION-PIPELINE § 5) adds, for this page:

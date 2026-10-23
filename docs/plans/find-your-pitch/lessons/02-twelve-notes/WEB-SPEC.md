@@ -70,10 +70,10 @@ are Lesson, Watch and Explorer. Each section's heading, and the line above it, a
    LESSON.md (twelve steps, not fourteen). It leaves which gaps and why to steps 3 and 4, so step
    3's predict is not given away. Merc and Tavi react here (Merc and Tavi, below). On phones the
    hero stacks as Lesson 1's does (kicker, title, chips, stage, sound gate, predict card, promise;
-   `kit/lesson-stage.css:354-397`), so Play the climb sits right under the spiral it lights. There
+   `kit/lesson-stage.css:365-408`), so Play the climb sits right under the spiral it lights. There
    the spiral takes the stage's full width above the floor line, at least 250 px tall, and Merc and
    Tavi stand smaller either side of its base: at Lesson 1's phone size, `min(39vw, 160px)` each
-   (`kit/lesson-stage.css:439`), Merc and Tavi leave too little room between them for a spiral.
+   (`kit/lesson-stage.css:450`), Merc and Tavi leave too little room between them for a spiral.
 3. **Recall from Lesson 1**: two questions, straight after the hero (see Toys, 6).
 4. **Four words you'll meet**: semitone, tone, sharp and flat, cent, each with its one-line
    definition and a play button (A3 to A♯3; A3 to B3; C4 to C♯4; the 100-cent glide).
@@ -274,9 +274,9 @@ step 4's; step 5's; and free play's.
 
 Measured from Lesson 1's stage CSS at 390 x 844, the page's phone check: the stage card is 358 px
 wide inside the 16 px gutters (`kit/lesson-base.css:96-97`, `:224-229`); its 1 px borders
-(`:448-455`), its 12 px side padding below 960 px (`kit/lesson-stage.css:1079-1081`) and a figure's
-own 1 px border (`kit/lesson-stage.css:769-777`) leave Lesson 1's canvas 330 px wide, 308 px tall in
-the tall figure (`:1083-1089`). That is too narrow for eight 44 px keys, so steps 3 to 5 widen the
+(`:448-455`), its 12 px side padding below 960 px (`kit/lesson-stage.css:1090-1092`) and a figure's
+own 1 px border (`kit/lesson-stage.css:780-788`) leave Lesson 1's canvas 330 px wide, 308 px tall in
+the tall figure (`:1094-1100`). That is too narrow for eight 44 px keys, so steps 3 to 5 widen the
 figure.
 
 - **The figure**, steps 3 to 5: it spans the card's inner width, 356 px (`margin-inline: -12px`,
@@ -303,8 +303,8 @@ figure.
   The seven tiles stay 44 px or wider from a 342 px phone up.
 - **Stage heights** at 390 x 844, from the card's 1 px borders, its 12 px and 14 px top and bottom
   padding, the stage head's 44 px buttons and 12 px gap, the figure label's 16 px line and 10 px gap
-  (`kit/lesson-stage.css:699-704`, `:766-768`), the 310 px figure, and Lesson 1's 14 px control gap,
-  10 px row gap and 44 px buttons (`kit/lesson-stage.css:874-880`; `kit/lesson-base.css:524-532`):
+  (`kit/lesson-stage.css:710-715`, `:777-779`), the 310 px figure, and Lesson 1's 14 px control gap,
+  10 px row gap and 44 px buttons (`kit/lesson-stage.css:885-891`; `kit/lesson-base.css:524-532`):
   - Step 3, 478 px. Under the figure, one row: Unroll the spiral (Roll it back up) and Straighten
     (Bend it back). The predict, its two plays, Play E to F and the mix-up card's play are in the
     step's text below the stage.
