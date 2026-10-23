@@ -649,12 +649,12 @@ paused off screen, and the still images when WebGL fails or would run on the CPU
   (FACTS 43). On the public host the card's link is `/pitch-training?lesson=11`: the marker makes
   First Light step aside for good, so a first visit lands on the Exercises tab with no intro, and
   the card carries no first-visit line (FACTS 43). The card names the tap ("then tap Siren / Range
-  Explorer"), says what the drill does and how it scores, and names its help's line that asks for no
-  breaks, because this page lets a flip come (FACTS 40 to 42). It comes in two versions, picked by
-  how Sing it ended (Toys 4), and both link the same address. From its default centre note the
-  drill's glides stay in the lower half of the saved preset, so it asks for nothing near the top of
-  the saved range, but its octave glide starts on the preset's lowest note at the default level
-  (FACTS 40, 62; REQ-GVC-011): a question on the coach's list.
+  Explorer"), says what the drill does, how it scores and what a flip does to its score, and names
+  its help's line that asks for no breaks, because this page lets a flip come (FACTS 40 to 42). It
+  comes in two versions, picked by how Sing it ended (Toys 4), and both link the same address. From
+  its default centre note the drill's glides stay in the lower half of the saved preset, so it asks
+  for nothing near the top of the saved range, but its octave glide starts on the preset's lowest
+  note at the default level (FACTS 40, 62; REQ-GVC-011): a question on the coach's list.
 - **App content, small** (MASTER-PLAN § 7's App content track), proposed, for the Siren exercise
   (FACTS 41, 42):
   - its help (`src/features/exercises/exercise-help.ts:149-156`): ":150" "Glide your full range up
