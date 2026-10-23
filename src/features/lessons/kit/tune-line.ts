@@ -80,7 +80,7 @@ export interface TuneOverlay {
 
 /** How a played run lights the line. */
 export interface TuneLook {
-  /** Whose light: blue or orange Merc's, or chrome for the soft tone (default). */
+  /** Whose light: Merc's or Tavi's, or chrome for the soft tone (default). */
   readonly color?: string
   readonly kind?: VoiceOptions['kind']
   /** The note each event lights, counted across the tune; by default the shown notes in turn. */

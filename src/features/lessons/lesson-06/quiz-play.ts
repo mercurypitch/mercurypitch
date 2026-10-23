@@ -2,7 +2,7 @@
 // Lesson 6 quiz sounds — question 1's two lines, question 3's pair
 // ============================================================
 //
-// Question 1 plays `line-c`, 0.6 s of silence, then `line-fs` in blue
+// Question 1 plays `line-c`, 0.6 s of silence, then `line-fs` in
 // Merc's "ooh" (FACTS 63); question 3 plays C4 then F4 in the soft tone
 // (FACTS 69). The quiz rebuilds its questions on every answer and keeps
 // each slot, so the buttons are handled by one listener on the quiz's host.

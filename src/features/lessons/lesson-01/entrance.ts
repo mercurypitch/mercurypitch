@@ -1,11 +1,11 @@
 // ============================================================
-// Lesson 1 entrance — one shot: the camera pushes in, the Mercs drop
+// Lesson 1 entrance — one shot: the camera pushes in, Merc and Tavi drop
 // ============================================================
 //
 // The copy reads in order (kicker, the question, the rest) while the camera
-// pushes in slowly on the night stage. The Mercs wait above the frame until
-// their live mounts settle (or 1.4 s, then the stills fall): blue lands first
-// and orange about 0.4 s later, each with a squash, a jelly settle and a ring
+// pushes in slowly on the night stage. Merc and Tavi wait above the frame until
+// their live mounts settle (or 1.4 s, then the stills fall): Merc lands first
+// and Tavi about 0.4 s later, each with a squash, a jelly settle and a ring
 // on the floor; then the bubbles speak in the film's order. A deep link, a
 // scrolled page or reduced motion skips all of it.
 
@@ -169,7 +169,7 @@ export function initEntrance(): void {
         { duration: 900, delay: (start + 0.52) * 1000, easing: EASE.power2Out },
       )
     })
-    // the conversation in film order: orange speaks, blue answers about 1.4 s later
+    // the conversation in film order: Tavi speaks, Merc answers about 1.4 s later
     bubbles.forEach((b, i) => {
       b.style.transformOrigin = i === 0 ? '80% 100%' : '20% 100%'
       const speak = b.animate(

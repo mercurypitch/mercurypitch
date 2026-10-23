@@ -7,10 +7,10 @@
 // release have died away, so his note never enters the take: analysis
 // capture runs with echo cancellation off. The take then waits up to 6 s
 // for the first voiced frame and runs 3 s from it (WEB-SPEC, Toys 7). While
-// it is open the page plays nothing (`Sound.hush`), both Mercs listen, the
-// ring counts the three seconds, and the violet line draws live on the band
-// chart, folded into Merc's octave, with a small "octave lower" tag while
-// it sits within 50 cents of his note and the gap readout following it.
+// it is open the page plays nothing (`Sound.hush`), Merc and Tavi both listen,
+// the ring counts the three seconds, and the violet line draws live on the band
+// chart, folded into Merc's octave, with a small "octave lower" tag while it
+// sits within 50 cents of his note and the gap readout following it.
 
 import { BAND_WORDS, gapWords, signedCents, } from '@/features/lessons/kit/band-words'
 import { wait } from '@/features/lessons/kit/dom'

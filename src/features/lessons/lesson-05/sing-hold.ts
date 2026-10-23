@@ -7,7 +7,7 @@
 // the ring breathes once over 2 s from the end of his note, and nothing
 // counts down. Sing: the ring turns and closes over the hold while the
 // violet line draws on a fixed 10- or 15-second frame, folded into Merc's
-// octave, and both Mercs listen.
+// octave, and Merc and Tavi both listen.
 //
 // The take opens 0.4 s after Merc's note ends, once his "ooh" and its
 // release have died away, during the Breathe ring, so a voice that starts

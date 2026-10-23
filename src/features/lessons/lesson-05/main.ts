@@ -3,9 +3,9 @@
 // ============================================================
 //
 // learn/05.html carries every word of the lesson; this module adds what the
-// markup cannot: the sound, the step toys, the Mercs, the recall and the
+// markup cannot: the sound, the step toys, Merc and Tavi, the recall and the
 // quick check, the checkpoint that listens, the Wrap's free play and the
-// season map. The renderer for the Mercs loads last, as its own chunk; the
+// season map. The renderer for Merc and Tavi loads last, as its own chunk; the
 // hold reader when Step 5 is first shown; the listener only when Sing it's
 // Start is pressed, so the page reads and plays before any of them arrive.
 // A draft until the vocal coach signs it off (kit/drafts.ts).

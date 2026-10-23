@@ -3,19 +3,19 @@
 // ============================================================
 //
 // The hero is the cold open, in Lesson 2's order (CURIOSITY-MOMENTS § 3.1):
-// the bubbles over the two Mercs either side of the compact tune line on C,
+// the bubbles over Merc and Tavi either side of the compact tune line on C,
 // Play from C under the stage, then the predict card. Play from C works from
-// the start, because orange's line answers it. Play from F♯ waits for a
+// the start, because Tavi's line answers it. Play from F♯ waits for a
 // guess, then lifts the line and slides it up six rows, announced "Twinkle
-// from F sharp", before blue Merc sings it in Merc's "ooh" (FACTS 36, 63).
+// from F sharp", before Merc sings it in his "ooh" (FACTS 36, 63).
 // The reveal follows once Play from F♯ has been heard to its end; with
 // sound off the hint says so and the reveal waits. Each play is the page's
 // one sound (kit/now-playing.ts) from its press, the slide included: a
 // newer sound anywhere stops it, Merc falls quiet, and a play cut short
-// reveals nothing. Orange celebrates once. The compact line takes no taps
+// reveals nothing. Tavi celebrates once. The compact line takes no taps
 // (the buttons carry every action), so its drawing is hidden from a screen
 // reader and a polite live region speaks for it. Its stars are drawn once
-// and never twinkle: on this page only the two Mercs' idle loops move by
+// and never twinkle: on this page only Merc and Tavi's idle loops move by
 // themselves (WEB-SPEC, Look).
 
 import { q, wait } from '@/features/lessons/kit/dom'
@@ -66,7 +66,7 @@ export const STARTS_SAID = {
  */
 const signedHint = (text: string): string => `<span>${signsHtml(text)}</span>`
 
-/** Blue Merc sings along: each note as it starts, quiet once the last has ended. */
+/** Merc sings along: each note as it starts, quiet once the last has ended. */
 function singAlong(e: NoteEvent, i: number, count: number): void {
   mercSing('blue', e.midi, true)
   if (i === count - 1)

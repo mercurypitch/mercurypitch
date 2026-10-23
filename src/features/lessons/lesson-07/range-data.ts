@@ -3,8 +3,8 @@
 // ============================================================
 //
 // Every number the page draws or sings, by construction from FACTS 81 to 87,
-// for either voice: the lower (blue Merc, from E3) and the higher (orange
-// Merc, an octave up). Pure, so each is tested against FACTS and against the
+// for either voice: the lower (Merc, from E3) and the higher (Tavi, an
+// octave up). Pure, so each is tested against FACTS and against the
 // app's own presets (`VOCAL_RANGES`) and its middle-half rule
 // (`middleHalf`), which the page itself never loads: both sit in modules a
 // first paint must not reach.

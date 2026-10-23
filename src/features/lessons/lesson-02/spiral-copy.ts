@@ -161,7 +161,7 @@ export interface CopyOptions extends Omit<
   SpiralOptions,
   'overlay' | 'lightOnPlay'
 > {
-  /** Hears each note of the climb as it starts (the hero's Mercs sing A3 and A4). */
+  /** Hears each note of the climb as it starts (the hero's Merc and Tavi sing A3 and A4). */
   readonly onClimbNote?: (e: NoteEvent, k: number) => void
 }
 

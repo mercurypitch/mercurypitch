@@ -3,12 +3,12 @@
    ============================================================
    Everything else is the kit's (lesson-base, lesson-sections, lesson-stage,
    lesson-guide, lesson-parts, lesson-voice, lesson-tune-line and
-   lesson-ear-game). Here: the compact tune line between the Mercs, the tune
+   lesson-ear-game). Here: the compact tune line between Merc and Tavi, the tune
    line's heights for the stage budget, the readout and the start slider
-   under it, orange Merc's line in Step 3, the anchor board, Sing it's
+   under it, Tavi's line in Step 3, the anchor board, Sing it's
    guide beside its ring, and the Wrap's cards and free play. */
 
-/* ---------------------------------------------------------------- hero: the tune line between the Mercs */
+/* ---------------------------------------------------------------- hero: the tune line between Merc and Tavi */
 .l6-duo {
   --merc: clamp(120px, 11vw, 168px);
   --line-h: clamp(170px, 15vw, 220px);
@@ -17,7 +17,7 @@
   height: calc(var(--line-h) + var(--merc) * 0.165);
   margin-top: 6px;
 }
-/* the floor line runs under the tune line's lowest row, where the Mercs stand */
+/* the floor line runs under the tune line's lowest row, where Merc and Tavi stand */
 .l6-duo .floor {
   top: var(--line-h);
 }
@@ -65,7 +65,7 @@
     margin-top: 14px;
   }
 }
-/* on a phone the Mercs stand smaller either side of the line */
+/* on a phone Merc and Tavi stand smaller either side of the line */
 @media (max-width: 560px) {
   .l6-duo {
     --merc: min(20vw, 80px);
@@ -171,7 +171,7 @@
 }
 
 /* ---------------------------------------------------------------- the step text */
-/* orange Merc's question in Step 3: a bubble beside her still */
+/* Tavi's question in Step 3: a bubble beside her still */
 .l6-says {
   display: flex;
   align-items: center;

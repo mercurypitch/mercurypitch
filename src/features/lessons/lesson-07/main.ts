@@ -9,7 +9,7 @@
 // the season map. A written lesson with no film, so there is no Watch
 // section and the masthead's anchors are Lesson, Sing and Explorer. The hero
 // is the cold open, in Lesson 2's order: the hook, the stage, the sound gate
-// and the predict, then the recall (CURIOSITY-MOMENTS § 3.1). The Mercs'
+// and the predict, then the recall (CURIOSITY-MOMENTS § 3.1). Merc and Tavi's
 // renderer loads last, as its own chunk, so the page reads and plays before
 // it arrives. A draft until the owner has reviewed it (kit/drafts.ts).
 

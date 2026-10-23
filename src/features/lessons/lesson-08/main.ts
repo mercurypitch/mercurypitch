@@ -13,7 +13,7 @@
 // then the recall (CURIOSITY-MOMENTS § 3.1). The recall runs once the
 // masthead has settled the page's state, which takes it out where Lesson 6
 // is not live. Every sound goes through the beat clock and the page's one
-// owner (kit/now-playing.ts); nothing listens. The Mercs' renderer loads
+// owner (kit/now-playing.ts); nothing listens. Merc and Tavi's renderer loads
 // last, as its own chunk, so the page reads and plays before it arrives. A
 // draft until the vocal coach signs off its sung line (kit/drafts.ts).
 

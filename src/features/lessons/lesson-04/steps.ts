@@ -5,7 +5,7 @@
 // Every step shows the one staircase (`toyFor: () => 1`), each in its own
 // state (WEB-SPEC, Toys 1): on C with the step sizes; Group; the slide with
 // White keys only; the names switch; Stop on ti and Land on do. Step 3's
-// predict sits in the step text after orange's line: a guess unlocks Play
+// predict sits in the step text after Tavi's line: a guess unlocks Play
 // white keys from D and Play the pattern from D, each sliding the staircase
 // to D first. The reveal waits until both have been heard, so it describes
 // what was played, and it never calls a guess wrong.

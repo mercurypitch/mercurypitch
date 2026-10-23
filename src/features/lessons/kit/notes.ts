@@ -4,8 +4,8 @@
 //
 // Every drawing and every sound on a lesson page reads the same numbers:
 // A4 = 440 Hz, twelve equal steps to the octave, octave numbers that go up
-// at C (B3, then C4). Colours follow the series code: blue is blue Merc's
-// note (A3), orange is orange Merc's (A4), gold means "fits" and nothing
+// at C (B3, then C4). Colours follow the series code: blue is Merc's
+// note (A3), orange is Tavi's (A4), gold means "fits" and nothing
 // else, violet is a contrast note, chrome any other note.
 //
 // A note can be spelled on more than one letter: the black key above C is

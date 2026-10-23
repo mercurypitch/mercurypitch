@@ -19,7 +19,7 @@
 // (`onChoice`, since `unlocks` takes buttons): all four are `disabled` in
 // the markup, so the stage cannot answer the question first. The reveal
 // waits until both plays have been heard to their ends, since it compares
-// them; orange's line, the mix-up card, the Try and the Notice answer it
+// them; Tavi's line, the mix-up card, the Try and the Notice answer it
 // too, so they come with it.
 
 import type { MachineState } from '@/features/lessons/kit/beat-layout'

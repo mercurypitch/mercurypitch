@@ -4,13 +4,13 @@
 //
 // The bubbles, each with its Merc's still, beside the compact staircase, so
 // the sound and the stairs are on screen together (playbook rule 10). Play
-// from C and Land on do work from the start: orange's line answers them.
+// from C and Land on do work from the start: Tavi's line answers them.
 // Play from D waits for a guess, then slides the staircase up two rows,
-// announced "Major scale from D", and climbs to ti in orange Merc's "ooh"
+// announced "Major scale from D", and climbs to ti in Tavi's "ooh"
 // (FACTS 59). Stopping on ti leaves the top stair an outline with the arrow
 // up from ti; Land on do finishes whichever scale stopped last, the top
 // stair filling and its house lit. The reveal follows Play from D once it
-// has been heard, and orange celebrates once. The compact staircase takes
+// has been heard, and Tavi celebrates once. The compact staircase takes
 // no taps (the buttons carry every action), so its drawing is hidden from
 // a screen reader and a polite live region speaks for it.
 
@@ -32,7 +32,7 @@ const GUESS: Readonly<Record<string, string>> = {
   'only-c': 'You said: only from C',
 }
 
-/** Who sings a start: blue Merc from C, orange Merc from D. */
+/** Who sings a start: Merc from C, Tavi from D. */
 const singer = (tonic: number): Which => (tonic === C4 ? 'blue' : 'orange')
 const lightOf = (which: Which): string =>
   which === 'blue' ? COLOR.blue : COLOR.orange

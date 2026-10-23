@@ -6,8 +6,8 @@
 // markup cannot: the sound, the cold open on the hero spiral, the recall
 // check, the step toys, the slide guide, the quiz, free play, the episode
 // and the season map. Every part is the shared kit's, mounted per root, or
-// this lesson's own toy built on it. The Mercs' renderer loads last, as its
-// own chunk, so the page reads and plays before it arrives.
+// this lesson's own toy built on it. Merc and Tavi's renderer loads last, as
+// its own chunk, so the page reads and plays before it arrives.
 
 import '@fontsource-variable/inter'
 import '@fontsource-variable/outfit'

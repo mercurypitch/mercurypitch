@@ -3,8 +3,8 @@
 // ============================================================
 //
 // The lesson's second predict (LESSON.md, Step 2). It needs no sound: the
-// reveal comes with the choice, then orange Merc's one line, a bubble with
-// orange's still, as the cold open's bubbles sit by the Mercs. It never
+// reveal comes with the choice, then Tavi's one line, a bubble with
+// Tavi's still, as the cold open's bubbles sit by Merc and Tavi. It never
 // calls a choice wrong. The gauge beside it then shows what the reveal
 // says: first the body holds back, then it adds.
 

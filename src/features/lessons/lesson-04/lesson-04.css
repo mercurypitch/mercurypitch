@@ -2,12 +2,12 @@
    Lesson 4 — The major scale and home: the page's own figures and cards
    ============================================================
    Everything else is the kit's (lesson-base, lesson-sections, lesson-stage,
-   lesson-guide and lesson-parts). Here: the hero's staircase between the
-   Mercs, the cold open's card, the staircase stage with its buttons laid
+   lesson-guide and lesson-parts). Here: the hero's staircase between Merc
+   and Tavi, the cold open's card, the staircase stage with its buttons laid
    over the drawing, the start slider, Sing it's guide and lines, the
    practice card's figure and the free-play stage. */
 
-/* ---------------------------------------------------------------- hero: the staircase between the Mercs */
+/* ---------------------------------------------------------------- hero: the staircase between Merc and Tavi */
 .l4-duo {
   --merc: clamp(120px, 11vw, 168px);
   --stairs-h: clamp(220px, 21vw, 290px);
@@ -16,7 +16,7 @@
   height: calc(var(--stairs-h) + var(--merc) * 0.165);
   margin-top: 6px;
 }
-/* the floor line runs under the staircase's foot, where the Mercs stand */
+/* the floor line runs under the staircase's foot, where Merc and Tavi stand */
 .l4-duo .floor {
   top: var(--stairs-h);
 }
@@ -64,7 +64,7 @@
     margin-top: 14px;
   }
 }
-/* on a phone the Mercs stand smaller either side of the staircase */
+/* on a phone Merc and Tavi stand smaller either side of the staircase */
 @media (max-width: 560px) {
   .l4-duo {
     --merc: min(22vw, 88px);

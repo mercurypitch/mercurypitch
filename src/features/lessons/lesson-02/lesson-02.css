@@ -2,7 +2,7 @@
    Lesson 2 — Twelve notes: the page's own figures and cards
    ============================================================
    Everything else is the kit's (lesson-base, lesson-sections, lesson-stage
-   and lesson-guide). Here: the hero spiral between the Mercs, the four
+   and lesson-guide). Here: the hero spiral between Merc and Tavi, the four
    tickets, the names toggle, the semitone ruler and its app-style monitor,
    the ear game, the predicts that sit in the step text, the Go deeper
    drawer, the slide guide beside the ring, the practice card's Leap grid,
@@ -10,7 +10,7 @@
    steps 3 to 5 keep the stage heights WEB-SPEC Toys 1 measures (478, 478
    and 680 px at 390 x 844). */
 
-/* ---------------------------------------------------------------- hero: the spiral between the Mercs */
+/* ---------------------------------------------------------------- hero: the spiral between Merc and Tavi */
 .l2-duo {
   --merc: clamp(120px, 11vw, 168px);
   --spiral-h: clamp(270px, 25vw, 340px);
@@ -19,7 +19,7 @@
   height: calc(var(--spiral-h) + var(--merc) * 0.165);
   margin-top: 6px;
 }
-/* the floor line runs under the spiral's base, where the Mercs stand */
+/* the floor line runs under the spiral's base, where Merc and Tavi stand */
 .l2-duo .floor {
   top: var(--spiral-h);
 }
@@ -69,7 +69,7 @@
     --spiral-h: clamp(270px, 42vw, 360px);
   }
 }
-/* on a phone the spiral takes the stage's width, and the Mercs stand smaller either side of its base */
+/* on a phone the spiral takes the stage's width, and Merc and Tavi stand smaller either side of its base */
 @media (max-width: 560px) {
   .l2-duo {
     --merc: min(25vw, 100px);

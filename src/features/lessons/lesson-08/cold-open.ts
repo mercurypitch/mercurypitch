@@ -3,24 +3,24 @@
 // ============================================================
 //
 // The hero is the cold open, in Lesson 2's order (CURIOSITY-MOMENTS § 3.1):
-// the bubbles over the two Mercs either side of the beat machine's compact
+// the bubbles over Merc and Tavi either side of the beat machine's compact
 // state, the two plays under the stage, then the predict card. "Play with
 // claps on 1 and 3" works from the start: it sets the question up and
 // answers nothing. "Play with claps on 2 and 4" waits for a guess, slides
 // the claps one beat along (0.4 s, at once under reduced motion or Pause
-// animations), announced "Claps moved to 2 and 4", then blue Merc sings
+// animations), announced "Claps moved to 2 and 4", then Merc sings
 // both lines over the plain click, loudest on beat 1 and softest on 2 and
-// 4, and both Mercs hop on every clap (FACTS 30, 72). The reveal follows
-// once it has been heard to its end; with sound off the hint says so and
-// the reveal waits. Each play is the page's one sound (kit/now-playing.ts)
-// from its press, the slide included: a newer sound anywhere stops it,
-// Merc falls quiet, and a play cut short reveals nothing.
+// 4, and Merc and Tavi both hop on every clap (FACTS 30, 72). The reveal
+// follows once it has been heard to its end; with sound off the hint says so
+// and the reveal waits. Each play is the page's one sound (kit/now-playing.ts)
+// from its press, the slide included: a newer sound anywhere stops it, Merc
+// falls quiet, and a play cut short reveals nothing.
 //
 // Until the reveal nothing on screen or in the clicks says which beats are
 // strong: every click plain, the beat numbers one size, the claps plain
 // dots (Look). As it shows, beat 1's number grows, the 2s and 4s and their
 // claps turn gold and glow once, a dashed ghost of the claps on 1 and 3
-// stays beside them, and orange celebrates. The strip takes no taps (the
+// stays beside them, and Tavi celebrates. The strip takes no taps (the
 // buttons carry every action), so its drawing is hidden from a screen
 // reader and a polite live region speaks for it.
 

@@ -3,7 +3,7 @@
 // ============================================================
 //
 // The kit's seeded stars (hero-sky.ts) drawn still over a hero stage, and
-// again when the stage changes size: for a page on which only the Mercs'
+// again when the stage changes size: for a page on which only Merc and Tavi's
 // idle loops move by themselves (each WEB-SPEC's Look). It is a module of
 // its own because hero-sky.ts is on every lesson page's first paint, and
 // only a page that draws a still sky should download one. Lesson 6 is the

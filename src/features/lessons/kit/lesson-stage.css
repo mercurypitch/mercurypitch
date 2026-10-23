@@ -2,7 +2,7 @@
    Lesson stage — the hero, the predict, the words, the steps, Sing it
    ============================================================
    The parts every lesson page builds its first half from: the hero's copy
-   and its night stage (the bubbles, the two Mercs on their floor), the
+   and its night stage (the bubbles, Merc and Tavi on their floor), the
    predict card, the ticket strip of words, the steps beside their sticky
    figure stage (a one-card deck on phones), the mix-up card, Sing it's
    breathing ring and the practise card. A lesson's own figures stay in its
@@ -118,7 +118,7 @@
       transparent 70%
     );
 }
-/* one shot: the camera pushes in on .stage-shot; the sky, the staff, the Mercs and the floor move at different depths */
+/* one shot: the camera pushes in on .stage-shot; the sky, the staff, Merc and Tavi, and the floor move at different depths */
 .stage-shot {
   position: relative;
   transform-origin: 50% 70%;
@@ -131,7 +131,7 @@
   z-index: -1;
   pointer-events: none;
 }
-/* the conversation reads in film order: orange speaks first (right, high), blue answers (left, lower) */
+/* the conversation reads in film order: Tavi speaks first (right, high), Merc answers (left, lower) */
 .bubbles {
   position: relative;
   display: grid;

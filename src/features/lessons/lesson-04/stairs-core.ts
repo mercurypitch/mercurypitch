@@ -42,9 +42,9 @@ export interface StairsCoreOptions {
 
 /** How a played run lights the drawing. */
 export interface PlayLook {
-  /** Whose voice: blue or orange Merc's light, or chrome for the soft tone. */
+  /** Whose voice: Merc's or Tavi's light, or chrome for the soft tone. */
   readonly color?: string
-  /** The notes are orange's guess, the white keys: light the overlay's stairs. */
+  /** The notes are Tavi's guess, the white keys: light the overlay's stairs. */
   readonly overlay?: boolean
   readonly kind?: VoiceOptions['kind']
   /** Hears each note as it starts. */

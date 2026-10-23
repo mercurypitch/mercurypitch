@@ -1,12 +1,12 @@
 // ============================================================
-// Lesson 4 hero — the two Mercs either side of the staircase on C
+// Lesson 4 hero — Merc and Tavi either side of the staircase on C
 // ============================================================
 //
-// The night stage's floor holds blue Merc, the compact staircase on C with
-// do marked home, and orange Merc. Play the scale sings C4 up to C5 (FACTS
-// 57) in blue Merc's "ooh", blue lighting each stair as it sounds, and the
+// The night stage's floor holds Merc, the compact staircase on C with
+// do marked home, and Tavi. Play the scale sings C4 up to C5 (FACTS
+// 57) in Merc's "ooh", blue lighting each stair as it sounds, and the
 // top stair's house lights as the scale lands home. The sky's stars are
-// drawn once and never twinkle: on this page only the two Mercs' idle loops
+// drawn once and never twinkle: on this page only Merc and Tavi's idle loops
 // move by themselves (WEB-SPEC, Look).
 
 import { q } from '@/features/lessons/kit/dom'

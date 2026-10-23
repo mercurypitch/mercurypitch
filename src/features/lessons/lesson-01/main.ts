@@ -3,8 +3,8 @@
 // ============================================================
 //
 // learn/01.html carries every word of the lesson; this module adds what the
-// markup cannot: the sound, the figure toys, the Mercs, the quiz, the
-// episode and the season map. The renderer for the Mercs loads last, as its
+// markup cannot: the sound, the figure toys, Merc and Tavi, the quiz, the
+// episode and the season map. The renderer for Merc and Tavi loads last, as its
 // own chunk, so the page reads and plays before it arrives.
 
 import '@fontsource-variable/inter'

@@ -3,7 +3,7 @@
 // ============================================================
 //
 // The hero is the cold open, in Lesson 2's order (CURIOSITY-MOMENTS § 3.1):
-// the bubbles over the two Mercs either side of the compact range chart,
+// the bubbles over Merc and Tavi either side of the compact range chart,
 // Play "Twinkle" under the stage, then the predict card. The chart shows the
 // column alone, two octaves with its middle half lit (FACTS 35), and nothing
 // on it says how high the tune goes: Play "Twinkle" works from the start and
@@ -13,7 +13,7 @@
 // that play has been heard to its end, as kit/predict.ts has every lesson's
 // (the curiosity plan's rule, which overrides the WEB-SPEC's "the choice is
 // the reveal"): the gold bracket joins the tune's lowest note to its
-// highest, the live line names its span, and orange Merc celebrates once. A
+// highest, the live line names its span, and Tavi celebrates once. A
 // play that sound off kept silent, or that another sound cut short, takes
 // its beads away again, so only a heard play leaves the answer on the chart.
 // Each play is the page's one sound (kit/now-playing.ts). The chart takes no

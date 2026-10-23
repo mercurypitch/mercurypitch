@@ -2,7 +2,7 @@
 // Lesson 3 cold open — the hook stage, the sound pair and the predict
 // ============================================================
 //
-// The two Mercs either side of a band chart with one amber band at A3, and
+// Merc and Tavi either side of a band chart with one amber band at A3, and
 // the two figures under them (WEB-SPEC, Toys 1). The sound pair is live from
 // the start, as sound before the numbers: Merc's A3, then a reply on the
 // same A or a semitone under it, drawn as a violet line that belongs to no
@@ -10,7 +10,7 @@
 // after another, then the answer, and never marks a choice wrong. Under
 // reduced motion the line lands whole and the cards appear together.
 //
-// The sky is the kit's stars, drawn still: on this page only the two Mercs'
+// The sky is the kit's stars, drawn still: on this page only Merc and Tavi's
 // idle loops move on their own.
 
 import type { BandChart, CentsTick } from '@/features/lessons/kit/band-chart'
@@ -31,7 +31,7 @@ const REPLY_SEC = 1.6
 const REPLY_AT = MERC_SEC + GAP_SEC
 const REPLY_END = REPLY_AT + REPLY_SEC
 
-/** The small chart between the Mercs names only the semitone either side. */
+/** The small chart between Merc and Tavi names only the semitone either side. */
 const HOOK_TICKS: readonly CentsTick[] = [
   { c: 100, label: '100: a semitone' },
   { c: 35, label: '' },
