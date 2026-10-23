@@ -2,14 +2,15 @@ import type { Page } from '@playwright/test'
 import { expect } from '@playwright/test'
 import fs from 'node:fs'
 import path from 'node:path'
+import { settledPlanSeed } from './plan-seed'
 
 export async function dismissOverlays(page: Page) {
   const pkgPath = path.resolve(process.cwd(), 'package.json')
   const pkg = JSON.parse(fs.readFileSync(pkgPath, 'utf8'))
-  const appVersion = pkg.version
+  const seeds = { version: pkg.version, plan: settledPlanSeed() }
 
   // Force hide any overlays and reset focus mode via hash and localStorage
-  await page.evaluate((version) => {
+  await page.evaluate(({ version, plan }) => {
     // Hide all overlays including focus mode in DOM immediately.
     //
     // `[data-onboarding-flow]` is the First Light flow. It used to be
@@ -27,8 +28,15 @@ export async function dismissOverlays(page: Page) {
       el.style.pointerEvents = 'none'
     }
 
-    // Set localStorage to prevent overlays from reappearing on next load
+    // Set localStorage to prevent overlays from reappearing on next load. The
+    // welcome is spent, which makes the next load a returning visit, and the
+    // opening takeover would put the plan layer over it (a run that sets
+    // E2E_TEST_MODE is left alone by it, and many specs do not): so the plan is
+    // settled too (plan-seed.ts). A plan record a spec seeded for itself stays.
     localStorage.setItem('pitchperfect_welcome_version', version)
+    if (localStorage.getItem(plan.key) === null) {
+      localStorage.setItem(plan.key, plan.value)
+    }
     localStorage.setItem('pitchperfect_onboarding_done', '1')
     localStorage.setItem('pitchperfect_active_tab', 'singing')
     localStorage.setItem('pitchperfect_focus_mode', 'false')
@@ -43,7 +51,7 @@ export async function dismissOverlays(page: Page) {
         pp.appStore.exitFocusMode()
       }
     }
-  }, appVersion)
+  }, seeds)
 
   // Wait for overlay hiding to take effect
   await page.waitForTimeout(500)

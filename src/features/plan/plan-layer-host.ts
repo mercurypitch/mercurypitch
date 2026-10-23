@@ -20,7 +20,7 @@
 // plan modules as types only (plan-layer-host.test.ts reads its source and
 // holds it to each).
 //
-// Three things are easy to break:
+// Four things are easy to break:
 //
 // - The router needs the answer on the tick a route opens the layer, which on
 //   a page loaded at #/plan is before the store has arrived. So a layer that
@@ -41,6 +41,15 @@
 //   opening (`loading`); a failed import clears the ask and is tried again by
 //   the next one (`loading` is dropped, `asked` is cleared); and a layer that
 //   another path has opened is never overwritten by an ask that was waiting.
+// - What the host can see, and when. The takeover of an existing user opens its
+//   layer through the store, which it imports itself, while the host reads the
+//   store only once its own import has landed, a few tens of milliseconds
+//   later on a cold load. In that gap `isOpen()` says false for a layer that is
+//   up. `ready` settles when the host's import has, loaded or failed, so that a
+//   caller that must not act in the gap can wait for it: App holds the tour
+//   offer back until it has, since an offer made in the gap is spent under the
+//   layer. A failed import settles it too, and is never a rejection: no failure
+//   may hold the offer back for good.
 //
 // How the layer opens from an ask is by the record: an answered plan is
 // reviewed, and any other is the four taps, as a skipper's.
@@ -62,6 +71,13 @@ export interface PlanLayerHost {
   open: () => void
   /** Withdraw the ask and shut the layer, whichever of the two it is. */
   close: () => void
+  /**
+   * Settles when the host's own import of the store has, loaded or failed, and
+   * never rejects. Until then the host cannot see a layer that was opened
+   * through the store, so `isOpen()` reads false for it; after it, `isOpen()`
+   * reads what the store says.
+   */
+  ready: Promise<void>
 }
 
 /**
@@ -76,6 +92,12 @@ export function createPlanLayerHost(
   const [asked, setAsked] = createSignal(false)
   let loading: Promise<PlanStoreModule> | null = null
   let wanted = false
+  let markReady: () => void = () => undefined
+  const ready = new Promise<void>((resolve) => {
+    markReady = () => {
+      resolve()
+    }
+  })
 
   const load = async (): Promise<PlanStoreModule> => {
     loading ??= importStore().then(
@@ -103,7 +125,7 @@ export function createPlanLayerHost(
   }
 
   onMount(() => {
-    void load().catch(() => undefined)
+    void load().then(markReady, markReady)
   })
 
   return {
@@ -125,5 +147,6 @@ export function createPlanLayerHost(
       setAsked(false)
       untrack(store)?.closePlanLayer()
     },
+    ready,
   }
 }

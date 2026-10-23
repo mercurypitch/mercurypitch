@@ -17,18 +17,13 @@
 // land on top of the release page the same way, so its pause counts
 // `whatsNew.open()` as well.
 //
-// The same reading holds how App mounts the opening takeover, which is the
-// other half of that rule: the picker's component is web-only (R9, R32), the
-// arrival and First Light's flag it is given are read once when App sets up,
-// and what the old boot line did for a visitor who is not returning still
-// happens.
-//
-// The takeover holds one more thing: a tab's tour offer. usePageTourOffer
-// writes its once-per-tab key before the toast shows, and a pause that rises
-// later removes the toast and keeps the key. The takeover opens its surface
-// only after its chunk and, for a real account, the settings pull, so an offer
-// made before then is spent where nobody could act on it: App holds the offer
-// until the takeover says it has decided.
+// The same reading holds how App mounts the opening takeover, the other half of
+// that rule: the picker's component is web-only (R9, R32), the arrival and
+// First Light's flag it is given are read once when App sets up, what the old
+// boot line did for a visitor who is not returning still happens, and the tour
+// offer waits for the takeover to say it has decided (it writes its once-per-tab
+// key before its toast shows). app-takeover-glue.test.tsx runs that wait and
+// the arrival's rules; this is where their wiring is read.
 //
 // App is too large a world to render for these conditions, so this reads its
 // source, as home-card-mount.test.ts reads Home's.
@@ -302,20 +297,24 @@ describe('the one takeover per visit', () => {
     // to. It is here and not on the announcement's list, which also decides
     // whether the release is marked as told (use-whats-new.test.ts).
     expect(text).toContain("arrivalRoute.type === 'whats-new'")
-    // A first-timer a lesson's practice link sent came for that room.
-    expect(text).toContain('lessonArrival() !== null')
+    // A lesson's practice link asked for its room whoever follows it, so the
+    // marker is read: lessonArrival() is set only for a first run's welcome.
+    expect(text).toContain('arrivalLesson !== null')
+    expect(text).not.toContain('lessonArrival')
     expect(text).not.toContain('parseHash(')
     expect(declared('arrivalRoute')[0]?.initializer?.getText(source)).toBe(
       'parseHash(window.location.hash)',
+    )
+    expect(declared('arrivalLesson')[0]?.initializer?.getText(source)).toBe(
+      'lessonFromSearch(window.location.search)',
     )
     expect(enclosingFunction(declarations[0])).toBe(
       host === undefined ? 'no host' : enclosingFunction(host),
     )
   })
 
-  // First Light can be spent before the takeover's chunk lands. Asked then, a
-  // first-run visitor would read as "not a first run" and the plan layer would
-  // open over them (D3): the flag is read here at setup, once, and handed down.
+  // First Light can be spent before the takeover's chunk lands, and a first-run
+  // visitor would then read as returning (D3): the flag is read here, once.
   it("reads First Light's flag when App sets up, beside the arrival", () => {
     const [flag] = declared('takeoverWelcomeDue')
     const [arrival] = declared('takeoverSuppressed')
@@ -349,14 +348,15 @@ describe('the one takeover per visit', () => {
     expect(given.get('announceWhatsNew')).toContain(
       'whatsNew.announceIfNew(returningVisitor())',
     )
-    // What releases the tour offer's pause.
-    expect(given.get('onDecided')).toContain('setTakeoverDecided(true)')
+    // What releases the tour offer's pause, once the host has seen the open.
+    expect(given.get('onDecided')).toMatch(
+      /plan\.ready\.then\([\s\S]*setTakeoverDecided\(true\)/u,
+    )
   })
 
-  // A dead chunk (offline, or a deploy swapped the hashed assets) must cost the
+  // A dead chunk (offline, or a deploy swapped the hashed assets) costs the
   // visit its takeover and nothing else: the boundary keeps App up, says so
-  // once, and lets the tour offer go (a tick later, as the layer's mount defers
-  // its own write: a fallback is render work).
+  // once, and lets the tour offer go (a tick later: a fallback is render work).
   it('draws the takeover in a Suspense inside an ErrorBoundary whose fallback warns and decides', () => {
     const [mount] = declared('OpeningTakeoverMount')
     const picked = mount?.initializer

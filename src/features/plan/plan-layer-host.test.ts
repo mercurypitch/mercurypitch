@@ -269,6 +269,52 @@ describe('whether the plan is answered', () => {
   })
 })
 
+// ── When the host can see what the store holds ─────────────────────────
+
+describe('ready', () => {
+  it('settles once the store has landed, so a layer opened through the store before then is seen', async () => {
+    const held = gate()
+    const host = mount(async () => held.promise)
+    let settled = false
+    void host.ready.then(() => {
+      settled = true
+    })
+
+    // The existing user's takeover opens its layer through the store it
+    // imported itself. The host's own import has not landed, so it is blind to
+    // the layer: this is the gap a tour offer must not run in.
+    store.openPlanLayer('existing')
+    await settle()
+    expect(host.isOpen()).toBe(false)
+    expect(settled).toBe(false)
+
+    held.open()
+    await expect(host.ready).resolves.toBeUndefined()
+
+    expect(host.isOpen()).toBe(true)
+    expect(host.mode()).toBe('existing')
+  })
+
+  it('settles when the import fails, and is never a rejection', async () => {
+    const host = mount(async () => {
+      throw new Error('the chunk is gone')
+    })
+
+    await expect(host.ready).resolves.toBeUndefined()
+    expect(host.isOpen()).toBe(false)
+  })
+
+  it('needs no ask: it settles once the app is up, with nothing opened', async () => {
+    const host = mount()
+
+    expect(host.ready).toBeInstanceOf(Promise)
+    await host.ready
+
+    expect(host.answered()).toBe(false)
+    expect(host.isOpen()).toBe(false)
+  })
+})
+
 // ── What the module is ─────────────────────────────────────────────────
 
 describe('the module', () => {

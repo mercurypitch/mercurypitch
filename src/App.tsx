@@ -323,6 +323,7 @@ import { flushPendingPurchase } from '@/lib/consent'
 import { drumVoiceForMidi } from '@/lib/drum-lanes'
 import { registerE2EBridge } from '@/lib/e2e-bridge'
 import { navigateTo, parseHash, replaceHash } from '@/lib/hash-router'
+import { lessonFromSearch } from '@/lib/lesson-marker'
 import { isLocalSaveNavigationLocked, vetoNavigationDuringLocalSave, } from '@/lib/local-save-navigation-lock'
 import type { MidiSongNote } from '@/lib/midi-song'
 import { initDefaultOGTags, setMelodyOGTags } from '@/lib/og-tags'
@@ -363,7 +364,7 @@ import { setJamRoomToJoin } from '@/stores/jam-store'
 import { initKaraokePlaylistStore } from '@/stores/karaoke-playlist-store'
 import { melodyStore } from '@/stores/melody-store'
 import { micLatencyMs } from '@/stores/mic-latency-store'
-import { closeOnboarding, flowOpen, lessonArrival, returningVisitor, } from '@/stores/onboarding-store'
+import { closeOnboarding, flowOpen, returningVisitor, } from '@/stores/onboarding-store'
 import { startPracticeTimer } from '@/stores/practice-timer-store'
 import type { SavedMidiSong } from '@/stores/saved-midi-songs-store'
 import { savedMidiSongs } from '@/stores/saved-midi-songs-store'
@@ -505,6 +506,7 @@ const NO_PLAN: PlanLayerHost = {
   isOpen: () => false,
   open: () => undefined,
   close: () => undefined,
+  ready: Promise.resolve(),
 }
 
 const createPlanHost: () => PlanLayerHost = IS_NATIVE_BUILD
@@ -959,15 +961,20 @@ const AppShell: Component<AppProps> = (props) => {
   // router rewrites the address in its first dispatch (it erases a Stripe
   // return's one-shot hash), and a three-second wait for the account's settings
   // ends long after. A link, a return from checkout and #/plan asked for that
-  // place; so did a lesson's practice link, whose welcome the lesson spent, and
-  // a restored #/whats-new, a full-screen page the visitor came back to. That
-  // one is named here and not on the announcement's list, because the list
-  // also decides whether the release is marked as told (use-whats-new.ts).
+  // place. So did a lesson's practice link (?lesson=NN), whoever follows it:
+  // the marker is read here with the parser stepAsideForLesson uses, and not
+  // from lessonArrival(), which is set only when the link spent a first run's
+  // welcome, so a returning visitor would be handed the plan layer over the
+  // lesson's room. And so did a restored #/whats-new, a full-screen page the
+  // visitor came back to. That one is named here and not on the announcement's
+  // list, because the list also decides whether the release is marked as told
+  // (use-whats-new.ts).
   const arrivalRoute = parseHash(window.location.hash)
+  const arrivalLesson = lessonFromSearch(window.location.search)
   const takeoverSuppressed =
     routeSuppressesAnnouncement(arrivalRoute) ||
     arrivalRoute.type === 'whats-new' ||
-    lessonArrival() !== null
+    arrivalLesson !== null
   // Whether this visit began as a first run, read at the same moment and for
   // the same reason. First Light is spent when somebody finishes or skips it,
   // which can happen before the takeover's chunk lands, and a first-run visitor
@@ -2647,7 +2654,9 @@ const AppShell: Component<AppProps> = (props) => {
   // takeover that takes a visit when the plan does not: one takeover per
   // visit. And not before the takeover has decided which of them it is: its
   // surface opens after its chunk and the settings pull, and an offer made in
-  // that gap is spent and then taken down. The tab on screen when the layer
+  // that gap is spent and then taken down. Decided also waits for the host to
+  // have seen the layer (onDecided, below): `plan.isOpen()` rises only once the
+  // host's own import of the store has landed. The tab on screen when the layer
   // closes gets its offer then, if it never had one.
   usePageTourOffer(
     activeTab,
@@ -3449,7 +3458,14 @@ const AppShell: Component<AppProps> = (props) => {
             whatsNew.announceIfNew(returningVisitor())
           }}
           onDecided={() => {
-            setTakeoverDecided(true)
+            // The takeover opens its layer through the store it imported, and
+            // the host that draws it reads the store only once its own import
+            // has landed, a little later. Decided in that gap, the offer's
+            // pause would drop for a moment and the offer would be spent under
+            // the layer. A failed import settles `ready` as well.
+            void plan.ready.then(() => {
+              setTakeoverDecided(true)
+            })
           }}
         />
 
