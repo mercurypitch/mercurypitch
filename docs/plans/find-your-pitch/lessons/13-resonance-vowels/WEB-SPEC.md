@@ -423,7 +423,7 @@ The band chart in hold mode with the strip under it, inside Sing it's card: the 
 with this page's `.vowel-chart`, 340 px tall (310 px at 420 px wide and under, the step figure's
 heights, so the strip's segments are the ones Toys 1 gives), its frame fixed at ten seconds with
 the seconds named under the plot (`setWindow(10)`, `timeTicks`; `kit/band-chart-hold.ts:1-13`, as
-Lesson 5's hold chart is, `learn/05.html:1538`). Under the chart, the vowel names row: an ordered
+Lesson 5's hold chart is, `learn/05.html:1536`). Under the chart, the vowel names row: an ordered
 list of the five vowels, ‘ee’, ‘eh’, ‘ah’, ‘oh’ and ‘oo’, each in a 44 px tall cell, not a target;
 the vowel of the moment is bold, underlined and `aria-current="step"`, so it never rests on colour
 alone. Every state has a visible status line that is also announced (`aria-live="polite"`); the

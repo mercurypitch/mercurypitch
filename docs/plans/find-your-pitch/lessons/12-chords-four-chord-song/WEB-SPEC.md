@@ -305,7 +305,7 @@ the stage-fit test reach every action.
   as in C), and the tunes run C4 to C5 where in C they run F4 to F5. Play I, then vi plays G3 B3 D4,
   then E3 G3 B3, and the corner slide shows D going to E (FACTS 69a). Nothing locks: the guided
   steps come first on the page (playbook rule 17).
-- **Readouts** sit inside the figure, as Lesson 1's do (`learn/01.html:612-634`, `.readout`): the
+- **Readouts** sit inside the figure, as Lesson 1's do (`learn/01.html:610-632`, `.readout`): the
   centre's label, Step 4's moves and Step 5's count, so no status line takes height.
 - **Layout and targets** (FACTS 75). The steps figure is the kit's tall figure, `.viz.tall`: 380 px
   tall on a desktop, 340 px in the deck and 310 px up to 420 px wide

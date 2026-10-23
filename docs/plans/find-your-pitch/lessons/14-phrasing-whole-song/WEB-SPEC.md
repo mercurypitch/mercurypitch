@@ -395,7 +395,7 @@ over its numerals, V and I.
 
 The song line in live mode, inside Sing it's card, with line 1's bands as the target and the
 viewer's line drawn against them. It is the kit's `.sing-chart` (240 px; 210 px at 420 px wide and
-under), a band chart as on Lessons 3, 5 and 9 (`learn/03.html:1401`), so the 11-semitone window
+under), a band chart as on Lessons 3, 5 and 9 (`learn/03.html:1395`), so the 11-semitone window
 gives 17.6 px a semitone (14.9 at 210 px), and its words strip fits as in the steps (91). Every
 state has a visible status line that is also announced (`aria-live="polite"`).
 
