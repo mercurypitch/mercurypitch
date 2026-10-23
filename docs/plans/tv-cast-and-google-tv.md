@@ -712,8 +712,8 @@ on the LG C2 before the fix and gone with mp-v0.8.40, 2026-10-22).
    and claims no spread; a route-only plugin event keeps the route current
    without the volume polling; the wizard and the Microphone screen say
    which number is in use.
-3. The wizard that hears a TV (1.6), **next**, since a route is no use to
-   calibrate while the wizard cannot measure it. In the 0.8.41 test it
+3. The wizard that hears a TV (1.6): **merged, PR #1189**, for the next
+   TestFlight build (device test: Test 5 again). In the 0.8.41 test it
    found no number over AirPlay to the LG C2 (Test 5): the TV played the
    first click loud and the rest quieter, and the wizard holds every click
    to a quarter of the loudest. It also credits no reply later than 375 ms
@@ -721,8 +721,12 @@ on the LG C2 before the fix and gone with mp-v0.8.40, 2026-10-22).
    AirPlay mirroring alone at 100-200 ms and Chromecast's at 300-600 ms,
    before the phone's own input and the TV's sound processing; and its
    evenly spaced clicks would let a round trip longer than their 0.75 s
-   spacing pass for a short one (`REQ-TV-096`). Then the route prompt with
-   the spread guard (1.3), whose tolerance the P0 latency spreads decide.
+   spacing pass for a short one (`REQ-TV-096`). On a route with a delay of
+   its own the wizard now spaces its clicks unevenly, takes the lag most
+   clicks agree on, finds and times each reply in a narrow band at the
+   click's pitch against its own peak, keeps up to 1 s and names a longer
+   delay (`REQ-ML-021..026`). Then the route prompt with the spread guard
+   (1.3), whose tolerance the P0 latency spreads decide.
 4. The landscape layout under mirroring (1.4) and the help page (1.5), which
    says what P0 found works.
 
