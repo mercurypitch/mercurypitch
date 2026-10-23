@@ -153,8 +153,8 @@ Every lesson document follows this, in addition to its WEB-SPEC.
   teaching changes (the LEDGER says when).
 - **`author`.** MercuryPitch, the organization, as decided on 22 October 2026
   (§13 item 2), and the vocal coach as reviewer on the voice lessons.
-- **Once the hub exists,** the breadcrumb gains its middle step (Home, then Find
-  Your Pitch, then the lesson), and `isPartOf` gains the hub's URL.
+- **The hub.** Since this PR the breadcrumb has its middle step (Home, then Find Your Pitch,
+  then the lesson), and `isPartOf` gains the hub's URL and its series `@id`, `/learn/#series`.
 - **No `VideoObject` on a lesson page.** It belongs on the watch page (§6).
 
 ### 3.3 On the page
@@ -246,27 +246,27 @@ Notes on the table:
 
 ---
 
-## 5. The hub: `/learn/` **[next]**
+## 5. The hub: `/learn/` **[shipped]**
 
-Decided on 22 October 2026 (§13 item 3): a crawlable index of the series.
+Decided on 22 October 2026 (§13 item 3): a crawlable index of the series, which this PR built.
 
-- **Path.** `learn/index.html`, served at `/learn/`; Cloudflare's `html_handling`
-  redirects `/learn` there. Add a dev rewrite beside the lessons'.
+- **Path.** `learn/index.html`, served at `/learn/`; Cloudflare's `html_handling` redirects
+  `/learn` there, and the dev and preview servers rewrite `/learn` beside the lessons' rewrite.
 - **Title.** `Free singing and music theory lessons | MercuryPitch` (52). The
   h1 is "Find Your Pitch".
-- **Content:**
+- **Content.** A plain document with no script, on the lesson pages' stylesheet:
   - who it is for: no theory needed;
-  - how a lesson works: ten minutes, sound toys, a sung check, a quick check
-    and the episode;
-  - the Season 1 map in its two lanes, Theory and Voice. Published lessons are
-    links; planned ones show their hook question and "coming".
+  - how a lesson works: planned as ten minutes, sound toys, a sung check, a quick check and the
+    episode; built as a question, sound toys, singing, a quick check and 10 to 17 minutes;
+  - the Season 1 map: Theory and Voice, then the finale in both. Each lesson shows its hook
+    question; a live one links with its minutes, any other says "Coming".
 
-  The explorer that sits at the foot of Lesson 1 can move here.
+  The explorer that sits at the foot of Lesson 1 can still move here; this PR left it.
 
-- **Structured data.** A `BreadcrumbList`, and a node for the series with
-  `hasPart` pointing at each published lesson's `#lesson`. `Course` or
-  `CreativeWorkSeries`; neither earns a rich result any more, so it is a
-  wording choice.
+- **Structured data.** A `BreadcrumbList`, and a `CreativeWorkSeries` at `/learn/#series` whose
+  `hasPart` points at each live lesson's `#lesson` (`Course` was the other choice; neither earns
+  a rich result). `tools/learn-hub.ts` fills the map and `hasPart` in from `season.ts` at build
+  time, and the site worker settles both to the lessons live; every lesson's `isPartOf` names it.
 - **Not the "Series blueprint"** (the pipeline, the plan files). It left
   Lesson 1's page for the Content Studio's Lessons page, because the owner
   keeps the plan off public pages, the hub and the about site included. A
