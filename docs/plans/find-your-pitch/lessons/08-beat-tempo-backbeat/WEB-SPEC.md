@@ -967,7 +967,7 @@ was built on.
       the backbeat", `alternativeHeadline` the hook exactly (`lesson-copy.test.ts:356`), the same
       description as the meta, `url` and `mainEntityOfPage` the canonical address, `image` the
       og:image (`lesson-pages.test.ts:156-157`, `:165-166`), `inLanguage` `en-GB`,
-      `learningResourceType` "Lesson", `educationalLevel` "Beginner", `timeRequired` `PT15M`,
+      `learningResourceType` "Lesson", `educationalLevel` "Beginner", `timeRequired` `PT16M`,
       `teaches` ["The beat and the pulse", "Tempo in beats per minute", "Bars of 2, 3 and 4", "The
       backbeat"], `isAccessibleForFree`, `position` 8, `isPartOf` the series, and author and
       publisher the organization (`:146-172`); and the BreadcrumbList ending on the headline
