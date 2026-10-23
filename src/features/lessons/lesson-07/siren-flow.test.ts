@@ -8,8 +8,11 @@
 // Again; an abandoned take counts, uses the one Again if it had voice, and
 // leaves Done for today when it was the visit's last;
 // "Effortful" and "Uncomfortable" end the singing and pick the rest card,
-// and a later "Easy" brings none of it back. A walk over every sequence of
-// takes and answers never reaches a fourth take or a third sung siren.
+// and a later "Easy" brings none of it back. Done for today ends the takes
+// and keeps the question and its lines, which a later answer still
+// changes. A walk over every sequence of takes, answers and Done for today
+// never reaches a fourth take or a third sung siren, and never loses the
+// question after Done for today.
 
 import { describe, expect, it } from 'vitest'
 import type { Feeling } from '@/features/lessons/kit/comfort'
@@ -36,6 +39,7 @@ const feel = (f: Feeling): SirenEvent => ({ type: 'feel', feeling: f })
 const SING: SirenEvent = { type: 'comfort', sing: true }
 const HEARD: SirenEvent = { type: 'played', audible: true }
 const AGAIN: SirenEvent = { type: 'again' }
+const DONE: SirenEvent = { type: 'done' }
 
 describe('the briefing', () => {
   it('shows Start waiting for Merc’s siren, with the hint to play it first', () => {
@@ -211,11 +215,88 @@ describe('after a take', () => {
     expect([o.again, o.closing]).toEqual([false, 'gentle'])
   })
 
-  it('offers neither Start nor Again after Done for today', () => {
+  it('offers neither Start, Again nor Done for today after Done for today', () => {
+    const o = offers(run([SING, HEARD, took('band'), feel('easy'), DONE]))
+    expect([o.start, o.again, o.done, o.tryAgain]).toEqual([
+      false,
+      false,
+      false,
+      false,
+    ])
+  })
+})
+
+describe('after Done for today', () => {
+  it('keeps the question and its lines as the answer left them', () => {
+    // Act
+    const o = offers(run([SING, HEARD, took('band'), feel('easy'), DONE]))
+
+    // Assert
+    expect(o).toMatchObject({
+      ask: true,
+      closing: 'band',
+      keepBand: true,
+      doctor: false,
+      restCard: false,
+    })
+  })
+
+  it("lets a later answer change the lines and the Wrap's card, and brings back no take", () => {
+    // Act: "Easy", Done for today, then "Workable", "Uncomfortable" and "Easy"
+    const done = run([SING, HEARD, took('band'), feel('easy'), DONE])
+    const workable = run([feel('workable')], done)
+    const hurt = run([feel('uncomfortable')], workable)
+    const after = run([feel('easy')], hurt)
+
+    // Assert
+    expect(offers(workable)).toMatchObject({
+      ask: true,
+      closing: 'band',
+      keepBand: true,
+      restCard: false,
+    })
+    for (const v of [hurt, after])
+      expect(offers(v)).toMatchObject({
+        ask: true,
+        closing: 'enough',
+        doctor: true,
+        keepBand: false,
+        restCard: true,
+        start: false,
+        again: false,
+        done: false,
+      })
+  })
+
+  it('keeps the gentle line and the band after a later "Effortful"', () => {
     const o = offers(
-      run([SING, HEARD, took('band'), feel('easy'), { type: 'done' }]),
+      run([
+        SING,
+        HEARD,
+        took('unsteady'),
+        feel('easy'),
+        DONE,
+        feel('effortful'),
+      ]),
     )
-    expect([o.start, o.again]).toEqual([false, false])
+    expect(o).toMatchObject({
+      ask: true,
+      closing: 'gentle',
+      keepBand: true,
+      restCard: true,
+      again: false,
+      done: false,
+    })
+  })
+
+  it('asks nothing after a take with no voice, and offers nothing', () => {
+    const o = offers(run([SING, HEARD, took('none'), DONE]))
+    expect([o.ask, o.again, o.done, o.closing]).toEqual([
+      false,
+      false,
+      false,
+      null,
+    ])
   })
 })
 
@@ -239,10 +320,11 @@ describe('every visit', () => {
       for (const t of Object.keys(TAKE))
         moves.push(o.again ? [AGAIN, took(t)] : [took(t)])
     if (o.ask) for (const f of FEELINGS) moves.push([feel(f)])
+    if (o.done) moves.push([DONE])
     for (const m of moves) walk(run(m, v), depth - 1, seen)
   }
 
-  it('never reaches a fourth take or a third sung siren, and never shows "Try again" without Again', () => {
+  it('never reaches a fourth take or a third sung siren, never shows "Try again" without Again, and keeps the question after Done for today', () => {
     // Arrange
     let visits = 0
     const problems: string[] = []
@@ -256,6 +338,11 @@ describe('every visit', () => {
       if (o.tryAgain && !o.again) problems.push('"Try again" without Again')
       if (v.effort && (o.again || o.start))
         problems.push('a retry after effort')
+      const last = v.takes[v.takes.length - 1]
+      if (v.finished && (o.start || o.again || o.done || o.tryAgain))
+        problems.push('a take offered after Done for today')
+      if (v.finished && last?.voiced === true && !last.abandoned && !o.ask)
+        problems.push('the question gone after Done for today')
     })
 
     // Assert
