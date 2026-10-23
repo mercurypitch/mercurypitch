@@ -681,11 +681,11 @@ What the page does where nothing above says:
   (`Sound.canPlay`); Sing it offers the listen-only path of state 9 at once, with no Start; the Wrap
   keeps the Vocal Range Test card.
 - **No microphone, a refusal, or a listener that fails to load**: state 9 of Toys 4.
-- **The tab hidden during a take or as the microphone opens, or the section left during a take**:
-  the take is abandoned, the microphone released; no reading or feeling question follows; it counts
+- **The tab hidden, or the section left, during a take or as the microphone opens for one**: the
+  take is abandoned, the microphone released; no reading or feeling question follows; it counts
   towards the three. The briefing returns, with Start while the visit has had under three takes and
   no "Effortful" or "Uncomfortable", else Done for today; a take abandoned after voice was heard
-  uses up the visit's one Again, so a visit holds at most two sung sirens (Toys 4, retry rules).
+  uses up the visit's one Again, so a visit holds at most two sung sirens (Toys 4, the retry rules).
 - **A voice outside the window**: the line pins to the edge with an arrow; the reading still names
   the band from the notes the take held, and the window does not move. A lit band past the edge is
   drawn to the edge, or as a strip along it, with the arrow (Toys 4, state 7).

@@ -199,11 +199,13 @@ export function initSing(stills: RingStills): void {
       toListening('nomic')
       return
     }
-    // the tab hidden while the listener loaded: its visibilitychange came
-    // before the microphone did, so let it go here and end the take unstarted
+    // the tab hidden, or the section left, while the listener loaded: that
+    // leave came before the microphone did, so let it go here as the leave
+    // does, and end the take unstarted
     const hidden = document.hidden
-    if (hidden) leave(true)
-    const reading = hidden
+    const gone = hidden || left
+    if (gone) leave(hidden)
+    const reading = gone
       ? null
       : await singOne({
           mod,
@@ -375,12 +377,18 @@ export function initSing(stills: RingStills): void {
     release(now)
   }
   // leaving is staying away: a panel that grows or shrinks can take the
-  // section off screen for a moment, and that must not stop a take
+  // section off screen for a moment, and that must not stop a take; once
+  // away, `left` holds until the section is back, for a take still opening
   let away = 0
+  let left = false
   new IntersectionObserver((entries) => {
     window.clearTimeout(away)
     if (entries.some((e) => !e.isIntersecting))
-      away = window.setTimeout(() => leave(false), 600)
+      away = window.setTimeout(() => {
+        left = true
+        leave(false)
+      }, 600)
+    else left = false
   }).observe(q('#sing'))
   document.addEventListener('visibilitychange', () => {
     if (document.hidden) leave(true)

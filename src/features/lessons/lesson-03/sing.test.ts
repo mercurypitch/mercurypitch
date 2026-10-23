@@ -1,15 +1,16 @@
 // ============================================================
-// Lesson 3 Sing it tests — the notes, the live tag, the chart's words, a hidden tab
+// Lesson 3 Sing it tests — the notes, the live tag, the chart's words, the card left
 // ============================================================
 //
 // The card's own tests load learn/03.html's body into jsdom and drive
-// initSing as the page does. The listener is a double that counts the takes
-// it opens and the times the microphone is let go at once.
+// initSing as the page does, and leave it as the microphone opens: the tab
+// hidden, or the section scrolled away. The listener is a double that
+// counts the takes it opens and the times the microphone is let go.
 
 import { readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import '@/features/lessons/kit/browser-doubles.test-fixtures'
+import { scrollOutOfView } from '@/features/lessons/kit/browser-doubles.test-fixtures'
 import type * as ListenModule from '@/features/lessons/kit/listen'
 import type { TakeReading } from '@/features/lessons/kit/take'
 import { notesFor } from './sing'
@@ -20,8 +21,9 @@ const PAGE = readFileSync(resolve(process.cwd(), 'learn/03.html'), 'utf8')
 const mic = vi.hoisted(() => ({
   /** Runs as the page asks for the microphone, before the listener resolves. */
   opening: null as (() => void) | null,
-  /** Takes opened, and the times the microphone was let go at once. */
+  /** Takes opened, and the times the microphone was let go: after its linger, or at once. */
   opened: 0,
+  released: 0,
   releasedNow: 0,
 }))
 
@@ -34,7 +36,9 @@ vi.mock('@/features/lessons/kit/listen', async (importOriginal) => {
       return Promise.resolve({
         holding: true,
         latest: () => null,
-        release: () => undefined,
+        release: () => {
+          mic.released += 1
+        },
         releaseNow: () => {
           mic.releasedNow += 1
         },
@@ -84,6 +88,12 @@ function hideTab(): void {
     get: () => true,
   })
   document.dispatchEvent(new Event('visibilitychange'))
+}
+
+/** The section scrolled away as the microphone opens, and kept away past the page's 600 ms. */
+function leaveSection(): void {
+  scrollOutOfView(el('#sing'))
+  vi.advanceTimersByTime(600)
 }
 
 const reading = (over: Partial<TakeReading>): TakeReading => ({
@@ -149,13 +159,14 @@ describe("the chart's words after a take (REQ-GVC-085)", () => {
 // each case loads the page's modules afresh (vi.resetModules) and parses
 // learn/03.html into jsdom: up to 1.7 s measured on a loaded 4-core machine
 describe(
-  'Sing it with the tab hidden while the microphone opens',
+  'Sing it left while the microphone opens: the tab hidden, the section scrolled away',
   { timeout: 15_000 },
   () => {
     beforeEach(() => {
       vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] })
       mic.opening = null
       mic.opened = 0
+      mic.released = 0
       mic.releasedNow = 0
     })
 
@@ -167,7 +178,7 @@ describe(
       localStorage.clear()
     })
 
-    it('starts no take after Start, lets the microphone go, and offers the note again', async () => {
+    it('starts no take after Start in a hidden tab, lets the microphone go at once, and offers the note again', async () => {
       // Arrange
       await loadCard()
       mic.opening = hideTab
@@ -185,7 +196,7 @@ describe(
       expect(el('[data-sing="again"]').hidden).toBe(false)
     })
 
-    it('starts no take after Next note, lets the microphone go, and offers the note again', async () => {
+    it('starts no take after Next note in a hidden tab, lets the microphone go at once, and offers the note again', async () => {
       // Arrange: the first note's take, heard as nothing
       await loadCard()
       await press('[data-sing="start"]')
@@ -198,6 +209,24 @@ describe(
       expect(mic.opened).toBe(1)
       expect(mic.releasedNow).toBe(1)
       expect(el('[data-note-head]').textContent).toBe('Note 2 of 3')
+      expect(el('#singStatus').textContent).toBe(
+        'Stopped listening: the microphone is off.',
+      )
+      expect(el('[data-sing="again"]').hidden).toBe(false)
+    })
+
+    it('starts no take after Start with the section scrolled away, lets the microphone go, and offers the note again', async () => {
+      // Arrange
+      await loadCard()
+      mic.opening = leaveSection
+
+      // Act
+      await press('[data-sing="start"]')
+
+      // Assert: let go as leaving the section lets go, after the linger
+      expect(mic.opened).toBe(0)
+      expect([mic.released, mic.releasedNow]).toEqual([1, 0])
+      expect(el('[data-note-head]').textContent).toBe('Note 1 of 3')
       expect(el('#singStatus').textContent).toBe(
         'Stopped listening: the microphone is off.',
       )

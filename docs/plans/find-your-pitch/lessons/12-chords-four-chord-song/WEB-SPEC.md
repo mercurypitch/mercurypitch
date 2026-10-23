@@ -504,7 +504,7 @@ the guide, the kit's breathing ring (`mountRing`, `src/features/lessons/kit/sing
 still of the Merc singing, Merc for the lower voice and Tavi for the higher, never a microphone
 icon. Every state has a visible status line that is also announced (`aria-live="polite"`). Lesson
 3's rule for leaving holds, for what plays here: if the section stays off screen for 600 ms, or the
-page is hidden, whatever is playing stops (`src/features/lessons/lesson-03/sing.ts:366-382`).
+page is hidden, whatever is playing stops (`src/features/lessons/lesson-03/sing.ts:374-396`).
 
 The notes for every preset of the app (`VOCAL_RANGES`, `src/stores/settings-store.ts:91-152`;
 FACTS 59, 60; `verify12.py`, sections 8 and 12), first at Move do's middle position, with each
