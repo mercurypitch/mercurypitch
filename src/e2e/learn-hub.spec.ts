@@ -75,10 +75,11 @@ for (const l of LAYOUTS) {
           await expect(item.locator('.hub-go')).toHaveText('Coming')
           await expect(item.getByRole('link')).toHaveCount(0)
         } else {
-          // each link's hidden words name its lesson
+          // each link's hidden words name its lesson. Chromium reads the
+          // `sr` span, absolutely placed and so a block, with a space before it
           await expect(
             item.getByRole('link', {
-              name: new RegExp(`^Start lesson: Lesson ${L.n}, `),
+              name: new RegExp(`^Start lesson ?: Lesson ${L.n}, `),
             }),
           ).toHaveAttribute('href', L.page)
           await expect(item.getByText('Coming', { exact: true })).toBeHidden()
