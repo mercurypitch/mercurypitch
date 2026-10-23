@@ -70,8 +70,8 @@ page with the whole lesson in its text and live sound examples, with its
 episode where the lesson has one.
 
 - [Find Your Pitch](https://mercurypitch.com/learn/): The series' hub. Every
-  Season 1 lesson in its lane, theory or voice, the finale in both, with the
-  question it opens on and a link to each lesson that is published.
+  Season 1 lesson in its lane, theory or voice, the finale in both, and a link
+  to each lesson that is published, with how long it takes.
 - [Lesson 1: What is a note?](https://mercurypitch.com/learn/01): Why 220 Hz
   and 440 Hz share a name. What a note is, why notes come back an octave
   higher, and how to read names like A4 and C4.

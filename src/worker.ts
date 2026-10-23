@@ -422,10 +422,10 @@ export default {
       if (apex !== null) return Response.redirect(apex, 301)
     }
 
-    // Find Your Pitch's lesson pages, the sitemap and llms.txt answer as the
-    // admin console's lesson state has them: a lesson held back is the 404
-    // page, a published one carries the state and its picked hook, and the
-    // listings name the live lessons (src/lesson-gate.ts).
+    // Find Your Pitch's lesson pages, its hub, the sitemap and llms.txt answer
+    // as the admin console's lesson state has them: a lesson held back is the
+    // 404 page, a published one carries the state and its picked hook, and the
+    // hub and the listings name the live lessons (src/lesson-gate.ts).
     const lessonResp = await handleLessonRequest(request, env, ctx)
     if (lessonResp !== null) return lessonResp
 

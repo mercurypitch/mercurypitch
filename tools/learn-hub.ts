@@ -13,26 +13,31 @@
 //
 // A lesson is named by its document's structured-data headline, which is
 // what every nav calls it, or by its season title while it has no
-// document. Each lesson with a document writes both readings of its state
-// (tools/draft-lessons.ts): its reading time and "Start lesson" in
-// `<span data-if-live="N">`, "Coming" in `<span data-if-planned="N">`. Its
-// reading time goes with its link, since a lesson held back is drawn as one
-// not written yet, as publish.ts `seasonFor` has it. lessonStatesPlugin,
-// which runs after this, marks hidden the reading that is false under the
-// build's defaults; the site worker keeps the true one where it serves the
-// page (src/lesson-gate.ts). A lesson with no document is "Coming" in every
-// environment.
+// document, and asks its default hook in `<p class="hub-hook"
+// data-lesson="N">`. Each lesson with a document writes both readings of
+// its state (tools/draft-lessons.ts): its reading time and "Start lesson"
+// in `<span data-if-live="N">`, "Coming" in `<span data-if-planned="N">`.
+// Its reading time goes with its link, since a lesson held back is drawn as
+// one not written yet, as publish.ts `seasonFor` has it. The link's hidden
+// words name the lesson, so a screen reader's list of links tells them
+// apart; since a reading span cannot hold a span, the link's reading is the
+// block form, `<div data-if-live="N">`. lessonStatesPlugin, which runs after this, marks hidden the
+// reading that is false under the build's defaults. A lesson with no
+// document is "Coming" in every environment.
 //
-// `hasPart` is the build's default as well: the released lessons in a
-// production build, and the drafts with them where the build shows drafts,
-// so that a page no worker served lists the lessons it links. The site
-// worker settles it to the lessons live where it serves the page.
+// The span of reading times and `hasPart` follow the build's defaults as
+// well: the lessons live by default, which are the released lessons in a
+// production build and the drafts with them where the build shows drafts,
+// so that a page no worker served says only what the lessons it links do.
+// Where the site worker serves the page it settles all of it for the
+// lessons live there: the readings, the span, `hasPart` and each hook the
+// admin console picked (src/lesson-gate.ts `hubRewriter`).
 
 import { readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
 import type { Plugin } from 'vite'
 import type { Lane, Lesson } from '../src/features/lessons/kit/season'
-import { LESSONS } from '../src/features/lessons/kit/season'
+import { LESSONS, minutesSpan } from '../src/features/lessons/kit/season'
 import { lessonDocument, lessonPages, lessonPath } from './draft-lessons'
 import { lessonHeadline } from './lesson-links'
 
@@ -89,17 +94,6 @@ export function hubLessons(
     })
 }
 
-/** The shortest and longest reading time among the lessons that have one: "10 to 17". */
-export function minutesSpan(lessons: readonly HubLesson[]): string {
-  const times = lessons.flatMap((L) =>
-    L.minutes === undefined ? [] : [L.minutes],
-  )
-  if (times.length === 0)
-    throw new Error('No Season 1 lesson has a reading time (season.ts).')
-  const [least, most] = [Math.min(...times), Math.max(...times)]
-  return least === most ? String(least) : `${least} to ${most}`
-}
-
 const esc = (s: string): string =>
   s.replace(/[&<>"]/g, (c) => `&#${c.charCodeAt(0)};`)
 
@@ -110,21 +104,25 @@ const LANES: readonly (readonly [Lane, string])[] = [
   ['both', 'Voice and theory'],
 ]
 
-/** Where a lesson stands: its reading time and link while it is live, "Coming" otherwise. */
-function statusMarkup(L: HubLesson, name: string): string {
+/**
+ * Where a lesson stands: its reading time and link while it is live,
+ * "Coming" otherwise. Every link reads "Start lesson", so its hidden words
+ * say which lesson it starts.
+ */
+function statusMarkup(L: HubLesson): string {
   const coming = `<span data-if-planned="${L.n}">Coming</span>`
   if (L.page === undefined) return coming
   const time =
     L.minutes === undefined
       ? ''
       : `<span data-if-live="${L.n}">${L.minutes} minutes</span>`
-  const link = `<span data-if-live="${L.n}"><a class="btn sm" href="${L.page}" aria-describedby="${name}">Start lesson</a></span>`
+  const link = `<div data-if-live="${L.n}"><a class="btn sm" href="${L.page}">Start lesson<span class="sr">: Lesson ${L.n}, ${esc(L.name)}</span></a></div>`
   return [time, link, coming].filter(Boolean).join(' ')
 }
 
 function lessonMarkup(L: HubLesson): string {
   const name = `lesson-${String(L.n).padStart(2, '0')}`
-  return `<li class="hub-lesson"><p class="kicker">Lesson ${L.n}</p><h4 id="${name}">${esc(L.name)}</h4><p class="hub-hook">${esc(L.hook)}</p><p class="hub-go">${statusMarkup(L, name)}</p></li>`
+  return `<li class="hub-lesson"><p class="kicker">Lesson ${L.n}</p><h4 id="${name}">${esc(L.name)}</h4><p class="hub-hook" data-lesson="${L.n}">${esc(L.hook)}</p><div class="hub-go">${statusMarkup(L)}</div></li>`
 }
 
 /** The season map: one list a lane, each lesson once, in lesson order. */
@@ -148,7 +146,9 @@ export function seriesParts(live: readonly number[]): { '@id': string }[] {
 /**
  * The hub's document with the season map, the reading times and the
  * series' parts written in; `live` is the lessons live by the build's
- * default. Throws when the document lacks a mark, or holds one twice.
+ * default, over which the reading times are spanned. Throws when the
+ * document lacks a mark or holds one twice, and when no lesson in `live`
+ * has a reading time, which the released lessons always have.
  */
 export function fillHub(
   html: string,
@@ -160,8 +160,13 @@ export function fillHub(
       throw new Error(
         `${HUB_DOCUMENT} must hold ${mark} exactly once: tools/learn-hub.ts fills it in.`,
       )
+  const span = minutesSpan(lessons.filter((L) => live.includes(L.n)))
+  if (span === null)
+    throw new Error(
+      `No lesson live by the build's default has a reading time (season.ts), so ${HUB_DOCUMENT} cannot say how long a lesson takes.`,
+    )
   return html
-    .replace(MARKS.minutes, () => minutesSpan(lessons))
+    .replace(MARKS.minutes, () => span)
     .replace(MARKS.season, () => seasonMarkup(lessons))
     .replace(
       MARKS.parts,

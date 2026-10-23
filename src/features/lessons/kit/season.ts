@@ -482,3 +482,21 @@ export function lessonPath(n: number): LessonPath {
   })
   return { ancestors: before, roles }
 }
+
+/**
+ * How long a lesson among `lessons` takes, as the hub says it (learn/index.html):
+ * "10 to 17" from the shortest reading time to the longest, or "10" when they
+ * share one. Null when none of them has a reading time. The hub reads it over
+ * the lessons live where it is served (tools/learn-hub.ts, src/lesson-gate.ts),
+ * so it never names a time no lesson a learner can open takes.
+ */
+export function minutesSpan(
+  lessons: readonly { readonly minutes?: number }[],
+): string | null {
+  const times = lessons.flatMap((L) =>
+    L.minutes === undefined ? [] : [L.minutes],
+  )
+  if (times.length === 0) return null
+  const [least, most] = [Math.min(...times), Math.max(...times)]
+  return least === most ? String(least) : `${least} to ${most}`
+}

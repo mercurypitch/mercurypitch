@@ -11,7 +11,7 @@
 
 import type { Page } from '@playwright/test'
 import { expect, test } from '@playwright/test'
-import { LESSONS } from '../features/lessons/kit/season'
+import { LESSONS, minutesSpan } from '../features/lessons/kit/season'
 
 const LAYOUTS = [
   { name: 'a phone', width: 390, height: 844 },
@@ -75,8 +75,11 @@ for (const l of LAYOUTS) {
           await expect(item.locator('.hub-go')).toHaveText('Coming')
           await expect(item.getByRole('link')).toHaveCount(0)
         } else {
+          // each link's hidden words name its lesson
           await expect(
-            item.getByRole('link', { name: 'Start lesson' }),
+            item.getByRole('link', {
+              name: new RegExp(`^Start lesson: Lesson ${L.n}, `),
+            }),
           ).toHaveAttribute('href', L.page)
           await expect(item.getByText('Coming', { exact: true })).toBeHidden()
         }
@@ -118,6 +121,14 @@ test('links lessons that each answer, and says the same in its head and structur
     const answer = await page.request.get(href)
     expect(answer.status(), href).toBe(200)
   }
+
+  // How long a lesson takes, over the lessons linked and no other
+  const linked = SEASON.filter(
+    (L) => L.page !== undefined && links.includes(L.page),
+  )
+  await expect(page.locator('.hub-time')).toHaveText(
+    `Each lesson takes about ${minutesSpan(linked)} minutes.`,
+  )
 
   // Both blocks parse, and the series names exactly the lessons linked
   const parsed = await blocks(page)
