@@ -415,7 +415,8 @@ an optional `lesson`, and links that leave this page for a question from another
   quite." before each line (`quiz.ts:293`), so no feedback line starts with "Right", "Yes" or
   "Correct". "Try Step 1 again", "Try Step 3 again" and "Try Step 4 again" use the kit's
   `data-goto-step`. No question plays a sound. LESSON.md's note on the shuffle is editorial and
-  never printed. Answers stay in the viewer's browser until the telemetry track exists.
+  never printed. Answers stay in the viewer's browser; since this PR each question's first answer in
+  a visit also goes out, anonymously.
 
 ### 6. Sing it: one note, five vowels
 

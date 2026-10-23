@@ -339,7 +339,8 @@ Tests:
   "Yes" or "Right". Finishing it marks Lesson 3 done.
 - Storage keys, named as Lessons 1 and 2 name theirs: `fyp-l03-recall-seed` and `fyp-l03-recall-v1`
   for the recall, `fyp-l03-seed` and `fyp-l03-quiz-v1` for the quick check. Answers stay in
-  localStorage until the Lesson telemetry track exists.
+  localStorage; since this PR each question's first answer in a visit also goes out, anonymously
+  (`kit/telemetry.ts`).
 - Two quizzes on one page need the three changes to `kit/quiz.ts` that Lesson 2's spec lists (its
   "What the kit and the app still need"): a root element or id prefix, so two quizzes share a page;
   `lesson` optional, so the recall marks no lesson done; and a question `id` (`QuizQuestion` has

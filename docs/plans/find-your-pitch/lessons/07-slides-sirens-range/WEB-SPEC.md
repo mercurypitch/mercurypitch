@@ -490,8 +490,8 @@ kit marks `lesson` done once every question has an answer (`:75-76`, `:322-327`)
   answer, and a check icon and ink (not gold) on the right one. The kit prints "Right." or "Not
   quite." before each line (`kit/quiz.ts:293`), so no feedback line starts with "Right", "Yes" or
   "Correct". "Try Step 1 again", "Try Step 2 again", "Try Step 4 again" and "Try Step 5 again" use
-  the kit's `data-goto-step`. Answers stay in the viewer's browser until the telemetry track
-  exists.
+  the kit's `data-goto-step`. Answers stay in the viewer's browser; since this PR each question's
+  first answer in a visit also goes out, anonymously.
 
 ### 6. Go deeper drawers
 

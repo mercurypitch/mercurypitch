@@ -379,10 +379,10 @@ row, the previous lesson's next-lesson line and FACTS row, `next-card.test.ts` w
 | Did the reader play the opening, predict, scroll past it, open the next card?         | nothing                                      | needs new tracking                        |
 | Lesson-to-app clicks by `?lesson=NN`                                                  | nothing: it only steps First Light aside     | needs new tracking (CURRICULUM §4 item 6) |
 
-New tracking means counts-only events from the lesson pages (which load no first-party analytics today), new names in
-`src/lib/funnel-event-catalog.ts`, and the owner's call on consent and the privacy notice: the banner covers only GA4
-and Ads, and MASTER-PLAN §12 item 11's lesson-telemetry exception is decided (22 October 2026): anonymous, with consent.
-Quiz answers stay on the device. Baseline: Lessons 1 and 2 as uploaded; a YouTube re-cut is a new video (Phase 4).
+Quiz answers stayed on the device until this PR; now each question's first answer in a visit is an anonymous
+`lesson_answer` event (MASTER-PLAN § 9). The `?lesson=` attribution and the opening, predict, scroll and next-card
+measures are still not built: each needs counts-only events, a name in `src/lib/funnel-event-catalog.ts` and the owner's
+call on consent. Baseline: Lessons 1 and 2 as uploaded; a YouTube re-cut is a new video (Phase 4).
 
 ## 5. Open questions for the owner
 
