@@ -84,18 +84,18 @@ the Wrap. New: there is no Watch section until a film exists, and the checkpoint
 ### 1. Hook stage
 
 - Two ticket cards (the stats-site motif) repeating the figures of Lesson 2's next-lesson card:
-  "ASKED 59 %" over "of 1,105 · said they couldn't copy a tune", and "TESTED 10–16 %" over "a
-  semitone or more off" (FACTS 1 to 4, 44a), with LESSON.md's semitone line under them (FACTS 39).
-  Between them, the band chart (toy 6) with one amber band at A3.
+  "ASKED 59 %" over "of 1,105 · said they couldn't copy a tune", and, hidden until a choice,
+  "TESTED 10–16 %" over "a semitone or more off" (FACTS 1 to 4, 44a), with LESSON.md's semitone line
+  under them (FACTS 39). Between them, the band chart (toy 6) with one amber band at A3.
 - **Play: on the note** and **Play: a semitone off** are live from the start, as sound before the
   numbers: Merc's A3 (1.6 s, blue Merc in `sing`), then the reply (1.6 s) on A3 or G♯3 (FACTS 43,
   46), drawn as a violet line inside the band or a semitone under it, labelled "0 cents" or "100
   cents below: a semitone". The reply belongs to no Merc.
 - The predict widget: orange's bubble ("I can't sing.") and blue's reply, then LESSON.md's question
-  about the 39 students who said they couldn't copy a note, with its two choices (FACTS 6).
-  Choosing shows the three cards one after another, then the answer line, whose bracket speaks to
-  "Most of them" without calling it wrong; no choice is ever marked wrong. Under reduced motion the
-  cards appear together.
+  about the 39 students who said they couldn't copy a note, with its two choices (FACTS 6). Choosing
+  shows the three cards one after another, then the answer line, whose bracket speaks to "Most of
+  them" without calling it wrong; no choice is ever marked wrong. Under reduced motion the cards
+  appear together. Choosing also shows TESTED, which until this PR showed from the start.
 - States: waiting for a choice; a sound playing; choice made, cards and answer shown.
 - Accessible text: the figures are text; while the pair plays, the chart's label reads "Merc's A3
   as a band; the reply on the same note" or "the reply a semitone below it".
@@ -123,8 +123,8 @@ the Wrap. New: there is no Watch section until a film exists, and the checkpoint
   here "Louder" (how far) and "Higher" (how fast), in Merc's "ooh" (`kit/sound.ts` kind `merc`),
   its flag reading "Louder: the note stayed put" or "Higher: the note moved up".
 - States and accessible text as in Lesson 1: each slider sounds while held and carries its own
-  `aria-valuetext` (a percentage, a frequency). New here: the flag sits in a polite live region, so
-  a screen reader hears what each move did to the note.
+  `aria-valuetext` (a percentage, a frequency). Since this PR the flag speaks on the kit's status
+  line (`kit/announce.ts`), not a polite live region, so a screen reader hears what each move did.
 - Beside it, the care card: LESSON.md's four lines, each with an icon from the app's SVG set (no
   emoji), and the comfort line in bold.
 
@@ -236,9 +236,9 @@ States:
      For the vocal coach).
    - Uncomfortable: no count, no celebration and no Again, then LESSON.md's line and the doctor
      lines (REQ-GVC-021, REQ-GVC-023, REQ-GVC-024). The Wrap shows the rest card.
-   - The rest card, after "Uncomfortable" or "Just listen today", is LESSON.md's "Rest today. Voice
-     Mirror will be here when your voice feels comfortable", without "Ten minutes, gently, most
-     days" (REQ-GVC-055; FACTS 36, 38). The page holds the ending in memory for the visit, never in
+   - The rest card, after "Uncomfortable" or "Just listen today", is LESSON.md's "Voice Mirror will
+     be here when your voice feels comfortable", without "Ten minutes, gently, most days"
+     (REQ-GVC-055; FACTS 36, 38). The page holds the ending in memory for the visit, never in
      storage; skipping Sing it, or singing along with no microphone, leaves the Voice Mirror card.
 8. **No microphone** (permission refused, no device, or the listener failed to load): listen-only
    mode, with LESSON.md's "No microphone?" line.
@@ -371,11 +371,11 @@ motion or Pause animations each Merc holds a still frame and skips the reactions
 
 ## Practise link: what exists and what needs engineering
 
-- **Today: Voice Mirror**, `mercurypitch.com/mirror?lesson=03` (`season.ts` already carries it).
-  It counts any octave, and its "hit" band is this lesson's 35 cents (FACTS 41, 51). It is its own
+- **Today: Voice Mirror**, `mercurypitch.com/mirror?lesson=03` (`season.ts` already carries it). It
+  counts any octave, and its "hit" band is this lesson's 35 cents (FACTS 41, 51). It is its own
   document, so a first-time visitor meets no First Light (FACTS 53). The `?lesson=` marker records
   nothing until CURRICULUM § 4 item 6 ships. The card comes in two versions, picked by how the
-  checkpoint ended (Toys, 7), and both link the same address.
+  checkpoint ended (Toys, 7). The rest card, a link until this PR, now links nowhere.
 - **App content, small:**
   - Voice Mirror's first glide said "to your highest" (`src/features/mirror/MirrorApp.tsx:124` at
     `51f1c53de`); "to your highest comfortable note" would match the playbook's range rule

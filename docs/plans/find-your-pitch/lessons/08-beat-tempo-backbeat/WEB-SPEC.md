@@ -406,15 +406,15 @@ pan-y` (`lesson-stage.css:776`), so a swipe still scrolls; every action is a but
   predict as its `plays` (`kit/predict.ts:68-69`). "Play with claps on 1 and 3" is a free play
   (`data-free`, `kit/predict.ts:15-16`): it sets up the question and answers nothing. Only "Play
   with claps on 2 and 4" waits for the choice, and the reveal waits for it (`revealOn`). Until a
-  choice the lock hint reads LESSON.md's "Choose an answer to unlock the play buttons."; after one,
-  `hints.chosen` reads "Locked in. Play with claps on 2 and 4.", in Lesson 2's form; with sound off,
-  `hints.silent` is LESSON.md's line. The play slides the claps one beat along on the compact grid
-  (0.4 s; at once under reduced motion), then Merc sings, the syllables on beat 1 loudest and those
-  on 2 and 4 softest (FACTS 30c, 72), the Mercs hopping on each clap (Mercs). The reveal's "You
-  said" line is the kit's `guess`: "You said: strong beats" or "You said: weak beats", never
-  "right" or "wrong"; as it shows, the numbers 2 and 4 glow gold once and beat 1's number grows
-  (Look), and orange celebrates (Mercs). After it, `hints.again` reads "Play either version
-  again."
+  choice the lock hint reads LESSON.md's "Choose an answer to unlock the play button." (until this
+  PR, "the sound"); after one, `hints.chosen` reads "Locked in. Play with claps on 2 and 4.", in
+  Lesson 2's form; with sound off, `hints.silent` is LESSON.md's line. The play slides the claps one
+  beat along on the compact grid (0.4 s; at once under reduced motion), then Merc sings, the
+  syllables on beat 1 loudest and those on 2 and 4 softest (FACTS 30c, 72), the Mercs hopping on
+  each clap (Mercs). The reveal's "You said" line is the kit's `guess`: "You said: strong beats" or
+  "You said: weak beats", never "right" or "wrong"; as it shows, the numbers 2 and 4 glow gold once
+  and beat 1's number grows (Look), and orange celebrates (Mercs). After it, `hints.again` reads
+  "Play either version again."
 - **Step 5.** Both plays, "Play the march at 90" and "Play the rock beat", unlock after the choice,
   and the reveal waits until both have been heard to their ends (`revealAfter: 'all'`), since it
   compares them; after the first, the hint reads "Now play the other one." (`hints.next`); after the
@@ -459,15 +459,15 @@ DECISIONS 82).
   (FACTS 74), on the beat clock (Audio), and returns the run as the game's `EarPlaying`, its `done`
   and its `stop` (`:52-56`). A missed round plays again with `slower: 1.5`, every onset and length
   half as long again (`slowerBy`, `:112-114`), so at 60 BPM. The answers are three buttons side by
-  side, "2", "3" and "4", each at least 44 px tall, named "Bars of 2" and so on; the number keys 2,
-  3 and 4 answer while the game has focus. The kit's game maps key 1 to the first answer, so here
-  key 2 would answer "3": it takes a key per answer instead, its `keys` option, which this page
-  brought to the kit (`keyAnswer`, `:98-110`; `keys`, `:119-120`; What the kit and the app still
-  need, item 16). Space replays the round while the
-  focus is anywhere in the game but on a button; on a focused button Space and Enter press it, as on
-  any button, and the game's Play button replays the round while it waits for an answer
-  (`:202-207`). The answers use `aria-disabled`, never `disabled`, so a keyboard user's focus stays
-  put, as the kit's game has it (`:25-26`).
+  side, "2", "3" and "4", each at least 44 px tall, named "2: answer bars of 2" and so on (until
+  this PR "Bars of 2", as Step 3's toggles are named); the number keys 2, 3 and 4 answer while the
+  game has focus. The kit's game maps key 1 to the first answer, so here key 2 would answer "3": it
+  takes a key per answer instead, its `keys` option, which this page brought to the kit
+  (`keyAnswer`, `:98-110`; `keys`, `:119-120`; What the kit and the app still need, item 16). Space
+  replays the round while the focus is anywhere in the game but on a button; on a focused button
+  Space and Enter press it, as on any button, and the game's Play button replays the round while it
+  waits for an answer (`:202-207`). The answers use `aria-disabled`, never `disabled`, so a keyboard
+  user's focus stays put, as the kit's game has it (`:25-26`).
 - **Feedback** names the bar and the sound, never the listener, in one template per size, each
   round's `words`: "Bars of 2: the high click came back every other beat, 1 2, 1 2."; "Bars of 3:
   the high click came back every third beat, 1 2 3, 1 2 3."; "Bars of 4: the high click came back

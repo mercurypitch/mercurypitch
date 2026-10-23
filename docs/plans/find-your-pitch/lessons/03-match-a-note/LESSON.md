@@ -287,8 +287,8 @@ an ear problem.
   how many landed within a third of a semitone. Keep the glides comfortable. Sore, hoarse or unwell
   today? Just listen along. Free, no account: **mercurypitch.com/mirror**" Under it: "Ten minutes,
   gently, most days. Missed a day? Just come back."
-- Instead, after "Uncomfortable" or "Just listen today", with no "Ten minutes" line: "Rest today.
-  Voice Mirror will be here when your voice feels comfortable: **mercurypitch.com/mirror**"
+- Instead, after "Uncomfortable" or "Just listen today", headed "Rest today", with no "Ten minutes"
+  line: "Voice Mirror will be here when your voice feels comfortable: **mercurypitch.com/mirror**"
 
 _[Editorial: the card's second drill, Pitch Hold, can't be linked yet. It needs a slug that opens
 one 5-second hold in a fixed 35-cent zone (proposed `/exercises/hold-a-note`, through the planned

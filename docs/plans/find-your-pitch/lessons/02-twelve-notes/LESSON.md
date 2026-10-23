@@ -39,7 +39,7 @@ Blue Merc: "Count the steps and find out."
 hold one more note?
 [ Yes, every gap ] [ No, only some ]
 
-Until a choice: "Choose an answer to unlock the play buttons."
+Until a choice: "Choose an answer to unlock the play button."
 
 (After a choice, the play button unlocks: Play the climb, A3 up to A4, one step at a time, on the
 hero spiral.)
