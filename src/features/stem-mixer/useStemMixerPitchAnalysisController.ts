@@ -9,6 +9,8 @@ import { analyzeVocalSamples, pitchHistoryFromNotes, segmentVocalContour, VOCAL_
 import { midiToNote } from '@/lib/scale-data'
 import type { EditableNote, PitchEditLayer } from './pitch-edit-model'
 import { applyEditLayer, deleteNote, editNote, emptyEditLayer, isEditLayerEmpty, mergeNotes, splitNote, } from './pitch-edit-model'
+import type { StreamedVocalSource } from './streamed-vocal-samples'
+import { canGatherStreamedVocal, gatherStreamedVocal, windowForStep, } from './streamed-vocal-samples'
 import type { PitchNote } from './types'
 
 /** Fields a drag edit may change. */
@@ -17,6 +19,14 @@ type EditPatch = Partial<Pick<EditableNote, 'startBeat' | 'endBeat' | 'midi'>>
 export interface StemMixerPitchAnalysisDeps {
   sessionId?: string
   vocalBuffer: Accessor<AudioBuffer | null>
+  /**
+   * The vocal's stream, where it plays streamed and `vocalBuffer` has no
+   * samples: the analysis then gathers channel 0 from its decoded chunks
+   * (streamed-vocal-samples.ts), so a phone that streams finds the notes too,
+   * unless the song is too long to hold even that way. Absent, or null: there
+   * is only `vocalBuffer`.
+   */
+  vocalStream?: Accessor<StreamedVocalSource | null>
   sampleRate: Accessor<number>
   setPitchHistory: (history: PitchNote[]) => void
   showNotification: (
@@ -35,6 +45,12 @@ export type PitchAnalysisOutcome =
 
 /** What a finished analysis says to the singer who asked for it. */
 const ANALYSIS_COMPLETE = 'Pitch analysis complete'
+
+/**
+ * The share of the progress a streamed vocal's walk takes, in percent: the
+ * decode of the whole song through the stream, before the detector runs.
+ */
+const STREAM_WALK_SHARE = 35
 
 export interface StemMixerPitchAnalysisRunOptions {
   /**
@@ -117,6 +133,11 @@ export interface StemMixerPitchAnalysisController {
 
   isAnalyzing: Accessor<boolean>
   progress: Accessor<number>
+  /**
+   * An analysis can run now: on a decoded vocal, or on a streamed one short
+   * enough to gather. False while the song is still loading.
+   */
+  canAnalyse: Accessor<boolean>
 
   /**
    * One analysis at a time: asked again while one runs, this joins it and
@@ -402,9 +423,18 @@ export const useStemMixerPitchAnalysisController = (
     dragStartLayer = null
   }
 
+  /** The vocal's stream, when it is the one to analyse and can be gathered. */
+  const gatherableStream = (): StreamedVocalSource | null => {
+    const stream = deps.vocalStream?.() ?? null
+    return stream !== null && canGatherStreamedVocal(stream) ? stream : null
+  }
+  const canAnalyse = (): boolean =>
+    deps.vocalBuffer() !== null || gatherableStream() !== null
+
   const analyse = async (quiet: boolean): Promise<PitchAnalysisOutcome> => {
     const buffer = deps.vocalBuffer()
-    if (!buffer) {
+    const stream = buffer === null ? gatherableStream() : null
+    if (!buffer && stream === null) {
       const message = 'No vocal stem loaded'
       if (!quiet) deps.showNotification(message, 'error')
       return { ok: false, message, shown: !quiet }
@@ -414,19 +444,38 @@ export const useStemMixerPitchAnalysisController = (
     setProgress(0)
 
     try {
+      // Decoded: channel 0 as it is. Streamed: channel 0 gathered from the
+      // stream's chunks first, which is most of the wait on a phone, so it
+      // takes the first part of the progress.
+      const vocal =
+        buffer !== null
+          ? {
+              samples: buffer.getChannelData(0),
+              sampleRate: buffer.sampleRate,
+              step: 1,
+            }
+          : await gatherStreamedVocal(stream!, {
+              onProgress: (fraction) =>
+                setProgress(Math.round(fraction * STREAM_WALK_SHARE)),
+            })
+      const from = buffer !== null ? 0 : STREAM_WALK_SHARE
       const { algo, mergedNotes, contour, segmentedNotes } =
         await analyzeVocalSamples(
-          buffer.getChannelData(0),
-          buffer.sampleRate,
+          vocal.samples,
+          vocal.sampleRate,
           {
             algorithm: algorithm(),
-            bufferSize: bufferSize(),
+            // The same span of time at the rate the samples were kept at.
+            bufferSize: windowForStep(bufferSize(), vocal.step),
             sensitivity: sensitivity(),
             minConfidence: minConfidence(),
             minAmplitude: minAmplitude(),
             ...denoiseOptions(),
           },
-          { onProgress: setProgress },
+          {
+            onProgress: (pct) =>
+              setProgress(from + Math.round((pct * (100 - from)) / 100)),
+          },
         )
 
       // Raw (un-cleaned) merged notes for reference.
@@ -600,6 +649,7 @@ export const useStemMixerPitchAnalysisController = (
     setMinAmplitude,
     isAnalyzing,
     progress,
+    canAnalyse,
     runAnalysis,
     loadCachedAnalysis,
   }

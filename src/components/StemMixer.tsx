@@ -597,16 +597,15 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
     playlistId: () =>
       playlist.isPlaylistActive() ? playlist.activePlaylistId() : null,
     melody: () => songMelody(pitchAnalysis.editableNotes(), midiNotes()),
-    // Quiet: find my key reports the outcome itself, as one message.
+    // Quiet: find my key reports the outcome itself, as one message. A
+    // streamed vocal is gathered from its stream first.
     detectMelody: () =>
-      vocalIsStreamed() || analysableVocal() === null
-        ? null
-        : pitchAnalysis.runAnalysis({ quiet: true }),
+      vocalForNotes() ? pitchAnalysis.runAnalysis({ quiet: true }) : null,
     notify: findKeyNotices.notify,
     dismiss: findKeyNotices.dismiss,
-    // Only where the song is decoded: a streamed vocal is never analysed
-    // here, so "still loading" would promise a second press that fails.
-    melodyLoading: () => audio.loading() && !audio.streamsStems,
+    // Decoded or streamed, the melody can be found once the song is in, so
+    // "still loading" promises a second press that works.
+    melodyLoading: () => audio.loading(),
   })
 
   // ── Audio controller ─────────────────────────────────────────
@@ -1526,6 +1525,10 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
     // eslint-disable-next-line solid/reactivity
     sessionId: props.sessionId,
     vocalBuffer: () => analysableVocal(),
+    // A phone streams the song: the analysis then gathers the vocal from its
+    // stream instead (streamed-vocal-samples.ts). The other analyses (onsets,
+    // Whisper) still need `analysableVocal`.
+    vocalStream: () => vocal().stream ?? null,
     sampleRate: () => audio.getAudioCtx()?.sampleRate ?? 44100,
     // The realtime history is kept as heard, so this joins it in that key.
     // Untracked: a key change must not re-send it over a running history.
@@ -1536,6 +1539,9 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
     },
     showNotification,
   })
+
+  /** The pitch analysis can run: on a decoded vocal, or on a streamed one. */
+  const vocalForNotes = (): boolean => pitchAnalysis.canAnalyse()
 
   // ── What the singer sees follows what they hear ────────────────
   const keyView = useStemMixerKeyView({
@@ -2581,13 +2587,15 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
   // Zen note glyphs asked for notes with no analysis present — run the
   // denoised pipeline once; the alignment (and the glyphs) follow reactively.
   //
-  // The stage is handed this only while calling it would start an analysis. A
-  // streamed vocal cannot be analysed on this device (phones stream), nor can
-  // one still loading, and once the analysis has its notes there is nothing
-  // left to ask for: a song with no word segments has no notes to draw, and a
-  // tap would do nothing.
+  // The stage is handed this only while calling it would start an analysis.
+  // A vocal still loading cannot be analysed, nor a streamed one too long to
+  // gather (streamed-vocal-samples.ts); a phone that streams a song of any
+  // usual length now can (owner, 2026-10-23: an imported song never got its
+  // pitch guide on iOS 27, which streams). Once the analysis has its notes
+  // there is nothing left to ask for: a song with no word segments has no
+  // notes to draw, and a tap would do nothing.
   const canFindZenNotes = (): boolean =>
-    analysableVocal() !== null &&
+    vocalForNotes() &&
     pitchAnalysis.offlineSegmentedNotes().length === 0 &&
     pitchAnalysis.offlineMergedNotes().length === 0
   const ensureZenNotes = () => {

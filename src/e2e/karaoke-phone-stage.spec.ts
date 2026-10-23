@@ -14,7 +14,9 @@
 //   - More holds speed and the A/B loop in 44 px targets, refuses B on A
 //     inside the sheet, and the bar draws the loop;
 //   - the key sheet keeps Find my key on screen once it has named the key,
-//     and says its answer inside the sheet, not in a toast over it;
+//     and says its answer inside the sheet, not in a toast over it, on a
+//     phone that streams the song too, which finds the melody from the
+//     stream;
 //   - the mixer tour is not offered on the stage, so its one offer is kept.
 
 import type { Page } from '@playwright/test'
@@ -401,10 +403,9 @@ function toastsOver(page: Page): Promise<number> {
 }
 
 test.describe('the key sheet at 360x780, once Find my key has named the key', () => {
-  // A phone streams the vocal, and a streamed vocal is never analysed on
-  // the phone: there the key is named only for a song with stored notes.
-  // A browser of desktop class at the same width decodes the song whole
-  // and finds its melody, which names the key the way stored notes do. The
+  // A browser of desktop class at a phone's width decodes the song whole and
+  // finds its melody there. A phone streams the song and gathers the vocal
+  // from its stream instead (streamed-vocal-samples.ts), checked below. The
   // sheet is the same sheet either way.
   test.use({ isMobile: false })
   test.beforeEach(({ page }) => openOnPhone(page, PHONES[0]))
@@ -452,13 +453,22 @@ test.describe('the key sheet at 360x780, once Find my key has named the key', ()
 test.describe('the key sheet on a phone that streams the song, 360x780', () => {
   test.beforeEach(({ page }) => openOnPhone(page, PHONES[0]))
 
-  test('says why Find my key cannot find the melody, in the sheet and not over it', async ({
+  // It said the melody "cannot be found on this device" until a streamed
+  // vocal could be analysed: an imported song had no pitch guide and no
+  // Find my key on a phone (owner, mp-v0.8.41 on iOS 27). The sentence now
+  // stays for a vocal too long to gather even averaged, and its unit test
+  // is in useStemMixerKeyController.test.ts.
+  test('finds the melody from the stream, and answers in the sheet and not over it', async ({
     page,
   }) => {
     const sheet = await findMyKey(page)
 
-    await expect(sheet.getByRole('status')).toHaveText(
-      "Find my key needs the song's melody, and it cannot be found on this device. Set the key with \u2212 and + instead.",
+    await expect(sheet.getByRole('status')).toContainText('fits your voice', {
+      timeout: 20_000,
+    })
+    await expect(page.getByTestId('mobile-key-shift')).not.toHaveAttribute(
+      'aria-label',
+      /^Key 0\b/,
     )
     expect(await toastsOver(page)).toBe(0)
   })

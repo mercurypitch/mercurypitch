@@ -5,12 +5,14 @@
 // KaraokeMoreSheet.test.tsx and KaraokeMobileStage.more.test.tsx prove the
 // row follows what the stage is told. What the mixer tells the stage is
 // another matter, and it is where the row was dead: the stage was handed an
-// onEnsureNotes that did nothing on a phone that streams the song (a streamed
-// vocal cannot be analysed on the device, and phones stream), and nothing
+// onEnsureNotes that did nothing on a phone that streams the song, and nothing
 // once the analysis had its notes (a song with no lyrics then has no words to
 // carry them, so the row never changed and a tap did nothing). The row is the
 // stage's "this finds the notes", so the mixer offers it only while asking
-// would start an analysis.
+// would start an analysis. Since 2026-10-23 a phone that streams the song
+// gathers the vocal from its stream (streamed-vocal-samples.ts), so the row
+// and the mic find the notes there too: an imported song had no pitch guide
+// on iOS 27, which streams.
 //
 // So this mounts the mixer whole at phone width, the analysis standing in for
 // the real one so that each way it can end is chosen, and looks for the row
@@ -18,9 +20,8 @@
 // that streams the song and a computer that decodes the whole of it.
 //
 // While the song is still loading there is no vocal to analyse on any device,
-// so the row waits for one. Find my key reads the same vocal: where the song
-// will be decoded it says the song is still loading, and where it streams it
-// gives its plain answer at once, since a second press would fare no better.
+// so the row waits for one. Find my key reads the same vocal, decoded or
+// streamed, so on any device it says the song is still loading.
 
 import { cleanup, fireEvent, render, screen, waitFor, within, } from '@solidjs/testing-library'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
@@ -228,15 +229,30 @@ function foundNotes(): VocalAnalysis {
 }
 
 describe('the notes row, on a phone that streams the song', () => {
-  it('is not offered for a song with no notes: the song cannot be analysed here', async () => {
+  it('is offered for a song with no notes, and a tap finds them in the stream', async () => {
     device.klass = 'mobile'
     const stage = await mountPhone()
-
     const sheet = openMore(stage)
+    const pending = deferred<VocalAnalysis>()
+    pipeline.analyze.mockReturnValueOnce(pending.promise)
 
-    expect(sheet.getByRole('switch', { name: 'Loop A to B' })).toBeTruthy()
-    expect(sheet.queryByRole('switch', { name: NOTES_ROW })).toBeNull()
-    expect(pipeline.analyze).not.toHaveBeenCalled()
+    fireEvent.click(sheet.getByRole('switch', { name: NOTES_ROW }))
+
+    // The stream's thirty seconds, one channel at its own rate, gathered
+    // before the detector runs.
+    await waitFor(() => {
+      expect(pipeline.analyze).toHaveBeenCalledTimes(1)
+    })
+    const [samples, sampleRate, options] = pipeline.analyze.mock.calls[0] as [
+      Float32Array,
+      number,
+      { bufferSize: number },
+    ]
+    expect([samples.length, sampleRate, options.bufferSize]).toEqual([
+      30 * 44100,
+      44100,
+      1024,
+    ])
   })
 })
 
@@ -326,16 +342,16 @@ describe('the mic, which asks for the notes on its own account', () => {
     })
   })
 
-  it('starts nothing on a phone that streams the song, as before', async () => {
+  it('starts the analysis on a phone that streams the song too', async () => {
     device.klass = 'mobile'
+    pipeline.analyze.mockReturnValueOnce(new Promise(() => undefined))
     await mountPhone()
 
     fireEvent.click(screen.getByLabelText('Toggle your microphone'))
 
     await waitFor(() => {
-      expect(toasts.shown.join('\n')).toMatch(/noise cancelling/)
+      expect(pipeline.analyze).toHaveBeenCalledTimes(1)
     })
-    expect(pipeline.analyze).not.toHaveBeenCalled()
   })
 })
 
@@ -408,7 +424,7 @@ describe('while the song is still loading', () => {
     )
   })
 
-  it('has Find my key answer at once on a phone, which streams the song', async () => {
+  it('has Find my key say the song is still loading on a phone too, which streams it', async () => {
     device.klass = 'mobile'
     offerFindMyKey()
     const stage = await mountLoading()
@@ -418,6 +434,6 @@ describe('while the song is still loading', () => {
     expect([
       said.includes('still loading'),
       said.includes('cannot be found on this device'),
-    ]).toEqual([false, true])
+    ]).toEqual([true, false])
   })
 })
