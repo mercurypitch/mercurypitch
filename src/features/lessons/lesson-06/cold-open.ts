@@ -66,7 +66,6 @@ export const STARTS_SAID = {
  */
 const signedHint = (text: string): string => `<span>${signsHtml(text)}</span>`
 
-
 export function initColdOpen(): void {
   const stage = q('#heroStage')
   stillSky(stage)
