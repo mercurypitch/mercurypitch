@@ -129,6 +129,18 @@ describe('upNext', () => {
     // Assert: Lesson 5 is coming later, so nothing is left once 1 to 4 are done
     expect(picks).toEqual([null, 1, 2, 3, 4, null])
   })
+
+  it("never offers Lesson 8 on Lesson 1's page before Lesson 1 is done", () => {
+    // Arrange: the real season, every lesson with a page live, as on dev
+    const season = seasonFor(LESSONS, defaultPageState(true))
+    expect(season.find((L) => L.n === 8)?.page).toBe('/learn/08')
+
+    // Act
+    const next = upNext(season, viewer(1))
+
+    // Assert: Lesson 8 needs Lesson 1 (CURRICULUM § 3.3)
+    expect(next).not.toBe(8)
+  })
 })
 
 describe('a lesson held back (publish.ts)', () => {
