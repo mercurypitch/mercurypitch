@@ -289,16 +289,22 @@ describe('POST /api/mirror/event', () => {
     return { env, inserts, acquisitions, buckets, rateLimitStatements }
   }
 
-  const post = (env: Env, body: unknown, headers: HeadersInit = {}) =>
-    worker.fetch(
-      new Request('https://api.test/api/mirror/event', {
-        method: 'POST',
-        headers,
-        body: JSON.stringify(body),
-      }),
-      env,
-      {} as ExecutionContext,
-    )
+  /** A POST of `body`; `cf` is Cloudflare's request.cf, which a Request
+   *  built here has none of until the test gives it one. */
+  const post = (
+    env: Env,
+    body: unknown,
+    headers: HeadersInit = {},
+    cf?: { country?: string },
+  ) => {
+    const request = new Request('https://api.test/api/mirror/event', {
+      method: 'POST',
+      headers,
+      body: JSON.stringify(body),
+    })
+    if (cf !== undefined) Object.defineProperty(request, 'cf', { value: cf })
+    return worker.fetch(request, env, {} as ExecutionContext)
+  }
 
   /** A POST whose body streams in `chunkBytes` chunks with no
    *  Content-Length, as a chunked upload arrives; `pulls` counts the chunks
@@ -480,6 +486,59 @@ describe('POST /api/mirror/event', () => {
       expect(lessonLimit.keys).toEqual([])
     },
   )
+
+  describe('from the consent regions without a yes (the owner, 23 October 2026)', () => {
+    /** A lesson answer from a reader never asked, as the pages send it. */
+    const NEVER_ASKED = {
+      ...LESSON_ANSWER,
+      metrics: { ...LESSON_ANSWER.metrics, consent: 2 },
+    }
+
+    it.each([
+      ['DE', { country: 'DE' }],
+      ['GB', { country: 'GB' }],
+      ['CH', { country: 'CH' }],
+      ['a request with no cf', undefined],
+    ])(
+      'answers one from %s as a stored answer, and keeps nothing',
+      async (_label, cf) => {
+        const stored = await post(
+          envRecordingInserts(limiter(true)).env,
+          LESSON_ANSWER,
+        )
+        const lessonLimit = limiter(true)
+        const { env, inserts, rateLimitStatements } =
+          envRecordingInserts(lessonLimit)
+
+        const response = await post(env, NEVER_ASKED, {}, cf)
+
+        expect(response.status).toBe(stored.status)
+        expect(await response.json()).toEqual(await stored.json())
+        expect(inserts).toEqual([])
+        expect(rateLimitStatements).toEqual([])
+        expect(lessonLimit.keys).toEqual([])
+      },
+    )
+
+    it('stores one from the US, marked never asked', async () => {
+      const { env, inserts } = envRecordingInserts(limiter(true))
+
+      const response = await post(env, NEVER_ASKED, {}, { country: 'US' })
+
+      expect(response.status).toBe(201)
+      expect(inserts).toHaveLength(1)
+      expect(JSON.parse(String(inserts[0][4]))).toMatchObject({ consent: 2 })
+    })
+
+    it('stores one from Germany once the reader said yes', async () => {
+      const { env, inserts } = envRecordingInserts(limiter(true))
+
+      const response = await post(env, LESSON_ANSWER, {}, { country: 'DE' })
+
+      expect(response.status).toBe(201)
+      expect(inserts).toHaveLength(1)
+    })
+  })
 
   it("keeps no first-touch row for the lesson pages' shared id", async () => {
     const { env, inserts, acquisitions } = envRecordingInserts(limiter(true))
