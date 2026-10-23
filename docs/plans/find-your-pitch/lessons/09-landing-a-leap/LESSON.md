@@ -6,7 +6,7 @@ The web lesson's copy, step by step. Every claim is in [FACTS.md](FACTS.md). Wri
 English (MASTER-PLAN § 12 item 5); the app's screens stay American. Each step names its toy (the
 interactive visual it sits beside); the page spec is [WEB-SPEC.md](WEB-SPEC.md), which also holds
 the rules behind the checkpoint's lines. This is a voice lesson and a text-only package: Lesson 9
-has no film yet, so the page has no Watch section. Each step's heading is orange Merc's question
+has no film yet, so the page has no Watch section. Each step's heading is Tavi's question
 (playbook rule 4). The page opens in Lesson 2's order: the title, the stage, the sound gate, the
 cold open's predict, then the recall (MASTER-PLAN § 4.2 and § 12 item 13). Where this page shares a
 line with Lessons 3, 5, 6 and 7 (the comfort check, "Just listen today", the voice choice, the
@@ -58,12 +58,12 @@ by step, or one leap." (FACTS 1).]_
 
 [ Play Merc's leap ]
 
-(Merc sings do, then leaps up to so, on "ooh": blue Merc from D3 to A3, or orange Merc an octave
+(Merc sings do, then leaps up to so, on "ooh": Merc from D3 to A3, or Tavi an octave
 up if the stored voice is the higher. Beside the bubbles, the ladder chart shows do's band and
 so's, amber, and Merc's leap draws as an arc from one into the other.)
 
-Orange Merc: "Can't I just jump to the top note and hope?"
-Blue Merc: "Let's find something to aim with."
+Tavi: "Can't I just jump to the top note and hope?"
+Merc: "Let's find something to aim with."
 
 **Predict before you listen.** Merc sings do and so again, with one note in between. Which one
 splits the leap most evenly?
@@ -198,7 +198,7 @@ throat specialist). If it's very painful, or breathing or swallowing is hard, ge
 away."
 
 Choose a voice to sing with. If you chose one in an earlier lesson, pick it again:
-[ Lower: sing with blue Merc, around A3 ] [ Higher: sing with orange Merc, around A4 ]
+[ Lower: sing with Merc, around A3 ] [ Higher: sing with Tavi, around A4 ]
 
 (A stored voice shows pressed and can be changed, and the line above reads "Keep the voice you
 chose before, or change it:" instead. With none stored, this choice comes after either answer

@@ -6,7 +6,7 @@ The web lesson's copy, step by step. Every claim is in [FACTS.md](FACTS.md). Wri
 English (MASTER-PLAN § 12 item 5); the app's screens stay American. Each step names its toy (the
 interactive visual it sits beside); the page spec is [WEB-SPEC.md](WEB-SPEC.md), which also holds
 the rules behind the checkpoint's lines. This is a voice lesson and a text-only package: Lesson 11
-has no film yet, so the page has no Watch section. Each step's heading is orange Merc's question
+has no film yet, so the page has no Watch section. Each step's heading is Tavi's question
 (playbook rule 4). The page opens in Lesson 2's order: the title, the stage, the sound gate, the
 cold open's predict, then the recall (MASTER-PLAN § 4.2 and § 12 item 13). **The title is a new
 wording of the hook**, the curiosity plan's own fallback: "Why does your voice sometimes flip as you
@@ -58,21 +58,21 @@ lesson's tease reads "Slide up slowly, and your voice may flip." (FACTS 1).]_
 
 ## Cold open: predict
 
-[ Play orange Merc's siren ]
+[ Play Tavi's siren ]
 
-(Orange Merc hums a slow siren on "ng", up and back, from D4 to B4 in 8.5 seconds. On the way up,
+(Tavi hums a slow siren on "ng", up and back, from D4 to B4 in 8.5 seconds. On the way up,
 the sound changes: Merc's amber line, thick so far, jumps across a grey seam and goes on thin.
 Coming down, it jumps back. The seam is labelled "Merc's model".)
 
-Orange Merc: "My voice just flipped. Did I do it wrong?"
-Blue Merc: "Let's slide again and listen."
+Tavi: "My voice just flipped. Did I do it wrong?"
+Merc: "Let's slide again and listen."
 
 **Predict before you listen.** A flip like that: a mistake, or something every voice can do?
 [ A mistake ] [ Every voice can ]
 
-(Until a choice, the hint reads "Choose an answer to unlock blue Merc's siren." After a choice,
-[ Play blue Merc's siren ] unlocks: the same slow siren, lower, from E3 to C♯4, with its own flip,
-and the hint reads "Locked in. Now play blue Merc's siren." The reveal waits until it has been
+(Until a choice, the hint reads "Choose an answer to unlock Merc's siren." After a choice,
+[ Play Merc's siren ] unlocks: the same slow siren, lower, from E3 to C♯4, with its own flip,
+and the hint reads "Locked in. Now play Merc's siren." The reveal waits until it has been
 heard to its end. With sound off, the hint reads: "Sound is off, so nothing played. Turn sound on
 to hear the siren, then play it again.")
 
@@ -81,7 +81,7 @@ which every voice has. A sudden jump in pitch is the most common sign of that sw
 women's voices, in speech and in song. (Classical singers train to hide it, so "a mistake" was a
 fair guess.)
 
-(Then the seam's label reads "the switch", and orange Merc celebrates once.)
+(Then the seam's label reads "the switch", and Tavi celebrates once.)
 
 ## Recall from Lesson 7
 
@@ -215,7 +215,7 @@ throat specialist). If it's very painful, or breathing or swallowing is hard, ge
 away."
 
 Choose a voice to sing with. If you chose one in an earlier lesson, pick it again:
-[ Lower: sing with blue Merc, around A3 ] [ Higher: sing with orange Merc, around A4 ]
+[ Lower: sing with Merc, around A3 ] [ Higher: sing with Tavi, around A4 ]
 
 (A stored voice shows pressed and can be changed, and the line above reads "Keep the voice you
 chose before, or change it:" instead. With none stored, this choice comes after either answer
@@ -404,7 +404,7 @@ main, so a decision there carries here.
 ### Registers on the page
 
 - The predict asks whether a flip is "a mistake" or "something every voice can do": a question
-  about technique, as orange's "Did I do it wrong?" and the mix-up card are, so it never sets a
+  about technique, as Tavi's "Did I do it wrong?" and the mix-up card are, so it never sets a
   fault against a normal voice, and no line says a flip rules out a voice problem. The page
   teaches a flip on a slow slide as a change of gear, and the comfort check and the doctor lines
   stay for a voice that changes suddenly, hurts or stays hoarse (FACTS 12, 52, 56). Should Sing it

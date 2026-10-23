@@ -32,8 +32,8 @@ lesson is answered in DECISIONS ("Written lesson, review 1 response").
 In the hero, beside the spiral it plays on, as Lesson 1's cold open sits beside its stage: the
 bubbles over the stage, the predict card under it (DECISIONS 80).
 
-Orange Merc: "Seven letters on the way round. Is there a hidden note between every two letters?"
-Blue Merc: "Count the steps and find out."
+Tavi: "Seven letters on the way round. Is there a hidden note between every two letters?"
+Merc: "Count the steps and find out."
 
 **Predict before you listen.** Seven letters leave seven gaps on the way round. Does every gap
 hold one more note?
@@ -195,7 +195,7 @@ _Toy: the semitone ruler with cents._
 
 ## Sing it
 
-Blue Merc holds an A, slides up one semitone, and comes back. Orange Merc sings it an octave up.
+Merc holds an A, slides up one semitone, and comes back. Tavi sings it an octave up.
 
 **Your turn:** play Merc's slide, then do the same on a hum or an "ooh", starting on Merc's A or
 the A an octave up, whichever is comfortable. Keep it quiet and gentle, never push, and stop if
@@ -307,7 +307,7 @@ same as Lesson 1's, so are its words.
 | Watch the episode  | The same lesson, as a film: 7:11, captions on                                                                   | Watch the episode                    |
 | Explorer           | Season 1, fourteen lessons and a trailer: theory and voice, alternating                                         | The season, mapped                   |
 
-The six step headings are orange's questions (playbook rule 4's web column), as the steps above
+The six step headings are Tavi's questions (playbook rule 4's web column), as the steps above
 give them; the section headings stay Lesson 1's labels, a deviation Lesson 1's page shares
 (DECISIONS 86).
 

@@ -64,7 +64,7 @@ line above it, are in LESSON.md ("Section headings").
    (`{ lesson: 7, deck }`, `kit/page-chrome.ts`).
 2. **Hero**: kicker; the hook question as the title; the meta as four chips ("16 minutes", FACTS 4;
    "After Lesson 3: Match a note", a link to `/learn/03`; Sound on; Microphone optional); the
-   promise; the sound gate from LESSON.md in the hero copy; the two Mercs on the floor line either
+   promise; the sound gate from LESSON.md in the hero copy; Merc and Tavi on the floor line either
    side of the range chart in its compact state. As built, the hero holds the cold open (item 4) in
    Lesson 2's order, with the recall after it (CURIOSITY-MOMENTS § 3.1, "Place"), and its chart
    shows the column alone, with no siren still: Merc's siren spans the same 9 semitones as
@@ -308,7 +308,7 @@ States:
 1. **Comfort check**, always first and asked every visit (never stored): Lesson 3's comfort line,
    its list naming all six of REQ-GVC-020's conditions, and its two buttons (FACTS 48, 50), through
    the kit's comfort check (`kit/comfort.ts`).
-2. **Voice choice**, after either comfort answer: Lesson 3's two buttons with the Mercs' stills
+2. **Voice choice**, after either comfort answer: Lesson 3's two buttons with Merc and Tavi's stills
    (`aria-pressed`, at least 44 px), under LESSON.md's line, in two forms: "Keep the voice you chose
    before, or change it:" with a choice stored, and "Choose a voice to sing with. If you chose one
    in an earlier lesson, pick it again:" with none. Read from and written to `fyp-voice` inside
@@ -459,7 +459,7 @@ voice buttons and the four feelings are real buttons of at least 44 px in a keyb
 follows the flow; a button the flow does not offer is absent, not disabled, except Start's wait for
 Merc's siren; Space never starts a take by itself (REQ-GVC-080). Under reduced motion the live line
 draws on a fixed frame that never scrolls, the band appears in place, the ring holds still with the
-word "Listening", and the Mercs skip their reactions (REQ-GVC-083).
+word "Listening", and Merc and Tavi skip their reactions (REQ-GVC-083).
 
 ### 5. Recall and quick check
 
@@ -504,15 +504,15 @@ timbres on Merc's "ooh", "ng" (a 900 Hz lowpass) and a lip trill (a 22 Hz level 
 over a soft band of breath noise). Nothing autoplays, one sound plays at a time (a new tap stops
 the last), nothing plays while a take is open, and the page has no music bed.
 
-## Mercs
+## Merc and Tavi
 
 Lesson 1's setup through the kit (`kit/merc-duo.ts`, `kit/merc-warm.ts`): the app's renderer loaded
 after first paint, one WebGL context per Merc, medium quality on phones, turned towards each other,
 paused off screen, and the still images when WebGL fails or would run on the CPU.
 
 - They live in the hero, and their reactions are the hero pair's: the Merc of the chart's voice
-  `sing`s while the cold open's "Twinkle" sounds (blue for the lower voice, from E3; orange for the
-  higher, from E4), and orange `celebrate`s once after the cold-open reveal (no sparkles), the
+  `sing`s while the cold open's "Twinkle" sounds (Merc for the lower voice, from E3; Tavi for the
+  higher, from E4), and Tavi `celebrate`s once after the cold-open reveal (no sparkles), the
   puzzled guesser who then gets it (playbook rule 15). The same rule picks the singing Merc wherever
   Merc's siren sounds.
 - `merc-duo.ts` has `mercSing`, `mercListen` and `mercCelebrate` (`:164`, `:206`, `:216`), so this
@@ -623,7 +623,7 @@ Lessons 2 to 6 promote into the kit (Toys table). Read again on main at `31b7f53
    worth more than your highest note? A sixteen-minute lesson on gentle sirens, lip trills and “ng”,
    your range and voice types."; canonical and `og:url` `https://mercurypitch.com/learn/07`;
    `og:image` `public/learn/lesson-07-og.jpg`, 1200 x 630, the title card above the column alone,
-   its middle half lit and its ends dimmed, between blue Merc and orange Merc, which answers nothing
+   its middle half lit and its ends dimmed, between Merc and Tavi, which answers nothing
    the predict asks, with alt text naming what it shows.
 3. `kit/range-chart.ts`, new (Toys 1), generic over a window, a column and its lit band, lines,
    bands and range bars, so Lesson 11 (its signature, "the siren's line crossing a shaded seam")
@@ -696,7 +696,7 @@ What the page does where nothing above says:
   your siren: about A3.", and a hum between A3 and B3 gives "about A♯3".
 - **Three takes used**: Again is gone and Start does not come back; Done for today remains, and an
   unsteady third take's line carries no "Try again".
-- **No WebGL, or a slow device**: the Mercs' stills (`kit/merc-warm.ts`).
+- **No WebGL, or a slow device**: Merc and Tavi's stills (`kit/merc-warm.ts`).
 - **Lesson 3 never marked done**: the recall still shows, as a prerequisite's does. Until
   `/learn/03` is live, this page does not publish.
 - **Reduced motion**: Look, Toys 1 and Toys 4 give the end states; nothing moves on its own.

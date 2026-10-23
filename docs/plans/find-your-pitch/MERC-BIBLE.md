@@ -1,7 +1,7 @@
 # Find Your Pitch: the hosts
 
-Blue Merc and orange Merc host every episode and every lesson page. This is their bible: who they
-are, how they look, sound and behave, and how they are produced.
+Merc, the blue one, and Tavi, the orange one, named from Octavia because she sings an octave above
+him, host every episode and every lesson page. Their bible: looks, voices, behaviour, production.
 
 ## 1. Canon
 
@@ -26,26 +26,26 @@ not as footage. Mixing in the others would break continuity (the 3D one even has
 
 ## 2. Roles
 
-|              | Blue Merc                                                                                                                                                 | Orange Merc                                                                                                                                             |
+|              | Merc                                                                                                                                                      | Tavi                                                                                                                                                    |
 | ------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | Job          | Teaches. A kind expert who explains, demonstrates and sings the model note                                                                                | Learns alongside the viewer. A smart friend who voices the intuitive guess and asks why                                                                 |
-| Lines        | Plain words, one idea per sentence, verbs over adjectives (the brand voice)                                                                               | Only deep questions ("why", "how", "what if"), sincere guesses (wrong, or half right), or re-explanations in their own words. No filler ("wow", "cool") |
+| Lines        | Plain words, one idea per sentence, verbs over adjectives (the brand voice)                                                                               | Only deep questions ("why", "how", "what if"), sincere guesses (wrong, or half right), or re-explanations in her own words. No filler ("wow", "cool")   |
 | Musical part | Sings the reference note (lower register in Lesson 1, A3)                                                                                                 | Sings back, often an octave higher (A4), showing that octave matches count                                                                              |
-| Colour       | Signal Blue `#58a6ff` is blue Merc's note in explanatory diagrams; on a pitch canvas his sung model note is the app's amber target band (MASTER-PLAN § 5) | `#ff7448` is orange Merc's note in explanatory diagrams; on a pitch canvas the app's own canvas colours apply (MASTER-PLAN § 5)                         |
+| Colour       | Signal Blue `#58a6ff` is Merc's note in explanatory diagrams; on a pitch canvas his sung model note is the app's amber target band (MASTER-PLAN § 5)      | `#ff7448` is Tavi's note in explanatory diagrams; on a pitch canvas the app's own canvas colours apply (MASTER-PLAN § 5)                                |
 
 The pairing follows the strongest evidence in the research: stating a misconception and refuting
 it beat a clear exposition, whether it was narrated (d = 0.79) or played as a tutor-student
 dialogue (d = 0.83; Muller et al. 2008). The gain is the refutation, not the second character:
-orange is how we voice it, and orange's deep questions (Craig et al. 2006) are what make a
-dialogue pay. Rules: blue never mocks a guess; orange is visibly puzzled, then gets it; neither
+Tavi is how we voice it, and her deep questions (Craig et al. 2006) are what make a
+dialogue pay. Rules: Merc never mocks a guess; Tavi is visibly puzzled, then gets it; neither
 ever calls a singer wrong, bad or failed (the lines are about the sound, never the singer, as the
 app's own Merc lines rule).
 
 ## 3. Looks
 
-- **Blue Merc**: the shipped palette (`src/lib/merc/constants.ts` `PALETTE`): aqua base `#04ecd8`
+- **Merc**: the shipped palette (`src/lib/merc/constants.ts` `PALETTE`): aqua base `#04ecd8`
   through azure and indigo to a violet crown `#be6cf5`, blue bead feet, silver rim.
-- **Orange Merc**: the same body and rig with a warm gradient: gold base `#ffd84d`, orange belly
+- **Tavi**: the same body and rig with a warm gradient: gold base `#ffd84d`, orange belly
   `#ff7448` (the stats site's warm accent), rose crown `#ff86b8`, amber feet. Applied with
   `setLook()` (uniforms only). The shader also hard-codes some cool light: the floor pool, foot
   streaks, landing rings, sound arcs, key light, hot core, eye crescent. For Lesson 1 those are
@@ -55,7 +55,7 @@ app's own Merc lines rule).
 - Both read well on Obsidian `#0d1117` (orange's darkest gradient stop `#d42a5c` 3.9:1, blue's
   `#5133f3` 2.8:1; the bodies are not text).
 - **Bodies are not signals.** The series colour code (MASTER-PLAN § 5) governs marks, labels and
-  glows, not the hosts' bodies: orange Merc's gold base is body colour, never a signal, even though
+  glows, not the hosts' bodies: Tavi's gold base is body colour, never a signal, even though
   gold `#ffd84d` means "the fit" on a diagram. Both bodies are in the palette the colour-blindness
   gate checks (MASTER-PLAN § 5).
 - Framing: `front` for teaching, `hero` for personality, custom views for camera moves; idle Merc
@@ -63,7 +63,7 @@ app's own Merc lines rule).
 
 ## 4. Voices
 
-|                            | Blue Merc                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  | Orange Merc                                                                                                                                                                                                                                                                                                                 |
+|                            | Merc                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       | Tavi                                                                                                                                                                                                                                                                                                                        |
 | -------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | Speaking (final)           | The owner-approved ElevenLabs voice "Merc V1 Gentle Whimsical D2" (`B4fBPRmasEsTgd6YlSok`, `eleven_v3`, chosen 2026-09-20; brief: "soft and androgynous ... a friendly encouraging coach"). Voices Lessons 1 and 2 from October 2026; the owner holds its rights (MASTER-PLAN § 12 item 1)                                                                                                                                                                                                                 | The owner-chosen ElevenLabs voice "Orange Merc" (`p2JfZCXWY245UrEylK7q`, `eleven_v3`, chosen 2026-10-17 from a new Voice Design session), saved in a second workspace of the owner's account, apart from D2. The earlier auditions "Grounded Wry" and "Bright Playful" (`art/glass-adventure/voice/v1`) stay as a reference |
 | Speaking (scratch, drafts) | Local Kokoro-82M (Apache-2.0), voice `am_michael`                                                                                                                                                                                                                                                                                                                                                                                                                                                          | Kokoro `af_heart`                                                                                                                                                                                                                                                                                                           |
@@ -82,9 +82,9 @@ pipeline re-times the whole film from the new recordings automatically.
 
 Mascots act; they don't decorate (Wang et al. 2018; Moreno et al. 2001):
 
-- A Merc is on screen to ask, react, sing or point. During dense diagrams the Mercs leave or sit
+- A Merc is on screen to ask, react, sing or point. During dense diagrams Merc and Tavi leave or sit
   small at the edge, and come back to react.
-- Blue looks at and points (his nub) at the element being explained; orange looks at blue when
+- Merc looks at and points (his nub) at the element being explained; Tavi looks at Merc when
   asking.
 - While a Merc speaks, his mouth follows the line's loudness (`sing` state driven by the speech
   envelope, sound arcs off); while he sings, the arcs show.
@@ -148,7 +148,7 @@ track and item 8 in the Voices track; items 4, 5 and 10 are not scheduled yet.
 | 5   | A screen-projection helper (`screenOf(worldPoint, view, size)`) so graphics land on his nub or feet in any view                                                                                                                                                                                                                                                                      | small    | no                              |
 | 6   | A non-drawing `prepare(t)` so crossing a cue in capture mode skips the throwaway draw                                                                                                                                                                                                                                                                                                | small    | no                              |
 | 7   | A GPU render host (`hyperframes render --browser-gpu`) or a shared Merc frame cache for delivery renders                                                                                                                                                                                                                                                                             | ops      | no                              |
-| 8   | Final sung "ooh" sets for blue and orange to replace the ElevenLabs-derived Echo placeholders: real or licensed recordings (F2 to F5 at least, as the Echo set spans), or the synthesised demo-audio "ooh" (`src/lib/demo-audio.ts`) declared final. Phase 1 Voices track; owner decision 1                                                                                          | external | no                              |
+| 8   | Final sung "ooh" sets for Merc and Tavi to replace the ElevenLabs-derived Echo placeholders: real or licensed recordings (F2 to F5 at least, as the Echo set spans), or the synthesised demo-audio "ooh" (`src/lib/demo-audio.ts`) declared final. Phase 1 Voices track; owner decision 1                                                                                            | external | no                              |
 | 9   | Update `docs/branding/MASCOT.md`                                                                                                                                                                                                                                                                                                                                                     | small    | no                              |
 | 10  | Fix the one-frame black crescent along the crown at the top of a fast stretch (hop take-off, celebrate), seen at medium and high quality in 5 of Lesson 1's 17 passes. The film works round it (`merc-pass.mjs` re-renders a flagged frame at a nudged time); the app shows it on every hop, hidden only by its dark background. Reproduce with `merc/shots/m10-blue.json`, frame 46 | medium   | yes                             |
 

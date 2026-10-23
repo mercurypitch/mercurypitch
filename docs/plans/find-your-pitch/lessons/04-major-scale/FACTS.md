@@ -132,8 +132,8 @@ decimals; `verify.py` printed them.
     limits | `hz` (`src/features/lessons/kit/notes.ts:43`) | by construction; `verify.py`
 
 57. `scale-c` (the hero, step 1, the words strip's "Scale"): C4 to C5 up the major pattern, 0.45 s a note, the last 0.9 s; Play down is the same in reverse; Slow doubles every length | 56 | by construction
-58. `stop-c` and `land-c` (cold open, step 5, quiz question 3): C4, D4, E4, F4, G4, A4, B4 at 0.45 s a note, B4 held 1.2 s, then silence; Land on do plays B4 for 0.45 s, then C5 for 1.2 s | 56 | by construction; the cold open sings them in blue Merc's "ooh"
-59. `stop-d` and `land-d` (cold open, step 5 after a slide): D4, E4, F♯4, G4, A4, B4, C♯5, C♯5 held 1.2 s; Land on do plays C♯5, then D5 | 56 | by construction; the cold open sings them in orange Merc's "ooh", in the same octave as `stop-c`, so the two differ only in where they start
+58. `stop-c` and `land-c` (cold open, step 5, quiz question 3): C4, D4, E4, F4, G4, A4, B4 at 0.45 s a note, B4 held 1.2 s, then silence; Land on do plays B4 for 0.45 s, then C5 for 1.2 s | 56 | by construction; the cold open sings them in Merc's "ooh"
+59. `stop-d` and `land-d` (cold open, step 5 after a slide): D4, E4, F♯4, G4, A4, B4, C♯5, C♯5 held 1.2 s; Land on do plays C♯5, then D5 | 56 | by construction; the cold open sings them in Tavi's "ooh", in the same octave as `stop-c`, so the two differ only in where they start
 60. `white-d` and `major-d` (step 3): D4, E4, F4, G4, A4, B4, C5, D5, and D4, E4, F♯4, G4, A4, B4, C♯5, D5, each at 0.45 s a note, the last 0.9 s | 56, 10, 11 | by construction
 61. The words strip: Tonic plays C4 for 1.0 s; Scale degree plays C4, D4, E4 while "1 2 3" light; Solfège plays C4, D4, E4 in Merc's "ooh" while "do re mi" light | 56 | by construction
 62. Neither recall question plays a sound (Lesson 2's questions 1 and 3 have none) | Lesson 2 LESSON.md, Quick check | read
@@ -146,8 +146,8 @@ decimals; `verify.py` printed them.
   above do, each step one or two semitone rows. It is not a drawing of the app or of any
   instrument. Its keyboard strip is Lesson 1's drawing, every white key the same width, with no
   claim about a real piano.
-- Orange's guess in step 3, the white keys from D, is drawn as the contrast case, dashed in ink-2
-  `#a8b3bf` with a "?" (MASTER-PLAN § 5): it shows orange's belief, not a fact.
+- Tavi's guess in step 3, the white keys from D, is drawn as the contrast case, dashed in ink-2
+  `#a8b3bf` with a "?" (MASTER-PLAN § 5): it shows Tavi's belief, not a fact.
 - The scale guide's rows and Merc's amber path are a house-style drawing in the app's canvas
   colours (target amber `#f59e0b`), labelled as a guide. On the viewer's turn the amber goes and
   the guide is plain chrome, as Lesson 2's is (Lesson 2 DECISIONS 68). Nothing listens, and no
@@ -174,7 +174,7 @@ decimals; `verify.py` printed them.
 - Cuddy and Badertscher (1987), _Perception & Psychophysics_ 41(6), 609–620, on untrained listeners
   and children and the tonal hierarchy: the open PDF returned a bot challenge. Not read, not used.
 - "Most people meet the major scale on C first", or "most beginners think scales start on C": no
-  data. The misconception is voiced only as orange's sincere guess, and the cold-open reveal calls
+  data. The misconception is voiced only as Tavi's sincere guess, and the cold-open reveal calls
   C "a fair guess" only because the scale heard first started on C (58).
 - "The major scale is the most common scale", "bright and happy": the app's own description of the
   major scale says so with no source (`src/lib/scale-data.ts:83`), and mood labels are Lesson 10's

@@ -5,8 +5,8 @@ Status: Awaiting the vocal coach's sign-off before publishing (MASTER-PLAN § 12
 The web lesson's copy, step by step. Every claim is in [FACTS.md](FACTS.md). Written in British
 English (MASTER-PLAN § 12 item 5); the app's screens stay American. Each step names its toy (the
 interactive visual it sits beside); the page spec is [WEB-SPEC.md](WEB-SPEC.md). This is a text-only
-package: Lesson 10 has no film yet, so the page has no Watch section. Each step's heading is orange
-Merc's question (playbook rule 4). The page opens in Lesson 2's order: the hook, the stage, the
+package: Lesson 10 has no film yet, so the page has no Watch section. Each step's heading is Tavi's
+question (playbook rule 4). The page opens in Lesson 2's order: the hook, the stage, the
 sound gate, the cold open's predict, then the recall (CURIOSITY-MOMENTS § 3.1, decided in its § 5,
 item 1, and MASTER-PLAN § 12 item 13). The cold open is the curiosity plan's opening for this
 lesson, its predict included, and the title, which sits right above it, does not answer it (FACTS
@@ -62,7 +62,7 @@ live, so the owner keeps that order (FACTS 7).
 ## Cold open: predict
 
 (In the hero, as on Lesson 2's page: the bubbles over the stage, the hero's own copy of the spiral
-between the two Mercs, and the predict card under it: FACTS 5a, 41. The spiral is seen from above,
+between Merc and Tavi, and the predict card under it: FACTS 5a, 41. The spiral is seen from above,
 so one turn is a ring of twelve, and it holds still; every black key on it is named by its flat
 (FACTS 10). Do, mi and so, C4, E4 and G4, glow and carry their syllables. Nothing marks which of
 them is the chord's third.)
@@ -71,8 +71,8 @@ them is the chord's third.)
 
 (Merc plays C4, E4 and G4 together, and the three beads pulse. This play works before a choice.)
 
-Orange Merc: "If one note moves a semitone, can the whole chord change?"
-Blue Merc: "Choose one, and we'll move it."
+Tavi: "If one note moves a semitone, can the whole chord change?"
+Merc: "Choose one, and we'll move it."
 
 **Predict before you listen.** Do stays home. Which note, moved down a semitone, makes the chord
 minor?
@@ -169,7 +169,7 @@ _Toys: the chord beads with Major · Minor and Slide; the Major or minor? ear ga
 
 ## Step 4 of 5: Is minor the sad one, then?
 
-Orange Merc: "Major sounds happy and minor sounds sad. Isn't that the rule?"
+Tavi: "Major sounds happy and minor sounds sad. Isn't that the rule?"
 
 In listening tests, many Western listeners do lean that way. One open textbook even suggests
 "happy" and "sad" as a way to remember the two sounds. But a third isn't the only thing in the
@@ -249,7 +249,7 @@ nose and throat specialist). If it's very painful, or breathing or swallowing is
 straight away."
 
 Choose a voice to sing with. If you chose one in an earlier lesson, pick it again:
-[ Lower: sing with blue Merc, around A3 ] [ Higher: sing with orange Merc, around A4 ]
+[ Lower: sing with Merc, around A3 ] [ Higher: sing with Tavi, around A4 ]
 
 (A stored voice shows pressed and can be changed, and the line above reads "Keep the voice you
 chose before, or change it:" instead. With none stored, this choice comes after either answer

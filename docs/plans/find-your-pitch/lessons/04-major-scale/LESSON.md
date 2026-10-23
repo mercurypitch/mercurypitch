@@ -29,8 +29,8 @@ the end.
 [ Play from C ] (Merc climbs the major scale from C and stops on ti. Land on do finishes it. The
 small staircase beside the bubbles shows do-re-mi names only: no letters and no keys.)
 
-Orange Merc: "It just hangs there, waiting. Is that because we started on C?"
-Blue Merc: "Start somewhere else and listen."
+Tavi: "It just hangs there, waiting. Is that because we started on C?"
+Merc: "Start somewhere else and listen."
 
 **Predict before you listen.** Merc climbs the same steps from D and stops on ti again. Will it
 still sound unfinished?
@@ -108,7 +108,7 @@ _Toy: the staircase with Group._
 
 ## Step 3 of 5: Start anywhere
 
-Orange Merc: "Same white keys, just starting on D. Surely that's the same scale?"
+Tavi: "Same white keys, just starting on D. Surely that's the same scale?"
 
 **Predict:** start on D and play only white keys, up to the next D. Is it still do-re-mi?
 [ Yes: same keys, same scale ] [ No, it changes ]
@@ -184,8 +184,8 @@ _Toy: the staircase with Stop on ti and Land on do._
 
 ## Sing it
 
-Blue Merc sings do-re-mi-fa-so and back down to do. Then Merc climbs to ti, stops, and after a pause
-lands on do. Orange Merc sings the same an octave up.
+Merc sings do-re-mi-fa-so and back down to do. Then Merc climbs to ti, stops, and after a pause
+lands on do. Tavi sings the same an octave up.
 
 > Sore, hoarse or unwell today? Just listen along.
 

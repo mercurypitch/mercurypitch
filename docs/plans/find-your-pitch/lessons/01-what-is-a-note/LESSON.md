@@ -22,8 +22,8 @@ Each step names its toy (the interactive visual it sits beside); the page spec i
 
 ## Cold open: predict
 
-Orange Merc: "Ha! Same note."
-Blue Merc: "Is it? Mine shook the air 220 times a second. Yours shook it 440."
+Tavi: "Ha! Same note."
+Merc: "Is it? Mine shook the air 220 times a second. Yours shook it 440."
 
 **Predict before you listen.** Two different notes, or the same one?
 [ Different ] [ Same note ]

@@ -6,7 +6,7 @@ The web lesson's copy, step by step. Every claim is in [FACTS.md](FACTS.md). Wri
 English (MASTER-PLAN § 12 item 5); the app's screens stay American. Each step names its toy (the
 interactive visual it sits beside); the page spec is [WEB-SPEC.md](WEB-SPEC.md), which also holds
 the rules behind the checkpoint's lines. This is the second voice lesson and a text-only package:
-there is no film yet. Each step's heading is orange Merc's question (playbook rule 4). Where this
+there is no film yet. Each step's heading is Tavi's question (playbook rule 4). Where this
 page shares a line with Lesson 3 (the comfort check, the doctor lines, the warm-up, the voice
 choice, the four feelings with their gentle and stop lines, the rest card and "Ten minutes, gently,
 most days"), it is Lesson 3's current text, word for word. The page publishes only after
@@ -34,8 +34,8 @@ there. What the vocal coach and the owner decide is listed at the end.
 
 ## Cold open: predict
 
-Orange Merc: "So if I push the air out harder, the note holds steadier?"
-Blue Merc: "Let's listen. Here's one note, sung easily."
+Tavi: "So if I push the air out harder, the note holds steadier?"
+Merc: "Let's listen. Here's one note, sung easily."
 
 (On the stage: Merc's note as an amber band, as in Lesson 3, and under it a strip that grows with
 loudness.)
@@ -118,7 +118,7 @@ themselves, often harder than a quiet note needs. So at first your breathing-in 
 working, holding some of that push back. As the air goes, your belly and rib muscles take over the
 pushing. (If you said push: full lungs already push.)
 
-Orange Merc: "So full lungs push by themselves, and at first I just hold some back."
+Tavi: "So full lungs push by themselves, and at first I just hold some back."
 
 > **Common mix-up:** "Support means pushing the air out hard, or squeezing."
 > **Why it seems right:** singers often talk about support, and it sounds like effort.
@@ -208,7 +208,7 @@ and throat specialist). If it's very painful, or breathing or swallowing is hard
 away."
 
 Choose a voice to sing with. If you chose one in an earlier lesson, pick it again:
-[ Lower: sing with blue Merc, around A3 ] [ Higher: sing with orange Merc, around A4 ]
+[ Lower: sing with Merc, around A3 ] [ Higher: sing with Tavi, around A4 ]
 
 **Warm-up, optional, about a minute.** Three sighs: a quiet "hoo" sliding down, like a relieved
 sigh. Then, if you like, lip trills ("brrr", lips loose, up a little and back), or hum, or sing a

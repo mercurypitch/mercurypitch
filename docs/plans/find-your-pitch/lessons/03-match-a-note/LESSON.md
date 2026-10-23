@@ -6,7 +6,7 @@ The web lesson's copy, step by step. Every claim is in [FACTS.md](FACTS.md). Wri
 English, as the owner decided on 16 October 2026 (MASTER-PLAN § 12 item 5). Each step names its toy
 (the interactive visual it sits beside); the page spec is [WEB-SPEC.md](WEB-SPEC.md), which also
 holds the rules behind the checkpoint's lines. This is the first voice lesson and, for now, a
-text-only package: there is no film yet. Each step's heading is orange Merc's question (playbook
+text-only package: there is no film yet. Each step's heading is Tavi's question (playbook
 rule 4). The page publishes only after Lesson 2's page, `/learn/02`, is live, because its recall
 check links there. What the vocal coach signs off is listed at the end.
 
@@ -60,8 +60,8 @@ page prints "Right." or "Not quite." before each feedback line.
 
 ## Cold open: predict
 
-Orange Merc: "I can't sing."
-Blue Merc: "Lots of people say that. So two researchers tested it."
+Tavi: "I can't sing."
+Merc: "Lots of people say that. So two researchers tested it."
 
 On the stage, two figures: **ASKED 59 %** (of 1,105, said they couldn't copy a tune) and **TESTED
 10–16 %** (a semitone or more off). A semitone is the step from one piano key to the very next.
@@ -157,10 +157,10 @@ _Toy: Match it by ear, a slider note against Merc's note, with Compare._
 
 ## Step 4 of 5: Does it count if I'm an octave away?
 
-**Predict:** blue Merc sings an A3. Orange Merc answers with an A4, an octave higher. Does it count?
+**Predict:** Merc sings an A3. Tavi answers with an A4, an octave higher. Does it count?
 [ Yes, it counts ] [ No, it's a different note ]
 
-(After a choice: Play blue's A3 · Play orange's A4 · Play both.)
+(After a choice: Play Merc's A3 · Play Tavi's A4 · Play both.)
 
 Reveal: It counts: the same letter, twice as fast, one turn up the spiral (Lesson 1). Voice Mirror
 counts it too. (It does sound higher: that's what makes it tricky.)
@@ -320,7 +320,7 @@ the coach reviews Lessons 3 and 5):
   never scored. Merc demonstrates the sigh from E4 down to A3 (lower voice) or E5 down to A4
   (higher), and the slide from A up to E and back; hence "Copy the way Merc's voice slides, not the
   exact notes".
-- The voice choice: "Lower: sing with blue Merc, around A3" or "Higher: sing with orange Merc,
+- The voice choice: "Lower: sing with Merc, around A3" or "Higher: sing with Tavi,
   around A4".
 - The three notes, A, G and B around A3 or A4: Merc's two-second note, up to six seconds to start
   and about three to hold, up to three tries a note, and, after "Easy" or "Workable", one more run
@@ -353,7 +353,7 @@ thing as before, more plainly, except the last, the "close" reading, which also 
   Merc sings each one, then you sing it back."
 - The warm-up's cue, shared with Lessons 5 and 7. Before: "Follow the shape, not Merc's notes."
   After: "Copy the way Merc's voice slides, not the exact notes." It uses no pronoun on purpose,
-  because in the higher voice the singer is orange Merc.
+  because in the higher voice the singer is Tavi.
 - The checkpoint's instruction. Before: "For each note, listen, then sing it back at about speaking
   volume for about three seconds: A, then G a tone below, then B a tone above, up to three tries
   each." After: "For each note, listen, then sing it back for about three seconds, at about

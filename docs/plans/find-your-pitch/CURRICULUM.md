@@ -74,7 +74,7 @@ goes in the thumbnail text, the first line of the description and the cold open 
 
 ### 2.1 Lesson cards
 
-Each card is what a script writer needs before the first draft. "Misconception" is orange Merc's
+Each card is what a script writer needs before the first draft. "Misconception" is Tavi's
 sincere wrong guess (playbook rule 3); "Signature" is the episode's persistent object and its
 transformation (rule 6); "Checkpoint" is the sung moment (rule 16); "Practise" is the app link
 (see § 4 for what exists and what needs engineering).
@@ -85,7 +85,7 @@ waits on a person's listen to the new voices; the web lesson is built at `/learn
 - Objectives: say what makes a note higher (faster vibration, more hertz) and that loudness is
   something else; recognise that doubling the frequency gives the same note an octave up; read
   octave numbers (A3, A4, C4) and know they change at C.
-- Misconception: "A high note is just a loud note" (refuted). Orange's cold-open guess, "Same
+- Misconception: "A high note is just a loud note" (refuted). Tavi's cold-open guess, "Same
   note", is half right, so the reveal settles it rather than refuting it: "Higher, yes. But
   together, they melt into one note."
 - Signature: the pitch line winds into a spiral; the spiral unrolls into the keyboard.
@@ -130,7 +130,7 @@ on a person's listen and watch; the web lesson is built at `/learn/02`, from its
   matching is a hear, try, compare, adjust loop; know an octave match counts; get a first success
   at a slow pace in a comfortable range; read "in tune" in cents: how far the voice sits from the
   target note, and the target band it should land in (T04's second half; Lesson 2 teaches the cent).
-- Misconception: "Some people are just tone deaf." (Orange voices "I can't sing" once; blue
+- Misconception: "Some people are just tone deaf." (Tavi voices "I can't sing" once; Merc
   answers with the evidence: congenital amusia is about 1.5 % of people; poor-pitch singing is
   mostly a mapping skill between ear and voice, and it improves with practice.)
 - Signature: the singer's line chasing Merc's target band, with the gap shrinking in cents.

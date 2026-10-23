@@ -98,16 +98,16 @@ section's heading, and the line above it, are in LESSON.md ("Section headings").
    four chips ("16 minutes", FACTS 5; "After Lesson 11: Registers and the break", a link to
    `/learn/11`, wholly the link, as Lesson 2's `a.chip.chip-link` is, `learn/02.html:347-352`, so
    that it stays as a plain chip where Lesson 11 is not live; Sound on; Microphone optional); the
-   promise; and the sound gate from LESSON.md. Beside it, the stage: the bubbles, orange's "A
-   different vowel must be a slightly different note, surely?" and blue's "Watch the line, and
-   listen.", and the two Mercs on the floor line either side of the vowel figure in its compact
+   promise; and the sound gate from LESSON.md. Beside it, the stage: the bubbles, Tavi's "A
+   different vowel must be a slightly different note, surely?" and Merc's "Watch the line, and
+   listen.", and Merc and Tavi on the floor line either side of the vowel figure in its compact
    state, whose still before any play is ‘ee’ on A3: Merc's level line, the 18 columns lit as the
    model gives them, the 1st and 10th capped. Under the stage, the line that glosses the strip,
    then the cold open's predict card (Toys 2). On a phone (390 x 844) the title, the opening's
    first control, Play Merc's ‘ee’, and the two choices belong on the first screen, and on a tablet
    in landscape (1024 x 640) the stage and the choices too (CURIOSITY-MOMENTS § 3.1, "Above the
    fold", `docs/plans/find-your-pitch/CURIOSITY-MOMENTS.md:300-302`). Of the plan's levers, the
-   recall's place is already used, since it follows the predict; the others are the Mercs' size
+   recall's place is already used, since it follows the predict; the others are Merc and Tavi's size
    (`--merc`, `kit/lesson-stage.css:193`) and the hook's length, and this hook, at 97 characters,
    is a long one: on a phone the strip's gloss may go under the stage's fold before the choices
    do, and the gloss is the line to move below the choices if End to end 5 reports them off the
@@ -212,7 +212,7 @@ the strip draws is the one `verify13.py` asserted (FACTS 40 to 42).
   the figure, as Lesson 3's band chart sets its own (`lesson-03/lesson-03.css:177-182`), because 12
   segments need it: at 240 px the strip is 122 px, a segment every 10.2 px (8.2 lit). A stage still
   over budget scrolls inside itself, by 60 px at most (PRODUCTION-PIPELINE § 5).
-- **The voice.** The steps sing in blue Merc's lower voice, A3, whatever `fyp-voice` holds, since
+- **The voice.** The steps sing in Merc's lower voice, A3, whatever `fyp-voice` holds, since
   Step 5 compares the two voices and the step copy names the lower voice's bars (FACTS 48); Step 5
   and free play switch it for the visit and store nothing. The cold open is the lower voice too.
 - **Changing vowel.** When a play moves from one vowel to the next, the columns follow the sound:
@@ -265,8 +265,8 @@ the strip draws is the one `verify13.py` asserted (FACTS 40 to 42).
   five: "The five vowels on A 3. The line stayed level. The tallest bar was the 1st, then the 2nd,
   the 3rd, the 2nd and the 1st."
 - **Voices** (Step 5): **Lower** and **Higher**, a voice switch (`aria-pressed`, Lower pressed at
-  first), each playing ‘ah’ in its voice, 2.0 s: the lower voice on A3 with blue Merc singing, its
-  18 columns capped on the 3rd and 5th; the higher on A4 with orange Merc, its 9 columns twice as
+  first), each playing ‘ah’ in its voice, 2.0 s: the lower voice on A3 with Merc singing, its
+  18 columns capped on the 3rd and 5th; the higher on A4 with Tavi, its 9 columns twice as
   far apart and its tallest the 2nd, 880 Hz, with no second labelled peak (FACTS 42). Each voice's
   columns are drawn against its own loudest bar (FACTS 41). The plot's band follows the voice's
   note. The live region: "Lower voice, ‘ah’ on A 3: 18 bars, 220 hertz apart. The tallest is the
@@ -335,7 +335,7 @@ that file's unless it says otherwise.
   (`lesson-02/cold-open.ts:34-37`), and the reveal's text is LESSON.md's for either choice. It
   answers "Their heights" first; its "(The peaks did move along the strip, so ‘their places’ was a
   fair guess.)" consoles the other choice with what is true of it (FACTS 13). `onReveal`: the live
-  region speaks the reveal's peaks, and orange celebrates once (Mercs).
+  region speaks the reveal's peaks, and Tavi celebrates once (Merc and Tavi).
 - States, and what a play that runs to its end does in each (`heard`, `kit/predict.ts:160-174`):
   - **Waiting for a choice.** The lock hint shows. Play ‘ee’, then ‘ah’ is disabled, and the kit
     ignores it before a choice too (`:165`); Play Merc's ‘ee’ works. Played with sound off, Merc's
@@ -442,7 +442,7 @@ States:
    "Sore, hoarse or unwell today? Just listen along.", Lesson 3's list naming all six of
    REQ-GVC-020's conditions, and its two buttons (FACTS 45, 46), through the kit's `mountComfort`
    (`kit/comfort.ts:146-154`).
-2. **Voice choice**, after either comfort answer: Lesson 3's two buttons with the Mercs' stills
+2. **Voice choice**, after either comfort answer: Lesson 3's two buttons with Merc and Tavi's stills
    (`aria-pressed`, at least 44 px), under LESSON.md's line in its two forms, "Choose a voice to
    sing with. If you chose one in an earlier lesson, pick it again:" with none stored and "Keep the
    voice you chose before, or change it:" with one (FACTS 48). It reads and writes `fyp-voice`
@@ -475,18 +475,18 @@ States:
    the end of Merc's demonstration, with "Breathe in, low and quiet"; nothing counts down. Sing: the
    status reads "Sing ‘ee’, ‘eh’, ‘ah’, ‘oh’ and ‘oo’, two seconds each, moving on as each name
    lights up."; the ring turns from the first voiced frame and closes over the ten seconds; the
-   violet line draws on the fixed frame, folded into Merc's octave; both Mercs `listen`; the strip
-   stays dark. The take opens 0.4 s after Merc's demonstration ends, during the Breathe ring, with
-   every sound held off while it is open (`Sound.hush`, `kit/sound.ts:538-541`). It waits up to
-   6 s from opening for the first voiced frame, then runs exactly 10 s from it, timed on the
-   frames' own clock; it ends sooner only if the voice stops for more than 1 s, so a breath of under
-   a second between vowels does not end it, though its silence counts as time out of the band
+   violet line draws on the fixed frame, folded into Merc's octave; Merc and Tavi both `listen`; the
+   strip stays dark. The take opens 0.4 s after Merc's demonstration ends, during the Breathe ring,
+   with every sound held off while it is open (`Sound.hush`, `kit/sound.ts:538-541`). It waits up to
+   6 s from opening for the first voiced frame, then runs exactly 10 s from it, timed on the frames'
+   own clock; it ends sooner only if the voice stops for more than 1 s, so a breath of under a
+   second between vowels does not end it, though its silence counts as time out of the band
    (`HOLD_WAIT_SEC`, `HOLD_QUIET_SEC`, `kit/hold-take.ts:39-44`, and the reader's rules, `:1-31`).
-   The names row lights ‘ee’ as the take opens and ‘eh’, ‘ah’, ‘oh’ and ‘oo’ at 2, 4, 6 and 8 s
-   from the first voiced frame, on the frames' clock (the listener's `onFrame` gives the first
-   voiced time, `kit/listen.ts:89-110`): a pace, never a check, and nothing on the page compares
-   the voice with the vowel lit. Nothing on the page extends the take. The microphone is released
-   when it ends.
+   The names row lights ‘ee’ as the take opens and ‘eh’, ‘ah’, ‘oh’ and ‘oo’ at 2, 4, 6 and 8 s from
+   the first voiced frame, on the frames' clock (the listener's `onFrame` gives the first voiced
+   time, `kit/listen.ts:89-110`): a pace, never a check, and nothing on the page compares the voice
+   with the vowel lit. Nothing on the page extends the take. The microphone is released when it
+   ends.
 8. **Reading**: one line from the kit's hold reader (`readHold`, `kit/hold-take.ts:265`), unchanged:
    the time in Merc's band out of the ten seconds, rounded down to 0.1 s, and when the line
    settled, or the stop line for a hold cut short, with the octave line within 50 cents
@@ -576,7 +576,7 @@ Lower, Higher, Done for today, the comfort and voice buttons and the four feelin
 of at least 44 px in a keyboard order that follows the flow; a button the flow does not offer is
 absent, not disabled, except the feelings once answered, as the kit has them; Space never starts a
 take by itself (REQ-GVC-080). Under reduced motion the ring shows the phase and the seconds as words
-and a number, the names row changes without a transition, and the Mercs skip their reactions
+and a number, the names row changes without a transition, and Merc and Tavi skip their reactions
 (REQ-GVC-083).
 
 ### 7. Free play
@@ -675,16 +675,16 @@ exception: the kit ignores a tap on either while one runs (Toys 2). While a take
 on the page is silent, as the kit's hush makes it. A live line is written to its region only when
 its text changes, so a screen reader does not hear the same line twice.
 
-## Mercs
+## Merc and Tavi
 
 Lesson 1's setup through the kit (`kit/merc-duo.ts`, `kit/merc-warm.ts`): the app's renderer loaded
 after first paint, one WebGL context per Merc, medium quality on phones, turned towards each other,
 paused off screen, and the still images when WebGL fails or would run on the CPU.
 
-- They live in the hero, and their reactions are the hero pair's: blue sings while the cold open's
-  vowels sound, and orange celebrates once at the cold open's reveal (no sparkles), the puzzled one
+- They live in the hero, and their reactions are the hero pair's: Merc sings while the cold open's
+  vowels sound, and Tavi celebrates once at the cold open's reveal (no sparkles), the puzzled one
   who then gets it, whichever choice was made (playbook rule 15; FACTS 14). Elsewhere the Merc of
-  the figure's voice sings while Merc's vowels sound (blue for the lower voice, orange for the
+  the figure's voice sings while Merc's vowels sound (Merc for the lower voice, Tavi for the
   higher).
 - `kit/merc-duo.ts` has `mercSing`, `mercListen` and `mercCelebrate` (`:164`, `:206`, `:216`): Merc
   sings his vowels, and both listen during a take. In Sing it Merc celebrates at most once, only
@@ -819,8 +819,8 @@ and the four-words strip in the kit.
    - `og:image` and `twitter:image`, `https://mercurypitch.com/learn/lesson-13-og.jpg` (item 3),
      with `og:image:width` 1200 and `og:image:height` 630, and as `og:image:alt` and
      `twitter:image:alt` "The title card: Find Your Pitch, Lesson 13, Resonance and vowels, above an
-     amber pitch line held level over a strip of bars, two of them marked, between blue Merc and
-     orange Merc." (`learn/02.html:34-43`, `:53-60`; `lesson-pages.test.ts:189-209`);
+     amber pitch line held level over a strip of bars, two of them marked, between Merc and
+     Tavi." (`learn/02.html:34-43`, `:53-60`; `lesson-pages.test.ts:189-209`);
    - the Article node, in the head's first `application/ld+json` script and as a single object,
      since the test reads `alternativeHeadline` there and checks it only when present
      (`lesson-copy.test.ts:338-346`, `:356`), and `lesson-pages.test.ts` asks for the Article
@@ -847,7 +847,7 @@ and the four-words strip in the kit.
    x 630, a baseline JPEG as Lessons 3, 4 and 5's cards are (`public/learn/lesson-04-og.jpg`), drawn
    with the page's own kit so that it looks like the page it opens: the title, Lesson 13 and the
    wordmark over the vowel figure's compact still, Merc's amber line level over ‘ee’'s strip with
-   its two peaks capped, between blue Merc and orange Merc. It shows no ‘ah’, no second strip, no
+   its two peaks capped, between Merc and Tavi. It shows no ‘ah’, no second strip, no
    arrow and no word but the title's, so it says nothing of what the peaks do and does not answer
    the cold open's predict. Lesson 6's page test holds its card the same way
    (`lesson-06/page.test.ts:126-141`); the shared test makes a page test of this page's own
@@ -1011,7 +1011,7 @@ What the page does where nothing above says:
 - **Move at its ends**: Lower is absent at four semitones down and Higher at four up, as on Lesson
   5; the note, the strip and the hold follow the moved note, and the strip's columns follow its
   harmonics (22 at F3, 7 at C♯5).
-- **No WebGL, or a slow device**: the Mercs' stills (`kit/merc-warm.ts`).
+- **No WebGL, or a slow device**: Merc and Tavi's stills (`kit/merc-warm.ts`).
 - **Lesson 11 never marked done**: the recall still shows, as a prerequisite's does.
 - **Lesson 13 published while Lesson 11 is held back**: nothing stops it, since the publish order is
   a rule for whoever uses the console (the intro), so the page follows the state it is served with.

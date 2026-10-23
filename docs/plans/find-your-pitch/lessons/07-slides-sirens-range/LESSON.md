@@ -6,7 +6,7 @@ The web lesson's copy, step by step. Every claim is in [FACTS.md](FACTS.md). Wri
 English (MASTER-PLAN § 12 item 5); the app's screens stay American. Each step names its toy (the
 interactive visual it sits beside); the page spec is [WEB-SPEC.md](WEB-SPEC.md), which also holds
 the rules behind the checkpoint's lines. This is a voice lesson and a text-only package: Lesson 7
-has no film yet, so the page has no Watch section. Each step's heading is orange Merc's question
+has no film yet, so the page has no Watch section. Each step's heading is Tavi's question
 (playbook rule 4). Where this page shares a line with Lessons 3 and 5 (the care line and the
 comfort line, the comfort check, "Just listen today", the voice choice, the warm-up, the stop line,
 the four feelings with their gentle and enough-for-today lines, the doctor lines, the rest card and
@@ -55,12 +55,12 @@ link there. What the vocal coach signs off is listed at the end.
 
 ## Cold open: predict
 
-Orange Merc: "If I could reach more notes, would I be a better singer?"
-Blue Merc: "Let's see how many a song asks for."
+Tavi: "If I could reach more notes, would I be a better singer?"
+Merc: "Let's see how many a song asks for."
 
 [ Play "Twinkle" ]
 
-(Merc sings the first two lines of "Twinkle, Twinkle" on "ooh": blue Merc from E3, or orange Merc
+(Merc sings the first two lines of "Twinkle, Twinkle" on "ooh": Merc from E3, or Tavi
 an octave up if the voice stored from Lesson 3 is the higher. Beside the bubbles, the range chart: a
 column two octaves tall, its middle half lit and its ends dimmed. Play "Twinkle" works before a
 choice, and draws no notes: the tune's notes stay hidden until the reveal.)
@@ -215,7 +215,7 @@ throat specialist). If it's very painful, or breathing or swallowing is hard, ge
 away."
 
 Choose a voice to sing with. If you chose one in an earlier lesson, pick it again:
-[ Lower: sing with blue Merc, around A3 ] [ Higher: sing with orange Merc, around A4 ]
+[ Lower: sing with Merc, around A3 ] [ Higher: sing with Tavi, around A4 ]
 
 (A stored voice shows pressed and can be changed, and the line above reads "Keep the voice you
 chose before, or change it:" instead. With none stored, this choice comes after either answer

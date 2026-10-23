@@ -7,7 +7,7 @@
 1. A musical note's pitch comes from a vibration; faster vibration is heard as a higher pitch | ANSI/ASA S1.1 (pitch is the attribute of auditory sensation ordered from low to high, depending chiefly on frequency); Rossing, _The Science of Sound_, 3rd ed., ch. 1 and 7 | textbook definition
 2. Frequency is measured in hertz; 1 Hz = one cycle (swing) per second | BIPM, _The International System of Units_ (SI Brochure, 9th ed.), Table 4: hertz, Hz = s^-1 | SI definition
 3. Loudness depends mainly on amplitude (how far it swings); pitch mainly on frequency (how fast) | Rossing, ch. 6-7; Moore, _An Introduction to the Psychology of Hearing_, ch. 4 and 6 | textbook
-4. People, especially children, often confuse "high" with "loud" | Costa-Giomi and Descombes (1996), Journal of Research in Music Education 44(3), doi:10.2307/3345594; Flowers and Costa-Giomi (1991) | used only as Orange's question, not stated as a statistic
+4. People, especially children, often confuse "high" with "loud" | Costa-Giomi and Descombes (1996), Journal of Research in Music Education 44(3), doi:10.2307/3345594; Flowers and Costa-Giomi (1991) | used only as Tavi's question, not stated as a statistic
 5. Sound travels from the vibrating source through the air as a pressure wave | Rossing, ch. 2 | textbook
 6. The vocal folds vibrate to make the voiced sound of singing | Titze, _Principles of Voice Production_ (1994), ch. 1 | textbook
 7. An octave is a 2:1 frequency ratio: 440 Hz is exactly twice 220 Hz | ANSI/ASA S1.1 (octave: interval with frequency ratio 2) | arithmetic

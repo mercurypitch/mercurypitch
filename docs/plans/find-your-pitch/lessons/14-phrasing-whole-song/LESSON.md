@@ -6,7 +6,7 @@ The web lesson's copy, step by step. Every claim is in [FACTS.md](FACTS.md). Wri
 English (MASTER-PLAN § 12 item 5); the app's screens stay American. Each step names its toy (the
 interactive visual it sits beside); the page spec is [WEB-SPEC.md](WEB-SPEC.md), which also holds
 the rules behind the checkpoint's lines. This is a voice lesson and a text-only package: Lesson 14
-has no film yet, so the page has no Watch section. Each step's heading is orange Merc's question
+has no film yet, so the page has no Watch section. Each step's heading is Tavi's question
 (playbook rule 4). The page opens in Lesson 2's order: the title, the stage, the sound gate, the
 cold open's predict, then the recall (MASTER-PLAN § 4.2 and § 12 item 13). It is the season's last
 lesson, so the Wrap ends on the kit's card that closes the season, in its words as they stand, where
@@ -70,12 +70,12 @@ start to finish.", hints at the predict's answer, and is kept as the alternative
 [ Play take 1 ]
 
 (Merc sings the song's first phrase, "Twinkle, twinkle, little star", on "ooh", with its words under
-the bands: blue Merc from D3, or orange Merc an octave up if the stored voice is the higher. Beside
+the bands: Merc from D3, or Tavi an octave up if the stored voice is the higher. Beside
 the bubbles, the song line shows the phrase's seven notes as amber bands, Merc's line through each,
 and a breath mark lights where take 1 breathes, between "lit-tle" and "star".)
 
-Orange Merc: "If every note is in tune, isn't the song finished?"
-Blue Merc: "Listen to it twice."
+Tavi: "If every note is in tune, isn't the song finished?"
+Merc: "Listen to it twice."
 
 **Predict before you listen.** Merc sings it again, and this time "star" swells: soft, louder, soft.
 As it gets louder, what will its line do?
@@ -216,7 +216,7 @@ throat specialist). If it's very painful, or breathing or swallowing is hard, ge
 away."
 
 Choose a voice to sing with. If you chose one in an earlier lesson, pick it again:
-[ Lower: sing with blue Merc, around A3 ] [ Higher: sing with orange Merc, around A4 ]
+[ Lower: sing with Merc, around A3 ] [ Higher: sing with Tavi, around A4 ]
 
 (A stored voice shows pressed and can be changed, and the line above reads "Keep the voice you chose
 before, or change it:" instead. With none stored, this choice comes after either answer above and

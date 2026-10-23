@@ -54,7 +54,7 @@ order since 20 October 2026, MASTER-PLAN § 12 item 13). The practice link sits 
 as the anatomy has it; the page has two mix-up cards, one per concept (playbook rule 3); and there
 is no series blueprint section (it is the team's, in the Content Studio), so the masthead's anchors
 are Lesson, Watch and Explorer. Each section's heading, and the line above it, are in LESSON.md
-("Section headings"); the step headings are orange's questions (DECISIONS 86).
+("Section headings"); the step headings are Tavi's questions (DECISIONS 86).
 
 1. **Masthead**: Lesson 1's (wordmark, "Season 1 · Lesson 02", anchors Lesson, Watch, Explorer, the
    Sound toggle off by default, the Pause animations toggle with its reduced-motion lock).
@@ -62,23 +62,23 @@ are Lesson, Watch and Explorer. Each section's heading, and the line above it, a
    (10 minutes; "After Lesson 1: What is a note?", the prerequisite chip, a link to `/learn/01`;
    Sound on); the promise; the sound gate from LESSON.md, in the hero copy as Lesson 1's is. The
    stage holds the hero spiral (Toys, 1), the lit A3 to A4 turn with its five dim beads, between
-   the two Mercs on the floor line, with orange's guess ("Is there a hidden note between every two
-   letters?") and blue's reply in speech bubbles over it, as Lesson 1's bubbles sit over its stage.
+   Merc and Tavi on the floor line, with Tavi's guess ("Is there a hidden note between every two
+   letters?") and Merc's reply in speech bubbles over it, as Lesson 1's bubbles sit over its stage.
    Under the stage is the cold open's predict card (Toys, 7): two choices (every gap holds a note,
-   or only some), the lock hint, and Play the climb, which unlocks on a choice and plays on the
-   hero spiral, lighting each bead as it sounds and counting the steps; after the climb, the reveal
-   from LESSON.md (twelve steps, not fourteen). It leaves which gaps and why to steps 3 and 4, so
-   step 3's predict is not given away. The Mercs react here (Mercs, below). On phones the hero
-   stacks as Lesson 1's does (kicker, title, chips, stage, sound gate, predict card, promise;
-   `kit/lesson-stage.css:354-397`), so Play the climb sits right under the spiral it lights.
-   There the spiral takes the stage's full width above the floor line, at least 250 px tall, and
-   the Mercs stand smaller either side of its base: at Lesson 1's phone size, `min(39vw, 160px)`
-   each (`kit/lesson-stage.css:439`), two Mercs leave too little room between them for a spiral.
+   or only some), the lock hint, and Play the climb, which unlocks on a choice and plays on the hero
+   spiral, lighting each bead as it sounds and counting the steps; after the climb, the reveal from
+   LESSON.md (twelve steps, not fourteen). It leaves which gaps and why to steps 3 and 4, so step
+   3's predict is not given away. Merc and Tavi react here (Merc and Tavi, below). On phones the
+   hero stacks as Lesson 1's does (kicker, title, chips, stage, sound gate, predict card, promise;
+   `kit/lesson-stage.css:354-397`), so Play the climb sits right under the spiral it lights. There
+   the spiral takes the stage's full width above the floor line, at least 250 px tall, and Merc and
+   Tavi stand smaller either side of its base: at Lesson 1's phone size, `min(39vw, 160px)` each
+   (`kit/lesson-stage.css:439`), Merc and Tavi leave too little room between them for a spiral.
 3. **Recall from Lesson 1**: two questions, straight after the hero (see Toys, 6).
 4. **Four words you'll meet**: semitone, tone, sharp and flat, cent, each with its one-line
    definition and a play button (A3 to A♯3; A3 to B3; C4 to C♯4; the 100-cent glide).
 5. **The steps**: Lesson 1's sticky stage and step deck ("N of 6", Previous and Next, the stage
-   beside the text on desktop and above it on phones). Each step has its heading, orange's question
+   beside the text on desktop and above it on phones). Each step has its heading, Tavi's question
    (LESSON.md), its text, one "Try:", one "Notice:" and its toy; on phones, steps 3 to 5 use the
    stage in Toys 1, "On phones" (DECISIONS 83):
    1. "What's the very next note after A?": the spiral (Toys, 1).
@@ -332,7 +332,7 @@ vertical (pitch is height).
   the app's sharp spelling, and a bar from -50 to +50 cents that flips to the next note at 50 cents
   (FACTS 24, 30). The monitor always uses sharps, whatever the toggle says, because the app does,
   and its marker is drawn in ink at every reading, as the film draws it: the app's green means in
-  tune, which is Lesson 3's idea, and its blue is blue Merc's note (FACTS 30; DECISIONS 28).
+  tune, which is Lesson 3's idea, and its blue is Merc's note (FACTS 30; DECISIONS 28).
 - **One semitone** zooms the ruler to A3 to A♯3 with a tick every 10 cents. **Glide** plays the
   100-cent glide (FACTS 25) and moves the marker with it (under reduced motion the readout counts
   while the marker stays put).
@@ -389,7 +389,7 @@ vertical (pitch is height).
   chrome line, the film's plain guide. While a slide plays, the path lights in the app's target
   amber (`--amber`), the model a singer follows (MASTER-PLAN § 5), in step with the slide, and when
   the slide ends it goes back to its chrome rest; meanwhile the ring shows the still of the Merc
-  singing it, blue for A3 and orange for A4, as Lesson 1's ring does. Amber shows only while a
+  singing it, Merc for A3 and Tavi for A4, as Lesson 1's ring does. Amber shows only while a
   slide plays (DECISIONS 79).
 - **Start the guide** is enabled once either slide has played (hear it first: playbook rule 16). It
   is the viewer's turn, so nothing of the app's drawing shows, as in the film from "Now you"
@@ -440,15 +440,15 @@ card 1 (FACTS 46); Play E to F, after step 3's reveal and in step 5's predict (F
 C♯, D, then C to D, in step 4 (FACTS 48); Play both ways; the slides; and Play the two steps.
 Nothing autoplays. The page has no music bed.
 
-## Mercs
+## Merc and Tavi
 
 Lesson 1's setup: the app's own renderer (`src/lib/merc/renderer.ts`) through the kit
-(`kit/merc-duo.ts`), loaded after first paint, orange with the warm look and warm light
+(`kit/merc-duo.ts`), loaded after first paint, Tavi with the warm look and warm light
 (`kit/merc-warm.ts`), one WebGL context per Merc, `medium` quality on phones, turned towards each
 other, paused off screen; a still image if WebGL fails, or if WebGL2 would run on the CPU (Lesson 1
-WEB-SPEC, Mercs). They live in the hero, beside the spiral the cold open plays on, and their
-reactions are the hero's: blue `sing` while A3 plays and orange `sing` while A4 plays (the climb's
-first and last notes), and orange `celebrate` once after the cold-open reveal (no sparkles). The
+WEB-SPEC, Merc and Tavi). They live in the hero, beside the spiral the cold open plays on, and their
+reactions are the hero's: Merc `sing` while A3 plays and Tavi `sing` while A4 plays (the climb's
+first and last notes), and Tavi `celebrate` once after the cold-open reveal (no sparkles). The
 slides play in Sing it, far below the hero, where the ring shows a still of the Merc singing, so
 the live pair never needs `ride` (`merc-duo.ts` has `sing` and `celebrate` only). Under
 `prefers-reduced-motion` or Pause animations each Merc holds a still frame and skips the reactions;

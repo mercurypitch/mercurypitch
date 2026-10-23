@@ -19,12 +19,12 @@ The MercuryPitch "listening room", as in the film and the stats site (dev.stats.
   `#161b22`, hairlines `rgba(195,204,214,.14)`, ink `#e6edf3`, ink-2 `#a8b3bf`. The faint
   five-line staff texture as the page ground (repeating gradient, 3 % chrome), three soft glows.
 - Colour code (the series' own, for explanatory diagrams: MASTER-PLAN § 5): blue `#58a6ff` = blue
-  Merc's note; orange `#ff7448` = orange Merc's note; gold `#ffd84d` = the fit, and nothing else
+  Merc's note; orange `#ff7448` = Tavi's note; gold `#ffd84d` = the fit, and nothing else
   (right answers in the quiz get a check icon and the ink colour, not gold); violet = the contrast
   note, drawn as a dashed wave or bead in the darker `#8957e5` (L\* 49, so it separates from blue's
   L\* 67 for protan and deutan viewers; 3.7:1 on the panels), with its text labels in `#bc8cff`
   for text contrast above 4.5:1; chrome `#c3ccd6` = any other note. The signal colours govern
-  marks, labels and glows, not the Mercs' bodies: orange Merc's gold base is body colour, never a
+  marks, labels and glows, not Merc and Tavi's bodies: Tavi's gold base is body colour, never a
   signal. Pitch-canvas scenes (the app's pitch line) take the app's canvas set instead; this page
   has none.
 - Type (Google Fonts): Instrument Serif (italic for the big ideas and the hook question), Outfit
@@ -36,11 +36,11 @@ The MercuryPitch "listening room", as in the film and the stats site (dev.stats.
   Every section is visible at rest (never `opacity: 0` waiting for an observer). Three things move
   on their own: the two Merc idle loops, the staff vibration behind the hero and the spiral's
   drift. Under `prefers-reduced-motion` all three stop, always: the setting wins over the
-  masthead's toggle and over any stored choice (the Mercs hold a still frame: see Mercs below).
-  Every transition, the unroll included, lands in its final state with no travel; what the viewer
-  starts (a pluck, a tone, the hum-along ring) still plays, without travel. For everyone else, the
-  masthead's **Pause animations** toggle stops the same three (WCAG 2.2.2: motion that starts by
-  itself, lasts over 5 s and sits beside content needs a pause control).
+  masthead's toggle and over any stored choice (Merc and Tavi hold a still frame: see Merc and Tavi
+  below). Every transition, the unroll included, lands in its final state with no travel; what the
+  viewer starts (a pluck, a tone, the hum-along ring) still plays, without travel. For everyone
+  else, the masthead's **Pause animations** toggle stops the same three (WCAG 2.2.2: motion that
+  starts by itself, lasts over 5 s and sits beside content needs a pause control).
 
 ## Sections
 
@@ -79,12 +79,12 @@ in LESSON.md has none. The recall check (item 4) starts with Lesson 2.
 
 2. **Hero, the cold open**: kicker; the hook question as the title (serif italic, large, balanced);
    LESSON.md's meta as three chips (10 minutes, No theory needed, Sound on) and its one-line
-   promise; the two Mercs live (blue left, orange right, about 260 px on desktop, 160 px on phones)
+   promise; Merc and Tavi live (Merc left, Tavi right, about 260 px on desktop, 160 px on phones)
    on a reflective floor line with the living staff vibrating behind (still under reduced motion
    or with Pause animations on); between them a short pitch rail with the two beads (A at 220, A
-   at 440). The **predict widget**: orange's guess and blue's reply from LESSON.md in speech
+   at 440). The **predict widget**: Tavi's guess and Merc's reply from LESSON.md in speech
    bubbles, then "Two different notes, or the same one?" with two choices;
-   choosing unlocks Play 220 Hz (blue sings), Play 440 Hz (orange sings), Play both; after Play
+   choosing unlocks Play 220 Hz (Merc sings), Play 440 Hz (Tavi sings), Play both; after Play
    both, the reveal from LESSON.md ("One after the other, 440 sounds higher. Played together, they
    melt into one sound..."), which never tells either choice it was wrong.
 3. **Three words you'll meet**: pitch, hertz, octave, each with a one-line definition and a play
@@ -193,19 +193,19 @@ element's volume around the seek, so it does not click (iOS ignores element volu
 The proof preview on the artifact host used HLS (`video/lesson-01.m3u8` plus segments) with hls.js,
 because the artifact host caps a file at 15 MB.
 
-## Mercs
+## Merc and Tavi
 
-On the public page the Mercs are the app's own renderer (`src/lib/merc/renderer.ts`), loaded as
-its own chunk after first paint so the page reads and plays before it arrives: blue as shipped,
-orange with the warm look and the warm light (`src/features/lessons/kit/merc-warm.ts`: a gradient
+On the public page Merc and Tavi are the app's own renderer (`src/lib/merc/renderer.ts`), loaded as
+its own chunk after first paint so the page reads and plays before it arrives: Merc as shipped,
+Tavi with the warm look and the warm light (`src/features/lessons/kit/merc-warm.ts`: a gradient
 through `setLook`, and the shader's cool light constants swapped for amber through the renderer's
 `fragmentPatch`, so the approved shader text never changes). (The proof preview loaded the film's
 bundles, `merc-blue.js` and `merc-orange.js`, built by the film's `tools/build-merc.mjs` with the
 same swaps.) Live mode: `mount(el, { transparent: true, quality: 'medium', size, view: 'front',
-state: 'idle' })`, orange with `m.setLook(WARM_LOOK)`; turn them toward each other
+state: 'idle' })`, Tavi with `m.setLook(WARM_LOOK)`; turn them toward each other
 with `setPoseBias({ yaw: +-0.32, lookX: +-0.35 })`. While a tone plays, `setState('sing')` and
 `setVoice({ voiced: true, cents: 0, level: 0.75, steady: 0.95, midi: 57 })`; after, back to
-`idle` with `setVoice({ voiced: false, ... })`; on the reveal, orange `celebrate` for 1.6 s. One
+`idle` with `setVoice({ voiced: false, ... })`; on the reveal, Tavi `celebrate` for 1.6 s. One
 WebGL context per Merc; pause them (`setPaused(true)`) when the hero is off screen. Under
 `prefers-reduced-motion` (always) or while Pause animations is on, each Merc holds a still frame
 (`setPaused(true)` once its first frame has drawn) and skips the sing and celebrate reactions; the
@@ -213,8 +213,8 @@ play buttons and the reveal carry the moment alone. (The bundle's `setStill` is 
 calms only the `hum` and `ride` states, not `idle`.) If WebGL fails (the mount throws), show the
 still images (`merc-blue.png`, `merc-orange.png`). Show them too, without loading the renderer,
 when WebGL2 would run on the CPU: the browser reports a major performance caveat, or the renderer
-names itself as SwiftShader, llvmpipe, softpipe or the Basic Render Driver. Two Mercs drawn there
-held the main thread for about 11 s after load, and the page under them stopped answering.
+names itself as SwiftShader, llvmpipe, softpipe or the Basic Render Driver. Merc and Tavi drawn
+there held the main thread for about 11 s after load, and the page under them stopped answering.
 
 ## Contract (the proof preview on its preview host)
 

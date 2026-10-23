@@ -37,9 +37,9 @@ labels, and gold `#ffd84d` twice only, for the fit: the gauge's "what the note n
 "together" start's tick.
 
 Only the two Merc idle loops move on their own. Everything else moves because the viewer started
-it. Under `prefers-reduced-motion` the Mercs hold a still frame, every transition lands in its end
-state, no chart scrolls, and what the viewer starts still sounds. For everyone else the masthead's
-Pause animations toggle stops the Merc loops (WCAG 2.2.2).
+it. Under `prefers-reduced-motion` Merc and Tavi hold a still frame, every transition lands in its
+end state, no chart scrolls, and what the viewer starts still sounds. For everyone else the
+masthead's Pause animations toggle stops the Merc loops (WCAG 2.2.2).
 
 ## Sections
 
@@ -51,7 +51,7 @@ above it, are in LESSON.md ("Section headings").
 1. **Masthead**: Lesson 1's, with "Season 1 · Lesson 05" and the anchors Lesson, Sing and Explorer.
 2. **Hero**: kicker, title, LESSON.md's meta as chips ("17 minutes", FACTS 2; "After Lesson 2:
    Twelve notes" and "After Lesson 3: Match a note", the prerequisite chips, links to `/learn/02`
-   and `/learn/03`; Sound on; Microphone optional), the promise, and the two Mercs either side of a
+   and `/learn/03`; Sound on; Microphone optional), the promise, and Merc and Tavi either side of a
    still of the hold demo (Toys, 5): a violet line settling into Merc's band, the signature.
 3. **Cold open: predict**: the bubbles, the two takes, the predict and the reveal (Toys, 1).
 4. **Recall from Lesson 3**, a section of its own straight after the cold open, as on Lesson 2's
@@ -62,7 +62,7 @@ above it, are in LESSON.md ("Section headings").
    (Toys, 4); Support has no button.
 6. **The steps**: Lesson 1's sticky stage and step deck (`kit/step-deck.ts`, "N of 5"), each step
    with its heading, text, "Try:", "Notice:" and toy: 1, Push (Toys, 2); 2, the breath gauge, the
-   second predict, orange Merc's line after its reveal (a bubble with orange's still, as the cold
+   second predict, Tavi's line after its reveal (a bubble with Tavi's still, as the cold
    open's bubbles have) and the mix-up card (Toys, 3); 3, the breath figure, the care line and the
    comfort line, and the Go deeper drawer (Toys, 3 and 8); 4, three starts (Toys, 4); 5, the hold
    demo (Toys, 5).
@@ -88,7 +88,7 @@ questions take about 4 of them. Steps 1 and 5 sit inside § 4.2's 50 to 120 word
 and 89). Three run longer, for these reasons:
 
 - **Step 2, about 234 words.** Its own text is 62 words; the rest is the lesson's second predict
-  and its reveal (with orange Merc's one-line re-explanation, about 92 words) and the mix-up card
+  and its reveal (with Tavi's one-line re-explanation, about 92 words) and the mix-up card
   (about 80), which sits in the step whose toy refutes it, as in Lessons 2 to 4.
 - **Step 3, about 235 words.** Its text, Try and Notice come to about 98 words; it also carries the
   care line and the comfort line, which must come before Step 4's first sung "hoo" (FACTS 48), and
@@ -116,7 +116,7 @@ and 89). Three run longer, for these reasons:
   level). Two takes in the kit's "ooh", drawn as violet lines that belong to no Merc (FACTS 72):
   **Play: sung easily** is live from the start (sound before the predict); **Play: pushing
   harder** unlocks after a choice.
-- The predict widget: orange's bubble and blue's reply, then two choices. The reveal appears after
+- The predict widget: Tavi's bubble and Merc's reply, then two choices. The reveal appears after
   the pushed take has sounded (with sound off it waits, and the hint says so: Lesson 1's rule that
   the reveal describes what was heard), then the small print and the kind line. It never calls a
   choice wrong.
@@ -222,8 +222,8 @@ States:
    nothing listens; LESSON.md's rest line and the doctor lines show (REQ-GVC-021; FACTS 51); and
    the Wrap shows the rest card.
 2. **Voice choice**, if none is stored, before the warm-up so that its demonstrations are in the
-   chosen voice, as in Lesson 3: Lesson 3's two buttons, "Lower: sing with blue Merc, around A3"
-   and "Higher: sing with orange Merc, around A4" (`aria-pressed`, at least 44 px), read from and
+   chosen voice, as in Lesson 3: Lesson 3's two buttons, "Lower: sing with Merc, around A3"
+   and "Higher: sing with Tavi, around A4" (`aria-pressed`, at least 44 px), read from and
    written to `fyp-voice`, the key Lesson 3's page writes and later voice lessons share (Lesson 3
    WEB-SPEC, Toys 5 and Contract; FACTS 5). Its reading and writing move into the kit as
    `kit/voice-choice.ts` if Lesson 3's page has not moved them, with the same key; there is no
@@ -241,8 +241,8 @@ States:
    Sing**. Listen: Merc's note, 2.0 s, the singing Merc in `sing`. Breathe: the ring breathes once
    over 2 s from the end of Merc's note, with "Breathe in, low and quiet"; nothing counts down.
    Sing: the ring turns, with "Sing, and hold the note until the ring closes", and closes over the
-   hold; the violet line draws on a fixed 10-second frame; both Mercs `listen`. The take opens
-   0.4 s after Merc's note ends, during the Breathe ring, so a voice that starts as the breath
+   hold; the violet line draws on a fixed 10-second frame; Merc and Tavi both `listen`. The take
+   opens 0.4 s after Merc's note ends, during the Breathe ring, so a voice that starts as the breath
    turns is caught and nobody sits holding a breath for a cue (FACTS 56, 65). It waits up to 6 s
    from opening for the first voiced frame, then runs exactly 10 s from it, whatever happens;
    nothing on the page extends it. The microphone is released when the take ends.
@@ -347,7 +347,7 @@ Lower, Higher, Hold for 15 seconds, Again, Done for today, the comfort buttons a
 the four feelings are real buttons of at least 44 px in a keyboard order that follows the flow; a
 button the flow does not offer is absent, not disabled; Space never starts a take by itself
 (REQ-GVC-080). Under reduced motion the ring shows the phase and the seconds as words and a number,
-and the Mercs skip their reactions (REQ-GVC-083).
+and Merc and Tavi skip their reactions (REQ-GVC-083).
 
 Tests:
 
@@ -418,15 +418,15 @@ hook's takes and the hold demo (Lesson 2's spec asks for pitch contours; this pa
 Push's Hold the note stops itself after 20 s. Nothing autoplays, there is no music bed, and nothing
 plays while a take is open.
 
-## Mercs
+## Merc and Tavi
 
 Lesson 1's setup (`kit/merc-duo.ts`, `kit/merc-warm.ts`): the app's renderer, loaded after first
 paint, one WebGL context each, stills when WebGL fails or would run on the CPU. Reactions: both
-`listen` to the cold open's takes; blue `sing`s the note for the lower voice and orange for the
+`listen` to the cold open's takes; Merc `sing`s the note for the lower voice and Tavi for the
 higher, while the other `listen`s; both `listen` during a hold; the singing Merc `celebrate`s once,
 with no sparkles, only after an Easy or Workable answer for a take in the band for at least 80 % of
 its length (Toys, 6), never after Effortful or Uncomfortable, and never because a hold was longer.
-Orange's line in Step 2 is a bubble with orange's still, as the cold open's bubbles are. Under
+Tavi's line in Step 2 is a bubble with Tavi's still, as the cold open's bubbles are. Under
 reduced motion or Pause animations each Merc holds a still frame and skips the reactions.
 
 ## Practice links: what exists and what needs engineering

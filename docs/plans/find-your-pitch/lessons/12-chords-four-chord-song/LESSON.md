@@ -5,8 +5,8 @@ Status: Awaiting the vocal coach's sign-off before publishing (MASTER-PLAN § 12
 The web lesson's copy, step by step. Every claim is in [FACTS.md](FACTS.md). Written in British
 English (MASTER-PLAN § 12 item 5); the app's screens stay American. Each step names its toy (the
 interactive visual it sits beside); the page spec is [WEB-SPEC.md](WEB-SPEC.md). This is a text-only
-package: Lesson 12 has no film yet, so the page has no Watch section. Each step's heading is orange
-Merc's question (playbook rule 4). The page opens in Lesson 2's order: the hook, the stage, the
+package: Lesson 12 has no film yet, so the page has no Watch section. Each step's heading is Tavi's
+question (playbook rule 4). The page opens in Lesson 2's order: the hook, the stage, the
 sound gate, the cold open's predict, then the recall (CURIOSITY-MOMENTS § 3.1, decided in its § 5,
 item 1, and MASTER-PLAN § 12 item 13).
 
@@ -27,7 +27,7 @@ this page's own. "Just listen today" names the loop's roots where Lesson 3's say
 notes", as Lesson 10's names its chords. The Easy and Workable line is new. The predict's sound-off
 hint reads "Sound is off: nothing played.", where Lesson 10's reads "Sound is off, so nothing
 played.", because this page keeps "so" for the syllable. For the same reason the reveal makes the
-other choice a fair guess with "which made", not the series' "so", orange Merc's line drops the
+other choice a fair guess with "which made", not the series' "so", Tavi's line drops the
 plan's "so" (FACTS 39), and the practice card says "set your range there first" without Lesson 9's
 "so". Two other "so"s a learner may read are shared lines, kept word for word: "Thanks for saying
 so." and the kit's own notice on every lesson page when a play is tapped with sound off, "Sound is
@@ -85,7 +85,7 @@ the owner keeps that order (FACTS 7).
 ## Cold open: predict
 
 (In the hero, as on Lesson 2's page: the bubbles over the stage, the hero's own copy of the spiral
-between the two Mercs, and the predict card under it: FACTS 5a, 39. The spiral is seen from above,
+between Merc and Tavi, and the predict card under it: FACTS 5a, 39. The spiral is seen from above,
 which makes one turn a ring of twelve, and it holds still. Four rooms are drawn on it, faint: the
 triangles joining the three notes of each of the four chords. Nothing marks a tune.)
 
@@ -94,8 +94,8 @@ triangles joining the three notes of each of the four chords. Nothing marks a tu
 (Merc plays the four chords, two seconds each, and each room lights while its chord sounds. This
 play works before a choice.)
 
-Orange Merc: "Same four chords. Isn't it the same song, then?"
-Blue Merc: "Listen to both, and watch where each tune lands."
+Tavi: "Same four chords. Isn't it the same song, then?"
+Merc: "Listen to both, and watch where each tune lands."
 
 **Predict before you listen.** Each chord lights a room on the ring, with its three notes as the
 corners. As Merc sings a tune over the chords, how many of its notes land on a corner of the lit
@@ -215,7 +215,7 @@ _Toy: the ring of rooms, with Play the loop and Play the roots._
 
 ## Step 5 of 5: If the chords match, is it the same song?
 
-Orange Merc: "Same chords, same song. Isn't that how it works?"
+Tavi: "Same chords, same song. Isn't that how it works?"
 
 Back to the cold open's two tunes, over the same four chords. Tune 1 walks down, mostly by steps,
 in even notes. Tune 2 leaps between corners in a long-short-long rhythm. Both land mostly on
@@ -252,7 +252,7 @@ doctor (a GP or an ear, nose and throat specialist). If it's very painful, or br
 swallowing is hard, get help straight away."
 
 Choose a voice to sing with. If you chose one in an earlier lesson, pick it again:
-[ Lower: sing with blue Merc, around A3 ] [ Higher: sing with orange Merc, around A4 ]
+[ Lower: sing with Merc, around A3 ] [ Higher: sing with Tavi, around A4 ]
 
 (A stored voice shows pressed and can be changed, and the line above reads "Keep the voice you
 chose before, or change it:" instead. With none stored, this choice comes after either answer
