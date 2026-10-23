@@ -2,7 +2,7 @@
 import type { WebGLRendererParameters } from 'three'
 import { beforeEach, expect, it, vi } from 'vitest'
 import { getGraphicsCanvasDiagnostic } from './graphics-diagnostics'
-import { createGraphicsRenderer } from './graphics-renderer'
+import { constructGraphicsScene, createGraphicsRenderer, } from './graphics-renderer'
 
 const state = vi.hoisted(() => ({
   fail: true,
@@ -39,6 +39,25 @@ vi.mock('three', () => ({
 beforeEach(() => {
   vi.clearAllMocks()
   state.fail = true
+})
+
+it('preserves construction failure and reverses cleanup even when diagnostic reporting throws', () => {
+  const cleaned: string[] = []
+  const failure = new Error('original scene construction failure')
+  expect(() =>
+    constructGraphicsScene((registerCleanup, registerFailureReporter) => {
+      registerCleanup(() => cleaned.push('first'))
+      registerCleanup(() => {
+        cleaned.push('second')
+        throw new Error('cleanup failure')
+      })
+      registerFailureReporter(() => {
+        throw new Error('diagnostic failure')
+      })
+      throw failure
+    }),
+  ).toThrow(failure)
+  expect(cleaned).toEqual(['second', 'first'])
 })
 
 it.each(['gallery', 'museum-map', 'singing-current', 'loading-merc'] as const)(

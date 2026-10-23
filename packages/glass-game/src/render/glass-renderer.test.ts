@@ -32,6 +32,9 @@ const state = vi.hoisted(() => {
     listeners: new Map<string, EventListener>(),
     loseContext: false,
     assetFailure: null as Error | null,
+    assetWait: null as Promise<void> | null,
+    mercWait: null as Promise<void> | null,
+    environmentWait: null as Promise<void> | null,
     assetCompletions: [] as string[],
     assetInstalled: null as ((taskId: string) => void) | null,
     assetLoadOptions: null as {
@@ -41,6 +44,7 @@ const state = vi.hoisted(() => {
       onDecodedImage?: (image: TexImageSource) => void
     } | null,
     museumFailure: null as Error | null,
+    rendererFailure: null as Error | null,
     museumOwnershipFixture: false,
     museumDispose: vi.fn(),
     museumLibraryDispose: vi.fn(),
@@ -52,6 +56,7 @@ const state = vi.hoisted(() => {
     environmentLoadFailure: null as Error | null,
     rendererDispose: vi.fn(),
     forceContextLoss: vi.fn(),
+    canvas: undefined as unknown as HTMLCanvasElement,
     canvasRemove: vi.fn(),
     mercDispose: vi.fn(),
     mercUpdate: vi.fn(),
@@ -72,7 +77,7 @@ const state = vi.hoisted(() => {
 })
 
 function rendererCanvas() {
-  return {
+  const canvas = {
     style: {},
     setAttribute: vi.fn(),
     remove: state.canvasRemove,
@@ -80,6 +85,8 @@ function rendererCanvas() {
       state.listeners.set(name, listener),
     removeEventListener: (name: string) => state.listeners.delete(name),
   }
+  state.canvas = canvas as unknown as HTMLCanvasElement
+  return canvas
 }
 
 vi.mock('three', async (original) => ({
@@ -87,6 +94,7 @@ vi.mock('three', async (original) => ({
   WebGLRenderer: class {
     domElement: ReturnType<typeof rendererCanvas>
     constructor(parameters: ThreeTypes.WebGLRendererParameters) {
+      if (state.rendererFailure) throw state.rendererFailure
       this.domElement = parameters.canvas as unknown as ReturnType<
         typeof rendererCanvas
       >
@@ -148,7 +156,7 @@ vi.mock('./environment', () => ({
   createMuseumEnvironment: (renderer: { render: (scene: symbol) => void }) => ({
     load: () => {
       if (state.environmentLoadFailure) throw state.environmentLoadFailure
-      return Promise.resolve()
+      return state.environmentWait ?? Promise.resolve()
     },
     capture: () => {
       renderer.render(state.reflectionProbeRender)
@@ -165,11 +173,13 @@ vi.mock('./asset-kit', () => ({
     state.assetLoadOptions = args[9] as typeof state.assetLoadOptions
     state.assetCompletions.forEach((taskId) => state.assetInstalled?.(taskId))
     if (state.assetFailure) throw state.assetFailure
+    if (state.assetWait) await state.assetWait
   },
 }))
 vi.mock('./materials', () => ({ createMuseumMaterials: () => ({}) }))
 vi.mock('./merc', () => ({
   loadAdventureMerc: async () => {
+    if (state.mercWait) await state.mercWait
     const root = new Group()
     root.name = 'test-adventure-merc'
     return { root, update: state.mercUpdate, dispose: state.mercDispose }
@@ -260,6 +270,7 @@ vi.mock('./resonance-portal', () => ({
 }))
 import { createMuseumAssetLoadPlan } from './asset-load-plan'
 import { createGlassRenderer } from './glass-renderer'
+import { getActiveGraphicsCanvasCounts, getGraphicsCanvasDiagnostic, } from './graphics-diagnostics'
 
 function browserFixture() {
   vi.stubGlobal('document', {
@@ -283,13 +294,19 @@ function browserFixture() {
 
 afterEach(() => {
   vi.unstubAllGlobals()
+  vi.unstubAllEnvs()
+  vi.restoreAllMocks()
   state.listeners.clear()
   state.loseContext = false
   state.assetFailure = null
+  state.assetWait = null
+  state.mercWait = null
+  state.environmentWait = null
   state.assetCompletions = []
   state.assetInstalled = null
   state.assetLoadOptions = null
   state.museumFailure = null
+  state.rendererFailure = null
   state.museumOwnershipFixture = false
   state.museumDispose.mockReset()
   state.museumLibraryDispose.mockReset()
@@ -329,6 +346,134 @@ afterEach(() => {
   state.cullCloudwayPlatforms.mockReturnValue(false)
   state.runtimeRoomId = undefined
   state.visibleRoomIds.clear()
+})
+
+it.each(['assets', 'merc', 'environment'] as const)(
+  'does not compile, capture or warm up a retired generation while %s is pending',
+  async (pending) => {
+    vi.stubEnv('VITE_PORTABLE_CONSOLE', 'true')
+    const info = vi.spyOn(console, 'info').mockImplementation(() => {})
+    let release!: () => void
+    const waiting = new Promise<void>((resolve) => {
+      release = resolve
+    })
+    if (pending === 'assets') state.assetWait = waiting
+    if (pending === 'merc') state.mercWait = waiting
+    if (pending === 'environment') state.environmentWait = waiting
+    const updates = vi.fn()
+    const baseline = getActiveGraphicsCanvasCounts()
+    const renderer = createGlassRenderer(
+      browserFixture(),
+      GLASSWORKS,
+      (id) => id,
+      {
+        onLoadingProgress: updates,
+        onContextLost: () => renderer.dispose(),
+      },
+    )
+    const loss = state.listeners.get('webglcontextlost')!
+    loss(new Event('webglcontextlost'))
+    loss(new Event('webglcontextlost'))
+    const progressCount = updates.mock.calls.length
+    release()
+    await renderer.ready
+    expect(state.compile).not.toHaveBeenCalled()
+    expect(state.shadowNeedsUpdateAtProbeRender).toEqual([])
+    expect(state.warmupRenders).toBe(0)
+    expect(updates).toHaveBeenCalledTimes(progressCount)
+    expect(state.mercDispose).toHaveBeenCalledOnce()
+    expect(getGraphicsCanvasDiagnostic(state.canvas)?.lifecycle).toBe(
+      'disposed',
+    )
+    expect(getActiveGraphicsCanvasCounts()).toEqual(baseline)
+    expect(info).toHaveBeenCalledOnce()
+    expect(info.mock.calls[0]?.[1]).toMatchObject({
+      outcome: 'failure',
+      substage: 'assets',
+      activeGalleryCount: baseline.gallery + 1,
+      canvasInstance: expect.any(Number),
+      pendingUnitIds: expect.arrayContaining(['merc:model', 'gpu:programs']),
+    })
+    info.mockRestore()
+  },
+)
+
+it('reports successful readiness only after the first verified frame, then reports a later loss once', async () => {
+  vi.stubEnv('VITE_PORTABLE_CONSOLE', 'true')
+  const info = vi.spyOn(console, 'info').mockImplementation(() => {})
+  const renderer = createGlassRenderer(browserFixture(), GLASSWORKS, (id) => id)
+  await renderer.ready
+  expect(info).not.toHaveBeenCalled()
+  renderer.render(createGlassGame(GLASSWORKS).snapshot(), 0.016)
+  renderer.render(createGlassGame(GLASSWORKS).snapshot(), 0.016)
+  expect(info).toHaveBeenCalledOnce()
+  expect(info.mock.calls[0]?.[1]).toMatchObject({
+    outcome: 'ready',
+    substage: 'ready',
+  })
+  const loss = state.listeners.get('webglcontextlost')!
+  loss(new Event('webglcontextlost'))
+  loss(new Event('webglcontextlost'))
+  expect(info).toHaveBeenCalledTimes(2)
+  expect(info.mock.calls[1]?.[1]).toMatchObject({
+    outcome: 'failure',
+    substage: 'ready',
+  })
+  renderer.dispose()
+  info.mockRestore()
+})
+
+it('balances constructor failure ownership and reports its initialization stage once', () => {
+  vi.stubEnv('VITE_PORTABLE_CONSOLE', 'true')
+  const info = vi.spyOn(console, 'info').mockImplementation(() => {})
+  const baseline = getActiveGraphicsCanvasCounts()
+  state.rendererFailure = new Error('WebGL creation failed')
+  expect(() =>
+    createGlassRenderer(browserFixture(), GLASSWORKS, (id) => id),
+  ).toThrow('WebGL creation failed')
+  expect(getActiveGraphicsCanvasCounts()).toEqual(baseline)
+  expect(getGraphicsCanvasDiagnostic(state.canvas)?.lifecycle).toBe('disposed')
+  expect(info).toHaveBeenCalledOnce()
+  expect(info.mock.calls[0]?.[1]).toMatchObject({
+    outcome: 'failure',
+    substage: 'initializing',
+    activeGalleryCount: baseline.gallery,
+  })
+})
+
+it('does not emit gallery snapshots outside a portable build', async () => {
+  vi.stubEnv('VITE_PORTABLE_CONSOLE', '')
+  const info = vi.spyOn(console, 'info').mockImplementation(() => {})
+  const renderer = createGlassRenderer(browserFixture(), GLASSWORKS, (id) => id)
+  await renderer.ready
+  renderer.render(createGlassGame(GLASSWORKS).snapshot(), 0.016)
+  state.listeners.get('webglcontextlost')?.(new Event('webglcontextlost'))
+  expect(info).not.toHaveBeenCalled()
+  renderer.dispose()
+})
+
+it('reports awaiting-first-frame before a failed first draw is retired', async () => {
+  vi.stubEnv('VITE_PORTABLE_CONSOLE', 'true')
+  const info = vi.spyOn(console, 'info').mockImplementation(() => {})
+  const baseline = getActiveGraphicsCanvasCounts()
+  const renderer = createGlassRenderer(browserFixture(), GLASSWORKS, (id) => id)
+  await renderer.ready
+  state.render.mockImplementationOnce(() => {
+    throw new Error('first draw failed')
+  })
+  expect(() =>
+    renderer.render(createGlassGame(GLASSWORKS).snapshot(), 0.016),
+  ).toThrow('first draw failed')
+  expect(info).toHaveBeenCalledOnce()
+  expect(info.mock.calls[0]?.[1]).toMatchObject({
+    outcome: 'failure',
+    substage: 'awaiting-first-frame',
+    drawingBuffer: [800, 600],
+    renderProfile: 'high',
+    activeGalleryCount: baseline.gallery + 1,
+  })
+  renderer.dispose()
+  expect(getActiveGraphicsCanvasCounts()).toEqual(baseline)
 })
 
 it('hides Merc only for the primary first-person render', async () => {
@@ -974,6 +1119,8 @@ it('draws resident shatter variants behind loading and restores their visibility
 it.each(['dispose', 'context loss'] as const)(
   'cancels pending shader polling before renderer teardown on %s',
   async (cause) => {
+    vi.stubEnv('VITE_PORTABLE_CONSOLE', 'true')
+    const info = vi.spyOn(console, 'info').mockImplementation(() => {})
     state.programIsReady.mockReturnValue(false)
     const renderer = createGlassRenderer(
       browserFixture(),
@@ -995,6 +1142,17 @@ it.each(['dispose', 'context loss'] as const)(
     expect(state.programIsReady).toHaveBeenCalledTimes(readinessCalls)
     expect(state.rendererDispose).toHaveBeenCalledOnce()
     expect(state.forceContextLoss).toHaveBeenCalledOnce()
+    expect(state.warmupRenders).toBe(0)
+    expect(
+      info.mock.calls.some(([, snapshot]) => snapshot.outcome === 'ready'),
+    ).toBe(false)
+    if (cause === 'context loss') {
+      expect(info).toHaveBeenCalledOnce()
+      expect(info.mock.calls[0]?.[1]).toMatchObject({
+        outcome: 'failure',
+        substage: 'program-compile',
+      })
+    }
   },
 )
 

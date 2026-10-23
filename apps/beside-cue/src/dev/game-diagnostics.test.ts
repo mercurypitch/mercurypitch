@@ -4,6 +4,16 @@ import { afterEach, expect, it, vi } from 'vitest'
 import { flushPortableConsole } from '../../../../src/lib/portable-console'
 import { setupGameDiagnostics } from './game-diagnostics'
 
+const appState = vi.hoisted(() => ({
+  listener: undefined as undefined | ((state: 'active' | 'background') => void),
+}))
+vi.mock('@irchiinnuss/mobile-runtime/platform', () => ({
+  onAppState: vi.fn((listener) => {
+    appState.listener = listener
+    return () => {}
+  }),
+}))
+
 vi.mock('../../../../src/components/PortableConsole', () => ({
   setupPortableConsole: vi.fn(),
 }))
@@ -154,6 +164,30 @@ it('labels delayed loader teardown without hiding loss or restoration on the act
       }),
     )
     expect(flushPortableConsole).toHaveBeenCalledTimes(5)
+    // A visible WebView can become natively inactive without visibilitychange.
+    appState.listener!('background')
+    expect(info).toHaveBeenLastCalledWith(
+      '[Beside Cue app state]',
+      expect.objectContaining({
+        bootId,
+        state: 'background',
+        visibility: 'visible',
+        at: expect.any(Number),
+        elapsedMs: expect.any(Number),
+        focused: expect.any(Boolean),
+      }),
+    )
+    expect(flushPortableConsole).toHaveBeenCalledTimes(6)
+    appState.listener!('background')
+    expect(flushPortableConsole).toHaveBeenCalledTimes(6)
+    appState.listener!('active')
+    expect(info).toHaveBeenLastCalledWith(
+      '[Beside Cue app state]',
+      expect.objectContaining({ bootId, state: 'active' }),
+    )
+    expect(flushPortableConsole).toHaveBeenCalledTimes(7)
+    setupGameDiagnostics()
+    expect(flushPortableConsole).toHaveBeenCalledTimes(7)
   } finally {
     loading.remove()
     museum.remove()

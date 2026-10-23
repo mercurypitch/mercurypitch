@@ -20,11 +20,12 @@ import { CLOUDWAY_FOG_COLOR, isCloudwayLevel, resolveCloudwayFog, } from './clou
 import { createContactShadow } from './contact-shadow'
 import { disposeMaterials, disposeObject } from './dispose'
 import { createMuseumEnvironment } from './environment'
-import { verifyFirstFrame } from './first-frame'
+import { createGalleryFramePresenter } from './first-frame'
 import { createGalleryInspection } from './gallery-inspection'
+import { createGalleryRendererLoadingDiagnostics } from './gallery-loading-diagnostics'
 import type { GlassRenderer, GlassRendererOptions, } from './glass-renderer-contracts'
 import { retireGraphicsCanvas } from './graphics-diagnostics'
-import { createGraphicsRenderer } from './graphics-renderer'
+import { constructGraphicsScene, createGraphicsRenderer, } from './graphics-renderer'
 import { createMuseumMaterials } from './materials'
 import { loadAdventureMerc } from './merc'
 import { createMuseum } from './museum'
@@ -52,24 +53,16 @@ export function createGlassRenderer(
   assetUrl: (id: string) => string,
   options: GlassRendererOptions = {},
 ): GlassRenderer {
-  const partialCleanups: (() => void)[] = []
-  try {
-    return createGlassRendererInstance(
+  return constructGraphicsScene((registerCleanup, registerFailureReporter) =>
+    createGlassRendererInstance(
       container,
       level,
       assetUrl,
       options,
-      (cleanup) => partialCleanups.push(cleanup),
-    )
-  } catch (error) {
-    for (const cleanup of partialCleanups.reverse())
-      try {
-        cleanup()
-      } catch {
-        // Preserve the construction failure that explains why loading stopped.
-      }
-    throw error
-  }
+      registerCleanup,
+      registerFailureReporter,
+    ),
+  )
 }
 
 function createGlassRendererInstance(
@@ -78,6 +71,7 @@ function createGlassRendererInstance(
   assetUrl: (id: string) => string,
   options: GlassRendererOptions,
   registerPartialCleanup: (cleanup: () => void) => void,
+  registerFailureReporter: (report: () => void) => void,
 ): GlassRenderer {
   level.breakables.forEach((target) => getBreakableRenderRecipe(target.variant))
   level.platforms.forEach((platform) =>
@@ -138,6 +132,16 @@ function createGlassRendererInstance(
   )
   registerPartialCleanup(() => performanceGovernor.dispose())
   const loadedAssetProfile = options.assetProfile ?? renderQuality.assetProfile
+  const loadingDiagnostics =
+    import.meta.env.VITE_PORTABLE_CONSOLE === 'true'
+      ? createGalleryRendererLoadingDiagnostics(
+          level.id,
+          loading,
+          () => renderQuality.profile,
+          loadedAssetProfile,
+        )
+      : undefined
+  registerFailureReporter(() => loadingDiagnostics?.report('failure'))
   let shadowFrameInterval = renderQuality.shadowFrameInterval
   const shadowCadence = createShadowUpdateCadence(shadowFrameInterval)
   let shadowUpdates = 0
@@ -151,6 +155,7 @@ function createGlassRendererInstance(
   renderer.toneMapping = ACESFilmicToneMapping
   renderer.toneMappingExposure = 0.9
   const renderContext = renderer.getContext()
+  loadingDiagnostics?.attach(renderer, container)
   const renderCapabilities = {
     colorBufferFloat:
       renderContext.getExtension('EXT_color_buffer_float') !== null,
@@ -183,6 +188,7 @@ function createGlassRendererInstance(
     decodedAssetImages.clear()
   }
   registerPartialCleanup(() => {
+    loadingDiagnostics?.stage('disposed')
     retireGraphicsCanvas(renderer.domElement)
     assetLoads.abort()
     programPrecompile.abort()
@@ -313,6 +319,7 @@ function createGlassRendererInstance(
   const onContextLost = (event: Event) => {
     event.preventDefault()
     if (disposed || contextLost) return
+    loadingDiagnostics?.report('failure')
     contextLost = true
     assetLoads.abort()
     programPrecompile.abort()
@@ -326,7 +333,12 @@ function createGlassRendererInstance(
   let latest: GameSnapshot | undefined
   let skyBackdrop: Texture | undefined
   let drawable = false
-  let firstFrameVerified = false
+  const presentFrame = createGalleryFramePresenter(
+    renderer,
+    scene,
+    camera.camera,
+    () => loadingDiagnostics?.reportReady(!contextLost),
+  )
   let shadowTopology = ''
   const resize = () => {
     if (disposed) return
@@ -375,6 +387,7 @@ function createGlassRendererInstance(
   registerPartialCleanup(() => {
     disposed = true
   })
+  loadingDiagnostics?.stage('assets')
   const mercReady = loadAdventureMerc(mercUrl).then((actor) => {
     if (disposed) {
       actor.dispose()
@@ -384,6 +397,7 @@ function createGlassRendererInstance(
     scene.add(actor.root)
     if (latest) actor.update(latest, 0, options.reducedMotion ?? false)
     loading.complete('merc:model')
+    loadingDiagnostics?.progress()
   })
   registerPartialCleanup(() => {
     void mercReady.catch(() => undefined)
@@ -404,7 +418,10 @@ function createGlassRendererInstance(
     },
     () => disposed,
     options.onAssetError,
-    (taskId) => loading.complete(taskId),
+    (taskId) => {
+      loading.complete(taskId)
+      loadingDiagnostics?.progress()
+    },
     {
       signal: assetLoads.signal,
       assetProfile: loadedAssetProfile,
@@ -443,6 +460,7 @@ function createGlassRendererInstance(
       if (isCloudwayLevel(level) && skyBackdrop !== undefined)
         installBackdropFog(scene, skyBackdrop)
       if (!sceneRecipe.reflectionProbe) return
+      loadingDiagnostics?.stage('reflection')
       const position = new Vector3().copy(sceneRecipe.reflectionProbe)
       try {
         environment.capture(
@@ -466,6 +484,7 @@ function createGlassRendererInstance(
       if (disposed || contextLost) return
       // Compile hidden fragment/instancing variants behind the loading screen,
       // after the final lighting and environment exist, before the first Sing.
+      loadingDiagnostics?.stage('program-compile')
       await precompileRendererPrograms(
         renderer,
         scene,
@@ -476,6 +495,7 @@ function createGlassRendererInstance(
       // compile() cannot upload hidden buffers or complete a program's first
       // real use. Exercise every resident effect behind the loading cover on
       // the same framebuffer used during play, then restore its exact state.
+      loadingDiagnostics?.stage('resident-warmup')
       renderer.shadowMap.needsUpdate = true
       withResidentRenderablesVisible(scene, () =>
         renderer.render(scene, camera.camera),
@@ -483,8 +503,10 @@ function createGlassRendererInstance(
       shadowCadence.invalidate()
       performanceGovernor.activate()
       loading.complete('gpu:programs')
+      loadingDiagnostics?.stage('awaiting-first-frame')
     })
     .catch((error: unknown) => {
+      loadingDiagnostics?.report('failure')
       loading.freeze()
       throw error
     })
@@ -731,24 +753,18 @@ function createGlassRendererInstance(
       renderer.shadowMap.needsUpdate = updateShadow
       if (updateShadow) shadowUpdates++
       else shadowReuses++
-      const mercVisible = merc?.root.visible
-      if (merc !== undefined && camera.mode() === 'first-person')
-        merc.root.visible = false
       try {
-        renderer.render(scene, camera.camera)
-      } finally {
-        if (merc !== undefined && mercVisible !== undefined)
-          merc.root.visible = mercVisible
-      }
-      if (!firstFrameVerified) {
-        verifyFirstFrame(renderer.getContext())
-        firstFrameVerified = true
+        presentFrame(merc?.root, camera.mode() === 'first-person')
+      } catch (error) {
+        loadingDiagnostics?.report('failure')
+        throw error
       }
       return !contextLost
     },
     dispose() {
       if (disposed) return
       disposed = true
+      loadingDiagnostics?.stage('disposed')
       retireGraphicsCanvas(renderer.domElement)
       assetLoads.abort()
       programPrecompile.abort()

@@ -1057,6 +1057,13 @@ took about 0.38 seconds with pitch fixtures passing; keep bounded fail-safe queu
 **Rule:** a tier stylesheet may use `[class*=…]` only to switch an effect off (filter, animation). A surface that needs another ground on a tier gets it from a token it already uses (`--glass-bg`). Check any tier with Settings > Quality or `?perf=low`: the sampler can apply `low` to any device mid-song.
 **See:** `src/styles/performance-mode.css`, `src/styles/performance-mode.contract.test.ts`, `src/e2e/low-tier-overlays.spec.ts`.
 
+### Apply mobile texture limits to standalone material maps too
+
+**Symptom:** Little Discoveries lost an active iOS context during loading or before its first frame; separate catalog roughness maps still decoded at full size.
+**Cause:** GLB textures used the mobile profile, while catalog material maps bypassed it. This is a verified budget omission, not proof of the physical reset cause.
+**Rule:** profile each material slot before upload, register the replacement image for cleanup, and preserve sky orientation. Verify bitmap and canvas resizes by actual GPU readback, and hold a real asset request through context loss and Retry without replacing draw calls. Keep native acceptance separate.
+**See:** `packages/glass-game/src/render/asset-kit.ts`, `apps/beside-cue/e2e/glass-adventure-loading-recovery.e2e.ts`, `apps/beside-cue/e2e/glass-adventure-texture-orientation.e2e.ts`.
+
 ## Data and billing
 
 ### Share pending startup hydration, not just a ready flag

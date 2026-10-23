@@ -19,6 +19,7 @@ interface GraphicsCanvasDiagnostic {
   instance: number
   lifecycle: 'active' | 'disposed'
   snapshot?: Readonly<GraphicsCanvasSnapshot>
+  counted?: true
 }
 const SNAPSHOT_COUNTS = [
   'drawCalls',
@@ -29,13 +30,38 @@ const SNAPSHOT_COUNTS = [
 ] as const
 const canvases = new WeakMap<HTMLCanvasElement, GraphicsCanvasDiagnostic>()
 let nextInstance = 0
+const activeCounts: Record<GraphicsCanvasScene, number> = {
+  'museum-map': 0,
+  gallery: 0,
+  'singing-current': 0,
+  'loading-merc': 0,
+}
+
+/** Primitive counters avoid retaining a collection of canvases or renderers. */
+export function getActiveGraphicsCanvasCounts(): Readonly<
+  Record<GraphicsCanvasScene, number>
+> {
+  return { ...activeCounts }
+}
 
 /** Weak ownership metadata never keeps a retired canvas or renderer alive. */
 export function registerGraphicsCanvas(
   canvas: HTMLCanvasElement,
   scene: GraphicsCanvasScene,
 ): void {
-  canvases.set(canvas, { scene, instance: ++nextInstance, lifecycle: 'active' })
+  const diagnostic: GraphicsCanvasDiagnostic = {
+    scene,
+    instance: ++nextInstance,
+    lifecycle: 'active',
+  }
+  if (import.meta.env.VITE_PORTABLE_CONSOLE === 'true') {
+    const previous = canvases.get(canvas)
+    if (previous?.lifecycle === 'active' && previous.counted)
+      activeCounts[previous.scene]--
+    activeCounts[scene]++
+    diagnostic.counted = true
+  }
+  canvases.set(canvas, diagnostic)
 }
 
 /** Retain only the latest bounded primitives; never hold a scene or texture. */
@@ -61,7 +87,10 @@ export function updateGraphicsCanvasSnapshot(
 /** Call before deliberate forceContextLoss; its event may arrive asynchronously. */
 export function retireGraphicsCanvas(canvas: HTMLCanvasElement): void {
   const diagnostic = canvases.get(canvas)
-  if (diagnostic !== undefined) diagnostic.lifecycle = 'disposed'
+  if (diagnostic === undefined || diagnostic.lifecycle === 'disposed') return
+  if (import.meta.env.VITE_PORTABLE_CONSOLE === 'true' && diagnostic.counted)
+    activeCounts[diagnostic.scene]--
+  diagnostic.lifecycle = 'disposed'
 }
 
 export function getGraphicsCanvasDiagnostic(
@@ -70,7 +99,9 @@ export function getGraphicsCanvasDiagnostic(
   const diagnostic = canvases.get(canvas)
   if (diagnostic === undefined) return undefined
   return {
-    ...diagnostic,
+    scene: diagnostic.scene,
+    instance: diagnostic.instance,
+    lifecycle: diagnostic.lifecycle,
     ...(diagnostic.snapshot === undefined
       ? {}
       : { snapshot: Object.freeze({ ...diagnostic.snapshot }) }),

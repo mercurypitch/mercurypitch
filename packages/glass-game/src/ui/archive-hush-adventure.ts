@@ -5,6 +5,7 @@ import type { GameSnapshot, GlassGame, LevelDefinition } from '../contracts'
 import type { GlassGameHost } from '../host'
 import { createArchiveHushAwards } from './archive-hush-awards'
 import { createArchiveHushSession } from './archive-hush-session'
+import { reportArchiveOutcome } from './archive-outcome-diagnostics'
 
 export function createArchiveHushAdventure(options: {
   host: GlassGameHost
@@ -45,9 +46,11 @@ export function createArchiveHushAdventure(options: {
   const awards = createArchiveHushAwards({
     canCommit: options.canPlay,
     accept: (id) => options.game.completeProtectionRoom(id),
-    onCommit: () => {
+    onCommit: (id) => {
       options.host.saveProgress(options.game.saveProgress())
       options.refresh()
+      if (import.meta.env.VITE_PORTABLE_CONSOLE === 'true')
+        reportArchiveOutcome(options.level.id, id, 'protection')
     },
   })
   const session = createArchiveHushSession({

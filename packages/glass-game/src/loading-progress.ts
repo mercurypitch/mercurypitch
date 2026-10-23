@@ -7,9 +7,16 @@ export interface LoadingProgress {
   readonly totalUnits: number
 }
 
+export interface LoadingProgressDiagnosticSnapshot extends LoadingProgress {
+  readonly lastCompletedUnitId: string | null
+  readonly pendingCount: number
+  readonly pendingUnitIds: string[]
+}
+
 export interface LoadingProgressLedger {
   readonly unitIds: readonly string[]
   progress(): LoadingProgress
+  diagnosticSnapshot?(): LoadingProgressDiagnosticSnapshot
   complete(unitId: string): boolean
   freeze(): void
 }
@@ -28,6 +35,7 @@ export function createLoadingProgressLedger(
   const planned = new Set(unitIds)
   const completed = new Set<string>()
   let frozen = false
+  let lastCompletedUnitId: string | null = null
 
   const progress = (): LoadingProgress => ({
     completedUnits: completed.size,
@@ -38,11 +46,26 @@ export function createLoadingProgressLedger(
   return {
     unitIds,
     progress,
+    ...(import.meta.env.VITE_PORTABLE_CONSOLE === 'true'
+      ? {
+          diagnosticSnapshot: (): LoadingProgressDiagnosticSnapshot => ({
+            ...progress(),
+            lastCompletedUnitId,
+            pendingCount: unitIds.length - completed.size,
+            pendingUnitIds: unitIds
+              .filter((unitId) => !completed.has(unitId))
+              .slice(0, 8)
+              .map((unitId) => unitId.slice(0, 100)),
+          }),
+        }
+      : {}),
     complete(unitId): boolean {
       if (frozen || completed.has(unitId)) return false
       if (!planned.has(unitId))
         throw new Error(`Unknown loading progress unit: ${unitId}`)
       completed.add(unitId)
+      if (import.meta.env.VITE_PORTABLE_CONSOLE === 'true')
+        lastCompletedUnitId = unitId.slice(0, 100)
       onProgress(progress())
       return true
     },

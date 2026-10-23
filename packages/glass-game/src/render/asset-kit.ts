@@ -8,7 +8,8 @@ import type { LevelDefinition } from '../contracts'
 import { createMuseumAssetLoadPlan } from './asset-load-plan'
 import { resolveAssetProfileBundle } from './asset-profile-bundles'
 import { loadProfiledAssetScene } from './asset-scene-loader'
-import { releaseAssetImage } from './asset-texture-profile'
+import type { AssetTextureSlot } from './asset-texture-profile'
+import { applyOwnedAssetTextureProfile, releaseAssetImage, } from './asset-texture-profile'
 import { getBreakableRenderRecipe } from './catalog'
 import { disposeObject } from './dispose'
 import { prepareExhibitAsset } from './exhibit-asset'
@@ -160,37 +161,45 @@ export async function loadMuseumAssets(
     recipe: TextureRecipe,
     use: (texture: Awaited<ReturnType<TextureLoader['loadAsync']>>) => void,
     beforeInstall: Promise<unknown> = Promise.resolve(),
+    profileSlot?: AssetTextureSlot,
   ): Promise<boolean> => {
     let texture: Awaited<ReturnType<TextureLoader['loadAsync']>> | undefined
-    let decodedImage: TexImageSource | undefined
     let imageRegistered = false
     try {
       texture = await new TextureLoader().loadAsync(assetUrl(recipe.asset))
-      decodedImage = texture.source.data as TexImageSource | undefined
-      if (unavailable()) {
-        if (decodedImage !== undefined) releaseAssetImage(decodedImage)
-        texture.dispose()
-        return false
-      }
+      if (unavailable()) return false
+      configureTexture(texture, recipe)
+      // Only catalog material roles share the GLB texture budget. In particular,
+      // the sky keeps its existing flipY upload path rather than a bitmap resize.
+      if (profileSlot !== undefined)
+        await applyOwnedAssetTextureProfile(
+          texture,
+          profileSlot,
+          options.assetProfile ?? 'full',
+          undefined,
+          attempt.signal,
+        )
+      if (unavailable()) return false
+      const decodedImage = texture.source.data as TexImageSource | undefined
       if (decodedImage !== undefined && options.onDecodedImage !== undefined) {
         options.onDecodedImage(decodedImage)
         imageRegistered = true
       }
-      configureTexture(texture, recipe)
       await beforeInstall
-      if (unavailable()) {
-        texture.dispose()
-        return false
-      }
+      if (unavailable()) return false
       use(texture)
       texture = undefined
       return true
     } catch (error) {
-      texture?.dispose()
-      if (decodedImage !== undefined && !imageRegistered)
-        releaseAssetImage(decodedImage)
       if (unavailable()) return false
       throw failure(recipe.asset, error)
+    } finally {
+      if (texture !== undefined) {
+        texture.dispose()
+        const image = texture.source.data as TexImageSource | null | undefined
+        if (image !== undefined && image !== null && !imageRegistered)
+          releaseAssetImage(image)
+      }
     }
   }
   const installTargets = (
@@ -249,12 +258,17 @@ export async function loadMuseumAssets(
   }
   const materialLoads = new Map<string, Promise<boolean>[]>()
   for (const textureInstall of plan.materialTextures) {
-    const pending = loadTexture(textureInstall.recipe, (texture) => {
-      const material = materials[textureInstall.materialId]
-      material[textureInstall.slot]?.dispose()
-      material[textureInstall.slot] = texture
-      material.needsUpdate = true
-    })
+    const pending = loadTexture(
+      textureInstall.recipe,
+      (texture) => {
+        const material = materials[textureInstall.materialId]
+        material[textureInstall.slot]?.dispose()
+        material[textureInstall.slot] = texture
+        material.needsUpdate = true
+      },
+      Promise.resolve(),
+      textureInstall.slot,
+    )
     const group = materialLoads.get(textureInstall.taskId) ?? []
     group.push(pending)
     materialLoads.set(textureInstall.taskId, group)
