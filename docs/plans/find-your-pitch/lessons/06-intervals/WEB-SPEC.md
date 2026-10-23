@@ -434,7 +434,7 @@ Two quizzes share this page, so it depends on the three changes Lesson 2 makes t
 (its WEB-SPEC, "What the kit and the app still need"), which are on main: an id prefix for the
 elements each quiz binds and writes (`kit/quiz.ts:81-86`, `:213-217`); `lesson` optional, since the
 kit marks `lesson` done once every question has an answer (`:75-76`, `:322-327`); and a question
-`id`, the telemetry's `question_id` (`:43-47`).
+`id`, the event's `qLesson` and `q` (`:43-47`).
 
 - **Recall**: Lesson 4's questions 1 and 4, word for word with their feedback (LESSON.md; FACTS 7),
   under their Lesson 4 ids, `l04-q1` and `l04-q4`, shown to everyone (Lesson 4 is a prerequisite).

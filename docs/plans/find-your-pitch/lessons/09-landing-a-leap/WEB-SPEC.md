@@ -446,8 +446,8 @@ Listening: Lesson 3's `kit/listen.ts`, unchanged: `micManager.acquire('lesson-09
 (`:18-22`); the YIN-only F0 stream (`src/lib/pitch-f0-stream.ts`); one AudioContext through
 `Sound.context()`, so every note Merc sings and every frame the take hears share a clock; nothing
 plays while a take is open. Nothing is recorded or kept, nothing leaves the device, and no event
-carries a note, a reading or an answer; at most a count-only "checkpoint finished" event once the
-Lesson telemetry track exists (REQ-GVC-090; FACTS 87).
+carries a note, a reading or an answer. No checkpoint event: `lesson_answer` covers only the quick
+check and the recall; a count-only "checkpoint finished" event (REQ-GVC-090; FACTS 87) is not built.
 
 Accessibility and motion: the bands are words plus the lit edge, never colour alone (REQ-GVC-082).
 After a take the chart's summary reads, for example, "Your ladder, drawn as a line: do in the band,

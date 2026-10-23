@@ -41,8 +41,8 @@ export interface QuizOption {
 
 export interface QuizQuestion {
   /**
-   * The telemetry's question_id, the same on every page that asks it:
-   * `l02-q1` is Lesson 2's question 1, and its lesson is read from it.
+   * The same on every page that asks it: `l02-q1` is Lesson 2's question
+   * 1, its lesson is read from it, and lesson_answer sends both numbers.
    */
   readonly id: string
   /** The question (markup). */

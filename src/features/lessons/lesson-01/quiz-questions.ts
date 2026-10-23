@@ -5,7 +5,7 @@
 // Copied exactly from the reviewed page, in authored order: the stored seed
 // shuffles by position, so reordering the options here would reshuffle every
 // returning viewer's answers. The strings are markup, so they stay in code.
-// The ids are the telemetry's question_id on every page that asks them:
+// The ids are the same on every page that asks them (telemetry.ts):
 // Lesson 2's recall check asks questions 2 and 4 as `l01-q2` and `l01-q4`.
 
 import type { QuizQuestion } from '@/features/lessons/kit/quiz'

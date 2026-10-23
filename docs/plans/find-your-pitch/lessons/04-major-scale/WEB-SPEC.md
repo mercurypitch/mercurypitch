@@ -244,7 +244,7 @@ Two quizzes share this page, so it depends on the three changes Lesson 2 makes t
 - a root element or id prefix, because the kit bound to `#qs`, `#scoreN` and `#quizReset` and
   wrote the ids `q0` and `fb0` onwards;
 - `lesson` optional, because the kit marked `lesson` done once every question had an answer;
-- a question `id`, the telemetry's `question_id`, which `QuizQuestion` lacked.
+- a question `id`, the event's `qLesson` and `q`, which `QuizQuestion` lacked.
 
 If Lesson 2's page has not landed them when this one is built, this page lands them, in the shape
 Lesson 2 describes. All three are on main: the id `prefix` (`kit/quiz.ts:81-86`, `:213-217`), an

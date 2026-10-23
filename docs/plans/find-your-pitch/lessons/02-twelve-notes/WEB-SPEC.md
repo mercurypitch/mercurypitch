@@ -410,7 +410,7 @@ vertical (pitch is height).
 ### 6. Recall check
 
 - The quick-check component, straight after the hero (DECISIONS 80), with Lesson 1's questions 2
-  and 4 under the `question_id`s Lesson 1's page gives them (proposed: `l01-q2` and `l01-q4`, as
+  and 4 under the ids Lesson 1's page gives them (`l01-q2` and `l01-q4`, as
   this page's own are `l02-q1` to `l02-q4`), so one question reports under one id on both pages;
   the first time the page anatomy's item 4 runs. Options are reshuffled from a seed of its own
   (keys `fyp-l02-recall-seed` and `fyp-l02-recall-v1`), not Lesson 1's, and earlier answers are
@@ -544,7 +544,7 @@ what it must do. The kit items move Lesson 1's code into `src/features/lessons/k
 9. **`kit/quiz.ts`**: three changes, so two quizzes can share a page: a root element or id prefix
    (it binds to `#qs`, `#scoreN` and `#quizReset` and writes ids `q0` and `fb0` onwards); `lesson`
    optional, so the recall check marks no lesson done (it marks `lesson` done once every question
-   has an answer); and a question `id`, the telemetry's `question_id` (`QuizQuestion` had none,
+   has an answer); and a question `id`, the event's `qLesson` and `q` (`QuizQuestion` had none,
    FACTS 35a). And two more, for this page and the pages that reuse its questions: a slot after a
    question's heading, outside the `<h3>` that labels its answers (`quiz.ts:306`), for the
    question's own controls, so question 2's Play the two steps and its "1st" and "2nd" chips do not

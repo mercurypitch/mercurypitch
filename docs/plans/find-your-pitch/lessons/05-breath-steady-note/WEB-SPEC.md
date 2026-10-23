@@ -337,8 +337,9 @@ Reading a hold (`kit/take.ts`, extended; pure and unit-tested):
 Listening: Lesson 3's `kit/listen.ts` unchanged: `micManager.acquire('lesson-05')` for each take,
 released when the take ends, on leaving the section, on `pagehide` and when the tab is hidden; the
 YIN-only F0 stream; one AudioContext through `Sound.context()`; nothing plays while a take is open;
-nothing is recorded or kept, and nothing leaves the device (FACTS 57). At most a count-only
-"checkpoint finished" event, once the Lesson telemetry track exists (REQ-GVC-090).
+nothing is recorded or kept, and nothing leaves the device (FACTS 57). No checkpoint event:
+`lesson_answer` covers only the quick check and the recall; a count-only "checkpoint finished" event
+(REQ-GVC-090) is not built.
 
 Accessibility and motion: the band state is words plus the mint edge, never colour alone
 (REQ-GVC-082); after each take the chart's text summary reads, for example, "Merc's note A3; your
@@ -508,8 +509,8 @@ reduced motion or Pause animations each Merc holds a still frame and skips the r
    pitch and level.
 4. The page's own toys and rules in `lesson-05/`: Push with Hold the note, Breath (gauge and
    figure), Three starts, and the hold flow (`hold-flow.ts`).
-5. Quiz ids and keys (the Lesson telemetry track; the recall needs Lesson 3's ids), and the tests in
-   Toys 6.
+5. Quiz ids and keys (the recall needs Lesson 3's ids; each question's first answer in a visit is
+   sent as `lesson_answer`), and the tests in Toys 6.
 6. For the Long Note link: the slug, `durationSec`, Long Note's effective length, its new copy, the
    octave note or option, and the `?lesson=` marker (Practice links).
 7. The season entry's link, `minutes` and `needs`, and the explorer's text-only state.

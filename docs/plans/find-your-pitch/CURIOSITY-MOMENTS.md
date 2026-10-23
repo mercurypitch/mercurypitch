@@ -392,7 +392,7 @@ teases to be easy to change, with a switch for them in the admin console. So:
 - items 1, 3 and 4 follow their recommendations;
 - for item 2, each proposed hook goes live with the current wording kept as an alternative. The admin console
   switches between them, and a hook that needs a source keeps its current wording until FACTS.md has one;
-- item 5, answered on 22 October 2026: yes, anonymous events with consent, in their own PR (MASTER-PLAN § 12 item 11).
+- item 5 was answered on 22 October 2026: the lesson pages send each question's first answer in a visit, anonymously, and nothing else.
 
 The questions as they were put:
 

@@ -289,8 +289,8 @@ Listening (`kit/listen.ts`, loaded as its own chunk when Start is pressed):
   never enters it (analysis capture runs with echo cancellation off). The page plays nothing while
   a take is open.
 - Nothing is recorded or kept (no take recorder: REQ-GVC-004) and nothing leaves the device
-  (REQ-GVC-003). No analytics except, once the Lesson telemetry track exists, at most a count-only
-  "checkpoint finished" event, never cents or audio (REQ-GVC-090).
+  (REQ-GVC-003). No checkpoint event: `lesson_answer` covers only the quick check and the recall; a
+  count-only "checkpoint finished" event (REQ-GVC-090) is not built.
 
 Accessibility and motion:
 
