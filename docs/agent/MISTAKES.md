@@ -895,6 +895,13 @@ import handler, issue #813.
 **Rule:** a sticky panel must fit the smallest viewport it sticks in (`100svh`). Let its flexible part give way first, keep a scroll inside the panel as the last resort, and test at the browser's sizes, not the device's screen. Look at every figure the fit shrinks, not only at the boxes: a canvas laid out in fixed pixels (a readout in its corner, a label per semitone) collides with itself below a height the e2e cannot see, so each such figure carries its own floor (`--viz-min`).
 **See:** `src/features/lessons/kit/stage-fit.ts`, `src/e2e/learn-stage-fit.spec.ts`, `--viz-min` in the lesson stylesheets
 
+### Give a scene delegate to the application role only, never to every role (iOS)
+
+**Symptom:** with the iPhone app open, AirPlay screen mirroring put a second copy of the app on the TV, stuck on the Rooms start screen while the song's sound played on the TV, instead of mirroring the phone (an LG C2, 2026-10-22, builds before mp-v0.8.40). The upstream report sees a second `Loading app at capacitor://localhost` in the console each time mirroring starts, and the same from a cable.
+**Cause:** iOS asks for a scene with the external-display role even when the app supports one scene. Capacitor 8.5's UIScene template returns `SceneDelegate` for every role from `configurationForConnecting`, and `SceneDelegate` builds a new bridge for every window scene: a second web app, sharing the first's storage and initialising every plugin twice. Apple's answer is to create no window for that scene unless the app means to stop mirroring (ionic-team/capacitor#8648, still open upstream on 2026-10-21).
+**Rule:** give `SceneDelegate` to `.windowApplication` alone, guard `scene(_:willConnectTo:)` on the role too, and recheck both after every Capacitor upgrade or template migration. A deliberate second screen gets its own delegate and a plain web view, never a second bridge.
+**See:** `apps/mercurypitch/ios/App/App/AppDelegate.swift`, `apps/mercurypitch/ios/App/App/SceneDelegate.swift`, `apps/mercurypitch/src/ios-external-display.test.ts`
+
 ## Performance
 
 ### Preserve physical material units when baking decoded geometry
