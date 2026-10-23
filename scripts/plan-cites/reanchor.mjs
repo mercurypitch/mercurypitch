@@ -87,9 +87,9 @@ const lineCount = (text) => text.split('\n').length
 
 /**
  * Re-anchors the citations in `docs` from `base` to the working tree.
- * Returns the report's events, the citations moved (read at their new
- * numbers) and the number already re-anchored; with `write`, the
- * documents are rewritten.
+ * Returns the report's events, the citations moved and those already
+ * re-anchored, each with the lines it cites now, for a check by content;
+ * with `write`, the documents are rewritten.
  */
 export function reanchor(
   repo,
@@ -136,7 +136,7 @@ export function reanchor(
 
   const events = []
   const moved = []
-  let already = 0
+  const already = []
   const writes = []
   for (const doc of docs) {
     if (skip(doc)) continue
@@ -192,7 +192,10 @@ export function reanchor(
       }
       const st = changed.get(t.path)
       if (st.kind === 'D') {
-        hand('deleted', `${t.path} was deleted since ${base}`)
+        hand(
+          'deleted',
+          `${t.path} was deleted (or renamed and not staged) since ${base}`,
+        )
         continue
       }
       if (st.kind === 'R') {
@@ -222,11 +225,19 @@ export function reanchor(
         events.push({ ...at, kind: 'moved', message: `-> ${digits}` })
         moved.push({ doc, cite: c, ...s })
         edits.push({ line: c.line, start: c.numStart, end: c.numEnd, digits })
-      } else if (s !== null && same(s, c)) already++
+      } else if (s !== null && same(s, c))
+        already.push({ doc, cite: c, from: c.from, to: c.to })
+      else if (baseText === null)
+        hand(
+          'edited',
+          `${doc} is new since ${base}, so nothing there places it`,
+        )
       else
         hand(
           'edited',
-          `its line was written or edited since ${base}, so no citation there places it ` +
+          (p === undefined
+            ? `${g.base.length} citations to this file here at ${base}, ${g.work.length} now, so none is paired `
+            : `its line was written or edited since ${base}, so no citation there places it `) +
             '(the base must be the last commit at which the docs matched the code)',
         )
     }
