@@ -230,6 +230,29 @@ the server, and Settings says Not subscribed until something asks again. A
 store build carries none of it (`assert-no-portable-console.mjs
 --store-binary`).
 
+## A TestFlight Subscribe that asks for the password
+
+A Subscribe or a Restore purchase in a TestFlight build ends in Apple's
+purchase sheet, and there it asks for the Apple Account password every time.
+TestFlight purchases run against Apple's sandbox, where Face ID and Touch ID
+do not authorise a purchase (Apple's answers on the developer forums,
+[thread 96990](https://developer.apple.com/forums/thread/96990) and
+[thread 49940](https://developer.apple.com/forums/thread/49940)). The same
+build from the App Store takes Face ID as usual, so a singer rarely sees the
+prompt at all.
+
+The sheet and its prompt are drawn by iOS, in a process of its own. The app
+hands RevenueCat the purchase and waits (the `purchase` step in the timings
+above); nothing in the web view, the Keyboard plugin or the native shell can
+reach the prompt. A password manager's AutoFill can fail inside it: its
+keyboard never comes up, or its Face ID does not answer. The owner hit it on
+TestFlight mp-v0.8.40 (2026-10-22). The App Store app's own Get button does
+the same ([bitwarden/ios#3093](https://github.com/bitwarden/ios/issues/3093)),
+so it is an iOS limit, not this app's bug.
+
+For a tester: type the password, or copy it from the password manager before
+pressing Subscribe and paste it into the prompt.
+
 ## A crash only in a Play build
 
 The Android build Play installs is shrunk and renamed by R8
