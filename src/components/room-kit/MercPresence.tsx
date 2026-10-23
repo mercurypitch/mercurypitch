@@ -41,6 +41,10 @@ export interface MercPresenceProps {
   alt?: string
   /** The width and height of his box, in px. */
   size: number
+  /**
+   * The host's own class for his box, to place it. It must leave `display`
+   * alone: his still and his live canvas share the box's one grid cell.
+   */
   class?: string
   /** The box's id; the live Merc inside it takes `${testId}-live`. */
   testId: string

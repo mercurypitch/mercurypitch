@@ -1,0 +1,71 @@
+/* ============================================================
+   PlanExits: the way back and the way out
+   ============================================================
+
+   Back (top left) and "Not now" (top right), absolute in the nearest
+   positioned box of the host, so the questions and the plan carry them in
+   the same corners and they do not move from one screen to the next. What
+   that box has to be is written in PlanExits.tsx.
+
+   The same pills as First Light's own "Not now": 44 px to the thumb, and a
+   small pill of the ground behind the words so they read over Merc's
+   pictures. Every colour reads the host's --ob-* value and falls back to the
+   mock's, so the buttons look the same in a layer that does not define them. */
+
+.exit {
+  --ex-pill: var(--ob-rail-pill, rgba(13, 17, 23, 0.78));
+  --ex-ink: var(--ob-ink, #e6edf3);
+  --ex-ink-2: var(--ob-ink-2, #a8b3bf);
+  --ex-blue: var(--ob-blue, #58a6ff);
+
+  position: absolute;
+  top: 8px;
+  z-index: 2;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 44px;
+  min-height: 44px;
+  margin: 0;
+  padding: 0 13px;
+  border: 0;
+  border-radius: 999px;
+  background: var(--ex-pill);
+  -webkit-backdrop-filter: blur(8px);
+  backdrop-filter: blur(8px);
+  color: var(--ex-ink-2);
+  font: inherit;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  touch-action: manipulation;
+}
+
+.exit:focus-visible {
+  outline: 2px solid var(--ex-blue);
+  outline-offset: 2px;
+}
+
+.back {
+  left: 14px;
+  width: 44px;
+  padding: 0;
+}
+
+.back svg {
+  display: block;
+  width: 20px;
+  height: 20px;
+}
+
+.notNow {
+  right: 14px;
+}
+
+/* A tablet keeps a button's :hover look after a tap, so the lift in colour
+   is for a pointer only. */
+@media (hover: hover) {
+  .exit:hover {
+    color: var(--ex-ink);
+  }
+}

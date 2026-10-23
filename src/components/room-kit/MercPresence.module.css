@@ -3,9 +3,9 @@
    own can make it absolute or fixed with no contest over specificity or
    stylesheet order. (`:where()` would give the same, but the web build's
    Lightning CSS targets include browsers older than it.) His still and, over
-   it, his live canvas share the box's one grid cell, so a host's class leaves
-   `display` alone. He is decoration: he never takes a tap meant for what lies
-   under him. */
+   it, his live canvas share the box's one grid cell, so a host's class must
+   leave `display` alone. He is decoration: he never takes a tap meant for what
+   lies under him. */
 .presence {
   display: grid;
   grid-template: minmax(0, 1fr) / minmax(0, 1fr);
