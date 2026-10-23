@@ -4,9 +4,9 @@
 
 import { describe, expect, it } from 'vitest'
 import '@/features/lessons/kit/browser-doubles.test-fixtures'
-import { lessonOfQuestion, linkAway } from '@/features/lessons/kit/quiz'
+import { lessonOfQuestion, linkAway, recallStepHref, } from '@/features/lessons/kit/quiz'
 import { QUIZ_QUESTIONS as LESSON_4 } from '@/features/lessons/lesson-04/quiz-questions'
-import { QUIZ_QUESTIONS, RECALL_QUESTIONS, recallHref } from './quiz-questions'
+import { QUIZ_QUESTIONS, RECALL_QUESTIONS } from './quiz-questions'
 
 /** Markup as the eye reads it: the signs shown, the spoken words dropped. */
 const seen = (html: string): string =>
@@ -65,18 +65,18 @@ describe('the recall (FACTS 7)', () => {
     )
   })
 
-  it("turns Lesson 4's step link into a link to Lesson 4's page, in a new tab", () => {
+  it("turns Lesson 4's step link into a link to that step on Lesson 4's page, in a new tab", () => {
     // Arrange: the feedback line as the quiz renders it
     const box = document.createElement('p')
     box.innerHTML = RECALL_QUESTIONS[0].options[1].feedback
 
     // Act
-    linkAway(box, 4, { href: recallHref })
+    linkAway(box, 4, { href: recallStepHref })
 
     // Assert
     const a = box.querySelector('a')
     expect(a?.textContent).toBe('Try Lesson 4, Step 1 again')
-    expect(a?.getAttribute('href')).toBe('/learn/04')
+    expect(a?.getAttribute('href')).toBe('/learn/04#step-1')
     expect(a?.target).toBe('_blank')
     expect(a?.hasAttribute('data-goto-step')).toBe(false)
   })

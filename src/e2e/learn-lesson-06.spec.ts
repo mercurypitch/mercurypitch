@@ -156,7 +156,7 @@ test('a visitor with the studio installed still gets the lesson, not the shell @
   await expect(page.locator('#root')).toHaveCount(0)
 })
 
-test("the recall asks Lesson 4's questions, marks nothing done and links Lesson 4's page in a new tab", async ({
+test("the recall asks Lesson 4's questions, marks nothing done and links Lesson 4's step in a new tab", async ({
   page,
 }) => {
   await page.goto('/learn/06')
@@ -177,7 +177,7 @@ test("the recall asks Lesson 4's questions, marks nothing done and links Lesson 
   const link = page.locator('#recall-qs a', {
     hasText: 'Try Lesson 4, Step 1 again',
   })
-  await expect(link).toHaveAttribute('href', '/learn/04')
+  await expect(link).toHaveAttribute('href', '/learn/04#step-1')
   await expect(link).toHaveAttribute('target', '_blank')
   expect(await done()).toBe(before)
 })

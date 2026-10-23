@@ -436,19 +436,19 @@ elements each quiz binds and writes (`kit/quiz.ts:81-86`, `:213-217`); `lesson` 
 kit marks `lesson` done once every question has an answer (`:75-76`, `:322-327`); and a question
 `id`, the telemetry's `question_id` (`:43-47`).
 
-- **Recall**: Lesson 4's questions 1 and 4, word for word with their feedback (LESSON.md; FACTS
-  7), under their Lesson 4 ids, `l04-q1` and `l04-q4`, shown to everyone (Lesson 4 is a
-  prerequisite). Reshuffled from a seed of its own (keys `fyp-l06-recall-seed` and
-  `fyp-l06-recall-v1`); earlier answers are never shown, so the answers measure delayed retrieval
-  (MASTER-PLAN § 9). It takes no `lesson`, so it marks nothing done. Neither question plays a sound
-  (FACTS 71). "Try Lesson 4, Step 1 again" is a plain link to Lesson 4's page, `/learn/04`,
-  opening in a new tab so the viewer keeps their place here, never `data-goto-step`, which would
-  move this page's own deck: the rule Lesson 2's reviewed spec sets for a question reused on
-  another lesson's page (its "What the kit and the app still need", item 9). It stays the page
-  only, as the brief for this lesson asks, even though that rule allows a step address once a step
-  deck can open at one (Lesson 3 WEB-SPEC, "New engineering, in one list", item 6); Lesson 4's deck
-  opens on Step 1 (FACTS 7). On the public host each answer is a telemetry event with its
-  `visit_index`.
+- **Recall**: Lesson 4's questions 1 and 4, word for word with their feedback (LESSON.md; FACTS 7),
+  under their Lesson 4 ids, `l04-q1` and `l04-q4`, shown to everyone (Lesson 4 is a prerequisite).
+  Reshuffled from a seed of its own (keys `fyp-l06-recall-seed` and `fyp-l06-recall-v1`); earlier
+  answers are never shown, so the answers measure delayed retrieval (MASTER-PLAN § 9). It takes no
+  `lesson`, so it marks nothing done. Neither question plays a sound (FACTS 71). "Try Lesson 4, Step
+  1 again" was a plain link to Lesson 4's page, `/learn/04`, as the brief for this lesson asked;
+  since this PR it opens the step its question comes from, `/learn/04#step-1`, through the kit's
+  `recallStepHref`, as Lessons 4 and 7 do. It opens in a new tab so the viewer keeps their place
+  here, never `data-goto-step`, which would move this page's own deck: the rule Lesson 2's reviewed
+  spec sets for a question reused on another lesson's page (its "What the kit and the app still
+  need", item 9), which allows a step address once a step deck can open at one (Lesson 3 WEB-SPEC,
+  "New engineering, in one list", item 6) (FACTS 7). On the public host each answer is a telemetry
+  event with its `visit_index`.
 - **Quick check**: LESSON.md's four questions, ids `l06-q1` to `l06-q4`, keys `fyp-l06-seed` and
   `fyp-l06-quiz-v1`, and `lesson: 6`, so answering all four marks Lesson 6 done in the explorer.
   Three answers each, shuffled per question from the stored seed, one-line feedback for every
@@ -678,8 +678,8 @@ End to end (Playwright, at 390 x 844 and 1440 x 900):
 6. No call to `navigator.mediaDevices.getUserMedia` at any point (a spy).
 7. The recall shows with an empty `fyp-done`, and answering both its questions marks nothing done:
    `fyp-done` stays empty and no explorer node changes; its step link is
-   `<a href="/learn/04" target="_blank">`; answering all four quick-check questions marks Lesson 6
-   done in the explorer; each feedback line starts "Right." or "Not quite.".
+   `<a href="/learn/04#step-1" target="_blank">`; answering all four quick-check questions marks
+   Lesson 6 done in the explorer; each feedback line starts "Right." or "Not quite.".
 8. Every practice link carries `?lesson=06`.
 9. With reduced motion emulated, the slide and the swap land in their end states with no
    transition, the guide's notes light one after another in place of the sweep, and nothing moves
