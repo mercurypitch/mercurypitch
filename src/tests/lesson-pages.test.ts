@@ -1,7 +1,7 @@
 import { existsSync, readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
 import { describe, expect, it } from 'vitest'
-import { PREREQ } from '@/features/lessons/kit/season'
+import { LESSONS, PREREQ } from '@/features/lessons/kit/season'
 import { ENTRY_PAGES } from '@/seo/entry-pages'
 import { draftLessons, lessonDocument, lessonPath, releasedLessons, } from '../../tools/draft-lessons'
 import { lessonHeadline, releasedLessonLinks } from '../../tools/lesson-links'
@@ -69,6 +69,21 @@ const SERIES = {
   '@id': `${HUB}#series`,
   name: 'Find Your Pitch',
   url: HUB,
+}
+
+// A lesson's run time as its description writes it, "a ten-minute lesson".
+const MINUTE_WORDS: Partial<Record<number, string>> = {
+  10: 'ten',
+  11: 'eleven',
+  12: 'twelve',
+  13: 'thirteen',
+  14: 'fourteen',
+  15: 'fifteen',
+  16: 'sixteen',
+  17: 'seventeen',
+  18: 'eighteen',
+  19: 'nineteen',
+  20: 'twenty',
 }
 
 // Released: every learn/NN.html the draft list does not hold back.
@@ -169,6 +184,27 @@ describe.each(DOCUMENTS)('lesson document %i', (n) => {
     // series, so a card seen out of context still says what it belongs to.
     expect(meta(document, 'og:title')).toContain('Find Your Pitch')
     expect(meta(document, 'twitter:title')).toBe(meta(document, 'og:title'))
+  })
+
+  it("states the season's run time on its chip, in timeRequired and in its descriptions", () => {
+    const document = parse(file)
+    const minutes = LESSONS[n]?.minutes
+    expect(minutes, 'no minutes in season.ts').toBeDefined()
+    if (minutes === undefined) return
+    const chips = Array.from(
+      document.querySelectorAll('.chip'),
+      (chip) => chip.textContent?.trim() ?? '',
+    ).filter((text) => /\bminutes?$/.test(text))
+    const article = jsonLd(document).find((node) => node['@type'] === 'Article')
+    // The descriptions write the minutes as a word, with its article.
+    const word = MINUTE_WORDS[minutes]
+    expect(word, `no word for ${minutes}`).toBeDefined()
+    const spoken = `${/^(eight|eleven)/.test(word ?? '') ? 'An' : 'A'} ${word}-minute lesson`
+
+    expect(chips).toEqual([`${minutes} minutes`])
+    expect(article?.timeRequired).toBe(`PT${minutes}M`)
+    expect(meta(document, 'description')).toContain(spoken)
+    expect(article?.description).toContain(spoken)
   })
 
   it('gives search a trail back through the hub to the home page', () => {
