@@ -5,6 +5,12 @@ continues [tv-and-low-tier-devices.md](tv-and-low-tier-devices.md) (the TV
 browser audit, tracked in issue #489) and the song handoff in
 [tv-qr-handoff.md](tv-qr-handoff.md) and [device-sync.md](device-sync.md).
 
+**Continued in [tv-cast-and-google-tv.md](tv-cast-and-google-tv.md)**
+(2026-10-21): casting and mirroring, the Google Play TV quality items, effort
+per work item and one order of work across this plan and that one. This plan
+stays the record for the platforms (§1), the #489 items (§2) and the phone
+as the microphone (§4).
+
 Status keys as in the TV audit: **[shipped]**, **[next]** planned, **[open]**
 needs a decision or hardware.
 
@@ -129,9 +135,12 @@ has TURN. `QrCode.tsx` renders the pairing code.
 
 ### 4.2 Pairing
 
-The TV shows a QR of a new deep link (for example `/#/mic:CODE`) with the code
-as text. The phone opens it in the native app (an app link) or the browser,
-and one tap makes it the microphone for that TV.
+The TV shows a QR of a new link with the code as text. The phone opens it in
+the native app (an app link) or the browser, and one tap makes it the
+microphone for that TV. The link is a path, `/mic/CODE`, answered by the web
+too: app links and universal links match the path, so a hash route such as
+`/#/mic:CODE` could never open the app
+([tv-cast-and-google-tv.md](tv-cast-and-google-tv.md) §2.8).
 
 ### 4.3 Transport
 
@@ -140,8 +149,10 @@ one transport that works everywhere: in any TV browser, and in an LG app,
 where WebRTC is reserved for partners. The Durable Object relays signalling
 today; it gains a `pitch` message it forwards to the room's display. A WebRTC
 data channel (unordered, no retransmits) is a later optimization where both
-ends support it. Durable Object billing counts WebSocket messages: measure the
-cost at 20–50 frames a second per singer before fixing the rate.
+ends support it. Durable Object billing counts WebSocket messages: at 20
+frames a second it costs next to nothing on Workers Paid, and batching three
+frames a message cuts the billed requests by three
+([tv-cast-and-google-tv.md](tv-cast-and-google-tv.md) §2.5).
 
 ### 4.4 Timing
 
@@ -208,6 +219,12 @@ Record results here.
 ---
 
 ## 6. Order of work
+
+[tv-cast-and-google-tv.md](tv-cast-and-google-tv.md) §7 now holds the one
+order of work, with effort in points per item: its P2 to P4 are phases 1 to 3
+below, and it adds mirroring (P1), an iOS second screen (P5) and Google Cast
+(P6). The owner chose iOS first on 2026-10-21. The table stays as this plan's
+first estimate.
 
 Rough, focused-work estimates; store review is calendar time on top.
 
