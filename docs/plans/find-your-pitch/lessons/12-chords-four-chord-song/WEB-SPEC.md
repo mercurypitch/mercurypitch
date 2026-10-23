@@ -625,10 +625,10 @@ under Step 4's, "Start on vi" and "Another loop" (LESSON.md). Neither plays a so
 ### 8. Recall and quick check
 
 Two quizzes share this page through the kit's quiz (`src/features/lessons/kit/quiz.ts`, `createQuiz`
-at `:211`), with the options it already has (`:73-97`): an id prefix for each quiz's elements;
+at `:218`), with the options it already has (`:80-104`): an id prefix for each quiz's elements;
 `lesson` optional; a question `id`, the event's `qLesson` and `q`; a slot for a question's own
 controls (`:52-58`); and, for a question from another lesson, a step link that reads "Try Lesson 10,
-Step 1 again" and opens in a new tab, through `away` (`:87-94`, `linkAway` at `:179-209`), which
+Step 1 again" and opens in a new tab, through `away` (`:94-101`, `linkAway` at `:186-216`), which
 keeps a link's words and drops the link wherever that lesson is not live.
 
 - **Recall**: Lesson 10's questions 1 and 2, word for word with their feedback (LESSON.md; FACTS 7),
@@ -650,7 +650,7 @@ keeps a link's words and drops the link wherever that lesson is not live.
   `fyp-l12-quiz-v1`, and `lesson: 12`, so answering all four marks Lesson 12 done in the explorer.
   Three answers each, shuffled per question from the stored seed, one-line feedback for every
   answer, and a check icon and ink (not gold) on the right one. The kit prints "Right." or "Not
-  quite." before each line (`quiz.ts:293`), so no feedback line starts with "Right", "Yes" or
+  quite." before each line (`quiz.ts:315`), so no feedback line starts with "Right", "Yes" or
   "Correct". None of the four plays a sound. "Try Step 1 again" to "Try Step 5 again" use the kit's
   `data-goto-step`. Answers stay in the viewer's browser; since this PR each question's first answer
   in a visit also goes out, anonymously.
@@ -883,11 +883,11 @@ heard play (Toys 3; Edge cases) (`git diff --stat`).
    page moves it into the kit with a stop that clears its timers, for the owner to call, and Lessons
    2 and 4 may take it later.
 9. `kit/quiz.ts`: `recallStepHref`, built: Lesson 8's page moved it into the kit beside
-   `lessonPageHref` (`:134-136`, `:130-132`), as Lesson 10's spec proposed (its item 9), and Lessons
+   `lessonPageHref` (`:141-143`, `:137-139`), as Lesson 10's spec proposed (its item 9), and Lessons
    3, 4 and 5 take it from there (`lesson-03/quiz-questions.ts:24`,
    `lesson-04/quiz-questions.ts:32`, `lesson-05/quiz-questions.ts:20`), as this page and Lesson 10's
    will. The quiz needs nothing else: its prefix, slot and away links are on main (`quiz.ts:52-58`,
-   `:73-97`, `:179-209`).
+   `:80-104`, `:186-216`).
 10. `kit/comfort.ts` needs nothing: this page's `sing-flow.ts` picks the rest card after "Effortful"
     with `restAfterEffort`, built by #1192, as Lesson 6's does now (by hand before) and Lesson
     10's will, leaving the kit's default for the coach (`comfort.ts:69-78`), and it keeps the kit's
@@ -1117,7 +1117,7 @@ Each with the package's recommendation and the review's judgement (Lesson 12's r
   console's question before it publishes a draft names Lesson 10's page, but nothing checks it
   (Decisions for the owner, item 3). Published first, it would break nothing: its chip would stay as
   a plain chip, and its recall's step links would keep their words with no link
-  (`src/features/lessons/kit/page-state.ts:84-108`; `src/features/lessons/kit/quiz.ts:179-209`). But
+  (`src/features/lessons/kit/page-state.ts:84-108`; `src/features/lessons/kit/quiz.ts:186-216`). But
   the recall would ask about a lesson the learner cannot open.
 - **Lesson 13 not yet live**: the next card reads "Coming later" and "See it on the map", to
   `#explorer` (`kit/next-card.ts:108-110`).

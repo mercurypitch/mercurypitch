@@ -547,7 +547,7 @@ what it must do. The kit items move Lesson 1's code into `src/features/lessons/k
    optional, so the recall check marks no lesson done (it marks `lesson` done once every question
    has an answer); and a question `id`, the event's `qLesson` and `q` (`QuizQuestion` had none,
    FACTS 35a). And two more, for this page and the pages that reuse its questions: a slot after a
-   question's heading, outside the `<h3>` that labels its answers (`quiz.ts:306`), for the
+   question's heading, outside the `<h3>` that labels its answers (`quiz.ts:328`), for the
    question's own controls, so question 2's Play the two steps and its "1st" and "2nd" chips do not
    become part of every answer's name (Lesson 3's recall asks question 2 with its button too); and
    a rule for a question reused on another lesson's page: there its "Try Step N again" is a plain

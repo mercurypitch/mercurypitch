@@ -367,7 +367,7 @@ pan-y` (`lesson-stage.css:776`), so a swipe still scrolls; every action is a but
   toy the new step and the one before (`kit/step-deck.ts:167`): Next and Previous (`:205-215`), a
   swipe (`:217-243`), scrolling another step into view on the wide page (`:194-203`), the lesson
   menu's jump (`:273-277`, called at `kit/lesson-menu.ts:517`), a `#step-N` address
-  (`kit/step-deck.ts:255-262`, `:284-291`) and a quiz's step link (`kit/quiz.ts:339`, `:344`). The
+  (`kit/step-deck.ts:255-262`, `:284-291`) and a quiz's step link (`kit/quiz.ts:361`, `:366`). The
   page registers one toy (`registerToy`, `kit/step-deck.ts:92-96`), as `lesson-03/main.ts:80-87`
   does, whose `onStep(step, previous)` (`kit/step-deck.ts:45-47`) stops the stage, Count the bar and
   Step 5's predict plays whenever the two differ; a layout change that shows the same step again
@@ -663,12 +663,12 @@ another, which is the guide in either case, and the still stays still.
 
 ### 7. Recall and quick check
 
-Two quizzes share this page through the kit's quiz (`kit/quiz.ts`, `createQuiz` at `:211`), with
-the options it already has (`:73-97`): an id prefix for each quiz's elements; `lesson` optional; a
+Two quizzes share this page through the kit's quiz (`kit/quiz.ts`, `createQuiz` at `:218`), with
+the options it already has (`:80-104`): an id prefix for each quiz's elements; `lesson` optional; a
 question `id`, the event's `qLesson` and `q`; and a question from another lesson linking "Try Lesson
-M, Step N again" in a new tab, through `away` (`:87-94`, `linkAway` at `:184-209`). While that
+M, Step N again" in a new tab, through `away` (`:94-101`, `linkAway` at `:191-216`). While that
 lesson is not live where the page is served, the words stay with no link, which would lead to the
-404 page (`:18-20`, `:190`, `:199-202`).
+404 page (`:18-20`, `:197`, `:206-209`).
 
 - **Recall**: Lesson 6's questions 1 and 4, word for word with their feedback (LESSON.md; FACTS 3):
   the very question objects Lesson 6's page asks, imported from `lesson-06/quiz-questions.ts` and
@@ -704,12 +704,12 @@ lesson is not live where the page is served, the words stay with no link, which 
   calls its recall first (`lesson-03/main.ts:56`, `:104`), so that it never mounts a quiz the page
   then takes away. Nothing then invites the viewer to answer questions on a lesson the explorer
   calls "Coming later", and the step links' fallback, their words with no link
-  (`kit/quiz.ts:184-209`), is never shown.
+  (`kit/quiz.ts:191-216`), is never shown.
 - **Quick check**: LESSON.md's four questions, ids `l08-q1` to `l08-q4`, keys `fyp-l08-seed` and
   `fyp-l08-quiz-v1`, and `lesson: 8`, so answering all four marks Lesson 8 done in the explorer.
   Three answers each, shuffled per question from the stored seed, one-line feedback for every
   answer, and a check icon and ink (not gold) on the right one. The kit prints "Right." or "Not
-  quite." before each line (`kit/quiz.ts:293`), so no feedback line starts with "Right", "Yes" or
+  quite." before each line (`kit/quiz.ts:315`), so no feedback line starts with "Right", "Yes" or
   "Correct". Question 2's slot holds its play button, two bars of 3 and the next first beat, seven
   clicks, 4.0 s (FACTS 77), named "Play two bars"; the kit keeps a slot's controls across answers,
   and the page handles them with a listener on the quiz's `host`. "Try Step 2 again" to "Try Step
@@ -914,13 +914,13 @@ was built on.
    `lesson-sections.css:226-232`), and the old hook was the admin console's alternative in
    `kit/lesson-copy.ts:106-112` at `b7093a0a4` until #1186 dropped it. This page adds only its
    tease figure to the slot (Toys 9).
-10. `kit/quiz.ts`: `recallStepHref` promoted beside `lessonPageHref` (`:134-136`, `:130-132`),
+10. `kit/quiz.ts`: `recallStepHref` promoted beside `lessonPageHref` (`:141-143`, `:137-139`),
     since this page is its fourth user after Lessons 3, 4 and 5, whose own copies became
     re-exports of the kit's (`lesson-03/quiz-questions.ts:23-24`, `lesson-04/quiz-questions.ts:31-32`,
     used at `lesson-04/main.ts:41` and `:64`, and `lesson-05/quiz-questions.ts:19-20`). #1149's
     `recallHref` (`lesson-06/quiz-questions.ts:30-32` at `b7093a0a4`) opened a page, never a step;
     #1186 deleted it. The quiz needs nothing else: its prefix, slot and away links are on main
-    (`kit/quiz.ts:73-97`, `:179-209`).
+    (`kit/quiz.ts:80-104`, `:186-216`).
 11. `kit/comfort.ts`, built by #1192: `restAfterEffort`, which this page's flow passes
     (`lesson-08/sing-flow.ts:121`) to pick the rest card after "Effortful", as Lesson 6's does; both
     picked it by hand before. The kit's default stays the coach's (`kit/comfort.ts:69-78`).
