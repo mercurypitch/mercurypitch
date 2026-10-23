@@ -2,7 +2,7 @@
 // ============================================================
 
 import { describe, expect, it } from 'vitest'
-import { CLICK_ECHO_MS, clickTap, keyTap, pointerTap, TAP_FLASH_MS, } from './tap-rule'
+import { CLICK_ECHO_MS, clickTap, isTapKey, keyTap, pointerTap, TAP_FLASH_MS, } from './tap-rule'
 
 describe('pointerTap', () => {
   it("takes the primary button, touch and pen at the event's own time", () => {
@@ -33,6 +33,26 @@ describe('keyTap', () => {
   })
 })
 
+describe('isTapKey', () => {
+  it('names Space and Enter, the keys that tap and make a click of themselves', () => {
+    expect(isTapKey(' ')).toBe(true)
+    expect(isTapKey('Enter')).toBe(true)
+  })
+
+  it("names none of a screen reader's modifier keys, nor any other key", () => {
+    for (const key of [
+      'Control',
+      'Alt',
+      'Meta',
+      'Shift',
+      'CapsLock',
+      'Tab',
+      'a',
+    ])
+      expect(isTapKey(key)).toBe(false)
+  })
+})
+
 describe('clickTap', () => {
   it('takes a click no gesture made, as a screen reader, switch or voice control sends it, at its own time', () => {
     expect(clickTap({ timeStamp: 900 }, -Infinity)).toBe(900)
@@ -42,5 +62,18 @@ describe('clickTap', () => {
   it('ignores the click a pointer or key gesture makes of itself, already a tap', () => {
     expect(clickTap({ timeStamp: 505 }, 500)).toBeNull()
     expect(clickTap({ timeStamp: 599 }, 500)).toBeNull()
+  })
+
+  it('takes a click 50 ms after a Control keydown, which times no echo, and not one 50 ms after a Space keyup', () => {
+    // Arrange: a pad that has seen only the key, at 1000 ms
+    const since = (key: string): number => (isTapKey(key) ? 1000 : -Infinity)
+
+    // Act
+    const afterControl = clickTap({ timeStamp: 1050 }, since('Control'))
+    const afterSpace = clickTap({ timeStamp: 1050 }, since(' '))
+
+    // Assert
+    expect(afterControl).toBe(1050)
+    expect(afterSpace).toBeNull()
   })
 })

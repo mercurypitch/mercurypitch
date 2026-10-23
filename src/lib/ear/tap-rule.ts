@@ -13,8 +13,10 @@
 // A click with no pointer or key gesture just before it is a tap too: it is
 // how a screen reader activates the pad (VoiceOver's VO+Space, NVDA's Enter
 // in browse mode), and how a switch or voice control does, all of which
-// send the click alone. A click that follows a gesture is that gesture's
-// own echo, already taken.
+// send the click alone. A click that follows a pointer, or Space or Enter,
+// is that gesture's own echo, already taken. Only those keys make a click,
+// so only they time an echo: the Control and Option of a quick VO+Space
+// may reach the page, and VoiceOver's click after them is a tap.
 
 /** How long a pad flashes after a tap, ms. */
 export const TAP_FLASH_MS = 110
@@ -37,14 +39,18 @@ export function pointerTap(event: PointerTapEvent): number | null {
   return event.button > 0 ? null : event.timeStamp
 }
 
+/** True for the keys that tap and make a click of themselves, Space and Enter. */
+export function isTapKey(key: string): boolean {
+  return key === ' ' || key === 'Enter'
+}
+
 /** A key down's tap time, ms on the page's clock, or null for another key or a held key's repeat. */
 export function keyTap(event: KeyTapEvent): number | null {
-  if (event.repeat) return null
-  if (event.key !== ' ' && event.key !== 'Enter') return null
+  if (event.repeat || !isTapKey(event.key)) return null
   return event.timeStamp
 }
 
-/** A click this soon after the pad's last pointer up, key down or key up is that gesture's echo, ms. */
+/** A click this soon after the pad's last pointer up, or Space or Enter down or up, is that gesture's echo, ms. */
 export const CLICK_ECHO_MS = 100
 
 /** The parts of a click the rule reads. */
@@ -54,8 +60,8 @@ export interface ClickTapEvent {
 
 /**
  * A click's tap time, ms on the page's clock, or null when it echoes the
- * gesture at `lastGesture` (the pad's latest pointer up, key down or key
- * up), which was already a tap.
+ * gesture at `lastGesture` (the pad's latest pointer up, or Space or Enter
+ * down or up), which was already a tap.
  */
 export function clickTap(
   event: ClickTapEvent,

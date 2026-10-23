@@ -17,7 +17,7 @@
 // delay cancels out of a gap, so the reading needs no lining-up. Nothing is
 // stored.
 
-import { clickTap, keyTap, pointerTap, TAP_FLASH_MS } from '@/lib/ear/tap-rule'
+import { clickTap, isTapKey, keyTap, pointerTap, TAP_FLASH_MS, } from '@/lib/ear/tap-rule'
 
 /** Binds `pad` to `onTap`, which hears each tap's page-clock time in ms. */
 export function bindTapPad(
@@ -40,16 +40,17 @@ export function bindTapPad(
     e.preventDefault()
     register(at)
   })
-  // the pad's latest gesture: the click it makes of itself is no second tap
+  // the pad's latest pointer up, or Space or Enter: the click it makes of
+  // itself is no second tap
   let gesture = -Infinity
   pad.addEventListener('pointerup', (e) => {
     gesture = e.timeStamp
   })
   pad.addEventListener('keyup', (e) => {
-    gesture = e.timeStamp
+    if (isTapKey(e.key)) gesture = e.timeStamp
   })
   pad.addEventListener('keydown', (e) => {
-    gesture = e.timeStamp
+    if (isTapKey(e.key)) gesture = e.timeStamp
     const at = keyTap(e)
     if (at === null) return
     e.preventDefault()
