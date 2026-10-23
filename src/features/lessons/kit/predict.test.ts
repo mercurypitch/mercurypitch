@@ -244,7 +244,7 @@ describe('mountPredict', () => {
     const root = predictRoot()
     const hint = root.querySelector('.lock-hint')
     if (hint !== null)
-      hint.textContent = 'Choose an answer to unlock the play buttons.'
+      hint.textContent = 'Choose an answer to unlock the play button.'
     mount(root)
     Sound.set('off')
     click(root, '[data-play="one"]')
@@ -258,7 +258,7 @@ describe('mountPredict', () => {
 
     // Assert
     expect(hint?.textContent).toBe(
-      'Choose an answer to unlock the play buttons.',
+      'Choose an answer to unlock the play button.',
     )
     expect(reveal(root)?.hidden).toBe(true)
   })
