@@ -82,9 +82,12 @@ are the mobile app's builds. The next `v` tag carries both pages.
    unpublish Lessons 1 and 2 from the console as soon as it deploys; the site follows within about a
    minute.
 5. **The release.** Its changelog entry lands on main first. The `prod-upd` skill then tags main at
-   `CHANGELOG.md`'s version, and the tag deploys production. Only the owner cuts a release. The
-   same release takes the publishing gate and `/admin/lessons` to production, with Lessons 3 to 8
-   held back as drafts.
+   `CHANGELOG.md`'s version, and the tag deploys production. Only the owner cuts a release. The same
+   release takes the publishing gate and `/admin/lessons` to production, with Lessons 3 to 8 held
+   back as drafts. If the release carries the lesson answer events, the privacy notice on
+   about.mercurypitch.com (another repository) first needs a line on them: what a lesson page sends,
+   that it is anonymous, and that in the EEA, the UK and Switzerland it sends nothing without a
+   recorded yes (you asked for this reminder on 23 October 2026).
 
 ### On the day
 
@@ -104,7 +107,7 @@ are the mobile app's builds. The next `v` tag carries both pages.
 9. **Hooks and teases** switch in the same place. Every alternative shows its note, which says why
    it exists. The notes live in `kit/team-notes.ts`, which only the console loads.
 
-## 3. Decisions waiting for you
+## 3. Decisions you made
 
 1. **The vocal coach** (MASTER-PLAN § 12 item 8): who, and when. Eleven lessons wait on the coach.
    The voice lessons, 3, 5, 7, 9, 11, 13 and 14, wait on the coach's sign-off of the "For the vocal
@@ -143,22 +146,22 @@ are the mobile app's builds. The next `v` tag carries both pages.
    “support” a long note. What keeps it steady?"; you pick which goes live.
 7. **Lesson 8 in the lesson menu.** On Lesson 1's own page, before Lesson 1 was done, the menu
    offered Lesson 8 as "up next" wherever Lesson 8 was live: the menu skips the page's own lesson,
-   and Lesson 8 built on no lesson. Decided: Lesson 8 comes after Lesson 1. This PR adds the edge
-   [1, 8] to `EDGES` in `kit/season.ts` and to CURRICULUM § 3.3, so the explorer draws a line from
-   Lesson 1 to Lesson 8, and `kit/lesson-menu.test.ts` records the new order. Lesson 6 only helps,
-   so Lesson 8's recall still shows once Lesson 6 is done; its page gains an "After Lesson 1" chip.
+   and Lesson 8 built on no lesson. Decided (22 October 2026): Lesson 8 comes after Lesson 1. This
+   PR adds the edge [1, 8] to `EDGES` in `kit/season.ts` and to CURRICULUM § 3.3, so the explorer
+   joins Lesson 1 to Lesson 8, and `kit/lesson-menu.test.ts` records the new order. Lesson 6 only
+   helps, so Lesson 8's recall still shows once Lesson 6 is done; its page gains a Lesson 1 chip.
 8. **Recall links, one rule or two.** Lessons 3, 4, 5, 7 and 8 open the earlier lesson at the step a
    question comes from (`/learn/02#step-5`). Lesson 6 opened Lesson 4's page at its top, as its
    brief asked (its WEB-SPEC, Toys 7), though the step address would work there too. Both open a new
    tab. Decided (22 October 2026): one rule. Since this PR Lesson 6 opens Lesson 4's page at the
    step too (`/learn/04#step-1`).
 9. **Open since before this run** (MASTER-PLAN § 12), each decided on 22 October 2026, as
-   MASTER-PLAN § 12 and SEARCH.md § 13 now record: orange Merc's name and pronouns (item 1); whether
-   the lessons are free (3); 1080p or 4K (4); where the lessons live in the app (6); orange Merc as
-   an app palette (10); the lesson telemetry exception (11). SEARCH.md § 13: titles, bylines, the
-   hub, watch pages, articles, the lesson licence and aggregate data. CURIOSITY-MOMENTS § 5 item 5,
-   whether lesson pages send events at all: yes, with consent, built in their own PR (MASTER-PLAN
-   § 12 item 11).
+   MASTER-PLAN § 12 and SEARCH.md § 13 now record: orange Merc's name and pronouns (item 1; Decided
+   (23 October 2026): Tavi, she, where 22 October left her unnamed); whether the lessons are free
+   (3); 1080p or 4K (4); where the lessons live in the app (6); orange Merc as an app palette (10);
+   the lesson telemetry exception (11). SEARCH.md § 13: titles, bylines, the hub, watch pages,
+   articles, the lesson licence and aggregate data. CURIOSITY-MOMENTS § 5 item 5, whether lesson
+   pages send events at all: yes, with consent, built in their own PR (MASTER-PLAN § 12 item 11).
 
 ## 4. Left for later, on purpose
 

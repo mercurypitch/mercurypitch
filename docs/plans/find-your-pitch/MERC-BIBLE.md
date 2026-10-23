@@ -157,11 +157,11 @@ track and item 8 in the Voices track; items 4, 5 and 10 are not scheduled yet.
 MASTER-PLAN § 12 is the single register of what waits for the owner. The items that concern the
 hosts:
 
-- **Item 1.** Orange Merc's name and pronouns (the voice is cast, § 4). (This plan avoids inventing them: the
-  owner's own words are "blue and orange Merc".) Confirm the ElevenLabs plan covers commercial
-  YouTube use of the D2 voice. The same check covers Merc's sung notes: Lesson 1's are
-  ElevenLabs-derived placeholders that the app keeps out of its store build
-  (`src/features/echo/merc-voice-set.ts`). Confirm their rights before any public release, or
-  switch the public film to the synthesised demo-audio "ooh" (`src/lib/demo-audio.ts`).
-- **Item 10.** Whether orange Merc becomes a first-class palette in the app (backlog items 1 and
-  2), including approval of the new pinned shader hash that the accent uniforms need.
+- **Item 1.** Decided (23 October 2026): orange Merc is Tavi, from Octavia, as she sings an octave
+  above Merc; she. This overtakes 22 October's "unnamed, with no pronoun" (the voice is cast, § 4).
+  Decided (16 October 2026): the owner holds the rights to the ElevenLabs voices, which covers
+  commercial YouTube use of the D2 voice and Merc's sung notes, Lesson 1's ElevenLabs-derived
+  placeholders that the app keeps out of its store build (`src/features/echo/merc-voice-set.ts`):
+  they stay for now, and a voice actor replaces them later.
+- **Item 10.** Orange Merc as a first-class palette in the app (backlog items 1 and 2), with the
+  pinned shader hash its accent uniforms need. Decided (22 October 2026): after Season 1.
