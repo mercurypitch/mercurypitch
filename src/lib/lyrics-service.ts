@@ -3,9 +3,15 @@
 import type { WordSweepPoint } from '@/features/stem-mixer/types'
 import { stripAudioExtension } from './audio-file-name'
 import { IS_DEV } from './defaults'
+import type { LyricsSearchMatch, LyricsSearchResult } from './lrclib-record'
+import { createTimeoutSignal, fetchLyricsByIdOutcome } from './lrclib-record'
 import { cappedEvenLineDuration } from './lyric-sung-end'
 import { interpolateSweepProgress } from './lyric-sweep'
 import { estimateWordDuration } from './word-sync'
+
+// The search's types live with LRCLIB's records (lrclib-record.ts), and
+// stay importable from here, where every caller has always found them.
+export type { LyricsSearchMatch, LyricsSearchResult } from './lrclib-record'
 
 export interface LrcLine {
   time: number // seconds
@@ -81,33 +87,6 @@ export function parseArtistTitle(input: string): {
 }
 
 // ── Lyrics API Fetching ──────────────────────────────────────
-
-export interface LyricsSearchResult {
-  text: string
-  format: 'txt' | 'lrc'
-}
-
-function createTimeoutSignal(
-  ms: number,
-  externalSignal?: AbortSignal,
-): {
-  signal: AbortSignal
-  clear: () => void
-} {
-  const ctrl = new AbortController()
-  const id = setTimeout(() => ctrl.abort(), ms)
-
-  if (externalSignal) {
-    if (externalSignal.aborted) {
-      ctrl.abort(externalSignal.reason)
-      return { signal: ctrl.signal, clear: () => clearTimeout(id) }
-    }
-    const onAbort = () => ctrl.abort(externalSignal.reason)
-    externalSignal.addEventListener('abort', onAbort, { once: true })
-  }
-
-  return { signal: ctrl.signal, clear: () => clearTimeout(id) }
-}
 
 export async function searchLyrics(
   rawInput: string,
@@ -190,14 +169,6 @@ async function fetchLyricsLrclib(
 
 // ── Multi-Result Search ─────────────────────────────────────
 
-export interface LyricsSearchMatch {
-  artist: string
-  title: string
-  plainLyrics?: string
-  syncedLyrics?: string
-  id: number
-}
-
 export async function searchLyricsMulti(
   rawInput: string,
   signal?: AbortSignal,
@@ -247,36 +218,13 @@ export async function searchLyricsMulti(
   return results
 }
 
+/** One LRCLIB record's lyrics by id, or null for any way it can fail. */
 export async function fetchLyricsById(
   id: number,
   signal?: AbortSignal,
 ): Promise<LyricsSearchResult | null> {
-  try {
-    const { signal: timeoutSignal, clear } = createTimeoutSignal(25000, signal)
-    const resp = await fetch(`https://lrclib.net/api/get/${id}`, {
-      signal: timeoutSignal,
-      headers: {
-        'LrcLib-Client': 'MercuryPitch/1.0.0',
-      },
-    })
-    clear()
-    if (!resp.ok) return null
-
-    const data = await resp.json()
-
-    if (
-      typeof data?.syncedLyrics === 'string' &&
-      data.syncedLyrics.length > 20
-    ) {
-      return { text: data.syncedLyrics, format: 'lrc' }
-    }
-    if (typeof data?.plainLyrics === 'string' && data.plainLyrics.length > 10) {
-      return { text: data.plainLyrics, format: 'txt' }
-    }
-    return null
-  } catch {
-    return null
-  }
+  const outcome = await fetchLyricsByIdOutcome(id, signal)
+  return outcome.kind === 'found' ? outcome.result : null
 }
 
 async function fetchSearchLrclib(
