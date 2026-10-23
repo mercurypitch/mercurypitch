@@ -929,8 +929,9 @@ With the recommendation first:
    did not link it. Recommended: link it, and ship the help's new lines (Practice links) so the
    card's sentence about them can go; and land the season entry's link with the page, not before.
    The Siren's slide part, which scored jumps rather than the glide (FACTS 41; App content), was a
-   known app bug, filed by the lead with the task #38 follow-ups and fixed in this PR; the card and
-   the help name only the part of the score that measures how close you come to the second note.
+   known app bug, filed by the lead with the task #38 follow-ups and fixed in this PR; the card
+   names the part of the score that measures how close you come to the second note, and the glide
+   part only to say that a flip can lower it.
 8. **The CURRICULUM card** (FACTS 6): done in this package. Its checkpoint and its Practise line
    match the page: "one slow, quiet siren on "ng", up only as far as is easy" and the Siren exercise
    alone.
