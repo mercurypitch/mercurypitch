@@ -159,6 +159,8 @@ export function initSing(stills: RingStills): void {
     const listening = visit.mode === 'listen' || visit.mode === 'nomic'
     // the visit's takes spent, the last abandoned: no Start, and Done for today alone
     const spent = phase === 'idle' && o.done
+    // and the ring at rest beside it, unless Merc's siren is still running on it
+    if (spent && !ring.busy) ring.stop('Rest')
     liveEl.hidden =
       visit.mode === null ||
       VoiceChoice.voice === null ||
@@ -229,7 +231,8 @@ export function initSing(stills: RingStills): void {
       label: RING_LABEL,
       listen: SIREN_SEC,
       turn: 0,
-      words: { done: 'Ready' },
+      // ready for the take Start offers; with none on offer, at rest
+      words: { done: offers(visit).start ? 'Ready' : 'Rest' },
     })
     const t0 = performance.now()
     mercT = 0

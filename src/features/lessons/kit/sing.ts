@@ -81,8 +81,8 @@ export interface Ring {
   readonly busy: boolean
   /** Merc's note, then the viewer's turn; resolves once the ring is back at rest. */
   run(r: RingRun): Promise<void>
-  /** Ends a run where it stands: the ring rests, its ripples go, and the run's promise settles. */
-  stop(): void
+  /** Ends a run where it stands: the ring rests, its ripples go, the run's promise settles; then it says `word`, if given. */
+  stop(word?: string): void
 }
 
 const WORDS: RingWords = {
@@ -243,10 +243,11 @@ export function mountRing(root: HTMLElement, opts: RingOptions): Ring {
     get busy() {
       return now !== null
     },
-    stop() {
+    stop(word) {
       if (now !== null) finish(now)
       rips.forEach((r) => r.c.remove())
       rips = []
+      if (word !== undefined) state.textContent = word
     },
     run(run) {
       return new Promise<void>((resolve) => {

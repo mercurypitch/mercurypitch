@@ -12,9 +12,11 @@
 // it is gone; "Uncomfortable" takes the band away; a tab hidden while the
 // microphone opens starts no take, lets it go, and counts it, the third
 // leaving Done for today, and the section scrolled away starts none either,
-// though once it is back in view Start starts one; and storage holds
-// nothing but `fyp-voice` and `fyp-l07-warmup`. The listener is a double:
-// its takes are synthetic frames, read by the real siren reader.
+// though once it is back in view Start starts one; the ring rests once a
+// take ends, with motion or without, and beside Done for today, and Merc's
+// siren ends on "Rest" once the takes are spent; and storage holds nothing
+// but `fyp-voice` and `fyp-l07-warmup`. The listener is a double: its takes
+// are synthetic frames, read by the real siren reader.
 
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { scrollIntoViewAgain, scrollOutOfView, } from '@/features/lessons/kit/browser-doubles.test-fixtures'
@@ -37,6 +39,8 @@ const takes = vi.hoisted(() => ({
   next: [] as F0Frame[],
   /** Runs as the page asks for the microphone, before the listener resolves. */
   opening: null as (() => void) | null,
+  /** Runs inside an open take, which then reads nothing: the viewer gone mid-take. */
+  during: null as ((o: ListenModule.TakeOptions) => void) | null,
   /** Takes opened, and the times the microphone was let go: after its linger, or at once. */
   opened: 0,
   released: 0,
@@ -60,16 +64,32 @@ vi.mock('@/features/lessons/kit/listen', async (importOriginal) => {
         },
       })
     },
-    takeFrames: () => {
+    takeFrames: (_: unknown, o: ListenModule.TakeOptions) => {
       takes.opened += 1
-      return Promise.resolve(takes.next)
+      if (takes.during === null) return Promise.resolve(takes.next)
+      takes.during(o)
+      return Promise.resolve(null)
     },
   }
 })
 
-/** The page's modules, loaded afresh: the voice choice reads storage as it loads. */
-async function load() {
+/**
+ * The page's modules, loaded afresh: the voice choice reads storage as it
+ * loads, and the motion setting is read as its module loads, under reduced
+ * motion as the doubles hold it unless `moving`.
+ */
+async function load(o: { readonly moving?: boolean } = {}) {
   vi.resetModules()
+  if (o.moving === true) {
+    // the doubles first, then the system setting with motion on, before any
+    // kit module reads it: none of the doubles' queries matches
+    await import('@/features/lessons/kit/browser-doubles.test-fixtures')
+    const doubles = window.matchMedia.bind(window)
+    vi.spyOn(window, 'matchMedia').mockImplementation((q) => ({
+      ...doubles(q),
+      matches: false,
+    }))
+  }
   const dom = await import('./page-dom.test-fixtures')
   const sing = await import('./sing')
   const comfort = await import('@/features/lessons/kit/comfort')
@@ -131,10 +151,38 @@ function leaveSection(): void {
   vi.advanceTimersByTime(600)
 }
 
+/** A voice heard in an open take, then the tab hidden: the take abandoned after voice. */
+function voiceThenHide(o: ListenModule.TakeOptions): void {
+  o.onFrame?.({ t: 0.6, f0: 220, conf: 0.95, rms: 0.1 }, 0.5)
+  hideTab()
+}
+
+/** The word the ring says. */
+const ringSays = (p: Page): string =>
+  p.el('#ring .ring-state').textContent ?? ''
+
+/**
+ * The page's frame loop on frames the test runs, the ring on screen: `draw(s)`
+ * runs the frame asked for, `s` seconds from now, as a ring on screen is drawn.
+ */
+async function drawnRing(p: Page): Promise<(seconds: number) => void> {
+  const asked: FrameRequestCallback[] = []
+  vi.spyOn(window, 'requestAnimationFrame').mockImplementation((cb) =>
+    asked.push(cb),
+  )
+  const loop = await import('@/features/lessons/kit/frame-loop')
+  loop.startFrameLoop()
+  scrollIntoViewAgain(p.el('#ring'))
+  return (seconds) => {
+    for (const cb of asked.splice(0)) cb(performance.now() + seconds * 1000)
+  }
+}
+
 beforeEach(() => {
   localStorage.clear()
   webAudio(true)
   takes.opening = null
+  takes.during = null
   takes.opened = 0
   takes.released = 0
   takes.releasedNow = 0
@@ -515,5 +563,90 @@ describe("Lesson 7's Sing it: the takes", () => {
     // Assert
     expect(keys().sort()).toEqual(['fyp-l07-warmup', 'fyp-voice'])
     expect(status(p)).toBe('Done for today.')
+  })
+})
+
+describe("Lesson 7's Sing it: the ring at rest", () => {
+  describe.each([
+    { motion: 'with motion', moving: true },
+    { motion: 'under reduced motion', moving: false },
+  ])('$motion', ({ moving }) => {
+    it('rests once a take ends with a reading', async () => {
+      // Arrange
+      vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] })
+      const p = await load({ moving })
+      p.el('[data-comfort="sing"]').click()
+      p.el('[data-panel="voice"] [data-voice="lower"]').click()
+      await playMerc(p)
+
+      // Act
+      await sing(p, p.el('[data-sing="start"]'), steady(57, 3))
+
+      // Assert
+      expect(shown(p, '[data-panel="feel"]')).toBe(true)
+      expect(ringSays(p)).toBe('Rest')
+    })
+
+    it('rests once a take is abandoned after its voice was heard', async () => {
+      // Arrange
+      vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] })
+      const p = await load({ moving })
+      p.el('[data-comfort="sing"]').click()
+      p.el('[data-panel="voice"] [data-voice="lower"]').click()
+      await playMerc(p)
+      takes.during = voiceThenHide
+
+      // Act
+      await sing(p, p.el('[data-sing="start"]'), steady(57, 3))
+
+      // Assert
+      expect(status(p)).toBe('Stopped listening: the microphone is off.')
+      expect(shown(p, '[data-sing="start"]')).toBe(true)
+      expect(ringSays(p)).toBe('Rest')
+    })
+  })
+
+  it('rests beside Done for today once three Starts are abandoned as the microphone opens', async () => {
+    // Arrange: Merc's siren heard to its end on a ring the frame loop draws
+    vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] })
+    const p = await load()
+    const draw = await drawnRing(p)
+    p.el('[data-comfort="sing"]').click()
+    p.el('[data-panel="voice"] [data-voice="lower"]').click()
+    await playMerc(p)
+    draw(10)
+    const heard = ringSays(p)
+    takes.opening = hideTab
+
+    // Act: Start three times, the tab hidden each time the microphone opens
+    for (let i = 0; i < 3; i += 1)
+      await sing(p, p.el('[data-sing="start"]'), steady(57, 3))
+
+    // Assert
+    expect(heard).toBe('Ready')
+    expect(takes.opened).toBe(0)
+    expect(onCard(p, '[data-take-actions] [data-sing="today"]')).toBe(true)
+    expect(ringSays(p)).toBe('Rest')
+  })
+
+  it("ends Merc's siren on Rest once the takes are spent", async () => {
+    // Arrange: three Starts abandoned as the microphone opened, and Done for today alone
+    vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] })
+    const p = await load()
+    const draw = await drawnRing(p)
+    p.el('[data-comfort="sing"]').click()
+    p.el('[data-panel="voice"] [data-voice="lower"]').click()
+    await playMerc(p)
+    draw(10)
+    takes.opening = hideTab
+    for (let i = 0; i < 3; i += 1)
+      await sing(p, p.el('[data-sing="start"]'), steady(57, 3))
+
+    // Act: Merc's siren once more, by the briefing's button the card now holds hidden
+    await playMerc(p)
+    draw(10)
+
+    // Assert
+    expect(ringSays(p)).toBe('Rest')
   })
 })

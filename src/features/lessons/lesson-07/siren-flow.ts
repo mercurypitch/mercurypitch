@@ -16,15 +16,15 @@
 // counting; at most two sung sirens. Again after "Easy" or "Workable" comes
 // once a visit, whatever the reading. A take that heard no voice asks no
 // feeling question, and its Again is a fresh start that leaves the one Again
-// unused. A take abandoned when the page was hidden asks none either, and
-// Start comes back while takes remain, Done for today once none do; if it
-// had voice it uses the one Again up. Never a retry after "Effortful" or
-// "Uncomfortable": once either has been picked, no Again and no Start for
-// the rest of the visit, and the Wrap shows the rest card, as after "Just
-// listen today" (REQ-GVC-021, REQ-GVC-023, REQ-GVC-055). An answer can
-// change until the next take; the strongest report the visit has had decides
-// the closing line, because the singer's report outranks every reading
-// (REQ-GVC-024). Nothing here is stored: the ending lasts the visit.
+// unused. A take abandoned when the page was hidden or the section left asks
+// none either, and Start comes back while takes remain, Done for today once
+// none do; if it had voice it uses the one Again up. Never a retry after
+// "Effortful" or "Uncomfortable": once either has been picked, no Again and
+// no Start for the rest of the visit, and the Wrap shows the rest card, as
+// after "Just listen today" (REQ-GVC-021, REQ-GVC-023, REQ-GVC-055). An
+// answer can change until the next take; the strongest report the visit has
+// had decides the closing line, because the singer's report outranks every
+// reading (REQ-GVC-024). Nothing here is stored: the ending lasts the visit.
 
 import type { Feeling } from '@/features/lessons/kit/comfort'
 
