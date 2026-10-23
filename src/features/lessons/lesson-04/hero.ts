@@ -12,11 +12,10 @@
 import { q } from '@/features/lessons/kit/dom'
 import { surface, watch } from '@/features/lessons/kit/frame-loop'
 import { drawStars, makeStars } from '@/features/lessons/kit/hero-sky'
-import type { Which } from '@/features/lessons/kit/merc-duo'
-import { mercSing, mercsReady } from '@/features/lessons/kit/merc-duo'
+import { mercsReady } from '@/features/lessons/kit/merc-duo'
 import { COLOR } from '@/features/lessons/kit/notes'
+import { singAlong } from '@/features/lessons/kit/sing-along'
 import { Sound } from '@/features/lessons/kit/sound'
-import type { NoteEvent } from './examples'
 import { scaleUp } from './examples'
 import type { StairsCore } from './stairs-core'
 import { mountStairs } from './stairs-core'
@@ -31,17 +30,6 @@ export function stillSky(stage: HTMLElement): void {
   }
   paint()
   new ResizeObserver(paint).observe(stage)
-}
-
-/** A Merc sings along with a run: each note as it starts, quiet once the last has ended. */
-export function singAlong(
-  which: Which,
-): (e: NoteEvent, i: number, count: number) => void {
-  return (e, i, count) => {
-    mercSing(which, e.midi, true)
-    if (i === count - 1)
-      window.setTimeout(() => mercSing(which, e.midi, false), e.dur * 1000)
-  }
 }
 
 export function initHero(): StairsCore {

@@ -20,14 +20,14 @@
 
 import { q, wait } from '@/features/lessons/kit/dom'
 import { watch } from '@/features/lessons/kit/frame-loop'
-import { mercCelebrate, mercSing, mercsReady, } from '@/features/lessons/kit/merc-duo'
+import { mercCelebrate, mercsReady } from '@/features/lessons/kit/merc-duo'
 import { COLOR, signsHtml } from '@/features/lessons/kit/notes'
 import { NowPlaying } from '@/features/lessons/kit/now-playing'
 import { mountPredict } from '@/features/lessons/kit/predict'
+import { singAlong, stopSingAlong } from '@/features/lessons/kit/sing-along'
 import { stillSky } from '@/features/lessons/kit/still-sky'
 import type { TuneShape } from '@/features/lessons/kit/tune-line'
 import { mountTuneLine } from '@/features/lessons/kit/tune-line'
-import type { NoteEvent } from './examples'
 import { LINE_C, LINE_FS } from './examples'
 import { C4, FS4 } from './melody'
 import { TUNE } from './tune-toy'
@@ -66,12 +66,6 @@ export const STARTS_SAID = {
  */
 const signedHint = (text: string): string => `<span>${signsHtml(text)}</span>`
 
-/** Merc sings along: each note as it starts, quiet once the last has ended. */
-function singAlong(e: NoteEvent, i: number, count: number): void {
-  mercSing('blue', e.midi, true)
-  if (i === count - 1)
-    window.setTimeout(() => mercSing('blue', e.midi, false), e.dur * 1000)
-}
 
 export function initColdOpen(): void {
   const stage = q('#heroStage')
@@ -87,6 +81,8 @@ export function initColdOpen(): void {
     shape: COMPACT,
     active: watch(stage),
   })
+  // blue Merc sings along, and falls quiet when a play is cut short
+  const sing = singAlong('blue')
 
   // the stops so far: a play stopped while its line still slides finds them changed
   let stops = 0
@@ -95,7 +91,7 @@ export function initColdOpen(): void {
   function stop(): void {
     stops += 1
     line.stop()
-    mercSing('blue', C4, false)
+    stopSingAlong('blue', C4)
   }
 
   /** Plays a start; resolves false if another sound cut it short. */
@@ -111,7 +107,7 @@ export function initColdOpen(): void {
     const finished = await line.play(events, audible, {
       kind: 'merc',
       color: COLOR.blue,
-      onNote: (e, i) => singAlong(e, i, events.length),
+      onNote: (e, i) => sing(e, i, events.length),
     })
     if (finished) NowPlaying.release(stop)
     return finished

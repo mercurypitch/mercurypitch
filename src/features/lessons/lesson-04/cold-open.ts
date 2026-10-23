@@ -20,8 +20,8 @@ import type { Which } from '@/features/lessons/kit/merc-duo'
 import { mercCelebrate } from '@/features/lessons/kit/merc-duo'
 import { COLOR } from '@/features/lessons/kit/notes'
 import { mountPredict } from '@/features/lessons/kit/predict'
+import { singAlong } from '@/features/lessons/kit/sing-along'
 import { landOnDo, stopOnTi } from './examples'
-import { singAlong } from './hero'
 import { mountStairs } from './stairs-core'
 
 const C4 = 60
