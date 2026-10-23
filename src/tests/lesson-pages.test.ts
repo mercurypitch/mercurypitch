@@ -1,6 +1,7 @@
 import { existsSync, readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
 import { describe, expect, it } from 'vitest'
+import { PREREQ } from '@/features/lessons/kit/season'
 import { ENTRY_PAGES } from '@/seo/entry-pages'
 import { draftLessons, lessonDocument, lessonPath, releasedLessons, } from '../../tools/draft-lessons'
 import { lessonHeadline, releasedLessonLinks } from '../../tools/lesson-links'
@@ -192,6 +193,21 @@ describe.each(DOCUMENTS)('lesson document %i', (n) => {
     expect(meta(document, 'og:image:alt')?.trim()).toBeTruthy()
     expect(meta(document, 'twitter:image:alt')).toBe(
       meta(document, 'og:image:alt'),
+    )
+  })
+
+  // The header's "After Lesson N" chips are written by hand, and the season's
+  // edges are what the menu and the map read: a page whose chips name other
+  // lessons than PREREQ tells a learner a different way in.
+  it('names the lessons it comes after, as the season does', () => {
+    const chips = Array.from(
+      parse(file).querySelectorAll('ul.meta a.chip-link'),
+    ).map((a) => ({
+      after: Number(/After Lesson (\d+)/.exec(a.textContent ?? '')?.[1]),
+      href: a.getAttribute('href'),
+    }))
+    expect(chips).toEqual(
+      (PREREQ[n] ?? []).map((k) => ({ after: k, href: lessonPath(k) })),
     )
   })
 

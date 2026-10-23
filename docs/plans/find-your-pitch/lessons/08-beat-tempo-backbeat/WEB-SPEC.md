@@ -137,10 +137,10 @@ section's heading, and the line above it, are in LESSON.md ("Section headings").
    the page was served with (`followPageState`, `kit/page-chrome.ts:113`).
 2. **The hook**, the hero's copy: the kicker, the hook question as the title (`h1.hook#hook`, as
    `kit/lesson-copy.test.ts:325-334` requires of every page from its first commit), the meta as
-   three chips ("15 minutes", FACTS 4; "Also useful: Lesson 6, Intervals", a plain chip, not a link,
-   as Lesson 3's "Also useful" chip is, `learn/03.html:354-357`, FACTS 2; Sound on) and the promise,
-   from LESSON.md. The title is the season's hook (`kit/season.ts:312`, FACTS 1); it says the song
-   feels different and never says where the claps land, so it answers nothing the predict asks.
+   four chips ("15 minutes", FACTS 4; "After Lesson 1", a link; "Also useful: Lesson 6, Intervals",
+   a plain chip as Lesson 3's is, `learn/03.html:354-357`, FACTS 2; Sound on) and the promise, from
+   LESSON.md. The title is the season's hook (`kit/season.ts:312`, FACTS 1); it says the song feels
+   different and never says where the claps land, so it answers nothing the predict asks.
 3. **The stage**: orange's and blue's bubbles over the two Mercs on the floor line, with the beat
    machine in its compact state between them (Toys 1), and under the machine the two plays: "Play
    with claps on 1 and 3" (`twinkle-13`, FACTS 72), which works from the start, and "Play with
