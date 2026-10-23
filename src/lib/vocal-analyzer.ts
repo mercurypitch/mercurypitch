@@ -535,9 +535,18 @@ function computeDirectness(
 }
 
 /**
+ * The longest time, in seconds, that one step of a glide may span. The
+ * frames either side of an unvoiced gap are not a glide, and silence then the
+ * far note would otherwise pass as one slow step; a frame or two dropped at
+ * 30 frames a second still counts.
+ */
+const GLIDE_MAX_GAP_S = 0.12
+
+/**
  * How much of the way from one note toward another a line glides, 0 to 1:
  * the share of the span between `fromMidi` and `toMidi` that the frames cross
- * moving toward `toMidi` in steps of at most `maxStep` semitones a frame.
+ * moving toward `toMidi` no faster than `maxRate` semitones a second, each
+ * step spanning at most GLIDE_MAX_GAP_S.
  *
  * computeDirectness cannot score a glide window on its own. It draws one
  * straight line across every sample, so a held note with a jump halfway
@@ -545,14 +554,22 @@ function computeDirectness(
  * follows the Siren's guide dot there and back, scores about two thirds.
  * Here a jump or a flip crosses ground without gliding it, frames sung an
  * octave away lie outside the span, a held note crosses nothing, and going
- * back over ground already glided neither adds nor takes away. `maxStep` is
- * the half semitone detectSlides already treats as a jump between frames.
+ * back over ground already glided neither adds nor takes away.
+ *
+ * The limit is a rate, read from each frame's `time`, because the frames come
+ * at the display's refresh rate: a limit per frame would pass a 3-semitone
+ * jump taking 100 ms at 120 Hz and refuse a smooth octave glide at twice the
+ * dot's pace at 30 frames a second. The Siren sets the rate from its guide's
+ * pace, so it grows with the span, not one rate for every round: a 3-semitone
+ * jump moves about as fast as an octave glide at twice the dot's pace. The
+ * cost is wide vibrato on the smallest span: ±1 semitone on a 3-semitone
+ * round scores about 0.31.
  */
 export function computeGlideCoverage(
-  samples: Array<{ midi: number }>,
+  samples: Array<{ midi: number; time: number }>,
   fromMidi: number,
   toMidi: number,
-  maxStep = 0.5,
+  maxRate: number,
 ): number {
   const lo = Math.min(fromMidi, toMidi)
   const hi = Math.max(fromMidi, toMidi)
@@ -562,7 +579,11 @@ export function computeGlideCoverage(
   const crossed: Array<[number, number]> = []
   for (let i = 1; i < samples.length; i++) {
     const step = samples[i].midi - samples[i - 1].midi
-    if (Math.abs(step) > maxStep || step * toward <= 0) continue
+    const dt = samples[i].time - samples[i - 1].time
+    // Written so that a NaN pitch or time glides nothing.
+    const glides =
+      dt > 0 && dt <= GLIDE_MAX_GAP_S && Math.abs(step) <= maxRate * dt
+    if (!glides || step * toward <= 0) continue
     const a = Math.max(lo, Math.min(samples[i - 1].midi, samples[i].midi))
     const b = Math.min(hi, Math.max(samples[i - 1].midi, samples[i].midi))
     if (b > a) crossed.push([a, b])
