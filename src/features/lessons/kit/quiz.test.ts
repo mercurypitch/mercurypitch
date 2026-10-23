@@ -2,7 +2,8 @@
 // Lesson quiz tests — two quizzes on one page, and a question asked away from home
 // ============================================================
 
-import { afterEach, beforeEach, describe, expect, it } from 'vitest'
+import type { Mock } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import './browser-doubles.test-fixtures'
 import { Done } from './progress'
 import type { QuizAnswer, QuizQuestion } from './quiz'
@@ -46,9 +47,38 @@ beforeEach(() => {
   localStorage.clear()
 })
 
-afterEach(() => {
+afterEach(async () => {
+  // every answer's beacon settles in its own test's page, not the next one's
+  await vi.dynamicImportSettled()
   document.body.textContent = ''
+  document.getElementById('lesson-state')?.remove()
+  window.history.replaceState(null, '', '/')
+  vi.unstubAllEnvs()
+  vi.unstubAllGlobals()
 })
+
+/** A page the site worker served, with an API base: where the beacon sends. */
+function servedPage(): Mock<typeof fetch> {
+  vi.stubEnv('VITE_API_BASE_URL', 'https://api.test')
+  window.history.replaceState(null, '', '/learn/01')
+  const tag = document.createElement('script')
+  tag.type = 'application/json'
+  tag.id = 'lesson-state'
+  tag.textContent = '{"version":1,"updatedAt":null,"lessons":{},"drafts":true}'
+  document.head.append(tag)
+  const fetchMock = vi.fn<typeof fetch>(
+    async () => new Response(null, { status: 201 }),
+  )
+  vi.stubGlobal('fetch', fetchMock)
+  return fetchMock
+}
+
+/** The metrics of each event the beacon posted. */
+const sentMetrics = (fetchMock: Mock<typeof fetch>): unknown[] =>
+  fetchMock.mock.calls.map(
+    ([, init]) =>
+      (JSON.parse(String(init?.body)) as { metrics: unknown }).metrics,
+  )
 
 describe('createQuiz', () => {
   it("names the learner's pick and the right answer in words, with no markup in any name", () => {
@@ -229,6 +259,93 @@ describe('createQuiz', () => {
     expect(heard.map((a) => [a.id, a.option, a.correct, a.first])).toEqual([
       ['l01-q1', 1, false, true],
       ['l01-q1', 0, true, false],
+    ])
+  })
+
+  it('says firstThisVisit once per question per visit, across a Reset, and again in the next visit', () => {
+    // Arrange: one visit's answers, one of them again after Reset
+    quizBox()
+    const heard: QuizAnswer[] = []
+    const opts = {
+      questions: [question('l01-q1'), question('l01-q2')],
+      lesson: 1,
+      keys: KEYS,
+      onAnswer: (a: QuizAnswer) => heard.push(a),
+    }
+    const quiz = createQuiz(opts)
+    answer(quiz.host, 0, 'A wrong answer')
+    document.getElementById('quizReset')?.click()
+    answer(quiz.host, 0, 'The right answer')
+    answer(quiz.host, 1, 'The right answer')
+    document.body.textContent = ''
+    quizBox()
+
+    // Act: the next visit
+    const next = createQuiz(opts)
+    answer(next.host, 0, 'The right answer')
+
+    // Assert
+    expect(heard.map((a) => [a.id, a.firstThisVisit, a.visit])).toEqual([
+      ['l01-q1', true, 1],
+      ['l01-q1', false, 1],
+      ['l01-q2', true, 1],
+      ['l01-q1', true, 2],
+    ])
+  })
+
+  it("tells onAnswer each question's number of options", () => {
+    // Arrange: a two-option question and a three-option one
+    quizBox()
+    const heard: QuizAnswer[] = []
+    const three: QuizQuestion = {
+      ...question('l01-q2'),
+      options: [
+        ...question('l01-q2').options,
+        { text: 'Another wrong answer', feedback: 'Nor this one.' },
+      ],
+    }
+    const quiz = createQuiz({
+      questions: [question('l01-q1'), three],
+      lesson: 1,
+      keys: KEYS,
+      onAnswer: (a) => heard.push(a),
+    })
+
+    // Act
+    answer(quiz.host, 0, 'The right answer')
+    answer(quiz.host, 1, 'Another wrong answer')
+
+    // Assert
+    expect(heard.map((a) => a.k)).toEqual([2, 3])
+  })
+
+  it('sends the beacon once per question per visit, never for a re-answer after Reset', async () => {
+    // Arrange
+    const fetchMock = servedPage()
+    quizBox()
+    const opts = {
+      questions: [question('l01-q1'), question('l01-q2')],
+      lesson: 1,
+      keys: KEYS,
+    }
+    const quiz = createQuiz(opts)
+    answer(quiz.host, 0, 'A wrong answer')
+    document.getElementById('quizReset')?.click()
+    answer(quiz.host, 0, 'The right answer')
+    answer(quiz.host, 1, 'The right answer')
+    document.body.textContent = ''
+    quizBox()
+
+    // Act: the next visit answers the first again
+    const next = createQuiz(opts)
+    answer(next.host, 0, 'The right answer')
+    await vi.dynamicImportSettled()
+
+    // Assert: the first answer of each, in each visit
+    expect(sentMetrics(fetchMock)).toMatchObject([
+      { q: 1, firstTry: 0, visit: 1 },
+      { q: 2, firstTry: 1, visit: 1 },
+      { q: 1, firstTry: 1, visit: 2 },
     ])
   })
 

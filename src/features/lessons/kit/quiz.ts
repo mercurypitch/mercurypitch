@@ -58,7 +58,7 @@ export interface QuizQuestion {
   readonly slot?: string
 }
 
-/** One answer, as the telemetry will report it. */
+/** One answer, as the quiz hears it; telemetry.ts sends some of it. */
 export interface QuizAnswer {
   readonly id: string
   /** The option's index in authored order. */
@@ -66,6 +66,13 @@ export interface QuizAnswer {
   readonly correct: boolean
   /** The viewer's first answer to this question ever. */
   readonly first: boolean
+  /**
+   * The first answer to this question in this visit: a re-answer after
+   * Reset is not. Only these are sent (telemetry.ts).
+   */
+  readonly firstThisVisit: boolean
+  /** The question's number of options, for the guess correction (MASTER-PLAN § 9). */
+  readonly k: number
   /** How many times this viewer has opened this quiz, this visit included. */
   readonly visit: number
 }
@@ -92,7 +99,7 @@ export interface QuizOptions {
     readonly href?: (lesson: number, step: number) => string
     readonly newTab?: boolean
   }
-  /** Hears every answer, the telemetry's event once that track exists. */
+  /** Hears every answer; the quiz sends each question's first in a visit itself. */
   readonly onAnswer?: (answer: QuizAnswer) => void
 }
 
@@ -219,6 +226,8 @@ export function createQuiz(opts: QuizOptions): Quiz {
   rec.visits += 1
   store.set(keys.record, rec)
   let answers: Answers = {}
+  // the questions answered in this visit: Reset clears the answers, not this
+  const answeredThisVisit = new Set<string>()
   // a question asked on another lesson's page links to that lesson's page
   const owners = questions.map((question) => lessonOfQuestion(question.id))
   const awayLesson = (i: number): number | null => {
@@ -235,17 +244,30 @@ export function createQuiz(opts: QuizOptions): Quiz {
   })
 
   function record(i: number, j: number): void {
+    const question = questions[i]
     const first = rec.first[i] == null
     if (first) rec.first[i] = j
     rec.last[i] = j
     store.set(keys.record, rec)
-    opts.onAnswer?.({
-      id: questions[i].id,
+    const firstThisVisit = !answeredThisVisit.has(question.id)
+    answeredThisVisit.add(question.id)
+    const answer: QuizAnswer = {
+      id: question.id,
       option: j,
-      correct: questions[i].options[j].correct === true,
+      correct: question.options[j].correct === true,
       first,
+      firstThisVisit,
+      k: question.options.length,
       visit: rec.visits,
-    })
+    }
+    // each question's first answer in a visit goes to the team, anonymously;
+    // the beacon loads on the first, so it is no first-paint work, and one
+    // that cannot load costs the lesson nothing
+    if (firstThisVisit)
+      void import('./telemetry')
+        .then((telemetry) => telemetry.sendLessonAnswer(answer))
+        .catch(() => undefined)
+    opts.onAnswer?.(answer)
   }
 
   function optionButton(i: number, j: number, pos: number): HTMLElement {
