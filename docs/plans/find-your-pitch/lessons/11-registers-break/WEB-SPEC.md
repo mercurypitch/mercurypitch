@@ -673,7 +673,7 @@ paused off screen, and the still images when WebGL fails or would run on the CPU
     line, so a glide sung smoothly at the dot's pace earned nothing from the 30 % slide part, and a
     flip or a tracking error could earn it (FACTS 41). Proposed: measure the glide itself
     (`computeDirectness`, over each round's window). Done in this PR with `computeGlideCoverage`
-    instead (`vocal-analyzer.ts:537-610`): `computeDirectness` ranks a jump above a glide.
+    instead (`src/lib/glide-coverage.ts:9-83`): `computeDirectness` ranks a jump above a glide.
   - optionally, the octave glide fitted so that it no longer starts on the preset's lowest note, for
     example by centring the glides two semitones higher before the shift into the preset
     (`use-siren-controller.ts:106-117`).
