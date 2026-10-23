@@ -118,8 +118,12 @@ export const FIRST_PAINT_BUDGETS_KB = {
   // lip-trill hook in kit/sound.ts (36), and the two modules it shares with
   // this page, Lesson 3's questions and the warm-up's contour, each now a
   // chunk of its own (274). The console's notes and the signatures have
-  // since left every lesson page for kit/team-notes.ts.
-  'learn/03.html': 127,
+  // since left every lesson page for kit/team-notes.ts. Raised to 128 for
+  // the release review's fixes: 129,702 bytes on this branch before them,
+  // 130,362 with them, against 130,048 at 127. All 660 bytes are the kit's,
+  // and Lesson 4 gains the same: the status line's words read from a copy
+  // and emptied once spoken, and the toast's, deck's and explorer's fixes.
+  'learn/03.html': 128,
   // Lesson 5, a draft too, built in every mode as Lesson 3 is. Measured 122
   // with the lesson menu and the next-lesson card (109 before them), and 129
   // with the page state.
