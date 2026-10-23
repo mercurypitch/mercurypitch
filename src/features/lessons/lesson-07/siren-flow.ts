@@ -172,19 +172,24 @@ export interface SirenOffers {
 
 /** What the card offers and says for the visit as it stands. */
 export function offers(v: SirenVisit): SirenOffers {
+  const card = cardOffers(v)
+  if (!v.finished) return card
   // Done for today ends the takes, not the card: the question and its lines
   // stay as an answer leaves them, and a later answer still changes them,
   // but nothing starts a take again, and Done for today itself is gone
-  if (v.finished)
-    return {
-      ...offers({ ...v, finished: false }),
-      start: false,
-      startReady: false,
-      startHint: null,
-      again: false,
-      done: false,
-      tryAgain: false,
-    }
+  return {
+    ...card,
+    start: false,
+    startReady: false,
+    startHint: null,
+    again: false,
+    done: false,
+    tryAgain: false,
+  }
+}
+
+/** The card's question, lines and buttons, before Done for today has its say. */
+function cardOffers(v: SirenVisit): SirenOffers {
   const last = v.takes[v.takes.length - 1]
   const restCard = v.mode === 'listen' || v.rest
   const base: SirenOffers = {
