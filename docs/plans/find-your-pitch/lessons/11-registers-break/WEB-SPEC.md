@@ -708,7 +708,7 @@ paused off screen, and the still images when WebGL fails or would run on the CPU
   before it as Lesson 9's did: every lesson page's explorer prints it, and only this page says what
   the drill's help asks and why a flip may come anyway (Decisions). Its hook is the entry's
   (`season.ts:357`), which this package changed, and its tease is `kit/lesson-copy.ts`'s (`:116`),
-  whose entry held the alternative `same-note` (`:124-132` at `b7093a0a4`) until this PR dropped it
+  whose entry held the alternative `same-note` (`:124-132` at `b7093a0a4`) until #1186 dropped it
   (FACTS 1). `EDGES` already holds [7, 11] (`season.ts:420`).
 - **The explorer card**: what the kit draws for a lesson with a page and no published film: its
   state and main action from `kit/lesson-state.ts` ("Start lesson", "Continue: step N" or "Read
@@ -899,7 +899,7 @@ With the recommendation first:
 
 1. **The hook** (FACTS 1): since this package the new wording, "Why does your voice sometimes
    flip as you slide up?", is the default. The old was the alternative `same-note`, whose note
-   said it needed a source, until the owner dropped it on 22 October 2026 (this PR).
+   said it needed a source, until the owner dropped it on 22 October 2026 (#1186).
    Recommended then: never pick it until FACTS.md had one, since the console would write its
    claim into the title, the head, every explorer card and Lesson 10's next card. The source
    to look for is a singer's flip followed over repeated slides; Roubeau, Henrich and

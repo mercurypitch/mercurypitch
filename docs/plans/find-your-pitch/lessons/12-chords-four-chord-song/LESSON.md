@@ -63,7 +63,7 @@ the owner keeps that order (FACTS 7).
   The old title, "How can hundreds of songs share the same four chords and still sound
   different?", was kept in `kit/lesson-copy.ts` as the alternative `hundreds`, as the owner's
   answer to CURIOSITY-MOMENTS § 5 item 2 kept every changed hook's old wording, until the
-  owner dropped it on 22 October 2026 for want of a source (this PR). Picked, it went wherever
+  owner dropped it on 22 October 2026 for want of a source (#1186). Picked, it went wherever
   the hook goes. The site worker writes it into the page's h1 and into every copy of the hook
   in its head: the description, the og and twitter descriptions and the structured data. The
   page state gives it to Lesson 12's card in every lesson page's explorer, even while Lesson

@@ -442,7 +442,7 @@ kit marks `lesson` done once every question has an answer (`:75-76`, `:322-327`)
   answers are never shown, so the answers measure delayed retrieval (MASTER-PLAN § 9). It takes no
   `lesson`, so it marks nothing done. Neither question plays a sound (FACTS 71). "Try Lesson 4, Step
   1 again" was a plain link to Lesson 4's page, `/learn/04`, as the brief for this lesson asked;
-  since this PR it opens the step its question comes from, `/learn/04#step-1`, through the kit's
+  since #1186 it opens the step its question comes from, `/learn/04#step-1`, through the kit's
   `recallStepHref`, as Lessons 4 and 7 do. It opens in a new tab so the viewer keeps their place
   here, never `data-goto-step`, which would move this page's own deck: the rule Lesson 2's reviewed
   spec sets for a question reused on another lesson's page (its "What the kit and the app still
