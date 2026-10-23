@@ -13,8 +13,8 @@
 // page's frame loop, turned by hand, an idle line asks for no frames, and a
 // run brings them back until its last light has gone. A shape that asks for
 // a grid makes its buttons one: a row for each line's beads and its gaps,
-// one Tab stop that stays on the button last focused, and arrows, Home and
-// End that move the focus as WAI-ARIA's layout grid does.
+// one Tab stop that stays on the button last focused or pressed, and
+// arrows, Home and End that move the focus as WAI-ARIA's layout grid does.
 
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import './browser-doubles.test-fixtures'
@@ -288,6 +288,20 @@ describe('mountTuneLine: a grid', () => {
     expect(after).toEqual(['Gap 4'])
     expect(tabStops(hits)).toEqual(['Gap 4'])
     expect(hits.querySelectorAll('.tune-hit[tabindex="-1"]')).toHaveLength(26)
+  })
+
+  it('moves its Tab stop to a button clicked without taking the focus, as a tap in Safari is', () => {
+    // Arrange
+    const { hits, pressed } = mount({ shape: GRID })
+    const gap = button(hits, '[data-gap="5"]')
+
+    // Act: a click with no focus event
+    gap.click()
+
+    // Assert
+    expect(document.activeElement).not.toBe(gap)
+    expect(tabStops(hits)).toEqual(['Gap 6'])
+    expect(pressed).toEqual(['gap 5'])
   })
 
   it('moves the focus by the arrows, a row at a time down a column, and by Home and End', () => {
