@@ -138,8 +138,8 @@ section's heading, and the line above it, are in LESSON.md ("Section headings").
    figures are (`learn/02.html:1806`). The card is a link, so the figure holds no button. The
    practice card is the Siren card, with "Ten minutes, gently, most days" under it; after
    "Effortful", "Uncomfortable" or "Just listen today" it is the rest card instead, without that
-   line (Toys 4). Its address links `/pitch-training?lesson=11` in a new tab. Free play unlocks
-   here: the chart's five step states on one stage (playbook rule 17).
+   line or a link (Toys 4). Its address links `/pitch-training?lesson=11` in a new tab. Free play
+   unlocks here: the chart's five step states on one stage (playbook rule 17).
 9. **Lesson explorer**: the kit's, with Lesson 11 as the current node and the line under its
    heading from LESSON.md; its card shows what `kit/lesson-state.ts` says of a live lesson, and no
    Watch button, since Lesson 11 has no published film (`kit/season.ts:23-25`).
@@ -651,10 +651,10 @@ paused off screen, and the still images when WebGL fails or would run on the CPU
   the card carries no first-visit line (FACTS 43). The card names the tap ("then tap Siren / Range
   Explorer"), says what the drill does, how it scores and what a flip does to its score, and names
   its help's line that asks for no breaks, because this page lets a flip come (FACTS 40 to 42). It
-  comes in two versions, picked by how Sing it ended (Toys 4), and both link the same address. From
-  its default centre note the drill's glides stay in the lower half of the saved preset, so it asks
-  for nothing near the top of the saved range, but its octave glide starts on the preset's lowest
-  note at the default level (FACTS 40, 62; REQ-GVC-011): a question on the coach's list.
+  comes in two versions, picked by how Sing it ended (Toys 4); the rest card has no link (#1177).
+  From its default centre note the drill's glides stay in the lower half of the saved preset, so it
+  asks for nothing near the top of the saved range, but its octave glide starts on the preset's
+  lowest note at the default level (FACTS 40, 62; REQ-GVC-011): a question on the coach's list.
 - **App content, small** (MASTER-PLAN § 7's App content track), proposed, for the Siren exercise
   (FACTS 41, 42):
   - its help (`src/features/exercises/exercise-help.ts:149-156`): ":150" "Glide your full range up
@@ -845,11 +845,11 @@ the others take it.
    `:146-160`), so Lessons 3 and 5 see no change. This page needs nothing more of it.
 9. `kit/comfort.ts`: an option that sends "Effortful" to the rest card,
    `afterFeeling(f, { restAfterEffort: true })`, since `afterFeeling` leaves it to the coach
-   (`:58-67`) and Lessons 6, 7, 9 and 11 all choose it (unit test 13). Lesson 6's page sends
-   effort to the rest card in its own flow (`lesson-06/sing-flow.ts:90-95`), so until the option
-   lands this page overrides `rest` itself, as that page does. `mountFeelings` needs nothing new:
-   its `changeable` option serves Lesson 6's sweeps (`kit/comfort.ts:156-187`), and this page takes
-   the default, an answer that locks (Toys 4, state 8).
+   (`:58-67`) and Lessons 6, 7, 9 and 11 all choose it (unit test 13). Built by this PR: Lesson 6's
+   page sent effort to the rest card in its own flow until then, and passes the option now
+   (`lesson-06/sing-flow.ts:90-95`), as this page will. `mountFeelings` needs nothing new: its
+   `changeable` option serves Lesson 6's sweeps (`kit/comfort.ts:156-187`), and this page takes the
+   default, an answer that locks (Toys 4, state 8).
 10. Nothing new for the two sound rules (Audio): their kit parts are on main since #1149.
     `kit/predict.ts`'s `play` may resolve `false` for a play cut short, which the predict then
     never counts as heard, while `true` or nothing keeps the old meaning (`:31-41`, `:184-188`);

@@ -168,13 +168,13 @@ None found.
   - Where: kit/spiral.ts:418-431, 468-471; learn/01.html:1139; learn/02.html:1024
   - Fix: On an activation with no drag that does not land on a bead, play the selected note; or play the selected note on each value change. Then confirm with VoiceOver on an iPhone and TalkBack on Android.
   - Standard: WCAG 2.1.1, 4.1.2; Apple HIG VoiceOver
-  - **Status (Partly fixed):** Code fallback in this PR: a click that no pointer made (a screen reader double-tap, a switch, voice control) plays the selected note instead of doing nothing. Still needs VoiceOver on an iPhone and TalkBack on Android (device plan).
+  - **Status (Partly fixed):** Code fallback in #1177: a click that no pointer made (a screen reader double-tap, a switch, voice control) plays the selected note instead of doing nothing. Still needs VoiceOver on an iPhone and TalkBack on Android (device plan).
 - [ ] **S-09** No way back to the app from a lesson; a dead end in the installed app `BROWSER`
   - The new Home "Lessons" link opens /learn/01, a separate document. The masthead's brand link goes to #top; the only links out of the eight pages are each lesson's practise rooms, and they open a new tab. None links to Home (checked on all 8). The manifest is display "standalone", scope "/", so in the installed app on an iPhone there is no back button: a learner who opened Lessons from Home cannot return to MercuryPitch without closing the app.
   - Where: learn/0N.html masthead and footer; src/pages/HomePage.tsx:192-199; public site.webmanifest
   - Fix: Add a visible "MercuryPitch" / "Open the app" link (masthead or lesson menu, and footer). Check the installed app on iOS and Android.
   - Standard: Navigation; Apple HIG (always a way back)
-  - **Status (Corrected):** Correction: the lesson menu (the masthead's "Season 1 · Lesson 0N" button) already ends with a "MercuryPitch home" link; the review missed it because the menu is built when it opens. It is two taps deep, so this PR also puts "MercuryPitch home" in every page's footer. The installed-app check stays in the device plan.
+  - **Status (Corrected):** Correction: the lesson menu (the masthead's "Season 1 · Lesson 0N" button) already ends with a "MercuryPitch home" link; the review missed it because the menu is built when it opens. It is two taps deep, so #1177 also puts "MercuryPitch home" in every page's footer. The installed-app check stays in the device plan.
 
 #### Lesson 1, What is a note? (live)
 
@@ -204,7 +204,7 @@ None found.
   - Where: Shots L01-desktop-00, L01-phone-02; kit/page-chrome.ts; kit/sound.ts; learn/0N.html gate
   - Fix: One sound model: the first Play press turns sound on (it is a user gesture) and the gate disappears, or the gate is the only switch and the masthead mirrors it with "Sound on" / "Sound off". Reword the lock as "Choose an answer first".
   - Standard: Usability of the first interaction
-  - **Status (Corrected):** Correction: the first Play press already turns sound on when it has not been chosen (kit/sound.ts canPlay), so a first-time learner does hear it; silence and the toast come only after turning sound off. Done in this PR: the lock line now reads "Choose an answer to unlock the play buttons." on every page, or "the play button" where one play is locked (Lessons 2 and 8, L8-09), and the "Sound is off" toast waits for its Turn on (S-19). Still open: whether to fold the masthead switch and the gate into one control (owner).
+  - **Status (Corrected):** Correction: the first Play press already turns sound on when it has not been chosen (kit/sound.ts canPlay), so a first-time learner does hear it; silence and the toast come only after turning sound off. Done in #1177: the lock line now reads "Choose an answer to unlock the play buttons." on every page, or "the play button" where one play is locked (Lessons 2 and 8, L8-09), and the "Sound is off" toast waits for its Turn on (S-19). Still open: whether to fold the masthead switch and the gate into one control (owner).
 - [x] **G-03** Below 1240 px the motion switch says only "Pause", right beside the speaker `DESIGN`
   - The masthead's "Pause animations" shortens to "Pause" at 1240 px and narrower (phones, tablets and smaller laptop windows) and sits next to the mute button, so in a sound lesson it reads as pausing audio. The deck also has its own "Pause turning". The accessible name is "Pause animations", but sighted phone users only see "Pause".
   - Where: Shots L01-phone-00 (masthead), L02-phone-05; learn/0N.html #motionSwitch `.mw` span; kit/lesson-base.css
@@ -216,7 +216,7 @@ None found.
   - Where: Shots L02-phone-05 and -06, L01-phone-04 and -05, L04-phone-06 and -07; kit/lesson-stage.css; kit/step-deck.ts
   - Fix: Put the "Try" line inside the deck card next to the figure's controls, or make the figure a compact sticky band while the text scrolls.
   - Standard: Usability on the primary platform (phones)
-  - **Status (Open):** Not in this PR: a layout decision for the owner (Try line inside the deck card, or a compact sticky figure).
+  - **Status (Open):** Not in #1177: a layout decision for the owner (Try line inside the deck card, or a compact sticky figure).
 
 #### Voice lessons 3, 5, 7 and 8 (microphone)
 
@@ -225,7 +225,7 @@ None found.
   - Where: lesson-03/sing.ts:190-191, 210-213; lesson-03/sing-take.ts:114-119; lesson-05/sing-hold.ts; lesson-07/sing.ts:64; lesson-08/take.ts
   - Fix: Give the routine once in the briefing (and "use headphones with a screen reader"); per note, announce before Merc sings; open the take only after the line has had time to be spoken; announce nothing while a take is open. Confirm on a phone with VoiceOver and TalkBack.
   - Standard: WCAG 4.1.3 in practice; FACTS 57
-  - **Status (Open):** Not in this PR: needs a phone with VoiceOver and TalkBack and a real microphone first (device plan).
+  - **Status (Open):** Not in #1177: needs a phone with VoiceOver and TalkBack and a real microphone first (device plan).
 
 #### Lesson 3, Match a note (draft)
 
@@ -282,7 +282,7 @@ None found.
   - Where: kit/tap-pad.ts:36-47; learn/08.html:698, 1231, 1770
   - Fix: Also accept a click with detail === 0 and no pointer or key tap within 50 ms, timed by its timeStamp (the Ear Lab rule).
   - Standard: WCAG 2.1.1, 4.1.2
-  - **Status (Fixed):** The pad also takes a click that no pointer or key made (CLICK_ECHO_MS = 100 after the pad's last pointer up or key). The rule lives in src/lib/ear/tap-rule.ts, so the Ear Lab's pad takes the same clicks. Later in this PR, only Space and Enter time a click's echo, and a pointer's echo has its own window (POINTER_ECHO_MS, 1 s), so a late click on WebKit is not a second tap. The device plan checks both: 20 taps on a slow iPhone, and VO+Space once on a Mac.
+  - **Status (Fixed):** The pad also takes a click that no pointer or key made (CLICK_ECHO_MS = 100 after the pad's last pointer up or key). The rule lives in src/lib/ear/tap-rule.ts, so the Ear Lab's pad takes the same clicks. Later in #1177, only Space and Enter time a click's echo, and a pointer's echo has its own window (POINTER_ECHO_MS, 1 s), so a late click on WebKit is not a second tap. The device plan checks both: 20 taps on a slow iPhone, and VO+Space once on a Mac.
 - [x] **L8-02** The tap tempo result never reaches a screen reader `BROWSER`
   - "Your taps: N BPM" sits inside the figure's aria-hidden visual layer and is never announced; step 1's taps are silent apart from a flash. After seven Space taps in Chromium the result was in neither the accessibility tree nor a live region. Step 2's Notice ("Tap faster and your number climbs") cannot be done without sight. Same in free play.
   - Where: kit/beat-machine.ts:145-160, 598; learn/08.html:896-905
@@ -317,7 +317,7 @@ None found.
   - Where: kit/step-deck.ts:163-169; kit/lesson-menu.ts:484-488, 532-534
   - Fix: Move focus to the new step's h3 (tabindex="-1"); after a menu jump, focus the target heading.
   - Standard: WCAG 2.4.3
-  - **Status (Open):** This PR names the step: Next, Previous, a swipe and a menu jump say "Step 3 of 6" and the step's title on the kit status line (S-10). Focus does not follow yet: it stays on Next, and a menu jump hands it back to the menu button.
+  - **Status (Open):** #1177 names the step: Next, Previous, a swipe and a menu jump say "Step 3 of 6" and the step's title on the kit status line (S-10). Focus does not follow yet: it stays on Next, and a menu jump hands it back to the menu button.
 - [ ] **S-12** Buttons become disabled while focused, dropping focus to the page `CODE`
   - Previous/Next at the deck ends; Lesson 1 "Play Merc's A" and "Play it an octave up" during the 6.4 s ring; feeling buttons after an answer; Lesson 3 hook pair and Match buttons; Lesson 4 Start lower/higher and Move do at their limits; Lesson 7 Start lower/higher; Lesson 8 Move do at plus or minus 4.
   - Where: kit/step-deck.ts:147-154; kit/sing.ts:302-309; kit/comfort.ts:137-140; lesson-03/hook.ts:111-114; lesson-03/toy-match.ts:166-176; lesson-04/stairs-toy.ts:151; lesson-04/sing.ts:95; lesson-07/range-toy.ts:411-414; lesson-08/sing.ts:174-177
@@ -333,7 +333,7 @@ None found.
   - Where: kit/sing.ts:88-92, 183-213; learn/04.html:1337; lesson-07/range-toy.ts:495-506; lesson-08/take.ts:181-184; kit/loud.ts:140-176
   - Fix: Announce phase changes only ("Your turn: 4 seconds", "Done"); hide the per-second count from assistive tech; throttle held buttons to the final value.
   - Standard: WCAG 4.1.3 (quality)
-  - **Status (Open):** This PR quiets one of them: Lesson 3's Louder/Higher flag speaks on the kit status line only when its words change, not on every arrow key. The sing ring's count (Lessons 1, 2 and 4), Lesson 4's ring line, Lesson 7's held Higher and Lesson 8's take status still speak as above.
+  - **Status (Open):** #1177 quiets one of them: Lesson 3's Louder/Higher flag speaks on the kit status line only when its words change, not on every arrow key. The sing ring's count (Lessons 1, 2 and 4), Lesson 4's ring line, Lesson 7's held Higher and Lesson 8's take status still speak as above.
 - [ ] **S-15** Reduced motion is not applied everywhere the page says it is `CODE`
   - The sing ring stops its breathing and ripples only if a page passes `calm: true`; Lessons 1, 2 and 4 do not. Lesson 1's slow-motion ripples and the "Low to high" bead still travel under prefers-reduced-motion although the module header says they do not.
   - Where: kit/sing.ts:142; lesson-01/sing.ts:16; lesson-02/sing.ts:77; lesson-04/sing.ts:74; lesson-01/toy-string.ts:153-166, 290-294; lesson-01/words.ts:174-179
@@ -940,7 +940,7 @@ None found.
   - Where: learn/08.html:452, 459, 676-687, 839-845, 1151-1154, 1192, 1204, 1248, 1716-1723, footer; lesson-08/take.ts:45-46; lesson-08/bar-rounds.ts:37; lesson-08/take-judge.ts:45; lesson-08/sing.ts:221-225
   - Fix: See the Lesson 8 table in the appendix.
   - Standard: WCAG 2.4.6, 2.5.8; consistency
-  - **Status (Open):** This PR fixes two of these: the lock line names "the play button" where one play is locked (Lessons 2 and 8; it said "unlock the sound"), and the footer's practise links are 44 px tall (axe's target-size, on Lesson 6 too). The rest stay open.
+  - **Status (Open):** #1177 fixes two of these: the lock line names "the play button" where one play is locked (Lessons 2 and 8; it said "unlock the sound"), and the footer's practise links are 44 px tall (axe's target-size, on Lesson 6 too). The rest stay open.
 
 #### Owner decisions
 

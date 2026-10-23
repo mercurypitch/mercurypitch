@@ -118,10 +118,10 @@ export const VisitEnding = {
  * and 7), or holds that link in its practise version (Lesson 6), in the
  * version the visit's ending picks: each `[data-ending]` part shows for its
  * own ending. After "Uncomfortable" or "Just listen today" nothing may send
- * the learner to sing (REQ-GVC-055), so the rest card is no longer a link,
- * its eyebrow says "Rest today", and the link's address line (`.addr`,
- * with its new-tab icon) goes; the room's address stays in the rest card's
- * words, for another day.
+ * the learner to sing (REQ-GVC-055), nor after "Effortful" where the page asks
+ * (`restAfterEffort`), so the rest card is no longer a link, its eyebrow says
+ * "Rest today", and the link's address line (`.addr`, with its new-tab icon)
+ * goes; the room's address stays in the rest card's words, for another day.
  */
 export function mountPractiseCard(card: HTMLElement): void {
   const link = card instanceof HTMLAnchorElement ? card : null

@@ -236,7 +236,7 @@ recall and quiz questions, 60 s (FACTS 4).
 | 2. Predict widgets        | The kit's predict (`kit/predict.ts`), with a free play before the choice and a reveal after both of two plays                                                                                                                                                                               | Nothing                                                                                                                                                           |
 | 3. Four words             | Lesson 1's words strip, a ticket per word with its figure and play button, in the kit for Lesson 7 (`kit/words-strip.ts:1-12`)                                                                                                                                                              | Four new figures                                                                                                                                                  |
 | 4. Count the bar          | The kit's ear game (`kit/ear-game.ts`, on #1149): Lesson 2's Semitone or tone? promoted and generalised to N answers                                                                                                                                                                        | Three answers, 2, 3 and 4, on the keys 2, 3 and 4 (a key per answer, new in the kit); the clicks as the game's notes                                              |
-| 5. Tap pad and readout    | The Ear Lab's tap rule (`src/lib/ear/tap-rule.ts:22-52`, moved there from its `TapPad`, `src/features/ear-lab/EarStage.tsx:545-622`): pointer down, Space or Enter, the event's own time; since this PR, also a click no pointer or key made (`tap-rule.ts:81-93`)                          | A plain-DOM pad in the kit; the taps-per-minute readout                                                                                                           |
+| 5. Tap pad and readout    | The Ear Lab's tap rule (`src/lib/ear/tap-rule.ts:22-52`, moved there from its `TapPad`, `src/features/ear-lab/EarStage.tsx:545-622`): pointer down, Space or Enter, the event's own time; since #1177, also a click no pointer or key made (`tap-rule.ts:81-93`)                          | A plain-DOM pad in the kit; the taps-per-minute readout                                                                                                           |
 | 6. Sing it                | Lesson 3's comfort check, voice choice and feeling question (`kit/comfort.ts`, `kit/voice-choice.ts`, `fyp-voice`); Lesson 6's rest card after "Effortful" and its pure flow rule; the Ear Lab's judge (`src/lib/ear/rhythm-take.ts`); Drum Night's latency estimator, moved into `src/lib` | The tap take and its lines; the sung line's guide on the beat machine; Move do in semitones                                                                       |
 | 7. Recall and quick check | The kit's quiz (`kit/quiz.ts`), with its prefix, slot and away links; Lesson 3's recall (`lesson-03/recall.ts`) and its step links; Lesson 6's question objects and quiz plays (on #1149), imported                                                                                         | Keys; the recall's `data-if-live` wrapper                                                                                                                         |
 | 8. Go deeper drawer       | Lesson 2's `details` drawer                                                                                                                                                                                                                                                                 | One item                                                                                                                                                          |
@@ -406,8 +406,8 @@ pan-y` (`lesson-stage.css:776`), so a swipe still scrolls; every action is a but
   predict as its `plays` (`kit/predict.ts:68-69`). "Play with claps on 1 and 3" is a free play
   (`data-free`, `kit/predict.ts:15-16`): it sets up the question and answers nothing. Only "Play
   with claps on 2 and 4" waits for the choice, and the reveal waits for it (`revealOn`). Until a
-  choice the lock hint reads LESSON.md's "Choose an answer to unlock the play button." (until this
-  PR, "the sound"); after one, `hints.chosen` reads "Locked in. Play with claps on 2 and 4.", in
+  choice the lock hint reads LESSON.md's "Choose an answer to unlock the play button." (until #1177,
+  "the sound"); after one, `hints.chosen` reads "Locked in. Play with claps on 2 and 4.", in
   Lesson 2's form; with sound off, `hints.silent` is LESSON.md's line. The play slides the claps one
   beat along on the compact grid (0.4 s; at once under reduced motion), then Merc sings, the
   syllables on beat 1 loudest and those on 2 and 4 softest (FACTS 30c, 72), Merc and Tavi hopping on
@@ -460,7 +460,7 @@ DECISIONS 82).
   and its `stop` (`:52-56`). A missed round plays again with `slower: 1.5`, every onset and length
   half as long again (`slowerBy`, `:112-114`), so at 60 BPM. The answers are three buttons side by
   side, "2", "3" and "4", each at least 44 px tall, named "2: answer bars of 2" and so on (until
-  this PR "Bars of 2", as Step 3's toggles are named); the number keys 2, 3 and 4 answer while the
+  #1177 "Bars of 2", as Step 3's toggles are named); the number keys 2, 3 and 4 answer while the
   game has focus. The kit's game maps key 1 to the first answer, so here key 2 would answer "3": it
   takes a key per answer instead, its `keys` option, which this page brought to the kit
   (`keyAnswer`, `:98-110`; `keys`, `:119-120`; What the kit and the app still need, item 16). Space
@@ -497,7 +497,7 @@ DECISIONS 82).
   Lab's `TapPad` (`src/features/ear-lab/EarStage.tsx:545-622`) into a small shared module,
   `src/lib/ear/tap-rule.ts` (`pointerTap`, `keyTap` and `TAP_FLASH_MS`, `:22-52`), that the Ear
   Lab's pad and the kit's both call, so the two cannot drift (What the kit and the app still need,
-  item 3). Since this PR both pads also take a click no pointer or key made (`clickTap`, `:81-93`).
+  item 3). Since #1177 both pads also take a click no pointer or key made (`clickTap`, `:81-93`).
   The pad keeps `touch-action: manipulation`, so a quick second tap is never read as a zoom.
 - **Steps 1 and 2.** The pad sits beside Start in one row. A tap there is silent and only flashes,
   so the clicks stay clear; Step 1 judges nothing. Start moves the focus to the pad while the
