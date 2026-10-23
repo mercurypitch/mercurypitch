@@ -247,7 +247,7 @@ describe('a draft lesson (drafts.ts)', () => {
       const [L3, L4, L5] = [3, 4, 5].map((n) => season.LESSONS[n])
       expect([L3.page, L3.minutes, L3.film], drafts).toEqual([
         '/learn/03',
-        15,
+        16,
         undefined,
       ])
       expect([L4.page, L4.minutes, L4.film], drafts).toEqual([
@@ -257,7 +257,7 @@ describe('a draft lesson (drafts.ts)', () => {
       ])
       expect([L5.page, L5.minutes, L5.film], drafts).toEqual([
         '/learn/05',
-        17,
+        18,
         undefined,
       ])
       expect(L4.pr.link?.href, drafts).toBe('/pitch-training?lesson=04')
@@ -274,7 +274,7 @@ describe('a draft lesson (drafts.ts)', () => {
       const L8 = season.LESSONS[8]
       expect([L8.page, L8.minutes, L8.film], drafts).toEqual([
         '/learn/08',
-        15,
+        16,
         undefined,
       ])
       expect(L8.pr.link?.href, drafts).toBe(

@@ -137,7 +137,7 @@ section's heading, and the line above it, are in LESSON.md ("Section headings").
    the page was served with (`followPageState`, `kit/page-chrome.ts:113`).
 2. **The hook**, the hero's copy: the kicker, the hook question as the title (`h1.hook#hook`, as
    `kit/lesson-copy.test.ts:323-332` requires of every page from its first commit), the meta as
-   four chips ("15 minutes", FACTS 4; "After Lesson 1", a link; "Also useful: Lesson 6, Intervals",
+   four chips ("16 minutes", FACTS 4; "After Lesson 1", a link; "Also useful: Lesson 6, Intervals",
    a plain chip as Lesson 3's is, `learn/03.html:362-365`, FACTS 2; Sound on) and the promise, from
    LESSON.md. The title is the season's hook (`kit/season.ts:312`, FACTS 1); it says the song feels
    different and never says where the claps land, so it answers nothing the predict asks.
@@ -202,25 +202,25 @@ section's heading, and the line above it, are in LESSON.md ("Section headings").
 
 ## Length
 
-The learner copy is 2,328 words by the review's count (FACTS 4), under the series' cap, Lesson 3's
-page at 2,379 words on the same count once the note under its title is marked Editorial (2,382 under
-its old title, at `616c97edb`). The page runs about 15 minutes: 9.78 minutes of reading at 238 words
-a minute and 5.70 of sound, toys and tasks, 15.48 in all. That is past MASTER-PLAN § 4.2's budget,
-"8 to 12 minutes of active time, 500 to 900 words" (`MASTER-PLAN.md:137`), as Lessons 3, 5, 6 and 7
-are (15, 17, 17 and 16 minutes: Lesson 3 FACTS 61, Lesson 5 FACTS 2, Lesson 6 FACTS 3, Lesson 7
-FACTS 4). The series' cap is Lesson 3's page, not § 4.2's word budget, so nothing is cut; were a cut
-wanted, the Go deeper drawer (45 words) and the ABRSM sentence (14 words) would go first. Each
-step's text, with its Try, its Notice and any predict, runs 91 to 120 words (Steps 1 to 5: 92, 91,
-119, 120 and 116), inside § 4.2's 50 to 120 a step. Three parts carry more beside it, for these
-reasons:
+The learner copy is 2,502 words on today's default path (FACTS 4), 123 over the series' cap, Lesson
+3's page at 2,379 words on the same count once the note under its title is marked Editorial (2,382
+under its old title, at `616c97edb`); the text package's 2,328 was under it. The page runs about 16
+minutes: 10.51 minutes of reading at 238 words a minute and 5.70 of sound, toys and tasks, 16.21 in
+all. That is past MASTER-PLAN § 4.2's budget, "8 to 12 minutes of active time, 500 to 900 words"
+(`MASTER-PLAN.md:137`), as Lessons 3, 5, 6 and 7 are (16, 18, 17 and 16 minutes: Lesson 3 FACTS 61,
+Lesson 5 FACTS 2, Lesson 6 FACTS 3, Lesson 7 FACTS 4). The owner kept the longer lessons on 22
+October 2026 (HANDOFF), so nothing is cut; were a cut wanted, the Go deeper drawer (45 words) and
+the ABRSM sentence (14 words) would go first. Each step's text, with its Try, its Notice and any
+predict, runs 91 to 120 words (Steps 1 to 5: 92, 91, 119, 120 and 116), inside § 4.2's 50 to 120 a
+step. Three parts carry more beside it, for these reasons:
 
 - **Step 3, 174 words with its drawer.** Its Go deeper drawer (45 words) says why bars of 2 and of 4
   are hard to tell apart by ear, and is closed by default; Count the bar, its ear game, is a card
   under the Notice.
 - **Step 5, 220 words with its mix-up card.** The mix-up card (95 words) sits in the step whose toy
   refutes it, as in Lessons 2 to 7.
-- **Sing it, about 470 words.** It holds two tasks, the taps and the sung line, and the series'
-  singing lines, which are Lesson 3's word for word and are not cut (LESSON.md's intro).
+- **Sing it, about 640 words.** It holds two tasks, the taps and the sung line, with their status
+  lines, and the series' singing lines, Lesson 3's word for word and not cut (LESSON.md's intro).
 
 The activities are timed from the spec's own lengths: the cold open's two versions and the choice,
 25 s; the four words, 18 s; Step 1, 14 s; Step 2, 25 s; Step 3, 18 s and Count the bar, 48 s; Step
@@ -842,7 +842,7 @@ paused off screen, and the still images when WebGL fails or would run on the CPU
 
 Lesson 8's entry (`kit/season.ts:303-324`; FACTS 58), as this page wrote it:
 
-- `minutes: 15` and `page: '/learn/08'`, written plainly with Lesson 5's comment, "A draft until its
+- `minutes: 16` and `page: '/learn/08'`, written plainly with Lesson 5's comment, "A draft until its
   sign-off (drafts.ts), as Lesson 3 is." (`season.ts:250-252`). Every build keeps a draft's page and
   reading time (`kit/season.test.ts:241-266`); where the page's state holds the lesson back, every
   list draws it with neither, as a lesson coming later (`kit/publish.ts:94-124`).
@@ -946,7 +946,7 @@ was built on.
       other query-led titles. Until #1187 the test wanted the headline in the title too; it now
       wants it in `og:title` (`:167`).
     - The description, 80 to 160 characters (`:139-142`): "Why does the same song feel different
-      when you clap on 2 and 4? A fifteen-minute lesson on the beat, tempo, bars of 2, 3 and 4, and
+      when you clap on 2 and 4? A sixteen-minute lesson on the beat, tempo, bars of 2, 3 and 4, and
       the backbeat." (145 characters). It shortens the hook, so it serves as `description` and as
       the Article's description (`:165`) only, never as a copy of the hook.
     - Canonical and `og:url` `https://mercurypitch.com/learn/08`; robots

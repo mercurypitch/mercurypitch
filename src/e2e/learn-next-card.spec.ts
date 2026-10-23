@@ -33,7 +33,7 @@ const CARDS = [
   ],
   [
     '/learn/02',
-    'Next lesson 03 · Match a note Ready · 15 min',
+    'Next lesson 03 · Match a note Ready · 16 min',
     '/learn/03',
     'Start lesson',
   ],
@@ -45,13 +45,13 @@ const CARDS = [
   ],
   [
     '/learn/04',
-    'Next lesson 05 · Breath and a steady note Ready · 17 min',
+    'Next lesson 05 · Breath and a steady note Ready · 18 min',
     '/learn/05',
     'Start lesson',
   ],
   [
     '/learn/05',
-    'Next lesson 06 · Intervals: the distance between notes Ready · 15 min',
+    'Next lesson 06 · Intervals: the distance between notes Ready · 17 min',
     '/learn/06',
     'Start lesson',
   ],
@@ -63,7 +63,7 @@ const CARDS = [
   ],
   [
     '/learn/07',
-    'Next lesson 08 · Beat, tempo and the backbeat Ready · 15 min',
+    'Next lesson 08 · Beat, tempo and the backbeat Ready · 16 min',
     '/learn/08',
     'Start lesson',
   ],

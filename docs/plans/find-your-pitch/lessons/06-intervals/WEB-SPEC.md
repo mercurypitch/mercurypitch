@@ -51,7 +51,7 @@ line above it, are in LESSON.md ("Section headings").
    the Sound toggle off by default, Pause animations with its reduced-motion lock). `initMasthead`
    takes any map of anchors, and the page's lesson and step deck for the lesson menu
    (`{ lesson: 6, deck }`, `kit/page-chrome.ts`).
-2. **Hero**: kicker; the hook question as the title; the meta as three chips ("15 minutes", FACTS
+2. **Hero**: kicker; the hook question as the title; the meta as three chips ("17 minutes", FACTS
    3; "After Lesson 4: The major scale and home", a link to `/learn/04`; Sound on); the promise; the
    sound gate from LESSON.md in the hero copy, as Lesson 1's is; and beside them the cold open (3):
    Merc and Tavi on the floor line either side of the tune line on C, with Play from C under it
@@ -114,11 +114,11 @@ line above it, are in LESSON.md ("Section headings").
 
 The learner copy is 2,591 words on today's default path (FACTS 3), over the series' cap, Lesson 3's
 page at 2,355 on the review's count; 2,258 was the text package's count. The page runs about 17
-minutes, though its chip says 15: 10.89 minutes of reading at 238 words a minute and about 6 of
-sound, toys and tasks, 16.89 in all. That is past MASTER-PLAN § 4.2's 8 to 12 minutes of active
-time, as Lessons 3 and 5 are (15 and 17 minutes: Lesson 3 FACTS 61, Lesson 5 FACTS 2). Each step's
-text, with its Try, its Notice and any predict, runs 88 to 174 words (Steps 1 to 5: 88, 119, 115,
-174 and 109), inside § 4.2's 50 to 120 a step but for Step 4. Two steps carry more beside it:
+minutes, as its chip says (15 until this PR): 10.89 minutes of reading at 238 words a minute and
+about 6 of sound, toys and tasks, 16.89 in all. That is past MASTER-PLAN § 4.2's 8 to 12 minutes of
+active time, as Lessons 3 and 5 are (16 and 18 minutes: Lesson 3 FACTS 61, Lesson 5 FACTS 2). Each
+step's text, with its Try, its Notice and any predict, runs 88 to 174 words (Steps 1 to 5: 88, 119,
+115, 174 and 109), inside § 4.2's 50 to 120 a step but for Step 4. Two steps carry more beside it:
 
 - **Step 4, about 290 words.** Its hints and "You said" lines (about 70 words) take its text past
   120; its mix-up card (about 100) sits in the step whose toy refutes it, as in Lessons 2 to 5.
@@ -546,9 +546,9 @@ and the line references are main's.
   the app still need", item 9; Toys 7), all on main (`kit/quiz.ts:42-59`, `:73-86`).
 - `kit/explorer.ts`, shared with Lessons 3 and 4, needs nothing new: a lesson with a page and no
   film reads "Ready · read", its card offers "Start lesson" (`/learn/06`) without "Watch the
-  episode" and shows its Length, "15 min"; the page passes `current: 6`, and other lessons' cards
+  episode" and shows its Length, "17 min"; the page passes `current: 6`, and other lessons' cards
   link to their own pages.
-- `kit/season.ts`, Lesson 6's entry (`:264-284`): `minutes: 15` (FACTS 3). The practice link
+- `kit/season.ts`, Lesson 6's entry (`:264-284`): `minutes: 17` (FACTS 3). The practice link
   stays Ear Lab's (`href` `/ear-lab?lesson=06`, `addr` `mercurypitch.com/ear-lab`, `label` "Ear
   Lab"), and its `note` stays "then tap Leap to name them", printed "Ear Lab, then tap Leap to name
   them" by `practiseMarkup` (`kit/explorer.ts:174-179`): the `?lesson=` step-aside has shipped
@@ -590,7 +590,7 @@ and the line references are main's.
   - title: "Intervals: the distance between two notes | MercuryPitch", 60 characters at most;
     og:title and twitter:title "Intervals: the distance between notes · Find Your Pitch, Lesson 6";
   - meta description, and the structured data's: "Why can you start 'Twinkle, Twinkle' on any
-    note and it is still the same tune? A fifteen-minute lesson on intervals, steps, leaps and
+    note and it is still the same tune? A seventeen-minute lesson on intervals, steps, leaps and
     transposing.";
   - og:description: the hook, then "Hear it from two notes, find what stays the same, and sing it
     yourself." (151 characters); twitter:description, the hook alone;

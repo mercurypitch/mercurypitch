@@ -49,7 +49,7 @@ the Wrap, and there is no Watch section until a film exists. Each section's head
 above it, are in LESSON.md ("Section headings").
 
 1. **Masthead**: Lesson 1's, with "Season 1 · Lesson 05" and the anchors Lesson, Sing and Explorer.
-2. **Hero**: kicker, title, LESSON.md's meta as chips ("17 minutes", FACTS 2; "After Lesson 2:
+2. **Hero**: kicker, title, LESSON.md's meta as chips ("18 minutes", FACTS 2; "After Lesson 2:
    Twelve notes" and "After Lesson 3: Match a note", the prerequisite chips, links to `/learn/02`
    and `/learn/03`; Sound on; Microphone optional), the promise, and Merc and Tavi either side of a
    still of the hold demo (Toys, 5): a violet line settling into Merc's band, the signature.
@@ -81,11 +81,11 @@ above it, are in LESSON.md ("Section headings").
 
 ## Length
 
-The learner copy is 2,351 words by the review's count (FACTS 2), under Lesson 3's 2,361 on the
-same count, and the page runs about 17 minutes, past MASTER-PLAN § 4.2's 8
-to 12 minutes of active time, as Lesson 3's 15 minutes do; the holds, the warm-up and the six
-questions take about 4 of them. Steps 1 and 5 sit inside § 4.2's 50 to 120 words a step (about 98
-and 89). Three run longer, for these reasons:
+The learner copy is 2,404 words on today's default path (FACTS 2), 25 over the series' cap of
+2,379; the text package's was 2,351. The page runs about 18 minutes, past MASTER-PLAN § 4.2's 8 to
+12 minutes of active time, as Lesson 3's 16 do; the holds, the warm-up and the six questions take
+about 4 of them. On the text package's figures, Steps 1 and 5 sit inside § 4.2's 50 to 120 words
+a step (about 98 and 89). Three run longer, for these reasons:
 
 - **Step 2, about 234 words.** Its own text is 62 words; the rest is the lesson's second predict
   and its reveal (with Tavi's one-line re-explanation, about 92 words) and the mix-up card
@@ -486,7 +486,7 @@ reduced motion or Pause animations each Merc holds a still frame and skips the r
 - **Season data**: Lesson 5's entry in `kit/season.ts` (`:244-263`) gains today's link, `href`
   `/mirror?lesson=05`, `addr` `mercurypitch.com/mirror`, `label` "Voice Mirror" and `note` "its
   Hold: a comfortable note, held steady" (a note is printed on the card, so it speaks to the
-  learner), and `minutes: 17` (FACTS 2, 70), and keeps its `needs` until the slug ships, with the
+  learner), and `minutes: 18` (FACTS 2, 70), and keeps its `needs` until the slug ships, with the
   owner's lengths: "Long Note with a fixed 10 or 15 s length (durationSec)" (FACTS 63, 70), for
   the team and the admin console, never drawn on the card. Its signature already reads so
   (`kit/team-notes.ts:37`).

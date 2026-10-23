@@ -261,7 +261,7 @@ describe('createNextCard', () => {
         (s) => card?.querySelector(s)?.textContent,
       ),
     ).toEqual([
-      'Next lesson 03 · Match a note Ready · 15 min',
+      'Next lesson 03 · Match a note Ready · 16 min',
       LESSONS.find((L) => L.n === 3)?.hook,
       'Start lesson',
     ])
