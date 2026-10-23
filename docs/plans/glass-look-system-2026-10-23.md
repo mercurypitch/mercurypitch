@@ -1,8 +1,8 @@
 # Plan: one glass look for every Glassworks vessel
 
 **Date:** 2026-10-23 · **Branch:** the plan sits on `feat/blender-modeler-skill`;
-the work goes on a new `feat/glass-look-system` · **Status:** proposal. Nothing
-is built yet. Phase 0 starts when the owner answers §13.
+the work goes on `feat/glass-look-system`, stacked on it · **Status:** approved
+by the owner on 2026-10-23 (§13); Phase 0 in progress.
 
 Evidence for every claim below is in
 [`art/glass-adventure/proofs/glass-look-research-2026-10-23/`](../../art/glass-adventure/proofs/glass-look-research-2026-10-23/):
@@ -218,6 +218,10 @@ Rules that hold for every look:
   ([`asset-texture-profile.ts:6-17`](../../packages/glass-game/src/render/asset-texture-profile.ts)).
 - **Every number in §4.2 is a structural estimate** until the phone test in
   Phase 2. Nothing has been measured on a phone.
+- **Until then, both tiers run glass at maximum quality** (the owner's call,
+  2026-10-23): screen transmission at full scale, the largest studio
+  environments, dispersion on cut crystal and the full shard hold. Performance
+  is measured and the tiers are tuned after the phone test.
 
 ## 5. The exhibit light kit
 
@@ -636,6 +640,9 @@ Outside the campaign:
 | Git LFS pointers in a fresh checkout                                    | `git lfs pull` before tests and proofs                                                                                                                                                                       |
 
 ## 13. Decisions for the owner
+
+The owner answered yes to all four on 2026-10-23, and asked for maximum quality
+settings until performance is measured (§4.4).
 
 To start Phase 0:
 
