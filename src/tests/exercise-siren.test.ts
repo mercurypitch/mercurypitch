@@ -194,6 +194,27 @@ describe('the Siren glide score (30 % of the grade)', () => {
     expect(jumped.score).toBeLessThan(smooth.score)
   })
 
+  it('gives a jump that moves over 150 ms little of it', async () => {
+    // Hold the first note, then move to the second along a raised cosine
+    // lasting 150 ms, then hold it. Only its slow ends are under the limit.
+    const r = await runSiren((from, to, since) => {
+      const u = Math.min(1, Math.max(0, (since - 2000) / 150))
+      return from + ((to - from) * (1 - Math.cos(Math.PI * u))) / 2
+    })
+    expect(r.metrics.glideQuality).toBeLessThan(20)
+  })
+
+  it("credits a glide at four times the dot's pace in full", async () => {
+    // A straight line to the second note in a quarter of the time the dot
+    // takes to cross the span, then held: under the limit all the way.
+    const r = await runSiren(
+      (from, to, since) =>
+        from +
+        (to - from) * Math.min(1, since / (SIREN_GUIDE_PERIOD_MS / 2 / 4)),
+    )
+    expect(r.metrics.glideQuality).toBeGreaterThan(95)
+  })
+
   it('also credits following the dot there and back', async () => {
     const r = await runSiren((from, to, since) =>
       sirenGuideMidi(from, to, since),

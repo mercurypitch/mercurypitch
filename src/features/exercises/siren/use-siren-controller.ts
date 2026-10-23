@@ -40,6 +40,17 @@ export const SIREN_GUIDE_PERIOD_MS = 2500
 export const SIREN_GLIDE_PACE_LIMIT = 6
 
 /**
+ * The dot crosses the span in half a period, so the fastest a step may
+ * glide, in semitones a second, grows with the span.
+ */
+export function sirenGlideMaxRate(startMidi: number, endMidi: number): number {
+  return (
+    (SIREN_GLIDE_PACE_LIMIT * Math.abs(endMidi - startMidi)) /
+    (SIREN_GUIDE_PERIOD_MS / 2 / 1000)
+  )
+}
+
+/**
  * Where the guide dot sits, `sinceMs` into the glide window.
  *
  * `sinceMs` is measured from the moment the window OPENED, which is the
@@ -265,18 +276,13 @@ export function useSirenController(
       .filter((p) => p.freq > 0 && p.time * 1000 > glideFromMs)
       .map((p) => ({ midi: freqToExactMidi(p.freq), time: p.time }))
     if (glideFrames.length >= 2) voicedGlides++
-    // The dot crosses the span in half a period, so the fastest a step may
-    // glide, in semitones a second, grows with the span.
-    const maxRate =
-      (SIREN_GLIDE_PACE_LIMIT * Math.abs(round.endMidi - round.startMidi)) /
-      (SIREN_GUIDE_PERIOD_MS / 2 / 1000)
     glideScores.push(
       Math.round(
         computeGlideCoverage(
           glideFrames,
           round.startMidi,
           round.endMidi,
-          maxRate,
+          sirenGlideMaxRate(round.startMidi, round.endMidi),
         ) * 100,
       ),
     )
