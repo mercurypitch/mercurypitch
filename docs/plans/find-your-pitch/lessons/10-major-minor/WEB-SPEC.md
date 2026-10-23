@@ -818,7 +818,7 @@ at `85e23a1af` changed there, and that page's own lines are cited at `d59c00ad6`
     - title, at most 60 characters, ending " | MercuryPitch" (`lesson-pages.test.ts:128-129`):
       SEARCH.md § 4's draft, "Major and minor: the one note that changes | MercuryPitch" (57
       characters), in the query-led form the owner chose for Lessons 1 to 8 on 22 October 2026.
-      Until this PR the title had to hold the headline, and this spec gave it the series' form,
+      Until #1187 the title had to hold the headline, and this spec gave it the series' form,
       "Major and minor: Find Your Pitch, Lesson 10 | MercuryPitch"; `og:title` holds the headline
       now (`:161-165`). The site worker never rewrites the title, whichever hook the console picks;
     - description, 80 to 160 characters: "Which single note turns a major chord into a minor one? A

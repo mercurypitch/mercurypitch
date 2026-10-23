@@ -783,7 +783,7 @@ among them (PR #1149), and in Lesson 9's spec, beyond the parts Lessons 2 to 9 p
      sing one phrase twice, then sing it and listen back." (121 characters, inside the test's 81 to
      160, `lesson-pages.test.ts:130-133`, and 153 with `compelling`, since dropped);
    - `og:title` and `twitter:title`, "Phrasing: sing a whole song · Find Your Pitch, Lesson 14",
-     hold the headline, as the title did until this PR (`lesson-pages.test.ts:161-165`);
+     hold the headline, as the title did until #1187 (`lesson-pages.test.ts:161-165`);
    - `og:description`, the full hook and one line, "If every note of a song is in tune, what is left
      to shape? Hear one phrase sung twice, then sing it yourself." (109 characters; 141 with
      `compelling`, since dropped; `lesson-copy.test.ts:349-352`), and `twitter:description`, the

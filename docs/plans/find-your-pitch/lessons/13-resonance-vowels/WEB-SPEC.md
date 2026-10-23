@@ -795,7 +795,7 @@ and the four-words strip in the kit.
    - the title, "Resonance and vowels: why ee and ah differ | MercuryPitch" (57 characters, under
      the test's ceiling of 60, `lesson-pages.test.ts:128-129`), SEARCH.md § 4's draft for Lesson 13
      (`SEARCH.md:231`), in the query-led form the owner chose for Lessons 1 to 8 on 22 October 2026.
-     Until this PR the title had to hold the Article's headline, which `og:title` holds now
+     Until #1187 the title had to hold the Article's headline, which `og:title` holds now
      (`lesson-pages.test.ts:161-165`), and this spec kept the series' name for the owner,
      "Resonance and vowels · Find Your Pitch | MercuryPitch" (53), Lessons 4 and 5's form then,
      since the full form, with "Lesson 13", runs to 63 (Decisions 1). "Why ee and ah differ" says

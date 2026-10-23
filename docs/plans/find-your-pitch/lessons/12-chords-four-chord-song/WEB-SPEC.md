@@ -898,7 +898,7 @@ heard play (Toys 3; Edge cases) (`git diff --stat`).
     - title, at most 60 characters, ending " | MercuryPitch" (`lesson-pages.test.ts:128-129`):
       SEARCH.md § 4's draft, "The four-chord song: how chords work | MercuryPitch" (51 characters,
       `SEARCH.md:230`), in the query-led form the owner chose for Lessons 1 to 8, on 22
-      October 2026. Until this PR the title had to hold the Article's headline, so this spec
+      October 2026. Until #1187 the title had to hold the Article's headline, so this spec
       recommended "Chords and the four-chord song: Lesson 12 | MercuryPitch" (56): the series' form,
       "Chords and the four-chord song: Find Your Pitch, Lesson 12 | MercuryPitch", ran to 73, over
       the cap, and Lesson 4's then, "· Find Your Pitch | MercuryPitch", to 63. `og:title` holds the
@@ -987,7 +987,7 @@ Each with the package's recommendation and the review's judgement (Lesson 12's r
    owner wants a hard guard, retire it.
 2. **The page's title.** SEARCH.md § 4's draft, "The four-chord song: how chords work |
    MercuryPitch" (51), in the query-led form the owner chose for Lessons 1 to 8, on 22
-   October 2026. Until this PR the title had to hold the headline, and the series' form ran to 73,
+   October 2026. Until #1187 the title had to hold the headline, and the series' form ran to 73,
    so this spec recommended "Chords and the four-chord song: Lesson 12 | MercuryPitch" (56; What the
    kit and the app still need, item 12). The review found that one acceptable; the site worker
    never rewrites the title, whichever hook the console picks.

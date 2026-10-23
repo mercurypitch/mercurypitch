@@ -618,7 +618,7 @@ Lessons 2 to 6 promote into the kit (Toys table). Read again on main at `31b7f53
 2. The page's head, as Lesson 1's (`learn/01.html`). As built, held to the head checks of
    `src/tests/lesson-pages.test.ts` (a title of at most 60 characters, a description of at most
    160): title "Your vocal range: slides, sirens and comfort | MercuryPitch" (SEARCH.md § 4; built
-   as "Slides, sirens and your range | MercuryPitch" until this PR), and `og:title` "Slides, sirens
+   as "Slides, sirens and your range | MercuryPitch" until #1187), and `og:title` "Slides, sirens
    and your range · Find Your Pitch, Lesson 7"; meta description "Why is your comfortable middle
    worth more than your highest note? A sixteen-minute lesson on gentle sirens, lip trills and “ng”,
    your range and voice types."; canonical and `og:url` `https://mercurypitch.com/learn/07`;

@@ -943,7 +943,7 @@ was built on.
     - The document title, at most 60 characters, ending in " | MercuryPitch"
       (`lesson-pages.test.ts:128-129`): SEARCH.md § 4's draft, "Beat, tempo and the backbeat,
       explained | MercuryPitch" (54 characters), which the owner chose on 22 October 2026 with the
-      other query-led titles. Until this PR the test wanted the headline in the title too; it now
+      other query-led titles. Until #1187 the test wanted the headline in the title too; it now
       wants it in `og:title` (`:161`).
     - The description, 80 to 160 characters (`:130-133`): "Why does the same song feel different
       when you clap on 2 and 4? A fifteen-minute lesson on the beat, tempo, bars of 2, 3 and 4, and
