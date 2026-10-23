@@ -218,8 +218,8 @@ owner, not decisions.
 | --- | ---------------------------------------------------- | ------------------------------------------------------------- | ------------------------------ |
 | 1   | what is a note, what is an octave, what does A4 mean | What is a note? Pitch, hertz and the octave \| MercuryPitch   | Voice Mirror                   |
 | 2   | why 12 notes, sharps and flats, what is a semitone   | Why twelve notes? Sharps, flats and semitones \| MercuryPitch | Ear Lab                        |
-| 3   | how to match pitch, am I tone deaf, sing in tune     | How to match pitch, and why most people can \| MercuryPitch   | Pitch training, Voice Mirror   |
-| 4   | major scale explained, do re mi, tonic               | The major scale: why do sounds like home \| MercuryPitch      | Pitch training (scales)        |
+| 3   | how to match pitch, am I tone deaf, sing in tune     | How to match pitch and sing in tune \| MercuryPitch           | Pitch training, Voice Mirror   |
+| 4   | major scale explained, do re mi, tonic               | The major scale: do-re-mi and the home note \| MercuryPitch   | Pitch training (scales)        |
 | 5   | breath support singing, how to hold a note longer    | Breath support: how to hold a steady note \| MercuryPitch     | Pitch training (long note)     |
 | 6   | intervals explained, interval songs                  | Intervals: the distance between two notes \| MercuryPitch     | Ear Lab (intervals)            |
 | 7   | how to find my vocal range, vocal sirens             | Your vocal range: slides, sirens and comfort \| MercuryPitch  | Vocal range test, voice type   |
@@ -239,6 +239,10 @@ Notes on the table:
   The test answers "vocal range test". The lesson answers why the comfortable
   middle matters and how to use sirens. Each links the other.
 - **The trailer** is a YouTube piece. Its web home is the hub.
+- **Lessons 3 and 4** changed from their first drafts. Lesson 3's, "How to
+  match pitch, and why most people can", told the cold open's predict how the
+  tests came out (CURIOSITY-MOMENTS § 1 rule 4). Lesson 4's, "The major scale:
+  why do sounds like home", read with "do" as a verb.
 
 ---
 

@@ -381,7 +381,7 @@ main's.
 - `public/learn/lesson-04-og.jpg`: the share card, 1200 x 630. With no film to cut a frame from,
   it is a still of the hero: the title over the staircase on C, do's house glyph lit.
 - The page's head, as Lesson 1's (`learn/01.html:9-60`):
-  - title: "The major scale and home · Find Your Pitch, Lesson 4 | MercuryPitch";
+  - title: "The major scale: do-re-mi and the home note | MercuryPitch";
   - meta description: "Why does do-re-mi sound finished when it lands on do, and restless when
     it stops on ti? A ten-minute lesson with live sound toys: the major scale's pattern of steps,
     starting it on any note, naming its notes do to ti, and hearing ti lean towards home. With the

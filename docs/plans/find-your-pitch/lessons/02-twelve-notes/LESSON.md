@@ -322,7 +322,7 @@ its film is published, then "Ready · watch and read" (WEB-SPEC, Lesson explorer
 The page's head, its share text and its footer, exactly (WEB-SPEC, Footer; Lesson 1's page,
 `learn/01.html`, is the pattern).
 
-- `<title>`: Twelve notes: Find Your Pitch, Lesson 2 | MercuryPitch
+- `<title>`: Why twelve notes? Sharps, flats and semitones | MercuryPitch
 - Description: "Musicians only use seven letters, so where do the other five notes come from? A
   ten-minute lesson with live sound toys: find the twelve notes on a keyboard, tell a semitone from
   a tone by ear, see why one key has two names, and learn what a cent is. With the Season 1 map."
