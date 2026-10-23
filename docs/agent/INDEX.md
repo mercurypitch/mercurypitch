@@ -540,6 +540,8 @@ The headless preview lies in specific, repeatable ways:
 | `pnpm docs:index` | `node scripts/gen-agent-index.mjs` |
 | `pnpm og:versions` | `node scripts/gen-og-versions.mjs` |
 | `pnpm docs:index:check` | `node scripts/gen-agent-index.mjs --check` |
+| `pnpm plan:cites` | `node scripts/plan-cites.mjs` |
+| `pnpm plan:cites:check` | `node scripts/plan-cites.mjs check` |
 | `pnpm pr:prepare` | `node scripts/pr-prepare.mjs` |
 | `pnpm pr:validate` | `node scripts/pr-prepare.mjs --check` |
 | `pnpm pr:prepare:test` | `node --test scripts/pr-prepare.test.mjs` |
