@@ -257,16 +257,16 @@ Decided on 22 October 2026 (§13 item 3): a crawlable index of the series, which
 - **Content.** A plain document with no script, on the lesson pages' stylesheet:
   - who it is for: no theory needed;
   - how a lesson works: planned as ten minutes, sound toys, a sung check, a quick check and the
-    episode; built as a question, sound toys, singing, a quick check and 10 to 17 minutes;
-  - the Season 1 map: Theory and Voice, then the finale in both. Each lesson shows its hook
-    question; a live one links with its minutes, any other says "Coming".
+    episode; built as a question, sound toys, singing, a quick check and the live lessons' minutes;
+  - the Season 1 map: Theory and Voice, then the finale in both. Each lesson asks its picked hook;
+    a live one links with its minutes, any other says "Coming".
 
   The explorer that sits at the foot of Lesson 1 can still move here; this PR left it.
 
 - **Structured data.** A `BreadcrumbList`, and a `CreativeWorkSeries` at `/learn/#series` whose
   `hasPart` points at each live lesson's `#lesson` (`Course` was the other choice; neither earns
-  a rich result). `tools/learn-hub.ts` fills the map and `hasPart` in from `season.ts` at build
-  time, and the site worker settles both to the lessons live; every lesson's `isPartOf` names it.
+  a rich result). `tools/learn-hub.ts` fills in the map, minutes and `hasPart` at build time; the
+  site worker settles them and the hooks to the state. Each lesson's `isPartOf` names the series.
 - **Not the "Series blueprint"** (the pipeline, the plan files). It left
   Lesson 1's page for the Content Studio's Lessons page, because the owner
   keeps the plan off public pages, the hub and the about site included. A
@@ -434,7 +434,7 @@ exist beyond a definition.
    lessons. Decided (22 October 2026): MercuryPitch as the author, and the vocal
    coach named as reviewer on the voice lessons once they sign off.
 3. **The hub** at `/learn/` when Lesson 2 ships. Decided (22 October 2026): yes,
-   built in its own PR.
+   and this PR built it (§5).
 4. **Watch pages.** After YouTube. Decided (22 October 2026): later, if Search
    Console shows the lessons ranking.
 5. **Articles.** Whether to write them, how often, and who writes them; the
