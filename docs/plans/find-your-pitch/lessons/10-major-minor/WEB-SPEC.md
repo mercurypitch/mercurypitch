@@ -285,7 +285,7 @@ draw its triads with it; it moves into the kit when Lesson 12 needs it.
   rather than its fast one) and the names switch. Spread into a scale on a root slid to B4, it
   reaches B5, 987.77 Hz, the scale's top do (FACTS 70a), in the scale's own window (Layout and
   targets). Nothing locks: the guided steps come first on the page (playbook rule 17).
-- **Readouts** sit inside the figure, as Lesson 1's do (`learn/01.html:612-634`, `.readout`), so no
+- **Readouts** sit inside the figure, as Lesson 1's do (`learn/01.html:610-632`, `.readout`), so no
   status line takes height.
 - **Layout and targets** (FACTS 82). Rows are 15 px a semitone, so the closest two beads, a minor
   third apart, sit 45 px apart, and their 44 px targets never overlap; the two gap buttons' centres

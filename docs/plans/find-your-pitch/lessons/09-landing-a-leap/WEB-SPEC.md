@@ -295,7 +295,7 @@ Arpeggio plays do, mi, so and the top do; Landing zone lights so's band and play
 
 The ladder chart in live mode, inside Sing it's card, with Merc's rungs as the target and the
 viewer's line drawn against them. It is the kit's `.sing-chart` (240 px; 210 px at 420 px wide and
-under), a band chart as on Lessons 3 and 5 (`learn/03.html:1493`), so the full ladder's 14-semitone
+under), a band chart as on Lessons 3 and 5 (`learn/03.html:1487`), so the full ladder's 14-semitone
 window gives 15.1 px a semitone (13.0 at 210 px) and the smaller ladder's 9 gives 23.6 (20.2) (FACTS
 97). Every state has a visible status line that is also announced (`aria-live="polite"`).
 
