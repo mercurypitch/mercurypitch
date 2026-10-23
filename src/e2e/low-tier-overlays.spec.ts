@@ -87,7 +87,7 @@ test.describe('on the low tier', () => {
       .toBe(true)
   })
 
-  test("Home's Learn dialog opens over the page, not over nothing", async ({
+  test('the Learn dialog opens over the page, not over nothing', async ({
     page,
   }) => {
     await page.setViewportSize(DESK)
@@ -95,7 +95,8 @@ test.describe('on the low tier', () => {
     await dismissOverlays(page)
     expect(await perfTier(page)).toBe('low')
 
-    await page.getByTestId('home-learn').click()
+    // Learn sits in the sidebar, which is open on every tab at desktop width.
+    await page.getByTestId('sidebar-learn').click()
     const scrim = page.locator('[class*="walkthroughSelectionOverlay"]')
     await expect(scrim).toBeVisible()
     const color = await backgroundOf(

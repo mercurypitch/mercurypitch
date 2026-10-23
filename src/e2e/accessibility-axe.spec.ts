@@ -95,12 +95,12 @@ test.describe('axe-core, Section 508 and WCAG 2.1 AA', () => {
   }
 
   test('Home on a desk', async ({ page }) => {
-    await openTab(page, 'home', DESK, '[data-testid="home-learn"]')
+    await openTab(page, 'home', DESK, '[data-testid="home-lessons"]')
     expectNoWorseThanBaseline('home-desk', await violations(page))
   })
 
   test('Home on a phone', async ({ page }) => {
-    await openTab(page, 'home', PHONE, '[data-testid="home-learn"]')
+    await openTab(page, 'home', PHONE, '[data-testid="home-lessons"]')
     expectNoWorseThanBaseline('home-phone', await violations(page))
   })
 
