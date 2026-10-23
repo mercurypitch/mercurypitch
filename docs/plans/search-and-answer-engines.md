@@ -488,7 +488,10 @@ are competitor names (guideline 2.3.7).
 - **The listing needs** a TV screenshot, a 1280×720 TV banner, and "Android TV"
   in the description.
 - **Since 1 August 2026,** a TV app must support 64-bit and 16 KB pages
-  _(verified)_.
+  _(verified)_. Both rules are about native code: a bundle with no native
+  libraries meets them without any work, and this app's plugins look to be
+  Java and Kotlin only. CI should prove the bundle carries no `lib/*.so`
+  ([tv-cast-and-google-tv.md](tv-cast-and-google-tv.md) §2.2, `REQ-TV-079`).
 - **D-pad navigation** has started (remote arrows move between rows, per the
   CHANGELOG). The TV checklist asks for all of it.
 - **Fire TV (Fire OS) next.** It takes the same Android build in the Amazon
