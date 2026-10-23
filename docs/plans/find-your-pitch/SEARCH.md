@@ -153,7 +153,7 @@ Every lesson document follows this, in addition to its WEB-SPEC.
   teaching changes (the LEDGER says when).
 - **`author`.** MercuryPitch, the organization, as decided on 22 October 2026
   (§13 item 2), and the vocal coach as reviewer on the voice lessons.
-- **The hub.** Since this PR the breadcrumb has its middle step (Home, then Find Your Pitch,
+- **The hub.** Since #1188 the breadcrumb has its middle step (Home, then Find Your Pitch,
   then the lesson), and `isPartOf` gains the hub's URL and its series `@id`, `/learn/#series`.
 - **No `VideoObject` on a lesson page.** It belongs on the watch page (§6).
 
@@ -248,7 +248,7 @@ Notes on the table:
 
 ## 5. The hub: `/learn/` **[shipped]**
 
-Decided on 22 October 2026 (§13 item 3): a crawlable index of the series, which this PR built.
+Decided on 22 October 2026 (§13 item 3): a crawlable index of the series, which #1188 built.
 
 - **Path.** `learn/index.html`, served at `/learn/`; Cloudflare's `html_handling` redirects
   `/learn` there, and the dev and preview servers rewrite `/learn` beside the lessons' rewrite.
@@ -261,7 +261,7 @@ Decided on 22 October 2026 (§13 item 3): a crawlable index of the series, which
   - the Season 1 map: Theory and Voice, then the finale in both. Each lesson asks its picked hook;
     a live one links with its minutes, any other says "Coming".
 
-  The explorer that sits at the foot of Lesson 1 can still move here; this PR left it.
+  The explorer that sits at the foot of Lesson 1 can still move here; #1188 left it.
 
 - **Structured data.** A `BreadcrumbList`, and a `CreativeWorkSeries` at `/learn/#series` whose
   `hasPart` points at each live lesson's `#lesson` (`Course` was the other choice; neither earns
@@ -434,7 +434,7 @@ exist beyond a definition.
    lessons. Decided (22 October 2026): MercuryPitch as the author, and the vocal
    coach named as reviewer on the voice lessons once they sign off.
 3. **The hub** at `/learn/` when Lesson 2 ships. Decided (22 October 2026): yes,
-   and this PR built it (§5).
+   and #1188 built it (§5).
 4. **Watch pages.** After YouTube. Decided (22 October 2026): later, if Search
    Console shows the lessons ranking.
 5. **Articles.** Whether to write them, how often, and who writes them; the
