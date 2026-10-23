@@ -698,12 +698,12 @@ paused off screen, and the still images when WebGL fails or would run on the CPU
   chip and Find my key put a song in the comfortable middle. Its page boots Consent Mode and its
   cookie banner and counts one view a session (55): the owner's to accept for a link from a lesson
   (report).
-- **Not linked**, with the reasons in FACTS: Dynamic Swell, whose card promises more of the breath
-  than any fact here supports, whose score weighs the decibels sung, and which no address opens
-  (58); the daily routines, whose copy promises the same of the breath and of range, and which live
-  in the main app's sidebar (59); and Play Along, which opens on the songs a singer has brought and
-  separated, nothing for most visitors (60). The CURRICULUM card's practise line named all three;
-  the card now says why only Karaoke Night is linked.
+- **Not linked**, with the reasons in FACTS: Dynamic Swell, whose card promised more of the breath
+  than any fact here supports until this PR and now says what it scores, whose score weighs the
+  decibels sung, and which no address opens (58); the daily routines, whose copy promised breath
+  support and range until this PR, and which live in the main app's sidebar (59); and Play Along,
+  which opens on the songs a singer has brought and separated, nothing for most visitors (60). The
+  CURRICULUM card's practise line named all three; it now says why only Karaoke Night is linked.
 - **App content, small** (MASTER-PLAN § 7's App content track), proposed: Dynamic Swell's card copy,
   its tags and its score checked against the claims rules, as CURRICULUM § 4 item 8 does for the
   Ascent's weeks (`CURRICULUM.md:510-514`), so that a later lesson can link it: a swell scored by
@@ -895,7 +895,7 @@ among them (PR #1149), and in Lesson 9's spec, beyond the parts Lessons 2 to 9 p
     tones in sequence after a stretch of silence, beside `writeToneWav` (`:76`), here for the phrase
     with take 2's breath, D3 D3 A3 A3 B3 B3 at 0.75 s, A3 for 1.2 s and 0.3 s of silence (Tests, end
     to end 6).
-17. App: the App content items for Dynamic Swell and the routines (Practice links).
+17. App: Dynamic Swell's score (Practice links); its copy and the routines' were done in this PR.
 
 Lesson 6's page also brought kit parts this page does not use: the ear game (`kit/ear-game.ts`) and
 the tune line (`kit/tune-line.ts`, with its layout, drawing and motion modules), whose beads draw a

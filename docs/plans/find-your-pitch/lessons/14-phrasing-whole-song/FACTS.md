@@ -264,8 +264,8 @@ measurement at the speaker.
   its reference 3, not read), and the "five best" warm-ups in Arneson's account of Titze's column
   (40). Neither the column nor Titze 1999's full text was read. Not said.
 - Anything about what trains the breath or "breath support": Arneson ties messa di voce to breath
-  management (¶ 7), and Dynamic Swell's card and the routines promise breath support. Not said, and
-  not linked (58, 59).
+  management (¶ 7), and Dynamic Swell's card and the routines promised breath support until this PR,
+  and since say only what they do. Not said, and not linked (58, 59).
 - Köberlein 2025's results for professional singers: only its abstract's opening sentence is used.
 - A swell's shape: Titze 1999's "symmetric triangle" is the exercise's ideal, and Collyer 2007
   found the change "predominantly nonlinear" in five trained singers; Kirsch 2025's untrained

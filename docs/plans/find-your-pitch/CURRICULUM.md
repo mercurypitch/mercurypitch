@@ -325,10 +325,10 @@ its voice lines wait on the vocal coach's sign-off, and its page publishes after
 - Signature: a whole song's pitch line with breath marks and a swell drawn in light.
 - Checkpoint: sing one phrase twice, the second time with a planned breath and a swell.
 - Practise: Karaoke Night (`/karaoke-night?lesson=14`: a whole song, with the singer's own take
-  played back; it scores the singing, and says so). Not linked: Dynamic Swell, whose card promises
-  breath support and whose score rewards a wider swell in decibels, and which no address opens; the
-  daily routines, which promise breath support and range from the main app's sidebar; and Play
-  Along, which opens only on a song the viewer has had separated.
+  played back; it scores the singing, and says so). Not linked: Dynamic Swell, whose score rewards a
+  wider swell in decibels, which no address opens, and whose card promised breath support until this
+  PR, not since; the daily routines, in the main app's sidebar, which promised breath support and
+  range until then; and Play Along, which opens only on a song the viewer has had separated.
 - Facts: messa di voce (Titze); phrasing and breath planning (Arneson).
 
 ## 3. Topic graph
