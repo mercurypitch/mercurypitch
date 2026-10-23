@@ -3,8 +3,8 @@
 // ============================================================
 //
 // And the ring on the page's frame loop: at rest it asks for no frame, and
-// a run draws every frame from the one that starts it to the one that ends
-// it, once the ring is on screen.
+// a run draws every frame from the one that starts it to the one its last
+// ripple fades out in, once the ring is on screen.
 
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import './browser-doubles.test-fixtures'
@@ -211,6 +211,26 @@ describe('a run ended where it stands (`stop`)', () => {
 })
 
 describe("the ring on the page's frame loop", () => {
+  /** Runs frames until `ring`'s run ends: how many it took, and when its last ripple was made (ms). */
+  function toEnd(
+    ring: Ring,
+    el: HTMLElement,
+    frame: () => boolean,
+  ): { frames: number; lastRipple: number } {
+    let frames = 0
+    let newest: Element | null = null
+    let lastRipple = 0
+    while (ring.busy && frame()) {
+      frames += 1
+      const made = el.querySelector('.ring-ripples circle:last-child')
+      if (made !== null && made !== newest) {
+        newest = made
+        lastRipple = performance.now()
+      }
+    }
+    return { frames, lastRipple }
+  }
+
   it('asks for no frame at rest, then for every frame of a run until the ring is back at rest', async () => {
     // Arrange: a ring on screen, settled
     const { asked, settle, see } = await handLoop()
@@ -226,10 +246,12 @@ describe("the ring on the page's frame loop", () => {
     const woken = asked.length
     const frames = settle()
 
-    // Assert: a frame every 16 ms for the run's two seconds, and none after it
+    // Assert: a frame every 16 ms for the run's two seconds and the fade of
+    // the last ripple Merc's note made (0.88 s in, gone 1.6 s later), and none
+    // after it
     expect(resting).toBe(0)
     expect(woken).toBe(1)
-    expect(frames).toBe(125)
+    expect(frames).toBe(155)
     await expect(done).resolves.toBeUndefined()
     expect(asked).toHaveLength(0)
   })
@@ -278,5 +300,96 @@ describe("the ring on the page's frame loop", () => {
     expect(seen).toBe(10)
     expect(ripples(el)).toBeGreaterThan(0)
     expect(asked).toHaveLength(1)
+  })
+
+  it("fades a turn-0 run's last ripples out after its end, then asks for no frame", async () => {
+    // Arrange: a ring on screen, settled
+    const { asked, frame, settle, see } = await handLoop()
+    const { mountRing } = await import('./sing')
+    const el = ringEl()
+    const ring = mountRing(el, { stills: STILLS })
+    see(el)
+    settle()
+
+    // Act: a second of Merc's note and no turn, as Lesson 2's slide runs it
+    const done = ring.run({ which: 'blue', label: 'A3', listen: 1, turn: 0 })
+    let settledAt = -1
+    void done.then(() => {
+      settledAt = performance.now()
+    })
+    const { frames, lastRipple } = toEnd(ring, el, frame)
+    const ended = performance.now()
+    const left = ripples(el)
+    const endAsks = asked.length
+    await done
+    const fading = settle()
+    const rested = performance.now()
+
+    // Assert: the run settles at its end with its last ripples on the ring,
+    // and the loop draws them out, resting once the last has faded
+    expect(frames).toBe(63)
+    expect(settledAt).toBe(ended)
+    expect(left).toBeGreaterThan(0)
+    expect(endAsks).toBe(1)
+    expect(fading).toBeGreaterThan(0)
+    expect(rested - lastRipple).toBeGreaterThanOrEqual(1600)
+    expect(rested - lastRipple).toBeLessThan(1600 + 16)
+    expect(ripples(el)).toBe(0)
+    expect(asked).toHaveLength(0)
+  })
+
+  it('makes no ripple in a calm run under reduced motion, and asks for no frame after its end', async () => {
+    // Arrange: a calm ring on screen, settled, with reduced motion on
+    const { asked, frame, settle, see } = await handLoop()
+    const { mountRing } = await import('./sing')
+    const el = ringEl()
+    const ring = mountRing(el, { stills: STILLS, calm: true })
+    see(el)
+    settle()
+
+    // Act: the same turn-0 run
+    const done = ring.run({ which: 'blue', label: 'A3', listen: 1, turn: 0 })
+    const { frames, lastRipple } = toEnd(ring, el, frame)
+    const after = settle()
+
+    // Assert
+    await expect(done).resolves.toBeUndefined()
+    expect(frames).toBe(63)
+    expect(lastRipple).toBe(0)
+    expect(ripples(el)).toBe(0)
+    expect(after).toBe(0)
+    expect(asked).toHaveLength(0)
+  })
+
+  it("holds a run's last ripples while the ring is off screen, and clears them in one frame once it is back", async () => {
+    // Arrange: a turn-0 run to its end on screen, its last ripples still fading
+    const { asked, frame, settle, see } = await handLoop()
+    const { mountRing } = await import('./sing')
+    const el = ringEl()
+    const ring = mountRing(el, { stills: STILLS })
+    see(el)
+    settle()
+    void ring.run({ which: 'blue', label: 'A3', listen: 1, turn: 0 })
+    toEnd(ring, el, frame)
+    const left = ripples(el)
+
+    // Act: the ring scrolled out of view, two seconds off screen, then back
+    see(el, false)
+    const offScreen = settle()
+    vi.advanceTimersByTime(2000)
+    const offAsks = asked.length
+    const kept = ripples(el)
+    see(el)
+    const back = settle()
+
+    // Assert: off screen only the frame already asked for, drawing nothing;
+    // back in view, every ripple is older than 1.6 s and goes in one frame
+    expect(left).toBeGreaterThan(0)
+    expect(offScreen).toBe(1)
+    expect(offAsks).toBe(0)
+    expect(kept).toBe(left)
+    expect(back).toBe(1)
+    expect(ripples(el)).toBe(0)
+    expect(asked).toHaveLength(0)
   })
 })

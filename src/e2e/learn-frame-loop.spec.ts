@@ -155,6 +155,11 @@ async function runRests(
   if (whole) await expectRest(page, null)
 }
 
+/** Once `ring`'s run has come to rest, no ripple is left on it: the last ones faded out. */
+async function expectNoRipples(page: Page, ring: string): Promise<void> {
+  await expect(page.locator(`${ring} .ring-ripples circle`)).toHaveCount(0)
+}
+
 const PLATE = '#exCardHost .plate canvas'
 const node = (page: Page, n: number) =>
   page.locator(`#graph button.node[aria-label^="Lesson ${n}:"]`)
@@ -218,6 +223,7 @@ test("Lesson 1: the sing card's ring and the explorer rest", async ({
   await runRests(page, ['#sing .ring'], false, () =>
     page.locator('#singA3').click(),
   )
+  await expectNoRipples(page, '#sing .ring')
   await explorerRests(page, 1, false)
 })
 
@@ -230,6 +236,7 @@ test("Lesson 2: the slide's ring and guide and the explorer rest", async ({
   await runRests(page, ['#sing .ring', '#slideGuide canvas'], false, () =>
     page.locator('[data-slide="57"]').click(),
   )
+  await expectNoRipples(page, '#sing .ring')
   await explorerRests(page, 2, false)
 })
 
@@ -241,6 +248,7 @@ test("Lesson 3: Sing it's ring and the explorer rest", async ({ page }) => {
   await runRests(page, ['#ring'], false, () =>
     page.locator('[data-listen-note="0"]').click(),
   )
+  await expectNoRipples(page, '#ring')
   await explorerRests(page, 3, false)
 })
 
@@ -253,6 +261,7 @@ test("Lesson 4: the scale's ring and guide and the explorer rest", async ({
   await runRests(page, ['#sing .ring', '#scaleGuide canvas'], false, () =>
     page.locator('[data-scale="50"]').click(),
   )
+  await expectNoRipples(page, '#sing .ring')
   await explorerRests(page, 4, false)
 })
 
@@ -264,6 +273,7 @@ test("Lesson 5: Sing it's ring and the explorer rest", async ({ page }) => {
   await runRests(page, ['#ring'], false, () =>
     page.locator('[data-listen-len="10"]').click(),
   )
+  await expectNoRipples(page, '#ring')
   await explorerRests(page, 5, false)
 })
 
@@ -278,6 +288,7 @@ test('Lesson 6: the ring, the guide and the explorer rest, and so does the whole
   await runRests(page, ['#singCard .ring', '#tuneGuide canvas'], true, () =>
     page.locator('[data-version="1"]').click(),
   )
+  await expectNoRipples(page, '#singCard .ring')
   await explorerRests(page, 6, true)
 })
 
@@ -292,6 +303,7 @@ test('Lesson 7: the ring and the explorer rest, and so does the whole page', asy
   await runRests(page, ['#ring'], true, () =>
     page.locator('[data-panel="prepare"] [data-merc-siren]').click(),
   )
+  await expectNoRipples(page, '#ring')
   await explorerRests(page, 7, true)
 })
 

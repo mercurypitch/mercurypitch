@@ -12,8 +12,9 @@
 // an in-breath between Merc's note and the turn, and turn as one long
 // out-breath: Lesson 5's Listen · Breathe · Sing, and its "sss". A page
 // whose run can be cut short ends it where it stands (`stop`). The ring
-// draws only while a run moves it; at rest it holds its last frame and asks
-// the page's frame loop for nothing (frame-loop.ts, `wants`).
+// draws only while a run moves it, and while the run's last ripples fade out
+// after it; at rest it holds its last frame and asks the page's frame loop
+// for nothing (frame-loop.ts, `wants`).
 //
 // Mounted on a `.ring` element, any number per page. Inside it: the
 // `.ring-progress` and `.ring-breath` circles, the `.ring-ripples` group,
@@ -228,17 +229,21 @@ export function mountRing(root: HTMLElement, opts: RingOptions): Ring {
   }
 
   addDrawer({
-    active: () => now !== null && seen(),
-    // a run moves the ring every frame; between runs nothing it shows changes
-    wants: () => now !== null,
+    active: () => (now !== null || rips.length > 0) && seen(),
+    // a run moves the ring every frame, and its last ripples fade out after
+    // it; between runs, once they have gone, nothing it shows changes
+    wants: () => now !== null || rips.length > 0,
     draw(t) {
       const r = now
-      if (r === null) return
-      const { phase, h } = ringPhase(r.run, (t - r.t0) / 1000)
-      if (phase === 'listen') listening(r, t)
-      else if (phase === 'breathe') breathing(r, h)
-      else if (phase === 'turn') turning(r, h)
-      else finish(r)
+      if (r !== null) {
+        const { phase, h } = ringPhase(r.run, (t - r.t0) / 1000)
+        if (phase === 'listen') listening(r, t)
+        else if (phase === 'breathe') breathing(r, h)
+        else if (phase === 'turn') turning(r, h)
+        else finish(r)
+      }
+      // the ripples fade on whether or not a run is on: a run whose turn ends
+      // sooner than they fade leaves its last ones to fade out after it
       fade(t)
     },
   })
