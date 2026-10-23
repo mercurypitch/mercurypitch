@@ -334,6 +334,14 @@ export function initSing(stills: RingStills): void {
       toListening('nomic')
       return
     }
+    // the viewer left while the microphone opened: let it go before any
+    // panel is drawn, which would bring the card back on screen
+    const hidden = document.hidden
+    if (hidden || left) {
+      leave(hidden)
+      view.status(STATUS.stopped)
+      return
+    }
     run = {
       which: mercOf(v),
       midi: holdNote(v, move),
