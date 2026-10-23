@@ -1,10 +1,9 @@
 // The lesson word counter. Each fixture below is a small LESSON.md in the
 // forms the packages write, with the words a learner reads counted by hand.
-// The golden cases count the real packages and hold each total to the count
-// its FACTS and its WEB-SPEC state. Lessons 7, 8 and 10 are left out of them:
-// 7 and 8 state their text package's count, from before their pages wrote
-// the built page's lines into LESSON.md, and Lesson 10's count takes in its
-// two `_Toys:` lines, which this counter leaves out as toy lines.
+// The golden cases count the real packages and hold each total, and each
+// step's own text, to what its FACTS and its WEB-SPEC's Length state. Lessons
+// 1 to 4 are left out of them: their packages state no count in that form
+// (Lesson 3's FACTS 61 states one, but its WEB-SPEC has no Length section).
 
 import assert from 'node:assert/strict'
 import { spawnSync } from 'node:child_process'
@@ -315,7 +314,7 @@ Because it is.`),
 })
 
 // The lessons whose FACTS and WEB-SPEC state the count of today's LESSON.md.
-const GOLDEN = ['09', '11', '12', '13', '14']
+const GOLDEN = ['05', '06', '07', '08', '09', '10', '11', '12', '13', '14']
 
 /** The number in `text` that `pattern` captures, without its commas. */
 const stated = (text, pattern) => {
