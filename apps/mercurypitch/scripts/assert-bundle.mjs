@@ -208,6 +208,12 @@ const PLAN_WORDS = [
   ],
   ['Change my answers', "the way back to the plan's questions (PlanScreen)"],
   ['Four quick questions', "Merc's opening line on the first question"],
+  // The questions' own copy, which comes with any value import of
+  // plan-record.ts (it reads its ids from them), not only with the screens.
+  [
+    'start you where you can hear yourself',
+    "Merc's answer to Singing on the first question (questions.ts)",
+  ],
 ]
 
 /**

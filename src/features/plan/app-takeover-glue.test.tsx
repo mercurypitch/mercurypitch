@@ -20,6 +20,9 @@
 //
 // When a line of App's stops running here (a name changes, a line moves), the
 // failure names it, and `initializerOf` and `givenToMount` are where to look.
+// A `ReferenceError` out of `new Function` is a name App's line now uses that
+// the run was not given: add it to the scope literal it runs over, in
+// `staysAway` or in `loadTakeover`.
 
 import { cleanup, render } from '@solidjs/testing-library'
 import { readFileSync } from 'node:fs'
@@ -152,6 +155,8 @@ async function staysAway(url: string, returning: boolean): Promise<boolean> {
   vi.resetModules()
   const onboarding = await import('@/stores/onboarding-store')
   onboarding.stepAsideForLesson(window.location.search)
+  // The seed took: a renamed welcome key would make every row a first visit.
+  expect(onboarding.returningVisitor()).toBe(returning)
   const lines = ['arrivalRoute', 'arrivalLesson', 'takeoverSuppressed']
     .map((name) => `const ${name} = ${initializerOf(name)}`)
     .join('\n')

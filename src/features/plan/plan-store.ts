@@ -8,7 +8,9 @@
 // write is careful about what it replaces. The record's setter is private
 // to this file for that reason: each way to write the record is a function
 // below that looks at what is stored first, and nothing outside this file
-// can write it without that look.
+// can write it without that look. Across devices, the sync keeps that order
+// through preferPlanRecord (plan-precedence.ts), which App registers for this
+// key before the first pull.
 //
 // Four things are easy to break:
 //

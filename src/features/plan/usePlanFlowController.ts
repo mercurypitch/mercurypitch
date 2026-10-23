@@ -349,20 +349,23 @@ export function usePlanFlowController(o: PlanFlowOptions): PlanFlowController {
     send(['scope_offer_accept'])
   }
 
-  /** Hands the stop to the host, with the menu whole first if it lacks the stop. */
+  /**
+   * Starts a stop: counted, marked opened, and handed to the host, with the
+   * menu whole first if it lacks the stop.
+   */
   const enter = (stop: PlanStop, tour: boolean): void => {
+    send([`plan_stop_${stop.kind}`])
+    markStopOpened(stop.dest)
     widenMenuFor(stop)
     exit({ to: 'stop', stop, tour })
   }
 
   const openStop = (stop: PlanStop): void => {
-    send([`plan_stop_${stop.kind}`])
-    markStopOpened(stop.dest)
     enter(stop, false)
   }
 
   // Interim, until the tour is built (Plan 1B): the Start here stop, with
-  // the tour where its room has one.
+  // the tour where its room has one. It starts the stop as its card does.
   const showMeAround = (): void => {
     const current = untrack(plan)
     if (current !== null) enter(current.start, true)

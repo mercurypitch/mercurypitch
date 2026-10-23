@@ -1702,11 +1702,12 @@ describe('the store build', () => {
       )
     }
 
-    it('are the three the native check rejects, read from it', () => {
+    it('are the four the native check rejects, read from it', () => {
       expect(PLAN_WORDS).toEqual([
         'mp.plan.text.v1',
         'Change my answers',
         'Four quick questions',
+        'start you where you can hear yourself',
       ])
     })
 

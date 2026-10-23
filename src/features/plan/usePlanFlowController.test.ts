@@ -836,12 +836,17 @@ describe('Show me around', () => {
   it('goes to Start here with the tour, until the tour is built', () => {
     const { c, exits } = start('new')
     c.done(AUDITION, NO_TEXTS, NO_PILLS)
+    const here = c.plan()?.start
+    if (here === undefined) throw new Error('a Start here card')
 
     c.showMeAround()
 
     expect(exits.map((e) => e.exit)).toEqual([
-      { to: 'stop', stop: c.plan()?.start, tour: true },
+      { to: 'stop', stop: here, tour: true },
     ])
+    // It starts the stop as the card does: counted, and marked opened.
+    expect(sent().at(-1)).toBe('plan_stop_start')
+    expect(stopOpened(here.dest)).toBe(true)
   })
 
   it('shows every room again first when the menu hides Start here', () => {

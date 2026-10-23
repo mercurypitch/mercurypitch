@@ -33,8 +33,10 @@ import { SingingCanvasHud } from '@/components/SingingCanvasHud'
 import { SyncHost } from '@/components/sync/SyncHost'
 import type { FirstLight as FirstLightFlow } from '@/features/onboarding/FirstLight'
 import type { OpeningTakeoverProps } from '@/features/plan/OpeningTakeover'
+import { PLAN_RECORD_KEY } from '@/features/plan/plan-keys'
 import type { PlanLayerHost, PlanStoreModule, } from '@/features/plan/plan-layer-host'
 import { createPlanLayerHost } from '@/features/plan/plan-layer-host'
+import { preferPlanRecord } from '@/features/plan/plan-precedence'
 import type { PlanLayerProps } from '@/features/plan/PlanLayer'
 import { syncPlanForAccount } from '@/features/plan/sync-for-account'
 import type { SingRoomCanvasOptions } from '@/features/sing-room/SingRoomStage'
@@ -255,7 +257,7 @@ import { GuitarProvider, useGuitar } from '@/contexts/GuitarContext'
 import { PlaybackProvider } from '@/contexts/PlaybackContext'
 import { hasValidToken, takeGoogleRedirectResult, } from '@/db/services/auth-service'
 import { takeExpectedCredits } from '@/db/services/billing-service'
-import { initSettingsSync } from '@/db/services/settings-service'
+import { initSettingsSync, registerSyncPrecedence, } from '@/db/services/settings-service'
 import { authVersion } from '@/db/services/user-service'
 import { adoptAfterGoogleSignup, syncLocalVoiceprints, } from '@/db/services/voiceprint-service'
 import { clearChallengeAttempt } from '@/features/challenges/challenge-attempt'
@@ -2941,7 +2943,10 @@ const AppShell: Component<AppProps> = (props) => {
     onCleanup(installSelectBlurOnPointerChange())
 
     // Cloud settings sync: pull on startup/auth change, write-through
-    // on preference changes. Inert when no API is configured.
+    // on preference changes. Inert when no API is configured. The plan's
+    // rule goes in first: an earlier page's unsent record meets this pull.
+    if (!IS_NATIVE_BUILD)
+      registerSyncPrecedence(PLAN_RECORD_KEY, preferPlanRecord)
     initSettingsSync()
 
     // Surface the outcome of a Google sign-in redirect (token handling

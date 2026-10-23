@@ -221,17 +221,50 @@ describe('the one takeover per visit', () => {
   // R9: a module-level createPersistedSignal is a side effect Rollup keeps, so
   // one static import of the store, or of the takeover that reads it, puts the
   // plan in the phone's bundle. App holds the host (which takes the store as a
-  // type) and the sync gate (which imports its module inside a function), and
-  // reaches everything else through a constant-picked dynamic import.
-  it('imports nothing from the plan statically but the host and the sync gate', () => {
+  // type), the sync gate (which imports its module inside a function) and the
+  // record's sync rule with its key (R108, registered on the web only), and
+  // reaches everything else through a constant-picked dynamic import. App
+  // loads the rule on every visit, so plan-precedence.ts has no runtime import:
+  // through plan-record.ts it would bring the questions into every first paint.
+  it('imports nothing from the plan statically but the host, the sync gate and the record rule', () => {
     const named = planImports
       .filter(isValueImport)
       .map((statement) => statement.moduleSpecifier.getText(source))
+    const rule = ts.createSourceFile(
+      'src/features/plan/plan-precedence.ts',
+      readFileSync('src/features/plan/plan-precedence.ts', 'utf8'),
+      ts.ScriptTarget.Latest,
+      true,
+    )
+    const ruleImports = rule.statements.filter(
+      (statement) =>
+        (ts.isImportDeclaration(statement) && isValueImport(statement)) ||
+        (ts.isExportDeclaration(statement) &&
+          statement.moduleSpecifier !== undefined),
+    )
 
     expect(named.sort()).toEqual([
+      "'@/features/plan/plan-keys'",
       "'@/features/plan/plan-layer-host'",
+      "'@/features/plan/plan-precedence'",
       "'@/features/plan/sync-for-account'",
     ])
+    expect(ruleImports.map((statement) => statement.getText(rule))).toEqual([])
+  })
+
+  it('registers the record rule on the web only, and before the sync starts', () => {
+    const registers = callsTo('registerSyncPrecedence')
+    const [init] = callsTo('initSettingsSync')
+
+    expect(registers.map((call) => call.getText(source))).toEqual([
+      'registerSyncPrecedence(PLAN_RECORD_KEY, preferPlanRecord)',
+    ])
+    const guard = registers[0].parent.parent
+    expect(ts.isIfStatement(guard) && guard.expression.getText(source)).toBe(
+      '!IS_NATIVE_BUILD',
+    )
+    expect(registers[0].end < init.getStart(source)).toBe(true)
+    expect(enclosingFunction(registers[0])).toBe(enclosingFunction(init))
   })
 
   it('reaches the rest of the plan only through an import that IS_NATIVE_BUILD folds away', () => {

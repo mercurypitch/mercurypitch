@@ -10,6 +10,10 @@
 //          to localStorage AND live signals (via applyPersistedValue).
 //   push:  every persisted-signal write (onPersistedWrite hook) is
 //          debounced and upserted to the cloud.
+//   rule:  whoever owns a key can register which side stands when an
+//          unsent local value meets a different account row
+//          (registerSyncPrecedence), before the first pull. With no
+//          rule the local value wins; a merged key merges and has none.
 //
 // Signed out, practice stays in a separate guest copy on this device.
 // With no API configured the sync hooks are inert.
@@ -104,6 +108,29 @@ const pushTimers = new Map<string, ReturnType<typeof setTimeout>>()
 const pushQueues = new Map<string, Promise<void>>()
 let pullRevision = 0
 
+type SyncPrecedence = (local: string, remote: string) => 'local' | 'remote'
+
+const precedence = new Map<string, SyncPrecedence>()
+
+/**
+ * Gives `key` a rule for when this device's unsent value and the account's
+ * row differ: 'remote' keeps the account's value and drops the local one,
+ * 'local' sends the local one as a key with no rule does. A key that merges
+ * on pull (MERGE_ON_PULL) merges and ignores it.
+ */
+export function registerSyncPrecedence(
+  key: string,
+  prefer: SyncPrecedence,
+): void {
+  precedence.set(key, prefer)
+}
+
+/** Does the key's rule keep the account's row over a different unsent value? */
+function accountStands(key: string, local: string, remote: string): boolean {
+  if (local === remote || MERGE_ON_PULL[key] !== undefined) return false
+  return precedence.get(key)?.(local, remote) === 'remote'
+}
+
 async function uploadPending(
   key: string,
   identity: SyncIdentity,
@@ -134,10 +161,13 @@ async function uploadPending(
       markPending(key, value, identity.userId)
     }
     if (!isCurrent(identity) || value.length > MAX_VALUE_BYTES) return
-    if (existing !== undefined) {
-      if (existing.value !== value) await repo.update(existing.id, { value })
-    } else {
+    if (existing === undefined) {
       await repo.create({ userId: '', key, value })
+    } else if (accountStands(key, value, existing.value)) {
+      // The identity checked above still holds: nothing was awaited since.
+      applyPersistedValue(key, existing.value)
+    } else if (existing.value !== value) {
+      await repo.update(existing.id, { value })
     }
     // An old completion must not clear the new account/generation's ledger.
     if (isCurrent(identity) && progressReset(key) === reset) {
@@ -217,6 +247,9 @@ async function pullOnce(): Promise<boolean> {
       } else if (pending[row.key] !== undefined) {
         if (pending[row.key] === row.value) {
           clearPendingIfUnchanged(row.key, row.value, identity.userId)
+        } else if (accountStands(row.key, pending[row.key], row.value)) {
+          applyPersistedValue(row.key, row.value)
+          clearPendingIfUnchanged(row.key, pending[row.key], identity.userId)
         }
       } else if (localStorage.getItem(row.key) !== row.value) {
         applyPersistedValue(row.key, row.value)
