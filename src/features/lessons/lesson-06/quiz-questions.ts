@@ -16,7 +16,8 @@
 // link to Lesson 4's page at that step, in a new tab (WEB-SPEC, Toys 7).
 
 import { signsHtml } from '@/features/lessons/kit/notes'
-import type { QuizQuestion } from '@/features/lessons/kit/quiz'
+import type { QuizOptions, QuizQuestion } from '@/features/lessons/kit/quiz'
+import { recallStepHref } from '@/features/lessons/kit/quiz'
 import { QUIZ_QUESTIONS as LESSON_4_QUESTIONS } from '@/features/lessons/lesson-04/quiz-questions'
 
 /** "Try Step N again", as a link the quiz turns into a jump to that step. */
@@ -26,6 +27,11 @@ const tryStep = (n: number): string =>
 /** The recall's two questions, Lesson 4's own. */
 export const RECALL_QUESTIONS: readonly QuizQuestion[] =
   LESSON_4_QUESTIONS.filter((q) => q.id === 'l04-q1' || q.id === 'l04-q4')
+
+/** Where the recall's step links go: Lesson 4's page at that step, as Lessons 4 and 7 link theirs. */
+export const RECALL_AWAY: NonNullable<QuizOptions['away']> = {
+  href: recallStepHref,
+}
 
 /** A question's play button, in its slot. */
 const playSlot = (what: string, color: string): string =>

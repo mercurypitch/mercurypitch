@@ -35,14 +35,14 @@ import { Motion } from '@/features/lessons/kit/motion-switch'
 import { createModeStore } from '@/features/lessons/kit/names'
 import { createNextCard } from '@/features/lessons/kit/next-card'
 import { engraveClefs, initMasthead, initMotionSwitch, initSoundSwitch, } from '@/features/lessons/kit/page-chrome'
-import { createQuiz, recallStepHref } from '@/features/lessons/kit/quiz'
+import { createQuiz } from '@/features/lessons/kit/quiz'
 import { initReveals } from '@/features/lessons/kit/reveal'
 import { createStepDeck } from '@/features/lessons/kit/step-deck'
 import mercBlue from '@/features/lessons/lesson-01/assets/merc-blue.png'
 import mercOrange from '@/features/lessons/lesson-01/assets/merc-orange.png'
 import { initColdOpen } from './cold-open'
 import { bindQuizPlays } from './quiz-play'
-import { QUIZ_QUESTIONS, RECALL_QUESTIONS } from './quiz-questions'
+import { QUIZ_QUESTIONS, RECALL_AWAY, RECALL_QUESTIONS } from './quiz-questions'
 import { initSing } from './sing'
 import { initSteps } from './steps'
 import type { NamesMode } from './tune-words'
@@ -62,7 +62,7 @@ createQuiz({
   keys: { seed: 'fyp-l06-recall-seed', record: 'fyp-l06-recall-v1' },
   prefix: 'recall-',
   // "Try Lesson 4, Step 1 again" opens Lesson 4's page at Step 1, in a new tab
-  away: { href: recallStepHref },
+  away: RECALL_AWAY,
 })
 
 initWords()

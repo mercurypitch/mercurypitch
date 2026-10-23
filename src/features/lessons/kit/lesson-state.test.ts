@@ -138,8 +138,8 @@ describe('upNext', () => {
     // Act
     const next = upNext(season, viewer(1))
 
-    // Assert: Lesson 8 needs Lesson 1 (CURRICULUM § 3.3)
-    expect(next).not.toBe(8)
+    // Assert: Lesson 8 needs Lesson 1 (CURRICULUM § 3.3), as every lesson after it does
+    expect(next).toBeNull()
   })
 })
 
