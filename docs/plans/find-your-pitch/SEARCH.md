@@ -129,7 +129,7 @@ Every lesson document follows this, in addition to its WEB-SPEC.
     searchers do not type.
   - Season 1's titles are in §4: rows 1 to 8 as decided, rows 9 to 14 as drafts.
 - **Description, 80 to 160 characters:** the hook, then what the lesson covers
-  and how ("a ten-minute lesson with sound toys"). The test holds the length.
+  and how ("an eight-minute lesson with sound toys"). The test holds the length.
 - **Canonical, `og:url` and robots.** The canonical and `og:url` are the clean
   path. Robots is `index, follow, max-image-preview:large`.
 - **Share card.** 1200×630 as now (`learn/lesson-NN-og.jpg`). It doubles as the

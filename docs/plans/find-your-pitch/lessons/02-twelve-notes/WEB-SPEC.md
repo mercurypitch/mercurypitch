@@ -59,7 +59,7 @@ are Lesson, Watch and Explorer. Each section's heading, and the line above it, a
 1. **Masthead**: Lesson 1's (wordmark, "Season 1 · Lesson 02", anchors Lesson, Watch, Explorer, the
    Sound toggle off by default, the Pause animations toggle with its reduced-motion lock).
 2. **Hero, with the cold open**: kicker; the hook question as the title; the meta as three chips
-   (10 minutes; "After Lesson 1: What is a note?", the prerequisite chip, a link to `/learn/01`;
+   (13 minutes; "After Lesson 1: What is a note?", the prerequisite chip, a link to `/learn/01`;
    Sound on); the promise; the sound gate from LESSON.md, in the hero copy as Lesson 1's is. The
    stage holds the hero spiral (Toys, 1), the lit A3 to A4 turn with its five dim beads, between
    Merc and Tavi on the floor line, with Tavi's guess ("Is there a hidden note between every two
@@ -152,7 +152,7 @@ are Lesson, Watch and Explorer. Each section's heading, and the line above it, a
     one action ("Start lesson", "Continue: step N" or "Read again"; Lesson 1's spec, item 9)
     without Watch the episode; once the film is published (its sources set in `kit/films.ts`) it
     reads "Ready · watch and read" and Watch the episode joins the action. Its
-    Length row is the page's reading time, 10 min (`minutes: 10`), with the film's 7:11 only once
+    Length row is the page's reading time, 13 min (`minutes: 13`), with the film's 7:11 only once
     the film plays. The line under the explorer's heading names no lesson's state: the legend
     (Ready, Coming later, Done) and the cards say it, from the season. Lesson 2 marks done when its
     quiz is finished. Its card's practice link reads as LESSON.md's Wrap: `season.ts` links
@@ -554,7 +554,7 @@ what it must do. The kit items move Lesson 1's code into `src/features/lessons/k
     lesson (`poster` is Lesson 1's, and the poster figure's alt text names Lesson 01); and a state
     for a lesson whose page is live and whose film is not published, "Ready · read", whose card
     offers its action without Watch the episode (built: `kit/lesson-state.ts` gives the state and
-    the action, and Lesson 2's entry carries `minutes: 10`, its film's `len: '7:11'` for the team,
+    the action, and Lesson 2's entry carries `minutes: 13`, its film's `len: '7:11'` for the team,
     and `film: 'production'` until the film is published). Its practice note is "then tap Leap":
     a lesson's link skips the app's intro since the `?lesson=` step-aside shipped (item 18).
 11. **`kit/notes.ts`**: the sharp and flat names of the five (`letterOf` returns null for them,

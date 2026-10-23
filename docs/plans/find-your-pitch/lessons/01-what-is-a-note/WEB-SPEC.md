@@ -78,7 +78,7 @@ in LESSON.md has none. The recall check (item 4) starts with Lesson 2.
    (`kit/position.ts`).
 
 2. **Hero, the cold open**: kicker; the hook question as the title (serif italic, large, balanced);
-   LESSON.md's meta as three chips (10 minutes, No theory needed, Sound on) and its one-line
+   LESSON.md's meta as three chips (8 minutes, No theory needed, Sound on) and its one-line
    promise; Merc and Tavi live (Merc left, Tavi right, about 260 px on desktop, 160 px on phones)
    on a reflective floor line with the living staff vibrating behind (still under reduced motion
    or with Pause animations on); between them a short pitch rail with the two beads (A at 220, A
@@ -149,7 +149,7 @@ in LESSON.md has none. The recall check (item 4) starts with Lesson 2.
    action ("Start lesson" at its page's top, "Continue: step N" at the furthest step the viewer
    reached, or "Read again"), with "Watch the episode" beside it once the film is published; then
    the topics by name, what it builds on and opens, the practise link where one exists, as its
-   CURRICULUM card gives it, and its reading time ("10 min", with the film's running time once the
+   CURRICULUM card gives it, and its reading time ("8 min", with the film's running time once the
    film plays). The season's planning fields (the signature image, the link a drill still needs, a
    film made but not published) stay in `kit/season.ts` for the team and the admin console, never
    on a card. On phones a vertical two-lane list with chips. Remember "done" per lesson in
