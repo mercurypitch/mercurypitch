@@ -12,7 +12,9 @@
 // So does a WebGL that would run on the CPU (SwiftShader, llvmpipe: no GPU,
 // or one the browser has blocklisted). Merc and Tavi drawn there hold the main
 // thread for seconds at a time, and the lesson under them stops answering.
+// The check is the app's one, lib/merc/gpu-gate.ts.
 
+import { canRunLiveMerc } from '@/lib/merc/gpu-gate'
 import type { MercMountOptions, MercRenderer } from '@/lib/merc/renderer'
 import type { SparkleSide } from '@/lib/merc/sim'
 import { q } from './dom'
@@ -94,29 +96,6 @@ function mountOne(
   }
 }
 
-// A WebGL drawn on the CPU names itself: Chrome's SwiftShader, Mesa's
-// llvmpipe and softpipe, Windows' Basic Render Driver. Headless Chrome hands
-// out a SwiftShader context even when asked to fail on a performance caveat.
-const SOFTWARE_RENDERER = /swiftshader|llvmpipe|softpipe|software|basic render/i
-
-/** True when this browser draws WebGL2 on a GPU. */
-function gpuWebGL2(): boolean {
-  try {
-    const gl = document
-      .createElement('canvas')
-      .getContext('webgl2', { failIfMajorPerformanceCaveat: true })
-    if (gl === null) return false
-    const info = gl.getExtension('WEBGL_debug_renderer_info')
-    const name: unknown = gl.getParameter(
-      info === null ? gl.RENDERER : info.UNMASKED_RENDERER_WEBGL,
-    )
-    gl.getExtension('WEBGL_lose_context')?.loseContext()
-    return !(typeof name === 'string' && SOFTWARE_RENDERER.test(name))
-  } catch {
-    return false
-  }
-}
-
 export interface MercDuoOptions {
   /**
    * Where a celebration's sparkles land; 'none' for a quiet one (Lesson 5's
@@ -130,7 +109,7 @@ export async function initMercs(
   stage: HTMLElement,
   o: MercDuoOptions = {},
 ): Promise<void> {
-  if (!gpuWebGL2()) {
+  if (!canRunLiveMerc()) {
     settle()
     return
   }

@@ -1,0 +1,32 @@
+/* Merc on a screen (MercPresence.tsx). The screen sizes the box and may place
+   it however it likes: the root sets no `position`, so a class of the host's
+   own can make it absolute or fixed with no contest over specificity or
+   stylesheet order. (`:where()` would give the same, but the web build's
+   Lightning CSS targets include browsers older than it.) His still and, over
+   it, his live canvas share the box's one grid cell, so a host's class leaves
+   `display` alone. He is decoration: he never takes a tap meant for what lies
+   under him. */
+.presence {
+  display: grid;
+  grid-template: minmax(0, 1fr) / minmax(0, 1fr);
+  pointer-events: none;
+}
+
+.still,
+.live {
+  grid-area: 1 / 1;
+  width: 100%;
+  height: 100%;
+}
+
+.still {
+  display: block;
+  object-fit: contain;
+  transition: opacity 200ms ease-out;
+}
+
+/* Once the live Merc has drawn, his still steps aside. It stays in the page,
+   so the description the screen gave it still reads. */
+.presence[data-presence='live'] .still {
+  opacity: 0;
+}
