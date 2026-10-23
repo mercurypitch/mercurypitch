@@ -135,7 +135,7 @@ section's heading, and the line above it, are in LESSON.md ("Section headings").
    is Lesson 12's rule for this still (Lesson 12's WEB-SPEC, Decisions for the owner, item 13;
    Lesson 12's FACTS 5b; FACTS 7). The still sits in the page's `[data-next-card]` mark, whose
    children the kit keeps in the card after its words (`:27-29`, `:184`, `:205`), as Lesson 2's
-   figures are (`learn/02.html:1806`). The card is a link, so the figure holds no button. The
+   figures are (`learn/02.html:1819`). The card is a link, so the figure holds no button. The
    practice card is the Siren card, with "Ten minutes, gently, most days" under it; after
    "Effortful", "Uncomfortable" or "Just listen today" it is the rest card instead, without that
    line or a link (Toys 4). Its address links `/pitch-training?lesson=11` in a new tab. Free play
@@ -855,7 +855,7 @@ the others take it.
     never counts as heard, while `true` or nothing keeps the old meaning (`:31-41`, `:184-188`);
     and `NowPlaying`, the page-wide owner, stops the sound before a source that claims it
     (`kit/now-playing.ts:17-39`). A page opts in by handing it to what it mounts (`:14-15`), as
-    Lesson 6's cold open does (`lesson-06/cold-open.ts:99`); this page hands it to every source.
+    Lesson 6's cold open does (`lesson-06/cold-open.ts:98`); this page hands it to every source.
 11. `recallStepHref` in `kit/quiz.ts`, built: Lesson 8's page moved it there (`:134-136`), and
     Lessons 3, 4 and 5 take it from the kit (`lesson-03/quiz-questions.ts:24`,
     `lesson-04/quiz-questions.ts:32`, `lesson-05/quiz-questions.ts:20`), so Lessons 7, 9 and 11's

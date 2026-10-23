@@ -185,7 +185,7 @@ section's heading, and the line above it, are in LESSON.md ("Section headings").
     the map" while Lesson 9 has no published page, then "Start lesson" to `/learn/09` (FACTS 6). Its
     slot, the page's mark, `<div class="next-card card l08-next" data-next-card hidden>` in `#wrap`,
     holds the tease figure (Toys 9), which the card keeps after its words (`kit/next-card.ts:184`,
-    `:205`), as Lesson 2's mark keeps its figures (`learn/02.html:1806`). Free play unlocks after
+    `:205`), as Lesson 2's mark keeps its figures (`learn/02.html:1819`). Free play unlocks after
     the card: every beat-machine control on one card (Toys 1; playbook rule 17), keeping the card's
     place after the challenge and the practice card (CURIOSITY-MOMENTS § 3.1).
 12. **Lesson explorer**: the kit's, `createExplorer({ current: 8 })` (`kit/explorer.ts:256`), with
@@ -293,7 +293,7 @@ its patterns with it.
   (`kit/predict.ts:66-67`, `:124-126`). The Tempo slider is an `input`, which `unlocks` does not
   take, so the predict's `onChoice` enables it (`:65`, called at `:129`). Lesson 2's stage does the
   same with Sharp and Flat: `disabled` in its markup (`learn/02.html:934`, `:939`) and enabled from
-  its predict's `onChoice` (`lesson-02/steps.ts:142`; `lesson-02/keys-toy.ts:337-340`). No
+  its predict's `onChoice` (`lesson-02/steps.ts:142`; `lesson-02/keys-toy.ts:341-345`). No
   `aria-disabled` is involved: a `disabled` control stays out of the tab order until the choice, and
   the choice locks for the visit, so the row stays open after it. This page is the first to pass
   `unlocks`, so its tests check it (Tests, unit 15).
@@ -730,7 +730,7 @@ one a dashed arc with a "?" over its landing (CURIOSITY-MOMENTS § 2, Lesson 8, 
 sits under the words the kit draws, the eyebrow, the tease line, the hook and the way on
 (`kit/next-card.ts:131-146`). It holds no button, since the card is a link, and it plays no sound.
 Its styles go in this page's stylesheet, under a class of its own, `.l08-tease`: never Lesson 2's
-`.tease` (`lesson-02/lesson-02.css:495`), which `learn-next-card.spec.ts` tests, nor the kit's
+`.tease` (`lesson-02/lesson-02.css:510`), which `learn-next-card.spec.ts` tests, nor the kit's
 `.next-tease`, which sets the tease line (`lesson-sections.css:226-232`). It does not move.
 
 ## Audio

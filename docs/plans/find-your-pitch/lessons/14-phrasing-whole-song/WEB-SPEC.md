@@ -667,7 +667,7 @@ takes as "not heard" (`:187-188`), while `true` or nothing means heard, as on th
 Lesson 6 (What the kit and the app still need, 10; unit tests 16 and 17). This page hands
 `NowPlaying` to every source it mounts, as Lesson 6's page does: its cold open claims the owner
 before it plays and resolves `false` when another sound cut it short
-(`src/features/lessons/lesson-06/cold-open.ts:97-114`). The owner here covers a buffer as well as a
+(`src/features/lessons/lesson-06/cold-open.ts:96-113`). The owner here covers a buffer as well as a
 synthesised voice, since the singer's takes play through it.
 
 ## Merc and Tavi

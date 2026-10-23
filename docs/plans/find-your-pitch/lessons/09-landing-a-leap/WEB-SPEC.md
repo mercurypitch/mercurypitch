@@ -120,7 +120,7 @@ heading, and the line above it, are in LESSON.md ("Section headings").
    it picks (`:14-20`), since the card reads the season as the page's state shows it (`:185`). The
    tease's figure, a still of the pitch spiral with do, mi and so lit and one "?" over all three,
    not over mi, sits in the page's `[data-next-card]` mark, whose children the kit keeps in the card
-   after its words (`:27-29`, `:184`, `:205`), as Lesson 2's figures are (`learn/02.html:1806`). The
+   after its words (`:27-29`, `:184`, `:205`), as Lesson 2's figures are (`learn/02.html:1819`). The
    card is a link, so the figure holds no button. The practice card is the Arpeggio Jumper and
    Interval Trainer card, with "Ten minutes, gently, most days" under it; after "Effortful",
    "Uncomfortable" or "Just listen today" it is the rest card instead, without that line or a link
