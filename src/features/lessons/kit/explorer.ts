@@ -28,16 +28,19 @@
 // state only picks among lesson-copy.ts's hooks, by id); poster URLs, which
 // come from the page, are set as properties instead. The map's stateless pieces
 // (lanes, arcs, edges, labels and their painters) are in explorer-graph.ts.
+// Lesson 13's card shakes its plate's sand on every frame while motion
+// plays; held still, or on any other card, the explorer asks the page's
+// frame loop for nothing (frame-loop.ts, `wants`).
 
 import { clamp, q, qa, svg } from './dom'
 import type { PlateFigure } from './explorer-figures'
 import { cardFigure, plateFigure, pluckString } from './explorer-figures'
 import type { Look, Pos } from './explorer-graph'
 import { addArcs, addEdges, addLaneBands, labelLeans, labelWidths, LANE_Y, nodeLabel, paintLabel, paintNode, paintRow, } from './explorer-graph'
-import { addDrawer, watch } from './frame-loop'
+import { addDrawer, wake, watch, watchPixelRatio } from './frame-loop'
 import type { LessonView } from './lesson-state'
 import { lessonViews } from './lesson-state'
-import { reducedMotion } from './motion-switch'
+import { Motion, reducedMotion } from './motion-switch'
 import { pageLessons } from './page-state'
 import { Positions } from './position'
 import { Done } from './progress'
@@ -311,10 +314,42 @@ export function createExplorer(opts: ExplorerOptions): Explorer {
   // the card sits in the host on a wide screen and inside the list on a phone
   const hostSeen = watch(cardHost)
   const listSeen = watch(list)
+  let plateCanvas: HTMLCanvasElement | null = null
+  // the plate has something new to show since its last frame
+  let plateDirty = true
+  // the plate, and the size and pixel ratio, of its last frame
+  let drawnPlate: PlateFigure | null = null
+  let drawnAt = ''
+  /** The plate's canvas size and pixel ratio now, as its next frame would draw them. */
+  const plateSizeNow = (): string =>
+    plateCanvas === null
+      ? ''
+      : `${plateCanvas.clientWidth}x${plateCanvas.clientHeight}@${window.devicePixelRatio || 1}`
+
+  /** A new plate, size, pixel ratio or motion setting: the plate draws on the next frame. */
+  function plateChanged(): void {
+    plateDirty = true
+    wake()
+  }
+  const plateSize = new ResizeObserver(plateChanged)
   addDrawer({
     active: () => plate !== null && (hostSeen() || listSeen()),
-    draw: (_now, dt) => plate?.draw(dt),
+    // the sand moves while motion plays; held still, only a change draws,
+    // a plate, size or pixel ratio that moved without a word among them
+    wants: () =>
+      plateDirty ||
+      !Motion.paused ||
+      drawnPlate !== plate ||
+      plateSizeNow() !== drawnAt,
+    draw: (_now, dt) => {
+      plateDirty = false
+      plate?.draw(dt)
+      drawnPlate = plate
+      drawnAt = plateSizeNow()
+    },
   })
+  watchPixelRatio(plateChanged)
+  Motion.subscribe(plateChanged)
 
   /** Where the keyboard is in the open card: its lesson and the control's place among the card's controls. */
   function focusedSlot(): { n: number; i: number } | null {
@@ -346,6 +381,10 @@ export function createExplorer(opts: ExplorerOptions): Explorer {
     }
     const canvas = el.querySelector<HTMLCanvasElement>('.plate canvas')
     plate = canvas === null ? null : plateFigure(canvas)
+    plateCanvas = canvas
+    plateSize.disconnect()
+    if (canvas !== null) plateSize.observe(canvas)
+    plateChanged()
     pluckString(el)
     if (slot !== null) refocus(el, slot)
   }
