@@ -36,6 +36,9 @@ export const SIREN_PHASE_READY = 3
 /** How long the guide dot takes to travel start → end → start. */
 export const SIREN_GUIDE_PERIOD_MS = 2500
 
+/** A glide moves at most 6 times the dot's pace: twice a quick glide's speed, slower than a jump. */
+export const SIREN_GLIDE_PACE_LIMIT = 6
+
 /**
  * Where the guide dot sits, `sinceMs` into the glide window.
  *
@@ -260,11 +263,21 @@ export function useSirenController(
     // the frames of the round before.
     const glideFrames = history
       .filter((p) => p.freq > 0 && p.time * 1000 > glideFromMs)
-      .map((p) => ({ midi: freqToExactMidi(p.freq) }))
+      .map((p) => ({ midi: freqToExactMidi(p.freq), time: p.time }))
     if (glideFrames.length >= 2) voicedGlides++
+    // The dot crosses the span in half a period, so the fastest a step may
+    // glide, in semitones a second, grows with the span.
+    const maxRate =
+      (SIREN_GLIDE_PACE_LIMIT * Math.abs(round.endMidi - round.startMidi)) /
+      (SIREN_GUIDE_PERIOD_MS / 2 / 1000)
     glideScores.push(
       Math.round(
-        computeGlideCoverage(glideFrames, round.startMidi, round.endMidi) * 100,
+        computeGlideCoverage(
+          glideFrames,
+          round.startMidi,
+          round.endMidi,
+          maxRate,
+        ) * 100,
       ),
     )
 
