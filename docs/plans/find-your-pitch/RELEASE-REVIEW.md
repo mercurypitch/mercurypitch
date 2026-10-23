@@ -12,12 +12,12 @@ the review itself was wrong. File and line references are to main @ fd2166c, bef
 
 ## Status after the first fix PR
 
-- **Fixed:** 32 items, S-01, S-02, S-03, S-04, S-05, S-06, S-07, L1-01, L1-02, G-01, G-03, L3-01, L3-02, L3-11, L5-01, L6-01, L7-07, L8-01, L8-02, L8-03, L8-04, S-10, S-19, S-23, L1-03, L2-02, L2-03, W-01, L6-07, L8-05, L8-07, W-02.
-- **Partly fixed:** S-08, S-17.
+- **Fixed:** 31 items, S-01, S-02, S-03, S-04, S-05, S-06, S-07, L1-01, L1-02, G-01, G-03, L3-01, L3-02, L3-11, L5-01, L6-01, L7-07, L8-01, L8-02, L8-03, L8-04, S-10, S-19, S-23, L1-03, L2-02, L2-03, L6-07, L8-05, L8-07, W-02.
+- **Partly fixed:** S-08, S-17, W-01.
 - **Corrected (the review was wrong in part):** S-09, G-02.
-- **Decided by the owner:** D-01, D-02.
+- **Decided by the owner:** D-01, D-02; in other PRs, S-24, S-25; in part, L2-07, G-20, G-06, D-04.
 - **Also fixed:** axe's one serious result, `target-size` on the stacked footer practise links of Lessons 6 and 8 (Appendix A): footer links are 44 px tall now. axe reports only the moderate landmark notes on each page (S-29).
-- **P1 still open:** S-08, G-04, V-01 (G-02 keeps one owner question; S-08 and V-01 wait on devices; G-04 is a layout decision).
+- **P1 still open:** S-08, S-09, G-04, V-01 (G-02 keeps one owner question; S-08, S-09 and V-01 wait on devices; G-04 is a layout decision).
 
 ## Contents
 
@@ -53,7 +53,7 @@ the review itself was wrong. File and line references are to main @ fd2166c, bef
 
 ## What this release contains
 
-- **Find Your Pitch lessons (new):** eight lesson pages at /learn/01 to /learn/08, each a hand-written document booted by its own module, over a shared kit of about 150 modules; hosts blue and orange Merc. Lessons 1 and 2 go live; Lessons 3 to 8 are drafts that the site worker answers with a 404 on mercurypitch.com until the owner publishes them from the Content Studio, with no release needed.
+- **Find Your Pitch lessons (new):** eight lesson pages at /learn/01 to /learn/08, each a hand-written document booted by its own module, over a shared kit of 90 modules (79 scripts and 11 stylesheets); hosts blue and orange Merc. Lessons 1 and 2 go live; Lessons 3 to 8 are drafts that the site worker answers with a 404 on mercurypitch.com until the owner publishes them from the Content Studio, with no release needed.
 - **Around the lessons:** the lesson gate in the site worker, the admin Lessons page (publish, unpublish, choose hooks), sitemap and llms.txt entries, lesson links in every entry page's nav and on the 404 page, and Home's new "Lessons" link.
 - **Rest of the web release:** a new 404 error scene; a karaoke-app front door and FAQs for Jam Rooms and key changes; Voice Mirror reads Bass-baritone and cushions the range top; Piano Night gets an h1; the Guided Warmup ends without a grade; hold cards stop asking for the longest hold; tour numbering and events; IndexNow.
 - **Not covered (native app only):** the native onboarding beats, warm-up rooms, haptics and AirPlay lyrics, and the Glassworks museum (unlisted on mercurypitch.com).
@@ -126,13 +126,13 @@ None found.
   - Where: kit/predict.ts:120-151; learn/01.html:462; learn/02.html:482, 1138, 1392, 1399; learn/05.html:490; learn/06.html:477, 997
   - Fix: Keep one always-rendered, visually hidden role="status" per predict and write the reveal into it after showing it; or move focus to the reveal (tabindex="-1") as lesson-05/predict-breath.ts:46-47 does. Add the same to Lesson 2 step 5.
   - Standard: WCAG 4.1.3
-  - **Status (Fixed):** A new kit status line (kit/announce.ts) speaks each reveal once it shows; the reveals' own hidden live regions are dropped, so nothing is said twice. Lesson 2 step 5 is covered too. Focus stays on the play button.
+  - **Status (Fixed):** A new kit status line (kit/announce.ts) speaks each reveal once it shows; the reveals' own hidden live regions are dropped, so nothing is said twice. Lesson 2 step 5 is covered too. Focus stays on the play button. The reveal is read from its words, so ♯ is said as "sharp", "You said" is not spelled out in capitals, and a button's label is not read into it. The status line empties about 5 s after it speaks.
 - [x] **S-02** Explorer card buttons drop keyboard focus to the page `BROWSER`
   - "Mark as done" and the "Builds on" / "Opens" lesson buttons rebuild the whole card, destroying the focused button. Reproduced on Lesson 1: after Enter on "Mark as done" and on "02 · Twelve notes", document.activeElement is <body>.
   - Where: kit/explorer.ts:291-303, 315-328, 526
   - Fix: Update the card in place, or after refresh() focus the same control in the new card (or its h3 with tabindex="-1").
   - Standard: WCAG 2.4.3
-  - **Status (Fixed):** After a rebuild, focus goes back to the same control (Mark as done, now Done), or to the opened lesson's title after a Builds on / Opens link.
+  - **Status (Fixed):** After a rebuild, focus goes back to the same control (Mark as done, now Done), or to the opened lesson's title after a Builds on / Opens link. After such a link the status line empties rather than also say "card below", since focus is already on the card's title (cc80f3cce).
 - [x] **S-03** Tabbing onto the season map shows no focus change `BROWSER`
   - Only the selected lesson node is in the tab order (roving tabindex), and `.node.sel` draws a permanent 2px ink outline that beats the global :focus-visible ring. Tabbing onto the map changes nothing visible. The keyboard walk flagged this node on all 8 pages.
   - Where: kit/lesson-sections.css:648-652 vs kit/lesson-base.css:197-201
@@ -183,7 +183,7 @@ None found.
   - Where: learn/01.html:726-734, 806-810; kit/loud.ts:138-151; lesson-01/toy-octave.ts:62-85
   - Fix: aria-live="polite" on #loudFlag and #octFlag (as learn/03.html:788-790), written once per change.
   - Standard: WCAG 4.1.3, 1.3.1
-  - **Status (Fixed):** Both flags are spoken once per change through the kit status line (Lesson 3's loudness flag too, whose own live region is dropped). Try 1.26, Back to 2 and Try 3 speak what the ratio slider now says. Found while checking: an arrow key moved "how fast" by under half a hertz, below the flag's bar, so a keyboard never raised "Pitch: climbing" at all; the flag now measures from where it last spoke.
+  - **Status (Fixed):** Step 3's flag is spoken once per change through the kit status line (Lesson 3's loudness flag too, whose own live region is dropped). Step 4's flag is read out in the ratio slider's value text (aria-valuetext), so the slider says it as it moves; only Try 1.26, Back to 2 and Try 3, which move the slider from elsewhere, speak what it now says through the status line. Found while checking: an arrow key moved "how fast" by under half a hertz, below the flag's bar, so a keyboard never raised "Pitch: climbing" at all; the flag now measures from where it last spoke. Its fix now has unit tests (kit/loud.test.ts, lesson-01/toy-octave.test.ts).
 - [x] **L1-02** Step 4 says "slide the ratio and listen", but the slider is silent `BROWSER`
   - Try: "Slide the ratio from 1 to 3 and listen." The ratio slider only retunes a tone that "Play both" started (and that stops after 9 s). Checked in Chromium: no sound starts while the slider moves. Figures 2 and 3 do sound while held, so learners expect it.
   - Where: learn/01.html:1104; lesson-01/toy-octave.ts:107, 127-141
@@ -204,7 +204,7 @@ None found.
   - Where: Shots L01-desktop-00, L01-phone-02; kit/page-chrome.ts; kit/sound.ts; learn/0N.html gate
   - Fix: One sound model: the first Play press turns sound on (it is a user gesture) and the gate disappears, or the gate is the only switch and the masthead mirrors it with "Sound on" / "Sound off". Reword the lock as "Choose an answer first".
   - Standard: Usability of the first interaction
-  - **Status (Corrected):** Correction: the first Play press already turns sound on when it has not been chosen (kit/sound.ts canPlay), so a first-time learner does hear it; silence and the toast come only after turning sound off. Done in this PR: the lock line now reads "Choose an answer to unlock the play buttons." on every page, and the "Sound is off" toast waits for its Turn on (S-19). Still open: whether to fold the masthead switch and the gate into one control (owner).
+  - **Status (Corrected):** Correction: the first Play press already turns sound on when it has not been chosen (kit/sound.ts canPlay), so a first-time learner does hear it; silence and the toast come only after turning sound off. Done in this PR: the lock line now reads "Choose an answer to unlock the play buttons." on every page, or "the play button" where one play is locked (Lessons 2 and 8, L8-09), and the "Sound is off" toast waits for its Turn on (S-19). Still open: whether to fold the masthead switch and the gate into one control (owner).
 - [x] **G-03** Below 1240 px the motion switch says only "Pause", right beside the speaker `DESIGN`
   - The masthead's "Pause animations" shortens to "Pause" at 1240 px and narrower (phones, tablets and smaller laptop windows) and sits next to the mute button, so in a sound lesson it reads as pausing audio. The deck also has its own "Pause turning". The accessible name is "Pause animations", but sighted phone users only see "Pause".
   - Where: Shots L01-phone-00 (masthead), L02-phone-05; learn/0N.html #motionSwitch `.mw` span; kit/lesson-base.css
@@ -240,13 +240,13 @@ None found.
   - Where: learn/03.html:1773; lesson-03/wrap.ts:29-31
   - Fix: Swap the eyebrow ("Rest today") and link only the address on the rest card.
   - Standard: FACTS 36 / REQ-GVC-055: nothing after discomfort recommends more singing
-  - **Status (Fixed):** After "Uncomfortable" or "Just listen today" the card is no longer a link, its eyebrow says "Rest today" and the address shows only in the rest text. Lessons 5 and 7 had the same card and get the same fix (kit/comfort.ts mountPractiseCard).
+  - **Status (Fixed):** After "Uncomfortable" or "Just listen today" the card is no longer a link, its eyebrow says "Rest today" and the address shows only in the rest text. Lessons 5 and 7 had the same card and get the same fix (kit/comfort.ts mountPractiseCard). Lesson 6's rest card now rests as well: it names Interval Trainer for later with no link, and Ear Lab's Leap, which needs no voice, stays. The rest cards no longer say "Rest today" twice: their text starts with the room.
 - [x] **L3-11** Lesson 3's stage prints the predict's answer above the question `DESIGN`
   - The hero shows "ASKED 59 % of 1,105" and "TESTED 10-16 % a semitone or more off" right above "PREDICT: ...How many sang a semitone or more off?" with "Most of them" / "About as few as anyone else". The 22 Oct hook change left the stage figures in place, so predict-then-reveal is undone (seen on the current build). Lesson 2's next card repeats the figures (L2-07).
   - Where: learn/03.html hero stage (ASKED / TESTED tiles); shot L03-desktop-00, L03-phone-02
   - Fix: Show only ASKED before the choice; reveal TESTED with the reveal cards.
   - Standard: Predict before reveal (TEACHING-PLAYBOOK, MASTER-PLAN 4.2)
-  - **Status (Fixed):** The TESTED tile keeps its place but stays hidden (visibility, so screen readers skip it too) until a choice is in.
+  - **Status (Fixed):** The TESTED tile keeps its place but stays hidden (visibility, so screen readers skip it too) until a choice is in. Its fix now has a unit test (lesson-03/hook.test.ts).
 
 #### Lesson 5, Breath and a steady note (draft)
 
@@ -273,7 +273,7 @@ None found.
   - Where: Shots L07-phone-05, -06, L07-desktop-05, -06, -11; lesson-07/range-toy.ts and kit/range-chart-draw.ts (siren stroke)
   - Fix: Draw the idle siren at 3:1 or better (for example #f59e0b at 2 to 3 px, or ink-2 dashed until it plays) and keep the bright glow for playback.
   - Standard: WCAG 1.4.11 (graphical object, 3:1)
-  - **Status (Fixed):** The idle siren is drawn at 60 % instead of 22 %: about 3.6:1 on the chart; playback still draws the bright line and glow.
+  - **Status (Fixed):** The idle siren is drawn at 60 % instead of 22 %: about 3.6:1 on the chart (#f59e0b at 0.6 over the #181e2b the review sampled); playback still draws the bright line and glow.
 
 #### Lesson 8, Beat, tempo and the backbeat (draft)
 
@@ -282,7 +282,7 @@ None found.
   - Where: kit/tap-pad.ts:36-47; learn/08.html:698, 1231, 1770
   - Fix: Also accept a click with detail === 0 and no pointer or key tap within 50 ms, timed by its timeStamp (the Ear Lab rule).
   - Standard: WCAG 2.1.1, 4.1.2
-  - **Status (Fixed):** The pad also takes a click that no pointer or key made (CLICK_ECHO_MS = 100 after the pad's last pointer up or key). The rule lives in src/lib/ear/tap-rule.ts, so the Ear Lab's pad takes the same clicks.
+  - **Status (Fixed):** The pad also takes a click that no pointer or key made (CLICK_ECHO_MS = 100 after the pad's last pointer up or key). The rule lives in src/lib/ear/tap-rule.ts, so the Ear Lab's pad takes the same clicks. Later in this PR, only Space and Enter time a click's echo, and a pointer's echo has its own window (POINTER_ECHO_MS, 1 s), so a late click on WebKit is not a second tap. The device plan checks both: 20 taps on a slow iPhone, and VO+Space once on a Mac.
 - [x] **L8-02** The tap tempo result never reaches a screen reader `BROWSER`
   - "Your taps: N BPM" sits inside the figure's aria-hidden visual layer and is never announced; step 1's taps are silent apart from a flash. After seven Space taps in Chromium the result was in neither the accessibility tree nor a live region. Step 2's Notice ("Tap faster and your number climbs") cannot be done without sight. Same in free play.
   - Where: kit/beat-machine.ts:145-160, 598; learn/08.html:896-905
@@ -311,12 +311,13 @@ None found.
   - Where: kit/step-deck.ts:142; learn/0N.html `.counter`
   - Fix: aria-atomic="true"; announce only on Next/Previous, not on scroll-driven changes; include the step title.
   - Standard: WCAG 4.1.3
-  - **Status (Fixed):** The counter is no live region; Next, Previous, a swipe and a menu jump say "Step 3 of 6: <title>" on the status line. Scrolling past steps says nothing.
+  - **Status (Fixed):** The counter is no live region; Next, Previous, a swipe and a menu jump say "Step 3 of 6: <title>" on the status line. Scrolling past steps says nothing. A swipe past the first or last step says nothing.
 - [ ] **S-11** Focus does not follow the content after Next or a menu jump `BROWSER`
   - Phone deck: Next keeps focus on the button; only "Step 2 of 6" is announced, not the new step. Choosing a step or section in the lesson menu returns focus to the menu button in the masthead, so keyboard and screen-reader users start reading from the top.
   - Where: kit/step-deck.ts:163-169; kit/lesson-menu.ts:484-488, 532-534
   - Fix: Move focus to the new step's h3 (tabindex="-1"); after a menu jump, focus the target heading.
   - Standard: WCAG 2.4.3
+  - **Status (Open):** This PR names the step: Next, Previous, a swipe and a menu jump say "Step 3 of 6" and the step's title on the kit status line (S-10). Focus does not follow yet: it stays on Next, and a menu jump hands it back to the menu button.
 - [ ] **S-12** Buttons become disabled while focused, dropping focus to the page `CODE`
   - Previous/Next at the deck ends; Lesson 1 "Play Merc's A" and "Play it an octave up" during the 6.4 s ring; feeling buttons after an answer; Lesson 3 hook pair and Match buttons; Lesson 4 Start lower/higher and Move do at their limits; Lesson 7 Start lower/higher; Lesson 8 Move do at plus or minus 4.
   - Where: kit/step-deck.ts:147-154; kit/sing.ts:302-309; kit/comfort.ts:137-140; lesson-03/hook.ts:111-114; lesson-03/toy-match.ts:166-176; lesson-04/stairs-toy.ts:151; lesson-04/sing.ts:95; lesson-07/range-toy.ts:411-414; lesson-08/sing.ts:174-177
@@ -332,6 +333,7 @@ None found.
   - Where: kit/sing.ts:88-92, 183-213; learn/04.html:1337; lesson-07/range-toy.ts:495-506; lesson-08/take.ts:181-184; kit/loud.ts:140-176
   - Fix: Announce phase changes only ("Your turn: 4 seconds", "Done"); hide the per-second count from assistive tech; throttle held buttons to the final value.
   - Standard: WCAG 4.1.3 (quality)
+  - **Status (Open):** This PR quiets one of them: Lesson 3's Louder/Higher flag speaks on the kit status line only when its words change, not on every arrow key. The sing ring's count (Lessons 1, 2 and 4), Lesson 4's ring line, Lesson 7's held Higher and Lesson 8's take status still speak as above.
 - [ ] **S-15** Reduced motion is not applied everywhere the page says it is `CODE`
   - The sing ring stops its breathing and ripples only if a page passes `calm: true`; Lessons 1, 2 and 4 do not. Lesson 1's slow-motion ripples and the "Low to high" bead still travel under prefers-reduced-motion although the module header says they do not.
   - Where: kit/sing.ts:142; lesson-01/sing.ts:16; lesson-02/sing.ts:77; lesson-04/sing.ts:74; lesson-01/toy-string.ts:153-166, 290-294; lesson-01/words.ts:174-179
@@ -358,7 +360,7 @@ None found.
   - Where: kit/toast.ts:15-29; kit/sound.ts:517; kit/lesson-base.css:859-885
   - Fix: Keep it until the next action or a dismiss, or put "Turn on" next to the control that raised it; visibility:hidden and empty text when idle.
   - Standard: WCAG 2.2.1
-  - **Status (Fixed):** A toast with a button now stays until it is used, put away with Escape, or a tap elsewhere (or sound comes on); idle, its text is emptied.
+  - **Status (Fixed):** A toast with a button now stays until it is used, put away with Escape, or a tap elsewhere (or sound comes on); idle, its text is emptied. Escape hands focus to the sound switch, and the idle line is empty from the first paint.
 - [ ] **S-20** Device-specific words: "Tap", "Drag", "Hold and drag" `CODE`
   - About 90 visible strings across the 8 pages and the kit assume touch: the sound gate ("Tap to turn it on"), every quiz ("Tap an answer"), Try lines ("Drag the dial", "tap any bead"), practise notes ("then tap Leap"). The gate line also exists in three wordings and promises "nothing plays until you press a play button" although Turn sound on itself plays a soft A3 and A4.
   - Where: kit/page-chrome.ts:36-55; kit/spiral.ts:146-147; kit/season.ts:197, 240, 281, 338; learn/0N.html gate and quiz eyebrow
@@ -385,11 +387,13 @@ None found.
   - Where: learn/0N.html <title>, og:title, twitter:title
   - Fix: One template: "<Title>: Find Your Pitch, Lesson N | MercuryPitch".
   - Standard: WCAG 2.4.2 (met); consistency, SEO
+  - **Status (Decided):** Decided 22 Oct: the titles are search-led, not one series template. Each lesson's `<title>` leads with what people search for ("What is a note? Pitch, hertz and the octave | MercuryPitch"); the series name stays in the kicker, the breadcrumb, og:title and the structured data. Another PR carries it out; the template above is not to be applied.
 - [ ] **S-25** The admin console can publish hooks the facts do not support `CODE`
   - Hook and tease variants flagged by the team's own notes are selectable. Lesson 11's "Why does your voice flip at roughly the same note every time you slide up?" contradicts its FACTS ("a flip can come at different notes on different slides, or not at all"); Lesson 9 "so much harder", Lesson 12 "hundreds", Lesson 14 "compelling" have no FACTS source. Not shown today; publishing one would put an unsupported claim live.
   - Where: kit/lesson-copy.ts:107-157; kit/team-notes.ts:48-90
   - Fix: Hide or block flagged variants in the console until FACTS supports them.
   - Standard: TEACHING-PLAYBOOK claims rule
+  - **Status (Decided):** Decided 22 Oct: the owner dropped the five alternative hooks that make claims no FACTS source supports or use mood labels, `harder` (Lesson 9), `bright-dark` (10), `same-note` (11), `hundreds` (12) and `compelling` (14), which covers every hook named above. Another PR carries it out. The alternatives that stay remain selectable with their notes, so nothing is hidden: Lesson 3's `figures` and `tested` (both notes warn that they give the cold open's answer away), Lesson 5's new `steady`, Lesson 7's `two-questions` and Lesson 14's tease `band`.
 - [ ] **S-32** Stage controls lock until the in-step predict is answered, with no reason given `BROWSER`
   - Lesson 2 step 5 (Sharp, Flat, Show the rare ones) and Lesson 8 step 5 (every control: Play, March, Rock, Tempo, all 12 grid cells; checked in Chromium) are `disabled` until a predict in the text column is answered. Tab skips them and the stage never says why, so a keyboard or screen-reader user meets a dead figure.
   - Where: learn/02.html:894-937; lesson-02/steps.ts:142; learn/08.html step 5; lesson-08/steps.ts
@@ -413,7 +417,7 @@ None found.
   - Where: learn/01.html:824-836; lesson-01/toy-octave.ts (snap)
   - Fix: Snap only on pointer release, or skip the snap for keyboard and assistive-tech steps.
   - Standard: WCAG 2.1.1 (usability)
-  - **Status (Fixed):** The octave detent applies to a pointer drag only; arrow keys and screen-reader swipes step off 2.00.
+  - **Status (Fixed):** The octave detent applies to a pointer drag only; arrow keys and screen-reader swipes step off 2.00. Its fix now has a unit test (lesson-01/toy-octave.test.ts): a key step off 2.00 stays off it, and a drag is still pulled back to the octave.
 - [ ] **L1-04** Orange Merc opens with filler: "Ha! Same note." `CODE`
   - The bible limits orange to deep questions, sincere guesses and re-explanations, with no filler. Same line in the film captions.
   - Where: learn/01.html:366; lesson-01/assets/lesson-01.en.vtt:10
@@ -464,6 +468,7 @@ None found.
   - Where: learn/02.html:1776-1787; kit/next-card.ts:27-29; kit/season.ts:214
   - Fix: Show only "Asked 59 % of 1,105", or pair the figures with the statement hook. Owner check against CURIOSITY-MOMENTS.
   - Standard: CURIOSITY-MOMENTS rules 4 and 6
+  - **Status (Open):** Decided 22 Oct, in part: Lesson 3 keeps its default hook, and the `figures` alternative's note warns that it gives the cold open's answer away (another PR carries it out), so pairing the figures with a statement hook is ruled out. Still open: the card's Tested tile beside "What happened when researchers tested it?"; show only "Asked 59 % of 1,105".
 
 #### Design and mascot
 
@@ -477,6 +482,7 @@ None found.
   - Where: Shots L02-phone-01, L02-desktop-01, L04-phone-01, L06-desktop-01, L07-desktop-01, L08-desktop-01, L05-phone-01, L07-phone-01; kit/lesson-menu.ts; kit/lesson-menu.css
   - Fix: Bar shows done and current only, availability as a dashed tail; "Not finished" on earlier lessons; sticky sheet header and close button.
   - Standard: Clarity of state
+  - **Status (Open):** Decided 22 Oct, and carried out in another PR: Lesson 8 comes after Lesson 1, so on Lesson 1's page the menu no longer offers Lesson 8 as Up next. The three problems above stay open.
 - [ ] **G-07** Static chips look like buttons, and buttons look like chips `DESIGN`
   - Hero metadata ("10 minutes", "After Lesson 1: ...", "Sound on", "Microphone optional") are bordered pills shaped like the explorer's filter chips; "Sound on" reads as a sound toggle while sound is off. In the explorer card, static topic chips and tappable "Builds on" pills look the same. Lesson 2's "1st" / "2nd" pills look like 27 pt buttons, its practise card's interval grid looks like tappable tiles, and the explorer's topic boxes and Lesson 8's syllable boxes have button borders.
   - Where: Shots L01-phone-00, L03-phone-00, L02-phone-15, L02-phone-09, L02-phone-13
@@ -542,15 +548,16 @@ None found.
   - Where: Shots L07-phone-12, L06-phone-12, L06-desktop-10, -11, L07-desktop-10, L05-phone-13, L08-phone-13
   - Fix: Cap the measure at about 70ch; two or three short lines (what it does, how long, the care note); a named button ("Open the Vocal Range Test") with the address as secondary text.
   - Standard: Readability; WCAG 1.4.8 (AAA) spirit
+  - **Status (Open):** Decided 22 Oct, in part: the lessons stay as long as they are and nobody trims them (another PR carries it out), so the card keeps its words. Still open: cap the measure at about 70ch, break the paragraph into short ones and name the button; do not cut it to two or three lines.
 
 #### Webapp entry and wider web release
 
-- [x] **W-01** Home: "Learn" and "Lessons" sit side by side and open different things `BROWSER`
+- [ ] **W-01** Home: "Learn" and "Lessons" sit side by side and open different things `BROWSER`
   - New this release: Home's header has "Learn" (the in-app walkthrough / read-along chapters), "Lessons" (Find Your Pitch, a separate site section) and "What's new". Two near-synonyms for different destinations; "Lessons" always opens Lesson 1 even for a returning learner, and has only a title tooltip to explain it (tooltips do not exist on touch).
   - Where: src/pages/HomePage.tsx:184-205
   - Fix: Rename one (for example "Find Your Pitch" or "Free lessons" for the series, "Tour" for the walkthrough); send returning learners to the lesson they were on.
   - Standard: Information architecture
-  - **Status (Fixed):** Learn (the read-along chapters about the app) moved back to the sidebar, beside Guide and Tour, where the welcome tour's "Learn & Guide" step points. Home keeps Lessons and What's new.
+  - **Status (Partly fixed):** Learn (the read-along chapters about the app) moved back to the sidebar, beside Guide and Tour, where the welcome tour's "Learn & Guide" step points. Home keeps Lessons and What's new. The native bundle probe now checks that Lessons is gone under the shell. Still open: Lessons still opens /learn/01 for everyone, a returning learner too.
 - [ ] **W-03** The new karaoke-app page carries the Karaoke Night shell's axe failures `BROWSER`
   - /karaoke-app is new (404 in 0.9.21) and reuses the Karaoke Night shell: nested-interactive (serious: the credits toggle contains focusable elements), target-size (serious: the credits toggle's smallest space is 272 x 5.8 px), and two nav landmarks without unique names. The same three exist, unchanged from 0.9.21, on /karaoke-night, /karaoke and /vocal-remover.
   - Where: .kn-credits-toggle, .kn-topbar-links (Karaoke Night shell)
@@ -748,7 +755,7 @@ None found.
   - Where: learn/08.html:737-759, 957-983
   - Fix: Name the answers "Answer: bars of 2" and so on.
   - Standard: WCAG 2.4.6
-  - **Status (Fixed):** Count the bar's answers are named "2: answer bars of 2" and so on.
+  - **Status (Fixed):** Count the bar's answers are named "2: answer bars of 2" and so on. Its fix now has a unit test (lesson-08/page.test.ts), which also checks that the answers share no name with the Bars toggles beside them.
 - [ ] **L8-06** Teaching copy that the step does not support `CODE`
   - h3 "Why do musicians count to four?" is never answered (the step teaches 2, 3 and 4 equally); "this lesson's bars are 3/4 and 4/4" (it taught 2/4 too); "pad" names the tap button, the beat-row boxes and the grid cells; the hero caption still says the claps are on 1 and 3 after they move.
   - Where: learn/08.html:376-381, 699, 867, 913, 915, 1017, 1614-1616; lesson-08/cold-open.ts
@@ -933,6 +940,7 @@ None found.
   - Where: learn/08.html:452, 459, 676-687, 839-845, 1151-1154, 1192, 1204, 1248, 1716-1723, footer; lesson-08/take.ts:45-46; lesson-08/bar-rounds.ts:37; lesson-08/take-judge.ts:45; lesson-08/sing.ts:221-225
   - Fix: See the Lesson 8 table in the appendix.
   - Standard: WCAG 2.4.6, 2.5.8; consistency
+  - **Status (Open):** This PR fixes two of these: the lock line names "the play button" where one play is locked (Lessons 2 and 8; it said "unlock the sound"), and the footer's practise links are 44 px tall (axe's target-size, on Lesson 6 too). The rest stay open.
 
 #### Owner decisions
 
@@ -952,6 +960,7 @@ None found.
   - Where: MERC-BIBLE section 8; learn/01.html, learn/02.html footer
   - Fix: Owner: decide before the films publish; until then drop the film credits from the pages.
   - Standard: MASTER-PLAN 12 items 1, 10
+  - **Status (Partly decided):** Decided 22 Oct: orange Merc stays unnamed and is not given a pronoun (another PR records it). Still open: the rights to the sung notes and the film credits on the live pages (L1-08).
 
 ## Device test plan
 
@@ -959,10 +968,11 @@ Everything tagged DEVICE, plus the checks a headless browser cannot make. Each l
 
 - [ ] **VoiceOver on iPhone, Safari.** Lessons 1 and 2 end to end: turn sound on; answer the predict and play it (is the answer read? S-01); swipe through a step on the phone deck and press Next (S-10, S-11); on the spiral and the keyboard, pick a note with swipe up and down, then double-tap: does the chosen note play? (S-08); move the ratio slider at 2.00 with swipe up (L1-03); answer the quiz; open the lesson menu; reach the season map; follow a practise link.
 - [ ] **TalkBack on Android, Chrome.** The same walk as above, with the double-tap on the spiral and keyboard (S-08).
-- [ ] **VoiceOver on Mac with Safari, and NVDA with Firefox or Chrome.** Lesson 8: press the tap pad with VO+Space and with Enter in browse mode (L8-01); is "Your taps" read? (L8-02). Predict reveals and toy results on Lessons 1 and 2.
+- [ ] **VoiceOver on Mac with Safari, and NVDA with Firefox or Chrome.** Lesson 8: press the tap pad with VO+Space (it counts once) and with Enter in browse mode (L8-01); is "Your taps" read? (L8-02). Predict reveals and toy results on Lessons 1 and 2.
 - [ ] **Voice Control on iPhone.** Say "Tap Lesson 01" in the masthead (S-04) and "Tap P5" on Lesson 6 (L6-01).
 - [ ] **Switch Control.** The tap pad on Lesson 8 and the spiral on Lesson 1.
 - [ ] **Installed app on iPhone and Android.** Home, Lessons, then try to get back to the app (S-09).
+- [ ] **A slow iPhone, by touch.** Tap the Ear Lab's pad and Lesson 8's pad 20 times each: each counts 20, so a click WebKit sends late is not a second tap (L8-01).
 - [ ] **Real microphone with a screen reader on the speaker.** Lessons 3, 5, 7 and 8: does the screen reader's speech start or fill a take? (V-01)
 - [ ] **iOS display settings.** Larger Text (Safari page zoom up to 200%), Bold Text, Increase Contrast, Reduce Transparency, Reduce Motion, Smart Invert (the Mercs and canvases should not invert badly), Differentiate Without Color.
 - [ ] **Windows High Contrast.** Pressed states on choices, segmented toggles, the season map and Lesson 8's beat grid (S-05, S-16).
@@ -979,16 +989,16 @@ Everything tagged DEVICE, plus the checks a headless browser cannot make. Each l
 
 ## Appendix A: automated results
 
-| Lesson | Page title                                 | axe desktop  | axe phone  | contrast to check by hand (gradients) | Tab stops | No visible focus | Under 24 px | Under 44 px | Lost at 320 px | Lost with text spacing                     | Console errors |
-| ------ | ------------------------------------------ | ------------ | ---------- | ------------------------------------- | --------- | ---------------- | ----------- | ----------- | -------------- | ------------------------------------------ | -------------- | --- |
-| 01     | What is a note? Find Your Pitch, Lesson 1  | MercuryPitch | 1 moderate | none                                  | 263       | 45               | 1           | 0           | 1              | 0                                          | 0              | 0   |
-| 02     | Twelve notes: Find Your Pitch, Lesson 2    | MercuryPitch | 2 moderate | none                                  | 370       | 75               | 1           | 0           | 2              | 0                                          | 0              | 0   |
-| 03     | Match a note: Find Your Pitch, Lesson 3    | MercuryPitch | 1 moderate | none                                  | 281       | 63               | 1           | 0           | 2              | 0                                          | 0              | 0   |
-| 04     | The major scale and home · Find Your Pitch | MercuryPitch | 1 moderate | none                                  | 328       | 94               | 1           | 0           | 2              | 0                                          | 0              | 0   |
-| 05     | Breath and a steady note · Find Your Pitch | MercuryPitch | 1 moderate | none                                  | 284       | 63               | 1           | 0           | 3              | 0                                          | 0              | 0   |
-| 06     | Intervals: the distance between notes      | MercuryPitch | 1 serious  | 1 serious                             | 320       | 125              | 1           | 0           | 2              | 1 (L6-07)                                  | 1              | 0   |
-| 07     | Slides, sirens and your range              | MercuryPitch | 1 moderate | none                                  | 275       | 72               | 1           | 0           | 2              | 1 (1 px, L7-06)                            | 0              | 0   |
-| 08     | Beat, tempo and the backbeat, explained    | MercuryPitch | 1 serious  | 1 serious                             | 323       | 83               | 1           | 0           | 1              | 0 off-screen; strip syllables clip (L8-07) | 0              | 0   |
+| Lesson | Page title                                                 | axe desktop | axe phone | contrast to check by hand (gradients) | Tab stops | No visible focus | Under 24 px | Under 44 px | Lost at 320 px                             | Lost with text spacing | Console errors |
+| ------ | ---------------------------------------------------------- | ----------- | --------- | ------------------------------------- | --------- | ---------------- | ----------- | ----------- | ------------------------------------------ | ---------------------- | -------------- |
+| 01     | What is a note? Find Your Pitch, Lesson 1 \| MercuryPitch  | 1 moderate  | none      | 263                                   | 45        | 1                | 0           | 1           | 0                                          | 0                      | 0              |
+| 02     | Twelve notes: Find Your Pitch, Lesson 2 \| MercuryPitch    | 2 moderate  | none      | 370                                   | 75        | 1                | 0           | 2           | 0                                          | 0                      | 0              |
+| 03     | Match a note: Find Your Pitch, Lesson 3 \| MercuryPitch    | 1 moderate  | none      | 281                                   | 63        | 1                | 0           | 2           | 0                                          | 0                      | 0              |
+| 04     | The major scale and home · Find Your Pitch \| MercuryPitch | 1 moderate  | none      | 328                                   | 94        | 1                | 0           | 2           | 0                                          | 0                      | 0              |
+| 05     | Breath and a steady note · Find Your Pitch \| MercuryPitch | 1 moderate  | none      | 284                                   | 63        | 1                | 0           | 3           | 0                                          | 0                      | 0              |
+| 06     | Intervals: the distance between notes \| MercuryPitch      | 1 serious   | 1 serious | 320                                   | 125       | 1                | 0           | 2           | 1 (L6-07)                                  | 1                      | 0              |
+| 07     | Slides, sirens and your range \| MercuryPitch              | 1 moderate  | none      | 275                                   | 72        | 1                | 0           | 2           | 1 (1 px, L7-06)                            | 0                      | 0              |
+| 08     | Beat, tempo and the backbeat, explained \| MercuryPitch    | 1 serious   | 1 serious | 323                                   | 83        | 1                | 0           | 1           | 0 off-screen; strip syllables clip (L8-07) | 0                      | 0              |
 
 Axe "moderate" on every page is `landmark-complementary-is-top-level` (the mix-up aside inside main); Lesson 2 adds
 `landmark-unique` (two asides with one name); the "serious" on Lessons 6 and 8 is `target-size` on the footer's
@@ -1045,7 +1055,7 @@ Positions are in image pixels: phone shots are 780x1688 (2x, so divide by 2 for 
 | P2  | Typography               | Instructions in 12 px uppercase, letter-spaced mono: "TAP THE STRING TO PLUCK IT" (L01-phone-04 y1218-1246), "DRAG TO TURN · TAP A BEAD TO HEAR IT" (L02-phone-05 y895-952), "ONE TRY EACH, THEN THE REASON" (L02-phone-09 y545-575), statuses "COMING LATER · AFTER 5, 8, 9, 12" (L02-phone-16 y405-470), whole-sentence captions (L03-phone-04 y1328-1356)                                                   | Contrast passes (about 5.3 to 6.3:1). The problem for low-vision readers is that real instructions and sentences are set in 12 px caps with wide tracking, which removes word shapes, and it is worse on desktop at 1x.                                                                                                                                                                                                                                   | Keep mono caps for one- or two-word kickers. Set instructions, statuses and captions in Inter, 14 to 16 px, sentence case.                                                                                                                          |
 | P2  | Layout                   | Explorer, phone: L02-phone-14 y1183-1503 ("What is a / note?", "READY · / AFTER 1"); L02-phone-16 y143-323 ("COMING / LATER · / AFTER 11"); L03-phone-14, L04-phone-17                                                                                                                                                                                                                                         | The two-lane list uses half-width cards, so titles and statuses break into two or three lines while the other lane sits empty beside them.                                                                                                                                                                                                                                                                                                                | Let a card span both lanes when the other lane is empty. Alternatively, use a single column with a Theory/Voice tag.                                                                                                                                |
 | P2  | Consistency              | Practise card inside Sing on L1 (L01-phone-07) but in Wrap on L2 to L4. Next lesson card beside the recap on L1 and L3 (L01-desktop-09, L03-desktop-09), but after the practise card on L2 and L4 (L02-desktop-11, L04-desktop-12). Challenge under the recap on L1, to the right on L2 and L4 (L02-desktop-10 x744-1325 y325-400). Free play after Wrap on L2 to L4                                           | The same blocks move around from page to page, so a returning learner cannot predict where "next" or "practise" will be.                                                                                                                                                                                                                                                                                                                                  | Fix one Wrap template: recap, then challenge, then practise, then Next lesson (last, with the primary button). Fix one position for Free play.                                                                                                      |
-| P2  | Layout / Hierarchy       | L4: L04-phone-08/09; L3 for comparison: L03-phone-06 y870-1688                                                                                                                                                                                                                                                                                                                                                 | Lesson 4's Sing has about 650 pt of copy before "Play Merc's scale", and its health check is a small callout. Lesson 3 opens Sing with a clear choice card ("I'm comfortable: let's sing" / "Just listen today"). The safety pattern differs between the two singing lessons.                                                                                                                                                                             | Reuse Lesson 3's check card on every sing section. Cut Lesson 4's intro to two sentences above the buttons and move the detail below them.                                                                                                          |
+| P2  | Layout / Hierarchy       | L4: L04-phone-08/09; L3 for comparison: L03-phone-06 y870-1688                                                                                                                                                                                                                                                                                                                                                 | Lesson 4's Sing has about 650 pt of copy before "Play Merc's scale", and its health check is a small callout. Lesson 3 opens Sing with a clear choice card ("I'm comfortable: let's sing" / "Just listen today"). The safety pattern differs between the two singing lessons.                                                                                                                                                                             | Reuse Lesson 3's check card on every sing section. Move Lesson 4's intro detail below the buttons, leaving two sentences above them.                                                                                                                |
 | P3  | Layout                   | L01-phone-04 y665 and y1510; L02-desktop-05 x127-230 y414 and x668-770 y436                                                                                                                                                                                                                                                                                                                                    | "STEP 1 OF 6" is printed twice, once in the deck header and once as the step text kicker.                                                                                                                                                                                                                                                                                                                                                                 | Keep the deck counter and drop the kicker, or the reverse.                                                                                                                                                                                          |
 | P3  | Layout                   | L02-phone-06 y1120-1275 ("Next: How many / steps until we're / back at A?"); L01-phone-05                                                                                                                                                                                                                                                                                                                      | The Next button carries the whole next question, so it wraps to two or three lines.                                                                                                                                                                                                                                                                                                                                                                       | Use "Next step" plus a short title (two to four words), and show the full question as the next card's heading.                                                                                                                                      |
 | P3  | Platform                 | L02-phone-07 y0-140; L03-phone-06 y0-140; L04-desktop-08 behind the nav                                                                                                                                                                                                                                                                                                                                        | The masthead is translucent, so content (a gradient button, text) shows through behind "Pause" and the mute button.                                                                                                                                                                                                                                                                                                                                       | Use a more opaque masthead fill with a blur, or fade the content under it.                                                                                                                                                                          |
