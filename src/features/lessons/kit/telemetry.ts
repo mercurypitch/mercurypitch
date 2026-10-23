@@ -79,8 +79,9 @@ const VISIT_CAP = 3
 
 /**
  * Send one answer, a question's first in this visit. A no-op with no API
- * base, on a page no site worker served, or when consent says no; every
- * failure is swallowed, since telemetry must never break the lesson.
+ * base, on a page no site worker served, when consent says no, or when the
+ * page or the question has no lesson number (the worker would refuse it);
+ * every failure is swallowed, since telemetry must never break the lesson.
  */
 export function sendLessonAnswer(answer: AnswerSent): void {
   const base: string | undefined = import.meta.env.VITE_API_BASE_URL
@@ -89,11 +90,13 @@ export function sendLessonAnswer(answer: AnswerSent): void {
     if (document.getElementById(PAGE_STATE_ID) === null) return
     const consent = lessonConsent()
     if (consent === null) return
+    const page = lessonOfHref(window.location.pathname)
     const question = questionOf(answer.id)
+    if (page === null || question === null) return
     const metrics = {
-      page: lessonOfHref(window.location.pathname),
-      qLesson: question?.lesson ?? null,
-      q: question?.n ?? null,
+      page,
+      qLesson: question.lesson,
+      q: question.n,
       firstTry: answer.correct ? 1 : 0,
       k: answer.k,
       visit: Math.min(answer.visit, VISIT_CAP),

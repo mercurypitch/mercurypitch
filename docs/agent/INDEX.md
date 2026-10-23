@@ -206,6 +206,7 @@ These are the rules that break things when ignored.
 | [midi-song.ts](../../src/lib/midi-song.ts) | 450 | MIDI Song Parser — multi-track import with instrument names Unlike importMelodyFromMIDI (which flattens everything into one melody), this... |
 | [portable-console.ts](../../src/lib/portable-console.ts) | 450 | Portable console — the browser console, on the device that has the bug Reaching Safari's inspector means a cable, a Mac, and a page that... |
 | [transcription-alignment-utils.ts](../../src/lib/transcription-alignment-utils.ts) | 450 | Shared transcription + alignment utilities. |
+| [funnel-event-catalog.ts](../../src/lib/funnel-event-catalog.ts) | 400 | funnel-event-catalog — the ONE list of funnel event names Both halves of the funnel read this file: each client surface derives its event... |
 | [pwa-service-worker.ts](../../src/lib/pwa-service-worker.ts) | 400 | pwa-service-worker — register src/sw.ts and route its updates to the user The worker (src/sw.ts) serves the app from a precache, one buil... |
 | [uvr-song-preparation.ts](../../src/lib/uvr-song-preparation.ts) | 400 | UVR song preparation — durable file-to-session orchestration shared by every upload surface UI remains outside this module. |
 
@@ -292,7 +293,7 @@ These are the rules that break things when ignored.
 
 | Module | Entry point | LOC | What it is |
 |---|---|---|---|
-| `db-worker` | [index.ts](../../workers/db-worker/src/index.ts) | 39.4k | ── MercuryPitch DB Worker Generic CRUD REST API over Cloudflare D1, matching the contract of the frontend ServerAdapter (src/db/adapters/... |
+| `db-worker` | [index.ts](../../workers/db-worker/src/index.ts) | 39.6k | ── MercuryPitch DB Worker Generic CRUD REST API over Cloudflare D1, matching the contract of the frontend ServerAdapter (src/db/adapters/... |
 | `jam-worker` | [index.ts](../../workers/jam-worker/src/index.ts) | 1.4k | ── Jam Signaling Worker WebSocket upgrade router → Durable Object signaling relay. |
 
 <!-- END:GENERATED module-map -->
@@ -393,7 +394,7 @@ Grep for the symbol and read the surrounding range instead.
 | [workers/db-worker/src/auth.ts](../../workers/db-worker/src/auth.ts) | 4.6k |
 | [src/components/UvrPanel.tsx](../../src/components/UvrPanel.tsx) | 3.6k |
 | [src/stores/jam-store.ts](../../src/stores/jam-store.ts) | 3.3k |
-| [workers/db-worker/src/index.ts](../../workers/db-worker/src/index.ts) | 3.1k |
+| [workers/db-worker/src/index.ts](../../workers/db-worker/src/index.ts) | 3.2k |
 | [src/features/voice-history/VoiceHistoryPage.tsx](../../src/features/voice-history/VoiceHistoryPage.tsx) | 2.9k |
 | [src/components/PitchTestingTab.tsx](../../src/components/PitchTestingTab.tsx) | 2.8k |
 | [src/features/guitar-night/GuitarNightApp.tsx](../../src/features/guitar-night/GuitarNightApp.tsx) | 2.8k |

@@ -36,7 +36,7 @@ import { handleAchievementBulk, handleBadgeBulk, handleGrantContext, } from './g
 import { handleGuidedExerciseRequest } from './guided-exercises'
 import { handleLessonStateRequest, isLessonStatePath, } from './lesson-state-routes'
 import { awardForSessionRecord, awardStreakBonuses, getLeagueMe, runWeeklyLeagueCut, } from './league'
-import { cleanMirrorMetrics } from './mirror-metrics'
+import { cleanMirrorMetrics, lessonAnswerInBounds } from './mirror-metrics'
 import { AccountSuspendedError, accountSuspendedResponse, handleUserSuspension, } from './moderation'
 import { getPerksForUser } from './perks'
 import { handlePremiumBackgroundAdminRequest } from './premium-background-admin'
@@ -1307,6 +1307,9 @@ export function sanitizeAcquisition(
   return Object.keys(clean).length > 0 ? clean : null
 }
 
+/** A funnel body's most bytes: an id, a name and a few numbers fit with room to spare. */
+const MIRROR_EVENT_MAX_BYTES = 4096
+
 /**
  * The client ids many visitors share, for which no first-touch row is kept.
  * 'no-storage' is the literal id every storage-disabled browser sends, and
@@ -1318,6 +1321,33 @@ const SHARED_CLIENT_IDS: ReadonlySet<string> = new Set([
   'no-storage',
   LESSON_CLIENT_ID,
 ])
+
+/**
+ * The body as text, or null once it passes `max` bytes. It reads the stream
+ * a chunk at a time and stops at the first chunk past the cap, so a chunked
+ * body with no Content-Length is never buffered whole. Throws when the
+ * stream does.
+ */
+async function readBodyCapped(
+  request: Request,
+  max: number,
+): Promise<string | null> {
+  const reader = request.body?.getReader()
+  if (reader === undefined) return ''
+  const decoder = new TextDecoder()
+  let size = 0
+  let text = ''
+  for (;;) {
+    const chunk = await reader.read()
+    if (chunk.done) return text + decoder.decode()
+    size += chunk.value.byteLength
+    if (size > max) {
+      await reader.cancel().catch(() => undefined)
+      return null
+    }
+    text += decoder.decode(chunk.value, { stream: true })
+  }
+}
 
 /** The 429 a refused event gets, from either limiter. */
 function mirrorEventRefused(retryAfter = 60): Response {
@@ -1375,22 +1405,22 @@ async function handleMirrorEvent(
   request: Request,
   env: Env,
 ): Promise<Response> {
-  // Funnel payloads are tiny (a UUID + an event name + 5 numbers) — reject
-  // anything bigger before parsing it into memory.
+  // Funnel payloads are tiny (a UUID + an event name + 7 numbers) — reject
+  // anything bigger before reading it into memory.
   const contentLength = Number(request.headers.get('Content-Length') ?? '0')
-  if (contentLength > 4096) {
+  if (contentLength > MIRROR_EVENT_MAX_BYTES) {
     return respond({ error: 'Payload too large' }, { status: 413 })
   }
 
-  // Chunked/HTTP2 requests may omit Content-Length — enforce the cap on the
-  // actual bytes too, before JSON.parse buffers something huge.
-  let rawBody: string
+  // Chunked/HTTP2 requests may omit Content-Length — the read stops at the
+  // first chunk past the cap, before JSON.parse sees anything huge.
+  let rawBody: string | null
   try {
-    rawBody = await request.text()
+    rawBody = await readBodyCapped(request, MIRROR_EVENT_MAX_BYTES)
   } catch {
     return respond({ error: 'Invalid body' }, { status: 400 })
   }
-  if (rawBody.length > 4096) {
+  if (rawBody === null) {
     return respond({ error: 'Payload too large' }, { status: 413 })
   }
   let body: unknown
@@ -1407,9 +1437,14 @@ async function handleMirrorEvent(
   }
 
   // The lesson pages' answers have a limiter of their own, so a class behind
-  // one address neither loses answers nor starves the app's own events. The
-  // limiter is the event's, so the limit waits for the body.
-  const lessonAnswer = event === 'lesson_answer'
+  // one address neither loses answers nor starves the app's own events. Only
+  // a body that is a whole lesson answer takes it (its shared id and seven
+  // numbers in range); anything else, a broken lesson answer included, takes
+  // the funnel's bucket, so naming lesson_answer buys no extra write rate.
+  const lessonAnswer =
+    event === 'lesson_answer' &&
+    clientId === LESSON_CLIENT_ID &&
+    lessonAnswerInBounds(metrics)
   const refused = lessonAnswer
     ? await lessonAnswerRefusal(request, env)
     : await mirrorEventRefusal(request, env)
@@ -1423,6 +1458,9 @@ async function handleMirrorEvent(
   }
   if (typeof event !== 'string' || !FUNNEL_EVENTS.has(event)) {
     return respond({ error: 'Invalid event' }, { status: 400 })
+  }
+  if (event === 'lesson_answer' && !lessonAnswer) {
+    return respond({ error: 'Invalid lesson answer' }, { status: 400 })
   }
 
   const metricsJson = cleanMirrorMetrics(event, metrics)
