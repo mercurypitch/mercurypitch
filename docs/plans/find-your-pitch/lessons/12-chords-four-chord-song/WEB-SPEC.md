@@ -112,22 +112,22 @@ FACTS 5a). Each section's heading, and the line above it, are in LESSON.md ("Sec
    sections and `{ lesson: 12, deck }` (`lesson-04/main.ts:99-110`), which draws the lesson menu,
    remembers the steps the viewer reaches and first settles the page's links to other lessons for
    the state it was served with (`followPageState`, `src/features/lessons/kit/page-chrome.ts:113`).
-2. **Hero, with the cold open**, laid out as Lesson 2's (`learn/02.html:321-494`). Its copy holds
+2. **Hero, with the cold open**, laid out as Lesson 2's (`learn/02.html:329-502`). Its copy holds
    the kicker, the hook question as the title (the `<h1 class="hook" id="hook">` every lesson page
-   has, `learn/04.html:320`), the meta as three chips, the promise and the sound gate from
+   has, `learn/04.html:328`), the meta as three chips, the promise and the sound gate from
    LESSON.md. The chips are "15 minutes" (FACTS 3), "After Lesson 10: Major and minor", a link to
-   `/learn/10` as Lesson 4's prerequisite chip links Lesson 2 (`learn/04.html:327-331`; FACTS 2),
+   `/learn/10` as Lesson 4's prerequisite chip links Lesson 2 (`learn/04.html:335-339`; FACTS 2),
    which stays a plain chip wherever Lesson 10 is not live
    (`src/features/lessons/kit/page-state.ts:16-17`), and "Sound on". Its stage holds orange's and
-   blue's bubbles (`learn/02.html:375`) over the two Mercs on the floor line, the hero's own copy of
-   the spiral between them (`:396`; Toys 2), and under the spiral the cold open's three plays: "Play
+   blue's bubbles (`learn/02.html:383`) over the two Mercs on the floor line, the hero's own copy of
+   the spiral between them (`:404`; Toys 2), and under the spiral the cold open's three plays: "Play
    the four chords", which works from the start, and "Play tune 1" and "Play tune 2", locked until a
-   choice. The predict card sits under the stage, as Lesson 2's does (`:440`): LESSON.md's predict,
+   choice. The predict card sits under the stage, as Lesson 2's does (`:448`): LESSON.md's predict,
    its two choices, the lock hint and the reveal (Toys 3). On a phone the hero's parts run kicker,
    title, meta, the stage, the gate, the predict, then the promise
    (`src/features/lessons/kit/lesson-stage.css:354-397`), so the title and the first Play come
    before anything asks for an answer (CURIOSITY-MOMENTS § 3.1, "Above the fold"; FACTS 5a).
-3. **Recall from Lesson 10**, straight after the hero (`learn/02.html:497`): Lesson 10's questions
+3. **Recall from Lesson 10**, straight after the hero (`learn/02.html:505`): Lesson 10's questions
    1 and 2, shown to everyone, since Lesson 10 is a prerequisite (Toys 8; FACTS 7).
 4. **Four words you'll meet**: diatonic, Roman numeral, diminished and augmented, each with its
    definition, a small figure and a play button (Toys 4).
@@ -173,7 +173,7 @@ FACTS 5a). Each section's heading, and the line above it, are in LESSON.md ("Sec
     practice links, printed `mercurypitch.com/pitch-training` and `mercurypitch.com/ear-lab`, with
     "Arpeggio Jumper and Cadence are free." and no first-visit line (FACTS 42, 43, 44); Lesson 1's
     fonts line and "Every sound on this page is synthesised in your browser" (FACTS 6, Labels); the
-    legal links, as every lesson document closes (`src/tests/lesson-pages.test.ts:220-229`). With
+    legal links, as every lesson document closes (`src/tests/lesson-pages.test.ts:227-236`). With
     no film there are no voices to credit.
 
 ## Length
@@ -305,7 +305,7 @@ the stage-fit test reach every action.
   as in C), and the tunes run C4 to C5 where in C they run F4 to F5. Play I, then vi plays G3 B3 D4,
   then E3 G3 B3, and the corner slide shows D going to E (FACTS 69a). Nothing locks: the guided
   steps come first on the page (playbook rule 17).
-- **Readouts** sit inside the figure, as Lesson 1's do (`learn/01.html:604-626`, `.readout`): the
+- **Readouts** sit inside the figure, as Lesson 1's do (`learn/01.html:612-634`, `.readout`): the
   centre's label, Step 4's moves and Step 5's count, so no status line takes height.
 - **Layout and targets** (FACTS 75). The steps figure is the kit's tall figure, `.viz.tall`: 380 px
   tall on a desktop, 340 px in the deck and 310 px up to 420 px wide
@@ -389,7 +389,7 @@ further:
   on a phone its ring is 76.6 px in radius and its beads 39.6 px apart (FACTS 75), so its beads are
   a second way in, as Toys 1's are, and nothing in the cold open needs a bead tapped.
 - **Speaking for it.** The drawing is a slider for the notes, as Lesson 2's hero copy is
-  (`role="slider"`, `learn/02.html:396-401`), its values set by the kit, and a polite live region
+  (`role="slider"`, `learn/02.html:404-409`), its values set by the kit, and a polite live region
   beside it speaks for the plays: "Four chords: C major, G major, A minor, F major." as the loop
   plays; "Tune 1, over the four chords." as a tune starts, and the count once it ends, "On a corner:
   11 of 15." It names no note as it lands, so it never chatters.
@@ -562,7 +562,7 @@ States:
    sits in one place, on its own line above the buttons. **Play Merc's notes** sings do, so, la, fa
    and do over the chords, on do = C4 (lower) or C5 (higher), in Merc's "ooh", 10.0 s (FACTS 59,
    61, 73), the path lighting in amber in step while the ring shows the singing Merc's still. **Move
-   do** is Lesson 4's group, "Move do:" with lower and higher (`learn/04.html:1242-1251`), moved
+   do** is Lesson 4's group, "Move do:" with lower and higher (`learn/04.html:1250-1259`), moved
    into the kit (What the kit and the app still need, item 7): a semitone each, up to four lower
    and three higher, moving Merc's notes, the chords, the guide's count-in and its readout together,
    from "do is A♭3" to "do is E♭4" for the lower voice (spoken "do is A flat 3"), or A♭4 to E♭5 for
@@ -837,7 +837,7 @@ heard play (Toys 3; Edge cases) (`git diff --stat`).
 
 1. The lesson host: `learn/12.html` at `/learn/12`. The dev and preview servers and every build take
    every `learn/NN.html` as a lesson page, a draft's included, with no entry of its own
-   (`vite.config.ts:77-86`, `:138-140`, `:474`; `lessonPages` and `lessonInputs`,
+   (`vite.config.ts:78-87`, `:147-149`, `:489`; `lessonPages` and `lessonInputs`,
    `tools/draft-lessons.ts:77-86`, `:109-117`). Still needed: `/learn/12` and `/learn/12.html` in
    `STANDALONE_DOCUMENT_PATHS` (`src/lib/sw-runtime.ts:93`), beside the drafts' entries, whose
    comment gives the reason: where a draft is not published, its address must reach the site
@@ -892,17 +892,17 @@ heard play (Toys 3; Edge cases) (`git diff --stat`).
     (`comfort.ts:58-67`), and it keeps the kit's lock on the feeling answer (Toys 6; Decisions for
     the owner).
 11. `kit/season.ts`, Lesson 12's entry (Explorer and season data).
-12. The head, from SEARCH.md § 3 and Lesson 4's document (`learn/04.html:9-137`), held by
-    `src/features/lessons/kit/lesson-copy.test.ts:323-358` and `src/tests/lesson-pages.test.ts:113-230`
+12. The head, from SEARCH.md § 3 and Lesson 4's document (`learn/04.html:9-145`), held by
+    `src/features/lessons/kit/lesson-copy.test.ts:323-358` and `src/tests/lesson-pages.test.ts:122-237`
     on every page, a draft's included, from its first commit:
-    - title, at most 60 characters, ending " | MercuryPitch" (`lesson-pages.test.ts:128-129`):
+    - title, at most 60 characters, ending " | MercuryPitch" (`lesson-pages.test.ts:137-138`):
       SEARCH.md § 4's draft, "The four-chord song: how chords work | MercuryPitch" (51 characters,
       `SEARCH.md:230`), in the query-led form the owner chose for Lessons 1 to 8, on 22
       October 2026. Until #1187 the title had to hold the Article's headline, so this spec
       recommended "Chords and the four-chord song: Lesson 12 | MercuryPitch" (56): the series' form,
       "Chords and the four-chord song: Find Your Pitch, Lesson 12 | MercuryPitch", ran to 73, over
       the cap, and Lesson 4's then, "· Find Your Pitch | MercuryPitch", to 63. `og:title` holds the
-      headline now (`lesson-pages.test.ts:161`), so it stays "Chords and the four-chord song", and
+      headline now (`lesson-pages.test.ts:167`), so it stays "Chords and the four-chord song", and
       this spec's query-led option, "Chords and the four-chord song: I-V-vi-IV | MercuryPitch" (56),
       is not used (Decisions 2). The worker never rewrites the title, whichever hook is picked;
     - description, 80 to 160 characters: "How can two songs share the same four chords and still
@@ -923,7 +923,7 @@ heard play (Toys 3; Edge cases) (`git diff --stat`).
       test reads `alternativeHeadline` from the first script only and skips the check when it is
       absent (`lesson-copy.test.ts:338-346`, `:356`): `@id`
       `https://mercurypitch.com/learn/12#lesson`, `url` the canonical, `image` the same URL as
-      `og:image` (`lesson-pages.test.ts:147-148`, `:160`), headline "Chords and the four-chord
+      `og:image` (`lesson-pages.test.ts:156-157`, `:166`), headline "Chords and the four-chord
       song", `alternativeHeadline` the hook, the same description, `inLanguage` `en-GB`,
       `learningResourceType` "Lesson", `educationalLevel` "Beginner", `timeRequired` `PT15M`,
       `teaches` ["Building a key's chords from its scale", "Reading Roman numerals", "Hearing the
@@ -935,9 +935,9 @@ heard play (Toys 3; Edge cases) (`git diff --stat`).
       date, so a published draft is served without one. It is set either in the commit that
       deletes the page's `drafts.ts` line or in a commit straight after the console publishes it,
       and the owner picks which (SEARCH.md § 3.2). Last, the BreadcrumbList, ending on the
-      headline (`lesson-pages.test.ts:168-180`).
+      headline (`lesson-pages.test.ts:174-187`).
 13. `public/learn/lesson-12-og.jpg`: the share card, 1200 x 630, in the page's first commit, since
-    `lesson-pages.test.ts:182-201` fails a lesson document whose card is not in `public/` at the size
+    `lesson-pages.test.ts:189-208` fails a lesson document whose card is not in `public/` at the size
     its head gives, a draft's included. It is a still of the hero: the title over
     the ring of twelve seen from above, the loop's four rooms drawn in chrome, between blue Merc and
     orange Merc, with the alt text above. It draws no tune, no walk, no gold and no count, so the
@@ -951,9 +951,9 @@ heard play (Toys 3; Edge cases) (`git diff --stat`).
     which `build:e2e` runs (`package.json:20`). The page's WebGL renderer, as on every lesson page,
     arrives after first paint (Mercs).
 15. On release (SEARCH.md § 12), once its `drafts.ts` line is deleted: `public/sitemap.xml` and
-    `public/llms.txt` (its Lessons list, `:66-77`), one entry each. Until then the draft's rules
+    `public/llms.txt` (its Lessons list, `:66-80`), one entry each. Until then the draft's rules
     hold on the repository: in neither file, linked from no entry document, its service-worker rule
-    kept (`src/tests/lesson-pages.test.ts:262-299`). While the console has it published, the site
+    kept (`src/tests/lesson-pages.test.ts:269-306`). While the console has it published, the site
     worker adds it to the sitemap and llms.txt it serves, and takes it out again if it is held back
     (`src/lesson-gate.ts:22-24`; `src/features/lessons/kit/drafts.ts:18-21`). So indexing is
     requested when the console publishes the page, not at the release.
@@ -1128,7 +1128,7 @@ Each with the package's recommendation and the review's judgement (Lesson 12's r
   (`src/features/admin/lessons/LessonControls.tsx:447-451`). The page's markup keeps the default;
   picked, the alternative goes wherever the hook goes. The site worker writes it into the page's h1,
   into every head copy that quotes the hook, the description and the og and twitter descriptions,
-  and into the structured data (`src/lesson-gate.ts:14-21`, `:444-460`, `:476-487`, `:561-591`). Its
+  and into the structured data (`src/lesson-gate.ts:14-21`, `:454-470`, `:486-497`, `:571-604`). Its
   list takes in the og and twitter titles too, but they carry the lesson's name, not the hook (What
   the kit and the app still need, item 12), and it never touches `<title>`. The page state gives it
   to every list (`src/features/lessons/kit/publish.ts:22-25`; `seasonFor`,
@@ -1137,7 +1137,7 @@ Each with the package's recommendation and the review's judgement (Lesson 12's r
   so does Lesson 11's next-lesson card (`src/features/lessons/kit/next-card.ts:114-115`). So
   "hundreds", a count FACTS.md does not hold, would stand on every surface the hook reaches (FACTS
   1). The description would run to 158 characters and og:description to 141, inside their caps,
-  which `src/tests/lesson-pages.test.ts:130-133` checks only on the page as written. Neither hook
+  which `src/tests/lesson-pages.test.ts:139-142` checks only on the page as written. Neither hook
   says where a tune's notes fall, so the title never answers the predict (FACTS 1a). The owner
   dropped it on 22 October 2026 (#1186; Decisions for the owner, item 1).
 

@@ -90,13 +90,13 @@ section's heading, and the line above it, are in LESSON.md ("Section headings").
    `:113`; `kit/page-state.ts:64-108`; Edge cases), then "Season 1 · Lesson 13" opens the lesson
    menu (`kit/lesson-menu.ts`), and the page's steps are remembered as the viewer moves through
    them (`kit/position.ts`).
-2. **Hero**, laid out as Lesson 2's is (`learn/02.html:321-494`). The hero copy holds the kicker;
+2. **Hero**, laid out as Lesson 2's is (`learn/02.html:329-502`). The hero copy holds the kicker;
    the hook question as the title, `<h1 class="hook" id="hook">` in its default wording, the
    season's, which `src/features/lessons/kit/lesson-copy.test.ts` holds every page's title to
    (`:323-332`), with no variant's team note anywhere in the markup (`src/features/lessons/kit/team-notes.test.ts:85-101`; FACTS 1), and the
-   element the site worker writes a picked hook into (`src/lesson-gate.ts:582-583`); the meta as
+   element the site worker writes a picked hook into (`src/lesson-gate.ts:592-593`); the meta as
    four chips ("16 minutes", FACTS 5; "After Lesson 11: Registers and the break", a link to
-   `/learn/11`, wholly the link, as Lesson 2's `a.chip.chip-link` is, `learn/02.html:339-344`, so
+   `/learn/11`, wholly the link, as Lesson 2's `a.chip.chip-link` is, `learn/02.html:347-352`, so
    that it stays as a plain chip where Lesson 11 is not live; Sound on; Microphone optional); the
    promise; and the sound gate from LESSON.md. Beside it, the stage: the bubbles, orange's "A
    different vowel must be a slightly different note, surely?" and blue's "Watch the line, and
@@ -141,7 +141,7 @@ section's heading, and the line above it, are in LESSON.md ("Section headings").
    picked, the defaults until it picks (`:14-20`), since the card reads the season as the page's
    state shows it (`pageLessons`, `kit/page-state.ts:54-57`). The tease's figure (Toys 8) sits in
    the page's `[data-next-card]` mark, whose children the kit keeps in the card after its words
-   (`kit/next-card.ts:27-29`), as Lesson 2's figures are (`learn/02.html:1798`). The card is a link,
+   (`kit/next-card.ts:27-29`), as Lesson 2's figures are (`learn/02.html:1806`). The card is a link,
    so the figure holds no button. The practice card is the Voice Mirror card, with "Ten minutes,
    gently, most days" under it; after "Effortful", "Uncomfortable" or "Just listen today" it is the
    rest card instead, without that line (Toys 6). Both link `/mirror?lesson=13` in a new tab.
@@ -423,7 +423,7 @@ The band chart in hold mode with the strip under it, inside Sing it's card: the 
 with this page's `.vowel-chart`, 340 px tall (310 px at 420 px wide and under, the step figure's
 heights, so the strip's segments are the ones Toys 1 gives), its frame fixed at ten seconds with
 the seconds named under the plot (`setWindow(10)`, `timeTicks`; `kit/band-chart-hold.ts:1-13`, as
-Lesson 5's hold chart is, `learn/05.html:1530`). Under the chart, the vowel names row: an ordered
+Lesson 5's hold chart is, `learn/05.html:1538`). Under the chart, the vowel names row: an ordered
 list of the five vowels, ‘ee’, ‘eh’, ‘ah’, ‘oh’ and ‘oo’, each in a 44 px tall cell, not a target;
 the vowel of the moment is bold, underlined and `aria-current="step"`, so it never rests on colour
 alone. Every state has a visible status line that is also announced (`aria-live="polite"`); the
@@ -438,7 +438,7 @@ but pitch frames: no analyser, no spectrum, no level, and no vowel (Decisions 3)
 States:
 
 1. **Comfort check**, always first and asked every visit (never stored): Lesson 5's status line,
-   "Before you sing: how is your voice today?" (`learn/05.html:1318`), LESSON.md's head line,
+   "Before you sing: how is your voice today?" (`learn/05.html:1326`), LESSON.md's head line,
    "Sore, hoarse or unwell today? Just listen along.", Lesson 3's list naming all six of
    REQ-GVC-020's conditions, and its two buttons (FACTS 45, 46), through the kit's `mountComfort`
    (`kit/comfort.ts:146-154`).
@@ -767,7 +767,7 @@ and the four-words strip in the kit.
 
 1. The lesson host: `learn/13.html` at `/learn/13`. Every build takes every `learn/NN.html` as an
    input and routes its clean path (`tools/draft-lessons.ts:78-86`, `:110-122`;
-   `vite.config.ts:306`, `:474`), so the page needs no build change. Its line in `kit/drafts.ts`,
+   `vite.config.ts:318`, `:489`), so the page needs no build change. Its line in `kit/drafts.ts`,
    `13: "the vocal coach's sign-off (MASTER-PLAN § 12 item 8)"`, beside Lessons 3 to 8's
    (`kit/drafts.ts:31-38`), makes it a draft: production's `LESSON_DRAFTS`, "0", holds it back, and
    the dev site's and the previews', "1", show it (`wrangler.jsonc:112-116`, `:167`, `:190`,
@@ -775,11 +775,11 @@ and the four-words strip in the kit.
    reason when asked to publish it (`src/features/admin/AdminLessonsPage.tsx:186-207`; FACTS 9).
    `/learn/13` and `/learn/13.html` go in `STANDALONE_DOCUMENT_PATHS` (`src/lib/sw-runtime.ts:93`,
    the lessons `:131-156`), so the service worker never serves the app shell in the lesson's place;
-   `src/tests/lesson-pages.test.ts` checks a draft for them too (`:294-298`). On release: delete the
+   `src/tests/lesson-pages.test.ts` checks a draft for them too (`:301-305`). On release: delete the
    `drafts.ts` line, and add the page to `public/sitemap.xml` and to `public/llms.txt`'s Lessons
-   list (`:66-77`); until then the site worker adds the page to both only while it is published
+   list (`:66-80`); until then the site worker adds the page to both only while it is published
    (`src/lesson-gate.ts:22-24`). Then `src/tests/lesson-pages.test.ts` holds the page to the
-   release's checks (`:233-260`). `datePublished` is set in the commit that deletes the `drafts.ts`
+   release's checks (`:240-267`). `datePublished` is set in the commit that deletes the `drafts.ts`
    line or in one straight after the console publishes it, as the owner picks, and indexing is
    requested on the day the console publishes it, not at the release (`SEARCH.md` § 3.2, `:146-153`;
    § 12, `:400-424`).
@@ -787,16 +787,16 @@ and the four-words strip in the kit.
    `src/features/lessons/kit/lesson-copy.test.ts` reads every `learn/NN.html`, drafts included
    (`lesson-copy.test.ts:323-358`), and `src/tests/lesson-pages.test.ts` holds every lesson
    document, a draft's included, to its head, its share card, its structured data and its legal
-   links (`:113-230`), since a draft the console publishes goes live with the head it was built with
+   links (`:122-237`), since a draft the console publishes goes live with the head it was built with
    (`:13-18`). The hook's copies are the ones the site worker rewrites when the console picks
-   another hook (`HOOK_COPIES`, `src/lesson-gate.ts:444-460`, and the structured data after it);
+   another hook (`HOOK_COPIES`, `src/lesson-gate.ts:454-470`, and the structured data after it);
    only the meta description and the Article's description, which repeat each other, may shorten the
-   hook, and every other copy carries it whole. As Lesson 2's head has them (`learn/02.html:3-137`):
+   hook, and every other copy carries it whole. As Lesson 2's head has them (`learn/02.html:3-145`):
    - the title, "Resonance and vowels: why ee and ah differ | MercuryPitch" (57 characters, under
-     the test's ceiling of 60, `lesson-pages.test.ts:128-129`), SEARCH.md § 4's draft for Lesson 13
+     the test's ceiling of 60, `lesson-pages.test.ts:137-138`), SEARCH.md § 4's draft for Lesson 13
      (`SEARCH.md:231`), in the query-led form the owner chose for Lessons 1 to 8 on 22 October 2026.
      Until #1187 the title had to hold the Article's headline, which `og:title` holds now
-     (`lesson-pages.test.ts:161-165`), and this spec kept the series' name for the owner,
+     (`lesson-pages.test.ts:167-171`), and this spec kept the series' name for the owner,
      "Resonance and vowels · Find Your Pitch | MercuryPitch" (53), Lessons 4 and 5's form then,
      since the full form, with "Lesson 13", runs to 63 (Decisions 1). "Why ee and ah differ" says
      only what the hook says, that the two differ, and nothing of what the peaks do. The worker
@@ -804,7 +804,7 @@ and the four-words strip in the kit.
      (`lesson-copy.test.ts:323-332`; Hero);
    - the meta description, "Same note, ‘ee’ or ‘ah’: what makes them sound different? A free
      lesson with sound toys: harmonics, resonance, and one note held through five vowels." (149
-     characters, inside the test's 80 to 160, `lesson-pages.test.ts:130-133`). It does not quote
+     characters, inside the test's 80 to 160, `lesson-pages.test.ts:139-142`). It does not quote
      the hook, so the worker leaves it as it is;
    - `og:title` and `twitter:title`, "Resonance and vowels: Find Your Pitch, Lesson 13" (48;
      `learn/02.html:26-29`, `:45-48`);
@@ -815,26 +815,26 @@ and the four-words strip in the kit.
      `learn/02.html:49-52`), so both descriptions the worker rewrites fit 80 to 160 (FACTS 1);
    - canonical and `og:url` `https://mercurypitch.com/learn/13`, `robots` "index, follow,
      max-image-preview:large" and `twitter:card` "summary_large_image"
-     (`lesson-pages.test.ts:117-135`);
+     (`lesson-pages.test.ts:126-144`);
    - `og:image` and `twitter:image`, `https://mercurypitch.com/learn/lesson-13-og.jpg` (item 3),
      with `og:image:width` 1200 and `og:image:height` 630, and as `og:image:alt` and
      `twitter:image:alt` "The title card: Find Your Pitch, Lesson 13, Resonance and vowels, above an
      amber pitch line held level over a strip of bars, two of them marked, between blue Merc and
-     orange Merc." (`learn/02.html:34-43`, `:53-60`; `lesson-pages.test.ts:182-202`);
+     orange Merc." (`learn/02.html:34-43`, `:53-60`; `lesson-pages.test.ts:189-209`);
    - the Article node, in the head's first `application/ld+json` script and as a single object,
      since the test reads `alternativeHeadline` there and checks it only when present
      (`lesson-copy.test.ts:338-346`, `:356`), and `lesson-pages.test.ts` asks for the Article
-     first (`:143-145`): `@id` `https://mercurypitch.com/learn/13#lesson` and
-     `url` `https://mercurypitch.com/learn/13` (`lesson-pages.test.ts:147-148`); the headline
+     first (`:152-154`): `@id` `https://mercurypitch.com/learn/13#lesson` and
+     `url` `https://mercurypitch.com/learn/13` (`lesson-pages.test.ts:156-157`); the headline
      "Resonance and vowels"; `alternativeHeadline`, the hook exactly; `description`, the meta
-     description's words, and `image`, the `og:image` URL (`:159-160`); `position: 13`,
+     description's words, and `image`, the `og:image` URL (`:165-166`); `position: 13`,
      `learningResourceType` "Lesson", `timeRequired` "PT16M", `inLanguage` "en-GB", free, the
-     series as `isPartOf`, and the organization as author and publisher (`:149-157`), as in Lesson
-     2's (`learn/02.html:69-109`). It has no `datePublished` yet, as the built pages leave it out
+     series as `isPartOf`, and the organization as author and publisher (`:158-163`), as in Lesson
+     2's (`learn/02.html:69-111`). It has no `datePublished` yet, as the built pages leave it out
      until they go live (`learn/04.html:61-68`; item 1);
-   - a BreadcrumbList from the home page to the headline (`lesson-pages.test.ts:168-180`;
-     `learn/02.html:110-128`); and the legal links, privacy, terms and imprint, in a `nav` labelled
-     "Legal" (`lesson-pages.test.ts:220-230`).
+   - a BreadcrumbList from the home page to the headline (`lesson-pages.test.ts:174-187`;
+     `learn/02.html:112-136`); and the legal links, privacy, terms and imprint, in a `nav` labelled
+     "Legal" (`lesson-pages.test.ts:227-237`).
 
    None of it answers the predict: the title, the hook and the descriptions say that ‘ee’ and ‘ah’
    differ on one note, never what the peaks do, and "Watch Merc's line, then make your guess." is
@@ -843,7 +843,7 @@ and the four-words strip in the kit.
 3. The share image the head names, `public/learn/lesson-13-og.jpg`, in the page's first commit:
    `src/tests/lesson-pages.test.ts` holds every lesson document, a draft's included, to its own
    card, a file in `public/` at the pixel size `og:image:width` and `og:image:height` give, with
-   both alts set and the same (`:182-202`), so the page fails the unit tests without it. It is 1200
+   both alts set and the same (`:189-209`), so the page fails the unit tests without it. It is 1200
    x 630, a baseline JPEG as Lessons 3, 4 and 5's cards are (`public/learn/lesson-04-og.jpg`), drawn
    with the page's own kit so that it looks like the page it opens: the title, Lesson 13 and the
    wordmark over the vowel figure's compact still, Merc's amber line level over ‘ee’'s strip with

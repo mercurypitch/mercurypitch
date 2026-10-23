@@ -88,14 +88,14 @@ heading, and the line above it, are in LESSON.md ("Section headings").
    `kit/page-state.ts:84-108`; Edge cases), then "Season 1 · Lesson 14" opens the lesson menu
    (`kit/lesson-menu.ts`), and the page's steps are remembered as the viewer moves through them
    (`kit/position.ts`).
-2. **Hero**, laid out as Lesson 2's is (`learn/02.html:321-494`). The hero copy holds the kicker;
+2. **Hero**, laid out as Lesson 2's is (`learn/02.html:329-502`). The hero copy holds the kicker;
    the hook question as the title, `<h1 class="hook" id="hook">` in its default wording, the
    season's, which `src/features/lessons/kit/lesson-copy.test.ts` holds every page's title to
    (`:323-332`), with no variant's team note anywhere in the markup (`src/features/lessons/kit/team-notes.test.ts:85-101`; 1), and the element
-   the site worker writes a picked hook into (`src/lesson-gate.ts:582-583`); the meta as seven chips
+   the site worker writes a picked hook into (`src/lesson-gate.ts:592-593`); the meta as seven chips
    ("18 minutes", 8; "After Lesson 5: Steady note", "After Lesson 8: Beat and tempo", "After Lesson
    9: Landing a leap" and "After Lesson 12: Chords", each a link to that lesson's page and wholly
-   the link, as Lesson 2's `a.chip.chip-link` is, `learn/02.html:339-344`, so that it stays as a
+   the link, as Lesson 2's `a.chip.chip-link` is, `learn/02.html:347-352`, so that it stays as a
    plain chip where its lesson is not live, 3; Sound on; Microphone optional); the promise; and the
    sound gate from LESSON.md. Beside it, the stage: the bubbles, the two Mercs on the floor line,
    and under them, across the stage's whole width, the song line in its compact state (Toys 1). It
@@ -395,7 +395,7 @@ over its numerals, V and I.
 
 The song line in live mode, inside Sing it's card, with line 1's bands as the target and the
 viewer's line drawn against them. It is the kit's `.sing-chart` (240 px; 210 px at 420 px wide and
-under), a band chart as on Lessons 3, 5 and 9 (`learn/03.html:1393`), so the 11-semitone window
+under), a band chart as on Lessons 3, 5 and 9 (`learn/03.html:1401`), so the 11-semitone window
 gives 17.6 px a semitone (14.9 at 210 px), and its words strip fits as in the steps (91). Every
 state has a visible status line that is also announced (`aria-live="polite"`).
 
@@ -424,7 +424,7 @@ States:
    line; the "What this does" box (REQ-GVC-002, REQ-GVC-003, REQ-GVC-012, REQ-GVC-026; 79, 52);
    **Play Merc's phrase** and **Start take 1**, the only control that asks for the microphone
    (MASTER-PLAN § 4.2 item 2).
-   - **Move do**: Lesson 4's control, word for word (`learn/04.html:1242-1251`): a group labelled
+   - **Move do**: Lesson 4's control, word for word (`learn/04.html:1250-1259`): a group labelled
      "Move do:" with two buttons, "lower" and "higher", a semitone a tap, up to four each way from
      D3 (or D4), each disabled at its end, as Lesson 4's are (`lesson-04/sing.ts:34-35`, `:168-176`;
      70). The bands, the rows and the window move with it, and the chart's summary says where do is
@@ -619,7 +619,7 @@ the link where that lesson is not live (`:179-183`).
   retrieval (MASTER-PLAN § 9). It takes no `lesson`, so it marks nothing done. Neither question
   plays a sound. The kit turns "Try Step 1 again" and "Try Step 5 again" into "Try Lesson 5, Step 1
   again" and "Try Lesson 5, Step 5 again", links that open Lesson 5's page at that step,
-  `/learn/05#step-1` and `/learn/05#step-5` (its step ids, `learn/05.html:1040`, `:1257`), in a new
+  `/learn/05#step-1` and `/learn/05#step-5` (its step ids, `learn/05.html:1048`, `:1265`), in a new
   tab so the viewer keeps their place here, never `data-goto-step`, which would move this page's own
   deck (`quiz.ts:179-209`); where Lesson 5 is not live, each keeps its words with no link
   (`:199-202`; Edge cases). The address is the quiz's `away.href` (`quiz.ts:87-94`), the kit's
@@ -744,7 +744,7 @@ among them (PR #1149), and in Lesson 9's spec, beyond the parts Lessons 2 to 9 p
 
 1. The lesson host: `learn/14.html` at `/learn/14`. Every build takes every `learn/NN.html` as an
    input and routes its clean path (`tools/draft-lessons.ts:1-18`; `lessonPages`, `:77-86`;
-   `lessonInputs` and `lessonPaths`, `:109-122`; `vite.config.ts:306`, `:474`), so the page needs no
+   `lessonInputs` and `lessonPaths`, `:109-122`; `vite.config.ts:318`, `:489`), so the page needs no
    build change. Its line in `kit/drafts.ts`,
    `14: "the vocal coach's sign-off (MASTER-PLAN § 12 item 8)"`, beside Lessons 3 to 8's
    (`:30-38`), makes it a draft: production's `LESSON_DRAFTS`, "0", holds it back, and the dev
@@ -753,16 +753,16 @@ among them (PR #1149), and in Lesson 9's spec, beyond the parts Lessons 2 to 9 p
    asked to publish it (11). `/learn/14` and `/learn/14.html` go in `STANDALONE_DOCUMENT_PATHS`
    (`src/lib/sw-runtime.ts:93`, the lessons `:131-156`), so the service worker never serves the app
    shell in the lesson's place. As a draft, `src/tests/lesson-pages.test.ts` holds the page to the
-   draft checks (`:262-299`): in neither the sitemap nor llms.txt (`lesson-pages.test.ts:277-280`),
-   linked from no entry document (`:282-292`), and its service-worker rule kept (`:294-298`). On
+   draft checks (`:269-306`): in neither the sitemap nor llms.txt (`lesson-pages.test.ts:284-287`),
+   linked from no entry document (`:289-299`), and its service-worker rule kept (`:301-305`). On
    release: delete the `drafts.ts` line, and add the page to `public/sitemap.xml` and to
-   `public/llms.txt`'s Lessons list (`:66-77`), whose intro already allows a page with no episode
+   `public/llms.txt`'s Lessons list (`:66-80`), whose intro already allows a page with no episode
    (`:68-70`); until then the site worker adds the page to both only while it is published
    (`src/lesson-gate.ts:22-24`). Then `src/tests/lesson-pages.test.ts` holds the page to the release
-   checks instead (`:232-260`): listed in the sitemap, llms.txt and the service worker
-   (`lesson-pages.test.ts:237-245`), and linked from every generated entry document (`:247-259`) by
+   checks instead (`:239-267`): listed in the sitemap, llms.txt and the service worker
+   (`lesson-pages.test.ts:244-252`), and linked from every generated entry document (`:254-266`) by
    its headline, which `tools/lesson-links.ts` writes and the test reads
-   (`lesson-pages.test.ts:75-91`). Nothing writes `datePublished` at run time, so a published draft
+   (`lesson-pages.test.ts:84-100`). Nothing writes `datePublished` at run time, so a published draft
    is served without one; it is set in the commit that deletes the page's `drafts.ts` line or in one
    straight after the console publishes it, whichever the owner picks, and indexing is asked for
    when the console publishes the page, not at a release (SEARCH.md § 3.2, 12).
@@ -770,54 +770,54 @@ among them (PR #1149), and in Lesson 9's spec, beyond the parts Lessons 2 to 9 p
    is a draft: `src/features/lessons/kit/lesson-copy.test.ts` reads every `learn/NN.html`, drafts
    included (`lesson-copy.test.ts:323-358`), and `src/tests/lesson-pages.test.ts` holds every lesson
    document, drafts included, to its head, its structured data, its breadcrumb, its share card and
-   its legal links (`:113-230`). So Lesson 14 meets all of the checks below as a draft; its release
-   adds only the listings and links of item 1 (`:232-260`). The hook's copies are the ones the site
-   worker rewrites when the console picks another hook (`src/lesson-gate.ts:444-451`, `:565-594`);
+   its legal links (`:122-237`). So Lesson 14 meets all of the checks below as a draft; its release
+   adds only the listings and links of item 1 (`:239-267`). The hook's copies are the ones the site
+   worker rewrites when the console picks another hook (`src/lesson-gate.ts:454-461`, `:575-607`);
    it never rewrites the title. Only the meta description and the Article's description, which
    repeat each other, may shorten the hook, and every other copy carries it whole. In Lesson 4's
-   form (`learn/04.html:9-128`), with the default hook (13):
+   form (`learn/04.html:9-136`), with the default hook (13):
    - the title, "Phrasing in singing: breath, swell and shape | MercuryPitch" (59 characters, under
-     the test's 60, `lesson-pages.test.ts:128-129`), SEARCH.md § 4's draft (`SEARCH.md:232`), and
+     the test's 60, `lesson-pages.test.ts:137-138`), SEARCH.md § 4's draft (`SEARCH.md:232`), and
      the h1, `h1.hook#hook`, the hook in its default wording (`lesson-copy.test.ts:323-332`; Hero);
    - the meta description, "If every note of a song is in tune, what is left to shape? Hear Merc
      sing one phrase twice, then sing it and listen back." (121 characters, inside the test's 81 to
-     160, `lesson-pages.test.ts:130-133`, and 153 with `compelling`, since dropped);
+     160, `lesson-pages.test.ts:139-142`, and 153 with `compelling`, since dropped);
    - `og:title` and `twitter:title`, "Phrasing: sing a whole song · Find Your Pitch, Lesson 14",
-     hold the headline, as the title did until #1187 (`lesson-pages.test.ts:161-165`);
+     hold the headline, as the title did until #1187 (`lesson-pages.test.ts:167-171`);
    - `og:description`, the full hook and one line, "If every note of a song is in tune, what is left
      to shape? Hear one phrase sung twice, then sing it yourself." (109 characters; 141 with
      `compelling`, since dropped; `lesson-copy.test.ts:349-352`), and `twitter:description`, the
      hook exactly (`:353-355`);
    - canonical and `og:url` `https://mercurypitch.com/learn/14`, `robots` "index, follow,
      max-image-preview:large" and `twitter:card` "summary_large_image"
-     (`lesson-pages.test.ts:117-135`);
+     (`lesson-pages.test.ts:126-144`);
    - `og:image` and `twitter:image`, `https://mercurypitch.com/learn/lesson-14-og.jpg` (item 3),
      with `og:image:width` 1200 and `og:image:height` 630, and as `og:image:alt` and
      `twitter:image:alt` "The title card: Find Your Pitch, Lesson 14, Phrasing: sing a whole song,
      above the first line of "Twinkle, Twinkle, Little Star" as seven amber bands with its words,
      between blue Merc and orange Merc." (`learn/04.html:34-43`, `:53-60`), which the test holds to
-     the file (`lesson-pages.test.ts:182-201`; item 3);
+     the file (`lesson-pages.test.ts:189-208`; item 3);
    - the Article node, in the head's first `application/ld+json` script and as a single object,
      since the test reads `alternativeHeadline` there and checks it only when present
      (`lesson-copy.test.ts:338-346`, `:356`), and the other test asks for the Article first
-     (`lesson-pages.test.ts:143-145`): `@id` `https://mercurypitch.com/learn/14#lesson` and `url`
-     `https://mercurypitch.com/learn/14` (`:147-148`); the headline "Phrasing: sing a whole song";
+     (`lesson-pages.test.ts:152-154`): `@id` `https://mercurypitch.com/learn/14#lesson` and `url`
+     `https://mercurypitch.com/learn/14` (`:156-157`); the headline "Phrasing: sing a whole song";
      `alternativeHeadline`, the hook exactly; `description`, the meta description's words, and
-     `image`, the `og:image` URL (`:159-160`); `position: 14`, `learningResourceType` "Lesson",
-     free, the series as `isPartOf`, and the organization as author and publisher (`:149-157`), with
+     `image`, the `og:image` URL (`:165-166`); `position: 14`, `learningResourceType` "Lesson",
+     free, the series as `isPartOf`, and the organization as author and publisher (`:158-163`), with
      `timeRequired` "PT18M" and `teaches` "Where to breathe in a song: at a phrase's end", "Legato:
      singing smoothly through a phrase", "The swell, or messa di voce: one note, louder, then
      softer", "How a phrase ends: perfect and imperfect cadences" and "Recording yourself and
      listening back", none of which says what a swell does to the line, as in Lesson 4's
-     (`learn/04.html:69-109`). It has no `datePublished` (item 1);
-   - a BreadcrumbList from the home page to the headline (`lesson-pages.test.ts:168-180`;
-     `learn/04.html:110-128`); and the legal links, privacy, terms and imprint, in a `nav` labelled
-     "Legal" (`lesson-pages.test.ts:218-229`).
+     (`learn/04.html:69-111`). It has no `datePublished` (item 1);
+   - a BreadcrumbList from the home page to the headline (`lesson-pages.test.ts:174-187`;
+     `learn/04.html:112-136`); and the legal links, privacy, terms and imprint, in a `nav` labelled
+     "Legal" (`lesson-pages.test.ts:225-236`).
    - Before #1186 dropped `compelling`, picking it wrote it into every copy of the hook: every
      description stayed between 80 and 160 characters with either hook (13).
 3. The share image the head names, `public/learn/lesson-14-og.jpg`, which
    `src/tests/lesson-pages.test.ts` checks on every lesson document, drafts included, so from the
-   page's first commit (`:182-201`): `og:image` is
+   page's first commit (`:189-208`): `og:image` is
    `https://mercurypitch.com/learn/lesson-14-og.jpg`, the file is in `public/`, its pixel size, read
    from the JPEG's frame header (`:41-56`), is what `og:image:width` and `og:image:height` say,
    `og:image:alt` is not empty, and `twitter:image` and `twitter:image:alt` repeat the two. It is
@@ -985,7 +985,7 @@ What the page does where nothing above says:
 - **Lesson 14 published while Lesson 5, 8, 9 or 12 is held back**: nothing stops it, since the
   publish order is a rule for whoever uses the console (the intro), so the page follows the state it
   is served with. The site worker, and then the masthead's `followPageState`, make every link to a
-  lesson that is not live no link (`src/lesson-gate.ts:515-525`, `:539-559`;
+  lesson that is not live no link (`src/lesson-gate.ts:525-535`, `:549-569`;
   `kit/page-state.ts:64-108`, called by `initMasthead`, `kit/page-chrome.ts:113`): each "After
   Lesson N" chip for such a lesson stays as a plain chip, and any other link keeps its words. The
   kit's quiz does the same for the recall's step links, which keep their words, "Try Lesson 5, Step

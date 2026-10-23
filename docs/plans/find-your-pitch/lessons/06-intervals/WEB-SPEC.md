@@ -578,10 +578,10 @@ and the line references are main's.
   4's (`lesson-04/sing.ts`).
 - `vite.config.ts`: `/learn/06` served from `learn/06.html` in dev and preview, and `learn/06.html`
   as a build input. On main every `learn/NN.html` is both, with no entry of its own
-  (`vite.config.ts:77-86`, `:138-140`, `:474`).
+  (`vite.config.ts:78-87`, `:147-149`, `:489`).
 - `src/lib/sw-runtime.ts`: `/learn/06` and `/learn/06.html` in `STANDALONE_DOCUMENT_PATHS`, as
   `/learn/01` is (`sw-runtime.ts:131-135`).
-- `public/sitemap.xml` and `public/llms.txt` (its "Lessons" list, `:66-77`): Lesson 6's entry.
+- `public/sitemap.xml` and `public/llms.txt` (its "Lessons" list, `:66-80`): Lesson 6's entry.
 - `public/learn/lesson-06-og.jpg`: the share card, 1200 x 630, a still of the hero: the title over
   the tune line on C with its leap bracketed.
 - The page's head, as Lesson 1's (`learn/01.html:9-60`). Like the cold open, nothing in it answers
