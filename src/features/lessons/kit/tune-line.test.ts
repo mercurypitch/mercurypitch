@@ -366,14 +366,19 @@ describe('mountTuneLine: a grid', () => {
   })
 
   it('goes back to a Tab stop each, and the layer to its own role, on a shape with no grid', () => {
-    // Arrange
-    const { tune, hits } = mount({ shape: GRID })
+    // Arrange: the layer is a group, as Lesson 6's markup has it
+    const hits = document.createElement('div')
+    hits.setAttribute('role', 'group')
+    document.body.append(hits)
+    const { tune } = mount({ shape: GRID, hits })
+    const inGrid = hits.getAttribute('role')
 
     // Act
     tune.setShape(ONE)
 
     // Assert
-    expect(hits.getAttribute('role')).toBeNull()
+    expect(inGrid).toBe('grid')
+    expect(hits.getAttribute('role')).toBe('group')
     expect(hits.querySelectorAll('[role="row"]')).toHaveLength(0)
     expect(hits.querySelectorAll('.tune-hit[tabindex]')).toHaveLength(0)
     expect(Array.from(hits.children).every((c) => c.matches('.tune-hit'))).toBe(
