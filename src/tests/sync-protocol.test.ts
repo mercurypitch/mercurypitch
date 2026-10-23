@@ -32,7 +32,7 @@ import type * as PortableAudio from '@/lib/portable/portable-audio'
 import type { SyncWireMessage } from '@/lib/sync/sync-protocol'
 import { isSyncWireMessage, PART_STALL_MS, receiveBundleOverWire, sendBundleOverWire, SENDER_SILENCE_MS, } from '@/lib/sync/sync-protocol'
 import type { UvrSession } from '@/stores/uvr-store'
-import { deleteAllUvrSessions, getAllUvrSessions, getUvrSession, getUvrSessionByHash, saveAllUvrSessions, } from '@/stores/uvr-store'
+import { deleteAllUvrSessions, getAllUvrSessions, getUvrSession, getUvrSessionByHash, saveAllUvrSessions, uvrSessionsWipeSettled, } from '@/stores/uvr-store'
 
 vi.mock('@/lib/portable/portable-audio', async (importOriginal) => {
   const actual = await importOriginal<typeof PortableAudio>()
@@ -154,6 +154,7 @@ async function crossTheWire(
   await seedSourceSong()
   const bundle = await buildPortableBundle(SOURCE_ID, { tier: 'portable-192' })
   deleteAllUvrSessions()
+  await uvrSessionsWipeSettled()
 
   const sender = sendBundleOverWire(bundle, {
     sendControl: wire.senderPort.sendControl,
@@ -174,8 +175,10 @@ async function crossTheWire(
 }
 
 describe('sync protocol over a wire', () => {
-  beforeEach(() => {
+  beforeEach(async () => {
     deleteAllUvrSessions()
+    // Finish the old device's reset before seeding the next source song.
+    await uvrSessionsWipeSettled()
   })
 
   it('carries a song across and both ends know it', async () => {
@@ -396,8 +399,9 @@ describe('sync protocol over a wire', () => {
 })
 
 describe('sync protocol when the far device is full', () => {
-  beforeEach(() => {
+  beforeEach(async () => {
     deleteAllUvrSessions()
+    await uvrSessionsWipeSettled()
   })
 
   it('refuses before a byte moves, and says how full it is', async () => {
@@ -477,6 +481,7 @@ describe('sync protocol when the connection dies', () => {
     await seedSourceSong()
     const bundle = await buildPortableBundle(SOURCE_ID)
     deleteAllUvrSessions()
+    await uvrSessionsWipeSettled()
     vi.useFakeTimers()
     try {
       const receiver = receiveBundleOverWire(
