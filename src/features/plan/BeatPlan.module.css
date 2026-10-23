@@ -1,0 +1,43 @@
+/* ============================================================
+   BeatPlan: the box the questions and the plan stand in
+   ============================================================
+
+   What the screens need of their host is written in PlanExits.tsx, and this
+   is that box inside First Light's frame:
+
+   - Positioned, so the screens' Back and Not now (absolute, in the nearest
+     positioned box) sit in this box's corners and not in the frame's. The
+     frame scrolls; a transformed ancestor would become the containing block
+     for the first 0.55 s and then hand the buttons to the frame. So the
+     host is a plain direct child of the frame, with no transform, no
+     animation, no overflow and no filter, and is not a `.beat`, whose
+     entrance is a transform.
+   - A flex column of a definite height. `flex: 1 1 0` with `min-height: 0`
+     takes what the frame has (the frame is itself a flex item of the
+     overlay, which is fixed to the window, so its content height is
+     definite and so is this box's). The question screens' root asks for
+     `calc(100% + 14px)` and shrinks to what Merc leaves; a plain block box
+     would collapse its negative margin and leave the percentage with no
+     height to resolve.
+   - Merc directly above the screens and `flex: none`, so the screen takes
+     the rest. His box is sized inline by MercPresence, and its class must
+     leave `display` alone (his still and his live canvas share one grid
+     cell), so the class below sets only `flex`.
+   - No padding of its own, at the bottom or anywhere: the frame's padding is
+     the beat's margin, and on a phone the frame gives its bottom padding up
+     (the rule beside the twin's, in onboarding.module.css) so the screens
+     own the room under their last row, home indicator included. */
+
+.host {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  flex: 1 1 0;
+  width: 100%;
+  min-height: 0;
+}
+
+.merc {
+  flex: none;
+}

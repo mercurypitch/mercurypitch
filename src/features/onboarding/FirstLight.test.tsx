@@ -6,18 +6,32 @@
 // most one way out, at the top right of the frame: a close button on the
 // welcome, "Not now" everywhere else, and never a second exit button
 // beside the beat's own. On the Fork, "Not now" is the old "Take me in"
-// card moved to the corner: it lands on the Map with nothing measured and
-// keeps that card's event, `onboarding_track_short`, so the funnel reads
+// card moved to the corner: it lands on the next beat with nothing measured
+// and keeps that card's event, `onboarding_track_short`, so the funnel reads
 // straight across the change. No new event names.
+//
+// The next beat is the four questions while the person's plan is due (the
+// plan record is empty or only shown), and the Map once it has been answered
+// or turned down. The questions' own cases are in FirstLight.plan.test.tsx.
+//
+// Over 600 lines on purpose (TESTING.md 3.5): every case mounts the real flow
+// at one beat and reads what that beat does, so they share one harness (the
+// mic, the canvases, the promo and the funnel faked once), and splitting them
+// by beat would copy it into each part.
 
 import { cleanup, fireEvent, render, waitFor, within, } from '@solidjs/testing-library'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type * as OnboardingFunnelModule from '@/features/onboarding/funnel'
 import { ONBOARDING_FUNNEL_EVENTS } from '@/lib/funnel-event-catalog'
+import type * as GpuGateModule from '@/lib/merc/gpu-gate'
 import type { MirrorResult } from '@/lib/mirror/metrics'
 import type { OpenResult, ProbeResult, VoiceSession } from '@/lib/voice-session'
+import type * as AppStoreModule from '@/stores/app-store'
 
-const mocks = vi.hoisted(() => ({ trackOnboarding: vi.fn() }))
+const mocks = vi.hoisted(() => ({
+  trackOnboarding: vi.fn(),
+  startPageTour: vi.fn(),
+}))
 
 vi.mock('@/lib/jam/media-errors', () => ({
   micPermissionState: (): Promise<string> => Promise.resolve('granted'),
@@ -69,11 +83,28 @@ vi.mock('@/stores/launch-gift-store', () => ({
   claimGiftNow: async () => {},
 }))
 
+// The questions' Merc asks the browser for WebGL, which jsdom cannot give.
+vi.mock('@/lib/merc/gpu-gate', async (importOriginal) => ({
+  ...(await importOriginal<typeof GpuGateModule>()),
+  canRunLiveMerc: (): boolean => false,
+}))
+
+// Starting a page tour opens a real walkthrough; the flow only has to ask.
+vi.mock('@/stores/app-store', async (importOriginal) => ({
+  ...(await importOriginal<typeof AppStoreModule>()),
+  startPageTour: mocks.startPageTour,
+}))
+
+import { PLAN_OPENED_KEY, PLAN_RECORD_KEY } from '@/features/plan/plan-keys'
+import { savePlanAnswers } from '@/features/plan/plan-store'
+import { applyPersistedValue } from '@/lib/storage'
 import { currentBeat, flowOpen, openBeat, recordFirstNote, recordVoiceprint, resetOnboarding, savedVoiceprints, track, voiceprint, } from '@/stores/onboarding-store'
+import { setActiveTab } from '@/stores/ui-store'
 import { VOICE_RIDGE } from './beats/KeepChips'
 import { FirstLight } from './FirstLight'
 import type { Beat } from './flow'
 import { MAP_ROOM_EVENT } from './funnel'
+import type { Plate } from './plates'
 import { plateSrc } from './plates'
 import { ROOMS } from './rooms'
 import { ridgeShape } from './voice-strip'
@@ -115,9 +146,26 @@ function tracked(): string[] {
   return mocks.trackOnboarding.mock.calls.map(([event]) => String(event))
 }
 
+/** The plan record and the stops opened live in module signals that `localStorage.clear()` does not reach. */
+function forgetThePlan(): void {
+  applyPersistedValue(PLAN_RECORD_KEY, 'null', { persist: false })
+  applyPersistedValue(PLAN_OPENED_KEY, '[]', { persist: false })
+}
+
+/** A plan that has been answered: the questions are not due. */
+function answerThePlan(): void {
+  savePlanAnswers(
+    { q1: 'singing', q2: null, q3: [], q4: [] },
+    { q3other: '', q4app: '' },
+  )
+}
+
 beforeEach(() => {
   vi.clearAllMocks()
   localStorage.clear()
+  forgetThePlan()
+  setActiveTab('home')
+  vi.spyOn(console, 'info').mockImplementation(() => undefined)
   resetOnboarding()
   // jsdom ships no matchMedia; the star field and the plates ask it.
   vi.stubGlobal('matchMedia', () => ({
@@ -130,6 +178,8 @@ beforeEach(() => {
 afterEach(() => {
   cleanup()
   vi.unstubAllGlobals()
+  vi.restoreAllMocks()
+  forgetThePlan()
   resetOnboarding()
 })
 
@@ -148,7 +198,7 @@ describe('the Fork in the flow', () => {
     expect(ONBOARDING_FUNNEL_EVENTS).toEqual(expect.arrayContaining(tracked()))
   })
 
-  it('"Not now" takes the Fork to the Map with nothing measured, counted as the short track', async () => {
+  it("asks the questions after the short track's Not now, with nothing measured, counted as the short track", async () => {
     // Arrange
     await at('fork')
     const [notNow] = railExits()
@@ -157,7 +207,8 @@ describe('the Fork in the flow', () => {
     fireEvent.click(notNow)
 
     // Assert
-    await waitFor(() => expect(currentBeat()).toBe('map'))
+    await waitFor(() => expect(currentBeat()).toBe('questions'))
+    expect(beat('questions')).not.toBeNull()
     expect(notNow).toHaveTextContent('Not now')
     expect(track()).toBe('short')
     expect(voiceprint()).toBeNull()
@@ -166,11 +217,11 @@ describe('the Fork in the flow', () => {
     expect(ONBOARDING_FUNNEL_EVENTS).toEqual(expect.arrayContaining(tracked()))
   })
 
-  it('"Not now" on a replayed Fork lands on the Map, not the account ask, and keeps the voiceprint', async () => {
+  it('"Not now" on a replayed Fork lands on the questions, not the account ask, and keeps the voiceprint', async () => {
     // Arrange: the review's path. A voiceprint made earlier this session
     // is still in memory, the account ask is still due, and the intro is
-    // replayed from Settings. The Map is where every "Not now" goes (V9);
-    // the voiceprint is never dropped (V13).
+    // replayed from Settings. Every "Not now" goes past Keep (V9), to the
+    // questions while the plan is due; the voiceprint is never dropped (V13).
     recordVoiceprint(VOICEPRINT)
     render(() => <FirstLight replay />)
     openBeat('fork')
@@ -181,16 +232,38 @@ describe('the Fork in the flow', () => {
     fireEvent.click(notNow)
 
     // Assert
-    await waitFor(() => expect(beat('map')).not.toBeNull())
-    expect(currentBeat()).toBe('map')
+    await waitFor(() => expect(beat('questions')).not.toBeNull())
+    expect(currentBeat()).toBe('questions')
     expect(beat('keep')).toBeNull()
     expect(voiceprint()).toEqual(VOICEPRINT)
     expect(tracked()).toContain('onboarding_track_short')
   })
+
+  it('"Not now" goes straight to the Map once the plan is answered', async () => {
+    // Arrange: somebody who answered the questions on another visit.
+    answerThePlan()
+    await at('fork')
+    const [notNow] = railExits()
+
+    // Act
+    fireEvent.click(notNow)
+
+    // Assert
+    await waitFor(() => expect(currentBeat()).toBe('map'))
+    expect(beat('questions')).toBeNull()
+    expect(tracked()).toContain('onboarding_track_short')
+  })
 })
 
-describe('the pictures fetched ahead of the Fork', () => {
-  it('fetches the plain sky its button leads to, and the Map behind "Not now"', async () => {
+// Past the walk, a Not now leads to the plain sky (the four questions while the
+// plan is due) or to the Map (once it is answered), so both are fetched behind
+// each beat that has one. The questions lead to the Map by See every room alone.
+describe('the pictures fetched ahead', () => {
+  it.each<[Beat, readonly Plate[]]>([
+    ['fork', ['plain', 'map']],
+    ['first-light', ['plain', 'map']],
+    ['questions', ['map']],
+  ])('fetches what can follow the %s beat: %j', async (name, plates) => {
     // Arrange
     const requested: string[] = []
     vi.stubGlobal(
@@ -204,14 +277,11 @@ describe('the pictures fetched ahead of the Fork', () => {
     )
 
     // Act
-    await at('fork')
+    await at(name)
 
     // Assert
     expect(requested).toEqual(
-      expect.arrayContaining([
-        plateSrc('plain', false),
-        plateSrc('map', false),
-      ]),
+      expect.arrayContaining(plates.map((plate) => plateSrc(plate, false))),
     )
   })
 })
@@ -272,9 +342,9 @@ describe('one way out on every beat', () => {
   )
 })
 
-describe('"Not now" lands on the Map (owner decision V9)', () => {
+describe('"Not now" lands past the walk (owner decision V9)', () => {
   it.each<Beat>(['first-light', 'voiceprint', 'prints', 'twin'])(
-    'takes the %s beat to the Map, counted as a skip, with the flow still open',
+    'takes the %s beat to the questions, counted as a skip, with the flow still open',
     async (name) => {
       // Arrange
       if (name === 'twin') recordVoiceprint(VOICEPRINT)
@@ -295,9 +365,9 @@ describe('"Not now" lands on the Map (owner decision V9)', () => {
       fireEvent.click(notNow)
 
       // Assert
-      await waitFor(() => expect(currentBeat()).toBe('map'))
+      await waitFor(() => expect(currentBeat()).toBe('questions'))
       expect(flowOpen()).toBe(true)
-      expect(beat('map')).not.toBeNull()
+      expect(beat('questions')).not.toBeNull()
       expect(tracked()).toContain('onboarding_skipped')
       expect(tracked()).not.toContain('onboarding_track_short')
       expect(ONBOARDING_FUNNEL_EVENTS).toEqual(
@@ -305,6 +375,21 @@ describe('"Not now" lands on the Map (owner decision V9)', () => {
       )
     },
   )
+
+  it('takes a beat to the Map once the plan is answered, counted as a skip', async () => {
+    // Arrange
+    answerThePlan()
+    await at('first-light')
+    const [notNow] = railExits()
+
+    // Act
+    fireEvent.click(notNow)
+
+    // Assert
+    await waitFor(() => expect(currentBeat()).toBe('map'))
+    expect(beat('questions')).toBeNull()
+    expect(tracked()).toContain('onboarding_skipped')
+  })
 
   it('makes no voiceprint on the way: leaving the voiceprint mid-run lands with none', async () => {
     // Arrange
@@ -314,7 +399,7 @@ describe('"Not now" lands on the Map (owner decision V9)', () => {
     fireEvent.click(railExits()[0])
 
     // Assert
-    await waitFor(() => expect(currentBeat()).toBe('map'))
+    await waitFor(() => expect(currentBeat()).toBe('questions'))
     expect(voiceprint()).toBeNull()
   })
 })

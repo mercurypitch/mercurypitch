@@ -47,17 +47,20 @@ beforeEach(() => {
 })
 
 describe('AuthModal Google sign-in', () => {
-  it('arms the onboarding resume when the flow is open', async () => {
-    openBeat('map')
-    openAuthModal('register')
-    const { getByTestId } = render(() => <AuthModal />)
+  it.each(['map', 'questions'] as const)(
+    'arms the onboarding resume on the %s beat when the flow is open',
+    async (beat) => {
+      openBeat(beat)
+      openAuthModal('register')
+      const { getByTestId } = render(() => <AuthModal />)
 
-    fireEvent.click(getByTestId('auth-google'))
-    await Promise.resolve()
+      fireEvent.click(getByTestId('auth-google'))
+      await Promise.resolve()
 
-    expect(localStorage.getItem(RESUME_KEY)).toBe('map')
-    expect(startGoogleSignIn).toHaveBeenCalledTimes(1)
-  })
+      expect(localStorage.getItem(RESUME_KEY)).toBe(beat)
+      expect(startGoogleSignIn).toHaveBeenCalledTimes(1)
+    },
+  )
 
   it('arms nothing on a surface outside the flow', async () => {
     closeOnboarding()

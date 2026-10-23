@@ -6,9 +6,12 @@
 //
 // `isMobile()` is an app-lifetime accessor backed by a single matchMedia
 // listener, so every caller shares one signal and reacts to viewport changes.
+// A screen with a breakpoint of its own asks it with `createReactiveMatch`,
+// which stops listening when the screen goes, rather than a matchMedia hook
+// of its own.
 // ============================================================
 
-import { createSignal } from 'solid-js'
+import { createSignal, getOwner, onCleanup } from 'solid-js'
 
 /**
  * Breakpoints used across the app (px). `mobile` is the de-facto cutoff where
@@ -40,7 +43,28 @@ const NARROW_QUERY = `(max-width: ${BREAKPOINTS.mobile}px)`
 // The pointer keeps a short desktop window, and a touch laptop's mouse, out.
 const SHORT_TOUCH_LANDSCAPE_QUERY = `(pointer: coarse) and (orientation: landscape) and (max-height: ${SHORT_LANDSCAPE_MAX_HEIGHT}px)`
 
-function createReactiveMatch(query: string): () => boolean {
+/** Listens for a query's changes on the API the browser has; returns the way to stop. */
+function listen(mql: MediaQueryList, onChange: () => void): () => void {
+  if (typeof mql.addEventListener === 'function') {
+    mql.addEventListener('change', onChange)
+    return () => mql.removeEventListener('change', onChange)
+  }
+  // Older WebKit: addListener is the only API.
+  const legacy = mql as MediaQueryList & {
+    addListener: (cb: () => void) => void
+    removeListener: (cb: () => void) => void
+  }
+  legacy.addListener(onChange)
+  return () => legacy.removeListener(onChange)
+}
+
+/**
+ * One media query as a reactive accessor. At module level (the exports below)
+ * it listens for the life of the app: there is no owner to end it. Inside a
+ * component it stops with the component, so a screen can ask its own question
+ * without leaving a listener behind each time it mounts.
+ */
+export function createReactiveMatch(query: string): () => boolean {
   // SSR / non-DOM guard — behave as desktop when there's no matchMedia.
   if (
     typeof window === 'undefined' ||
@@ -51,19 +75,10 @@ function createReactiveMatch(query: string): () => boolean {
   }
   const mql = window.matchMedia(query)
   const [matches, setMatches] = createSignal(mql.matches)
-  const onChange = (): void => {
+  const stop = listen(mql, () => {
     setMatches(mql.matches)
-  }
-  // App-lifetime listener: this module-level signal is never disposed, so no
-  // onCleanup is needed (and it must not depend on a component owner).
-  if (typeof mql.addEventListener === 'function') {
-    mql.addEventListener('change', onChange)
-  } else {
-    // Older WebKit: addListener is the only API.
-    ;(
-      mql as MediaQueryList & { addListener: (cb: () => void) => void }
-    ).addListener(onChange)
-  }
+  })
+  if (getOwner() !== null) onCleanup(stop)
   return matches
 }
 

@@ -78,10 +78,11 @@ test.describe('First Light onboarding', () => {
     await expect(onward).toBeVisible({ timeout: 20000 })
     await onward.click()
 
-    // Refusing the mic makes every beat except the Map inapplicable, so
-    // one advance lands there — the fork is deliberately never offered
-    // to someone we cannot hear.
-    await expect(beat(page, 'map')).toBeVisible({ timeout: 10000 })
+    // Refusing the mic makes every beat except the questions and the Map
+    // inapplicable, and a fresh visitor's plan is due, so one advance lands
+    // on the four questions (words and taps, no take) — the fork is
+    // deliberately never offered to someone we cannot hear.
+    await expect(beat(page, 'questions')).toBeVisible({ timeout: 10000 })
     await expect(beat(page, 'fork')).toHaveCount(0)
   })
 

@@ -18,22 +18,30 @@
 // 928x1152 portrait, and a singer with a dozen takes must not pay for
 // twelve of them on mount.
 //
-// "Make another voiceprint" sits beside "See my map" (owner decision V12,
-// 11 Oct 2026): it opens the Voice Mirror for a fresh take. The one-way-
+// "Make another voiceprint" sits beside the beat's way on (owner decision
+// V12, 11 Oct 2026): it opens the Voice Mirror for a fresh take. The one-way-
 // out rule (V1, V8) is about leaving the flow for nothing; this leaves it
-// for the thing a returning singer may have come back to do.
+// for the thing a returning singer may have come back to do. The way on
+// leads to the four questions while the person's plan is due, so it says
+// "Make my plan" then, and "See my map" once the plan is answered.
 
 import type { Component } from 'solid-js'
 import { createMemo, createResource, createSignal, For, onCleanup, onMount, Show, } from 'solid-js'
 import type { VoiceprintRecord } from '@/db/services/voiceprint-service'
 import { renderVoiceprintCard } from '@/features/mirror/voiceprint-share'
 import { midiToNoteNameOctave } from '@/lib/note-utils'
+import { PRINTS_NEXT_MAP, PRINTS_NEXT_PLAN } from '../copy'
 import styles from '../onboarding.module.css'
 
 export interface BeatPrintsProps {
   /** Newest first — the order `listVoiceprints` returns. */
   records: readonly VoiceprintRecord[]
-  /** On to the Map. */
+  /**
+   * True while the person's plan is due: the way on leads to the four
+   * questions, and its label says so.
+   */
+  planDue?: boolean
+  /** On to the four questions while the plan is due, else the Map. */
   onContinue: () => void
   /** A fresh take, in the Voice Mirror. */
   onAnother: () => void
@@ -184,7 +192,7 @@ export const BeatPrints: Component<BeatPrintsProps> = (props) => {
           class={styles.primary}
           onClick={() => props.onContinue()}
         >
-          See my map
+          {props.planDue === true ? PRINTS_NEXT_PLAN : PRINTS_NEXT_MAP}
         </button>
         <button
           type="button"

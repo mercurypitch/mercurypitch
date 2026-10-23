@@ -6,7 +6,9 @@
 // button: the welcome, the first note and the Fork right after it, and
 // the Map (owner decision V5, 10 Oct 2026). The beats that bring their own
 // pictures (the voiceprint's demos, the twin's portrait, the prints, the
-// account card) keep the plain sky, so two pictures never compete.
+// account card) keep the plain sky, so two pictures never compete. So do the
+// four questions and the plan: the Map's plate has Merc painted into it, and
+// the questions bring Merc themselves, live or his still, above the screens.
 //
 // The art was generated with Codex imagegen on 11 Oct 2026 and ships as
 // webp at full resolution: 1672x941 for wide screens, 941x1672 for tall
@@ -34,6 +36,10 @@ const PLATE_FOR_BEAT: Record<Beat, Plate> = {
   voiceprint: 'plain',
   twin: 'plain',
   keep: 'plain',
+  // Merc is the questions' own (MercPresence), so no plate may paint a
+  // second one. The sky steps back behind their words, as it does behind
+  // Keep and the Map (FirstLight's textHeavy).
+  questions: 'plain',
   map: 'map',
 }
 
@@ -75,15 +81,20 @@ export function plateSrc(plate: Plate, tall: boolean): string {
  * they read the current beat, so the next plate fades in on a picture
  * rather than on an empty frame that fills in a moment later.
  *
- * The Fork's one button leads to the voiceprint (or, for a returning
- * singer, the prints), both on the plain sky; its "Not now" leads to the
- * Map. First light already fetched the Map for its own way out, so the
- * second entry costs nothing there.
+ * First light's "Not now" and a refused microphone, and the Fork's "Not now",
+ * lead past the walk: to the four questions while the person's plan is due,
+ * and to the Map once it is answered or turned down. The questions are on the
+ * plain sky, so both pictures are fetched behind each, the plain one first as
+ * the likelier. The Fork's one button leads to the voiceprint (or, for a
+ * returning singer, the prints), also on the plain sky. The questions lead to
+ * the Map only by "See every room", the one way out of the plan that stays
+ * in the flow.
  */
 const PLATES_AHEAD: Partial<Record<Beat, readonly Plate[]>> = {
   sky: ['first-light'],
-  'first-light': ['map'],
+  'first-light': ['plain', 'map'],
   fork: ['plain', 'map'],
+  questions: ['map'],
 }
 
 export function platesAhead(beat: Beat): readonly Plate[] {

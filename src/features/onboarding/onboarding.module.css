@@ -1790,6 +1790,16 @@
     padding-bottom: 0;
   }
 
+  /* The plan beat (the four questions and the plan, BeatPlan) gives the
+     frame's bottom padding up in the same way, so its box reaches the bottom
+     edge and the screens own the room under their last row, the home
+     indicator's inset included. The beat's host is a direct child of the
+     frame and carries `data-beat="questions"`; it adds no padding or inset
+     of its own (BeatPlan.module.css). */
+  .frame:has(> [data-beat='questions']) {
+    padding-bottom: 0;
+  }
+
   .twinBeat {
     gap: 10px;
   }

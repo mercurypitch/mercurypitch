@@ -12,6 +12,8 @@ const state = (over: Partial<FlowState> = {}): FlowState => ({
   hasVoiceprint: false,
   micDenied: false,
   savedPrints: 0,
+  // A first run: the plan has not been answered.
+  planDue: true,
   ...over,
 })
 
@@ -58,11 +60,26 @@ describe('isBeatApplicable', () => {
     ).toBe(true)
   })
 
-  it('leaves only the Map applicable once the mic is refused', () => {
+  it('leaves only the questions and the Map applicable once the mic is refused', () => {
     const denied = state({ micDenied: true })
     for (const beat of BEAT_ORDER) {
-      expect(isBeatApplicable(beat, denied)).toBe(beat === 'map')
+      expect(isBeatApplicable(beat, denied)).toBe(
+        beat === 'questions' || beat === 'map',
+      )
     }
+  })
+
+  it('asks the questions when the microphone was refused', () => {
+    // The questions are words and taps, never a take: a refused mic hears them.
+    const denied = state({ micDenied: true })
+    expect(isBeatApplicable('questions', denied)).toBe(true)
+    expect(nextBeat('first-light', denied, ALL)).toBe('questions')
+    expect(nextBeat('questions', denied, ALL)).toBe('map')
+  })
+
+  it('asks the questions only while the plan is due', () => {
+    expect(isBeatApplicable('questions', state({ planDue: true }))).toBe(true)
+    expect(isBeatApplicable('questions', state({ planDue: false }))).toBe(false)
   })
 
   it('does not offer the voiceprint fork to someone who refused the mic', () => {
@@ -81,8 +98,32 @@ describe('nextBeat', () => {
     expect(nextBeat('fork', full, ALL)).toBe('voiceprint')
     expect(nextBeat('voiceprint', full, ALL)).toBe('twin')
     expect(nextBeat('twin', full, ALL)).toBe('keep')
-    expect(nextBeat('keep', full, ALL)).toBe('map')
+    expect(nextBeat('keep', full, ALL)).toBe('questions')
+    expect(nextBeat('questions', full, ALL)).toBe('map')
     expect(nextBeat('map', full, ALL)).toBeNull()
+  })
+
+  it('puts the questions after Keep and before the Map', () => {
+    const at = (beat: Beat): number => BEAT_ORDER.indexOf(beat)
+    expect(at('keep')).toBeLessThan(at('questions'))
+    expect(at('questions')).toBe(at('map') - 1)
+    // And a visitor with no account ask meets them straight after the twin.
+    const withoutKeep = new Set(BEAT_ORDER.filter((b) => b !== 'keep'))
+    const full = state({ track: 'full', hasVoiceprint: true })
+    expect(nextBeat('twin', full, withoutKeep)).toBe('questions')
+  })
+
+  it('goes straight to the Map once a plan is answered', () => {
+    const answered = { planDue: false }
+    const full = state({ track: 'full', hasVoiceprint: true, ...answered })
+    expect(nextBeat('keep', full, ALL)).toBe('map')
+    expect(nextBeat('fork', state({ track: 'short', ...answered }), ALL)).toBe(
+      'map',
+    )
+    expect(
+      nextBeat('first-light', state({ micDenied: true, ...answered }), ALL),
+    ).toBe('map')
+    expect(walkedBeats(full, ALL)).not.toContain('questions')
   })
 
   it('always ends on the Map, so the last screen is a way into the app', () => {
@@ -99,16 +140,17 @@ describe('nextBeat', () => {
   it('skips the account ask when it is not renderable, landing on the Map', () => {
     // A visitor who declined last week: 'keep' is withheld by the caller.
     const withoutKeep = new Set(BEAT_ORDER.filter((b) => b !== 'keep'))
-    const full = state({ track: 'full', hasVoiceprint: true })
+    const full = state({ track: 'full', hasVoiceprint: true, planDue: false })
     expect(nextBeat('twin', full, withoutKeep)).toBe('map')
   })
 
   it('sends a returning visitor fork → gallery → map, with no re-measure', () => {
     const gallery = state({ track: 'gallery', savedPrints: 3 })
     expect(nextBeat('fork', gallery, ALL)).toBe('prints')
-    // Straight to the Map: no voiceprint, no twin, and nothing to keep
-    // because nothing new was measured in this run.
-    expect(nextBeat('prints', gallery, ALL)).toBe('map')
+    // Then the questions, then the Map: no voiceprint, no twin, and nothing
+    // to keep because nothing new was measured in this run.
+    expect(nextBeat('prints', gallery, ALL)).toBe('questions')
+    expect(nextBeat('questions', gallery, ALL)).toBe('map')
     expect(nextBeat('map', gallery, ALL)).toBeNull()
   })
 
@@ -120,7 +162,8 @@ describe('nextBeat', () => {
 
   it('skips the fork entirely on the short track', () => {
     const short = state({ track: 'short' })
-    expect(nextBeat('fork', short, ALL)).toBe('map')
+    expect(nextBeat('fork', short, ALL)).toBe('questions')
+    expect(nextBeat('questions', short, ALL)).toBe('map')
     // Nothing measured → no account ask.
     expect(nextBeat('map', short, ALL)).toBeNull()
   })
@@ -137,12 +180,14 @@ describe('nextBeat', () => {
     expect(nextBeat('map', full, PHASE_1)).toBeNull()
   })
 
-  it('routes a refused mic straight to the Map from wherever it happened', () => {
+  it('routes a refused mic to the questions and the Map from wherever it happened', () => {
     const denied = state({ micDenied: true })
-    // Denied at the mic ask.
-    expect(nextBeat('first-light', denied, ALL)).toBe('map')
+    // Denied at the mic ask: the questions need no microphone, so they come
+    // first, and the Map after them.
+    expect(nextBeat('first-light', denied, ALL)).toBe('questions')
     // Denied mid-voiceprint (device unplugged).
-    expect(nextBeat('voiceprint', denied, ALL)).toBe('map')
+    expect(nextBeat('voiceprint', denied, ALL)).toBe('questions')
+    expect(nextBeat('questions', denied, ALL)).toBe('map')
     // And the Map is still the end of the line.
     expect(nextBeat('map', denied, ALL)).toBeNull()
   })
@@ -183,7 +228,10 @@ describe('walkedBeats', () => {
     for (const beat of walkedBeats(short, ALL)) {
       expect(walkedBeats(short, ALL)).toContain(beat)
     }
-    expect(walkedBeats(state({ micDenied: true }), ALL)).toEqual(['map'])
+    expect(walkedBeats(state({ micDenied: true }), ALL)).toEqual([
+      'questions',
+      'map',
+    ])
   })
 
   it('agrees with beatProgress about where the end is', () => {
@@ -208,12 +256,14 @@ describe('beatProgress', () => {
     expect(beatProgress('map', short, ALL)).toBe(1)
   })
 
-  it('paces the full track across all seven beats', () => {
+  it('paces the full track across every beat it walks', () => {
     const full = state({ track: 'full', hasVoiceprint: true })
     expect(beatProgress('sky', full, ALL)).toBe(0)
-    expect(beatProgress('fork', full, ALL)).toBeCloseTo(2 / 6)
-    // The Map is last, so the account ask is not yet the end of the bar.
-    expect(beatProgress('keep', full, ALL)).toBeCloseTo(5 / 6)
+    expect(beatProgress('fork', full, ALL)).toBeCloseTo(2 / 7)
+    // The Map is last, so neither the account ask nor the questions are the
+    // end of the bar.
+    expect(beatProgress('keep', full, ALL)).toBeCloseTo(5 / 7)
+    expect(beatProgress('questions', full, ALL)).toBeCloseTo(6 / 7)
     expect(beatProgress('map', full, ALL)).toBe(1)
   })
 })

@@ -6,7 +6,7 @@
 import { describe, expect, it } from 'vitest'
 import { BEAT_ORDER } from '@/features/onboarding/flow'
 import type { MirrorResult } from '@/lib/mirror/metrics'
-import { chooseTrack, currentBeat, firstNote, markMicDenied, micDenied, recordFirstNote, recordVoiceprint, setBeatsAvailable, startOnboarding, track, voiceStrip, } from '@/stores/onboarding-store'
+import { advanceBeat, chooseTrack, currentBeat, firstNote, markMicDenied, micDenied, onboardingBeads, openBeat, recordFirstNote, recordVoiceprint, resetOnboarding, setBeatsAvailable, setPlanDue, startOnboarding, track, voiceStrip, } from '@/stores/onboarding-store'
 
 describe('onboarding replay', () => {
   it('startOnboarding clears mic denial, track and first note', () => {
@@ -46,5 +46,70 @@ describe('the voiceprint and its glide line', () => {
     recordVoiceprint(null, [45, 57, 69])
 
     expect(voiceStrip()).toBeNull()
+  })
+})
+
+describe('the questions in the walk', () => {
+  const RESULT: MirrorResult = { range: null, accuracy: null, steadiness: null }
+
+  it('walks past the questions until First Light says the plan is due', () => {
+    // Arrange: a fresh store has not been told anything about the plan.
+    resetOnboarding()
+    setBeatsAvailable(BEAT_ORDER)
+    chooseTrack('short')
+    openBeat('fork')
+
+    // Act
+    advanceBeat()
+
+    // Assert
+    expect(currentBeat()).toBe('map')
+  })
+
+  it('lands on the questions after Keep while the plan is due, and on the Map once it is not', () => {
+    // Arrange
+    resetOnboarding()
+    setBeatsAvailable(BEAT_ORDER)
+    chooseTrack('full')
+    recordVoiceprint(RESULT)
+    setPlanDue(true)
+    openBeat('keep')
+
+    // Act
+    advanceBeat()
+
+    // Assert
+    expect(currentBeat()).toBe('questions')
+
+    // Act: the same walk for somebody whose plan is answered.
+    setPlanDue(false)
+    openBeat('keep')
+    advanceBeat()
+
+    // Assert
+    expect(currentBeat()).toBe('map')
+  })
+
+  it('draws a bead for the questions while the plan is due', () => {
+    resetOnboarding()
+    setBeatsAvailable(BEAT_ORDER)
+    chooseTrack('short')
+    const without = onboardingBeads().count
+
+    setPlanDue(true)
+
+    expect(onboardingBeads().count).toBe(without + 1)
+  })
+
+  it('forgets that the plan is due when the flow is reset', () => {
+    setBeatsAvailable(BEAT_ORDER)
+    setPlanDue(true)
+
+    resetOnboarding()
+
+    chooseTrack('short')
+    openBeat('fork')
+    advanceBeat()
+    expect(currentBeat()).toBe('map')
   })
 })
