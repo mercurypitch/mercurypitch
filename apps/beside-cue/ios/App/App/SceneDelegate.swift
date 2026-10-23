@@ -5,7 +5,12 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate {
     var window: UIWindow?
 
     func scene(_ scene: UIScene, willConnectTo session: UISceneSession, options connectionOptions: UIScene.ConnectionOptions) {
-        guard let windowScene = scene as? UIWindowScene else { return }
+        // The app's own window only. AppDelegate hands this class to the
+        // application role alone; the guard keeps a second bridge off a TV
+        // even if anything else ever hands it an external display, which
+        // iOS would then mirror (AppDelegate.swift says why).
+        guard session.role == .windowApplication,
+              let windowScene = scene as? UIWindowScene else { return }
 
         window = UIWindow(windowScene: windowScene)
         window?.rootViewController = GameDiagnostics.enabled
