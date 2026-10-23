@@ -81,7 +81,9 @@ function assetLayer() {
       pathname = spelling[1]
     }
     if (pathname === '/learn/index.html') {
-      // The hub's document, which html_handling redirects to its address.
+      // The hub's document, which html_handling redirects to its address in
+      // one step: miniflare's asset worker, Cloudflare's own asset code,
+      // answers /learn/index.html with a 307 to /learn/, not to /learn.
       if (request.redirect === 'manual')
         return new Response(null, {
           status: 307,
@@ -1216,7 +1218,7 @@ describe('reading the state', () => {
 describe('the wrangler config', () => {
   interface Wrangler {
     vars?: Record<string, string>
-    assets: { run_worker_first: string[] }
+    assets: { run_worker_first: string[]; html_handling?: string }
     env: Record<string, { vars?: Record<string, string> }>
   }
   // JSONC: strings kept whole, comments and trailing commas dropped.
@@ -1235,18 +1237,15 @@ describe('the wrangler config', () => {
     )
   })
 
-  it('runs the worker first for the hub at its address and as its document, but not for /learn, which the asset layer redirects', () => {
-    // A rule as wrangler's router reads it: `*` is any run of characters.
-    const literal = (part: string): string =>
-      part.replace(/[.*+?^${}()|[\]\\/-]/g, '\\$&')
-    const covered = (path: string): boolean =>
-      config.assets.run_worker_first.some((rule) =>
-        new RegExp(`^${rule.split('*').map(literal).join('.*')}$`).test(path),
-      )
-
-    expect(covered('/learn/')).toBe(true)
-    expect(covered('/learn/index.html')).toBe(true)
-    expect(covered('/learn')).toBe(false)
+  it('serves the hub as the gate expects: the worker first under /learn/, and the asset layer redirecting /learn there', () => {
+    // A run_worker_first rule's `*` is any run of characters, so '/learn/*'
+    // takes in the hub at /learn/ and as /learn/index.html. The asset
+    // layer's default html_handling, auto-trailing-slash, answers /learn and
+    // the document's own address with a 307 to /learn/, as the stand-in does.
+    expect(config.assets.run_worker_first).toContain('/learn/*')
+    expect([undefined, 'auto-trailing-slash']).toContain(
+      config.assets.html_handling,
+    )
   })
 
   it("sets each environment's default for drafts: held back on mercurypitch.com, shown on dev, previews and a local run", () => {
