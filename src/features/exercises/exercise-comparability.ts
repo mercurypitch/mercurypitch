@@ -17,13 +17,15 @@
 // trend across two different rulers.
 
 import type { ExerciseType } from './types'
-import { EXERCISE_INTERVAL_TRAINER } from './types'
+import { EXERCISE_INTERVAL_TRAINER, EXERCISE_SIREN } from './types'
 
 /** Bump when a drill's SCORING changes meaning — never for UI changes. */
 const SCORING_VERSION: Partial<Record<ExerciseType, number>> = {
   // Redesigned 2026-08 to per-note slots; the old whole-window average
   // scored a correct performance ~0. Those scores share no ruler.
   [EXERCISE_INTERVAL_TRAINER]: 2,
+  // Rescored 2026-10: its 30 % part now scores the glide, which a smooth glide never earned.
+  [EXERCISE_SIREN]: 2,
 }
 
 /**

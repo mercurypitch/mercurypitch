@@ -10,7 +10,7 @@
 
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { exerciseComparabilityKey } from '@/features/exercises/exercise-comparability'
-import { EXERCISE_INTERVAL_TRAINER, EXERCISE_LONG_NOTE, EXERCISE_PITCH_HOLD, } from '@/features/exercises/types'
+import { EXERCISE_INTERVAL_TRAINER, EXERCISE_LONG_NOTE, EXERCISE_PITCH_HOLD, EXERCISE_SIREN, } from '@/features/exercises/types'
 
 const saveSessionRecord = vi.fn(async (..._args: unknown[]) => null)
 
@@ -51,6 +51,10 @@ describe('exerciseComparabilityKey', () => {
     // performance ~0; scores across that redesign share no ruler.
     expect(exerciseComparabilityKey(EXERCISE_INTERVAL_TRAINER)).toBe(
       'voice:exercise:interval-trainer:v2',
+    )
+    // The Siren's 30 % part scored jumps until it scored the glide itself.
+    expect(exerciseComparabilityKey(EXERCISE_SIREN)).toBe(
+      'voice:exercise:siren:v2',
     )
   })
 })
