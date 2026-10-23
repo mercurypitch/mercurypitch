@@ -105,7 +105,7 @@
   color: var(--on-light);
 }
 /* the learner's own pick, when it missed: never dimmed, its cross in a
-   filled disc, so it reads as theirs beside the right answer (G-01) */
+   filled disc, so it reads as theirs beside the right answer */
 .opt.wrong {
   border-color: var(--ink-3);
   color: var(--ink);

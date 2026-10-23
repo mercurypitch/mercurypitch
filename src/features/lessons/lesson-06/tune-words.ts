@@ -6,9 +6,11 @@
 // pure (WEB-SPEC, Toys 1, Keyboard and screen readers): the names under the
 // beads (letters spelled as Lesson 4 spells the key, or do-re-mi), each
 // gap's size and word, the live summary, each bead's and gap's button, the
-// slider's value and the readout. Whatever is printed keeps its sign;
-// whatever is spoken (an accessible name, a live line) uses words, "B flat
-// 4", never the sign (Contract).
+// slider's value and the readout. Whatever is printed keeps its sign; a
+// note that is spoken (in an accessible name, a live line) is in words, "B
+// flat 4", never the sign (Contract). A gap's button starts with what the
+// gap draws, its size with any minus sign ("−2, step: gap 6, down 2
+// semitones"), so a voice control user can say what they see.
 
 import type { Spelled } from '@/features/lessons/kit/notes'
 import { nameHtml, signName, wordName } from '@/features/lessons/kit/notes'

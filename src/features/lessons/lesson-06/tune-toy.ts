@@ -6,10 +6,11 @@
 // Toys 1): the contour on C; both lines with their gaps numbered; the slide
 // with the names switch; Swap sizes; the named intervals; and free play,
 // every control on one stage. Over the drawing sit real buttons: every bead
-// plays its note ("Note 3 of 7, F 5, twin"), every gap its two ("Gap 2: up 7
-// semitones, a leap"), every bracket its interval. They follow the controls
-// in reading order: Play, Slow, the slider and its buttons, the toggles and
-// the names switch, then the beads and gaps, line 1 before line 2.
+// plays its note ("Note 3 of 7, F 5, twin"), every gap its two ("7, leap:
+// gap 2, up 7 semitones"), every bracket its interval. They follow the
+// controls in reading order: Play, Slow, the slider and its buttons, the
+// toggles and the names switch, then the beads and gaps, line 1 before
+// line 2.
 //
 // The start is a slider (C4 to B4, arrow keys a semitone, Home and End to
 // C4 and B4) between Start lower and Start higher, or, with a mouse or pen,

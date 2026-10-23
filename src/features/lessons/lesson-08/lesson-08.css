@@ -83,7 +83,7 @@
   height: 28px;
 }
 /* Under 360 px the strip gives the metronome's column to the beats: beside
-   it a cell came to 21 px at 320 px and cut "Twin" and "won" (L8-07) */
+   it a cell came to 21 px at 320 px and cut "Twin" and "won" */
 @media (max-width: 359px) {
   .hero-strip .strip.with-metro {
     --metro-col: 0px;

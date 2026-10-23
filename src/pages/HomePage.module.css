@@ -7,8 +7,8 @@
   flex-shrink: 0;
 }
 
-/* Greeting left, the doors right: Learn and What's new explain the app,
-   Lessons leaves it for the Find Your Pitch lessons. They wrap under the
+/* Greeting left, the doors right: Lessons leaves the app for the Find Your
+   Pitch lessons, and What's new says what changed in it. They wrap under the
    greeting on a narrow phone rather than squeezing it — a date and a name
    are the point of this row, the buttons are the guests. */
 .head {

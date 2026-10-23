@@ -20,10 +20,10 @@
 // "?" beads light once heard on that copy, and on no other). Inside the
 // root: the canvas, and optionally the `[data-spiral-hint]` line, the
 // `[data-spiral-readout]` value, the `[data-spiral-drift]`,
-// `[data-spiral-turn]` (-1 or 1) and `[data-spiral-unroll]` buttons, the `[data-spiral-pan]` box (its
-// `[data-pan]` buttons and `[data-pan-window]` label) and `[data-key]`
-// buttons that play a note. Every name follows the page's sharps-or-flats
-// choice (names.ts).
+// `[data-spiral-turn]` (-1 or 1) and `[data-spiral-unroll]` buttons, the
+// `[data-spiral-pan]` box (its `[data-pan]` buttons and `[data-pan-window]`
+// label) and `[data-key]` buttons that play a note. Every name follows the
+// page's sharps-or-flats choice (names.ts).
 //
 // A page can take the figure further without forking it: look straight down
 // the axis (`setView('top')`), keep the selection inside the notes it shows
