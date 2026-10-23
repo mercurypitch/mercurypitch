@@ -3,24 +3,23 @@
 // ============================================================
 //
 // WEB-SPEC's end-to-end checks 3, 4 and 9 and its page QA (Contract), with
-// reduced motion emulated so every move lands at once and a key press
-// meets the state it changed: Tab enters Step 2's line once, a grid whose
-// arrows, Home and End reach every bead and gap, each named in spoken
-// names, and Tab comes back to the button last focused; the start slider
-// moves by keys alone and the words follow it; the names switch and Swap
-// sizes toggle and say so; Step 4's predict
-// waits for both versions, and holds Swap sizes, the mix-up card, the Try
-// and the Notice until then; Step 5's brackets and anchor board play; the
-// two games answer by keys, and Space replays only off a button. At 390 x
-// 844, 375 and 360 px wide, every step's stage fits with every target at
-// least 44 px square and none overlapping, free play at every start from
-// C4 to B4; at 390 and 360 px the hero's compact line, which has no
-// buttons, draws all seven notes from C and from F sharp, and the cold
-// open's sharp sign stays beside its F, in Play from F sharp and in every
-// lock hint; at 1024 x 640
-// the stage fits the screen under the masthead. Two real-mouse drags of
-// the line close it: a drag slides the start and must not land as a tap,
-// and a drag let go off the line leaves Enter and Space pressing a bead.
+// reduced motion emulated so every move lands at once and a key press meets
+// the state it changed: Tab enters Step 2's line once, a grid whose arrows,
+// Home and End reach every bead and gap, each named in spoken names, and Tab
+// comes back to the button last focused; the start slider moves by keys
+// alone and the words follow it; the names switch and Swap sizes toggle and
+// say so; Step 4's predict waits for both versions, and holds Swap sizes,
+// the mix-up card, the Try and the Notice until then; Step 5's brackets and
+// anchor board play; the two games answer by keys, and Space replays only
+// off a button. At 390 x 844, 375 and 360 px wide, every step's stage fits
+// with every target at least 44 px square and none overlapping, free play at
+// every start from C4 to B4; at 390 and 360 px the hero's compact line,
+// which has no buttons, draws all seven notes from C and from F sharp, and
+// the cold open's sharp sign stays beside its F, in Play from F sharp and in
+// every lock hint; at 1024 x 640 the stage fits the screen under the
+// masthead. Two real-mouse drags of the line close it: a drag slides the
+// start and must not land as a tap, and a drag let go off the line leaves
+// Enter and Space pressing a bead.
 
 import type { Locator, Page } from '@playwright/test'
 import { expect, test } from '@playwright/test'
