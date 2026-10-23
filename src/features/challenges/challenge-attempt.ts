@@ -20,6 +20,7 @@ import { loadChallengeProgress, saveChallengeProgress, } from '@/db/services/cha
 import { saveSessionRecord } from '@/db/services/session-service'
 import { getUserId } from '@/db/services/user-service'
 import { fingerprintOf } from '@/features/community/share-identity'
+import { exerciseScoringVersion } from '@/features/exercises/exercise-comparability'
 import { noteTallyFromMetrics } from '@/features/exercises/exercise-note-tally'
 import { lastRunTrace } from '@/features/exercises/last-run-trace'
 import type { ExerciseType } from '@/features/exercises/types'
@@ -52,11 +53,15 @@ export function challengeAttemptComparabilityKey(
   if (target.targetNotes === undefined || target.targetNotes.length === 0) {
     return undefined
   }
+  // A drill rescored since its challenges began threads anew, and a drill
+  // still on its first scoring keeps the key its attempts always had.
+  const scoring = exerciseScoringVersion(target.exercise)
   const signature = fingerprintOf(
     JSON.stringify({
       exercise: target.exercise,
       notes: target.targetNotes,
       difficulty: target.difficulty ?? null,
+      ...(scoring > 1 ? { scoring } : {}),
     }),
   )
   return `voice:challenge:${target.challengeId}:v${CHALLENGE_ATTEMPT_SOURCE_VERSION}:${signature}`

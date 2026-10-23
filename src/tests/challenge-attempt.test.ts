@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { challengeAttemptComparabilityKey, computeAttemptOutcome, } from '@/features/challenges/challenge-attempt'
+import { fingerprintOf } from '@/features/community/share-identity'
 
 describe('computeAttemptOutcome', () => {
   it('first attempt below target stays active', () => {
@@ -89,16 +90,22 @@ describe('computeAttemptOutcome', () => {
 })
 
 describe('challenge attempt comparability', () => {
+  const target = {
+    challengeId: 'c1',
+    title: 'Hold steady',
+    category: 'basics',
+    exercise: 'long-note' as const,
+    targetScore: 80,
+    difficulty: 3,
+    targetNotes: ['C4'],
+  }
+  /** The key as it was before the scoring version joined it. */
+  const firstScoringKey = (exercise: string) =>
+    `voice:challenge:c1:v1:${fingerprintOf(
+      JSON.stringify({ exercise, notes: ['C4'], difficulty: 3 }),
+    )}`
+
   it('changes when the scored task changes and stays absent without the task', () => {
-    const target = {
-      challengeId: 'c1',
-      title: 'Hold steady',
-      category: 'basics',
-      exercise: 'long-note' as const,
-      targetScore: 80,
-      difficulty: 3,
-      targetNotes: ['C4'],
-    }
     expect(challengeAttemptComparabilityKey(target)).toBe(
       challengeAttemptComparabilityKey({ ...target }),
     )
@@ -111,5 +118,18 @@ describe('challenge attempt comparability', () => {
         targetNotes: undefined,
       }),
     ).toBeUndefined()
+  })
+
+  it('keeps the key a drill still on its first scoring always had', () => {
+    expect(challengeAttemptComparabilityKey(target)).toBe(
+      firstScoringKey('long-note'),
+    )
+  })
+
+  it("threads a rescored drill's attempts apart from its old scoring's", () => {
+    // The Siren is on its second scoring (exercise-comparability.ts).
+    expect(
+      challengeAttemptComparabilityKey({ ...target, exercise: 'siren' }),
+    ).not.toBe(firstScoringKey('siren'))
   })
 })
