@@ -498,7 +498,7 @@ breathing ring (`mountRing`, `src/features/lessons/kit/sing.ts:132`) shows the s
 singing, Merc for the lower voice and Tavi for the higher, never a microphone icon. Every state
 has a visible status line that is also announced (`aria-live="polite"`). Lesson 3's rule for leaving
 holds, for what plays here: if the section stays off screen for 600 ms, or the page is hidden,
-whatever is playing stops (`src/features/lessons/lesson-03/sing.ts:366-382`).
+whatever is playing stops (`src/features/lessons/lesson-03/sing.ts:374-396`).
 
 States:
 

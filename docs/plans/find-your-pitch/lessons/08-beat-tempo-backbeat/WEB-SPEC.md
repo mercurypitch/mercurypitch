@@ -515,7 +515,7 @@ DECISIONS 82).
 Two parts on one card, each with a visible status line that is also announced (`role="status"`):
 first the backbeat, tapped, with no voice; then the line, sung, with Lesson 3's comfort check
 before it. Lesson 3's rule for leaving holds for both: if the card stays off screen for 600 ms, or
-the page is hidden, whatever is playing stops (`lesson-03/sing.ts:366-382`).
+the page is hidden, whatever is playing stops (`lesson-03/sing.ts:374-396`).
 
 **Part 1: the tap take.** The card holds Play the groove, Start, the pad (Toys 5), the take strip
 (the compact beat machine cut to one bar of four, with 2 and 4 marked) and the line.

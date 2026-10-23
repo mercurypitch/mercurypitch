@@ -322,11 +322,12 @@ export function initSing(stills: RingStills): void {
       focusText(q('[data-listen-why="nomic"]', card))
       return
     }
-    // the tab hidden while the listener loaded: its visibilitychange came
-    // before the microphone did, so let it go here, and end the take
-    // unstarted, as one abandoned before any voice is ended
-    if (document.hidden) {
-      leave(true)
+    // the tab hidden, or the section left, while the listener loaded: that
+    // leave came before the microphone did, so let it go here as the leave
+    // does, and end the take unstarted, as an abandoned one with no voice
+    const hidden = document.hidden
+    if (hidden || left) {
+      leave(hidden)
       recordTake({ reading: null, voiced: false })
       return
     }
@@ -461,12 +462,18 @@ export function initSing(stills: RingStills): void {
     mic.release(now)
   }
   // leaving is staying away: a panel that grows or shrinks can take the
-  // section off screen for a moment, and that must not stop a take
+  // section off screen for a moment, and that must not stop a take; once
+  // away, `left` holds until the section is back, for a take still opening
   let away = 0
+  let left = false
   new IntersectionObserver((entries) => {
     window.clearTimeout(away)
     if (entries.some((e) => !e.isIntersecting))
-      away = window.setTimeout(() => leave(false), 600)
+      away = window.setTimeout(() => {
+        left = true
+        leave(false)
+      }, 600)
+    else left = false
   }).observe(q('#sing'))
   document.addEventListener('visibilitychange', () => {
     if (document.hidden) leave(true)

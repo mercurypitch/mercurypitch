@@ -11,12 +11,13 @@
 // reads as its one note, "Easy" offers Again once, and after a second take
 // it is gone; "Uncomfortable" takes the band away; a tab hidden while the
 // microphone opens starts no take, lets it go, and counts it, the third
-// leaving Done for today; and storage holds nothing but `fyp-voice` and
-// `fyp-l07-warmup`. The listener is a double: its takes are synthetic
-// frames, read by the real siren reader.
+// leaving Done for today, and the section scrolled away starts none either;
+// and storage holds nothing but `fyp-voice` and `fyp-l07-warmup`. The
+// listener is a double: its takes are synthetic frames, read by the real
+// siren reader.
 
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import '@/features/lessons/kit/browser-doubles.test-fixtures'
+import { scrollOutOfView } from '@/features/lessons/kit/browser-doubles.test-fixtures'
 import type * as ListenModule from '@/features/lessons/kit/listen'
 import type { F0Frame } from '@/lib/mirror/metrics'
 import { DEFAULT_HOP_SEC } from '@/lib/mirror/metrics'
@@ -36,8 +37,9 @@ const takes = vi.hoisted(() => ({
   next: [] as F0Frame[],
   /** Runs as the page asks for the microphone, before the listener resolves. */
   opening: null as (() => void) | null,
-  /** Takes opened, and the times the microphone was let go at once. */
+  /** Takes opened, and the times the microphone was let go: after its linger, or at once. */
   opened: 0,
+  released: 0,
   releasedNow: 0,
 }))
 
@@ -50,7 +52,9 @@ vi.mock('@/features/lessons/kit/listen', async (importOriginal) => {
       return Promise.resolve({
         holding: true,
         latest: () => null,
-        release: () => undefined,
+        release: () => {
+          takes.released += 1
+        },
         releaseNow: () => {
           takes.releasedNow += 1
         },
@@ -81,6 +85,7 @@ async function load() {
 type Page = Awaited<ReturnType<typeof load>>
 
 const shown = (p: Page, selector: string): boolean => !p.el(selector).hidden
+
 /** Shown on the card: neither it nor any box around it hidden. */
 function onCard(p: Page, selector: string): boolean {
   for (let el: HTMLElement | null = p.el(selector); el; el = el.parentElement)
@@ -113,11 +118,20 @@ function hideTab(): void {
   document.dispatchEvent(new Event('visibilitychange'))
 }
 
+/** The section scrolled away as the microphone opens, and kept away past the page's 600 ms. */
+function leaveSection(): void {
+  const section = document.querySelector('#sing')
+  if (section === null) throw new Error('no #sing')
+  scrollOutOfView(section)
+  vi.advanceTimersByTime(600)
+}
+
 beforeEach(() => {
   localStorage.clear()
   webAudio(true)
   takes.opening = null
   takes.opened = 0
+  takes.released = 0
   takes.releasedNow = 0
 })
 
@@ -412,6 +426,26 @@ describe("Lesson 7's Sing it: the takes", () => {
     // Assert
     expect(takes.opened).toBe(0)
     expect(takes.releasedNow).toBe(1)
+    expect(status(p)).toBe('Stopped listening: the microphone is off.')
+    expect(shown(p, '[data-panel="prepare"]')).toBe(true)
+    expect(shown(p, '[data-sing="start"]')).toBe(true)
+  })
+
+  it('starts no take when the section is scrolled away while the microphone opens, lets it go, and offers Start again', async () => {
+    // Arrange
+    vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] })
+    const p = await load()
+    p.el('[data-comfort="sing"]').click()
+    p.el('[data-panel="voice"] [data-voice="lower"]').click()
+    await playMerc(p)
+    takes.opening = leaveSection
+
+    // Act: Start, and the section away for good before the listener resolves
+    await sing(p, p.el('[data-sing="start"]'), steady(57, 3))
+
+    // Assert: let go as leaving the section lets go, after the linger
+    expect(takes.opened).toBe(0)
+    expect([takes.released, takes.releasedNow]).toEqual([1, 0])
     expect(status(p)).toBe('Stopped listening: the microphone is off.')
     expect(shown(p, '[data-panel="prepare"]')).toBe(true)
     expect(shown(p, '[data-sing="start"]')).toBe(true)

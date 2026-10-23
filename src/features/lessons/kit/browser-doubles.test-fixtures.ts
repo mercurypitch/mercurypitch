@@ -8,8 +8,9 @@
 // './browser-doubles.test-fixtures'`), and the import sort puts a bare
 // import ahead of every relative one, so the doubles are in place before
 // any kit module runs. Reduced motion is on, so nothing animates and every
-// change lands at once; the observer never reports, so no drawer is ever
-// active; the context takes every call and draws nothing.
+// change lands at once; the observer reports only when a test scrolls an
+// element out of view (`scrollOutOfView`), so no drawer is ever active; the
+// context takes every call and draws nothing.
 
 import { vi } from 'vitest'
 
@@ -26,13 +27,40 @@ function mediaQuery(query: string): MediaQueryList {
   }
 }
 
+/**
+ * Each element's observers, as a test may report it out of view to them:
+ * one map on the global, as a page's modules loaded afresh (`vi.resetModules`)
+ * load this module afresh too, and its observers are the fresh copy's.
+ */
+const WATCHERS = Symbol.for('lessons.browser-doubles.watchers')
+const shared = globalThis as { [WATCHERS]?: WeakMap<Element, QuietObserver[]> }
+const watchers = (shared[WATCHERS] ??= new WeakMap())
+
 class QuietObserver {
-  observe(): void {}
+  private readonly report: IntersectionObserverCallback
+  constructor(report: IntersectionObserverCallback) {
+    this.report = report
+  }
+  observe(target: Element): void {
+    watchers.set(target, [...(watchers.get(target) ?? []), this])
+  }
   unobserve(): void {}
   disconnect(): void {}
   takeRecords(): IntersectionObserverEntry[] {
     return []
   }
+  out(target: Element): void {
+    const entry = { target, isIntersecting: false, intersectionRatio: 0 }
+    this.report(
+      [entry as IntersectionObserverEntry],
+      this as unknown as IntersectionObserver,
+    )
+  }
+}
+
+/** `target` off screen, as scrolling it out of view reports to whatever observes it. */
+export function scrollOutOfView(target: Element): void {
+  for (const o of watchers.get(target) ?? []) o.out(target)
 }
 
 /** The few context calls whose result a caller reads; every other call returns nothing. */
