@@ -185,10 +185,10 @@ These are the rules that break things when ignored.
 | [playback-runtime.ts](../../src/lib/playback-runtime.ts) | 700 | PlaybackRuntime - Unified playback orchestrator Manages audio timing and syncs with PianoRollEditor |
 | [practice-engine.ts](../../src/lib/practice-engine.ts) | 700 | Practice Engine — Mic, pitch detection, accuracy scoring |
 | [useWhisperTranscription.ts](../../src/lib/useWhisperTranscription.ts) | 700 | Shared Whisper transcription controller hook. |
-| [consent.ts](../../src/lib/consent.ts) | 650 | Cookie consent + Google Consent Mode v2 (Google Ads + GA4). |
 | [sw-runtime.ts](../../src/lib/sw-runtime.ts) | 650 | sw-runtime — every caching rule src/sw.ts follows src/sw.ts is the worker: it owns the globals (`self`, `clients`, `skipWaiting`, `__WB_M... |
 | [effect-renderer.ts](../../src/lib/effect-renderer.ts) | 600 | Shared Effect Renderer Pure canvas drawing functions for slide, ease, and vibrato effects. |
 | [preview-player.ts](../../src/lib/preview-player.ts) | 600 | Preview player — pop-free HTMLAudioElement playback HOW TO NOT POP, the house rules (see .claude/memory/ audio-pop-free-playback.md): A b... |
+| [consent.ts](../../src/lib/consent.ts) | 550 | Cookie consent + Google Consent Mode v2 (Google Ads + GA4). |
 | [demo-audio.ts](../../src/lib/demo-audio.ts) | 550 | Audible guided demos (glass plan §17.4, decision 18). |
 | [device-tier.ts](../../src/lib/device-tier.ts) | 550 | Device tier — one answer to "how much frame budget does this machine have?" TV browsers (Google TV / Android TV, Tizen, webOS, Fire TV) a... |
 | [mic-manager.ts](../../src/lib/mic-manager.ts) | 550 | ── MicManager Single, reference-counted owner of the capture microphone for the app's analysis features (pitch detection, scoring, live v... |

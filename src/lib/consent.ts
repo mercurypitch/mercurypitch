@@ -27,6 +27,7 @@
 
 import { createSignal } from 'solid-js'
 import { CONSENT_PREVIEW, GA4_MEASUREMENT_ID, GOOGLE_ADS_TAG_ID, IS_TEST, } from '@/lib/defaults'
+import { isRestrictedTimezone, RESTRICTED_COUNTRIES, } from '@/lib/consent-regions'
 import { ga4TrafficParams } from '@/lib/internal-traffic'
 
 export type ConsentStatus = 'granted' | 'denied'
@@ -45,109 +46,9 @@ interface StoredConsent {
 
 const STORAGE_KEY = 'mp.consent.v1'
 
-// EEA + UK + Switzerland — where prior opt-in consent is required. Passed to
-// the Consent Mode `region` default (ISO 3166-1 alpha-2), so Google applies
-// the denied-by-default state by the visitor's actual IP location.
-const RESTRICTED_COUNTRIES = [
-  // EU-27
-  'AT',
-  'BE',
-  'BG',
-  'HR',
-  'CY',
-  'CZ',
-  'DK',
-  'EE',
-  'FI',
-  'FR',
-  'DE',
-  'GR',
-  'HU',
-  'IE',
-  'IT',
-  'LV',
-  'LT',
-  'LU',
-  'MT',
-  'NL',
-  'PL',
-  'PT',
-  'RO',
-  'SK',
-  'SI',
-  'ES',
-  'SE',
-  // EEA (non-EU)
-  'IS',
-  'LI',
-  'NO',
-  // UK + Switzerland
-  'GB',
-  'CH',
-  // EU territory with its own ISO code, so an IP there never reads as FI
-  // or FR: Åland, and the French outermost regions.
-  'AX',
-  'GF',
-  'GP',
-  'MF',
-  'MQ',
-  'RE',
-  'YT',
-]
-
-// European timezones that are NOT in scope (used only to avoid showing the
-// banner to visitors whose clock says Europe/* but who are outside the EEA).
-const NON_EEA_EUROPE_TZ = new Set([
-  'Europe/Moscow',
-  'Europe/Kaliningrad',
-  'Europe/Simferopol',
-  'Europe/Volgograd',
-  'Europe/Kirov',
-  'Europe/Samara',
-  'Europe/Saratov',
-  'Europe/Ulyanovsk',
-  'Europe/Astrakhan',
-  'Europe/Istanbul',
-  'Europe/Minsk',
-])
-
-// EEA time zones outside Europe/*: Iceland, Cyprus, the Canaries, Ceuta,
-// Madeira, the Azores and the French outermost regions. Each of these once
-// fell through to a silent grant.
-const EEA_TZ_OUTSIDE_EUROPE = new Set([
-  'Atlantic/Reykjavik',
-  'Asia/Nicosia',
-  'Asia/Famagusta',
-  'Atlantic/Canary',
-  'Africa/Ceuta',
-  'Atlantic/Madeira',
-  'Atlantic/Azores',
-  'America/Cayenne',
-  'America/Guadeloupe',
-  'America/Marigot',
-  'America/Martinique',
-  'Indian/Reunion',
-  'Indian/Mayotte',
-])
-
-// A clock that says nothing about where it is: UTC, as privacy-hardened
-// browsers and many Linux desktops report it. Treated like an unknown zone.
-const PLACELESS_TZ = new Set([
-  'UTC',
-  'Etc/UTC',
-  'Etc/UCT',
-  'UCT',
-  'GMT',
-  'Etc/GMT',
-  'Etc/GMT0',
-  'Etc/GMT+0',
-  'Etc/GMT-0',
-  'Etc/Greenwich',
-  'Etc/Universal',
-  'Etc/Zulu',
-  'Universal',
-  'Zulu',
-])
+// The region lists and the clock test live in consent-regions.ts; the clock
+// test is re-exported for this module's importers and tests.
+export { isRestrictedTimezone }
 
 /**
  * Public conversion `send_to` targets (client-side IDs, NOT secrets) — sourced
@@ -288,14 +189,6 @@ function forgetStored(): void {
 }
 
 // ── region detection (banner display only) ────────────────────
-
-/** Pure: is this IANA timezone inside the EEA / UK / CH banner scope? */
-export function isRestrictedTimezone(tz: string): boolean {
-  // Unknown, or a clock that names no place → be cautious and ask.
-  if (tz === '' || PLACELESS_TZ.has(tz)) return true
-  if (EEA_TZ_OUTSIDE_EUROPE.has(tz)) return true
-  return tz.startsWith('Europe/') && !NON_EEA_EUROPE_TZ.has(tz)
-}
 
 function currentTimezone(): string {
   try {
