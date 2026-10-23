@@ -157,10 +157,12 @@ export function initSing(stills: RingStills): void {
     const o = offers(visit)
     show(panelsNow(o))
     const listening = visit.mode === 'listen' || visit.mode === 'nomic'
+    // the visit's takes spent, the last abandoned: no Start, and Done for today alone
+    const spent = phase === 'idle' && o.done
     liveEl.hidden =
       visit.mode === null ||
       VoiceChoice.voice === null ||
-      (visit.mode === 'sing' && phase === 'idle' && !o.start)
+      (visit.mode === 'sing' && phase === 'idle' && !o.start && !spent)
     for (const el of qa('[data-voice-line]', card))
       el.hidden = el.dataset.voiceLine !== (storedVoice ? 'stored' : 'none')
     for (const el of qa('[data-listen-why]', card))
@@ -179,7 +181,7 @@ export function initSing(stills: RingStills): void {
       phase !== 'read' || (!o.keepBand && o.closing === 'enough')
     const noVoice = phase === 'read' && !o.ask
     const actions = q('[data-take-actions]', card)
-    actions.hidden = !noVoice || visit.finished
+    actions.hidden = !(noVoice || spent) || visit.finished
     q('[data-sing="again"]', actions).hidden = !o.again
     q('[data-sing="today"]', actions).hidden = !o.done
     const after = q('[data-panel="after"]', card)

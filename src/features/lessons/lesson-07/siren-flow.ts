@@ -17,14 +17,14 @@
 // once a visit, whatever the reading. A take that heard no voice asks no
 // feeling question, and its Again is a fresh start that leaves the one Again
 // unused. A take abandoned when the page was hidden asks none either, and
-// Start comes back while takes remain, but if it had voice it uses the one
-// Again up. Never a retry after "Effortful" or "Uncomfortable": once either
-// has been picked, no Again and no Start for the rest of the visit, and the
-// Wrap shows the rest card, as after "Just listen today" (REQ-GVC-021,
-// REQ-GVC-023, REQ-GVC-055). An answer can change until the next take; the
-// strongest report the visit has had decides the closing line, because the
-// singer's report outranks every reading (REQ-GVC-024). Nothing here is
-// stored: the ending lasts the visit.
+// Start comes back while takes remain, Done for today once none do; if it
+// had voice it uses the one Again up. Never a retry after "Effortful" or
+// "Uncomfortable": once either has been picked, no Again and no Start for
+// the rest of the visit, and the Wrap shows the rest card, as after "Just
+// listen today" (REQ-GVC-021, REQ-GVC-023, REQ-GVC-055). An answer can
+// change until the next take; the strongest report the visit has had decides
+// the closing line, because the singer's report outranks every reading
+// (REQ-GVC-024). Nothing here is stored: the ending lasts the visit.
 
 import type { Feeling } from '@/features/lessons/kit/comfort'
 
@@ -181,12 +181,14 @@ export function offers(v: SirenVisit): SirenOffers {
     restCard,
   }
   if (v.mode !== 'sing' || v.finished) return base
-  // the briefing: before any take, or after one abandoned
+  // the briefing: before any take, or after one abandoned; Done for today
+  // in Start's place once the visit allows no more
   if (last === undefined || last.abandoned) {
     const start = mayTake(v)
     return {
       ...base,
       start,
+      done: !start,
       startReady: start && v.heard,
       startHint: !start || v.heard ? null : v.silentPlay ? 'off' : 'first',
     }
