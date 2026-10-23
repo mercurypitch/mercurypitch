@@ -20,7 +20,7 @@
 // the three-take limit, the Wrap's practise card it picks, that listening
 // only never asks for the microphone, and that the microphone stops at the
 // end of each hold. Merc's celebration is not visible here: the e2e browser
-// has no GPU, so the Mercs are stills (hold-flow.test.ts covers it).
+// has no GPU, so Merc and Tavi are stills (hold-flow.test.ts covers it).
 
 import type { Page } from '@playwright/test'
 import { expect, test } from '@playwright/test'
