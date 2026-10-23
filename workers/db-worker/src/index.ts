@@ -1311,17 +1311,6 @@ async function handleMirrorEvent(
   request: Request,
   env: Env,
 ): Promise<Response> {
-  const ip = ipRateLimitKey(request.headers.get('CF-Connecting-IP'))
-  const rl = await checkRateLimit(env.DB, ip, 'mirror-event')
-  if (!rl.allowed) {
-    return respond(
-      {
-        error: `Too many requests. Retry after ${rl.retryAfter ?? 60} seconds.`,
-      },
-      { status: 429, headers: { 'Retry-After': String(rl.retryAfter ?? 60) } },
-    )
-  }
-
   // Funnel payloads are tiny (a UUID + an event name + 5 numbers) — reject
   // anything bigger before parsing it into memory.
   const contentLength = Number(request.headers.get('Content-Length') ?? '0')
@@ -1352,8 +1341,25 @@ async function handleMirrorEvent(
     metrics?: unknown
     acq?: unknown
   }
-  // The client always sends a UUID (or the literal 'no-storage') — enforce
-  // the shape so the clientId index stays clean for grouping/dedup.
+
+  // The lesson pages' answers have a bucket of their own (auth.ts), so a
+  // class behind one address neither loses answers nor starves the app's own
+  // events. The bucket is the event's, so the limit waits for the body.
+  const ip = ipRateLimitKey(request.headers.get('CF-Connecting-IP'))
+  const bucket = event === 'lesson_answer' ? 'lesson-event' : 'mirror-event'
+  const rl = await checkRateLimit(env.DB, ip, bucket)
+  if (!rl.allowed) {
+    return respond(
+      {
+        error: `Too many requests. Retry after ${rl.retryAfter ?? 60} seconds.`,
+      },
+      { status: 429, headers: { 'Retry-After': String(rl.retryAfter ?? 60) } },
+    )
+  }
+
+  // The client always sends a UUID (or the literal 'no-storage', or the
+  // lesson pages' 'lesson-anonymous') — enforce the shape so the clientId
+  // index stays clean for grouping/dedup.
   if (typeof clientId !== 'string' || !/^[A-Za-z0-9-]{8,64}$/.test(clientId)) {
     return respond({ error: 'Invalid clientId' }, { status: 400 })
   }

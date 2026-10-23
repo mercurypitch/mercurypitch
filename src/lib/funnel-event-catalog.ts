@@ -448,6 +448,20 @@ export const GUIDE_FUNNEL_EVENTS = [
 ] as const
 
 /**
+ * The Find Your Pitch lesson pages (src/features/lessons/kit/telemetry.ts).
+ * Anonymous: every lesson event carries the one client id
+ * `lesson-anonymous`, so no answer joins any other row, and its numbers say
+ * which visit it was.
+ */
+export const LESSON_FUNNEL_EVENTS = [
+  /** A quick check's or a recall's question, answered for the first time in
+   *  a visit: the page, the question, whether that answer was right, the
+   *  question's number of options, the visit and the consent it was sent
+   *  under ride along as metrics (workers/db-worker/src/mirror-metrics.ts). */
+  'lesson_answer',
+] as const
+
+/**
  * Accepted by the worker but emitted by no client yet.
  *
  * Registering a name early means the client rollout that starts emitting it
@@ -465,6 +479,7 @@ export const FUNNEL_EVENT_NAMES = [
   ...GLASS_FUNNEL_EVENTS,
   ...ONBOARDING_FUNNEL_EVENTS,
   ...GUIDE_FUNNEL_EVENTS,
+  ...LESSON_FUNNEL_EVENTS,
   ...RESERVED_FUNNEL_EVENTS,
 ] as const
 
@@ -475,4 +490,5 @@ export type GlassFunnelEventName = (typeof GLASS_FUNNEL_EVENTS)[number]
 export type OnboardingFunnelEvent = (typeof ONBOARDING_FUNNEL_EVENTS)[number]
 export type TourFunnelEvent = (typeof TOUR_FUNNEL_EVENTS)[number]
 export type GuideFunnelEvent = (typeof GUIDE_FUNNEL_EVENTS)[number]
+export type LessonFunnelEvent = (typeof LESSON_FUNNEL_EVENTS)[number]
 export type FunnelEventName = (typeof FUNNEL_EVENT_NAMES)[number]

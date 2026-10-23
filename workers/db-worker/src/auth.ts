@@ -886,6 +886,11 @@ const RATE_LIMITS: Record<string, { max: number; windowMs: number }> = {
   // Anonymous Voice Mirror funnel beacons: a full run emits ~10 events, so
   // 60/min per IP is roomy for humans and cheap to spam-bound.
   'mirror-event': { max: 60, windowMs: 60_000 },
+  // The lesson pages' answers, on the same route (handleMirrorEvent picks
+  // the bucket by the event's name). A class behind one address answers a
+  // few dozen questions a minute between them; in the bucket above they
+  // would be refused and would starve the app's own events. 300/min per IP.
+  'lesson-event': { max: 300, windowMs: 60_000 },
   // A room host normally mints once when selecting premium art. Thirty per
   // minute leaves room for reconnects and development while bounding the
   // entitlement query + cross-Worker Durable Object proof behind each mint.
