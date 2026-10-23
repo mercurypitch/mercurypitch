@@ -29,8 +29,8 @@
 // come from the page, are set as properties instead. The map's stateless pieces
 // (lanes, arcs, edges, labels and their painters) are in explorer-graph.ts.
 // Lesson 13's card shakes its plate's sand on every frame while motion
-// plays; held still, or on any other card, the explorer asks the page's
-// frame loop for nothing (frame-loop.ts, `wants`).
+// plays; held still, on any other card, or folded away on a phone, the
+// explorer asks the page's frame loop for nothing (frame-loop.ts, `wants`).
 
 import { clamp, q, qa, svg } from './dom'
 import type { PlateFigure } from './explorer-figures'
@@ -333,7 +333,11 @@ export function createExplorer(opts: ExplorerOptions): Explorer {
   }
   const plateSize = new ResizeObserver(plateChanged)
   addDrawer({
-    active: () => plate !== null && (hostSeen() || listSeen()),
+    active: () =>
+      plate !== null &&
+      plateCanvas !== null &&
+      plateCanvas.isConnected &&
+      (hostSeen() || listSeen()),
     // the sand moves while motion plays; held still, only a change draws,
     // a plate, size or pixel ratio that moved without a word among them
     wants: () =>

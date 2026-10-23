@@ -302,3 +302,24 @@ test('Lesson 8: the explorer rests, and so does the whole page', async ({
 
   await explorerRests(page, 8, true)
 })
+
+test.describe('on a phone', () => {
+  test.use({ viewport: { width: 390, height: 844 } })
+
+  test("Lesson 8: the explorer's list rests once Lesson 13's card is folded away, and so does the whole page", async ({
+    page,
+  }) => {
+    await open(page, 8)
+    await scrollTo(page, '#exList')
+    await expectRest(page, null)
+
+    // on a phone the card opens under its row, and a second tap folds it away
+    const row = page.locator('#exList [data-n="13"] button.it')
+    await row.click()
+    await expectMoving(page, '#exList .ex-detail .plate canvas')
+    await expectMoving(page, null)
+    await row.click()
+    await expect(page.locator('#exList .ex-detail')).toHaveCount(0)
+    await expectRest(page, null)
+  })
+})
