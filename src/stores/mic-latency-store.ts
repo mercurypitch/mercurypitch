@@ -22,7 +22,7 @@
 //
 // Tests: src/tests/mic-latency-store.test.ts.
 
-import { MAX_LATENCY_MS } from '@/lib/mic-latency'
+import { MAX_LATENCY_MS, MAX_ROUTE_LATENCY_MS } from '@/lib/mic-latency'
 import { micManager } from '@/lib/mic-manager'
 import { createPersistedSignal } from '@/lib/storage'
 import { audioRoute } from '@/stores/audio-route-store'
@@ -231,15 +231,18 @@ export function micLatencyMeasuredOnRoute(): boolean {
 /**
  * One measurement for `deviceKey`, clamped to the believable range, kept for
  * the route the sound takes now: its own maps for a route with a delay of
- * its own, the input's otherwise. An unknown spread is stored as absent.
+ * its own, the input's otherwise. A route with a delay of its own believes up
+ * to a second (`MAX_ROUTE_LATENCY_MS`), the phone's own outputs half that.
+ * An unknown spread is stored as absent.
  */
 function keepMeasurement(
   deviceKey: string,
   latencyMs: number,
   spreadMs: number | null,
 ): void {
-  const latency = Math.max(0, Math.min(MAX_LATENCY_MS, Math.round(latencyMs)))
   const route = currentLatencyRoute()
+  const ceiling = route === null ? MAX_LATENCY_MS : MAX_ROUTE_LATENCY_MS
+  const latency = Math.max(0, Math.min(ceiling, Math.round(latencyMs)))
   const key = route === null ? deviceKey : routeKey(route, deviceKey)
   const setLatency =
     route === null ? setMicLatencyByDevice : setMicLatencyByRoute

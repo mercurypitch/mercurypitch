@@ -23,18 +23,25 @@
 // their own, so a run there is kept for that route alone, and the number in
 // use there is the phone's own outputs' until one is (mic-latency-store.ts).
 // The wizard says which, and offers to clear only a number measured where
-// the sound goes now.
+// the sound goes now. A run there is also measured its own way
+// (@/lib/mic-latency-route): unevenly spaced clicks, each reply held to a
+// threshold of its own, up to a second kept and a longer delay named
+// (REQ-TV-096), with words of its own (latency-route-copy.ts).
 //
-// The math is in @/lib/mic-latency; this file is capture, playback and copy.
+// The math is in @/lib/mic-latency and @/lib/mic-latency-route; this file is
+// capture, playback and copy.
 
 import type { JSX } from 'solid-js'
 import { createSignal, onCleanup, Show } from 'solid-js'
-import type { LatencyResult } from '@/lib/mic-latency'
-import { detectOnsets, LATENCY_CLICK_COUNT, LATENCY_CLICK_INTERVAL_SEC, LATENCY_LEAD_IN_SEC, matchOnsetDeltas, summariseLatency, } from '@/lib/mic-latency'
+import { detectOnsets, LATENCY_CLICK_COUNT, LATENCY_CLICK_HZ, LATENCY_CLICK_INTERVAL_SEC, LATENCY_LEAD_IN_SEC, matchOnsetDeltas, summariseLatency, } from '@/lib/mic-latency'
+import type { RouteLatencyResult } from '@/lib/mic-latency-route'
+import { measureRouteLatency, ROUTE_TAIL_SEC, routeClickSchedule, } from '@/lib/mic-latency-route'
 import { micManager } from '@/lib/mic-manager'
 import { buildClickSchedule } from '@/lib/tap-calibration'
+import type { LatencyRoute } from '@/stores/mic-latency-store'
 import { clearMicLatency, currentLatencyRoute, LATENCY_ROUTE_NAMES, micLatencyMeasuredOnRoute, micLatencyMs, setMicLatencyMeasurement, } from '@/stores/mic-latency-store'
 import { showNotification } from '@/stores/notifications-store'
+import { isTvRoute, routeFailureCopy, TV_RUN_NOTE } from './latency-route-copy'
 import styles from './MicLatencyWizard.module.css'
 
 const MIC_OWNER = 'mic-latency-wizard'
@@ -54,6 +61,47 @@ const FAILURE_COPY: Record<string, string> = {
     'The numbers did not agree with each other — something else in the room was probably picked up as a click. Worth another run.',
 }
 
+/**
+ * One run's answer from its recording. `startedAt` is the recording's first
+ * sample on the audio clock, which the schedule is on. The phone's own
+ * outputs keep the measurement they always had; a route with a delay of its
+ * own is measured its own way.
+ */
+function measure(
+  samples: Float32Array,
+  sampleRate: number,
+  startedAt: number,
+  scheduled: readonly number[],
+  route: LatencyRoute | null,
+): RouteLatencyResult {
+  if (route !== null) {
+    return measureRouteLatency(
+      samples,
+      sampleRate,
+      scheduled.map((time) => time - startedAt),
+    )
+  }
+  const onsets = detectOnsets(samples, sampleRate)
+  // Onsets are relative to the buffer; the schedule is on the audio clock.
+  const onsetTimes = onsets.map((t) => startedAt + t)
+  const deltas = matchOnsetDeltas([...scheduled], onsetTimes)
+  return summariseLatency(deltas, onsets.length)
+}
+
+/** A failed run in words: the route's own where it has them. */
+function failureCopy(
+  result: RouteLatencyResult | null,
+  route: LatencyRoute | null,
+): string {
+  const routed =
+    result !== null && route !== null ? routeFailureCopy(result, route) : null
+  return (
+    routed ??
+    FAILURE_COPY[result?.failure ?? ''] ??
+    'The run did not produce a usable number.'
+  )
+}
+
 export interface MicLatencyWizardProps {
   onClose: () => void
   /** Extra class on the root, for a host that restyles the panel through
@@ -70,8 +118,10 @@ export interface MicLatencyWizardProps {
 
 export function MicLatencyWizard(props: MicLatencyWizardProps) {
   const [phase, setPhase] = createSignal<Phase>('idle')
-  const [result, setResult] = createSignal<LatencyResult | null>(null)
+  const [result, setResult] = createSignal<RouteLatencyResult | null>(null)
   const [error, setError] = createSignal<string | null>(null)
+  /** The route the last run measured, which its words are for. */
+  const [runRoute, setRunRoute] = createSignal<LatencyRoute | null>(null)
 
   let ctx: AudioContext | null = null
   let source: MediaStreamAudioSourceNode | null = null
@@ -130,7 +180,7 @@ export function MicLatencyWizard(props: MicLatencyWizardProps) {
     const osc = audio.createOscillator()
     const gain = audio.createGain()
     osc.type = 'sine'
-    osc.frequency.value = 1000
+    osc.frequency.value = LATENCY_CLICK_HZ
     gain.gain.setValueAtTime(0, at)
     gain.gain.linearRampToValueAtTime(0.5, at + 0.003)
     gain.gain.linearRampToValueAtTime(0, at + 0.04)
@@ -162,11 +212,7 @@ export function MicLatencyWizard(props: MicLatencyWizardProps) {
       at += chunk.length
     }
 
-    const onsets = detectOnsets(samples, sampleRate)
-    // Onsets are relative to the buffer; the schedule is on the audio clock.
-    const onsetTimes = onsets.map((t) => startedAt + t)
-    const deltas = matchOnsetDeltas(scheduled, onsetTimes)
-    setResult(summariseLatency(deltas, onsets.length))
+    setResult(measure(samples, sampleRate, startedAt, scheduled, runRoute()))
     setPhase('done')
   }
 
@@ -176,6 +222,9 @@ export function MicLatencyWizard(props: MicLatencyWizardProps) {
     setResult(null)
     chunks = []
     captureStartSec = null
+    // Read as the run starts: the run is measured, and kept, for this route.
+    const route = currentLatencyRoute()
+    setRunRoute(route)
 
     let stream: MediaStream
     try {
@@ -211,17 +260,24 @@ export function MicLatencyWizard(props: MicLatencyWizardProps) {
     capture.connect(sink).connect(audio.destination)
 
     const firstClick = audio.currentTime + LATENCY_LEAD_IN_SEC
-    schedule = buildClickSchedule(
-      firstClick,
-      LATENCY_CLICK_COUNT,
-      LATENCY_CLICK_INTERVAL_SEC,
-    )
+    // A route with a delay of its own gets unevenly spaced clicks and a tail
+    // long enough for the longest reply looked for (REQ-TV-096).
+    schedule =
+      route === null
+        ? buildClickSchedule(
+            firstClick,
+            LATENCY_CLICK_COUNT,
+            LATENCY_CLICK_INTERVAL_SEC,
+          )
+        : routeClickSchedule(firstClick)
     for (const time of schedule) scheduleClick(audio, time)
 
     const runFor =
-      LATENCY_LEAD_IN_SEC +
-      LATENCY_CLICK_COUNT * LATENCY_CLICK_INTERVAL_SEC +
-      TAIL_SEC
+      route === null
+        ? LATENCY_LEAD_IN_SEC +
+          LATENCY_CLICK_COUNT * LATENCY_CLICK_INTERVAL_SEC +
+          TAIL_SEC
+        : schedule[schedule.length - 1] - audio.currentTime + ROUTE_TAIL_SEC
     finishTimer = setTimeout(finish, runFor * 1000)
     setPhase('running')
   }
@@ -230,6 +286,16 @@ export function MicLatencyWizard(props: MicLatencyWizardProps) {
     const measurement = result()
     const measured = measurement?.latencyMs
     if (measured == null) return
+    // A number is kept for the route it was measured on. If the sound has
+    // moved since (mirroring stopped, say), it would land on the wrong one.
+    if (currentLatencyRoute() !== runRoute()) {
+      setResult(null)
+      setError(
+        'The sound has moved to another output since that run. Run it again where you will sing.',
+      )
+      setPhase('idle')
+      return
+    }
     setMicLatencyMeasurement(measured, measurement?.spreadMs ?? null)
     const name = routeName()
     showNotification(
@@ -306,6 +372,9 @@ export function MicLatencyWizard(props: MicLatencyWizardProps) {
           Use speakers, not headphones — the microphone has to hear the clicks.
           Moderate volume, and stay quiet for the few seconds it runs.
         </p>
+        <Show when={isTvRoute(currentLatencyRoute())}>
+          <p class={styles.note}>{TV_RUN_NOTE}</p>
+        </Show>
         <Show when={micLatencyMs() > 0}>
           <p class={styles.current}>
             Currently set to <strong>{micLatencyMs()} ms</strong>
@@ -345,10 +414,7 @@ export function MicLatencyWizard(props: MicLatencyWizardProps) {
           when={result()?.latencyMs != null}
           fallback={
             <>
-              <p class={styles.error}>
-                {FAILURE_COPY[result()?.failure ?? ''] ??
-                  'The run did not produce a usable number.'}
-              </p>
+              <p class={styles.error}>{failureCopy(result(), runRoute())}</p>
               <div class={styles.actions}>
                 <button
                   type="button"

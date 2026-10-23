@@ -3,7 +3,7 @@
 // ============================================================
 
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { MAX_LATENCY_MS } from '@/lib/mic-latency'
+import { MAX_LATENCY_MS, MAX_ROUTE_LATENCY_MS } from '@/lib/mic-latency'
 import { micManager } from '@/lib/mic-manager'
 import { setAudioRouteForTests } from '@/stores/audio-route-store'
 import { clearMicLatency, currentLatencyRoute, currentMicDeviceKey, DEFAULT_DEVICE_KEY, micLatencyByDevice, micLatencyByRoute, micLatencyMeasuredOnRoute, micLatencyMs, micLatencyMsForDevice, micLatencySec, micLatencySpreadByDevice, micLatencySpreadByRoute, micLatencySpreadMs, micLatencySpreadMsForDevice, setMicLatencyByDevice, setMicLatencyByRoute, setMicLatencyMeasurement, setMicLatencyMeasurementForDevice, setMicLatencyMs, setMicLatencySpreadByDevice, setMicLatencySpreadByRoute, } from '@/stores/mic-latency-store'
@@ -290,6 +290,24 @@ describe('Mic Latency Store', () => {
       setAudioRouteForTests('hdmi')
       expect(micLatencyMs()).toBe(0)
     })
+
+    it.each(['airplay', 'hdmi', 'bluetooth'] as const)(
+      'believes up to a second on %s, where the phone’s outputs stop at half that (REQ-TV-096)',
+      (route) => {
+        pretendDevice('built-in')
+        setAudioRouteForTests(route)
+
+        setMicLatencyMeasurement(800, 20)
+        expect(micLatencyMs()).toBe(800)
+
+        setMicLatencyMeasurement(MAX_ROUTE_LATENCY_MS + 500, 20)
+        expect(micLatencyMs()).toBe(MAX_ROUTE_LATENCY_MS)
+
+        setAudioRouteForTests('speaker')
+        setMicLatencyMeasurement(800, 20)
+        expect(micLatencyMs()).toBe(MAX_LATENCY_MS)
+      },
+    )
 
     it('stores a fallback device’s calibration for the route it was taken on', () => {
       pretendDevice(null)

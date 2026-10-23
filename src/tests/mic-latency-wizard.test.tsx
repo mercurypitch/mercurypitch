@@ -9,11 +9,18 @@
 // of the host's, the first paragraph is the old one, word for word. On a TV
 // over AirPlay the number is the route's own once measured there, and the
 // wizard says which number it shows and clears only the route's own.
+// A run there is measured its own way (REQ-TV-096): unevenly spaced clicks,
+// a longer wait, and words of its own when it fails.
 
 import { fireEvent, render, screen } from '@solidjs/testing-library'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { TV_RUN_NOTE } from '@/features/mic-feedback/latency-route-copy'
 import { MicLatencyWizard } from '@/features/mic-feedback/MicLatencyWizard'
 import type * as MicLatency from '@/lib/mic-latency'
+import { LATENCY_LEAD_IN_SEC } from '@/lib/mic-latency'
+import type * as MicLatencyRoute from '@/lib/mic-latency-route'
+import type { RouteLatencyResult } from '@/lib/mic-latency-route'
+import { measureRouteLatency, routeClickSchedule, } from '@/lib/mic-latency-route'
 import { setAudioRouteForTests } from '@/stores/audio-route-store'
 import { micLatencyByDevice, micLatencyByRoute, micLatencyMs, setMicLatencyByDevice, setMicLatencyByRoute, setMicLatencySpreadByDevice, setMicLatencySpreadByRoute, } from '@/stores/mic-latency-store'
 
@@ -21,6 +28,10 @@ const fake = vi.hoisted(() => ({
   processor: null as null | {
     onaudioprocess: ((event: unknown) => void) | null
   },
+  /** When each click was scheduled to play, in order. */
+  clicks: [] as number[],
+  /** What the route's measurement answers, a TV's 240 ms unless a test says. */
+  routeResult: null as null | RouteLatencyResult,
 }))
 
 vi.mock('@/lib/mic-manager', () => ({
@@ -41,6 +52,18 @@ vi.mock('@/lib/mic-latency', async (importOriginal) => ({
     hits: 8,
     failure: null,
   }),
+}))
+vi.mock('@/lib/mic-latency-route', async (importOriginal) => ({
+  ...(await importOriginal<typeof MicLatencyRoute>()),
+  measureRouteLatency: vi.fn(
+    () =>
+      fake.routeResult ?? {
+        latencyMs: 240,
+        spreadMs: 12,
+        hits: 8,
+        failure: null,
+      },
+  ),
 }))
 
 /** Just enough of an AudioContext for one run: nothing plays, nothing is heard. */
@@ -78,7 +101,9 @@ class FakeAudioContext {
       type: 'sine',
       frequency: { value: 0 },
       connect: (node: unknown) => node,
-      start: vi.fn(),
+      start: vi.fn((at: number) => {
+        fake.clicks.push(at)
+      }),
       stop: vi.fn(),
     }
   }
@@ -94,8 +119,12 @@ function paragraphs(): string[] {
   return [...document.querySelectorAll('p')].map((p) => p.textContent ?? '')
 }
 
-/** One run of the wizard, answered by the mocked measurement (18 ms), applied. */
-async function measureAndApply(): Promise<void> {
+/**
+ * One run of the wizard up to its answer: started, one block of capture fed,
+ * and `runMs` of the clock let pass (the phone's run takes 7.75 s, a TV's
+ * 10.75 s).
+ */
+async function runWizard(runMs = 12_000): Promise<void> {
   vi.useFakeTimers()
   vi.stubGlobal('AudioContext', FakeAudioContext)
   render(() => <MicLatencyWizard onClose={vi.fn()} />)
@@ -104,7 +133,15 @@ async function measureAndApply(): Promise<void> {
   fake.processor?.onaudioprocess?.({
     inputBuffer: { getChannelData: () => new Float32Array(512) },
   })
-  await vi.advanceTimersByTimeAsync(10_000)
+  await vi.advanceTimersByTimeAsync(runMs)
+}
+
+/**
+ * One run, answered by the mocked measurement (18 ms on the phone's outputs,
+ * 240 ms on a TV's route), applied.
+ */
+async function measureAndApply(): Promise<void> {
+  await runWizard()
   fireEvent.click(screen.getByText('Use this'))
 }
 
@@ -116,6 +153,9 @@ beforeEach(() => {
   setMicLatencySpreadByRoute({})
   setAudioRouteForTests(null)
   fake.processor = null
+  fake.clicks = []
+  fake.routeResult = null
+  vi.mocked(measureRouteLatency).mockClear()
 })
 
 afterEach(() => {
@@ -206,8 +246,8 @@ describe('the route the number is for', () => {
 
     await measureAndApply()
 
-    expect(micLatencyMs()).toBe(18)
-    expect(micLatencyByRoute()).toEqual({ 'airplay:default': 18 })
+    expect(micLatencyMs()).toBe(240)
+    expect(micLatencyByRoute()).toEqual({ 'airplay:default': 240 })
     expect(micLatencyByDevice()).toEqual({ default: 60 })
   })
 
@@ -225,5 +265,94 @@ describe('the route the number is for', () => {
     expect(micLatencyByRoute()).toEqual({})
     expect(micLatencyByDevice()).toEqual({ default: 60 })
     expect(micLatencyMs()).toBe(60)
+  })
+})
+
+describe('a run on a TV (REQ-TV-096)', () => {
+  it('plays its clicks unevenly, and listens long enough for the longest reply', async () => {
+    setAudioRouteForTests('airplay')
+
+    await runWizard(10_000)
+
+    expect(fake.clicks).toEqual(routeClickSchedule(LATENCY_LEAD_IN_SEC))
+    expect(screen.queryByText('Listening — stay quiet.')).not.toBeNull()
+
+    await vi.advanceTimersByTimeAsync(1_000)
+
+    expect(measureRouteLatency).toHaveBeenCalledTimes(1)
+    expect(screen.getByText('240 ms')).not.toBeNull()
+  })
+
+  it('leaves the phone’s own outputs the run they always had', async () => {
+    setAudioRouteForTests('speaker')
+
+    await runWizard(8_000)
+
+    expect(fake.clicks).toEqual(
+      Array.from({ length: 8 }, (_, i) => LATENCY_LEAD_IN_SEC + i * 0.75),
+    )
+    expect(measureRouteLatency).not.toHaveBeenCalled()
+    expect(screen.getByText('18 ms')).not.toBeNull()
+  })
+
+  it('says before a run where to hold the phone, on a TV only', () => {
+    setAudioRouteForTests('airplay')
+    const { unmount } = render(() => <MicLatencyWizard onClose={vi.fn()} />)
+    expect(paragraphs()).toContain(TV_RUN_NOTE)
+    unmount()
+
+    setAudioRouteForTests('speaker')
+    render(() => <MicLatencyWizard onClose={vi.fn()} />)
+    expect(paragraphs()).not.toContain(TV_RUN_NOTE)
+  })
+
+  it('names a round trip too late to keep, and offers nothing to use', async () => {
+    setAudioRouteForTests('airplay')
+    fake.routeResult = {
+      latencyMs: null,
+      spreadMs: 4,
+      hits: 8,
+      failure: 'too-late',
+      heardMs: 1600,
+    }
+
+    await runWizard()
+
+    expect(paragraphs().join(' ')).toContain(
+      'The TV plays the sound about 1.6 s after the phone sends it, too late to sing along with, so no number was kept. If only the sound goes to the TV, use Screen Mirroring instead',
+    )
+    expect(screen.queryByText('Use this')).toBeNull()
+    expect(screen.queryByText('Try again')).not.toBeNull()
+  })
+
+  it('keeps no number when the sound has moved since the run', async () => {
+    setMicLatencyByDevice({ default: 60 })
+    setAudioRouteForTests('airplay')
+    await runWizard()
+
+    setAudioRouteForTests('speaker')
+    fireEvent.click(screen.getByText('Use this'))
+
+    expect(micLatencyByRoute()).toEqual({})
+    expect(micLatencyByDevice()).toEqual({ default: 60 })
+    expect(paragraphs()).toContain(
+      'The sound has moved to another output since that run. Run it again where you will sing.',
+    )
+  })
+
+  it('says to hold the phone near the TV and turn off its automatic volume when few clicks come back', async () => {
+    setAudioRouteForTests('airplay')
+    fake.routeResult = {
+      latencyMs: null,
+      spreadMs: null,
+      hits: 1,
+      failure: 'too-few-hits',
+    }
+
+    await runWizard()
+
+    expect(paragraphs().join(' ')).toContain(
+      "Hold the phone near the TV's speaker, turn off the TV's automatic volume",
+    )
   })
 })

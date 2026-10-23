@@ -116,8 +116,8 @@ These are the rules that break things when ignored.
 | `falling-notes` | [useFallingNotesController.ts](../../src/features/falling-notes/useFallingNotesController.ts) | 1.0k | useFallingNotesController — Game logic for Synthesia-style piano practice |
 | `sidebar` | [sidebar-registry.ts](../../src/features/sidebar/sidebar-registry.ts) | 1.0k | ── Sidebar panel registry One AppSidebar shell; WHAT it shows is this file's decision, per tab. |
 | `account` | [native-sign-in.ts](../../src/features/account/native-sign-in.ts) | 900 | Native sign-in — the phone's own Apple and Google ceremonies On the web, Google sign-in is a full-page redirect (the app's `COOP: same-or... |
+| `mic-feedback` | [MicLatencyWizard.tsx](../../src/features/mic-feedback/MicLatencyWizard.tsx) | 900 | MicLatencyWizard — measure the speaker-to-microphone round trip Plays a short click track through the speakers and records what comes bac... |
 | `premium-exercises` | [ExercisePicker.tsx](../../src/features/premium-exercises/ExercisePicker.tsx) | 900 | The exercise picker: every premium exercise, one card each A kit Sheet the Sing room owns, as it owns its song and take sheets. |
-| `mic-feedback` | [MicLatencyWizard.tsx](../../src/features/mic-feedback/MicLatencyWizard.tsx) | 800 | MicLatencyWizard — measure the speaker-to-microphone round trip Plays a short click track through the speakers and records what comes bac... |
 | `voice-constellation` | [useVoiceConstellationIsolation.ts](../../src/features/voice-constellation/useVoiceConstellationIsolation.ts) | 750 | Voice Constellation Isolation — route-lifetime focus and page isolation. |
 | `community` | [ProfileView.tsx](../../src/features/community/ProfileView.tsx) | 700 | ProfileView — your voice, so far Lifted out of CommunityShare, where it was ~200 lines inside an 1100-line component and could not be loo... |
 | `routing` | [useHashRouter.ts](../../src/features/routing/useHashRouter.ts) | 600 | useHashRouter — binds the URL hash to app state, both directions The app has no file-system router. |
@@ -199,6 +199,7 @@ These are the rules that break things when ignored.
 | [share-codec.ts](../../src/lib/share-codec.ts) | 500 | Share Codec — Base64url self-contained payload encoding Encodes melodies, exercises, and daily routines into compact base64url strings su... |
 | [uvr-stem-split.ts](../../src/lib/uvr-stem-split.ts) | 500 | Stem split — break a session's instrumental into its parts Second separation pass over the ALREADY-SEPARATED instrumental: the server (de... |
 | [lyricsfile.ts](../../src/lib/lyricsfile.ts) | 450 | lyricsfile 1.0 — serialising a mapping to the interchange format Enhanced LRC is what the app has always exported, and it is lossy in way... |
+| [mic-latency-route.ts](../../src/lib/mic-latency-route.ts) | 450 | mic-latency-route — the round trip on a route with a delay of its own Measures the round trip on a TV over AirPlay or HDMI, or on a Bluet... |
 | [midi-generator.ts](../../src/lib/midi-generator.ts) | 450 | MIDI Generator — pitch-detect vocal audio → Standard MIDI File |
 | [midi-song.ts](../../src/lib/midi-song.ts) | 450 | MIDI Song Parser — multi-track import with instrument names Unlike importMelodyFromMIDI (which flattens everything into one melody), this... |
 | [portable-console.ts](../../src/lib/portable-console.ts) | 450 | Portable console — the browser console, on the device that has the bug Reaching Safari's inspector means a cable, a Mac, and a page that... |

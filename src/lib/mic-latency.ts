@@ -16,6 +16,8 @@
 //
 // Everything here is pure. The capture and playback live in the wizard
 // (@/features/mic-feedback/MicLatencyWizard.tsx); tests feed synthetic buffers.
+// A route with a delay of its own (a TV, Bluetooth) is measured differently,
+// by @/lib/mic-latency-route, for the reasons its header gives.
 //
 // Tests: src/lib/mic-latency.test.ts.
 
@@ -25,12 +27,17 @@ import { median, spreadMs } from './calibration-stats'
 export const LATENCY_CLICK_COUNT = 8
 /** Seconds between clicks — comfortably longer than any plausible round trip. */
 export const LATENCY_CLICK_INTERVAL_SEC = 0.75
+/** The click's pitch: a short sine burst at this frequency. */
+export const LATENCY_CLICK_HZ = 1000
 /** Silence before the first click: lets the mic settle and the AGC give up. */
 export const LATENCY_LEAD_IN_SEC = 1
 /**
  * A returning click further than this from its own is a false onset — a cough,
  * a keystroke — not the click. Half the interval, so no click can steal the
- * next one's echo.
+ * next one's echo. That holds only while the round trip is shorter than the
+ * interval, as on the phone's own outputs: a longer one lines up with an
+ * earlier click and reads as a short one, which is why a TV or Bluetooth is
+ * measured by @/lib/mic-latency-route instead.
  */
 export const MAX_ONSET_DISTANCE_SEC = LATENCY_CLICK_INTERVAL_SEC / 2
 /** Below this many matched clicks the median is not worth trusting. */
@@ -41,6 +48,13 @@ export const MIN_LATENCY_HITS = 4
  * offset is worse than none.
  */
 export const MAX_LATENCY_MS = 500
+
+/**
+ * The same ceiling on a route with a delay of its own (a TV over AirPlay or
+ * HDMI, Bluetooth), measured by @/lib/mic-latency-route: mirroring alone can
+ * take most of 500 ms there. Longer than this is too late to sing along with.
+ */
+export const MAX_ROUTE_LATENCY_MS = 1000
 
 /**
  * Spread (interquartile, ms) under which a measurement reads as steady. Above
