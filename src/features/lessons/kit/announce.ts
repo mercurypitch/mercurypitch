@@ -42,19 +42,28 @@ export function announce(text: string): void {
   }, ANNOUNCE_DELAY_MS)
 }
 
+/** The blocks a reveal draws on lines of their own; a `br` ends a line too. */
+const LINE_ENDS = '.mono, p, blockquote, .k, .bubble b'
+
 /**
  * The words of `el` as one spoken line: each line the page draws becomes a
  * sentence, so "You said: higher" and the reveal under it are not run
- * together. innerText follows the layout; jsdom has none, so tests read
- * the text content.
+ * together. It reads a copy's text rather than innerText, which keeps the
+ * glyphs a screen reader is told to skip, sets words in the capitals the
+ * page draws them in, and breaks a line around each visually hidden word.
  */
 export function spokenText(el: HTMLElement): string {
-  const drawn: unknown = el.innerText
-  const text =
-    typeof drawn === 'string' && drawn.trim() !== ''
-      ? drawn
-      : (el.textContent ?? '')
-  return text
+  const copy = el.cloneNode(true) as HTMLElement
+  copy
+    .querySelectorAll('[aria-hidden="true"], [hidden], button')
+    .forEach((n) => n.remove())
+  // the markup's line breaks only wrap its source, so they go first
+  const texts = document.createTreeWalker(copy, NodeFilter.SHOW_TEXT)
+  for (let t = texts.nextNode(); t !== null; t = texts.nextNode())
+    t.textContent = (t.textContent ?? '').replace(/\s+/g, ' ')
+  copy.querySelectorAll('br').forEach((br) => br.replaceWith('\n'))
+  copy.querySelectorAll(LINE_ENDS).forEach((block) => block.append('\n'))
+  return (copy.textContent ?? '')
     .split('\n')
     .map((part) => part.replace(/\s+/g, ' ').trim())
     .filter((part) => part !== '')
