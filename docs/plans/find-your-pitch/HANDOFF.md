@@ -37,7 +37,7 @@ so.
 | 11. Registers and the break        | not built                         |                               | its page; the coach                             |
 | 12. Chords and the four-chord song | not built                         |                               | its page; the coach's look                      |
 | 13. Resonance and vowels           | not built                         |                               | its page; the coach                             |
-| 14. Phrasing: sing a whole song    | not built                         |                               | its page, after two kit changes; the coach      |
+| 14. Phrasing: sing a whole song    | not built                         |                               | its page, after a kit change; the coach         |
 
 A draft is in every build. The dev site and the previews serve it. From the next release,
 mercurypitch.com answers it with the 404 page until the Content Studio's Lessons page,
@@ -166,8 +166,7 @@ are the mobile app's builds. The next `v` tag carries both pages.
 10. **Run times past the budget.** Most lessons run past MASTER-PLAN § 4.2's 8 to 12 minutes of
     active time. Decided (22 October 2026): none is trimmed to fit. Decided (23 October 2026): every
     lesson's chip states its real run time, Lessons 1, 2 and 4 included, whose chips read an
-    estimate of 10 minutes; the handoff follow-ups PR, not yet merged, sets them from today's word
-    counts.
+    estimate of 10 minutes; this PR sets them from today's word counts, to 8, 13 and 14 minutes.
 
 ## 4. Left for later, on purpose
 
@@ -177,13 +176,7 @@ Each WEB-SPEC's "What the kit and the app still need" lists its parts, checked a
 day it was written; re-check each against main before building. The shared pieces, and which pages
 need them ("needs 5" is item 5 of a lesson's list):
 
-- **Move do as a kit part** (Lessons 9, 10, 12 and 14), and the count-in with it (10, 12 and 14).
-  Lesson 4's page has Move do, and Lessons 6 and 8 each keep a copy of their own. Promote it once,
-  before the first of these pages.
 - **The names switch** from Lesson 4 (10 and 12).
-- **An option in `kit/comfort.ts` that sends "Effortful" to the rest card**,
-  `afterFeeling(f, { restAfterEffort: true })` (9, 11, 13 and 14 ask for it). Lessons 6, 7 and 8
-  already do it by hand, and Lessons 10 and 12 plan to, each in its own `sing-flow.ts`.
 - **The band chart's rungs** (`kit/band-chart.ts`): Lesson 9 brings them, and Lesson 14's song line
   reuses them.
 - **The range chart** (`kit/range-chart.ts`), new with Lesson 7's page: Lesson 11 adds four options
@@ -196,18 +189,27 @@ need them ("needs 5" is item 5 of a lesson's list):
   for the ring's `RingRun` (11's needs 12), `kit/hold-flow.ts` and `kit/hold-run.ts` from Lesson
   5's page (13's needs 8 and 9), `writeStepsWav` for the end-to-end tests (9's needs 13, 14's needs
   16), and a `schedule` that can be stopped (12's needs 8).
-- **Lesson 14** waits on two kit changes before its page is built (its needs 11 and 12):
-  - a season close that knows a rest ending: no "Now sing a whole song." after "Effortful",
-    "Uncomfortable" or "Just listen today" (the lead's decision, 21 October);
-  - Move do and the count-in as kit parts, above.
+- **Lesson 14** waits on one kit change before its page is built (its needs 12): a season close
+  that knows a rest ending, with no "Now sing a whole song." after "Effortful", "Uncomfortable" or
+  "Just listen today" (the lead's decision, 21 October). Item 11 of its list, Move do and the
+  count-in as kit parts, is done (below).
 - **Lesson 14 also proposes** `kit/record.ts` with `Listener.media`, the first kit module that keeps
   audio, in memory only; `kit/twinkle.ts`, the whole first verse as data; and a `playNoise` that can
   be stopped, so a page can cut an in-breath when the viewer leaves a step.
-- **Done since the specs were written:** `recallStepHref` is in `kit/quiz.ts` (Lesson 8's page,
-  #1172), and every page whose recall opens a step uses it. Lessons 10 to 14's specs proposed the
-  move; #1171 says in their words that it is done.
+- **Done since the specs were written:**
+  - `recallStepHref` is in `kit/quiz.ts` (Lesson 8's page, #1172), and every page whose recall
+    opens a step uses it. Lessons 10 to 14's specs proposed the move; #1171 says in their words
+    that it is done.
+  - **Move do and the count-in are kit parts** (`kit/move-do.ts`, this PR), as Lessons 9, 10, 12
+    and 14 ask. Lessons 4, 6 and 8 share its step and its ends, and Lessons 4 and 6 its count-in;
+    Lesson 8's count-in is a bar on its beat clock, another mechanism, and stays on its page. Each
+    page keeps its own wiring, readout and labels.
+  - **"Effortful" goes to the rest card by a kit option** (this PR),
+    `afterFeeling(f, { restAfterEffort: true })` in `kit/comfort.ts`, as Lessons 9, 11, 13 and 14
+    ask. Lessons 6, 7 and 8 pass it in place of their own overrides. The specs of 9, 11, 13 and 14
+    say it is built, and those of 10 and 12 follow Lesson 6, so their pages can pass it too.
 
-A suggested order: 9 (it brings the rungs and Move do), then 10, 12, 11, 13 and 14.
+A suggested order: 9 (it brings the rungs), then 10, 12, 11, 13 and 14.
 
 ### 4.2 Kit cleanups
 
@@ -216,48 +218,85 @@ A suggested order: 9 (it brings the rungs and Move do), then 10, 12, 11, 13 and 
   first-paint check, which CI runs in `build:e2e`, now fails a build that pulls it into a lesson
   page. Every lesson page lost 2,877 bytes of JavaScript: Lesson 3's headroom went from 37 bytes to
   2,914, and Lesson 4's from 111 to 2,988.
-- **The sound gate shrinks** by 42 px the first time sound comes on. Lesson 7's build measured it on
-  its page; the gate is the kit's, so check the other pages before fixing it in one.
-- **A take that starts in a hidden tab.** Lessons 3, 5 and 7 ask for the microphone
-  (`await mic.open(...)`, or Lesson 3's `openMic`) and start the take when it resolves, without
-  checking `document.hidden`. A viewer who switches tabs while the listener loads is already past
-  the `visibilitychange` that would have cancelled the take, so the take opens in the background
-  and holds the microphone until it times out, about 6 s with no voice. The fix is one check after
-  the microphone opens, releasing it at once if the page is hidden; make it in all three pages, or
-  once in a shared Sing it helper.
-- **Lesson 8 with sound off**, both minor: Start on the take shows the kit's toast ("you'll see this
-  one") but does not start the take, and the status line says why; "Play the groove" runs silently,
-  with nothing on screen to watch.
-- **The service worker's list** (`STANDALONE_DOCUMENT_PATHS` in `src/lib/sw-runtime.ts`) still
-  groups `/learn/04` with the released lessons, above the comment that opens the drafts, though
-  Lesson 4 is a draft now. Every lesson path goes to the network either way, so only the grouping
-  misleads.
-- **Lesson 6's review follow-ups**, each still open on main on 22 October:
-  - Step 2's 27 buttons are 27 Tab stops. A roving tabindex would make them one, but it changes the
-    keys, and `src/e2e/learn-lesson-06-qa.spec.ts` pins today's order.
-  - `singAlong` in `lesson-06/cold-open.ts` copies `lesson-04/hero.ts`'s. Move Lesson 4's into the
-    kit, and cancel its last-note timer when a play is cut short: today a replay started within a
-    note's length can quiet Merc early.
-  - The frame loop can rest (`kit/frame-loop.ts`, `wants`), but the ring, guide and explorer drawers
-    never say they have nothing to draw, so on Lesson 6 the loop still runs every frame. Giving them
-    `wants` touches every lesson page.
-  - The layout sweeps show the masthead over the sticky stage at `#sing`, 691 by 59 pixels at
-    1440x900, on Lessons 3 to 8 alike.
-  - Lesson 6's chip read 15 minutes from the text package's 2,258 words; today's 2,590 make it 17
-    (this PR). On 22 October 2026 the owner kept the longer lessons untrimmed: over the cap of 2,379
-    words are Lessons 4 by 138, 5 by 25, 6 by 212, 7 by 101 and 8 by 123. On 23 October 2026 the
-    owner chose real run times for every chip, Lessons 1, 2 and 4 included (this PR): 8, 13 and 14.
+- **Done in this PR**, each with a test that fails without it:
+  - **The sound gate** keeps its height when sound comes on: both of its lines stay in it, and the
+    one not current is hidden. It shrank by 19 to 21 px on Lessons 1 to 6 and 8, and by 40 to 42 px
+    on Lesson 7.
+  - **A take that opens in a hidden tab, or after its section is left,** lets the microphone go at
+    once on Lessons 3, 5 and 7, and starts nothing. On Lessons 3 and 5, leaving while the microphone
+    opens no longer scrolls the card back into view.
+  - **Lesson 8 with sound off:** Start on the take and "Play the groove" each say they need sound,
+    and neither runs.
+  - **The service worker's list** (`STANDALONE_DOCUMENT_PATHS` in `src/lib/sw-runtime.ts`) groups
+    Lesson 4 with the drafts.
+  - **Lesson 6's step 2** is one Tab stop: its 27 buttons are a grid that the arrow keys move
+    through (`kit/tune-line.ts`, on for that step only), and `src/e2e/learn-lesson-06-qa.spec.ts`
+    walks it.
+  - **`singAlong`** is in the kit (`kit/sing-along.ts`) for Lessons 4 and 6, and a replay started
+    within a note's length is no longer quieted by the play before it.
+  - **The frame loop rests.** The ring, the slide guide and the explorer tell it when they have
+    nothing to draw (`wants`), any input wakes it, and a ring's last ripples fade out after its
+    run. On Lessons 6, 7 and 8 the whole page asks for no frame at rest
+    (`src/e2e/learn-frame-loop.spec.ts`).
+  - **Lesson 6's chip** read 15 minutes from the text package's 2,258 words, and today's 2,590
+    make it 17. On 22 October 2026 the owner kept the longer lessons untrimmed: over the cap of
+    2,379 words were Lessons 4 by 138, 5 by 25, 6 by 212, 7 by 101 and 8 by 123, and on
+    `pnpm lesson:words` today they are 4 by 132, 5 by 22, 6 by 211, 7 by 98 and 8 by 155. On 23
+    October 2026 the owner chose real run times for every chip, Lessons 1, 2 and 4 included: 8, 13
+    and 14.
+- **Still open:**
+  - **The masthead over the sticky stage.** The layout sweeps show it over the stage at `#sing`,
+    691 by 59 pixels at 1440x900, on Lessons 3 to 8 alike.
+  - **Lessons 1 to 5 never rest page-wide.** Twenty-one drawers there still draw every frame: the
+    spiral, the dial, the loudness toy, the hero's sky, the band chart and the lessons' own toys.
+    Each needs a `wants` of its own. Left as they were, by the review: the slide guide's and the
+    explorer's `wants` read the layout every frame, as their drawing did before, and a canvas
+    resized by layout alone draws one frame late.
+  - **Lesson 5's hold reads short under load.** On a loaded machine its spec's holds read "In the
+    band for 9.8 of the 10 seconds" (and 14.8 of 15), on main too. The frame loop is not the cause:
+    the hold takes its seconds from the microphone's frames, and a unit test reads a whole
+    15-second hold while the loop rests. Find out whether the reading counts frames or time before
+    calling it a flake: on a slow phone, a learner who held for 10 s could be told 9.8.
 
 ### 4.3 App fixes the lessons found
 
-The writers found these while checking what each lesson's practice link opens. None is a lesson-page
-bug, and none is fixed:
+The writers found these while checking what each lesson's practice link opens. Neither is a
+lesson-page bug, and this PR fixes both:
 
-- **The Siren exercise's slide score** (30 % of its grade) rewards jumps between steady stretches. A
-  smooth glide, the thing Lessons 7 and 11 teach, scores nothing on that part. Simulated with the
-  scoring code as it stands.
-- **Dynamic Swell** promises breath support on its card; its score rewards a wider swell in
-  decibels, not support.
+- **The Siren exercise's slide score** (30 % of its grade) rewarded jumps between steady stretches,
+  so a smooth glide, the thing Lessons 7 and 11 teach, scored nothing on that part. It now scores
+  the glide itself, per second: a step counts at up to six times the round's guide pace, and one
+  across more than 0.12 s counts nothing, so a take scores much the same at 30, 60 and 120 frames
+  a second. The Siren has a new scoring version, so its Best, grade and play count start again
+  from the next run, and the high-notes and range challenges, which run it, start new attempt
+  threads. The interval trainer's challenge threads split once with them, which is right: they
+  have mixed its two scorings since August.
+- **Dynamic Swell** promised breath support on its card, though its score rewards a wider swell in
+  decibels, and two daily routines promised breath support and a wider range. The card, its help
+  and idle screen, and the two routines now promise only what the app measures.
+
+What the new glide part still gets wrong, measured and left as it is:
+
+- **A staircase.** Semitone steps of 50 ms every 300 ms earn the glide part; the old slide part
+  paid such steps most of all, so this is no regression. No speed rule can tell such a step from a
+  glide, but the stops between steps can. A rule measured on synthetic frames scores those
+  staircases 0 and leaves every glide as it was: a stop is 200 ms or more within 0.35 semitone, and
+  a burst under 150 ms between two stops, at 8 semitones a second or more, moving their medians 0.6
+  semitone or more, is a step whose ground earns nothing. Build it from real recordings, not
+  synthetic frames.
+- **A register flip** lowers the glide part by the ground it skips, and Lesson 11 says so in one
+  neutral sentence. Inside a dropout under 0.12 s a flip can earn that ground, so Lesson 11 says a
+  flip "can" lower the score.
+- **Wide vibrato**, a semitone either way, on a 3-semitone round scores about 0.31 of the glide
+  part (0.31 to 0.42 by frame rate).
+- **A 120 Hz phone.** Frames carry the display's frame time, not the audio's
+  (`docs/agent/MISTAKES.md`). If a phone's analyser hands over audio in bursts of 20 to 40 ms, a
+  quick glide at 120 Hz can score 0 on that part. Check a quick siren on a 120 Hz Android phone;
+  if it fails, skip a frame whose pitch equals the one before exactly, in the glide part only.
+- **Stored bests and the weekly key.** A Siren challenge's best on the server stays on the old
+  scale; completing one is unaffected, since a single attempt must reach the target. The weekly
+  attempt key (`src/features/challenges/weekly-attempt.ts`) leaves the scoring version out, so a
+  weekly that ran a rescored drill would thread its old and new scores together.
 
 Lessons 7 and 8's builds found no other. Lesson 8's moved two pieces of the app into `src/lib` so
 that its page can share them, both unchanged: Drum Night's input latency estimator
@@ -282,7 +321,19 @@ other page first needs what theirs have: the Watch section, its masthead link an
 
 ### 4.6 The plan's citations
 
-#1171 read every citation in the packages again on main. Three things stay as they are:
+#1171 read every citation in the packages again on main, with scripts that lived outside the
+repository. Since this PR the tools are in it (`scripts/plan-cites.mjs`, with tests):
+
+- `pnpm plan:cites:check` reads every citation by content: the quoted words must be in the cited
+  lines, and those lines inside the section the citation names. On main it reports about 150
+  findings, most of them kinds it cannot settle alone: a file outside the repository (the films'
+  build files), a name two files share, a bare `:N` with no file before it, or a quote it cannot
+  attach. Compare a branch's findings with main's; a branch should add none.
+- `pnpm plan:cites reanchor --base <ref>` moves the citations into every file changed since
+  `<ref>` by the lines added and removed above them, reports those whose cited lines changed, and
+  with `--write` rewrites their digits only. This PR re-anchored its own changes that way.
+
+Three things stay as they are:
 
 - **Lesson 10's reads of the Lesson 6 page branch** stay pinned to `f6333d527`, where they are
   right. Now that #1149 has merged, they can be read again on main.
@@ -316,12 +367,14 @@ other page first needs what theirs have: the Watch section, its masthead link an
   follow code that moved to another file, and the facts the plan, the kit or the app had overtaken
   now say what was, with the commit that changed it, and what is. Citations outside the section they
   name fell from 35 to 3, all three false positives. Re-anchor by shift, then check by content.
-- **What the checks cannot see.** Each of these was found by reading by hand: a quote written after
-  its citation, or one that runs across a wrapped comment line; a file name two files share
+- **What the checks could not see.** Each of these was found by reading by hand: a quote written
+  after its citation, or one that runs across a wrapped comment line; a file name two files share
   (`predict.ts`, `metrics.ts`); a file deleted on main; a bare `:N` whose file is named only in
-  prose, which the tools attach to an earlier file, even across table rows; a pattern such as
-  `learn/NN.html`, taken for a file; a pin, which the tools see only on the citation right before
+  prose, which the tools attached to an earlier file, even across table rows; a pattern such as
+  `learn/NN.html`, taken for a file; a pin, which the tools saw only on the citation right before
   "at `<sha>`", where the README pins the whole list; and a line that the PR under check rewrote.
+  `pnpm plan:cites` (this PR) has a test for each, and reports what it cannot settle instead of
+  passing it.
 - **First paint grows with the season.** Every lesson page carries the whole season's data, so each
   new lesson's entry and each hook alternative add bytes to every page. The ceilings in
   `scripts/assert-first-paint-budgets.mjs` say why each was raised; keep new kit code in modules of
@@ -336,15 +389,15 @@ other page first needs what theirs have: the Watch section, its masthead link an
   citations on main. Nearly every finding came from the review, not from the writer's own checks,
   and nearly all were of three kinds: a predict's answer leaking, a citation that no longer pointed
   at what it meant, and a claim with no source. Keep the reviewer separate.
-- **Most review scripts are not in the repository.** The citation printer, the compare, re-anchor
-  and content checks, and each lesson's verifier were written for this run and lived outside the
-  repository; the word counter is now `pnpm lesson:words` (`scripts/lesson-words.mjs`, this PR).
-  The rules they applied are in it: the house rules for claims and safety in
-  [TEACHING-PLAYBOOK.md](TEACHING-PLAYBOOK.md), and the copy rules in `kit/lesson-copy.ts`'s header.
-  If the series goes on this way, bring the citation tools into `scripts/` with tests too, starting
-  with the blind spots above: they are what make a rebase safe for a package. The tool that wrote
-  re-anchored numbers back once rewrote each whole line as it stood before the change, which undid
-  the numbers its other half had just set; a test would have caught it on the first run.
+- **The review scripts are in the repository now.** The citation printer, the re-anchor and the
+  content checks are `pnpm plan:cites` (`scripts/plan-cites.mjs`), and the word counter is
+  `pnpm lesson:words` (`scripts/lesson-words.mjs`), whose golden tests hold each package's stated
+  count to its copy. Both came with this PR, with tests that `pnpm test:scripts` runs in CI. Each
+  lesson's verifier stayed outside, but the rules they applied are in the repository: the house
+  rules for claims and safety in [TEACHING-PLAYBOOK.md](TEACHING-PLAYBOOK.md), and the copy rules in
+  `kit/lesson-copy.ts`'s header. The tool that wrote re-anchored numbers back once rewrote each
+  whole line as it stood before the change, which undid the numbers its other half had just set; a
+  test now holds `--write` to the digits.
 
 ## 6. Working on the series
 
@@ -363,5 +416,7 @@ other page first needs what theirs have: the Watch section, its masthead link an
 - **Tests that hold the season together**: `src/tests/lesson-pages.test.ts` (every lesson document's
   head, drafts included), `kit/lesson-copy.test.ts` (the hooks and their copies),
   `kit/team-notes.test.ts` (a note for every alternative, and none of the team's words on a page),
-  `kit/drafts.test.ts`, the first-paint check in `scripts/assert-first-paint-budgets.mjs`, and the
-  `learn-*` end-to-end specs. `pnpm check`, then the specs, before every push.
+  `kit/drafts.test.ts`, `scripts/lesson-words.test.mjs` (each package's stated word count), the
+  first-paint check in `scripts/assert-first-paint-budgets.mjs`, and the `learn-*` end-to-end
+  specs. `pnpm check`, then the specs, before every push, and `pnpm plan:cites:check` after a
+  change to a package or to code one cites.
