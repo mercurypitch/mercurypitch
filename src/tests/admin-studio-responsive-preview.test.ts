@@ -433,6 +433,61 @@ ${DB_PREVIEW_TEMPLATE.replace(
     )
   })
 
+  it.each([
+    [
+      "dev's namespace",
+      (config: string) =>
+        config.replace('"namespace_id": "4104"', '"namespace_id": "4102"'),
+      'PR preview rate limit binding.namespace_id must exactly match the approved value',
+    ],
+    [
+      'another binding name',
+      (config: string) =>
+        config.replace('"name": "LESSON_EVENT_LIMIT"', '"name": "OTHER_LIMIT"'),
+      'PR preview rate limit binding.name must exactly match the approved value',
+    ],
+    [
+      'a different budget',
+      (config: string) =>
+        config.replace(
+          '"limit": 300, "period": 60',
+          '"limit": 300, "period": 10',
+        ),
+      'PR preview rate limit binding.simple.period must exactly match the approved value',
+    ],
+    [
+      'an extra key',
+      (config: string) =>
+        config.replace(
+          '"namespace_id": "4104",',
+          '"namespace_id": "4104",\n      "remote": true,',
+        ),
+      'PR preview rate limit binding must contain exactly the approved keys',
+    ],
+    [
+      'a second limiter',
+      (config: string) =>
+        config.replace(
+          '  "ratelimits": [\n',
+          '  "ratelimits": [\n    { "name": "EXTRA_LIMIT", "namespace_id": "4103", "simple": { "limit": 9, "period": 60 } },\n',
+        ),
+      'PR preview rate limits must contain exactly one binding',
+    ],
+    [
+      'no limiter',
+      (config: string) =>
+        config.replace(/ {2}"ratelimits": \[[\s\S]*?\n {2}\],\n/u, ''),
+      'PR preview Wrangler config must contain exactly the approved keys',
+    ],
+  ])('rejects rate limit drift: %s', (_label, drift, message) => {
+    const driftedConfig = drift(DB_PREVIEW_TEMPLATE)
+    expect(driftedConfig).not.toBe(DB_PREVIEW_TEMPLATE)
+
+    const result = validatePreviewConfig(driftedConfig)
+    expect(result.status).not.toBe(0)
+    expect(result.stderr).toContain(message)
+  })
+
   it('accepts the isolated preview contract', () => {
     const result = validatePreviewConfig(DB_PREVIEW_TEMPLATE)
     expect(result.status).toBe(0)

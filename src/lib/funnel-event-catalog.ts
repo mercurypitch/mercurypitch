@@ -449,17 +449,26 @@ export const GUIDE_FUNNEL_EVENTS = [
 
 /**
  * The Find Your Pitch lesson pages (src/features/lessons/kit/telemetry.ts).
- * Anonymous: every lesson event carries the one client id
- * `lesson-anonymous`, so no answer joins any other row, and its numbers say
- * which visit it was.
+ * Anonymous. A lesson event's row keeps the one client id every lesson page
+ * shares (LESSON_CLIENT_ID), the UTC day it came on and its seven numbers.
+ * It keeps no address (the Worker's limiter for it is Cloudflare's, not the
+ * auth_ratelimit table), no time of day and no device id
+ * (workers/db-worker/src/index.ts handleMirrorEvent).
  */
 export const LESSON_FUNNEL_EVENTS = [
   /** A quick check's or a recall's question, answered for the first time in
    *  a visit: the page, the question, whether that answer was right, the
-   *  question's number of options, the visit and the consent it was sent
-   *  under ride along as metrics (workers/db-worker/src/mirror-metrics.ts). */
+   *  question's number of options, the visit (first, second or later) and
+   *  the consent it was sent under ride along as metrics
+   *  (workers/db-worker/src/mirror-metrics.ts). */
   'lesson_answer',
 ] as const
+
+/**
+ * The one client id every lesson event carries. Every visitor shares it, so
+ * it names no one, and the Worker keeps no first-touch row for it.
+ */
+export const LESSON_CLIENT_ID = 'lesson-anonymous'
 
 /**
  * Accepted by the worker but emitted by no client yet.

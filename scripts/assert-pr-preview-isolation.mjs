@@ -28,6 +28,7 @@ const PREVIEW_TOP_LEVEL_KEYS = [
   'vars',
   'd1_databases',
   'r2_buckets',
+  'ratelimits',
 ]
 const PREVIEW_VAR_VALUES = {
   PR_PREVIEW: 'true',
@@ -54,6 +55,16 @@ const PREVIEW_DATABASE_KEYS = [
   'migrations_dir',
 ]
 const PREVIEW_R2_KEYS = ['binding', 'bucket_name']
+// The lesson answers' limiter (workers/db-worker/wrangler.jsonc). A limiter
+// holds no data, but one sharing dev's (4102) or prod's (4103) namespace
+// would let preview traffic spend their counters, so it is pinned by value
+// like everything else here.
+const PREVIEW_RATE_LIMIT = {
+  name: 'LESSON_EVENT_LIMIT',
+  namespace_id: '4104',
+}
+const PREVIEW_RATE_LIMIT_KEYS = ['name', 'namespace_id', 'simple']
+const PREVIEW_RATE_LIMIT_SIMPLE = { limit: 300, period: 60 }
 
 function assertExactObjectKeys(value, expectedKeys, label) {
   if (value === null || typeof value !== 'object' || Array.isArray(value)) {
@@ -280,6 +291,30 @@ function readPreviewConfig(configPath) {
   return parsed.rawConfig
 }
 
+function assertPreviewRateLimit(rateLimits) {
+  if (!Array.isArray(rateLimits) || rateLimits.length !== 1) {
+    throw new Error('PR preview rate limits must contain exactly one binding.')
+  }
+  const [rateLimit] = rateLimits
+  assertExactObjectKeys(
+    rateLimit,
+    PREVIEW_RATE_LIMIT_KEYS,
+    'PR preview rate limit binding',
+  )
+  for (const [key, expectedValue] of Object.entries(PREVIEW_RATE_LIMIT)) {
+    if (rateLimit[key] !== expectedValue) {
+      throw new Error(
+        `PR preview rate limit binding.${key} must exactly match the approved value.`,
+      )
+    }
+  }
+  assertExactValues(
+    rateLimit.simple,
+    PREVIEW_RATE_LIMIT_SIMPLE,
+    'PR preview rate limit binding.simple',
+  )
+}
+
 export function assertPreviewIsolation({
   config,
   workflowWorkerName,
@@ -377,6 +412,7 @@ export function assertPreviewIsolation({
       'PR preview R2 binding must exactly match the approved bucket.',
     )
   }
+  assertPreviewRateLimit(config.ratelimits)
   if (config.workers_dev !== false) {
     throw new Error('The stable workers.dev route must remain disabled.')
   }

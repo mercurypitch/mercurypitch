@@ -88,6 +88,14 @@ export interface Env {
   JAM_WORKER?: {
     verifyHost(roomId: string, ownerToken: string): Promise<boolean>
   }
+  /**
+   * Cloudflare's rate limiter for the lesson pages' answers (the `ratelimits`
+   * entry in every wrangler config this Worker deploys from). It keeps its
+   * counters itself, so an answer leaves no address in D1, as the
+   * auth_ratelimit table would. Unset (a config without it, the tests) means
+   * every lesson answer is refused: they never fall back to that table.
+   */
+  LESSON_EVENT_LIMIT?: RateLimit
   /** Dedicated HMAC key for short-lived, room-scoped background capabilities.
    *  Generate separate dev/prod values of at least 32 random bytes and set
    *  each with `wrangler secret put BACKGROUND_CAPABILITY_SECRET --env ...`;
@@ -884,13 +892,10 @@ const RATE_LIMITS: Record<string, { max: number; windowMs: number }> = {
   // not a throttle anyone should ever meet.
   'achievement-write': { max: 60, windowMs: 60_000 },
   // Anonymous Voice Mirror funnel beacons: a full run emits ~10 events, so
-  // 60/min per IP is roomy for humans and cheap to spam-bound.
+  // 60/min per IP is roomy for humans and cheap to spam-bound. The lesson
+  // pages' answers share the route but not this table: their limiter is the
+  // LESSON_EVENT_LIMIT binding (handleMirrorEvent), so they keep no address.
   'mirror-event': { max: 60, windowMs: 60_000 },
-  // The lesson pages' answers, on the same route (handleMirrorEvent picks
-  // the bucket by the event's name). A class behind one address answers a
-  // few dozen questions a minute between them; in the bucket above they
-  // would be refused and would starve the app's own events. 300/min per IP.
-  'lesson-event': { max: 300, windowMs: 60_000 },
   // A room host normally mints once when selecting premium art. Thirty per
   // minute leaves room for reconnects and development while bounding the
   // entitlement query + cross-Worker Durable Object proof behind each mint.
@@ -983,9 +988,11 @@ export function rateLimitSubject(
  * full address lets one such tenant mint a fresh budget per request by
  * walking its own range, which defeats every per-IP limit for anonymous
  * callers. Bucketing to the /64 ties the budget to the allocation instead.
- * IPv4 is returned unchanged (one address is one host). The result is only
- * ever a limiter key, never stored or shown, so a non-canonical form is fine
- * as long as it is stable.
+ * IPv4 is returned unchanged (one address is one host). The result is a
+ * limiter key and is never shown. It is stored: checkRateLimit keeps it in
+ * auth_ratelimit, and the cron deletes those rows after
+ * RETENTION_RATE_LIMIT_DAYS (funnel-retention.ts). A non-canonical form is
+ * fine as long as it is stable.
  */
 export function ipRateLimitKey(ip: string | null): string {
   if (ip === null || ip === '') return '127.0.0.1'

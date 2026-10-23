@@ -9,9 +9,11 @@
 // all a lesson page sends: not the predicts, which have no right answer,
 // not the ear games, not the sung or tapped checkpoints.
 //
-// Anonymous: no device id. Every event carries the one client id
-// `lesson-anonymous`, so no answer joins any other row, and its `visit`
-// says which visit it was (the quiz's own count of page loads).
+// Anonymous. The db-worker's database keeps, for each answer, the one
+// client id every lesson page shares (`lesson-anonymous`), the UTC day it
+// came on, and its seven numbers, `visit` among them: the first, the second
+// or a later visit (the quiz's own count of page loads, capped at 3). It
+// keeps no address, no time of day and no device id (handleMirrorEvent).
 //
 // Only a page the site worker served sends: a document with no
 // `#lesson-state` (page-state.ts: `pnpm dev`, the e2e bundle's static
@@ -23,6 +25,7 @@
 // funnel or consent modules: they bring solid-js and package.json with them.
 
 import type { LessonFunnelEvent } from '@/lib/funnel-event-catalog'
+import { LESSON_CLIENT_ID } from '@/lib/funnel-event-catalog'
 import { store } from './dom'
 import { lessonOfHref, PAGE_STATE_ID } from './publish'
 
@@ -36,9 +39,6 @@ export interface AnswerSent {
   /** Which visit to this quiz the answer came in. */
   readonly visit: number
 }
-
-/** The one client id every lesson event carries, so no answer joins any other row. */
-export const LESSON_CLIENT_ID = 'lesson-anonymous'
 
 const EVENT: LessonFunnelEvent = 'lesson_answer'
 
@@ -74,6 +74,9 @@ function questionOf(id: string): { lesson: number; n: number } | null {
   return m === null ? null : { lesson: Number(m[1]), n: Number(m[2]) }
 }
 
+/** The most `visit` says: the first, the second or a later visit. */
+const VISIT_CAP = 3
+
 /**
  * Send one answer, a question's first in this visit. A no-op with no API
  * base, on a page no site worker served, or when consent says no; every
@@ -93,7 +96,7 @@ export function sendLessonAnswer(answer: AnswerSent): void {
       q: question?.n ?? null,
       firstTry: answer.correct ? 1 : 0,
       k: answer.k,
-      visit: answer.visit,
+      visit: Math.min(answer.visit, VISIT_CAP),
       consent,
     }
     // The field names are src/lib/funnel.ts `funnelEventBody`'s. `acq` is

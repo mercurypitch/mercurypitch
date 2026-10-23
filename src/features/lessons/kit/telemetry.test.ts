@@ -85,6 +85,19 @@ describe('sendLessonAnswer', () => {
     expect(sentBody().metrics).toMatchObject({ firstTry: 0 })
   })
 
+  it('sends a third or later visit as 3, and the first two as they are', () => {
+    // Act
+    for (const visit of [1, 2, 3, 4, 17]) sendLessonAnswer({ ...ANSWER, visit })
+
+    // Assert
+    const visits = fetchMock.mock.calls.map(
+      ([, init]) =>
+        (JSON.parse(String(init?.body)) as { metrics: { visit: number } })
+          .metrics.visit,
+    )
+    expect(visits).toEqual([1, 2, 3, 3, 3])
+  })
+
   it('posts JSON to the event route with keepalive and no credentials', () => {
     // Act
     sendLessonAnswer(ANSWER)

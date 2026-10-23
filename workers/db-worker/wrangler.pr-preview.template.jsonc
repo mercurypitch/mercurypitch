@@ -58,4 +58,14 @@
       "bucket_name": "mercurypitch-guided-media-dev",
     },
   ],
+  // The lesson answers' limiter (wrangler.jsonc has the why), with the
+  // previews' own namespace so their traffic never spends dev's or prod's
+  // counters. Without it a preview would refuse every lesson answer.
+  "ratelimits": [
+    {
+      "name": "LESSON_EVENT_LIMIT",
+      "namespace_id": "4104",
+      "simple": { "limit": 300, "period": 60 },
+    },
+  ],
 }
