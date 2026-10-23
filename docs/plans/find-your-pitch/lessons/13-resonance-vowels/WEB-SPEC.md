@@ -144,7 +144,7 @@ section's heading, and the line above it, are in LESSON.md ("Section headings").
    (`kit/next-card.ts:27-29`), as Lesson 2's figures are (`learn/02.html:1806`). The card is a link,
    so the figure holds no button. The practice card is the Voice Mirror card, with "Ten minutes,
    gently, most days" under it; after "Effortful", "Uncomfortable" or "Just listen today" it is the
-   rest card instead, without that line (Toys 6). Both link `/mirror?lesson=13` in a new tab.
+   rest card instead, without that line or link (Toys 6). It links `/mirror?lesson=13` in a new tab.
 9. **Lesson explorer**: the kit's, with Lesson 13 as the current node and the line under its
    heading from LESSON.md; its card shows what `kit/lesson-state.ts` says of a live lesson, the
    plate figure (`fig: 'chladni'`, `kit/explorer-figures.ts:188-213`; FACTS 10a), and no Watch
@@ -702,7 +702,7 @@ paused off screen, and the still images when WebGL fails or would run on the CPU
   read for its pitch and nothing else (FACTS 63). The card suggests the hold on ‘ee’, moving through
   ‘ah’ to ‘oo’, as the page's own suggestion, not a Voice Mirror option, and asks for comfortable
   glides, since its first task asks for a glide "to your highest comfortable note". It comes in two
-  versions, picked by how Sing it ended (Toys 6), and both link the same address.
+  versions, picked by how Sing it ended (Toys 6); the rest card links nowhere since #1177.
 - **Not linked**, with the reasons in FACTS, each checked against the rule that nothing linked may
   claim to assess a vowel:
   - **Long Note** (FACTS 60): free, in the Exercises tab that `mercurypitch.com/pitch-training`
@@ -897,7 +897,7 @@ and the four-words strip in the kit.
 10. `kit/comfort.ts`: an option that sends "Effortful" to the rest card,
     `afterFeeling(f, { restAfterEffort: true })`, since `afterFeeling` leaves it to the coach
     (`:58-67`) and Lessons 6, 7, 9, 10, 11 and 13 all choose it, as Lesson 11's spec proposes (its
-    needs 9). Until the option lands this page overrides `rest` itself, as Lesson 6's page does.
+    needs 9). Built by this PR: Lessons 6, 7 and 8 pass it, and so will this page.
 11. `recallStepHref` in `kit/quiz.ts`, built: Lesson 8's page moved it there (`:134-136`), and
     Lessons 3, 4 and 5 take it from the kit (`lesson-03/quiz-questions.ts:24`,
     `lesson-04/quiz-questions.ts:32`, `lesson-05/quiz-questions.ts:20`), so Lessons 7, 9, 11 and

@@ -96,7 +96,7 @@ line above it, are in LESSON.md ("Section headings").
    card with LESSON.md's eyebrow, title, text, address and second drill: Interval Trainer and Ear
    Lab's Leap. After "Effortful", "Uncomfortable" or "Just listen today" it is Lesson 3's rest card
    instead, with Interval Trainer named and "then tap Interval Trainer" after its address, unlinked
-   since this PR, then the same second drill (Toys 6). Its links, `/pitch-training?lesson=06` and
+   since #1177, then the same second drill (Toys 6). Its links, `/pitch-training?lesson=06` and
    `/ear-lab?lesson=06`, open in a new tab, so neither meets First Light (Practice links). Free play
    unlocks here: every tune-line control on one stage (playbook rule 17), headed in the learner's
    words, "Free play: try every control of the tune line in one place".
@@ -324,7 +324,7 @@ Feedback names the interval and the sound, never the listener.
   "Play it again" while a round waits for its answer, "Next round" after it, and "Play ten more"
   or "Play eight more" at the end. Each answer shows its key, "1 Step" and "2 Leap", or "1 Semitone
   · m2" to "4 Fifth · P5", and under them "Keys 1 and 2 answer while you are in the game." or
-  "Keys 1 to 4 answer while you are in the game." (until this PR they offered Space as a replay;
+  "Keys 1 to 4 answer while you are in the game." (until #1177 they offered Space as a replay;
   focus is always on a button, which keeps Space). A feedback line opens "Yes." after a right
   answer, or "Here it is again, slower." after a miss, before its template (`kit/ear-game.ts`).
 - States: ready (a Play button); playing; answering; feedback shown; finished, with the count and

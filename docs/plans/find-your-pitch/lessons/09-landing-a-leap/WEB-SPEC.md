@@ -123,9 +123,9 @@ heading, and the line above it, are in LESSON.md ("Section headings").
    after its words (`:27-29`, `:184`, `:205`), as Lesson 2's figures are (`learn/02.html:1806`). The
    card is a link, so the figure holds no button. The practice card is the Arpeggio Jumper and
    Interval Trainer card, with "Ten minutes, gently, most days" under it; after "Effortful",
-   "Uncomfortable" or "Just listen today" it is the rest card instead, without that line (Toys 4).
-   Its address links `/pitch-training?lesson=09` in a new tab. Free play unlocks here: the chart's
-   rungs on one stage (playbook rule 17).
+   "Uncomfortable" or "Just listen today" it is the rest card instead, without that line or a link
+   (Toys 4). Its address links `/pitch-training?lesson=09` in a new tab. Free play unlocks here: the
+   chart's rungs on one stage (playbook rule 17).
 9. **Lesson explorer**: the kit's, with Lesson 9 as the current node and the line under its heading
    from LESSON.md; its card shows what `kit/lesson-state.ts` says of a live lesson, and no Watch
    button, since Lesson 9 has no published film (`kit/season.ts:23-25`).
@@ -545,9 +545,9 @@ paused off screen, and the still images when WebGL fails or would run on the CPU
   aside for good, so a first visit lands on the Exercises tab with no intro (FACTS 56), and the card
   carries no first-visit line. The card names the taps ("then tap Arpeggio Jumper or Interval
   Trainer"), because Scale Runner sits between them in the menu (FACTS 53). It comes in two
-  versions, picked by how Sing it ended (Toys 4), and both link the same address. What the card says
-  of each drill is in FACTS 48 to 52, and it says in plain words that both want each note in the
-  octave they play, not an octave away (FACTS 50, 51; CURRICULUM § 4 item 7).
+  versions, picked by how Sing it ended (Toys 4); the rest card, a link until #1177, links nowhere.
+  What the card says of each drill is in FACTS 48 to 52, and it says in plain words that both want
+  each note in the octave they play, not an octave away (FACTS 50, 51; CURRICULUM § 4 item 7).
 - **App content, small** (MASTER-PLAN § 7's App content track), proposed: Arpeggio Jumper's grade
   blends a "richness" score, which is only the run's average pitch clarity, at a quarter of the
   grade (FACTS 50): a measure the card does not mention, of the recording rather than the singing.
@@ -705,11 +705,11 @@ table):
    which they reuse unchanged.
 8. `kit/comfort.ts`: an option that sends "Effortful" to the rest card,
    `afterFeeling(f, { restAfterEffort: true })`, since `afterFeeling` leaves it to the coach
-   (`:58-67`) and Lessons 6, 7 and 9 all choose it (unit test 13). Lesson 6's page (PR #1149) sends
-   effort to the rest card in its own flow, so until the option lands this page overrides `rest`
-   itself, as that page does. `mountFeelings` needs nothing new: PR #1149's `changeable` option
-   serves Lesson 6's sweeps, and this page takes the default, an answer that locks (Toys 4, state
-   8).
+   (`:58-67`) and Lessons 6, 7 and 9 all choose it (unit test 13). Built by this PR: Lesson 6's page
+   (PR #1149) sent effort to the rest card in its own flow until then, and Lessons 6, 7 and 8 now
+   pass the option, as this page will. `mountFeelings` needs nothing new: PR #1149's `changeable`
+   option serves Lesson 6's sweeps, and this page takes the default, an answer that locks (Toys 4,
+   state 8).
 9. The two sound rules' kit parts (Audio), which PR #1149's fix pass brings from Lesson 6's page
    review: `kit/predict.ts`'s `play` may resolve `false` for a play cut short, which the predict
    then never counts as heard, while a `void` result keeps today's meaning (`:31-41`, `:184-188`);

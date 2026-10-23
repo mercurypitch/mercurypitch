@@ -150,8 +150,8 @@ heading, and the line above it, are in LESSON.md ("Section headings").
    card keeps "You've seen every note you sing." and "See the season map", and shows neither "Now
    sing a whole song." nor its Karaoke Night button. The practice card is the Karaoke Night card,
    with "Ten minutes, gently, most days" under it; after "Effortful", "Uncomfortable" or "Just
-   listen today" it is the rest card instead, without that line (Toys 4). Both link
-   `/karaoke-night?lesson=14` in a new tab (57).
+   listen today" it is the rest card instead, without that line or a link (Toys 4). The practice
+   card links `/karaoke-night?lesson=14` in a new tab (57).
 9. **Lesson explorer**: the kit's, with Lesson 14 as the current node and the line under its heading
    from LESSON.md; its card shows what `kit/lesson-state.ts` says of a live lesson, and no Watch
    button, since Lesson 14 has no published film (`kit/season.ts:23-25`).
@@ -692,10 +692,10 @@ paused off screen, and the still images when WebGL fails or would run on the CPU
   `PREMIUM_EXERCISES` gates (55). The card's link is `/karaoke-night?lesson=14`, the season entry's
   (57); Karaoke Night reads no marker and opens with no intro, so the card carries no first-visit
   line, and the marker rides along for the analytics of the lesson that sent the visit (56). It
-  comes in two versions, picked by how Sing it ended (Toys 4), and both link the same address. What
-  the card says of the room is in 54, its own page's words: it draws every note against the note
-  aimed at, plays the singer's own take back, scores the singing, which the card says, and its key
-  chip and Find my key put a song in the comfortable middle. Its page boots Consent Mode and its
+  comes in two versions, picked by how Sing it ended (Toys 4); the rest card has no link (#1177).
+  What the card says of the room is in 54, its own page's words: it draws every note against the
+  note aimed at, plays the singer's own take back, scores the singing, which the card says, and its
+  key chip and Find my key put a song in the comfortable middle. Its page boots Consent Mode and its
   cookie banner and counts one view a session (55): the owner's to accept for a link from a lesson
   (report).
 - **Not linked**, with the reasons in FACTS: Dynamic Swell, whose card promised more of the breath
@@ -861,8 +861,8 @@ among them (PR #1149), and in Lesson 9's spec, beyond the parts Lessons 2 to 9 p
 9. `kit/comfort.ts`: an option that sends "Effortful" to the rest card,
    `afterFeeling(f, { restAfterEffort: true })`, as Lesson 9's spec proposes (What the kit and the
    app still need, 8, there), since `afterFeeling` leaves it to the coach (`:58-67`) and Lessons 6,
-   7, 9 and 14 all choose it. Until the option lands this page overrides `rest` itself, as Lesson
-   6's page does (`lesson-06/sing-flow.ts:18-20`, `:88-97`).
+   7, 9 and 14 all choose it. Built by this PR: Lesson 6's page, which sent effort there in its own
+   flow, now passes it (`lesson-06/sing-flow.ts:18-20`, `:88-97`), and so will this page.
 10. The two sound rules (Audio), wired through the kit parts on main since PR #1149:
     `kit/predict.ts`'s `play` may resolve `false` for a play cut short, which the predict then never
     counts as heard (`:30-41`, `:187-188`), while `true` or nothing means heard; and

@@ -97,7 +97,7 @@ line above it, are in LESSON.md ("Section headings").
    the explorer until Lesson 8 is live, then "Start lesson" to its page. The card is the Vocal Range
    Test card, with "Ten minutes, gently, most days" under it; after "Effortful", "Uncomfortable" or
    "Just listen today" it is the rest card instead, without that line (Toys 4). Only the Vocal Range
-   Test card links `/vocal-range-test?lesson=07`, in a new tab; until this PR the rest card did too.
+   Test card links `/vocal-range-test?lesson=07`, in a new tab; until #1177 the rest card did too.
    Free play unlocks here: every chart control on one stage (playbook rule 17).
 10. **Lesson explorer**: the kit's, with Lesson 7 as the current node, the line under its heading
     from LESSON.md, and the state for a lesson with a page and no film (What the kit and the app
@@ -538,7 +538,7 @@ paused off screen, and the still images when WebGL fails or would run on the CPU
   the voice type the range overlaps most, then five match notes picked from the middle half of the
   range the glides found; it shows the range first, with the span and the overlapping voice type as
   "a broad guide, not a verdict", then Accuracy and Steadiness scores (FACTS 65a to 69a). The card
-  comes in two versions, picked by how Sing it ended (Toys 4). The rest card, a link until this PR,
+  comes in two versions, picked by how Sing it ended (Toys 4). The rest card, a link until #1177,
   now links nowhere. The `?lesson=` marker changes nothing in the test: the main app's step-aside
   never runs in the test's own document, and the test's intent reads only the path (FACTS 64, 72a).
 - **App content, small** (the App content track): on main since `7ed2aa1d2` and `e37bbba59`, all

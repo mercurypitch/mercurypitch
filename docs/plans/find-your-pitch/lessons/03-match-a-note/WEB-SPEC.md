@@ -95,7 +95,7 @@ the Wrap. New: there is no Watch section until a film exists, and the checkpoint
   about the 39 students who said they couldn't copy a note, with its two choices (FACTS 6). Choosing
   shows the three cards one after another, then the answer line, whose bracket speaks to "Most of
   them" without calling it wrong; no choice is ever marked wrong. Under reduced motion the cards
-  appear together. Choosing also shows TESTED, which until this PR showed from the start.
+  appear together. Choosing also shows TESTED, which until #1177 showed from the start.
 - States: waiting for a choice; a sound playing; choice made, cards and answer shown.
 - Accessible text: the figures are text; while the pair plays, the chart's label reads "Merc's A3
   as a band; the reply on the same note" or "the reply a semitone below it".
@@ -123,7 +123,7 @@ the Wrap. New: there is no Watch section until a film exists, and the checkpoint
   here "Louder" (how far) and "Higher" (how fast), in Merc's "ooh" (`kit/sound.ts` kind `merc`),
   its flag reading "Louder: the note stayed put" or "Higher: the note moved up".
 - States and accessible text as in Lesson 1: each slider sounds while held and carries its own
-  `aria-valuetext` (a percentage, a frequency). Since this PR the flag speaks on the kit's status
+  `aria-valuetext` (a percentage, a frequency). Since #1177 the flag speaks on the kit's status
   line (`kit/announce.ts`), not a polite live region, so a screen reader hears what each move did.
 - Beside it, the care card: LESSON.md's four lines, each with an icon from the app's SVG set (no
   emoji), and the comfort line in bold.
@@ -375,7 +375,7 @@ motion or Pause animations each Merc holds a still frame and skips the reactions
   counts any octave, and its "hit" band is this lesson's 35 cents (FACTS 41, 51). It is its own
   document, so a first-time visitor meets no First Light (FACTS 53). The `?lesson=` marker records
   nothing until CURRICULUM § 4 item 6 ships. The card comes in two versions, picked by how the
-  checkpoint ended (Toys, 7). The rest card, a link until this PR, now links nowhere.
+  checkpoint ended (Toys, 7). The rest card, a link until #1177, now links nowhere.
 - **App content, small:**
   - Voice Mirror's first glide said "to your highest" (`src/features/mirror/MirrorApp.tsx:124` at
     `51f1c53de`); "to your highest comfortable note" would match the playbook's range rule
