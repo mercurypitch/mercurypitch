@@ -46,8 +46,8 @@ The publishing gate and the console reach production with that release: v0.9.21,
 has neither.
 
 A page links the earlier lessons its prerequisite chips and its recall name: Lesson 3 links Lessons
-1 and 2; 4 links 2; 5 links 2 and 3; 6 links 4; 7 links 3; 8 and 10 link 6 (8 comes after 1 since
-this PR, with no chip for it); 9 links 3 and 6; 11 links 7; 12 links 10; 13 links 11; 14 links 5, 8,
+1 and 2; 4 links 2; 5 links 2 and 3; 6 links 4; 7 links 3; 8 and 10 link 6 (8 also links 1 since
+this PR, by its chip); 9 links 3 and 6; 11 links 7; 12 links 10; 13 links 11; 14 links 5, 8,
 9 and 12. While the earlier page is not live, the link shows as words with no link, so nothing
 breaks. Publish in that order anyway: MASTER-PLAN § 11 says when each page can go live, and the
 console does not check the order.
@@ -146,7 +146,7 @@ are the mobile app's builds. The next `v` tag carries both pages.
    and Lesson 8 built on no lesson. Decided: Lesson 8 comes after Lesson 1. This PR adds the edge
    [1, 8] to `EDGES` in `kit/season.ts` and to CURRICULUM § 3.3, so the explorer draws a line from
    Lesson 1 to Lesson 8, and `kit/lesson-menu.test.ts` records the new order. Lesson 6 only helps,
-   so Lesson 8's recall still shows once Lesson 6 is done; its page shows no chip for Lesson 1.
+   so Lesson 8's recall still shows once Lesson 6 is done; its page gains an "After Lesson 1" chip.
 8. **Recall links, one rule or two.** Lessons 3, 4, 5, 7 and 8 open the earlier lesson at the step a
    question comes from (`/learn/02#step-5`). Lesson 6 opened Lesson 4's page at its top, as its
    brief asked (its WEB-SPEC, Toys 7), though the step address would work there too. Both open a new
