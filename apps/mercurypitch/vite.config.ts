@@ -413,13 +413,28 @@ export default defineConfig(({ mode, command }) => {
       // whatever the JS target implies: NATIVE_CSS_TARGET, above.
       cssTarget: NATIVE_CSS_TARGET,
       rollupOptions: {
-        // Exactly one HTML document. The web build emits an entry page per SEO
-        // route; none of them belong in a bundle that ships inside an app, and
-        // a second document is also a second AudioContext waiting to happen.
-        input: resolve(
-          fileURLToPath(new URL('.', import.meta.url)),
-          'index.html',
-        ),
+        // The app's one document, and in a test build the TV stage's. The
+        // web build emits an entry page per SEO route; none of them belong
+        // in a bundle that ships inside an app, and a second document of the
+        // app is also a second AudioContext waiting to happen. The stage is
+        // not that: a page with no audio, no plugins and no storage, which a
+        // web view of its own shows on a connected TV while a test build's
+        // switch is on (stage.html, ios/App/App/LyricsWindow/TVStage.swift).
+        // A store build has no switch to show it, so it carries none of it.
+        input: {
+          index: resolve(
+            fileURLToPath(new URL('.', import.meta.url)),
+            'index.html',
+          ),
+          ...(portableConsole
+            ? {
+                stage: resolve(
+                  fileURLToPath(new URL('.', import.meta.url)),
+                  'stage.html',
+                ),
+              }
+            : {}),
+        },
         treeshake: {
           // A Karaoke Stage 2, floating console or launch offer module that
           // nothing uses is dropped whole, its module-level state included

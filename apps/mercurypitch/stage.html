@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="color-scheme" content="dark" />
+    <meta name="theme-color" content="#0b0d12" />
+    <title>Mercury Pitch stage</title>
+    <!--
+      The Karaoke room's stage on a TV connected to the iPhone: a page of its
+      own, in a web view of its own on the TV's screen (ios/App/App/
+      LyricsWindow/TVStage.swift). It loads nothing but itself: no fonts, no
+      Capacitor, no plugins, no storage. Everything it draws arrives from the
+      room through the app (src/stage/main.ts).
+    -->
+    <style>
+      html,
+      body {
+        margin: 0;
+        height: 100%;
+        overflow: hidden;
+        background: #0b0d12;
+      }
+      canvas {
+        display: block;
+        width: 100vw;
+        height: 100vh;
+      }
+    </style>
+  </head>
+  <body>
+    <canvas id="stage" aria-label="The Karaoke room's stage"></canvas>
+    <script type="module" src="/src/stage/main.ts"></script>
+  </body>
+</html>

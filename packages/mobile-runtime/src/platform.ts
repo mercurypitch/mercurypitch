@@ -53,15 +53,20 @@ export type { Unsubscribe } from './native-calls'
 export type {
   PictureInPictureLyrics,
   TvLyricsState,
+  TvStageState,
 } from './picture-in-picture'
 export {
   onPictureInPicture,
   onTvLyrics,
+  onTvStage,
   pictureInPictureNeedsLyrics,
   readTvLyrics,
+  readTvStage,
+  sendTvStage,
   setPictureInPictureAutoEnter,
   setPictureInPictureLyrics,
   setTvLyricsEnabled,
+  setTvStageEnabled,
 } from './picture-in-picture'
 
 /**

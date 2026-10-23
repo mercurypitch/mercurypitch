@@ -90,7 +90,7 @@ These are the rules that break things when ignored.
 | `voice-control` | [useVoiceControlController.ts](../../src/features/voice-control/useVoiceControlController.ts) | 6.1k | useVoiceControlController — voice control's dispatcher and lifecycle Owns the listener (started/stopped with the persisted enable flag, e... |
 | `onboarding` | [FirstLight.tsx](../../src/features/onboarding/FirstLight.tsx) | 5.7k | First Light — the beat orchestrator Owns the shared frame (sky, progress hairline, escape) and swaps the current beat inside it. |
 | `piano` | [piano-sampled-instrument.ts](../../src/features/piano/instrument/piano-sampled-instrument.ts) | 5.7k | Piano sampled instrument — lazy Salamander playback on one bounded graph Construction is deliberately inert. |
-| `karaoke-room` | [karaoke-room-store.ts](../../src/features/karaoke-room/karaoke-room-store.ts) | 5.3k | The Karaoke room's memory: what it keeps across an unmount The room is a tab, and a tab unmounts every time the singer leaves it. |
+| `karaoke-room` | [karaoke-room-store.ts](../../src/features/karaoke-room/karaoke-room-store.ts) | 5.5k | The Karaoke room's memory: what it keeps across an unmount The room is a tab, and a tab unmounts every time the singer leaves it. |
 | `play-along` | [useSongController.ts](../../src/features/play-along/useSongController.ts) | 5.0k | Shared song selection controller owns lazy catalogs, stale-safe staging, and leases. |
 | `challenges` | [ChallengeStage.tsx](../../src/features/challenges/ChallengeStage.tsx) | 4.9k | ChallengeStage — the Legend Attempt performed on the zen canvas "Sing it" no longer runs the plain sight-singing drill: the challenge's m... |
 | `zen` | [ZenPitchStage.tsx](../../src/features/zen/ZenPitchStage.tsx) | 4.9k | _(no header comment)_ |
@@ -159,6 +159,7 @@ These are the rules that break things when ignored.
 | `domain` | [performance-take.ts](../../src/lib/domain/performance-take.ts) | 1.0k | Performance Take — local replay and scored-result contract Hear Yourself still uses its original VoiceTake stores internally, but a kept... |
 | `glass` | [fracture.ts](../../src/lib/glass/fracture.ts) | 1.0k | Glass — fracture geometry, shard physics and the shatter timeline (spec §7 + §17.3). |
 | `key-shift` | [key-shift-graph.ts](../../src/lib/key-shift/key-shift-graph.ts) | 1.0k | Key shift graph — routes audio buses through the key shifter Three buses: - pitched: everything that moves with the key → shifter P; - vo... |
+| `tv-stage` | [renderer.ts](../../src/lib/tv-stage/renderer.ts) | 900 | TV stage renderer — the stage, drawn on a canvas at the TV's size One frame of the stage from its state (model.ts) and the wall clock: th... |
 | `tab` | [gp-to-midi-song.ts](../../src/lib/tab/gp-to-midi-song.ts) | 750 | Guitar Pro (.gp/.gp3/.gp4/.gp5/.gpx) → MidiSong mapping Pure mapping from an alphaTab Score into the app's existing MidiSong shape, so im... |
 | `portable` | [portable-audio.ts](../../src/lib/portable/portable-audio.ts) | 700 | ── Portable audio Turns a stored WAV stem into something small enough to send or to keep on a phone. |
 | `drive` | [drive-client.ts](../../src/lib/drive/drive-client.ts) | 450 | ── Google Drive client The handful of Drive REST calls sync needs, and nothing else. |
@@ -251,12 +252,14 @@ These are the rules that break things when ignored.
 | [karaoke-key-store.ts](../../src/stores/karaoke-key-store.ts) | 50 | Karaoke key store — the key each song was last sung in A per-song key shift (semitones, −6..+6), remembered on this device so a song come... |
 | [karaoke-settings-store.ts](../../src/stores/karaoke-settings-store.ts) | 50 | Karaoke Settings Store — the preferences the Karaoke tab actually honours These used to live behind the cogwheel in the Karaoke tab heade... |
 | [lip-roll-store.ts](../../src/stores/lip-roll-store.ts) | 50 | Lip roll's records: the best at each level, the singer's easy note The glide rooms' records (glide-room-store.ts) under Lip roll's keys:... |
+| [live-mic-store.ts](../../src/stores/live-mic-store.ts) | 50 | Live mic store — what the singing room's microphone heard, for others The stem mixer's microphone keeps its own pitch readings and works... |
 | [ng-slides-store.ts](../../src/stores/ng-slides-store.ts) | 50 | Ng slides' records: the best at each level, the singer's easy note The glide rooms' records (glide-room-store.ts) under Ng slides' keys:... |
 | [playback-state-store.ts](../../src/stores/playback-state-store.ts) | 50 | Playback State Store — transport position, shared app-wide Prefer the `isPlaying()` / `isPaused()` / `isStopped()` helpers over reading t... |
 | [playback-store.ts](../../src/stores/playback-store.ts) | 50 | Playback Store — Transport and playback state |
 | [promo-store.ts](../../src/stores/promo-store.ts) | 50 | promo-store — the promo code the app offers with one click The server decides which code is featured and whether it is open (GET /api/bil... |
 | [settings-section.ts](../../src/stores/settings-section.ts) | 50 | Settings sections — the web Settings panel's sub-tabs, by name A module of its own so the native shell bridge (native-shell-store.ts) can... |
 | [transport-store.ts](../../src/stores/transport-store.ts) | 50 | Transport Store — persisted tempo, count-in and playback speed Every setter clamps to a musically valid range (bpm 40-280, speed 0.25-2.0x). |
+| [tv-stage-store.ts](../../src/stores/tv-stage-store.ts) | 50 | TV stage store — how far ahead a connected TV draws the stage A TV that draws the Karaoke room's stage (src/lib/tv-stage/) shows the song... |
 | [unlock-claims.ts](../../src/stores/unlock-claims.ts) | 50 | Unlock claims: a room that shows its own badges, and the tap you feel The notifications store's half of routing an unlock (its header exp... |
 | [usage-store.ts](../../src/stores/usage-store.ts) | 50 | Usage store — lightweight cumulative "has really used the app" tracking Persists two coarse signals across sessions: - usageMs: foregroun... |
 | [uvr-upload-queue-store.ts](../../src/stores/uvr-upload-queue-store.ts) | 50 | UVR Upload Queue Store — app-lifetime holder for the stem-upload queue |
