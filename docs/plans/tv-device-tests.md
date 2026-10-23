@@ -134,18 +134,32 @@ the wizard found no number: the first click came out of the TV loud and the
 rest quieter, even at TV volume 100, and too few clicks were heard. The
 likely cause is the wizard's detection rather than the route: it holds every
 click to a quarter of the loudest, credits no reply later than 375 ms and
-keeps no number over 500 ms; a fix is planned (plan 1.6, `REQ-TV-096`).
-Until it ships, a run may succeed with the TV's automatic volume and sound
-processing off (on the LG, for example Auto Volume and AI Sound Pro; names
-vary by model) and the phone held near the TV's speaker. Without a number
-the TV borrows the speaker's, which is probably 100 to 300 ms short of a
-mirrored round trip (the plan's section 2.3 figures), so a song may score
-late.
+keeps no number over 500 ms; the fix is merged (PR #1189, `REQ-TV-096`) and
+goes to TestFlight with the next tag. Until it ships, a run may succeed with
+the TV's automatic volume and sound processing off (on the LG, for example
+Auto Volume and AI Sound Pro; names vary by model) and the phone held near
+the TV's speaker. Without a number the TV borrows the speaker's, which is
+probably 100 to 300 ms short of a mirrored round trip (the plan's section
+2.3 figures), so a song may score late.
+
+**Again with the build after PR #1189** (the next `mp-v` tag):
+
+1. Mirror to the LG C2. Settings, Microphone, Measure latency for AirPlay.
+   Before the run the wizard should say to hold the phone near the TV's
+   speaker and to turn off the TV's automatic volume.
+2. Start. The run takes about 11 seconds, with clicks at uneven gaps. Write
+   down the number and the spread.
+3. If the TV has Auto Volume, run once with it on and once with it off: does
+   the number change, or only the spread?
+4. If a run fails, copy its sentence into the notes. A delay over a second
+   is named rather than kept.
+5. Sing a song you know while mirroring: does the score feel right now?
 
 | Route                | Latency, result and spread                                                      | Score feels right? | Notes                                        |
 | -------------------- | ------------------------------------------------------------------------------- | ------------------ | -------------------------------------------- |
 | Phone speaker        | 113 ms (91 ms before)                                                           |                    |                                              |
 | AirPlay to the LG C2 | No number: first click loud, the rest quieter even at volume 100; too few heard |                    | The wizard's detection; plan 1.6, REQ-TV-096 |
+| LG C2, after #1189   |                                                                                 |                    |                                              |
 | AirPlay to Samsung   |                                                                                 |                    |                                              |
 
 ## Test 6: the stage on the TV (PR #1179, TestFlight mp-v0.8.41, build 1321)
