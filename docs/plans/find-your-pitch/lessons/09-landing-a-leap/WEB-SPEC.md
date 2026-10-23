@@ -639,15 +639,15 @@ table):
    hook (`src/lesson-gate.ts:17-19`, `:445-460`); only the meta description and the Article's
    description, which repeat each other, may shorten the hook, and every other copy carries it
    whole. As Lesson 2's head has them (`learn/02.html:9-128`):
-   - the title, "Landing a leap: Find Your Pitch, Lesson 9 | MercuryPitch" (56 characters, under the
-     test's 60, `lesson-pages.test.ts:128-129`), which holds the Article's headline (`:161`), and
+   - the title, "Landing a leap: singing big intervals in tune | MercuryPitch" (60 characters, the
+     test's most, `lesson-pages.test.ts:128-129`), SEARCH.md § 4's draft (`SEARCH.md:227`), and
      the h1, `h1.hook#hook`, the hook in its default wording (`lesson-copy.test.ts:323-332`; Hero);
    - the meta description, "How do you land a note you have to leap to? Hear it first, aim at its
      band, and sing do-mi-so-do as a ladder. A free lesson in your browser." (140 characters, inside
      the test's 80 to 160, `lesson-pages.test.ts:130-133`, and 157 with the alternative hook that
      #1186 dropped);
-   - `og:title` and `twitter:title`, "Landing a leap: Find Your Pitch, Lesson 9"
-     (`learn/02.html:26-29`, `:45-48`);
+   - `og:title` and `twitter:title` in the series' form, "Landing a leap: Find Your Pitch, Lesson
+     9", holding the headline, as the title did until this PR (`:160-164`; `learn/02.html:26-29`);
    - `og:description`, the full hook and one line, "How do you land a note you have to leap to? Hear
      the landing note first, then aim at it." (`lesson-copy.test.ts:349-352`;
      `learn/02.html:30-33`), and `twitter:description`, the hook exactly
