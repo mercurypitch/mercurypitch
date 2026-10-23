@@ -599,9 +599,9 @@ paused off screen, and the still images when WebGL fails or would run on the CPU
   tap Arpeggio Jumper", as Lesson 4's reads "Exercises, then tap Scale Runner" (`season.ts:236-241`,
   `explorer.ts:178`). The note is in the learner's words (`season.ts:34-37`); `needs` keeps
   "Interval Trainer (sing) and Arpeggio Jumper" for the team, and no card draws it. Its topics
-  stay. Its hook is the entry's, the default (`season.ts:331`); its tease, which Lesson 8's
-  card draws, is `kit/lesson-copy.ts`'s, which held the alternative `'harder'` (`:106-114`)
-  until this PR dropped it (FACTS 1). `EDGES` already holds [3, 9] and [6, 9]
+  stay. Its hook is the entry's, the default (`season.ts:331`); its tease, which Lesson 8's card
+  draws, is `kit/lesson-copy.ts`'s (`:114`), whose entry held the alternative `'harder'` (`:106-114`
+  at `b7093a0a4`) until this PR dropped it (FACTS 1). `EDGES` already holds [3, 9] and [6, 9]
   (`season.ts:417-418`).
 - **The explorer card**: what the kit draws for a lesson with a page and no published film: its
   state and main action from `kit/lesson-state.ts` ("Start lesson", "Continue: step N" or "Read
@@ -634,7 +634,7 @@ table):
 2. The page's head, written in full from its first commit:
    `src/features/lessons/kit/lesson-copy.test.ts` reads every `learn/NN.html`, drafts included
    (`:305-320`), and `src/tests/lesson-pages.test.ts` holds every lesson document's head and
-   structured data, a draft's included (`:112-210`), and a released lesson's listings (`:228-256`).
+   structured data, a draft's included (`:113-226`), and a released lesson's listings (`:228-256`).
    The hook's copies are the ones the site worker rewrites when the console picks an alternative
    hook (`src/lesson-gate.ts:17-19`, `:445-460`); only the meta description and the Article's
    description, which repeat each other, may shorten the hook, and every other copy carries it

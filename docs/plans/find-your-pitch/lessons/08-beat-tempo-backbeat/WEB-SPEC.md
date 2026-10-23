@@ -860,8 +860,8 @@ Lesson 8's entry (`kit/season.ts:303-324`; FACTS 58), as this page wrote it:
 - The hook stays word for word (`season.ts:312`; FACTS 1), with no alternative, and the tease stays
   as `kit/lesson-copy.ts:113` has it: "Same song, same speed. Only the claps move.", which Lesson
   7's card shows (FACTS 6a). Lesson 9's entry carries the hook this page's card shows
-  (`season.ts:331`), and its copy the tease (`kit/lesson-copy.ts:113`), its earlier hook an
-  alternative (`:106-112`) until this PR dropped it; all are Lesson 9's, not this page's (FACTS 6).
+  (`season.ts:331`), and its copy the tease (`kit/lesson-copy.ts:114`) and, until this PR, its old
+  hook as an alternative (`:106-112` at `b7093a0a4`); all are Lesson 9's, not this page's (FACTS 6).
 
 ## What the kit and the app still need
 
@@ -909,11 +909,11 @@ was built on.
    time of its own. It moves the whole figure, live or still, so both Mercs hop while blue sings.
 9. The next card's tease and Lesson 9's hook need nothing: the curiosity plan's kit work is on main
    (`8cba5c3d9`, `e364eeaa6`). The card draws Lesson 9's tease, "One note, two ways up: step by
-   step, or one leap." (`kit/lesson-copy.ts:113`), above its new hook, "How do you land a note you
+   step, or one leap." (`kit/lesson-copy.ts:114`), above its new hook, "How do you land a note you
    have to leap to?" (`season.ts:331`), under `.next-tease` (`kit/next-card.ts:142`;
    `lesson-sections.css:226-232`), and the old hook was the admin console's alternative in
-   `kit/lesson-copy.ts:106-112` until this PR dropped it. This page adds only its tease figure to
-   the slot (Toys 9).
+   `kit/lesson-copy.ts:106-112` at `b7093a0a4` until this PR dropped it. This page adds only its
+   tease figure to the slot (Toys 9).
 10. `kit/quiz.ts`: `recallStepHref` promoted beside `lessonPageHref` (`:134-136`, `:130-132`),
     since this page is its fourth user after Lessons 3, 4 and 5, whose own copies became
     re-exports of the kit's (`lesson-03/quiz-questions.ts:23-24`, `lesson-04/quiz-questions.ts:31-32`,
@@ -936,7 +936,7 @@ was built on.
 14. The head, from `docs/plans/find-your-pitch/SEARCH.md` § 3 and Lesson 2's document
     (`learn/02.html:3-137`), whole in the page's first commit. Two tests hold it: the kit's
     `src/features/lessons/kit/lesson-copy.test.ts:323-358` reads every `learn/NN.html`, drafts
-    included, from its first commit, and `src/tests/lesson-pages.test.ts:112-210` holds every lesson
+    included, from its first commit, and `src/tests/lesson-pages.test.ts:113-226` holds every lesson
     document's head too. The copies of the hook that the first test reads are the ones the site
     worker rewrites when the console picks another hook (`src/lesson-gate.ts:17-19`).
     - The title, `h1.hook#hook`, the hook word for word (`lesson-copy.test.ts:323-332`).

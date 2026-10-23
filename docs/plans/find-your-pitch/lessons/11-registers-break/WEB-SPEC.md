@@ -707,9 +707,9 @@ paused off screen, and the still images when WebGL fails or would run on the CPU
   "siren and slide drills" for the team, and no card draws it. The link lands with the page, not
   before it as Lesson 9's did: every lesson page's explorer prints it, and only this page says what
   the drill's help asks and why a flip may come anyway (Decisions). Its hook is the entry's
-  (`season.ts:357`), which this package changed, and its tease is `kit/lesson-copy.ts`'s
-  (`:124-132`), which held the alternative `same-note` until this PR dropped it (FACTS 1). `EDGES`
-  already holds [7, 11] (`season.ts:420`).
+  (`season.ts:357`), which this package changed, and its tease is `kit/lesson-copy.ts`'s (`:116`),
+  whose entry held the alternative `same-note` (`:124-132` at `b7093a0a4`) until this PR dropped it
+  (FACTS 1). `EDGES` already holds [7, 11] (`season.ts:420`).
 - **The explorer card**: what the kit draws for a lesson with a page and no published film: its
   state and main action from `kit/lesson-state.ts` ("Start lesson", "Continue: step N" or "Read
   again"), its minutes, no Watch button (`kit/season.ts:23-25`), and the learner's fields only,
@@ -746,7 +746,7 @@ the others take it.
    `src/features/lessons/kit/lesson-copy.test.ts` reads every `learn/NN.html`, drafts included
    (`:373-408`), and `src/tests/lesson-pages.test.ts` holds every lesson document's head, share
    card and structured data, a draft's included, since a draft the console publishes goes live
-   with the head it was built with (`:13-18`, `:112-210`). The hook's copies are the ones the site
+   with the head it was built with (`:13-18`, `:113-226`). The hook's copies are the ones the site
    worker rewrites when the console picks the alternative hook (`src/lesson-gate.ts:17-19`,
    `:445-460`); only the meta description and the Article's description, which repeat each other,
    may shorten the hook, and every other copy carries it whole. As Lesson 2's head has them
