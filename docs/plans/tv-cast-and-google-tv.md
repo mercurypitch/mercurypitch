@@ -784,10 +784,10 @@ Flagged so they are checked, not trusted.
   - Phone-mic link as a path (`/mic/CODE`).
 - **tv-apps-and-phone-mic.md:** section 4.2's link becomes `/mic/CODE`; section 4.3's
   cost question is answered by section 2.5 here; section 6 points here for
-  phases P1, P5 and P6.
+  phases P1, P5 and P6. Done with this plan, and its header now points here.
 - **search-and-answer-engines.md section 7.1:** note that the 64-bit and
   16 KB line is met automatically by a bundle without native code, and that
-  CI should prove the bundle has none.
+  CI should prove the bundle has none. Done with this plan.
 - **docs/agent/MISTAKES.md**, once 1.1 lands: the Capacitor 8.5 scene template
   and external displays. 1.1 is merged and device-confirmed (2026-10-22). The
   entry is drafted and waits to be appended (the file is too large for the
