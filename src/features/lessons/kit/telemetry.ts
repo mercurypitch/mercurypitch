@@ -13,7 +13,12 @@
 // client id every lesson page shares (`lesson-anonymous`), the UTC day it
 // came on, and its seven numbers, `visit` among them: the first, the second
 // or a later visit (the quiz's own count of page loads, capped at 3). It
-// keeps no address, no time of day and no device id (handleMirrorEvent).
+// keeps no address, no time of day and no device id, and the row's place in
+// its table is drawn at random, so that does not date it either
+// (handleMirrorEvent, mirrorEventInsert). Outside that database Cloudflare
+// keeps more, for a while: its request logs hold each request's address and
+// time for up to 7 days, and D1's point-in-time recovery can show the minute
+// a row was added for up to 30. The privacy notice has to say both.
 //
 // Only a page the site worker served sends: a document with no
 // `#lesson-state` (page-state.ts: `pnpm dev`, the e2e bundle's static

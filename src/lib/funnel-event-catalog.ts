@@ -450,10 +450,11 @@ export const GUIDE_FUNNEL_EVENTS = [
 /**
  * The Find Your Pitch lesson pages (src/features/lessons/kit/telemetry.ts).
  * Anonymous. A lesson event's row keeps the one client id every lesson page
- * shares (LESSON_CLIENT_ID), the UTC day it came on and its seven numbers.
- * It keeps no address (the Worker's limiter for it is Cloudflare's, not the
- * auth_ratelimit table), no time of day and no device id
- * (workers/db-worker/src/index.ts handleMirrorEvent).
+ * shares (LESSON_CLIENT_ID), the UTC day it came on and its seven numbers,
+ * at a random place in its table. It keeps no address (the Worker's limiter
+ * for it is Cloudflare's, not the auth_ratelimit table), no time of day and
+ * no device id (workers/db-worker/src/index.ts handleMirrorEvent). What
+ * Cloudflare keeps beside it, for a while, is in telemetry.ts.
  */
 export const LESSON_FUNNEL_EVENTS = [
   /** A quick check's or a recall's question, answered for the first time in
