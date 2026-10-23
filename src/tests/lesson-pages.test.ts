@@ -62,6 +62,15 @@ const ORGANIZATION = {
   url: 'https://mercurypitch.com/',
 }
 
+// The series every lesson is part of, as its hub at /learn/ names it.
+const HUB = 'https://mercurypitch.com/learn/'
+const SERIES = {
+  '@type': 'CreativeWorkSeries',
+  '@id': `${HUB}#series`,
+  name: 'Find Your Pitch',
+  url: HUB,
+}
+
 // Released: every learn/NN.html the draft list does not hold back.
 const RELEASED = releasedLessons(repo)
 // Every lesson document, released or a draft: any of them can be live.
@@ -149,10 +158,7 @@ describe.each(DOCUMENTS)('lesson document %i', (n) => {
     expect(article.learningResourceType).toBe('Lesson')
     expect(article.isAccessibleForFree).toBe(true)
     expect(article.position).toBe(n)
-    expect(article.isPartOf).toEqual({
-      '@type': 'CreativeWorkSeries',
-      name: 'Find Your Pitch',
-    })
+    expect(article.isPartOf).toEqual(SERIES)
     expect(article.author).toEqual(ORGANIZATION)
     expect(article.publisher).toEqual(ORGANIZATION)
     // Repeats the page, never a second version of it.
@@ -165,7 +171,7 @@ describe.each(DOCUMENTS)('lesson document %i', (n) => {
     expect(meta(document, 'twitter:title')).toBe(meta(document, 'og:title'))
   })
 
-  it('gives search a trail back to the home page', () => {
+  it('gives search a trail back through the hub to the home page', () => {
     const document = parse(file)
     const trail = jsonLd(document).find(
       (node) => node['@type'] === 'BreadcrumbList',
@@ -173,8 +179,9 @@ describe.each(DOCUMENTS)('lesson document %i', (n) => {
     const items = (trail?.itemListElement ?? []) as Record<string, unknown>[]
     const article = jsonLd(document).find((node) => node['@type'] === 'Article')
 
-    expect(items.length).toBeGreaterThanOrEqual(2)
+    expect(items).toHaveLength(3)
     expect(items[0]?.item).toBe('https://mercurypitch.com/')
+    expect([items[1]?.name, items[1]?.item]).toEqual(['Find Your Pitch', HUB])
     expect(items.at(-1)?.name).toBe(article?.headline)
     items.forEach((item, index) => expect(item.position).toBe(index + 1))
   })
