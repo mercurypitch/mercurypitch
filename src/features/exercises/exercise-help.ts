@@ -167,8 +167,8 @@ export const EXERCISE_HELP: Record<ExerciseType, ExerciseHelp> = {
       'Grow and shrink your volume on a held note while keeping pitch steady.',
     body: [
       'A "swell" (messa di voce) means starting soft, growing louder, then fading back — all on one steady pitch.',
-      'The hard part is keeping the note in tune while the volume changes. Support the sound with steady breath.',
-      'It runs in short rounds and scores your control over the volume curve and pitch.',
+      'The hard part is keeping the note in tune while the volume changes.',
+      'It runs in short rounds, scored on staying in tune and how wide the swell is.',
     ],
   },
   [EXERCISE_CHORD_STACKER]: {
