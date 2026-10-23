@@ -12,8 +12,8 @@
 //
 // The recall asks Lesson 4's questions 1 and 4, the very objects Lesson 4's
 // page asks, under their ids `l04-q1` and `l04-q4` (FACTS 7). The kit's quiz
-// turns their "Try Step 1 again" into "Try Lesson 4, Step 1 again", a plain
-// link to Lesson 4's page in a new tab (WEB-SPEC, Toys 7).
+// turns their "Try Step 1 again" into "Try Lesson 4, Step 1 again", a
+// link to Lesson 4's page at that step, in a new tab (WEB-SPEC, Toys 7).
 
 import { signsHtml } from '@/features/lessons/kit/notes'
 import type { QuizQuestion } from '@/features/lessons/kit/quiz'
@@ -26,10 +26,6 @@ const tryStep = (n: number): string =>
 /** The recall's two questions, Lesson 4's own. */
 export const RECALL_QUESTIONS: readonly QuizQuestion[] =
   LESSON_4_QUESTIONS.filter((q) => q.id === 'l04-q1' || q.id === 'l04-q4')
-
-/** The recall's links: Lesson 4's page only, never a step address (WEB-SPEC, Toys 7). */
-export const recallHref = (lesson: number): string =>
-  `/learn/${String(lesson).padStart(2, '0')}`
 
 /** A question's play button, in its slot. */
 const playSlot = (what: string, color: string): string =>
