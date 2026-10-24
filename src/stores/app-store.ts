@@ -1772,6 +1772,17 @@ const LEADERBOARD_TOUR_STEPS: WalkthroughStep[] = [
 
 const HOME_TOUR_STEPS: WalkthroughStep[] = [
   {
+    title: 'Your plan',
+    description:
+      'For a week, Merc’s plan sits here: the stops picked from your answers, each ticked once you’ve done it. Skipped the questions? Start asks them.',
+    targetSelector: '[data-testid="home-plan-card"]',
+    placement: 'bottom',
+    requiredTab: TAB_HOME,
+    // Drawn in the week after the plan, above the streak, and never in the
+    // native app; without it the step drops out.
+    whenPresent: true,
+  },
+  {
     title: 'Your daily home',
     description:
       'Home is your launchpad every day — your streak, one guided session picked for you, and this week’s challenge, all in one place.',
