@@ -937,6 +937,13 @@ import handler, issue #813.
 **Rule:** the root of a dialog that passes `isolateKeyboard` gets `tabindex="-1"` and no focus ring (the trap does not count the root as a Tab stop or open on it), and a capture-phase window or document shortcut yields to `[role="dialog"]`, as `isInsideOverlay` does. Bind the dialog's own key handlers natively, as "Use native key handlers inside propagation-stopping dialogs" says; `trap-key-handlers.test.ts` scans the imports of every host that passes `isolateKeyboard` for the delegated ones, and fails when a new host is missing from its list.
 **See:** `isolateKeyboard` in `src/lib/use-focus-trap.ts`, `isInsideOverlay` in `src/lib/space-playback.ts`, `src/tests/utils/trap-keys.ts`, `src/tests/trap-key-handlers.test.ts`
 
+### Never write the address from state between a popstate and its hashchange
+
+**Symptom:** `onboarding.spec.ts`'s Map test failed about one run in 60 at six workers: after `goto('/#/map')` First Light stayed on its first beat, with `#/home` in the address.
+**Cause:** a browser fires popstate first for every change of the hash, a link's and a typed address's as well as Back's, with the address already moved, and the hashchange in a task of its own after it (measured in headless Chromium). The plan store's lazy import landed in that gap and reran the router's state-to-hash sync, which wrote `#/home` back with replaceState, so the hashchange read `#/home`. A jsdom test that pushes and then dispatches only a hashchange never opens the gap.
+**Rule:** an effect that writes the address from state holds off while the browser has moved somewhere the router has not read (`unreadMove`: set by the popstate, cleared by the hashchange), and its test dispatches the popstate, then changes state, then the hashchange. Do not read a popstate as "a traversal": a link fires one too.
+**See:** `holdForMove` in `src/features/routing/useHashRouter.ts`; "a move the router has not read yet" in `src/features/routing/useHashRouter.test.tsx`
+
 ## Performance
 
 ### Preserve physical material units when baking decoded geometry
