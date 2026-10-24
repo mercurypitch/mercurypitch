@@ -379,7 +379,7 @@ row, the previous lesson's next-lesson line and FACTS row, `next-card.test.ts` w
 | Did the reader play the opening, predict, scroll past it, open the next card?         | nothing                                      | needs new tracking                        |
 | Lesson-to-app clicks by `?lesson=NN`                                                  | nothing: it only steps First Light aside     | needs new tracking (CURRICULUM §4 item 6) |
 
-Quiz answers stayed on the device until this PR; now each question's first answer in a visit is an anonymous event under
+Quiz answers stayed on the device until #1193; now each question's first answer in a visit is an anonymous event under
 the owner's consent rule of 23 October 2026 (MASTER-PLAN § 9, § 12 item 11). The `?lesson=` attribution and the opening,
 predict, scroll and next-card measures are still not built: each needs counts-only events and a name in
 `src/lib/funnel-event-catalog.ts`. Baseline: Lessons 1 and 2 as uploaded; a YouTube re-cut is a new video (Phase 4).

@@ -632,7 +632,7 @@ the link where that lesson is not live (`:186-190`).
   "Right." or "Not quite." before each line (`quiz.ts:315`), so no feedback line starts with
   "Right", "Yes" or "Correct". "Try Step 2 again", "Try Step 3 again" and "Try Step 4 again" use the
   kit's `data-goto-step`. LESSON.md's note on the shuffle is editorial and never printed. Answers
-  stay local; this PR sends each first answer in a visit, anonymously.
+  stay local; #1193 sends each first answer in a visit, anonymously.
 
 ## Audio
 

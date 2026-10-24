@@ -611,7 +611,7 @@ keeps a link's words and drops the link wherever that lesson is not live.
   triad (FACTS 79), named "Play the question's chord", so it never shares a name with the cold
   open's Play the chord; the kit keeps a slot's controls across answers, and the page handles them
   with a listener on the quiz's `host`. "Try Step 1 again" to "Try Step 5 again" use the kit's
-  `data-goto-step`. Answers stay local; this PR sends each first answer in a visit, anonymously.
+  `data-goto-step`. Answers stay local; #1193 sends each first answer in a visit, anonymously.
 
 ### 9. Tease still
 

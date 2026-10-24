@@ -398,7 +398,7 @@ Tests:
   answering all four marks Lesson 5 done in the explorer; a check icon and ink (not gold) on the
   right answer, and feedback that links back to Steps 1, 2, 4 and 5 (`data-goto-step`). No feedback
   line starts with "Right", "Yes" or "Correct": the kit prints "Right." or "Not quite." itself
-  (`kit/quiz.ts:315`). Answers stay in localStorage; since this PR each question's first answer in a
+  (`kit/quiz.ts:315`). Answers stay in localStorage; since #1193 each question's first answer in a
   visit also goes out, anonymously (`kit/telemetry.ts`).
 - Two quizzes on one page need the three changes to `kit/quiz.ts` that Lesson 2's spec lists (a
   root per quiz, `lesson` optional, a question `id`); Lesson 2's page brings them, and this page

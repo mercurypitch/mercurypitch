@@ -558,7 +558,7 @@ is not live (`:206-209`).
   quite." before each line (`quiz.ts:315`), so no feedback line starts with "Right", "Yes" or
   "Correct". "Try Step 2 again", "Try Step 3 again", "Try Step 4 again" and "Try Step 5 again" use
   the kit's `data-goto-step`. LESSON.md's note on the shuffle is editorial and never printed.
-  Answers stay local; this PR sends each first answer in a visit, anonymously.
+  Answers stay local; #1193 sends each first answer in a visit, anonymously.
 
 ### 6. Go deeper drawers
 

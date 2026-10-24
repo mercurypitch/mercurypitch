@@ -372,7 +372,7 @@ twelve notes (see CURRICULUM § 5).
 | Craft      | Critic rounds to SHIP; factual corrections after publishing                                                                                                         | Three or fewer; zero                                      |
 
 Each question has three or four options, so a blind guess scores a third or a quarter; scores are
-reported guess-corrected, (raw - 1/k) / (1 - 1/k) for k options. Until this PR quiz answers stayed
+reported guess-corrected, (raw - 1/k) / (1 - 1/k) for k options. Until #1193 quiz answers stayed
 in the browser; now each question's first answer in a visit is an anonymous `lesson_answer` event
 (`page`, `qLesson`, `q`, `firstTry`, `k`, `visit`, `consent`). Predicts and checkpoints send none.
 

@@ -257,7 +257,7 @@ optional `lesson` (`:82-83`, `:344-349`) and the question `id` (`:43-47`).
   nothing done. Neither question plays a sound (FACTS 62). "Try Lesson 2, Step 2 again" and "Try
   Lesson 2, Step 5 again" are plain links to Lesson 2's steps, `/learn/02#lesson`, opening in a new tab so the
   viewer keeps their place here; never `data-goto-step`, which would move this page's own deck. On
-  the public host, since this PR, each question's first answer in a visit is an anonymous
+  the public host, since #1193, each question's first answer in a visit is an anonymous
   `lesson_answer` event with its visit.
 - **Quick check**: LESSON.md's four questions, ids `l04-q1` to `l04-q4`, keys `fyp-l04-seed` and
   `fyp-l04-quiz-v1`, and `lesson: 4`, so answering all four marks Lesson 4 done in the explorer.
@@ -266,7 +266,7 @@ optional `lesson` (`:82-83`, `:344-349`) and the question `id` (`:43-47`).
   `stop-c` (FACTS 58). The kit rebuilds the questions on every answer (`kit/quiz.ts:301-304`,
   `:321-322`), so that button is handled by a listener on the quiz's root (`#qs` today), as the step
   links are. "Try Step 1 again" and "Try Step 3 again" use the kit's `data-goto-step`. Answers stay
-  in the viewer's browser; since this PR each question's first answer in a visit also goes out,
+  in the viewer's browser; since #1193 each question's first answer in a visit also goes out,
   anonymously.
 
 ### 6. Go deeper drawer
