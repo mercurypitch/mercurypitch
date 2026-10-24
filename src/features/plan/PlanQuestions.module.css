@@ -1,0 +1,600 @@
+/* ============================================================
+   PlanQuestions: the four question screens
+   ============================================================
+
+   The look is the approved mock's (your-plan-in-four-taps.html, 19 Oct). The
+   tokens, Merc's line, the headline and the scroll region are shared with the
+   plan screen and written once, in plan-chrome.module.css, which this sheet
+   composes (the rule at the top of that file says what a composing sheet may
+   set). What is here is the questions' own.
+
+   Where things sit:
+
+   - The root sets no `position`. Back and Not now are PlanExits' (its own
+     stylesheet): they sit in the top corners of the host's nearest
+     positioned box, and what that box has to be is written in PlanExits.tsx.
+     The host may stack Merc above the screens or lay him over them, and the
+     two buttons stay in the corners either way.
+   - The root is the screens' own scroll region (plan-chrome.module.css's
+     `scroll`, plus the height set below). The host's box is height-bounded
+     and holds still; the root fills it and scrolls what does not fit, so an
+     overflowing Q3 scrolls inside the screen while the buttons stay in the
+     corners (an absolute child whose containing block is the host's box is
+     neither clipped nor scrolled by the root). On a phone the box also
+     reaches the bottom edge, so the root pads its end by the home
+     indicator's inset (`--pc-end`), and the last row and Next clear it.
+     Where the host lends room below its box (`--pc-overhang-end`), the root
+     reaches into it (`--pc-reach`), so Next's shadow is not cut at the box's
+     edge when Q3 scrolls.
+   - The hairline is the host's: First Light draws it across the top of its
+     frame. These screens add the "Question N of 4" eyebrow, never a second
+     hairline and never dots.
+   - Every target is 44 px or more. Q1's cards are a 2x2 grid on a phone; Q2
+     to Q4 are full-width rows, which become a wrapped row of pills on a wide
+     screen.
+
+   Every animation, transition and lift is at the end, behind
+   `prefers-reduced-motion: no-preference`, so reduced motion is the default
+   and everything animated is an addition to it. */
+
+.root {
+  composes: root scroll from './plan-chrome.module.css';
+  /* The questions' own token: the rows' fill, a little see-through. */
+  --pq-card: var(--ob-card, rgba(22, 27, 34, 0.74));
+  /* The region is the last thing in the host's box, which on a phone reaches
+     the bottom edge (PlanExits.tsx's header), so the room under the last row
+     is the region's own: the chrome's bleed and the home indicator's inset on
+     top of it. The chrome's padding reads this property. */
+  --pc-end: calc(var(--pc-bleed) + env(safe-area-inset-bottom, 0px));
+  /* As the last thing in the box, the region may also reach into the room the
+     host lends below it, so Next's shadow fades out there instead of stopping
+     at a line under Next (the chrome's .scroll says how). */
+  --pc-reach: var(--pc-overhang-end, 0px);
+
+  /* The region fills the host's box and pulls its room above back, so its
+     margin box still ends at the box's bottom edge; its clip line ends the
+     room the host lends below. */
+  height: calc(100% + var(--pc-room) + var(--pc-reach));
+}
+
+/* ── Merc's line ──────────────────────────────────────────────── */
+
+/* The bubble is the chrome's. The pop a new pick gives it is in the motion
+   block at the end. */
+.say {
+  composes: say from './plan-chrome.module.css';
+}
+
+/* ── One question ─────────────────────────────────────────────── */
+
+.screen {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 14px;
+  width: 100%;
+  max-width: 620px;
+}
+
+/* Q1's cards get the room of a wide screen. */
+.wide {
+  max-width: 1000px;
+}
+
+.eyebrow {
+  margin: 0;
+  font-size: 11px;
+  font-weight: 600;
+  line-height: 1;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--pc-ink-3);
+  font-variant-numeric: tabular-nums;
+}
+
+/* The headline and its accent are the chrome's. Focused by script when the
+   screen moves on (no ring, it is not a control). */
+.question {
+  composes: headline from './plan-chrome.module.css';
+}
+
+.lit {
+  composes: lit from './plan-chrome.module.css';
+}
+
+.sub {
+  margin: -6px 0 0;
+  font-size: 15px;
+  color: var(--pc-ink-2);
+}
+
+/* ── Q1: four cards ───────────────────────────────────────────── */
+
+/* The cards and "A bit of everything" are one group, one question with five
+   answers, laid out as the screen lays out its own children. */
+.choices {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 14px;
+  width: 100%;
+}
+
+.cards {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+  width: 100%;
+  max-width: 420px;
+}
+
+.card {
+  position: relative;
+  display: block;
+  width: 100%;
+  aspect-ratio: 1 / 0.9;
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
+  border: 1px solid rgba(230, 237, 243, 0.14);
+  border-radius: 18px;
+  background-color: #161b22;
+  color: var(--pc-ink);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.cardArt {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+/* The art fades to the ground at the foot, where the label stands. */
+.card::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: linear-gradient(
+    180deg,
+    rgba(13, 17, 23, 0.04) 24%,
+    rgba(13, 17, 23, 0.9) 100%
+  );
+  background-origin: border-box;
+}
+
+.cardGlyph {
+  position: absolute;
+  top: 10px;
+  left: 10px;
+  z-index: 1;
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 999px;
+  background: rgba(13, 17, 23, 0.62);
+  -webkit-backdrop-filter: blur(6px);
+  backdrop-filter: blur(6px);
+}
+
+.cardGlyph svg {
+  width: 19px;
+  height: 19px;
+}
+
+.cardCheck {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  z-index: 1;
+  display: grid;
+  place-items: center;
+  width: 26px;
+  height: 26px;
+  border-radius: 999px;
+  background: linear-gradient(135deg, var(--pc-blue), var(--pc-teal));
+  color: var(--pc-on-fill);
+  opacity: 0;
+}
+
+.cardLabel {
+  position: absolute;
+  right: 13px;
+  bottom: 11px;
+  left: 13px;
+  z-index: 1;
+  font-family: var(--pc-display);
+  font-size: 19px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+}
+
+.card[aria-pressed='true'] {
+  border-color: transparent;
+  box-shadow:
+    0 0 0 2px var(--pc-blue),
+    0 12px 32px rgba(88, 166, 255, 0.32);
+}
+
+.card[aria-pressed='true'] .cardCheck {
+  opacity: 1;
+  transform: none;
+}
+
+.ghost {
+  min-height: 46px;
+  margin: 0;
+  padding: 0 22px;
+  border: 1px solid var(--pc-rule);
+  border-radius: 999px;
+  background-color: rgba(13, 17, 23, 0.55);
+  -webkit-backdrop-filter: blur(6px);
+  backdrop-filter: blur(6px);
+  color: var(--pc-ink-2);
+  font: inherit;
+  font-size: 15px;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.ghost[aria-pressed='true'] {
+  border-color: var(--pc-blue);
+  background-color: rgba(88, 166, 255, 0.16);
+  color: var(--pc-ink);
+}
+
+/* The quiet way on from Q1 and Q2, Skip or Next: a hint, not a button. */
+.pass {
+  min-height: 44px;
+  margin: -6px 0 0;
+  padding: 0 14px;
+  border: 0;
+  background: none;
+  color: var(--pc-ink-3);
+  font: inherit;
+  font-size: 14px;
+  font-weight: 500;
+  text-decoration: underline;
+  text-decoration-color: rgba(125, 133, 144, 0.5);
+  text-underline-offset: 3px;
+  cursor: pointer;
+}
+
+/* ── Q2 to Q4: answers as rows ────────────────────────────────── */
+
+.options {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  width: 100%;
+  max-width: 420px;
+}
+
+.option {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  min-height: 46px;
+  margin: 0;
+  padding: 6px 16px;
+  border: 1px solid var(--pc-rule);
+  border-radius: 14px;
+  background-color: var(--pq-card);
+  -webkit-backdrop-filter: blur(6px);
+  backdrop-filter: blur(6px);
+  color: var(--pc-ink);
+  font: inherit;
+  font-size: 15.5px;
+  font-weight: 500;
+  line-height: 1.25;
+  text-align: left;
+  cursor: pointer;
+}
+
+/* The tick is round for one answer and square for several, so the shape
+   says how many can be picked. The check inside it is transparent until the
+   answer is picked. */
+.tick {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 20px;
+  height: 20px;
+  border: 1.5px solid var(--pc-ink-3);
+  border-radius: 999px;
+  color: transparent;
+}
+
+.options[data-pick='many'] .tick {
+  border-radius: 6px;
+}
+
+.option[aria-pressed='true'] {
+  border-color: rgba(88, 166, 255, 0.85);
+  background: linear-gradient(
+    102deg,
+    rgba(88, 166, 255, 0.24),
+    rgba(45, 212, 191, 0.15) 60%,
+    rgba(188, 140, 255, 0.24)
+  );
+  background-origin: border-box;
+}
+
+.option[aria-pressed='true'] .tick {
+  border-color: transparent;
+  background: linear-gradient(135deg, var(--pc-blue), var(--pc-teal));
+  background-origin: border-box;
+  color: var(--pc-on-fill);
+}
+
+/* At two picks the rest are dimmed, and still there for a screen reader. */
+.option[aria-disabled='true'] {
+  opacity: 0.42;
+  cursor: default;
+}
+
+/* ── The typed line ───────────────────────────────────────────── */
+
+.field {
+  display: grid;
+  gap: 4px;
+  width: 100%;
+  max-width: 420px;
+  text-align: left;
+}
+
+/* 16 px: a smaller field makes iOS zoom the page when it takes focus. */
+.input {
+  min-height: 48px;
+  padding: 0 14px;
+  border: 1px solid var(--pc-rule);
+  border-radius: 12px;
+  background-color: rgba(13, 17, 23, 0.8);
+  color: var(--pc-ink);
+  font: inherit;
+  font-size: 16px;
+  font-weight: 400;
+}
+
+.input::placeholder {
+  color: var(--pc-ink-3);
+}
+
+.count {
+  font-size: 12px;
+  color: var(--pc-ink-3);
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+.srOnly {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* ── Next ─────────────────────────────────────────────────────── */
+
+.nextRow {
+  display: flex;
+  justify-content: center;
+  width: 100%;
+  margin-top: 4px;
+}
+
+.next {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 9px;
+  min-height: 52px;
+  margin: 0;
+  padding: 0 32px;
+  border: 0;
+  border-radius: 999px;
+  background: linear-gradient(
+    102deg,
+    var(--pc-blue),
+    var(--pc-teal) 60%,
+    var(--pc-violet)
+  );
+  box-shadow: 0 6px 26px rgba(88, 166, 255, 0.26);
+  color: var(--pc-on-fill);
+  font: inherit;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+/* Nothing picked yet: the button still passes the question, so it stays a
+   button, in the quiet look of a way to carry on. */
+.nextQuiet {
+  border: 1px solid var(--pc-rule);
+  background: rgba(230, 237, 243, 0.08);
+  box-shadow: none;
+  color: var(--pc-ink);
+}
+
+/* The chevron is Back's, turned round. */
+.nextArrow {
+  display: inline-flex;
+  transform: scaleX(-1);
+}
+
+.nextArrow svg {
+  display: block;
+  width: 18px;
+  height: 18px;
+}
+
+/* ── Hover, only where there is a pointer to move away ─────────── */
+
+@media (hover: hover) {
+  .ghost:hover {
+    border-color: var(--pc-ink-3);
+    color: var(--pc-ink);
+  }
+
+  .pass:hover {
+    color: var(--pc-ink-2);
+  }
+
+  .option:hover {
+    border-color: var(--pc-ink-3);
+  }
+
+  .option[aria-disabled='true']:hover {
+    border-color: var(--pc-rule);
+  }
+}
+
+/* ── A wide screen ────────────────────────────────────────────── */
+
+@media (min-width: 720px) {
+  /* The headline's own size and measure, set through the chrome's two
+     properties (never on the shared class itself, see plan-chrome). */
+  .question {
+    --pc-headline-max: 20ch;
+    --pc-headline-size: 46px;
+  }
+
+  .cards {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 16px;
+    max-width: 900px;
+  }
+
+  .card {
+    aspect-ratio: 4 / 5;
+  }
+
+  .cardLabel {
+    bottom: 16px;
+    left: 16px;
+    font-size: 22px;
+  }
+
+  .options {
+    flex-direction: row;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 10px;
+    max-width: 720px;
+  }
+
+  .option {
+    padding: 6px 20px 6px 16px;
+    border-radius: 999px;
+  }
+}
+
+/* ── Motion ───────────────────────────────────────────────────── */
+
+@media (prefers-reduced-motion: no-preference) {
+  /* A new question comes in as the First Light beats do. */
+  .screen {
+    animation: screenIn 0.45s var(--pc-ease) both;
+  }
+
+  /* Merc's line pops when a pick changes it. The two names alternate, so the
+     same animation starts over on the next pick. */
+  .say[data-pop='1'] {
+    animation: sayPopOdd 0.34s var(--pc-ease);
+  }
+
+  .say[data-pop='0'] {
+    animation: sayPopEven 0.34s var(--pc-ease);
+  }
+
+  /* What eases from one state to the next: a card into its ring, the check
+     growing in, a row taking its colour, Next. With reduced motion every one
+     of them changes at once. */
+  .card {
+    transition:
+      box-shadow 0.25s var(--pc-ease),
+      transform 0.25s var(--pc-ease);
+  }
+
+  .cardCheck {
+    transform: scale(0.6);
+    transition:
+      opacity 0.2s var(--pc-ease),
+      transform 0.25s var(--pc-ease);
+  }
+
+  .option {
+    transition:
+      border-color 0.2s var(--pc-ease),
+      background-color 0.2s var(--pc-ease);
+  }
+
+  .next {
+    transition:
+      transform 0.25s var(--pc-ease),
+      box-shadow 0.25s var(--pc-ease);
+  }
+}
+
+/* The lifts: a card and Next rise under a pointer. Where there is no pointer
+   to move away, and where motion is off, they stay put. */
+@media (prefers-reduced-motion: no-preference) and (hover: hover) {
+  .card:hover {
+    transform: translateY(-2px);
+  }
+
+  .next:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 10px 32px rgba(88, 166, 255, 0.34);
+  }
+
+  .nextQuiet:hover {
+    box-shadow: none;
+  }
+}
+
+@keyframes screenIn {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes sayPopOdd {
+  from {
+    opacity: 0.2;
+    transform: translateY(4px) scale(0.97);
+  }
+
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes sayPopEven {
+  from {
+    opacity: 0.2;
+    transform: translateY(4px) scale(0.97);
+  }
+
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}

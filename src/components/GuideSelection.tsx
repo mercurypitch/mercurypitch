@@ -5,6 +5,7 @@
 import type { Component } from 'solid-js'
 import { createEffect, For, onCleanup, Show } from 'solid-js'
 import { startMixerTourIfReady } from '@/features/tours/startMixerTour'
+import { IS_NATIVE_BUILD } from '@/lib/native-build'
 import { startVoiceTour } from '@/stores/app-store'
 import { getIncompleteGuideSections, GUIDE_SECTIONS, hasPageTour, isGuideSectionCompleted, PAGE_TOUR_CATALOG, startPageTour, } from '@/stores/app-store'
 import type { ActiveTab } from '@/types'
@@ -20,10 +21,28 @@ const TourIcon = () => (
   </svg>
 )
 
+/**
+ * The line above the rows. Where the plan's row is drawn it comes first in the
+ * line; where it is not, the line is the Guide's own, as it was before the plan.
+ */
+const PLAN_LINE =
+  'Start with your plan, or pick a tour. Each tour lights up part of the app and explains what it does.'
+const TOUR_LINE =
+  'Choose a guided spotlight tour. The tour highlights UI elements and explains how they work.'
+
 interface GuideSelectionProps {
   isOpen: boolean
   onClose: () => void
   onStartTour: (sectionIds: string[]) => void
+  /**
+   * Opens the plan: the first row, drawn only where the host gives this, and
+   * never in the native build, which has no plan. The plan is a feature and
+   * this component may not import one, so the host hands it over, and gives
+   * none where there is no plan.
+   */
+  onOpenPlan?: () => void
+  /** Has the person answered the plan's four questions? It names the row. */
+  planAnswered?: () => boolean
 }
 
 export const GuideSelection: Component<GuideSelectionProps> = (props) => {
@@ -48,6 +67,15 @@ export const GuideSelection: Component<GuideSelectionProps> = (props) => {
 
   const handleStartSection = (id: string) => {
     props.onStartTour([id])
+    props.onClose()
+  }
+
+  // Hands the choice to the host, then closes itself. App's handler closes the
+  // Guide before it sets the address (the address sync would otherwise rewrite
+  // #/plan), so this close finds it shut; it keeps the row right for a host
+  // whose handler leaves the Guide open.
+  const handleOpenPlan = () => {
+    props.onOpenPlan?.()
     props.onClose()
   }
 
@@ -97,13 +125,35 @@ export const GuideSelection: Component<GuideSelectionProps> = (props) => {
             </button>
           </div>
 
+          {/* The constant folds to a literal, so the native bundle keeps
+              the Guide's own line and not the plan's. */}
           <p class={styles.guideSelectionDesc}>
-            Choose a guided spotlight tour. The tour highlights UI elements and
-            explains how they work.
+            {IS_NATIVE_BUILD || props.onOpenPlan === undefined
+              ? TOUR_LINE
+              : PLAN_LINE}
           </p>
 
           {/* Quick actions */}
           <div class={styles.guideQuickActions}>
+            {/* A ternary rather than a <Show when={!IS_NATIVE_BUILD && ...}>:
+                only a ternary folds, so the row's words stay out of the
+                native bundle (a <Show> chooses what to render and removes
+                neither branch). */}
+            {IS_NATIVE_BUILD ? null : (
+              <Show when={props.onOpenPlan !== undefined}>
+                <button class={styles.guideQuickBtn} onClick={handleOpenPlan}>
+                  <svg viewBox="0 0 24 24" width="18" height="18">
+                    <path
+                      fill="currentColor"
+                      d="M14.4 6L14 4H5v17h2v-7h5.6l.4 2h7V6z"
+                    />
+                  </svg>
+                  {props.planAnswered?.() === true
+                    ? 'Your plan'
+                    : 'Your plan, in four taps'}
+                </button>
+              </Show>
+            )}
             <button class={styles.guideQuickBtn} onClick={handleStartFull}>
               <svg viewBox="0 0 24 24" width="18" height="18">
                 <path

@@ -5,7 +5,7 @@ import { readFile } from 'node:fs/promises'
 import type { GuitarPracticeScore, GuitarRecording, } from '../lib/guitar/recording-types'
 import { installSongAudioProbe, readSongAudio, } from './helpers/guitar-night-audio-probe'
 import { enterSong, SONG_TITLE } from './helpers/guitar-night-song'
-import { dismissOverlays, openNavTab } from './helpers/ui'
+import { dismissOverlays, openNavTab, skipTheIntro } from './helpers/ui'
 
 async function readAcceptedMelody(page: Page) {
   return page.evaluate(async () => {
@@ -326,10 +326,7 @@ test('records and keeps a dry melody without playback, then practices its accept
   await page.goto('/')
   await page.waitForSelector('#app-tabs')
   // This is the first visit to the main app, not a return from its onboarding.
-  await page
-    .getByRole('dialog', { name: 'Welcome to MercuryPitch', exact: true })
-    .getByRole('button', { name: 'Skip the intro', exact: true })
-    .click()
+  await skipTheIntro(page)
   await dismissOverlays(page)
   await openNavTab(page, 'tab-voice-history')
   await expect(page.getByTestId('voice-history-page')).toBeVisible()

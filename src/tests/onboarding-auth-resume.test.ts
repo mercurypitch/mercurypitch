@@ -11,9 +11,10 @@
 // blank there. The resume marker therefore lives in localStorage, the one
 // store both contexts share, and the boot path consumes it one-shot.
 //
-// Only the map beat is resumable: it is the one beat that rebuilds itself
-// entirely from persisted data (saved voiceprints), which is also exactly
-// where a sign-in can leave from.
+// Only the map and the questions are resumable. The map rebuilds itself
+// entirely from persisted data (saved voiceprints); the questions need no
+// take at all, and First Light decides whether the plan is still due when it
+// opens there. Both are exactly where a sign-in can leave from.
 
 import { readFileSync } from 'node:fs'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
@@ -43,6 +44,19 @@ describe('onboarding resume across a sign-in redirect', () => {
     expect(after.flowOpen()).toBe(true)
   })
 
+  it('reboots into the questions after arming on the questions beat', async () => {
+    // The Keep beat's sign-up advances to the questions before the modal
+    // opens, so the redirect leaves from there.
+    const before = await freshStore()
+    before.openBeat('questions')
+    before.armOnboardingResume()
+
+    const after = await freshStore()
+    after.startOrResumeOnboarding()
+    expect(after.currentBeat()).toBe('questions')
+    expect(after.flowOpen()).toBe(true)
+  })
+
   it('consumes the marker one-shot', async () => {
     const before = await freshStore()
     before.openBeat('map')
@@ -65,7 +79,7 @@ describe('onboarding resume across a sign-in redirect', () => {
     expect(after.currentBeat()).toBe('sky')
   })
 
-  it('resumes only into the map — earlier beats restart honestly', async () => {
+  it('resumes only into the questions or the map — earlier beats restart honestly', async () => {
     // A beat that needs a live microphone take cannot be re-entered cold;
     // pretending otherwise would strand the visitor mid-capture.
     const before = await freshStore()

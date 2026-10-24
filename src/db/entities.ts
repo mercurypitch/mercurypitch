@@ -833,7 +833,7 @@ export interface UserActivity extends DbEntity {
 
 export interface UserSurveyResponse extends DbEntity {
   userId: string
-  /** JSON: { background?: string[], usage?: string[], featureRequest?: string } */
+  /** JSON: a SurveyAnswers or a PlanResponseV1, both in src/db/services/survey-service.ts */
   answersJson: string
   submittedAt: string
 }

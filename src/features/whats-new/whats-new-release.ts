@@ -35,9 +35,12 @@ export function releaseLine(version: string): string | null {
 
 /**
  * Routes that mean "somebody sent me here for THIS" — a shared song, a
- * scanned code, a password reset, one chapter of the guide. Arriving on one
- * is a request for that thing, and opening a release page over it is the
- * same rudeness whatever the page says.
+ * scanned code, a password reset, one chapter of the guide, the plan, a
+ * return from Stripe checkout. Arriving on one is a request for that thing,
+ * and opening a release page over it is the same rudeness whatever the page
+ * says. The same list holds back the opening takeover (the plan's), which a
+ * visit gets one of: a second layer over #/plan, or a sheet over the page a
+ * payment sent somebody back to, is two things on one screen.
  *
  * A denylist rather than an allowlist, because the ordinary ways in are the
  * long tail: a bare URL, a tab, the Karaoke upload view, and — the one that
@@ -60,6 +63,8 @@ export const DEEP_LINK_ROUTE_TYPES: readonly string[] = [
   'learn-chapter',
   'guide-start',
   'onboarding-map',
+  'plan',
+  'billing-return',
   'voice-constellation',
   'admin',
 ]

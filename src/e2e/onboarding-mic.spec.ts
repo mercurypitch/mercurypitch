@@ -34,6 +34,27 @@ const beat = (page: import('@playwright/test').Page, name: string) =>
   page.locator(`[data-beat="${name}"]`)
 
 /**
+ * From the first of the four questions to the Map: every question passed with
+ * nothing picked, then "See every room" on the plan. Each screen is waited for
+ * by its "Question N of 4" line, so a tap never lands on the one leaving.
+ */
+async function skipThePlanToTheMap(page: import('@playwright/test').Page) {
+  const questions = beat(page, 'questions')
+  await expect(questions.getByText('Question 1 of 4')).toBeVisible({
+    timeout: 10000,
+  })
+  await questions.getByRole('button', { name: 'Skip', exact: true }).click()
+  await expect(questions.getByText('Question 2 of 4')).toBeVisible()
+  await questions.getByRole('button', { name: 'Skip', exact: true }).click()
+  await expect(questions.getByText('Question 3 of 4')).toBeVisible()
+  await questions.getByRole('button', { name: 'Skip this one' }).click()
+  await expect(questions.getByText('Question 4 of 4')).toBeVisible()
+  await questions.getByRole('button', { name: 'Skip to my plan' }).click()
+  await questions.getByRole('button', { name: 'See every room' }).click()
+  await expect(beat(page, 'map')).toBeVisible({ timeout: 10000 })
+}
+
+/**
  * The beat-2 button, whichever label it is wearing. This context grants
  * `microphone` up front, so beat 2 knows there is no prompt to explain
  * and says "Start listening"; a first-time visitor gets "Allow
@@ -102,7 +123,7 @@ test.describe('First Light with a microphone', () => {
     await expect(beat(page, 'first-light')).toContainText(/Hz/)
   })
 
-  test('the Fork asks one question, and "Not now" reaches the Map without a voiceprint', async ({
+  test('the Fork asks one question, and "Not now" reaches the four questions and then the Map without a voiceprint', async ({
     page,
   }) => {
     await page.setViewportSize(DESKTOP)
@@ -128,9 +149,17 @@ test.describe('First Light with a microphone', () => {
       0,
     )
 
+    // Past the walk, the four questions come first while the plan is due
+    // (a fresh visitor's is), and "See every room" on the plan opens the Map.
+    // It asks first: no voiceprint has been made in this run.
     await page.getByRole('button', { name: 'Not now' }).click()
-    await expect(beat(page, 'map')).toBeVisible({ timeout: 10000 })
+    await page
+      .getByRole('alertdialog', { name: 'Skip your voiceprint?' })
+      .getByRole('button', { name: 'Yes, skip' })
+      .click()
+    await expect(beat(page, 'questions')).toBeVisible({ timeout: 10000 })
     await expect(beat(page, 'voiceprint')).toHaveCount(0)
+    await skipThePlanToTheMap(page)
     await expect(page.getByText('Your first stop')).toBeVisible()
 
     await page.getByRole('button', { name: /Start singing|Done/ }).click()
@@ -162,15 +191,21 @@ test.describe('First Light with a microphone', () => {
       page.getByRole('button', { name: /Find my twin/ }),
     ).toHaveCount(0)
 
-    // The gallery, then the Map — never a second measurement.
+    // The gallery, then the plan and the Map — never a second measurement.
+    // The way on says where it leads: the four questions, while the plan is
+    // due (a fresh visitor's is), not the Map.
     await page.getByRole('button', { name: /See my voiceprints/ }).click()
     const prints = beat(page, 'prints')
     await expect(prints).toBeVisible()
     await expect(prints).toContainText('2 voiceprints')
     await expect(prints).toContainText('Earlier takes')
+    await expect(page.getByRole('button', { name: /See my map/ })).toHaveCount(
+      0,
+    )
 
-    await page.getByRole('button', { name: /See my map/ }).click()
-    await expect(beat(page, 'map')).toBeVisible({ timeout: 10000 })
+    await page.getByRole('button', { name: /Make my plan/ }).click()
+    await expect(beat(page, 'questions')).toBeVisible({ timeout: 10000 })
+    await skipThePlanToTheMap(page)
     await expect(beat(page, 'voiceprint')).toHaveCount(0)
   })
 
@@ -232,15 +267,18 @@ test.describe('First Light with a microphone', () => {
     await expect(twin).toBeVisible({ timeout: 30000 })
     await expect(twin).toContainText(/steadiness/i)
     await expect(twin.locator('[data-stat-card]')).toHaveCount(1)
+    // The line under the card names what follows the account offer: the plan
+    // while it is due (a fresh visitor's is), not the Map.
+    await expect(twin).toContainText('Next, your plan')
 
-    // "Continue", not "See my map": this advances to `keep`, and the Map
-    // is one screen further on. The Prints beat above DOES say "See my
-    // map", because from there the Map really is next.
+    // "Continue", not "See my map": this advances to `keep`, and the four
+    // questions and the Map are further on. The Prints beat above says
+    // "Make my plan", because from there the questions really are next.
     await page.getByRole('button', { name: /^Continue$/ }).click()
 
     // Beat 7 offers the account when there is something to keep; it is
     // dismissible, and "Not now" (top right, in the rail) must still reach
-    // the Map.
+    // the four questions, and through them the Map.
     const keep = beat(page, 'keep')
     if (await keep.isVisible().catch(() => false)) {
       await expect(keep).toContainText(/keep/i)
@@ -249,6 +287,8 @@ test.describe('First Light with a microphone', () => {
       await expect(keep).toContainText(/Your voiceprint and range, saved/)
       await page.getByRole('button', { name: /Not now/ }).click()
     }
+    await expect(beat(page, 'questions')).toBeVisible({ timeout: 15000 })
+    await skipThePlanToTheMap(page)
 
     const map = beat(page, 'map')
     await expect(map).toBeVisible({ timeout: 15000 })

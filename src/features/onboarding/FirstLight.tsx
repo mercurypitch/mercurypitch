@@ -12,12 +12,15 @@
 // See docs/plans/onboarding-first-light.md.
 
 import type { Component } from 'solid-js'
-import { createEffect, createSignal, Match, on, onMount, Show, Switch, } from 'solid-js'
+import { createEffect, createSignal, Match, on, onMount, Show, Switch, untrack, } from 'solid-js'
 import { X } from '@/components/icons'
 import { accountHeld, hasUpgradedAccount } from '@/db/services/auth-service'
 import { listVoiceprints, saveVoiceprint, } from '@/db/services/voiceprint-service'
 import { shareOutcomeMessage } from '@/features/mirror/card-renderer'
 import { shareVoiceprintRecord } from '@/features/mirror/voiceprint-share'
+import { BeatPlan, PLAN_SKIP_ASK } from '@/features/plan/BeatPlan'
+import { PLAN_DESTS } from '@/features/plan/build-plan'
+import { markPlanShown, planRecord } from '@/features/plan/plan-store'
 import type { ActiveTab } from '@/features/tabs/constants'
 import { openVoiceConstellation } from '@/features/voice-constellation/navigation'
 import { giftOfferLine } from '@/lib/launch-gift-copy'
@@ -25,9 +28,9 @@ import type { F0Frame, MirrorResult } from '@/lib/mirror/metrics'
 import { summarize } from '@/lib/mirror/metrics'
 import { singerForRange } from '@/lib/mirror/singer-match'
 import { useFocusTrap } from '@/lib/use-focus-trap'
-import { startPageTour } from '@/stores/app-store'
+import { hasPageTour, startPageTour } from '@/stores/app-store'
 import { claimGiftNow, giftWaiting, rememberGiftOffered, } from '@/stores/launch-gift-store'
-import { advanceBeat, chooseTrack, closeOnboarding, currentBeat, finishOnboarding, firstNote, markMicDenied, micDenied, onboardingBeads, onboardingProgress, openBeat, recordFirstNote, recordSavedVoiceprints, recordVoiceprint, savedVoiceprints, setBeatsAvailable, voiceprint, voiceStrip, } from '@/stores/onboarding-store'
+import { advanceBeat, chooseTrack, closeOnboarding, currentBeat, finishOnboarding, firstNote, markMicDenied, micDenied, onboardingBeads, onboardingProgress, openBeat, recordFirstNote, recordSavedVoiceprints, recordVoiceprint, savedVoiceprints, setBeatsAvailable, setPlanDue, voiceprint, voiceStrip, } from '@/stores/onboarding-store'
 import { loadFeaturedPromo, offeredPromo } from '@/stores/promo-store'
 import { openAuthModal, setActiveTab } from '@/stores/ui-store'
 import { dismissNudge, shouldShowNudge } from './account-nudge'
@@ -40,6 +43,7 @@ import { BeatPrints } from './beats/BeatPrints'
 import { BeatSky } from './beats/BeatSky'
 import { BeatTwin } from './beats/BeatTwin'
 import { BeatVoiceprint } from './beats/BeatVoiceprint'
+import { pickFirstStop } from './first-stop'
 import type { Beat, OnboardingTrack } from './flow'
 import { BEAT_EVENT, MAP_ROOM_EVENT, MAP_STORE_EVENT, trackOnboarding, } from './funnel'
 import styles from './onboarding.module.css'
@@ -48,6 +52,7 @@ import { plateFor, platesAhead, plateSrc, TALL_QUERY } from './plates'
 import type { EnteredRoomId, RoomId, RoomTarget } from './rooms'
 import { SIDE_DOORS } from './rooms'
 import type { SettledNote } from './settled-note'
+import { createSkipConfirm } from './skip-confirm'
 import { StarField } from './StarField'
 import { glideStrip } from './voice-strip'
 
@@ -63,6 +68,7 @@ const RENDERABLE: readonly Beat[] = [
   'voiceprint',
   'twin',
   'keep',
+  'questions',
   'map',
 ]
 
@@ -79,6 +85,19 @@ export interface FirstLightProps {
 
 export const FirstLight: Component<FirstLightProps> = (props) => {
   const [twin, setTwin] = createSignal<string | null>(null)
+
+  // The four questions are asked while the person's plan is due: not answered
+  // and not turned down. Read once, as the flow opens, and handed to the walk
+  // (the store has no way to read the plan), so answering the questions in
+  // this run never drops their beat from its own walk.
+  const planDueAtOpen = untrack(() => {
+    const record = planRecord()
+    return record === null || record.status === 'shown'
+  })
+  setPlanDue(planDueAtOpen)
+  // A sign-up that left from the questions resumes there, unless the plan was
+  // answered since (another tab, another device): then the Map.
+  if (!planDueAtOpen && untrack(currentBeat) === 'questions') openBeat('map')
 
   onMount(() => {
     props.onReady?.()
@@ -114,6 +133,8 @@ export const FirstLight: Component<FirstLightProps> = (props) => {
   /** The launch gift beside the account ask: only for somebody with no
    *  account to put it in yet. */
   const gift = () => (accountHeld() ? null : offeredPromo())
+  // Asks before the welcome's close or a Not now skips the voiceprint or plan.
+  const skip = createSkipConfirm(props, planDueAtOpen, gift, PLAN_SKIP_ASK)
 
   // Keep shown with the gift card, counted once beside `onboarding_keep`.
   let keepGiftCounted = false
@@ -190,20 +211,25 @@ export const FirstLight: Component<FirstLightProps> = (props) => {
   }
 
   /**
-   * The Fork's "Not now": the Map, with nothing measured (owner decision
-   * V3). It is the old "Take me in" card moved to the top right, so it
-   * keeps that card's event, `onboarding_track_short`, and stays countable
-   * apart from the welcome's skip (`onboarding_skipped`).
-   *
-   * Straight to the Map, never through the traversal: a replay that still
-   * holds this session's voiceprint has the account ask due, and the next
-   * beat after the Fork would be Keep (review of PR 977). The voiceprint
-   * stays where it is (V13).
+   * Where every "Not now" lands before the Map: the four questions while the
+   * plan is due, and the Map once it is answered or turned down. Straight
+   * there, never through the traversal: a replay that still holds this
+   * session's voiceprint has the account ask due, and the next beat after
+   * the Fork would be Keep (review of PR 977).
+   */
+  const afterFirstLight = () => openBeat(planDueAtOpen ? 'questions' : 'map')
+
+  /**
+   * The Fork's "Not now": past the walk, with nothing measured (owner
+   * decision V3). It is the old "Take me in" card moved to the top right, so
+   * it keeps that card's event, `onboarding_track_short`, and stays
+   * countable apart from the welcome's skip (`onboarding_skipped`). The
+   * voiceprint stays where it is (V13).
    */
   const handleForkNotNow = () => {
     chooseTrack('short')
     trackOnboarding(TRACK_EVENT.short)
-    openBeat('map')
+    afterFirstLight()
   }
 
   /** Share the voiceprint that was just made. Resolves to a line worth
@@ -272,8 +298,9 @@ export const FirstLight: Component<FirstLightProps> = (props) => {
 
   /**
    * The mic is unusable. Marking it denied makes every beat except the
-   * Map inapplicable, so a single advance lands there — no special-case
-   * jump, and the progress bar stays honest.
+   * questions and the Map inapplicable (neither needs a microphone), so a
+   * single advance lands on the next of them: no special-case jump, and the
+   * progress bar stays honest.
    */
   const handleMicDenied = () => {
     trackOnboarding('onboarding_mic_denied')
@@ -333,11 +360,12 @@ export const FirstLight: Component<FirstLightProps> = (props) => {
     // The shared AuthModal on its register pane - no navigation hand-off.
     // The old '#/settings/account' hash-jump left the flow entirely, which
     // raced the teardown (a dead first click in testing), landed on a
-    // signed-out settings section, AND skipped the Map beat - creating an
-    // account was the one path that never saw "See my map" pay off. The
-    // modal (z 3200) opens above the flow (z 3000); underneath, the flow
-    // advances to the Map so closing the modal lands exactly where the
-    // button promised.
+    // signed-out settings section, AND skipped what comes after Keep - the
+    // four questions while the plan is due, the Map once it is answered -
+    // so creating an account was the one path that never saw it. The modal
+    // (z 3200) opens above the flow (z 3000); underneath, the flow advances
+    // to that next beat, so closing the modal lands exactly where the button
+    // promised. A Google sign-up resumes there too (armOnboardingResume).
     advanceBeat()
     openAuthModal('register')
   }
@@ -367,29 +395,38 @@ export const FirstLight: Component<FirstLightProps> = (props) => {
 
   const handleSkip = () => {
     trackOnboarding('onboarding_skipped')
+    // The intro was met and skipped, and that is the visitor's answer: the
+    // app never takes the plan over later.
+    markPlanShown('welcome-skip')
     leave()
   }
 
   /**
-   * "Not now" on First light, the voiceprint, the twin and the prints: the
-   * Map, as the Fork's does (owner decision V9, 11 Oct 2026), rather than
-   * out of the flow onto an app the visitor has not been shown. Nothing is
-   * measured on the way: a voiceprint run in progress is dropped with its
-   * beat. The event stays `onboarding_skipped`, so the skip rate reads
-   * straight across the change; the Map then counts its own arrival.
+   * "Not now" on First light, the voiceprint, the twin and the prints: where
+   * the Fork's does (owner decision V9, 11 Oct 2026), rather than out of the
+   * flow onto an app the visitor has not been shown. Nothing is measured on
+   * the way: a voiceprint run in progress is dropped with its beat. The
+   * event stays `onboarding_skipped`, so the skip rate reads straight across
+   * the change; the next beat then counts its own arrival.
    */
   const handleNotNow = () => {
     trackOnboarding('onboarding_skipped')
-    openBeat('map')
+    afterFirstLight()
   }
 
   /** The beats that are mostly words: the sky recedes behind them, so its
    *  lines do not run through the copy. */
   const textHeavy = (): boolean =>
-    currentBeat() === 'map' || currentBeat() === 'keep'
+    currentBeat() === 'map' ||
+    currentBeat() === 'keep' ||
+    currentBeat() === 'questions'
 
   /** The picture behind the current beat (plates.ts). */
   const plate = (): Plate => plateFor(currentBeat())
+
+  /** Is Merc drawn where the star field's arc runs: on a plate, or on the questions? */
+  const fieldAway = (): boolean =>
+    plate() !== 'plain' || currentBeat() === 'questions'
 
   /** The plain sky recedes behind the word beats, and behind the
    *  voiceprint: on a wide screen its brightest lines cross the step
@@ -426,15 +463,10 @@ export const FirstLight: Component<FirstLightProps> = (props) => {
   const isRoomId = (id: EnteredRoomId): id is RoomId =>
     Object.hasOwn(MAP_ROOM_EVENT, id)
 
-  const handleEnterRoom = (target: RoomTarget, roomId: EnteredRoomId) => {
-    trackOnboarding('onboarding_map_room')
-    // A room counts which room it was, a door under the grid which door.
-    if (isRoomId(roomId)) trackOnboarding(MAP_ROOM_EVENT[roomId])
-    const door = SIDE_DOORS.find((d) => d.id === roomId)
-    if (door !== undefined) trackOnboarding(door.event)
-    console.info('[onboarding] entering room', roomId)
+  /** Opens a room's tab or page, and closes the flow. */
+  const goTo = (target: RoomTarget) => {
     if (target.kind === 'tab') {
-      setActiveTab(target.tab as ActiveTab)
+      setActiveTab(target.tab)
       leave()
       return
     }
@@ -443,6 +475,28 @@ export const FirstLight: Component<FirstLightProps> = (props) => {
     // inside onboarding.
     leave()
     window.location.href = target.href
+  }
+
+  const handleEnterRoom = (target: RoomTarget, roomId: EnteredRoomId) => {
+    trackOnboarding('onboarding_map_room')
+    // A room counts which room it was, a door under the grid which door.
+    if (isRoomId(roomId)) trackOnboarding(MAP_ROOM_EVENT[roomId])
+    const door = SIDE_DOORS.find((d) => d.id === roomId)
+    if (door !== undefined) trackOnboarding(door.event)
+    console.info('[onboarding] entering room', roomId)
+    goTo(target)
+  }
+
+  /**
+   * A stop of the plan, entered as a room is. The plan counted it itself
+   * (`plan_stop_*`), so it is not a Map room here. `tour` asks for the
+   * room's spotlight tour too, and a room without one is simply entered.
+   */
+  const handleEnterStop = (target: RoomTarget, tour: boolean) => {
+    goTo(target)
+    if (tour && target.kind === 'tab' && hasPageTour(target.tab)) {
+      startPageTour(target.tab)
+    }
   }
 
   // aria-modal is a claim; holding focus is what makes it true. Without
@@ -460,6 +514,12 @@ export const FirstLight: Component<FirstLightProps> = (props) => {
   let frameRef: HTMLDivElement | undefined
   useFocusTrap(() => overlayRef, {
     isOpen: () => true,
+    // The app's shortcuts listen on window and the flow opens over live tabs:
+    // Space would play the tab behind and kill a button's activation, M would
+    // toggle the microphone. A stopped keydown never reaches Solid's delegated
+    // listeners (on the document), so key handlers in here are native
+    // (`on:keydown`), as the Map's tour link is.
+    isolateKeyboard: true,
     initialFocus: () => frameRef,
   })
 
@@ -493,6 +553,12 @@ export const FirstLight: Component<FirstLightProps> = (props) => {
       role="dialog"
       aria-modal="true"
       aria-label="Welcome to MercuryPitch"
+      // Takes focus from a press, never from Tab. A press on the overlay
+      // outside the frame (the picture behind the beat, the rail) would drop
+      // focus to the page, and a key sent from there is not stopped by
+      // isolateKeyboard, which holds only for keys sent from inside. The frame
+      // does the same for its own words. No ring: `.overlay:focus`.
+      tabIndex={-1}
       // A stable hook for the E2E overlay helper. The class is a CSS
       // module, so its name is a build hash and nothing outside this file
       // can match on it — which is exactly how this flow ended up
@@ -538,19 +604,22 @@ export const FirstLight: Component<FirstLightProps> = (props) => {
       {/* The arc is the same walk the hairline measures, drawn as a
           journey: one bead per beat, lit behind, accented under foot,
           hollow ahead. */}
-      {/* Merc's plates paint their own sky, and on a phone the arc's
-          beads would sit on Merc himself, so the field steps out while
-          one is up. It stays mounted, so its sweep and lit beads are
-          where they were when it comes back, and paused, so it draws
-          nothing while it is away. */}
+      {/* Merc's plates paint their own sky, and the questions draw Merc
+          themselves, at the top of the frame, where the arc runs (his box
+          spans about 60-156 px on a phone, the arc about 90-141 px of 844).
+          On a phone the arc's beads would sit on Merc himself in both, so
+          the field steps out while either is up. It stays mounted, so its
+          sweep and lit beads are where they were when it comes back, and
+          paused, so it draws nothing while it is away. The hairline still
+          shows the progress. */}
       <div
         class={styles.field}
-        classList={{ [styles.fieldAway]: plate() !== 'plain' }}
+        classList={{ [styles.fieldAway]: fieldAway() }}
         aria-hidden="true"
       >
         <StarField
           recede={textHeavy()}
-          paused={plate() !== 'plain'}
+          paused={fieldAway()}
           beads={onboardingBeads().count}
           beadIndex={onboardingBeads().index}
         />
@@ -581,6 +650,7 @@ export const FirstLight: Component<FirstLightProps> = (props) => {
           <Match when={currentBeat() === 'prints'}>
             <BeatPrints
               records={savedVoiceprints()}
+              planDue={planDueAtOpen}
               onContinue={() => advanceBeat()}
               onAnother={handleAnotherVoiceprint}
               onExplore={openVoiceConstellation}
@@ -596,6 +666,7 @@ export const FirstLight: Component<FirstLightProps> = (props) => {
             <BeatTwin
               result={voiceprint() as MirrorResult}
               strip={voiceStrip()}
+              planDue={planDueAtOpen}
               onContinue={() => advanceBeat()}
               onShare={handleShareVoiceprint}
             />
@@ -633,6 +704,18 @@ export const FirstLight: Component<FirstLightProps> = (props) => {
               onCreateAccount={handleCreateAccount}
             />
           </Match>
+          <Match when={currentBeat() === 'questions'}>
+            <BeatPlan
+              voiceprint={() => pickFirstStop(voiceprint())}
+              gift={mapGift}
+              onHome={leave}
+              askBeforeDecline={(decline) => skip.ask('plan', decline)}
+              onRooms={() => openBeat('map')}
+              onEnterStop={(stop, tour) =>
+                handleEnterStop(PLAN_DESTS[stop.dest].target, tour)
+              }
+            />
+          </Match>
         </Switch>
       </div>
 
@@ -653,12 +736,14 @@ export const FirstLight: Component<FirstLightProps> = (props) => {
         {/* One way out, top right, and never two (owner decisions V1 and
             V8). The welcome's is a close button: the beat itself carries
             one action. Everywhere else it is "Not now", in words. On Keep
-            it declines the account and moves on to the Map, at full
-            contrast: declining is an answer to the question on screen. On
-            the Fork it is the old "Take me in" card, so it lands on the
-            Map without a voiceprint. On the other beats it lands on the
-            Map too (V9). The Map is the last beat; its rooms are the way
-            out. */}
+            it declines the account and moves on (to the four questions
+            while the plan is due, else the Map), at full contrast:
+            declining is an answer to the question on screen. On
+            the Fork it is the old "Take me in" card, so it lands past the
+            walk without a voiceprint. On the other beats it lands there
+            too (V9). The questions and the plan carry their own Not now,
+            in the corner of their own box, so the rail adds none. The Map
+            is the last beat; its rooms are the way out. */}
         <Switch>
           <Match when={currentBeat() === 'sky'}>
             <button
@@ -666,7 +751,7 @@ export const FirstLight: Component<FirstLightProps> = (props) => {
               class={styles.railClose}
               aria-label="Skip the intro"
               title="Skip the intro"
-              onClick={handleSkip}
+              onClick={() => skip.ask('intro', handleSkip)}
             >
               <span aria-hidden="true">
                 <X />
@@ -686,22 +771,25 @@ export const FirstLight: Component<FirstLightProps> = (props) => {
             <button
               type="button"
               class={styles.railNotNow}
-              onClick={handleForkNotNow}
+              onClick={() => skip.ask('voiceprint', handleForkNotNow)}
             >
               Not now
             </button>
           </Match>
-          <Match when={currentBeat() !== 'map'}>
+          <Match
+            when={currentBeat() !== 'map' && currentBeat() !== 'questions'}
+          >
             <button
               type="button"
               class={styles.railNotNow}
-              onClick={handleNotNow}
+              onClick={() => skip.ask('voiceprint', handleNotNow)}
             >
               Not now
             </button>
           </Match>
         </Switch>
       </div>
+      <skip.Confirm />
     </div>
   )
 }

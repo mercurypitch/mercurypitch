@@ -1,6 +1,6 @@
 // ============================================================
-// No em dash in the copy of the Ear Lab, Home, Voice Mirror and the karaoke
-// playlist overlay
+// No em dash in the copy of the Ear Lab, Home, Voice Mirror, the karaoke
+// playlist overlay, the plan and the feedback survey
 // ============================================================
 //
 // The owner's product voice keeps the em dash out of visible English: a full
@@ -9,7 +9,11 @@
 // "±19 cents —", so these features were swept: The Grid first, then every
 // Ear Lab drill so their feedback lines share one shape ("Right. The …"),
 // and the profile's voice twin with the rest of Voice Mirror. This guard keeps
-// a dash from coming back to them.
+// a dash from coming back to them. The plan (src/features/plan) joined as it
+// was written; its folder is read in full, so a screen added to it later is
+// swept without a change here. The feedback survey's modal joined when it was
+// cut down to one question: its Skip button's tooltip kept its words and gave
+// up the dash.
 //
 // It reads the source rather than a rendered screen, because most of these
 // lines appear only after a sung take or a finished session. The TypeScript
@@ -36,6 +40,8 @@ const SWEPT: readonly (readonly [string, string])[] = [
   ['Voice Mirror', 'src/lib/mirror/cosmic-melodies.ts'],
   ['Voice Mirror', 'src/features/community/ProfileView.tsx'],
   ['the karaoke playlist overlay', 'src/components/KaraokePlaylistOverlay.tsx'],
+  ['the plan', 'src/features/plan'],
+  ['the feedback survey', 'src/components/UserSurveyModal.tsx'],
 ]
 
 function sourceFiles(path: string): string[] {

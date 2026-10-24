@@ -32,6 +32,13 @@ import { SingingStatusBar } from '@/components/singing/SingingStatusBar'
 import { SingingCanvasHud } from '@/components/SingingCanvasHud'
 import { SyncHost } from '@/components/sync/SyncHost'
 import type { FirstLight as FirstLightFlow } from '@/features/onboarding/FirstLight'
+import type { OpeningTakeoverProps } from '@/features/plan/OpeningTakeover'
+import { PLAN_RECORD_KEY } from '@/features/plan/plan-keys'
+import type { PlanLayerHost, PlanStoreModule, } from '@/features/plan/plan-layer-host'
+import { createPlanLayerHost } from '@/features/plan/plan-layer-host'
+import { preferPlanRecord } from '@/features/plan/plan-precedence'
+import type { PlanLayerProps } from '@/features/plan/PlanLayer'
+import { syncPlanForAccount } from '@/features/plan/sync-for-account'
 import type { SingRoomCanvasOptions } from '@/features/sing-room/SingRoomStage'
 import { SingRoomStage } from '@/features/sing-room/SingRoomStage'
 import { IS_NATIVE_BUILD } from '@/lib/native-build'
@@ -106,6 +113,28 @@ const FirstLight: LazyFirstLight = IS_NATIVE_BUILD
   : lazy(async () =>
       import('@/features/onboarding/FirstLight').then((m) => ({
         default: m.FirstLight,
+      })),
+    )
+// The plan layer: lazy like First Light, and not in the native bundle at all
+// (the constant picks a function that renders nothing before `lazy()` is
+// ever written, so the native build has neither the call nor the layer's
+// chunk: the controller, the screens, the credits words).
+const PlanLayer: Component<PlanLayerProps> = IS_NATIVE_BUILD
+  ? () => null
+  : lazy(async () =>
+      import('@/features/plan/PlanLayer').then((m) => ({
+        default: m.PlanLayer,
+      })),
+    )
+// The one takeover per visit (R32): the same fold as the layer. The component
+// draws nothing; it is where useOpeningTakeover runs, in a chunk of its own,
+// because the hook reads the plan store and App may not import that
+// statically (R9).
+const OpeningTakeover: Component<OpeningTakeoverProps> = IS_NATIVE_BUILD
+  ? () => null
+  : lazy(async () =>
+      import('@/features/plan/OpeningTakeover').then((m) => ({
+        default: m.OpeningTakeover,
       })),
     )
 const VoiceConstellationSurface = lazy(async () =>
@@ -228,7 +257,7 @@ import { GuitarProvider, useGuitar } from '@/contexts/GuitarContext'
 import { PlaybackProvider } from '@/contexts/PlaybackContext'
 import { hasValidToken, takeGoogleRedirectResult, } from '@/db/services/auth-service'
 import { takeExpectedCredits } from '@/db/services/billing-service'
-import { initSettingsSync } from '@/db/services/settings-service'
+import { initSettingsSync, registerSyncPrecedence, } from '@/db/services/settings-service'
 import { authVersion } from '@/db/services/user-service'
 import { adoptAfterGoogleSignup, syncLocalVoiceprints, } from '@/db/services/voiceprint-service'
 import { clearChallengeAttempt } from '@/features/challenges/challenge-attempt'
@@ -285,6 +314,7 @@ import type { VoiceHistoryLeaveRequester } from '@/features/voice-history/VoiceH
 import { VoiceHistoryPage } from '@/features/voice-history/VoiceHistoryPage'
 import { createWhatsNewController } from '@/features/whats-new/use-whats-new'
 import { RELEASE_0_9 } from '@/features/whats-new/whats-new-content'
+import { routeSuppressesAnnouncement } from '@/features/whats-new/whats-new-release'
 import { WhatsNewPage } from '@/features/whats-new/WhatsNewPage'
 import { clampLoopB, isSeekOutsideLoop, shouldLoopBack } from '@/lib/ab-loop'
 import { trackEvent } from '@/lib/analytics'
@@ -295,6 +325,7 @@ import { flushPendingPurchase } from '@/lib/consent'
 import { drumVoiceForMidi } from '@/lib/drum-lanes'
 import { registerE2EBridge } from '@/lib/e2e-bridge'
 import { navigateTo, parseHash, replaceHash } from '@/lib/hash-router'
+import { lessonFromSearch } from '@/lib/lesson-marker'
 import { isLocalSaveNavigationLocked, vetoNavigationDuringLocalSave, } from '@/lib/local-save-navigation-lock'
 import type { MidiSongNote } from '@/lib/midi-song'
 import { initDefaultOGTags, setMelodyOGTags } from '@/lib/og-tags'
@@ -453,6 +484,106 @@ const GuitarGlyph = () => (
     </g>
   </svg>
 )
+
+// ── The plan layer's open state ─────────────────────────────
+// The plan record and the layer's mode live in plan-store, which the native
+// build must not carry: a module-level createPersistedSignal is a side effect
+// Rollup keeps, so even a static import used only in a dead branch would put
+// the store, and what it pulls in, in the phone's bundle. As First Light's
+// does above, the constant picks a function before the `import()` is written,
+// so App holds the store only as a module it has loaded, on the web.
+//
+// What says whether the layer is open is plan-layer-host.ts, which App imports
+// statically: it has no side effect, says no word and takes the store as a
+// type only, so it costs the native bundle nothing. The constant picks the
+// host as well, so only the web builds one; the native build gets a stand-in
+// that is never open and has nothing answered.
+const importPlanStore: () => Promise<PlanStoreModule> = IS_NATIVE_BUILD
+  ? async () => Promise.reject(new Error('The plan is not in this build'))
+  : async () => import('@/features/plan/plan-store')
+
+const NO_PLAN: PlanLayerHost = {
+  mode: () => null,
+  answered: () => false,
+  isOpen: () => false,
+  open: () => undefined,
+  close: () => undefined,
+  ready: Promise.resolve(),
+}
+
+const createPlanHost: () => PlanLayerHost = IS_NATIVE_BUILD
+  ? () => NO_PLAN
+  : () => createPlanLayerHost(importPlanStore)
+
+// ── The plan's answers on the account ───────────────────────
+// plan-sync.ts reads the plan record, so it imports plan-store, which the
+// native build must not carry (see above). The one gate in front of it,
+// syncPlanForAccount (sync-for-account.ts, R85), asks whether there is a real
+// account before it fetches the chunk, so a visitor with none loads nothing for
+// a sync; the plan's screens call the same gate when a plan is done. The
+// constant picks the function before anything is called, so the native build
+// holds one that does nothing and drops the gate with the import() inside it.
+// The gate never rejects: a failed sync costs that one sync, and the next
+// sign-in or load tries again.
+const syncPlan: () => Promise<void> = IS_NATIVE_BUILD
+  ? async () => undefined
+  : syncPlanForAccount
+
+/**
+ * The plan, as a layer over the app: drawn while the host has a mode, and keyed
+ * by it, so a layer opened in another mode is a new run. Not in the native
+ * bundle, which has no plan: the constant picks a component that draws
+ * nothing, so the layer's chunk stays out of the phone's bundle. A component of
+ * its own, so AppShell's body does not carry the mount.
+ */
+const PlanLayerMount: Component<{ plan: PlanLayerHost }> = IS_NATIVE_BUILD
+  ? () => null
+  : (props) => (
+      <Show when={props.plan.mode()} keyed>
+        {(mode) => (
+          <ErrorBoundary
+            fallback={() => {
+              // A dead chunk (offline, or a deploy swapped the hashed
+              // assets) must not leave the layer open with nothing on
+              // screen. Deferred a tick: this is a write, not render work.
+              queueMicrotask(props.plan.close)
+              return null
+            }}
+          >
+            <Suspense fallback={null}>
+              <PlanLayer mode={mode} onClose={props.plan.close} />
+            </Suspense>
+          </ErrorBoundary>
+        )}
+      </Show>
+    )
+
+/**
+ * The takeover's mount: the lazy component, behind a boundary that costs a
+ * visit its takeover and nothing else. A dead chunk (offline, or a deploy
+ * swapped the hashed assets) has nothing on screen to clean up: the next visit
+ * tries again. It says so once, and lets the tour offer go, since a takeover
+ * that will never open is not a reason to hold it back; a chunk that is only
+ * slow holds the offer for that visit, which spends nothing. The fallback takes
+ * the error so Solid calls it once, and the write waits a tick, as the layer's
+ * mount does: a fallback is render work. A component of its own, as the
+ * layer's mount is.
+ */
+const OpeningTakeoverMount: Component<OpeningTakeoverProps> = IS_NATIVE_BUILD
+  ? () => null
+  : (props) => (
+      <ErrorBoundary
+        fallback={(error: unknown) => {
+          console.warn('[takeover] The opening takeover was left out:', error)
+          queueMicrotask(props.onDecided)
+          return null
+        }}
+      >
+        <Suspense fallback={null}>
+          <OpeningTakeover {...props} />
+        </Suspense>
+      </ErrorBoundary>
+    )
 
 const AppShell: Component<AppProps> = (props) => {
   const { audioEngine, playbackRuntime, practiceEngine } = useEngines()
@@ -819,7 +950,45 @@ const AppShell: Component<AppProps> = (props) => {
   // one a lesson's link sent here for the first time. Not under the native
   // build, which has no What's New (use-whats-new.ts).
   const whatsNew = createWhatsNewController({ native: IS_NATIVE_BUILD })
-  onMount(() => whatsNew.announceIfNew(returningVisitor()))
+  // One takeover per visit: announcing to a returning visitor is the
+  // takeover's now (OpeningTakeoverMount, below), which picks between First
+  // Light, the plan and What's New. What stays here is the other half of what
+  // announceIfNew did on every boot: a visitor who is not returning is caught
+  // up on the release line, so their first announcement is the next real
+  // release. Asking is safe for them, since the page is never shown to one.
+  onMount(() => {
+    if (!returningVisitor()) whatsNew.announceIfNew(false)
+  })
+  // What this visit came for, read now and not when the takeover asks: the
+  // router rewrites the address in its first dispatch (it erases a Stripe
+  // return's one-shot hash), and a three-second wait for the account's settings
+  // ends long after. A link, a return from checkout and #/plan asked for that
+  // place. So did a lesson's practice link (?lesson=NN), whoever follows it:
+  // the marker is read here with the parser stepAsideForLesson uses, and not
+  // from lessonArrival(), which is set only when the link spent a first run's
+  // welcome, so a returning visitor would be handed the plan layer over the
+  // lesson's room. And so did a restored #/whats-new, a full-screen page the
+  // visitor came back to. That one is named here and not on the announcement's
+  // list, because the list also decides whether the release is marked as told
+  // (use-whats-new.ts).
+  const arrivalRoute = parseHash(window.location.hash)
+  const arrivalLesson = lessonFromSearch(window.location.search)
+  const takeoverSuppressed =
+    routeSuppressesAnnouncement(arrivalRoute) ||
+    arrivalRoute.type === 'whats-new' ||
+    arrivalLesson !== null
+  // Whether this visit began as a first run, read at the same moment and for
+  // the same reason. First Light is spent when somebody finishes or skips it,
+  // which can happen before the takeover's chunk lands, and a first-run visitor
+  // who read as "not a first run" by then would get the plan layer or What's
+  // New on top of it. `showWelcome` is settled by now: a storage read at load.
+  const takeoverWelcomeDue = showWelcome()
+  // Has the takeover chosen, and opened what it chose? The tour offer waits for
+  // it (below). The offer writes its once-per-tab key before its toast shows,
+  // and a pause that rises afterwards takes the toast down and keeps the key,
+  // so an offer made while the takeover was still choosing is spent unseen.
+  // The native build has no takeover, so it starts decided.
+  const [takeoverDecided, setTakeoverDecided] = createSignal(IS_NATIVE_BUILD)
 
   const closeVoiceConstellation = () => {
     const exit = leaveVoiceConstellation(activeTab())
@@ -834,6 +1003,12 @@ const AppShell: Component<AppProps> = (props) => {
   // aside by now: index.tsx does that before the render.
   const firstLight = useFirstLight(voiceConstellationOpen)
 
+  // ── The plan layer ──────────────────────────────────────────
+  // Opened by its route, by Guide's first row and, on the web, by Home's card
+  // and the existing user's takeover; see plan-layer-host.ts, which says when
+  // an opener may open at boot.
+  const plan = createPlanHost()
+
   const startGuideTour = (sectionIds: string[]) => {
     // Start before closing the dialog so a tour surface stays open across the
     // hand-off (the deferred survey checks for one — see tourSurfaceOpen).
@@ -844,6 +1019,19 @@ const AppShell: Component<AppProps> = (props) => {
       setGuideFromWelcome(false)
       dismissWelcome()
     }
+  }
+
+  // Guide's first row. Committed to the plan, like a tour: the welcome is
+  // retired for good. The Guide closes BEFORE the address goes in: closed
+  // after, the address sync would rewrite #/plan to the tab's own before the
+  // hashchange had read it, and the plan would never open.
+  const openPlanFromGuide = () => {
+    if (guideFromWelcome()) {
+      setGuideFromWelcome(false)
+      dismissWelcome()
+    }
+    setShowGuideSelection(false)
+    navigateTo({ type: 'plan' })
   }
 
   // ── Swipe to Change Tabs ──────────────────────────────────
@@ -1265,6 +1453,9 @@ const AppShell: Component<AppProps> = (props) => {
     showResetPassword: () => resetPasswordView() != null,
     closeResetPassword: () => setResetPasswordView(null),
     openOnboardingMap: firstLight.openMap,
+    openPlan: plan.open,
+    closePlan: plan.close,
+    planOpen: plan.isOpen,
     setVoiceConstellationOpen,
     voiceConstellationOpen,
     setWhatsNewOpen: whatsNew.setOpen,
@@ -2371,6 +2562,9 @@ const AppShell: Component<AppProps> = (props) => {
     authVersion()
     void syncLocalVoiceprints()
     void adoptAfterGoogleSignup()
+    // The plan's answers go up on the same transition, once there is a real
+    // account to send them to (plan-sync.ts).
+    void syncPlan()
   })
 
   // Restore the imported song behind the current melody on reload. Melodies
@@ -2456,8 +2650,25 @@ const AppShell: Component<AppProps> = (props) => {
 
   // Offer a page's spotlight tour the first time it's visited.
   // Not over First Light: the welcome screen is a first visit's whole
-  // screen, and the toast spent Home's offer underneath it.
-  usePageTourOffer(activeTab, () => showWelcome() || flowOpen())
+  // screen, and the toast spent Home's offer underneath it. Not over the
+  // plan layer either (R83): the toast region stands above it, and its
+  // Start tour ran the tab's tour over the plan. Nor over What's New, the
+  // takeover that takes a visit when the plan does not: one takeover per
+  // visit. And not before the takeover has decided which of them it is: its
+  // surface opens after its chunk and the settings pull, and an offer made in
+  // that gap is spent and then taken down. Decided also waits for the host to
+  // have seen the layer (onDecided, below): `plan.isOpen()` rises only once the
+  // host's own import of the store has landed. The tab on screen when the layer
+  // closes gets its offer then, if it never had one.
+  usePageTourOffer(
+    activeTab,
+    () =>
+      showWelcome() ||
+      flowOpen() ||
+      plan.isOpen() ||
+      whatsNew.open() ||
+      !takeoverDecided(),
+  )
 
   // Live mic insights → inline "can't hear you" / "too quiet" hints (Singing).
   const micInsights = useMicInsights({
@@ -2732,7 +2943,10 @@ const AppShell: Component<AppProps> = (props) => {
     onCleanup(installSelectBlurOnPointerChange())
 
     // Cloud settings sync: pull on startup/auth change, write-through
-    // on preference changes. Inert when no API is configured.
+    // on preference changes. Inert when no API is configured. The plan's
+    // rule goes in first: an earlier page's unsent record meets this pull.
+    if (!IS_NATIVE_BUILD)
+      registerSyncPrecedence(PLAN_RECORD_KEY, preferPlanRecord)
     initSettingsSync()
 
     // Surface the outcome of a Google sign-in redirect (token handling
@@ -2933,13 +3147,15 @@ const AppShell: Component<AppProps> = (props) => {
   }
 
   // True while any guide/tour surface is up: the guide-section dialog, the
-  // spotlight walkthrough, or the Learn chapter modals. The survey must never
-  // pop over these (it used to occlude a tour started from the welcome screen).
+  // spotlight walkthrough, the Learn chapter modals, or the plan layer (R83).
+  // The survey must never pop over these (it used to occlude a tour started
+  // from the welcome screen).
   const tourSurfaceOpen = () =>
     showGuideSelection() ||
     walkthroughActive() ||
     showSelection() ||
-    walkthroughModalOpen()
+    walkthroughModalOpen() ||
+    plan.isOpen()
 
   // Don't ask for feedback the moment a first-time visitor closes the welcome
   // screen: wait until they have genuinely used the app — enough cumulative
@@ -3237,6 +3453,27 @@ const AppShell: Component<AppProps> = (props) => {
           </Show>
         )}
 
+        {/* The plan, as a layer over the app; not in the native build. */}
+        <PlanLayerMount plan={plan} />
+        <OpeningTakeoverMount
+          routeSuppressed={takeoverSuppressed}
+          welcomeDue={takeoverWelcomeDue}
+          whatsNewDue={() => whatsNew.isDue(returningVisitor())}
+          announceWhatsNew={() => {
+            whatsNew.announceIfNew(returningVisitor())
+          }}
+          onDecided={() => {
+            // The takeover opens its layer through the store it imported, and
+            // the host that draws it reads the store only once its own import
+            // has landed, a little later. Decided in that gap, the offer's
+            // pause would drop for a moment and the offer would be spent under
+            // the layer. A failed import settles `ready` as well.
+            void plan.ready.then(() => {
+              setTakeoverDecided(true)
+            })
+          }}
+        />
+
         <Show when={whatsNew.open()}>
           <Suspense fallback={null}>
             <WhatsNewPage release={RELEASE_0_9} onClose={whatsNew.close} />
@@ -3266,6 +3503,8 @@ const AppShell: Component<AppProps> = (props) => {
           isOpen={showGuideSelection()}
           onClose={closeGuideSelection}
           onStartTour={startGuideTour}
+          onOpenPlan={IS_NATIVE_BUILD ? undefined : openPlanFromGuide}
+          planAnswered={plan.answered}
         />
 
         {/* Guide Tour — Interactive spotlight overlay */}

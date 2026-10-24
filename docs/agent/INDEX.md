@@ -75,7 +75,7 @@ These are the rules that break things when ignored.
 | Module | Entry point | LOC | What it is |
 |---|---|---|---|
 | `guitar-night` | [guitar-night-score-voice-commands.ts](../../src/features/guitar-night/guitar-night-score-voice-commands.ts) | 43.9k | Guitar Night score voice commands — hands-free Rehearse controls The score room and its command overlay share this one capability-shaped... |
-| `lessons` | [tune-line.ts](../../src/features/lessons/kit/tune-line.ts) | 41.4k | Tune line — a tune drawn as beads on semitone rows, played, slid and compared The object a lesson about tunes transforms is one object on... |
+| `lessons` | [tune-line.ts](../../src/features/lessons/kit/tune-line.ts) | 41.5k | Tune line — a tune drawn as beads on semitone rows, played, slid and compared The object a lesson about tunes transforms is one object on... |
 | `drum-night` | [index.ts](../../src/features/drum-night/session/index.ts) | 32.2k | Drum Night session boundary — import, score, kit, and evidence coaching. |
 | `stem-mixer` | [stem-mixer-voice-commands.ts](../../src/features/stem-mixer/stem-mixer-voice-commands.ts) | 17.8k | StemMixer voice commands — the karaoke tab's own spoken set Registered by StemMixer for exactly its mount lifetime, which ends the global... |
 | `ear-lab` | [ThresholdDrillView.tsx](../../src/features/ear-lab/ThresholdDrillView.tsx) | 17.1k | ThresholdDrillView — every Ruler-A drill on the stage. |
@@ -86,9 +86,10 @@ These are the rules that break things when ignored.
 | `piano-night` | [piano-night-music-source.ts](../../src/features/piano-night/piano-night-music-source.ts) | 8.5k | Piano Night music source — lazy, failure-bearing local catalogue boundary Piano Night discovers canonical projects and lightweight compos... |
 | `mirror` | [MirrorApp.tsx](../../src/features/mirror/MirrorApp.tsx) | 7.4k | Voice Mirror — the guided 3-task flow (spec §2). |
 | `progress` | [ProgressPage.tsx](../../src/features/progress/ProgressPage.tsx) | 7.3k | Progress — the Resonance Atlas THESIS: The Atlas is the interface: practice leaves physical pressure in a personal record, instead of bec... |
+| `onboarding` | [FirstLight.tsx](../../src/features/onboarding/FirstLight.tsx) | 6.2k | First Light — the beat orchestrator Owns the shared frame (sky, progress hairline, escape) and swaps the current beat inside it. |
+| `plan` | [PlanQuestions.tsx](../../src/features/plan/PlanQuestions.tsx) | 6.2k | PlanQuestions — the four question screens What Merc asks after First Light: the instrument (Q1), what the person is working toward (Q2),... |
 | `guitar` | [guitar-room-band.ts](../../src/features/guitar/backing/guitar-room-band.ts) | 6.1k | Guitar room band schedules count-ins and synthesized grooves on the shared room buses. |
 | `voice-control` | [useVoiceControlController.ts](../../src/features/voice-control/useVoiceControlController.ts) | 6.1k | useVoiceControlController — voice control's dispatcher and lifecycle Owns the listener (started/stopped with the persisted enable flag, e... |
-| `onboarding` | [FirstLight.tsx](../../src/features/onboarding/FirstLight.tsx) | 5.7k | First Light — the beat orchestrator Owns the shared frame (sky, progress hairline, escape) and swaps the current beat inside it. |
 | `piano` | [piano-sampled-instrument.ts](../../src/features/piano/instrument/piano-sampled-instrument.ts) | 5.7k | Piano sampled instrument — lazy Salamander playback on one bounded graph Construction is deliberately inert. |
 | `karaoke-room` | [karaoke-room-store.ts](../../src/features/karaoke-room/karaoke-room-store.ts) | 5.6k | The Karaoke room's memory: what it keeps across an unmount The room is a tab, and a tab unmounts every time the singer leaves it. |
 | `play-along` | [useSongController.ts](../../src/features/play-along/useSongController.ts) | 5.0k | Shared song selection controller owns lazy catalogs, stale-safe staging, and leases. |
@@ -120,8 +121,8 @@ These are the rules that break things when ignored.
 | `premium-exercises` | [ExercisePicker.tsx](../../src/features/premium-exercises/ExercisePicker.tsx) | 900 | The exercise picker: every premium exercise, one card each A kit Sheet the Sing room owns, as it owns its song and take sheets. |
 | `voice-constellation` | [useVoiceConstellationIsolation.ts](../../src/features/voice-constellation/useVoiceConstellationIsolation.ts) | 750 | Voice Constellation Isolation — route-lifetime focus and page isolation. |
 | `community` | [ProfileView.tsx](../../src/features/community/ProfileView.tsx) | 700 | ProfileView — your voice, so far Lifted out of CommunityShare, where it was ~200 lines inside an 1100-line component and could not be loo... |
+| `whats-new` | [whats-new-content.tsx](../../src/features/whats-new/whats-new-content.tsx) | 650 | What's New — the 0.9 line, in the visitor's terms One page for the whole release LINE, not one per version, because that is the granulari... |
 | `routing` | [useHashRouter.ts](../../src/features/routing/useHashRouter.ts) | 600 | useHashRouter — binds the URL hash to app state, both directions The app has no file-system router. |
-| `whats-new` | [whats-new-content.tsx](../../src/features/whats-new/whats-new-content.tsx) | 600 | What's New — the 0.9 line, in the visitor's terms One page for the whole release LINE, not one per version, because that is the granulari... |
 | `backgrounds` | [PremiumBackgroundPicker.tsx](../../src/features/backgrounds/PremiumBackgroundPicker.tsx) | 550 | PremiumBackgroundPicker — compact accessible stage gallery Locked cards intentionally render an atmospheric placeholder and never ask the... |
 | `session` | [useSessionSequencer.ts](../../src/features/session/useSessionSequencer.ts) | 450 | useSessionSequencer — drives a multi-item practice session item by item Between items it rewrites global musical context (key, scale, bpm... |
 | `keyboard` | [useKeyboardShortcuts.ts](../../src/features/keyboard/useKeyboardShortcuts.ts) | 400 | useKeyboardShortcuts — global hotkeys, mounted once by App One document-level keydown listener for the whole app. |
@@ -194,6 +195,7 @@ These are the rules that break things when ignored.
 | [pitch-algorithm-tester.ts](../../src/lib/pitch-algorithm-tester.ts) | 550 | Pitch Algorithm Tester — Compare pitch detection algorithms |
 | [runpod.ts](../../src/lib/runpod.ts) | 550 | RunPod bridge — translate the app's /api/uvr/* contract to/from RunPod's serverless job API. |
 | [uvr-processing-pipeline.ts](../../src/lib/uvr-processing-pipeline.ts) | 550 | UVR Processing Pipeline — Unified abstraction over: • Server mode → upload → poll /status → download stems • Local mode → VocalSeparator... |
+| [funnel-event-catalog.ts](../../src/lib/funnel-event-catalog.ts) | 500 | funnel-event-catalog — the ONE list of funnel event names Both halves of the funnel read this file: each client surface derives its event... |
 | [hash-router.ts](../../src/lib/hash-router.ts) | 500 | Hash Router — Client-side hash-based routing |
 | [scale-data.ts](../../src/lib/scale-data.ts) | 500 | Scale Data — Music theory utilities for MercuryPitch |
 | [share-codec.ts](../../src/lib/share-codec.ts) | 500 | Share Codec — Base64url self-contained payload encoding Encodes melodies, exercises, and daily routines into compact base64url strings su... |
@@ -271,11 +273,12 @@ These are the rules that break things when ignored.
 | File | LOC | What it is |
 |---|---|---|
 | [GuitarPage.tsx](../../src/pages/GuitarPage.tsx) | 1.3k | Original tab fingering (Guitar Pro imports) is preserved through load. |
-| [HomePage.tsx](../../src/pages/HomePage.tsx) | 650 | HomePage — the "today" landing surface One obvious next step: your streak (with forgiveness), today's generated 5–15 min session, this we... |
+| [HomePage.tsx](../../src/pages/HomePage.tsx) | 700 | HomePage — the "today" landing surface One obvious next step: your streak (with forgiveness), today's generated 5–15 min session, this we... |
 | [PianoPage.tsx](../../src/pages/PianoPage.tsx) | 400 | Route-neutral facade over the App-owned falling-notes runtime. |
 | [PathPage.tsx](../../src/pages/PathPage.tsx) | 350 | PathPage — The Ascent: the guided learning path A serpentine trail of celestial week-orbs climbing a night sky — week 1 at the foot, week... |
 | [ExercisesPage.tsx](../../src/pages/ExercisesPage.tsx) | 250 | The app's single pitch-frame stream. |
 | [EarLabPage.tsx](../../src/pages/EarLabPage.tsx) | 150 | EarLabPage — the Ear Lab tab: the Regulator Room around the bench and every drill stage. |
+| [HomePlanCardMount.tsx](../../src/pages/HomePlanCardMount.tsx) | 150 | HomePlanCardMount — how Home reaches its "Your plan" card, and what Home does for it "Your plan" is the first week's card (src/features/p... |
 | [LabPage.tsx](../../src/pages/LabPage.tsx) | 100 | Keep the real-mouse Lab specs runnable without putting a supporter token in CI. |
 | [AnalysisPage.tsx](../../src/pages/AnalysisPage.tsx) | 50 | One dashboard at every width. |
 | [ChallengesPage.tsx](../../src/pages/ChallengesPage.tsx) | 50 | Challenges tab (TAB_CHALLENGES). |
@@ -386,7 +389,7 @@ Grep for the symbol and read the surrounding range instead.
 | [src/components/StemMixer.tsx](../../src/components/StemMixer.tsx) | 7.5k |
 | [src/lib/piano-roll.ts](../../src/lib/piano-roll.ts) | 6.0k |
 | [src/features/drum-night/DrumNightApp.tsx](../../src/features/drum-night/DrumNightApp.tsx) | 5.3k |
-| [src/App.tsx](../../src/App.tsx) | 4.8k |
+| [src/App.tsx](../../src/App.tsx) | 5.0k |
 | [workers/db-worker/src/auth.ts](../../workers/db-worker/src/auth.ts) | 4.6k |
 | [src/components/UvrPanel.tsx](../../src/components/UvrPanel.tsx) | 3.6k |
 | [src/stores/jam-store.ts](../../src/stores/jam-store.ts) | 3.3k |

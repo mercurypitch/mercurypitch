@@ -1,0 +1,547 @@
+/* ============================================================
+   PlanScreen: your plan
+   ============================================================
+
+   The look is the approved mock's (your-plan-in-four-taps.html, 19 Oct). The
+   tokens, Merc's line, the headline and the scroll region are shared with
+   the question screens and written once, in plan-chrome.module.css, which
+   this sheet composes (the rule at the top of that file says what a
+   composing sheet may set, and which tokens read the host's --ob-* values).
+   The plan adds a solid card colour, which reads --ob-card-solid and falls
+   back to the mock's, and the gold of the credits line and the chips' ink,
+   which are literals. The tints of those colours (borders, halos, fills) are
+   written out as literals, as in the questions' sheet.
+
+   Where things sit:
+
+   - The screen fills the host's box and scrolls its own content; what the
+     host owes the screens is written in PlanExits.tsx. The root is a flex
+     column. The scroll region (Merc's line, the headline, the cards, the
+     menu switch and, in a review, Change my answers) takes the height the
+     ways on leave and scrolls what does not fit, and Show me around and See
+     every room are a row under it. That row is not pinned over the cards
+     with `position: sticky`: a sticky row is an overlay, so some card is
+     always partly under it, and it stops short of its scroller's bottom
+     padding (docs/agent/MISTAKES.md, "Give a pinned footer its own row").
+     From 900 px the region is only as tall as its cards, so the row follows
+     them, and the region scrolls only when the box is shorter than that. On
+     a phone the host's box reaches the bottom edge, so the row carries the
+     home indicator's inset under its buttons (PlanExits.tsx). It carries
+     the inset up to 899 px and none from 900 px.
+   - The root sets no `position` and no transform. Not now is PlanExits': it
+     sits in the top right corner of the host's nearest positioned box,
+     where the questions put it, and is neither clipped nor scrolled by the
+     region.
+   - No card makes a stacking context: no backdrop filter, filter, opacity
+     under 1, transform or will-change on a card, its cover or its body. The
+     chips fly across the plan inside their cards (fly-chips.ts), and a card
+     with its own stacking context would paint over the chips of the one
+     before it. The cover is clipped on its own, not the card.
+   - Start here is the big card: a 2:1 picture over its words. Learn and Play
+     are smaller, the picture beside the words. From 900 px the cards stand
+     in two columns, Start here on the left and the rest, with the menu
+     switch last, on the right.
+   - Every target is 44 px or more: the cards, the switch (its box, not its
+     track), Show me around and See every room.
+
+   Every animation, transition and lift is at the end, behind
+   `prefers-reduced-motion: no-preference`, so reduced motion is the default
+   and everything animated is an addition to it. */
+
+.root {
+  composes: root from './plan-chrome.module.css';
+  /* The plan's own tokens: a solid card (the picture and the words sit on
+     it), the gold of the credits line and the Play dot, and the chips' ink. */
+  --pl-card: var(--ob-card-solid, rgba(22, 27, 34, 0.92));
+  --pl-gold: #f2c46d;
+  --pl-gold-ink: #f6dca6;
+  --pl-chip-ink: #d7e8ff;
+
+  /* Fills the host's box: the scroll region, then the ways on under it. */
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 0;
+}
+
+/* Merc's line, the headline and the scroll region are the chrome's. */
+.scroll {
+  composes: scroll from './plan-chrome.module.css';
+  /* The height the ways on leave. */
+  flex: 1;
+}
+
+.say {
+  composes: say from './plan-chrome.module.css';
+}
+
+.headline {
+  composes: headline from './plan-chrome.module.css';
+  /* The mock's measure, two characters wider than the chrome's 14ch. Set
+     through the property the chrome's max-width reads, never as max-width. */
+  --pc-headline-max: 16ch;
+}
+
+.lit {
+  composes: lit from './plan-chrome.module.css';
+}
+
+/* ── The cards ────────────────────────────────────────────────── */
+
+.stops {
+  display: grid;
+  gap: 12px;
+  width: 100%;
+  max-width: 440px;
+  text-align: left;
+}
+
+/* Learn, Play and the switch: under Start here on a phone, beside it on a
+   wide screen. */
+.side {
+  display: grid;
+  gap: 12px;
+  align-content: start;
+  min-width: 0;
+}
+
+.stop {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  border: 1px solid rgba(230, 237, 243, 0.12);
+  border-radius: 18px;
+  background-color: var(--pl-card);
+  color: var(--pc-ink);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+/* The dot in front of the kicker: Start here blue (the dot's own fallback),
+   Learn violet, Play gold. */
+.stop[data-kind='learn'] {
+  --pl-k: var(--pc-violet);
+}
+
+.stop[data-kind='play'] {
+  --pl-k: var(--pl-gold);
+}
+
+.stop:not([data-kind='start']) {
+  flex-direction: row;
+}
+
+/* The room's picture, clipped here (the card is not, see the top). The
+   card's border is 1 px, so the picture's corners are 17. */
+.cover {
+  display: block;
+  width: 100%;
+  overflow: hidden;
+  aspect-ratio: 2 / 1;
+  border-radius: 17px 17px 0 0;
+  background-color: #161b22;
+}
+
+.cover img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.stop:not([data-kind='start']) .cover {
+  flex: none;
+  width: 100px;
+  aspect-ratio: auto;
+  border-radius: 17px 0 0 17px;
+}
+
+.body {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+  padding: 12px 14px 14px;
+  overflow-wrap: break-word;
+}
+
+.stop[data-kind='start'] .body {
+  gap: 8px;
+  padding: 14px 16px 16px;
+}
+
+.kicker {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 11px;
+  font-weight: 600;
+  line-height: 1.2;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--pc-ink-3);
+}
+
+.dot {
+  flex: none;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background-color: var(--pl-k, var(--pc-blue));
+}
+
+.title {
+  font-family: var(--pc-display);
+  font-size: 17px;
+  font-weight: 600;
+  line-height: 1.2;
+  letter-spacing: -0.01em;
+}
+
+.stop[data-kind='start'] .title {
+  font-size: 22px;
+}
+
+.why {
+  font-size: 14px;
+  line-height: 1.45;
+  color: var(--pc-ink-2);
+}
+
+/* ── The answers on a card ────────────────────────────────────── */
+
+.chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 2px;
+}
+
+/* The words of an answer can run longer than a small phone's card, so a chip
+   wraps rather than sticking out of it. */
+.chip {
+  display: inline-flex;
+  align-items: center;
+  max-width: 100%;
+  padding: 4px 10px;
+  border: 1px solid rgba(88, 166, 255, 0.36);
+  border-radius: 14px;
+  background-color: rgba(88, 166, 255, 0.15);
+  color: var(--pl-chip-ink);
+  font-size: 12px;
+  font-weight: 500;
+  line-height: 1.25;
+}
+
+/* ── The credits line ─────────────────────────────────────────── */
+
+/* A gift, a balance or a first pack: the gold is the credits'. The icon is a
+   box of its own, so the gift's svg and the credit coin sit the same. */
+.credits {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  margin-top: 4px;
+  padding: 10px 12px;
+  border: 1px solid rgba(242, 196, 109, 0.3);
+  border-radius: 12px;
+  background-color: rgba(242, 196, 109, 0.09);
+  color: var(--pl-gold);
+}
+
+.creditsIcon {
+  display: inline-flex;
+  flex: none;
+  margin-top: 1px;
+}
+
+.creditsTitle {
+  display: block;
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 1.3;
+  color: var(--pl-gold-ink);
+}
+
+.creditsSub {
+  display: block;
+  margin-top: 2px;
+  font-size: 12px;
+  line-height: 1.4;
+  color: var(--pc-ink-2);
+}
+
+/* ── The menu switch ──────────────────────────────────────────── */
+
+.scope {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 6px 6px 6px 14px;
+  border: 1px solid var(--pc-rule);
+  border-radius: 14px;
+  background-color: rgba(13, 17, 23, 0.66);
+  text-align: left;
+}
+
+/* A label for the switch: a tap on the words turns it. */
+.scopeText {
+  flex: 1;
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+  padding: 4px 0;
+  cursor: pointer;
+}
+
+.scopeLabel {
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.scopeNote {
+  font-size: 12px;
+  color: var(--pc-ink-3);
+}
+
+/* The button is the 44 px target and draws nothing; its track is the switch. */
+.switch {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 56px;
+  height: 44px;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: none;
+  cursor: pointer;
+}
+
+.track {
+  position: relative;
+  display: block;
+  width: 50px;
+  height: 30px;
+  border-radius: 999px;
+  background-color: var(--pc-rule);
+}
+
+.thumb {
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background-color: var(--pc-ink);
+}
+
+.switch[aria-checked='true'] .track {
+  background: linear-gradient(102deg, var(--pc-blue), var(--pc-teal));
+}
+
+.switch[aria-checked='true'] .thumb {
+  transform: translateX(20px);
+  background-color: var(--pc-on-fill);
+}
+
+/* ── The ways on ──────────────────────────────────────────────── */
+
+/* A row under the scroll region, not a layer over it: the cards scroll in
+   their own box and stop at its edge, so no card is ever partly under these
+   buttons, and a focused card is scrolled fully into view. On a phone the
+   two stand one over the other, with room for the home indicator, as First
+   Light's own pinned row has. */
+.actions {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  padding: 8px 0 calc(12px + env(safe-area-inset-bottom, 0px));
+}
+
+.primary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 9px;
+  min-height: 52px;
+  margin: 0;
+  padding: 0 32px;
+  border: 0;
+  border-radius: 999px;
+  background: linear-gradient(
+    102deg,
+    var(--pc-blue),
+    var(--pc-teal) 60%,
+    var(--pc-violet)
+  );
+  box-shadow: 0 6px 26px rgba(88, 166, 255, 0.26);
+  color: var(--pc-on-fill);
+  font: inherit;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+/* The chevron is Back's, turned round, as Next's is. */
+.arrow {
+  display: inline-flex;
+  transform: scaleX(-1);
+}
+
+.arrow svg {
+  display: block;
+  width: 18px;
+  height: 18px;
+}
+
+/* The quiet way into the full grid: a hint, not a button. */
+.skip {
+  min-height: 44px;
+  margin: 0;
+  padding: 0 14px;
+  border: 0;
+  background: none;
+  color: var(--pc-ink-3);
+  font: inherit;
+  font-size: 14px;
+  font-weight: 500;
+  text-decoration: underline;
+  text-decoration-color: rgba(125, 133, 144, 0.5);
+  text-underline-offset: 3px;
+  cursor: pointer;
+}
+
+/* A review's way back to the questions: the last thing in the scroll region,
+   and the same quiet link as See every room (a hint, 44 px tall, with its
+   hover), so it composes that class and sets nothing of its own. */
+.change {
+  composes: skip;
+}
+
+/* ── Hover, only where there is a pointer to move away ─────────── */
+
+@media (hover: hover) {
+  .stop:hover {
+    border-color: rgba(88, 166, 255, 0.55);
+  }
+
+  .skip:hover {
+    color: var(--pc-ink-2);
+  }
+}
+
+/* ── A wide screen ────────────────────────────────────────────── */
+
+@media (min-width: 900px) {
+  /* The headline's own size and measure, set through the chrome's two
+     properties (never on the shared class itself, see plan-chrome). */
+  .headline {
+    --pc-headline-max: 24ch;
+    --pc-headline-size: 44px;
+  }
+
+  /* Only as tall as the cards, so the ways on follow them; it still gives
+     way, and scrolls, when the host's box is shorter than that. */
+  .scroll {
+    flex: 0 1 auto;
+  }
+
+  .stops {
+    grid-template-columns: minmax(0, 1.28fr) minmax(0, 1fr);
+    gap: 16px;
+    max-width: 1000px;
+  }
+
+  /* Start here and nothing else: one column, centred. */
+  .stops[data-solo] {
+    grid-template-columns: minmax(0, 560px);
+    justify-content: center;
+  }
+
+  /* The cards share the height Start here takes; the switch keeps its own. */
+  .side {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+  }
+
+  .side > .stop {
+    flex: 1 1 auto;
+  }
+
+  .scope {
+    flex: none;
+  }
+
+  .stop[data-kind='start'] .title {
+    font-size: 26px;
+  }
+
+  .stop:not([data-kind='start']) .cover {
+    width: clamp(120px, 38%, 170px);
+  }
+
+  .why {
+    font-size: 14.5px;
+  }
+
+  .actions {
+    flex-direction: row;
+    justify-content: center;
+    gap: 14px;
+    padding: 12px 0 0;
+  }
+}
+
+/* ── Motion ───────────────────────────────────────────────────── */
+
+@media (prefers-reduced-motion: no-preference) {
+  /* Merc's line pops as the plan opens, as it does on each question. */
+  .say {
+    animation: sayIn 0.34s var(--pc-ease) both;
+  }
+
+  .stop {
+    transition: border-color 0.2s var(--pc-ease);
+  }
+
+  .primary {
+    transition:
+      transform 0.25s var(--pc-ease),
+      box-shadow 0.25s var(--pc-ease);
+  }
+
+  .thumb {
+    transition: transform 0.22s var(--pc-ease);
+  }
+}
+
+/* The lift: Show me around rises under a pointer. Where there is no pointer
+   to move away, and where motion is off, it stays put. */
+@media (prefers-reduced-motion: no-preference) and (hover: hover) {
+  .primary:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 10px 32px rgba(88, 166, 255, 0.34);
+  }
+}
+
+@keyframes sayIn {
+  from {
+    opacity: 0.2;
+    transform: translateY(4px) scale(0.97);
+  }
+
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}

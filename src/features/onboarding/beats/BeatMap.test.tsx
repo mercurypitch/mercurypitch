@@ -8,12 +8,16 @@
 // Each card now wears its room's cover in full from the first frame.
 // These tests hold both halves of that: the markup (nothing waits on a
 // pointer or an observer) and the stylesheet (nothing dims the cover at
-// rest, and every hover effect needs a pointer that can hover).
+// rest, and every hover effect needs a pointer that can hover). The file
+// reads the whole sheet, so it also holds the rules of First Light's frame that
+// the plan's beat reads (the bottom of the file).
 
 import { cleanup, fireEvent, render } from '@solidjs/testing-library'
 import { readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import type { MirrorResult } from '@/lib/mirror/metrics'
+import { setPracticeScope, setUiMode } from '@/stores/settings-store'
 import { ROOMS, SIDE_DOORS } from '../rooms'
 import { BeatMap, ROOM_COVER_SIZES } from './BeatMap'
 
@@ -303,5 +307,236 @@ describe("the Map's side doors", () => {
     )
 
     expect(phoneDoor?.body).toMatch(/min-height:\s*44px/)
+  })
+})
+
+// The plan can narrow the menu to one instrument (its switch), and "See every
+// room" then opens this grid: a card or a door for a tab the menu has hidden
+// would open a room the person cannot reach from anywhere else.
+describe("the Map and the person's menu", () => {
+  const WOBBLY = {
+    range: null,
+    accuracy: null,
+    steadiness: { score: 40 },
+  } as unknown as MirrorResult
+
+  afterEach(() => {
+    cleanup()
+    setPracticeScope('all')
+    setUiMode('advanced')
+  })
+
+  function mapOf(voiceprint: MirrorResult | null = null): HTMLElement {
+    return render(() => (
+      <BeatMap
+        voiceprint={voiceprint}
+        onEnter={() => {}}
+        onTour={() => {}}
+        onDone={() => {}}
+      />
+    )).container
+  }
+
+  const rooms = (map: HTMLElement): (string | null)[] =>
+    [...map.querySelectorAll('[data-room]')].map((card) =>
+      card.getAttribute('data-room'),
+    )
+
+  const doors = (map: HTMLElement): (string | null)[] =>
+    [...map.querySelectorAll('[data-side-doors] button')].map(
+      (door) => door.textContent,
+    )
+
+  it('shows every room and door while the menu shows every tab', () => {
+    const map = mapOf()
+
+    expect(rooms(map).sort()).toEqual(ROOMS.map((room) => room.id).sort())
+    expect(doors(map)).toEqual(SIDE_DOORS.map((door) => door.label))
+  })
+
+  it('leaves out rooms the menu hides', () => {
+    // Arrange: guitar's menu has no Practice, no Jam, and no Karaoke tab.
+    setPracticeScope('guitar')
+
+    // Act
+    const map = mapOf()
+
+    // Assert: the Karaoke room is a page, but it stands for the Karaoke tab.
+    expect(rooms(map)).not.toContain('practice')
+    expect(rooms(map)).not.toContain('jam')
+    expect(rooms(map)).not.toContain('karaoke')
+    expect(rooms(map)).toContain('ascent')
+  })
+
+  it('leaves out the doors the menu hides, and keeps the one with no tab', () => {
+    setPracticeScope('guitar')
+
+    const map = mapOf()
+
+    expect(doors(map)).toEqual(['Guitar', 'Voice Mirror'])
+  })
+
+  it("follows Simple mode's smaller menu", () => {
+    setUiMode('simple')
+
+    const map = mapOf()
+
+    expect(rooms(map)).toEqual(
+      expect.arrayContaining(['practice', 'exercises', 'ascent']),
+    )
+    expect(rooms(map)).not.toContain('karaoke')
+    expect(rooms(map)).not.toContain('jam')
+    expect(rooms(map)).not.toContain('analysis')
+  })
+
+  it('brings the rooms back when the menu does', () => {
+    setPracticeScope('guitar')
+    const map = mapOf()
+    expect(rooms(map)).not.toContain('practice')
+
+    setPracticeScope('all')
+
+    expect(rooms(map)).toContain('practice')
+    expect(rooms(map)).toContain('karaoke')
+  })
+
+  it('names no first stop in a room the menu has hidden', () => {
+    // Arrange: a wobbly voiceprint sends a singer to Exercises, which
+    // guitar's menu does not have.
+    setPracticeScope('guitar')
+
+    // Act
+    const map = mapOf(WOBBLY)
+
+    // Assert
+    expect(rooms(map)).not.toContain('exercises')
+    expect(map).not.toHaveTextContent('Your first stop')
+  })
+
+  it('still names the first stop in a room the menu keeps', () => {
+    setPracticeScope('singing')
+
+    const map = mapOf(WOBBLY)
+
+    expect(rooms(map)[0]).toBe('exercises')
+    expect(map).toHaveTextContent('Your first stop')
+  })
+})
+
+// The plan's beat (the four questions and the plan, BeatPlan) is a direct
+// child of First Light's frame and carries `data-beat="questions"`. On a phone
+// the frame gives its bottom padding up to it, as it does to the twin's: the
+// screens own the room under their last row, the home indicator's inset
+// included, and the box adds none (BeatPlan.module.css). The beat standing
+// directly in the frame is pinned in FirstLight.plan.test.tsx. The frame also
+// lends the screens its padding beside and below the box, which it never
+// clips, so a glow by the box's edge fades out there (PlanExits.tsx). A lend is
+// the padding it lends, so it is read against the frame's padding at each
+// width, not pinned as a second copy of the number.
+describe("First Light's frame, while the plan is up", () => {
+  const PHONE = '@media (max-width: 640px)'
+  const reads = RULES.filter((rule) =>
+    rule.selector.includes("[data-beat='questions']"),
+  )
+  const body = (rule: Rule): string => rule.body.replace(/\s+/g, ' ').trim()
+  // The frame's own rules. The beat's (`reads`) are the more specific selector,
+  // so what they set wins over these at any width.
+  const frames = RULES.filter((rule) => rule.selector === '.frame')
+
+  /** The four sides of a `padding` of one to four values, as CSS reads them. */
+  function sides(value: string): Record<string, string> {
+    const [top, right = top, bottom = top, left = right, ...more] =
+      value.split(' ')
+    if (more.length > 0) throw new Error(`Cannot read the padding "${value}"`)
+    return {
+      'padding-top': top,
+      'padding-right': right,
+      'padding-bottom': bottom,
+      'padding-left': left,
+    }
+  }
+
+  /** What the rules leave each property, later over earlier, with `padding` spelt out by side. */
+  function cascade(rules: Rule[]): Record<string, string> {
+    const settled: Record<string, string> = {}
+    for (const rule of rules) {
+      for (const declaration of body(rule).split(';')) {
+        const colon = declaration.indexOf(':')
+        if (colon < 1) continue
+        const property = declaration.slice(0, colon).trim()
+        const value = declaration.slice(colon + 1).trim()
+        Object.assign(
+          settled,
+          property === 'padding' ? sides(value) : { [property]: value },
+        )
+      }
+    }
+    return settled
+  }
+
+  /** A plain length in px, where `0` is one too. A calc() or a var() is not, and throws. */
+  function px(value: string | undefined): number {
+    if (value === '0') return 0
+    const found = /^(-?\d+(?:\.\d+)?)px$/.exec(value ?? '')
+    if (found === null) throw new Error(`"${value}" is not a plain px length`)
+    return Number(found[1])
+  }
+
+  it('lends its padding, gives up its bottom padding on a phone, and does nothing else', () => {
+    expect(reads.map((rule) => [rule.selector, rule.at])).toEqual([
+      [".frame:has(> [data-beat='questions'])", []],
+      [".frame:has(> [data-beat='questions'])", [PHONE]],
+    ])
+    expect(reads.map(body)).toEqual([
+      '--pc-overhang-side: 22px; --pc-overhang-end: 40px;',
+      'padding-bottom: 0; --pc-overhang-end: 0px;',
+    ])
+  })
+
+  it.each<[string, string[]]>([
+    ['wider than a phone', []],
+    ['on a phone', [PHONE]],
+  ])(
+    'lends exactly the padding it has beside and below the box, %s',
+    (_width, widths) => {
+      const frame = cascade(
+        [...frames, ...reads].filter((rule) =>
+          rule.at.every((atRule) => widths.includes(atRule)),
+        ),
+      )
+      const padding = {
+        left: px(frame['padding-left']),
+        right: px(frame['padding-right']),
+        bottom: px(frame['padding-bottom']),
+      }
+
+      // One lend serves both sides, so the narrower side is all it can be.
+      expect({
+        side: px(frame['--pc-overhang-side']),
+        end: px(frame['--pc-overhang-end']),
+      }).toEqual({
+        side: Math.min(padding.left, padding.right),
+        end: padding.bottom,
+      })
+    },
+  )
+
+  it("changes the frame's padding at no width but the phone's, so no width goes unread", () => {
+    const elsewhere = frames.filter(
+      (rule) =>
+        rule.at.some((atRule) => atRule !== PHONE) &&
+        rule.body.includes('padding'),
+    )
+
+    expect(elsewhere.map(body)).toEqual([])
+  })
+
+  it("gives it up on a phone only, in the width the twin's rule gives its own", () => {
+    const twin = RULES.find(
+      (rule) => rule.selector === '.frame:has(> .twinBeat)',
+    )
+
+    expect(reads[1].at).toEqual([PHONE])
+    expect(twin?.at).toEqual([PHONE])
   })
 })

@@ -58,6 +58,10 @@ export type HashRoute =
    *  folds the tour catalog into the Map, at which point the two should be
    *  consolidated onto one route. */
   | { type: 'onboarding-map' }
+  /** The plan as a layer over the app: the four questions, then the stops
+   *  they lead to. Guide's first row opens it, and the address is what a
+   *  reload or a link comes back to. */
+  | { type: 'plan' }
   /** Return from Stripe checkout (success_url / cancel_url in the
    *  db-worker's billing.ts) — lands on Settings → Credits. `kind` separates a
    *  donation return (grants a supporter entitlement) from a credit purchase;
@@ -150,6 +154,16 @@ function isValidTab(tab: string): tab is ActiveTab {
 function isAdminSection(section: string): section is AdminSection {
   return VALID_ADMIN_SECTIONS.has(section)
 }
+
+/**
+ * The routes that are one fixed address and carry nothing, so parseHash looks
+ * them up in a table instead of growing a branch for each: the First Light Map
+ * and the plan layer.
+ */
+const BARE_ROUTES: ReadonlyMap<string, HashRoute> = new Map<string, HashRoute>([
+  ['/map', { type: 'onboarding-map' }],
+  ['/plan', { type: 'plan' }],
+])
 
 /**
  * Parse the current window.location.hash into a HashRoute.
@@ -300,10 +314,9 @@ export function parseHash(rawHash: string): HashRoute {
     return { type: 'voice-constellation' }
   }
 
-  // Match: /map (replay the First Light Map)
-  if (hash === '/map') {
-    return { type: 'onboarding-map' }
-  }
+  // Match: /map (replay the First Light Map) and /plan (the plan layer)
+  const bare = BARE_ROUTES.get(hash)
+  if (bare !== undefined) return { ...bare }
 
   // Stripe checkout return URLs (see workers/db-worker/src/billing.ts):
   // success lands on Settings → Account with a confirmation; the cancel URL
@@ -417,6 +430,8 @@ export function buildHash(route: HashRoute): string {
       return '/whats-new'
     case 'onboarding-map':
       return '/map'
+    case 'plan':
+      return '/plan'
     case 'billing-return':
       // Only the SUCCESS return has a donation-specific hash; a cancelled
       // donation goes back to the credits tab, same as a cancelled purchase.

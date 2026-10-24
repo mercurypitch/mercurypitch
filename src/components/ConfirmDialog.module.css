@@ -53,6 +53,11 @@
   animation: confirmDialogIn 0.2s ease;
 }
 
+.dialog:focus {
+  /* Focus taken from a press on the words (isolateKeyboard): no ring. */
+  outline: none;
+}
+
 .dialog h4 {
   margin: 0 0 0.5rem;
   font-size: 1rem;
@@ -176,6 +181,71 @@
 .primary svg {
   width: 0.9rem;
   height: 0.9rem;
+}
+
+/* ── A way to stay (keepLabel) ──────────────────────────────────────
+   One primary, full width: staying. The way out sits apart under it, as
+   words rather than a second button of the same weight. */
+
+.details {
+  /* Closer to the line that introduces it than the paragraph margin. */
+  margin: -0.75rem 0 1.25rem;
+  padding-left: 1.15rem;
+  font-size: 0.85rem;
+  color: var(--fg-secondary);
+  line-height: 1.5;
+}
+
+.details li + li {
+  margin-top: 0.35rem;
+}
+
+.stacked {
+  flex-direction: column;
+  align-items: stretch;
+  gap: 0.25rem;
+}
+
+.keep {
+  width: 100%;
+  min-height: 44px;
+  padding: 0.6rem 1rem;
+  background: var(--accent);
+  color: var(--on-accent, var(--bg-primary, #0d1117));
+  border: none;
+  border-radius: 0.4rem;
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: filter 0.15s;
+}
+
+.keep:hover:not(:disabled) {
+  filter: brightness(1.1);
+}
+
+.quiet {
+  align-self: center;
+  min-height: 44px;
+  padding: 0.5rem 1rem;
+  background: transparent;
+  border: none;
+  border-radius: 0.4rem;
+  color: var(--fg-secondary);
+  font-size: 0.85rem;
+  cursor: pointer;
+  transition: color 0.15s;
+}
+
+.quiet:hover:not(:disabled) {
+  color: var(--fg-primary);
+  text-decoration: underline;
+}
+
+.keep:focus-visible,
+.quiet:focus-visible {
+  outline: 2px solid var(--accent, #58a6ff);
+  outline-offset: 2px;
 }
 
 @media (prefers-reduced-motion: reduce) {

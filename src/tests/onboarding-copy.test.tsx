@@ -368,14 +368,21 @@ describe('beat 5 — the twin', () => {
   })
 
   // FVC-14
-  it('says what comes next in its one line, with no em dash on the screen', () => {
-    const { container } = render(() => (
-      <BeatTwin result={TWIN_RESULT} onContinue={noop} />
-    ))
+  it.each<[boolean, string, string]>([
+    [false, COPY.TWIN_NEXT, COPY.TWIN_NEXT_PLAN],
+    [true, COPY.TWIN_NEXT_PLAN, COPY.TWIN_NEXT],
+  ])(
+    'with the plan due: %s, says "%s" and not "%s", with no em dash',
+    (planDue, line, other) => {
+      const { container } = render(() => (
+        <BeatTwin result={TWIN_RESULT} planDue={planDue} onContinue={noop} />
+      ))
 
-    expect(container.textContent).toContain(COPY.TWIN_NEXT)
-    expect(container.textContent).not.toContain(EM_DASH)
-  })
+      expect(container.textContent).toContain(line)
+      expect(container.textContent).not.toContain(other)
+      expect(container.textContent).not.toContain(EM_DASH)
+    },
+  )
 
   // FVC-15
   it("puts its numbers on one stat card, drawn from the singer's glides", () => {

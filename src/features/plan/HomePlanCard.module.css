@@ -1,0 +1,194 @@
+/* ============================================================
+   HomePlanCard: "Your plan" on Home, in the colors and the shape of Home's own cards
+   ============================================================
+
+   One grid item across both columns of Home's grid: a row for each stop of
+   the plan, or Merc's line and a Start. Every target is 44 px. Small text is
+   set in --accent-text, the accent made for text, and never --accent, which
+   is a fill and does not clear 4.5:1 on a row's ground in the light theme.
+   HomePlanCard.css.test.ts holds the span, the targets and the colour.
+   HomePlanCardMount.module.css copies .card's frame for the slot Home keeps
+   before this chunk is in; HomePlanCardMount.css.test.ts holds the copy. */
+
+.card {
+  /* Across both columns of Home's grid, as the Ascent card is (AscentCard.module.css).
+     It is placed here, not by a wrapper in HomePage: the card draws nothing when
+     there is no plan to show, and an empty wrapper would still hold a row, and its
+     gap, open at the top of Home. */
+  grid-column: 1 / -1;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 16px;
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  background: var(--bg-card);
+}
+
+.head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.title {
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 650;
+  color: var(--text-primary);
+}
+
+/* The X: a 44 px target around a 16 px picture. The negative margin gives the
+   head back the room the target takes beyond the card's padding, so the card
+   is no taller for it. */
+.hide {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  margin: -10px -10px -10px 0;
+  padding: 0;
+  border: none;
+  border-radius: 10px;
+  background: none;
+  color: var(--text-muted);
+  cursor: pointer;
+}
+
+.hide svg {
+  width: 16px;
+  height: 16px;
+}
+
+.hide:hover {
+  background: var(--bg-tertiary);
+  color: var(--text-primary);
+}
+
+.hide:focus-visible,
+.row:focus-visible,
+.start:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+/* ── The plan: a row for each stop ───────────────────────────────── */
+
+/* One column on a phone, up to three side by side where there is room. The
+   track minimum is capped at the card's own width, so a narrow window never
+   pushes a row past the card. */
+.rows {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 230px), 1fr));
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+/* The row's button fills its cell, so rows side by side are one height. */
+.item {
+  display: flex;
+  min-width: 0;
+}
+
+.row {
+  flex: 1 1 auto;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+  min-height: 44px;
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--bg-tertiary);
+  color: inherit;
+  font-family: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.row:hover {
+  border-color: var(--accent);
+}
+
+.rowText {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.kicker {
+  font-size: 0.75rem;
+  font-weight: 650;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--accent-text);
+}
+
+.rowTitle {
+  font-size: 0.9rem;
+  font-weight: 600;
+  line-height: 1.3;
+  color: var(--text-primary);
+  overflow-wrap: anywhere;
+}
+
+/* A stop that is done reads as behind the person, with its tick. */
+.row[data-done] .rowTitle {
+  color: var(--text-secondary);
+}
+
+.tick {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: var(--accent);
+  color: var(--on-accent, var(--bg-primary));
+}
+
+/* ── The ask: Merc's line, and the way in ───────────────────────── */
+
+.ask {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.line {
+  flex: 1 1 240px;
+  margin: 0;
+  font-size: 0.9rem;
+  line-height: 1.45;
+  color: var(--text-secondary);
+}
+
+.start {
+  flex: none;
+  min-height: 44px;
+  padding: 0 22px;
+  border: none;
+  border-radius: 10px;
+  background: var(--accent);
+  color: var(--on-accent, var(--bg-primary));
+  font-family: inherit;
+  font-size: 0.9rem;
+  font-weight: 650;
+  cursor: pointer;
+}
+
+.start:hover {
+  background: var(--accent-hover);
+}

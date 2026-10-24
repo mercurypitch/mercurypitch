@@ -5,7 +5,7 @@
 // ============================================================
 
 import type { Component, JSX } from 'solid-js'
-import { createEffect, createSignal, createUniqueId, Show } from 'solid-js'
+import { createEffect, createSignal, createUniqueId, For, Show } from 'solid-js'
 import { Portal } from 'solid-js/web'
 import { useFocusTrap } from '@/lib/use-focus-trap'
 import styles from './ConfirmDialog.module.css'
@@ -40,6 +40,23 @@ interface ConfirmDialogProps {
   /** A third, labelled way out beside Cancel (e.g. "Sing as practice"). */
   secondaryLabel?: string
   onSecondary?: () => void
+  /**
+   * For a confirm that talks someone out of leaving: Cancel carries this
+   * label, takes the focus and is the one primary, full width, and the
+   * confirm sits under it as a quiet text button with no icon (`tone` is
+   * not read). Without it the dialog is the usual Cancel and confirm pair.
+   */
+  keepLabel?: string
+  /** Lines listed under the message, outside its paragraph, and read with
+   *  it as the dialog's description. None, or an empty list, shows nothing. */
+  details?: readonly string[]
+  /**
+   * Keep every key at the dialog, so the app's shortcuts on the window cannot
+   * act behind it (Space would play the tab behind and swallow a button's
+   * activation). The type-to-confirm input's Enter is a native listener on the
+   * input, so it works with this too.
+   */
+  isolateKeyboard?: boolean
   onConfirm: () => void
   onCancel: () => void
 }
@@ -49,6 +66,8 @@ export const ConfirmDialog: Component<ConfirmDialogProps> = (props) => {
   const titleId = createUniqueId()
   const bodyId = createUniqueId()
   const phraseId = createUniqueId()
+  const detailsId = createUniqueId()
+  let keepRef: HTMLButtonElement | undefined
   const [typed, setTyped] = createSignal('')
   const portalSkin = createPortalSkinBridge(() => props.open)
 
@@ -75,9 +94,17 @@ export const ConfirmDialog: Component<ConfirmDialogProps> = (props) => {
     if (props.busy !== true) props.onSecondary?.()
   }
 
+  const stay = (): boolean => props.keepLabel != null
+  const listed = (): boolean => (props.details?.length ?? 0) > 0
+
   useFocusTrap(() => dialogRef, {
     isOpen: () => props.open,
     onClose: cancel,
+    // A getter: the trap reads it on each key, so it follows the prop.
+    get isolateKeyboard() {
+      return props.isolateKeyboard
+    },
+    initialFocus: () => (stay() ? keepRef : undefined),
   })
 
   return (
@@ -99,13 +126,21 @@ export const ConfirmDialog: Component<ConfirmDialogProps> = (props) => {
               class={styles.dialog}
               role="alertdialog"
               aria-modal="true"
+              // Takes focus from a press on its words, never from Tab, so the
+              // keys after it stay inside the trap (use-focus-trap.ts).
+              tabIndex={props.isolateKeyboard === true ? -1 : undefined}
               aria-labelledby={titleId}
-              aria-describedby={bodyId}
+              aria-describedby={listed() ? `${bodyId} ${detailsId}` : bodyId}
               aria-busy={props.busy === true ? true : undefined}
               onClick={(e) => e.stopPropagation()}
             >
               <h4 id={titleId}>{props.title}</h4>
               <p id={bodyId}>{props.message}</p>
+              <Show when={listed()}>
+                <ul id={detailsId} class={styles.details}>
+                  <For each={props.details}>{(line) => <li>{line}</li>}</For>
+                </ul>
+              </Show>
               <Show when={props.confirmPhrase != null}>
                 <label class={styles.phraseLabel} for={phraseId}>
                   Type <strong>{props.confirmPhrase}</strong> to confirm
@@ -121,20 +156,26 @@ export const ConfirmDialog: Component<ConfirmDialogProps> = (props) => {
                   disabled={props.busy}
                   data-testid="confirm-phrase"
                   onInput={(e) => setTyped(e.currentTarget.value)}
-                  onKeyDown={(e) => {
+                  // Native, on the input: heard inside a trap that keeps every
+                  // key at the dialog, where a delegated onKeyDown is not.
+                  on:keydown={(e) => {
                     if (e.key === 'Enter') confirm()
                   }}
                 />
               </Show>
-              <div class={styles.actions}>
+              <div
+                class={styles.actions}
+                classList={{ [styles.stacked]: stay() }}
+              >
                 <button
+                  ref={keepRef}
                   type="button"
-                  class={styles.cancel}
+                  class={stay() ? styles.keep : styles.cancel}
                   data-testid="confirm-cancel"
                   disabled={props.busy}
                   onClick={cancel}
                 >
-                  Cancel
+                  {props.keepLabel ?? 'Cancel'}
                 </button>
                 <Show when={props.secondaryLabel != null}>
                   <button
@@ -150,14 +191,15 @@ export const ConfirmDialog: Component<ConfirmDialogProps> = (props) => {
                 <button
                   type="button"
                   classList={{
-                    [styles.delete]: props.tone !== 'primary',
-                    [styles.primary]: props.tone === 'primary',
+                    [styles.delete]: !stay() && props.tone !== 'primary',
+                    [styles.primary]: !stay() && props.tone === 'primary',
+                    [styles.quiet]: stay(),
                   }}
                   data-testid="confirm-delete"
                   disabled={props.busy === true || !phraseSatisfied()}
                   onClick={confirm}
                 >
-                  {props.confirmIcon ?? <Trash2 />}{' '}
+                  <Show when={!stay()}>{props.confirmIcon ?? <Trash2 />} </Show>
                   {props.confirmLabel ?? 'Delete'}
                 </button>
               </div>

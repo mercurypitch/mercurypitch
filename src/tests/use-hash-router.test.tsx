@@ -60,6 +60,8 @@ function mountRouter(options: {
   const handleShareMelody = vi.fn()
   const setInitialUvrView = vi.fn()
   const openOnboardingMap = vi.fn()
+  const openPlan = vi.fn()
+  const closePlan = vi.fn()
   const dismissWelcome = vi.fn()
   const openSettingsSection = vi.fn()
   const setActiveUvrSessionId = vi.fn()
@@ -67,6 +69,7 @@ function mountRouter(options: {
   const Fixture = () => {
     const [voiceConstellationOpen, setVoiceOpen] = createSignal(false)
     const [whatsNewOpen, setWhatsNewOpen] = createSignal(false)
+    const [planOpen, setPlanOpen] = createSignal(false)
     useHashRouter({
       setActiveTab,
       requestActiveTabChange,
@@ -94,6 +97,15 @@ function mountRouter(options: {
       showResetPassword: () => false,
       closeResetPassword,
       openOnboardingMap,
+      openPlan: () => {
+        setPlanOpen(true)
+        openPlan()
+      },
+      closePlan: () => {
+        setPlanOpen(false)
+        closePlan()
+      },
+      planOpen,
       setVoiceConstellationOpen: (open) => {
         setVoiceOpen(open)
         setVoiceConstellationOpen(open)
@@ -124,6 +136,8 @@ function mountRouter(options: {
     handleShareMelody,
     setInitialUvrView,
     openOnboardingMap,
+    openPlan,
+    closePlan,
     dismissWelcome,
     openSettingsSection,
     setActiveUvrSessionId,
@@ -324,6 +338,89 @@ describe('the First Light map route', () => {
     await new Promise((resolve) => setTimeout(resolve, 20))
     expect(router.openOnboardingMap).not.toHaveBeenCalled()
     expect(router.dismissWelcome).not.toHaveBeenCalled()
+  })
+})
+
+describe('the plan route', () => {
+  afterEach(() => {
+    build.native = false
+  })
+
+  it('routes #/plan to the plan layer, with the welcome put away first', async () => {
+    // A first-ever visitor on #/plan would otherwise get First Light and the
+    // layer together, as the onboarding map's route found.
+    history.replaceState(null, '', '#/plan')
+    const router = mountRouter({
+      closeAdminContent: () => true,
+      showAdminContentStudio: false,
+    })
+
+    await waitFor(() => expect(router.openPlan).toHaveBeenCalledTimes(1))
+
+    expect(router.dismissWelcome).toHaveBeenCalledTimes(1)
+    expect(router.dismissWelcome.mock.invocationCallOrder[0]).toBeLessThan(
+      router.openPlan.mock.invocationCallOrder[0],
+    )
+    expect(router.closePlan).not.toHaveBeenCalled()
+  })
+
+  it('keeps #/plan in the address while the layer is up', async () => {
+    // The tab-to-hash sync runs once the route is in, and would rewrite the
+    // address to the tab's own unless the open layer holds it still.
+    history.replaceState(null, '', '#/plan')
+    const router = mountRouter({
+      closeAdminContent: () => true,
+      showAdminContentStudio: false,
+    })
+    await waitFor(() => expect(router.openPlan).toHaveBeenCalled())
+
+    await new Promise((resolve) => setTimeout(resolve, 20))
+
+    expect(window.location.hash).toBe('#/plan')
+  })
+
+  it('is inert under the native build: no layer, no welcome put away', async () => {
+    // The layer is folded out of the native build, so a route that opened it
+    // there would leave a surface open with nothing on screen.
+    build.native = true
+    history.replaceState(null, '', '#/plan')
+    const router = mountRouter({
+      closeAdminContent: () => true,
+      showAdminContentStudio: false,
+    })
+
+    // The web case sees its call inside this; give the route the same time.
+    await new Promise((resolve) => setTimeout(resolve, 20))
+
+    expect(router.openPlan).not.toHaveBeenCalled()
+    expect(router.dismissWelcome).not.toHaveBeenCalled()
+  })
+
+  it('closes the layer when browser navigation leaves its route', async () => {
+    history.replaceState(null, '', '#/plan')
+    const router = mountRouter({
+      closeAdminContent: () => true,
+      showAdminContentStudio: false,
+    })
+    await waitFor(() => expect(router.openPlan).toHaveBeenCalled())
+
+    // A link: a new entry, then the hashchange the router sees.
+    history.pushState(null, '', '#/progress')
+    window.dispatchEvent(new HashChangeEvent('hashchange'))
+
+    await waitFor(() => expect(router.closePlan).toHaveBeenCalledTimes(1))
+  })
+
+  it('closes the layer on any other route, and opens none for it', async () => {
+    history.replaceState(null, '', '#/progress')
+    const router = mountRouter({
+      closeAdminContent: () => true,
+      showAdminContentStudio: false,
+    })
+
+    await waitFor(() => expect(router.closePlan).toHaveBeenCalled())
+
+    expect(router.openPlan).not.toHaveBeenCalled()
   })
 })
 

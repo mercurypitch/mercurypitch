@@ -260,6 +260,21 @@
     grid-template-columns: minmax(0, 1fr);
   }
 }
+/* the way back to the plan, shown by kit/plan-back.ts to someone who answered
+   its questions: a plain link beside the next card, never a second card, with
+   a 44 px box. It is `hidden` until then, and the display set here must not
+   beat the attribute, so the link says so itself (the base sheet's [hidden]
+   rule says it for every element too). */
+.plan-back {
+  display: flex;
+  align-items: center;
+  width: fit-content;
+  min-height: 44px;
+  margin-top: 6px;
+}
+.plan-back[hidden] {
+  display: none;
+}
 
 /* ---------------------------------------------------------------- the episode */
 .player-grid {

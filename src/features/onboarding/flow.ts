@@ -4,14 +4,15 @@
 //
 // The onboarding is an ordered list of beats, not all of which
 // apply to every visitor: the voiceprint pair only runs on the full
-// track, and there is nothing to "keep" if nothing was measured.
+// track, there is nothing to "keep" if nothing was measured, and the
+// four questions are asked only while the person's plan is due.
 // Keeping the traversal pure makes every skip rule testable without
 // mounting a component.
 //
 // See docs/plans/onboarding-first-light.md.
 
 /**
- * The seven beats, in the order they are walked.
+ * The beats, in the order they are walked.
  *
  * `keep` sits BEFORE `map`, which the plan originally had the other way
  * round. The Map's entire job is to send someone into a room, so an ask
@@ -20,6 +21,11 @@
  * flow exists to avoid. Asking while the twin portrait is still on
  * screen is both the stronger moment and the politer one, and it leaves
  * the Map as the last thing they see either way.
+ *
+ * `questions` (the four taps and the plan they make) sits between the two:
+ * after the account ask, so nothing interrupts the offer the twin earned,
+ * and before the Map, which stays the last screen. Its plan can send the
+ * visitor into a room itself, or on to the Map's grid.
  */
 export const BEAT_ORDER = [
   'sky',
@@ -29,6 +35,7 @@ export const BEAT_ORDER = [
   'voiceprint',
   'twin',
   'keep',
+  'questions',
   'map',
 ] as const
 
@@ -55,6 +62,13 @@ export interface FlowState {
    * who has done exactly that, four times.
    */
   savedPrints: number
+  /**
+   * True while the person's plan has not been answered or turned down: the
+   * record is empty or only shown. A snapshot taken when the flow opens
+   * (First Light), so answering the questions never drops the beat from its
+   * own walk.
+   */
+  planDue: boolean
 }
 
 /**
@@ -63,10 +77,13 @@ export interface FlowState {
  * that is a build-phase concern, this is a product rule.
  */
 export function isBeatApplicable(beat: Beat, state: FlowState): boolean {
+  // Words and taps, never a take: a refused microphone is asked too, and the
+  // questions come before the mic rule so it cannot swallow them.
+  if (beat === 'questions') return state.planDue
   if (state.micDenied) {
-    // Every remaining beat except the Map needs a working microphone.
-    // Offering "map my whole voice" to someone who just refused the mic
-    // is the kind of thing that makes a product feel like it wasn't
+    // Every remaining beat except the questions and the Map needs a working
+    // microphone. Offering "map my whole voice" to someone who just refused
+    // the mic is the kind of thing that makes a product feel like it wasn't
     // paying attention.
     return beat === 'map'
   }

@@ -3,15 +3,21 @@
 // ============================================================
 //
 // The gift appears only while the server features a code. Keep has one
-// button; "Not now" is in the rail at the top right, advances to the Map
-// and silences the ask for a week. The welcome beat has one button and a
-// close button. A declined microphone hears no offer in onboarding.
+// button; "Not now" is in the rail at the top right, advances to the next
+// beat (the four questions while the plan is due, else the Map) and
+// silences the ask for a week. The welcome beat has one button and a close
+// button. A declined microphone hears no offer in onboarding. The plan inside
+// the flow follows the Map's rule for the gift (the same offer on its Karaoke
+// Night card, none for a declined microphone), and Keep's sign-up detour (the
+// questions behind the modal, Google's return) tells the funnel the plan was
+// shown once.
 //
 // Launch offer plan, sections 4.1 to 4.5; owner decisions D5 and D6.
 
 import { cleanup, fireEvent, render, screen, waitFor, } from '@solidjs/testing-library'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type * as OnboardingFunnelModule from '@/features/onboarding/funnel'
+import type * as GpuGateModule from '@/lib/merc/gpu-gate'
 import type { MirrorResult } from '@/lib/mirror/metrics'
 import type { OpenResult, ProbeResult, VoiceSession } from '@/lib/voice-session'
 import type * as UiStore from '@/stores/ui-store'
@@ -85,9 +91,24 @@ vi.mock('@/stores/launch-gift-store', () => ({
   claimGiftNow: mocks.claimGiftNow,
 }))
 
+// jsdom cannot draw: the star field's canvas is stubbed out, which also keeps
+// its "getContext not implemented" probe out of the output.
+vi.mock('@/features/onboarding/StarField', () => ({ StarField: () => null }))
+
+// The questions' Merc asks the browser for WebGL, which jsdom cannot give.
+vi.mock('@/lib/merc/gpu-gate', async (importOriginal) => ({
+  ...(await importOriginal<typeof GpuGateModule>()),
+  canRunLiveMerc: (): boolean => false,
+}))
+
 import { nudgeState } from '@/features/onboarding/account-nudge'
 import { FirstLight } from '@/features/onboarding/FirstLight'
-import { chooseTrack, currentBeat, markMicDenied, openBeat, recordVoiceprint, resetOnboarding, } from '@/stores/onboarding-store'
+import { PLAN_RECORD_KEY } from '@/features/plan/plan-keys'
+import { savePlanAnswers } from '@/features/plan/plan-store'
+import { next, q2Label, quiet, tap, } from '@/features/plan/PlanQuestions.fixture'
+import { GUIDE_FUNNEL_STORAGE_KEY } from '@/lib/guide-funnel'
+import { applyPersistedValue } from '@/lib/storage'
+import { armOnboardingResume, chooseTrack, currentBeat, markMicDenied, openBeat, recordVoiceprint, resetOnboarding, startOrResumeOnboarding, } from '@/stores/onboarding-store'
 
 const VOICEPRINT: MirrorResult = {
   range: {
@@ -107,6 +128,37 @@ function beat(name: string): HTMLElement | null {
   return document.querySelector<HTMLElement>(`[data-beat="${name}"]`)
 }
 
+/** The plan record is a module signal that `localStorage.clear()` does not reach. */
+function forgetThePlan(): void {
+  applyPersistedValue(PLAN_RECORD_KEY, 'null', { persist: false })
+}
+
+/** What the plan told the guide funnel about being shown, in order. */
+function planShown(): string[] {
+  const raw = localStorage.getItem(GUIDE_FUNNEL_STORAGE_KEY) ?? '[]'
+  return (JSON.parse(raw) as { event: string }[])
+    .map((entry) => entry.event)
+    .filter((event) => event.startsWith('plan_shown'))
+}
+
+/** The questions, answered for singing toward an audition: the plan's Karaoke Night card carries the credits line. */
+async function toTheAuditionPlan(): Promise<HTMLElement> {
+  render(() => <FirstLight />)
+  openBeat('questions')
+  await waitFor(() => expect(beat('questions')).not.toBeNull())
+  const host = beat('questions') as HTMLElement
+  tap('Singing')
+  fireEvent.click(quiet())
+  tap(q2Label('audition'))
+  fireEvent.click(quiet())
+  next()
+  next()
+  await waitFor(() =>
+    expect(host.querySelector('[data-kind="play"]')).not.toBeNull(),
+  )
+  return host
+}
+
 async function atKeep(): Promise<HTMLElement> {
   render(() => <FirstLight />)
   recordVoiceprint(VOICEPRINT)
@@ -119,6 +171,7 @@ describe('First Light and the launch gift', () => {
   beforeEach(() => {
     vi.clearAllMocks()
     localStorage.clear()
+    forgetThePlan()
     resetOnboarding()
     mocks.setOffer(LAUNCH)
     // jsdom ships no matchMedia; the star field asks for reduced-motion.
@@ -132,6 +185,7 @@ describe('First Light and the launch gift', () => {
   afterEach(() => {
     cleanup()
     vi.unstubAllGlobals()
+    forgetThePlan()
     resetOnboarding()
   })
 
@@ -170,7 +224,7 @@ describe('First Light and the launch gift', () => {
     )
   })
 
-  it('"Not now" sits in the rail, moves on to the Map and quiets the ask', async () => {
+  it('"Not now" sits in the rail, moves on to the questions and quiets the ask', async () => {
     const keep = await atKeep()
     const notNow = screen.getByRole('button', { name: 'Not now' })
     // In the rail at the top, and the only way out: every button outside
@@ -184,7 +238,7 @@ describe('First Light and the launch gift', () => {
 
     fireEvent.click(notNow)
 
-    await waitFor(() => expect(currentBeat()).toBe('map'))
+    await waitFor(() => expect(currentBeat()).toBe('questions'))
     expect(mocks.trackOnboarding).toHaveBeenCalledWith(
       'onboarding_account_dismissed',
     )
@@ -204,7 +258,58 @@ describe('First Light and the launch gift', () => {
     expect(mocks.trackOnboarding).toHaveBeenCalledWith(
       'onboarding_account_created',
     )
-    await waitFor(() => expect(currentBeat()).toBe('map'))
+    // Underneath the modal the flow has moved on, so closing it lands on
+    // the questions, which is also where a Google sign-up resumes.
+    await waitFor(() => expect(currentBeat()).toBe('questions'))
+  })
+
+  it.each<[string, () => void]>([
+    ['mounted again where it stands', () => undefined],
+    [
+      'resumed where Google sent the person back',
+      () => {
+        armOnboardingResume()
+        startOrResumeOnboarding()
+      },
+    ],
+  ])(
+    'counts the plan as shown once, behind the sign-up and with the flow %s',
+    async (_how, comeBack) => {
+      // Arrange: Keep's sign-up leaves the flow on the questions, behind the modal.
+      await atKeep()
+      fireEvent.click(
+        screen.getByRole('button', { name: 'Create my free account' }),
+      )
+      await waitFor(() => expect(beat('questions')).not.toBeNull())
+      expect(planShown()).toEqual(['plan_shown_new'])
+      cleanup()
+
+      // Act: the flow is back on the questions, the plan already shown.
+      comeBack()
+      render(() => <FirstLight />)
+      await waitFor(() => expect(beat('questions')).not.toBeNull())
+
+      // Assert
+      expect(planShown()).toEqual(['plan_shown_new'])
+    },
+  )
+
+  it("names the launch gift on the plan's Karaoke Night card, as the Map does", async () => {
+    const host = await toTheAuditionPlan()
+
+    expect(
+      host.querySelector('[data-kind="play"] [data-part="credits"]'),
+    ).toHaveTextContent('Up to 5 free song separations')
+  })
+
+  it('names no gift on the plan to a visitor who declined the microphone, as the Map does not', async () => {
+    markMicDenied()
+    const host = await toTheAuditionPlan()
+
+    expect(
+      host.querySelector('[data-kind="play"] [data-part="credits"]'),
+    ).toBeNull()
+    expect(host).not.toHaveTextContent('separations')
   })
 
   it('offers the gift on the Map to a visitor who took the short track', async () => {
@@ -283,10 +388,15 @@ describe('First Light and the launch gift', () => {
   })
 
   it('leaves the twin by "Not now" for a Map that offers to keep the voiceprint, with the gift', async () => {
-    // Owner decision V9: the twin's "Not now" lands on the Map, past the
-    // Keep beat. The voiceprint was saved on this device the moment it
-    // was made, so the Map's way back to the account offer carries it,
-    // and the gift rides on that line rather than on a second one.
+    // Owner decision V9: the twin's "Not now" goes past the Keep beat, and
+    // once the plan is answered it lands on the Map. The voiceprint was
+    // saved on this device the moment it was made, so the Map's way back to
+    // the account offer carries it, and the gift rides on that line rather
+    // than on a second one.
+    savePlanAnswers(
+      { q1: 'singing', q2: null, q3: [], q4: [] },
+      { q3other: '', q4app: '' },
+    )
     render(() => <FirstLight />)
     recordVoiceprint(VOICEPRINT)
     openBeat('twin')
@@ -312,6 +422,7 @@ describe('the welcome beat', () => {
   beforeEach(() => {
     vi.clearAllMocks()
     localStorage.clear()
+    forgetThePlan()
     resetOnboarding()
     vi.stubGlobal('matchMedia', () => ({
       matches: false,
@@ -323,6 +434,7 @@ describe('the welcome beat', () => {
   afterEach(() => {
     cleanup()
     vi.unstubAllGlobals()
+    forgetThePlan()
     resetOnboarding()
   })
 
@@ -336,6 +448,9 @@ describe('the welcome beat', () => {
     const close = screen.getByRole('button', { name: 'Skip the intro' })
     expect(close.closest('[data-beat]')).toBeNull()
     fireEvent.click(close)
+    // It asks first (skip-confirm.tsx); Yes, skip is the skip.
+    expect(mocks.trackOnboarding).not.toHaveBeenCalledWith('onboarding_skipped')
+    fireEvent.click(screen.getByRole('button', { name: 'Yes, skip' }))
     expect(mocks.trackOnboarding).toHaveBeenCalledWith('onboarding_skipped')
   })
 })

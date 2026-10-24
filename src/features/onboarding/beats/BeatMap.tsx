@@ -22,6 +22,13 @@
 // beat, so a link out of the app here cannot cost the account offer the way
 // one on the twin portrait would. It still must not cost a room: the beat's
 // job is sending people into one.
+//
+// The grid shows only the rooms and doors the person's own menu has. The
+// plan's switch can narrow the menu to one instrument, and "See every room"
+// then opens this grid: a card for a tab the menu has hidden would open a
+// room that nothing else in the app reaches. A room that is a page (Karaoke)
+// stands for its tab in the menu; a door with no tab at all (the Voice
+// Mirror) is not in the menu, and always shows.
 
 import type { Component } from 'solid-js'
 import { createMemo, For, Match, Show, Switch } from 'solid-js'
@@ -30,8 +37,10 @@ import { GiftIcon } from '@/components/billing/GiftIcon'
 import type { StoreId } from '@/components/shared/StoreChips'
 import { StoreChips } from '@/components/shared/StoreChips'
 import type { ActiveTab } from '@/features/tabs/constants'
+import { isTabVisible, TAB_KARAOKE } from '@/features/tabs/constants'
 import type { MirrorResult } from '@/lib/mirror/metrics'
 import { hasPageTour } from '@/stores/app-store'
+import { practiceScope, uiMode } from '@/stores/settings-store'
 import { KARAOKE_GIFT_TAG, MAP_GIFT_JOIN_LINK, MAP_KEEP_GIFT_LINK, mapGiftJoin, mapGiftWaiting, } from '../copy'
 import { pickFirstStop } from '../first-stop'
 import styles from '../onboarding.module.css'
@@ -93,16 +102,32 @@ export interface BeatMapProps {
   onStoreClick?: (store: StoreId) => void
 }
 
+/** The menu tab that stands for a room or a door, or null when none does. */
+function menuTab(item: Room | SideDoor): ActiveTab | null {
+  if (item.target.kind === 'tab') return item.target.tab
+  return item.id === 'karaoke' ? TAB_KARAOKE : null
+}
+
 export const BeatMap: Component<BeatMapProps> = (props) => {
   const stop = createMemo(() => pickFirstStop(props.voiceprint))
 
-  // The recommended room first, everything else in authored order.
+  /** Is the room or door in the person's menu, as it stands now? */
+  const inMenu = (item: Room | SideDoor): boolean => {
+    const tab = menuTab(item)
+    return tab === null || isTabVisible(tab, practiceScope(), uiMode())
+  }
+
+  // The recommended room first, everything else in authored order; a room
+  // the menu hides is not here, so it is never the one lit.
   const ordered = createMemo<Room[]>(() => {
     const firstId = stop().room
-    const first = ROOMS.filter((room) => room.id === firstId)
-    const rest = ROOMS.filter((room) => room.id !== firstId)
+    const shown = ROOMS.filter(inMenu)
+    const first = shown.filter((room) => room.id === firstId)
+    const rest = shown.filter((room) => room.id !== firstId)
     return [...first, ...rest]
   })
+
+  const doors = createMemo(() => SIDE_DOORS.filter(inMenu))
 
   const isFirst = (room: Room): boolean => room.id === stop().room
 
@@ -210,7 +235,13 @@ export const BeatMap: Component<BeatMapProps> = (props) => {
                         room.id,
                       )
                     }}
-                    onKeyDown={(e) => {
+                    // Native, not Solid's delegated key prop: First Light
+                    // stops keydown at its root (isolateKeyboard), so a
+                    // delegated one, listening at the document, would never
+                    // hear it. FirstLight.keys.test.tsx pins the key, and
+                    // src/tests/trap-key-handlers.test.ts keeps delegated key
+                    // props out of everything First Light renders.
+                    on:keydown={(e) => {
                       if (e.key !== 'Enter' && e.key !== ' ') return
                       e.preventDefault()
                       e.stopPropagation()
@@ -234,7 +265,7 @@ export const BeatMap: Component<BeatMapProps> = (props) => {
           them; on a phone it still takes its own line. */}
       <div class={styles.sideDoors} data-side-doors>
         <span class={styles.sideDoorsLabel}>And also</span>
-        <For each={SIDE_DOORS}>
+        <For each={doors()}>
           {(door: SideDoor) => (
             <button
               type="button"

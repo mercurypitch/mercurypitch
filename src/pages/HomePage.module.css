@@ -502,6 +502,22 @@
   margin-top: 16px;
   padding-top: 14px;
   border-top: 1px solid var(--border-color, var(--border));
+  /* The plan's Start here row brings this card into view, as little as will
+     do (HomePlanCardMount's startPlannedSession), and focuses its first
+     button. On a phone the tab bar floats over the window's foot, so the
+     browser keeps the foot stack clear of it: the tallest of the spaces
+     lib/foot-space.ts publishes (the bar's own height and gap, safe-area
+     inset included, and the cookie and confirm bars that stand on it), as
+     the toasts stand on it, and 8px of air. Each space is 0 where its bar
+     is not drawn, so a desktop scrolls no further than 8px past the card. */
+  scroll-margin-bottom: calc(
+    max(
+        var(--tabbar-space, 0px),
+        var(--consent-banner-space, 0px),
+        var(--verify-banner-space, 0px)
+      ) +
+      8px
+  );
 }
 
 /* Four steps on one line, in place of a paragraph that ran to ten rows

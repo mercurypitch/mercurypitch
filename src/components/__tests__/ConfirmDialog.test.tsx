@@ -287,3 +287,106 @@ describe('ConfirmDialog tone and secondary action', () => {
     expect(screen.queryByTestId('confirm-secondary')).toBeNull()
   })
 })
+
+describe('ConfirmDialog as a way to stay', () => {
+  function stay(onCancel = vi.fn(), onConfirm = vi.fn()) {
+    render(() => (
+      <ConfirmDialog
+        open={true}
+        title="Skip the intro?"
+        message="Stay, and you get:"
+        details={['Your range', 'A plan']}
+        keepLabel="Keep going"
+        confirmLabel="Yes, skip"
+        isolateKeyboard
+        onConfirm={onConfirm}
+        onCancel={onCancel}
+      />
+    ))
+    return { onCancel, onConfirm }
+  }
+
+  it('offers Keep going on top as the one primary, and Yes, skip under it without an icon', () => {
+    stay()
+
+    const keep = screen.getByRole('button', { name: 'Keep going' })
+    const skip = screen.getByRole('button', { name: 'Yes, skip' })
+    expect(keep.className).toContain('keep')
+    expect(skip.className).toContain('quiet')
+    expect(skip.className).not.toContain('delete')
+    expect(skip.className).not.toContain('primary')
+    expect(screen.queryByTestId('trash-icon')).toBeNull()
+    expect(screen.queryByRole('button', { name: 'Cancel' })).toBeNull()
+    // Two buttons, stacked: Keep going first in the reading order.
+    const actions = keep.parentElement as HTMLElement
+    expect(actions.className).toContain('stacked')
+    expect([...actions.querySelectorAll('button')]).toEqual([keep, skip])
+  })
+
+  it('opens with the focus on Keep going', async () => {
+    stay()
+
+    await Promise.resolve()
+
+    expect(screen.getByRole('button', { name: 'Keep going' })).toHaveFocus()
+  })
+
+  it('lists the details under the message, outside its paragraph, and reads them as the description', () => {
+    stay()
+
+    const dialog = screen.getByRole('alertdialog')
+    const items = screen.getAllByRole('listitem')
+    expect(items.map((item) => item.textContent)).toEqual([
+      'Your range',
+      'A plan',
+    ])
+    expect(items[0]?.closest('p')).toBeNull()
+    const described = (dialog.getAttribute('aria-describedby') ?? '').split(' ')
+    expect(described).toHaveLength(2)
+    expect(document.getElementById(described[1] ?? '')).toContainElement(
+      items[0] ?? null,
+    )
+  })
+
+  it('shows no list, and describes by the message alone, without details', () => {
+    render(() => (
+      <ConfirmDialog
+        open={true}
+        title="Leave?"
+        message="Sure?"
+        details={[]}
+        keepLabel="Stay"
+        onConfirm={vi.fn()}
+        onCancel={vi.fn()}
+      />
+    ))
+
+    expect(screen.queryByRole('list')).toBeNull()
+    expect(
+      screen.getByRole('alertdialog').getAttribute('aria-describedby'),
+    ).not.toContain(' ')
+  })
+
+  it('keeps going on Keep going and skips on Yes, skip', () => {
+    const { onCancel, onConfirm } = stay()
+
+    fireEvent.click(screen.getByRole('button', { name: 'Keep going' }))
+    expect(onCancel).toHaveBeenCalledTimes(1)
+    fireEvent.click(screen.getByRole('button', { name: 'Yes, skip' }))
+    expect(onConfirm).toHaveBeenCalledTimes(1)
+  })
+
+  it('keeps its keys from the app behind when asked to', () => {
+    const heard = vi.fn()
+    window.addEventListener('keydown', heard)
+    stay()
+
+    fireEvent.keyDown(screen.getByRole('button', { name: 'Keep going' }), {
+      key: ' ',
+      code: 'Space',
+    })
+
+    window.removeEventListener('keydown', heard)
+    expect(heard).not.toHaveBeenCalled()
+  })
+})

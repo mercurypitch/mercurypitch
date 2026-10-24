@@ -10,6 +10,10 @@
 //          to localStorage AND live signals (via applyPersistedValue).
 //   push:  every persisted-signal write (onPersistedWrite hook) is
 //          debounced and upserted to the cloud.
+//   rule:  whoever owns a key can register which side stands when an
+//          unsent local value meets a different account row
+//          (registerSyncPrecedence), before the first pull. With no
+//          rule the local value wins; a merged key merges and has none.
 //
 // Signed out, practice stays in a separate guest copy on this device.
 // With no API configured the sync hooks are inert.
@@ -104,6 +108,29 @@ const pushTimers = new Map<string, ReturnType<typeof setTimeout>>()
 const pushQueues = new Map<string, Promise<void>>()
 let pullRevision = 0
 
+type SyncPrecedence = (local: string, remote: string) => 'local' | 'remote'
+
+const precedence = new Map<string, SyncPrecedence>()
+
+/**
+ * Gives `key` a rule for when this device's unsent value and the account's
+ * row differ: 'remote' keeps the account's value and drops the local one,
+ * 'local' sends the local one as a key with no rule does. A key that merges
+ * on pull (MERGE_ON_PULL) merges and ignores it.
+ */
+export function registerSyncPrecedence(
+  key: string,
+  prefer: SyncPrecedence,
+): void {
+  precedence.set(key, prefer)
+}
+
+/** Does the key's rule keep the account's row over a different unsent value? */
+function accountStands(key: string, local: string, remote: string): boolean {
+  if (local === remote || MERGE_ON_PULL[key] !== undefined) return false
+  return precedence.get(key)?.(local, remote) === 'remote'
+}
+
 async function uploadPending(
   key: string,
   identity: SyncIdentity,
@@ -134,10 +161,13 @@ async function uploadPending(
       markPending(key, value, identity.userId)
     }
     if (!isCurrent(identity) || value.length > MAX_VALUE_BYTES) return
-    if (existing !== undefined) {
-      if (existing.value !== value) await repo.update(existing.id, { value })
-    } else {
+    if (existing === undefined) {
       await repo.create({ userId: '', key, value })
+    } else if (accountStands(key, value, existing.value)) {
+      // The identity checked above still holds: nothing was awaited since.
+      applyPersistedValue(key, existing.value)
+    } else if (existing.value !== value) {
+      await repo.update(existing.id, { value })
     }
     // An old completion must not clear the new account/generation's ledger.
     if (isCurrent(identity) && progressReset(key) === reset) {
@@ -169,22 +199,28 @@ function flushPendingPushes(): void {
   }
 }
 
-/** Restore this account's local progress first, then reconcile its cloud copy. */
-export async function pullCloudSettings(): Promise<void> {
-  if (API_BASE_URL == null || API_BASE_URL === '') return
+/**
+ * One pull. True once the account's rows were read and applied; false when it
+ * stopped short of that: no API, no usable sign-in, a newer pull or another
+ * identity took over, a progress reset, or a read that failed.
+ */
+async function pullOnce(): Promise<boolean> {
+  if (API_BASE_URL == null || API_BASE_URL === '') return false
   const revision = ++pullRevision
   // This happens even on sign-out or an expired token: A's work stays in A's
   // saved copy, while the newly active guest/account receives its own signals.
-  if (!activateProgress() || !cloudActive()) return
+  if (!activateProgress() || !cloudActive()) return false
   const identity = syncIdentity()
   try {
     const resetRevision = progressResetRevision()
     const db = await getDb()
-    if (!isCurrent(identity) || revision !== pullRevision) return
+    if (!isCurrent(identity) || revision !== pullRevision) return false
     const repo = db.getRepository<UserSetting>('userSettings')
     const rows = await repo.findAll({ throwOnError: true })
-    if (!isCurrent(identity) || revision !== pullRevision) return
-    if (!activateProgress() || progressResetRevision() !== resetRevision) return
+    if (!isCurrent(identity) || revision !== pullRevision) return false
+    if (!activateProgress() || progressResetRevision() !== resetRevision) {
+      return false
+    }
     const seen = new Set<string>()
     const pending = readPending(identity.userId)
     for (const row of rows) {
@@ -211,6 +247,9 @@ export async function pullCloudSettings(): Promise<void> {
       } else if (pending[row.key] !== undefined) {
         if (pending[row.key] === row.value) {
           clearPendingIfUnchanged(row.key, row.value, identity.userId)
+        } else if (accountStands(row.key, pending[row.key], row.value)) {
+          applyPersistedValue(row.key, row.value)
+          clearPendingIfUnchanged(row.key, pending[row.key], identity.userId)
         }
       } else if (localStorage.getItem(row.key) !== row.value) {
         applyPersistedValue(row.key, row.value)
@@ -224,8 +263,50 @@ export async function pullCloudSettings(): Promise<void> {
       }
     }
     flushPendingPushes()
+    return true
   } catch (err) {
     console.warn('[settings-sync] pull failed:', err)
+    return false
+  }
+}
+
+// ── This page's first pull ───────────────────────────────────────────────
+//
+// What a caller waits on when a decision depends on the account's settings
+// (a plan answered on another device arrives with them). The answer is module
+// state because it belongs to this page load: callers mount after the pull has
+// begun, or after it has ended, and ask all the same.
+
+let settleFirstPull: (applied: boolean) => void = () => undefined
+const firstPull = new Promise<void>((resolve, reject) => {
+  settleFirstPull = (applied) => {
+    if (applied) resolve()
+    else reject(new Error('The first settings pull ended without the account'))
+  }
+})
+// A page nobody asks never reads it, and an unread rejection is reported.
+void firstPull.catch(() => undefined)
+
+/**
+ * Resolves when this page's first settings pull has applied the account's
+ * settings, and at once when sync is off (there is no pull to wait for).
+ * Rejects when that pull ended without reading them: no usable sign-in,
+ * offline, a newer pull took over, a progress reset. The first pull to finish
+ * decides, and a later one changes nothing. The wait is the caller's to
+ * bound (awaitSettingsPull in the plan's settings-pull-wait.ts does).
+ */
+export async function settingsPulled(): Promise<void> {
+  if (API_BASE_URL == null || API_BASE_URL === '') return
+  await firstPull
+}
+
+/** Restore this account's local progress first, then reconcile its cloud copy. */
+export async function pullCloudSettings(): Promise<void> {
+  let applied = false
+  try {
+    applied = await pullOnce()
+  } finally {
+    settleFirstPull(applied)
   }
 }
 

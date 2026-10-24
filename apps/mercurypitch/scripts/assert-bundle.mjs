@@ -90,6 +90,16 @@
 //            and its modules are dropped whole (LAUNCH_OFFER in
 //            vite.config.ts), so no native build carries any of it.
 //
+//   PLAN     The plan is not in the binary. The four questions, the plan they
+//            make and the layer that hosts them (src/features/plan) are the
+//            web's: the native app has its own first run. Every reference the
+//            native bundle can reach is folded out behind IS_NATIVE_BUILD
+//            (App.tsx, GuideSelection.tsx), and the plan's store is imported
+//            only by the importer App builds for the web, so no native build
+//            carries a word of it. PLAN_WORDS are words only the plan has;
+//            "See every room" is not one of them, First Light's Map says it
+//            too.
+//
 // Every check runs against every bundle root it is given, `--android-assets`
 // included. Those are the bytes that reach the APK, `cap sync` copies webDir
 // wholesale, and a sync that did not overwrite the previous build leaves a
@@ -183,6 +193,27 @@ const LAUNCH_OFFER = [
   ['Karaoke Night credits', 'the launch gift on the Keep and Map screens'],
   ['mp.launchOffer', 'the launch offer (src/lib/launch-offer.ts)'],
   ['extra credits', "the launch offer's progress line and reward sheet"],
+]
+
+/**
+ * The plan, in no native build at all. Each is a word only the plan has, so a
+ * native bundle that holds one holds some of the plan. build-plan.test.ts holds
+ * the list to that: each word is in the plan's own sources, and in nothing
+ * outside them.
+ */
+const PLAN_WORDS = [
+  [
+    'mp.plan.text.v1',
+    "the plan's typed lines (src/features/plan/plan-keys.ts)",
+  ],
+  ['Change my answers', "the way back to the plan's questions (PlanScreen)"],
+  ['Four quick questions', "Merc's opening line on the first question"],
+  // The questions' own copy, which comes with any value import of
+  // plan-record.ts (it reads its ids from them), not only with the screens.
+  [
+    'start you where you can hear yourself',
+    "Merc's answer to Singing on the first question (questions.ts)",
+  ],
 ]
 
 /**
@@ -733,6 +764,20 @@ function main(argv) {
       launchOffer.length === 0,
       `${label}: the launch offer is not in the bundle`,
       `Found ${launchOffer.join('; ')}. Something reaches the launch gift or the offer from a path the IS_NATIVE_BUILD fold does not guard, or one of its modules is missing from LAUNCH_OFFER in vite.config.ts${synced ? ', or this is a stale bundle cap sync did not overwrite' : ''}. The offer is the web's; its bonus rides on Stripe Checkout.`,
+    )
+
+    // PLAN
+    const planWords = []
+    for (const file of assets) {
+      for (const [needle, what] of PLAN_WORDS) {
+        if (contains(file, needle))
+          planWords.push(`${needle} (${what}) in ${file}`)
+      }
+    }
+    record(
+      planWords.length === 0,
+      `${label}: the plan is not in the bundle`,
+      `Found ${planWords.join('; ')}. Something reaches the plan from a path the IS_NATIVE_BUILD fold does not guard (src/App.tsx, src/components/GuideSelection.tsx), or imports one of its modules statically${synced ? ', or this is a stale bundle cap sync did not overwrite' : ''}. The plan is the web's.`,
     )
   }
 

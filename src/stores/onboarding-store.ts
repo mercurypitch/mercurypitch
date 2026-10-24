@@ -76,6 +76,14 @@ const [firstNote, setFirstNote] = createSignal<string | null>(null)
 const [savedVoiceprints, setSavedVoiceprints] = createSignal<
   readonly VoiceprintRecord[]
 >([])
+/**
+ * Whether the person's plan is due: not answered, not turned down. First
+ * Light reads the plan record once, when it opens, and says so here, so the
+ * walk includes the questions for exactly as long as that run lasts. The
+ * record is the plan feature's, and a store may not import a feature, so
+ * the flow is told rather than asking. False until it is told.
+ */
+const [planDue, setPlanDueSignal] = createSignal(false)
 
 export {
   currentBeat,
@@ -111,10 +119,11 @@ function flowState(): FlowState {
     hasVoiceprint: voiceprint() !== null,
     micDenied: micDenied(),
     savedPrints: savedVoiceprints().length,
+    planDue: planDue(),
   }
 }
 
-/** 0–1 across the beats THIS visitor will see (not all seven). */
+/** 0–1 across the beats THIS visitor will see (not all of them). */
 export function onboardingProgress(): number {
   return beatProgress(currentBeat(), flowState(), availableBeats())
 }
@@ -164,16 +173,18 @@ export function armOnboardingResume(): void {
 }
 
 /**
- * Open the flow where a sign-in redirect left it, or from the top. Only
- * the map resumes — it is the one beat that rebuilds itself entirely from
- * persisted data (the saved voiceprints); a capture beat re-entered cold
- * would strand the visitor mid-take, so anything else restarts honestly.
+ * Open the flow where a sign-in redirect left it, or from the top. Only the
+ * map and the questions resume. The map rebuilds itself entirely from
+ * persisted data (the saved voiceprints), and the questions need no take at
+ * all (First Light decides, when it opens there, whether the plan is still
+ * due). A capture beat re-entered cold would strand the visitor mid-take, so
+ * anything else restarts honestly.
  */
 export function startOrResumeOnboarding(): void {
   const resume = authResumeBeat()
   setAuthResumeBeat('')
-  if (resume === 'map') {
-    openBeat('map')
+  if (resume === 'map' || resume === 'questions') {
+    openBeat(resume)
     return
   }
   startOnboarding()
@@ -191,6 +202,15 @@ export function recordVoiceprint(
   setVoiceStrip(result === null ? null : strip)
 }
 
+/**
+ * Say whether the person's plan is due (First Light, as it opens). It joins
+ * or leaves the walk the visitor sees: the hairline and the sky's beads
+ * follow.
+ */
+export function setPlanDue(due: boolean): void {
+  setPlanDueSignal(due)
+}
+
 /** Remember the single note heard at beat 2, e.g. 'G3'. */
 export function recordFirstNote(note: string | null): void {
   setFirstNote(note)
@@ -205,8 +225,8 @@ export function recordSavedVoiceprints(
 
 /**
  * Mark the microphone unusable — refused, unavailable, or silent. Every
- * beat after this except the Map needs one, so the traversal routes
- * straight to the Map from wherever the visitor is.
+ * beat after this except the questions and the Map needs one, so the
+ * traversal routes straight to them from wherever the visitor is.
  */
 export function markMicDenied(): void {
   setMicDenied(true)
@@ -315,6 +335,7 @@ export function resetOnboarding(): void {
   setMicDenied(false)
   setFirstNote(null)
   setSavedVoiceprints([])
+  setPlanDueSignal(false)
   setCurrentBeat('sky')
   setFlowOpen(false)
   setLessonArrival(null)

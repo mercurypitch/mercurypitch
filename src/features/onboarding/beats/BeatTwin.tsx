@@ -18,7 +18,7 @@ import { IconCheck } from '@/features/mirror/icons'
 import { LegendCaricature } from '@/features/mirror/LegendCaricature'
 import type { MirrorResult } from '@/lib/mirror/metrics'
 import { singerForRange } from '@/lib/mirror/singer-match'
-import { TWIN_NEXT } from '../copy'
+import { TWIN_NEXT, TWIN_NEXT_PLAN } from '../copy'
 import styles from '../onboarding.module.css'
 import { TwinStatCard } from './TwinStatCard'
 
@@ -31,6 +31,11 @@ export interface BeatTwinProps {
   result: MirrorResult
   /** The singer's glides as one line, for the stat card's ridge. */
   strip?: readonly number[] | null
+  /**
+   * True while the person's plan is due: the four questions come before the
+   * Map, and the line under the card says so.
+   */
+  planDue?: boolean
   onContinue: () => void
 }
 
@@ -83,7 +88,9 @@ export const BeatTwin: Component<BeatTwinProps> = (props) => {
 
       <TwinStatCard result={props.result} strip={props.strip ?? null} />
 
-      <p class={styles.mapExplainer}>{TWIN_NEXT}</p>
+      <p class={styles.mapExplainer}>
+        {props.planDue === true ? TWIN_NEXT_PLAN : TWIN_NEXT}
+      </p>
       <div class={styles.actions}>
         {/* Share first: Continue sits on the right, under the thumb on a
             phone (owner testing, 11 Oct 2026), and Tab meets the two in
@@ -97,14 +104,16 @@ export const BeatTwin: Component<BeatTwinProps> = (props) => {
             Share now
           </button>
         </Show>
-        {/* Not "See my map": this advances to `keep`, and the Map is one
-            screen further on. Promising the Map and then showing an
-            account offer that repeats the portrait is what made the two
-            screens read as one screen twice. `keep` is also skippable
-            (isBeatApplicable: state.hasVoiceprint), so the label has to be
-            true whether the next thing is the offer or the Map itself —
-            the pull lives in the paragraph above, which sells the Map
-            without the button having to lie about the order. */}
+        {/* Not "See my map": this advances to `keep`, and the Map is
+            further on. Promising the Map and then showing an account offer
+            that repeats the portrait is what made the two screens read as
+            one screen twice. `keep` is also skippable
+            (isBeatApplicable: state.hasVoiceprint), and the four questions
+            come between it and the Map while the plan is due, so the label
+            has to be true whichever comes next. The pull lives in the
+            paragraph above, which names the stop after the offer (the plan
+            while it is due, the Map after it) without the button having to
+            lie about the order. */}
         <button
           type="button"
           class={styles.primary}

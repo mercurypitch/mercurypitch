@@ -1,9 +1,15 @@
 // ============================================================
-// UserSurveyModal — Optional onboarding survey
+// UserSurveyModal — The GH #97 feedback survey: one optional question
 // ============================================================
+//
+// It asks what the singer was trying to do the last time the app got in their
+// way, and saves `{ kind: 'gh97-v2', gotInTheWay }`. The role and use questions
+// it used to ask are asked up front now, and a feature request is an idea
+// taken at face value where this asks for a problem. The rows the three
+// questions wrote are still in the table, and still read.
 
 import type { Component } from 'solid-js'
-import { createSignal, For, onCleanup, onMount, Show } from 'solid-js'
+import { createSignal, createUniqueId, onCleanup, onMount, Show, } from 'solid-js'
 import { submitSurvey } from '@/db/services/survey-service'
 import { skipArmSecondsLeft, SURVEY_SKIP_ARM_MS, surveyHasContent, } from '@/lib/survey-timing'
 import { showNotification } from '@/stores/notifications-store'
@@ -13,35 +19,18 @@ interface Props {
   onClose: () => void
   /**
    * 'onboarding' is the automatic first-run prompt; 'feedback' is the user
-   * opening it themselves from Settings, where "Welcome to MercuryPitch" and
-   * a dismissal delay would both be wrong.
+   * opening it themselves from Settings, where the app's own title ("One
+   * question") and a dismissal delay would both be wrong.
    */
   mode?: 'onboarding' | 'feedback'
 }
 
-const BACKGROUNDS = [
-  { id: 'singer', label: 'Singer / Vocalist' },
-  { id: 'guitarist', label: 'Guitarist' },
-  { id: 'musician', label: 'Musician (multi-instrument)' },
-  { id: 'producer', label: 'Producer / Songwriter' },
-  { id: 'exploring', label: 'Just exploring' },
-]
-
-const USAGES = [
-  { id: 'singing', label: 'Singing practice' },
-  { id: 'guitar', label: 'Guitar practice' },
-  { id: 'jam', label: 'Jam sessions' },
-  { id: 'karaoke', label: 'Karaoke singing' },
-  { id: 'ear', label: 'Ear training' },
-]
-
 const UserSurveyModal: Component<Props> = (props) => {
-  const [background, setBackground] = createSignal<string[]>([])
-  const [usage, setUsage] = createSignal<string[]>([])
-  const [featureRequest, setFeatureRequest] = createSignal('')
+  const [gotInTheWay, setGotInTheWay] = createSignal('')
   const [submitting, setSubmitting] = createSignal(false)
   const [visible, setVisible] = createSignal(false)
   const [armMsLeft, setArmMsLeft] = createSignal(0)
+  const answerId = createUniqueId()
 
   // The user opened this themselves — no arming delay, they are looking at it.
   const selfOpened = (): boolean => props.mode === 'feedback'
@@ -63,28 +52,11 @@ const UserSurveyModal: Component<Props> = (props) => {
     onCleanup(() => window.clearInterval(id))
   })
 
-  const hasContent = () =>
-    surveyHasContent({
-      background: background(),
-      usage: usage(),
-      featureRequest: featureRequest(),
-    })
+  const hasContent = () => surveyHasContent({ gotInTheWay: gotInTheWay() })
 
   /** Overlay clicks only count once armed — see dismissable(). */
   const handleOverlayClick = () => {
     if (dismissable()) props.onClose()
-  }
-
-  const toggleItem = (
-    list: string[],
-    setter: (v: string[]) => void,
-    id: string,
-  ) => {
-    if (list.includes(id)) {
-      setter(list.filter((x) => x !== id))
-    } else {
-      setter([...list, id])
-    }
   }
 
   const handleSubmit = async () => {
@@ -92,25 +64,29 @@ const UserSurveyModal: Component<Props> = (props) => {
     // a mis-click, and storing it would quietly poison the results.
     if (!hasContent() || submitting()) return
     setSubmitting(true)
-    const saved = await submitSurvey({
-      background: background(),
-      usage: usage(),
-      featureRequest: featureRequest().trim() || undefined,
-    })
-    setSubmitting(false)
-    // Only thank the user if the response was actually persisted. On a
-    // failure, keep the modal open with their text intact and say so -
-    // closing "quietly" would discard typed feedback, and in survey mode
-    // onClose marks the prompt seen forever.
-    if (!saved) {
-      showNotification(
-        'Could not send right now - your answers are still here, try again.',
-        'error',
-      )
-      return
+    // `finally` puts the button back whatever happens below: a send that goes
+    // wrong must leave the singer able to send again, not stuck on "Sending...".
+    try {
+      const saved = await submitSurvey({
+        kind: 'gh97-v2',
+        gotInTheWay: gotInTheWay().trim(),
+      })
+      // Only thank the user if the response was actually persisted. On a
+      // failure, keep the modal open with their text intact and say so -
+      // closing "quietly" would discard typed feedback, and in survey mode
+      // onClose marks the prompt seen forever.
+      if (!saved) {
+        showNotification(
+          'Could not send right now. Your answer is still here, so try again.',
+          'error',
+        )
+        return
+      }
+      showNotification('Thank you for sharing!', 'success')
+      props.onClose()
+    } finally {
+      setSubmitting(false)
     }
-    showNotification('Thank you for sharing!', 'success')
-    props.onClose()
   }
 
   return (
@@ -126,104 +102,26 @@ const UserSurveyModal: Component<Props> = (props) => {
       <div class={styles.card} onClick={(e) => e.stopPropagation()}>
         <div class={styles.header}>
           <h2 class={styles.title}>
-            {selfOpened() ? 'Share your feedback' : 'Welcome to MercuryPitch'}
+            {selfOpened() ? 'Share your feedback' : 'One question'}
           </h2>
           <p class={styles.subtitle}>
             {selfOpened()
-              ? 'Tell us what would make MercuryPitch better — anonymous, no account needed'
-              : 'Help us improve — 3 quick questions (optional)'}
+              ? 'Tell us what would make Mercury Pitch better. Anonymous, no account needed.'
+              : 'Optional. Skip it if nothing got in your way.'}
           </p>
         </div>
 
         <div class={styles.questions}>
-          {/* Q1: Background */}
           <div class={styles.question}>
-            <h3 class={styles.questionLabel}>I am a...</h3>
-            <div class={styles.options}>
-              <For each={BACKGROUNDS}>
-                {(opt) => (
-                  <button
-                    class={styles.option}
-                    classList={{
-                      [styles.selected]: background().includes(opt.id),
-                    }}
-                    onClick={() =>
-                      toggleItem(background(), setBackground, opt.id)
-                    }
-                    type="button"
-                  >
-                    <span class={styles.check}>
-                      <Show when={background().includes(opt.id)}>
-                        <svg
-                          width="12"
-                          height="12"
-                          viewBox="0 0 24 24"
-                          fill="none"
-                          stroke="currentColor"
-                          stroke-width="2.5"
-                          stroke-linecap="round"
-                          stroke-linejoin="round"
-                        >
-                          <polyline points="20 6 9 17 4 12" />
-                        </svg>
-                      </Show>
-                    </span>
-                    {opt.label}
-                  </button>
-                )}
-              </For>
-            </div>
-          </div>
-
-          {/* Q2: Usage */}
-          <div class={styles.question}>
-            <h3 class={styles.questionLabel}>
-              I plan to use MercuryPitch for...
-            </h3>
-            <div class={styles.options}>
-              <For each={USAGES}>
-                {(opt) => (
-                  <button
-                    class={styles.option}
-                    classList={{
-                      [styles.selected]: usage().includes(opt.id),
-                    }}
-                    onClick={() => toggleItem(usage(), setUsage, opt.id)}
-                    type="button"
-                  >
-                    <span class={styles.check}>
-                      <Show when={usage().includes(opt.id)}>
-                        <svg
-                          width="12"
-                          height="12"
-                          viewBox="0 0 24 24"
-                          fill="none"
-                          stroke="currentColor"
-                          stroke-width="2.5"
-                          stroke-linecap="round"
-                          stroke-linejoin="round"
-                        >
-                          <polyline points="20 6 9 17 4 12" />
-                        </svg>
-                      </Show>
-                    </span>
-                    {opt.label}
-                  </button>
-                )}
-              </For>
-            </div>
-          </div>
-
-          {/* Q3: Feature request */}
-          <div class={styles.question}>
-            <h3 class={styles.questionLabel}>
-              What feature would you most like to see?
-            </h3>
+            <label class={styles.questionLabel} for={answerId}>
+              What were you trying to do the last time the app got in your way?
+            </label>
             <textarea
+              id={answerId}
               class={styles.textarea}
-              value={featureRequest()}
-              onInput={(e) => setFeatureRequest(e.currentTarget.value)}
-              placeholder="e.g. Offline mode, more exercises, tablature view..."
+              value={gotInTheWay()}
+              onInput={(e) => setGotInTheWay(e.currentTarget.value)}
+              placeholder="For example, load my own song"
               rows={2}
               maxLength={500}
             />
@@ -240,7 +138,7 @@ const UserSurveyModal: Component<Props> = (props) => {
             title={
               dismissable()
                 ? undefined
-                : 'Just a moment — so this is not dismissed by accident'
+                : 'Just a moment, so this is not dismissed by accident'
             }
             data-testid="survey-skip"
             type="button"
@@ -256,11 +154,7 @@ const UserSurveyModal: Component<Props> = (props) => {
             class={styles.submitBtn}
             onClick={() => void handleSubmit()}
             disabled={submitting() || !hasContent()}
-            title={
-              hasContent()
-                ? undefined
-                : 'Pick an option or write something first'
-            }
+            title={hasContent() ? undefined : 'Write something first'}
             data-testid="survey-submit"
             type="button"
           >

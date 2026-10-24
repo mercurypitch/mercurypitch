@@ -18,6 +18,17 @@ interface FocusTrapOptions {
    * Stop every key at the modal root so document/window shortcuts cannot act
    * on the obscured screen. Use only when the dialog has no Solid-delegated
    * keyboard handlers of its own; native controls still behave normally.
+   *
+   * The stop is half of what keeps the keys in. It holds only for a key sent
+   * from inside the root, and only in the bubble phase:
+   * - The root must take focus from a press: give it `tabindex="-1"`. A press
+   *   on its words, where no control takes the focus, drops it to the body
+   *   otherwise, and every key after that is heard by the app behind again.
+   *   The root is not one of its own Tab stops, so this changes neither the
+   *   Tab cycle nor where focus opens.
+   * - A capture-phase listener on the window or document still runs first and
+   *   hears every key. Such a listener must yield to `[role="dialog"]`, as
+   *   `isInsideOverlay` does in src/lib/space-playback.ts.
    */
   isolateKeyboard?: boolean
   /**

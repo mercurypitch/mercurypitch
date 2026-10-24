@@ -103,6 +103,16 @@ describe('routeSuppressesAnnouncement', () => {
     }
   })
 
+  // The plan layer is route-owned: a visitor on #/plan asked for the plan, and
+  // the one takeover a visit gets must not put a second layer, or this page,
+  // over it. A Stripe checkout return is somebody sent back to see what they
+  // paid for; a pending What's New sheet once swallowed it.
+  it('holds back on the plan and on a return from checkout', () => {
+    for (const route of ['plan', 'billing-return']) {
+      expect(routeSuppressesAnnouncement({ type: route }), route).toBe(true)
+    }
+  })
+
   // Karaoke Night's "what a song costs" lands on Settings > Credits with the
   // cost guide open. That visitor was sent for the guide, not restored.
   it('holds back on a Settings link that asks for something open', () => {

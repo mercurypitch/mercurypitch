@@ -49,13 +49,28 @@ export const FIRST_LIGHT_HEARD =
   "Your note lit the first star. Now let's find the rest of your range."
 
 /**
- * The twin's one line about what comes next. "A room", not "rooms": the
- * Map picks one first stop from the voiceprint (first-stop.ts). Short
- * enough for two lines on a 320 px phone (the owner asked for one or two;
- * the longer line, which ended "from daily practice to Karaoke Night",
- * took three).
+ * The twin's one line about what comes next once the plan is answered or
+ * turned down, so the Map is the next stop after the account ask. "A room",
+ * not "rooms": the Map picks one first stop from the voiceprint
+ * (first-stop.ts). Short enough for two lines on a 320 px phone (the owner
+ * asked for one or two; the longer line, which ended "from daily practice
+ * to Karaoke Night", took three).
  */
 export const TWIN_NEXT = 'Next, the Map: a room picked for your voice.'
+
+/**
+ * The same line while the person's plan is due: the four questions come
+ * before the Map. A few characters longer than TWIN_NEXT, still two lines
+ * on a 320 px phone.
+ */
+export const TWIN_NEXT_PLAN = 'Next, your plan: four taps, then where to start.'
+
+/**
+ * The Prints button's label: where it leads is the four questions while
+ * the plan is due, and the Map once it is answered or turned down.
+ */
+export const PRINTS_NEXT_PLAN = 'Make my plan'
+export const PRINTS_NEXT_MAP = 'See my map'
 
 // The gift's own words are shared with the Voice Mirror's account ask, so
 // they live in src/lib/launch-gift-copy.ts; re-exported here so the beats

@@ -923,6 +923,20 @@ import handler, issue #813.
 **Rule:** a page outside the lessons takes the base through a stylesheet of its own that `@import`s it (`kit/lesson-hub.css`): the build inlines the import, so no chunk of the lessons changes. After a change to which documents or scripts take in a shared stylesheet, compare each `dist/learn/NN.html`'s stylesheet links with main's build: the same files, in the same order.
 **See:** `src/features/lessons/kit/lesson-hub.css`, `tools/learn-hub.test.ts`
 
+### A class that composes from another file must not set what the composed class sets
+
+**Symptom:** in a scratch Vite build of the plan screens' sheets (the repo's own CSS config), a wide-screen headline's `font-size: 46px`, set on a class that composes the shared headline, lost to the shared 31px. In the other screen the same kind of rule would have won. The build was silent and Vitest does not process CSS, so nothing else shows it. Caught in Plan 1A (Task 6) before it shipped.
+**Cause:** under Vite's CSS Modules (Lightning CSS, Vite 6.4.4), a class composed from another file lands after the first importer's own rules and before the next importer's, so a local declaration of the same property is not guaranteed to win. The order follows import order, and a lazy chunk repeats it.
+**Rule:** a class that composes from another file never sets a property the composed class sets, a longhand counting against its shorthand. Vary a shared value through a custom property the composed class reads with a fallback (`--pc-headline-max`): no order can undo that. `plan-chrome.test.ts` holds the plan's two sheets to this.
+**See:** `src/features/plan/plan-chrome.module.css`, `src/features/plan/plan-chrome.test.ts`
+
+### Give a dialog that isolates the keyboard a root that takes focus from a press
+
+**Symptom:** behind a modal that stops every key (`isolateKeyboard`), a Space, an M or an Escape still reached the app's window shortcuts once a person had pressed on the modal's words: the tab behind played, the microphone toggled. A test that sends keys at the modal's controls cannot see it, because those keys start inside the root.
+**Cause:** the stop holds only for a key sent from inside the root, and a press on content that takes no focus drops the focus to the page, so the keys after it start outside. Measured in headless Chromium on a stand-in dialog: with no `tabindex`, `document.activeElement` was `BODY` after a press on the words; with `tabindex="-1"` on the root it stayed on the root. jsdom moves no focus on a press (a mousedown on the words left it on the button), so a test must supply the browser's move itself (`press()`) and proves the wiring, not the browser. The stop is also bubble-phase: a capture-phase listener on the window runs before it and hears every key (jsdom: window and document capture heard a Space, the document and window bubble listeners did not).
+**Rule:** the root of a dialog that passes `isolateKeyboard` gets `tabindex="-1"` and no focus ring (the trap does not count the root as a Tab stop or open on it), and a capture-phase window or document shortcut yields to `[role="dialog"]`, as `isInsideOverlay` does. Bind the dialog's own key handlers natively, as "Use native key handlers inside propagation-stopping dialogs" says; `trap-key-handlers.test.ts` scans the imports of every host that passes `isolateKeyboard` for the delegated ones, and fails when a new host is missing from its list.
+**See:** `isolateKeyboard` in `src/lib/use-focus-trap.ts`, `isInsideOverlay` in `src/lib/space-playback.ts`, `src/tests/utils/trap-keys.ts`, `src/tests/trap-key-handlers.test.ts`
+
 ## Performance
 
 ### Preserve physical material units when baking decoded geometry
@@ -1385,6 +1399,13 @@ advanced together; a request between renewal and sweeping can hide the bug.
 **Cause:** its picker shares completed runs, and `sharedSessions` stores scores rather than playable items.
 **Rule:** display bounded result summaries without importing practice history. Retain the source run ID in `sessionId` for identity, and require `isPublic: true` when resolving a public link even for its signed-in owner.
 **See:** `src/db/services/share-service.ts` and `src/features/community/SharedRunResult.tsx`.
+
+### Read a JSON column as an object and as text
+
+**Symptom:** `hasSubmittedSurvey` passed every test against the local-only store, and would have counted every plan row as the survey for a real singer.
+**Cause:** the worker parses the columns in a table's `jsonCols` (`fromSql`), so the account returns `answersJson` as an object, while the local-only store returns the text it was given. Production reads the cloud table (`userSurveyResponses` is routed there in `src/db/adapters/hybrid-adapter.ts`), so the object is the form real singers meet. `UserSurveyResponse.answersJson` is still typed `string`, so the compiler says nothing.
+**Rule:** a reader of a `jsonCols` column accepts both forms, and its test puts one row in as text and one as an object.
+**See:** `src/db/services/survey-service.ts:70`, `workers/db-worker/src/tables.ts:117`.
 
 ## Tooling and environment
 
@@ -1971,6 +1992,13 @@ test's stand-in follow redirects for any other mode, as the runtime does.
 **Cause:** `setViewportSize` can return before ResizeObserver delivery. A focused browser probe measured before resize work began; the runner also renders synchronously inside its resize observer.
 **Rule:** cross the observer/render lifecycle with two animation frames before starting the geometry poll. Preserve its assertions and deadlines; this synchronization does not diagnose or benchmark the underlying rendering cost.
 **See:** `apps/beside-cue/e2e/glass-adventure-icon-alignment.e2e.ts`.
+
+### Name a test helper that imports production code `*.fixture.ts`
+
+**Symptom:** `sync-for-account.test.ts` ("is the only place in the app that asks for plan-sync") failed with a second asker, `src/features/plan/plan-sync.harness.ts`, a helper the sync's two test files shared. No production code had changed.
+**Cause:** source-scan guards walk `src` and skip only `.test`, `.spec` and `.fixture` files, so a helper under any other name is production code to them. This one loaded `./plan-sync` with `import()`, the pattern that guard looks for.
+**Rule:** a test helper that imports a production module, or loads one with `import()`, is named `*.fixture.ts` (`plan-sync.harness.fixture.ts`), never `.harness.ts` or `.helpers.ts`, so a guard that scans sources can rely on the skip.
+**See:** `src/features/plan/sync-for-account.test.ts:138`, `src/features/plan/plan-sync.harness.fixture.ts`
 
 ## Process
 

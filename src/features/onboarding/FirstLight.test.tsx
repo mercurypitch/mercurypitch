@@ -6,91 +6,74 @@
 // most one way out, at the top right of the frame: a close button on the
 // welcome, "Not now" everywhere else, and never a second exit button
 // beside the beat's own. On the Fork, "Not now" is the old "Take me in"
-// card moved to the corner: it lands on the Map with nothing measured and
-// keeps that card's event, `onboarding_track_short`, so the funnel reads
+// card moved to the corner: it lands on the next beat with nothing measured
+// and keeps that card's event, `onboarding_track_short`, so the funnel reads
 // straight across the change. No new event names.
+//
+// The next beat is the four questions while the person's plan is due (the
+// plan record is empty or only shown), and the Map once it has been answered
+// or turned down. The questions' own cases are in FirstLight.plan.test.tsx.
+//
+// Every case mounts the real flow at one beat and reads what that beat does.
+// The harness these cases share with FirstLight.plan.test.tsx and
+// FirstLight.keys.test.tsx (the mic, the canvases, the promo and the funnel
+// faked once, and the voiceprints) is in FirstLight.fixture.tsx.
 
 import { cleanup, fireEvent, render, waitFor, within, } from '@solidjs/testing-library'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import type * as OnboardingFunnelModule from '@/features/onboarding/funnel'
 import { ONBOARDING_FUNNEL_EVENTS } from '@/lib/funnel-event-catalog'
-import type { MirrorResult } from '@/lib/mirror/metrics'
-import type { OpenResult, ProbeResult, VoiceSession } from '@/lib/voice-session'
 
-const mocks = vi.hoisted(() => ({ trackOnboarding: vi.fn() }))
+// The flow's edges are faked once, in FirstLight.fixture.tsx: the mic, the
+// canvases (none of them is an exit), the funnel, the promo and gift stores,
+// the GPU gate and the page tours.
+vi.mock('@/lib/jam/media-errors', async () =>
+  (await import('./FirstLight.fixture')).fake.micPermission(),
+)
+vi.mock('@/lib/voice-session', async () =>
+  (await import('./FirstLight.fixture')).fake.voiceSession(),
+)
+vi.mock('./StarField', async () =>
+  (await import('./FirstLight.fixture')).fake.starField(),
+)
+vi.mock('@/features/mirror/TaskDemo', async () =>
+  (await import('./FirstLight.fixture')).fake.taskDemo(),
+)
+vi.mock('@/features/mirror/LiveViz', async () =>
+  (await import('./FirstLight.fixture')).fake.liveViz(),
+)
+vi.mock('@/features/mirror/voiceprint-share', async () =>
+  (await import('./FirstLight.fixture')).fake.voiceprintCard(),
+)
+vi.mock('@/features/onboarding/funnel', async (importOriginal) =>
+  (await import('./FirstLight.fixture')).fake.funnel(importOriginal),
+)
+vi.mock('@/stores/promo-store', async () =>
+  (await import('./FirstLight.fixture')).fake.promoStore(),
+)
+vi.mock('@/stores/launch-gift-store', async () =>
+  (await import('./FirstLight.fixture')).fake.giftStore(),
+)
+vi.mock('@/lib/merc/gpu-gate', async (importOriginal) =>
+  (await import('./FirstLight.fixture')).fake.gpuGate(importOriginal),
+)
+vi.mock('@/stores/app-store', async (importOriginal) =>
+  (await import('./FirstLight.fixture')).fake.appStore(importOriginal),
+)
 
-vi.mock('@/lib/jam/media-errors', () => ({
-  micPermissionState: (): Promise<string> => Promise.resolve('granted'),
-}))
-
-vi.mock('@/lib/voice-session', () => ({
-  createVoiceSession: (): VoiceSession =>
-    ({
-      open: (): Promise<OpenResult> =>
-        Promise.resolve({ ok: true } as OpenResult),
-      probe: (): Promise<ProbeResult> => Promise.resolve('ok' as ProbeResult),
-      arm: (): void => {},
-      record: () => Promise.resolve([]),
-      latest: () => null,
-      latestSmoothed: () => null,
-      level: (): number => 0,
-      context: () => null,
-      isOpen: (): boolean => false,
-      devices: (): Promise<MediaDeviceInfo[]> => Promise.resolve([]),
-      useDevice: (): Promise<ProbeResult> =>
-        Promise.resolve('ok' as ProbeResult),
-      close: (): void => {},
-    }) as unknown as VoiceSession,
-}))
-
-// jsdom cannot draw: the canvases (the star field, the voiceprint's demo
-// and live trace) are stubbed out. None of them is an exit.
-vi.mock('./StarField', () => ({ StarField: () => null }))
-vi.mock('@/features/mirror/TaskDemo', () => ({ TaskDemo: () => null }))
-vi.mock('@/features/mirror/LiveViz', () => ({ LiveViz: () => null }))
-vi.mock('@/features/mirror/voiceprint-share', () => ({
-  renderVoiceprintCard: async () => null,
-}))
-
-vi.mock('@/features/onboarding/funnel', async (importOriginal) => {
-  const actual = await importOriginal<typeof OnboardingFunnelModule>()
-  return { ...actual, trackOnboarding: mocks.trackOnboarding }
-})
-
-vi.mock('@/stores/promo-store', async () => {
-  const { createSignal } = await import('solid-js')
-  const [offer] = createSignal(null)
-  return { offeredPromo: offer, loadFeaturedPromo: async () => {} }
-})
-
-vi.mock('@/stores/launch-gift-store', () => ({
-  giftWaiting: () => null,
-  rememberGiftOffered: () => {},
-  claimGiftNow: async () => {},
-}))
-
+import { PLAN_OPENED_KEY, PLAN_RECORD_KEY } from '@/features/plan/plan-keys'
+import { savePlanAnswers } from '@/features/plan/plan-store'
+import { applyPersistedValue } from '@/lib/storage'
 import { currentBeat, flowOpen, openBeat, recordFirstNote, recordVoiceprint, resetOnboarding, savedVoiceprints, track, voiceprint, } from '@/stores/onboarding-store'
+import { setActiveTab } from '@/stores/ui-store'
 import { VOICE_RIDGE } from './beats/KeepChips'
 import { FirstLight } from './FirstLight'
+import { mocks, SAVED_PRINT, skipAnyway, VOICEPRINT, } from './FirstLight.fixture'
 import type { Beat } from './flow'
 import { MAP_ROOM_EVENT } from './funnel'
+import type { Plate } from './plates'
 import { plateSrc } from './plates'
 import { ROOMS } from './rooms'
 import { ridgeShape } from './voice-strip'
-
-const VOICEPRINT: MirrorResult = {
-  range: {
-    lowMidi: 40,
-    highMidi: 67,
-    lowNote: 'E2',
-    highNote: 'G4',
-    semitones: 27,
-    qualifyingMidis: [40, 52, 67],
-    voiceHint: 'baritone',
-  },
-  accuracy: null,
-  steadiness: null,
-}
 
 function beat(name: Beat): HTMLElement | null {
   return document.querySelector<HTMLElement>(`[data-beat="${name}"]`)
@@ -115,9 +98,26 @@ function tracked(): string[] {
   return mocks.trackOnboarding.mock.calls.map(([event]) => String(event))
 }
 
+/** The plan record and the stops opened live in module signals that `localStorage.clear()` does not reach. */
+function forgetThePlan(): void {
+  applyPersistedValue(PLAN_RECORD_KEY, 'null', { persist: false })
+  applyPersistedValue(PLAN_OPENED_KEY, '[]', { persist: false })
+}
+
+/** A plan that has been answered: the questions are not due. */
+function answerThePlan(): void {
+  savePlanAnswers(
+    { q1: 'singing', q2: null, q3: [], q4: [] },
+    { q3other: '', q4app: '' },
+  )
+}
+
 beforeEach(() => {
   vi.clearAllMocks()
   localStorage.clear()
+  forgetThePlan()
+  setActiveTab('home')
+  vi.spyOn(console, 'info').mockImplementation(() => undefined)
   resetOnboarding()
   // jsdom ships no matchMedia; the star field and the plates ask it.
   vi.stubGlobal('matchMedia', () => ({
@@ -130,6 +130,8 @@ beforeEach(() => {
 afterEach(() => {
   cleanup()
   vi.unstubAllGlobals()
+  vi.restoreAllMocks()
+  forgetThePlan()
   resetOnboarding()
 })
 
@@ -148,16 +150,18 @@ describe('the Fork in the flow', () => {
     expect(ONBOARDING_FUNNEL_EVENTS).toEqual(expect.arrayContaining(tracked()))
   })
 
-  it('"Not now" takes the Fork to the Map with nothing measured, counted as the short track', async () => {
+  it("asks the questions after the short track's Not now, with nothing measured, counted as the short track", async () => {
     // Arrange
     await at('fork')
     const [notNow] = railExits()
 
-    // Act
+    // Act: it asks first (FirstLight.skip.test.tsx), and Yes, skip goes on.
     fireEvent.click(notNow)
+    skipAnyway()
 
     // Assert
-    await waitFor(() => expect(currentBeat()).toBe('map'))
+    await waitFor(() => expect(currentBeat()).toBe('questions'))
+    expect(beat('questions')).not.toBeNull()
     expect(notNow).toHaveTextContent('Not now')
     expect(track()).toBe('short')
     expect(voiceprint()).toBeNull()
@@ -166,11 +170,11 @@ describe('the Fork in the flow', () => {
     expect(ONBOARDING_FUNNEL_EVENTS).toEqual(expect.arrayContaining(tracked()))
   })
 
-  it('"Not now" on a replayed Fork lands on the Map, not the account ask, and keeps the voiceprint', async () => {
+  it('"Not now" on a replayed Fork lands on the questions, not the account ask, and keeps the voiceprint', async () => {
     // Arrange: the review's path. A voiceprint made earlier this session
     // is still in memory, the account ask is still due, and the intro is
-    // replayed from Settings. The Map is where every "Not now" goes (V9);
-    // the voiceprint is never dropped (V13).
+    // replayed from Settings. Every "Not now" goes past Keep (V9), to the
+    // questions while the plan is due; the voiceprint is never dropped (V13).
     recordVoiceprint(VOICEPRINT)
     render(() => <FirstLight replay />)
     openBeat('fork')
@@ -181,16 +185,39 @@ describe('the Fork in the flow', () => {
     fireEvent.click(notNow)
 
     // Assert
-    await waitFor(() => expect(beat('map')).not.toBeNull())
-    expect(currentBeat()).toBe('map')
+    await waitFor(() => expect(beat('questions')).not.toBeNull())
+    expect(currentBeat()).toBe('questions')
     expect(beat('keep')).toBeNull()
     expect(voiceprint()).toEqual(VOICEPRINT)
     expect(tracked()).toContain('onboarding_track_short')
   })
+
+  it('"Not now" goes straight to the Map once the plan is answered', async () => {
+    // Arrange: somebody who answered the questions on another visit.
+    answerThePlan()
+    await at('fork')
+    const [notNow] = railExits()
+
+    // Act
+    fireEvent.click(notNow)
+    skipAnyway()
+
+    // Assert
+    await waitFor(() => expect(currentBeat()).toBe('map'))
+    expect(beat('questions')).toBeNull()
+    expect(tracked()).toContain('onboarding_track_short')
+  })
 })
 
-describe('the pictures fetched ahead of the Fork', () => {
-  it('fetches the plain sky its button leads to, and the Map behind "Not now"', async () => {
+// Past the walk, a Not now leads to the plain sky (the four questions while the
+// plan is due) or to the Map (once it is answered), so both are fetched behind
+// each beat that has one. The questions lead to the Map by See every room alone.
+describe('the pictures fetched ahead', () => {
+  it.each<[Beat, readonly Plate[]]>([
+    ['fork', ['plain', 'map']],
+    ['first-light', ['plain', 'map']],
+    ['questions', ['map']],
+  ])('fetches what can follow the %s beat: %j', async (name, plates) => {
     // Arrange
     const requested: string[] = []
     vi.stubGlobal(
@@ -204,26 +231,14 @@ describe('the pictures fetched ahead of the Fork', () => {
     )
 
     // Act
-    await at('fork')
+    await at(name)
 
     // Assert
     expect(requested).toEqual(
-      expect.arrayContaining([
-        plateSrc('plain', false),
-        plateSrc('map', false),
-      ]),
+      expect.arrayContaining(plates.map((plate) => plateSrc(plate, false))),
     )
   })
 })
-
-/** One voiceprint already on this device, for the returning beats. */
-const SAVED_PRINT = {
-  id: 'saved-1',
-  takenAt: '2026-10-10T10:00:00.000Z',
-  twin: null,
-  source: 'mirror',
-  summary: { lowMidi: 43, highMidi: 72, semitones: 29 },
-}
 
 /** The ways out that used to sit inside a beat. Matched anywhere in a
  *  button's text, with no word boundary in front: a card button's title
@@ -272,9 +287,9 @@ describe('one way out on every beat', () => {
   )
 })
 
-describe('"Not now" lands on the Map (owner decision V9)', () => {
+describe('"Not now" lands past the walk (owner decision V9)', () => {
   it.each<Beat>(['first-light', 'voiceprint', 'prints', 'twin'])(
-    'takes the %s beat to the Map, counted as a skip, with the flow still open',
+    'takes the %s beat to the questions, counted as a skip, with the flow still open',
     async (name) => {
       // Arrange
       if (name === 'twin') recordVoiceprint(VOICEPRINT)
@@ -291,13 +306,15 @@ describe('"Not now" lands on the Map (owner decision V9)', () => {
       const [notNow] = railExits()
       expect(notNow).toHaveTextContent('Not now')
 
-      // Act
+      // Act: before a voiceprint, Not now asks first; the twin and the
+      // prints have one already, and go on at once.
       fireEvent.click(notNow)
+      if (name === 'first-light' || name === 'voiceprint') skipAnyway()
 
       // Assert
-      await waitFor(() => expect(currentBeat()).toBe('map'))
+      await waitFor(() => expect(currentBeat()).toBe('questions'))
       expect(flowOpen()).toBe(true)
-      expect(beat('map')).not.toBeNull()
+      expect(beat('questions')).not.toBeNull()
       expect(tracked()).toContain('onboarding_skipped')
       expect(tracked()).not.toContain('onboarding_track_short')
       expect(ONBOARDING_FUNNEL_EVENTS).toEqual(
@@ -306,15 +323,32 @@ describe('"Not now" lands on the Map (owner decision V9)', () => {
     },
   )
 
+  it('takes a beat to the Map once the plan is answered, counted as a skip', async () => {
+    // Arrange
+    answerThePlan()
+    await at('first-light')
+    const [notNow] = railExits()
+
+    // Act
+    fireEvent.click(notNow)
+    skipAnyway()
+
+    // Assert
+    await waitFor(() => expect(currentBeat()).toBe('map'))
+    expect(beat('questions')).toBeNull()
+    expect(tracked()).toContain('onboarding_skipped')
+  })
+
   it('makes no voiceprint on the way: leaving the voiceprint mid-run lands with none', async () => {
     // Arrange
     await at('voiceprint')
 
     // Act
     fireEvent.click(railExits()[0])
+    skipAnyway()
 
     // Assert
-    await waitFor(() => expect(currentBeat()).toBe('map'))
+    await waitFor(() => expect(currentBeat()).toBe('questions'))
     expect(voiceprint()).toBeNull()
   })
 })
