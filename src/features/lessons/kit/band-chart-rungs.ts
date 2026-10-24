@@ -87,6 +87,11 @@ export function paintRungs(
 ): boolean {
   const { rungs } = scene
   if (rungs === undefined) return false
+  // the singer's line leaves its caps and joins round for the next frame
+  // (drawTrace), and a round cap reaches past a rung's slot by half its
+  // stroke: a glow by 6 px, into the gutter's letters
+  f.ctx.lineCap = 'butt'
+  f.ctx.lineJoin = 'miter'
   const bands = rungs.map((r) => bandOf(f, r))
   rungs.forEach((r, i) => {
     if (showsFaint(r)) drawFaint(f, bands[i])

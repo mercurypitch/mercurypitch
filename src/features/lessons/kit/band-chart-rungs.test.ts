@@ -12,8 +12,9 @@
 
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import './browser-doubles.test-fixtures'
+import type { BandScene } from './band-chart'
 import type { Figure, Mark } from './band-chart.test-fixtures'
-import { channels, marksOf, paintCharts } from './band-chart.test-fixtures'
+import { capsOf, channels, marksOf, paintCharts, paintFrames, } from './band-chart.test-fixtures'
 import { BAND_COLOR } from './band-chart-draw'
 import type { Rung } from './band-chart-rungs'
 import { paintRungs } from './band-chart-rungs'
@@ -28,13 +29,22 @@ afterEach(() => {
 /** Do for the lower voice, D3. */
 const DO = 50
 
-/** Lesson 9's chart on the lower voice's window, two semitones under do to two over so, showing `rungs`. */
-const ladder = (rungs: Rung[]): Figure => ({
+/** Lesson 9's chart on the lower voice's window, two semitones under do to two over so, showing `rungs` and the rest of `scene`. */
+const ladder = (rungs: Rung[], scene?: (s: BandScene) => void): Figure => ({
   opts: { target: DO, axis: { notes: [DO - 2, DO + 9] }, paintRungs },
   scene: (s) => {
     s.rungs = rungs
+    scene?.(s)
   },
 })
+
+/** The singer's line climbing into do's band, its caps round (drawTrace). */
+const singing = (s: BandScene): void => {
+  s.line = [
+    { t: 0.6, c: -40 },
+    { t: 1.8, c: 5 },
+  ]
+}
 
 const AMBER = channels(BAND_COLOR.target).rgb
 const MINT = channels(BAND_COLOR.mint).rgb
@@ -78,6 +88,39 @@ describe('a rung over its time slot', () => {
       expect(Math.max(...m.xs)).toBeLessThanOrEqual(end)
     }
   })
+
+  it.each<[string, Rung]>([
+    [
+      'a sounding rung, its edge lit',
+      { c: 0, from: 0.5, to: 2, glow: 1, lit: true },
+    ],
+    ['a faint rung', { c: 700, from: 2, to: 3.5, faint: true }],
+  ])(
+    'keeps every stroke of %s inside its slot in the frame after a line was drawn',
+    async (_name, rung) => {
+      // Arrange: the line drawn in the first frame leaves its caps round
+      const figure = ladder([rung], singing)
+
+      // Act
+      const { chart, calls } = await paintFrames(figure, 2)
+
+      // Assert: each stroke's ends, and half its width past them unless its caps are butt
+      const start = chart.pointOf(rung.from ?? 0, rung.c).x
+      const end = chart.pointOf(rung.to ?? chart.window, rung.c).x
+      const strokes = capsOf(marksOf(calls)).filter(
+        ({ mark }) =>
+          mark.line.startsWith('stroke ') &&
+          (mark.rgb === AMBER || mark.rgb === MINT),
+      )
+      const second = strokes.filter(({ frame }) => frame === 2)
+      expect(second).toHaveLength(strokes.length / 2)
+      for (const { mark, cap } of second) {
+        const past = cap === 'butt' ? 0 : mark.width / 2
+        expect(Math.min(...mark.xs) - past).toBeGreaterThanOrEqual(start)
+        expect(Math.max(...mark.xs) + past).toBeLessThanOrEqual(end)
+      }
+    },
+  )
 
   it('stands a staircase: each rung over its own slot, at its own note', async () => {
     // Arrange: the compact chart's do and so, over two slots

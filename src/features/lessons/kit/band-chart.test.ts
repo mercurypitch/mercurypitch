@@ -14,7 +14,7 @@
 
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import './browser-doubles.test-fixtures'
-import type { Figure } from './band-chart.test-fixtures'
+import type { Call, Figure } from './band-chart.test-fixtures'
 import { paintCharts, picture } from './band-chart.test-fixtures'
 import { paintRungs } from './band-chart-rungs'
 
@@ -368,6 +368,18 @@ function asOneRung(figure: Figure): Figure {
   }
 }
 
+/**
+ * The calls without the rung painter's own setting of a line's caps and
+ * joins back to the canvas's (butt, miter), which a first frame draws the
+ * same without: the rest must be the band's, call for call.
+ */
+const drawn = (calls: readonly Call[]): Call[] =>
+  calls.filter(
+    ([name, value]) =>
+      !(name === 'lineCap=' && value === 'butt') &&
+      !(name === 'lineJoin=' && value === 'miter'),
+  )
+
 describe('one rung at 0 across the plot', () => {
   it.each<[string, Figure]>([
     ["Lesson 3's Sing it chart", SING_3],
@@ -382,7 +394,7 @@ describe('one rung at 0 across the plot', () => {
     const [band, rungs] = await paintCharts(figure, rung)
 
     // Assert
-    expect(rungs.calls).toEqual(band.calls)
+    expect(drawn(rungs.calls)).toEqual(band.calls)
   })
 
   it('leaves a chart given the painter on its band while its scene holds no rungs', async () => {
@@ -412,6 +424,6 @@ describe('one rung at 0 across the plot', () => {
     const [rungs, band] = await paintCharts(rung, atRest)
 
     // Assert
-    expect(rungs.calls).toEqual(band.calls)
+    expect(drawn(rungs.calls)).toEqual(band.calls)
   })
 })
