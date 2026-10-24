@@ -111,12 +111,99 @@ export function writeGlideWav(
   )
 }
 
-/** Chromium flags that route the generated tone into getUserMedia. */
-export function fakeMicArgs(wavPath: string): string[] {
+/** One step of a stepped take: `hz` held for `seconds`, or a rest when `hz` is 0. */
+export interface ToneStep {
+  readonly hz: number
+  readonly seconds: number
+}
+
+/** Seconds a run of tones fades in over, and out over. */
+const STEP_FADE_SEC = 0.01
+
+/**
+ * Seconds of silence after the last step. Played once (`%noloop`), Chromium
+ * does not fall silent at the end of a file: it hands the page the last slice
+ * it read, about 10 ms, again and again. A file that ends in silence repeats
+ * silence.
+ */
+const STEP_TAIL_SEC = 0.5
+
+/**
+ * Steady tones one after another, after `leadSilence` seconds of silence: a
+ * singer who waits for her cue, then sings a ladder (Lesson 9's WEB-SPEC,
+ * End to end 6). Each step is the same voice as `writeToneWav`'s, on one
+ * running phase, so a step changes pitch without a click; the first fades in
+ * and the last fades out over 10 ms, and half a second of silence ends the
+ * file. A step with `hz` 0 is a rest: silence for its seconds, with the tones
+ * either side fading out and in over 10 ms.
+ *
+ * Chromium starts the file from its first sample each time a page opens the
+ * microphone, so the lead puts the first step that long after the page's
+ * `getUserMedia` resolves, however long the page has been open. Measured
+ * 2026-10-24 over 39 opens, with the file looped and played once, opened at
+ * once, 5 s after the page loaded, and again after stopping mid-ladder: the
+ * first step arrived 4 to 39 ms after its lead, and each step read within a
+ * cent of its note. A take's slots then line up with the steps, since they
+ * are timed from the first voiced frame. Looped, the file sings its ladder
+ * again after the tail and the lead; `fakeMicArgs(file, { loop: false })`
+ * plays it once.
+ *
+ * An opening is a `getUserMedia` once every earlier track has stopped. The
+ * app's microphone owner keeps the device for 2 s after its last release
+ * (`LINGER_MS`, src/lib/mic-manager.ts), so a take started inside that
+ * linger hears the file go on from where it was.
+ */
+export function writeStepsWav(
+  steps: readonly ToneStep[],
+  leadSilence: number,
+): string {
+  const lead = Math.round(RATE * leadSilence)
+  const ends: number[] = []
+  let end = lead
+  for (const step of steps) {
+    end += Math.round(RATE * step.seconds)
+    ends.push(end)
+  }
+  // where the run of tones each step sings in starts and stops: rests and
+  // the lead and tail bound the runs, and each run fades in and out
+  const sounds = (k: number): boolean => steps[k].hz > 0
+  const from: number[] = []
+  const to: number[] = []
+  steps.forEach((_, k) => {
+    from[k] = k === 0 ? lead : sounds(k - 1) ? from[k - 1] : ends[k - 1]
+  })
+  for (let k = steps.length - 1; k >= 0; k--)
+    to[k] = k + 1 < steps.length && sounds(k + 1) ? to[k + 1] : ends[k]
+  const fade = RATE * STEP_FADE_SEC
+  let k = 0
+  let phase = 0
+  const buf = wavOf(end + Math.round(RATE * STEP_TAIL_SEC), (i) => {
+    if (i < lead || i >= end) return 0
+    while (i >= ends[k]) k++
+    if (!sounds(k)) return 0
+    phase += (2 * Math.PI * steps[k].hz) / RATE
+    return Math.min(1, (i - from[k]) / fade, (to[k] - i) / fade) * voice(phase)
+  })
+  // The lead first, then each step as its hertz and seconds, in order.
+  const names = steps.map((s) => `${s.hz}x${s.seconds}s`).join('-')
+  return place(`mercurypitch-e2e-steps-${leadSilence}s-${names}.wav`, buf)
+}
+
+/**
+ * Chromium flags that route the generated tone into getUserMedia. Chromium
+ * loops the file; with `loop: false` (its `%noloop` suffix) it plays it once
+ * from each opening of the microphone, then repeats the last slice it read,
+ * so a file played once must end in silence, as `writeStepsWav`'s does.
+ */
+export function fakeMicArgs(
+  wavPath: string,
+  o: { readonly loop?: boolean } = {},
+): string[] {
+  const file = o.loop === false ? `${wavPath}%noloop` : wavPath
   return [
     '--use-fake-ui-for-media-stream',
     '--use-fake-device-for-media-stream',
-    `--use-file-for-fake-audio-capture=${wavPath}`,
+    `--use-file-for-fake-audio-capture=${file}`,
   ]
 }
 
