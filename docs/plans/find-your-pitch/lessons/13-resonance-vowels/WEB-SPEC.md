@@ -506,7 +506,7 @@ States:
    (`:56-87`) with its `restAfterEffort`, proposed here and built by #1192 (needs 10).
    - Easy or Workable: Merc `celebrate`s if the take was in the band for at least 80 % of its ten
      seconds, at most once a visit; rule 15's line, "If that felt tricky, good: that's learning."
-     (`TRICKY_LINE`, `kit/take.ts:155`), if it was in the band for under half; then Lesson 5's
+     (`TRICKY_LINE`, `kit/take.ts:164`), if it was in the band for under half; then Lesson 5's
      "Rest for a few easy breaths. Ready when you are.", with **Again** (named "Again: one more
      hold") while the visit has had fewer than three takes, and **Done for today**. The Wrap shows
      the practice card.
