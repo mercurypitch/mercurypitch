@@ -378,7 +378,7 @@ States:
      storage.
    - **Done for today** ends the takes, not the card: the question, its answer and its lines stay,
      and an answer can still be changed, with its own lines, band and Wrap card as above, but no
-     Start, Again or Done for today comes back. Until this PR an answer changed after Done for
+     Start, Again or Done for today comes back. Until #1192 an answer changed after Done for
      today emptied the card, the question with it, and left only the reading's line.
 9. **No microphone** (refused, no device, or the listener failed to load): listen-only mode with
    LESSON.md's line; Merc's siren still plays, and the Wrap keeps the Vocal Range Test card, since
@@ -649,7 +649,7 @@ Lessons 2 to 6 promote into the kit (Toys table). Read again on main at `31b7f53
    the voice choice on `fyp-voice` (`voice-choice.ts`) and the warm-up cards (`warm-up.ts`); so is
    Lesson 1's predict widget (`kit/predict.ts`). Still needed: Lesson 6's tune line. Built: Lesson
    6's rest card after "Effortful", left to the coach by default (`kit/comfort.ts:76-77`), a kit
-   option since this PR (`restAfterEffort`); and Lesson 1's words strip, promoted
+   option since #1192 (`restAfterEffort`); and Lesson 1's words strip, promoted
    (`lesson-01/words.ts`) to `kit/words-strip.ts`, which Lesson 1's page now uses too.
 7. `kit/quiz.ts`: Lesson 2's three changes (Toys 5), on main.
 8. `kit/explorer.ts`: the text-only state and the current lesson (Explorer and season data). Both

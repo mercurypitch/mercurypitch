@@ -166,7 +166,7 @@ are the mobile app's builds. The next `v` tag carries both pages.
 10. **Run times past the budget.** Most lessons run past MASTER-PLAN § 4.2's 8 to 12 minutes of
     active time. Decided (22 October 2026): none is trimmed to fit. Decided (23 October 2026): every
     lesson's chip states its real run time, Lessons 1, 2 and 4 included, whose chips read an
-    estimate of 10 minutes; this PR sets them from today's word counts, to 8, 13 and 14 minutes.
+    estimate of 10 minutes; #1192 sets them from today's word counts, to 8, 13 and 14 minutes.
 
 ## 4. Left for later, on purpose
 
@@ -200,11 +200,11 @@ need them ("needs 5" is item 5 of a lesson's list):
   - `recallStepHref` is in `kit/quiz.ts` (Lesson 8's page, #1172), and every page whose recall
     opens a step uses it. Lessons 10 to 14's specs proposed the move; #1171 says in their words
     that it is done.
-  - **Move do and the count-in are kit parts** (`kit/move-do.ts`, this PR), as Lessons 9, 10, 12
+  - **Move do and the count-in are kit parts** (`kit/move-do.ts`, #1192), as Lessons 9, 10, 12
     and 14 ask. Lessons 4, 6 and 8 share its step and its ends, and Lessons 4 and 6 its count-in;
     Lesson 8's count-in is a bar on its beat clock, another mechanism, and stays on its page. Each
     page keeps its own wiring, readout and labels.
-  - **"Effortful" goes to the rest card by a kit option** (this PR),
+  - **"Effortful" goes to the rest card by a kit option** (#1192),
     `afterFeeling(f, { restAfterEffort: true })` in `kit/comfort.ts`, as Lessons 9, 11, 13 and 14
     ask. Lessons 6, 7 and 8 pass it in place of their own overrides. The specs of 9, 11, 13 and 14
     say it is built, and those of 10 and 12 follow Lesson 6, so their pages can pass it too.
@@ -218,7 +218,7 @@ A suggested order: 9 (it brings the rungs), then 10, 12, 11, 13 and 14.
   first-paint check, which CI runs in `build:e2e`, now fails a build that pulls it into a lesson
   page. Every lesson page lost 2,877 bytes of JavaScript: Lesson 3's headroom went from 37 bytes to
   2,914, and Lesson 4's from 111 to 2,988.
-- **Done in this PR**, each with a test that fails without it:
+- **Done in #1192**, each with a test that fails without it:
   - **The sound gate** keeps its height when sound comes on: both of its lines stay in it, and the
     one not current is hidden. It shrank by 19 to 21 px on Lessons 1 to 6 and 8, and by 40 to 42 px
     on Lesson 7.
@@ -261,7 +261,7 @@ A suggested order: 9 (it brings the rungs), then 10, 12, 11, 13 and 14.
 ### 4.3 App fixes the lessons found
 
 The writers found these while checking what each lesson's practice link opens. Neither is a
-lesson-page bug, and this PR fixes both:
+lesson-page bug, and #1192 fixes both:
 
 - **The Siren exercise's slide score** (30 % of its grade) rewarded jumps between steady stretches,
   so a smooth glide, the thing Lessons 7 and 11 teach, scored nothing on that part. It now scores
@@ -322,7 +322,7 @@ other page first needs what theirs have: the Watch section, its masthead link an
 ### 4.6 The plan's citations
 
 #1171 read every citation in the packages again on main, with scripts that lived outside the
-repository. Since this PR the tools are in it (`scripts/plan-cites.mjs`, with tests):
+repository. Since #1192 the tools are in it (`scripts/plan-cites.mjs`, with tests):
 
 - `pnpm plan:cites:check` reads every citation by content: the quoted words must be in the cited
   lines, and those lines inside the section the citation names. On main it reports about 150
@@ -373,7 +373,7 @@ Three things stay as they are:
   prose, which the tools attached to an earlier file, even across table rows; a pattern such as
   `learn/NN.html`, taken for a file; a pin, which the tools saw only on the citation right before
   "at `<sha>`", where the README pins the whole list; and a line that the PR under check rewrote.
-  `pnpm plan:cites` (this PR) has a test for each, and reports what it cannot settle instead of
+  `pnpm plan:cites` (#1192) has a test for each, and reports what it cannot settle instead of
   passing it.
 - **First paint grows with the season.** Every lesson page carries the whole season's data, so each
   new lesson's entry and each hook alternative add bytes to every page. The ceilings in
@@ -392,7 +392,7 @@ Three things stay as they are:
 - **The review scripts are in the repository now.** The citation printer, the re-anchor and the
   content checks are `pnpm plan:cites` (`scripts/plan-cites.mjs`), and the word counter is
   `pnpm lesson:words` (`scripts/lesson-words.mjs`), whose golden tests hold each package's stated
-  count to its copy. Both came with this PR, with tests that `pnpm test:scripts` runs in CI. Each
+  count to its copy. Both came with #1192, with tests that `pnpm test:scripts` runs in CI. Each
   lesson's verifier stayed outside, but the rules they applied are in the repository: the house
   rules for claims and safety in [TEACHING-PLAYBOOK.md](TEACHING-PLAYBOOK.md), and the copy rules in
   `kit/lesson-copy.ts`'s header. The tool that wrote re-anchored numbers back once rewrote each

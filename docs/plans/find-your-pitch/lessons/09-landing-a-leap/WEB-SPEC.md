@@ -705,7 +705,7 @@ table):
    which they reuse unchanged.
 8. `kit/comfort.ts`: an option that sends "Effortful" to the rest card,
    `afterFeeling(f, { restAfterEffort: true })`, since `afterFeeling` leaves it to the coach
-   (`:69-78`) and Lessons 6, 7 and 9 all choose it (unit test 13). Built by this PR: Lesson 6's page
+   (`:69-78`) and Lessons 6, 7 and 9 all choose it (unit test 13). Built by #1192: Lesson 6's page
    (PR #1149) sent effort to the rest card in its own flow until then, and Lessons 6, 7 and 8 now
    pass the option, as this page will. `mountFeelings` needs nothing new: PR #1149's `changeable`
    option serves Lesson 6's sweeps, and this page takes the default, an answer that locks (Toys 4,
@@ -716,7 +716,7 @@ table):
    and a page-wide "now playing" owner that every sound source takes before it sounds, which stops
    the sound before it. If that pass keeps the owner in Lesson 6's own modules, it moves into the
    kit before this page is built, as Move do does (item 10).
-10. Move do as a kit part, promoted before this page is built. Built by this PR: Lesson 4's page
+10. Move do as a kit part, promoted before this page is built. Built by #1192: Lesson 4's page
     had it, and Lesson 6's page (PR #1149) a copy in its own module (`lesson-06/sing-guide.ts`,
     its `MOVE_MAX` and `clampMove`), so this page would have made a third. `kit/move-do.ts` holds
     Lesson 4's control word for word (`kit/move-do.ts:20-29`, `:31-40`): four semitones each way,

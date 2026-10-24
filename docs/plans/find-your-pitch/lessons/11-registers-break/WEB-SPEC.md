@@ -663,16 +663,16 @@ paused off screen, and the still images when WebGL fails or would run on the CPU
     relaxed and let the pitch flow. If your voice flips between your low and high voice, let it:
     every voice changes gear."; and ":154", which says the glide is scored on how smooth and
     connected it is, becomes "Most of your score is how close you come to the second note.", as the
-    code scores it (70 %, FACTS 41), and stays true with the slide part below fixed (this PR): no
+    code scores it (70 %, FACTS 41), and stays true with the slide part below fixed (#1192): no
     change. When the help changes, the card's sentence about it goes (LESSON.md's editorial note).
   - its menu card (`src/features/exercises/ExerciseMenu.tsx:175-176`), "Glide smoothly across your
     range. Develop seamless register transitions and vocal flexibility.", becomes "Glide smoothly
     between two notes and back. Develop vocal flexibility.", which promises nothing about the
     switch.
-  - its slide score: until this PR `detectSlides` scored the jumps between steady stretches of the
+  - its slide score: until #1192 `detectSlides` scored the jumps between steady stretches of the
     line, so a glide sung smoothly at the dot's pace earned nothing from the 30 % slide part, and a
     flip or a tracking error could earn it (FACTS 41). Proposed: measure the glide itself
-    (`computeDirectness`, over each round's window). Done in this PR with `computeGlideCoverage`
+    (`computeDirectness`, over each round's window). Done in #1192 with `computeGlideCoverage`
     instead (`src/lib/glide-coverage.ts:9-83`): `computeDirectness` ranks a jump above a glide.
   - optionally, the octave glide fitted so that it no longer starts on the preset's lowest note, for
     example by centring the glides two semitones higher before the shift into the preset
@@ -845,7 +845,7 @@ the others take it.
    `:146-160`), so Lessons 3 and 5 see no change. This page needs nothing more of it.
 9. `kit/comfort.ts`: an option that sends "Effortful" to the rest card,
    `afterFeeling(f, { restAfterEffort: true })`, since `afterFeeling` leaves it to the coach
-   (`:69-78`) and Lessons 6, 7, 9 and 11 all choose it (unit test 13). Built by this PR: Lesson 6's
+   (`:69-78`) and Lessons 6, 7, 9 and 11 all choose it (unit test 13). Built by #1192: Lesson 6's
    page sent effort to the rest card in its own flow until then, and passes the option now
    (`lesson-06/sing-flow.ts:91-96`), as this page will. `mountFeelings` needs nothing new: its
    `changeable` option serves Lesson 6's sweeps (`kit/comfort.ts:168-199`), and this page takes the
@@ -873,7 +873,7 @@ the others take it.
     (Tests, end to end 6).
 15. `kit/merc-duo.ts`: `ride` and `hum`, proposed, as Lesson 7's spec proposes (Merc and Tavi).
 16. App: the Siren exercise's help and menu card, the optional octave fitting, and the
-    `/exercises/siren` slug (Practice links); its slide score was here too until this PR fixed it.
+    `/exercises/siren` slug (Practice links); its slide score was here too until #1192 fixed it.
 
 Lesson 6's page (#1149) also brought kit parts this page does not use: the ear game
 (`kit/ear-game.ts`), the tune line (`kit/tune-line.ts`, with its layout, drawing and motion modules)
@@ -929,7 +929,7 @@ With the recommendation first:
    did not link it. Recommended: link it, and ship the help's new lines (Practice links) so the
    card's sentence about them can go; and land the season entry's link with the page, not before.
    The Siren's slide part, which scored jumps rather than the glide (FACTS 41; App content), was a
-   known app bug, filed by the lead with the task #38 follow-ups and fixed in this PR; the card
+   known app bug, filed by the lead with the task #38 follow-ups and fixed in #1192; the card
    names the part of the score that measures how close you come to the second note, and the glide
    part only to say that a flip can lower it.
 8. **The CURRICULUM card** (FACTS 6): done in this package. Its checkpoint and its Practise line

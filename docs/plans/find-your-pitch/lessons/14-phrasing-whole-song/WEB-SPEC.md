@@ -699,9 +699,9 @@ paused off screen, and the still images when WebGL fails or would run on the CPU
   cookie banner and counts one view a session (55): the owner's to accept for a link from a lesson
   (report).
 - **Not linked**, with the reasons in FACTS: Dynamic Swell, whose card promised more of the breath
-  than any fact here supports until this PR and now says what it scores, whose score weighs the
+  than any fact here supports until #1192 and now says what it scores, whose score weighs the
   decibels sung, and which no address opens (58); the daily routines, whose copy promised breath
-  support and range until this PR, and which live in the main app's sidebar (59); and Play Along,
+  support and range until #1192, and which live in the main app's sidebar (59); and Play Along,
   which opens on the songs a singer has brought and separated, nothing for most visitors (60). The
   CURRICULUM card's practise line named all three; it now says why only Karaoke Night is linked.
 - **App content, small** (MASTER-PLAN § 7's App content track), proposed: Dynamic Swell's card copy,
@@ -710,7 +710,7 @@ paused off screen, and the still images when WebGL fails or would run on the CPU
   its width in decibels rewards a louder swell, which this lesson's "grow only to about speaking
   volume" would not, so its score would change or its result would say what it measures; and the two
   routines' descriptions, which promised gains in the breath and in range (59), the same way. Until
-  then no lesson links them. The copy changed in this PR (58, 59); the score did not.
+  then no lesson links them. The copy changed in #1192 (58, 59); the score did not.
 
 ## Explorer and season data
 
@@ -861,7 +861,7 @@ among them (PR #1149), and in Lesson 9's spec, beyond the parts Lessons 2 to 9 p
 9. `kit/comfort.ts`: an option that sends "Effortful" to the rest card,
    `afterFeeling(f, { restAfterEffort: true })`, as Lesson 9's spec proposes (What the kit and the
    app still need, 8, there), since `afterFeeling` leaves it to the coach (`:69-78`) and Lessons 6,
-   7, 9 and 14 all choose it. Built by this PR: Lesson 6's page, which sent effort there in its own
+   7, 9 and 14 all choose it. Built by #1192: Lesson 6's page, which sent effort there in its own
    flow, now passes it (`lesson-06/sing-flow.ts:18-20`, `:89-98`), and so will this page.
 10. The two sound rules (Audio), wired through the kit parts on main since PR #1149:
     `kit/predict.ts`'s `play` may resolve `false` for a play cut short, which the predict then never
@@ -869,7 +869,7 @@ among them (PR #1149), and in Lesson 9's spec, beyond the parts Lessons 2 to 9 p
     `kit/now-playing.ts`, the page-wide owner, `NowPlaying` (`:17-39`), which every source `claim`s
     with its own stop before it sounds and `release`s when it ends. No kit change: only this page's
     wiring.
-11. Move do and the count-in as kit parts, built by this PR, which moved them from Lesson 4's page
+11. Move do and the count-in as kit parts, built by #1192, which moved them from Lesson 4's page
     into `kit/move-do.ts` as Lesson 9's spec proposed (What the kit and the app still need, 10,
     there): Move do word for word (`kit/move-do.ts:20-21`, `:23-29`), and Lesson 4's count-in
     (`countIn`, `:42-44`, `:46-51`), which this page plays before every take.
@@ -895,7 +895,7 @@ among them (PR #1149), and in Lesson 9's spec, beyond the parts Lessons 2 to 9 p
     tones in sequence after a stretch of silence, beside `writeToneWav` (`:76`), here for the phrase
     with take 2's breath, D3 D3 A3 A3 B3 B3 at 0.75 s, A3 for 1.2 s and 0.3 s of silence (Tests, end
     to end 6).
-17. App: Dynamic Swell's score (Practice links); its copy and the routines' were done in this PR.
+17. App: Dynamic Swell's score (Practice links); its copy and the routines' were done in #1192.
 
 Lesson 6's page also brought kit parts this page does not use: the ear game (`kit/ear-game.ts`) and
 the tune line (`kit/tune-line.ts`, with its layout, drawing and motion modules), whose beads draw a
