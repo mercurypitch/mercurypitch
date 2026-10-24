@@ -74,7 +74,7 @@ export function playLine(points: readonly ContourPoint[], o: RunOptions): Run {
   return timed(contourLength(points), () => v?.stop(0.08))
 }
 
-/** A tune, note by note, each its own voice; `onNote` hears each as it starts. */
+/** A tune, note by note, each its own voice, ending with its last-ending note; `onNote` hears each as it starts. */
 export function playNotes(
   notes: readonly RunNote[],
   o: RunOptions & { readonly onNote?: (n: RunNote, i: number) => void },
@@ -96,8 +96,8 @@ export function playNotes(
       }, n.t * 1000),
     )
   })
-  const last = notes[notes.length - 1]
-  const length = last === undefined ? 0 : last.t + last.dur
+  // in a chord, or a list out of order, the note that ends last need not be listed last
+  const length = notes.reduce((end, n) => Math.max(end, n.t + n.dur), 0)
   return timed(
     length,
     () => {
