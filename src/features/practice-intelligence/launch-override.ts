@@ -10,7 +10,7 @@
 // when the exercise is exited so it never leaks into the next session.
 
 import type { ExerciseConfig, ExerciseType, GuidedPracticeLaunchConfig, } from '@/features/exercises/types'
-import { clearExerciseLaunchOverride, exerciseLaunchDifficulty, exerciseLaunchGuidedPractice, exerciseLaunchPattern, exerciseLaunchTargetNote, exerciseLaunchTargetNotes, setExerciseLaunchOverride, } from '@/lib/domain/exercise-launch'
+import { clearExerciseLaunchOverride, exerciseLaunchDifficulty, exerciseLaunchGuidedPractice, exerciseLaunchIntervals, exerciseLaunchPattern, exerciseLaunchTargetNote, exerciseLaunchTargetNotes, setExerciseLaunchOverride, } from '@/lib/domain/exercise-launch'
 import { clampDifficulty } from './adaptive-difficulty'
 import { getDifficulty } from './difficulty-store'
 
@@ -50,6 +50,29 @@ export function launchTargetNotes(type: ExerciseType): string[] | undefined {
 /** Step-pattern a launch requested for `type` (e.g. warmup block), if any. */
 export function launchPattern(type: ExerciseType): string | undefined {
   return exerciseLaunchPattern(type)
+}
+
+/** The widest interval a launch may ask for: the octave, as wide as the
+ *  Interval Trainer's own pool reaches above its start note. */
+const MAX_LAUNCH_INTERVAL = 12
+
+/**
+ * Intervals a launch asked `type` to drill, in semitones above the start
+ * note, each upward: whole semitones from 1 to an octave, each once, in the
+ * order given. Undefined when no launch asked, or when nothing it asked for
+ * is usable, so the exercise falls back to its own pool.
+ */
+export function launchIntervals(type: ExerciseType): number[] | undefined {
+  const requested = exerciseLaunchIntervals(type)
+  if (requested === undefined) return undefined
+  const usable = [
+    ...new Set(
+      requested.filter(
+        (s) => Number.isInteger(s) && s >= 1 && s <= MAX_LAUNCH_INTERVAL,
+      ),
+    ),
+  ]
+  return usable.length > 0 ? usable : undefined
 }
 
 /** Reviewed guided-practice prescription attached to this one launch. */

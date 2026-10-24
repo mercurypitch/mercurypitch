@@ -1,6 +1,6 @@
 import { batch } from 'solid-js'
 import { difficultyFactor } from '@/features/practice-intelligence/difficulty-scaling'
-import { launchDifficulty } from '@/features/practice-intelligence/launch-override'
+import { launchDifficulty, launchIntervals, } from '@/features/practice-intelligence/launch-override'
 import { midiToFrequency as midiToFreq } from '@/lib/frequency-to-note'
 import { EMPTY_NOTE_TALLY, tallyFromDeviations } from '../exercise-note-tally'
 import { noteDeviationCentsInRange, scoreNoteInRange, } from '../exercise-scoring-utils'
@@ -44,23 +44,105 @@ const INTERVAL_POOL: ReadonlyArray<readonly [number, number]> = [
 ]
 
 /** Rounds a run will ask for at this difficulty. The pool is the ceiling —
- *  `slice` used to hide that, and the idle hint promised six regardless. */
-export function plannedRounds(difficulty: number): number {
-  return Math.min(
-    INTERVAL_POOL.length,
-    Math.round(ROUNDS * (2 - difficultyFactor(difficulty))),
-  )
+ *  `slice` used to hide that, and the idle hint promised six regardless.
+ *  A launch's own intervals may repeat, so they set no ceiling: two of them
+ *  still make a run as long as the difficulty asks for. */
+export function plannedRounds(
+  difficulty: number,
+  intervals?: readonly number[],
+): number {
+  const asked = Math.round(ROUNDS * (2 - difficultyFactor(difficulty)))
+  return intervals !== undefined && intervals.length > 0
+    ? asked
+    : Math.min(INTERVAL_POOL.length, asked)
 }
 
 function generateIntervals(
   baseMidi: number,
   rounds: number,
+  given?: readonly number[],
 ): Array<[number, number]> {
+  if (given !== undefined && given.length > 0) {
+    return drawIntervalRounds(given, rounds).map((s) => [
+      baseMidi,
+      baseMidi + s,
+    ])
+  }
   // Shuffle and pick. The interval named is the interval played: an earlier
   // version added a random extra octave to note2 in a quarter of rounds, so a
   // "Major 2nd" could silently span 14 semitones and leave the singer's range.
   const shuffled = [...INTERVAL_POOL].sort(() => Math.random() - 0.5)
   return shuffled.slice(0, rounds).map(([a, b]) => [baseMidi + a, baseMidi + b])
+}
+
+/** A Fisher-Yates shuffle of a copy. */
+function shuffledCopy<T>(xs: readonly T[], random: () => number): T[] {
+  const out = [...xs]
+  for (let i = out.length - 1; i > 0; i--) {
+    const j = Math.floor(random() * (i + 1))
+    ;[out[i], out[j]] = [out[j], out[i]]
+  }
+  return out
+}
+
+/**
+ * A run's intervals on a launch's own list, one per round, in semitones
+ * above the start note. They are dealt from shuffled bags of the whole
+ * list, one bag after another, so no interval comes a second time before
+ * every one has come once, and a run at least as long as the list plays
+ * each of them. Inside a bag nothing repeats; where one bag meets the next,
+ * an opener that matches the round before trades places with another of
+ * its bag, so no interval comes twice running. A run shorter than the list
+ * plays that many of them, each once, as a run on the pool does. A list of
+ * one has nothing to alternate with, so it plays every round.
+ */
+export function drawIntervalRounds(
+  intervals: readonly number[],
+  rounds: number,
+  random: () => number = Math.random,
+): number[] {
+  const distinct = [...new Set(intervals)]
+  const drawn: number[] = []
+  // Whole rounds only: the loop would never reach a count like 2.5.
+  const total = Math.floor(rounds)
+  if (distinct.length === 0) return drawn
+  while (drawn.length < total) {
+    const bag = shuffledCopy(distinct, random)
+    if (bag.length > 1 && bag[0] === drawn.at(-1)) {
+      const other = 1 + Math.floor(random() * (bag.length - 1))
+      ;[bag[0], bag[other]] = [bag[other], bag[0]]
+    }
+    drawn.push(...bag.slice(0, total - drawn.length))
+  }
+  return drawn
+}
+
+/** Interval names by span in semitones, from the unison to the octave. */
+const INTERVAL_NAMES: readonly string[] = [
+  'Unison',
+  'Minor 2nd',
+  'Major 2nd',
+  'Minor 3rd',
+  'Major 3rd',
+  'Perfect 4th',
+  'Tritone',
+  'Perfect 5th',
+  'Minor 6th',
+  'Major 6th',
+  'Minor 7th',
+  'Major 7th',
+  'Octave',
+]
+
+/** The idle hint's words for a launch's own intervals, in place of the
+ *  pool's: from the list's narrowest interval to its widest, or named
+ *  outright when it holds only one or two. */
+export function intervalRangeLabel(intervals: readonly number[]): string {
+  const names = [...new Set(intervals)]
+    .sort((a, b) => a - b)
+    .map((s) => INTERVAL_NAMES[s] ?? `${s} semitones`)
+  if (names.length <= 2) return names.join(' and ')
+  return `${names[0]} through ${names[names.length - 1]}`
 }
 
 export function useIntervalTrainerController(
@@ -96,9 +178,11 @@ export function useIntervalTrainerController(
     _cancelled = false
     // Read effective difficulty at round-setup, centred so 5 == default.
     const d = launchDifficulty(EXERCISE_INTERVAL_TRAINER)
-    const rounds = plannedRounds(d)
+    // A launch's own intervals, if it brought any, replace the pool.
+    const given = launchIntervals(EXERCISE_INTERVAL_TRAINER)
+    const rounds = plannedRounds(d, given)
     slotMs = Math.round(BASE_SLOT_MS * difficultyFactor(d))
-    intervals = generateIntervals(baseMidi, rounds)
+    intervals = generateIntervals(baseMidi, rounds, given)
     roundIndex = 0
     roundScores = []
     intervalSpans = []
