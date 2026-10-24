@@ -713,7 +713,7 @@ lesson is not live where the page is served, the words stay with no link, which 
   "Correct". Question 2's slot holds its play button, two bars of 3 and the next first beat, seven
   clicks, 4.0 s (FACTS 77), named "Play two bars"; the kit keeps a slot's controls across answers,
   and the page handles them with a listener on the quiz's `host`. "Try Step 2 again" to "Try Step
-  5 again" use the kit's `data-goto-step`. Answers stay in the viewer's browser; since this PR each
+  5 again" use the kit's `data-goto-step`. Answers stay in the viewer's browser; since #1193 each
   question's first answer in a visit also goes out, anonymously.
 
 ### 8. Go deeper drawer

@@ -652,7 +652,7 @@ keeps a link's words and drops the link wherever that lesson is not live.
   answer, and a check icon and ink (not gold) on the right one. The kit prints "Right." or "Not
   quite." before each line (`quiz.ts:315`), so no feedback line starts with "Right", "Yes" or
   "Correct". None of the four plays a sound. "Try Step 1 again" to "Try Step 5 again" use the kit's
-  `data-goto-step`. Answers stay in the viewer's browser; since this PR each question's first answer
+  `data-goto-step`. Answers stay in the viewer's browser; since #1193 each question's first answer
   in a visit also goes out, anonymously.
 - **Spoken numerals.** Wherever the page prints Roman numerals in text (the steps, the Wrap, the
   quiz, the practice card's I–V–vi–IV), they are `aria-hidden` and a visually hidden spoken form

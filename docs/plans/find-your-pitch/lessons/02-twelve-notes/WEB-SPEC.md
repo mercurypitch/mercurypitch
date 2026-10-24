@@ -114,7 +114,7 @@ are Lesson, Watch and Explorer. Each section's heading, and the line above it, a
    storage keys `fyp-l02-seed` and `fyp-l02-quiz-v1`; `lesson: 2`, so answering all four marks
    Lesson 2 done. The kit rebuilds the questions on every answer, so question 2's play button is
    handled by a listener on `#qs`, as the step links are. Answers stay in the viewer's browser
-   (localStorage); since this PR each question's first answer in a visit also goes out as an
+   (localStorage); since #1193 each question's first answer in a visit also goes out as an
    anonymous `lesson_answer` event, never after a no, and from the EEA, the UK and Switzerland only
    after a yes (`kit/telemetry.ts`; the owner, 23 October 2026). A later visit asks them afresh, and
    Lessons 3 and 4 will each open with two of them.
@@ -416,7 +416,7 @@ vertical (pitch is height).
   the first time the page anatomy's item 4 runs. Options are reshuffled from a seed of its own
   (keys `fyp-l02-recall-seed` and `fyp-l02-recall-v1`), not Lesson 1's, and earlier answers are
   never shown, so the answers measure delayed retrieval (MASTER-PLAN § 9). It marks no lesson done.
-  On the public host, since this PR, each question's first answer in a visit is an anonymous
+  On the public host, since #1193, each question's first answer in a visit is an anonymous
   `lesson_answer` event with its visit. The kit needs three changes for it (What the kit and the app
   still need, 9): a second quiz on one page, no done-marking, and question ids.
 

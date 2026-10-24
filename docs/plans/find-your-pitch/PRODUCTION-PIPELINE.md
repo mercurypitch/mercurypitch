@@ -292,7 +292,7 @@ the no-iframe rule in its contract (WEB-SPEC) binds only that preview. The publi
 `mercurypitch.com/learn/NN` (MASTER-PLAN § 12 item 9), on the same origin as the app's analytics,
 accounts and `?lesson=` marker, built by the Phase 1 Lesson host track, whose exit is Lesson 1
 served at its public URL with CTAs carrying `?lesson=01`. The episode plays there from R2 (§ 12
-item 7): an MP4 at 1080p and a 720p copy for phones, cut from the delivery master. Until this PR
+item 7): an MP4 at 1080p and a 720p copy for phones, cut from the delivery master. Until #1193
 quiz answers stayed in the viewer's browser; now each question's first answer in a visit is an
 anonymous `lesson_answer` event (MASTER-PLAN § 9).
 

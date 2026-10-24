@@ -129,7 +129,7 @@ in LESSON.md has none. The recall check (item 4) starts with Lesson 2.
    localStorage (wrapped in try/catch). On a return visit the questions are asked afresh, not
    shown with their stored answers, so the page measures delayed retrieval (MASTER-PLAN § 9);
    Lesson 2's page asks two of them again (§ 4.2 item 4). In the preview nothing leaves the browser;
-   on the public host, since this PR, each question's first answer in a visit goes out as an
+   on the public host, since #1193, each question's first answer in a visit goes out as an
    anonymous `lesson_answer` event (`kit/telemetry.ts`), never after a no, and from the EEA, the UK
    and Switzerland only after a yes (the owner, 23 October 2026).
 7. **Wrap**: the three recap lines, the one-sentence challenge, and the next lesson's hook from
