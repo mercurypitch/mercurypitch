@@ -142,7 +142,7 @@ describe('CreditCostGuide', () => {
 })
 
 // "what a song costs" on the Karaoke Night rail promises this guide. The
-// router turns that link into a request (use-hash-router.test.tsx); here the
+// router turns that link into a request (useHashRouter.test.tsx); here the
 // guide answers it.
 describe('CreditCostGuide, reached by its link', () => {
   const originalScrollIntoView = Object.getOwnPropertyDescriptor(
