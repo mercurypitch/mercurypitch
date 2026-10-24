@@ -1,0 +1,78 @@
+#!/bin/bash
+# heavy <command...>: run a memory-heavy command (tsc, eslint, vite build,
+# vitest over many files, playwright) in one of two shared slots, so the
+# agents in this container never run more than two at once. The shell
+# processes share a 13.7 GB memory cap; a third heavy job gets OOM-killed.
+# Waiters take the slots in the order they came, one ticket each, so a
+# small job is never starved by later ones. A command started through
+# heavy-pri takes a ticket ahead of every ordinary one.
+L=${HEAVY_LOCKS:-/tmp/claude-0/-home-user-mercurypitch/12ae313e-03fe-590a-b304-88d38ce9e159/scratchpad/locks}
+mkdir -p "$L"
+CG=/sys/fs/cgroup/memory$(awk -F: '$2 ~ /(^|,)memory(,|$)/ {print $3; exit}' /proc/self/cgroup)
+# free bytes under the cap: the limit, less what is used, plus the page cache
+# the kernel can drop. The cgroup is read from /proc/self/cgroup, because its
+# path changes when the worker restarts (a fixed path read nothing, so the
+# gate was off and a heavy job was OOM-killed on 24 October).
+free_gib() {
+  [ -r "$CG/memory.limit_in_bytes" ] || { echo 99; return; }
+  local lim use inact
+  lim=$(cat "$CG/memory.limit_in_bytes")
+  use=$(cat "$CG/memory.usage_in_bytes")
+  inact=$(awk '$1 == "total_inactive_file" {print $2}' "$CG/memory.stat")
+  echo $(( (lim - use + ${inact:-0}) / 1073741824 ))
+}
+PRI=${HEAVY_PRI:-0}
+# a ticket sorts by class (0 first), then by arrival: q-<class>-<ns>-<pid>
+cls=1
+[ "$PRI" = 1 ] && cls=0
+T="$L/q-$cls-$(date +%s%N)-$$"
+: >"$T"
+# the previous version's waiters only know these flags, so a priority
+# waiter keeps one too, and they still give way to it
+[ "$PRI" = 1 ] && : >"$L/pri-wait-$$"
+trap 'rm -f "$T" "$L/pri-wait-$$"' EXIT
+while true; do
+  # a ticket or flag whose waiter died without its trap is dropped
+  for f in "$L"/q-* "$L"/pri-wait-*; do
+    [ -e "$f" ] || continue
+    kill -0 "${f##*-}" 2>/dev/null || rm -f "$f"
+  done
+  if [ "$PRI" != 1 ] && compgen -G "$L/pri-wait-*" >/dev/null; then
+    sleep 5
+    continue
+  fi
+  first=$(ls "$L" | grep '^q-' | sort | head -n 1)
+  if [ "$L/$first" = "$T" ]; then
+    for slot in 1 2; do
+      exec {fd}>"$L/heavy-$slot.lock"
+      if flock -n "$fd"; then
+        rm -f "$T" "$L/pri-wait-$$"
+        echo "[heavy] slot $slot: $*" >&2
+        # A browser run gets a port no server answers on, from this slot's own
+        # range. The checkouts' tracked .env fixes one e2e port for every
+        # worktree, and the Playwright config reuses whatever server answers
+        # there, a sibling worktree's included. A port set by the caller wins.
+        if [ -z "${VITE_E2E_PORT:-}" ] && [[ "$*" == *playwright* ]]; then
+          p=$((3500 + (slot - 1) * 200))
+          while (exec 3<>"/dev/tcp/127.0.0.1/$p") 2>/dev/null; do p=$((p + 1)); done
+          export VITE_E2E_PORT=$p
+          echo "[heavy] e2e port $p" >&2
+        fi
+        # A heavy job takes up to about 5 GB (a vite build), and every shell
+        # shares one cap, so wait for room; after 10 minutes, run anyway.
+        w=0
+        while [ "$(free_gib)" -lt "${HEAVY_MIN_GIB:-5}" ] && [ "$w" -lt 600 ]; do
+          [ "$w" = 0 ] && echo "[heavy] waiting for ${HEAVY_MIN_GIB:-5} GiB free" >&2
+          sleep 5
+          w=$((w + 5))
+        done
+        "$@"
+        rc=$?
+        flock -u "$fd"
+        exit $rc
+      fi
+      exec {fd}>&-
+    done
+  fi
+  sleep 5
+done

@@ -1,0 +1,76 @@
+#!/usr/bin/env bash
+# Back up the lead's working notes to the branch feat/lead-notes, which holds
+# only these files and is never merged (the owner asked for a backup, 24 Oct).
+# Builder ids are dropped from the notes. No worktree is used: the files go in
+# through a throwaway index, so nothing on the machine changes but the ref.
+# Restore: git fetch origin feat/lead-notes && git archive FETCH_HEAD | tar -x -C <scratchpad>
+set -euo pipefail
+R=/home/user/mercurypitch
+S=/tmp/claude-0/-home-user-mercurypitch/12ae313e-03fe-590a-b304-88d38ce9e159/scratchpad
+REF=refs/heads/feat/lead-notes
+FILES=(
+  NEXT.md PAUSED.md
+  l9/PLAN.md l9/DECISIONS.md l9/FOLLOWUPS.md l9/BUILDER-RULES.md l9/REVIEWER-RULES.md
+  l9/a1b-brief.md l9/a1b-design.md
+  l10/PLAN.md l10/DECISIONS.md l10/FOLLOWUPS.md l10/k5k4-brief.md l10/k5k4-handback.md
+  l11/INBOX.md
+  l12/PLAN.md l12/DECISIONS.md
+  arp/CONSENSUS.md arp/FOLLOWUPS.md
+  tour/PLAN.md
+  bin/heavy bin/heavy-pri bin/light bin/seq-fold.py bin/verify-rebase-merge.sh bin/push-notes
+)
+
+tmp=$(mktemp -d "$S/.notes-XXXXXX")
+trap 'rm -rf -- "${tmp:?}"' EXIT
+export GIT_INDEX_FILE="$tmp/index"
+git -C "$R" read-tree --empty
+
+add() { # add <path in branch> <mode>, content on stdin
+  local h
+  h=$(git -C "$R" hash-object -w --stdin)
+  git -C "$R" update-index --add --cacheinfo "$2,$h,$1"
+}
+
+for f in "${FILES[@]}"; do
+  if [ ! -f "$S/$f" ]; then echo "missing: $f" >&2; continue; fi
+  mode=100644; [ -x "$S/$f" ] && mode=100755
+  case "$f" in
+    *.md) sed -E 's/\ba[0-9a-f]{16}\b/(builder)/g' "$S/$f" | add "$f" "$mode" ;;
+    *) add "$f" "$mode" < "$S/$f" ;;
+  esac
+done
+
+add README.md 100644 <<'EOF'
+# Lead notes (backup)
+
+Working notes for the Find Your Pitch lesson builds, backed up from the
+session's scratchpad. This branch is never merged.
+
+- `NEXT.md`: the queue, the owner's decisions, open PRs, what runs now.
+- `PAUSED.md`: where each paused piece of work stopped, and what it needs next.
+- `l9/`, `l10/`, `l11/`, `l12/`: build plans, decisions and follow-ups.
+- `arp/`: the arpeggio grading consensus.
+- `tour/`: the lesson page tour plan.
+- `bin/`: the lane scripts builders run tests through, and the fold helper.
+
+Builder ids are replaced with "(builder)". The work itself is on the `feat/`
+branches these notes name.
+
+Restore into a scratchpad:
+`git fetch origin feat/lead-notes && git archive FETCH_HEAD | tar -x -C <scratchpad>`
+EOF
+
+tree=$(git -C "$R" write-tree)
+parent=$(git -C "$R" rev-parse -q --verify "$REF" || true)
+if [ -n "$parent" ] && [ "$(git -C "$R" rev-parse "$parent^{tree}")" = "$tree" ]; then
+  echo "notes unchanged (${parent:0:9})"
+  exit 0
+fi
+c=$(git -C "$R" commit-tree "$tree" ${parent:+-p "$parent"} -m "docs: lead notes, $(date -u '+%Y-%m-%d %H:%M') UTC")
+git -C "$R" update-ref "$REF" "$c" ${parent:+"$parent"}
+for i in 1 2 3 4 5; do
+  if git -C "$R" push -q -u origin "$REF:$REF"; then echo "notes pushed: ${c:0:9}"; exit 0; fi
+  sleep $((2 ** i))
+done
+echo "push failed" >&2
+exit 1

@@ -1,0 +1,28 @@
+# Lesson 12 page: lead decisions
+
+Answers to PLAN.md section 6, 24 October 2026. Lesson 9's builder rules (`../l9/BUILDER-RULES.md`) and Lesson 10's decisions (`../l10/DECISIONS.md`) apply here too.
+
+1. **Shipping:** the page is one branch, `feat/lesson-12-page`, stacked on `feat/lesson-10-page` after L10-P11, one commit per task, one PR. It cannot merge before Lesson 10's page, because its recall imports Lesson 10's modules. Nothing merges before the owner's release tag. The page modules (P1 to P10) go on a few branches, one commit per task (item 12), and join the page branch by cherry-pick.
+2. **The drafts line** keeps the spec's wording, "Lesson 10's page at /learn/10, and the vocal coach's look at the sung checkpoint", which is already Lesson 10's form (Lesson 10 decision 2). If it costs a first-paint ceiling, the ceiling rises in L12-P11 with its reason (Lesson 10 decision 9). Lesson 3's 784 bytes of headroom are measured there, not guessed now.
+3. **One owner each for the shared kit parts.** L12-K1, a voice kind on each note, folds into L10-K2 (`feat/kit-run-chords`). L12-K2, a reach for each side, folds into L10-K3 (`feat/kit-move-do-aria`), which already takes optional limits for each side (Lesson 10 decision 5). Lesson 12 has no kit task of its own, and L12-K1's and L12-K2's tests move with them.
+4. **`aria-disabled` on Move do: yes** (Lesson 10 decision 5). The spec's Toys 6, state 4 and End to end 7 stand as written.
+5. **Resting page-wide: yes,** through L10-K4 (Lesson 10 decision 6) and its `overlayWants`. P9 reports whether it is still animating, so the page can answer `overlayWants`.
+6. **The drag: no kit change.** The rooms follow the beads (G5). P21 corrects the spec.
+7. **The stop on a hidden page:** keep L10-K2's item 5, so the page does not subscribe to `onStopAll` itself.
+8. **Arpeggio Jumper's copy** is the owner's (CONSENSUS decision 2). The octave sentence (LESSON:334-335) joins the consensus's copy-fix list for Lesson 12 (`../arp/FOLLOWUPS.md`). L12-C1 waits for v2 and the owner.
+9. **The explorer card's practice link: Cadence.** The owner took the recommendation on 24 October ("use recommended"), as spec Decisions 5 gives it: it needs no voice, so it is right however Sing it ends.
+10. **"Leaving the hero for a step"** means any step change of the deck, or the hero off screen for 600 ms, as Sing it's rule has it (P15).
+11. **The tune toy's Stop label:** while a tune plays, its button's accessible name is "Stop tune 1", "Stop tune 2" or "Stop tune 2 with even notes", so the name matches what it shows (WCAG 2.5.3; Lesson 9 decision 17). P14 builds it, and P21 puts the names in the spec.
+12. **The owner's items: the recommendation on each** (24 October, "use recommended"). None blocks the build:
+    - the owner listens to both tunes before the page publishes, with the five likenesses spec Decisions 4 names in mind (a check before L12-R1, not a build task);
+    - Lesson 10's card keeps naming Lesson 11, by design, with no kit change;
+    - L12-C2, the console warning, is built: the owner said yes. It goes on `feat/lesson-order-warning` from origin/main, one builder, as the plan has it (a pure helper in `lesson-admin.ts`, its test in a new file, covering every lesson that recalls an earlier one). It is clear of every other task's files. Once it ships, the drafts line is no longer the only guard (PLAN section 5, item 4);
+    - the coach's items (the rest card after Effortful, the feeling lock, Move do's top three semitones up, the chords at 0.05 under the voice, the volume line) are built as the spec has them and checked at the sung checkpoint before publishing.
+13. **Lesson 11's still** keeps no tune note on the ring (spec Decisions 13). The rule is passed on in `../l11/INBOX.md`, with section 5's note on `kit/explorer.test.ts:291-293`: whichever of Lessons 11 and 12 lands second rewrites that test.
+14. **Drift and stale statements** are fixed in the task the plan names, or in P21. P21 also takes the SEARCH.md § 8 fix: Lesson 12's practice rooms are `/pitch-training` and `/ear-lab`, not `/piano-night` and `/guitar-night`.
+15. **The asks of Lessons 9 and 10's builders** (section 6, item 18) are recorded: B15's padding and B2's recorder in `../l9/FOLLOWUPS.md`; L10-K2's kind on each note and L10-K3's reach for each side here (item 3); L10-P14 exporting its quiz-play binder, and L10-P8's ids and slot staying fixed once shipped, in `../l10/FOLLOWUPS.md`.
+16. **Branches and builders** (all from origin/main 5e08dd4a3 unless stacked):
+    - P1, P2, P3, P4, P8 on `feat/lesson-12-music`, one commit each, in that order: one builder.
+    - P5, P6, P7 on `feat/lesson-12-sing-layout`, one commit each: one builder.
+    - P9, P10 on `feat/lesson-12-rooms`, stacked on `feat/lesson-12-music` once P1 is in: one builder.
+    - P11 onwards wait for L10-P11 on `feat/lesson-10-page`.
