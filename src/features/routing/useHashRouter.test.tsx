@@ -1,3 +1,12 @@
+// ============================================================
+// useHashRouter tests — every route the hook owns, and its guards
+// ============================================================
+//
+// Past TESTING.md's 600 lines because one hook owns every route and both
+// directions of the sync, and every case mounts it through the one fixture
+// below: split by route family, the fixture and its mocks would be copied
+// into each part.
+
 import { cleanup, fireEvent, render, screen, waitFor, } from '@solidjs/testing-library'
 import { createSignal } from 'solid-js'
 import { afterEach, describe, expect, it, vi } from 'vitest'
@@ -41,6 +50,11 @@ function mountRouter(options: {
     tab: ActiveTab,
     onResolved: (accepted: boolean) => void,
   ) => void
+  /**
+   * A signal both address syncs read and whose change leaves their answers
+   * as they were: a store landing late, as the plan host's does at boot.
+   */
+  landing?: () => unknown
 }) {
   const [activeTab, updateActiveTab] = createSignal(
     options.activeTab ?? 'singing',
@@ -105,7 +119,10 @@ function mountRouter(options: {
         setPlanOpen(false)
         closePlan()
       },
-      planOpen,
+      planOpen: () => {
+        options.landing?.()
+        return planOpen()
+      },
       setVoiceConstellationOpen: (open) => {
         setVoiceOpen(open)
         setVoiceConstellationOpen(open)
@@ -120,7 +137,10 @@ function mountRouter(options: {
       showSelection: () => options.showSelection ?? false,
       walkthroughModalOpen: () => false,
       showGuideSelection: () => false,
-      selectedWalkthrough: () => options.selectedWalkthrough ?? null,
+      selectedWalkthrough: () => {
+        options.landing?.()
+        return options.selectedWalkthrough ?? null
+      },
     })
     return options.renderCommunityPage === true ? <CommunityPage /> : null
   }
@@ -338,6 +358,147 @@ describe('the First Light map route', () => {
     await new Promise((resolve) => setTimeout(resolve, 20))
     expect(router.openOnboardingMap).not.toHaveBeenCalled()
     expect(router.dismissWelcome).not.toHaveBeenCalled()
+  })
+})
+
+describe('a move the router has not read yet', () => {
+  /** Two timer tasks: the most a move with no hashchange holds the syncs. */
+  const twoTimerTasks = () =>
+    new Promise((resolve) => setTimeout(() => setTimeout(resolve)))
+
+  /** A browser's move to a new address: popstate, the address already moved. */
+  function moveTo(hash: string): void {
+    history.pushState(null, '', hash)
+    window.dispatchEvent(new PopStateEvent('popstate'))
+  }
+
+  it('is not written over by the tab sync before its hashchange comes', async () => {
+    // The hashchange follows the popstate in a task of its own. The plan
+    // store landing in between reran the tab sync, which wrote Home back over
+    // #/map; the hashchange read Home, and the Map never opened.
+    // Arrange
+    history.replaceState(null, '', '#/home')
+    const [landing, land] = createSignal<object | null>(null)
+    const router = mountRouter({
+      activeTab: TAB_HOME,
+      reactiveActiveTab: true,
+      closeAdminContent: () => true,
+      showAdminContentStudio: false,
+      landing,
+    })
+    await waitFor(() =>
+      expect(router.setActiveTab).toHaveBeenCalledWith(TAB_HOME),
+    )
+
+    // Act: the move, the store landing, then the hashchange.
+    moveTo('#/map')
+    land({})
+    window.dispatchEvent(new HashChangeEvent('hashchange'))
+
+    // Assert
+    await waitFor(() =>
+      expect(router.openOnboardingMap).toHaveBeenCalledTimes(1),
+    )
+    expect(window.location.hash).toBe('#/map')
+  })
+
+  it('is not written over by the guide sync before its hashchange comes', async () => {
+    // Arrange: the walkthrough list is open, so the guide sync keeps the
+    // address on #/learn.
+    history.replaceState(null, '', '#/learn')
+    const [landing, land] = createSignal<object | null>(null)
+    const router = mountRouter({
+      closeAdminContent: () => true,
+      showAdminContentStudio: false,
+      showSelection: true,
+      landing,
+    })
+    await waitFor(() =>
+      expect(router.setVoiceConstellationOpen).toHaveBeenCalledWith(false),
+    )
+
+    // Act
+    moveTo('#/map')
+    land({})
+    window.dispatchEvent(new HashChangeEvent('hashchange'))
+
+    // Assert
+    await waitFor(() =>
+      expect(router.openOnboardingMap).toHaveBeenCalledTimes(1),
+    )
+    expect(window.location.hash).toBe('#/map')
+  })
+
+  it('holds the syncs only until the hashchange comes', async () => {
+    // Arrange
+    history.replaceState(null, '', '#/home')
+    const router = mountRouter({
+      activeTab: TAB_HOME,
+      reactiveActiveTab: true,
+      closeAdminContent: () => true,
+      showAdminContentStudio: false,
+    })
+    await waitFor(() =>
+      expect(router.setActiveTab).toHaveBeenCalledWith(TAB_HOME),
+    )
+    moveTo('#/progress')
+    window.dispatchEvent(new HashChangeEvent('hashchange'))
+    expect(router.setActiveTab).toHaveBeenCalledWith(TAB_PROGRESS)
+
+    // Act: a tab change in the same task, long before the hold's timers.
+    router.setActiveTab(TAB_COMPOSE)
+
+    // Assert
+    expect(window.location.hash).toBe('#/compose')
+  })
+
+  it('holds nothing for a move to the address the router is on', async () => {
+    // A link to the address already shown fires popstate and no hashchange.
+    // There is nothing to protect, and a hold there would cost the next sync.
+    // Arrange
+    history.replaceState(null, '', '#/home')
+    const router = mountRouter({
+      activeTab: TAB_HOME,
+      reactiveActiveTab: true,
+      closeAdminContent: () => true,
+      showAdminContentStudio: false,
+    })
+    await waitFor(() =>
+      expect(router.setActiveTab).toHaveBeenCalledWith(TAB_HOME),
+    )
+    window.dispatchEvent(new PopStateEvent('popstate'))
+
+    // Act
+    router.setActiveTab(TAB_PROGRESS)
+
+    // Assert
+    expect(window.location.hash).toBe('#/progress')
+  })
+
+  it('stops holding them when no hashchange follows', async () => {
+    // A popstate between two entries with the same hash has no hashchange
+    // behind it. A panel has rewritten that hash behind the router (the jam
+    // panel does), so it is not one the router accepted.
+    // Arrange
+    history.replaceState(null, '', '#/home')
+    const router = mountRouter({
+      activeTab: TAB_HOME,
+      reactiveActiveTab: true,
+      closeAdminContent: () => true,
+      showAdminContentStudio: false,
+    })
+    await waitFor(() =>
+      expect(router.setActiveTab).toHaveBeenCalledWith(TAB_HOME),
+    )
+    history.replaceState(history.state, '', '#/jam:room-1')
+    window.dispatchEvent(new PopStateEvent('popstate'))
+    await twoTimerTasks()
+
+    // Act
+    router.setActiveTab(TAB_PROGRESS)
+
+    // Assert
+    expect(window.location.hash).toBe('#/progress')
   })
 })
 
