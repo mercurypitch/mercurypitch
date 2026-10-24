@@ -25,10 +25,10 @@
 //   canvas (a resize, a restore, a quality change) draws the current pose
 //   once, at zero elapsed time.
 
-import type { GradientStop, MercLook, MercPalette, MercQuality, MercState, MercView, MercViewName, } from './constants'
-import { BG, BLOOM, isMercQuality, isMercState, LOOK, PALETTE, QUALITY, RIM, SHAPE, VIEWS, } from './constants'
+import type { GradientStop, MercLight, MercLook, MercPalette, MercQuality, MercState, MercView, MercViewName, } from './constants'
+import { BG, BLOOM, isMercQuality, isMercState, LIGHT, LOOK, PALETTE, QUALITY, RIM, SHAPE, VIEWS, } from './constants'
 import type { RenderTargets } from './gl'
-import { cameraFor, createRenderTargets, deleteRenderTargets, flat, lookUniforms, paletteUniforms, srgbToLin, } from './gl'
+import { cameraFor, createRenderTargets, deleteRenderTargets, flat, lightUniforms, lookUniforms, paletteUniforms, srgbToLin, } from './gl'
 import type { PostProgram, PostPrograms, ProgramBuild, SceneProgram, } from './programs'
 import { buildDone, createPoller, deleteBuilt, deletePostPrograms, dropBuild, finishBuild, startBuild, } from './programs'
 import type { MercPose, MercVoice, MercVoiceSource, PoseBias, SimSnapshot, SparkleSide, } from './sim'
@@ -77,20 +77,15 @@ export interface MercMountOptions {
    * or destroy.
    */
   onReady?: () => void
-  /**
-   * Rewrites the scene shader's GLSL just before it compiles, for a page that
-   * needs other light than the shader's own cool blue (the lessons' orange
-   * Merc, src/features/lessons/kit/merc-warm.ts). The approved text itself
-   * never changes; scene-shader.test.ts still pins it.
-   */
-  fragmentPatch?: (source: string) => string
 }
 
-/** Tuning on top of the look: any LOOK entry, the palette's stops or feet, the rim. */
+/** Tuning on top of the look: any LOOK entry, the palette's stops or feet, the rim, the light. */
 export interface MercLookPatch extends Partial<MercLook> {
   stops?: readonly GradientStop[]
   bead?: readonly [deep: string, light: string]
   rim?: number
+  /** The light he casts, all of it (LIGHT is Merc's own cool blue). */
+  light?: MercLight
 }
 
 export interface MercRenderer {
@@ -168,6 +163,7 @@ export function mount(
   let palette: MercPalette = PALETTE
   let pal = paletteUniforms(palette)
   let rimStrength: number = RIM.strength
+  let lightU = lightUniforms(LIGHT)
   const bgLin = new Float32Array(BG.map(srgbToLin))
 
   const sim = new Sim(opts.state ?? 'idle')
@@ -205,7 +201,7 @@ export function mount(
 
   // Asks for the first programs; without the extension, waits for them here.
   function startResources(): void {
-    building = startBuild(gl, quality, opts.fragmentPatch, true)
+    building = startBuild(gl, quality, true)
     if (!parallel) takeBuild()
   }
 
@@ -237,7 +233,7 @@ export function mount(
       invalidate()
       return
     }
-    switching = startBuild(gl, wanted, opts.fragmentPatch, false)
+    switching = startBuild(gl, wanted, false)
     if (parallel) poller.ask()
     else takeSwitch(r)
   }
@@ -395,6 +391,7 @@ export function mount(
     // The study's debug views are not carried over; 0 is the normal image.
     gl.uniform1i(loc.uDebug, 0)
     gl.uniform1i(loc.uZero, 0)
+    gl.uniform3fv(loc.uLight, lightU)
     gl.drawArrays(gl.TRIANGLES, 0, 3)
   }
 
@@ -743,6 +740,7 @@ export function mount(
         pal = paletteUniforms(palette)
       }
       if (patch.rim !== undefined) rimStrength = patch.rim
+      if (patch.light) lightU = lightUniforms(patch.light)
       invalidate()
     },
     setQuality(name) {

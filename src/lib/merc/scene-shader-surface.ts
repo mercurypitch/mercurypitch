@@ -24,22 +24,22 @@ vec3 floorLight(vec3 P) {
   // floor right under him stays dark while he stands, as painted, so the feet
   // stand out; as he rises his light reaches under him and the pool fills in.
   float under = mix(smoothstep(0.16, 0.46, sqrt(r2)), 1.0, smoothstep(0.0, 0.12, lift));
-  vec3 pool = vec3(0.03, 0.42, 0.52) * 0.5 * k * exp(-r2 * 9.0 * k) * under + vec3(0.03, 0.12, 0.5) * 0.06 * k * exp(-r2 * 3.4);
+  vec3 pool = uLight[0] * 0.5 * k * exp(-r2 * 9.0 * k) * under + uLight[1] * 0.06 * k * exp(-r2 * 3.4);
   vec3 c = pool * uColor.y * (1.0 + uColor.z * 0.7);
   // Under each foot, a short cyan streak on the floor, as painted.
   vec2 fl = mat2(uShape.z, uShape.w, -uShape.w, uShape.z) * rel;
   fl.x = abs(fl.x);
   vec2 fs = (fl - vec2(FOOT_C.x * inversesqrt(uShape.x), FOOT_C.z + 0.55 * FOOT_R.z)) / vec2(0.1, 0.03);
-  c += vec3(0.08, 0.5, 0.62) * 0.2 * k * exp(-dot(fs, fs)) * uColor.y;
+  c += uLight[2] * 0.2 * k * exp(-dot(fs, fs)) * uColor.y;
   float r = length(rel);
-  if (uRing.y > 0.001) { float g = (r - uRing.x) / 0.022; c += vec3(0.3, 0.85, 1.0) * 1.1 * uRing.y * exp(-g * g); }
-  if (uRing.w > 0.001) { float g = (r - uRing.z) / 0.022; c += vec3(0.3, 0.85, 1.0) * 1.1 * uRing.w * exp(-g * g); }
+  if (uRing.y > 0.001) { float g = (r - uRing.x) / 0.022; c += uLight[3] * 1.1 * uRing.y * exp(-g * g); }
+  if (uRing.w > 0.001) { float g = (r - uRing.z) / 0.022; c += uLight[3] * 1.1 * uRing.w * exp(-g * g); }
   if (uStops.w > 0.001) {
     for (int i = 0; i < 3; i++) {
       float sx = i == 0 ? uStops.x : (i == 1 ? uStops.y : uStops.z);
       float d = length(P.xz - vec2(sx, 0.0));
       float g = (d - 0.15) / 0.01;
-      c += vec3(0.3, 0.55, 1.0) * uStops.w * (exp(-g * g) * 0.9 + smoothstep(0.16, 0.0, d) * 0.12);
+      c += uLight[4] * uStops.w * (exp(-g * g) * 0.9 + smoothstep(0.16, 0.0, d) * 0.12);
     }
   }
   return c;
@@ -196,14 +196,14 @@ vec3 shadeEye(vec3 P, float pw) {
   float ew = pw / rx;
   vec3 c = vec3(0.0007, 0.0009, 0.0014);
   float low = smoothstep(0.1, -0.95, uv.y) * smoothstep(1.05, 0.55, length(uv * vec2(1.0, 0.85)));
-  c += vec3(0.001, 0.006, 0.022) * low * 0.4;
+  c += uLight[5] * low * 0.4;
   float rr = length(uv);
   // A thin light crescent just inside the lower edge, fading a third of the
   // way up the sides (painted #122938).
-  c += vec3(0.04, 0.5, 0.46) * 0.075 * smoothstep(EYE_VIS - 0.11, EYE_VIS - 0.02, rr) * smoothstep(-0.2, -0.75, uv.y / max(rr, 1e-3));
+  c += uLight[6] * 0.075 * smoothstep(EYE_VIS - 0.11, EYE_VIS - 0.02, rr) * smoothstep(-0.2, -0.75, uv.y / max(rr, 1e-3));
   // The painted eye is a touch lighter just inside its edge than at its core,
   // which rounds it like a glass bead.
-  c += vec3(0.006, 0.008, 0.022) * smoothstep(0.45 * EYE_VIS, 0.92 * EYE_VIS, rr);
+  c += uLight[7] * smoothstep(0.45 * EYE_VIS, 0.92 * EYE_VIS, rr);
   float lit = smoothstep(0.25, 0.6, open);
   // One catchlight, up and to the viewer's right in both eyes, as painted.
   float k1 = length((uv - vec2(0.255, 0.59)) / vec2(0.284, 0.196));
@@ -236,7 +236,7 @@ vec3 shadeBody(vec3 P, vec3 N, vec3 rd, float t, float pixA, out vec3 glow) {
   if (uDropN > 0) {
     float dd = sdDrops(P);
     float dr = smoothstep(0.004, -0.004, dd - min(dB, dF));
-    base = mix(base, vec3(0.12, 0.72, 0.78) * uColor.y, dr);
+    base = mix(base, uLight[8] * uColor.y, dr);
   }
 
   // The painted light, measured on the concept's three front figures: the
@@ -258,18 +258,18 @@ vec3 shadeBody(vec3 P, vec3 N, vec3 rd, float t, float pixA, out vec3 glow) {
   // left of the body at eye level reads a lighter sky blue. Only there: at
   // the upper flank the paintings' left is the darker side.
   float key = smoothstep(0.0, 0.35, -sin(da)) * smoothstep(0.68, 0.84, s) * (1.0 - 0.5 * smoothstep(0.88, 0.98, s)) * exp(-pow((h0 - 0.44) / 0.12, 2.0));
-  col = mix(col, vec3(0.22, 0.55, 1.0) * uColor.y, uLookK.w * key * fr);
+  col = mix(col, uLight[9] * uColor.y, uLookK.w * key * fr);
   // The hot core: a glow deep in the lower body, seen through the volume, so it
   // shifts against the surface as he turns.
   vec3 oc = uCore.xyz - uCamPos;
   float tc = dot(oc, rd);
   float d2 = max(dot(oc, oc) - tc * tc, 0.0);
   float core = exp(-d2 / (uCore.w * uCore.w));
-  col += vec3(0.02, 0.34, 0.28) * core * (0.62 + 1.0 * uColor.z) * uColor.y;
+  col += uLight[10] * core * (0.62 + 1.0 * uColor.z) * uColor.y;
   if (uNub > 0.01) {
     vec3 bc = NUB_A + normalize(vec3(1.0, 0.3, 0.12)) * (0.03 + 0.34 * uNub);
     vec3 db = q - bc;
-    col += vec3(0.12, 0.5, 0.62) * uNub * exp(-dot(db, db) * 45.0) * 0.8;
+    col += uLight[11] * uNub * exp(-dot(db, db) * 45.0) * 0.8;
   }
   glow = col;
 
@@ -288,8 +288,8 @@ vec3 shadeBody(vec3 P, vec3 N, vec3 rd, float t, float pixA, out vec3 glow) {
   if (foot > 0.0) {
     float side = dot(P - uRoot, uCamR) < 0.0 ? -1.0 : 1.0;
     float g = dot(nv, normalize(vec3(0.5 * side, 0.42, 0.76)));
-    col += vec3(0.45, 0.85, 1.0) * smoothstep(0.72, 0.95, g) * foot * 0.12;
-    col = mix(col, vec3(0.37, 0.65, 0.97), smoothstep(0.95, 0.985, g) * foot * 0.85);
+    col += uLight[12] * smoothstep(0.72, 0.95, g) * foot * 0.12;
+    col = mix(col, uLight[13], smoothstep(0.95, 0.985, g) * foot * 0.85);
   }
   // Debug view 3: feet (r), body height (g, from 0.25), azimuth offset (b).
   col *= 1.0 - 0.6 * crease;

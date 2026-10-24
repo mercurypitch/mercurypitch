@@ -5,10 +5,10 @@
 import { createHash } from 'node:crypto'
 import { describe, expect, it } from 'vitest'
 import type { MercQuality } from './constants'
-import { QUALITY } from './constants'
+import { LIGHT, LIGHT_SLOTS, QUALITY } from './constants'
 import { POST_BLUR, POST_COMPOSITE, POST_DOWN } from './post-shaders'
 import { fragSource, VERT } from './scene-shader'
-import { asStudied, glslLoops, occurrences, ZERO_UNIFORM, } from './study-text.fixture'
+import { asStudied, glslLoops, LIGHT_UNIFORM, occurrences, vec3Text, ZERO_UNIFORM, } from './study-text.fixture'
 
 const sha256 = (s: string): string =>
   createHash('sha256').update(s, 'utf8').digest('hex')
@@ -51,7 +51,8 @@ describe('fragSource', () => {
 // hash; never update it just to make this test pass. 16 Oct: a lip roll's
 // lips added (uMouth.w); while it is 0 every room draws as it did. The scene
 // shader is hashed as studied (study-text.fixture.ts): its loop starts read
-// uZero, which draws the same pixels, and nothing else may differ.
+// uZero and its light colours are uniforms set from LIGHT, which draws the
+// same pixels, and nothing else may differ.
 describe('approved shader text', () => {
   const APPROVED: Record<string, string> = {
     'frag low':
@@ -124,5 +125,33 @@ describe('loops the compiler must keep', () => {
     // Assert
     expect(zeroStarts).toHaveLength(3)
     expect(occurrences(src, 'uZero')).toBe(4)
+  })
+})
+
+describe('the light set', () => {
+  it('reads every slot, and writes none of the colours out any more', () => {
+    for (const q of QUALITIES) {
+      // Arrange
+      const src = fragSource(QUALITY[q])
+
+      // Act
+      const unread = LIGHT_SLOTS.filter((_, k) => !src.includes(`uLight[${k}]`))
+      const written = LIGHT_SLOTS.filter((slot) =>
+        src.includes(vec3Text(LIGHT[slot])),
+      )
+
+      // Assert
+      expect(unread, q).toEqual([])
+      expect(written, q).toEqual([])
+      expect(occurrences(src, LIGHT_UNIFORM), q).toBe(1)
+    }
+  })
+
+  it('declares one slot for each entry of LIGHT_SLOTS', () => {
+    // Act
+    const declared = LIGHT_UNIFORM.match(/uLight\[(\d+)\]/)
+
+    // Assert
+    expect(Number(declared?.[1])).toBe(LIGHT_SLOTS.length)
   })
 })

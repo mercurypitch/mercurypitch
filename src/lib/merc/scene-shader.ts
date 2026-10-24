@@ -18,13 +18,15 @@
 // shape constants are interpolated, exactly as the study interpolated them.
 // Change the text and Merc changes; do that on purpose or not at all.
 //
-// One edit draws the same pixels and is undone before the hash is taken
-// (study-text.fixture.ts): every loop that calls the distance field or a
+// Two edits draw the same pixels and are undone before the hash is taken
+// (study-text.fixture.ts). Every loop that calls the distance field or a
 // whole sample starts at uZero, a uniform that is always 0, not at a literal
-// 0. A compiler that knows a loop's trip count may unroll it, and on Windows
+// 0: a compiler that knows a loop's trip count may unroll it, and on Windows
 // Direct3D's compiler unrolls the march (and the samples around it) into
 // copies of the whole distance field, which can take minutes on a first
-// visit. With a start it cannot know, it keeps each one a loop.
+// visit. And the colours of the light he casts are uniforms (uLight, set
+// from constants.ts LIGHT), so the lessons' warm Merc draws with this same
+// text and the browser compiles it once for both.
 //
 // The text is split across four files at blank lines between sections: the
 // header and the uniforms here, the distance field in scene-shader-sdf.ts,
@@ -142,6 +144,7 @@ uniform vec3 uLookT;   // streak colour, linear
 uniform vec3 uLookT2;  // the edge's tint low down, linear (white up top)
 uniform int uDebug;
 uniform int uZero;     // always 0: a loop start the compiler cannot fold
+uniform vec3 uLight[18]; // the light he casts, linear (constants.ts LIGHT_SLOTS)
 
 const float PI = 3.14159265;
 // Light directions (world space, fixed): the form light, the soft crown

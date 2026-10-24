@@ -144,3 +144,29 @@ test('offers nothing to watch while the film has no sources @smoke', async ({
     page.locator('#mastNav a:visible b').filter({ hasText: /^[IVX]+$/ }),
   ).toHaveText(['I', 'II'])
 })
+
+// Tavi mounts once Merc is live, so the stage can wait on her with Merc
+// already drawn. The stills' four-second fallback (lesson-stage.css) must
+// then bring back only hers, never his over him. Headless Chromium keeps
+// both on their stills, so the test sets the classes that state has.
+test('a live Merc keeps his still hidden while the stage waits on Tavi', async ({
+  page,
+}) => {
+  await page.goto('/learn/01')
+  const duo = page.locator('#duo')
+  await expect(duo).not.toHaveClass(/\bpending\b/)
+  const stillAnimations = (id: string): Promise<string[]> =>
+    page.locator(`#${id} img`).evaluate((img) =>
+      img
+        .getAnimations()
+        .filter((a) => a instanceof CSSAnimation)
+        .map((a) => (a as CSSAnimation).animationName),
+    )
+
+  await duo.evaluate((el) => el.classList.add('pending'))
+  await page.locator('#mercBlue').evaluate((el) => el.classList.add('is-live'))
+
+  expect(await stillAnimations('mercBlue')).toEqual([])
+  expect(await stillAnimations('mercOrange')).toEqual(['still-in'])
+  await expect(page.locator('#mercBlue img')).toHaveCSS('opacity', '0')
+})

@@ -71,6 +71,7 @@ const SCENE_UNIFORMS = [
   'uCamAz',
   'uDebug',
   'uZero',
+  'uLight[0]',
   'uGradH[0]',
   'uGradC[0]',
   'uBead[0]',
@@ -217,11 +218,9 @@ function finish<N extends string>(
 export function startBuild(
   gl: WebGL2RenderingContext,
   quality: MercQuality,
-  patch: ((source: string) => string) | undefined,
   withPost: boolean,
 ): ProgramBuild {
-  const src = fragSource(QUALITY[quality])
-  const scene = start(gl, patch ? patch(src) : src, SCENE_UNIFORMS)
+  const scene = start(gl, fragSource(QUALITY[quality]), SCENE_UNIFORMS)
   const post: Pending<PostName>[] = []
   try {
     if (withPost) {

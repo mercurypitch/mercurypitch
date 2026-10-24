@@ -220,3 +220,59 @@ export const BLOOM = { tight: 0.7, wide: 1.1, overBody: 0.92 } as const
 
 // Silver rim: width in world units (about 1.75 px on a 360 px tile), strength.
 export const RIM = { width: 0.013, strength: 0.5 } as const
+
+// The light he casts and wears apart from his gradient: linear colours the
+// scene shader multiplies in, one uLight slot each, in LIGHT_SLOTS order.
+// Each is a colour the study text wrote out, and he draws as it drew him. A
+// warm Merc swaps the whole set through setLook (lessons' merc-warm.ts), so
+// both draw with one shader text, which a browser compiles once.
+export const LIGHT_SLOTS = [
+  // the floor: the pool under him, its wide wash, foot streaks, landing
+  // rings, the stop marks
+  'pool',
+  'wash',
+  'footStreak',
+  'ring',
+  'stops',
+  // the eyes: the glow low in them, the crescent, the lighter edge
+  'eyeGlow',
+  'eyeCrescent',
+  'eyeEdge',
+  // droplets, the left key, the hot core, the nub, the feet's sheen and glint
+  'drops',
+  'key',
+  'core',
+  'nub',
+  'glintSheen',
+  'glint',
+  // sound arcs and the climb arrow, motion dots, speed lines, the echo trail
+  'arcs',
+  'dots',
+  'speed',
+  'trail',
+] as const
+
+export type LightSlot = (typeof LIGHT_SLOTS)[number]
+
+export type MercLight = Readonly<Record<LightSlot, Vec3>>
+
+export const LIGHT: MercLight = {
+  pool: [0.03, 0.42, 0.52],
+  wash: [0.03, 0.12, 0.5],
+  footStreak: [0.08, 0.5, 0.62],
+  ring: [0.3, 0.85, 1.0],
+  stops: [0.3, 0.55, 1.0],
+  eyeGlow: [0.001, 0.006, 0.022],
+  eyeCrescent: [0.04, 0.5, 0.46],
+  eyeEdge: [0.006, 0.008, 0.022],
+  drops: [0.12, 0.72, 0.78],
+  key: [0.22, 0.55, 1.0],
+  core: [0.02, 0.34, 0.28],
+  nub: [0.12, 0.5, 0.62],
+  glintSheen: [0.45, 0.85, 1.0],
+  glint: [0.37, 0.65, 0.97],
+  arcs: [0.62, 0.78, 1.0],
+  dots: [0.55, 0.75, 1.0],
+  speed: [0.6, 0.75, 1.0],
+  trail: [0.8, 0.95, 1.0],
+}
