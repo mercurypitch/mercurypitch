@@ -14,6 +14,7 @@ import { describe, expect, it, vi } from 'vitest'
 import { DRAFT_LESSONS } from '@/features/lessons/kit/drafts'
 import type { Lesson } from '@/features/lessons/kit/season'
 import { LESSONS } from '@/features/lessons/kit/season'
+import { lessonWithNoPage } from '@/features/lessons/kit/season.test-fixtures'
 import { SIGNATURES } from '@/features/lessons/kit/team-notes'
 import type { ChecklistInputs, Fetcher, LessonRow, ListingCheck, PageCheck, ReleaseStep, } from './lesson-admin'
 import { checkPage, lessonRows, llmsPaths, pagePath, readListing, releaseChecklist, sitemapPaths, } from './lesson-admin'
@@ -93,7 +94,7 @@ describe('lessonRows', () => {
         (lesson) => lesson.n,
       ),
     )
-    expect(rowFor(9, rows)).toMatchObject({
+    expect(rowFor(lessonWithNoPage().n, rows)).toMatchObject({
       build: 'planned',
       built: false,
       written: false,
@@ -478,7 +479,8 @@ describe('releaseChecklist', () => {
 
     expect(ids(2)).toContain('film')
     expect(ids(4)).not.toContain('film')
-    expect(states(releaseChecklist(rowFor(9), site, SHOWN))).toEqual([
+    const planned = rowFor(lessonWithNoPage().n, lessonRows(LESSONS, {}))
+    expect(states(releaseChecklist(planned, site, SHOWN))).toEqual([
       ['page', 'todo'],
       ['release', 'todo'],
       ['sitemap', 'todo'],

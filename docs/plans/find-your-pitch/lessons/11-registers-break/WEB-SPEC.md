@@ -1067,12 +1067,10 @@ parts:
     (`:241-266`), and the same file's check of every page in the repository then covers it
     (`:286-303`); `seasonFor(LESSONS, defaultPageState(false))` gives Lesson 11 no page and no
     reading time while its line is in `drafts.ts`, and `seasonFor(LESSONS, defaultPageState(true))`
-    keeps both, as `publish.test.ts` checks a lesson held back and one published (`:57-91`). That
-    file's example of a lesson with no page is Lesson 9 (`:44-55`): if it is still a fixed lesson
-    when this page lands, it moves to one the test finds,
-    `LESSONS.find((L) => L.n > 0 && L.page === undefined)`, as Lesson 9's spec proposes, so that no
-    page's arrival breaks it. Lesson 11's practise link carries `?lesson=11`, and `EDGES` holds
-    [7, 11].
+    keeps both, as `publish.test.ts` checks a lesson held back and one published (`:58-92`). That
+    file's example of a lesson with no page is found, not named (`:45-56`, through
+    `lessonWithNoPage` in `kit/season.test-fixtures.ts:22-36`), so this page's arrival does not
+    break it. Lesson 11's practise link carries `?lesson=11`, and `EDGES` holds [7, 11].
 13. The kit's new option (What the kit and the app still need, 9):
     `afterFeeling('effortful', { restAfterEffort: true })` is today's answer to "Effortful" with
     `rest: true`; every other answer with the option, and all four without it, give what
