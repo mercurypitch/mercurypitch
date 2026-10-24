@@ -30,6 +30,18 @@ const TUNE: readonly RunNote[] = [
   { t: 0.5, midi: 62, dur: 1 },
 ]
 
+/** A chord: C3 held for 2 s under an E3 of half a second, listed last, so the list's last note ends first. */
+const CHORD: readonly RunNote[] = [
+  { t: 0, midi: 48, dur: 2 },
+  { t: 0, midi: 52, dur: 0.5 },
+]
+
+/** Two notes listed out of order: C4 from 1 s to 2 s, then D4 for the first half second. */
+const UNSORTED: readonly RunNote[] = [
+  { t: 1, midi: 60, dur: 1 },
+  { t: 0, midi: 62, dur: 0.5 },
+]
+
 /** A sung line: A3 held for a second, then a glide up to C4 over a second, 2 s in all. */
 const LINE = contourOf(220, [{ hold: 1 }, { glide: 1, to: hz(60) }])
 
@@ -209,6 +221,44 @@ describe('playNotes', () => {
     expect(heard).toEqual([
       { midi: 60, stops: [SHORT_RELEASE] },
       { midi: 64, stops: [SHORT_RELEASE] },
+    ])
+  })
+
+  it.each([
+    { kind: 'a chord whose last-listed note ends first', notes: CHORD },
+    { kind: 'notes listed out of order', notes: UNSORTED },
+  ])(
+    'resolves true for $kind only once its last-ending note has ended',
+    async ({ notes }) => {
+      // Arrange: both end at 2 s, and the list's last note at 0.5 s
+      vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] })
+      const seen = outcome(playNotes(notes, { audible: false }))
+
+      // Act
+      await vi.advanceTimersByTimeAsync(1999)
+      const early = seen.heard
+      await vi.advanceTimersByTimeAsync(1)
+
+      // Assert
+      expect(early).toBeUndefined()
+      expect(seen.heard).toBe(true)
+    },
+  )
+
+  it("releases a chord's long note when stopped after the list's last note has ended", async () => {
+    // Arrange: 1 s in, E3 is over and C3 still sounds
+    vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] })
+    const heard = listen()
+    const run = playNotes(CHORD, { audible: true })
+    await vi.advanceTimersByTimeAsync(1000)
+
+    // Act
+    run.stop()
+
+    // Assert: in a browser E3's voice has already ended by itself, and its stop does nothing
+    expect(heard).toEqual([
+      { midi: 48, stops: [SHORT_RELEASE] },
+      { midi: 52, stops: [SHORT_RELEASE] },
     ])
   })
 })
