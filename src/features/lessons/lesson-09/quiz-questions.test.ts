@@ -34,6 +34,10 @@ describe('the quick check', () => {
     }
   })
 
+  it('puts the right answer first in authored order, as LESSON.md lists it', () => {
+    for (const q of QUIZ_QUESTIONS) expect(q.options[0].correct).toBe(true)
+  })
+
   it("reads each id as Lesson 9's own, so its step links move this page's deck", () => {
     // Act
     const owners = QUIZ_QUESTIONS.map((q) => lessonOfQuestion(q.id))
