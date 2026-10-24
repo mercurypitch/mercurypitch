@@ -537,7 +537,7 @@ pure and unit-tested; 53):
 
 - Input: the take's raw frames, the take's number, and Merc's do and la as MIDI notes (from do D3:
   50 and 59). A frame is voiced when Voice Mirror's `preprocess` keeps it, as `readTake` takes them
-  (`kit/take.ts:115-137`).
+  (`kit/take.ts:125-147`).
 - Under 1.5 s of voiced frames gives `{ heard: false }` and `NOT_HEARD_PHRASE_LINE`, "We didn't hear
   the phrase that time.", the kit's `NOT_STEADY_LINE` (`:64-65`) with "the phrase" for "a steady
   note" and without its "Try again at about speaking volume.", since the takes stop at three.
@@ -549,7 +549,7 @@ pure and unit-tested; 53):
   swell.
 - The octave line, as a second sentence, only when both notes, moved by the same whole number of
   octaves, are Merc's do and la: the kit's octave words in the plural, "You sang it an octave lower:
-  same notes." (`octaveLine`, `kit/take.ts:97-103`, whose "two octaves" form carries over).
+  same notes." (`octaveLine`, `kit/take.ts:107-113`, whose "two octaves" form carries over).
 - Every template passes `validateGuidedDynamicClaim` (`src/lib/guided-voice/claims.ts`, surface
   `finding`) in a unit test, as Lesson 3's lines do (95).
 
