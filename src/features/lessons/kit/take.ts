@@ -28,6 +28,16 @@
 // half, the window the Vocal Range Test picks its match notes from
 // (`middleHalf`), or the one centre note under three semitones. Neither end
 // of the siren and no span is ever named (Lesson 7 WEB-SPEC, Toys 4).
+//
+// A ladder (Lesson 9) is read a rung at a time (`readLadder`). Its take is
+// cut into one slot a rung, 1.5 s each from where the voice began: the
+// take's own `voicedAt` when the page passes it, so each slot is the stretch
+// its band glowed, or else the first frame `preprocess` keeps, which on the
+// same frames is that frame too. Each slot is read by `readTake` against its
+// rung, unchanged, so the attack trim takes the move from the note before,
+// and the run counts one take a slot. A rung's line (`rungLine`) leaves off
+// the advice to listen or try again: the lines stay on screen after an
+// answer that ends the singing (Lesson 9 FACTS 79).
 
 import type { F0Frame } from '@/lib/mirror/metrics'
 import { computeRange, foldCents, median, middleHalf, preprocess, } from '@/lib/mirror/metrics'
@@ -253,4 +263,75 @@ export function readSiren(frames: readonly F0Frame[]): SirenReading {
     line: sirenLine(band),
     spoken: sirenLine(band, inWords),
   }
+}
+
+/** Seconds of a ladder's slot: one rung's note, as Merc sings it and as the take reads it (Lesson 9 FACTS 76). */
+export const LADDER_SLOT_SEC = 1.5
+
+export const NOT_STEADY_RUNG_LINE = "We didn't hear a steady note there."
+
+/**
+ * A rung's line after a ladder: its label, a middle dot, then the reading's
+ * words, with the octave line when there is one: "Top do · Right in the
+ * middle: on Merc's note. You sang it an octave lower: same note." It never
+ * gives the advice to listen or try again that `readingLine` and
+ * `NOT_STEADY_LINE` give a page that offers another try.
+ */
+export function rungLine(
+  label: string,
+  r: Pick<TakeReading, 'd' | 'octaveLine'>,
+): string {
+  if (r.d === null) return `${label} · ${NOT_STEADY_RUNG_LINE}`
+  const octave = r.octaveLine === null ? '' : ` ${r.octaveLine}`
+  return `${label} · ${readingWords(r.d)}${octave}`
+}
+
+export interface LadderOptions {
+  /** Seconds of each rung's slot (`LADDER_SLOT_SEC`). */
+  readonly slotSec?: number
+  /**
+   * Where the first slot begins, on the frames' clock: the take's own
+   * `voicedAt`, so each slot is the stretch its band glowed. Absent or null,
+   * the first frame `preprocess` keeps.
+   */
+  readonly start?: number | null
+}
+
+/** A ladder take: no voice at all, or a reading a rung and their count. */
+export type LadderReading =
+  | { readonly heard: false }
+  | {
+      readonly heard: true
+      /**
+       * Rung k's reading, in sung order: `readTake` over slot k's frames
+       * against rung k, typed without its `line`, the advice for a page that
+       * offers another try (Lesson 9 FACTS 79). Say each with `rungLine`.
+       */
+      readonly slots: readonly Omit<TakeReading, 'line'>[]
+      /** The run, one take a slot: a slot with no steady voice is left out. */
+      readonly count: RunCount
+    }
+
+/**
+ * Reads a ladder take: its raw frames, and the rungs as MIDI notes in sung
+ * order. No voiced frame gives `{ heard: false }`; otherwise slot k holds the
+ * frames from k to k + 1 slots after the start, read against rung k.
+ */
+export function readLadder(
+  frames: readonly F0Frame[],
+  rungs: readonly number[],
+  o: LadderOptions = {},
+): LadderReading {
+  const voiced = preprocess(frames)
+  if (voiced.length === 0) return { heard: false }
+  const start = o.start ?? voiced[0].t
+  const slotSec = o.slotSec ?? LADDER_SLOT_SEC
+  const edge = (k: number): number => start + k * slotSec
+  const slots = rungs.map((rung, k) =>
+    readTake(
+      frames.filter((f) => f.t >= edge(k) && f.t < edge(k + 1)),
+      rung,
+    ),
+  )
+  return { heard: true, slots, count: countRun(slots.map((s) => [s])) }
 }
