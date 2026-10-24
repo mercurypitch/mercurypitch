@@ -913,7 +913,7 @@ and the four-words strip in the kit.
     length, through CURRICULUM § 4 item 2's `durationSec` launch field; its help's "as long as you
     can" and "how long you hold it", and its setup screen's "The longer and steadier, the better.",
     rewritten so that length is never rewarded (REQ-GVC-070); and a data-only slug that opens it
-    with the cue on, registered in `EXERCISE_SLUGS` (`src/features/exercises/slug-map.ts:47-65`)
+    with the cue on, registered in `EXERCISE_SLUGS` (`src/features/exercises/slug-map.ts:52-77`)
     with a line in `src/tests/slug-map.test.ts`, linked with `?lesson=13`, because a slug boots the
     main app, where First Light opens on a first visit unless the marker steps it aside.
 13. `src/e2e/helpers/tone-wav.ts`: `writeVowelWav(hz, seconds)`, beside `writeToneWav` (`:76`), the
