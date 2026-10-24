@@ -8,7 +8,10 @@
 // the rooms (MercView) over his still. Everywhere else it holds the still
 // alone, and MercView is never mounted, so nothing asks for his renderer.
 // The still stays up until the live Merc has drawn; a stage that cannot draw
-// never says it is ready, so the still stays for good.
+// never says it is ready, so the still stays for good. Nor does it wait
+// forever: a shader still compiling after LIVE_MERC_WAIT_MS of the page on
+// screen keeps the still for this screen and lets the stage and its WebGL
+// context go.
 //
 // MercView is imported statically. It is a small shell: the renderer behind
 // it comes in through a dynamic import when he mounts (MercView.tsx).
@@ -23,7 +26,7 @@
 import type { JSX } from 'solid-js'
 import { createSignal, onCleanup, Show } from 'solid-js'
 import type { MercState } from '@/lib/merc/constants'
-import { canRunLiveMerc } from '@/lib/merc/gpu-gate'
+import { canRunLiveMerc, waitForLiveMerc } from '@/lib/merc/gpu-gate'
 import styles from './MercPresence.module.css'
 import { MercView } from './MercView'
 import { prefersReducedMotion } from './reduced-motion'
@@ -53,23 +56,20 @@ export interface MercPresenceProps {
 export function MercPresence(props: MercPresenceProps): JSX.Element {
   const live = !prefersReducedMotion() && canRunLiveMerc()
   const [drawn, setDrawn] = createSignal(false)
-  let frame = 0
+  const [gaveUp, setGaveUp] = createSignal(false)
+  // Unmounting MercView destroys his stage, which frees the context.
+  const stopWaiting = live
+    ? waitForLiveMerc(() => setGaveUp(true))
+    : () => undefined
 
-  // MercView says ready as his stage starts drawing, before the first draw.
-  // The still waits two screen frames, as the lessons' stills do
-  // (merc-duo.ts), so it steps aside onto a Merc who is on screen.
+  // MercView says ready once his first frame is drawn, so the still steps
+  // aside onto a Merc who is already there.
   const stepAside = (): void => {
-    frame = requestAnimationFrame(() => {
-      frame = requestAnimationFrame(() => {
-        frame = 0
-        setDrawn(true)
-      })
-    })
+    stopWaiting()
+    setDrawn(true)
   }
 
-  onCleanup(() => {
-    if (frame !== 0) cancelAnimationFrame(frame)
-  })
+  onCleanup(stopWaiting)
 
   return (
     <div
@@ -88,7 +88,7 @@ export function MercPresence(props: MercPresenceProps): JSX.Element {
         alt={props.alt ?? ''}
         draggable={false}
       />
-      <Show when={live}>
+      <Show when={live && !gaveUp()}>
         <MercView
           state={props.state}
           voice={() => SILENT_VOICE}

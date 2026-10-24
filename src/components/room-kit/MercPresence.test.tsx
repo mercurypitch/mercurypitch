@@ -4,12 +4,14 @@
 //
 // Only the browser's edges are faked: its WebGL2 request (the GPU gate reads
 // the answer for real), his stage (it puts a canvas in the host, as the
-// renderer does) and the screen's frames, which a test runs by hand.
+// renderer does, and says ready when a test says his first frame is drawn)
+// and the screen's frames, which a test runs by hand.
 
 import { render, screen } from '@solidjs/testing-library'
 import { createSignal } from 'solid-js'
 import { afterEach, beforeAll, beforeEach, describe, expect, it, vi, } from 'vitest'
 import type { MercState } from '@/lib/merc/constants'
+import { LIVE_MERC_WAIT_MS } from '@/lib/merc/gpu-gate'
 import { MercPresence } from './MercPresence'
 import { SILENT_VOICE } from './room-constants'
 
@@ -21,24 +23,37 @@ const stage = vi.hoisted(() => ({
   mounts: [] as { state: string | undefined }[],
   states: [] as string[],
   voices: [] as unknown[],
+  ready: [] as (() => void)[],
+  destroyed: 0,
   ok: true,
 }))
 
 vi.mock('@/lib/merc/stage', () => ({
-  mountMercStage: (host: HTMLElement, options: { state?: string }) => {
+  mountMercStage: (
+    host: HTMLElement,
+    options: { state?: string; onReady?: () => void },
+  ) => {
     stage.mounts.push({ state: options.state })
     // The renderer puts his canvas in the host, unless he cannot be drawn.
     if (stage.ok) host.appendChild(document.createElement('canvas'))
+    if (stage.ok && options.onReady) stage.ready.push(options.onReady)
     return {
       ok: stage.ok,
       setState: (name: string) => stage.states.push(name),
       setVoice: (voice: unknown) => stage.voices.push(voice),
       setPaused: () => undefined,
       setStill: () => undefined,
-      destroy: () => undefined,
+      destroy: () => {
+        stage.destroyed += 1
+      },
     }
   },
 }))
+
+/** His stage has drawn his first frame, as the renderer says once his shader has linked. */
+function firstFrameDrawn(): void {
+  for (const ready of stage.ready) ready()
+}
 
 // The screen's frames, run by hand.
 let frames: { id: number; run: FrameRequestCallback }[] = []
@@ -109,6 +124,8 @@ beforeEach(() => {
   stage.mounts = []
   stage.states = []
   stage.voices = []
+  stage.ready = []
+  stage.destroyed = 0
   stage.ok = true
   vi.stubGlobal('requestAnimationFrame', (run: FrameRequestCallback) => {
     lastFrameId += 1
@@ -124,6 +141,7 @@ beforeEach(() => {
 })
 
 afterEach(() => {
+  vi.useRealTimers()
   vi.unstubAllGlobals()
   vi.restoreAllMocks()
 })
@@ -208,21 +226,84 @@ describe('MercPresence on a GPU', () => {
     expect(screen.getByRole('img', { name: ALT })).toHaveAttribute('src', STILL)
   })
 
-  it('steps the still aside once his first frame has drawn', async () => {
+  it('steps the still aside once his first frame has drawn, and not before', async () => {
     // Arrange
     onAGpu()
     presence()
     await vi.waitFor(() => expect(stage.mounts).toHaveLength(1))
     const host = screen.getByTestId('plan-merc')
+    screenFrame()
+    screenFrame()
+    const whileLinking = host.dataset.presence
 
-    // Act: his stage draws on the next screen frame; the one after has shown it.
-    screenFrame()
-    const afterOne = host.dataset.presence
-    screenFrame()
+    // Act
+    firstFrameDrawn()
 
     // Assert
-    expect(afterOne).toBe('still')
+    expect(whileLinking).toBe('still')
     expect(host.dataset.presence).toBe('live')
+  })
+
+  it('keeps the still and lets his stage go when his shader is not ready in time', async () => {
+    // Arrange
+    vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] })
+    onAGpu()
+    presence()
+    await vi.waitFor(() => expect(stage.mounts).toHaveLength(1))
+    const host = screen.getByTestId('plan-merc')
+
+    // Act
+    vi.advanceTimersByTime(LIVE_MERC_WAIT_MS)
+
+    // Assert
+    expect(stage.destroyed).toBe(1)
+    expect(screen.queryByTestId('plan-merc-live')).toBeNull()
+    expect(host.querySelector('canvas')).toBeNull()
+    expect(host.dataset.presence).toBe('still')
+    expect(screen.getByRole('img', { name: ALT })).toHaveAttribute('src', STILL)
+  })
+
+  it('keeps a Merc who was ready in time, however long the screen stays', async () => {
+    // Arrange
+    vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] })
+    onAGpu()
+    presence()
+    await vi.waitFor(() => expect(stage.mounts).toHaveLength(1))
+    firstFrameDrawn()
+
+    // Act
+    vi.advanceTimersByTime(LIVE_MERC_WAIT_MS * 3)
+
+    // Assert
+    expect(stage.destroyed).toBe(0)
+    expect(screen.getByTestId('plan-merc').dataset.presence).toBe('live')
+    expect(screen.getByTestId('plan-merc-live')).toBeInTheDocument()
+  })
+
+  it('counts only the time the page is on screen before it gives up on him', async () => {
+    // Arrange
+    vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] })
+    const visibility = vi
+      .spyOn(document, 'visibilityState', 'get')
+      .mockReturnValue('hidden')
+    onAGpu()
+    presence()
+    await vi.waitFor(() => expect(stage.mounts).toHaveLength(1))
+
+    // Act
+    vi.advanceTimersByTime(LIVE_MERC_WAIT_MS * 3)
+    const destroyedHidden = stage.destroyed
+    visibility.mockReturnValue('visible')
+    document.dispatchEvent(new Event('visibilitychange'))
+    vi.advanceTimersByTime(LIVE_MERC_WAIT_MS - 1)
+    const destroyedShortOfWait = stage.destroyed
+    vi.advanceTimersByTime(1)
+
+    // Assert
+    expect(destroyedHidden).toBe(0)
+    expect(destroyedShortOfWait).toBe(0)
+    expect(stage.destroyed).toBe(1)
+    expect(screen.getByTestId('plan-merc').dataset.presence).toBe('still')
   })
 
   it('gives him no voice of his own to follow', async () => {
@@ -262,6 +343,7 @@ describe('MercPresence on a GPU', () => {
 
   it('stops waiting for his first frame when the screen leaves', async () => {
     // Arrange
+    vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] })
     onAGpu()
     const { unmount } = presence()
     await vi.waitFor(() => expect(stage.mounts).toHaveLength(1))
@@ -269,8 +351,10 @@ describe('MercPresence on a GPU', () => {
     // Act
     unmount()
 
-    // Assert: nothing is left asking for a screen frame.
+    // Assert: nothing is left asking for a screen frame or a give-up.
     expect(frames).toHaveLength(0)
+    expect(vi.getTimerCount()).toBe(0)
+    expect(stage.destroyed).toBe(1)
   })
 })
 

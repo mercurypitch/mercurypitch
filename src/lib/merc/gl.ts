@@ -1,18 +1,16 @@
 // ============================================================
-// Merc GL helpers — programs, render targets, camera and uniform data
+// Merc GL helpers — render targets, camera and uniform data
 // ============================================================
 //
 // Everything here is either a GL object factory with a matching release, or
 // plain data prepared for uniforms. The factories clean up after themselves
-// when they fail (a failed compile or link leaves no shader or program
-// behind), because the stage retries nothing: a failure means Merc is not
-// drawn and the exercise carries on without him.
+// when they fail, because the stage retries nothing: a failure means Merc is
+// not drawn and the exercise carries on without him. The programs, which
+// must never be read before the driver has finished, are in programs.ts.
 
-import type { MercLook, MercPalette, MercQuality, MercQualitySpec, MercView, } from './constants'
-import { GRAD_N, QUALITY } from './constants'
-import { POST_BLUR, POST_COMPOSITE, POST_DOWN } from './post-shaders'
+import type { MercLook, MercPalette, MercView } from './constants'
+import { GRAD_N } from './constants'
 import { cross3, norm3 } from './rest-space'
-import { fragSource, VERT } from './scene-shader'
 
 // ------------------------------------------------------------ colour
 
@@ -111,173 +109,6 @@ export const flat = (
   const out = new Float32Array(n * width)
   arr.slice(0, n).forEach((v, i) => out.set(v.slice(0, width), i * width))
   return out
-}
-
-// ------------------------------------------------------------ programs
-
-const SCENE_UNIFORMS = [
-  'uRes',
-  'uCamPos',
-  'uCamR',
-  'uCamU',
-  'uCamF',
-  'uFocal',
-  'uBound',
-  'uTime',
-  'uRoot',
-  'uShape',
-  'uLip',
-  'uLean',
-  'uFeet',
-  'uRipple',
-  'uWave',
-  'uNub',
-  'uEyeC[0]',
-  'uEyeX[0]',
-  'uEyeZ[0]',
-  'uEyeFrz',
-  'uEyeA',
-  'uEyeB',
-  'uMouth',
-  'uColor',
-  'uCore',
-  'uRing',
-  'uArcs',
-  'uArcs2',
-  'uDropN',
-  'uDrops[0]',
-  'uSparkN',
-  'uSparks[0]',
-  'uDotN',
-  'uDots[0]',
-  'uStops',
-  'uGhost[0]',
-  'uGhostSq',
-  'uSpeed',
-  'uArrow',
-  'uCamAz',
-  'uDebug',
-  'uGradH[0]',
-  'uGradC[0]',
-  'uBead[0]',
-  'uLookE',
-  'uLookE2',
-  'uLookS1',
-  'uLookS2',
-  'uLookK',
-  'uLookT',
-  'uLookT2',
-] as const
-
-const POST_UNIFORMS = [
-  'uSrc',
-  'uSrcTexel',
-  'uDstRes',
-  'uDir',
-  'uScene',
-  'uA',
-  'uB',
-  'uRes',
-  'uBg',
-  'uOpaque',
-  'uBloomK',
-  'uCov',
-  'uRim',
-  'uRimY',
-] as const
-
-// 'uEyeC[0]' is looked up by its array name, 'uEyeC'.
-type UniformKey<N extends string> = N extends `${infer A}[0]` ? A : N
-
-export type UniformLocations<N extends string> = Readonly<
-  Record<UniformKey<N>, WebGLUniformLocation | null>
->
-
-export interface LinkedProgram<N extends string> {
-  readonly p: WebGLProgram
-  readonly loc: UniformLocations<N>
-}
-
-export type SceneProgram = LinkedProgram<(typeof SCENE_UNIFORMS)[number]> & {
-  readonly q: MercQualitySpec
-}
-export type PostProgram = LinkedProgram<(typeof POST_UNIFORMS)[number]>
-
-export interface PostPrograms {
-  readonly down: PostProgram
-  readonly blur: PostProgram
-  readonly comp: PostProgram
-}
-
-function compile(
-  gl: WebGL2RenderingContext,
-  type: number,
-  src: string,
-): WebGLShader {
-  const sh = gl.createShader(type)
-  if (!sh) throw new Error('Shader compile failed: no shader object')
-  gl.shaderSource(sh, src)
-  gl.compileShader(sh)
-  if (gl.getShaderParameter(sh, gl.COMPILE_STATUS) !== true) {
-    const log = gl.getShaderInfoLog(sh)
-    gl.deleteShader(sh)
-    throw new Error(`Shader compile failed: ${log}`)
-  }
-  return sh
-}
-
-function link<N extends string>(
-  gl: WebGL2RenderingContext,
-  fragSrc: string,
-  names: readonly N[],
-): LinkedProgram<N> {
-  const shaders: WebGLShader[] = []
-  // Null on a lost context, whatever the DOM typings say.
-  const p = gl.createProgram()
-  try {
-    if (p === null) throw new Error('Program link failed: no program object')
-    shaders.push(compile(gl, gl.VERTEX_SHADER, VERT))
-    shaders.push(compile(gl, gl.FRAGMENT_SHADER, fragSrc))
-    for (const sh of shaders) gl.attachShader(p, sh)
-    gl.linkProgram(p)
-    if (gl.getProgramParameter(p, gl.LINK_STATUS) !== true) {
-      throw new Error(`Program link failed: ${gl.getProgramInfoLog(p)}`)
-    }
-  } catch (err) {
-    if (p !== null) gl.deleteProgram(p)
-    throw err
-  } finally {
-    // A linked program keeps what it needs; flagged shaders go with it.
-    for (const sh of shaders) gl.deleteShader(sh)
-  }
-  const loc: Partial<Record<string, WebGLUniformLocation | null>> = {}
-  for (const n of names) loc[n.replace('[0]', '')] = gl.getUniformLocation(p, n)
-  return { p, loc: loc as UniformLocations<N> }
-}
-
-export function createSceneProgram(
-  gl: WebGL2RenderingContext,
-  quality: MercQuality,
-  patch?: (source: string) => string,
-): SceneProgram {
-  const q = QUALITY[quality]
-  const src = fragSource(q)
-  return { ...link(gl, patch ? patch(src) : src, SCENE_UNIFORMS), q }
-}
-
-export function createPostPrograms(gl: WebGL2RenderingContext): PostPrograms {
-  const made: PostProgram[] = []
-  try {
-    const down = link(gl, POST_DOWN, POST_UNIFORMS)
-    made.push(down)
-    const blur = link(gl, POST_BLUR, POST_UNIFORMS)
-    made.push(blur)
-    const comp = link(gl, POST_COMPOSITE, POST_UNIFORMS)
-    return { down, blur, comp }
-  } catch (err) {
-    for (const prg of made) gl.deleteProgram(prg.p)
-    throw err
-  }
 }
 
 // ------------------------------------------------------------ render targets

@@ -141,12 +141,10 @@ describe('MercView', () => {
     expect(merc.options[1]).toMatchObject({ state: 'hum', mouth: undefined })
   })
 
-  it('says when his stage starts drawing, once, and never without WebGL', async () => {
+  it('says when his stage has drawn his first frame, once, and never on its own', async () => {
     // Arrange
     const drawing = vi.fn()
     const without = vi.fn()
-
-    // Act
     render(() => (
       <MercView
         state={() => 'drop'}
@@ -166,8 +164,13 @@ describe('MercView', () => {
       />
     ))
     await vi.waitFor(() => expect(merc.options).toHaveLength(2))
+    const beforeDrawn = drawing.mock.calls.length
+
+    // Act: the stage that can draw says his shader linked and he is drawn.
+    ;(merc.options[0] as { onReady: () => void }).onReady()
 
     // Assert
+    expect(beforeDrawn).toBe(0)
     expect(drawing).toHaveBeenCalledTimes(1)
     expect(without).not.toHaveBeenCalled()
   })

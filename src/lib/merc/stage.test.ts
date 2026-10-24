@@ -1,10 +1,13 @@
 // ============================================================
-// Merc stage tests — failure, pause, visibility, context loss, teardown
+// Merc stage tests — failure, pause, visibility, context loss, teardown,
+// and a shader link that never makes the page wait
 // ============================================================
 //
 // jsdom has no WebGL, so these run against a small stateful fake: it hands
 // out GL objects and records which are still alive, so a leak is a count,
-// not a guess. Pixels are proved separately, in a real browser.
+// not a guess. It can offer KHR_parallel_shader_compile and hold a compile
+// open, and it logs every query that would make a real page wait. Pixels
+// are proved separately, in a real browser.
 
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { MercVoice } from './sim'
@@ -15,8 +18,21 @@ interface GlObject {
   kind: string
 }
 
+const COMPLETION_STATUS_KHR = 0x91b1
+
+// The calls that wait for the driver in a real browser, as the fake saw them.
+type Wait = 'completion' | 'link' | 'compile' | 'uniform' | 'use'
+
 function createFakeGl() {
-  const state = { draws: 0, lost: false, compiles: true }
+  // parallel: offers KHR_parallel_shader_compile; done: the driver finished.
+  const state = {
+    draws: 0,
+    lost: false,
+    compiles: true,
+    parallel: false,
+    done: true,
+  }
+  const waits: Wait[] = []
   const live = new Set<GlObject>()
   const created: GlObject[] = []
   const make = (kind: string): GlObject => {
@@ -53,16 +69,30 @@ function createFakeGl() {
     createShader: () => make('shader'),
     shaderSource: noop,
     compileShader: noop,
-    getShaderParameter: () => state.compiles,
+    getShaderParameter: () => {
+      waits.push('compile')
+      return state.compiles
+    },
     getShaderInfoLog: () => "ERROR: 0:1: 'fake' : syntax error",
     deleteShader: release,
     createProgram: () => make('program'),
     attachShader: noop,
     linkProgram: noop,
-    getProgramParameter: () => true,
+    // A shader that did not compile fails its program's link.
+    getProgramParameter: (_p: GlObject, pname: number) => {
+      if (pname === COMPLETION_STATUS_KHR) {
+        waits.push('completion')
+        return state.done
+      }
+      waits.push('link')
+      return state.compiles
+    },
     getProgramInfoLog: () => '',
     deleteProgram: release,
-    getUniformLocation: () => ({}),
+    getUniformLocation: () => {
+      waits.push('uniform')
+      return {}
+    },
     createTexture: () => make('texture'),
     bindTexture: noop,
     texStorage2D: noop,
@@ -78,7 +108,9 @@ function createFakeGl() {
     bindVertexArray: noop,
     deleteVertexArray: release,
     viewport: noop,
-    useProgram: noop,
+    useProgram: () => {
+      waits.push('use')
+    },
     activeTexture: noop,
     finish: noop,
     uniform1f: noop,
@@ -93,12 +125,22 @@ function createFakeGl() {
       state.draws++
     },
     isContextLost: () => state.lost,
-    getExtension: (name: string) =>
-      name === 'WEBGL_lose_context' && !state.lost ? { loseContext } : null,
+    getExtension: (name: string) => {
+      if (state.lost) return null
+      if (name === 'WEBGL_lose_context') return { loseContext }
+      if (name === 'KHR_parallel_shader_compile' && state.parallel) {
+        return { COMPLETION_STATUS_KHR }
+      }
+      return null
+    },
   }
   return {
     gl: gl as unknown as WebGL2RenderingContext,
     state,
+    waits,
+    // How many of `kind` the fake has been asked, since `from`.
+    count: (kind: Wait, from = 0) =>
+      waits.slice(from).filter((w) => w === kind).length,
     live,
     created,
     loseContext,
@@ -198,6 +240,7 @@ beforeEach(() => {
 
 afterEach(() => {
   for (const stage of mounted.splice(0)) stage.destroy()
+  vi.useRealTimers()
   vi.restoreAllMocks()
   vi.unstubAllGlobals()
   host.remove()
@@ -273,6 +316,7 @@ describe('mountMercStage', () => {
     const fake = createFakeGl()
     stubContext(fake.gl)
     mountStage()
+    frames.run(1000)
     const visibility = vi
       .spyOn(document, 'visibilityState', 'get')
       .mockReturnValue('hidden')
@@ -378,5 +422,150 @@ describe('mountMercStage', () => {
     expect(host.querySelector('canvas')).toBeNull()
     expect(frames.pending).toBe(0)
     expect(stage.ok).toBe(false)
+  })
+})
+
+// The fake as a browser that compiles in the background: it offers
+// KHR_parallel_shader_compile and holds every compile open until told.
+function compilingGl() {
+  const fake = createFakeGl()
+  fake.state.parallel = true
+  fake.state.done = false
+  stubContext(fake.gl)
+  return fake
+}
+
+describe('mountMercStage, while the driver compiles his shaders', () => {
+  it('asks nothing that waits, and draws nothing, until the driver says done', () => {
+    // Arrange
+    const frames = frameQueue()
+    const fake = compilingGl()
+    const onReady = vi.fn()
+    mountStage({ onReady })
+
+    // Act
+    frames.run(1000)
+    frames.run(1016)
+    frames.run(1033)
+    const askedCompiling = [...new Set(fake.waits)]
+    const drawsCompiling = fake.state.draws
+    const readyCompiling = onReady.mock.calls.length
+    fake.state.done = true
+    frames.run(1050)
+
+    // Assert
+    expect(askedCompiling).toEqual(['completion'])
+    expect(drawsCompiling).toBe(0)
+    expect(readyCompiling).toBe(0)
+    expect(fake.state.draws).toBe(DRAWS_PER_FRAME)
+    expect(onReady).toHaveBeenCalledTimes(1)
+  })
+
+  it.each([
+    ['with', true],
+    ['without', false],
+  ])(
+    'reads one link status a program and no shader status %s parallel compile',
+    (_, parallel) => {
+      // Arrange
+      const frames = frameQueue()
+      const fake = createFakeGl()
+      fake.state.parallel = parallel
+      stubContext(fake.gl)
+      const onReady = vi.fn()
+
+      // Act
+      mountStage({ onReady })
+      frames.run(1000)
+      frames.run(1016)
+
+      // Assert
+      expect(fake.count('link')).toBe(4)
+      expect(fake.count('compile')).toBe(0)
+      expect(fake.state.draws).toBeGreaterThan(0)
+      expect(onReady).toHaveBeenCalledTimes(1)
+    },
+  )
+
+  it('says why a link failed once the driver is done, and leaves no GL object behind', () => {
+    // Arrange
+    const frames = frameQueue()
+    const fake = compilingGl()
+    fake.state.compiles = false
+    const onFailure = vi.fn()
+    const onReady = vi.fn()
+    const stage = mountStage({ onFailure, onReady })
+    frames.run(1000)
+    const failedCompiling = onFailure.mock.calls.length
+
+    // Act
+    fake.state.done = true
+    frames.run(1016)
+
+    // Assert
+    expect(failedCompiling).toBe(0)
+    expect(onFailure).toHaveBeenCalledTimes(1)
+    expect(onFailure).toHaveBeenCalledWith(
+      expect.stringMatching(/Shader compile failed: ERROR: 0:1: 'fake'/),
+    )
+    expect(onReady).not.toHaveBeenCalled()
+    expect([...fake.live]).toEqual([])
+    expect(frames.pending).toBe(0)
+    expect(stage.ok).toBe(false)
+  })
+
+  it('frees the context and stops asking when destroyed mid-compile', () => {
+    // Arrange
+    vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] })
+    const frames = frameQueue()
+    const fake = compilingGl()
+    const onReady = vi.fn()
+    const stage = mountStage({ onReady })
+    frames.run(1000)
+    const asked = fake.waits.length
+
+    // Act
+    stage.destroy()
+    fake.state.done = true
+    vi.advanceTimersByTime(1000)
+    frames.run(2000)
+
+    // Assert
+    expect(fake.waits.length).toBe(asked)
+    expect([...fake.live]).toEqual([])
+    expect(fake.loseContext).toHaveBeenCalledTimes(1)
+    expect(host.querySelector('canvas')).toBeNull()
+    expect(frames.pending).toBe(0)
+    expect(onReady).not.toHaveBeenCalled()
+  })
+
+  it('keeps asking on a hidden page, which has no frames, and says ready once he is drawn', () => {
+    // Arrange
+    vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] })
+    const frames = frameQueue()
+    const visibility = vi
+      .spyOn(document, 'visibilityState', 'get')
+      .mockReturnValue('hidden')
+    const fake = compilingGl()
+    const onReady = vi.fn()
+    mountStage({ onReady })
+
+    // Act
+    vi.advanceTimersByTime(300)
+    const askedHidden = fake.count('completion')
+    fake.state.done = true
+    vi.advanceTimersByTime(100)
+    const linkedHidden = fake.count('link')
+    const readyHidden = onReady.mock.calls.length
+    visibility.mockReturnValue('visible')
+    document.dispatchEvent(new Event('visibilitychange'))
+    frames.run(1000)
+
+    // Assert
+    expect(askedHidden).toBe(3)
+    expect(linkedHidden).toBe(4)
+    expect(readyHidden).toBe(0)
+    expect(fake.state.draws).toBe(DRAWS_PER_FRAME)
+    expect(onReady).toHaveBeenCalledTimes(1)
   })
 })

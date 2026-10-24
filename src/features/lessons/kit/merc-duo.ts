@@ -4,8 +4,11 @@
 //
 // The app's own shader Merc, twice: blue as shipped, orange through the warm
 // look (merc-warm.ts). The renderer loads after first paint, so the page
-// opens on the two still images and live Merc and Tavi take over once each
-// has drawn a frame. One WebGL context per Merc. They pause while the stage is
+// opens on the two still images, and live Merc and Tavi take over once each
+// says ready: his shader has linked and his first frame is drawn. A first
+// visit can wait seconds for that, the page running on meanwhile; one still
+// not ready after LIVE_MERC_WAIT_MS stays a still for this page and lets its
+// WebGL context go. One WebGL context per Merc. They pause while the stage is
 // off screen and while animations are paused, except when a tap has asked one
 // to sing; reduced motion and failures leave the stills in place.
 //
@@ -14,7 +17,7 @@
 // thread for seconds at a time, and the lesson under them stops answering.
 // The check is the app's one, lib/merc/gpu-gate.ts.
 
-import { canRunLiveMerc } from '@/lib/merc/gpu-gate'
+import { canRunLiveMerc, waitForLiveMerc } from '@/lib/merc/gpu-gate'
 import type { MercMountOptions, MercRenderer } from '@/lib/merc/renderer'
 import type { SparkleSide } from '@/lib/merc/sim'
 import { q } from './dom'
@@ -32,7 +35,7 @@ let settle: () => void = () => undefined
 /** Each Merc's sung energy, 0 or 1, which the hero's staff and rail follow. */
 export const energy: Record<Which, number> = { blue: 0, orange: 0 }
 
-/** Settles once both mounts have succeeded or failed; the hero entrance waits on it, briefly. */
+/** Settles once both Mercs are live, failed or given up; the hero entrance waits on it, briefly. */
 export const mercsReady = new Promise<void>((resolve) => {
   settle = resolve
 })
@@ -54,46 +57,61 @@ function syncPause(): void {
   }
 }
 
+// Settles once this Merc is live, or has failed or been given up on.
 function mountOne(
   which: Which,
   mount: MountFn,
   o: MercDuoOptions,
-): MercRenderer | null {
+): Promise<void> {
   const el = mercEl(which)
   const host = q('.live', el)
   const warm = which === 'orange'
-  try {
-    const m = mount(host, {
-      transparent: true,
-      quality: 'medium',
-      size: 0,
-      view: 'front',
-      state: 'idle',
-      still: reducedMotion(),
-      fragmentPatch: warm ? warmFragment : undefined,
-      onFailure: () => el.classList.remove('is-live'),
-      ...(o.sparkles === undefined ? {} : { sparkles: o.sparkles }),
-    })
-    if (warm) m.setLook(WARM_LOOK)
-    // turned towards each other
-    m.setPoseBias(
-      warm ? { yaw: -0.32, lookX: -0.35 } : { yaw: 0.32, lookX: 0.35 },
-    )
-    if (!m.ok) {
-      m.destroy()
+  return new Promise((resolve) => {
+    // The still stays; the renderer, its context and its canvas go.
+    const giveUp = (): void => {
+      stopWaiting()
+      const m = mercs[which]
+      mercs[which] = null
+      el.classList.remove('is-live')
+      try {
+        m?.destroy()
+      } catch {
+        // already failing
+      }
       host.textContent = ''
-      return null
+      resolve()
     }
-    requestAnimationFrame(() =>
-      requestAnimationFrame(() => {
-        if (m.ok) el.classList.add('is-live')
-      }),
-    )
-    return m
-  } catch {
-    host.textContent = ''
-    return null
-  }
+    const stopWaiting = waitForLiveMerc(giveUp)
+    let m: MercRenderer
+    try {
+      m = mount(host, {
+        transparent: true,
+        quality: 'medium',
+        size: 0,
+        view: 'front',
+        state: 'idle',
+        still: reducedMotion(),
+        fragmentPatch: warm ? warmFragment : undefined,
+        onReady: () => {
+          stopWaiting()
+          el.classList.add('is-live')
+          resolve()
+        },
+        onFailure: giveUp,
+        ...(o.sparkles === undefined ? {} : { sparkles: o.sparkles }),
+      })
+      if (warm) m.setLook(WARM_LOOK)
+      // turned towards each other
+      m.setPoseBias(
+        warm ? { yaw: -0.32, lookX: -0.35 } : { yaw: 0.32, lookX: 0.35 },
+      )
+    } catch {
+      giveUp()
+      return
+    }
+    mercs[which] = m
+    syncPause()
+  })
 }
 
 export interface MercDuoOptions {
@@ -121,13 +139,7 @@ export async function initMercs(
     settle()
     return
   }
-  mercs.blue = mountOne('blue', mount, o)
-  mercs.orange = mountOne('orange', mount, o)
-  // let the live canvases draw their first frame before the stills step aside
-  await new Promise<void>((resolve) =>
-    requestAnimationFrame(() => requestAnimationFrame(() => resolve())),
-  )
-  settle()
+  const mounted = [mountOne('blue', mount, o), mountOne('orange', mount, o)]
   new IntersectionObserver(
     (entries) =>
       entries.forEach((e) => {
@@ -137,6 +149,8 @@ export async function initMercs(
     { rootMargin: '40px 0px' },
   ).observe(stage)
   Motion.subscribe(syncPause)
+  await Promise.all(mounted)
+  settle()
 }
 
 /** Starts or ends a Merc's sung note; the rail bead marks the note either way. */

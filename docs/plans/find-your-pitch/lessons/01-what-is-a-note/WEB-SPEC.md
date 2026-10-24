@@ -216,6 +216,11 @@ still images (`merc-blue.png`, `merc-orange.png`). Show them too, without loadin
 when WebGL2 would run on the CPU: the browser reports a major performance caveat, or the renderer
 names itself as SwiftShader, llvmpipe, softpipe or the Basic Render Driver. Merc and Tavi drawn
 there held the main thread for about 11 s after load, and the page under them stopped answering.
+Each still stays until its Merc says ready (`onReady`: his shader has linked and his first frame is
+drawn), and a Merc not ready after 10 s of the page on screen (`LIVE_MERC_WAIT_MS`; time in a
+background tab does not count) stays a still for the page and frees his context. The renderer never
+asks the driver for a shader's status before it is done: such a read waits out the whole compile,
+the likely cause of a Windows Chrome that froze for minutes on a first visit.
 
 ## Contract (the proof preview on its preview host)
 

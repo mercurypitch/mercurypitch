@@ -7,6 +7,11 @@
 // asked (renderAt), deterministically, for tests and store art.
 //
 // Lifetime rules that are easy to break:
+// - Live mode enables KHR_parallel_shader_compile and never reads a shader
+//   status before the driver is done (programs.ts says why). It polls each
+//   frame, draws nothing until the programs have linked, and calls onReady
+//   after the first frame. Without the extension mount() waits once, as
+//   capture does.
 // - iOS drops the GL context when the app goes to the background. The loss
 //   handler must call preventDefault (the browser restores nothing without
 //   it), forget every GL handle and stop the loop. The restore handler
@@ -22,8 +27,10 @@
 
 import type { GradientStop, MercLook, MercPalette, MercQuality, MercState, MercView, MercViewName, } from './constants'
 import { BG, BLOOM, isMercQuality, isMercState, LOOK, PALETTE, QUALITY, RIM, SHAPE, VIEWS, } from './constants'
-import type { PostProgram, PostPrograms, RenderTargets, SceneProgram, } from './gl'
-import { cameraFor, createPostPrograms, createRenderTargets, createSceneProgram, deleteRenderTargets, flat, lookUniforms, paletteUniforms, srgbToLin, } from './gl'
+import type { RenderTargets } from './gl'
+import { cameraFor, createRenderTargets, deleteRenderTargets, flat, lookUniforms, paletteUniforms, srgbToLin, } from './gl'
+import type { PostProgram, PostPrograms, ProgramBuild, SceneProgram, } from './programs'
+import { buildDone, createPoller, deleteBuilt, deletePostPrograms, dropBuild, finishBuild, startBuild, } from './programs'
 import type { MercPose, MercVoice, MercVoiceSource, PoseBias, SimSnapshot, SparkleSide, } from './sim'
 import { Sim, STEP } from './sim'
 import type { GlideMouth } from './sim-glide'
@@ -63,6 +70,13 @@ export interface MercMountOptions {
   glideMouth?: GlideMouth
   /** Called once if Merc stops drawing for good after mount. */
   onFailure?: (error: Error) => void
+  /**
+   * Live mode: called once, when his programs have linked and his first
+   * frame is drawn (a hidden page draws it once it shows). The canvas stays
+   * empty until then. Never synchronously in mount(), never after a failure
+   * or destroy.
+   */
+  onReady?: () => void
   /**
    * Rewrites the scene shader's GLSL just before it compiles, for a page that
    * needs other light than the shader's own cool blue (the lessons' orange
@@ -165,40 +179,79 @@ export function mount(
 
   // ---------------------------------------------------------- GL resources
 
+  // Enabled before any compile, so ANGLE compiles off the GPU process's main
+  // thread. Capture links at once, as a browser without the extension does.
+  const parallel = live ? gl.getExtension('KHR_parallel_shader_compile') : null
   let res: GlResources | null = null
-
-  function createResources(): GlResources {
-    // Null on a lost context, whatever the DOM typings say.
-    const vao = gl.createVertexArray()
-    if (vao === null) throw new Error('Vertex array allocation failed')
-    const programs = new Map<MercQuality, SceneProgram>()
-    try {
-      programs.set(quality, createSceneProgram(gl, quality, opts.fragmentPatch))
-      const post = createPostPrograms(gl)
-      return { vao, programs, post, targets: null }
-    } catch (err) {
-      for (const prg of programs.values()) gl.deleteProgram(prg.p)
-      gl.deleteVertexArray(vao)
-      throw err
-    }
-  }
+  // Still with the driver: the first programs, and a quality asked for.
+  let building: ProgramBuild | null = null
+  let switching: ProgramBuild | null = null
+  // The quality asked for; `quality` is the one drawn.
+  let wanted: MercQuality = quality
 
   function releaseResources(r: GlResources): void {
     for (const prg of r.programs.values()) gl.deleteProgram(prg.p)
-    gl.deleteProgram(r.post.down.p)
-    gl.deleteProgram(r.post.blur.p)
-    gl.deleteProgram(r.post.comp.p)
+    deletePostPrograms(gl, r.post)
     if (r.targets) deleteRenderTargets(gl, r.targets)
     gl.deleteVertexArray(r.vao)
   }
 
-  function sceneProgram(r: GlResources): SceneProgram {
-    let prg = r.programs.get(quality)
-    if (!prg) {
-      prg = createSceneProgram(gl, quality, opts.fragmentPatch)
-      r.programs.set(quality, prg)
+  // Every GL object held, drawn with or still building.
+  function releaseAll(): void {
+    if (res) releaseResources(res)
+    if (building) dropBuild(gl, building)
+    if (switching) dropBuild(gl, switching)
+  }
+
+  // Asks for the first programs; without the extension, waits for them here.
+  function startResources(): void {
+    building = startBuild(gl, quality, opts.fragmentPatch, true)
+    if (!parallel) takeBuild()
+  }
+
+  // The first build, read, becomes res: a vertex array, targets for the canvas.
+  function takeBuild(): void {
+    const pending = building!
+    building = null
+    const b = finishBuild(gl, pending)
+    // Null on a lost context, whatever the DOM typings say.
+    const vao = gl.createVertexArray()
+    if (vao === null) {
+      deleteBuilt(gl, b)
+      throw new Error('Vertex array allocation failed')
     }
-    return prg
+    const r = { vao, programs: new Map([[b.quality, b.scene]]), post: b.post! }
+    res = { ...r, targets: null }
+    needsDraw = true
+    resize(res)
+    seekQuality(res)
+  }
+
+  // Draws the quality asked for once its program is there, asking for it
+  // first. Without the extension that ask waits, and a failure throws to
+  // setQuality's caller with the drawn quality still drawing.
+  function seekQuality(r: GlResources): void {
+    if (wanted === quality || switching) return
+    if (r.programs.has(wanted)) {
+      quality = wanted
+      invalidate()
+      return
+    }
+    switching = startBuild(gl, wanted, opts.fragmentPatch, false)
+    if (parallel) poller.ask()
+    else takeSwitch(r)
+  }
+
+  function takeSwitch(r: GlResources): void {
+    const b = switching!
+    switching = null
+    try {
+      r.programs.set(b.quality, finishBuild(gl, b).scene)
+    } catch (err) {
+      wanted = quality
+      throw err
+    }
+    seekQuality(r)
   }
 
   // ---------------------------------------------------------- size
@@ -345,7 +398,8 @@ export function mount(
   }
 
   function draw(r: GlResources, T: RenderTargets): void {
-    const prg = sceneProgram(r)
+    const prg = r.programs.get(quality)
+    if (!prg) throw new Error(`Merc has no ${quality} program`)
     const P = sim.pose()
     gl.bindVertexArray(r.vao)
     const { post } = r
@@ -451,6 +505,7 @@ export function mount(
       resize(r)
       if (r.targets) draw(r, r.targets)
       needsDraw = false
+      announce()
     } catch (err) {
       if (!gl.isContextLost()) fail(err)
     }
@@ -496,8 +551,11 @@ export function mount(
     if (failed || destroyed) return
     failed = err instanceof Error ? err : new Error(String(err))
     stopLoop()
-    if (res && !gl.isContextLost()) releaseResources(res)
+    poller.cancel()
+    if (!gl.isContextLost()) releaseAll()
     res = null
+    building = null
+    switching = null
     console.warn('[merc] stopped drawing:', failed.message)
     opts.onFailure?.(failed)
   }
@@ -507,41 +565,78 @@ export function mount(
   function onLost(e: Event): void {
     e.preventDefault()
     stopLoop()
+    poller.cancel()
     // Every handle died with the context; there is nothing to delete.
     res = null
+    building = null
+    switching = null
     needsDraw = true
   }
 
   function onRestored(): void {
     if (destroyed || failed) return
-    let r: GlResources | null = null
     try {
-      r = createResources()
-      resize(r)
+      startResources()
     } catch (err) {
-      if (gl.isContextLost()) return
-      if (r) releaseResources(r)
-      fail(err)
+      if (!gl.isContextLost()) fail(err)
       return
     }
-    res = r
-    needsDraw = true
-    syncLoop()
+    if (building) poller.ask()
+    else syncLoop()
   }
 
   function onVisibility(): void {
     syncLoop()
   }
 
+  // ---------------------------------------------------------- readiness
+
+  const poller = createPoller(poll)
+  let announced = false
+
+  function poll(): void {
+    if (destroyed || failed || gl.isContextLost()) return
+    try {
+      if (building) {
+        if (!buildDone(gl, parallel, building)) {
+          poller.ask()
+          return
+        }
+        takeBuild()
+        // His first frame now: he says ready once it is on the canvas.
+        if (!hidden()) render()
+        syncLoop()
+      }
+    } catch (err) {
+      if (!gl.isContextLost()) fail(err)
+      return
+    }
+    if (res) pollSwitch(res)
+  }
+
+  // A quality's program finished: draw it, or stay if it failed.
+  function pollSwitch(r: GlResources): void {
+    if (!switching) return
+    if (!buildDone(gl, parallel, switching)) return poller.ask()
+    try {
+      takeSwitch(r)
+    } catch (err) {
+      if (!gl.isContextLost()) console.warn('[merc] quality not changed:', err)
+    }
+  }
+
+  function announce(): void {
+    if (announced || failed || destroyed) return
+    announced = true
+    opts.onReady?.()
+  }
+
   // ---------------------------------------------------------- start
 
   try {
-    const r = createResources()
-    res = r
-    resize(r)
+    startResources()
   } catch (err) {
-    if (res) releaseResources(res)
-    res = null
+    releaseAll()
     gl.getExtension('WEBGL_lose_context')?.loseContext()
     canvas.remove()
     throw err
@@ -563,6 +658,8 @@ export function mount(
       })
   ro?.observe(container)
   syncLoop()
+  // With the extension the first programs are still building.
+  if (parallel) poller.ask()
 
   // ---------------------------------------------------------- capture
 
@@ -648,13 +745,10 @@ export function mount(
       invalidate()
     },
     setQuality(name) {
-      if (!isMercQuality(name) || name === quality) return
-      // Compile first, so a failure leaves the current quality drawing.
-      if (res && !res.programs.has(name)) {
-        res.programs.set(name, createSceneProgram(gl, name, opts.fragmentPatch))
-      }
-      quality = name
-      invalidate()
+      if (!isMercQuality(name)) return
+      // Linked first, so a failure leaves the current quality drawing.
+      wanted = name
+      if (res) seekQuality(res)
     },
     setView(v) {
       view = resolveView(v)
@@ -683,12 +777,15 @@ export function mount(
       if (destroyed) return
       destroyed = true
       stopLoop()
+      poller.cancel()
       ro?.disconnect()
       canvas.removeEventListener('webglcontextlost', onLost)
       canvas.removeEventListener('webglcontextrestored', onRestored)
       document.removeEventListener('visibilitychange', onVisibility)
-      if (res && !gl.isContextLost()) releaseResources(res)
+      if (!gl.isContextLost()) releaseAll()
       res = null
+      building = null
+      switching = null
       gl.getExtension('WEBGL_lose_context')?.loseContext()
       canvas.width = 0
       canvas.height = 0

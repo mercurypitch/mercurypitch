@@ -22,10 +22,15 @@ const stage = vi.hoisted(() => ({
   ok: true,
   states: [] as string[],
   paused: [] as boolean[],
+  ready: [] as (() => void)[],
 }))
 vi.mock('@/lib/merc/stage', () => ({
-  mountMercStage: (_host: HTMLElement, options: { state: string }) => {
+  mountMercStage: (
+    _host: HTMLElement,
+    options: { state: string; onReady?: () => void },
+  ) => {
     stage.states.push(options.state)
+    if (stage.ok && options.onReady) stage.ready.push(options.onReady)
     return {
       ok: stage.ok,
       setState: (state: string) => stage.states.push(state),
@@ -92,10 +97,14 @@ const q = (root: HTMLElement, id: string): HTMLElement | null =>
 const mercState = (root: HTMLElement): string | null =>
   q(root, 'alley-merc')?.getAttribute('data-merc-state') ?? null
 
-/** His stage loaded: the chunk's import settled and his first frame up. */
+/**
+ * His stage loaded: the chunk's import settled and his first frame up, which
+ * the stage says once his shader has linked (its onReady).
+ */
 async function drawn(): Promise<void> {
   await vi.dynamicImportSettled()
   await Promise.resolve()
+  for (const ready of stage.ready) ready()
 }
 
 beforeEach(() => {
@@ -109,6 +118,7 @@ beforeEach(() => {
   stage.ok = true
   stage.states = []
   stage.paused = []
+  stage.ready = []
 })
 
 afterEach(() => {
