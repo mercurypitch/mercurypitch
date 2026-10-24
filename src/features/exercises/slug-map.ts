@@ -13,7 +13,8 @@
 // Slugs are lowercase kebab-case (`[a-z0-9-]+`). Add new ones freely — the
 // landing just needs the agreed string and the app maps it to an action here.
 // Keep this registry in sync with the landing's Try-button hrefs
-// (packages/mercurypitch/src/components/Community.astro).
+// (packages/mercurypitch/src/components/Community.astro). Lessons have slugs
+// of their own too (`leap-ladder`, for Lesson 9's practice card).
 
 import type { ExerciseType } from '@/features/exercises/types'
 import { EXERCISE_INTERVAL_TRAINER, EXERCISE_SCALE_RUNNER, } from '@/features/exercises/types'
@@ -61,6 +62,13 @@ export const EXERCISE_SLUGS: Record<string, Launch> = {
     exercise: EXERCISE_SCALE_RUNNER,
     scaleId: 'scale-major-c4',
     difficulty: 8,
+  },
+  // Interval exercise on Lesson 9's leaps (Landing a leap): the minor and
+  // major thirds, the fifth, the fourth and the octave, each upward.
+  'leap-ladder': {
+    kind: 'exercise',
+    exercise: EXERCISE_INTERVAL_TRAINER,
+    intervals: [3, 4, 7, 5, 12],
   },
   // Open the Karaoke view.
   'karaoke-duel': { kind: 'tab', tab: TAB_KARAOKE },
