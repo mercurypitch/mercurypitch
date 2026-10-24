@@ -646,7 +646,7 @@ Lessons 2 to 6 promote into the kit (Toys table). Read again on main at `31b7f53
 5. `kit/take.ts`: `readSiren` (Toys 4); `src/lib/mirror/metrics.ts`:
    `middleHalf(lowMidi: number, highMidi: number): { low: number; high: number }`, exported and used
    by `pickMatchTargets`, with its parity test in `src/lib/mirror/metrics.test.ts` (Toys 4). Both
-   built: `readSiren` at `kit/take.ts:228`, `middleHalf` at `metrics.ts:353-368` and the parity test
+   built: `readSiren` at `kit/take.ts:237`, `middleHalf` at `metrics.ts:353-368` and the parity test
    at `metrics.test.ts:479`. The note formatter is on main: Lesson 4's spelling helper names a note
    with its sign and in words (`sharpOf`, `signName`, `wordName`, `kit/notes.ts:157-197`).
 6. Lesson 3's kit parts are on main: `comfort.ts` with the feeling question, `listen.ts`, `take.ts`,

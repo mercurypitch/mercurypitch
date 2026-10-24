@@ -365,7 +365,7 @@ States:
    6's page (PR #1149) gives `mountFeelings` a `changeable` option for its sweeps, which this page
    leaves off.
    - Easy or Workable: the count, and "If that felt tricky, good: that's learning." when fewer than
-     all the heard notes landed (`trickyAfter`, `kit/take.ts:165-167`); then, if the visit's one
+     all the heard notes landed (`trickyAfter`, `kit/take.ts:174-176`); then, if the visit's one
      Again is unused and fewer than three takes have been made, **Again** (the same ladder, named
      "Again: do-mi-so-do" or "Again: the smaller ladder") and, after the full ladder, **Again,
      smaller** too (named "Again, on the smaller ladder"); either uses the one Again. Then **Done
@@ -416,7 +416,7 @@ Reading a ladder (`kit/take.ts`, extended with `readLadder` and `rungLine`; pure
 
 - Input: the take's raw frames, the ladder's rungs as MIDI notes in sung order (from do D3: 50, 54,
   57, 62, or 50, 54, 57, 54, 50), and the slot length, 1.5 s. A frame is voiced when Voice Mirror's
-  `preprocess` keeps it, as `readTake` takes them (`kit/take.ts:106-128`).
+  `preprocess` keeps it, as `readTake` takes them (`kit/take.ts:115-137`).
 - No voiced frame gives `{ heard: false }`, the "didn't hear you start" line (state 7).
 - The slots start at the first voiced frame: slot k holds the raw frames from 1.5k s to 1.5(k + 1) s
   after it. Each slot is read by the kit's own `readTake` against its rung, unchanged: its first 0.3
@@ -428,16 +428,16 @@ Reading a ladder (`kit/take.ts`, extended with `readLadder` and `rungLine`; pure
 - The line for a slot, `rungLine(label, reading)`: the rung's label ("Do", "Mi", "So", "Top do"; on
   the smaller ladder "Do", "Mi", "So", "Mi again", "Do again"), a middle dot, then the reading:
   "Right in the middle: …", "In the band: …" or "Close: …", each with the kit's gap words
-  (`readingLine`, `kit/take.ts:78-86`), without its "Listen again, then aim a touch higher." on a
+  (`readingLine`, `kit/take.ts:78-95`), without its "Listen again, then aim a touch higher." on a
   close note; beyond 60 cents, "{About a semitone below}, nearer a different note."
   (`semitonesAway`, `:69-76`), without the kit's "Listen again, then slide up to the band." (FACTS
   79); a slot without steady voice, "We didn't hear a steady note there." (new,
   `NOT_STEADY_RUNG_LINE`), without the kit's "Try again at about speaking volume."
   (`NOT_STEADY_LINE`, `:64-65`); and the octave line, when there is one, as a second sentence
-  (`octaveLine`, `:88-94`).
+  (`octaveLine`, `:97-103`).
 - The count's line is the kit's `countLine` ("This time, 3 of your 4 notes landed in the band.", or
   "… of the 3 notes we heard …"), or `NONE_HEARD_LINE` when voice came but no note was steady
-  (`kit/take.ts:154-163`).
+  (`kit/take.ts:163-172`).
 - Every template passes `validateGuidedDynamicClaim` (`src/lib/guided-voice/claims.ts`, surface
   `finding`) in a unit test, as Lesson 3's lines do.
 
