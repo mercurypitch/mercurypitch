@@ -132,7 +132,15 @@ export const FIRST_PAINT_BUDGETS_KB = {
   // renaming. The other 188 are this page's: Sing it's fixes for a take cut
   // short by leaving (lesson-03/sing.ts, 153), the rest card's
   // (kit/comfort.ts, 25) and renaming.
-  'learn/03.html': 129,
+  // Raised to 130 for the lesson answer events (#1193): 131,785 bytes on main
+  // before them, 132,272 with them, against 132,096 at 129. 447 of the 487
+  // are the kit's, on every lesson page: the quiz's first-answer check and
+  // the import that loads the answer beacon on a first answer (kit/quiz.ts,
+  // 183), and that import's preload list (264). The other 40 are this
+  // page's: the listener's preload list names the consent regions, which
+  // have a chunk of their own so that the beacon does not bring pitch-core
+  // (vite.config.ts).
+  'learn/03.html': 130,
   // Lesson 5, a draft too, built in every mode as Lesson 3 is. Measured 122
   // with the lesson menu and the next-lesson card (109 before them), and 129
   // with the page state.
@@ -153,8 +161,10 @@ export const FIRST_PAINT_BUDGETS_KB = {
   // 129,024 at 126. The kit's 1,090 reach it as they reach Lesson 3; Move do
   // and Merc's sing-along, kit parts now, come in chunks of their own, 672
   // bytes there and 241 fewer in the page's module; and the slide guide's
-  // rest adds 323 (kit/slide-guide.ts).
-  'learn/04.html': 128,
+  // rest adds 323 (kit/slide-guide.ts). Raised to 129 for the lesson answer
+  // events (#1193): 130,767 bytes on main before them, 131,214 with them,
+  // against 131,072 at 128. All 447 are the kit's, as on Lesson 3.
+  'learn/04.html': 129,
   // Lesson 6, "Intervals: the distance between notes", a draft too, built
   // in every mode as Lesson 3 is: its own module on the kit, with the tune
   // line and the ear game it brings. Measured 125 with the lesson menu and
