@@ -137,15 +137,16 @@ heading, and the line above it, are in LESSON.md ("Section headings").
 
 ## Length
 
-The learner copy is 2,346 words on `pnpm lesson:words` (FACTS 5; the review's 2,350), 33 under the
-series' cap of 2,379: Lesson 3's page on the same count at `a3d8048e1` is 2,454 words, 75 of them
-the note under its new title, which is not in editorial form, so the counter reads it. The page runs
-about 16 minutes: 9.86 of reading and about 6.4 of sound, toys and tasks, 16.3 in all. That
-is past MASTER-PLAN § 4.2's 8 to 12 minutes of active time, as Lessons 3, 5, 6 and 7 are (16, 18, 17
-and 16 minutes), and acceptable by their precedent. Each step's text, with its Try and its Notice,
-runs 106 to 120 words (Steps 1 to 5: 118, 119, 120, 119 and 106), inside § 4.2's 50 to 120 a step.
-One step carries more beside it: Step 2, about 200 words with its mix-up card (about 80 words),
-which sits in the step whose toy refutes it, as in Lessons 2 to 7. The page has no Go deeper drawer.
+The learner copy is 2,362 words on `pnpm lesson:words` (FACTS 5; the review's 2,350, before the
+listen path's voice line), 17 under the series' cap of 2,379: Lesson 3's page on the same count at
+`a3d8048e1` is 2,454 words, 75 of them the note under its new title, which is not in editorial form,
+so the counter reads it. The page runs about 16 minutes: 9.92 of reading and about 6.4 of sound,
+toys and tasks, 16.3 in all. That is past MASTER-PLAN § 4.2's 8 to 12 minutes of active time, as
+Lessons 3, 5, 6 and 7 are (16, 18, 17 and 16 minutes), and acceptable by their precedent. Each
+step's text, with its Try and its Notice, runs 106 to 120 words (Steps 1 to 5: 118, 119, 120, 119
+and 106), inside § 4.2's 50 to 120 a step. One step carries more beside it: Step 2, about 200 words
+with its mix-up card (about 80 words), which sits in the step whose toy refutes it, as in Lessons 2
+to 7. The page has no Go deeper drawer.
 
 ## Toys: what each reuses, and what is new
 
@@ -305,13 +306,16 @@ States:
    its list naming all six of REQ-GVC-020's conditions, and its two buttons (FACTS 64, 65), through
    the kit's `mountComfort` (`kit/comfort.ts:158-166`).
 2. **Voice choice**, after either comfort answer: Lesson 3's two buttons with Merc and Tavi's stills
-   (`aria-pressed`, at least 44 px), under LESSON.md's line in its two forms, "Choose a voice to
+   (`aria-pressed`, at least 44 px), under LESSON.md's line in its three forms, "Choose a voice to
    sing with. If you chose one in an earlier lesson, pick it again:" with none stored and "Keep the
    voice you chose before, or change it:" with one, as Lessons 5 to 7 word it, the first as Lesson
-   5's page prints it (`learn/05.html:1381-1384`; FACTS 69). It reads and writes `fyp-voice` through
-   `VoiceChoice` (`kit/voice-choice.ts:20-48`). A stored choice shows pressed and can be changed;
-   with none stored, neither is pressed and the next state waits for a choice, before "Just listen
-   today" plays anything too, because the voice picks the Merc who sings.
+   5's page prints it (`learn/05.html:1381-1384`; FACTS 69); after "Just listen today" with none
+   stored, Lesson 8's "Choose a voice: it picks the Merc who sings." It reads and writes `fyp-voice`
+   through `VoiceChoice` (`kit/voice-choice.ts:20-48`). A stored choice shows pressed and can be
+   changed; with none stored, neither is pressed and the next state waits for a choice, before "Just
+   listen today" plays anything too, because the voice picks the Merc who sings. Just listen today's
+   line and the doctor lines (state 3) do not wait: they show with the choice, as Lessons 3, 6 and 8
+   have them, since the referral guidance never waits on an unrelated choice.
 3. **Just listen today** (listen-only mode): LESSON.md's line with the doctor lines (FACTS 67, 68);
    the ladder choice and Move do (state 5) and **Play Merc's ladder**, which sings it on a tap in
    the chosen voice, the chart lighting each rung; nothing listens, the warm-up and Start are not
@@ -332,14 +336,20 @@ States:
      D3 (or D4), each disabled at its end, as Lesson 4's are (`kit/move-do.ts:20-21`, `:31-40`,
      `:23-29`; FACTS 75). The rungs, their names and the chart's window move with it, and the
      chart's summary says where do is ("Do is D3"), in Lesson 4's spelling (FACTS 22). The ladder
-     choice and Move do can change before Start and before Again, never during a take.
+     choice and Move do can change before Start or Start again, and Move do before Again, whose two
+     buttons are the ladder choice there; never during a take.
    - Start: with sound on, it asks for the microphone (`listen('lesson-09', Sound.context())`,
      `kit/listen.ts:54-57`), then Merc sings the chosen ladder, each slot's band lighting as he
      sings it (Listen), then, at least 0.4 s after his last note ends, the take opens. With sound
      off, Start and Play Merc's ladder play nothing and ask for nothing, and the hint shows: "Sound
-     is off, so nothing played. Turn sound on to hear Merc's ladder, then press Start." That is
-     Lesson 1's rule, as Lessons 5 to 7 apply it: what waits on hearing a sound waits while the
-     sound is off.
+     is off, so nothing played. Turn sound on to hear Merc's ladder, then press Start." Start
+     again and the Again buttons do the same, and their hint names them: "Sound is off, so nothing
+     played. Turn sound on to hear Merc's ladder, then press Start again." and "Sound is off, so
+     nothing played. Turn sound on to hear Merc's ladder, then press Again." That is Lesson 1's
+     rule, as Lessons 5 to 7 apply it: what waits on hearing a sound waits while the sound is off.
+     Sound turned off while Merc sings, before the take opens, ends the take without counting it,
+     and the card goes back to how it stood before its button, with that button's hint: no take is
+     spent on a ladder the viewer could not hear.
 6. **Take**: the status reads "Your turn: start on do when you're ready. Move on each time the next
    band lights up." The take waits up to 6 s for the first voiced frame, then runs one 1.5 s slot a
    note from that frame, 6.0 s for the full ladder and 7.5 s for the smaller (`takeFrames`,
@@ -356,8 +366,10 @@ States:
    voice came within 6 s, the line is Lessons 5 and 7's with this task's cue, "We didn't hear you
    start that time. Start on do when its band lights.", with **Start again** while the visit has had
    fewer than three takes (this take counts, and leaves the visit's one Again unused) and **Done for
-   today**, and no feeling question, since nothing was sung. Otherwise the count follows the lines
-   (below) and **How did that feel?** follows at once (REQ-GVC-022).
+   today**, and no feeling question, since nothing was sung. After the last take, or once Done for
+   today is pressed, the line keeps "We didn't hear you start that time." and drops its cue, since
+   no retry wording shows without a retry control. Otherwise **How did that feel?** follows the
+   lines at once (REQ-GVC-022), and the count (below) comes with its answer (state 8).
 8. **How did that feel?**: Lesson 3's four answers (`aria-pressed`, at least 44 px, two a row on
    phones), through `mountFeelings` (`kit/comfort.ts:168-206`) with its default, an answer that
    locks, asked after each take with voice (FACTS 82): a press disables all four, and `reset()`
@@ -368,9 +380,9 @@ States:
      all the heard notes landed (`trickyAfter`, `kit/take.ts:165-167`); then, if the visit's one
      Again is unused and fewer than three takes have been made, **Again** (the same ladder, named
      "Again: do-mi-so-do" or "Again: the smaller ladder") and, after the full ladder, **Again,
-     smaller** too (named "Again, on the smaller ladder"); either uses the one Again. Then **Done
-     for today**. Merc celebrates once if every heard note landed (FACTS 83). The Wrap shows the
-     practice card.
+     smaller** too (named "Again, smaller ladder", which holds its visible label); either uses the
+     one Again. Then **Done for today**. Merc celebrates once if every heard note landed (FACTS 83).
+     The Wrap shows the practice card.
    - Effortful: the count, then Lesson 3's "Keep it gentle: rest before you sing again.", no Again
      and no further ladder this visit; the ladder choice, Move do and Start go. The Wrap shows the
      rest card, as Lessons 6 and 7 specify. The rules decide it: a report of effort suppresses
@@ -841,18 +853,23 @@ parts:
    again" and "Do again"; no line holds "Listen again" or "Try again".
 7. The Sing it flow (`lesson-09/ladder-flow.ts`, Toys 4): with no stored voice the voice choice
    comes before either path, and a stored voice starts pressed and can be changed; "Just listen
-   today" shows no Start and picks the rest card; with sound off Start asks for nothing and shows
-   the hint; without Web Audio, Sing it is listen-only with no Start; a take with no voice brings no
-   feeling question and offers Start again while fewer than three takes have been made, leaving the
-   visit's one Again unused; "Easy" and "Workable" offer Again once a visit, and after the full
-   ladder Again smaller too, either using it up; after a smaller ladder the full ladder's button is
-   gone; an abandoned take counts, and uses the one Again up if it had voice; a walk over every
-   sequence of take outcomes, ladder choices and answers never reaches a fourth take or a third sung
-   ladder, never offers the full ladder after a sung smaller one, and never shows Again after
-   "Effortful" or "Uncomfortable"; "Effortful" and "Uncomfortable" end the singing for the visit and
-   pick the rest card; "Uncomfortable" takes the lines and the count away; the feelings lock once
-   answered and free again only for the next take; nothing is written to storage but `fyp-voice` and
-   `fyp-l09-warmup`.
+   today" shows its line and the doctor lines at once, beside the voice choice, shows no Start and
+   picks the rest card; with sound off Start, Start again and Again ask for nothing and show the
+   hint naming the button, and sound turned off while Merc sings ends the take uncounted, the card
+   back as it was; without Web Audio, Sing it is listen-only with no Start; a take with no voice
+   brings no feeling question and offers Start again while fewer than three takes have been made,
+   leaving the visit's one Again unused, and after the last take its line drops its cue; "Easy" and
+   "Workable" offer Again once a visit, and after the full ladder Again smaller too, either using it
+   up; after a smaller ladder the full ladder's button is gone; an abandoned take counts, and uses
+   the one Again up if it had voice; a walk over every sequence of take outcomes, ladder choices and
+   answers never reaches a fourth take or a third sung ladder, never offers the full ladder after a
+   sung smaller one, and never shows Again after "Effortful" or "Uncomfortable", and at every step
+   offers what the step asks for: the feeling question after a sung ladder, Start again or Start
+   while takes remain, Again after "Easy" or "Workable" while the one Again is unused, and Merc's
+   one celebration where it was earned; "Effortful" and "Uncomfortable" end the singing for the
+   visit and pick the rest card; "Uncomfortable" takes the lines and the count away; the feelings
+   lock once answered and free again only for the next take; nothing is written to storage but
+   `fyp-voice` and `fyp-l09-warmup`.
 8. Copy: every line of LESSON.md's page copy and every template in Toys 1, 2 and 4 passes
    `validateGuidedDynamicClaim` (surface `finding`); no quiz feedback line starts with "Right",
    "Yes" or "Correct"; no accessible name or live text holds a ♯ or ♭ sign; and no two controls on a
