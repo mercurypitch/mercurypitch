@@ -82,7 +82,7 @@ let hushed = false
 const waves: { soft?: PeriodicWave; merc?: PeriodicWave } = {}
 const listeners = new Set<(s: SoundState) => void>()
 const live = new Set<Voice>()
-// What else stops with every voice (`onStopAll`): kit/sound-ahead.ts's buses.
+// What else stops with every voice (`onStopAll`): kit/sound-ahead.ts's buses, kit/run.ts's runs.
 const stoppers = new Set<() => void>()
 
 function periodicWave(context: AudioContext, amps: number[]): PeriodicWave {
