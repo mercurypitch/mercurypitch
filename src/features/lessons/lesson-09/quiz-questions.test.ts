@@ -10,9 +10,10 @@
 
 import { describe, expect, it } from 'vitest'
 import '@/features/lessons/kit/browser-doubles.test-fixtures'
-import { lessonOfQuestion } from '@/features/lessons/kit/quiz'
+import { lessonOfQuestion, linkAway, recallStepHref, } from '@/features/lessons/kit/quiz'
+import { QUIZ_QUESTIONS as LESSON_6 } from '@/features/lessons/lesson-06/quiz-questions'
 import { validateGuidedDynamicClaim } from '@/lib/guided-voice/claims'
-import { QUIZ_QUESTIONS } from './quiz-questions'
+import { QUIZ_QUESTIONS, RECALL_QUESTIONS } from './quiz-questions'
 
 /** Markup as text. */
 const text = (html: string): string => html.replace(/<[^>]+>/g, '')
@@ -90,5 +91,39 @@ describe('the quick check', () => {
       ).toEqual([])
       expect(line).not.toMatch(/[♯♭]/)
     }
+  })
+})
+
+describe('the recall', () => {
+  it("asks Lesson 6's questions 2 and 3, its very objects, under Lesson 6's ids", () => {
+    // Assert
+    expect(RECALL_QUESTIONS.map((q) => q.id)).toEqual(['l06-q2', 'l06-q3'])
+    expect(RECALL_QUESTIONS.map((q) => lessonOfQuestion(q.id))).toEqual([6, 6])
+    expect(RECALL_QUESTIONS).toEqual(
+      LESSON_6.filter((q) => q.id === 'l06-q2' || q.id === 'l06-q3'),
+    )
+  })
+
+  it("turns Lesson 6's step links into links to Lesson 6's page at the step, in a new tab", () => {
+    // Arrange
+    const links = RECALL_QUESTIONS.map((q) => {
+      const box = document.createElement('p')
+      box.innerHTML = q.options.map((o) => o.feedback).join(' ')
+
+      // Act
+      linkAway(box, 6, { href: recallStepHref })
+      return box.querySelector('a')
+    })
+
+    // Assert
+    expect(links.map((a) => a?.getAttribute('href'))).toEqual([
+      '/learn/06#step-5',
+      '/learn/06#step-2',
+    ])
+    expect(links.map((a) => a?.textContent)).toEqual([
+      'Try Lesson 6, Step 5 again',
+      'Try Lesson 6, Step 2 again',
+    ])
+    expect(links.every((a) => a?.target === '_blank')).toBe(true)
   })
 })
