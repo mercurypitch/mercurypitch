@@ -101,6 +101,7 @@ describe("Lesson 7's live words", () => {
       startReady: false,
       startHint: null,
       ask: true,
+      locked: false,
       again: true,
       done: true,
       closing: 'plain' as const,

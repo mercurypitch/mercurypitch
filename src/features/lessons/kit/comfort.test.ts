@@ -139,6 +139,40 @@ describe('mountFeelings', () => {
       ['uncomfortable', 'false', false],
     ])
   })
+
+  it('when changeable and then locked, keeps the answer pressed and takes no other', () => {
+    // Arrange
+    const root = document.createElement('div')
+    root.innerHTML = FEELINGS.map(
+      (f) =>
+        `<button type="button" data-feel="${f}" aria-pressed="false">${f}</button>`,
+    ).join('')
+    const heard: string[] = []
+    const feelings = mountFeelings(root, (f) => heard.push(f), {
+      changeable: true,
+    })
+    root.querySelector<HTMLButtonElement>('[data-feel="easy"]')?.click()
+
+    // Act: locked, then a tap on another answer, as a script might send it
+    feelings.lock()
+    root
+      .querySelector('[data-feel="uncomfortable"]')
+      ?.dispatchEvent(new MouseEvent('click'))
+
+    // Assert
+    expect(heard).toEqual(['easy'])
+    const pressed = Array.from(root.querySelectorAll('button')).map((b) => [
+      b.dataset.feel,
+      b.getAttribute('aria-pressed'),
+      b.disabled,
+    ])
+    expect(pressed).toEqual([
+      ['easy', 'true', true],
+      ['workable', 'false', true],
+      ['effortful', 'false', true],
+      ['uncomfortable', 'false', true],
+    ])
+  })
 })
 
 describe('VisitEnding', () => {

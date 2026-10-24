@@ -8,11 +8,12 @@
 // Again; an abandoned take counts, uses the one Again if it had voice, and
 // leaves Done for today when it was the visit's last;
 // "Effortful" and "Uncomfortable" end the singing and pick the rest card,
-// and a later "Easy" brings none of it back. Done for today ends the takes
-// and keeps the question and its lines, which a later answer still
-// changes. A walk over every sequence of takes, answers and Done for today
-// never reaches a fourth take or a third sung siren, and never loses the
-// question after Done for today.
+// and a later "Easy" brings none of it back. Done for today ends the takes,
+// keeps the question, its answer and its lines, and locks the answer, so a
+// later one changes nothing. A walk over every sequence of takes, answers
+// and Done for today never reaches a fourth take or a third sung siren,
+// never loses the question after Done for today, and never lets an answer
+// change after it.
 
 import { describe, expect, it } from 'vitest'
 import type { Feeling } from '@/features/lessons/kit/comfort'
@@ -227,13 +228,14 @@ describe('after a take', () => {
 })
 
 describe('after Done for today', () => {
-  it('keeps the question and its lines as the answer left them', () => {
+  it('keeps the question and its lines as the answer left them, the answer locked', () => {
     // Act
     const o = offers(run([SING, HEARD, took('band'), feel('easy'), DONE]))
 
     // Assert
     expect(o).toMatchObject({
       ask: true,
+      locked: true,
       closing: 'band',
       keepBand: true,
       doctor: false,
@@ -241,49 +243,42 @@ describe('after Done for today', () => {
     })
   })
 
-  it("lets a later answer change the lines and the Wrap's card, and brings back no take", () => {
-    // Act: "Easy", Done for today, then "Workable", "Uncomfortable" and "Easy"
+  it("locks the answer: a later one changes neither the lines nor the Wrap's card", () => {
+    // Arrange: "Easy", Done for today
     const done = run([SING, HEARD, took('band'), feel('easy'), DONE])
-    const workable = run([feel('workable')], done)
-    const hurt = run([feel('uncomfortable')], workable)
-    const after = run([feel('easy')], hurt)
+
+    // Act: "Workable", "Uncomfortable" and "Effortful"
+    const after = run(
+      [feel('workable'), feel('uncomfortable'), feel('effortful')],
+      done,
+    )
 
     // Assert
-    expect(offers(workable)).toMatchObject({
+    expect(after).toBe(done)
+    expect(after.feeling).toBe('easy')
+    expect(offers(after)).toMatchObject({
       ask: true,
+      locked: true,
       closing: 'band',
+      doctor: false,
       keepBand: true,
       restCard: false,
+      start: false,
+      again: false,
+      done: false,
     })
-    for (const v of [hurt, after])
-      expect(offers(v)).toMatchObject({
-        ask: true,
-        closing: 'enough',
-        doctor: true,
-        keepBand: false,
-        restCard: true,
-        start: false,
-        again: false,
-        done: false,
-      })
   })
 
-  it('keeps the gentle line and the band after a later "Effortful"', () => {
-    const o = offers(
-      run([
-        SING,
-        HEARD,
-        took('unsteady'),
-        feel('easy'),
-        DONE,
-        feel('effortful'),
-      ]),
-    )
+  it('keeps the plain line after an unsteady take, without "Try again", after a later "Effortful"', () => {
+    const done = run([SING, HEARD, took('unsteady'), feel('easy'), DONE])
+    const o = offers(run([feel('effortful')], done))
     expect(o).toMatchObject({
       ask: true,
-      closing: 'gentle',
+      locked: true,
+      closing: 'plain',
+      tryAgain: false,
       keepBand: true,
-      restCard: true,
+      restCard: false,
       again: false,
       done: false,
     })
@@ -319,12 +314,12 @@ describe('every visit', () => {
     if (taking)
       for (const t of Object.keys(TAKE))
         moves.push(o.again ? [AGAIN, took(t)] : [took(t)])
-    if (o.ask) for (const f of FEELINGS) moves.push([feel(f)])
+    if (o.ask && !o.locked) for (const f of FEELINGS) moves.push([feel(f)])
     if (o.done) moves.push([DONE])
     for (const m of moves) walk(run(m, v), depth - 1, seen)
   }
 
-  it('never reaches a fourth take or a third sung siren, never shows "Try again" without Again, and keeps the question after Done for today', () => {
+  it('never reaches a fourth take or a third sung siren, never shows "Try again" without Again, and keeps the question, its answer locked, after Done for today', () => {
     // Arrange
     let visits = 0
     const problems: string[] = []
@@ -343,6 +338,12 @@ describe('every visit', () => {
         problems.push('a take offered after Done for today')
       if (v.finished && last?.voiced === true && !last.abandoned && !o.ask)
         problems.push('the question gone after Done for today')
+      if (o.locked !== v.finished)
+        problems.push(
+          'the answers locked before Done for today, or open after it',
+        )
+      if (v.finished && FEELINGS.some((f) => next(v, feel(f)) !== v))
+        problems.push('an answer changed after Done for today')
     })
 
     // Assert

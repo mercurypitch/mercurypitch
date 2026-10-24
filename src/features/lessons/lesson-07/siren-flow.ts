@@ -22,11 +22,11 @@
 // "Effortful" or "Uncomfortable": once either has been picked, no Again and
 // no Start for the rest of the visit, and the Wrap shows the rest card, as
 // after "Just listen today" (REQ-GVC-021, REQ-GVC-023, REQ-GVC-055). An
-// answer can change until the next take, and after Done for today, which
-// ends the takes and keeps the card's question and lines; the strongest
-// report the visit has had decides the closing line, because the singer's
-// report outranks every reading (REQ-GVC-024). Nothing here is stored: the
-// ending lasts the visit.
+// answer can change until the next take or Done for today, which ends the
+// takes, keeps the card's question, its answer and its lines, and locks the
+// answer as it stands; the strongest report the visit has had decides the
+// closing line, because the singer's report outranks every reading
+// (REQ-GVC-024). Nothing here is stored: the ending lasts the visit.
 
 import type { Feeling } from '@/features/lessons/kit/comfort'
 import { afterFeeling } from '@/features/lessons/kit/comfort'
@@ -109,6 +109,8 @@ export function next(v: SirenVisit, e: SirenEvent): SirenVisit {
         againUsed: v.againUsed || (e.take.abandoned && e.take.voiced),
       }
     case 'feel':
+      // after Done for today the answer stands
+      if (v.finished) return v
       return {
         ...v,
         feeling: e.feeling,
@@ -157,6 +159,8 @@ export interface SirenOffers {
   readonly startHint: 'first' | 'off' | null
   /** "How did that feel?" is asked. */
   readonly ask: boolean
+  /** Its four answers are locked, the one picked still pressed: Done for today was pressed. */
+  readonly locked: boolean
   readonly again: boolean
   /** Done for today. */
   readonly done: boolean
@@ -174,11 +178,12 @@ export interface SirenOffers {
 export function offers(v: SirenVisit): SirenOffers {
   const card = cardOffers(v)
   if (!v.finished) return card
-  // Done for today ends the takes, not the card: the question and its lines
-  // stay as an answer leaves them, and a later answer still changes them,
-  // but nothing starts a take again, and Done for today itself is gone
+  // Done for today ends the takes, not the card: the question, its answer
+  // and its lines stay as they stand, the answer locked, nothing starts a
+  // take again, and Done for today itself is gone
   return {
     ...card,
+    locked: true,
     start: false,
     startReady: false,
     startHint: null,
@@ -197,6 +202,7 @@ function cardOffers(v: SirenVisit): SirenOffers {
     startReady: false,
     startHint: null,
     ask: false,
+    locked: false,
     again: false,
     done: false,
     closing: null,

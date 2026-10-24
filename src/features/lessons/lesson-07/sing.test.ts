@@ -15,10 +15,10 @@
 // though once it is back in view Start starts one; the ring rests once a
 // take ends, with motion or without, and beside Done for today, and Merc's
 // siren ends on "Rest" in a listen-only visit; Done for today keeps the
-// question, its answer and its lines, which a later answer changes, with no
-// take on offer again; and storage holds nothing but `fyp-voice` and
-// `fyp-l07-warmup`. The listener is a double: its takes are synthetic
-// frames, read by the real siren reader.
+// question, its answer and its lines, the four answers locked with the one
+// picked still pressed, and no take on offer again; and storage holds
+// nothing but `fyp-voice` and `fyp-l07-warmup`. The listener is a double:
+// its takes are synthetic frames, read by the real siren reader.
 
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { scrollIntoViewAgain, scrollOutOfView, } from '@/features/lessons/kit/browser-doubles.test-fixtures'
@@ -583,6 +583,17 @@ describe("Lesson 7's Sing it: after Done for today", () => {
   }
   const pressed = (p: Page, f: string): string | null =>
     p.el(`[data-feel="${f}"]`).getAttribute('aria-pressed')
+  /** The four answers, as [answer, pressed, disabled]. */
+  const answers = (): [string, string | null, boolean][] =>
+    Array.from(
+      document.querySelectorAll<HTMLButtonElement>(
+        '#singCard button[data-feel]',
+      ),
+    ).map((b) => [
+      b.dataset.feel ?? '',
+      b.getAttribute('aria-pressed'),
+      b.disabled,
+    ])
   const lit = (p: Page): boolean =>
     (p.el('#singChart canvas').getAttribute('aria-label') ?? '').includes('lit')
   /** No button on the card that would start or end a take. */
@@ -614,43 +625,32 @@ describe("Lesson 7's Sing it: after Done for today", () => {
     expect(status(p)).toBe('Done for today.')
   })
 
-  it('lets the answer change, each with its own lines, and brings no take back', async () => {
+  it('locks the answer: the one picked stays pressed, and the others change nothing', async () => {
     // Arrange: "Easy", Done for today
     vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] })
     const p = await sungBand()
     p.el('[data-feel="easy"]').click()
     p.el('[data-panel="after"] [data-sing="today"]').click()
 
-    // Act: "Workable", then "Uncomfortable"
-    p.el('[data-feel="workable"]').click()
-    const workable = {
-      asked: onCard(p, '[data-panel="feel"]'),
-      pressed: pressed(p, 'workable'),
-      band: onCard(p, '[data-closing="band"]'),
-      lit: lit(p),
-      noTakes: noTakes(p),
-    }
-    p.el('[data-feel="uncomfortable"]').click()
+    // Act: "Workable", then "Uncomfortable", as a script might press them
+    for (const f of ['workable', 'uncomfortable'])
+      p.el(`[data-feel="${f}"]`).dispatchEvent(new MouseEvent('click'))
 
     // Assert
-    expect(workable).toEqual({
-      asked: true,
-      pressed: 'true',
-      band: true,
-      lit: true,
-      noTakes: true,
-    })
+    expect(answers()).toEqual([
+      ['easy', 'true', true],
+      ['workable', 'false', true],
+      ['effortful', 'false', true],
+      ['uncomfortable', 'false', true],
+    ])
     expect(onCard(p, '[data-panel="feel"]')).toBe(true)
-    expect(pressed(p, 'uncomfortable')).toBe('true')
-    expect(onCard(p, '[data-closing="enough"]')).toBe(true)
-    expect(onCard(p, '[data-after-doctor]')).toBe(true)
-    expect(onCard(p, '[data-reading]')).toBe(false)
-    expect(lit(p)).toBe(false)
+    expect(onCard(p, '[data-closing="band"]')).toBe(true)
+    expect(onCard(p, '[data-after-doctor]')).toBe(false)
+    expect(onCard(p, '[data-reading]')).toBe(true)
+    expect(lit(p)).toBe(true)
     expect(noTakes(p)).toBe(true)
-    expect(p.VisitEnding.ending).toBe('rest')
-    expect(status(p)).toBe(
-      "Thanks for saying so. That's enough singing for today: rest your voice.",
-    )
+    expect(p.VisitEnding.ending).toBe('practise')
+    expect(status(p)).toBe('Done for today.')
   })
 
   it('leaves the reading and nothing to press after a take with no voice', async () => {
