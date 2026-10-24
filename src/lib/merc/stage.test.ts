@@ -412,3 +412,40 @@ describe('mountMercStage, while the driver compiles his shaders', () => {
     expect(onReady).toHaveBeenCalledTimes(1)
   })
 })
+
+describe('mountMercStage, mounted again and again', () => {
+  // Chrome keeps 16 WebGL contexts live at most and drops the oldest, so a
+  // context a destroy kept would cost a later Merc his.
+  it('gives every context back: twenty mounts and destroys, half mid-compile, leave nothing', () => {
+    // Arrange
+    vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] })
+    const frames = frameQueue()
+    const fakes = Array.from({ length: 20 }, (_, i) => {
+      const fake = createFakeGl()
+      fake.state.parallel = i % 2 === 1
+      fake.state.done = i % 2 === 0
+      return fake
+    })
+    let next = 0
+    vi.spyOn(HTMLCanvasElement.prototype, 'getContext').mockImplementation(
+      (() => fakes[next++].gl) as unknown as HTMLCanvasElement['getContext'],
+    )
+
+    // Act
+    for (let i = 0; i < 20; i++) {
+      const stage = mountMercStage(host)
+      frames.run(1000 + 16 * i)
+      stage.destroy()
+    }
+
+    // Assert
+    expect(fakes.map((f) => f.loseContext.mock.calls.length)).toEqual(
+      Array.from({ length: 20 }, () => 1),
+    )
+    expect(fakes.flatMap((f) => [...f.live])).toEqual([])
+    expect(fakes.filter((f) => f.state.draws > 0)).toHaveLength(10)
+    expect(frames.pending).toBe(0)
+    expect(vi.getTimerCount()).toBe(0)
+    expect(host.querySelector('canvas')).toBeNull()
+  })
+})
