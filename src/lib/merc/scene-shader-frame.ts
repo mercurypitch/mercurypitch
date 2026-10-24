@@ -60,7 +60,7 @@ vec3 effects(vec3 ro, vec3 rd, float tLim, float pw) {
           float ri = uArcs2.w + fi * 0.075;
           float fade = smoothstep(0.0, 0.7, fi) * smoothstep(3.0, 1.7, fi);
           float dr = r - ri;
-          acc += vec3(0.62, 0.78, 1.0) * uArcs.z * am * fade * (exp(-dr * dr / 0.00006) * 1.1 + exp(-dr * dr / 0.0015) * 0.1);
+          acc += uLight[14] * uArcs.z * am * fade * (exp(-dr * dr / 0.00006) * 1.1 + exp(-dr * dr / 0.0015) * 0.1);
         }
       }
     }
@@ -87,7 +87,7 @@ vec3 effects(vec3 ro, vec3 rd, float tLim, float pw) {
     if (tp < 0.0 || tp > tLim) continue;
     vec2 l = (ro + rd * tp).xy - dd.xy;
     float r2 = dot(l, l);
-    acc += vec3(0.55, 0.75, 1.0) * dd.w * (exp(-r2 / 0.00009) * 1.1 + exp(-r2 / 0.0016) * 0.12);
+    acc += uLight[15] * dd.w * (exp(-r2 / 0.00009) * 1.1 + exp(-r2 / 0.0016) * 0.12);
   }
   // Speed lines above a falling drop.
   if (uSpeed > 0.001) {
@@ -102,7 +102,7 @@ vec3 effects(vec3 ro, vec3 rd, float tLim, float pw) {
         float y1 = y0 + 0.4 + 0.25 * fract(fi * 0.37 + 0.2);
         float gx = (X.x - lx) / 0.005;
         float along = smoothstep(y0, y0 + 0.1, X.y) * smoothstep(y1, y0 + 0.12, X.y);
-        acc += vec3(0.6, 0.75, 1.0) * exp(-gx * gx) * along * uSpeed * 0.9;
+        acc += uLight[16] * exp(-gx * gx) * along * uSpeed * 0.9;
       }
     }
   }
@@ -123,7 +123,7 @@ vec3 effects(vec3 ro, vec3 rd, float tLim, float pw) {
     vec3 gc = gradAt(hh);
     // Only the lower curve of each echo: the trail is a run of arcs, no sides.
     float low = 1.0 - smoothstep(0.2, 0.46, hh);
-    acc += (mix(gc, vec3(0.8, 0.95, 1.0), 0.45) * line * 0.95 + gc * fill) * gh.w * low;
+    acc += (mix(gc, uLight[17], 0.45) * line * 0.95 + gc * fill) * gh.w * low;
   }
   // Climb arrow: a thin arc curving up beside him, with a head.
   if (uArrow.z > 0.001) {
@@ -136,7 +136,7 @@ vec3 effects(vec3 ro, vec3 rd, float tLim, float pw) {
       float a = atan(l.y, l.x);
       float on = smoothstep(2.0, 2.15, a) * smoothstep(3.75, 3.6, a);
       float dr = (r - 0.42) / 0.006;
-      acc += vec3(0.62, 0.78, 1.0) * exp(-dr * dr) * on * uArrow.z * 0.9;
+      acc += uLight[14] * exp(-dr * dr) * on * uArrow.z * 0.9;
       vec2 tip = c + 0.42 * vec2(cos(2.05), sin(2.05));
       vec2 tl = X - tip;
       vec2 dir = normalize(vec2(sin(2.05), -cos(2.05)));
@@ -145,7 +145,7 @@ vec3 effects(vec3 ro, vec3 rd, float tLim, float pw) {
         vec2 hd = normalize(-dir + nrm * 0.75 * float(s));
         float tt = clamp(dot(tl, hd), 0.0, 0.07);
         float dd = length(tl - hd * tt) / 0.006;
-        acc += vec3(0.62, 0.78, 1.0) * exp(-dd * dd) * uArrow.z * 0.9;
+        acc += uLight[14] * exp(-dd * dd) * uArrow.z * 0.9;
       }
     }
   }

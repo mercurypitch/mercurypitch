@@ -3,14 +3,17 @@
 // ============================================================
 //
 // The app's own shader Merc, twice: blue as shipped, orange through the warm
-// look (merc-warm.ts). The renderer loads after first paint, so the page
-// opens on the two still images, and live Merc and Tavi take over once each
-// says ready: his shader has linked and his first frame is drawn. A first
-// visit can wait seconds for that, the page running on meanwhile; one still
-// not ready after LIVE_MERC_WAIT_MS stays a still for this page and lets its
-// WebGL context go. One WebGL context per Merc. They pause while the stage is
-// off screen and while animations are paused, except when a tap has asked one
-// to sing; reduced motion and failures leave the stills in place.
+// look (merc-warm.ts), both with one shader text. The renderer loads after
+// first paint, so the page opens on the two still images, and live Merc and
+// Tavi take over once each says ready: his shader has linked and his first
+// frame is drawn. A first visit can wait seconds for that, the page running
+// on meanwhile. Tavi mounts once Merc is live, so her shader comes from the
+// browser's cache, and stays a still when he does not; one not ready after
+// LIVE_MERC_WAIT_MS of the page on screen stays a still for this page and
+// lets its WebGL context go. One WebGL context per Merc. They
+// pause while the stage is off screen and while animations are paused,
+// except when a tap has asked one to sing; reduced motion and failures leave
+// the stills in place.
 //
 // So does a WebGL that would run on the CPU (SwiftShader, llvmpipe: no GPU,
 // or one the browser has blocklisted). Merc and Tavi drawn there hold the main
@@ -21,7 +24,7 @@ import { canRunLiveMerc, waitForLiveMerc } from '@/lib/merc/gpu-gate'
 import type { MercMountOptions, MercRenderer } from '@/lib/merc/renderer'
 import type { SparkleSide } from '@/lib/merc/sim'
 import { q } from './dom'
-import { WARM_LOOK, warmFragment } from './merc-warm'
+import { WARM_LOOK } from './merc-warm'
 import { Motion, reducedMotion } from './motion-switch'
 
 export type Which = 'blue' | 'orange'
@@ -57,12 +60,12 @@ function syncPause(): void {
   }
 }
 
-// Settles once this Merc is live, or has failed or been given up on.
+// Settles once this Merc is live (true), or has failed or been given up on.
 function mountOne(
   which: Which,
   mount: MountFn,
   o: MercDuoOptions,
-): Promise<void> {
+): Promise<boolean> {
   const el = mercEl(which)
   const host = q('.live', el)
   const warm = which === 'orange'
@@ -79,7 +82,7 @@ function mountOne(
         // already failing
       }
       host.textContent = ''
-      resolve()
+      resolve(false)
     }
     const stopWaiting = waitForLiveMerc(giveUp)
     let m: MercRenderer
@@ -91,11 +94,10 @@ function mountOne(
         view: 'front',
         state: 'idle',
         still: reducedMotion(),
-        fragmentPatch: warm ? warmFragment : undefined,
         onReady: () => {
           stopWaiting()
           el.classList.add('is-live')
-          resolve()
+          resolve(true)
         },
         onFailure: giveUp,
         ...(o.sparkles === undefined ? {} : { sparkles: o.sparkles }),
@@ -139,7 +141,13 @@ export async function initMercs(
     settle()
     return
   }
-  const mounted = [mountOne('blue', mount, o), mountOne('orange', mount, o)]
+  // Tavi once Merc is live: the same shader again, which the browser has
+  // then compiled and cached, where two at once would compile it twice. A
+  // Merc who failed or ran out of time leaves her a still too, since her
+  // shader is his and would only fail or keep the driver busy again.
+  const mounted = mountOne('blue', mount, o).then(
+    (live) => live && mountOne('orange', mount, o),
+  )
   new IntersectionObserver(
     (entries) =>
       entries.forEach((e) => {
@@ -149,7 +157,7 @@ export async function initMercs(
     { rootMargin: '40px 0px' },
   ).observe(stage)
   Motion.subscribe(syncPause)
-  await Promise.all(mounted)
+  await mounted
   settle()
 }
 

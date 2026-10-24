@@ -236,6 +236,10 @@
   opacity: 0;
   animation: still-in 0.4s 4s forwards;
 }
+/* but not over a Merc already live while his partner still loads */
+.duo.pending .merc.is-live img {
+  animation: none;
+}
 @keyframes still-in {
   to {
     opacity: 1;

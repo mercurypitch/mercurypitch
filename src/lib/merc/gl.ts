@@ -8,8 +8,8 @@
 // not drawn and the exercise carries on without him. The programs, which
 // must never be read before the driver has finished, are in programs.ts.
 
-import type { MercLook, MercPalette, MercView } from './constants'
-import { GRAD_N } from './constants'
+import type { MercLight, MercLook, MercPalette, MercView } from './constants'
+import { GRAD_N, LIGHT_SLOTS } from './constants'
 import { cross3, norm3 } from './rest-space'
 
 // ------------------------------------------------------------ colour
@@ -72,6 +72,11 @@ export function lookUniforms(look: MercLook): LookUniforms {
     tint: new Float32Array(hexLin(look.tint)),
     tint2: new Float32Array(hexLin(look.tint2)),
   }
+}
+
+/** The light set packed once per change, in the shader's slot order. */
+export function lightUniforms(light: MercLight): Float32Array {
+  return new Float32Array(LIGHT_SLOTS.flatMap((slot) => light[slot]))
 }
 
 // ------------------------------------------------------------ camera

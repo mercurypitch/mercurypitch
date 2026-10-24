@@ -199,8 +199,9 @@ because the artifact host caps a file at 15 MB.
 On the public page Merc and Tavi are the app's own renderer (`src/lib/merc/renderer.ts`), loaded as
 its own chunk after first paint so the page reads and plays before it arrives: Merc as shipped,
 Tavi with the warm look and the warm light (`src/features/lessons/kit/merc-warm.ts`: a gradient
-through `setLook`, and the shader's cool light constants swapped for amber through the renderer's
-`fragmentPatch`, so the approved shader text never changes). (The proof preview loaded the film's
+and an amber light set, both through `setLook`; the shader reads its light colours from uniforms, so
+both Mercs draw with one shader text, which the browser compiles once, Tavi mounting once Merc is
+ready). (The proof preview loaded the film's
 bundles, `merc-blue.js` and `merc-orange.js`, built by the film's `tools/build-merc.mjs` with the
 same swaps.) Live mode: `mount(el, { transparent: true, quality: 'medium', size, view: 'front',
 state: 'idle' })`, Tavi with `m.setLook(WARM_LOOK)`; turn them toward each other
@@ -218,9 +219,13 @@ names itself as SwiftShader, llvmpipe, softpipe or the Basic Render Driver. Merc
 there held the main thread for about 11 s after load, and the page under them stopped answering.
 Each still stays until its Merc says ready (`onReady`: his shader has linked and his first frame is
 drawn), and a Merc not ready after 10 s of the page on screen (`LIVE_MERC_WAIT_MS`; time in a
-background tab does not count) stays a still for the page and frees his context. The renderer never
-asks the driver for a shader's status before it is done: such a read waits out the whole compile,
-the likely cause of a Windows Chrome that froze for minutes on a first visit.
+background tab does not count) stays a still for the page and frees his context. Tavi waits for
+Merc: she mounts once he is live, and stays a still when he is not. A Windows Chrome froze for
+minutes on a first visit, most likely in the shader compile, so the compile is kept small for
+Direct3D's compiler: the march's loops start at a uniform (`uZero`), which keeps them loops rather
+than copies, and both Mercs share one shader text, which the browser compiles once. The renderer
+also never asks the driver for a shader's status before it is done (`KHR_parallel_shader_compile`),
+since such a read waits out the whole compile.
 
 ## Contract (the proof preview on its preview host)
 

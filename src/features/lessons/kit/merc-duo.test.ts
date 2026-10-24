@@ -132,6 +132,28 @@ describe('initMercs', () => {
     expect(renderer.destroyed).toEqual([])
   })
 
+  it('mounts Tavi once Merc is ready, as Merc was mounted, so her shader is his', async () => {
+    // Arrange
+    const m = await duo()
+    void m.initMercs(stage())
+    await flush()
+    const mountsBeforeReady = renderer.mounts.length
+
+    // Act
+    mounted('mercBlue').onReady!()
+    await flush()
+
+    // Assert
+    const own = (o: MercMountOptions): MercMountOptions => ({
+      ...o,
+      onReady: undefined,
+      onFailure: undefined,
+    })
+    expect(mountsBeforeReady).toBe(1)
+    expect(renderer.mounts).toHaveLength(2)
+    expect(own(mounted('mercOrange'))).toEqual(own(mounted('mercBlue')))
+  })
+
   it('keeps the still and frees the renderer of a Merc not ready in time', async () => {
     // Arrange
     vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] })
@@ -153,6 +175,32 @@ describe('initMercs', () => {
     expect(orange.querySelector('img')).not.toBeNull()
     expect(renderer.destroyed).toEqual([orange.querySelector('.live')])
     expect(mercEl('mercBlue').classList.contains('is-live')).toBe(true)
+    expect(settled()).toBe(true)
+  })
+
+  it.each([
+    ['fails', () => mounted('mercBlue').onFailure!(new Error('no context'))],
+    ['is not ready in time', () => vi.advanceTimersByTime(LIVE_MERC_WAIT_MS)],
+  ])('leaves Tavi a still, never mounted, when Merc %s', async (_, ends) => {
+    // Arrange
+    vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] })
+    const m = await duo()
+    void m.initMercs(stage())
+    const settled = settledFlag(m.mercsReady)
+    await flush()
+
+    // Act
+    ends()
+    await flush()
+
+    // Assert
+    const orange = mercEl('mercOrange')
+    expect(renderer.mounts).toHaveLength(1)
+    expect(renderer.destroyed).toEqual([
+      mercEl('mercBlue').querySelector('.live'),
+    ])
+    expect(orange.classList.contains('is-live')).toBe(false)
+    expect(orange.querySelector('canvas')).toBeNull()
     expect(settled()).toBe(true)
   })
 
