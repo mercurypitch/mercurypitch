@@ -469,10 +469,10 @@ States:
    three takes (this take counts), with **Done for today**, and no feeling question follows, since
    nothing was sung. Otherwise **How did that feel?** follows at once (REQ-GVC-022).
 8. **How did that feel?**: Lesson 3's four answers (`aria-pressed`, at least 44 px, two a row on
-   phones), through `mountFeelings` (`kit/comfort.ts:168-199`) with its default, an answer that
+   phones), through `mountFeelings` (`kit/comfort.ts:168-206`) with its default, an answer that
    locks, asked after each take with voice (73): a press disables all four, and `reset()` frees them
-   for the next take. `mountFeelings` has a `changeable` option, for Lesson 6's sweeps (`:168-173`,
-   `:177`), which this page leaves off.
+   for the next take. `mountFeelings` has a `changeable` option, for Lesson 6's sweeps (`:168-174`,
+   `:178`), which this page leaves off.
    - Easy or Workable after take 1: LESSON.md's "Now take 2: breathe after "star", and let "star"
      swell." and **Start take 2**.
    - Easy or Workable after take 2: LESSON.md's playback prompt, "Two takes, one phrase. Play them

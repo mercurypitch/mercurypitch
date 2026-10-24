@@ -583,10 +583,10 @@ States:
    text (REQ-GVC-080, as `lesson-03/sing-view.ts:1-9` does). When the sweep ends, the feeling
    question follows.
 6. **How did that feel?** appears under the guide each time a sweep ends, asked afresh with no
-   answer pressed: Lesson 3's four answers through `mountFeelings` (`comfort.ts:168-199`; FACTS 63).
+   answer pressed: Lesson 3's four answers through `mountFeelings` (`comfort.ts:168-206`; FACTS 63).
    The kit locks the answer once given, until the next sweep resets it; Lesson 6's page passes the
    kit's `changeable`, so its answer can change until then (`mountFeelings`,
-   `comfort.ts:168-178`). This page keeps the lock until the coach settles
+   `comfort.ts:168-179`). This page keeps the lock until the coach settles
    it for the series, as Lesson 10's does (Decisions for the owner).
    - Easy or Workable shows LESSON.md's line, "Do, so, la, fa, do: you just sang the loop's roots.",
      which names the task, never the voice or how the notes went, since nothing listened, and leaves
@@ -1027,7 +1027,7 @@ Each with the package's recommendation and the review's judgement (Lesson 12's r
    lesson follows is a question for the vocal coach across the series; this page shows the rest card
    until it is answered.
 7. **Locking the feeling answer.** The kit locks it once given; Lesson 6's page lets it change until
-   the next sweep (`mountFeelings`, `changeable`, `comfort.ts:168-178`).
+   the next sweep (`mountFeelings`, `changeable`, `comfort.ts:168-179`).
    The vocal coach's call, for the whole series; this page keeps the lock until then, as Lesson 10's
    does (Toys 6). The review: with the lock, a mis-tapped "Easy" can become "Uncomfortable", and
    bring up the doctor lines, only after another sung run, so Lesson 6's changeable answer serves

@@ -540,7 +540,7 @@ States:
    and focus never moves to a button when a state changes, only to its text (REQ-GVC-080, as
    `lesson-03/sing-view.ts:1-9` does). When the sweep ends, the feeling question follows.
 6. **How did that feel?** appears under the guide each time a sweep ends, asked afresh with no
-   answer pressed: Lesson 3's four answers through `mountFeelings` (`comfort.ts:168-199`; FACTS 67).
+   answer pressed: Lesson 3's four answers through `mountFeelings` (`comfort.ts:168-206`; FACTS 67).
    The kit locks the answer once given, until the next sweep resets it; Lesson 6's page passes the
    kit's new `changeable`, so its answer can change until then (`mountFeelings`, `comfort.ts` on
    `feat/lesson-06-page`). This page keeps the lock until the coach settles it for the series

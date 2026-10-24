@@ -624,7 +624,7 @@ States:
    does). When the guide ends, the line counts as sung, and Start the guide gives way to the feeling
    question: from then on the only way to sing again is Again, so a visit holds at most two guides.
 6. **How did that feel?** appears under the guide each time it ends, asked afresh with no answer
-   pressed: Lesson 3's four answers through `mountFeelings` (`kit/comfort.ts:174-199`; FACTS 66).
+   pressed: Lesson 3's four answers through `mountFeelings` (`kit/comfort.ts:175-206`; FACTS 66).
    - Easy or Workable shows LESSON.md's line, "That's it: one line over the backbeat, done.", which
      names the task, never the voice or how the line went, since nothing listened; and **Again**,
      the guide once more, once a visit (Lesson 7 FACTS 58), so a visit holds at most two sung
