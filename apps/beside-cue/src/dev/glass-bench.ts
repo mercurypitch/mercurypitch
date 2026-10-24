@@ -7,7 +7,7 @@
 // is judged on swatches before any vessel wears it
 // (docs/plans/glass-look-system-2026-10-23.md, section 7).
 //
-//   /glass-bench.html?environment=kit&look=studio-amber
+//   /glass-bench.html?environment=kit&look=studio-amber   (C; B is screen-amber)
 //   /glass-bench.html?subject=swatches&toneMapping=neutral
 //   /glass-bench.html?hero=/games/adventure-v6/opaline-echo-amphora-qa-v2.glb
 //   /glass-bench.html?camera=front&yaw=90&mask=1
@@ -16,6 +16,7 @@
 
 import type { BenchShot, GlassBench } from '@irchiinnuss/glass-game/glass-bench'
 import { mountGlassBench, parseBenchShot, } from '@irchiinnuss/glass-game/glass-bench'
+import { MeshoptDecoder } from 'three/addons/libs/meshopt_decoder.module.js'
 
 declare global {
   interface Window {
@@ -43,6 +44,7 @@ try {
     hero: DEFAULT_HERO,
     hdr: HDR,
     pixelRatio: Number(params.get('scale') ?? 2),
+    meshoptDecoder: MeshoptDecoder,
   })
   const set = bench.set
   window.glassBench = {

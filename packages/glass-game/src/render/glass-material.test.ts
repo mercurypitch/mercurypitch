@@ -46,7 +46,13 @@ describe('GlassMaterial', () => {
     expect(material.thickness).toBe(0.02)
     expect(material.defines).not.toHaveProperty('GLASS_STUDIO')
     const shader = compile(material)
-    expect(shader.fragmentShader).toContain('#include <transmission_fragment>')
+    expect(shader.fragmentShader).not.toContain(
+      '#include <transmission_fragment>',
+    )
+    expect(shader.fragmentShader).toContain('getIBLVolumeRefraction(')
+    expect(shader.fragmentShader).toContain(
+      'material.thickness += glassThicknessFloor;',
+    )
   })
 
   it('keys programs by technique, thickness channel and back light', () => {
@@ -79,6 +85,8 @@ describe('GlassMaterial', () => {
     expect(shader.fragmentShader).toContain(
       'textureCubeUV( envMap, envMapRotation * glassRay',
     )
+    expect(shader.fragmentShader).toContain('glassWall += glassThicknessFloor;')
+    expect(shader.fragmentShader).toContain('glassRefractionStrength )')
     expect(
       shader.fragmentShader.split('uniform float glassTransmission;'),
     ).toHaveLength(2)

@@ -1,0 +1,347 @@
+<title>Glass Look Bench</title>
+<meta name="claude:viewport-fit-sides" content="cover" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link
+  rel="stylesheet"
+  href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap"
+/>
+<style>
+  /* Layout: a review tool. The rendered shot leads; the controls and the round's findings sit beside it, below it on a phone. */
+  :root {
+    --bg: #eceff1;
+    --panel: #ffffff;
+    --ink: #1a1d21;
+    --muted: #5b646d;
+    --rule: #d5dadf;
+    --amber: #a8650a;
+    --field: #f6f7f8;
+    --display: 'Bricolage Grotesque', 'Helvetica Neue', Arial, sans-serif;
+    --body: 'IBM Plex Sans', 'Helvetica Neue', Arial, sans-serif;
+    --mono: 'IBM Plex Mono', ui-monospace, Menlo, Consolas, monospace;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme='light']) {
+      --bg: #111417;
+      --panel: #191d21;
+      --ink: #e6e9ec;
+      --muted: #9aa3ab;
+      --rule: #2b3137;
+      --amber: #e6a443;
+      --field: #20252a;
+      color-scheme: dark;
+    }
+  }
+  :root[data-theme='dark'] {
+    --bg: #111417;
+    --panel: #191d21;
+    --ink: #e6e9ec;
+    --muted: #9aa3ab;
+    --rule: #2b3137;
+    --amber: #e6a443;
+    --field: #20252a;
+    color-scheme: dark;
+  }
+  * {
+    box-sizing: border-box;
+  }
+  body {
+    background: var(--bg);
+    color: var(--ink);
+    font: 15px/1.55 var(--body);
+    padding-left: max(16px, env(safe-area-inset-left, 0px));
+    padding-right: max(16px, env(safe-area-inset-right, 0px));
+    padding-block: 24px 48px;
+  }
+  .wrap {
+    max-width: 1240px;
+    margin: 0 auto;
+    display: grid;
+    gap: 20px;
+  }
+  header {
+    display: grid;
+    gap: 6px;
+  }
+  .eyebrow {
+    font: 500 12px var(--mono);
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--muted);
+  }
+  h1 {
+    font: 600 clamp(26px, 3.6vw, 36px)/1.15 var(--display);
+    margin: 0;
+    text-wrap: balance;
+  }
+  h1 span {
+    color: var(--amber);
+  }
+  h2 {
+    font: 600 16px/1.3 var(--display);
+    margin: 0;
+  }
+  p {
+    margin: 0;
+    max-width: 68ch;
+  }
+  .lede {
+    color: var(--muted);
+  }
+  .bench {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 360px;
+    gap: 20px;
+    align-items: start;
+  }
+  .stage {
+    margin: 0;
+    display: grid;
+    gap: 8px;
+    min-width: 0;
+  }
+  canvas {
+    display: block;
+    width: 100%;
+    max-width: 860px;
+    aspect-ratio: 1;
+    height: auto;
+    border-radius: 8px;
+    background: #767676;
+  }
+  #status {
+    font: 13px var(--mono);
+    color: var(--muted);
+    min-height: 1.5em;
+  }
+  .panel {
+    display: grid;
+    gap: 16px;
+    min-width: 0;
+  }
+  .card {
+    background: var(--panel);
+    border: 1px solid var(--rule);
+    border-radius: 10px;
+    padding: 16px;
+    display: grid;
+    gap: 12px;
+  }
+  form {
+    display: grid;
+    gap: 10px;
+  }
+  label {
+    display: grid;
+    gap: 4px;
+    font-size: 13px;
+    color: var(--muted);
+  }
+  select,
+  input[type='range'] {
+    font: 14px var(--body);
+    color: var(--ink);
+  }
+  select {
+    background: var(--field);
+    border: 1px solid var(--rule);
+    border-radius: 6px;
+    padding: 7px 8px;
+    min-width: 0;
+    width: 100%;
+  }
+  select:focus-visible,
+  input:focus-visible {
+    outline: 2px solid var(--amber);
+    outline-offset: 2px;
+  }
+  input[type='range'] {
+    width: 100%;
+    accent-color: var(--amber);
+  }
+  .turn {
+    display: flex;
+    justify-content: space-between;
+    gap: 8px;
+  }
+  .turn output {
+    font: 13px var(--mono);
+    color: var(--ink);
+    font-variant-numeric: tabular-nums;
+  }
+  dl {
+    margin: 0;
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr);
+    gap: 6px 10px;
+    font-size: 14px;
+  }
+  dt {
+    font: 600 13px var(--mono);
+    color: var(--amber);
+  }
+  dd {
+    margin: 0;
+  }
+  .notes {
+    display: grid;
+    gap: 10px;
+    font-size: 14px;
+  }
+  .notes table {
+    border-collapse: collapse;
+    width: 100%;
+    font-size: 13px;
+  }
+  .notes th,
+  .notes td {
+    text-align: left;
+    padding: 5px 6px;
+    border-bottom: 1px solid var(--rule);
+    vertical-align: top;
+  }
+  .notes td.num {
+    font-family: var(--mono);
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+  }
+  .notes ul {
+    margin: 0;
+    padding-left: 18px;
+    display: grid;
+    gap: 6px;
+  }
+  @media (max-width: 900px) {
+    .bench {
+      grid-template-columns: minmax(0, 1fr);
+    }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    * {
+      scroll-behavior: auto;
+    }
+  }
+</style>
+
+<div class="wrap">
+  <header>
+    <div class="eyebrow">Glassworks · glass look plan · {{SUBTITLE}}</div>
+    <h1>Glass Look <span>Bench</span></h1>
+    <p class="lede">
+      One glass look at a time, on the game's own renderer settings, under five
+      lights. A look passes when it reads right under all of them without
+      changes for any one.
+    </p>
+  </header>
+
+  <main class="bench">
+    <figure class="stage">
+      <canvas
+        id="bench"
+        width="1024"
+        height="1024"
+        aria-label="The bench's current shot"
+      ></canvas>
+      <figcaption id="status" role="status">Loading the bench…</figcaption>
+    </figure>
+
+    <div class="panel">
+      <section class="card" aria-labelledby="shot-title">
+        <h2 id="shot-title">Shot</h2>
+        <form id="controls">
+          <label for="look"
+            >Look
+            <select id="look" name="look">
+              {{LOOKS}}
+            </select>
+          </label>
+          <label for="environment"
+            >Light
+            <select id="environment" name="environment">
+              <option value="kit">
+                Exhibit kit: gallery, spots, lit plinth
+              </option>
+              <option value="gallery">Gallery today</option>
+              <option value="room">Studio room (image light)</option>
+              <option value="hdr">The game's sky (image light)</option>
+              <option value="grey">Flat grey (energy check)</option>
+            </select>
+          </label>
+          <label for="toneMapping"
+            >Tone mapping
+            <select id="toneMapping" name="toneMapping">
+              <option value="neutral">Neutral (Khronos PBR)</option>
+              <option value="aces">ACES (the game today)</option>
+              <option value="agx">AgX</option>
+            </select>
+          </label>
+          <label for="subject"
+            >Subject
+            <select id="subject" name="subject">
+              <option value="hero">Vessel</option>
+              <option value="swatches">
+                Swatches: sphere, tumbler, thickness wedge
+              </option>
+            </select>
+          </label>
+          <label for="hero"
+            >Vessel
+            <select id="hero" name="hero"></select>
+          </label>
+          <label for="camera"
+            >Camera
+            <select id="camera" name="camera">
+              <option value="three-quarter">Three-quarter</option>
+              <option value="front">Front, orthographic</option>
+            </select>
+          </label>
+          <label for="yaw">
+            <span class="turn"
+              >Turn <output id="yaw-value" for="yaw">0°</output></span
+            >
+            <input
+              id="yaw"
+              name="yaw"
+              type="range"
+              min="0"
+              max="345"
+              step="15"
+              value="0"
+            />
+          </label>
+        </form>
+      </section>
+
+      <section class="card" aria-labelledby="key-title">
+        <h2 id="key-title">The looks</h2>
+        <dl>
+          <dt>A</dt>
+          <dd>The vessel's own materials, as the game draws them today.</dd>
+          <dt>B</dt>
+          <dd>
+            Real transmission. A lit liner inside the vessel is the light it
+            shows through.
+          </dd>
+          <dt>C</dt>
+          <dd>
+            The glass carries its own light: it refracts a built-in studio,
+            glows where it is thick and lets lamps behind it shine through.
+          </dd>
+        </dl>
+      </section>
+
+      <section class="card notes" aria-labelledby="notes-title">
+        <h2 id="notes-title">This round</h2>
+        {{NOTES}}
+      </section>
+    </div>
+  </main>
+</div>
+
+<script>
+  window.BENCH_MANIFEST = {{MANIFEST}};
+  document.getElementById('yaw').addEventListener('input', (event) => {
+    document.getElementById('yaw-value').textContent = `${event.target.value}°`
+  });
+</script>
+<script type="module" src="bench.js"></script>

@@ -25,6 +25,7 @@ the repository root, where the game's packages are.
 | `bench_capture.mjs`                             | Node            | The glass look bench (`apps/beside-cue/glass-bench.html`): one look on the game's renderer settings under five lights, with a mask per shot. Heroes come from disk or the game's public files. Queues on the proof's port lock |
 | `bench_sheet.py`                                | Python          | The bench's contact sheet: rows of hero, look and tone mapping against columns of lights, masked CIELAB per cell, and CIEDE2000 across the lights (a look tuned to one light shows a large spread)                             |
 | `game_server.mjs`                               | Node            | The dev server, the port lock and software-WebGL Chromium that the proof and the bench capture share                                                                                                                           |
+| `bench_publish.mjs`, `bench_page.html`          | Node            | The bench as a static folder for a hosted review page: the bench bundled, its vessels and HDR embedded as scripts (hosted pages serve neither `.glb` nor `.hdr`), a page with controls and the round's notes                   |
 
 ## Probes and measurement (no Blender)
 

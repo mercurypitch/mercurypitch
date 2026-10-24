@@ -4,9 +4,20 @@ import { Mesh, MeshBasicMaterial, MeshPhysicalMaterial } from 'three'
 import type { GlassOptics } from '../render/glass-material'
 import { GlassMaterial } from '../render/glass-material'
 
-export type BenchLookId = 'authored' | 'studio-amber'
+/**
+ * Phase 1's amber candidates (docs/plans/glass-look-system-2026-10-23.md):
+ * - `authored`: A, the vessel's own materials as the game draws them today;
+ * - `screen-amber`: B, Three's transmission over a lit liner inside the vessel;
+ * - `studio-amber`: C, glass that carries its own light: studio refraction, a
+ *   glow that grows with the path through it, and back-light.
+ */
+export type BenchLookId = 'authored' | 'screen-amber' | 'studio-amber'
 
-export const BENCH_LOOKS: readonly BenchLookId[] = ['authored', 'studio-amber']
+export const BENCH_LOOKS: readonly BenchLookId[] = [
+  'authored',
+  'screen-amber',
+  'studio-amber',
+]
 
 /**
  * Today's amber on the swatches: the procedural urn's own `amber_glass`
@@ -28,34 +39,53 @@ export function todaysAmber(thickness: number): MeshPhysicalMaterial {
   return material
 }
 
-/**
- * A first, untuned draft of the studio amber. White base, amber absorption
- * (never both tints), a glow that grows with the path through the glass, and
- * back-light from lamps behind it.
- */
-export const STUDIO_AMBER_DRAFT: GlassOptics = {
+// The urn's thickness map runs about 4:1 from crease to lobe. Both candidates
+// keep 40% of its factor over a 35 mm floor, under 2:1, so the lobes read gold
+// and the creases deeper amber instead of pale yellow against orange.
+const MAP_SCALE = 0.4
+const MAP_FLOOR = 0.035
+
+/** C, round 1. White base, amber absorption only (never both tints). */
+export const STUDIO_AMBER_V1: GlassOptics = {
   technique: 'studio',
   transmission: 0.96,
   ior: 1.52,
   attenuationColor: '#f2a93b',
-  attenuationDistance: 0.02,
+  attenuationDistance: 0.055,
   thickness: 0.02,
-  refractionRoughness: 0.12,
+  thicknessFloor: MAP_FLOOR,
+  refractionRoughness: 0.16,
   refractionGain: 1,
+  refractionStrength: 0.3,
   glowColor: '#f2a93b',
-  glow: 0.18,
-  glowThickness: 0.04,
+  glow: 0.3,
+  glowThickness: 0.08,
   backLight: 0.5,
   backLightPower: 3,
   backLightDistortion: 0.35,
 }
 
-export function studioAmber(
+/** B, round 1. Three's transmission; the lit liner behind the glass is its light. */
+export const SCREEN_AMBER_V1: GlassOptics = {
+  technique: 'screen',
+  transmission: 0.96,
+  ior: 1.52,
+  attenuationColor: '#f2a93b',
+  attenuationDistance: 0.055,
+  thickness: 0.02,
+  thicknessFloor: MAP_FLOOR,
+}
+
+export type AmberLookId = Exclude<BenchLookId, 'authored'>
+
+export function amberLook(
+  look: AmberLookId,
   studio: Texture,
   optics: Partial<GlassOptics> = {},
 ): GlassMaterial {
+  const base = look === 'studio-amber' ? STUDIO_AMBER_V1 : SCREEN_AMBER_V1
   const material = new GlassMaterial(
-    { ...STUDIO_AMBER_DRAFT, ...optics },
+    { ...base, ...optics },
     {
       color: 0xffffff,
       roughness: 0.06,
@@ -64,7 +94,7 @@ export function studioAmber(
     },
   )
   material.envMap = studio
-  material.name = 'glass.amber (studio draft)'
+  material.name = `glass.amber (${look === 'studio-amber' ? 'C studio' : 'B screen'} v1)`
   return material
 }
 
@@ -73,30 +103,29 @@ const MASK = new MeshBasicMaterial({ color: 0xffffff, toneMapped: false })
 /** Swaps materials by look and restores the authored ones on demand. */
 export function createLookDresser(studio: () => Texture) {
   const authored = new WeakMap<Mesh, Material | Material[]>()
-  const drafts = new Map<Material, Material>()
+  const drafts = new Map<AmberLookId, Map<Material, Material>>()
 
-  function draftFor(source: Material): Material {
-    const cached = drafts.get(source)
+  function draftFor(look: AmberLookId, source: Material): Material {
+    let cache = drafts.get(look)
+    if (cache === undefined) drafts.set(look, (cache = new Map()))
+    const cached = cache.get(source)
     if (cached !== undefined) return cached
     if (!/amber/i.test(source.name)) return source
     const physical = source instanceof MeshPhysicalMaterial ? source : undefined
     const map = physical?.thicknessMap ?? null
     const cut = /cut/i.test(source.name)
-    // Keep the vessel's thickness map; tint density follows its own factor.
-    const thickness =
-      map !== null && physical !== undefined
-        ? physical.thickness
-        : STUDIO_AMBER_DRAFT.thickness
-    const draft = studioAmber(studio(), {
-      thickness,
-      attenuationDistance:
-        (map !== null
-          ? thickness * 0.5
-          : STUDIO_AMBER_DRAFT.attenuationDistance) * (cut ? 0.6 : 1),
+    const base = look === 'studio-amber' ? STUDIO_AMBER_V1 : SCREEN_AMBER_V1
+    // Keep the vessel's own thickness map, at the looks' share of its factor.
+    const draft = amberLook(look, studio(), {
+      thickness:
+        map !== null && physical !== undefined
+          ? physical.thickness * MAP_SCALE
+          : base.thickness,
+      attenuationDistance: base.attenuationDistance * (cut ? 0.6 : 1),
     })
     if (map !== null) draft.setThicknessMap(map, map.channel === 1 ? 1 : 0)
     if (cut) draft.roughness = 0.08
-    drafts.set(source, draft)
+    cache.set(source, draft)
     return draft
   }
 
@@ -110,8 +139,8 @@ export function createLookDresser(studio: () => Texture) {
         else if (look === 'mask') object.material = MASK
         else
           object.material = Array.isArray(original)
-            ? original.map(draftFor)
-            : draftFor(original)
+            ? original.map((m) => draftFor(look, m))
+            : draftFor(look, original)
       })
     },
   }

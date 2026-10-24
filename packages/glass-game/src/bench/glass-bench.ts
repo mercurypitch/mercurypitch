@@ -1,15 +1,14 @@
 // Glass look bench — a fixed look-development rig on the game's renderer settings, for judging one glass look under several lights.
-import type { Material, MeshBasicMaterial, Object3D, Texture } from 'three'
-import { ACESFilmicToneMapping, AgXToneMapping, Box3, Color, DirectionalLight, FogExp2, Group, HemisphereLight, Mesh, NeutralToneMapping, OrthographicCamera, PCFShadowMap, PerspectiveCamera, PMREMGenerator, Scene, SRGBColorSpace, Vector3, WebGLRenderer, } from 'three'
+import type { Material, Object3D, Texture } from 'three'
+import { ACESFilmicToneMapping, AgXToneMapping, Box3, Color, DataTexture, DirectionalLight, FogExp2, Group, HemisphereLight, LinearFilter, LinearSRGBColorSpace, Mesh, MeshBasicMaterial, NeutralToneMapping, OrthographicCamera, PCFShadowMap, PerspectiveCamera, PMREMGenerator, RGBAFormat, Scene, SphereGeometry, SRGBColorSpace, Vector3, WebGLRenderer, } from 'three'
 import { ColorEnvironment } from 'three/addons/environments/ColorEnvironment.js'
 import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js'
-import { MeshoptDecoder } from 'three/addons/libs/meshopt_decoder.module.js'
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js'
 import { HDRLoader } from 'three/addons/loaders/HDRLoader.js'
 import { createResidentExhibitLights } from '../render/exhibit-lights'
 import { createGlassStudios } from '../render/glass-studios'
 import type { BenchLookId } from './bench-looks'
-import { BENCH_LOOKS, createLookDresser, studioAmber, todaysAmber, } from './bench-looks'
+import { amberLook, BENCH_LOOKS, createLookDresser, todaysAmber, } from './bench-looks'
 import { BENCH_PLINTH, createCheckerCard, createColorChecker, createFloor, createPlinth, createReferenceSpheres, createSwatches, createWallCard, } from './bench-scene'
 
 /**
@@ -97,6 +96,63 @@ export interface GlassBenchOptions {
   /** Drawing-buffer scale; 2 supersamples a 1024 canvas. */
   readonly pixelRatio?: number
   readonly studioSize?: number
+  /** A file's bytes; a hosted copy of the bench answers from embedded files. */
+  readonly fetchBytes?: (url: string) => Promise<ArrayBuffer>
+  /** For GLBs compressed with EXT_meshopt_compression. */
+  readonly meshoptDecoder?: Parameters<GLTFLoader['setMeshoptDecoder']>[0]
+}
+
+async function fetchFile(url: string): Promise<ArrayBuffer> {
+  const response = await fetch(url)
+  if (!response.ok) throw new Error(`${url}: ${response.status}`)
+  return response.arrayBuffer()
+}
+
+/** An RGBE file as HDRLoader would load it. */
+function hdrTexture(buffer: ArrayBuffer): DataTexture {
+  const parsed = new HDRLoader().parse(buffer)
+  const texture = new DataTexture(
+    parsed.data,
+    parsed.width,
+    parsed.height,
+    RGBAFormat,
+    parsed.type,
+  )
+  texture.colorSpace = LinearSRGBColorSpace
+  texture.minFilter = texture.magFilter = LinearFilter
+  texture.generateMipmaps = false
+  texture.flipY = true
+  texture.needsUpdate = true
+  return texture
+}
+
+/**
+ * B's light: an emissive liner inside the vessel's amber body, near the 1.45
+ * radiance at which the concept's amber reads gold, seen only through the glass.
+ */
+function addLiner(holder: Object3D): void {
+  const box = new Box3()
+  holder.updateMatrixWorld(true)
+  holder.traverse((object) => {
+    if (
+      object instanceof Mesh &&
+      ([] as Material[])
+        .concat(object.material)
+        .some((material) => /amber/i.test(material.name))
+    )
+      box.expandByObject(object)
+  })
+  if (box.isEmpty()) return
+  const size = box.getSize(new Vector3())
+  const liner = new Mesh(
+    new SphereGeometry(1, 48, 24),
+    new MeshBasicMaterial({ color: new Color(1.5, 1.45, 1.35) }),
+  )
+  liner.name = 'bench-liner'
+  liner.scale.set(size.x * 0.4, size.y * 0.4, size.z * 0.4)
+  box.getCenter(liner.position)
+  liner.visible = false
+  holder.add(liner)
 }
 
 const TONE_MAPPING = {
@@ -160,7 +216,8 @@ export async function mountGlassBench(
     new ColorEnvironment(new Color(0.5, 0.5, 0.5)),
     0,
   )
-  const hdrSource = await new HDRLoader().loadAsync(options.hdr)
+  const fetchBytes = options.fetchBytes ?? fetchFile
+  const hdrSource = hdrTexture(await fetchBytes(options.hdr))
   const hdr = pmrem.fromEquirectangular(hdrSource)
   hdrSource.dispose()
   pmrem.dispose()
@@ -203,22 +260,39 @@ export async function mountGlassBench(
   heroStage.add(plinth, plinthTop, turntable)
   scene.add(floor, wall, checker, references, colorChecker, heroStage)
 
+  // Swatches carry their own thickness; the floor stands in for a vessel's far wall.
   const swatchSets = {
     authored: createSwatches((t) => todaysAmber(t)),
+    'screen-amber': createSwatches((t) =>
+      amberLook('screen-amber', warmStudio(), {
+        thickness: t,
+        thicknessFloor: 0,
+      }),
+    ),
     'studio-amber': createSwatches((t) =>
-      studioAmber(warmStudio(), { thickness: t, attenuationDistance: 0.02 }),
+      amberLook('studio-amber', warmStudio(), {
+        thickness: t,
+        thicknessFloor: 0,
+      }),
     ),
   } satisfies Record<BenchLookId, ReturnType<typeof createSwatches>>
   const swatchStage = new Group()
   Object.values(swatchSets).forEach((set) => swatchStage.add(set.group))
   scene.add(swatchStage)
 
-  const loader = new GLTFLoader().setMeshoptDecoder(MeshoptDecoder)
+  const loader = new GLTFLoader()
+  if (options.meshoptDecoder) loader.setMeshoptDecoder(options.meshoptDecoder)
   const heroes = new Map<string, Promise<Object3D>>()
   const loadHero = (url: string) => {
     let hero = heroes.get(url)
     if (hero === undefined) {
-      hero = loader.loadAsync(url).then((gltf) => intactOf(gltf.scene))
+      hero = fetchBytes(url)
+        .then((bytes) => loader.parseAsync(bytes, ''))
+        .then((gltf) => {
+          const holder = intactOf(gltf.scene)
+          addLiner(holder)
+          return holder
+        })
       heroes.set(url, hero)
     }
     return hero
@@ -268,8 +342,10 @@ export async function mountGlassBench(
     const heroShot = shot.subject === 'hero'
     heroStage.visible = heroShot
     swatchStage.visible = !heroShot
-    swatchSets.authored.group.visible = shot.look === 'authored'
-    swatchSets['studio-amber'].group.visible = shot.look === 'studio-amber'
+    for (const [look, set] of Object.entries(swatchSets))
+      set.group.visible = look === shot.look
+    const liner = hero.getObjectByName('bench-liner')
+    if (liner) liner.visible = shot.look === 'screen-amber' && !shot.mask
     turntable.rotation.y = (shot.yaw * Math.PI) / 180
     swatchStage.rotation.y = (shot.yaw * Math.PI) / 180
 

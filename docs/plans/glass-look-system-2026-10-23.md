@@ -518,6 +518,12 @@ before-and-after shots:
 
 ### Phase 1: amber through G1 (1-2 sessions, at most 3 owner rounds)
 
+**Round 1 delivered 2026-10-24.** B and C hold their look across the five
+lights at a colour change of 3.9 to 5.0 (CIEDE2000), against 11.3 to 12.4 for
+today's amber. The live bench is a private page
+(https://claude.ai/artifact/KB4bBm9HSJufmJ9DPvrJSr); results are in
+[`glass-look-round1-2026-10-24/`](../../art/glass-adventure/proofs/glass-look-round1-2026-10-24/).
+
 - Three candidates on the bench, each under ACES and under Neutral:
   - **A:** today's material, as the baseline;
   - **B:** screen transmission over a lit liner or plinth top near 1.45;

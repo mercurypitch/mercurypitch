@@ -19,10 +19,21 @@ export interface GlassOptics {
   readonly attenuationDistance: number
   /** Wall thickness in metres; a thickness map's green channel scales it. */
   readonly thickness: number
+  /**
+   * Metres of glass every path crosses before the map's share: the far wall
+   * and body behind a vessel's thin parts. Softens a map's contrast.
+   */
+  readonly thicknessFloor?: number
   /** studio: blur of the refracted studio, 0-1, separate from surface roughness. */
   readonly refractionRoughness?: number
   /** studio: gain on the refracted studio radiance. */
   readonly refractionGain?: number
+  /**
+   * studio: how far the view ray bends, 0 (straight through) to 1 (one
+   * interface). A thin wall bends a ray in and back out again; refracting at
+   * one surface sends upward-facing glass looking into the ceiling.
+   */
+  readonly refractionStrength?: number
   /** studio: light the glass carries, in proportion to its path length. */
   readonly glowColor?: string
   readonly glow?: number
@@ -49,10 +60,12 @@ type GlassUniforms = {
   glassAttenuationColor: IUniform<Color>
   glassAttenuationDistance: IUniform<number>
   glassThickness: IUniform<number>
+  glassThicknessFloor: IUniform<number>
   glassThicknessMap: IUniform<Texture | null>
   glassThicknessMapTransform: IUniform<Matrix3>
   glassRefractionRoughness: IUniform<number>
   glassRefractionGain: IUniform<number>
+  glassRefractionStrength: IUniform<number>
   glassGlowColor: IUniform<Color>
   glassGlow: IUniform<number>
   glassGlowThickness: IUniform<number>
@@ -83,8 +96,10 @@ uniform float glassIor;
 uniform vec3 glassAttenuationColor;
 uniform float glassAttenuationDistance;
 uniform float glassThickness;
+uniform float glassThicknessFloor;
 uniform float glassRefractionRoughness;
 uniform float glassRefractionGain;
+uniform float glassRefractionStrength;
 uniform vec3 glassGlowColor;
 uniform float glassGlow;
 uniform float glassGlowThickness;
@@ -105,13 +120,14 @@ const STUDIO_FRAGMENT = /* glsl */ `
 	#ifdef GLASS_THICKNESS_MAP
 		glassWall *= texture2D( glassThicknessMap, vGlassThicknessUv ).g;
 	#endif
+	glassWall += glassThicknessFloor;
 	// The path through a wall grows toward grazing angles.
 	float glassNdotV = saturate( dot( normal, geometryViewDir ) );
 	float glassSinT2 = ( 1.0 - glassNdotV * glassNdotV ) / ( glassIor * glassIor );
 	float glassPath = glassWall / sqrt( max( 1.0 - glassSinT2, 0.04 ) );
 	vec3 glassAbsorption = - log( max( glassAttenuationColor, vec3( 1e-4 ) ) ) / max( glassAttenuationDistance, 1e-5 );
 	vec3 glassTransmittance = exp( - glassAbsorption * glassPath );
-	vec3 glassRay = transformDirectionByInverseViewMatrix( refract( - geometryViewDir, normal, 1.0 / glassIor ), viewMatrix );
+	vec3 glassRay = transformDirectionByInverseViewMatrix( normalize( mix( - geometryViewDir, refract( - geometryViewDir, normal, 1.0 / glassIor ), glassRefractionStrength ) ), viewMatrix );
 	vec3 glassStudio = textureCubeUV( envMap, envMapRotation * glassRay, glassRefractionRoughness ).rgb * envMapIntensity * glassRefractionGain;
 	vec3 glassReflectance = EnvironmentBRDF( normal, geometryViewDir, material.specularColorBlended, material.specularF90, material.roughness );
 	vec3 glassBody = ( 1.0 - glassReflectance ) * material.diffuseColor * glassTransmittance * glassStudio;
@@ -167,6 +183,9 @@ const STUDIO_VERTEX = /* glsl */ `
 #endif
 `
 
+// Three's own transmission, with the same thickness floor as the studio path.
+const SCREEN_MARKER = 'vec3 pos = vWorldPosition;'
+
 function replaceOnce(
   source: string,
   marker: string,
@@ -219,6 +238,29 @@ export function patchStudioGlassShader(
   )
 }
 
+/** Patches a physical-material program for the screen technique. */
+export function patchScreenGlassShader(
+  shader: WebGLProgramParametersWithUniforms,
+  uniforms: GlassUniforms,
+): void {
+  const chunk = replaceOnce(
+    ShaderChunk.transmission_fragment,
+    SCREEN_MARKER,
+    `material.thickness += glassThicknessFloor;\n\t${SCREEN_MARKER}`,
+  )
+  Object.assign(shader.uniforms, uniforms)
+  shader.fragmentShader = replaceOnce(
+    shader.fragmentShader,
+    'void main() {',
+    'uniform float glassThicknessFloor;\nvoid main() {',
+  )
+  shader.fragmentShader = replaceOnce(
+    shader.fragmentShader,
+    '#include <transmission_fragment>',
+    chunk,
+  )
+}
+
 function createUniforms(): GlassUniforms {
   return {
     glassTransmission: { value: 1 },
@@ -226,10 +268,12 @@ function createUniforms(): GlassUniforms {
     glassAttenuationColor: { value: new Color(1, 1, 1) },
     glassAttenuationDistance: { value: 1 },
     glassThickness: { value: 0.01 },
+    glassThicknessFloor: { value: 0 },
     glassThicknessMap: { value: null },
     glassThicknessMapTransform: { value: new Matrix3() },
     glassRefractionRoughness: { value: 0 },
     glassRefractionGain: { value: 1 },
+    glassRefractionStrength: { value: 1 },
     glassGlowColor: { value: new Color(0, 0, 0) },
     glassGlow: { value: 0 },
     glassGlowThickness: { value: 0.02 },
@@ -260,6 +304,7 @@ export class GlassMaterial extends MeshPhysicalMaterial {
     this.onBeforeCompile = (shader) => {
       if (this.technique === 'studio')
         patchStudioGlassShader(shader, this.glassUniforms)
+      else patchScreenGlassShader(shader, this.glassUniforms)
     }
   }
 
@@ -273,8 +318,10 @@ export class GlassMaterial extends MeshPhysicalMaterial {
     u.glassAttenuationColor.value.set(optics.attenuationColor)
     u.glassAttenuationDistance.value = optics.attenuationDistance
     u.glassThickness.value = optics.thickness
+    u.glassThicknessFloor.value = optics.thicknessFloor ?? 0
     u.glassRefractionRoughness.value = optics.refractionRoughness ?? 0
     u.glassRefractionGain.value = optics.refractionGain ?? 1
+    u.glassRefractionStrength.value = optics.refractionStrength ?? 1
     u.glassGlowColor.value.set(optics.glowColor ?? '#000000')
     u.glassGlow.value = optics.glow ?? 0
     u.glassGlowThickness.value = optics.glowThickness ?? 0.02

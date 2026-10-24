@@ -1,6 +1,6 @@
 // Glass studios — emissive-panel rooms prefiltered once at load, so every glass piece reflects and refracts the same lit studio in any room.
 import type { Texture, WebGLRenderer } from 'three'
-import { BackSide, CircleGeometry, Color, CylinderGeometry, DoubleSide, Mesh, MeshBasicMaterial, PlaneGeometry, PMREMGenerator, Scene, SphereGeometry, } from 'three'
+import { BackSide, CircleGeometry, Color, CylinderGeometry, DoubleSide, Float32BufferAttribute, Mesh, MeshBasicMaterial, PlaneGeometry, PMREMGenerator, Scene, SphereGeometry, } from 'three'
 
 /**
  * - `warm-bright-field`: a bright band all round the horizon, so whatever lies
@@ -34,6 +34,34 @@ function shell(scene: Scene, r: number, g: number, b: number): void {
     new Mesh(
       new SphereGeometry(12, 32, 16),
       new MeshBasicMaterial({ color: new Color(r, g, b), side: BackSide }),
+    ),
+  )
+}
+
+type Rgb = readonly [number, number, number]
+
+/** A shell lit from below to above: dark floor, `horizon` at eye level, `zenith` overhead. */
+function domeShell(scene: Scene, ground: Rgb, horizon: Rgb, zenith: Rgb): void {
+  const geometry = new SphereGeometry(12, 48, 24)
+  const positions = geometry.getAttribute('position')
+  const colors: number[] = []
+  for (let i = 0; i < positions.count; i += 1) {
+    const height = positions.getY(i) / 12
+    const [from, to, t] =
+      height < 0
+        ? [horizon, ground, Math.min(1, -height * 3)]
+        : [horizon, zenith, height]
+    colors.push(...from.map((value, k) => value + (to[k]! - value) * t))
+  }
+  geometry.setAttribute('color', new Float32BufferAttribute(colors, 3))
+  scene.add(
+    new Mesh(
+      geometry,
+      new MeshBasicMaterial({
+        vertexColors: true,
+        side: BackSide,
+        toneMapped: false,
+      }),
     ),
   )
 }
@@ -78,7 +106,8 @@ export function createGlassStudioScene(kind: GlassStudioKind): Scene {
   const scene = new Scene()
   scene.name = `glass-studio:${kind}`
   if (kind === 'warm-bright-field') {
-    shell(scene, 0.05, 0.042, 0.034)
+    // A lit dome as well as the band: glass facing up must not refract darkness.
+    domeShell(scene, [0.05, 0.04, 0.03], [1.1, 1.02, 0.92], [0.75, 0.72, 0.68])
     floor(scene, 0.06, 0.045, 0.03)
     // The band behind the glass from every side: near 1.5 radiance, the level
     // at which the concept's amber reads gold.
