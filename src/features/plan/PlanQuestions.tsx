@@ -112,6 +112,12 @@ export interface PlanQuestionsProps {
   ) => void
   /** Not now: the question it came on, and the answers so far. */
   onDecline: (on: QuestionId, c: PlanChoices) => void
+  /**
+   * Ask before Not now turns the plan down: handed the decline, the host runs
+   * it if the person still wants to, and it reads the question showing then.
+   * Without it, Not now declines at once (the plan layer).
+   */
+  askBeforeDecline?: (decline: () => void) => void
 }
 
 // ── What Merc says ──────────────────────────────────────────────────────
@@ -532,6 +538,20 @@ export function PlanQuestions(props: PlanQuestionsProps): JSX.Element {
     props.onDecline(step(), copyOf(choices()))
   }
 
+  /**
+   * Not now. A host that asks first is handed the decline, and the pending
+   * move to the next question stops, so staying leaves the person on the
+   * question they were on with their answer picked.
+   */
+  function notNow(): void {
+    if (props.askBeforeDecline === undefined) {
+      decline()
+      return
+    }
+    clearTimeout(advanceTimer)
+    props.askBeforeDecline(decline)
+  }
+
   // ── What is on screen ──
 
   const firstScreen = (): JSX.Element => (
@@ -728,7 +748,7 @@ export function PlanQuestions(props: PlanQuestionsProps): JSX.Element {
           way out; PlanExits puts them in the corners. */}
       <PlanExits
         onBack={step() === 'q1' ? undefined : back}
-        onNotNow={decline}
+        onNotNow={notNow}
       />
     </div>
   )

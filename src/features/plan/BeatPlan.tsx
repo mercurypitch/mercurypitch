@@ -55,6 +55,18 @@ import { PlanScreen } from './PlanScreen'
 import type { PlanExit, PlanFlowOptions } from './usePlanFlowController'
 import { usePlanFlowController } from './usePlanFlowController'
 
+/**
+ * What First Light's "are you sure?" says before a question's Not now turns
+ * the plan down (owner copy, 23 Oct 2026). Here rather than in First Light:
+ * "Four quick questions" is one of the words that mark the plan in a bundle
+ * (apps/mercurypitch/scripts/assert-bundle.mjs PLAN_WORDS), so it is said only
+ * inside the plan.
+ */
+export const PLAN_SKIP_ASK = {
+  title: 'Skip your plan?',
+  body: 'Four quick questions, and Merc lays out where to start, what to learn and what to play.',
+} as const
+
 export interface BeatPlanProps {
   /** What the voiceprint found, as the Map names its first stop. */
   voiceprint: () => VoiceprintStop | null
@@ -66,6 +78,9 @@ export interface BeatPlanProps {
   onRooms: () => void
   /** A stop was opened; `tour` asks for its room's spotlight tour as well. */
   onEnterStop: (stop: PlanStop, tour: boolean) => void
+  /** First Light asks before a question's Not now turns the plan down
+   *  (PlanQuestions' `askBeforeDecline`); the plan's own Not now asks nothing. */
+  askBeforeDecline?: (decline: () => void) => void
 }
 
 export function BeatPlan(props: BeatPlanProps): JSX.Element {
@@ -104,6 +119,7 @@ export function BeatPlan(props: BeatPlanProps): JSX.Element {
             onMercState={c.setMercState}
             onDone={c.done}
             onDecline={c.decline}
+            askBeforeDecline={props.askBeforeDecline}
           />
         </Match>
         <Match when={c.phase() === 'plan'}>

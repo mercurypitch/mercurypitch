@@ -21,8 +21,10 @@
 // flow's own imports are still loading, and a fixture that imported a store
 // or the funnel would wait on the very mock that is waiting for it.
 
+import { fireEvent, screen } from '@solidjs/testing-library'
 import { createEffect, createSignal } from 'solid-js'
 import { vi } from 'vitest'
+import type { FeaturedPromo } from '@/db/services/billing-service'
 import type * as OnboardingFunnelModule from '@/features/onboarding/funnel'
 import type * as GpuGateModule from '@/lib/merc/gpu-gate'
 import type { MirrorResult } from '@/lib/mirror/metrics'
@@ -37,6 +39,10 @@ export const mocks = {
   startPageTour: vi.fn(),
   /** What the star field (when it is `fake.watchedStarField`) was last told about being paused. */
   starFieldPaused: null as boolean | null,
+  /** Put a launch gift on offer through `fake.promoStore`, or take it off with null. */
+  setOffer: (_offer: FeaturedPromo | null): void => {},
+  /** Every fake voice session's `close`: the microphone let go. */
+  sessionClose: vi.fn(),
 }
 
 /** The helper vitest hands a factory, which loads the module as it really is. */
@@ -66,7 +72,7 @@ export const fake = {
         devices: (): Promise<MediaDeviceInfo[]> => Promise.resolve([]),
         useDevice: (): Promise<ProbeResult> =>
           Promise.resolve('ok' as ProbeResult),
-        close: (): void => {},
+        close: mocks.sessionClose,
       }) as unknown as VoiceSession,
   }),
 
@@ -100,9 +106,10 @@ export const fake = {
     trackOnboarding: mocks.trackOnboarding,
   }),
 
-  /** The server's promo is never asked, and none is on offer. */
+  /** The server's promo is never asked, and none is on offer until a case calls `mocks.setOffer`. */
   promoStore: () => {
-    const [offer] = createSignal(null)
+    const [offer, setOffer] = createSignal<FeaturedPromo | null>(null)
+    mocks.setOffer = (next) => setOffer(() => next)
     return { offeredPromo: offer, loadFeaturedPromo: async () => {} }
   },
 
@@ -148,4 +155,9 @@ export const SAVED_PRINT = {
   twin: null,
   source: 'mirror',
   summary: { lowMidi: 43, highMidi: 72, semitones: 29 },
+}
+
+/** Yes, skip on the "are you sure?" a way out asks first (skip-confirm.tsx). */
+export function skipAnyway(): void {
+  fireEvent.click(screen.getByRole('button', { name: 'Yes, skip' }))
 }

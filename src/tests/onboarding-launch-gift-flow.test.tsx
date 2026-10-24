@@ -448,6 +448,9 @@ describe('the welcome beat', () => {
     const close = screen.getByRole('button', { name: 'Skip the intro' })
     expect(close.closest('[data-beat]')).toBeNull()
     fireEvent.click(close)
+    // It asks first (skip-confirm.tsx); Yes, skip is the skip.
+    expect(mocks.trackOnboarding).not.toHaveBeenCalledWith('onboarding_skipped')
+    fireEvent.click(screen.getByRole('button', { name: 'Yes, skip' }))
     expect(mocks.trackOnboarding).toHaveBeenCalledWith('onboarding_skipped')
   })
 })

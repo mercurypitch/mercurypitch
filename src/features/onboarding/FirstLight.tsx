@@ -18,7 +18,7 @@ import { accountHeld, hasUpgradedAccount } from '@/db/services/auth-service'
 import { listVoiceprints, saveVoiceprint, } from '@/db/services/voiceprint-service'
 import { shareOutcomeMessage } from '@/features/mirror/card-renderer'
 import { shareVoiceprintRecord } from '@/features/mirror/voiceprint-share'
-import { BeatPlan } from '@/features/plan/BeatPlan'
+import { BeatPlan, PLAN_SKIP_ASK } from '@/features/plan/BeatPlan'
 import { PLAN_DESTS } from '@/features/plan/build-plan'
 import { markPlanShown, planRecord } from '@/features/plan/plan-store'
 import type { ActiveTab } from '@/features/tabs/constants'
@@ -52,6 +52,7 @@ import { plateFor, platesAhead, plateSrc, TALL_QUERY } from './plates'
 import type { EnteredRoomId, RoomId, RoomTarget } from './rooms'
 import { SIDE_DOORS } from './rooms'
 import type { SettledNote } from './settled-note'
+import { createSkipConfirm } from './skip-confirm'
 import { StarField } from './StarField'
 import { glideStrip } from './voice-strip'
 
@@ -132,6 +133,8 @@ export const FirstLight: Component<FirstLightProps> = (props) => {
   /** The launch gift beside the account ask: only for somebody with no
    *  account to put it in yet. */
   const gift = () => (accountHeld() ? null : offeredPromo())
+  // Asks before the welcome's close or a Not now skips the voiceprint or plan.
+  const skip = createSkipConfirm(props, planDueAtOpen, gift, PLAN_SKIP_ASK)
 
   // Keep shown with the gift card, counted once beside `onboarding_keep`.
   let keepGiftCounted = false
@@ -706,6 +709,7 @@ export const FirstLight: Component<FirstLightProps> = (props) => {
               voiceprint={() => pickFirstStop(voiceprint())}
               gift={mapGift}
               onHome={leave}
+              askBeforeDecline={(decline) => skip.ask('plan', decline)}
               onRooms={() => openBeat('map')}
               onEnterStop={(stop, tour) =>
                 handleEnterStop(PLAN_DESTS[stop.dest].target, tour)
@@ -747,7 +751,7 @@ export const FirstLight: Component<FirstLightProps> = (props) => {
               class={styles.railClose}
               aria-label="Skip the intro"
               title="Skip the intro"
-              onClick={handleSkip}
+              onClick={() => skip.ask('intro', handleSkip)}
             >
               <span aria-hidden="true">
                 <X />
@@ -767,7 +771,7 @@ export const FirstLight: Component<FirstLightProps> = (props) => {
             <button
               type="button"
               class={styles.railNotNow}
-              onClick={handleForkNotNow}
+              onClick={() => skip.ask('voiceprint', handleForkNotNow)}
             >
               Not now
             </button>
@@ -778,13 +782,14 @@ export const FirstLight: Component<FirstLightProps> = (props) => {
             <button
               type="button"
               class={styles.railNotNow}
-              onClick={handleNotNow}
+              onClick={() => skip.ask('voiceprint', handleNotNow)}
             >
               Not now
             </button>
           </Match>
         </Switch>
       </div>
+      <skip.Confirm />
     </div>
   )
 }

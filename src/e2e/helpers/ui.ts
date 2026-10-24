@@ -264,3 +264,18 @@ export async function goToAndWait(page: Page, url: string) {
 export async function expectVisible(page: Page, selector: string) {
   await expect(page.locator(selector)).toBeVisible()
 }
+
+/**
+ * Skip First Light from its welcome. The close asks "Skip the intro?" first
+ * (src/features/onboarding/skip-confirm.tsx), and Yes, skip is the skip.
+ */
+export async function skipTheIntro(page: Page): Promise<void> {
+  await page
+    .getByRole('dialog', { name: 'Welcome to MercuryPitch', exact: true })
+    .getByRole('button', { name: 'Skip the intro', exact: true })
+    .click()
+  await page
+    .getByRole('alertdialog', { name: 'Skip the intro?' })
+    .getByRole('button', { name: 'Yes, skip' })
+    .click()
+}

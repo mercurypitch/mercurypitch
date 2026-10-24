@@ -13,6 +13,7 @@
 
 import type { Page } from '@playwright/test'
 import { expect, test } from '@playwright/test'
+import { skipTheIntro } from './helpers/ui'
 
 /** First Light, by the name its dialog announces. */
 const intro = (page: Page) =>
@@ -139,7 +140,7 @@ test.describe('a first visit without a lesson marker', () => {
     const skip = page.getByRole('button', { name: 'Skip the intro' })
     await expect(skip).toBeVisible()
 
-    await skip.click()
+    await skipTheIntro(page)
 
     await expect(intro(page)).toHaveCount(0)
     await expect(page.locator('#ear-lab-panel')).toBeVisible()

@@ -13,6 +13,7 @@
 
 import { expect, test } from '@playwright/test'
 import { FRESH_VISITOR_INIT } from './helpers/tone-wav'
+import { skipTheIntro } from './helpers/ui'
 
 const PHONE = { width: 390, height: 844 }
 const DESKTOP = { width: 1440, height: 900 }
@@ -124,7 +125,19 @@ test.describe('First Light onboarding', () => {
     await page.setViewportSize(DESKTOP)
     await page.goto('/')
 
+    // The close asks first, says what staying gets, and opens on Keep going.
     await page.getByRole('button', { name: 'Skip the intro' }).click()
+    const ask = page.getByRole('alertdialog', { name: 'Skip the intro?' })
+    await expect(ask).toBeVisible()
+    await expect(ask.getByRole('listitem').first()).toContainText(
+      'Your range, your voiceprint and your legend twin',
+    )
+    await expect(ask.getByRole('button', { name: 'Keep going' })).toBeFocused()
+    await ask.getByRole('button', { name: 'Keep going' }).click()
+    await expect(ask).toHaveCount(0)
+    await expect(beat(page, 'sky')).toBeVisible()
+
+    await skipTheIntro(page)
     await expect(page.locator('#app-tabs')).toBeVisible()
 
     await page.reload()
@@ -144,7 +157,7 @@ test.describe('First Light onboarding', () => {
     // `welcomeSeen`, so the extra gate is not needed at all.
     await page.setViewportSize(DESKTOP)
     await page.goto('/')
-    await page.getByRole('button', { name: 'Skip the intro' }).click()
+    await skipTheIntro(page)
     await expect(page.locator('#app-tabs')).toBeVisible()
     await expect(beat(page, 'sky')).toHaveCount(0)
 
@@ -159,7 +172,7 @@ test.describe('First Light onboarding', () => {
   test('the Map replay does not rewind the seen-flag', async ({ page }) => {
     await page.setViewportSize(DESKTOP)
     await page.goto('/')
-    await page.getByRole('button', { name: 'Skip the intro' }).click()
+    await skipTheIntro(page)
     await expect(page.locator('#app-tabs')).toBeVisible()
 
     await page.goto('/#/map')

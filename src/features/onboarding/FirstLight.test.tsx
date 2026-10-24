@@ -67,7 +67,7 @@ import { currentBeat, flowOpen, openBeat, recordFirstNote, recordVoiceprint, res
 import { setActiveTab } from '@/stores/ui-store'
 import { VOICE_RIDGE } from './beats/KeepChips'
 import { FirstLight } from './FirstLight'
-import { mocks, SAVED_PRINT, VOICEPRINT } from './FirstLight.fixture'
+import { mocks, SAVED_PRINT, skipAnyway, VOICEPRINT, } from './FirstLight.fixture'
 import type { Beat } from './flow'
 import { MAP_ROOM_EVENT } from './funnel'
 import type { Plate } from './plates'
@@ -155,8 +155,9 @@ describe('the Fork in the flow', () => {
     await at('fork')
     const [notNow] = railExits()
 
-    // Act
+    // Act: it asks first (FirstLight.skip.test.tsx), and Yes, skip goes on.
     fireEvent.click(notNow)
+    skipAnyway()
 
     // Assert
     await waitFor(() => expect(currentBeat()).toBe('questions'))
@@ -199,6 +200,7 @@ describe('the Fork in the flow', () => {
 
     // Act
     fireEvent.click(notNow)
+    skipAnyway()
 
     // Assert
     await waitFor(() => expect(currentBeat()).toBe('map'))
@@ -304,8 +306,10 @@ describe('"Not now" lands past the walk (owner decision V9)', () => {
       const [notNow] = railExits()
       expect(notNow).toHaveTextContent('Not now')
 
-      // Act
+      // Act: before a voiceprint, Not now asks first; the twin and the
+      // prints have one already, and go on at once.
       fireEvent.click(notNow)
+      if (name === 'first-light' || name === 'voiceprint') skipAnyway()
 
       // Assert
       await waitFor(() => expect(currentBeat()).toBe('questions'))
@@ -327,6 +331,7 @@ describe('"Not now" lands past the walk (owner decision V9)', () => {
 
     // Act
     fireEvent.click(notNow)
+    skipAnyway()
 
     // Assert
     await waitFor(() => expect(currentBeat()).toBe('map'))
@@ -340,6 +345,7 @@ describe('"Not now" lands past the walk (owner decision V9)', () => {
 
     // Act
     fireEvent.click(railExits()[0])
+    skipAnyway()
 
     // Assert
     await waitFor(() => expect(currentBeat()).toBe('questions'))

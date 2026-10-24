@@ -55,7 +55,7 @@ import { activeTab, setActiveTab } from '@/stores/ui-store'
 import * as COPY from './copy'
 import { pickFirstStop } from './first-stop'
 import { FirstLight } from './FirstLight'
-import { mocks, SAVED_PRINT, VOICEPRINT } from './FirstLight.fixture'
+import { mocks, SAVED_PRINT, skipAnyway, VOICEPRINT, } from './FirstLight.fixture'
 import type { Beat } from './flow'
 import styles from './onboarding.module.css'
 
@@ -133,8 +133,9 @@ describe('Skip the intro', () => {
     // Arrange
     await at('sky')
 
-    // Act
+    // Act: the close asks first (FirstLight.skip.test.tsx), and Yes, skip leaves.
     fireEvent.click(screen.getByRole('button', { name: 'Skip the intro' }))
+    skipAnyway()
 
     // Assert: the plan was met here, as a skip, and nothing asks again.
     expect(planRecord()?.status).toBe('shown')
@@ -237,8 +238,9 @@ describe('the four questions and the plan in the flow', () => {
     // Arrange
     const host = await at('questions')
 
-    // Act
+    // Act: Not now asks first inside First Light, and Yes, skip turns it down.
     fireEvent.click(within(host).getByRole('button', { name: 'Not now' }))
+    skipAnyway()
 
     // Assert
     expect(planRecord()?.status).toBe('declined')

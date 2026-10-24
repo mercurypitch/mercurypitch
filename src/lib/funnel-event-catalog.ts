@@ -240,6 +240,18 @@ export const ONBOARDING_FUNNEL_EVENTS = [
   'onboarding_map_door_piano',
   'onboarding_map_door_mirror',
   'onboarding_skipped',
+  /** The welcome's close asked "Skip the intro?" first (skip-confirm.tsx). */
+  'onboarding_skip_asked_intro',
+  /** A Not now before the voiceprint asked "Skip your voiceprint?" first. */
+  'onboarding_skip_asked_voiceprint',
+  /** The questions' Not now asked "Skip your plan?" first. */
+  'onboarding_skip_asked_plan',
+  /** "Skip the intro?" answered with Keep going, Escape or the backdrop. */
+  'onboarding_skip_kept_intro',
+  /** "Skip your voiceprint?" answered with Keep going, Escape or the backdrop. */
+  'onboarding_skip_kept_voiceprint',
+  /** "Skip your plan?" answered with Keep going, Escape or the backdrop. */
+  'onboarding_skip_kept_plan',
   'onboarding_done',
   /** Counts taps on the Keep beat's button (and the Map's way back to it),
    *  not accounts: the button opens the form, and `signup` counts what

@@ -77,11 +77,13 @@ afterEach(tearDown)
 // ── The ways out ───────────────────────────────────────────────────────
 
 describe('the ways out', () => {
-  it('closes the layer, then goes Home, from Not now on a question, and turns the plan down', () => {
+  it('closes the layer, then goes Home, from Not now on a question, and turns the plan down at once', () => {
     const host = open('skipper')
 
     tap('Not now')
 
+    // No "are you sure?" here: only First Light asks before skipping the plan.
+    expect(document.querySelector('[role="alertdialog"]')).toBeNull()
     expect(host.onClose).toHaveBeenCalledTimes(1)
     // Still on the tab it was opened from, at its own address, when it closed.
     expect(atClose).toEqual([

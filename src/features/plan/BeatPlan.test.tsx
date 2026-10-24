@@ -26,6 +26,7 @@ import { resolve } from 'node:path'
 import { createSignal } from 'solid-js'
 import type { Mock } from 'vitest'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { GUIDE_FUNNEL_STORAGE_KEY } from '@/lib/guide-funnel'
 import { giftTitle } from '@/lib/launch-gift-copy'
 import type * as GpuGateModule from '@/lib/merc/gpu-gate'
 import { applyPersistedValue } from '@/lib/storage'
@@ -371,6 +372,55 @@ describe('the ways out', () => {
 
     expect(handed(host)).toEqual([['onHome', 1]])
     expect(planRecord()?.status).toBe('declined')
+  })
+
+  it('asks First Light first when it wants to, and turns the plan down only once it says so', () => {
+    let held: (() => void) | undefined
+    const host = open({
+      askBeforeDecline: (decline) => {
+        held = decline
+      },
+    })
+
+    tap('Not now')
+
+    expect(held).toBeTypeOf('function')
+    expect(handed(host)).toEqual([])
+    expect(planRecord()?.status).not.toBe('declined')
+    held?.()
+    expect(handed(host)).toEqual([['onHome', 1]])
+    expect(planRecord()?.status).toBe('declined')
+  })
+
+  it('stays on the question Not now was tapped on, with its answer picked, while First Light asks', () => {
+    let held: (() => void) | undefined
+    open({
+      askBeforeDecline: (decline) => {
+        held = decline
+      },
+    })
+    tap('Guitar')
+
+    tap('Not now')
+    vi.advanceTimersByTime(PICK_ADVANCE_MS * 2)
+
+    // The pick's move on to Q2 stopped, so staying leaves the person here.
+    expect(screen.getByText('Question 1 of 4')).toBeTruthy()
+    expect(screen.queryByText('Question 2 of 4')).toBeNull()
+    expect(
+      screen
+        .getByRole('button', { name: 'Guitar' })
+        .getAttribute('aria-pressed'),
+    ).toBe('true')
+    held?.()
+
+    const sent = (
+      JSON.parse(localStorage.getItem(GUIDE_FUNNEL_STORAGE_KEY) ?? '[]') as {
+        event: string
+      }[]
+    ).map((entry) => entry.event)
+    expect(sent).toContain('plan_declined_q1')
+    expect(sent).not.toContain('plan_declined_q2')
   })
 
   it("hands Home from the plan's Not now, with the answers kept", () => {

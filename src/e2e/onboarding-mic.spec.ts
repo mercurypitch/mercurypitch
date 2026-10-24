@@ -151,7 +151,12 @@ test.describe('First Light with a microphone', () => {
 
     // Past the walk, the four questions come first while the plan is due
     // (a fresh visitor's is), and "See every room" on the plan opens the Map.
+    // It asks first: no voiceprint has been made in this run.
     await page.getByRole('button', { name: 'Not now' }).click()
+    await page
+      .getByRole('alertdialog', { name: 'Skip your voiceprint?' })
+      .getByRole('button', { name: 'Yes, skip' })
+      .click()
     await expect(beat(page, 'questions')).toBeVisible({ timeout: 10000 })
     await expect(beat(page, 'voiceprint')).toHaveCount(0)
     await skipThePlanToTheMap(page)
