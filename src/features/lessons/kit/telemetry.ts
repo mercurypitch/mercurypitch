@@ -31,7 +31,9 @@
 // it is never first-paint work. It reads the consent regions from
 // consent-regions.ts, which imports nothing, and imports none of the app's
 // analytics, funnel or consent modules: they bring solid-js and package.json
-// with them.
+// with them. vite.config.ts gives consent-regions.ts a chunk of its own: the
+// build filed it with consent.ts in pitch-core before, and a first answer
+// downloaded pitch-core and solid-js anyway.
 
 import { isRestrictedTimezone } from '@/lib/consent-regions'
 import type { LessonFunnelEvent } from '@/lib/funnel-event-catalog'
