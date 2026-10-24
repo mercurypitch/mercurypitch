@@ -563,8 +563,8 @@ paused off screen, and the still images when WebGL fails or would run on the CPU
   registered in `EXERCISE_SLUGS` as
   `{ kind: 'exercise', exercise: EXERCISE_INTERVAL_TRAINER, intervals: [3, 4, 7, 5, 12] }`, each
   upward, with a line in `src/tests/slug-map.test.ts`. It needs the `intervals` field on
-  `ExerciseLaunch` (`src/features/exercises/slug-map.ts:24-36`), passed by `applyExerciseSlug` into
-  the launch override beside the notes and the difficulty (`src/App.tsx:593-638`); the trainer
+  `ExerciseLaunch` (`src/features/exercises/slug-map.ts:25-41`), passed by `applyExerciseSlug` into
+  the launch override beside the notes and the difficulty (`src/App.tsx:754-765`); the trainer
   reading it in place of its fixed pool, which today has no minor third (FACTS 51, 59); and, since
   `plannedRounds` caps a run at the pool's size and `generateIntervals` plays each interval once,
   either five rounds a run or a field that lets intervals repeat (FACTS 60). The set keeps the
@@ -577,7 +577,7 @@ paused off screen, and the still images when WebGL fails or would run on the CPU
 - **Optional, proposed: `/exercises/arpeggio-jumper`**, a data-only slug (CURRICULUM § 4 item 1)
   that opens Arpeggio Jumper on its setup screen with its defaults, so the card can link the drill
   itself; its notes, if any, are fitted to the singer's range as every slug's are
-  (`src/App.tsx:619`).
+  (`src/App.tsx:750`).
 - **Not linked**, with the reasons in FACTS: the Ascent's "Tuning & Ear" week (FACTS 61), which the
   CURRICULUM card listed and CURRICULUM § 4 item 8's rewrite now takes, beside weeks 2 and 3, so
   that its coach note, its focus line, its first goal and its two videos are checked against the
