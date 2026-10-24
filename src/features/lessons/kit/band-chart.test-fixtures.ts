@@ -10,11 +10,14 @@
 // drew, a line a mark: a stroke with its colour, width, alpha, dash and
 // path; a fill and its path; a rect, its corner and size; words with their
 // alignment and anchor. The styles every later mark shares (the font, a
-// line's joins and caps) are written once, where they change. Words are
-// measured in the double's own font, `CHAR_PX` a character, so a mark knows
-// where its words end. Every canvas measures 300 by 190 px. The test file
-// imports './browser-doubles.test-fixtures' first, and calls
-// `vi.useRealTimers()` and `vi.restoreAllMocks()` after each test.
+// line's joins and caps) are written once, where they change. A mark also
+// keeps its colour's channels, how opaque it is drawn, a stroke's width
+// and the points it reaches, for a test that asks where and how strongly
+// something is drawn. Words are measured in the double's own font,
+// `CHAR_PX` a character, so a mark knows where its words end. Every canvas
+// measures 300 by 190 px. The test file imports
+// './browser-doubles.test-fixtures' first, and calls `vi.useRealTimers()`
+// and `vi.restoreAllMocks()` after each test.
 
 import { vi } from 'vitest'
 import type { BandChart, BandChartOptions, BandScene } from './band-chart'
@@ -25,10 +28,10 @@ import { handLoop } from './frame-loop.test-fixtures'
 export type Call = readonly [name: string, ...args: unknown[]]
 
 /** A character's width in the double's 12 px monospaced font, px. */
-export const CHAR_PX = 7.2
+const CHAR_PX = 7.2
 
 /** Every canvas's size on the page, CSS px, as the hand loop measures it. */
-export const CANVAS = { w: 300, h: 190 } as const
+const CANVAS = { w: 300, h: 190 } as const
 
 /** A 2D context that keeps every call and every property set, and draws nothing. */
 function recordingContext(calls: Call[]): CanvasRenderingContext2D {
@@ -54,8 +57,12 @@ function recordingContext(calls: Call[]): CanvasRenderingContext2D {
 /** A mark the calls drew: the line the picture writes for it, its colour, and the points it reaches. */
 export interface Mark {
   readonly line: string
-  /** The colour it is drawn in; empty for a clear or a shared style. */
-  readonly color: string
+  /** Its colour's red, green and blue ('245,158,11'); empty for a clear or a shared style. */
+  readonly rgb: string
+  /** How opaque it is drawn: its colour's alpha times the context's. */
+  readonly opacity: number
+  /** A stroke's width, px; 0 for any other mark. */
+  readonly width: number
   /** A path's points (a circle's edges), a rect's sides, or where words run from and to. */
   readonly xs: readonly number[]
   readonly ys: readonly number[]
@@ -66,6 +73,17 @@ const num = (v: number): string => String(Math.round(v * 100) / 100)
 
 /** Styles that every later mark shares, written once where they change. */
 const SHARED = ['font', 'lineJoin', 'lineCap']
+
+/** A colour's red, green and blue and its alpha, from '#f59e0b' or 'rgba(245,158,11,0.6)'. */
+export function channels(color: string): { rgb: string; alpha: number } {
+  const rgba = /^rgba\((\d+),(\d+),(\d+),([\d.]+)\)$/.exec(color)
+  if (rgba !== null)
+    return { rgb: rgba.slice(1, 4).join(','), alpha: Number(rgba[4]) }
+  const hex = /^#([0-9a-f]{6})$/i.exec(color)
+  if (hex === null) return { rgb: '', alpha: 0 }
+  const v = parseInt(hex[1], 16)
+  return { rgb: [v >> 16, (v >> 8) & 255, v & 255].join(','), alpha: 1 }
+}
 
 /** Where words run from and to, by their alignment, in the double's font. */
 function wordsSpan(words: string, x: number, align: unknown): number[] {
@@ -87,7 +105,16 @@ export function marksOf(calls: readonly Call[]): Mark[] {
   const alpha = (): string =>
     style.globalAlpha === 1 ? '' : ` alpha ${num(Number(style.globalAlpha))}`
   const mark = (line: string, color = '', mx = xs, my = ys): void => {
-    out.push({ line, color, xs: mx, ys: my })
+    const { rgb, alpha: a } = channels(color)
+    const stroke = line.startsWith('stroke ')
+    out.push({
+      line,
+      rgb,
+      opacity: a * Number(style.globalAlpha),
+      width: stroke ? Number(style.lineWidth) : 0,
+      xs: mx,
+      ys: my,
+    })
   }
   for (const [name, ...args] of calls) {
     const [x, y, p, r] = args.map(Number)

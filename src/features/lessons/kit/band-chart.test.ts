@@ -7,13 +7,16 @@
 // call they hear (band-chart.test-fixtures.ts), set a scene, run one frame
 // of the page's loop, and read the calls back as the marks they draw. Each
 // lesson's chart is written out here mark by mark, as the chart painted it
-// before it took rungs (Lesson 9 WEB-SPEC, Tests 5), so a change that moves
-// any line of them fails here.
+// before it took rungs, so a change that moves any line of them fails here;
+// and its band painted as one rung at 0 across the plot makes the very same
+// calls (Lesson 9 WEB-SPEC, Tests 5). Where rungs land beyond that is
+// band-chart-rungs.test.ts's.
 
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import './browser-doubles.test-fixtures'
 import type { Figure } from './band-chart.test-fixtures'
 import { paintCharts, picture } from './band-chart.test-fixtures'
+import { paintRungs } from './band-chart-rungs'
 
 afterEach(() => {
   vi.useRealTimers()
@@ -328,5 +331,87 @@ describe('the band chart as Lessons 3 and 5 mount it', () => {
 
     // Assert
     expect(picture(calls)).toEqual(recorded)
+  })
+})
+
+/**
+ * A chart on a notes axis with no echo, as Lesson 9's will be: Merc's band
+ * half lit as his note fades, the singer's line inside it.
+ */
+const NOTES: Figure = {
+  opts: { target: 57, axis: { notes: [53, 72], named: [57, 69] } },
+  scene: (s) => {
+    s.line = [
+      { t: 0.5, c: -60 },
+      { t: 1.5, c: -10 },
+    ]
+    s.head = { t: 1.5, c: -10 }
+    s.glow = 0.5
+    s.lit = true
+  },
+}
+
+/**
+ * The same figure with its band as one rung at 0 across the plot, which
+ * carries the scene's glow and lit edge: the scene's own are put out, so
+ * only the rung can paint them.
+ */
+function asOneRung(figure: Figure): Figure {
+  return {
+    opts: { ...figure.opts, paintRungs },
+    scene: (s) => {
+      figure.scene?.(s)
+      s.rungs = [{ c: 0, glow: s.glow, lit: s.lit }]
+      s.glow = 0
+      s.lit = false
+    },
+  }
+}
+
+describe('one rung at 0 across the plot', () => {
+  it.each<[string, Figure]>([
+    ["Lesson 3's Sing it chart", SING_3],
+    ["Lesson 5's hold", HOLD_5],
+    ["Lesson 5's push", PUSH_5],
+    ['a notes axis with no echo', NOTES],
+  ])('paints %s call for call as its band does', async (_name, figure) => {
+    // Arrange
+    const rung = asOneRung(figure)
+
+    // Act
+    const [band, rungs] = await paintCharts(figure, rung)
+
+    // Assert
+    expect(rungs.calls).toEqual(band.calls)
+  })
+
+  it('leaves a chart given the painter on its band while its scene holds no rungs', async () => {
+    // Arrange
+    const given: Figure = { ...SING_3, opts: { ...SING_3.opts, paintRungs } }
+
+    // Act
+    const [band, painter] = await paintCharts(SING_3, given)
+
+    // Assert
+    expect(painter.calls).toEqual(band.calls)
+  })
+
+  it("paints neither the scene's glow nor its lit edge once a rung takes the band's place", async () => {
+    // Arrange: one rung at rest under a scene that glows and is lit
+    const rung: Figure = {
+      opts: { target: 57, paintRungs },
+      scene: (s) => {
+        s.rungs = [{ c: 0 }]
+        s.glow = 1
+        s.lit = true
+      },
+    }
+    const atRest: Figure = { opts: { target: 57 } }
+
+    // Act
+    const [rungs, band] = await paintCharts(rung, atRest)
+
+    // Assert
+    expect(rungs.calls).toEqual(band.calls)
   })
 })
