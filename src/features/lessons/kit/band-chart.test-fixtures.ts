@@ -1,0 +1,230 @@
+// ============================================================
+// Band chart by hand — charts on canvases that keep every call they hear
+// ============================================================
+//
+// A band chart's tests ask what it paints. `paintCharts` mounts each figure
+// as a page mounts it, on a canvas of its own whose 2D context draws nothing
+// and keeps every call it hears, sets the figure's scene, and runs one frame
+// of the page's loop by hand (frame-loop.test-fixtures.ts): what each canvas
+// heard in that frame. `marksOf` reads the calls back as the marks they
+// drew, a line a mark: a stroke with its colour, width, alpha, dash and
+// path; a fill and its path; a rect, its corner and size; words with their
+// alignment and anchor. The styles every later mark shares (the font, a
+// line's joins and caps) are written once, where they change. Words are
+// measured in the double's own font, `CHAR_PX` a character, so a mark knows
+// where its words end. Every canvas measures 300 by 190 px. The test file
+// imports './browser-doubles.test-fixtures' first, and calls
+// `vi.useRealTimers()` and `vi.restoreAllMocks()` after each test.
+
+import { vi } from 'vitest'
+import type { BandChart, BandChartOptions, BandScene } from './band-chart'
+import { q } from './dom'
+import { handLoop } from './frame-loop.test-fixtures'
+
+/** A call a canvas heard: a method and its arguments, or a property set (`font=`) and its value. */
+export type Call = readonly [name: string, ...args: unknown[]]
+
+/** A character's width in the double's 12 px monospaced font, px. */
+export const CHAR_PX = 7.2
+
+/** Every canvas's size on the page, CSS px, as the hand loop measures it. */
+export const CANVAS = { w: 300, h: 190 } as const
+
+/** A 2D context that keeps every call and every property set, and draws nothing. */
+function recordingContext(calls: Call[]): CanvasRenderingContext2D {
+  const props: Record<PropertyKey, unknown> = {}
+  return new Proxy(props, {
+    get: (target, key) =>
+      key in target
+        ? target[key]
+        : (...args: unknown[]): unknown => {
+            calls.push([String(key), ...args])
+            return key === 'measureText'
+              ? { width: String(args[0]).length * CHAR_PX }
+              : undefined
+          },
+    set: (target, key, value: unknown) => {
+      calls.push([`${String(key)}=`, value])
+      target[key] = value
+      return true
+    },
+  }) as unknown as CanvasRenderingContext2D
+}
+
+/** A mark the calls drew: the line the picture writes for it, its colour, and the points it reaches. */
+export interface Mark {
+  readonly line: string
+  /** The colour it is drawn in; empty for a clear or a shared style. */
+  readonly color: string
+  /** A path's points (a circle's edges), a rect's sides, or where words run from and to. */
+  readonly xs: readonly number[]
+  readonly ys: readonly number[]
+}
+
+/** A number as a mark writes it, to two decimals. */
+const num = (v: number): string => String(Math.round(v * 100) / 100)
+
+/** Styles that every later mark shares, written once where they change. */
+const SHARED = ['font', 'lineJoin', 'lineCap']
+
+/** Where words run from and to, by their alignment, in the double's font. */
+function wordsSpan(words: string, x: number, align: unknown): number[] {
+  const w = words.length * CHAR_PX
+  if (align === 'right') return [x - w, x]
+  if (align === 'center') return [x - w / 2, x + w / 2]
+  return [x, x + w]
+}
+
+/** What the calls drew, mark by mark, in the order they drew it. */
+export function marksOf(calls: readonly Call[]): Mark[] {
+  const style: Record<string, unknown> = { globalAlpha: 1, lineWidth: 1 }
+  const out: Mark[] = []
+  let dash: readonly number[] = []
+  let path: string[] = []
+  let xs: number[] = []
+  let ys: number[] = []
+  const of = (key: string): string => String(style[key])
+  const alpha = (): string =>
+    style.globalAlpha === 1 ? '' : ` alpha ${num(Number(style.globalAlpha))}`
+  const mark = (line: string, color = '', mx = xs, my = ys): void => {
+    out.push({ line, color, xs: mx, ys: my })
+  }
+  for (const [name, ...args] of calls) {
+    const [x, y, p, r] = args.map(Number)
+    if (name.endsWith('=')) {
+      const key = name.slice(0, -1)
+      if (SHARED.includes(key) && style[key] !== args[0])
+        mark(`${key} ${String(args[0])}`, '', [], [])
+      style[key] = args[0]
+      continue
+    }
+    switch (name) {
+      case 'beginPath':
+        path = []
+        xs = []
+        ys = []
+        break
+      case 'moveTo':
+      case 'lineTo':
+        path.push(`${name === 'moveTo' ? 'M' : 'L'}${num(x)},${num(y)}`)
+        xs.push(x)
+        ys.push(y)
+        break
+      case 'arc':
+        path.push(`O${num(x)},${num(y)} r${num(p)}`)
+        xs.push(x - p, x + p)
+        ys.push(y - p, y + p)
+        break
+      case 'closePath':
+        path.push('Z')
+        break
+      case 'setLineDash':
+        dash = args[0] as number[]
+        break
+      case 'stroke': {
+        const dashed = dash.length > 0 ? ` dash ${dash.join(' ')}` : ''
+        const width = num(Number(style.lineWidth))
+        mark(
+          `stroke ${of('strokeStyle')} w${width}${alpha()}${dashed} ${path.join(' ')}`,
+          of('strokeStyle'),
+        )
+        break
+      }
+      case 'fill':
+        mark(
+          `fill ${of('fillStyle')}${alpha()} ${path.join(' ')}`,
+          of('fillStyle'),
+        )
+        break
+      case 'fillRect':
+        mark(
+          `rect ${of('fillStyle')}${alpha()} ${num(x)},${num(y)} ${num(p)}x${num(r)}`,
+          of('fillStyle'),
+          [x, x + p],
+          [y, y + r],
+        )
+        break
+      case 'fillText': {
+        const words = String(args[0])
+        const [tx, ty] = [Number(args[1]), Number(args[2])]
+        mark(
+          `text ${of('fillStyle')}${alpha()} ${of('textAlign')} ${of('textBaseline')} ${num(tx)},${num(ty)} ${words}`,
+          of('fillStyle'),
+          wordsSpan(words, tx, style.textAlign),
+          [ty],
+        )
+        break
+      }
+      case 'clearRect':
+        mark(`clear ${num(x)},${num(y)} ${num(p)}x${num(r)}`, '', [], [])
+        break
+      case 'setTransform':
+        mark(
+          `transform ${args.map((a) => num(Number(a))).join(' ')}`,
+          '',
+          [],
+          [],
+        )
+        break
+      default:
+      // measureText draws nothing
+    }
+  }
+  return out
+}
+
+/** The picture the calls drew: each mark's line. */
+export const picture = (calls: readonly Call[]): string[] =>
+  marksOf(calls).map((m) => m.line)
+
+/** A chart as a page mounts it, and the scene it shows. */
+export interface Figure {
+  readonly opts: BandChartOptions
+  readonly scene?: (s: BandScene) => void
+}
+
+export interface Painted {
+  readonly chart: BandChart
+  /** Every call its canvas heard in the frame. */
+  readonly calls: readonly Call[]
+}
+
+/**
+ * Each figure's chart mounted on a canvas of its own, on screen, its scene
+ * set; then one frame of the page's loop: what each canvas heard in it.
+ */
+export async function paintCharts(
+  ...figures: readonly Figure[]
+): Promise<Painted[]> {
+  const heard = new Map<HTMLCanvasElement, Call[]>()
+  vi.spyOn(HTMLCanvasElement.prototype, 'getContext').mockImplementation(
+    function (this: HTMLCanvasElement) {
+      const calls: Call[] = []
+      heard.set(this, calls)
+      return recordingContext(calls)
+    } as unknown as HTMLCanvasElement['getContext'],
+  )
+  const hand = await handLoop()
+  const { mountBandChart } = await import('./band-chart')
+  const charts = figures.map((figure) => {
+    const root = document.createElement('div')
+    root.innerHTML = '<canvas></canvas>'
+    document.body.appendChild(root)
+    const canvas = q<HTMLCanvasElement>('canvas', root)
+    hand.paints(canvas)
+    // what `pointOf` measures, as the hand loop's `paints` has the box
+    Object.defineProperties(canvas, {
+      clientWidth: { value: CANVAS.w },
+      clientHeight: { value: CANVAS.h },
+    })
+    const chart = mountBandChart(root, figure.opts)
+    figure.scene?.(chart.scene)
+    hand.see(canvas)
+    return chart
+  })
+  hand.frame()
+  return charts.map((chart) => ({
+    chart,
+    calls: heard.get(chart.canvas) ?? [],
+  }))
+}
