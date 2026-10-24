@@ -8,6 +8,7 @@ import type { PageState } from './publish'
 import { defaultPageState, isLive, isPublished, lessonOfHref, pageStateJson, parsePageState, readingHolds, readingLesson, seasonFor, } from './publish'
 import type { Lesson } from './season'
 import { LESSONS } from './season'
+import { lessonWithNoPage } from './season.test-fixtures'
 
 const served = (lessons: PageState['lessons'], drafts = false): PageState => ({
   ...defaultPageState(drafts),
@@ -43,12 +44,12 @@ describe('isPublished', () => {
 
 describe('isLive', () => {
   it('needs a page as well: a lesson not written yet is coming later whatever the console says', () => {
-    // Arrange: Lesson 9 has no page
-    const state = served({ 9: { published: true } })
+    // Arrange: a lesson with no page, published by the console
+    const { n } = lessonWithNoPage()
+    const state = served({ [n]: { published: true } })
 
     // Act + Assert
-    expect(LESSONS[9].page).toBeUndefined()
-    expect(isLive(9, LESSONS, state)).toBe(false)
+    expect(isLive(n, LESSONS, state)).toBe(false)
     expect(isLive(2, LESSONS, state)).toBe(true)
     expect(isLive(99, LESSONS, state)).toBe(false)
   })

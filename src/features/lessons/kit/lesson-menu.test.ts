@@ -11,6 +11,7 @@ import type { DeckNow, MenuModel, MenuRow } from './lesson-menu'
 import { menuMarkup, menuModel } from './lesson-menu'
 import { defaultPageState, seasonFor } from './publish'
 import { LESSONS } from './season'
+import { lessonWithNoPage } from './season.test-fixtures'
 import type { StepDeck } from './step-deck'
 import { TOUR_KEY, TOUR_VERSION } from './tour-gate'
 
@@ -30,13 +31,14 @@ describe('menuModel', () => {
   it('gives each lesson its state, its right-hand text and where its row goes', () => {
     // Arrange: on Lesson 2's page, Lesson 1 done, Lesson 4 left at step 3
     const kept = { 4: { step: 3, of: 5 } }
+    const later = lessonWithNoPage().n
 
     // Act
     const m = menuModel(LESSONS, [1], kept, 2, DECK)
 
     // Assert
     expect(
-      [1, 2, 3, 4, 5, 9].map((n) => {
+      [1, 2, 3, 4, 5, later].map((n) => {
         const r = row(m, n)
         return [n, r?.state, r?.meta, r?.href]
       }),
@@ -46,26 +48,30 @@ describe('menuModel', () => {
       [3, 'next', 'Up next', '/learn/03'],
       [4, 'progress', 'Step 3 of 5', '/learn/04#step-3'],
       [5, 'ready', 'Ready · 18 min', '/learn/05'],
-      [9, 'later', 'Coming later', null],
+      [later, 'later', 'Coming later', null],
     ])
   })
 
   it('says each row as a sentence, so a lesson coming later is never a dead link', () => {
+    // Arrange
+    const later = lessonWithNoPage()
+
     // Act
     const m = menuModel(LESSONS, [1], {}, 2, DECK)
 
     // Assert
-    expect([1, 2, 3, 9].map((n) => row(m, n)?.label)).toEqual([
+    expect([1, 2, 3, later.n].map((n) => row(m, n)?.label)).toEqual([
       'Lesson 1, What is a note?, done, 8 minutes',
       'Lesson 2, Twelve notes, step 3 of 6',
       'Lesson 3, Match a note, up next',
-      'Lesson 9, Landing a leap, coming later',
+      `Lesson ${later.n}, ${later.title}, coming later`,
     ])
-    expect(
-      rows(m)
-        .filter((r) => r.state === 'later')
-        .map((r) => r.href),
-    ).toEqual(Array(6).fill(null))
+    const hrefs = rows(m)
+      .filter((r) => r.state === 'later')
+      .map((r) => r.href)
+    expect(hrefs).toEqual(
+      LESSONS.filter((L) => L.n > 0 && L.page === undefined).map(() => null),
+    )
   })
 
   it('recommends as up next the first lesson ready whose prerequisites are all done', () => {
@@ -153,10 +159,10 @@ describe('menuModel', () => {
       'ready',
       'done',
       'progress',
-      'ready',
-      'ready',
-      'ready',
-      ...Array(6).fill('later'),
+      // Lessons 6 on: ready with a page, coming later without one
+      ...LESSONS.slice(6).map((L) =>
+        L.page === undefined ? 'later' : 'ready',
+      ),
     ])
     expect(m.bars[4].fill).toBeCloseTo(0.4)
   })

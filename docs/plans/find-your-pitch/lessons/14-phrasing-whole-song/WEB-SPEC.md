@@ -143,7 +143,7 @@ heading, and the line above it, are in LESSON.md ("Section headings").
    `[data-next-card]` mark, whose children the kit keeps in the card after its words, in the form
    the kit's own test gives,
    `<div class="next-card card l14-next" data-next-card hidden><figure class="end-still">`
-   (`src/features/lessons/kit/next-card.test.ts:337-368`). The kit draws the close once and never
+   (`src/features/lessons/kit/next-card.test.ts:348-379`). The kit draws the close once and never
    redraws it (`next-card.ts:190-193`), so today it says "Now sing a whole song." whatever Sing it's
    ending. This page needs a close that knows the ending, and is not built before it (What the kit
    and the app still need, 12; 78): after "Effortful", "Uncomfortable" or "Just listen today" the
@@ -1086,10 +1086,12 @@ parts:
     (`:241-266`), and the same file's check of every page in the repository then covers it
     (`:286-303`); `seasonFor(LESSONS, defaultPageState(false))` gives Lesson 14 no page and no
     reading time while its line is in `drafts.ts`, and `seasonFor(LESSONS, defaultPageState(true))`
-    keeps both, as `publish.test.ts` checks a lesson held back and one published (`:57-91`); if that
-    file's example of a lesson with no page still names a lesson that now has one (`:44-55`), it
-    moves to one the test finds, as Lesson 9's spec proposes. Lesson 14's practise link carries
-    `?lesson=14`, and `EDGES` holds [5, 14], [8, 14], [9, 14] and [12, 14].
+    keeps both, as `publish.test.ts` checks a lesson held back and one published (`:58-92`); that
+    file's example of a lesson with no page is found, not named (`:45-56`). When the season's last
+    page lands, Lesson 14's in the order `docs/plans/find-your-pitch/HANDOFF.md:219` suggests,
+    `lessonWithNoPage` (`kit/season.test-fixtures.ts:22-36`) finds none, and each test that asks it
+    for an example fails by saying so. Lesson 14's practise link carries `?lesson=14`, and `EDGES`
+    holds [5, 14], [8, 14], [9, 14] and [12, 14].
 15. The kit's new option (What the kit and the app still need, 9), if this page lands it:
     `afterFeeling('effortful', { restAfterEffort: true })` is today's answer to "Effortful" with
     `rest: true`; every other answer with the option, and all four without it, give what
@@ -1108,7 +1110,7 @@ parts:
 18. The season's close: `createNextCard(14)` on the page's mark draws "End of Season 1", the line,
     Karaoke Night at `/karaoke-night?lesson=14` with `target="_blank"` and `rel="noopener"`, and
     "See the season map" at `#explorer`, and keeps the still after its words, as `next-card.test.ts`
-    checks the kit (`:337-368`); and after each of the three rest endings, "Effortful",
+    checks the kit (`:348-379`); and after each of the three rest endings, "Effortful",
     "Uncomfortable" and "Just listen today", the close keeps "End of Season 1", "You've seen every
     note you sing." and "See the season map", and shows neither "Now sing a whole song." nor its
     Karaoke Night button, while every other ending keeps both.
@@ -1165,10 +1167,11 @@ End to end (Playwright, at 390 x 844 and 1440 x 900, on the e2e build, which sho
 11. The Wrap ends on the season's close: on `/learn/14` the card reads "End of Season 1" and the
     line, holds the two links and keeps its figure after its words;
     `src/e2e/learn-next-card.spec.ts`, which today leaves the close to `next-card.test.ts` because
-    the finale has no page (`:17-18`), gains this check. After "Uncomfortable" and after
-    "Effortful", each reached with the fake microphone as End to end 6 reaches them, and after "Just
-    listen today", the card keeps "You've seen every note you sing." and "See the season map", and
-    shows neither "Now sing a whole song." nor a link to `/karaoke-night?lesson=14`.
+    the finale has no page (`src/e2e/learn-next-card.spec.ts:16-17`), gains this check. After
+    "Uncomfortable" and after "Effortful", each reached with the fake microphone as End to end 6
+    reaches them, and after "Just listen today", the card keeps "You've seen every note you sing."
+    and "See the season map", and shows neither "Now sing a whole song." nor a link to
+    `/karaoke-night?lesson=14`.
 12. With reduced motion emulated, a take's bands light in place with no playhead, a line draws
     whole, and nothing moves on its own.
 13. After a full run, storage holds only the keys in the Contract.

@@ -1021,11 +1021,11 @@ parts it adds:
     `recallStepHref(6, 5)` is `/learn/06#step-5`.
 12. The season entry: `seasonFor` with a state that holds Lesson 10 back, by its draft default or by
     `{ 10: { published: false } }`, gives it no `page` and no `minutes`, as
-    `src/features/lessons/kit/publish.test.ts:57-73` checks Lessons 2 and 3. On a page no worker
+    `src/features/lessons/kit/publish.test.ts:58-74` checks Lessons 2 and 3. On a page no worker
     served, with `VITE_DRAFT_LESSONS` stubbed to '0' and the modules reloaded (`vi.stubEnv`,
     `vi.resetModules`), Lesson 1's explorer shows Lesson 10 as "Coming later", with no link to
     `/learn/10` and its practice link kept, and with '1' links it to read, as
-    `src/features/lessons/kit/explorer.test.ts:460-485` checks Lesson 5 (the block, `:417-486`). Its
+    `src/features/lessons/kit/explorer.test.ts:481-506` checks Lesson 5 (the block, `:438-507`). Its
     link's `note` matches none of the backlog words (`/needs|slug|deep link|for now/i`).
 13. The names switch: under Minor, Do-re-mi names the staircase do re me fa so le te do, and under
     Major do re mi fa so la ti do (FACTS 8, 26); Letters gives `spellScale`'s names on every root

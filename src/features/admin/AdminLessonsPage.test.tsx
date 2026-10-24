@@ -98,11 +98,11 @@ describe('AdminLessonsPage', () => {
       '404 Not found',
       '500 Error',
       'Unreachable',
-      // Lessons 6, 7 and 8 have pages in this build, and this site knows none
-      '404 Not found',
-      '404 Not found',
-      '404 Not found',
-      ...Array<string>(6).fill('No page yet'),
+      // From Lesson 6 on, a lesson with a page in this build is one this
+      // site does not know, and the rest have no page yet
+      ...LESSONS.slice(6).map((L) =>
+        L.page === undefined ? 'No page yet' : '404 Not found',
+      ),
     ])
     expect(column(3)).toEqual([
       'Not listed',
@@ -112,14 +112,7 @@ describe('AdminLessonsPage', () => {
     ])
     expect(column(4)).toEqual(Array<string>(15).fill('Could not read'))
     expect(sitePathsAsked(fetchMock)).toEqual([
-      '/learn/01',
-      '/learn/02',
-      '/learn/03',
-      '/learn/04',
-      '/learn/05',
-      '/learn/06',
-      '/learn/07',
-      '/learn/08',
+      ...LESSONS.flatMap((L) => L.page ?? []),
       '/llms.txt',
       '/sitemap.xml',
     ])
