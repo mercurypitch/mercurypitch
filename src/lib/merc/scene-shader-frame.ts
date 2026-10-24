@@ -185,7 +185,7 @@ vec4 renderSample(vec2 fc, out vec3 dbg, out vec3 glow) {
   if (tb.y > 0.0) {
     float t = max(tb.x, 0.0);
     float tEnd = min(tb.y, tFloor);
-    for (int i = 0; i < MAX_STEPS; i++) {
+    for (int i = uZero; i < MAX_STEPS; i++) {
       vec3 p = ro + rd * t;
       vec3 h = map3(p);
       steps = i + 1;
@@ -284,12 +284,12 @@ void main() {
   cacc = gCov;
 #elif SPP == 4
   const vec2 o4[4] = vec2[4](vec2(0.125, 0.375), vec2(0.375, -0.125), vec2(-0.125, -0.375), vec2(-0.375, 0.125));
-  for (int i = 0; i < 4; i++) { acc += renderSample(gl_FragCoord.xy + o4[i], dbg, g); gacc += g; cacc += gCov; }
+  for (int i = uZero; i < 4; i++) { acc += renderSample(gl_FragCoord.xy + o4[i], dbg, g); gacc += g; cacc += gCov; }
   acc *= 0.25;
   gacc *= 0.25;
   cacc *= 0.25;
 #else
-  for (int i = 0; i < SPP; i++) {
+  for (int i = uZero; i < SPP; i++) {
     vec2 o = (vec2(float(i % 3), float(i / 3)) - 1.0) / 3.0;
     acc += renderSample(gl_FragCoord.xy + o, dbg, g);
     gacc += g;
