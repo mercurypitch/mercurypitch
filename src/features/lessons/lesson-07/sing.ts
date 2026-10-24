@@ -16,8 +16,8 @@
 // What the card offers is the pure rule in siren-flow.ts, and the take is
 // sing-take.ts's, so this file draws what the rule says. "How did that
 // feel?" follows every take that heard a voice (REQ-GVC-022), an answer can
-// change until the next take, and after Done for today, and nothing is
-// scored or celebrated (FACTS 59). The microphone is held only around a
+// change until the next take or Done for today, which locks it, and nothing
+// is scored or celebrated (FACTS 59). The microphone is held only around a
 // take: acquired on the tap that starts one, released when it ends, when
 // the viewer leaves the section, when the tab is hidden and when the page
 // goes. Refused, missing, or a listener that fails to load: the page
@@ -188,6 +188,13 @@ export function initSing(stills: RingStills): void {
     actions.hidden = !(noVoice || spent) || visit.finished
     q('[data-sing="again"]', actions).hidden = !o.again
     q('[data-sing="today"]', actions).hidden = !o.done
+    renderAfter(o)
+    const ending = o.restCard ? 'rest' : 'practise'
+    if (VisitEnding.ending !== ending) VisitEnding.set(ending)
+  }
+
+  /** Under the answers: the lines, what comes next, and the lock after Done for today. */
+  function renderAfter(o: SirenOffers): void {
     const after = q('[data-panel="after"]', card)
     for (const el of qa('[data-closing]', after))
       el.hidden = el.dataset.closing !== o.closing
@@ -195,8 +202,7 @@ export function initSing(stills: RingStills): void {
     q('[data-after-doctor]', after).hidden = !o.doctor
     q('[data-sing="again"]', after).hidden = !o.again
     q('[data-sing="today"]', after).hidden = !o.done
-    const ending = o.restCard ? 'rest' : 'practise'
-    if (VisitEnding.ending !== ending) VisitEnding.set(ending)
+    if (o.locked) feelings.lock()
   }
 
   function dispatch(e: SirenEvent): void {
@@ -383,9 +389,8 @@ export function initSing(stills: RingStills): void {
 
   /**
    * Done for today: the takes end here, and the card keeps its question,
-   * its answer and its last lines. An answer can still change them, since
-   * the singer's report outranks every reading (REQ-GVC-024), but nothing
-   * offers a take again.
+   * its answer and its last lines, the answer locked as it stands, and
+   * nothing offers a take again.
    */
   function finish(): void {
     dispatch({ type: 'done' })

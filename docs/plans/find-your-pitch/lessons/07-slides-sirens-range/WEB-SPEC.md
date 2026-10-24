@@ -372,14 +372,17 @@ States:
      voice.", the doctor lines, no Again and no further siren; the reading's band and line are
      taken away (Lesson 3 shows no count after it). The Wrap shows the rest card (REQ-GVC-023,
      REQ-GVC-024, REQ-GVC-055).
-   - An answer can be changed until the next take. Changing to Effortful or Uncomfortable takes
-     Again away; once either has been picked, no further siren and the rest card stay so for the
-     visit, whatever is picked after. The page keeps the ending in memory for the visit, never in
-     storage.
+   - An answer can be changed until the next take or Done for today. Changing to Effortful or
+     Uncomfortable takes Again away; once either has been picked, no further siren and the rest
+     card stay so for the visit, whatever is picked after. The page keeps the ending in memory for
+     the visit, never in storage.
    - **Done for today** ends the takes, not the card: the question, its answer and its lines stay,
-     and an answer can still be changed, with its own lines, band and Wrap card as above, but no
-     Start, Again or Done for today comes back. Until #1192 an answer changed after Done for
-     today emptied the card, the question with it, and left only the reading's line.
+     and the answer locks as it stands, as Lesson 3's does after its one answer: the four buttons
+     are disabled, the one picked still pressed, and its lines, band and Wrap card stay as they
+     are. No Start, Again or Done for today comes back. Until #1192 an answer changed after Done
+     for today emptied the card, the question with it, and left only the reading's line; from
+     #1192 until this PR it could still be changed, and on 24 October 2026 the owner chose the
+     lock.
 9. **No microphone** (refused, no device, or the listener failed to load): listen-only mode with
    LESSON.md's line; Merc's siren still plays, and the Wrap keeps the Vocal Range Test card, since
    singing along with nothing listening is no report of effort (Lesson 3's rule). Without Web Audio
@@ -755,9 +758,10 @@ parts:
    siren, and never shows "Try again" without Again; "Effortful" and "Uncomfortable" end the
    singing for the visit and pick the rest card, and a later "Easy" brings back neither Again, Start
    nor the Vocal Range Test card; "Uncomfortable" takes the band away; after Done for today the
-   question, its answer and its lines stay, a changed answer changes the lines, and no Start, Again
-   or Done for today comes back, in every sequence the walk takes; nothing is written to storage
-   but `fyp-voice` and `fyp-l07-warmup`.
+   question, its answer and its lines stay, the four answers locked with the one picked still
+   pressed, a later answer changes nothing, and no Start, Again or Done for today comes back, in
+   every sequence the walk takes; nothing is written to storage but `fyp-voice` and
+   `fyp-l07-warmup`.
 8. Copy: every line of LESSON.md's page copy and every template in Toys 1 and 4 passes
    `validateGuidedDynamicClaim` (`src/lib/guided-voice/claims.ts`, surface `finding`); no quiz
    feedback line starts with "Right", "Yes" or "Correct"; no accessible name or live text holds a
