@@ -10,6 +10,12 @@
 // imported from Voice Mirror's leaf (src/lib/mirror/match-bands.ts), never
 // copied, so what a lesson calls "in the band" and what Voice Mirror counts
 // as a hit cannot drift apart. Words only: no colour is ever the message.
+//
+// A live line folded into Merc's octave carries a small tag ("octave lower")
+// while it sits within 50 cents of his note an octave or more away
+// (`octaveTag`). It lives here, not beside the take reader (take.ts):
+// Lesson 3's first paint imports the module that draws the tag, and the
+// reader loads only with the listener, after Start.
 
 import { BULLSEYE_TOLERANCE_CENTS, CLOSE_TOLERANCE_CENTS, HIT_TOLERANCE_CENTS, } from '@/lib/mirror/match-bands'
 import type { Spelled } from './notes'
@@ -78,4 +84,16 @@ export function nearestNote(target: number, cents: number): Spelled {
  */
 export function bandValueText(target: number, cents: number): string {
   return `${gapWords(cents)}: ${BAND_WORDS[bandOf(cents)]}; nearest note ${wordName(nearestNote(target, cents))}`
+}
+
+/** Whole octaves between a pitch and Merc's note, by the folded distance. */
+export const octavesOf = (raw: number, folded: number): number =>
+  Math.round((raw - folded) / 1200)
+
+/** The tag beside the live line: "octave lower", "two octaves higher", or none. */
+export function octaveTag(octaves: number, folded: number): string | null {
+  if (octaves === 0 || Math.abs(folded) > 50) return null
+  const n = Math.abs(octaves)
+  const size = n === 1 ? 'octave' : `${n === 2 ? 'two' : String(n)} octaves`
+  return `${size} ${octaves < 0 ? 'lower' : 'higher'}`
 }
