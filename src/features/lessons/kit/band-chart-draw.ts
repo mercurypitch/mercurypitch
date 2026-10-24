@@ -21,7 +21,8 @@ export const BAND_COLOR = {
   mint: '#80ffca',
 } as const
 
-const MONO = '500 12px "JetBrains Mono", monospace'
+/** The chart's words: the grid's, the marks', the readings'. */
+export const MONO = '500 12px "JetBrains Mono", monospace'
 
 /** One frame of a chart: its context, its plot and its two scales. */
 export interface ChartFrame {
@@ -144,25 +145,29 @@ export interface BandSpec {
   readonly dashed?: boolean
   /** 0 at rest, 1 while Merc's note sounds. */
   readonly glow?: number
+  /** Where it starts and ends across the canvas, px: a rung over its time slot. Default the plot's full width. */
+  readonly x0?: number
+  readonly x1?: number
 }
 
 /** Merc's band: an amber strip, its two edges, and Merc's steady line at its centre. */
 export function drawBand(f: ChartFrame, b: BandSpec): void {
   const { ctx } = f
+  const { x0 = f.x0, x1 = f.x1 } = b
   const glow = b.glow ?? 0
   const dashed = b.dashed === true
   const yTop = yOf(f, b.c + b.half)
   const yBot = yOf(f, b.c - b.half)
   const y = yOf(f, b.c)
   ctx.fillStyle = rgba(BAND_COLOR.target, dashed ? 0.07 : 0.13 + 0.07 * glow)
-  ctx.fillRect(f.x0, yTop, f.x1 - f.x0, yBot - yTop)
+  ctx.fillRect(x0, yTop, x1 - x0, yBot - yTop)
   ctx.strokeStyle = rgba(BAND_COLOR.target, dashed ? 0.5 : 0.6)
   ctx.lineWidth = 1
   ctx.setLineDash(dashed ? [5, 4] : [])
   for (const yy of [yTop, yBot]) {
     ctx.beginPath()
-    ctx.moveTo(f.x0, yy)
-    ctx.lineTo(f.x1, yy)
+    ctx.moveTo(x0, yy)
+    ctx.lineTo(x1, yy)
     ctx.stroke()
   }
   // Merc's line, steady: the vibrato of his "ooh" is never drawn
@@ -170,8 +175,8 @@ export function drawBand(f: ChartFrame, b: BandSpec): void {
   ctx.globalAlpha = dashed ? 0.55 : 0.75 + 0.25 * glow
   ctx.lineWidth = 2 + glow
   ctx.beginPath()
-  ctx.moveTo(f.x0, y)
-  ctx.lineTo(f.x1, y)
+  ctx.moveTo(x0, y)
+  ctx.lineTo(x1, y)
   ctx.stroke()
   if (glow > 0) {
     ctx.globalAlpha = 0.18 * glow
@@ -185,21 +190,22 @@ export function drawBand(f: ChartFrame, b: BandSpec): void {
 /** The band's lit edge, in mint, with the words beside it. */
 export function drawLitEdge(f: ChartFrame, b: BandSpec): void {
   const { ctx } = f
+  const { x0 = f.x0, x1 = f.x1 } = b
   const yTop = yOf(f, b.c + b.half)
   const yBot = yOf(f, b.c - b.half)
   ctx.strokeStyle = BAND_COLOR.mint
   ctx.lineWidth = 2
   for (const yy of [yTop, yBot]) {
     ctx.beginPath()
-    ctx.moveTo(f.x0, yy)
-    ctx.lineTo(f.x1, yy)
+    ctx.moveTo(x0, yy)
+    ctx.lineTo(x1, yy)
     ctx.stroke()
   }
   ctx.font = MONO
   ctx.fillStyle = BAND_COLOR.mint
   ctx.textAlign = 'right'
   ctx.textBaseline = 'bottom'
-  ctx.fillText('IN THE BAND', f.x1 - 4, yTop - 3)
+  ctx.fillText('IN THE BAND', x1 - 4, yTop - 3)
 }
 
 /** A point of the singer's line: seconds into the window, cents from Merc's note. */
