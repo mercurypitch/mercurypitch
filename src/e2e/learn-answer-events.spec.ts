@@ -10,14 +10,38 @@
 // one carries, and that a re-answer after Reset sends none, is held by
 // kit/quiz.test.ts and kit/telemetry.test.ts. What the built page can show
 // is held here: the beacon is no first-paint work, it loads on the quiz's
-// first answer, and the page sends nothing from this bundle, even when it
-// is served with its state as the site worker serves it.
+// first answer and brings nothing of the app with it, and the page sends
+// nothing from this bundle, even when it is served with its state as the
+// site worker serves it.
 
 import type { Page, Request } from '@playwright/test'
 import { expect, test } from '@playwright/test'
 
 /** The beacon's own chunk, as Vite names it. */
 const BEACON_CHUNK = /\/assets\/telemetry-[\w-]+\.js$/
+
+/**
+ * The chunks the beacon may bring that the page did not already have: the
+ * consent regions and the event names, two leaves that import nothing. The
+ * regions once rode consent.ts into pitch-core, and a first answer
+ * downloaded that chunk and the seven it hoists, 147 KB (54 gzipped), to
+ * read one list (vite.config.ts names them now). The event names may
+ * instead be inlined into the beacon's own chunk, as in this bundle.
+ */
+const BEACON_LEAVES = /^(?:consent-regions|funnel-event-catalog)-[\w-]+\.js$/
+
+/** The chunks a built chunk imports statically, by file name. */
+async function staticImportsOf(page: Page, url: string): Promise<string[]> {
+  const source = await (await page.request.get(url)).text()
+  return [...source.matchAll(/\b(?:from|import)\s*"\.\/([^"]+\.js)"/g)].map(
+    (match) => match[1],
+  )
+}
+
+/** A script's file name, from its URL. */
+function fileOf(url: string): string {
+  return new URL(url).pathname.split('/').at(-1) ?? ''
+}
 
 /** Serves `path` with a lesson state in its head, as the site worker would (learn-publish-state.spec.ts). */
 async function serveWithState(page: Page, path: string): Promise<void> {
@@ -64,6 +88,7 @@ test('Lesson 2 loads the beacon on its first answer and, with no API base, sends
   const check = page.locator('#qs .q')
   await expect(check).toHaveCount(4)
   expect(scripts.filter((url) => BEACON_CHUNK.test(url))).toEqual([])
+  const loaded = new Set(scripts.map(fileOf))
 
   // Act: two questions answered, the first of them again after Reset
   const beacon = page.waitForResponse((response) =>
@@ -84,7 +109,12 @@ test('Lesson 2 loads the beacon on its first answer and, with no API base, sends
   )
 
   // Assert
-  expect(scripts.filter((url) => BEACON_CHUNK.test(url))).toHaveLength(1)
+  const beaconUrls = scripts.filter((url) => BEACON_CHUNK.test(url))
+  expect(beaconUrls).toHaveLength(1)
+  const brought = (await staticImportsOf(page, beaconUrls[0])).filter(
+    (file) => !loaded.has(file),
+  )
+  expect(brought.filter((file) => !BEACON_LEAVES.test(file))).toEqual([])
   expect(events).toEqual([])
   expect(errors).toEqual([])
 })

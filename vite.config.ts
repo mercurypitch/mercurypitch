@@ -706,6 +706,15 @@ export default defineConfig(({ command, mode }) => {
             ) {
               return 'runtime-config'
             }
+            // The consent regions are a leaf the lesson pages' answer beacon
+            // reads (src/features/lessons/kit/telemetry.ts). Unnamed, they
+            // rode consent.ts into the broad pitch-core chunk below, and a
+            // lesson page's first answer downloaded pitch-core and the seven
+            // chunks it hoists, 147 KB (54 gzipped), to read one list of
+            // time zones (learn-answer-events.spec.ts).
+            if (id.includes('/src/lib/consent-regions.')) {
+              return 'consent-regions'
+            }
             if (id.includes('node_modules')) {
               if (id.includes('onnxruntime')) return undefined
               // A dependency reached ONLY through `await import(...)` still
