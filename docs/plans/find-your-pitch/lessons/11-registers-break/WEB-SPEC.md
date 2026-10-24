@@ -454,10 +454,10 @@ States:
    "Your siren, drawn as a line." (REQ-GVC-085), and **How did that feel?** follows at once
    (REQ-GVC-022).
 8. **How did that feel?**: Lesson 3's four answers (`aria-pressed`, at least 44 px, a 2 x 2 grid on
-   phones), through `mountFeelings` (`kit/comfort.ts:168-199`) with its default, an answer that
+   phones), through `mountFeelings` (`kit/comfort.ts:168-206`) with its default, an answer that
    locks, asked after each take with voice (FACTS 65): a press disables all four, and `reset()`
    frees them for the next take, so an answer cannot be changed once it has set what follows. Lesson
-   6's page gives `mountFeelings` a `changeable` option for its sweeps (`kit/comfort.ts:177`), which
+   6's page gives `mountFeelings` a `changeable` option for its sweeps (`kit/comfort.ts:178`), which
    this page leaves off. What each answer allows comes from `afterFeeling` with the proposed
    `restAfterEffort` (What the kit and the app still need, 9); its `count` and `tricky` have nothing
    to show here.
@@ -848,7 +848,7 @@ the others take it.
    (`:69-78`) and Lessons 6, 7, 9 and 11 all choose it (unit test 13). Built by #1192: Lesson 6's
    page sent effort to the rest card in its own flow until then, and passes the option now
    (`lesson-06/sing-flow.ts:91-96`), as this page will. `mountFeelings` needs nothing new: its
-   `changeable` option serves Lesson 6's sweeps (`kit/comfort.ts:168-199`), and this page takes the
+   `changeable` option serves Lesson 6's sweeps (`kit/comfort.ts:168-206`), and this page takes the
    default, an answer that locks (Toys 4, state 8).
 10. Nothing new for the two sound rules (Audio): their kit parts are on main since #1149.
     `kit/predict.ts`'s `play` may resolve `false` for a play cut short, which the predict then

@@ -359,7 +359,7 @@ States:
    today**, and no feeling question, since nothing was sung. Otherwise the count follows the lines
    (below) and **How did that feel?** follows at once (REQ-GVC-022).
 8. **How did that feel?**: Lesson 3's four answers (`aria-pressed`, at least 44 px, two a row on
-   phones), through `mountFeelings` (`kit/comfort.ts:168-199`) with its default, an answer that
+   phones), through `mountFeelings` (`kit/comfort.ts:168-206`) with its default, an answer that
    locks, asked after each take with voice (FACTS 82): a press disables all four, and `reset()`
    frees them for the next take, so an answer cannot be changed once it has set what follows. Lesson
    6's page (PR #1149) gives `mountFeelings` a `changeable` option for its sweeps, which this page
