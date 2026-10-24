@@ -12,16 +12,17 @@
 // Stretch is the dial's log slider, 110 to 440 Hz (FACTS 48): the folds
 // draw longer and thinner as it rises, and the rail's bead climbs in the
 // note's colour. Under reduced motion the singing folds are two stills,
-// open and closed, with the rate in words. The folds themselves are the
-// kit's drawing (kit/folds.ts), which Lesson 5's three starts share.
+// open and closed, with the rate in words. The folds are the kit's
+// drawing (kit/folds.ts), and their singing is too (kit/folds-sing.ts).
 //
 // Mounted on a root, twice on the page (Step 1 and free play): inside it the
 // canvas, `[data-folds="breathe" | "sing" | "slow" | "stretch"]`, the
 // `[data-folds-ro]` readout, the `[data-folds-count]` counter, the
 // `[data-folds-note]` label and the `[data-folds-live]` line.
 
-import { clamp, lerp, q, TAU } from '@/features/lessons/kit/dom'
-import { drawFoldLabels, drawFoldPair, drawFoldText, foldShapeAt, } from '@/features/lessons/kit/folds'
+import { clamp, lerp, q } from '@/features/lessons/kit/dom'
+import { drawFoldLabels, drawFoldPair, foldShapeAt, } from '@/features/lessons/kit/folds'
+import { drawFoldBlur, drawFoldStills, foldBulge, foldStretch, } from '@/features/lessons/kit/folds-sing'
 import { addDrawer, surface, watch } from '@/features/lessons/kit/frame-loop'
 import { reducedMotion } from '@/features/lessons/kit/motion-switch'
 import { COLOR, fmtHz, nameHtml, noteColor, sharpOf, wordName, } from '@/features/lessons/kit/notes'
@@ -189,20 +190,16 @@ export function mountFolds(root: HTMLElement, opts: FoldsOptions = {}): Folds {
     now: number,
     dt: number,
   ): void {
-    const s = clamp(Math.log2(f / 110) / 2, 0, 1)
+    const s = foldStretch(f)
     const shape = foldShapeAt(h, s, (w - 70) / 2 + 6)
     const o = openness(now, dt)
     shape.gap = lerp(1, shape.len * 0.3, clamp(o, 0, 1.3))
-    const vib = 6 * (1 - 0.3 * s)
     if (singing && slow) {
       if (clock.advance(dt, f) && Sound.canPlay()) Sound.tick(1500, 0.06)
-      shape.bulge = vib * Math.max(0, Math.sin(TAU * clock.phase))
+      shape.bulge = foldBulge(s, clock.phase)
       drawFoldPair(ctx, shape)
-    } else if (singing) {
-      // too fast to see: the blur between closed and open
-      drawFoldPair(ctx, { ...shape, bulge: vib }, 0.35)
-      drawFoldPair(ctx, shape, 0.75)
-    } else drawFoldPair(ctx, shape)
+    } else if (singing) drawFoldBlur(ctx, shape, s)
+    else drawFoldPair(ctx, shape)
     drawFoldLabels(ctx, shape)
   }
 
@@ -212,7 +209,7 @@ export function mountFolds(root: HTMLElement, opts: FoldsOptions = {}): Folds {
     w: number,
     h: number,
   ): void {
-    const s = clamp(Math.log2(f / 110) / 2, 0, 1)
+    const s = foldStretch(f)
     const plot = w - 70
     if (!singing) {
       const shape = foldShapeAt(h, s, plot / 2 + 6)
@@ -221,13 +218,7 @@ export function mountFolds(root: HTMLElement, opts: FoldsOptions = {}): Folds {
       drawFoldLabels(ctx, shape)
       return
     }
-    const vib = 6 * (1 - 0.3 * s)
-    for (const [i, word] of ['OPEN', 'CLOSED'].entries()) {
-      const shape = foldShapeAt(h * 0.86, s, plot * (0.3 + 0.42 * i))
-      shape.bulge = i === 0 ? vib : 0
-      drawFoldPair(ctx, shape)
-      drawFoldText(ctx, word, shape.cx, shape.y0 + shape.len + 18, 'center')
-    }
+    drawFoldStills(ctx, plot, h, s)
   }
 
   addDrawer({
