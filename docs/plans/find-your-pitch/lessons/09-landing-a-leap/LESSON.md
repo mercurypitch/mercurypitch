@@ -201,9 +201,13 @@ away."
 Choose a voice to sing with. If you chose one in an earlier lesson, pick it again:
 [ Lower: sing with Merc, around A3 ] [ Higher: sing with Tavi, around A4 ]
 
-(A stored voice shows pressed and can be changed, and the line above reads "Keep the voice you
-chose before, or change it:" instead. With none stored, this choice comes after either answer
-above and before anything plays, because it picks the Merc who sings, as in Lessons 5 to 7.)
+After Just listen today, with none stored: "Choose a voice: it picks the Merc who sings."
+
+(A stored voice shows pressed and can be changed, and the line over the choice reads "Keep the
+voice you chose before, or change it:" instead. With none stored, this choice comes after either
+answer above and before anything plays, because it picks the Merc who sings, as in Lessons 5 to 7.
+Just listen today's line and the doctor lines show at once, with the choice, as in Lessons 3, 6
+and 8.)
 
 **Warm-up, optional, about a minute.** Three sighs: a quiet "hoo" sliding down, like a relieved
 sigh. Then, if you like, lip trills ("brrr", lips loose, up a little and back), or hum, or sing a
