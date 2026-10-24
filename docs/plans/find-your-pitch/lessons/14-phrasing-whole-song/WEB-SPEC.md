@@ -199,7 +199,7 @@ song, takes, swell, endings, listen back and still, plus live mode at the checkp
   kit as data (`kit/twinkle.ts`, proposed, What the kit and the app still need, 6), with the five
   breath marks at 5.7, 11.7, 17.7, 23.7 and 29.7 s (85).
 - **Drawing.** Pitch is height (playbook rule 20): one faint row per semitone, bottom to top,
-  through the kit's notes axis (`axis: { notes: [lo, hi] }`, `kit/band-chart.ts:38-46`), with its 40
+  through the kit's notes axis (`axis: { notes: [lo, hi] }`, `kit/band-chart.ts:42-50`), with its 40
   px gutter on the left. Only the song's six rows are named, by syllable alone, "do", "re", "mi",
   "fa", "so" and "la", through Lesson 9's rung-names option (two letters fit the gutter; the chart's
   summary gives the spelled note), since the kit's grid letters every natural row (`drawNotesGrid`,
@@ -214,7 +214,7 @@ song, takes, swell, endings, listen back and still, plus live mode at the checkp
 - **The light.** Each band brightens while its note sounds, by the note's level: Merc's lines are at
   level 1, take 2's "star" goes from 0.5 to 1 and back (83). Today a band's glow is one number, "0
   at rest, 1 while Merc's note sounds" (`kit/band-chart-draw.ts:145-146`), which brightens its fill
-  and Merc's line and adds a halo (`drawBand`, `:149-184`). The song line needs it along a band's
+  and Merc's line and adds a halo (`drawBand`, `:152-187`). The song line needs it along a band's
   length: each moment of the band as bright as the note's level then, kept once it has sounded, so a
   still holds the take's shape in light. That is what "Brighter means louder." points at (16).
   Nothing else is drawn for loudness on the plot; level as height is only ever in Step 3's strip.
