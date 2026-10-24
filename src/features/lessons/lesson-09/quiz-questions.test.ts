@@ -1,12 +1,17 @@
 // ============================================================
-// Lesson 9 question tests — ids, one right answer each, the step links
+// Lesson 9 question tests — the quick check, and the recall from Lesson 6
 // ============================================================
 //
-// WEB-SPEC, Tests 8 and 11: four questions, l09-q1 to l09-q4, three answers
-// each, one right; no feedback starts "Right", "Yes" or "Correct", since the
-// kit prints "Right." or "Not quite." first; every line passes the claims
+// The quick check's part of WEB-SPEC Tests 11, with its lines' part of
+// Tests 8: four questions, l09-q1 to l09-q4, three answers each, the right
+// one first; no feedback starts "Right", "Yes" or "Correct", since the kit
+// prints "Right." or "Not quite." first; every line passes the claims
 // check. Each misconception links back to the step whose toy answers it,
-// on this page, since every id is Lesson 9's own.
+// on this page, since every id is Lesson 9's own. And the recall's
+// questions: Lesson 6's l06-q2 and l06-q3, its very objects, whose step
+// links open Lesson 6's page at Steps 5 and 2 in a new tab. The rest of
+// Tests 11, `lesson: 9` and the recall taking none, comes with main.ts and
+// recall.ts.
 
 import { describe, expect, it } from 'vitest'
 import '@/features/lessons/kit/browser-doubles.test-fixtures'
