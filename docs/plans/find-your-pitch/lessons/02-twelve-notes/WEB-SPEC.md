@@ -200,7 +200,7 @@ Twelve notes".
   `lesson-02/assets/` (the page's copies). A `film-sync.test.ts` like Lesson 1's holds the two
   copies equal and checks the speaker labels, and a re-cut that re-times the film changes both
   copies in the same commit as the MP4 URLs. The captions are a same-origin VTT track, on by
-  default, whose turns start "BLUE:" or "ORANGE:", as the transcript expects; the transcript is the
+  default, whose turns start "MERC:" or "TAVI:", as the transcript expects; the transcript is the
   same text, one paragraph per speaker turn, each with its time to jump to.
 - **Chapters**: eleven, as the film's `chapters.json` gives them (FACTS 54; each starts where its
   first scene starts; the list prints the minutes and seconds, the jump uses the seconds):

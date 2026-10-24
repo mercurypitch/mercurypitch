@@ -72,7 +72,11 @@ are the mobile app's builds. The next `v` tag carries both pages.
 2. **A re-cut film.** If the polish re-times a film or changes a word, the page needs its new
    captions (the VTT) or its final scene times. A test holds the page's captions and chapters to
    the lesson's copies, and Lesson 2's last caption inside 7:11. The length label (5:14 and 7:11
-   today) takes the film's own running time once the video loads.
+   today) takes the film's own running time once the video loads. The captions name the hosts
+   ("MERC:", "TAVI:", "[Tavi sings ...]"), and the film project's `tools/captions.py` still
+   writes the colours, so change it first (PRODUCTION-PIPELINE, Captions): the tests fail on a
+   colour label. The same goes for the SRT uploaded to YouTube and any captions burned into a
+   Short: the ones in this repository already carry the names.
 3. **The date.** In a commit before the tag, set `datePublished` for Lessons 1 and 2 to the planned
    release day, and their sitemap `lastmod` (2026-10-20 today) with it (SEARCH.md § 3.2). Both
    ship as built, so a date set after the tag waits for the next release. Neither page has a

@@ -334,26 +334,26 @@ Every example is listed with its exact pitches in FACTS 41 to 53. Sound descript
 `tools/captions.py` (`SOUNDS`), so a viewer with the sound off knows what is playing; the listening
 quiz's caption names nothing, so it cannot give the answer away:
 
-| Cue                | Caption                                                       |
-| ------------------ | ------------------------------------------------------------- |
-| sing-blue-a3       | [blue Merc sings an A, 220 Hz]                                |
-| sing-orange-a4     | [orange Merc sings an A, 440 Hz]                              |
-| q0, q1, q2, q3, q4 | [think]                                                       |
-| title, end         | [chime]                                                       |
-| first-step         | [A, then the next note up]                                    |
-| climb              | [twelve steps up, from A3 to A4]                              |
-| unroll             | [a run up the keyboard]                                       |
-| predict, predict-e | [pause and predict]                                           |
-| bc-cd              | [B to C, then C to D]                                         |
-| neighbours         | [C to the black key above it, then B to C]                    |
-| e-f, ef-again      | [E to F]                                                      |
-| tone-split         | [C, C sharp, D; then C straight to D]                         |
-| two-ways           | [up from C to C sharp; down from D to D flat]                 |
-| cents-glide        | [a slow glide from A3 up one semitone]                        |
-| slide-blue         | [blue Merc sings A, slides up a semitone and back]            |
-| slide-orange       | [orange Merc slides up a semitone and back, an octave higher] |
-| your-turn          | [your turn: slide up a semitone and back]                     |
-| quiz-pair          | [two steps]                                                   |
+| Cue                | Caption                                                |
+| ------------------ | ------------------------------------------------------ |
+| sing-blue-a3       | [Merc sings an A, 220 Hz]                              |
+| sing-orange-a4     | [Tavi sings an A, 440 Hz]                              |
+| q0, q1, q2, q3, q4 | [think]                                                |
+| title, end         | [chime]                                                |
+| first-step         | [A, then the next note up]                             |
+| climb              | [twelve steps up, from A3 to A4]                       |
+| unroll             | [a run up the keyboard]                                |
+| predict, predict-e | [pause and predict]                                    |
+| bc-cd              | [B to C, then C to D]                                  |
+| neighbours         | [C to the black key above it, then B to C]             |
+| e-f, ef-again      | [E to F]                                               |
+| tone-split         | [C, C sharp, D; then C straight to D]                  |
+| two-ways           | [up from C to C sharp; down from D to D flat]          |
+| cents-glide        | [a slow glide from A3 up one semitone]                 |
+| slide-blue         | [Merc sings A, slides up a semitone and back]          |
+| slide-orange       | [Tavi slides up a semitone and back, an octave higher] |
+| your-turn          | [your turn: slide up a semitone and back]              |
+| quiz-pair          | [two steps]                                            |
 
 Captions write numbers as on screen ("220 Hz", "100 cents", "1,200 cents", "1,105") and note names
 as "A3", "C sharp" and "D flat" in words (`tools/captions.py` `WORDS`: add "twelve hundred" to

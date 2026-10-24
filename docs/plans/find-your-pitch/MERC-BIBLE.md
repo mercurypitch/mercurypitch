@@ -159,6 +159,8 @@ hosts:
 
 - **Item 1.** Decided (23 October 2026): orange Merc is Tavi, from Octavia, as she sings an octave
   above Merc; she. This overtakes 22 October's "unnamed, with no pronoun" (the voice is cast, § 4).
+  Decided (24 October 2026): the captions name them too, "MERC:" and "TAVI:" where the speaker
+  changes and "[Merc sings an A, 220 Hz]" in a sound, never "BLUE:", "ORANGE:" or a colour.
   Decided (16 October 2026): the owner holds the rights to the ElevenLabs voices, which covers
   commercial YouTube use of the D2 voice and Merc's sung notes, Lesson 1's ElevenLabs-derived
   placeholders that the app keeps out of its store build (`src/features/echo/merc-voice-set.ts`):
