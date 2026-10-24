@@ -791,7 +791,7 @@ paused off screen, and the still images when WebGL fails or would run on the CPU
   Tavi listens (`mercListen`, `:206`). Both hop on every clap, a hop in place that lands on the
   clap, started from the beat clock 0.53 s before it: a new kit cue (FACTS 30d; What the kit and
   the app still need). Tavi celebrates once as the reveal shows, the puzzled guesser who then
-  gets it (`mercCelebrate('orange', 1600)`, `:216`, as Lesson 2's cold open does; playbook rule
+  gets it (`mercCelebrate('orange', 1600)`, `:217`, as Lesson 2's cold open does; playbook rule
   15), with no sparkles: the page mounts the pair with `{ sparkles: 'none' }` (`MercDuoOptions`,
   `:120-126`). The page asks for no other state; the Merc who is not singing idles.
 - In the steps and in Sing it Merc and Tavi appear as stills: the guide shows the still of the Merc

@@ -524,7 +524,7 @@ paused off screen, and the still images when WebGL fails or would run on the CPU
   higher, from E4), and Tavi `celebrate`s once after the cold-open reveal (no sparkles), the
   puzzled guesser who then gets it (playbook rule 15). The same rule picks the singing Merc wherever
   Merc's siren sounds.
-- `merc-duo.ts` has `mercSing`, `mercListen` and `mercCelebrate` (`:164`, `:206`, `:216`), so this
+- `merc-duo.ts` has `mercSing`, `mercListen` and `mercCelebrate` (`:164`, `:206`, `:217`), so this
   page needs no other state: the Merc who is not singing idles, and both idle during a take. Three
   states the renderer already has would suit it, proposed: `listen` for the take, which the kit has
   since Lesson 3's page added `mercListen`; and `ride` and `hum`, which

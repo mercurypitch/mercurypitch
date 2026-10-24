@@ -285,7 +285,7 @@ Merc's singing in Merc's "ooh", and the guide's count-in in the soft tone at hal
 
 Lesson 1's setup through the kit (`kit/merc-duo.ts`, `kit/merc-warm.ts`): the app's renderer
 loaded after first paint, one WebGL context per Merc, medium quality on phones, turned towards each
-other, paused off screen (`merc-duo.ts:43-53`), and the still images when WebGL fails or would run
+other, paused off screen (`merc-duo.ts:51-61`), and the still images when WebGL fails or would run
 on the CPU.
 
 - They live in the hero, and their reactions are the hero pair's: Merc `sing` while the hero's
@@ -293,7 +293,7 @@ on the CPU.
   from D sounds; and Tavi `celebrate` once after the cold-open reveal (no sparkles).
 - The cold open sits below the hero, so the live pair is often off screen and paused while it
   plays. The bubbles carry each Merc's still, and the compact staircase carries the moment.
-- `merc-duo.ts` has `mercSing` and `mercCelebrate` (`:164`, `:216`), and `mercListen` (`:206`)
+- `merc-duo.ts` has `mercSing` and `mercCelebrate` (`:164`, `:217`), and `mercListen` (`:206`)
   since Lesson 3's page; this page asks for no other state: the Merc who is not singing idles.
 - In Sing it, far below the hero, the ring shows the still of the Merc singing (Toys 4), so the
   live pair needs nothing more.
