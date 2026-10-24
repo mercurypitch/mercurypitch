@@ -6,9 +6,8 @@
 // item 7): a 1080p MP4 and a 720p copy for phones, both cut from the
 // delivery master. Their addresses are Lesson 1's entry in kit/films.ts, the
 // one list every film is read from, and the page shows no Watch section
-// until it is set. The plan for their host is media.mercurypitch.com, since
-// r2.dev is rate-limited and for development; films.ts says what media-src
-// needs first.
+// until it is set. They play from media.mercurypitch.com, since r2.dev is
+// rate-limited and for development; films.ts says how a fixed cut goes up.
 //
 // Captions and chapters travel with the film. A re-cut that re-times it (a
 // re-voice will) regenerates the film's captions and chapters, and both copies

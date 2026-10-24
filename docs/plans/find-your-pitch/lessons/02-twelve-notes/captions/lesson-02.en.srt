@@ -20,16 +20,16 @@ does the higher A shake?
 Twice as fast: an octave, one turn up.
 
 6
-00:00:14,904 --> 00:00:17,754
-TAVI: Is there a hidden
-note between every two letters?
+00:00:14,904 --> 00:00:17,673
+TAVI: Is there a hidden note
+between every two letters?
 
 7
 00:00:18,023 --> 00:00:20,557
 MERC: Seven letters, but twelve notes.
 
 8
-00:00:20,857 --> 00:00:23,207
+00:00:20,857 --> 00:00:23,107
 TAVI: Then where do
 the other five come from?
 
@@ -65,8 +65,8 @@ One of the five.
 
 16
 00:00:48,253 --> 00:00:52,471
-TAVI: If we keep taking steps that
-small, how many until we're back at A?
+TAVI: If we keep taking steps that small,
+how many until we're back at A?
 
 17
 00:00:52,771 --> 00:00:54,271
@@ -124,8 +124,8 @@ There's no black key between them.
 
 29
 00:01:52,849 --> 00:01:58,330
-TAVI: But B to C looks just as
-far as C to D. Isn't it the same step?
+TAVI: But B to C looks just as far
+as C to D. Isn't it the same step?
 
 30
 00:01:58,830 --> 00:02:05,517
@@ -260,8 +260,7 @@ for F. Sharp is a direction, not a colour.
 
 59
 00:04:12,808 --> 00:04:15,182
-TAVI: Then how do
-musicians choose a name?
+TAVI: Then how do musicians choose a name?
 
 60
 00:04:15,482 --> 00:04:19,086
@@ -275,8 +274,7 @@ it uses the sharp names, like C sharp.
 
 62
 00:04:28,127 --> 00:04:30,654
-TAVI: And how big is a semitone,
-exactly?
+TAVI: And how big is a semitone, exactly?
 
 63
 00:04:31,004 --> 00:04:36,928
@@ -323,8 +321,8 @@ slides up a semitone and back]
 
 72
 00:05:16,417 --> 00:05:20,617
-[Tavi slides up a semitone
-and back, an octave higher]
+[Tavi slides up a semitone and back,
+an octave higher]
 
 73
 00:05:20,967 --> 00:05:25,266
@@ -446,5 +444,5 @@ in six missed by a semitone or more.
 TAVI: So what's going on?
 
 100
-00:07:05,876 --> 00:07:10,793
+00:07:05,876 --> 00:07:08,793
 [chime]

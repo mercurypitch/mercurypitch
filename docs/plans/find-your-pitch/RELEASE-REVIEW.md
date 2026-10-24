@@ -19,6 +19,11 @@ the review itself was wrong. File and line references are to main @ fd2166c, bef
 - **Also fixed:** axe's one serious result, `target-size` on the stacked footer practise links of Lessons 6 and 8 (Appendix A): footer links are 44 px tall now. axe reports only the moderate landmark notes on each page (S-29).
 - **P1 still open:** S-08, S-09, G-04, V-01 (G-02 keeps one owner question; S-08, S-09 and V-01 wait on devices; G-04 is a layout decision).
 
+## Status after the films PR
+
+- **Fixed:** L1-04, L1-05, L1-07 and L1-08: Lesson 1's master is rc-09 and Lesson 2's rc-06, both on the pages with their captions, chapters and credits.
+- **Decided by the owner:** D-04.
+
 ## Contents
 
 1. [Verdict](#verdict)
@@ -418,16 +423,18 @@ None found.
   - Fix: Snap only on pointer release, or skip the snap for keyboard and assistive-tech steps.
   - Standard: WCAG 2.1.1 (usability)
   - **Status (Fixed):** The octave detent applies to a pointer drag only; arrow keys and screen-reader swipes step off 2.00. Its fix now has a unit test (lesson-01/toy-octave.test.ts): a key step off 2.00 stays off it, and a drag is still pulled back to the octave.
-- [ ] **L1-04** Orange Merc opens with filler: "Ha! Same note." `CODE`
+- [x] **L1-04** Orange Merc opens with filler: "Ha! Same note." `CODE`
   - The bible limits orange to deep questions, sincere guesses and re-explanations, with no filler. Same line in the film captions.
   - Where: learn/01.html:366; lesson-01/assets/lesson-01.en.vtt:10
   - Fix: Page now: "Same note, surely?"; film at the next re-voice.
   - Standard: MERC-BIBLE section 2
-- [ ] **L1-05** Film captions miss the sounds that teach (P1 once the film is published) `CODE`
+  - **Status (Fixed):** Re-voiced in the film's rc-09 (23 October 2026, in disjoint-colliders' `packages/learn/`): Tavi opens with "Same note, surely?", and the captions say so.
+- [x] **L1-05** Film captions miss the sounds that teach (P1 once the film is published) `CODE`
   - Lesson 1's captions omit the pluck (0:38), the louder and the higher tone that demonstrate "Loud is how far it swings. High is how fast." (1:17, 1:19.5), the 277 Hz drift (2:28) and the run up the keys (3:44). Lesson 2 captions every example. The film is not on the page yet.
   - Where: lesson-01/assets/lesson-01.en.vtt:43-48, 81-85, 154-156, 214-215
   - Fix: Add "[a string is plucked]", "[the tone gets louder]", "[the tone goes higher]", "[220 and 277 Hz drift in and out]", "[a run up the keys]".
   - Standard: WCAG 1.2.2
+  - **Status (Fixed):** All five, in the review's words. Each plays under speech, so it is a line above the words of the caption it plays under (the film's `tools/captions.py`).
 
 #### Lesson 2, Twelve notes (live)
 
@@ -829,16 +836,18 @@ None found.
   - Where: lesson-01/toy-string.ts:366-373; lesson-01/toy-spiral.ts:24, 63; learn/01.html:42, 59, 606-610, 1419-1421; lesson-01/assets/lesson-01.en.vtt:210-212
   - Fix: "0" until plucked; "Fig. 6 From spiral to keyboard"; "seven white keys apart"; "a second"; "Press Pluck to pluck it"; "a lower and a higher voice".
   - Standard: Accuracy; inclusive wording
-- [ ] **L1-07** Film lines to fix at the next re-voice `CODE`
+- [x] **L1-07** Film lines to fix at the next re-voice `CODE`
   - Blue answers orange with a bare "No."; orange's "See you there." is not a question, guess or re-explanation.
   - Where: lesson-01/assets/lesson-01.en.vtt:79, 295
   - Fix: "Not quite." (as Lesson 2); recast the sign-off.
   - Standard: TEACHING-PLAYBOOK rule 3; MERC-BIBLE section 2
-- [ ] **L1-08** Credits describe a film that is not on the page `BROWSER`
+  - **Status (Fixed):** In rc-09, Merc answers "Not quite.", and Tavi's sign-off is a guess: "Between the letters, maybe?", the owner's line.
+- [x] **L1-08** Credits describe a film that is not on the page `BROWSER`
   - The live footer says "Voices in the episode: ElevenLabs (Eleven v3). Merc's sung notes in the film: stand-ins for now, made with ElevenLabs and retuned." The Watch section is hidden (no film published), and "stand-ins for now" reads unfinished on a public page (MERC-BIBLE: confirm rights before any public release). Same on Lesson 2.
   - Where: learn/01.html footer credits; learn/02.html footer credits
   - Fix: Show the film credits only when the film is published; owner to confirm the wording.
   - Standard: Content accuracy; rights (MASTER-PLAN 12 item 1)
+  - **Status (Fixed):** Both films are on their pages now, and the credits take the owner's wording (23 October 2026): "The episode: made by MercuryPitch. Merc and Tavi are voiced with ElevenLabs (Eleven v3). Their sung notes are ElevenLabs takes tuned to exact pitches." Lesson 2 adds "their slides included" to the synthesised examples. The owner wrote "Merc's sung notes"; it reads "Their" because Tavi sings too, and Merc now names the blue host.
 
 #### Lesson 2, Twelve notes (live)
 
@@ -955,12 +964,12 @@ None found.
   - Where: learn/0N.html section kickers
   - Fix: Owner: plain kickers ("Your turn", "From memory", "To keep") or keep as flavour with a gloss.
   - Standard: BRAND voice: never jargon-heavy (TASTE)
-- [ ] **D-04** Orange Merc's name, pronouns and the film credits `CODE`
+- [x] **D-04** Orange Merc's name, pronouns and the film credits `CODE`
   - MERC-BIBLE section 8: orange Merc's name and pronouns are open, and the sung notes' rights must be confirmed before any public release. The live footer already credits "stand-ins for now" (L1-08).
   - Where: MERC-BIBLE section 8; learn/01.html, learn/02.html footer
   - Fix: Owner: decide before the films publish; until then drop the film credits from the pages.
   - Standard: MASTER-PLAN 12 items 1, 10
-  - **Status (Partly decided):** Decided 23 Oct: orange Merc is Tavi, she, which overtakes 22 Oct's unnamed, with no pronoun (#1186 records both). Decided 16 Oct: the owner holds the rights to the voices and Merc's sung notes (MASTER-PLAN § 12 item 1). Still open: the film credits on the live pages (L1-08).
+  - **Status (Partly decided):** Decided 23 Oct: orange Merc is Tavi, she, which overtakes 22 Oct's unnamed, with no pronoun (#1186 records both). Decided 16 Oct: the owner holds the rights to the voices and Merc's sung notes (MASTER-PLAN § 12 item 1). The film credits: the owner's wording of 23 October 2026, on the pages with the films (L1-08).
 
 ## Device test plan
 

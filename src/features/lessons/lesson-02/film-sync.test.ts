@@ -69,7 +69,7 @@ describe("Lesson 2's film files", () => {
     expect(vtt).not.toMatch(/\b(?:blue|orange) Merc\b/i)
   })
 
-  it('ends its last caption inside the 7:11 film', () => {
+  it('ends its last caption inside the 7:19 film', () => {
     const stamps = [
       ...read(ASSETS, 'lesson-02.en.vtt').matchAll(
         /--> (\d\d):(\d\d):(\d\d\.\d{3})/g,
@@ -77,6 +77,6 @@ describe("Lesson 2's film files", () => {
     ].map((m) => Number(m[1]) * 3600 + Number(m[2]) * 60 + Number(m[3]))
     const last = Math.max(...stamps)
     expect(last).toBeGreaterThan(400)
-    expect(last).toBeLessThanOrEqual(431.08)
+    expect(last).toBeLessThanOrEqual(439.1)
   })
 })

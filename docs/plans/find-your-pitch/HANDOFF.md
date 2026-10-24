@@ -24,8 +24,8 @@ so.
 
 | Lesson                             | Page                              | On mercurypitch.com           | What it waits on                                |
 | ---------------------------------- | --------------------------------- | ----------------------------- | ----------------------------------------------- |
-| 1. What is a note?                 | `/learn/01`, with its film (5:14) | from the next release         | the film's upload                               |
-| 2. Twelve notes                    | `/learn/02`, with its film (7:11) | from the next release         | the film's upload                               |
+| 1. What is a note?                 | `/learn/01`, with its film (5:35) | from the next release         | the release                                     |
+| 2. Twelve notes                    | `/learn/02`, with its film (7:19) | from the next release         | the release                                     |
 | 3. Match a note                    | `/learn/03`, draft                | when the console publishes it | the vocal coach                                 |
 | 4. The major scale and home        | `/learn/04`, draft                | when the console publishes it | the owner's go-ahead                            |
 | 5. Breath and a steady note        | `/learn/05`, draft                | when the console publishes it | the vocal coach                                 |
@@ -69,14 +69,17 @@ are the mobile app's builds. The next `v` tag carries both pages.
      `*.r2.cloudflarestorage.com` today). Cloudflare rate-limits `r2.dev` and meant it for
      development (MASTER-PLAN § 12 item 7), so launch on the custom domain,
      `media.mercurypitch.com`, and add it to `media-src` first.
-2. **A re-cut film.** If the polish re-times a film or changes a word, the page needs its new
-   captions (the VTT) or its final scene times. A test holds the page's captions and chapters to
-   the lesson's copies, and Lesson 2's last caption inside 7:11. The length label (5:14 and 7:11
-   today) takes the film's own running time once the video loads. The captions name the hosts
-   ("MERC:", "TAVI:", "[Tavi sings ...]"), and the film project's `tools/captions.py` still
-   writes the colours, so change it first (PRODUCTION-PIPELINE, Captions): the tests fail on a
-   colour label. The same goes for the SRT uploaded to YouTube and any captions burned into a
-   Short: the ones in this repository already carry the names.
+   - Done for Lessons 1 and 2 on 24 October 2026: both pairs are on R2 as `learn/01/v1/` and
+     `learn/02/v1/`, `media-src` allows `media.mercurypitch.com`, and both lines in `films.ts`
+     are set. Disjoint-colliders' `packages/learn/r2/README.md` lists every upload.
+2. **A re-cut film.** A fixed cut goes up as the next version beside the old one
+   (`learn/NN/v2/`, MASTER-PLAN § 12 item 7), and its line in `films.ts` moves to it in the
+   commit that brings its new captions (the VTT) and chapters. A test holds the page's captions
+   and chapters to the lesson's copies, and Lesson 2's last caption inside 7:19. The length label
+   (5:35 and 7:19 today) takes the film's own running time once the video loads. The captions
+   name the hosts ("MERC:", "TAVI:", "[Tavi sings ...]"), and the film project's
+   `tools/captions.py` writes them that way since 24 October 2026, so the SRTs here, the ones for
+   YouTube, carry the names too. Captions burned into a Short need them as well.
 3. **The date.** In a commit before the tag, set `datePublished` for Lessons 1 and 2 to the planned
    release day, and their sitemap `lastmod` (2026-10-20 today) with it (SEARCH.md § 3.2). Both
    ship as built, so a date set after the tag waits for the next release. Neither page has a
