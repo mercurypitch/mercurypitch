@@ -218,7 +218,7 @@ step, hear, ladder, order, landing and free play, plus live mode at the checkpoi
 - **Landing** (Step 5): do's slot and so's, longer. **Play** plays the illustrated landing (FACTS
   94, 99): the violet trace leaps to 80 cents under so, holds, slides up into the band and settles
   25 cents under so, while so's band stays lit amber. The readout follows the trace in the kit's
-  words (`bandValueText`, `kit/band-words.ts:79-81`): "80 cents below Merc's note: outside the band;
+  words (`bandValueText`, `kit/band-words.ts:85-87`): "80 cents below Merc's note: outside the band;
   nearest note G sharp 3", then "25 cents below Merc's note: in the band; nearest note A3", and the
   band's edge lights "IN THE BAND" (`drawLitEdge`). **Pause** while it plays, **Slow** (6.0 s), and
   a **scrub** bar on the same row (MASTER-PLAN § 4.2 item 5): scrubbing draws the trace to that
