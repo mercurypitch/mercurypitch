@@ -18,6 +18,14 @@
 // shape constants are interpolated, exactly as the study interpolated them.
 // Change the text and Merc changes; do that on purpose or not at all.
 //
+// One edit draws the same pixels and is undone before the hash is taken
+// (study-text.fixture.ts): every loop that calls the distance field or a
+// whole sample starts at uZero, a uniform that is always 0, not at a literal
+// 0. A compiler that knows a loop's trip count may unroll it, and on Windows
+// Direct3D's compiler unrolls the march (and the samples around it) into
+// copies of the whole distance field, which can take minutes on a first
+// visit. With a start it cannot know, it keeps each one a loop.
+//
 // The text is split across four files at blank lines between sections: the
 // header and the uniforms here, the distance field in scene-shader-sdf.ts,
 // the floor, face and materials in scene-shader-surface.ts, and the
@@ -133,6 +141,7 @@ uniform vec4 uLookK;   // crown streak, shoulder streak, edge whitening up top, 
 uniform vec3 uLookT;   // streak colour, linear
 uniform vec3 uLookT2;  // the edge's tint low down, linear (white up top)
 uniform int uDebug;
+uniform int uZero;     // always 0: a loop start the compiler cannot fold
 
 const float PI = 3.14159265;
 // Light directions (world space, fixed): the form light, the soft crown

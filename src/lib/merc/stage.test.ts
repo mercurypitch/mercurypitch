@@ -33,6 +33,8 @@ function createFakeGl() {
     done: true,
   }
   const waits: Wait[] = []
+  // The int uniforms last set, by name.
+  const ints = new Map<string, number>()
   const live = new Set<GlObject>()
   const created: GlObject[] = []
   const make = (kind: string): GlObject => {
@@ -89,9 +91,9 @@ function createFakeGl() {
     },
     getProgramInfoLog: () => '',
     deleteProgram: release,
-    getUniformLocation: () => {
+    getUniformLocation: (_p: GlObject, name: string) => {
       waits.push('uniform')
-      return {}
+      return { name }
     },
     createTexture: () => make('texture'),
     bindTexture: noop,
@@ -114,7 +116,9 @@ function createFakeGl() {
     activeTexture: noop,
     finish: noop,
     uniform1f: noop,
-    uniform1i: noop,
+    uniform1i: (loc: { name: string } | null, v: number) => {
+      if (loc) ints.set(loc.name, v)
+    },
     uniform1fv: noop,
     uniform2f: noop,
     uniform2fv: noop,
@@ -138,6 +142,7 @@ function createFakeGl() {
     gl: gl as unknown as WebGL2RenderingContext,
     state,
     waits,
+    ints,
     // How many of `kind` the fake has been asked, since `from`.
     count: (kind: Wait, from = 0) =>
       waits.slice(from).filter((w) => w === kind).length,
@@ -308,6 +313,20 @@ describe('mountMercStage', () => {
     expect(pendingPaused).toBe(0)
     expect(frames.pending).toBe(1)
     expect(stage.ok).toBe(true)
+  })
+
+  it('tells the shader its loops start at 0', () => {
+    // Arrange
+    const frames = frameQueue()
+    const fake = createFakeGl()
+    stubContext(fake.gl)
+    mountStage()
+
+    // Act
+    frames.run(1000)
+
+    // Assert
+    expect(fake.ints.get('uZero')).toBe(0)
   })
 
   it('stops the frame loop while the page is hidden and resumes when it shows', () => {

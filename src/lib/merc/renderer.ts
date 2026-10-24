@@ -394,6 +394,7 @@ export function mount(
     gl.uniform3fv(loc.uLookT2, lookU.tint2)
     // The study's debug views are not carried over; 0 is the normal image.
     gl.uniform1i(loc.uDebug, 0)
+    gl.uniform1i(loc.uZero, 0)
     gl.drawArrays(gl.TRIANGLES, 0, 3)
   }
 

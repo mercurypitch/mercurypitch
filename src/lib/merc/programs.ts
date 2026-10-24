@@ -70,6 +70,7 @@ const SCENE_UNIFORMS = [
   'uArrow',
   'uCamAz',
   'uDebug',
+  'uZero',
   'uGradH[0]',
   'uGradC[0]',
   'uBead[0]',

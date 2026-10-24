@@ -8,6 +8,7 @@ import type { MercQuality } from './constants'
 import { QUALITY } from './constants'
 import { POST_BLUR, POST_COMPOSITE, POST_DOWN } from './post-shaders'
 import { fragSource, VERT } from './scene-shader'
+import { asStudied, glslLoops, occurrences, ZERO_UNIFORM, } from './study-text.fixture'
 
 const sha256 = (s: string): string =>
   createHash('sha256').update(s, 'utf8').digest('hex')
@@ -48,7 +49,9 @@ describe('fragSource', () => {
 // merc-sdf.js. A change here changes how Merc looks. If that is the intent,
 // render the before and after, get the new look approved, then update the
 // hash; never update it just to make this test pass. 16 Oct: a lip roll's
-// lips added (uMouth.w); while it is 0 every room draws as it did.
+// lips added (uMouth.w); while it is 0 every room draws as it did. The scene
+// shader is hashed as studied (study-text.fixture.ts): its loop starts read
+// uZero, which draws the same pixels, and nothing else may differ.
 describe('approved shader text', () => {
   const APPROVED: Record<string, string> = {
     'frag low':
@@ -76,7 +79,9 @@ describe('approved shader text', () => {
       POST_BLUR,
       POST_COMPOSITE,
     }
-    for (const q of QUALITIES) sources[`frag ${q}`] = fragSource(QUALITY[q])
+    for (const q of QUALITIES) {
+      sources[`frag ${q}`] = asStudied(fragSource(QUALITY[q]))
+    }
 
     // Act
     const hashes = Object.fromEntries(
@@ -85,5 +90,39 @@ describe('approved shader text', () => {
 
     // Assert
     expect(hashes).toEqual(APPROVED)
+  })
+})
+
+// What draws on the distance field, or renders a whole sample.
+const HEAVY_CALL = /\b(?:map3?|mapBody|calcNormal(?:Body)?|renderSample)\(/
+
+describe('loops the compiler must keep', () => {
+  it('starts every loop that calls the distance field or a sample at uZero', () => {
+    for (const q of QUALITIES) {
+      // Arrange
+      const src = fragSource(QUALITY[q])
+
+      // Act
+      const heavy = glslLoops(src).filter((l) => HEAVY_CALL.test(l.body))
+
+      // Assert: the march, and the 4 and 9 sample loops around it.
+      expect(
+        heavy.map((l) => l.init),
+        q,
+      ).toEqual(['int i = uZero', 'int i = uZero', 'int i = uZero'])
+      expect(occurrences(src, ZERO_UNIFORM), q).toBe(1)
+    }
+  })
+
+  it('finds no other loop start that reads uZero', () => {
+    // Arrange
+    const src = fragSource(QUALITY.ultra)
+
+    // Act
+    const zeroStarts = glslLoops(src).filter((l) => l.init.includes('uZero'))
+
+    // Assert
+    expect(zeroStarts).toHaveLength(3)
+    expect(occurrences(src, 'uZero')).toBe(4)
   })
 })
