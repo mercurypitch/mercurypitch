@@ -52,6 +52,13 @@ export function exerciseLaunchPattern(type: ExerciseType): string | undefined {
   return current?.type === type ? current.config.pattern : undefined
 }
 
+export function exerciseLaunchIntervals(
+  type: ExerciseType,
+): number[] | undefined {
+  const current = launchOverride()
+  return current?.type === type ? current.config.intervals : undefined
+}
+
 export function exerciseLaunchGuidedPractice(
   type: ExerciseType,
 ): GuidedPracticeLaunchConfig | undefined {
