@@ -75,7 +75,7 @@ These are the rules that break things when ignored.
 | Module | Entry point | LOC | What it is |
 |---|---|---|---|
 | `guitar-night` | [guitar-night-score-voice-commands.ts](../../src/features/guitar-night/guitar-night-score-voice-commands.ts) | 43.9k | Guitar Night score voice commands — hands-free Rehearse controls The score room and its command overlay share this one capability-shaped... |
-| `lessons` | [tune-line.ts](../../src/features/lessons/kit/tune-line.ts) | 41.5k | Tune line — a tune drawn as beads on semitone rows, played, slid and compared The object a lesson about tunes transforms is one object on... |
+| `lessons` | [tune-line.ts](../../src/features/lessons/kit/tune-line.ts) | 41.7k | Tune line — a tune drawn as beads on semitone rows, played, slid and compared The object a lesson about tunes transforms is one object on... |
 | `drum-night` | [index.ts](../../src/features/drum-night/session/index.ts) | 32.2k | Drum Night session boundary — import, score, kit, and evidence coaching. |
 | `stem-mixer` | [stem-mixer-voice-commands.ts](../../src/features/stem-mixer/stem-mixer-voice-commands.ts) | 17.8k | StemMixer voice commands — the karaoke tab's own spoken set Registered by StemMixer for exactly its mount lifetime, which ends the global... |
 | `ear-lab` | [ThresholdDrillView.tsx](../../src/features/ear-lab/ThresholdDrillView.tsx) | 17.1k | ThresholdDrillView — every Ruler-A drill on the stage. |
@@ -206,7 +206,6 @@ These are the rules that break things when ignored.
 | [midi-song.ts](../../src/lib/midi-song.ts) | 450 | MIDI Song Parser — multi-track import with instrument names Unlike importMelodyFromMIDI (which flattens everything into one melody), this... |
 | [portable-console.ts](../../src/lib/portable-console.ts) | 450 | Portable console — the browser console, on the device that has the bug Reaching Safari's inspector means a cable, a Mac, and a page that... |
 | [transcription-alignment-utils.ts](../../src/lib/transcription-alignment-utils.ts) | 450 | Shared transcription + alignment utilities. |
-| [funnel-event-catalog.ts](../../src/lib/funnel-event-catalog.ts) | 400 | funnel-event-catalog — the ONE list of funnel event names Both halves of the funnel read this file: each client surface derives its event... |
 | [pwa-service-worker.ts](../../src/lib/pwa-service-worker.ts) | 400 | pwa-service-worker — register src/sw.ts and route its updates to the user The worker (src/sw.ts) serves the app from a precache, one buil... |
 | [uvr-song-preparation.ts](../../src/lib/uvr-song-preparation.ts) | 400 | UVR song preparation — durable file-to-session orchestration shared by every upload surface UI remains outside this module. |
 
