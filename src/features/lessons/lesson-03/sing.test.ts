@@ -1,5 +1,5 @@
 // ============================================================
-// Lesson 3 Sing it tests — the notes, the live tag, the chart's words, the card left
+// Lesson 3 Sing it tests — the notes, the chart's words, the card left
 // ============================================================
 //
 // The card's own tests load learn/03.html's body into jsdom and drive
@@ -15,7 +15,7 @@ import { scrollAwayAndBack, scrollIntoViewAgain, scrollOutOfView, } from '@/feat
 import type * as ListenModule from '@/features/lessons/kit/listen'
 import type { TakeReading } from '@/features/lessons/kit/take'
 import { notesFor } from './sing'
-import { chartSummary, octaveTag } from './sing-take'
+import { chartSummary } from './sing-take'
 
 const PAGE = readFileSync(resolve(process.cwd(), 'learn/03.html'), 'utf8')
 
@@ -112,16 +112,6 @@ describe('notesFor (FACTS 45)', () => {
   it('sings A, then G a tone below, then B a tone above, around the voice', () => {
     expect(notesFor('lower')).toEqual([57, 55, 59])
     expect(notesFor('higher')).toEqual([69, 67, 71])
-  })
-})
-
-describe("the live line's octave tag", () => {
-  it("names an octave away only within 50 cents of Merc's note", () => {
-    expect(octaveTag(-1, 10)).toBe('octave lower')
-    expect(octaveTag(1, -50)).toBe('octave higher')
-    expect(octaveTag(-2, 0)).toBe('two octaves lower')
-    expect(octaveTag(-1, 51)).toBeNull()
-    expect(octaveTag(0, 0)).toBeNull()
   })
 })
 

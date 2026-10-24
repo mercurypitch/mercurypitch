@@ -205,7 +205,7 @@ song, takes, swell, endings, listen back and still, plus live mode at the checkp
   summary gives the spelled note), since the kit's grid letters every natural row (`drawNotesGrid`,
   `kit/band-chart-draw.ts:112-137`). Time runs left to right. Each note is a band 35 cents either
   side, Voice Mirror's own (`HIT_TOLERANCE_CENTS`, `src/lib/mirror/match-bands.ts:22`, through
-  `kit/band-words.ts:14-18`), over its own time, with Merc's steady line at its centre; the vibrato
+  `kit/band-words.ts:20-24`), over its own time, with Merc's steady line at its centre; the vibrato
   of his "ooh" is never drawn, as the kit's band rule says (`band-chart.ts:5-12`). Each of Merc's
   notes is synthesised at its exact pitch (92), so his line is the band's centre. A breath is a gap
   between two bands, with its breath mark over it. The chart's spoken summary (`describe`) names
@@ -542,7 +542,7 @@ pure and unit-tested; 53):
   the phrase that time.", the kit's `NOT_STEADY_LINE` (`:64-65`) with "the phrase" for "a steady
   note" and without its "Try again at about speaking volume.", since the takes stop at three.
 - Otherwise the 10th and the 90th percentiles of the voiced frames' pitch, each taken to its nearest
-  note (`nearestNote`, `kit/band-words.ts:69`) and spelled in the app's sharps, give "Take 1, drawn
+  note (`nearestNote`, `kit/band-words.ts:75`) and spelled in the app's sharps, give "Take 1, drawn
   over Merc's bands: your line ran from about D3 to B3.", or, when both are the same note, "Take 1,
   drawn over Merc's bands: your line stayed at about A3." The line names notes the recording held
   and nothing else (REQ-GVC-045): no count, no score, nothing about loudness, the breath or the

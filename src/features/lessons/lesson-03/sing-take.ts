@@ -12,7 +12,7 @@
 // chart, folded into Merc's octave, with a small "octave lower" tag while it
 // sits within 50 cents of his note and the gap readout following it.
 
-import { BAND_WORDS, gapWords, signedCents, } from '@/features/lessons/kit/band-words'
+import { BAND_WORDS, gapWords, octavesOf, octaveTag, signedCents, } from '@/features/lessons/kit/band-words'
 import { wait } from '@/features/lessons/kit/dom'
 import type * as ListenKit from '@/features/lessons/kit/listen'
 import type { Listener, PitchFrame, TakeReading, } from '@/features/lessons/kit/listen'
@@ -42,18 +42,6 @@ export interface TakeContext {
   readonly cancelled: () => boolean
   /** Merc has sung: the viewer's turn. */
   readonly onTurn: () => void
-}
-
-/** Whole octaves between a pitch and Merc's note, by the folded distance. */
-const octavesOf = (raw: number, folded: number): number =>
-  Math.round((raw - folded) / 1200)
-
-/** The tag beside the live line: "octave lower", "two octaves higher", or none. */
-export function octaveTag(octaves: number, folded: number): string | null {
-  if (octaves === 0 || Math.abs(folded) > 50) return null
-  const n = Math.abs(octaves)
-  const size = n === 1 ? 'octave' : `${n === 2 ? 'two' : String(n)} octaves`
-  return `${size} ${octaves < 0 ? 'lower' : 'higher'}`
 }
 
 /** The live gap: signed cents within the chart, the distance in semitones beyond it. */
