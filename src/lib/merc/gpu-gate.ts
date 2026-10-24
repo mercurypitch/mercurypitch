@@ -4,7 +4,7 @@
 //
 // The one answer the app gives: the lessons' Mercs (merc-duo.ts) and the
 // onboarding's MercPresence both ask it, so a device is never live on one
-// page and stalled on the next.
+// page and stalled on the next. They share how long they wait for him, too.
 //
 // A WebGL drawn on the CPU names itself: Chrome's SwiftShader, Mesa's
 // llvmpipe and softpipe, Windows' Basic Render Driver. Headless Chrome hands
@@ -14,6 +14,48 @@
 //
 // The probe (what the browser says) and the decision (what the app makes of
 // it) are apart, so the decision can be tested without a browser.
+
+/**
+ * How long a page with Merc's still waits for the live Merc's shader before
+ * it keeps the still and lets the WebGL context go. Lesson 1's two Mercs
+ * compiled and linked in 0.1 to 1.9 s in a headless Chrome, on a CPU
+ * (SwiftShader); the compile that froze a Windows Chrome took minutes. Ten
+ * seconds is five times the slowest of those, and still inside the time a
+ * reader spends on the opening screen, so a late Merc steps in where he
+ * stands rather than halfway down the page. With KHR_parallel_shader_compile
+ * the page keeps running while it waits (src/lib/merc/programs.ts), so
+ * waiting costs only the context.
+ */
+export const LIVE_MERC_WAIT_MS = 10_000
+
+/**
+ * Calls `giveUp` once the page has been on screen for LIVE_MERC_WAIT_MS with
+ * no live Merc ready, and returns the cancel, which a ready Merc calls. A
+ * hidden page draws no frame, so he cannot be ready there: its time does not
+ * count, and the wait starts over when the page shows. A lesson opened in a
+ * background tab keeps him live for when it is read.
+ */
+export function waitForLiveMerc(giveUp: () => void): () => void {
+  let timer = 0
+  const arm = (): void => {
+    window.clearTimeout(timer)
+    timer =
+      document.visibilityState === 'hidden'
+        ? 0
+        : window.setTimeout(expire, LIVE_MERC_WAIT_MS)
+  }
+  const cancel = (): void => {
+    window.clearTimeout(timer)
+    document.removeEventListener('visibilitychange', arm)
+  }
+  const expire = (): void => {
+    cancel()
+    giveUp()
+  }
+  document.addEventListener('visibilitychange', arm)
+  arm()
+  return cancel
+}
 
 /** What a WebGL that draws on the CPU calls itself. */
 export const SOFTWARE_RENDERER =

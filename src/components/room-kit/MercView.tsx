@@ -59,8 +59,9 @@ export interface MercViewProps {
   /** The room's own id for him ("long-note-merc"). */
   testId: string
   /**
-   * Called once, as his stage starts drawing: his chunk has arrived and
-   * WebGL is up. Never called without WebGL. A room that times what he
+   * Called once, when his stage has drawn his first frame: his chunk has
+   * arrived, WebGL is up and his shader has linked, which can take a while
+   * on a first visit. Never called without WebGL. A room that times what he
    * does from the moment he is seen (the alley's welcome) starts there.
    */
   onReady?: () => void
@@ -95,11 +96,11 @@ export function MercView(props: MercViewProps): JSX.Element {
         still: stillAtMount,
         rings: untrack(() => props.rings),
         mouth: untrack(() => props.mouth),
+        onReady: () => untrack(() => props.onReady)?.(),
       })
       if (!stage.ok) return
       if (untrack(() => props.paused?.() ?? false)) stage.setPaused(true)
       frame = requestAnimationFrame(feed)
-      untrack(() => props.onReady)?.()
     })
   })
 

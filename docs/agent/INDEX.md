@@ -144,8 +144,8 @@ These are the rules that break things when ignored.
 |---|---|---|---|
 | `guitar` | [guitar-live-score.ts](../../src/lib/guitar/guitar-live-score.ts) | 12.4k | Guitar live score — bounded, evidence-honest feedback while a take is running. |
 | `jam` | [jam-net-stats.ts](../../src/lib/jam/jam-net-stats.ts) | 10.8k | ── Jam network stats One RTCStatsReport, reduced to the numbers that decide whether two people can play together. |
+| `merc` | [renderer.ts](../../src/lib/merc/renderer.ts) | 4.8k | Merc renderer — one canvas, one WebGL2 context, one simulated Merc mount() draws Merc into a container. |
 | `guided-voice` | [index.ts](../../src/lib/guided-voice/index.ts) | 4.7k | Guided Voice — local assessment science and safety foundation |
-| `merc` | [renderer.ts](../../src/lib/merc/renderer.ts) | 4.5k | Merc renderer — one canvas, one WebGL2 context, one simulated Merc mount() draws Merc into a container. |
 | `ear` | [banks.ts](../../src/lib/ear/banks.ts) | 4.4k | Ear Lab — identification item banks (Leap, Stack, Contour). |
 | `backgrounds` | [background-catalog.ts](../../src/lib/backgrounds/background-catalog.ts) | 3.2k | Background catalog — one typed registry for every performance environment Supporter sources are opaque protected keys, never public asset... |
 | `mirror` | [metrics.ts](../../src/lib/mirror/metrics.ts) | 2.6k | Voice Mirror — pure metrics over F0 frame streams. |

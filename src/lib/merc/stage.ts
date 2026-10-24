@@ -51,6 +51,11 @@ export interface MercStageOptions {
   mouth?: GlideMouth
   /** Called once, when Merc stops drawing for good (also during mount). */
   onFailure?: (reason: string) => void
+  /**
+   * Called once, when his shader has linked and his first frame is drawn
+   * (the renderer's onReady). Never called when he cannot be drawn.
+   */
+  onReady?: () => void
 }
 
 export interface MercStage {
@@ -93,6 +98,16 @@ export function mountMercStage(
     }
   }
 
+  let destroyed = false
+  const ready = (): void => {
+    if (destroyed) return
+    try {
+      opts.onReady?.()
+    } catch (cbErr) {
+      console.warn('[merc] onReady threw:', cbErr)
+    }
+  }
+
   let renderer: MercRenderer
   try {
     renderer = mount(container, {
@@ -106,6 +121,7 @@ export function mountMercStage(
       rings: opts.rings,
       glideMouth: opts.mouth,
       onFailure: report,
+      onReady: ready,
     })
   } catch (err) {
     console.warn('[merc] cannot draw Merc:', reasonOf(err))
@@ -113,7 +129,6 @@ export function mountMercStage(
     return failedStage()
   }
 
-  let destroyed = false
   // Every call is guarded: a throw here would land in the host's handler.
   const guard = (fn: (r: MercRenderer) => void): void => {
     if (destroyed || !renderer.ok) return
