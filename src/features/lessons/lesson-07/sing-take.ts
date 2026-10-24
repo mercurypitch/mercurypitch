@@ -19,14 +19,15 @@
 // Nothing extends it. The ring turns once every 6 s while it is open,
 // whatever its length, and shows no seconds, so it never reads as a time to
 // fill; under reduced motion it holds still with the word "Listening". The
-// listener and the siren reader load after Start (kit/listen.ts), so the
-// page's first paint carries neither.
+// listener and the siren reader load after Start (kit/listen.ts, through the
+// kit's microphone holder, kit/mic-hold.ts), so the page's first paint
+// carries neither.
 
 import { wait } from '@/features/lessons/kit/dom'
-import type * as ListenKit from '@/features/lessons/kit/listen'
 import type { Listener, PitchFrame, SirenReading, } from '@/features/lessons/kit/listen'
 import type { Which } from '@/features/lessons/kit/merc-duo'
 import { mercListen } from '@/features/lessons/kit/merc-duo'
+import type { ListenModule } from '@/features/lessons/kit/mic-hold'
 import { reducedMotion } from '@/features/lessons/kit/motion-switch'
 import type { LinePoint, RangeChart, RangeLine, } from '@/features/lessons/kit/range-chart'
 import { mountRangeChart, RANGE_COLOR, } from '@/features/lessons/kit/range-chart'
@@ -51,33 +52,6 @@ export const TAKE = {
 export const RING_TURN_SEC = 6
 /** The ring's label through Sing it. */
 export const RING_LABEL = 'One siren on “ng”'
-
-export type ListenModule = typeof ListenKit
-
-/** The microphone and the siren reader, held only around a take. */
-export class Mic {
-  mod: ListenModule | null = null
-  listener: Listener | null = null
-
-  /** Loads the listener and holds the microphone, inside the tap that asked; false if either fails. */
-  async open(context: AudioContext | null): Promise<boolean> {
-    if (context === null) return false
-    try {
-      this.mod ??= await import('@/features/lessons/kit/listen')
-      if (this.listener === null || !this.listener.holding)
-        this.listener = await this.mod.listen(CONSUMER, context)
-      return true
-    } catch {
-      return false
-    }
-  }
-
-  release(now = false): void {
-    if (now) this.listener?.releaseNow()
-    else this.listener?.release()
-    this.listener = null
-  }
-}
 
 /** A frame's note, MIDI, or null when it is not voice. */
 export function frameMidi(f: PitchFrame): number | null {
