@@ -15,7 +15,10 @@
 // chase and drag, and Sing it's live line, and later Lessons 5, 7 and 9.
 // Lesson 5 adds what a held note needs: a level strip under the plot (its
 // push and its hook), and a hold's fixed frame with its seconds named,
-// 10 or 15 across (`setWindow`), both in band-chart-hold.ts.
+// 10 or 15 across (`setWindow`), both in band-chart-hold.ts. Lesson 9 adds
+// rungs, Merc's notes as bands over time slots or across the plot, each
+// with its own glow and lit edge (band-chart-rungs.ts): the page passes
+// their painter in (`paintRungs`), so no lesson without rungs downloads it.
 // Each figure is a controller that writes the chart's `scene` (the line, the
 // marks, the glow, the lit edge) and the chart paints it every frame while
 // it is on screen. The time window is fixed and the line draws across it,
@@ -27,6 +30,7 @@ import type { BandSpec, CentsTick, ChartFrame, ChartMark, TracePoint, } from './
 import { BAND_COLOR, centsAt, drawBand, drawCentsGrid, drawHandle, drawHead, drawLineLabel, drawLitEdge, drawMark, drawNotesGrid, drawOctaveBracket, drawPlayhead, drawTrace, xOf, yOf, } from './band-chart-draw'
 import type { LevelPoint } from './band-chart-hold'
 import { drawLevelStrip, drawTimeTicks, STRIP_GAP, stripHeight, TICKS_ROOM, } from './band-chart-hold'
+import type { Rung } from './band-chart-rungs'
 import { HIT_TOLERANCE_CENTS } from './band-words'
 import { q } from './dom'
 import { addDrawer, surface, watch } from './frame-loop'
@@ -62,6 +66,12 @@ export interface BandChartOptions {
   readonly strip?: boolean
   /** The seconds named under the plot: a hold's fixed frame. */
   readonly timeTicks?: boolean
+  /**
+   * Paints the scene's `rungs` in place of Merc's band: band-chart-rungs.ts's
+   * `paintRungs`, passed in by the page that has rungs. False for a scene
+   * with none, which keeps the band.
+   */
+  readonly paintRungs?: (f: ChartFrame, scene: BandScene) => boolean
 }
 
 /** What the chart shows this frame; a figure's controller writes it. */
@@ -87,6 +97,12 @@ export interface BandScene {
   handle: boolean
   /** The level along the window, drawn in the strip under the plot (a chart with `strip`). */
   level: LevelPoint[]
+  /**
+   * Merc's notes as rungs, each with its own glow and lit edge: on a chart
+   * given `paintRungs`, they take the place of his band, its echo, `glow`
+   * and `lit`. `clear` and `setTarget` take them away with the rest.
+   */
+  rungs?: Rung[]
 }
 
 export interface BandChart {
@@ -182,26 +198,26 @@ export function mountBandChart(
     if (opts.timeTicks === true) drawTimeTicks(f, y + 4)
   }
 
-  function bands(): BandSpec[] {
+  /** Merc's band, its echo and its lit edge; or the scene's rungs in their place. */
+  function paintBands(f: ChartFrame): void {
+    if (opts.paintRungs?.(f, scene) === true) return
     const main: BandSpec = { c: 0, half: HIT_TOLERANCE_CENTS, glow: scene.glow }
-    if (opts.echo === undefined) return [main]
-    return [
-      main,
-      {
+    drawBand(f, main)
+    if (opts.echo !== undefined)
+      drawBand(f, {
         c: opts.echo,
         half: HIT_TOLERANCE_CENTS,
         dashed: true,
         glow: scene.echoGlow,
-      },
-    ]
+      })
+    if (scene.lit) drawLitEdge(f, main)
   }
 
   function paint(f: ChartFrame): void {
     if (notesAxis)
       drawNotesGrid(f, target, 'named' in axis ? (axis.named ?? []) : [])
     else drawCentsGrid(f, opts.ticks)
-    for (const b of bands()) drawBand(f, b)
-    if (scene.lit) drawLitEdge(f, bands()[0])
+    paintBands(f)
     for (const m of scene.marks) drawMark(f, m)
     if (scene.playhead !== null) drawPlayhead(f, scene.playhead)
     drawTrace(f, scene.line)
