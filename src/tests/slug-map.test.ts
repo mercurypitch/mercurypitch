@@ -7,6 +7,7 @@
 import { describe, expect, it } from 'vitest'
 import { EXERCISE_SLUG_PATH, EXERCISE_SLUGS, } from '@/features/exercises/slug-map'
 import { EXERCISE_INTERVAL_TRAINER, EXERCISE_SCALE_RUNNER, } from '@/features/exercises/types'
+import { clearLaunchOverride, launchIntervals, setLaunchOverride, } from '@/features/practice-intelligence/launch-override'
 import { TAB_JAM, TAB_KARAOKE } from '@/features/tabs/constants'
 
 // ── EXERCISE_SLUG_PATH ────────────────────────────────────────
@@ -56,6 +57,14 @@ describe('EXERCISE_SLUGS', () => {
     expect(EXERCISE_SLUGS['jam-relay']).toEqual({ kind: 'tab', tab: TAB_JAM })
   })
 
+  it("opens Interval Trainer on Lesson 9's five leaps for leap-ladder", () => {
+    expect(EXERCISE_SLUGS['leap-ladder']).toEqual({
+      kind: 'exercise',
+      exercise: EXERCISE_INTERVAL_TRAINER,
+      intervals: [3, 4, 7, 5, 12],
+    })
+  })
+
   it('keys are lowercase kebab-case', () => {
     for (const slug of Object.keys(EXERCISE_SLUGS)) {
       expect(slug).toMatch(/^[a-z0-9-]+$/)
@@ -76,6 +85,25 @@ describe('EXERCISE_SLUGS', () => {
         expect(typeof launch.tab).toBe('string')
       }
     }
+  })
+
+  it('lists only intervals the launch keeps as written', () => {
+    // launchIntervals drops what is not a whole upward semitone up to an
+    // octave, and repeats; a slug that wrote one would lose it silently.
+    const withIntervals = Object.values(EXERCISE_SLUGS).flatMap((launch) =>
+      launch.kind === 'exercise' && launch.intervals !== undefined
+        ? [{ exercise: launch.exercise, intervals: launch.intervals }]
+        : [],
+    )
+
+    const kept = withIntervals.map(({ exercise, intervals }) => {
+      setLaunchOverride(exercise, { type: exercise, intervals })
+      return launchIntervals(exercise)
+    })
+    clearLaunchOverride()
+
+    expect(withIntervals.length).toBeGreaterThan(0)
+    expect(kept).toEqual(withIntervals.map(({ intervals }) => intervals))
   })
 
   it('unknown slugs resolve to undefined (own-property only)', () => {
