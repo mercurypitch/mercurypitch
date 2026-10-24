@@ -1137,7 +1137,7 @@ End to end (Playwright, at 390 x 844 and 1440 x 900, on the e2e build, which sho
    `src/e2e/learn-no-planning-text.spec.ts` reads it for the team's planning words and every
    variant's note the same way, and `src/e2e/learn-cold-open-fold.spec.ts` holds its title on the
    first screen at seven sizes and reports where Play take 1 and the two choices sit (`:176-203`).
-6. Sing it, with the fake microphone (`src/e2e/helpers/tone-wav.ts`, `fakeMicArgs`, `:115`): with
+6. Sing it, with the fake microphone (`src/e2e/helpers/tone-wav.ts`, `fakeMicArgs`, `:198`): with
    sound off, Start asks for no microphone and the hint says sound is off; with sound on, a steady
    A3 (`writeToneWav(220)`) reads "Take 1, drawn over Merc's bands: your line stayed at about A3.";
    "Easy" offers Start take 2; after take 2 and "Easy", Play your take 1 and Play your take 2 each

@@ -1133,7 +1133,7 @@ End to end (Playwright, at 390 x 844 and 1440 x 900, on the e2e build, which sho
    for the team's planning words and every variant's note the same way, and
    `src/e2e/learn-cold-open-fold.spec.ts` holds its title on the first screen at seven sizes and
    reports where Play Merc's ‘ee’ and the two choices sit (`:167-206`).
-6. Sing it, with the fake microphone (`src/e2e/helpers/tone-wav.ts`, `fakeMicArgs`, `:115`), as
+6. Sing it, with the fake microphone (`src/e2e/helpers/tone-wav.ts`, `fakeMicArgs`, `:198`), as
    `src/e2e/learn-lesson-05.spec.ts` drives Lesson 5's hold: a steady A3 (`writeToneWav(220, 20)`)
    in the lower voice reads "In the band for all 10 seconds." and asks "How did that feel?"; the
    strip is dark through the take, with no lit segment; the vowel names light in turn. The same note
