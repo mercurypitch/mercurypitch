@@ -1,0 +1,249 @@
+// ============================================================
+// Lesson sound run tests — heard to its end, or stopped where it stands
+// ============================================================
+//
+// A run's promise is what a page reads to know whether a sound was heard to
+// its end: kit/predict.ts reveals nothing after a play cut short. So each
+// run here goes on fake timers, and must resolve true only at its own end,
+// and false once stopped. A tune's voices are heard through a spy on
+// `Sound.voice`. A sung line's voice does not go through `Sound`, so it is
+// built for real on the fake AudioContext the sound tests use
+// (sound-doubles.test-fixtures.ts), and its release is read from the
+// schedule. A stop starts nothing still to come and releases what sounds
+// with the kit's short release (CONVENTIONS.md § 5b); a silent run starts
+// no voice, but keeps the visuals' time as if it were heard.
+
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { hz } from './notes'
+import type { Run, RunNote } from './run'
+import { playLine, playNote, playNotes } from './run'
+import type { Voice } from './sound'
+import { contourOf, Sound } from './sound'
+import { FakeContext } from './sound-doubles.test-fixtures'
+
+/** The release a stop gives each voice, seconds: the kit's short release, as kit/tune-line.ts's stop uses. */
+const SHORT_RELEASE = 0.08
+
+/** A two-note tune: C4 for half a second, then D4 for a second, 1.5 s in all. */
+const TUNE: readonly RunNote[] = [
+  { t: 0, midi: 60, dur: 0.5 },
+  { t: 0.5, midi: 62, dur: 1 },
+]
+
+/** A sung line: A3 held for a second, then a glide up to C4 over a second, 2 s in all. */
+const LINE = contourOf(220, [{ hold: 1 }, { glide: 1, to: hz(60) }])
+
+/** Each kind of run, silent, and how long it lasts, milliseconds. */
+const RUNS: readonly { kind: string; start: () => Run; ms: number }[] = [
+  {
+    kind: 'a sung line',
+    start: () => playLine(LINE, { audible: false }),
+    ms: 2000,
+  },
+  {
+    kind: 'a tune',
+    start: () => playNotes(TUNE, { audible: false }),
+    ms: 1500,
+  },
+  {
+    kind: 'one note',
+    start: () => playNote(57, 0.75, { audible: false }),
+    ms: 750,
+  },
+]
+
+afterEach(() => {
+  vi.useRealTimers()
+  vi.restoreAllMocks()
+  vi.unstubAllGlobals()
+})
+
+/** What a run's promise has said so far: nothing while it runs. */
+function outcome(run: Run): { heard?: boolean } {
+  const seen: { heard?: boolean } = {}
+  void run.done.then((heard) => {
+    seen.heard = heard
+  })
+  return seen
+}
+
+/** A voice a run started: its MIDI note, and the release of each stop it was given. */
+interface HeardVoice {
+  readonly midi: number
+  readonly stops: (number | undefined)[]
+}
+
+/** Every voice a run starts from now on, in order, heard through a spy on `Sound.voice`. */
+function listen(): HeardVoice[] {
+  const heard: HeardVoice[] = []
+  vi.spyOn(Sound, 'voice').mockImplementation((freq: number) => {
+    const v: HeardVoice = {
+      midi: Math.round(69 + 12 * Math.log2(freq / 440)),
+      stops: [],
+    }
+    heard.push(v)
+    const voice: Voice = {
+      alive: true,
+      setFreq: () => undefined,
+      setGain: () => undefined,
+      stop: (release?: number) => {
+        v.stops.push(release)
+      },
+    }
+    return voice
+  })
+  return heard
+}
+
+describe("a run's promise", () => {
+  it.each(RUNS)(
+    'resolves true for $kind once it ends by itself, and not before',
+    async ({ start, ms }) => {
+      // Arrange
+      vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] })
+      const seen = outcome(start())
+
+      // Act
+      await vi.advanceTimersByTimeAsync(ms - 1)
+      const early = seen.heard
+      await vi.advanceTimersByTimeAsync(1)
+
+      // Assert
+      expect(early).toBeUndefined()
+      expect(seen.heard).toBe(true)
+    },
+  )
+
+  it.each(RUNS)(
+    'resolves false for $kind stopped halfway, even once its end has passed',
+    async ({ start, ms }) => {
+      // Arrange
+      vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] })
+      const run = start()
+      const seen = outcome(run)
+      await vi.advanceTimersByTimeAsync(ms / 2)
+
+      // Act
+      run.stop()
+      await vi.advanceTimersByTimeAsync(ms)
+
+      // Assert
+      expect(seen.heard).toBe(false)
+    },
+  )
+})
+
+describe('playNotes', () => {
+  it('gives each note its own voice, at its pitch and for its own length, in Merc\'s "ooh" by default', async () => {
+    // Arrange
+    vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] })
+    const voice = vi.spyOn(Sound, 'voice').mockReturnValue(null)
+    playNotes(TUNE, { audible: true })
+
+    // Act
+    await vi.advanceTimersByTimeAsync(1500)
+
+    // Assert
+    expect(voice.mock.calls).toEqual([
+      [hz(60), { kind: 'merc', dur: 0.5, gain: undefined }],
+      [hz(62), { kind: 'merc', dur: 1, gain: undefined }],
+    ])
+  })
+
+  it('starts no voice and fires no onNote for a note whose onset comes after a stop', async () => {
+    // Arrange: C4 has started, D4 is still to come
+    vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] })
+    const heard = listen()
+    const onNote = vi.fn()
+    const run = playNotes(TUNE, { audible: true, onNote })
+    await vi.advanceTimersByTimeAsync(250)
+
+    // Act
+    run.stop()
+    await vi.advanceTimersByTimeAsync(1500)
+
+    // Assert
+    expect(heard.map((v) => v.midi)).toEqual([60])
+    expect(onNote.mock.calls).toEqual([[TUNE[0], 0]])
+  })
+
+  it('starts no voice when silent, yet fires onNote for each note at its onset and resolves true', async () => {
+    // Arrange
+    vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] })
+    const heard = listen()
+    const onNote = vi.fn()
+    const seen = outcome(playNotes(TUNE, { audible: false, onNote }))
+
+    // Act
+    await vi.advanceTimersByTimeAsync(250)
+    const atFirst = onNote.mock.calls.length
+    await vi.advanceTimersByTimeAsync(1250)
+
+    // Assert
+    expect(heard).toEqual([])
+    expect(atFirst).toBe(1)
+    expect(onNote.mock.calls).toEqual([
+      [TUNE[0], 0],
+      [TUNE[1], 1],
+    ])
+    expect(seen.heard).toBe(true)
+  })
+
+  it("releases every voice it started with the kit's short release when stopped", async () => {
+    // Arrange: C4, and an E4 that comes in under it, both sounding
+    vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] })
+    const heard = listen()
+    const run = playNotes(
+      [
+        { t: 0, midi: 60, dur: 1 },
+        { t: 0.5, midi: 64, dur: 1 },
+      ],
+      { audible: true },
+    )
+    await vi.advanceTimersByTimeAsync(750)
+
+    // Act
+    run.stop()
+
+    // Assert
+    expect(heard).toEqual([
+      { midi: 60, stops: [SHORT_RELEASE] },
+      { midi: 64, stops: [SHORT_RELEASE] },
+    ])
+  })
+})
+
+describe('playLine', () => {
+  beforeEach(() => {
+    // a fresh sound module, so the fake AudioContext is the one it makes
+    vi.resetModules()
+    FakeContext.last = null
+    vi.stubGlobal('AudioContext', FakeContext)
+  })
+
+  it("releases its voice with the kit's short release when stopped", async () => {
+    // Arrange: sound on, the line 1 s in on the fake context's clock
+    vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] })
+    const kit = await import('./sound')
+    const runs = await import('./run')
+    kit.Sound.set('on')
+    const ctx = FakeContext.last
+    if (ctx === null) throw new Error('no context was made')
+    const run = runs.playLine(LINE, { audible: true })
+    ctx.currentTime = 1
+
+    // Act
+    run.stop()
+
+    // Assert: the envelope falls from where it stands, and the tone and its vibrato stop once it has died away
+    const releases = ctx.gains
+      .flatMap((g) => g.gain.events)
+      .filter(([method, , at]) => method === 'setTargetAtTime' && at === 1)
+    expect(releases).toEqual([['setTargetAtTime', 0, 1, SHORT_RELEASE / 5]])
+    const after = 1 + SHORT_RELEASE + kit.SLACK
+    expect(ctx.oscillators.map((o) => o.stops.at(-1))).toEqual([
+      expect.closeTo(after, 6),
+      expect.closeTo(after, 6),
+    ])
+  })
+})

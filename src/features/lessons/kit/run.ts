@@ -1,21 +1,28 @@
 // ============================================================
-// Lesson 7 sounds — Merc's siren, "Twinkle" and one note, each stoppable
+// Lesson sound runs — a sung line, a tune or one note, each stoppable
 // ============================================================
 //
-// Every sound on the page is one of these runs (WEB-SPEC, Audio): Merc's
-// siren, a glide in Merc's "ooh" that follows the siren's path, in its
-// pressed sound (kit/timbre.ts); "Twinkle", note by note; or one note held
-// for a moment, a band's middle note in the soft tone or the push note in
-// Merc's "ooh" at one quiet level. A run's visuals go on with the sound off,
-// and its promise says whether it was heard to its end: true when it ended
-// by itself, false when it was stopped, so a play cut short reveals
-// nothing (kit/predict.ts). The page's one-sound owner
-// (kit/now-playing.ts) calls a run's `stop`, never `Sound.stopAll`.
+// A run is one sound in flight: a line sung along a contour (`playLine`),
+// with a timbre if the caller brings one (kit/timbre.ts); a tune, note by
+// note, each note its own voice (`playNotes`); or one note held for a moment
+// (`playNote`); each in Merc's "ooh" unless the caller picks the soft tone.
+// Lesson 7 plays its siren, "Twinkle" and its bands' notes this way (its
+// WEB-SPEC, Audio). A run's visuals go on with the sound off, and its promise
+// says whether it was heard to its end: true when it ended by itself, false
+// when it was stopped, so a play cut short reveals nothing (kit/predict.ts).
+// The page's one-sound owner (kit/now-playing.ts) calls a run's `stop`, never
+// `Sound.stopAll`.
 
-import { hz } from '@/features/lessons/kit/notes'
-import type { ContourPoint, Voice, VoiceOptions, } from '@/features/lessons/kit/sound'
-import { contourLength, contourVoice, Sound, } from '@/features/lessons/kit/sound'
-import type { TuneNote } from './range-data'
+import { hz } from './notes'
+import type { ContourPoint, Voice, VoiceOptions } from './sound'
+import { contourLength, contourVoice, Sound } from './sound'
+
+/** A note of a tune: when it starts, its MIDI note, and how long it lasts, seconds. */
+export interface RunNote {
+  readonly t: number
+  readonly midi: number
+  readonly dur: number
+}
 
 /** A sound in flight: `done` is true when it ended by itself, false when stopped. */
 export interface Run {
@@ -69,8 +76,8 @@ export function playLine(points: readonly ContourPoint[], o: RunOptions): Run {
 
 /** A tune, note by note, each its own voice; `onNote` hears each as it starts. */
 export function playNotes(
-  notes: readonly TuneNote[],
-  o: RunOptions & { readonly onNote?: (n: TuneNote, i: number) => void },
+  notes: readonly RunNote[],
+  o: RunOptions & { readonly onNote?: (n: RunNote, i: number) => void },
 ): Run {
   const timers: number[] = []
   const voices: Voice[] = []
