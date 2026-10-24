@@ -683,10 +683,10 @@ still images when WebGL fails or would run on the CPU.
   rounds, each one chord on a roved root, named from six qualities, of which this lesson teaches
   two. On the public host `/ear-lab?lesson=10`, the marker before the hash the entry document adds
   (`src/seo/entry-pages.ts:453-458`). Stack needs no voice, so it stays on the rest card (FACTS 67).
-- **Needed, proposed: `/exercises/thirds-on-a-drone`** (CURRICULUM § 4 item 2, the planned
-  `intervals` launch field; FACTS 52, 53): Drone Intonation with the field set to the minor and
-  major thirds, 3 and 4 semitones up, registered in `EXERCISE_SLUGS`
-  (`src/features/exercises/slug-map.ts:47-65`) with a line in `src/tests/slug-map.test.ts`. Beyond
+- **Needed, proposed: `/exercises/thirds-on-a-drone`** (CURRICULUM § 4 item 2, the `intervals`
+  launch field, which Drone Intonation does not read yet; FACTS 52, 53): Drone Intonation with the
+  field set to the minor and major thirds, 3 and 4 semitones up, registered in `EXERCISE_SLUGS`
+  (`src/features/exercises/slug-map.ts:52-77`) with a line in `src/tests/slug-map.test.ts`. Beyond
   the field it needs repeats: `pickIntervals` draws each interval at most once and a run's rounds
   are capped at the pool's size
   (`src/features/exercises/drone-intonation/use-drone-intonation-controller.ts:26-31`, `:72-76`), so
