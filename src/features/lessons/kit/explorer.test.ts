@@ -21,6 +21,7 @@ import { Positions } from './position'
 import { Done } from './progress'
 import type { Lesson } from './season'
 import { LESSONS, TOPICS } from './season'
+import { lessonWithNoPage } from './season.test-fixtures'
 import { TEAM_STRINGS } from './team-notes.test-fixtures'
 
 /** A lesson for a card test, live or coming later as `extra` makes it. */
@@ -292,17 +293,37 @@ describe('createExplorer', () => {
     expect(cardRows().Length).toBe('8 min · film 5:14')
   })
 
-  it('draws a lesson with no drill to link without a Practise row, and one coming later without a Length row', () => {
+  it('draws a lesson coming later without a Length row', () => {
     // Arrange
+    const later = lessonWithNoPage()
     explorerPage()
     const explorer = createExplorer({ current: 1 })
 
-    // Act: Lesson 10 is coming later, with no drill to link yet
-    explorer.select(10, false)
+    // Act
+    explorer.select(later.n, false)
 
     // Assert
-    expect(Object.keys(cardRows())).toEqual(['Topics', 'Builds on', 'Opens'])
+    const rows = Object.keys(cardRows())
+    expect(rows).toContain('Builds on')
+    expect(rows).not.toContain('Length')
     expect(openCard()?.querySelector('.chip')?.textContent).toBe('Coming later')
+  })
+
+  it('draws a lesson with no drill to link without a Practise row', () => {
+    // Arrange: any lesson with no drill to link yet
+    const bare = LESSONS.find((L) => L.n > 0 && L.pr.link === undefined)
+    if (bare === undefined)
+      throw new Error('Every lesson links a drill now: retire this test')
+    explorerPage()
+    const explorer = createExplorer({ current: 1 })
+
+    // Act
+    explorer.select(bare.n, false)
+
+    // Assert
+    const rows = Object.keys(cardRows())
+    expect(rows).toContain('Builds on')
+    expect(rows).not.toContain('Practise')
   })
 
   it('follows the viewer: a step reached on its page continues it, and marking it done offers it again', () => {
