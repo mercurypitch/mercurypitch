@@ -31,6 +31,7 @@ import { mountComfort, mountFeelings, VisitEnding, } from '@/features/lessons/ki
 import { q, qa, store } from '@/features/lessons/kit/dom'
 import { watch } from '@/features/lessons/kit/frame-loop'
 import { mercSing } from '@/features/lessons/kit/merc-duo'
+import { MicHold } from '@/features/lessons/kit/mic-hold'
 import { reducedMotion } from '@/features/lessons/kit/motion-switch'
 import { NowPlaying } from '@/features/lessons/kit/now-playing'
 import type { Run } from '@/features/lessons/kit/run'
@@ -45,7 +46,7 @@ import { warmUpContour } from '@/features/lessons/kit/warm-up'
 import { SIREN_SEC, sirenContour, sirenEnds } from './range-data'
 import { sirenSaid } from './range-words'
 import type { TakeEnd } from './sing-take'
-import { Mic, mountLiveChart, RING_LABEL, takeOne, takeSaid } from './sing-take'
+import { CONSUMER, mountLiveChart, RING_LABEL, takeOne, takeSaid, } from './sing-take'
 import type { SirenEvent, SirenOffers, SirenVisit } from './siren-flow'
 import { freshVisit, next, offers, SIREN_LINES } from './siren-flow'
 
@@ -112,7 +113,7 @@ export function initSing(stills: RingStills): void {
   })
   const voiceNow = (): Voice => VoiceChoice.voice ?? 'lower'
   const live = mountLiveChart(q('#singChart'), voiceNow(), watch(q('#sing')))
-  const mic = new Mic()
+  const mic = new MicHold(CONSUMER)
   let visit: SirenVisit = freshVisit()
   let phase: Phase = 'idle'
   // the voice stored when the comfort check was answered: which voice line shows

@@ -43,6 +43,8 @@ const takes = vi.hoisted(() => ({
   opening: null as (() => void) | null,
   /** Runs inside an open take, which then reads nothing: the viewer gone mid-take. */
   during: null as ((o: ListenModule.TakeOptions) => void) | null,
+  /** The consumer id the microphone was asked for, each time. */
+  asked: [] as string[],
   /** Takes opened, and the times the microphone was let go: after its linger, or at once. */
   opened: 0,
   released: 0,
@@ -53,7 +55,8 @@ vi.mock('@/features/lessons/kit/listen', async (importOriginal) => {
   const real = await importOriginal<typeof ListenModule>()
   return {
     ...real,
-    listen: () => {
+    listen: (id: string) => {
+      takes.asked.push(id)
       takes.opening?.()
       return Promise.resolve({
         holding: true,
@@ -185,6 +188,7 @@ beforeEach(() => {
   webAudio(true)
   takes.opening = null
   takes.during = null
+  takes.asked = []
   takes.opened = 0
   takes.released = 0
   takes.releasedNow = 0
@@ -418,6 +422,7 @@ describe("Lesson 7's Sing it: the takes", () => {
 
     // Assert
     expect(line).toBe('The lit band is the middle of your siren: about A3.')
+    expect(takes.asked).toEqual(['lesson-07', 'lesson-07'])
     expect(asked).toBe(true)
     expect(closing).toBe(true)
     expect(again).toBe(true)
