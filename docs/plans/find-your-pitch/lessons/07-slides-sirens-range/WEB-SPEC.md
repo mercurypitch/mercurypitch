@@ -381,7 +381,7 @@ States:
      are disabled, the one picked still pressed, and its lines, band and Wrap card stay as they
      are. No Start, Again or Done for today comes back. Until #1192 an answer changed after Done
      for today emptied the card, the question with it, and left only the reading's line; from
-     #1192 until this PR it could still be changed, and on 24 October 2026 the owner chose the
+     #1192 until #1195 it could still be changed, and on 24 October 2026 the owner chose the
      lock.
 9. **No microphone** (refused, no device, or the listener failed to load): listen-only mode with
    LESSON.md's line; Merc's siren still plays, and the Wrap keeps the Vocal Range Test card, since
