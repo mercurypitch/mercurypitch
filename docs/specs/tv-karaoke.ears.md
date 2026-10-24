@@ -16,7 +16,11 @@ done; `092` and `095` are in review (PR #1175); POC-3 (PR #1179) builds
 view-mode slices of `020`-`022`, `026`, `027`, `091` and `100`-`102`, and
 adds `104` and `105`, behind a test build's switch. Updated 2026-10-23:
 `034` is added and `115` corrected. The server keeps no songs, so a TV that
-plays a song gets it from the phone (plan section 2.9).
+plays a song gets it from the phone (plan section 2.9). Updated again after
+the merges: `092` and `095` shipped in TestFlight mp-v0.8.41 (PR #1175), the
+POC-3 slices are merged (PR #1179), `035` is added (the quality bar,
+plan section 2.10), and `096` (the wizard that hears a TV, from the 0.8.41
+device test; merged in PR #1189).
 
 **Source (existing):** `src/lib/device-tier.ts` — device class and tier;
 `src/styles/performance-mode.css` — the TV focus ring;
@@ -34,7 +38,7 @@ frames and the room relay;
 `apps/mercurypitch/ios/App/App/{AppDelegate,SceneDelegate}.swift`,
 `apps/mercurypitch/src/infrastructure/native-shell.ts`,
 `packages/mobile-runtime/src/audio-output.ts`
-**Source (POC-3, in review, PR #1179):** `apps/mercurypitch/stage.html` and
+**Source (POC-3, merged in PR #1179):** `apps/mercurypitch/stage.html` and
 `apps/mercurypitch/src/stage/main.ts` — the stage page; `src/lib/tv-stage/`
 — its protocol, model, renderer and feed;
 `apps/mercurypitch/ios/App/App/LyricsWindow/TVStage.swift` — the window on
@@ -173,7 +177,7 @@ _Tests:_ `src/e2e/tv-dpad-walk.spec.ts` _(planned)_.
 
 ## The TV stage — `REQ-TV-020..027`
 
-### REQ-TV-020 — Inside the safe area **[next; POC in review, PR #1179]**
+### REQ-TV-020 — Inside the safe area **[next; POC merged, PR #1179]**
 
 The stage shall keep all text and controls inside an overscan-safe inset of
 at least 5% of each edge (Play TV-OV).
@@ -181,7 +185,7 @@ _Tests:_ `src/lib/tv-stage/renderer.test.ts` ("keeps everything inside a 5%
 margin on every side", the POC stage); `src/features/tv-stage/layout.test.ts`
 _(planned)_; app-check at 1920x1080.
 
-### REQ-TV-021 — Landscape, full screen, opaque **[next; POC in review, PR #1179]**
+### REQ-TV-021 — Landscape, full screen, opaque **[next; POC merged, PR #1179]**
 
 The stage shall fill a landscape screen with an opaque background and no
 letterboxing (Play TV-LO, TV-TR).
@@ -218,7 +222,7 @@ The stage shall print the pairing code as text under the QR, from an alphabet
 without `0`, `O`, `1` or `I`.
 _Tests:_ as `REQ-TV-024`.
 
-### REQ-TV-026 — Host and view modes **[next; view mode in review, PR #1179]**
+### REQ-TV-026 — Host and view modes **[next; view mode merged, PR #1179]**
 
 The stage shall draw from one model in two modes: **host**, where it owns
 playback and scoring (TV browser, Google TV app, Cast receiver), and **view**,
@@ -226,7 +230,7 @@ where it draws snapshots from a controller that owns them (iOS second screen).
 _Tests:_ `src/features/tv-stage/stage-model.test.ts` _(planned)_. View mode
 as built in POC-3: `src/lib/tv-stage/model.test.ts`.
 
-### REQ-TV-027 — A light entry with no native plugins **[next; POC in review, PR #1179]**
+### REQ-TV-027 — A light entry with no native plugins **[next; POC merged, PR #1179]**
 
 The stage shall be its own entry, shall register no Capacitor plugins, and
 shall load no module outside its own chunk at first paint.
@@ -239,7 +243,7 @@ room imports too, in a small chunk the two entries share.
 
 ---
 
-## Songs on the TV — `REQ-TV-030..034`
+## Songs on the TV — `REQ-TV-030..035`
 
 ### REQ-TV-030 — Never a dead upload button **[shipped notice, next action]**
 
@@ -282,6 +286,17 @@ fetches them from their public URL.
 _Tests:_ `src/lib/sync/sync-protocol.test.ts` _(planned case: play without
 keeping)_; the relay refusal as `src/tests/sync-store.test.ts` pins it for
 sync today; a two-device run on the jam-two-peer harness.
+
+### REQ-TV-035 — The best quality the phone holds **[next]**
+
+**WHEN** the phone sends a song to a TV, the system shall send each stem the
+phone holds compressed without encoding it again, and shall encode a lossless
+stem at most once, at the highest portable tier (192 kbps AAC), never at the
+jam room's 128 kbps tier. **WHERE** the TV can hold a lossless stem within its
+memory budget (`REQ-TV-040`) over a direct route, the system may send it
+lossless.
+_Tests:_ `src/tests/portable-bundle.test.ts` (a portable stem passes through
+unchanged, today); the TV's tier _(planned case)_.
 
 ---
 
@@ -554,7 +569,7 @@ paywall _(planned)_.
 
 ---
 
-## Mirroring — `REQ-TV-090..095`
+## Mirroring — `REQ-TV-090..096`
 
 ### REQ-TV-090 — An external display mirrors by default **[done]**
 
@@ -568,14 +583,14 @@ to the application role; Simulator check (I/O, External Displays) shows one
 `Loading app at`. Device check passed 2026-10-22 on an LG C2 over AirPlay
 (TestFlight mp-v0.8.40): the TV mirrors the phone in both orientations.
 
-### REQ-TV-091 — One bridge **[next; POC in review, PR #1179]**
+### REQ-TV-091 — One bridge **[next; POC merged, PR #1179]**
 
 The iOS app shall run one Capacitor bridge per process. The second-screen
 stage (`REQ-TV-100`) is not a bridge and registers no plugins.
 _Tests:_ as `REQ-TV-090`; `apps/mercurypitch/src/ios-tv-stage.test.ts`
 ("shows a plain web view: no bridge of its own, no plugins").
 
-### REQ-TV-092 — Offsets per input and output **[in review, PR #1175]**
+### REQ-TV-092 — Offsets per input and output **[shipped, PR #1175; device test pending]**
 
 The latency offset shall be stored per input device, and per output route
 for the routes that add a delay of their own (Bluetooth, AirPlay, HDMI).
@@ -609,7 +624,7 @@ room shall offer a landscape layout sized for the TV. **WHERE** the app runs on
 the web, the same layout shall be available as a manual choice.
 _Tests:_ app-check at 1920x1080 _(planned)_.
 
-### REQ-TV-095 — The screens say which number is in use **[in review, PR #1175]**
+### REQ-TV-095 — The screens say which number is in use **[shipped, PR #1175; device test pending]**
 
 **WHILE** the output route is one with a delay of its own, the latency
 wizard and the native Microphone screen shall say whether the offset in use
@@ -622,6 +637,39 @@ _Tests:_ `src/tests/mic-latency-wizard.test.tsx` ("the route the number is
 for"); `apps/mercurypitch/src/shell/settings/MicrophoneScreen.test.tsx` and
 `latency-measured.test.ts` (the AirPlay cases).
 
+### REQ-TV-096 — The wizard hears a TV **[merged, PR #1189; device test pending]**
+
+**WHEN** the latency wizard runs on a route with a delay of its own (AirPlay,
+HDMI, Bluetooth), it shall hear a click whose reply comes back quieter than
+the first click's, shall keep a round trip of up to 1,000 ms, and shall not
+take one click's reply for another's at any round trip up to 2.5 s.
+**IF** the round trip is longer than 1,000 ms, **THEN** it shall keep no
+number, say how late the sound plays, and suggest Screen Mirroring rather
+than the sound alone on AirPlay (the TV's game mode on HDMI, another speaker
+on Bluetooth). **IF** fewer clicks than it needs agree, **THEN** it shall say
+so, and on a TV suggest holding the phone near the TV's speaker and turning
+off the TV's automatic volume. The details are `REQ-ML-021..026` in
+[mic-latency.ears.md](mic-latency.ears.md): unevenly spaced clicks, the lag
+most clicks agree on, and each reply found and timed in a narrow band at the
+click's pitch against its own peak.
+_Why:_ in the 0.8.41 test the wizard found no number over AirPlay to the
+LG C2. The TV played the first click loud and the rest quieter, and the
+wizard holds every click to a quarter of the loudest (`detectOnsets`,
+`src/lib/mic-latency.ts`). It also credits no reply later than half the
+0.75 s between clicks (`MAX_ONSET_DISTANCE_SEC`) and keeps no number over
+500 ms (`MAX_LATENCY_MS`), while mirroring alone is reported at up to
+600 ms (Chromecast's; AirPlay's at 100-200 ms); and with evenly spaced
+clicks a round trip longer than the spacing can pass for a short one (1.6 s
+reads as 100 ms). Each of these was reproduced on synthetic recordings
+against the phone's functions (2026-10-23): replies at a fifth of the first
+click's level match 1 click of 8; a steady 450 ms matches none; 1.6 s gives
+100 ms from 6 clicks with a 1 ms spread. Sending the sound alone over
+AirPlay is reported at about 2 s (plan section 2.3; to confirm in P0).
+_Tests:_ `src/lib/mic-latency-route.test.ts`,
+`src/features/mic-feedback/latency-route-copy.test.ts`,
+`src/tests/mic-latency-wizard.test.tsx` ("a run on a TV"),
+`src/tests/mic-latency-store.test.ts` (the ceiling on a route).
+
 ---
 
 ## iOS second screen — `REQ-TV-100..105`
@@ -630,7 +678,7 @@ POC-3 (PR #1179) builds `100`-`102` and `104`-`105` behind a test build's
 "Stage on a connected TV" switch, which starts off; a store build carries no
 stage page, so its TV mirrors (`REQ-TV-090`, `104`).
 
-### REQ-TV-100 — The stage on the external display **[open; POC in review, PR #1179]**
+### REQ-TV-100 — The stage on the external display **[open; POC merged, PR #1179]**
 
 **WHERE** the second-screen stage is enabled, **WHEN** an external-display
 scene connects, the iOS app shall show the stage in view mode
@@ -640,7 +688,7 @@ _Tests:_ `apps/mercurypitch/src/ios-tv-stage.test.ts` (the POC: an external
 display's scene and no other, only with the switch on); a device check with
 an Apple TV and an AirPlay 2 TV.
 
-### REQ-TV-101 — Fed only by the bridge **[open; POC in review, PR #1179]**
+### REQ-TV-101 — Fed only by the bridge **[open; POC merged, PR #1179]**
 
 The stage web view shall receive state only from the main web view, through a
 native message bridge, and shall read no storage of its own.
@@ -650,7 +698,7 @@ _Tests:_ `src/features/tv-stage/view-mode.test.ts` _(planned)_. The POC:
 and when), `apps/mercurypitch/src/ios-tv-stage.test.ts` (each message reaches
 the page; the newest song and frame wait for a page still loading).
 
-### REQ-TV-102 — Released on disconnect **[open; POC in review, PR #1179]**
+### REQ-TV-102 — Released on disconnect **[open; POC merged, PR #1179]**
 
 **WHEN** the external display disconnects, the iOS app shall tear down and
 release the stage web view, leaving one web view running.
@@ -665,7 +713,7 @@ song plays on the TV or the phone, and shall apply the offset for that route
 (`REQ-TV-092`).
 _Tests:_ device check, recorded in the plan.
 
-### REQ-TV-104 — No stage page, no window **[open; POC in review, PR #1179]**
+### REQ-TV-104 — No stage page, no window **[open; POC merged, PR #1179]**
 
 **IF** the app's bundle has no stage page, or the stage page fails to load,
 **THEN** the iOS app shall take no window, or take its window down, so the
@@ -675,7 +723,7 @@ the bundle has none", "gives the TV back to the mirror when the page does not
 load"). A store build installed over a test build that left the switch on is
 the case this covers: TestFlight and the App Store share the app's settings.
 
-### REQ-TV-105 — The picture can be moved to meet the sound **[open; POC in review, PR #1179]**
+### REQ-TV-105 — The picture can be moved to meet the sound **[open; POC merged, PR #1179]**
 
 **WHILE** the second-screen stage is shown, the system shall let the singer
 move the stage's picture earlier or later than the room's clock, in steps,
@@ -690,6 +738,10 @@ the Developer screen's offset");
 ---
 
 ## Google Cast — `REQ-TV-110..117`
+
+Owner decision, 2026-10-23: the first Cast release plays demo songs, which
+the receiver fetches by URL (`115`). Every song follows through `034` and
+`035` before the native app's release.
 
 ### REQ-TV-110 — The receiver is the stage **[open]**
 

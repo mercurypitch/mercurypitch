@@ -4,7 +4,7 @@ For phase P0 and the proofs of concept of
 [tv-cast-and-google-tv.md](tv-cast-and-google-tv.md); requirement ids are in
 [../specs/tv-karaoke.ears.md](../specs/tv-karaoke.ears.md). Tests 1 to 3 need
 no new build: use the current TestFlight build on the iPhone and the current
-app on an Android phone. Tests 4 to 6 need the build named in each. Fill in
+app on an Android phone. Tests 4 to 7 need the build named in each. Fill in
 the tables; that is all that needs to come back.
 
 ## Before you start
@@ -110,7 +110,7 @@ picture-in-picture lyrics work. Still to run on the Samsung.
 | LG C2   | Yes, both orientations   |               |                                                      | TV         |                           |                            |                           |                          |                      |
 | Samsung |                          |               |                                                      |            |                           |                            |                           |                          |                      |
 
-## Test 5: per-route latency (PR #1175, the next `mp-v` build after it merges)
+## Test 5: per-route latency (PR #1175, TestFlight mp-v0.8.41, build 1321)
 
 1. On the phone's speaker: Settings, Microphone. Note the Latency and the
    day under it.
@@ -128,17 +128,45 @@ picture-in-picture lyrics work. Still to run on the Samsung.
 6. While mirroring, Clear offset in the wizard: only the TV's number should
    go; the speaker's stays.
 
-| Route                | Latency, result and spread | Score feels right? | Notes |
-| -------------------- | -------------------------- | ------------------ | ----- |
-| Phone speaker        |                            |                    |       |
-| AirPlay to the LG C2 |                            |                    |       |
-| AirPlay to Samsung   |                            |                    |       |
+**Run on the LG C2, 2026-10-23** (mp-v0.8.41, build 1321, iPhone 13 Pro on
+iOS 27): the phone's speaker measured 113 ms (91 ms before). Over AirPlay
+the wizard found no number: the first click came out of the TV loud and the
+rest quieter, even at TV volume 100, and too few clicks were heard. The
+likely cause is the wizard's detection rather than the route: it holds every
+click to a quarter of the loudest, credits no reply later than 375 ms and
+keeps no number over 500 ms; the fix is merged (PR #1189, `REQ-TV-096`) and
+goes to TestFlight with the next tag. Until it ships, a run may succeed with
+the TV's automatic volume and sound processing off (on the LG, for example
+Auto Volume and AI Sound Pro; names vary by model) and the phone held near
+the TV's speaker. Without a number the TV borrows the speaker's, which is
+probably 100 to 300 ms short of a mirrored round trip (the plan's section
+2.3 figures), so a song may score late.
 
-## Test 6: the stage on the TV (PR #1179, the next `mp-v` build after it merges)
+**Again with the build after PR #1189** (the next `mp-v` tag):
+
+1. Mirror to the LG C2. Settings, Microphone, Measure latency for AirPlay.
+   Before the run the wizard should say to hold the phone near the TV's
+   speaker and to turn off the TV's automatic volume.
+2. Start. The run takes about 11 seconds, with clicks at uneven gaps. Write
+   down the number and the spread.
+3. If the TV has Auto Volume, run once with it on and once with it off: does
+   the number change, or only the spread?
+4. If a run fails, copy its sentence into the notes. A delay over a second
+   is named rather than kept.
+5. Sing a song you know while mirroring: does the score feel right now?
+
+| Route                | Latency, result and spread                                                      | Score feels right? | Notes                                        |
+| -------------------- | ------------------------------------------------------------------------------- | ------------------ | -------------------------------------------- |
+| Phone speaker        | 113 ms (91 ms before)                                                           |                    |                                              |
+| AirPlay to the LG C2 | No number: first click loud, the rest quieter even at volume 100; too few heard |                    | The wizard's detection; plan 1.6, REQ-TV-096 |
+| LG C2, after #1189   |                                                                                 |                    |                                              |
+| AirPlay to Samsung   |                                                                                 |                    |                                              |
+
+## Test 6: the stage on the TV (PR #1179, TestFlight mp-v0.8.41, build 1321)
 
 The phone stays the room and the microphone, held upright; the TV draws the
-stage in its own landscape (POC-3). Merging #1175 first lets step 6 use the
-TV's own latency number.
+stage in its own landscape (POC-3). mp-v0.8.41 carries #1175 as well, so
+step 6 can use the TV's own latency number from Test 5.
 
 1. Start Screen Mirroring. Settings, Developer, TV: turn on "Stage on a
    connected TV". "It shows" should read the stage, "Lyrics on a connected
@@ -158,8 +186,8 @@ TV's own latency number.
    each within a moment? After a key change the notes should move.
 5. From the sofa: is the text easy to read? Is anything cut off at the edges?
    Does the lane move smoothly? Is the phone warm after a whole song?
-6. With #1175 merged and the TV measured: does the score feel the same as on
-   the phone's speaker?
+6. With the TV measured (Test 5): does the score feel the same as on the
+   phone's speaker?
 7. Turn the switch off: the TV should mirror the phone again at once. Turn it
    on, stop mirroring and start again: the stage should come back. Close and
    reopen the app while mirroring: the stage should come back too.
@@ -169,6 +197,23 @@ TV's own latency number.
 | ------- | ------------ | ---------- | -------------------------------- | ------------------------------ | -------------------------- | ------------------- | ------------------------- | ------------------------ |
 | LG C2   |              |            |                                  |                                |                            |                     |                           |                          |
 | Samsung |              |            |                                  |                                |                            |                     |                           |                          |
+
+## Test 7: Beside Cue on a TV (PR #1182, TestFlight build 1198 or later)
+
+Beside Cue had Mercury Pitch's second-copy bug, and #1182 ports the fix. Main
+uploads a Beside Cue TestFlight build on every push that touches it; the
+newest of 2026-10-23 is build 1202.
+
+1. Start Screen Mirroring, then open Beside Cue. The TV should show the phone
+   and follow it, with no separate copy of the app on its first screen.
+2. Open Beside Cue first, then start mirroring. You should get the same
+   result.
+3. Play a game with sound: does the sound come from the TV?
+
+| TV      | Mirrors, no second copy? | Same when mirroring starts second? | Sound from |
+| ------- | ------------------------ | ---------------------------------- | ---------- |
+| LG C2   |                          |                                    |            |
+| Samsung |                          |                                    |            |
 
 ## Aside: a TestFlight Subscribe asks for the password
 
@@ -184,9 +229,9 @@ Face ID as usual.
 
 | Route                              | TV      | Sound on the TV? | Second copy on the TV?             | Latency, result and spread | Score feels right? | Notes |
 | ---------------------------------- | ------- | ---------------- | ---------------------------------- | -------------------------- | ------------------ | ----- |
-| iPhone, AirPlay mirroring          | LG C2   | Yes              | Before 0.8.40 yes; fixed in 0.8.40 |                            |                    |       |
+| iPhone, AirPlay mirroring          | LG C2   | Yes              | Before 0.8.40 yes; fixed in 0.8.40 | None in 0.8.41 (Test 5)    |                    |       |
 | iPhone, AirPlay mirroring          | Samsung |                  |                                    |                            |                    |       |
-| iPhone, phone speaker only         | none    | n/a              | n/a                                |                            |                    |       |
+| iPhone, phone speaker only         | none    | n/a              | n/a                                | 113 ms in 0.8.41 (Test 5)  |                    |       |
 | Android, Screen Cast               | Philips |                  | n/a                                |                            |                    |       |
 | Android, Screen Cast or Smart View | LG      |                  | n/a                                |                            |                    |       |
 | Samsung phone, Smart View          | Samsung |                  | n/a                                |                            |                    |       |
