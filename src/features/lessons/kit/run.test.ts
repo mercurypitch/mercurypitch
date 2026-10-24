@@ -8,13 +8,15 @@
 // and false once stopped. A tune's voices are heard through a spy on
 // `Sound.voice`. A sung line's voice does not go through `Sound`, so it is
 // built for real on the fake AudioContext the sound tests use
-// (sound-doubles.test-fixtures.ts), and its release is read from the
-// schedule. A stop starts nothing still to come and releases what sounds
-// with the kit's short release (CONVENTIONS.md § 5b); a silent run starts
-// no voice, but keeps the visuals' time as if it were heard.
+// (sound-doubles.test-fixtures.ts), and read from what that context holds:
+// its timbre, its release, and no voice at all for a silent line. A stop
+// starts nothing still to come and releases what sounds with the kit's
+// short release (CONVENTIONS.md § 5b); a silent run starts no voice, but
+// keeps the visuals' time as if it were heard.
 
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { hz } from './notes'
+import type * as RunKit from './run'
 import type { Run, RunNote } from './run'
 import { playLine, playNote, playNotes } from './run'
 import type { Voice } from './sound'
@@ -146,19 +148,19 @@ describe("a run's promise", () => {
 })
 
 describe('playNotes', () => {
-  it('gives each note its own voice, at its pitch and for its own length, in Merc\'s "ooh" by default', async () => {
+  it('gives each note its own voice, at its pitch, for its own length and at the caller\'s level, in Merc\'s "ooh" by default', async () => {
     // Arrange
     vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] })
     const voice = vi.spyOn(Sound, 'voice').mockReturnValue(null)
-    playNotes(TUNE, { audible: true })
+    playNotes(TUNE, { audible: true, gain: 0.13 })
 
     // Act
     await vi.advanceTimersByTimeAsync(1500)
 
     // Assert
     expect(voice.mock.calls).toEqual([
-      [hz(60), { kind: 'merc', dur: 0.5, gain: undefined }],
-      [hz(62), { kind: 'merc', dur: 1, gain: undefined }],
+      [hz(60), { kind: 'merc', dur: 0.5, gain: 0.13 }],
+      [hz(62), { kind: 'merc', dur: 1, gain: 0.13 }],
     ])
   })
 
@@ -271,14 +273,24 @@ describe('playLine', () => {
     vi.stubGlobal('AudioContext', FakeContext)
   })
 
-  it("releases its voice with the kit's short release when stopped", async () => {
-    // Arrange: sound on, the line 1 s in on the fake context's clock
-    vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] })
+  /** Sound on, as after a first tap: fresh run and sound modules, and the fake AudioContext they made. */
+  async function soundOn(): Promise<{
+    runs: typeof RunKit
+    slack: number
+    ctx: FakeContext
+  }> {
     const kit = await import('./sound')
     const runs = await import('./run')
     kit.Sound.set('on')
     const ctx = FakeContext.last
     if (ctx === null) throw new Error('no context was made')
+    return { runs, slack: kit.SLACK, ctx }
+  }
+
+  it("releases its voice with the kit's short release when stopped", async () => {
+    // Arrange: the line 1 s in on the fake context's clock
+    vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] })
+    const { runs, slack, ctx } = await soundOn()
     const run = runs.playLine(LINE, { audible: true })
     ctx.currentTime = 1
 
@@ -290,10 +302,41 @@ describe('playLine', () => {
       .flatMap((g) => g.gain.events)
       .filter(([method, , at]) => method === 'setTargetAtTime' && at === 1)
     expect(releases).toEqual([['setTargetAtTime', 0, 1, SHORT_RELEASE / 5]])
-    const after = 1 + SHORT_RELEASE + kit.SLACK
+    const after = 1 + SHORT_RELEASE + slack
     expect(ctx.oscillators.map((o) => o.stops.at(-1))).toEqual([
       expect.closeTo(after, 6),
       expect.closeTo(after, 6),
+    ])
+  })
+
+  it('builds no voice for a silent line with sound on, and still resolves true at its end', async () => {
+    // Arrange
+    vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] })
+    const { runs, ctx } = await soundOn()
+    const seen = outcome(runs.playLine(LINE, { audible: false }))
+
+    // Act
+    await vi.advanceTimersByTimeAsync(2000)
+
+    // Assert
+    expect(ctx.oscillators).toEqual([])
+    expect(seen.heard).toBe(true)
+  })
+
+  it("shapes the line's voice with the caller's timbre", async () => {
+    // Arrange
+    vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] })
+    const { runs, ctx } = await soundOn()
+    const timbre = vi.fn((filter: BiquadFilterNode, envelope: GainNode) => {
+      filter.connect(envelope)
+    })
+
+    // Act
+    runs.playLine(LINE, { audible: true, timbre })
+
+    // Assert: the timbre was handed the line's one voice, at its filter
+    expect(timbre.mock.calls.map(([filter]) => filter)).toEqual([
+      ctx.filters[0],
     ])
   })
 })
