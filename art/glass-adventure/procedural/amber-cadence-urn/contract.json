@@ -1,0 +1,19 @@
+{
+  "root": "breakable_l2_low_amber_urn",
+  "intact": "breakable_l2_low_amber_urn_intact",
+  "shard_prefix": "breakable_l2_low_amber_urn_shard_",
+  "shard_count": 16,
+  "collider": "COLLIDER_breakable_l2_low_amber_urn",
+  "height_m": 0.72,
+  "height_tolerance_m": 0.003,
+  "base_m": 0.0,
+  "max_tris_intact": 9800,
+  "max_tris_shards_total": 16000,
+  "extras": {
+    "root": { "asset_id": "amber-cadence-urn", "units": "metres" },
+    "intact": { "role": "intact", "asset_id": "amber-cadence-urn" },
+    "shard": { "role": "shard" },
+    "collider": { "collision_proxy": true, "collision_shape": "16-sided-cylinder" }
+  },
+  "volume_tolerance": 0.03
+}
