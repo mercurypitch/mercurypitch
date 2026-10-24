@@ -333,7 +333,7 @@ closing card do (FACTS 57, 9). Karaoke Night is a document of its own on the web
 example song, and outside what `PREMIUM_EXERCISES` gates (FACTS 55). It reads no lesson marker and
 shows no intro, so the cards carry no first-visit line (FACTS 56). Not linked: Dynamic Swell, whose
 score weighs loudness and whose card promised more of the breath than any fact here supports until
-this PR; the daily routines, whose copy promised breath support and range until then; and Play
+#1192; the daily routines, whose copy promised breath support and range until then; and Play
 Along, which needs tracks the learner brings (FACTS 58 to 60). Card and copy now say what they do.]_
 
 **End of Season 1** · "You've seen every note you sing. Now sing a whole song." [ Karaoke Night ] [

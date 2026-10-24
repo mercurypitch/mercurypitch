@@ -115,7 +115,7 @@ line above it, are in LESSON.md ("Section headings").
 The learner copy is 2,590 words today, every branch counted (FACTS 3; 2,591 at `1308fd2e7`), 211
 over the series' cap of 2,379; the text package's was 2,258. That is an upper bound: one branch of
 each is about 2,340 words, 15.8 minutes. The page runs about 17 minutes, as its chip says (15 until
-this PR): 10.88 minutes of reading and about 6 of sound, toys and tasks, 16.88 in all, past
+#1192): 10.88 minutes of reading and about 6 of sound, toys and tasks, 16.88 in all, past
 MASTER-PLAN § 4.2's 8 to 12 minutes of active time, as Lessons 3 and 5 are (16 and 18 minutes). Each
 step's text, with its Try, its Notice and any predict, runs 88 to 175 words (Steps 1 to 5: 88, 119,
 114, 175 and 109), inside § 4.2's 50 to 120 a step but for Step 4. Two steps carry more beside it:
@@ -252,7 +252,7 @@ and keeps its identity" (`research/brand-motion.md` § 3.3), and playbook rule 6
   Swap sizes announces "Swapped: up 2, then up 7. Same ups and downs, two intervals changed." and,
   pressed again, "The tune as it was: up 7, then up 2."; a repeated note's gap is "0, same: gap 1,
   the same note again". Tab order: Play, Slow, the slider and its buttons, the toggles, the names
-  switch, then the beads and gaps, line 1 first: a stop each, but in Step 2 one grid since this PR.
+  switch, then the beads and gaps, line 1 first: a stop each, but in Step 2 one grid since #1192.
 - **Words on the stage** (`lesson-06/steps.ts`, `lesson-06/tune-words.ts`). The figure's label
   follows the step: "Fig. 1 The shape of a tune", "Fig. 2 Both lines, every gap", "Fig. 3 Slide the
   whole tune", "Fig. 4 Two sizes swapped" and "Fig. 5 The named intervals". The controls read
@@ -657,7 +657,7 @@ End to end (Playwright, at 390 x 844 and 1440 x 900):
    every hint sits on its letter's line, beside it. In Step 4, Swap sizes is disabled and the
    mix-up card, the Try and the Notice hidden until the choice and both plays.
 3. The tune line by keyboard alone: Tab reaches every bead and gap (in Step 2 one Tab stop, then
-   arrows, Home and End, since this PR); the slider moves by arrows and jumps by Home and End; after
+   arrows, Home and End, since #1192); the slider moves by arrows and jumps by Home and End; after
    a slide the gap numbers read the same and the names under the beads follow Lesson 4's spelling;
    the names switch toggles `aria-pressed` and shows do-re-mi in the letters' place; Swap sizes
    toggles `aria-pressed` and the dashed overlay; each announcement in Toys 1 reaches the live

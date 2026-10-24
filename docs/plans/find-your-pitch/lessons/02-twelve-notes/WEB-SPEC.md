@@ -361,7 +361,7 @@ vertical (pitch is height).
   ring settles round the tile; beside it, **Play both ways** sounds C4 to C♯4, then D4 to D♭4
   (FACTS 49), and runs the arrows again. On step 5's stage, Sharp, Flat and Show the rare ones stay
   locked until the step's predict has a choice (Toys, 7): all three dimmed (the switch only since
-  this PR), and under them a line, "Answer the predict to unlock Sharp, Flat and the rare ones.",
+  #1192), and under them a line, "Answer the predict to unlock Sharp, Flat and the rare ones.",
   that says once they unlock "Unlocked: pick a white tile, then press Sharp or Flat.", both in one
   box, so the stage keeps its height as they swap. From E, Sharp lands on F and writes E♯
   above F's own letter, where the film writes it (the predict's evidence); from F, Flat lands on E

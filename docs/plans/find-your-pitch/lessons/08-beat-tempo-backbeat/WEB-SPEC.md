@@ -632,7 +632,7 @@ States:
    - Effortful shows Lesson 3's gentle line, "Keep it gentle: rest before you sing again.", and
      puts the guide, Again and Move do away (REQ-GVC-021: a report of effort suppresses
      immediate-repeat encouragement). Play Merc's line still plays, at the do Move do last set. The
-     Wrap shows the rest card (REQ-GVC-055; FACTS 66), set by hand until this PR, as the kit's
+     Wrap shows the rest card (REQ-GVC-055; FACTS 66), set by hand until #1192, as the kit's
      `afterFeeling` leaves "Effortful" off it for the coach; this page now asks (`restAfterEffort`,
      `kit/comfort.ts:69-78`); LESSON.md's coach list asks the coach to confirm the wording.
    - Uncomfortable shows Lesson 3's enough-for-today line, "Thanks for saying so. That's enough
@@ -921,7 +921,7 @@ was built on.
     `recallHref` (`lesson-06/quiz-questions.ts:30-32` at `b7093a0a4`) opened a page, never a step;
     #1186 deleted it. The quiz needs nothing else: its prefix, slot and away links are on main
     (`kit/quiz.ts:73-97`, `:179-209`).
-11. `kit/comfort.ts`, built by this PR: `restAfterEffort`, which this page's flow passes
+11. `kit/comfort.ts`, built by #1192: `restAfterEffort`, which this page's flow passes
     (`lesson-08/sing-flow.ts:121`) to pick the rest card after "Effortful", as Lesson 6's does; both
     picked it by hand before. The kit's default stays the coach's (`kit/comfort.ts:69-78`).
 12. `src/features/lessons/kit/drafts.ts:30-38`: Lesson 8's line, "the vocal coach's sign-off
@@ -1009,7 +1009,7 @@ was built on.
   the first tap turns sound on, sound off plays the visuals silently with the kit's toast, and no
   Web Audio leaves the page readable with every play `aria-disabled` and its line saying why. The
   predicts' reveals and Start the guide wait for heard sound (Toys 2, 6); the take and the groove,
-  which need sound, do not run, and say so (Toys 6; till this PR the groove ran silently).
+  which need sound, do not run, and say so (Toys 6; till #1192 the groove ran silently).
 - **A hidden page or a card off screen** stops what is playing (Audio; Toys 6), and a take that
   was running ends with no line.
 - **Leaving a step**, by any route, stops the stage's sound, Count the bar's queued replay and Step

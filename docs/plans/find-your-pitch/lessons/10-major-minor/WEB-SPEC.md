@@ -552,7 +552,7 @@ States:
      the guide and Move do away for the visit (REQ-GVC-021: a report of effort suppresses
      immediate-repeat encouragement). Play Merc's notes still plays, at the do Move do last set. The
      Wrap shows the rest card (REQ-GVC-055; FACTS 67), which this page asks the kit for, as Lesson
-     6's does since this PR (`restAfterEffort`); `afterFeeling` leaves "Effortful" off it for the
+     6's does since #1192 (`restAfterEffort`); `afterFeeling` leaves "Effortful" off it for the
      coach to decide (`comfort.ts:69-78`); LESSON.md's coach list asks the coach to confirm it.
    - Uncomfortable shows Lesson 3's enough-for-today line, "Thanks for saying so. That's enough
      singing for today: rest your voice.", and the doctor lines, puts the guide and Move do away for
@@ -790,13 +790,13 @@ at `85e23a1af` changed there, and that page's own lines are cited at `d59c00ad6`
    seed for each run (`freshSeed`, `kit/ear-game.ts:95-96`). The page's deal balances its rounds, so
    the game needs nothing more.
 7. Move do and the count-in's note (Toys 6): Lesson 4's, in the kit beside the slide guide since
-   this PR (`kit/move-do.ts:20-29`; `:42-51`), as Lesson 6's spec listed it. Lesson 6's page kept
+   #1192 (`kit/move-do.ts:20-29`; `:42-51`), as Lesson 6's spec listed it. Lesson 6's page kept
    its own copy until then (`MOVE_MAX` and `clampMove`, in `lesson-06/sing-guide.ts`), and this
-   page was to move Move do into the kit itself and take Lesson 6's copy with it; this PR did both,
+   page was to move Move do into the kit itself and take Lesson 6's copy with it; #1192 did both,
    and Lessons 4, 6 and 8 use the kit's, as this page will. The kit's guide already
    waits through a count-in before its sweep (`sweep`,
    `src/features/lessons/kit/slide-guide.ts:77-78`). Lesson 4's Move do and Lesson 6's both set
-   `disabled` at their limits (the kit's `setMoveEnds` since this PR, `kit/move-do.ts:31-40`), which
+   `disabled` at their limits (the kit's `setMoveEnds` since #1192, `kit/move-do.ts:31-40`), which
    drops a keyboard user's focus there; the kit's is to take `aria-disabled`, both pages with it.
 8. The breath mark on the slide guide (Toys 6): the kit's, from Lesson 6's page (`breaths`,
    `slide-guide.ts` on `feat/lesson-06-page`). Until that lands, the gap alone shows where to
@@ -807,7 +807,7 @@ at `85e23a1af` changed there, and that page's own lines are cited at `d59c00ad6`
    `lesson-05/quiz-questions.ts:20`), as this page will. The quiz needs nothing else: its prefix,
    slot and away links are on main (`quiz.ts:52-58`, `:73-97`, `:179-209`).
 10. `kit/comfort.ts` needs nothing: this page's `sing-flow.ts` picks the rest card after "Effortful"
-    with `restAfterEffort`, built by this PR, as Lesson 6's does now (by hand before), leaving the
+    with `restAfterEffort`, built by #1192, as Lesson 6's does now (by hand before), leaving the
     kit's default for the coach (`comfort.ts:69-78`); it keeps the kit's lock on the feeling answer,
     where Lesson 6's page passes the new `changeable` (Toys 6; Decisions for the owner).
 11. `kit/season.ts`, Lesson 10's entry (Explorer and season data).

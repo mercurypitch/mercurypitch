@@ -595,7 +595,7 @@ States:
      the guide and Move do away for the visit (REQ-GVC-021: a report of effort suppresses
      immediate-repeat encouragement). Play Merc's notes still plays, at the do Move do last set. The
      Wrap shows the rest card (REQ-GVC-055; FACTS 63), which this page asks the kit for, as Lesson
-     6's does since this PR and Lesson 10's will (`restAfterEffort`); `afterFeeling` leaves that to
+     6's does since #1192 and Lesson 10's will (`restAfterEffort`); `afterFeeling` leaves that to
      the coach to decide (`comfort.ts:69-78`); LESSON.md's coach list asks the coach to confirm it.
    - Uncomfortable shows Lesson 3's enough-for-today line, "Thanks for saying so. That's enough
      singing for today: rest your voice.", and the doctor lines, puts the guide and Move do away for
@@ -868,7 +868,7 @@ heard play (Toys 3; Edge cases) (`git diff --stat`).
    store is the kit's already (`createModeStore`, `kit/names.ts:27`).
 6. The breath mark on the slide guide (Toys 6): on main, from Lesson 6's page (`breaths`,
    `slide-guide.ts:62-63`). Nothing to add.
-7. Move do and the count-in's note (Toys 6): Lesson 4's, in the kit since this PR moved it there
+7. Move do and the count-in's note (Toys 6): Lesson 4's, in the kit since #1192 moved it there
    (`kit/move-do.ts:20-29`; `:42-51`), as Lesson 10's spec planned (its item 7). It sets `disabled`
    at its limits; this page needs `aria-disabled`, never `disabled`, so a keyboard user's focus
    stays put, and one thing more: a limit for each side, four lower and three higher, where Lessons
@@ -888,7 +888,7 @@ heard play (Toys 3; Edge cases) (`git diff --stat`).
    will. The quiz needs nothing else: its prefix, slot and away links are on main (`quiz.ts:52-58`,
    `:73-97`, `:179-209`).
 10. `kit/comfort.ts` needs nothing: this page's `sing-flow.ts` picks the rest card after "Effortful"
-    with `restAfterEffort`, built by this PR, as Lesson 6's does now (by hand before) and Lesson
+    with `restAfterEffort`, built by #1192, as Lesson 6's does now (by hand before) and Lesson
     10's will, leaving the kit's default for the coach (`comfort.ts:69-78`), and it keeps the kit's
     lock on the feeling answer (Toys 6; Decisions for the owner).
 11. `kit/season.ts`, Lesson 12's entry (Explorer and season data).

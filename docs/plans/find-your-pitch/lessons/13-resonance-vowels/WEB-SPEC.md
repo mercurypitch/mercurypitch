@@ -502,7 +502,7 @@ States:
    locks, asked after each take with voice (FACTS 54): a press disables all four, and `reset()`
    frees them for the next take, so an answer cannot be changed once it has set what follows.
    Lesson 6's `changeable` option is left off. What each answer allows comes from `afterFeeling`
-   (`:56-87`) with its `restAfterEffort`, proposed here and built by this PR (needs 10).
+   (`:56-87`) with its `restAfterEffort`, proposed here and built by #1192 (needs 10).
    - Easy or Workable: Merc `celebrate`s if the take was in the band for at least 80 % of its ten
      seconds, at most once a visit; rule 15's line, "If that felt tricky, good: that's learning."
      (`TRICKY_LINE`, `kit/take.ts:155`), if it was in the band for under half; then Lesson 5's
@@ -897,7 +897,7 @@ and the four-words strip in the kit.
 10. `kit/comfort.ts`: an option that sends "Effortful" to the rest card,
     `afterFeeling(f, { restAfterEffort: true })`, since `afterFeeling` leaves it to the coach
     (`:69-78`) and Lessons 6, 7, 9, 10, 11 and 13 all choose it, as Lesson 11's spec proposes (its
-    needs 9). Built by this PR: Lessons 6, 7 and 8 pass it, and so will this page.
+    needs 9). Built by #1192: Lessons 6, 7 and 8 pass it, and so will this page.
 11. `recallStepHref` in `kit/quiz.ts`, built: Lesson 8's page moved it there (`:134-136`), and
     Lessons 3, 4 and 5 take it from the kit (`lesson-03/quiz-questions.ts:24`,
     `lesson-04/quiz-questions.ts:32`, `lesson-05/quiz-questions.ts:20`), so Lessons 7, 9, 11 and
