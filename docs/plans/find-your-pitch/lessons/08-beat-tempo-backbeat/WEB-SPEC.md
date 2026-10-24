@@ -1105,7 +1105,7 @@ parts:
 14. The season entry: Lesson 8 keeps `page` and `minutes` in every build, as Lessons 3 and 5 do
     (`kit/season.test.ts:241-266`), and the season gives the page its entry, as it must every lesson
     document in `learn/` (`kit/season.test.ts:286-303`); a state that holds it back draws it with
-    neither (`kit/publish.test.ts:58-73`); its link's `note` matches none of the backlog words
+    neither (`kit/publish.test.ts:59-74`); its link's `note` matches none of the backlog words
     (`kit/season.test.ts:177-190`).
 15. Step 5's lock: before the predict's choice, Play, March, Rock and Tempo are `disabled` and none
     carries `aria-disabled`; the choice enables the three buttons through `unlocks` and Tempo

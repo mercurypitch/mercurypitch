@@ -871,10 +871,11 @@ parts:
     (`:241-266`), and the same file's check of every page in the repository then covers it
     (`:286-303`); `seasonFor(LESSONS, defaultPageState(false))` gives Lesson 9 no page and no
     reading time while its line is in `drafts.ts`, and `seasonFor(LESSONS, defaultPageState(true))`
-    keeps both, as `publish.test.ts` checks a lesson held back and one published (`:57-91`). That
-    file's example of a lesson with no page is Lesson 9 (`:44-55`): it moves to one the test finds,
-    `LESSONS.find((L) => L.n > 0 && L.page === undefined)`, so that the next page to land cannot
-    break it. Lesson 9's practise link carries `?lesson=09`, and `EDGES` holds [3, 9] and [6, 9].
+    keeps both, as `publish.test.ts` checks a lesson held back and one published (`:58-92`). That
+    file's example of a lesson with no page is found, not named: the first lesson the season has
+    with none (`:45-56`, through `lessonWithNoPage` in `kit/season.test-fixtures.ts:22-36`), so
+    this page's arrival does not break it. Lesson 9's practise link carries `?lesson=09`, and
+    `EDGES` holds [3, 9] and [6, 9].
 13. The kit's new option (What the kit and the app still need, 8):
     `afterFeeling('effortful', { restAfterEffort: true })` is today's answer to "Effortful" with
     `rest: true`, so the count and the gentle line stay, with no Again and no doctor lines; every

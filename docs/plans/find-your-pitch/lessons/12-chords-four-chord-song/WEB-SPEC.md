@@ -1201,11 +1201,11 @@ parts it adds:
     keys; `recallStepHref(10, 1)` is `/learn/10#step-1`.
 12. The season entry: `seasonFor` with a state that holds Lesson 12 back, by its draft default or by
     `{ 12: { published: false } }`, gives it no `page` and no `minutes`, as
-    `src/features/lessons/kit/publish.test.ts:57-73` checks Lessons 2 and 3. On a page no worker
+    `src/features/lessons/kit/publish.test.ts:58-74` checks Lessons 2 and 3. On a page no worker
     served, with `VITE_DRAFT_LESSONS` stubbed to '0' and the modules reloaded (`vi.stubEnv`,
     `vi.resetModules`), Lesson 1's explorer shows Lesson 12 as "Coming later", with no link to
     `/learn/12` and its practice link kept, and with '1' links it to read, as
-    `src/features/lessons/kit/explorer.test.ts:460-485` checks Lesson 5 (the block, `:417-486`). Its
+    `src/features/lessons/kit/explorer.test.ts:481-506` checks Lesson 5 (the block, `:438-507`). Its
     link's `note` matches none of the backlog words (`/needs|slug|deep link|for now/i`).
 13. The names switch: under Do-re-mi in C the chord on la reads "la do mi" and the chord on do "do
     mi so"; in G, do is G and ti is F♯; no state names la as home (FACTS 8).

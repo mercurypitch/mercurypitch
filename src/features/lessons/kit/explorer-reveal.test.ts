@@ -11,6 +11,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 import './browser-doubles.test-fixtures'
 import { q, qa } from './dom'
 import { createExplorer, revealDelta } from './explorer'
+import { lessonWithNoPage } from './season.test-fixtures'
 
 /** The room under a 59 px masthead on a 768 px screen: 8 px below it to 12 px above the screen's foot. */
 const ROOM = { top: 67, bottom: 756 }
@@ -301,8 +302,10 @@ describe("a next-lesson card's link to the explorer", () => {
   })
 
   it('shows a card coming later as far as its question, which stands in for the button it does not have', () => {
-    // Arrange: Lesson 8's card leads to Lesson 9, coming later, its question under the fold
-    pageWithNextCard(8, 9)
+    // Arrange: the card on the page before a lesson coming later leads to
+    // it, its question under the fold
+    const later = lessonWithNoPage()
+    pageWithNextCard(later.n - 1, later.n)
     measuredBoxes({ card: [700, 1000], hook: [810, 870] })
     const tops = pageScrolls()
     q('[data-select-lesson]').click()
@@ -311,7 +314,7 @@ describe("a next-lesson card's link to the explorer", () => {
     window.dispatchEvent(new Event('scrollend'))
 
     // Assert
-    expect(q('#exCardHost h3').textContent).toBe('Landing a leap')
+    expect(q('#exCardHost h3').textContent).toBe(later.title)
     expect(document.querySelector('#exCardHost .ex-actions')).toBeNull()
     expect(tops()).toEqual([870 - ROOM.bottom])
   })
