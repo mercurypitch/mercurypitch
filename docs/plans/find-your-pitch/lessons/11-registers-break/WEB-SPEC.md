@@ -1117,7 +1117,7 @@ End to end (Playwright, at 390 x 844 and 1440 x 900, on the e2e build, which sho
    variant's note the same way, and `src/e2e/learn-cold-open-fold.spec.ts` holds its title on the
    first screen at seven sizes and reports where Play Tavi's siren and the two choices sit
    (`:176-203`).
-6. Sing it, with the fake microphone (`src/e2e/helpers/tone-wav.ts`, `fakeMicArgs`, `:115`): with
+6. Sing it, with the fake microphone (`src/e2e/helpers/tone-wav.ts`, `fakeMicArgs`, `:198`): with
    sound off, Start stays `aria-disabled` after Play Merc's slow siren and the hint says sound is
    off; with sound on, a glide from E3 up to C♯4 and back (`writeGlideWav(164.81, 277.18, 4)`) in
    the lower voice draws a violet line and the summary reads "Your siren, drawn as a line.":
