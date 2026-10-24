@@ -154,14 +154,32 @@ export function useHashRouter(deps: UseHashRouterDeps): void {
   /** Set once the first route of this load has been accepted. */
   let acceptedOnce = false
   /**
-   * The URL a traversal just landed on. popstate fires only for
-   * traversals, with the URL already updated, and the hashchange that
-   * follows sees the same URL; a push fires hashchange alone. That is how
-   * the router tells an entry the user came back to from one a link has
-   * just created -- history.length cannot, since a push after Back
-   * truncates the forward entries and the length stays put.
+   * The URL the last popstate landed on, until the hashchange after it.
+   * It is meant to tell an entry the user came back to from one a link
+   * has just created -- history.length cannot, since a push after Back
+   * truncates the forward entries and the length stays put. But a browser
+   * fires popstate for a link or a typed address as well as for Back and
+   * Forward, with the URL already updated, and the hashchange after it in
+   * a task of its own; only pushState and replaceState fire neither. So
+   * in a browser every hashchange reads as a return here, and an entry a
+   * link created goes unplaced: a veto there rewrites it.
    */
   let traversedTo: string | null = null
+  /**
+   * A move the browser has made to an address the router has not
+   * accepted, until its hashchange hands it over. Anything that runs in
+   * the gap after the popstate -- a lazy import landing, as the plan
+   * store's does at boot -- can rerun the state-to-hash syncs, and a sync
+   * would write the screen still showing over the address just moved to.
+   * The hashchange then reads that write, and the move is lost: a #/map
+   * link left First Light on its first beat. So the syncs hold off while
+   * this is set. A popstate with no hashchange behind it (two entries
+   * with the same hash) must not hold them off for good, so the hold
+   * also ends at a timer set from a timer the popstate set: the
+   * hashchange is queued as the popstate's dispatch ends, so it is
+   * already in the queue when that second timer is set.
+   */
+  let unreadMove: object | null = null
   /** A traversal the router asked for is under way; the hashchange it
    *  fires is the accepted route coming back, not a navigation. */
   let restoring = false
@@ -457,6 +475,7 @@ export function useHashRouter(deps: UseHashRouterDeps): void {
 
   const onHashChange = () => {
     restoring = false
+    unreadMove = null
     const traversed = traversedTo === window.location.href
     traversedTo = null
     // Standing on the accepted entry again -- the traversal the router
@@ -472,11 +491,25 @@ export function useHashRouter(deps: UseHashRouterDeps): void {
     dispatchRoute(parseHash(window.location.hash))
   }
 
+  /** Hold the syncs off until this move's hashchange: see `unreadMove`. */
+  const holdForMove = (): void => {
+    if (window.location.hash === lastAcceptedHash) return
+    const move = {}
+    unreadMove = move
+    setTimeout(() => {
+      setTimeout(() => {
+        if (unreadMove === move) unreadMove = null
+      })
+    })
+  }
+
   const onPopState = () => {
     traversedTo = window.location.href
+    holdForMove()
     if (!restoring) return
     // The traversal has landed. The hashchange, when the hashes differ,
-    // follows in its own task; the sync effects may run again from here.
+    // follows in its own task; the sync effects may run again from here,
+    // unless the move itself is unread (holdForMove).
     queueMicrotask(() => {
       restoring = false
     })
@@ -548,7 +581,8 @@ export function useHashRouter(deps: UseHashRouterDeps): void {
       deps.voiceConstellationOpen() ||
       deps.whatsNewOpen() ||
       deps.planOpen()
-    if (!initialized() || hashSyncing || restoring) return
+    if (!initialized() || hashSyncing || restoring || unreadMove !== null)
+      return
     if (resultRequest) {
       if (tab === TAB_COMMUNITY) {
         lastSyncedTab = tab
@@ -594,7 +628,13 @@ export function useHashRouter(deps: UseHashRouterDeps): void {
     const selectionOpen = deps.showSelection()
     const guideOpen = deps.showGuideSelection()
     const constellationOpen = deps.voiceConstellationOpen()
-    if (!initialized() || hashSyncing || restoring || constellationOpen) {
+    if (
+      !initialized() ||
+      hashSyncing ||
+      restoring ||
+      unreadMove !== null ||
+      constellationOpen
+    ) {
       return
     }
     if (modalOpen && walkthroughId !== null) {
