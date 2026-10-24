@@ -138,7 +138,11 @@ session.
   warns on a breach:
   - at most 42 characters a line and two lines a caption;
   - at most 20 characters a second, and at least 5/6 s on screen;
-  - the short speaker label ("BLUE:", "ORANGE:"), only when the speaker changes.
+  - the short speaker label, the host's name ("MERC:", "TAVI:"), only when the speaker changes,
+    and the same names in a sound ("[Tavi sings an A, 440 Hz]"), never a colour (owner, 24
+    October 2026). The tool wrote colour labels ("BLUE:", "[orange Merc ...]") for Lessons 1
+    and 2, whose captions in this repository were renamed by hand, so it must write the names
+    before either film is re-cut: their film-sync tests fail on a colour label.
 - **Voices.** The scratch voice is local Kokoro; the final voices are the owner's ElevenLabs
   voices, Blue as D2 ("Merc V1 Gentle Whimsical D2") and Orange as "Orange Merc", Eleven v3, one
   take a line (October 2026: 133 lines for both lessons, 6,743 credits). The director's tools are

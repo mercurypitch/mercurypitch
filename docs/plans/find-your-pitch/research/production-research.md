@@ -520,7 +520,7 @@ control.
   characters per second for adults; break after punctuation and before conjunctions
   and prepositions; keep articles with their nouns; prefer a bottom-heavy shape.
 - **Two speakers.** Identify the speaker when it is not obvious on screen
-  (`BLUE MERC:` / `ORANGE MERC:` at speaker changes, or a leading dash for two
+  (`MERC:` / `TAVI:`, the hosts' names, at speaker changes, or a leading dash for two
   speakers in one cue). Write sound cues for musical examples (`[piano plays A4, then A5]`),
   because the musical example is content, not ambience.
 

@@ -477,6 +477,8 @@ the item is marked decided here and the Phase 1 Decisions track closes when ever
    withholds from its store build, `src/features/echo/merc-voice-set.ts`): they stay for now, and a
    voice actor replaces them later (Phase 1 Voices track). Decided (23 October 2026): orange Merc
    is Tavi, from Octavia, as she sings an octave above Merc; she (22 October: unnamed, no pronoun).
+   Decided (24 October 2026): the captions name them, "MERC:" and "TAVI:" where the speaker
+   changes and "[Tavi sings an A, 440 Hz]" in a sound, never their colours (PRODUCTION-PIPELINE).
 2. **Decided (16 October 2026): a private repository.** It is `disjoint-colliders`, package
    `packages/learn` (17 October 2026). The film sources go there; source media (the Merc passes,
    the voice takes) goes to a private R2 bucket listed in a `media.json` manifest, never into git.
