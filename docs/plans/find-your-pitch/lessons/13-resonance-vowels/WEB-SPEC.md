@@ -687,7 +687,7 @@ paused off screen, and the still images when WebGL fails or would run on the CPU
   who then gets it, whichever choice was made (playbook rule 15; FACTS 14). Elsewhere the Merc of
   the figure's voice sings while Merc's vowels sound (Merc for the lower voice, Tavi for the
   higher).
-- `kit/merc-duo.ts` has `mercSing`, `mercListen` and `mercCelebrate` (`:164`, `:206`, `:216`): Merc
+- `kit/merc-duo.ts` has `mercSing`, `mercListen` and `mercCelebrate` (`:164`, `:206`, `:217`): Merc
   sings his vowels, and both listen during a take. In Sing it Merc celebrates at most once, only
   after "Easy" or "Workable", for a take in the band for at least 80 % of its ten seconds, never
   because a hold was longer (FACTS 55).

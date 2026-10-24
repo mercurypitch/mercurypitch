@@ -634,7 +634,7 @@ paused off screen, and the still images when WebGL fails or would run on the CPU
   sparkles), the puzzled one who then gets it, whichever choice was made (playbook rule 15; FACTS
   13). Elsewhere the Merc of the chart's voice sings while Merc's lines sound (Merc for the lower
   voice, Tavi for the higher).
-- `kit/merc-duo.ts` has `mercSing`, `mercListen` and `mercCelebrate` (`:164`, `:206`, `:216`): Merc
+- `kit/merc-duo.ts` has `mercSing`, `mercListen` and `mercCelebrate` (`:164`, `:206`, `:217`): Merc
   sings his lines, and both listen during a take. Nothing celebrates in Sing it: a hum is never
   scored or celebrated, as on Lesson 7's page (FACTS 66). Proposed, as Lesson 7's spec proposes:
   `ride` and `hum`, which `src/lib/merc/constants.ts` lists for the glide rooms ("humming, and

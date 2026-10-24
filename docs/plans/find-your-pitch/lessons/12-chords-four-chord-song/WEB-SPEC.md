@@ -730,7 +730,7 @@ still images when WebGL fails or would run on the CPU.
   Tavi asks and Merc answers in the bubbles (LESSON.md). While the four chords sound, both listen
   (`mercListen`, `merc-duo.ts:206`). While a tune plays, Merc sings it (`mercSing`, `:164`), note by
   note, and Tavi listens: Merc said "Listen to both", and sings them. Tavi celebrates once as
-  the reveal shows, the puzzled guesser who then gets it (`mercCelebrate('orange', 1600)`, `:216`,
+  the reveal shows, the puzzled guesser who then gets it (`mercCelebrate('orange', 1600)`, `:217`,
   as Lesson 2's cold open does, `lesson-02/cold-open.ts:56`; playbook rule 15), a quiet one, since
   the reveal calls no choice right: the page mounts the pair with `{ sparkles: 'none' }`
   (`MercDuoOptions`, `merc-duo.ts:120-126`). The page asks for no other state.

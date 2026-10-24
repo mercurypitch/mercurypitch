@@ -680,7 +680,7 @@ paused off screen, and the still images when WebGL fails or would run on the CPU
   while Merc's notes sound (Merc for the lower voice, Tavi for the higher), and Tavi celebrates
   once at the cold open's reveal (no sparkles), the puzzled guesser who then gets it (playbook rule
   15). The same rule picks the singing Merc wherever Merc's notes sound.
-- `kit/merc-duo.ts` has `mercSing`, `mercListen` and `mercCelebrate` (`:164`, `:206`, `:216`): Merc
+- `kit/merc-duo.ts` has `mercSing`, `mercListen` and `mercCelebrate` (`:164`, `:206`, `:217`): Merc
   sings his phrase, and both listen during a take. Neither celebrates in Sing it, since nothing
   there is scored, and never after "Effortful" or "Uncomfortable" (75).
 - Under reduced motion or Pause animations each Merc holds a still frame and skips the reactions.

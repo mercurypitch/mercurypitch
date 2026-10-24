@@ -490,7 +490,7 @@ other, paused off screen, and the still images when WebGL fails or would run on 
 - They live in the hero, and their reactions are the hero pair's: Merc `sing` while the hero's
   Play sounds and while the cold open's two plays sound; Tavi `celebrate` once after the
   cold-open reveal (no sparkles), the puzzled guesser who then gets it (playbook rule 15).
-- `merc-duo.ts` has `mercSing` and `mercCelebrate` (`:164`, `:216`), and `mercListen` (`:206`)
+- `merc-duo.ts` has `mercSing` and `mercCelebrate` (`:164`, `:217`), and `mercListen` (`:206`)
   since Lesson 3's page; this page asks for no other state: the Merc who is not singing idles.
 - The cold open is in the hero, beside the title, so the live pair is there for it; they pause off
   screen as always, and the compact line between them carries the moment. In Sing it the ring
