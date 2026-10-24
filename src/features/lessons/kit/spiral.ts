@@ -30,12 +30,21 @@
 // (`range`), and draw the unrolled keys itself (`keys`, a layer that also
 // says where each key is and where it takes taps), as Lesson 2 does to
 // straighten the keyboard into a row of equal tiles.
+//
+// On a page that plays one sound at a time (`owner`, now-playing.ts), a
+// note the viewer plays here (a tap on a bead or a key, Enter on the
+// slider, an activation) is one of the page's sounds: it claims the owner,
+// so the sound before it stops, lets go at its end, and stops where it
+// stands when another sound claims the page. `play` is the page's own and
+// leaves the owner to the page. Without an owner every note plays to its
+// end, as it always has.
 
 import { clamp, q, qa, TAU } from './dom'
 import { addDrawer, surface, watch } from './frame-loop'
 import { Motion, reducedMotion } from './motion-switch'
 import { Names, namesFor, spokenNames } from './names'
 import { fmtHz, hz, isBlack, nameHtml, nameOf, noteColor, signName, } from './notes'
+import type { SoundOwner } from './now-playing'
 import type { Voice } from './sound'
 import { playTone, Sound } from './sound'
 import type { BeadHit, BeadLabels, KeysLayer } from './spiral-draw'
@@ -58,6 +67,11 @@ const STEP_KEYS: ReadonlyMap<string, number> = new Map([
 
 /** A click this long after the last pointerup came from no pointer: assistive technology. */
 const ACTIVATION_GAP_MS = 500
+
+/** A note the viewer plays here lasts this long, seconds. */
+const NOTE_SEC = 0.9
+/** How fast that note fades when another sound takes the page, seconds: as a cut-short run does (tune-line.ts). */
+const CUT_SEC = 0.08
 
 /** What the hint line can depend on. */
 export interface SpiralState {
@@ -104,6 +118,11 @@ export interface SpiralOptions {
   readonly range?: () => readonly [number, number]
   /** The turn that stays lit from above starts here, MIDI; default A3. */
   readonly ring?: number
+  /**
+   * The page's one-sound owner (now-playing.ts): a note the viewer plays
+   * here claims it, and stops when another sound claims it; default none.
+   */
+  readonly owner?: SoundOwner
 }
 
 /** What a page's keys layer is built from: the canvas size, the time and the figure's state. */
@@ -123,7 +142,11 @@ export interface Spiral {
   readonly lit: ReadonlySet<number>
   /** The selected note's MIDI number. */
   readonly selected: number
-  /** Plays a note on this copy: its bead or key pulses (and lights, with lightOnPlay); resolves when it ends. */
+  /**
+   * Plays a note on this copy: its bead or key pulses (and lights, with
+   * lightOnPlay); resolves when it ends. It never claims the owner: a page
+   * that plays one sound at a time claims it for its own run.
+   */
   play(
     midi: number,
     o?: { audible?: boolean; dur?: number },
@@ -219,6 +242,10 @@ export function mountSpiral(
   let topTarget = 0
   const pulses = new Map<number, number>()
   const drifting = (): boolean => userDrift && !Motion.paused
+  // on a page with an owner, the note the viewer last played here, and the
+  // timer that lets the owner go at its end
+  let asked: Voice | null = null
+  let askedEnds = 0
 
   /** The selection's reach, in semitones from A2: every bead, or the page's range. */
   function reach(): [number, number] {
@@ -264,10 +291,41 @@ export function mountSpiral(
   function play(
     m: number,
     audible = Sound.canPlay(),
-    dur = 0.9,
+    dur = NOTE_SEC,
   ): Promise<Voice | null> {
     hit(m - LO)
     return playTone(hz(m), dur, { audible })
+  }
+
+  /** Stops the viewer's note where it stands: another sound has taken the page. */
+  function stopAsked(): void {
+    window.clearTimeout(askedEnds)
+    asked?.stop(CUT_SEC)
+    asked = null
+  }
+
+  /**
+   * A note the viewer plays here: a tap on a bead or a key, Enter on the
+   * slider, an activation. With the page's owner its voice is one the owner
+   * can stop: it claims the owner before it sounds, so the sound before it
+   * stops (this copy's own last note too), and lets go at its end. Without
+   * one it plays as any note does, to its end.
+   */
+  function playAsked(m: number): void {
+    const owner = opts.owner
+    if (owner === undefined) {
+      void play(m)
+      return
+    }
+    stopAsked()
+    owner.claim(stopAsked)
+    const audible = Sound.canPlay()
+    hit(m - LO)
+    asked = audible ? Sound.voice(hz(m), { dur: NOTE_SEC }) : null
+    askedEnds = window.setTimeout(() => {
+      asked = null
+      owner.release(stopAsked)
+    }, NOTE_SEC * 1000)
   }
 
   // the drift: the viewer's own pause, and never while animations are paused (reduced motion included)
@@ -298,7 +356,7 @@ export function mountSpiral(
   qa('[data-key]', root).forEach((b) =>
     b.addEventListener('click', () => {
       setSel(Number(b.dataset.key) - LO)
-      void play(Number(b.dataset.key))
+      playAsked(Number(b.dataset.key))
     }),
   )
   unrollBtn?.addEventListener('click', () => {
@@ -392,7 +450,7 @@ export function mountSpiral(
     // note they picked. A finger's own click follows its pointerup at once.
     canvas.addEventListener('click', (e) => {
       if (e.timeStamp - lastUp < ACTIVATION_GAP_MS) return
-      void play(LO + sel)
+      playAsked(LO + sel)
     })
   }
 
@@ -464,7 +522,7 @@ export function mountSpiral(
     const target = u > 0.6 ? keyAt(x, y) : beadAt(x, y)
     if (target) {
       setSel(target.s)
-      void play(LO + target.s)
+      playAsked(LO + target.s)
     }
   }
 
@@ -505,7 +563,7 @@ export function mountSpiral(
     }
     if (k === 'Enter' || k === ' ' || k === 'Spacebar') {
       e.preventDefault()
-      void play(LO + sel)
+      playAsked(LO + sel)
     }
   }
 
