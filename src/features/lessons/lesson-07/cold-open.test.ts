@@ -8,7 +8,8 @@
 // while "Twinkle" plays; the free play works before a choice; the beads,
 // the gold bracket and the reveal come only after a choice and a heard
 // play on the column; with sound off the hint says so and the reveal
-// waits; and a play cut short by another sound reveals nothing.
+// waits; and a play cut short, by another sound or by every sound stopping
+// (the Sound switch, a hidden page), reveals nothing.
 
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import '@/features/lessons/kit/browser-doubles.test-fixtures'
@@ -129,5 +130,26 @@ describe("Lesson 7's cold open", () => {
     expect(revealed()).toBe(false)
     expect(chart.scene.beads).toHaveLength(0)
     NowPlaying.release(other)
+  })
+
+  it('reveals nothing after a play cut short by every sound stopping, as when the page is hidden', async () => {
+    // Arrange
+    vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] })
+    const heard = listen()
+    loadPage()
+    const chart = initColdOpen()
+    el('#predict [data-choice="less"]').click()
+    el('#predict [data-play="column"]').click()
+    await vi.advanceTimersByTimeAsync(2000)
+    const sung = heard.length
+
+    // Act: the Sound switch turned off, the hush or a hidden page
+    Sound.stopAll()
+    await vi.advanceTimersByTimeAsync(PLAY_MS)
+
+    // Assert
+    expect(heard).toHaveLength(sung)
+    expect(revealed()).toBe(false)
+    expect(chart.scene.beads).toHaveLength(0)
   })
 })
