@@ -276,7 +276,7 @@ export function mountRangeToy(
     run = r
   }
 
-  /** A run that ended by itself: the toy rests. */
+  /** Its run over, by itself or as every sound stopped (the Sound switch, a hidden page): the toy rests, a line where it stands. */
   function ended(r: Run): void {
     if (run !== r) return
     run = null
@@ -338,8 +338,8 @@ export function mountRangeToy(
       })
     }
     void r.done.then((heard) => {
-      if (!heard || run !== r) return
-      sirenT = SIREN_SEC
+      if (run !== r) return
+      if (heard) sirenT = SIREN_SEC
       ended(r)
       syncScrub()
     })
@@ -434,8 +434,8 @@ export function mountRangeToy(
     })
     claim('song', r)
     songBtn.classList.add('is-on')
-    void r.done.then((heard) => {
-      if (heard) ended(r)
+    void r.done.then(() => {
+      ended(r)
     })
   }
 
@@ -574,8 +574,8 @@ export function mountRangeToy(
     button.classList.add('is-on')
     draw()
     describe()
-    void r.done.then((heard) => {
-      if (heard) ended(r)
+    void r.done.then(() => {
+      ended(r)
     })
   }
 

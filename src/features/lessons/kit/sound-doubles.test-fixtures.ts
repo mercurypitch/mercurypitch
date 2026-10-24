@@ -3,9 +3,10 @@
 // ============================================================
 //
 // jsdom cannot render audio, so the sound tests (sound.test.ts,
-// sound-ahead.test.ts, run.test.ts) stub AudioContext with this one: every
-// node it makes records what the page schedules on its params, and `valueAt`
-// replays those events against the Web Audio curve definitions.
+// sound-ahead.test.ts, and the run tests through run.test-fixtures.ts's
+// `soundOn`) stub AudioContext with this one: every node it makes records
+// what the page schedules on its params, and `valueAt` replays those events
+// against the Web Audio curve definitions.
 
 export type Event = [method: string, ...args: number[]]
 

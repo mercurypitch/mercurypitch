@@ -9,12 +9,14 @@
 // column to its top; Start lower and Start higher move "Twinkle" and its
 // readout; the voice switch, the sounds and the singers toggle
 // `aria-pressed`, and a voice switch renames the scrub bar's note; a band
-// plays its middle note and says its span; one sound at a time; and the
+// plays its middle note and says its span; one sound at a time; every sound
+// stopped (the Sound switch, a hidden page) rests whatever played; and the
 // live line is written only when its words change, in spoken names.
 
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import '@/features/lessons/kit/browser-doubles.test-fixtures'
 import { NowPlaying } from '@/features/lessons/kit/now-playing'
+import { Sound } from '@/features/lessons/kit/sound'
 import { el, listen, mountSteps, press } from './page-dom.test-fixtures'
 import { bandMiddle, BANDS, bandSaid, pushReadout, sirenWhere, } from './range-data'
 
@@ -345,4 +347,59 @@ describe("Lesson 7's chart: one sound at a time", () => {
     expect(heard.length).toBeGreaterThan(0)
     expect(toy('[data-song-play]').classList.contains('is-on')).toBe(true)
   })
+})
+
+describe("Lesson 7's chart: every sound stopped", () => {
+  /** Sound on and the chart mounted, with `start` playing one of its sounds. */
+  const SOURCES: readonly {
+    what: string
+    lit: string
+    start: (deck: { show(n: number): void }) => void
+  }[] = [
+    {
+      what: 'the siren, its button back to Play',
+      lit: '[data-siren-play]',
+      start: () => toy('[data-siren-play]').click(),
+    },
+    {
+      what: 'the tune',
+      lit: '[data-song-play]',
+      start: (deck) => {
+        deck.show(3)
+        toy('[data-song-play]').click()
+      },
+    },
+    {
+      what: "a band's note",
+      lit: '[data-band="tenor"]',
+      start: (deck) => {
+        deck.show(5)
+        el('#predictTypes [data-choice="not-always"]').click()
+        toy('[data-show-types]').click()
+        toy('[data-band="tenor"]').click()
+      },
+    },
+  ]
+
+  it.each(SOURCES)(
+    'rests $what at once when every sound stops, as the Sound switch and a hidden page stop it',
+    async ({ lit, start }) => {
+      // Arrange
+      vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] })
+      listen()
+      const { deck } = mountSteps()
+      start(deck)
+      vi.advanceTimersByTime(300)
+      const playing = toy(lit).classList.contains('is-on')
+
+      // Act: the run's promise settles a microtask later, long before its own end
+      Sound.stopAll()
+      await vi.advanceTimersByTimeAsync(0)
+
+      // Assert
+      expect(playing).toBe(true)
+      expect(toy(lit).classList.contains('is-on')).toBe(false)
+      expect(toy('[data-play-word]').textContent).toBe('Play')
+    },
+  )
 })
