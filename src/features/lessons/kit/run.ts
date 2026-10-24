@@ -12,6 +12,11 @@
 // when it was stopped, so a play cut short reveals nothing (kit/predict.ts).
 // The page's one-sound owner (kit/now-playing.ts) calls a run's `stop`, never
 // `Sound.stopAll`.
+//
+// Lesson 8's beat clock (kit/beat-clock.ts) has a `Run` and `RunOptions` of
+// its own: there the audio clock books each hit ahead, here timers start each
+// note and end the run, and both have `done` and `stop`, so a page's
+// one-sound owner can hold either.
 
 import { hz } from './notes'
 import type { ContourPoint, Voice, VoiceOptions } from './sound'
@@ -33,8 +38,11 @@ export interface Run {
 export interface RunOptions {
   /** Decided once by the caller, so a run is all sound or all silent. */
   readonly audible: boolean
+  /** The tone, Merc's "ooh" by default; every run honours it. */
   readonly kind?: VoiceOptions['kind']
+  /** Each note's level (kit/sound.ts's default when unset): `playNotes` and `playNote` honour it, `playLine` ignores it. */
   readonly gain?: number
+  /** Shapes a sung line (kit/timbre.ts): `playLine` honours it, `playNotes` and `playNote` ignore it. */
   readonly timbre?: VoiceOptions['timbre']
 }
 
