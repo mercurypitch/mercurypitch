@@ -132,6 +132,10 @@ export interface ExerciseConfig {
   difficulty?: number
   /** Step-pattern for pattern-driven exercises (e.g. warmup blocks) */
   pattern?: string
+  /** Intervals to drill, in semitones above the start note, each upward
+   *  (e.g. `[5, 7]`, a fourth and a fifth): this launch's own set in place
+   *  of the exercise's pool. Read it through `launchIntervals`. */
+  intervals?: number[]
   /** Reviewed guided-practice prescription for this one launch. */
   guidedPractice?: GuidedPracticeLaunchConfig
 }

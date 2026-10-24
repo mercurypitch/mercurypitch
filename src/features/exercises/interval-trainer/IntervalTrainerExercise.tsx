@@ -1,10 +1,10 @@
 import type { Component } from 'solid-js'
 import { createEffect, createSignal, onCleanup, onMount, untrack, } from 'solid-js'
-import { For } from 'solid-js'
+import { For, Show } from 'solid-js'
 import { IconArrowUpDown, IconMic, IconMusic, } from '@/components/exercise-icons'
 import { NoteDial } from '@/components/NoteDial'
 import { updateDifficultyFromEma } from '@/features/practice-intelligence/difficulty-store'
-import { launchDifficulty, launchTargetNote, } from '@/features/practice-intelligence/launch-override'
+import { launchDifficulty, launchIntervals, launchTargetNote, } from '@/features/practice-intelligence/launch-override'
 import type { AudioEngine } from '@/lib/audio-engine'
 import { midiToNoteName, noteToMidi } from '@/lib/frequency-to-note'
 import type { PracticeEngine } from '@/lib/practice-engine'
@@ -15,7 +15,7 @@ import { ExerciseFeedback } from '../ExerciseFeedback'
 import { ExerciseShell } from '../ExerciseShell'
 import { EXERCISE_INTERVAL_TRAINER } from '../types'
 import { useBaseExercise } from '../use-base-exercise'
-import { plannedRounds, useIntervalTrainerController, } from './use-interval-trainer-controller'
+import { intervalRangeLabel, plannedRounds, useIntervalTrainerController, } from './use-interval-trainer-controller'
 
 interface IntervalTrainerExerciseProps {
   audioEngine: AudioEngine
@@ -93,6 +93,14 @@ const IntervalTrainerExercise: Component<IntervalTrainerExerciseProps> = (
   const roundsCompleted = () => base.state().metrics.roundsCompleted ?? 0
   const totalRounds = () => base.state().metrics.totalRounds ?? 6
   const lastRoundScore = () => base.state().metrics.lastRoundScore ?? 0
+  // The hint promises what setBase will play: the same difficulty and the
+  // same intervals, read from the same launch.
+  const launchedIntervals = () => launchIntervals(EXERCISE_INTERVAL_TRAINER)
+  const promisedRounds = () =>
+    plannedRounds(
+      launchDifficulty(EXERCISE_INTERVAL_TRAINER),
+      launchedIntervals(),
+    )
 
   const pitch = () => base.currentPitch()
   const currentCents = () => {
@@ -122,8 +130,13 @@ const IntervalTrainerExercise: Component<IntervalTrainerExerciseProps> = (
             intervals.
           </p>
           <span class="idle-hint">
-            {plannedRounds(launchDifficulty(EXERCISE_INTERVAL_TRAINER))} rounds
-            · Major 2nd through Octave
+            {promisedRounds()} rounds ·{' '}
+            <Show
+              when={launchedIntervals()}
+              fallback="Major 2nd through Octave"
+            >
+              {(given) => intervalRangeLabel(given())}
+            </Show>
           </span>
         </div>
       }

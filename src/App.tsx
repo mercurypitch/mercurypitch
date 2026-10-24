@@ -759,6 +759,9 @@ const AppShell: Component<AppProps> = (props) => {
       ...(launch.difficulty !== undefined
         ? { difficulty: launch.difficulty }
         : {}),
+      ...(launch.intervals !== undefined
+        ? { intervals: launch.intervals }
+        : {}),
     })
     // Intentionally do NOT auto-start. Starting acquires the mic, which
     // browsers only grant from a user gesture; a fresh deep-link load has none,
