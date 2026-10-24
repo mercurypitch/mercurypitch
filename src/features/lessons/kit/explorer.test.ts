@@ -49,9 +49,13 @@ function view(
 /** Lesson 1 as it reads once its film has sources (films.ts). */
 const filmed: Lesson = { ...LESSONS[1], film: 'published' }
 
-/** Where Lesson 1's card sends Watch from `at`: nowhere until its film has sources. */
-const watchFrom = (at: string): string[] =>
-  filmSources(1) === null ? [] : [`${at}#watch`]
+/** Where lesson `n`'s card sends Watch from `at`: nowhere until its film has sources. */
+const watchFrom = (at: string, n = 1): string[] =>
+  filmSources(n) === null ? [] : [`${at}#watch`]
+
+/** Lesson 2's Watch action on a card on another page, as `actions` reads it: none until its film has sources. */
+const watchTwo = (): [string, string | null, boolean][] =>
+  watchFrom('/learn/02', 2).map((href) => ['Watch the episode', href, false])
 
 /** Each action of a card as [label, href (null for a button), primary]. */
 function actions(markup: string): [string, string | null, boolean][] {
@@ -127,9 +131,10 @@ describe('cardActions', () => {
       cardActions(view(LESSONS[2], 1, [], { 2: { step: 3, of: 6 } }), 1),
     )
 
-    // Assert: its film is not published, so there is nothing to watch
+    // Assert: its episode beside it once its film has sources
     expect(fromOne).toEqual([
       ['Continue: step 3', '/learn/02#step-3', true],
+      ...watchTwo(),
       ['Mark as done', null, false],
     ])
   })
@@ -144,6 +149,7 @@ describe('cardActions', () => {
     // Assert
     expect(actions(box.innerHTML)).toEqual([
       ['Read again', '/learn/02', true],
+      ...watchTwo(),
       ['Done', null, false],
     ])
     expect(box.querySelector('[data-done]')?.getAttribute('aria-pressed')).toBe(
@@ -311,8 +317,11 @@ describe('createExplorer', () => {
     Done.set(2, true)
 
     // Assert
-    expect(continued).toEqual(['/learn/02#step-4'])
-    expect(cardLinks()).toEqual(['/learn/02'])
+    expect(continued).toEqual([
+      '/learn/02#step-4',
+      ...watchFrom('/learn/02', 2),
+    ])
+    expect(cardLinks()).toEqual(['/learn/02', ...watchFrom('/learn/02', 2)])
     expect(openCard()?.querySelector('a.btn')?.textContent).toBe('Read again')
     expect(openCard()?.querySelector('.chip')?.textContent).toBe('Done')
   })

@@ -400,11 +400,11 @@ Judge lessons by retrieval, not by "that was so clear": fluency inflates perceiv
   facts, script with timings and `script.json`, storyboard, handoffs, build guide, decisions,
   captions, the written lesson, the web spec and the LEDGER of all nine critic rounds) and
   [`research/`](research/) (the seven reports and the stats-site snippets).
-- The film project: `output/motion/lesson-01/` (gitignored, per the motion pipeline's house rules;
-  its tools and scene kit are the seed of the Phase 1 film kit). The master is `rc-07` (5:14,
-  60 fps, with the owner's ElevenLabs voices); round 09 passed it and left four cosmetic items,
-  each under two seconds, for a later render. Its 1080p and 720p web encodes go to R2 (§ 12 item
-  7); the film is never committed.
+- The film project: disjoint-colliders' `packages/learn/series/find-your-pitch/01-what-is-a-note/film/`
+  since 19 October 2026 (its media are never committed; its tools and scene kit are the seed of
+  the Phase 1 film kit). The master is `rc-09` (5:35, 60 fps, with the owner's ElevenLabs voices
+  and Tavi's re-voiced lines); round 10 passed it on 23 October 2026. Its 1080p and 720p web
+  encodes are on R2 as version `v1` (§ 12 item 7).
 - The web lesson and explorer: built in the app at `/learn/01` (`learn/01.html`,
   `src/features/lessons/`), merged on 19 October 2026 and live on the dev site; it reaches
   `mercurypitch.com` with the next release. Until the film is on R2 the page shows the poster,
@@ -412,9 +412,9 @@ Judge lessons by retrieval, not by "that was so clear": fluency inflates perceiv
   review.
 - Lesson 2: [`lessons/02-twelve-notes/`](lessons/02-twelve-notes/) holds the same set, plus the
   film's build decisions and the LEDGER of its fifteen critic rounds (ten on the script and
-  storyboard, five on the film). Its film project is `output/motion/lesson-02/` (gitignored); the
-  master is `rc-04` (7:11, 60 fps, with the owner's ElevenLabs voices), which round 15 passed with
-  four polish items for a later render. Its web lesson is built at `/learn/02` (`learn/02.html`,
+  storyboard, five on the film). Its film project is in disjoint-colliders' `packages/learn/`; the
+  master is `rc-06` (7:19, 60 fps, the owner's ElevenLabs voices, a 13 s end card), which round 17
+  passed on 23 October 2026 with three polish items left; its web encodes are on R2 as `v1`. Its web lesson is built at `/learn/02` (`learn/02.html`,
   `src/features/lessons/lesson-02/`, on the shared kit in `src/features/lessons/kit/`), merged on
   19 October 2026 and live on the dev site; it reaches `mercurypitch.com` with the next release.
 - Lessons 3 to 7: written lessons, text only and reviewed, in
@@ -501,10 +501,10 @@ the item is marked decided here and the Phase 1 Decisions track closes when ever
    the Ascent, or a new Lessons surface.
 7. **Decided (16 October 2026): self-hosted on R2.** The page plays its own copy of the episode, an
    MP4 at 1080p with a 720p copy for phones, from the R2 bucket the site's security policy already
-   allows (`media-src` in `public/_headers`); a re-cut replaces the file in place. Updated 17
-   October 2026: the web encodes go to R2 on a custom domain (planned: `media.mercurypitch.com`),
-   because Cloudflare rate-limits `r2.dev` and meant it for development; `media-src` gains that
-   domain when it exists. In the app, a lesson film plays from those MP4s in the app's own player,
+   allows (`media-src` in `public/_headers`). Updated 17 October 2026: on a custom domain,
+   `media.mercurypitch.com` (in `media-src` since 24 October), as Cloudflare rate-limits `r2.dev`.
+   Updated 23 October 2026, the owner: a fixed cut goes up beside the old one as the next version
+   (`learn/NN/vK/`), never in place, and `kit/films.ts` moves to it with its captions and chapters. In the app, a lesson film plays from those MP4s in the app's own player,
    with a "Watch on YouTube" link and no YouTube embed: iOS WebViews send no Referer, so YouTube
    embeds fail with Error 153, and the app's COEP header blocks YouTube iframes. The film files are
    never committed (renders stay out of git, and the asset layer serves no file over 25 MiB).

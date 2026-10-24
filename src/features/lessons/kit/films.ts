@@ -19,10 +19,14 @@
 // numbering Explorer III) then paints it from the first frame instead.
 //
 // The MP4s live on R2 (docs/plans/find-your-pitch/MASTER-PLAN.md § 12
-// item 7), and their host must be one the site's media-src allows
-// (public/_headers: *.r2.dev or *.r2.cloudflarestorage.com today), or the
-// browser refuses the video. The plan is a custom domain,
-// media.mercurypitch.com, which goes into media-src first.
+// item 7), on media.mercurypitch.com, the bucket's custom domain. Their host
+// must be one the site's media-src allows (public/_headers), or the browser
+// refuses the video.
+//
+// Each upload is a version, learn/NN/vK/, and its files never change: a
+// fixed cut goes up as the next version beside the old one, and its line
+// here moves to the new folder in the same commit as its new captions and
+// chapters (lesson-0N/film-sync.test.ts holds those copies equal).
 //
 // Pure data, read in plain Node too (src/e2e reads it): nothing here may
 // touch the DOM or `import.meta`.
@@ -39,10 +43,16 @@ export interface FilmSources {
 export type FilmRegistry = Readonly<Partial<Record<number, FilmSources | null>>>
 
 export const FILMS: FilmRegistry = {
-  // "What is a note?", 5:14: made, not uploaded yet
-  1: null,
-  // "Twelve notes", 7:11: made, not uploaded yet
-  2: null,
+  // "What is a note?", 5:35, master rc-09
+  1: {
+    hd: 'https://media.mercurypitch.com/learn/01/v1/lesson-01-1080p.mp4',
+    sd: 'https://media.mercurypitch.com/learn/01/v1/lesson-01-720p.mp4',
+  },
+  // "Twelve notes", 7:19, master rc-06
+  2: {
+    hd: 'https://media.mercurypitch.com/learn/02/v1/lesson-02-1080p.mp4',
+    sd: 'https://media.mercurypitch.com/learn/02/v1/lesson-02-720p.mp4',
+  },
 }
 
 /**

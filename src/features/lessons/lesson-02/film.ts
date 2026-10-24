@@ -2,9 +2,9 @@
 // Lesson 2 film — where the episode plays from, its chapters and captions
 // ============================================================
 //
-// The episode, 7:11 (431.08 s, FACTS 54), plays from R2 (MASTER-PLAN § 12
+// The episode, 7:19 (439.10 s, FACTS 54), plays from R2 (MASTER-PLAN § 12
 // item 7): a 1080p MP4 and a 720p copy for phones, both cut from the
-// delivery master `rc-04-60fps` by the film's tools/web-video.sh. Their
+// delivery master `rc-06-60fps` by the film's tools/web-video.sh. Their
 // addresses are Lesson 2's entry in kit/films.ts, the one list every film is
 // read from, and the page shows no Watch section until it is set; films.ts
 // says which hosts media-src allows.

@@ -36,7 +36,7 @@
       "id": "o1",
       "type": "line",
       "who": "orange",
-      "text": "Ha! Same note.",
+      "text": "Same note, surely?",
       "gap": 0.25
     },
     {
@@ -79,9 +79,16 @@
       "gap": 0.2
     },
     {
+      "id": "promise",
+      "type": "line",
+      "who": "blue",
+      "text": "By the end, you'll know what a note really is, why notes come back an octave higher, and how to read names like A four and C four.",
+      "gap": 0.2
+    },
+    {
       "id": "act1",
       "type": "mark",
-      "gap": 0.1
+      "gap": 0.6
     },
     {
       "id": "b4",
@@ -193,7 +200,7 @@
       "id": "b11a",
       "type": "line",
       "who": "blue",
-      "text": "No."
+      "text": "Not quite."
     },
     {
       "id": "louder",
@@ -505,7 +512,7 @@
       "id": "b32",
       "type": "line",
       "who": "blue",
-      "text": "Let's try. I'll sing an A. Hum it back, wherever it feels easy.",
+      "text": "Let's try. I'll sing an A. Sing it back, or hum along, wherever it feels easy.",
       "gap": 0.5
     },
     {
@@ -630,13 +637,13 @@
       "id": "o8",
       "type": "line",
       "who": "orange",
-      "text": "See you there.",
+      "text": "Between the letters, maybe?",
       "gap": 0.4
     },
     {
       "id": "end",
       "type": "sting",
-      "dur": 5.0,
+      "dur": 13.0,
       "gap": 0.3
     }
   ]

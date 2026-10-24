@@ -117,7 +117,7 @@ export interface Lesson extends CuriosityCopy {
   /** Its page's reading time in minutes, as its hero says; only a lesson with a page has one. */
   readonly minutes?: number
   /**
-   * Its film's running time as made ("5:14"), or as planned for the
+   * Its film's running time as made ("5:35"), or as planned for the
    * trailer. Admin only: a card shows a film's length only once that film
    * plays on its page, which reports it (explorer.ts `setLength`).
    */
@@ -160,7 +160,7 @@ const ENTRIES: readonly Lesson[] = [
     short: 'What is a note?',
     topics: ['T01', 'T02'],
     minutes: 8,
-    len: '5:14',
+    len: '5:35',
     page: '/learn/01',
     film: filmState(1),
     hook: 'If 440 Hz shakes the air twice as fast as 220 Hz, why do musicians call them the same note?',
@@ -183,7 +183,7 @@ const ENTRIES: readonly Lesson[] = [
     short: 'Twelve notes',
     topics: ['T03', 'T04'],
     minutes: 13,
-    len: '7:11',
+    len: '7:19',
     page: '/learn/02',
     film: filmState(2),
     hook: 'Musicians only use seven letters, so where do the other five notes come from?',
