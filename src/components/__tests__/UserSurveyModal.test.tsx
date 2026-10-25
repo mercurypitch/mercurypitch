@@ -17,6 +17,7 @@ vi.mock('@/db/services/survey-service', () => ({
 import UserSurveyModal from '@/components/UserSurveyModal'
 import { submitSurvey } from '@/db/services/survey-service'
 import { notifications, resetNotifications } from '@/stores/notifications-store'
+import { APP_KEYS, overheard, press, stopOverhearing, } from '@/tests/utils/trap-keys'
 
 const sent = vi.mocked(submitSurvey)
 
@@ -191,6 +192,61 @@ describe('UserSurveyModal — accidental dismissal', () => {
 
     await vi.advanceTimersByTimeAsync(3200)
     fireEvent.click(overlay)
+    expect(onClose).toHaveBeenCalledTimes(1)
+  })
+})
+
+// The survey opens by itself over a tab that may be playing. The app's
+// shortcuts listen on the window, so a key that leaves the survey plays or
+// pauses the tab behind it, or opens the microphone.
+describe('UserSurveyModal — the app behind it', () => {
+  afterEach(stopOverhearing)
+
+  it('takes the focus as it opens, so a Space, an M or an Escape never reaches the app', async () => {
+    render(() => <UserSurveyModal onClose={vi.fn()} />)
+    await Promise.resolve()
+    const heard = overheard()
+
+    expect(screen.getByRole('dialog')).toContainElement(
+      document.activeElement as HTMLElement,
+    )
+    for (const key of APP_KEYS) {
+      fireEvent.keyDown(document.activeElement ?? document.body, key)
+    }
+    expect(heard).toEqual([])
+  })
+
+  it('opens on its heading, not the field, so a phone keeps its keyboard down', async () => {
+    render(() => <UserSurveyModal onClose={vi.fn()} />)
+    await Promise.resolve()
+
+    expect(screen.getByRole('heading', { name: 'One question' })).toHaveFocus()
+    expect(field()).not.toHaveFocus()
+  })
+
+  it('keeps the focus in it when a press lands on its words', async () => {
+    render(() => <UserSurveyModal onClose={vi.fn()} />)
+    await Promise.resolve()
+    const heard = overheard()
+
+    press(screen.getByText('Optional. Skip it if nothing got in your way.'))
+
+    for (const key of APP_KEYS) {
+      fireEvent.keyDown(document.activeElement ?? document.body, key)
+    }
+    expect(heard).toEqual([])
+  })
+
+  it('closes on Escape only once Skip would, in the prompt the app opens', async () => {
+    const onClose = vi.fn()
+    render(() => <UserSurveyModal onClose={onClose} />)
+    await Promise.resolve()
+
+    fireEvent.keyDown(screen.getByRole('dialog'), { key: 'Escape' })
+    expect(onClose).not.toHaveBeenCalled()
+
+    await vi.advanceTimersByTimeAsync(3200)
+    fireEvent.keyDown(screen.getByRole('dialog'), { key: 'Escape' })
     expect(onClose).toHaveBeenCalledTimes(1)
   })
 })

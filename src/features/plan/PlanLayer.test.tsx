@@ -173,6 +173,26 @@ describe('the keyboard', () => {
     expect(heard).toEqual([])
   })
 
+  // The blur drops the focus to the page, where a key is not stopped: the
+  // Space after Enter played the tab behind the questions.
+  it('keeps the keys after Enter puts the keyboard away: the layer takes the focus the field lets go of', async () => {
+    open('skipper')
+    // The layer's own opening focus, on the heading, comes first.
+    await Promise.resolve()
+    toThirdQuestion()
+    tap(SOMETHING_ELSE)
+    const field = screen.getByRole('textbox', { name: OTHER_FIELD })
+    fireEvent.keyDown(field, { key: 'Enter' })
+    await Promise.resolve()
+    const heard = overheard('key')
+
+    expect.soft(dialog()).toHaveFocus()
+    for (const key of APP_KEYS) {
+      fireEvent.keyDown(document.activeElement ?? document.body, key)
+    }
+    expect(heard).toEqual([])
+  })
+
   // isolateKeyboard stops a key only when it is sent from inside the layer. A
   // press on content that cannot take focus drops focus to the page, and the
   // keys sent there reach the app's shortcuts (ruling R68), so the layer takes

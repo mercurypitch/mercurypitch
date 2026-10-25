@@ -67,6 +67,12 @@
   background-clip: text;
 }
 
+/* Focus taken on opening, or from a press on the words: no ring. */
+.overlay:focus,
+.title:focus {
+  outline: none;
+}
+
 .subtitle {
   margin: 4px 0 0;
   font-size: 0.72rem;

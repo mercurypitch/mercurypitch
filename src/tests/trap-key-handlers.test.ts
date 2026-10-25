@@ -79,6 +79,18 @@ const HOSTS = [
     reaches: ['src/lib/mic-scoring.ts', 'src/lib/use-focus-trap.ts'],
   },
   {
+    // Every confirm, unless its caller passes isolateKeyboard={false}. The
+    // messages callers pass are theirs and no part of this walk.
+    name: 'the confirm dialog',
+    entry: 'src/components/ConfirmDialog.tsx',
+    reaches: ['src/components/portal-skin.ts', 'src/lib/use-focus-trap.ts'],
+  },
+  {
+    name: 'the GH #97 survey',
+    entry: 'src/components/UserSurveyModal.tsx',
+    reaches: ['src/lib/survey-timing.ts', 'src/lib/use-focus-trap.ts'],
+  },
+  {
     name: 'the voice type picker',
     entry: 'src/components/key-shift/VoiceTypePicker.tsx',
     reaches: [

@@ -37,6 +37,41 @@ describe('ConfirmDialog', () => {
     expect(screen.getByText('Delete this?')).toBeTruthy()
   })
 
+  // A confirm opens over a tab that may be playing, and the app's shortcuts
+  // listen on the window: a Space on Cancel played the tab behind, and the
+  // press never reached Cancel.
+  it('keeps its keys from the app behind without being asked', () => {
+    const heard = vi.fn()
+    window.addEventListener('keydown', heard)
+    render(() => <ConfirmDialog {...baseProps} open={true} />)
+    const cancel = screen.getByRole('button', { name: 'Cancel' })
+
+    fireEvent.keyDown(cancel, { key: ' ', code: 'Space' })
+    fireEvent.keyDown(cancel, { key: 'm', code: 'KeyM' })
+
+    window.removeEventListener('keydown', heard)
+    expect(heard).not.toHaveBeenCalled()
+    // And takes the focus from a press on its words, so the keys after it stay.
+    expect(screen.getByRole('alertdialog')).toHaveAttribute('tabindex', '-1')
+  })
+
+  it('lets its keys through when a caller turns that off', () => {
+    const heard = vi.fn()
+    window.addEventListener('keydown', heard)
+    render(() => (
+      <ConfirmDialog {...baseProps} open={true} isolateKeyboard={false} />
+    ))
+
+    fireEvent.keyDown(screen.getByRole('button', { name: 'Cancel' }), {
+      key: ' ',
+      code: 'Space',
+    })
+
+    window.removeEventListener('keydown', heard)
+    expect(heard).toHaveBeenCalledTimes(1)
+    expect(screen.getByRole('alertdialog')).not.toHaveAttribute('tabindex')
+  })
+
   it('fires onConfirm (not onCancel) when the delete button is clicked', () => {
     const onConfirm = vi.fn()
     const onCancel = vi.fn()

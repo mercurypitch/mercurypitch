@@ -26,6 +26,10 @@ interface FocusTrapOptions {
    *   otherwise, and every key after that is heard by the app behind again.
    *   The root is not one of its own Tab stops, so this changes neither the
    *   Tab cycle nor where focus opens.
+   * - The focus can fall to the body without a press, too: a field blurs
+   *   itself to put a phone's keyboard away, and a control that goes, or is
+   *   disabled, takes the focus with it. The topmost trap takes it back onto
+   *   the root, which opens no keyboard, unless the dialog moves it on first.
    * - A capture-phase listener on the window or document still runs first and
    *   hears every key. Such a listener must yield to `[role="dialog"]`, as
    *   `isInsideOverlay` does in src/lib/space-playback.ts.
@@ -83,6 +87,9 @@ function isRendered(element: HTMLElement, root: HTMLElement): boolean {
   }
   return false
 }
+
+/** The open traps' roots, the last opened last: the topmost owns a fallen focus. */
+const openRoots: HTMLElement[] = []
 
 export function useFocusTrap(
   getRoot: () => HTMLElement | undefined,
@@ -168,10 +175,39 @@ export function useFocusTrap(
       })
     }
 
+    // A focus that fell to the body leaves no target inside the root, so the
+    // stop at the root never hears the keys after it (isolateKeyboard). Both
+    // ways it falls are caught: a blur says where focus went (nowhere), and a
+    // removed or disabled control says nothing, so the root is watched for
+    // those. Both act a microtask later (the observer delivers in one), so a
+    // dialog that moves the focus on itself does so first.
+    const takeBackFocus = (): void => {
+      if (opts.isolateKeyboard !== true) return
+      if (openRoots[openRoots.length - 1] !== root || !root.isConnected) return
+      const active = document.activeElement
+      if (active !== null && active !== document.body) return
+      if (root.hasAttribute('tabindex')) root.focus({ preventScroll: true })
+      else focusable()[0]?.focus({ preventScroll: true })
+    }
+    const onFocusOut = (e: FocusEvent): void => {
+      if (e.relatedTarget === null) queueMicrotask(takeBackFocus)
+    }
+    const watch = new MutationObserver(takeBackFocus)
+    watch.observe(root, {
+      childList: true,
+      subtree: true,
+      attributeFilter: ['disabled', 'hidden', 'inert'],
+    })
+
+    openRoots.push(root)
     root.addEventListener('keydown', onKeyDown)
+    root.addEventListener('focusout', onFocusOut)
     document.addEventListener('focusin', onFocusIn)
     onCleanup(() => {
+      openRoots.splice(openRoots.lastIndexOf(root), 1)
+      watch.disconnect()
       root.removeEventListener('keydown', onKeyDown)
+      root.removeEventListener('focusout', onFocusOut)
       document.removeEventListener('focusin', onFocusIn)
       if (lastFocused?.isConnected === true) {
         lastFocused.focus({ preventScroll: true })
