@@ -4,9 +4,9 @@ Free a worktree only after its agent's report is in. Reuse one by `git worktree 
 
 ## Frees soon
 - kit-ladder: free once the lead has run A4's last vitest and folded its fixups.
-- l9-nopage: after the B0 review.
-- e2e-wav, kit-mic: after the A5/A8 review; A8 rebase onto feat/kit-run's tip first (in kit-mic).
-- kit-octave: after the A3 review and its fixes.
+- l9-nopage: B0 folded and pushed (d10168b66); free.
+- e2e-wav, kit-mic: A5/A8 folded and pushed; free once their integration is planned (A8 now on feat/kit-run's tip).
+- kit-octave: A3 folded and pushed (68f7cedb5); free.
 - (app-slug became l12-warning.) l9-flow: after the B11 fixes and its integration (S4 rename at the cherry-pick).
 
 ## Policy (owner, 24 Oct)
@@ -22,10 +22,10 @@ At most two agents at a time, on two different things. Every builder is spawned 
   - No usage percentage exists (get_session rate_limit_info: status + resetsAt). Start no new agent unless status is "allowed".
 
 ## Now (the two slots)
-- slot 1: A5/A8 fixups builder (e2e-wav + kit-mic), resumed 01:53 25 Oct: A8 nit 2, then heavy gates for both.
+- slot 1: L12 music builder (l12-music), resumed 02:28 25 Oct at P3's mutations (then P4, P8, map, gates, report). A5/A8 finished 02:27: all gates pass; lead checks the fixups, then folds them.
 - slot 2: L10 K5 then K4 builder (kit-spiral), resumed 01:53 25 Oct at step 1 of l10/k5k4-handback.md.
 - A1b (l9-rungs) reviewed at max 25 Oct ~02:20: no code findings (l9/review-a1b/REPORT.md). At integration fix d854cf079's "four citations" -> three; two notes for the Lesson 9 page brief (gaps between slots an arc joins; remount the chart on a voice change).
-- Lead queue besides the freeze fix: fold A3 (kit-octave; add the first-paint line to the parent's message) and B0 (l9-nopage, incl. lead fixup d12779779).
+- Lead queue besides the freeze fix: folded and pushed with leases, each tree checked (02:35-02:45 25 Oct): A3 feat/kit-octave-tag 68f7cedb5 (tree 088f2d0e); B0 feat/lessons-no-page-tests d10168b66 (tree 9c074960; origin had only the pre-fixup 33537af37; walk re-run: pages 9, 10, 12, 11, 13 pass 128/128, at 14 the nine fixture tests fail by the helper's message and AdminLessonsPage's planned-lesson test with a TypeError = l9/FOLLOWUPS N4; helper mutation turns the nine red; message says so); A5 feat/e2e-steps-wav c922f08b1 (tree ce19e8d2; rests sentence and fuller test paragraph in the message); A8 feat/kit-mic-hold d0789109d, moved onto feat/kit-run's tip 659265535 (patch-id unchanged; mic-hold + sing + run tests 48/48). All four still sit on 5e08dd4a3 or kit-run: rebase onto main and gates when each goes into its PR.
 - Lead (no agent): feat/merc-shader-compile is PR #1200 (opened 01:43 25 Oct; subscribed). Head 677118dc1 = 6 commits on 2bc138b4e (14dfdbda2 A, c35035531 B, 89655b233 C, 6eb6743c6 D, aa8efa69b restore fix, 677118dc1 docs: 14 citations, msg says 157 vs 183 at 2bc138b4e). Gates on it: pnpm check 0 errors / 11 warnings, merc unit 43/352, e2e 21 specs 188 passed + 2 self-skipped (L1/L2 'nothing to watch', films have sources), metrics, index, pr:validate, cites 157. First paint measured: every lesson page 1,160 B lighter than main at 2bc138b4e (L3 headroom 1,680 vs 520); PR body updated 02:07. CI on 677118dc1: all green except the Mercury Pitch job: apps/mercurypitch AlleyGuide.dom.test.tsx's stand-in stage never called onReady (MercView's onReady now comes from the first frame). Fix: the stand-in collects onReady and drawn() calls it (merc-compile/ci-fix/); repro 2 failed -> 9/9; native vitest 166 files / 1,847 tests; mp check pass; native build + assert-bundle and root pnpm check running. Then fold as amend! into 14dfdbda2 (message adds the alley line, ci-fix/msg-amend.txt), autosquash, tree check, force-with-lease, body: Checks + item 1. Then merge on green (rebase, expectedHeadSha, patch-id verify with bin/verify-rebase-merge.sh), unsubscribe, ask the owner for the friend's Windows check on dev.
 - Playwright: the checkouts' @playwright/test 1.60 wants chromium 1223; /opt/pw-browsers has only 1194. Run every e2e with PLAYWRIGHT_BROWSERS_PATH=$S/pw-browsers (the builders' shim). Never `playwright install`.
 - Tour (no agent now): builder finished 00:53 (a94ae7884 feat, f8f4a964f docs, f8e319135 map, on 5e08dd4a3; every gate green; L3 first paint 77 B left once main's films are in, before the freeze fix's -1,387 B). Lead review at max: no findings. Next (lead): once the freeze fix merges, rebase onto main, regenerate the map, gates (check, kit+lessons vitest, all learn e2e, first paint), push, PR left OPEN for the owner's polish. Owner questions for the PR: smooth scroll vs jump between steps; replay in the menu foot. Lead decision on the builder's Q1: Lessons 9-14's page builders add `fyp-tour` to their WEB-SPEC Contracts when they build each page.
