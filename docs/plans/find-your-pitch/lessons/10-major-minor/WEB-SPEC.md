@@ -48,7 +48,7 @@ link, as a lesson not written yet (`src/lesson-gate.ts:10-12`;
 it from the admin console puts it live on mercurypitch.com with no release
 (`src/features/lessons/kit/drafts.ts:13`); the console asks first while its `drafts.ts` line stands,
 naming what it waits on, and, line or no line, while Lesson 6 is not published, asking once when
-both hold (`src/features/admin/AdminLessonsPage.tsx:186-219`); but "Publish anyway" goes ahead, so
+both hold (`src/features/admin/AdminLessonsPage.tsx:186-241`); but "Publish anyway" goes ahead, so
 the owner keeps the order above (Decisions for the owner). Releasing it is deleting its `drafts.ts`
 line (What the kit and the app still need, items 2
 and 15). The curiosity plan's kit work is on main at `85e23a1af`: Lesson 10's tease is in the kit's
@@ -773,7 +773,7 @@ at `85e23a1af` changed there, and that page's own lines are cited at `d59c00ad6`
    (`src/features/lessons/kit/drafts.ts:5-13`), once it has asked, naming what the line says the
    page waits on: "Publish ${name} before its sign-off?", or, while Lesson 6 is not published there,
    "Publish ${name} before its sign-off and before ${lessons}?"
-   (`src/features/admin/lessons/lesson-publish.ts:252-272`). Releasing it is deleting that line
+   (`src/features/admin/lessons/lesson-publish.ts:282-308`). Releasing it is deleting that line
    once both are done, then listing it as item 15 says
    (`src/features/lessons/kit/drafts.ts:18-21`; SEARCH.md § 12 item 3).
 3. `lesson-10/chord-beads.ts`, new (Toys 1): the chord beads, generic over a chord, with its pure
@@ -893,12 +893,14 @@ CURIOSITY-MOMENTS § 5 item 2.
    Lesson 6's questions and its chip names Lesson 6 (Edge cases, "Lesson 6 not yet live").
    Decided: the console warns, as this spec proposed; the owner said yes on 24 October 2026. Before
    it publishes a lesson while a lesson it builds on is not published on that site, it asks,
-   whether its draft line stands or not (`src/features/admin/AdminLessonsPage.tsx:186-219`;
-   `publishQuestion`, `src/features/admin/lessons/lesson-publish.ts:239-272`; `aheadOf`,
-   `src/features/admin/lessons/lesson-admin.ts:493-510`). With Lesson 6 held back and the line
-   standing, it asks once, "Publish Lesson 10 before its sign-off and before Lesson 6?", naming
-   what the line says the page waits on; with the line deleted, it asks "Publish Lesson 10 before
-   Lesson 6?". "Publish anyway" still publishes it, so the owner keeps the order.
+   whether its draft line stands or not (`src/features/admin/AdminLessonsPage.tsx:186-241`;
+   `publishQuestion`, `src/features/admin/lessons/lesson-publish.ts:265-308`; `aheadOf`,
+   `src/features/admin/lessons/lesson-admin.ts:525-548`). With Lesson 6 held back and the line
+   standing, it asks once, "Publish Lesson 10 before its sign-off and before Lesson 6?", naming what
+   the line says the page waits on; with the line deleted, it asks "Publish Lesson 10 before Lesson
+   6?". "Publish anyway" still publishes it, so the owner keeps the order. On 25 October 2026 the
+   owner added that "Use default" asks the same question when going back to the code's default would
+   put the lesson live (`defaultGoesLive`, `src/features/admin/lessons/lesson-publish.ts:227-235`).
 4. **The explorer card's practice link: Stack**, `/ear-lab?lesson=10` and "then tap Stack" (Explorer
    and season data). It needs no microphone, Ear Lab locks nothing, Lesson 6's card links Leap the
    same way, and it is right whatever Sing it's ending. The other choice: Drone Intonation.
