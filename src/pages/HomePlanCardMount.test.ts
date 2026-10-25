@@ -26,6 +26,7 @@
 import type { Mock, MockInstance } from 'vitest'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { PLAN_CARD_SLOT_KEY, PLAN_RECORD_KEY } from '@/features/plan/plan-keys'
+import type * as HomeSessionAsk from '@/lib/home-session-ask'
 import type * as NativeBuild from '@/lib/native-build'
 import type { SessionRoutine } from './HomePlanCardMount'
 import { startPlannedSession } from './HomePlanCardMount'
@@ -315,6 +316,38 @@ describe('the card on Home', () => {
       /(?:did not|could not|failed to|couldn't) load/iu,
     )
     expect(warn.mock.calls[0][1]).toBeInstanceOf(Error)
+  })
+})
+
+// ── Today's session, asked for from outside Home ───────────────────────
+
+describe("today's session, asked for by First Light or the plan layer", () => {
+  // The copy of the channel the mount listens on: nothing has reset the
+  // modules since the mount was imported.
+  const channel = async (): Promise<typeof HomeSessionAsk> =>
+    import('@/lib/home-session-ask')
+
+  it('answers with what Home does for its own session, once', async () => {
+    const onHomeSession = vi.fn()
+    await mountedBeside(onHomeSession)
+    const { askHomeForTodaysSession } = await channel()
+
+    askHomeForTodaysSession()
+    await settle()
+
+    expect(onHomeSession).toHaveBeenCalledTimes(1)
+  })
+
+  it('answers nothing once Home is gone', async () => {
+    const onHomeSession = vi.fn()
+    await mountedBeside(onHomeSession)
+    const { askHomeForTodaysSession } = await channel()
+
+    cleanUp()
+    askHomeForTodaysSession()
+    await settle()
+
+    expect(onHomeSession).not.toHaveBeenCalled()
   })
 })
 
