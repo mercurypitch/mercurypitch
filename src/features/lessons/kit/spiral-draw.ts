@@ -27,6 +27,9 @@ import { COLOR, letterOf, nameOf, noteColor, rgba, signName } from './notes'
 import type { KeyboardView, KeyHit } from './spiral-keys'
 import { drawKeyboard, keyboardLayout, LO, N, pulseOf, roundedRect, } from './spiral-keys'
 
+/** A tapped bead carries its name tag this long, ms. */
+export const TAG_MS = 1800
+
 /** Where a bead was drawn: its semitone from A2, centre, radius and depth. */
 export interface BeadHit {
   s: number
@@ -496,7 +499,7 @@ export function drawOverlays(
   // every bead carries its letter and number on hover, on tap, or under the keyboard's selection
   const tipS =
     hover ??
-    (tapLabel !== null && now - tapLabel.t < 1800
+    (tapLabel !== null && now - tapLabel.t < TAG_MS
       ? tapLabel.s
       : focused
         ? sel

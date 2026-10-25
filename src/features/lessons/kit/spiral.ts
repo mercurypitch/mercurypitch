@@ -38,9 +38,16 @@
 // stands when another sound claims the page. `play` is the page's own and
 // leaves the owner to the page. Without an owner every note plays to its
 // end, as it always has.
+//
+// It draws only while something it shows moves (the drift, a turn, the
+// camera, the unroll, the pan, a tap's flash and tag) or has changed; still,
+// it asks the page's frame loop for nothing (frame-loop.ts, `wants`). It
+// compares what it shows with what it last drew, so a change made with no
+// wake draws at the next input. A page's own drawing asks for frames by
+// `overlayWants`; one that says nothing draws every frame (Lesson 2's).
 
 import { clamp, q, qa, TAU } from './dom'
-import { addDrawer, surface, watch } from './frame-loop'
+import { addDrawer, surface, wake, watch, watchPixelRatio } from './frame-loop'
 import { Motion, reducedMotion } from './motion-switch'
 import { Names, namesFor, spokenNames } from './names'
 import { fmtHz, hz, isBlack, nameHtml, nameOf, noteColor, signName, } from './notes'
@@ -48,9 +55,9 @@ import type { SoundOwner } from './now-playing'
 import type { Voice } from './sound'
 import { playTone, Sound } from './sound'
 import type { BeadHit, BeadLabels, KeysLayer } from './spiral-draw'
-import { drawOverlays, drawSpiral } from './spiral-draw'
+import { drawOverlays, drawSpiral, TAG_MS } from './spiral-draw'
 import type { KeyboardView, KeyHit, KeyLabels } from './spiral-keys'
-import { KEY_SLOP, LO, N, wIndex } from './spiral-keys'
+import { KEY_SLOP, LO, N, pulseOf, wIndex } from './spiral-keys'
 
 /** The phone keyboard's three windows, by pan / 7. */
 const WIN = ['A2 to A3', 'A3 to A4', 'A4 to A5']
@@ -112,6 +119,12 @@ export interface SpiralOptions {
   readonly unrollLabels?: readonly [string, string]
   /** Draws a page's own marks over each frame. */
   readonly overlay?: (frame: SpiralFrame) => void
+  /**
+   * Whether the page's own drawing (`overlay`, `keys`) has a frame to draw;
+   * one that starts to move with no input behind it also calls `wake`
+   * (frame-loop.ts). Default: every frame, for a page that draws either.
+   */
+  readonly overlayWants?: () => boolean
   /** The page's own unrolled keys, built for each frame; default the kit's keyboard. */
   readonly keys?: (frame: KeysFrame) => KeysLayer
   /** The notes the selection may reach, MIDI low and high; default A2 to A5. */
@@ -246,6 +259,11 @@ export function mountSpiral(
   // timer that lets the owner go at its end
   let asked: Voice | null = null
   let askedEnds = 0
+  // something the figure shows has changed since its last frame; whether
+  // that frame had room to draw in, and how the figure looked in it
+  let dirty = true
+  let room = false
+  let drawnLook = ''
 
   /** The selection's reach, in semitones from A2: every bead, or the page's range. */
   function reach(): [number, number] {
@@ -271,6 +289,7 @@ export function mountSpiral(
       if (reducedMotion()) pan = panTarget
       syncPan()
     }
+    wake()
   }
 
   function hit(s: number): void {
@@ -278,6 +297,7 @@ export function mountSpiral(
     if (opts.lightOnPlay === true && isBlack(m)) lit.add(m)
     pulses.set(m, performance.now())
     tapLabel = { s, t: performance.now() }
+    wake()
     if (readout === null) return
     const name = named(m)
       ? namesFor(m)
@@ -442,8 +462,10 @@ export function mountSpiral(
     canvas.addEventListener('pointercancel', () => {
       dragging = false
     })
+    // not an input the page's frame loop hears: the tag it leaves goes now
     canvas.addEventListener('pointerleave', () => {
       hover = null
+      wake()
     })
     // A click with no pointer just before it is a screen reader's double-tap,
     // a switch or voice control: they activate the slider, so it plays the
@@ -600,12 +622,56 @@ export function mountSpiral(
     }
   }
 
+  /** How the figure looks now, as its next frame would draw it, a flash or a tag's fade aside. */
+  const look = (): string =>
+    `${canvas.clientWidth}x${canvas.clientHeight}@${window.devicePixelRatio || 1} ${yaw} ${u} ${top} ${pan} ${sel} ${focused} ${hover} ${labels} ${lit.size} ${Names.mode}`
+
+  /** Whether the figure moves by itself in its next frame: a turn, a glide, the drift, the unroll, the camera, the pan. */
+  const moving = (): boolean =>
+    turnLeft !== 0 ||
+    (!dragging &&
+      (Math.abs(vel) > 0.01 || (drifting() && turning && u < 0.02))) ||
+    u !== uTarget ||
+    top !== topTarget ||
+    pan !== panTarget
+
+  /** Whether a tap's flash, or its bead's name tag, is still showing at `t`. */
+  function fadingAt(t: number): boolean {
+    if (tapLabel !== null && u < 0.6 && t - tapLabel.t < TAG_MS) return true
+    for (const m of pulses.keys()) if (pulseOf(pulses, m, t) > 0) return true
+    return false
+  }
+
+  /** Whether the page's own drawing asks for a frame: by its word, or always when it says nothing. */
+  const pageWants = (): boolean =>
+    opts.overlayWants?.() ??
+    (opts.overlay !== undefined || opts.keys !== undefined)
+
+  /** Whether the figure has a frame to draw: a change since its last, or something it shows moving. */
+  const wants = (): boolean =>
+    dirty ||
+    look() !== drawnLook ||
+    (room && (moving() || fadingAt(performance.now()) || pageWants()))
+
+  /** Something the figure shows has changed with no input behind it: it draws in the next frame. */
+  function changed(): void {
+    dirty = true
+    wake()
+  }
+
   addDrawer({
     active: opts.active ?? watch(root),
+    wants,
     draw(now, dt) {
+      dirty = false
       const { ctx, w: W, h: H } = cv.fit()
-      // a canvas not laid out yet (a hidden or collapsing box) has nothing to show
-      if (W < 24 || H < 24) return
+      // a canvas not laid out yet (a hidden or collapsing box) has nothing
+      // to show, and nothing on it moves until it has room
+      room = W >= 24 && H >= 24
+      if (!room) {
+        drawnLook = look()
+        return
+      }
       const nar = W < 560
       if (nar !== narrow) {
         narrow = nar
@@ -646,13 +712,21 @@ export function mountSpiral(
         tag,
       })
       opts.overlay?.({ ctx, W, H, now, u, beads: hits, keys: keyHits })
+      drawnLook = look()
     },
   })
+  // a new size or pixel ratio draws again, and so does a font that loads
+  // after a frame drew the tags and labels in another
+  new ResizeObserver(changed).observe(canvas)
+  watchPixelRatio(changed)
+  void document.fonts?.ready.then(changed)
+  document.fonts?.addEventListener('loadingdone', changed)
 
-  // a change of names re-says the selected note
-  Names.subscribe(() =>
-    canvas.setAttribute('aria-valuetext', valueText(LO + sel)),
-  )
+  // a change of names re-says the selected note, and draws it
+  Names.subscribe(() => {
+    canvas.setAttribute('aria-valuetext', valueText(LO + sel))
+    wake()
+  })
 
   return {
     root,
@@ -665,6 +739,7 @@ export function mountSpiral(
     },
     light(midi) {
       if (isBlack(midi)) lit.add(midi)
+      wake()
     },
     select(midi) {
       setSel(midi - LO)
@@ -673,6 +748,7 @@ export function mountSpiral(
       uTarget = on ? 1 : 0
       if (reducedMotion()) u = uTarget
       syncUnroll()
+      wake()
     },
     get unrolled() {
       return u === 1
@@ -680,13 +756,16 @@ export function mountSpiral(
     setLabels(next) {
       labels = next
       syncUnroll()
+      wake()
     },
     setTurning(on) {
       turning = on
+      wake()
     },
     setView(camera) {
       topTarget = camera === 'top' ? 1 : 0
       if (reducedMotion()) top = topTarget
+      wake()
     },
     get top() {
       return top
