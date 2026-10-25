@@ -51,7 +51,7 @@ describe('Move do', () => {
   it('moves do a whole semitone at a time, four at most either way', () => {
     // Assert
     expect(MOVE_MAX).toBe(4)
-    expect([-9, -4, -1.4, 0, 2.6, 4, 9].map(clampMove)).toEqual([
+    expect([-9, -4, -1.4, 0, 2.6, 4, 9].map((s) => clampMove(s))).toEqual([
       -4, -4, -1, 0, 3, 4, 4,
     ])
     expect(lineDo('lower', -9)).toBe(46)

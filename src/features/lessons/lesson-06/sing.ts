@@ -252,6 +252,9 @@ export function initSing(stills: RingStills): void {
   startBtn.addEventListener('click', () => void startGuide())
   for (const b of moves)
     b.addEventListener('click', () => {
+      // at its end the button is aria-disabled, so it keeps the keyboard's
+      // place; a press there neither moves do nor stops what plays
+      if (b.getAttribute('aria-disabled') === 'true') return
       stopRun()
       shift = nextShift(shift, b)
       relabel()

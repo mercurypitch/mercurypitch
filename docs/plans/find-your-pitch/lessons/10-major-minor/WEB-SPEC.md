@@ -524,7 +524,7 @@ States:
    lighting in amber in step while the ring shows the singing Merc's still. **Move do** is Lesson
    4's group, "Move do:" with lower and higher (`learn/04.html:1254-1263`), moved into the kit (What
    the kit and the app still need, item 7): a semitone each, up to four either way (`MOVE_MAX`,
-   `kit/move-do.ts:20-21`, `:23-29`), moving Merc's notes, the guide's count-in and its readout
+   `kit/move-do.ts:26-27`, `:38-49`), moving Merc's notes, the guide's count-in and its readout
    together, from "do is C3" to "do is A♭3" for the lower voice (spoken "do is A flat 3"), or C4 to
    A♭4 for the higher (FACTS 64). At four either way its button is `aria-disabled`.
 5. **Guide**: **Start the guide** is enabled once Merc's notes have played with sound on (hear it
@@ -533,7 +533,7 @@ States:
    series' form: "Sound is off, so nothing played. Turn sound on to hear Merc's notes, then start
    the guide." It is the viewer's turn, so the amber goes, the rows turn plain chrome and Merc's
    path is drawn dashed in chrome. The count-in is Lesson 4's: do, once, softly, at half a tapped
-   note's level, for 0.8 s, then 0.2 s of quiet (`kit/move-do.ts:42-44`; FACTS 80). Then a
+   note's level, for 0.8 s, then 0.2 s of quiet (`kit/move-do.ts:65-67`; FACTS 80). Then a
    vertical chrome line sweeps the path for 10.0 s, past the gap, with nothing riding the path
    itself, while the ring breathes through the gap with the still of the Merc last heard at its
    centre. Merc does not sing in the guide: it is the viewer's turn. Space never starts the guide,
@@ -790,13 +790,13 @@ at `85e23a1af` changed there, and that page's own lines are cited at `d59c00ad6`
    seed for each run (`freshSeed`, `kit/ear-game.ts:95-96`). The page's deal balances its rounds, so
    the game needs nothing more.
 7. Move do and the count-in's note (Toys 6): Lesson 4's, in the kit beside the slide guide since
-   #1192 (`kit/move-do.ts:20-29`; `:42-51`), as Lesson 6's spec listed it. Lesson 6's page kept
+   #1192 (`kit/move-do.ts:26-49`; `:65-74`), as Lesson 6's spec listed it. Lesson 6's page kept
    its own copy until then (`MOVE_MAX` and `clampMove`, in `lesson-06/sing-guide.ts`), and this
    page was to move Move do into the kit itself and take Lesson 6's copy with it; #1192 did both,
    and Lessons 4, 6 and 8 use the kit's, as this page will. The kit's guide already
    waits through a count-in before its sweep (`sweep`,
    `src/features/lessons/kit/slide-guide.ts:77-78`). Lesson 4's Move do and Lesson 6's both set
-   `disabled` at their limits (the kit's `setMoveEnds` since #1192, `kit/move-do.ts:31-40`), which
+   `disabled` at their limits (the kit's `setMoveEnds` since #1192, `kit/move-do.ts:51-63`), which
    drops a keyboard user's focus there; the kit's is to take `aria-disabled`, both pages with it.
 8. The breath mark on the slide guide (Toys 6): the kit's, from Lesson 6's page (`breaths`,
    `slide-guide.ts` on `feat/lesson-06-page`). Until that lands, the gap alone shows where to

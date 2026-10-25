@@ -6,7 +6,8 @@
 // here: the sprite's `#i-home` is the very house the canvas draws
 // (kit/home-glyph.ts), and every ♯ and ♭ its text prints is followed by its
 // spoken name, the sign itself hidden from a screen reader. Mounted, its
-// Move do disables the button at an end, and only that one.
+// Move do marks the button at an end aria-disabled, and only that one, and
+// a press there keeps the keyboard's place and leaves do where it is.
 
 import { readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
@@ -64,8 +65,8 @@ describe("Lesson 4's page", () => {
     expect([...at].sort((a, b) => a - b)).toEqual(at)
   })
 
-  it("disables Move do's lower button at the lowest do and its higher one at the highest", () => {
-    // Arrange: Sing it mounted on the page's own markup
+  /** Sing it mounted on the page's own markup, and its two Move do buttons. */
+  function mountMoveDo(): [HTMLButtonElement, HTMLButtonElement] {
     document.body.innerHTML =
       /<body[^>]*>([\s\S]*)<\/body>/.exec(PAGE)?.[1] ?? ''
     initSing({ blue: 'blue.png', orange: 'orange.png' })
@@ -76,9 +77,16 @@ describe("Lesson 4's page", () => {
       if (b === null) throw new Error(`no Move do ${step}`)
       return b
     }
-    const lower = button('-1')
-    const higher = button('1')
-    const ends = (): boolean[] => [lower.disabled, higher.disabled]
+    return [button('-1'), button('1')]
+  }
+
+  it("marks Move do's lower button aria-disabled at the lowest do and its higher one at the highest", () => {
+    // Arrange
+    const [lower, higher] = mountMoveDo()
+    const ends = (): (string | null)[] => [
+      lower.getAttribute('aria-disabled'),
+      higher.getAttribute('aria-disabled'),
+    ]
 
     // Act: down to the lowest do, then up to the highest
     for (let k = 0; k < MOVE_MAX; k++) lower.click()
@@ -86,8 +94,27 @@ describe("Lesson 4's page", () => {
     for (let k = 0; k < 2 * MOVE_MAX; k++) higher.click()
     const highest = ends()
 
-    // Assert
-    expect(lowest).toEqual([true, false])
-    expect(highest).toEqual([false, true])
+    // Assert: never disabled, so neither leaves the tab order
+    expect(lowest).toEqual(['true', 'false'])
+    expect(highest).toEqual(['false', 'true'])
+    expect([lower.disabled, higher.disabled]).toEqual([false, false])
+  })
+
+  it('keeps the keyboard on Move do lower at the lowest do, and a press there leaves do where it is', () => {
+    // Arrange: do four lower, the keyboard on lower
+    const [lower] = mountMoveDo()
+    const guide = (): string | null =>
+      document.querySelector('#scaleGuide')?.getAttribute('aria-label') ?? null
+    lower.focus()
+    for (let k = 0; k < MOVE_MAX; k++) lower.click()
+    const lowest = guide()
+
+    // Act
+    lower.click()
+
+    // Assert: still B♭2 to B♭3, four below D3
+    expect(lowest).toMatch(/^Thirteen rows, B flat 2 to B flat 3,/)
+    expect(guide()).toBe(lowest)
+    expect(document.activeElement).toBe(lower)
   })
 })
