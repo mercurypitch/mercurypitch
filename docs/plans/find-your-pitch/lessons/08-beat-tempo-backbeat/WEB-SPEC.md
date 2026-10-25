@@ -131,10 +131,10 @@ section's heading, and the line above it, are in LESSON.md ("Section headings").
 
 1. **Masthead**: Lesson 3's (wordmark, "Season 1 · Lesson 08", anchors Lesson, Sing and Explorer,
    the Sound toggle off by default, Pause animations with its reduced-motion lock), through
-   `initMasthead` (`kit/page-chrome.ts:119-150`) with Lesson 3's map of sections and
+   `initMasthead` (`kit/page-chrome.ts:122-154`) with Lesson 3's map of sections and
    `{ lesson: 8, deck }` (`lesson-03/main.ts:104-112`), which draws the lesson menu, remembers the
    steps the viewer reaches, and first settles the page's own links to other lessons by the state
-   the page was served with (`followPageState`, `kit/page-chrome.ts:123`).
+   the page was served with (`followPageState`, `kit/page-chrome.ts:126`).
 2. **The hook**, the hero's copy: the kicker, the hook question as the title (`h1.hook#hook`, as
    `kit/lesson-copy.test.ts:323-332` requires of every page from its first commit), the meta as
    four chips ("16 minutes", FACTS 4; "After Lesson 1", a link; "Also useful: Lesson 6, Intervals",
@@ -366,7 +366,7 @@ pan-y` (`lesson-stage.css:776`), so a swipe still scrolls; every action is a but
   the bar included (Toys 4). Every route goes through the deck's `show`, which tells each registered
   toy the new step and the one before (`kit/step-deck.ts:167`): Next and Previous (`:205-215`), a
   swipe (`:217-243`), scrolling another step into view on the wide page (`:194-203`), the lesson
-  menu's jump (`:273-277`, called at `kit/lesson-menu.ts:517`), a `#step-N` address
+  menu's jump (`:273-277`, called at `kit/lesson-menu.ts:518`), a `#step-N` address
   (`kit/step-deck.ts:255-262`, `:284-291`) and a quiz's step link (`kit/quiz.ts:361`, `:366`). The
   page registers one toy (`registerToy`, `kit/step-deck.ts:92-96`), as `lesson-03/main.ts:80-87`
   does, whose `onStep(step, previous)` (`kit/step-deck.ts:45-47`) stops the stage, Count the bar and
@@ -694,7 +694,7 @@ lesson is not live where the page is served, the words stay with no link, which 
   `<div data-if-live="6">`. Where Lesson 6 is not live, the site worker takes out the wrapper and
   the section in it (`src/lesson-gate.ts:20-21`), and on a page no worker served `followPageState`
   does the same as the page boots (`kit/page-state.ts:84-108`, run first in `initMasthead`,
-  `kit/page-chrome.ts:123`); where it is live, the wrapper goes and the section stays. The build
+  `kit/page-chrome.ts:126`); where it is live, the wrapper goes and the section stays. The build
   marks the wrapper's tag `hidden` where its build's default holds Lesson 6 back, as it marks a
   reading's span, so a page no worker served reads right before its script runs: this page taught
   the build's marker that `<div>` form (`tools/draft-lessons.ts:134`, in `markLessonStates`,
@@ -1213,8 +1213,9 @@ figures' accessible names and every live region use words only. The page stores 
 records (`fyp-l08-recall-seed`, `fyp-l08-recall-v1`, `fyp-l08-seed`, `fyp-l08-quiz-v1`),
 `fyp-done`, `fyp-voice`, the masthead's Pause animations choice, `fyp-motion`
 (`kit/motion-switch.ts:12`), and the steps the viewer reached, the kit's `fyp-pos`
-(`kit/position.ts:20`), which `initMasthead` keeps (`kit/page-chrome.ts:119-150`); nothing from the
-toys, the take or Sing it but the voice.
+(`kit/position.ts:20`), which `initMasthead` keeps (`kit/page-chrome.ts:122-154`), and the kit's
+record of the welcome tour, `fyp-tour` (`kit/tour-gate.ts:24`); nothing from the toys, the take or
+Sing it but the voice.
 
 Page QA before publishing (PRODUCTION-PIPELINE § 5) adds, for this page:
 
