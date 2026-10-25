@@ -10,9 +10,10 @@
 // ladder read as rows. Each rung has its own glow while Merc's note sounds
 // and its own lit edge, "IN THE BAND", while the singer's line sits inside
 // it, the words kept inside the plot over a slot too narrow for them; a
-// rung before its turn is drawn faint, and drawn in full while it glows. A chart paints its scene's rungs in place of its one band when the
-// page passes it `paintRungs` (kit/band-chart.ts), and one rung at 0 across
-// the plot paints exactly that band. A module of its own, so that a lesson
+// rung before its turn is drawn faint, and drawn in full while it glows.
+// A chart paints its scene's rungs in place of its one band when the page
+// passes it `paintRungs` (kit/band-chart.ts), and one rung at 0 across the
+// plot paints exactly that band. A module of its own, so that a lesson
 // whose charts keep one band (Lessons 3 and 5) never downloads it.
 
 import type { BandSpec, ChartFrame } from './band-chart-draw'
