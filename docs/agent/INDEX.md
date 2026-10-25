@@ -74,7 +74,7 @@ These are the rules that break things when ignored.
 
 | Module | Entry point | LOC | What it is |
 |---|---|---|---|
-| `lessons` | [spiral.ts](../../src/features/lessons/kit/spiral.ts) | 44.0k | Lesson spiral — the pitch spiral and the keyboard it unrolls into One control with three ways in: drag to turn the spiral and tap a bead... |
+| `lessons` | [spiral.ts](../../src/features/lessons/kit/spiral.ts) | 44.8k | Lesson spiral — the pitch spiral and the keyboard it unrolls into One control with three ways in: drag to turn the spiral and tap a bead... |
 | `guitar-night` | [guitar-night-score-voice-commands.ts](../../src/features/guitar-night/guitar-night-score-voice-commands.ts) | 43.9k | Guitar Night score voice commands — hands-free Rehearse controls The score room and its command overlay share this one capability-shaped... |
 | `drum-night` | [index.ts](../../src/features/drum-night/session/index.ts) | 32.2k | Drum Night session boundary — import, score, kit, and evidence coaching. |
 | `stem-mixer` | [stem-mixer-voice-commands.ts](../../src/features/stem-mixer/stem-mixer-voice-commands.ts) | 17.8k | StemMixer voice commands — the karaoke tab's own spoken set Registered by StemMixer for exactly its mount lifetime, which ends the global... |
