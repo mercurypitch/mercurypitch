@@ -200,7 +200,7 @@ song, takes, swell, endings, listen back and still, plus live mode at the checkp
   kit as data (`kit/twinkle.ts`, proposed, What the kit and the app still need, 6), with the five
   breath marks at 5.7, 11.7, 17.7, 23.7 and 29.7 s (85).
 - **Drawing.** Pitch is height (playbook rule 20): one faint row per semitone, bottom to top,
-  through the kit's notes axis (`axis: { notes: [lo, hi] }`, `kit/band-chart.ts:47-61`), with its 40
+  through the kit's notes axis (`axis: { notes: [lo, hi] }`, `kit/band-chart.ts:54-68`), with its 40
   px gutter on the left. Only the song's six rows are named, by syllable alone, "do", "re", "mi",
   "fa", "so" and "la", through Lesson 9's rung-names option (two letters fit the gutter; the chart's
   summary gives the spelled note), since the kit's grid letters every natural row (`drawNotesGrid`,

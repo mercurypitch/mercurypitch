@@ -192,7 +192,7 @@ its columns from Merc's vowel model (`lesson-13/vowels.ts`, needs 7), a pure mod
 the strip draws is the one `verify13.py` asserted (FACTS 40 to 42).
 
 - **Drawing.** The band chart's plot on top: Merc's note as the band's centre, the band 35 cents
-  either side, a cents axis of ±100 (`axis: { range: 100 }`, `kit/band-chart.ts:48-67`) with only
+  either side, a cents axis of ±100 (`axis: { range: 100 }`, `kit/band-chart.ts:55-74`) with only
   the ±35 ticks named, and Merc's amber line drawn left to right as it sounds and level at the
   centre, its vibrato left out as on Lessons 3 and 5 (`kit/band-chart.ts:5-12`; FACTS 43). Under
   it, the strip: one column for each harmonic of the note up to 4,000 Hz, the k-th centred at
@@ -880,7 +880,7 @@ and the four-words strip in the kit.
    lip trill do (`kit/timbre.ts`).
 6. `kit/spectrum-strip.ts`, new: the LED strip as a painter under the band chart's plot, as
    `kit/band-chart-hold.ts`'s level strip is (`:1-13`, `:37-42`), behind a `spectrum` option on
-   `BandChartOptions` (`kit/band-chart.ts:63-86`), off by default, with a scene field holding the
+   `BandChartOptions` (`kit/band-chart.ts:70-93`), off by default, with a scene field holding the
    columns (each its harmonic number and its lit segments), the labelled peaks, the curves (each a
    resonance frequency and its points) and the caption. It draws only what the scene gives it, takes
    no audio input, and is pure but for the canvas calls, with its layout (column centres and widths,

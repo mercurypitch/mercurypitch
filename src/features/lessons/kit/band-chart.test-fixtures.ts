@@ -7,17 +7,20 @@
 // and keeps every call it hears, sets the figure's scene, and runs one frame
 // of the page's loop by hand (frame-loop.test-fixtures.ts): what each canvas
 // heard in that frame. `paintFrames` runs more than one, for what one frame
-// leaves the next on the canvas. `marksOf` reads the calls back as the marks
-// they drew, a line a mark: a stroke with its colour, width, alpha, dash and
-// path; a fill and its path; a rect, its corner and size; words with their
-// alignment and anchor. The styles every later mark shares (the font, a
+// leaves the next on the canvas, with a late font loading before each frame
+// after the first, since a chart draws again only when something it shows has
+// changed; `mountCharts` mounts the figures and hands back the loop, for a
+// test that runs its frames itself. `marksOf` reads the calls back as the
+// marks they drew, a line a mark: a stroke with its colour, width, alpha,
+// dash and path; a fill and its path; a rect, its corner and size; words with
+// their alignment and anchor. The styles every later mark shares (the font, a
 // line's joins and caps) are written once, where they change, and `capsOf`
 // says which frame drew each mark, and with what cap. A mark also keeps its
 // colour's channels, how opaque it is drawn, a stroke's width and the points
-// it reaches, for a test that asks where and how strongly something is
-// drawn. Words are measured in the double's own font, `CHAR_PX` a character,
-// so a mark knows where its words end. Every canvas measures 300 by 190 px.
-// The test file imports './browser-doubles.test-fixtures' first, and calls
+// it reaches, for a test that asks where and how strongly something is drawn.
+// Words are measured in the double's own font, `CHAR_PX` a character, so a
+// mark knows where its words end. Every canvas measures 300 by 190 px. The
+// test file imports './browser-doubles.test-fixtures' first, and calls
 // `vi.useRealTimers()` and `vi.restoreAllMocks()` after each test.
 
 import { vi } from 'vitest'
@@ -240,8 +243,12 @@ export interface Painted {
   readonly calls: readonly Call[]
 }
 
-/** Each figure's chart mounted on a canvas of its own, on screen, its scene set, and the loop to paint them. */
-async function mount(
+/**
+ * Each figure's chart mounted on a canvas of its own, on screen, its scene
+ * set, and the loop to paint them, its frames not yet run. A canvas's
+ * `clientWidth` and `clientHeight` can be redefined, for a new size.
+ */
+export async function mountCharts(
   figures: readonly Figure[],
 ): Promise<{ hand: HandLoop; painted: Painted[] }> {
   const heard = new Map<HTMLCanvasElement, Call[]>()
@@ -262,8 +269,8 @@ async function mount(
     hand.paints(canvas)
     // what `pointOf` measures, as the hand loop's `paints` has the box
     Object.defineProperties(canvas, {
-      clientWidth: { value: CANVAS.w },
-      clientHeight: { value: CANVAS.h },
+      clientWidth: { value: CANVAS.w, configurable: true },
+      clientHeight: { value: CANVAS.h, configurable: true },
     })
     const chart = mountBandChart(root, figure.opts)
     figure.scene?.(chart.scene)
@@ -280,17 +287,24 @@ async function mount(
 export async function paintCharts(
   ...figures: readonly Figure[]
 ): Promise<Painted[]> {
-  const { hand, painted } = await mount(figures)
+  const { hand, painted } = await mountCharts(figures)
   hand.frame()
   return painted
 }
 
-/** A figure's chart, mounted as `paintCharts` mounts it, then `count` frames of the loop: what its canvas heard in them all. */
+/**
+ * A figure's chart, mounted as `paintCharts` mounts it, then `count` frames
+ * of the loop, a late font loading before each after the first so that each
+ * paints the scene again: what its canvas heard in them all.
+ */
 export async function paintFrames(
   figure: Figure,
   count: number,
 ): Promise<Painted> {
-  const { hand, painted } = await mount([figure])
-  for (let i = 0; i < count; i++) hand.frame()
+  const { hand, painted } = await mountCharts([figure])
+  for (let i = 0; i < count; i++) {
+    if (i > 0) hand.fontsLoad()
+    hand.frame()
+  }
   return painted[0]
 }
