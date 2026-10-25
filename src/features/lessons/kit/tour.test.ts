@@ -110,7 +110,7 @@ afterEach(() => {
   localStorage.clear()
   document.body.textContent = ''
   document.getElementById('tourSheet')?.remove()
-  document.documentElement.classList.remove('touring')
+  document.documentElement.classList.remove('touring', 'motion-paused')
   vi.useRealTimers()
   vi.restoreAllMocks()
 })
@@ -324,6 +324,23 @@ describe('moving the page', () => {
 
   it('moves to a step out of view at once under reduced motion', () => {
     // Arrange: the browser doubles' reduced motion, the step deck below the fold
+    page()
+    draw(document.getElementById('stepsStage') as Element, 0, 1500)
+    void runTour(1, true)
+
+    // Act
+    document.querySelector<HTMLButtonElement>('[data-tour-next]')?.click()
+
+    // Assert
+    expect(window.scrollTo).toHaveBeenLastCalledWith(
+      expect.objectContaining({ behavior: 'instant' }),
+    )
+  })
+
+  it("moves to a step out of view at once with the page's animations paused", () => {
+    // Arrange: reduced motion off, Pause animations pressed (motion-switch.ts)
+    motionAllowed()
+    document.documentElement.classList.add('motion-paused')
     page()
     draw(document.getElementById('stepsStage') as Element, 0, 1500)
     void runTour(1, true)

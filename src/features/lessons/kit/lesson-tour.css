@@ -7,7 +7,7 @@
    so it outranks the kit's button rules it adjusts, whatever order the
    sheets load in. The spotlight is one element whose box-shadow is the
    dim; the sheet under the card takes every press on the page. Under
-   reduced motion nothing glides. */
+   reduced motion, or with the page's animations paused, nothing glides. */
 
 .tour {
   position: fixed;
@@ -132,4 +132,9 @@
   .tour.is-moving .tour-spot {
     transition: none;
   }
+}
+/* the page's animations paused (motion-switch.ts): nothing glides either */
+.motion-paused .tour .tour-card,
+.motion-paused .tour.is-moving .tour-spot {
+  transition: none;
 }

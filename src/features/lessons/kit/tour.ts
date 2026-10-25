@@ -31,7 +31,8 @@
 // and at the foot of the screen where there is none; on a phone it is
 // docked at the foot, and the target is scrolled into the room above it.
 // The page glides to each target, and the spotlight and the card with it;
-// under reduced motion nothing glides. A glide passes every step on its
+// under reduced motion, or with the page's animations paused, the page
+// moves at once. A glide passes every step on its
 // way, so while the tour is up, and until the page has come to rest after
 // it, <html> carries a class (`PAUSE`) that the kit reads before it counts
 // anything as read (dom.ts `touring`): the step deck holds its step, and no
@@ -238,12 +239,17 @@ const wait = (ms: number): Promise<void> =>
 const REDUCED = '(prefers-reduced-motion: reduce)'
 
 /**
- * How the tour moves the page: smoothly, and at once under reduced motion,
- * read as the kit's own scrolls read it (step-deck.ts). The page's motion
- * switch pauses its ambient loops, and no scroll in the kit asks it.
+ * How the tour moves the page: smoothly, and at once under reduced motion
+ * or with the page's animations paused. The motion switch keeps its own
+ * choice (`fyp-motion`) and marks <html> `motion-paused` for it and for
+ * reduced motion alike (motion-switch.ts); the class is read here rather
+ * than the module imported (see the head of this file).
  */
 const glide = (): ScrollBehavior =>
-  window.matchMedia(REDUCED).matches ? 'instant' : 'smooth'
+  window.matchMedia(REDUCED).matches ||
+  document.documentElement.classList.contains('motion-paused')
+    ? 'instant'
+    : 'smooth'
 
 /**
  * The class on <html> that pauses the kit's record of reading (dom.ts
