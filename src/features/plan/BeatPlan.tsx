@@ -8,7 +8,9 @@
 // stays through the questions and the plan, wearing the pose the screens ask
 // for; the screens mount none. The flow's own words about where to go next
 // are its three props: Home (out of First Light, into the app), the Map's
-// grid, and a stop of the plan.
+// grid, and a stop of the plan. "Show me around" leaves First Light as Home
+// does and then runs Merc's showcase (runPlanShowcase), which opens Start
+// here at its end, in the app.
 //
 // Three things are easy to break:
 //
@@ -50,6 +52,7 @@ import { MercPresence } from '@/components/room-kit/MercPresence'
 import styles from './BeatPlan.module.css'
 import type { PlanStop, VoiceprintStop } from './build-plan'
 import { createMercSize, stillFor } from './plan-merc'
+import { runPlanShowcase } from './plan-showcase'
 import { PlanQuestions } from './PlanQuestions'
 import { PlanScreen } from './PlanScreen'
 import type { PlanExit, PlanFlowOptions } from './usePlanFlowController'
@@ -72,12 +75,12 @@ export interface BeatPlanProps {
   voiceprint: () => VoiceprintStop | null
   /** The launch gift on offer, for the credits line: the one rule the Map follows. */
   gift: NonNullable<PlanFlowOptions['gift']>
-  /** Out of First Light and into the app: Not now, on a question or on the plan. */
+  /** Out of First Light and into the app: Not now, on a question or on the plan, and Show me around before its showcase. */
   onHome: () => void
   /** See every room: the Map's grid. */
   onRooms: () => void
-  /** A stop was opened; `tour` asks for its room's spotlight tour as well. */
-  onEnterStop: (stop: PlanStop, tour: boolean) => void
+  /** A card's stop was opened. */
+  onEnterStop: (stop: PlanStop) => void
   /** First Light asks before a question's Not now turns the plan down
    *  (PlanQuestions' `askBeforeDecline`); the plan's own Not now asks nothing.
    *  `stillTrue` holds while the questions show: the account's plan can take
@@ -89,7 +92,12 @@ export function BeatPlan(props: BeatPlanProps): JSX.Element {
   const hand = (exit: PlanExit): void => {
     if (exit.to === 'home') props.onHome()
     else if (exit.to === 'rooms') props.onRooms()
-    else props.onEnterStop(exit.stop, exit.tour)
+    else if (exit.to === 'showcase') {
+      // The showcase holds the app's offers before First Light lets them go,
+      // and draws once First Light has gone.
+      runPlanShowcase(exit.plan, exit.begin)
+      props.onHome()
+    } else props.onEnterStop(exit.stop)
   }
 
   const c = usePlanFlowController({

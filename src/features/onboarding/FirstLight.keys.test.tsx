@@ -62,8 +62,9 @@ vi.mock('@/stores/app-store', async (importOriginal) =>
 import { PLAN_OPENED_KEY, PLAN_RECORD_KEY } from '@/features/plan/plan-keys'
 import { next, OTHER_FIELD, passTo, SOMETHING_ELSE, tap, } from '@/features/plan/PlanQuestions.fixture'
 import { TAB_EXERCISES, TAB_SINGING } from '@/features/tabs/constants'
+import { startRoomTour } from '@/features/tours/room-tour'
+import { provideRoomTourDoor } from '@/lib/room-tour-door'
 import { applyPersistedValue } from '@/lib/storage'
-import type * as AppStoreModule from '@/stores/app-store'
 import { currentBeat, flowOpen, openBeat, recordVoiceprint, resetOnboarding, savedVoiceprints, } from '@/stores/onboarding-store'
 import { setActiveTab } from '@/stores/ui-store'
 import { APP_KEYS, overheard, stopOverhearing } from '@/tests/utils/trap-keys'
@@ -73,6 +74,10 @@ import { mocks, SAVED_PRINT, VOICEPRINT } from './FirstLight.fixture'
 import type { Beat } from './flow'
 import type { Room } from './rooms'
 import { ROOMS } from './rooms'
+
+// First Light starts a room's tour through the room tour door, which App opens
+// as it draws. These cases draw no App, so they open it as App does.
+provideRoomTourDoor(startRoomTour)
 
 /** Every beat the flow can show. */
 const BEATS: readonly Beat[] = [
@@ -250,14 +255,13 @@ describe("the Map's tour link in the flow", () => {
     return link
   }
 
-  it("draws one on Practice too, whose Enter starts the Guide's Singing section", async () => {
-    // Arrange: Singing has no page tour; its room's tour is the Guide's
-    // Singing section. The store's own starter runs this once, and the tour
-    // is closed when the case ends.
-    const store =
-      await vi.importActual<typeof AppStoreModule>('@/stores/app-store')
-    mocks.startRoomTour.mockImplementationOnce(store.startRoomTour)
-    onTestFinished(() => store.endWalkthrough())
+  it("draws one on Practice too, whose Enter asks the room tour door for Singing's", async () => {
+    // Arrange: Singing has no page tour, but its room has a tour
+    // (hasRoomTour), so its card draws the link. Which tour the door starts
+    // is the tours' to decide (room-tour.test.ts); the flow only asks it.
+    const asked = vi.fn<(tab: string) => void>()
+    provideRoomTourDoor(asked)
+    onTestFinished(() => provideRoomTourDoor(startRoomTour))
     const link = await tourLink('practice')
     link.focus()
 
@@ -265,12 +269,8 @@ describe("the Map's tour link in the flow", () => {
     fireEvent.keyDown(link, { key: 'Enter', code: 'Enter' })
 
     // Assert
-    expect(mocks.startRoomTour).toHaveBeenCalledExactlyOnceWith(TAB_SINGING)
+    expect(asked).toHaveBeenCalledExactlyOnceWith(TAB_SINGING)
     expect(flowOpen()).toBe(false)
-    expect(store.walkthroughActive()).toBe(true)
-    expect(new Set(store.tourSteps().map((s) => s.section))).toEqual(
-      new Set(['practice']),
-    )
   })
 
   it.each<[string, Press]>([
@@ -290,8 +290,8 @@ describe("the Map's tour link in the flow", () => {
       // Assert: handled (the card's own button does not also activate), counted
       // as the room and the tour, and kept from the app behind.
       expect(unhandled).toBe(false)
-      expect(mocks.startRoomTour).toHaveBeenCalledTimes(1)
-      expect(mocks.startRoomTour).toHaveBeenCalledWith(TAB_EXERCISES)
+      expect(mocks.startPageTour).toHaveBeenCalledTimes(1)
+      expect(mocks.startPageTour).toHaveBeenCalledWith(TAB_EXERCISES)
       expect(tracked().slice(-2)).toEqual([
         'onboarding_map_room',
         'onboarding_map_room_exercises',
@@ -313,7 +313,7 @@ describe("the Map's tour link in the flow", () => {
     }
 
     // Assert
-    expect(mocks.startRoomTour).not.toHaveBeenCalled()
+    expect(mocks.startPageTour).not.toHaveBeenCalled()
     expect(flowOpen()).toBe(true)
     expect(heard).toEqual([])
   })

@@ -12,11 +12,12 @@
 //   means no chip: the offer could never be recorded, so it would come back
 //   on every visit.
 // - Nothing while `paused` (First Light, the plan, What's New, the takeover
-//   still deciding) or while a tour runs: a Merc tour pauses it too, and the
-//   legacy spotlight is checked when an offer is due. The pause is a memo, so
-//   a re-read that says the same thing changes nothing. When it lifts, the
-//   offer waits a microtask: First Light's Map lifts it in the same handler
-//   that starts a room's tour, and the offer must not land on that tour.
+//   still deciding) or while Merc has the screen (coachBusy: a Merc tour,
+//   asked for or running, or the showcase); the legacy spotlight is checked
+//   when an offer is due. The pause is a memo, so a re-read that says the
+//   same thing changes nothing. When it lifts, the offer waits a microtask:
+//   First Light's Map lifts it in the same handler that starts a room's
+//   tour, and the offer must not land on that tour.
 // - One chip at a time. A tab change, the pause rising, and a page asking
 //   for the offer to go (a drill or a stage replacing what the tour walks:
 //   removeNotificationsByChannel on TOUR_OFFER_CHANNEL, which bumps
@@ -26,6 +27,7 @@
 //
 // - A tab with a Merc tour (COACH_TOURS) offers it with Merc's line; any
 //   other tab with a legacy page tour offers that, with the toast's own line.
+//   Either starts through startRoomTour (room-tour.ts), as every door does.
 // - A tab change ends a running Merc tour, reported as an exit at its step,
 //   and the legacy spotlight starting ends one too: the two never run
 //   together (R11).
@@ -35,15 +37,14 @@
 import type { JSX } from 'solid-js'
 import { createEffect, createMemo, createSignal, on, Show } from 'solid-js'
 import { tabLabel } from '@/features/tabs/constants'
+import { coachActive, coachBusy } from '@/lib/coach-state'
 import { trackTour } from '@/lib/guide-funnel'
 import type { TourKey } from '@/lib/tour-ids'
-import { isNarrow } from '@/lib/use-viewport'
-import { hasPageTour, pageTourKey, startPageTour, tourOfferRetired, walkthroughActive, } from '@/stores'
+import { hasPageTour, pageTourKey, tourOfferRetired, walkthroughActive, } from '@/stores'
 import type { ActiveTab } from '@/types'
-import { coachActive } from './coach/coach-state'
 import { MERC_TOUR_LINE, TourChip } from './coach/TourChip'
-import type { CoachTourEntry } from './coach-tours'
 import { COACH_TOURS } from './coach-tours'
+import { startRoomTour } from './room-tour'
 import styles from './TourChipHost.module.css'
 
 /** A contextual tour's offer: shown in the tab chip's place, once ever. */
@@ -73,8 +74,8 @@ export const tourOfferKey = (tab: ActiveTab): string =>
   `pitchperfect_page_tour_offered_${tab}`
 
 /**
- * The coach's start and end (start.ts), loaded with the first Merc tour
- * rather than with the page: no tour has to be ended before one has started.
+ * The coach's end (start.ts), loaded only when there is a Merc tour to end:
+ * none has to be ended before one has started.
  */
 const loadCoach = () => import('./coach/start')
 
@@ -111,18 +112,12 @@ export interface TourChipHostProps {
 
 export function TourChipHost(props: TourChipHostProps): JSX.Element {
   const [chip, setChip] = createSignal<Chip | null>(null)
-  const pausedNow = createMemo(() => props.paused() || coachActive() !== null)
+  const pausedNow = createMemo(() => props.paused() || coachBusy())
 
-  const startMercTour = (tab: ActiveTab, entry: CoachTourEntry): void => {
-    Promise.all([entry.load(), loadCoach()])
-      .then(([tour, coach]) => {
-        // The singer moved on while the tour loaded.
-        if (props.tab() !== tab) return
-        return coach.startCoachTour(tour, { phone: isNarrow() })
-      })
-      // A chunk that did not arrive starts nothing, and the page stays as
-      // it was.
-      .catch(() => undefined)
+  // Either kind of tour, started as every door starts one; a Merc tour that
+  // loads after the singer has left its tab does not start.
+  const startTour = (tab: ActiveTab): void => {
+    startRoomTour(tab, () => props.tab() === tab)
   }
 
   const offer = (tab: ActiveTab): void => {
@@ -136,13 +131,13 @@ export function TourChipHost(props: TourChipHostProps): JSX.Element {
     const key = tourOfferKey(tab)
     if (offeredAlready(key) || !recordOffer(key)) return
     if (entry !== undefined) {
-      setChip({ line: MERC_TOUR_LINE, start: () => startMercTour(tab, entry) })
+      setChip({ line: MERC_TOUR_LINE, start: () => startTour(tab) })
       trackTour('tour_offer', entry.key)
       return
     }
     setChip({
       line: `New to ${tabLabel(tab)}? Take a quick tour.`,
-      start: () => startPageTour(tab),
+      start: () => startTour(tab),
     })
     // The offer does not depend on a key to report; only the report does.
     const tourKey = pageTourKey(tab)

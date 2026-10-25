@@ -6,8 +6,9 @@
 // questions are the last stop before the Map. What is pinned here is the
 // beat's place in the flow: that it stands directly in the frame, with the
 // plain sky receding behind it and the star field out of Merc's way; where
-// each way out of the questions and the plan lands (Home, the Map, a stop
-// with or without its tour); how the beats before it name it (the twin's line
+// each way out of the questions and the plan lands (Home, the Map, a stop,
+// and Show me around's showcase, then Start here with or without its tour);
+// how the beats before it name it (the twin's line
 // and the Prints button); and that the walk it is on does not shorten as the
 // questions are answered. The screens and the rulebook have tests of their
 // own, and BeatPlan.test.tsx pins the box. This file was split from
@@ -15,7 +16,7 @@
 // (TESTING.md 3.5).
 
 import { cleanup, fireEvent, render, screen, waitFor, within, } from '@solidjs/testing-library'
-import { afterEach, beforeEach, describe, expect, it, onTestFinished, vi, } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 // The flow's edges are faked once, in FirstLight.fixture.tsx: the star field
 // (which keeps what it is told about stepping aside), the prints' cards, the
@@ -49,9 +50,10 @@ import { markPlanShown, planRecord, savePlanAnswers, } from '@/features/plan/pla
 import { next, passTo, quiet, tap } from '@/features/plan/PlanQuestions.fixture'
 import type { PlanChoices, Q3Id } from '@/features/plan/questions'
 import { q2Options, q3Options } from '@/features/plan/questions'
+import { startRoomTour } from '@/features/tours/room-tour'
 import { GUIDE_FUNNEL_STORAGE_KEY } from '@/lib/guide-funnel'
+import { provideRoomTourDoor } from '@/lib/room-tour-door'
 import { applyPersistedValue } from '@/lib/storage'
-import type * as AppStoreModule from '@/stores/app-store'
 import { currentBeat, flowOpen, onboardingBeads, openBeat, recordVoiceprint, resetOnboarding, savedVoiceprints, } from '@/stores/onboarding-store'
 import { activeTab, setActiveTab } from '@/stores/ui-store'
 import * as COPY from './copy'
@@ -60,6 +62,10 @@ import { FirstLight } from './FirstLight'
 import { mocks, SAVED_PRINT, skipAnyway, VOICEPRINT, } from './FirstLight.fixture'
 import type { Beat } from './flow'
 import styles from './onboarding.module.css'
+
+// First Light starts a room's tour through the room tour door, which App opens
+// as it draws. These cases draw no App, so they open it as App does.
+provideRoomTourDoor(startRoomTour)
 
 function beat(name: Beat): HTMLElement | null {
   return document.querySelector<HTMLElement>(`[data-beat="${name}"]`)
@@ -84,12 +90,15 @@ function tracked(): string[] {
   return mocks.trackOnboarding.mock.calls.map(([event]) => String(event))
 }
 
+/** What was sent to the guide funnel, in order. */
+function guideEvents(): string[] {
+  const raw = localStorage.getItem(GUIDE_FUNNEL_STORAGE_KEY) ?? '[]'
+  return (JSON.parse(raw) as { event: string }[]).map((entry) => entry.event)
+}
+
 /** What the plan sent to the guide funnel, in order. */
 function planEvents(): string[] {
-  const raw = localStorage.getItem(GUIDE_FUNNEL_STORAGE_KEY) ?? '[]'
-  return (JSON.parse(raw) as { event: string }[])
-    .map((entry) => entry.event)
-    .filter((event) => event.startsWith('plan_'))
+  return guideEvents().filter((event) => event.startsWith('plan_'))
 }
 
 /** The plan record and the stops opened live in module signals that `localStorage.clear()` does not reach. */
@@ -281,14 +290,9 @@ describe('the four questions and the plan in the flow', () => {
     expect(planRecord()?.status).toBe('answered')
   })
 
-  it("Show me around into Singing starts the Guide's Singing section", async () => {
+  it('leaves First Light at once, and enters Start here once the showcase is over, without a tour where the room has none', async () => {
     // Arrange: nothing answered, so Start here is the Sing room, which has
-    // no page tour; its tour is the Guide's Singing section. The store's own
-    // starter runs this once, and the tour is closed when the case ends.
-    const store =
-      await vi.importActual<typeof AppStoreModule>('@/stores/app-store')
-    mocks.startRoomTour.mockImplementationOnce(store.startRoomTour)
-    onTestFinished(() => store.endWalkthrough())
+    // no spotlight tour.
     const host = await toThePlan()
 
     // Act
@@ -296,18 +300,15 @@ describe('the four questions and the plan in the flow', () => {
       within(host).getByRole('button', { name: 'Show me around' }),
     )
 
-    // Assert: in Singing, out of the flow, on the section's first step
-    expect(activeTab()).toBe('singing')
+    // Assert: First Light goes at once. The showcase, with no tab bar on
+    // this page to stand by, passes every stop, then opens Start here, which
+    // is counted then, as its card is.
     expect(flowOpen()).toBe(false)
-    expect(mocks.startRoomTour).toHaveBeenCalledExactlyOnceWith('singing')
-    expect(store.walkthroughActive()).toBe(true)
-    expect(store.walkthroughStep()).toBe(0)
-    expect(new Set(store.tourSteps().map((s) => s.section))).toEqual(
-      new Set(['practice']),
-    )
-    expect(store.tourSteps()[0]).toBe(
-      store.WALKTHROUGH_STEPS.find((s) => s.section === 'practice'),
-    )
+    expect(planEvents()).not.toContain('plan_stop_start')
+    await waitFor(() => expect(activeTab()).toBe('singing'))
+    expect(planEvents()).toContain('plan_stop_start')
+    expect(guideEvents()).toContain('showcase_done')
+    expect(mocks.startPageTour).not.toHaveBeenCalled()
   })
 
   it('goes to a Start here that is a page of its own from Show me around, and starts no tour', async () => {
@@ -326,13 +327,14 @@ describe('the four questions and the plan in the flow', () => {
       within(host).getByRole('button', { name: 'Show me around' }),
     )
 
-    // Assert
-    expect(location.href).toBe('/guitar-night')
+    // Assert: out of the flow at once, and on the page once the showcase is
+    // over, with no tour.
     expect(flowOpen()).toBe(false)
-    expect(mocks.startRoomTour).not.toHaveBeenCalled()
+    await waitFor(() => expect(location.href).toBe('/guitar-night'))
+    expect(mocks.startPageTour).not.toHaveBeenCalled()
   })
 
-  it('starts the tour of Start here when the room has one', async () => {
+  it('starts the tour of Start here after the showcase when the room has one', async () => {
     // Arrange: a guitar player's Start here is the Guitar room, which does.
     const host = await toThePlanOf('Guitar', null)
 
@@ -342,9 +344,11 @@ describe('the four questions and the plan in the flow', () => {
     )
 
     // Assert
-    expect(activeTab()).toBe('guitar')
     expect(flowOpen()).toBe(false)
-    expect(mocks.startRoomTour).toHaveBeenCalledWith('guitar')
+    await waitFor(() =>
+      expect(mocks.startPageTour).toHaveBeenCalledWith('guitar'),
+    )
+    expect(activeTab()).toBe('guitar')
   })
 
   it('enters Start here from the main button, and starts no tour even where the room has one', async () => {
@@ -357,7 +361,7 @@ describe('the four questions and the plan in the flow', () => {
     // Assert: in, as the card goes in; the tour is Show me around's.
     expect(activeTab()).toBe('guitar')
     expect(flowOpen()).toBe(false)
-    expect(mocks.startRoomTour).not.toHaveBeenCalled()
+    expect(mocks.startPageTour).not.toHaveBeenCalled()
   })
 
   it("enters a card's stop, closes First Light, and starts no tour", async () => {
@@ -370,7 +374,7 @@ describe('the four questions and the plan in the flow', () => {
     // Assert
     expect(activeTab()).toBe('guitar')
     expect(flowOpen()).toBe(false)
-    expect(mocks.startRoomTour).not.toHaveBeenCalled()
+    expect(mocks.startPageTour).not.toHaveBeenCalled()
     expect(planEvents()).toContain('plan_stop_start')
   })
 

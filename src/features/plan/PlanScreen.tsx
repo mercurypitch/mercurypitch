@@ -23,7 +23,9 @@
 // - A stop's reason can be empty: a plan rebuilt from the stored record has
 //   no voiceprint reason. Then the card has no reason line, not an empty one.
 // - Merc is the host's. The screen never mounts one; it reports `celebrate`
-//   as the plan opens and `point`, at Start here, a moment later.
+//   as the plan opens and `point`, at Start here, a moment later. Where Merc
+//   can be drawn live it fetches his showcase and the coach as it opens
+//   (warmPlanShowcase), so "Show me around" does not wait for them.
 // - The screen fills the host's box and scrolls its own content (what the
 //   host owes the screens is in PlanExits.tsx's header). The cards and the
 //   switch are in the scroll region, and so is Change my answers, last in it,
@@ -53,11 +55,13 @@ import { CreditCoin } from '@/components/billing/CreditCoin'
 import { GiftIcon } from '@/components/billing/GiftIcon'
 import { ChevronLeft } from '@/components/icons'
 import type { MercState } from '@/lib/merc/constants'
+import { canRunLiveMerc } from '@/lib/merc/gpu-gate'
 import type { Plan, PlanStop, ScopeOffer } from './build-plan'
 import { coverHasWords, PLAN_DESTS, planStops } from './build-plan'
 import { flyChips } from './fly-chips'
 import { KICKER } from './plan-copy'
 import type { CreditsLine } from './plan-credits'
+import { warmPlanShowcase } from './plan-showcase'
 import { PlanExits } from './PlanExits'
 import styles from './PlanScreen.module.css'
 import { MERC_INTRO } from './questions'
@@ -257,6 +261,7 @@ export function PlanScreen(props: PlanScreenProps): JSX.Element {
     poseTimer = setTimeout(() => props.onMercState('point'), CELEBRATE_MS)
     heading?.focus({ preventScroll: true })
     void flyChips(chipsIn(root), props.fromPills ?? NO_PILLS)
+    if (canRunLiveMerc()) warmPlanShowcase()
   })
 
   const open = (stop: PlanStop): void => props.onOpenStop(stop)

@@ -40,6 +40,18 @@ import { CELEBRATE_MS, PlanScreen } from './PlanScreen'
 import styles from './PlanScreen.module.css'
 import { MERC_INTRO } from './questions'
 
+// Whether Merc can be drawn live, as a case sets it; jsdom has no WebGL.
+const merc = vi.hoisted(() => ({
+  live: false,
+  warmPlanShowcase: vi.fn(),
+}))
+vi.mock('@/lib/merc/gpu-gate', () => ({
+  canRunLiveMerc: () => merc.live,
+}))
+vi.mock('./plan-showcase', () => ({
+  warmPlanShowcase: merc.warmPlanShowcase,
+}))
+
 /** Singing, for the audition: the approved plan with all three stops and the switch. */
 const AUDITION: Plan = buildPlan({
   q1: 'singing',
@@ -133,6 +145,8 @@ const SHOW_ME_AROUND = 'Show me around'
 
 beforeEach(() => {
   vi.useFakeTimers()
+  merc.live = false
+  merc.warmPlanShowcase.mockClear()
 })
 
 afterEach(() => {
@@ -567,6 +581,20 @@ describe('Merc', () => {
     open()
 
     expect(document.querySelector('[data-presence]')).toBeNull()
+  })
+
+  it('fetches his showcase as the plan opens, where he can be drawn live', () => {
+    merc.live = true
+
+    open()
+
+    expect(merc.warmPlanShowcase).toHaveBeenCalledOnce()
+  })
+
+  it('fetches nothing ahead where he cannot', () => {
+    open()
+
+    expect(merc.warmPlanShowcase).not.toHaveBeenCalled()
   })
 })
 

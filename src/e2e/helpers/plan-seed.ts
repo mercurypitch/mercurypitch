@@ -16,6 +16,12 @@
 // - It was turned down, not answered, and only an answered plan is sent
 //   (plan-sync.ts), so nothing syncs.
 //
+// A spec that opens the plan itself (showcase.spec.ts: `#/plan` reviews an
+// answered plan, and Show me around runs from it) seeds an answered one
+// instead, built here as well: a singer who named singing and nothing else,
+// whose Start here is the Sing room, dated as long ago, so Home draws no plan
+// card under it either.
+//
 // Built in this one place, and importing no Playwright, so that
 // src/tests/e2e-plan-seed.test.ts can load it and hold it to the plan's own
 // reader. A change to the record's format then fails that one test, and not
@@ -30,7 +36,7 @@ export interface PlanSeed {
   value: string
 }
 
-/** When the seeded plan was turned down: years before any run, so out of Home's card week whenever a spec runs. */
+/** When a seeded plan was settled: years before any run, so out of Home's card week whenever a spec runs. */
 const TURNED_DOWN_AT = '2020-01-01T00:00:00.000Z'
 
 /** A turned-down plan with nothing picked, dated long ago. */
@@ -39,6 +45,18 @@ export function settledPlanSeed(): PlanSeed {
     v: 1,
     status: 'declined',
     choices: { q1: null, q2: null, q3: [], q4: [] },
+    at: TURNED_DOWN_AT,
+    via: 'layer',
+  }
+  return { key: PLAN_RECORD_KEY, value: JSON.stringify(record) }
+}
+
+/** An answered plan: singing named and nothing else picked, dated long ago. */
+export function answeredPlanSeed(): PlanSeed {
+  const record: PlanRecordV1 = {
+    v: 1,
+    status: 'answered',
+    choices: { q1: 'singing', q2: null, q3: [], q4: [] },
     at: TURNED_DOWN_AT,
     via: 'layer',
   }
