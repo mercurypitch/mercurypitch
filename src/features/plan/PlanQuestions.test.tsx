@@ -581,3 +581,35 @@ describe('the fourth question', () => {
     expect(pills.get(q4Label('video'))?.top).toBe(100)
   })
 })
+
+describe('the word to the host that answering has started', () => {
+  it('says nothing while a question is only open, even on answers it opens on', () => {
+    const onAnswering = vi.fn<() => void>()
+    open({ onAnswering })
+    cleanup()
+    open({
+      onAnswering,
+      initial: { q1: 'guitar', q2: null, q3: [], q4: [] },
+    })
+
+    expect(onAnswering).not.toHaveBeenCalled()
+  })
+
+  it('says it on the first pick', () => {
+    const onAnswering = vi.fn<() => void>()
+    open({ onAnswering })
+
+    tap('Guitar')
+
+    expect(onAnswering).toHaveBeenCalled()
+  })
+
+  it('says it on a Skip past the first question', () => {
+    const onAnswering = vi.fn<() => void>()
+    open({ onAnswering })
+
+    tap('Skip')
+
+    expect(onAnswering).toHaveBeenCalled()
+  })
+})

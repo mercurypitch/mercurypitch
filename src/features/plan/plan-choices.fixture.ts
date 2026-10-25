@@ -20,7 +20,7 @@ import { GUIDE_FUNNEL_STORAGE_KEY } from '@/lib/guide-funnel'
 import { applyPersistedValue } from '@/lib/storage'
 import { setPracticeScope, setUiMode } from '@/stores/settings-store'
 import { PLAN_OPENED_KEY, PLAN_RECORD_KEY } from './plan-keys'
-import type { PlanTexts } from './plan-record'
+import type { PlanRecordV1, PlanTexts } from './plan-record'
 import { closePlanLayer, savePlanAnswers } from './plan-store'
 import type { PlanChoices } from './questions'
 
@@ -93,6 +93,23 @@ export function answeredAgo(
   choices: PlanChoices = AUDITION,
 ): void {
   savePlanAnswers(choices, NO_TEXTS, null, ago(days))
+}
+
+/**
+ * A plan answered on another device lands here, as the settings pull applies
+ * it: after a sign-in, the account's plan arrives once the page has already
+ * read its own.
+ */
+export function answeredElsewhere(choices: PlanChoices): void {
+  const record: PlanRecordV1 = {
+    v: 1,
+    status: 'answered',
+    choices,
+    at: '2026-10-20T10:00:00.000Z',
+    via: 'first-light',
+    syncedAt: '2026-10-20T10:00:01.000Z',
+  }
+  applyPersistedValue(PLAN_RECORD_KEY, JSON.stringify(record))
 }
 
 /** Gives the device exactly these first values, as saved runs and finished songs do. */

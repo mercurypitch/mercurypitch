@@ -22,6 +22,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type * as GpuGateModule from '@/lib/merc/gpu-gate'
 import { APP_KEYS, overheard, press, stopOverhearing, } from '@/tests/utils/trap-keys'
 import type * as EnterStopModule from './enter-stop'
+import { answeredElsewhere, AUDITION } from './plan-choices.fixture'
 import { planRecord } from './plan-store'
 import { answered, box, card, changeAnswers, dialog, fresh, open, opened, sent, setUp, tearDown, toThePlan, } from './PlanLayer.fixture'
 import styles from './PlanLayer.module.css'
@@ -330,6 +331,25 @@ describe('the shown event', () => {
 })
 
 // ── Reviewing an answered plan ─────────────────────────────────────────
+
+describe('a plan answered on another device', () => {
+  it('is shown in place of the questions when the account sends it before the first pick', () => {
+    open('skipper')
+
+    answeredElsewhere(AUDITION)
+
+    expect(box().dataset.phase).toBe('plan')
+  })
+
+  it('leaves the questions to a singer who has started answering', () => {
+    open('skipper')
+    tap('Guitar')
+
+    answeredElsewhere(AUDITION)
+
+    expect(box().dataset.phase).toBe('questions')
+  })
+})
 
 describe('a review', () => {
   it('opens an answered plan with a way to change the answers', () => {
