@@ -4,6 +4,7 @@
 
 import { afterEach, describe, expect, it } from 'vitest'
 import { findWeakExercises, findWeakIntervals, findWeakPitches, generateWeaknessReport, hasWeaknesses, } from '@/features/practice-intelligence/weakness-analyzer'
+import { applyPersistedValue } from '@/lib/storage'
 import { clearExerciseHistory, flushExerciseHistoryWrites, recordExerciseResult, } from '@/stores/exercise-history-store'
 import { setSessionResults } from '@/stores/practice-session-store'
 import { seedSessionWithNotes } from '../utils/session-fixtures'
@@ -48,6 +49,34 @@ describe('findWeakExercises', () => {
     clearAll()
     for (let i = 0; i < 10; i++) seedExercise('long-note', 85)
     expect(findWeakExercises()).toEqual([])
+  })
+
+  it('judges a rescored drill on its new scores alone', () => {
+    // Arrange: ten Siren runs at 40 on its first scoring (never stamped),
+    // then three at 80 on its second.
+    const old = Array.from({ length: 10 }, (_, i) => ({
+      type: 'siren',
+      score: 40,
+      metrics: {},
+      completedAt: 100 - i,
+    }))
+    const fresh = Array.from({ length: 3 }, (_, i) => ({
+      type: 'siren',
+      score: 80,
+      metrics: {},
+      completedAt: 200 - i,
+      scoringVersion: 2,
+    }))
+    applyPersistedValue(
+      'mercurypitch_exercise_history',
+      JSON.stringify([...fresh, ...old]),
+    )
+
+    // Act
+    const weak = findWeakExercises()
+
+    // Assert: mixed, the recent average would be 52 and flag it weak.
+    expect(weak).toEqual([])
   })
 
   it('sorts weakest first', () => {

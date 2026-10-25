@@ -4,6 +4,7 @@
 
 import { describe, expect, it } from 'vitest'
 import { clampDifficulty, computeEma, difficultyLabel, getSuggestedDifficulty, suggestedDifficulty, } from '@/features/practice-intelligence/adaptive-difficulty'
+import { applyPersistedValue } from '@/lib/storage'
 import { clearExerciseHistory, recordExerciseResult, } from '@/stores/exercise-history-store'
 
 function seedScores(type: string, scores: number[]) {
@@ -51,6 +52,31 @@ describe('computeEma', () => {
     seedScores('vibrato', [30, 30, 30])
     expect(computeEma('long-note')).toBe(90)
     expect(computeEma('vibrato')).toBe(30)
+  })
+
+  it('leaves out runs scored before the drill was rescored', () => {
+    // Arrange: the Siren is on its second scoring. Two runs scored the old
+    // way (never stamped) sit under one scored the new way.
+    applyPersistedValue(
+      'mercurypitch_exercise_history',
+      JSON.stringify([
+        {
+          type: 'siren',
+          score: 95,
+          metrics: {},
+          completedAt: 3,
+          scoringVersion: 2,
+        },
+        { type: 'siren', score: 40, metrics: {}, completedAt: 2 },
+        { type: 'siren', score: 40, metrics: {}, completedAt: 1 },
+      ]),
+    )
+
+    // Act
+    const ema = computeEma('siren')
+
+    // Assert: the old ruler's 40s no longer drag the level's EMA down.
+    expect(ema).toBe(95)
   })
 
   it('caps at last 10 entries', () => {

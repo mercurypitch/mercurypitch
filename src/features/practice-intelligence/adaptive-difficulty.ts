@@ -14,7 +14,7 @@
 //   Otherwise → stay at current level
 
 import type { ExerciseType } from '@/features/exercises/types'
-import { exerciseHistory } from '@/stores/exercise-history-store'
+import { exerciseHistoryOnCurrentScoring } from '@/stores/exercise-history-store'
 
 // ── Constants ──────────────────────────────────────────────────
 
@@ -26,9 +26,13 @@ const DIFFICULTY_DEFAULT = 5
 
 // ── Public API ─────────────────────────────────────────────────
 
-/** Compute EMA score for an exercise type from recent history */
+/**
+ * Compute EMA score for an exercise type from recent history. Only runs
+ * scored the way the drill scores now count, so a rescore does not leave
+ * the old ruler's scores steering the level.
+ */
 export function computeEma(type: ExerciseType): number | null {
-  const entries = exerciseHistory()
+  const entries = exerciseHistoryOnCurrentScoring()
     .filter((e) => e.type === type)
     .slice(0, EMA_WINDOW)
 

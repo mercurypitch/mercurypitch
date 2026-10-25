@@ -4,6 +4,7 @@
 
 import { afterEach, describe, expect, it } from 'vitest'
 import { computeImprovementRate, computeMonthlyTrends, computePerExerciseStats, computePracticeStats, computeRollingAverage, computeWeeklyTrends, getRecentScores, } from '@/features/practice-intelligence/trends-computer'
+import { applyPersistedValue } from '@/lib/storage'
 import { clearExerciseHistory, flushExerciseHistoryWrites, recordExerciseResult, } from '@/stores/exercise-history-store'
 import { setSessionResults } from '@/stores/practice-session-store'
 
@@ -196,5 +197,35 @@ describe('computePerExerciseStats', () => {
     expect(longNote?.totalPlays).toBe(2)
     expect(longNote?.bestScore).toBe(90)
     expect(longNote?.lastScore).toBe(90) // newest first, second insert (90) is entries[0]
+  })
+
+  it("leaves a rescored drill's old runs out of its stats", () => {
+    // Arrange: two Siren runs on its first scoring (never stamped), one on
+    // its second.
+    applyPersistedValue(
+      'mercurypitch_exercise_history',
+      JSON.stringify([
+        {
+          type: 'siren',
+          score: 60,
+          metrics: {},
+          completedAt: 3,
+          scoringVersion: 2,
+        },
+        { type: 'siren', score: 95, metrics: {}, completedAt: 2 },
+        { type: 'siren', score: 90, metrics: {}, completedAt: 1 },
+      ]),
+    )
+
+    // Act
+    const siren = computePerExerciseStats().find((s) => s.type === 'siren')
+
+    // Assert
+    expect(siren).toMatchObject({
+      totalPlays: 1,
+      bestScore: 60,
+      lastScore: 60,
+      avgScore: 60,
+    })
   })
 })
