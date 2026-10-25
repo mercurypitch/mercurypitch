@@ -25,6 +25,12 @@ import { card, cellOf, liveRegion, openCard, seasonRows, settled, } from './less
 import type { FakeLessonApi, SiteAnswer, } from './lessons/lesson-site.test-fixtures'
 import { ADMIN_KEY, fakeLessonApi, stubLessonSite, unpublishedHere, } from './lessons/lesson-site.test-fixtures'
 
+// Each test renders the whole Lessons page, every lesson's row and card, and
+// waits for its site checks and its state read. On a loaded machine the first
+// test in the file, which pays for a cold start, has run past Vitest's 5 s
+// default, so this file gets 20 s (TESTING.md section 3.7).
+vi.setConfig({ testTimeout: 20_000 })
+
 function seasonLesson(test: (lesson: Lesson) => boolean, what: string): Lesson {
   const lesson = LESSONS.find(test)
   if (lesson === undefined) throw new Error(`no lesson with ${what}`)
