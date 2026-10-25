@@ -112,12 +112,15 @@ export function drawCentsGrid(
 
 /**
  * The notes grid, a tick per semitone from `target + lo` to `target + hi`:
- * letters on the natural notes, `named` notes (A3 and A4) in full.
+ * letters on the natural notes, `named` notes (A3 and A4) in full; with
+ * `letters` off, the rows alone, for a chart that names its rows itself
+ * (band-chart-names.ts).
  */
 export function drawNotesGrid(
   f: ChartFrame,
   target: number,
   named: readonly number[],
+  letters = true,
 ): void {
   const { ctx } = f
   ctx.font = MONO
@@ -130,7 +133,7 @@ export function drawNotesGrid(
     const y = yOf(f, s * 100)
     const letter = letterOf(midi)
     hline(f, y, letter === null ? 0.06 : 0.12)
-    if (letter === null) continue
+    if (letter === null || !letters) continue
     const full = named.includes(midi)
     ctx.fillStyle = full ? COLOR.ink : COLOR.ink3
     ctx.fillText(full ? (nameOf(midi) ?? letter) : letter, f.x0 - 8, y)
