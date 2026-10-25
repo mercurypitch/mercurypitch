@@ -656,7 +656,54 @@ function buildRhythm(model: ProgressModel): ProgressRhythmView {
   }
 }
 
+/**
+ * A plain drill's thread key carries its scoring version,
+ * `voice:exercise:<type>:v<n>` (exerciseComparabilityKey in
+ * exercises/exercise-comparability.ts). A rescored drill's runs start a new
+ * thread under the same name, so a period spanning the rescore would show
+ * two threads called the same. The thread on the older ruler says so.
+ */
+const EXERCISE_THREAD_KEY = /^voice:exercise:(.+):v(\d+)$/
+
+function exerciseThreadVersion(
+  comparisonKey: string,
+): { type: string; version: number } | null {
+  const match = EXERCISE_THREAD_KEY.exec(comparisonKey)
+  if (match === null) return null
+  return { type: match[1], version: Number(match[2]) }
+}
+
+/** Each plain drill's newest scoring version seen in the history. */
+function newestExerciseVersions(
+  comparisonKeys: readonly string[],
+): Map<string, number> {
+  const newest = new Map<string, number>()
+  for (const key of comparisonKeys) {
+    const thread = exerciseThreadVersion(key)
+    if (thread === null) continue
+    newest.set(
+      thread.type,
+      Math.max(thread.version, newest.get(thread.type) ?? 0),
+    )
+  }
+  return newest
+}
+
+function skillThreadLabel(
+  melodyName: string,
+  comparisonKey: string,
+  newest: ReadonlyMap<string, number>,
+): string {
+  const thread = exerciseThreadVersion(comparisonKey)
+  const superseded =
+    thread !== null && thread.version < (newest.get(thread.type) ?? 0)
+  return superseded ? `${melodyName} (earlier scoring)` : melodyName
+}
+
 function buildSkillThreads(model: ProgressModel): ProgressSkillThreadView[] {
+  const newest = newestExerciseVersions(
+    model.scoreTrend.comparableSeries.map((series) => series.comparisonKey),
+  )
   return model.scoreTrend.comparableSeries
     .map((series): ProgressSkillThreadView | null => {
       const periodPoints = series.points.filter(
@@ -673,7 +720,11 @@ function buildSkillThreads(model: ProgressModel): ProgressSkillThreadView[] {
           : `${plural(periodPoints.length, 'scored attempt')} were recorded for the same exercise or song.`
       return {
         id: `thread:${series.comparisonKey}`,
-        label: series.melodyName,
+        label: skillThreadLabel(
+          series.melodyName,
+          series.comparisonKey,
+          newest,
+        ),
         context: `${sourceName(series.source)} · same task setup`,
         metricLabel: 'Score',
         summary,

@@ -373,3 +373,71 @@ describe('progress page view model', () => {
     expect(snapshot.coverage.continuityAction).toBeDefined()
   })
 })
+
+describe('skill threads across a rescore', () => {
+  /** A model holding only these scored runs. */
+  function modelOf(records: SessionRecord[]): ProgressModel {
+    return buildProgressModel(
+      {
+        records,
+        voiceprints: [],
+        badgeDefinitions: [],
+        userBadges: [],
+        achievementDefinitions: [],
+        userAchievements: [],
+        challengeDefinitions: [],
+        activityRows: [],
+        recentActivity: [],
+        league: null,
+      },
+      { now: NOW },
+    )
+  }
+
+  const jumper = (
+    id: string,
+    at: string,
+    score: number,
+    version: number,
+  ): SessionRecord =>
+    record(id, at, score, {
+      melodyName: 'Arpeggio Jumper',
+      comparabilityKey: `voice:exercise:arpeggio-jumper:v${version}`,
+    })
+
+  it("labels a rescored drill's thread on its old scoring", () => {
+    // Arrange: two runs graded the old way, then two the new way, all in
+    // the period. Each scoring version keeps a thread of its own.
+    const model = modelOf([
+      jumper('old-1', '2026-07-20T10:00:00.000Z', 62, 1),
+      jumper('old-2', '2026-07-27T10:00:00.000Z', 68, 1),
+      jumper('new-1', '2026-08-05T10:00:00.000Z', 85, 2),
+      jumper('new-2', '2026-08-09T10:00:00.000Z', 88, 2),
+    ])
+
+    // Act
+    const threads = buildProgressPageSnapshot(model, {
+      accountHeld: true,
+    }).skillThreads
+
+    // Assert
+    const labelOf = (pointId: string) =>
+      threads.find((t) => t.points.some((p) => p.id === pointId))?.label
+    expect(threads).toHaveLength(2)
+    expect(labelOf('new-2')).toBe('Arpeggio Jumper')
+    expect(labelOf('old-2')).toBe('Arpeggio Jumper (earlier scoring)')
+  })
+
+  it("leaves a drill's only thread under its own name", () => {
+    const model = modelOf([
+      jumper('old-1', '2026-07-20T10:00:00.000Z', 62, 1),
+      jumper('old-2', '2026-07-27T10:00:00.000Z', 68, 1),
+    ])
+
+    const threads = buildProgressPageSnapshot(model, {
+      accountHeld: true,
+    }).skillThreads
+
+    expect(threads.map((t) => t.label)).toEqual(['Arpeggio Jumper'])
+  })
+})
