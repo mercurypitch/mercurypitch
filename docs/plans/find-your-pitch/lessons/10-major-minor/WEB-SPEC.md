@@ -708,7 +708,8 @@ still images when WebGL fails or would run on the CPU.
   uplifting." and natural minor "Emotional, reflective, and sometimes sad.", and gives C minor's
   relative major as A major, where it is E♭ major (`src/types/walkthrough.ts:887-907`); Drone
   Intonation's copy promises "just intonation" and "pure intonation" while every target is
-  equal-tempered, and its score folds in a "richness" reading, a fifth of the total. And
+  equal-tempered, and its score cannot reach 100: the fifth of it that was a "richness" reading was
+  dropped without reweighting the rest. And
   `/ear-lab`'s entry document should link back to Lesson 10 once it is out, as `/piano-night`'s and
   `/guitar-night`'s should (`docs/plans/find-your-pitch/SEARCH.md` § 8). SEARCH.md § 4 lists Piano
   Night among the rooms this lesson practises in; the page links only the two drills the CURRICULUM
