@@ -12,6 +12,7 @@
 import { cleanup, fireEvent, render, screen, waitFor, within, } from '@solidjs/testing-library'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { ONBOARDING_FUNNEL_EVENTS } from '@/lib/funnel-event-catalog'
+import type { F0Frame } from '@/lib/mirror/metrics'
 
 vi.mock('@/lib/jam/media-errors', async () =>
   (await import('./FirstLight.fixture')).fake.micPermission(),
@@ -432,7 +433,59 @@ describe("the questions' Not now in First Light", () => {
   })
 })
 
+/** A steady tone at `hz`, one frame every 16 ms: a note First light can name. */
+function tone(hz: number, count: number): F0Frame[] {
+  return Array.from({ length: count }, (_, i) => ({
+    t: i * 0.016,
+    f0: hz,
+    conf: 0.95,
+  }))
+}
+
 describe('the confirm keeps the flow', () => {
+  // Keep going has to hand back a beat that still works. A take that ends
+  // while the confirm is open lands under it, and once the confirm is gone
+  // the beat's own Keep going goes on.
+  it('hands back a working beat: a note heard under it, then the beat goes on', async () => {
+    await at('first-light')
+    const allow = screen.queryByRole('button', {
+      name: /Start listening|Allow microphone/,
+    })
+    if (allow !== null) fireEvent.click(allow)
+    let finish: (frames: F0Frame[]) => void = () => undefined
+    mocks.record.mockImplementationOnce(
+      () =>
+        new Promise<F0Frame[]>((resolve) => {
+          finish = resolve
+        }),
+    )
+    fireEvent.click(
+      await screen.findByRole('button', { name: /Start the take/ }),
+    )
+    fireEvent.click(railExit())
+    expect(confirm()).not.toBeNull()
+
+    finish(tone(220, 120))
+
+    const firstLight = beat('first-light') as HTMLElement
+    await waitFor(() =>
+      expect(within(firstLight).getByRole('heading')).toHaveTextContent(
+        "That's an A3",
+      ),
+    )
+    // The beat did not move, so the confirm is still asking.
+    expect(confirm()).not.toBeNull()
+
+    fireEvent.click(keepGoing())
+
+    expect(confirm()).toBeNull()
+    fireEvent.click(
+      within(firstLight).getByRole('button', { name: 'Keep going' }),
+    )
+    await waitFor(() => expect(currentBeat()).not.toBe('first-light'))
+    expect(count('onboarding_skip_kept_voiceprint')).toBe(1)
+  })
+
   it('keeps going on Escape and on the backdrop, counted each time', async () => {
     await at('sky')
     const close = screen.getByRole('button', { name: 'Skip the intro' })
