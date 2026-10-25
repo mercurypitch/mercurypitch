@@ -13,10 +13,11 @@
 // button; and its second, the cold open (End to end 2), at a phone's size
 // and a desktop's: Merc's leap plays before a choice, the paths wait for
 // one, and the reveal waits until all three have been heard to their end
-// with sound on; and its eighth, the quizzes (End to end 8), at both sizes:
-// the recall shows to everyone, marks nothing done and links Lesson 6's
-// steps in a new tab, and the quick check marks Lesson 9 done. Each other
-// toy's checks join it as that toy is wired.
+// with sound on, a path cut short by the four words' Leap or by the Sound
+// switch never counting; and its eighth, the quizzes (End to end 8), at
+// both sizes: the recall shows to everyone, marks nothing done and links
+// Lesson 6's steps in a new tab, and the quick check marks Lesson 9 done.
+// Each other toy's checks join it as that toy is wired.
 
 import type { Locator, Page } from '@playwright/test'
 import { expect, test } from './helpers/lesson-page'
@@ -183,7 +184,17 @@ for (const viewport of [
       await playThrough(mi)
       await expect(reveal).toBeHidden()
 
-      // fa cut short, as the Sound switch silences it, brings nothing
+      // fa cut short by the four words' Leap, played over it, brings nothing
+      const word = page.locator('[data-word-play="leap"]')
+      await fa.click()
+      await expect(fa).toHaveClass(/\bis-on\b/)
+      await word.click()
+      await expect(word).toHaveClass(/\bis-on\b/)
+      await expect(fa).not.toHaveClass(/\bis-on\b/)
+      await expect(word).not.toHaveClass(/\bis-on\b/, { timeout: 10_000 })
+      await expect(reveal).toBeHidden()
+
+      // and so does fa cut short as the Sound switch silences it
       await fa.click()
       await expect(fa).toHaveClass(/\bis-on\b/)
       await sound.click()

@@ -228,7 +228,10 @@ export const FIRST_PAINT_BUDGETS_KB = {
   // and Lesson 2's with their pair and examples (chunks shared with the
   // lessons that have them); and the kit's quiz, which joins the chunk
   // every lesson page shares.
-  'learn/09.html': 116,
+  // Raised to 118 for the four words: 120,479 bytes with them, against
+  // 118,784 at 116, and 2,468 more than with the quizzes. The four words
+  // and the kit's words strip (a chunk shared with Lessons 1 and 7).
+  'learn/09.html': 118,
 
   // The main app, and the crawlable doors that are the main app. Measured
   // 4669. It is eager by design today, so this is a ceiling on growth rather

@@ -12,9 +12,9 @@
 //
 // The page shell: the switches, the steps' deck with its ladder chart in
 // each step's state, the next lesson's card, the season map, the masthead
-// and Merc and Tavi; the cold open, the recall and the quick check. Each
-// other toy, and each control, does nothing until it is wired: the four
-// words, the steps' sounds, Sing it and free play.
+// and Merc and Tavi; the cold open, the four words, the recall and the
+// quick check. Each other toy, and each control, does nothing until it is
+// wired: the steps' sounds, Sing it and free play.
 
 import '@fontsource-variable/inter'
 import '@fontsource-variable/outfit'
@@ -46,12 +46,14 @@ import { initColdOpen } from './cold-open'
 import { QUIZ_QUESTIONS } from './quiz-questions'
 import { initRecall } from './recall'
 import { initSteps } from './steps'
+import { initWords } from './words'
 
 initSoundSwitch()
 initMotionSwitch()
 Motion.init()
 
 initColdOpen()
+initWords()
 
 // five steps, one ladder chart
 const deck = createStepDeck({
