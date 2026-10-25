@@ -291,7 +291,7 @@ step, hear, ladder, order, landing and free play, plus live mode at the checkpoi
 
 Lesson 1's strip: Leap plays do up to so with its arc; Third plays do up to mi, then mi up to so;
 Arpeggio plays do, mi, so and the top do; Landing zone lights so's band and plays nothing (FACTS
-91). Each button names what it does ("Play: do up to so"; "Show: so's landing zone").
+91). Each button names what it does ("Play: do up to so"; "Show: so's band lights").
 
 ### 4. Sing it: do-mi-so-do
 
@@ -699,10 +699,10 @@ table):
    between Merc and Tavi. It shows no middle note, so it does not answer the cold open's
    predict.
 4. First-paint ceilings for `learn/09.html` in `scripts/assert-first-paint-budgets.mjs`, one in its
-   JavaScript table and one in its stylesheet table, beside Lesson 3's (`:103-151`, `:287-290`).
-   Every build emits every lesson page, and the check fails a document with no ceiling (`:550-554`),
+   JavaScript table and one in its stylesheet table, beside Lesson 3's (`:103-151`, `:290-293`).
+   Every build emits every lesson page, and the check fails a document with no ceiling (`:553-557`),
    so without them the Browser jobs fail before any spec runs, as Lesson 6's did on PR #1149. Each
-   is the page's measured first paint plus about a quarter, the tables' rule (`:47-58`, `:243-253`),
+   is the page's measured first paint plus about a quarter, the tables' rule (`:47-58`, `:246-256`),
    measured in `build:e2e`, where the check runs (`package.json:20`): a build of Lesson 6's page
    alone weighed it about 8 KB lighter. As on Lesson 3, the listener, the pitch detector and Voice
    Mirror's scorer arrive through a dynamic import when Start is pressed
