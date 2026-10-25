@@ -193,7 +193,8 @@ export function createSkipConfirm(
       title={copy().title}
       message={copy().body}
       details={asking()?.kind === 'intro' ? gains() : undefined}
-      keepLabel={SKIP_COPY.keep}
+      variant="stay"
+      cancelLabel={SKIP_COPY.keep}
       confirmLabel={SKIP_COPY.skip}
       isolateKeyboard
       onConfirm={confirm}

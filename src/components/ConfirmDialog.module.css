@@ -166,7 +166,9 @@
 }
 
 .cancel:disabled,
-.delete:disabled {
+.delete:disabled,
+.keep:disabled,
+.quiet:disabled {
   cursor: wait;
   opacity: 0.55;
 }
@@ -183,7 +185,7 @@
   height: 0.9rem;
 }
 
-/* ── A way to stay (keepLabel) ──────────────────────────────────────
+/* ── A way to stay (variant="stay") ─────────────────────────────────
    One primary, full width: staying. The way out sits apart under it, as
    words rather than a second button of the same weight. */
 
@@ -283,11 +285,14 @@
 
 /* Disabled-until-typed is a gate, not work in progress — `cursor: wait`
    above would claim the app is busy when it is simply waiting on the user. */
-.delete:disabled {
+.delete:disabled,
+.quiet:disabled {
   cursor: not-allowed;
 }
 
 .dialog[aria-busy='true'] .cancel:disabled,
-.dialog[aria-busy='true'] .delete:disabled {
+.dialog[aria-busy='true'] .delete:disabled,
+.dialog[aria-busy='true'] .keep:disabled,
+.dialog[aria-busy='true'] .quiet:disabled {
   cursor: wait;
 }

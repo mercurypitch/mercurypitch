@@ -40,13 +40,15 @@ interface ConfirmDialogProps {
   /** A third, labelled way out beside Cancel (e.g. "Sing as practice"). */
   secondaryLabel?: string
   onSecondary?: () => void
+  /** Cancel's label. Defaults to "Cancel"; the layout is the variant's. */
+  cancelLabel?: string
   /**
-   * For a confirm that talks someone out of leaving: Cancel carries this
-   * label, takes the focus and is the one primary, full width, and the
-   * confirm sits under it as a quiet text button with no icon (`tone` is
-   * not read). Without it the dialog is the usual Cancel and confirm pair.
+   * `stay` is for a confirm that talks someone out of leaving: Cancel takes
+   * the focus and is the one primary, full width, and the confirm sits under
+   * it as a quiet text button with no icon (`tone` is not read). `confirm`,
+   * the default, is the usual Cancel and confirm pair.
    */
-  keepLabel?: string
+  variant?: 'confirm' | 'stay'
   /** Lines listed under the message, outside its paragraph, and read with
    *  it as the dialog's description. None, or an empty list, shows nothing. */
   details?: readonly string[]
@@ -96,7 +98,7 @@ export const ConfirmDialog: Component<ConfirmDialogProps> = (props) => {
     if (props.busy !== true) props.onSecondary?.()
   }
 
-  const stay = (): boolean => props.keepLabel != null
+  const stay = (): boolean => props.variant === 'stay'
   // The trap is read as `isolateKeyboard: true` unless a caller passes false.
   const isolated = (): boolean => props.isolateKeyboard !== false
   const listed = (): boolean => (props.details?.length ?? 0) > 0
@@ -179,7 +181,7 @@ export const ConfirmDialog: Component<ConfirmDialogProps> = (props) => {
                   disabled={props.busy}
                   onClick={cancel}
                 >
-                  {props.keepLabel ?? 'Cancel'}
+                  {props.cancelLabel ?? 'Cancel'}
                 </button>
                 <Show when={props.secondaryLabel != null}>
                   <button
