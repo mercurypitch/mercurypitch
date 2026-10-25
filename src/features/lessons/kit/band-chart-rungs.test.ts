@@ -2,10 +2,12 @@
 // Band chart rungs tests — where each rung lands, and how it lights
 // ============================================================
 //
-// Lesson 9's WEB-SPEC, Tests 5: rungs over slots and across the plot land
-// where their times and cents say, each with its own glow and lit edge. Each
-// test mounts Lesson 9's chart as its lower voice's Steps 1, 2 and 5 have
-// it, a notes axis from two semitones under do (D3) to two over so, 4
+// Lesson 9's WEB-SPEC, Tests 5: a scene with one rung at 0 across the plot
+// paints exactly as the single band does, so Lessons 3 and 5's charts see no
+// change; and rungs over slots and across the plot land where their times
+// and cents say, each with its own glow and lit edge. Each test of where
+// rungs land mounts Lesson 9's chart as its lower voice's Steps 1, 2 and 5
+// have it, a notes axis from two semitones under do (D3) to two over so, 4
 // seconds across, with the rungs the page would pass (on canvases that
 // keep every call, band-chart.test-fixtures.ts), and reads where each mark
 // should land from the chart's own `pointOf`.
@@ -13,9 +15,10 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import './browser-doubles.test-fixtures'
 import type { BandScene } from './band-chart'
-import type { Figure, Mark } from './band-chart.test-fixtures'
+import type { Call, Figure, Mark } from './band-chart.test-fixtures'
 import { capsOf, channels, marksOf, paintCharts, paintFrames, } from './band-chart.test-fixtures'
 import { BAND_COLOR } from './band-chart-draw'
+import { HOLD_5, PUSH_5, SING_3 } from './band-chart-lessons.test-fixtures'
 import type { Rung } from './band-chart-rungs'
 import { paintRungs } from './band-chart-rungs'
 import { HIT_TOLERANCE_CENTS } from './band-words'
@@ -261,5 +264,99 @@ describe('a faint rung', () => {
 
     // Assert
     expect(lifted.calls).toEqual(full.calls)
+  })
+})
+
+/**
+ * A chart on a notes axis with no echo, as Lesson 9's will be: Merc's band
+ * half lit as his note fades, the singer's line inside it.
+ */
+const NOTES: Figure = {
+  opts: { target: 57, axis: { notes: [53, 72], named: [57, 69] } },
+  scene: (s) => {
+    s.line = [
+      { t: 0.5, c: -60 },
+      { t: 1.5, c: -10 },
+    ]
+    s.head = { t: 1.5, c: -10 }
+    s.glow = 0.5
+    s.lit = true
+  },
+}
+
+/**
+ * A figure with its band as one rung at 0 across the plot, which
+ * carries the scene's glow and lit edge: the scene's own are put out, so
+ * only the rung can paint them.
+ */
+function asOneRung(figure: Figure): Figure {
+  return {
+    opts: { ...figure.opts, paintRungs },
+    scene: (s) => {
+      figure.scene?.(s)
+      s.rungs = [{ c: 0, glow: s.glow, lit: s.lit }]
+      s.glow = 0
+      s.lit = false
+    },
+  }
+}
+
+/**
+ * The calls without the rung painter's own setting of a line's caps and
+ * joins back to the canvas's (butt, miter), which a first frame draws the
+ * same without: the rest must be the band's, call for call.
+ */
+const drawn = (calls: readonly Call[]): Call[] =>
+  calls.filter(
+    ([name, value]) =>
+      !(name === 'lineCap=' && value === 'butt') &&
+      !(name === 'lineJoin=' && value === 'miter'),
+  )
+
+describe('one rung at 0 across the plot', () => {
+  it.each<[string, Figure]>([
+    ["Lesson 3's Sing it chart", SING_3],
+    ["Lesson 5's hold", HOLD_5],
+    ["Lesson 5's push", PUSH_5],
+    ['a notes axis with no echo', NOTES],
+  ])('paints %s call for call as its band does', async (_name, figure) => {
+    // Arrange
+    const rung = asOneRung(figure)
+
+    // Act
+    const [band, rungs] = await paintCharts(figure, rung)
+
+    // Assert
+    expect(drawn(rungs.calls)).toEqual(band.calls)
+  })
+
+  it('leaves a chart given the painter on its band while its scene holds no rungs', async () => {
+    // Arrange
+    const given: Figure = { ...SING_3, opts: { ...SING_3.opts, paintRungs } }
+
+    // Act
+    const [band, painter] = await paintCharts(SING_3, given)
+
+    // Assert
+    expect(painter.calls).toEqual(band.calls)
+  })
+
+  it("paints neither the scene's glow nor its lit edge once a rung takes the band's place", async () => {
+    // Arrange: one rung at rest under a scene that glows and is lit
+    const rung: Figure = {
+      opts: { target: 57, paintRungs },
+      scene: (s) => {
+        s.rungs = [{ c: 0 }]
+        s.glow = 1
+        s.lit = true
+      },
+    }
+    const atRest: Figure = { opts: { target: 57 } }
+
+    // Act
+    const [rungs, band] = await paintCharts(rung, atRest)
+
+    // Assert
+    expect(drawn(rungs.calls)).toEqual(band.calls)
   })
 })
