@@ -323,6 +323,32 @@ describe('ConfirmDialog tone and secondary action', () => {
   })
 })
 
+describe("ConfirmDialog's Cancel label", () => {
+  // A label is a label: the layout is the variant's to change, not the words'.
+  it('names Cancel without changing the usual pair', () => {
+    render(() => (
+      <ConfirmDialog
+        open={true}
+        title="Replace the take?"
+        message="The old one goes."
+        cancelLabel="Back"
+        confirmLabel="Replace"
+        onConfirm={vi.fn()}
+        onCancel={vi.fn()}
+      />
+    ))
+
+    const back = screen.getByRole('button', { name: 'Back' })
+    const replace = screen.getByRole('button', { name: /Replace/ })
+    expect(back.className).toContain('cancel')
+    expect(replace.className).toContain('delete')
+    expect(screen.getByTestId('trash-icon')).toBeTruthy()
+    expect((back.parentElement as HTMLElement).className).not.toContain(
+      'stacked',
+    )
+  })
+})
+
 describe('ConfirmDialog as a way to stay', () => {
   function stay(onCancel = vi.fn(), onConfirm = vi.fn()) {
     render(() => (
@@ -331,7 +357,8 @@ describe('ConfirmDialog as a way to stay', () => {
         title="Skip the intro?"
         message="Stay, and you get:"
         details={['Your range', 'A plan']}
-        keepLabel="Keep going"
+        variant="stay"
+        cancelLabel="Keep going"
         confirmLabel="Yes, skip"
         isolateKeyboard
         onConfirm={onConfirm}
@@ -390,7 +417,8 @@ describe('ConfirmDialog as a way to stay', () => {
         title="Leave?"
         message="Sure?"
         details={[]}
-        keepLabel="Stay"
+        variant="stay"
+        cancelLabel="Stay"
         onConfirm={vi.fn()}
         onCancel={vi.fn()}
       />
