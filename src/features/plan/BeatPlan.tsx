@@ -79,8 +79,10 @@ export interface BeatPlanProps {
   /** A stop was opened; `tour` asks for its room's spotlight tour as well. */
   onEnterStop: (stop: PlanStop, tour: boolean) => void
   /** First Light asks before a question's Not now turns the plan down
-   *  (PlanQuestions' `askBeforeDecline`); the plan's own Not now asks nothing. */
-  askBeforeDecline?: (decline: () => void) => void
+   *  (PlanQuestions' `askBeforeDecline`); the plan's own Not now asks nothing.
+   *  `stillTrue` holds while the questions show: the account's plan can take
+   *  their place while it asks. */
+  askBeforeDecline?: (decline: () => void, stillTrue: () => boolean) => void
 }
 
 export function BeatPlan(props: BeatPlanProps): JSX.Element {
@@ -120,7 +122,15 @@ export function BeatPlan(props: BeatPlanProps): JSX.Element {
             onDone={c.done}
             onDecline={c.decline}
             onAnswering={c.answering}
-            askBeforeDecline={props.askBeforeDecline}
+            askBeforeDecline={
+              props.askBeforeDecline === undefined
+                ? undefined
+                : (decline) =>
+                    props.askBeforeDecline?.(
+                      decline,
+                      () => c.phase() === 'questions',
+                    )
+            }
           />
         </Match>
         <Match when={c.phase() === 'plan'}>

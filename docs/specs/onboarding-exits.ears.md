@@ -241,11 +241,14 @@ confirms" in `FirstLight.skip.test.tsx`.
 ### REQ-EX-016: A question that is no longer true closes by itself
 
 **IF** the beat it was asked on moves on underneath an open question (the
-voiceprint finished, the microphone was refused) **THEN** it shall close by
-itself, counted as neither kept nor skipped, and the focus shall land on
-the new beat's heading. Verified by "closes by itself when the voiceprint
-finishes underneath, counted as neither" and "leaves the focus on the twin's
-heading when it closes by itself" in `FirstLight.skip.test.tsx`.
+voiceprint finished, the microphone was refused), or what it asks about
+goes (an answered plan from the account takes the questions' place),
+**THEN** it shall close by itself, counted as neither kept nor skipped, and
+the focus shall land on the heading now showing. Verified by "closes by
+itself when the voiceprint finishes underneath, counted as neither", "leaves
+the focus on the twin's heading when it closes by itself" and "closes by
+itself when the account plan lands in place of the questions, counted as
+neither" in `FirstLight.skip.test.tsx`.
 
 ### REQ-EX-017: The beat goes on under the question
 
