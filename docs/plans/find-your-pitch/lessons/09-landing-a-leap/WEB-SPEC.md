@@ -329,8 +329,8 @@ States:
      first) and "Smaller: do-mi-so-mi-do". The chart shows the pressed ladder's slots, faint.
    - **Move do**: Lesson 4's control, word for word (`learn/04.html:1254-1263`): a group labelled
      "Move do:" with two buttons, "lower" and "higher", a semitone a tap, up to four each way from
-     D3 (or D4), each disabled at its end, as Lesson 4's are (`kit/move-do.ts:20-21`, `:31-40`,
-     `:23-29`; FACTS 75). The rungs, their names and the chart's window move with it, and the
+     D3 (or D4), each disabled at its end, as Lesson 4's are (`kit/move-do.ts:26-27`, `:51-63`,
+     `:38-49`; FACTS 75). The rungs, their names and the chart's window move with it, and the
      chart's summary says where do is ("Do is D3"), in Lesson 4's spelling (FACTS 22). The ladder
      choice and Move do can change before Start and before Again, never during a take.
    - Start: with sound on, it asks for the microphone (`listen('lesson-09', Sound.context())`,
@@ -720,7 +720,7 @@ table):
 10. Move do as a kit part, promoted before this page is built. Built by #1192: Lesson 4's page
     had it, and Lesson 6's page (PR #1149) a copy in its own module (`lesson-06/sing-guide.ts`,
     its `MOVE_MAX` and `clampMove`), so this page would have made a third. `kit/move-do.ts` holds
-    Lesson 4's control word for word (`kit/move-do.ts:20-29`, `:31-40`): four semitones each way,
+    Lesson 4's control word for word (`kit/move-do.ts:26-49`, `:51-63`): four semitones each way,
     the two buttons and their disabled ends, and Lessons 4, 6 and 8 use it, as this page will.
 11. The four-words strip: built, promoted from Lesson 1's page (`lesson-01/words.ts`) into
     `kit/words-strip.ts` with Lesson 7's page; Lesson 6's page (PR #1149) keeps its own in

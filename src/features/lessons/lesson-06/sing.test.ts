@@ -6,11 +6,14 @@
 // and a voice change, pressed while Merc sings a version, stop the version
 // and then act; a version cut short has not been played, so the guide
 // still waits for one; and a sound anywhere else on the page stops a
-// version too. The status line and the do line, both live regions, are
-// written only when their words change.
+// version too. Move do at its end is aria-disabled, and a press there
+// keeps the keyboard's place, leaves do where it is and does not stop the
+// sweep. The status line and the do line, both live regions, are written
+// only when their words change.
 
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import '@/features/lessons/kit/browser-doubles.test-fixtures'
+import { MOVE_MAX } from '@/features/lessons/kit/move-do'
 import { el, listen, loadPage } from './page-dom.test-fixtures'
 import { initSing, RUNNING } from './sing'
 import { STATUS } from './sing-flow'
@@ -124,6 +127,33 @@ describe("Lesson 6's Sing it: a press while Merc sings", () => {
     expect(el('#ring .ring-note').innerHTML).toBe(ringLabel(62))
     expect(el('#singStatus').textContent).toBe(STATUS.first)
     expect(lit('[data-version="1"]')).toBe(false)
+  })
+})
+
+describe("Lesson 6's Sing it: Move do at its end", () => {
+  it('leaves the sweep, do and the keyboard on lower at a press of lower at the lowest do', async () => {
+    // Arrange: the first version played, do four lower, the guide sweeping, the keyboard on lower
+    vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] })
+    listen()
+    mountSing()
+    el('[data-version="1"]').click()
+    await vi.advanceTimersByTimeAsync(9700)
+    const lower = el<HTMLButtonElement>('[data-move-do="-1"]')
+    for (let k = 0; k < MOVE_MAX; k++) lower.click()
+    el('[data-guide-start]').click()
+    await vi.advanceTimersByTimeAsync(3000)
+    lower.focus()
+
+    // Act
+    lower.click()
+    await vi.advanceTimersByTimeAsync(1000)
+
+    // Assert
+    expect(lower.getAttribute('aria-disabled')).toBe('true')
+    expect(el('#singStatus').textContent).toBe(RUNNING.guide)
+    expect(lit('[data-guide-start]')).toBe(true)
+    expect(el('[data-do-readout]').innerHTML).toBe(readoutHtml('lower', -4))
+    expect(document.activeElement).toBe(lower)
   })
 })
 

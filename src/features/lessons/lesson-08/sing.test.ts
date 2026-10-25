@@ -9,7 +9,8 @@
 // hides with the feeling question while its guide runs, and the keyboard's
 // place moves to the status line, never to a button; Again sits after the
 // four feelings, as the card's keyboard order has it; and Move do's button
-// at an end is disabled, the other not.
+// at an end is aria-disabled, the other not, and a press there keeps the
+// keyboard's place, leaves do where it is and does not stop the guide.
 
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import '@/features/lessons/kit/browser-doubles.test-fixtures'
@@ -129,12 +130,15 @@ describe("Lesson 8's sung line", () => {
     expect(again.closest('[data-panel]')).toBe(el('[data-panel="feel"]'))
   })
 
-  it("disables Move do's lower button at the lowest do and its higher one at the highest", async () => {
+  it("marks Move do's lower button aria-disabled at the lowest do and its higher one at the highest", async () => {
     // Arrange
     await ready()
     const lower = el<HTMLButtonElement>('[data-move-do="-1"]')
     const higher = el<HTMLButtonElement>('[data-move-do="1"]')
-    const ends = (): boolean[] => [lower.disabled, higher.disabled]
+    const ends = (): (string | null)[] => [
+      lower.getAttribute('aria-disabled'),
+      higher.getAttribute('aria-disabled'),
+    ]
 
     // Act: down to the lowest do, then up to the highest
     for (let k = 0; k < MOVE_MAX; k++) lower.click()
@@ -142,8 +146,31 @@ describe("Lesson 8's sung line", () => {
     for (let k = 0; k < 2 * MOVE_MAX; k++) higher.click()
     const highest = ends()
 
+    // Assert: never disabled, so neither leaves the tab order
+    expect(lowest).toEqual(['true', 'false'])
+    expect(highest).toEqual(['false', 'true'])
+    expect([lower.disabled, higher.disabled]).toEqual([false, false])
+  })
+
+  it('leaves the guide running, do where it is and the keyboard on lower at a press of lower at the lowest do', async () => {
+    // Arrange: do four lower, then the guide started and the keyboard on lower
+    await ready()
+    const lower = el<HTMLButtonElement>('[data-move-do="-1"]')
+    for (let k = 0; k < MOVE_MAX; k++) lower.click()
+    el('[data-guide-start]').click()
+    const guide = runs[runs.length - 1]
+    lower.focus()
+
+    // Act
+    lower.click()
+    await settle()
+
     // Assert
-    expect(lowest).toEqual([true, false])
-    expect(highest).toEqual([false, true])
+    expect(guide.stopped).toBe(false)
+    expect(el('#singStatus').textContent).toBe(STATUS.guiding)
+    expect(el('[data-do-readout]').textContent).toBe(
+      'do: 4 semitones lower, the lowest',
+    )
+    expect(document.activeElement).toBe(lower)
   })
 })

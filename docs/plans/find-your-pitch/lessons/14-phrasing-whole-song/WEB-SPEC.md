@@ -426,7 +426,7 @@ States:
    (MASTER-PLAN § 4.2 item 2).
    - **Move do**: Lesson 4's control, word for word (`learn/04.html:1254-1263`): a group labelled
      "Move do:" with two buttons, "lower" and "higher", a semitone a tap, up to four each way from
-     D3 (or D4), each disabled at its end, as Lesson 4's are (`kit/move-do.ts:20-21`, `:23-29`;
+     D3 (or D4), each disabled at its end, as Lesson 4's are (`kit/move-do.ts:26-27`, `:38-49`;
      70). The bands, the rows and the window move with it, and the chart's summary says where do is
      ("Do is D3"), in Lesson 4's spelling (18). Move do can change before Start and between takes,
      never during a take; a take made before a move is redrawn against the bands it was sung to,
@@ -871,8 +871,8 @@ among them (PR #1149), and in Lesson 9's spec, beyond the parts Lessons 2 to 9 p
     wiring.
 11. Move do and the count-in as kit parts, built by #1192, which moved them from Lesson 4's page
     into `kit/move-do.ts` as Lesson 9's spec proposed (What the kit and the app still need, 10,
-    there): Move do word for word (`kit/move-do.ts:20-21`, `:23-29`), and Lesson 4's count-in
-    (`countIn`, `:42-44`, `:46-51`), which this page plays before every take.
+    there): Move do word for word (`kit/move-do.ts:26-27`, `:38-49`), and Lesson 4's count-in
+    (`countIn`, `:65-67`, `:69-74`), which this page plays before every take.
 12. `kit/next-card.ts`: a close that knows Sing it's ending, required before this page is built, the
     lead's decision (21 October 2026), so the page waits for it, as it did for item 11. After
     "Effortful", "Uncomfortable" or "Just listen today", the card keeps "You've seen every note you
