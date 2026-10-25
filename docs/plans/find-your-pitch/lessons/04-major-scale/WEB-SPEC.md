@@ -181,7 +181,7 @@ transforms is one object on the page.
   Play white keys from D and Play the pattern from D, each sliding the staircase to D first; with
   sound off, LESSON.md's hint shows and the reveal waits; the reveal never calls a choice wrong.
 - **The house glyph** is a new symbol, `#i-home`, in the page's inline icon sprite (Lesson 1's
-  sprite, `learn/01.html:147-240`, has no house). The glyph itself is `aria-hidden`; do's stair
+  sprite, `learn/01.html:147-244`, has no house). The glyph itself is `aria-hidden`; do's stair
   buttons say it instead ("Stair 1, do, D 4, home").
 - **Keyboard and screen readers.** The staircase is a group whose live summary names the scale,
   its notes and its steps: "D major: D, E, F sharp, G, A, B, C sharp, D. Tone, tone, semitone,

@@ -90,13 +90,13 @@ section's heading, and the line above it, are in LESSON.md ("Section headings").
    `:126`; `kit/page-state.ts:64-108`; Edge cases), then "Season 1 · Lesson 13" opens the lesson
    menu (`kit/lesson-menu.ts`), and the page's steps are remembered as the viewer moves through
    them (`kit/position.ts`).
-2. **Hero**, laid out as Lesson 2's is (`learn/02.html:329-502`). The hero copy holds the kicker;
+2. **Hero**, laid out as Lesson 2's is (`learn/02.html:333-506`). The hero copy holds the kicker;
    the hook question as the title, `<h1 class="hook" id="hook">` in its default wording, the
    season's, which `src/features/lessons/kit/lesson-copy.test.ts` holds every page's title to
    (`:323-332`), with no variant's team note anywhere in the markup (`src/features/lessons/kit/team-notes.test.ts:85-101`; FACTS 1), and the
    element the site worker writes a picked hook into (`src/lesson-gate.ts:590-591`); the meta as
    four chips ("16 minutes", FACTS 5; "After Lesson 11: Registers and the break", a link to
-   `/learn/11`, wholly the link, as Lesson 2's `a.chip.chip-link` is, `learn/02.html:347-352`, so
+   `/learn/11`, wholly the link, as Lesson 2's `a.chip.chip-link` is, `learn/02.html:351-356`, so
    that it stays as a plain chip where Lesson 11 is not live; Sound on; Microphone optional); the
    promise; and the sound gate from LESSON.md. Beside it, the stage: the bubbles, Tavi's "A
    different vowel must be a slightly different note, surely?" and Merc's "Watch the line, and
@@ -141,7 +141,7 @@ section's heading, and the line above it, are in LESSON.md ("Section headings").
    picked, the defaults until it picks (`:14-20`), since the card reads the season as the page's
    state shows it (`pageLessons`, `kit/page-state.ts:54-57`). The tease's figure (Toys 8) sits in
    the page's `[data-next-card]` mark, whose children the kit keeps in the card after its words
-   (`kit/next-card.ts:27-29`), as Lesson 2's figures are (`learn/02.html:1819`). The card is a link,
+   (`kit/next-card.ts:27-29`), as Lesson 2's figures are (`learn/02.html:1823`). The card is a link,
    so the figure holds no button. The practice card is the Voice Mirror card, with "Ten minutes,
    gently, most days" under it; after "Effortful", "Uncomfortable" or "Just listen today" it is the
    rest card instead, without that line or link (Toys 6). It links `/mirror?lesson=13` in a new tab.
@@ -424,7 +424,7 @@ The band chart in hold mode with the strip under it, inside Sing it's card: the 
 with this page's `.vowel-chart`, 340 px tall (310 px at 420 px wide and under, the step figure's
 heights, so the strip's segments are the ones Toys 1 gives), its frame fixed at ten seconds with
 the seconds named under the plot (`setWindow(10)`, `timeTicks`; `kit/band-chart-hold.ts:1-13`, as
-Lesson 5's hold chart is, `learn/05.html:1536`). Under the chart, the vowel names row: an ordered
+Lesson 5's hold chart is, `learn/05.html:1540`). Under the chart, the vowel names row: an ordered
 list of the five vowels, ‘ee’, ‘eh’, ‘ah’, ‘oh’ and ‘oo’, each in a 44 px tall cell, not a target;
 the vowel of the moment is bold, underlined and `aria-current="step"`, so it never rests on colour
 alone. Every state has a visible status line that is also announced (`aria-live="polite"`); the
@@ -439,7 +439,7 @@ but pitch frames: no analyser, no spectrum, no level, and no vowel (Decisions 3)
 States:
 
 1. **Comfort check**, always first and asked every visit (never stored): Lesson 5's status line,
-   "Before you sing: how is your voice today?" (`learn/05.html:1326`), LESSON.md's head line,
+   "Before you sing: how is your voice today?" (`learn/05.html:1330`), LESSON.md's head line,
    "Sore, hoarse or unwell today? Just listen along.", Lesson 3's list naming all six of
    REQ-GVC-020's conditions, and its two buttons (FACTS 45, 46), through the kit's `mountComfort`
    (`kit/comfort.ts:158-166`).
