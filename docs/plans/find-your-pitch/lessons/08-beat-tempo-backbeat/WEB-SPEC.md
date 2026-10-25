@@ -34,14 +34,15 @@ Its public home is `mercurypitch.com/learn/08` (MASTER-PLAN § 12 item 9): a han
 but answers its address with the 404 page on mercurypitch.com until the admin console publishes it
 (FACTS 7). Publish it only after Lesson 6's page at `/learn/06` is published, because its recall
 check asks Lesson 6's questions and links there (FACTS 3), and once the kit parts listed under "What
-the kit and the app still need" are in. The console does not check this order: it asks before it
-publishes a lesson ahead of one it builds on, and Lesson 8 builds on Lesson 1, not Lesson 6
-(`kit/season.ts`, `EDGES`). So the order is the owner's to keep; as a backstop the recall sits in a
-wrapper that leaves it out while Lesson 6 is not live (Toys 7). The curiosity plan's kit work is
-on main: the next-lesson card draws Lesson 9's tease
-above its new hook, and Lesson 7's card draws this lesson's tease, "Same song, same speed. Only the
-claps move.", both from the season data (`kit/season.ts` and `kit/lesson-copy.ts`; FACTS 6, 6a). The
-page writes neither into its markup.
+the kit and the app still need" are in. Lesson 8 builds on Lesson 1, not Lesson 6 (`kit/season.ts`,
+`EDGES`), but the console asks before it publishes this page while Lesson 6's is not published
+there, since its own list of the recalls that ask a lesson off that map names Lesson 6 for it
+(`RECALLS`, `src/features/admin/lessons/lesson-admin.ts:493-511`). "Publish anyway" still publishes
+it, so the order is the owner's to keep; as a backstop the recall sits in a wrapper that leaves it
+out while Lesson 6 is not live (Toys 7). The curiosity plan's kit work is on main: the next-lesson
+card draws Lesson 9's tease above its new hook, and Lesson 7's card draws this lesson's tease, "Same
+song, same speed. Only the claps move.", both from the season data (`kit/season.ts` and
+`kit/lesson-copy.ts`; FACTS 6, 6a). The page writes neither into its markup.
 
 ## The checkpoint: how it takes input
 
@@ -691,8 +692,8 @@ lesson is not live where the page is served, the words stay with no link, which 
   `line-fs` (FACTS 78) through Lesson 6's `bindQuizPlays`, bound to the recall's `host`
   (`lesson-06/quiz-play.ts:14-33`); like every play here, it stops whatever else is sounding
   (Audio).
-- **While Lesson 6 is not live.** The page publishes after `/learn/06` (FACTS 7), but the console
-  does not check that order, since it asks only about the lesson Lesson 8 builds on, Lesson 1, so
+- **While Lesson 6 is not live.** The page publishes after `/learn/06` (FACTS 7), and the console
+  asks before it publishes the page ahead of it (the intro), but "Publish anyway" goes ahead, so
   the recall has a backstop: `section#recall` sits inside
   `<div data-if-live="6">`. Where Lesson 6 is not live, the site worker takes out the wrapper and
   the section in it (`src/lesson-gate.ts:20-21`), and on a page no worker served `followPageState`

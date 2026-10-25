@@ -50,9 +50,11 @@ A page links the earlier lessons its prerequisite chips and its recall name: Les
 #1186, by its chip); 9 links 3 and 6; 11 links 7; 12 links 10; 13 links 11; 14 links 5, 8,
 9 and 12. While the earlier page is not live, the link shows as words with no link, so nothing
 breaks. Publish in that order anyway: MASTER-PLAN § 11 says when each page can go live. The console
-asks before it publishes a lesson ahead of one it builds on, but "Publish anyway" goes ahead, and
-it does not ask about the two recalls of a lesson their page does not build on: Lesson 3's, of
-Lesson 2, and Lesson 8's, of Lesson 6.
+asks before it publishes a lesson ahead of one it builds on, or ahead of the lesson its recall asks,
+but "Publish anyway" goes ahead. Two recalls ask a lesson their page does not build on, Lesson 3's
+(of Lesson 2) and Lesson 8's (of Lesson 6); the console keeps them in its own list, `RECALLS` in
+`src/features/admin/lessons/lesson-admin.ts`, so the season map and the chips stay as they are. A
+new recall that asks a lesson its page does not build on needs a line there.
 
 ## 2. Release day
 
@@ -110,7 +112,8 @@ are the mobile app's builds. The next `v` tag carries both pages.
 
 7. **Publish** from `/admin/lessons`. The button reads Publish, or Unpublish once a lesson is live.
    For a lesson that still waits on its sign-off, or that would go live before a lesson it builds
-   on, the console asks first ("Publish anyway"). "Use default" goes back to what the code says.
+   on or its recall asks, the console asks first ("Publish anyway"). "Use default" goes back to what
+   the code says, and asks the same question first when that would put the lesson live.
 8. **The date, again.** The site worker never writes `datePublished`; it gives a published draft
    only a sitemap `lastmod`. Set the lesson's `datePublished` in a commit straight after the
    console publishes it, or in the commit that deletes its `drafts.ts` line (SEARCH.md § 3.2);

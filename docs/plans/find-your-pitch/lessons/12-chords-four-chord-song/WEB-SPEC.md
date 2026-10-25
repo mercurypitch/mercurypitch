@@ -52,7 +52,7 @@ page, and every page's explorer shows Lesson 12 with no link, as a lesson not wr
 preview serve it. Publishing it from the admin console puts it live on mercurypitch.com with no
 release (`src/features/lessons/kit/drafts.ts:13`); the console asks first while its `drafts.ts` line
 stands, naming what it waits on, and, line or no line, while Lesson 10 is not published, asking once
-when both hold (`src/features/admin/AdminLessonsPage.tsx:186-219`); but "Publish anyway" goes
+when both hold (`src/features/admin/AdminLessonsPage.tsx:186-241`); but "Publish anyway" goes
 ahead, so "publish after Lesson 10" stays a rule for whoever uses it (Decisions for the owner).
 Releasing it is deleting its `drafts.ts` line (What the kit and the app still need,
 items 2 and 15). The curiosity plan's kit work is on main: Lesson 12's hook is the season's
@@ -852,7 +852,7 @@ heard play (Toys 3; Edge cases) (`git diff --stat`).
    (`src/features/lessons/kit/drafts.ts:5-13`), once it has asked, naming what the line says the
    page waits on: "Publish ${name} before its sign-off?", or, while Lesson 10 is not published
    there, "Publish ${name} before its sign-off and before ${lessons}?"
-   (`src/features/admin/lessons/lesson-publish.ts:252-272`; `waitingOn`,
+   (`src/features/admin/lessons/lesson-publish.ts:282-308`; `waitingOn`,
    `src/features/admin/lessons/lesson-admin.ts:96-98`). Releasing it is deleting that line once both
    are done, then listing it as item 15 says (`src/features/lessons/kit/drafts.ts:18-21`; SEARCH.md
    § 12 item 3).
@@ -981,7 +981,7 @@ Each with the package's recommendation and the review's judgement (Lesson 12's r
    Lesson 12 opens with.", a second button holding its wording, its team note printed below it, and
    the tags "Default" and "Chosen"; one click saves it, with no confirmation
    (`src/features/admin/lessons/LessonControls.tsx:333-463`, the Hook picker `:496-500`; `saveCopy`,
-   `src/features/admin/AdminLessonsPage.tsx:226-234`). Picked, it would reach the h1; the
+   `src/features/admin/AdminLessonsPage.tsx:248-256`). Picked, it would reach the h1; the
    description (158 characters) and og:description (141); twitter:description; the Article's
    `alternativeHeadline` and description; Lesson 12's card in every lesson page's explorer, today
    included, while Lesson 12 is coming later; and Lesson 11's next-lesson card (Edge cases, "The
@@ -999,14 +999,16 @@ Each with the package's recommendation and the review's judgement (Lesson 12's r
    Decided: the console warns, as this spec and Lesson 10's proposed, and as the review found
    sensible; the owner said yes on 24 October 2026. Before it publishes a lesson while a lesson it
    builds on is not published on that site, it asks, whether its draft line stands or not
-   (`src/features/admin/AdminLessonsPage.tsx:186-219`; `publishQuestion`,
-   `src/features/admin/lessons/lesson-publish.ts:239-272`; `aheadOf`,
-   `src/features/admin/lessons/lesson-admin.ts:493-510`). With Lesson 10 held back and the line
+   (`src/features/admin/AdminLessonsPage.tsx:186-241`; `publishQuestion`,
+   `src/features/admin/lessons/lesson-publish.ts:265-308`; `aheadOf`,
+   `src/features/admin/lessons/lesson-admin.ts:525-548`). With Lesson 10 held back and the line
    standing, it asks once, "Publish Lesson 12 before its sign-off and before Lesson 10?", and its
    words read "Lesson 12 waits on Lesson 10's page at /learn/10, and the vocal coach's look at the
    sung checkpoint. It also builds on Lesson 10, which is not published here. Publish it anyway?";
    with the line deleted, it asks "Publish Lesson 12 before Lesson 10?". "Publish anyway" still
-   publishes it, so the owner keeps the order.
+   publishes it, so the owner keeps the order. On 25 October 2026 the owner added that "Use default"
+   asks the same question when going back to the code's default would put the lesson live
+   (`defaultGoesLive`, `src/features/admin/lessons/lesson-publish.ts:227-235`).
 4. **The two tunes.** Both are written for this lesson, and neither quotes a song the writer knows
    (FACTS 33). No melody database was searched. The review, which found no close match to any melody
    it knows, wrote both out in solfa and heard these likenesses, for the owner to hear too: tune 1,

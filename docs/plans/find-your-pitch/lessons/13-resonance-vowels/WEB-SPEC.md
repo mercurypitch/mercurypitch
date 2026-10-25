@@ -774,8 +774,8 @@ and the four-words strip in the kit.
    (`kit/drafts.ts:31-38`), makes it a draft: production's `LESSON_DRAFTS`, "0", holds it back, and
    the dev site's and the previews', "1", show it (`wrangler.jsonc:112-116`, `:167`, `:190`,
    `:232`), until the console sets it either way, and the Content Studio's Lessons page names that
-   reason when asked to publish it (`src/features/admin/AdminLessonsPage.tsx:186-219`;
-   `publishQuestion`, `src/features/admin/lessons/lesson-publish.ts:239-272`; FACTS 9).
+   reason when asked to publish it (`src/features/admin/AdminLessonsPage.tsx:186-241`;
+   `publishQuestion`, `src/features/admin/lessons/lesson-publish.ts:265-308`; FACTS 9).
    `/learn/13` and `/learn/13.html` go in `STANDALONE_DOCUMENT_PATHS` (`src/lib/sw-runtime.ts:93`,
    the lessons `:131-157`), so the service worker never serves the app shell in the lesson's place;
    `src/tests/lesson-pages.test.ts` checks a draft for them too (`:339-343`). On release: delete the
