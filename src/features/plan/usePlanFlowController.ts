@@ -42,8 +42,10 @@
 //   from the account after the host read it as due: First Light reads it as
 //   it opens, and the pull after a sign-in lands later. So an answered plan,
 //   there as the run begins or landing before the first pick, is shown as a
-//   review shows it, and nothing is told for it: it was counted where it was
-//   answered. Once the person has started, their answers replace it.
+//   review shows it: from the finding the record kept, never this run's, so
+//   Home's card shows the same plan. Nothing is told for it: it was counted
+//   where it was answered. Once the person has started, their answers replace
+//   it.
 //
 // What the host sees: `phase` says which screen to draw; `plan`, `credits`,
 // `scopeOn`, `pills`, `choices` and `texts` are what the screens take;
@@ -228,17 +230,19 @@ export function usePlanFlowController(o: PlanFlowOptions): PlanFlowController {
 
   // ── Building the plan ──
 
-  /** What the voiceprint found: the host's live finding, else the record's. */
-  const found = (): VoiceprintStop | null => {
-    const live = untrack(() => o.voiceprint?.() ?? null)
-    if (live !== null) return live
-    const kept = untrack(planRecord)?.voiceprint
-    return kept === undefined ? null : { room: kept.room, detail: kept.detail }
+  /** The finding the record kept, which Home's card and a review build from. */
+  const kept = (): VoiceprintStop | null => {
+    const v = untrack(planRecord)?.voiceprint
+    return v === undefined ? null : { room: v.room, detail: v.detail }
   }
 
-  const planFor = (c: PlanChoices): Plan =>
+  /** What the voiceprint found: the host's live finding, else the record's. */
+  const found = (): VoiceprintStop | null =>
+    untrack(() => o.voiceprint?.() ?? null) ?? kept()
+
+  const planFor = (c: PlanChoices, voiceprint = found()): Plan =>
     buildPlan(c, {
-      voiceprint: found(),
+      voiceprint,
       // The menu as it stands, or as it stood before the switch narrowed it.
       view: {
         scope: before ?? untrack(practiceScope),
@@ -287,12 +291,16 @@ export function usePlanFlowController(o: PlanFlowOptions): PlanFlowController {
 
   // ── How the run begins ──
 
-  /** An answered plan, shown as a review opens on it: its answers were told where they were given. */
+  /**
+   * An answered plan, shown as a review opens on it: built from the finding
+   * the record kept, as Home's card is, and its answers were told where they
+   * were given.
+   */
   const showAnswered = (c: PlanChoices): void => {
     reported = true
     batch(() => {
       setChoices(c)
-      setPlan(planFor(c))
+      setPlan(planFor(c, kept()))
       setPhase('plan')
     })
   }

@@ -209,7 +209,9 @@ and "answers with what Home does for its own session, once" in
 answering (no pick, no move past the first question), **WHEN** an answered
 plan arrives from the account, the beat shall show that plan, as a review
 of it does, instead of asking the questions again, and shall tell the
-funnel nothing for its answers. Once the visitor has started, their own
+funnel nothing for its answers. It shall build that plan from the
+voiceprint finding the record kept, not from one made in this run, so
+Home's card shows the same plan. Once the visitor has started, their own
 answers replace it. The same holds for a plan that arrived after First
 Light read the plan as due but before the beat opened. Verified by "is
 shown in place of the questions when the account sends it before the first
