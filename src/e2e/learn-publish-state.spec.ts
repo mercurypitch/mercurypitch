@@ -16,7 +16,7 @@
 // src/lesson-gate.test.ts's.
 
 import type { Locator, Page } from '@playwright/test'
-import { expect, test } from '@playwright/test'
+import { expect, test } from './helpers/lesson-page'
 import { LESSON_COPY } from '../features/lessons/kit/lesson-copy'
 
 interface Served {

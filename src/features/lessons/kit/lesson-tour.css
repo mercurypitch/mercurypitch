@@ -1,0 +1,135 @@
+/* ============================================================
+   Lesson tour — the welcome tour's spotlight and card
+   ============================================================
+   Loaded with the tour (tour.ts), never on first paint. The card wears the
+   kit's buttons (lesson-base.css) and the room's tokens: the lessons have
+   one dark theme, so the tour has one too. Every rule here starts at .tour,
+   so it outranks the kit's button rules it adjusts, whatever order the
+   sheets load in. The spotlight is one element whose box-shadow is the
+   dim; the sheet under the card takes every press on the page. Under
+   reduced motion nothing glides. */
+
+.tour {
+  position: fixed;
+  inset: 0;
+  z-index: 200;
+}
+.tour .tour-sheet {
+  position: absolute;
+  inset: 0;
+  cursor: default;
+}
+.tour .tour-spot {
+  position: fixed;
+  top: 0;
+  left: 0;
+  border-radius: var(--r-lg);
+  box-shadow:
+    0 0 0 2px color-mix(in srgb, var(--aqua) 70%, transparent),
+    0 0 28px 4px color-mix(in srgb, var(--aqua) 22%, transparent),
+    0 0 0 200vmax rgba(3, 6, 10, 0.66);
+  pointer-events: none;
+}
+.tour.is-moving .tour-spot {
+  transition:
+    transform 0.34s var(--ease),
+    width 0.34s var(--ease),
+    height 0.34s var(--ease);
+}
+.tour .tour-card {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: min(360px, calc(100vw - 24px));
+  padding: 18px 20px 16px;
+  border: 1px solid transparent;
+  border-radius: var(--r-lg);
+  color: var(--ink);
+  background:
+    linear-gradient(180deg, var(--raised), var(--panel)) padding-box,
+    var(--grad-rim) border-box;
+  box-shadow:
+    var(--shadow),
+    0 18px 50px -12px rgba(0, 0, 0, 0.7);
+  transition:
+    left 0.28s var(--ease),
+    top 0.28s var(--ease);
+}
+/* no room beside the target on a wide screen: the card waits at the foot */
+.tour .tour-card.is-dock {
+  top: auto;
+  left: auto;
+  right: max(12px, env(safe-area-inset-right, 0px));
+  bottom: max(12px, env(safe-area-inset-bottom, 0px));
+}
+.tour .tour-x {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  border-color: transparent;
+  background: transparent;
+  color: var(--ink-2);
+}
+.tour .tour-count {
+  margin: 0 0 6px;
+  padding-right: 44px;
+  font: 500 var(--fs-12) / 1.4 var(--f-mono);
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--aqua);
+}
+.tour .tour-title {
+  margin: 0 0 8px;
+  padding-right: 36px;
+  font: 600 var(--fs-22) / 1.2 var(--f-display);
+  letter-spacing: -0.01em;
+}
+.tour .tour-body {
+  margin: 0 0 16px;
+  font-size: var(--fs-16);
+  line-height: 1.55;
+  color: var(--ink-2);
+}
+.tour .tour-nav {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.tour .tour-skip {
+  margin-right: auto;
+  border-color: transparent;
+  background: transparent;
+  color: var(--ink-2);
+  padding: 0 10px;
+}
+.tour .tour-x:hover,
+.tour .tour-skip:hover {
+  background: rgba(255, 255, 255, 0.07);
+  color: var(--ink);
+}
+/* a phone: the card docks at the foot, full width, and the target scrolls
+   into the room above it (tour.ts NARROW) */
+@media (max-width: 639px) {
+  .tour .tour-card,
+  .tour .tour-card.is-dock {
+    top: auto;
+    left: max(12px, env(safe-area-inset-left, 0px));
+    right: max(12px, env(safe-area-inset-right, 0px));
+    bottom: max(12px, env(safe-area-inset-bottom, 0px));
+    width: auto;
+    padding: 16px 16px 14px;
+    transition: none;
+  }
+  .tour .tour-title {
+    font-size: var(--fs-18);
+  }
+  .tour .tour-body {
+    margin-bottom: 12px;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .tour .tour-card,
+  .tour.is-moving .tour-spot {
+    transition: none;
+  }
+}

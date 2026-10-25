@@ -11,6 +11,7 @@ import { rememberSteps } from './position'
 import { Sound } from './sound'
 import type { StepDeck } from './step-deck'
 import { hideToast, toast } from './toast'
+import { startTour, tourDue } from './tour-gate'
 
 /** The sound gate's two lines: before sound is on, and once it is. */
 export interface GateLines {
@@ -114,7 +115,9 @@ export interface MastheadLesson {
  * viewer moves through them (position.ts), for every page's menu and map.
  * Every lesson page calls this, so it is also where the page's own links
  * to other lessons, and its readings of their state, follow the state the
- * page was served with (page-state.ts `followPageState`).
+ * page was served with (page-state.ts `followPageState`), and where a first
+ * visit is offered the welcome tour (tour-gate.ts), once the lesson menu's
+ * button it ends on is in place.
  */
 export function initMasthead(
   sections: Record<string, string>,
@@ -147,6 +150,7 @@ export function initMasthead(
     label: q('.mast-ep'),
     sections: links,
   })
+  if (tourDue()) startTour(page.lesson, false)
 }
 
 /**

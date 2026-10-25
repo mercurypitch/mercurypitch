@@ -18,7 +18,7 @@
 // learn-lesson-07-sing-a3.spec.ts's. Merc's siren is 6 s and a take about
 // 11 s, so the longest test runs about 30 s.
 
-import { expect, test } from '@playwright/test'
+import { expect, test } from './helpers/lesson-page'
 import { again, ending, feel, micAsks, playMerc, start, status, take, toSing, trackStops, watchMic, } from './helpers/lesson-07-sing'
 import { fakeMicArgs, writeGlideWav } from './helpers/tone-wav'
 

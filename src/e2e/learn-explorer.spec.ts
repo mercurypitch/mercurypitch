@@ -13,7 +13,7 @@
 // question stands in. At 1024 px wide the map's labels keep apart.
 
 import type { Page } from '@playwright/test'
-import { expect, test } from '@playwright/test'
+import { expect, test } from './helpers/lesson-page'
 
 /** The open card's main button, by its class: its words follow the viewer's progress. */
 const MAIN = '.ex-actions .btn.primary'

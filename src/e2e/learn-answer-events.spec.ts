@@ -15,7 +15,7 @@
 // site worker serves it.
 
 import type { Page, Request } from '@playwright/test'
-import { expect, test } from '@playwright/test'
+import { expect, test } from './helpers/lesson-page'
 
 /** The beacon's own chunk, as Vite names it. */
 const BEACON_CHUNK = /\/assets\/telemetry-[\w-]+\.js$/

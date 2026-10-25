@@ -9,7 +9,7 @@
 // with the cached app shell. Once it loads, the module must boot too: a page
 // that reads but never plays is a failure nobody would think to report.
 
-import { expect, test } from '@playwright/test'
+import { expect, test } from './helpers/lesson-page'
 import { filmSources } from '../features/lessons/kit/films'
 import { dismissOverlays } from './helpers/ui'
 

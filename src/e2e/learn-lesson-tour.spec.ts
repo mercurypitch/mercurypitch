@@ -1,0 +1,347 @@
+// ============================================================
+// Lesson tour — a first visit's welcome tour on a lesson page
+// ============================================================
+//
+// The one learn spec that starts clean: it imports Playwright's own `test`,
+// not helpers/lesson-page.ts, which closes the tour for every other spec.
+// A first visit opens the tour on Merc and Tavi's stage; Next walks its
+// steps; Done, Skip, the X and Escape close it for good; the lesson menu's
+// "Tour this page" plays it again. Phone and desktop, reduced motion, and
+// no sideways scroll at any step.
+
+import type { Page } from '@playwright/test'
+import { expect, test } from '@playwright/test'
+import { TOUR_KEY, TOUR_VERSION } from '../features/lessons/kit/tour-gate'
+
+const PHONE = { width: 390, height: 844 }
+const DESKTOP = { width: 1440, height: 900 }
+
+const TITLES = [
+  'Meet Merc and Tavi',
+  'One step at a time',
+  'Your turn to sing',
+  'The season, mapped',
+  'Find your way',
+]
+
+const card = (page: Page) =>
+  page.getByRole('dialog', {
+    name: /Meet Merc and Tavi|One step|Your turn|The season|Find your way/,
+  })
+const next = (page: Page) =>
+  card(page).getByRole('button', { name: /^(Next|Done)$/ })
+
+/** The tour's record, as the page reads it. */
+const record = (page: Page): Promise<string | null> =>
+  page.evaluate((k) => localStorage.getItem(k), TOUR_KEY)
+
+/**
+ * Whether the spotlight lies over the targets that show for `selectors`,
+ * 8 px out, as far as they show on the screen.
+ */
+function lit(page: Page, selectors: readonly string[]): Promise<boolean> {
+  return page.evaluate((sels) => {
+    const els = sels
+      .map((s) => document.querySelector(s))
+      .filter(
+        (el): el is Element => el !== null && el.getClientRects().length > 0,
+      )
+    const spot = document.querySelector('.tour-spot')
+    if (els.length === 0 || spot === null) return false
+    const rs = els.map((el) => el.getBoundingClientRect())
+    const vw = document.documentElement.clientWidth
+    const vh = window.innerHeight
+    const want = [
+      Math.max(Math.min(...rs.map((r) => r.left)) - 8, -8),
+      Math.max(Math.min(...rs.map((r) => r.top)) - 8, -8),
+      Math.min(Math.max(...rs.map((r) => r.right)) + 8, vw + 8),
+      Math.min(Math.max(...rs.map((r) => r.bottom)) + 8, vh + 8),
+    ]
+    const s = spot.getBoundingClientRect()
+    const got = [s.left, s.top, s.right, s.bottom]
+    return got.every((v, i) => Math.abs(v - want[i]) < 1.5)
+  }, selectors)
+}
+
+/** The page wider than its viewport, in px: 0 when nothing scrolls sideways. */
+const sideways = (page: Page): Promise<number> =>
+  page.evaluate(
+    () =>
+      document.documentElement.scrollWidth -
+      document.documentElement.clientWidth,
+  )
+
+const STEP_TARGETS: readonly (readonly string[])[] = [
+  ['#heroStage'],
+  ['#stepsStage'],
+  ['#sing'],
+  ['#graph', '#exList'],
+  ['.lm-btn', '#mastNav'],
+]
+
+for (const [name, size] of [
+  ['phone', PHONE],
+  ['desktop', DESKTOP],
+] as const) {
+  test(`on a ${name} (${size.width} x ${size.height}) a first visit opens on Merc and Tavi, and Next lights every step with nothing scrolling sideways`, async ({
+    page,
+  }) => {
+    // Arrange
+    await page.setViewportSize(size)
+    await page.goto('/learn/01')
+    await expect(card(page)).toBeVisible()
+    await expect(card(page).getByRole('heading')).toHaveText(TITLES[0])
+    await expect(card(page)).toContainText('1 of 5')
+    await expect(next(page)).toBeFocused()
+    const seen: string[] = []
+
+    // Act
+    for (const [i, targets] of STEP_TARGETS.entries()) {
+      await expect(card(page).getByRole('heading')).toHaveText(TITLES[i])
+      await expect.poll(() => lit(page, targets)).toBe(true)
+      expect(await sideways(page)).toBeLessThanOrEqual(0)
+      seen.push(await card(page).getByRole('heading').innerText())
+      if (i < STEP_TARGETS.length - 1) await next(page).click()
+    }
+
+    // Assert
+    expect(seen).toEqual(TITLES)
+    await expect(next(page)).toHaveText('Done')
+    await expect(card(page)).toContainText('5 of 5')
+  })
+}
+
+test('on a phone the card docks at the foot and each target shows in the room above it @smoke', async ({
+  page,
+}) => {
+  // Arrange
+  await page.setViewportSize(PHONE)
+  await page.goto('/learn/03')
+  await expect(card(page)).toBeVisible()
+  const placed: string[] = []
+
+  // Act
+  for (const [i, targets] of STEP_TARGETS.entries()) {
+    await expect.poll(() => lit(page, targets)).toBe(true)
+    const where = await page.evaluate((sels) => {
+      const box = document.querySelector('.tour-card')?.getBoundingClientRect()
+      const mast = document.getElementById('mast')?.getBoundingClientRect()
+      const el = sels
+        .map((s) => document.querySelector(s))
+        .find((e) => e !== null && e.getClientRects().length > 0)
+      const t = el?.getBoundingClientRect()
+      if (box === undefined || mast === undefined || t === undefined)
+        return 'missing'
+      const docked =
+        Math.abs(window.innerHeight - 12 - box.bottom) < 2 &&
+        Math.abs(box.left - 12) < 1
+      // the target's top shows between the masthead's foot and the card (the masthead's own step, in it)
+      const floor = el?.closest('#mast') === null ? mast.bottom : mast.top
+      const above = t.top >= floor - 1 && t.top < box.top - 40
+      return docked && above
+        ? 'ok'
+        : `card ${box.top}-${box.bottom}, target top ${t.top}`
+    }, targets)
+    placed.push(where)
+    if (i < STEP_TARGETS.length - 1) await next(page).click()
+  }
+
+  // Assert
+  expect(placed).toEqual(['ok', 'ok', 'ok', 'ok', 'ok'])
+})
+
+test('walking the tour on a wide screen marks no step of the lesson as reached', async ({
+  page,
+}) => {
+  // Arrange: on a wide screen the step deck follows the scroll, and the kit
+  // keeps the furthest step reached (kit/position.ts, `fyp-pos`)
+  await page.setViewportSize(DESKTOP)
+  await page.goto('/learn/01')
+  await expect(card(page)).toBeVisible()
+
+  // Act: every step, from the deck to Sing it to the map, then Done
+  for (const [i, targets] of STEP_TARGETS.entries()) {
+    await expect.poll(() => lit(page, targets)).toBe(true)
+    await next(page).click()
+    if (i === STEP_TARGETS.length - 1) await expect(card(page)).toBeHidden()
+  }
+
+  // Assert
+  expect(await page.evaluate(() => localStorage.getItem('fyp-pos'))).toBeNull()
+  await expect(page.locator('#stepNow')).toHaveText('1')
+})
+
+test('the dimmed page and the cutout take no presses: only the card answers', async ({
+  page,
+}) => {
+  // Arrange
+  await page.setViewportSize(DESKTOP)
+  await page.goto('/learn/01')
+  await expect.poll(() => lit(page, ['#heroStage'])).toBe(true)
+
+  // Act: what a press lands on, in the cutout and on the dim
+  const hits = await page.evaluate(() => {
+    const s = document.querySelector('.tour-spot')?.getBoundingClientRect()
+    if (s === undefined) return []
+    return [
+      [s.left + s.width / 2, s.top + s.height / 2],
+      [8, window.innerHeight - 8],
+    ].map(([x, y]) => document.elementFromPoint(x, y)?.className ?? '')
+  })
+
+  // Assert
+  expect(hits).toEqual(['tour-sheet', 'tour-sheet'])
+})
+
+for (const [way, close] of [
+  [
+    'Done',
+    async (page: Page) => {
+      for (let i = 0; i < TITLES.length; i++) await next(page).click()
+    },
+  ],
+  [
+    'Skip tour',
+    async (page: Page) => {
+      await card(page).getByRole('button', { name: 'Skip tour' }).click()
+    },
+  ],
+  [
+    'the X',
+    async (page: Page) => {
+      await card(page).getByRole('button', { name: 'Close tour' }).click()
+    },
+  ],
+  [
+    'Escape',
+    async (page: Page) => {
+      await page.keyboard.press('Escape')
+    },
+  ],
+] as const) {
+  test(`${way} closes the tour for good: the record is written and a reload does not bring it back`, async ({
+    page,
+  }) => {
+    // Arrange
+    await page.setViewportSize(DESKTOP)
+    await page.goto('/learn/02')
+    await expect(card(page)).toBeVisible()
+
+    // Act
+    await close(page)
+    await expect(card(page)).toBeHidden()
+    const kept = await record(page)
+    const tourLoads: string[] = []
+    page.on('request', (r) => {
+      if (/\/tour-[^/]*\.js$/.test(r.url())) tourLoads.push(r.url())
+    })
+    await page.reload({ waitUntil: 'networkidle' })
+
+    // Assert: the gate never loads the tour on a browser that closed it
+    expect(kept).toBe(TOUR_VERSION)
+    await expect(page.locator('.lm-btn')).toBeVisible()
+    expect(tourLoads).toEqual([])
+    await expect(card(page)).toBeHidden()
+  })
+}
+
+test('Tab stays in the card, Escape closes it, and the focus goes back to the menu button that replayed it', async ({
+  page,
+}) => {
+  // Arrange: a browser that has closed the tour, replaying it from the menu
+  await page.addInitScript(([k, v]) => localStorage.setItem(k, v), [
+    TOUR_KEY,
+    TOUR_VERSION,
+  ] as const)
+  await page.setViewportSize(DESKTOP)
+  await page.goto('/learn/04')
+  await page.locator('.lm-btn').click()
+  await page.getByRole('button', { name: 'Tour this page' }).click()
+  await expect(card(page).getByRole('heading')).toHaveText(TITLES[0])
+  const inside: boolean[] = []
+
+  // Act
+  for (let i = 0; i < 6; i++) {
+    await page.keyboard.press('Tab')
+    inside.push(
+      await card(page).evaluate((c) => c.contains(document.activeElement)),
+    )
+  }
+  await page.keyboard.press('Escape')
+
+  // Assert
+  expect(inside).toEqual([true, true, true, true, true, true])
+  await expect(card(page)).toBeHidden()
+  await expect(page.locator('.lm-btn')).toBeFocused()
+})
+
+test('a deep link skips the tour this time, and the next lesson page opened at the top offers it', async ({
+  page,
+}) => {
+  // Arrange
+  await page.setViewportSize(DESKTOP)
+  await page.goto('/learn/03#sing', { waitUntil: 'networkidle' })
+  await expect(page.locator('.lm-btn')).toBeVisible()
+  const deep = await record(page)
+
+  // Act
+  await page.goto('/learn/05')
+
+  // Assert: the deep link wrote nothing, so the next page still offers it
+  expect(deep).toBeNull()
+  await expect(card(page).getByRole('heading')).toHaveText(TITLES[0])
+})
+
+test('every lesson page, 1 to 8, offers the same five steps', async ({
+  page,
+}) => {
+  // Arrange
+  await page.setViewportSize(DESKTOP)
+  const counts: string[] = []
+
+  // Act
+  for (let n = 1; n <= 8; n++) {
+    await page.goto(`/learn/0${n}`)
+    await expect(card(page)).toBeVisible()
+    // its words, not as drawn: the count is set in capitals
+    counts.push((await card(page).locator('.tour-count').textContent()) ?? '')
+    await card(page).getByRole('button', { name: 'Skip tour' }).click()
+    await page.evaluate((k) => localStorage.removeItem(k), TOUR_KEY)
+  }
+
+  // Assert
+  expect(counts).toEqual(Array.from({ length: 8 }, () => '1 of 5'))
+})
+
+test.describe('under reduced motion', () => {
+  test('the page jumps to each step and nothing glides', async ({ page }) => {
+    // Arrange
+    await page.emulateMedia({ reducedMotion: 'reduce' })
+    await page.setViewportSize(DESKTOP)
+    await page.goto('/learn/01')
+    await expect(card(page)).toBeVisible()
+
+    // Act: Next, then where the page is and the card's and the spotlight's longest
+    // transition, in seconds, in the same task, before any frame
+    const after = await page.evaluate(() => {
+      const before = window.scrollY
+      document.querySelector<HTMLElement>('[data-tour-next]')?.click()
+      return {
+        moved: window.scrollY !== before,
+        glides: ['.tour-card', '.tour-spot'].map((s) =>
+          Math.max(
+            ...getComputedStyle(document.querySelector(s) as Element)
+              .transitionDuration.split(',')
+              .map((d) => parseFloat(d)),
+          ),
+        ),
+      }
+    })
+
+    // Assert: the page is already there, and no transition runs past the kit's
+    // reduced-motion floor of 0.001 ms
+    expect(after.moved).toBe(true)
+    expect(Math.max(...after.glides)).toBeLessThanOrEqual(0.000001)
+    await expect.poll(() => lit(page, ['#stepsStage'])).toBe(true)
+  })
+})

@@ -19,7 +19,7 @@
 // keyboard and the layouts are learn-lesson-07-qa.spec.ts's; Sing it is
 // learn-lesson-07-sing.spec.ts's.
 
-import { expect, test } from '@playwright/test'
+import { expect, test } from './helpers/lesson-page'
 import { LESSON_COPY } from '../features/lessons/kit/lesson-copy'
 
 // 60 characters at most (src/tests/lesson-pages.test.ts): the lesson's number is in its kicker

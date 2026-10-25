@@ -14,7 +14,7 @@
 // the button's name, a tapped step, and the phone sheet's three sections.
 
 import type { Locator, Page } from '@playwright/test'
-import { expect, test } from '@playwright/test'
+import { expect, test } from './helpers/lesson-page'
 
 /** The masthead's button that opens the season. */
 const trigger = (page: Page): Locator =>

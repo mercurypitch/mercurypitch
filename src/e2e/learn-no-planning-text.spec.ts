@@ -15,7 +15,7 @@
 // opens.
 
 import type { Page } from '@playwright/test'
-import { expect, test } from '@playwright/test'
+import { expect, test } from './helpers/lesson-page'
 import { lessonPages, lessonPath } from '../../tools/draft-lessons'
 import { TEAM_STRINGS } from '../features/lessons/kit/team-notes.test-fixtures'
 

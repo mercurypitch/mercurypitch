@@ -17,7 +17,7 @@
 // and the take are learn-lesson-08-qa.spec.ts's; the sung line is
 // learn-lesson-08-sing.spec.ts's.
 
-import { expect, test } from '@playwright/test'
+import { expect, test } from './helpers/lesson-page'
 import { LESSON_COPY } from '../features/lessons/kit/lesson-copy'
 
 // 60 characters at most (src/tests/lesson-pages.test.ts): the lesson's number is in its kicker

@@ -19,7 +19,7 @@
 // on the note's handle moves the note.
 
 import type { Locator, Page } from '@playwright/test'
-import { expect, test } from '@playwright/test'
+import { expect, test } from './helpers/lesson-page'
 
 /** The steps' chart, and its parts. */
 const TOY = '#toyRange'

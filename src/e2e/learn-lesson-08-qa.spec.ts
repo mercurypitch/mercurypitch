@@ -18,7 +18,7 @@
 // Nothing asks for the microphone.
 
 import type { Locator, Page } from '@playwright/test'
-import { expect, test } from '@playwright/test'
+import { expect, test } from './helpers/lesson-page'
 
 /** The steps' beat machine, and its live region. */
 const TOY = '#toyBeat'

@@ -13,7 +13,7 @@
 // marker closes it, since the marker is a custom slider, not a range input.
 
 import type { Locator, Page } from '@playwright/test'
-import { expect, test } from '@playwright/test'
+import { expect, test } from './helpers/lesson-page'
 import { filmSources } from '../features/lessons/kit/films'
 
 const TITLE = 'Why twelve notes? Sharps, flats and semitones | MercuryPitch'
