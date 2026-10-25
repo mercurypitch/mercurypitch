@@ -4,8 +4,9 @@ import type { PracticeController } from '@/features/practice/usePracticeControll
 import { usePracticeController } from '@/features/practice/usePracticeController'
 import type { RecordingController } from '@/features/recording/useRecordingController'
 import type { AudioEngine } from '@/lib/audio-engine'
+import { onCoachEvent } from '@/lib/coach-events'
 import type { PlaybackRuntime } from '@/lib/playback-runtime'
-import type { PracticeEngine } from '@/lib/practice-engine'
+import type { PracticeEngine, PracticeEngineCallbacks, } from '@/lib/practice-engine'
 import type { PitchResult } from '@/types'
 
 const DETECTED_PITCH: PitchResult = {
@@ -146,5 +147,22 @@ describe('usePracticeController frame subscriptions', () => {
 
     expect(remaining).toHaveBeenCalledOnce()
     expect(cancelAnimationFrame).toHaveBeenCalled()
+  })
+
+  it('tells a waiting Merc tour about a clear note, and not about silence', () => {
+    const { dispose, practiceEngine } = mountController()
+    const heard = vi.fn()
+    const off = onCoachEvent('pitch-detected', heard)
+    const callbacks = vi.mocked(practiceEngine.addCallbacks).mock
+      .calls[0][0] as PracticeEngineCallbacks
+
+    callbacks.onPitchDetected?.(null)
+    callbacks.onPitchDetected?.({ ...DETECTED_PITCH, frequency: 0 })
+    callbacks.onPitchDetected?.({ ...DETECTED_PITCH, clarity: 0.1 })
+    callbacks.onPitchDetected?.(DETECTED_PITCH)
+
+    expect(heard).toHaveBeenCalledTimes(1)
+    off()
+    dispose()
   })
 })

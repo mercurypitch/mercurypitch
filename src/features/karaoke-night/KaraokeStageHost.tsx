@@ -3,10 +3,18 @@
 // (always mounted), so playlists work whether or not a song is staged yet.
 // This module owns the heavy imports (the mixer + its styles) — the page
 // shell lazy-loads it only when a song goes on stage.
+//
+// It is mounted once per staged song (KaraokeNightApp keys it by the song),
+// whichever way the song got there: the hero's demo, a song link, the rail,
+// the zen sheet. So its mount is where a waiting Merc tour hears that a song
+// is on stage (src/lib/coach-events.ts), along with the first sung note and
+// the score being shown.
+import { onMount } from 'solid-js'
 import { LyricsUploaderStyles } from '@/components/LyricsUploader'
 import { StemMixer, StemMixerStyles } from '@/components/StemMixer'
 import type { NightMusicSessionGuard } from '@/features/play-along/night-music-import'
 import { ensureSessionHydrated } from '@/features/stem-mixer/karaoke-playlist-runner'
+import { emitCoachEvent } from '@/lib/coach-events'
 import { trackFirstValue } from '@/lib/first-value'
 import { isPlaylistActive, stopPlaylist } from '@/stores/karaoke-playlist-store'
 import { showNotification } from '@/stores/notifications-store'
@@ -38,6 +46,8 @@ interface KaraokeStageHostProps {
 }
 
 export function KaraokeStageHost(props: KaraokeStageHostProps) {
+  onMount(() => emitCoachEvent('song-staged'))
+
   // Mirror of the rail's singSession: verify + re-mint blob URLs before
   // staging (stored object URLs die with the page that minted them).
   let picking = false
@@ -100,14 +110,18 @@ export function KaraokeStageHost(props: KaraokeStageHostProps) {
           : undefined
       }
       onMicGranted={() => trackKaraokeSessionOnce('karaoke_mic_granted')}
-      onValidMicPitch={() => trackKaraokeSessionOnce('karaoke_first_pitch')}
+      onValidMicPitch={() => {
+        trackKaraokeSessionOnce('karaoke_first_pitch')
+        emitCoachEvent('pitch-detected')
+      }}
       onScoreCreated={() => {
         trackKaraokeSessionOnce('karaoke_first_score')
         trackFirstValue('karaoke')
       }}
-      onScorecardViewed={() =>
+      onScorecardViewed={() => {
         trackKaraokeSessionOnce('karaoke_scorecard_view')
-      }
+        emitCoachEvent('score-shown')
+      }}
       onBack={() => {
         if (isPlaylistActive()) stopPlaylist()
         props.onExit()
