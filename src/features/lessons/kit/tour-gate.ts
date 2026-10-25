@@ -19,6 +19,11 @@
 // storage reads but will not write never sees the tour: it could never
 // record a close, and the tour would come back on every page. Storage that
 // throws, as blocked site data does, means no tour.
+//
+// On Lessons 1 and 2 a first visit's tour waits for the opening shot, Merc
+// and Tavi landing, with the page held still (opening-hold.ts, `holdTour`).
+// The chunk loads as the page starts all the same, so the card comes up as
+// the shot ends.
 
 /** The record's name, in the lesson pages' own run of keys (`fyp-pos`, `fyp-motion`). */
 export const TOUR_KEY = 'fyp-tour'
@@ -43,10 +48,40 @@ export function tourDue(): boolean {
   }
 }
 
-/** Loads the tour and runs it; `replay` is the lesson menu's "Tour this page". */
+/** Whether this page has started a first visit's tour. */
+let first = false
+/** What a first visit's tour waits for, and what to call once it has run. */
+let ahead: unknown
+let after = (): void => undefined
+
+/**
+ * Holds a first visit's tour until `until` settles, and calls `done` once
+ * the tour has opened, given up or failed to load (opening-hold.ts); false,
+ * holding nothing, on a visit that offers no tour. Call it in the same
+ * task as the masthead's start.
+ */
+export function holdTour(until: Promise<unknown>, done: () => void): boolean {
+  if (first) {
+    ahead = until
+    after = done
+  }
+  return first
+}
+
+/**
+ * Loads the tour and runs it, a first visit's once anything it is held for
+ * has settled; `replay` (the lesson menu's "Tour this page", the question
+ * mark) runs it at once.
+ */
 export function startTour(lesson: number, replay: boolean): void {
-  void import('./tour').then(
-    (t) => t.runTour(lesson, replay),
-    () => undefined,
-  )
+  first ||= !replay
+  void Promise.all([
+    import('./tour'),
+    Promise.resolve().then(() => replay || ahead),
+  ])
+    .then(([t]) => t.runTour(lesson, replay))
+    .then(
+      () => after(),
+      () => after(),
+    )
 }

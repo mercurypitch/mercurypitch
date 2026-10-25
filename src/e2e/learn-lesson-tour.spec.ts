@@ -8,14 +8,19 @@
 // steps; Done, Skip, the X and Escape close it for good; the lesson menu's
 // "Tour this page", and the question mark at the masthead's right end, play
 // it again. Phone and desktop, reduced motion, and no sideways scroll at
-// any step.
+// any step. On Lessons 1 and 2 a first visit's card comes once Merc and
+// Tavi have landed, the page held still till then (kit/opening-hold.ts), so
+// a wait for it there allows the hold's cap.
 
 import type { Page } from '@playwright/test'
 import { expect, test } from '@playwright/test'
+import { HOLD_CAP } from '../features/lessons/kit/opening-hold'
 import { TOUR_KEY, TOUR_VERSION } from '../features/lessons/kit/tour-gate'
 
 const PHONE = { width: 390, height: 844 }
 const DESKTOP = { width: 1440, height: 900 }
+/** A first visit's card on Lessons 1 and 2, which waits for the opening, at most until the cap. */
+const OPENED = { timeout: HOLD_CAP + 2000 }
 
 const TITLES = [
   'Meet Merc and Tavi',
@@ -90,7 +95,7 @@ for (const [name, size] of [
     // Arrange
     await page.setViewportSize(size)
     await page.goto('/learn/01')
-    await expect(card(page)).toBeVisible()
+    await expect(card(page)).toBeVisible(OPENED)
     await expect(card(page).getByRole('heading')).toHaveText(TITLES[0])
     await expect(card(page)).toContainText('1 of 5')
     await expect(next(page)).toBeFocused()
@@ -151,25 +156,53 @@ test('on a phone the card docks at the foot and each target shows in the room ab
   expect(placed).toEqual(['ok', 'ok', 'ok', 'ok', 'ok'])
 })
 
-test('walking the tour on a wide screen marks no step of the lesson as reached', async ({
+test('walking the tour on a wide screen glides past every step and marks none of them reached, and reading counts again after it', async ({
   page,
 }) => {
   // Arrange: on a wide screen the step deck follows the scroll, and the kit
   // keeps the furthest step reached (kit/position.ts, `fyp-pos`)
   await page.setViewportSize(DESKTOP)
   await page.goto('/learn/01')
-  await expect(card(page)).toBeVisible()
+  await expect(card(page)).toBeVisible(OPENED)
+  const glides: boolean[] = []
 
-  // Act: every step, from the deck to Sing it to the map, then Done
+  // Act: every step, from the deck to Sing it to the map, then Done; each
+  // Next leaves the page where it was in its own task, and the page glides
   for (const [i, targets] of STEP_TARGETS.entries()) {
     await expect.poll(() => lit(page, targets)).toBe(true)
-    await next(page).click()
+    glides.push(
+      await page.evaluate(() => {
+        const before = window.scrollY
+        document.querySelector<HTMLElement>('[data-tour-next]')?.click()
+        return window.scrollY === before
+      }),
+    )
     if (i === STEP_TARGETS.length - 1) await expect(card(page)).toBeHidden()
   }
+  await expect
+    .poll(() =>
+      page.evaluate(() =>
+        document.documentElement.classList.contains('touring'),
+      ),
+    )
+    .toBe(false)
+  const during = await page.evaluate(() => localStorage.getItem('fyp-pos'))
+  const deckAfter = await page.locator('#stepNow').textContent()
+  // the viewer's own scroll to step 3, once the page is at rest
+  await page.evaluate(() =>
+    document
+      .querySelector('.step[data-step="3"]')
+      ?.scrollIntoView({ block: 'center', behavior: 'instant' }),
+  )
 
   // Assert
-  expect(await page.evaluate(() => localStorage.getItem('fyp-pos'))).toBeNull()
-  await expect(page.locator('#stepNow')).toHaveText('1')
+  expect(glides).toEqual([true, true, true, true, true])
+  expect(during).toBeNull()
+  expect(deckAfter).toBe('1')
+  await expect(page.locator('#stepNow')).toHaveText('3')
+  await expect
+    .poll(() => page.evaluate(() => localStorage.getItem('fyp-pos')))
+    .toBe(JSON.stringify({ 1: { step: 3, of: 6 } }))
 })
 
 test('the dimmed page and the cutout take no presses: only the card answers', async ({
@@ -178,7 +211,7 @@ test('the dimmed page and the cutout take no presses: only the card answers', as
   // Arrange
   await page.setViewportSize(DESKTOP)
   await page.goto('/learn/01')
-  await expect.poll(() => lit(page, ['#heroStage'])).toBe(true)
+  await expect.poll(() => lit(page, ['#heroStage']), OPENED).toBe(true)
 
   // Act: what a press lands on, in the cutout and on the dim
   const hits = await page.evaluate(() => {
@@ -226,7 +259,7 @@ for (const [way, close] of [
     // Arrange
     await page.setViewportSize(DESKTOP)
     await page.goto('/learn/02')
-    await expect(card(page)).toBeVisible()
+    await expect(card(page)).toBeVisible(OPENED)
 
     // Act
     await close(page)
@@ -342,7 +375,7 @@ test('every lesson page, 1 to 8, offers the same five steps', async ({
   // Act
   for (let n = 1; n <= 8; n++) {
     await page.goto(`/learn/0${n}`)
-    await expect(card(page)).toBeVisible()
+    await expect(card(page)).toBeVisible(OPENED)
     // its words, not as drawn: the count is set in capitals
     counts.push((await card(page).locator('.tour-count').textContent()) ?? '')
     await card(page).getByRole('button', { name: 'Skip tour' }).click()
@@ -351,6 +384,105 @@ test('every lesson page, 1 to 8, offers the same five steps', async ({
 
   // Assert
   expect(counts).toEqual(Array.from({ length: 8 }, () => '1 of 5'))
+})
+
+test("on Lesson 1's first visit the page holds still while Merc and Tavi land, and the card comes once they have, before the cap", async ({
+  page,
+}) => {
+  // Arrange: when the hold starts and lifts, and when the card comes, with
+  // whether any landing or bubble is still moving then
+  await page.addInitScript(() => {
+    const log = {
+      held: [] as number[],
+      card: 0,
+      moving: [] as string[],
+    }
+    Object.assign(window, { tourLog: log })
+    new MutationObserver(() => {
+      const on = document.documentElement.classList.contains('tour-wait')
+      if (on !== (log.held.length % 2 === 1))
+        log.held.push(Math.round(performance.now()))
+      if (log.card === 0 && document.querySelector('.tour-card') !== null) {
+        log.card = Math.round(performance.now())
+        log.moving = ['#mercBlue', '#mercOrange', '#bubbleO', '#bubbleB']
+          .map((s) => document.querySelector(s))
+          .filter((el): el is Element => el !== null)
+          .filter((el) =>
+            el.getAnimations().some((a) => a.playState === 'running'),
+          )
+          .map((el) => el.id)
+      }
+    }).observe(document, {
+      subtree: true,
+      childList: true,
+      attributes: true,
+      attributeFilter: ['class'],
+    })
+  })
+  await page.setViewportSize(DESKTOP)
+  await page.goto('/learn/01')
+  await expect(page.locator('html')).toHaveClass(/\btour-wait\b/)
+
+  // Act: the wheel, then the keys that scroll a page
+  await page.mouse.move(700, 500)
+  await page.mouse.wheel(0, 900)
+  for (const k of ['PageDown', 'Space', 'ArrowDown', 'End'])
+    await page.keyboard.press(k)
+  const held = await page.evaluate(() => ({
+    y: window.scrollY,
+    overflow: getComputedStyle(document.documentElement).overflowY,
+  }))
+  await expect(card(page)).toBeVisible(OPENED)
+  const log = await page.evaluate(
+    () =>
+      (
+        window as unknown as {
+          tourLog: { held: number[]; card: number; moving: string[] }
+        }
+      ).tourLog,
+  )
+
+  // Assert: still at the top with no scrollbar; the card once nothing moves,
+  // before the cap, and the page let go as it comes
+  expect(held).toEqual({ y: 0, overflow: 'hidden' })
+  expect(log.moving).toEqual([])
+  expect(log.card).toBeLessThan(HOLD_CAP)
+  expect(log.held).toHaveLength(2)
+  expect(log.held[1] - log.card).toBeLessThanOrEqual(50)
+  await expect(page.locator('html')).not.toHaveClass(/\btour-wait\b/)
+})
+
+test("Lesson 3's first visit holds nothing: its card comes at once, and the page scrolls", async ({
+  page,
+}) => {
+  // Arrange: whether the hold is ever put on
+  await page.addInitScript(() => {
+    Object.assign(window, { everHeld: false })
+    new MutationObserver(() => {
+      if (document.documentElement.classList.contains('tour-wait'))
+        Object.assign(window, { everHeld: true })
+    }).observe(document.documentElement, {
+      attributes: true,
+      attributeFilter: ['class'],
+    })
+  })
+  await page.setViewportSize(DESKTOP)
+
+  // Act
+  await page.goto('/learn/03')
+  await expect(card(page)).toBeVisible()
+
+  // Assert
+  expect(
+    await page.evaluate(
+      () => (window as unknown as { everHeld: boolean }).everHeld,
+    ),
+  ).toBe(false)
+  expect(
+    await page.evaluate(
+      () => getComputedStyle(document.documentElement).overflowY,
+    ),
+  ).not.toBe('hidden')
 })
 
 test.describe('under reduced motion', () => {
