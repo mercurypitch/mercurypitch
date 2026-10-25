@@ -22,7 +22,7 @@ At most two agents at a time, on two different things. Every builder is spawned 
   - No usage percentage exists (get_session rate_limit_info: status + resetsAt). Start no new agent unless status is "allowed".
 
 ## Now (the two slots)
-- slot 1: feat/merc-shader-compile (Merc compile fix), then its PR review.
+- slot 1 (no agent now): feat/merc-shader-compile. Builder done; lead review at max found 3 bugs (hidden-tab time counted toward the 10 s give-up; Tavi mounted after a failed Merc; a restored context never re-enabled the parallel compile). Fixed by the lead and folded: 6 commits 2caf37e45..84046b46f on 2bc138b4e (tree = lead/merc-review-unfolded; old head tagged lead/merc-before-review-fixes). Each new test fails with its fix undone. Gates + 21 e2e specs: merc-compile/rb-gates/summary.txt. Then: push --force-with-lease, PR (body: merc-compile/pr-body.md), subscribe, merge on green for v0.9.22, ask the owner for the friend's Windows check.
 - slot 2: feat/lesson-page-tour, then its PR review.
 
 ## Paused, resume in this order (one per free slot, by SendMessage; each has a WIP/status hand-back coming)
