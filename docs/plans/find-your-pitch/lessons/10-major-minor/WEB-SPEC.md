@@ -704,12 +704,10 @@ still images when WebGL fails or would run on the CPU.
 - When either ships, LESSON.md's editorial note gives the copy, and the card, the rest card and the
   footer switch to the slug, which carries `?lesson=10` too.
 - **Proposed, App content** (FACTS 49, 55), for the App content track and, for Drone Intonation's
-  score, the coach: the Learn chapter "Common Musical Scales" calls C major "Bright, cheerful, and
-  uplifting." and natural minor "Emotional, reflective, and sometimes sad.", and gives C minor's
-  relative major as A major, where it is E♭ major (`src/types/walkthrough.ts:887-907`); Drone
-  Intonation's copy promises "just intonation" and "pure intonation" while every target is
-  equal-tempered, and its score cannot reach 100: the fifth of it that was a "richness" reading was
-  dropped without reweighting the rest. And
+  score, the coach: its score cannot reach 100, since the fifth of it that was a "richness" reading
+  was dropped without reweighting the rest. The Learn chapter "Common Musical Scales" now gives
+  minor's mood as a tendency and E♭ major as C minor's relative major, and Drone Intonation's copy
+  says its targets are equal-tempered (FACTS 55). And
   `/ear-lab`'s entry document should link back to Lesson 10 once it is out, as `/piano-night`'s and
   `/guitar-night`'s should (`docs/plans/find-your-pitch/SEARCH.md` § 8). SEARCH.md § 4 lists Piano
   Night among the rooms this lesson practises in; the page links only the two drills the CURRICULUM

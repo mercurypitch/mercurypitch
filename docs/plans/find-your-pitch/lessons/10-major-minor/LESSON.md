@@ -429,10 +429,9 @@ chords:
   do-me-so: you just moved the third." (FACTS 67).
 - The practice card's Drone Intonation: at the default pace six rounds, a 6-second drone each and
   up to 4 seconds to sing a note above it that it names but does not play, from the unison to the
-  octave, scored in cents against the octave it asks for. Two things for the coach and the App
+  octave, scored in cents against the octave it asks for. One thing for the coach and the App
   content track: its score cannot reach 100, since the fifth of it that was a "richness" reading of
-  the voice was dropped without reweighting the rest, and its copy promises "just intonation" while
-  it scores equal-tempered notes (FACTS 48, 49, 55).
+  the voice was dropped without reweighting the rest (FACTS 48, 49, 55).
 - The proposed slug with the two thirds only (FACTS 53).
 
 ### Changed in the plain-language review

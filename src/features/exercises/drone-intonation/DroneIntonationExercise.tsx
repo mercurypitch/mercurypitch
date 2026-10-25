@@ -131,8 +131,8 @@ const DroneIntonationExercise: Component<DroneIntonationExerciseProps> = (
       idlePlaceholder={
         <div class="exercise-idle-placeholder">
           <p>
-            Sing intervals against a sustained drone. Train your ear to lock
-            into just intonation.
+            Sing intervals against a sustained drone. Each target is an
+            equal-tempered note, in the same tuning as the rest of the app.
           </p>
           <span class="idle-hint">6 rounds · Drone: {startNote()}</span>
         </div>

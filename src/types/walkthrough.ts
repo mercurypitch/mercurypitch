@@ -889,22 +889,22 @@ All Western music is based on 12 notes within an octave:
       title: 'Common Musical Scales',
       description: 'Learn different scale types used in music',
       content: `
-Different scales create different moods and are used in various musical contexts.
+Different scales have their own sound and are used in various musical contexts.
 
 ## Major Scales
 
-**C Major**: The "do-re-mi-fa-so-la-ti-do" scale. Bright, cheerful, and uplifting.
+**C Major**: The "do-re-mi-fa-so-la-ti-do" scale.
 
 - Notes: C, D, E, F, G, A, B (all natural, no sharps/flats)
-- Best for: Beginners and optimistic melodies
+- Best for: Beginners
 
 ## Natural Minor Scales
 
-Emotional, reflective, and sometimes sad.
+Many Western listeners hear minor as sadder than major, but that is a tendency, not a rule: tempo, the rest of the music and what you grew up hearing all shape how happy or sad a piece sounds.
 
 - **C Minor**: C, D, Eb, F, G, Ab, Bb
-- Uses the same notes as relative major (A Major) but starts on a different note
-- Best for: Melancholic or emotional expressions
+- Uses the same notes as its relative major (Eb Major) but starts on a different note
+- Compared with C Major, three notes are a semitone lower: Eb, Ab and Bb
 
 ## Pentatonic Scales
 
