@@ -24,7 +24,7 @@ import { DRAFT_LESSONS } from '@/features/lessons/kit/drafts'
 import type { FilmRegistry, FilmSources, FilmState, } from '@/features/lessons/kit/films'
 import { FILMS, filmSources, filmState } from '@/features/lessons/kit/films'
 import type { Lesson } from '@/features/lessons/kit/season'
-import { LESSONS } from '@/features/lessons/kit/season'
+import { LESSONS, PREREQ } from '@/features/lessons/kit/season'
 import { SIGNATURES } from '@/features/lessons/kit/team-notes'
 
 /**
@@ -483,4 +483,28 @@ export function releaseChecklist(
     detail: 'SEARCH.md § 12 item 5.',
   })
   return steps
+}
+
+// ── The publish order ────────────────────────────────────────────
+
+/** Each lesson's direct prerequisites by number, in season.ts PREREQ's shape. */
+export type Prerequisites = Readonly<Partial<Record<number, readonly number[]>>>
+
+/**
+ * The lessons that publishing lesson `n` would put it ahead of: those it
+ * builds on directly (season.ts PREREQ, its explorer card's "Builds on",
+ * the lessons its prerequisite chips name) that are not published, in
+ * lesson order. `isPublished` says which are, as the page's state has it.
+ * Empty when every one is published, or when it builds on none. Only the
+ * direct ones: publishing the lesson between them asks about a lesson
+ * further back.
+ */
+export function aheadOf(
+  n: number,
+  isPublished: (n: number) => boolean,
+  prerequisites: Prerequisites = PREREQ,
+): number[] {
+  return (prerequisites[n] ?? [])
+    .filter((k) => !isPublished(k))
+    .sort((a, b) => a - b)
 }
