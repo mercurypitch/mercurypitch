@@ -15,7 +15,12 @@
 // passes it `paintRungs` (kit/band-chart.ts), and one rung at 0 across the
 // plot paints exactly that band. A module of its own, so that a lesson
 // whose charts keep one band (Lessons 3 and 5) never downloads it.
+//
+// Merc's leaps, the scene's arcs (kit/band-chart-arcs.ts), are drawn over
+// every band and under every lit edge.
 
+import type { Arc } from './band-chart-arcs'
+import { drawArcs } from './band-chart-arcs'
 import type { BandSpec, ChartFrame } from './band-chart-draw'
 import { BAND_COLOR, drawBand, drawLitEdge, MONO, xOf, yOf, } from './band-chart-draw'
 import { HIT_TOLERANCE_CENTS } from './band-words'
@@ -110,14 +115,14 @@ function drawLitSlot(f: ChartFrame, b: BandSpec): void {
 const showsFaint = (r: Rung): boolean => r.faint === true && (r.glow ?? 0) <= 0
 
 /**
- * Paints the scene's rungs: every band, then every lit edge, so that no
- * band covers a neighbour's edge or its words. A chart calls it in place of
- * its own band (`paintRungs`, kit/band-chart.ts): false for a scene with no
- * rungs, which keeps the band.
+ * Paints the scene's rungs: every band, then Merc's arcs, then every lit
+ * edge, so that no band covers an arc, a neighbour's edge or its words. A
+ * chart calls it in place of its own band (`paintRungs`, kit/band-chart.ts):
+ * false for a scene with no rungs, which keeps the band.
  */
 export function paintRungs(
   f: ChartFrame,
-  scene: { readonly rungs?: readonly Rung[] },
+  scene: { readonly rungs?: readonly Rung[]; readonly arcs?: readonly Arc[] },
 ): boolean {
   const { rungs } = scene
   if (rungs === undefined) return false
@@ -131,6 +136,7 @@ export function paintRungs(
     if (showsFaint(r)) drawFaint(f, bands[i])
     else drawBand(f, bands[i])
   })
+  if (scene.arcs !== undefined) drawArcs(f, scene.arcs)
   rungs.forEach((r, i) => {
     if (r.lit !== true) return
     // a rung across the plot lights as the band does, its words at the end
