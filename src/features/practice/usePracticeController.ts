@@ -11,6 +11,7 @@ import type { Accessor, Setter } from 'solid-js'
 import { createSignal, onCleanup, onMount } from 'solid-js'
 import type { RecordingController } from '@/features/recording/useRecordingController'
 import type { AudioEngine } from '@/lib/audio-engine'
+import { emitCoachEvent } from '@/lib/coach-events'
 import { sungBeat } from '@/lib/mic-latency'
 import { micManager } from '@/lib/mic-manager'
 import { registerMicIndicator } from '@/lib/mic-sentinel'
@@ -118,6 +119,8 @@ export function usePracticeController(deps: Deps): PracticeController {
       setCurrentPitch(pitch)
       if (pitch && pitch.frequency > 0 && pitch.clarity >= 0.2) {
         setFrequencyData(audioEngine.getFrequencyData())
+        // A Merc tour's "sing any note" step waits for this; free otherwise.
+        emitCoachEvent('pitch-detected')
       }
     },
     onNoteComplete: (result) => {
