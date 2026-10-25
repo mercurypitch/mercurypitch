@@ -3,10 +3,11 @@
 // ============================================================
 //
 // The page asks before it publishes a lesson that waits on its sign-off,
-// and before one that would go live ahead of a lesson it builds on. When
-// both hold it asks once, so the one question must name both. These hold
-// every form of it word for word, and when "Use default" asks too; the
-// page test (AdminLessonsPage.order.test.tsx) holds when the page asks.
+// and before one that would go live ahead of a lesson it builds on or a
+// lesson its recall asks. However many hold it asks once, so the one
+// question must name them all, each as what it is to the lesson. These
+// hold every form of it word for word, and when "Use default" asks too;
+// the page test (AdminLessonsPage.order.test.tsx) holds when the page asks.
 
 import { describe, expect, it } from 'vitest'
 import type { LessonRow } from './lesson-admin'
@@ -16,12 +17,22 @@ import { defaultGoesLive, publishQuestion, publishView } from './lesson-publish'
 const WAITS =
   "Lesson 10's page at /learn/10, and the vocal coach's look at the sung checkpoint"
 
+const SIGN_OFF = "the vocal coach's sign-off (MASTER-PLAN § 12 item 8)"
+
+/** Lessons ahead of it: those it builds on, and those only its recall asks. */
+const ahead = (buildsOn: number[], recalled: number[] = []) => ({
+  buildsOn,
+  recalled,
+})
+
+const NONE = ahead([])
+
 describe('publishQuestion', () => {
   it('asks nothing of a lesson with no sign-off to wait on and nothing to get ahead of', () => {
-    // Arrange: no drafts line, and every lesson it builds on is published.
+    // Arrange: no drafts line, and every lesson it names is published.
 
     // Act
-    const question = publishQuestion('Lesson 2', null, [])
+    const question = publishQuestion('Lesson 2', null, NONE)
 
     // Assert
     expect(question).toBeNull()
@@ -31,7 +42,7 @@ describe('publishQuestion', () => {
     // Arrange: a drafts line, and nothing to get ahead of.
 
     // Act
-    const question = publishQuestion('Lesson 3', "the owner's go-ahead", [])
+    const question = publishQuestion('Lesson 3', "the owner's go-ahead", NONE)
 
     // Assert
     expect(question).toEqual({
@@ -44,7 +55,7 @@ describe('publishQuestion', () => {
     // Arrange: no drafts line, and Lesson 10 is not published.
 
     // Act
-    const question = publishQuestion('Lesson 12', null, [10])
+    const question = publishQuestion('Lesson 12', null, ahead([10]))
 
     // Assert
     expect(question).toEqual({
@@ -56,10 +67,10 @@ describe('publishQuestion', () => {
 
   it('names two lessons it would get ahead of together', () => {
     // Arrange
-    const ahead = [2, 3]
+    const held = ahead([2, 3])
 
     // Act
-    const question = publishQuestion('Lesson 5', null, ahead)
+    const question = publishQuestion('Lesson 5', null, held)
 
     // Assert
     expect(question).toEqual({
@@ -71,10 +82,10 @@ describe('publishQuestion', () => {
 
   it('lists three or more lessons with commas and a last "and"', () => {
     // Arrange
-    const ahead = [5, 9, 12]
+    const held = ahead([5, 9, 12])
 
     // Act
-    const question = publishQuestion('Lesson 14', null, ahead)
+    const question = publishQuestion('Lesson 14', null, held)
 
     // Assert
     expect(question?.title).toBe(
@@ -86,12 +97,94 @@ describe('publishQuestion', () => {
     // Arrange: Lesson 12's drafts line stands, and Lesson 10 is not published.
 
     // Act
-    const question = publishQuestion('Lesson 12', WAITS, [10])
+    const question = publishQuestion('Lesson 12', WAITS, ahead([10]))
 
     // Assert
     expect(question).toEqual({
       title: 'Publish Lesson 12 before its sign-off and before Lesson 10?',
       message: `Lesson 12 waits on ${WAITS}. It also builds on Lesson 10, which is not published here. Publish it anyway?`,
+    })
+  })
+})
+
+describe('publishQuestion, for a lesson its recall asks', () => {
+  it('says the recall asks its questions, never that the lesson builds on it', () => {
+    // Arrange: no drafts line; Lesson 1 is live, Lesson 2 is not.
+
+    // Act
+    const question = publishQuestion('Lesson 3', null, ahead([], [2]))
+
+    // Assert
+    expect(question).toEqual({
+      title: 'Publish Lesson 3 before Lesson 2?',
+      message:
+        "Lesson 3's recall asks Lesson 2's questions, and Lesson 2 is not published here. Publish it anyway?",
+    })
+  })
+
+  it('says what each lesson is to it when it would get ahead of both kinds', () => {
+    // Arrange: no drafts line; Lessons 1 and 6 are not published.
+
+    // Act
+    const question = publishQuestion('Lesson 8', null, ahead([1], [6]))
+
+    // Assert
+    expect(question).toEqual({
+      title: 'Publish Lesson 8 before Lessons 1 and 6?',
+      message:
+        "Lesson 8 builds on Lesson 1, which is not published here. Its recall also asks Lesson 6's questions, and Lesson 6 is not published here. Publish it anyway?",
+    })
+  })
+
+  it('names every lesson in the title in lesson order, whichever kind each is', () => {
+    // Arrange: it builds on Lesson 6, and its recall asks Lesson 2.
+    const held = ahead([6], [2])
+
+    // Act
+    const question = publishQuestion('Lesson 9', null, held)
+
+    // Assert
+    expect(question?.title).toBe('Publish Lesson 9 before Lessons 2 and 6?')
+  })
+
+  it('asks a draft once, naming its sign-off and the lesson its recall asks', () => {
+    // Arrange: Lesson 3's drafts line stands; Lesson 2 is not published.
+
+    // Act
+    const question = publishQuestion('Lesson 3', SIGN_OFF, ahead([], [2]))
+
+    // Assert
+    expect(question).toEqual({
+      title: 'Publish Lesson 3 before its sign-off and before Lesson 2?',
+      message: `Lesson 3 waits on ${SIGN_OFF}. Its recall also asks Lesson 2's questions, and Lesson 2 is not published here. Publish it anyway?`,
+    })
+  })
+
+  it('asks a draft once, naming its sign-off and every lesson of both kinds', () => {
+    // Arrange: Lesson 8's drafts line stands; Lessons 1 and 6 are not published.
+
+    // Act
+    const question = publishQuestion('Lesson 8', SIGN_OFF, ahead([1], [6]))
+
+    // Assert
+    expect(question).toEqual({
+      title: 'Publish Lesson 8 before its sign-off and before Lessons 1 and 6?',
+      message: `Lesson 8 waits on ${SIGN_OFF}. It also builds on Lesson 1, which is not published here. Its recall also asks Lesson 6's questions, and Lesson 6 is not published here. Publish it anyway?`,
+    })
+  })
+
+  it('names two lessons a recall asks together', () => {
+    // Arrange
+    const held = ahead([], [2, 3])
+
+    // Act
+    const question = publishQuestion('Lesson 9', null, held)
+
+    // Assert
+    expect(question).toEqual({
+      title: 'Publish Lesson 9 before Lessons 2 and 3?',
+      message:
+        "Lesson 9's recall asks questions from Lessons 2 and 3, which are not published here. Publish it anyway?",
     })
   })
 })

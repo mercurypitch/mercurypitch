@@ -487,24 +487,62 @@ export function releaseChecklist(
 
 // ── The publish order ────────────────────────────────────────────
 
-/** Each lesson's direct prerequisites by number, in season.ts PREREQ's shape. */
+/** Lessons by number, each with the lessons it names: season.ts PREREQ's shape. */
 export type Prerequisites = Readonly<Partial<Record<number, readonly number[]>>>
 
 /**
- * The lessons that publishing lesson `n` would put it ahead of: those it
- * builds on directly (season.ts PREREQ, its explorer card's "Builds on",
- * the lessons its prerequisite chips name) that are not published, in
- * lesson order. `isPublished` says which are, as the page's state has it.
- * Empty when every one is published, or when it builds on none. Only the
- * direct ones: publishing the lesson between them asks about a lesson
- * further back.
+ * The recalls that ask a lesson outside the lessons their own lesson builds
+ * on: Lesson 3's recall asks Lesson 2's questions, and Lesson 8's asks
+ * Lesson 6's, while both build on Lesson 1 alone. A page that goes live
+ * before the lesson its recall asks names a lesson the learner cannot open,
+ * so the console asks about these as it asks about PREREQ's.
+ *
+ * They stay here, apart from season.ts PREREQ, because PREREQ is the
+ * season's map: the explorer's graph, its cards' "Builds on" and "Opens"
+ * and the "up next" order draw it, and each page's prerequisite chips name
+ * what it says. The owner keeps a recall off that map (25 October 2026), so
+ * only the console's warning reads this list. A lesson whose recall asks a
+ * lesson outside its PREREQ needs a line here when its recall is written;
+ * one whose recall asks a lesson it builds on needs none.
+ */
+export const RECALLS: Prerequisites = {
+  3: [2],
+  8: [6],
+}
+
+/** The lessons a publish would put a lesson ahead of, by why, each in lesson order. */
+export interface Ahead {
+  /** Those it builds on directly (season.ts PREREQ) that are not published. */
+  readonly buildsOn: readonly number[]
+  /** Those only its recall asks (RECALLS) that are not published. */
+  readonly recalled: readonly number[]
+}
+
+/** `ns` once each, in lesson order. */
+const inOrder = (ns: Iterable<number>): number[] =>
+  [...new Set(ns)].sort((a, b) => a - b)
+
+/**
+ * The lessons that publishing lesson `n` would put it ahead of, as the page's
+ * state has them (`isPublished`): those it builds on directly (season.ts
+ * PREREQ, its explorer card's "Builds on", the lessons its prerequisite
+ * chips name), and those its recall asks outside them (RECALLS), that are
+ * not published. A lesson in both counts once, as one it builds on. Both
+ * empty when every one is published, or when it names none. Only the direct
+ * ones: publishing the lesson between them asks about a lesson further back.
  */
 export function aheadOf(
   n: number,
   isPublished: (n: number) => boolean,
   prerequisites: Prerequisites = PREREQ,
-): number[] {
-  return (prerequisites[n] ?? [])
-    .filter((k) => !isPublished(k))
-    .sort((a, b) => a - b)
+  recalls: Prerequisites = RECALLS,
+): Ahead {
+  const before = prerequisites[n] ?? []
+  const held = (k: number): boolean => !isPublished(k)
+  return {
+    buildsOn: inOrder(before.filter(held)),
+    recalled: inOrder(
+      (recalls[n] ?? []).filter((k) => !before.includes(k) && held(k)),
+    ),
+  }
 }

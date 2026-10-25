@@ -19,7 +19,7 @@
 // No DOM.
 
 import type { LessonOverride, LessonStateChange, LessonStateField, } from '@/lib/lesson-state'
-import type { LessonRow } from './lesson-admin'
+import type { Ahead, LessonRow } from './lesson-admin'
 import { publishedByDefault } from './lesson-admin'
 import type { LessonApiError } from './lesson-state-client'
 
@@ -240,6 +240,22 @@ function lessonList(ns: readonly number[]): string {
   return `Lessons ${ns.slice(0, -1).join(', ')} and ${ns[ns.length - 1]}`
 }
 
+/** "which is not published here", or "which are" for more than one. */
+const notPublished = (ns: readonly number[]): string =>
+  `which ${ns.length === 1 ? 'is' : 'are'} not published here.`
+
+/**
+ * What a recall asks, and that those lessons are not published: "Lesson 2's
+ * questions, and Lesson 2 is not published here.", or "questions from
+ * Lessons 2 and 3, which are not published here."
+ */
+function recallAsks(ns: readonly number[]): string {
+  const lessons = lessonList(ns)
+  return ns.length === 1
+    ? `${lessons}'s questions, and ${lessons} is not published here.`
+    : `questions from ${lessons}, ${notPublished(ns)}`
+}
+
 /** What the page asks before it publishes a lesson: its dialog's title and words. */
 export interface PublishQuestion {
   readonly title: string
@@ -250,33 +266,43 @@ export interface PublishQuestion {
  * What the page asks before it publishes lesson `name`, or null when it
  * publishes at once. It asks while the lesson waits on its sign-off
  * (`waitingOn`, its line in drafts.ts), and, whether a line stands or not,
- * when it would go live before lessons it builds on that are not published
- * here (`ahead`, lesson-admin.ts `aheadOf`). When both hold it asks once,
- * in words that name both. Unpublishing never asks.
+ * when it would go live before lessons that are not published here
+ * (`ahead`, lesson-admin.ts `aheadOf`): those it builds on, and those only
+ * its recall asks, each said as what it is to the lesson. However many
+ * hold, it asks once, in words that name them all; the title names every
+ * lesson it would go ahead of, in lesson order. Unpublishing never asks.
  */
 export function publishQuestion(
   name: string,
   waitingOn: string | null,
-  ahead: readonly number[],
+  ahead: Ahead,
 ): PublishQuestion | null {
-  const waits = waitingOn === null ? null : `${name} waits on ${waitingOn}.`
-  if (ahead.length === 0) {
-    return waits === null
-      ? null
-      : {
-          title: `Publish ${name} before its sign-off?`,
-          message: `${waits} Publish it anyway?`,
-        }
+  const { buildsOn, recalled } = ahead
+  const said: string[] = []
+  if (waitingOn !== null) said.push(`${name} waits on ${waitingOn}.`)
+  if (buildsOn.length > 0) {
+    const who = said.length === 0 ? name : 'It also'
+    said.push(
+      `${who} builds on ${lessonList(buildsOn)}, ${notPublished(buildsOn)}`,
+    )
   }
-  const lessons = lessonList(ahead)
-  const buildsOn = `builds on ${lessons}, which ${ahead.length === 1 ? 'is' : 'are'} not published here.`
-  return waits === null
-    ? {
-        title: `Publish ${name} before ${lessons}?`,
-        message: `${name} ${buildsOn} Publish it anyway?`,
-      }
-    : {
-        title: `Publish ${name} before its sign-off and before ${lessons}?`,
-        message: `${waits} It also ${buildsOn} Publish it anyway?`,
-      }
+  if (recalled.length > 0) {
+    const who =
+      said.length === 0 ? `${possessive(name)} recall` : 'Its recall also'
+    said.push(`${who} asks ${recallAsks(recalled)}`)
+  }
+  if (said.length === 0) return null
+  const message = `${said.join(' ')} Publish it anyway?`
+  const all = [...buildsOn, ...recalled].sort((a, b) => a - b)
+  if (all.length === 0) {
+    return { title: `Publish ${name} before its sign-off?`, message }
+  }
+  const lessons = lessonList(all)
+  return {
+    title:
+      waitingOn === null
+        ? `Publish ${name} before ${lessons}?`
+        : `Publish ${name} before its sign-off and before ${lessons}?`,
+    message,
+  }
 }
