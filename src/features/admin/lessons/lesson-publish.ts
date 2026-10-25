@@ -224,6 +224,16 @@ export function failedMessage(name: string, error: LessonApiError): string {
 
 // ── Before a publish ─────────────────────────────────────────────
 
+/**
+ * Whether "Use default" would put lesson `view` live here: it is not
+ * published now, and its default here is. Then it asks first, as Publish
+ * does; going back to a default that leaves it unpublished, unpublishes it
+ * or keeps it live never asks.
+ */
+export function defaultGoesLive(view: PublishView): boolean {
+  return view.canPublish && view.byDefault && !view.published
+}
+
 /** "Lesson 10", "Lessons 2 and 3", "Lessons 5, 8 and 9": lessons by number, as given. */
 function lessonList(ns: readonly number[]): string {
   if (ns.length < 2) return `Lesson ${ns.join('')}`

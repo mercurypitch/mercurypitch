@@ -38,7 +38,7 @@ export interface LessonActions {
   readonly viewOf: (row: LessonRow) => PublishView | null
   /** Publish it (asking first while it waits on a sign-off or would go live before a lesson it builds on), or unpublish it. */
   readonly toggle: (row: LessonRow) => void
-  /** Clear its publish override; true once stored. */
+  /** Clear its publish override, asking first as Publish does when that would put it live; true once stored. */
   readonly useDefault: (row: LessonRow) => Promise<boolean>
   /** Save a wording: a variant id, or null for the default. */
   readonly saveCopy: (

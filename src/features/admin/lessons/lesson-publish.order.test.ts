@@ -5,11 +5,13 @@
 // The page asks before it publishes a lesson that waits on its sign-off,
 // and before one that would go live ahead of a lesson it builds on. When
 // both hold it asks once, so the one question must name both. These hold
-// every form of it word for word; the page test
-// (AdminLessonsPage.order.test.tsx) holds when the page asks.
+// every form of it word for word, and when "Use default" asks too; the
+// page test (AdminLessonsPage.order.test.tsx) holds when the page asks.
 
 import { describe, expect, it } from 'vitest'
-import { publishQuestion } from './lesson-publish'
+import type { LessonRow } from './lesson-admin'
+import { lessonRows } from './lesson-admin'
+import { defaultGoesLive, publishQuestion, publishView } from './lesson-publish'
 
 const WAITS =
   "Lesson 10's page at /learn/10, and the vocal coach's look at the sung checkpoint"
@@ -91,5 +93,81 @@ describe('publishQuestion', () => {
       title: 'Publish Lesson 12 before its sign-off and before Lesson 10?',
       message: `Lesson 12 waits on ${WAITS}. It also builds on Lesson 10, which is not published here. Publish it anyway?`,
     })
+  })
+})
+
+/** Lesson `n`'s row in the season as it stands. */
+function rowOf(n: number): LessonRow {
+  const row = lessonRows().find((r) => r.lesson.n === n)
+  if (row === undefined) throw new Error(`no row for lesson ${n}`)
+  return row
+}
+
+describe('defaultGoesLive', () => {
+  it('holds for a lesson unpublished here whose default is published', () => {
+    // Arrange: Lesson 2 is released in code, and set unpublished here.
+    const view = publishView(rowOf(2), { published: false }, null, true)
+
+    // Act
+    const live = defaultGoesLive(view)
+
+    // Assert
+    expect(live).toBe(true)
+  })
+
+  it('holds for a draft unpublished here on a site that shows drafts', () => {
+    // Arrange
+    const view = publishView(rowOf(3), { published: false }, null, true)
+
+    // Act
+    const live = defaultGoesLive(view)
+
+    // Assert
+    expect(live).toBe(true)
+  })
+
+  it('does not hold for a draft unpublished here on a site that leaves drafts out', () => {
+    // Arrange: going back to the default leaves it unpublished.
+    const view = publishView(rowOf(3), { published: false }, null, false)
+
+    // Act
+    const live = defaultGoesLive(view)
+
+    // Assert
+    expect(live).toBe(false)
+  })
+
+  it('does not hold for a draft published here on a site that leaves drafts out', () => {
+    // Arrange: going back to the default unpublishes it.
+    const view = publishView(rowOf(3), { published: true }, null, false)
+
+    // Act
+    const live = defaultGoesLive(view)
+
+    // Assert
+    expect(live).toBe(false)
+  })
+
+  it('does not hold for a lesson published here whose default is published too', () => {
+    // Arrange: going back to the default keeps it live.
+    const view = publishView(rowOf(2), { published: true }, null, true)
+
+    // Act
+    const live = defaultGoesLive(view)
+
+    // Assert
+    expect(live).toBe(false)
+  })
+
+  it('does not hold for a lesson with no page to publish, whatever its build says', () => {
+    // Arrange: Lesson 2's row with no address, set unpublished here.
+    const row: LessonRow = { ...rowOf(2), path: null }
+    const view = publishView(row, { published: false }, null, true)
+
+    // Act
+    const live = defaultGoesLive(view)
+
+    // Assert
+    expect(live).toBe(false)
   })
 })
