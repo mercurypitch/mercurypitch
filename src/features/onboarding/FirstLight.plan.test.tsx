@@ -44,6 +44,7 @@ vi.mock('@/stores/app-store', async (importOriginal) =>
   (await import('./FirstLight.fixture')).fake.appStore(importOriginal),
 )
 
+import { endCoachTour } from '@/components/coach/start'
 import { buildPlan } from '@/features/plan/build-plan'
 import { KICKER } from '@/features/plan/plan-copy'
 import { PLAN_OPENED_KEY, PLAN_RECORD_KEY } from '@/features/plan/plan-keys'
@@ -51,7 +52,6 @@ import { markPlanShown, planRecord, savePlanAnswers, } from '@/features/plan/pla
 import { next, passTo, quiet, tap } from '@/features/plan/PlanQuestions.fixture'
 import type { PlanChoices, Q3Id } from '@/features/plan/questions'
 import { q2Options, q3Options } from '@/features/plan/questions'
-import { endCoachTour } from '@/features/tours/coach/start'
 import { startRoomTour } from '@/features/tours/room-tour'
 import { GUIDE_FUNNEL_STORAGE_KEY } from '@/lib/guide-funnel'
 import { provideRoomTourDoor } from '@/lib/room-tour-door'

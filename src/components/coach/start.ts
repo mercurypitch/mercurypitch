@@ -13,6 +13,10 @@
 //   (the chip, the legacy walkthrough) waits for it.
 // - The layer mounts in a #coach-root of its own on <body>, outside #app,
 //   which a full-screen stage makes inert while it is up.
+//
+// The coach is shared UI: the app's tours, the plan's showcase and Karaoke
+// Night, a document of its own, all run tours on it, so it lives in
+// components and imports no feature.
 
 import { coachActive, setCoachActive } from '@/lib/coach-state'
 import type { CoachHandoff, CoachTour } from '@/lib/coach-types'

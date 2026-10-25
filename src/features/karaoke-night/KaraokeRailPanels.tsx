@@ -409,7 +409,9 @@ export function KaraokeRailPanels(props: KaraokeRailPanelsProps) {
   return (
     <>
       <LaunchOfferRewardSheet offer={launchOffer()} onSeePacks={seePacks} />
-      <section class="kn-card">
+      {/* Merc's tour ends here: where your own song goes in, and what it
+          costs (karaoke-tour.ts). */}
+      <section class="kn-card" data-tour="karaoke.own-song">
         <p class="kn-card-kicker">
           Your song
           <Show

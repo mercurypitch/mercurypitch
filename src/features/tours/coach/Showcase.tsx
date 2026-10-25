@@ -35,11 +35,11 @@
 
 import type { JSX } from 'solid-js'
 import { createEffect, createMemo, createSignal, on, onCleanup, onMount, Show, untrack, } from 'solid-js'
+import { findTarget } from '@/components/coach/find-target'
 import { MercPresence } from '@/components/room-kit/MercPresence'
 import { prefersReducedMotion } from '@/components/room-kit/reduced-motion'
 import type { MercState } from '@/lib/merc/constants'
 import { stillFor } from '@/lib/merc/stills'
-import { findTarget } from './find-target'
 import styles from './Showcase.module.css'
 import type { ShowcaseStop } from './showcase-stops'
 import { STOP_MS } from './showcase-stops'

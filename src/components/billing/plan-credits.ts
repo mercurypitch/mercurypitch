@@ -8,6 +8,11 @@
 // pack costs (a signed-in singer with none). Spec 5.3, rule by rule, the
 // first that fits wins.
 //
+// Karaoke Night's own tour says the same line at its last stop
+// (src/features/karaoke-night/karaoke-tour.ts), so it lives here in billing,
+// where the plan and Karaoke Night both reach it without importing each
+// other.
+//
 // Two things are easy to break:
 //
 // - It is pure. The host finds out whether the build can take payment, who
@@ -24,10 +29,10 @@
 //
 // A build that cannot take payment (the store build) gets no line at all.
 
-import { creditCount } from '@/components/billing/credit-cost-model'
 import { formatPrice } from '@/db/services/billing-service'
 import { GIFT_ARRIVES, giftTitle } from '@/lib/launch-gift-copy'
 import { UVR_BASE_MINUTES } from '../../../workers/db-worker/src/billing-core'
+import { creditCount } from './credit-cost-model'
 
 /**
  * The title and the line under it, as the card shows them, and what they are

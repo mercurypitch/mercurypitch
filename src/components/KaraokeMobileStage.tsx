@@ -1157,6 +1157,9 @@ export const KaraokeMobileStage: Component<KaraokeMobileStageProps> = (
                     : 'Sing with the mic and watch your pitch ride the notes'
                 }
                 aria-label="Toggle your microphone"
+                // Karaoke Night's Merc tour rings it at "Sing along"; the
+                // desktop mixer's mic keeps the legacy tour's mixer.mic.
+                data-tour="karaoke.mic"
               >
                 <MicIcon />
               </button>

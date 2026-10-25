@@ -9,8 +9,8 @@
 // so each screen is read through it, as the layer reads the tour.
 
 import { describe, expect, it, vi } from 'vitest'
-import type { CoachRunner } from '@/features/tours/coach/runner'
-import { createCoachRunner } from '@/features/tours/coach/runner'
+import type { CoachRunner } from '@/components/coach/runner'
+import { createCoachRunner } from '@/components/coach/runner'
 import type { CoachStep } from '@/lib/coach-types'
 import { SING_TOUR } from './sing-tour'
 

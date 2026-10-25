@@ -7,10 +7,14 @@
 // removed with it) are kept here case for case, then the chip's own: which
 // tour a tap starts, a tab change ending a Merc tour, the pause a running
 // tour holds, and the contextual offers offerTourOnce asks for.
+//
+// The chip loads once, before the cases (warmTourChip), so each offer shows
+// as it is made. What an offer does while the chip is still loading is
+// TourChipHost.lazy.test.tsx's.
 
 import { cleanup, fireEvent, render, screen } from '@solidjs/testing-library'
 import { createRoot, createSignal } from 'solid-js'
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeAll, beforeEach, describe, expect, it, vi, } from 'vitest'
 import { setCoachActive, setShowcaseOn } from '@/lib/coach-state'
 import type { CoachTour } from '@/lib/coach-types'
 import type { ActiveTab } from '@/types'
@@ -51,7 +55,7 @@ const coach = vi.hoisted(() => ({
   })),
   endCoachTour: vi.fn(),
 }))
-vi.mock('./coach/start', () => coach)
+vi.mock('@/components/coach/start', () => coach)
 
 const SING_TOUR: CoachTour = {
   key: 'sing',
@@ -65,7 +69,7 @@ const registry = vi.hoisted(() => ({
 vi.mock('./coach-tours', () => registry)
 
 import { startRoomTour } from './room-tour'
-import { requestTourChip, TourChipHost } from './TourChipHost'
+import { requestTourChip, TourChipHost, warmTourChip } from './TourChipHost'
 
 const KEY = (tab: string): string => `pitchperfect_page_tour_offered_${tab}`
 const chip = (): HTMLElement | null => screen.queryByTestId('tour-chip')
@@ -78,6 +82,10 @@ function mount(initial: string, initiallyPaused = false) {
   render(() => <TourChipHost tab={tab} paused={paused} />)
   return { setTab: (t: string) => setTab(t as ActiveTab), setPaused }
 }
+
+beforeAll(async () => {
+  expect(await warmTourChip()).toBe(true)
+})
 
 beforeEach(() => {
   localStorage.clear()

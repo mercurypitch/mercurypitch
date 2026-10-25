@@ -20,6 +20,7 @@
 
 import { createComponent } from 'solid-js'
 import { render } from 'solid-js/web'
+import { COACH_ROOT_ID, endCoachTour, warmCoach, } from '@/components/coach/start'
 import { setShowcaseOn } from '@/lib/coach-state'
 import { isConsentBannerOpen } from '@/lib/consent'
 import { trackGuide } from '@/lib/guide-funnel'
@@ -27,7 +28,6 @@ import type { ShowcaseEnd } from './Showcase'
 import { Showcase } from './Showcase'
 import type { ShowcaseMenu } from './showcase-stops'
 import { showcaseStops } from './showcase-stops'
-import { COACH_ROOT_ID, endCoachTour, warmCoach } from './start'
 
 export type { ShowcaseEnd } from './Showcase'
 
