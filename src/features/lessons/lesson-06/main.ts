@@ -33,6 +33,8 @@ import { G_CLEF_PATH } from '@/features/lessons/kit/glyphs'
 import { initMercs } from '@/features/lessons/kit/merc-duo'
 import { Motion } from '@/features/lessons/kit/motion-switch'
 import { createModeStore } from '@/features/lessons/kit/names'
+import type { LettersSolfegeMode } from '@/features/lessons/kit/names-modes'
+import { LETTERS_SOLFEGE_MODES } from '@/features/lessons/kit/names-modes'
 import { createNextCard } from '@/features/lessons/kit/next-card'
 import { engraveClefs, initMasthead, initMotionSwitch, initSoundSwitch, } from '@/features/lessons/kit/page-chrome'
 import { createQuiz } from '@/features/lessons/kit/quiz'
@@ -45,8 +47,6 @@ import { bindQuizPlays } from './quiz-play'
 import { QUIZ_QUESTIONS, RECALL_AWAY, RECALL_QUESTIONS } from './quiz-questions'
 import { initSing } from './sing'
 import { initSteps } from './steps'
-import type { NamesMode } from './tune-words'
-import { NAMES_MODES } from './tune-words'
 import { initWords } from './words'
 import { initWrap } from './wrap'
 
@@ -68,7 +68,10 @@ createQuiz({
 initWords()
 
 // the names under the beads: one page-wide choice, Letters on every visit
-const names = createModeStore<NamesMode>(NAMES_MODES, 'letters')
+const names = createModeStore<LettersSolfegeMode>(
+  LETTERS_SOLFEGE_MODES,
+  'letters',
+)
 
 // five steps, one tune line
 const deck = createStepDeck({

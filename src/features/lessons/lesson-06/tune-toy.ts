@@ -29,6 +29,7 @@
 import { clamp, q, qa } from '@/features/lessons/kit/dom'
 import type { ModeStore } from '@/features/lessons/kit/names'
 import { bindModeToggle } from '@/features/lessons/kit/names'
+import type { LettersSolfegeMode } from '@/features/lessons/kit/names-modes'
 import { COLOR } from '@/features/lessons/kit/notes'
 import { NowPlaying } from '@/features/lessons/kit/now-playing'
 import { Sound } from '@/features/lessons/kit/sound'
@@ -36,7 +37,6 @@ import type { TuneLine, TuneShape } from '@/features/lessons/kit/tune-line'
 import { mountTuneLine } from '@/features/lessons/kit/tune-line'
 import { BEAT_SEC, bothLines, firstLine, pair, swappedLine } from './examples'
 import { C4, semitonesOf, START_HI, START_LO, TWINKLE } from './melody'
-import type { NamesMode } from './tune-words'
 import { BRACKET_GAPS, bracketLabel, bracketText, drawnName, gapLabel, gapWords, noteLabel, readoutHtml, readoutSaid, sliderHtml, sliderText, summary, SWAP_SAID, swapOverlay, } from './tune-words'
 
 /** A step of the deck, or the Wrap's free play, which has every control. */
@@ -129,7 +129,7 @@ export interface TuneToy {
 
 export interface TuneToyOptions {
   readonly active: () => boolean
-  readonly names: ModeStore<NamesMode>
+  readonly names: ModeStore<LettersSolfegeMode>
 }
 
 export function mountTuneToy(root: HTMLElement, opts: TuneToyOptions): TuneToy {
@@ -156,7 +156,7 @@ export function mountTuneToy(root: HTMLElement, opts: TuneToyOptions): TuneToy {
   let swapRuns = 0
 
   const shownCount = (): number => (features.shape.lines.length === 1 ? 7 : 14)
-  const mode = (): NamesMode => opts.names.mode
+  const mode = (): LettersSolfegeMode => opts.names.mode
 
   const core = mountTuneLine({
     canvas: q<HTMLCanvasElement>('canvas', viz),

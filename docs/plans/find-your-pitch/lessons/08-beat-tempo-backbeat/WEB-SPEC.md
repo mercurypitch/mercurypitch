@@ -917,7 +917,7 @@ was built on.
 10. `kit/quiz.ts`: `recallStepHref` promoted beside `lessonPageHref` (`:141-143`, `:137-139`),
     since this page is its fourth user after Lessons 3, 4 and 5, whose own copies became
     re-exports of the kit's (`lesson-03/quiz-questions.ts:23-24`, `lesson-04/quiz-questions.ts:31-32`,
-    used at `lesson-04/main.ts:41` and `:64`, and `lesson-05/quiz-questions.ts:19-20`). #1149's
+    used at `lesson-04/main.ts:43` and `:64`, and `lesson-05/quiz-questions.ts:19-20`). #1149's
     `recallHref` (`lesson-06/quiz-questions.ts:30-32` at `b7093a0a4`) opened a page, never a step;
     #1186 deleted it. The quiz needs nothing else: its prefix, slot and away links are on main
     (`kit/quiz.ts:80-104`, `:186-216`).

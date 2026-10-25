@@ -15,14 +15,14 @@ import { resolve } from 'node:path'
 import { vi } from 'vitest'
 import '@/features/lessons/kit/browser-doubles.test-fixtures'
 import { createModeStore } from '@/features/lessons/kit/names'
+import type { LettersSolfegeMode } from '@/features/lessons/kit/names-modes'
+import { LETTERS_SOLFEGE_MODES } from '@/features/lessons/kit/names-modes'
 import type { Voice } from '@/features/lessons/kit/sound'
 import { Sound } from '@/features/lessons/kit/sound'
 import type { StepDeck } from '@/features/lessons/kit/step-deck'
 import { createStepDeck } from '@/features/lessons/kit/step-deck'
 import { classify } from './melody'
 import { initSteps } from './steps'
-import type { NamesMode } from './tune-words'
-import { NAMES_MODES } from './tune-words'
 
 const PAGE = readFileSync(resolve(process.cwd(), 'learn/06.html'), 'utf8')
 
@@ -78,7 +78,10 @@ export function mountSteps(): StepDeck {
     toyFor: () => 1,
     after: { label: 'Sing it', selector: '#sing' },
   })
-  initSteps(deck, createModeStore<NamesMode>(NAMES_MODES, 'letters'))
+  initSteps(
+    deck,
+    createModeStore<LettersSolfegeMode>(LETTERS_SOLFEGE_MODES, 'letters'),
+  )
   deck.start()
   return deck
 }
