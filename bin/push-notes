@@ -17,6 +17,10 @@ FILES=(
   l12/PLAN.md l12/DECISIONS.md
   arp/CONSENSUS.md arp/FOLLOWUPS.md arp/BRIEF-v2.md
   tour/PLAN.md
+  l9/BRIEF-page-3.md l12/BRIEF-sing-layout.md
+  release/BRIEF-notes.md release/bin/cut.py
+  release/notes/CHANGELOG-entry.md release/notes/dev-changelog-entry.md release/notes/PR-BODY.md
+  release/notes/REACH.md release/notes/REPORT.md release/notes/LEAD-REVIEW.md
   bin/heavy bin/heavy-pri bin/light bin/seq-fold.py bin/verify-rebase-merge.sh bin/push-notes
 )
 

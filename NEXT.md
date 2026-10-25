@@ -111,3 +111,62 @@ Note: the lanes' memory gate read a stale cgroup path after the 21:00 restart (f
 - #1199 A4 kit ladder reader: feat/kit-ladder-reader 228b58e71 on 2bc138b4e (kit-ladder worktree). Lead review: no findings. CI all green.
 - Both touch docs/agent/INDEX.md and Lesson 9 FACTS/WEB-SPEC: whichever merges second rebases and regenerates the map. After #1200 (which also touched INDEX.md), both still merge cleanly (merge-tree, 02:50), but rebase each onto main and regenerate the map before its merge.
 - Safety-net check-in for #1198/#1199 fired 23:09 UTC: both green, clean, no threads. The 2-hourly check-in covers the PRs from here (no separate re-arm).
+
+## 20:45 — release test doc done; #1210 gating; sing-layout handed back
+- Claude Doc "Release 0.9.22: test scope" filled, s1-s11 (https://claude.ai/artifact/UWLsxnKVK9B2n4r2bJ9a9U, rev 13).
+- Facts found while writing it: v0.9.21 shipped no lesson pages (0.9.22 is the first); one migration since v0.9.21 (0071_lesson_state.sql); the v* tag runs seller-details check, Jam, prod migrations, DB worker and site (build.yml deploy-db-prod), Release Tours beside; IndexNow goes out by itself on the release (#1116).
+- Release PR still needs: CHANGELOG 0.9.22 + dev-changelog + package.json 0.9.21 -> 0.9.22 (#1135 is stale, other agent's branch); `pnpm run og:versions`; L1/L2 datePublished + sitemap lastmod = release day (SEARCH.md 3.2, 12 step 6; no VideoObject on lesson pages); Release Tours dispatched on main before the tag.
+- #1210 gates on lead/pr1210-rebased (4bd96d8d2): index, pr:validate, typecheck pass; unit 538 files / 6621 tests pass; prettier only INDEX.md (excluded); metrics + test:scripts running. CI on b01617a98: all 23 green.
+- L12 sing-layout handed back: d05a01cd0 23e8b8eee 8afe746d8 ce5038197 on 05d1be73d; backed up to origin feat/lesson-12-sing-layout. Review at max pending (report notes: flow lines live in sing-flow.ts not lines.ts; compact "beside" layout is the builder's reading; 8 px row gap a choice; tab order vs layout; one surviving mutant unreachable).
+- Music head 358932000: check 0/11 pass; unit running.
+
+## 20:52 — #1210 merged
+- Merged by rebase on the owner's go (expectedHeadSha b01617a98): main 2404b342e -> cddefd571, 12 commits, committer aetheris007, authors kept.
+- Against the gated local replay 4bd96d8d2: subjects, messages, authors and dates, patch-ids 12/12 and tree all the same. Against the original branch, one patch-id differs (the second-device commit, context from #1209's PlanQuestions change).
+- Local gates on the replay: index, pr:validate, typecheck, unit 538 files / 6621 tests, metrics (no regressions), test:scripts 255/255; prettier flags only INDEX.md (excluded by pr-prepare).
+- lesson-tour back on feat/lesson-10-app-copy; lead/pr1210-rebased kept.
+- #1203 (Merc's tours, draft, other agent) now rebases onto main, per #1210's heads-up.
+- Held PRs are on 2404b342e; they rebase onto main after the tag anyway.
+
+## 20:59 — #1205 music head pushed
+- Music gates on 358932000 all pass: check 0/11, unit 140/1432, scripts 255, pr:validate, metrics, index, plan-cites 157.
+- feat/lesson-12-music forced to 358932000 with lease 05d1be73d; #1205 Checks section updated with the real counts, read back, no footer.
+- l12-music back on feat/lesson-12-rooms.
+- Sing-layout gates (c03f23ed0) running: $S/l12/sing-layout/review/gates.out.
+- 21:15 #1205 CI on 358932000: all 23 green (PR Gate, unit 2/2, browser 4/4, lint/typecheck, ratchet, mobile builds). Holds for the tag.
+
+## 21:22 — L12 sing-layout gated and pushed
+- c03f23ed0 (01f4365b6 strip layout, bf8d0b9f0 Sing it flow, e283d5824 sing guide, c03f23ed0 map) on 358932000: check 0/11 no rewrite, unit 143/1476, scripts 255, pr:validate, metrics, index, plan-cites 157.
+- Tag lead/l12-sing-layout-gated (local); origin feat/lesson-12-sing-layout forced from the ce5038197 backup with a lease.
+- Review notes: l12/sing-layout/review/REPORT.md; four follow-ups appended to l12/FOLLOWUPS.md.
+- Agent slots: L9 page run 2 builder running; one slot free. Release work waits on the owner's test pass.
+
+## 21:40 — release notes agent launched
+- Task #126 closed (doc and summary done). Task #127: 0.9.22 release notes draft.
+- Notes agent launched at xhigh (rate limit allowed), brief release/BRIEF-notes.md: read-only git plumbing on origin/main + GitHub MCP reads; writes release/notes/{CHANGELOG-entry,dev-changelog-entry,PR-BODY,REACH,REPORT}.md; no build (843 MB free), no worktree, no push. Reuses #1135's text for its 40 PRs (171 commits to 2ad8e8576), corrected (L4 draft, films play, migration 0071); adds ~70 PRs since (82 merged since 20 Oct).
+- On hand-back: review at max; nothing goes up until the owner says "tag it" and settles #1135 (refresh by the other agent, or the lead's fresh PR; recommended: fresh).
+- SLOTS: (1) L9 page run 2 builder (at its final unit rerun), (2) release notes agent.
+
+## 21:50 — L9 page run 2 handed back
+- feat/lesson-09-page (l9-flow) on 5fe88a723: 9646b9bd8 ladder chart, 8c6e05125 cold open, d5b4a0fb0 recall + quick check, b045b622b four words, ef9352ff6 map. Not pushed. 26 files, +2611/-56.
+- Gates pass (logs l9/page-2/logs/): check 0/11, lessons unit 160/1739, scripts, pr:validate, metrics, index, plan-cites 157, build:e2e (Glassworks stop) + first paint + draft-lessons, 13 specs 253 passed.
+- FAIL: stylesheet links on L2/4/6/8 since d5b4a0fb0 (decision 20's L6 question import drags L2's quiz modules into L9; kit/lesson-guide.css splits into its own chunk, linked after the page sheet): L4 .scale-guide 190 px (was 300), L6 .tune-guide 190 (was 240). Options: (a) L9 main.ts imports kit/lesson-guide.css (measured: base links restored exactly, L9 +577 B CSS); (b) specificity; (c) move L6's recall questions.
+- L3 stays at 131 (133,409; 289 over 130). L9 JS budget 89 -> 118 in four tight raises (no quarter headroom: policy question).
+- Lead review at max next: l9/page-2/review/REPORT.md.
+
+## 22:50 — L9 page run 2 reviewed and folded; gates running
+- Review at max: no code findings (l9/page-2/review/REPORT.md). Decisions 30 (tight budget raises while the page is built; the completing task sets measure + a quarter) and 31 (L9 imports kit/lesson-guide.css to keep L2/4/6/8 links) in l9/DECISIONS.md; two follow-ups in l9/FOLLOWUPS.md.
+- Fold: recall commit amended with the lesson-guide.css import and its message (577 B CSS); four words cherry-picked (patch-id unchanged); map regenerated (identical to the builder's). feat/lesson-09-page = 019bd5c93 (9646b9bd8, 8c6e05125, eea6ba230, 9fd4baadb, 019bd5c93); tree vs tag lead/l9-page2-prefold (ef9352ff6) = main.ts +5 only.
+- Measured at the fixed recall commit: L1-L8 links identical to the base build (reveal->predict same hash); L9 JS 118,011 (comment right), CSS 85,435; L2/4/6/8 JS 35 B lighter each.
+- Gates running: l9/page-2/review/gates.sh -> gates.out (check, unit, scripts, pr:validate, metrics, index, plan-cites, build + first paint + links, draft-lessons, no-console, 15 specs incl. L4/L6, guide heights probe). Then tag lead/l9-page2-gated and push with lease over origin's 5fe88a723.
+- 21:54 usage one-shot fired (work had not stopped). Next one-shot trig_01Tupc8MPN5xoiMZAYr8uW2y at 02:53 UTC 26 Oct (resetsAt 02:50). Rate limit allowed.
+
+## 22:15 UTC 25 Oct
+- Release notes: lead review done (release/notes/LEAD-REVIEW.md; v1 copies are the writer's). At "tag it": worktree from origin/main on a feat/ branch, `python3 -I release/bin/cut.py <wt> <tag day>` (dry run passed), add any PR merged after cddefd571 to both entries and the counts, og:versions, gates, PR body from release/notes/PR-BODY.md (fill Checks), Release Tours, merge, prod-upd tag.
+- Owner questions sent: Home's Lessons link (Lesson 1 or hub), privacy notice covers #1190 and #1193 (logs 7 d, D1 30 d), #1190's consent legal review ask, #1134 funnel on Guitar Night; plus the four calls from 20:40.
+- L9 page run 2 gates (gates.sh, watcher bm8m6p3zh): check 0/11 tree clean, unit 160/1739, scripts 255, pr:validate pass; metrics onward running. Then tag lead/l9-page2-gated and push with lease against origin's 5fe88a723.
+
+## 22:20 — check-in (trigger)
+- No v0.9.22 tag. Held PRs: no new activity. merge-tree against main cddefd571: all clean except #1213 (INDEX.md only, after #1210).
+- #1213 rebased in kit-movedo: a94b555ad (9 feature patch-ids unchanged; map commit regenerated, same two lines). Gates arp/rebase-1027/gates.sh running; then push with lease over 86babb444 and check the body's base line.
+- L9 run 3 brief written (l9/BRIEF-page-3.md): Steps 1-5 (B7, B8a, B8b) + map; starts after run 2's specs pass and the branch is pushed. Rate limit allowed (resets 02:50 UTC).

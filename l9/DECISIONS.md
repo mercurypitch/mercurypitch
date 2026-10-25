@@ -55,3 +55,8 @@ Answers to PLAN.md section 6. Builders follow these; a builder who finds one wro
 27. The head's `teaches` list (JSON-LD) words Step 1's question (LESSON.md:110) as a phrase, "Why a leap is harder than a step", as every other lesson's list does.
 28. B11's `next()` (cognitive complexity 26) is split into small rules (`comfortAnswered`, `mercPlayed`, `silenced`, `took`; now 14), not waved through with a metrics baseline update: the ratchet holds, and a baseline edit would conflict with every other branch that moves the baseline file. Folded into B11's commit.
 29. Code comments and commit messages name no plan task (B6, B12 and so on) and no scratchpad file (PLAN.md, DECISIONS): they say what is still to come in plain words ("once it is wired").
+
+## From the page run 2 review (25 October 2026; page-2/review/)
+
+30. While Lesson 9's page is still being built, each toy raises its first-paint budget to the smallest whole KB above its own measure, the measure and the cause in the raise's comment, so each raise stays a tripwire. The page task that completes the page sets the ceiling the tables' rule asks for, its measure plus about a quarter (WEB-SPEC, the budget rows).
+31. Lesson 9's `main.ts` imports `kit/lesson-guide.css`, which the page does not use, so that the sheet stays in one chunk with Lesson 2's quiz modules, which this page shares through Lesson 6's questions (decision 20). Without it, Lessons 2, 4, 6 and 8 link the sheet after their own stylesheets, and Lesson 4's scale guide and Lesson 6's tune guide lose their heights to the slide guide's 190 px. Measured on a build: those four pages keep exactly their links; Lesson 9 gains 577 bytes of CSS.
