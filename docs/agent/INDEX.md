@@ -74,7 +74,7 @@ These are the rules that break things when ignored.
 
 | Module | Entry point | LOC | What it is |
 |---|---|---|---|
-| `lessons` | [tune-line.ts](../../src/features/lessons/kit/tune-line.ts) | 44.6k | Tune line — a tune drawn as beads on semitone rows, played, slid and compared The object a lesson about tunes transforms is one object on... |
+| `lessons` | [tune-line.ts](../../src/features/lessons/kit/tune-line.ts) | 45.2k | Tune line — a tune drawn as beads on semitone rows, played, slid and compared The object a lesson about tunes transforms is one object on... |
 | `guitar-night` | [guitar-night-score-voice-commands.ts](../../src/features/guitar-night/guitar-night-score-voice-commands.ts) | 43.9k | Guitar Night score voice commands — hands-free Rehearse controls The score room and its command overlay share this one capability-shaped... |
 | `drum-night` | [index.ts](../../src/features/drum-night/session/index.ts) | 32.2k | Drum Night session boundary — import, score, kit, and evidence coaching. |
 | `stem-mixer` | [stem-mixer-voice-commands.ts](../../src/features/stem-mixer/stem-mixer-voice-commands.ts) | 17.8k | StemMixer voice commands — the karaoke tab's own spoken set Registered by StemMixer for exactly its mount lifetime, which ends the global... |
