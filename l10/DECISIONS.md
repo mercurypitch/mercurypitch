@@ -24,3 +24,9 @@ Answers to PLAN.md section 6, 24 October 2026. Lesson 9's decisions (`../l9/DECI
     - P4, P5, P8 on `feat/lesson-10-sing-quiz`, one commit each; then C10-4 on `feat/lesson-10-app-copy`.
     - P6, P9, P10 on `feat/lesson-10-layout-hero`, one commit each.
     - K2 waits for A2's fixes, then stacks on `feat/kit-run`. P11 to P22 wait for Lesson 9's B2.
+17. **A gap button's name starts with its label** (review of P7, 25 October): "4, major third: C 4 up to E 4", as Lesson 6's gap buttons do, so a voice control user can say what they see (WCAG 2.5.3). P22 corrects the spec's example in Toys 1, "Keyboard and screen readers" ("Play the major third, C 4 up to E 4").
+18. **P4's lines and sweeps** (lead, 25 October, before the sing-quiz run):
+    - A line Lesson 10's LESSON.md or spec words comes from P7's `SING_LINES`, imported, never copied.
+    - A status line Lesson 10 does not word takes the series' line where Lessons 6 and 8 share it word for word ("Before you sing: how is your voice today?", "Choose the voice you'll sing with.", "Choose a voice: it picks the Merc who sings.", "How did that feel?"). Where the two differ only in what Merc sings, it takes Lesson 8's form with "Merc's notes" in place of "Merc's line". Each such line is listed in the run's report, and P22 adds them to the spec's Toys 6.
+    - A sweep cut short (Stop, the section off screen, the page hidden) asks nothing, and the card goes back to what it showed before the sweep ran, as Lesson 8's flow does. Only a sweep that ends asks "How did that feel?".
+    - The sweeps have no cap: Lesson 10 has no Again, and the spec asks the feeling question "each time a sweep ends".

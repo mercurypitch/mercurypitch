@@ -11,3 +11,16 @@
 - kit/run.ts chords (K2 review N1, 25 Oct): a stop from inside onNote in the middle of a chord leaves that chord's later notes built after the stop and unowned for their dur (one timer per onset now; before, one per note, cleared by the stop). No caller stops its own run from onNote; if one ever does, guard the onset loop with a flag the stop sets.
 - After K3 and K1 merge (review 25 Oct): rewrite as done the plan sentences that still plan them or call Move do's ends "disabled". Lesson 10 spec :18, item 5 (:782-786), item 7 (:797-800); Lesson 12 spec :873-874; Lesson 9 spec :332, :457, :724, :788, :818; Lesson 14 spec :429, :598, :981, :1013. Owners: P22, Lesson 12's docs task, B16, Lesson 14's builder.
 - Optional (K1 review): Lesson 6's melody.ts SOLFEGE (do to la) could index the kit's MAJOR_SOLFEGE.
+
+- **From the chords run (P1, P2, P3, P7; review 25 Oct, head bdd1f8ef7):**
+  - P7's `said` ("C 4", "E flat 4") repeats Lesson 6's `spoken` in `lesson-06/tune-words.ts`. When Lesson 6 is next built and measured, move it to `kit/notes.ts` as `spokenName`, appended at the end of the file so no plan citation shifts.
+  - Sing it lines exist only where the spec words them; P4 must not invent the others.
+  - The two-note level of 0.075 extends FACTS 81 (which gives the three-note level); P22 adds it to FACTS.
+  - P7's templates are each built from one spec example; P22 checks them against every spec line once the page plays them.
+  - Step 5's scale has no name strip; "Play Merc's notes first" has no closing period in the spec. Both for P22.
+  - `EarNote` carries no level, so P16 and P17 must sound the games' chords at 0.075 themselves.
+  - Step 5's choice keys `one` and `three` must match P17's `data-choice`.
+  - P7 imports `MoveId` and `Tempo` from P2's `sounds.ts`, so P7 cannot join the page before P2.
+  - The triad syllables are literals until K1's `MAJOR_SOLFEGE` and `MINOR_SOLFEGE` are in the base; swap them then.
+  - The ear games' roots are chromatic, MIDI 60 to 67 (FACTS 78 says "C4 to G4").
+  - Two whole-suite load timeouts in that run (`lesson-07/sing.test.ts`, `kit/beat-layout.test.ts`) were not checked against main; both have timed out under load before.
