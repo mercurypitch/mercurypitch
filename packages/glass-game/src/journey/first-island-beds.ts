@@ -27,10 +27,10 @@ export const FIRST_ISLAND_TERRACE_BEDS: readonly TerraceBed[] = [
   {
     id: 'east-shoulder',
     lobes: [
-      { x: 2.63608, z: 0.27672, radius: 0.24, height: 0.23 },
-      { x: 2.814, z: 0.55, radius: 0.24, height: 0.28 },
-      { x: 2.861, z: 0.82, radius: 0.24, height: 0.25 },
-      { x: 2.75134, z: 1.09351, radius: 0.24, height: 0.22 },
+      { x: 2.68, z: 0.28, radius: 0.27, height: 0.23 },
+      { x: 2.8, z: 0.56, radius: 0.28, height: 0.28 },
+      { x: 2.83, z: 0.83, radius: 0.28, height: 0.25 },
+      { x: 2.77, z: 1.1, radius: 0.27, height: 0.22 },
     ],
   },
   {
@@ -151,12 +151,22 @@ function terraceBedCards(
   )
   // Darker leaf backing separates the new pale blooms from the marble terrace.
   // Only these ground cards receive the tint; cornices and urns stay unchanged.
-  for (const card of sprigs) {
-    card.tint = [128, 165, 113]
+  const leafTints = [
+    [91, 145, 116],
+    [116, 162, 121],
+    [139, 173, 131],
+  ] as const
+  for (const [index, card] of sprigs.entries()) {
+    card.tint = leafTints[(index + seed) % leafTints.length]!
+    // Unequal low leaves reveal dark breaks around the fuller flower cups.
+    // Shrinking from the planted root preserves every measured clearance.
+    const growth = 0.72 + ((index * 3 + seed) % 5) * 0.07
+    card.size = [card.size[0] * growth, card.size[1] * growth]
+    card.bend *= growth
     card.subdivisions = [2, 1]
   }
-  for (const card of trails) {
-    card.tint = [128, 165, 113]
+  for (const [index, card] of trails.entries()) {
+    card.tint = leafTints[(index + seed) % leafTints.length]!
     card.subdivisions = [3, 2]
   }
   return { sprigs, trails }
@@ -210,11 +220,11 @@ function corollaGeometry(): BufferGeometry {
   for (let petal = 0; petal < 5; petal++) {
     const angle = (petal * Math.PI * 2) / 5
     const offset = positions.length / 3
-    positions.push(0, 0.025, 0)
+    positions.push(Math.cos(angle) * 0.08, 0.025, Math.sin(angle) * 0.08)
     for (const [azimuth, radius, y] of [
-      [angle - 0.45, 0.72, 0.075],
-      [angle, 1, 0],
-      [angle + 0.45, 0.72, 0.075],
+      [angle - 0.48, 0.8, 0.12],
+      [angle, 1, 0.08],
+      [angle + 0.48, 0.8, 0.12],
     ] as const)
       positions.push(Math.cos(azimuth) * radius, y, Math.sin(azimuth) * radius)
     indices.push(offset, offset + 2, offset + 1, offset, offset + 3, offset + 2)
@@ -264,28 +274,45 @@ export function createFirstIslandFlowers(
       for (let flower = 0; flower < population; flower++) {
         const cluster = Math.floor(flower / 3)
         const phase = lobeIndex * 1.71 + lobe.x * 1.3 + lobe.z * 0.7
-        const clusterAngle = (cluster * Math.PI * 2) / (population / 3) + phase
-        const clusterDistance = lobe.radius * (0.3 + cluster * 0.015)
+        const prior = bed.lobes[Math.max(0, lobeIndex - 1)]!
+        const next = bed.lobes[Math.min(bed.lobes.length - 1, lobeIndex + 1)]!
+        const bearing = Math.atan2(next.z - prior.z, next.x - prior.x)
+        // Follow the bed instead of repeating circular bouquets at each lobe.
+        // The two staggered rows interleave at joins, with an unequal leaf-side
+        // edge. Every centre stays within 0.66r of its measured root footprint.
+        const row = flower % 2
+        const along =
+          ((Math.floor(flower / 2) + row * 0.24) / (population / 2 - 0.76) -
+            0.5) *
+            lobe.radius *
+            1.18 +
+          Math.sin(flower * 2.7 + phase) * lobe.radius * 0.018
+        const across =
+          (row === 0 ? -0.16 : 0.13) * lobe.radius +
+          Math.sin(flower * 1.7 + phase) * lobe.radius * 0.035 +
+          Math.sin((along / lobe.radius) * Math.PI * 2 + phase) *
+            lobe.radius *
+            0.045
         const angle = (flower % 3) * 2.18 + phase + cluster * 0.73
-        const distance = lobe.radius * (0.12 + (flower % 3) * 0.025)
-        const radius = 0.038 + (instance % 4) * 0.003
+        // Keep the larger cups inside each supported planting footprint;
+        // continuity comes from redistributing the existing flower population.
+        const radius = Math.min(
+          0.058 + (instance % 4) * 0.004,
+          lobe.radius * 0.32,
+        )
         quaternion.setFromEuler(
           new Euler(
-            Math.sin(instance * 1.7) * 0.12,
+            Math.sin(instance * 1.7) * 0.08,
             angle,
-            Math.cos(instance * 2.1) * 0.12,
+            Math.cos(instance * 2.1) * 0.08,
           ),
         )
         matrix.compose(
           new Vector3(
-            lobe.x +
-              Math.cos(clusterAngle) * clusterDistance +
-              Math.cos(angle) * distance,
+            lobe.x + Math.cos(bearing) * along - Math.sin(bearing) * across,
             // Clear the foliage envelope with every petal, not only its centre.
-            foliageTop + 0.018 + (flower % 3) * 0.005,
-            lobe.z +
-              Math.sin(clusterAngle) * clusterDistance +
-              Math.sin(angle) * distance,
+            foliageTop + 0.015 + (flower % 3) * 0.005,
+            lobe.z + Math.sin(bearing) * along + Math.cos(bearing) * across,
           ),
           quaternion,
           new Vector3(radius, radius, radius),
@@ -293,12 +320,18 @@ export function createFirstIslandFlowers(
         flowers.setMatrixAt(instance, matrix)
         // Colour grows in small neighbouring patches rather than isolated dots.
         // Ivory remains the majority, with rose and lilac among the leaf backing.
-        const patch = (cluster + lobeIndex * 2 + bedIndex) % 7
-        const tint: readonly [number, number, number] =
-          patch === 2 || patch === 3
-            ? [1, 0.58, 0.72]
-            : patch === 5
-              ? [0.7, 0.64, 1]
+        const rose =
+          cluster < 3 &&
+          ((bedIndex === 0 && lobeIndex === 1) ||
+            (bedIndex === 2 && lobeIndex < 2))
+        const lilac =
+          cluster < 2 && ((bedIndex === 0 && lobeIndex === 3) || bedIndex === 1)
+        const tint: readonly [number, number, number] = rose
+          ? [1, 0.32, 0.56]
+          : lilac
+            ? [0.56, 0.39, 0.94]
+            : cluster % 3 === 0
+              ? [1, 0.94, 0.81]
               : [1, 1, 1]
         color.setRGB(tint[0], tint[1], tint[2])
         flowers.setColorAt(instance, color)
@@ -325,9 +358,9 @@ export function createFirstIslandFlowers(
       // lilac patch sit together instead of alternating across the whole rim.
       const tint: readonly [number, number, number] =
         bankIndex === 0 && contact[0] < -1.48
-          ? [1, 0.7, 0.79]
+          ? [1, 0.42, 0.64]
           : bankIndex === 2 && contact[0] > 2.55
-            ? [0.78, 0.73, 1]
+            ? [0.62, 0.46, 1]
             : [1, 1, 1]
       color.setRGB(tint[0], tint[1], tint[2])
       flowers.setColorAt(instance++, color)
