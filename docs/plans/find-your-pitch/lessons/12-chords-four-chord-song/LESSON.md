@@ -331,8 +331,9 @@ four chords and still be two songs.
 - Text: By default, Arpeggio Jumper plays a chord's notes one at a time, from its root up to the
   root an octave higher, and you sing each back. Its Chord menu starts on Major, with Minor,
   Diminished and Augmented there too. It starts low in the voice range saved in Settings and climbs
-  a whole octave. It wants each note in the octave it plays, not an octave away: set your range
-  there first, under Singing Voice Range. If the top do felt high today, leave it for another day.
+  a whole octave: set your range there first, under Singing Voice Range. Sing the whole arpeggio an
+  octave higher or lower and it scores it there, and says so. If the top do felt high today, leave
+  it for another day.
   Sore, hoarse or unwell today? Just listen along. Sing at about speaking volume, and stop
   immediately if anything feels uncomfortable.
 - Address: Practise it free: **mercurypitch.com/pitch-training**, then tap Arpeggio Jumper.
@@ -444,9 +445,8 @@ roots of a chord loop, over the chords:
   stored difficulty scales the note and the time to sing it, from 924 ms and 2.64 seconds at level
   1 to 420 ms and 1.2 seconds at level 10, and its setup can turn the arpeggio downwards or ask for
   the whole of it back from memory (Echo the phrase). Its Chord menu includes Diminished and
-  Augmented, which this lesson only names. Its score also folds in a "richness" reading that is
-  only the run's average pitch clarity, as Lesson 9 lists it for the App content track (FACTS 45,
-  46).
+  Augmented, which this lesson only names. Its grade is the average of its note scores, in the
+  octave the whole run fits, so the card can say so plainly (FACTS 45, 46).
 
 ### Changed in the plain-language review
 

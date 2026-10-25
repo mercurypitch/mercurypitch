@@ -138,10 +138,10 @@ heading, and the line above it, are in LESSON.md ("Section headings").
 
 ## Length
 
-The learner copy is 2,346 words on `pnpm lesson:words` (FACTS 5; the review's 2,350), 33 under the
+The learner copy is 2,363 words on `pnpm lesson:words` (FACTS 5; the review's 2,350), 16 under the
 series' cap of 2,379: Lesson 3's page on the same count at `a3d8048e1` is 2,454 words, 75 of them
 the note under its new title, which is not in editorial form, so the counter reads it. The page runs
-about 16 minutes: 9.86 of reading and about 6.4 of sound, toys and tasks, 16.3 in all. That
+about 16 minutes: 9.93 of reading and about 6.4 of sound, toys and tasks, 16.3 in all. That
 is past MASTER-PLAN § 4.2's 8 to 12 minutes of active time, as Lessons 3, 5, 6 and 7 are (16, 18, 17
 and 16 minutes), and acceptable by their precedent. Each step's text, with its Try and its Notice,
 runs 106 to 120 words (Steps 1 to 5: 118, 119, 120, 119 and 106), inside § 4.2's 50 to 120 a step.
@@ -548,15 +548,15 @@ paused off screen, and the still images when WebGL fails or would run on the CPU
   carries no first-visit line. The card names the taps ("then tap Arpeggio Jumper or Interval
   Trainer"), because Scale Runner sits between them in the menu (FACTS 53). It comes in two
   versions, picked by how Sing it ended (Toys 4); the rest card, a link until #1177, links nowhere.
-  What the card says of each drill is in FACTS 48 to 52, and it says in plain words that both want
-  each note in the octave they play, not an octave away (FACTS 50, 51; CURRICULUM § 4 item 7).
-- **App content, small** (MASTER-PLAN § 7's App content track), proposed: Arpeggio Jumper's grade
-  blends a "richness" score, which is only the run's average pitch clarity, at a quarter of the
-  grade (FACTS 50): a measure the card does not mention, of the recording rather than the singing.
-  Proposed: leave it out of the grade, or name it in the result. Lesson 4's card links Scale Runner,
-  whose grade does the same at a fifth
-  (`src/features/exercises/scale-runner/use-scale-runner-controller.ts:202`), so this is the series'
-  precedent, not a block. Interval Trainer's card no longer says it sings intervals "above and
+  What the card says of each drill is in FACTS 48 to 52, and it says in plain words that Interval
+  Trainer wants each note in the octave it plays, not an octave away, and that Arpeggio Jumper
+  scores a whole run sung an octave up or down in that octave, and says so (FACTS 50, 51;
+  CURRICULUM § 4 item 7).
+- **App content, done** (MASTER-PLAN § 7's App content track): Arpeggio Jumper's grade is the
+  average of its note scores, its scoring version 2 of 25 October 2026 (FACTS 50). It no longer
+  blends in a "richness" score, which was only the run's average pitch clarity, a measure of the
+  recording rather than the singing, and nor does the grade of Scale Runner, which Lesson 4's card
+  links. Interval Trainer's card no longer says it sings intervals "above and
   below" a note: main fixed it on 19 October 2026 (FACTS 53), and this package's plan commit drops
   the fix from MASTER-PLAN § 7's App content row (`MASTER-PLAN.md:304`).
 - **Needed, proposed: `/exercises/leap-ladder`** (CURRICULUM § 4 item 2, and the Phase 2 engineering

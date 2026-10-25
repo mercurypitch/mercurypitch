@@ -179,10 +179,10 @@ FACTS 5a). Each section's heading, and the line above it, are in LESSON.md ("Sec
 
 ## Length
 
-The learner copy is 2,336 words on `pnpm lesson:words` (FACTS 3; the review's 2,341), under the
+The learner copy is 2,340 words on `pnpm lesson:words` (FACTS 3; the review's 2,341), under the
 series' cap of 2,379, Lesson 3's page on the same counter less the editorial note under its title.
-The page runs about 15 minutes: 9.82 of reading at 238 words a minute and 5.25 of sound, toys and
-tasks, 15.07 in all. That is past MASTER-PLAN § 4.2's 8 to 12 minutes of active time, as Lessons 3,
+The page runs about 15 minutes: 9.83 of reading at 238 words a minute and 5.25 of sound, toys and
+tasks, 15.08 in all. That is past MASTER-PLAN § 4.2's 8 to 12 minutes of active time, as Lessons 3,
 5, 6, 7 and 10 are (16, 18, 17, 16 and 17 minutes: Lesson 3 FACTS 61, Lesson 5 FACTS 2, Lesson 6
 FACTS 3, Lesson 7 FACTS 4, Lesson 10 FACTS 3). Each step's text, with its Try, its Notice and any
 Tavi line, runs 96 to 118 words (Steps 1 to 5: 115, 118, 118, 111 and 96), inside § 4.2's 50 to 120
@@ -197,7 +197,7 @@ a step. Six parts carry more, by the same counter with their headings left out, 
   are not cut (LESSON.md's intro).
 - **The quick check, 356 words.** Four questions with three answers each and a line of feedback for
   every answer, as MASTER-PLAN § 4.2 item 8 asks.
-- **The Wrap, 366 words.** The practice card names two drills and says how Arpeggio Jumper climbs
+- **The Wrap, 370 words.** The practice card names two drills and says how Arpeggio Jumper climbs
   and scores, which the learner needs before opening it (FACTS 45 to 47).
 
 The activities are timed from the spec's own lengths (FACTS 3): the cold open's three plays, 8 s
@@ -748,8 +748,8 @@ still images when WebGL fails or would run on the CPU.
   the default, 5: 924 and 2,640 ms at level 1, 420 and 1,200 ms at level 10; its setup can also play
   the arpeggio downwards or ask for it back whole, from memory ("Echo the phrase") (FACTS 45). Its
   Chord menu holds Major, Minor, Diminished and Augmented, so it is the app's one drill with this
-  lesson's triads today. It scores each note against the octave it plays (FACTS 46), so the card
-  sends the viewer to Settings, Singing Voice Range, first (CURRICULUM § 4 item 7). The link is
+  lesson's triads today. It climbs a whole octave from low in the saved range (FACTS 45, 46), so the
+  card sends the viewer to Settings, Singing Voice Range, first (CURRICULUM § 4 item 7). The link is
   `/pitch-training?lesson=12`, and the marker lets First Light, the main app's intro, step aside on
   a first visit (FACTS 43), so the card, the rest card and the footer carry no first-visit line.
 - **Today, Ear Lab's Cadence.** `mercurypitch.com/ear-lab`, then tap Cadence (FACTS 44, 47): twelve
@@ -776,9 +776,9 @@ still images when WebGL fails or would run on the CPU.
 - **Needed, proposed: an `ear-drill` launch for Cadence** (CURRICULUM § 4 item 5, the planned
   `ear-drill` launch kind): Cadence opened on its own, with the page's "then tap Cadence" dropped
   when it ships, as Lesson 10's spec proposes for Stack.
-- **Proposed, App content** (FACTS 46), for the App content track and, for Arpeggio Jumper's score,
-  the coach: its grade folds in a "richness" reading that is only the run's average pitch clarity,
-  as Lesson 9's spec lists it. And `/ear-lab`'s entry document should link back to Lesson 12 once it
+- **App content, done** (FACTS 46): Arpeggio Jumper's grade no longer folds in a "richness" reading
+  of the run's pitch clarity; since its scoring version 2 it is the average of its note scores, as
+  Lesson 9's spec records. And `/ear-lab`'s entry document should link back to Lesson 12 once it
   is out, as SEARCH.md § 8 asks of the rooms a lesson practises in.
 - Not linked: none of the premium exercises (`src/lib/native-build.ts:57-68`; FACTS 50).
 
