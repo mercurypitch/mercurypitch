@@ -22,7 +22,7 @@
 // are the lessons kit's own (lessons/copy-choices.ts).
 
 import type { JSX } from 'solid-js'
-import { createMemo, createSignal, For, onCleanup, onMount, Show, } from 'solid-js'
+import { createMemo, createSignal, For, Index, onCleanup, onMount, Show, } from 'solid-js'
 import { ConfirmDialog } from '@/components/ConfirmDialog'
 import { ChevronDown, Eye, RotateCcw } from '@/components/icons'
 import { prefersReducedMotion } from '@/components/room-kit/reduced-motion'
@@ -619,25 +619,25 @@ export function AdminLessonsPage(props: AdminLessonsPageProps): JSX.Element {
                     <div class={styles.checklist}>
                       <h4>Release checklist</h4>
                       <ol class={styles.steps}>
-                        <For each={stepsOf(row)}>
+                        <Index each={stepsOf(row)}>
                           {(step) => (
-                            <li class={styles.step} data-state={step.state}>
+                            <li class={styles.step} data-state={step().state}>
                               <ToneIcon
-                                tone={step.state}
+                                tone={step().state}
                                 class={styles.stepIcon}
                               />
                               <div>
                                 <span class={styles.srOnly}>
-                                  {STATE_WORDS[step.state]}:{' '}
+                                  {STATE_WORDS[step().state]}:{' '}
                                 </span>
-                                {step.text}
-                                <Show when={step.detail}>
+                                {step().text}
+                                <Show when={step().detail}>
                                   {(detail) => <small>{detail()}</small>}
                                 </Show>
                               </div>
                             </li>
                           )}
-                        </For>
+                        </Index>
                       </ol>
                     </div>
                   </Show>
