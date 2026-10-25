@@ -17,8 +17,11 @@
 // push and its hook), and a hold's fixed frame with its seconds named,
 // 10 or 15 across (`setWindow`), both in band-chart-hold.ts. Lesson 9 adds
 // rungs, Merc's notes as bands over time slots or across the plot, each
-// with its own glow and lit edge (band-chart-rungs.ts): the page passes
-// their painter in (`paintRungs`), so no lesson without rungs downloads it.
+// with its own glow and lit edge (band-chart-rungs.ts), and his leaps as
+// arcs between them (band-chart-arcs.ts): the page passes their painter in
+// (`paintRungs`), so no lesson without rungs downloads it. Its notes axis
+// can name the rungs' rows in words in place of the grid's letters, the
+// gutter widened to fit (`names`, band-chart-names.ts).
 // Each figure is a controller that writes the chart's `scene` (the line, the
 // marks, the glow, the lit edge) and the chart paints it every frame while
 // it is on screen. The time window is fixed and the line draws across it,
@@ -26,10 +29,12 @@
 // figure in the end state instead of animating it. The canvas is an image
 // with a spoken summary (`describe`) unless a controller makes it a slider.
 
+import type { Arc } from './band-chart-arcs'
 import type { BandSpec, CentsTick, ChartFrame, ChartMark, TracePoint, } from './band-chart-draw'
 import { BAND_COLOR, centsAt, drawBand, drawCentsGrid, drawHandle, drawHead, drawLineLabel, drawLitEdge, drawMark, drawNotesGrid, drawOctaveBracket, drawPlayhead, drawTrace, xOf, yOf, } from './band-chart-draw'
 import type { LevelPoint } from './band-chart-hold'
 import { drawLevelStrip, drawTimeTicks, STRIP_GAP, stripHeight, TICKS_ROOM, } from './band-chart-hold'
+import type { RungNames } from './band-chart-names'
 import type { Rung } from './band-chart-rungs'
 import { HIT_TOLERANCE_CENTS } from './band-words'
 import { q } from './dom'
@@ -47,6 +52,12 @@ export type BandAxis =
       readonly notes: readonly [lo: number, hi: number]
       /** Notes named in full beside their tick (A3, A4); the others show their letter. */
       readonly named?: readonly number[]
+      /**
+       * Rows named in words in place of every letter and `named`, and no
+       * other row named: a ladder's rungs ("so · A3", band-chart-names.ts's
+       * `rungNames`). The gutter widens to the longest.
+       */
+      readonly names?: RungNames
     }
 
 export interface BandChartOptions {
@@ -103,6 +114,8 @@ export interface BandScene {
    * and `lit`. `clear` and `setTarget` take them away with the rest.
    */
   rungs?: Rung[]
+  /** Merc's leaps as arcs between his rungs, drawn while the scene has rungs (band-chart-arcs.ts). */
+  arcs?: Arc[]
 }
 
 export interface BandChart {
@@ -159,6 +172,7 @@ export function mountBandChart(
   const cv = surface(canvas)
   const axis: BandAxis = opts.axis ?? { range: 150 }
   const notesAxis = !('range' in axis)
+  const names = 'names' in axis ? axis.names : undefined
   let window = opts.window ?? 4
   let target = opts.target
   let [lo, hi] = reach(axis, target)
@@ -169,7 +183,7 @@ export function mountBandChart(
     (opts.strip === true ? STRIP_GAP + stripHeight(h) : 0) +
     (opts.timeTicks === true ? TICKS_ROOM : 0)
 
-  /** The plot inside a w by h canvas: room for the note letters at the left on a notes axis. */
+  /** The plot inside a w by h canvas: room for the note letters, or the rung names, at the left on a notes axis. */
   const frameOf = (
     ctx: CanvasRenderingContext2D,
     w: number,
@@ -178,7 +192,7 @@ export function mountBandChart(
     ctx,
     w,
     h,
-    x0: notesAxis ? 40 : 12,
+    x0: notesAxis ? Math.max(40, names?.gutter(ctx) ?? 0) : 12,
     x1: w - 12,
     top: PAD,
     bottom: h - PAD - below(h),
@@ -213,10 +227,19 @@ export function mountBandChart(
     if (scene.lit) drawLitEdge(f, main)
   }
 
+  /** The grid: the notes axis's rows, lettered or named, or the cents ticks. */
+  function paintGrid(f: ChartFrame): void {
+    if (!notesAxis) {
+      drawCentsGrid(f, opts.ticks)
+      return
+    }
+    const named = 'named' in axis ? (axis.named ?? []) : []
+    drawNotesGrid(f, target, named, names === undefined)
+    names?.paint(f, target)
+  }
+
   function paint(f: ChartFrame): void {
-    if (notesAxis)
-      drawNotesGrid(f, target, 'named' in axis ? (axis.named ?? []) : [])
-    else drawCentsGrid(f, opts.ticks)
+    paintGrid(f)
     paintBands(f)
     for (const m of scene.marks) drawMark(f, m)
     if (scene.playhead !== null) drawPlayhead(f, scene.playhead)
