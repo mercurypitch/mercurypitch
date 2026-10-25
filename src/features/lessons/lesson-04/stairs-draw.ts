@@ -15,11 +15,11 @@ import { drawHome } from '@/features/lessons/kit/home-glyph'
 import { drawStrip } from '@/features/lessons/kit/key-strip'
 import type { StepSize } from '@/features/lessons/kit/major-scale'
 import { MAJOR_STEPS, nameInScale, scaleNotes, stepSizes, whiteKeysFrom, } from '@/features/lessons/kit/major-scale'
+import type { NamesMode } from '@/features/lessons/kit/names-modes'
 import { COLOR, rgba } from '@/features/lessons/kit/notes'
 import type { StairBox, StairsLayout } from './stairs-geometry'
 import { BLOCK_GAP } from './stairs-geometry'
 import { paintRows, paintRuler } from './stairs-ruler'
-import type { NamesMode } from './stairs-words'
 import { stairName } from './stairs-words'
 
 /** A stair's light: how strongly (0 to 1) and in whose colour. */

@@ -268,11 +268,11 @@ draw its triads with it; it moves into the kit when Lesson 12 needs it.
   other five are plain stairs. Under Minor, mi, la and ti each drop one row and are renamed me, le
   and te, drawn in the same chrome as the rest and labelled, never in a mood colour (FACTS 24, 25;
   FACTS, Illustrations without claims). The names switch is Lesson 4's
-  (`lesson-04/stairs-words.ts:17-23`), which this page moves into the kit with a choice of modes
+  (`kit/names-modes.ts:15-22`), which this page moves into the kit with a choice of modes
   (What the kit and the app still need, item 5), and shows two of its three modes, Letters ·
   Do-re-mi, as Lesson 6's page does, on a page-wide `createModeStore` (`kit/names.ts:27`), as Lesson
   4's page keeps its own (`lesson-04/main.ts:69-70`). Lesson 4's syllables are the major scale's
-  (`SOLFEGE`, `stairs-words.ts:25-35`), so this page gives the switch its own: under Minor, do re me
+  (`MAJOR_SOLFEGE`, `kit/names-modes.ts:32-42`), so this page gives the switch its own: under Minor, do re me
   fa so le te do, the do-based minor the series sings (FACTS 8, 26). The letters come from
   `spellScale` (`notes.ts:165-177`; FACTS 27). Major · Minor waits for the predict's choice: in Step
   5 the toy draws it disabled until the predict's `onChoice` says a choice is in, and the predict's
@@ -780,8 +780,8 @@ at `85e23a1af` changed there, and that page's own lines are cited at `d59c00ad6`
    main (`kit/spiral.ts:82-107`, `:120-149`).
 5. The names switch (Toys 1): Lesson 4's (`lesson-04/stairs-words.ts`), promoted into the kit with a
    choice of modes and the page's own syllables, as Lesson 6's spec lists it. Lesson 6's page keeps
-   its two modes on its own page (`NamesMode` and `NAMES_MODES`, `lesson-06/tune-words.ts:21-23`,
-   its store at `lesson-06/main.ts:70-71`, on `feat/lesson-06-page`), so this page moves the switch
+   its two modes on its own page (`NamesMode` and `NAMES_MODES`, `lesson-06/tune-words.ts:21-23` at `5e08dd4a3`,
+   its store at `lesson-06/main.ts:70-71`, at `5e08dd4a3`), so this page moves the switch
    into the kit and takes Lesson 6's modes with it; if this page lands first, Lesson 6's page takes
    the kit's. The page-wide store is the kit's already (`createModeStore`, `kit/names.ts:27`).
 6. The ear game (Toys 5): the kit's, from Lesson 6's page (`kit/ear-game.ts`), Lesson 2's Semitone

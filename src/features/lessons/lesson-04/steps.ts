@@ -12,12 +12,12 @@
 
 import { q } from '@/features/lessons/kit/dom'
 import type { ModeStore } from '@/features/lessons/kit/names'
+import type { NamesMode } from '@/features/lessons/kit/names-modes'
 import { mountPredict } from '@/features/lessons/kit/predict'
 import type { StepDeck } from '@/features/lessons/kit/step-deck'
 import { registerToy } from '@/features/lessons/kit/step-deck'
 import type { StairsStep, StairsToy } from './stairs-toy'
 import { mountStairsToy } from './stairs-toy'
-import type { NamesMode } from './stairs-words'
 
 const D4 = 62
 
