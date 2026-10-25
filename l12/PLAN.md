@@ -155,7 +155,7 @@ Section 3 lists the seven things Lesson 12's build must do so that `/learn/12` s
 - L12-K1 waits for L10-K2's branch (`feat/kit-run-chords`, on A2's fix commits).
 - L12-K2 waits for the lead's answer on L10-K3.
 - The page waits for L10-P11 on `feat/lesson-10-page`, which needs B0 and B2 below it.
-- L12-C1 waits for Arpeggio Jumper v2 and the owner. L12-C2 waits for the owner's yes.
+- L12-C1 waits for Arpeggio Jumper v2 and the owner. L12-C2 had the owner's yes (24 Oct) and is built (25 Oct, `feat/lesson-order-warning` 6c5aed259; reviewed, backed up).
 - L12-C3 waits for a design and for C1. L12-C4 waits for C10-3. L12-R1 waits for the release.
 
 The tasks below are all new files under `l12/`, plus `public/learn/lesson-12-og.jpg`. No Lesson 9
@@ -468,7 +468,8 @@ Every branch regenerates `docs/agent/INDEX.md` and the plan-cites anchors. After
 regenerate both rather than merging their text by hand.
 
 **Shipping before Lesson 11.** HANDOFF suggests building 9, 10, 12, 11 (`HANDOFF.md:219`), and
-publishing goes in the same order. The console checks no order. These are the checks the lead
+publishing goes in the same order. On main the console checks no order; L12-C2 (built 25 Oct,
+`feat/lesson-order-warning` 6c5aed259, not merged) asks first but never stops it. These are the checks the lead
 asked for:
 
 - **Lesson 10's next card** names Lesson 11, "Coming later" and "See it on the map", because it
@@ -486,7 +487,8 @@ asked for:
 - **The explorer and season data** draw arcs from `EDGES`. No edge joins 11 and 12, and
   `unlocks(10)` is `[12]`.
 - **The publishing console** asks only while a drafts line stands (`AdminLessonsPage.tsx:186-207`;
-  `waitingOn`, `lesson-admin.ts:96-98`). It never checks another lesson's state. L12-C2 would.
+  `waitingOn`, `lesson-admin.ts:96-98`). On main it never checks another lesson's state; with L12-C2 it
+  also asks while a lesson it builds on (`PREREQ`) is not published, once for both (`aheadOf`, `publishQuestion`).
 - **Tests that assume contiguous pages:**
   - main's count tests, which B0 fixes;
   - `learn-frame-loop.spec.ts:213`, which B15 or L10-P21 fixes;
@@ -505,7 +507,8 @@ is published first or not:
 3. Put `/learn/12` in the drafts group of `sw-runtime.ts` (`:138-157`), so a held-back page reaches
    the site worker's 404 page and never the app shell.
 4. Carry a drafts line that names Lesson 10's page, so the console's question states the order. This
-   holds until L12-C2.
+   holds until L12-C2 merges; after that the console names Lesson 10 itself (`aheadOf`), and the line
+   needs only the coach's sign-off.
 5. Add the two publish-state cases in section 5:
    - `/learn/12` with Lesson 10 held back;
    - `/learn/10` with Lesson 12 published and Lesson 11 still without a page.
