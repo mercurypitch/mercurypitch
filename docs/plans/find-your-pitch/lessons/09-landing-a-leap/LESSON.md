@@ -24,9 +24,10 @@ agree. The copy follows the plain-language review's patterns. Every practice lin
 carries the page, and it goes live when the admin console publishes it (FACTS 9, 63). Whoever
 publishes it waits for the vocal coach's sign-off, the hard gate, and for Lessons 3 and 6 to be
 live, because its prerequisite chips and its recall check link there. Those are rules for whoever
-uses the console, and nothing enforces them: the console asks before it publishes a draft that waits
-on a sign-off, and checks nothing about the lessons a page links. What the vocal coach signs off is
-listed at the end.
+uses the console, which asks before it breaks one but never stops it: it asks before it publishes a
+draft that waits on a sign-off, and before it publishes a lesson while one it builds on is not
+published, then publishes it on "Publish anyway". What the vocal coach signs off is listed at the
+end.
 
 ---
 

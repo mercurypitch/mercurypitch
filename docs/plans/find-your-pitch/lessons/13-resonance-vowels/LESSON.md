@@ -28,9 +28,10 @@ spelling. Every practice link carries `?lesson=13`, which tells the app a lesson
 Every build carries the page, and it goes live when the admin console publishes it (FACTS 9).
 Whoever publishes it waits for the vocal coach's sign-off, the hard gate, and for Lesson 11's page,
 `/learn/11`, to be live, because its prerequisite chip and its recall link there. Those are rules
-for whoever uses the console, and nothing enforces them: the console asks before it publishes a
-draft that waits on a sign-off, and checks nothing about the lessons a page links. What the vocal
-coach signs off is listed at the end.
+for whoever uses the console, which asks before it breaks one but never stops it: it asks before it
+publishes a draft that waits on a sign-off, and before it publishes a lesson while one it builds on
+is not published, then publishes it on "Publish anyway". What the vocal coach signs off is listed
+at the end.
 
 ---
 

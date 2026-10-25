@@ -28,9 +28,10 @@ carries `?lesson=11`, which opens its room with no intro, so the page has no fir
 Every build carries the page, and it goes live when the admin console publishes it (FACTS 9).
 Whoever publishes it waits for the vocal coach's sign-off, the hard gate, and for Lesson 7's page,
 `/learn/07`, to be live, because its prerequisite chip and its recall link there. Those are rules
-for whoever uses the console, and nothing enforces them: the console asks before it publishes a
-draft that waits on a sign-off, and checks nothing about the lessons a page links. What the vocal
-coach signs off is listed at the end.
+for whoever uses the console, which asks before it breaks one but never stops it: it asks before it
+publishes a draft that waits on a sign-off, and before it publishes a lesson while one it builds on
+is not published, then publishes it on "Publish anyway". What the vocal coach signs off is listed
+at the end.
 
 ---
 

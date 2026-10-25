@@ -50,8 +50,8 @@ next-lesson card. No source this package read counts those songs, so the package
 it unpicked (Header; FACTS 1). The page is published only after Lesson 10's page, `/learn/10`, is,
 because its recall asks Lesson 10's questions and its prerequisite chip names Lesson 10, and after
 the vocal coach has looked at its voice lines (For the vocal coach). The admin console asks before
-it publishes a lesson still waiting on its sign-off, but it never checks that Lesson 10 is live, so
-the owner keeps that order (FACTS 7).
+it publishes a lesson still waiting on its sign-off, and before it publishes Lesson 12 while Lesson
+10 is not published, but "Publish anyway" goes ahead, so the owner keeps that order (FACTS 7).
 
 ---
 

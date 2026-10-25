@@ -31,9 +31,10 @@ answers its address with the 404 page until the admin console publishes it, at r
 release (FACTS 9, 48). Whoever publishes it waits for two things: the vocal coach's sign-off, the
 hard gate, because it is a voice lesson (MASTER-PLAN § 7, days 1 and 6; § 12 item 8); and Lesson
 7's page live at `/learn/07`, because its prerequisite chip and its recall check link there (FACTS
-2, 4, 9). Those are rules for whoever uses the console, and nothing enforces them: the console asks
-before it publishes a draft that waits on a sign-off, then publishes it if told to, and nothing
-checks the lessons a page links. A page published early still works, with a plain chip and unlinked
+2, 4, 9). Those are rules for whoever uses the console, which asks before it breaks one but never
+stops it: it asks before it publishes a draft that waits on a sign-off, and before it publishes a
+lesson while one it builds on is not published, then publishes it if told to. A page published
+early still works, with a plain chip and unlinked
 step links where its links to Lesson 7 would be (Edge cases). It is built after Lesson 7's page,
 whose range chart, siren take and quiz questions it reuses, and with the hook this package gives it,
 since its title must be the season's (FACTS 1). It opens in Lesson 2's order, the cold open straight
@@ -982,8 +983,9 @@ What the page does where nothing above says:
   FACTS 56).
 - **No WebGL, or a slow device**: Merc and Tavi's stills (`kit/merc-warm.ts`).
 - **Lesson 7 never marked done**: the recall still shows, as a prerequisite's does.
-- **Lesson 11 published while Lesson 7 is held back**: nothing stops it, since the publish order is
-  a rule for whoever uses the console (the intro), so the page follows the state it is served with.
+- **Lesson 11 published while Lesson 7 is held back**: nothing stops it. The console asks first, but
+  the publish order is a rule for whoever uses it (the intro), so the page follows the state it is
+  served with.
   The site worker, and then the masthead's `followPageState`, make every link to a lesson that is
   not live no link (`src/lesson-gate.ts:523-533`, `:547-567`; `kit/page-state.ts:64-108`, called by
   `initMasthead`, `kit/page-chrome.ts:126`): the "After Lesson 7" chip stays as a plain chip, and
@@ -1176,7 +1178,7 @@ nothing from the take: no frame, no line, no answer to "How did that feel?" and 
 Page QA before publishing (PRODUCTION-PIPELINE § 5) adds, for this page:
 
 - The vocal coach has signed the page off, and Lesson 7 is live on the site it is published to: the
-  console asks only about the sign-off, and nothing checks the rest (the intro).
+  console asks about both, but publishes on "Publish anyway" (the intro).
 - The gear model is heard by ear on a phone's speaker and on headphones: one voice changing colour
   at the switch, the two gears equally loud, and no click at a crossfade (Audio; Decisions, 3).
 - **The predict before a choice** (Toys 2; Edge cases): with sound off, Play Tavi's siren

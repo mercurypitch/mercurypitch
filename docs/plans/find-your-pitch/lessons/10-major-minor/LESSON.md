@@ -28,8 +28,9 @@ card. Those are mood labels, the link this lesson questions, so the package reco
 unpicked (Header; FACTS 1). The page is published only after Lesson 6's page, `/learn/06`, is,
 because its recall check asks Lesson 6's questions and its prerequisite chip names Lesson 6, and
 after the vocal coach has looked at its voice lines (For the vocal coach). The admin console asks
-before it publishes a lesson still waiting on its sign-off, but it never checks that Lesson 6 is
-live, so the owner keeps that order (FACTS 7).
+before it publishes a lesson still waiting on its sign-off, and before it publishes Lesson 10 while
+Lesson 6 is not published, but "Publish anyway" goes ahead, so the owner keeps that order (FACTS
+7).
 
 ---
 
