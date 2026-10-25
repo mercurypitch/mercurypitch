@@ -47,7 +47,7 @@ const registry = vi.hoisted(() => ({
   COACH_TOURS: {} as Record<string, unknown>,
 }))
 vi.mock('@/features/tours/coach-tours', () => registry)
-vi.mock('@/features/tours/coach/start', () => ({
+vi.mock('@/components/coach/start', () => ({
   startCoachTour: mocks.startCoachTour,
 }))
 

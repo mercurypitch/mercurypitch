@@ -10,7 +10,7 @@
 // Carries its own funnel instrumentation (./funnel) -- this is a top-of-funnel
 // landing surface, not just another tab.
 
-import { createEffect, createMemo, createSignal, For, lazy, on, onCleanup, onMount, Show, Suspense, untrack, } from 'solid-js'
+import { createEffect, createMemo, createSignal, ErrorBoundary, For, lazy, on, onCleanup, onMount, Show, Suspense, untrack, } from 'solid-js'
 import { ChunkErrorBoundary } from '@/components/ChunkErrorBoundary'
 import { ChevronDown, Info } from '@/components/icons'
 import { Notifications } from '@/components/Notifications'
@@ -33,12 +33,14 @@ import { useBackgroundSurfaceController } from '@/lib/backgrounds/background-sur
 import { eventBus } from '@/lib/event-bus'
 import type { KaraokeNightLaunchParams } from '@/lib/karaoke-night-link'
 import { normalizeSongSlug, parseKaraokeNightLaunch, studioSessionUrl, takeScannedSyncLink, } from '@/lib/karaoke-night-link'
+import { IS_NATIVE_BUILD } from '@/lib/native-build'
 import { isNarrow } from '@/lib/use-viewport'
 import { karaokeFocus, karaokeZen, setKaraokeFocus, setKaraokeZen, } from '@/stores/ui-store'
 import type { DemoSongManifest } from './demo-song'
 import { demoIsPlayable, demoSessionId, isDemoSessionId, loadDemoSongs, seedDemoLyrics, } from './demo-song'
 import { exampleLinkSlug, findExampleBySongSlug } from './example-links'
 import { trackKaraoke } from './funnel'
+import { tourBelongsAt, tourOfferDue } from './karaoke-tour-offer'
 import type { KaraokeSong } from './KaraokeRailPanels'
 import { KARAOKE_STAGE_ALPHA, loadKaraokeStageAlpha, persistKaraokeStageAlpha, } from './stage-transparency'
 
@@ -68,6 +70,20 @@ const KaraokeAccount = lazy(async () => {
   const m = await import('./KaraokeAccount')
   return { default: m.KaraokeAccount }
 })
+
+// Merc's first-visit offer of the tour, with the coach's chip: loaded only on
+// a first visit (karaoke-tour-offer.ts says when).
+const KaraokeTourChip = lazy(async () => {
+  const m = await import('./KaraokeTourChip')
+  return { default: m.KaraokeTourChip }
+})
+
+/** Merc's tour, with the coach and its steps, loaded as it is asked for. */
+function startTour(afterConsent: boolean): void {
+  void import('./start-karaoke-tour').then((m) =>
+    m.startKaraokeTour({ afterConsent }),
+  )
+}
 
 // The Mercury Sing stage drags in the whole pitch/matcher stack — lazy, it
 // costs nothing until someone actually says "mercury sing".
@@ -176,6 +192,15 @@ export function KaraokeNightApp() {
   const [stageAlpha, setStageAlpha] = createSignal(loadKaraokeStageAlpha())
   const [railCollapsed, setRailCollapsed] = createSignal(loadRailCollapsed())
   const [creditsOpen, setCreditsOpen] = createSignal(false)
+  // Merc's tour (karaoke-tour.ts): an ad's `?tour=first` starts it, and a
+  // first visit to an empty stage is offered it by a chip under the top bar
+  // instead, which goes once a song is on stage.
+  const [tourOffered, setTourOffered] = createSignal(false)
+  createEffect(
+    on(activeSong, (song) => {
+      if (song !== null) setTourOffered(false)
+    }),
+  )
   // A scanned #/sync:CODE, parked here until the rail mounts and takes it.
   // The PAGE has to catch it: the rail never mounts while collapsed, and
   // collapsed is a persisted preference — a handler down there would make
@@ -422,15 +447,30 @@ export function KaraokeNightApp() {
     // visitor leaves zen (the `karaokeZen` effect above).
     if (launch.zen && !isNarrow()) setKaraokeZen(true)
 
-    // `t` and `autoplay` are consumed by THIS boot — strip them so a
+    // `tour=first` is an ad's landing: Merc's tour starts (once the consent
+    // bar is answered). Tours are web only, and the vocal remover's landing,
+    // which shares this entry, has none (R23).
+    if (!IS_NATIVE_BUILD && tourBelongsAt(window.location.pathname)) {
+      if (searchParams.get('tour') === 'first') startTour(true)
+      else if (!hasSession && songLink === null && tourOfferDue())
+        setTourOffered(true)
+    }
+
+    // `t`, `autoplay` and `tour` are consumed by THIS boot — strip them so a
     // refresh or a share of the resulting page does not replay the launch.
     // A `song` that a `session` overrides, or that is not a slug at all,
     // goes too: it names nothing on this page.
     const deadSong = searchParams.has('song') && songLink === null
-    if (searchParams.has('t') || searchParams.has('autoplay') || deadSong) {
+    if (
+      searchParams.has('t') ||
+      searchParams.has('autoplay') ||
+      searchParams.has('tour') ||
+      deadSong
+    ) {
       replaceSearch((params) => {
         params.delete('t')
         params.delete('autoplay')
+        params.delete('tour')
         if (deadSong) params.delete('song')
       })
     }
@@ -659,6 +699,20 @@ export function KaraokeNightApp() {
           'kn-body--rail-min': railCollapsed(),
         }}
       >
+        <Show when={tourOffered()}>
+          {/* A chip that cannot load is no loss: the page offers nothing. */}
+          <ErrorBoundary fallback={null}>
+            <Suspense>
+              <KaraokeTourChip
+                onStart={() => {
+                  setTourOffered(false)
+                  startTour(false)
+                }}
+                onDismiss={() => setTourOffered(false)}
+              />
+            </Suspense>
+          </ErrorBoundary>
+        </Show>
         <aside class="kn-rail" classList={{ 'kn-rail--min': railCollapsed() }}>
           <Show
             when={!railCollapsed()}
@@ -709,6 +763,7 @@ export function KaraokeNightApp() {
                 <button
                   class="kn-rail-icon"
                   title="Add a song"
+                  data-tour="karaoke.own-song"
                   onClick={() => updateRail(false)}
                 >
                   <svg viewBox="0 0 24 24" width="16" height="16">
@@ -882,6 +937,7 @@ export function KaraokeNightApp() {
                 <Show when={demoIsPlayable(manifest())}>
                   <button
                     class="kn-btn kn-btn--primary"
+                    data-tour="karaoke.demo"
                     onClick={() => singDemo(manifest()!)}
                   >
                     Sing this song

@@ -16,7 +16,7 @@ const fakes = vi.hoisted(() => ({
   bannerOpen: false,
 }))
 vi.mock('@/lib/guide-funnel', () => ({ trackGuide: fakes.trackGuide }))
-vi.mock('./start', () => ({
+vi.mock('@/components/coach/start', () => ({
   COACH_ROOT_ID: 'coach-root',
   endCoachTour: fakes.endCoachTour,
   warmCoach: () => undefined,

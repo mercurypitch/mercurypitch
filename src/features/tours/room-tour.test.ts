@@ -6,9 +6,9 @@
 // next (provideTourHandoff), and a tour that starts spends its tab's offer.
 
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import type { CoachStartOptions } from '@/components/coach/start'
 import { coachActive, setCoachActive } from '@/lib/coach-state'
 import type { CoachTour } from '@/lib/coach-types'
-import type { CoachStartOptions } from './coach/start'
 
 const fakes = vi.hoisted(() => ({
   hasPageTour: vi.fn((_tab: string) => false),
@@ -20,7 +20,9 @@ vi.mock('@/stores', () => ({
   startPageTour: (tab: string) => fakes.startPageTour(tab),
 }))
 vi.mock('@/lib/use-viewport', () => ({ isNarrow: () => true }))
-vi.mock('./coach/start', () => ({ startCoachTour: fakes.startCoachTour }))
+vi.mock('@/components/coach/start', () => ({
+  startCoachTour: fakes.startCoachTour,
+}))
 const registry = vi.hoisted(() => ({
   COACH_TOURS: {} as Record<string, unknown>,
 }))

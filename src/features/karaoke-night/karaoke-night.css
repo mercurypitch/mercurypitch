@@ -604,6 +604,13 @@ textarea {
   grid-template-columns: 56px 1fr;
 }
 
+/* Merc's first-visit tour offer (KaraokeTourChip): a row of its own across
+   the rail and the stage, above both, in the page's flow. */
+.kn-tour-slot {
+  grid-column: 1 / -1;
+  display: flex;
+}
+
 .kn-rail-collapse {
   align-self: flex-end;
   display: inline-flex;

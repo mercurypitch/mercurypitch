@@ -76,7 +76,7 @@ function handoffFor(
   return () => next?.(tab) ?? null
 }
 
-const importCoach = () => import('./coach/start')
+const importCoach = () => import('@/components/coach/start')
 let coach: ReturnType<typeof importCoach> | null = null
 
 /**

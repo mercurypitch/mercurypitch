@@ -235,6 +235,29 @@ describe('the studio-quality card', () => {
   })
 })
 
+describe("Merc's tour", () => {
+  // The tour's last stop rings the card a song of your own goes in by, on
+  // either side of a sign-in (karaoke-tour.ts, R20).
+  it.each([false, true])(
+    'names the Add a song card for its last stop, signed in: %s',
+    (signedIn) => {
+      store.signedIn = signedIn
+      const { container } = render(() => <KaraokeRailPanels {...railProps} />)
+
+      const card = container.querySelector('[data-tour="karaoke.own-song"]')
+      expect(card?.tagName).toBe('SECTION')
+      expect(
+        within(card as HTMLElement).getByRole('heading', {
+          name: 'Add a song',
+        }),
+      ).toBeInTheDocument()
+      expect(
+        container.querySelectorAll('[data-tour="karaoke.own-song"]'),
+      ).toHaveLength(1)
+    },
+  )
+})
+
 describe('the launch offer', () => {
   const counting: LaunchOffer = {
     state: 'counting',

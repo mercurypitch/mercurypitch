@@ -35,16 +35,21 @@
 //   together (R11).
 // - A contextual tour (the stem mixer's, offerTourOnce) asks through
 //   requestTourChip and shows in the same place, under the same rules.
+// - The chip itself (src/components/coach/TourChip.tsx) loads with the first
+//   offer, not with the app. Karaoke Night shows the same chip, which makes
+//   it a chunk of its own, and most visits never see an offer. An offer
+//   waits for it, so the offer is still written as the chip shows: one that
+//   cannot load is not spent, and comes back on the next visit.
 
-import type { JSX } from 'solid-js'
-import { createEffect, createMemo, createSignal, on, Show } from 'solid-js'
+import type { Component, JSX } from 'solid-js'
+import { createComponent, createEffect, createMemo, createSignal, on, Show, } from 'solid-js'
+import type { TourChipProps } from '@/components/coach/TourChip'
 import { tabLabel } from '@/features/tabs/constants'
 import { coachActive, coachBusy } from '@/lib/coach-state'
 import { trackTour } from '@/lib/guide-funnel'
 import type { TourKey } from '@/lib/tour-ids'
 import { hasPageTour, pageTourKey, tourOfferRetired, walkthroughActive, } from '@/stores'
 import type { ActiveTab } from '@/types'
-import { MERC_TOUR_LINE, TourChip } from './coach/TourChip'
 import { COACH_TOURS } from './coach-tours'
 import { startRoomTour, tourOfferKey } from './room-tour'
 import styles from './TourChipHost.module.css'
@@ -60,7 +65,8 @@ export interface TourChipRequest {
 }
 
 interface Chip {
-  line: string
+  /** A legacy or contextual tour's own line; a Merc tour's is the chip's. */
+  line?: string
   start: () => void
 }
 
@@ -71,11 +77,40 @@ export function requestTourChip(req: TourChipRequest): void {
   setRequest(req)
 }
 
+const [chipView, setChipView] = createSignal<Component<TourChipProps> | null>(
+  null,
+)
+let chipLoading: Promise<boolean> | null = null
+
+/**
+ * Loads the chip, once: true when it is there to draw. A load that fails is
+ * tried again by the next offer.
+ */
+export function warmTourChip(): Promise<boolean> {
+  chipLoading ??= import('@/components/coach/TourChip').then(
+    (chipModule) => {
+      setChipView(() => chipModule.TourChip)
+      return true
+    },
+    () => {
+      chipLoading = null
+      return false
+    },
+  )
+  return chipLoading
+}
+
+/** The chip, once it has loaded; an offer is only made when it has. */
+function LoadedTourChip(props: TourChipProps): JSX.Element {
+  const view = chipView()
+  return view === null ? null : createComponent(view, props)
+}
+
 /**
  * The coach's end (start.ts), loaded only when there is a Merc tour to end:
  * none has to be ended before one has started.
  */
-const loadCoach = () => import('./coach/start')
+const loadCoach = () => import('@/components/coach/start')
 
 /** Ends the Merc tour that runs or is loading. With none, nothing loads. */
 function endMercTour(): void {
@@ -127,9 +162,17 @@ export function TourChipHost(props: TourChipHostProps): JSX.Element {
     const entry = COACH_TOURS[tab]
     if (entry === undefined && !hasPageTour(tab)) return
     const key = tourOfferKey(tab)
-    if (offeredAlready(key) || !recordOffer(key)) return
+    if (offeredAlready(key)) return
+    // The chip first, then the offer, so it is written as the chip shows.
+    if (chipView() === null) {
+      void warmTourChip().then((ready) => {
+        if (ready) offer(tab)
+      })
+      return
+    }
+    if (!recordOffer(key)) return
     if (entry !== undefined) {
-      setChip({ line: MERC_TOUR_LINE, start: () => startTour(tab) })
+      setChip({ start: () => startTour(tab) })
       trackTour('tour_offer', entry.key)
       return
     }
@@ -162,10 +205,15 @@ export function TourChipHost(props: TourChipHostProps): JSX.Element {
     }),
   )
 
-  // A contextual offer shows when nothing holds the screen.
+  // A contextual offer shows when nothing holds the screen, and the chip is
+  // there to draw: its load makes this run again.
   createEffect(
-    on([request, pausedNow], ([req, isPaused]) => {
+    on([request, pausedNow, chipView], ([req, isPaused, view]) => {
       if (req === null || isPaused) return
+      if (view === null) {
+        void warmTourChip()
+        return
+      }
       setRequest(null)
       if (walkthroughActive()) return
       if (offeredAlready(req.storageKey) || !recordOffer(req.storageKey)) {
@@ -180,7 +228,7 @@ export function TourChipHost(props: TourChipHostProps): JSX.Element {
     <Show when={chip()}>
       {(shown) => (
         <div class={styles.slot}>
-          <TourChip
+          <LoadedTourChip
             line={shown().line}
             onStart={() => {
               const start = shown().start

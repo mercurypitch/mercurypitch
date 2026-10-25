@@ -2,9 +2,9 @@
 // Coach state — what Merc is doing, for the hosts that wait on him
 // ============================================================
 //
-// coachActive is set by a tour's start (the coach's start.ts and room-tour.ts,
-// in src/features/tours) from the moment the tour is asked for until its layer
-// is gone. showcaseOn is set from "Show me around" until the showcase has
+// coachActive is set by a tour's start (src/components/coach/start.ts, and
+// the tours' room-tour.ts) from the moment the tour is asked for until its
+// layer is gone. showcaseOn is set from "Show me around" until the showcase has
 // handed over; the plan raises it as its layer closes (plan-showcase.ts). The
 // app's offers (the tour chip, the legacy walkthrough's) and the deferred
 // survey read coachBusy, so nothing new starts under Merc.

@@ -32,7 +32,8 @@
 //   card, and never blocks it: a signed-in singer's balance and the cheapest
 //   pack are fetched once, after the plan shows, and a failure, a build that
 //   cannot take payment or a balance that cannot be read leaves no line.
-//   `fetchPricing` throws on a bad answer; that is swallowed here.
+//   The facts come from credit-facts.ts, which Karaoke Night's tour reads
+//   too, and which swallows `fetchPricing`'s throw on a bad answer.
 // - Review's answers are not the host's. A reviewed plan is built from the
 //   record, which keeps where a voiceprint pointed (never why), and answered
 //   again it keeps that finding unless the host has a live one, or the new
@@ -54,8 +55,11 @@
 
 import type { Accessor } from 'solid-js'
 import { batch, createEffect, createMemo, createSignal, onCleanup, untrack, } from 'solid-js'
+import type { CreditsLine } from '@/components/billing/plan-credits'
+import { planCreditsLine } from '@/components/billing/plan-credits'
 import { accountHeld } from '@/db/services/auth-service'
-import { fetchBillingMe, fetchPricing } from '@/db/services/billing-service'
+import type { AccountFacts } from '@/lib/credit-facts'
+import { loadAccountFacts } from '@/lib/credit-facts'
 import type { GuideFunnelEvent } from '@/lib/funnel-event-catalog'
 import { trackGuide } from '@/lib/guide-funnel'
 import { askHomeForTodaysSession } from '@/lib/home-session-ask'
@@ -66,8 +70,6 @@ import { practiceScope, setPracticeScope, uiMode, } from '@/stores/settings-stor
 import type { Plan, PlanStop, VoiceprintStop } from './build-plan'
 import { buildPlan, planStops } from './build-plan'
 import { widenMenuFor } from './enter-stop'
-import type { CreditsInput, CreditsLine } from './plan-credits'
-import { planCreditsLine } from './plan-credits'
 import { planDeclinedEvents, planDoneEvents } from './plan-events'
 import type { PlanTexts, PlanVia } from './plan-record'
 import { readPlanTexts } from './plan-record'
@@ -160,50 +162,6 @@ const SHOWN: Record<
 
 /** A plan opened without the questions before it: nothing to fly from. */
 const NO_PILLS: ReadonlyMap<string, DOMRect> = new Map()
-
-// ── What a signed-in singer's credits line needs ───────────────────────
-
-interface AccountFacts {
-  balance: number | null
-  cheapestPack: CreditsInput['cheapestPack']
-}
-
-/** The cheapest pack on sale: one that can be bought, with a price. */
-async function cheapestPack(): Promise<AccountFacts['cheapestPack']> {
-  try {
-    const pricing = await fetchPricing()
-    let cheapest: AccountFacts['cheapestPack'] = null
-    for (const pack of pricing?.packs ?? []) {
-      if (!pack.purchasable || pack.amount === null || pack.amount <= 0)
-        continue
-      if (cheapest === null || pack.amount < cheapest.amount) {
-        cheapest = { amount: pack.amount, currency: pack.currency }
-      }
-    }
-    return cheapest
-  } catch {
-    // fetchPricing throws on a bad answer, and a plan shows without a price.
-    return null
-  }
-}
-
-/**
- * The balance, and, for a balance of none, the pack to start from (a balance
- * the line states needs no price). Never rejects: what cannot be read is
- * null, and the line says nothing for it.
- */
-async function loadAccountFacts(): Promise<AccountFacts> {
-  try {
-    const me = await fetchBillingMe()
-    const balance = me === null ? null : me.creditBalance
-    return {
-      balance,
-      cheapestPack: balance === 0 ? await cheapestPack() : null,
-    }
-  } catch {
-    return { balance: null, cheapestPack: null }
-  }
-}
 
 // ── The controller ─────────────────────────────────────────────────────
 
