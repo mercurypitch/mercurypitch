@@ -163,7 +163,9 @@ export function initSing(stills: RingStills): void {
 
   for (const b of moves)
     b.addEventListener('click', () => {
-      if (busy()) return
+      // at its end the button is aria-disabled, so it keeps the keyboard's
+      // place; a press there does nothing
+      if (b.getAttribute('aria-disabled') === 'true' || busy()) return
       shift = nextShift(shift, b)
       relabel()
     })

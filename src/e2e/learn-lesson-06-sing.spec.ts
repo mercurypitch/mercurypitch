@@ -6,15 +6,19 @@
 // first on every visit; with no voice stored, nothing after the voice
 // choice until one is chosen; a stored voice shown pressed, and a tap on
 // the other changing it; a black-key do, Move do four lower, on one line
-// in the ring; Start the guide aria-disabled until a version has
-// played; "How did that feel?" as each sweep ends, and what each answer
-// shows and puts away; the Wrap's practise card each branch picks. Nothing
-// listens: no call to getUserMedia, and no request that sends anything.
+// in the ring; Move do's lower button at the lowest do keeping the
+// keyboard's place, said by the accessibility tree to be unavailable, and
+// a press there stopping no version; Start the guide aria-disabled until
+// a version has played; "How did that feel?" as each sweep ends, and what
+// each answer shows and puts away; the Wrap's practise card each branch
+// picks. Nothing listens: no call to getUserMedia, and no request that
+// sends anything.
 // Merc's versions are 9.6 s and a sweep 10.6 s with its count-in, so the
 // longest test runs about 45 s.
 
 import type { Locator, Page } from '@playwright/test'
 import { expect, test } from '@playwright/test'
+import { axState } from './helpers/ax-state'
 
 test.describe('Sing it, with no microphone', () => {
   test.describe.configure({ timeout: 120_000 })
@@ -162,7 +166,7 @@ test.describe('Sing it, with no microphone', () => {
     await page.locator('[data-comfort="sing"]').click()
     const lower = page.locator('[data-move-do="-1"]')
     for (let i = 0; i < 4; i++) await lower.click()
-    await expect(lower).toBeDisabled()
+    await expect(lower).toHaveAttribute('aria-disabled', 'true')
 
     const note = page.locator('#ring .ring-note')
     await expect(note).toContainText('117 Hz')
@@ -182,6 +186,39 @@ test.describe('Sing it, with no microphone', () => {
     })
     expect(drawn.pieces).toBeGreaterThan(1)
     expect(drawn.spread).toBeLessThan(drawn.line / 2)
+  })
+
+  test("Move do's lower button keeps the keyboard at the lowest do, is said to be unavailable, and a press there stops no version", async ({
+    page,
+  }) => {
+    // Arrange: do four lower by keyboard, then the first version sounding, the keyboard back on lower
+    await toSing(page, 'lower')
+    await page.locator('[data-comfort="sing"]').click()
+    const lower = page.locator('[data-move-do="-1"]')
+    const readout = page.locator('[data-do-readout]')
+    await lower.focus()
+    for (let i = 0; i < 4; i++) await page.keyboard.press('Enter')
+    await expect(lower).toHaveAttribute('aria-disabled', 'true')
+    const lowest = (await readout.textContent()) ?? ''
+    await page.locator('[data-version="1"]').click()
+    await expect(status(page)).toHaveText('Merc sings the first version.')
+    await lower.focus()
+
+    // Act
+    await page.keyboard.press('Enter')
+
+    // Assert
+    await expect(lower).toBeFocused()
+    await expect(readout).toHaveText(lowest)
+    await expect(status(page)).toHaveText('Merc sings the first version.')
+    await expect(page.locator('[data-version="1"]')).toHaveClass(/\bis-on\b/)
+    expect(await axState(page, '[data-move-do="-1"]')).toEqual({
+      role: 'button',
+      name: 'lower',
+      disabled: true,
+      focusable: true,
+      focused: true,
+    })
   })
 
   test('"Effortful" puts the guide away for the visit and rests the Wrap, and "Easy" after it brings neither back', async ({

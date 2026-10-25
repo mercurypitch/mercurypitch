@@ -3,11 +3,14 @@
 // ============================================================
 //
 // Lesson 4's control, word for word: a whole semitone a press, four at
-// most either way, and the button at an end disabled, the other not. The
-// count-in plays do once, 0.8 s at 0.065, and hands back its voice.
+// most either way, and the button at an end aria-disabled, the other not,
+// both still focusable. A page may pass a reach for each side, as Lesson
+// 12 does (its Tests 9): four lower and three higher. The count-in plays
+// do once, 0.8 s at 0.065, and hands back its voice.
 
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { clampMove, COUNT_IN, COUNT_IN_SEC, countIn, MOVE_MAX, nextShift, setMoveEnds, } from './move-do'
+import type { MoveReach } from './move-do'
+import { clampMove, COUNT_IN, COUNT_IN_SEC, countIn, MOVE_MAX, MOVE_REACH, nextShift, setMoveEnds, } from './move-do'
 import type { Voice } from './sound'
 import { Sound } from './sound'
 
@@ -29,9 +32,10 @@ describe('Move do', () => {
   it('keeps do whole and within four semitones either way', () => {
     // Assert
     expect(MOVE_MAX).toBe(4)
-    expect([-9, -4, -1.4, 0, 2.6, 4, 9].map(clampMove)).toEqual([
-      -4, -4, -1, 0, 3, 4, 4,
-    ])
+    expect(MOVE_REACH).toEqual({ lower: 4, higher: 4 })
+    expect(
+      [-9, -5, -4, -1.4, 0, 2.6, 4, 5, 9].map((s) => clampMove(s)),
+    ).toEqual([-4, -4, -4, -1, 0, 3, 4, 4, 4])
   })
 
   it('moves do a semitone by the pressed button, and no further than an end', () => {
@@ -51,12 +55,15 @@ describe('Move do', () => {
     expect(moved).toEqual([-1, 1, -4, 4, 3])
   })
 
-  it('disables only the button whose end do has reached', () => {
+  it('marks only the button whose end do has reached aria-disabled, and leaves both focusable', () => {
     // Arrange
     const [lower, higher] = buttons()
-    const ends = (shift: number): boolean[] => {
+    const ends = (shift: number): (string | null)[] => {
       setMoveEnds([lower, higher], shift)
-      return [lower.disabled, higher.disabled]
+      return [
+        lower.getAttribute('aria-disabled'),
+        higher.getAttribute('aria-disabled'),
+      ]
     }
 
     // Act
@@ -64,11 +71,65 @@ describe('Move do', () => {
 
     // Assert
     expect(seen).toEqual([
-      [true, false],
-      [false, false],
-      [false, false],
-      [false, false],
-      [false, true],
+      ['true', 'false'],
+      ['false', 'false'],
+      ['false', 'false'],
+      ['false', 'false'],
+      ['false', 'true'],
+    ])
+    expect([lower.disabled, higher.disabled]).toEqual([false, false])
+  })
+})
+
+describe('Move do with a reach for each side', () => {
+  /** Lesson 12's reach (its FACTS 60): four lower, three higher. */
+  const REACH: MoveReach = { lower: 4, higher: 3 }
+
+  it('holds four lower and three higher, and refuses four higher and five lower', () => {
+    // Act
+    const kept = [-5, -4, 3, 4].map((s) => clampMove(s, REACH))
+
+    // Assert
+    expect(kept).toEqual([-4, -4, 3, 3])
+  })
+
+  it('stops a press at three higher and at four lower', () => {
+    // Arrange
+    const [lower, higher] = buttons()
+
+    // Act
+    const moved = [
+      nextShift(2, higher, REACH),
+      nextShift(3, higher, REACH),
+      nextShift(3, lower, REACH),
+      nextShift(-3, lower, REACH),
+      nextShift(-4, lower, REACH),
+    ]
+
+    // Assert
+    expect(moved).toEqual([3, 3, 2, -4, -4])
+  })
+
+  it('marks aria-disabled only the end that was reached', () => {
+    // Arrange
+    const [lower, higher] = buttons()
+    const ends = (shift: number): (string | null)[] => {
+      setMoveEnds([lower, higher], shift, REACH)
+      return [
+        lower.getAttribute('aria-disabled'),
+        higher.getAttribute('aria-disabled'),
+      ]
+    }
+
+    // Act
+    const seen = [-4, -3, 2, 3].map(ends)
+
+    // Assert: three higher is the top, where the default reach would go on to four
+    expect(seen).toEqual([
+      ['true', 'false'],
+      ['false', 'false'],
+      ['false', 'false'],
+      ['false', 'true'],
     ])
   })
 })

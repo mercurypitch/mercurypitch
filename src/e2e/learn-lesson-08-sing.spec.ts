@@ -8,13 +8,16 @@
 // voice shown pressed, and a tap on the other changing it; Start the guide
 // aria-disabled until Merc's line has played; "How did that feel?" as each
 // guide ends, and what each answer shows and puts away; Again once a visit;
-// the Wrap's rest line each branch picks. Nothing listens: no call to
-// getUserMedia, and no request that sends anything. Merc's line and the
-// guide each run about 8 s with their count-in, so the longest test runs
-// about 40 s.
+// Move do's lower button at the lowest do keeping the keyboard's place,
+// said by the accessibility tree to be unavailable, and a press there
+// stopping no line; the Wrap's rest line each branch picks. Nothing
+// listens: no call to getUserMedia, and no request that sends anything.
+// Merc's line and the guide each run about 8 s with their count-in, so the
+// longest test runs about 40 s.
 
 import type { Locator, Page } from '@playwright/test'
 import { expect, test } from '@playwright/test'
+import { axState } from './helpers/ax-state'
 
 test.describe('Sing it, the line on the beat, with no microphone', () => {
   test.describe.configure({ timeout: 120_000 })
@@ -159,6 +162,39 @@ test.describe('Sing it, the line on the beat, with no microphone', () => {
     await expect(
       page.locator('[data-panel="voice"] [data-voice="lower"]'),
     ).toHaveAttribute('aria-pressed', 'false')
+  })
+
+  test("Move do's lower button keeps the keyboard at the lowest do, is said to be unavailable, and a press there stops no line", async ({
+    page,
+  }) => {
+    // Arrange: do four lower by keyboard, then Merc's line sounding, the keyboard back on lower
+    await toSing(page, 'lower')
+    await page.locator('[data-comfort="sing"]').click()
+    const lower = page.locator('[data-move-do="-1"]')
+    const readout = page.locator('[data-do-readout]')
+    await lower.focus()
+    for (let i = 0; i < 4; i++) await page.keyboard.press('Enter')
+    await expect(lower).toHaveAttribute('aria-disabled', 'true')
+    await expect(readout).toHaveText('do: 4 semitones lower, the lowest')
+    await page.locator('[data-line-play]').click()
+    await expect(status(page)).toHaveText('Merc sings the line.')
+    await lower.focus()
+
+    // Act
+    await page.keyboard.press('Enter')
+
+    // Assert
+    await expect(lower).toBeFocused()
+    await expect(readout).toHaveText('do: 4 semitones lower, the lowest')
+    await expect(status(page)).toHaveText('Merc sings the line.')
+    await expect(page.locator('[data-line-play]')).toHaveClass(/\bis-on\b/)
+    expect(await axState(page, '[data-move-do="-1"]')).toEqual({
+      role: 'button',
+      name: 'Move do lower',
+      disabled: true,
+      focusable: true,
+      focused: true,
+    })
   })
 
   test('"Effortful" puts the guide away for the visit and rests the Wrap, and "Easy" after it brings neither back', async ({

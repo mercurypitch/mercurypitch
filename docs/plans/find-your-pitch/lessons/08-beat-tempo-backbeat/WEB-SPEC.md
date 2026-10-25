@@ -345,7 +345,7 @@ pan-y` (`lesson-stage.css:776`), so a swipe still scrolls; every action is a but
   657 (`src/e2e/learn-stage-fit.spec.ts:34-58`), where the rooms are 564, 555, 604 and 581 px: so
   every step's stage fits whole, its figure never shrinks and nothing scrolls inside the stage. Each
   also keeps to the polish audit's budget of about 550 px at 1024 px wide, which Lessons 4 and 5
-  hold (`src/e2e/learn-lesson-04.spec.ts:334-339`; `lesson-05/lesson-05.css:171-174`): the tallest,
+  hold (`src/e2e/learn-lesson-04.spec.ts:366-371`; `lesson-05/lesson-05.css:171-174`): the tallest,
   Step 2's, is 543 px. Free play is a card in the Wrap, not the stuck stage. At 390 x 844 the
   one-card deck's stages are 418 to 535 px, inside the 786 px below the masthead. No step shows a
   status line under its figure, and Count the bar and both predicts sit in the step text, not on the

@@ -10,10 +10,14 @@
 // keyboard alone and say what the page shows; and at 390 x 844 the
 // staircase, its buttons and the keyboard strip fit, overlapping nothing,
 // at every start from C4 to B4. A real-mouse drag of the staircase closes
-// it, since a drag slides the start and must not land as a tap.
+// it, since a drag slides the start and must not land as a tap. Move do's
+// lower button at the lowest do keeps the keyboard's place, the
+// accessibility tree says it is unavailable, and a press there leaves do
+// where it is.
 
 import type { Locator, Page } from '@playwright/test'
 import { expect, test } from '@playwright/test'
+import { axState } from './helpers/ax-state'
 
 // 60 characters at most (src/tests/lesson-pages.test.ts): the lesson's number is in its kicker
 const TITLE = 'The major scale: do-re-mi and the home note | MercuryPitch'
@@ -247,6 +251,34 @@ test.describe('page QA (WEB-SPEC, Contract)', () => {
     // a stair plays by keyboard as by tap
     await page.keyboard.press('Enter')
     await expect(stair(page, 7)).toBeFocused()
+  })
+
+  test("Move do's lower button keeps the keyboard at the lowest do, is said to be unavailable, and a press there leaves do where it is", async ({
+    page,
+  }) => {
+    // Arrange: do four lower by keyboard, B flat 2, the keyboard still on lower
+    await page.goto('/learn/04#sing')
+    const lower = page.locator('#sing [data-move-do="-1"]')
+    const guide = page.locator('#scaleGuide')
+    const lowest = /^Thirteen rows, B flat 2 to B flat 3,/
+    await lower.focus()
+    for (let i = 0; i < 4; i++) await page.keyboard.press('Enter')
+    await expect(lower).toHaveAttribute('aria-disabled', 'true')
+    await expect(guide).toHaveAttribute('aria-label', lowest)
+
+    // Act
+    await page.keyboard.press('Enter')
+
+    // Assert
+    await expect(lower).toBeFocused()
+    await expect(guide).toHaveAttribute('aria-label', lowest)
+    expect(await axState(page, '#sing [data-move-do="-1"]')).toEqual({
+      role: 'button',
+      name: 'lower',
+      disabled: true,
+      focusable: true,
+      focused: true,
+    })
   })
 
   test('the start slider moves by keys alone and says the scale it stands on', async ({
