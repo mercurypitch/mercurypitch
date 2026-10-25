@@ -13,7 +13,7 @@
 // it, since a drag slides the start and must not land as a tap.
 
 import type { Locator, Page } from '@playwright/test'
-import { expect, test } from '@playwright/test'
+import { expect, test } from './helpers/lesson-page'
 
 // 60 characters at most (src/tests/lesson-pages.test.ts): the lesson's number is in its kicker
 const TITLE = 'The major scale: do-re-mi and the home note | MercuryPitch'

@@ -569,7 +569,7 @@ a.lm-row:hover {
   .lm-row.next .st {
     padding: 4px 9px;
   }
-  .lm-foot a {
+  .lm-foot .btn {
     flex: 1 1 auto;
   }
 }

@@ -10,7 +10,7 @@
 // page where it serves it is src/lesson-gate.test.ts's.
 
 import type { Page } from '@playwright/test'
-import { expect, test } from '@playwright/test'
+import { expect, test } from './helpers/lesson-page'
 import { LESSONS, minutesSpan } from '../features/lessons/kit/season'
 
 const LAYOUTS = [

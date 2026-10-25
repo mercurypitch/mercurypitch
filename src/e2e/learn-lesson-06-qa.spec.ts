@@ -22,7 +22,7 @@
 // Enter and Space pressing a bead.
 
 import type { Locator, Page } from '@playwright/test'
-import { expect, test } from '@playwright/test'
+import { expect, test } from './helpers/lesson-page'
 
 /** The steps' tune line, and its parts. */
 const TOY = '#toyTune'

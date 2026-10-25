@@ -19,7 +19,7 @@
 // the microphone.
 
 import type { Page } from '@playwright/test'
-import { expect, test } from '@playwright/test'
+import { expect, test } from './helpers/lesson-page'
 import { fakeMicArgs, writeToneWav } from './helpers/tone-wav'
 
 const TITLE = 'How to match pitch and sing in tune | MercuryPitch'

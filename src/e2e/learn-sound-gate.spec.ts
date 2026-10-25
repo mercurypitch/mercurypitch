@@ -10,7 +10,7 @@
 // on, 42 px on Lesson 7, and moved the page below it. Lessons 1 to 8, at a
 // phone's size and a desktop's; the e2e build shows the drafts.
 
-import { expect, test } from '@playwright/test'
+import { expect, test } from './helpers/lesson-page'
 
 const LESSONS = ['01', '02', '03', '04', '05', '06', '07', '08'] as const
 const VIEWPORTS = [

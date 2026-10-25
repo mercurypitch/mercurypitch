@@ -17,7 +17,7 @@
 // next-card.test.ts's too.
 
 import type { Locator, Page } from '@playwright/test'
-import { expect, test } from '@playwright/test'
+import { expect, test } from './helpers/lesson-page'
 import { LESSON_COPY } from '../features/lessons/kit/lesson-copy'
 
 /** The card at the foot of this page's Wrap. */

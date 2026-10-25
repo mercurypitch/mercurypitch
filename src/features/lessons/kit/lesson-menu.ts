@@ -35,6 +35,7 @@ import { Done } from './progress'
 import type { Lane, Lesson } from './season'
 import type { StepDeck } from './step-deck'
 import { stepFromHash } from './step-deck'
+import { startTour } from './tour-gate'
 
 /** This page's step deck, as the menu shows it. */
 export interface DeckNow {
@@ -296,7 +297,7 @@ function seasonMarkup(season: string): string {
     : `${season.slice(0, at)}<span class="lm-size">${season.slice(at)}</span>`
 }
 
-/** The panel's contents: heading, season bar, sections (phones), where the viewer is, the lessons, the foot and its last link, the hub. */
+/** The panel's contents: heading, season bar, sections (phones), where the viewer is, the lessons, the foot (with the page's tour) and its last link, the hub. */
 export function menuMarkup(
   m: MenuModel,
   sections: readonly Section[],
@@ -331,7 +332,7 @@ export function menuMarkup(
     foot.practise === null
       ? ''
       : `<a class="btn sm" href="${esc(foot.practise)}" target="_blank" rel="noopener">Practise in MercuryPitch${icon('i-out')}<span class="sr">, opens in a new tab</span></a>`
-  return `<div class="lm-in"><div class="lm-head"><h2 id="lessonMenuTitle">Find Your Pitch <small>${seasonMarkup(m.season)}</small></h2><p class="lm-count">${m.count}</p><button class="btn icon lm-x" type="button" data-close aria-label="Close">${icon('i-x')}</button></div><div class="lm-bar" aria-hidden="true">${bars}</div>${onPage}<a class="lm-here" href="${m.here.href}" aria-label="${esc(m.here.label)}">${ring(m.here.fill)}<span class="lm-here-t"><b>${esc(m.here.title)}</b><span>${esc(m.here.line)}</span></span><span class="btn primary sm" aria-hidden="true">Continue</span></a><nav class="lm-season" aria-label="${SEASON} lessons">${arcs}</nav><div class="lm-foot">${map}${practise}<a class="btn sm" href="/">MercuryPitch home</a><a class="btn sm" href="${HUB}">All lessons</a></div></div>`
+  return `<div class="lm-in"><div class="lm-head"><h2 id="lessonMenuTitle">Find Your Pitch <small>${seasonMarkup(m.season)}</small></h2><p class="lm-count">${m.count}</p><button class="btn icon lm-x" type="button" data-close aria-label="Close">${icon('i-x')}</button></div><div class="lm-bar" aria-hidden="true">${bars}</div>${onPage}<a class="lm-here" href="${m.here.href}" aria-label="${esc(m.here.label)}">${ring(m.here.fill)}<span class="lm-here-t"><b>${esc(m.here.title)}</b><span>${esc(m.here.line)}</span></span><span class="btn primary sm" aria-hidden="true">Continue</span></a><nav class="lm-season" aria-label="${SEASON} lessons">${arcs}</nav><div class="lm-foot">${map}<button class="btn sm" type="button" data-close data-tour>Tour this page</button>${practise}<a class="btn sm" href="/">MercuryPitch home</a><a class="btn sm" href="${HUB}">All lessons</a></div></div>`
 }
 
 // ---------------------------------------------------------------- the menu on a page
@@ -538,6 +539,8 @@ export function createLessonMenu(o: LessonMenuOptions): void {
     const t = e.target as Element
     if (t.closest('[data-close]') !== null) {
       shut()
+      // "Tour this page": the welcome tour again, from its first step (tour-gate.ts)
+      if (t.closest('[data-tour]') !== null) startTour(o.lesson, true)
       return
     }
     const a = t.closest('a')

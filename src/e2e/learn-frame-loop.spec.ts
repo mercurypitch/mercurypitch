@@ -26,7 +26,7 @@
 // and 7) and by kit/sing.test.ts.
 
 import type { Page } from '@playwright/test'
-import { expect, test } from '@playwright/test'
+import { expect, test } from './helpers/lesson-page'
 
 test.describe.configure({ timeout: 150_000 })
 test.use({ viewport: { width: 1280, height: 800 } })

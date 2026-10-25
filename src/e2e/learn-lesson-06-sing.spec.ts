@@ -14,7 +14,7 @@
 // longest test runs about 45 s.
 
 import type { Locator, Page } from '@playwright/test'
-import { expect, test } from '@playwright/test'
+import { expect, test } from './helpers/lesson-page'
 
 test.describe('Sing it, with no microphone', () => {
   test.describe.configure({ timeout: 120_000 })

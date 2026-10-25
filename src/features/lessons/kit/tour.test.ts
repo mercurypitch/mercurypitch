@@ -1,0 +1,386 @@
+// ============================================================
+// Lesson tour tests — the steps a page shows, the keyboard, focus and the wait for layers
+// ============================================================
+//
+// jsdom lays nothing out, so a test draws each target it means to show
+// (`draw`): a box, and the client rects a drawn element has. An element left
+// undrawn has none, as an element under display: none has none in a browser.
+
+import { afterEach, describe, expect, it, vi } from 'vitest'
+import './browser-doubles.test-fixtures'
+import { atTop, closeTour, footOf, layerOpen, pageSteps, RECORD, runTour, scrollFor, sideFor, } from './tour'
+import { TOUR_STEPS } from './tour-copy'
+import { atTop as gateAtTop, TOUR_KEY, TOUR_VERSION } from './tour-gate'
+
+/** Gives `el` a box at (x, y), w by h, and the client rects of a drawn element. */
+function draw(el: Element, x = 0, y = 120, w = 400, h = 300): void {
+  const r = {
+    x,
+    y,
+    width: w,
+    height: h,
+    left: x,
+    top: y,
+    right: x + w,
+    bottom: y + h,
+  }
+  el.getBoundingClientRect = () => r as DOMRect
+  el.getClientRects = () => [r] as unknown as DOMRectList
+}
+
+/** A lesson page with every target the tour knows, each drawn, a page button focused. */
+function page(): HTMLButtonElement {
+  document.body.innerHTML = `<header class="mast" id="mast"><button class="lm-btn">Lesson 03</button><nav id="mastNav"></nav></header>
+    <main><button id="pageBtn">Play Merc's A</button>
+    <div id="heroStage"></div><div id="stepsStage"></div><section id="sing"></section>
+    <div id="graph"></div><ol id="exList"></ol></main>`
+  for (const s of [
+    '.lm-btn',
+    '#mastNav',
+    '#heroStage',
+    '#stepsStage',
+    '#sing',
+    '#graph',
+    '#exList',
+  ])
+    draw(document.querySelector(s) as Element)
+  vi.spyOn(window, 'scrollTo').mockImplementation(() => undefined)
+  const btn = document.getElementById('pageBtn') as HTMLButtonElement
+  btn.focus()
+  return btn
+}
+
+/** Where the page stands: its hash and how far down it is scrolled. */
+function pageAt(hash: string, scrollY: number): void {
+  window.location.hash = hash
+  Object.defineProperty(window, 'scrollY', {
+    value: scrollY,
+    configurable: true,
+  })
+}
+
+const card = (): HTMLElement | null => document.querySelector('[role="dialog"]')
+const title = (): string =>
+  document.getElementById('tourTitle')?.textContent ?? ''
+/** A key pressed where the focus is, or on `at`. */
+const key = (
+  k: string,
+  shiftKey = false,
+  at = document.activeElement,
+): void => {
+  at?.dispatchEvent(
+    new KeyboardEvent('keydown', {
+      key: k,
+      shiftKey,
+      bubbles: true,
+      cancelable: true,
+    }),
+  )
+}
+
+afterEach(() => {
+  closeTour()
+  pageAt('', 0)
+  localStorage.clear()
+  document.body.textContent = ''
+  document.getElementById('tourSheet')?.remove()
+  vi.useRealTimers()
+  vi.restoreAllMocks()
+})
+
+describe('pageSteps', () => {
+  it('leaves out a step whose targets are missing, and one whose targets are hidden', () => {
+    // Arrange: no Sing it on this page, the map's graph hidden and its list undrawn
+    page()
+    document.getElementById('sing')?.remove()
+    document.getElementById('graph')?.setAttribute('hidden', '')
+    const list = document.getElementById('exList') as HTMLElement
+    list.getClientRects = () => [] as unknown as DOMRectList
+
+    // Act
+    const steps = pageSteps(1)
+
+    // Assert
+    expect(steps.map((s) => s.title)).toEqual([
+      'Meet Merc and Tavi',
+      'One step at a time',
+      'Find your way',
+    ])
+  })
+
+  it('lights every target of a step that shows, and leaves out one under visibility: hidden', () => {
+    // Arrange: a phone's masthead, its section links not shown
+    page()
+    const nav = document.getElementById('mastNav') as HTMLElement
+    nav.style.visibility = 'hidden'
+
+    // Act
+    const mast = pageSteps(1).at(-1)
+
+    // Assert
+    expect(mast?.targets.map((el) => el.className)).toEqual(['lm-btn'])
+  })
+
+  it('names the microphone in Sing it on a lesson that listens, and not on one that never does', () => {
+    // Arrange
+    page()
+    const sing = TOUR_STEPS[2]
+
+    // Act
+    const listens = pageSteps(3).find((s) => s.title === sing.title)
+    const never = pageSteps(1).find((s) => s.title === sing.title)
+
+    // Assert
+    expect(listens?.body).toBe(`${sing.body} ${sing.listening}`)
+    expect(never?.body).toBe(sing.body)
+  })
+})
+
+describe('runTour', () => {
+  it('opens on Merc and Tavi as step 1 of five, with the focus in the card', () => {
+    // Arrange
+    page()
+
+    // Act
+    void runTour(1, true)
+
+    // Assert
+    expect(title()).toBe('Meet Merc and Tavi')
+    expect(document.querySelector('.tour-count')?.textContent).toBe('1 of 5')
+    expect(card()?.contains(document.activeElement)).toBe(true)
+    expect(card()?.getAttribute('aria-modal')).toBe('true')
+  })
+
+  it('goes forward with Enter and Next, back with Back, and says Done on the last step', () => {
+    // Arrange: Enter on a card button is that button's own (a browser clicks it), so it is pressed off one
+    page()
+    void runTour(1, true)
+    const next = document.querySelector<HTMLButtonElement>('[data-tour-next]')
+
+    // Act
+    key('Enter', false, document.getElementById('tourTitle'))
+    next?.click()
+    document.querySelector<HTMLButtonElement>('[data-tour-back]')?.click()
+    const back = title()
+    next?.click()
+    next?.click()
+    next?.click()
+
+    // Assert
+    expect(back).toBe('One step at a time')
+    expect(title()).toBe('Find your way')
+    expect(next?.textContent).toBe('Done')
+  })
+
+  it('keeps the spotlight on a target that moves with no scroll or resize, as a reveal moves it', async () => {
+    // Arrange
+    vi.useFakeTimers()
+    page()
+    await runTour(1, true)
+    const spot = document.querySelector<HTMLElement>('.tour-spot')
+
+    // Act: Merc and Tavi's stage ends its reveal higher and taller, with no event to say so
+    draw(document.getElementById('heroStage') as Element, 0, 100, 400, 320)
+    await vi.advanceTimersByTimeAsync(100)
+
+    // Assert: the cutout is 8 px out from the stage's new box
+    expect(spot?.style.transform).toBe('translate(-8px, 92px)')
+    expect(spot?.style.height).toBe('336px')
+  })
+
+  it('closes with Escape as Skip does, and hands the focus back to where it was', () => {
+    // Arrange
+    const before = page()
+    void runTour(1, true)
+
+    // Act
+    key('Escape')
+
+    // Assert
+    expect(card()).toBeNull()
+    expect(localStorage.getItem(TOUR_KEY)).toBe(TOUR_VERSION)
+    expect(document.activeElement).toBe(before)
+  })
+
+  it('keeps Tab inside the card: past the last stop to the first, and Shift+Tab back to the last', () => {
+    // Arrange
+    page()
+    void runTour(1, true)
+    const stops = Array.from(
+      card()?.querySelectorAll<HTMLElement>('button:not([disabled])') ?? [],
+    )
+    stops.at(-1)?.focus()
+
+    // Act
+    key('Tab')
+    const forward = document.activeElement
+    key('Tab', true)
+
+    // Assert
+    expect(forward).toBe(stops[0])
+    expect(document.activeElement).toBe(stops.at(-1))
+  })
+
+  it('makes the rest of the page inert while it is up, and gives it back after', () => {
+    // Arrange
+    page()
+    void runTour(1, true)
+    const during = document.querySelector('main')?.hasAttribute('inert')
+
+    // Act
+    document.querySelector<HTMLElement>('.tour-x')?.click()
+
+    // Assert
+    expect(during).toBe(true)
+    expect(document.querySelector('[inert]')).toBeNull()
+  })
+
+  it('waits on a first visit while a dialog is open, and opens once it closes', async () => {
+    // Arrange
+    vi.useFakeTimers()
+    page()
+    const menu = document.createElement('dialog')
+    menu.setAttribute('open', '')
+    document.body.appendChild(menu)
+    const run = runTour(1, false)
+    await vi.advanceTimersByTimeAsync(1200)
+    const waited = card()
+
+    // Act
+    menu.removeAttribute('open')
+    await vi.advanceTimersByTimeAsync(400)
+    await run
+
+    // Assert
+    expect(waited).toBeNull()
+    expect(title()).toBe('Meet Merc and Tavi')
+  })
+
+  it('gives up on a first visit when the page left the top while it waited', async () => {
+    // Arrange
+    vi.useFakeTimers()
+    page()
+    const film = document.createElement('video')
+    Object.defineProperty(film, 'paused', { value: false, configurable: true })
+    document.body.appendChild(film)
+    const run = runTour(1, false)
+    await vi.advanceTimersByTimeAsync(400)
+
+    // Act: the viewer scrolled away, then the film stopped
+    pageAt('', 600)
+    Object.defineProperty(film, 'paused', { value: true, configurable: true })
+    await vi.advanceTimersByTimeAsync(400)
+    await run
+
+    // Assert: not shown, and not recorded, so another page offers it
+    expect(card()).toBeNull()
+    expect(localStorage.getItem(TOUR_KEY)).toBeNull()
+  })
+})
+
+describe('the copy of the gate the tour keeps', () => {
+  it('writes the record the gate reads, and reads the top as the gate does', () => {
+    // Arrange: pages at the top, one with a bare #, a deep link, and pages either side of 40 px down
+    const places: ReadonlyArray<[string, number]> = [
+      ['', 0],
+      ['#', 0],
+      ['#sing', 0],
+      ['', 39],
+      ['', 40],
+    ]
+
+    // Act
+    const tops = places.map(([hash, y]) => {
+      pageAt(hash, y)
+      return [atTop(), gateAtTop()]
+    })
+
+    // Assert
+    expect(RECORD).toEqual({ key: TOUR_KEY, version: TOUR_VERSION })
+    expect(tops).toEqual([
+      [true, true],
+      [true, true],
+      [false, false],
+      [true, true],
+      [false, false],
+    ])
+  })
+})
+
+describe('layerOpen', () => {
+  it('counts an open dialog and a playing film as layers, and a paused film as none', () => {
+    // Arrange
+    document.body.innerHTML = '<video></video><dialog></dialog>'
+    const film = document.querySelector('video') as HTMLVideoElement
+    const quiet = layerOpen()
+    Object.defineProperty(film, 'paused', { value: false, configurable: true })
+    const playing = layerOpen()
+    Object.defineProperty(film, 'paused', { value: true, configurable: true })
+
+    // Act
+    document.querySelector('dialog')?.setAttribute('open', '')
+
+    // Assert
+    expect([quiet, playing, layerOpen()]).toEqual([false, true, true])
+  })
+})
+
+describe('placement', () => {
+  const room = { w: 1440, h: 900, top: 58 }
+  const cardSize = { w: 360, h: 220 }
+
+  it('keeps a target clear of the card: the docked card and its margin on a phone, the card and its gap below, nothing beside', () => {
+    // Arrange
+    const sides = [
+      ['dock', true],
+      ['below', false],
+      ['dock', false],
+      ['right', false],
+    ] as const
+
+    // Act
+    const feet = sides.map(([side, narrow]) => footOf(side, narrow, cardSize.h))
+
+    // Assert
+    expect(feet).toEqual([232, 234, 220, 0])
+  })
+
+  it('puts the card beside a target with room to its side, and under one that spans the page', () => {
+    // Arrange
+    const stage = { x: 800, y: 80, w: 560, h: 420 }
+    const section = { x: 40, y: 80, w: 1360, h: 420 }
+
+    // Act
+    const sides = [
+      sideFor(stage, cardSize, room),
+      sideFor(section, cardSize, room),
+    ]
+
+    // Assert
+    expect(sides).toEqual(['left', 'below'])
+  })
+
+  it('docks the card at the foot when a full-width target leaves no room under it', () => {
+    // Arrange
+    const tall = { x: 40, y: 80, w: 1360, h: 700 }
+
+    // Act
+    const side = sideFor(tall, cardSize, room)
+
+    // Assert
+    expect(side).toBe('dock')
+  })
+
+  it('scrolls a target that shows whole not at all, centres a short one and tops a tall one', () => {
+    // Arrange
+    const inView = { x: 0, y: 100, w: 10, h: 200 }
+    const below = { x: 0, y: 1500, w: 10, h: 200 }
+    const tall = { x: 0, y: 1500, w: 10, h: 2000 }
+
+    // Act
+    const moves = [inView, below, tall].map((b) => scrollFor(b, 70, 888))
+
+    // Assert
+    expect(moves).toEqual([0, 1500 - (70 + (818 - 200) / 2), 1500 - 70])
+  })
+})

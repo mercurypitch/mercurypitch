@@ -11,13 +11,13 @@
 // which holds only the Contract's keys. Every other branch is
 // learn-lesson-07-sing.spec.ts's, on a siren.
 
-import { expect, test } from '@playwright/test'
+import { expect, test } from './helpers/lesson-page'
 import { again, ending, feel, micAsks, playMerc, start, status, take, toSing, trackStops, watchMic, } from './helpers/lesson-07-sing'
 import { fakeMicArgs, writeToneWav } from './helpers/tone-wav'
 
 const TONE_WAV = writeToneWav(220, 20)
 
-/** WEB-SPEC's Contract: every key the page may store, and the kit's `fyp-pos`. */
+/** WEB-SPEC's Contract: every key the page may store, with the kit's `fyp-pos` and `fyp-tour`. */
 const CONTRACT_KEYS = [
   'fyp-l07-recall-seed',
   'fyp-l07-recall-v1',
@@ -28,6 +28,7 @@ const CONTRACT_KEYS = [
   'fyp-l07-warmup',
   'fyp-motion',
   'fyp-pos',
+  'fyp-tour',
 ]
 
 test.use({
@@ -73,8 +74,9 @@ test('in the lower voice it reads as its one note; "Easy" offers Again once, and
   await expect(ending(page, 'rest')).toBeHidden()
   expect(await micAsks(page)).toBe(2)
 
-  // storage holds only the Contract's keys, and the kit's memory of the
-  // furthest step (kit/position.ts): no band, no note, no take, no answer
+  // storage holds only the Contract's keys, with the kit's memory of the
+  // furthest step (kit/position.ts) and its record of the welcome tour
+  // (kit/tour-gate.ts): no band, no note, no take, no answer
   const keys = await page.evaluate(() =>
     Array.from(
       { length: localStorage.length },

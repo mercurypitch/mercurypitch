@@ -22,7 +22,7 @@
 // measured where it rests.
 
 import type { Page } from '@playwright/test'
-import { expect, test } from '@playwright/test'
+import { expect, test } from './helpers/lesson-page'
 import { fileURLToPath } from 'node:url'
 import { lessonPages, lessonPath } from '../../tools/draft-lessons'
 

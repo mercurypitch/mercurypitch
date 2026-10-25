@@ -22,7 +22,7 @@
 // Lesson 3's chase lists its readings under the figure instead of moving.
 
 import type { Page } from '@playwright/test'
-import { expect, test } from '@playwright/test'
+import { expect, test } from './helpers/lesson-page'
 import { fileURLToPath } from 'node:url'
 import { lessonPages, lessonPath } from '../../tools/draft-lessons'
 

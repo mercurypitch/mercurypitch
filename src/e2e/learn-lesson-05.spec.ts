@@ -23,7 +23,7 @@
 // has no GPU, so Merc and Tavi are stills (hold-flow.test.ts covers it).
 
 import type { Page } from '@playwright/test'
-import { expect, test } from '@playwright/test'
+import { expect, test } from './helpers/lesson-page'
 import { fakeMicArgs, writeToneWav } from './helpers/tone-wav'
 
 const TITLE = 'Breath support: how to hold a steady note | MercuryPitch'
