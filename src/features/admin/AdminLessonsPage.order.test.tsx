@@ -6,7 +6,9 @@
 // PREREQ): its prerequisite chips name them. Before the console publishes
 // a lesson while one of those is not published here, it asks, whether a
 // drafts line stands or not; for a draft that would also get ahead of
-// one, it asks once, naming both. Unpublishing never asks.
+// one, it asks once, naming both. "Use default" asks the same question
+// when going back to the default would put the lesson live, and saves at
+// once otherwise. Unpublishing never asks.
 // Driven as AdminLessonsPage.publish.test.tsx drives the page, against the
 // same doubles at `fetch`; its own file, so that one and
 // AdminLessonsPage.test.tsx stay as they are.
@@ -18,7 +20,7 @@ import { PREREQ } from '@/features/lessons/kit/season'
 import { AdminLessonsPage } from './AdminLessonsPage'
 import type { LessonRow } from './lessons/lesson-admin'
 import { lessonRows } from './lessons/lesson-admin'
-import { cellOf, settled } from './lessons/lesson-page.test-fixtures'
+import { card, cellOf, openCard, settled, } from './lessons/lesson-page.test-fixtures'
 import type { FakeLessonApi } from './lessons/lesson-site.test-fixtures'
 import { ADMIN_KEY, fakeLessonApi, stubLessonSite, } from './lessons/lesson-site.test-fixtures'
 
@@ -63,6 +65,18 @@ const switchOf = (n: number, name: 'Publish' | 'Unpublish') =>
   within(cellOf(n, 0)).getByRole('button', { name: `${name} Lesson ${n}` })
 
 const bodies = (api: FakeLessonApi) => api.saves.map((save) => save.body)
+
+/** Lesson `n`'s card panel that publishes it, with "Use default". */
+const publishPanel = (n: number) =>
+  within(card(n)).getByRole('region', { name: 'On this site' })
+
+/** Lesson `n`'s "Use default", in its card, opened from its row. */
+function useDefaultOf(n: number): HTMLElement {
+  openCard(n)
+  return within(publishPanel(n)).getByRole('button', {
+    name: `Use default for Lesson ${n}`,
+  })
+}
 
 afterEach(() => {
   cleanup()
@@ -143,6 +157,121 @@ describe('publishing a lesson ahead of one it builds on', () => {
       expect(switchOf(DRAFT, 'Unpublish')).toBeInTheDocument()
     })
     expect(bodies(api)).toEqual([{ published: true }])
+    expect(screen.queryByRole('alertdialog')).toBeNull()
+  })
+})
+
+describe('"Use default" that would put a lesson live', () => {
+  it('asks a draft first, naming its sign-off, and saves nothing yet', async () => {
+    // Arrange: the draft is unpublished here, and its default on this site
+    // is published; every lesson it names is published.
+    const api = unpublished(DRAFT)
+    renderPage(api)
+    await settled()
+
+    // Act
+    fireEvent.click(useDefaultOf(DRAFT))
+
+    // Assert
+    const dialog = await screen.findByRole('alertdialog', {
+      name: `Publish Lesson ${DRAFT} before its sign-off?`,
+    })
+    expect(dialog).toHaveAccessibleDescription(
+      `Lesson ${DRAFT} waits on ${DRAFT_LESSONS[DRAFT]}. Publish it anyway?`,
+    )
+    expect(api.saves).toEqual([])
+  })
+
+  it('asks first when it would go ahead of the lesson it builds on, and saves nothing yet', async () => {
+    // Arrange
+    const api = unpublished(RELEASED_ON, RELEASED)
+    renderPage(api)
+    await settled()
+
+    // Act
+    fireEvent.click(useDefaultOf(RELEASED))
+
+    // Assert
+    const dialog = await screen.findByRole('alertdialog', {
+      name: `Publish Lesson ${RELEASED} before Lesson ${RELEASED_ON}?`,
+    })
+    expect(dialog).toHaveAccessibleDescription(
+      `Lesson ${RELEASED} builds on Lesson ${RELEASED_ON}, which is not published here. Publish it anyway?`,
+    )
+    expect(api.saves).toEqual([])
+  })
+
+  it('goes back to the default on "Publish anyway", and hands the focus to the switch', async () => {
+    // Arrange
+    const api = unpublished(RELEASED_ON, RELEASED)
+    renderPage(api)
+    await settled()
+    const useDefault = useDefaultOf(RELEASED)
+    useDefault.focus()
+    fireEvent.click(useDefault)
+    const dialog = await screen.findByRole('alertdialog')
+
+    // Act
+    fireEvent.click(
+      within(dialog).getByRole('button', { name: 'Publish anyway' }),
+    )
+
+    // Assert
+    await waitFor(() => {
+      expect(
+        within(publishPanel(RELEASED)).getByRole('button', {
+          name: `Unpublish Lesson ${RELEASED}`,
+        }),
+      ).toHaveFocus()
+    })
+    expect(bodies(api)).toEqual([{ published: null }])
+    expect(screen.queryByRole('alertdialog')).toBeNull()
+  })
+
+  it('stores nothing when the owner backs out', async () => {
+    // Arrange
+    const api = unpublished(RELEASED_ON, RELEASED)
+    renderPage(api)
+    await settled()
+    fireEvent.click(useDefaultOf(RELEASED))
+    const dialog = await screen.findByRole('alertdialog')
+
+    // Act
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Cancel' }))
+
+    // Assert
+    await waitFor(() => {
+      expect(screen.queryByRole('alertdialog')).toBeNull()
+    })
+    expect(api.saves).toEqual([])
+    expect(
+      within(publishPanel(RELEASED)).getByRole('button', {
+        name: `Use default for Lesson ${RELEASED}`,
+      }),
+    ).toBeInTheDocument()
+  })
+})
+
+describe('"Use default" that would not put a lesson live', () => {
+  it('saves at once for a lesson it keeps live, ahead of the lesson it builds on', async () => {
+    // Arrange: the lesson is published here and by default; the one it
+    // builds on is unpublished here, which a publish would ask about.
+    const api = fakeLessonApi({
+      lessons: {
+        [RELEASED]: { published: true },
+        [RELEASED_ON]: { published: false },
+      },
+    })
+    renderPage(api)
+    await settled()
+
+    // Act
+    fireEvent.click(useDefaultOf(RELEASED))
+
+    // Assert
+    await waitFor(() => {
+      expect(bodies(api)).toEqual([{ published: null }])
+    })
     expect(screen.queryByRole('alertdialog')).toBeNull()
   })
 })

@@ -35,7 +35,7 @@ import type { CopyChoicesFor } from './lessons/copy-choices'
 import { copyChoicesFor } from './lessons/copy-choices'
 import type { LessonRow, ListingCheck, PageCheck, ReleaseStep, SiteFindings, StepId, StepState, } from './lessons/lesson-admin'
 import { aheadOf, checkPage, lessonName, lessonRows, listedIn, llmsPaths, publishedByDefault, readListing, releaseChecklist, sitemapPaths, } from './lessons/lesson-admin'
-import { asSentence, publishQuestion, publishView, stateWord, } from './lessons/lesson-publish'
+import { asSentence, defaultGoesLive, publishQuestion, publishView, stateWord, } from './lessons/lesson-publish'
 import type { LessonActions } from './lessons/LessonControls'
 import { PublishCell, PublishPanel, WordingPanel, } from './lessons/LessonControls'
 import { LessonsBlueprint } from './lessons/LessonsBlueprint'
@@ -190,10 +190,35 @@ export function AdminLessonsPage(props: AdminLessonsPageProps): JSX.Element {
   }
 
   /**
-   * Publish, asking first when the lesson still waits on its sign-off or
-   * would go live before a lesson it builds on, once for both; or
-   * unpublish, which never asks.
+   * Put lesson `row` live by `save`, asking first when it still waits on
+   * its sign-off or would go live before a lesson it builds on, once for
+   * both. The switch's Publish and a "Use default" that would put the
+   * lesson live both come here, so they ask alike. Resolves with the
+   * save's answer: at once when there is nothing to ask, or after "Publish
+   * anyway". Cancel stores nothing, and the promise then never settles;
+   * only a stored save moves the focus.
    */
+  const goLive = (
+    row: LessonRow,
+    save: () => Promise<boolean>,
+  ): Promise<boolean> => {
+    const question = publishQuestion(
+      lessonName(row.lesson),
+      row.waitingOn,
+      aheadOf(row.lesson.n, publishedHere),
+    )
+    if (question === null) return save()
+    return new Promise((resolve) => {
+      confirm.request({
+        ...question,
+        confirmLabel: 'Publish anyway',
+        confirmIcon: <Eye />,
+        onConfirm: () => void save().then(resolve),
+      })
+    })
+  }
+
+  /** Publish, through `goLive`; or unpublish, which never asks. */
   const toggle = (row: LessonRow): void => {
     const view = viewOf(row)
     if (view === null || !view.canPublish) return
@@ -201,28 +226,25 @@ export function AdminLessonsPage(props: AdminLessonsPageProps): JSX.Element {
       void savePublished(row, false)
       return
     }
-    const question = publishQuestion(
-      lessonName(row.lesson),
-      row.waitingOn,
-      aheadOf(row.lesson.n, publishedHere),
-    )
-    if (question === null) {
-      void savePublished(row, true)
-      return
-    }
-    confirm.request({
-      ...question,
-      confirmLabel: 'Publish anyway',
-      confirmIcon: <Eye />,
-      onConfirm: () => void savePublished(row, true),
-    })
+    void goLive(row, () => savePublished(row, true))
+  }
+
+  /**
+   * Clear the lesson's publish override: through `goLive` when that would
+   * put it live, and at once when it would leave it unpublished, unpublish
+   * it or keep it live.
+   */
+  const useDefault = (row: LessonRow): Promise<boolean> => {
+    const view = viewOf(row)
+    const save = (): Promise<boolean> => savePublished(row, null)
+    return view !== null && defaultGoesLive(view) ? goLive(row, save) : save()
   }
 
   const actions: LessonActions = {
     lessons,
     viewOf,
     toggle,
-    useDefault: (row) => savePublished(row, null),
+    useDefault,
     saveCopy: (row, field, value) => {
       void lessons.save({
         n: row.lesson.n,
