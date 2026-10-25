@@ -59,6 +59,19 @@ export function exerciseHistory(): ExerciseHistoryEntry[] {
 }
 
 /**
+ * The runs scored the way their drill scores now, newest first. Everything
+ * that averages, compares or counts a drill's scores reads these: the
+ * stats below, the difficulty EMA and its play count, the weak-drill list
+ * and the per-drill trends. A rescored drill then starts again from its
+ * next run instead of blending two rulers -- after Arpeggio Jumper's
+ * rescore, its old runs (capped at 75) would otherwise have held the EMA
+ * under the step-up line for about ten runs.
+ */
+export function exerciseHistoryOnCurrentScoring(): ExerciseHistoryEntry[] {
+  return history().filter((e) => onCurrentScoring(e.type, e.scoringVersion))
+}
+
+/**
  * The exact record a plain drill run persists. Exported so a test can hold
  * it against the worker's own `validateWrite`: a payload the server rejects
  * is not a failed feature but a silent one — the 400 is swallowed, no
@@ -206,8 +219,8 @@ export function recordExerciseResult(
  * run.
  */
 export function getExerciseStats(type: ExerciseType): ExerciseStats {
-  const entries = history().filter(
-    (e) => e.type === type && onCurrentScoring(e.type, e.scoringVersion),
+  const entries = exerciseHistoryOnCurrentScoring().filter(
+    (e) => e.type === type,
   )
   if (entries.length === 0) {
     return {

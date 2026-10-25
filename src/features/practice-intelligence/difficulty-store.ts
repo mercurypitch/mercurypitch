@@ -8,7 +8,7 @@
 
 import type { ExerciseType } from '@/features/exercises/types'
 import { createPersistedSignal } from '@/lib/storage'
-import { exerciseHistory } from '@/stores/exercise-history-store'
+import { exerciseHistoryOnCurrentScoring } from '@/stores/exercise-history-store'
 import { showNotification } from '@/stores/notifications-store'
 import { clampDifficulty, getSuggestedDifficulty } from './adaptive-difficulty'
 
@@ -32,8 +32,21 @@ const [difficultyMap, setDifficultyMap] = createPersistedSignal<DifficultyMap>(
 const [lastAdjustCount, setLastAdjustCount] =
   createPersistedSignal<DifficultyMap>(ADJUST_COUNT_KEY, {})
 
+/** Plays of `type` scored the way it scores now, as the EMA counts them. */
 function playCount(type: ExerciseType): number {
-  return exerciseHistory().filter((e) => e.type === type).length
+  return exerciseHistoryOnCurrentScoring().filter((e) => e.type === type).length
+}
+
+/**
+ * Plays since the last automatic adjustment. A count below the mark means
+ * the counted runs shrank under it -- a rescore set them aside, or the
+ * 100-run history dropped old ones -- so the mark is stale and every run
+ * counted now is new to it. Read as a negative gap instead, it held a
+ * rescored drill's level still until the new runs outnumbered the old.
+ */
+function playsSinceAdjust(type: ExerciseType, count: number): number {
+  const mark = lastAdjustCount()[type] ?? 0
+  return count >= mark ? count - mark : count
 }
 
 /** Get the current difficulty level for an exercise (default 5). */
@@ -59,8 +72,7 @@ export function updateDifficultyFromEma(type: ExerciseType): number | null {
   // Hysteresis: wait for at least ADJUST_COOLDOWN new plays since the last
   // adjustment before nudging again, so the level can't ratchet every run.
   const count = playCount(type)
-  const since = count - (lastAdjustCount()[type] ?? 0)
-  if (since < ADJUST_COOLDOWN) return null
+  if (playsSinceAdjust(type, count) < ADJUST_COOLDOWN) return null
 
   const current = getDifficulty(type)
   const { difficulty } = getSuggestedDifficulty(type, current)

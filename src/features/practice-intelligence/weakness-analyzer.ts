@@ -9,7 +9,7 @@
 
 import type { ExerciseType } from '@/features/exercises/types'
 import { midiToNoteName } from '@/lib/frequency-to-note'
-import { exerciseHistory } from '@/stores/exercise-history-store'
+import { exerciseHistory, exerciseHistoryOnCurrentScoring, } from '@/stores/exercise-history-store'
 import { collectNoteAccuracySamples } from '@/stores/practice-session-store'
 
 // ── Types ──────────────────────────────────────────────────────
@@ -46,10 +46,12 @@ const RECENT_WINDOW = 10 // consider last N entries
 // ── Exercise Weaknesses ────────────────────────────────────────
 
 export function findWeakExercises(): WeakExercise[] {
-  const entries = exerciseHistory()
+  // Runs scored on a drill's old ruler are left out: a rescored drill is
+  // judged weak or not on its new scores alone.
+  const entries = exerciseHistoryOnCurrentScoring()
   if (entries.length === 0) return []
 
-  // `exerciseHistory()` is newest-first, so this collects each type's
+  // The history is newest-first, so this collects each type's
   // scores in that same newest-first order.
   const byType = new Map<ExerciseType, number[]>()
   for (const e of entries) {
