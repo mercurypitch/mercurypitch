@@ -88,6 +88,60 @@ describe('useMirrorMelodyController', () => {
   })
 })
 
+describe('the grade carries no richness', () => {
+  it('grades four exact notes and one 4 cents off at 73, not 74', async () => {
+    vi.useFakeTimers()
+    try {
+      // Arrange: notes 100, 100, 100, 100 and 94 (4 cents off), with the
+      // detector's realistic clarity (0 to 1). Average 99, best 100,
+      // consistency 95: 0.35 x 99 + 0.15 x 100 + 0.25 x 95 = 73.4. The
+      // richness term read 0.9 clarity as 1 and added 0.25: 73.65, so 74.
+      let targetFreq = 0
+      let notesDone = 0
+      let sampleClock = 100
+      const base = createMockBase({
+        _setTargetPitch: ((v: number | null) => {
+          if (v != null && v > 0) targetFreq = v
+          return v
+        }) as BaseExerciseController['_setTargetPitch'],
+        _updateMetrics: (m) => {
+          if (typeof m.notesCompleted === 'number') notesDone = m.notesCompleted
+        },
+        pitchHistory: () => {
+          const cents = notesDone === 4 ? 4 : 0
+          const samples = []
+          for (let i = 0; i < 30; i++) {
+            sampleClock += 0.01
+            samples.push({
+              freq: targetFreq * 2 ** (cents / 1200),
+              time: sampleClock,
+              cents,
+              clarity: 0.9,
+            })
+          }
+          return samples
+        },
+      })
+      const ctrl = useMirrorMelodyController(base, { playTone: async () => {} })
+      ctrl.setMelody(60, { min: 36, max: 84 })
+
+      // Act
+      ctrl.startSequence()
+      await vi.advanceTimersByTimeAsync(60000)
+      const result = ctrl.computeResult()
+
+      // Assert
+      expect(result.metrics.notesCompleted).toBe(5)
+      expect(result.metrics.avgAccuracy).toBe(99)
+      expect(result.metrics.consistency).toBe(95)
+      expect(result.metrics.richnessScore).toBe(1)
+      expect(result.score).toBe(73)
+    } finally {
+      vi.useRealTimers()
+    }
+  })
+})
+
 describe("the melody respects the singer's range", () => {
   it('clamps every generated note to the given range, not the old C2-C6 constant', () => {
     // Force the biggest upward step (+9) every time: from A4 the old

@@ -158,5 +158,46 @@ describe('useScaleRunnerController', () => {
       expect(result.score).toBeGreaterThan(40)
       expect(result.score).toBeLessThanOrEqual(100)
     })
+
+    it('grades a run 36 cents sharp at 50, with no richness in it', async () => {
+      // Arrange: every note 36 cents sharp, with the detector's realistic
+      // clarity (0 to 1). Each note scores 100 - 1.5 x 36 = 46 and the notes
+      // are even, so the grade is 0.4 x 46 + 0.15 x 46 + 0.25 x 100 = 50.3.
+      // The richness term read 0.9 clarity as 1 and added 0.2: 50.5, so 51.
+      const sharp = 2 ** (36 / 1200)
+      let currentTargetFreq = 0
+      let sampleClock = 100
+      const base = createMockBase({
+        _setTargetPitch: ((v: number | null) => {
+          if (v != null && v > 0) currentTargetFreq = v
+          return v
+        }) as BaseExerciseController['_setTargetPitch'],
+        pitchHistory: () => {
+          const samples = []
+          for (let i = 0; i < 30 && currentTargetFreq > 0; i++) {
+            sampleClock += 0.01
+            samples.push({
+              freq: currentTargetFreq * sharp,
+              time: sampleClock,
+              cents: 36,
+              clarity: 0.9,
+            })
+          }
+          return samples
+        },
+      })
+      const ctrl = useScaleRunnerController(base, audioEngine)
+      ctrl.setScale(60, 'major', 'up')
+
+      // Act
+      ctrl.startScale()
+      await vi.advanceTimersByTimeAsync(60000)
+      const result = ctrl.computeResult()
+
+      // Assert
+      expect(result.metrics.avgAccuracy).toBe(46)
+      expect(result.metrics.richnessScore).toBe(1)
+      expect(result.score).toBe(50)
+    })
   })
 })
