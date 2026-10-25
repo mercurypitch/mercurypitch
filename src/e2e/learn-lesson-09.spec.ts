@@ -18,10 +18,11 @@
 // both sizes: the recall shows to everyone, marks nothing done and links
 // Lesson 6's steps in a new tab, and the quick check marks Lesson 9 done.
 // Then the chart by keyboard alone (End to end 3), at both sizes, for
-// Steps 1 and 2: Tab reaches each control in reading order, Slow toggles
-// `aria-pressed`, each play says its move in spoken names, and the folds
-// strip fills the figure's bottom 64 px. Each other toy's checks join it
-// as that toy is wired.
+// Steps 1 to 4: Tab reaches each control in reading order, Slow toggles
+// `aria-pressed`, each play says its move in spoken names, the folds strip
+// fills the figure's bottom 64 px, Step 3's climb clears the line a leap
+// left, and Step 4 names its five leaps in order. Each other toy's checks
+// join it as that toy is wired.
 
 import type { Locator, Page } from '@playwright/test'
 import { expect, test } from './helpers/lesson-page'
@@ -382,6 +383,78 @@ for (const viewport of [
       await expect(ladderStatus(page)).toHaveText(
         'The leap: D3 to A3, a perfect fifth.',
       )
+      await page.keyboard.press('Tab')
+      await expect(slow).toBeFocused()
+      expect(errors).toEqual([])
+    })
+  })
+}
+
+// WEB-SPEC, End to end 3: Steps 3 and 4, at a phone's size and a desktop's
+for (const viewport of [
+  { width: 390, height: 844 },
+  { width: 1440, height: 900 },
+]) {
+  test.describe(`Steps 3 and 4 by keyboard at ${viewport.width} x ${viewport.height}`, () => {
+    test.use({ viewport })
+
+    test('Tab reaches each control in reading order, each leap says what it skips, the climb clears the line, and Step 4 names its leaps in order', async ({
+      page,
+    }) => {
+      test.setTimeout(90_000)
+      // Arrange
+      const errors: string[] = []
+      page.on('pageerror', (e) => errors.push(e.message))
+      await page.goto('/learn/09#step-3')
+      const toy = page.locator('#toyLadder')
+      const play = (id: string): Locator =>
+        toy.locator(`[data-ladder-play="${id}"]`)
+      const slow = toy.locator('[data-ladder-slow]')
+      const next = page.getByRole('button', { name: 'Next step', exact: true })
+      await expect(page.locator('#stepNow')).toHaveText('3')
+      await play('climb').scrollIntoViewIfNeeded()
+      await play('climb').focus()
+
+      // Act, Assert: Step 3's row in reading order
+      await page.keyboard.press('Tab')
+      await playsThrough(page, play('to-so'))
+      await expect(ladderStatus(page)).toHaveText(
+        'Do to so: a perfect fifth, 7 semitones, over mi.',
+      )
+      await page.keyboard.press('Tab')
+      await playsThrough(page, play('to-top'))
+      await expect(ladderStatus(page)).toHaveText(
+        'Do to the top do: an octave, 12 semitones, over mi and so.',
+      )
+      await page.keyboard.press('Tab')
+      await expect(slow).toBeFocused()
+
+      // the climb names no leap, so the line the last one left goes
+      await page.keyboard.press('Shift+Tab')
+      await page.keyboard.press('Shift+Tab')
+      await page.keyboard.press('Shift+Tab')
+      await playsThrough(page, play('climb'))
+      await expect(ladderStatus(page)).toHaveText('')
+
+      // Step 4 by the stage's Next: its play, then Slow
+      await play('climb').focus()
+      await page.keyboard.press('Shift+Tab')
+      await expect(next).toBeFocused()
+      await page.keyboard.press('Enter')
+      await expect(page.locator('#stepNow')).toHaveText('4')
+      await page.keyboard.press('Tab')
+      const five = play('five')
+      await expect(five).toBeFocused()
+      await page.keyboard.press('Enter')
+      await expect(five).toHaveClass(/\bis-on\b/)
+      await expect(ladderStatus(page)).toHaveText(
+        '1 of 5: mi to so, a minor third, 3 semitones',
+      )
+      await expect(ladderStatus(page)).toHaveText(
+        '5 of 5: do to the top do, an octave, 12 semitones',
+        { timeout: 15_000 },
+      )
+      await expect(five).not.toHaveClass(/\bis-on\b/, { timeout: 5_000 })
       await page.keyboard.press('Tab')
       await expect(slow).toBeFocused()
       expect(errors).toEqual([])
