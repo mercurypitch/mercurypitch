@@ -2694,6 +2694,20 @@
   color: var(--text-secondary);
 }
 
+/* Arpeggio Jumper: the octave a run was scored in, on its own line. */
+.arpeggio-octave-line {
+  display: block;
+  margin-top: 2px;
+}
+
+/* Arpeggio Jumper: a run with nothing voiced, or stopped before its end,
+   was not scored. Said first, above the description, because it is why
+   there is no result card. */
+.exercise-idle-placeholder .arpeggio-not-scored {
+  color: var(--text-primary);
+  font-weight: 600;
+}
+
 .exercise-result-voice {
   display: flex;
   align-items: center;
