@@ -307,7 +307,7 @@ describe('UserSurveyModal — feedback mode', () => {
     const dialog = screen.getByTestId('user-survey-modal')
 
     expect(dialog).toHaveTextContent(
-      'Tell us what would make Mercury Pitch better. Anonymous, no account needed.',
+      'Tell us what would make Mercury Pitch better. No account needed.',
     )
     expect(dialog).not.toHaveTextContent(
       'Optional. Skip it if nothing got in your way.',
