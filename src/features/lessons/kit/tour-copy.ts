@@ -7,9 +7,9 @@
 // serves every lesson page: a step whose targets are all missing or hidden
 // on a page is left out there, and the count ("1 of 5") follows. A step
 // names its targets in order; every one that shows is lit, together, so
-// the masthead's step lights the lesson menu's button and the section
-// links on a wide screen, and the menu's button alone on a phone, where
-// the menu carries the sections.
+// the masthead's step lights the lesson menu's button, the section links
+// and the tour's question mark on a wide screen, and the menu's button and
+// the question mark on a phone, where the menu carries the sections.
 //
 // Each line was checked against what the eight pages do. Lessons 1, 2, 4,
 // 6 and 8 never listen; 3, 5 and 7 can, once the viewer chooses to sing,
@@ -18,9 +18,9 @@
 // the lessons in `LISTENING_LESSONS`: a new lesson whose Sing it listens
 // adds its number there.
 //
-// The menu's "Tour this page" is the one tour word not here: it is drawn
-// with the menu's other links on first paint (lesson-menu.ts), and this
-// file loads with the tour, after first paint.
+// The menu's "Tour this page", which names the question mark too, is the
+// one tour word not here: both are drawn on first paint (lesson-menu.ts),
+// and this file loads with the tour, after first paint.
 
 export interface TourStepCopy {
   /** What the step lights: every one of these that shows on the page. */
@@ -58,9 +58,9 @@ export const TOUR_STEPS: readonly TourStepCopy[] = [
     body: 'Every lesson in the season, and how each one builds on the ones before. Pick a lesson to see what it covers and what it builds on.',
   },
   {
-    targets: ['.lm-btn', '#mastNav'],
+    targets: ['.lm-btn', '#mastNav', '.lm-tour'],
     title: 'Find your way',
-    body: 'From up here you can jump to any part of this lesson, or open the lesson menu for every lesson in the season. Tour this page, in that menu, shows you this tour again.',
+    body: 'From up here you can jump to any part of this lesson, or open the lesson menu for every lesson in the season. Tour this page, in that menu, shows you this tour again. So does the question mark at the top right.',
   },
 ]
 

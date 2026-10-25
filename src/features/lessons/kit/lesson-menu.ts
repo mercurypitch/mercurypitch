@@ -7,7 +7,9 @@
 // list, each lesson done, here, in progress, up next, ready or coming later
 // (lesson-state.ts, which the explorer's card asks too), and this page's
 // lesson open to its steps. Without it a page had no way to another lesson
-// from the top: every path ran through the map at its foot.
+// from the top: every path ran through the map at its foot. A question mark
+// at the masthead's right end plays the welcome tour again (tour-gate.ts),
+// as the panel's "Tour this page" does, from anywhere on the page.
 //
 // One panel, three layouts (lesson-menu.css): a dropdown under the button
 // on tablets and desktops, and under 821 px a sheet under the masthead that
@@ -426,6 +428,16 @@ export function createLessonMenu(o: LessonMenuOptions): void {
   seasonShown.addEventListener('change', nameButton)
   btn.innerHTML = `${ring(0)}<span class="lm-l"><span class="lm-s">${SEASON} · </span>${label}</span>${icon('i-right', 'ico lm-chev')}`
   o.label.replaceWith(btn)
+  // the welcome tour again from anywhere on the page, as the panel's "Tour
+  // this page" plays it: a question mark at the masthead's right end
+  // (lesson-menu.css places it)
+  const replay = document.createElement('button')
+  replay.type = 'button'
+  replay.className = 'lm-tour'
+  replay.setAttribute('aria-label', 'Tour this page')
+  replay.innerHTML = icon('i-help')
+  replay.addEventListener('click', () => startTour(o.lesson, true))
+  btn.parentElement?.append(replay)
   const arc = btn.querySelector('.arc')
   const paintRing = (): void => {
     const fill = Done.has(o.lesson) ? 1 : deck.current / deck.count
