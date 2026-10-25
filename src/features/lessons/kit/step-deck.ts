@@ -28,7 +28,7 @@
 // scroll, and every step scrolled past would be said.
 
 import { announce, announcer } from './announce'
-import { clamp, q, qa } from './dom'
+import { clamp, q, qa, touring } from './dom'
 import { watch } from './frame-loop'
 import { reducedMotion } from './motion-switch'
 import { fitStage, watchStageFit } from './stage-fit'
@@ -191,10 +191,18 @@ export function createStepDeck(opts: StepDeckOptions): StepDeck {
   })
   watchStageFit(stage, () => deck)
 
+  // the welcome tour's glides pass steps nobody read: the deck holds its
+  // step, which the lesson menu shows as where the viewer is (dom.ts `touring`)
   const follow = new IntersectionObserver(
     (entries) =>
       entries.forEach((e) => {
-        if (deck || !e.isIntersecting || performance.now() < lockUntil) return
+        if (
+          deck ||
+          !e.isIntersecting ||
+          performance.now() < lockUntil ||
+          touring()
+        )
+          return
         const n = Number((e.target as HTMLElement).dataset.step)
         if (n !== current) show(n)
       }),

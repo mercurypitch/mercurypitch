@@ -89,3 +89,11 @@ export const store = {
 
 export const wait = (seconds: number): Promise<void> =>
   new Promise((resolve) => setTimeout(resolve, seconds * 1000))
+
+/**
+ * Whether the welcome tour is up, or the page still coming to rest after it
+ * (tour.ts marks <html> `touring`): its glides pass steps nobody read, so
+ * nothing then counts as reading (step-deck.ts, position.ts).
+ */
+export const touring = (): boolean =>
+  document.documentElement.classList.contains('touring')

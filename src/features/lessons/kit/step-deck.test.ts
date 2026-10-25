@@ -80,6 +80,7 @@ const beat = (): Promise<void> =>
 afterEach(() => {
   window.location.hash = ''
   document.body.textContent = ''
+  document.documentElement.classList.remove('touring')
 })
 
 describe('stepFromHash', () => {
@@ -251,6 +252,42 @@ describe('createStepDeck', () => {
     )
 
     // Assert
+    expect(deck.current).toBe(3)
+  })
+
+  it('holds its step while the welcome tour moves the page, and follows the scroll again once it is over', () => {
+    // Arrange: a deck on step 1 whose step observer the test speaks for,
+    // under the tour's pause (tour.ts marks <html> `touring`)
+    deckPage(3)
+    const quiet = window.IntersectionObserver
+    window.IntersectionObserver =
+      TellingObserver as unknown as typeof IntersectionObserver
+    const deck = createStepDeck({
+      toyFor: (n) => n,
+      after: { label: 'The quick check', selector: '#quiz' },
+    })
+    window.IntersectionObserver = quiet
+    deck.start()
+    const reached = (n: number): void =>
+      report(
+        [
+          {
+            isIntersecting: true,
+            target: document.querySelector(`[data-step="${n}"]`),
+          } as IntersectionObserverEntry,
+        ],
+        {} as IntersectionObserver,
+      )
+    document.documentElement.classList.add('touring')
+
+    // Act: a glide that passes step 2, then the viewer's own scroll to step 3
+    reached(2)
+    const during = deck.current
+    document.documentElement.classList.remove('touring')
+    reached(3)
+
+    // Assert
+    expect(during).toBe(1)
     expect(deck.current).toBe(3)
   })
 
