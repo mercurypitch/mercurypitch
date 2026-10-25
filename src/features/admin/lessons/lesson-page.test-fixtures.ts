@@ -55,11 +55,30 @@ export function liveRegion(): HTMLElement {
   return screen.getByRole('status')
 }
 
-/** The site checked and the lesson state read. */
-export const settled = (): Promise<void> =>
-  waitFor(() => {
+/**
+ * The site checked and the lesson state read.
+ *
+ * Polled on the two texts that say so, a millisecond or two each. A role
+ * query names every button on the page, over fifty once the state is read,
+ * and a failed `getBy` prints the whole page into its error: polling with
+ * those cost about a second a test. The button is then asked for by role
+ * and name once, among its own row's controls.
+ */
+export async function settled(): Promise<void> {
+  await waitFor(() => {
     expect(
-      screen.getByRole('button', { name: 'Check again' }),
-    ).not.toHaveAttribute('aria-disabled')
-    expect(screen.getByText(/^Lesson state read at/)).toBeInTheDocument()
+      screen.queryByText('Check again', { selector: 'button' }),
+      'the site checked',
+    ).not.toBeNull()
+    expect(
+      screen.queryByText(/^Lesson state read at/, { selector: 'span' }),
+      'the lesson state read',
+    ).not.toBeNull()
   })
+  const button = screen.getByText('Check again', { selector: 'button' })
+  expect(
+    within(button.parentElement ?? document.body).getByRole('button', {
+      name: 'Check again',
+    }),
+  ).not.toHaveAttribute('aria-disabled')
+}
