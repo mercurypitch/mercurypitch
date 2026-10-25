@@ -332,7 +332,7 @@ export const FirstLight: Component<FirstLightProps> = (props) => {
    * Open a room and walk its spotlight tour (`startRoomTour`).
    *
    * No delay before the tour starts, matching every other caller
-   * (usePageTourOffer, offerTourOnce): page-tour steps carry
+   * (TourChipHost, offerTourOnce): page-tour steps carry
    * `requiredTab`, so the Walkthrough switches tabs itself, and it
    * already waits ~1s per step for a target to become visible. Closing
    * the overlay first is enough — a hand-rolled frame of delay would

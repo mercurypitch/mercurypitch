@@ -11,7 +11,7 @@ import type { AudioEngine } from '@/lib/audio-engine'
 import type { PlaybackRuntime } from '@/lib/playback-runtime'
 import type { PracticeEngine } from '@/lib/practice-engine'
 import { earInfoOpen, resetEarLabStore, setEarInfoOpen, } from '@/stores/ear-lab-store'
-import { notifications, resetNotifications, showActionNotification, showNotification, TOUR_OFFER_CHANNEL, } from '@/stores/notifications-store'
+import { notifications, resetNotifications, showNotification, tourOfferRetired, } from '@/stores/notifications-store'
 import { PlayPad } from './EarStage'
 import { HairlineDrill } from './HairlineDrill'
 import { HomeDrill } from './HomeDrill'
@@ -571,18 +571,11 @@ describe("the bench's tour offer", () => {
     resetNotifications()
   })
 
-  it('goes when a drill opens, and other toasts stay', () => {
-    // What usePageTourOffer shows on a first visit to the bench.
-    showActionNotification(
-      'New to Ear Lab? Take a quick tour.',
-      'info',
-      { label: 'Start tour', onClick: () => undefined },
-      { channel: TOUR_OFFER_CHANNEL },
-    )
+  it('goes when a drill opens, and toasts stay', () => {
+    // The offer is the tour chip by the page title (TourChipHost), which
+    // goes when this count moves.
+    const retired = tourOfferRetired()
     showNotification('Saved to the Field Book', 'success')
-    expect(notifications().map((n) => n.message)).toContain(
-      'New to Ear Lab? Take a quick tour.',
-    )
 
     const Engine = withEngine(fakeEngine())
     render(() => (
@@ -591,9 +584,10 @@ describe("the bench's tour offer", () => {
       </Engine>
     ))
 
-    const left = notifications().map((n) => n.message)
-    expect(left).not.toContain('New to Ear Lab? Take a quick tour.')
-    expect(left).toContain('Saved to the Field Book')
+    expect(tourOfferRetired()).toBe(retired + 1)
+    expect(notifications().map((n) => n.message)).toContain(
+      'Saved to the Field Book',
+    )
   })
 })
 

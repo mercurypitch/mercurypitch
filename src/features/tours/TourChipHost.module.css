@@ -1,0 +1,13 @@
+/* ============================================================
+   TourChipHost: the chip's row at the top of the main column
+   ============================================================
+
+   In the page's flow, above the page and by its title, never over it: the
+   corner toast it replaces covered the controls at a phone's foot. It does
+   not shrink, as no page in the column does (CONVENTIONS.md, section 5). */
+
+.slot {
+  flex-shrink: 0;
+  display: flex;
+  padding: 8px 16px 0;
+}

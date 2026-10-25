@@ -299,7 +299,8 @@ import { useHashRouter } from '@/features/routing/useHashRouter'
 import { useSessionSequencer } from '@/features/session/useSessionSequencer'
 import { appModeBounce } from '@/features/tabs/app-mode-guard'
 import { PLAYBACK_MODE_ONCE, PLAYBACK_MODE_REPEAT, PLAYBACK_MODE_SESSION, TAB_ANALYSIS, TAB_CHALLENGES, TAB_COMMUNITY, TAB_COMPOSE, TAB_EAR_LAB, TAB_EXERCISES, TAB_GUITAR, TAB_HOME, TAB_JAM, TAB_KARAOKE, TAB_LAB, TAB_LAB_DIFF, TAB_LAB_TRANSCRIBE, TAB_LEADERBOARD, TAB_PATH, TAB_PIANO, TAB_PITCH_ALGO, TAB_PITCH_TEST, TAB_PROGRESS, TAB_SETTINGS, TAB_SINGING, TAB_VOICE_HISTORY, tabLabel, visibleTabOrder, } from '@/features/tabs/constants'
-import { usePageTourOffer } from '@/features/tours/usePageTourOffer'
+import { coachActive } from '@/features/tours/coach/coach-state'
+import { TourChipHost } from '@/features/tours/TourChipHost'
 import { leaveVoiceConstellation } from '@/features/voice-constellation/navigation'
 import { useVoiceConstellationIsolation } from '@/features/voice-constellation/useVoiceConstellationIsolation'
 import { bottomHudVisible } from '@/features/voice-control/hud-placement'
@@ -2651,27 +2652,26 @@ const AppShell: Component<AppProps> = (props) => {
     }),
   )
 
-  // Offer a page's spotlight tour the first time it's visited.
-  // Not over First Light: the welcome screen is a first visit's whole
-  // screen, and the toast spent Home's offer underneath it. Not over the
-  // plan layer either (R83): the toast region stands above it, and its
-  // Start tour ran the tab's tour over the plan. Nor over What's New, the
-  // takeover that takes a visit when the plan does not: one takeover per
-  // visit. And not before the takeover has decided which of them it is: its
-  // surface opens after its chunk and the settings pull, and an offer made in
-  // that gap is spent and then taken down. Decided also waits for the host to
-  // have seen the layer (onDecided, below): `plan.isOpen()` rises only once the
-  // host's own import of the store has landed. The tab on screen when the layer
-  // closes gets its offer then, if it never had one.
-  usePageTourOffer(
-    activeTab,
-    () =>
-      showWelcome() ||
-      flowOpen() ||
-      plan.isOpen() ||
-      whatsNew.open() ||
-      !takeoverDecided(),
-  )
+  // A tab's tour is offered the first time it's visited, in a chip by the
+  // page title (TourChipHost, at the top of the main column below), and not
+  // while this holds. Not over First Light: the welcome screen is a first
+  // visit's whole screen, and the corner toast the chip replaced spent Home's
+  // offer underneath it. Not over the plan layer either (R83): the toast
+  // stood above it, and its Start tour ran the tab's tour over the plan. Nor
+  // over What's New, the takeover that takes a visit when the plan does not:
+  // one takeover per visit. And not before the takeover has decided which of
+  // them it is: its surface opens after its chunk and the settings pull, and
+  // an offer made in that gap is spent and then taken down. Decided also
+  // waits for the host to have seen the layer (onDecided, below):
+  // `plan.isOpen()` rises only once the host's own import of the store has
+  // landed. The tab on screen when the layer closes gets its offer then, if
+  // it never had one.
+  const tourOfferPaused = (): boolean =>
+    showWelcome() ||
+    flowOpen() ||
+    plan.isOpen() ||
+    whatsNew.open() ||
+    !takeoverDecided()
 
   // Live mic insights → inline "can't hear you" / "too quiet" hints (Singing).
   const micInsights = useMicInsights({
@@ -3150,15 +3150,16 @@ const AppShell: Component<AppProps> = (props) => {
   }
 
   // True while any guide/tour surface is up: the guide-section dialog, the
-  // spotlight walkthrough, the Learn chapter modals, or the plan layer (R83).
-  // The survey must never pop over these (it used to occlude a tour started
-  // from the welcome screen).
+  // spotlight walkthrough, the Learn chapter modals, the plan layer (R83), or
+  // a Merc tour. The survey must never pop over these (it used to occlude a
+  // tour started from the welcome screen).
   const tourSurfaceOpen = () =>
     showGuideSelection() ||
     walkthroughActive() ||
     showSelection() ||
     walkthroughModalOpen() ||
-    plan.isOpen()
+    plan.isOpen() ||
+    coachActive() !== null
 
   // Don't ask for feedback the moment a first-time visitor closes the welcome
   // screen: wait until they have genuinely used the app — enough cumulative
@@ -3714,6 +3715,11 @@ const AppShell: Component<AppProps> = (props) => {
 
             {/* Tab content */}
             <main class="main-content" id="main-content" tabindex="-1">
+              {/* A tab's first visit offers its tour here, by the page title
+                  and in the flow. Tours are web only. */}
+              {IS_NATIVE_BUILD ? null : (
+                <TourChipHost tab={activeTab} paused={tourOfferPaused} />
+              )}
               {/* Phones: the verify-email nudge is a strip here, in the flow,
                   not a pill over the tab bar and the toasts. */}
               <VerifyEmailBanner placement="inline" />

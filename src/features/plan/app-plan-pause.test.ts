@@ -3,27 +3,30 @@
 // ============================================================
 //
 // The plan layer covers the whole window (z-index 3000), and two things App
-// raises on their own would land over it or under it: a tab's first-visit
-// tour offer, a toast whose region sits at z-index 20000, so it is drawn on
-// top of the layer and its Start tour runs that tab's tour over the plan; and
-// the deferred feedback survey (GH #97), which waits for no guide or tour
-// surface to be up. Ruling R83: both count the open layer, through the host's
-// `plan.isOpen()` (plan-layer-host.ts), which is true from the moment the layer
-// is asked for. usePageTourOffer removes a shown offer when its pause rises
-// and offers the tab on screen when it falls, so an offer that was never shown
-// comes once the layer closes (usePageTourOffer.test.tsx runs that part).
+// raises on their own would be spent under it or land over it: a tab's
+// first-visit tour offer, a chip at the top of the main column (TourChipHost)
+// that writes its once-per-tab key as it shows, so an offer made under the
+// layer is spent where nobody sees it (the corner toast the chip replaced
+// stood over the layer, and its Start tour ran that tab's tour over the
+// plan); and the deferred feedback survey (GH #97), which waits for no guide
+// or tour surface to be up. Ruling R83: both count the open layer, through the
+// host's `plan.isOpen()` (plan-layer-host.ts), which is true from the moment
+// the layer is asked for. The chip host removes a shown offer when its pause
+// rises and offers the tab on screen when it falls, so an offer that was
+// never shown comes once the layer closes (TourChipHost.test.tsx runs that
+// part).
 //
-// What's New joins them (the one takeover per visit): the offer's toast would
-// land on top of the release page the same way, so its pause counts
-// `whatsNew.open()` as well.
+// What's New joins them (the one takeover per visit): the offer would be spent
+// under the release page the same way, so its pause counts `whatsNew.open()`
+// as well. A Merc tour joins the survey's list: it is a tour surface too.
 //
 // The same reading holds how App mounts the opening takeover, the other half of
 // that rule: the picker's component is web-only (R9, R32), the arrival and
 // First Light's flag it is given are read once when App sets up, what the old
 // boot line did for a visitor who is not returning still happens, and the tour
 // offer waits for the takeover to say it has decided (it writes its once-per-tab
-// key before its toast shows). app-takeover-glue.test.tsx runs that wait and
-// the arrival's rules; this is where their wiring is read.
+// key as its chip shows). app-takeover-glue.test.tsx runs that wait and the
+// arrival's rules; this is where their wiring is read.
 //
 // App is too large a world to render for these conditions, so this reads its
 // source, as home-card-mount.test.ts reads Home's.
@@ -107,6 +110,18 @@ function enclosingFunction(node: ts.Node): ts.Node | undefined {
   return undefined
 }
 
+/** App's chip hosts: the tab's tour offer, by the page title. */
+const chipHosts = all.filter((node) => tagOf(node) === 'TourChipHost')
+
+/** The `const` App hands its one chip host as `paused`: what the offer waits for. */
+function offerPause(): ts.VariableDeclaration | undefined {
+  const given =
+    chipHosts.length === 1 ? attributeOf(chipHosts[0], 'paused') : undefined
+  const name = given?.match(/^\{\s*(\w+)\s*\}$/u)?.[1]
+  const found = name === undefined ? [] : declared(name)
+  return found.length === 1 ? found[0] : undefined
+}
+
 describe('while the plan layer is up', () => {
   const [host] = declared('plan')
   const decided = all.find(
@@ -122,31 +137,35 @@ describe('while the plan layer is up', () => {
   })
 
   it("a tab's tour offer waits, beside First Light", () => {
-    const offers = callsTo('usePageTourOffer')
-    expect(offers).toHaveLength(1)
-    const [, paused] = offers[0].arguments
+    expect(chipHosts).toHaveLength(1)
+    const pause = offerPause()
+    const paused = pause?.initializer
 
     expect(paused).toBeDefined()
+    if (pause === undefined || paused === undefined) return
     expect(layerChecks(paused)).toHaveLength(1)
     // The pauses it had keep their place.
     expect(paused.getText(source)).toMatch(/\bshowWelcome\(\)/u)
     expect(paused.getText(source)).toMatch(/\bflowOpen\(\)/u)
     // The host it asks is the one the layer is drawn by, in the same component.
-    expect(enclosingFunction(offers[0])).toBe(
+    expect(enclosingFunction(pause)).toBe(
       host === undefined ? 'no host' : enclosingFunction(host),
     )
   })
 
   it("a tab's tour offer waits while What's New is up as well", () => {
-    const [, paused] = callsTo('usePageTourOffer')[0].arguments
+    const pause = offerPause()
+    const paused = pause?.initializer
 
+    expect(paused).toBeDefined()
+    if (pause === undefined || paused === undefined) return
     expect(whatsNewChecks(paused)).toHaveLength(1)
     // And the controller it asks is the one that draws the page, in the same component.
     const [controller] = declared('whatsNew')
     expect(controller?.initializer?.getText(source)).toMatch(
       /^createWhatsNewController\(/u,
     )
-    expect(enclosingFunction(callsTo('usePageTourOffer')[0])).toBe(
+    expect(enclosingFunction(pause)).toBe(
       controller === undefined
         ? 'no controller'
         : enclosingFunction(controller),
@@ -154,19 +173,36 @@ describe('while the plan layer is up', () => {
   })
 
   it("a tab's tour offer waits until the takeover has decided", () => {
-    const [, paused] = callsTo('usePageTourOffer')[0].arguments
+    const paused = offerPause()?.initializer
 
-    expect(paused.getText(source)).toMatch(/!takeoverDecided\(\)/u)
+    expect(paused?.getText(source)).toMatch(/!takeoverDecided\(\)/u)
   })
 
   it('the takeover starts decided in the native build, which has none, in the same component as the offer', () => {
+    const pause = offerPause()
+
     expect(decided).toBeDefined()
     expect(decided?.initializer?.getText(source)).toBe(
       'createSignal(IS_NATIVE_BUILD)',
     )
-    expect(enclosingFunction(callsTo('usePageTourOffer')[0])).toBe(
+    expect(pause).toBeDefined()
+    if (pause === undefined) return
+    expect(enclosingFunction(pause)).toBe(
       decided === undefined ? 'no signal' : enclosingFunction(decided),
     )
+  })
+
+  it("the tour chip's host is drawn on the web only, as tours are", () => {
+    const [chipHost] = chipHosts
+    let condition: string | undefined
+    for (let up = chipHost?.parent; up !== undefined; up = up.parent) {
+      if (ts.isConditionalExpression(up)) {
+        condition = up.condition.getText(source)
+        break
+      }
+    }
+
+    expect(condition).toBe('IS_NATIVE_BUILD')
   })
 
   it('the deferred survey counts the layer as a surface it must not cover', () => {
@@ -188,6 +224,14 @@ describe('while the plan layer is up', () => {
     }
     expect(enclosingFunction(surfaces[0])).toBe(
       host === undefined ? 'no host' : enclosingFunction(host),
+    )
+  })
+
+  it('the deferred survey waits for a Merc tour as well', () => {
+    const [surfaces] = declared('tourSurfaceOpen')
+
+    expect(surfaces?.initializer?.getText(source)).toMatch(
+      /\bcoachActive\(\) !== null/u,
     )
   })
 })

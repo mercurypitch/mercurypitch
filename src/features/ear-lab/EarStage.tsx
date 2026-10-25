@@ -219,10 +219,9 @@ export function EarStage(props: EarStageProps): JSX.Element {
   const reserve = (): StageReserve | null => props.reserve?.() ?? null
   const keyHint = (): string | undefined => formatKeyHint(props.keys?.() ?? [])
 
-  // A first visit offers the bench's tour in a toast that stays ten
-  // seconds, and on a phone toasts sit at the foot of the screen, over the
-  // answer pads. The tour walks the bench, which the stage has replaced, so
-  // opening a drill retires the offer. The guide control still starts it.
+  // A first visit offers the bench's tour in a chip by the page title
+  // (TourChipHost). The tour walks the bench, which the stage has replaced,
+  // so opening a drill retires the offer. The guide control still starts it.
   onMount(() => removeNotificationsByChannel(TOUR_OFFER_CHANNEL))
 
   // Every keydown, registered or not, so a keyup can tell a key the
