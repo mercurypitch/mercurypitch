@@ -119,6 +119,24 @@ describe('a rung over its time slot', () => {
     },
   )
 
+  it('keeps its words inside the plot over a slot too narrow for them', async () => {
+    // Arrange: do's rung lit over the window's first eighth, about 31 px
+    const figure = ladder([{ c: 0, from: 0, to: 0.5, lit: true }])
+
+    // Act
+    const [{ chart, calls }] = await paintCharts(figure)
+
+    // Assert: the words start after the gutter's letters and end in the plot
+    const words = marksOf(calls).filter((m) => m.line.endsWith(' IN THE BAND'))
+    expect(words).toHaveLength(1)
+    expect(Math.min(...words[0].xs)).toBeGreaterThanOrEqual(
+      chart.pointOf(0, 0).x + 2,
+    )
+    expect(Math.max(...words[0].xs)).toBeLessThanOrEqual(
+      chart.pointOf(chart.window, 0).x,
+    )
+  })
+
   it('stands a staircase: each rung over its own slot, at its own note', async () => {
     // Arrange: the compact chart's do and so, over two slots
     const figure = ladder([

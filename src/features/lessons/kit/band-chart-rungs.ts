@@ -9,14 +9,14 @@
 // phrase read as a staircase of bands; one across the whole plot makes the
 // ladder read as rows. Each rung has its own glow while Merc's note sounds
 // and its own lit edge, "IN THE BAND", while the singer's line sits inside
-// it; a rung before its turn is drawn faint, and drawn in full while it
-// glows. A chart paints its scene's rungs in place of its one band when the
+// it, the words kept inside the plot over a slot too narrow for them; a
+// rung before its turn is drawn faint, and drawn in full while it glows. A chart paints its scene's rungs in place of its one band when the
 // page passes it `paintRungs` (kit/band-chart.ts), and one rung at 0 across
 // the plot paints exactly that band. A module of its own, so that a lesson
 // whose charts keep one band (Lessons 3 and 5) never downloads it.
 
 import type { BandSpec, ChartFrame } from './band-chart-draw'
-import { BAND_COLOR, drawBand, drawLitEdge, xOf, yOf } from './band-chart-draw'
+import { BAND_COLOR, drawBand, drawLitEdge, MONO, xOf, yOf, } from './band-chart-draw'
 import { HIT_TOLERANCE_CENTS } from './band-words'
 import { rgba } from './notes'
 
@@ -72,6 +72,39 @@ function drawFaint(f: ChartFrame, b: BandSpec): void {
   }
 }
 
+/** The words beside a lit edge, as the band's (`drawLitEdge`). */
+const IN_THE_BAND = 'IN THE BAND'
+
+/**
+ * A rung's lit edge over its slot, in mint, as the band's (`drawLitEdge`),
+ * and its words: they end at the slot's end where they would still start
+ * inside the plot, and further right where they would not, so that over a
+ * narrow slot they run neither into the gutter's letters nor off the canvas.
+ */
+function drawLitSlot(f: ChartFrame, b: BandSpec): void {
+  const { ctx } = f
+  const { x0 = f.x0, x1 = f.x1 } = b
+  const yTop = yOf(f, b.c + b.half)
+  ctx.strokeStyle = BAND_COLOR.mint
+  ctx.lineWidth = 2
+  for (const y of [yTop, yOf(f, b.c - b.half)]) {
+    ctx.beginPath()
+    ctx.moveTo(x0, y)
+    ctx.lineTo(x1, y)
+    ctx.stroke()
+  }
+  ctx.font = MONO
+  ctx.fillStyle = BAND_COLOR.mint
+  ctx.textAlign = 'right'
+  ctx.textBaseline = 'bottom'
+  const earliest = f.x0 + 2 + ctx.measureText(IN_THE_BAND).width
+  ctx.fillText(
+    IN_THE_BAND,
+    Math.min(f.x1, Math.max(x1 - 4, earliest)),
+    yTop - 3,
+  )
+}
+
 /** A faint rung shows faint only while it rests: one that glows is sounding. */
 const showsFaint = (r: Rung): boolean => r.faint === true && (r.glow ?? 0) <= 0
 
@@ -98,7 +131,10 @@ export function paintRungs(
     else drawBand(f, bands[i])
   })
   rungs.forEach((r, i) => {
-    if (r.lit === true) drawLitEdge(f, bands[i])
+    if (r.lit !== true) return
+    // a rung across the plot lights as the band does, its words at the end
+    if (r.from === undefined && r.to === undefined) drawLitEdge(f, bands[i])
+    else drawLitSlot(f, bands[i])
   })
   return true
 }

@@ -21,7 +21,8 @@ export const BAND_COLOR = {
   mint: '#80ffca',
 } as const
 
-const MONO = '500 12px "JetBrains Mono", monospace'
+/** The chart's words: the grid's, the marks', the readings'. */
+export const MONO = '500 12px "JetBrains Mono", monospace'
 
 /** One frame of a chart: its context, its plot and its two scales. */
 export interface ChartFrame {
