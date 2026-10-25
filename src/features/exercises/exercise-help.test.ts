@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { EXERCISE_HELP } from './exercise-help'
-import { EXERCISE_LONG_NOTE_LANTERN } from './types'
+import { EXERCISE_DRONE_INTONATION, EXERCISE_LONG_NOTE_LANTERN } from './types'
 
 describe('exercise help', () => {
   it('says what the Long note lantern counts: a vibrato costs steadiness, and the Accuracy Tier sets the top', () => {
@@ -16,5 +16,19 @@ describe('exercise help', () => {
     expect(body).toMatch(/Accuracy Tier/)
     expect(body).not.toMatch(/\b(Beginner|Pro)\b/)
     expect(body).not.toMatch(/—|calm|practise/i)
+  })
+
+  it("says Drone Intonation's targets are equal-tempered, and promises no pure or just tuning", () => {
+    // Every target is midiToFreq of the note, twelve equal steps to the
+    // octave (Lesson 10 FACTS 49), so the help promises no other tuning.
+    // Arrange
+    const help = EXERCISE_HELP[EXERCISE_DRONE_INTONATION]
+
+    // Act
+    const words = [help.summary, ...help.body].join(' ')
+
+    // Assert
+    expect(help.summary).toMatch(/equal-tempered/)
+    expect(words).not.toMatch(/just intonation|pure intonation|stop beating/i)
   })
 })

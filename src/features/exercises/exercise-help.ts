@@ -140,10 +140,10 @@ export const EXERCISE_HELP: Record<ExerciseType, ExerciseHelp> = {
   },
   [EXERCISE_DRONE_INTONATION]: {
     summary:
-      'Match and hold notes against a steady drone to train pure intonation.',
+      'Match and hold notes against a steady drone. Every target is equal-tempered.',
     body: [
-      'A "drone" is a constant background note. You sing notes against it and listen for when the two sounds lock together and stop beating.',
-      'Adjust tiny amounts until the sound feels smooth and "in tune" with the drone.',
+      'A "drone" is a constant background note. Each round names an interval, such as a minor 3rd, for you to sing against it and hold.',
+      'The targets use the same twelve equal steps to the octave as the rest of the app. Adjust tiny amounts until your note sits on the target.',
       'The exercise runs in short rounds and scores how cleanly your notes sit against the drone.',
     ],
   },
