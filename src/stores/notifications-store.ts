@@ -3,7 +3,7 @@
 // ============================================================
 //
 // Toasts are pushed from anywhere and rendered by Notifications.tsx. Use a
-// `channel` for any toast a user could trigger repeatedly (tour offers, save
+// `channel` for any toast a user could trigger repeatedly (save
 // confirmations): showing a channelled toast clears the previous one on that
 // channel, so a category can never stack up the screen.
 //
@@ -86,8 +86,18 @@ export interface Notification {
   unlockAt?: number
 }
 
-/** Shared channel for the one-at-a-time "take a tour" offer toasts. */
+/**
+ * The tour offer's channel. The offer is a chip by the page title now
+ * (TourChipHost), not a toast, so clearing this channel also counts in
+ * `tourOfferRetired`, which the chip host listens to: a drill or a stage that
+ * replaces what the offered tour walks still retires the offer.
+ */
 export const TOUR_OFFER_CHANNEL = 'page-tour-offer'
+
+const [offerRetired, setOfferRetired] = createSignal(0)
+
+/** How many times the tour offer was retired; see TOUR_OFFER_CHANNEL. */
+export const tourOfferRetired = offerRetired
 
 export const [notifications, setNotifications] = createSignal<Notification[]>(
   [],
@@ -472,6 +482,7 @@ export function removeNotification(id: number): void {
 
 /** Remove every notification currently on a given channel. */
 export function removeNotificationsByChannel(channel: string): void {
+  if (channel === TOUR_OFFER_CHANNEL) setOfferRetired((n) => n + 1)
   dropWaiting((n) => n.channel === channel)
   for (const stale of notifications().filter((n) => n.channel === channel))
     dropVisible(stale.id)

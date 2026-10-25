@@ -1,0 +1,79 @@
+/* ============================================================
+   TourChip: a page's tour, offered by its title
+   ============================================================
+
+   A pill in the page's flow, never over it. Its two parts are both 44px
+   tall, the line that starts the tour and the Not now beside it. It wears
+   the page's own surface and ink (the app's theme tokens), with fallbacks
+   for a document that does not set them, as Karaoke Night's does not. */
+
+.chip {
+  display: inline-flex;
+  align-items: center;
+  max-width: 100%;
+  border: 1px solid var(--border, #30363d);
+  border-radius: 999px;
+  background: var(--bg-secondary, #161b22);
+  color: var(--text-primary, #e6edf3);
+  font-size: 0.875rem;
+  line-height: 1.3;
+}
+
+.start,
+.dismiss {
+  min-height: 44px;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+}
+
+.start {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  padding: 0 4px 0 8px;
+  border-radius: 999px 0 0 999px;
+  text-align: left;
+}
+
+.merc {
+  flex: none;
+  width: 28px;
+  height: 28px;
+  object-fit: contain;
+}
+
+.dismiss {
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 44px;
+  padding: 0;
+  border-radius: 0 999px 999px 0;
+  color: var(--text-secondary, #a8b3bf);
+}
+
+.dismiss svg {
+  width: 16px;
+  height: 16px;
+}
+
+.start:focus-visible,
+.dismiss:focus-visible {
+  outline: 2px solid var(--accent, #58a6ff);
+  outline-offset: -2px;
+}
+
+@media (hover: hover) {
+  .start:hover span {
+    text-decoration: underline;
+    text-underline-offset: 3px;
+  }
+
+  .dismiss:hover {
+    color: var(--text-primary, #e6edf3);
+  }
+}

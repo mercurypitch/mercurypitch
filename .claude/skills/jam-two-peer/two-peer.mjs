@@ -37,11 +37,9 @@ async function launch(name) {
   await ctx.addInitScript((line) => {
     localStorage.setItem('pitchperfect_welcome_version', '99.0.0')
     localStorage.setItem('pitchperfect_survey_dismissed', '1')
-    // Mark the Jam page tour as already offered. It auto-closes for a real
-    // user so it is not a bug, but it sits exactly over the header's icon
-    // controls -- clicking it away afterwards is unreliable, and any
-    // screenshot of the mic/camera/leave buttons photographs the popup
-    // instead. usePageTourOffer reads this key and stays quiet.
+    // Mark the Jam page tour as already offered, so no tour chip sits above
+    // the room in the shots and moves the header's mic/camera/leave buttons
+    // down. TourChipHost reads this key and stays quiet.
     localStorage.setItem('pitchperfect_page_tour_offered_jam', 'true')
     localStorage.setItem('pitchperfect_whats_new_seen_v2', line)
   }, RELEASE_LINE)

@@ -1053,7 +1053,7 @@ export const PRACTICE_MODES_TOUR_STEPS: WalkthroughStep[] = [
 // ── Per-page spotlight tours ─────────────────────────────────────────
 // Page-scoped tours that target stable [data-tour="<page>.<thing>"] hooks
 // (decoupled from CSS/test ids so refactors don't break them). Started via
-// startPageTour(tab); offered per page by usePageTourOffer.
+// startPageTour(tab); offered per page by TourChipHost.
 
 const GUITAR_TOUR_STEPS: WalkthroughStep[] = [
   {

@@ -94,14 +94,26 @@ function givenToMount(name: string): string {
   return given.expression.getText(source)
 }
 
-/** What App holds the tour offer back for: the second argument of its one `usePageTourOffer`. */
+/** What App holds the tour offer back for: the `const` its one `<TourChipHost>` is handed as `paused`. */
 function offerPause(): string {
-  const [call] = nodes.filter(
-    (node): node is ts.CallExpression =>
-      ts.isCallExpression(node) &&
-      node.expression.getText(source) === 'usePageTourOffer',
-  )
-  return call.arguments[1].getText(source)
+  const attribute = nodes
+    .filter(
+      (node): node is ts.JsxSelfClosingElement =>
+        ts.isJsxSelfClosingElement(node) &&
+        node.tagName.getText(source) === 'TourChipHost',
+    )
+    .flatMap((host) => host.attributes.properties.filter(ts.isJsxAttribute))
+    .find((candidate) => candidate.name.getText(source) === 'paused')
+  const given = attribute?.initializer
+  if (
+    given === undefined ||
+    !ts.isJsxExpression(given) ||
+    given.expression === undefined ||
+    !ts.isIdentifier(given.expression)
+  ) {
+    throw new Error('App.tsx does not hand the chip host a named "paused"')
+  }
+  return initializerOf(given.expression.text)
 }
 
 /** Runs a piece of App's source, with the names it reads from the code around it. */

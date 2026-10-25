@@ -129,10 +129,10 @@ const SHOTS = [
 ]
 
 /**
- * Every tab offers its spotlight tour in a toast on first visit
- * (usePageTourOffer, keyed on the active tab), so the offer key is pre-set
- * for every tab id the app declares — otherwise the shot ships with a "Take a
- * quick tour" card on top, which is exactly what happened to v1 of these.
+ * Every tab offers its tour in a chip by the page title on first visit
+ * (TourChipHost, keyed on the active tab), so the offer key is pre-set for
+ * every tab id the app declares — otherwise the shot ships with a "Take a
+ * quick tour" chip on top, as v1 of these shipped with the toast before it.
  * Read from the source rather than listed here: a hand-kept list had already
  * fallen behind the tabs it was meant to cover.
  */

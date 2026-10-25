@@ -71,8 +71,8 @@ string[]`), expand an `aria-expanded` collapse toggle (`reveal`), and
   sections expose `data-collapsible="<storageKey>"` on their header for
   `reveal`. Never target hashed CSS-module classes.
 - **Entry points**: welcome screen → Guide dialog (`GuideSelection.tsx`),
-  sidebar Learn/Guide/Tour buttons, per-page offer toasts
-  (`src/features/tours/usePageTourOffer.ts`, `offerTourOnce.ts`).
+  sidebar Learn/Guide/Tour buttons, per-page offer chips
+  (`src/features/tours/TourChipHost.tsx`, `offerTourOnce.ts`).
 - **Survey interplay**: the onboarding survey defers while any tour surface
   is open (`tourSurfaceOpen` in `App.tsx`) — keep it that way.
 

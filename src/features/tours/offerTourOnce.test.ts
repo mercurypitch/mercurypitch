@@ -1,27 +1,28 @@
 // @vitest-environment jsdom
 // ============================================================
-// offerTourOnce — the contextual offer reports itself, once
+// offerTourOnce — the contextual offer asks for the chip, once
 // ============================================================
+//
+// The chip host records the offer and reports it as the chip shows
+// (TourChipHost.test.tsx); this holds what offerTourOnce asks for.
 
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import type { WalkthroughStep } from '@/stores'
+import type { TourChipRequest } from './TourChipHost'
 
 const store = vi.hoisted(() => ({
-  showActionNotification: vi.fn((..._args: unknown[]) => 7),
-  removeNotification: vi.fn(),
   startTour: vi.fn(),
-  trackTour: vi.fn(),
+  requestTourChip: vi.fn((_req: unknown) => undefined),
+  toursAvailable: true,
 }))
 vi.mock('@/stores', () => ({
-  showActionNotification: (...args: unknown[]) =>
-    store.showActionNotification(...args),
-  removeNotification: (id: number) => store.removeNotification(id),
   startTour: (...args: unknown[]) => store.startTour(...args),
-  TOUR_OFFER_CHANNEL: 'page-tour-offer',
-  TOURS_AVAILABLE: true,
+  get TOURS_AVAILABLE() {
+    return store.toursAvailable
+  },
 }))
-vi.mock('@/lib/guide-funnel', () => ({
-  trackTour: (...args: unknown[]) => store.trackTour(...args),
+vi.mock('./TourChipHost', () => ({
+  requestTourChip: (req: unknown) => store.requestTourChip(req),
 }))
 
 import { offerTourOnce } from './offerTourOnce'
@@ -30,31 +31,48 @@ const STEPS: WalkthroughStep[] = [
   { title: 'One', description: 'A step.', targetSelector: 'body' },
 ]
 
+const asked = (): TourChipRequest =>
+  store.requestTourChip.mock.calls[0][0] as TourChipRequest
+
 describe('offerTourOnce', () => {
   beforeEach(() => {
     localStorage.clear()
-    for (const fn of Object.values(store)) fn.mockClear()
+    store.startTour.mockClear()
+    store.requestTourChip.mockClear()
+    store.toursAvailable = true
   })
 
-  it('reports the offer with the key it was given when the toast shows', () => {
+  it('asks for the chip with its line, its key and where to record it', () => {
     offerTourOnce('offered-key', 'New here?', STEPS, 'mixer')
-    expect(store.showActionNotification).toHaveBeenCalledTimes(1)
-    expect(store.trackTour.mock.calls).toEqual([['tour_offer', 'mixer']])
+
+    expect(store.requestTourChip).toHaveBeenCalledTimes(1)
+    expect(asked()).toMatchObject({
+      key: 'mixer',
+      storageKey: 'offered-key',
+      line: 'New here?',
+    })
+    // The chip host records it as the chip shows, not before.
+    expect(localStorage.getItem('offered-key')).toBe(null)
   })
 
-  it('sends nothing for an offer that was already made', () => {
+  it('asks nothing for an offer that was already made', () => {
     localStorage.setItem('offered-key', 'true')
     offerTourOnce('offered-key', 'New here?', STEPS, 'mixer')
-    expect(store.showActionNotification).not.toHaveBeenCalled()
-    expect(store.trackTour).not.toHaveBeenCalled()
+
+    expect(store.requestTourChip).not.toHaveBeenCalled()
   })
 
-  it('starts the tour under the same key when Start tour is clicked', () => {
+  it('asks nothing in a build with no spotlight tours', () => {
+    store.toursAvailable = false
     offerTourOnce('offered-key', 'New here?', STEPS, 'mixer')
-    const action = store.showActionNotification.mock.calls[0][2] as {
-      onClick: () => void
-    }
-    action.onClick()
+
+    expect(store.requestTourChip).not.toHaveBeenCalled()
+  })
+
+  it('starts the tour under the same key when the chip is tapped', () => {
+    offerTourOnce('offered-key', 'New here?', STEPS, 'mixer')
+    asked().onStart()
+
     expect(store.startTour.mock.calls).toEqual([[STEPS, 'mixer']])
   })
 })
