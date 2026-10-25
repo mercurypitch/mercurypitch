@@ -170,3 +170,11 @@ Note: the lanes' memory gate read a stale cgroup path after the 21:00 restart (f
 - No v0.9.22 tag. Held PRs: no new activity. merge-tree against main cddefd571: all clean except #1213 (INDEX.md only, after #1210).
 - #1213 rebased in kit-movedo: a94b555ad (9 feature patch-ids unchanged; map commit regenerated, same two lines). Gates arp/rebase-1027/gates.sh running; then push with lease over 86babb444 and check the body's base line.
 - L9 run 3 brief written (l9/BRIEF-page-3.md): Steps 1-5 (B7, B8a, B8b) + map; starts after run 2's specs pass and the branch is pushed. Rate limit allowed (resets 02:50 UTC).
+
+## 22:23 — L9 run 2 done; run 3 started
+- Run 2 gates all pass: check 0/11 clean, unit 160/1739, scripts 255, pr:validate, metrics, index, plan-cites 157, build + first paint (L9 120,479 B / CSS 85,435), links = trial (L1-L8 base order), drafts, no-console, 15 specs 277/277 (7.0 min, retries 0), guide heights L4 300 / L6 240. Tag lead/l9-page2-gated; origin feat/lesson-09-page 5fe88a723 -> 019bd5c93 (fast-forward, leased).
+- L9 run 3 builder launched at xhigh (rate limit allowed): Steps 1-5 + map, brief l9/BRIEF-page-3.md, notes in l9/page-3/. SLOTS: (1) L9 run 3, (2) free.
+
+## 22:42 — #1213 rebased and pushed
+- Gates on a94b555ad (main cddefd571): check 0/11 clean, unit 37 files / 363 tests, scripts 255, pr:validate, metrics, index. Pushed with lease over 86babb444; body Checks section restated (new base, prior results kept as "previous head"), read back intact, no footer. CI re-running on a94b555ad.
+- Held PRs otherwise clean against main (merge-tree 22:18).
