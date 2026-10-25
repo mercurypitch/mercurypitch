@@ -7,6 +7,7 @@
 import type { JSX } from 'solid-js'
 import { Show } from 'solid-js'
 import { X } from '@/components/icons'
+import { isolateKeys } from '@/lib/keyboard-isolation'
 import { useFocusTrap } from '@/lib/use-focus-trap'
 import roomStyles from './GuitarNightApp.module.css'
 import styles from './GuitarNightMixControls.module.css'
@@ -110,7 +111,7 @@ export function GuitarNightMixerDialog(props: GuitarNightMixerDialogProps) {
     isOpen: () => props.isOpen,
     onClose: () => props.onClose(),
     initialFocus: () => props.initialFocus?.() ?? closeButton,
-    isolateKeyboard: true,
+    isolateKeyboard: isolateKeys,
   })
 
   return (

@@ -11,6 +11,7 @@
 import type { Component } from 'solid-js'
 import { createSignal, createUniqueId, onCleanup, onMount, Show, } from 'solid-js'
 import { submitSurvey } from '@/db/services/survey-service'
+import { isolateKeys } from '@/lib/keyboard-isolation'
 import { skipArmSecondsLeft, SURVEY_SKIP_ARM_MS, surveyHasContent, } from '@/lib/survey-timing'
 import { useFocusTrap } from '@/lib/use-focus-trap'
 import { showNotification } from '@/stores/notifications-store'
@@ -62,7 +63,7 @@ const UserSurveyModal: Component<Props> = (props) => {
   let heading: HTMLHeadingElement | undefined
   useFocusTrap(() => dialog, {
     isOpen: () => true,
-    isolateKeyboard: true,
+    isolateKeyboard: isolateKeys,
     onClose: () => {
       if (dismissable()) props.onClose()
     },
@@ -114,7 +115,7 @@ const UserSurveyModal: Component<Props> = (props) => {
       role="dialog"
       aria-modal="true"
       // Takes the focus from a press on its words, never from Tab, so the keys
-      // after the press stay in it (use-focus-trap.ts).
+      // after the press stay in it (keyboard-isolation.ts).
       tabIndex={-1}
       aria-label={selfOpened() ? 'Share feedback' : 'Quick survey'}
       data-testid="user-survey-modal"

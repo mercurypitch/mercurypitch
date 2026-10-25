@@ -4,6 +4,7 @@ import type { Accessor } from 'solid-js'
 import { createSignal, Show } from 'solid-js'
 import { afterEach, describe, expect, it } from 'vitest'
 import { APP_KEYS, overheard, stopOverhearing } from '@/tests/utils/trap-keys'
+import { isolateKeys } from './keyboard-isolation'
 import { useFocusTrap } from './use-focus-trap'
 
 function DisclosureDialog() {
@@ -96,7 +97,10 @@ describe('useFocusTrap native disclosures', () => {
 // from there would play the tab behind, so the trap takes that focus back.
 function KeptDialog(props: { field: Accessor<boolean> }) {
   let dialog: HTMLDivElement | undefined
-  useFocusTrap(() => dialog, { isOpen: () => true, isolateKeyboard: true })
+  useFocusTrap(() => dialog, {
+    isOpen: () => true,
+    isolateKeyboard: isolateKeys,
+  })
   return (
     <div ref={dialog} role="dialog" aria-modal="true" tabindex="-1">
       <Show when={props.field()}>
@@ -182,5 +186,119 @@ describe('useFocusTrap keeping the keys', () => {
     await Promise.resolve()
 
     expect(document.activeElement).toBe(document.body)
+  })
+})
+
+/** Lets the traps' queued focus moves and the observers' deliveries run. */
+async function settle(): Promise<void> {
+  for (let i = 0; i < 3; i++) await Promise.resolve()
+}
+
+// Two traps open at once. A focus that falls belongs to the dialog that held
+// it, never to the one beneath, nested or not.
+describe('useFocusTrap keeping the keys under another dialog', () => {
+  afterEach(cleanup)
+
+  it('leaves a fallen focus to the dialog nested in it that held it', async () => {
+    const [field, setField] = createSignal(true)
+
+    function Nested() {
+      let outer: HTMLDivElement | undefined
+      let inner: HTMLDivElement | undefined
+      useFocusTrap(() => outer, {
+        isOpen: () => true,
+        isolateKeyboard: isolateKeys,
+      })
+      useFocusTrap(() => inner, {
+        isOpen: () => true,
+        isolateKeyboard: isolateKeys,
+      })
+      return (
+        <div
+          ref={outer}
+          role="dialog"
+          aria-modal="true"
+          aria-label="Outer"
+          tabindex="-1"
+        >
+          <button type="button">Outer button</button>
+          <div
+            ref={inner}
+            role="dialog"
+            aria-modal="true"
+            aria-label="Inner"
+            tabindex="-1"
+          >
+            <Show when={field()}>
+              <input aria-label="Inner field" />
+            </Show>
+          </div>
+        </div>
+      )
+    }
+    render(() => <Nested />)
+    await settle()
+    expect(screen.getByRole('textbox', { name: 'Inner field' })).toHaveFocus()
+
+    setField(false)
+    await settle()
+
+    expect(screen.getByRole('dialog', { name: 'Inner' })).toHaveFocus()
+  })
+
+  it('leaves a focus that falls from a dialog over it alone, and takes it back once that one has gone', async () => {
+    const [overOpen, setOverOpen] = createSignal(true)
+    const [note, setNote] = createSignal(false)
+
+    function Stacked() {
+      let under: HTMLDivElement | undefined
+      let over: HTMLDivElement | undefined
+      useFocusTrap(() => under, {
+        isOpen: () => true,
+        isolateKeyboard: isolateKeys,
+      })
+      useFocusTrap(() => over, { isOpen: overOpen })
+      return (
+        <>
+          <div
+            ref={under}
+            role="dialog"
+            aria-modal="true"
+            aria-label="Under"
+            tabindex="-1"
+          >
+            <button type="button">Under button</button>
+            <Show when={note()}>
+              <p>Saved</p>
+            </Show>
+          </div>
+          <Show when={overOpen()}>
+            <div
+              ref={over}
+              role="dialog"
+              aria-modal="true"
+              aria-label="Over"
+              tabindex="-1"
+            >
+              <input aria-label="Over field" />
+            </div>
+          </Show>
+        </>
+      )
+    }
+    render(() => <Stacked />)
+    await settle()
+    const field = screen.getByRole('textbox', { name: 'Over field' })
+    expect(field).toHaveFocus()
+
+    field.blur()
+    setNote(true)
+    await settle()
+    expect.soft(document.activeElement).toBe(document.body)
+
+    setOverOpen(false)
+    setNote(false)
+    await settle()
+    expect(screen.getByRole('dialog', { name: 'Under' })).toHaveFocus()
   })
 })

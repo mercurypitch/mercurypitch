@@ -4,6 +4,7 @@ import { Portal } from 'solid-js/web'
 import { FileUpload, X } from '@/components/icons'
 import { AUDIO_UPLOAD_ACCEPT, formatFileSize, } from '@/lib/audio-upload-contract'
 import { FILE_PICKER_UNAVAILABLE_MESSAGE, openFilePicker, } from '@/lib/file-picker'
+import { isolateKeys } from '@/lib/keyboard-isolation'
 import { useFocusTrap } from '@/lib/use-focus-trap'
 import { NIGHT_MUSIC_FORMATS } from './night-music-import'
 import styles from './NightMusicImport.module.css'
@@ -26,7 +27,7 @@ export function NightMusicImport(props: {
   useFocusTrap(() => panel, {
     isOpen: () => props.controller.isOpen(),
     onClose: () => props.controller.close(),
-    isolateKeyboard: true,
+    isolateKeyboard: isolateKeys,
   })
   const choose = () => {
     if (input)

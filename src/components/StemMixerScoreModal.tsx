@@ -9,6 +9,7 @@ import type { Component, JSX } from 'solid-js'
 import type { Accessor } from 'solid-js'
 import { createEffect, Show } from 'solid-js'
 import { Portal } from 'solid-js/web'
+import { isolateKeys } from '@/lib/keyboard-isolation'
 import type { MicScore } from '@/lib/mic-scoring'
 import { hasJudgedComparisons } from '@/lib/mic-scoring'
 import { useFocusTrap } from '@/lib/use-focus-trap'
@@ -56,7 +57,7 @@ export const StemMixerScoreModal: Component<StemMixerScoreModalProps> = (
   useFocusTrap(() => dialogRef, {
     isOpen,
     onClose: requestClose,
-    isolateKeyboard: true,
+    isolateKeyboard: isolateKeys,
   })
 
   createEffect(() => {

@@ -24,6 +24,7 @@ import { Portal } from 'solid-js/web'
 import confirmStyles from '@/components/ConfirmDialog.module.css'
 import { createPortalSkinBridge } from '@/components/portal-skin'
 import { formatKeyShift } from '@/lib/key-shift/key-shift'
+import { isolateKeys } from '@/lib/keyboard-isolation'
 import { IS_NATIVE_BUILD } from '@/lib/native-build'
 import { midiToNoteNameOctave } from '@/lib/note-utils'
 import { useFocusTrap } from '@/lib/use-focus-trap'
@@ -69,7 +70,7 @@ export const VoiceTypePicker: Component<VoiceTypePickerProps> = (props) => {
   useFocusTrap(() => dialogRef, {
     isOpen: () => props.open,
     onClose: () => props.onCancel(),
-    isolateKeyboard: true,
+    isolateKeyboard: isolateKeys,
   })
 
   return (

@@ -68,6 +68,7 @@ import { Match, Show, Switch, untrack } from 'solid-js'
 import { MercPresence } from '@/components/room-kit/MercPresence'
 import { TAB_HOME } from '@/features/tabs/constants'
 import { navigateTo } from '@/lib/hash-router'
+import { isolateKeys } from '@/lib/keyboard-isolation'
 import { useFocusTrap } from '@/lib/use-focus-trap'
 import { setActiveTab } from '@/stores/ui-store'
 import { enterStop } from './enter-stop'
@@ -93,7 +94,7 @@ export function PlanLayer(props: PlanLayerProps): JSX.Element {
   let layer: HTMLDivElement | undefined
   useFocusTrap(() => layer, {
     isOpen: () => true,
-    isolateKeyboard: true,
+    isolateKeyboard: isolateKeys,
     initialFocus: () => layer?.querySelector<HTMLElement>('h1') ?? undefined,
   })
 

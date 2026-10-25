@@ -2,7 +2,7 @@
 // Inside a focus trap that isolates the keyboard, key handlers are native
 // ============================================================
 //
-// useFocusTrap({ isolateKeyboard: true }) stops every keydown at the trap's
+// useFocusTrap({ isolateKeyboard: isolateKeys }) stops every keydown at the trap's
 // root, so none reaches the document. Solid binds `onKeyDown` and `onKeyUp`
 // (in any letter case) through one listener on the document, which a stopped
 // key never reaches: a handler written that way inside such a trap goes
@@ -22,7 +22,7 @@
 // stricter. It reads the files from the repo this file sits in, so a copy of
 // the file in <tree>/src/tests/ scans <tree>.
 //
-// HOSTS is every file in src that passes `isolateKeyboard: true` (ruling R72).
+// HOSTS is every file in src that passes `isolateKeyboard: isolateKeys` (ruling R72).
 // One case fails when a file passes the option and is missing from HOSTS, and
 // when an entry no longer passes it, so a new host cannot be forgotten.
 
@@ -34,7 +34,7 @@ import { describe, expect, it } from 'vitest'
 const ROOT = resolve(__dirname, '../..')
 
 /**
- * Every host: a file that passes `isolateKeyboard: true` to its focus trap,
+ * Every host: a file that passes `isolateKeyboard: isolateKeys` to its focus trap,
  * each with files the walk from it must reach, so that a resolver which stops
  * following imports fails here and does not pass on nothing.
  */
@@ -109,8 +109,8 @@ const HOSTS = [
  */
 const KEY_PROP = /\son(?:keydown|keyup|keypress)\s*=\s*\{/gi
 
-/** A host's call to the focus trap: `isolateKeyboard: true`. A comment that says so is a host to the finder too. */
-const PASSES_ISOLATE_KEYBOARD = /\bisolateKeyboard\s*:\s*true\b/
+/** A host's call to the focus trap: `isolateKeyboard: isolateKeys`. A comment that says so is a host to the finder too. */
+const PASSES_ISOLATE_KEYBOARD = /\bisolateKeyboard\s*:\s*isolateKeys\b/
 
 const SOURCE_EXTENSIONS = ['.ts', '.tsx', '.js', '.jsx', '.mjs']
 
@@ -202,14 +202,14 @@ describe('inside a focus trap that isolates the keyboard', () => {
     },
   )
 
-  it('has as its hosts exactly the files in src that pass isolateKeyboard: true', () => {
+  it('has as its hosts exactly the files in src that pass isolateKeyboard: isolateKeys', () => {
     const passing = sourceFiles(join(ROOT, 'src')).filter((file) =>
       PASSES_ISOLATE_KEYBOARD.test(read(file)),
     )
 
     expect(
       passing,
-      'HOSTS and the files in src that pass isolateKeyboard: true differ',
+      'HOSTS and the files in src that pass isolateKeyboard: isolateKeys differ',
     ).toEqual(HOSTS.map((host) => host.entry).sort())
   })
 

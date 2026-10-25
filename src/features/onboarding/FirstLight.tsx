@@ -23,6 +23,7 @@ import { PLAN_DESTS } from '@/features/plan/build-plan'
 import { markPlanShown, planRecord } from '@/features/plan/plan-store'
 import type { ActiveTab } from '@/features/tabs/constants'
 import { openVoiceConstellation } from '@/features/voice-constellation/navigation'
+import { isolateKeys } from '@/lib/keyboard-isolation'
 import { giftOfferLine } from '@/lib/launch-gift-copy'
 import type { F0Frame, MirrorResult } from '@/lib/mirror/metrics'
 import { summarize } from '@/lib/mirror/metrics'
@@ -519,7 +520,7 @@ export const FirstLight: Component<FirstLightProps> = (props) => {
     // toggle the microphone. A stopped keydown never reaches Solid's delegated
     // listeners (on the document), so key handlers in here are native
     // (`on:keydown`), as the Map's tour link is.
-    isolateKeyboard: true,
+    isolateKeyboard: isolateKeys,
     initialFocus: () => frameRef,
   })
 
