@@ -171,6 +171,17 @@ export function arpeggioRunHeard(
   return (metrics?.notesSung ?? 0) > 0
 }
 
+/**
+ * Whether the run was stopped before its end. That is no result either:
+ * graded on the notes it reached, one good note and Stop would record 100.
+ * It is not recorded (REQ-GVC-031: a partial run, never a false result).
+ */
+export function arpeggioRunStopped(
+  metrics: Readonly<Record<string, number>> | undefined,
+): boolean {
+  return (metrics?.stoppedEarly ?? 0) > 0
+}
+
 function buildArpeggioNotes(
   baseMidi: number,
   arpeggioType: ArpeggioType,
@@ -201,6 +212,7 @@ export function useArpeggioJumperController(
   let sungNotes: SungNote[] = []
   let mode: ArpeggioMode = 'steps'
   let timings = arpeggioTimings(5)
+  let stoppedEarly = false
   const timers = new Set<ReturnType<typeof setTimeout>>()
   let _cancelled = false
   // Bumped by every setArpeggio. An await begun in an earlier run (the echo
@@ -242,6 +254,7 @@ export function useArpeggioJumperController(
   ): void {
     run++
     _cancelled = false
+    stoppedEarly = false
     arpeggioNotes = buildArpeggioNotes(baseMidi, arpeggioType, direction)
     noteIndex = 0
     sungNotes = []
@@ -394,6 +407,10 @@ export function useArpeggioJumperController(
 
   function computeResult(): ExerciseResult {
     const echoMode = mode === 'echo' ? 1 : 0
+    // Only a stopped run carries the flag, so a recorded run never does.
+    const stopped: Record<string, number> = stoppedEarly
+      ? { stoppedEarly: 1 }
+      : {}
     if (sungNotes.length === 0) {
       return {
         type: EXERCISE_ARPEGGIO_JUMPER,
@@ -405,6 +422,7 @@ export function useArpeggioJumperController(
           notesSung: 0,
           octaveOffset: 0,
           echoMode,
+          ...stopped,
           ...EMPTY_NOTE_TALLY,
         },
         completedAt: Date.now(),
@@ -428,6 +446,7 @@ export function useArpeggioJumperController(
         notesSung: deviations.filter((d) => d !== null).length,
         octaveOffset,
         echoMode,
+        ...stopped,
         // Counted in the same octave as the score.
         ...tallyFromDeviations(deviations),
       },
@@ -438,6 +457,7 @@ export function useArpeggioJumperController(
   function stopArpeggio(): void {
     _cancelled = true
     clearTimers()
+    stoppedEarly = sungNotes.length < arpeggioNotes.length
     base._setRunning(false)
     finish()
   }

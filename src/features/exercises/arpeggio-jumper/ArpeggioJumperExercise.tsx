@@ -1,6 +1,6 @@
 import type { Component } from 'solid-js'
 import { createEffect, createSignal, onCleanup, onMount, untrack, } from 'solid-js'
-import { For } from 'solid-js'
+import { For, Show } from 'solid-js'
 import { IconLayers, IconMic, IconMusic } from '@/components/exercise-icons'
 import { NoteDial } from '@/components/NoteDial'
 import { updateDifficultyFromEma } from '@/features/practice-intelligence/difficulty-store'
@@ -17,7 +17,7 @@ import { ExerciseShell } from '../ExerciseShell'
 import { EXERCISE_ARPEGGIO_JUMPER } from '../types'
 import { useBaseExercise } from '../use-base-exercise'
 import type { ArpeggioMode } from './use-arpeggio-jumper-controller'
-import { useArpeggioJumperController } from './use-arpeggio-jumper-controller'
+import { arpeggioRunHeard, arpeggioRunStopped, octaveLine, useArpeggioJumperController, } from './use-arpeggio-jumper-controller'
 
 interface ArpeggioJumperExerciseProps {
   audioEngine: AudioEngine
@@ -94,8 +94,24 @@ const ArpeggioJumperExercise: Component<ArpeggioJumperExerciseProps> = (
     }
   })
 
-  createEffect(() => {
+  // A run in which no note was voiced is no result, not a low one, and nor
+  // is a run stopped before its end (REQ-GVC-031): neither is recorded or
+  // moves the level, and no grade is shown for it.
+  const scoredRun = () => {
     const r = base.result()
+    return r !== null &&
+      arpeggioRunHeard(r.metrics) &&
+      !arpeggioRunStopped(r.metrics)
+      ? r
+      : null
+  }
+  const unscoredRun = () =>
+    base.state().status === 'complete' &&
+    base.result() !== null &&
+    scoredRun() === null
+
+  createEffect(() => {
+    const r = scoredRun()
     if (r && r.type === 'arpeggio-jumper') {
       untrack(() => {
         recordExerciseResult({
@@ -115,6 +131,9 @@ const ArpeggioJumperExercise: Component<ArpeggioJumperExerciseProps> = (
   const noteIndex = () => base.state().metrics.noteIndex ?? 0
   const arpeggioLength = () => base.state().metrics.arpeggioLength ?? 4
   const lastNoteScore = () => base.state().metrics.lastNoteScore ?? 0
+  const resultMetric = (key: string) => base.result()?.metrics[key] ?? 0
+  const notesNotSung = () =>
+    resultMetric('notesTotal') - resultMetric('notesSung')
 
   const pitch = () => base.currentPitch()
   const currentCents = () => {
@@ -132,13 +151,20 @@ const ArpeggioJumperExercise: Component<ArpeggioJumperExerciseProps> = (
       title="Arpeggio Jumper"
       status={() => base.state().status}
       currentScore={() => base.state().currentScore}
-      resultScore={() => base.result()?.score ?? null}
+      resultScore={() => scoredRun()?.score ?? null}
       voiceCapture={base.voiceCapture}
       error={() => base.error()}
       onBack={() => props.onBack?.()}
       icon={<IconLayers size={20} />}
       idlePlaceholder={
         <div class="exercise-idle-placeholder">
+          <Show when={unscoredRun()}>
+            <p class="arpeggio-not-scored" role="status">
+              {arpeggioRunStopped(base.result()?.metrics)
+                ? 'You stopped before the end, so this run was not scored.'
+                : "We didn't hear any singing, so this run was not scored. Check the microphone, then try again."}
+            </p>
+          </Show>
           <p>
             {mode() === 'echo'
               ? 'Hear the whole arpeggio, then sing it back from memory — train your inner ear, not just your pitch.'
@@ -294,9 +320,14 @@ const ArpeggioJumperExercise: Component<ArpeggioJumperExerciseProps> = (
       }
       resultSummary={
         <>
-          Avg Accuracy: {base.result()?.metrics.avgAccuracy}% · Best Note:{' '}
-          {base.result()?.metrics.bestNote}% · Notes:{' '}
-          {base.result()?.metrics.notesCompleted}
+          {/* The grade is the note average, so it is not repeated here; the
+              best note is praise, outside the grade. */}
+          Best note: {resultMetric('bestNote')}% · Landed:{' '}
+          {resultMetric('notesHit')} of {resultMetric('notesTotal')}
+          <Show when={notesNotSung() > 0}> · Not sung: {notesNotSung()}</Show>
+          <Show when={octaveLine(base.result()?.metrics.octaveOffset)}>
+            {(line) => <span class="arpeggio-octave-line">{line()}</span>}
+          </Show>
         </>
       }
       onTryAgain={() => {

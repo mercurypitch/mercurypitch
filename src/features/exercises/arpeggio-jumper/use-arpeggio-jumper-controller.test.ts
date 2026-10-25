@@ -20,7 +20,7 @@ import type { ExerciseResult } from '../types'
 import { EXERCISE_ARPEGGIO_JUMPER } from '../types'
 import type { BaseExerciseController } from '../use-base-exercise'
 import type { ArpeggioMode, SungNote } from './use-arpeggio-jumper-controller'
-import { arpeggioRunHeard, arpeggioTimings, bestOctaveOffset, MIN_SINGING_MS, octaveLine, useArpeggioJumperController, } from './use-arpeggio-jumper-controller'
+import { arpeggioRunHeard, arpeggioRunStopped, arpeggioTimings, bestOctaveOffset, MIN_SINGING_MS, octaveLine, useArpeggioJumperController, } from './use-arpeggio-jumper-controller'
 
 function freqToMidi(freq: number): number {
   return 12 * Math.log2(freq / 440) + 69
@@ -106,6 +106,8 @@ interface RunOptions {
   latencyMs?: number
   /** The speaker's tone reaches the microphone (laptop speakers). */
   speakerBleed?: boolean
+  /** Press Stop at this moment of the run clock (ms). */
+  stopAtMs?: number
 }
 
 interface Run {
@@ -186,6 +188,10 @@ async function runArpeggio(options: RunOptions): Promise<Run> {
   ctrl.startArpeggio()
 
   for (let spent = 0; result === null && spent < 60_000; spent += FRAME_MS) {
+    if (options.stopAtMs !== undefined && now() >= options.stopAtMs) {
+      ctrl.stopArpeggio()
+      break
+    }
     const sungAt = now() - latency
     const hz =
       options.voice(sungAt, screen) ??
@@ -342,6 +348,48 @@ describe('the grade is the mean of the note scores', () => {
     expect(result.score).toBe(78)
     expect(result.score).toBe(result.metrics.avgAccuracy)
     expect(live[live.length - 1]).toBe(78)
+  })
+})
+
+describe('a run stopped before its end is not scored', () => {
+  beforeEach(() => {
+    vi.useFakeTimers()
+  })
+  afterEach(() => {
+    vi.useRealTimers()
+  })
+
+  it('marks a run stopped after one flawless note, which would read 100', async () => {
+    // Arrange: Stop while the second tone plays, after the root's window
+    // has been read.
+    const { toneMs, windowMs } = arpeggioTimings(5)
+    const rootRead = toneMs + 250 + windowMs
+
+    // Act
+    const { result } = await runArpeggio({
+      voice: onCue(),
+      stopAtMs: rootRead + 600,
+    })
+
+    // Assert: graded on the one note it reached, it is no result.
+    expect(result.metrics).toMatchObject({ notesSung: 1, stoppedEarly: 1 })
+    expect(result.score).toBe(100)
+    expect(arpeggioRunHeard(result.metrics)).toBe(true)
+    expect(arpeggioRunStopped(result.metrics)).toBe(true)
+  })
+
+  it('marks a run stopped before a note was sung', async () => {
+    const { result } = await runArpeggio({ voice: onCue(), stopAtMs: 300 })
+
+    expect(result.metrics).toMatchObject({ notesSung: 0, stoppedEarly: 1 })
+    expect(arpeggioRunStopped(result.metrics)).toBe(true)
+  })
+
+  it('leaves a run that reaches its end unmarked', async () => {
+    const { result } = await runArpeggio({ voice: onCue(), mode: 'echo' })
+
+    expect(result.metrics).not.toHaveProperty('stoppedEarly')
+    expect(arpeggioRunStopped(result.metrics)).toBe(false)
   })
 })
 
