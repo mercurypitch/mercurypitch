@@ -99,10 +99,10 @@ FACTS 5a). Each section's heading, and the line above it, are in LESSON.md ("Sec
 
 1. **Masthead**: Lesson 4's (wordmark, "Season 1 · Lesson 10", anchors Lesson, Sing and Explorer,
    the Sound toggle off by default, Pause animations with its reduced-motion lock), through
-   `initMasthead` (`src/features/lessons/kit/page-chrome.ts:119-150`) with Lesson 4's map of
+   `initMasthead` (`src/features/lessons/kit/page-chrome.ts:122-154`) with Lesson 4's map of
    sections and `{ lesson: 10, deck }` (`lesson-04/main.ts:99-110`), which draws the lesson menu,
    remembers the steps the viewer reaches and first settles the page's links to other lessons for
-   the state it was served with (`followPageState`, `src/features/lessons/kit/page-chrome.ts:123`).
+   the state it was served with (`followPageState`, `src/features/lessons/kit/page-chrome.ts:126`).
 2. **Hero, with the cold open**, laid out as Lesson 2's (`learn/02.html:329-502`). Its copy holds
    the kicker, the hook question as the title (the `<h1 class="hook" id="hook">` every lesson page
    has, `learn/04.html:328`), the meta as three chips, the promise and the sound gate from
@@ -1107,7 +1107,7 @@ words only. The page stores the quiz seeds and records (`fyp-l10-recall-seed`, `
 `fyp-voice` (`voice-choice.ts:20`), the masthead's Pause animations choice, `fyp-motion`
 (`src/features/lessons/kit/motion-switch.ts:12`), and the steps the viewer reached, the kit's
 `fyp-pos` (`src/features/lessons/kit/position.ts:20`), which `initMasthead` keeps
-(`page-chrome.ts:119-150`); nothing from the toys, the ear game or Sing it but the voice.
+(`page-chrome.ts:122-154`); nothing from the toys, the ear game or Sing it but the voice.
 
 Page QA before publishing (PRODUCTION-PIPELINE § 5) adds, for this page, every check against a local
 or dev build, never production:

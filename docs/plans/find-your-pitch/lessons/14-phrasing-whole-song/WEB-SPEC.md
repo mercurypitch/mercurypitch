@@ -83,7 +83,7 @@ heading, and the line above it, are in LESSON.md ("Section headings").
 
 1. **Masthead**: Lesson 1's (wordmark, "Season 1 · Lesson 14", anchors Lesson, Sing and Explorer,
    the Sound toggle off by default, Pause animations with its reduced-motion lock), through
-   `initMasthead(sections, { lesson: 14, deck })` (`kit/page-chrome.ts:109-123`): before anything
+   `initMasthead(sections, { lesson: 14, deck })` (`kit/page-chrome.ts:110-126`): before anything
    else the page's links to other lessons follow the state it was served with (`followPageState`,
    `kit/page-state.ts:84-108`; Edge cases), then "Season 1 · Lesson 14" opens the lesson menu
    (`kit/lesson-menu.ts`), and the page's steps are remembered as the viewer moves through them
@@ -986,7 +986,7 @@ What the page does where nothing above says:
   publish order is a rule for whoever uses the console (the intro), so the page follows the state it
   is served with. The site worker, and then the masthead's `followPageState`, make every link to a
   lesson that is not live no link (`src/lesson-gate.ts:523-533`, `:547-567`;
-  `kit/page-state.ts:64-108`, called by `initMasthead`, `kit/page-chrome.ts:123`): each "After
+  `kit/page-state.ts:64-108`, called by `initMasthead`, `kit/page-chrome.ts:126`): each "After
   Lesson N" chip for such a lesson stays as a plain chip, and any other link keeps its words. The
   kit's quiz does the same for the recall's step links, which keep their words, "Try Lesson 5, Step
   1 again", with no link (`kit/quiz.ts:186-216`). Step 4's "as in Lesson 12" names a lesson that may

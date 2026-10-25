@@ -833,8 +833,9 @@ visually hidden word follows it, so a screen reader says "C sharp". The page sto
 and records (`fyp-l07-recall-seed`, `fyp-l07-recall-v1`, `fyp-l07-seed`, `fyp-l07-quiz-v1`),
 `fyp-done`, `fyp-voice`, the warm-up's Skip (`fyp-l07-warmup`) and the masthead's Pause animations
 choice, `fyp-motion` (`kit/motion-switch.ts:12`); through the kit, as every lesson page does, its
-memory of the furthest step, `fyp-pos` (`kit/position.ts:20`); and nothing from the take: no band,
-no note, no answer to "How did that feel?" and no ending.
+memory of the furthest step, `fyp-pos` (`kit/position.ts:20`), and its record of the welcome tour,
+`fyp-tour` (`kit/tour-gate.ts:24`); and nothing from the take: no band, no note, no answer to "How
+did that feel?" and no ending.
 
 Page QA before publishing (PRODUCTION-PIPELINE § 5) adds, for this page:
 
