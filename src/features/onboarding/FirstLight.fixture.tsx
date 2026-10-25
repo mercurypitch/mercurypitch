@@ -27,7 +27,7 @@ import { vi } from 'vitest'
 import type { FeaturedPromo } from '@/db/services/billing-service'
 import type * as OnboardingFunnelModule from '@/features/onboarding/funnel'
 import type * as GpuGateModule from '@/lib/merc/gpu-gate'
-import type { MirrorResult } from '@/lib/mirror/metrics'
+import type { F0Frame, MirrorResult } from '@/lib/mirror/metrics'
 import type { OpenResult, ProbeResult, VoiceSession } from '@/lib/voice-session'
 import type * as AppStoreModule from '@/stores/app-store'
 
@@ -43,6 +43,8 @@ export const mocks = {
   setOffer: (_offer: FeaturedPromo | null): void => {},
   /** Every fake voice session's `close`: the microphone let go. */
   sessionClose: vi.fn(),
+  /** Every fake voice session's take: hears nothing unless a case hands it frames. */
+  record: vi.fn((_seconds: number): Promise<F0Frame[]> => Promise.resolve([])),
 }
 
 /** The helper vitest hands a factory, which loads the module as it really is. */
@@ -63,7 +65,7 @@ export const fake = {
           Promise.resolve({ ok: true } as OpenResult),
         probe: (): Promise<ProbeResult> => Promise.resolve('ok' as ProbeResult),
         arm: (): void => {},
-        record: () => Promise.resolve([]),
+        record: mocks.record,
         latest: () => null,
         latestSmoothed: () => null,
         level: (): number => 0,
