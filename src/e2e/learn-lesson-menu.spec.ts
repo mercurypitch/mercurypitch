@@ -15,6 +15,7 @@
 
 import type { Locator, Page } from '@playwright/test'
 import { expect, test } from './helpers/lesson-page'
+import { lessonWithNoPage } from '../features/lessons/kit/season.test-fixtures'
 
 /** The masthead's button that opens the season. */
 const trigger = (page: Page): Locator =>
@@ -375,11 +376,13 @@ for (const l of LAYOUTS) {
       )
     expect(later).not.toEqual([])
     expect(later.filter((r) => r !== 'plain')).toEqual([])
-    const leap = menu(page)
+    // the season's first lesson with no page, found rather than named
+    const { n, title } = lessonWithNoPage()
+    const coming = menu(page)
       .getByRole('listitem')
-      .filter({ hasText: 'Lesson 9, Landing a leap, coming later' })
-    await expect(leap).toHaveCount(1)
-    await expect(leap.getByRole('link')).toHaveCount(0)
+      .filter({ hasText: `Lesson ${n}, ${title}, coming later` })
+    await expect(coming).toHaveCount(1)
+    await expect(coming.getByRole('link')).toHaveCount(0)
   })
 }
 

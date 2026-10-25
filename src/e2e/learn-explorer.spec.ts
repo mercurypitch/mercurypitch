@@ -14,6 +14,7 @@
 
 import type { Page } from '@playwright/test'
 import { expect, test } from './helpers/lesson-page'
+import { lessonWithNoPage } from '../features/lessons/kit/season.test-fixtures'
 
 /** The open card's main button, by its class: its words follow the viewer's progress. */
 const MAIN = '.ex-actions .btn.primary'
@@ -141,8 +142,10 @@ test.describe('on an iPad in Safari, 1024 x 672', () => {
   test("a next-lesson card's link opens the explorer on a lesson coming later, its card in view as far as its question", async ({
     page,
   }) => {
-    // Arrange: Lesson 8's card leads to Lesson 9, coming later, whose card has no button
-    await page.goto('/learn/08')
+    // Arrange: the card on the page before the season's first lesson with
+    // no page leads to that lesson, coming later, whose card has no button
+    const later = lessonWithNoPage()
+    await page.goto(`/learn/${String(later.n - 1).padStart(2, '0')}`)
     const next = page.locator('#wrap [data-select-lesson]')
     // at once: Playwright's own scroll into view races the page's smooth one
     await next.evaluate((el) =>
@@ -153,7 +156,7 @@ test.describe('on an iPad in Safari, 1024 x 672', () => {
     await next.tap()
 
     // Assert: its question stands in for the button
-    await expect(page.locator('#exCardHost h3')).toHaveText('Landing a leap')
+    await expect(page.locator('#exCardHost h3')).toHaveText(later.title)
     await expectInView(page, '#exCardHost .hookq')
   })
 })

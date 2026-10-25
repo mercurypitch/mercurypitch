@@ -140,7 +140,15 @@ export const FIRST_PAINT_BUDGETS_KB = {
   // page's: the listener's preload list names the consent regions, which
   // have a chunk of their own so that the beacon does not bring pitch-core
   // (vite.config.ts).
-  'learn/03.html': 130,
+  // Raised to 131 for Lesson 9's page shell: 132,918 bytes on its branch
+  // before it, 133,324 with it, against 133,120 at 130. 86 of the 406 are
+  // Lesson 9's season entry and drafts line, on every lesson page. The
+  // other 320 are the kit's predict, quiz and hero sky (kit/predict.ts,
+  // quiz.ts, hero-sky.ts) in a chunk of their own, with its preload list
+  // and its imports, and the minifier's renaming: every other lesson page
+  // loads them, and Lesson 9's shell does not yet. Once its cold open and
+  // its quizzes load them the chunk goes, and 130 holds.
+  'learn/03.html': 131,
   // Lesson 5, a draft too, built in every mode as Lesson 3 is. Measured 122
   // with the lesson menu and the next-lesson card (109 before them), and 129
   // with the page state.
@@ -188,6 +196,15 @@ export const FIRST_PAINT_BUDGETS_KB = {
   // opens no microphone, so the only dynamic import is Merc's renderer, as
   // on Lesson 1.
   'learn/08.html': 181,
+  // Lesson 9, "Landing a leap", a draft too, built in every mode as Lesson
+  // 3 is. Measured 71 in build:e2e (72,588 bytes) as the page's shell: the
+  // kit's chrome, the steps' deck, the next card, the map and Merc and
+  // Tavi, before any toy; the budget is a quarter over that, and each
+  // change that brings a toy raises it with its own measure and reason.
+  // The listener, the pitch detector and the ladder's reader are to arrive
+  // through a dynamic import when Sing it's Start is pressed, as on Lessons
+  // 3 and 7, so the page stays light only while that boundary holds.
+  'learn/09.html': 89,
 
   // The main app, and the crawlable doors that are the main app. Measured
   // 4669. It is eager by design today, so this is a ceiling on growth rather
@@ -269,6 +286,11 @@ export const FIRST_PAINT_CSS_BUDGETS_KB = {
   // sheets (with the beat machine's), its own, and the shared Inter and
   // Outfit @font-face rules; the budget is a quarter over that.
   'learn/08.html': 116,
+  // Lesson 9 (a draft, as above). Measured 83 in build:e2e as the page's
+  // shell: the kit's sheets (with the shared parts), its own with the voice
+  // lessons' sheet inlined by an @import (lesson-09.css says why), and the
+  // shared Inter and Outfit @font-face rules; a quarter over.
+  'learn/09.html': 104,
 
   // The main app and the crawlable doors that are the main app. Measured
   // 1009, of which 871 is the single `index` sheet that src/index.tsx

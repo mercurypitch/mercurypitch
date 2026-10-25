@@ -864,7 +864,7 @@ Lesson 8's entry (`kit/season.ts:303-324`; FACTS 58), as this page wrote it:
 - The hook stays word for word (`season.ts:312`; FACTS 1), with no alternative, and the tease stays
   as `kit/lesson-copy.ts:113` has it: "Same song, same speed. Only the claps move.", which Lesson
   7's card shows (FACTS 6a). Lesson 9's entry carries the hook this page's card shows
-  (`season.ts:331`), and its copy the tease (`kit/lesson-copy.ts:114`) and, until #1186, its old
+  (`season.ts:334`), and its copy the tease (`kit/lesson-copy.ts:114`) and, until #1186, its old
   hook as an alternative (`:106-112` at `b7093a0a4`); all are Lesson 9's, not this page's (FACTS 6).
 
 ## What the kit and the app still need
@@ -914,7 +914,7 @@ was built on.
 9. The next card's tease and Lesson 9's hook need nothing: the curiosity plan's kit work is on main
    (`8cba5c3d9`, `e364eeaa6`). The card draws Lesson 9's tease, "One note, two ways up: step by
    step, or one leap." (`kit/lesson-copy.ts:114`), above its new hook, "How do you land a note you
-   have to leap to?" (`season.ts:331`), under `.next-tease` (`kit/next-card.ts:142`;
+   have to leap to?" (`season.ts:334`), under `.next-tease` (`kit/next-card.ts:142`;
    `lesson-sections.css:296-302`), and the old hook was the admin console's alternative in
    `kit/lesson-copy.ts:106-112` at `b7093a0a4` until #1186 dropped it. This page adds only its
    tease figure to the slot (Toys 9).
@@ -928,7 +928,7 @@ was built on.
 11. `kit/comfort.ts`, built by #1192: `restAfterEffort`, which this page's flow passes
     (`lesson-08/sing-flow.ts:121`) to pick the rest card after "Effortful", as Lesson 6's does; both
     picked it by hand before. The kit's default stays the coach's (`kit/comfort.ts:69-78`).
-12. `src/features/lessons/kit/drafts.ts:30-38`: Lesson 8's line, "the vocal coach's sign-off
+12. `src/features/lessons/kit/drafts.ts:30-39`: Lesson 8's line, "the vocal coach's sign-off
     (MASTER-PLAN § 12 item 8)", in the form of Lessons 3 and 5's, and the season entry above. The
     console puts the page live on mercurypitch.com by publishing it, with no release
     (`kit/drafts.ts:13`); releasing it in code means deleting that line (`drafts.ts:18-24`).
@@ -997,8 +997,8 @@ was built on.
     (`src/tests/lesson-pages.test.ts:307-344`). When its line leaves `drafts.ts`, the release adds a
     line to each static file (`public/llms.txt`'s Lessons list, `:66-80`), as `kit/drafts.ts:18-21`
     asks and `lesson-pages.test.ts:282-290` checks. The first-paint budget comes with the page,
-    beside the other drafts' (`scripts/assert-first-paint-budgets.mjs:103-151`, Lessons 3 and 5),
-    at `:184-190`, and its CSS ceiling at `:268-271`, since every build carries every lesson page.
+    beside the other drafts' (`scripts/assert-first-paint-budgets.mjs:103-159`, Lessons 3 and 5),
+    at `:192-198`, and its CSS ceiling at `:285-288`, since every build carries every lesson page.
 17. The App content items under Practice links: the App and App content tracks' to weigh, and not
     built with the page.
 18. From #1149's fix pass, both needed before this page's predicts and plays are built:
@@ -1108,7 +1108,7 @@ parts:
 13. `metronomeSVG(id)`: two copies have distinct gradient ids.
 14. The season entry: Lesson 8 keeps `page` and `minutes` in every build, as Lessons 3 and 5 do
     (`kit/season.test.ts:241-266`), and the season gives the page its entry, as it must every lesson
-    document in `learn/` (`kit/season.test.ts:286-303`); a state that holds it back draws it with
+    document in `learn/` (`kit/season.test.ts:302-319`); a state that holds it back draws it with
     neither (`kit/publish.test.ts:59-74`); its link's `note` matches none of the backlog words
     (`kit/season.test.ts:177-190`).
 15. Step 5's lock: before the predict's choice, Play, March, Rock and Tempo are `disabled` and none
@@ -1179,8 +1179,8 @@ draft shown as `build:e2e` shows it):
 10. Every practice link carries `?lesson=08` before any hash: `/drum-night?drawer=learn&lesson=08`
     and `/ear-lab?lesson=08`.
 11. The next-lesson card: a row for `/learn/08` in `src/e2e/learn-next-card.spec.ts`'s `CARDS`
-    (`:27-76`), `['/learn/08', 'Next lesson 09 · Landing a leap Coming later', '#explorer', 'See it
-on the map']`, while Lesson 9 has no page; a test as the spec's Lesson 1 test is (`:102-119`):
+    (`:36-91`), `['/learn/08', 'Next lesson 09 · Landing a leap Coming later', '#explorer', 'See it
+on the map']`, while Lesson 9 has no page; a test as the spec's Lesson 1 test is (`:117-134`):
     `.next-tease` reads `LESSON_COPY[9].tease`, and the card's words run eyebrow, `next-tease`,
     `q2`, `chip`; and its tease figure, after the words, holds no button.
 12. No planning words: the kit's `src/e2e/learn-no-planning-text.spec.ts` reads every built lesson,

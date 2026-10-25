@@ -452,7 +452,7 @@ test('a deep link skips the tour this time, and the next lesson page opened at t
   await expect(card(page).getByRole('heading')).toHaveText(TITLES[0])
 })
 
-test('every lesson page, 1 to 8, offers the same five steps', async ({
+test('every lesson page, 1 to 9, offers the same five steps', async ({
   page,
 }) => {
   // Arrange
@@ -460,7 +460,7 @@ test('every lesson page, 1 to 8, offers the same five steps', async ({
   const counts: string[] = []
 
   // Act
-  for (let n = 1; n <= 8; n++) {
+  for (let n = 1; n <= 9; n++) {
     await page.goto(`/learn/0${n}`)
     await expect(card(page)).toBeVisible(OPENED)
     // its words, not as drawn: the count is set in capitals
@@ -470,7 +470,7 @@ test('every lesson page, 1 to 8, offers the same five steps', async ({
   }
 
   // Assert
-  expect(counts).toEqual(Array.from({ length: 8 }, () => '1 of 5'))
+  expect(counts).toEqual(Array.from({ length: 9 }, () => '1 of 5'))
 })
 
 test("on Lesson 1's first visit the page holds still while Merc and Tavi land, and the card comes once they have, before the cap", async ({
