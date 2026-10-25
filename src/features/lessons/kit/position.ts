@@ -13,7 +13,7 @@
 // again from the top. Anything unreadable in the map is ignored, never
 // trusted, and a browser that refuses storage simply remembers nothing.
 
-import { store } from './dom'
+import { store, touring } from './dom'
 import { Done } from './progress'
 import type { StepDeck } from './step-deck'
 
@@ -105,11 +105,13 @@ Done.subscribe(() => {
 
 /**
  * Remembers how far the viewer gets in this page's lesson: from the deck's
- * first step change on, so opening the page is not progress, and never for
- * a lesson already done.
+ * first step change on, so opening the page is not progress; never while
+ * the welcome tour moves the page (dom.ts `touring`), whose glides pass
+ * steps nobody read; and never for a lesson already done.
  */
 export function rememberSteps(lesson: number, deck: StepDeck): void {
   deck.subscribe((step) => {
-    if (!Done.has(lesson)) Positions.reach(lesson, { step, of: deck.count })
+    if (!touring() && !Done.has(lesson))
+      Positions.reach(lesson, { step, of: deck.count })
   })
 }

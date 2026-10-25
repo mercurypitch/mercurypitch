@@ -8,6 +8,7 @@
 
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import './browser-doubles.test-fixtures'
+import { touring } from './dom'
 import { atTop, closeTour, footOf, layerOpen, pageSteps, RECORD, runTour, scrollFor, sideFor, } from './tour'
 import { TOUR_STEPS } from './tour-copy'
 import { atTop as gateAtTop, TOUR_KEY, TOUR_VERSION } from './tour-gate'
@@ -78,12 +79,38 @@ const key = (
   )
 }
 
+/** Reduced motion off, as most viewers have it: the browser doubles turn it on. */
+function motionAllowed(): void {
+  const doubles = window.matchMedia
+  vi.spyOn(window, 'matchMedia').mockImplementation((query: string) => ({
+    ...doubles(query),
+    matches: query.includes('prefers-reduced-motion')
+      ? false
+      : doubles(query).matches,
+  }))
+}
+
+/** Next, pressed until the tour closes on Done. */
+const walkToDone = (): void => {
+  for (let i = 0; i < 5; i++)
+    document.querySelector<HTMLButtonElement>('[data-tour-next]')?.click()
+}
+
+/** A frame's worth of time, `n` times over, with the page at each of `ys` in turn when given. */
+async function frames(n: number, ys: readonly number[] = []): Promise<void> {
+  for (let i = 0; i < n; i++) {
+    if (i < ys.length) pageAt('', ys[i])
+    await vi.advanceTimersByTimeAsync(16)
+  }
+}
+
 afterEach(() => {
   closeTour()
   pageAt('', 0)
   localStorage.clear()
   document.body.textContent = ''
   document.getElementById('tourSheet')?.remove()
+  document.documentElement.classList.remove('touring')
   vi.useRealTimers()
   vi.restoreAllMocks()
 })
@@ -275,6 +302,193 @@ describe('runTour', () => {
     // Assert: not shown, and not recorded, so another page offers it
     expect(card()).toBeNull()
     expect(localStorage.getItem(TOUR_KEY)).toBeNull()
+  })
+})
+
+describe('moving the page', () => {
+  it('glides to a step out of view', () => {
+    // Arrange: reduced motion off, the step deck below the fold
+    motionAllowed()
+    page()
+    draw(document.getElementById('stepsStage') as Element, 0, 1500)
+    void runTour(1, true)
+
+    // Act
+    document.querySelector<HTMLButtonElement>('[data-tour-next]')?.click()
+
+    // Assert
+    expect(window.scrollTo).toHaveBeenLastCalledWith(
+      expect.objectContaining({ behavior: 'smooth' }),
+    )
+  })
+
+  it('moves to a step out of view at once under reduced motion', () => {
+    // Arrange: the browser doubles' reduced motion, the step deck below the fold
+    page()
+    draw(document.getElementById('stepsStage') as Element, 0, 1500)
+    void runTour(1, true)
+
+    // Act
+    document.querySelector<HTMLButtonElement>('[data-tour-next]')?.click()
+
+    // Assert
+    expect(window.scrollTo).toHaveBeenLastCalledWith(
+      expect.objectContaining({ behavior: 'instant' }),
+    )
+  })
+
+  it('glides back to where the page was on close', () => {
+    // Arrange: reduced motion off, the tour opened at the top, the page now 1,200 px down
+    motionAllowed()
+    page()
+    void runTour(1, true)
+    pageAt('', 1200)
+
+    // Act
+    key('Escape')
+
+    // Assert
+    expect(window.scrollTo).toHaveBeenLastCalledWith({
+      top: 0,
+      behavior: 'smooth',
+    })
+  })
+})
+
+describe('the pause on reading while the tour is up', () => {
+  it('marks the page touring from the moment the tour opens', () => {
+    // Arrange
+    page()
+    const before = touring()
+
+    // Act
+    void runTour(1, true)
+
+    // Assert
+    expect([before, touring()]).toEqual([false, true])
+  })
+
+  const ways: ReadonlyArray<[string, () => void]> = [
+    ['Done', walkToDone],
+    [
+      'Skip tour',
+      () => document.querySelector<HTMLElement>('.tour-skip')?.click(),
+    ],
+    ['the X', () => document.querySelector<HTMLElement>('.tour-x')?.click()],
+    ['Escape', () => key('Escape')],
+    ['closeTour, as a page leaving calls it', closeTour],
+  ]
+
+  for (const [way, closeIt] of ways) {
+    it(`is lifted once the page is at rest after ${way}, and not before`, async () => {
+      // Arrange
+      vi.useFakeTimers()
+      page()
+      await runTour(1, true)
+
+      // Act
+      closeIt()
+      const closing = touring()
+      await frames(8)
+
+      // Assert: still paused in the close itself, lifted a few still frames on
+      expect(card()).toBeNull()
+      expect(closing).toBe(true)
+      expect(touring()).toBe(false)
+    })
+  }
+
+  it('is lifted when the tour fails as it opens, with the page given back and no record written', async () => {
+    // Arrange: Merc and Tavi's stage cannot be measured as the tour opens on it
+    vi.useFakeTimers()
+    page()
+    const stage = document.getElementById('heroStage') as HTMLElement
+    stage.getBoundingClientRect = () => {
+      throw new Error('gone')
+    }
+
+    // Act
+    await runTour(1, true)
+    await frames(8)
+
+    // Assert
+    expect(card()).toBeNull()
+    expect(document.querySelector('[inert]')).toBeNull()
+    expect(touring()).toBe(false)
+    expect(localStorage.getItem(TOUR_KEY)).toBeNull()
+  })
+
+  it('holds while the scroll back glides past the steps, and lifts once it is still at the top', async () => {
+    // Arrange: the tour opened at the top and left the page 1,200 px down
+    vi.useFakeTimers()
+    page()
+    await runTour(1, true)
+    pageAt('', 1200)
+    key('Escape')
+
+    // Act: the glide back takes six frames, a frame's report after each
+    const during: boolean[] = []
+    for (const y of [1000, 800, 600, 400, 200, 0]) {
+      await frames(1, [y])
+      during.push(touring())
+    }
+    await frames(8)
+
+    // Assert
+    expect(during).toEqual([true, true, true, true, true, true])
+    expect(touring()).toBe(false)
+  })
+
+  it('holds through frames the scroll back has not yet moved in, short of where it goes', async () => {
+    // Arrange: closed 1,200 px down, the glide back to the top not yet begun
+    vi.useFakeTimers()
+    page()
+    await runTour(1, true)
+    pageAt('', 1200)
+    key('Escape')
+
+    // Act: ten frames at 1,200 px, then the page arrives at the top
+    await frames(10)
+    const waiting = touring()
+    await frames(8, [0])
+
+    // Assert
+    expect([waiting, touring()]).toEqual([true, false])
+  })
+
+  it("is lifted half a second after a viewer's own scroll stops the glide back short", async () => {
+    // Arrange: closed 1,200 px down
+    vi.useFakeTimers()
+    page()
+    await runTour(1, true)
+    pageAt('', 1200)
+    key('Escape')
+
+    // Act: the glide stopped at 700 px; 20 frames there, then 15 more
+    await frames(20, [700])
+    const soon = touring()
+    await frames(15)
+
+    // Assert
+    expect([soon, touring()]).toEqual([true, false])
+  })
+
+  it('is lifted after 3 s on a page that draws no frames, as a hidden page does', async () => {
+    // Arrange: a page whose frames never come
+    vi.useFakeTimers()
+    page()
+    await runTour(1, true)
+    vi.spyOn(window, 'requestAnimationFrame').mockImplementation(() => 0)
+    pageAt('', 1200)
+    key('Escape')
+
+    // Act
+    await vi.advanceTimersByTimeAsync(2900)
+    const before = touring()
+    await vi.advanceTimersByTimeAsync(200)
+
+    // Assert
+    expect([before, touring()]).toEqual([true, false])
   })
 })
 

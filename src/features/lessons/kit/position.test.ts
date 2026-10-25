@@ -7,6 +7,7 @@ import './browser-doubles.test-fixtures'
 import { Positions, rememberSteps } from './position'
 import { Done } from './progress'
 import { createStepDeck } from './step-deck'
+import { closeTour, runTour } from './tour'
 
 /** A lesson page's step deck of `count` steps, each with a toy of its own. */
 function deckPage(count: number): void {
@@ -29,6 +30,10 @@ const deck = (): ReturnType<typeof createStepDeck> =>
   })
 
 afterEach(() => {
+  closeTour()
+  document.documentElement.classList.remove('touring')
+  document.getElementById('tourSheet')?.remove()
+  vi.useRealTimers()
   vi.restoreAllMocks()
   localStorage.clear()
   window.location.hash = ''
@@ -155,6 +160,33 @@ describe('rememberSteps', () => {
 
     // Assert
     expect(opened).toBeNull()
+    expect(Positions.get(2)).toEqual({ step: 4, of: 4 })
+  })
+
+  it('remembers no step the deck moves to while the welcome tour is up, and the next one once the page is at rest', async () => {
+    // Arrange: the tour replayed over the step deck, its stage drawn
+    vi.useFakeTimers()
+    deckPage(4)
+    const stage = document.getElementById('stepsStage') as HTMLElement
+    const box = { x: 0, y: 120, width: 400, height: 300 } as DOMRect
+    stage.getBoundingClientRect = () => box
+    stage.getClientRects = () => [box] as unknown as DOMRectList
+    vi.spyOn(window, 'scrollTo').mockImplementation(() => undefined)
+    const steps = deck()
+    steps.start()
+    rememberSteps(2, steps)
+    await runTour(2, true)
+
+    // Act: a step the tour's glide passes, then one after it closes
+    steps.show(3)
+    const during = Positions.get(2)
+    closeTour()
+    await vi.advanceTimersByTimeAsync(16 * 8)
+    steps.show(4)
+
+    // Assert
+    expect(document.querySelector('.tour')).toBeNull()
+    expect(during).toBeNull()
     expect(Positions.get(2)).toEqual({ step: 4, of: 4 })
   })
 

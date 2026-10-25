@@ -30,9 +30,13 @@
 // On a wide screen the card sits beside its target where there is room,
 // and at the foot of the screen where there is none; on a phone it is
 // docked at the foot, and the target is scrolled into the room above it.
-// The page jumps to each target, so the step deck never follows a scroll
-// through steps nobody read (`JUMP`); the spotlight and the card glide,
-// and under reduced motion nothing glides.
+// The page glides to each target, and the spotlight and the card with it;
+// under reduced motion nothing glides. A glide passes every step on its
+// way, so while the tour is up, and until the page has come to rest after
+// it, <html> carries a class (`PAUSE`) that the kit reads before it counts
+// anything as read (dom.ts `touring`): the step deck holds its step, and no
+// step is remembered (position.ts). A class on the page is the one signal
+// both sides can read without the chunk importing the kit.
 //
 // Merc and Tavi keep moving under step 1's spotlight: the dim is drawn over
 // the page, which goes on rendering, and the tour never waits on their
@@ -230,15 +234,62 @@ export function wrapTab(root: HTMLElement, e: KeyboardEvent): boolean {
 const wait = (ms: number): Promise<void> =>
   new Promise((resolve) => window.setTimeout(resolve, ms))
 
+/** Under reduced motion the page moves at once, as lesson-tour.css stops the glides. */
+const REDUCED = '(prefers-reduced-motion: reduce)'
+
 /**
- * How the tour moves the page: at once, never smoothly. On a wide screen
- * the step deck follows the scroll and the kit keeps the furthest step a
- * viewer reaches (position.ts), so a smooth scroll from the deck to Sing it
- * passes every step and the page remembers the lesson read to its last
- * step, "Continue: step 6", for a visitor who has read none. A jump passes
- * nothing. The spotlight and the card still glide to their new places.
+ * How the tour moves the page: smoothly, and at once under reduced motion,
+ * read as the kit's own scrolls read it (step-deck.ts). The page's motion
+ * switch pauses its ambient loops, and no scroll in the kit asks it.
  */
-const JUMP: ScrollBehavior = 'instant'
+const glide = (): ScrollBehavior =>
+  window.matchMedia(REDUCED).matches ? 'instant' : 'smooth'
+
+/**
+ * The class on <html> that pauses the kit's record of reading (dom.ts
+ * `touring` reads it), written here rather than imported (see the head of
+ * this file). On a wide screen the step deck follows the scroll and the kit
+ * keeps the furthest step a viewer reaches (position.ts): unpaused, a glide
+ * from the deck to Sing it passed every step, and the page remembered the
+ * lesson read to its last step, "Continue: step 6", for a visitor who had
+ * read none.
+ */
+const PAUSE = 'touring'
+
+/** Stops a pause's lifting that is waiting for the page to come to rest. */
+let resting = (): void => undefined
+
+/**
+ * Lifts the pause once the page has come to rest after the tour: the scroll
+ * back to where the page was (`to`, or null for none) glides too, and
+ * passes steps on its way. At rest is five frames in a row at one scroll,
+ * at `to`; half a second still anywhere else, where a viewer's own scroll
+ * stopped it; and 3 s at the most, since a hidden page draws no frames.
+ */
+function liftPauseAtRest(to: number | null): void {
+  resting()
+  let y = Number.NaN
+  let still = 0
+  let frame = 0
+  const lift = (): void => {
+    resting()
+    document.documentElement.classList.remove(PAUSE)
+  }
+  const cap = window.setTimeout(lift, 3000)
+  const tick = (): void => {
+    still = window.scrollY === y ? still + 1 : 0
+    y = window.scrollY
+    const there = to === null || Math.abs(y - to) < 2
+    if (still >= (there ? 5 : 30)) lift()
+    else frame = window.requestAnimationFrame(tick)
+  }
+  frame = window.requestAnimationFrame(tick)
+  resting = () => {
+    window.cancelAnimationFrame(frame)
+    window.clearTimeout(cap)
+    resting = () => undefined
+  }
+}
 
 /** The tour now up, so a second start does nothing. */
 let running: { close: () => void } | null = null
@@ -291,7 +342,8 @@ export async function runTour(lesson: number, replay: boolean): Promise<void> {
   running = open(steps)
 }
 
-function open(steps: readonly PageStep[]): { close: () => void } {
+/** Opens the tour on `steps`; null when it could not, the page given back as it was. */
+function open(steps: readonly PageStep[]): { close: () => void } | null {
   const back = document.activeElement
   const startY = window.scrollY
   const narrow = window.matchMedia(NARROW)
@@ -315,6 +367,9 @@ function open(steps: readonly PageStep[]): { close: () => void } {
   )
   quiet.forEach((el) => el.setAttribute('inert', ''))
   document.body.appendChild(root)
+  // nothing the page does while the tour is up counts as reading (`PAUSE`)
+  resting()
+  document.documentElement.classList.add(PAUSE)
 
   let at = 0
   let side: Side = 'dock'
@@ -436,7 +491,7 @@ function open(steps: readonly PageStep[]): { close: () => void } {
     } else side = 'dock'
     root.dataset.side = side
     if (delta !== 0)
-      window.scrollTo({ top: window.scrollY + delta, behavior: JUMP })
+      window.scrollTo({ top: window.scrollY + delta, behavior: glide() })
     place()
   }
 
@@ -459,7 +514,12 @@ function open(steps: readonly PageStep[]): { close: () => void } {
     settle()
   }
 
-  function close(): void {
+  /**
+   * Takes the tour down and gives the page back: nothing inert, the focus
+   * and the scroll back where they were, and reading counted again once the
+   * page has come to rest.
+   */
+  function teardown(): void {
     window.removeEventListener('keydown', onKey, true)
     window.removeEventListener('keyup', hush, true)
     window.removeEventListener('scroll', later)
@@ -471,11 +531,16 @@ function open(steps: readonly PageStep[]): { close: () => void } {
     quiet.forEach((el) => el.removeAttribute('inert'))
     running = null
     window.clearTimeout(moving)
-    record()
     if (back instanceof HTMLElement && back !== document.body)
       back.focus({ preventScroll: true })
-    if (window.scrollY !== startY)
-      window.scrollTo({ top: startY, behavior: JUMP })
+    const to = window.scrollY === startY ? null : startY
+    if (to !== null) window.scrollTo({ top: to, behavior: glide() })
+    liftPauseAtRest(to)
+  }
+
+  function close(): void {
+    teardown()
+    record()
   }
 
   function next(): void {
@@ -510,17 +575,24 @@ function open(steps: readonly PageStep[]): { close: () => void } {
 
   const onResize = (): void => layout(false)
 
-  backBtn.addEventListener('click', () => show(at - 1))
-  nextBtn.addEventListener('click', next)
-  pick('.tour-skip').addEventListener('click', close)
-  pick('.tour-x').addEventListener('click', close)
-  window.addEventListener('keydown', onKey, true)
-  window.addEventListener('keyup', hush, true)
-  window.addEventListener('scroll', later, { passive: true })
-  window.addEventListener('resize', onResize)
-  watcher?.observe(document.body)
+  try {
+    backBtn.addEventListener('click', () => show(at - 1))
+    nextBtn.addEventListener('click', next)
+    pick('.tour-skip').addEventListener('click', close)
+    pick('.tour-x').addEventListener('click', close)
+    window.addEventListener('keydown', onKey, true)
+    window.addEventListener('keyup', hush, true)
+    window.addEventListener('scroll', later, { passive: true })
+    window.addEventListener('resize', onResize)
+    watcher?.observe(document.body)
 
-  show(0)
-  nextBtn.focus({ preventScroll: true })
+    show(0)
+    nextBtn.focus({ preventScroll: true })
+  } catch {
+    // a tour that cannot open gives the page back, reading counted again,
+    // and writes no record, so another page offers it
+    teardown()
+    return null
+  }
   return { close }
 }
