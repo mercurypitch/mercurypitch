@@ -141,9 +141,19 @@ export function createSkipConfirm(
     return true
   }
 
+  // The beat moved on under the confirm (the voiceprint finished), so it
+  // closes, counted as neither. Its trap hands the focus back to the way out
+  // that opened it, a pass after First Light put it on the new beat's heading,
+  // so the heading takes it back once the trap is done.
   createEffect(() => {
     const open = asking()
-    if (open !== null && currentBeat() !== open.beat) setAsking(null)
+    if (open === null || currentBeat() === open.beat) return
+    setAsking(null)
+    queueMicrotask(() =>
+      document
+        .querySelector<HTMLElement>('[data-onboarding-flow] [data-beat] h1')
+        ?.focus({ preventScroll: true }),
+    )
   })
 
   const ask = (kind: SkipAsk, skip: () => void): void => {

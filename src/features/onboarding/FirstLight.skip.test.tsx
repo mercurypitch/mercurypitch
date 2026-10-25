@@ -324,6 +324,25 @@ describe('Not now before the voiceprint', () => {
     expect(tracked()).not.toContain('onboarding_skipped')
   })
 
+  // The confirm's trap hands the focus back to the Not now that opened it as it
+  // closes, a pass after First Light has put it on the twin's heading, and a
+  // screen reader then said "Not now" instead of where the person landed.
+  it("leaves the focus on the twin's heading when it closes by itself", async () => {
+    await at('voiceprint')
+    const notNow = railExit()
+    notNow.focus()
+    fireEvent.click(notNow)
+    await Promise.resolve()
+    expect(keepGoing()).toHaveFocus()
+
+    recordVoiceprint(VOICEPRINT)
+    openBeat('twin')
+    await waitFor(() => expect(confirm()).toBeNull())
+    await Promise.resolve()
+
+    expect(beat('twin')?.querySelector('h1')).toHaveFocus()
+  })
+
   it('asks on the Fork, and Yes, skip takes the short track', async () => {
     await at('fork')
 
