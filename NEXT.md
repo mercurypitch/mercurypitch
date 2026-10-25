@@ -56,4 +56,4 @@ Note: the lanes' memory gate read a stale cgroup path after the 21:00 restart (f
 - #1198 C1 /exercises/leap-ladder: feat/leap-ladder-slug 855efc050 on 2bc138b4e (l9-page worktree holds it). Lead review: no findings. CI all green (PR Gate, Build & Deploy, Mobile; 22:33 UTC).
 - #1199 A4 kit ladder reader: feat/kit-ladder-reader 228b58e71 on 2bc138b4e (kit-ladder worktree). Lead review: no findings. CI all green.
 - Both touch docs/agent/INDEX.md and Lesson 9 FACTS/WEB-SPEC: whichever merges second rebases and regenerates the map.
-- Safety-net check-in for #1198/#1199: trig_011fNd65snih8GpuamwEmfiB at 23:08 UTC; after it, the 2-hourly check-in covers the PRs (no separate re-arm).
+- Safety-net check-in for #1198/#1199 fired 23:09 UTC: both green, clean, no threads. The 2-hourly check-in covers the PRs from here (no separate re-arm).
