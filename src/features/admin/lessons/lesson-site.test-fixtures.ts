@@ -72,6 +72,14 @@ export function logged(
   }
 }
 
+/** An API where lesson `n` is unpublished here, by the owner. */
+export function unpublishedHere(n: number): FakeLessonApi {
+  return fakeLessonApi({
+    lessons: { [n]: { published: false } },
+    log: [logged({ id: 1, lesson: n, field: 'published', newValue: false })],
+  })
+}
+
 function json(body: unknown, status = 200): Response {
   return new Response(JSON.stringify(body), {
     status,
