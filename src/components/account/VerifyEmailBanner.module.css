@@ -99,23 +99,28 @@
 }
 
 /* The studio app mounts the pill for desktops and a strip for phones; each
-   is shown at the widths it was made for. */
+   is shown at the widths it was made for. Two classes, so the phone card's
+   display (below) cannot bring the desktop pill back. */
 @media (max-width: 768px) {
-  .floatingOnly {
+  .banner.floatingOnly {
     display: none;
   }
 }
 
 /* The phone strip: in the page flow, so nothing is covered. Same parts as
-   the pill, laid out as one row that wraps. */
+   the pill: the icon and the words, Resend at the end of the row, and the X
+   in the top-right corner (below). Under 601 px it is a card instead, as
+   the pill is there. */
 .inline {
-  display: flex;
-  flex-wrap: wrap;
+  position: relative;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  /* With the 10 px padding, at least the 44 px the X's corner takes. */
+  grid-template-rows: minmax(24px, auto);
   align-items: center;
-  justify-content: center;
   gap: 8px 10px;
   margin: 8px 10px 0;
-  padding: 8px 12px;
+  padding: 10px 44px 10px 12px;
   border-radius: 12px;
   background: color-mix(
     in srgb,
@@ -125,7 +130,25 @@
   border: 1px solid color-mix(in srgb, var(--accent, #58a6ff) 35%, transparent);
   color: var(--text-primary, #e6edf3);
   font-size: 0.85rem;
-  text-align: center;
+}
+
+/* On a phone the X sits in the top-right corner, out of the flow. The strip
+   and the pill used to wrap and centre their items, and the X went to the
+   last row with Resend: at 390 px the icon, the words and the buttons took
+   three rows, 114 px for the strip and 122 for Karaoke Night's pill. The
+   X keeps its 22 px box; its ::after spans the corner's 44 px square, the
+   tap area, and nothing else enters that square: here the end padding is
+   as wide, and in the phone card (below) a float keeps the words off it. */
+.inline .close {
+  position: absolute;
+  top: 11px;
+  right: 11px;
+}
+
+.inline .close::after {
+  content: '';
+  position: absolute;
+  inset: -11px;
 }
 
 @media (min-width: 769px) {
@@ -151,14 +174,61 @@
     right: 10px;
     transform: none;
     max-width: none;
-    flex-wrap: wrap;
-    justify-content: center;
-    text-align: center;
 
-    /* Cap height so long email addresses don't push the close button
-       past the top of the viewport. */
+    /* Cap height so a long address cannot push the pill, and the X at
+       its top, past the top of the viewport: the rest scrolls. */
     max-height: calc(100dvh - var(--verify-floor) - 12px);
     overflow-y: auto;
     overscroll-behavior: contain;
+  }
+
+  /* The X in the corner, as on the strip (above). */
+  .banner .close {
+    position: absolute;
+    top: 11px;
+    right: 11px;
+  }
+
+  .banner .close::after {
+    content: '';
+    position: absolute;
+    inset: -11px;
+  }
+
+  /* The phone card, both forms: the words flow around the icon and the X's
+     corner, and only the lines beside the X are shortened for it, so a
+     long address loses no width below it. Resend goes under the words. */
+  .inline,
+  .banner {
+    display: flow-root;
+    padding: 12px 12px 10px;
+  }
+
+  /* The X's 44 px corner, less the padding it already covers: no line of
+     the words reaches under it. The words' first line is centred on the X
+     (12 px of padding and half its 19.7 px line: 22 px, the X's centre). */
+  .inline::before,
+  .banner::before {
+    content: '';
+    float: right;
+    width: 32px;
+    height: 32px;
+  }
+
+  .inline .icon,
+  .banner .icon {
+    /* On the first line, centred: (19.7 - 16) / 2 above it. */
+    float: left;
+    margin: 2px 10px 0 0;
+  }
+
+  /* A button on a line of its own keeps its width: a block button is as
+     wide as its label. */
+  .inline .resend,
+  .inline .sent,
+  .banner .resend,
+  .banner .sent {
+    display: block;
+    margin-top: 8px;
   }
 }
