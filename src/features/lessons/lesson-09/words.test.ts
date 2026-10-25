@@ -6,10 +6,11 @@
 // fixtures.ts): Leap, Third and Arpeggio each play their notes (FACTS 91)
 // for the stored voice, each the page's one sound, so a word stops the
 // sound before it and a newer sound stops the word (WEB-SPEC, Tests 14:
-// with Step 3's climb not yet wired, the cold open's path stands in for
-// it); Leap's arc waits for so and draws as it starts; Landing zone lights
-// so's band for a second, plays nothing and stops nothing, and a second
-// press waits for the first. Each button's name says what it does.
+// here over the cold open's path; over Step 3's climb, with the kit's own
+// runs on fake timers, in steps-leaps.test.ts); Leap's arc waits for so
+// and draws as it starts; Landing zone lights so's band for a second,
+// plays nothing and stops nothing, and a second press waits for the
+// first. Each button's name says what it does.
 
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import '@/features/lessons/kit/browser-doubles.test-fixtures'

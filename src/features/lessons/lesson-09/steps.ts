@@ -22,10 +22,15 @@
 // say the folds' change as a ratio and sing the folds strip under the
 // chart (folds-strip.ts); Step 2's Hear it first plays so alone, lighting
 // its band, and its Leap names the move alone, beside Step 2's
-// illustrated copy, which the chart draws from the start. With sound off a
-// play still draws, and the kit's hint says why nothing was heard
-// (`Sound.canPlay`). The other steps' plays are wired separately; until
-// then their controls do nothing.
+// illustrated copy, which the chart draws from the start. Step 3's Climb
+// lights each rung in turn and clears the line a leap left; its two leaps
+// draw their arcs from do's slot over the rungs between and say what they
+// skip. Step 4's five leaps come in the syllabus's order (FACTS 36, 93),
+// 0.6 s apart, 12.4 s in all: each arc draws, numbered, as its second note
+// starts, and the status line names that leap then. With sound off a play
+// still draws, and the kit's hint says why nothing was heard
+// (`Sound.canPlay`). Step 5's landing is wired separately; until then its
+// controls do nothing.
 
 import { q, qa } from '@/features/lessons/kit/dom'
 import type { Which } from '@/features/lessons/kit/merc-duo'
@@ -44,8 +49,8 @@ import { mountFoldsStrip } from './folds-strip'
 import type { LadderChart, Phrase, PhraseDrawing } from './ladder-chart'
 import { mountLadderChart } from './ladder-chart'
 import type { ChartState } from './ladder-data'
-import { foldsLine, HEAR_LINE, moveLine } from './lines'
-import { hearFirstNotes, leapNotes, MERC_LEAP, SLOW, stepNotes } from './sounds'
+import { foldsLine, HEAR_LINE, moveLine, orderLine, overLine } from './lines'
+import { climbNotes, FIVE_LEAPS, fiveLeapsNotes, hearFirstNotes, leapNotes, MERC_LEAP, OVER_LEAPS, SLOW, stepNotes, } from './sounds'
 
 /** Each step's figure label. */
 export const FIG: Readonly<Record<number, string>> = {
@@ -81,9 +86,24 @@ export function showParts(root: ParentNode, n: number): void {
 // -------------------------------------------------------------- the plays
 
 /** The plays of Merc's notes on the steps' row (`data-ladder-play`). */
-export type PlayId = 'step' | 'hear' | 'leap'
+export type PlayId =
+  | 'step'
+  | 'hear'
+  | 'leap'
+  | 'climb'
+  | 'to-so'
+  | 'to-top'
+  | 'five'
 
-const PLAY_IDS: readonly PlayId[] = ['step', 'hear', 'leap']
+const PLAY_IDS: readonly PlayId[] = [
+  'step',
+  'hear',
+  'leap',
+  'climb',
+  'to-so',
+  'to-top',
+  'five',
+]
 
 const isPlayId = (id: string | undefined): id is PlayId =>
   (PLAY_IDS as readonly (string | undefined)[]).includes(id)
@@ -95,10 +115,24 @@ export interface StepPlay {
   readonly said: string
   /** Its notes sing the folds strip: Step 1's. */
   readonly folds: boolean
+  /** What the status line says as note `i` starts, if anything: Step 4 names each leap as its arc draws. */
+  readonly sayAt?: (i: number) => string | null
 }
 
 /** A leap's two notes, its arc drawn as the second starts. */
 const ONE_LEAP: Phrase['leaps'] = [[0, 1]]
+
+/** Step 4's leaps: leap k is notes 2k and 2k + 1. */
+const FIVE_PAIRS: Phrase['leaps'] = FIVE_LEAPS.map(
+  (_, k) => [2 * k, 2 * k + 1] as const,
+)
+
+/** Step 3's leap `k` over the climb: do then so, or do then the top do, named with the rungs it skips. */
+const overClimb = (d: number, slow: number, k: number): StepPlay => ({
+  phrase: { notes: leapNotes(d, OVER_LEAPS[k], slow), leaps: ONE_LEAP },
+  said: overLine(OVER_LEAPS[k]),
+  folds: false,
+})
 
 /**
  * What each play sounds and says on do `d`, pressed on step `n`; `slow` 2
@@ -122,6 +156,20 @@ const PLAYS: Readonly<
     phrase: { notes: hearFirstNotes(d, slow) },
     said: HEAR_LINE,
     folds: false,
+  }),
+  // the climb names no leap, so it clears the line a leap left
+  climb: (d, slow) => ({
+    phrase: { notes: climbNotes(d, slow) },
+    said: '',
+    folds: false,
+  }),
+  'to-so': (d, slow) => overClimb(d, slow, 0),
+  'to-top': (d, slow) => overClimb(d, slow, 1),
+  five: (d, slow) => ({
+    phrase: { notes: fiveLeapsNotes(d, slow), leaps: FIVE_PAIRS },
+    said: '',
+    folds: false,
+    sayAt: (i) => (i % 2 === 1 ? orderLine((i - 1) / 2) : null),
   }),
 }
 
@@ -197,6 +245,8 @@ export function initSteps(deck: StepDeck): Steps {
       audible: Sound.canPlay(),
       onNote: (n, i) => {
         d.note(i)
+        const line = p.sayAt?.(i) ?? null
+        if (line !== null) say(line)
         if (p.folds) strip.sing(hz(n.midi))
         sung = { which, midi: n.midi }
         mercSing(which, n.midi, true)

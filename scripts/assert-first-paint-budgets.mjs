@@ -237,7 +237,11 @@ export const FIRST_PAINT_BUDGETS_KB = {
   // with Lessons 3 and 5); and its slowed folds and slow clock, which leave
   // Lesson 3's own chunk for one shared with it now that this page draws
   // them too.
-  'learn/09.html': 123,
+  // Raised to 124 for Steps 3 and 4: 126,817 bytes with them, against
+  // 125,952 at 123, and 1,154 more than with Steps 1 and 2. Step 3's climb
+  // and its two leaps over it, and Step 4's five leaps with their numbered
+  // arcs and their lines.
+  'learn/09.html': 124,
 
   // The main app, and the crawlable doors that are the main app. Measured
   // 4669. It is eager by design today, so this is a ceiling on growth rather
