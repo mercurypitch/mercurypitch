@@ -2,11 +2,12 @@
 // Merc's hop — one hop in place, landing on a beat
 // ============================================================
 //
-// Lesson 8's cold open has Merc and Tavi hop on every clap. The hop is the
-// renderer's own crouch and flight (src/lib/merc/sim-choreo.ts, `HOP`),
+// Lesson 8's cold open has Merc and Tavi hop on every clap, and Lesson 9's
+// has the singing Merc hop to land on each leap's second note. The hop is
+// the renderer's own crouch and flight (src/lib/merc/sim-choreo.ts, `HOP`),
 // played on the whole figure, live or still, so a caller that starts it
-// HOP_MS before a clap lands it on the clap. Only Lesson 8 imports this
-// module, so no other lesson's first paint carries it.
+// HOP_MS before a clap or a note lands it there. Only Lessons 8 and 9
+// import this module, so no other lesson's first paint carries it.
 
 import type { Which } from './merc-duo'
 import { Motion } from './motion-switch'

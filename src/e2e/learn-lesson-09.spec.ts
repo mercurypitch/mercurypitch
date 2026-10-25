@@ -10,10 +10,12 @@
 // the 404 page or the studio's cached app shell, and its module must boot.
 // Then WEB-SPEC's first end-to-end check (Tests, End to end 1): no
 // AudioContext before the first tap, and nothing plays before a play
-// button. This is the page shell's spec; each toy's own checks join it as
-// that toy is wired.
+// button; and its second, the cold open (End to end 2), at a phone's size
+// and a desktop's: Merc's leap plays before a choice, the paths wait for
+// one, and the reveal waits until all three have been heard to their end
+// with sound on. Each other toy's checks join it as that toy is wired.
 
-import type { Page } from '@playwright/test'
+import type { Locator, Page } from '@playwright/test'
 import { expect, test } from './helpers/lesson-page'
 
 // 60 characters at most (src/tests/lesson-pages.test.ts)
@@ -124,3 +126,82 @@ test("nothing plays but the sound switch's own chime until a play button is pres
   expect(after.contexts).toBe(1)
   expect(await heard(page)).toEqual(after)
 })
+
+// WEB-SPEC, End to end 2, at a phone's size and a desktop's
+for (const viewport of [
+  { width: 390, height: 844 },
+  { width: 1440, height: 900 },
+]) {
+  test.describe(`the cold open at ${viewport.width} x ${viewport.height}`, () => {
+    test.use({ viewport })
+
+    test("Merc's leap plays before a choice, the paths wait for one, and the reveal waits for all three heard to their end with sound on", async ({
+      page,
+    }) => {
+      test.setTimeout(90_000)
+      // Arrange
+      const errors: string[] = []
+      page.on('pageerror', (e) => errors.push(e.message))
+      await watchSound(page)
+      await page.goto('/learn/09')
+      const leap = page.locator('#heroPlay')
+      const [re, mi, fa] = ['re', 'mi', 'fa'].map((p) =>
+        page.locator(`#predict [data-play="${p}"]`),
+      )
+      const reveal = page.locator('#predict .reveal')
+      const hint = page.locator('#predict .lock-hint')
+      const said = page.locator('[data-hero-said]')
+      const sound = page.locator('#soundSwitch')
+      /** Plays `b` and waits for it to finish. */
+      const playThrough = async (b: Locator): Promise<void> => {
+        await b.click()
+        await expect(b).toHaveClass(/\bis-on\b/)
+        await expect(b).not.toHaveClass(/\bis-on\b/, { timeout: 10_000 })
+      }
+
+      // Act, Assert: Merc's leap before a choice plays and reveals nothing
+      for (const b of [re, mi, fa]) await expect(b).toBeDisabled()
+      await playThrough(leap)
+      await expect(said).toHaveText(
+        "Merc's leap: do, D3, up to so, A3, a perfect fifth",
+      )
+      await expect(reveal).toBeHidden()
+      expect((await heard(page)).sources).toBeGreaterThan(0)
+
+      // the choice unlocks the three paths
+      await page.locator('#predict [data-choice="mi"]').click()
+      for (const b of [re, mi, fa]) await expect(b).toBeEnabled()
+
+      // re and mi heard to their end leave it hidden
+      await playThrough(re)
+      await expect(hint).toHaveText(
+        "Now play the others, so you've heard all three.",
+      )
+      await playThrough(mi)
+      await expect(reveal).toBeHidden()
+
+      // fa cut short, as the Sound switch silences it, brings nothing
+      await fa.click()
+      await expect(fa).toHaveClass(/\bis-on\b/)
+      await sound.click()
+      await expect(sound).toHaveAttribute('aria-pressed', 'false')
+      await expect(fa).not.toHaveClass(/\bis-on\b/)
+      await expect(reveal).toBeHidden()
+
+      // with sound off, fa says nothing played, and still no reveal
+      await playThrough(fa)
+      await expect(hint).toHaveText(
+        'Sound is off, so nothing played. Turn sound on to hear them, then play all three.',
+      )
+      await expect(reveal).toBeHidden()
+
+      // sound on, fa heard to its end brings the reveal
+      await sound.click()
+      await expect(sound).toHaveAttribute('aria-pressed', 'true')
+      await fa.click()
+      await expect(reveal).toBeVisible({ timeout: 10_000 })
+      await expect(reveal.locator('.mono')).toHaveText('You said: mi')
+      expect(errors).toEqual([])
+    })
+  })
+}

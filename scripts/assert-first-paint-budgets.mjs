@@ -210,7 +210,13 @@ export const FIRST_PAINT_BUDGETS_KB = {
   // and 5) and the rungs, arcs and rung names only this page paints, Move
   // do's bounds and the voice choice (chunks shared with the lessons that
   // have them).
-  'learn/09.html': 90,
+  // Raised to 97 for the cold open: 98,535 bytes with it, against 92,160 at
+  // 90, and 7,029 more than with the ladder chart alone. The cold open and
+  // its lines; the kit's predict and hero sky, which join the chunk every
+  // lesson page shares now that this page loads them too; and the kit's
+  // runs, Merc's hop and the still sky (chunks shared with the lessons that
+  // have them).
+  'learn/09.html': 97,
 
   // The main app, and the crawlable doors that are the main app. Measured
   // 4669. It is eager by design today, so this is a ceiling on growth rather
