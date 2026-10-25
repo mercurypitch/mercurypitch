@@ -15,7 +15,7 @@ FILES=(
   l10/PLAN.md l10/DECISIONS.md l10/FOLLOWUPS.md l10/k5k4-brief.md l10/k5k4-handback.md
   l11/INBOX.md
   l12/PLAN.md l12/DECISIONS.md
-  arp/CONSENSUS.md arp/FOLLOWUPS.md
+  arp/CONSENSUS.md arp/FOLLOWUPS.md arp/BRIEF-v2.md
   tour/PLAN.md
   bin/heavy bin/heavy-pri bin/light bin/seq-fold.py bin/verify-rebase-merge.sh bin/push-notes
 )
