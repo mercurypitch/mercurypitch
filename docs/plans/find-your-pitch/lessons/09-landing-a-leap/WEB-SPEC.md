@@ -600,7 +600,7 @@ paused off screen, and the still images when WebGL fails or would run on the CPU
 
 ## Explorer and season data
 
-- **Season data**: Lesson 9's entry in `kit/season.ts` (`:325-341`) gains a plain `minutes: 16` and
+- **Season data**: Lesson 9's entry in `kit/season.ts` (`:325-344`) gains a plain `minutes: 16` and
   `page: '/learn/09'` after its topics, in every build, under the comment Lesson 5's entry carries,
   `// A draft until its sign-off (drafts.ts), as Lesson 3 is.` (`season.ts:250`), as Lesson 3's own
   are written (`season.ts:210-213`; FACTS 5, 62, 63). Whether the page is live is `kit/publish.ts`'s
@@ -613,10 +613,10 @@ paused off screen, and the still images when WebGL fails or would run on the CPU
   tap Arpeggio Jumper", as Lesson 4's reads "Exercises, then tap Scale Runner" (`season.ts:236-241`,
   `explorer.ts:181`). The note is in the learner's words (`season.ts:34-37`); `needs` keeps
   "Interval Trainer (sing) and Arpeggio Jumper" for the team, and no card draws it. Its topics
-  stay. Its hook is the entry's, the default (`season.ts:331`); its tease, which Lesson 8's card
+  stay. Its hook is the entry's, the default (`season.ts:334`); its tease, which Lesson 8's card
   draws, is `kit/lesson-copy.ts`'s (`:114`), whose entry held the alternative `'harder'` (`:106-114`
   at `b7093a0a4`) until #1186 dropped it (FACTS 1). `EDGES` already holds [3, 9] and [6, 9]
-  (`season.ts:417-418`).
+  (`season.ts:420-421`).
 - **The explorer card**: what the kit draws for a lesson with a page and no published film: its
   state and main action from `kit/lesson-state.ts` ("Start lesson", "Continue: step N" or "Read
   again"), its minutes, no Watch button (`kit/season.ts:23-25`), and the learner's fields only,
@@ -632,7 +632,7 @@ table):
    input and routes its clean path (`tools/draft-lessons.ts:1-18`; `lessonPages`, `:77-86`;
    `lessonInputs` and `lessonPaths`, `:109-122`; `vite.config.ts:319`, `:493`), so the page needs no
    build change. Its line in `kit/drafts.ts`,
-   `9: "the vocal coach's sign-off (MASTER-PLAN § 12 item 8)"`, beside Lessons 3 to 8's (`:30-38`),
+   `9: "the vocal coach's sign-off (MASTER-PLAN § 12 item 8)"`, beside Lessons 3 to 8's (`:30-39`),
    makes it a draft: production's `LESSON_DRAFTS`, "0", holds it back, and the dev site's and the
    previews', "1", show it (`wrangler.jsonc:165-167`, `:188-190`, `:231-232`), until the console
    sets it either way, and the Content Studio's Lessons page names that reason when asked to publish
@@ -656,10 +656,11 @@ table):
    - the title, "Landing a leap: singing big intervals in tune | MercuryPitch" (60 characters, the
      test's most, `lesson-pages.test.ts:154-155`), SEARCH.md § 4's draft (`SEARCH.md:240`), and
      the h1, `h1.hook#hook`, the hook in its default wording (`lesson-copy.test.ts:323-332`; Hero);
-   - the meta description, "How do you land a note you have to leap to? Hear it first, aim at its
-     band, and sing do-mi-so-do as a ladder. A free lesson in your browser." (140 characters, inside
-     the test's 80 to 160, `lesson-pages.test.ts:156-159`, and 157 with the alternative hook that
-     #1186 dropped);
+   - the meta description, "How do you land a note you have to leap to? A sixteen-minute lesson on
+     big leaps: hear the landing note first, aim at its band, then sing a ladder." (147 characters,
+     inside the test's 80 to 160, `lesson-pages.test.ts:156-159`, with the run time in words that
+     every page's description and Article carry, `:191-210`). It names no middle note, so
+     it does not answer the cold open's predict (the lead's decision 1, 24 October 2026);
    - `og:title` and `twitter:title`, "Landing a leap: Find Your Pitch, Lesson 9", hold the headline,
      as the title did until #1187 (`lesson-pages.test.ts:184-188`; `learn/02.html:26-29`);
    - `og:description`, the full hook and one line, "How do you land a note you have to leap to? Hear
@@ -698,10 +699,10 @@ table):
    between Merc and Tavi. It shows no middle note, so it does not answer the cold open's
    predict.
 4. First-paint ceilings for `learn/09.html` in `scripts/assert-first-paint-budgets.mjs`, one in its
-   JavaScript table and one in its stylesheet table, beside Lesson 3's (`:103-143`, `:246-249`).
-   Every build emits every lesson page, and the check fails a document with no ceiling (`:504-508`),
+   JavaScript table and one in its stylesheet table, beside Lesson 3's (`:103-151`, `:263-266`).
+   Every build emits every lesson page, and the check fails a document with no ceiling (`:526-530`),
    so without them the Browser jobs fail before any spec runs, as Lesson 6's did on PR #1149. Each
-   is the page's measured first paint plus about a quarter, the tables' rule (`:47-58`, `:202-212`),
+   is the page's measured first paint plus about a quarter, the tables' rule (`:47-58`, `:219-229`),
    measured in `build:e2e`, where the check runs (`package.json:20`): a build of Lesson 6's page
    alone weighed it about 8 KB lighter. As on Lesson 3, the listener, the pitch detector and Voice
    Mirror's scorer arrive through a dynamic import when Start is pressed
@@ -888,9 +889,9 @@ parts:
 12. Season data: Lesson 9's entry has `minutes: 16` and `page: '/learn/09'` in every build,
     whichever way `VITE_DRAFT_LESSONS` reads, as `season.test.ts` checks Lessons 3 to 5's
     (`:241-266`), and the same file's check of every page in the repository then covers it
-    (`:286-303`); `seasonFor(LESSONS, defaultPageState(false))` gives Lesson 9 no page and no
+    (`:302-319`); `seasonFor(LESSONS, defaultPageState(false))` gives Lesson 9 no page and no
     reading time while its line is in `drafts.ts`, and `seasonFor(LESSONS, defaultPageState(true))`
-    keeps both, as `publish.test.ts` checks a lesson held back and one published (`:58-92`). That
+    keeps both, as `publish.test.ts` checks a lesson held back and one published (`:58-110`). That
     file's example of a lesson with no page is found, not named: the first lesson the season has
     with none (`:45-56`, through `lessonWithNoPage` in `kit/season.test-fixtures.ts:22-36`), so
     this page's arrival does not break it. Lesson 9's practise link carries `?lesson=09`, and
@@ -956,7 +957,7 @@ End to end (Playwright, at 390 x 844 and 1440 x 900, on the e2e build, which sho
 10. The Wrap's next card names Lesson 10, says "Coming later" and leads to the map, never to a page,
     as `src/e2e/learn-next-card.spec.ts` checks a card for a lesson not written yet; its tease,
     Lesson 10's line, sits one line above the hook, the card's words in the order eyebrow, tease,
-    hook and way on, as that spec checks Lesson 1's card (`:102-119`).
+    hook and way on, as that spec checks Lesson 1's card (`:117-134`).
 11. With reduced motion emulated, an arc and a trace draw at once, the guide's bands light in place,
     and nothing moves on its own.
 12. After a full run, storage holds only the keys in the Contract.
@@ -987,9 +988,10 @@ reader says "F sharp"; the figures' accessible names and every live region use w
 stores the quiz seeds and records (`fyp-l09-recall-seed`, `fyp-l09-recall-v1`, `fyp-l09-seed`,
 `fyp-l09-quiz-v1`), `fyp-done` (`kit/progress.ts:12`), `fyp-voice` (`kit/voice-choice.ts:20`), the
 warm-up's Skip (`fyp-l09-warmup`), the masthead's Pause animations choice, `fyp-motion`
-(`kit/motion-switch.ts:12`), and the steps the viewer reached, `fyp-pos` (`kit/position.ts:20`); and
-nothing from the take: no note, no reading, no count, no answer to "How did that feel?" and no
-ending.
+(`kit/motion-switch.ts:12`); through the kit, as every lesson page does, the steps the viewer
+reached, `fyp-pos` (`kit/position.ts:20`), and its record of the welcome tour, `fyp-tour`
+(`kit/tour-gate.ts:29`); and nothing from the take: no note, no reading, no count, no answer to "How
+did that feel?" and no ending.
 
 Page QA before publishing (PRODUCTION-PIPELINE § 5) adds, for this page:
 

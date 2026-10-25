@@ -328,6 +328,9 @@ const ENTRIES: readonly Lesson[] = [
     title: 'Landing a leap',
     short: 'Landing a leap',
     topics: ['S09', 'S10'],
+    // A draft until its sign-off (drafts.ts), as Lesson 3 is.
+    minutes: 16,
+    page: '/learn/09',
     hook: 'How do you land a note you have to leap to?',
     pr: {
       needs: 'Interval Trainer (sing) and Arpeggio Jumper',

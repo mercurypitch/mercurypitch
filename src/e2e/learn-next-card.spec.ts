@@ -9,22 +9,31 @@
 // yet "Coming later" and a way to the map, never a link to a page. These
 // are the lesson polish plan's checks for it (D2), with the prerequisite
 // chip's 44 px target (A6). The e2e build shows drafts, as the dev deploy
-// does, so Lessons 3, 5, 6, 7 and 8 are live here; a page that holds them
+// does, so Lessons 3 and 5 to 9 are live here; a page that holds them
 // back is next-card.test.ts's, and one the site worker served with the
 // console's state is learn-publish-state.spec.ts's. A lesson with a tease
 // (kit/lesson-copy.ts) is set up by it on the card before, one line above
 // its hook; the season's close, on a finale with no page yet, is
-// next-card.test.ts's too.
+// next-card.test.ts's too. The card for a lesson coming later is found in
+// the season, on the page before its first lesson with no page
+// (`lessonWithNoPage`), so no new lesson page moves these tests.
 
 import type { Locator, Page } from '@playwright/test'
 import { expect, test } from './helpers/lesson-page'
 import { LESSON_COPY } from '../features/lessons/kit/lesson-copy'
+import { lessonWithNoPage } from '../features/lessons/kit/season.test-fixtures'
 
 /** The card at the foot of this page's Wrap. */
 const card = (page: Page): Locator => page.locator('#wrap a.next-card')
 
+/** A lesson's number as its address writes it: 9 is "09". */
+const pad = (n: number): string => String(n).padStart(2, '0')
+
+/** The season's first lesson with no page: the page before it ends on its card. */
+const LATER = lessonWithNoPage()
+
 // each page's card: [page, its eyebrow, where it goes, its way on]
-const CARDS = [
+const CARDS: readonly (readonly [string, string, string, string])[] = [
   [
     '/learn/01',
     'Next lesson 02 · Twelve notes Ready · 13 min',
@@ -69,11 +78,17 @@ const CARDS = [
   ],
   [
     '/learn/08',
-    'Next lesson 09 · Landing a leap Coming later',
+    'Next lesson 09 · Landing a leap Ready · 16 min',
+    '/learn/09',
+    'Start lesson',
+  ],
+  [
+    `/learn/${pad(LATER.n - 1)}`,
+    `Next lesson ${pad(LATER.n)} · ${LATER.title} Coming later`,
     '#explorer',
     'See it on the map',
   ],
-] as const
+]
 
 /** Seeds the viewer's progress before the page's scripts read it. */
 async function seed(page: Page, key: string, value: unknown): Promise<void> {
@@ -196,14 +211,14 @@ test('a lesson coming later opens the map on its card @smoke', async ({
   page,
 }) => {
   // Arrange
-  await page.goto('/learn/08')
+  await page.goto(`/learn/${pad(LATER.n - 1)}`)
 
   // Act
   await card(page).click()
 
   // Assert
   await expect(page).toHaveURL(/#explorer$/)
-  await expect(page.locator('#exCardHost h3')).toHaveText('Landing a leap')
+  await expect(page.locator('#exCardHost h3')).toHaveText(LATER.title)
 })
 
 /**

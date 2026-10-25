@@ -1,0 +1,201 @@
+/* ============================================================
+   Lesson 9 — Landing a leap: the page's own figures
+   ============================================================
+   Everything else is the kit's (lesson-base, lesson-sections, lesson-stage,
+   lesson-parts and lesson-voice). The voice lessons' sheet comes in by the
+   @import below, which the build inlines, and not as main.ts's import:
+   Lessons 3 and 5 to 8 share it in one chunk with the comfort check and the
+   voice choice (kit/comfort.ts, kit/voice-choice.ts), which this page's
+   shell does not load yet. Imported here alone, it would leave that chunk
+   for a sheet of its own, which those pages link after their own sheet, so
+   its rules would win over theirs (docs/agent/MISTAKES.md, "Take the
+   lessons' base stylesheet into another page by @import"). Once Sing it
+   loads both modules, the import moves back to main.ts.
+
+   Here: the compact ladder chart between Merc and Tavi, the ladder chart's
+   floor for the stage budget and Step 1's folds strip under it, its row of
+   controls (WEB-SPEC, Toys 1, "Layout and targets": every target 44 px,
+   10 px apart, from 344 px up), the scrub bar, Sing it's lines, and the
+   Wrap's cards. */
+@import '../kit/lesson-voice.css';
+
+/* ---------------------------------------------------------------- hero: the compact chart between Merc and Tavi */
+.l9-duo {
+  --merc: clamp(120px, 11vw, 168px);
+  --line-h: clamp(190px, 17vw, 240px);
+  grid-template-columns: var(--merc) minmax(0, 1fr) var(--merc);
+  align-items: end;
+  height: calc(var(--line-h) + var(--merc) * 0.165);
+  margin-top: 6px;
+}
+/* the floor line runs under the chart's foot, where Merc and Tavi stand */
+.l9-duo .floor {
+  top: var(--line-h);
+}
+.l9-duo .merc {
+  grid-row: 1;
+  z-index: 1;
+  pointer-events: none;
+}
+.l9-duo .merc-blue {
+  grid-column: 1;
+}
+.l9-duo .merc-orange {
+  grid-column: 3;
+}
+.hero-ladder {
+  position: relative;
+  grid-column: 2;
+  grid-row: 1;
+  align-self: start;
+  min-width: 0;
+  height: var(--line-h);
+  margin: 0;
+}
+.hero-ladder canvas {
+  position: absolute;
+  inset: 0;
+}
+/* Play Merc's leap leads the predict: it works before a choice */
+.predict-lead {
+  margin: 0 0 14px;
+  padding: 0;
+  border: 0;
+}
+@media (max-width: 1080px) {
+  .l9-duo {
+    --merc: clamp(110px, 18vw, 170px);
+    --line-h: clamp(200px, 28vw, 260px);
+  }
+}
+/* on a phone Merc and Tavi stand smaller either side of the chart */
+@media (max-width: 560px) {
+  .l9-duo {
+    --merc: min(20vw, 80px);
+    --line-h: 190px;
+    margin-top: 2px;
+  }
+}
+
+/* ---------------------------------------------------------------- the ladder chart's stage */
+/* a figure label is one 16 px line (the stage budget counts on it) */
+.steps-stage .toy .eyebrow {
+  line-height: 16px;
+}
+/* The kit's figure heights, given way to the controls no lower than this:
+   lower, the rung names and the rows collide (WEB-SPEC, Toys 1) */
+.ladder-viz {
+  --viz-min: 210px;
+}
+/* Step 1's folds in the figure's bottom 64 px, the chart above them */
+.ladder-viz .folds-strip {
+  top: auto;
+  height: 64px;
+  border-top: 1px solid var(--hair);
+}
+.ladder-viz:has(.folds-strip:not([hidden])) .ladder-canvas {
+  height: calc(100% - 64px);
+}
+.ladder-status,
+.ladder-readout {
+  margin: 8px 0 0;
+  min-height: 1.4em;
+  font-size: var(--fs-14);
+  line-height: 1.4;
+  color: var(--ink-2);
+}
+.ladder-readout {
+  font: 600 var(--fs-16) / 1.4 var(--f-display);
+  font-variant-numeric: tabular-nums;
+  color: var(--ink);
+}
+/* each step's controls one row where they fit, wrapping on a phone */
+.ladder-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 10px;
+}
+.ladder-toy .btn {
+  min-width: 0;
+  white-space: normal;
+  line-height: 1.2;
+}
+.ladder-toy .switch[aria-pressed] {
+  justify-content: center;
+}
+
+/* Step 5's scrub bar, the kit's range (lesson-stage.css), after Slow on the
+   same row; where the row has no room for it, at 344 px, a row of its own */
+.ladder-row .range {
+  flex: 1 1 160px;
+  min-width: 0;
+}
+
+/* ---------------------------------------------------------------- Sing it */
+.l9-sing .sing-card .turn {
+  margin: 14px 0 10px;
+}
+.l9-sing .ladder-choice,
+.l9-sing .move-do {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+  margin: 10px 0 0;
+}
+/* the card's 12 px under the ladder choice, before the words on singing it */
+.l9-sing .ladder-choice {
+  margin-bottom: 12px;
+}
+/* the ladder the take sings wears the kit's pressed ring (lesson-parts.css,
+   `.seg`), its buttons 10 px apart rather than joined */
+.l9-sing .ladder-choice .btn[aria-pressed='true'] {
+  background: color-mix(in srgb, var(--aqua) 16%, transparent);
+  box-shadow: inset 0 0 0 2px var(--aqua);
+  color: var(--ink);
+}
+@media (forced-colors: active) {
+  .l9-sing .ladder-choice .btn[aria-pressed='true'] {
+    forced-color-adjust: none;
+    background: Highlight;
+    color: HighlightText;
+  }
+}
+.l9-sing .sing-card .stop-line {
+  margin: 14px 0 0;
+  font-weight: 600;
+  color: var(--ink);
+}
+.l9-sing .sing-card .guide-hint {
+  margin: 8px 0 0;
+  font-size: var(--fs-14);
+  color: var(--ink-3);
+}
+.l9-sing .brief-lines {
+  margin: 0 0 14px;
+  padding-left: 18px;
+  color: var(--ink-2);
+}
+.ladder-readings {
+  margin: 12px 0 0;
+  padding-left: 18px;
+  color: var(--ink-2);
+}
+
+/* ---------------------------------------------------------------- the wrap */
+.l9-app {
+  grid-template-columns: minmax(0, 1fr);
+  align-items: start;
+}
+.l9-app .dose {
+  margin: 10px 0 0;
+  color: var(--ink);
+}
+.l9-next {
+  margin-top: 18px;
+}
+.l9-free > .eyebrow {
+  margin: 0 0 10px;
+  line-height: 16px;
+}

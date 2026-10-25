@@ -44,7 +44,7 @@ its cold open before its recall, a recall shown to everyone, a names switch, a s
 do, and free play in the Wrap. It is published only after Lesson 10's page, `/learn/10`, is, because
 its recall check asks Lesson 10's questions and its prerequisite chip names Lesson 10 (FACTS 2, 7),
 and after the vocal coach has looked at its voice lines (LESSON.md, For the vocal coach). Until both
-are done it is a draft (`src/features/lessons/kit/drafts.ts:5-24`, `:30-38`). Every build carries
+are done it is a draft (`src/features/lessons/kit/drafts.ts:5-24`, `:30-39`). Every build carries
 `learn/12.html`, as it carries every lesson page (`tools/draft-lessons.ts:8-14`), and its line in
 `drafts.ts` holds it back on mercurypitch.com: the site worker answers `/learn/12` with the 404
 page, and every page's explorer shows Lesson 12 with no link, as a lesson not written yet
@@ -56,7 +56,7 @@ when both hold (`src/features/admin/AdminLessonsPage.tsx:186-241`); but "Publish
 ahead, so "publish after Lesson 10" stays a rule for whoever uses it (Decisions for the owner).
 Releasing it is deleting its `drafts.ts` line (What the kit and the app still need,
 items 2 and 15). The curiosity plan's kit work is on main: Lesson 12's hook is the season's
-(`src/features/lessons/kit/season.ts:366`), its tease is in the kit's lesson copy
+(`src/features/lessons/kit/season.ts:369`), its tease is in the kit's lesson copy
 (`src/features/lessons/kit/lesson-copy.ts:117`), as its alternative was until #1186 (`:133-141` at
 `b7093a0a4`), Lesson 13's tease is there too (`:118`), and the next-lesson card draws a tease above
 the next hook (`src/features/lessons/kit/next-card.ts:142-143`). So the page writes only its own
@@ -784,7 +784,7 @@ still images when WebGL fails or would run on the CPU.
 
 ## Explorer and season data
 
-Lesson 12's entry (`src/features/lessons/kit/season.ts:361-371`), proposed for when this page is
+Lesson 12's entry (`src/features/lessons/kit/season.ts:364-374`), proposed for when this page is
 built:
 
 - `minutes: 15` and `page: '/learn/12'`, written plainly, as Lesson 3's entry is
@@ -811,12 +811,12 @@ built:
   (`season.ts:193-198`). Cadence is the lesson's ear drill and needs no voice, so the card stays
   right whatever Sing it's ending. For the owner (Decisions for the owner), the other choice:
   Arpeggio Jumper, `href` `/pitch-training?lesson=12`, `label` "Exercises" and `note` "then tap
-  Arpeggio Jumper", as Lesson 9's card now reads (`season.ts:332-339`). `pr.needs`, "Chord Stacker
+  Arpeggio Jumper", as Lesson 9's card now reads (`season.ts:335-342`). `pr.needs`, "Chord Stacker
   with major and minor triads (today it has only maj7, min7, dom7, dim7 and maj6)", stays until the
   triads ship: it is "Admin only, never drawn on a lesson page" (`season.ts:102-103`, and the fields
   the team keeps, `:27-31`).
 - The signature stays as it is (`kit/team-notes.ts:44`). The entry has no `fig`, so the card draws no figure.
-- The hook stays word for word (`season.ts:366`; FACTS 1). The tease Lesson 11's card shows for this
+- The hook stays word for word (`season.ts:369`; FACTS 1). The tease Lesson 11's card shows for this
   lesson, and Lesson 13's tease on this page's card, are the kit's lesson copy
   (`kit/lesson-copy.ts:117`, `:118`; FACTS 5, 5b).
 - The card reads "Ready · read", with "15 min", once the page is live (`explorer.ts:153-160`).
@@ -826,7 +826,7 @@ built:
 Found in the kit and the app as they stand on main at `75eeddc40` (21 October 2026), beyond the
 parts Lessons 2 to 10 promote into the kit (Toys table). Every item is proposed. From `6f8081804`,
 where this package was first written, to `9fcc96a01`, where it was reviewed, the code this spec
-cites is unchanged but for Lesson 9's practise link in `season.ts` (`:332-339`, the same lines) and
+cites is unchanged but for Lesson 9's practise link in `season.ts` (`:335-342`, the same lines) and
 a comment in `src/lib/lesson-marker.ts`. From `9fcc96a01` to `02682a122`, PR #1156 put Lesson 4 back
 on the draft list, which moved two citations here, to the draft list (item 2) and to llms.txt's
 Lessons list (item 15). From `02682a122` to `75eeddc40`, three PRs changed code this spec cites, and
@@ -844,7 +844,7 @@ heard play (Toys 3; Edge cases) (`git diff --stat`).
    `STANDALONE_DOCUMENT_PATHS` (`src/lib/sw-runtime.ts:93`), beside the drafts' entries, whose
    comment gives the reason: where a draft is not published, its address must reach the site
    worker's 404 page, never the app shell (`:138-157`).
-2. `src/features/lessons/kit/drafts.ts:30-38`: Lesson 12's line, after Lesson 8's and in the form of
+2. `src/features/lessons/kit/drafts.ts:30-39`: Lesson 12's line, after Lesson 8's and in the form of
    Lessons 3, 5 and 6's:
    `12: "Lesson 10's page at /learn/10, and the vocal coach's look at the sung checkpoint"`. While
    it stands, the page is held back on mercurypitch.com and served on the dev site and every PR
@@ -947,10 +947,10 @@ heard play (Toys 3; Edge cases) (`git diff --stat`).
     card does not answer the cold open's predict (FACTS 1a).
 14. The first-paint budget, in the change that adds the page: `learn/12.html` in both of
     `scripts/assert-first-paint-budgets.mjs`'s tables, its JavaScript (`FIRST_PAINT_BUDGETS_KB`,
-    `:59`) and its render-blocking CSS (`FIRST_PAINT_CSS_BUDGETS_KB`, `:213`), measured, with the
+    `:59`) and its render-blocking CSS (`FIRST_PAINT_CSS_BUDGETS_KB`, `:230`), measured, with the
     lessons' headroom, a quarter over. Every build emits every lesson page, a draft's included
     (`scripts/assert-first-paint-budgets.mjs:103-105`), and a document it emits with no budget
-    fails the check (`assert-first-paint-budgets.mjs:541-545`, and for CSS `:571-577`; FACTS 76),
+    fails the check (`assert-first-paint-budgets.mjs:563-567`, and for CSS `:593-599`; FACTS 76),
     which `build:e2e` runs (`package.json:20`). The page's WebGL renderer, as on every lesson page,
     arrives after first paint (Merc and Tavi).
 15. On release (SEARCH.md § 12), once its `drafts.ts` line is deleted: `public/sitemap.xml` and
@@ -1267,10 +1267,10 @@ bundle, which no site worker serves and which shows drafts: `build:e2e` sets `VI
 10. Every practice link carries `?lesson=12` before any hash: `/pitch-training?lesson=12` and
     `/ear-lab?lesson=12`.
 11. The next-lesson card: a row for `/learn/12` in `src/e2e/learn-next-card.spec.ts`'s cards
-    (`:27-76`), with the eyebrow "Next lesson 13 · Resonance and vowels Coming later", the link
+    (`:36-91`), with the eyebrow "Next lesson 13 · Resonance and vowels Coming later", the link
     `#explorer` and "See it on the map" while Lesson 13 has no page, as Lesson 7's row reads for
     Lesson 8; its `.next-tease` reads Lesson 13's tease, one line above its hook, as the spec checks
-    Lesson 1's card (`:102-119`); its still inside the card holds no button.
+    Lesson 1's card (`:117-134`); its still inside the card holds no button.
 12. No planning words: the kit's `src/e2e/learn-no-planning-text.spec.ts` reads every lesson page,
     this one included (`lessonPages`, `:45-47`), for the team's words (`:22-40`), and the
     alternative hook's note never reaches the page (`:77-79`).

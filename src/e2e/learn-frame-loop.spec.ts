@@ -6,7 +6,7 @@
 // (kit/frame-loop.ts), and it stops asking for frames once every figure
 // has nothing new to draw. The ring, the slide guide and the explorer never
 // said so, and kept it asking every frame for as long as the page was open.
-// On every page from Lesson 1 to Lesson 8, each figure that uses one of the
+// On every page from Lesson 1 to Lesson 9, each figure that uses one of the
 // three is scrolled into view and left to settle, and then it changes
 // nothing for a whole second: no paint of its canvas, no change to the
 // ring's drawing. A run of the figure (a sung note, Merc's slide, scale or
@@ -16,8 +16,10 @@
 // phone, where the explorer is a list, Lesson 8's whole page rests again
 // once a second tap on Lesson 13's row folds its card away.
 //
-// On Lessons 6, 7 and 8 every figure now says when it has nothing to draw,
-// so there the whole page asks for no frame at all at rest. Lessons 1 to 5
+// On Lessons 6 to 9 every figure now says when it has nothing to draw, so
+// there the whole page asks for no frame at all at rest. Lesson 9's checks
+// here are its page shell's, the explorer and the page at rest; its ladder
+// chart and folds strip join them once they are wired. Lessons 1 to 5
 // each have drawers of their own that still draw every frame (S-26 in
 // docs/plans/find-your-pitch/RELEASE-REVIEW.md), which keep their loop
 // running whatever these three do, so there only the figures are watched.
@@ -318,6 +320,14 @@ test('Lesson 8: the explorer rests, and so does the whole page', async ({
   await open(page, 8)
 
   await explorerRests(page, 8, true)
+})
+
+test('Lesson 9: the explorer rests, and so does the whole page', async ({
+  page,
+}) => {
+  await open(page, 9)
+
+  await explorerRests(page, 9, true)
 })
 
 test.describe('on a phone', () => {
