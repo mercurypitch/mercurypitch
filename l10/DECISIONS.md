@@ -30,3 +30,37 @@ Answers to PLAN.md section 6, 24 October 2026. Lesson 9's decisions (`../l9/DECI
     - A status line Lesson 10 does not word takes the series' line where Lessons 6 and 8 share it word for word ("Before you sing: how is your voice today?", "Choose the voice you'll sing with.", "Choose a voice: it picks the Merc who sings.", "How did that feel?"). Where the two differ only in what Merc sings, it takes Lesson 8's form with "Merc's notes" in place of "Merc's line". Each such line is listed in the run's report, and P22 adds them to the spec's Toys 6.
     - A sweep cut short (Stop, the section off screen, the page hidden) asks nothing, and the card goes back to what it showed before the sweep ran, as Lesson 8's flow does. Only a sweep that ends asks "How did that feel?".
     - The sweeps have no cap: Lesson 10 has no Again, and the spec asks the feeling question "each time a sweep ends".
+19. **The layout-hero review** (lead, 25 October; head 821ef42a1 after the fold). The builder's questions:
+    - The spaces across the figure are even, (300 - 280) / 3 px: FACTS 82 gives the parts and the total, not the spaces.
+    - No name strip in Step 5 or free play, as the spec's Drawing lists it in Steps 1 to 4 only. The compact strip is the top-left corner above the top name, 14.5 px tall, so the toy sets its text at 12 px or less.
+    - A name box is one row, 15 px; a stair runs from its tread to the window's foot; Step 1's compact window is root to fifth, as a chord's is.
+    - Under reduced motion the bead lands at 1.2 s and is home at 3.1 s: the glide's start and the sound's end.
+    - mi's glow is the kit's tune-line glow (0.12 s up, 1.2 s down); the spec gives no length.
+    - At rest after the reveal the ring's centre reads "C major"; the neither name wraps after its colon; the halo keeps "mi" on E flat, as LESSON.md's live line says "Mi moved down a semitone".
+    - The kit's bead stays drawn where it is during a slide; the page's moving bead travels over the ring.
+    - hero-marks takes MOVE from sounds.ts, which loads kit/sound.ts and its visibilitychange listener: accepted. The hero plays through kit/sound.ts anyway, and FACTS 73's timings keep one home.
+    - The kit's orange A4 stays: it is the series' colour code (Look: "Lessons 1 to 7's look, unchanged"), Lesson 2's card shows the same orange note, and it marks no chord tone.
+    - The kit's C4 seam tick through do's halo stays: it marks where the ring starts.
+    - The syllable literals stay until K1 is in the page's base (as for the triads, FOLLOWUPS).
+    - The share card is accepted (48,717 bytes, baseline, 1200x630; nothing gold, no name, no note marked), with the builder's alt text for P11: "The title card: Find Your Pitch, Lesson 10, Major and minor, above the ring of twelve notes seen from above, with C, E and G circled alike in chrome as do, mi and so and joined by a thin triangle, between Merc and Tavi."
+    - The review's one finding: no test said which halo turns gold (a gold on so passed all 18). The fold adds one: the gold sits on E4 at rest, on E flat 4 once mi's move lands, and stays on mi through so's move.
+20. **Lesson 9's decision 29 applies to Lesson 10**: code comments and commit messages name no plan task (P6, K1) and no scratchpad file (PLAN.md, DECISIONS). The layout-hero messages were reworded in its fold; the chords and sing-quiz commits get the same in theirs.
+21. **The sing-quiz review** (lead, 25 October; head e409678d5 after the fold). The builder's questions:
+    - While a sweep runs, the flow says Lesson 8's "Your turn: sing with the guide.": Lesson 10 sings with the kit's guide as Lesson 8 does, and Lesson 6's "with the line" names its tune line. The flow's status is always a line, as Lesson 8's is. Folded into P4.
+    - "them" for "it" where "Merc's notes" replaces "Merc's line": "press Play Merc's notes to hear them", "Merc sings them". Folded into P4.
+    - The listen line takes Lesson 8's form: confirmed.
+    - No `rested` line: under the kit's lock, an answer that puts the guide away keeps its own line. If the coach settles on `changeable`, the flow takes Lesson 8's rule and line.
+    - The readout keeps the kit's `nameHtml` ("do is E3", every sign spoken), as Lesson 6's readout does.
+    - The quick check's storage keys are the page's, passed in main.ts as every lesson does.
+    - Question 3 prints curly quotes, as Lessons 6 and 7 do; its test compares LESSON.md with the quotes made alike.
+    - No labels for the guide or the ring beyond the kit's: the spec words none.
+    - M4d (rest not sticky while the lock holds) is an equivalent mutant; the sticky ORs stay for a lifted lock.
+    - Decision 20 applied: the three feature messages drop "PLAN Pn" and "decision 7".
+22. **The app copy, done by the lead** (25 October; feat/lesson-10-app-copy dfde08a58 on origin/main 2404b342e, worktree lesson-tour; both builder slots were busy and the task is small). One commit, as one task:
+    - The chapter's six cited lines change in place, none added or removed, so every citation of `walkthrough.ts` holds: the intro loses "create different moods"; C major loses its mood words; "Best for: Beginners" loses "optimistic melodies"; natural minor's mood line becomes LESSON.md Step 4's tendency ("many Western listeners", and its tempo, rest-of-the-music and upbringing sentence); "relative major (Eb Major)" in the chapter's own ASCII flats; and minor's mood "Best for" line becomes the three notes C minor lowers from C major (Eb, Ab, Bb), read off the chapter's two note lists.
+    - Drone Intonation (decision 15): the idle line and the help summary say the targets are equal-tempered; the help's first two paragraphs lose "lock together and stop beating" and "smooth", which ask for a beatless, just tuning (FACTS 49 groups them with the promise), and say the targets use the app's twelve equal steps (Lesson 2 FACTS 29a). No claim about just thirds: FACTS reads no source on them. The help's third paragraph and the menu card stay; neither promises a tuning.
+    - Left: `scale-data.ts`'s unrendered mood descriptions (FACTS 55 keeps them listed), and MASTER-PLAN § 7's App content row, a task list for the track.
+    - Docs in the same commit: FACTS 48, 49, 55 and the Unverified note, LESSON.md's practice-card note, and WEB-SPEC's App content item now describe the corrected copy. plan-cites stays 157.
+    - Tests: `src/types/walkthrough.test.ts` (new, colocated) and a Drone case in `exercise-help.test.ts`; five mutations (A Major back, "cheerful" back, no tendency, "pure intonation" back, "stop beating" back) each fail one.
+    - A PR once gated (the owner, 25 October: open PRs for the rest of the lessons and kit, merge none); it merges only on the owner's go after the tag, with the held PRs.
+    - It conflicts with #1213 (drill v2) only in the three Lesson 10 doc passages both edit: FACTS 49 (one line), LESSON.md's practice-card note and WEB-SPEC's App content item; the code merges clean (`git merge-tree`). So it merges after #1213, rebased onto main then, the passages merged word by word: the score tops out at 80 (#1213) and the copy now says equal-tempered (this branch).

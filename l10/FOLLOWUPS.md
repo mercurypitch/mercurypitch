@@ -24,3 +24,12 @@
   - The triad syllables are literals until K1's `MAJOR_SOLFEGE` and `MINOR_SOLFEGE` are in the base; swap them then.
   - The ear games' roots are chromatic, MIDI 60 to 67 (FACTS 78 says "C4 to G4").
   - Two whole-suite load timeouts in that run (`lesson-07/sing.test.ts`, `kit/beat-layout.test.ts`) were not checked against main; both have timed out under load before.
+
+- **From the layout-hero review (25 Oct, head 821ef42a1):**
+  - The chords commits (P1, P2, P3, P7, under bdd1f8ef7) cite "PLAN Pn" in their messages: reword them in the PR-time fold (decision 20). Rewording now would move both branches stacked on them.
+  - P11 or the hero's wiring: if the page pulses the chord's beads as they sound, the pulse must follow mi's or so's glide, or leave the moving bead as the one that sounds; and `setView('top')` at mount moves the camera unless the page starts it from above.
+  - The toy sets the compact strip's text at 12 px or less (the box is 14.5 px tall; about 360 px wide at 844 x 390).
+
+- **From the sing-quiz review (25 Oct, head e409678d5):**
+  - P22: the spec's Toys 6 takes the flow's status lines, the series' with "Merc's notes" and "them", and "Your turn: sing with the guide." while a sweep runs.
+  - If the coach settles the feeling answer on `changeable`, the flow takes Lesson 8's rested rule and line ("Merc can still sing the notes for you.", to be settled then).
