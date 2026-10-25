@@ -48,7 +48,7 @@ and wordmark, and the motion rules. On this page:
   leaps are amber arcs between them; the viewer's line, and the illustrated singer's in Steps 2 and
   5, are singer violet `#a78bfa`. Violet means a singer only. A band's edge lights mint `#80ffca`
   with the words "IN THE BAND" while a line sits inside it (`drawLitEdge`,
-  `kit/band-chart-draw.ts:189-208`), so the word, not the colour, carries it.
+  `kit/band-chart-draw.ts:190-209`), so the word, not the colour, carries it.
 - Each rung is named in words beside its band, its syllable and its spelled note ("so · A3"), and no
   other row of the chart is named (Toys 1, Drawing). Gold `#ffd84d`, which means "the fit", is not
   used: the band itself is the landing zone.
@@ -167,7 +167,7 @@ step, hear, ladder, order, landing and free play, plus live mode at the checkpoi
   px gutter on the left (`:181`). Only the rungs' rows are named, each by its syllable and its
   spelled note in Lesson 4's spelling ("so · A3"), through a new rung-names option beside `named`,
   since the kit's grid letters every natural row and names its `named` notes in full
-  (`drawNotesGrid`, `kit/band-chart-draw.ts:112-137`; FACTS 22). Time runs left to right. Each of
+  (`drawNotesGrid`, `kit/band-chart-draw.ts:113-138`; FACTS 22). Time runs left to right. Each of
   Merc's notes is a rung: a band 35 cents either side, Voice Mirror's own (`HIT_TOLERANCE_CENTS`,
   FACTS 43), with Merc's steady line at its centre; the vibrato of his "ooh" is never drawn, as the
   kit's band rule says (`band-chart.ts:5-12`). A rung is drawn either over its own time slot, so a
