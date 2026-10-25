@@ -143,11 +143,16 @@ export const FIRST_PAINT_BUDGETS_KB = {
   // Raised to 131 for Lesson 9's page shell: 132,918 bytes on its branch
   // before it, 133,324 with it, against 133,120 at 130. 86 of the 406 are
   // Lesson 9's season entry and drafts line, on every lesson page. The
-  // other 320 are the kit's predict, quiz and hero sky (kit/predict.ts,
-  // quiz.ts, hero-sky.ts) in a chunk of their own, with its preload list
-  // and its imports, and the minifier's renaming: every other lesson page
-  // loads them, and Lesson 9's shell does not yet. Once its cold open and
-  // its quizzes load them the chunk goes, and 130 holds.
+  // other 320 were the kit's predict, quiz and hero sky (kit/predict.ts,
+  // quiz.ts, hero-sky.ts) in a chunk of their own, which went once Lesson
+  // 9's cold open and quizzes loaded them; yet 133,409 bytes still need
+  // 131. Lesson 9 loads only some of the modules this page shares, so each
+  // group splits, with a preload and imports of its own: the voice choice
+  // leaves the comfort check's chunk (kit/voice-choice.ts, comfort.ts),
+  // the band chart leaves the folds' (kit/band-chart.ts, folds.ts), and
+  // Merc and Tavi's two images, which Lessons 1 to 8 import and Lesson 9
+  // does not, keep a chunk of their own. Each merges again once Lesson 9
+  // loads the rest, and 130 can be tried then.
   'learn/03.html': 131,
   // Lesson 5, a draft too, built in every mode as Lesson 3 is. Measured 122
   // with the lesson menu and the next-lesson card (109 before them), and 129
@@ -216,7 +221,14 @@ export const FIRST_PAINT_BUDGETS_KB = {
   // lesson page shares now that this page loads them too; and the kit's
   // runs, Merc's hop and the still sky (chunks shared with the lessons that
   // have them).
-  'learn/09.html': 97,
+  // Raised to 116 for the recall and the quick check: 118,011 bytes with
+  // them, against 99,328 at 97, and 19,476 more than with the cold open.
+  // The quick check's questions and the recall; Lesson 6's questions, its
+  // melody, examples and quiz plays, and through its questions Lesson 4's,
+  // and Lesson 2's with their pair and examples (chunks shared with the
+  // lessons that have them); and the kit's quiz, which joins the chunk
+  // every lesson page shares.
+  'learn/09.html': 116,
 
   // The main app, and the crawlable doors that are the main app. Measured
   // 4669. It is eager by design today, so this is a ceiling on growth rather
