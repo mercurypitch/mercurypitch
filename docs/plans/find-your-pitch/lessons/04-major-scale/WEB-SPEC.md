@@ -127,7 +127,7 @@ transforms is one object on the page.
 - **One action per tap.** A tap on a stair plays its note in the soft tone, in every state but the
   compact one. A tap on a key of the strip plays that key in steps 1 and 2; from step 3 on, and in
   free play, it makes that key do instead. A pointer that moves more than 6 px before it lifts is a
-  drag, not a tap, as on Lesson 1's spiral (`kit/spiral.ts:517`).
+  drag, not a tap, as on Lesson 1's spiral (`kit/spiral.ts:539`).
 - **Play up** and **Play down** (FACTS 57) light each stair and key as it sounds; **Slow** doubles
   every length (MASTER-PLAN § 4.2 item 5).
 - **Step sizes** (step 1): the T and S labels show, and the two semitone steps light gold once
