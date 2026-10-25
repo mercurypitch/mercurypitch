@@ -12,8 +12,8 @@ import { cleanup, fireEvent, render, screen } from '@solidjs/testing-library'
 import { createRoot, createSignal } from 'solid-js'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { setCoachActive, setShowcaseOn } from '@/lib/coach-state'
+import type { CoachTour } from '@/lib/coach-types'
 import type { ActiveTab } from '@/types'
-import type { CoachTour } from './coach/types'
 
 const store = vi.hoisted(() => ({
   hasPageTour: vi.fn((_tab: string) => true),
@@ -64,6 +64,7 @@ const registry = vi.hoisted(() => ({
 }))
 vi.mock('./coach-tours', () => registry)
 
+import { startRoomTour } from './room-tour'
 import { requestTourChip, TourChipHost } from './TourChipHost'
 
 const KEY = (tab: string): string => `pitchperfect_page_tour_offered_${tab}`
@@ -283,6 +284,28 @@ describe('TourChipHost: the chip', () => {
     store.setWalkthrough(true)
 
     await vi.waitFor(() => expect(coach.endCoachTour).toHaveBeenCalledOnce())
+  })
+
+  it('offers nothing on a tab whose tour another door started, once it is over', async () => {
+    // Arrange: the showcase holds the screen, then hands over to Start
+    // here's tour (enterStop), as the plan's Show me around does.
+    registry.COACH_TOURS = {
+      singing: { key: 'sing', load: vi.fn(async () => SING_TOUR) },
+    }
+    store.hasPageTour.mockReturnValue(false)
+    setShowcaseOn(true)
+    mount('singing')
+    startRoomTour('singing')
+    setShowcaseOn(false)
+    await vi.waitFor(() => expect(coach.startCoachTour).toHaveBeenCalled())
+
+    // Act: the tour is over, and Merc lets go of the screen.
+    setCoachActive(null)
+    await settle()
+
+    // Assert
+    expect(chip()).toBeNull()
+    expect(store.trackTour).not.toHaveBeenCalled()
   })
 
   it('waits for a running Merc tour', async () => {

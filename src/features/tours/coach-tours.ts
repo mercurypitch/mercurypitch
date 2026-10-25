@@ -9,17 +9,23 @@
 // page's first paint. Tours are web only, as the legacy ones are
 // (TOURS_AVAILABLE): the native build lists none.
 
+import type { CoachTour } from '@/lib/coach-types'
 import { IS_NATIVE_BUILD } from '@/lib/native-build'
 import type { TourKey } from '@/lib/tour-ids'
 import type { ActiveTab } from '@/types'
-import type { CoachTour } from './coach/types'
 
 export interface CoachTourEntry {
   key: TourKey
   load: () => Promise<CoachTour>
 }
 
-const WEB_TOURS: Partial<Record<ActiveTab, CoachTourEntry>> = {}
+const WEB_TOURS: Partial<Record<ActiveTab, CoachTourEntry>> = {
+  singing: {
+    key: 'sing',
+    load: async () =>
+      import('@/features/practice/sing-tour').then((m) => m.SING_TOUR),
+  },
+}
 
 export const COACH_TOURS: Partial<Record<ActiveTab, CoachTourEntry>> =
   IS_NATIVE_BUILD ? {} : WEB_TOURS

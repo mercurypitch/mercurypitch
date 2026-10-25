@@ -337,6 +337,8 @@ describe('the one takeover per visit', () => {
     ).toEqual([
       "'@/features/plan/OpeningTakeover'",
       "'@/features/plan/PlanLayer'",
+      // A finished Merc tour's "Next on your plan" (app-tour-handoff.test.ts).
+      "'@/features/plan/load-plan-handoff'",
       "'@/features/plan/plan-store'",
     ])
     expect(imports.filter((call) => !foldedAway(call))).toEqual([])

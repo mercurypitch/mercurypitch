@@ -15,8 +15,8 @@
 //   which a full-screen stage makes inert while it is up.
 
 import { coachActive, setCoachActive } from '@/lib/coach-state'
+import type { CoachHandoff, CoachTour } from '@/lib/coach-types'
 import type { CoachEnd } from './runner'
-import type { CoachHandoff, CoachTour } from './types'
 
 export interface CoachHandle {
   /** Ends the tour now: an exit where it stands, or the hand-over closed. */

@@ -13,7 +13,9 @@
 // - watch: something to look at or read later. The tour goes on.
 //
 // Tour content lives beside its room and imports only these types, so a
-// room's tour costs its chunk a few hundred bytes of strings.
+// room's tour costs its chunk a few hundred bytes of strings. They live in lib
+// beside the event bus, so a room's feature writes its tour without importing
+// the tours (src/features/tours) or loading the coach.
 
 import type { CoachEventName } from '@/lib/coach-events'
 import type { MercState } from '@/lib/merc/constants'
@@ -33,8 +35,10 @@ interface CoachStepBase {
   title: string
   body: string
   /**
-   * A `[data-tour="..."]` (or `#id`) selector for what the step points at.
-   * None, or nothing on screen that matches, and the bubble stands centred.
+   * A `[data-tour="..."]` (or `#id`) selector for what the step points at, or
+   * a list of them where a phone and a wide screen draw the same control
+   * apart: the first match laid out is used (find-target.ts). None, or nothing
+   * on screen that matches, and the bubble stands centred.
    */
   target?: string
   /** Merc's pose while the step shows. */

@@ -2,11 +2,13 @@
 // coachActive from the ask, so an offer due while it loads waits for it; one
 // ended, unwanted or asked for again while it loads never shows; a chunk that
 // does not arrive lets go. A tab without one gets its legacy spotlight tour,
-// and a tab with neither gets nothing.
+// and a tab with neither gets nothing. A Merc tour ends on what the app names
+// next (provideTourHandoff), and a tour that starts spends its tab's offer.
 
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { coachActive, setCoachActive } from '@/lib/coach-state'
-import type { CoachTour } from './coach/types'
+import type { CoachTour } from '@/lib/coach-types'
+import type { CoachStartOptions } from './coach/start'
 
 const fakes = vi.hoisted(() => ({
   hasPageTour: vi.fn((_tab: string) => false),
@@ -24,7 +26,7 @@ const registry = vi.hoisted(() => ({
 }))
 vi.mock('./coach-tours', () => registry)
 
-import { startRoomTour } from './room-tour'
+import { provideTourHandoff, startRoomTour, tourOfferKey } from './room-tour'
 
 const TOUR: CoachTour = { key: 'sing', steps: [] }
 
@@ -48,6 +50,8 @@ beforeEach(() => {
   fakes.hasPageTour.mockReturnValue(false)
   registry.COACH_TOURS = {}
   setCoachActive(null)
+  provideTourHandoff(null)
+  localStorage.clear()
 })
 
 afterEach(() => {
@@ -138,5 +142,127 @@ describe('startRoomTour', () => {
 
     expect(fakes.startPageTour).not.toHaveBeenCalled()
     expect(fakes.startCoachTour).not.toHaveBeenCalled()
+    expect(localStorage.getItem(tourOfferKey('settings'))).toBeNull()
+  })
+})
+
+describe('what a finished Merc tour offers next', () => {
+  it('is what the app names for the tab toured, loaded with the tour', async () => {
+    const tour = singTour()
+    const go = vi.fn()
+    provideTourHandoff(async () => (tab) => ({
+      title: 'Next on your plan',
+      body: `after ${tab}`,
+      go,
+    }))
+
+    startRoomTour('singing')
+    tour.arrive()
+    await vi.waitFor(() => {
+      expect(fakes.startCoachTour).toHaveBeenCalled()
+    })
+
+    const [, opts] = fakes.startCoachTour.mock.calls[0] as [
+      CoachTour,
+      CoachStartOptions,
+    ]
+    expect(opts.phone).toBe(true)
+    expect(opts.handoff?.()).toEqual({
+      title: 'Next on your plan',
+      body: 'after singing',
+      go,
+    })
+  })
+
+  it('is nothing when it does not load, and the tour still starts', async () => {
+    const tour = singTour()
+    provideTourHandoff(async () => Promise.reject(new Error('chunk')))
+
+    startRoomTour('singing')
+    tour.arrive()
+    await vi.waitFor(() => {
+      expect(fakes.startCoachTour).toHaveBeenCalled()
+    })
+    await settled()
+
+    const [, opts] = fakes.startCoachTour.mock.calls[0] as [
+      CoachTour,
+      CoachStartOptions,
+    ]
+    expect(opts.handoff?.()).toBeNull()
+  })
+
+  it('never holds the tour back while it loads, and is nothing until it has', async () => {
+    const tour = singTour()
+    let arrive!: () => void
+    provideTourHandoff(
+      async () =>
+        new Promise((resolve) => {
+          arrive = () =>
+            resolve((tab) => ({ title: 'Next', body: tab, go: vi.fn() }))
+        }),
+    )
+
+    startRoomTour('singing')
+    tour.arrive()
+    await vi.waitFor(() => {
+      expect(fakes.startCoachTour).toHaveBeenCalled()
+    })
+    const [, opts] = fakes.startCoachTour.mock.calls[0] as [
+      CoachTour,
+      CoachStartOptions,
+    ]
+    expect(opts.handoff?.()).toBeNull()
+
+    arrive()
+    await settled()
+    expect(opts.handoff?.()).toMatchObject({ body: 'singing' })
+  })
+
+  it('is not asked for where the app names none', async () => {
+    const tour = singTour()
+
+    startRoomTour('singing')
+    tour.arrive()
+    await vi.waitFor(() => {
+      expect(fakes.startCoachTour).toHaveBeenCalled()
+    })
+
+    expect(fakes.startCoachTour).toHaveBeenCalledExactlyOnceWith(TOUR, {
+      phone: true,
+    })
+  })
+})
+
+describe("a tab's offer", () => {
+  it('is spent when its Merc tour starts, so the chip never offers what was just shown', async () => {
+    const tour = singTour()
+    startRoomTour('singing')
+    expect(localStorage.getItem(tourOfferKey('singing'))).toBeNull()
+
+    tour.arrive()
+    await vi.waitFor(() => {
+      expect(fakes.startCoachTour).toHaveBeenCalled()
+    })
+
+    expect(localStorage.getItem(tourOfferKey('singing'))).toBe('true')
+  })
+
+  it('is spent when its legacy spotlight tour starts', () => {
+    fakes.hasPageTour.mockReturnValue(true)
+
+    startRoomTour('guitar')
+
+    expect(localStorage.getItem(tourOfferKey('guitar'))).toBe('true')
+  })
+
+  it('is kept for a Merc tour that never showed', async () => {
+    const tour = singTour()
+    startRoomTour('singing')
+
+    tour.fail()
+    await settled()
+
+    expect(localStorage.getItem(tourOfferKey('singing'))).toBeNull()
   })
 })

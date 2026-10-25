@@ -23,8 +23,8 @@
 import type { Accessor } from 'solid-js'
 import { createSignal, untrack } from 'solid-js'
 import { onCoachEvent } from '@/lib/coach-events'
+import type { CoachStep, CoachTour } from '@/lib/coach-types'
 import { trackTour } from '@/lib/guide-funnel'
-import type { CoachStep, CoachTour } from './types'
 
 /** How long Merc celebrates a done do-step before the next step shows. */
 export const CELEBRATE_MS = 900

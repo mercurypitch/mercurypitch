@@ -77,11 +77,12 @@ export const SingingControlBar: Component<SingingControlBarProps> = (props) => {
 
   return (
     <div class={styles.bar} data-testid="practice-header-bar">
-      {/* Mic */}
+      {/* Mic: where the Sing tab's Merc tour starts on a wide screen */}
       <MicButton
         active={micActive()}
         onClick={props.onMicToggle}
         disabled={false}
+        tour="sing.mic"
       />
 
       {/* Transport */}

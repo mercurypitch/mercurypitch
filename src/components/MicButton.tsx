@@ -12,6 +12,11 @@ interface MicButtonProps {
   active: boolean
   onClick: () => void
   disabled?: boolean
+  /**
+   * A tour's hook for this bar's mic (`data-tour`). Every bar shares this
+   * button, so only a bar a tour points at names one.
+   */
+  tour?: string
 }
 
 export const MicButton: Component<MicButtonProps> = (props) => {
@@ -53,6 +58,7 @@ export const MicButton: Component<MicButtonProps> = (props) => {
       onClick={() => props.onClick?.()}
       disabled={props.disabled}
       aria-pressed={props.active}
+      data-tour={props.tour}
       aria-label={props.active ? 'Disable microphone' : 'Enable microphone'}
       title={props.active ? 'Disable microphone' : 'Enable microphone'}
       style={{

@@ -11,10 +11,13 @@
 // - Every stop showcaseStops gives for the menu as it stands is visited, in
 //   order, with its line. A tap moves on, and the last stop ends the walk by
 //   itself after STOP_MS to the millisecond. The walk then lands on Start
-//   here: the Sing tab.
+//   here, the Sing tab, and hands over to its Merc tour, which rings the mic.
+//   Ended there, the tour leaves nothing behind, and the chip does not offer
+//   the tour that was just shown.
 // - One Merc at a time. A MutationObserver counts Merc's canvases after every
-//   change to the page, through the plan's Merc, the walk's and what follows,
-//   and never sees two. Merc is drawn live, as on a phone with a GPU, or there
+//   change to the page, through the plan's Merc, the walk's and the tour's
+//   that follows it, and never sees two. Merc is drawn live, as on a phone
+//   with a GPU, or there
 //   would be no canvas to count: headless Chrome 148 gives the app's probe
 //   (gpu-gate.ts, which asks for a context without a performance caveat) no
 //   WebGL2 at all unless SwiftShader is made its GPU, which the launch flags
@@ -225,9 +228,15 @@ const version = (
 ).version
 
 for (const vp of VIEWPORTS) {
-  test(`Show me around stands Merc by every stop, then opens Start here, at ${vp.width}x${vp.height} @smoke`, async ({
+  test(`Show me around stands Merc by every stop, then opens Start here and its tour, at ${vp.width}x${vp.height} @smoke`, async ({
     page,
   }) => {
+    // Two live Mercs are drawn on SwiftShader, on the CPU, in this test: the
+    // plan's and the Sing tour's. With three such browsers at once, 4 runs of
+    // 9 ran out of the default 30 s just after the tour's Merc went up (one
+    // browser at a time: 9 of 9 passed; with 60 s, 12 of 12 in six). The
+    // steps' own waits add up to more than 30 s.
+    test.setTimeout(60_000)
     const plan = answeredPlanSeed()
     await page.setViewportSize({ width: vp.width, height: vp.height })
     await page.addInitScript(seedVisit, {
@@ -286,7 +295,6 @@ for (const vp of VIEWPORTS) {
     await page.clock.runFor(1)
     await expect(walk).toHaveCount(0)
     await page.clock.resume()
-    await expect(page.locator('#coach-root')).toHaveCount(0)
     // More's sheet, which the walk opened on a phone, is closed again.
     await expect(page.getByTestId('sheet-panel')).toHaveCount(0)
     await expect(page.locator('#tab-singing')).toHaveAttribute(
@@ -294,10 +302,60 @@ for (const vp of VIEWPORTS) {
       'page',
     )
 
+    // Start here's own tour follows: Merc's, which starts at the mic.
+    const bubble = page.getByTestId('coach-bubble')
+    await expect(
+      bubble.getByRole('heading', { name: 'Start the mic' }),
+    ).toBeVisible({ timeout: 15_000 })
+    const mic = page.locator(
+      vp.phone ? '[data-tour="singing-transport"]' : '[data-tour="sing.mic"]',
+    )
+    const ring = page.getByTestId('coach-ring')
+    await expect(ring).toBeVisible()
+    const micBox = await mic.boundingBox()
+    const ringBox = await ring.boundingBox()
+    const bubbleBox = await bubble.boundingBox()
+    if (micBox === null || ringBox === null || bubbleBox === null) {
+      throw new Error('the mic, its ring or the bubble is not laid out')
+    }
+    const box = (b: typeof micBox): Rect => ({
+      top: b.y,
+      left: b.x,
+      right: b.x + b.width,
+      bottom: b.y + b.height,
+    })
+    const [micRect, ringRect, bubbleRect] = [micBox, ringBox, bubbleBox].map(
+      box,
+    )
+    const at = JSON.stringify({ micRect, ringRect, bubbleRect })
+    expect(ringRect.left, `the ring misses the mic: ${at}`).toBeLessThanOrEqual(
+      micRect.left,
+    )
+    expect(ringRect.top).toBeLessThanOrEqual(micRect.top)
+    expect(ringRect.right).toBeGreaterThanOrEqual(micRect.right)
+    expect(ringRect.bottom).toBeGreaterThanOrEqual(micRect.bottom)
+    expect(
+      overlaps(bubbleRect, micRect),
+      `the bubble covers the mic: ${at}`,
+    ).toBe(false)
+
+    // The tour's Merc is drawn live too, so the count below saw his canvas.
+    await expect(page.getByTestId('coach-merc')).toHaveAttribute(
+      'data-presence',
+      'live',
+      { timeout: 20_000 },
+    )
+
+    // Ended there, it leaves nothing behind, and nothing offers it again.
+    await page.getByRole('button', { name: 'End tour' }).click()
+    await expect(page.locator('#coach-root')).toHaveCount(0)
+    await expect(page.getByTestId('tour-chip')).toHaveCount(0)
+
     const watched = await page.evaluate(
       () => (window as unknown as { __showcaseWatch: Watched }).__showcaseWatch,
     )
-    // Merc was drawn live, so the count below counted something.
+    // Merc was drawn live, so the count below counted something: never two
+    // at once, through the walk and the tour that took over from it.
     expect(watched.coach).toBe(1)
     expect(watched.mercs).toBeLessThanOrEqual(1)
     if (vp.phone) {
