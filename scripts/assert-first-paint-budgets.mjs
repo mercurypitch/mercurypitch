@@ -204,7 +204,13 @@ export const FIRST_PAINT_BUDGETS_KB = {
   // The listener, the pitch detector and the ladder's reader are to arrive
   // through a dynamic import when Sing it's Start is pressed, as on Lessons
   // 3 and 7, so the page stays light only while that boundary holds.
-  'learn/09.html': 89,
+  // Raised to 90 for the steps' ladder chart: 91,506 bytes with it, against
+  // 91,136 at 89, and 18,918 more than the shell. The chart's controller,
+  // its ladder data, the kit's band chart (a chunk shared with Lessons 3
+  // and 5) and the rungs, arcs and rung names only this page paints, Move
+  // do's bounds and the voice choice (chunks shared with the lessons that
+  // have them).
+  'learn/09.html': 90,
 
   // The main app, and the crawlable doors that are the main app. Measured
   // 4669. It is eager by design today, so this is a ceiling on growth rather
