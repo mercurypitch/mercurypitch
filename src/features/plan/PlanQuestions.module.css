@@ -57,6 +57,22 @@
   height: calc(100% + var(--pc-room) + var(--pc-reach));
 }
 
+/* While a typed line has focus and a phone's keyboard covers the region's
+   foot, the region ends in this spacer, as tall as what the keyboard covers
+   and a margin, so the line can scroll up above the keyboard
+   (lib/field-above-keyboard.ts sets the attribute and --keyboard-room). A
+   box, not padding: Safari 26 leaves a flex column's padding out of its
+   scroll range (WebKit bug 316902). It stretches across the region, because
+   the region centres its items and WebKit leaves an empty box with no width
+   out of the range too. It is there only while the attribute is, so the gap
+   before it never moves the screens without a keyboard. */
+.root[data-keyboard-room]::after {
+  content: '';
+  flex: none;
+  align-self: stretch;
+  height: var(--keyboard-room);
+}
+
 /* ── Merc's line ──────────────────────────────────────────────── */
 
 /* The bubble is the chrome's. The pop a new pick gives it is in the motion

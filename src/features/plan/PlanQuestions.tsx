@@ -37,11 +37,15 @@
 // (First Light's); the screens add the eyebrow. Back and Not now are
 // PlanExits', and what the host owes the screens (the box, and where Merc
 // sits) is written in full in that file's header. The root fills that box and
-// scrolls its own content, and each question opens at the top of it.
+// scrolls its own content, and each question opens at the top of it. While a
+// typed line has focus, the root ends in a spacer as tall as what a phone's
+// keyboard covers (PlanQuestions.module.css) and lifts the line into view
+// (lib/field-above-keyboard.ts).
 
 import type { Component, JSX } from 'solid-js'
 import { createMemo, createSignal, createUniqueId, For, Match, onCleanup, onMount, Show, Switch, untrack, } from 'solid-js'
 import { CheckSmall, ChevronLeft, Ear, Guitar, Mic, PianoKeys, } from '@/components/icons'
+import { keepFieldAboveKeyboard } from '@/lib/field-above-keyboard'
 import type { MercState } from '@/lib/merc/constants'
 import type { PlanTexts } from './plan-record'
 import { Q3_OTHER_MAX, Q4_APP_MAX } from './plan-record'
@@ -421,6 +425,12 @@ export function PlanQuestions(props: PlanQuestionsProps): JSX.Element {
   }
 
   onMount(() => mercPose('drop', 'idle', DROP_MS))
+
+  // A typed line opens focused, low on the screen, and the phone's keyboard
+  // would cover it: the region makes room under it and lifts it into view.
+  onMount(() => {
+    if (root !== undefined) onCleanup(keepFieldAboveKeyboard(root))
+  })
 
   /** Merc's reply to a pick: his line changes, and it pops. */
   function reply(said: string): void {
