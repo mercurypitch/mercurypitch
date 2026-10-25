@@ -177,7 +177,7 @@ export function mount(
 
   // Enabled before any compile, so ANGLE compiles off the GPU process's main
   // thread. Capture links at once, as a browser without the extension does.
-  const parallel = live ? gl.getExtension('KHR_parallel_shader_compile') : null
+  let parallel = live ? gl.getExtension('KHR_parallel_shader_compile') : null
   let res: GlResources | null = null
   // Still with the driver: the first programs, and a quality asked for.
   let building: ProgramBuild | null = null
@@ -573,6 +573,9 @@ export function mount(
 
   function onRestored(): void {
     if (destroyed || failed) return
+    // A restored context starts with no extension enabled: ask again, or
+    // every poll asks for a status it does not know, and he never returns.
+    if (live) parallel = gl.getExtension('KHR_parallel_shader_compile')
     try {
       startResources()
     } catch (err) {

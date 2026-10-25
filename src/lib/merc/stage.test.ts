@@ -411,6 +411,40 @@ describe('mountMercStage, while the driver compiles his shaders', () => {
     expect(fake.state.draws).toBe(DRAWS_PER_FRAME)
     expect(onReady).toHaveBeenCalledTimes(1)
   })
+
+  // A browser forgets the extensions it enabled when the context is lost.
+  it('asks for the parallel compile again on a restored context, and draws once the driver is done', () => {
+    // Arrange
+    const frames = frameQueue()
+    const fake = compilingGl()
+    const onReady = vi.fn()
+    const stage = mountStage({ onReady })
+    fake.state.done = true
+    frames.run(1000)
+    const canvas = host.querySelector('canvas')!
+    fake.drop()
+    canvas.dispatchEvent(new Event('webglcontextlost', { cancelable: true }))
+    fake.state.lost = false
+    fake.state.done = false
+    const drawsBefore = fake.state.draws
+    const asked = fake.waits.length
+
+    // Act
+    canvas.dispatchEvent(new Event('webglcontextrestored'))
+    frames.run(2000)
+    frames.run(2016)
+    const linkedCompiling = fake.count('link', asked)
+    const drawsCompiling = fake.state.draws - drawsBefore
+    fake.state.done = true
+    frames.run(2033)
+
+    // Assert
+    expect(linkedCompiling).toBe(0)
+    expect(drawsCompiling).toBe(0)
+    expect(fake.state.draws - drawsBefore).toBe(DRAWS_PER_FRAME)
+    expect(stage.ok).toBe(true)
+    expect(onReady).toHaveBeenCalledTimes(1)
+  })
 })
 
 describe('mountMercStage, mounted again and again', () => {

@@ -29,6 +29,9 @@ export function createFakeGl() {
     done: true,
   }
   const waits: Wait[] = []
+  // Whether getExtension enabled the parallel compile on this context; a
+  // context that is lost forgets it, as a browser's does.
+  let parallelOn = false
   // The int and vec3 uniforms last set, by name, and every shader's text.
   const ints = new Map<string, number>()
   const vec3s = new Map<string, number[]>()
@@ -46,6 +49,7 @@ export function createFakeGl() {
   }
   const loseContext = vi.fn(() => {
     state.lost = true
+    parallelOn = false
   })
   const noop = (): void => {}
   const gl = {
@@ -84,7 +88,8 @@ export function createFakeGl() {
     getProgramParameter: (_p: GlObject, pname: number) => {
       if (pname === COMPLETION_STATUS_KHR) {
         waits.push('completion')
-        return state.done
+        // A query of an extension not enabled is no query: null.
+        return parallelOn ? state.done : null
       }
       waits.push('link')
       return state.compiles
@@ -135,6 +140,7 @@ export function createFakeGl() {
       if (state.lost) return null
       if (name === 'WEBGL_lose_context') return { loseContext }
       if (name === 'KHR_parallel_shader_compile' && state.parallel) {
+        parallelOn = true
         return { COMPLETION_STATUS_KHR }
       }
       return null
@@ -157,6 +163,7 @@ export function createFakeGl() {
     // What a driver does: every object dies with the context.
     drop: () => {
       state.lost = true
+      parallelOn = false
       live.clear()
     },
   }
