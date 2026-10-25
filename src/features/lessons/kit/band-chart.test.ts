@@ -2,8 +2,9 @@
 // Band chart tests — Lessons 3 and 5's charts, mark for mark
 // ============================================================
 //
-// A chart paints its scene in every frame it is on screen. These tests
-// mount charts as Lessons 3 and 5 mount them
+// A chart paints its scene while it is on screen, in each frame where what
+// it shows has changed since the frame it last drew. These tests mount
+// charts as Lessons 3 and 5 mount them
 // (band-chart-lessons.test-fixtures.ts), on canvases that keep every call
 // they hear (band-chart.test-fixtures.ts), set a scene, run one frame of the
 // page's loop, and read the calls back as the marks they draw. Each lesson's
@@ -15,7 +16,8 @@
 
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import './browser-doubles.test-fixtures'
-import { paintCharts, picture } from './band-chart.test-fixtures'
+import type { Call } from './band-chart.test-fixtures'
+import { marksOf, mountCharts, paintCharts, picture, } from './band-chart.test-fixtures'
 import { HOLD_5, OCTAVES_3, PUSH_5, SING_3, } from './band-chart-lessons.test-fixtures'
 
 afterEach(() => {
@@ -242,4 +244,124 @@ describe('the band chart as Lessons 3 and 5 mount it', () => {
     // Assert
     expect(picture(calls)).toEqual(recorded)
   })
+})
+
+/** How many frames the calls painted: each starts by setting its transform. */
+const paintsIn = (calls: readonly Call[]): number =>
+  calls.filter(([name]) => name === 'setTransform').length
+
+/** Lesson 3's Sing it chart, drawn once and at rest: its loop, chart and canvas's calls. */
+async function restingChart() {
+  const { hand, painted } = await mountCharts([SING_3])
+  const first = hand.settle()
+  return { hand, first, ...painted[0] }
+}
+
+describe('the band chart at rest', () => {
+  afterEach(() => {
+    vi.stubGlobal('devicePixelRatio', 1)
+  })
+
+  it('asks for no frame once it has drawn a scene that has not changed', async () => {
+    // Arrange
+    const { hand, painted } = await mountCharts([SING_3])
+
+    // Act
+    const frames = hand.settle()
+
+    // Assert: the one frame that drew it, and none asked for since
+    expect(frames).toBe(1)
+    expect(paintsIn(painted[0].calls)).toBe(1)
+    expect(hand.asked).toHaveLength(0)
+  })
+
+  it('draws nothing in a frame a wake asks for while its scene is unchanged', async () => {
+    // Arrange
+    const { hand, calls } = await restingChart()
+
+    // Act
+    hand.loop.wake()
+    const frames = hand.settle()
+
+    // Assert
+    expect(frames).toBe(1)
+    expect(paintsIn(calls)).toBe(1)
+  })
+
+  it('draws a changed scene in the frame a wake asks for, and then rests', async () => {
+    // Arrange
+    const { hand, chart, calls } = await restingChart()
+
+    // Act: Merc's note stops sounding
+    chart.scene.glow = 0
+    hand.loop.wake()
+    const frames = hand.settle()
+
+    // Assert
+    expect(frames).toBe(1)
+    expect(paintsIn(calls)).toBe(2)
+    expect(hand.asked).toHaveLength(0)
+  })
+
+  it('draws a line grown in place, with no wake, in the frame the next input asks for', async () => {
+    // Arrange: the line grows by a point, and time passes with no input
+    const { hand, chart, calls } = await restingChart()
+    chart.scene.line.push({ t: 3, c: 20 })
+    vi.advanceTimersByTime(5000)
+    const unasked = hand.asked.length
+
+    // Act
+    document.body.dispatchEvent(new Event('pointerdown'))
+    const frames = hand.settle()
+
+    // Assert: the new frame's line reaches the new point
+    const reaches = chart.pointOf(3, 20)
+    const lines = marksOf(calls).filter((m) =>
+      m.line.startsWith('stroke #a78bfa w2.6'),
+    )
+    expect(unasked).toBe(0)
+    expect(frames).toBe(1)
+    expect(lines).toHaveLength(2)
+    expect(lines[1].xs.at(-1)).toBeCloseTo(reaches.x)
+    expect(lines[1].ys.at(-1)).toBeCloseTo(reaches.y)
+  })
+
+  it.each<[string, (r: Awaited<ReturnType<typeof restingChart>>) => void]>([
+    [
+      'a new size',
+      ({ hand, chart }) => {
+        Object.defineProperty(chart.canvas, 'clientWidth', {
+          value: 320,
+          configurable: true,
+        })
+        hand.resize(chart.canvas)
+      },
+    ],
+    [
+      'a new pixel ratio',
+      ({ hand }) => {
+        vi.stubGlobal('devicePixelRatio', 2)
+        hand.zoom()
+      },
+    ],
+    ['a font that loads late', ({ hand }) => hand.fontsLoad()],
+    ["Merc's next note", ({ chart }) => chart.setTarget(60)],
+    ['a new window', ({ chart }) => chart.setWindow(10)],
+    ['a cleared scene', ({ chart }) => chart.clear()],
+  ])(
+    'draws once more for %s, with no other input, and then rests',
+    async (_what, change) => {
+      // Arrange
+      const resting = await restingChart()
+
+      // Act
+      change(resting)
+      const frames = resting.hand.settle()
+
+      // Assert
+      expect(resting.first).toBe(1)
+      expect(frames).toBe(1)
+      expect(paintsIn(resting.calls)).toBe(2)
+    },
+  )
 })

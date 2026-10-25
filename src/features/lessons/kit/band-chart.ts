@@ -23,11 +23,18 @@
 // can name the rungs' rows in words in place of the grid's letters, the
 // gutter widened to fit (`names`, band-chart-names.ts).
 // Each figure is a controller that writes the chart's `scene` (the line, the
-// marks, the glow, the lit edge) and the chart paints it every frame while
-// it is on screen. The time window is fixed and the line draws across it,
-// so the chart never scrolls; under reduced motion a controller lands its
-// figure in the end state instead of animating it. The canvas is an image
-// with a spoken summary (`describe`) unless a controller makes it a slider.
+// marks, the glow, the lit edge) and the chart paints it while it is on
+// screen, in each frame where what it shows differs from what it last drew:
+// the scene, Merc's note, the window, the canvas's size and pixel ratio
+// (frame-loop.ts, `wants`). It compares rather than waits for a wake,
+// because a controller writes the scene in place, from anywhere, and on any
+// input the page's loop asks again; one that changes it from a timer or a
+// sound, with no input on the page, calls the loop's `wake`. With nothing
+// changing, the chart asks for no frame. The time window is fixed and the
+// line draws across it, so the chart never scrolls; under reduced motion a
+// controller lands its figure in the end state instead of animating it. The
+// canvas is an image with a spoken summary (`describe`) unless a controller
+// makes it a slider.
 
 import type { Arc } from './band-chart-arcs'
 import type { BandSpec, CentsTick, ChartFrame, ChartMark, TracePoint, } from './band-chart-draw'
@@ -38,7 +45,7 @@ import type { RungNames } from './band-chart-names'
 import type { Rung } from './band-chart-rungs'
 import { HIT_TOLERANCE_CENTS } from './band-words'
 import { q } from './dom'
-import { addDrawer, surface, watch } from './frame-loop'
+import { addDrawer, surface, wake, watch, watchPixelRatio } from './frame-loop'
 
 export type { CentsTick, ChartMark, TracePoint } from './band-chart-draw'
 export type { LevelPoint } from './band-chart-hold'
@@ -256,13 +263,40 @@ export function mountBandChart(
     paintBelow(f)
   }
 
+  // what the chart shows now, and what its last frame drew, as one string
+  // each: the scene, Merc's note, the window, the canvas's size and ratio
+  let shown = ''
+  let drawn = ''
+  const showing = (): string =>
+    JSON.stringify([
+      scene,
+      target,
+      window,
+      canvas.clientWidth,
+      canvas.clientHeight,
+      globalThis.devicePixelRatio,
+    ])
+  /** Draws again though nothing it compares has moved: a font that loaded after a frame drew its words in another. */
+  const again = (): void => {
+    drawn = ''
+    wake()
+  }
+
   addDrawer({
     active: opts.active ?? watch(canvas),
+    // read just before `draw`, in the same frame, so `draw` keeps it as drawn
+    wants: () => (shown = showing()) !== drawn,
     draw() {
+      drawn = shown
       const { ctx, w, h } = cv.fit()
       paint(frameOf(ctx, w, h))
     },
   })
+  // a new size or pixel ratio wakes a resting loop; a late font draws again
+  new ResizeObserver(wake).observe(canvas)
+  watchPixelRatio(wake)
+  void document.fonts?.ready.then(again)
+  document.fonts?.addEventListener('loadingdone', again)
 
   return {
     canvas,
@@ -282,15 +316,18 @@ export function mountBandChart(
       target = midi
       ;[lo, hi] = reach(axis, target)
       scene = blankScene()
+      wake()
     },
     get window() {
       return window
     },
     setWindow(seconds) {
       window = seconds
+      wake()
     },
     clear() {
       scene = blankScene()
+      wake()
     },
     describe(text) {
       canvas.setAttribute('aria-label', text)
