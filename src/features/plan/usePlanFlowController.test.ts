@@ -27,6 +27,7 @@
 // a copy.
 
 import { createRoot } from 'solid-js'
+import type { Mock } from 'vitest'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type * as AuthServiceModule from '@/db/services/auth-service'
 import type * as BillingServiceModule from '@/db/services/billing-service'
@@ -34,6 +35,7 @@ import type { Pricing, PricingPlan } from '@/db/services/billing-service'
 import { formatPrice } from '@/db/services/billing-service'
 import type * as SurveyServiceModule from '@/db/services/survey-service'
 import { GUIDE_FUNNEL_STORAGE_KEY } from '@/lib/guide-funnel'
+import { answerHomeSessionAsks } from '@/lib/home-session-ask'
 import { applyPersistedValue } from '@/lib/storage'
 import type * as NotificationsStoreModule from '@/stores/notifications-store'
 import { practiceScope, setPracticeScope, setUiMode, uiMode, } from '@/stores/settings-store'
@@ -101,6 +103,13 @@ const GUITAR: PlanChoices = {
   q3: ['time'],
   q4: ['app'],
 }
+/** Everything, with friends, short of time: Start here is today's session, Home's own. */
+const HABIT: PlanChoices = {
+  q1: 'everything',
+  q2: 'together',
+  q3: ['time'],
+  q4: ['starting'],
+}
 const NO_TEXTS: PlanTexts = { q3other: '', q4app: '' }
 const NO_PILLS: ReadonlyMap<string, DOMRect> = new Map()
 
@@ -140,6 +149,18 @@ function start(
 }
 
 const settle = (): Promise<void> => new Promise((r) => setTimeout(r, 0))
+
+/**
+ * Home, answering asks for today's session until the case ends. An ask an
+ * earlier case left waiting is drained first, so only this case's count.
+ */
+async function homeAnswering(): Promise<Mock<() => void>> {
+  const answer = vi.fn<() => void>()
+  disposers.push(answerHomeSessionAsks(answer))
+  await Promise.resolve()
+  answer.mockClear()
+  return answer
+}
 
 /** A pack of credits as the server lists it. */
 function pack(amount: number | null, purchasable = true): PricingPlan {
@@ -830,6 +851,42 @@ describe('opening a stop', () => {
     expect(practiceScope()).toBe('all')
     expect(uiMode()).toBe('simple')
   })
+
+  it("asks Home for today's session when the stop is Home's own, which the host only switches to", async () => {
+    // Arrange
+    const home = await homeAnswering()
+    const { c, exits } = start('new')
+    c.done(HABIT, NO_TEXTS, NO_PILLS)
+    const today = c.plan()?.start
+    if (today === undefined) throw new Error('a Start here card')
+    expect(today.dest).toBe('homeSession')
+
+    // Act
+    c.openStop(today)
+    await Promise.resolve()
+
+    // Assert
+    expect(home).toHaveBeenCalledOnce()
+    expect(exits.map((e) => e.exit)).toEqual([
+      { to: 'stop', stop: today, tour: false },
+    ])
+  })
+
+  it('asks Home nothing for a stop that is not its own', async () => {
+    // Arrange
+    const home = await homeAnswering()
+    const { c } = start('new')
+    c.done(HABIT, NO_TEXTS, NO_PILLS)
+    const learn = c.plan()?.learn
+    if (learn === null || learn === undefined) throw new Error('a Learn card')
+
+    // Act
+    c.openStop(learn)
+    await Promise.resolve()
+
+    // Assert
+    expect(home).not.toHaveBeenCalled()
+  })
 })
 
 describe('Show me around', () => {
@@ -847,6 +904,25 @@ describe('Show me around', () => {
     // It starts the stop as the card does: counted, and marked opened.
     expect(sent().at(-1)).toBe('plan_stop_start')
     expect(stopOpened(here.dest)).toBe(true)
+  })
+
+  it("asks Home nothing when Start here is today's session: the room's tour leads", async () => {
+    // Arrange
+    const home = await homeAnswering()
+    const { c, exits } = start('new')
+    c.done(HABIT, NO_TEXTS, NO_PILLS)
+    const today = c.plan()?.start
+    if (today === undefined) throw new Error('a Start here card')
+
+    // Act
+    c.showMeAround()
+    await Promise.resolve()
+
+    // Assert
+    expect(home).not.toHaveBeenCalled()
+    expect(exits.map((e) => e.exit)).toEqual([
+      { to: 'stop', stop: today, tour: true },
+    ])
   })
 
   it('shows every room again first when the menu hides Start here', () => {

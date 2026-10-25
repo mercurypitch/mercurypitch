@@ -29,16 +29,20 @@
 //
 // This file is where Home reaches the card, so it is also where Home answers
 // the one thing the card asks of it: the Start here row that is today's
-// session, which is Home's own (`startPlannedSession`). It lives here and not
-// in HomePage.tsx because a page that needs its whole world to render cannot
-// be tested for what it does. Both are held by home-card-mount.test.ts
-// (R30, read from source) and HomePlanCardMount.test.ts (run).
+// session, which is Home's own (`startPlannedSession`). First Light and the
+// plan layer ask the same from outside Home (src/lib/home-session-ask.ts), and
+// the mount answers them with the card's own handler while Home is drawn. It
+// lives here and not in HomePage.tsx because a page that needs its whole world
+// to render cannot be tested for what it does. Both are held by
+// home-card-mount.test.ts (R30, read from source) and
+// HomePlanCardMount.test.ts (run).
 
 import type { Component, JSX } from 'solid-js'
-import { ErrorBoundary, lazy, Show, Suspense } from 'solid-js'
+import { ErrorBoundary, lazy, onCleanup, onMount, Show, Suspense, } from 'solid-js'
 import type { HomePlanCardProps } from '@/features/plan/HomePlanCard'
 import type { PlanCardSlot } from '@/features/plan/plan-card-slot'
 import { readPlanCardSlot } from '@/features/plan/plan-card-slot'
+import { answerHomeSessionAsks } from '@/lib/home-session-ask'
 import { IS_NATIVE_BUILD } from '@/lib/native-build'
 import styles from './HomePlanCardMount.module.css'
 
@@ -91,6 +95,7 @@ function slotNow(): PlanCardSlot | null {
 export function HomePlanCardMount(props: HomePlanCardProps): JSX.Element {
   // Read once, as Home is drawn.
   const slot = slotNow()
+  onMount(() => onCleanup(answerHomeSessionAsks(props.onHomeSession)))
   return (
     <ErrorBoundary
       fallback={(error: unknown) => {

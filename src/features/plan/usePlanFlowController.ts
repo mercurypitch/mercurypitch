@@ -49,6 +49,7 @@ import { accountHeld } from '@/db/services/auth-service'
 import { fetchBillingMe, fetchPricing } from '@/db/services/billing-service'
 import type { GuideFunnelEvent } from '@/lib/funnel-event-catalog'
 import { trackGuide } from '@/lib/guide-funnel'
+import { askHomeForTodaysSession } from '@/lib/home-session-ask'
 import type { MercState } from '@/lib/merc/constants'
 import { CAN_TAKE_PAYMENT } from '@/lib/native-build'
 import { loadFeaturedPromo, offeredPromo } from '@/stores/promo-store'
@@ -351,12 +352,15 @@ export function usePlanFlowController(o: PlanFlowOptions): PlanFlowController {
 
   /**
    * Starts a stop: counted, marked opened, and handed to the host, with the
-   * menu whole first if it lacks the stop.
+   * menu whole first if it lacks the stop. Today's session is Home's to
+   * build, and the host only switches to Home, so Home is asked for it too
+   * (src/lib/home-session-ask.ts). Not with the tour: the tour leads the room.
    */
   const enter = (stop: PlanStop, tour: boolean): void => {
     send([`plan_stop_${stop.kind}`])
     markStopOpened(stop.dest)
     widenMenuFor(stop)
+    if (stop.dest === 'homeSession' && !tour) askHomeForTodaysSession()
     exit({ to: 'stop', stop, tour })
   }
 
