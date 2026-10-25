@@ -81,13 +81,13 @@ section's heading, and the line above it, are in LESSON.md ("Section headings").
    `:126`; `kit/page-state.ts:64-108`; Edge cases), then "Season 1 · Lesson 11" opens the lesson
    menu (`kit/lesson-menu.ts`), and the page's steps are remembered as the viewer moves through
    them (`kit/position.ts`).
-2. **Hero**, laid out as Lesson 2's is (`learn/02.html:329-502`). The hero copy holds the kicker;
+2. **Hero**, laid out as Lesson 2's is (`learn/02.html:333-506`). The hero copy holds the kicker;
    the hook question as the title, `<h1 class="hook" id="hook">` in its default wording, the
    season's, which `src/features/lessons/kit/lesson-copy.test.ts` holds every page's title to
    (`:323-332`), with no variant's team note anywhere in the markup (`src/features/lessons/kit/team-notes.test.ts:85-101`; FACTS 1), and the
    element the site worker writes a picked hook into (`src/lesson-gate.ts:590-591`); the meta as
    four chips ("16 minutes", FACTS 5; "After Lesson 7: Slides, sirens and your range", a link to
-   `/learn/07`, wholly the link, as Lesson 2's `a.chip.chip-link` is, `learn/02.html:347-352`, so
+   `/learn/07`, wholly the link, as Lesson 2's `a.chip.chip-link` is, `learn/02.html:351-356`, so
    that it stays as a plain chip where Lesson 7 is not live; Sound on; Microphone optional); the
    promise; and the sound gate from LESSON.md. Beside it, the stage: the bubbles, Tavi's "My voice
    just flipped. Did I do it wrong?" and Merc's "Let's slide again and listen.", and Merc and Tavi
@@ -135,7 +135,7 @@ section's heading, and the line above it, are in LESSON.md ("Section headings").
    is Lesson 12's rule for this still (Lesson 12's WEB-SPEC, Decisions for the owner, item 13;
    Lesson 12's FACTS 5b; FACTS 7). The still sits in the page's `[data-next-card]` mark, whose
    children the kit keeps in the card after its words (`:27-29`, `:184`, `:205`), as Lesson 2's
-   figures are (`learn/02.html:1819`). The card is a link, so the figure holds no button. The
+   figures are (`learn/02.html:1823`). The card is a link, so the figure holds no button. The
    practice card is the Siren card, with "Ten minutes, gently, most days" under it; after
    "Effortful", "Uncomfortable" or "Just listen today" it is the rest card instead, without that
    line or a link (Toys 4). Its address links `/pitch-training?lesson=11` in a new tab. Free play
@@ -549,7 +549,7 @@ is not live (`:206-209`).
   (`quiz.ts:186-216`); where Lesson 7 is not live, each keeps its words with no link (Edge cases).
   The address is the quiz's `away.href` (`quiz.ts:94-101`), the kit's `recallStepHref`, which Lesson
   8's page moved into `kit/quiz.ts` (`:141-143`; What the kit and the app still need, 11), and the
-  kit's step deck opens at the step an address names (`kit/step-deck.ts:18-23`, `:284-292`), as
+  kit's step deck opens at the step an address names (`kit/step-deck.ts:18-23`, `:292-300`), as
   Lesson 7's does.
 - **Quick check**: LESSON.md's four questions, ids `l11-q1` to `l11-q4`, keys `fyp-l11-seed` and
   `fyp-l11-quiz-v1`, and `lesson: 11`, so answering all four marks Lesson 11 done in the explorer.

@@ -122,7 +122,7 @@ the Playground, unlocked in the Wrap; the mix-up card sits in the step whose toy
 practice card sits in the Wrap. No Watch section (§ 4.2 item 10). The page opens in Lesson 2's
 order: the hook, the stage, the sound gate and the cold open's predict, then the recall (§ 4.2
 items 3 and 4, and § 12 item 13; CURIOSITY-MOMENTS § 3.1, "the order to copy"). Items 2 to 5 are
-the hero, one `section.hero` laid out as Lesson 2's (`learn/02.html:329-502`). Above 1080 px it
+the hero, one `section.hero` laid out as Lesson 2's (`learn/02.html:333-506`). Above 1080 px it
 has two columns, the hero's copy and the gate on the left, the stage and the predict on the right
 (`lesson-stage.css:16-21`); at 1080 px and below it is one column in the order listed here, with
 the promise after the predict (`lesson-stage.css:365-408`). So on a phone the title and the first
@@ -138,7 +138,7 @@ section's heading, and the line above it, are in LESSON.md ("Section headings").
 2. **The hook**, the hero's copy: the kicker, the hook question as the title (`h1.hook#hook`, as
    `kit/lesson-copy.test.ts:323-332` requires of every page from its first commit), the meta as
    four chips ("16 minutes", FACTS 4; "After Lesson 1", a link; "Also useful: Lesson 6, Intervals",
-   a plain chip as Lesson 3's is, `learn/03.html:362-365`, FACTS 2; Sound on) and the promise, from
+   a plain chip as Lesson 3's is, `learn/03.html:366-369`, FACTS 2; Sound on) and the promise, from
    LESSON.md. The title is the season's hook (`kit/season.ts:312`, FACTS 1); it says the song feels
    different and never says where the claps land, so it answers nothing the predict asks.
 3. **The stage**: Tavi's and Merc's bubbles over Merc and Tavi on the floor line, with the beat
@@ -149,10 +149,10 @@ section's heading, and the line above it, are in LESSON.md ("Section headings").
    stage and the predict, so its button comes before the choices in the reading order, as it does
    in the tab order (`lesson-stage.css:386-396`).
 5. **The cold open's predict**: the predict card, `#predict`, under the stage, as Lesson 2's is
-   (`learn/02.html:448`): LESSON.md's predict, its two `[data-choice]` buttons, the lock hint and
+   (`learn/02.html:452`): LESSON.md's predict, its two `[data-choice]` buttons, the lock hint and
    the reveal (Toys 2).
 6. **Recall from Lesson 6**, `section#recall`, straight after the hero, as Lesson 2's is
-   (`learn/02.html:505`): Lesson 6's questions 1 and 4, open once Lesson 6 is marked done; for
+   (`learn/02.html:509`): Lesson 6's questions 1 and 4, open once Lesson 6 is marked done; for
    anyone else the closed line "Done Lesson 6? Two questions from it". It sits inside
    `<div data-if-live="6">`, so it is left out while Lesson 6 is not live (Toys 7).
 7. **Four words you'll meet**: beat, tempo, bar and backbeat, each with its definition, a small
@@ -185,7 +185,7 @@ section's heading, and the line above it, are in LESSON.md ("Section headings").
     the map" while Lesson 9 has no published page, then "Start lesson" to `/learn/09` (FACTS 6). Its
     slot, the page's mark, `<div class="next-card card l08-next" data-next-card hidden>` in `#wrap`,
     holds the tease figure (Toys 9), which the card keeps after its words (`kit/next-card.ts:184`,
-    `:205`), as Lesson 2's mark keeps its figures (`learn/02.html:1819`). Free play unlocks after
+    `:205`), as Lesson 2's mark keeps its figures (`learn/02.html:1823`). Free play unlocks after
     the card: every beat-machine control on one card (Toys 1; playbook rule 17), keeping the card's
     place after the challenge and the practice card (CURIOSITY-MOMENTS § 3.1).
 12. **Lesson explorer**: the kit's, `createExplorer({ current: 8 })` (`kit/explorer.ts:256`), with
@@ -292,7 +292,7 @@ its patterns with it.
   predict's `unlocks`, which sets `disabled = false` on each as the choice locks
   (`kit/predict.ts:66-67`, `:124-126`). The Tempo slider is an `input`, which `unlocks` does not
   take, so the predict's `onChoice` enables it (`:65`, called at `:129`). Lesson 2's stage does the
-  same with Sharp and Flat: `disabled` in its markup (`learn/02.html:934`, `:939`) and enabled from
+  same with Sharp and Flat: `disabled` in its markup (`learn/02.html:938`, `:943`) and enabled from
   its predict's `onChoice` (`lesson-02/steps.ts:142`; `lesson-02/keys-toy.ts:341-345`). No
   `aria-disabled` is involved: a `disabled` control stays out of the tab order until the choice, and
   the choice locks for the visit, so the row stays open after it. This page is the first to pass
@@ -364,10 +364,10 @@ pan-y` (`lesson-stage.css:776`), so a swipe still scrolls; every action is a but
   (Step 5); free play, every control together. Any state can be playing or still. Leaving a step by
   any route stops the step's sound and anything queued to play after it, a miss's replay in Count
   the bar included (Toys 4). Every route goes through the deck's `show`, which tells each registered
-  toy the new step and the one before (`kit/step-deck.ts:167`): Next and Previous (`:205-215`), a
-  swipe (`:217-243`), scrolling another step into view on the wide page (`:194-203`), the lesson
-  menu's jump (`:273-277`, called at `kit/lesson-menu.ts:518`), a `#step-N` address
-  (`kit/step-deck.ts:255-262`, `:284-291`) and a quiz's step link (`kit/quiz.ts:361`, `:366`). The
+  toy the new step and the one before (`kit/step-deck.ts:167`): Next and Previous (`:213-223`), a
+  swipe (`:225-251`), scrolling another step into view on the wide page (`:196-211`), the lesson
+  menu's jump (`:281-285`, called at `kit/lesson-menu.ts:530`), a `#step-N` address
+  (`kit/step-deck.ts:263-270`, `:292-299`) and a quiz's step link (`kit/quiz.ts:361`, `:366`). The
   page registers one toy (`registerToy`, `kit/step-deck.ts:92-96`), as `lesson-03/main.ts:80-87`
   does, whose `onStep(step, previous)` (`kit/step-deck.ts:45-47`) stops the stage, Count the bar and
   Step 5's predict plays whenever the two differ; a layout change that shows the same step again
@@ -1214,7 +1214,7 @@ records (`fyp-l08-recall-seed`, `fyp-l08-recall-v1`, `fyp-l08-seed`, `fyp-l08-qu
 `fyp-done`, `fyp-voice`, the masthead's Pause animations choice, `fyp-motion`
 (`kit/motion-switch.ts:12`), and the steps the viewer reached, the kit's `fyp-pos`
 (`kit/position.ts:20`), which `initMasthead` keeps (`kit/page-chrome.ts:122-154`), and the kit's
-record of the welcome tour, `fyp-tour` (`kit/tour-gate.ts:24`); nothing from the toys, the take or
+record of the welcome tour, `fyp-tour` (`kit/tour-gate.ts:29`); nothing from the toys, the take or
 Sing it but the voice.
 
 Page QA before publishing (PRODUCTION-PIPELINE § 5) adds, for this page:

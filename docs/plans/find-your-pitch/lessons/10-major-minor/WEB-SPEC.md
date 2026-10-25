@@ -103,22 +103,22 @@ FACTS 5a). Each section's heading, and the line above it, are in LESSON.md ("Sec
    sections and `{ lesson: 10, deck }` (`lesson-04/main.ts:99-110`), which draws the lesson menu,
    remembers the steps the viewer reaches and first settles the page's links to other lessons for
    the state it was served with (`followPageState`, `src/features/lessons/kit/page-chrome.ts:126`).
-2. **Hero, with the cold open**, laid out as Lesson 2's (`learn/02.html:329-502`). Its copy holds
+2. **Hero, with the cold open**, laid out as Lesson 2's (`learn/02.html:333-506`). Its copy holds
    the kicker, the hook question as the title (the `<h1 class="hook" id="hook">` every lesson page
-   has, `learn/04.html:328`), the meta as three chips, the promise and the sound gate from
+   has, `learn/04.html:332`), the meta as three chips, the promise and the sound gate from
    LESSON.md. The chips are "17 minutes" (FACTS 3), "After Lesson 6: Intervals: the distance between
    notes", a link to `/learn/06` as Lesson 4's prerequisite chip links Lesson 2
-   (`learn/04.html:335-339`; FACTS 2), which stays a plain chip wherever Lesson 6 is not live
+   (`learn/04.html:339-343`; FACTS 2), which stays a plain chip wherever Lesson 6 is not live
    (`src/features/lessons/kit/page-state.ts:16-17`), and "Sound on". Its stage holds Tavi's and
-   Merc's bubbles (`learn/02.html:383`) over Merc and Tavi on the floor line, the hero's own copy of
-   the spiral between them (`:404`; Toys 2), and under the spiral the cold open's three plays: "Play
+   Merc's bubbles (`learn/02.html:387`) over Merc and Tavi on the floor line, the hero's own copy of
+   the spiral between them (`:408`; Toys 2), and under the spiral the cold open's three plays: "Play
    the chord", which works from the start, and "Move mi down" and "Move so down", locked until a
-   choice. The predict card sits under the stage, as Lesson 2's does (`:448`): LESSON.md's predict,
+   choice. The predict card sits under the stage, as Lesson 2's does (`:452`): LESSON.md's predict,
    its two choices, the lock hint and the reveal (Toys 3). On a phone the hero's parts run kicker,
    title, meta, the stage, the gate, the predict, then the promise
    (`src/features/lessons/kit/lesson-stage.css:365-408`), so the title and the first Play come
    before anything asks for an answer (CURIOSITY-MOMENTS § 3.1, "Above the fold"; FACTS 5a).
-3. **Recall from Lesson 6**, straight after the hero (`learn/02.html:505`): Lesson 6's questions 2
+3. **Recall from Lesson 6**, straight after the hero (`learn/02.html:509`): Lesson 6's questions 2
    and 3, shown to everyone, since Lesson 6 is a prerequisite (Toys 8; FACTS 7).
 4. **Four words you'll meet**: third, triad, quality and natural minor, each with its definition, a
    small figure and a play button (Toys 4).
@@ -285,7 +285,7 @@ draw its triads with it; it moves into the kit when Lesson 12 needs it.
   rather than its fast one) and the names switch. Spread into a scale on a root slid to B4, it
   reaches B5, 987.77 Hz, the scale's top do (FACTS 70a), in the scale's own window (Layout and
   targets). Nothing locks: the guided steps come first on the page (playbook rule 17).
-- **Readouts** sit inside the figure, as Lesson 1's do (`learn/01.html:610-632`, `.readout`), so no
+- **Readouts** sit inside the figure, as Lesson 1's do (`learn/01.html:614-636`, `.readout`), so no
   status line takes height.
 - **Layout and targets** (FACTS 82). Rows are 15 px a semitone, so the closest two beads, a minor
   third apart, sit 45 px apart, and their 44 px targets never overlap; the two gap buttons' centres
@@ -382,7 +382,7 @@ taken further without forking it (`spiral.ts:28-32`):
   slider works as the kit's does, A2 to A5 (FACTS 70a). The three plays are buttons under the
   spiral, at least 44 px tall.
 - **Speaking for it.** The drawing is a slider for the notes, as Lesson 2's hero copy is
-  (`role="slider"`, `learn/02.html:404-409`), its values set by the kit; a polite live region beside
+  (`role="slider"`, `learn/02.html:408-413`), its values set by the kit; a polite live region beside
   it speaks for the moves: "C, E and G together." as the chord plays, and LESSON.md's "Mi moved down
   a semitone: C, E flat, G." or "So moved down a semitone: C, E, G flat." as a move lands.
 
@@ -522,7 +522,7 @@ States:
    sits in one place, on its own line above the buttons. **Play Merc's notes** sings do-mi-so, then
    do-me-so, on do = E3 (lower) or E4 (higher), in Merc's "ooh", 10.0 s (FACTS 63, 65, 80), the path
    lighting in amber in step while the ring shows the singing Merc's still. **Move do** is Lesson
-   4's group, "Move do:" with lower and higher (`learn/04.html:1250-1259`), moved into the kit (What
+   4's group, "Move do:" with lower and higher (`learn/04.html:1254-1263`), moved into the kit (What
    the kit and the app still need, item 7): a semitone each, up to four either way (`MOVE_MAX`,
    `kit/move-do.ts:20-21`, `:23-29`), moving Merc's notes, the guide's count-in and its readout
    together, from "do is C3" to "do is A♭3" for the lower voice (spoken "do is A flat 3"), or C4 to

@@ -88,14 +88,14 @@ heading, and the line above it, are in LESSON.md ("Section headings").
    `kit/page-state.ts:84-108`; Edge cases), then "Season 1 · Lesson 14" opens the lesson menu
    (`kit/lesson-menu.ts`), and the page's steps are remembered as the viewer moves through them
    (`kit/position.ts`).
-2. **Hero**, laid out as Lesson 2's is (`learn/02.html:329-502`). The hero copy holds the kicker;
+2. **Hero**, laid out as Lesson 2's is (`learn/02.html:333-506`). The hero copy holds the kicker;
    the hook question as the title, `<h1 class="hook" id="hook">` in its default wording, the
    season's, which `src/features/lessons/kit/lesson-copy.test.ts` holds every page's title to
    (`:323-332`), with no variant's team note anywhere in the markup (`src/features/lessons/kit/team-notes.test.ts:85-101`; 1), and the element
    the site worker writes a picked hook into (`src/lesson-gate.ts:590-591`); the meta as seven chips
    ("18 minutes", 8; "After Lesson 5: Steady note", "After Lesson 8: Beat and tempo", "After Lesson
    9: Landing a leap" and "After Lesson 12: Chords", each a link to that lesson's page and wholly
-   the link, as Lesson 2's `a.chip.chip-link` is, `learn/02.html:347-352`, so that it stays as a
+   the link, as Lesson 2's `a.chip.chip-link` is, `learn/02.html:351-356`, so that it stays as a
    plain chip where its lesson is not live, 3; Sound on; Microphone optional); the promise; and the
    sound gate from LESSON.md. Beside it, the stage: the bubbles, Merc and Tavi on the floor line,
    and under them, across the stage's whole width, the song line in its compact state (Toys 1). It
@@ -395,7 +395,7 @@ over its numerals, V and I.
 
 The song line in live mode, inside Sing it's card, with line 1's bands as the target and the
 viewer's line drawn against them. It is the kit's `.sing-chart` (240 px; 210 px at 420 px wide and
-under), a band chart as on Lessons 3, 5 and 9 (`learn/03.html:1395`), so the 11-semitone window
+under), a band chart as on Lessons 3, 5 and 9 (`learn/03.html:1399`), so the 11-semitone window
 gives 17.6 px a semitone (14.9 at 210 px), and its words strip fits as in the steps (91). Every
 state has a visible status line that is also announced (`aria-live="polite"`).
 
@@ -424,7 +424,7 @@ States:
    line; the "What this does" box (REQ-GVC-002, REQ-GVC-003, REQ-GVC-012, REQ-GVC-026; 79, 52);
    **Play Merc's phrase** and **Start take 1**, the only control that asks for the microphone
    (MASTER-PLAN § 4.2 item 2).
-   - **Move do**: Lesson 4's control, word for word (`learn/04.html:1250-1259`): a group labelled
+   - **Move do**: Lesson 4's control, word for word (`learn/04.html:1254-1263`): a group labelled
      "Move do:" with two buttons, "lower" and "higher", a semitone a tap, up to four each way from
      D3 (or D4), each disabled at its end, as Lesson 4's are (`kit/move-do.ts:20-21`, `:23-29`;
      70). The bands, the rows and the window move with it, and the chart's summary says where do is
@@ -619,12 +619,12 @@ the link where that lesson is not live (`:186-190`).
   retrieval (MASTER-PLAN § 9). It takes no `lesson`, so it marks nothing done. Neither question
   plays a sound. The kit turns "Try Step 1 again" and "Try Step 5 again" into "Try Lesson 5, Step 1
   again" and "Try Lesson 5, Step 5 again", links that open Lesson 5's page at that step,
-  `/learn/05#step-1` and `/learn/05#step-5` (its step ids, `learn/05.html:1048`, `:1265`), in a new
+  `/learn/05#step-1` and `/learn/05#step-5` (its step ids, `learn/05.html:1052`, `:1269`), in a new
   tab so the viewer keeps their place here, never `data-goto-step`, which would move this page's own
   deck (`quiz.ts:186-216`); where Lesson 5 is not live, each keeps its words with no link
   (`:206-209`; Edge cases). The address is the quiz's `away.href` (`quiz.ts:94-101`), the kit's
   `recallStepHref` (`:141-143`) in place of the default `/learn/05#lesson`, and the kit's step deck
-  opens at the step an address names (`kit/step-deck.ts:18-23`, `:284-292`).
+  opens at the step an address names (`kit/step-deck.ts:18-23`, `:292-300`).
 - **Quick check**: LESSON.md's four questions, ids `l14-q1` to `l14-q4`, keys `fyp-l14-seed` and
   `fyp-l14-quiz-v1` (`lesson-04/main.ts:84`), and `lesson: 14`, so answering all four marks Lesson
   14 done in the explorer. Three answers each, shuffled per question from the stored seed, one-line

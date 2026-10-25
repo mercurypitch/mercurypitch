@@ -75,14 +75,14 @@ heading, and the line above it, are in LESSON.md ("Section headings").
    `kit/page-state.ts:84-108`; Edge cases), then "Season 1 · Lesson 09" opens the lesson menu
    (`kit/lesson-menu.ts`), and the page's steps are remembered as the viewer moves through them
    (`kit/position.ts`).
-2. **Hero**, laid out as Lesson 2's is (`learn/02.html:329-502`). The hero copy holds the kicker;
+2. **Hero**, laid out as Lesson 2's is (`learn/02.html:333-506`). The hero copy holds the kicker;
    the hook question as the title, `<h1 class="hook" id="hook">` in its default wording, the
    season's, which `src/features/lessons/kit/lesson-copy.test.ts` holds every page's title to
    (`:323-332`), with no variant's team note anywhere in the markup (`src/features/lessons/kit/team-notes.test.ts:85-101`; FACTS 1), and the
    element the site worker writes a picked hook into (`src/lesson-gate.ts:590-591`); the meta as
    five chips ("16 minutes", FACTS 5; "After Lesson 3: Match a note", a link to `/learn/03`; "After
    Lesson 6: Intervals: the distance between notes", a link to `/learn/06`, each chip wholly the
-   link, as Lesson 2's `a.chip.chip-link` is, `learn/02.html:347-352`, so that it stays as a plain
+   link, as Lesson 2's `a.chip.chip-link` is, `learn/02.html:351-356`, so that it stays as a plain
    chip where its lesson is not live; Sound on; Microphone optional); the promise; and the sound
    gate from LESSON.md. Beside it, the stage: the bubbles, and Merc and Tavi on the floor line
    either side of the ladder chart in its compact state, whose still before any play is do's and
@@ -120,7 +120,7 @@ heading, and the line above it, are in LESSON.md ("Section headings").
    it picks (`:14-20`), since the card reads the season as the page's state shows it (`:185`). The
    tease's figure, a still of the pitch spiral with do, mi and so lit and one "?" over all three,
    not over mi, sits in the page's `[data-next-card]` mark, whose children the kit keeps in the card
-   after its words (`:27-29`, `:184`, `:205`), as Lesson 2's figures are (`learn/02.html:1819`). The
+   after its words (`:27-29`, `:184`, `:205`), as Lesson 2's figures are (`learn/02.html:1823`). The
    card is a link, so the figure holds no button. The practice card is the Arpeggio Jumper and
    Interval Trainer card, with "Ten minutes, gently, most days" under it; after "Effortful",
    "Uncomfortable" or "Just listen today" it is the rest card instead, without that line or a link
@@ -295,7 +295,7 @@ Arpeggio plays do, mi, so and the top do; Landing zone lights so's band and play
 
 The ladder chart in live mode, inside Sing it's card, with Merc's rungs as the target and the
 viewer's line drawn against them. It is the kit's `.sing-chart` (240 px; 210 px at 420 px wide and
-under), a band chart as on Lessons 3 and 5 (`learn/03.html:1487`), so the full ladder's 14-semitone
+under), a band chart as on Lessons 3 and 5 (`learn/03.html:1491`), so the full ladder's 14-semitone
 window gives 15.1 px a semitone (13.0 at 210 px) and the smaller ladder's 9 gives 23.6 (20.2) (FACTS
 97). Every state has a visible status line that is also announced (`aria-live="polite"`).
 
@@ -308,7 +308,7 @@ States:
    (`aria-pressed`, at least 44 px), under LESSON.md's line in its two forms, "Choose a voice to
    sing with. If you chose one in an earlier lesson, pick it again:" with none stored and "Keep the
    voice you chose before, or change it:" with one, as Lessons 5 to 7 word it, the first as Lesson
-   5's page prints it (`learn/05.html:1381-1384`; FACTS 69). It reads and writes `fyp-voice` through
+   5's page prints it (`learn/05.html:1385-1388`; FACTS 69). It reads and writes `fyp-voice` through
    `VoiceChoice` (`kit/voice-choice.ts:20-48`). A stored choice shows pressed and can be changed;
    with none stored, neither is pressed and the next state waits for a choice, before "Just listen
    today" plays anything too, because the voice picks the Merc who sings.
@@ -327,7 +327,7 @@ States:
    (MASTER-PLAN § 4.2 item 2).
    - The ladder choice: two buttons with `aria-pressed`, "Do-mi-so-do: up to the top do" (pressed at
      first) and "Smaller: do-mi-so-mi-do". The chart shows the pressed ladder's slots, faint.
-   - **Move do**: Lesson 4's control, word for word (`learn/04.html:1250-1259`): a group labelled
+   - **Move do**: Lesson 4's control, word for word (`learn/04.html:1254-1263`): a group labelled
      "Move do:" with two buttons, "lower" and "higher", a semitone a tap, up to four each way from
      D3 (or D4), each disabled at its end, as Lesson 4's are (`kit/move-do.ts:20-21`, `:31-40`,
      `:23-29`; FACTS 75). The rungs, their names and the chart's window move with it, and the
@@ -483,7 +483,7 @@ live (`:186-190`).
   its words with no link (`:206-209`; Edge cases). The address is the quiz's `away.href`
   (`quiz.ts:94-101`), the kit's `recallStepHref` (`:141-143`) in place of the default
   `/learn/06#lesson`, and the kit's step deck opens at the step an address names
-  (`kit/step-deck.ts:18-23`, `:284-292`).
+  (`kit/step-deck.ts:18-23`, `:292-300`).
 - **Quick check**: LESSON.md's four questions, ids `l09-q1` to `l09-q4`, keys `fyp-l09-seed` and
   `fyp-l09-quiz-v1` (`lesson-04/main.ts:84`), and `lesson: 9`, so answering all four marks Lesson 9
   done in the explorer. Three answers each, shuffled per question from the stored seed, one-line
