@@ -249,6 +249,23 @@ describe('UserSurveyModal — the app behind it', () => {
     fireEvent.keyDown(screen.getByRole('dialog'), { key: 'Escape' })
     expect(onClose).toHaveBeenCalledTimes(1)
   })
+
+  // Escape also puts a field's suggestions away and cancels a composition.
+  // Closing on it lost the answer, and in the prompt the app opens, closing
+  // marks the survey seen for good.
+  it('stays open on Escape once something is typed, wherever the focus is', async () => {
+    const onClose = vi.fn()
+    render(() => <UserSurveyModal mode="feedback" onClose={onClose} />)
+    await Promise.resolve()
+
+    field().focus()
+    typeAnswer('The tuner lost my low notes')
+    fireEvent.keyDown(field(), { key: 'Escape' })
+    fireEvent.keyDown(screen.getByRole('dialog'), { key: 'Escape' })
+
+    expect(onClose).not.toHaveBeenCalled()
+    expect(field()).toHaveValue('The tuner lost my low notes')
+  })
 })
 
 describe('UserSurveyModal — empty responses', () => {

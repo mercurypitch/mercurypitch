@@ -54,23 +54,25 @@ const UserSurveyModal: Component<Props> = (props) => {
     onCleanup(() => window.clearInterval(id))
   })
 
+  const hasContent = () => surveyHasContent({ gotInTheWay: gotInTheWay() })
+
   // It opens by itself, over a tab that may be playing, and the app's
   // shortcuts listen on the window: a Space that left it played the tab behind
   // and M opened the microphone. So it takes the focus and keeps its keys. It
-  // opens on its heading, not the field, so a phone keeps its keyboard down,
-  // and Escape is Skip, so it waits as Skip does.
+  // opens on its heading, not the field, so a phone keeps its keyboard down.
+  // Escape is Skip, so it waits as Skip does, and only while nothing is typed:
+  // Escape also puts a field's suggestions away, and closing on it would lose
+  // the answer (and, in the prompt, mark the survey seen for good).
   let dialog: HTMLDivElement | undefined
   let heading: HTMLHeadingElement | undefined
   useFocusTrap(() => dialog, {
     isOpen: () => true,
     isolateKeyboard: isolateKeys,
     onClose: () => {
-      if (dismissable()) props.onClose()
+      if (dismissable() && !hasContent()) props.onClose()
     },
     initialFocus: () => heading,
   })
-
-  const hasContent = () => surveyHasContent({ gotInTheWay: gotInTheWay() })
 
   /** Overlay clicks only count once armed — see dismissable(). */
   const handleOverlayClick = () => {
