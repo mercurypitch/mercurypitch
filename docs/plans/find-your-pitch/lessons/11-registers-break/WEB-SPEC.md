@@ -658,7 +658,7 @@ paused off screen, and the still images when WebGL fails or would run on the CPU
   lowest note at the default level (FACTS 40, 62; REQ-GVC-011): a question on the coach's list.
 - **App content, small** (MASTER-PLAN § 7's App content track), proposed, for the Siren exercise
   (FACTS 41, 42):
-  - its help (`src/features/exercises/exercise-help.ts:149-156`): ":150" "Glide your full range up
+  - its help (`src/features/exercises/exercise-help.ts:150-157`): ":150" "Glide your full range up
     and down like a smooth siren." becomes "Glide up and down like a smooth siren, within an easy
     part of your range."; ":152" drops "through your range"; ":153" becomes LESSON.md's "Stay
     relaxed and let the pitch flow. If your voice flips between your low and high voice, let it:

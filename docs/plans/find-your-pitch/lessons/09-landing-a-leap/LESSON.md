@@ -293,11 +293,12 @@ jumping and hoping.
 - After singing, or if Sing it was skipped: "Arpeggio Jumper plays do, mi, so and the top do one at
   a time, and you sing each back. Interval Trainer plays two notes, the second always higher, then
   you sing them back. Four of its six intervals are this lesson's leaps, but not the minor third.
-  Both start low in the voice range saved in Settings, and both reach a whole octave. They want
-  each note in the octave they play, not an octave away. Set your range there first, under Singing
-  Voice Range ("Don't know? Find my voice" helps). If the top do felt high today, leave them for
-  another day. Sore, hoarse or unwell today? Just listen along. Sing at about speaking volume, and
-  stop immediately if anything feels uncomfortable. Practise it free:
+  Both start low in the voice range saved in Settings, and both reach a whole octave. Interval
+  Trainer wants each note in the octave it plays, not an octave away; Arpeggio Jumper lets you sing
+  the whole arpeggio an octave higher or lower, and says so. Set your range there first, under
+  Singing Voice Range ("Don't know? Find my voice" helps). If the top do felt high today, leave them
+  for another day. Sore, hoarse or unwell today? Just listen along. Sing at about speaking volume,
+  and stop immediately if anything feels uncomfortable. Practise it free:
   **mercurypitch.com/pitch-training**, then tap Arpeggio Jumper or Interval Trainer." Under it:
   "Ten minutes, gently, most days. Missed a day? Just come back."
 - Instead, after "Effortful", "Uncomfortable" or "Just listen today", with no "Ten minutes" line:
@@ -423,9 +424,9 @@ so a decision there carries here.
   celebrates once, only after "Easy" or "Workable", when every note heard landed, whichever ladder
   was sung (FACTS 82, 83, 85).
 - The practice card: Arpeggio Jumper's four notes up an octave, note by note, from the anchor of
-  the singer's saved preset, and its grade, which also counts a measure of how clear the pitch
-  track was; Interval Trainer's six rounds, one an octave and one a major sixth; both scored in the
-  written octave, which the card says plainly; and the line "If the top do felt high today, leave
+  the singer's saved preset, and its grade, the average of its note scores, in the octave the whole
+  run fits; Interval Trainer's six rounds, one an octave and one a major sixth, scored in the
+  written octave; the card says both plainly; and the line "If the top do felt high today, leave
   them for another day." (FACTS 48 to 52, 86).
 - The octave, which the rules decide too. Targets fit a comfortable range without requesting
   extremes (REQ-GVC-011), and a gentler alternative may be offered (REQ-GVC-055), so this page makes
