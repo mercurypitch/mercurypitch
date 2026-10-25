@@ -594,6 +594,24 @@ describe('when an answered plan comes from the account', () => {
     expect(sent()).toEqual(told)
   })
 
+  // Home's card and a review build the plan from the record, which keeps the
+  // finding of the device it was answered on. A finding from this run gave
+  // First Light a Start here that Home's card then contradicted.
+  it("builds the plan that lands from the record's finding, not this run's voiceprint", () => {
+    // Arrange: this run found range; the plan was answered where nothing was measured.
+    const singing: PlanChoices = { q1: 'singing', q2: null, q3: [], q4: [] }
+    const { c } = start('new', {
+      voiceprint: () => ({ room: 'ascent', detail: 'Range week' }),
+    })
+
+    // Act
+    answeredElsewhere(singing)
+
+    // Assert
+    expect(c.plan()).toEqual(buildPlan(singing))
+    expect(c.plan()?.start.dest).not.toBe('ascent')
+  })
+
   it('leaves the questions to a person who has started answering, whose answers then replace it', () => {
     // Arrange
     const { c } = start('new')
