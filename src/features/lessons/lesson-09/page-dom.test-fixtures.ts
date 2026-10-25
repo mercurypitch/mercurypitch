@@ -18,7 +18,7 @@ import '@/features/lessons/kit/browser-doubles.test-fixtures'
 import { Sound } from '@/features/lessons/kit/sound'
 import type { StepDeck } from '@/features/lessons/kit/step-deck'
 import { createStepDeck } from '@/features/lessons/kit/step-deck'
-import type { LadderChart } from './ladder-chart'
+import type { Steps } from './steps'
 import { initSteps } from './steps'
 
 const PAGE = readFileSync(resolve(process.cwd(), 'learn/09.html'), 'utf8')
@@ -48,15 +48,15 @@ export const settle = async (): Promise<void> => {
   for (let i = 0; i < 5; i++) await Promise.resolve()
 }
 
-/** The page's deck with its steps mounted, opened on step 1 as the page opens it, and the steps' chart. */
-export function mountSteps(): StepDeck & { readonly ladder: LadderChart } {
+/** The page's deck with its steps mounted, opened on step 1 as the page opens it, and the steps' chart and folds strip. */
+export function mountSteps(): StepDeck & Steps {
   loadPage()
   vi.spyOn(window, 'scrollTo').mockImplementation(() => undefined)
   const deck = createStepDeck({
     toyFor: () => 1,
     after: { label: 'Sing it', selector: '#sing' },
   })
-  const ladder = initSteps(deck)
+  const steps = initSteps(deck)
   deck.start()
-  return Object.assign(deck, { ladder })
+  return Object.assign(deck, steps)
 }

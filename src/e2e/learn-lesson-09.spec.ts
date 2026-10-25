@@ -17,7 +17,11 @@
 // switch never counting; and its eighth, the quizzes (End to end 8), at
 // both sizes: the recall shows to everyone, marks nothing done and links
 // Lesson 6's steps in a new tab, and the quick check marks Lesson 9 done.
-// Each other toy's checks join it as that toy is wired.
+// Then the chart by keyboard alone (End to end 3), at both sizes, for
+// Steps 1 and 2: Tab reaches each control in reading order, Slow toggles
+// `aria-pressed`, each play says its move in spoken names, and the folds
+// strip fills the figure's bottom 64 px. Each other toy's checks join it
+// as that toy is wired.
 
 import type { Locator, Page } from '@playwright/test'
 import { expect, test } from './helpers/lesson-page'
@@ -286,6 +290,101 @@ for (const viewport of [
       // the map's card on a desktop, the list's open row on a phone
       await page.locator('#explorer').scrollIntoViewIfNeeded()
       await expect(page.locator('#explorer .ex-card')).toContainText('Done')
+    })
+  })
+}
+
+/** The status line under the ladder chart. */
+const ladderStatus = (page: Page): Locator =>
+  page.locator('#toyLadder [data-ladder-status]')
+
+/** `b` pressed by keyboard, from where the focus stands, sounds and then ends. */
+async function playsThrough(page: Page, b: Locator): Promise<void> {
+  await expect(b).toBeFocused()
+  await page.keyboard.press('Enter')
+  await expect(b).toHaveClass(/\bis-on\b/)
+  await expect(b).not.toHaveClass(/\bis-on\b/, { timeout: 10_000 })
+}
+
+// WEB-SPEC, End to end 3: Steps 1 and 2, at a phone's size and a desktop's
+for (const viewport of [
+  { width: 390, height: 844 },
+  { width: 1440, height: 900 },
+]) {
+  test.describe(`Steps 1 and 2 by keyboard at ${viewport.width} x ${viewport.height}`, () => {
+    test.use({ viewport })
+
+    test('Tab reaches each control in reading order, Slow toggles aria-pressed, and each play says its move in spoken names', async ({
+      page,
+    }) => {
+      test.setTimeout(60_000)
+      // Arrange
+      const errors: string[] = []
+      page.on('pageerror', (e) => errors.push(e.message))
+      await page.goto('/learn/09')
+      const toy = page.locator('#toyLadder')
+      const play = (id: string): Locator =>
+        toy.locator(`[data-ladder-play="${id}"]`)
+      const [step, hear, leap] = [play('step'), play('hear'), play('leap')]
+      const slow = toy.locator('[data-ladder-slow]')
+      const next = page.getByRole('button', { name: 'Next step', exact: true })
+      const strip = toy.locator('[data-folds-strip]')
+      await step.scrollIntoViewIfNeeded()
+      await step.focus()
+      await expect(page.locator('#stepNow')).toHaveText('1')
+
+      // Act, Assert: Step 1's row in reading order, then Slow by Space
+      await page.keyboard.press('Tab')
+      await expect(leap).toBeFocused()
+      await page.keyboard.press('Tab')
+      await expect(slow).toBeFocused()
+      await page.keyboard.press('Space')
+      await expect(slow).toHaveAttribute('aria-pressed', 'true')
+      await page.keyboard.press('Space')
+      await expect(slow).toHaveAttribute('aria-pressed', 'false')
+
+      // Step and Leap, each saying its move and the folds' ratio in words
+      await page.keyboard.press('Shift+Tab')
+      await page.keyboard.press('Shift+Tab')
+      await playsThrough(page, step)
+      await expect(ladderStatus(page)).toHaveText(
+        'The step: D3 to E3, a tone. The folds go about an eighth faster: 1.12 times.',
+      )
+      await page.keyboard.press('Tab')
+      await playsThrough(page, leap)
+      await expect(ladderStatus(page)).toHaveText(
+        'The leap: D3 to A3, a perfect fifth. The folds go one and a half times as fast: 1.50 times.',
+      )
+
+      // the folds strip fills the figure's bottom 64 px, inside its border
+      const box = await strip.boundingBox()
+      const viz = await toy.locator('[data-ladder-viz]').boundingBox()
+      expect(box?.height).toBe(64)
+      expect(
+        Math.abs((box?.y ?? 0) + 64 - ((viz?.y ?? 0) + (viz?.height ?? 0))),
+      ).toBeLessThanOrEqual(1)
+
+      // Step 2 by the stage's Next, its row in reading order
+      await step.focus()
+      await page.keyboard.press('Shift+Tab')
+      await expect(next).toBeFocused()
+      await page.keyboard.press('Enter')
+      await expect(page.locator('#stepNow')).toHaveText('2')
+      await expect(ladderStatus(page)).toHaveText('')
+      await expect(strip).toBeHidden()
+      await page.keyboard.press('Tab')
+      await playsThrough(page, hear)
+      await expect(ladderStatus(page)).toHaveText(
+        'So: hear where the leap lands.',
+      )
+      await page.keyboard.press('Tab')
+      await playsThrough(page, leap)
+      await expect(ladderStatus(page)).toHaveText(
+        'The leap: D3 to A3, a perfect fifth.',
+      )
+      await page.keyboard.press('Tab')
+      await expect(slow).toBeFocused()
+      expect(errors).toEqual([])
     })
   })
 }

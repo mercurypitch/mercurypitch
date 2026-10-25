@@ -231,7 +231,13 @@ export const FIRST_PAINT_BUDGETS_KB = {
   // Raised to 118 for the four words: 120,479 bytes with them, against
   // 118,784 at 116, and 2,468 more than with the quizzes. The four words
   // and the kit's words strip (a chunk shared with Lessons 1 and 7).
-  'learn/09.html': 118,
+  // Raised to 123 for Steps 1 and 2 and the folds strip: 125,663 bytes with
+  // them, against 120,832 at 118, and 5,184 more than with the four words.
+  // The steps' plays and the folds strip; the kit's folds (a chunk shared
+  // with Lessons 3 and 5); and its slowed folds and slow clock, which leave
+  // Lesson 3's own chunk for one shared with it now that this page draws
+  // them too.
+  'learn/09.html': 123,
 
   // The main app, and the crawlable doors that are the main app. Measured
   // 4669. It is eager by design today, so this is a ceiling on growth rather

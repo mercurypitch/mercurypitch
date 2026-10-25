@@ -18,9 +18,9 @@
 //
 // On Lessons 6 to 9 every figure now says when it has nothing to draw, so
 // there the whole page asks for no frame at all at rest. Lesson 9's checks
-// here are the explorer, the steps' ladder chart, and the cold open's
-// chart, at rest and through Merc's leap; its folds strip joins them once
-// it is wired. Lessons 1 to 5
+// here are the explorer, the cold open's chart, at rest and through Merc's
+// leap, and the steps' ladder chart with Step 1's folds strip, at rest and
+// through Step's two notes, while the strip's folds open and close. Lessons 1 to 5
 // each have drawers of their own that still draw every frame (S-26 in
 // docs/plans/find-your-pitch/RELEASE-REVIEW.md), which keep their loop
 // running whatever these three do, so there only the figures are watched.
@@ -323,17 +323,21 @@ test('Lesson 8: the explorer rests, and so does the whole page', async ({
   await explorerRests(page, 8, true)
 })
 
-test('Lesson 9: the ladder charts and the explorer rest, and so does the whole page', async ({
+test('Lesson 9: the ladder charts, the folds strip and the explorer rest, and so does the whole page', async ({
   page,
 }) => {
   const hero = '#heroLadder canvas'
   const ladder = '#toyLadder .ladder-canvas'
+  const strip = '#toyLadder .folds-strip'
   await open(page, 9)
 
   await runRests(page, [hero], true, () => page.locator('#heroPlay').click())
   await scrollTo(page, ladder)
   await expectRest(page, ladder)
-  await expectRest(page, null)
+  await runRests(page, [strip], true, () =>
+    page.locator('#toyLadder [data-ladder-play="step"]').click(),
+  )
+  await expectRest(page, ladder)
   await explorerRests(page, 9, true)
 })
 
