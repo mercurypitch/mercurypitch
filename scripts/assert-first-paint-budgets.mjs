@@ -241,7 +241,15 @@ export const FIRST_PAINT_BUDGETS_KB = {
   // 125,952 at 123, and 1,154 more than with Steps 1 and 2. Step 3's climb
   // and its two leaps over it, and Step 4's five leaps with their numbered
   // arcs and their lines.
-  'learn/09.html': 124,
+  // Raised to 131 for Step 5's landing: 133,525 bytes with it, against
+  // 126,976 at 124, and 6,708 more than with Steps 3 and 4. The landing and
+  // its sound from any moment; its readout and the scrub bar's words, which
+  // bring the page's landing lines and the kit's band words (a chunk shared
+  // with the lessons that have them) to first paint now that something
+  // calls them; the kit's range fill (a chunk shared with Lessons 1, 3 and
+  // 5); and the kit's `allOf`, which joins the runs chunk this page shares
+  // with Lesson 7, so Lesson 7 measures 192 bytes more, 135,457.
+  'learn/09.html': 131,
 
   // The main app, and the crawlable doors that are the main app. Measured
   // 4669. It is eager by design today, so this is a ceiling on growth rather

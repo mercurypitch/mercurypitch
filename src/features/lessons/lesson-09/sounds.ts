@@ -25,7 +25,6 @@ import type { TracePoint } from '@/features/lessons/kit/band-chart'
 import { hz } from '@/features/lessons/kit/notes'
 import type { RunNote } from '@/features/lessons/kit/run'
 import type { ContourPoint } from '@/features/lessons/kit/sound'
-import { contourOf } from '@/features/lessons/kit/sound'
 import type { LadderId, Leap, RungId } from './ladder-data'
 import { degreeStep, ladderNotes, rungMidi, RUNGS } from './ladder-data'
 
@@ -199,6 +198,12 @@ export function landingTrace(until = LANDING_SEC): TracePoint[] {
   return prev.t === last.t && prev.c === last.c ? drawn : [...drawn, last]
 }
 
+/** The landing's slide: when it starts, seconds from the press, and its contour. */
+export interface LandingSlide {
+  readonly at: number
+  readonly points: ContourPoint[]
+}
+
 /**
  * Step 5's sound, in the soft tone: do, then one voice that leaps to 80
  * cents under so, holds, slides up and settles 25 cents under; `slow` 2 for
@@ -207,20 +212,44 @@ export function landingTrace(until = LANDING_SEC): TracePoint[] {
 export function landingSound(
   doMidi: number,
   slow = 1,
-): {
-  readonly first: SoundNote
-  readonly slide: { readonly at: number; readonly points: ContourPoint[] }
-} {
-  const so = rungMidi(doMidi, 'so')
+): { readonly first: SoundNote; readonly slide: LandingSlide } {
   return {
     first: { t: 0, midi: doMidi, dur: LANDING.doSec * slow },
+    slide: landingSoundFrom(doMidi, 0, slow).slide,
+  }
+}
+
+/**
+ * The same sound from `from` seconds in, at speed, as Play carries on
+ * after Pause or Slow, as Lesson 7's siren does: what is left of do, none
+ * once the leap has landed, then the voice from where the line stands
+ * through the landing's corners to its end, each at the line's pitch
+ * there (`landingAt`). Its slide starts as do ends, at once without do.
+ */
+export function landingSoundFrom(
+  doMidi: number,
+  from: number,
+  slow = 1,
+): { readonly first: SoundNote | null; readonly slide: LandingSlide } {
+  const so = rungMidi(doMidi, 'so')
+  const start = Math.min(Math.max(from, 0), LANDING_SEC)
+  const leapAt = Math.max(start, LANDING.doSec)
+  const slideAt = LANDING.doSec + LANDING.hold
+  const corners = [slideAt, slideAt + LANDING.slide, LANDING_SEC].filter(
+    (c) => c > leapAt,
+  )
+  return {
+    first:
+      start < LANDING.doSec
+        ? { t: 0, midi: doMidi, dur: (LANDING.doSec - start) * slow }
+        : null,
     slide: {
-      at: LANDING.doSec * slow,
-      points: contourOf(hz(so + LANDING.lands / 100), [
-        { hold: LANDING.hold * slow },
-        { glide: LANDING.slide * slow, to: hz(so + LANDING.settles / 100) },
-        { hold: LANDING.rest * slow },
-      ]),
+      at: (leapAt - start) * slow,
+      points: [leapAt, ...corners].map((c) => ({
+        t: (c - leapAt) * slow,
+        hz: hz(so + landingAt(c).cents / 100),
+        level: 1,
+      })),
     },
   }
 }
