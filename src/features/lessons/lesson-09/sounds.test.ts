@@ -5,7 +5,8 @@
 // WEB-SPEC, Tests 4 and 9: the cold open's leap and three paths (FACTS 91);
 // Steps 1 to 3's notes (FACTS 92); Step 4's five leaps in the syllabus's
 // order, 12.4 s and 24.8 s slowed (FACTS 93); Step 5's landing, which lands
-// 80 cents under so and settles 25 under (FACTS 94), and Step 2's copy, 75
+// 80 cents under so and settles 25 under (FACTS 94), and which carries on
+// from where its line stands after Pause or Slow, and Step 2's copy, 75
 // under (FACTS 98); the Four words and Merc's ladder (FACTS 91, 95), and
 // free play, whose timing is borrowed from Steps 1 and 4; Slow doubling
 // every onset and length of whatever it slows, and moving no pitch (FACTS
@@ -18,7 +19,7 @@ import type { Voice } from '@/features/lessons/kit/voice-choice'
 import type { ChartState, RungId } from './ladder-data'
 import { doOf, leapName, leapSize, RUNG_ORDER, windowOf } from './ladder-data'
 import type { SoundNote } from './sounds'
-import { climbNotes, COPY_LANDS, COPY_TRACE, FIVE_LEAPS, fiveLeapsNotes, freeNotes, hearFirstNotes, LANDING_SEC, landingAt, landingSound, landingTrace, leapNotes, lengthOf, MERC_LEAP, mercLadderNotes, OVER_LEAPS, PATH_IDS, pathNotes, SLOW, stepNotes, wordNotes, } from './sounds'
+import { climbNotes, COPY_LANDS, COPY_TRACE, FIVE_LEAPS, fiveLeapsNotes, freeNotes, hearFirstNotes, LANDING_SEC, landingAt, landingSound, landingSoundFrom, landingTrace, leapNotes, lengthOf, MERC_LEAP, mercLadderNotes, OVER_LEAPS, PATH_IDS, pathNotes, SLOW, stepNotes, wordNotes, } from './sounds'
 
 const VOICES: readonly Voice[] = ['lower', 'higher']
 
@@ -272,6 +273,47 @@ describe("Step 5's landing", () => {
     }
     const slow = landingSound(50, SLOW)
     expect(slow.slide.at + (slow.slide.points.at(-1)?.t ?? 0)).toBeCloseTo(6, 9)
+  })
+
+  it('carries on from where the line stands: what is left of do, then the voice from its pitch there to the end, at speed or slowed', () => {
+    // Act: from the start, on do, held under so, mid-slide slowed, settled
+    const [whole, onDo, held, sliding, settled] = [
+      landingSoundFrom(50, 0),
+      landingSoundFrom(50, 0.4),
+      landingSoundFrom(50, 1.4),
+      landingSoundFrom(50, 1.9, SLOW),
+      landingSoundFrom(50, 2.6),
+    ]
+    // each point's distance from so, cents, and its time
+    const shape = (x: typeof whole) => ({
+      at: x.slide.at.toFixed(9),
+      t: fixed(x.slide.points.map((p) => p.t)),
+      cents: x.slide.points.map((p) =>
+        (1200 * Math.log2(p.hz / hz(57))).toFixed(6),
+      ),
+    })
+    const cents = (cs: readonly number[]) => cs.map((c) => c.toFixed(6))
+
+    // Assert: from the start, the whole sound; on do, the rest of do first
+    expect(whole).toEqual(landingSound(50))
+    expect(onDo.first).toEqual({ t: 0, midi: 50, dur: 0.6 })
+    expect(shape(onDo)).toEqual({ ...shape(whole), at: (0.6).toFixed(9) })
+    for (const x of [held, sliding, settled]) expect(x.first).toBeNull()
+    expect(shape(held)).toEqual({
+      at: (0).toFixed(9),
+      t: fixed([0, 0.2, 0.8, 1.6]),
+      cents: cents([-80, -80, -25, -25]),
+    })
+    expect(shape(sliding)).toEqual({
+      at: (0).toFixed(9),
+      t: fixed([0, 0.6, 2.2]),
+      cents: cents([-52.5, -25, -25]),
+    })
+    expect(shape(settled)).toEqual({
+      at: (0).toFixed(9),
+      t: fixed([0, 0.4]),
+      cents: cents([-25, -25]),
+    })
   })
 })
 

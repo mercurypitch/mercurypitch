@@ -20,8 +20,9 @@
 // there the whole page asks for no frame at all at rest. Lesson 9's checks
 // here are the explorer, the cold open's chart, at rest and through Merc's
 // leap, and the steps' ladder chart with Step 1's folds strip, at rest and
-// through Step's two notes, while the strip's folds open and close. Lessons 1 to 5
-// each have drawers of their own that still draw every frame (S-26 in
+// through Step's two notes, while the strip's folds open and close, and
+// through Step 5's landing, whose line moves only while it plays. Lessons
+// 1 to 5 each have drawers of their own that still draw every frame (S-26 in
 // docs/plans/find-your-pitch/RELEASE-REVIEW.md), which keep their loop
 // running whatever these three do, so there only the figures are watched.
 // There the ring's checks pin only that it writes nothing at rest and leaves
@@ -323,7 +324,7 @@ test('Lesson 8: the explorer rests, and so does the whole page', async ({
   await explorerRests(page, 8, true)
 })
 
-test('Lesson 9: the ladder charts, the folds strip and the explorer rest, and so does the whole page', async ({
+test('Lesson 9: the ladder charts, the folds strip, the landing and the explorer rest, and so does the whole page', async ({
   page,
 }) => {
   const hero = '#heroLadder canvas'
@@ -338,6 +339,15 @@ test('Lesson 9: the ladder charts, the folds strip and the explorer rest, and so
     page.locator('#toyLadder [data-ladder-play="step"]').click(),
   )
   await expectRest(page, ladder)
+  // Step 5's landing, opened from its address: the line moves while it plays
+  await page.evaluate(() => {
+    window.location.hash = '#step-5'
+  })
+  await expect(page.locator('#stepNow')).toHaveText('5')
+  await scrollTo(page, ladder)
+  await runRests(page, [ladder], true, () =>
+    page.locator('#toyLadder [data-ladder-play="landing"]').click(),
+  )
   await explorerRests(page, 9, true)
 })
 

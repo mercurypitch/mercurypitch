@@ -21,8 +21,11 @@
 // Steps 1 to 4: Tab reaches each control in reading order, Slow toggles
 // `aria-pressed`, each play says its move in spoken names, the folds strip
 // fills the figure's bottom 64 px, Step 3's climb clears the line a leap
-// left, and Step 4 names its five leaps in order. Each other toy's checks
-// join it as that toy is wired.
+// left, and Step 4 names its five leaps in order; and Step 5's scrub bar,
+// the kit's native range, moves a tenth of a second an arrow, Home and End
+// jump, and the readout and the bar's words follow it in spoken names,
+// while Play turns to Pause and back. Each other toy's checks join it as
+// that toy is wired.
 
 import type { Locator, Page } from '@playwright/test'
 import { expect, test } from './helpers/lesson-page'
@@ -457,6 +460,99 @@ for (const viewport of [
       await expect(five).not.toHaveClass(/\bis-on\b/, { timeout: 5_000 })
       await page.keyboard.press('Tab')
       await expect(slow).toBeFocused()
+      expect(errors).toEqual([])
+    })
+  })
+}
+
+// WEB-SPEC, End to end 3: Step 5's scrub bar, at a phone's size and a desktop's
+for (const viewport of [
+  { width: 390, height: 844 },
+  { width: 1440, height: 900 },
+]) {
+  test.describe(`Step 5 by keyboard at ${viewport.width} x ${viewport.height}`, () => {
+    test.use({ viewport })
+
+    test('the scrub bar moves by arrows, Home and End jump, and the readout follows in spoken names; Play turns to Pause and back', async ({
+      page,
+    }) => {
+      test.setTimeout(60_000)
+      // Arrange
+      const errors: string[] = []
+      page.on('pageerror', (e) => errors.push(e.message))
+      await page.goto('/learn/09#step-5')
+      const toy = page.locator('#toyLadder')
+      const play = toy.locator('[data-ladder-play="landing"]')
+      const slow = toy.locator('[data-ladder-slow]')
+      const scrub = toy.locator('[data-landing-scrub]')
+      const readout = toy.locator('[data-ladder-readout]')
+      await expect(page.locator('#stepNow')).toHaveText('5')
+      await play.scrollIntoViewIfNeeded()
+      await play.focus()
+
+      // Act, Assert: Step 5's row in reading order, the bar last
+      await page.keyboard.press('Tab')
+      await expect(slow).toBeFocused()
+      await page.keyboard.press('Tab')
+      await expect(scrub).toBeFocused()
+      await expect(scrub).toHaveAttribute('aria-valuetext', '0.0 seconds of 3')
+
+      // a tenth of a second an arrow
+      for (let i = 0; i < 14; i++) await page.keyboard.press('ArrowRight')
+      await expect(scrub).toHaveValue('1.4')
+      await expect(scrub).toHaveAttribute(
+        'aria-valuetext',
+        "1.4 seconds of 3: 80 cents below Merc's note, outside the band",
+      )
+      await expect(readout).toHaveText(
+        "80 cents below Merc's note: outside the band; nearest note G sharp 3",
+      )
+      await page.keyboard.press('ArrowLeft')
+      await expect(scrub).toHaveAttribute(
+        'aria-valuetext',
+        "1.3 seconds of 3: 80 cents below Merc's note, outside the band",
+      )
+
+      // End and Home jump to either end
+      await page.keyboard.press('End')
+      await expect(scrub).toHaveValue('3')
+      await expect(scrub).toHaveAttribute(
+        'aria-valuetext',
+        "3.0 seconds of 3: 25 cents below Merc's note, in the band",
+      )
+      await expect(readout).toHaveText(
+        "25 cents below Merc's note: in the band; nearest note A3",
+      )
+      await page.keyboard.press('Home')
+      await expect(scrub).toHaveValue('0')
+      await expect(scrub).toHaveAttribute('aria-valuetext', '0.0 seconds of 3')
+      await expect(readout).toHaveText('')
+
+      // Play, its word Pause while the landing sounds, and Play again at its end
+      await page.keyboard.press('Shift+Tab')
+      await page.keyboard.press('Shift+Tab')
+      await expect(play).toBeFocused()
+      await page.keyboard.press('Enter')
+      await expect(play).toHaveText('Pause')
+      await expect(play).toHaveClass(/\bis-on\b/)
+      await expect(play).toHaveText('Play', { timeout: 6_000 })
+      await expect(readout).toHaveText(
+        "25 cents below Merc's note: in the band; nearest note A3",
+      )
+      await expect(scrub).toHaveValue('3')
+
+      // Pause mid-landing leaves the bar where the line stands: from the
+      // end, Play starts again at 0, and the bar follows the line
+      await page.keyboard.press('Enter')
+      await expect(play).toHaveText('Pause')
+      await expect
+        .poll(async () => Number(await scrub.inputValue()))
+        .toBeGreaterThan(0.2)
+      await page.keyboard.press('Enter')
+      await expect(play).toHaveText('Play')
+      const stood = Number(await scrub.inputValue())
+      expect(stood).toBeGreaterThan(0)
+      expect(stood).toBeLessThan(3)
       expect(errors).toEqual([])
     })
   })

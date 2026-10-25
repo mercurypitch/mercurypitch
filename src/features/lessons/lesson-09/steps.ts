@@ -11,7 +11,10 @@
 // chart's state follow the step, through the deck's `onStep`, whatever the
 // route (Next or Back, a swipe, the lesson menu, an address that names a
 // step, the quiz's step links); the chart draws only while the stage shows
-// it, and the status line starts each step empty.
+// it, and the status line starts each step empty. Leaving a step by any of
+// those routes stops whatever its controls set sounding (WEB-SPEC, Audio),
+// so nothing of it plays on under another step; the step showing shown
+// again, as the phone deck and the wide page swap, stops nothing.
 //
 // Each play is a phrase of Merc's notes, 1.0 s each (FACTS 92), the page's
 // one sound (kit/now-playing.ts): a press stops the sound before it,
@@ -27,10 +30,11 @@
 // draw their arcs from do's slot over the rungs between and say what they
 // skip. Step 4's five leaps come in the syllabus's order (FACTS 36, 93),
 // 0.6 s apart, 12.4 s in all: each arc draws, numbered, as its second note
-// starts, and the status line names that leap then. With sound off a play
-// still draws, and the kit's hint says why nothing was heard
-// (`Sound.canPlay`). Step 5's landing is wired separately; until then its
-// controls do nothing.
+// starts, and the status line names that leap then. Step 5's landing has
+// Play and Pause and a scrub bar (landing.ts); Slow stretches it to 6.0 s,
+// and pressed mid-landing carries it on from where it stands. With sound
+// off a play still draws, and the kit's hint says why nothing was heard
+// (`Sound.canPlay`).
 
 import { q, qa } from '@/features/lessons/kit/dom'
 import type { Which } from '@/features/lessons/kit/merc-duo'
@@ -49,6 +53,8 @@ import { mountFoldsStrip } from './folds-strip'
 import type { LadderChart, Phrase, PhraseDrawing } from './ladder-chart'
 import { mountLadderChart } from './ladder-chart'
 import type { ChartState } from './ladder-data'
+import type { Landing } from './landing'
+import { mountLanding } from './landing'
 import { foldsLine, HEAR_LINE, moveLine, orderLine, overLine } from './lines'
 import { climbNotes, FIVE_LEAPS, fiveLeapsNotes, hearFirstNotes, leapNotes, MERC_LEAP, OVER_LEAPS, SLOW, stepNotes, } from './sounds'
 
@@ -186,6 +192,7 @@ export const stepPlay = (
 export interface Steps {
   readonly ladder: LadderChart
   readonly strip: FoldsStrip
+  readonly landing: Landing
 }
 
 /** Follows the deck: registered before `deck.start()`, so an address that names a step opens it. */
@@ -270,8 +277,10 @@ export function initSteps(deck: StepDeck): Steps {
   }
 
   const slow = (): boolean => slowBtn.getAttribute('aria-pressed') === 'true'
+  const landing = mountLanding({ root, ladder, active, slow })
   slowBtn.addEventListener('click', () => {
     slowBtn.setAttribute('aria-pressed', String(!slow()))
+    landing.slowChanged()
   })
 
   for (const btn of qa<HTMLButtonElement>('[data-ladder-play]', root)) {
@@ -280,13 +289,16 @@ export function initSteps(deck: StepDeck): Steps {
   }
 
   // a voice chosen in Sing it moves do: the chart lays itself out again,
-  // and a play on the old do stops
+  // and a play on the old do stops; the landing stands where it was, drawn
+  // again over the new layout
   let voice: Voice = ladder.voice
   VoiceChoice.subscribe((v) => {
     const next = v ?? 'lower'
     if (next === voice) return
     voice = next
     stop()
+    landing.stop()
+    if (deck.current === 5) landing.draw()
   })
 
   registerToy({
@@ -295,11 +307,16 @@ export function initSteps(deck: StepDeck): Steps {
       // swap at a rotation or a resize, or Step 1 as the deck starts: the
       // markup already shows it
       if (n === previous) return
+      // the step left: whatever its controls set sounding stops
+      stop()
+      landing.stop()
       showParts(root, n)
       label.innerHTML = FIG[n] ?? FIG[1]
       say('')
       ladder.show(STEP_STATE[n] ?? STEP_STATE[1])
+      // the landing's line where it was left, and its readout
+      if (n === 5) landing.draw()
     },
   })
-  return { ladder, strip }
+  return { ladder, strip, landing }
 }
