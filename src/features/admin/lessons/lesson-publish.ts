@@ -14,8 +14,9 @@
 // carries a draft's page (lesson-admin.ts `publishedByDefault`).
 //
 // The words the Lessons page prints for all of that are here too, from the
-// state words to what the page says after a save, so the page and its tests
-// read one set. Admin copy, in American English. No DOM.
+// state words to what the page asks before a publish and says after a save,
+// so the page and its tests read one set. Admin copy, in American English.
+// No DOM.
 
 import type { LessonOverride, LessonStateChange, LessonStateField, } from '@/lib/lesson-state'
 import type { LessonRow } from './lesson-admin'
@@ -219,4 +220,53 @@ export function failedMessage(name: string, error: LessonApiError): string {
     return `${lead}: the content API could not be reached. Check the connection, then try again.`
   }
   return `${lead}: ${asSentence(error.message)}`
+}
+
+// ── Before a publish ─────────────────────────────────────────────
+
+/** "Lesson 10", "Lessons 2 and 3", "Lessons 5, 8 and 9": lessons by number, as given. */
+function lessonList(ns: readonly number[]): string {
+  if (ns.length < 2) return `Lesson ${ns.join('')}`
+  return `Lessons ${ns.slice(0, -1).join(', ')} and ${ns[ns.length - 1]}`
+}
+
+/** What the page asks before it publishes a lesson: its dialog's title and words. */
+export interface PublishQuestion {
+  readonly title: string
+  readonly message: string
+}
+
+/**
+ * What the page asks before it publishes lesson `name`, or null when it
+ * publishes at once. It asks while the lesson waits on its sign-off
+ * (`waitingOn`, its line in drafts.ts), and, whether a line stands or not,
+ * when it would go live before lessons it builds on that are not published
+ * here (`ahead`, lesson-admin.ts `aheadOf`). When both hold it asks once,
+ * in words that name both. Unpublishing never asks.
+ */
+export function publishQuestion(
+  name: string,
+  waitingOn: string | null,
+  ahead: readonly number[],
+): PublishQuestion | null {
+  const waits = waitingOn === null ? null : `${name} waits on ${waitingOn}.`
+  if (ahead.length === 0) {
+    return waits === null
+      ? null
+      : {
+          title: `Publish ${name} before its sign-off?`,
+          message: `${waits} Publish it anyway?`,
+        }
+  }
+  const lessons = lessonList(ahead)
+  const buildsOn = `builds on ${lessons}, which ${ahead.length === 1 ? 'is' : 'are'} not published here.`
+  return waits === null
+    ? {
+        title: `Publish ${name} before ${lessons}?`,
+        message: `${name} ${buildsOn} Publish it anyway?`,
+      }
+    : {
+        title: `Publish ${name} before its sign-off and before ${lessons}?`,
+        message: `${waits} It also ${buildsOn} Publish it anyway?`,
+      }
 }

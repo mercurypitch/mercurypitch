@@ -34,8 +34,8 @@ import styles from './AdminLessonsPage.module.css'
 import type { CopyChoicesFor } from './lessons/copy-choices'
 import { copyChoicesFor } from './lessons/copy-choices'
 import type { LessonRow, ListingCheck, PageCheck, ReleaseStep, SiteFindings, StepId, StepState, } from './lessons/lesson-admin'
-import { checkPage, lessonName, lessonRows, listedIn, llmsPaths, publishedByDefault, readListing, releaseChecklist, sitemapPaths, } from './lessons/lesson-admin'
-import { asSentence, publishView, stateWord } from './lessons/lesson-publish'
+import { aheadOf, checkPage, lessonName, lessonRows, listedIn, llmsPaths, publishedByDefault, readListing, releaseChecklist, sitemapPaths, } from './lessons/lesson-admin'
+import { asSentence, publishQuestion, publishView, stateWord, } from './lessons/lesson-publish'
 import type { LessonActions } from './lessons/LessonControls'
 import { PublishCell, PublishPanel, WordingPanel, } from './lessons/LessonControls'
 import { LessonsBlueprint } from './lessons/LessonsBlueprint'
@@ -183,7 +183,17 @@ export function AdminLessonsPage(props: AdminLessonsPageProps): JSX.Element {
       defaultPublished: publishedByDefault(row, DRAFTS_SHOWN),
     })
 
-  /** Publish, asking first when the lesson still waits on its sign-off; or unpublish. */
+  /** Whether lesson `n` is published on this site, as the page's state has it. */
+  const publishedHere = (n: number): boolean => {
+    const row = rows.find((r) => r.lesson.n === n)
+    return row !== undefined && viewOf(row)?.published === true
+  }
+
+  /**
+   * Publish, asking first when the lesson still waits on its sign-off or
+   * would go live before a lesson it builds on, once for both; or
+   * unpublish, which never asks.
+   */
   const toggle = (row: LessonRow): void => {
     const view = viewOf(row)
     if (view === null || !view.canPublish) return
@@ -191,15 +201,17 @@ export function AdminLessonsPage(props: AdminLessonsPageProps): JSX.Element {
       void savePublished(row, false)
       return
     }
-    const waitingOn = row.waitingOn
-    if (waitingOn === null) {
+    const question = publishQuestion(
+      lessonName(row.lesson),
+      row.waitingOn,
+      aheadOf(row.lesson.n, publishedHere),
+    )
+    if (question === null) {
       void savePublished(row, true)
       return
     }
-    const name = lessonName(row.lesson)
     confirm.request({
-      title: `Publish ${name} before its sign-off?`,
-      message: `${name} waits on ${waitingOn}. Publish it anyway?`,
+      ...question,
       confirmLabel: 'Publish anyway',
       confirmIcon: <Eye />,
       onConfirm: () => void savePublished(row, true),
