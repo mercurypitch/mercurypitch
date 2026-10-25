@@ -10,7 +10,7 @@
 // and where the host is sent. The host draws the phase it is given, gives the
 // screens the callbacks below and answers an exit.
 //
-// Five things are easy to break:
+// Six things are easy to break:
 //
 // - The answers are told once per run. The first `done` sends them with
 //   `plan_done`; Back then Done, and Change my answers then Done, send
@@ -37,6 +37,13 @@
 //   record, which keeps where a voiceprint pointed (never why), and answered
 //   again it keeps that finding unless the host has a live one, or the new
 //   plan would lose its voiceprint-led Start here.
+// - A run follows the record until the person starts answering (a pick, or a
+//   move on, as the screens report it). A signed-in singer's plan can come
+//   from the account after the host read it as due: First Light reads it as
+//   it opens, and the pull after a sign-in lands later. So an answered plan,
+//   there as the run begins or landing before the first pick, is shown as a
+//   review shows it, and nothing is told for it: it was counted where it was
+//   answered. Once the person has started, their answers replace it.
 //
 // What the host sees: `phase` says which screen to draw; `plan`, `credits`,
 // `scopeOn`, `pills`, `choices` and `texts` are what the screens take;
@@ -122,6 +129,8 @@ export interface PlanFlowController {
   ) => void
   /** Not now on a question, with the answers so far. */
   decline: (on: QuestionId, c: PlanChoices) => void
+  /** The person started answering: an answered plan that lands now is theirs to replace. */
+  answering: () => void
   /** Back from the plan to the questions, on the answers given. */
   changeAnswers: () => void
   setScope: (on: boolean) => void
@@ -208,6 +217,8 @@ export function usePlanFlowController(o: PlanFlowOptions): PlanFlowController {
   let before: ReturnType<typeof practiceScope> | null = null
   /** Have the answers been told? Once per run, never in a review. */
   let reported = o.mode === 'review'
+  /** Does the run still follow the record? Until the person starts answering. */
+  let follows = o.mode !== 'review'
   let accepted = false
 
   const send = (events: readonly GuideFunnelEvent[]): void => {
@@ -276,12 +287,17 @@ export function usePlanFlowController(o: PlanFlowOptions): PlanFlowController {
 
   // ── How the run begins ──
 
-  if (o.mode === 'review') {
-    if (answered !== null) {
-      setPlan(planFor(answered.choices))
+  /** An answered plan, shown as a review opens on it: its answers were told where they were given. */
+  const showAnswered = (c: PlanChoices): void => {
+    reported = true
+    batch(() => {
+      setChoices(c)
+      setPlan(planFor(c))
       setPhase('plan')
-    }
-  } else {
+    })
+  }
+
+  if (o.mode !== 'review') {
     const shown = SHOWN[o.mode]
     markPlanShown(shown.via)
     // A new visitor and an existing user are each counted once, when the
@@ -294,10 +310,27 @@ export function usePlanFlowController(o: PlanFlowOptions): PlanFlowController {
     const wrote = record === null && untrack(planRecord) !== null
     if (o.mode === 'skipper' || wrote) send([shown.event])
   }
+  // Only a review is opened on an answered plan; any other run that finds one
+  // lost a race with the account's, and follows it.
+  if (answered !== null) showAnswered(answered.choices)
+
+  // The account's plan, landing before the person starts answering.
+  createEffect(() => {
+    const landed = planRecord()
+    if (!follows || landed?.status !== 'answered') return
+    if (untrack(phase) === 'questions') showAnswered(landed.choices)
+  })
 
   // ── The screens' callbacks ──
 
+  const answering = (): void => {
+    follows = false
+  }
+
   const done: PlanFlowController['done'] = (c, t, from) => {
+    // The person's own answers: the run stops following the record first, or
+    // the save below would land as a plan from elsewhere.
+    follows = false
     savePlanAnswers(c, t, found())
     // A singer who already holds an account has no sign-in coming that would
     // send these answers, so they go now, through the one gate
@@ -397,6 +430,7 @@ export function usePlanFlowController(o: PlanFlowOptions): PlanFlowController {
     pills,
     done,
     decline,
+    answering,
     changeAnswers,
     setScope,
     openStop,

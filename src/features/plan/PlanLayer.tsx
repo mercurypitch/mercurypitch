@@ -143,6 +143,7 @@ export function PlanLayer(props: PlanLayerProps): JSX.Element {
               onMercState={c.setMercState}
               onDone={c.done}
               onDecline={c.decline}
+              onAnswering={c.answering}
             />
           </Match>
           <Match when={c.phase() === 'plan'}>

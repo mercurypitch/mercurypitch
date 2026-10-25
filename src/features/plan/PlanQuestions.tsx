@@ -43,7 +43,7 @@
 // (lib/field-above-keyboard.ts).
 
 import type { Component, JSX } from 'solid-js'
-import { createMemo, createSignal, createUniqueId, For, Match, onCleanup, onMount, Show, Switch, untrack, } from 'solid-js'
+import { createEffect, createMemo, createSignal, createUniqueId, For, Match, onCleanup, onMount, Show, Switch, untrack, } from 'solid-js'
 import { CheckSmall, ChevronLeft, Ear, Guitar, Mic, PianoKeys, } from '@/components/icons'
 import { keepFieldAboveKeyboard } from '@/lib/field-above-keyboard'
 import type { MercState } from '@/lib/merc/constants'
@@ -116,6 +116,12 @@ export interface PlanQuestionsProps {
   ) => void
   /** Not now: the question it came on, and the answers so far. */
   onDecline: (on: QuestionId, c: PlanChoices) => void
+  /**
+   * The person started answering: a pick, or a move past the first question.
+   * Said again on each change after that; the host needs only the first. Until
+   * then the host's run follows the plan record (usePlanFlowController).
+   */
+  onAnswering?: () => void
   /**
    * Ask before Not now turns the plan down: handed the decline, the host runs
    * it if the person still wants to, and it reads the question showing then.
@@ -393,6 +399,10 @@ export function PlanQuestions(props: PlanQuestionsProps): JSX.Element {
     restingLine('q1', seed.choices, seed.returning),
   )
   const [pops, setPops] = createSignal(0)
+  // The host's run follows the plan record until the person starts answering.
+  createEffect(() => {
+    if (step() !== 'q1' || choices() !== seed.choices) props.onAnswering?.()
+  })
   // One screen is up at a time, so one id serves each of these on every one.
   const headingId = createUniqueId()
   const pickId = createUniqueId()

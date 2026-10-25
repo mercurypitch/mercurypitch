@@ -119,6 +119,7 @@ export function BeatPlan(props: BeatPlanProps): JSX.Element {
             onMercState={c.setMercState}
             onDone={c.done}
             onDecline={c.decline}
+            onAnswering={c.answering}
             askBeforeDecline={props.askBeforeDecline}
           />
         </Match>

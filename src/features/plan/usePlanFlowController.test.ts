@@ -40,6 +40,7 @@ import { applyPersistedValue } from '@/lib/storage'
 import type * as NotificationsStoreModule from '@/stores/notifications-store'
 import { practiceScope, setPracticeScope, setUiMode, uiMode, } from '@/stores/settings-store'
 import { buildPlan } from './build-plan'
+import { answeredElsewhere } from './plan-choices.fixture'
 import { planCreditsLine } from './plan-credits'
 import { planDeclinedEvents, planDoneEvents } from './plan-events'
 import { PLAN_OPENED_KEY, PLAN_RECORD_KEY } from './plan-keys'
@@ -561,6 +562,54 @@ describe('when the answers are in and the singer holds an account', () => {
 })
 
 // ── Not now ────────────────────────────────────────────────────────────
+
+// ── A plan answered on another device ──────────────────────────────────
+
+describe('when an answered plan comes from the account', () => {
+  it('opens on it when it is there as the run begins, as a review does, and tells nobody', () => {
+    // Arrange: the pull landed after First Light read the plan as due.
+    answeredElsewhere(HABIT)
+
+    // Act
+    const { c } = start('new')
+
+    // Assert
+    expect(c.phase()).toBe('plan')
+    expect(c.plan()).toEqual(buildPlan(HABIT))
+    expect(sent()).toEqual([])
+  })
+
+  it('moves to it when it lands before the person starts answering, and tells nobody of the answers', () => {
+    // Arrange
+    const { c } = start('new')
+    const told = sent()
+
+    // Act: the pull after a sign-in lands while the first question is up.
+    answeredElsewhere(HABIT)
+
+    // Assert
+    expect(c.phase()).toBe('plan')
+    expect(c.choices()).toEqual(HABIT)
+    expect(c.plan()).toEqual(buildPlan(HABIT))
+    expect(sent()).toEqual(told)
+  })
+
+  it('leaves the questions to a person who has started answering, whose answers then replace it', () => {
+    // Arrange
+    const { c } = start('new')
+    c.answering()
+
+    // Act
+    answeredElsewhere(HABIT)
+
+    // Assert
+    expect(c.phase()).toBe('questions')
+    c.done(AUDITION, NO_TEXTS, NO_PILLS)
+    expect(c.plan()).toEqual(buildPlan(AUDITION))
+    expect(planRecord()?.choices).toEqual(AUDITION)
+    expect(sent().at(-1)).toBe('plan_done')
+  })
+})
 
 describe('when the person says Not now on a question', () => {
   it('sends plan_declined with its question and goes Home', () => {

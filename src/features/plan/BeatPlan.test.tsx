@@ -37,6 +37,7 @@ import { BeatPlan } from './BeatPlan'
 import styles from './BeatPlan.module.css'
 import type { PlanStop } from './build-plan'
 import { buildPlan } from './build-plan'
+import { answeredElsewhere } from './plan-choices.fixture'
 import { PLAN_OPENED_KEY, PLAN_RECORD_KEY } from './plan-keys'
 import { planRecord } from './plan-store'
 import { PICK_ADVANCE_MS } from './PlanQuestions'
@@ -489,6 +490,26 @@ describe('what First Light tells it', () => {
 
     expect(card('start').dataset.dest).toBe(led.start.dest)
     expect(within(card('start')).getByText(led.start.title)).toBeInTheDocument()
+  })
+})
+
+describe('a plan answered on another device', () => {
+  it('is shown in place of the questions when the account sends it before the first pick', () => {
+    open()
+
+    answeredElsewhere(AUDITION)
+
+    expect(box().dataset.phase).toBe('plan')
+    expect(card('start').dataset.dest).toBe(buildPlan(AUDITION).start.dest)
+  })
+
+  it('leaves the questions to a singer who has started answering', () => {
+    open()
+    tap('Guitar')
+
+    answeredElsewhere(AUDITION)
+
+    expect(box().dataset.phase).toBe('questions')
   })
 })
 
