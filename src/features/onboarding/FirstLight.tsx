@@ -710,7 +710,7 @@ export const FirstLight: Component<FirstLightProps> = (props) => {
               voiceprint={() => pickFirstStop(voiceprint())}
               gift={mapGift}
               onHome={leave}
-              askBeforeDecline={(decline) => skip.ask('plan', decline)}
+              askBeforeDecline={(...args) => skip.ask('plan', ...args)}
               onRooms={() => openBeat('map')}
               onEnterStop={(stop, tour) =>
                 handleEnterStop(PLAN_DESTS[stop.dest].target, tour)

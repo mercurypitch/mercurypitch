@@ -49,6 +49,7 @@ vi.mock('@/stores/app-store', async (importOriginal) =>
 )
 
 import { PLAN_SKIP_ASK } from '@/features/plan/BeatPlan'
+import { answeredElsewhere, AUDITION, } from '@/features/plan/plan-choices.fixture'
 import { PLAN_OPENED_KEY, PLAN_RECORD_KEY } from '@/features/plan/plan-keys'
 import { planRecord, savePlanAnswers } from '@/features/plan/plan-store'
 import { GUIDE_FUNNEL_STORAGE_KEY } from '@/lib/guide-funnel'
@@ -430,6 +431,25 @@ describe("the questions' Not now in First Light", () => {
     expect(planRecord()?.status).not.toBe('declined')
     expect(flowOpen()).toBe(true)
     expect(count('onboarding_skip_kept_plan')).toBe(1)
+  })
+
+  // The account's plan can land while the question is open. The questions it
+  // asks about are gone, and Yes, skip turned down a plan that was answered.
+  it('closes by itself when the account plan lands in place of the questions, counted as neither', async () => {
+    const host = await at('questions')
+    fireEvent.click(within(host).getByRole('button', { name: 'Not now' }))
+    expect(confirm()).toHaveTextContent(PLAN_SKIP_ASK.title)
+
+    answeredElsewhere(AUDITION)
+
+    await waitFor(() => expect(confirm()).toBeNull())
+    await Promise.resolve()
+    expect(beat('questions')?.dataset.phase).toBe('plan')
+    expect(beat('questions')?.querySelector('h1')).toHaveFocus()
+    expect(tracked()).not.toContain('onboarding_skip_kept_plan')
+    expect(planRecord()?.status).toBe('answered')
+    expect(planEvents()).toEqual(['plan_shown_new'])
+    expect(flowOpen()).toBe(true)
   })
 })
 

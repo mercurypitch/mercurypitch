@@ -14,8 +14,10 @@
 // - Yes, skip runs the handler it was handed, and every handler reads the
 //   flow's state when it runs, so it acts on the state at that moment.
 // - When the beat it was asked on moves on underneath (the voiceprint
-//   finished, the microphone was refused), the question is no longer true and
-//   the confirm closes by itself, counted neither as kept nor as skipped.
+//   finished, the microphone was refused), or what it asks about goes (the
+//   account's plan takes the questions' place), the question is no longer
+//   true and the confirm closes by itself, counted neither as kept nor as
+//   skipped.
 //
 // The events of each way out (`onboarding_skipped`, `onboarding_track_short`,
 // the plan's decline) fire from its handler, so only after Yes, skip.
@@ -103,11 +105,17 @@ interface Asking {
   beat: Beat
   /** The way out the person tapped, run on Yes, skip. */
   skip: () => void
+  /** Is what it asks about still there? */
+  stillTrue: () => boolean
 }
 
 export interface SkipConfirm {
-  /** Ask before `skip` runs, or run it at once when nothing needs asking. */
-  ask: (kind: SkipAsk, skip: () => void) => void
+  /**
+   * Ask before `skip` runs, or run it at once when nothing needs asking. Once
+   * `stillTrue` turns false the question closes by itself, as it does when
+   * the beat moves on.
+   */
+  ask: (kind: SkipAsk, skip: () => void, stillTrue?: () => boolean) => void
   /** The confirm itself, rendered inside the flow so it wears its skin. */
   Confirm: Component
 }
@@ -141,13 +149,15 @@ export function createSkipConfirm(
     return true
   }
 
-  // The beat moved on under the confirm (the voiceprint finished), so it
-  // closes, counted as neither. Its trap hands the focus back to the way out
-  // that opened it, a pass after First Light put it on the new beat's heading,
-  // so the heading takes it back once the trap is done.
+  // The beat moved on under the confirm (the voiceprint finished), or what it
+  // asks about went, so it closes, counted as neither. Its trap hands the
+  // focus back to the way out that opened it, a pass after First Light put it
+  // on the new beat's heading, so the heading takes it back once the trap is
+  // done.
   createEffect(() => {
     const open = asking()
-    if (open === null || currentBeat() === open.beat) return
+    if (open === null) return
+    if (currentBeat() === open.beat && open.stillTrue()) return
     setAsking(null)
     queueMicrotask(() =>
       document
@@ -156,7 +166,7 @@ export function createSkipConfirm(
     )
   })
 
-  const ask = (kind: SkipAsk, skip: () => void): void => {
+  const ask: SkipConfirm['ask'] = (kind, skip, stillTrue = () => true) => {
     // One confirm at a time: a second way out reached while one is open
     // neither counts again nor swaps the handler.
     if (untrack(asking) !== null) return
@@ -165,7 +175,7 @@ export function createSkipConfirm(
       return
     }
     trackOnboarding(ASKED_EVENT[kind])
-    setAsking({ kind, beat: untrack(currentBeat), skip })
+    setAsking({ kind, beat: untrack(currentBeat), skip, stillTrue })
   }
 
   const keep = (): void => {
