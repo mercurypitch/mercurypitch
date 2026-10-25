@@ -48,3 +48,10 @@ Answers to PLAN.md section 6. Builders follow these; a builder who finds one wro
 ## From the A3 and A6 builds (24 October 2026)
 
 25. A6's painters leave the shared `kit/folds.ts` for a leaf module, `kit/folds-sing.ts`, imported only by the pages that call them (Lessons 3 and 9), as decision 10 does for the band chart's rungs. Lesson 5 must not download 319 bytes it never calls, and Lessons 3 and 5 hold the season's least first-paint room. Lesson 3's frequency-to-stretch mapping, `clamp(log2(f/110)/2, 0, 1)`, moves there too, as `foldStretch(hz)`, for B7.
+
+## From the page run 1 review (25 October 2026; page-1/review/)
+
+26. Step 5's scrub bar is the kit's native range (`input.range`, lesson-stage.css), as Lesson 3's chase scrubs its band chart: 0 to 3 s in steps of 0.1, named "Scrub the landing", its `aria-valuetext` from `scrubText(t)` in `lesson-09/lines.ts` ("0.0 seconds of 3" at rest). It sits after Slow on the same row, and takes a row of its own where the row has no room for it, at 344 px. A native range brings keyboard, touch and screen-reader behaviour with no pointer code of its own; B8b wires it, and its markup is already in `learn/09.html`.
+27. The head's `teaches` list (JSON-LD) words Step 1's question (LESSON.md:110) as a phrase, "Why a leap is harder than a step", as every other lesson's list does.
+28. B11's `next()` (cognitive complexity 26) is split into small rules (`comfortAnswered`, `mercPlayed`, `silenced`, `took`; now 14), not waved through with a metrics baseline update: the ratchet holds, and a baseline edit would conflict with every other branch that moves the baseline file. Folded into B11's commit.
+29. Code comments and commit messages name no plan task (B6, B12 and so on) and no scratchpad file (PLAN.md, DECISIONS): they say what is still to come in plain words ("once it is wired").
