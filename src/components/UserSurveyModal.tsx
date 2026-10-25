@@ -127,7 +127,7 @@ const UserSurveyModal: Component<Props> = (props) => {
           </h2>
           <p class={styles.subtitle}>
             {selfOpened()
-              ? 'Tell us what would make Mercury Pitch better. Anonymous, no account needed.'
+              ? 'Tell us what would make Mercury Pitch better. No account needed.'
               : 'Optional. Skip it if nothing got in your way.'}
           </p>
         </div>
