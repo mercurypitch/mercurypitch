@@ -12,6 +12,7 @@ import type { Component } from 'solid-js'
 import { createSignal, createUniqueId, onCleanup, onMount, Show, } from 'solid-js'
 import { submitSurvey } from '@/db/services/survey-service'
 import { skipArmSecondsLeft, SURVEY_SKIP_ARM_MS, surveyHasContent, } from '@/lib/survey-timing'
+import { useFocusTrap } from '@/lib/use-focus-trap'
 import { showNotification } from '@/stores/notifications-store'
 import styles from './UserSurveyModal.module.css'
 
@@ -50,6 +51,22 @@ const UserSurveyModal: Component<Props> = (props) => {
       if (left <= 0) window.clearInterval(id)
     }, 200)
     onCleanup(() => window.clearInterval(id))
+  })
+
+  // It opens by itself, over a tab that may be playing, and the app's
+  // shortcuts listen on the window: a Space that left it played the tab behind
+  // and M opened the microphone. So it takes the focus and keeps its keys. It
+  // opens on its heading, not the field, so a phone keeps its keyboard down,
+  // and Escape is Skip, so it waits as Skip does.
+  let dialog: HTMLDivElement | undefined
+  let heading: HTMLHeadingElement | undefined
+  useFocusTrap(() => dialog, {
+    isOpen: () => true,
+    isolateKeyboard: true,
+    onClose: () => {
+      if (dismissable()) props.onClose()
+    },
+    initialFocus: () => heading,
   })
 
   const hasContent = () => surveyHasContent({ gotInTheWay: gotInTheWay() })
@@ -91,17 +108,21 @@ const UserSurveyModal: Component<Props> = (props) => {
 
   return (
     <div
+      ref={dialog}
       class={styles.overlay}
       classList={{ [styles.visible]: visible() }}
       role="dialog"
       aria-modal="true"
+      // Takes the focus from a press on its words, never from Tab, so the keys
+      // after the press stay in it (use-focus-trap.ts).
+      tabIndex={-1}
       aria-label={selfOpened() ? 'Share feedback' : 'Quick survey'}
       data-testid="user-survey-modal"
       onClick={handleOverlayClick}
     >
       <div class={styles.card} onClick={(e) => e.stopPropagation()}>
         <div class={styles.header}>
-          <h2 class={styles.title}>
+          <h2 ref={heading} class={styles.title} tabIndex={-1}>
             {selfOpened() ? 'Share your feedback' : 'One question'}
           </h2>
           <p class={styles.subtitle}>

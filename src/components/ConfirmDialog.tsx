@@ -51,10 +51,12 @@ interface ConfirmDialogProps {
    *  it as the dialog's description. None, or an empty list, shows nothing. */
   details?: readonly string[]
   /**
-   * Keep every key at the dialog, so the app's shortcuts on the window cannot
-   * act behind it (Space would play the tab behind and swallow a button's
-   * activation). The type-to-confirm input's Enter is a native listener on the
-   * input, so it works with this too.
+   * Every key stays at the dialog unless this is false, so the app's shortcuts
+   * on the window cannot act behind it: a Space would play the tab behind and
+   * swallow a button's activation. The type-to-confirm input's Enter is a
+   * native listener on the input, so it works with this too. Pass false only
+   * for a message whose own controls take keys through Solid's `onKeyDown`,
+   * which a stopped key never reaches.
    */
   isolateKeyboard?: boolean
   onConfirm: () => void
@@ -95,6 +97,8 @@ export const ConfirmDialog: Component<ConfirmDialogProps> = (props) => {
   }
 
   const stay = (): boolean => props.keepLabel != null
+  // The trap is read as `isolateKeyboard: true` unless a caller passes false.
+  const isolated = (): boolean => props.isolateKeyboard !== false
   const listed = (): boolean => (props.details?.length ?? 0) > 0
 
   useFocusTrap(() => dialogRef, {
@@ -102,7 +106,7 @@ export const ConfirmDialog: Component<ConfirmDialogProps> = (props) => {
     onClose: cancel,
     // A getter: the trap reads it on each key, so it follows the prop.
     get isolateKeyboard() {
-      return props.isolateKeyboard
+      return isolated()
     },
     initialFocus: () => (stay() ? keepRef : undefined),
   })
@@ -128,7 +132,7 @@ export const ConfirmDialog: Component<ConfirmDialogProps> = (props) => {
               aria-modal="true"
               // Takes focus from a press on its words, never from Tab, so the
               // keys after it stay inside the trap (use-focus-trap.ts).
-              tabIndex={props.isolateKeyboard === true ? -1 : undefined}
+              tabIndex={isolated() ? -1 : undefined}
               aria-labelledby={titleId}
               aria-describedby={listed() ? `${bodyId} ${detailsId}` : bodyId}
               aria-busy={props.busy === true ? true : undefined}

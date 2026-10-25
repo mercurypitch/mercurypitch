@@ -1,6 +1,9 @@
 // Modal focus follows visible native disclosures rather than their hidden controls.
 import { cleanup, fireEvent, render, screen } from '@solidjs/testing-library'
+import type { Accessor } from 'solid-js'
+import { createSignal, Show } from 'solid-js'
 import { afterEach, describe, expect, it } from 'vitest'
+import { APP_KEYS, overheard, stopOverhearing } from '@/tests/utils/trap-keys'
 import { useFocusTrap } from './use-focus-trap'
 
 function DisclosureDialog() {
@@ -84,5 +87,100 @@ describe('useFocusTrap native disclosures', () => {
     const afterTab = document.activeElement?.textContent
 
     expect([afterShiftTab, afterTab]).toEqual(['Shape tone', 'Close'])
+  })
+})
+
+// A trap that keeps the keys stops only a key sent from inside it. The focus
+// can fall to the page without a press: a field blurs itself to put a phone's
+// keyboard away, and a control that goes takes the focus with it. A Space sent
+// from there would play the tab behind, so the trap takes that focus back.
+function KeptDialog(props: { field: Accessor<boolean> }) {
+  let dialog: HTMLDivElement | undefined
+  useFocusTrap(() => dialog, { isOpen: () => true, isolateKeyboard: true })
+  return (
+    <div ref={dialog} role="dialog" aria-modal="true" tabindex="-1">
+      <Show when={props.field()}>
+        <input aria-label="Something else" />
+      </Show>
+      <button type="button">Next</button>
+    </div>
+  )
+}
+
+/** Sends the app's three keys from wherever the focus is. */
+function pressAppKeys(): void {
+  for (const key of APP_KEYS) {
+    fireEvent.keyDown(document.activeElement ?? document.body, key)
+  }
+}
+
+describe('useFocusTrap keeping the keys', () => {
+  afterEach(() => {
+    cleanup()
+    stopOverhearing()
+  })
+
+  it('takes back the focus a field lets go of, so the keys after it stay inside', async () => {
+    render(() => <KeptDialog field={() => true} />)
+    await Promise.resolve()
+    const field = screen.getByRole('textbox', { name: 'Something else' })
+    expect(field).toHaveFocus()
+    const heard = overheard()
+
+    // What Enter does in the plan's typed lines.
+    field.blur()
+    await Promise.resolve()
+
+    expect.soft(screen.getByRole('dialog')).toHaveFocus()
+    pressAppKeys()
+    expect(heard).toEqual([])
+  })
+
+  it('takes back the focus when the focused control goes', async () => {
+    const [field, setField] = createSignal(true)
+    render(() => <KeptDialog field={field} />)
+    await Promise.resolve()
+    expect(
+      screen.getByRole('textbox', { name: 'Something else' }),
+    ).toHaveFocus()
+    const heard = overheard()
+
+    setField(false)
+    await Promise.resolve()
+
+    expect.soft(screen.getByRole('dialog')).toHaveFocus()
+    pressAppKeys()
+    expect(heard).toEqual([])
+  })
+
+  it('leaves the focus where the dialog moves it next', async () => {
+    render(() => <KeptDialog field={() => true} />)
+    await Promise.resolve()
+    const next = screen.getByRole('button', { name: 'Next' })
+
+    screen.getByRole('textbox', { name: 'Something else' }).blur()
+    next.focus()
+    await Promise.resolve()
+
+    expect(next).toHaveFocus()
+  })
+
+  it('leaves a trap that lets the keys through as it was', async () => {
+    function OpenDialog() {
+      let dialog: HTMLDivElement | undefined
+      useFocusTrap(() => dialog, { isOpen: () => true })
+      return (
+        <div ref={dialog} role="dialog" aria-modal="true" tabindex="-1">
+          <input aria-label="Name" />
+        </div>
+      )
+    }
+    render(() => <OpenDialog />)
+    await Promise.resolve()
+
+    screen.getByRole('textbox', { name: 'Name' }).blur()
+    await Promise.resolve()
+
+    expect(document.activeElement).toBe(document.body)
   })
 })
