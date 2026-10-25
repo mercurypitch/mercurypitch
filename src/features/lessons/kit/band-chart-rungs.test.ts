@@ -90,10 +90,7 @@ describe('a rung over its time slot', () => {
   })
 
   it.each<[string, Rung]>([
-    [
-      'a sounding rung, its edge lit',
-      { c: 0, from: 0.5, to: 2, glow: 1, lit: true },
-    ],
+    ['a sounding, lit rung', { c: 0, from: 0.5, to: 2, glow: 1, lit: true }],
     ['a faint rung', { c: 700, from: 2, to: 3.5, faint: true }],
   ])(
     'keeps every stroke of %s inside its slot in the frame after a line was drawn',
@@ -219,6 +216,21 @@ describe('a faint rung', () => {
     weak.forEach((m, i) => {
       expect(m.opacity).toBeLessThan(full[i].opacity)
     })
+  })
+
+  it('draws its strip, edges and line only over its slot', async () => {
+    // Arrange: so's rung over the second and third seconds, before its turn
+    const figure = ladder([{ c: 700, from: 1, to: 3, faint: true }])
+
+    // Act
+    const [{ chart, calls }] = await paintCharts(figure)
+
+    // Assert: each of the four from the slot's start to its end, no further
+    const slot = [chart.pointOf(1, 700).x, chart.pointOf(3, 700).x]
+    const weak = inColor(marksOf(calls), AMBER)
+    expect(weak.map((m) => [Math.min(...m.xs), Math.max(...m.xs)])).toEqual(
+      Array(4).fill(slot),
+    )
   })
 
   it('draws in full while its note sounds, as a rung that is not faint does', async () => {
