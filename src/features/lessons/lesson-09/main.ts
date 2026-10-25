@@ -12,8 +12,8 @@
 //
 // The page shell: the switches, the steps' deck with its ladder chart in
 // each step's state, the next lesson's card, the season map, the masthead
-// and Merc and Tavi; and the cold open. Each other toy, and each control,
-// does nothing until it is wired: the recall and the quick check, the four
+// and Merc and Tavi; the cold open, the recall and the quick check. Each
+// other toy, and each control, does nothing until it is wired: the four
 // words, the steps' sounds, Sing it and free play.
 
 import '@fontsource-variable/inter'
@@ -22,6 +22,11 @@ import '@/features/lessons/kit/lesson-fonts.css'
 import '@/features/lessons/kit/lesson-base.css'
 import '@/features/lessons/kit/lesson-sections.css'
 import '@/features/lessons/kit/lesson-stage.css'
+// unused here: Lesson 6's questions bring Lesson 2's quiz modules onto this
+// page, and taking this sheet too keeps it in their chunk, so Lessons 2, 4,
+// 6 and 8 still link it before their own sheets and their guides keep
+// their heights (MISTAKES.md, on the lessons' base stylesheet)
+import '@/features/lessons/kit/lesson-guide.css'
 import '@/features/lessons/kit/lesson-parts.css'
 // lesson-voice.css comes in by lesson-09.css's @import until Sing it's
 // task brings the modules it shares a chunk with (lesson-09.css says why)
@@ -34,9 +39,12 @@ import { initMercs } from '@/features/lessons/kit/merc-duo'
 import { Motion } from '@/features/lessons/kit/motion-switch'
 import { createNextCard } from '@/features/lessons/kit/next-card'
 import { engraveClefs, initMasthead, initMotionSwitch, initSoundSwitch, } from '@/features/lessons/kit/page-chrome'
+import { createQuiz } from '@/features/lessons/kit/quiz'
 import { initReveals } from '@/features/lessons/kit/reveal'
 import { createStepDeck } from '@/features/lessons/kit/step-deck'
 import { initColdOpen } from './cold-open'
+import { QUIZ_QUESTIONS } from './quiz-questions'
+import { initRecall } from './recall'
 import { initSteps } from './steps'
 
 initSoundSwitch()
@@ -52,6 +60,13 @@ const deck = createStepDeck({
 })
 initSteps(deck)
 deck.start()
+
+createQuiz({
+  questions: QUIZ_QUESTIONS,
+  lesson: 9,
+  keys: { seed: 'fyp-l09-seed', record: 'fyp-l09-quiz-v1' },
+  deck,
+})
 
 // the next lesson's card first: the explorer binds its link to the map
 createNextCard(9)
@@ -76,6 +91,7 @@ initMasthead(
   },
   { lesson: 9, deck },
 )
+initRecall()
 initReveals()
 startFrameLoop()
 // Merc celebrates with no sparkles on this page (WEB-SPEC, Merc and Tavi)

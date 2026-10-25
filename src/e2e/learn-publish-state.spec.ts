@@ -244,3 +244,42 @@ test('Lesson 8, a draft, is coming later where drafts are held back, and linked 
   const shown = await menuRow(page, 8)
   await expect(shown).toHaveAttribute('href', '/learn/08')
 })
+
+test("Lesson 9, published while Lesson 6 is held back and Lesson 3 is a draft, keeps both chips plain, links neither, and its recall's step link keeps its words", async ({
+  page,
+}) => {
+  // Arrange
+  const errors: string[] = []
+  page.on('pageerror', (e) => errors.push(e.message))
+
+  // Act: mercurypitch.com's default, Lesson 9 published and Lesson 6 not
+  await serveWith(page, '/learn/09', {
+    drafts: false,
+    lessons: { 9: { published: true }, 6: { published: false } },
+  })
+
+  // Assert: each chip stays, as a plain chip, and nothing links its lesson
+  for (const n of [6, 3]) {
+    const chip = page.locator('ul.meta .chip', {
+      hasText: `After Lesson ${n}`,
+    })
+    await expect(chip).toHaveCount(1)
+    await expect(chip).not.toHaveAttribute('href', /./)
+    await expect(page.locator(`a[href^="/learn/0${n}"]`)).toHaveCount(0)
+  }
+
+  // Act: the recall still shows, and its answer that names a step
+  const recall = page.locator('#rc-qs')
+  await expect(recall.locator('.q')).toHaveCount(2)
+  await recall
+    .getByRole('button', { name: '5 semitones: a perfect fourth', exact: true })
+    .click()
+
+  // Assert: the words stay, with no link
+  const fb = recall.locator('.fb')
+  await expect(fb).toHaveCount(1)
+  await expect(fb).toContainText('Try Lesson 6, Step 5 again')
+  await expect(fb.locator('a')).toHaveCount(0)
+  await expect(page.locator('a[href^="/learn/06"]')).toHaveCount(0)
+  expect(errors).toEqual([])
+})

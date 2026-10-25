@@ -13,7 +13,10 @@
 // button; and its second, the cold open (End to end 2), at a phone's size
 // and a desktop's: Merc's leap plays before a choice, the paths wait for
 // one, and the reveal waits until all three have been heard to their end
-// with sound on. Each other toy's checks join it as that toy is wired.
+// with sound on; and its eighth, the quizzes (End to end 8), at both sizes:
+// the recall shows to everyone, marks nothing done and links Lesson 6's
+// steps in a new tab, and the quick check marks Lesson 9 done. Each other
+// toy's checks join it as that toy is wired.
 
 import type { Locator, Page } from '@playwright/test'
 import { expect, test } from './helpers/lesson-page'
@@ -202,6 +205,76 @@ for (const viewport of [
       await expect(reveal).toBeVisible({ timeout: 10_000 })
       await expect(reveal.locator('.mono')).toHaveText('You said: mi')
       expect(errors).toEqual([])
+    })
+  })
+}
+
+// WEB-SPEC, End to end 8, at a phone's size and a desktop's
+for (const viewport of [
+  { width: 390, height: 844 },
+  { width: 1440, height: 900 },
+]) {
+  test.describe(`the quizzes at ${viewport.width} x ${viewport.height}`, () => {
+    test.use({ viewport })
+
+    test("the recall shows to everyone, marks nothing done and links Lesson 6's steps in a new tab; the quick check marks Lesson 9 done", async ({
+      page,
+    }) => {
+      // Arrange: no lesson done
+      await page.goto('/learn/09')
+      expect(await page.evaluate(() => localStorage.getItem('fyp-done'))).toBe(
+        null,
+      )
+      const recall = page.locator('#rc-qs')
+      const check = page.locator('#qs')
+      /** Answers `option`, in `quiz`. */
+      const answer = (quiz: Locator, option: string): Promise<void> =>
+        quiz.getByRole('button', { name: option, exact: true }).click()
+
+      // Act: the recall, both answered with the misconception
+      await expect(recall.locator('.q')).toHaveCount(2)
+      await answer(recall, '5 semitones: a perfect fourth')
+      await answer(recall, 'A step')
+
+      // Assert: nothing marked done, and each step link opens Lesson 6 in a new tab
+      expect(await page.evaluate(() => localStorage.getItem('fyp-done'))).toBe(
+        null,
+      )
+      const links = await recall
+        .locator('.fb a')
+        .evaluateAll((as) =>
+          as.map((a) => [
+            a.getAttribute('href'),
+            a.getAttribute('target'),
+            a.textContent,
+          ]),
+        )
+      expect(links).toEqual([
+        ['/learn/06#step-5', '_blank', 'Try Lesson 6, Step 5 again'],
+        ['/learn/06#step-2', '_blank', 'Try Lesson 6, Step 2 again'],
+      ])
+
+      // Act: the quick check, a wrong answer's step link first
+      await answer(check, "They're right: a leap is too quick to aim")
+      await check.locator('a', { hasText: 'Try Step 2 again' }).click()
+      await expect(page.locator('#stepNow')).toHaveText('2')
+      await answer(check, 'A major third, then a minor third: 4 and 3')
+      await answer(check, 'The minor and major thirds')
+      await answer(check, "Listen, then slide up into so's band")
+
+      // Assert: every line starts the kit's way, and Lesson 9 is done
+      await expect(page.locator('#scoreN')).toHaveText('3')
+      const lines = await page
+        .locator('#rc-qs .fb, #qs .fb')
+        .evaluateAll((els) => els.map((e) => e.textContent?.trim() ?? ''))
+      expect(lines).toHaveLength(6)
+      for (const line of lines) expect(line).toMatch(/^(Right\.|Not quite\.)/)
+      expect(await page.evaluate(() => localStorage.getItem('fyp-done'))).toBe(
+        '[9]',
+      )
+      // the map's card on a desktop, the list's open row on a phone
+      await page.locator('#explorer').scrollIntoViewIfNeeded()
+      await expect(page.locator('#explorer .ex-card')).toContainText('Done')
     })
   })
 }
