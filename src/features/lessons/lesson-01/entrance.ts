@@ -8,10 +8,16 @@
 // and Tavi about 0.4 s later, each with a squash, a jelly settle and a ring
 // on the floor; then the bubbles speak in the film's order. A deep link, a
 // scrolled page or reduced motion skips all of it.
+//
+// The shot has ended once both have landed and both bubbles are up: their
+// animations' own finish, not a guess at the time. On the visit that offers
+// the welcome tour, the page holds still until then and the tour waits for
+// it (kit/opening-hold.ts).
 
 import { q, qa } from '@/features/lessons/kit/dom'
 import { mercsReady } from '@/features/lessons/kit/merc-duo'
 import { reducedMotion } from '@/features/lessons/kit/motion-switch'
+import { holdForOpening } from '@/features/lessons/kit/opening-hold'
 import { EASE, easeOut2, easeOut3, elasticOut, tweenTo, } from '@/features/lessons/kit/reveal'
 import { heroCamera } from './hero'
 
@@ -73,6 +79,12 @@ export function initEntrance(): void {
   }
   heroCamera.intro = 0
   heroCamera.cam = 0
+  let end = (): void => undefined
+  holdForOpening(
+    new Promise<void>((resolve) => {
+      end = resolve
+    }),
+  )
   fromState(
     qa('#heroKicker > *'),
     { transform: 'translateY(8px)', opacity: 0 },
@@ -144,6 +156,8 @@ export function initEntrance(): void {
     duo.classList.remove('pending')
     // never before the shot has begun
     const at = Math.max(0, 0.4 - (performance.now() - t0) / 1000)
+    // the landings and the bubbles: the shot has ended when all four have
+    const shot: Animation[] = []
     mercs.forEach((el, i) => {
       const start = at + i * 0.42
       const splash = q('.splash', el)
@@ -153,6 +167,7 @@ export function initEntrance(): void {
         delay: start * 1000,
         fill: 'backwards',
       })
+      shot.push(fall)
       el.style.transform = ''
       window.setTimeout(
         () => el.classList.remove('dropping'),
@@ -184,12 +199,14 @@ export function initEntrance(): void {
           fill: 'backwards',
         },
       )
+      shot.push(speak)
       b.style.opacity = ''
       b.style.transform = ''
       void speak.finished.then(() => {
         b.style.transformOrigin = ''
       })
     })
+    void Promise.all(shot.map((a) => a.finished)).then(end, end)
   }
   void Promise.race([
     mercsReady,

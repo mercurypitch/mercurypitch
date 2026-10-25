@@ -10,10 +10,16 @@
 // Then the bubbles speak in the film's order, Tavi's guess and Merc's
 // reply. A deep link, a page already scrolled or reduced motion skips all of
 // it, and the stills settle in place.
+//
+// The shot has ended once both have landed and both bubbles are up: their
+// animations' own finish, not a guess at the time. On the visit that offers
+// the welcome tour, the page holds still until then and the tour waits for
+// it (kit/opening-hold.ts).
 
 import { q, qa } from '@/features/lessons/kit/dom'
 import { mercsReady } from '@/features/lessons/kit/merc-duo'
 import { reducedMotion } from '@/features/lessons/kit/motion-switch'
+import { holdForOpening } from '@/features/lessons/kit/opening-hold'
 import { EASE } from '@/features/lessons/kit/reveal'
 
 /** Fades and lifts `els` in from `keyframe`, one after another. */
@@ -44,7 +50,8 @@ const landing = (above: number): Keyframe[] => [
   { transform: 'translateY(0px) scale(1, 1)' },
 ]
 
-function dropMercs(stage: HTMLElement, duo: HTMLElement): void {
+/** Drops Merc and Tavi and has the bubbles speak; settles once all four are done. */
+function dropMercs(stage: HTMLElement, duo: HTMLElement): Promise<void> {
   const mercs = [q('#mercBlue'), q('#mercOrange')]
   const bubbles = [q('#bubbleO'), q('#bubbleB')]
   const heights = mercs.map(
@@ -61,20 +68,27 @@ function dropMercs(stage: HTMLElement, duo: HTMLElement): void {
   })
   for (const b of bubbles) b.style.opacity = '0'
   const t0 = performance.now()
+  let end = (): void => undefined
+  const ended = new Promise<void>((resolve) => {
+    end = resolve
+  })
   let dropped = false
   const drop = (): void => {
     if (dropped) return
     dropped = true
     duo.classList.remove('pending')
     const at = Math.max(0, 0.4 - (performance.now() - t0) / 1000)
+    const shot: Animation[] = []
     mercs.forEach((el, i) => {
       const start = at + i * 0.42
       el.style.transformOrigin = '50% 83.5%'
-      el.animate(landing(heights[i]), {
-        duration: 1150,
-        delay: start * 1000,
-        fill: 'backwards',
-      })
+      shot.push(
+        el.animate(landing(heights[i]), {
+          duration: 1150,
+          delay: start * 1000,
+          fill: 'backwards',
+        }),
+      )
       el.style.transform = ''
       window.setTimeout(
         () => {
@@ -94,24 +108,28 @@ function dropMercs(stage: HTMLElement, duo: HTMLElement): void {
     // Tavi speaks first, Merc answers about 1.4 s later
     bubbles.forEach((b, i) => {
       b.style.opacity = ''
-      b.animate(
-        [
-          { opacity: 0, transform: 'translateY(10px) scale(.94)' },
-          { opacity: 1, transform: 'none' },
-        ],
-        {
-          duration: 600,
-          delay: (at + (i === 0 ? 1.35 : 2.75)) * 1000,
-          easing: EASE.expoOut,
-          fill: 'backwards',
-        },
+      shot.push(
+        b.animate(
+          [
+            { opacity: 0, transform: 'translateY(10px) scale(.94)' },
+            { opacity: 1, transform: 'none' },
+          ],
+          {
+            duration: 600,
+            delay: (at + (i === 0 ? 1.35 : 2.75)) * 1000,
+            easing: EASE.expoOut,
+            fill: 'backwards',
+          },
+        ),
       )
     })
+    void Promise.all(shot.map((a) => a.finished)).then(end, end)
   }
   void Promise.race([
     mercsReady,
     new Promise((resolve) => window.setTimeout(resolve, 1400)),
   ]).then(drop)
+  return ended
 }
 
 export function initEntrance(): void {
@@ -157,5 +175,5 @@ export function initEntrance(): void {
   riseIn([q('#predict')], { transform: 'translateY(20px)' }, 0.9, {
     delay: 0.6,
   })
-  dropMercs(stage, duo)
+  holdForOpening(dropMercs(stage, duo))
 }

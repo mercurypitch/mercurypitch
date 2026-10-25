@@ -209,8 +209,10 @@
     animation: none;
   }
 }
-/* the page behind stays where it is while the panel is open */
-html.lm-open {
+/* the page behind stays where it is while the panel is open, and while
+   Lessons 1 and 2's opening plays before the tour (opening-hold.ts) */
+html.lm-open,
+html.tour-wait {
   overflow: hidden;
   scrollbar-gutter: stable;
 }

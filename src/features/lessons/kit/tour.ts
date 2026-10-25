@@ -316,6 +316,19 @@ function record(): void {
   }
 }
 
+/**
+ * Whether this browser has closed this version of the tour: on Lessons 1
+ * and 2 a replay can open and close it while a first visit's waits for the
+ * opening (opening-hold.ts).
+ */
+function seen(): boolean {
+  try {
+    return window.localStorage.getItem(RECORD.key) === RECORD.version
+  } catch {
+    return false
+  }
+}
+
 /** The tour's stylesheet, put into the page once. */
 function style(): void {
   if (document.getElementById('tourSheet') !== null) return
@@ -328,13 +341,14 @@ function style(): void {
 /**
  * Runs the tour from step 1 on lesson `lesson`'s page. A first visit's tour
  * waits for any open layer to close and starts only if the page is still at
- * the top; the lesson menu's replay (`replay`) starts at once.
+ * the top and the tour not closed meanwhile; a replay (`replay`, the lesson
+ * menu's or the question mark's) starts at once.
  */
 export async function runTour(lesson: number, replay: boolean): Promise<void> {
   if (running !== null) return
   if (!replay) {
     while (layerOpen()) await wait(400)
-    if (!atTop() || running !== null) return
+    if (!atTop() || running !== null || seen()) return
   }
   const steps = pageSteps(lesson)
   if (steps.length === 0) return

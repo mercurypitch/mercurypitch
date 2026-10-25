@@ -5,6 +5,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import './browser-doubles.test-fixtures'
 import { closeTour } from './tour'
+import type * as Gate from './tour-gate'
 import { atTop, startTour, TOUR_KEY, TOUR_VERSION, tourDue } from './tour-gate'
 
 /** A storage that keeps what it is given, or throws on reading or writing. */
@@ -67,6 +68,7 @@ beforeEach(() => {
 
 afterEach(() => {
   closeTour()
+  document.documentElement.classList.remove('touring')
   pageAt('', 0)
   if (pageStorage !== undefined)
     Object.defineProperty(window, 'localStorage', pageStorage)
@@ -244,4 +246,117 @@ describe('startTour: the record on every way of closing', () => {
       expect(localStorage.getItem(TOUR_KEY)).toBe(TOUR_VERSION)
     })
   }
+})
+
+describe('startTour: a first visit held for the opening (holdTour)', () => {
+  let gate: typeof Gate
+
+  /** A page with Merc and Tavi's stage, drawn, so the tour has a step. */
+  function stage(): void {
+    document.body.innerHTML = '<div id="heroStage"></div>'
+    const el = document.getElementById('heroStage') as HTMLElement
+    const box = { x: 0, y: 100, width: 300, height: 200 } as DOMRect
+    el.getBoundingClientRect = () => box
+    el.getClientRects = () => [box] as unknown as DOMRectList
+    vi.spyOn(window, 'scrollTo').mockImplementation(() => undefined)
+  }
+
+  const tourUp = (): boolean => document.querySelector('.tour') !== null
+
+  /** The tour's chunk loaded, and every promise waiting on it run. */
+  async function settled(): Promise<void> {
+    await vi.dynamicImportSettled()
+    for (let i = 0; i < 10; i++) await Promise.resolve()
+  }
+
+  beforeEach(async () => {
+    // whether the page has started a first visit's tour is the gate's own state
+    vi.resetModules()
+    gate = await import('./tour-gate')
+    stage()
+  })
+
+  afterEach(() => {
+    document.querySelector<HTMLElement>('.tour-x')?.click()
+    document.getElementById('tourSheet')?.remove()
+    vi.doUnmock('./tour')
+  })
+
+  it('waits for what it is held for, then opens, then calls back', async () => {
+    // Arrange
+    let release = (): void => undefined
+    const done = vi.fn()
+    gate.startTour(1, false)
+    const holds = gate.holdTour(
+      new Promise<void>((resolve) => {
+        release = resolve
+      }),
+      done,
+    )
+    await settled()
+    const waiting = [tourUp(), done.mock.calls.length]
+
+    // Act
+    release()
+    await settled()
+
+    // Assert
+    expect(holds).toBe(true)
+    expect(waiting).toEqual([false, 0])
+    expect([tourUp(), done.mock.calls.length]).toEqual([true, 1])
+  })
+
+  it('holds nothing on a visit whose masthead started no tour', async () => {
+    // Arrange
+    const done = vi.fn()
+
+    // Act
+    const holds = gate.holdTour(new Promise(() => undefined), done)
+    await settled()
+
+    // Assert
+    expect([holds, done.mock.calls.length]).toEqual([false, 0])
+  })
+
+  it('opens a replay at once while a first visit waits, and the first visit gives up once the replay is closed', async () => {
+    // Arrange: the question mark pressed while the opening plays
+    let release = (): void => undefined
+    const done = vi.fn()
+    gate.startTour(1, false)
+    gate.holdTour(
+      new Promise<void>((resolve) => {
+        release = resolve
+      }),
+      done,
+    )
+    gate.startTour(1, true)
+    await settled()
+    const replayed = [tourUp(), done.mock.calls.length]
+
+    // Act: the replay closed, then the opening ends
+    document.querySelector<HTMLElement>('.tour-x')?.click()
+    release()
+    await settled()
+
+    // Assert: the replay's opening let the page go; nothing comes back
+    expect(replayed).toEqual([true, 1])
+    expect(tourUp()).toBe(false)
+    expect(localStorage.getItem(TOUR_KEY)).toBe(TOUR_VERSION)
+  })
+
+  it("calls back when the tour's chunk fails to load, without waiting for what it is held for", async () => {
+    // Arrange: offline, the chunk cannot load
+    vi.doMock('./tour', () => {
+      throw new Error('Failed to fetch dynamically imported module')
+    })
+    const done = vi.fn()
+    gate.startTour(1, false)
+    gate.holdTour(new Promise(() => undefined), done)
+
+    // Act
+    await settled()
+
+    // Assert
+    expect([tourUp(), done.mock.calls.length]).toEqual([false, 1])
+  })
 })
