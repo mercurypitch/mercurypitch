@@ -7,6 +7,7 @@
 import type { Component, JSX } from 'solid-js'
 import { createEffect, createSignal, createUniqueId, For, Show } from 'solid-js'
 import { Portal } from 'solid-js/web'
+import { isolateKeys } from '@/lib/keyboard-isolation'
 import { useFocusTrap } from '@/lib/use-focus-trap'
 import styles from './ConfirmDialog.module.css'
 import { Trash2 } from './icons'
@@ -99,16 +100,16 @@ export const ConfirmDialog: Component<ConfirmDialogProps> = (props) => {
   }
 
   const stay = (): boolean => props.variant === 'stay'
-  // The trap is read as `isolateKeyboard: true` unless a caller passes false.
+  // The trap is read as `isolateKeyboard: isolateKeys` unless a caller passes false.
   const isolated = (): boolean => props.isolateKeyboard !== false
   const listed = (): boolean => (props.details?.length ?? 0) > 0
 
   useFocusTrap(() => dialogRef, {
     isOpen: () => props.open,
     onClose: cancel,
-    // A getter: the trap reads it on each key, so it follows the prop.
+    // A getter: the trap reads it as it opens, and again if the prop changes.
     get isolateKeyboard() {
-      return isolated()
+      return isolated() ? isolateKeys : undefined
     },
     initialFocus: () => (stay() ? keepRef : undefined),
   })
@@ -133,7 +134,7 @@ export const ConfirmDialog: Component<ConfirmDialogProps> = (props) => {
               role="alertdialog"
               aria-modal="true"
               // Takes focus from a press on its words, never from Tab, so the
-              // keys after it stay inside the trap (use-focus-trap.ts).
+              // keys after it stay inside the trap (keyboard-isolation.ts).
               tabIndex={isolated() ? -1 : undefined}
               aria-labelledby={titleId}
               aria-describedby={listed() ? `${bodyId} ${detailsId}` : bodyId}

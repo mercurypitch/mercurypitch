@@ -15,26 +15,13 @@ interface FocusTrapOptions {
   isOpen: () => boolean
   onClose?: () => void
   /**
-   * Stop every key at the modal root so document/window shortcuts cannot act
-   * on the obscured screen. Use only when the dialog has no Solid-delegated
-   * keyboard handlers of its own; native controls still behave normally.
-   *
-   * The stop is half of what keeps the keys in. It holds only for a key sent
-   * from inside the root, and only in the bubble phase:
-   * - The root must take focus from a press: give it `tabindex="-1"`. A press
-   *   on its words, where no control takes the focus, drops it to the body
-   *   otherwise, and every key after that is heard by the app behind again.
-   *   The root is not one of its own Tab stops, so this changes neither the
-   *   Tab cycle nor where focus opens.
-   * - The focus can fall to the body without a press, too: a field blurs
-   *   itself to put a phone's keyboard away, and a control that goes, or is
-   *   disabled, takes the focus with it. The topmost trap takes it back onto
-   *   the root, which opens no keyboard, unless the dialog moves it on first.
-   * - A capture-phase listener on the window or document still runs first and
-   *   hears every key. Such a listener must yield to `[role="dialog"]`, as
-   *   `isInsideOverlay` does in src/lib/space-playback.ts.
+   * Keep every key inside the dialog, so document/window shortcuts cannot act
+   * on the obscured screen: pass `isolateKeys` from
+   * src/lib/keyboard-isolation.ts, which says what that takes of the root. Use
+   * only when the dialog has no Solid-delegated keyboard handlers of its own;
+   * native controls still behave normally. Read as the trap opens.
    */
-  isolateKeyboard?: boolean
+  isolateKeyboard?: KeyboardIsolation
   /**
    * Element to focus when the dialog opens, instead of the first focusable
    * descendant. Use for dialogs whose leading control has an activation
@@ -47,18 +34,23 @@ interface FocusTrapOptions {
   initialFocus?: () => HTMLElement | undefined
 }
 
-const FOCUSABLE_SELECTOR = [
-  'a[href]',
-  'button:not([disabled])',
-  'input:not([disabled])',
-  'select:not([disabled])',
-  'textarea:not([disabled])',
-  'audio[controls]',
-  'video[controls]',
-  'details > summary:first-of-type',
-  '[contenteditable="true"]',
-  '[tabindex]',
-].join(',')
+// The trap is on Drum Night's first paint, whose bytes are budgeted
+// (scripts/assert-drum-night-bundle.mjs): the selector is one string, and
+// every focus the trap moves shares one options object.
+const FOCUSABLE_SELECTOR =
+  'a[href],' +
+  'button:not([disabled]),' +
+  'input:not([disabled]),' +
+  'select:not([disabled]),' +
+  'textarea:not([disabled]),' +
+  'audio[controls],' +
+  'video[controls],' +
+  'details > summary:first-of-type,' +
+  '[contenteditable="true"],' +
+  '[tabindex]'
+
+/** Moving the focus never scrolls, so a tall sheet is not yanked into view. */
+const NO_SCROLL: FocusOptions = { preventScroll: true }
 
 function isRendered(element: HTMLElement, root: HTMLElement): boolean {
   // Native summaries are tab stops even in DOM implementations that report
@@ -88,8 +80,15 @@ function isRendered(element: HTMLElement, root: HTMLElement): boolean {
   return false
 }
 
-/** The open traps' roots, the last opened last: the topmost owns a fallen focus. */
-const openRoots: HTMLElement[] = []
+/**
+ * Keeps an open trap's keys inside its root (see keyboard-isolation.ts) and
+ * returns its teardown. It is set up before the trap's own key handler, so it
+ * hears a key before an Escape there closes the dialog and takes it away.
+ */
+export type KeyboardIsolation = (
+  root: HTMLElement,
+  focusable: () => HTMLElement[],
+) => () => void
 
 export function useFocusTrap(
   getRoot: () => HTMLElement | undefined,
@@ -111,9 +110,8 @@ export function useFocusTrap(
     let focusWithinDialog: HTMLElement | undefined
 
     // Defer initial focus until the dialog's children have mounted.
-    // preventScroll keeps a tall sheet from being yanked into view on open.
     queueMicrotask(() =>
-      (opts.initialFocus?.() ?? focusable()[0])?.focus({ preventScroll: true }),
+      (opts.initialFocus?.() ?? focusable()[0])?.focus(NO_SCROLL),
     )
 
     const onKeyDown = (e: KeyboardEvent): void => {
@@ -122,8 +120,6 @@ export function useFocusTrap(
           ? e.target.closest<HTMLElement>('[aria-modal="true"]')
           : null
       if (eventModal !== null && eventModal !== root) return
-
-      if (opts.isolateKeyboard === true) e.stopPropagation()
 
       if (e.key === 'Escape') {
         e.preventDefault()
@@ -134,7 +130,7 @@ export function useFocusTrap(
       const items = focusable()
       if (items.length === 0) {
         e.preventDefault()
-        root.focus({ preventScroll: true })
+        root.focus(NO_SCROLL)
         return
       }
       const first = items[0]
@@ -171,46 +167,19 @@ export function useFocusTrap(
           focusWithinDialog !== undefined && isRendered(focusWithinDialog, root)
             ? focusWithinDialog
             : focusable()[0]
-        ;(fallback ?? root).focus({ preventScroll: true })
+        ;(fallback ?? root).focus(NO_SCROLL)
       })
     }
 
-    // A focus that fell to the body leaves no target inside the root, so the
-    // stop at the root never hears the keys after it (isolateKeyboard). Both
-    // ways it falls are caught: a blur says where focus went (nowhere), and a
-    // removed or disabled control says nothing, so the root is watched for
-    // those. Both act a microtask later (the observer delivers in one), so a
-    // dialog that moves the focus on itself does so first.
-    const takeBackFocus = (): void => {
-      if (opts.isolateKeyboard !== true) return
-      if (openRoots[openRoots.length - 1] !== root || !root.isConnected) return
-      const active = document.activeElement
-      if (active !== null && active !== document.body) return
-      if (root.hasAttribute('tabindex')) root.focus({ preventScroll: true })
-      else focusable()[0]?.focus({ preventScroll: true })
-    }
-    const onFocusOut = (e: FocusEvent): void => {
-      if (e.relatedTarget === null) queueMicrotask(takeBackFocus)
-    }
-    const watch = new MutationObserver(takeBackFocus)
-    watch.observe(root, {
-      childList: true,
-      subtree: true,
-      attributeFilter: ['disabled', 'hidden', 'inert'],
-    })
-
-    openRoots.push(root)
+    const isolation = opts.isolateKeyboard?.(root, focusable)
     root.addEventListener('keydown', onKeyDown)
-    root.addEventListener('focusout', onFocusOut)
     document.addEventListener('focusin', onFocusIn)
     onCleanup(() => {
-      openRoots.splice(openRoots.lastIndexOf(root), 1)
-      watch.disconnect()
+      isolation?.()
       root.removeEventListener('keydown', onKeyDown)
-      root.removeEventListener('focusout', onFocusOut)
       document.removeEventListener('focusin', onFocusIn)
       if (lastFocused?.isConnected === true) {
-        lastFocused.focus({ preventScroll: true })
+        lastFocused.focus(NO_SCROLL)
       }
     })
   })
