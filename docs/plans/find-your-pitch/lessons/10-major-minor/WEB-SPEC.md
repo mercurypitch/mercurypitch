@@ -47,8 +47,10 @@ link, as a lesson not written yet (`src/lesson-gate.ts:10-12`;
 `src/features/lessons/kit/publish.ts:16-25`). The dev site and every PR preview serve it. Publishing
 it from the admin console puts it live on mercurypitch.com with no release
 (`src/features/lessons/kit/drafts.ts:13`); the console asks first while its `drafts.ts` line stands,
-naming what it waits on, but checks nothing, so the owner keeps the order above (Decisions for the
-owner). Releasing it is deleting its `drafts.ts` line (What the kit and the app still need, items 2
+naming what it waits on, and, line or no line, while Lesson 6 is not published, asking once when
+both hold (`src/features/admin/AdminLessonsPage.tsx:186-219`); but "Publish anyway" goes ahead, so
+the owner keeps the order above (Decisions for the owner). Releasing it is deleting its `drafts.ts`
+line (What the kit and the app still need, items 2
 and 15). The curiosity plan's kit work is on main at `85e23a1af`: Lesson 10's tease is in the kit's
 lesson copy (`src/features/lessons/kit/lesson-copy.ts:115`), as its alternative hook was until #1186
 (`:115-123` at `b7093a0a4`), Lesson 11's tease is there too (`:116`), and the next-lesson card
@@ -768,10 +770,11 @@ at `85e23a1af` changed there, and that page's own lines are cited at `d59c00ad6`
    `10: "Lesson 6's page at /learn/06, and the vocal coach's look at the sung checkpoint"`. While it
    stands, the page is held back on mercurypitch.com and served on the dev site and every PR
    preview, and the console can publish it there before both are done, with no release
-   (`src/features/lessons/kit/drafts.ts:5-13`), once it has asked "Publish ${name} before its
-   sign-off?" and named what the line says the page waits on
-   (`src/features/admin/AdminLessonsPage.tsx:186-207`, at `d59c00ad6`). Releasing it is deleting
-   that line once both are done, then listing it as item 15 says
+   (`src/features/lessons/kit/drafts.ts:5-13`), once it has asked, naming what the line says the
+   page waits on: "Publish ${name} before its sign-off?", or, while Lesson 6 is not published there,
+   "Publish ${name} before its sign-off and before ${lessons}?"
+   (`src/features/admin/lessons/lesson-publish.ts:252-272`). Releasing it is deleting that line
+   once both are done, then listing it as item 15 says
    (`src/features/lessons/kit/drafts.ts:18-21`; SEARCH.md § 12 item 3).
 3. `lesson-10/chord-beads.ts`, new (Toys 1): the chord beads, generic over a chord, with its pure
    layout helper for the targets and the compact layout.
@@ -887,11 +890,15 @@ CURIOSITY-MOMENTS § 5 item 2.
    October 2026. Until then this spec gave it the series' form, "Major and minor: Find Your Pitch,
    Lesson 10 | MercuryPitch" (58; What the kit and the app still need, item 12).
 3. **The publish order.** Lesson 10 is published only after Lesson 6 is, because its recall asks
-   Lesson 6's questions and its chip names Lesson 6 (Edge cases, "Lesson 6 not yet live"). The
-   console asks before it publishes Lesson 10 while its draft line stands, and the line names Lesson
-   6's page, but it never checks that Lesson 6 is live and asks nothing once the line is deleted:
-   the owner keeps the order. Proposed: a console warning when a lesson is published before the
-   lesson it recalls.
+   Lesson 6's questions and its chip names Lesson 6 (Edge cases, "Lesson 6 not yet live").
+   Decided: the console warns, as this spec proposed; the owner said yes on 24 October 2026. Before
+   it publishes a lesson while a lesson it builds on is not published on that site, it asks,
+   whether its draft line stands or not (`src/features/admin/AdminLessonsPage.tsx:186-219`;
+   `publishQuestion`, `src/features/admin/lessons/lesson-publish.ts:239-272`; `aheadOf`,
+   `src/features/admin/lessons/lesson-admin.ts:493-510`). With Lesson 6 held back and the line
+   standing, it asks once, "Publish Lesson 10 before its sign-off and before Lesson 6?", naming
+   what the line says the page waits on; with the line deleted, it asks "Publish Lesson 10 before
+   Lesson 6?". "Publish anyway" still publishes it, so the owner keeps the order.
 4. **The explorer card's practice link: Stack**, `/ear-lab?lesson=10` and "then tap Stack" (Explorer
    and season data). It needs no microphone, Ear Lab locks nothing, Lesson 6's card links Leap the
    same way, and it is right whatever Sing it's ending. The other choice: Drone Intonation.
@@ -944,7 +951,7 @@ CURIOSITY-MOMENTS § 5 item 2.
   in a production bundle (`src/features/lessons/kit/page-state.ts:5-10`;
   `src/features/lessons/kit/draft-switch.ts:5-6`, `:21`).
 - **Lesson 6 not yet live**: this page stays held back until it is, by the owner's hand: the
-  console's question before it publishes a draft names Lesson 6's page, but nothing checks it
+  console asks before it publishes Lesson 10 ahead of Lesson 6, but publishes on "Publish anyway"
   (Decisions for the owner, item 3). Published first, it would break nothing: its chip would stay as
   a plain chip, and its recall's step links would keep their words with no link
   (`src/features/lessons/kit/page-state.ts:84-108`; `src/features/lessons/kit/quiz.ts:186-216`). But

@@ -29,10 +29,11 @@ answers its address with the 404 page until the admin console publishes it, at r
 release (FACTS 63). Whoever publishes it waits for three things: the vocal coach's sign-off, the
 hard gate, because it is a voice lesson (MASTER-PLAN § 7, days 1 and 6; § 12 item 8); Lesson 3's
 page live at `/learn/03`; and Lesson 6's live at `/learn/06`, because its prerequisite chips and its
-recall check link there (FACTS 2, 4, 9). Those are rules for whoever uses the console, and nothing
-enforces them: the console asks before it publishes a draft that waits on a sign-off, then publishes
-it if told to, and nothing checks the lessons a page links. A page published early still works, with
-plain chips and unlinked step links where its links to those lessons would be (Edge cases). It opens
+recall check link there (FACTS 2, 4, 9). Those are rules for whoever uses the console, which asks
+before it breaks one but never stops it: it asks before it publishes a draft that waits on a
+sign-off, and before it publishes a lesson while one it builds on is not published, then publishes
+it if told to. A page published early still works, with plain chips and unlinked step links where
+its links to those lessons would be (Edge cases). It opens
 in Lesson 2's order, the cold open straight under the title and the recall after it, as MASTER-PLAN
 § 4.2 now has every page open (§ 12 item 13; FACTS 3), and its copy follows the plain-language
 review's patterns. "What the kit and the app still need", below, lists the wiring and every kit
@@ -792,9 +793,10 @@ What the page does where nothing above says:
   "Skip the intro"; the page prints no line for it, since its links carry the marker (FACTS 56).
 - **No WebGL, or a slow device**: Merc and Tavi's stills (`kit/merc-warm.ts`).
 - **Lesson 6 never marked done**: the recall still shows, as a prerequisite's does.
-- **Lesson 9 published while Lesson 3 or 6 is held back**: nothing stops it, since the publish order
-  is a rule for whoever uses the console (the intro), so the page follows the state it is served
-  with. The site worker, and then the masthead's `followPageState`, make every link to a lesson that
+- **Lesson 9 published while Lesson 3 or 6 is held back**: nothing stops it. The console asks first,
+  but the publish order is a rule for whoever uses it (the intro), so the page follows the state it
+  is served with. The site worker, and then the masthead's `followPageState`, make every link to a
+  lesson that
   is not live no link (`src/lesson-gate.ts:523-533`, `:547-567`; `kit/page-state.ts:64-108`, called
   by `initMasthead`, `kit/page-chrome.ts:126`): the "After Lesson 3" or "After Lesson 6" chip stays
   as a plain chip, and any other link keeps its words. The kit's quiz does the same for the recall's
@@ -975,7 +977,7 @@ ending.
 Page QA before publishing (PRODUCTION-PIPELINE § 5) adds, for this page:
 
 - The vocal coach has signed the page off, and Lessons 3 and 6 are live on the site it is published
-  to: the console asks only about the sign-off, and nothing checks the rest (the intro).
+  to: the console asks about both, but publishes on "Publish anyway" (the intro).
 - The microphone is requested only by Start; "Just listen today", sound off and a refused permission
   never open it; the browser's microphone indicator goes off at the end of each take, on leaving the
   section and when the tab is hidden.

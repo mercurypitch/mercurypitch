@@ -33,9 +33,10 @@ Karaoke Night reads no marker and opens with no intro, so the page has no first-
 56). Every build carries the page, and it goes live when the admin console publishes it (FACTS 11,
 12). Whoever publishes it waits for the vocal coach's sign-off, the hard gate, and for Lessons 5, 8,
 9 and 12 to be live, because its prerequisite chips and its recall check link there. Those are rules
-for whoever uses the console, and nothing enforces them: the console asks before it publishes a
-draft that waits on a sign-off, and checks nothing about the lessons a page links. What the vocal
-coach signs off is listed at the end.
+for whoever uses the console, which asks before it breaks one but never stops it: it asks before it
+publishes a draft that waits on a sign-off, and before it publishes a lesson while one it builds on
+is not published, then publishes it on "Publish anyway". What the vocal coach signs off is listed
+at the end.
 
 ---
 

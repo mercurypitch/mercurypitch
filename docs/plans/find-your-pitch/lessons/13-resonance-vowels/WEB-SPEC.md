@@ -34,9 +34,10 @@ answers its address with the 404 page until the admin console publishes it, at r
 release (FACTS 9, 64). Whoever publishes it waits for two things: the vocal coach's sign-off, the
 hard gate, because it is a voice lesson (MASTER-PLAN § 7, days 1 and 6; § 12 item 8); and Lesson
 11's page live at `/learn/11`, because its prerequisite chip and its recall check link there (FACTS
-2, 4, 9). Those are rules for whoever uses the console, and nothing enforces them: the console asks
-before it publishes a draft that waits on a sign-off, then publishes it on "Publish anyway", and
-nothing checks the lessons a page links. A page published early still works, with a plain chip and
+2, 4, 9). Those are rules for whoever uses the console, which asks before it breaks one but never
+stops it: it asks before it publishes a draft that waits on a sign-off, and before it publishes a
+lesson while one it builds on is not published, then publishes it on "Publish anyway". A page
+published early still works, with a plain chip and
 unlinked step links where its links to Lesson 11 would be (Edge cases). It is built after Lesson
 11's page, whose quiz questions its recall reuses. It opens in Lesson 2's order, the cold open
 straight under the title and the recall after it, as MASTER-PLAN § 4.2 now has every page open (§
@@ -773,7 +774,8 @@ and the four-words strip in the kit.
    (`kit/drafts.ts:31-38`), makes it a draft: production's `LESSON_DRAFTS`, "0", holds it back, and
    the dev site's and the previews', "1", show it (`wrangler.jsonc:112-116`, `:167`, `:190`,
    `:232`), until the console sets it either way, and the Content Studio's Lessons page names that
-   reason when asked to publish it (`src/features/admin/AdminLessonsPage.tsx:186-207`; FACTS 9).
+   reason when asked to publish it (`src/features/admin/AdminLessonsPage.tsx:186-219`;
+   `publishQuestion`, `src/features/admin/lessons/lesson-publish.ts:239-272`; FACTS 9).
    `/learn/13` and `/learn/13.html` go in `STANDALONE_DOCUMENT_PATHS` (`src/lib/sw-runtime.ts:93`,
    the lessons `:131-157`), so the service worker never serves the app shell in the lesson's place;
    `src/tests/lesson-pages.test.ts` checks a draft for them too (`:339-343`). On release: delete the
@@ -1014,8 +1016,9 @@ What the page does where nothing above says:
   harmonics (22 at F3, 7 at C♯5).
 - **No WebGL, or a slow device**: Merc and Tavi's stills (`kit/merc-warm.ts`).
 - **Lesson 11 never marked done**: the recall still shows, as a prerequisite's does.
-- **Lesson 13 published while Lesson 11 is held back**: nothing stops it, since the publish order is
-  a rule for whoever uses the console (the intro), so the page follows the state it is served with.
+- **Lesson 13 published while Lesson 11 is held back**: nothing stops it. The console asks first,
+  but the publish order is a rule for whoever uses it (the intro), so the page follows the state it
+  is served with.
   The site worker, and then the masthead's `followPageState`, make every link to a lesson that is
   not live no link (`kit/page-state.ts:64-108`, called by `initMasthead`, `kit/page-chrome.ts:126`):
   the "After Lesson 11" chip stays as a plain chip, and any other link keeps its words. The kit's
@@ -1194,7 +1197,7 @@ ending.
 Page QA before publishing (PRODUCTION-PIPELINE § 5) adds, for this page:
 
 - The vocal coach has signed the page off, and Lesson 11 is live on the site it is published to:
-  the console asks only about the sign-off, and nothing checks the rest (the intro).
+  the console asks about both, but publishes on "Publish anyway" (the intro).
 - The vowels are heard by ear on a phone's speaker and on headphones: five vowels a listener can
   tell apart, sung by one voice on one note, every vowel as loud as the others and as loud as
   Merc's "ooh" on Lessons 3 and 5, with no click at a change (Audio; Decisions 2).

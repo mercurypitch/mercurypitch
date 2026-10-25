@@ -51,9 +51,10 @@ page, and every page's explorer shows Lesson 12 with no link, as a lesson not wr
 (`src/lesson-gate.ts:10-12`; `src/features/lessons/kit/publish.ts:16-25`). The dev site and every PR
 preview serve it. Publishing it from the admin console puts it live on mercurypitch.com with no
 release (`src/features/lessons/kit/drafts.ts:13`); the console asks first while its `drafts.ts` line
-stands, naming what it waits on (`src/features/admin/AdminLessonsPage.tsx:186-207`), but it checks
-nothing, and "publish after Lesson 10" is a rule for whoever uses it: nothing enforces it (Decisions
-for the owner). Releasing it is deleting its `drafts.ts` line (What the kit and the app still need,
+stands, naming what it waits on, and, line or no line, while Lesson 10 is not published, asking once
+when both hold (`src/features/admin/AdminLessonsPage.tsx:186-219`); but "Publish anyway" goes
+ahead, so "publish after Lesson 10" stays a rule for whoever uses it (Decisions for the owner).
+Releasing it is deleting its `drafts.ts` line (What the kit and the app still need,
 items 2 and 15). The curiosity plan's kit work is on main: Lesson 12's hook is the season's
 (`src/features/lessons/kit/season.ts:366`), its tease is in the kit's lesson copy
 (`src/features/lessons/kit/lesson-copy.ts:117`), as its alternative was until #1186 (`:133-141` at
@@ -632,7 +633,7 @@ Step 1 again" and opens in a new tab, through `away` (`:94-101`, `linkAway` at `
 keeps a link's words and drops the link wherever that lesson is not live.
 
 - **Recall**: Lesson 10's questions 1 and 2, word for word with their feedback (LESSON.md; FACTS 7),
-  under Lesson 10's ids, `l10-q1` and `l10-q2` (`lessons/10-major-minor/WEB-SPEC.md:605-606`). If
+  under Lesson 10's ids, `l10-q1` and `l10-q2` (`lessons/10-major-minor/WEB-SPEC.md:607-608`). If
   Lesson 10's page lands first, they are imported from its `lesson-10/quiz-questions.ts` and
   filtered by id, as Lesson 4's page takes Lesson 2's (`lesson-04/quiz-questions.ts:28-29`);
   otherwise they are written into this page's `lesson-12/quiz-questions.ts` as Lesson 3 writes
@@ -848,9 +849,10 @@ heard play (Toys 3; Edge cases) (`git diff --stat`).
    `12: "Lesson 10's page at /learn/10, and the vocal coach's look at the sung checkpoint"`. While
    it stands, the page is held back on mercurypitch.com and served on the dev site and every PR
    preview, and the console can publish it there before both are done, with no release
-   (`src/features/lessons/kit/drafts.ts:5-13`), once it has asked "Publish ${name} before its
-   sign-off?" and named what the line says the page waits on
-   (`src/features/admin/AdminLessonsPage.tsx:186-207`; `waitingOn`,
+   (`src/features/lessons/kit/drafts.ts:5-13`), once it has asked, naming what the line says the
+   page waits on: "Publish ${name} before its sign-off?", or, while Lesson 10 is not published
+   there, "Publish ${name} before its sign-off and before ${lessons}?"
+   (`src/features/admin/lessons/lesson-publish.ts:252-272`; `waitingOn`,
    `src/features/admin/lessons/lesson-admin.ts:96-98`). Releasing it is deleting that line once both
    are done, then listing it as item 15 says (`src/features/lessons/kit/drafts.ts:18-21`; SEARCH.md
    § 12 item 3).
@@ -979,7 +981,7 @@ Each with the package's recommendation and the review's judgement (Lesson 12's r
    Lesson 12 opens with.", a second button holding its wording, its team note printed below it, and
    the tags "Default" and "Chosen"; one click saves it, with no confirmation
    (`src/features/admin/lessons/LessonControls.tsx:333-463`, the Hook picker `:496-500`; `saveCopy`,
-   `src/features/admin/AdminLessonsPage.tsx:214-222`). Picked, it would reach the h1; the
+   `src/features/admin/AdminLessonsPage.tsx:226-234`). Picked, it would reach the h1; the
    description (158 characters) and og:description (141); twitter:description; the Article's
    `alternativeHeadline` and description; Lesson 12's card in every lesson page's explorer, today
    included, while Lesson 12 is coming later; and Lesson 11's next-lesson card (Edge cases, "The
@@ -994,13 +996,17 @@ Each with the package's recommendation and the review's judgement (Lesson 12's r
    never rewrites the title, whichever hook the console picks.
 3. **The publish order.** Lesson 12 is published only after Lesson 10 is, because its recall asks
    Lesson 10's questions and its chip names Lesson 10 (Edge cases, "Lesson 10 not yet live").
-   Nothing enforces it. The console asks before it publishes Lesson 12 while its draft line stands,
-   and the line names Lesson 10's page, so its question reads "Lesson 12 waits on Lesson 10's page
-   at /learn/10, and the vocal coach's look at the sung checkpoint. Publish it anyway?"
-   (`AdminLessonsPage.tsx:186-207`); but it never checks that Lesson 10 is live, and it asks nothing
-   once the line is deleted, so the owner keeps the order. Proposed: a console warning when a lesson
-   is published before the lesson it recalls, as Lesson 10's spec proposes. The review: stated
-   correctly, and the warning is sensible.
+   Decided: the console warns, as this spec and Lesson 10's proposed, and as the review found
+   sensible; the owner said yes on 24 October 2026. Before it publishes a lesson while a lesson it
+   builds on is not published on that site, it asks, whether its draft line stands or not
+   (`src/features/admin/AdminLessonsPage.tsx:186-219`; `publishQuestion`,
+   `src/features/admin/lessons/lesson-publish.ts:239-272`; `aheadOf`,
+   `src/features/admin/lessons/lesson-admin.ts:493-510`). With Lesson 10 held back and the line
+   standing, it asks once, "Publish Lesson 12 before its sign-off and before Lesson 10?", and its
+   words read "Lesson 12 waits on Lesson 10's page at /learn/10, and the vocal coach's look at the
+   sung checkpoint. It also builds on Lesson 10, which is not published here. Publish it anyway?";
+   with the line deleted, it asks "Publish Lesson 12 before Lesson 10?". "Publish anyway" still
+   publishes it, so the owner keeps the order.
 4. **The two tunes.** Both are written for this lesson, and neither quotes a song the writer knows
    (FACTS 33). No melody database was searched. The review, which found no close match to any melody
    it knows, wrote both out in solfa and heard these likenesses, for the owner to hear too: tune 1,
@@ -1114,7 +1120,7 @@ Each with the package's recommendation and the review's judgement (Lesson 12's r
   in a production bundle (`src/features/lessons/kit/page-state.ts:5-10`;
   `src/features/lessons/kit/draft-switch.ts:5-6`, `:21`).
 - **Lesson 10 not yet live**: this page stays held back until it is, by the owner's hand: the
-  console's question before it publishes a draft names Lesson 10's page, but nothing checks it
+  console asks before it publishes Lesson 12 ahead of Lesson 10, but publishes on "Publish anyway"
   (Decisions for the owner, item 3). Published first, it would break nothing: its chip would stay as
   a plain chip, and its recall's step links would keep their words with no link
   (`src/features/lessons/kit/page-state.ts:84-108`; `src/features/lessons/kit/quiz.ts:186-216`). But
