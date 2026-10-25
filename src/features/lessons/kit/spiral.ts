@@ -260,10 +260,12 @@ export function mountSpiral(
   let asked: Voice | null = null
   let askedEnds = 0
   // something the figure shows has changed since its last frame; whether
-  // that frame had room to draw in, and how the figure looked in it
+  // that frame had room to draw in, how the figure looked in it, and
+  // whether it showed a flash or tag that a later frame must take away
   let dirty = true
   let room = false
   let drawnLook = ''
+  let drawnFading = false
 
   /** The selection's reach, in semitones from A2: every bead, or the page's range. */
   function reach(): [number, number] {
@@ -647,11 +649,12 @@ export function mountSpiral(
     opts.overlayWants?.() ??
     (opts.overlay !== undefined || opts.keys !== undefined)
 
-  /** Whether the figure has a frame to draw: a change since its last, or something it shows moving. */
+  /** Whether the figure has a frame to draw: a change since its last, something it shows moving or fading, or the frame that takes an ended flash or tag away. */
   const wants = (): boolean =>
     dirty ||
     look() !== drawnLook ||
-    (room && (moving() || fadingAt(performance.now()) || pageWants()))
+    (room &&
+      (moving() || drawnFading || fadingAt(performance.now()) || pageWants()))
 
   /** Something the figure shows has changed with no input behind it: it draws in the next frame. */
   function changed(): void {
@@ -670,6 +673,7 @@ export function mountSpiral(
       room = W >= 24 && H >= 24
       if (!room) {
         drawnLook = look()
+        drawnFading = false
         return
       }
       const nar = W < 560
@@ -713,6 +717,7 @@ export function mountSpiral(
       })
       opts.overlay?.({ ctx, W, H, now, u, beads: hits, keys: keyHits })
       drawnLook = look()
+      drawnFading = fadingAt(now)
     },
   })
   // a new size or pixel ratio draws again, and so does a font that loads

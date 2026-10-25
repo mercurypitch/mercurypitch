@@ -87,9 +87,11 @@ describe("the spiral on the page's frame loop", () => {
   it("asks for every frame of a tap's flash and its bead's name, then for none", async () => {
     // Arrange: a page's marks that hold still, saying where the beads landed
     let beads: readonly BeadHit[] = []
+    let drawnAt = 0
     const { asked, canvas, settle } = await onLoop({
       overlay: (f) => {
         beads = f.beads
+        drawnAt = f.now
       },
       overlayWants: () => false,
     })
@@ -97,29 +99,36 @@ describe("the spiral on the page's frame loop", () => {
     const bead = beads.find((b) => b.s === A3 - A2)
     if (bead === undefined) throw new Error('no bead drawn for A3')
     const at = { clientX: bead.x, clientY: bead.y }
+    const tapped = performance.now()
 
     // Act: a tap on A3, and every frame the page asks for after it
     canvas.dispatchEvent(new MouseEvent('pointerdown', at))
     canvas.dispatchEvent(new MouseEvent('pointerup', at))
     const frames = settle()
 
-    // Assert: the name shows for 1.8 s, outlasting the 0.7 s flash; a frame each 16 ms
+    // Assert: the name shows for 1.8 s, outlasting the 0.7 s flash; a frame
+    // each 16 ms, the last of them painted after the 1.8 s, which takes the
+    // name away
     expect(frames).toBe(Math.ceil(1800 / 16))
+    expect(drawnAt - tapped).toBeGreaterThanOrEqual(1800)
     expect(asked).toHaveLength(0)
   })
 
   it("asks for every frame of a key's flash once unrolled, where no name shows, then for none", async () => {
     // Arrange: the keys, at once under reduced motion
-    const { asked, root, settle, spiral } = await onLoop()
+    const { asked, painted, root, settle, spiral } = await onLoop()
     spiral.setUnrolled(true)
     settle()
+    const before = painted()
 
     // Act
     root.querySelector<HTMLElement>('[data-key]')?.click()
     const frames = settle()
 
-    // Assert: the 0.7 s flash, a frame each 16 ms
+    // Assert: the 0.7 s flash, a frame each 16 ms, every one painted, the
+    // last after the 0.7 s, which takes the flash away
     expect(frames).toBe(Math.ceil(700 / 16))
+    expect(painted() - before).toBe(frames)
     expect(asked).toHaveLength(0)
   })
 
