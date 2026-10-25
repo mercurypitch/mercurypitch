@@ -20,7 +20,10 @@ plays a song gets it from the phone (plan section 2.9). Updated again after
 the merges: `092` and `095` shipped in TestFlight mp-v0.8.41 (PR #1175), the
 POC-3 slices are merged (PR #1179), `035` is added (the quality bar,
 plan section 2.10), and `096` (the wizard that hears a TV, from the 0.8.41
-device test; merged in PR #1189).
+device test; merged in PR #1189). Updated 2026-10-25 with the owner's
+decisions: `066` notes about four singers on a TV, not capped yet; the
+Google TV app (`070`-`084`) waits until after the first official native app
+release (plan decisions 4 and 8).
 
 **Source (existing):** `src/lib/device-tier.ts` — device class and tier;
 `src/styles/performance-mode.css` — the TV focus ring;
@@ -435,7 +438,9 @@ _Tests:_ `src/e2e-devices/phone-mic.spec.ts` _(planned)_.
 ### REQ-TV-066 — More than one singer **[open]**
 
 **WHERE** more than one phone joins, each shall get its own lane and colour, up
-to the room's limit.
+to the room's limit. On a TV the limit is not set yet: about four singers is
+the owner's expectation for a low-tier set (2026-10-25), to be set from what
+P0 and P3 measure; no cap applies until then.
 _Tests:_ two-device end-to-end with three peers _(planned)_.
 
 ### REQ-TV-067 — Who is connected **[next]**

@@ -596,6 +596,10 @@ parallel do not depend on each other.
 Android TVs in other houses are the only ones the iOS route misses. So the
 order is P0, P1, P5 (proofs of concept first, below), then P2 and P3, P4,
 and P6. P5's production stage still needs 2.6, which moves up with it.
+**Updated 2026-10-23 and 2026-10-25 (decision 8):** iOS and Cast come
+first, so P6 moves ahead of P4, and P4 starts only after the first official
+native app release: P0, P1, P5, then P2 and P3 as P5 and P6 need them, P6,
+then P4.
 
 ### Proofs of concept, iOS first
 
@@ -759,7 +763,10 @@ tolerance of a local mic after calibration; frames lost for a second show
 "phone mic paused", not wrong notes. Then the "karaoke on your TV" page
 (search-and-answer-engines.md section 7.3) can go live.
 
-### P4 Google TV app (26) **[next]**; 4.1-4.3 can run parallel with P2-P3
+### P4 Google TV app (26) **[parked: after the first official native app release, and after P6]**
+
+The detailed plan for this track, with what the TV app shows, is on the
+branch `feat/android-tv-app` (decisions 4 and 8).
 
 1. Manifest, detection plugin and quality fixes (4.1-4.3).
 2. The native shell on the D-pad (4.4), memory (4.5), paywall (4.6).
@@ -806,10 +813,15 @@ phone shows its controls; disconnecting leaves one web view.
    public, and the extensionless path, since `.html` redirects there); and
    the production one, ID `D7DF12C6`, for store builds, whose URL is
    `https://mercurypitch.com/cast-receiver` by the time it is published.
-   Recommended for both: audio-only devices off (karaoke needs a screen) and
-   relay casting off (songs and pitch frames need the same Wi-Fi). An
-   application ID is not a secret: every sender carries it. No test device
-   is registered yet; the LG C2 cannot receive Cast.
+   Both are set as recommended (owner, 2026-10-25): **Supports casting to
+   audio-only devices** off, since karaoke needs a screen, and guest mode
+   off. Google's registration page now calls that box **Supports relay
+   casting**: casting from a sender that is not on the TV's Wi-Fi, which
+   songs and pitch frames cannot use (they need the same Wi-Fi). Both boxes
+   are in the Cast SDK Developer Console, on each receiver application, not
+   on a phone. An application ID is not a secret: every sender carries it.
+   No test device is registered yet; the LG C2 cannot receive Cast, and the
+   owner registers the Philips Google TVs next.
 1. Spike (6.0). Stop here if the stage cannot hold its frame cap or its memory
    on the older Chromecast with Google TV.
 2. Receiver (6.1), then senders (6.2-6.4), then Cast Connect into G (6.5) and
@@ -856,13 +868,26 @@ Not re-estimated here.
 3. **Picture-in-picture:** decided 2026-10-21, keep it. Phones go on entering
    it by themselves while a song plays; on a TV it opens only when the user
    asks, with its usage metadata (TV-IE, TV-IC; `REQ-TV-074`).
-4. **Dedicated TV track:** explained 2026-10-21; decide at P4. Recommended,
-   and the choice is permanent.
-5. **Path links:** move `#/link:` and `#/sync:` to path forms in the same
-   change as `/mic/`?
-6. **Singers per TV:** jam allows twelve lanes; is that the TV's cap too?
-7. **The stage as its own entry:** recommended (memory, no plugins, one
-   surface for four routes).
+4. **Dedicated TV track:** decided 2026-10-25, yes. Play says that once it is
+   saved, TV releases and users are managed apart from the phone's, and that
+   this cannot be changed; opting in also needs TV screenshots for every
+   store listing. The Google TV app it serves comes after the first official
+   native app release, after the iOS second screen and Cast (decision 8).
+   Its detailed plan is parked on the branch `feat/android-tv-app` until
+   then.
+5. **Path links:** decided 2026-10-25, yes: `#/link:` and `#/sync:` move to
+   `/link/CODE` and `/sync/CODE` in the same change as `/mic/CODE` (2.8).
+   What each link does stays the same. The web keeps answering the old hash
+   forms (`REQ-TV-054`), so a link already sent, printed or saved still
+   works; the path forms add opening the installed app.
+6. **Singers per TV:** decided 2026-10-25, no cap for now. A jam room on a TV
+   was not part of the owner's picture, but it makes sense; when one runs
+   on a TV, expect a cap of about four singers, since TVs are low-tier
+   devices. P0 and P3 measure what a set holds before the cap is set
+   (`REQ-TV-066`).
+7. **The stage as its own entry:** decided 2026-10-25, yes: the page TVs
+   show, in the TV browser, the Google TV app, the Cast receiver and the iOS
+   second screen (memory, no plugins, one surface for four routes).
 8. **TV apps:** decided 2026-10-23, installable TV apps come later, after
    mirroring, the iOS second screen and Cast. How each is built is decided
    when its phase starts: for Google TV the plan recommends the Capacitor
@@ -870,6 +895,9 @@ Not re-estimated here.
    LG and Samsung are P7. Apple TV is different: tvOS ships no web view, so
    an Apple TV app could be neither the Capacitor app nor the stage page and
    would be a native rewrite. AirPlay (M, S) serves Apple TV meanwhile.
+   **2026-10-25:** the Google TV app (P4) starts after the first official
+   native app release; iOS and Cast come first. What the TV app shows, and
+   its phases, are in the plan on `feat/android-tv-app`.
 
 ---
 
