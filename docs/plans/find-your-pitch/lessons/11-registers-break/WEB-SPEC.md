@@ -811,10 +811,10 @@ the others take it.
    carries no label on the seam and no word but the title's, so it says nothing of whether a flip is
    a mistake and does not answer the cold open's predict.
 4. First-paint ceilings for `learn/11.html` in `scripts/assert-first-paint-budgets.mjs`, one in its
-   JavaScript table and one in its stylesheet table, beside Lesson 3's (`:103-151`, `:269-272`).
-   Every build emits every lesson page, and the check fails a document with no ceiling (`:531-537`),
+   JavaScript table and one in its stylesheet table, beside Lesson 3's (`:103-151`, `:275-278`).
+   Every build emits every lesson page, and the check fails a document with no ceiling (`:537-543`),
    so without them the Browser jobs fail before any spec runs, as Lesson 6's did on PR #1149. Each
-   is the page's measured first paint plus about a quarter, the tables' rule (`:47-58`, `:225-235`),
+   is the page's measured first paint plus about a quarter, the tables' rule (`:47-58`, `:231-241`),
    measured in `build:e2e`, where the check runs (`package.json:20`): a build of Lesson 6's page
    alone weighed it about 8 KB lighter. As on Lesson 3, the listener and the pitch detector arrive
    through a dynamic import when Start is pressed

@@ -907,7 +907,7 @@ was built on.
    four stops (`src/lib/merc/sim-choreo.ts:450-475`), so the cue is new; its timing is that hop's
    crouch and flight (`:127-128`). If a hop over singing cannot be had, Tavi alone hops, and
    LESSON.md's stage directions change to say so. Built as `mercHop(which)`, which lands `HOP_MS`,
-   530 ms, after it is called (`kit/merc-hop.ts:14-40`, a module of its own that only this page
+   530 ms, after it is called (`kit/merc-hop.ts:15-41`, a module of its own that only this page
    imports, so no other lesson's first paint carries it): the beat clock calls it that long before
    each clap, on the page's clock as the audio clock maps to it (`early`, Audio), so the cue needs
    no audio time of its own. It moves the whole figure, live or still, so both hop while Merc sings.
@@ -998,7 +998,7 @@ was built on.
     line to each static file (`public/llms.txt`'s Lessons list, `:66-80`), as `kit/drafts.ts:18-21`
     asks and `lesson-pages.test.ts:282-290` checks. The first-paint budget comes with the page,
     beside the other drafts' (`scripts/assert-first-paint-budgets.mjs:103-159`, Lessons 3 and 5),
-    at `:192-198`, and its CSS ceiling at `:291-294`, since every build carries every lesson page.
+    at `:192-198`, and its CSS ceiling at `:297-300`, since every build carries every lesson page.
 17. The App content items under Practice links: the App and App content tracks' to weigh, and not
     built with the page.
 18. From #1149's fix pass, both needed before this page's predicts and plays are built:

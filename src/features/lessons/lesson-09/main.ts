@@ -12,8 +12,8 @@
 //
 // The page shell: the switches, the steps' deck with its ladder chart in
 // each step's state, the next lesson's card, the season map, the masthead
-// and Merc and Tavi. Each other toy, and each control, does nothing until
-// it is wired: the cold open, the recall and the quick check, the four
+// and Merc and Tavi; and the cold open. Each other toy, and each control,
+// does nothing until it is wired: the recall and the quick check, the four
 // words, the steps' sounds, Sing it and free play.
 
 import '@fontsource-variable/inter'
@@ -36,11 +36,14 @@ import { createNextCard } from '@/features/lessons/kit/next-card'
 import { engraveClefs, initMasthead, initMotionSwitch, initSoundSwitch, } from '@/features/lessons/kit/page-chrome'
 import { initReveals } from '@/features/lessons/kit/reveal'
 import { createStepDeck } from '@/features/lessons/kit/step-deck'
+import { initColdOpen } from './cold-open'
 import { initSteps } from './steps'
 
 initSoundSwitch()
 initMotionSwitch()
 Motion.init()
+
+initColdOpen()
 
 // five steps, one ladder chart
 const deck = createStepDeck({
