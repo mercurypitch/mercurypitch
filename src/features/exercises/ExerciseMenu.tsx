@@ -155,7 +155,7 @@ const CARDS: ExerciseCardDef[] = [
     type: EXERCISE_ARPEGGIO_JUMPER,
     title: 'Arpeggio Jumper',
     description:
-      'Leap between chord tones with precision. Build confidence hitting notes across wide intervals.',
+      'Leap between chord tones with precision. Build confidence hitting notes across wide intervals. Scored on how close each note is to its target.',
     icon: () => <IconLayers size={24} />,
     tags: ['Arpeggios', 'Precision'],
     available: true,

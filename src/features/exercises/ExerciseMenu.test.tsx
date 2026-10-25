@@ -16,7 +16,7 @@ import { validateGuidedDynamicClaim } from '@/lib/guided-voice/claims'
 import DynamicSwellExercise from './dynamic-swell/DynamicSwellExercise'
 import { EXERCISE_HELP } from './exercise-help'
 import ExerciseMenu from './ExerciseMenu'
-import { EXERCISE_DYNAMIC_SWELL } from './types'
+import { EXERCISE_ARPEGGIO_JUMPER, EXERCISE_DYNAMIC_SWELL } from './types'
 
 afterEach(cleanup)
 
@@ -100,6 +100,27 @@ describe('the exercise cards', () => {
     expect(words.filter((text) => /breath|master/iu.test(text))).toEqual([])
     expect(
       words.flatMap(
+        (text) =>
+          validateGuidedDynamicClaim({ surface: 'finding', text }).violations,
+      ),
+    ).toEqual([])
+  })
+
+  it("says what Arpeggio Jumper's grade is, as its help does", () => {
+    // Its grade is the mean of the note scores, each note scored on how
+    // near it is to its target (use-arpeggio-jumper-controller.ts).
+    const jumper = card('Arpeggio Jumper')
+    expect(jumper).toEqual({
+      description:
+        'Leap between chord tones with precision. Build confidence hitting notes across wide intervals. Scored on how close each note is to its target.',
+      tags: ['Arpeggios', 'Precision'],
+    })
+    const help = EXERCISE_HELP[EXERCISE_ARPEGGIO_JUMPER]
+    expect(help.body).toContain(
+      'Each note is scored on how close it is to its target, and your grade is the average of the note scores.',
+    )
+    expect(
+      [jumper.description, help.summary, ...help.body].flatMap(
         (text) =>
           validateGuidedDynamicClaim({ surface: 'finding', text }).violations,
       ),
