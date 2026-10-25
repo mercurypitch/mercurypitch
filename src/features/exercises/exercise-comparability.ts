@@ -17,7 +17,7 @@
 // trend across two different rulers.
 
 import type { ExerciseType } from './types'
-import { EXERCISE_INTERVAL_TRAINER, EXERCISE_SIREN } from './types'
+import { EXERCISE_ARPEGGIO_JUMPER, EXERCISE_INTERVAL_TRAINER, EXERCISE_SIREN, } from './types'
 
 /** Bump when a drill's SCORING changes meaning — never for UI changes. */
 const SCORING_VERSION: Partial<Record<ExerciseType, number>> = {
@@ -27,6 +27,11 @@ const SCORING_VERSION: Partial<Record<ExerciseType, number>> = {
   // Rescored 2026-10: its 30 % part now scores the glide, which a smooth
   // glide never earned.
   [EXERCISE_SIREN]: 2,
+  // Rescored 2026-10-25: the grade is the mean of the note scores, each
+  // note scored on its own window, settled, in the octave that fits the
+  // whole run. Version 1 blended in the best note and a dead richness term
+  // and could not pass 75.
+  [EXERCISE_ARPEGGIO_JUMPER]: 2,
 }
 
 /**

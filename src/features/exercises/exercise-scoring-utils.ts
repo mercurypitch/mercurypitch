@@ -157,8 +157,15 @@ export function noteDeviationCentsInRange(
   )
 }
 
-/** Shared cents-deviation scoring: 100 − avgCents×1.5, floored at 0. */
-function scoreSamples(samples: PitchSample[], targetMidi: number): number {
+/**
+ * Shared cents-deviation scoring: 100 − avgCents×1.5, floored at 0. No
+ * voiced sample scores 0. Exported for drills that choose a note's samples
+ * themselves (Arpeggio Jumper's settled slots) rather than by time range.
+ */
+export function scoreSamples(
+  samples: readonly PitchSample[],
+  targetMidi: number,
+): number {
   const avgDeviation = averageDeviationCents(samples, targetMidi)
   if (avgDeviation === null) return 0
   return Math.round(Math.max(0, 100 - avgDeviation * 1.5))

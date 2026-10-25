@@ -10,6 +10,7 @@ import { midiToNoteName, noteToMidi } from '@/lib/frequency-to-note'
 import type { PracticeEngine } from '@/lib/practice-engine'
 import { getDefaultNote, getNoteOptions } from '@/lib/vocal-range'
 import { recordExerciseResult } from '@/stores/exercise-history-store'
+import { micLatencyMs } from '@/stores/mic-latency-store'
 import { vocalRangePreset } from '@/stores/settings-store'
 import { ExerciseFeedback } from '../ExerciseFeedback'
 import { ExerciseShell } from '../ExerciseShell'
@@ -64,7 +65,10 @@ const ArpeggioJumperExercise: Component<ArpeggioJumperExerciseProps> = (
   })
 
   /* eslint-disable solid/reactivity */
-  const controller = useArpeggioJumperController(base, props.audioEngine)
+  const controller = useArpeggioJumperController(base, props.audioEngine, {
+    // Frames arrive one measured round trip after they were sung.
+    micLatencyMs,
+  })
   /* eslint-enable solid/reactivity */
 
   const handleStart = async () => {

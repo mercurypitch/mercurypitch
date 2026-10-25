@@ -10,7 +10,7 @@
 
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { exerciseComparabilityKey } from '@/features/exercises/exercise-comparability'
-import { EXERCISE_INTERVAL_TRAINER, EXERCISE_LONG_NOTE, EXERCISE_PITCH_HOLD, EXERCISE_SIREN, } from '@/features/exercises/types'
+import { EXERCISE_ARPEGGIO_JUMPER, EXERCISE_INTERVAL_TRAINER, EXERCISE_LONG_NOTE, EXERCISE_PITCH_HOLD, EXERCISE_SIREN, } from '@/features/exercises/types'
 import { applyPersistedValue } from '@/lib/storage'
 
 const saveSessionRecord = vi.fn(async (..._args: unknown[]) => null)
@@ -56,6 +56,11 @@ describe('exerciseComparabilityKey', () => {
     // The Siren's 30 % part scored jumps until it scored the glide itself.
     expect(exerciseComparabilityKey(EXERCISE_SIREN)).toBe(
       'voice:exercise:siren:v2',
+    )
+    // Arpeggio Jumper's grade became the mean of its note scores: version
+    // 1 could not pass 75, version 2 grades a flawless run 100.
+    expect(exerciseComparabilityKey(EXERCISE_ARPEGGIO_JUMPER)).toBe(
+      'voice:exercise:arpeggio-jumper:v2',
     )
   })
 })
@@ -122,8 +127,15 @@ describe('local bests compare only runs scored the same way', () => {
       metrics: {},
       completedAt: 3,
     })
+    recordExerciseResult({
+      type: EXERCISE_ARPEGGIO_JUMPER,
+      score: 100,
+      metrics: {},
+      completedAt: 4,
+    })
     await flushExerciseHistoryWrites()
     expect(exerciseHistory().map((e) => [e.type, e.scoringVersion])).toEqual([
+      [EXERCISE_ARPEGGIO_JUMPER, 2],
       [EXERCISE_LONG_NOTE, 1],
       [EXERCISE_SIREN, 2],
     ])

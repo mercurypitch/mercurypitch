@@ -13,7 +13,7 @@
 
 import { describe, expect, it } from 'vitest'
 import { exerciseComparabilityKey, exerciseScoringVersion, } from '@/features/exercises/exercise-comparability'
-import { EXERCISE_INTERVAL_TRAINER, EXERCISE_LONG_NOTE, EXERCISE_WARMUP, } from '@/features/exercises/types'
+import { EXERCISE_ARPEGGIO_JUMPER, EXERCISE_INTERVAL_TRAINER, EXERCISE_LONG_NOTE, EXERCISE_WARMUP, } from '@/features/exercises/types'
 import type { ExerciseHistoryEntry } from '@/stores/exercise-history-store'
 import { exerciseSessionPayload } from '@/stores/exercise-history-store'
 import { validateWrite } from '../../workers/db-worker/src/validation'
@@ -48,6 +48,11 @@ describe('the plain-exercise session payload', () => {
     // must say so, or old ~0 scores would thread against new real ones.
     expect(
       exerciseSessionPayload(entry(EXERCISE_INTERVAL_TRAINER), undefined)
+        .sourceVersion,
+    ).toBe(2)
+    // Arpeggio Jumper's 2026-10-25 rescore did the same.
+    expect(
+      exerciseSessionPayload(entry(EXERCISE_ARPEGGIO_JUMPER), undefined)
         .sourceVersion,
     ).toBe(2)
   })

@@ -131,5 +131,12 @@ describe('challenge attempt comparability', () => {
     expect(
       challengeAttemptComparabilityKey({ ...target, exercise: 'siren' }),
     ).not.toBe(firstScoringKey('siren'))
+    // So is Arpeggio Jumper, since its grade became the mean of its notes.
+    expect(
+      challengeAttemptComparabilityKey({
+        ...target,
+        exercise: 'arpeggio-jumper',
+      }),
+    ).not.toBe(firstScoringKey('arpeggio-jumper'))
   })
 })
