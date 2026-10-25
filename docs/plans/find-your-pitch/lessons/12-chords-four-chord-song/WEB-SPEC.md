@@ -280,13 +280,13 @@ the stage-fit test reach every action.
   centre's label changes from "I · C major" to "vi · A minor". Under reduced motion the corner lands
   at once. **Slow** (`aria-pressed`) doubles the play's lengths, as Lesson 10's Slow does (MASTER-
   PLAN § 4.2 item 5, "play / pause / scrub / slow on every animation"). **The names switch**,
-  Letters · Do-re-mi, is Lesson 4's (`lesson-04/stairs-words.ts:17-23`), which Lesson 10's spec
+  Letters · Do-re-mi, is Lesson 4's (`kit/names-modes.ts:15-22`), which Lesson 10's spec
   moves into the kit with a choice of modes (What the kit and the app still need, item 5), on a
   page-wide `createModeStore` (`kit/names.ts:27`), as Lesson 4's page keeps its own
   (`lesson-04/main.ts:69-70`). Under Do-re-mi the seven scale notes carry their syllables beside
   their beads, do on C in C major and on G in G major, and the chips' second lines change with them;
-  the black keys carry no syllable. The syllables are the major scale's, Lesson 4's (`SOLFEGE`,
-  `stairs-words.ts:25-35`), with do on the key's tonic: the chord on la reads "la do mi", and no
+  the black keys carry no syllable. The syllables are the major scale's, Lesson 4's (`MAJOR_SOLFEGE`,
+  `kit/names-modes.ts:32-42`), with do on the key's tonic: the chord on la reads "la do mi", and no
   state sings or labels from la as home (FACTS 8).
 - **Loop** (Step 4): it opens with the loop's four rooms drawn faint, I, V, vi and IV. **Play the
   loop** plays I, V, vi and IV, 2.0 s each, 8.0 s (FACTS 68), each room lighting while its chord

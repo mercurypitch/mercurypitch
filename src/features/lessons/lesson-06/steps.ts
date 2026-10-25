@@ -19,6 +19,7 @@
 
 import { q, qa } from '@/features/lessons/kit/dom'
 import type { ModeStore } from '@/features/lessons/kit/names'
+import type { LettersSolfegeMode } from '@/features/lessons/kit/names-modes'
 import { mountPredict } from '@/features/lessons/kit/predict'
 import type { StepDeck } from '@/features/lessons/kit/step-deck'
 import { registerToy } from '@/features/lessons/kit/step-deck'
@@ -26,7 +27,6 @@ import { initAnchors } from './anchors'
 import { initGames } from './games'
 import type { TuneStep, TuneToy } from './tune-toy'
 import { mountTuneToy } from './tune-toy'
-import type { NamesMode } from './tune-words'
 
 /** Each step's figure label. */
 export const FIG: Readonly<Record<number, string>> = {
@@ -67,7 +67,7 @@ function initPredict(toy: TuneToy, stage: HTMLElement): void {
 
 export function initSteps(
   deck: StepDeck,
-  names: ModeStore<NamesMode>,
+  names: ModeStore<LettersSolfegeMode>,
 ): TuneToy {
   const root = q('#toyTune')
   const toy = mountTuneToy(root, { active: deck.toyActive(1), names })

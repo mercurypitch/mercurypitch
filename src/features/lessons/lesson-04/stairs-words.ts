@@ -11,28 +11,10 @@
 // shown (`signsHtml`).
 
 import { blackKeysOf, MAJOR_STEPS, majorScale, stepSizes, whiteKeysFrom, } from '@/features/lessons/kit/major-scale'
+import type { NamesMode } from '@/features/lessons/kit/names-modes'
+import { MAJOR_SOLFEGE } from '@/features/lessons/kit/names-modes'
 import type { Spelled } from '@/features/lessons/kit/notes'
 import { signName, signsHtml, wordName } from '@/features/lessons/kit/notes'
-
-export type NamesMode = 'letters' | 'numbers' | 'solfege'
-
-export const NAMES_MODES: readonly NamesMode[] = [
-  'letters',
-  'numbers',
-  'solfege',
-]
-
-/** The sung names, do to do (FACTS 19 and 20: so, as the CURRICULUM card writes it). */
-export const SOLFEGE: readonly string[] = [
-  'do',
-  're',
-  'mi',
-  'fa',
-  'so',
-  'la',
-  'ti',
-  'do',
-]
 
 /** The starts the staircase slides through: C4 to B4. */
 export const START_LO = 60
@@ -48,7 +30,7 @@ const spoken = (s: Spelled): string => wordName(s, { octave: false })
 /** Stair `i`'s name in a mode: its letter, its number (1 to 7, then 1 at the top) or its sung name. */
 export function stairName(i: number, tonic: number, mode: NamesMode): string {
   if (mode === 'numbers') return i === 7 ? '1' : String(i + 1)
-  if (mode === 'solfege') return SOLFEGE[i]
+  if (mode === 'solfege') return MAJOR_SOLFEGE[i]
   return plain(majorScale(tonic)[i])
 }
 
@@ -56,7 +38,7 @@ export function stairName(i: number, tonic: number, mode: NamesMode): string {
 export function stairLabel(i: number, tonic: number): string {
   const note = wordName(majorScale(tonic)[i])
   const home = i === 0 || i === 7 ? ', home' : ''
-  return `Stair ${i + 1}, ${SOLFEGE[i]}, ${note}${home}`
+  return `Stair ${i + 1}, ${MAJOR_SOLFEGE[i]}, ${note}${home}`
 }
 
 /** The scale's name, "D major", for the eye or in words. */

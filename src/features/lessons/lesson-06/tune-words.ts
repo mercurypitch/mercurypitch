@@ -12,15 +12,12 @@
 // gap draws, its size with any minus sign ("−2, step: gap 6, down 2
 // semitones"), so a voice control user can say what they see.
 
+import type { LettersSolfegeMode } from '@/features/lessons/kit/names-modes'
 import type { Spelled } from '@/features/lessons/kit/notes'
 import { nameHtml, signName, wordName } from '@/features/lessons/kit/notes'
 import type { GapWords } from '@/features/lessons/kit/tune-line-draw'
 import type { MelodyNote } from './melody'
 import { classify, gapsOf, intervalName, lineNames, SOLFEGE, swapSizes, tuneMidis, TWINKLE, } from './melody'
-
-/** The names switch: two of Lesson 4's three modes (this lesson uses no degree numbers). */
-export type NamesMode = 'letters' | 'solfege'
-export const NAMES_MODES: readonly NamesMode[] = ['letters', 'solfege']
 
 /** Every note of both lines, in order. */
 const NOTES: readonly MelodyNote[] = TWINKLE.flat()
@@ -36,7 +33,11 @@ export function spoken(s: Spelled, o: { octave?: boolean } = {}): string {
 }
 
 /** The name drawn under note g: its letter with any sign, or its do-re-mi name. */
-export function drawnName(g: number, start: number, mode: NamesMode): string {
+export function drawnName(
+  g: number,
+  start: number,
+  mode: LettersSolfegeMode,
+): string {
   if (mode === 'solfege') return SOLFEGE[NOTES[g].degree]
   return signName(spelledAt(g, start), { octave: false })
 }
@@ -83,7 +84,7 @@ export function noteLabel(
   g: number,
   of: number,
   start: number,
-  mode: NamesMode,
+  mode: LettersSolfegeMode,
 ): string {
   const name = spoken(spelledAt(g, start))
   const head = `Note ${g + 1} of ${of}`
@@ -96,7 +97,11 @@ export function noteLabel(
  * The line's live summary, in spoken names: "Twinkle from B flat 4: B flat,
  * B flat, F, F, G, G, F. Same, up 7, same, up 2, same, down 2."
  */
-export function summary(start: number, lines: number, mode: NamesMode): string {
+export function summary(
+  start: number,
+  lines: number,
+  mode: LettersSolfegeMode,
+): string {
   const notes = shownNotes(lines)
   const names = notes.map((g) =>
     mode === 'solfege'

@@ -14,18 +14,21 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import '@/features/lessons/kit/browser-doubles.test-fixtures'
 import { createModeStore } from '@/features/lessons/kit/names'
+import type { LettersSolfegeMode } from '@/features/lessons/kit/names-modes'
+import { LETTERS_SOLFEGE_MODES } from '@/features/lessons/kit/names-modes'
 import { el, listen, loadPage } from './page-dom.test-fixtures'
 import type { TuneStep, TuneToy } from './tune-toy'
 import { mountTuneToy } from './tune-toy'
-import type { NamesMode } from './tune-words'
-import { NAMES_MODES } from './tune-words'
 
 /** The steps' stage on the page's markup, on `step`. */
 function mountStage(step: TuneStep = 1): TuneToy {
   loadPage()
   const toy = mountTuneToy(el('#toyTune'), {
     active: () => true,
-    names: createModeStore<NamesMode>(NAMES_MODES, 'letters'),
+    names: createModeStore<LettersSolfegeMode>(
+      LETTERS_SOLFEGE_MODES,
+      'letters',
+    ),
   })
   toy.setStep(step)
   return toy

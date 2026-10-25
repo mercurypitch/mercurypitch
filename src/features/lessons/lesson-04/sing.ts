@@ -21,6 +21,7 @@ import { q, qa } from '@/features/lessons/kit/dom'
 import { majorScale } from '@/features/lessons/kit/major-scale'
 import type { Which } from '@/features/lessons/kit/merc-duo'
 import { COUNT_IN_SEC, countIn, nextShift, setMoveEnds, } from '@/features/lessons/kit/move-do'
+import { MAJOR_SOLFEGE } from '@/features/lessons/kit/names-modes'
 import { hz, nameHtml, wordName } from '@/features/lessons/kit/notes'
 import type { Ring, RingStills } from '@/features/lessons/kit/sing'
 import { mountRing } from '@/features/lessons/kit/sing'
@@ -28,7 +29,6 @@ import type { GuideRow } from '@/features/lessons/kit/slide-guide'
 import { mountGuide } from '@/features/lessons/kit/slide-guide'
 import { Sound } from '@/features/lessons/kit/sound'
 import { GUIDE_SEC, guidePath, singModel, TI_HOLD } from './examples'
-import { SOLFEGE } from './stairs-words'
 
 /** Merc's do, and Tavi's an octave up (FACTS 52 and 63). */
 const MERC_DO = 50
@@ -44,7 +44,7 @@ export function scaleRows(doMidi: number): GuideRow[] {
       ? { midi: doMidi + k, label: '', faint: true }
       : {
           midi: doMidi + k,
-          label: `<span class="sol">${SOLFEGE[i]}</span> ${nameHtml(spelled[i])}`,
+          label: `<span class="sol">${MAJOR_SOLFEGE[i]}</span> ${nameHtml(spelled[i])}`,
         }
   })
 }

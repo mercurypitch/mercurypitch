@@ -17,10 +17,10 @@ import { mountPractiseCard } from '@/features/lessons/kit/comfort'
 import { q } from '@/features/lessons/kit/dom'
 import { watch } from '@/features/lessons/kit/frame-loop'
 import type { ModeStore } from '@/features/lessons/kit/names'
+import type { LettersSolfegeMode } from '@/features/lessons/kit/names-modes'
 import { mountTuneToy } from './tune-toy'
-import type { NamesMode } from './tune-words'
 
-export function initWrap(names: ModeStore<NamesMode>): void {
+export function initWrap(names: ModeStore<LettersSolfegeMode>): void {
   mountPractiseCard(q('#practiseCard'))
   const free = q('#freePlay')
   mountTuneToy(free, { active: watch(free), names }).setStep('free')
