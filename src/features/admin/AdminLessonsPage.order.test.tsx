@@ -3,12 +3,14 @@
 // ============================================================
 //
 // A lesson's page points back to the lessons it builds on (season.ts
-// PREREQ): its prerequisite chips name them. Before the console publishes
-// a lesson while one of those is not published here, it asks, whether a
-// drafts line stands or not; for a draft that would also get ahead of
-// one, it asks once, naming both. "Use default" asks the same question
-// when going back to the default would put the lesson live, and saves at
-// once otherwise. Unpublishing never asks.
+// PREREQ), which its prerequisite chips name, and to the lesson its recall
+// asks (lesson-admin.ts RECALLS, for the two recalls outside PREREQ).
+// Before the console publishes a lesson while one of those is not
+// published here, it asks, whether a drafts line stands or not; for a
+// draft that would also get ahead of one, it asks once, naming both.
+// "Use default" asks the same question when going back to the default
+// would put the lesson live, and saves at once otherwise. Unpublishing
+// never asks.
 // Driven as AdminLessonsPage.publish.test.tsx drives the page, against the
 // same doubles at `fetch`; its own file, so that one and
 // AdminLessonsPage.test.tsx stay as they are.
@@ -158,6 +160,50 @@ describe('publishing a lesson ahead of one it builds on', () => {
     })
     expect(bodies(api)).toEqual([{ published: true }])
     expect(screen.queryByRole('alertdialog')).toBeNull()
+  })
+})
+
+describe('publishing a lesson ahead of the lesson its recall asks', () => {
+  // Lessons 3 and 8 build on Lesson 1 alone; their recalls ask Lesson 2's
+  // and Lesson 6's questions. The words are held in full in
+  // lesson-publish.order.test.ts; these hold that the page asks them, with
+  // or without a sign-off line before them.
+  it("asks before it publishes Lesson 3 while Lesson 2 is not published, naming Lesson 2's questions", async () => {
+    // Arrange
+    const api = unpublished(2, 3)
+    renderPage(api)
+    await settled()
+
+    // Act
+    fireEvent.click(switchOf(3, 'Publish'))
+
+    // Assert
+    const dialog = await screen.findByRole('alertdialog', {
+      name: /^Publish Lesson 3 before (its sign-off and before )?Lesson 2\?$/,
+    })
+    expect(dialog).toHaveAccessibleDescription(
+      /(^Lesson 3's recall|\. Its recall also) asks Lesson 2's questions, and Lesson 2 is not published here\. Publish it anyway\?$/,
+    )
+    expect(api.saves).toEqual([])
+  })
+
+  it("asks before it publishes Lesson 8 while Lesson 6 is not published, naming Lesson 6's questions", async () => {
+    // Arrange
+    const api = unpublished(6, 8)
+    renderPage(api)
+    await settled()
+
+    // Act
+    fireEvent.click(switchOf(8, 'Publish'))
+
+    // Assert
+    const dialog = await screen.findByRole('alertdialog', {
+      name: /^Publish Lesson 8 before (its sign-off and before )?Lesson 6\?$/,
+    })
+    expect(dialog).toHaveAccessibleDescription(
+      /(^Lesson 8's recall|\. Its recall also) asks Lesson 6's questions, and Lesson 6 is not published here\. Publish it anyway\?$/,
+    )
+    expect(api.saves).toEqual([])
   })
 })
 

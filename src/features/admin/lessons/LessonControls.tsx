@@ -36,7 +36,7 @@ export interface LessonActions {
   readonly lessons: LessonStateController
   /** Lesson `row`'s state on this site; null while the lesson state is unread. */
   readonly viewOf: (row: LessonRow) => PublishView | null
-  /** Publish it (asking first while it waits on a sign-off or would go live before a lesson it builds on), or unpublish it. */
+  /** Publish it (asking first while it waits on a sign-off or would go live before a lesson it builds on or its recall asks), or unpublish it. */
   readonly toggle: (row: LessonRow) => void
   /** Clear its publish override, asking first as Publish does when that would put it live; true once stored. */
   readonly useDefault: (row: LessonRow) => Promise<boolean>

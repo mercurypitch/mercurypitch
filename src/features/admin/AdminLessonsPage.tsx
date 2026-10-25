@@ -191,12 +191,12 @@ export function AdminLessonsPage(props: AdminLessonsPageProps): JSX.Element {
 
   /**
    * Put lesson `row` live by `save`, asking first when it still waits on
-   * its sign-off or would go live before a lesson it builds on, once for
-   * both. The switch's Publish and a "Use default" that would put the
-   * lesson live both come here, so they ask alike. Resolves with the
-   * save's answer: at once when there is nothing to ask, or after "Publish
-   * anyway". Cancel stores nothing, and the promise then never settles;
-   * only a stored save moves the focus.
+   * its sign-off or would go live before a lesson it builds on or its
+   * recall asks, once for all of them. The switch's Publish and a "Use
+   * default" that would put the lesson live both come here, so they ask
+   * alike. Resolves with the save's answer: at once when there is nothing
+   * to ask, or after "Publish anyway". Cancel stores nothing, and the
+   * promise then never settles; only a stored save moves the focus.
    */
   const goLive = (
     row: LessonRow,

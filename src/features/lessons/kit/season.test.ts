@@ -6,7 +6,7 @@ import { readdirSync } from 'node:fs'
 import { resolve } from 'node:path'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import type * as Season from './season'
-import { ancestors, EDGES, lessonPath, LESSONS, unlocks } from './season'
+import { ancestors, EDGES, lessonPath, LESSONS, PREREQ, unlocks, } from './season'
 
 /** Lesson n's lit edges as { 'a-b': role }, leaving out the edges off its path. */
 function litEdges(n: number): Record<string, string> {
@@ -315,5 +315,20 @@ describe('a draft lesson (drafts.ts)', () => {
     expect(season.LESSONS[5].pr.needs).toBe(
       'Long Note with a fixed 10 or 15 s length (durationSec)',
     )
+  })
+})
+
+describe('PREREQ', () => {
+  it('keeps Lessons 3 and 8 on Lesson 1 alone, leaving the lessons their recalls ask off the map', () => {
+    // Arrange: Lesson 3's recall asks Lesson 2's questions and Lesson 8's
+    // asks Lesson 6's. The owner keeps a recall off the map (25 October
+    // 2026): only the admin console's warning reads them (RECALLS, in
+    // admin/lessons/lesson-admin.ts).
+
+    // Act
+    const before = [PREREQ[3], PREREQ[8]]
+
+    // Assert
+    expect(before).toEqual([[1], [1]])
   })
 })
