@@ -10,11 +10,16 @@
 // and Slow serves all five. Here the page shell only: the figure's label and
 // which parts show follow the step, through the deck's `onStep`, whatever
 // the route (Next or Back, a swipe, the lesson menu, an address that names a
-// step, the quiz's step links). The chart and its sounds are wired
-// separately; until then a control does nothing.
+// step, the quiz's step links), and so does the chart's state
+// (ladder-chart.ts), drawn only while the stage shows it. The steps' sounds
+// are wired separately; until then a control does nothing.
 
 import { q, qa } from '@/features/lessons/kit/dom'
+import type { StepDeck } from '@/features/lessons/kit/step-deck'
 import { registerToy } from '@/features/lessons/kit/step-deck'
+import type { LadderChart } from './ladder-chart'
+import { mountLadderChart } from './ladder-chart'
+import type { ChartState } from './ladder-data'
 
 /** Each step's figure label. */
 export const FIG: Readonly<Record<number, string>> = {
@@ -23,6 +28,15 @@ export const FIG: Readonly<Record<number, string>> = {
   3: '<span class="fig">Fig. 3</span> Every rung of the ladder',
   4: '<span class="fig">Fig. 4</span> Five leaps, small ones first',
   5: '<span class="fig">Fig. 5</span> A landing, and an adjustment',
+}
+
+/** Each step's state of the chart (WEB-SPEC, Toys 1). */
+export const STEP_STATE: Readonly<Record<number, ChartState>> = {
+  1: 'step',
+  2: 'hear',
+  3: 'ladder',
+  4: 'order',
+  5: 'landing',
 }
 
 /** The steps a part shows on, from its `data-part` list ("1 2"). */
@@ -39,9 +53,13 @@ export function showParts(root: ParentNode, n: number): void {
 }
 
 /** Follows the deck: registered before `deck.start()`, so an address that names a step opens it. */
-export function initSteps(): void {
+export function initSteps(deck: StepDeck): LadderChart {
   const root = q('#toyLadder')
   const label = q('[data-fig-label]', root)
+  const ladder = mountLadderChart(q('[data-ladder-viz]', root), {
+    state: STEP_STATE[1],
+    active: deck.toyActive(1),
+  })
   registerToy({
     onStep(n, previous) {
       // the step showing shown again, as the phone deck and the wide page
@@ -50,6 +68,8 @@ export function initSteps(): void {
       if (n === previous) return
       showParts(root, n)
       label.innerHTML = FIG[n] ?? FIG[1]
+      ladder.show(STEP_STATE[n] ?? STEP_STATE[1])
     },
   })
+  return ladder
 }

@@ -6,8 +6,9 @@
 // its `data-part` lists name and hides the rest, so no two controls on the
 // stage ever share an accessible name (WEB-SPEC, Toys 1, "Keyboard and
 // screen readers"; Tests 8), each step has a control to press, and the
-// figure's label follows the step. An address that names a step opens it
-// in its own parts, and the step showing, shown again, changes nothing.
+// figure's label and the chart's state follow the step. An address that
+// names a step opens it in its own parts, and the step showing, shown
+// again, changes nothing.
 
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import '@/features/lessons/kit/browser-doubles.test-fixtures'
@@ -82,17 +83,41 @@ describe("Lesson 9's stage, step by step", () => {
     expect([shows(strip), shows(scrub)]).toEqual([true, false])
   })
 
-  it('opens the step an address names in its own parts', () => {
+  it('opens the step an address names in its own parts, and its chart in its state', () => {
     // Arrange
     window.location.hash = '#step-3'
 
     // Act
-    mountSteps()
+    const { ladder } = mountSteps()
 
     // Assert
     expect(shows(el('#toyLadder [data-ladder-play="climb"]'))).toBe(true)
     expect(shows(el('#toyLadder [data-ladder-play="step"]'))).toBe(false)
     expect(label()).toBe(FIG[3].replace(/<[^>]+>/g, ''))
+    expect(ladder.state).toBe('ladder')
+  })
+
+  it('shows each step its own state of the chart, and the step showing, shown again, leaves it be', () => {
+    // Arrange
+    const deck = mountSteps()
+    const states: string[] = [deck.ladder.state]
+
+    // Act
+    for (const n of [2, 3, 4, 5]) {
+      deck.show(n)
+      states.push(deck.ladder.state)
+    }
+    const drawn = deck.ladder.play({ notes: [{ t: 0, midi: 50, dur: 1 }] })
+    drawn.end()
+    const before = deck.ladder.view
+    deck.show(5)
+
+    // Assert
+    expect(states).toEqual(['step', 'hear', 'ladder', 'order', 'landing'])
+    expect(deck.ladder.view).toBe(before)
+    expect(el('#toyLadder .ladder-canvas').getAttribute('aria-label')).toBe(
+      'Do, D3, and so, A3',
+    )
   })
 
   it("draws the page in Step 1's parts before any script runs", () => {
