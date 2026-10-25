@@ -18,7 +18,6 @@ const MELODY_LENGTH = 5
 const SCORE_ACCURACY_WEIGHT = 0.35
 const SCORE_BEST_NOTE_WEIGHT = 0.15
 const SCORE_CONSISTENCY_WEIGHT = 0.25
-const SCORE_RICHNESS_WEIGHT = 0.25
 
 function generateMelody(
   baseMidi: number,
@@ -197,11 +196,14 @@ export function useMirrorMelodyController(
         ? approximateRichness(claritySamples).richnessScore
         : 0
 
+    // Richness left the grade on 2026-10-25 without a reweighting: it
+    // read the detector's 0-1 clarity as 0-100, so it was 0 or 1 and the
+    // grade moves by at most 0.25 before rounding. Still recorded in the
+    // metrics until the approximation itself is deleted.
     const score = Math.round(
       avgAccuracy * SCORE_ACCURACY_WEIGHT +
         bestNote * SCORE_BEST_NOTE_WEIGHT +
-        consistency * SCORE_CONSISTENCY_WEIGHT +
-        richness * SCORE_RICHNESS_WEIGHT,
+        consistency * SCORE_CONSISTENCY_WEIGHT,
     )
 
     return {

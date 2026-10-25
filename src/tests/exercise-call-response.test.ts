@@ -132,6 +132,55 @@ describe('useCallResponseController', () => {
     }
   })
 
+  it('grades five rounds 30 cents sharp at 41, with no richness in it', async () => {
+    vi.useFakeTimers()
+    try {
+      // Arrange: every phrase note sung 30 cents sharp, with the detector's
+      // realistic clarity (0 to 1). Each note and round scores
+      // 100 - 1.5 x 30 = 55, so the grade is 0.5 x 55 + 0.25 x 55 = 41.25.
+      // The richness term read 0.9 clarity as 1 and added 0.25: 41.5, so 42.
+      vi.advanceTimersByTime(500_000)
+      const startPerf = performance.now()
+      const announced: number[] = []
+      const base = createMockBase({
+        _getElapsed: () => performance.now() - startPerf,
+        _updateMetrics: (m) => {
+          if (typeof m.currentMidi === 'number') announced.push(m.currentMidi)
+        },
+        pitchHistory: () => {
+          const nowMs = performance.now() - startPerf
+          const samples = []
+          for (const midi of new Set(announced)) {
+            const freq = midiToFrequency(midi) * 2 ** (30 / 1200)
+            for (let i = 0; i < 10; i++) {
+              samples.push({
+                freq,
+                time: (nowMs - i * 20) / 1000,
+                cents: 30,
+                clarity: 0.9,
+              })
+            }
+          }
+          return samples
+        },
+      })
+      const ctrl = useCallResponseController(base, audioEngineMock)
+      ctrl.setBase(60, RANGE)
+
+      // Act
+      ctrl.startRounds()
+      await vi.advanceTimersByTimeAsync(120000)
+      const result = ctrl.computeResult()
+
+      // Assert
+      expect(result.metrics.avgAccuracy).toBe(55)
+      expect(result.metrics.richnessScore).toBe(1)
+      expect(result.score).toBe(41)
+    } finally {
+      vi.useRealTimers()
+    }
+  })
+
   it('stopRounds completes with a result', () => {
     const completed: unknown[] = []
     const base = createMockBase({

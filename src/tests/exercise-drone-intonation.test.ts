@@ -162,6 +162,53 @@ describe('useDroneIntonationController', () => {
     }
   })
 
+  it('grades six rounds 36 cents sharp at 50, with no richness in it', async () => {
+    vi.useFakeTimers()
+    try {
+      // Arrange: every round held 36 cents sharp and dead steady, with the
+      // detector's realistic clarity (0 to 1). Each round scores
+      // 100 - 1.5 x 36 = 46 and stability scores 100, so the grade is
+      // 0.4 x 46 + 0.15 x 46 + 0.25 x 100 = 50.3. The richness term read 0.9
+      // clarity as 1 and added 0.2: 50.5, so 51.
+      let targetMidi = 60
+      const base = createMockBase({
+        _setTargetPitch: ((v: number | null) => {
+          if (typeof v === 'number' && v > 0) {
+            targetMidi = Math.round(12 * Math.log2(v / 440) + 69)
+          }
+          return v
+        }) as BaseExerciseController['_setTargetPitch'],
+        pitchHistory: () => {
+          const freq = midiToFrequency(targetMidi) * 2 ** (36 / 1200)
+          const samples = []
+          for (let i = 0; i < 80; i++) {
+            samples.push({
+              freq,
+              time: 100 + i * 0.05,
+              cents: 36,
+              clarity: 0.9,
+            })
+          }
+          return samples
+        },
+      })
+      const ctrl = useDroneIntonationController(base, audioEngineMock)
+      ctrl.setBase(60)
+
+      // Act
+      await ctrl.startRounds()
+      await vi.advanceTimersByTimeAsync(80000)
+      const result = ctrl.computeResult()
+
+      // Assert
+      expect(result.metrics.avgAccuracy).toBe(46)
+      expect(result.metrics.richnessScore).toBe(1)
+      expect(result.score).toBe(50)
+    } finally {
+      vi.useRealTimers()
+    }
+  })
+
   it('stopRounds completes with a result', () => {
     const completed: unknown[] = []
     const base = createMockBase({

@@ -225,11 +225,12 @@ export function useDroneIntonationController(
 
     return {
       type: EXERCISE_DRONE_INTONATION,
+      // Richness left the grade on 2026-10-25 without a reweighting: it
+      // read the detector's 0-1 clarity as 0-100, so it was 0 or 1 and the
+      // grade moves by at most 0.2 before rounding. Still recorded in the
+      // metrics until the approximation itself is deleted.
       score: Math.round(
-        avgAccuracy * 0.4 +
-          bestRound * 0.15 +
-          stabilityScore * 0.25 +
-          richness * 0.2,
+        avgAccuracy * 0.4 + bestRound * 0.15 + stabilityScore * 0.25,
       ),
       metrics: {
         roundsCompleted: roundScores.length,
