@@ -8,3 +8,4 @@
   - B15 or L10-P21 pads `open()` (also in `../l9/FOLLOWUPS.md`).
 
 - Lesson 7 Sing it: when a play is cut short by a hidden page or the Sound switch (K2 item 5), "played" drops as intended, but the listen ring runs on to its natural end, since ring.stop is not called. Cosmetic; K2 left it alone (24 Oct).
+- kit/run.ts chords (K2 review N1, 25 Oct): a stop from inside onNote in the middle of a chord leaves that chord's later notes built after the stop and unowned for their dur (one timer per onset now; before, one per note, cleared by the stop). No caller stops its own run from onNote; if one ever does, guard the onset loop with a flag the stop sets.
