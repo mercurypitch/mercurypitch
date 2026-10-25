@@ -18,9 +18,9 @@
 //   listening when the host that asked goes.
 // - Where he cannot be drawn live, a still stands in for him, and it follows
 //   his pose: the listening Merc on the third question, the cheering one on the
-//   plan, and the one pointing the way on every other.
+//   plan, and the one pointing the way on every other. The map is
+//   lib/merc/stills.ts's, shared with the coach's tours, and passed on here.
 
-import type { MercState } from '@/lib/merc/constants'
 import { createReactiveMatch } from '@/lib/use-viewport'
 import type { PlanPhase } from './usePlanFlowController'
 
@@ -33,15 +33,7 @@ const MERC_PX = {
 /** The question screens' phone layout: the complement of their `min-width: 720px`. */
 export const PHONE_QUERY = '(max-width: 719.98px)'
 
-/** His stills, by pose: the listening one on Q3, the cheering one on the plan, else pointing the way. */
-const STILLS: Partial<Record<MercState, string>> = {
-  listen: '/onboarding/coach/merc-listen.webp',
-  celebrate: '/onboarding/coach/merc-celebrate.webp',
-}
-const STILL_POINT = '/onboarding/coach/merc-point.webp'
-
-/** The still that stands in for him in `pose`. */
-export const stillFor = (pose: MercState): string => STILLS[pose] ?? STILL_POINT
+export { stillFor } from '@/lib/merc/stills'
 
 /** His box's side in px: what the flow is on, and whether the window is a phone's. */
 export const mercSizeFor = (phase: PlanPhase, phone: boolean): number =>

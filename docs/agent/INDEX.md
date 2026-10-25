@@ -114,6 +114,7 @@ These are the rules that break things when ignored.
 | `home` | [DestinationGallery.tsx](../../src/features/home/DestinationGallery.tsx) | 1.1k | DestinationGallery — the Home page's card grid `HOME_DESTINATIONS` is the content; the component is the renderer. |
 | `playback` | [usePlaybackController.ts](../../src/features/playback/usePlaybackController.ts) | 1.1k | usePlaybackController — the Singing tab's transport Start/stop/seek across the three playback modes (free practice, session, backing track). |
 | `session-drummer` | [session-drummer-engine.ts](../../src/features/session-drummer/session-drummer-engine.ts) | 1.1k | A session-scoped drummer borrows the room graph and either scheduled score beats or one manual-tempo clock. |
+| `tours` | [CoachLayer.tsx](../../src/features/tours/coach/CoachLayer.tsx) | 1.1k | CoachLayer — Merc's bubble, and the ring around what he points at Drawn over the page, never instead of it: the layer lets every tap thro... |
 | `falling-notes` | [useFallingNotesController.ts](../../src/features/falling-notes/useFallingNotesController.ts) | 1.0k | useFallingNotesController — Game logic for Synthesia-style piano practice |
 | `sidebar` | [sidebar-registry.ts](../../src/features/sidebar/sidebar-registry.ts) | 1.0k | ── Sidebar panel registry One AppSidebar shell; WHAT it shows is this file's decision, per tab. |
 | `account` | [native-sign-in.ts](../../src/features/account/native-sign-in.ts) | 900 | Native sign-in — the phone's own Apple and Google ceremonies On the web, Google sign-in is a full-page redirect (the app's `COOP: same-or... |
@@ -127,7 +128,6 @@ These are the rules that break things when ignored.
 | `session` | [useSessionSequencer.ts](../../src/features/session/useSessionSequencer.ts) | 450 | useSessionSequencer — drives a multi-item practice session item by item Between items it rewrites global musical context (key, scale, bpm... |
 | `keyboard` | [useKeyboardShortcuts.ts](../../src/features/keyboard/useKeyboardShortcuts.ts) | 400 | useKeyboardShortcuts — global hotkeys, mounted once by App One document-level keydown listener for the whole app. |
 | `tabs` | [constants.ts](../../src/features/tabs/constants.ts) | 400 | ── Tab ID constants Use these everywhere instead of raw strings. |
-| `tours` | [runner.ts](../../src/features/tours/coach/runner.ts) | 400 | Coach runner — which step of a Merc tour is on screen, and why it moves No DOM here: the layer (CoachLayer.tsx) draws what the runner say... |
 | `jam` | [useJamRoomBackground.ts](../../src/features/jam/useJamRoomBackground.ts) | 300 | Jam room background controller — shared host selection and protected bytes A Jam background is room state, not a personal preference. |
 | `practice` | [usePracticeController.ts](../../src/features/practice/usePracticeController.ts) | 300 | usePracticeController — mic capture and scoring for the Singing tab Owns one mic lease for the duration of the practice run. |
 | `rooms` | [contract.ts](../../src/features/rooms/contract.ts) | 300 | The room contract. |
