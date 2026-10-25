@@ -38,6 +38,7 @@ import { createComponent, createEffect, createMemo, createSignal, on, onCleanup,
 import { render } from 'solid-js/web'
 import { X } from '@/components/icons'
 import { MercPresence } from '@/components/room-kit/MercPresence'
+import type { CoachHandoff, CoachStep } from '@/lib/coach-types'
 import type { DemoSound } from '@/lib/demo-audio'
 import { playHoldTone } from '@/lib/demo-audio'
 import type { MercState } from '@/lib/merc/constants'
@@ -45,7 +46,6 @@ import { stillFor } from '@/lib/merc/stills'
 import styles from './CoachLayer.module.css'
 import { findTarget } from './find-target'
 import type { CoachRunner, CoachSnapshot } from './runner'
-import type { CoachHandoff, CoachStep } from './types'
 
 /** A target taller than this share of the window gets no ring: it would ring the page. */
 export const RING_MAX_SHARE = 0.7

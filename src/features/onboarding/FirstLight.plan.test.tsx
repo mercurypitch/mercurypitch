@@ -7,7 +7,8 @@
 // beat's place in the flow: that it stands directly in the frame, with the
 // plain sky receding behind it and the star field out of Merc's way; where
 // each way out of the questions and the plan lands (Home, the Map, a stop,
-// and Show me around's showcase, then Start here with or without its tour);
+// and Show me around's showcase, then Start here with its tour: Merc's,
+// or the legacy spotlight where the room has no Merc tour);
 // how the beats before it name it (the twin's line
 // and the Prints button); and that the walk it is on does not shorten as the
 // questions are answered. The screens and the rulebook have tests of their
@@ -50,6 +51,7 @@ import { markPlanShown, planRecord, savePlanAnswers, } from '@/features/plan/pla
 import { next, passTo, quiet, tap } from '@/features/plan/PlanQuestions.fixture'
 import type { PlanChoices, Q3Id } from '@/features/plan/questions'
 import { q2Options, q3Options } from '@/features/plan/questions'
+import { endCoachTour } from '@/features/tours/coach/start'
 import { startRoomTour } from '@/features/tours/room-tour'
 import { GUIDE_FUNNEL_STORAGE_KEY } from '@/lib/guide-funnel'
 import { provideRoomTourDoor } from '@/lib/room-tour-door'
@@ -133,6 +135,8 @@ beforeEach(() => {
 
 afterEach(() => {
   cleanup()
+  // A Merc tour mounts on <body>, outside what cleanup() unmounts.
+  endCoachTour()
   vi.unstubAllGlobals()
   vi.restoreAllMocks()
   forgetThePlan()
@@ -290,9 +294,9 @@ describe('the four questions and the plan in the flow', () => {
     expect(planRecord()?.status).toBe('answered')
   })
 
-  it('leaves First Light at once, and enters Start here once the showcase is over, without a tour where the room has none', async () => {
-    // Arrange: nothing answered, so Start here is the Sing room, which has
-    // no spotlight tour.
+  it("leaves First Light at once, and enters Start here once the showcase is over, with Merc's tour of it", async () => {
+    // Arrange: nothing answered, so Start here is the Sing room, whose tour
+    // is Merc's.
     const host = await toThePlan()
 
     // Act
@@ -302,12 +306,17 @@ describe('the four questions and the plan in the flow', () => {
 
     // Assert: First Light goes at once. The showcase, with no tab bar on
     // this page to stand by, passes every stop, then opens Start here, which
-    // is counted then, as its card is.
+    // is counted then, as its card is, and Merc's tour of it starts.
     expect(flowOpen()).toBe(false)
     expect(planEvents()).not.toContain('plan_stop_start')
     await waitFor(() => expect(activeTab()).toBe('singing'))
     expect(planEvents()).toContain('plan_stop_start')
     expect(guideEvents()).toContain('showcase_done')
+    await waitFor(() =>
+      expect(
+        screen.getByRole('heading', { name: 'Start the mic' }),
+      ).toBeVisible(),
+    )
     expect(mocks.startPageTour).not.toHaveBeenCalled()
   })
 

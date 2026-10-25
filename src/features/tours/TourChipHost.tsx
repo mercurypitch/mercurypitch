@@ -8,9 +8,11 @@
 // TourChipHost.test.tsx:
 //
 // - One offer per tab, ever. `pitchperfect_page_tour_offered_<tab>` is
-//   written as the chip shows, and only then. Storage that cannot be written
-//   means no chip: the offer could never be recorded, so it would come back
-//   on every visit.
+//   written as the chip shows, and never for a chip that did not. Storage
+//   that cannot be written means no chip: the offer could never be recorded,
+//   so it would come back on every visit. A tour started by another door (the
+//   showcase's end, First Light's Map) spends the offer too (room-tour.ts),
+//   so the chip never offers a tour that was just shown.
 // - Nothing while `paused` (First Light, the plan, What's New, the takeover
 //   still deciding) or while Merc has the screen (coachBusy: a Merc tour,
 //   asked for or running, or the showcase); the legacy spotlight is checked
@@ -44,7 +46,7 @@ import { hasPageTour, pageTourKey, tourOfferRetired, walkthroughActive, } from '
 import type { ActiveTab } from '@/types'
 import { MERC_TOUR_LINE, TourChip } from './coach/TourChip'
 import { COACH_TOURS } from './coach-tours'
-import { startRoomTour } from './room-tour'
+import { startRoomTour, tourOfferKey } from './room-tour'
 import styles from './TourChipHost.module.css'
 
 /** A contextual tour's offer: shown in the tab chip's place, once ever. */
@@ -68,10 +70,6 @@ const [request, setRequest] = createSignal<TourChipRequest | null>(null)
 export function requestTourChip(req: TourChipRequest): void {
   setRequest(req)
 }
-
-/** The tab's offer key, as the toast wrote it. */
-export const tourOfferKey = (tab: ActiveTab): string =>
-  `pitchperfect_page_tour_offered_${tab}`
 
 /**
  * The coach's end (start.ts), loaded only when there is a Merc tour to end:

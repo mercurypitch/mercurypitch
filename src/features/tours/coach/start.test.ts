@@ -3,9 +3,9 @@
 
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { coachActive } from '@/lib/coach-state'
+import type { CoachTour } from '@/lib/coach-types'
 import type * as GpuGateModule from '@/lib/merc/gpu-gate'
 import { COACH_ROOT_ID, endCoachTour, startCoachTour } from './start'
-import type { CoachTour } from './types'
 
 const { trackTour } = vi.hoisted(() => ({ trackTour: vi.fn() }))
 vi.mock('@/lib/guide-funnel', () => ({ trackTour }))

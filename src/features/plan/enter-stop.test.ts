@@ -22,9 +22,9 @@
 
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { PracticeScope, UiMode } from '@/features/tabs/constants'
-import type { CoachTour } from '@/features/tours/coach/types'
 import { startRoomTour } from '@/features/tours/room-tour'
 import { coachActive, setCoachActive } from '@/lib/coach-state'
+import type { CoachTour } from '@/lib/coach-types'
 import { provideRoomTourDoor } from '@/lib/room-tour-door'
 import type * as AppStoreModule from '@/stores/app-store'
 import type * as NotificationsStoreModule from '@/stores/notifications-store'

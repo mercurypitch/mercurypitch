@@ -5,9 +5,9 @@
 import type { Mock } from 'vitest'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { CoachEventName } from '@/lib/coach-events'
+import type { CoachShowStep, CoachStep, CoachTour } from '@/lib/coach-types'
 import type { CoachRunnerDeps } from './runner'
 import { CELEBRATE_MS, createCoachRunner } from './runner'
-import type { CoachShowStep, CoachStep, CoachTour } from './types'
 
 /** A bus that only delivers to listeners subscribed when the event is sent. */
 function fakeBus(): {

@@ -299,7 +299,8 @@ import { useHashRouter } from '@/features/routing/useHashRouter'
 import { useSessionSequencer } from '@/features/session/useSessionSequencer'
 import { appModeBounce } from '@/features/tabs/app-mode-guard'
 import { PLAYBACK_MODE_ONCE, PLAYBACK_MODE_REPEAT, PLAYBACK_MODE_SESSION, TAB_ANALYSIS, TAB_CHALLENGES, TAB_COMMUNITY, TAB_COMPOSE, TAB_EAR_LAB, TAB_EXERCISES, TAB_GUITAR, TAB_HOME, TAB_JAM, TAB_KARAOKE, TAB_LAB, TAB_LAB_DIFF, TAB_LAB_TRANSCRIBE, TAB_LEADERBOARD, TAB_PATH, TAB_PIANO, TAB_PITCH_ALGO, TAB_PITCH_TEST, TAB_PROGRESS, TAB_SETTINGS, TAB_SINGING, TAB_VOICE_HISTORY, tabLabel, visibleTabOrder, } from '@/features/tabs/constants'
-import { startRoomTour } from '@/features/tours/room-tour'
+import type { TourHandoff } from '@/features/tours/room-tour'
+import { provideTourHandoff, startRoomTour } from '@/features/tours/room-tour'
 import { TourChipHost } from '@/features/tours/TourChipHost'
 import { leaveVoiceConstellation } from '@/features/voice-constellation/navigation'
 import { useVoiceConstellationIsolation } from '@/features/voice-constellation/useVoiceConstellationIsolation'
@@ -531,6 +532,19 @@ const createPlanHost: () => PlanLayerHost = IS_NATIVE_BUILD
 const syncPlan: () => Promise<void> = IS_NATIVE_BUILD
   ? async () => undefined
   : syncPlanForAccount
+
+// ── What a finished Merc tour offers next ───────────────────
+// The plan's next stop (plan-handoff.ts), which room-tour.ts loads with a tour
+// through load-plan-handoff.ts (which says why the extra step). It reads the
+// plan store, so the constant picks the importer before the import() is
+// written, as importPlanStore's does: the native build, which has no Merc
+// tours either, hands over nothing.
+const importTourHandoff: (() => Promise<TourHandoff>) | null = IS_NATIVE_BUILD
+  ? null
+  : async () =>
+      import('@/features/plan/load-plan-handoff').then((m) =>
+        m.loadPlanHandoff(),
+      )
 
 /**
  * The plan, as a layer over the app: drawn while the host has a mode, and keyed
@@ -1017,6 +1031,7 @@ const AppShell: Component<AppProps> = (props) => {
   // and the existing user's takeover; see plan-layer-host.ts, which says when
   // an opener may open at boot.
   const plan = createPlanHost()
+  provideTourHandoff(importTourHandoff)
 
   const startGuideTour = (sectionIds: string[]) => {
     // Start before closing the dialog so a tour surface stays open across the

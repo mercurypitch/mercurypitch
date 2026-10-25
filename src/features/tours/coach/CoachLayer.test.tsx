@@ -7,11 +7,11 @@ import { cleanup, fireEvent, render, screen } from '@solidjs/testing-library'
 import type { Mock } from 'vitest'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { CoachEventName } from '@/lib/coach-events'
+import type { CoachHandoff, CoachStep, CoachTour } from '@/lib/coach-types'
 import type * as GpuGateModule from '@/lib/merc/gpu-gate'
 import { CoachLayer, HOLD_TONE_HZ, TRACK_MS } from './CoachLayer'
 import type { CoachRunnerDeps } from './runner'
 import { CELEBRATE_MS, createCoachRunner } from './runner'
-import type { CoachHandoff, CoachStep, CoachTour } from './types'
 
 const { playHoldTone } = vi.hoisted(() => ({
   playHoldTone: vi.fn(() => ({ stop: vi.fn() })),
