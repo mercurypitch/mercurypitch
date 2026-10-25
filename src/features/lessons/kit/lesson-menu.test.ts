@@ -2,6 +2,8 @@
 // Lesson menu tests — every lesson's row, and where the viewer is on this page
 // ============================================================
 
+import { readdirSync, readFileSync } from 'node:fs'
+import { resolve } from 'node:path'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import './browser-doubles.test-fixtures'
 import type * as Menu from './lesson-menu'
@@ -10,6 +12,7 @@ import { menuMarkup, menuModel } from './lesson-menu'
 import { defaultPageState, seasonFor } from './publish'
 import { LESSONS } from './season'
 import type { StepDeck } from './step-deck'
+import { TOUR_KEY, TOUR_VERSION } from './tour-gate'
 
 /** This page's deck: six steps, the third showing, singing after the last. */
 const DECK: DeckNow = {
@@ -229,10 +232,73 @@ describe('createLessonMenu on a page the worker served (page-state.ts)', () => {
 
   afterEach(() => {
     HTMLDialogElement.prototype.showModal = showModal
+    document.querySelector<HTMLElement>('.tour-x')?.click()
+    document.documentElement.classList.remove('touring')
     document.head.querySelector('#lesson-state')?.remove()
+    document.getElementById('tourSheet')?.remove()
     document.body.textContent = ''
+    localStorage.clear()
     vi.unstubAllEnvs()
+    vi.restoreAllMocks()
     vi.resetModules()
+  })
+
+  it('ends the masthead on a question mark that plays the tour from step 1, on a browser that has closed it', async () => {
+    // Arrange: a return visit, the tour's record written, and Merc and
+    // Tavi's stage drawn, so the tour has a step to show
+    localStorage.setItem(TOUR_KEY, TOUR_VERSION)
+    vi.spyOn(window, 'scrollTo').mockImplementation(() => undefined)
+    const built: typeof Menu = await import('./lesson-menu')
+    document.body.innerHTML =
+      '<header class="mast" id="mast"><div class="mast-in"><span class="mast-ep">Lesson 01</span><button id="soundSwitch" type="button">Sound</button></div></header><div id="heroStage"></div>'
+    const stage = document.getElementById('heroStage') as HTMLElement
+    const box = { x: 0, y: 100, width: 300, height: 200 } as DOMRect
+    stage.getBoundingClientRect = () => box
+    stage.getClientRects = () => [box] as unknown as DOMRectList
+    built.createLessonMenu({
+      lesson: 1,
+      deck,
+      label: document.querySelector('.mast-ep') as HTMLElement,
+      sections: [],
+    })
+    const mark = document.querySelector<HTMLButtonElement>(
+      '.mast-in > :last-child',
+    )
+
+    // Act
+    mark?.click()
+    await vi.dynamicImportSettled()
+
+    // Assert
+    expect([
+      mark?.className,
+      mark?.type,
+      mark?.getAttribute('aria-label'),
+      mark?.querySelector('use')?.getAttribute('href'),
+    ]).toEqual(['lm-tour', 'button', 'Tour this page', '#i-help'])
+    expect(document.getElementById('tourTitle')?.textContent).toBe(
+      'Meet Merc and Tavi',
+    )
+    expect(document.querySelector('.tour-count')?.textContent).toBe('1 of 1')
+  })
+
+  it("draws its question mark from a symbol in every lesson page's sprite", () => {
+    // Arrange: every lesson page in the repository
+    const pages = readdirSync(resolve(process.cwd(), 'learn')).filter((name) =>
+      /^\d{2}\.html$/.test(name),
+    )
+
+    // Act
+    const without = pages.filter(
+      (name) =>
+        !readFileSync(resolve(process.cwd(), 'learn', name), 'utf8').includes(
+          '<symbol id="i-help" viewBox="0 0 24 24">',
+        ),
+    )
+
+    // Assert
+    expect(pages.length).toBeGreaterThanOrEqual(8)
+    expect(without).toEqual([])
   })
 
   it('names its button by the label on screen, the season too where it shows, then what it opens', async () => {

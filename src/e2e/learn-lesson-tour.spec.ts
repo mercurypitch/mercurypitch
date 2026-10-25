@@ -6,8 +6,9 @@
 // not helpers/lesson-page.ts, which closes the tour for every other spec.
 // A first visit opens the tour on Merc and Tavi's stage; Next walks its
 // steps; Done, Skip, the X and Escape close it for good; the lesson menu's
-// "Tour this page" plays it again. Phone and desktop, reduced motion, and
-// no sideways scroll at any step.
+// "Tour this page", and the question mark at the masthead's right end, play
+// it again. Phone and desktop, reduced motion, and no sideways scroll at
+// any step.
 
 import type { Page } from '@playwright/test'
 import { expect, test } from '@playwright/test'
@@ -76,7 +77,7 @@ const STEP_TARGETS: readonly (readonly string[])[] = [
   ['#stepsStage'],
   ['#sing'],
   ['#graph', '#exList'],
-  ['.lm-btn', '#mastNav'],
+  ['.lm-btn', '#mastNav', '.lm-tour'],
 ]
 
 for (const [name, size] of [
@@ -256,7 +257,10 @@ test('Tab stays in the card, Escape closes it, and the focus goes back to the me
   await page.setViewportSize(DESKTOP)
   await page.goto('/learn/04')
   await page.locator('.lm-btn').click()
-  await page.getByRole('button', { name: 'Tour this page' }).click()
+  await page
+    .locator('#lessonMenu')
+    .getByRole('button', { name: 'Tour this page' })
+    .click()
   await expect(card(page).getByRole('heading')).toHaveText(TITLES[0])
   const inside: boolean[] = []
 
@@ -274,6 +278,42 @@ test('Tab stays in the card, Escape closes it, and the focus goes back to the me
   await expect(card(page)).toBeHidden()
   await expect(page.locator('.lm-btn')).toBeFocused()
 })
+
+for (const [name, size] of [
+  ['phone', PHONE],
+  ['desktop', DESKTOP],
+] as const) {
+  test(`on a ${name} the question mark plays the tour again from step 1 on a return visit, and takes the focus back`, async ({
+    page,
+  }) => {
+    // Arrange: a browser that has closed the tour
+    await page.addInitScript(([k, v]) => localStorage.setItem(k, v), [
+      TOUR_KEY,
+      TOUR_VERSION,
+    ] as const)
+    await page.setViewportSize(size)
+    await page.goto('/learn/04')
+    const mark = page.getByRole('button', { name: 'Tour this page' })
+    await expect(mark).toBeVisible()
+    const [markBox, menuBox] = await Promise.all([
+      mark.boundingBox(),
+      page.locator('.lm-btn').boundingBox(),
+    ])
+
+    // Act
+    await mark.click()
+
+    // Assert: step 1, then Escape gives the focus back to the question mark
+    await expect(card(page).getByRole('heading')).toHaveText(TITLES[0])
+    await expect(card(page)).toContainText('1 of 5')
+    expect(markBox?.height).toBe(menuBox?.height)
+    expect(markBox?.width).toBeGreaterThanOrEqual(44)
+    expect(await sideways(page)).toBeLessThanOrEqual(0)
+    await page.keyboard.press('Escape')
+    await expect(card(page)).toBeHidden()
+    await expect(mark).toBeFocused()
+  })
+}
 
 test('a deep link skips the tour this time, and the next lesson page opened at the top offers it', async ({
   page,
