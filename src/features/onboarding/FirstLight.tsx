@@ -28,8 +28,8 @@ import { giftOfferLine } from '@/lib/launch-gift-copy'
 import type { F0Frame, MirrorResult } from '@/lib/mirror/metrics'
 import { summarize } from '@/lib/mirror/metrics'
 import { cleanRange, singerForRange } from '@/lib/mirror/singer-match'
+import { startTabTour } from '@/lib/room-tour-door'
 import { useFocusTrap } from '@/lib/use-focus-trap'
-import { hasRoomTour, startRoomTour } from '@/stores/app-store'
 import { claimGiftNow, giftWaiting, rememberGiftOffered, } from '@/stores/launch-gift-store'
 import { advanceBeat, chooseTrack, closeOnboarding, currentBeat, finishOnboarding, firstNote, markMicDenied, micDenied, onboardingBeads, onboardingProgress, openBeat, recordFirstNote, recordSavedVoiceprints, recordVoiceprint, savedVoiceprints, setBeatsAvailable, setPlanDue, voiceprint, voiceStrip, } from '@/stores/onboarding-store'
 import { loadFeaturedPromo, offeredPromo } from '@/stores/promo-store'
@@ -329,14 +329,16 @@ export const FirstLight: Component<FirstLightProps> = (props) => {
   }
 
   /**
-   * Open a room and walk its spotlight tour (`startRoomTour`).
+   * Open a room and walk its tour: Merc's where it has one, else its
+   * spotlight tour, started through the room tour door as every way in
+   * starts one (src/lib/room-tour-door.ts).
    *
-   * No delay before the tour starts, matching every other caller
-   * (TourChipHost, offerTourOnce): page-tour steps carry
-   * `requiredTab`, so the Walkthrough switches tabs itself, and it
-   * already waits ~1s per step for a target to become visible. Closing
-   * the overlay first is enough — a hand-rolled frame of delay would
-   * be a second, weaker copy of a budget the engine owns.
+   * No delay before the tour, matching every other caller (TourChipHost,
+   * offerTourOnce): page-tour steps carry `requiredTab`, so the Walkthrough
+   * switches tabs itself, and it already waits ~1s per step for a target to
+   * become visible. Closing the overlay first is enough — a hand-rolled
+   * frame of delay would be a second, weaker copy of a budget the engine
+   * owns.
    */
   const handleRoomTour = (
     target: RoomTarget,
@@ -347,7 +349,7 @@ export const FirstLight: Component<FirstLightProps> = (props) => {
     trackOnboarding(MAP_ROOM_EVENT[roomId])
     if (target.kind === 'tab') setActiveTab(target.tab as ActiveTab)
     leave()
-    startRoomTour(tab)
+    startTabTour(tab)
   }
 
   const handleCreateAccount = () => {
@@ -487,18 +489,6 @@ export const FirstLight: Component<FirstLightProps> = (props) => {
     if (door !== undefined) trackOnboarding(door.event)
     console.info('[onboarding] entering room', roomId)
     goTo(target)
-  }
-
-  /**
-   * A stop of the plan, entered as a room is. The plan counted it itself
-   * (`plan_stop_*`), so it is not a Map room here. `tour` asks for the
-   * room's spotlight tour too, and a room without one is simply entered.
-   */
-  const handleEnterStop = (target: RoomTarget, tour: boolean) => {
-    goTo(target)
-    if (tour && target.kind === 'tab' && hasRoomTour(target.tab)) {
-      startRoomTour(target.tab)
-    }
   }
 
   // aria-modal is a claim; holding focus is what makes it true. Without
@@ -713,9 +703,8 @@ export const FirstLight: Component<FirstLightProps> = (props) => {
               onHome={leave}
               askBeforeDecline={(...args) => skip.ask('plan', ...args)}
               onRooms={() => openBeat('map')}
-              onEnterStop={(stop, tour) =>
-                handleEnterStop(PLAN_DESTS[stop.dest].target, tour)
-              }
+              // A card's stop: the plan counted it, so it is no Map room.
+              onEnterStop={(stop) => goTo(PLAN_DESTS[stop.dest].target)}
             />
           </Match>
         </Switch>

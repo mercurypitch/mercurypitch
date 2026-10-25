@@ -3,18 +3,20 @@
 // ============================================================
 //
 // The layer closes first, and only then is the app sent on: Home through the
-// tab, the Map through its address, a stop through enterStop. Each case records
-// what the app looked like the moment the layer asked to be closed, so the
-// order is asserted and not assumed. The screens are the real ones, tapped the
-// way a singer taps them; enterStop is the fake (enter-stop.test.ts has cases
-// of its own), and so are the promo store and the GPU gate, as in
-// PlanLayer.test.tsx, whose fixture this file shares.
+// tab, the Map through its address, a stop through enterStop, and Show me
+// around to Merc's showcase, which is asked for before the close (it holds
+// the app's offers) and draws after it. Each case records what the app looked
+// like the moment the layer asked to be closed, so the order is asserted and
+// not assumed. The screens are the real ones, tapped the way a singer taps
+// them; enterStop and the showcase are fakes (enter-stop.test.ts and
+// plan-showcase.test.ts have cases of their own), and so are the promo store
+// and the GPU gate, as in PlanLayer.test.tsx, whose fixture this file shares.
 
 import { fireEvent } from '@solidjs/testing-library'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type * as GpuGateModule from '@/lib/merc/gpu-gate'
 import { activeTab } from '@/stores/ui-store'
-import type { PlanStop } from './build-plan'
+import type { Plan, PlanStop } from './build-plan'
 import type * as EnterStopModule from './enter-stop'
 import { KICKER } from './plan-copy'
 import { planRecord } from './plan-store'
@@ -25,6 +27,12 @@ import { tap } from './PlanQuestions.fixture'
 
 const mocks = vi.hoisted(() => ({
   enterStop: vi.fn<(stop: PlanStop, tour?: boolean) => void>(),
+  runPlanShowcase: vi.fn<(plan: Plan, begin: () => void) => void>(),
+}))
+
+vi.mock('./plan-showcase', () => ({
+  runPlanShowcase: mocks.runPlanShowcase,
+  warmPlanShowcase: () => undefined,
 }))
 
 // enterStop is the fake. widenMenuFor stays real: the controller calls it before
@@ -72,6 +80,7 @@ function open(mode: PlanLayerProps['mode']): Host {
 beforeEach(() => {
   setUp()
   atClose = []
+  mocks.runPlanShowcase.mockClear()
 })
 afterEach(tearDown)
 
@@ -137,30 +146,37 @@ describe('the ways out', () => {
     expect(mocks.enterStop).toHaveBeenCalledTimes(1)
     expect(mocks.enterStop).toHaveBeenCalledWith(
       expect.objectContaining({ kind: 'start', dest: start }),
-      false,
     )
+    expect(mocks.runPlanShowcase).not.toHaveBeenCalled()
   })
 
-  it('closes the layer, then enters Start here with its tour, from Show me around', () => {
+  it('asks for the showcase, closes the layer, and enters nothing yet, from Show me around', () => {
     answered()
     const host = open('review')
     const start = card('start').dataset.dest
+    let closedFirst = true
+    mocks.runPlanShowcase.mockImplementationOnce(() => {
+      closedFirst = host.onClose.mock.calls.length > 0
+    })
 
     tap('Show me around')
 
+    // The showcase holds the offers before the close lets them go, and opens
+    // Start here itself, at its end.
+    expect(closedFirst).toBe(false)
     expect(host.onClose).toHaveBeenCalledTimes(1)
     expect(atClose).toEqual([
       { tab: 'singing', hash: '#/plan', stopsEntered: 0 },
     ])
-    expect(mocks.enterStop).toHaveBeenCalledTimes(1)
-    expect(mocks.enterStop).toHaveBeenCalledWith(
-      expect.objectContaining({ kind: 'start', dest: start }),
-      true,
-    )
+    expect(mocks.enterStop).not.toHaveBeenCalled()
+    expect(mocks.runPlanShowcase).toHaveBeenCalledTimes(1)
+    const [plan, begin] = mocks.runPlanShowcase.mock.calls[0] ?? []
+    expect(plan?.start).toMatchObject({ kind: 'start', dest: start })
+    expect(typeof begin).toBe('function')
   })
 
   it.each<PlanStop['kind']>(['start', 'learn', 'play'])(
-    'closes the layer, then enters the %s card without a tour when it is tapped',
+    'closes the layer, then enters the %s card when it is tapped',
     (kind) => {
       answered()
       const host = open('review')
@@ -173,8 +189,8 @@ describe('the ways out', () => {
       expect(mocks.enterStop).toHaveBeenCalledTimes(1)
       expect(mocks.enterStop).toHaveBeenCalledWith(
         expect.objectContaining({ kind, dest }),
-        false,
       )
+      expect(mocks.runPlanShowcase).not.toHaveBeenCalled()
     },
   )
 })

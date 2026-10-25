@@ -299,7 +299,7 @@ import { useHashRouter } from '@/features/routing/useHashRouter'
 import { useSessionSequencer } from '@/features/session/useSessionSequencer'
 import { appModeBounce } from '@/features/tabs/app-mode-guard'
 import { PLAYBACK_MODE_ONCE, PLAYBACK_MODE_REPEAT, PLAYBACK_MODE_SESSION, TAB_ANALYSIS, TAB_CHALLENGES, TAB_COMMUNITY, TAB_COMPOSE, TAB_EAR_LAB, TAB_EXERCISES, TAB_GUITAR, TAB_HOME, TAB_JAM, TAB_KARAOKE, TAB_LAB, TAB_LAB_DIFF, TAB_LAB_TRANSCRIBE, TAB_LEADERBOARD, TAB_PATH, TAB_PIANO, TAB_PITCH_ALGO, TAB_PITCH_TEST, TAB_PROGRESS, TAB_SETTINGS, TAB_SINGING, TAB_VOICE_HISTORY, tabLabel, visibleTabOrder, } from '@/features/tabs/constants'
-import { coachActive } from '@/features/tours/coach/coach-state'
+import { startRoomTour } from '@/features/tours/room-tour'
 import { TourChipHost } from '@/features/tours/TourChipHost'
 import { leaveVoiceConstellation } from '@/features/voice-constellation/navigation'
 import { useVoiceConstellationIsolation } from '@/features/voice-constellation/useVoiceConstellationIsolation'
@@ -322,6 +322,7 @@ import { trackEvent } from '@/lib/analytics'
 import type { InstrumentType } from '@/lib/audio-engine'
 import { audioRegistry } from '@/lib/audio-registry'
 import { activateAudioPlayback } from '@/lib/audio-unlock'
+import { coachBusy } from '@/lib/coach-state'
 import { flushPendingPurchase } from '@/lib/consent'
 import { drumVoiceForMidi } from '@/lib/drum-lanes'
 import { registerE2EBridge } from '@/lib/e2e-bridge'
@@ -331,6 +332,7 @@ import { isLocalSaveNavigationLocked, vetoNavigationDuringLocalSave, } from '@/l
 import type { MidiSongNote } from '@/lib/midi-song'
 import { initDefaultOGTags, setMelodyOGTags } from '@/lib/og-tags'
 import { segmentContourToMelody } from '@/lib/pitch-pipeline'
+import { provideRoomTourDoor } from '@/lib/room-tour-door'
 import { melodyIndicesAtBeat, melodyTotalBeats, midiToFreq, midiToNote, } from '@/lib/scale-data'
 import { installSelectBlurOnPointerChange } from '@/lib/select-blur'
 import { buildScaleMelody, buildSessionPlaybackMelody, } from '@/lib/session-builder'
@@ -1006,6 +1008,9 @@ const AppShell: Component<AppProps> = (props) => {
   // screen. A lesson's practise link (?lesson=NN) has already stepped it
   // aside by now: index.tsx does that before the render.
   const firstLight = useFirstLight(voiceConstellationOpen)
+  // First Light's Map and the plan's Start here start a tab's tour through
+  // the room tour door (src/lib/room-tour-door.ts); this is what opens it.
+  provideRoomTourDoor(startRoomTour)
 
   // ── The plan layer ──────────────────────────────────────────
   // Opened by its route, by Guide's first row and, on the web, by Home's card
@@ -3151,15 +3156,15 @@ const AppShell: Component<AppProps> = (props) => {
 
   // True while any guide/tour surface is up: the guide-section dialog, the
   // spotlight walkthrough, the Learn chapter modals, the plan layer (R83), or
-  // a Merc tour. The survey must never pop over these (it used to occlude a
-  // tour started from the welcome screen).
+  // Merc (a tour, or the showcase after the plan). The survey must never pop
+  // over these (it used to occlude a tour started from the welcome screen).
   const tourSurfaceOpen = () =>
     showGuideSelection() ||
     walkthroughActive() ||
     showSelection() ||
     walkthroughModalOpen() ||
     plan.isOpen() ||
-    coachActive() !== null
+    coachBusy()
 
   // Don't ask for feedback the moment a first-time visitor closes the welcome
   // screen: wait until they have genuinely used the app — enough cumulative

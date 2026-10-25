@@ -834,9 +834,7 @@ describe('opening a stop', () => {
     // Assert
     expect(sent().at(-1)).toBe('plan_stop_learn')
     expect(stopOpened(learn.dest)).toBe(true)
-    expect(exits.map((e) => e.exit)).toEqual([
-      { to: 'stop', stop: learn, tour: false },
-    ])
+    expect(exits.map((e) => e.exit)).toEqual([{ to: 'stop', stop: learn }])
   })
 
   it('shows every room again before opening a stop the menu hides', () => {
@@ -852,9 +850,7 @@ describe('opening a stop', () => {
     c.openStop(sing)
 
     // Assert: the menu was whole by the time the host heard.
-    expect(exits).toEqual([
-      { exit: { to: 'stop', stop: sing, tour: false }, scope: 'all' },
-    ])
+    expect(exits).toEqual([{ exit: { to: 'stop', stop: sing }, scope: 'all' }])
     expect(practiceScope()).toBe('all')
     expect(mocks.showNotification).toHaveBeenCalledOnce()
     expect(mocks.showNotification.mock.calls[0][0]).toBe(NOTICE)
@@ -890,9 +886,7 @@ describe('opening a stop', () => {
     // Assert
     expect(practiceScope()).toBe('piano')
     expect(mocks.showNotification).not.toHaveBeenCalled()
-    expect(exits.map((e) => e.exit)).toEqual([
-      { to: 'stop', stop: play, tour: false },
-    ])
+    expect(exits.map((e) => e.exit)).toEqual([{ to: 'stop', stop: play }])
     expect(sent().at(-1)).toBe('plan_stop_play')
   })
 
@@ -934,9 +928,7 @@ describe('opening a stop', () => {
 
     // Assert
     expect(home).toHaveBeenCalledOnce()
-    expect(exits.map((e) => e.exit)).toEqual([
-      { to: 'stop', stop: today, tour: false },
-    ])
+    expect(exits.map((e) => e.exit)).toEqual([{ to: 'stop', stop: today }])
   })
 
   it('asks Home nothing for a stop that is not its own', async () => {
@@ -957,20 +949,32 @@ describe('opening a stop', () => {
 })
 
 describe('Show me around', () => {
-  it('goes to Start here with the tour, until the tour is built', () => {
+  it('hands the plan to the showcase, and begins Start here only as it hands over', () => {
     const { c, exits } = start('new')
     c.done(AUDITION, NO_TEXTS, NO_PILLS)
     const here = c.plan()?.start
     if (here === undefined) throw new Error('a Start here card')
+    const before = sent().length
 
     c.showMeAround()
 
+    // The host runs the showcase on this plan; nothing is counted or marked
+    // yet, since nothing has opened.
     expect(exits.map((e) => e.exit)).toEqual([
-      { to: 'stop', stop: here, tour: true },
+      { to: 'showcase', plan: c.plan(), begin: expect.any(Function) },
     ])
-    // It starts the stop as the card does: counted, and marked opened.
+    expect(sent()).toHaveLength(before)
+    expect(stopOpened(here.dest)).toBe(false)
+
+    // As the showcase hands over: begun as its card begins it, counted and
+    // marked opened.
+    const exit = exits[0]?.exit
+    if (exit?.to !== 'showcase') throw new Error('a showcase exit')
+    exit.begin()
+
     expect(sent().at(-1)).toBe('plan_stop_start')
     expect(stopOpened(here.dest)).toBe(true)
+    expect(exits).toHaveLength(1)
   })
 
   it("asks Home nothing when Start here is today's session: the room's tour leads", async () => {
@@ -980,29 +984,36 @@ describe('Show me around', () => {
     c.done(HABIT, NO_TEXTS, NO_PILLS)
     const today = c.plan()?.start
     if (today === undefined) throw new Error('a Start here card')
+    expect(today.dest).toBe('homeSession')
 
-    // Act
+    // Act: the showcase runs, and hands over to Start here.
     c.showMeAround()
+    const exit = exits[0]?.exit
+    if (exit?.to !== 'showcase') throw new Error('a showcase exit')
+    exit.begin()
     await Promise.resolve()
 
     // Assert
     expect(home).not.toHaveBeenCalled()
-    expect(exits.map((e) => e.exit)).toEqual([
-      { to: 'stop', stop: today, tour: true },
-    ])
+    expect(exits).toHaveLength(1)
   })
 
-  it('shows every room again first when the menu hides Start here', () => {
-    // Arrange
+  it('shows every room again as it begins Start here, when the menu hides it', () => {
+    // Arrange: the menu is piano's, and Start here is the Sing room.
     setPracticeScope('piano')
     const { c, exits } = start('new')
     c.done(AUDITION, NO_TEXTS, NO_PILLS)
 
     // Act
     c.showMeAround()
+    const exit = exits[0]?.exit
+    if (exit?.to !== 'showcase') throw new Error('a showcase exit')
 
-    // Assert
-    expect(exits[0].scope).toBe('all')
+    // Assert: the menu stays as it is while the showcase walks it, and is
+    // made whole as Start here begins.
+    expect(practiceScope()).toBe('piano')
+    exit.begin()
+    expect(practiceScope()).toBe('all')
     expect(mocks.showNotification.mock.calls[0][0]).toBe(NOTICE)
   })
 })

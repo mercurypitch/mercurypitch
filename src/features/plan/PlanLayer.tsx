@@ -25,7 +25,9 @@
 //   `data-phase`, as the beat's does, which the browser checks read.
 // - The order of an exit. The layer closes first, and only then is the app
 //   sent on: Home through the tab, the Map through its address, a stop
-//   through enterStop. The Map is the reason. The router holds the address
+//   through enterStop, and "Show me around" to Merc's showcase
+//   (runPlanShowcase), which opens Start here at its end. The Map is the
+//   reason. The router holds the address
 //   still while the layer is open and syncs it to the tab's own when the
 //   layer closes; an address set before the close would be rewritten by that
 //   sync, before the router read it, and the Map would never open. Closed
@@ -73,6 +75,7 @@ import { useFocusTrap } from '@/lib/use-focus-trap'
 import { setActiveTab } from '@/stores/ui-store'
 import { enterStop } from './enter-stop'
 import { createMercSize, stillFor } from './plan-merc'
+import { runPlanShowcase } from './plan-showcase'
 import type { PlanLayerMode } from './plan-store'
 import styles from './PlanLayer.module.css'
 import { PlanQuestions } from './PlanQuestions'
@@ -99,10 +102,14 @@ export function PlanLayer(props: PlanLayerProps): JSX.Element {
   })
 
   const hand = (exit: PlanExit): void => {
+    // The showcase holds the app's offers before the close lets them go; it
+    // draws once the layer is gone (its code loads a microtask later at the
+    // soonest).
+    if (exit.to === 'showcase') runPlanShowcase(exit.plan, exit.begin)
     props.onClose()
     if (exit.to === 'home') setActiveTab(TAB_HOME)
     else if (exit.to === 'rooms') navigateTo({ type: 'onboarding-map' })
-    else enterStop(exit.stop, exit.tour)
+    else if (exit.to === 'stop') enterStop(exit.stop)
   }
 
   const c = usePlanFlowController({ mode, onExit: hand })

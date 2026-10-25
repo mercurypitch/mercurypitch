@@ -35,7 +35,7 @@ import { practiceScope, setPracticeScope, setUiMode, } from '@/stores/settings-s
 import type { BeatPlanProps } from './BeatPlan'
 import { BeatPlan } from './BeatPlan'
 import styles from './BeatPlan.module.css'
-import type { PlanStop } from './build-plan'
+import type { Plan, PlanStop } from './build-plan'
 import { buildPlan } from './build-plan'
 import { answeredElsewhere } from './plan-choices.fixture'
 import { KICKER } from './plan-copy'
@@ -58,6 +58,13 @@ vi.mock('@/lib/merc/gpu-gate', async (importOriginal) => ({
   ...(await importOriginal<typeof GpuGateModule>()),
   canRunLiveMerc: (): boolean => false,
 }))
+
+// Merc's showcase is the coach's: here it is only handed the plan.
+const showcase = vi.hoisted(() => ({
+  runPlanShowcase: vi.fn<(plan: Plan, begin: () => void) => void>(),
+  warmPlanShowcase: vi.fn(),
+}))
+vi.mock('./plan-showcase', () => showcase)
 
 // ── Fixtures ───────────────────────────────────────────────────────────
 
@@ -111,7 +118,7 @@ function turnPhone(phone: boolean): void {
 interface Host {
   onHome: Mock<() => void>
   onRooms: Mock<() => void>
-  onEnterStop: Mock<(stop: PlanStop, tour: boolean) => void>
+  onEnterStop: Mock<(stop: PlanStop) => void>
 }
 
 /** The beat on its first question, with First Light's three hand-overs faked, and no gift on offer. */
@@ -119,7 +126,7 @@ function open(props: Partial<BeatPlanProps> = {}): Host {
   const host: Host = {
     onHome: vi.fn<() => void>(),
     onRooms: vi.fn<() => void>(),
-    onEnterStop: vi.fn<(stop: PlanStop, tour: boolean) => void>(),
+    onEnterStop: vi.fn<(stop: PlanStop) => void>(),
   }
   render(() => (
     <BeatPlan voiceprint={() => null} gift={() => null} {...props} {...host} />
@@ -204,6 +211,7 @@ beforeEach(() => {
   browser.listeners.clear()
   browser.asked = []
   stubMatchMedia()
+  showcase.runPlanShowcase.mockClear()
 })
 
 afterEach(() => {
@@ -453,12 +461,12 @@ describe('the ways out', () => {
     // Act
     tap(KICKER.start)
 
-    // Assert: the card's stop, no tour, and the card's own count.
+    // Assert: the card's stop, no showcase, and the card's own count.
     expect(handed(host)).toEqual([['onEnterStop', 1]])
     expect(host.onEnterStop).toHaveBeenCalledWith(
       expect.objectContaining({ kind: 'start', dest: start }),
-      false,
     )
+    expect(showcase.runPlanShowcase).not.toHaveBeenCalled()
     const sent = (
       JSON.parse(localStorage.getItem(GUIDE_FUNNEL_STORAGE_KEY) ?? '[]') as {
         event: string
@@ -467,22 +475,31 @@ describe('the ways out', () => {
     expect(sent).toContain('plan_stop_start')
   })
 
-  it('hands Start here on, with its tour, from Show me around', () => {
+  it('runs the showcase with the plan, then leaves First Light, from Show me around', () => {
     const host = open()
     toTheAuditionPlan()
     const start = card('start').dataset.dest
+    const order: string[] = []
+    showcase.runPlanShowcase.mockImplementationOnce(() =>
+      order.push('showcase'),
+    )
+    host.onHome.mockImplementationOnce(() => order.push('home'))
 
     tap('Show me around')
 
-    expect(handed(host)).toEqual([['onEnterStop', 1]])
-    expect(host.onEnterStop).toHaveBeenCalledWith(
-      expect.objectContaining({ kind: 'start', dest: start }),
-      true,
-    )
+    // Out of First Light as Home is, and no stop opened yet: the showcase
+    // opens Start here at its end.
+    expect(handed(host)).toEqual([['onHome', 1]])
+    expect(showcase.runPlanShowcase).toHaveBeenCalledTimes(1)
+    const [plan, begin] = showcase.runPlanShowcase.mock.calls[0] ?? []
+    expect(plan?.start).toMatchObject({ kind: 'start', dest: start })
+    expect(typeof begin).toBe('function')
+    // The showcase holds the app's offers before First Light lets them go.
+    expect(order).toEqual(['showcase', 'home'])
   })
 
   it.each<PlanStop['kind']>(['start', 'learn', 'play'])(
-    'hands the %s card on without a tour when it is tapped',
+    'hands the %s card on when it is tapped',
     (kind) => {
       const host = open()
       toTheAuditionPlan()
@@ -493,8 +510,8 @@ describe('the ways out', () => {
       expect(handed(host)).toEqual([['onEnterStop', 1]])
       expect(host.onEnterStop).toHaveBeenCalledWith(
         expect.objectContaining({ kind, dest }),
-        false,
       )
+      expect(showcase.runPlanShowcase).not.toHaveBeenCalled()
     },
   )
 })

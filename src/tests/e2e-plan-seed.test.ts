@@ -16,8 +16,9 @@
 
 import type { Page } from '@playwright/test'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { settledPlanSeed } from '@/e2e/helpers/plan-seed'
+import { answeredPlanSeed, settledPlanSeed } from '@/e2e/helpers/plan-seed'
 import { dismissOverlays } from '@/e2e/helpers/ui'
+import { buildPlan, PLAN_DESTS } from '@/features/plan/build-plan'
 import { planCardKind } from '@/features/plan/plan-card-rules'
 import { PLAN_RECORD_KEY } from '@/features/plan/plan-keys'
 import { isPlanRecordV1 } from '@/features/plan/plan-record'
@@ -54,6 +55,34 @@ describe('the seed', () => {
     if (!isPlanRecordV1(record)) return
 
     expect(record.status).toBe('declined')
+    for (const now of [Date.now(), Date.now() + 10 * YEAR_MS]) {
+      expect(planCardKind({ record, dismissed: false, now })).toBeNull()
+    }
+  })
+})
+
+describe('the answered seed', () => {
+  it("is a record the plan's own reader accepts, under its own key", async () => {
+    const seed = answeredPlanSeed()
+    expect(seed.key).toBe(PLAN_RECORD_KEY)
+    expect(isPlanRecordV1(JSON.parse(seed.value))).toBe(true)
+
+    localStorage.setItem(seed.key, seed.value)
+    vi.resetModules()
+    const { planRecord } = await import('@/features/plan/plan-store')
+
+    expect(planRecord()?.status).toBe('answered')
+  })
+
+  it("is a plan whose Start here is the Sing room, and out of Home's card week", () => {
+    const record: unknown = JSON.parse(answeredPlanSeed().value)
+    if (!isPlanRecordV1(record)) throw new Error('a plan record')
+
+    const start = buildPlan(record.choices).start
+    expect(PLAN_DESTS[start.dest].target).toEqual({
+      kind: 'tab',
+      tab: 'singing',
+    })
     for (const now of [Date.now(), Date.now() + 10 * YEAR_MS]) {
       expect(planCardKind({ record, dismissed: false, now })).toBeNull()
     }

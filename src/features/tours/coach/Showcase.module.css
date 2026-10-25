@@ -1,0 +1,129 @@
+/* ============================================================
+   Showcase: Merc's walk along the tab bar
+   ============================================================
+
+   - The layer stands where the coach layer does (900): over the stages,
+     rails and sheets (the More sheet it opens is 600), under the modals,
+     the toasts and the cookie banner, whose buttons stay live above it.
+     Literal numbers, as in CoachLayer.module.css.
+   - The catcher takes the window's taps while a stop shows: a tap anywhere
+     moves on, and the page under it is not for using during the walk.
+   - Merc, his line and the ring move with transforms, which the browser
+     animates for a hop. Under reduced motion nothing travels: each stop's
+     Merc and line fade in where they stand (data-motion="fade").
+   - Colours are the coach's own, so the walk reads on the app's light and
+     dark themes alike. Every control is at least 44px. */
+
+.layer {
+  --showcase-ground: #0d1117;
+  --showcase-ink: #e6edf3;
+  --showcase-rule: #30363d;
+  --showcase-blue: #58a6ff;
+  --showcase-teal: #2dd4bf;
+
+  position: fixed;
+  inset: 0;
+  z-index: 900;
+  pointer-events: none;
+  outline: none;
+}
+
+.catcher {
+  position: fixed;
+  inset: 0;
+  pointer-events: auto;
+  cursor: pointer;
+}
+
+.ring {
+  position: fixed;
+  box-sizing: content-box;
+  margin: -8px;
+  padding: 6px;
+  border: 2px solid var(--showcase-teal);
+  border-radius: 14px;
+  box-shadow: 0 0 0 9999px rgb(1 4 9 / 0.32);
+  pointer-events: none;
+  transition:
+    top 420ms ease,
+    left 420ms ease,
+    width 420ms ease,
+    height 420ms ease;
+}
+
+.merc,
+.bubble {
+  position: fixed;
+  top: 0;
+  left: 0;
+  transition: transform 420ms cubic-bezier(0.34, 1.4, 0.64, 1);
+}
+
+.merc {
+  pointer-events: none;
+}
+
+.bubble {
+  box-sizing: border-box;
+  /* A phone's line is capped above Merc by an inline max-height, so it never
+     runs past the window's top; it scrolls before it would. */
+  overflow-y: auto;
+  padding: 12px 14px;
+  border: 1px solid var(--showcase-rule);
+  border-radius: 14px;
+  background: var(--showcase-ground);
+  color: var(--showcase-ink);
+  box-shadow: 0 12px 32px rgb(1 4 9 / 0.45);
+  pointer-events: auto;
+  cursor: pointer;
+}
+
+.line {
+  margin: 0;
+  font-size: 0.95rem;
+  line-height: 1.45;
+}
+
+.skip {
+  position: fixed;
+  top: calc(env(safe-area-inset-top, 0px) + 10px);
+  right: 10px;
+  min-width: 44px;
+  min-height: 44px;
+  padding: 0 16px;
+  border: 1px solid var(--showcase-rule);
+  border-radius: 22px;
+  background: var(--showcase-ground);
+  color: var(--showcase-ink);
+  font: inherit;
+  font-weight: 600;
+  pointer-events: auto;
+  cursor: pointer;
+}
+
+.skip:focus-visible,
+.bubble:focus-visible {
+  outline: 2px solid var(--showcase-blue);
+  outline-offset: 2px;
+}
+
+.layer[data-motion='fade'] .ring,
+.layer[data-motion='fade'] .merc,
+.layer[data-motion='fade'] .bubble {
+  transition: none;
+}
+
+.layer[data-motion='fade'] .merc,
+.layer[data-motion='fade'] .bubble {
+  animation: showcase-fade-in 180ms ease-out;
+}
+
+@keyframes showcase-fade-in {
+  from {
+    opacity: 0;
+  }
+
+  to {
+    opacity: 1;
+  }
+}

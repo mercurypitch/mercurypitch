@@ -14,7 +14,7 @@
 // - The layer mounts in a #coach-root of its own on <body>, outside #app,
 //   which a full-screen stage makes inert while it is up.
 
-import { coachActive, setCoachActive } from './coach-state'
+import { coachActive, setCoachActive } from '@/lib/coach-state'
 import type { CoachEnd } from './runner'
 import type { CoachHandoff, CoachTour } from './types'
 

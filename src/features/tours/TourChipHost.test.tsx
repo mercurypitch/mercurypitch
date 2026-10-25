@@ -11,8 +11,8 @@
 import { cleanup, fireEvent, render, screen } from '@solidjs/testing-library'
 import { createRoot, createSignal } from 'solid-js'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { setCoachActive, setShowcaseOn } from '@/lib/coach-state'
 import type { ActiveTab } from '@/types'
-import { setCoachActive } from './coach/coach-state'
 import type { CoachTour } from './coach/types'
 
 const store = vi.hoisted(() => ({
@@ -88,6 +88,7 @@ beforeEach(() => {
   coach.endCoachTour.mockClear()
   registry.COACH_TOURS = {}
   setCoachActive(null)
+  setShowcaseOn(false)
 })
 
 afterEach(() => {
@@ -291,6 +292,17 @@ describe('TourChipHost: the chip', () => {
     expect(localStorage.getItem(KEY('home'))).toBe(null)
 
     setCoachActive(null)
+    await settle()
+    expect(chip()).not.toBeNull()
+  })
+
+  it("waits for Merc's showcase after the plan, and spends no offer under it", async () => {
+    setShowcaseOn(true)
+    mount('home')
+    expect(chip()).toBeNull()
+    expect(localStorage.getItem(KEY('home'))).toBe(null)
+
+    setShowcaseOn(false)
     await settle()
     expect(chip()).not.toBeNull()
   })

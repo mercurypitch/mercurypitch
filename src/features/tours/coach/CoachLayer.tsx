@@ -43,6 +43,7 @@ import { playHoldTone } from '@/lib/demo-audio'
 import type { MercState } from '@/lib/merc/constants'
 import { stillFor } from '@/lib/merc/stills'
 import styles from './CoachLayer.module.css'
+import { findTarget } from './find-target'
 import type { CoachRunner, CoachSnapshot } from './runner'
 import type { CoachHandoff, CoachStep } from './types'
 
@@ -83,16 +84,6 @@ const sameBox = (a: Box | null, b: Box | null): boolean =>
     a.left === b.left &&
     a.width === b.width &&
     a.height === b.height)
-
-/** The first match that is on the page to be seen: laid out, and not under an inert page. */
-function findTarget(selector: string): HTMLElement | null {
-  for (const el of document.querySelectorAll<HTMLElement>(selector)) {
-    if (el.closest('[inert]') !== null) continue
-    const r = el.getBoundingClientRect()
-    if (r.width > 0 && r.height > 0) return el
-  }
-  return null
-}
 
 /** The box to ring for `step`, or null for none. Scrolls a target out of view into it, once. */
 function ringFor(step: CoachStep, scrolled: { done: boolean }): Box | null {

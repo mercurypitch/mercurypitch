@@ -227,12 +227,10 @@ describe('while the plan layer is up', () => {
     )
   })
 
-  it('the deferred survey waits for a Merc tour as well', () => {
+  it('the deferred survey waits for Merc as well: a tour, or the showcase', () => {
     const [surfaces] = declared('tourSurfaceOpen')
 
-    expect(surfaces?.initializer?.getText(source)).toMatch(
-      /\bcoachActive\(\) !== null/u,
-    )
+    expect(surfaces?.initializer?.getText(source)).toMatch(/\bcoachBusy\(\)/u)
   })
 })
 

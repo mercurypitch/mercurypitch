@@ -2,8 +2,8 @@
 // coachActive() naming it for exactly as long as its layer is up.
 
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { coachActive } from '@/lib/coach-state'
 import type * as GpuGateModule from '@/lib/merc/gpu-gate'
-import { coachActive } from './coach-state'
 import { COACH_ROOT_ID, endCoachTour, startCoachTour } from './start'
 import type { CoachTour } from './types'
 

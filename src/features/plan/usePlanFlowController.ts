@@ -84,11 +84,17 @@ import { syncPlanForAccount } from './sync-for-account'
  */
 export type PlanFlowMode = 'new' | 'existing' | 'skipper' | 'review'
 
-/** Where the run hands over to its host. */
+/**
+ * Where the run hands over to its host. `showcase` is "Show me around": the
+ * host closes and runs Merc's showcase (plan-showcase.ts), and as the
+ * showcase hands over it calls `begin`, which starts Start here as its card
+ * does (counted, marked opened, the menu made whole), before opening it.
+ */
 export type PlanExit =
   | { to: 'home' }
   | { to: 'rooms' }
-  | { to: 'stop'; stop: PlanStop; tour: boolean }
+  | { to: 'stop'; stop: PlanStop }
+  | { to: 'showcase'; plan: Plan; begin: () => void }
 
 export type PlanPhase = 'questions' | 'plan'
 
@@ -392,28 +398,33 @@ export function usePlanFlowController(o: PlanFlowOptions): PlanFlowController {
   }
 
   /**
-   * Starts a stop: counted, marked opened, and handed to the host, with the
-   * menu whole first if it lacks the stop. Today's session is Home's to
-   * build, and the host only switches to Home, so Home is asked for it too
-   * (src/lib/home-session-ask.ts). Not with the tour: the tour leads the room.
+   * What a way into a stop does before the host opens it: counted, marked
+   * opened, and the menu made whole first if it lacks the stop.
    */
-  const enter = (stop: PlanStop, tour: boolean): void => {
+  const begin = (stop: PlanStop): void => {
     send([`plan_stop_${stop.kind}`])
     markStopOpened(stop.dest)
     widenMenuFor(stop)
-    if (stop.dest === 'homeSession' && !tour) askHomeForTodaysSession()
-    exit({ to: 'stop', stop, tour })
   }
 
+  /**
+   * A card's tap. Today's session is Home's to build, and the host only
+   * switches to Home, so Home is asked for it too (src/lib/home-session-ask.ts).
+   * Not as the showcase hands over: Start here's room tour leads the room.
+   */
   const openStop = (stop: PlanStop): void => {
-    enter(stop, false)
+    begin(stop)
+    if (stop.dest === 'homeSession') askHomeForTodaysSession()
+    exit({ to: 'stop', stop })
   }
 
-  // Interim, until the tour is built (Plan 1B): the Start here stop, with
-  // the tour where its room has one. It starts the stop as its card does.
+  // Merc's showcase, then Start here with its room's tour. Start here is
+  // begun as the showcase hands over, not now: it is counted and marked as
+  // its card's tap is, once it opens.
   const showMeAround = (): void => {
     const current = untrack(plan)
-    if (current !== null) enter(current.start, true)
+    if (current === null) return
+    exit({ to: 'showcase', plan: current, begin: () => begin(current.start) })
   }
 
   const seeEveryRoom = (): void => {
