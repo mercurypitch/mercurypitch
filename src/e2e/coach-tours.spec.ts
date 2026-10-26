@@ -64,6 +64,8 @@ interface Stop {
 interface Tour {
   name: string
   open: (page: Page) => Promise<void>
+  /** The chip's line, which starts the tour. */
+  chip: string
   stops: (screen: Screen) => readonly Stop[]
 }
 
@@ -77,6 +79,7 @@ const SING: Tour = {
     })
     await page.goto('/#/singing')
   },
+  chip: 'Merc can show you around, 30 s',
   // src/features/practice/sing-tour.ts
   stops: (screen) => [
     {
@@ -100,6 +103,7 @@ const KARAOKE: Tour = {
     await localKaraokeDemo(page)
     await page.goto('/karaoke-night')
   },
+  chip: 'Sing the demo with Merc',
   // src/features/karaoke-night/karaoke-tour.ts
   stops: (screen) => [
     { target: '[data-tour="karaoke.demo"]', doIt: true },
@@ -195,7 +199,7 @@ for (const tour of [SING, KARAOKE]) {
       // A first visit: the chip offers the tour.
       const chip = page.getByTestId('tour-chip')
       await expect(chip).toBeVisible({ timeout: 20_000 })
-      await chip.getByRole('button', { name: /show you around/ }).click()
+      await chip.getByRole('button', { name: tour.chip }).click()
 
       const bubble = page.getByTestId('coach-bubble')
       const ring = page.getByTestId('coach-ring')

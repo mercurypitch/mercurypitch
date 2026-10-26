@@ -4,7 +4,6 @@
 
 import { cleanup, fireEvent, render, screen, waitFor, within, } from '@solidjs/testing-library'
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { MERC_TOUR_LINE } from '@/components/coach/TourChip'
 import { matchVoiceCommand } from '@/features/voice-control/command-grammar'
 import { activeVoiceCommands } from '@/features/voice-control/voice-command-registry'
 import type * as GuideFunnelModule from '@/lib/guide-funnel'
@@ -212,7 +211,9 @@ describe("KaraokeNightApp and Merc's tour", () => {
     window.history.replaceState({}, '', '/karaoke-night')
     render(() => <KaraokeNightApp />)
 
-    fireEvent.click(await screen.findByRole('button', { name: MERC_TOUR_LINE }))
+    fireEvent.click(
+      await screen.findByRole('button', { name: 'Sing the demo with Merc' }),
+    )
 
     await waitFor(() => expect(tour.start).toHaveBeenCalledTimes(1))
     // The visitor asked: no wait for the consent bar.
@@ -225,7 +226,9 @@ describe("KaraokeNightApp and Merc's tour", () => {
     window.history.replaceState({}, '', '/karaoke-night')
     render(() => <KaraokeNightApp />)
 
-    fireEvent.click(await screen.findByRole('button', { name: MERC_TOUR_LINE }))
+    fireEvent.click(
+      await screen.findByRole('button', { name: 'Sing the demo with Merc' }),
+    )
 
     await waitFor(() => expect(tour.start).toHaveBeenCalledTimes(1))
     expect(await screen.findByTestId('tour-chip')).toBeInTheDocument()

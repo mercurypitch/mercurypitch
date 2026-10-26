@@ -65,14 +65,14 @@ describe('startCoachTour', () => {
     const onEnd = vi.fn()
     const first = await startCoachTour(tour('sing', 'Tap to start'), { onEnd })
     const second = await startCoachTour(
-      tour('karaoke-night', 'Start with the demo song'),
+      tour('karaoke-night', 'Start with the demo'),
     )
 
     await expect(first.ended).resolves.toBe('exit')
     expect(onEnd).toHaveBeenCalledExactlyOnceWith('exit')
     await settle()
     expect(roots()).toHaveLength(1)
-    expect(roots()[0]).toHaveTextContent('Start with the demo song')
+    expect(roots()[0]).toHaveTextContent('Start with the demo')
     expect(coachActive()).toBe('karaoke-night')
 
     second.end()

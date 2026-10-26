@@ -214,6 +214,24 @@ describe('KARAOKE_TOUR', () => {
     expect(lastStep(tour.KARAOKE_TOUR, true).target).toBeUndefined()
   })
 
+  it('starts with the demo, whose tap starts the music', async () => {
+    const { tour } = await fresh()
+    for (const { phone } of SCREENS) {
+      const [demo] = stepsFor(tour.KARAOKE_TOUR, phone)
+      // Sing this song stages the demo with autoPlay (KaraokeNightApp's
+      // singDemo): the song plays as soon as it has loaded.
+      expect(demo?.title).toBe('Start with the demo')
+      expect(demo?.body).toBe('Tap Sing this song and the music starts.')
+    }
+  })
+
+  it('says what the Cloud GPU does at the last stop on a wide screen', async () => {
+    const { tour } = await fresh()
+    expect(lastStep(tour.KARAOKE_TOUR, false).body).toBe(
+      'Add any song. The Cloud GPU takes the voice out, so you sing over the band.',
+    )
+  })
+
   it('says at the mic when the score shows', async () => {
     const { tour } = await fresh()
     for (const { phone } of SCREENS) {

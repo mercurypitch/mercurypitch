@@ -140,7 +140,7 @@ for (const screen of SCREENS) {
 
     // The tour starts under the bar, and the bar stays on top: a tap at the
     // middle of each of its buttons reaches that button.
-    await expect(heading(page, 'Start with the demo song')).toBeVisible({
+    await expect(heading(page, 'Start with the demo')).toBeVisible({
       timeout: 15_000,
     })
     const bar = page.getByRole('dialog', { name: 'Cookie consent' })
@@ -233,9 +233,9 @@ for (const screen of SCREENS) {
     const rail = await boxOf(page.locator('aside.kn-rail'))
     expect(rail.y).toBeGreaterThanOrEqual(box.y + box.height)
 
-    await chip.getByRole('button', { name: /show you around/ }).click()
+    await chip.getByRole('button', { name: 'Sing the demo with Merc' }).click()
     await expect(chip).toHaveCount(0)
-    await expect(heading(page, 'Start with the demo song')).toBeVisible({
+    await expect(heading(page, 'Start with the demo')).toBeVisible({
       timeout: 15_000,
     })
     await bubble(page).getByRole('button', { name: 'End tour' }).click()
