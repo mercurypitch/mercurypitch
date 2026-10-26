@@ -14,10 +14,11 @@
 // landing just needs the agreed string and the app maps it to an action here.
 // Keep this registry in sync with the landing's Try-button hrefs
 // (packages/mercurypitch/src/components/Community.astro). Lessons have slugs
-// of their own too (`leap-ladder`, for Lesson 9's practice card).
+// of their own too (`leap-ladder`, for Lesson 9's practice card, and
+// `thirds-on-a-drone`, for Lesson 10's).
 
 import type { ExerciseType } from '@/features/exercises/types'
-import { EXERCISE_INTERVAL_TRAINER, EXERCISE_SCALE_RUNNER, } from '@/features/exercises/types'
+import { EXERCISE_DRONE_INTONATION, EXERCISE_INTERVAL_TRAINER, EXERCISE_SCALE_RUNNER, } from '@/features/exercises/types'
 import type { ActiveTab } from '@/features/tabs/constants'
 import { TAB_JAM, TAB_KARAOKE } from '@/features/tabs/constants'
 
@@ -70,6 +71,13 @@ export const EXERCISE_SLUGS: Record<string, Launch> = {
     kind: 'exercise',
     exercise: EXERCISE_INTERVAL_TRAINER,
     intervals: [3, 4, 7, 5, 12],
+  },
+  // Drone exercise on Lesson 10's thirds (Major and minor): the minor and
+  // the major third above the drone, each upward.
+  'thirds-on-a-drone': {
+    kind: 'exercise',
+    exercise: EXERCISE_DRONE_INTONATION,
+    intervals: [3, 4],
   },
   // Open the Karaoke view.
   'karaoke-duel': { kind: 'tab', tab: TAB_KARAOKE },
