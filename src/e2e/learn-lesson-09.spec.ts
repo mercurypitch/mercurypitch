@@ -8,24 +8,25 @@
 // address with the 404 page until the admin console publishes it
 // (src/lesson-gate.ts). Like every lesson it must load as itself, never as
 // the 404 page or the studio's cached app shell, and its module must boot.
-// Then WEB-SPEC's first end-to-end check (Tests, End to end 1): no
-// AudioContext before the first tap, and nothing plays before a play
-// button; and its second, the cold open (End to end 2), at a phone's size
-// and a desktop's: Merc's leap plays before a choice, the paths wait for
-// one, and the reveal waits until all three have been heard to their end
-// with sound on, a path cut short by the four words' Leap or by the Sound
-// switch never counting; and its eighth, the quizzes (End to end 8), at
-// both sizes: the recall shows to everyone, marks nothing done and links
-// Lesson 6's steps in a new tab, and the quick check marks Lesson 9 done.
-// Then the chart by keyboard alone (End to end 3), at both sizes, for
+// Then WEB-SPEC's first end-to-end check (Tests, End to end 1), at a
+// phone's size and a desktop's: no AudioContext before the first tap, and
+// nothing plays before a play button; and its second, the cold open (End
+// to end 2), at both sizes: Merc's leap plays before a choice, the paths
+// wait for one, and the reveal waits until all three have been heard to
+// their end with sound on, a path cut short by the four words' Leap or by
+// the Sound switch never counting; and its eighth, the quizzes (End to end
+// 8), at both sizes: the recall shows to everyone, marks nothing done and
+// links Lesson 6's steps in a new tab, and the quick check marks Lesson 9
+// done. Then the chart by keyboard alone (End to end 3), at both sizes, for
 // Steps 1 to 4: Tab reaches each control in reading order, Slow toggles
 // `aria-pressed`, each play says its move in spoken names, the folds strip
 // fills the figure's bottom 64 px, Step 3's climb clears the line a leap
 // left, and Step 4 names its five leaps in order; and Step 5's scrub bar,
 // the kit's native range, moves a tenth of a second an arrow, Home and End
 // jump, and the readout and the bar's words follow it in spoken names,
-// while Play turns to Pause and back. Each other toy's checks join it as
-// that toy is wired.
+// while Play turns to Pause and back. The whole page by keyboard, its
+// targets, its rest under reduced motion and its storage (End to end 3, 4,
+// 11 and 12, page-wide) are learn-lesson-09-qa.spec.ts's.
 
 import type { Locator, Page } from '@playwright/test'
 import { expect, test } from './helpers/lesson-page'
@@ -67,77 +68,87 @@ const heard = (page: Page): Promise<{ contexts: number; sources: number }> =>
     return { contexts: w.audioContexts, sources: w.sources }
   })
 
-test('a hard load of /learn/09 answers 200 with the lesson @smoke', async ({
-  page,
-}) => {
-  // Act
-  const response = await page.goto('/learn/09')
+// WEB-SPEC, End to end 1, at a phone's size and a desktop's
+for (const viewport of [
+  { width: 390, height: 844 },
+  { width: 1440, height: 900 },
+]) {
+  test.describe(`the page at ${viewport.width} x ${viewport.height}`, () => {
+    test.use({ viewport })
 
-  // Assert
-  expect(response?.status()).toBe(200)
-  await expect(page).toHaveTitle(TITLE)
-  await expect(page.getByRole('heading', { level: 1 })).toHaveText(
-    'How do you land a note you have to leap to?',
-  )
-  await expect(page.locator('#root')).toHaveCount(0)
-  // a written lesson: no film, so no Watch section
-  await expect(page.locator('#watch')).toHaveCount(0)
-})
+    test('a hard load of /learn/09 answers 200 with the lesson @smoke', async ({
+      page,
+    }) => {
+      // Act
+      const response = await page.goto('/learn/09')
 
-test('the page boots with no AudioContext until the first tap, the deck and the map drawn @smoke', async ({
-  page,
-}) => {
-  // Arrange
-  const errors: string[] = []
-  page.on('pageerror', (e) => errors.push(e.message))
-  await watchSound(page)
-  // the page booted: the map drawn, and the deck on Step 1 (read before the
-  // scroll, which the steps follow)
-  await page.goto('/learn/09')
-  await expect(page.locator('#exList .ex-row')).toHaveCount(15)
-  await expect(page.locator('#stepNow')).toHaveText('1')
-  await expect(page.locator('#deckNextLabel')).toHaveText(
-    'Next: Can I aim a leap, then?',
-  )
+      // Assert
+      expect(response?.status()).toBe(200)
+      await expect(page).toHaveTitle(TITLE)
+      await expect(page.getByRole('heading', { level: 1 })).toHaveText(
+        'How do you land a note you have to leap to?',
+      )
+      await expect(page.locator('#root')).toHaveCount(0)
+      // a written lesson: no film, so no Watch section
+      await expect(page.locator('#watch')).toHaveCount(0)
+    })
 
-  // Act: the whole page read, top to bottom, with no tap
-  for (const id of ['#predict', '#words', '#lesson', '#sing', '#wrap'])
-    await page.locator(id).scrollIntoViewIfNeeded()
+    test('the page boots with no AudioContext until the first tap, the deck and the map drawn @smoke', async ({
+      page,
+    }) => {
+      // Arrange
+      const errors: string[] = []
+      page.on('pageerror', (e) => errors.push(e.message))
+      await watchSound(page)
+      // the page booted: the map drawn, and the deck on Step 1 (read before the
+      // scroll, which the steps follow)
+      await page.goto('/learn/09')
+      await expect(page.locator('#exList .ex-row')).toHaveCount(15)
+      await expect(page.locator('#stepNow')).toHaveText('1')
+      await expect(page.locator('#deckNextLabel')).toHaveText(
+        'Next: Can I aim a leap, then?',
+      )
 
-  // Assert
-  expect(await heard(page)).toEqual({ contexts: 0, sources: 0 })
-  await expect(page.locator('.lm-btn')).toBeVisible()
-  await expect(page.locator('#wrap a.next-card')).toHaveAttribute(
-    'data-select-lesson',
-    '10',
-  )
-  expect(errors).toEqual([])
-})
+      // Act: the whole page read, top to bottom, with no tap
+      for (const id of ['#predict', '#words', '#lesson', '#sing', '#wrap'])
+        await page.locator(id).scrollIntoViewIfNeeded()
 
-test("nothing plays but the sound switch's own chime until a play button is pressed", async ({
-  page,
-}) => {
-  // Arrange: sound on from the gate, which confirms it with its two soft notes
-  await watchSound(page)
-  await page.goto('/learn/09')
-  await page.locator('#gateBtn').click()
-  await expect(page.locator('#soundSwitch')).toHaveAttribute(
-    'aria-pressed',
-    'true',
-  )
-  const after = await heard(page)
+      // Assert
+      expect(await heard(page)).toEqual({ contexts: 0, sources: 0 })
+      await expect(page.locator('.lm-btn')).toBeVisible()
+      await expect(page.locator('#wrap a.next-card')).toHaveAttribute(
+        'data-select-lesson',
+        '10',
+      )
+      expect(errors).toEqual([])
+    })
 
-  // Act: a choice, the steps and the sections, none of them a play button
-  await page.locator('#predict [data-choice="re"]').click()
-  await page.getByRole('button', { name: 'Next step', exact: true }).click()
-  await expect(page.locator('#stepNow')).toHaveText('2')
-  for (const id of ['#words', '#sing', '#wrap', '#explorer'])
-    await page.locator(id).scrollIntoViewIfNeeded()
+    test("nothing plays but the sound switch's own chime until a play button is pressed", async ({
+      page,
+    }) => {
+      // Arrange: sound on from the gate, which confirms it with its two soft notes
+      await watchSound(page)
+      await page.goto('/learn/09')
+      await page.locator('#gateBtn').click()
+      await expect(page.locator('#soundSwitch')).toHaveAttribute(
+        'aria-pressed',
+        'true',
+      )
+      const after = await heard(page)
 
-  // Assert
-  expect(after.contexts).toBe(1)
-  expect(await heard(page)).toEqual(after)
-})
+      // Act: a choice, the steps and the sections, none of them a play button
+      await page.locator('#predict [data-choice="re"]').click()
+      await page.getByRole('button', { name: 'Next step', exact: true }).click()
+      await expect(page.locator('#stepNow')).toHaveText('2')
+      for (const id of ['#words', '#sing', '#wrap', '#explorer'])
+        await page.locator(id).scrollIntoViewIfNeeded()
+
+      // Assert
+      expect(after.contexts).toBe(1)
+      expect(await heard(page)).toEqual(after)
+    })
+  })
+}
 
 // WEB-SPEC, End to end 2, at a phone's size and a desktop's
 for (const viewport of [

@@ -11,8 +11,9 @@
 // 1.5 s each as the kit's ladder slots, a line a rung through `rungLine`
 // with no advice to try again, the count's line after the answer, the drawn
 // line folded around each glowing rung with its octave tag, the lit edges
-// and the chart's summary in words; the guide out once a take ends, with
-// or without a voice; a voice heard with no note kept is a sung ladder,
+// and the chart's summary in words; the guide's band lit whole at once
+// under reduced motion, and out once a take ends, with or without a
+// voice; a voice heard with no note kept is a sung ladder,
 // never "didn't hear you start"; Merc celebrates once a visit;
 // "Effortful" and "Uncomfortable" end the singing, the second taking the
 // lines, the count and the drawn line away; and the Agains carry their names
@@ -323,6 +324,21 @@ describe("Lesson 9's Sing it: a take's reading", () => {
       [0, true],
       [0, false],
     ])
+  })
+
+  it("lights the guide's band in place under reduced motion, whole on the frame it lights, never swelling in", async () => {
+    // Arrange: the kit's browser doubles report reduced motion
+    const p = await load()
+    let glows: (number | undefined)[] = []
+    p.takes.inside = () => {
+      glows = (p.card.chart.chart.scene.rungs ?? []).map((r) => r.glow)
+    }
+
+    // Act: a second of do, inside its slot
+    await take(p, start(p), sung([50, 1]))
+
+    // Assert
+    expect(glows).toEqual([1, 0, 0, 0])
   })
 })
 

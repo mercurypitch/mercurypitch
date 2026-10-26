@@ -21,11 +21,13 @@
 // here are the explorer, the cold open's chart, at rest and through Merc's
 // leap, and the steps' ladder chart with Step 1's folds strip, at rest and
 // through Step's two notes, while the strip's folds open and close,
-// through Step 5's landing, whose line moves only while it plays, and Sing
-// it's chart, whose rungs light only while Merc sings his ladder. Lessons
-// 1 to 5 each have drawers of their own that still draw every frame (S-26 in
-// docs/plans/find-your-pitch/RELEASE-REVIEW.md), which keep their loop
-// running whatever these three do, so there only the figures are watched.
+// through Step 5's landing, whose line moves only while it plays, Sing
+// it's chart, whose rungs light only while Merc sings his ladder, and free
+// play's chart, whose rung swells and whose arc draws only through a leap.
+// Lessons 1 to 5 each have drawers of their own that still draw every
+// frame (S-26 in docs/plans/find-your-pitch/RELEASE-REVIEW.md), which keep
+// their loop running whatever these three do, so there only the figures
+// are watched.
 // There the ring's checks pin only that it writes nothing at rest and leaves
 // no ripple: its `wants` is pinned where the whole page rests (Lessons 6
 // and 7) and by kit/sing.test.ts.
@@ -215,7 +217,7 @@ async function open(page: Page, n: number): Promise<void> {
   await page.addInitScript(() => {
     localStorage.setItem('fyp-voice', JSON.stringify('lower'))
   })
-  await page.goto(`/learn/0${n}`)
+  await page.goto(`/learn/${String(n).padStart(2, '0')}`)
 }
 
 /** Sing it past the comfort check: "Just listen today", or "Sing along". */
@@ -325,7 +327,7 @@ test('Lesson 8: the explorer rests, and so does the whole page', async ({
   await explorerRests(page, 8, true)
 })
 
-test("Lesson 9: the ladder charts, the folds strip, the landing, Sing it's chart and the explorer rest, and so does the whole page", async ({
+test("Lesson 9: the ladder charts, the folds strip, the landing, Sing it's chart, free play and the explorer rest, and so does the whole page", async ({
   page,
 }) => {
   const hero = '#heroLadder canvas'
@@ -355,6 +357,13 @@ test("Lesson 9: the ladder charts, the folds strip, the landing, Sing it's chart
   await scrollTo(page, sing)
   await runRests(page, [sing], true, () =>
     page.locator('[data-panel="prepare"] [data-merc-ladder]').click(),
+  )
+  // free play's chart: a rung swells as it sounds, and a leap's arc draws
+  const free = '#freePlay canvas'
+  await scrollTo(page, free)
+  await page.locator('#freePlay [data-free-rung="do"]').click()
+  await runRests(page, [free], true, () =>
+    page.locator('#freePlay [data-free-rung="so"]').click(),
   )
   await explorerRests(page, 9, true)
 })
