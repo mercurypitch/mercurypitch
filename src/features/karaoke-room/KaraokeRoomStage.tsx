@@ -99,6 +99,7 @@ import { KaraokeLibrarySheet } from './KaraokeLibrarySheet'
 import { KaraokeLyricsWindow } from './KaraokeLyricsWindow'
 import { KaraokeRoomOptions } from './KaraokeRoomOptions'
 import { KaraokeRoomPicker } from './KaraokeRoomPicker'
+import { isMissing, sayMissingSong } from './missing-song'
 import { useKaraokePictureInPicture, windowShowsThePage, } from './useKaraokePictureInPicture'
 import { useKaraokeTvStage } from './useKaraokeTvStage'
 
@@ -208,6 +209,18 @@ export const KaraokeRoomStage: Component = () => {
     setKaraokeStagedSong(song.sessionId)
     const stems = await hydrateSong(song).catch(() => song.stems)
     if (token !== cueToken) return
+    if (isMissing(song, stems)) {
+      // The mixer could only fail to load it: the stage keeps its song, or
+      // takes an example, and the singer is told what brings it back.
+      void sayMissingSong(song)
+      const onStage = untrack(cue)
+      setKaraokeStagedSong(onStage?.song.sessionId ?? null)
+      const examples = library().filter((row) => row.kind === 'example')
+      const example = arrivalSong(examples, null, null, null)
+      if (onStage !== null || example === null) return
+      void cueSong(example, { autoPlay: false, arriving: options.arriving })
+      return
+    }
     setMixer(null)
     setCue({
       key: token,

@@ -471,9 +471,8 @@ export async function enqueueImports(
 }
 
 /**
- * Try a failed song again. One the server separated but the phone did not
- * save is collected again for free; anything else goes back in line and is
- * separated again.
+ * Try a song again, failed or no longer on this phone. One the server still
+ * keeps is collected again for free; the rest queue to be separated again.
  */
 export function retryImport(id: string): void {
   const session = getUvrSession(id)
@@ -481,6 +480,7 @@ export function retryImport(id: string): void {
   if (hasJob(session)) {
     const job = session.apiSessionId ?? ''
     setUvrSessionResuming(id)
+    if (!untrack(tracked).includes(id)) track(id)
     void resumeServerSession(id, job, callbacksFor(id)).catch(() => {
       afterTaken(id, null)
     })

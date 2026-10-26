@@ -1421,6 +1421,13 @@ advanced together; a request between renewal and sweeping can hide the bug.
 **Rule:** a row that must not say when it came takes a random rowid outside the range the table's other rows count in (a lesson answer's is negative), or lives in a table of its own. Test it through the route against real SQLite, with timed rows on either side, and read `rowid`.
 **See:** `workers/db-worker/src/index.ts` (`mirrorEventInsert`), `workers/db-worker/node-tests/funnel-retention-integration.test.ts`
 
+### A session's stem URLs are not whether it has stems
+
+**Symptom:** songs separated in the native Karaoke room played until the app restarted or was updated. Then the room listed only the examples, and importing one of the songs again said it was already in the singer's songs, with no way to open it (maff, 25 Oct 2026).
+**Cause:** `UvrSession.outputs` holds object URLs minted by the page that saved the stems, and `sessionToDbRecord` keeps none, so every launch reads its sessions back without them while the stems stay on disk. The room listed a song of the singer's own only while `outputs` named both stems. Every test and probe ran inside the page that minted them. `takes.ts` had made the same mistake before.
+**Rule:** decide that a session has audio from what lasts (its status, `stemMeta`, the stems on disk), and mint the URLs when the song is opened (`ensureSessionHydrated`). Test a list across two launches that share one database, and take a probe through `page.reload()`.
+**See:** `src/features/karaoke-room/karaoke-room-library.ts`, `src/features/karaoke-room/karaoke-room-library.restart.test.ts`, `apps/mercurypitch/scripts/probe-karaoke-import.mjs`
+
 ## Tooling and environment
 
 ### Ignore new generated entry documents

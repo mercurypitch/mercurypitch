@@ -784,6 +784,8 @@ describe('a song that fails on the server', () => {
 
     expect(fake.resumed).toEqual([run.sessionId])
     expect(fake.runs).toHaveLength(1)
+    // Still the one row it was.
+    expect(importRows()).toHaveLength(1)
   })
 
   it('waits for the resume when only the connection to it was lost', async () => {
@@ -800,6 +802,58 @@ describe('a song that fails on the server', () => {
 
     expect(session(run.sessionId).status).toBe('interrupted')
     expect(lines()).toEqual(['Long Road North: Waiting for a studio slot'])
+  })
+})
+
+describe('a ready song no longer on the phone', () => {
+  /** A song separated, saved and announced: its row gone, as a launch
+   *  finds it. */
+  async function ready(): Promise<string> {
+    await started()
+    await enqueueImports([song('Long Road North.m4a')])
+    await settle()
+    const run = fake.runs[0] as FakeRun
+    accept(run)
+    await settle()
+    await run.callbacks.onComplete({
+      outputs: { vocal: 'blob:v', instrumental: 'blob:i' },
+      stemMeta: {},
+    })
+    run.resolve()
+    await settle()
+    setNotifications([])
+    return run.sessionId
+  }
+
+  it('downloads again from its job, for free, as a row', async () => {
+    const id = await ready()
+
+    retryImport(id)
+    await settle()
+
+    expect(fake.resumed).toEqual([id])
+    // Collected, never sent again: nothing is used.
+    expect(fake.runs).toHaveLength(1)
+    expect(lines()).toEqual(['Long Road North: Waiting for a studio slot'])
+    // A row that is completed is announced as ready; this one is not yet.
+    expect(notifications()).toEqual([])
+  })
+
+  it('is announced as ready once it is saved again', async () => {
+    const id = await ready()
+    retryImport(id)
+    await settle()
+
+    patch(id, {
+      status: 'completed',
+      outputs: { vocal: 'v', instrumental: 'i' },
+    })
+    await settle()
+
+    expect(lines()).toEqual([])
+    expect(notifications().at(-1)?.message).toBe(
+      'Long Road North is ready to sing.',
+    )
   })
 })
 

@@ -35,6 +35,9 @@ export interface RoomSong {
   /** What the licence asks to be shown with the song, or null. */
   readonly credit: string | null
   readonly kind: 'example' | 'yours'
+  /** An example's packaged files. A song of the singer's own carries what
+   *  this page has minted, which is nothing after a launch: hydrateSong is
+   *  what makes its stems playable. */
   readonly stems: RoomStems
 }
 
@@ -72,13 +75,18 @@ function stemDuration(session: UvrSession): number | null {
   return typeof seconds === 'number' && seconds > 0 ? seconds : null
 }
 
-/** A song of the singer's own that can be sung: separated, both stems. */
+/**
+ * A song of the singer's own: separated, and not an example. Its stems are
+ * on this phone, and the URLs that play them are not what makes it a song:
+ * they are object URLs, minted by the page that saved the stems, and the
+ * session's row on disk keeps none (uvr-store's sessionToDbRecord), so a
+ * launch reads the row back without them. Asking for them here listed no
+ * song of the singer's own after the app started again, only the examples
+ * (maff, 25 Oct 2026). hydrateSong mints them when the song is cued.
+ */
 function ownSong(session: UvrSession): RoomSong | null {
   if (session.status !== 'completed') return null
   if (isExampleSession(session)) return null
-  const vocal = session.outputs?.vocal ?? ''
-  const instrumental = session.outputs?.instrumental ?? ''
-  if (vocal === '' || instrumental === '') return null
   const title = withoutExtension(session.originalFile?.name ?? '')
   return {
     sessionId: session.sessionId,
@@ -87,7 +95,10 @@ function ownSong(session: UvrSession): RoomSong | null {
     durationSec: stemDuration(session),
     credit: null,
     kind: 'yours',
-    stems: { vocal, instrumental },
+    stems: {
+      vocal: session.outputs?.vocal ?? '',
+      instrumental: session.outputs?.instrumental ?? '',
+    },
   }
 }
 

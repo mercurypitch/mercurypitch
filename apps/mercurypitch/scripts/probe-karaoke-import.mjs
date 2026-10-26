@@ -20,6 +20,9 @@
 //     guard may be. The stems are MP3 as the deployed handler writes them
 //     (owner, 28 Sep: no new RunPod image), made from a take in the
 //     repository;
+//   - the app starts again (closed and opened over the same storage):
+//     the room opens on the song, the library still lists it, and it plays
+//     from the stems on the phone;
 //   - the room's options and Settings count the songs; Restore purchase
 //     and Subscribe fail closed, since no store is there yet (owner, 27 Sep);
 //   - the song's own menu removes it from this phone;
@@ -944,6 +947,63 @@ export async function walkKaraokeImport(browser, args, frame, kit, target) {
     }
     steps.push(
       `karaoke import: "${SONG}" arrives under ${mine.group}, marked new, the only new one; Import's chip reads "17 of 20 songs left"; it cues and plays (${cue.elapsed}s to ${playing.elapsed}s) from the MP3 stems saved on the phone (${stemSizes.join(' and ')} bytes, 320 kb/s), streamed: neither decoded whole`,
+    )
+
+    // ── The app starts again ─────────────────────────────────
+    // maff, 25 Oct 2026: a song imported and sung, then the app restarted
+    // or was updated, and the library listed only the examples while Import
+    // said the song was already in it. A launch reads the sessions back from
+    // IndexedDB without the stems' object URLs, which die with the page
+    // that minted them, and a walk that never leaves the page cannot see
+    // that. So the app is closed and opened again over the same storage: the
+    // page leaves, then loads the start page with no room in its address, as
+    // a launch does.
+    at = 'the app starts again'
+    await page.goto('about:blank')
+    await page.goto(args.baseUrl, { waitUntil: 'domcontentloaded' })
+    await page
+      .locator('#root.loaded')
+      .waitFor({ state: 'attached', timeout: bootTimeoutMs })
+    await visible('[data-testid="rooms-alley"]')
+    await settle(600)
+    await tapDoor(page, 'karaoke')
+    await waitPhase(page, 'alive', 'karaoke', 'select Karaoke after a launch')
+    await walkOpen(
+      page,
+      ctx,
+      'import-relaunch-open',
+      '[data-testid="karaoke-room"]',
+    )
+    // The room opens on the song last sung (KaraokeRoomStage arrivalSong).
+    const relaunched = await cued(null, 'the room after a launch')
+    await openLibrary()
+    const kept = await library()
+    const keptMine = kept.songs.find((song) => song.id === mine.id)
+    if (keptMine === undefined || keptMine.group !== 'Your songs') {
+      throw new Error(
+        `after a launch the library lists ${JSON.stringify(kept.songs.map((song) => `${song.group}: ${song.title}`))}, without ${SONG} in Your songs`,
+      )
+    }
+    await closeLibrary()
+    if (relaunched.title !== SONG) {
+      throw new Error(
+        `after a launch the room opened on "${relaunched.title}", not on ${SONG}, the song last sung`,
+      )
+    }
+    await page.locator(`${stage} button[aria-label="Play"]`).tap()
+    await visible(`${stage} button[aria-label="Pause"]`)
+    await page.waitForTimeout(2600)
+    const replaying = await page.evaluate(readStage)
+    if (!(replaying.elapsed >= relaunched.elapsed + 1)) {
+      throw new Error(
+        `after a launch: the time did not move (${relaunched.elapsed}s, then ${replaying.elapsed}s)`,
+      )
+    }
+    await page.locator(`${stage} button[aria-label="Pause"]`).tap()
+    await visible(`${stage} button[aria-label="Play"]`)
+    await shoot(page, ctx, 'import-after-launch')
+    steps.push(
+      `karaoke import: after a launch (closed and opened over the same storage), the room opens on "${SONG}", the library still lists it under Your songs, and it plays (${relaunched.elapsed}s to ${replaying.elapsed}s) from the stems on the phone`,
     )
 
     // ── Again, on a phone without AudioDecoder ────────────────
