@@ -754,7 +754,7 @@ still images when WebGL fails or would run on the CPU.
 - **Today, Ear Lab's Cadence.** `mercurypitch.com/ear-lab`, then tap Cadence (FACTS 44, 47): twelve
   rounds, each a progression of three or four chords strummed on a guitar in a roved key, named in
   numerals from four pads; I–V–vi–IV is one of its eight. On the public host `/ear-lab?lesson=12`,
-  the marker before the hash the entry document adds (`src/seo/entry-pages.ts:439-444`). Cadence
+  the marker before the hash the entry document adds (`src/seo/entry-pages.ts:453-458`). Cadence
   needs no voice, so it stays on the rest card (FACTS 63).
 - **The CURRICULUM's two, not linked.** Chord Stacker drills four-note chords only, Major 7th,
   Minor 7th, Dominant 7th, Diminished 7th and Major 6th
@@ -838,7 +838,7 @@ heard play (Toys 3; Edge cases) (`git diff --stat`).
 
 1. The lesson host: `learn/12.html` at `/learn/12`. The dev and preview servers and every build take
    every `learn/NN.html` as a lesson page, a draft's included, with no entry of its own
-   (`vite.config.ts:78-87`, `:147-149`, `:489`; `lessonPages` and `lessonInputs`,
+   (`vite.config.ts:79-88`, `:148-150`, `:493`; `lessonPages` and `lessonInputs`,
    `tools/draft-lessons.ts:77-86`, `:109-117`). Still needed: `/learn/12` and `/learn/12.html` in
    `STANDALONE_DOCUMENT_PATHS` (`src/lib/sw-runtime.ts:93`), beside the drafts' entries, whose
    comment gives the reason: where a draft is not published, its address must reach the site
@@ -898,7 +898,7 @@ heard play (Toys 3; Edge cases) (`git diff --stat`).
     on every page, a draft's included, from its first commit:
     - title, at most 60 characters, ending " | MercuryPitch" (`lesson-pages.test.ts:154-155`):
       SEARCH.md § 4's draft, "The four-chord song: how chords work | MercuryPitch" (51 characters,
-      `SEARCH.md:230`), in the query-led form the owner chose for Lessons 1 to 8, on 22
+      `SEARCH.md:243`), in the query-led form the owner chose for Lessons 1 to 8, on 22
       October 2026. Until #1187 the title had to hold the Article's headline, so this spec
       recommended "Chords and the four-chord song: Lesson 12 | MercuryPitch" (56): the series' form,
       "Chords and the four-chord song: Find Your Pitch, Lesson 12 | MercuryPitch", ran to 73, over

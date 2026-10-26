@@ -725,7 +725,7 @@ the others take it.
 
 1. The lesson host: `learn/11.html` at `/learn/11`. Every build takes every `learn/NN.html` as an
    input and routes its clean path (`tools/draft-lessons.ts:1-18`; `lessonPages`, `:77-86`;
-   `lessonInputs` and `lessonPaths`, `:109-122`; `vite.config.ts:318`, `:489`), so the page needs no
+   `lessonInputs` and `lessonPaths`, `:109-122`; `vite.config.ts:319`, `:493`), so the page needs no
    build change. Its line in `kit/drafts.ts`,
    `11: "the vocal coach's sign-off (MASTER-PLAN § 12 item 8)"`, beside Lessons 3 to 8's
    (`:30-38`), makes it a draft: production's `LESSON_DRAFTS`, "0", holds it back, and the dev
@@ -756,7 +756,7 @@ the others take it.
      chose for Lessons 1 to 8 on 22 October 2026. Until #1187 the title had to hold the Article's
      headline, which `og:title` holds now (`:184-188`), and this spec kept the series' form for the
      owner, "Registers and the break: Find Your Pitch | MercuryPitch" (55). SEARCH.md § 4's draft
-     for Lesson 11, "Registers and the break: why voices flip | MercuryPitch" (`SEARCH.md:229`), is
+     for Lesson 11, "Registers and the break: why voices flip | MercuryPitch" (`SEARCH.md:242`), is
      not used: "why voices flip" leans on the predict's answer. The worker never rewrites a title.
      The h1 is `h1.hook#hook`, the hook in its default wording (`lesson-copy.test.ts:323-332`;
      Hero);
