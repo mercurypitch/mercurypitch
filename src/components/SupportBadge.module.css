@@ -1,5 +1,15 @@
 /* Support Badge — double-pill (version | heart) for the header right slot */
 
+/* The badge's box and nothing more: it holds only the badge. It is where the
+   heart's touch target is placed (the phone block at the end), because the
+   badge itself clips its children to the pill, and a box hung on the heart
+   inside that clip would be cut to the heart's own size. An absolute box
+   placed in this frame is not clipped by the badge between them. */
+.frame {
+  position: relative;
+  display: inline-flex;
+}
+
 .badge {
   display: inline-flex;
   align-items: stretch;
@@ -76,6 +86,26 @@
 @media (max-width: 768px) {
   .version {
     display: none;
+  }
+}
+
+/* The heart alone, on a phone, drew 34x25 and took a press in that much.
+   Under a finger it takes one 44 px each way from an invisible box that
+   starts at the badge's left edge and reaches 8.4 px past its right, into
+   the header's 10 px padding, and up and down inside the 50 px row. It
+   gives nothing to the left, where the 6 px gap belongs to the box of
+   whatever sits beside it: the account glyph, or the voice pill's mic. The
+   heart stays unpositioned so the box is placed in `.frame`, outside the
+   badge's clip. */
+@media (pointer: coarse) and (max-width: 768px) {
+  .support::after {
+    position: absolute;
+    top: 50%;
+    left: 0;
+    width: max(100%, 44px);
+    height: max(100%, 44px);
+    content: '';
+    transform: translateY(-50%);
   }
 }
 

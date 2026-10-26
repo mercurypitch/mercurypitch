@@ -97,6 +97,37 @@ header h1 {
   }
 }
 
+/* ── The phone header under a finger ────────────────────────────
+   The menu button drew 42x34 and the wordmark 20 px tall, so they took a
+   press in that much and no more. Each now takes one at least 44 px each
+   way, from an invisible box centred on it (as large as the control or
+   44 px, whichever is more), and draws exactly as before; the row stays
+   50 px, which holds the 44 px box. The menu's box gains 1 px a side,
+   inside the header's padding and the 8 px gap before the wordmark; the
+   wordmark's only grows up and down. The voice pill's mic and the support
+   heart get theirs in their own stylesheets.
+   Above the phone block, and written `(pointer: coarse) and` first, because
+   src/tests/header-account-touch-targets.test.ts and
+   src/tests/header-voice-room.test.ts read everything from the last
+   `@media (max-width: 768px)` to the end of this file as the phone rules. */
+@media (pointer: coarse) and (max-width: 768px) {
+  .sidebar-toggle-btn,
+  .logo-btn {
+    position: relative;
+  }
+
+  .sidebar-toggle-btn::after,
+  .logo-btn::after {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: max(100%, 44px);
+    height: max(100%, 44px);
+    content: '';
+    transform: translate(-50%, -50%);
+  }
+}
+
 /* ── Mobile header (<= 768px) ─────────────────────────────────────
    Tighten the header so the account + heart fit on the first row
    instead of wrapping to their own empty band: smaller gap/padding,

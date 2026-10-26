@@ -18,64 +18,69 @@ const SUPPORT_HASH = '#/settings/credits'
 
 export const SupportBadge: Component = () => {
   const [showChangelog, setShowChangelog] = createSignal(false)
+  // The frame holds the badge and nothing else. It is the box the heart's
+  // touch target is placed in on a phone: the badge clips its children to
+  // the pill (SupportBadge.module.css, `.frame`).
   return (
-    <div class={styles.badge}>
-      {/* The store binary has no changelog to open (ChangelogModalSlot says
+    <div class={styles.frame}>
+      <div class={styles.badge}>
+        {/* The store binary has no changelog to open (ChangelogModalSlot says
           why), so the version reads as a label there rather than as a
           control that does nothing. */}
-      <Show
-        when={HAS_CHANGELOG}
-        fallback={
-          <span
+        <Show
+          when={HAS_CHANGELOG}
+          fallback={
+            <span
+              class={styles.version}
+              style="cursor: default;"
+              title={`MercuryPitch v${APP_VERSION} (${COMMIT_SHA})`}
+            >
+              v{APP_VERSION}
+            </span>
+          }
+        >
+          <button
+            type="button"
             class={styles.version}
-            style="cursor: default;"
-            title={`MercuryPitch v${APP_VERSION} (${COMMIT_SHA})`}
+            title={`MercuryPitch v${APP_VERSION} (${COMMIT_SHA}) — what's new`}
+            aria-label="Show the changelog"
+            onClick={() => setShowChangelog(true)}
           >
             v{APP_VERSION}
-          </span>
-        }
-      >
-        <button
-          type="button"
-          class={styles.version}
-          title={`MercuryPitch v${APP_VERSION} (${COMMIT_SHA}) — what's new`}
-          aria-label="Show the changelog"
-          onClick={() => setShowChangelog(true)}
-        >
-          v{APP_VERSION}
-        </button>
-      </Show>
-      <Show when={showChangelog()}>
-        <ChangelogModalSlot
-          open={showChangelog()}
-          onClose={() => setShowChangelog(false)}
-        />
-      </Show>
-      {/* Settings -> Credits holds no support options in a build that cannot
+          </button>
+        </Show>
+        <Show when={showChangelog()}>
+          <ChangelogModalSlot
+            open={showChangelog()}
+            onClose={() => setShowChangelog(false)}
+          />
+        </Show>
+        {/* Settings -> Credits holds no support options in a build that cannot
           take payment, so the heart would open an explanation of its own
           absence. */}
-      <Show when={CAN_TAKE_PAYMENT}>
-        <a
-          class={styles.support}
-          href={SUPPORT_HASH}
-          title="Support MercuryPitch"
-          aria-label="Support MercuryPitch"
-          data-testid="support-heart"
-        >
-          <svg
-            class={styles.heart}
-            viewBox="0 0 24 24"
-            width="15"
-            height="15"
-            aria-hidden="true"
+        <Show when={CAN_TAKE_PAYMENT}>
+          <a
+            class={styles.support}
+            href={SUPPORT_HASH}
+            title="Support MercuryPitch"
+            aria-label="Support MercuryPitch"
+            data-testid="support-heart"
           >
-            <path
-              fill="currentColor"
-              d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"
-            />
-          </svg>
-        </a>
-      </Show>
+            <svg
+              class={styles.heart}
+              viewBox="0 0 24 24"
+              width="15"
+              height="15"
+              aria-hidden="true"
+            >
+              <path
+                fill="currentColor"
+                d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"
+              />
+            </svg>
+          </a>
+        </Show>
+      </div>
     </div>
   )
 }
