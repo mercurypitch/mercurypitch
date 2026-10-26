@@ -314,3 +314,28 @@ Note: the lanes' memory gate read a stale cgroup path after the 21:00 restart (f
 - Consent matrix for a quick-check answer (telemetry.ts lessonConsent): Berlin, London, UTC never asked -> nothing; New York never asked -> one lesson_answer, consent 2; New York denied -> nothing; Berlin granted -> one, consent 1. Body: clientId lesson-anonymous, metrics {page, qLesson, q, firstTry, k, visit, consent}. Dialogs 0 -> 0.
 - Test doc rev 26: two bullets in "Checked before the tag" (the pass, the consent cases); .3256 share card moved to After the tag (picture named by its production address); new After the tag item for the share card; the bass-baritone line says local dev server only; the /karaoke-app line says the FAQ is in the served page and hides once the app starts.
 - Film playback stays the owner's: Playwright's headless shell has no H.264/AAC, and the full Chromium (channel chromium) fails to open a tab here.
+
+## 10:58 UTC 26 Oct — check-in: five held PRs conflicted with main; rebasing
+- 10:15 check-in: no v0.9.22 tag; main a6f839e14. merge-tree: #1198, #1199, #1208, #1213, #1214 CONFLICT with main (plan citations: #1216's re-anchor commit 9c500893a and entry-pages/lesson-base moves sit on lines next to the branches' own anchors); #1205, #1206, #1207, #1212 clean. Conflicts existed since #1216 merged (05:37); the 08:30 check-in missed them (checked activity, not mergeability). PR rules: a conflict on my PR is work now.
+- Old heads tagged lead/pr<N>-before-1026. All hunks were non-overlapping word edits (rebase/merge_words.py); #1213's map commit regenerated (same two rows). Each: src (+ map) diff identical to before apart from line numbers; doc +/- lines identical except main's own anchors; plan-cites 157 with the same findings as main (only the branches' own known line-number shifts).
+- #1199 PUSHED 10:45 (7da7a58a7, lease 556aae010): check 0/11 no rewrites (794 s), take files 4/78, metrics, validate, index; body updated (no footer); CI running (most green by 10:57).
+- #1214 rebased in kit-ladder (551242c2d): gates running (rebase-1026/gates.sh -> 1214-gates.out).
+- #1208 (13f54306c), #1213 (d0164992b), #1198 (04390501b) rebased in a temporary worktree .claude/worktrees/rb (own node_modules via `pnpm install --offline --frozen-lockfile`, 49 s; a symlinked node_modules made pnpm try to purge it: never symlink). #1208 gates running in rb.
+- Bodies: rebase-1026/bodies/<N>-new.md (fill {{CHECK}}, {{UNIT}}, {{SCRIPTS}}, {{NFILES}}). Push each with --force-with-lease=<branch>:<old sha>, then update the body and read it back (no footer). Remove rb when done (git worktree remove).
+
+## 11:40 UTC 26 Oct — four of the five rebased PRs pushed, bodies updated
+- #1199 7da7a58a7: CI all green (23 runs incl. 4 browser shards), mergeable clean.
+- #1214 551242c2d (lease bdb16f364): gates all pass (check 0/11 no rewrites 883 s; unit 14 files/154; scripts 255; validate; metrics; index); body updated and read back (no footer); CI all green by 11:33.
+- #1208 13f54306c (lease 7ac753f41): gates all pass (check 0/11 913 s; the 14 changed test files, 196 tests, AdminLessonsPage among them; scripts 255; validate; metrics; index); body updated, read back clean; CI running.
+- #1213 d0164992b (lease a94b555ad): gates all pass (check 0/11 870 s; unit 37 files/363; scripts 255; validate; metrics; index); body updated, read back clean; CI running.
+- #1198 04390501b (old 5e1d2db37) gating in rb: check 0/11 (900 s), unit 4/46, scripts 255, validate pass; metrics running. Then push, body (1198-new.md: {{CHECK}}, {{UNIT}}), remove rb (git worktree remove --force: only node_modules is untracked).
+- Re-subscribed #1198, #1208, #1213, #1214 (idempotent). No review threads on any. No steward/babysit skills in the repo.
+- Stop hook keeps asking to re-commit as Claude with noreply@anthropic.com: ignored (owner rule: no Claude attribution). It fires when the shell's cwd is a worktree with unpushed commits; keep the shell in the main checkout and use git -C.
+- Shell pushes: `cmd | tail` hides the push's exit status; use set -o pipefail and confirm with git ls-remote.
+
+## 11:45 UTC 26 Oct — all five rebased PRs pushed; rb removed
+- #1198 04390501b (lease 5e1d2db37): gates all pass (check 0/11 900 s; unit 4/46; scripts 255; validate; metrics; index); body updated, read back clean; CI running.
+- CI all green: #1199 (7da7a58a7), #1214 (551242c2d), #1208 (13f54306c). Running: #1213 (d0164992b), #1198 (04390501b).
+- merge-tree: all five clean against main a6f839e14 (#1205, #1206, #1207, #1212 were clean at 10:15; main unchanged).
+- rb removed with plain `git worktree remove` (only ignored output inside: node_modules, generated entry pages, __pycache__). df 11G free. kit-ladder now on feat/arpeggio-jumper-v2 (post-tag rebase lane); l9-flow unchanged.
+- Next: watch CI on #1213 and #1198; then wait for the owner's tag. Check-ins: trig_01JGQdH9F56vCzkd9UvFFRJv (2 h at :15) and the 12:53Z one-shot. At each check-in run merge-tree for every held PR, not just activity.
