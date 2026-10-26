@@ -185,3 +185,9 @@ Note: the lanes' memory gate read a stale cgroup path after the 21:00 restart (f
 
 ## 23:35 — owner ask: onboarding critique, linking, Search Console, follow-ups, game changer
 - Two local fenced walks on main (lesson-tour detached, restored to feat/lesson-10-app-copy bdb16f364, clean). Findings: onb/FINDINGS.md. Port 3797 freed. 965 MB free.
+
+## 01:00 UTC 26 Oct — L9 page run 3 reviewed
+- Review at max: no code findings (l9/page-3/review/REPORT.md, 12 builder items ruled). Gates are the builder's on this exact head plus lead re-checks (lesson-09 unit 18 files / 286, plan-cites 157, index current). No fold.
+- Tag lead/l9-page3-gated = d6fcfdf3a; origin feat/lesson-09-page 019bd5c93 -> d6fcfdf3a (fast-forward, leased).
+- Follow-ups added (l9/FOLLOWUPS.md, run 3 section): readout announce at stop (B15), rangeFill leaf module (B16), re-anchor base rule; COPY_TRACE item closed.
+- Next: run 4 brief (Sing it without the microphone, then the take, then the map) on d6fcfdf3a; launch at xhigh if the rate limit is allowed.

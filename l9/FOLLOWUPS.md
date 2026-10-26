@@ -95,3 +95,9 @@
 - `learn-lesson-08.spec.ts:224` (the quick check) failed once in the page run 1 gates (#scoreN 2, not 3) at a load of about 4.4 with the builders running; alone it passed 4 of 4, and it had not failed in eleven earlier runs. A guess: the "Try Step 2 again" link glides the page, and a click that lands mid-glide hits the wrong answer. If it fails again, make the test wait for the page to settle after the link.
 - (page run 2) The hear state's canvas summary names do and so but not the illustration it draws; the four words' `[data-word-said]` line is empty. Both need copy from the spec or LESSON.md before a page task fills them.
 - (page run 2) Lesson 3's budget back to 130: try once Lesson 9 loads the folds, the comfort check and Merc and Tavi's images (the three split chunks re-merge); 133,409 B at run 2, 289 over 130.
+
+## From the page run 3 review (26 October)
+- The B7 item on COPY_TRACE is closed: the copy is drawn whole from the start and silent, so Slow does not touch it.
+- B15: the page-wide checks may announce Step 5's readout once the landing stops (Pause or its end), never per frame. Today the scrub bar's aria-valuetext carries the words; the announced status line is Sing it's (WEB-SPEC:301).
+- B16: toy-helpers' chunk (about 2 KB) comes to Lesson 9 for `rangeFill` alone. At the final measurement, try `rangeFill` in a leaf module, measured on Lessons 1, 3, 5 and 9.
+- Briefs from here re-anchor citations with `--base` set to the branch's last gated head, not `lead/l9-base` (the base must be where the docs last matched the code).
