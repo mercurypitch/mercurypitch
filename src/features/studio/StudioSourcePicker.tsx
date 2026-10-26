@@ -43,7 +43,9 @@ const duration = (ms: number) =>
 
 export function StudioSourcePicker(props: StudioSourcePickerProps) {
   const [filter, setFilter] = createSignal('All')
-  const [selected, setSelected] = createSignal<ReadonlySet<string>>(new Set())
+  const [selected, setSelected] = createSignal<ReadonlySet<string>>(
+    new Set<string>(),
+  )
   const [previewId, setPreviewId] = createSignal<string | null>(null)
   const [previewPhase, setPreviewPhase] = createSignal<
     'reading' | 'starting' | 'active' | null
@@ -77,7 +79,7 @@ export function StudioSourcePicker(props: StudioSourcePickerProps) {
       () => props.studio.project()?.id,
       () => {
         stopPreview()
-        setSelected(new Set())
+        setSelected(new Set<string>())
       },
       { defer: true },
     ),
@@ -157,7 +159,7 @@ export function StudioSourcePicker(props: StudioSourcePickerProps) {
       !disposed &&
       props.studio.project()?.id === projectId
     )
-      setSelected(new Set())
+      setSelected(new Set<string>())
   }
 
   return (
@@ -191,7 +193,7 @@ export function StudioSourcePicker(props: StudioSourcePickerProps) {
           props.onFile()
         }}
       >
-        <FileUpload size={18} />
+        <FileUpload />
         <span>
           Choose file<small>WAV, MP3 and other supported audio</small>
         </span>
@@ -257,11 +259,8 @@ export function StudioSourcePicker(props: StudioSourcePickerProps) {
                     disabled={props.studio.importing()}
                     onClick={() => void preview(source)}
                   >
-                    <Show
-                      when={previewId() === source.id}
-                      fallback={<Play size={16} />}
-                    >
-                      <Pause size={16} />
+                    <Show when={previewId() === source.id} fallback={<Play />}>
+                      <Pause />
                     </Show>
                   </button>
                 </li>

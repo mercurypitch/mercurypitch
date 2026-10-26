@@ -412,13 +412,11 @@ test('Studio plays four owned audio lanes and stops after reopening @smoke', asy
     ['Piano', 440],
     ['Drums', 110],
   ] as const) {
-    await studio
-      .locator('input[type=file][accept^="audio/"]')
-      .setInputFiles({
-        name: `${name}.wav`,
-        mimeType: 'audio/wav',
-        buffer: audioFixture(8, frequency),
-      })
+    await studio.locator('input[type=file][accept^="audio/"]').setInputFiles({
+      name: `${name}.wav`,
+      mimeType: 'audio/wav',
+      buffer: audioFixture(8, frequency),
+    })
     await expect(
       studio.getByRole('button', { name: `${name} details`, exact: true }),
     ).toBeVisible()

@@ -130,7 +130,7 @@ export function StudioPage() {
           }
         >
           <Show when={studio.project()?.id} keyed>
-            {() => (
+            {(_id) => (
               <StudioWorkspace
                 studio={studio}
                 startWithSources={startWithSources()}
