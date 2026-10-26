@@ -211,3 +211,9 @@ Note: the lanes' memory gate read a stale cgroup path after the 21:00 restart (f
 ## 02:54 UTC 26 Oct — usage reset one-shot
 - Work had not stopped (both polish builders running; P at 2 commits, S at 1 at 02:15). Next reset one-shot armed: trig_016ejAAaamsQcUtyT6k2tpWN at 07:53 UTC (resetsAt 07:50). 2-hourly check-in continues (next 04:15).
 - Note: #1135's branch is feat/release-0.9.22, so the fresh release PR needs another name (feat/release-0.9.22-notes).
+
+## 04:19 UTC 26 Oct — S handed back, reviewed, PR #1216 open
+- S review at max: no code findings. Folded the item-4 test fix into item 4 (message updated) and named the foot in vite.config's comment (item 2); tree otherwise identical to the hand-back (tag lead/s-handback = 0c3484323). Head 056748461, 6 commits. Lead re-checks: plan-cites 157, prettier, 3 unit files 102 pass.
+- PR #1216 (feat/lesson-links-search), subscribed. Merge by rebase on green with expectedHeadSha, then verify-rebase-merge.sh.
+- Tell the owner: on phones (under 561 px) and 821-1020 px the masthead logo gives way to the tour "?" (wordmark 1021-1180); the trail under the masthead names and links MercuryPitch. One CSS rule to revert if unwanted.
+- Follow-ups for 0.9.23 (not in BUGS.md yet): L6 tune note buttons keep their first layout on a narrowing window (873 px sideways at 320 after a 1280 load); L7 hero "Play Twinkle" button 1 px wider than its card at 320. Both drafts.
