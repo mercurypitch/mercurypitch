@@ -87,15 +87,18 @@
 }
 
 /* ---------------------------------------------------------------- the tour's question mark */
-/* The welcome tour again (lesson-menu.ts), at the masthead's right end:
-   in the row beside the switches from 1181 px, where every lesson's row
-   has 34 px more than it needs. Narrower the row has no room for it at
-   most widths (6, 46 and 1 px to spare at 320, 360 and 390 px, none at
-   821 or 1021 px, where it needs 50 to 62), so it hangs under the
-   masthead's right end and stays there as the page scrolls: over the
-   ragged ends of lines rather than their starts, clear of the toast and
-   the tour's docked card at the foot, and beside the masthead the tour's
-   last step lights. */
+/* The welcome tour again (lesson-menu.ts), at the masthead's right end,
+   in the row beside the switches at every width: there it covers nothing,
+   and it is where the tour's last step says it is ("the question mark at
+   the top right"). From 1181 px every lesson's row has room for it. Narrower
+   the row has none at most widths (6, 46 and 1 px to spare at 320, 360 and
+   390 px, none at 821 or 1021 px, where it needs 50 to 62), so the brand
+   makes the room: under 561 px and from 821 to 1020 px the logo, as wide as
+   the question mark, gives way to it, and from 1021 to 1180 px the wordmark
+   does. Every row fits as it did, and the trail under the masthead names and
+   links MercuryPitch and Find Your Pitch at every width (tools/lesson-ways.ts).
+   Only once lesson-menu.ts has added the mark: a page whose script never
+   ran keeps its logo. */
 .lm-tour {
   display: inline-grid;
   place-items: center;
@@ -114,40 +117,14 @@
 .lm-tour:hover {
   color: var(--ink);
 }
-/* Hanging, it is a 36 px disc in the same 44 px target, its right edge
-   under the masthead's last switch. The masthead blurs what is under it,
-   and a backdrop-filter inside it has only the masthead to blur, so the
-   disc is opaque. */
-@media (max-width: 1180px) {
-  .lm-tour {
-    position: absolute;
-    top: calc(100% + 4px);
-    right: calc(var(--gutter-r) - 4px);
-    border: 0;
-    background: none;
-  }
-  .lm-tour::before {
-    content: '';
-    position: absolute;
-    inset: 4px;
-    border-radius: inherit;
-    border: 1px solid var(--hair-2);
-    background: var(--obsidian);
-    box-shadow: 0 10px 24px -14px #000;
-  }
-  .lm-tour .ico {
-    position: relative;
-  }
-  .lm-tour:focus-visible {
-    outline-offset: 0;
+@media (max-width: 560px), (min-width: 821px) and (max-width: 1020px) {
+  .mast-in:has(> .lm-tour) > .brand {
+    display: none;
   }
 }
-/* beside the stuck stage (step-deck.ts), whose step arrows sit at its top
-   right corner 18 px under the masthead, the disc moves out into the
-   gutter, and its target clears theirs */
-@media (min-width: 961px) and (max-width: 1180px) {
-  .lm-tour {
-    right: max(4px, env(safe-area-inset-right, 0px));
+@media (min-width: 1021px) and (max-width: 1180px) {
+  .mast-in:has(> .lm-tour) > .brand .wm {
+    display: none;
   }
 }
 
