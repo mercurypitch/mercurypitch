@@ -17,7 +17,8 @@ FILES=(
   l12/PLAN.md l12/DECISIONS.md
   arp/CONSENSUS.md arp/FOLLOWUPS.md arp/BRIEF-v2.md
   tour/PLAN.md onb/FINDINGS.md
-  l9/BRIEF-page-3.md l12/BRIEF-sing-layout.md
+  l9/BRIEF-page-3.md l9/BRIEF-page-4.md l12/BRIEF-sing-layout.md
+  polish/BUILDER-RULES.md polish/BRIEF-P.md polish/BRIEF-S.md
   release/BRIEF-notes.md release/bin/cut.py
   release/notes/CHANGELOG-entry.md release/notes/dev-changelog-entry.md release/notes/PR-BODY.md
   release/notes/REACH.md release/notes/REPORT.md release/notes/LEAD-REVIEW.md
