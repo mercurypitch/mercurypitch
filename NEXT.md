@@ -217,3 +217,9 @@ Note: the lanes' memory gate read a stale cgroup path after the 21:00 restart (f
 - PR #1216 (feat/lesson-links-search), subscribed. Merge by rebase on green with expectedHeadSha, then verify-rebase-merge.sh.
 - Tell the owner: on phones (under 561 px) and 821-1020 px the masthead logo gives way to the tour "?" (wordmark 1021-1180); the trail under the masthead names and links MercuryPitch. One CSS rule to revert if unwanted.
 - Follow-ups for 0.9.23 (not in BUGS.md yet): L6 tune note buttons keep their first layout on a narrowing window (873 px sideways at 320 after a 1280 load); L7 hero "Play Twinkle" button 1 px wider than its card at 320. Both drafts.
+
+## 04:25 UTC 26 Oct — check-in (trigger)
+- No v0.9.22 tag. main cddefd571. #1216 CI running on 056748461 (ratchet, validate, workers, build & deploy, Mercury Pitch pass; browser and unit shards running); server-added footer removed from its body, read back clean. Held PRs: no activity since 22:43.
+- New PR #1215 (other agent, Komediruzecki, native karaoke library after restart), mergeable clean: not ours; tell the owner it lands in 0.9.22's notes only if it merges before the release PR is cut.
+- P builder: 7 commits to cbd92c5b6, running build:tours for the tour walk. Slots: (1) P, (2) free (nothing queued before the tag).
+- 04:33: test scope doc rev 18 (the "?" item restated as fixed; trail, foot links and room-page lesson links added to "Around the lessons"). P's checks go in after its hand-back. Release notes: late-PR rule (one bullet, one dev-changelog entry + counts via tmp/prs.tsv rows, one REACH row, one PR-body line) for #1216 and P's PR.
