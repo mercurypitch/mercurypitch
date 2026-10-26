@@ -27,7 +27,7 @@ import { isolateKeys } from '@/lib/keyboard-isolation'
 import { giftOfferLine } from '@/lib/launch-gift-copy'
 import type { F0Frame, MirrorResult } from '@/lib/mirror/metrics'
 import { summarize } from '@/lib/mirror/metrics'
-import { singerForRange } from '@/lib/mirror/singer-match'
+import { cleanRange, singerForRange } from '@/lib/mirror/singer-match'
 import { useFocusTrap } from '@/lib/use-focus-trap'
 import { hasPageTour, startPageTour } from '@/stores/app-store'
 import { claimGiftNow, giftWaiting, rememberGiftOffered, } from '@/stores/launch-gift-store'
@@ -236,14 +236,15 @@ export const FirstLight: Component<FirstLightProps> = (props) => {
   /** Share the voiceprint that was just made. Resolves to a line worth
    *  saying afterwards, and only for the one outcome nothing else announces:
    *  the share sheet speaks for itself and a saved file shows in the browser,
-   *  but a link on the clipboard is silent. */
+   *  but a link on the clipboard is silent. Its range goes only when the
+   *  read was clean (isCleanRange), as the twin's own card shows it. */
   const handleShareVoiceprint = async (): Promise<string | null> => {
     const result = voiceprint()
     if (result == null) return null
     const outcome = await shareVoiceprintRecord(
       {
         id: 'fresh',
-        summary: summarize(result),
+        summary: summarize({ ...result, range: cleanRange(result.range) }),
         twin: twin(),
         source: 'onboarding',
         takenAt: new Date().toISOString(),

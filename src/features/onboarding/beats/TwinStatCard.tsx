@@ -13,12 +13,16 @@
 // (../voice-strip.ts), never from a picture.
 //
 // Every number is optional. A run with no range has no ridge and no
-// semitones, a skipped match has no accuracy, and a run that measured
-// nothing shows no card at all.
+// semitones, and so does a range read that is not clean (a steady tone reads
+// "A3 to A3", 0 semitones: singer-match.ts `isCleanRange`), since the beat
+// above the card has just said Merc could not read the range. A skipped
+// match has no accuracy, and a run that measured nothing shows no card at
+// all.
 
 import type { Component } from 'solid-js'
 import { createMemo, createSignal, createUniqueId, For, onCleanup, Show, } from 'solid-js'
 import type { MirrorResult } from '@/lib/mirror/metrics'
+import { cleanRange } from '@/lib/mirror/singer-match'
 import type { RidgeBox } from '../voice-strip'
 import { idealStrip, RIDGE_BOX, ridgeShape } from '../voice-strip'
 import styles from './TwinStatCard.module.css'
@@ -64,7 +68,8 @@ export interface TwinStatCardProps {
 
 export const TwinStatCard: Component<TwinStatCardProps> = (props) => {
   const id = createUniqueId()
-  const range = () => props.result.range
+  /** The range, when its read is clean: an unclean one is drawn as none. */
+  const range = () => cleanRange(props.result.range)
   /** The ridge's own size, measured, so the line is drawn 1:1. */
   const [box, setBox] = createSignal<RidgeBox>(RIDGE_BOX)
 
@@ -82,7 +87,7 @@ export const TwinStatCard: Component<TwinStatCardProps> = (props) => {
 
   const cells = createMemo((): StatCell[] => {
     const out: StatCell[] = []
-    const measured = props.result.range
+    const measured = range()
     if (measured !== null) {
       out.push({
         key: 'range',
@@ -110,7 +115,7 @@ export const TwinStatCard: Component<TwinStatCardProps> = (props) => {
   })
 
   const ridge = createMemo(() => {
-    const measured = props.result.range
+    const measured = range()
     if (measured === null) return null
     const shape = ridgeShape(
       props.strip ?? idealStrip(measured),

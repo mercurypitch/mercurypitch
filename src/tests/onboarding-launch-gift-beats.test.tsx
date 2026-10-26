@@ -2,10 +2,11 @@
 // The launch gift on the Keep beat and the Map
 // ============================================================
 //
-// Keep in its four states (a code on offer or none, a twin or none), and
-// the Map's three gift lines. The beats take everything as props, so these
-// render them alone; which variant a visitor gets is FirstLight's call, and
-// onboarding-launch-gift-flow.test.tsx pins that.
+// Keep in its four states (a code on offer or none, a twin or none), with
+// a range read that is not clean, and the Map's three gift lines. The beats
+// take everything as props, so these render them alone; which variant a
+// visitor gets is FirstLight's call, and onboarding-launch-gift-flow.test.tsx
+// pins that.
 //
 // Launch offer plan, sections 4.1 to 4.4 and the copy deck in 4.7.
 
@@ -42,13 +43,17 @@ const VOICEPRINT: MirrorResult = {
 }
 
 function renderKeep(
-  props: { gift?: FeaturedPromo | null; twin?: string | null } = {},
+  props: {
+    gift?: FeaturedPromo | null
+    twin?: string | null
+    voiceprint?: MirrorResult
+  } = {},
 ) {
   const onCreateAccount = vi.fn()
   const view = render(() => (
     <BeatKeep
       twin={props.twin ?? null}
-      voiceprint={VOICEPRINT}
+      voiceprint={props.voiceprint ?? VOICEPRINT}
       gift={props.gift ?? null}
       onCreateAccount={onCreateAccount}
     />
@@ -106,6 +111,31 @@ describe('Keep with the launch gift', () => {
     const card = screen.getByTestId('keep-range')
     expect(card).toHaveTextContent('Baritone')
     expect(card).toHaveTextContent('E2 to G4')
+  })
+
+  it('shows no range card for a read that is not clean', () => {
+    // Arrange: a steady tone reads A3 to A3, 0 semitones, no voice type; the
+    // twin beat has just said Merc could not read the range.
+    const steadyTone: MirrorResult = {
+      ...VOICEPRINT,
+      range: {
+        lowMidi: 57,
+        highMidi: 57,
+        lowNote: 'A3',
+        highNote: 'A3',
+        semitones: 0,
+        qualifyingMidis: [57],
+        voiceHint: null,
+      },
+    }
+
+    // Act
+    const { beat } = renderKeep({ gift: LAUNCH, voiceprint: steadyTone })
+
+    // Assert
+    expect(screen.queryByTestId('keep-range')).toBeNull()
+    expect(beat).not.toHaveTextContent('A3 to A3')
+    expect(beat.querySelector('h1')).toHaveTextContent('Keep your voiceprint')
   })
 
   it('puts the twin in the headline and the portrait in place of the card', () => {

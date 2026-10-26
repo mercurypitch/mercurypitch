@@ -5,8 +5,9 @@
 // Owner testing, 11 Oct 2026: three loose stat boxes wrapped to two rows
 // on a phone. One card now, with the singer's glides drawn as a gold
 // ridge over a single row of numbers. These tests hold its edge cases:
-// a run with no range, a skipped match, nothing measured at all, the
-// widest and narrowest ranges, and reduced motion.
+// a run with no range, a range read that is not clean, a skipped match,
+// nothing measured at all, the widest and narrowest ranges, and reduced
+// motion.
 
 import { cleanup, render, screen } from '@solidjs/testing-library'
 import { readFileSync } from 'node:fs'
@@ -133,6 +134,24 @@ describe('the twin stat card', () => {
     expect(document.querySelector('[data-ridge]')).toBeNull()
     expect(textOf('[data-value]')).toEqual(['61'])
     expect(textOf('[data-label]')).toEqual(['steadiness'])
+  })
+
+  it('draws no ridge, notes or range for a read that is not clean', () => {
+    // Arrange: a steady tone reads A3 to A3, 0 semitones, no voice type, and
+    // the twin beat above the card says Merc could not read the range.
+    const steadyTone: MirrorResult = {
+      ...RESULT,
+      range: { ...range(57, 57, 'A3', 'A3'), voiceHint: null },
+    }
+
+    // Act
+    render(() => <TwinStatCard result={steadyTone} strip={[57, 57, 57]} />)
+
+    // Assert: the scores stay; nothing claims a range.
+    expect(document.querySelector('[data-ridge]')).toBeNull()
+    expect(document.querySelector('[data-note]')).toBeNull()
+    expect(document.querySelector('[data-stat="range"]')).toBeNull()
+    expect(textOf('[data-label]')).toEqual(['steadiness', 'pitch accuracy'])
   })
 
   it('shows nothing at all when nothing was measured', () => {

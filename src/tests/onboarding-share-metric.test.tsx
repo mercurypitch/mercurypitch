@@ -8,6 +8,9 @@
 // `card_shared` either — that name is a live Google Ads conversion and has
 // to go on meaning a share from the Mirror, and mirrorEvents stores an event
 // name and a client id and nothing else, so a surface needs its own name.
+//
+// What the share carries is pinned here too: a range read the twin beat
+// called unclean never leaves in the record.
 
 import { cleanup, fireEvent, render, screen, waitFor, } from '@solidjs/testing-library'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
@@ -75,9 +78,9 @@ const RESULT: MirrorResult = {
 }
 
 /** Render First Light and stand on the twin beat with a voiceprint in hand. */
-async function atTwinBeat(): Promise<void> {
+async function atTwinBeat(result: MirrorResult = RESULT): Promise<void> {
   render(() => <FirstLight />)
-  recordVoiceprint(RESULT)
+  recordVoiceprint(result)
   openBeat('twin')
   await screen.findByRole('button', { name: 'Share now' })
 }
@@ -128,4 +131,41 @@ describe('First Light share metric', () => {
       expect(mocks.trackOnboarding).not.toHaveBeenCalledWith('onboarding_share')
     },
   )
+
+  it('shares no range the twin could not read', async () => {
+    // Arrange: a steady tone reads A3 to A3, 0 semitones, no voice type.
+    mocks.shareVoiceprintRecord.mockResolvedValue('unavailable')
+    await atTwinBeat({
+      range: {
+        lowMidi: 57,
+        highMidi: 57,
+        lowNote: 'A3',
+        highNote: 'A3',
+        semitones: 0,
+        qualifyingMidis: [57],
+        voiceHint: null,
+      },
+      accuracy: { score: 100, takes: [], scoopMedianMs: null },
+      steadiness: null,
+    })
+
+    // Act
+    fireEvent.click(screen.getByRole('button', { name: 'Share now' }))
+
+    // Assert: the record that would leave carries the score and no range.
+    await waitFor(() => {
+      expect(mocks.shareVoiceprintRecord).toHaveBeenCalledWith(
+        expect.objectContaining({
+          summary: {
+            lowMidi: null,
+            highMidi: null,
+            semitones: null,
+            accuracy: 100,
+            steadiness: null,
+          },
+        }),
+        'face',
+      )
+    })
+  })
 })
