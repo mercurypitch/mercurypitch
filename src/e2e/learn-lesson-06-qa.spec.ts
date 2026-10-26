@@ -17,16 +17,21 @@
 // window's edges; at 390 and 360 px the hero's compact line, which has no
 // buttons, draws all seven notes from C and from F sharp, and the cold
 // open's sharp sign stays beside its F, in Play from F sharp and in every
-// lock hint; at 320 px the start slider, Step 3's and free play's, holds
-// its words at every start between two arrow buttons that keep their names,
-// and from 360 px the buttons show their words again; at 1024 x 640 the
-// stage fits the screen under the masthead. A window narrowed from 1280 px
-// to 320, or a phone turned from landscape to portrait, lays every tune
-// line's buttons out again, on screen and off, with nothing past the
-// window's edge, and Step 3 keeps its start, names, Slow and the line it is
-// playing, and the cold open its answer. Two real-mouse drags of the line
-// close it: a drag slides the start and must not land as a tap, and a drag
-// let go off the line leaves Enter and Space pressing a bead.
+// lock hint; at 320, 360 and 375 px the start slider, Step 3's and free
+// play's, holds its words at every start between two arrow buttons that keep
+// their names, and from 390 px the buttons show their words again, and free
+// play's words still fit at 430 and 450 px; at 1024 x 640 the stage fits the
+// screen under the masthead. A window narrowed from 1280 px to 320, or a
+// phone turned from landscape to portrait, lays every tune line's buttons
+// out again, on screen and off, with nothing past the window's edge, and
+// Step 3 keeps its start, names, Slow and the line it is playing, and the
+// cold open its answer. Two real-mouse drags of the line close it: a drag
+// slides the start and must not land as a tap, and a drag let go off the
+// line leaves Enter and Space pressing a bead.
+//
+// Over the 600-line cap (TESTING.md): its checks share this file's probes
+// of the stage (`expectTargets`, `startOn`, `wordsPast`, `strays`), so a
+// split moves those into a helper first.
 
 import type { Locator, Page } from '@playwright/test'
 import { expect, test } from './helpers/lesson-page'
@@ -703,38 +708,46 @@ test.describe('page QA (WEB-SPEC, Tests and Contract)', () => {
     })
   }
 
+  // with both buttons' words, "Starts on D♭4" ran onto Start higher at
+  // 360 px as well as at 320
+  for (const width of [320, 360, 375]) {
+    test.describe(`at ${width} px`, () => {
+      test.use({ viewport: { width, height: 800 } })
+
+      for (const [where, root, at] of [
+        ['free play', '#freePlay', '/learn/06#freePlay'],
+        ['Step 3', TOY, '/learn/06#step-3'],
+      ] as const) {
+        test(`${where}'s start slider holds its words at every start from C4 to B4, between two 44 px arrows that keep their names`, async ({
+          page,
+        }) => {
+          // Arrange
+          await page.goto(at)
+          const row = page.locator(`${root} [data-slide-row]`)
+          const past: string[] = []
+
+          // Act: every start, the widest words (D♭4) among them
+          for (let start = 60; start <= 71; start++) {
+            await startOn(page, start, root)
+            const by = await wordsPast(row)
+            if (by > 0.5) past.push(`${start}: ${by.toFixed(1)} px`)
+          }
+
+          // Assert
+          expect(past).toEqual([])
+          for (const name of ['Start lower', 'Start higher']) {
+            const box = await row.getByRole('button', { name }).boundingBox()
+            expect(box?.width, name).toBe(44)
+            expect(box?.height, name).toBeGreaterThanOrEqual(44)
+          }
+          expect(await sideways(page)).toBe(width)
+        })
+      }
+    })
+  }
+
   test.describe('at 320 px', () => {
     test.use({ viewport: { width: 320, height: 800 } })
-
-    for (const [where, root, at] of [
-      ['free play', '#freePlay', '/learn/06#freePlay'],
-      ['Step 3', TOY, '/learn/06#step-3'],
-    ] as const) {
-      test(`${where}'s start slider holds its words at every start from C4 to B4, between two 44 px arrows that keep their names`, async ({
-        page,
-      }) => {
-        // Arrange
-        await page.goto(at)
-        const row = page.locator(`${root} [data-slide-row]`)
-        const past: string[] = []
-
-        // Act: every start, the widest words (D♭4) among them
-        for (let start = 60; start <= 71; start++) {
-          await startOn(page, start, root)
-          const by = await wordsPast(row)
-          if (by > 0.5) past.push(`${start}: ${by.toFixed(1)} px`)
-        }
-
-        // Assert
-        expect(past).toEqual([])
-        for (const name of ['Start lower', 'Start higher']) {
-          const box = await row.getByRole('button', { name }).boundingBox()
-          expect(box?.width, name).toBe(44)
-          expect(box?.height, name).toBeGreaterThanOrEqual(44)
-        }
-        expect(await sideways(page)).toBe(320)
-      })
-    }
 
     test("free play fits every bead, gap and bracket, none overlapping, at every start, its figure the window's width", async ({
       page,
@@ -756,17 +769,27 @@ test.describe('page QA (WEB-SPEC, Tests and Contract)', () => {
     })
   })
 
-  // from 360 px the buttons show their words again, as they always did
-  for (const width of [360, 390]) {
-    test(`at ${width} px the start slider's buttons show their words`, async ({
+  // from 390 px the buttons show their words again; up to 459 px without
+  // their arrows, which squeezed "Starts on D♭4" onto Start higher at 430 px
+  for (const width of [390, 430, 450]) {
+    test(`at ${width} px the start slider's buttons show their words, and its own words fit at every start`, async ({
       page,
     }) => {
-      // Arrange + Act
+      // Arrange
       await page.setViewportSize({ width, height: 800 })
       await page.goto('/learn/06#freePlay')
+      const row = page.locator('#freePlay [data-slide-row]')
+      const past: string[] = []
+
+      // Act
+      for (let start = 60; start <= 71; start++) {
+        await startOn(page, start, '#freePlay')
+        const by = await wordsPast(row)
+        if (by > 0.5) past.push(`${start}: ${by.toFixed(1)} px`)
+      }
 
       // Assert
-      const row = page.locator('#freePlay [data-slide-row]')
+      expect(past).toEqual([])
       await expect(row.getByText('Start lower')).toBeVisible()
       await expect(row.getByText('Start higher')).toBeVisible()
     })

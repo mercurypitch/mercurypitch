@@ -167,8 +167,11 @@
   outline: 2px solid var(--aqua);
   outline-offset: 2px;
 }
-/* on a narrow phone the two buttons keep their words and give up their arrows, so the slider can show its note */
-@media (max-width: 420px) {
+/* on a narrow phone the two buttons keep their words and give up their
+   arrows, so the slider can show its note: with both, the buttons take
+   266 px, and "Starts on D♭4" ran 21 px onto Start higher at 421 px and
+   still 2 px past the slider at 450 */
+@media (max-width: 459px) {
   .slide-row {
     gap: 8px;
   }
@@ -180,11 +183,12 @@
   }
 }
 /* At 320 px the row has 262 px, and with both buttons' words the slider had
-   51: "Starts on C4" ran 42 px over Start higher, "Starts on D♭4" 50. Under
-   360 px the buttons keep their arrows and give up their words, which stay
-   their names, so the slider has 158 px and every start's words fit in it;
-   from 360 px nothing changes. */
-@media (max-width: 359px) {
+   51: "Starts on C4" ran 42 px over Start higher, "Starts on D♭4" 50. At
+   360 px they still ran 1.6 and 10.2 px onto it. Under 390 px the buttons
+   keep their arrows and give up their words, which stay their names, so
+   the slider has 158 px at 320 and every start's words fit in it; from
+   390 px nothing changes. */
+@media (max-width: 389px) {
   .slide-row .btn {
     flex: none;
     width: 44px;
