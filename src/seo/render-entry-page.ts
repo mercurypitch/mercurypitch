@@ -68,6 +68,34 @@ function structuredData(page: EntryPage): unknown[] {
   return nodes
 }
 
+/** A lesson's clean path, as tools/draft-lessons.ts `lessonPath` writes it: `/learn/01`. */
+const lessonHref = (n: number): string => `/learn/${String(n).padStart(2, '0')}`
+
+/**
+ * The paragraph under the lede that links the lessons this room practises
+ * (`lessonsPractised`, SEARCH.md § 8), in the words the nav gives them. Only
+ * a lesson in `released` is linked, and the build lists a lesson there only
+ * once it is released (tools/lesson-links.ts), so a draft never is; nothing
+ * when none is.
+ */
+export function practisedLessonsMarkup(
+  page: EntryPage,
+  released: readonly { href: string; label: string }[],
+): string {
+  const hrefs = (page.lessonsPractised ?? []).map(lessonHref)
+  const links = released
+    .filter((lesson) => hrefs.includes(lesson.href))
+    .map((lesson) => `<a href="${esc(lesson.href)}">${esc(lesson.label)}</a>`)
+  if (links.length === 0) return ''
+  const last = links[links.length - 1]
+  const list =
+    links.length === 1 ? last : `${links.slice(0, -1).join(', ')} and ${last}`
+  const lead =
+    links.length === 1 ? 'Find Your Pitch lesson' : 'Find Your Pitch lessons'
+  return `
+      <p class="entry-prelude__lessons">${lead}: ${list}</p>`
+}
+
 export interface RenderEntryPageOptions {
   /**
    * Slugs this build serves but keeps out of discovery: no other entry links
@@ -78,8 +106,9 @@ export interface RenderEntryPageOptions {
   /** The store listings the banner is worked out from. Tests only; the build
    *  uses the shipped ones (src/lib/store-listings.ts). */
   listings?: StoreListings
-  /** The released Find Your Pitch lessons, linked after Home in the nav.
-   *  The build reads them off learn/ (tools/lesson-links.ts). */
+  /** The released Find Your Pitch lessons, linked after Home in the nav,
+   *  and those this room practises under its lede. The build reads them off
+   *  learn/ (tools/lesson-links.ts). */
   lessons?: readonly { href: string; label: string }[]
 }
 
@@ -202,7 +231,7 @@ ${JSON.stringify(node, null, 2)
         <span class="entry-prelude__wordmark">Mercury<span>Pitch</span></span>
       </div>
       <h1>${esc(page.h1)}</h1>
-      <p>${esc(page.lede)}</p>
+      <p>${esc(page.lede)}</p>${practisedLessonsMarkup(page, options.lessons ?? [])}
       <nav aria-label="More from MercuryPitch">
 ${nav}
       </nav>${faqSection}

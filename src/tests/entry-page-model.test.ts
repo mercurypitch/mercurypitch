@@ -4,6 +4,7 @@ import type { StoreListings } from '@/lib/store-listings'
 import { STORE_LISTINGS } from '@/lib/store-listings'
 import { canonicalPath, ENTRY_PAGES, nativeAppsAnswer, navLinksFor, } from '@/seo/entry-pages'
 import { renderEntryPage } from '@/seo/render-entry-page'
+import { releasedLessonLinks } from '../../tools/lesson-links'
 
 // The entry documents are generated from ENTRY_PAGES, so the thing worth
 // guarding is the model and what the renderer makes of it. These are the
@@ -453,5 +454,131 @@ describe('the answer about the phone apps', () => {
     )
     expect(item?.a).toBe(nativeAppsAnswer(STORE_LISTINGS))
     expect(renderEntryPage(page)).toContain(nativeAppsAnswer(STORE_LISTINGS))
+  })
+})
+
+// A room's document links back to each lesson that practises in it once
+// that lesson is released (docs/plans/find-your-pitch/SEARCH.md § 8), in
+// its text under the lede rather than only in the nav, so the rooms and the
+// lessons read as one topic. The model holds § 8's table; the build passes
+// in the released lessons (tools/lesson-links.ts), so a draft is never
+// linked and the release that deletes a lesson's line links it.
+describe('the lessons a room practises', () => {
+  const LESSON_1 = { href: '/learn/01', label: 'What is a note? (Lesson 1)' }
+  const LESSON_2 = { href: '/learn/02', label: 'Twelve notes (Lesson 2)' }
+
+  /** The lesson links in the text of `page` as rendered with `released`, and their paragraph's words. */
+  function practised(
+    page: (typeof ENTRY_PAGES)[number],
+    released: readonly { href: string; label: string }[],
+  ) {
+    const document = new DOMParser().parseFromString(
+      renderEntryPage(page, { lessons: released }),
+      'text/html',
+    )
+    const p = document.querySelector(
+      '.entry-prelude > p.entry-prelude__lessons',
+    )
+    return {
+      links: Array.from(p?.querySelectorAll('a') ?? [], (a) => [
+        a.getAttribute('href'),
+        a.textContent,
+      ]),
+      words: (p?.textContent ?? '').replace(/\s+/g, ' ').trim(),
+    }
+  }
+
+  it("holds SEARCH.md § 8's table, room by room", () => {
+    // Arrange: each row's rooms and lessons, as the plan writes them
+    const rows = repoFile('docs/plans/find-your-pitch/SEARCH.md')
+      .split('\n## 8.')[1]
+      .split('\n---')[0]
+      .split('\n')
+      .filter((line) => line.startsWith('| `/'))
+      .map((line) => {
+        const [rooms, lessons] = line.split('|').slice(1, 3)
+        return {
+          paths: Array.from(rooms.matchAll(/`([^`]+)`/g), (m) => m[1]),
+          lessons: Array.from(lessons.matchAll(/\b\d+\b/g), (m) =>
+            Number(m[0]),
+          ),
+        }
+      })
+
+    // Act
+    const model = new Map(
+      ENTRY_PAGES.filter((page) => page.lessonsPractised !== undefined).map(
+        (page) => [canonicalPath(page), page.lessonsPractised],
+      ),
+    )
+
+    // Assert
+    expect(rows).toHaveLength(7)
+    expect(model).toEqual(
+      new Map(
+        rows.flatMap((row) =>
+          row.paths.map((path) => [path, row.lessons] as const),
+        ),
+      ),
+    )
+  })
+
+  it('links Lesson 1 from /mirror and /vocal-range-test and Lesson 2 from /ear-lab while those two are out, and nothing from any other room', () => {
+    // Act
+    const linked = Object.fromEntries(
+      ENTRY_PAGES.map((page) => [
+        page.slug,
+        practised(page, [LESSON_1, LESSON_2]).links,
+      ]).filter(([, links]) => links.length > 0),
+    )
+
+    // Assert
+    expect(linked).toEqual({
+      mirror: [['/learn/01', 'What is a note? (Lesson 1)']],
+      'vocal-range-test': [['/learn/01', 'What is a note? (Lesson 1)']],
+      'ear-lab': [['/learn/02', 'Twelve notes (Lesson 2)']],
+    })
+    const mirror = ENTRY_PAGES.find((page) => page.slug === 'mirror')!
+    expect(practised(mirror, [LESSON_1, LESSON_2]).words).toBe(
+      'Find Your Pitch lesson: What is a note? (Lesson 1)',
+    )
+  })
+
+  it('links a lesson only once it is released, every one in lesson order', () => {
+    // Arrange
+    const ear = ENTRY_PAGES.find((page) => page.slug === 'ear-lab')!
+    const three = { href: '/learn/03', label: 'Match a note (Lesson 3)' }
+    const seven = { href: '/learn/07', label: 'Slides (Lesson 7)' }
+    const mirror = ENTRY_PAGES.find((page) => page.slug === 'mirror')!
+
+    // Act
+    const held = practised(ear, [LESSON_1])
+    const out = practised(mirror, [LESSON_1, LESSON_2, three, seven])
+
+    // Assert
+    expect(held.links).toEqual([])
+    expect(out.words).toBe(
+      'Find Your Pitch lessons: What is a note? (Lesson 1), Match a note (Lesson 3) and Slides (Lesson 7)',
+    )
+  })
+
+  it('links from each generated document only lessons the build lists as released', () => {
+    // Arrange
+    const released = releasedLessonLinks(process.cwd()).map((l) => l.href)
+
+    for (const page of ENTRY_PAGES) {
+      // Act
+      const document = new DOMParser().parseFromString(
+        repoFile(`${page.slug}.html`),
+        'text/html',
+      )
+      const hrefs = Array.from(
+        document.querySelectorAll('.entry-prelude__lessons a'),
+        (a) => a.getAttribute('href'),
+      )
+
+      // Assert
+      for (const href of hrefs) expect(released, page.slug).toContain(href)
+    }
   })
 })
