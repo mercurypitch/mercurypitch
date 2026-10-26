@@ -92,6 +92,7 @@ export function StudioTrackControls(props: StudioTrackControlsProps) {
   return (
     <div
       class={styles.controls}
+      data-tour="studio.track-controls"
       classList={{ [styles.compactControls]: props.compact === true }}
       onKeyDown={(event) => {
         if (event.key === 'Escape' && editing() !== null) {

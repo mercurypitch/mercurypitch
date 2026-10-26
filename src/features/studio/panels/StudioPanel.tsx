@@ -14,7 +14,9 @@ interface StudioPanelProps {
 }
 
 export function StudioPanel(props: StudioPanelProps) {
-  const overlay = createReactiveMatch('(max-width: 1100px)')
+  const overlay = createReactiveMatch(
+    '(max-width: 1100px), (pointer: coarse) and (max-height: 500px)',
+  )
   let panel: HTMLDivElement | undefined
   useFocusTrap(() => panel, { isOpen: overlay, initialFocus: () => panel })
   onMount(() => {
@@ -47,6 +49,7 @@ export function StudioPanel(props: StudioPanelProps) {
     <div class={styles.panelShade}>
       <div
         ref={panel}
+        data-studio-panel
         class={styles.panel}
         role={overlay() ? 'dialog' : 'region'}
         aria-modal={overlay() || undefined}

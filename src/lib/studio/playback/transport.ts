@@ -1,7 +1,13 @@
 // Studio transport — one borrowed clock, explicit playback intent and generation-owned graph cleanup.
 import type { AudioContextLease } from '@/lib/audio-context-lease'
 import { closeEnvelope } from '@/lib/preview-player'
+import type { ChainSpec } from '@/lib/studio-fx/chain-spec'
+import { measureTrackLatencies } from '@/lib/studio-fx/mixdown'
+import type { StudioMasterGainToken } from '../export/sound-graph'
+import { resolveStudioSoundGraph } from '../export/sound-graph'
 import { reserveStudioMemory } from '../memory-budget'
+import { createStudioLiveMeter, prepareStudioLiveMeter, } from '../metering/live-meter'
+import type { StudioMeterSnapshot } from '../metering/stream-meter'
 import { compileStudioArrangement } from '../model/arrangement-plan'
 import type { StudioAsset, StudioProject } from '../model/types'
 import type { StudioBufferCache, StudioBufferLease } from './buffer-cache'
@@ -21,6 +27,8 @@ export interface StudioTransportState {
   peakL: number
   peakR: number
   error: string | null
+  meter: StudioMeterSnapshot | null
+  masterReady: boolean
 }
 export interface StudioTransportOptions {
   lease: AudioContextLease
@@ -34,6 +42,7 @@ interface Run {
   ctx: AudioContext
   graph: StudioGraph
   envelope: GainNode
+  meter: ReturnType<typeof createStudioLiveMeter>
   buffers: StudioBufferLease
   releaseMemory: () => void
   startFrame: number
@@ -57,6 +66,7 @@ export function createStudioTransport(options: StudioTransportOptions) {
   let generation = 0
   let wantsPlayback = false
   let repeat = false
+  let masterGain: StudioMasterGainToken | null = null
   let restartGeneration = 0
   let state: StudioTransportState = {
     playing: false,
@@ -65,6 +75,8 @@ export function createStudioTransport(options: StudioTransportOptions) {
     peakL: 0,
     peakR: 0,
     error: null,
+    meter: null,
+    masterReady: false,
   }
   let watchedContext: AudioContext | null = null
   const publish = (update: Partial<StudioTransportState>) => {
@@ -78,7 +90,18 @@ export function createStudioTransport(options: StudioTransportOptions) {
     return run.repeat ? frame % run.endFrame : Math.min(run.endFrame, frame)
   }
 
+  function observeSnapshot(project: StudioProject): void {
+    if (
+      masterGain &&
+      (masterGain.projectId !== project.id ||
+        masterGain.revision !== project.revision)
+    )
+      masterGain = null
+    publish({ masterReady: masterGain !== null })
+  }
+
   function release(run: Run): void {
+    run.meter?.dispose()
     run.graph.dispose()
     run.envelope.disconnect()
     run.buffers.release()
@@ -117,7 +140,13 @@ export function createStudioTransport(options: StudioTransportOptions) {
     abort?.abort()
     if (active) publish({ playheadFrame: position(active) })
     retire()
-    publish({ playing: false, pending: preparing, peakL: 0, peakR: 0 })
+    publish({
+      playing: false,
+      pending: preparing,
+      peakL: 0,
+      peakR: 0,
+      meter: null,
+    })
   }
 
   function onClockState(): void {
@@ -164,6 +193,23 @@ export function createStudioTransport(options: StudioTransportOptions) {
     return { content, from }
   }
 
+  async function prepareMaster(
+    ctx: AudioContext,
+    spec: ChainSpec,
+    signal: AbortSignal,
+  ): Promise<number> {
+    await prepareStudioLiveMeter(ctx)
+    signal.throwIfAborted()
+    const [frames] = await (options.measureLatencies ?? measureTrackLatencies)(
+      [spec],
+      ctx.sampleRate,
+    )
+    signal.throwIfAborted()
+    if (!Number.isSafeInteger(frames) || frames < 0)
+      throw new Error('Studio master timing could not be measured.')
+    return frames / ctx.sampleRate
+  }
+
   async function play(
     project: StudioProject,
     assets: readonly StudioAsset[],
@@ -191,13 +237,17 @@ export function createStudioTransport(options: StudioTransportOptions) {
     let releaseMemory: (() => void) | undefined
     let graph: StudioGraph | undefined
     let envelope: GainNode | undefined
+    let meter: ReturnType<typeof createStudioLiveMeter> = null
     try {
       // Called immediately by an explicit UI action, before asset reads.
       const ctx = await unlockContext(attempt.signal)
+      observeSnapshot(project)
       const { content, from } = playableContent(project, assets, startFrame)
+      const sound = resolveStudioSoundGraph(project, masterGain ?? undefined)
       releaseMemory = reserveStudioMemory(
-        studioGraphWorkingBytes(content, ctx.sampleRate),
+        studioGraphWorkingBytes(content, ctx.sampleRate, sound.full),
       )
+      const masterLatency = await prepareMaster(ctx, sound.full, attempt.signal)
       const plan = await prepareStudioPlan(
         project,
         assets,
@@ -216,6 +266,7 @@ export function createStudioTransport(options: StudioTransportOptions) {
       if (token !== generation || disposed)
         throw new DOMException('Playback cancelled', 'AbortError')
       const epoch = ctx.currentTime + WARMUP_SECONDS
+      const audibleEpoch = epoch + planLatencySeconds(plan) + masterLatency
       graph = (options.buildGraph ?? buildStudioGraph)(
         ctx,
         plan,
@@ -223,19 +274,21 @@ export function createStudioTransport(options: StudioTransportOptions) {
         epoch,
         true,
         repeat ? from : undefined,
+        { spec: sound.full },
       )
       envelope = ctx.createGain()
       envelope.gain.value = 0
-      const audibleEpoch = epoch + planLatencySeconds(plan)
       envelope.gain.setValueAtTime(0.0001, audibleEpoch)
       envelope.gain.exponentialRampToValueAtTime(1, audibleEpoch + 0.09)
       graph.output.connect(envelope)
       envelope.connect(ctx.destination)
+      meter = createStudioLiveMeter(ctx, envelope, audibleEpoch)
       graph.scheduleUntil(ctx.currentTime + LOOKAHEAD_SECONDS)
       active = {
         ctx,
         graph,
         envelope,
+        meter,
         buffers,
         releaseMemory,
         startFrame: from,
@@ -250,6 +303,7 @@ export function createStudioTransport(options: StudioTransportOptions) {
       releaseMemory = undefined
       graph = undefined
       envelope = undefined
+      meter = null
       publish({ playing: true, pending: false, playheadFrame: from })
       return true
     } catch (error) {
@@ -266,6 +320,7 @@ export function createStudioTransport(options: StudioTransportOptions) {
       }
       return false
     } finally {
+      meter?.dispose()
       graph?.dispose()
       envelope?.disconnect()
       buffers?.release()
@@ -283,8 +338,16 @@ export function createStudioTransport(options: StudioTransportOptions) {
     if (!run) return
     try {
       run.graph.scheduleUntil(run.ctx.currentTime + LOOKAHEAD_SECONDS)
-      const [peakL, peakR] = run.graph.readPeaks()
-      publish({ playheadFrame: position(run), peakL, peakR })
+      const meter = run.meter?.read() ?? null
+      const [peakL, peakR] = meter
+        ? [meter.peakL, meter.peakR]
+        : run.graph.readPeaks()
+      publish({
+        playheadFrame: position(run),
+        peakL,
+        peakR,
+        meter,
+      })
       if (run.ctx.currentTime >= run.endsAt) pause()
     } catch (error) {
       pause()
@@ -305,6 +368,23 @@ export function createStudioTransport(options: StudioTransportOptions) {
     setRepeat(enabled: boolean) {
       repeat = enabled
     },
+    setMasterGain(value: StudioMasterGainToken | null) {
+      if (
+        value &&
+        (!Number.isFinite(value.gainDb) ||
+          value.gainDb < -24 ||
+          value.gainDb > 36 ||
+          !Number.isFinite(value.safetyGainDb) ||
+          value.safetyGainDb > 0 ||
+          value.safetyGainDb < -24)
+      )
+        throw new Error('The prepared master has invalid gain settings.')
+      masterGain = value === null ? null : { ...value }
+      publish({ masterReady: masterGain !== null })
+    },
+    resetPeakHold() {
+      active?.meter?.clearPeakHold()
+    },
     pause: () => pause(),
     stop() {
       pause()
@@ -321,6 +401,7 @@ export function createStudioTransport(options: StudioTransportOptions) {
       project: StudioProject,
       assets: readonly StudioAsset[],
     ): Promise<void> {
+      observeSnapshot(project)
       if (!wantsPlayback || disposed) return
       const token = ++restartGeneration
       const frame = active ? position(active) : state.playheadFrame

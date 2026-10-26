@@ -21,7 +21,7 @@
 import { createSignal, untrack } from 'solid-js'
 import type { FeatureFlag } from '@/db'
 import { getDb } from '@/db'
-import { TAB_ANALYSIS, TAB_CHALLENGES, TAB_COMMUNITY, TAB_COMPOSE, TAB_EAR_LAB, TAB_EXERCISES, TAB_GUITAR, TAB_HOME, TAB_JAM, TAB_KARAOKE, TAB_LEADERBOARD, TAB_PATH, TAB_PIANO, TAB_PROGRESS, TAB_SETTINGS, TAB_SINGING, } from '@/features/tabs/constants'
+import { TAB_ANALYSIS, TAB_CHALLENGES, TAB_COMMUNITY, TAB_COMPOSE, TAB_EAR_LAB, TAB_EXERCISES, TAB_GUITAR, TAB_HOME, TAB_JAM, TAB_KARAOKE, TAB_LEADERBOARD, TAB_PATH, TAB_PIANO, TAB_PROGRESS, TAB_SETTINGS, TAB_SINGING, TAB_STUDIO_NIGHT, } from '@/features/tabs/constants'
 import type { InstrumentType } from '@/lib/audio-engine'
 import { AudioEngine } from '@/lib/audio-engine'
 import { IS_DEV } from '@/lib/defaults'
@@ -29,6 +29,7 @@ import { GLASSWORKS_LISTED } from '@/lib/glassworks-listing'
 import { trackTour } from '@/lib/guide-funnel'
 import { jamRoomIsOpen } from '@/lib/jam/jam-room-presence'
 import { CAN_TAKE_PAYMENT, IS_NATIVE_BUILD } from '@/lib/native-build'
+import { STUDIO_LIBRARY_TOUR_STEPS, studioTourSteps } from '@/lib/studio-tour'
 import type { TourKey } from '@/lib/tour-ids'
 import { isNarrow } from '@/lib/use-viewport'
 import { getCompletedCount, getRemainingWalkthroughs, } from '@/stores/walkthrough-store'
@@ -2041,6 +2042,10 @@ export const PAGE_TOURS: Partial<Record<ActiveTab, WalkthroughStep[]>> = {
   [TAB_ANALYSIS]: ANALYSIS_TOUR_STEPS,
   [TAB_EXERCISES]: EXERCISES_TOUR_STEPS,
   [TAB_JAM]: JAM_TOUR_STEPS,
+  [TAB_STUDIO_NIGHT]: STUDIO_LIBRARY_TOUR_STEPS.map((step) => ({
+    ...step,
+    requiredTab: TAB_STUDIO_NIGHT,
+  })),
   [TAB_COMMUNITY]: COMMUNITY_TOUR_STEPS,
   [TAB_LEADERBOARD]: LEADERBOARD_TOUR_STEPS,
   [TAB_CHALLENGES]: CHALLENGES_TOUR_STEPS,
@@ -2103,6 +2108,12 @@ export const PAGE_TOUR_CATALOG: {
       'Create or join a jam room and sing together; inside a room, a tour of the room',
   },
   {
+    tab: TAB_STUDIO_NIGHT,
+    title: 'Studio',
+    description:
+      'Arrange your recorded takes, shape the sound and export a song',
+  },
+  {
     tab: TAB_COMMUNITY,
     title: 'Community',
     description: 'Share your work and browse the community feed',
@@ -2141,7 +2152,9 @@ export const TOURS_AVAILABLE = !IS_NATIVE_BUILD
 /**
  * The tour for the screen a tab is showing right now.
  *
- * One tab, one tour -- except the Jam tab, which is the lobby until a room
+ * Studio uses the mounted library or workspace; conditional workspace steps
+ * follow its own phone/tablet layout instead of the app's narrow breakpoint.
+ * Jam is the lobby until a room
  * opens and the room after that. The room outlives a tab switch (the panel
  * unmounts, the store does not), so this asks the store and not the panel:
  * started from the Guide on another tab, the tour still gets the screen the
@@ -2149,6 +2162,15 @@ export const TOURS_AVAILABLE = !IS_NATIVE_BUILD
  */
 export function pageTourSteps(tab: ActiveTab): WalkthroughStep[] | undefined {
   if (tab === TAB_JAM && jamRoomIsOpen()) return JAM_ROOM_TOUR_STEPS
+  if (tab === TAB_STUDIO_NIGHT) {
+    const hasWorkspace =
+      typeof document !== 'undefined' &&
+      document.querySelector('[data-tour="studio.workspace"]') !== null
+    return studioTourSteps(hasWorkspace).map((step) => ({
+      ...step,
+      requiredTab: TAB_STUDIO_NIGHT,
+    }))
+  }
   return PAGE_TOURS[tab]
 }
 
@@ -2161,6 +2183,7 @@ const PAGE_TOUR_KEYS: Partial<Record<ActiveTab, TourKey>> = {
   [TAB_ANALYSIS]: 'analysis',
   [TAB_EXERCISES]: 'exercises',
   [TAB_JAM]: 'jam',
+  [TAB_STUDIO_NIGHT]: 'studio',
   [TAB_COMMUNITY]: 'community',
   [TAB_LEADERBOARD]: 'leaderboard',
   [TAB_CHALLENGES]: 'challenges',

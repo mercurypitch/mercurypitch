@@ -29,6 +29,7 @@ export type TourKey =
   | 'sing'
   | 'karaoke-night'
   | 'sing-more'
+  | 'studio'
 
 /** One permanent number per tour. The table is append-only: see the banner. */
 export const TOUR_IDS: Readonly<Record<TourKey, number>> = {
@@ -53,4 +54,5 @@ export const TOUR_IDS: Readonly<Record<TourKey, number>> = {
   'karaoke-night': 18,
   // Merc's second Sing tour, "Show me more", from the first one's last stop
   'sing-more': 19,
+  studio: 20,
 }

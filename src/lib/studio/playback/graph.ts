@@ -1,5 +1,6 @@
 // Studio graph — shared lane processing and source scheduling for live and offline consumers.
 import { createStudioFxChain } from '@/lib/studio-fx/chain'
+import type { ChainSpec } from '@/lib/studio-fx/chain-spec'
 import type { StudioArrangementPlan, StudioPlannedLane, StudioPlannedSegment, } from '../model/arrangement-plan'
 import { studioPanGains } from '../model/arrangement-plan'
 import { scheduleStudioSegmentGain } from './edge-envelope'
@@ -14,10 +15,14 @@ export interface StudioGraph {
 export function studioGraphWorkingBytes(
   plan: StudioArrangementPlan,
   rate: number,
+  masterSpec?: ChainSpec,
 ): number {
   const count = plan.lanes
     .filter((lane) => lane.audible && lane.segments.length > 0)
-    .reduce((sum, lane) => sum + lane.spec.effects.length, 0)
+    .reduce(
+      (sum, lane) => sum + lane.spec.effects.length,
+      masterSpec?.effects.length ?? 0,
+    )
   // Includes the engine's bounded eight-impulse cache, generation copies,
   // delay lines and node overhead. Browser-private native allocations vary.
   return Math.ceil(
@@ -82,6 +87,7 @@ export function buildStudioGraph(
   epoch: number,
   metering = true,
   repeatFromFrame?: number,
+  master?: { spec: ChainSpec },
 ): StudioGraph {
   const output = ctx.createGain()
   const disposers: (() => void)[] = []
@@ -101,11 +107,18 @@ export function buildStudioGraph(
   const analysers: AnalyserNode[] = []
   const peakSamples = new Float32Array(4096)
   try {
+    let laneOutput = output
+    if (master) {
+      const chain = createStudioFxChain(ctx, master.spec)
+      chain.output.connect(output)
+      laneOutput = chain.input
+      disposers.push(() => chain.dispose())
+    }
     for (const lane of plan.lanes) {
       if (!lane.audible || !lane.segments.length) continue
       if (lane.compensationSeconds === null)
         throw new Error('Studio chain timing has not been measured.')
-      const input = connectLane(ctx, lane, output, disposers)
+      const input = connectLane(ctx, lane, laneOutput, disposers)
       for (const segment of lane.segments)
         scheduled.push({
           segment,

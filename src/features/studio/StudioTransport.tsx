@@ -1,6 +1,8 @@
-// Studio transport — explicit playback and real sample-peak activity in dBFS.
+// Studio transport — explicit playback, repeat and actual stereo output metering.
 import { Show } from 'solid-js'
 import { Pause, Play, Repeat, SkipBack } from '@/components/icons'
+import type { StudioMeterSnapshot } from '@/lib/studio/metering/stream-meter'
+import { StudioOutputMeter } from './audio/StudioOutputMeter'
 import styles from './StudioPage.module.css'
 import { formatStudioTime } from './timeline/timeline-geometry'
 
@@ -10,6 +12,9 @@ interface StudioTransportProps {
   playheadFrame: number
   peakL: number
   peakR: number
+  meter: StudioMeterSnapshot | null
+  meterReady: boolean
+  onResetPeakHold(): void
   hasAudio: boolean
   repeating: boolean
   onRepeat(): void
@@ -18,17 +23,13 @@ interface StudioTransportProps {
 }
 
 export function StudioTransport(props: StudioTransportProps) {
-  const level = (amplitude: number) =>
-    Math.max(
-      0,
-      Math.min(
-        100,
-        ((20 * Math.log10(Math.max(1e-6, amplitude)) + 60) / 60) * 100,
-      ),
-    )
-  const peak = () => Math.max(props.peakL, props.peakR)
   return (
-    <div class={styles.transport} role="group" aria-label="Song playback">
+    <div
+      class={styles.transport}
+      role="group"
+      aria-label="Song playback"
+      data-tour="studio.transport"
+    >
       <button
         type="button"
         class={styles.iconButton}
@@ -64,26 +65,14 @@ export function StudioTransport(props: StudioTransportProps) {
       <output class={styles.time} aria-label="Song position">
         {formatStudioTime(props.playheadFrame)}
       </output>
-      <div
-        class={styles.peak}
-        role="meter"
-        aria-label="Output sample peak"
-        aria-valuemin={-60}
-        aria-valuemax={6}
-        aria-valuenow={Math.max(
-          -60,
-          Math.min(6, 20 * Math.log10(Math.max(1e-6, peak()))),
-        )}
-        aria-valuetext={
-          peak() > 0 ? `${(20 * Math.log10(peak())).toFixed(1)} dBFS` : 'Silent'
-        }
-      >
-        <div class={styles.peakBars} aria-hidden="true">
-          <i style={{ width: `${level(props.peakL)}%` }} />
-          <i style={{ width: `${level(props.peakR)}%` }} />
-        </div>
-        <span>Peak</span>
-      </div>
+      <StudioOutputMeter
+        compact
+        snapshot={props.meter}
+        ready={props.meterReady}
+        peakL={props.peakL}
+        peakR={props.peakR}
+        onReset={props.onResetPeakHold}
+      />
     </div>
   )
 }

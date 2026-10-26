@@ -27,6 +27,7 @@ describe('TOUR_IDS', () => {
       sing: 17,
       'karaoke-night': 18,
       'sing-more': 19,
+      studio: 20,
     })
   })
 

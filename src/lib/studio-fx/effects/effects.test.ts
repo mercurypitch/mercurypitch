@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import type { EffectSpec } from '@/lib/studio-fx/chain-spec'
 import { normalizeChainSpec } from '@/lib/studio-fx/chain-spec'
 import { compressorAutoMakeupGain } from '@/lib/studio-fx/compressor-curve'
@@ -494,4 +494,44 @@ describe('reverb impulse changes', () => {
     expect(a.loads).toHaveLength(2)
     expect(b.loads).toHaveLength(0)
   })
+})
+
+it('reuses shared reverb impulses only while an owner lives and clears disposed buffers', () => {
+  const { ctx, env } = setup(false)
+  const create = vi.spyOn(ctx, 'createBuffer')
+  const first = createEffectUnit(
+    ctx.asContext,
+    spec('reverb', { decayS: 8 }),
+    env,
+  )
+  const second = createEffectUnit(
+    ctx.asContext,
+    spec('reverb', { decayS: 8 }),
+    env,
+  )
+  const original = ctx.ofType<FakeConvolver>('convolver')[0].buffer
+  expect(create).toHaveBeenCalledTimes(1)
+  first.dispose()
+  const third = createEffectUnit(
+    ctx.asContext,
+    spec('reverb', { decayS: 8 }),
+    env,
+  )
+  expect(ctx.ofType<FakeConvolver>('convolver')[4].buffer).toBe(original)
+  expect(create).toHaveBeenCalledTimes(1)
+  second.dispose()
+  third.dispose()
+  expect(
+    ctx
+      .ofType<FakeConvolver>('convolver')
+      .every((node) => node.buffer === null),
+  ).toBe(true)
+  const next = createEffectUnit(
+    ctx.asContext,
+    spec('reverb', { decayS: 8 }),
+    env,
+  )
+  expect(create).toHaveBeenCalledTimes(2)
+  expect(ctx.ofType<FakeConvolver>('convolver')[6].buffer).not.toBe(original)
+  next.dispose()
 })

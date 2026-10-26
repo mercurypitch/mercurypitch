@@ -22,9 +22,6 @@ import { expect, test } from '@playwright/test'
 
 const DB = 'MercuryPitchDB'
 
-/** The schema the shipped app opens. Dexie's version 12 is IndexedDB's 120. */
-const APP_VERSION = 120
-
 declare global {
   interface Window {
     __ppDatabase?: {
@@ -35,7 +32,7 @@ declare global {
   }
 }
 
-async function openApp(page: import('@playwright/test').Page) {
+async function openApp(page: import('@playwright/test').Page): Promise<number> {
   await page.addInitScript(() => {
     ;(window as unknown as Record<string, unknown>).E2E_TEST_MODE = true
   })
@@ -54,13 +51,27 @@ async function openApp(page: import('@playwright/test').Page) {
       { timeout: 20_000 },
     )
     .toBe(true)
+
+  // Derive the fixture from the connection this bundle actually opened.
+  // A fixed old version can turn the simulated upgrade into a same-version
+  // open after an app migration, which never fires a versionchange event.
+  return page.evaluate(async (name) => {
+    const read = await window.__ppDatabase?.read()
+    if (read !== 'ok') throw new Error(`The app database is not ready: ${read}`)
+    const version = (await indexedDB.databases()).find(
+      (db) => db.name === name,
+    )?.version
+    if (version === undefined || !Number.isSafeInteger(version) || version <= 0)
+      throw new Error('The opened app database has no valid schema version.')
+    return version
+  }, DB)
 }
 
 test.describe('multi-tab database upgrade', () => {
   test('a busy tab still lets another connection upgrade @smoke', async ({
     page,
   }) => {
-    await openApp(page)
+    const appVersion = await openApp(page)
 
     const result = await page.evaluate(
       async ({ name, version }) => {
@@ -99,13 +110,13 @@ test.describe('multi-tab database upgrade', () => {
           reads: reads.length,
         }
       },
-      { name: DB, version: APP_VERSION },
+      { name: DB, version: appVersion },
     )
 
     // The regression, in one assertion. Against the unfixed build this is
-    // `blocked-forever`: the read loop keeps reopening version 120 and the
-    // upgrade to 130 never starts.
-    expect(result.outcome).toBe(`upgraded-to-${APP_VERSION + 10}`)
+    // `blocked-forever`: the read loop keeps reopening the old version and
+    // the upgrade never starts.
+    expect(result.outcome).toBe(`upgraded-to-${appVersion + 10}`)
     // And the tab knows why it can no longer read, so the UI can say so.
     expect(result.lifecycle).toBe('superseded')
     // The loop really did run; a zero here would mean the test proved nothing.
@@ -115,7 +126,7 @@ test.describe('multi-tab database upgrade', () => {
   test('the superseded tab stops reopening the old version', async ({
     page,
   }) => {
-    await openApp(page)
+    const appVersion = await openApp(page)
 
     await page.evaluate(
       async ({ name, version }) => {
@@ -129,7 +140,7 @@ test.describe('multi-tab database upgrade', () => {
           setTimeout(resolve, 20_000)
         })
       },
-      { name: DB, version: APP_VERSION },
+      { name: DB, version: appVersion },
     )
 
     // Keep asking the app to read. A connection that still auto-opens would
@@ -144,7 +155,7 @@ test.describe('multi-tab database upgrade', () => {
       return dbs.find((d) => d.name === name)?.version ?? null
     }, DB)
 
-    expect(version).toBe(APP_VERSION + 10)
+    expect(version).toBe(appVersion + 10)
     expect(await page.evaluate(() => window.__ppDatabase?.lifecycle())).toBe(
       'superseded',
     )
@@ -153,7 +164,7 @@ test.describe('multi-tab database upgrade', () => {
   test('the shell tells the visitor the tab is out of date', async ({
     page,
   }) => {
-    await openApp(page)
+    const appVersion = await openApp(page)
 
     // Nothing to say while the database is healthy.
     await expect(page.getByRole('alert')).toHaveCount(0)
@@ -170,7 +181,7 @@ test.describe('multi-tab database upgrade', () => {
           setTimeout(resolve, 20_000)
         })
       },
-      { name: DB, version: APP_VERSION },
+      { name: DB, version: appVersion },
     )
 
     // The room-level copy only helps whoever is watching that room's spinner.
@@ -184,7 +195,7 @@ test.describe('multi-tab database upgrade', () => {
   test('an upgrade held up by another connection reports blocked, then completes', async ({
     page,
   }) => {
-    await openApp(page)
+    const appVersion = await openApp(page)
 
     const result = await page.evaluate(
       async ({ name, version }) => {
@@ -213,13 +224,13 @@ test.describe('multi-tab database upgrade', () => {
 
         return { sawBlocked, finalVersion }
       },
-      { name: DB, version: APP_VERSION },
+      { name: DB, version: appVersion },
     )
 
     // Both halves matter: the browser really did report blocked, and closing
     // the other connection really did let it through. That is the advice the
     // rooms now give while they wait, proven end to end.
     expect(result.sawBlocked).toBe(true)
-    expect(result.finalVersion).toBe(APP_VERSION + 20)
+    expect(result.finalVersion).toBe(appVersion + 20)
   })
 })

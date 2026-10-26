@@ -10,11 +10,19 @@ afterEach(() => {
   vi.unstubAllGlobals()
 })
 
-function viewport(overlay: boolean): void {
+function viewport(width: number, height: number, coarse = false): void {
   vi.stubGlobal(
     'matchMedia',
     vi.fn((media: string) => ({
-      matches: overlay && media === '(max-width: 1100px)',
+      matches: media.split(',').some((query) => {
+        const maxWidth = /\(max-width:\s*(\d+)px\)/.exec(query)
+        const maxHeight = /\(max-height:\s*(\d+)px\)/.exec(query)
+        return (
+          (maxWidth === null || width <= Number(maxWidth[1])) &&
+          (maxHeight === null || height <= Number(maxHeight[1])) &&
+          (!query.includes('(pointer: coarse)') || coarse)
+        )
+      }),
       media,
       addEventListener: vi.fn(),
       removeEventListener: vi.fn(),
@@ -24,7 +32,7 @@ function viewport(overlay: boolean): void {
 
 describe('Studio panel', () => {
   it('focuses the modal, traps Tab, cancels the field before closing, and returns to the opener', async () => {
-    viewport(true)
+    viewport(800, 900)
     const close = vi.fn()
     const commit = vi.fn(() => true)
     render(() => {
@@ -81,7 +89,7 @@ describe('Studio panel', () => {
   })
 
   it('focuses the desktop region without trapping outside focus and closes on Escape', async () => {
-    viewport(false)
+    viewport(1360, 900)
     const close = vi.fn()
     render(() => (
       <>
@@ -102,5 +110,33 @@ describe('Studio panel', () => {
       key: 'Escape',
     })
     expect(close).toHaveBeenCalledTimes(1)
+  })
+
+  it('keeps a coarse 1200 by 400 landscape panel modal with transport in its focus cycle', async () => {
+    viewport(1200, 400, true)
+    render(() => (
+      <>
+        <button>Outside editor</button>
+        <StudioPanel
+          title="Sound"
+          onClose={vi.fn()}
+          footer={<button>Play song</button>}
+        >
+          <button>Auto-balance</button>
+        </StudioPanel>
+      </>
+    ))
+    const panel = screen.getByRole('dialog', { name: 'Sound' })
+    await waitFor(() => expect(panel).toHaveFocus())
+    expect(panel).toHaveAttribute('aria-modal', 'true')
+    expect(panel).toHaveAttribute('data-studio-panel')
+    fireEvent.keyDown(panel, { key: 'Tab', shiftKey: true })
+    const play = screen.getByRole('button', { name: 'Play song' })
+    expect(play).toHaveFocus()
+    fireEvent.keyDown(play, { key: 'Tab' })
+    const close = screen.getByRole('button', { name: 'Close Sound' })
+    expect(close).toHaveFocus()
+    screen.getByRole('button', { name: 'Outside editor' }).focus()
+    await waitFor(() => expect(close).toHaveFocus())
   })
 })

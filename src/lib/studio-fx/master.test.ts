@@ -4,6 +4,20 @@ import { masterBusChain, masterChain, masterGainDb } from './master'
 import { findFlavour, NEUTRAL_MACROS } from './mix-macros'
 
 describe('masterGainDb', () => {
+  it('reports gains the actual gain effect can apply without silent clamping', () => {
+    const gain = masterGainDb({
+      integratedLufs: -65,
+      samplePeakDb: -60,
+      truePeakDb: -60,
+    })
+    expect(gain).toBe(36)
+    expect(
+      masterChain({ gainDb: gain }).effects.find(
+        (effect) => effect.id === 'loudness',
+      )?.params.gainDb,
+    ).toBe(gain)
+  })
+
   it('moves the mix to the target loudness when the peaks allow it', () => {
     expect(
       masterGainDb({ integratedLufs: -20, samplePeakDb: -12, truePeakDb: -12 }),

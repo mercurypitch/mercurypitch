@@ -91,6 +91,7 @@ export function StudioTimeline(props: StudioTimelineProps) {
         [styles.tablet]: !props.phone && width() < 1050,
       }}
       aria-label="Song arrangement"
+      data-tour={props.phone ? 'studio.timeline-overview' : 'studio.timeline'}
       data-studio-scale={scale()}
       style={{
         '--studio-header-width': `${headerWidth()}px`,
@@ -102,6 +103,7 @@ export function StudioTimeline(props: StudioTimelineProps) {
           <button
             type="button"
             aria-label="Snap clips"
+            data-tour="studio.snap"
             aria-pressed={snap()}
             onClick={() => setSnap((value) => !value)}
           >

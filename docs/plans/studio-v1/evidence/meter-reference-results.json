@@ -1,0 +1,1543 @@
+{
+  "version": "ffmpeg version n9.0.2 Copyright (c) 2000-2026 the FFmpeg developers",
+  "algorithm": "hann64-8x-v1",
+  "fixtures": [
+    {
+      "fixture": "44100-997",
+      "sampleRate": 44100,
+      "studio": {
+        "integratedLufs": -19.99720782908929,
+        "samplePeakDb": -19.99999987057016,
+        "truePeakDb": -19.9979346609648
+      },
+      "ffmpeg": {
+        "integratedLufs": -20,
+        "truePeakDb": -20
+      },
+      "difference": {
+        "lufs": 0.0027921709107090464,
+        "truePeakDb": 0.0020653390352016743
+      }
+    },
+    {
+      "fixture": "44100-11025",
+      "sampleRate": 44100,
+      "studio": {
+        "integratedLufs": 0.25727423732683985,
+        "samplePeakDb": -6.108339409602456,
+        "truePeakDb": -3.0076754114784148
+      },
+      "ffmpeg": {
+        "integratedLufs": 0.2,
+        "truePeakDb": -2.5
+      },
+      "difference": {
+        "lufs": 0.05727423732683984,
+        "truePeakDb": -0.5076754114784148
+      }
+    },
+    {
+      "fixture": "44100-19845",
+      "sampleRate": 44100,
+      "studio": {
+        "integratedLufs": 0.25790149461442136,
+        "samplePeakDb": -3.1115882711352953,
+        "truePeakDb": -2.617129569278171
+      },
+      "ffmpeg": {
+        "integratedLufs": 0.2,
+        "truePeakDb": -3.1
+      },
+      "difference": {
+        "lufs": 0.057901494614421345,
+        "truePeakDb": 0.482870430721829
+      }
+    },
+    {
+      "fixture": "44100-60",
+      "sampleRate": 44100,
+      "studio": {
+        "integratedLufs": -23.587868956877717,
+        "samplePeakDb": -20.000019932218475,
+        "truePeakDb": -19.999961764260906
+      },
+      "ffmpeg": {
+        "integratedLufs": -23.6,
+        "truePeakDb": -20
+      },
+      "difference": {
+        "lufs": 0.012131043122284524,
+        "truePeakDb": 0.000038235739094005794
+      }
+    },
+    {
+      "fixture": "44100-5000",
+      "sampleRate": 44100,
+      "studio": {
+        "integratedLufs": -16.67307871693368,
+        "samplePeakDb": -20.00005487842621,
+        "truePeakDb": -19.936966070560672
+      },
+      "ffmpeg": {
+        "integratedLufs": -16.7,
+        "truePeakDb": -19.9
+      },
+      "difference": {
+        "lufs": 0.02692128306631858,
+        "truePeakDb": -0.03696607056067336
+      }
+    },
+    {
+      "fixture": "44100-one-channel",
+      "sampleRate": 44100,
+      "studio": {
+        "integratedLufs": -23.007507785729107,
+        "samplePeakDb": -19.99999987057016,
+        "truePeakDb": -19.9979346609648
+      },
+      "ffmpeg": {
+        "integratedLufs": -23,
+        "truePeakDb": -20
+      },
+      "difference": {
+        "lufs": -0.0075077857291070416,
+        "truePeakDb": 0.0020653390352016743
+      }
+    },
+    {
+      "fixture": "44100-gated",
+      "sampleRate": 44100,
+      "studio": {
+        "integratedLufs": -20.16323058584676,
+        "samplePeakDb": -19.99999987057016,
+        "truePeakDb": -19.9979346609648
+      },
+      "ffmpeg": {
+        "integratedLufs": -20.2,
+        "truePeakDb": -20
+      },
+      "difference": {
+        "lufs": 0.036769414153237534,
+        "truePeakDb": 0.0020653390352016743
+      }
+    },
+    {
+      "fixture": "48000-997",
+      "sampleRate": 48000,
+      "studio": {
+        "integratedLufs": -19.99997033323232,
+        "samplePeakDb": -19.99999987057016,
+        "truePeakDb": -19.999905390528582
+      },
+      "ffmpeg": {
+        "integratedLufs": -20,
+        "truePeakDb": -20
+      },
+      "difference": {
+        "lufs": 0.00002966676768068055,
+        "truePeakDb": 0.00009460947141803899
+      }
+    },
+    {
+      "fixture": "48000-12000",
+      "sampleRate": 48000,
+      "studio": {
+        "integratedLufs": 0.25362373030789553,
+        "samplePeakDb": -6.108339409602456,
+        "truePeakDb": -3.0076754114784148
+      },
+      "ffmpeg": {
+        "integratedLufs": 0.2,
+        "truePeakDb": -2.5
+      },
+      "difference": {
+        "lufs": 0.05362373030789552,
+        "truePeakDb": -0.5076754114784148
+      }
+    },
+    {
+      "fixture": "48000-21600",
+      "sampleRate": 48000,
+      "studio": {
+        "integratedLufs": 0.25407985206837735,
+        "samplePeakDb": -3.1115882711352953,
+        "truePeakDb": -2.617129569278171
+      },
+      "ffmpeg": {
+        "integratedLufs": 0.2,
+        "truePeakDb": -3.1
+      },
+      "difference": {
+        "lufs": 0.05407985206837734,
+        "truePeakDb": 0.482870430721829
+      }
+    },
+    {
+      "fixture": "48000-60",
+      "sampleRate": 48000,
+      "studio": {
+        "integratedLufs": -23.591693358207227,
+        "samplePeakDb": -19.99999987057016,
+        "truePeakDb": -19.999989889005384
+      },
+      "ffmpeg": {
+        "integratedLufs": -23.6,
+        "truePeakDb": -20
+      },
+      "difference": {
+        "lufs": 0.008306641792774627,
+        "truePeakDb": 0.00001011099461578624
+      }
+    },
+    {
+      "fixture": "48000-5000",
+      "sampleRate": 48000,
+      "studio": {
+        "integratedLufs": -16.677619795152015,
+        "samplePeakDb": -19.99999987057016,
+        "truePeakDb": -19.995527935904303
+      },
+      "ffmpeg": {
+        "integratedLufs": -16.7,
+        "truePeakDb": -20
+      },
+      "difference": {
+        "lufs": 0.022380204847983975,
+        "truePeakDb": 0.004472064095697448
+      }
+    },
+    {
+      "fixture": "48000-one-channel",
+      "sampleRate": 48000,
+      "studio": {
+        "integratedLufs": -23.010270289872132,
+        "samplePeakDb": -19.99999987057016,
+        "truePeakDb": -19.999905390528582
+      },
+      "ffmpeg": {
+        "integratedLufs": -23,
+        "truePeakDb": -20
+      },
+      "difference": {
+        "lufs": -0.010270289872131855,
+        "truePeakDb": 0.00009460947141803899
+      }
+    },
+    {
+      "fixture": "48000-gated",
+      "sampleRate": 48000,
+      "studio": {
+        "integratedLufs": -20.165993885262793,
+        "samplePeakDb": -19.99999987057016,
+        "truePeakDb": -19.999905390528582
+      },
+      "ffmpeg": {
+        "integratedLufs": -20.2,
+        "truePeakDb": -20
+      },
+      "difference": {
+        "lufs": 0.03400611473720616,
+        "truePeakDb": 0.00009460947141803899
+      }
+    },
+    {
+      "fixture": "adversarial",
+      "sampleRate": 48000,
+      "studio": {
+        "integratedLufs": -27.038533150881666,
+        "samplePeakDb": 0,
+        "truePeakDb": 4.951947325657111
+      },
+      "ffmpeg": {
+        "integratedLufs": -27,
+        "truePeakDb": 4.1
+      },
+      "difference": {
+        "lufs": -0.038533150881665534,
+        "truePeakDb": 0.8519473256571111
+      }
+    },
+    {
+      "fixture": "edge-44100-0.05-0.000",
+      "sampleRate": 44100,
+      "studio": {
+        "integratedLufs": -0.45757554414517354,
+        "samplePeakDb": -3.0980393476346837,
+        "truePeakDb": -3.089703825425483
+      },
+      "ffmpeg": {
+        "integratedLufs": -70,
+        "truePeakDb": -3.1
+      },
+      "difference": {
+        "lufs": 69.54242445585483,
+        "truePeakDb": 0.010296174574516925
+      }
+    },
+    {
+      "fixture": "edge-44100-0.05-0.393",
+      "sampleRate": 44100,
+      "studio": {
+        "integratedLufs": -0.45726456477935684,
+        "samplePeakDb": -3.124856409430381,
+        "truePeakDb": -3.0550068900713345
+      },
+      "ffmpeg": {
+        "integratedLufs": -70,
+        "truePeakDb": -3
+      },
+      "difference": {
+        "lufs": 69.54273543522065,
+        "truePeakDb": -0.055006890071334524
+      }
+    },
+    {
+      "fixture": "edge-44100-0.05-0.785",
+      "sampleRate": 44100,
+      "studio": {
+        "integratedLufs": -0.45617316645365663,
+        "samplePeakDb": -3.2056409890858872,
+        "truePeakDb": -2.8494871000604083
+      },
+      "ffmpeg": {
+        "integratedLufs": -70,
+        "truePeakDb": -3.1
+      },
+      "difference": {
+        "lufs": 69.54382683354635,
+        "truePeakDb": 0.2505128999395918
+      }
+    },
+    {
+      "fixture": "edge-44100-0.05-1.571",
+      "sampleRate": 44100,
+      "studio": {
+        "integratedLufs": -0.4542880026363964,
+        "samplePeakDb": -3.0980393476346837,
+        "truePeakDb": -2.031157250297999
+      },
+      "ffmpeg": {
+        "integratedLufs": -70,
+        "truePeakDb": -3.1
+      },
+      "difference": {
+        "lufs": 69.5457119973636,
+        "truePeakDb": 1.068842749702001
+      }
+    },
+    {
+      "fixture": "edge-44100-0.1-0.000",
+      "sampleRate": 44100,
+      "studio": {
+        "integratedLufs": 0.2077559696281367,
+        "samplePeakDb": -3.533913016570457,
+        "truePeakDb": -3.0980205743785696
+      },
+      "ffmpeg": {
+        "integratedLufs": -70,
+        "truePeakDb": -3.1
+      },
+      "difference": {
+        "lufs": 70.20775596962814,
+        "truePeakDb": 0.0019794256214304973
+      }
+    },
+    {
+      "fixture": "edge-44100-0.1-0.393",
+      "sampleRate": 44100,
+      "studio": {
+        "integratedLufs": 0.2077115711253067,
+        "samplePeakDb": -3.124856409430381,
+        "truePeakDb": -3.0980341599481216
+      },
+      "ffmpeg": {
+        "integratedLufs": -70,
+        "truePeakDb": -2.8
+      },
+      "difference": {
+        "lufs": 70.2077115711253,
+        "truePeakDb": -0.29803415994812177
+      }
+    },
+    {
+      "fixture": "edge-44100-0.1-0.785",
+      "sampleRate": 44100,
+      "studio": {
+        "integratedLufs": 0.20788180537237677,
+        "samplePeakDb": -3.2056409890858872,
+        "truePeakDb": -3.0980295134037372
+      },
+      "ffmpeg": {
+        "integratedLufs": -70,
+        "truePeakDb": -2.8
+      },
+      "difference": {
+        "lufs": 70.20788180537238,
+        "truePeakDb": -0.2980295134037374
+      }
+    },
+    {
+      "fixture": "edge-44100-0.1-1.571",
+      "sampleRate": 44100,
+      "studio": {
+        "integratedLufs": 0.20840198247057118,
+        "samplePeakDb": -3.0980393476346837,
+        "truePeakDb": -2.237473918646209
+      },
+      "ffmpeg": {
+        "integratedLufs": -70,
+        "truePeakDb": -3.1
+      },
+      "difference": {
+        "lufs": 70.20840198247058,
+        "truePeakDb": 0.8625260813537912
+      }
+    },
+    {
+      "fixture": "edge-44100-0.2-0.000",
+      "sampleRate": 44100,
+      "studio": {
+        "integratedLufs": 0.25564852883325995,
+        "samplePeakDb": -3.533913016570457,
+        "truePeakDb": -2.666156881309267
+      },
+      "ffmpeg": {
+        "integratedLufs": -70,
+        "truePeakDb": -2.2
+      },
+      "difference": {
+        "lufs": 70.25564852883326,
+        "truePeakDb": -0.4661568813092667
+      }
+    },
+    {
+      "fixture": "edge-44100-0.2-0.393",
+      "sampleRate": 44100,
+      "studio": {
+        "integratedLufs": 0.2555939104881596,
+        "samplePeakDb": -3.124856409430381,
+        "truePeakDb": -3.0804911317053003
+      },
+      "ffmpeg": {
+        "integratedLufs": -70,
+        "truePeakDb": -2.9
+      },
+      "difference": {
+        "lufs": 70.25559391048816,
+        "truePeakDb": -0.1804911317053004
+      }
+    },
+    {
+      "fixture": "edge-44100-0.2-0.785",
+      "sampleRate": 44100,
+      "studio": {
+        "integratedLufs": 0.2555902298385099,
+        "samplePeakDb": -3.2056409890858872,
+        "truePeakDb": -3.0673267571826015
+      },
+      "ffmpeg": {
+        "integratedLufs": -70,
+        "truePeakDb": -3
+      },
+      "difference": {
+        "lufs": 70.2555902298385,
+        "truePeakDb": -0.0673267571826015
+      }
+    },
+    {
+      "fixture": "edge-44100-0.2-1.571",
+      "sampleRate": 44100,
+      "studio": {
+        "integratedLufs": 0.25571525405072126,
+        "samplePeakDb": -3.0980393476346837,
+        "truePeakDb": -2.4300447547015294
+      },
+      "ffmpeg": {
+        "integratedLufs": -70,
+        "truePeakDb": -3.1
+      },
+      "difference": {
+        "lufs": 70.25571525405073,
+        "truePeakDb": 0.6699552452984707
+      }
+    },
+    {
+      "fixture": "edge-44100-0.25-0.000",
+      "sampleRate": 44100,
+      "studio": {
+        "integratedLufs": 0.2572054321036277,
+        "samplePeakDb": -3.0980393476346837,
+        "truePeakDb": -2.9268196178816943
+      },
+      "ffmpeg": {
+        "integratedLufs": -70,
+        "truePeakDb": -2.6
+      },
+      "difference": {
+        "lufs": 70.25720543210363,
+        "truePeakDb": -0.3268196178816942
+      }
+    },
+    {
+      "fixture": "edge-44100-0.25-0.393",
+      "sampleRate": 44100,
+      "studio": {
+        "integratedLufs": 0.2571593123129796,
+        "samplePeakDb": -3.7857319070009057,
+        "truePeakDb": -2.8984430696919055
+      },
+      "ffmpeg": {
+        "integratedLufs": -70,
+        "truePeakDb": -2.6
+      },
+      "difference": {
+        "lufs": 70.25715931231298,
+        "truePeakDb": -0.29844306969190537
+      }
+    },
+    {
+      "fixture": "edge-44100-0.25-0.785",
+      "sampleRate": 44100,
+      "studio": {
+        "integratedLufs": 0.25714033468920716,
+        "samplePeakDb": -6.108339409602456,
+        "truePeakDb": -3.0076754114784148
+      },
+      "ffmpeg": {
+        "integratedLufs": -70,
+        "truePeakDb": -2.5
+      },
+      "difference": {
+        "lufs": 70.25714033468921,
+        "truePeakDb": -0.5076754114784148
+      }
+    },
+    {
+      "fixture": "edge-44100-0.25-1.571",
+      "sampleRate": 44100,
+      "studio": {
+        "integratedLufs": 0.2572087203182313,
+        "samplePeakDb": -3.0980393476346837,
+        "truePeakDb": -2.9268196178816943
+      },
+      "ffmpeg": {
+        "integratedLufs": -70,
+        "truePeakDb": -3.1
+      },
+      "difference": {
+        "lufs": 70.25720872031823,
+        "truePeakDb": 0.17318038211830578
+      }
+    },
+    {
+      "fixture": "edge-44100-0.35-0.000",
+      "sampleRate": 44100,
+      "studio": {
+        "integratedLufs": 0.2578282653248425,
+        "samplePeakDb": -3.0980393476346837,
+        "truePeakDb": -2.560498261783634
+      },
+      "ffmpeg": {
+        "integratedLufs": -70,
+        "truePeakDb": -2.3
+      },
+      "difference": {
+        "lufs": 70.25782826532485,
+        "truePeakDb": -0.260498261783634
+      }
+    },
+    {
+      "fixture": "edge-44100-0.35-0.393",
+      "sampleRate": 44100,
+      "studio": {
+        "integratedLufs": 0.25779744062017274,
+        "samplePeakDb": -3.124856409430381,
+        "truePeakDb": -2.5969234261759495
+      },
+      "ffmpeg": {
+        "integratedLufs": -70,
+        "truePeakDb": -2.2
+      },
+      "difference": {
+        "lufs": 70.25779744062017,
+        "truePeakDb": -0.39692342617594933
+      }
+    },
+    {
+      "fixture": "edge-44100-0.35-0.785",
+      "sampleRate": 44100,
+      "studio": {
+        "integratedLufs": 0.2577701178544235,
+        "samplePeakDb": -3.2056409890858872,
+        "truePeakDb": -2.8617129644865575
+      },
+      "ffmpeg": {
+        "integratedLufs": -70,
+        "truePeakDb": -2.6
+      },
+      "difference": {
+        "lufs": 70.25777011785442,
+        "truePeakDb": -0.26171296448655745
+      }
+    },
+    {
+      "fixture": "edge-44100-0.35-1.571",
+      "sampleRate": 44100,
+      "studio": {
+        "integratedLufs": 0.25778016364968837,
+        "samplePeakDb": -3.0980393476346837,
+        "truePeakDb": -2.798307954531426
+      },
+      "ffmpeg": {
+        "integratedLufs": -70,
+        "truePeakDb": -3.1
+      },
+      "difference": {
+        "lufs": 70.25778016364968,
+        "truePeakDb": 0.3016920454685743
+      }
+    },
+    {
+      "fixture": "edge-44100-0.4-0.000",
+      "sampleRate": 44100,
+      "studio": {
+        "integratedLufs": 0.2578818761584196,
+        "samplePeakDb": -3.533913016570457,
+        "truePeakDb": -2.3976743982263993
+      },
+      "ffmpeg": {
+        "integratedLufs": -70,
+        "truePeakDb": -2.2
+      },
+      "difference": {
+        "lufs": 70.25788187615842,
+        "truePeakDb": -0.1976743982263991
+      }
+    },
+    {
+      "fixture": "edge-44100-0.4-0.393",
+      "sampleRate": 44100,
+      "studio": {
+        "integratedLufs": 0.2578583350004109,
+        "samplePeakDb": -3.124856409430381,
+        "truePeakDb": -2.566296636307859
+      },
+      "ffmpeg": {
+        "integratedLufs": -70,
+        "truePeakDb": -2.5
+      },
+      "difference": {
+        "lufs": 70.2578583350004,
+        "truePeakDb": -0.0662966363078592
+      }
+    },
+    {
+      "fixture": "edge-44100-0.4-0.785",
+      "sampleRate": 44100,
+      "studio": {
+        "integratedLufs": 0.25783086138552336,
+        "samplePeakDb": -3.2056409890858872,
+        "truePeakDb": -2.805724054744629
+      },
+      "ffmpeg": {
+        "integratedLufs": -70,
+        "truePeakDb": -2.7
+      },
+      "difference": {
+        "lufs": 70.25783086138553,
+        "truePeakDb": -0.10572405474462876
+      }
+    },
+    {
+      "fixture": "edge-44100-0.4-1.571",
+      "sampleRate": 44100,
+      "studio": {
+        "integratedLufs": 0.25782341856779845,
+        "samplePeakDb": -3.0980393476346837,
+        "truePeakDb": -2.8180200242756994
+      },
+      "ffmpeg": {
+        "integratedLufs": -70,
+        "truePeakDb": -3.1
+      },
+      "difference": {
+        "lufs": 70.2578234185678,
+        "truePeakDb": 0.28197997572430067
+      }
+    },
+    {
+      "fixture": "edge-44100-0.45-0.000",
+      "sampleRate": 44100,
+      "studio": {
+        "integratedLufs": 0.25789966483519766,
+        "samplePeakDb": -3.0980393476346837,
+        "truePeakDb": -2.531120315523089
+      },
+      "ffmpeg": {
+        "integratedLufs": -70,
+        "truePeakDb": -3.1
+      },
+      "difference": {
+        "lufs": 70.2578996648352,
+        "truePeakDb": 0.5688796844769111
+      }
+    },
+    {
+      "fixture": "edge-44100-0.45-0.393",
+      "sampleRate": 44100,
+      "studio": {
+        "integratedLufs": 0.25788304322607924,
+        "samplePeakDb": -3.124856409430381,
+        "truePeakDb": -2.6240111262397408
+      },
+      "ffmpeg": {
+        "integratedLufs": -70,
+        "truePeakDb": -3.1
+      },
+      "difference": {
+        "lufs": 70.25788304322607,
+        "truePeakDb": 0.47598887376025933
+      }
+    },
+    {
+      "fixture": "edge-44100-0.45-0.785",
+      "sampleRate": 44100,
+      "studio": {
+        "integratedLufs": 0.2578568885182042,
+        "samplePeakDb": -3.2056409890858872,
+        "truePeakDb": -2.1036316964330206
+      },
+      "ffmpeg": {
+        "integratedLufs": -70,
+        "truePeakDb": -3.1
+      },
+      "difference": {
+        "lufs": 70.2578568885182,
+        "truePeakDb": 0.9963683035669795
+      }
+    },
+    {
+      "fixture": "edge-44100-0.45-1.571",
+      "sampleRate": 44100,
+      "studio": {
+        "integratedLufs": 0.25783546448070527,
+        "samplePeakDb": -3.0980393476346837,
+        "truePeakDb": -2.160906610249552
+      },
+      "ffmpeg": {
+        "integratedLufs": -70,
+        "truePeakDb": -3.1
+      },
+      "difference": {
+        "lufs": 70.2578354644807,
+        "truePeakDb": 0.9390933897504481
+      }
+    },
+    {
+      "fixture": "edge-44100-0.475-0.000",
+      "sampleRate": 44100,
+      "studio": {
+        "integratedLufs": 0.2568782241444002,
+        "samplePeakDb": -3.0980393476346837,
+        "truePeakDb": -1.332807869404406
+      },
+      "ffmpeg": {
+        "integratedLufs": -70,
+        "truePeakDb": -3.1
+      },
+      "difference": {
+        "lufs": 70.2568782241444,
+        "truePeakDb": 1.767192130595594
+      }
+    },
+    {
+      "fixture": "edge-44100-0.475-0.393",
+      "sampleRate": 44100,
+      "studio": {
+        "integratedLufs": 0.2527702614440386,
+        "samplePeakDb": -3.124856409430381,
+        "truePeakDb": -2.9800540705346803
+      },
+      "ffmpeg": {
+        "integratedLufs": -70,
+        "truePeakDb": -3.1
+      },
+      "difference": {
+        "lufs": 70.25277026144404,
+        "truePeakDb": 0.11994592946531979
+      }
+    },
+    {
+      "fixture": "edge-44100-0.475-0.785",
+      "sampleRate": 44100,
+      "studio": {
+        "integratedLufs": 0.2516488760450486,
+        "samplePeakDb": -3.0980393476346837,
+        "truePeakDb": -3.004850390326934
+      },
+      "ffmpeg": {
+        "integratedLufs": -70,
+        "truePeakDb": -3.1
+      },
+      "difference": {
+        "lufs": 70.25164887604505,
+        "truePeakDb": 0.09514960967306596
+      }
+    },
+    {
+      "fixture": "edge-44100-0.475-1.571",
+      "sampleRate": 44100,
+      "studio": {
+        "integratedLufs": 0.25886150658408646,
+        "samplePeakDb": -3.0980393476346837,
+        "truePeakDb": -0.8888715049949004
+      },
+      "ffmpeg": {
+        "integratedLufs": -70,
+        "truePeakDb": -3.1
+      },
+      "difference": {
+        "lufs": 70.25886150658408,
+        "truePeakDb": 2.2111284950050996
+      }
+    },
+    {
+      "fixture": "edge-44100-0.49-0.000",
+      "sampleRate": 44100,
+      "studio": {
+        "integratedLufs": 0.2501005847785438,
+        "samplePeakDb": -3.0980393476346837,
+        "truePeakDb": -3.0980393476346837
+      },
+      "ffmpeg": {
+        "integratedLufs": -70,
+        "truePeakDb": -3.1
+      },
+      "difference": {
+        "lufs": 70.25010058477855,
+        "truePeakDb": 0.0019606523653163954
+      }
+    },
+    {
+      "fixture": "edge-44100-0.49-0.393",
+      "sampleRate": 44100,
+      "studio": {
+        "integratedLufs": 0.24889174251936674,
+        "samplePeakDb": -3.0991110928596437,
+        "truePeakDb": -3.0991110928596437
+      },
+      "ffmpeg": {
+        "integratedLufs": -70,
+        "truePeakDb": -3.1
+      },
+      "difference": {
+        "lufs": 70.24889174251936,
+        "truePeakDb": 0.0008889071403563875
+      }
+    },
+    {
+      "fixture": "edge-44100-0.49-0.785",
+      "sampleRate": 44100,
+      "studio": {
+        "integratedLufs": 0.2529459765727923,
+        "samplePeakDb": -3.1023263822496725,
+        "truePeakDb": -3.1023263822496725
+      },
+      "ffmpeg": {
+        "integratedLufs": -70,
+        "truePeakDb": -3.1
+      },
+      "difference": {
+        "lufs": 70.25294597657279,
+        "truePeakDb": -0.0023263822496724096
+      }
+    },
+    {
+      "fixture": "edge-44100-0.49-1.571",
+      "sampleRate": 44100,
+      "studio": {
+        "integratedLufs": 0.26562718112954087,
+        "samplePeakDb": -3.0980393476346837,
+        "truePeakDb": 0.4868405571316134
+      },
+      "ffmpeg": {
+        "integratedLufs": -70,
+        "truePeakDb": -3.1
+      },
+      "difference": {
+        "lufs": 70.26562718112955,
+        "truePeakDb": 3.5868405571316133
+      }
+    },
+    {
+      "fixture": "edge-48000-0.05-0.000",
+      "sampleRate": 48000,
+      "studio": {
+        "integratedLufs": -0.28385286537267024,
+        "samplePeakDb": -3.0980393476346837,
+        "truePeakDb": -3.089703825425487
+      },
+      "ffmpeg": {
+        "integratedLufs": -70,
+        "truePeakDb": -3.1
+      },
+      "difference": {
+        "lufs": 69.71614713462733,
+        "truePeakDb": 0.010296174574512929
+      }
+    },
+    {
+      "fixture": "edge-48000-0.05-0.393",
+      "sampleRate": 48000,
+      "studio": {
+        "integratedLufs": -0.28360410944212816,
+        "samplePeakDb": -3.124856409430381,
+        "truePeakDb": -3.0550068900713345
+      },
+      "ffmpeg": {
+        "integratedLufs": -70,
+        "truePeakDb": -3
+      },
+      "difference": {
+        "lufs": 69.71639589055788,
+        "truePeakDb": -0.055006890071334524
+      }
+    },
+    {
+      "fixture": "edge-48000-0.05-0.785",
+      "sampleRate": 48000,
+      "studio": {
+        "integratedLufs": -0.28269604049778047,
+        "samplePeakDb": -3.2056409890858872,
+        "truePeakDb": -2.8494871000604083
+      },
+      "ffmpeg": {
+        "integratedLufs": -70,
+        "truePeakDb": -3.1
+      },
+      "difference": {
+        "lufs": 69.71730395950222,
+        "truePeakDb": 0.2505128999395918
+      }
+    },
+    {
+      "fixture": "edge-48000-0.05-1.571",
+      "sampleRate": 48000,
+      "studio": {
+        "integratedLufs": -0.28110310610510236,
+        "samplePeakDb": -3.0980393476346837,
+        "truePeakDb": -2.031157250297999
+      },
+      "ffmpeg": {
+        "integratedLufs": -70,
+        "truePeakDb": -3.1
+      },
+      "difference": {
+        "lufs": 69.7188968938949,
+        "truePeakDb": 1.068842749702001
+      }
+    },
+    {
+      "fixture": "edge-48000-0.1-0.000",
+      "sampleRate": 48000,
+      "studio": {
+        "integratedLufs": 0.218139986266067,
+        "samplePeakDb": -3.533913016570457,
+        "truePeakDb": -3.098020574378166
+      },
+      "ffmpeg": {
+        "integratedLufs": -70,
+        "truePeakDb": -3.1
+      },
+      "difference": {
+        "lufs": 70.21813998626607,
+        "truePeakDb": 0.0019794256218341744
+      }
+    },
+    {
+      "fixture": "edge-48000-0.1-0.393",
+      "sampleRate": 48000,
+      "studio": {
+        "integratedLufs": 0.2181013523908789,
+        "samplePeakDb": -3.124856409430381,
+        "truePeakDb": -3.0980341599481216
+      },
+      "ffmpeg": {
+        "integratedLufs": -70,
+        "truePeakDb": -2.8
+      },
+      "difference": {
+        "lufs": 70.21810135239087,
+        "truePeakDb": -0.29803415994812177
+      }
+    },
+    {
+      "fixture": "edge-48000-0.1-0.785",
+      "sampleRate": 48000,
+      "studio": {
+        "integratedLufs": 0.21824171440314777,
+        "samplePeakDb": -3.2056409890858872,
+        "truePeakDb": -3.0980295134037372
+      },
+      "ffmpeg": {
+        "integratedLufs": -70,
+        "truePeakDb": -2.8
+      },
+      "difference": {
+        "lufs": 70.21824171440315,
+        "truePeakDb": -0.2980295134037374
+      }
+    },
+    {
+      "fixture": "edge-48000-0.1-1.571",
+      "sampleRate": 48000,
+      "studio": {
+        "integratedLufs": 0.21867586959999064,
+        "samplePeakDb": -3.0980393476346837,
+        "truePeakDb": -2.237473918646209
+      },
+      "ffmpeg": {
+        "integratedLufs": -70,
+        "truePeakDb": -3.1
+      },
+      "difference": {
+        "lufs": 70.21867586959999,
+        "truePeakDb": 0.8625260813537912
+      }
+    },
+    {
+      "fixture": "edge-48000-0.2-0.000",
+      "sampleRate": 48000,
+      "studio": {
+        "integratedLufs": 0.2524424704200744,
+        "samplePeakDb": -3.533913016570457,
+        "truePeakDb": -2.666156881309267
+      },
+      "ffmpeg": {
+        "integratedLufs": -70,
+        "truePeakDb": -2.3
+      },
+      "difference": {
+        "lufs": 70.25244247042008,
+        "truePeakDb": -0.36615688130926705
+      }
+    },
+    {
+      "fixture": "edge-48000-0.2-0.393",
+      "sampleRate": 48000,
+      "studio": {
+        "integratedLufs": 0.2523964845314711,
+        "samplePeakDb": -3.124856409430381,
+        "truePeakDb": -3.0804911317053003
+      },
+      "ffmpeg": {
+        "integratedLufs": -70,
+        "truePeakDb": -3
+      },
+      "difference": {
+        "lufs": 70.25239648453147,
+        "truePeakDb": -0.08049113170530031
+      }
+    },
+    {
+      "fixture": "edge-48000-0.2-0.785",
+      "sampleRate": 48000,
+      "studio": {
+        "integratedLufs": 0.25239315003229235,
+        "samplePeakDb": -3.2056409890858872,
+        "truePeakDb": -3.0673267571826015
+      },
+      "ffmpeg": {
+        "integratedLufs": -70,
+        "truePeakDb": -3.1
+      },
+      "difference": {
+        "lufs": 70.25239315003229,
+        "truePeakDb": 0.032673242817398584
+      }
+    },
+    {
+      "fixture": "edge-48000-0.2-1.571",
+      "sampleRate": 48000,
+      "studio": {
+        "integratedLufs": 0.25249816960581983,
+        "samplePeakDb": -3.0980393476346837,
+        "truePeakDb": -2.4300447547015294
+      },
+      "ffmpeg": {
+        "integratedLufs": -70,
+        "truePeakDb": -3.1
+      },
+      "difference": {
+        "lufs": 70.25249816960581,
+        "truePeakDb": 0.6699552452984707
+      }
+    },
+    {
+      "fixture": "edge-48000-0.25-0.000",
+      "sampleRate": 48000,
+      "studio": {
+        "integratedLufs": 0.25356611672551554,
+        "samplePeakDb": -3.0980393476346837,
+        "truePeakDb": -2.9268196178816943
+      },
+      "ffmpeg": {
+        "integratedLufs": -70,
+        "truePeakDb": -2.6
+      },
+      "difference": {
+        "lufs": 70.25356611672551,
+        "truePeakDb": -0.3268196178816942
+      }
+    },
+    {
+      "fixture": "edge-48000-0.25-0.393",
+      "sampleRate": 48000,
+      "studio": {
+        "integratedLufs": 0.25352732685059653,
+        "samplePeakDb": -3.7857319070009057,
+        "truePeakDb": -2.8984430696919055
+      },
+      "ffmpeg": {
+        "integratedLufs": -70,
+        "truePeakDb": -2.6
+      },
+      "difference": {
+        "lufs": 70.2535273268506,
+        "truePeakDb": -0.29844306969190537
+      }
+    },
+    {
+      "fixture": "edge-48000-0.25-0.785",
+      "sampleRate": 48000,
+      "studio": {
+        "integratedLufs": 0.25351116601057533,
+        "samplePeakDb": -6.108339409602456,
+        "truePeakDb": -3.0076754114784148
+      },
+      "ffmpeg": {
+        "integratedLufs": -70,
+        "truePeakDb": -2.5
+      },
+      "difference": {
+        "lufs": 70.25351116601057,
+        "truePeakDb": -0.5076754114784148
+      }
+    },
+    {
+      "fixture": "edge-48000-0.25-1.571",
+      "sampleRate": 48000,
+      "studio": {
+        "integratedLufs": 0.2535686558476803,
+        "samplePeakDb": -3.0980393476346837,
+        "truePeakDb": -2.9268196178816943
+      },
+      "ffmpeg": {
+        "integratedLufs": -70,
+        "truePeakDb": -3.1
+      },
+      "difference": {
+        "lufs": 70.25356865584769,
+        "truePeakDb": 0.17318038211830578
+      }
+    },
+    {
+      "fixture": "edge-48000-0.35-0.000",
+      "sampleRate": 48000,
+      "studio": {
+        "integratedLufs": 0.25402299155149655,
+        "samplePeakDb": -3.0980393476346837,
+        "truePeakDb": -2.560498261783634
+      },
+      "ffmpeg": {
+        "integratedLufs": -70,
+        "truePeakDb": -2.2
+      },
+      "difference": {
+        "lufs": 70.2540229915515,
+        "truePeakDb": -0.36049826178363364
+      }
+    },
+    {
+      "fixture": "edge-48000-0.35-0.393",
+      "sampleRate": 48000,
+      "studio": {
+        "integratedLufs": 0.25399704776459664,
+        "samplePeakDb": -3.124856409430381,
+        "truePeakDb": -2.5969234261759495
+      },
+      "ffmpeg": {
+        "integratedLufs": -70,
+        "truePeakDb": -2.4
+      },
+      "difference": {
+        "lufs": 70.2539970477646,
+        "truePeakDb": -0.1969234261759496
+      }
+    },
+    {
+      "fixture": "edge-48000-0.35-0.785",
+      "sampleRate": 48000,
+      "studio": {
+        "integratedLufs": 0.2539739395199111,
+        "samplePeakDb": -3.2056409890858872,
+        "truePeakDb": -2.8617129644865575
+      },
+      "ffmpeg": {
+        "integratedLufs": -70,
+        "truePeakDb": -2.6
+      },
+      "difference": {
+        "lufs": 70.25397393951991,
+        "truePeakDb": -0.26171296448655745
+      }
+    },
+    {
+      "fixture": "edge-48000-0.35-1.571",
+      "sampleRate": 48000,
+      "studio": {
+        "integratedLufs": 0.2539823763344061,
+        "samplePeakDb": -3.0980393476346837,
+        "truePeakDb": -2.79830795452893
+      },
+      "ffmpeg": {
+        "integratedLufs": -70,
+        "truePeakDb": -3.1
+      },
+      "difference": {
+        "lufs": 70.2539823763344,
+        "truePeakDb": 0.3016920454710701
+      }
+    },
+    {
+      "fixture": "edge-48000-0.4-0.000",
+      "sampleRate": 48000,
+      "studio": {
+        "integratedLufs": 0.2540640413295385,
+        "samplePeakDb": -3.533913016570457,
+        "truePeakDb": -2.3976743982263993
+      },
+      "ffmpeg": {
+        "integratedLufs": -70,
+        "truePeakDb": -2.4
+      },
+      "difference": {
+        "lufs": 70.25406404132954,
+        "truePeakDb": 0.0023256017736006385
+      }
+    },
+    {
+      "fixture": "edge-48000-0.4-0.393",
+      "sampleRate": 48000,
+      "studio": {
+        "integratedLufs": 0.25404425509203343,
+        "samplePeakDb": -3.124856409430381,
+        "truePeakDb": -2.566296636307859
+      },
+      "ffmpeg": {
+        "integratedLufs": -70,
+        "truePeakDb": -2.4
+      },
+      "difference": {
+        "lufs": 70.25404425509204,
+        "truePeakDb": -0.1662966363078593
+      }
+    },
+    {
+      "fixture": "edge-48000-0.4-0.785",
+      "sampleRate": 48000,
+      "studio": {
+        "integratedLufs": 0.2540210221298578,
+        "samplePeakDb": -3.2056409890858872,
+        "truePeakDb": -2.805724054744629
+      },
+      "ffmpeg": {
+        "integratedLufs": -70,
+        "truePeakDb": -2.8
+      },
+      "difference": {
+        "lufs": 70.25402102212986,
+        "truePeakDb": -0.0057240547446291146
+      }
+    },
+    {
+      "fixture": "edge-48000-0.4-1.571",
+      "sampleRate": 48000,
+      "studio": {
+        "integratedLufs": 0.2540147518898451,
+        "samplePeakDb": -3.0980393476346837,
+        "truePeakDb": -2.8180200242756994
+      },
+      "ffmpeg": {
+        "integratedLufs": -70,
+        "truePeakDb": -3.1
+      },
+      "difference": {
+        "lufs": 70.25401475188984,
+        "truePeakDb": 0.28197997572430067
+      }
+    },
+    {
+      "fixture": "edge-48000-0.45-0.000",
+      "sampleRate": 48000,
+      "studio": {
+        "integratedLufs": 0.2540782778640206,
+        "samplePeakDb": -3.0980393476346837,
+        "truePeakDb": -2.5311203155210715
+      },
+      "ffmpeg": {
+        "integratedLufs": -70,
+        "truePeakDb": -3.1
+      },
+      "difference": {
+        "lufs": 70.25407827786402,
+        "truePeakDb": 0.5688796844789286
+      }
+    },
+    {
+      "fixture": "edge-48000-0.45-0.393",
+      "sampleRate": 48000,
+      "studio": {
+        "integratedLufs": 0.25406430250452516,
+        "samplePeakDb": -3.124856409430381,
+        "truePeakDb": -2.6240111262397408
+      },
+      "ffmpeg": {
+        "integratedLufs": -70,
+        "truePeakDb": -3.1
+      },
+      "difference": {
+        "lufs": 70.25406430250453,
+        "truePeakDb": 0.47598887376025933
+      }
+    },
+    {
+      "fixture": "edge-48000-0.45-0.785",
+      "sampleRate": 48000,
+      "studio": {
+        "integratedLufs": 0.25404218527065214,
+        "samplePeakDb": -3.2056409890858872,
+        "truePeakDb": -2.1036316964330206
+      },
+      "ffmpeg": {
+        "integratedLufs": -70,
+        "truePeakDb": -3.2
+      },
+      "difference": {
+        "lufs": 70.25404218527065,
+        "truePeakDb": 1.0963683035669796
+      }
+    },
+    {
+      "fixture": "edge-48000-0.45-1.571",
+      "sampleRate": 48000,
+      "studio": {
+        "integratedLufs": 0.25402411991964313,
+        "samplePeakDb": -3.0980393476346837,
+        "truePeakDb": -2.160906610249552
+      },
+      "ffmpeg": {
+        "integratedLufs": -70,
+        "truePeakDb": -3.1
+      },
+      "difference": {
+        "lufs": 70.25402411991965,
+        "truePeakDb": 0.9390933897504481
+      }
+    },
+    {
+      "fixture": "edge-48000-0.475-0.000",
+      "sampleRate": 48000,
+      "studio": {
+        "integratedLufs": 0.2540808038673348,
+        "samplePeakDb": -3.0980393476346837,
+        "truePeakDb": -2.947616622704979
+      },
+      "ffmpeg": {
+        "integratedLufs": -70,
+        "truePeakDb": -3.1
+      },
+      "difference": {
+        "lufs": 70.25408080386734,
+        "truePeakDb": 0.15238337729502094
+      }
+    },
+    {
+      "fixture": "edge-48000-0.475-0.393",
+      "sampleRate": 48000,
+      "studio": {
+        "integratedLufs": 0.2540698912505909,
+        "samplePeakDb": -3.124856409430381,
+        "truePeakDb": -2.9800540705346803
+      },
+      "ffmpeg": {
+        "integratedLufs": -70,
+        "truePeakDb": -3.1
+      },
+      "difference": {
+        "lufs": 70.2540698912506,
+        "truePeakDb": 0.11994592946531979
+      }
+    },
+    {
+      "fixture": "edge-48000-0.475-0.785",
+      "sampleRate": 48000,
+      "studio": {
+        "integratedLufs": 0.2540487557440315,
+        "samplePeakDb": -3.0980393476346837,
+        "truePeakDb": -1.1693737689831738
+      },
+      "ffmpeg": {
+        "integratedLufs": -70,
+        "truePeakDb": -3.1
+      },
+      "difference": {
+        "lufs": 70.25404875574404,
+        "truePeakDb": 1.9306262310168263
+      }
+    },
+    {
+      "fixture": "edge-48000-0.475-1.571",
+      "sampleRate": 48000,
+      "studio": {
+        "integratedLufs": 0.2540255577289592,
+        "samplePeakDb": -3.0980393476346837,
+        "truePeakDb": -0.8888715049949004
+      },
+      "ffmpeg": {
+        "integratedLufs": -70,
+        "truePeakDb": -3.1
+      },
+      "difference": {
+        "lufs": 70.25402555772897,
+        "truePeakDb": 2.2111284950050996
+      }
+    },
+    {
+      "fixture": "edge-48000-0.49-0.000",
+      "sampleRate": 48000,
+      "studio": {
+        "integratedLufs": 0.25408169786516444,
+        "samplePeakDb": -3.0980393476346837,
+        "truePeakDb": -3.0980393476346837
+      },
+      "ffmpeg": {
+        "integratedLufs": -70,
+        "truePeakDb": -3.1
+      },
+      "difference": {
+        "lufs": 70.25408169786516,
+        "truePeakDb": 0.0019606523653163954
+      }
+    },
+    {
+      "fixture": "edge-48000-0.49-0.393",
+      "sampleRate": 48000,
+      "studio": {
+        "integratedLufs": 0.25407233374646154,
+        "samplePeakDb": -3.0991110928596437,
+        "truePeakDb": -3.0991110928596437
+      },
+      "ffmpeg": {
+        "integratedLufs": -70,
+        "truePeakDb": -3.1
+      },
+      "difference": {
+        "lufs": 70.25407233374646,
+        "truePeakDb": 0.0008889071403563875
+      }
+    },
+    {
+      "fixture": "edge-48000-0.49-0.785",
+      "sampleRate": 48000,
+      "studio": {
+        "integratedLufs": 0.2540520595432084,
+        "samplePeakDb": -3.1023263822496725,
+        "truePeakDb": -0.881261524900864
+      },
+      "ffmpeg": {
+        "integratedLufs": -70,
+        "truePeakDb": -3.1
+      },
+      "difference": {
+        "lufs": 70.25405205954321,
+        "truePeakDb": 2.218738475099136
+      }
+    },
+    {
+      "fixture": "edge-48000-0.49-1.571",
+      "sampleRate": 48000,
+      "studio": {
+        "integratedLufs": 0.2540261519073451,
+        "samplePeakDb": -3.0980393476346837,
+        "truePeakDb": 0.4868405571316134
+      },
+      "ffmpeg": {
+        "integratedLufs": -70,
+        "truePeakDb": -3.1
+      },
+      "difference": {
+        "lufs": 70.25402615190734,
+        "truePeakDb": 3.5868405571316133
+      }
+    }
+  ],
+  "finalWavs": [
+    {
+      "fixture": "48000-12000",
+      "studio": {
+        "integratedLufs": 1.0112028605622831,
+        "samplePeakDb": -5.3505148838681995,
+        "truePeakDb": -2.249915866759741,
+        "frames": 192000,
+        "sampleRate": 48000,
+        "channels": 2,
+        "bitDepth": 16
+      },
+      "ffmpegTruePeakDb": -1.7,
+      "ceilingDb": -1.5
+    },
+    {
+      "fixture": "48000-gated",
+      "studio": {
+        "integratedLufs": -2.4162204375549154,
+        "samplePeakDb": -2.250022112306263,
+        "truePeakDb": -2.249818625856371,
+        "frames": 384000,
+        "sampleRate": 48000,
+        "channels": 2,
+        "bitDepth": 16
+      },
+      "ffmpegTruePeakDb": -2.2,
+      "ceilingDb": -1.5
+    },
+    {
+      "fixture": "adversarial",
+      "studio": {
+        "integratedLufs": -34.24081096890272,
+        "samplePeakDb": -7.202277949893122,
+        "truePeakDb": -2.2503304763161904,
+        "frames": 48000,
+        "sampleRate": 48000,
+        "channels": 2,
+        "bitDepth": 16
+      },
+      "ffmpegTruePeakDb": -3.1,
+      "ceilingDb": -1.5
+    },
+    {
+      "fixture": "edge-48000-0.2-0.000",
+      "studio": {
+        "integratedLufs": 0.6685619666425032,
+        "samplePeakDb": -3.11760082711912,
+        "truePeakDb": -2.249865670236157,
+        "frames": 4800,
+        "sampleRate": 48000,
+        "channels": 2,
+        "bitDepth": 16
+      },
+      "ffmpegTruePeakDb": -1.9,
+      "ceilingDb": -1.5
+    }
+  ]
+}

@@ -1,0 +1,116 @@
+/* Studio sound controls share Graphite Sheet tokens and remain usable in the phone sheet. */
+.panel {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+.section {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+.section + .section {
+  padding-top: 20px;
+  border-top: 1px solid var(--studio-divider);
+}
+.section h3,
+.section legend {
+  margin: 0;
+  padding: 0;
+  font-size: 14px;
+  font-weight: 600;
+}
+.section legend {
+  padding-top: 20px;
+  margin-bottom: 12px;
+}
+.heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+.subtle {
+  color: var(--studio-pencil);
+  font-size: 12px;
+}
+.flavours {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+.choice {
+  min-height: 40px;
+  padding: 9px 12px;
+  border: 1px solid var(--studio-divider);
+  border-radius: 6px;
+  background: transparent;
+  color: var(--studio-graphite);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.choice[aria-pressed='true'] {
+  border-color: var(--studio-cobalt);
+  background: color-mix(in srgb, var(--studio-cobalt) 12%, transparent);
+}
+.macro {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+.macroTitle,
+.macroEnds {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+.macroTitle output {
+  color: var(--studio-pencil);
+}
+.macroEnds {
+  color: var(--studio-pencil);
+  font-size: 11px;
+}
+.macro input {
+  width: 100%;
+  min-width: 0;
+  height: 28px;
+  margin: 0;
+  accent-color: var(--studio-cobalt);
+}
+.presets {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.preset {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 40px;
+  cursor: pointer;
+}
+.preset input {
+  accent-color: var(--studio-cobalt);
+}
+.preset .subtle {
+  margin-left: auto;
+}
+.error {
+  color: var(--studio-error);
+}
+@media (pointer: coarse) {
+  .choice,
+  .preset {
+    min-height: 44px;
+  }
+  .macro input {
+    height: 44px;
+  }
+}

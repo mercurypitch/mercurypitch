@@ -111,6 +111,7 @@
   height: min(840px, calc(100dvh - 144px));
 }
 .topBar {
+  flex-wrap: wrap;
   min-height: 72px;
   flex-shrink: 0;
   display: flex;
@@ -557,7 +558,7 @@
   clip-path: inset(50%);
   white-space: nowrap;
 }
-@media (max-width: 1100px) {
+@media (max-width: 1100px), (pointer: coarse) and (max-height: 500px) {
   .topBar {
     gap: 12px;
   }
@@ -595,11 +596,14 @@
   }
 }
 .phone .topBar {
+  position: relative;
   flex-wrap: wrap;
   padding: 12px;
   gap: 12px;
 }
 .phone .songIdentity {
+  padding-right: 96px;
+  box-sizing: border-box;
   width: 100%;
   max-width: none;
   flex: 1 0 100%;
@@ -622,12 +626,15 @@
   box-sizing: border-box;
 }
 .phone .topActions {
+  gap: 8px;
   width: 100%;
   margin: 0;
   justify-content: flex-end;
 }
 .phone .historyButtons {
-  margin-right: auto;
+  position: absolute;
+  top: 12px;
+  right: 12px;
 }
 .phone .panelShade {
   align-items: flex-end;

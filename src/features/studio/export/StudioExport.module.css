@@ -1,0 +1,84 @@
+/* Studio export results use readable measurements and an indeterminate native-render progress indicator. */
+.panel {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+.format {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.format strong {
+  font-size: 24px;
+  font-weight: 600;
+  letter-spacing: -0.03em;
+}
+.format span,
+.details dt {
+  color: var(--studio-pencil);
+}
+.details,
+.measurements {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin: 0;
+}
+.details > div {
+  display: flex;
+  justify-content: space-between;
+  gap: 20px;
+}
+.details dd {
+  margin: 0;
+  text-align: right;
+}
+.resultHeading {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 600;
+}
+.measurements {
+  gap: 0;
+  border: 1px solid var(--studio-divider);
+  border-radius: 8px;
+  padding: 0 14px;
+  background: var(--studio-sheet);
+}
+.measurements > div {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 14px 0;
+}
+.measurements > div + div {
+  border-top: 1px solid var(--studio-divider);
+}
+.measurements dt {
+  color: var(--studio-pencil);
+  font-size: 12px;
+}
+.measurements dd {
+  margin: 0;
+  font-size: 19px;
+  white-space: nowrap;
+}
+.measurements dd span {
+  color: var(--studio-pencil);
+  font-size: 11px;
+}
+.progress {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.progress progress {
+  width: 100%;
+  height: 5px;
+  accent-color: var(--studio-cobalt);
+}
+.error {
+  color: var(--studio-error);
+}

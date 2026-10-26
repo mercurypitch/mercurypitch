@@ -1,0 +1,19 @@
+{
+  "before": [
+    132,
+    132
+  ],
+  "acknowledged": [
+    132,
+    132
+  ],
+  "after128ClockQuanta": [
+    133,
+    264
+  ],
+  "after256ClockQuanta": [
+    133,
+    396
+  ],
+  "meterStopped": true
+}
