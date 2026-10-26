@@ -110,6 +110,21 @@
     margin: 1px -12px;
   }
 }
+/* A tune line's layout keeps every button 44 px and apart on a canvas of
+   308 px or more (kit/tune-line-layout.ts, WEB-SPEC Tests 11: a 344 px
+   phone). At 320 px the canvas was 286: the last note's column came to
+   22 px, and free play's last gap button lay 22 px over the join's, their
+   tags drawn over each other. Under 342 px, where the canvas would be under
+   308, the figure and its buttons' layer run on past the card's border and
+   the page's gutter to the window's edges, and the canvas is the window's
+   width; from 342 px nothing changes. */
+@media (max-width: 341px) {
+  .tune-toy > .tune-viz.wide,
+  .tune-toy > .tune-hits {
+    margin-left: calc(-13px - var(--gutter-l));
+    margin-right: calc(-13px - var(--gutter-r));
+  }
+}
 /* the toggles' row takes no room while both its parts are hidden */
 .tune-toy .tune-toggles {
   margin-top: 0;
