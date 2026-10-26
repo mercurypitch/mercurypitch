@@ -38,7 +38,7 @@ Two choices the spec left open, taken as recommended. Say if either should chang
 
 ## Checks
 
-Rebased onto `{{MAIN}}` on 26 October, after v0.9.22 was tagged and #1206 merged. There were no conflicts. The five code commits keep their patch-ids, and the module map commit was regenerated. On the new base:
+Rebased onto `{{MAIN}}` on 26 October, after v0.9.22 was tagged and #1206 merged. There were no conflicts in the text, but one in the types: #1206 moved Lesson 4's `SOLFEGE` into the kit as `MAJOR_SOLFEGE` (`kit/names-modes.ts`), and the fourth commit's `lines.test.ts` took its syllables from `lesson-04/stairs-words`, so it no longer compiled. That commit's test now imports `MAJOR_SOLFEGE`, and `lines.ts`'s header no longer says the module waits for that kit part; nothing else in the commit changed. The other four code commits keep their patch-ids, and the module map commit was regenerated. These checks ran on the same tree, stacked on #1206 before it merged:
 
 - `pnpm check`: {{CHECK}}
 - Unit tests for Lesson 12 and `src/tests/lesson-pages.test.ts`: {{UNIT}}

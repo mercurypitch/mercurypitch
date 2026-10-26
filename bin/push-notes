@@ -33,7 +33,7 @@ FILES=(
   rebase-1026/gates.sh rebase-1026/bodies/1205-merge.md rebase-1026/bodies/1206-merge.md
   rebase-1026/bodies/1208-final.md rebase-1026/bodies/1212-merge.md
   rebase-1026/bodies/1213-new.md rebase-1026/bodies/1214-new.md
-  train/train.sh train/tips.txt train/wordmerged.txt train/resolve1214.py
+  train/train.sh train/tips.txt train/wordmerged.txt train/resolve1214.py train/step.sh rebase-1026/bodies/1212-final.md rebase-1026/bodies/1213-final.md
 )
 
 tmp=$(mktemp -d "$S/.notes-XXXXXX")

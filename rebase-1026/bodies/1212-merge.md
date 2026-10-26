@@ -53,11 +53,11 @@ One question, and only when there is something to say. The sign-off comes first:
 
 ## Checks
 
-Rebased onto `{{MAIN}}` on 26 October, after v0.9.22 was tagged and #1205 merged. There were no conflicts. Four of the five code commits keep their patch-ids. The fifth, which edits Lesson 8's FACTS.md, differs only in a line of context: main's #1216 re-anchored a `lesson-sections.css` citation two lines above the branch's edit, and the edit itself is unchanged. The module map commit was regenerated. On the new base:
+Rebased onto `{{MAIN}}` on 26 October, after v0.9.22 was tagged and #1205 merged. There were no conflicts. Four of the five code commits keep their patch-ids. The fifth, which edits Lesson 8's FACTS.md, differs only in a line of context: main's #1216 re-anchored a `lesson-sections.css` citation two lines above the branch's edit, and the edit itself is unchanged. The module map commit was regenerated. These checks ran on the same tree, stacked on #1205 before it merged:
 
-- `pnpm check`: {{CHECK}}
-- Unit tests for `src/features/admin`, `kit/season.test.ts` and `kit/publish.test.ts`: {{UNIT}}
-- `pnpm test:scripts` ({{SCRIPTS}}), `pnpm pr:validate` and `pnpm metrics:check` (no regressions): pass.
+- `pnpm check`: no errors and the 11 warnings main already has, none of them in these files; it changed no files.
+- Unit tests for `src/features/admin`, `kit/season.test.ts` and `kit/publish.test.ts`: 12 files and 173 tests pass.
+- `pnpm test:scripts` (255 of 255), `pnpm pr:validate` and `pnpm metrics:check` (no regressions): pass.
 - `pnpm docs:index:check`: up to date.
 - `plan-cites check`: 156 findings, one fewer than main's 157. Lesson 12's Decisions 3 had quoted a question that was never literally in the code.
 
