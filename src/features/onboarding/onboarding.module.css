@@ -1966,26 +1966,38 @@
     padding: 2px 0 0;
   }
 
-  .sideDoorsLabel {
-    flex-basis: 100%;
-    margin: 0 0 2px;
-    text-align: center;
-  }
-
-  /* The four doors in one row from a 360 px phone up (measured: 306 px
-     of chips in a 316 px row), under the label's own line, and Lessons,
-     the fifth, on the line under them. A 44 px tap target (owner rule),
-     so the height comes from min-height and the sides do the trimming. */
+  /* The label on a line of its own, then the doors as one set: all of
+     them on one line where they fit, otherwise lines of near-equal length
+     (three and two on phones from 320 to 430 px), never one door alone. A
+     wrapping flex row cannot do that: it fills each line before it starts
+     the next, so the fifth door, Lessons, sat on a line by itself. On a
+     phone the row is a line of text instead, the doors inline boxes in it,
+     and `text-wrap: balance` chooses where it breaks, for however many
+     doors the person's menu has. Their margins are the 6 px gaps the flex
+     row had. A browser without `balance` breaks the line as the flex row
+     did. */
   .sideDoors {
-    gap: 6px;
+    display: block;
+    text-align: center;
+    text-wrap: balance;
   }
 
+  .sideDoorsLabel {
+    display: block;
+    margin: 0 0 2px;
+  }
+
+  /* A 44 px tap target (owner rule), so the height comes from min-height
+     and the sides do the trimming. */
   .sideDoor {
     display: inline-flex;
     align-items: center;
     min-height: 44px;
+    margin: 3px;
     padding: 0 10px;
     font-size: 0.8rem;
+    white-space: nowrap;
+    vertical-align: top;
   }
 
   /* The lesson's cover narrower beside the words, still whole. */
