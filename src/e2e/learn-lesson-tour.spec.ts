@@ -7,8 +7,9 @@
 // A first visit opens the tour on Merc and Tavi's stage; Next walks its
 // steps; Done, Skip, the X and Escape close it for good; the lesson menu's
 // "Tour this page", and the question mark at the masthead's right end, play
-// it again. Phone and desktop, reduced motion, and no sideways scroll at
-// any step. On Lessons 1 and 2 a first visit's card comes once Merc and
+// it again; the mark keeps to the masthead's row at every width, over
+// nothing on the page. Phone and desktop, reduced motion, and no sideways
+// scroll at any step. On Lessons 1 and 2 a first visit's card comes once Merc and
 // Tavi have landed, the page held still till then (kit/opening-hold.ts), so
 // a wait for it there allows the hold's cap.
 
@@ -345,6 +346,92 @@ for (const [name, size] of [
     await page.keyboard.press('Escape')
     await expect(card(page)).toBeHidden()
     await expect(mark).toBeFocused()
+  })
+}
+
+/** Every width the masthead's row changes at, from the narrowest phone to the last before the row has room to spare, a landscape phone among them. */
+const NARROW = [
+  [320, 568],
+  [360, 740],
+  [390, 844],
+  [844, 390],
+  [768, 1024],
+  [820, 1180],
+  [1024, 768],
+  [1180, 820],
+] as const
+
+for (let n = 1; n <= 8; n++) {
+  test(`on Lesson ${n}, at every width from 320 to 1180 px, the question mark ends the masthead's row: a 44 px target that covers nothing`, async ({
+    page,
+  }) => {
+    // Arrange: a return visit
+    await page.addInitScript(([k, v]) => localStorage.setItem(k, v), [
+      TOUR_KEY,
+      TOUR_VERSION,
+    ] as const)
+    await page.goto(`/learn/0${n}`)
+    const mark = page.getByRole('button', { name: 'Tour this page' })
+    await expect(mark).toBeVisible()
+    await page.evaluate(() => document.fonts.ready)
+    const placed: unknown[] = []
+
+    // Act
+    for (const [width, height] of NARROW) {
+      await page.setViewportSize({ width, height })
+      placed.push(
+        await mark.evaluate((el, size) => {
+          const r = el.getBoundingClientRect()
+          const row = el.parentElement as HTMLElement
+          const mast = document.getElementById('mast')?.getBoundingClientRect()
+          const others = Array.from(
+            row.querySelectorAll<HTMLElement>(':scope > a, :scope > button'),
+          ).filter((c) => c !== el && c.getClientRects().length > 0)
+          const meets = (o: DOMRect) =>
+            Math.min(o.right, r.right) - Math.max(o.left, r.left) > 0.5 &&
+            Math.min(o.bottom, r.bottom) - Math.max(o.top, r.top) > 0.5
+          const top = document.elementFromPoint(
+            r.left + r.width / 2,
+            r.top + r.height / 2,
+          )
+          return {
+            size,
+            inMast:
+              mast !== undefined &&
+              r.top >= mast.top &&
+              r.bottom <= mast.bottom &&
+              r.left >= mast.left &&
+              r.right <= mast.right,
+            last: others.every(
+              (o) => o.getBoundingClientRect().right <= r.left,
+            ),
+            meets: others
+              .filter((o) => meets(o.getBoundingClientRect()))
+              .map((o) => o.className),
+            onTop: top !== null && el.contains(top),
+            target: r.width >= 44 && r.height >= 44,
+            // The mark's own place, not the page's scroll width: a lesson's
+            // content can outgrow a window resized under it, which says
+            // nothing about where the masthead puts the mark.
+            inView:
+              r.left >= 0 && r.right <= document.documentElement.clientWidth,
+          }
+        }, `${width}x${height}`),
+      )
+    }
+
+    // Assert
+    expect(placed).toEqual(
+      NARROW.map(([width, height]) => ({
+        size: `${width}x${height}`,
+        inMast: true,
+        last: true,
+        meets: [],
+        onTop: true,
+        target: true,
+        inView: true,
+      })),
+    )
   })
 }
 
