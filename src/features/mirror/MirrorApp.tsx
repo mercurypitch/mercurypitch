@@ -2117,6 +2117,7 @@ export const Results: Component<{
           <Suspense>
             <ThenAndNowPanel
               view={view()}
+              format={props.cardFormat}
               onSingAgain={() => props.onSingAgain?.()}
             />
           </Suspense>

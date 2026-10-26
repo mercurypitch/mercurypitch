@@ -39,6 +39,10 @@ export interface ProgressShareMoment {
   handle?: string | null
   /** Omit when there is no real saved trace; no placeholder graph is drawn. */
   trace?: ProgressPitchTrace | null
+  /** The line over the claim, drawn spaced out; "One moment" when absent. */
+  kicker?: string | null
+  /** The bare address at the foot (card-renderer.ts says why bare). */
+  site?: string | null
 }
 
 export interface ProgressShareAppearance {
@@ -57,6 +61,9 @@ export type ProgressSharePlateLoader = (
 export interface ProgressShareRenderOptions extends ProgressShareAppearance {
   /** Test/preview seam; production normally uses the built-in image loader. */
   loadPlate?: ProgressSharePlateLoader
+  /** A same-origin picture (Merc) drawn between the claim and the facts in a
+   *  trace's place, through the plate's loader; none if it fails to load. */
+  mascotUrl?: string | null
 }
 
 export type ProgressShareOutcome =
@@ -121,6 +128,8 @@ interface Layout {
   titleLineHeight: number
   titleLines: number
   trace: { x: number; y: number; width: number; height: number }
+  /** Merc's square, centred between the claim and the facts. */
+  mascot: { y: number; size: number }
   factsY: number
   footerY: number
 }
@@ -137,6 +146,7 @@ const LAYOUTS: Record<ProgressShareFormat, Layout> = {
     titleLineHeight: 76,
     titleLines: 3,
     trace: { x: 76, y: 500, width: 928, height: 190 },
+    mascot: { y: 400, size: 300 },
     factsY: 754,
     footerY: 988,
   },
@@ -151,6 +161,7 @@ const LAYOUTS: Record<ProgressShareFormat, Layout> = {
     titleLineHeight: 84,
     titleLines: 3,
     trace: { x: 82, y: 620, width: 916, height: 248 },
+    mascot: { y: 495, size: 400 },
     factsY: 970,
     footerY: 1250,
   },
@@ -165,6 +176,7 @@ const LAYOUTS: Record<ProgressShareFormat, Layout> = {
     titleLineHeight: 94,
     titleLines: 4,
     trace: { x: 88, y: 850, width: 904, height: 340 },
+    mascot: { y: 740, size: 520 },
     factsY: 1372,
     footerY: 1770,
   },
@@ -358,6 +370,16 @@ function fitTextSize(
   return minimum
 }
 
+/** "One moment" as the card sets it: "O N E   M O M E N T". */
+export function spacedKicker(value: string): string {
+  return cleanText(value)
+    .toUpperCase()
+    .split(/\s+/)
+    .filter(Boolean)
+    .map((word) => [...word].join(' '))
+    .join('   ')
+}
+
 function drawClaim(
   ctx: CanvasRenderingContext2D,
   moment: ProgressShareMoment,
@@ -366,7 +388,12 @@ function drawClaim(
   ctx.textAlign = 'left'
   ctx.fillStyle = COLOR.blue
   ctx.font = '650 24px Inter, system-ui, sans-serif'
-  ctx.fillText('O N E   M O M E N T', layout.side, layout.kickerY)
+  const kicker = cleanText(moment.kicker)
+  ctx.fillText(
+    spacedKicker(kicker === '' ? 'One moment' : kicker),
+    layout.side,
+    layout.kickerY,
+  )
 
   ctx.fillStyle = COLOR.starlight
   ctx.font = `650 ${layout.titleSize}px Outfit, Inter, system-ui, sans-serif`
@@ -582,7 +609,28 @@ function drawFooter(
   ctx.textAlign = 'left'
   ctx.font = '550 25px Inter, system-ui, sans-serif'
   ctx.fillStyle = COLOR.quiet
-  ctx.fillText('mercurypitch.com/progress', layout.side, layout.footerY)
+  const site = cleanText(moment.site)
+  ctx.fillText(
+    site === '' ? 'mercurypitch.com/progress' : site,
+    layout.side,
+    layout.footerY,
+  )
+}
+
+/** Merc, centred in the band between the claim and the facts, with the
+ *  card's aqua glow behind. */
+function drawMascot(
+  ctx: CanvasRenderingContext2D,
+  image: HTMLImageElement,
+  layout: Layout,
+): void {
+  const { y, size } = layout.mascot
+  ctx.save()
+  ctx.shadowColor = 'rgba(103, 229, 218, 0.45)'
+  ctx.shadowBlur = 48
+  ctx.imageSmoothingQuality = 'high'
+  ctx.drawImage(image, (layout.width - size) / 2, y, size, size)
+  ctx.restore()
 }
 
 /**
@@ -620,16 +668,19 @@ export async function renderProgressShareCard(
     options.backgroundUrl === undefined
       ? MERCURY_PRESSING_PLATE_URLS[format]
       : cleanText(options.backgroundUrl)
-  const plate =
-    backgroundUrl === ''
-      ? null
-      : await (options.loadPlate ?? loadPlate)(backgroundUrl).catch(() => null)
+  const loader = options.loadPlate ?? loadPlate
+  const mascotUrl = cleanText(options.mascotUrl)
+  const [plate, mascot] = await Promise.all([
+    backgroundUrl === '' ? null : loader(backgroundUrl).catch(() => null),
+    mascotUrl === '' ? null : loader(mascotUrl).catch(() => null),
+  ])
 
   drawFallbackPlate(ctx, layout.width, layout.height)
   if (plate !== null) drawPlateImage(ctx, plate, layout, exposure)
   drawDataScrim(ctx, layout, scrimOpacity)
   drawBrand(ctx, layout.side, layout.brandY, format === 'story' ? 38 : 34)
   drawClaim(ctx, moment, layout)
+  if (mascot !== null) drawMascot(ctx, mascot, layout)
   drawPitchTrace(ctx, moment.trace, layout)
   drawFacts(ctx, moment.facts, layout)
   drawFooter(ctx, moment, layout)

@@ -153,13 +153,21 @@
   margin-top: 6px;
 }
 
-/* The Mirror's secondary pill, a size down from the results' hero share. */
+/* The Mirror's pills, a size down from the results' hero share. */
+.panel .share,
 .panel .again {
   flex: 1 1 200px;
   min-height: 48px;
   margin-top: 10px;
   padding: 10px 18px;
   font-size: 0.95rem;
+}
+
+.status {
+  min-height: 1.2em;
+  margin: 6px 0 0;
+  color: var(--mirror-green);
+  font-size: 0.85rem;
 }
 
 .accountButton {

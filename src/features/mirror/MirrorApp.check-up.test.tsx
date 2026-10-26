@@ -22,6 +22,11 @@ vi.mock('./funnel', async (importOriginal) => ({
   ...(await importOriginal<typeof MirrorFunnel>()),
   trackFunnel: vi.fn(),
 }))
+// The share card needs a 2D canvas, which jsdom does not have.
+vi.mock('@/features/progress/then-and-now-card', () => ({
+  renderThenAndNowCard: async () => document.createElement('canvas'),
+  shareThenAndNowCard: async () => ({ outcome: 'dismissed' }),
+}))
 
 afterEach(() => {
   cleanup()

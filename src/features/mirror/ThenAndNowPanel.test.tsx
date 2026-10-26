@@ -8,8 +8,10 @@
 // line for a browser that has never met an account. The reader puts the take
 // just saved into the history before it compares.
 //
-// Faked at the boundary only: the session records, a database read. The
-// account is a real stored token, as the Mirror's account-ask tests use.
+// Faked at the boundaries only: the session records (a database read), and the
+// share card's module, which needs a 2D canvas jsdom does not have; its own
+// cases are src/features/progress/then-and-now-card.test.ts's. The account is
+// a real stored token, as the Mirror's account-ask tests use.
 
 import { cleanup, fireEvent, render, screen } from '@solidjs/testing-library'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
@@ -24,6 +26,8 @@ import { readThenAndNow, ThenAndNowPanel } from './ThenAndNowPanel'
 
 const fakes = vi.hoisted(() => ({
   sessions: [] as Array<{ id: string; endedAt: string }>,
+  render: vi.fn(async () => document.createElement('canvas')),
+  share: vi.fn(async () => ({ outcome: 'shared' })),
 }))
 
 vi.mock('@/db/services/progress-session-records', () => ({
@@ -33,6 +37,11 @@ vi.mock('@/db/services/progress-session-records', () => ({
     complete: true,
     totalAvailable: fakes.sessions.length,
   }),
+}))
+
+vi.mock('@/features/progress/then-and-now-card', () => ({
+  renderThenAndNowCard: fakes.render,
+  shareThenAndNowCard: fakes.share,
 }))
 
 const DAY = 24 * 60 * 60 * 1000
@@ -77,11 +86,14 @@ function accountToken(): string {
   return `h.${body}.s`
 }
 
-function renderPanel(options: { practice?: number } = {}) {
+function renderPanel(
+  options: { practice?: number; format?: 'square' | 'story' } = {},
+) {
   const onSingAgain = vi.fn()
   render(() => (
     <ThenAndNowPanel
       view={view(options.practice)}
+      format={options.format ?? 'square'}
       onSingAgain={onSingAgain}
       now={() => START + 14 * DAY}
     />
@@ -94,6 +106,8 @@ beforeEach(() => {
   setAuthToken(null)
   forgetSignInMethod()
   fakes.sessions = []
+  fakes.render.mockClear()
+  fakes.share.mockClear()
 })
 
 afterEach(() => {
@@ -180,6 +194,19 @@ describe('whose readings, and the account line', () => {
 
     expect(panel).not.toHaveTextContent(/this browser's/)
     expect(screen.queryByTestId('mirror-then-and-now-account')).toBeNull()
+  })
+})
+
+describe('sharing then and now', () => {
+  it('draws the card in the chosen shape before the tap, and shares it', async () => {
+    renderPanel({ practice: 2, format: 'story' })
+    await vi.waitFor(() => expect(fakes.render).toHaveBeenCalledTimes(1))
+
+    fireEvent.click(screen.getByRole('button', { name: 'Share then and now' }))
+
+    expect(await screen.findByText('Shared.')).toBeInTheDocument()
+    expect(fakes.render).toHaveBeenCalledWith(view(2).comparison, 2, 'story')
+    expect(fakes.render).toHaveBeenCalledTimes(1)
   })
 })
 
