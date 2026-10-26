@@ -348,8 +348,13 @@ the same head, structured data and checks out. It would work the way
 ## 8. Links between the lessons and the rooms
 
 Each lesson links the room that practises it (the CURRICULUM § 4 practise
-links). Each room's entry document should link back once the lesson is out,
-which is a field on the entry model (**[next]**, when Lesson 2 ships):
+links). Each room's entry document links back once the lesson is out
+(**[shipped]**): the entry model's `lessonsPractised` field holds the table
+below, and `src/seo/render-entry-page.ts` links each released lesson in the
+document's text under the lede, in the nav's words ("Find Your Pitch lesson:
+What is a note? (Lesson 1)"). With Lessons 1 and 2 out, `/mirror` and
+`/vocal-range-test` link Lesson 1 and `/ear-lab` links Lesson 2; every other
+row links nothing until its lesson is released, and that release links it:
 
 | Room page                                              | Lessons to link                         |
 | ------------------------------------------------------ | --------------------------------------- |

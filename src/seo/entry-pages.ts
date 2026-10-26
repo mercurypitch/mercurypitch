@@ -67,6 +67,14 @@ export interface EntryPage {
   lede: string
   /** Emits WebApplication JSON-LD with a free Offer. */
   app?: { name: string; category: string; description: string }
+  /**
+   * The Find Your Pitch lessons this room practises, by number: the table in
+   * docs/plans/find-your-pitch/SEARCH.md § 8. The document links each one
+   * that is released in its text, under the lede (render-entry-page.ts), and
+   * leaves out the rest, so the release that deletes a lesson's line from
+   * drafts.ts is what links it from its rooms.
+   */
+  lessonsPractised?: readonly number[]
   /** Emits both the visible FAQ section and FAQPage JSON-LD. */
   faq?: readonly FaqItem[]
   noscript: string
@@ -140,6 +148,7 @@ export const ENTRY_PAGES: readonly EntryPage[] = [
     },
     h1: 'Voice Mirror — see your voice in 60 seconds',
     lede: 'Sing two sirens and hold one note. Voice Mirror reads back your vocal range, your pitch accuracy in cents and how steady you held, then places your range in one of six voice types and names a famous singer of that type. Free, no account, and only you can hear you.',
+    lessonsPractised: [1, 3, 7],
     app: {
       name: 'Voice Mirror',
       category: 'MusicApplication',
@@ -187,6 +196,7 @@ export const ENTRY_PAGES: readonly EntryPage[] = [
     },
     h1: 'Free vocal range test',
     lede: 'Glide from your lowest comfortable note to your highest comfortable note and get both notes, your span in semitones and a broad voice-type guide. It runs in your browser and needs no piano and no teacher. The timed part takes about a minute, and each step waits until you are ready.',
+    lessonsPractised: [1, 3, 7],
     app: {
       name: 'MercuryPitch Vocal Range Test',
       category: 'MusicApplication',
@@ -233,6 +243,7 @@ export const ENTRY_PAGES: readonly EntryPage[] = [
     },
     h1: 'Karaoke Night — turn any song into karaoke',
     lede: 'Bring any song. The vocals lift away, the lyrics arrive in time, and every note you sing is drawn against the one you were aiming for. Loop the bar you keep missing, slow it down, and hear your own take back. The example song is free.',
+    lessonsPractised: [14],
     app: {
       name: 'Karaoke Night',
       category: 'MusicApplication',
@@ -366,6 +377,7 @@ export const ENTRY_PAGES: readonly EntryPage[] = [
     },
     h1: 'Piano Night — practice piano, phrase by phrase',
     lede: 'A focused room for the keyboard. Slow a phrase down, loop the bar that will not sit, and play it back up to tempo, reading it as falling notes, as a staff or as hands on the keys. Works with a MIDI keyboard or the keys on screen.',
+    lessonsPractised: [10, 12],
     app: {
       name: 'Piano Night',
       category: 'MusicApplication',
@@ -397,6 +409,7 @@ export const ENTRY_PAGES: readonly EntryPage[] = [
     },
     h1: 'Guitar Night — a rehearsal room that reads your playing',
     lede: 'Start on one open string, or bring a song and mute the guitarist on it. The room listens through a microphone, an interface or MIDI, reads the bar back to you as tab, and loops the four bars you keep missing.',
+    lessonsPractised: [10, 12],
     app: {
       name: 'Guitar Night',
       category: 'MusicApplication',
@@ -428,6 +441,7 @@ export const ENTRY_PAGES: readonly EntryPage[] = [
     },
     h1: 'Drum Night — play the kit, then find the center of the beat',
     lede: 'A drum room for touch, keys and electronic kits. Import MIDI or Guitar Pro percussion, read the part as a pocket guide, from the drummer’s seat or as notation, and find the center of the beat with timing evidence rather than a grade.',
+    lessonsPractised: [8],
     app: {
       name: 'Drum Night',
       category: 'MusicApplication',
@@ -460,6 +474,7 @@ export const ENTRY_PAGES: readonly EntryPage[] = [
     },
     h1: 'Ear Lab — ear training measured in real units',
     lede: 'A bench that reads in cents, milliseconds and notes — real units, not a grade. Calibrate once, then practice at whichever faculty is neediest: pitch resolution, harmony, melody, timbre and time. Everything is measured, nothing is guessed.',
+    lessonsPractised: [2, 6, 10],
     app: {
       name: 'Ear Lab',
       category: 'MusicApplication',
@@ -493,6 +508,7 @@ export const ENTRY_PAGES: readonly EntryPage[] = [
     },
     h1: 'Jam Rooms — sing together from anywhere',
     lede: 'Open a room, share the link, and sing a song together. Lyrics down the left, a live pitch lane for every singer in their own color, and one transport that keeps every room in step.',
+    lessonsPractised: [14],
     app: {
       name: 'Jam Rooms',
       category: 'MusicApplication',
@@ -546,6 +562,7 @@ export const ENTRY_PAGES: readonly EntryPage[] = [
     },
     h1: 'Practice singing on pitch, and see the proof',
     lede: 'Most pitch practice ends with a feeling. This ends with a number. Hold a note, run a scale or chase a moving target, and MercuryPitch draws what you actually sang against what you meant. After each run you get a score out of 100 and the spot where you drifted furthest, in cents, rather than being told it was close.',
+    lessonsPractised: [3, 4, 5, 9],
     app: {
       name: 'MercuryPitch Pitch Training',
       category: 'MusicApplication',
@@ -593,6 +610,7 @@ export const ENTRY_PAGES: readonly EntryPage[] = [
     },
     h1: 'Voice type test',
     lede: 'Sing one comfortable glide from your lowest note to your highest. MercuryPitch measures the notes you actually reached and shows which of six voice types (soprano, mezzo-soprano, alto, tenor, baritone or bass) your range overlaps most.',
+    lessonsPractised: [7, 11],
     app: {
       name: 'MercuryPitch Voice Type Test',
       category: 'MusicApplication',
@@ -686,6 +704,7 @@ export const ENTRY_PAGES: readonly EntryPage[] = [
     },
     h1: 'Which singer has my vocal range?',
     lede: 'Glide from your lowest comfortable note to your highest and back. MercuryPitch measures the notes you actually reached, places your range in one of six voice types and introduces a famous singer of that type, on a card you can keep or share.',
+    lessonsPractised: [7, 11],
     app: {
       name: 'MercuryPitch Singer Match',
       category: 'MusicApplication',
