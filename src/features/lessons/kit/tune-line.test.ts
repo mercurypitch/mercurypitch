@@ -5,16 +5,17 @@
 // The drawing itself is canvas work (the doubles take every call); what a
 // page relies on is here: a named button over every bead, gap and bracket
 // its shape asks for, on that part's target in the layout and numbered
-// across the tune; a new start that lands at once under reduced motion
-// (the doubles turn it on); and a run that announces each note at its
-// onset, settles when the last one ends, and stops when asked, saying
-// whether it was played to its end. With sound on (a fake Sound.voice),
-// a run's voices stop when it is stopped and when a new run starts. On the
-// page's frame loop, turned by hand, an idle line asks for no frames, and a
-// run brings them back until its last light has gone. A shape that asks for
-// a grid makes its buttons one: a row for each line's beads and its gaps,
-// one Tab stop that stays on the button last focused or pressed, and
-// arrows, Home and End that move the focus as WAI-ARIA's layout grid does.
+// across the tune, and moved to a new size even off screen; a new start
+// that lands at once under reduced motion (the doubles turn it on); and a
+// run that announces each note at its onset, settles when the last one
+// ends, and stops when asked, saying whether it was played to its end.
+// With sound on (a fake Sound.voice), a run's voices stop when it is
+// stopped and when a new run starts. On the page's frame loop, turned by
+// hand, an idle line asks for no frames, and a run brings them back until
+// its last light has gone. A shape that asks for a grid makes its buttons
+// one: a row for each line's beads and its gaps, one Tab stop that stays on
+// the button last focused or pressed, and arrows, Home and End that move
+// the focus as WAI-ARIA's layout grid does.
 
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import './browser-doubles.test-fixtures'
@@ -97,9 +98,15 @@ const box = (el: HTMLElement): number[] =>
     Number.parseFloat(v),
   )
 
+/** The test setup's size observer, which a case may swap for its own. */
+const SETUP_OBSERVER = globalThis.ResizeObserver
+
 afterEach(() => {
   vi.useRealTimers()
   vi.restoreAllMocks()
+  // put the setup's observer back, even after a case that threw, without
+  // unstubbing the browser doubles' globals as `vi.unstubAllGlobals` would
+  vi.stubGlobal('ResizeObserver', SETUP_OBSERVER)
   document.body.textContent = ''
 })
 
@@ -141,6 +148,38 @@ describe('mountTuneLine: its buttons', () => {
       gap?.w,
       gap?.h,
     ])
+  })
+
+  it('moves its buttons to a new size off screen, where it draws nothing, so none hangs past a narrower figure', () => {
+    // Arrange: the page's size observer, reporting when the test says so
+    const reports: ResizeObserverCallback[] = []
+    vi.stubGlobal(
+      'ResizeObserver',
+      class {
+        constructor(report: ResizeObserverCallback) {
+          reports.push(report)
+        }
+        observe(): void {}
+        unobserve(): void {}
+        disconnect(): void {}
+      },
+    )
+    const { tune, hits } = mount()
+    const canvas = document.querySelector('canvas')
+    if (canvas === null) throw new Error('no canvas')
+    const wide = box(button(hits, '[data-note="6"]'))
+    canvas.getBoundingClientRect = () =>
+      ({ x: 0, y: 0, top: 0, left: 0, width: 360, height: 276 }) as DOMRect
+
+    // Act
+    reports.forEach((report) => report([], {} as ResizeObserver))
+
+    // Assert
+    const last = tune.layout?.lines[0].beads[6]
+    const narrow = box(button(hits, '[data-note="6"]'))
+    expect(narrow).toEqual([last?.x, last?.y, last?.w, last?.h])
+    expect(narrow[0] + narrow[2]).toBeLessThanOrEqual(360)
+    expect(narrow).not.toEqual(wide)
   })
 
   it('hides its layer when the shape asks for no buttons', () => {
