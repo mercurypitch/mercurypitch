@@ -1102,6 +1102,11 @@ input:checked + .settings-slider:before {
   display: flex;
   flex-direction: column;
   height: 100%;
+  /* It fills the content area, and gives way to a tab's tour chip above it.
+     Its canvas is sized in pixels, so without this the panel kept its full
+     height and the chip pushed the keyboard below the fold (1440x900). The
+     canvas follows its container (FallingNotesCanvas's ResizeObserver). */
+  min-height: 0;
 }
 
 /* No room header over Piano under the native shell: the panel starts at the
