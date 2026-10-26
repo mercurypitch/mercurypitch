@@ -2,7 +2,7 @@
 // Hash Router — Client-side hash-based routing
 // ============================================================
 
-import { TAB_ANALYSIS, TAB_CHALLENGES, TAB_COMMUNITY, TAB_COMPOSE, TAB_EAR_LAB, TAB_EXERCISES, TAB_GUITAR, TAB_HOME, TAB_JAM, TAB_KARAOKE, TAB_LAB, TAB_LAB_DIFF, TAB_LAB_TRANSCRIBE, TAB_LEADERBOARD, TAB_PATH, TAB_PIANO, TAB_PITCH_ALGO, TAB_PITCH_TEST, TAB_PROGRESS, TAB_SETTINGS, TAB_SINGING, TAB_VOICE_HISTORY, } from '@/features/tabs/constants'
+import { TAB_ANALYSIS, TAB_CHALLENGES, TAB_COMMUNITY, TAB_COMPOSE, TAB_EAR_LAB, TAB_EXERCISES, TAB_GUITAR, TAB_HOME, TAB_JAM, TAB_KARAOKE, TAB_LAB, TAB_LAB_DIFF, TAB_LAB_TRANSCRIBE, TAB_LEADERBOARD, TAB_PATH, TAB_PIANO, TAB_PITCH_ALGO, TAB_PITCH_TEST, TAB_PROGRESS, TAB_SETTINGS, TAB_SINGING, TAB_STUDIO_NIGHT, TAB_VOICE_HISTORY, } from '@/features/tabs/constants'
 import { stashPendingFriendCode } from '@/lib/pending-friend-code'
 import { parseSyncLinkHash } from '@/lib/room-code'
 import { decodeSharePayload } from '@/lib/share-codec'
@@ -88,6 +88,7 @@ const VALID_TABS: Set<string> = new Set([
   TAB_SINGING,
   TAB_PIANO,
   TAB_COMPOSE,
+  TAB_STUDIO_NIGHT,
   TAB_SETTINGS,
   TAB_ANALYSIS,
   TAB_COMMUNITY,

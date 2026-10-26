@@ -23,7 +23,7 @@
 import type { Component } from 'solid-js'
 import { lazy } from 'solid-js'
 import type { ActiveTab } from '@/features/tabs/constants'
-import { TAB_ANALYSIS, TAB_CHALLENGES, TAB_COMMUNITY, TAB_COMPOSE, TAB_EAR_LAB, TAB_EXERCISES, TAB_GUITAR, TAB_HOME, TAB_JAM, TAB_KARAOKE, TAB_LAB, TAB_LAB_DIFF, TAB_LAB_TRANSCRIBE, TAB_LEADERBOARD, TAB_PATH, TAB_PIANO, TAB_PITCH_ALGO, TAB_PITCH_TEST, TAB_PROGRESS, TAB_SETTINGS, TAB_SINGING, TAB_VOICE_HISTORY, } from '@/features/tabs/constants'
+import { TAB_ANALYSIS, TAB_CHALLENGES, TAB_COMMUNITY, TAB_COMPOSE, TAB_EAR_LAB, TAB_EXERCISES, TAB_GUITAR, TAB_HOME, TAB_JAM, TAB_KARAOKE, TAB_LAB, TAB_LAB_DIFF, TAB_LAB_TRANSCRIBE, TAB_LEADERBOARD, TAB_PATH, TAB_PIANO, TAB_PITCH_ALGO, TAB_PITCH_TEST, TAB_PROGRESS, TAB_SETTINGS, TAB_SINGING, TAB_STUDIO_NIGHT, TAB_VOICE_HISTORY, } from '@/features/tabs/constants'
 import { ActivityPanel } from './panels/ActivityPanel'
 import { CharacterPanel } from './panels/CharacterPanel'
 import { DisplayPanel } from './panels/DisplayPanel'
@@ -116,6 +116,7 @@ export const SIDEBAR_LAYOUT: Record<ActiveTab, readonly SidebarPanelId[]> = {
   [TAB_LEADERBOARD]: ['mic'],
   [TAB_CHALLENGES]: ['mic', 'activity'],
   [TAB_COMPOSE]: ['library', 'playback-setup', 'mic', 'note-list'],
+  [TAB_STUDIO_NIGHT]: ['mic'],
   [TAB_ANALYSIS]: ['mic', 'display'],
   [TAB_SETTINGS]: ['mic'],
   [TAB_PITCH_TEST]: DEV_SURFACE_LAYOUT,

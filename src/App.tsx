@@ -50,6 +50,12 @@ import { useFocusTrap } from './lib/use-focus-trap'
 import { isNarrow } from './lib/use-viewport'
 import { installAutoResume } from './lib/uvr-auto-resume'
 
+const StudioPage = lazy(async () =>
+  import('@/features/studio/StudioPage').then((module) => ({
+    default: module.StudioPage,
+  })),
+)
+
 const SessionBrowser = lazy(async () =>
   import('@/components/SessionBrowser').then((m) => ({
     default: m.SessionBrowser,
@@ -299,7 +305,7 @@ import { loadSharedRoutine } from '@/features/routines/use-daily-routine'
 import { useHashRouter } from '@/features/routing/useHashRouter'
 import { useSessionSequencer } from '@/features/session/useSessionSequencer'
 import { appModeBounce } from '@/features/tabs/app-mode-guard'
-import { PLAYBACK_MODE_ONCE, PLAYBACK_MODE_REPEAT, PLAYBACK_MODE_SESSION, TAB_ANALYSIS, TAB_CHALLENGES, TAB_COMMUNITY, TAB_COMPOSE, TAB_EAR_LAB, TAB_EXERCISES, TAB_GUITAR, TAB_HOME, TAB_JAM, TAB_KARAOKE, TAB_LAB, TAB_LAB_DIFF, TAB_LAB_TRANSCRIBE, TAB_LEADERBOARD, TAB_PATH, TAB_PIANO, TAB_PITCH_ALGO, TAB_PITCH_TEST, TAB_PROGRESS, TAB_SETTINGS, TAB_SINGING, TAB_VOICE_HISTORY, tabLabel, visibleTabOrder, } from '@/features/tabs/constants'
+import { PLAYBACK_MODE_ONCE, PLAYBACK_MODE_REPEAT, PLAYBACK_MODE_SESSION, TAB_ANALYSIS, TAB_CHALLENGES, TAB_COMMUNITY, TAB_COMPOSE, TAB_EAR_LAB, TAB_EXERCISES, TAB_GUITAR, TAB_HOME, TAB_JAM, TAB_KARAOKE, TAB_LAB, TAB_LAB_DIFF, TAB_LAB_TRANSCRIBE, TAB_LEADERBOARD, TAB_PATH, TAB_PIANO, TAB_PITCH_ALGO, TAB_PITCH_TEST, TAB_PROGRESS, TAB_SETTINGS, TAB_SINGING, TAB_STUDIO_NIGHT, TAB_VOICE_HISTORY, tabLabel, visibleTabOrder, } from '@/features/tabs/constants'
 import type { TourHandoff } from '@/features/tours/room-tour'
 import { hasRoomTour, provideTourHandoff, startRoomTour, } from '@/features/tours/room-tour'
 import { TourChipHost } from '@/features/tours/TourChipHost'
@@ -1067,7 +1073,8 @@ const AppShell: Component<AppProps> = (props) => {
   const handleTouchStart = (e: TouchEvent) => {
     // Opt-in gesture (off by default) — the bottom tab bar is the primary
     // way to switch views on a phone; accidental swipes were changing tabs.
-    if (!swipeNavEnabled()) return
+    touchStartX = 0
+    if (!swipeNavEnabled() || activeTab() === TAB_STUDIO_NIGHT) return
     const target = e.target as HTMLElement
     // Allow swiping on canvas now, but still ignore buttons, inputs, and modals
     if (
@@ -1339,7 +1346,7 @@ const AppShell: Component<AppProps> = (props) => {
       vetoNavigationDuringLocalSave({
         onBlocked: () =>
           showNotification(
-            'Please wait while this take finishes saving on this device.',
+            'Please wait while your changes finish saving on this device.',
             'info',
             { channel: 'voice-take-save' },
           ),
@@ -4125,6 +4132,12 @@ const AppShell: Component<AppProps> = (props) => {
                       </div>
                     </Show>
                   )}
+                </TabErrorBoundary>
+              </Show>
+
+              <Show when={activeTab() === TAB_STUDIO_NIGHT}>
+                <TabErrorBoundary tabName={tabLabel(TAB_STUDIO_NIGHT)}>
+                  <StudioPage />
                 </TabErrorBoundary>
               </Show>
 

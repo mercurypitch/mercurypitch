@@ -2054,6 +2054,7 @@ test's stand-in follow redirects for any other mode, as the runtime does.
 **Symptom:** preparation in a lightweight worktree invoked an automatic install and attempted to replace a shared `node_modules` link.
 **Cause:** pnpm 11 checks dependency state before commands; the borrowed installation had different `patchedDependencies` metadata.
 **Rule:** never approve a purge or set `CI=true` against borrowed dependencies. Prefer direct installed tools for documentation-only work. When using the shared cache for local preparation, `pnpm_config_verify_deps_before_run=warn` prevents automatic installation for that invocation; record the mismatch and leave clean-install validation to CI. Remove only the link you created, not its target.
+**App/test work:** a borrowed install can also fail Vite resolution with an external `/@fs/...` dependency path. Replace only the owned symlink with a separate frozen install from the package cache; do not change the shared target or weaken the test config.
 **See:** `package.json` (`packageManager`), `pnpm-workspace.yaml` (`patchedDependencies`).
 
 ## Process

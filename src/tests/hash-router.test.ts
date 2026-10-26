@@ -3,7 +3,7 @@
 // ============================================================
 
 import { describe, expect, it, vi } from 'vitest'
-import { TAB_COMPOSE, TAB_SETTINGS, TAB_SINGING, TAB_VOICE_HISTORY, } from '@/features/tabs/constants'
+import { TAB_COMPOSE, TAB_SETTINGS, TAB_SINGING, TAB_STUDIO_NIGHT, TAB_VOICE_HISTORY, } from '@/features/tabs/constants'
 import { buildHash, navigateTo, parseHash, pushHash, replaceHash, } from '@/lib/hash-router'
 
 // ── parseHash ─────────────────────────────────────────────────
@@ -831,5 +831,13 @@ describe('parseHash — malformed percent-encoding', () => {
       shareType: 'melody',
       shareId: '%E0%A4%A',
     })
+  })
+})
+
+describe('Studio route', () => {
+  it('round-trips the integrated audio project tab', () => {
+    const route = { type: 'tab' as const, tab: TAB_STUDIO_NIGHT }
+    expect(parseHash('#/studio-night')).toEqual(route)
+    expect(parseHash(buildHash(route))).toEqual(route)
   })
 })

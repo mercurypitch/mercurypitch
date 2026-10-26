@@ -77,6 +77,12 @@ and result evidence shall remain in the existing device-local take stores and
 shall not enter cloud entities, analytics payloads, project exports, or device
 sync through this flow.
 
+**WHEN** the musician explicitly adds a kept take to a Studio project, Studio
+may copy the selected audio and minimal source provenance into its local project
+stores and an explicitly downloaded project backup. This exception excludes
+practice scores, contours, comparison context, and device evidence. Studio
+shall not upload the copied audio or change the original take.
+
 ### REQ-INH-010 — Keep existing history compatible
 
 **WHEN** the new Night sources are introduced, the system shall continue

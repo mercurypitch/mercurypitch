@@ -8,6 +8,7 @@ export const TAB_PROGRESS = 'progress' as const
 export const TAB_SINGING = 'singing' as const
 export const TAB_PIANO = 'piano' as const
 export const TAB_COMPOSE = 'compose' as const
+export const TAB_STUDIO_NIGHT = 'studio-night' as const
 export const TAB_SETTINGS = 'settings' as const
 export const TAB_ANALYSIS = 'analysis' as const
 export const TAB_COMMUNITY = 'community' as const
@@ -34,6 +35,7 @@ export type ActiveTab =
   | typeof TAB_SINGING
   | typeof TAB_PIANO
   | typeof TAB_COMPOSE
+  | typeof TAB_STUDIO_NIGHT
   | typeof TAB_SETTINGS
   | typeof TAB_ANALYSIS
   | typeof TAB_COMMUNITY
@@ -119,11 +121,11 @@ export const TAB_GROUPS: readonly TabGroupDef[] = [
     tabs: [TAB_KARAOKE, TAB_JAM, TAB_COMMUNITY, TAB_LEADERBOARD],
   },
   {
-    // Power-user surfaces. Settings is last on purpose: it is the way back
-    // from simple mode, so it must never be the tab that overflows.
+    // Keep the persisted group id, but distinguish Create from its Studio tab.
+    // Settings remains among the first three destinations and in simple mode.
     id: 'studio',
-    label: 'Studio',
-    tabs: [TAB_COMPOSE, TAB_ANALYSIS, TAB_SETTINGS],
+    label: 'Create',
+    tabs: [TAB_STUDIO_NIGHT, TAB_COMPOSE, TAB_SETTINGS, TAB_ANALYSIS],
   },
 ]
 
@@ -210,6 +212,7 @@ const TAB_SCOPES: Record<ActiveTab, readonly PracticeScope[]> = {
   [TAB_LEADERBOARD]: ['singing', 'guitar', 'piano'],
   [TAB_CHALLENGES]: ['singing'],
   [TAB_COMPOSE]: ['singing', 'piano'],
+  [TAB_STUDIO_NIGHT]: ['singing', 'guitar', 'piano'],
   [TAB_ANALYSIS]: ['singing'],
   [TAB_SETTINGS]: ['singing', 'guitar', 'piano'],
   // Hidden research sub-surfaces (not in TAB_GROUPS); scoped like Analysis.
@@ -255,9 +258,10 @@ export const MOBILE_BAR_TAB_PRIORITY: readonly ActiveTab[] = [
 
 export const MOBILE_BAR_SLOT_COUNT = 4
 
-/** Simple mode keeps only the primary groups + Settings (the way back). */
+/** Simple mode keeps the primary groups, local Studio projects and Settings. */
 const SIMPLE_TABS: ReadonlySet<ActiveTab> = new Set<ActiveTab>([
   ...PRIMARY_TABS,
+  TAB_STUDIO_NIGHT,
   TAB_SETTINGS,
 ])
 
@@ -325,6 +329,7 @@ const TAB_TO_ELEMENT_ID: Record<ActiveTab, string> = {
   [TAB_SINGING]: 'singing',
   [TAB_PIANO]: 'piano',
   [TAB_COMPOSE]: 'compose',
+  [TAB_STUDIO_NIGHT]: 'studio-night',
   [TAB_SETTINGS]: 'settings',
   [TAB_ANALYSIS]: 'analysis',
   [TAB_COMMUNITY]: 'community',
@@ -362,6 +367,7 @@ export function tabLabel(tab: ActiveTab): string {
     [TAB_SINGING]: 'Singing',
     [TAB_PIANO]: 'Piano',
     [TAB_COMPOSE]: 'Compose',
+    [TAB_STUDIO_NIGHT]: 'Studio',
     [TAB_SETTINGS]: 'Settings',
     [TAB_ANALYSIS]: 'Analysis',
     [TAB_COMMUNITY]: 'Community',

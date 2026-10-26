@@ -1,12 +1,12 @@
 import type { Component, JSX } from 'solid-js'
 import { createEffect, createSignal, For, onCleanup, onMount, Show, } from 'solid-js'
 import { AppNavOverflowMenu } from '@/components/AppNavOverflowMenu'
-import { Drum } from '@/components/icons'
+import { Drum, WaveformBars } from '@/components/icons'
 import { BusyLink } from '@/components/shared/BusyLink'
 import type { DragGestureOptions } from '@/components/shared/drag-gesture'
 import { dragGesture } from '@/components/shared/drag-gesture'
 import { DRUM_NIGHT_PATH } from '@/features/drum-night/route'
-import { isTabVisible, MAX_INLINE_GROUP_TABS, splitGroupTabs, TAB_ANALYSIS, TAB_CHALLENGES, TAB_COMMUNITY, TAB_COMPOSE, TAB_EAR_LAB, TAB_EXERCISES, TAB_GROUPS, TAB_GUITAR, TAB_HOME, TAB_JAM, TAB_KARAOKE, TAB_LEADERBOARD, TAB_PATH, TAB_PIANO, TAB_PROGRESS, TAB_SETTINGS, TAB_SINGING, TAB_VOICE_HISTORY, } from '@/features/tabs/constants'
+import { isTabVisible, MAX_INLINE_GROUP_TABS, splitGroupTabs, TAB_ANALYSIS, TAB_CHALLENGES, TAB_COMMUNITY, TAB_COMPOSE, TAB_EAR_LAB, TAB_EXERCISES, TAB_GROUPS, TAB_GUITAR, TAB_HOME, TAB_JAM, TAB_KARAOKE, TAB_LEADERBOARD, TAB_PATH, TAB_PIANO, TAB_PROGRESS, TAB_SETTINGS, TAB_SINGING, TAB_STUDIO_NIGHT, TAB_VOICE_HISTORY, } from '@/features/tabs/constants'
 import { createPersistedSignal } from '@/lib/storage'
 import { practiceScope, uiMode } from '@/stores/settings-store'
 import type { ActiveTab } from '@/types'
@@ -348,6 +348,11 @@ export const TAB_META: Partial<Record<ActiveTab, TabMeta>> = {
         <circle cx="18" cy="16" r="3" />
       </svg>
     ),
+  },
+  [TAB_STUDIO_NIGHT]: {
+    id: 'tab-studio-night',
+    ariaLabel: 'Studio audio projects',
+    icon: () => <WaveformBars size={16} />,
   },
   [TAB_COMPOSE]: {
     id: 'tab-compose',
