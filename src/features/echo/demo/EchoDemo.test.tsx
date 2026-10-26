@@ -214,15 +214,60 @@ function flushFrames(): void {
   for (const callback of due) callback(performance.now())
 }
 
-const room = (): HTMLElement => screen.getByTestId('echo-room')
+// ── The room's parts ───────────────────────────────────────────
+//
+// `run` reads a dozen of the room's parts on every frame of a 22-second
+// demo, about 1,400 frames a run. Found one at a time, each read walked the
+// whole page, and a whole demo took 4 to 5 s on a quiet machine, against
+// Vitest's 5 s limit (TESTING.md section 3.7: fix the cost, do not raise the
+// ceiling). So while `run` reads a frame, the page is walked once, into an
+// index by test id, and every read looks its part up there; outside `run`
+// each read walks the page itself. Like `queryByTestId`, a part that is
+// there twice is an error.
+
+/** The parts on the page by test id, in page order. */
+type Parts = Map<string, HTMLElement[]>
+
+/** The frame `run` is reading, walked once; null between frames. */
+let frame: Parts | null = null
+
+function walkParts(): Parts {
+  const parts: Parts = new Map()
+  for (const el of document.querySelectorAll<HTMLElement>('[data-testid]')) {
+    const id = el.getAttribute('data-testid') ?? ''
+    const same = parts.get(id)
+    if (same === undefined) parts.set(id, [el])
+    else same.push(el)
+  }
+  return parts
+}
+
+/** Every part with this test id, in page order. */
+const partsWith = (testId: string): HTMLElement[] =>
+  (frame ?? walkParts()).get(testId) ?? []
+
+/** The room's part with this test id, or null. */
+function part(testId: string): HTMLElement | null {
+  const found = partsWith(testId)
+  if (found.length > 1)
+    throw new Error(`${found.length} parts with the test id ${testId}`)
+  return found[0] ?? null
+}
+
+/** The room's part with this test id, which must be there. */
+function partThere(testId: string): HTMLElement {
+  const found = part(testId)
+  if (found === null) throw new Error(`no part with the test id ${testId}`)
+  return found
+}
+
+const room = (): HTMLElement => partThere('echo-room')
 const demoMode = (): string | undefined => room().dataset.demo
 const keys = (testId: string): string[] =>
-  screen
-    .queryAllByTestId(testId)
-    .map(
-      (el) =>
-        `${el.getAttribute('data-key')}:${el.getAttribute('data-style') ?? el.getAttribute('data-size')}`,
-    )
+  partsWith(testId).map(
+    (el) =>
+      `${el.getAttribute('data-key')}:${el.getAttribute('data-style') ?? el.getAttribute('data-size')}`,
+  )
 
 /** The room the moment a tooltip showed. */
 interface Moment {
@@ -270,8 +315,7 @@ const push = (list: string[], value: string | null | undefined): void => {
 
 /** Which clouds are up: the take's, the demo's, or none. */
 function cloudsUp(): string {
-  const up = (id: string) =>
-    screen.queryByTestId(id)?.getAttribute('data-on') === 'true'
+  const up = (id: string) => part(id)?.getAttribute('data-on') === 'true'
   if (up('echo-clouds-demo')) return 'demo-off'
   if (up('echo-clouds')) return 'mid-take'
   return 'none'
@@ -283,8 +327,38 @@ function topLightUp(): string {
     'echo-top-light',
     'echo-top-light-demo-off',
     'echo-top-light-result',
-  ].filter((id) => screen.getByTestId(id).style.opacity === '1')
+  ].filter((id) => partThere(id).style.opacity === '1')
   return lit.join(',')
+}
+
+/** Note what the room shows this frame. */
+function note(log: Seen): void {
+  const tip = part('echo-demo-tip')?.dataset.tip
+  const take = part('echo-demo-take')?.textContent
+  if (tip !== undefined && !(tip in log.at)) {
+    log.at[tip] = {
+      phase: room().dataset.phase,
+      take: take ?? null,
+      rings: keys('echo-ring'),
+      stars: keys('echo-star'),
+      result: part('echo-result')?.textContent ?? null,
+      clouds: cloudsUp(),
+      light: partThere('echo-citylight').dataset.state ?? '',
+      topLight: topLightUp(),
+    }
+  }
+  push(log.tips, tip)
+  if (room().dataset.phase === 'result') push(log.overResult, tip)
+  push(log.takes, take)
+  push(log.phases, room().dataset.phase)
+  if (demoMode() === 'playing') {
+    const bubble = part('echo-bubble')?.textContent
+    push(take === undefined ? log.bubbleAlone : log.bubbleInTakes, bubble)
+    if (take !== undefined) {
+      push(log.chipInTakes, part('echo-chip')?.textContent)
+    }
+    push(log.clouds, `${take ?? '-'}:${cloudsUp()}`)
+  }
 }
 
 /** Advance the fake clock a frame at a time, noting what showed. */
@@ -293,31 +367,11 @@ async function run(ms: number, log: Seen = watched()): Promise<Seen> {
   for (let t = 0; t < ms; t += step) {
     await vi.advanceTimersByTimeAsync(step)
     flushFrames()
-    const tip = screen.queryByTestId('echo-demo-tip')?.dataset.tip
-    const take = screen.queryByTestId('echo-demo-take')?.textContent
-    if (tip !== undefined && !(tip in log.at)) {
-      log.at[tip] = {
-        phase: room().dataset.phase,
-        take: take ?? null,
-        rings: keys('echo-ring'),
-        stars: keys('echo-star'),
-        result: screen.queryByTestId('echo-result')?.textContent ?? null,
-        clouds: cloudsUp(),
-        light: screen.getByTestId('echo-citylight').dataset.state ?? '',
-        topLight: topLightUp(),
-      }
-    }
-    push(log.tips, tip)
-    if (room().dataset.phase === 'result') push(log.overResult, tip)
-    push(log.takes, take)
-    push(log.phases, room().dataset.phase)
-    if (demoMode() === 'playing') {
-      const bubble = screen.queryByTestId('echo-bubble')?.textContent
-      push(take === undefined ? log.bubbleAlone : log.bubbleInTakes, bubble)
-      if (take !== undefined) {
-        push(log.chipInTakes, screen.queryByTestId('echo-chip')?.textContent)
-      }
-      push(log.clouds, `${take ?? '-'}:${cloudsUp()}`)
+    frame = walkParts()
+    try {
+      note(log)
+    } finally {
+      frame = null
     }
   }
   return log
