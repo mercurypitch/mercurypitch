@@ -12,10 +12,20 @@
 // This is the cheap half of it: every hook a tour names has to appear
 // somewhere in the source, so deleting a control fails the build of the PR
 // that deletes it rather than the release two weeks later.
+//
+// Merc's tours are held to it too: the Sing and Karaoke Night tours' targets,
+// on both screens, and every stop of the showcase after the plan, for each
+// menu the tab bar can show (src/e2e/coach-tours.spec.ts and showcase.spec.ts
+// are their browser walks).
 
 import { readdirSync, readFileSync, statSync } from 'node:fs'
 import { join } from 'node:path'
 import { describe, expect, it } from 'vitest'
+import { KARAOKE_TOUR } from '@/features/karaoke-night/karaoke-tour'
+import { SING_TOUR } from '@/features/practice/sing-tour'
+import type { PracticeScope, UiMode } from '@/features/tabs/constants'
+import { showcaseStops } from '@/features/tours/coach/showcase-stops'
+import type { CoachTour } from '@/lib/coach-types'
 import type { WalkthroughStep } from '@/stores/app-store'
 import { JAM_ROOM_TOUR_STEPS, PAGE_TOURS, PRACTICE_MODES_TOUR_STEPS, STEM_MIXER_TOUR_STEPS, VOICE_TOUR_STEPS, WALKTHROUGH_STEPS, } from '@/stores/app-store'
 
@@ -38,7 +48,7 @@ function hooksIn(selector: string): string[] {
     hooks.push(`id:${match[1]!}`)
   }
   for (const match of selector.matchAll(
-    /\[data-(tour|testid|collapsible|settings-anchor)="([^"]+)"\]/g,
+    /\[data-(tour|testid|collapsible|settings-anchor|tab-group)="([^"]+)"\]/g,
   )) {
     hooks.push(`data-${match[1]!}:${match[2]!}`)
   }
@@ -46,7 +56,14 @@ function hooksIn(selector: string): string[] {
 }
 
 /** Where selectors are declared rather than implemented. */
-const DEFINITION_FILES = new Set(['app-store.ts', 'walkthrough.ts'])
+const DEFINITION_FILES = new Set([
+  'app-store.ts',
+  'walkthrough.ts',
+  // Merc's tours and the showcase's stops.
+  'sing-tour.ts',
+  'karaoke-tour.ts',
+  'showcase-stops.ts',
+])
 
 function sourceText(): string {
   const chunks: string[] = []
@@ -105,6 +122,49 @@ const ALL_TOURS: Record<string, readonly WalkthroughStep[]> = {
   ),
 }
 
+const MERC_TOURS: Record<string, CoachTour> = {
+  sing: SING_TOUR,
+  'karaoke-night': KARAOKE_TOUR,
+}
+
+const SCOPES: readonly PracticeScope[] = ['all', 'singing', 'guitar', 'piano']
+const MODES: readonly UiMode[] = ['advanced', 'simple']
+
+interface NamedSelector {
+  tour: string
+  title: string
+  selector: string
+}
+
+/**
+ * What Merc's tours point at: each step's target, on either screen, and each
+ * showcase stop's target and what it opens, for every menu.
+ */
+function coachSelectors(): NamedSelector[] {
+  const named: NamedSelector[] = []
+  for (const [tour, { steps }] of Object.entries(MERC_TOURS)) {
+    for (const step of steps) {
+      if (step.target !== undefined) {
+        named.push({ tour, title: step.title, selector: step.target })
+      }
+    }
+  }
+  for (const phone of [true, false]) {
+    for (const scope of SCOPES) {
+      for (const mode of MODES) {
+        for (const stop of showcaseStops({ phone, scope, mode })) {
+          const tour = `showcase (${phone ? 'phone' : 'wide'}, ${scope}, ${mode})`
+          named.push({ tour, title: stop.id, selector: stop.target })
+          if (stop.opens !== undefined) {
+            named.push({ tour, title: stop.id, selector: stop.opens })
+          }
+        }
+      }
+    }
+  }
+  return named
+}
+
 describe('tour selectors', () => {
   it('names only hooks that exist in the app', () => {
     const source = sourceText()
@@ -125,6 +185,22 @@ describe('tour selectors', () => {
     expect(missing).toEqual([])
   })
 
+  it("names only hooks that exist in the app, in Merc's tours and the showcase", () => {
+    const source = sourceText()
+    const named = coachSelectors()
+    const missing = named.flatMap(({ tour, title, selector }) =>
+      hooksIn(selector)
+        .filter((hook) => !isPresent(hook, source))
+        .map((hook) => `${tour} — "${title}" wants ${hook}`),
+    )
+
+    // Every tour and every showcase stop names at least one hook to check.
+    expect(
+      named.filter(({ selector }) => hooksIn(selector).length === 0),
+    ).toEqual([])
+    expect(missing).toEqual([])
+  })
+
   it('never targets a hashed CSS-module class', () => {
     const offenders: string[] = []
     for (const [tour, steps] of Object.entries(ALL_TOURS)) {
@@ -136,6 +212,11 @@ describe('tour selectors', () => {
             offenders.push(`${tour} — "${step.title}": ${selector}`)
           }
         }
+      }
+    }
+    for (const { tour, title, selector } of coachSelectors()) {
+      if (selector.includes('styles.')) {
+        offenders.push(`${tour} — "${title}": ${selector}`)
       }
     }
     expect(offenders).toEqual([])

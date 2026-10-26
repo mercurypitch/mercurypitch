@@ -19,9 +19,7 @@
 
 import type { Locator, Page } from '@playwright/test'
 import { expect, test } from '@playwright/test'
-import { writeToneWav } from './helpers/tone-wav'
-
-const TONE_WAV = writeToneWav(220, 2)
+import { localKaraokeDemo } from './helpers/karaoke-demo'
 
 const SCREENS = [
   { name: 'phone', width: 390, height: 844, phone: true },
@@ -96,20 +94,6 @@ async function standInConsentBar(page: Page): Promise<void> {
   })
 }
 
-/**
- * The demo's stems and lyrics, served from here. Anything else asked of the
- * demo's bucket is refused, so no case reaches the real one.
- */
-async function localDemo(page: Page): Promise<void> {
-  await page.route('**/*.r2.dev/**', (route) => route.abort())
-  await page.route('**/demo/**/*.m4a', (route) =>
-    route.fulfill({ path: TONE_WAV, contentType: 'audio/wav' }),
-  )
-  await page.route('**/demo/**/lyrics.lrc', (route) =>
-    route.fulfill({ body: '[00:00.50]Tour words', contentType: 'text/plain' }),
-  )
-}
-
 /** Plays the singer's part: what the stage host tells a waiting tour. */
 async function singerDid(page: Page, name: string): Promise<void> {
   await page.evaluate((detail) => {
@@ -149,7 +133,7 @@ for (const screen of SCREENS) {
     page.on('pageerror', (error) => errors.push(error.message))
     await page.setViewportSize({ width: screen.width, height: screen.height })
     await standInConsentBar(page)
-    await localDemo(page)
+    await localKaraokeDemo(page)
 
     await page.goto('/karaoke?tour=first')
 
@@ -231,7 +215,7 @@ for (const screen of SCREENS) {
     page,
   }) => {
     await page.setViewportSize({ width: screen.width, height: screen.height })
-    await localDemo(page)
+    await localKaraokeDemo(page)
     await page.goto('/karaoke-night')
 
     const chip = page.getByTestId('tour-chip')
@@ -264,7 +248,7 @@ for (const screen of SCREENS) {
 
 test('the vocal remover keeps its page to itself @smoke', async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 })
-  await localDemo(page)
+  await localKaraokeDemo(page)
   await page.goto('/vocal-remover?tour=first')
 
   await expect(

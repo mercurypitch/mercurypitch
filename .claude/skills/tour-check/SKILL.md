@@ -50,6 +50,18 @@ does exactly that and exits non-zero if any step's spotlight misses.
    auto-show)? does it need `inSidebar`, `navigate`, or a different
    `requiredTab`?
 
+   Every step is also held to the two rules in `scripts/tour-rules.mjs`.
+   `WIDE` means its spotlight is taller than 70% of the window (point the
+   step at something smaller); the steps that already were when the rule
+   came in are named in `WIDE_TARGETS` and print `wide` instead. `BAR` means
+   something the tour put up covers the consent bar, which the walk stands
+   in for at every step (the walk's build shows no real banner).
+
+   Merc's tours (Sing, Karaoke Night) run on the coach, not the Guide's
+   tooltip, so this walker does not drive them: `src/e2e/coach-tours.spec.ts`
+   walks them under the same two rules, and `src/e2e/showcase.spec.ts` walks
+   the showcase after the plan.
+
 4. The **Karaoke mixer tour is not walked** (its targets only exist with a
    song loaded). If you changed `STEM_MIXER_TOUR_STEPS` or the mixer UI,
    verify those selectors statically against the components.
