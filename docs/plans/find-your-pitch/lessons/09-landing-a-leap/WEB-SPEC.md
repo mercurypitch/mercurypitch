@@ -112,8 +112,8 @@ heading, and the line above it, are in LESSON.md ("Section headings").
    octave-tolerant, with Voice Mirror's 35-cent band, and language about the sound.
 7. **Quick check**: LESSON.md's four questions (Toys 5).
 8. **Wrap**: the three recap lines, the challenge, the practice card in the version Sing it's ending
-   picks, free play, and the kit's next-lesson card (`createNextCard(9)`,
-   `kit/next-card.ts:181-210`, drawn before `createExplorer`, `:27-30`). The card is Lesson 10's,
+   picks, the kit's next-lesson card (`createNextCard(9)`, `kit/next-card.ts:181-210`, drawn before
+   `createExplorer`, `:27-30`), then free play, as Lessons 6 to 8 have it. The card is Lesson 10's,
    its words the kit's: the eyebrow with the number, the title and the state, then the tease, "Three
    notes, one chord. Move one by a semitone.", one line above the hook as `.next-tease`, the hook as
    `.q2` and the way on (`:130-146`; FACTS 7), "Coming later" and "See it on the map" until Lesson
@@ -248,13 +248,18 @@ step, hear, ladder, order, landing and free play, plus live mode at the checkpoi
   plot 21.6 px a semitone at 330 px and 10.7 px at the floor, where its two named rows still stand
   at least 21 px apart.
 - **Keyboard and screen readers.** The chart is a group with a live summary in spoken names, never
-  the sign. Every control is a button, and Slow, Hear it first and the voice switch carry
-  `aria-pressed`. The scrub bar is a slider (`role="slider"`, 0 to 3 seconds, `aria-valuetext` such
-  as "1.4 seconds of 3: 80 cents below Merc's note, outside the band"), moved by the arrow keys a
-  tenth of a second at a time, Home and End for its ends. No two controls on the stage share a name:
-  "Leap" in Steps 1 and 2 is named "Leap: do up to so"; the rung buttons "do, D3" and so on; the
-  voice switch "Lower voice" and "Higher voice", distinct from Sing it's voice buttons and from Move
-  do (Toys 4). Tab order: the state's own controls in reading order, then Slow, then the scrub bar.
+  the sign. Every control but the scrub bar is a button, and Slow, Hear it first and the voice
+  switch carry `aria-pressed`. The scrub bar is the kit's native range (`input.range`, as Lesson
+  3's chase scrubs its band chart), named "Scrub the landing", 0 to 3 seconds in steps of 0.1, its
+  `aria-valuetext` from `scrubText` (`lesson-09/lines.ts`) such as "1.4 seconds of 3: 80 cents
+  below Merc's note, outside the band" and "0.0 seconds of 3" at rest; the browser moves it by the
+  arrow keys a tenth of a second at a time, Home and End for its ends, and brings touch and
+  screen-reader behaviour with no pointer code of the page's own. No two controls on the stage
+  share a name: "Leap" in Steps 1 and 2 is named "Leap: do up to so"; the rung buttons "do, D3" and
+  so on; the voice switch "Lower voice" and "Higher voice", distinct from Sing it's voice buttons
+  and from Move do (Toys 4). Sing it's two choices are groups named for what they pick, "The voice
+  you'll sing with" and "The ladder you'll sing". Tab order: the state's own controls in reading
+  order, then Slow, then the scrub bar.
 - Under reduced motion an arc and a trace draw whole at once, a band lights without a pulse, and the
   folds are two stills with the ratio in words; a played sound still sounds.
 
@@ -360,8 +365,8 @@ States:
    turn, every 1.5 s: that is the guide, on the chart itself, so the page needs no ring or countdown
    beside it. The violet line draws live, folded around the glowing rung's note (its cents from the
    rung through `foldCents`, `src/lib/pitch-measurements/f0.ts:57-59`), with a small "octave lower"
-   or "octave higher" tag while it sits within 50 cents of the rung an octave away (FACTS 45); a
-   frame outside the window pins to the chart's edge with a small arrow and no number. Merc and Tavi
+   or "octave higher" tag while it sits within 50 cents of the rung an octave away (`octaveTag`,
+   `src/features/lessons/kit/band-words.ts:93-99`; FACTS 45); a frame outside the window pins to the chart's edge with a small arrow and no number. Merc and Tavi
    listen (`mercListen`, `kit/merc-duo.ts:206`). The microphone is released when the take ends.
 7. **Reading**: one line a note, from the ladder reader (below), listed under the chart in the
    ladder's order, each also drawn: a rung whose note landed lights its edge, "IN THE BAND". If no
@@ -546,10 +551,10 @@ paused off screen, and the still images when WebGL fails or would run on the CPU
   sound.
 - `kit/merc-duo.ts` has `mercSing`, `mercListen` and `mercCelebrate` (`:164`, `:206`, `:217`): Merc
   sings his notes, both listen during a take, and the singing Merc celebrates once after "Easy" or
-  "Workable" when every heard note landed, never otherwise (FACTS 83). Proposed: a `mercHop` beside
-  them for Merc's leaps, since the renderer has `hop`, "Moving between places; jumping notes"
-  (`src/lib/merc/constants.ts:23`; MERC-BIBLE § 5, `MERC-BIBLE.md:101`). Without it the page uses
-  `mercSing`.
+  "Workable" when every heard note landed, never otherwise (FACTS 83). Beside them, `mercHop`
+  (`kit/merc-hop.ts:23`) has the singing Merc hop to land on each leap's second note in the cold
+  open (`lesson-09/cold-open.ts:118-127`), the renderer's `hop`, "Moving between places; jumping
+  notes" (`src/lib/merc/constants.ts:23`; MERC-BIBLE § 5, `MERC-BIBLE.md:101`).
 - Under reduced motion or Pause animations each Merc holds a still frame and skips the reactions.
 
 ## Practice links: what exists and what needs engineering
@@ -572,22 +577,24 @@ paused off screen, and the still images when WebGL fails or would run on the CPU
   links. Interval Trainer's card no longer says it sings intervals "above and
   below" a note: main fixed it on 19 October 2026 (FACTS 53), and this package's plan commit drops
   the fix from MASTER-PLAN § 7's App content row (`MASTER-PLAN.md:304`).
-- **Needed, proposed: `/exercises/leap-ladder`** (CURRICULUM § 4 item 2, and the Phase 2 engineering
-  track's Lesson 9 interval set, `MASTER-PLAN.md:311-315`): Interval Trainer on this lesson's leaps,
-  registered in `EXERCISE_SLUGS` as
+- **Built, not yet linked: `/exercises/leap-ladder`** (#1198; CURRICULUM § 4 item 2, and the Phase
+  2 engineering track's Lesson 9 interval set, `MASTER-PLAN.md:311-315`): Interval Trainer on this
+  lesson's leaps, registered in `EXERCISE_SLUGS` as
   `{ kind: 'exercise', exercise: EXERCISE_INTERVAL_TRAINER, intervals: [3, 4, 7, 5, 12] }`, each
-  upward, with a line in `src/tests/slug-map.test.ts`. It needs the `intervals` field on
-  `ExerciseLaunch` (`src/features/exercises/slug-map.ts:26-43`), passed by `applyExerciseSlug` into
-  the launch override beside the notes and the difficulty (`src/App.tsx:754-765`); the trainer
-  reading it in place of its fixed pool, which today has no minor third (FACTS 51, 59); and, since
-  `plannedRounds` caps a run at the pool's size and `generateIntervals` plays each interval once,
-  either five rounds a run or a field that lets intervals repeat (FACTS 60). The set keeps the
+  upward (`src/features/exercises/slug-map.ts:70-74`), with its line in
+  `src/tests/slug-map.test.ts:61-67`. The `intervals` field on `ExerciseLaunch`
+  (`src/features/exercises/slug-map.ts:26-43`) is passed by `applyExerciseSlug` into the launch
+  override beside the notes and the difficulty (`src/App.tsx:762-764`), and the trainer reads it in
+  place of its fixed pool, which still has no minor third (FACTS 51, 59); a launched list runs as
+  many rounds as the difficulty asks, every leap once before any twice (FACTS 60). The set keeps the
   plan's octave, which this page makes optional, as the rules allow: played from a preset's anchor,
   as the trainer plays every round, the octave tops out 7 to 9 semitones under the preset's top, so
   it requests no extreme of the saved range (REQ-GVC-011), and the card's "If the top do felt high
-  today, leave them for another day." is the gentler way (REQ-GVC-055; FACTS 60). When it ships,
-  LESSON.md's editorial note gives the card's new sentences, and the season entry's `needs` gives
-  way to a second link.
+  today, leave them for another day." is the gentler way (REQ-GVC-055; FACTS 60). The page does not
+  link it yet: the practice card is one link, to the Exercises tab where both of today's drills
+  sit, and the slug needs a link of its own beside it. The switch waits on a card with two links:
+  then LESSON.md's editorial note gives the card's new sentences, and the season entry's `needs`
+  gives way to the second link.
 - **Optional, proposed: `/exercises/arpeggio-jumper`**, a data-only slug (CURRICULUM § 4 item 1)
   that opens Arpeggio Jumper on its setup screen with its defaults, so the card can link the drill
   itself; its notes, if any, are fitted to the singer's range as every slug's are
@@ -700,10 +707,10 @@ table):
    between Merc and Tavi. It shows no middle note, so it does not answer the cold open's
    predict.
 4. First-paint ceilings for `learn/09.html` in `scripts/assert-first-paint-budgets.mjs`, one in its
-   JavaScript table and one in its stylesheet table, beside Lesson 3's (`:103-151`, `:322-325`).
-   Every build emits every lesson page, and the check fails a document with no ceiling (`:587-591`),
+   JavaScript table and one in its stylesheet table, beside Lesson 3's (`:103-151`, `:267-270`).
+   Every build emits every lesson page, and the check fails a document with no ceiling (`:529-533`),
    so without them the Browser jobs fail before any spec runs, as Lesson 6's did on PR #1149. Each
-   is the page's measured first paint plus about a quarter, the tables' rule (`:47-58`, `:278-288`),
+   is the page's measured first paint plus about a quarter, the tables' rule (`:47-58`, `:223-233`),
    measured in `build:e2e`, where the check runs (`package.json:20`): a build of Lesson 6's page
    alone weighed it about 8 KB lighter. As on Lesson 3, the listener, the pitch detector and Voice
    Mirror's scorer arrive through a dynamic import when Start is pressed
@@ -740,12 +747,16 @@ table):
 11. The four-words strip: built, promoted from Lesson 1's page (`lesson-01/words.ts`) into
     `kit/words-strip.ts` with Lesson 7's page; Lesson 6's page (PR #1149) keeps its own in
     `lesson-06/words.ts`.
-12. `kit/merc-duo.ts`: `mercHop`, proposed (Merc and Tavi).
-13. `src/e2e/helpers/tone-wav.ts`: proposed `writeStepsWav(steps, leadSilence)`, steady tones in
-    sequence after a stretch of silence, beside `writeToneWav` (`:76`), for the end-to-end ladder
-    test (Tests, end to end 6).
-14. App: the `intervals` launch field and a minor third for `/exercises/leap-ladder`, the optional
-    Arpeggio Jumper slug, the App content item, and the Ascent week 4 rewrite (Practice links).
+12. `kit/merc-hop.ts`: `mercHop` (`:23`), for Merc and Tavi: built with Lesson 8's page, and used by
+    this page's cold open.
+13. `src/e2e/helpers/tone-wav.ts`: steady tones in sequence after a stretch of silence, beside
+    `writeToneWav` (`:76`), built as `writeStepsWav(steps, leadSilence)` (`:156`); the page opening
+    the microphone starts the file from its first sample, so the lead places the first step, as the
+    helper notes (`:139-146`), for the end-to-end ladder test (Tests, end to end 6,
+    `src/e2e/learn-lesson-09-sing-steps.spec.ts`).
+14. App: the `intervals` launch field and a minor third for `/exercises/leap-ladder`, built by
+    #1198 and not yet linked from the card; the optional Arpeggio Jumper slug, the App content item,
+    and the Ascent week 4 rewrite (Practice links).
 
 Lesson 6's page (PR #1149) also brings kit parts this page does not use: the ear game
 (`kit/ear-game.ts`), the tune line (`kit/tune-line.ts`, with its layout, drawing and motion modules)
@@ -939,11 +950,11 @@ End to end (Playwright, at 390 x 844 and 1440 x 900, on the e2e build, which sho
    A3 (`writeToneWav(220)`) on the lower full ladder reads so "Right in the middle" and the other
    three far from their bands, with "This time, 1 of your 4 notes landed in the band." and the
    tricky line; "Easy" offers Again and Again smaller, and after a second take neither shows. A
-   steady D3 reads the top do with "You sang it an octave lower: same note." Proposed, with
-   `writeStepsWav`: D3, F♯3, A3 and D4 at 1.5 s each, after 8 s of silence so that they start after
-   Merc's ladder and inside the take's 6 s wait, read "This time, 4 of your 4 notes landed in the
-   band."; if the fake device's start cannot be pinned that way, the unit tests carry the per-note
-   readings. "Effortful" shows the gentle line, no Again, the feelings locked, and the rest card in
+   steady D3 reads the top do with "You sang it an octave lower: same note." With `writeStepsWav`
+   (built, `src/e2e/helpers/tone-wav.ts:156`): D3, F♯3, A3 and D4 at 1.5 s each, after 8 s of
+   silence so that they start after Merc's ladder and inside the take's 6 s wait, read "This time, 4
+   of your 4 notes landed in the band." (`src/e2e/learn-lesson-09-sing-steps.spec.ts`); the unit
+   tests carry the per-note readings too. "Effortful" shows the gentle line, no Again, the feelings locked, and the rest card in
    the Wrap. "Uncomfortable" shows the doctor lines, no Again, no lines and no count, and the rest
    card. "Just listen today" never calls `navigator.mediaDevices.getUserMedia` (a spy), shows the
    doctor lines and leaves the rest card. A refused permission shows the no-microphone line and
@@ -993,8 +1004,10 @@ stores the quiz seeds and records (`fyp-l09-recall-seed`, `fyp-l09-recall-v1`, `
 warm-up's Skip (`fyp-l09-warmup`), the masthead's Pause animations choice, `fyp-motion`
 (`kit/motion-switch.ts:12`); through the kit, as every lesson page does, the steps the viewer
 reached, `fyp-pos` (`kit/position.ts:20`), and its record of the welcome tour, `fyp-tour`
-(`kit/tour-gate.ts:29`); and nothing from the take: no note, no reading, no count, no answer to "How
-did that feel?" and no ending.
+(`kit/tour-gate.ts:29`); the app's microphone lock, `mercurypitch_mic_holder`
+(`src/lib/mic-lock.ts:24`), while the microphone is open and through its short linger after a
+take, gone once it closes (`:212-220`); and nothing from the take: no note, no reading, no count, no
+answer to "How did that feel?" and no ending.
 
 Page QA before publishing (PRODUCTION-PIPELINE § 5) adds, for this page:
 

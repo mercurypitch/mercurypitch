@@ -202,72 +202,13 @@ export const FIRST_PAINT_BUDGETS_KB = {
   // on Lesson 1.
   'learn/08.html': 181,
   // Lesson 9, "Landing a leap", a draft too, built in every mode as Lesson
-  // 3 is. Measured 71 in build:e2e (72,588 bytes) as the page's shell: the
-  // kit's chrome, the steps' deck, the next card, the map and Merc and
-  // Tavi, before any toy; the budget is a quarter over that, and each
-  // change that brings a toy raises it with its own measure and reason.
-  // The listener, the pitch detector and the ladder's reader are to arrive
-  // through a dynamic import when Sing it's Start is pressed, as on Lessons
-  // 3 and 7, so the page stays light only while that boundary holds.
-  // Raised to 90 for the steps' ladder chart: 91,506 bytes with it, against
-  // 91,136 at 89, and 18,918 more than the shell. The chart's controller,
-  // its ladder data, the kit's band chart (a chunk shared with Lessons 3
-  // and 5) and the rungs, arcs and rung names only this page paints, Move
-  // do's bounds and the voice choice (chunks shared with the lessons that
-  // have them).
-  // Raised to 97 for the cold open: 98,535 bytes with it, against 92,160 at
-  // 90, and 7,029 more than with the ladder chart alone. The cold open and
-  // its lines; the kit's predict and hero sky, which join the chunk every
-  // lesson page shares now that this page loads them too; and the kit's
-  // runs, Merc's hop and the still sky (chunks shared with the lessons that
-  // have them).
-  // Raised to 116 for the recall and the quick check: 118,011 bytes with
-  // them, against 99,328 at 97, and 19,476 more than with the cold open.
-  // The quick check's questions and the recall; Lesson 6's questions, its
-  // melody, examples and quiz plays, and through its questions Lesson 4's,
-  // and Lesson 2's with their pair and examples (chunks shared with the
-  // lessons that have them); and the kit's quiz, which joins the chunk
-  // every lesson page shares.
-  // Raised to 118 for the four words: 120,479 bytes with them, against
-  // 118,784 at 116, and 2,468 more than with the quizzes. The four words
-  // and the kit's words strip (a chunk shared with Lessons 1 and 7).
-  // Raised to 123 for Steps 1 and 2 and the folds strip: 125,663 bytes with
-  // them, against 120,832 at 118, and 5,184 more than with the four words.
-  // The steps' plays and the folds strip; the kit's folds (a chunk shared
-  // with Lessons 3 and 5); and its slowed folds and slow clock, which leave
-  // Lesson 3's own chunk for one shared with it now that this page draws
-  // them too.
-  // Raised to 124 for Steps 3 and 4: 126,817 bytes with them, against
-  // 125,952 at 123, and 1,154 more than with Steps 1 and 2. Step 3's climb
-  // and its two leaps over it, and Step 4's five leaps with their numbered
-  // arcs and their lines.
-  // Raised to 131 for Step 5's landing: 133,525 bytes with it, against
-  // 126,976 at 124, and 6,708 more than with Steps 3 and 4. The landing and
-  // its sound from any moment; its readout and the scrub bar's words, which
-  // bring the page's landing lines and the kit's band words (a chunk shared
-  // with the lessons that have them) to first paint now that something
-  // calls them; the kit's range fill (a chunk shared with Lessons 1, 3 and
-  // 5); and the kit's `allOf`, which joins the runs chunk this page shares
-  // with Lesson 7, so Lesson 7 measures 192 bytes more, 135,457.
-  // Raised to 143 for Sing it up to its take: 146,278 bytes with it,
-  // against 134,144 at 131, and 12,433 more than without it (133,845 once
-  // the page sat on main's kit). Sing it's card and its flow rule with the
-  // flow's lines; the kit's comfort check, feelings and Wrap's card, which
-  // join the voice choice in the chunk Lessons 3 and 5 to 8 share, so each
-  // of those measures 142 to 149 bytes less; and the warm-up's two plays.
-  // Raised to 149 for Sing it's take: 152,032 bytes with it, against
-  // 146,432 at 143, and 5,754 more than without it. Sing it's take wiring
-  // (Start, Start again and the Agains, the readings, the feelings, the
-  // count, the closing lines and the after panel's buttons, and letting the
-  // microphone go on leaving); the loader for the take's own module and the
-  // listener, which come only inside Start's tap, so neither is here; and
-  // the kit's microphone holder, which joins the runs chunk this page
-  // shares with Lesson 7, so Lesson 7 measures 142 bytes more, 135,712.
-  // Raised to 151 for the Wrap's free play: 153,922 bytes with it, against
-  // 152,576 at 149, and 1,890 more than Sing it's take measured. Free play's
-  // rungs, its Hear it first, Slow and voice switch, and the ladder chart's
-  // voice for one chart alone.
-  'learn/09.html': 151,
+  // 3 is: its own module on the kit, with the ladder chart, the folds strip,
+  // the landing and free play. Measured 151 in build:e2e (153,922 bytes); the
+  // budget is a quarter over that. The listener, the pitch detector and the
+  // ladder's reader arrive through a dynamic import when Sing it's Start is
+  // pressed, as on Lessons 3 and 7, so the page stays this light only while
+  // that boundary holds.
+  'learn/09.html': 188,
 
   // The main app, and the crawlable doors that are the main app. Measured
   // 4669. It is eager by design today, so this is a ceiling on growth rather
@@ -349,13 +290,10 @@ export const FIRST_PAINT_CSS_BUDGETS_KB = {
   // sheets (with the beat machine's), its own, and the shared Inter and
   // Outfit @font-face rules; the budget is a quarter over that.
   'learn/08.html': 116,
-  // Lesson 9 (a draft, as above). Measured 83 in build:e2e as the page's
-  // shell: the kit's sheets (with the shared parts), its own with the voice
-  // lessons' sheet inlined by an @import, and the shared Inter and Outfit
-  // @font-face rules; a quarter over. With Sing it the voice lessons' sheet
-  // is main.ts's import again, in the chunk it shares with Lessons 3 and 5
-  // to 8: 87,375 bytes, 434 more.
-  'learn/09.html': 104,
+  // Lesson 9 (a draft, as above). Measured 87 in build:e2e (88,410 bytes):
+  // the kit's sheets (with the voice lessons' and the shared parts), its
+  // own, and the shared Inter and Outfit @font-face rules; a quarter over.
+  'learn/09.html': 108,
 
   // The main app and the crawlable doors that are the main app. Measured
   // 1009, of which 871 is the single `index` sheet that src/index.tsx

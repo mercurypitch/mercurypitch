@@ -310,13 +310,14 @@ jumping and hoping.
   **mercurypitch.com/pitch-training**, then tap Arpeggio Jumper."
 
 _[Editorial: both addresses link `/pitch-training?lesson=09`, which opens the Exercises tab with no
-intro (FACTS 56), so the card, the rest card and the footer carry no first-visit line. Interval
-Trainer can't yet drill this lesson's leaps alone. It needs the planned `intervals` launch field and
-a minor third, which its fixed pool lacks (CURRICULUM § 4 item 2), as a proposed slug,
-`/exercises/leap-ladder`: the minor and major thirds, the fifth, the fourth and the octave, each
-upward (WEB-SPEC, Practice links). When it ships, the card's Interval Trainer sentences become
-"Interval Trainer plays two notes, the second always higher, then you sing them back: only this
-lesson's five leaps." and its address "Interval Trainer, on this lesson's leaps:
+intro (FACTS 56), so the card, the rest card and the footer carry no first-visit line. The slug
+that drills this lesson's leaps alone is built (#1198): `/exercises/leap-ladder` opens Interval
+Trainer on the minor and major thirds, the fifth, the fourth and the octave, each upward, through
+the `intervals` launch field, with the minor third its fixed pool lacks (CURRICULUM § 4 item 2;
+WEB-SPEC, Practice links). The card does not link it yet: the switch waits on a card with two
+links, one to the Exercises tab and one to the slug. Then the card's Interval Trainer sentences
+become "Interval Trainer plays two notes, the second always higher, then you sing them back: only
+this lesson's five leaps." and its address "Interval Trainer, on this lesson's leaps:
 mercurypitch.com/exercises/leap-ladder". Both drills score the octave written on each note, so until
 the octave-folded option ships (§ 4 item 7) the card keeps its octave sentence. No Ascent link: its
 "Tuning & Ear" week tells singers their voice "can only sing as true as your ear can hear", which
@@ -434,8 +435,8 @@ so a decision there carries here.
   them for another day." (FACTS 48 to 52, 86).
 - The octave, which the rules decide too. Targets fit a comfortable range without requesting
   extremes (REQ-GVC-011), and a gentler alternative may be offered (REQ-GVC-055), so this page makes
-  the octave optional and never asks anyone to reach the top note (FACTS 73, 77, 80). The proposed
-  `/exercises/leap-ladder` can keep the plan's octave: played from a preset's anchor, as Interval
+  the octave optional and never asks anyone to reach the top note (FACTS 73, 77, 80).
+  `/exercises/leap-ladder`, built and not yet linked, can keep the plan's octave: played from a preset's anchor, as Interval
   Trainer plays every round, it tops out 7 to 9 semitones under the preset's top, so it requests no
   extreme of the saved range, and the card's "If the top do felt high today, leave them for another
   day." is the gentler way. Its score weighs the octave's round six times a tone's (FACTS 52, 60,
