@@ -609,8 +609,14 @@ export async function walkKaraoke(browser, args, frame, kit) {
  */
 const WHOLE_DECODE_MAX_BYTES = 12 * 1024 * 1024
 
+/**
+ * What the card says for a song past the guard: needsStreamingMessage in
+ * src/features/stem-mixer/stem-memory.ts, for a phone with no AudioDecoder
+ * whose system it cannot name (the probe's browser names none). It ends on
+ * "Choose another song", which the card offers as a button (bd9f13d50).
+ */
 const NEEDS_STREAMING =
-  "This song needs a newer version of this phone's software to play here. Update it, then open the song again."
+  'This song is too big for this phone to play in one piece. Choose another song.'
 
 /**
  * The room opened on a phone with no AudioDecoder, until its song is cued or
@@ -749,6 +755,11 @@ export async function walkKaraokeNoDecoder(browser, args, frame, kit) {
     }
     if (past.buttons.includes('Try again')) {
       pastProblems.push('the card offers Try again')
+    }
+    if (!past.buttons.includes('Choose another song')) {
+      pastProblems.push(
+        `the card offers ${JSON.stringify(past.buttons)}, not Choose another song`,
+      )
     }
     const whole = past.decodes.filter((bytes) => bytes > WHOLE_DECODE_MAX_BYTES)
     if (whole.length > 0) {
