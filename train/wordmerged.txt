@@ -1,0 +1,7 @@
+lesson-09-kit d1fd7848a docs/plans/find-your-pitch/lessons/14-phrasing-whole-song/FACTS.md
+lesson-10-kit 9db60be56 docs/plans/find-your-pitch/lessons/09-landing-a-leap/FACTS.md
+arpeggio-jumper-v2 05f500dbb docs/plans/find-your-pitch/lessons/02-twelve-notes/FACTS.md
+arpeggio-jumper-v2 05f500dbb docs/plans/find-your-pitch/lessons/04-major-scale/FACTS.md
+arpeggio-jumper-v2 05f500dbb docs/plans/find-your-pitch/lessons/06-intervals/FACTS.md
+arpeggio-jumper-v2 05f500dbb docs/plans/find-your-pitch/lessons/09-landing-a-leap/FACTS.md
+arpeggio-jumper-v2 05f500dbb docs/plans/find-your-pitch/lessons/13-resonance-vowels/FACTS.md

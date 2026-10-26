@@ -28,7 +28,12 @@ FILES=(
   release/notes/REACH.md release/notes/REPORT.md release/notes/LEAD-REVIEW.md
   release/OWNER-PING.md release/PR-BODY-final.md
   devpass/dev-pass.cjs devpass/dev-pass-2.cjs
-  bin/heavy bin/heavy-pri bin/light bin/seq-fold.py bin/verify-rebase-merge.sh bin/push-notes
+  bin/heavy bin/heavy-pri bin/light bin/seq-fold.py bin/verify-rebase-merge.sh bin/push-notes bin/restack.sh
+  checkup/BRIEF.md polish23/BRIEF.md
+  rebase-1026/gates.sh rebase-1026/bodies/1205-merge.md rebase-1026/bodies/1206-merge.md
+  rebase-1026/bodies/1208-final.md rebase-1026/bodies/1212-merge.md
+  rebase-1026/bodies/1213-new.md rebase-1026/bodies/1214-new.md
+  train/train.sh train/tips.txt train/wordmerged.txt train/resolve1214.py
 )
 
 tmp=$(mktemp -d "$S/.notes-XXXXXX")
