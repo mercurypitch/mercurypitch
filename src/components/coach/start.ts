@@ -16,7 +16,9 @@
 // - Focus goes back when the layer goes, however the tour ended (Done, End
 //   tour, Escape, a tab change): to what had it as the tour was asked for,
 //   if that is still in the page to take it, else to the page's main
-//   heading, which is focusable only while it holds focus. Only focus the
+//   heading, which is focusable only while it holds focus: the main one the
+//   singer can see (drawn, and on top at its middle), so not the rail's
+//   card under Karaoke's phone stage. Only focus the
 //   tour had: in its layer, or fallen to the page itself. A tour that ends
 //   while the singer is busy in the page (a quiet wait has no bubble) leaves
 //   their focus where it is.
@@ -71,16 +73,45 @@ const levelOf = (el: HTMLElement): number => {
 }
 
 /**
- * The page's headings, its main one first: the highest level, and at a level
- * the one in <main>. Karaoke Night with a song on its stage shows no h1 (its
- * page h1 is not laid out), so there it is the song's title.
+ * True when the singer can see `el`: drawn (not hidden, not faded out) and
+ * what lies at its own middle in the window, so not under a stage or sheet.
+ */
+function inSight(el: HTMLElement): boolean {
+  const drawn =
+    typeof el.checkVisibility !== 'function' ||
+    el.checkVisibility({ opacityProperty: true, visibilityProperty: true })
+  const r = el.getBoundingClientRect()
+  const x = r.left + r.width / 2
+  const y = r.top + r.height / 2
+  const inWindow =
+    r.width > 0 &&
+    r.height > 0 &&
+    x >= 0 &&
+    y >= 0 &&
+    x < window.innerWidth &&
+    y < window.innerHeight
+  if (!drawn || !inWindow || typeof document.elementFromPoint !== 'function') {
+    return false
+  }
+  const top = document.elementFromPoint(x, y)
+  return top !== null && el.contains(top)
+}
+
+/**
+ * The page's headings, its main one first: one the singer can see before
+ * one they cannot, then the highest level, and at a level the one in <main>.
+ * Karaoke Night with a song on its stage shows no h1 (its page h1 is not
+ * laid out), so there it is the song's title: the mixer's on a wide screen,
+ * the phone stage's own on a phone, where the stage covers the rail's.
  */
 function mainHeadings(): HTMLElement[] {
   const all = [...document.querySelectorAll<HTMLElement>(HEADINGS)].filter(
     (el) => el.closest(`[inert], [hidden], #${COACH_ROOT_ID}`) === null,
   )
   const rank = (el: HTMLElement): number =>
-    levelOf(el) * 2 + (el.closest('main') === null ? 1 : 0)
+    (inSight(el) ? 0 : 100) +
+    levelOf(el) * 2 +
+    (el.closest('main') === null ? 1 : 0)
   return all
     .map((el, order) => ({ el, order, rank: rank(el) }))
     .sort((a, b) => a.rank - b.rank || a.order - b.order)

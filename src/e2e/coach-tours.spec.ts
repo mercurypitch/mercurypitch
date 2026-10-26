@@ -26,6 +26,9 @@
 // Merc stays a still here (no GPU): this file reads layout, and
 // showcase.spec.ts draws him live.
 //
+// Done leaves focus on the page's main heading the singer can see, named
+// per tour and screen.
+//
 // Last, the tab chip in a room that fills the window: on Piano at 1440x900
 // the room gives way to the chip's row, so its keyboard stays on screen, the
 // content area does not scroll, and the chip covers no control.
@@ -67,6 +70,8 @@ interface Tour {
   /** The chip's line, which starts the tour. */
   chip: string
   stops: (screen: Screen) => readonly Stop[]
+  /** The heading focus lands on once Done has closed the tour (start.ts). */
+  focus: (screen: Screen) => string
 }
 
 const STAGE_LINE = '[data-stage-canvas], #canvas-container'
@@ -95,6 +100,7 @@ const SING: Tour = {
         : '[data-tab-group="you"]',
     },
   ],
+  focus: () => 'MercuryPitch',
 }
 
 const KARAOKE: Tour = {
@@ -121,6 +127,9 @@ const KARAOKE: Tour = {
         : '[data-tour="karaoke.own-song"]',
     },
   ],
+  // The song on stage, with its artist: the phone stage's own heading (not
+  // the rail card's "Goodbye to Spring" under the stage), or the mixer's.
+  focus: () => 'Goodbye to Spring · Josh Woodward',
 }
 
 /**
@@ -297,16 +306,26 @@ for (const tour of [SING, KARAOKE]) {
       await expect(page.locator('#coach-root')).toHaveCount(0)
       await expect(chip).toHaveCount(0)
       // Focus comes back to the page: the chip that had it has gone, so to
-      // the page's main heading (start.ts).
+      // the page's main heading the singer can see (start.ts), on top at its
+      // own middle.
       await expect
         .poll(() =>
-          page.evaluate(
-            () =>
-              document.activeElement?.matches('h1, h2, h3, [role="heading"]') ??
-              false,
-          ),
+          page.evaluate(() => {
+            const el = document.activeElement
+            if (!(el instanceof HTMLElement)) return null
+            if (!el.matches('h1, h2, h3, [role="heading"]')) return null
+            const r = el.getBoundingClientRect()
+            const top = document.elementFromPoint(
+              r.left + r.width / 2,
+              r.top + r.height / 2,
+            )
+            return {
+              text: (el.textContent ?? '').replace(/\s+/g, ' ').trim(),
+              onTop: top !== null && el.contains(top),
+            }
+          }),
         )
-        .toBe(true)
+        .toEqual({ text: tour.focus(screen), onTop: true })
       expect(errors).toEqual([])
     })
   }

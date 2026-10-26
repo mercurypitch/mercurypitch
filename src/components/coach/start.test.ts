@@ -246,6 +246,90 @@ describe('startCoachTour', () => {
       expect(document.activeElement).toBe(control)
     })
 
+    describe('to a heading the singer can see', () => {
+      // jsdom lays nothing out: each heading is given a box, and the page a
+      // hit test that says what lies at a point, as a browser would.
+      const boxes = new Map<Element, DOMRect>()
+      let topAt: (x: number, y: number) => Element | null = () => null
+
+      beforeEach(() => {
+        boxes.clear()
+        vi.spyOn(Element.prototype, 'getBoundingClientRect').mockImplementation(
+          function (this: Element) {
+            return boxes.get(this) ?? new DOMRect(0, 0, 0, 0)
+          },
+        )
+        Object.defineProperty(document, 'elementFromPoint', {
+          configurable: true,
+          value: (x: number, y: number) => topAt(x, y),
+        })
+      })
+
+      afterEach(() => {
+        vi.restoreAllMocks()
+        Reflect.deleteProperty(document, 'elementFromPoint')
+      })
+
+      /** A heading laid out at `y`, 20 px tall across the window. */
+      const heading = (tag: string, text: string, y: number): HTMLElement => {
+        const el = document.createElement(tag)
+        el.textContent = text
+        boxes.set(el, new DOMRect(0, y, 300, 20))
+        return el
+      }
+
+      it("passes over one a stage covers, for the stage's own", async () => {
+        // Karaoke Night on a phone with a song on stage: the rail's opener
+        // card sits under the stage, which draws the song's title.
+        const rail = heading('h2', 'Goodbye to Spring', 100)
+        const stage = document.createElement('div')
+        const title = heading('h2', 'Goodbye to Spring', 10)
+        stage.append(title)
+        document.body.append(rail, stage)
+        topAt = (_x, y) => (y >= 10 && y < 30 ? title : stage)
+        const handle = await startCoachTour(tour('karaoke-night', 'Only step'))
+        await settle()
+
+        handle.end()
+        await settle()
+
+        expect(document.activeElement).toBe(title)
+      })
+
+      it('passes over one that is not drawn, though it would take a tap', async () => {
+        const faded = heading('h1', 'Your stage is set', 100)
+        Object.defineProperty(faded, 'checkVisibility', { value: () => false })
+        const main = document.createElement('main')
+        const shown = heading('h2', 'Goodbye to Spring', 200)
+        main.append(shown)
+        document.body.append(faded, main)
+        topAt = (_x, y) => (y < 150 ? faded : shown)
+        const handle = await startCoachTour(tour('karaoke-night', 'Only step'))
+        await settle()
+
+        handle.end()
+        await settle()
+
+        expect(document.activeElement).toBe(shown)
+      })
+
+      it('takes the main one still, when none can be seen', async () => {
+        const main = document.createElement('main')
+        const h1 = heading('h1', 'Your stage is set', 100)
+        main.append(h1)
+        const cover = document.createElement('div')
+        document.body.append(main, cover)
+        topAt = () => cover
+        const handle = await startCoachTour(tour('karaoke-night', 'Only step'))
+        await settle()
+
+        handle.end()
+        await settle()
+
+        expect(document.activeElement).toBe(h1)
+      })
+    })
+
     it('to the main heading when nothing had focus before the tour', async () => {
       const { heading, control } = page()
       control.blur()
