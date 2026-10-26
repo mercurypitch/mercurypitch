@@ -2,11 +2,14 @@
 import type { TrackRole } from '@/lib/studio-fx/role-chains'
 import { isTrackRole } from '@/lib/studio-fx/role-chains'
 import { createStudioTrack } from './defaults'
+import type { StudioPasteEdit } from './placement-commands'
+import { moveStudioClipToNewTrack, pasteStudioClip } from './placement-commands'
 import type { StudioAsset, StudioClip, StudioProject, StudioTrack, } from './types'
 import { validateStudioProject } from './validation'
 import { requireValue } from './validation-values'
 
 export type StudioEdit =
+  | StudioPasteEdit
   | { readonly type: 'rename-project'; readonly title: string }
   | { readonly type: 'add-track'; readonly track: StudioTrack }
   | { readonly type: 'add-clip'; readonly clip: StudioClip }
@@ -37,6 +40,12 @@ export type StudioEdit =
       readonly clipId: string
       readonly trackId: string
       readonly startFrame: number
+    }
+  | {
+      readonly type: 'move-clip-to-new-track'
+      readonly clipId: string
+      readonly startFrame: number
+      readonly newTrackId: string
     }
   | {
       readonly type: 'trim-head'
@@ -154,6 +163,13 @@ function editClip(
         trackId: edit.trackId,
         startFrame: edit.startFrame,
       })
+    case 'move-clip-to-new-track':
+      return moveStudioClipToNewTrack(
+        project,
+        clip,
+        edit.startFrame,
+        edit.newTrackId,
+      )
     case 'trim-head':
       return replaceClip(project, {
         ...clip,
@@ -202,6 +218,8 @@ function editClip(
 function applyEdit(project: StudioProject, edit: StudioEdit): StudioProject {
   if ('clipId' in edit) return editClip(project, edit)
   switch (edit.type) {
+    case 'paste-clip':
+      return pasteStudioClip(project, edit)
     case 'rename-project':
       return { ...project, title: edit.title }
     case 'add-track':

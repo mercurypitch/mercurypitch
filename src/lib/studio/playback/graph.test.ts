@@ -81,4 +81,46 @@ describe('shared Studio graph', () => {
     expect(() => graph.scheduleUntil(2)).toThrow(/keep up/)
     graph.dispose()
   })
+  it('repeats on the audio clock without rebuilding lanes or replaying the pre-seek section', () => {
+    const { project, asset, clip } = studioFixture()
+    const longAsset = {
+      ...asset,
+      normalizedFrameCount: 96000,
+      canonicalPcmByteLength: 384032,
+    }
+    const song = {
+      ...project,
+      clips: [{ ...clip, startFrame: 0, sourceOutFrame: 96000 }],
+      tracks: project.tracks.map((track) => ({
+        ...track,
+        fx: { ...track.fx, baseSpec: { version: 1 as const, effects: [] } },
+      })),
+    }
+    const plan = compileStudioArrangement(song, [longAsset], {
+      latencies: { sampleRate: 48000, framesByTrack: { 'track-1': 0 } },
+    })
+    const ctx = new PlaybackContext()
+    ctx.state = 'suspended'
+    const buffer = ctx.createBuffer(1, 96000, 48000) as unknown as AudioBuffer
+    const graph = buildStudioGraph(
+      ctx.asContext,
+      plan,
+      new Map([[asset.id, buffer]]),
+      0.5,
+      false,
+      48000,
+    )
+    graph.scheduleUntil(3.6)
+    const sources = ctx.ofType<PlaybackSource>('source')
+    expect(sources.map((source) => source.starts[0])).toEqual([
+      [0.5, 1, 1],
+      [1.5, 0, 2],
+      [3.5, 0, 2],
+    ])
+    const inputs = sources.map(
+      (source) => source.connections[0].node.connections[0].node,
+    )
+    expect(new Set(inputs).size).toBe(1)
+    graph.dispose()
+  })
 })

@@ -170,40 +170,47 @@ export function createStudioImporter(options: ImportControllerOptions) {
     }
   }
 
-  async function addFile(file: File, startFrame = 0): Promise<boolean> {
-    const error = audioUploadValidationError(
-      file,
-      DEFAULT_STUDIO_IMPORT_LIMITS.maxEncodedBytes,
-      undefined,
-      'Studio import',
-    )
-    if (error !== null) {
-      options.report(new Error(error))
+  async function addFiles(
+    files: readonly File[],
+    startFrame = 0,
+  ): Promise<boolean> {
+    if (!files.length || files.length > 128) {
+      options.report(new Error('Choose between one and 128 audio files.'))
       return false
     }
+    for (const file of files) {
+      const error = audioUploadValidationError(
+        file,
+        DEFAULT_STUDIO_IMPORT_LIMITS.maxEncodedBytes,
+        undefined,
+        'Studio import',
+      )
+      if (error !== null) {
+        options.report(new Error(error))
+        return false
+      }
+    }
     const importedAt = options.now().toISOString()
-    const title = file.name.replace(/\.[^.]+$/, '').trim() || 'Audio'
     return importItems(
-      [
-        {
-          title,
-          role: 'other',
-          prepare: (id, projectId, signal) =>
-            (options.prepareFile ?? prepareStudioAsset)(
-              file,
-              {
-                id,
-                projectId,
-                originalName: file.name,
-                provenance: { kind: 'file', importedAt },
-              },
-              { signal },
-            ),
-        },
-      ],
+      files.map((file) => ({
+        title: file.name.replace(/\.[^.]+$/, '').trim() || 'Audio',
+        role: 'other',
+        prepare: (id, projectId, signal) =>
+          (options.prepareFile ?? prepareStudioAsset)(
+            file,
+            {
+              id,
+              projectId,
+              originalName: file.name,
+              provenance: { kind: 'file', importedAt },
+            },
+            { signal },
+          ),
+      })),
       startFrame,
     )
   }
+  const addFile = (file: File, startFrame = 0) => addFiles([file], startFrame)
 
   async function addTakes(
     entries: readonly StudioSourceEntry[],
@@ -230,6 +237,7 @@ export function createStudioImporter(options: ImportControllerOptions) {
 
   return {
     addFile,
+    addFiles,
     addTakes,
     addTake: (entry: StudioSourceEntry, startFrame = 0) =>
       addTakes([entry], startFrame),

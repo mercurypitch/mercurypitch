@@ -141,6 +141,27 @@ describe('local Studio persistence', () => {
     expect(studioReservedMemoryBytes()).toBe(0)
   })
 
+  it('admits project copies before loading persisted audio and preserves the source on failure', async () => {
+    const { project } = await savedArrangement()
+    const read = vi.spyOn(db, 'readByIndexStrict')
+    const release = reserveStudioMemory(STUDIO_WORKING_BYTES)
+    try {
+      await expect(service.forkProject(project)).rejects.toMatchObject({
+        code: 'memory-limit',
+      })
+      expect(
+        read.mock.calls.some((call) => call[0] === STUDIO_STORES.blobs),
+      ).toBe(false)
+      expect(await service.listProjects()).toHaveLength(1)
+    } finally {
+      release()
+    }
+    expect(studioReservedMemoryBytes()).toBe(0)
+    const copy = await service.forkProject(project)
+    expect(copy.id).not.toBe(project.id)
+    expect(studioReservedMemoryBytes()).toBe(0)
+  })
+
   it('loads only selected canonical bytes and rejects another project ownership', async () => {
     const { project, data } = await savedArrangement()
     const reads = vi.spyOn(db, 'readByIdStrict')

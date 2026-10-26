@@ -1,6 +1,7 @@
 // Studio page — local song entry, save recovery and an integrated arrangement workspace.
 import { createSignal, Show } from 'solid-js'
 import { ConfirmDialog } from '@/components/ConfirmDialog'
+import { releaseStudioResource } from '@/lib/studio/memory-budget'
 import styles from './StudioPage.module.css'
 import { StudioProjectList } from './StudioProjectList'
 import { StudioWorkspace } from './StudioWorkspace'
@@ -8,6 +9,7 @@ import { useStudioController } from './useStudioController'
 
 export function StudioPage() {
   const studio = useStudioController()
+  const [downloadError, setDownloadError] = createSignal<string | null>(null)
   const [library, setLibrary] = createSignal(true)
   const [startWithSources, setStartWithSources] = createSignal(false)
   const [confirmation, setConfirmation] = createSignal<
@@ -35,16 +37,35 @@ export function StudioPage() {
     const title = studio.project()?.title ?? 'Studio project'
     const blob = await studio.backup()
     if (!blob) return
-    const url = URL.createObjectURL(blob)
-    const anchor = document.createElement('a')
-    anchor.href = url
-    anchor.download = `${title.replace(/[^\p{L}\p{N} ._-]/gu, '').slice(0, 100) || 'Studio project'}.mpstudio`
-    anchor.click()
-    setTimeout(() => URL.revokeObjectURL(url), 10_000)
+    setDownloadError(null)
+    let url: string | undefined
+    try {
+      url = URL.createObjectURL(blob)
+      const anchor = document.createElement('a')
+      anchor.href = url
+      anchor.download = `${title.replace(/[^\p{L}\p{N} ._-]/gu, '').slice(0, 100) || 'Studio project'}.mpstudio`
+      anchor.click()
+      const savedUrl = url
+      setTimeout(() => {
+        URL.revokeObjectURL(savedUrl)
+        releaseStudioResource(blob)
+      }, 10_000)
+    } catch {
+      if (url !== undefined) URL.revokeObjectURL(url)
+      releaseStudioResource(blob)
+      setDownloadError(
+        'The backup could not download. Try Save project backup again.',
+      )
+    }
   }
 
   return (
     <section class={styles.page} aria-label="Studio">
+      <Show when={downloadError()}>
+        <p role="alert" class={styles.help}>
+          {downloadError()}
+        </p>
+      </Show>
       <input
         ref={backupInput}
         hidden

@@ -1,6 +1,6 @@
 // Studio transport — explicit playback and real sample-peak activity in dBFS.
 import { Show } from 'solid-js'
-import { Pause, Play, SkipBack } from '@/components/icons'
+import { Pause, Play, Repeat, SkipBack } from '@/components/icons'
 import styles from './StudioPage.module.css'
 import { formatStudioTime } from './timeline/timeline-geometry'
 
@@ -11,6 +11,8 @@ interface StudioTransportProps {
   peakL: number
   peakR: number
   hasAudio: boolean
+  repeating: boolean
+  onRepeat(): void
   onToggle(): void
   onStart(): void
 }
@@ -47,6 +49,17 @@ export function StudioTransport(props: StudioTransportProps) {
         <Show when={props.playing} fallback={<Play />}>
           <Pause />
         </Show>
+      </button>
+      <button
+        type="button"
+        class={styles.iconButton}
+        aria-label="Repeat song"
+        title="Repeat song"
+        aria-pressed={props.repeating}
+        disabled={!props.hasAudio || props.pending}
+        onClick={() => props.onRepeat()}
+      >
+        <Repeat size={18} />
       </button>
       <output class={styles.time} aria-label="Song position">
         {formatStudioTime(props.playheadFrame)}

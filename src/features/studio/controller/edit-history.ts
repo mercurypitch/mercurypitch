@@ -20,6 +20,8 @@ const EDIT_LABELS: Record<StudioEdit['type'], string> = {
   'set-track-role': 'change track role',
   'remove-clip': 'remove clip',
   'move-clip': 'move clip',
+  'move-clip-to-new-track': 'move clip to new lane',
+  'paste-clip': 'paste clip',
   'trim-head': 'trim start',
   'trim-tail': 'trim end',
   'split-clip': 'split clip',

@@ -45,6 +45,7 @@ export function useStudioTransport(options: UseStudioTransportOptions) {
     peakR: 0,
     error: null,
   })
+  const [repeating, setRepeating] = createSignal(false)
   const [previewPending, setPreviewPending] = createSignal(false)
   const [previewError, setPreviewError] = createSignal<string | null>(null)
   const [previewing, setPreviewing] = createSignal(false)
@@ -109,6 +110,25 @@ export function useStudioTransport(options: UseStudioTransportOptions) {
     return runtime.play(project, assets)
   }
 
+  function previewContext(blob: Blob): AudioContext {
+    const ctx = lease.ensure()
+    if (!ctx || ctx.state !== 'running')
+      throw new Error('The audio device is not ready.')
+    if (!blob.size || blob.size > 64 * 1024 * 1024)
+      throw new Error('This take is too large to preview here.')
+    return ctx
+  }
+
+  function previewFailure(
+    played: boolean,
+    player: PreviewPlayer,
+  ): string | null {
+    if (!played) return 'This take could not be previewed.'
+    if (player.duration > 300)
+      return 'Choose a take shorter than five minutes to preview in Studio.'
+    return null
+  }
+
   async function previewSource(blob: Blob): Promise<boolean> {
     if (disposed) return false
     // The picker primes before its original-byte read. A direct Blob preview
@@ -128,11 +148,7 @@ export function useStudioTransport(options: UseStudioTransportOptions) {
       if (!(await unlocked))
         throw new Error('Audio could not start. Try Preview again.')
       if (disposed || token !== previewGeneration) return false
-      const ctx = lease.ensure()
-      if (!ctx || ctx.state !== 'running')
-        throw new Error('The audio device is not ready.')
-      if (!blob.size || blob.size > 64 * 1024 * 1024)
-        throw new Error('This take is too large to preview here.')
+      const ctx = previewContext(blob)
       // Media decoding is browser-managed. Reserve the supported five-minute
       // stereo working allowance as well as encoded bytes, not just file size.
       release = reserveStudioMemory(
@@ -149,15 +165,9 @@ export function useStudioTransport(options: UseStudioTransportOptions) {
       release = undefined
       const played = await preview.player.play(preview.url)
       if (disposed || token !== previewGeneration) return false
-      if (!played) {
-        setPreviewError('This take could not be previewed.')
-        stopPreview()
-        return false
-      }
-      if (preview.player.duration > 300) {
-        setPreviewError(
-          'Choose a take shorter than five minutes to preview in Studio.',
-        )
+      const failure = previewFailure(played, preview.player)
+      if (failure !== null) {
+        setPreviewError(failure)
         stopPreview()
         return false
       }
@@ -228,6 +238,14 @@ export function useStudioTransport(options: UseStudioTransportOptions) {
   )
   return {
     ready,
+    repeating,
+    async setRepeat(enabled: boolean): Promise<void> {
+      const project = options.project()
+      const assets = options.assets()
+      setRepeating(enabled)
+      runtime.setRepeat(enabled)
+      if (project) await runtime.setSnapshot(project, assets)
+    },
     playing: () => state().playing,
     playheadFrame: () => state().playheadFrame,
     peakL: () => state().peakL,

@@ -29,3 +29,19 @@ export function reserveStudioMemory(bytes: number): () => void {
 export function studioReservedMemoryBytes(): number {
   return reservedBytes
 }
+
+const retainedResources = new WeakMap<object, () => void>()
+
+/** Transfer a reservation to an output until its consumer has finished with it. */
+export function retainStudioResource<T extends object>(
+  resource: T,
+  release: () => void,
+): T {
+  retainedResources.set(resource, release)
+  return resource
+}
+
+export function releaseStudioResource(resource: object): void {
+  retainedResources.get(resource)?.()
+  retainedResources.delete(resource)
+}

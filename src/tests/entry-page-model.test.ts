@@ -112,7 +112,7 @@ describe('entry page model', () => {
     }
   })
 
-  it("colors the browser chrome with the Voice Mirror's ground on its documents", () => {
+  it('colors browser chrome with each standalone surface ground', () => {
     const themeColor = (html: string): string | undefined =>
       /<meta name="theme-color" content="([^"]+)" \/>/.exec(html)?.[1]
     const colors = Object.fromEntries(
@@ -129,7 +129,13 @@ describe('entry page model', () => {
       'which-singer-has-my-vocal-range',
     ])
     for (const [slug, color] of Object.entries(colors)) {
-      expect(color, slug).toBe(mirror.includes(slug) ? '#0d1117' : '#0b1026')
+      const expected =
+        slug === 'studio-night'
+          ? '#17181b'
+          : mirror.includes(slug)
+            ? '#0d1117'
+            : '#0b1026'
+      expect(color, slug).toBe(expected)
     }
   })
 

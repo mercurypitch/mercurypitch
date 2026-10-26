@@ -1,6 +1,7 @@
 // Studio source picker — metadata browsing, explicit previews and one batch at the playhead.
 import { batch, createEffect, createMemo, createSignal, For, on, onCleanup, onMount, Show, } from 'solid-js'
 import { FileUpload, Pause, Play } from '@/components/icons'
+import { STUDIO_TAKE_DRAG_TYPE } from './integration/drop-audio'
 import type { StudioSourceEntry } from './integration/source-catalog'
 import styles from './StudioPage.module.css'
 import type { StudioController } from './useStudioController'
@@ -228,7 +229,15 @@ export function StudioSourcePicker(props: StudioSourcePickerProps) {
           <ul class={styles.sourceList}>
             <For each={visible()}>
               {(source) => (
-                <li>
+                <li
+                  draggable={props.studio.writable() && !props.studio.busy()}
+                  onDragStart={(event) => {
+                    if (!event.dataTransfer) return
+                    event.dataTransfer.setData(STUDIO_TAKE_DRAG_TYPE, source.id)
+                    event.dataTransfer.effectAllowed = 'copy'
+                    stopPreview()
+                  }}
+                >
                   <label class={styles.sourceChoice}>
                     <input
                       type="checkbox"

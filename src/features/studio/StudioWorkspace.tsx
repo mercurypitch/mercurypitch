@@ -2,15 +2,20 @@
 import { createEffect, createMemo, createSignal, For, onCleanup, onMount, Show, } from 'solid-js'
 import { ChevronDown, Plus, RotateCcw } from '@/components/icons'
 import { installSpacePlaybackToggle, isInsideOverlay, isTypingTarget, } from '@/lib/space-playback'
+import type { StudioClip } from '@/lib/studio/model/types'
 import { createReactiveMatch } from '@/lib/use-viewport'
 import { useStudioTransport } from './audio/useStudioTransport'
+import { createStudioEditor } from './editor/studio-editor'
+import { isStudioAudioDrop, studioDropFrame, studioDroppedTake, } from './integration/drop-audio'
 import type { StudioSourceEntry } from './integration/source-catalog'
 import { StudioClipDetails } from './panels/StudioClipDetails'
 import { StudioPanel } from './panels/StudioPanel'
+import { StudioSongPanel } from './panels/StudioSongPanel'
 import { StudioTrackDetails } from './panels/StudioTrackDetails'
 import styles from './StudioPage.module.css'
 import { StudioSourcePicker } from './StudioSourcePicker'
 import { StudioTransport } from './StudioTransport'
+import { StudioViewControls } from './StudioViewControls'
 import { StudioTimeline } from './timeline/StudioTimeline'
 import { StudioTrackControls } from './timeline/StudioTrackControls'
 import type { StudioController } from './useStudioController'
@@ -35,6 +40,13 @@ export function StudioWorkspace(props: StudioWorkspaceProps) {
   )
   const [zoom, setZoom] = createSignal(40)
   const [previewEpoch, setPreviewEpoch] = createSignal(0)
+  let workspace!: HTMLDivElement
+  const [keyboardPreview, setKeyboardPreview] = createSignal<StudioClip | null>(
+    null,
+  )
+  const [announcement, setAnnouncement] = createSignal('')
+  const [dropActive, setDropActive] = createSignal(false)
+  let dropping = false
   let opener: HTMLElement | null = null
   let audioInput!: HTMLInputElement
   let importFrame = 0
@@ -77,6 +89,61 @@ export function StudioWorkspace(props: StudioWorkspaceProps) {
     )
     return props.studio.assets().filter((asset) => ids.has(asset.id))
   })
+
+  const editor = createStudioEditor({
+    project: () => props.studio.project(),
+    writable,
+    playheadFrame: transport.playheadFrame,
+    pixelsPerSecond: zoom,
+    dispatch: (command) => props.studio.dispatch(command),
+    selectClip: setSelectedClipId,
+    previewClip: setKeyboardPreview,
+    announce: setAnnouncement,
+    focusClip: (clipId, trackId) =>
+      queueMicrotask(() => {
+        const selector =
+          clipId !== null
+            ? `[data-studio-clip="${CSS.escape(clipId)}"]`
+            : `[data-studio-track-header="${CSS.escape(trackId)}"]`
+        workspace.querySelector<HTMLElement>(selector)?.focus()
+      }),
+  })
+  createEffect(editor.sync)
+  onCleanup(editor.dispose)
+
+  async function dropAudio(event: DragEvent): Promise<void> {
+    const transfer = event.dataTransfer
+    if (!isStudioAudioDrop(transfer) || !transfer) return
+    event.preventDefault()
+    setDropActive(false)
+    if (!writable() || dropping || props.studio.busy()) return
+    const frame = studioDropFrame(
+      event.target,
+      event.clientX,
+      transport.playheadFrame(),
+    )
+    const projectId = project().id
+    const files = [...transfer.files]
+    const source = studioDroppedTake(transfer, props.studio.sources())
+    dropping = true
+    setPreviewEpoch((epoch) => epoch + 1)
+    editor.cancel()
+    try {
+      await transport.releaseAudio()
+      if (props.studio.project()?.id !== projectId || !writable()) return
+      const added = files.length
+        ? await props.studio.addFiles(files, frame)
+        : source
+          ? await props.studio.addTake(source, frame)
+          : false
+      if (added) {
+        closePanel()
+        setAnnouncement('Audio added on new lanes.')
+      }
+    } finally {
+      dropping = false
+    }
+  }
 
   function openPanel(next: Panel): void {
     if (next !== 'sources') transport.stopPreview()
@@ -138,7 +205,21 @@ export function StudioWorkspace(props: StudioWorkspaceProps) {
     }
   })
 
+  function historyAction(direction: 'undo' | 'redo'): void {
+    editor.cancel()
+    if (direction === 'undo') props.studio.undo()
+    else props.studio.redo()
+    queueMicrotask(() => {
+      const active = document.activeElement
+      if (active && active !== document.body && workspace.contains(active))
+        return
+      const clip = workspace.querySelector<HTMLElement>('[data-studio-clip]')
+      ;(clip ?? workspace).focus()
+    })
+  }
+
   function keyDown(event: KeyboardEvent): void {
+    if (editor.keyDown(event)) return
     if (
       event.defaultPrevented ||
       isTypingTarget(event.target) ||
@@ -147,8 +228,7 @@ export function StudioWorkspace(props: StudioWorkspaceProps) {
       return
     if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === 'z') {
       event.preventDefault()
-      if (event.shiftKey) props.studio.redo()
-      else props.studio.undo()
+      historyAction(event.shiftKey ? 'redo' : 'undo')
     } else if (event.key === 'Escape' && panel()) {
       event.preventDefault()
       closePanel()
@@ -170,6 +250,8 @@ export function StudioWorkspace(props: StudioWorkspaceProps) {
         peakL={transport.peakL()}
         peakR={transport.peakR()}
         hasAudio={project().clips.length > 0}
+        repeating={transport.repeating()}
+        onRepeat={() => void transport.setRepeat(!transport.repeating())}
         onToggle={togglePlayback}
         onStart={() => void transport.seek(0)}
       />
@@ -178,12 +260,31 @@ export function StudioWorkspace(props: StudioWorkspaceProps) {
 
   return (
     <div
+      ref={workspace}
+      tabIndex={-1}
       class={styles.workspace}
       classList={{
         [styles.phone]: phone(),
         [styles.phonePanelOpen]: phone() && panel() !== null,
       }}
       onKeyDown={keyDown}
+      onKeyUp={editor.keyUp}
+      onFocusOut={editor.cancel}
+      onDragOver={(event) => {
+        if (!isStudioAudioDrop(event.dataTransfer)) return
+        event.preventDefault()
+        if (event.dataTransfer)
+          event.dataTransfer.dropEffect = writable() ? 'copy' : 'none'
+        setDropActive(writable())
+      }}
+      onDragLeave={(event) => {
+        if (
+          !(event.relatedTarget instanceof Node) ||
+          !workspace.contains(event.relatedTarget)
+        )
+          setDropActive(false)
+      }}
+      onDrop={(event) => void dropAudio(event)}
     >
       <input
         ref={audioInput}
@@ -208,6 +309,14 @@ export function StudioWorkspace(props: StudioWorkspaceProps) {
           })
         }}
       />
+      <Show when={announcement()}>
+        <p class={styles.editNotice} role="status">
+          {announcement()}
+        </p>
+      </Show>
+      <Show when={dropActive()}>
+        <div class={styles.dropHint}>Drop audio to add new lanes</div>
+      </Show>
       <div class={styles.topBar}>
         <div class={styles.songIdentity}>
           <button
@@ -238,7 +347,7 @@ export function StudioWorkspace(props: StudioWorkspaceProps) {
               aria-label={props.studio.undoLabel() ?? 'Undo'}
               title={props.studio.undoLabel() ?? 'Undo'}
               disabled={!props.studio.canUndo()}
-              onClick={() => props.studio.undo()}
+              onClick={() => historyAction('undo')}
             >
               <RotateCcw size={17} />
             </button>
@@ -248,7 +357,7 @@ export function StudioWorkspace(props: StudioWorkspaceProps) {
               aria-label={props.studio.redoLabel() ?? 'Redo'}
               title={props.studio.redoLabel() ?? 'Redo'}
               disabled={!props.studio.canRedo()}
-              onClick={() => props.studio.redo()}
+              onClick={() => historyAction('redo')}
             >
               <RotateCcw size={17} />
             </button>
@@ -311,67 +420,20 @@ export function StudioWorkspace(props: StudioWorkspaceProps) {
       <div class={styles.editor}>
         <div class={styles.arrangement}>
           <Show when={!phone()}>
-            <div class={styles.viewControls}>
-              <label>
-                Ruler
-                <select
-                  aria-label="Timeline ruler"
-                  value={project().ruler}
-                  disabled={!writable()}
-                  onChange={(event) =>
-                    props.studio.dispatch({
-                      type: 'set-project-settings',
-                      changes: {
-                        ruler: event.currentTarget.value as 'time' | 'bars',
-                      },
-                    })
-                  }
-                >
-                  <option value="time">Seconds</option>
-                  <option value="bars">Beats</option>
-                </select>
-              </label>
-              <Show when={project().ruler === 'bars'}>
-                <label>
-                  Tempo
-                  <input
-                    type="number"
-                    min="30"
-                    max="300"
-                    value={project().tempoBpm}
-                    disabled={!writable()}
-                    onChange={(event) =>
-                      props.studio.dispatch({
-                        type: 'set-project-settings',
-                        changes: {
-                          tempoBpm: event.currentTarget.valueAsNumber,
-                        },
-                      })
-                    }
-                  />
-                  <span>bpm</span>
-                </label>
-              </Show>
-              <label class={styles.zoom}>
-                Zoom
-                <input
-                  type="range"
-                  min="10"
-                  max="200"
-                  step="5"
-                  value={zoom()}
-                  aria-label="Timeline zoom"
-                  onInput={(event) =>
-                    setZoom(event.currentTarget.valueAsNumber)
-                  }
-                />
-              </label>
-            </div>
+            <StudioViewControls
+              project={project()}
+              writable={writable()}
+              zoom={zoom()}
+              onZoom={setZoom}
+              onCommand={props.studio.dispatch}
+            />
           </Show>
           <StudioTimeline
             project={project()}
             assets={props.studio.assets()}
             selectedClipId={selectedClipId()}
+            keyboardPreviewClip={keyboardPreview()}
+            onPointerEditStart={editor.cancel}
             playheadFrame={transport.playheadFrame()}
             pixelsPerSecond={zoom()}
             writable={writable()}
@@ -414,64 +476,19 @@ export function StudioWorkspace(props: StudioWorkspaceProps) {
               />
             </Show>
             <Show when={panel() === 'song'}>
-              <div class={styles.detailsFields}>
-                <label class={styles.stackedField}>
-                  <span>Project name</span>
-                  <input
-                    aria-label="Project name"
-                    value={project().title}
-                    maxLength={160}
-                    disabled={!writable()}
-                    onChange={(event) => {
-                      if (!props.studio.rename(event.currentTarget.value))
-                        event.currentTarget.value = project().title
-                    }}
-                  />
-                </label>
-                <button
-                  type="button"
-                  class={styles.button}
-                  disabled={
-                    props.studio.busy() || props.studio.hasUnsavedChanges()
-                  }
-                  onClick={() => props.onLibrary()}
-                >
-                  All songs
-                </button>
-                <button
-                  type="button"
-                  class={styles.button}
-                  disabled={props.studio.busy()}
-                  onClick={() => void props.studio.fork()}
-                >
-                  Duplicate song
-                </button>
-                <button
-                  type="button"
-                  class={styles.button}
-                  disabled={props.studio.busy()}
-                  onClick={() => props.onBackup()}
-                >
-                  Save project backup
-                </button>
-                <p class={styles.help}>
-                  Includes your arrangement and copied audio. Saved projects
-                  stay in this browser.
-                </p>
-                <div class={styles.fieldDivider} />
-                <button
-                  type="button"
-                  class={styles.dangerButton}
-                  disabled={
-                    !writable() ||
-                    props.studio.busy() ||
-                    props.studio.hasUnsavedChanges()
-                  }
-                  onClick={() => props.onDelete()}
-                >
-                  Delete project
-                </button>
-              </div>
+              <StudioSongPanel
+                studio={props.studio}
+                writable={writable()}
+                onLibrary={props.onLibrary}
+                onBackup={() =>
+                  void transport.releaseAudio().then(props.onBackup)
+                }
+                onDelete={props.onDelete}
+                onFork={() => {
+                  const fork = props.studio.fork
+                  void transport.releaseAudio().then(fork)
+                }}
+              />
             </Show>
             <Show
               when={panel() === 'clip' && selectedClip() && selectedAsset()}

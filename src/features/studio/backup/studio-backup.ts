@@ -5,6 +5,7 @@
 import type { StudioService } from '@/db/services/studio-service'
 import { CANONICAL_PCM_MIME } from '@/lib/studio/audio/canonical-pcm'
 import { validatePreparedStudioAsset } from '@/lib/studio/audio/prepare-studio-asset'
+import { releaseStudioResource, reserveStudioMemory, retainStudioResource, } from '@/lib/studio/memory-budget'
 import type { StudioAsset, StudioAssetData, StudioProject, } from '@/lib/studio/model/types'
 import { validateStudioAsset, validateStudioProject, } from '@/lib/studio/model/validation'
 import { readStudioArchive, studioBackupAssetPath, StudioBackupError, writeStudioArchive, } from './archive-codec'
@@ -22,6 +23,7 @@ export interface StudioBackupOptions {
   signal?: AbortSignal
   /** Assets imported into an in-memory revision whose save has not succeeded. */
   preparedAssets?: readonly StudioAssetData[]
+  assetMetadata?: readonly StudioAsset[]
 }
 
 function exactKeys(
@@ -97,49 +99,74 @@ export async function createStudioBackup(
   )
   const entries = new Map<string, Blob>()
   const assets: StudioBackupManifest['assets'] = []
-  for (const id of new Set(snapshot.clips.map((clip) => clip.assetId))) {
-    options.signal?.throwIfAborted()
-    let data: StudioAssetData
-    try {
-      data = staged.get(id) ?? (await readAsset(id))
-      if (data.asset.id !== id || data.asset.projectId !== snapshot.id)
-        throw new Error('Audio ownership mismatch')
-      await validatePreparedStudioAsset(data, { signal: options.signal })
-    } catch (error) {
-      if (options.signal?.aborted === true) throw error
-      throw new StudioBackupError(
-        'The backup could not include every audio asset. Restore the missing audio and try again.',
-      )
+  const releases: (() => void)[] = []
+  try {
+    for (const id of new Set(snapshot.clips.map((clip) => clip.assetId))) {
+      options.signal?.throwIfAborted()
+      let data: StudioAssetData
+      try {
+        const known =
+          staged.get(id)?.asset ??
+          options.assetMetadata?.find((asset) => asset.id === id)
+        if (!known)
+          throw new Error(
+            'Audio metadata is required before reading a backup source',
+          )
+        if (!staged.has(id))
+          releases.push(
+            reserveStudioMemory(
+              2 * (known.byteLength + known.canonicalPcmByteLength),
+            ),
+          )
+        data = staged.get(id) ?? (await readAsset(id))
+        if (data.asset.id !== id || data.asset.projectId !== snapshot.id)
+          throw new Error('Audio ownership mismatch')
+        const releaseValidation = reserveStudioMemory(
+          2 * Math.max(data.original.size, data.canonicalPcm.size),
+        )
+        try {
+          await validatePreparedStudioAsset(data, { signal: options.signal })
+        } finally {
+          releaseValidation()
+        }
+      } catch (error) {
+        if (options.signal?.aborted === true) throw error
+        throw new StudioBackupError(
+          'The backup could not include every audio asset. Restore the missing audio and try again.',
+        )
+      }
+      const originalPath = studioBackupAssetPath(assets.length, 'original')
+      const canonicalPath = studioBackupAssetPath(assets.length, 'canonical')
+      assets.push({
+        asset: structuredClone(data.asset),
+        originalPath,
+        canonicalPath,
+      })
+      entries.set(originalPath, data.original)
+      entries.set(canonicalPath, data.canonicalPcm)
     }
-    const originalPath = studioBackupAssetPath(assets.length, 'original')
-    const canonicalPath = studioBackupAssetPath(assets.length, 'canonical')
-    assets.push({
-      asset: structuredClone(data.asset),
-      originalPath,
-      canonicalPath,
-    })
-    entries.set(originalPath, data.original)
-    entries.set(canonicalPath, data.canonicalPcm)
+    validateStudioProject(
+      snapshot,
+      assets.map(({ asset }) => asset),
+    )
+    const manifest: StudioBackupManifest = {
+      format: 'mercurypitch-studio',
+      version: 1,
+      project: snapshot,
+      assets,
+    }
+    // Keep the manifest first to make the archive straightforward to inspect.
+    const ordered = new Map<string, Blob>([
+      [
+        'manifest.json',
+        new Blob([JSON.stringify(manifest)], { type: 'application/json' }),
+      ],
+      ...entries,
+    ])
+    return await writeStudioArchive(ordered, options.signal)
+  } finally {
+    for (const release of releases) release()
   }
-  validateStudioProject(
-    snapshot,
-    assets.map(({ asset }) => asset),
-  )
-  const manifest: StudioBackupManifest = {
-    format: 'mercurypitch-studio',
-    version: 1,
-    project: snapshot,
-    assets,
-  }
-  // Keep the manifest first to make the archive straightforward to inspect.
-  const ordered = new Map<string, Blob>([
-    [
-      'manifest.json',
-      new Blob([JSON.stringify(manifest)], { type: 'application/json' }),
-    ],
-    ...entries,
-  ])
-  return writeStudioArchive(ordered, options.signal)
 }
 
 /** Validate every byte/reference before creating any rows in the local database. */
@@ -149,45 +176,61 @@ export async function readStudioBackup(
 ): Promise<{ project: StudioProject; assets: StudioAssetData[] }> {
   options.signal?.throwIfAborted()
   const entries = await readStudioArchive(archive, options.signal)
-  let manifest: StudioBackupManifest
+  let transferred = false
   try {
-    manifest = manifestFromJson(
-      JSON.parse(await entries.get('manifest.json')!.text()),
-    )
-  } catch (error) {
-    if (error instanceof StudioBackupError) throw error
-    throw new StudioBackupError(
-      'The project backup manifest contains invalid or unsupported data.',
-    )
-  }
-  if (entries.size !== 1 + manifest.assets.length * 2) {
-    throw new StudioBackupError(
-      'The project backup contains missing or unrelated files.',
-    )
-  }
-  const assets: StudioAssetData[] = []
-  for (const entry of manifest.assets) {
-    options.signal?.throwIfAborted()
-    const original = entries.get(entry.originalPath)
-    const canonical = entries.get(entry.canonicalPath)
-    if (!original || !canonical)
-      throw new StudioBackupError('The project backup is missing audio files.')
-    const data: StudioAssetData = {
-      asset: entry.asset,
-      original: original.slice(0, original.size, entry.asset.mimeType),
-      canonicalPcm: canonical.slice(0, canonical.size, CANONICAL_PCM_MIME),
-    }
+    let manifest: StudioBackupManifest
     try {
-      await validatePreparedStudioAsset(data, { signal: options.signal })
+      manifest = manifestFromJson(
+        JSON.parse(await entries.get('manifest.json')!.text()),
+      )
     } catch (error) {
-      if (options.signal?.aborted === true) throw error
+      if (error instanceof StudioBackupError) throw error
       throw new StudioBackupError(
-        'The project backup audio failed its size, format or checksum check.',
+        'The project backup manifest contains invalid or unsupported data.',
       )
     }
-    assets.push(data)
+    if (entries.size !== 1 + manifest.assets.length * 2) {
+      throw new StudioBackupError(
+        'The project backup contains missing or unrelated files.',
+      )
+    }
+    const assets: StudioAssetData[] = []
+    for (const entry of manifest.assets) {
+      options.signal?.throwIfAborted()
+      const original = entries.get(entry.originalPath)
+      const canonical = entries.get(entry.canonicalPath)
+      if (!original || !canonical)
+        throw new StudioBackupError(
+          'The project backup is missing audio files.',
+        )
+      const data: StudioAssetData = {
+        asset: entry.asset,
+        original: original.slice(0, original.size, entry.asset.mimeType),
+        canonicalPcm: canonical.slice(0, canonical.size, CANONICAL_PCM_MIME),
+      }
+      try {
+        const releaseValidation = reserveStudioMemory(
+          2 * Math.max(data.original.size, data.canonicalPcm.size),
+        )
+        try {
+          await validatePreparedStudioAsset(data, { signal: options.signal })
+        } finally {
+          releaseValidation()
+        }
+      } catch (error) {
+        if (options.signal?.aborted === true) throw error
+        throw new StudioBackupError(
+          'The project backup audio failed its size, format or checksum check.',
+        )
+      }
+      assets.push(data)
+    }
+    const result = { project: manifest.project, assets }
+    transferred = true
+    return retainStudioResource(result, () => releaseStudioResource(entries))
+  } finally {
+    if (!transferred) releaseStudioResource(entries)
   }
-  return { project: manifest.project, assets }
 }
 
 export async function restoreStudioBackup(
@@ -196,6 +239,10 @@ export async function restoreStudioBackup(
   options: Pick<StudioBackupOptions, 'signal'> = {},
 ): Promise<StudioProject> {
   const validated = await readStudioBackup(archive, options)
-  options.signal?.throwIfAborted()
-  return service.restoreProject(validated.project, validated.assets)
+  try {
+    options.signal?.throwIfAborted()
+    return await service.restoreProject(validated.project, validated.assets)
+  } finally {
+    releaseStudioResource(validated)
+  }
 }
