@@ -252,6 +252,20 @@ describe('CoachLayer', () => {
     expect(runner.snapshot()?.step.id).toBe('takes')
   })
 
+  it('offers Next, not Skip, when Back returns to a step the singer did', () => {
+    vi.useFakeTimers()
+    const runner = mount()
+    fireEvent.click(screen.getByRole('button', { name: 'Next' }))
+    bus.send('pitch-detected')
+    vi.advanceTimersByTime(CELEBRATE_MS)
+    fireEvent.click(screen.getByRole('button', { name: 'Back' }))
+
+    expect(runner.snapshot()?.step.id).toBe('note')
+    expect(screen.queryByRole('button', { name: 'Skip this step' })).toBeNull()
+    fireEvent.click(screen.getByRole('button', { name: 'Next' }))
+    expect(runner.snapshot()?.step.id).toBe('takes')
+  })
+
   it('rings the target and stands the bubble beside it', () => {
     addTarget({ top: 300, left: 200, width: 120, height: 48 })
     mount()

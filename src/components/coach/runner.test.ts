@@ -207,6 +207,35 @@ describe('createCoachRunner', () => {
     expect(runner.snapshot()).toMatchObject({ index: 1, failed: false })
   })
 
+  it('offers Next on a do step done earlier, when Back returns to it', () => {
+    const runner = start()
+    runner.next()
+    bus.send('pitch-detected')
+    vi.advanceTimersByTime(CELEBRATE_MS)
+    expect(runner.snapshot()?.step.id).toBe('line')
+
+    runner.back()
+    expect(runner.snapshot()).toMatchObject({
+      index: 1,
+      waiting: false,
+      celebrating: false,
+    })
+    // Nothing to wait for: Next goes on, and no note is asked for again.
+    runner.next()
+    expect(runner.snapshot()?.step.id).toBe('line')
+  })
+
+  it('waits again on a do step that was skipped, when Back returns to it', () => {
+    const runner = start()
+    runner.next()
+    runner.skip()
+    runner.back()
+
+    expect(runner.snapshot()).toMatchObject({ index: 1, waiting: true })
+    runner.next()
+    expect(runner.snapshot()?.index).toBe(1)
+  })
+
   it('goes back a step, and not before the first', () => {
     const runner = start()
     runner.back()

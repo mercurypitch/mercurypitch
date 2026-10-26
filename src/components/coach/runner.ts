@@ -13,8 +13,9 @@
 // - When the singer does the thing, Merc celebrates for CELEBRATE_MS and the
 //   step moves on by itself. Skip moves on at once, with no celebration.
 // - A do-step whose thing is already done as it shows (`doneAlready`: the mic
-//   was on before the tour) does not wait: it offers Next, as a show step
-//   does. One whose `failure` event comes while it waits is marked failed,
+//   was on before the tour), or that the singer did earlier in this run and
+//   Back has returned to, does not wait: it offers Next, as a show step
+//   does. One that was skipped waits again. One whose `failure` event comes while it waits is marked failed,
 //   for the layer to say why, and still waits.
 // - The tour events carry what the legacy spotlight tours' events carry
 //   (src/lib/guide-funnel.ts): tour_start how many steps this run shows,
@@ -86,6 +87,8 @@ export function createCoachRunner(
   const total = steps.length
   const [snapshot, setSnapshot] = createSignal<CoachSnapshot | null>(null)
   const [ended, setEnded] = createSignal<CoachEnd | null>(null)
+  // The do-steps the singer has done in this run, by index.
+  const done = new Set<number>()
   let unlisten: (() => void) | null = null
   let unlistenFailure: (() => void) | null = null
   let celebration: ReturnType<typeof setTimeout> | null = null
@@ -123,8 +126,10 @@ export function createCoachRunner(
       return
     }
     const at = { index, total, step, celebrating: false, failed: false }
-    const waiting =
-      step.kind === 'do' && untrack(() => step.doneAlready?.()) !== true
+    if (step.kind === 'do' && untrack(() => step.doneAlready?.()) === true) {
+      done.add(index)
+    }
+    const waiting = step.kind === 'do' && !done.has(index)
     setSnapshot({ ...at, waiting })
     if (step.kind !== 'do' || !waiting) return
     if (step.failure !== undefined) {
@@ -134,6 +139,7 @@ export function createCoachRunner(
     }
     unlisten = on(step.waitFor, () => {
       stopWaiting()
+      done.add(index)
       setSnapshot({ ...at, waiting: false, celebrating: true })
       celebration = setTimeout(() => {
         celebration = null
