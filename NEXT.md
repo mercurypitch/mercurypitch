@@ -243,3 +243,9 @@ Note: the lanes' memory gate read a stale cgroup path after the 21:00 restart (f
 - Pushed feat/onboarding-plan-polish (new branch). PR #1217 "feat(onboarding): the plan leads with Start here, and Home and the Map open your lesson"; server footer stripped, read back clean; subscribed. Merge by rebase on green with expectedHeadSha c96a3bb740241c5137138a6564b54f4b89aa6f81, then verify-rebase-merge.sh.
 - Release walk running on e2e-wav's head meanwhile (production-like build): release/walk/out-p1, run-p1.out (task bstjedbgg). Re-run on main after the release merge.
 - Release prep after the merge: polish-notes.py 1217 7 <main head> "<#1217 title>".
+
+## 06:05 UTC 26 Oct — release walk shakedown on #1217's head (e2e-wav dist = production-like build now)
+- Run 1 (out-p1): served-HTML checks all pass (breadcrumb, prev/next, rooms' lesson links); onboarding and lesson phases timed out. Diagnosis (release/walk/diag.sh + diag.cjs): the production build hears the steady tone ("That's an A3, 220.0 Hz"); the walk expected the h1 to be only the note name. Lesson tour: L1/L2 hold the first card until Merc and Tavi land (HOLD_CAP 6 s); the walk waited 3 s, then its later click hit the tour's dimmer.
+- Fixed the walk: h1 regex \b[A-G]#?\d\b; tour waitFor 8 s; L2 "no tour again" waits 8 s; Not now / Start singing clicks filter({visible:true}); phase errors now carry the call log's waiting-for line.
+- Run 2 (out-p2): 15 pass, 4 fail (click timeouts after Keep, after the L1 tour, B/C). Run 3 (out-p3, phases onbA,lessons,onbB,onbC) running.
+- No app defect found so far. e2e-wav's dist is the walk's production-like build: rebuild with build:e2e before running Playwright specs there again.

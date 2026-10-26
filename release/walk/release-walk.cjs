@@ -233,7 +233,11 @@ async function covers(page, sel) {
   const phase = async (name, fn) => {
     if (!want(name)) return
     note(`=== ${name}`)
-    try { await fn() } catch (e) { check(`${name}: ran to the end`, false, e.message.split('\n')[0]) }
+    try { await fn() } catch (e) {
+      const m = e.message.split('\n')
+      const why = m.filter((l) => /waiting for|intercepts pointer|not visible|not enabled|not stable|outside of the viewport|resolved to/.test(l)).slice(0, 4).map((l) => l.trim()).join(' ; ')
+      check(`${name}: ran to the end`, false, `${m[0]} ${why}`.slice(0, 600))
+    }
   }
   const beat = (page, b) => page.locator(`[data-beat="${b}"]`)
   const dismissWelcome = async (page) => {
@@ -258,7 +262,7 @@ async function covers(page, sel) {
     await page.getByRole('button', { name: 'Sing one note' }).click()
     await beat(page, 'first-light').waitFor()
     await page.getByRole('button', { name: /Allow microphone|Start listening/ }).click()
-    await beat(page, 'first-light').locator('h1').filter({ hasText: /^[A-G]#?\d$/ }).first().waitFor({ timeout: 40000 })
+    await beat(page, 'first-light').locator('h1').filter({ hasText: /\b[A-G]#?\d\b/ }).first().waitFor({ timeout: 40000 })
     const heard = await text(beat(page, 'first-light').locator('h1'))
     info(`${label}: first note heard`, heard)
     await page.getByRole('button', { name: 'Keep going' }).click()
@@ -354,7 +358,7 @@ async function covers(page, sel) {
         note(`A keep: ${keep}`)
         check('A: Keep shows no unclean range', !/A3 to A3/.test(keep), keep.slice(0, 120))
         await shot(page, 'A-keep')
-        await page.getByRole('button', { name: /Not now/ }).first().click()
+        await page.getByRole('button', { name: /Not now/ }).filter({ visible: true }).first().click()
       } else info('A: keep', 'not shown')
       const q = await answer(page, PICKS)
       const planText = await planChecks(page, q, 'A')
@@ -385,7 +389,7 @@ async function covers(page, sel) {
       await page.setViewportSize(DESKTOP); await page.waitForTimeout(700)
       await shot(page, 'A-map-1440', true)
       await page.setViewportSize(PHONE); await page.waitForTimeout(700)
-      await page.getByRole('button', { name: /Start singing|Done/ }).first().click()
+      await page.getByRole('button', { name: /Start singing|Done/ }).filter({ visible: true }).first().click()
       await page.locator('#app-tabs').waitFor({ timeout: 20000 })
       await page.waitForTimeout(2500)
       await page.goto(BASE + '/#/home', { timeout: 60000 })
@@ -419,9 +423,9 @@ async function covers(page, sel) {
     const { page } = await newPage(browser, PHONE)
     try {
       await page.goto(BASE + '/learn/01', { timeout: 120000 })
-      await page.waitForTimeout(3000)
       const card = page.locator('.tour-card[role="dialog"]')
-      const tourShown = await card.isVisible().catch(() => false)
+      // Lessons 1 and 2 hold a first visit's card until Merc and Tavi land (kit/opening-hold.ts, HOLD_CAP 6 s).
+      const tourShown = await card.waitFor({ state: 'visible', timeout: 8000 }).then(() => true).catch(() => false)
       check('L1: the tour opens on a first lesson visit', tourShown)
       if (tourShown) {
         let steps = 0, last = ''
@@ -499,7 +503,7 @@ async function covers(page, sel) {
       await page.setViewportSize(PHONE)
       // Lesson 2
       await page.goto(BASE + '/learn/02', { timeout: 120000 })
-      await page.waitForTimeout(3000)
+      await page.waitForTimeout(8000)
       check('L2: the tour does not open again', !(await card.isVisible().catch(() => false)))
       const l2links = await anchorsTo(page, /\/learn\/0[13]\/?$/)
       info('L2: links to Lessons 1 and 3', l2links.map((a) => `${a.href} [${a.text}]${a.vis ? '' : ' hidden'} in ${a.where}`).join(' | '))
@@ -597,7 +601,7 @@ async function covers(page, sel) {
       if (await beat(page, 'keep').isVisible().catch(() => false)) {
         info('B: keep', (await text(beat(page, 'keep'))).slice(0, 120))
         await shot(page, 'B-keep')
-        await page.getByRole('button', { name: /Not now/ }).first().click()
+        await page.getByRole('button', { name: /Not now/ }).filter({ visible: true }).first().click()
       }
       const q = await answer(page, PICKS)
       await planChecks(page, q, 'B')
