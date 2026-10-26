@@ -4,6 +4,8 @@
 //
 // Covers the paths a real visitor walks on their first load, at both a
 // desktop and a phone viewport. See docs/plans/onboarding-first-light.md.
+// Among them: the plan's Show me around into Singing, whose tour is the
+// Guide's Singing section, since Singing never had a page tour of its own.
 //
 // This file runs WITHOUT a microphone, which is what makes the
 // silent-input case here meaningful: `voice-session` rejects a dead
@@ -20,6 +22,36 @@ const DESKTOP = { width: 1440, height: 900 }
 
 const beat = (page: import('@playwright/test').Page, name: string) =>
   page.locator(`[data-beat="${name}"]`)
+
+/** Open the flow on its questions once, as a sign-in redirect does. */
+function resumeOnTheQuestions(): void {
+  try {
+    if (sessionStorage.getItem('e2e.onboarding.questions') === '1') return
+    sessionStorage.setItem('e2e.onboarding.questions', '1')
+    localStorage.setItem('pitchperfect_onboarding_resume', 'questions')
+  } catch {
+    /* storage blocked: the flow opens from the top and the spec fails */
+  }
+}
+
+/** Whether a box lies over the middle of a target's box. */
+async function coversCentreOf(
+  page: import('@playwright/test').Page,
+  box: import('@playwright/test').Locator,
+  target: string,
+): Promise<boolean> {
+  const outer = await box.boundingBox()
+  const inner = await page.locator(target).boundingBox()
+  if (outer === null || inner === null) return false
+  const x = inner.x + inner.width / 2
+  const y = inner.y + inner.height / 2
+  return (
+    x >= outer.x &&
+    x <= outer.x + outer.width &&
+    y >= outer.y &&
+    y <= outer.y + outer.height
+  )
+}
 
 test.describe('First Light onboarding', () => {
   test.beforeEach(async ({ page }) => {
@@ -227,6 +259,48 @@ test.describe('First Light onboarding', () => {
     )
     expect(overflows).toBe(false)
   })
+
+  for (const [name, size] of [
+    ['a phone', PHONE],
+    ['a desktop', DESKTOP],
+  ] as const) {
+    test(`Show me around into Singing walks the Guide's Singing section, on ${name}`, async ({
+      page,
+    }) => {
+      // Arrange: on the plan with nothing answered, so Start here is Sing,
+      // reached as a sign-in comes back to the questions
+      await page.setViewportSize(size)
+      await page.addInitScript(resumeOnTheQuestions)
+      await page.goto('/')
+      const questions = beat(page, 'questions')
+      await expect(questions.getByText('Question 1 of 4')).toBeVisible({
+        timeout: 15000,
+      })
+      await questions.getByRole('button', { name: 'Skip', exact: true }).click()
+      await questions.getByRole('button', { name: 'Skip', exact: true }).click()
+      await questions.getByRole('button', { name: 'Skip this one' }).click()
+      await questions.getByRole('button', { name: 'Skip to my plan' }).click()
+      await expect(questions.locator('[data-kind="start"]')).toHaveAttribute(
+        'data-dest',
+        'sing',
+      )
+
+      // Act
+      await questions.getByRole('button', { name: 'Show me around' }).click()
+
+      // Assert: in Singing, on the section's first step, its spotlight over
+      // the step's target
+      await expect(page).toHaveURL(/#\/singing$/)
+      await expect(
+        page.getByRole('dialog', { name: 'Welcome to MercuryPitch' }),
+      ).toBeVisible({ timeout: 12000 })
+      const spotlight = page.locator('[class*="walkthroughHighlight"]')
+      await expect(spotlight).toBeVisible()
+      await expect
+        .poll(() => coversCentreOf(page, spotlight, '#app-title'))
+        .toBe(true)
+    })
+  }
 
   test('reduced motion still reaches the Map', async ({ page }) => {
     await page.emulateMedia({ reducedMotion: 'reduce' })

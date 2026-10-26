@@ -5,9 +5,10 @@
 // A stop is a room: a tab of the app, or a page of its own. The plan layer and
 // Home's card open one the same way, so there is one copy of how: a tab is
 // switched to, a page is navigated to, and the room's spotlight tour starts
-// only when the person asked for it ("Show me around") and the room has one.
-// A page is not the app, so a tour cannot spotlight it, and none is started
-// for it.
+// only when the person asked for it ("Show me around") and the room has one:
+// its page tour, or for Singing, which is the Guide's own subject and never
+// had a page tour, the Guide's Singing section (`startRoomTour`). A page is
+// not the app, so a tour cannot spotlight it, and none is started for it.
 //
 // Before that, a menu that hides the stop's room is made whole, and the person
 // is told. That is `widenMenuFor`, a function of its own and not a part of
@@ -21,7 +22,7 @@
 
 import { untrack } from 'solid-js'
 import { isTabVisible } from '@/features/tabs/constants'
-import { hasPageTour, startPageTour } from '@/stores/app-store'
+import { hasRoomTour, startRoomTour } from '@/stores/app-store'
 import { showNotification } from '@/stores/notifications-store'
 import { practiceScope, setPracticeScope, uiMode, } from '@/stores/settings-store'
 import { setActiveTab } from '@/stores/ui-store'
@@ -64,5 +65,5 @@ export function enterStop(stop: PlanStop, tour = false): void {
     return
   }
   setActiveTab(target.tab)
-  if (tour && hasPageTour(target.tab)) startPageTour(target.tab)
+  if (tour && hasRoomTour(target.tab)) startRoomTour(target.tab)
 }

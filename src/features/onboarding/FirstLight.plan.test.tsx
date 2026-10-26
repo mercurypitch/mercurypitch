@@ -15,11 +15,11 @@
 // (TESTING.md 3.5).
 
 import { cleanup, fireEvent, render, screen, waitFor, within, } from '@solidjs/testing-library'
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, onTestFinished, vi, } from 'vitest'
 
 // The flow's edges are faked once, in FirstLight.fixture.tsx: the star field
 // (which keeps what it is told about stepping aside), the prints' cards, the
-// funnel, the promo and gift stores, the GPU gate and the page tours.
+// funnel, the promo and gift stores, the GPU gate and the rooms' tours.
 vi.mock('./StarField', async () =>
   (await import('./FirstLight.fixture')).fake.watchedStarField(),
 )
@@ -47,10 +47,11 @@ import { KICKER } from '@/features/plan/plan-copy'
 import { PLAN_OPENED_KEY, PLAN_RECORD_KEY } from '@/features/plan/plan-keys'
 import { markPlanShown, planRecord, savePlanAnswers, } from '@/features/plan/plan-store'
 import { next, passTo, quiet, tap } from '@/features/plan/PlanQuestions.fixture'
-import type { PlanChoices } from '@/features/plan/questions'
-import { q2Options } from '@/features/plan/questions'
+import type { PlanChoices, Q3Id } from '@/features/plan/questions'
+import { q2Options, q3Options } from '@/features/plan/questions'
 import { GUIDE_FUNNEL_STORAGE_KEY } from '@/lib/guide-funnel'
 import { applyPersistedValue } from '@/lib/storage'
+import type * as AppStoreModule from '@/stores/app-store'
 import { currentBeat, flowOpen, onboardingBeads, openBeat, recordVoiceprint, resetOnboarding, savedVoiceprints, } from '@/stores/onboarding-store'
 import { activeTab, setActiveTab } from '@/stores/ui-store'
 import * as COPY from './copy'
@@ -159,22 +160,24 @@ describe('the four questions and the plan in the flow', () => {
     return host
   }
 
-  /** Answers Q1 and Q2, passes Q3 and Q4, and waits for the plan. */
+  /** Answers Q1 and Q2, and Q3 when given, passes Q4, and waits for the plan. */
   async function toThePlanOf(
     q1: 'Singing' | 'Guitar',
     q2: 'song' | 'audition' | null,
+    q3: Q3Id | null = null,
   ): Promise<HTMLElement> {
     const host = await at('questions')
+    const id = q1 === 'Singing' ? 'singing' : 'guitar'
     tap(q1)
     fireEvent.click(quiet())
     if (q2 !== null) {
-      const id = q1 === 'Singing' ? 'singing' : 'guitar'
       const label = q2Options(id).find((o) => o.id === q2)?.label ?? ''
       tap(label)
       fireEvent.click(quiet())
     } else {
       tap('Skip')
     }
+    if (q3 !== null) tap(q3Options(id).find((o) => o.id === q3)?.label ?? '')
     next()
     next()
     await shown(host, 'See every room')
@@ -278,9 +281,14 @@ describe('the four questions and the plan in the flow', () => {
     expect(planRecord()?.status).toBe('answered')
   })
 
-  it('enters Start here and closes First Light, without a tour where the room has none', async () => {
+  it("Show me around into Singing starts the Guide's Singing section", async () => {
     // Arrange: nothing answered, so Start here is the Sing room, which has
-    // no spotlight tour.
+    // no page tour; its tour is the Guide's Singing section. The store's own
+    // starter runs this once, and the tour is closed when the case ends.
+    const store =
+      await vi.importActual<typeof AppStoreModule>('@/stores/app-store')
+    mocks.startRoomTour.mockImplementationOnce(store.startRoomTour)
+    onTestFinished(() => store.endWalkthrough())
     const host = await toThePlan()
 
     // Act
@@ -288,10 +296,40 @@ describe('the four questions and the plan in the flow', () => {
       within(host).getByRole('button', { name: 'Show me around' }),
     )
 
-    // Assert
+    // Assert: in Singing, out of the flow, on the section's first step
     expect(activeTab()).toBe('singing')
     expect(flowOpen()).toBe(false)
-    expect(mocks.startPageTour).not.toHaveBeenCalled()
+    expect(mocks.startRoomTour).toHaveBeenCalledExactlyOnceWith('singing')
+    expect(store.walkthroughActive()).toBe(true)
+    expect(store.walkthroughStep()).toBe(0)
+    expect(new Set(store.tourSteps().map((s) => s.section))).toEqual(
+      new Set(['practice']),
+    )
+    expect(store.tourSteps()[0]).toBe(
+      store.WALKTHROUGH_STEPS.find((s) => s.section === 'practice'),
+    )
+  })
+
+  it('goes to a Start here that is a page of its own from Show me around, and starts no tour', async () => {
+    // Arrange: a guitar player who practices alone gets Guitar Night, a page
+    // of its own, which no tour can spotlight. jsdom cannot navigate.
+    const location = { href: '' }
+    vi.stubGlobal('location', location)
+    const host = await toThePlanOf('Guitar', null, 'alone')
+    expect(host.querySelector('[data-kind="start"]')).toHaveAttribute(
+      'data-dest',
+      'guitarNight',
+    )
+
+    // Act
+    fireEvent.click(
+      within(host).getByRole('button', { name: 'Show me around' }),
+    )
+
+    // Assert
+    expect(location.href).toBe('/guitar-night')
+    expect(flowOpen()).toBe(false)
+    expect(mocks.startRoomTour).not.toHaveBeenCalled()
   })
 
   it('starts the tour of Start here when the room has one', async () => {
@@ -306,7 +344,7 @@ describe('the four questions and the plan in the flow', () => {
     // Assert
     expect(activeTab()).toBe('guitar')
     expect(flowOpen()).toBe(false)
-    expect(mocks.startPageTour).toHaveBeenCalledWith('guitar')
+    expect(mocks.startRoomTour).toHaveBeenCalledWith('guitar')
   })
 
   it('enters Start here from the main button, and starts no tour even where the room has one', async () => {
@@ -319,7 +357,7 @@ describe('the four questions and the plan in the flow', () => {
     // Assert: in, as the card goes in; the tour is Show me around's.
     expect(activeTab()).toBe('guitar')
     expect(flowOpen()).toBe(false)
-    expect(mocks.startPageTour).not.toHaveBeenCalled()
+    expect(mocks.startRoomTour).not.toHaveBeenCalled()
   })
 
   it("enters a card's stop, closes First Light, and starts no tour", async () => {
@@ -332,7 +370,7 @@ describe('the four questions and the plan in the flow', () => {
     // Assert
     expect(activeTab()).toBe('guitar')
     expect(flowOpen()).toBe(false)
-    expect(mocks.startPageTour).not.toHaveBeenCalled()
+    expect(mocks.startRoomTour).not.toHaveBeenCalled()
     expect(planEvents()).toContain('plan_stop_start')
   })
 

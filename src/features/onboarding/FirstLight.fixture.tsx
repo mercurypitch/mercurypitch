@@ -5,7 +5,7 @@
 // FirstLight.test.tsx, FirstLight.plan.test.tsx and FirstLight.keys.test.tsx
 // mount the real flow and fake only its edges: the microphone, the canvases
 // jsdom cannot draw, the funnel, the promo and gift stores, the GPU gate and
-// the page tours. This holds what each fake hands back, the things the fakes
+// the rooms' tours. This holds what each fake hands back, the things the fakes
 // record, and the voiceprints the flow is shown. src/tests/onboarding-focus
 // .test.tsx borrows the first three fakes.
 //
@@ -35,8 +35,8 @@ import type * as AppStoreModule from '@/stores/app-store'
 export const mocks = {
   /** The funnel's events, as the flow reports them. */
   trackOnboarding: vi.fn(),
-  /** The page tours the flow asked for. */
-  startPageTour: vi.fn(),
+  /** The rooms' tours the flow asked for, by tab. */
+  startRoomTour: vi.fn(),
   /** What the star field (when it is `fake.watchedStarField`) was last told about being paused. */
   starFieldPaused: null as boolean | null,
   /** Put a launch gift on offer through `fake.promoStore`, or take it off with null. */
@@ -128,10 +128,10 @@ export const fake = {
     canRunLiveMerc: (): boolean => false,
   }),
 
-  /** Starting a page tour opens a real walkthrough; the flow only has to ask, in `mocks.startPageTour`. */
+  /** Starting a room's tour opens a real walkthrough; the flow only has to ask, in `mocks.startRoomTour`. Whether a room has one is the store's real answer. */
   appStore: async (importOriginal: ImportOriginal) => ({
     ...(await importOriginal<typeof AppStoreModule>()),
-    startPageTour: mocks.startPageTour,
+    startRoomTour: mocks.startRoomTour,
   }),
 }
 
