@@ -43,11 +43,17 @@ vi.mock('@/lib/use-viewport', () => ({ isNarrow: () => false }))
 vi.mock('./coach-tours', () => ({ COACH_TOURS: {} }))
 vi.mock('@/components/coach/TourChip', async () => {
   await store.loaded
+  const { createEffect } = await import('solid-js')
   return {
-    TourChip: (props: { line?: string }) => {
+    TourChip: (props: { line?: string; onSeen?: () => void }) => {
       const chip = document.createElement('div')
       chip.dataset.testid = 'tour-chip'
-      chip.textContent = props.line ?? ''
+      // Its line, and seen as it mounts, as the real chip is where there is
+      // no IntersectionObserver.
+      createEffect(() => {
+        chip.textContent = props.line ?? ''
+        props.onSeen?.()
+      })
       return chip
     },
   }

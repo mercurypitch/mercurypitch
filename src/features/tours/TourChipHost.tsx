@@ -8,9 +8,12 @@
 // TourChipHost.test.tsx:
 //
 // - One offer per tab, ever. `pitchperfect_page_tour_offered_<tab>` is
-//   written as the chip shows, and never for a chip that did not. Storage
-//   that cannot be written means no chip: the offer could never be recorded,
-//   so it would come back on every visit. A tour started by another door (the
+//   written, and tour_offer sent, once the chip has been seen (at least half
+//   of it on screen: TourChip's onSeen), and never for a chip that was not:
+//   Path restores its scroll below the chip, and an offer scrolled away
+//   comes back on the next visit. Storage that cannot be written takes the
+//   chip down as it is seen: the offer could never be recorded, so it would
+//   come back on every visit. A tour started by another door (the
 //   showcase's end, First Light's Map) spends the offer too (room-tour.ts),
 //   so the chip never offers a tour that was just shown.
 // - Nothing while `paused` (First Light, the plan, What's New, the takeover
@@ -39,7 +42,8 @@
 //   offer, not with the app. Karaoke Night shows the same chip, which makes
 //   it a chunk of its own, and most visits never see an offer. An offer
 //   waits for it, so the offer is still written as the chip shows: one that
-//   cannot load is not spent, and comes back on the next visit.
+//   cannot load is not spent, and comes back on the next visit. The watch
+//   that says the chip was seen lives in that chunk too.
 
 import type { Component, JSX } from 'solid-js'
 import { createComponent, createEffect, createMemo, createSignal, on, Show, } from 'solid-js'
@@ -68,6 +72,8 @@ interface Chip {
   /** A legacy or contextual tour's own line; a Merc tour's is the chip's. */
   line?: string
   start: () => void
+  /** The chip has been on screen: spend the offer and report it. */
+  seen: () => void
 }
 
 const [request, setRequest] = createSignal<TourChipRequest | null>(null)
@@ -153,6 +159,14 @@ export function TourChipHost(props: TourChipHostProps): JSX.Element {
     startRoomTour(tab, () => props.tab() === tab)
   }
 
+  // Spends the offer under `key` once the chip is seen, and reports it for
+  // `tour` (none to report for a tab without a key); storage that will not
+  // take it takes the chip down.
+  const spend = (key: string, tour: TourKey | null) => (): void => {
+    if (!recordOffer(key)) setChip(null)
+    else if (tour !== null) trackTour('tour_offer', tour)
+  }
+
   const offer = (tab: ActiveTab): void => {
     // The microtask path can find the singer elsewhere already, or a
     // contextual offer on screen that came due as the pause lifted: that
@@ -163,26 +177,19 @@ export function TourChipHost(props: TourChipHostProps): JSX.Element {
     if (entry === undefined && !hasPageTour(tab)) return
     const key = tourOfferKey(tab)
     if (offeredAlready(key)) return
-    // The chip first, then the offer, so it is written as the chip shows.
+    // The chip first, then the offer, so it is written as the chip is seen.
     if (chipView() === null) {
       void warmTourChip().then((ready) => {
         if (ready) offer(tab)
       })
       return
     }
-    if (!recordOffer(key)) return
-    if (entry !== undefined) {
-      setChip({ start: () => startTour(tab) })
-      trackTour('tour_offer', entry.key)
-      return
-    }
     setChip({
-      line: `New to ${tabLabel(tab)}? Take a quick tour.`,
+      line: entry ? undefined : `New to ${tabLabel(tab)}? Take a quick tour.`,
       start: () => startTour(tab),
+      // The offer does not depend on a key to report; only the report does.
+      seen: spend(key, entry ? entry.key : pageTourKey(tab)),
     })
-    // The offer does not depend on a key to report; only the report does.
-    const tourKey = pageTourKey(tab)
-    if (tourKey !== null) trackTour('tour_offer', tourKey)
   }
 
   // A tab change ends a Merc tour on the tab left behind.
@@ -215,25 +222,26 @@ export function TourChipHost(props: TourChipHostProps): JSX.Element {
         return
       }
       setRequest(null)
-      if (walkthroughActive()) return
-      if (offeredAlready(req.storageKey) || !recordOffer(req.storageKey)) {
-        return
-      }
-      setChip({ line: req.line, start: req.onStart })
-      trackTour('tour_offer', req.key)
+      if (walkthroughActive() || offeredAlready(req.storageKey)) return
+      setChip({
+        line: req.line,
+        start: req.onStart,
+        seen: spend(req.storageKey, req.key),
+      })
     }),
   )
 
+  // Keyed: each offer is a chip of its own, watched for being seen anew.
   return (
-    <Show when={chip()}>
+    <Show when={chip()} keyed>
       {(shown) => (
         <div class={styles.slot}>
           <LoadedTourChip
-            line={shown().line}
+            line={shown.line}
+            onSeen={shown.seen}
             onStart={() => {
-              const start = shown().start
               setChip(null)
-              start()
+              shown.start()
             }}
             onDismiss={() => setChip(null)}
           />
