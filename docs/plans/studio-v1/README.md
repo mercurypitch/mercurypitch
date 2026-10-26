@@ -2,7 +2,7 @@
 
 **Date:** 26 October 2026
 
-**Status:** Layout approved with dark mode leading and light mode retained. Phase 2 local data and app integration is in progress.
+**Status:** Layout approved with dark mode leading and light mode retained. Phase 2 local data and app integration is implemented and locally verified; fresh PR CI is pending.
 
 **Branch:** `feat/studio-fx-chain`, existing draft [PR #1219](https://github.com/mercurypitch/mercurypitch/pull/1219)
 
@@ -151,4 +151,4 @@ The owner accepted the existing layout, requested dark as the lead and explicitl
 
 V1 arranges kept takes and uploaded files; recording and overdubbing are deferred. The remaining implementation defaults follow the approved small editor: one audible clip per lane, duplicate conflicts create a new lane, seconds ruler initially, and one contextual panel. The navigation group keeps its stored identity but is labelled Create; its default order is Studio, Compose, Settings, Analysis, so Settings remains among the first three destinations. Studio is reachable in simple mode for every instrument.
 
-Phase 2 is underway. Phase 3 will implement both themes over real project data. Physical-device and listening acceptance remain Phase 6 work.
+Phase 2 is implemented with an inspectable foundation shell. [Local verification](phase-2-verification.md) covers storage, imports, backups and real app navigation. Phase 3 now builds both themes and the arrangement workspace over that data. Physical-device and listening acceptance remain Phase 6 work.

@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { TAB_META } from '@/components/AppNavTabs'
 import type { ActiveTab } from '@/features/tabs/constants'
-import { isTabVisible, MAX_INLINE_GROUP_TABS, MOBILE_BAR_TAB_PRIORITY, mobileBarTabs, PRIMARY_TABS, splitGroupTabs, TAB_ANALYSIS, TAB_CHALLENGES, TAB_COMMUNITY, TAB_COMPOSE, TAB_EAR_LAB, TAB_EXERCISES, TAB_GROUPS, TAB_GUITAR, TAB_HOME, TAB_JAM, TAB_KARAOKE, TAB_LEADERBOARD, TAB_ORDER, TAB_PATH, TAB_PIANO, TAB_PROGRESS, TAB_SETTINGS, TAB_SINGING, TAB_VOICE_HISTORY, tabGroupOf, visibleTabOrder, } from '@/features/tabs/constants'
+import { isTabVisible, MAX_INLINE_GROUP_TABS, MOBILE_BAR_TAB_PRIORITY, mobileBarTabs, PRIMARY_TABS, splitGroupTabs, TAB_ANALYSIS, TAB_CHALLENGES, TAB_COMMUNITY, TAB_COMPOSE, TAB_EAR_LAB, TAB_EXERCISES, TAB_GROUPS, TAB_GUITAR, TAB_HOME, TAB_JAM, TAB_KARAOKE, TAB_LEADERBOARD, TAB_ORDER, TAB_PATH, TAB_PIANO, TAB_PROGRESS, TAB_SETTINGS, TAB_SINGING, TAB_STUDIO_NIGHT, TAB_VOICE_HISTORY, tabGroupOf, visibleTabOrder, } from '@/features/tabs/constants'
 
 // These tests pin the single source of truth that drives BOTH the visible tab
 // bar (AppNavTabs) and the mobile swipe navigation (App.tsx). If a tab is
@@ -188,7 +188,7 @@ describe('simple mode after the regrouping', () => {
     expect(visibleTabOrder('piano', 'simple')).toContain(TAB_VOICE_HISTORY)
   })
 
-  it('still hides the Play and Studio surfaces', () => {
+  it('keeps the Play surfaces and MIDI composition in advanced mode', () => {
     expect(isTabVisible(TAB_KARAOKE, 'all', 'simple')).toBe(false)
     expect(isTabVisible(TAB_LEADERBOARD, 'all', 'simple')).toBe(false)
     expect(isTabVisible(TAB_COMPOSE, 'all', 'simple')).toBe(false)
@@ -210,7 +210,7 @@ describe('simple mode after the regrouping', () => {
   it('shows nothing simple mode does not already allow', () => {
     const simple = visibleTabOrder('all', 'simple')
     for (const tab of simple) {
-      expect([...PRIMARY_TABS, TAB_SETTINGS]).toContain(tab)
+      expect([...PRIMARY_TABS, TAB_SETTINGS, TAB_STUDIO_NIGHT]).toContain(tab)
     }
   })
 })
@@ -252,5 +252,26 @@ describe('primary groups and phone priority', () => {
 
     expect(bar).not.toContain(TAB_VOICE_HISTORY)
     expect(more).toContain(TAB_VOICE_HISTORY)
+  })
+})
+
+// Studio owns local audio projects across all recording instruments.
+describe('Studio navigation', () => {
+  it.each(['all', 'singing', 'guitar', 'piano'] as const)(
+    'is reachable in simple and advanced %s',
+    (scope) => {
+      expect(isTabVisible(TAB_STUDIO_NIGHT, scope, 'simple')).toBe(true)
+      expect(isTabVisible(TAB_STUDIO_NIGHT, scope, 'advanced')).toBe(true)
+    },
+  )
+  it('keeps the persisted Create group identity and leaves Settings visible', () => {
+    const group = tabGroupOf(TAB_STUDIO_NIGHT)!
+    expect(group.id).toBe('studio')
+    expect(group.label).toBe('Create')
+    expect(group.tabs[0]).toBe(TAB_STUDIO_NIGHT)
+    expect(
+      splitGroupTabs(group.tabs, TAB_STUDIO_NIGHT, group.maxInline).inline,
+    ).toContain(TAB_SETTINGS)
+    expect(TAB_META[TAB_STUDIO_NIGHT]?.id).toBe('tab-studio-night')
   })
 })

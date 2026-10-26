@@ -120,6 +120,15 @@ class DexieDatabase extends DexieDB {
       guitarPracticeScores: 'id, recordingId, updatedAt',
       guitarScoreAttachments: 'id, scoreId, backingId',
     })
+    // v13: Studio owns its project documents and immutable source audio.
+    // Summaries and metadata never materialize blobs. All stores stay local.
+    this.version(13).stores({
+      studioProjects: 'id, updatedAt',
+      studioProjectSummaries: 'id, updatedAt',
+      studioAssets: 'id, projectId, [projectId+sha256]',
+      studioAssetBlobs: 'id, projectId, assetId, &[assetId+kind]',
+      studioEditorLeases: 'id, ownerId, expiresAt',
+    })
     // Two tabs on one origin disagree about the schema after every deploy that
     // raises it. Dexie's own defaults yield and then let this tab reopen at the
     // old version, which deadlocks the upgrading tab rather than delaying it.

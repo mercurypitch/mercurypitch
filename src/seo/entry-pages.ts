@@ -125,6 +125,32 @@ export const STUDIO_APP_ID = `${SITE_ORIGIN}/#app`
 
 export const ENTRY_PAGES: readonly EntryPage[] = [
   {
+    slug: 'studio-night',
+    paths: ['/studio-night'],
+    navLabel: 'Studio',
+    boot: '/src/index.tsx',
+    bootHash: '#/studio-night',
+    themeColor: '#17181b',
+    title: 'Studio: Your Takes Together | MercuryPitch',
+    description:
+      'Bring your kept takes and uploaded audio into a project saved in this browser. Keep a project backup with its audio.',
+    og: {
+      title: 'Studio: Your Takes Together',
+      description:
+        'A home for your kept takes and uploaded audio, saved on this device.',
+      imageAlt: 'MercuryPitch music practice and creation tools.',
+    },
+    twitter: {
+      title: 'Studio: Your Takes Together',
+      description:
+        'Bring your kept takes and uploaded audio into a local project.',
+    },
+    h1: 'Your takes, together.',
+    lede: 'Create a Studio project from your kept recordings and audio files. Projects and their audio stay in this browser. Save a project backup to keep a copy elsewhere.',
+    noscript:
+      'Studio needs JavaScript to read and save projects in this browser.',
+  },
+  {
     slug: 'mirror',
     paths: ['/mirror', '/free-sing'],
     navLabel: 'Voice Mirror',

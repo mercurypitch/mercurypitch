@@ -1,10 +1,7 @@
 {
   "date": "2026-10-26",
   "layout": "approved",
-  "themes": [
-    "dark",
-    "light"
-  ],
+  "themes": ["dark", "light"],
   "leadTheme": "dark",
   "mute": "speaker icon; slash when muted",
   "solo": "readable S",

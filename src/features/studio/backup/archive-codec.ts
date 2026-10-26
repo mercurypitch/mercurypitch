@@ -1,0 +1,323 @@
+// ============================================================
+// Studio archive codec — bounded ZIP streams with exact entry names.
+// ============================================================
+
+import { Unzip, UnzipInflate, Zip, ZipPassThrough } from 'fflate'
+import { updateStudioCrc32 } from './crc32'
+
+export const STUDIO_BACKUP_LIMITS = {
+  archiveBytes: 512 * 1024 * 1024,
+  totalBytes: 512 * 1024 * 1024,
+  assetBytes: 256 * 1024 * 1024,
+  manifestBytes: 2 * 1024 * 1024,
+  entries: 257,
+  inputChunkBytes: 16 * 1024,
+} as const
+
+export class StudioBackupError extends Error {
+  constructor(message: string) {
+    super(message)
+    this.name = 'StudioBackupError'
+  }
+}
+
+export function studioBackupAssetPath(
+  index: number,
+  kind: 'original' | 'canonical',
+): string {
+  return `assets/${index}/${kind === 'original' ? 'original.bin' : 'canonical.pcm'}`
+}
+
+function entryLimit(path: string): number {
+  if (path === 'manifest.json') return STUDIO_BACKUP_LIMITS.manifestBytes
+  if (
+    /^assets\/(0|[1-9][0-9]{0,2})\/(original\.bin|canonical\.pcm)$/.test(path)
+  ) {
+    return STUDIO_BACKUP_LIMITS.assetBytes
+  }
+  throw new StudioBackupError(
+    'The project backup contains an unexpected or unsafe entry path.',
+  )
+}
+
+function checkAbort(signal?: AbortSignal): void {
+  signal?.throwIfAborted()
+}
+
+interface DirectoryEntry {
+  size: number
+  compressedSize: number
+  compression: number
+  crc32: number
+}
+
+/** Require the final directory too: a truncated stream can contain complete files. */
+async function readDirectory(
+  archive: Blob,
+): Promise<Map<string, DirectoryEntry>> {
+  if (archive.size < 22)
+    throw new StudioBackupError('The project backup is incomplete.')
+  const end = new DataView(await archive.slice(archive.size - 22).arrayBuffer())
+  const count = end.getUint16(10, true)
+  const bytes = end.getUint32(12, true)
+  const offset = end.getUint32(16, true)
+  if (
+    end.getUint32(0, true) !== 0x06054b50 ||
+    end.getUint16(4, true) !== 0 ||
+    end.getUint16(6, true) !== 0 ||
+    end.getUint16(8, true) !== count ||
+    end.getUint16(20, true) !== 0 ||
+    count > STUDIO_BACKUP_LIMITS.entries ||
+    bytes > STUDIO_BACKUP_LIMITS.entries * 1024 ||
+    offset + bytes !== archive.size - 22
+  ) {
+    throw new StudioBackupError(
+      'The project backup has an unsupported or incomplete ZIP directory.',
+    )
+  }
+  const data = new Uint8Array(
+    await archive.slice(offset, offset + bytes).arrayBuffer(),
+  )
+  const view = new DataView(data.buffer)
+  const entries = new Map<string, DirectoryEntry>()
+  const decoder = new TextDecoder('utf-8', { fatal: true })
+  let at = 0
+  let total = 0
+  while (at < bytes) {
+    if (at + 46 > bytes || view.getUint32(at, true) !== 0x02014b50) {
+      throw new StudioBackupError(
+        'The project backup has a damaged ZIP directory.',
+      )
+    }
+    const nameLength = view.getUint16(at + 28, true)
+    const length =
+      46 +
+      nameLength +
+      view.getUint16(at + 30, true) +
+      view.getUint16(at + 32, true)
+    if (at + length > bytes)
+      throw new StudioBackupError(
+        'The project backup has a damaged entry name.',
+      )
+    const name = decoder.decode(data.subarray(at + 46, at + 46 + nameLength))
+    const limit = entryLimit(name)
+    const size = view.getUint32(at + 24, true)
+    const compressedSize = view.getUint32(at + 20, true)
+    const compression = view.getUint16(at + 10, true)
+    total += size
+    if (
+      entries.has(name) ||
+      size > limit ||
+      total > STUDIO_BACKUP_LIMITS.totalBytes ||
+      compressedSize > archive.size ||
+      (compression !== 0 && compression !== 8) ||
+      (view.getUint16(at + 8, true) & 1) !== 0 ||
+      view.getUint16(at + 34, true) !== 0 ||
+      view.getUint32(at + 42, true) >= offset
+    ) {
+      throw new StudioBackupError(
+        'The project backup has duplicate, oversized or unsupported entries.',
+      )
+    }
+    entries.set(name, {
+      size,
+      compressedSize,
+      compression,
+      crc32: view.getUint32(at + 16, true),
+    })
+    at += length
+  }
+  if (entries.size !== count || !entries.has('manifest.json')) {
+    throw new StudioBackupError('The project backup directory is incomplete.')
+  }
+  return entries
+}
+
+/** Limits apply during inflation, before complete files are retained. */
+export async function readStudioArchive(
+  archive: Blob,
+  signal?: AbortSignal,
+): Promise<Map<string, Blob>> {
+  if (archive.size === 0 || archive.size > STUDIO_BACKUP_LIMITS.archiveBytes) {
+    throw new StudioBackupError(
+      'The project backup exceeds the supported archive size.',
+    )
+  }
+  const entries = new Map<string, Blob>()
+  const seen = new Set<string>()
+  let total = 0
+  let pending = 0
+  const status: { failure: Error | null } = { failure: null }
+  const directory = await readDirectory(archive)
+  const unzip = new Unzip((file) => {
+    const limit = entryLimit(file.name)
+    const declared = directory.get(file.name)
+    if (
+      !declared ||
+      declared.compression !== file.compression ||
+      (file.size !== undefined && file.size !== declared.compressedSize)
+    ) {
+      throw new StudioBackupError(
+        'The project backup entry does not match its directory.',
+      )
+    }
+    if (seen.has(file.name) || seen.size >= STUDIO_BACKUP_LIMITS.entries) {
+      throw new StudioBackupError(
+        'The project backup has duplicate or too many entries.',
+      )
+    }
+    if (file.originalSize !== undefined && file.originalSize > limit) {
+      throw new StudioBackupError(
+        'An entry in the project backup exceeds its size limit.',
+      )
+    }
+    seen.add(file.name)
+    pending++
+    let size = 0
+    let crc32 = 0xffffffff
+    const parts: Uint8Array<ArrayBuffer>[] = []
+    file.ondata = (error, data, final) => {
+      if (status.failure !== null) return
+      if (error) {
+        status.failure = error
+        return
+      }
+      size += data.byteLength
+      total += data.byteLength
+      if (size > limit || total > STUDIO_BACKUP_LIMITS.totalBytes) {
+        status.failure = new StudioBackupError(
+          'The expanded project backup exceeds its size limit.',
+        )
+        file.terminate()
+        return
+      }
+      parts.push(new Uint8Array(data))
+      crc32 = updateStudioCrc32(crc32, data)
+      if (final) {
+        if (size !== declared.size) {
+          status.failure = new StudioBackupError(
+            'The project backup entry has an incorrect length.',
+          )
+          return
+        }
+        if ((crc32 ^ 0xffffffff) >>> 0 !== declared.crc32) {
+          status.failure = new StudioBackupError(
+            'The project backup entry checksum does not match its contents.',
+          )
+          return
+        }
+        entries.set(file.name, new Blob(parts))
+        pending--
+      }
+    }
+    file.start()
+  })
+  unzip.register(UnzipInflate)
+  try {
+    for (
+      let offset = 0;
+      offset < archive.size;
+      offset += STUDIO_BACKUP_LIMITS.inputChunkBytes
+    ) {
+      checkAbort(signal)
+      const end = Math.min(
+        archive.size,
+        offset + STUDIO_BACKUP_LIMITS.inputChunkBytes,
+      )
+      const chunk = new Uint8Array(
+        await archive.slice(offset, end).arrayBuffer(),
+      )
+      unzip.push(chunk, end === archive.size)
+      if (status.failure !== null) throw status.failure
+    }
+    if (pending || entries.size !== directory.size) {
+      throw new StudioBackupError('The project backup is incomplete.')
+    }
+    return entries
+  } catch (error) {
+    if (error instanceof StudioBackupError || signal?.aborted === true)
+      throw error
+    throw new StudioBackupError(
+      'The project backup is not a readable ZIP archive.',
+    )
+  }
+}
+
+/** Store already-encoded audio without compression or a whole-archive byte copy. */
+export async function writeStudioArchive(
+  entries: ReadonlyMap<string, Blob>,
+  signal?: AbortSignal,
+): Promise<Blob> {
+  if (
+    entries.size > STUDIO_BACKUP_LIMITS.entries ||
+    !entries.has('manifest.json')
+  ) {
+    throw new StudioBackupError(
+      'The project backup has an invalid entry count.',
+    )
+  }
+  let sourceBytes = 0
+  for (const [path, blob] of entries) {
+    sourceBytes += blob.size
+    if (
+      blob.size > entryLimit(path) ||
+      sourceBytes > STUDIO_BACKUP_LIMITS.totalBytes
+    ) {
+      throw new StudioBackupError(
+        'The project exceeds the supported backup size.',
+      )
+    }
+  }
+  const parts: Uint8Array<ArrayBuffer>[] = []
+  let outputBytes = 0
+  const status: { complete: boolean; failure: Error | null } = {
+    complete: false,
+    failure: null,
+  }
+  const zip = new Zip((error, chunk, final) => {
+    if (error) {
+      status.failure = error
+      return
+    }
+    outputBytes += chunk.byteLength
+    if (outputBytes > STUDIO_BACKUP_LIMITS.archiveBytes) {
+      status.failure = new StudioBackupError(
+        'The project backup exceeds the supported archive size.',
+      )
+      return
+    }
+    parts.push(new Uint8Array(chunk))
+    status.complete = final
+  })
+  try {
+    for (const [path, blob] of entries) {
+      checkAbort(signal)
+      const entry = new ZipPassThrough(path)
+      zip.add(entry)
+      if (blob.size === 0) entry.push(new Uint8Array(), true)
+      for (
+        let offset = 0;
+        offset < blob.size;
+        offset += STUDIO_BACKUP_LIMITS.inputChunkBytes
+      ) {
+        checkAbort(signal)
+        const end = Math.min(
+          blob.size,
+          offset + STUDIO_BACKUP_LIMITS.inputChunkBytes,
+        )
+        entry.push(
+          new Uint8Array(await blob.slice(offset, end).arrayBuffer()),
+          end === blob.size,
+        )
+        if (status.failure !== null) throw status.failure
+      }
+    }
+    zip.end()
+    if (status.failure !== null) throw status.failure
+    if (!status.complete)
+      throw new StudioBackupError('The project backup could not be completed.')
+    return new Blob(parts, { type: 'application/zip' })
+  } finally {
+    zip.terminate()
+  }
+}
