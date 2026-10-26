@@ -122,6 +122,9 @@ export const STANDALONE_DOCUMENT_PATHS: ReadonlySet<string> = new Set([
   // served from ear-lab.html so a share unfurls with its card.
   '/ear-lab',
   '/ear-lab.html',
+  // Studio's full-app entry sets its tab hash; the cached root shell does not.
+  '/studio-night',
+  '/studio-night.html',
   // Jam is the one entry that boots the SHARED studio rather than a mini-app,
   // so the shell would at least be the right product. It still belongs here:
   // the shell is cached under '/', which carries no '#/jam', so the visitor

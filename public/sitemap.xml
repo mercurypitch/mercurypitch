@@ -49,6 +49,10 @@
     <loc>https://mercurypitch.com/ear-lab</loc>
     <lastmod>2026-10-20</lastmod>
   </url>
+  <url>
+    <loc>https://mercurypitch.com/studio-night</loc>
+    <lastmod>2026-10-26</lastmod>
+  </url>
   <!-- Jam Rooms: the rooms live behind the fragment router, but /jam is a real
        document with its own head and share card, so it belongs here like the
        instrument rooms above. -->
