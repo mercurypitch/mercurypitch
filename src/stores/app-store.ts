@@ -2263,6 +2263,52 @@ export function startPageTour(tab: ActiveTab): void {
 }
 
 /**
+ * The Guide section that tours a room whose tab has no page tour.
+ *
+ * Singing is the Guide's own subject: its first section, 'practice', has
+ * always walked the singing stage, so the tab never had a page tour. The ways
+ * into a room that ask for its tour (the plan's "Show me around" and the
+ * Map's "Take the tour") asked only for a page tour, and a singer sent to
+ * Singing got none. Only those ways read this: the page-tour offer, the
+ * sidebar's Tour button and the Guide still ask `hasPageTour`, so Singing
+ * gains no first-visit offer and no second Tour button.
+ */
+const ROOM_GUIDE_SECTIONS: Partial<Record<ActiveTab, string>> = {
+  [TAB_SINGING]: 'practice',
+}
+
+/** The Guide section's steps for a room, for this viewport, or none. */
+function roomSectionSteps(tab: ActiveTab): WalkthroughStep[] {
+  const section = ROOM_GUIDE_SECTIONS[tab]
+  return section === undefined ? [] : buildStepsFromSections([section])
+}
+
+/**
+ * Whether a room's tour can be offered: the tab's page tour when it has one,
+ * else the Guide section that tours it (Singing's). False on the native build,
+ * as `hasPageTour` is.
+ */
+export function hasRoomTour(tab: ActiveTab): boolean {
+  if (!TOURS_AVAILABLE) return false
+  return hasPageTour(tab) || roomSectionSteps(tab).length > 0
+}
+
+/**
+ * Start a room's tour: the tab's page tour when it has one, else the Guide
+ * section that tours it, under the Guide's own 'guide' key, as the Guide
+ * starts it. A no-op on the native build and for a room with neither.
+ */
+export function startRoomTour(tab: ActiveTab): void {
+  if (!TOURS_AVAILABLE) return
+  if (hasPageTour(tab)) {
+    startPageTour(tab)
+    return
+  }
+  const section = ROOM_GUIDE_SECTIONS[tab]
+  if (section !== undefined) startWalkthrough([section])
+}
+
+/**
  * Start the voice-control tour.
  *
  * Its own starter rather than a bare `startTour(VOICE_TOUR_STEPS)`: the pill

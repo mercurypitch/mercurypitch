@@ -29,7 +29,7 @@ import type { F0Frame, MirrorResult } from '@/lib/mirror/metrics'
 import { summarize } from '@/lib/mirror/metrics'
 import { cleanRange, singerForRange } from '@/lib/mirror/singer-match'
 import { useFocusTrap } from '@/lib/use-focus-trap'
-import { hasPageTour, startPageTour } from '@/stores/app-store'
+import { hasRoomTour, startRoomTour } from '@/stores/app-store'
 import { claimGiftNow, giftWaiting, rememberGiftOffered, } from '@/stores/launch-gift-store'
 import { advanceBeat, chooseTrack, closeOnboarding, currentBeat, finishOnboarding, firstNote, markMicDenied, micDenied, onboardingBeads, onboardingProgress, openBeat, recordFirstNote, recordSavedVoiceprints, recordVoiceprint, savedVoiceprints, setBeatsAvailable, setPlanDue, voiceprint, voiceStrip, } from '@/stores/onboarding-store'
 import { loadFeaturedPromo, offeredPromo } from '@/stores/promo-store'
@@ -329,9 +329,9 @@ export const FirstLight: Component<FirstLightProps> = (props) => {
   }
 
   /**
-   * Open a room and walk its spotlight tour.
+   * Open a room and walk its spotlight tour (`startRoomTour`).
    *
-   * No delay before `startPageTour`, matching every other caller
+   * No delay before the tour starts, matching every other caller
    * (usePageTourOffer, offerTourOnce): page-tour steps carry
    * `requiredTab`, so the Walkthrough switches tabs itself, and it
    * already waits ~1s per step for a target to become visible. Closing
@@ -347,7 +347,7 @@ export const FirstLight: Component<FirstLightProps> = (props) => {
     trackOnboarding(MAP_ROOM_EVENT[roomId])
     if (target.kind === 'tab') setActiveTab(target.tab as ActiveTab)
     leave()
-    startPageTour(tab)
+    startRoomTour(tab)
   }
 
   const handleCreateAccount = () => {
@@ -496,8 +496,8 @@ export const FirstLight: Component<FirstLightProps> = (props) => {
    */
   const handleEnterStop = (target: RoomTarget, tour: boolean) => {
     goTo(target)
-    if (tour && target.kind === 'tab' && hasPageTour(target.tab)) {
-      startPageTour(target.tab)
+    if (tour && target.kind === 'tab' && hasRoomTour(target.tab)) {
+      startRoomTour(target.tab)
     }
   }
 

@@ -55,7 +55,8 @@ export interface Room {
   target: RoomTarget
   /**
    * The tab whose spotlight tour this room can offer, when one exists
-   * (PAGE_TOURS in src/stores/app-store.ts). Absent for rooms that are
+   * (hasRoomTour in src/stores/app-store.ts: the tab's page tour, or for
+   * Singing the Guide's Singing section). Absent for rooms that are
    * a separate page rather than a tab — a tour cannot spotlight
    * something the app isn't rendering.
    */

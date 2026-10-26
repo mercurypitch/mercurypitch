@@ -25,7 +25,7 @@ import { ONBOARDING_FUNNEL_EVENTS } from '@/lib/funnel-event-catalog'
 
 // The flow's edges are faked once, in FirstLight.fixture.tsx: the mic, the
 // canvases (none of them is an exit), the funnel, the promo and gift stores,
-// the GPU gate and the page tours.
+// the GPU gate and the rooms' tours.
 vi.mock('@/lib/jam/media-errors', async () =>
   (await import('./FirstLight.fixture')).fake.micPermission(),
 )

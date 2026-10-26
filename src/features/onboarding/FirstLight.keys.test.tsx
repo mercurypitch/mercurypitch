@@ -20,11 +20,11 @@
 // app's layer have their own copy of the first half in PlanLayer.test.tsx.
 
 import { cleanup, fireEvent, render, screen, waitFor, within, } from '@solidjs/testing-library'
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, onTestFinished, vi, } from 'vitest'
 
 // The flow's edges are faked once, in FirstLight.fixture.tsx: the mic, the
 // canvases (none of them takes a key), the funnel, the promo and gift stores,
-// the GPU gate and the page tours.
+// the GPU gate and the rooms' tours.
 vi.mock('@/lib/jam/media-errors', async () =>
   (await import('./FirstLight.fixture')).fake.micPermission(),
 )
@@ -61,8 +61,9 @@ vi.mock('@/stores/app-store', async (importOriginal) =>
 
 import { PLAN_OPENED_KEY, PLAN_RECORD_KEY } from '@/features/plan/plan-keys'
 import { next, OTHER_FIELD, passTo, SOMETHING_ELSE, tap, } from '@/features/plan/PlanQuestions.fixture'
-import { TAB_EXERCISES } from '@/features/tabs/constants'
+import { TAB_EXERCISES, TAB_SINGING } from '@/features/tabs/constants'
 import { applyPersistedValue } from '@/lib/storage'
+import type * as AppStoreModule from '@/stores/app-store'
 import { currentBeat, flowOpen, openBeat, recordVoiceprint, resetOnboarding, savedVoiceprints, } from '@/stores/onboarding-store'
 import { setActiveTab } from '@/stores/ui-store'
 import { APP_KEYS, overheard, stopOverhearing } from '@/tests/utils/trap-keys'
@@ -240,14 +241,37 @@ describe('the keyboard stays in the flow', () => {
 })
 
 describe("the Map's tour link in the flow", () => {
-  async function tourLink(): Promise<HTMLElement> {
+  async function tourLink(room = 'exercises'): Promise<HTMLElement> {
     const map = await at('map')
     const link = map.querySelector<HTMLElement>(
-      '[data-room="exercises"] [role="button"]',
+      `[data-room="${room}"] [role="button"]`,
     )
-    if (link === null) throw new Error('the Exercises card has a tour link')
+    if (link === null) throw new Error(`the ${room} card has a tour link`)
     return link
   }
+
+  it("draws one on Practice too, whose Enter starts the Guide's Singing section", async () => {
+    // Arrange: Singing has no page tour; its room's tour is the Guide's
+    // Singing section. The store's own starter runs this once, and the tour
+    // is closed when the case ends.
+    const store =
+      await vi.importActual<typeof AppStoreModule>('@/stores/app-store')
+    mocks.startRoomTour.mockImplementationOnce(store.startRoomTour)
+    onTestFinished(() => store.endWalkthrough())
+    const link = await tourLink('practice')
+    link.focus()
+
+    // Act
+    fireEvent.keyDown(link, { key: 'Enter', code: 'Enter' })
+
+    // Assert
+    expect(mocks.startRoomTour).toHaveBeenCalledExactlyOnceWith(TAB_SINGING)
+    expect(flowOpen()).toBe(false)
+    expect(store.walkthroughActive()).toBe(true)
+    expect(new Set(store.tourSteps().map((s) => s.section))).toEqual(
+      new Set(['practice']),
+    )
+  })
 
   it.each<[string, Press]>([
     ['Enter', { key: 'Enter', code: 'Enter' }],
@@ -266,8 +290,8 @@ describe("the Map's tour link in the flow", () => {
       // Assert: handled (the card's own button does not also activate), counted
       // as the room and the tour, and kept from the app behind.
       expect(unhandled).toBe(false)
-      expect(mocks.startPageTour).toHaveBeenCalledTimes(1)
-      expect(mocks.startPageTour).toHaveBeenCalledWith(TAB_EXERCISES)
+      expect(mocks.startRoomTour).toHaveBeenCalledTimes(1)
+      expect(mocks.startRoomTour).toHaveBeenCalledWith(TAB_EXERCISES)
       expect(tracked().slice(-2)).toEqual([
         'onboarding_map_room',
         'onboarding_map_room_exercises',
@@ -289,7 +313,7 @@ describe("the Map's tour link in the flow", () => {
     }
 
     // Assert
-    expect(mocks.startPageTour).not.toHaveBeenCalled()
+    expect(mocks.startRoomTour).not.toHaveBeenCalled()
     expect(flowOpen()).toBe(true)
     expect(heard).toEqual([])
   })
