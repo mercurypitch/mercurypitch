@@ -20,6 +20,34 @@
     border-color 0.15s ease;
 }
 
+/* The ring stays 20 px; the press it takes does not. An invisible square
+   centred on it takes the press at 24 px (WCAG 2.5.8) and, under a finger,
+   44 px, the size every other control here gets on touch. Centred and of a
+   fixed size, it adds nothing where a caller has already made the trigger
+   that big (the Voice Atlas's 44 px "i"s, a labelled trigger). `:where`
+   keeps the positioning beneath every caller's own: a caller that places
+   its trigger absolutely still does. */
+:where(.trigger) {
+  position: relative;
+}
+
+.trigger::before {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 24px;
+  height: 24px;
+  content: '';
+  transform: translate(-50%, -50%);
+}
+
+@media (pointer: coarse) {
+  .trigger::before {
+    width: 44px;
+    height: 44px;
+  }
+}
+
 /* Every icon slot sizes its own child — the base `.icon-svg` rule is 20px,
    which is the whole button, so the glyph was overflowing an 18px content
    box (20px minus the ring's 1px border on each side) and reading as

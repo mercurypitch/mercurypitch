@@ -55,6 +55,7 @@
 }
 
 .aboutBtn {
+  position: relative;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -73,6 +74,26 @@
   transition:
     color 0.15s,
     border-color 0.15s;
+}
+
+/* The ring stays 20 px around its "?"; the press it takes is 24 px, and
+   44 px under a finger, from an invisible square centred on it. Beside it
+   is only the title's text, so the square takes nothing from a neighbour. */
+.aboutBtn::before {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 24px;
+  height: 24px;
+  content: '';
+  transform: translate(-50%, -50%);
+}
+
+@media (pointer: coarse) {
+  .aboutBtn::before {
+    width: 44px;
+    height: 44px;
+  }
 }
 
 /* Hover only where hover is real. A touch tap leaves a synthetic hover

@@ -210,18 +210,34 @@
   grid-row: 1;
 }
 
+/* 24 px, the least a target may be (WCAG 2.5.8); it was 22. Its glyph is
+   sized on its own below, so only the press grows. */
 .closeBtn {
   display: grid;
   flex-shrink: 0;
   place-items: center;
-  width: 1.4rem;
-  height: 1.4rem;
+  width: 1.5rem;
+  height: 1.5rem;
   padding: 0;
   color: var(--text-muted, #8b949e);
   background: transparent;
   border: 0;
   border-radius: 0.35rem;
   cursor: pointer;
+}
+
+/* Under a finger, 44 px. The button grows into the toast's padding rather
+   than past its edge: the phone's toast stack scrolls, so anything that
+   stuck out of a toast would be cut off at the stack's ends or scroll it,
+   and to the left is the action button, whose press it must not take. So a
+   one-line toast is 46 px tall on a touch screen instead of 38. */
+@media (pointer: coarse) {
+  .closeBtn {
+    width: 2.75rem;
+    height: 2.75rem;
+    margin-block: -0.4rem;
+    margin-right: -0.4rem;
+  }
 }
 
 .closeBtn:hover {
