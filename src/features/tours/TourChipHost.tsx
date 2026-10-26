@@ -156,7 +156,9 @@ export function TourChipHost(props: TourChipHostProps): JSX.Element {
   // Either kind of tour, started as every door starts one; a Merc tour that
   // loads after the singer has left its tab does not start.
   const startTour = (tab: ActiveTab): void => {
-    startRoomTour(tab, () => props.tab() === tab)
+    // Asked once the tour has loaded, outside any tracking.
+    const stillOnTab = (): boolean => props.tab() === tab
+    startRoomTour(tab, stillOnTab)
   }
 
   // Spends the offer under `key` once the chip is seen, and reports it for
@@ -193,7 +195,7 @@ export function TourChipHost(props: TourChipHostProps): JSX.Element {
   }
 
   // A tab change ends a Merc tour on the tab left behind.
-  createEffect(on(props.tab, endMercTour, { defer: true }))
+  createEffect(on(() => props.tab(), endMercTour, { defer: true }))
   // The legacy spotlight and a Merc tour never run together.
   createEffect(
     on(walkthroughActive, (active) => {
@@ -204,11 +206,14 @@ export function TourChipHost(props: TourChipHostProps): JSX.Element {
   createEffect(on(tourOfferRetired, () => setChip(null), { defer: true }))
 
   createEffect(
-    on([props.tab, pausedNow], ([tab, isPaused], prev) => {
+    on([() => props.tab(), pausedNow], ([tab, isPaused], prev) => {
       setChip(null)
       if (isPaused) return
-      if (prev?.[1] === true) queueMicrotask(() => offer(tab))
-      else offer(tab)
+      // Just after a pause lifts, a microtask later: a contextual offer
+      // that came due with it goes first.
+      const offerHere = (): void => offer(tab)
+      if (prev?.[1] === true) queueMicrotask(offerHere)
+      else offerHere()
     }),
   )
 

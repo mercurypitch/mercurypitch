@@ -144,7 +144,7 @@ function bubbleStyle(spot: Spot | null): JSX.CSSProperties {
 
 export function Showcase(props: ShowcaseProps): JSX.Element {
   const reduced = prefersReducedMotion()
-  const mercPx = props.phone ? MERC_PHONE : MERC_WIDE
+  const mercPx = (): number => (props.phone ? MERC_PHONE : MERC_WIDE)
   const [index, setIndex] = createSignal(-1)
   const [box, setBox] = createSignal<Box | null>(null)
   const [hopping, setHopping] = createSignal(false)
@@ -219,14 +219,17 @@ export function Showcase(props: ShowcaseProps): JSX.Element {
 
   // The first stop, once nothing is held.
   createEffect(
-    on(props.held, (held) => {
-      if (!held && !over && untrack(index) < 0) enter(0)
-    }),
+    on(
+      () => props.held(),
+      (held) => {
+        if (!held && !over && untrack(index) < 0) enter(0)
+      },
+    ),
   )
 
   // On by itself after STOP_MS, while nothing is held.
   createEffect(
-    on([index, props.held], ([at, held]) => {
+    on([index, () => props.held()], ([at, held]) => {
       if (at < 0 || held) return
       const timer = setTimeout(next, STOP_MS)
       onCleanup(() => clearTimeout(timer))
@@ -286,7 +289,7 @@ export function Showcase(props: ShowcaseProps): JSX.Element {
   const pose = (): MercState => (hopping() ? 'hop' : 'point')
   const spot = (): Spot | null => {
     const b = box()
-    return b === null ? null : spotFor(b, props.phone, mercPx)
+    return b === null ? null : spotFor(b, props.phone, mercPx())
   }
   const ring = (): Box | null => {
     const b = box()
@@ -308,7 +311,7 @@ export function Showcase(props: ShowcaseProps): JSX.Element {
         <MercPresence
           state={pose}
           stillSrc={stillFor(pose())}
-          size={mercPx}
+          size={mercPx()}
           testId="showcase-merc"
         />
       </div>
