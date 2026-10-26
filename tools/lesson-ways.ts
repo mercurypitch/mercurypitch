@@ -17,7 +17,7 @@
 // goes between the masthead and the lesson, outside <main>, so "Skip to the
 // lesson" passes it. MercuryPitch is a link to the home page because the
 // structured data names it first and the masthead does not link home: its
-// logo goes back to the top of the lesson (lesson-base.css styles both).
+// logo goes back to the top of the lesson (lesson-sections.css styles both).
 //
 // The lessons either side go in the page's foot, as a nav: the lesson before
 // this one and the lesson after it, each that has a page, by its number and
