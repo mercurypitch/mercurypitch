@@ -43,12 +43,17 @@ interface KeepRow {
 
 /** What an account keeps, in the singer's words rather than the mechanism's
  *  ("sync", "cloud"). The leaderboard row stands in for the gift when there
- *  is none: it is the one thing here nobody can have without an account. */
+ *  is none: it is the one thing here nobody can have without an account.
+ *
+ *  The first row is the weekly Check-up (docs/specs/weekly-check-up.ears.md):
+ *  this browser keeps the latest twelve voiceprints (LOCAL_CAP), an account
+ *  every one, on every device. It names no range, so it says nothing untrue
+ *  after a read that was not clean. */
 const ROWS: KeepRow[] = [
   {
     chip: 'voiceprint',
     tone: 'teal',
-    text: 'Your voiceprint and range, saved',
+    text: 'Every weekly Check-up, kept',
   },
   {
     chip: 'devices',

@@ -75,7 +75,7 @@ describe('Keep with the launch gift', () => {
       'It lives in this browser for now. A free account keeps it on every device.',
     )
     expect(rowTexts(beat)).toEqual([
-      'Your voiceprint and range, saved',
+      'Every weekly Check-up, kept',
       'Your progress on every device',
     ])
     const gift = screen.getByTestId('keep-gift')
@@ -233,7 +233,7 @@ describe('Keep with no code on offer', () => {
 
     expect(screen.queryByTestId('keep-gift')).toBeNull()
     expect(rowTexts(beat)).toEqual([
-      'Your voiceprint and range, saved',
+      'Every weekly Check-up, kept',
       'Your progress on every device',
       'Your place on the leaderboard',
     ])
