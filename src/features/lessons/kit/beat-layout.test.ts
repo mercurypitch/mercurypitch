@@ -15,28 +15,49 @@ const GRIDS: readonly MachineState[] = ['grid', 'patterns', 'free']
 const inside = (r: Rect, w: number, h: number): boolean =>
   r.x >= 0 && r.y >= 0 && r.x + r.w <= w + 1e-9 && r.y + r.h <= h + 1e-9
 
+// The sweeps below check every cell of every layout, close to a million
+// facts. One expect each made the first sweep take two seconds alone and
+// time out under load, so each sweep writes down what breaks, as "width,
+// state, beats: the part and the rule", and asserts once that nothing did.
+
+/** A layout's cells, each with its name: lane, then beat. */
+const namedCells = (cells: readonly (readonly Rect[])[]) =>
+  cells.flatMap((lane, i) =>
+    lane.map((r, j) => ({ r, name: `cell ${i}:${j}` })),
+  )
+
 describe('machineLayout', () => {
   it('gives every cell 44 px each way, apart from every other and from the labels, at every width', () => {
+    // Act
+    const failures: string[] = []
     for (const w of WIDTHS)
       for (const state of GRIDS)
         for (const beats of [2, 3, 4]) {
-          // Act
           const l = machineLayout(state, w, 250, beats)
-          const cells = l.cells.flat()
-
-          // Assert
-          expect(l.compact).toBe(false)
-          for (const c of cells) {
-            expect(c.w).toBeGreaterThanOrEqual(44)
-            expect(c.h).toBeGreaterThanOrEqual(44)
-            expect(inside(c, w, 250)).toBe(true)
+          const at = `${w} px, ${state}, ${beats} beats`
+          const cells = namedCells(l.cells)
+          if (l.compact) failures.push(`${at}: compact`)
+          for (const { r, name } of cells) {
+            if (!(r.w >= 44)) failures.push(`${at}: ${name} under 44 px wide`)
+            if (!(r.h >= 44)) failures.push(`${at}: ${name} under 44 px tall`)
+            if (!inside(r, w, 250))
+              failures.push(`${at}: ${name} outside the figure`)
           }
           for (let i = 0; i < cells.length; i++)
             for (let j = i + 1; j < cells.length; j++)
-              expect(overlaps(cells[i], cells[j])).toBe(false)
-          for (const label of l.labels)
-            for (const c of cells) expect(overlaps(label, c)).toBe(false)
+              if (overlaps(cells[i].r, cells[j].r))
+                failures.push(
+                  `${at}: ${cells[i].name} overlaps ${cells[j].name}`,
+                )
+          l.labels.forEach((label, k) => {
+            for (const { r, name } of cells)
+              if (overlaps(label, r))
+                failures.push(`${at}: label ${k} overlaps ${name}`)
+          })
         }
+
+    // Assert
+    expect(failures).toEqual([])
   })
 
   it('takes 182 px for the band, the number strip and three lanes, the cells 4 px apart', () => {
@@ -57,38 +78,46 @@ describe('machineLayout', () => {
   })
 
   it('takes the compact layout under a 182 px figure, which fits 140 px', () => {
+    // Act
+    const failures: string[] = []
     for (const w of WIDTHS) {
-      // Act
       const l = machineLayout('patterns', w, 140, 4)
-      const cells = l.cells.flat()
-
-      // Assert
-      expect(l.compact).toBe(true)
-      for (const c of cells) {
-        expect(inside(c, w, 140)).toBe(true)
-        expect(c.h).toBeGreaterThanOrEqual(44)
-        expect(c.w).toBeGreaterThanOrEqual(44)
+      const at = `${w} px`
+      if (!l.compact) failures.push(`${at}: not compact`)
+      for (const { r, name } of namedCells(l.cells)) {
+        if (!inside(r, w, 140)) failures.push(`${at}: ${name} outside 140 px`)
+        if (!(r.h >= 44)) failures.push(`${at}: ${name} under 44 px tall`)
+        if (!(r.w >= 44)) failures.push(`${at}: ${name} under 44 px wide`)
       }
       // each number sits in its column's first cell's corner
       l.pads.forEach((p, i) => {
-        expect(p.x).toBeGreaterThan(l.cells[0][i].x)
-        expect(p.y).toBeGreaterThan(l.cells[0][i].y)
+        if (!(p.x > l.cells[0][i].x))
+          failures.push(`${at}: number ${i} left of its cell`)
+        if (!(p.y > l.cells[0][i].y))
+          failures.push(`${at}: number ${i} above its cell`)
       })
     }
+
+    // Assert
+    expect(failures).toEqual([])
     expect(machineLayout('grid', 600, 181, 4).compact).toBe(true)
     expect(machineLayout('grid', 600, 182, 4).compact).toBe(false)
   })
 
   it("keeps free play's taps readout clear of the grid at every width", () => {
+    // Act
+    const failures: string[] = []
     for (const w of WIDTHS)
       for (const beats of [2, 3, 4]) {
-        // Act
         const l = machineLayout('free', w, 250, beats)
         const read = freeReadBox(w, 250)
-
-        // Assert
-        for (const c of l.cells.flat()) expect(overlaps(read, c)).toBe(false)
+        for (const { r, name } of namedCells(l.cells))
+          if (overlaps(read, r))
+            failures.push(`${w} px, ${beats} beats: ${name} under the readout`)
       }
+
+    // Assert
+    expect(failures).toEqual([])
   })
 
   it('stands the tall metronome inside the figure, its lamp under its foot, beside the readouts', () => {
