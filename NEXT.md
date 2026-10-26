@@ -237,3 +237,9 @@ Note: the lanes' memory gate read a stale cgroup path after the 21:00 restart (f
 ## 05:40 UTC 26 Oct — notes script corrected
 - The owner never answered the two wording calls (Siren bullet; feedback form's "No account needed." and "Mercury Pitch" two words): the 01:07 message does not cover them. polish-notes.py no longer claims "the owner's calls are in": the dev-changelog line and the PR body's "Before the tag" item 1 stay as drafted (open for the owner). Both CHANGELOG lines are accurate as written. Dry run again (release/dryrun2): all edits match once, no line over 78 characters.
 - Main CI green on b8479306a (PR Gate, Build & Deploy, both Mobile). Open PRs unchanged (#1215 still open).
+
+## 05:52 UTC 26 Oct — P gated, PR #1217 open
+- Lead gates on c96a3bb74 (rebased on b8479306a), all pass: check 0/11 no rewrites; unit 629 files 8898 pass 1 skip (19 test files of S+P + src/tests); scripts 255; validate; metrics no regressions; index current; cites 157 (= main); build:e2e to LFS, first paint passes all 26 documents with S CSS + P JS (least room: L3 520 B JS, a draft); drafts shown; e2e 7 specs 77 pass 1 skip (L1 nothing-to-watch, skips with film sources).
+- Pushed feat/onboarding-plan-polish (new branch). PR #1217 "feat(onboarding): the plan leads with Start here, and Home and the Map open your lesson"; server footer stripped, read back clean; subscribed. Merge by rebase on green with expectedHeadSha c96a3bb740241c5137138a6564b54f4b89aa6f81, then verify-rebase-merge.sh.
+- Release walk running on e2e-wav's head meanwhile (production-like build): release/walk/out-p1, run-p1.out (task bstjedbgg). Re-run on main after the release merge.
+- Release prep after the merge: polish-notes.py 1217 7 <main head> "<#1217 title>".

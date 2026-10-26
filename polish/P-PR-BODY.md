@@ -32,7 +32,11 @@ On the builder's head, on main cddefd571:
 - Tours: 144 desktop and 127 phone steps, 0 without a spotlight.
 - Mutations, each caught: an unclean read sent to the range stop; the stat card, Keep or the share showing an unclean range; the main button entering with the tour, or Show me around removed; the Progress answer dropped, or given to Karaoke Night; the helper returning a draft, or `/learn/01` after Lesson 1; the door or the section in the native build; a lesson cover cropped again, or the 440 px column back.
 
-RESULTS_AFTER_REBASE
+On this head, rebased onto main b8479306a (#1216 merged), checked again:
+
+- `pnpm check`: 0 errors, 11 warnings (as on main), nothing rewritten. Unit: the 19 test files #1216 and this branch touch, plus `src/tests`: 629 files, 8898 passed, 1 skipped. `pnpm test:scripts` 255; `pnpm pr:validate`; `pnpm metrics:check` no regressions; `pnpm docs:index:check` current; plan citations 157 findings, as on main.
+- `build:e2e` to the Glassworks LFS step. First-paint budgets pass with #1216's lesson-page CSS and this branch's JavaScript together, none changed; the least room left is Lesson 3's 520 bytes of JavaScript (a draft). Draft lessons shown as expected.
+- Browser, `--retries=0`: onboarding, onboarding-mic, onboarding-plan-keyboard, onboarding-viewports, learn-lesson-01, learn-ways and learn-lesson-tour, 77 passed and 1 skipped (Lesson 1's "nothing to watch" test, which skips while the film has its sources).
 
 ## Notes
 
