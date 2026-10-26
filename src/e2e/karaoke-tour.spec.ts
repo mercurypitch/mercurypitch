@@ -15,8 +15,10 @@
 // that (a sung note, the score card closing) is played by the coach's own
 // events, by name (src/lib/coach-events.ts). Every ring holds its target,
 // fits the window and leaves the bubble off it; the last stop rings Add a
-// song on a wide screen and stands free over the phone stage. Done leaves nothing behind, the address has lost `tour`, and a
-// reload offers nothing more: the offer was spent when the tour started.
+// song on a wide screen, and on a phone the stage's Back, which it names,
+// with the bubble centred off the stage's transport. Done leaves nothing
+// behind, the address has lost `tour`, and a reload offers nothing more: the
+// offer was spent when the tour started.
 
 import type { Locator, Page } from '@playwright/test'
 import { expect, test } from '@playwright/test'
@@ -187,8 +189,16 @@ for (const screen of SCREENS) {
     await expect(heading(page, 'Bring your own song')).toBeVisible()
     await expect(bubble(page)).toContainText('3 of 3')
     if (screen.phone) {
-      // The phone stage covers the page: the stop stands with no ring.
-      await expect(ring(page)).toHaveCount(0)
+      // The phone stage covers the page, Add a song with it: the stop rings
+      // the stage's Back, the way there, names it, and stands centred, off
+      // the transport.
+      await ringsTarget(
+        page,
+        page.locator('[data-tour="karaoke.stage-back"]'),
+        screen,
+      )
+      await expect(bubble(page)).toContainText('Tap Back to add any song.')
+      await expect(bubble(page)).toHaveAttribute('data-place', 'centre')
     } else {
       await ringsTarget(
         page,

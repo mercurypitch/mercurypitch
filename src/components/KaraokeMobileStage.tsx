@@ -746,6 +746,7 @@ export const KaraokeMobileStage: Component<KaraokeMobileStageProps> = (
           onClick={() => props.onBack?.()}
           title="Back to Karaoke Night"
           aria-label="Back"
+          data-tour="karaoke.stage-back"
         >
           <ChevronLeftIcon />
         </button>

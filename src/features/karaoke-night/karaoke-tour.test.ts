@@ -204,14 +204,25 @@ describe('KARAOKE_TOUR', () => {
     }
   })
 
-  it('rings Add a song on a wide screen, and nothing over the phone stage', async () => {
+  it("rings Add a song on a wide screen, and the phone stage's Back on a phone", async () => {
     const { tour } = await fresh()
 
     expect(lastStep(tour.KARAOKE_TOUR, false).target).toBe(
       '[data-tour="karaoke.own-song"]',
     )
-    // The phone stage covers the page when the score shows.
-    expect(lastStep(tour.KARAOKE_TOUR, true).target).toBeUndefined()
+    // The phone stage covers the page, Add a song with it, when the score
+    // card closes: its Back is the way there, and the stop names it.
+    const phone = lastStep(tour.KARAOKE_TOUR, true)
+    expect(phone.target).toBe('[data-tour="karaoke.stage-back"]')
+    expect(phone.body).toBe(
+      'Tap Back to add any song. The Cloud GPU takes the voice out, so you sing over the band.',
+    )
+    // Without Back on screen it names nothing, and stands centred, off the
+    // stage's transport, ringed or not.
+    expect(phone.unseen).toBe(
+      'Add any song. The Cloud GPU takes the voice out, so you sing over the band.',
+    )
+    expect(phone.phoneCentred).toBe(true)
   })
 
   it('starts with the demo, whose tap starts the music', async () => {

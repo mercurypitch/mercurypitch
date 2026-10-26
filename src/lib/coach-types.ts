@@ -58,6 +58,18 @@ interface CoachStepBase {
    * instead.
    */
   corner?: CoachCorner
+  /**
+   * What the step says instead while its target is not on screen: a body
+   * that names a control ("Tap Back") holds only while that control is there
+   * to tap.
+   */
+  unseen?: string
+  /**
+   * On a phone, the bubble stands centred rather than docked: for a stop
+   * over a stage whose own transport fills the foot of the window, where a
+   * docked sheet would cover it. Its target must stand clear of the middle.
+   */
+  phoneCentred?: true
   /** Merc's pose while the step shows. */
   merc: MercState
   /** A lesson that explains the step, opened in a new tab. */
