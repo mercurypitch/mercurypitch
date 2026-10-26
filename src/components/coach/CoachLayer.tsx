@@ -33,7 +33,10 @@
 // - Focus and keys. Focus moves to the bubble on each step, which a screen
 //   reader reads by its title, and the title and body are a polite live
 //   region besides. The bubble is not modal: the page stays live, and Tab
-//   leaves it. While focus is inside it, though, no key reaches the app's
+//   leaves it. On a ringed step Tab from its last control goes to the
+//   target (its first control, if it is not one itself), and Shift+Tab from
+//   there comes back; start.ts gives focus back to the page when the layer
+//   goes. While focus is inside the bubble, though, no key reaches the app's
 //   window shortcuts, where Space would start playback and Escape would close
 //   the sidebar: Escape ends the tour, Enter and the right arrow go on from a
 //   show or watch step, and the left arrow goes back. The listener is native
@@ -72,6 +75,8 @@ export const HOLD_TONE_HZ = 220
 const GAP = 12
 const MARGIN = 16
 const BUBBLE_MAX_W = 360
+const FOCUSABLE =
+  'button:not([disabled]), a[href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])'
 
 export interface CoachLayerProps {
   runner: CoachRunner
@@ -100,27 +105,38 @@ const sameBox = (a: Box | null, b: Box | null): boolean =>
     a.width === b.width &&
     a.height === b.height)
 
+/** A step's target as found: the element, and its box or 'tall'. */
+interface Sighting {
+  el: HTMLElement
+  box: Box | 'tall'
+}
+
 /**
- * The box to ring for `step`; 'tall' for a target that is there but taller
- * than RING_MAX_SHARE of the window; null for none. Scrolls a target out of
- * view into it, once.
+ * The target of `step` and the box to ring; 'tall' for one taller than
+ * RING_MAX_SHARE of the window, which is not ringed; null for none. Scrolls a
+ * target out of view into it, once.
  */
-function ringFor(
-  step: CoachStep,
-  scrolled: { done: boolean },
-): Box | 'tall' | null {
+function sight(step: CoachStep, scrolled: { done: boolean }): Sighting | null {
   if (step.target === undefined) return null
   const el = findTarget(step.target)
   if (el === null) return null
   let r = el.getBoundingClientRect()
-  if (r.height > window.innerHeight * RING_MAX_SHARE) return 'tall'
+  if (r.height > window.innerHeight * RING_MAX_SHARE) return { el, box: 'tall' }
   const outOfView = r.bottom < 0 || r.top > window.innerHeight
   if (outOfView && !scrolled.done && typeof el.scrollIntoView === 'function') {
     scrolled.done = true
     el.scrollIntoView({ block: 'center' })
     r = el.getBoundingClientRect()
   }
-  return { top: r.top, left: r.left, width: r.width, height: r.height }
+  return {
+    el,
+    box: { top: r.top, left: r.left, width: r.width, height: r.height },
+  }
+}
+
+/** Where focus goes in a ringed target: itself if it is a control, else its first. */
+function entryOf(el: HTMLElement): HTMLElement | null {
+  return el.matches(FOCUSABLE) ? el : el.querySelector<HTMLElement>(FOCUSABLE)
 }
 
 /** The room the foot of the window holds (the toasts' floor), in px. */
@@ -178,6 +194,8 @@ export function CoachLayer(props: CoachLayerProps): JSX.Element {
   const [size, setSize] = createSignal({ w: BUBBLE_MAX_W, h: 0 })
   const [handoff, setHandoff] = createSignal<CoachHandoff | null>(null)
   let bubble: HTMLDivElement | undefined
+  // The element under the ring, for Tab into it and Shift+Tab back.
+  let ringed: HTMLElement | null = null
   let audio: AudioContext | null = null
   let tone: DemoSound | null = null
 
@@ -250,16 +268,18 @@ export function CoachLayer(props: CoachLayerProps): JSX.Element {
     on(step, (shown) => {
       stopTone()
       if (shown === undefined || isQuiet(shown)) {
+        ringed = null
         setRing(null)
         setTall(false)
         return
       }
       const scrolled = { done: false }
       const track = (): void => {
-        const found = ringFor(shown, scrolled)
-        const next = found === 'tall' ? null : found
+        const found = sight(shown, scrolled)
+        const next = found === null || found.box === 'tall' ? null : found.box
+        ringed = next === null ? null : (found?.el ?? null)
         if (!sameBox(untrack(ring), next)) setRing(next)
-        setTall(found === 'tall')
+        setTall(found?.box === 'tall')
         measureBubble()
       }
       track()
@@ -317,9 +337,44 @@ export function CoachLayer(props: CoachLayerProps): JSX.Element {
     }
   }
 
+  const lastControl = (): HTMLElement | null => {
+    const all = bubble?.querySelectorAll<HTMLElement>(FOCUSABLE)
+    return all === undefined || all.length === 0 ? null : all[all.length - 1]
+  }
+
+  // Tab from the bubble's last control into the ringed target, in place of
+  // the browser's move to whatever follows the layer on <body>.
+  const tabIntoTarget = (event: KeyboardEvent): void => {
+    if (event.shiftKey || ringed === null) return
+    if (event.target !== lastControl()) return
+    const entry = entryOf(ringed)
+    entry?.focus({ preventScroll: true })
+    if (entry !== null && document.activeElement === entry) {
+      event.preventDefault()
+    }
+  }
+
+  // Shift+Tab from the ringed target comes back to the bubble's last control.
+  const tabBackToBubble = (event: KeyboardEvent): void => {
+    if (event.key !== 'Tab' || !event.shiftKey || ringed === null) return
+    const entry = entryOf(ringed)
+    const last = lastControl()
+    if (entry === null || event.target !== entry || last === null) return
+    event.preventDefault()
+    last.focus({ preventScroll: true })
+  }
+  document.addEventListener('keydown', tabBackToBubble, true)
+  onCleanup(() =>
+    document.removeEventListener('keydown', tabBackToBubble, true),
+  )
+
   const onKey = (event: KeyboardEvent): void => {
     // Inside the bubble, no key reaches the app's shortcuts on the window.
     event.stopPropagation()
+    if (event.key === 'Tab') {
+      tabIntoTarget(event)
+      return
+    }
     if (event.key === 'Escape') {
       event.preventDefault()
       end()

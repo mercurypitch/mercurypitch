@@ -296,6 +296,17 @@ for (const tour of [SING, KARAOKE]) {
       // Done leaves nothing behind, and the chip does not come back.
       await expect(page.locator('#coach-root')).toHaveCount(0)
       await expect(chip).toHaveCount(0)
+      // Focus comes back to the page: the chip that had it has gone, so to
+      // the page's main heading (start.ts).
+      await expect
+        .poll(() =>
+          page.evaluate(
+            () =>
+              document.activeElement?.matches('h1, h2, h3, [role="heading"]') ??
+              false,
+          ),
+        )
+        .toBe(true)
       expect(errors).toEqual([])
     })
   }

@@ -119,6 +119,115 @@ describe('startCoachTour', () => {
     expect(roots()).toHaveLength(0)
   })
 
+  describe('gives focus back once the tour is over', () => {
+    /** A page with its main heading and the control that had focus. */
+    function page(): { heading: HTMLElement; control: HTMLButtonElement } {
+      const main = document.createElement('main')
+      const heading = document.createElement('h1')
+      heading.textContent = 'Your stage is set'
+      const control = document.createElement('button')
+      control.textContent = 'Open the song list'
+      main.append(heading, control)
+      document.body.append(main)
+      control.focus()
+      return { heading, control }
+    }
+    const bubble = (): HTMLElement => {
+      const el = roots()[0]?.querySelector<HTMLElement>(
+        '[data-testid="coach-bubble"]',
+      )
+      if (!el) throw new Error('no bubble')
+      return el
+    }
+    const press = (label: string): void => {
+      const button = [
+        ...(roots()[0]?.querySelectorAll<HTMLButtonElement>('button') ?? []),
+      ].find(
+        (b) =>
+          b.textContent === label || b.getAttribute('aria-label') === label,
+      )
+      if (!button) throw new Error(`no ${label}`)
+      button.click()
+    }
+
+    const ENDS: Record<string, () => void> = {
+      Done: () => press('Done'),
+      'End tour': () => press('End tour'),
+      Escape: () =>
+        bubble().dispatchEvent(
+          new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }),
+        ),
+      'a tab change': () => endCoachTour(),
+    }
+
+    for (const [how, end] of Object.entries(ENDS)) {
+      it(`to what had it before the tour, after ${how}`, async () => {
+        const { control } = page()
+        const handle = await startCoachTour(tour('sing', 'Only step'))
+        await settle()
+        expect(document.activeElement).toBe(bubble())
+
+        end()
+        await handle.ended
+        await settle()
+
+        expect(roots()).toHaveLength(0)
+        expect(document.activeElement).toBe(control)
+      })
+    }
+
+    it("to the page's main heading when that control has gone, and leaves the heading as it was", async () => {
+      const { heading, control } = page()
+      const handle = await startCoachTour(tour('karaoke-night', 'Only step'))
+      await settle()
+      control.remove()
+
+      press('Done')
+      await handle.ended
+      await settle()
+
+      expect(document.activeElement).toBe(heading)
+      // Focusable only while it holds focus.
+      expect(heading.getAttribute('tabindex')).toBe('-1')
+      heading.blur()
+      expect(heading.hasAttribute('tabindex')).toBe(false)
+    })
+
+    it('to the highest heading there is when the page has no level-one heading to take it', async () => {
+      // Karaoke Night with a song on stage: its h1 is not shown, and the
+      // song's title is the page's heading.
+      const hidden = document.createElement('h1')
+      hidden.hidden = true
+      hidden.textContent = 'Karaoke Night'
+      const rail = document.createElement('h3')
+      rail.textContent = 'Add a song'
+      const main = document.createElement('main')
+      const title = document.createElement('h2')
+      title.textContent = 'Goodbye to Spring'
+      main.append(title)
+      document.body.append(hidden, rail, main)
+      const handle = await startCoachTour(tour('karaoke-night', 'Only step'))
+      await settle()
+
+      handle.end()
+      await settle()
+
+      expect(document.activeElement).toBe(title)
+    })
+
+    it('to the main heading when nothing had focus before the tour', async () => {
+      const { heading, control } = page()
+      control.blur()
+      const handle = await startCoachTour(tour('sing', 'Only step'))
+      await settle()
+
+      handle.end()
+      await settle()
+
+      expect(document.activeElement).toBe(heading)
+    })
+  })
+
   it('reports done when the singer finishes, and lets go of the page', async () => {
     const handle = await startCoachTour(tour('sing', 'Only step'))
     const done = [

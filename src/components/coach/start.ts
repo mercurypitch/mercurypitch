@@ -13,6 +13,10 @@
 //   (the chip, the legacy walkthrough) waits for it.
 // - The layer mounts in a #coach-root of its own on <body>, outside #app,
 //   which a full-screen stage makes inert while it is up.
+// - Focus goes back when the layer goes, however the tour ended (Done, End
+//   tour, Escape, a tab change): to what had it as the tour was asked for,
+//   if that is still in the page to take it, else to the page's main
+//   heading, which is focusable only while it holds focus.
 //
 // The coach is shared UI: the app's tours, the plan's showcase and Karaoke
 // Night, a document of its own, all run tours on it, so it lives in
@@ -44,6 +48,72 @@ const loadCoach = () =>
 
 let generation = 0
 let running: CoachHandle | null = null
+/** Where focus stood when the tour on screen was asked for. */
+let runningFocus: HTMLElement | null = null
+
+/** What has focus now in the page: not the page itself, nor a bubble. */
+function focusedNow(): HTMLElement | null {
+  const el = document.activeElement
+  if (!(el instanceof HTMLElement) || el === document.body) return null
+  return el.closest(`#${COACH_ROOT_ID}`) === null ? el : null
+}
+
+const HEADINGS = 'h1, h2, h3, [role="heading"]'
+
+const levelOf = (el: HTMLElement): number => {
+  const aria = Number(el.getAttribute('aria-level'))
+  if (aria > 0) return aria
+  const tag = /^H([1-6])$/.exec(el.tagName)
+  return tag === null ? 2 : Number(tag[1])
+}
+
+/**
+ * The page's headings, its main one first: the highest level, and at a level
+ * the one in <main>. Karaoke Night with a song on its stage shows no h1 (its
+ * page h1 is not laid out), so there it is the song's title.
+ */
+function mainHeadings(): HTMLElement[] {
+  const all = [...document.querySelectorAll<HTMLElement>(HEADINGS)].filter(
+    (el) => el.closest(`[inert], [hidden], #${COACH_ROOT_ID}`) === null,
+  )
+  const rank = (el: HTMLElement): number =>
+    levelOf(el) * 2 + (el.closest('main') === null ? 1 : 0)
+  return all
+    .map((el, order) => ({ el, order, rank: rank(el) }))
+    .sort((a, b) => a.rank - b.rank || a.order - b.order)
+    .map(({ el }) => el)
+}
+
+/**
+ * Focus back to `before` if the page still has it to take, else to its main
+ * heading: the first that takes focus (one not laid out does not).
+ */
+function giveFocusBack(before: HTMLElement | null): void {
+  if (
+    before !== null &&
+    before.isConnected &&
+    before.closest('[inert]') === null
+  ) {
+    before.focus({ preventScroll: true })
+    if (document.activeElement === before) return
+  }
+  for (const heading of mainHeadings()) {
+    const added = !heading.hasAttribute('tabindex')
+    if (added) heading.setAttribute('tabindex', '-1')
+    heading.focus({ preventScroll: true })
+    if (document.activeElement === heading) {
+      if (added) {
+        heading.addEventListener(
+          'blur',
+          () => heading.removeAttribute('tabindex'),
+          { once: true },
+        )
+      }
+      return
+    }
+    if (added) heading.removeAttribute('tabindex')
+  }
+}
 
 /** Fetches the coach and Merc's renderer ahead of a tour, without starting one. */
 export function warmCoach(): void {
@@ -76,6 +146,8 @@ export async function startCoachTour(
   tour: CoachTour,
   opts: CoachStartOptions = {},
 ): Promise<CoachHandle> {
+  // A tour that replaces one on screen gives focus back where that one found it.
+  const before = focusedNow() ?? (running !== null ? runningFocus : null)
   running?.end()
   running = null
   const mine = ++generation
@@ -112,13 +184,17 @@ export async function startCoachTour(
     if (closed) return
     closed = true
     runner.dispose()
-    if (running === handle) running = null
+    if (running === handle) {
+      running = null
+      runningFocus = null
+    }
     if (mine === generation) setCoachActive(null)
     // The layer asks for its own close from inside its effects; unmount
-    // after they have run.
+    // after they have run, then give focus back.
     queueMicrotask(() => {
       unmount()
       root.remove()
+      giveFocusBack(before)
     })
     // How the tour itself ended: done, even after a hand-over the singer
     // put off; an exit, if it never got that far.
@@ -136,6 +212,7 @@ export async function startCoachTour(
     ended,
   }
   running = handle
+  runningFocus = before
   unmount = mountCoachLayer(root, {
     runner,
     phone: opts.phone === true,

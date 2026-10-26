@@ -218,6 +218,73 @@ describe('CoachLayer', () => {
     expect(heard).not.toHaveBeenCalled()
   })
 
+  it('tabs from its last button to the ringed target, and back again with Shift+Tab', () => {
+    const target = addTarget()
+    mount()
+    const next = screen.getByRole('button', { name: 'Next' })
+    next.focus()
+
+    const tab = fireEvent.keyDown(next, { key: 'Tab' })
+    expect(tab).toBe(false) // the browser's own move is replaced
+    expect(document.activeElement).toBe(target)
+
+    const back = fireEvent.keyDown(target, { key: 'Tab', shiftKey: true })
+    expect(back).toBe(false)
+    expect(document.activeElement).toBe(next)
+  })
+
+  it('tabs into a ringed target that is not a control itself, at its first control', () => {
+    const group = document.createElement('div')
+    group.setAttribute('data-tour', 'coach-test.mic')
+    const first = document.createElement('button')
+    first.textContent = 'Home'
+    group.append(first, document.createElement('button'))
+    group.getBoundingClientRect = () =>
+      ({
+        top: 12,
+        left: 292,
+        width: 172,
+        height: 50,
+        x: 292,
+        y: 12,
+        right: 464,
+        bottom: 62,
+        toJSON: () => ({}),
+      }) as DOMRect
+    document.body.append(group)
+    mount()
+    const next = screen.getByRole('button', { name: 'Next' })
+    next.focus()
+
+    fireEvent.keyDown(next, { key: 'Tab' })
+    expect(document.activeElement).toBe(first)
+
+    fireEvent.keyDown(first, { key: 'Tab', shiftKey: true })
+    expect(document.activeElement).toBe(next)
+  })
+
+  it('leaves Tab to the browser on a step with nothing ringed, and from any other button', () => {
+    const target = addTarget()
+    mount()
+    const end = screen.getByRole('button', { name: 'End tour' })
+    end.focus()
+    // Not the last button: the browser moves on through the bubble.
+    expect(fireEvent.keyDown(end, { key: 'Tab' })).toBe(true)
+    expect(document.activeElement).toBe(end)
+    // Shift+Tab from anything but the target is the browser's too.
+    expect(
+      fireEvent.keyDown(document.body, { key: 'Tab', shiftKey: true }),
+    ).toBe(true)
+    cleanup()
+    target.remove()
+
+    mount()
+    const next = screen.getByRole('button', { name: 'Next' })
+    next.focus()
+    expect(fireEvent.keyDown(next, { key: 'Tab' })).toBe(true)
+    expect(document.activeElement).toBe(next)
+  })
+
   it('leaves Enter on a button to the button', () => {
     const runner = mount()
     fireEvent.click(screen.getByRole('button', { name: 'Next' }))
