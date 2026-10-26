@@ -30,7 +30,7 @@ describe('the desktop stops', () => {
       "Home is your day: today's session and your streak.",
       'Singing lives here, with the drills.',
       'Karaoke with your own songs. Jam with a friend.',
-      'Your takes, read in plain words.',
+      'Studio: read your singing in plain words.',
     ])
   })
 
@@ -84,7 +84,7 @@ describe('the phone stops', () => {
     expect(lines).toEqual([
       "Home is your day: today's session and your streak.",
       'The Ascent: a new climb every week.',
-      "Progress: every take, and how it's moving.",
+      "Progress: every attempt, and how it's moving.",
       'Singing lives here.',
     ])
   })

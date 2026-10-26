@@ -14,7 +14,8 @@
 // coach, so the page's first paint carries none of it.
 //
 // - The demo: the hero's Sing this song, the one call to action an empty
-//   stage has (karaoke.demo).
+//   stage has (karaoke.demo). Its tap stages the demo to play at once
+//   (singDemo's autoPlay), so the line says the music starts.
 // - The mic: the desktop mixer's keeps the hook the legacy mixer tour names
 //   (mixer.mic, never renamed) and the phone stage's has its own
 //   (karaoke.mic), as one selector list: each screen draws one (R20).
@@ -82,7 +83,7 @@ const OWN_SONG = {
   kind: 'show',
   merc: 'point',
   title: 'Bring your own song',
-  body: 'Add any song. The Cloud GPU splits the voice from the band, so you sing over the band.',
+  body: 'Add any song. The Cloud GPU takes the voice out, so you sing over the band.',
   aside: karaokeCreditsAside,
 } as const
 
@@ -95,8 +96,8 @@ export const KARAOKE_TOUR: CoachTour = {
       waitFor: 'song-staged',
       target: '[data-tour="karaoke.demo"]',
       merc: 'point',
-      title: 'Start with the demo song',
-      body: 'Tap Sing this song. The demo is ready to go.',
+      title: 'Start with the demo',
+      body: 'Tap Sing this song and the music starts.',
     },
     {
       id: 'mic',

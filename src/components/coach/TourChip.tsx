@@ -27,7 +27,10 @@ export const MERC_TOUR_LINE = 'Merc can show you around, 30 s'
 export const SEEN_SHARE = 0.5
 
 export interface TourChipProps {
-  /** The line that starts the tour; Merc's own unless a legacy tour says its own. */
+  /**
+   * The line that starts the tour; Merc's own unless the offer says its own:
+   * a legacy tour's, or Karaoke Night's, whose tour sings the demo.
+   */
   line?: string
   onStart: () => void
   onDismiss: () => void

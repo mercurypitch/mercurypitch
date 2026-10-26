@@ -61,9 +61,9 @@ const MORE_SHEET = '[data-testid="sheet-panel"][aria-label="More tabs"]'
 
 const HOME_LINE = "Home is your day: today's session and your streak."
 const PATH_LINE = 'The Ascent: a new climb every week.'
-const PROGRESS_LINE = "Progress: every take, and how it's moving."
+const PROGRESS_LINE = "Progress: every attempt, and how it's moving."
 const PLAY_LINE = 'Karaoke with your own songs. Jam with a friend.'
-const STUDIO_LINE = 'Your takes, read in plain words.'
+const STUDIO_LINE = 'Studio: read your singing in plain words.'
 
 const INSTRUMENT_TABS: readonly ActiveTab[] = [
   TAB_SINGING,
