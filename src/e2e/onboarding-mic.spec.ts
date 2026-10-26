@@ -296,7 +296,7 @@ test.describe('First Light with a microphone', () => {
       await expect(keep).toContainText(/keep/i)
       // What an account keeps, in rows, with or without the launch gift
       // (the dev API decides whether a code is featured).
-      await expect(keep).toContainText(/Your voiceprint and range, saved/)
+      await expect(keep).toContainText(/Every weekly Check-up, kept/)
       // No range card for the unclean read.
       await expect(keep.getByTestId('keep-range')).toHaveCount(0)
       await page.getByRole('button', { name: /Not now/ }).click()
