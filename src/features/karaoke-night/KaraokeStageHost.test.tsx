@@ -87,12 +87,12 @@ describe('KaraokeStageHost', () => {
     expect(sent()).toEqual(['first_value_karaoke'])
   })
 
-  it('tells a waiting Merc tour the song is on stage, a note was sung and the score shown', () => {
+  it('tells a waiting Merc tour the song is on stage, a note was sung and the score card closed', () => {
     const heard: CoachEventName[] = []
     const names: CoachEventName[] = [
       'song-staged',
       'pitch-detected',
-      'score-shown',
+      'score-closed',
     ]
     const offs = names.map((name) => onCoachEvent(name, () => heard.push(name)))
 
@@ -110,11 +110,15 @@ describe('KaraokeStageHost', () => {
     const props = stemMixerSpy.mock.calls[0]?.[0] as {
       onValidMicPitch: () => void
       onScorecardViewed: () => void
+      onScorecardClosed: () => void
     }
     props.onValidMicPitch()
+    // The card showing is not it: the tour waits for the card to go.
     props.onScorecardViewed()
+    expect(heard).toEqual(['song-staged', 'pitch-detected'])
+    props.onScorecardClosed()
 
-    expect(heard).toEqual(['song-staged', 'pitch-detected', 'score-shown'])
+    expect(heard).toEqual(['song-staged', 'pitch-detected', 'score-closed'])
     for (const off of offs) off()
   })
 })

@@ -162,6 +162,8 @@ interface StemMixerProps {
   onScoreCreated?: (score: MicScore) => void
   /** A genuine score becoming visible in the score-card modal. */
   onScorecardViewed?: (score: MicScore) => void
+  /** The score card going away, however it went (StemMixerScoreModal). */
+  onScorecardClosed?: () => void
   onBack?: () => void
   /** Zen mobile stage: stage another library session from the in-stage song
    *  sheet. Undefined hides the sheet (the studio has its own pickers). */
@@ -2810,6 +2812,7 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
             showScore={mic.showScore}
             score={mic.score}
             onViewed={(score) => props.onScorecardViewed?.(score)}
+            onClosed={() => props.onScorecardClosed?.()}
             voiceTakeState={karaokeVoiceCapture.state()}
             voiceTakeMessage={karaokeVoiceCapture.message()}
             onKeepVoiceTake={handleKeepKaraokeVoiceTake}
@@ -3210,6 +3213,7 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
           showScore={mic.showScore}
           score={mic.score}
           onViewed={(score) => props.onScorecardViewed?.(score)}
+          onClosed={() => props.onScorecardClosed?.()}
           voiceTakeState={karaokeVoiceCapture.state()}
           voiceTakeMessage={karaokeVoiceCapture.message()}
           onKeepVoiceTake={handleKeepKaraokeVoiceTake}

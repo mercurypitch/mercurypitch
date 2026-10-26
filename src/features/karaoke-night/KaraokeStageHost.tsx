@@ -8,7 +8,7 @@
 // whichever way the song got there: the hero's demo, a song link, the rail,
 // the zen sheet. So its mount is where a waiting Merc tour hears that a song
 // is on stage (src/lib/coach-events.ts), along with the first sung note and
-// the score being shown.
+// the score card closing, however it closed.
 import { onMount } from 'solid-js'
 import { LyricsUploaderStyles } from '@/components/LyricsUploader'
 import { StemMixer, StemMixerStyles } from '@/components/StemMixer'
@@ -120,8 +120,8 @@ export function KaraokeStageHost(props: KaraokeStageHostProps) {
       }}
       onScorecardViewed={() => {
         trackKaraokeSessionOnce('karaoke_scorecard_view')
-        emitCoachEvent('score-shown')
       }}
+      onScorecardClosed={() => emitCoachEvent('score-closed')}
       onBack={() => {
         if (isPlaylistActive()) stopPlaylist()
         props.onExit()

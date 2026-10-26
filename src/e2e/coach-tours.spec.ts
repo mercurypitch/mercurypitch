@@ -18,8 +18,11 @@
 // The walk moves on as a visitor who only reads would: Skip this step on a
 // step that waits for the singer, Next on the others, Done at the end. The
 // exception is Karaoke Night's first stop, which the walk does (Sing this
-// song): its next stop's mic is drawn only once a song is on stage. The
-// rules are scripts/tour-rules.mjs's, which the Guide's walk applies too.
+// song): its next stop's mic is drawn only once a song is on stage. Karaoke
+// Night's wait through the song is quiet: nothing of the coach is drawn and
+// it is not counted, so the walk checks that and plays the singer's part by
+// the event the wait listens for (the score card closing). The rules are
+// scripts/tour-rules.mjs's, which the Guide's walk applies too.
 // Merc stays a still here (no GPU): this file reads layout, and
 // showcase.spec.ts draws him live.
 
@@ -50,6 +53,8 @@ interface Stop {
   target?: string
   /** The walk does the step (taps the target) rather than skipping it. */
   doIt?: boolean
+  /** A quiet wait: nothing drawn, not counted; the walk sends this event. */
+  quiet?: string
 }
 
 interface Tour {
@@ -99,7 +104,8 @@ const KARAOKE: Tour = {
         ? '[data-tour="karaoke.mic"]'
         : '[data-tour="mixer.mic"]',
     },
-    {},
+    // The song: nothing on screen until its score card has closed.
+    { quiet: 'score-closed' },
     // The phone stage covers the page by then: the stop stands free.
     screen.phone ? {} : { target: '[data-tour="karaoke.own-song"]' },
   ],
@@ -190,10 +196,25 @@ for (const tour of [SING, KARAOKE]) {
       const bubble = page.getByTestId('coach-bubble')
       const ring = page.getByTestId('coach-ring')
       const stops = tour.stops(screen)
-      for (const [index, stop] of stops.entries()) {
-        const n = index + 1
+      const counted = stops.filter((stop) => stop.quiet === undefined).length
+      let n = 0
+      for (const stop of stops) {
+        if (stop.quiet !== undefined) {
+          const at = `${tour.name}:quiet after ${n}:${screen.name}`
+          await expect(bubble, `${at}: a bubble`).toHaveCount(0)
+          await expect(ring, `${at}: a ring`).toHaveCount(0)
+          await expect(
+            page.getByTestId('coach-layer').locator('*'),
+            `${at}: something drawn`,
+          ).toHaveCount(0)
+          await page.evaluate((detail) => {
+            window.dispatchEvent(new CustomEvent('mp:coach', { detail }))
+          }, stop.quiet)
+          continue
+        }
+        n += 1
         const at = `${tour.name}:${n}:${screen.name}`
-        await expect(bubble).toContainText(`${n} of ${stops.length}`, {
+        await expect(bubble).toContainText(`${n} of ${counted}`, {
           timeout: 15_000,
         })
         // Where the bubble stands for this stop, once it has got there.

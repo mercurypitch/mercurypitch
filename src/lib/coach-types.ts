@@ -12,7 +12,8 @@
 //   refused mic or a silent room never strands anyone. A step whose thing is
 //   already done as it shows (the mic was on before the tour) does not wait,
 //   and a step can name what going wrong sounds like (`mic-failed`) and the
-//   line the bubble adds once it has.
+//   line the bubble adds once it has. A quiet do-step waits with nothing on
+//   screen and is not counted: the wait through a song.
 // - watch: something to look at or read later. The tour goes on.
 //
 // Tour content lives beside its room and imports only these types, so a
@@ -76,6 +77,13 @@ export interface CoachDoStep extends CoachStepBase {
    * bubble adds once it has come, until the step moves on. Skip stays.
    */
   failure?: { event: CoachEventName; aside: CoachAside }
+  /**
+   * A wait that draws nothing (no bubble, ring or dim) and is not counted in
+   * "N of M": Karaoke Night's song, which needs the whole stage until the
+   * score card closes. Its event moves the tour on at once; the title and
+   * body name it for tests and the tour checks, and are never shown.
+   */
+  quiet?: true
 }
 
 export type CoachStep = CoachShowStep | CoachDoStep

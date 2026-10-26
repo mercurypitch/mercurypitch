@@ -66,6 +66,17 @@ const SING: CoachTour = {
   ],
 }
 
+/** Karaoke Night's shape: two do steps, a quiet wait through the song, a show. */
+const KARAOKE: CoachTour = {
+  key: 'karaoke-night',
+  steps: [
+    doStep('demo', 'song-staged'),
+    doStep('mic', 'pitch-detected'),
+    doStep('score', 'score-closed', { quiet: true }),
+    show('own'),
+  ],
+}
+
 describe('createCoachRunner', () => {
   let bus: ReturnType<typeof fakeBus>
   let track: Mock<NonNullable<CoachRunnerDeps['track']>>
@@ -234,6 +245,66 @@ describe('createCoachRunner', () => {
     expect(runner.snapshot()).toMatchObject({ index: 1, waiting: true })
     runner.next()
     expect(runner.snapshot()?.index).toBe(1)
+  })
+
+  it('counts no quiet step: 1 of 3, 2 of 3, then 3 of 3 once it is done', () => {
+    const runner = start(KARAOKE)
+    expect(track).toHaveBeenCalledExactlyOnceWith(
+      'tour_start',
+      'karaoke-night',
+      {
+        of: 3,
+      },
+    )
+    expect(runner.snapshot()).toMatchObject({ place: 1, total: 3, last: false })
+    runner.skip()
+    expect(runner.snapshot()).toMatchObject({ place: 2, total: 3 })
+
+    runner.skip()
+    expect(runner.snapshot()).toMatchObject({ index: 2, waiting: true })
+    expect(runner.snapshot()?.step.id).toBe('score')
+    runner.next()
+    expect(runner.snapshot()?.step.id).toBe('score')
+
+    // On at once: nothing was drawn, so nothing celebrates.
+    bus.send('score-closed')
+    expect(runner.snapshot()).toMatchObject({
+      index: 3,
+      place: 3,
+      total: 3,
+      last: true,
+      celebrating: false,
+    })
+    runner.next()
+    expect(track).toHaveBeenLastCalledWith('tour_done', 'karaoke-night', {
+      step: 3,
+      of: 3,
+    })
+  })
+
+  it('goes back past a quiet step, and on through it once it is done', () => {
+    const runner = start(KARAOKE)
+    runner.skip()
+    runner.skip()
+    bus.send('score-closed')
+    expect(runner.snapshot()?.step.id).toBe('own')
+
+    runner.back()
+    expect(runner.snapshot()?.step.id).toBe('mic')
+    runner.skip()
+    expect(runner.snapshot()?.step.id).toBe('own')
+  })
+
+  it('reports the last counted step when a tour ends during a quiet wait', () => {
+    const runner = start(KARAOKE)
+    runner.skip()
+    runner.skip()
+    runner.exit()
+
+    expect(track).toHaveBeenLastCalledWith('tour_exit', 'karaoke-night', {
+      step: 2,
+      of: 3,
+    })
   })
 
   it('goes back a step, and not before the first', () => {

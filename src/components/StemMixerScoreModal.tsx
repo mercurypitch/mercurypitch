@@ -7,7 +7,7 @@
 
 import type { Component, JSX } from 'solid-js'
 import type { Accessor } from 'solid-js'
-import { createEffect, Show } from 'solid-js'
+import { createEffect, onCleanup, Show } from 'solid-js'
 import { Portal } from 'solid-js/web'
 import { isolateKeys } from '@/lib/keyboard-isolation'
 import type { MicScore } from '@/lib/mic-scoring'
@@ -23,6 +23,12 @@ interface StemMixerScoreModalProps {
   voiceTakeMessage?: string
   onKeepVoiceTake?: () => void
   onClose: () => void
+  /**
+   * The card has gone, however it went: Close, Not now, a tap outside,
+   * Escape, a new run that cleared it, or its stage leaving while it showed.
+   * Once per showing. Karaoke Night's Merc tour waits for it.
+   */
+  onClosed?: () => void
   /**
    * Drawn over the Zen stage. The stage is a fixed layer portalled to <body>
    * at --z-stage, so an overlay left in the mixer's tree opened invisibly
@@ -59,6 +65,19 @@ export const StemMixerScoreModal: Component<StemMixerScoreModalProps> = (
     onClose: requestClose,
     isolateKeyboard: isolateKeys,
   })
+
+  // Whichever way the card goes, its closing is heard once.
+  let showing = false
+  const closed = (): void => {
+    if (!showing) return
+    showing = false
+    props.onClosed?.()
+  }
+  createEffect(() => {
+    if (isOpen()) showing = true
+    else closed()
+  })
+  onCleanup(closed)
 
   createEffect(() => {
     const score = props.score()

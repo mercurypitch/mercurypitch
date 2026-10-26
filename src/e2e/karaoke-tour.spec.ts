@@ -9,12 +9,13 @@
 // (R22): it proves the order of the layers, and the unit tests pin that an
 // ad's tour waits for the real bar (start-karaoke-tour.test.ts).
 //
-// Then the tour itself, on a phone and a wide screen. The first bubble rings
-// Sing this song; the singer's part after that (a sung note, the score) is
-// played by the coach's own events, by name (src/lib/coach-events.ts). Every
-// ring holds its target, fits the window and leaves the bubble off it; the
-// last stop rings Add a song on a wide screen and stands free over the phone
-// stage. Done leaves nothing behind, the address has lost `tour`, and a
+// Then the tour itself, on a phone and a wide screen: three stops, 1 of 3 to
+// 3 of 3, and between the last two a quiet wait through the song that draws
+// nothing. The first bubble rings Sing this song; the singer's part after
+// that (a sung note, the score card closing) is played by the coach's own
+// events, by name (src/lib/coach-events.ts). Every ring holds its target,
+// fits the window and leaves the bubble off it; the last stop rings Add a
+// song on a wide screen and stands free over the phone stage. Done leaves nothing behind, the address has lost `tour`, and a
 // reload offers nothing more: the offer was spent when the tour started.
 
 import type { Locator, Page } from '@playwright/test'
@@ -161,10 +162,10 @@ for (const screen of SCREENS) {
     await bar.getByRole('button', { name: 'Accept' }).click()
     await expect(bar).toHaveCount(0)
 
-    // 1 of 4: the first bubble rings Sing this song.
+    // 1 of 3: the first bubble rings Sing this song.
     const demo = page.locator('[data-tour="karaoke.demo"]')
     await ringsTarget(page, demo, screen)
-    await expect(bubble(page)).toContainText('1 of 4')
+    await expect(bubble(page)).toContainText('1 of 3')
 
     // Putting the demo on stage moves the tour on by itself.
     await demo.click()
@@ -173,15 +174,18 @@ for (const screen of SCREENS) {
       screen.phone ? '[data-tour="karaoke.mic"]' : '[data-tour="mixer.mic"]',
     )
     await ringsTarget(page, mic, screen)
+    await expect(bubble(page)).toContainText('2 of 3')
 
+    // The song has the stage: nothing of the coach is drawn until its score
+    // card has closed.
     await singerDid(page, 'pitch-detected')
-    await expect(heading(page, 'Sing to the end')).toBeVisible()
-    // Nothing to ring while the song plays: the bubble stands aside.
+    await expect(bubble(page)).toHaveCount(0)
     await expect(ring(page)).toHaveCount(0)
+    await expect(page.getByTestId('coach-layer').locator('*')).toHaveCount(0)
 
-    await singerDid(page, 'score-shown')
+    await singerDid(page, 'score-closed')
     await expect(heading(page, 'Bring your own song')).toBeVisible()
-    await expect(bubble(page)).toContainText('4 of 4')
+    await expect(bubble(page)).toContainText('3 of 3')
     if (screen.phone) {
       // The phone stage covers the page: the stop stands with no ring.
       await expect(ring(page)).toHaveCount(0)
