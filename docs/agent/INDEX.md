@@ -84,8 +84,8 @@ These are the rules that break things when ignored.
 | `voice-history` | [VoiceHistoryPage.tsx](../../src/features/voice-history/VoiceHistoryPage.tsx) | 10.3k | Hear Yourself History — local listening desk for kept performance takes |
 | `echo` | [echo-celebration.ts](../../src/features/echo/echo-celebration.ts) | 9.6k | Echo's celebration star, in numbers (generated) Written by scripts/sync-echo-art.mjs from the Echo A0 art's echo-celebration-star.json (i... |
 | `piano-night` | [piano-night-music-source.ts](../../src/features/piano-night/piano-night-music-source.ts) | 8.5k | Piano Night music source — lazy, failure-bearing local catalogue boundary Piano Night discovers canonical projects and lightweight compos... |
-| `mirror` | [MirrorApp.tsx](../../src/features/mirror/MirrorApp.tsx) | 7.4k | Voice Mirror — the guided 3-task flow (spec §2). |
-| `progress` | [ProgressPage.tsx](../../src/features/progress/ProgressPage.tsx) | 7.4k | Progress — the Resonance Atlas THESIS: The Atlas is the interface: practice leaves physical pressure in a personal record, instead of bec... |
+| `mirror` | [MirrorApp.tsx](../../src/features/mirror/MirrorApp.tsx) | 7.8k | Voice Mirror — the guided 3-task flow (spec §2). |
+| `progress` | [ProgressPage.tsx](../../src/features/progress/ProgressPage.tsx) | 7.5k | Progress — the Resonance Atlas THESIS: The Atlas is the interface: practice leaves physical pressure in a personal record, instead of bec... |
 | `onboarding` | [FirstLight.tsx](../../src/features/onboarding/FirstLight.tsx) | 6.4k | First Light — the beat orchestrator Owns the shared frame (sky, progress hairline, escape) and swaps the current beat inside it. |
 | `plan` | [PlanQuestions.tsx](../../src/features/plan/PlanQuestions.tsx) | 6.3k | PlanQuestions — the four question screens What Merc asks after First Light: the instrument (Q1), what the person is working toward (Q2),... |
 | `guitar` | [guitar-room-band.ts](../../src/features/guitar/backing/guitar-room-band.ts) | 6.1k | Guitar room band schedules count-ins and synthesized grooves on the shared room buses. |
@@ -132,6 +132,7 @@ These are the rules that break things when ignored.
 | `rooms` | [contract.ts](../../src/features/rooms/contract.ts) | 300 | The room contract. |
 | `recording` | [useRecordingController.ts](../../src/features/recording/useRecordingController.ts) | 250 | useRecordingController — sung input captured as editable notes Feeds mic frames through the shared live-pitch pipeline (@/lib/pitch-pipel... |
 | `instrument-room` | [InstrumentRoomDoor.tsx](../../src/features/instrument-room/InstrumentRoomDoor.tsx) | 200 | The instrument room door Shown once, the first time somebody presses the Piano or Guitar tab, because each of those now opens two differe... |
+| `check-up` | [HomeCheckupCard.tsx](../../src/features/check-up/HomeCheckupCard.tsx) | 150 | HomeCheckupCard — "A week since your last Check-up", on Home The reason to come back on day 7 (docs/specs/weekly-check-up.ears.md). |
 | `tours` | [usePageTourOffer.ts](../../src/features/tours/usePageTourOffer.ts) | 150 | Offer a page's spotlight tour once, the first time the user visits a tab that has one. |
 | `editor` | [useEditorController.ts](../../src/features/editor/useEditorController.ts) | 100 | useEditorController — Compose-tab actions (MIDI import/export, share) The thin action layer over the piano-roll editor: import a MIDI fil... |
 | `glass-adventure` | [main.tsx](../../src/features/glass-adventure/main.tsx) | 100 | Glassworks campaign entry — MercuryPitch's standalone museum front door |
@@ -163,6 +164,7 @@ These are the rules that break things when ignored.
 | `tv-stage` | [renderer.ts](../../src/lib/tv-stage/renderer.ts) | 900 | TV stage renderer — the stage, drawn on a canvas at the TV's size One frame of the stage from its state (model.ts) and the wall clock: th... |
 | `tab` | [gp-to-midi-song.ts](../../src/lib/tab/gp-to-midi-song.ts) | 750 | Guitar Pro (.gp/.gp3/.gp4/.gp5/.gpx) → MidiSong mapping Pure mapping from an alphaTab Score into the app's existing MidiSong shape, so im... |
 | `portable` | [portable-audio.ts](../../src/lib/portable/portable-audio.ts) | 700 | ── Portable audio Turns a stored WAV stem into something small enough to send or to keep on a phone. |
+| `check-up` | [then-and-now.ts](../../src/lib/check-up/then-and-now.ts) | 500 | Weekly Check-up — then and now, from the voiceprint history What moved between a singer's first week of Check-ups and their latest, said... |
 | `drive` | [drive-client.ts](../../src/lib/drive/drive-client.ts) | 450 | ── Google Drive client The handful of Drive REST calls sync needs, and nothing else. |
 | `key-detection` | [index.ts](../../src/lib/key-detection/index.ts) | 300 | Key Detection — barrel for musical-key estimation Krumhansl-Schmuckler profile correlation over a pitch-class histogram. |
 | `platform` | [index.ts](../../src/lib/platform/index.ts) | 200 | Platform services — web implementations. |
@@ -279,6 +281,7 @@ These are the rules that break things when ignored.
 | [ExercisesPage.tsx](../../src/pages/ExercisesPage.tsx) | 250 | The app's single pitch-frame stream. |
 | [EarLabPage.tsx](../../src/pages/EarLabPage.tsx) | 150 | EarLabPage — the Ear Lab tab: the Regulator Room around the bench and every drill stage. |
 | [HomePlanCardMount.tsx](../../src/pages/HomePlanCardMount.tsx) | 150 | HomePlanCardMount — how Home reaches its "Your plan" card, and what Home does for it "Your plan" is the first week's card (src/features/p... |
+| [HomeCheckupCardMount.tsx](../../src/pages/HomeCheckupCardMount.tsx) | 100 | HomeCheckupCardMount — how Home reaches its weekly Check-up card The card (src/features/check-up/HomeCheckupCard) opens the Voice Mirror,... |
 | [LabPage.tsx](../../src/pages/LabPage.tsx) | 100 | Keep the real-mouse Lab specs runnable without putting a supporter token in CI. |
 | [AnalysisPage.tsx](../../src/pages/AnalysisPage.tsx) | 50 | One dashboard at every width. |
 | [ChallengesPage.tsx](../../src/pages/ChallengesPage.tsx) | 50 | Challenges tab (TAB_CHALLENGES). |
