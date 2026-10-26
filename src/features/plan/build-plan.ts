@@ -13,7 +13,9 @@
 //   it found something; a `practice` room is pickFirstStop's default, not a
 //   finding. It leads Start here when the hardest part is about the voice or
 //   was not picked. For a habit (time, setup, shy) the table leads, and the
-//   finding moves to the Learn card's line, or the Play card's.
+//   finding moves to the Learn card's line, or the Play card's. When it leads
+//   "telling if you're getting better", its card still ends with the table's
+//   answer, Progress, but only on a stop whose runs land there.
 // - Learn's rules and Play's repeat check read the Start here that was
 //   finally chosen, the voiceprint's included, so no card repeats another.
 // - The person's own menu. A Learn or Play card on a tab their menu hides is
@@ -271,6 +273,29 @@ function voiceLeads(pick: HardPart | null): boolean {
   return pick === null || VOICE_PICKS.includes(pick)
 }
 
+/**
+ * The voiceprint's stops whose runs land in Progress. A drill in Exercises is
+ * recorded as an Exercise run (exercise-history-store.ts), and the Ascent's
+ * daily session runs those same drills. Karaoke Night writes no run: a take
+ * there is kept in Hear Yourself, so its card does not promise Progress.
+ */
+const LANDS_IN_PROGRESS: ReadonlySet<PlanDest> = new Set<PlanDest>([
+  'exercises',
+  'ascent',
+])
+
+/**
+ * The table's answer the voiceprint's card keeps: Progress, for "telling if
+ * you're getting better", where the stop's runs land there. "Knowing what to
+ * practice" is answered by the finding itself, which names the drill, and
+ * the table's line for "in tune" describes Sing's own line, so neither adds one.
+ */
+function answerKept(dest: PlanDest, pick: HardPart | null): string {
+  return pick === 'progress' && LANDS_IN_PROGRESS.has(dest)
+    ? START.singing.progress[2]
+    : ''
+}
+
 /** Start here as the voiceprint sees it: its drill, its reason, then the person's words. */
 function voiceprintStart(
   c: PlanChoices,
@@ -283,7 +308,11 @@ function voiceprintStart(
     kind: 'start',
     dest,
     title: stop.detail ?? fallback,
-    why: joined(stop.reason, pick === null ? '' : `You said ${SAID[pick]}.`),
+    why: joined(
+      stop.reason,
+      pick === null ? '' : `You said ${SAID[pick]}.`,
+      answerKept(dest, pick),
+    ),
     chips:
       pick === null ? [VOICEPRINT_CHIP] : [VOICEPRINT_CHIP, hardLabel(c, pick)],
   }

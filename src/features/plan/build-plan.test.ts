@@ -954,6 +954,54 @@ describe('the voiceprint', () => {
     },
   )
 
+  it('keeps the Progress answer on a stop whose runs land in Progress', () => {
+    const drill = build(
+      { q1: 'singing', q3: ['progress'] },
+      { voiceprint: LONG_NOTE },
+    )
+    const climb = build(
+      { q1: 'singing', q3: ['progress'] },
+      { voiceprint: RANGE_WEEK },
+    )
+
+    expect(drill.start.why).toBe(
+      "Your tone wavers when you hold. Let's steady it. You said telling if you're getting better is the hard part. Every take lands in Progress, so you can watch the line move.",
+    )
+    expect(climb.start.why).toBe(
+      "There's more voice up there than you're using. You said telling if you're getting better is the hard part. Every take lands in Progress, so you can watch the line move.",
+    )
+  })
+
+  it('promises no Progress for Karaoke Night, which keeps a take but writes no run', () => {
+    const p = build(
+      { q1: 'singing', q3: ['progress'] },
+      { voiceprint: SONG_READY },
+    )
+
+    expect(p.start.dest).toBe('karaokeNight')
+    expect(p.start.why).toBe(
+      "That was solid. You're ready to sing a real song. You said telling if you're getting better is the hard part.",
+    )
+  })
+
+  it('adds nothing to "what" or "tune": the finding is the answer', () => {
+    const what = build(
+      { q1: 'singing', q3: ['what'] },
+      { voiceprint: LONG_NOTE },
+    )
+    const tune = build(
+      { q1: 'singing', q3: ['tune'] },
+      { voiceprint: RANGE_WEEK },
+    )
+
+    expect(what.start.why).toBe(
+      "Your tone wavers when you hold. Let's steady it. You said knowing what to practice is the hard part.",
+    )
+    expect(tune.start.why).toBe(
+      "There's more voice up there than you're using. You said hearing if you're in tune is the hard part.",
+    )
+  })
+
   it('leads when nothing was picked, and says only what it found', () => {
     const p = build({ q1: 'singing' }, { voiceprint: LONG_NOTE })
 
