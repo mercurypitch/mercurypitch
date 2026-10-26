@@ -1,5 +1,6 @@
 import type { CDPSession, Page } from '@playwright/test'
 import { expect, test } from '@playwright/test'
+import { hitArea } from '@/e2e/helpers/hit-area'
 import { dismissOverlays } from '@/e2e/helpers/ui'
 
 const USER_ID = 'e2e-progress-tablet-user'
@@ -435,5 +436,56 @@ test.describe('Progress dashboard', () => {
     expect(Math.abs(rail.ownerWidth - rail.scrollerWidth)).toBeLessThanOrEqual(
       1,
     )
+  })
+})
+
+test.describe('the cabinet on a phone', () => {
+  test.use({
+    viewport: { width: 390, height: 844 },
+    hasTouch: true,
+    isMobile: true,
+  })
+
+  // The badge tiles' "i" takes InfoPopover's 44 px press under a finger. Its
+  // box, centred on the 20 px ring, reached 6 px past the tile's corner, and
+  // the tile clips what reaches past it, which left 38 px. Here the box is
+  // the tile's corner instead.
+  test('gives a badge tile\'s "i" a 44 px press inside its tile', async ({
+    page,
+  }) => {
+    // Arrange
+    await page.addInitScript((userId) => {
+      ;(window as Window & { E2E_TEST_MODE?: boolean }).E2E_TEST_MODE = true
+      localStorage.setItem('mp:userId', userId)
+    }, USER_ID)
+    await page.goto('/')
+    await page.waitForSelector('#app-tabs, [data-tour="mobile-tabbar"]', {
+      timeout: 10_000,
+    })
+    await dismissOverlays(page)
+    await ensureLocalDb(page)
+    await seedProgressEvidence(page)
+    await page.goto('/#/progress')
+    await dismissOverlays(page)
+    const hint = page.getByRole('button', { name: /^How to earn / }).first()
+    await hint.scrollIntoViewIfNeeded()
+    await expect(hint).toBeVisible()
+
+    // Act
+    const area = await hitArea(hint)
+    const tile = await hint.evaluate((element) => {
+      const r = (element.closest('li') ?? element).getBoundingClientRect()
+      return [r.left, r.top, r.right, r.bottom]
+    })
+
+    // Assert
+    expect(area.box).toEqual([20, 20])
+    expect(area.hit[0]).toBeGreaterThanOrEqual(44)
+    expect(area.hit[1]).toBeGreaterThanOrEqual(44)
+    expect(area.ownsItsBox).toBe(true)
+    expect(area.rect[0]).toBeGreaterThanOrEqual(tile[0])
+    expect(area.rect[1]).toBeGreaterThanOrEqual(tile[1])
+    expect(area.rect[2]).toBeLessThanOrEqual(tile[2])
+    expect(area.rect[3]).toBeLessThanOrEqual(tile[3])
   })
 })

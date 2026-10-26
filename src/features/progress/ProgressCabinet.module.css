@@ -189,6 +189,20 @@
   z-index: 2;
 }
 
+/* Under a finger the "i" takes InfoPopover's 44 px press, from a box that
+   InfoPopover centres on it. Centred, it would reach 6 px past the tile's
+   top and right edges, and the tile clips whatever reaches past them, which
+   left a 38 px press. So here the box is the tile's corner instead: 44 px
+   in from its top and right edges, over nothing else that takes a press. */
+@media (pointer: coarse) {
+  .badge .badgeHint::before {
+    top: -6px;
+    right: -6px;
+    left: auto;
+    transform: none;
+  }
+}
+
 .badgeHintEarned {
   display: block;
   margin-top: 6px;
