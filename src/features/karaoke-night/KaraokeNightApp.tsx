@@ -40,7 +40,7 @@ import type { DemoSongManifest } from './demo-song'
 import { demoIsPlayable, demoSessionId, isDemoSessionId, loadDemoSongs, seedDemoLyrics, } from './demo-song'
 import { exampleLinkSlug, findExampleBySongSlug } from './example-links'
 import { trackKaraoke } from './funnel'
-import { tourBelongsAt, tourOfferDue } from './karaoke-tour-offer'
+import { returnTourOffer, spendTourOffer, tourBelongsAt, tourOfferDue, } from './karaoke-tour-offer'
 import type { KaraokeSong } from './KaraokeRailPanels'
 import { KARAOKE_STAGE_ALPHA, loadKaraokeStageAlpha, persistKaraokeStageAlpha, } from './stage-transparency'
 
@@ -204,6 +204,9 @@ export function KaraokeNightApp() {
   // first visit to an empty stage is offered it by a chip under the top bar
   // instead, which goes once a song is on stage.
   const [tourOffered, setTourOffered] = createSignal(false)
+  // The chip holds an offer handed back by a tour that did not load: it was
+  // not spent again as it showed, so Not now spends it.
+  const [offerHandedBack, setOfferHandedBack] = createSignal(false)
   createEffect(
     on(activeSong, (song) => {
       if (song !== null) setTourOffered(false)
@@ -712,15 +715,23 @@ export function KaraokeNightApp() {
           <ErrorBoundary fallback={null}>
             <Suspense>
               <KaraokeTourChip
+                handedBack={offerHandedBack()}
                 onStart={() => {
                   setTourOffered(false)
-                  // A tour that could not start leaves the chip offered.
+                  // A tour that could not start hands the offer back, and
+                  // the chip is offered again.
                   void startTour(false).then((started) => {
-                    if (started || untrack(activeSong) !== null) return
+                    if (started) return
+                    returnTourOffer()
+                    if (untrack(activeSong) !== null) return
+                    setOfferHandedBack(true)
                     setTourOffered(true)
                   })
                 }}
-                onDismiss={() => setTourOffered(false)}
+                onDismiss={() => {
+                  if (offerHandedBack()) spendTourOffer()
+                  setTourOffered(false)
+                }}
               />
             </Suspense>
           </ErrorBoundary>

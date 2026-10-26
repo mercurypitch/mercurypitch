@@ -19,7 +19,8 @@
 //   tour that was just shown (the showcase hands over to Start here's tour,
 //   and the chip's offer would come due the moment Merc lets go). A Merc
 //   tour spends it once the coach has it on screen: one whose coach did not
-//   load leaves the offer for the next visit.
+//   load leaves the offer for the next visit, and tells whoever asked
+//   (`failed`), so the chip can hand back the offer it spent as it showed.
 // - A finished Merc tour offers what comes next, as the app names it: the
 //   plan's next stop (src/features/plan/plan-handoff.ts). The plan imports
 //   this file (enter-stop.ts starts a stop's tour here), so the plan's half is
@@ -97,12 +98,14 @@ let pending: object | null = null
 
 /**
  * Starts `tab`'s tour. `still` says, once a Merc tour has loaded, whether it
- * is still wanted (the chip asks whether its tab is still on screen). False
- * when the tab has no tour of either kind.
+ * is still wanted (the chip asks whether its tab is still on screen), and
+ * `failed` hears of a Merc tour whose code did not arrive. False when the tab
+ * has no tour of either kind.
  */
 export function startRoomTour(
   tab: ActiveTab,
   still: () => boolean = () => true,
+  failed?: () => void,
 ): boolean {
   const entry = COACH_TOURS[tab]
   if (entry === undefined) {
@@ -141,6 +144,9 @@ export function startRoomTour(
       spendOffer(tab)
     })
     // A chunk that did not arrive starts nothing, and the page stays as it was.
-    .catch(letGo)
+    .catch(() => {
+      letGo()
+      failed?.()
+    })
   return true
 }

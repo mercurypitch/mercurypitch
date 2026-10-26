@@ -13,9 +13,13 @@
 //   Path restores its scroll below the chip, and an offer scrolled away
 //   comes back on the next visit. Storage that cannot be written takes the
 //   chip down as it is seen: the offer could never be recorded, so it would
-//   come back on every visit. A tour started by another door (the
-//   showcase's end, First Light's Map) spends the offer too (room-tour.ts),
-//   so the chip never offers a tour that was just shown.
+//   come back on every visit. A Merc tour the chip started whose code did
+//   not arrive hands the offer back: the key goes, and the chip that comes
+//   back as Merc lets go is that same offer, spent by Not now or a tour
+//   that starts but not by being seen, so a later visit (the page chunk
+//   recovery reloads to is one) offers the tour again. A tour started by
+//   another door (the showcase's end, First Light's Map) spends the offer
+//   too (room-tour.ts), so the chip never offers a tour that was just shown.
 // - Nothing while `paused` (First Light, the plan, What's New, the takeover
 //   still deciding) or while Merc has the screen (coachBusy: a Merc tour,
 //   asked for or running, or the showcase); the legacy spotlight is checked
@@ -74,6 +78,8 @@ interface Chip {
   start: () => void
   /** The chip has been on screen: spend the offer and report it. */
   seen: () => void
+  /** Not now: an offer handed back is spent here, as it was not on sight. */
+  dismissed?: () => void
 }
 
 const [request, setRequest] = createSignal<TourChipRequest | null>(null)
@@ -143,6 +149,15 @@ function recordOffer(key: string): boolean {
   }
 }
 
+/** Takes the offer under `key` back, so the tab offers its tour again. */
+function returnOffer(key: string): void {
+  try {
+    localStorage.removeItem(key)
+  } catch {
+    // Storage that will not change keeps the offer spent.
+  }
+}
+
 export interface TourChipHostProps {
   tab: () => ActiveTab
   /** Something else has the screen, or is still deciding whether it will. */
@@ -152,13 +167,20 @@ export interface TourChipHostProps {
 export function TourChipHost(props: TourChipHostProps): JSX.Element {
   const [chip, setChip] = createSignal<Chip | null>(null)
   const pausedNow = createMemo(() => props.paused() || coachBusy())
+  // The tabs whose offer a Merc tour that did not load handed back, by key.
+  const handedBack = new Set<string>()
 
   // Either kind of tour, started as every door starts one; a Merc tour that
-  // loads after the singer has left its tab does not start.
+  // loads after the singer has left its tab does not start, and one whose
+  // code did not arrive hands its offer back.
   const startTour = (tab: ActiveTab): void => {
     // Asked once the tour has loaded, outside any tracking.
     const stillOnTab = (): boolean => props.tab() === tab
-    startRoomTour(tab, stillOnTab)
+    const key = tourOfferKey(tab)
+    startRoomTour(tab, stillOnTab, () => {
+      handedBack.add(key)
+      returnOffer(key)
+    })
   }
 
   // Spends the offer under `key` once the chip is seen, and reports it for
@@ -186,9 +208,26 @@ export function TourChipHost(props: TourChipHostProps): JSX.Element {
       })
       return
     }
+    const line = entry
+      ? undefined
+      : `New to ${tabLabel(tab)}? Take a quick tour.`
+    const start = (): void => startTour(tab)
+    if (handedBack.has(key)) {
+      // The offer handed back, shown again: seen already, and reported.
+      setChip({
+        line,
+        start,
+        seen: () => undefined,
+        dismissed: () => {
+          handedBack.delete(key)
+          recordOffer(key)
+        },
+      })
+      return
+    }
     setChip({
-      line: entry ? undefined : `New to ${tabLabel(tab)}? Take a quick tour.`,
-      start: () => startTour(tab),
+      line,
+      start,
       // The offer does not depend on a key to report; only the report does.
       seen: spend(key, entry ? entry.key : pageTourKey(tab)),
     })
@@ -248,7 +287,10 @@ export function TourChipHost(props: TourChipHostProps): JSX.Element {
               setChip(null)
               shown.start()
             }}
-            onDismiss={() => setChip(null)}
+            onDismiss={() => {
+              setChip(null)
+              shown.dismissed?.()
+            }}
           />
         </div>
       )}

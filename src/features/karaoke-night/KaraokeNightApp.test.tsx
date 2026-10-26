@@ -234,6 +234,46 @@ describe("KaraokeNightApp and Merc's tour", () => {
     expect(await screen.findByTestId('tour-chip')).toBeInTheDocument()
   })
 
+  it('hands the offer back when the tour does not load, so the next visit offers it again', async () => {
+    tour.start.mockRejectedValueOnce(new Error('chunk'))
+    window.history.replaceState({}, '', '/karaoke-night')
+    render(() => <KaraokeNightApp />)
+    fireEvent.click(
+      await screen.findByRole('button', { name: 'Sing the demo with Merc' }),
+    )
+    await waitFor(() => expect(tour.start).toHaveBeenCalledTimes(1))
+    await screen.findByTestId('tour-chip')
+
+    // The chip back on this visit is the same offer: not spent or reported
+    // again as it shows.
+    expect(localStorage.getItem(KARAOKE_TOUR_OFFER_KEY)).toBeNull()
+    expect(funnel.trackTour).toHaveBeenCalledExactlyOnceWith(
+      'tour_offer',
+      'karaoke-night',
+    )
+
+    cleanup()
+    render(() => <KaraokeNightApp />)
+    expect(await screen.findByTestId('tour-chip')).toBeInTheDocument()
+    expect(localStorage.getItem(KARAOKE_TOUR_OFFER_KEY)).toBe('true')
+  })
+
+  it('spends a handed-back offer on Not now', async () => {
+    tour.start.mockRejectedValueOnce(new Error('chunk'))
+    window.history.replaceState({}, '', '/karaoke-night')
+    render(() => <KaraokeNightApp />)
+    fireEvent.click(
+      await screen.findByRole('button', { name: 'Sing the demo with Merc' }),
+    )
+    await waitFor(() => expect(tour.start).toHaveBeenCalledTimes(1))
+    await screen.findByTestId('tour-chip')
+
+    fireEvent.click(screen.getByRole('button', { name: 'Not now' }))
+
+    expect(screen.queryByTestId('tour-chip')).toBeNull()
+    expect(localStorage.getItem(KARAOKE_TOUR_OFFER_KEY)).toBe('true')
+  })
+
   it("leaves an ad's landing as it was when the tour does not load", async () => {
     tour.start.mockRejectedValueOnce(new Error('chunk'))
     window.history.replaceState({}, '', '/karaoke?tour=first')
