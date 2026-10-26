@@ -150,4 +150,30 @@ describe('Studio borrowed transport', () => {
     f.transport.dispose()
     expect(studioReservedMemoryBytes()).toBe(0)
   })
+  it('wraps the displayed audio-clock position while one graph keeps repeating', async () => {
+    vi.useFakeTimers()
+    const f = fixture()
+    const project = {
+      ...f.project,
+      clips: [{ ...f.project.clips[0], startFrame: 0, sourceOutFrame: 96000 }],
+    }
+    const asset = {
+      ...f.asset,
+      normalizedFrameCount: 96000,
+      canonicalPcmByteLength: 384032,
+    }
+    f.transport.setRepeat(true)
+    await f.transport.play(project, [asset], 48000)
+    expect(f.buildGraph.mock.calls[0][5]).toBe(48000)
+    f.ctx.currentTime = 3.01
+    await vi.advanceTimersByTimeAsync(33)
+    expect(f.transport.getState().playing).toBe(true)
+    expect(f.transport.getState().playheadFrame).toBe(72000)
+    expect(f.buildGraph).toHaveBeenCalledOnce()
+    const released = f.transport.releaseAudio()
+    await vi.advanceTimersByTimeAsync(240)
+    await released
+    f.transport.dispose()
+    expect(studioReservedMemoryBytes()).toBe(0)
+  })
 })

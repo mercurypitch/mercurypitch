@@ -1,6 +1,6 @@
 // Studio timeline contracts — view state and edit callbacks stay outside persistence.
 import type { StudioCommand } from '@/lib/studio/model/commands'
-import type { StudioAsset, StudioProject } from '@/lib/studio/model/types'
+import type { StudioAsset, StudioClip, StudioProject, } from '@/lib/studio/model/types'
 
 export interface StudioTimelineProps {
   project: StudioProject
@@ -10,6 +10,8 @@ export interface StudioTimelineProps {
   pixelsPerSecond: number
   writable: boolean
   phone: boolean
+  keyboardPreviewClip?: StudioClip | null
+  onPointerEditStart?(): void
   onSelectClip(id: string | null): void
   onSeek(frame: number): void
   onCommand(command: StudioCommand): boolean

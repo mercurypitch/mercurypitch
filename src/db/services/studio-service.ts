@@ -5,6 +5,7 @@
 import type { DexieAdapter } from '@/db/adapters/dexie-adapter'
 import { getLocalDatabase } from '@/db/local-database'
 import { CANONICAL_PCM_MIME } from '@/lib/studio/audio/canonical-pcm'
+import { reserveStudioMemory } from '@/lib/studio/memory-budget'
 import { createStudioProject, summarizeStudioProject, } from '@/lib/studio/model/defaults'
 import { fitsStudioProjectStorageBudget } from '@/lib/studio/model/storage-limits'
 import type { StudioAsset, StudioAssetData, StudioProject, StudioProjectSummary, } from '@/lib/studio/model/types'
@@ -391,10 +392,37 @@ export function createStudioService(
       studioStorageOperation(async () => {
         const supplied = new Map(assets.map((data) => [data.asset.id, data]))
         const selected: StudioAssetData[] = []
-        for (const id of new Set(project.clips.map((clip) => clip.assetId))) {
-          selected.push(supplied.get(id) ?? (await readAsset(project.id, id)))
+        const metadata = await listAssets(project.id)
+        const releases: (() => void)[] = []
+        try {
+          for (const id of new Set(project.clips.map((clip) => clip.assetId))) {
+            if (!supplied.has(id)) {
+              const asset = metadata.find((value) => value.id === id)
+              if (!asset)
+                throw new StudioStorageError(
+                  'not-found',
+                  'This project audio is missing.',
+                )
+              try {
+                releases.push(
+                  reserveStudioMemory(
+                    2 * (asset.byteLength + asset.canonicalPcmByteLength),
+                  ),
+                )
+              } catch (cause) {
+                throw new StudioStorageError(
+                  'memory-limit',
+                  'Studio needs more memory to copy this song. Stop playback and try again.',
+                  cause,
+                )
+              }
+            }
+            selected.push(supplied.get(id) ?? (await readAsset(project.id, id)))
+          }
+          return await restoreProject(project, selected)
+        } finally {
+          for (const release of releases) release()
         }
-        return restoreProject(project, selected)
       }),
     deleteProject: (id, token) =>
       studioStorageOperation(async () => {

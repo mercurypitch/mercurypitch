@@ -80,6 +80,38 @@ function mount() {
 }
 
 describe('Studio selected source previews', () => {
+  it('cancels a pending original-byte read when its source starts being dragged', async () => {
+    const ui = mount()
+    let finish!: (blob: Blob) => void
+    ui.read.mockImplementationOnce(
+      () =>
+        new Promise((resolve) => {
+          finish = resolve
+        }),
+    )
+    await fireEvent.click(
+      screen.getByRole('button', { name: 'Preview First take' }),
+    )
+    const signal = ui.read.mock.calls[0][1]?.signal
+    expect(signal?.aborted).toBe(false)
+    const row = screen.getByText('First take').closest('li')
+    if (!row) throw new Error('Missing kept take row')
+    const dataTransfer = { setData: vi.fn(), effectAllowed: '' }
+    await fireEvent.dragStart(row, { dataTransfer })
+    expect(dataTransfer.setData).toHaveBeenCalledWith(
+      'application/x-mercurypitch-studio-take',
+      entries[0].id,
+    )
+    expect(signal?.aborted).toBe(true)
+    finish(new Blob(['abc']))
+    await Promise.resolve()
+    await Promise.resolve()
+    expect(ui.onPreview).not.toHaveBeenCalled()
+    expect(
+      screen.getByRole('button', { name: 'Preview First take' }),
+    ).toBeDefined()
+  })
+
   it('stops preview before a source filter hides its row', async () => {
     const ui = mount()
     await fireEvent.click(

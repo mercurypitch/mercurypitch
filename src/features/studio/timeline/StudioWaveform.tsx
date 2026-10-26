@@ -14,6 +14,36 @@ export interface StudioWaveformProps {
   sourceOutFrame: number
 }
 
+function drawEnvelope(
+  context: CanvasRenderingContext2D,
+  wave: StudioWaveformEnvelope,
+  clip: StudioClip,
+  width: number,
+  mid: number,
+  sourceInFrame: number,
+  sourceOutFrame: number,
+): void {
+  const duration = sourceOutFrame - sourceInFrame
+  for (let x = 0; x < width; x++) {
+    const from = sourceInFrame + (x / width) * duration
+    const to = sourceInFrame + ((x + 1) / width) * duration
+    const first = Math.floor(from / wave.framesPerBucket)
+    const last = Math.min(
+      wave.minima.length - 1,
+      Math.floor(to / wave.framesPerBucket),
+    )
+    let low = 0
+    let high = 0
+    for (let bucket = first; bucket <= last; bucket++) {
+      low = Math.min(low, wave.minima[bucket])
+      high = Math.max(high, wave.maxima[bucket])
+    }
+    const gain = studioClipGainAtSourceFrame(clip, (from + to) / 2)
+    context.moveTo(x + 0.5, mid - Math.min(1, high * gain) * (mid - 3))
+    context.lineTo(x + 0.5, mid - Math.max(-1, low * gain) * (mid - 3))
+  }
+}
+
 export function StudioWaveform(props: StudioWaveformProps) {
   let canvas: HTMLCanvasElement | undefined
   let request = 0
@@ -73,25 +103,15 @@ export function StudioWaveform(props: StudioWaveformProps) {
     context.moveTo(0, mid)
     context.lineTo(width, mid)
     if (wave) {
-      const duration = props.sourceOutFrame - props.sourceInFrame
-      for (let x = 0; x < width; x++) {
-        const from = props.sourceInFrame + (x / width) * duration
-        const to = props.sourceInFrame + ((x + 1) / width) * duration
-        const first = Math.floor(from / wave.framesPerBucket)
-        const last = Math.min(
-          wave.minima.length - 1,
-          Math.floor(to / wave.framesPerBucket),
-        )
-        let low = 0
-        let high = 0
-        for (let bucket = first; bucket <= last; bucket++) {
-          low = Math.min(low, wave.minima[bucket])
-          high = Math.max(high, wave.maxima[bucket])
-        }
-        const gain = studioClipGainAtSourceFrame(clip, (from + to) / 2)
-        context.moveTo(x + 0.5, mid - Math.min(1, high * gain) * (mid - 3))
-        context.lineTo(x + 0.5, mid - Math.max(-1, low * gain) * (mid - 3))
-      }
+      drawEnvelope(
+        context,
+        wave,
+        clip,
+        width,
+        mid,
+        props.sourceInFrame,
+        props.sourceOutFrame,
+      )
     }
     context.stroke()
     if (

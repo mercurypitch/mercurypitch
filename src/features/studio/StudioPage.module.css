@@ -676,3 +676,27 @@
   position: static;
   flex-shrink: 0;
 }
+
+.editNotice {
+  margin: 0;
+  padding: 6px 16px;
+  color: var(--studio-pencil);
+  font-size: 12px;
+}
+.dropHint {
+  position: absolute;
+  z-index: 60;
+  inset: 70px 24px auto;
+  padding: 16px;
+  pointer-events: none;
+  text-align: center;
+  border: 1px solid var(--studio-cobalt);
+  background: var(--studio-sheet);
+  color: var(--studio-graphite);
+  border-radius: 8px;
+}
+.iconButton[aria-pressed='true'] {
+  background: var(--studio-cobalt);
+  color: var(--studio-paper);
+  border-color: var(--studio-cobalt);
+}

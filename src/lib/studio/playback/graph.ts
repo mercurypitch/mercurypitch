@@ -1,6 +1,6 @@
 // Studio graph — shared lane processing and source scheduling for live and offline consumers.
 import { createStudioFxChain } from '@/lib/studio-fx/chain'
-import type { StudioArrangementPlan, StudioPlannedSegment, } from '../model/arrangement-plan'
+import type { StudioArrangementPlan, StudioPlannedLane, StudioPlannedSegment, } from '../model/arrangement-plan'
 import { studioPanGains } from '../model/arrangement-plan'
 import { scheduleStudioSegmentGain } from './edge-envelope'
 
@@ -25,12 +25,63 @@ export function studioGraphWorkingBytes(
   )
 }
 
+function connectLane(
+  ctx: BaseAudioContext,
+  lane: StudioPlannedLane,
+  output: GainNode,
+  disposers: (() => void)[],
+): AudioNode {
+  const chain = createStudioFxChain(ctx, lane.spec)
+  disposers.push(() => chain.dispose())
+  const split = ctx.createChannelSplitter(2)
+  const merge = ctx.createChannelMerger(2)
+  const [left, right] = studioPanGains(lane.track.pan)
+  chain.output.connect(split)
+  for (const [index, balance] of [left, right].entries()) {
+    const gain = ctx.createGain()
+    gain.gain.value =
+      balance *
+      Math.pow(10, (lane.track.gainDb + lane.track.balanceGainDb) / 20)
+    split.connect(gain, index)
+    gain.connect(merge, 0, index)
+    disposers.push(() => gain.disconnect())
+  }
+  merge.connect(output)
+  disposers.push(
+    () => split.disconnect(),
+    () => merge.disconnect(),
+  )
+  return chain.input
+}
+
+function connectPeakAnalysers(
+  ctx: BaseAudioContext,
+  output: AudioNode,
+  fftSize: number,
+  disposers: (() => void)[],
+): AnalyserNode[] {
+  const split = ctx.createChannelSplitter(2)
+  output.connect(split)
+  disposers.push(() => split.disconnect())
+  const analysers: AnalyserNode[] = []
+  for (let channel = 0; channel < 2; channel++) {
+    const analyser = ctx.createAnalyser()
+    analyser.fftSize = fftSize
+    analyser.smoothingTimeConstant = 0
+    split.connect(analyser, channel)
+    analysers.push(analyser)
+    disposers.push(() => analyser.disconnect())
+  }
+  return analysers
+}
+
 export function buildStudioGraph(
   ctx: BaseAudioContext,
   plan: StudioArrangementPlan,
   buffers: ReadonlyMap<string, AudioBuffer>,
   epoch: number,
   metering = true,
+  repeatFromFrame?: number,
 ): StudioGraph {
   const output = ctx.createGain()
   const disposers: (() => void)[] = []
@@ -41,6 +92,11 @@ export function buildStudioGraph(
     when: number
   }[] = []
   let next = 0
+  let cycle = 0
+  let repeating: typeof scheduled = []
+  const repeatSeconds = (plan.endFrame - plan.startFrame) / 48000
+  if (repeatFromFrame !== undefined && repeatSeconds < 0.25)
+    throw new Error('A song needs at least a quarter second to repeat.')
   let disposed = false
   const analysers: AnalyserNode[] = []
   const peakSamples = new Float32Array(4096)
@@ -49,30 +105,11 @@ export function buildStudioGraph(
       if (!lane.audible || !lane.segments.length) continue
       if (lane.compensationSeconds === null)
         throw new Error('Studio chain timing has not been measured.')
-      const chain = createStudioFxChain(ctx, lane.spec)
-      disposers.push(() => chain.dispose())
-      const split = ctx.createChannelSplitter(2)
-      const merge = ctx.createChannelMerger(2)
-      const [left, right] = studioPanGains(lane.track.pan)
-      chain.output.connect(split)
-      for (const [index, balance] of [left, right].entries()) {
-        const gain = ctx.createGain()
-        gain.gain.value =
-          balance *
-          Math.pow(10, (lane.track.gainDb + lane.track.balanceGainDb) / 20)
-        split.connect(gain, index)
-        gain.connect(merge, 0, index)
-        disposers.push(() => gain.disconnect())
-      }
-      merge.connect(output)
-      disposers.push(
-        () => split.disconnect(),
-        () => merge.disconnect(),
-      )
+      const input = connectLane(ctx, lane, output, disposers)
       for (const segment of lane.segments)
         scheduled.push({
           segment,
-          input: chain.input,
+          input,
           when:
             epoch +
             (segment.startFrame - plan.startFrame) / 48000 +
@@ -80,18 +117,38 @@ export function buildStudioGraph(
         })
     }
     scheduled.sort((a, b) => a.when - b.when)
+    if (repeatFromFrame !== undefined) {
+      const offset = (repeatFromFrame - plan.startFrame) / 48000
+      repeating = scheduled.map((item) => ({
+        ...item,
+        when: item.when - offset,
+      }))
+      const first = repeating.flatMap((item) => {
+        const end =
+          item.segment.startFrame +
+          item.segment.sourceOutFrame -
+          item.segment.sourceInFrame
+        if (end <= repeatFromFrame) return []
+        const skipped = Math.max(0, repeatFromFrame - item.segment.startFrame)
+        return [
+          {
+            ...item,
+            when: item.when + skipped / 48000,
+            segment: {
+              ...item.segment,
+              startFrame: item.segment.startFrame + skipped,
+              sourceInFrame: item.segment.sourceInFrame + skipped,
+            },
+          },
+        ]
+      })
+      first.sort((a, b) => a.when - b.when)
+      scheduled.splice(0, scheduled.length, ...first)
+    }
     if (metering) {
-      const split = ctx.createChannelSplitter(2)
-      output.connect(split)
-      disposers.push(() => split.disconnect())
-      for (let channel = 0; channel < 2; channel++) {
-        const analyser = ctx.createAnalyser()
-        analyser.fftSize = peakSamples.length
-        analyser.smoothingTimeConstant = 0
-        split.connect(analyser, channel)
-        analysers.push(analyser)
-        disposers.push(() => analyser.disconnect())
-      }
+      analysers.push(
+        ...connectPeakAnalysers(ctx, output, peakSamples.length, disposers),
+      )
     }
   } catch (error) {
     for (const dispose of disposers) dispose()
@@ -102,7 +159,21 @@ export function buildStudioGraph(
     output,
     scheduleUntil(time) {
       if (disposed) return
-      while (next < scheduled.length && scheduled[next].when <= time) {
+      while (true) {
+        if (next >= scheduled.length) {
+          if (!repeating.length) break
+          cycle++
+          scheduled.splice(
+            0,
+            scheduled.length,
+            ...repeating.map((item) => ({
+              ...item,
+              when: item.when + cycle * repeatSeconds,
+            })),
+          )
+          next = 0
+        }
+        if (scheduled[next].when > time) break
         const { segment, input, when } = scheduled[next++]
         if (when < ctx.currentTime - 0.02)
           throw new Error(

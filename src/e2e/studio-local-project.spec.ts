@@ -456,7 +456,12 @@ test('Studio plays four owned audio lanes and stops after reopening @smoke', asy
   await studio.getByRole('button', { name: 'Pause song', exact: true }).click()
   const position = studio.getByLabel('Song position')
   const paused = await position.textContent()
-  await page.waitForTimeout(300)
+  await expect(
+    studio.getByRole('button', { name: 'Play song', exact: true }),
+  ).toBeEnabled()
+  await expect(
+    studio.getByRole('meter', { name: 'Output sample peak' }),
+  ).toHaveAttribute('aria-valuenow', '-60')
   await expect(position).toHaveText(paused!)
   await page.reload()
   await studio.getByRole('button', { name: /Window seat/ }).click()

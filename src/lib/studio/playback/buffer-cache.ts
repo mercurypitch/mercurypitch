@@ -16,6 +16,29 @@ export interface StudioBufferLease {
   release(): void
 }
 
+async function copyCanonicalSamples(
+  pcm: DataView,
+  buffer: AudioBuffer,
+  signal: AbortSignal,
+): Promise<void> {
+  for (let channel = 0; channel < buffer.numberOfChannels; channel++) {
+    const output = buffer.getChannelData(channel)
+    for (let from = 0; from < output.length; from += 65536) {
+      for (
+        let frame = from;
+        frame < Math.min(output.length, from + 65536);
+        frame++
+      ) {
+        output[frame] = pcm.getFloat32(
+          CANONICAL_PCM_HEADER_BYTES + (channel * output.length + frame) * 4,
+          true,
+        )
+      }
+      await importCheckpoint(signal)
+    }
+  }
+}
+
 export function createStudioBufferCache() {
   const entries = new Map<string, Entry>()
   let bytes = 0
@@ -36,6 +59,43 @@ export function createStudioBufferCache() {
       entries.delete(id)
       bytes -= entry.bytes
       entry.release()
+    }
+  }
+
+  async function loadEntry(
+    asset: StudioAsset,
+    ctx: BaseAudioContext,
+    read: (id: string) => Promise<Blob>,
+    signal: AbortSignal,
+  ): Promise<Entry> {
+    const size = asset.normalizedFrameCount * asset.channels * 4
+    const release = reserveStudioMemory(size)
+    let releaseTransient: (() => void) | undefined
+    try {
+      releaseTransient = reserveStudioMemory(asset.canonicalPcmByteLength * 2)
+      const blob = await read(asset.id)
+      signal.throwIfAborted()
+      const pcm = new DataView(
+        await readCanonicalPcmBytes(blob, asset, { signal }),
+      )
+      signal.throwIfAborted()
+      if (disposed) throw new DOMException('Studio closed', 'AbortError')
+      const buffer = ctx.createBuffer(
+        asset.channels,
+        asset.normalizedFrameCount,
+        48000,
+      )
+      await copyCanonicalSamples(pcm, buffer, signal)
+      if (disposed) throw new DOMException('Studio closed', 'AbortError')
+      const entry = { buffer, bytes: size, pins: 0, release }
+      entries.set(key(asset), entry)
+      bytes += size
+      return entry
+    } catch (error) {
+      release()
+      throw error
+    } finally {
+      releaseTransient?.()
     }
   }
 
@@ -66,55 +126,8 @@ export function createStudioBufferCache() {
       for (const asset of assets) {
         signal.throwIfAborted()
         const id = key(asset)
-        let entry = entries.get(id)
-        if (!entry) {
-          const size = asset.normalizedFrameCount * asset.channels * 4
-          const release = reserveStudioMemory(size)
-          let releaseTransient: (() => void) | undefined
-          try {
-            releaseTransient = reserveStudioMemory(
-              asset.canonicalPcmByteLength * 2,
-            )
-            const blob = await read(asset.id)
-            signal.throwIfAborted()
-            const pcm = new DataView(
-              await readCanonicalPcmBytes(blob, asset, { signal }),
-            )
-            signal.throwIfAborted()
-            if (disposed) throw new DOMException('Studio closed', 'AbortError')
-            const buffer = ctx.createBuffer(
-              asset.channels,
-              asset.normalizedFrameCount,
-              48000,
-            )
-            for (let channel = 0; channel < asset.channels; channel++) {
-              const output = buffer.getChannelData(channel)
-              for (let from = 0; from < output.length; from += 65536) {
-                for (
-                  let frame = from;
-                  frame < Math.min(output.length, from + 65536);
-                  frame++
-                ) {
-                  output[frame] = pcm.getFloat32(
-                    CANONICAL_PCM_HEADER_BYTES +
-                      (channel * output.length + frame) * 4,
-                    true,
-                  )
-                }
-                await importCheckpoint(signal)
-              }
-            }
-            if (disposed) throw new DOMException('Studio closed', 'AbortError')
-            entry = { buffer, bytes: size, pins: 0, release }
-            entries.set(id, entry)
-            bytes += size
-          } catch (error) {
-            release()
-            throw error
-          } finally {
-            releaseTransient?.()
-          }
-        }
+        const entry =
+          entries.get(id) ?? (await loadEntry(asset, ctx, read, signal))
         entry.pins++
         pinned.push(entry)
         buffers.set(asset.id, entry.buffer)

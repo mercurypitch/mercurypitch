@@ -8,10 +8,24 @@ import { DexieAdapter } from '@/db/adapters/dexie-adapter'
 import { studioArrangementFixture, studioAssetFixture, } from '@/db/services/studio.fixture'
 import { createStudioService } from '@/db/services/studio-service'
 import { sha256Bytes } from '@/lib/studio/audio/canonical-pcm'
-import { readStudioArchive, STUDIO_BACKUP_LIMITS, writeStudioArchive, } from './archive-codec'
-import { createStudioBackup, readStudioBackup, restoreStudioBackup, } from './studio-backup'
+import { releaseStudioResource, reserveStudioMemory, STUDIO_WORKING_BYTES, studioReservedMemoryBytes, } from '@/lib/studio/memory-budget'
+import { readStudioArchive as rawReadStudioArchive, STUDIO_BACKUP_LIMITS, writeStudioArchive as rawWriteStudioArchive, } from './archive-codec'
+import { createStudioBackup as rawCreateStudioBackup, readStudioBackup as rawReadStudioBackup, restoreStudioBackup, } from './studio-backup'
 
 describe('portable Studio backups', () => {
+  const resources: object[] = []
+
+  function track<T extends (...args: never[]) => Promise<object>>(fn: T) {
+    return async (...args: Parameters<T>): Promise<Awaited<ReturnType<T>>> => {
+      const result = await fn(...args)
+      resources.push(result)
+      return result as Awaited<ReturnType<T>>
+    }
+  }
+  const createStudioBackup = track(rawCreateStudioBackup)
+  const readStudioArchive = track(rawReadStudioArchive)
+  const writeStudioArchive = track(rawWriteStudioArchive)
+  const readStudioBackup = track(rawReadStudioBackup)
   let db: DexieAdapter
   let service: ReturnType<typeof createStudioService>
   let sequence: number
@@ -27,6 +41,8 @@ describe('portable Studio backups', () => {
     })
   })
   afterEach(async () => {
+    for (const resource of resources.splice(0)) releaseStudioResource(resource)
+    expect(studioReservedMemoryBytes()).toBe(0)
     await db.destroy()
     vi.unstubAllGlobals()
   })
@@ -39,8 +55,10 @@ describe('portable Studio backups', () => {
     await service.saveProject(project, { ...lease, expectedRevision: 0 }, [
       data,
     ])
-    const archive = await createStudioBackup(project, (id) =>
-      service.readAssetBytes(project.id, id),
+    const archive = await createStudioBackup(
+      project,
+      (id) => service.readAssetBytes(project.id, id),
+      { assetMetadata: [data.asset] },
     )
     return { project, data, archive }
   }
@@ -249,5 +267,24 @@ describe('portable Studio backups', () => {
     await expect(
       readStudioBackup(archive, { signal: cancelled.signal }),
     ).rejects.toMatchObject({ name: 'AbortError' })
+  })
+  it('rejects backup and restore before audio reads when working memory is already occupied', async () => {
+    const { project, data, archive } = await fixture()
+    const held = studioReservedMemoryBytes()
+    const release = reserveStudioMemory(STUDIO_WORKING_BYTES - held - 64)
+    const read = vi.fn()
+    try {
+      await expect(
+        createStudioBackup(project, read, { assetMetadata: [data.asset] }),
+      ).rejects.toThrow()
+      expect(read).not.toHaveBeenCalled()
+      await expect(restoreStudioBackup(archive, service)).rejects.toThrow(
+        /memory/,
+      )
+      expect(await service.listProjects()).toHaveLength(1)
+    } finally {
+      release()
+    }
+    expect(studioReservedMemoryBytes()).toBe(held)
   })
 })

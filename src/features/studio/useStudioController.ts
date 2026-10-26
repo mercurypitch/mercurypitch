@@ -6,6 +6,7 @@ import { useLocalSaveNavigationLock } from '@/lib/local-save-navigation-lock'
 import { checkImportCancelled, DEFAULT_STUDIO_IMPORT_LIMITS, } from '@/lib/studio/audio/import-limits'
 import type { prepareStudioAsset } from '@/lib/studio/audio/prepare-studio-asset'
 import { reserveStudioMemory } from '@/lib/studio/memory-budget'
+import { releaseStudioResource } from '@/lib/studio/memory-budget'
 import type { StudioCommand } from '@/lib/studio/model/commands'
 import type { StudioAsset, StudioAssetData, StudioProject, StudioProjectSummary, } from '@/lib/studio/model/types'
 import { createStudioBackup, restoreStudioBackup } from './backup/studio-backup'
@@ -104,22 +105,23 @@ export function useStudioController(options: StudioControllerOptions = {}) {
     untrack(() => !disposed() && generation === epoch)
   const report = (error: unknown) => setProblem(message(error))
 
-  const { addFile, addTake, addTakes, cancelImport } = createStudioImporter({
-    project,
-    assets,
-    epoch: () => generation,
-    current,
-    canEdit,
-    setImporting,
-    clearProblem: () => setProblem(null),
-    report,
-    commit,
-    flush: () => queue?.flush(),
-    createId,
-    now,
-    prepareFile: options.prepareFile,
-    prepareTake: options.prepareTake,
-  })
+  const { addFile, addFiles, addTake, addTakes, cancelImport } =
+    createStudioImporter({
+      project,
+      assets,
+      epoch: () => generation,
+      current,
+      canEdit,
+      setImporting,
+      clearProblem: () => setProblem(null),
+      report,
+      commit,
+      flush: () => queue?.flush(),
+      createId,
+      now,
+      prepareFile: options.prepareFile,
+      prepareTake: options.prepareTake,
+    })
 
   function expireEditor(): void {
     setWritable(false)
@@ -452,9 +454,15 @@ export function useStudioController(options: StudioControllerOptions = {}) {
       const blob = await (options.createBackup ?? createStudioBackup)(
         snapshot,
         (id) => service.readAssetBytes(snapshot.id, id),
-        { preparedAssets: prepared, signal: abort.signal },
+        {
+          preparedAssets: prepared,
+          signal: abort.signal,
+          assetMetadata: assets(),
+        },
       )
-      return current(epoch) && !abort.signal.aborted ? blob : null
+      if (current(epoch) && !abort.signal.aborted) return blob
+      releaseStudioResource(blob)
+      return null
     } catch (error) {
       if (current(epoch) && !abort.signal.aborted) report(error)
       return null
@@ -587,6 +595,7 @@ export function useStudioController(options: StudioControllerOptions = {}) {
     refreshProjects,
     refreshSources,
     addFile,
+    addFiles,
     addTake,
     addTakes,
     readCanonicalAsset,

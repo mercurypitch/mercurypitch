@@ -253,6 +253,152 @@ describe('non-destructive Studio commands', () => {
   })
 })
 
+describe('Studio clipboard and explicit lane placement', () => {
+  it('pastes at a free touching edge without creating another lane or changing source audio', () => {
+    const { project, clip, asset } = studioFixture()
+    const next = applyStudioCommand(
+      project,
+      {
+        type: 'paste-clip',
+        clip,
+        trackId: clip.trackId,
+        startFrame: 1100,
+        newClipId: 'pasted',
+        newTrackId: 'unused',
+      },
+      { assets: [asset] },
+    )
+    expect(next.tracks).toEqual(project.tracks)
+    expect(next.clips[1]).toEqual({ ...clip, id: 'pasted', startFrame: 1100 })
+    expect(next.revision).toBe(1)
+  })
+
+  it('pastes a trimmed copy into an occupied destination with destination sound as one undo and redo', () => {
+    const { project, clip, asset } = studioFixture()
+    const destination = {
+      ...createStudioTrack({
+        id: 'voice-lane',
+        name: 'Voice',
+        order: 1,
+        role: 'voice',
+      }),
+      gainDb: -8,
+      pan: -0.3,
+    }
+    const initial = {
+      ...project,
+      tracks: [...project.tracks, destination],
+      clips: [
+        ...project.clips,
+        { ...clip, id: 'occupied', trackId: destination.id },
+      ],
+    }
+    const copy = { ...clip, sourceInFrame: 150, sourceOutFrame: 900 }
+    const options = { assets: [asset], now: TEST_NOW }
+    const history = executeStudioCommand(
+      createStudioHistory(initial),
+      {
+        type: 'paste-clip',
+        clip: copy,
+        trackId: destination.id,
+        startFrame: 100,
+        newClipId: 'pasted',
+        newTrackId: 'fallback',
+      },
+      options,
+    )
+    expect(history.present.tracks[2]).toEqual({
+      ...destination,
+      id: 'fallback',
+      order: 2,
+    })
+    expect(history.present.clips[2]).toEqual({
+      ...copy,
+      id: 'pasted',
+      trackId: 'fallback',
+      startFrame: 100,
+    })
+    expect(history.past).toHaveLength(1)
+    const undo = undoStudioCommand(history, options)
+    expect(undo.present.clips).toEqual(initial.clips)
+    expect(undo.present.tracks).toEqual(initial.tracks)
+    const redo = redoStudioCommand(undo, options)
+    expect(redo.present.clips).toEqual(history.present.clips)
+    expect(redo.present.tracks).toEqual(history.present.tracks)
+    expect(redo.present.revision).toBe(3)
+    expect(asset.preparation.gainDb).toBe(3)
+  })
+
+  it('keeps a copied descriptor usable after its original clip is removed', () => {
+    const { project, clip, asset } = studioFixture()
+    const next = applyStudioCommand(
+      { ...project, clips: [] },
+      {
+        type: 'paste-clip',
+        clip,
+        trackId: clip.trackId,
+        startFrame: 700,
+        newClipId: 'pasted',
+        newTrackId: 'unused',
+      },
+      { assets: [asset] },
+    )
+    expect(next.clips).toEqual([{ ...clip, id: 'pasted', startFrame: 700 }])
+  })
+
+  it('rejects a foreign or malformed copied source without changing the current project', () => {
+    const { project, clip, asset } = studioFixture()
+    const before = structuredClone(project)
+    for (const copied of [
+      { ...clip, assetId: 'foreign' },
+      { ...clip, sourceOutFrame: 2000 },
+    ]) {
+      expect(() =>
+        applyStudioCommand(
+          project,
+          {
+            type: 'paste-clip',
+            clip: copied,
+            trackId: clip.trackId,
+            startFrame: 100,
+            newClipId: 'pasted',
+            newTrackId: 'fallback',
+          },
+          { assets: [asset] },
+        ),
+      ).toThrow()
+    }
+    expect(project).toEqual(before)
+  })
+
+  it('moves to an explicitly requested new lane in one revision and restores both on undo', () => {
+    const { project, clip, asset } = studioFixture()
+    const options = { assets: [asset] }
+    const history = executeStudioCommand(
+      createStudioHistory(project),
+      {
+        type: 'move-clip-to-new-track',
+        clipId: clip.id,
+        startFrame: 900,
+        newTrackId: 'new-lane',
+      },
+      options,
+    )
+    expect(history.present.clips).toEqual([
+      { ...clip, trackId: 'new-lane', startFrame: 900 },
+    ])
+    expect(history.present.tracks[1]).toEqual({
+      ...project.tracks[0],
+      id: 'new-lane',
+      order: 1,
+    })
+    expect(history.present.revision).toBe(1)
+    const undone = undoStudioCommand(history, options)
+    expect(undone.present.clips).toEqual(project.clips)
+    expect(undone.present.tracks).toEqual(project.tracks)
+  })
+})
+
 describe('monotonic Studio undo history', () => {
   it('uses new revisions for undo/redo and invalidates redo after a new edit', () => {
     const { project, asset } = studioFixture()

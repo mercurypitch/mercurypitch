@@ -135,8 +135,16 @@ describe('Studio timeline', () => {
   })
 
   it('shows only an overview on phone and gives the editing scope when a clip is selected', () => {
+    const select = vi.fn()
+    const command = vi.fn(() => true)
     render(() => (
-      <StudioTimeline {...base} phone={true} selectedClipId="clip" />
+      <StudioTimeline
+        {...base}
+        phone={true}
+        selectedClipId="clip"
+        onSelectClip={select}
+        onCommand={command}
+      />
     ))
     expect(
       screen.queryByRole('button', { name: 'Mute Lead vocal' }),
@@ -145,6 +153,13 @@ describe('Studio timeline', () => {
     expect(
       screen.getByText('Edit clips on a tablet or computer.'),
     ).toBeInTheDocument()
+    const clip = screen.getByRole('button', {
+      name: /Lead vocal, Lead vocal, 0:01.000/,
+    })
+    expect(clip).toHaveAttribute('aria-pressed', 'true')
+    fireEvent.click(clip)
+    expect(select).toHaveBeenCalledWith('clip')
+    expect(command).not.toHaveBeenCalled()
   })
 
   it('does not label valid project audio missing when waveform memory is busy', async () => {

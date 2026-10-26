@@ -40,6 +40,7 @@ interface Run {
   endFrame: number
   audibleEpoch: number
   endsAt: number
+  repeat: boolean
 }
 
 export function createStudioTransport(options: StudioTransportOptions) {
@@ -55,6 +56,7 @@ export function createStudioTransport(options: StudioTransportOptions) {
   let disposed = false
   let generation = 0
   let wantsPlayback = false
+  let repeat = false
   let restartGeneration = 0
   let state: StudioTransportState = {
     playing: false,
@@ -69,17 +71,12 @@ export function createStudioTransport(options: StudioTransportOptions) {
     state = { ...state, ...update }
     if (!disposed) options.changed(state)
   }
-  const position = (run: Run) =>
-    Math.max(
-      run.startFrame,
-      Math.min(
-        run.endFrame,
-        run.startFrame +
-          Math.floor(
-            Math.max(0, run.ctx.currentTime - run.audibleEpoch) * 48000,
-          ),
-      ),
-    )
+  const position = (run: Run) => {
+    const frame =
+      run.startFrame +
+      Math.floor(Math.max(0, run.ctx.currentTime - run.audibleEpoch) * 48000)
+    return run.repeat ? frame % run.endFrame : Math.min(run.endFrame, frame)
+  }
 
   function release(run: Run): void {
     run.graph.dispose()
@@ -141,6 +138,32 @@ export function createStudioTransport(options: StudioTransportOptions) {
     ctx.addEventListener('statechange', onClockState)
   }
 
+  async function unlockContext(signal: AbortSignal): Promise<AudioContext> {
+    if (!(await options.lease.unlock()))
+      throw new Error('Audio could not start. Press Play to try again.')
+    signal.throwIfAborted()
+    const ctx = options.lease.ensure()
+    if (!ctx || ctx.state !== 'running')
+      throw new Error('The audio device is not ready. Press Play to try again.')
+    watch(ctx)
+    return ctx
+  }
+
+  function playableContent(
+    project: StudioProject,
+    assets: readonly StudioAsset[],
+    startFrame: number,
+  ) {
+    const content = compileStudioArrangement(project, assets)
+    if (!content.lanes.some((lane) => lane.audible && lane.segments.length > 0))
+      throw new Error('Add an audible take before playing.')
+    const from =
+      startFrame >= content.endFrame ? 0 : Math.max(0, Math.floor(startFrame))
+    if (repeat && content.endFrame < 12000)
+      throw new Error('A song needs at least a quarter second to repeat.')
+    return { content, from }
+  }
+
   async function play(
     project: StudioProject,
     assets: readonly StudioAsset[],
@@ -170,22 +193,8 @@ export function createStudioTransport(options: StudioTransportOptions) {
     let envelope: GainNode | undefined
     try {
       // Called immediately by an explicit UI action, before asset reads.
-      if (!(await options.lease.unlock()))
-        throw new Error('Audio could not start. Press Play to try again.')
-      attempt.signal.throwIfAborted()
-      const ctx = options.lease.ensure()
-      if (!ctx || ctx.state !== 'running')
-        throw new Error(
-          'The audio device is not ready. Press Play to try again.',
-        )
-      watch(ctx)
-      const content = compileStudioArrangement(project, assets)
-      if (
-        !content.lanes.some((lane) => lane.audible && lane.segments.length > 0)
-      )
-        throw new Error('Add an audible take before playing.')
-      const from =
-        startFrame >= content.endFrame ? 0 : Math.max(0, Math.floor(startFrame))
+      const ctx = await unlockContext(attempt.signal)
+      const { content, from } = playableContent(project, assets, startFrame)
       releaseMemory = reserveStudioMemory(
         studioGraphWorkingBytes(content, ctx.sampleRate),
       )
@@ -193,7 +202,7 @@ export function createStudioTransport(options: StudioTransportOptions) {
         project,
         assets,
         ctx.sampleRate,
-        from,
+        repeat ? 0 : from,
         attempt.signal,
         options.measureLatencies,
       )
@@ -212,6 +221,8 @@ export function createStudioTransport(options: StudioTransportOptions) {
         plan,
         buffers.buffers,
         epoch,
+        true,
+        repeat ? from : undefined,
       )
       envelope = ctx.createGain()
       envelope.gain.value = 0
@@ -230,7 +241,10 @@ export function createStudioTransport(options: StudioTransportOptions) {
         startFrame: from,
         endFrame: plan.endFrame,
         audibleEpoch,
-        endsAt: audibleEpoch + (plan.endFrame - from + plan.tailFrames) / 48000,
+        endsAt: repeat
+          ? Infinity
+          : audibleEpoch + (plan.endFrame - from + plan.tailFrames) / 48000,
+        repeat,
       }
       buffers = undefined
       releaseMemory = undefined
@@ -288,6 +302,9 @@ export function createStudioTransport(options: StudioTransportOptions) {
 
   return {
     play,
+    setRepeat(enabled: boolean) {
+      repeat = enabled
+    },
     pause: () => pause(),
     stop() {
       pause()

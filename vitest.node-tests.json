@@ -532,5 +532,6 @@
   "workers/jam-worker/src/jam-room.test.ts",
   "workers/jam-worker/src/room-activity.test.ts",
   "workers/jam-worker/src/room-ownership.test.ts",
-  "workers/jam-worker/src/signaling-intent.test.ts"
+  "workers/jam-worker/src/signaling-intent.test.ts",
+  "src/features/studio/timeline/gesture-draft.test.ts"
 ]

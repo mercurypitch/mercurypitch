@@ -4,10 +4,11 @@ import { STUDIO_SAMPLE_RATE } from '@/lib/studio/model/types'
 import { studioSourcePresentation } from './source-presentation'
 import { StudioClipToolbar } from './StudioClipToolbar'
 import styles from './StudioTimeline.module.css'
+import { StudioTimelineClip } from './StudioTimelineClip'
 import { StudioTrackControls } from './StudioTrackControls'
-import { StudioWaveform } from './StudioWaveform'
-import { clipEndFrame, formatStudioTime, frameToPixel, pixelToFrame, studioContentEnd, studioPixelsPerSecond, studioRulerTicks, } from './timeline-geometry'
+import { formatStudioTime, frameToPixel, pixelToFrame, studioContentEnd, studioPixelsPerSecond, studioRulerTicks, } from './timeline-geometry'
 import type { StudioTimelineProps } from './types'
+import { useStudioPointer } from './useStudioPointer'
 import { createStudioWaveformResource } from './waveform-resource'
 
 export type { StudioTimelineProps } from './types'
@@ -16,6 +17,7 @@ export function StudioTimeline(props: StudioTimelineProps) {
   let viewport!: HTMLDivElement
   const [width, setWidth] = createSignal(800)
   const [scroll, setScroll] = createSignal(0)
+  const [snap, setSnap] = createSignal(true)
   const headerWidth = () => (props.phone ? 96 : width() < 1050 ? 176 : 232)
   const contentWidth = () => Math.max(1, width() - headerWidth())
   const contentEnd = () => studioContentEnd(props.project.clips)
@@ -59,6 +61,13 @@ export function StudioTimeline(props: StudioTimelineProps) {
     onCleanup(value.dispose)
     return value
   })
+  const pointer = useStudioPointer(props, {
+    viewport: () => viewport,
+    scale,
+    width,
+    headerWidth,
+    snap,
+  })
   const observer =
     typeof ResizeObserver === 'undefined'
       ? null
@@ -82,13 +91,31 @@ export function StudioTimeline(props: StudioTimelineProps) {
         [styles.tablet]: !props.phone && width() < 1050,
       }}
       aria-label="Song arrangement"
+      data-studio-scale={scale()}
       style={{
         '--studio-header-width': `${headerWidth()}px`,
         '--studio-time-width': `${timeWidth()}px`,
       }}
     >
+      <Show when={!props.phone}>
+        <div class={styles.editOptions}>
+          <button
+            type="button"
+            aria-label="Snap clips"
+            aria-pressed={snap()}
+            onClick={() => setSnap((value) => !value)}
+          >
+            Snap {snap() ? 'on' : 'off'}
+          </button>
+          <span>Hold Alt to move freely.</span>
+          <span role="status" aria-live="polite">
+            {pointer.message()}
+          </span>
+        </div>
+      </Show>
       <div
         class={styles.viewport}
+        data-studio-timeline-viewport=""
         ref={(element) => {
           viewport = element
           setWidth(element.clientWidth || 800)
@@ -182,7 +209,11 @@ export function StudioTimeline(props: StudioTimelineProps) {
                 studioSourcePresentation(assets().get(clips()[0]?.assetId))
               const clipIds = createMemo(() => clips().map((clip) => clip.id))
               return (
-                <div class={styles.lane} data-track-id={id}>
+                <div
+                  class={styles.lane}
+                  data-track-id={id}
+                  data-studio-track={id}
+                >
                   <div
                     class={styles.trackHeader}
                     style={{ '--studio-source': source().color }}
@@ -190,6 +221,7 @@ export function StudioTimeline(props: StudioTimelineProps) {
                     <button
                       type="button"
                       class={styles.trackName}
+                      data-studio-track-header={id}
                       title={`${track().name} details`}
                       aria-label={`${track().name} details`}
                       onClick={() => props.onTrackDetails(id)}
@@ -208,6 +240,7 @@ export function StudioTimeline(props: StudioTimelineProps) {
                   </div>
                   <div
                     class={styles.laneAudio}
+                    data-studio-lane-audio=""
                     onClick={(event) => {
                       if (event.target === event.currentTarget)
                         props.onSelectClip(null)
@@ -228,81 +261,31 @@ export function StudioTimeline(props: StudioTimelineProps) {
                           props.project.clips.find(
                             (item) => item.id === clipId,
                           )!
-                        const asset = () => assets().get(clip().assetId)
-                        const left = () =>
-                          frameToPixel(clip().startFrame, scale())
-                        const right = () =>
-                          frameToPixel(clipEndFrame(clip()), scale())
-                        const visibleLeft = () => Math.max(left(), scroll())
-                        const visibleRight = () =>
-                          Math.min(right(), scroll() + contentWidth())
-                        const title = () =>
-                          asset()?.originalName ?? track().name
-                        const selected = () => props.selectedClipId === clipId
                         return (
-                          <Show when={visibleRight() > visibleLeft()}>
-                            <button
-                              type="button"
-                              class={styles.clip}
-                              classList={{ [styles.selectedClip]: selected() }}
-                              aria-label={`${track().name}, ${title()}, ${formatStudioTime(clip().startFrame)} to ${formatStudioTime(clipEndFrame(clip()))}`}
-                              aria-pressed={selected()}
-                              style={{
-                                left: `${left()}px`,
-                                width: `${Math.max(1, right() - left())}px`,
-                                '--studio-source':
-                                  studioSourcePresentation(asset()).color,
-                              }}
-                              onClick={() => props.onSelectClip(clipId)}
-                              onDblClick={() => props.onClipDetails(clipId)}
-                            >
-                              <span
-                                class={styles.clipTitle}
-                                style={{
-                                  'padding-left': `${Math.max(8, visibleLeft() - left() + 8)}px`,
-                                }}
-                              >
-                                {title()}
-                              </span>
-                              <span
-                                class={styles.visibleWave}
-                                style={{
-                                  left: `${visibleLeft() - left()}px`,
-                                  width: `${visibleRight() - visibleLeft()}px`,
-                                }}
-                              >
-                                <StudioWaveform
-                                  clip={clip()}
-                                  asset={asset()}
-                                  resource={resource()}
-                                  sourceInFrame={
-                                    clip().sourceInFrame +
-                                    pixelToFrame(
-                                      visibleLeft() - left(),
-                                      scale(),
-                                      clip().sourceOutFrame -
-                                        clip().sourceInFrame,
-                                    )
-                                  }
-                                  sourceOutFrame={
-                                    clip().sourceInFrame +
-                                    pixelToFrame(
-                                      visibleRight() - left(),
-                                      scale(),
-                                      clip().sourceOutFrame -
-                                        clip().sourceInFrame,
-                                    )
-                                  }
-                                />
-                              </span>
-                            </button>
-                          </Show>
+                          <StudioTimelineClip
+                            clip={clip()}
+                            asset={assets().get(clip().assetId)}
+                            keyboardPreview={props.keyboardPreviewClip}
+                            trackName={track().name}
+                            selected={props.selectedClipId === clipId}
+                            writable={props.writable}
+                            phone={props.phone}
+                            tablet={width() < 1050}
+                            scale={scale()}
+                            scroll={scroll()}
+                            contentWidth={contentWidth()}
+                            pointer={pointer}
+                            resource={resource()}
+                            onSelect={() => props.onSelectClip(clipId)}
+                            onDetails={() => props.onClipDetails(clipId)}
+                          />
                         )
                       }}
                     </For>
                     <Show
                       when={
                         !props.phone &&
+                        !pointer.active() &&
                         clips().find((clip) => clip.id === props.selectedClipId)
                       }
                     >
@@ -329,6 +312,30 @@ export function StudioTimeline(props: StudioTimelineProps) {
               )
             }}
           </For>
+          <Show when={!props.phone && props.project.tracks.length > 0}>
+            <div
+              class={styles.newLane}
+              data-studio-new-lane=""
+              aria-label="New lane"
+            >
+              <span>New lane</span>
+              <span>Drop a clip here</span>
+            </div>
+          </Show>
+          <Show
+            when={
+              pointer.draft()?.snapFrame !== null &&
+              pointer.draft()?.snapFrame !== undefined
+            }
+          >
+            <div
+              class={styles.snapLine}
+              aria-hidden="true"
+              style={{
+                left: `calc(var(--studio-header-width) + ${frameToPixel(pointer.draft()!.snapFrame!, scale())}px)`,
+              }}
+            />
+          </Show>
           <Show when={props.project.tracks.length === 0}>
             <div class={styles.empty}>Add a take to start your song.</div>
           </Show>

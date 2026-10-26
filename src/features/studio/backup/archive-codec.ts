@@ -3,6 +3,7 @@
 // ============================================================
 
 import { Unzip, UnzipInflate, Zip, ZipPassThrough } from 'fflate'
+import { reserveStudioMemory, retainStudioResource, } from '@/lib/studio/memory-budget'
 import { updateStudioCrc32 } from './crc32'
 
 export const STUDIO_BACKUP_LIMITS = {
@@ -149,6 +150,14 @@ export async function readStudioArchive(
   let pending = 0
   const status: { failure: Error | null } = { failure: null }
   const directory = await readDirectory(archive)
+  const expandedBytes = [...directory.values()].reduce(
+    (sum, entry) => sum + entry.size,
+    0,
+  )
+  // Inflater output parts and their immutable Blob copies coexist. The caller
+  // owns the selected archive; keep decoded output admitted through restore.
+  const release = reserveStudioMemory(expandedBytes * 2 + 20 * 1024 * 1024)
+  let transferred = false
   const unzip = new Unzip((file) => {
     const limit = entryLimit(file.name)
     const declared = directory.get(file.name)
@@ -184,7 +193,10 @@ export async function readStudioArchive(
       }
       size += data.byteLength
       total += data.byteLength
-      if (size > limit || total > STUDIO_BACKUP_LIMITS.totalBytes) {
+      if (
+        size > Math.min(limit, declared.size) ||
+        total > STUDIO_BACKUP_LIMITS.totalBytes
+      ) {
         status.failure = new StudioBackupError(
           'The expanded project backup exceeds its size limit.',
         )
@@ -233,13 +245,16 @@ export async function readStudioArchive(
     if (pending || entries.size !== directory.size) {
       throw new StudioBackupError('The project backup is incomplete.')
     }
-    return entries
+    transferred = true
+    return retainStudioResource(entries, release)
   } catch (error) {
     if (error instanceof StudioBackupError || signal?.aborted === true)
       throw error
     throw new StudioBackupError(
       'The project backup is not a readable ZIP archive.',
     )
+  } finally {
+    if (!transferred) release()
   }
 }
 
@@ -268,6 +283,9 @@ export async function writeStudioArchive(
       )
     }
   }
+  // Stored ZIP chunks and the final Blob coexist, plus bounded headers/input.
+  const release = reserveStudioMemory(sourceBytes * 2 + 1024 * 1024)
+  let transferred = false
   const parts: Uint8Array<ArrayBuffer>[] = []
   let outputBytes = 0
   const status: { complete: boolean; failure: Error | null } = {
@@ -316,8 +334,11 @@ export async function writeStudioArchive(
     if (status.failure !== null) throw status.failure
     if (!status.complete)
       throw new StudioBackupError('The project backup could not be completed.')
-    return new Blob(parts, { type: 'application/zip' })
+    const result = new Blob(parts, { type: 'application/zip' })
+    transferred = true
+    return retainStudioResource(result, release)
   } finally {
     zip.terminate()
+    if (!transferred) release()
   }
 }
