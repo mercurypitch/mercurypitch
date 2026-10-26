@@ -24,6 +24,19 @@ body {
   background-color: #12081f;
 }
 
+/* Form controls do not inherit the page's font family; the browser gives
+   them its own, so every button on this page (the rail's cards, the account
+   chip, Hide panel, the voice pill) was drawn in Arial beside text in the
+   page font. app.css carries this rule for the main app, and app.css never
+   loads here. Family only: the `font: inherit` shorthand would also pull the
+   page's size into controls whose size comes from the browser. */
+button,
+input,
+select,
+textarea {
+  font-family: inherit;
+}
+
 .kn-app {
   /* Stage glass: the mixer's surfaces resolve their --bg-* variables from
      here (app.css never loads on this page), so one alpha variable makes the

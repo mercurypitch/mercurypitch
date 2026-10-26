@@ -112,6 +112,16 @@
   font: inherit;
 }
 
+/* The room's fields take its family as well; without this the master volume
+   and the MIDI input picker were drawn in the browser's Arial. Family only,
+   unlike the buttons above: a field's size is set where the field is styled,
+   or left to the browser, and `font: inherit` would override both. */
+.shell input,
+.shell select,
+.shell textarea {
+  font-family: inherit;
+}
+
 .shell button:focus-visible,
 .shell a:focus-visible,
 .shell [tabindex]:focus-visible {
