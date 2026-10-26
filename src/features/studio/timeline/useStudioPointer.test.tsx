@@ -131,7 +131,9 @@ describe('Studio pointer ownership', () => {
       fixture.dispatch('pointerup')
       await Promise.resolve()
       expect(replacement).toHaveFocus()
-    } finally { fixture.dispose() }
+    } finally {
+      fixture.dispose()
+    }
   })
   it('commits one move on pointerup while intermediate motion remains a local draft', () => {
     const fixture = setup()

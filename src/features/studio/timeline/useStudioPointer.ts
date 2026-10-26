@@ -186,12 +186,24 @@ export function useStudioPointer(
       setMessage('This edit could not be applied. The clip is unchanged.')
       return
     }
-    if (command) queueMicrotask(() => {
-      // Cross-lane moves replace the button; extreme edits can hide a handle.
-      // Restore only lost focus, never steal it from another intentional control.
-      if (props.project.id !== current.project.id || props.selectedClipId !== current.clip.id || current.owner.isConnected || document.activeElement !== document.body) return
-      geometry.viewport().querySelector<HTMLElement>(`[data-studio-clip="${CSS.escape(current.clip.id)}"]`)?.focus({ preventScroll: true })
-    })
+    if (command)
+      queueMicrotask(() => {
+        // Cross-lane moves replace the button; extreme edits can hide a handle.
+        // Restore only lost focus, never steal it from another intentional control.
+        if (
+          props.project.id !== current.project.id ||
+          props.selectedClipId !== current.clip.id ||
+          current.owner.isConnected ||
+          document.activeElement !== document.body
+        )
+          return
+        geometry
+          .viewport()
+          .querySelector<HTMLElement>(
+            `[data-studio-clip="${CSS.escape(current.clip.id)}"]`,
+          )
+          ?.focus({ preventScroll: true })
+      })
     setMessage(
       command
         ? result.targetTrackId === STUDIO_NEW_LANE
