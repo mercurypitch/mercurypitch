@@ -1,10 +1,54 @@
 import { describe, expect, it } from 'vitest'
 import { compileStudioArrangement, studioClipGainAtSourceFrame, } from './arrangement-plan'
 import { applyStudioCommand } from './commands'
+import { createStudioTrack } from './defaults'
 import { createStudioHistory, executeStudioCommand, redoStudioCommand, undoStudioCommand, } from './history'
 import { studioFixture, TEST_NOW } from './model.test-fixtures'
 
 describe('non-destructive Studio commands', () => {
+  it('changes role with its base sound and balance while preserving user mix controls and source preparation', () => {
+    const { project, asset } = studioFixture()
+    const old = {
+      ...project.tracks[0],
+      gainDb: -7,
+      balanceGainDb: -9,
+      pan: 0.4,
+      mute: true,
+      solo: true,
+    }
+    const edited = { ...project, tracks: [old] }
+    const result = applyStudioCommand(
+      edited,
+      { type: 'set-track-role', trackId: old.id, role: 'voice' },
+      { assets: [asset], now: TEST_NOW },
+    )
+    const expected = createStudioTrack({
+      id: old.id,
+      name: old.name,
+      order: old.order,
+      role: 'voice',
+    })
+    expect(result.tracks[0]).toEqual({
+      ...old,
+      role: 'voice',
+      balanceGainDb: expected.balanceGainDb,
+      fx: expected.fx,
+    })
+    expect(result.clips).toEqual(project.clips)
+    expect(asset.preparation.gainDb).toBe(3)
+    expect(
+      applyStudioCommand(
+        result,
+        { type: 'set-track-role', trackId: old.id, role: 'voice' },
+        { assets: [asset] },
+      ),
+    ).toBe(result)
+    const level = expected.fx.baseSpec.effects.find(
+      (effect) => effect.id === 'level-match',
+    )
+    expect(level).toBeDefined()
+    expect(level?.params).toMatchObject({ gainDb: 0 })
+  })
   it.each([200, 1000])(
     'splits within a fade at timeline frame %i without changing any sample gain or restarting the source',
     (atFrame) => {

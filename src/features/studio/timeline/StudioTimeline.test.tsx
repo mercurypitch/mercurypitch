@@ -1,0 +1,189 @@
+// Studio timeline controls tests — visible state, native edits, silent seeking and phone scope.
+import { cleanup, fireEvent, render, screen, waitFor, } from '@solidjs/testing-library'
+import { createSignal, untrack } from 'solid-js'
+import { afterEach, describe, expect, it, vi } from 'vitest'
+import { reserveStudioMemory, STUDIO_WORKING_BYTES, } from '@/lib/studio/memory-budget'
+import type { StudioCommand } from '@/lib/studio/model/commands'
+import { applyStudioCommand } from '@/lib/studio/model/commands'
+import { createStudioProject, createStudioTrack, } from '@/lib/studio/model/defaults'
+import { studioFixture } from '@/lib/studio/model/model.test-fixtures'
+import { StudioTimeline } from './StudioTimeline'
+import { StudioTrackControls } from './StudioTrackControls'
+
+afterEach(cleanup)
+
+describe('Studio track controls', () => {
+  it('exposes mute and solo as named pressed controls and commits a native fader only on completion', () => {
+    const [track, setTrack] = createSignal(
+      createStudioTrack({ id: 'voice', name: 'Lead vocal', order: 0 }),
+    )
+    const commands = vi.fn((command: StudioCommand) => {
+      const song = {
+        ...createStudioProject({ id: 'song' }),
+        tracks: [untrack(track)],
+      }
+      setTrack(applyStudioCommand(song, command, { assets: [] }).tracks[0])
+      return true
+    })
+    render(() => (
+      <StudioTrackControls
+        track={track()}
+        writable={true}
+        onCommand={commands}
+      />
+    ))
+    fireEvent.click(screen.getByRole('button', { name: 'Mute Lead vocal' }))
+    expect(
+      screen.getByRole('button', { name: 'Unmute Lead vocal' }),
+    ).toHaveAttribute('aria-pressed', 'true')
+    fireEvent.click(screen.getByRole('button', { name: 'Solo Lead vocal' }))
+    expect(
+      screen.getByRole('button', { name: 'Solo Lead vocal' }),
+    ).toHaveAttribute('aria-pressed', 'true')
+    commands.mockClear()
+    const volume = screen.getByRole('slider', { name: 'Lead vocal volume' })
+    fireEvent.input(volume, { target: { value: '-12' } })
+    expect(screen.getByText('-12.0 dB')).toBeInTheDocument()
+    expect(commands).not.toHaveBeenCalled()
+    fireEvent.change(volume, { target: { value: '-12' } })
+    expect(commands).toHaveBeenCalledTimes(1)
+    expect(untrack(track).gainDb).toBe(-12)
+    fireEvent.input(volume, { target: { value: '-20' } })
+    fireEvent.keyDown(volume, { key: 'Escape' })
+    expect(volume).toHaveValue('-12')
+    expect(commands).toHaveBeenCalledTimes(1)
+  })
+
+  it('keeps all mix controls read only without losing their saved values', () => {
+    render(() => (
+      <StudioTrackControls
+        track={{
+          ...createStudioTrack({ id: 'piano', name: 'Piano', order: 0 }),
+          gainDb: -4.5,
+          pan: -0.2,
+        }}
+        writable={false}
+        onCommand={vi.fn()}
+      />
+    ))
+    expect(screen.getByRole('button', { name: 'Mute Piano' })).toBeDisabled()
+    expect(screen.getByRole('slider', { name: 'Piano volume' })).toBeDisabled()
+    expect(screen.getByRole('slider', { name: 'Piano pan' })).toHaveAttribute(
+      'aria-valuetext',
+      '20 percent left',
+    )
+    expect(screen.getByText('-4.5 dB')).toBeInTheDocument()
+  })
+})
+
+describe('Studio timeline', () => {
+  const project = {
+    ...createStudioProject({ id: 'song' }),
+    tracks: [createStudioTrack({ id: 'voice', name: 'Lead vocal', order: 0 })],
+    clips: [
+      {
+        id: 'clip',
+        trackId: 'voice',
+        assetId: 'missing',
+        startFrame: 48000,
+        sourceInFrame: 0,
+        sourceOutFrame: 96000,
+        gainDb: 0,
+        fades: { curve: 'linear-amplitude' as const },
+      },
+    ],
+  }
+  const base = {
+    project,
+    assets: [],
+    selectedClipId: null,
+    playheadFrame: 0,
+    pixelsPerSecond: 20,
+    writable: true,
+    phone: false,
+    onSelectClip: vi.fn(),
+    onSeek: vi.fn(),
+    onCommand: vi.fn(() => true),
+    onClipDetails: vi.fn(),
+    onTrackDetails: vi.fn(),
+    readCanonicalAsset: vi.fn(() => Promise.reject(new Error('Missing'))),
+  }
+
+  it('keeps a missing-audio clip visible/selectable and seeks without starting playback', async () => {
+    const seek = vi.fn()
+    const selected = vi.fn()
+    render(() => (
+      <StudioTimeline {...base} onSeek={seek} onSelectClip={selected} />
+    ))
+    await waitFor(() =>
+      expect(screen.getByText('Audio missing')).toBeInTheDocument(),
+    )
+    fireEvent.click(
+      screen.getByRole('button', { name: /Lead vocal, Lead vocal, 0:01.000/ }),
+    )
+    expect(selected).toHaveBeenCalledWith('clip')
+    fireEvent.keyDown(screen.getByRole('slider', { name: 'Song playhead' }), {
+      key: 'ArrowRight',
+    })
+    expect(seek).toHaveBeenCalledWith(48000)
+    fireEvent.change(
+      screen.getByRole('spinbutton', { name: 'Playhead in seconds' }),
+      { target: { value: '1.234' } },
+    )
+    expect(seek).toHaveBeenLastCalledWith(59232)
+    expect(base.readCanonicalAsset).not.toHaveBeenCalled()
+  })
+
+  it('shows only an overview on phone and gives the editing scope when a clip is selected', () => {
+    render(() => (
+      <StudioTimeline {...base} phone={true} selectedClipId="clip" />
+    ))
+    expect(
+      screen.queryByRole('button', { name: 'Mute Lead vocal' }),
+    ).not.toBeInTheDocument()
+    expect(screen.queryByRole('toolbar')).not.toBeInTheDocument()
+    expect(
+      screen.getByText('Edit clips on a tablet or computer.'),
+    ).toBeInTheDocument()
+  })
+
+  it('does not label valid project audio missing when waveform memory is busy', async () => {
+    const { project: song, asset } = studioFixture()
+    const release = reserveStudioMemory(STUDIO_WORKING_BYTES)
+    const read = vi.fn(() => Promise.reject(new Error('Must not read')))
+    try {
+      render(() => (
+        <StudioTimeline
+          {...base}
+          project={song}
+          assets={[asset]}
+          readCanonicalAsset={read}
+        />
+      ))
+      await waitFor(() =>
+        expect(screen.getByText('Waveform unavailable')).toBeInTheDocument(),
+      )
+      expect(screen.queryByText('Audio missing')).not.toBeInTheDocument()
+      expect(read).not.toHaveBeenCalled()
+    } finally {
+      cleanup()
+      release()
+    }
+  })
+
+  it('only enables splitting when the playhead lies strictly inside the selected clip', () => {
+    const [playhead, setPlayhead] = createSignal(48000)
+    render(() => (
+      <StudioTimeline
+        {...base}
+        selectedClipId="clip"
+        playheadFrame={playhead()}
+      />
+    ))
+    expect(screen.getByRole('button', { name: 'Split' })).toBeDisabled()
+    setPlayhead(96000)
+    expect(screen.getByRole('button', { name: 'Split' })).toBeEnabled()
+    setPlayhead(144000)
+    expect(screen.getByRole('button', { name: 'Split' })).toBeDisabled()
+  })
+})

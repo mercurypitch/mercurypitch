@@ -1,5 +1,6 @@
 // @vitest-environment node
 import { describe, expect, it, vi } from 'vitest'
+import { reserveStudioMemory, STUDIO_WORKING_BYTES, studioReservedMemoryBytes, } from '@/lib/studio/memory-budget'
 import { sampledAudio, toneAudio } from './audio.fixture'
 import { decodeCanonicalPcm, sha256Bytes } from './canonical-pcm'
 import type { PcmAudio } from './import-limits'
@@ -126,7 +127,10 @@ describe('Studio asset preparation', () => {
       name: 'AbortError',
     })
     await ready
+    const reserved = studioReservedMemoryBytes()
+    expect(reserved).toBeGreaterThan(0)
     abort.abort()
+    expect(studioReservedMemoryBytes()).toBe(reserved)
     const read = vi.fn(async () => new Blob(['b']))
     await expect(prepareStudioAssetFrom(read, info)).rejects.toThrow(
       'still finishing',
@@ -134,12 +138,33 @@ describe('Studio asset preparation', () => {
     expect(read).not.toHaveBeenCalled()
     finish(sampledAudio([[0]]))
     await cancelled
+    expect(studioReservedMemoryBytes()).toBe(0)
     const successful = await prepareStudioAsset(
       new Blob(['b']),
       info,
       decoder(sampledAudio([[0]])),
     )
     expect(successful.asset.normalizedFrameCount).toBe(1)
+  })
+
+  it('admits shared memory before reading a kept source and releases on failed read', async () => {
+    const release = reserveStudioMemory(STUDIO_WORKING_BYTES - 1024)
+    const read = vi.fn(async () => new Blob(['a']))
+    try {
+      await expect(
+        prepareStudioAssetFrom(read, info, { encodedByteLength: 1 }),
+      ).rejects.toThrow('memory')
+      expect(read).not.toHaveBeenCalled()
+    } finally {
+      release()
+    }
+    const failedRead = vi.fn(async () => {
+      throw new Error('Missing')
+    })
+    await expect(
+      prepareStudioAssetFrom(failedRead, info, { encodedByteLength: 1 }),
+    ).rejects.toThrow('Missing')
+    expect(studioReservedMemoryBytes()).toBe(0)
   })
 
   it('does no read when cancelled and rejects tampered original bytes on restore', async () => {

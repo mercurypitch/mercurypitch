@@ -1,6 +1,7 @@
 // Studio save queue — serialize immutable revisions and retain failed imported assets.
 import type { StudioEditorToken, StudioWriteToken, } from '@/db/services/studio-service'
 import type { StudioAssetData, StudioProject } from '@/lib/studio/model/types'
+import { createRetainedStudioAudio } from './retained-audio'
 
 export type StudioSaveState = 'saved' | 'unsaved' | 'saving' | 'error'
 
@@ -21,7 +22,7 @@ export function createStudioSaveQueue(options: StudioSaveQueueOptions) {
   let closed = false
   let failed = false
   let running: Promise<boolean> | null = null
-  const prepared = new Map<string, StudioAssetData>()
+  const prepared = createRetainedStudioAudio()
 
   function acknowledgeSave(
     snapshot: StudioProject,
@@ -33,9 +34,7 @@ export function createStudioSaveQueue(options: StudioSaveQueueOptions) {
         'The saved project revision did not match the requested revision.',
       )
     durableRevision = saved.revision
-    for (const input of inputs)
-      if (prepared.get(input.asset.id) === input)
-        prepared.delete(input.asset.id)
+    prepared.release(inputs)
   }
 
   async function saveLoop(): Promise<boolean> {
@@ -43,7 +42,7 @@ export function createStudioSaveQueue(options: StudioSaveQueueOptions) {
     try {
       while (!closed && !failed && latest.revision > durableRevision) {
         const snapshot = latest
-        const inputs = [...prepared.values()]
+        const inputs = prepared.values()
         const saved = await options.save(
           snapshot,
           { ...options.token, expectedRevision: durableRevision },
@@ -69,6 +68,7 @@ export function createStudioSaveQueue(options: StudioSaveQueueOptions) {
     if (latest.revision === durableRevision) return Promise.resolve(true)
     running = saveLoop().finally(() => {
       running = null
+      if (closed) prepared.clear()
       if (!closed && !failed && latest.revision > durableRevision) void flush()
     })
     return running
@@ -84,8 +84,8 @@ export function createStudioSaveQueue(options: StudioSaveQueueOptions) {
         throw new Error(
           'Studio edits must advance the active project revision.',
         )
+      prepared.retain(assets)
       latest = project
-      for (const asset of assets) prepared.set(asset.asset.id, asset)
       if (!failed) options.changed(running ? 'saving' : 'unsaved', null)
     },
     flush,
@@ -99,10 +99,11 @@ export function createStudioSaveQueue(options: StudioSaveQueueOptions) {
         options.changed('error', error)
       }
     },
-    preparedAssets: () => [...prepared.values()],
+    preparedAssets: prepared.values,
     durableRevision: () => durableRevision,
     dispose(): void {
       closed = true
+      if (!running) prepared.clear()
     },
   }
 }

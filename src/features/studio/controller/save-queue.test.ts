@@ -1,7 +1,9 @@
 // @vitest-environment node
 import { describe, expect, it, vi } from 'vitest'
+import { studioReservedMemoryBytes } from '@/lib/studio/memory-budget'
 import { createStudioProject } from '@/lib/studio/model/defaults'
-import type { StudioAssetData, StudioProject } from '@/lib/studio/model/types'
+import type { StudioProject } from '@/lib/studio/model/types'
+import { preparedFixture } from './controller.fixture'
 import { createStudioSaveQueue } from './save-queue'
 
 const initial = createStudioProject({
@@ -52,7 +54,11 @@ describe('Studio revision save queue', () => {
   })
 
   it('retains the latest edits and pending assets after failure, then retries once', async () => {
-    const asset = { asset: { id: 'new-audio' } } as StudioAssetData
+    const asset = preparedFixture({
+      id: 'new-audio',
+      projectId: initial.id,
+      provenance: { kind: 'file', importedAt: initial.createdAt },
+    })
     const save = vi.fn(async (project: StudioProject) => project)
     save.mockRejectedValueOnce(new Error('Quota'))
     const changed = vi.fn()
@@ -95,5 +101,39 @@ describe('Studio revision save queue', () => {
     finish(revision(1))
     expect(await pending).toBe(false)
     expect(changed).not.toHaveBeenCalledWith('saved', null)
+  })
+
+  it('retains admitted bytes through failure and an in-flight save on disposal', async () => {
+    const asset = preparedFixture({
+      id: 'new-audio',
+      projectId: initial.id,
+      provenance: { kind: 'file', importedAt: initial.createdAt },
+    })
+    const baseline = studioReservedMemoryBytes()
+    let finish!: (project: StudioProject) => void
+    const save = vi.fn(async (project: StudioProject) => project)
+    save.mockRejectedValueOnce(new Error('Full')).mockImplementationOnce(
+      () =>
+        new Promise((resolve) => {
+          finish = resolve
+        }),
+    )
+    const queue = createStudioSaveQueue({
+      project: initial,
+      token,
+      save,
+      changed: vi.fn(),
+    })
+    queue.stage(revision(1), [asset])
+    expect(studioReservedMemoryBytes()).toBe(baseline + 43)
+    await queue.flush()
+    expect(studioReservedMemoryBytes()).toBe(baseline + 43)
+    const retry = queue.retry()
+    queue.dispose()
+    expect(studioReservedMemoryBytes()).toBe(baseline + 43)
+    finish(revision(1))
+    await retry
+    expect(studioReservedMemoryBytes()).toBe(baseline)
+    expect(queue.preparedAssets()).toEqual([])
   })
 })

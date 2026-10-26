@@ -10,6 +10,9 @@ export interface StudioPlannedSegment {
   readonly clipIds: readonly string[]
   readonly assetId: string
   readonly startFrame: number
+  /** Full coalesced group edges survive seek/range clipping. */
+  readonly groupStartFrame: number
+  readonly groupEndFrame: number
   readonly sourceInFrame: number
   readonly sourceOutFrame: number
   readonly gainDb: number
@@ -78,6 +81,7 @@ function coalesce(
       result[result.length - 1] = {
         ...previous,
         sourceOutFrame: segment.sourceOutFrame,
+        groupEndFrame: segment.groupEndFrame,
         clipIds: [...previous.clipIds, ...segment.clipIds],
       }
     } else result.push(segment)
@@ -96,12 +100,6 @@ function laneSegments(
   for (const clip of project.clips
     .filter((item) => item.trackId === trackId)
     .sort((a, b) => a.startFrame - b.startFrame)) {
-    const from = Math.max(start, clip.startFrame)
-    const to = Math.min(
-      end,
-      clip.startFrame + clip.sourceOutFrame - clip.sourceInFrame,
-    )
-    if (to <= from) continue
     const asset = assets.get(clip.assetId)
     requireValue(
       asset !== undefined,
@@ -111,15 +109,29 @@ function laneSegments(
     segments.push({
       clipIds: [clip.id],
       assetId: clip.assetId,
-      startFrame: from,
-      sourceInFrame: clip.sourceInFrame + from - clip.startFrame,
-      sourceOutFrame: clip.sourceInFrame + to - clip.startFrame,
+      startFrame: clip.startFrame,
+      groupStartFrame: clip.startFrame,
+      groupEndFrame: clip.startFrame + clip.sourceOutFrame - clip.sourceInFrame,
+      sourceInFrame: clip.sourceInFrame,
+      sourceOutFrame: clip.sourceOutFrame,
       gainDb: clip.gainDb,
       preparationGainDb: asset.preparation.gainDb,
       fades: clip.fades,
     })
   }
-  return coalesce(segments)
+  return coalesce(segments).flatMap((segment) => {
+    const from = Math.max(start, segment.startFrame)
+    const to = Math.min(end, segment.groupEndFrame)
+    if (to <= from) return []
+    return [
+      {
+        ...segment,
+        startFrame: from,
+        sourceInFrame: segment.sourceInFrame + from - segment.startFrame,
+        sourceOutFrame: segment.sourceInFrame + to - segment.startFrame,
+      },
+    ]
+  })
 }
 
 /** A plan is data only: it allocates no audio graph, starts no playback and owns no context. */

@@ -6,6 +6,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import 'fake-indexeddb/auto'
 import { DexieAdapter, MERCURY_PITCH_DB_NAME, } from '@/db/adapters/dexie-adapter'
 import { CLOUD_ENTITIES } from '@/db/adapters/hybrid-adapter'
+import { reserveStudioMemory, STUDIO_WORKING_BYTES, studioReservedMemoryBytes, } from '@/lib/studio/memory-budget'
 import { fitsStudioProjectStorageBudget, STUDIO_PROJECT_STORAGE_LIMITS, } from '@/lib/studio/model/storage-limits'
 import type { StudioProject } from '@/lib/studio/model/types'
 import { studioArrangementFixture, studioAssetFixture } from './studio.fixture'
@@ -31,6 +32,7 @@ describe('local Studio persistence', () => {
     })
   })
   afterEach(async () => {
+    expect(studioReservedMemoryBytes()).toBe(0)
     vi.restoreAllMocks()
     await db.destroy()
     vi.unstubAllGlobals()
@@ -107,6 +109,60 @@ describe('local Studio persistence', () => {
     expect(await service.listAssets(empty.id)).toEqual([])
     expect(await db.readAllStrict(STUDIO_STORES.blobs)).toEqual([])
     expect((await service.listProjects())[0].clipCount).toBe(0)
+    expect(studioReservedMemoryBytes()).toBe(0)
+  })
+
+  it('admits serialization before reading bytes and releases after a successful retry', async () => {
+    const empty = await service.createProject()
+    const lease = await service.acquireLease(empty.id, 'tab-one')
+    const data = await studioAssetFixture(empty.id)
+    const originalRead = vi.spyOn(data.original, 'arrayBuffer')
+    const canonicalRead = vi.spyOn(data.canonicalPcm, 'arrayBuffer')
+    const snapshot = studioArrangementFixture(empty)
+    const releaseOtherAudio = reserveStudioMemory(STUDIO_WORKING_BYTES)
+    try {
+      await expect(
+        service.saveProject(snapshot, { ...lease, expectedRevision: 0 }, [
+          data,
+        ]),
+      ).rejects.toMatchObject({ code: 'memory-limit' })
+      expect(originalRead).not.toHaveBeenCalled()
+      expect(canonicalRead).not.toHaveBeenCalled()
+      expect(await service.loadProject(empty.id)).toEqual(empty)
+      expect(await service.listAssets(empty.id)).toEqual([])
+      expect(studioReservedMemoryBytes()).toBe(STUDIO_WORKING_BYTES)
+    } finally {
+      releaseOtherAudio()
+    }
+    await service.saveProject(snapshot, { ...lease, expectedRevision: 0 }, [
+      data,
+    ])
+    expect(await service.loadProject(empty.id)).toEqual(snapshot)
+    expect(studioReservedMemoryBytes()).toBe(0)
+  })
+
+  it('loads only selected canonical bytes and rejects another project ownership', async () => {
+    const { project, data } = await savedArrangement()
+    const reads = vi.spyOn(db, 'readByIdStrict')
+    const indexedReads = vi.spyOn(db, 'readByIndexStrict')
+    const canonical = await service.readCanonicalAsset(
+      project.id,
+      data.asset.id,
+    )
+    expect(await canonical.arrayBuffer()).toEqual(
+      await data.canonicalPcm.arrayBuffer(),
+    )
+    expect(
+      reads.mock.calls.filter(([store]) => store === STUDIO_STORES.blobs),
+    ).toEqual([[STUDIO_STORES.blobs, data.asset.canonicalPcmId]])
+    expect(indexedReads).not.toHaveBeenCalled()
+    await expect(
+      service.readCanonicalAsset('another-project', data.asset.id),
+    ).rejects.toMatchObject({ code: 'not-found' })
+    await db.deleteByIdStrict(STUDIO_STORES.blobs, data.asset.canonicalPcmId)
+    await expect(
+      service.readCanonicalAsset(project.id, data.asset.id),
+    ).rejects.toMatchObject({ code: 'invalid-asset' })
   })
 
   it('atomically rejects one of two saves of the same base revision and permits skipped command revisions', async () => {

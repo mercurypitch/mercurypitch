@@ -1,0 +1,465 @@
+/* Studio arrangement shares one coordinate surface and the approved app appearance tokens. */
+.timeline {
+  --studio-row-height: 104px;
+  --studio-clip-height: 88px;
+  min-width: 0;
+  color: var(--studio-graphite);
+  background: var(--studio-paper);
+}
+.viewport {
+  position: relative;
+  overflow: auto;
+  max-height: min(70dvh, 900px);
+  min-height: 360px;
+  scrollbar-gutter: stable;
+  overscroll-behavior: contain;
+}
+.surface {
+  position: relative;
+  width: calc(var(--studio-header-width) + var(--studio-time-width));
+  min-height: 360px;
+}
+.rulerRow,
+.lane {
+  display: grid;
+  grid-template-columns: var(--studio-header-width) var(--studio-time-width);
+}
+.rulerRow {
+  position: sticky;
+  top: 0;
+  height: 48px;
+  z-index: 5;
+  background: var(--studio-sheet);
+  border-bottom: 1px solid var(--studio-divider);
+}
+.corner {
+  position: sticky;
+  left: 0;
+  z-index: 6;
+  background: var(--studio-sheet);
+  border-right: 1px solid var(--studio-divider);
+  padding: 8px 12px;
+}
+.corner label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--studio-pencil);
+  font-size: 11px;
+}
+.corner input {
+  width: 85px;
+  min-width: 0;
+  padding: 5px;
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+  background: var(--studio-paper);
+  color: var(--studio-graphite);
+  border: 1px solid var(--studio-divider);
+  border-radius: 4px;
+}
+.ruler {
+  position: relative;
+  cursor: pointer;
+  outline-offset: -3px;
+}
+.tick {
+  position: absolute;
+  top: 5px;
+  height: 42px;
+  padding-left: 5px;
+  border-left: 1px solid var(--studio-grid);
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+.tick::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: -1px;
+  height: 10px;
+  border-left: 1px solid var(--studio-pencil);
+}
+.lane {
+  height: var(--studio-row-height);
+  border-bottom: 1px solid var(--studio-divider);
+}
+.trackHeader {
+  position: sticky;
+  left: 0;
+  z-index: 4;
+  background: var(--studio-sheet);
+  border-left: 4px solid var(--studio-source);
+  border-right: 1px solid var(--studio-divider);
+  padding: 10px 8px 8px 10px;
+  min-width: 0;
+}
+.timeline button.trackName {
+  display: block;
+  max-width: 100%;
+  border: 0;
+  background: transparent;
+  color: var(--studio-graphite);
+  padding: 0;
+  min-height: 20px;
+  text-align: left;
+  font-size: 13px;
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  border-radius: 2px;
+}
+.sourceLabel {
+  margin: 2px 0 8px;
+  color: var(--studio-pencil);
+  font-size: 11px;
+  line-height: 14px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.controls {
+  display: grid;
+  grid-template-columns: 28px 28px minmax(42px, 1fr) 48px;
+  gap: 4px;
+  align-items: center;
+  min-width: 0;
+}
+.controls button.mixButton {
+  width: 28px;
+  height: 28px;
+  min-height: 28px;
+  padding: 4px;
+  border: 1px solid var(--studio-divider);
+  border-radius: 5px;
+  background: var(--studio-sheet);
+  color: var(--studio-graphite);
+  font: inherit;
+  font-size: 12px;
+  cursor: pointer;
+}
+.mixButton svg {
+  width: 16px;
+  height: 16px;
+}
+.controls button.mixButton[aria-pressed='true'] {
+  color: var(--studio-cobalt);
+  border: 2px solid var(--studio-cobalt);
+  background: color-mix(in srgb, var(--studio-cobalt) 15%, var(--studio-sheet));
+}
+.controls input {
+  accent-color: var(--studio-cobalt);
+  margin: 0;
+  width: 100%;
+  min-width: 0;
+  height: 22px;
+  cursor: pointer;
+}
+.volume {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+}
+.volume output {
+  font-size: 10px;
+  line-height: 12px;
+  font-variant-numeric: tabular-nums;
+  color: var(--studio-pencil);
+  text-align: center;
+  white-space: nowrap;
+}
+.pan {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+.pan span {
+  color: var(--studio-pencil);
+  font-size: 10px;
+  line-height: 12px;
+  text-align: center;
+  white-space: nowrap;
+}
+.pan input {
+  height: 20px;
+}
+.controls :disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+.laneAudio {
+  position: relative;
+  min-width: 0;
+}
+.gridLine {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  border-left: 1px solid var(--studio-grid);
+  pointer-events: none;
+}
+.timeline button.clip {
+  position: absolute;
+  top: 8px;
+  height: var(--studio-clip-height);
+  min-height: 0;
+  /* Native block buttons vertically center their anonymous content box. */
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  justify-content: flex-start;
+  padding: 0;
+  overflow: hidden;
+  border: 1px solid var(--studio-divider);
+  border-radius: 4px;
+  color: var(--studio-graphite);
+  background: var(--studio-sheet);
+  cursor: pointer;
+  text-align: left;
+}
+.timeline button.selectedClip {
+  border: 2px solid var(--studio-cobalt);
+  outline: 1px solid var(--studio-cobalt);
+  outline-offset: 0;
+  z-index: 2;
+}
+.clipTitle {
+  display: block;
+  height: 23px;
+  padding: 4px 8px;
+  background: color-mix(in srgb, var(--studio-source) 16%, transparent);
+  font-size: 11px;
+  font-weight: 500;
+  line-height: 15px;
+  white-space: nowrap;
+}
+.visibleWave {
+  position: absolute;
+  top: 23px;
+  bottom: 0;
+  display: block;
+}
+.waveform {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  min-height: 1px;
+  color: var(--studio-graphite);
+}
+.waveform canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+.waveStatus {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  font-size: 11px;
+  color: var(--studio-pencil);
+  white-space: nowrap;
+}
+.missing {
+  background: repeating-linear-gradient(
+    135deg,
+    transparent 0,
+    transparent 7px,
+    var(--studio-grid) 7px,
+    var(--studio-grid) 8px
+  );
+}
+.playhead {
+  position: absolute;
+  top: 48px;
+  bottom: 0;
+  width: 1px;
+  background: var(--studio-graphite);
+  pointer-events: none;
+  z-index: 3;
+}
+.playhead::before {
+  content: '';
+  position: absolute;
+  left: -5px;
+  top: 0;
+  width: 0;
+  height: 0;
+  border-left: 5px solid transparent;
+  border-right: 5px solid transparent;
+  border-top: 8px solid var(--studio-graphite);
+}
+.empty {
+  position: sticky;
+  left: 0;
+  width: min(100%, 600px);
+  padding: 80px 24px;
+  color: var(--studio-pencil);
+  font-size: 13px;
+}
+.toolbar {
+  position: absolute;
+  top: -36px;
+  z-index: 7;
+  display: flex;
+  padding: 3px;
+  gap: 2px;
+  border: 1px solid var(--studio-divider);
+  border-radius: 6px;
+  background: var(--studio-sheet);
+  box-shadow: 0 3px 12px #0002;
+}
+.timeline .toolbar button {
+  border: 0;
+  border-radius: 3px;
+  background: transparent;
+  color: var(--studio-graphite);
+  font-size: 11px;
+  padding: 7px 9px;
+  min-height: 30px;
+  white-space: nowrap;
+}
+.timeline button:focus-visible,
+.timeline input:focus-visible,
+.ruler:focus-visible,
+.controls button:focus-visible,
+.controls input:focus-visible {
+  outline: 2px solid var(--studio-cobalt);
+  outline-offset: 2px;
+}
+.srOnly {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+.tablet {
+  --studio-row-height: 132px;
+  --studio-clip-height: 112px;
+}
+.tablet .trackHeader {
+  padding: 10px 8px;
+}
+.tablet .trackName,
+.tablet .sourceLabel {
+  max-width: calc(100% - 60px);
+}
+.tablet .controls {
+  grid-template-columns: 44px 44px minmax(40px, 1fr);
+}
+.tablet .controls button.mixButton {
+  width: 44px;
+  height: 44px;
+  min-height: 44px;
+}
+.tablet .volume input {
+  height: 44px;
+}
+.panDisclosure {
+  position: absolute;
+  right: 8px;
+  top: 4px;
+  z-index: 6;
+}
+.panDisclosure summary {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 52px;
+  min-height: 44px;
+  padding: 4px;
+  cursor: pointer;
+  color: var(--studio-graphite);
+  background: var(--studio-sheet);
+  border: 1px solid var(--studio-divider);
+  border-radius: 5px;
+  font-size: 11px;
+  list-style: none;
+}
+.panDisclosure summary::-webkit-details-marker {
+  display: none;
+}
+.panDisclosure .pan {
+  position: absolute;
+  top: calc(100% + 4px);
+  right: 0;
+  width: 156px;
+  padding: 8px;
+  border: 1px solid var(--studio-divider);
+  border-radius: 6px;
+  background: var(--studio-sheet);
+}
+.panDisclosure .pan input {
+  height: 44px;
+}
+.panDisclosure summary:focus-visible {
+  outline: 2px solid var(--studio-cobalt);
+  outline-offset: 2px;
+}
+.tablet .toolbar button {
+  min-height: 44px;
+}
+.phone {
+  --studio-row-height: 72px;
+  --studio-clip-height: 58px;
+}
+.phone .viewport {
+  min-height: 240px;
+  max-height: 50dvh;
+}
+.phone .surface {
+  min-height: 240px;
+}
+.phone .trackHeader {
+  display: flex;
+  align-items: center;
+  padding: 6px;
+}
+.phone button.trackName {
+  font-size: 11px;
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+.phone .corner {
+  padding: 10px 5px;
+}
+.phone .corner label > span {
+  display: none;
+}
+.phone .corner input {
+  width: 80px;
+}
+.phone .clipTitle {
+  height: 16px;
+  font-size: 9px;
+  line-height: 12px;
+  padding-top: 2px;
+}
+.phone .visibleWave {
+  top: 16px;
+}
+.phoneNote {
+  margin: 0;
+  padding: 10px 12px;
+  font-size: 12px;
+  color: var(--studio-pencil);
+  background: var(--studio-sheet);
+}
+.compactControls {
+  grid-template-columns: 44px 44px minmax(70px, 1fr) 64px;
+}
+.compactControls button.mixButton {
+  width: 44px;
+  height: 44px;
+  min-height: 44px;
+}
+.compactControls input {
+  height: 44px;
+}
