@@ -5,9 +5,10 @@
 // Review focus 5: `/karaoke?tour=first` with the consent bar unanswered. The
 // bar's buttons stay on top and clickable, and the tour starts under it. The
 // e2e build mounts no consent banner (it configures no tag), so a stand-in
-// bar with the real one's dialog name, two buttons and z-index plays its part
-// (R22): it proves the order of the layers, and the unit tests pin that an
-// ad's tour waits for the real bar (start-karaoke-tour.test.ts).
+// plays its part (R22): the real one's markup, words, CSS and foot space, so
+// it is as tall as the real one on a phone, with its dialog name and z-index.
+// It proves the order of the layers, and the unit tests pin that an ad's tour
+// waits for the real bar (start-karaoke-tour.test.ts).
 //
 // Then the tour itself, on a phone and a wide screen: three stops, 1 of 3 to
 // 3 of 3, and between the last two a quiet wait through the song that draws
@@ -60,41 +61,72 @@ async function boxOf(locator: Locator): Promise<Box> {
 }
 
 /**
- * The stand-in consent bar: the real banner's dialog name, its two buttons,
- * its z-index, and the foot space it publishes on <html> while open.
+ * The stand-in consent bar: the real banner's markup and words, its module
+ * CSS with the phone rule (max-width: 460px puts the buttons on a row of
+ * their own, full width), its dialog name and z-index, and the foot space it
+ * publishes on <html> while open: its height plus its gap to the foot, as
+ * lib/foot-space.ts measures it. So it stands as tall as the real one, about
+ * 158 px at 390x844 (src/components/ConsentBanner.tsx and .module.css).
  */
+const CONSENT_CSS = `
+.consent-stand-in{position:fixed;left:1rem;right:1rem;bottom:max(1rem,env(safe-area-inset-bottom),calc(var(--tabbar-space,0px) + 0.5rem));margin-inline:auto;max-width:640px;z-index:2147483000;display:flex;align-items:center;gap:.75rem 1.25rem;flex-wrap:wrap;justify-content:space-between;padding:.8rem 1rem;border-radius:.9rem;background:rgba(18,20,28,.92);color:#eef0f6;border:1px solid rgba(255,255,255,.14);font-family:inherit}
+.consent-stand-in .copy{display:flex;align-items:flex-start;gap:.6rem;flex:1 1 260px;min-width:0}
+.consent-stand-in .icon{flex-shrink:0;margin-top:.1rem}
+.consent-stand-in .text{margin:0;font-size:.8rem;line-height:1.45;color:#c7cbe0}
+.consent-stand-in .text strong{color:#eef0f6;font-weight:600}
+.consent-stand-in .link{color:#8fa3ff;text-decoration:none;white-space:nowrap}
+.consent-stand-in .actions{display:flex;gap:.5rem;flex-shrink:0;margin-left:auto}
+.consent-stand-in .choice{min-height:44px;min-width:96px;padding:0 1.1rem;border-radius:.5rem;border:1px solid rgba(255,255,255,.28);background:rgba(255,255,255,.08);color:#eef0f6;font-size:.85rem;font-weight:600;font-family:inherit}
+@media (max-width:460px){.consent-stand-in .actions{width:100%}.consent-stand-in .choice{flex:1}}
+`
+
+const CONSENT_MARKUP =
+  '<div class="copy"><svg class="icon" viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"></svg>' +
+  '<p class="text">We\'d like to use Google cookies to measure our ads and see how the site is used. ' +
+  '<strong>Pitch detection runs on your device either way.</strong> ' +
+  '<a class="link" href="#">Privacy&nbsp;Notice</a></p></div>' +
+  '<div class="actions"><button type="button" class="choice">Decline</button>' +
+  '<button type="button" class="choice">Accept</button></div>'
+
 async function standInConsentBar(page: Page): Promise<void> {
-  await page.addInitScript(() => {
-    const mount = (): void => {
-      const bar = document.createElement('div')
-      bar.setAttribute('role', 'dialog')
-      bar.setAttribute('aria-label', 'Cookie consent')
-      bar.style.cssText =
-        'position:fixed;left:8px;right:8px;bottom:8px;z-index:2147483000;' +
-        'display:flex;gap:8px;justify-content:flex-end;padding:12px;' +
-        'background:#1b1426;color:#fff;border-radius:12px'
-      for (const name of ['Decline', 'Accept']) {
-        const button = document.createElement('button')
-        button.type = 'button'
-        button.textContent = name
-        button.style.cssText = 'min-height:44px;min-width:88px'
-        button.addEventListener('click', () => {
-          bar.remove()
-          document.documentElement.style.removeProperty(
+  await page.addInitScript(
+    ({ css, markup }) => {
+      const mount = (): void => {
+        const style = document.createElement('style')
+        style.textContent = css
+        document.head.append(style)
+        const bar = document.createElement('section')
+        bar.className = 'consent-stand-in'
+        bar.setAttribute('role', 'dialog')
+        bar.setAttribute('aria-label', 'Cookie consent')
+        bar.setAttribute('aria-live', 'polite')
+        bar.innerHTML = markup
+        document.body.append(bar)
+        const root = document.documentElement
+        const publish = (): void => {
+          const gap = Number.parseFloat(getComputedStyle(bar).bottom)
+          const space = bar.offsetHeight + (Number.isFinite(gap) ? gap : 0)
+          root.style.setProperty(
             '--consent-banner-space',
+            `${Math.ceil(space)}px`,
           )
-        })
-        bar.append(button)
+        }
+        publish()
+        const resized = new ResizeObserver(publish)
+        resized.observe(bar)
+        for (const button of bar.querySelectorAll('button')) {
+          button.addEventListener('click', () => {
+            resized.disconnect()
+            bar.remove()
+            root.style.removeProperty('--consent-banner-space')
+          })
+        }
       }
-      document.body.append(bar)
-      document.documentElement.style.setProperty(
-        '--consent-banner-space',
-        `${bar.offsetHeight + 16}px`,
-      )
-    }
-    if (document.body !== null) mount()
-    else document.addEventListener('DOMContentLoaded', mount, { once: true })
-  })
+      if (document.body !== null) mount()
+      else document.addEventListener('DOMContentLoaded', mount, { once: true })
+    },
+    { css: CONSENT_CSS, markup: CONSENT_MARKUP },
+  )
 }
 
 /** Plays the singer's part: what the stage host tells a waiting tour. */
