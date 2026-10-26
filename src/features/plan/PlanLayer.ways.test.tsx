@@ -16,6 +16,7 @@ import type * as GpuGateModule from '@/lib/merc/gpu-gate'
 import { activeTab } from '@/stores/ui-store'
 import type { PlanStop } from './build-plan'
 import type * as EnterStopModule from './enter-stop'
+import { KICKER } from './plan-copy'
 import { planRecord } from './plan-store'
 import type { PlanLayerProps } from './PlanLayer'
 import type { Host } from './PlanLayer.fixture'
@@ -117,6 +118,27 @@ describe('the ways out', () => {
     ])
     expect(window.location.hash).toBe('#/map')
     expect(activeTab()).toBe('singing')
+  })
+
+  it('closes the layer, then enters Start here without the tour, from the main button', () => {
+    // Arrange
+    answered()
+    const host = open('review')
+    const start = card('start').dataset.dest
+
+    // Act
+    tap(KICKER.start)
+
+    // Assert: closed first, then Start here, as its card enters it.
+    expect(host.onClose).toHaveBeenCalledTimes(1)
+    expect(atClose).toEqual([
+      { tab: 'singing', hash: '#/plan', stopsEntered: 0 },
+    ])
+    expect(mocks.enterStop).toHaveBeenCalledTimes(1)
+    expect(mocks.enterStop).toHaveBeenCalledWith(
+      expect.objectContaining({ kind: 'start', dest: start }),
+      false,
+    )
   })
 
   it('closes the layer, then enters Start here with its tour, from Show me around', () => {

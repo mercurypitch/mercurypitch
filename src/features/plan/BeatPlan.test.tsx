@@ -38,6 +38,7 @@ import styles from './BeatPlan.module.css'
 import type { PlanStop } from './build-plan'
 import { buildPlan } from './build-plan'
 import { answeredElsewhere } from './plan-choices.fixture'
+import { KICKER } from './plan-copy'
 import { PLAN_OPENED_KEY, PLAN_RECORD_KEY } from './plan-keys'
 import { planRecord } from './plan-store'
 import { PICK_ADVANCE_MS } from './PlanQuestions'
@@ -441,6 +442,29 @@ describe('the ways out', () => {
     tap('See every room')
 
     expect(handed(host)).toEqual([['onRooms', 1]])
+  })
+
+  it('hands Start here on as its card does, without the tour, from the main button', () => {
+    // Arrange
+    const host = open()
+    toTheAuditionPlan()
+    const start = card('start').dataset.dest
+
+    // Act
+    tap(KICKER.start)
+
+    // Assert: the card's stop, no tour, and the card's own count.
+    expect(handed(host)).toEqual([['onEnterStop', 1]])
+    expect(host.onEnterStop).toHaveBeenCalledWith(
+      expect.objectContaining({ kind: 'start', dest: start }),
+      false,
+    )
+    const sent = (
+      JSON.parse(localStorage.getItem(GUIDE_FUNNEL_STORAGE_KEY) ?? '[]') as {
+        event: string
+      }[]
+    ).map((entry) => entry.event)
+    expect(sent).toContain('plan_stop_start')
   })
 
   it('hands Start here on, with its tour, from Show me around', () => {

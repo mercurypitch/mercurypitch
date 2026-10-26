@@ -43,6 +43,7 @@ vi.mock('@/stores/app-store', async (importOriginal) =>
 )
 
 import { buildPlan } from '@/features/plan/build-plan'
+import { KICKER } from '@/features/plan/plan-copy'
 import { PLAN_OPENED_KEY, PLAN_RECORD_KEY } from '@/features/plan/plan-keys'
 import { markPlanShown, planRecord, savePlanAnswers, } from '@/features/plan/plan-store'
 import { next, passTo, quiet, tap } from '@/features/plan/PlanQuestions.fixture'
@@ -306,6 +307,19 @@ describe('the four questions and the plan in the flow', () => {
     expect(activeTab()).toBe('guitar')
     expect(flowOpen()).toBe(false)
     expect(mocks.startPageTour).toHaveBeenCalledWith('guitar')
+  })
+
+  it('enters Start here from the main button, and starts no tour even where the room has one', async () => {
+    // Arrange: a guitar player's Start here is the Guitar room, which has one.
+    const host = await toThePlanOf('Guitar', null)
+
+    // Act
+    fireEvent.click(within(host).getByRole('button', { name: KICKER.start }))
+
+    // Assert: in, as the card goes in; the tour is Show me around's.
+    expect(activeTab()).toBe('guitar')
+    expect(flowOpen()).toBe(false)
+    expect(mocks.startPageTour).not.toHaveBeenCalled()
   })
 
   it("enters a card's stop, closes First Light, and starts no tour", async () => {
