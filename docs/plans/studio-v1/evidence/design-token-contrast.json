@@ -1,0 +1,61 @@
+{
+  "scope": "specified design tokens only, not a pixel audit of generated artwork",
+  "results": [
+    {
+      "pair": "light primary on paper",
+      "foreground": "#26282C",
+      "background": "#F5F3EE",
+      "ratio": 13.31,
+      "normal_text_4_5": true
+    },
+    {
+      "pair": "light secondary on paper",
+      "foreground": "#686B71",
+      "background": "#F5F3EE",
+      "ratio": 4.82,
+      "normal_text_4_5": true
+    },
+    {
+      "pair": "light white on cobalt",
+      "foreground": "#FFFFFF",
+      "background": "#2A55C9",
+      "ratio": 6.48,
+      "normal_text_4_5": true
+    },
+    {
+      "pair": "dark primary on paper",
+      "foreground": "#E7E4DD",
+      "background": "#17181B",
+      "ratio": 13.98,
+      "normal_text_4_5": true
+    },
+    {
+      "pair": "dark secondary on sheet",
+      "foreground": "#9EA1A7",
+      "background": "#222428",
+      "ratio": 6.0,
+      "normal_text_4_5": true
+    },
+    {
+      "pair": "dark cobalt on paper",
+      "foreground": "#7E9CFF",
+      "background": "#17181B",
+      "ratio": 6.84,
+      "normal_text_4_5": true
+    },
+    {
+      "pair": "light error on sheet",
+      "foreground": "#C8402A",
+      "background": "#FFFFFF",
+      "ratio": 4.97,
+      "normal_text_4_5": true
+    },
+    {
+      "pair": "dark error on sheet",
+      "foreground": "#FF7A5E",
+      "background": "#222428",
+      "ratio": 6.07,
+      "normal_text_4_5": true
+    }
+  ]
+}

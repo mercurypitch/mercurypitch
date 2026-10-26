@@ -1,0 +1,16 @@
+{
+  "nodeVersion": "v25.8.2",
+  "sourcePath": "src/lib/studio-fx/loudness.ts",
+  "sampleRate": 48000,
+  "localInterval": 1000,
+  "localFraction": 0.5,
+  "candidateThreshold": 0.7079457843841379,
+  "localAdjacentSampleAmplitude": 0.699999988079071,
+  "samplePeakDb": 0,
+  "reportedTruePeakDb": 0,
+  "uncheckedHalfSamplePeakDb": 3.1291198810644945,
+  "underestimateDb": 3.1291198810644945,
+  "shortcutMissConfirmed": true,
+  "interpretation": "Same interpolation kernel at a skipped phase proves the shortcut is not a safe bound. This is not an independent BS.1770 compliance test.",
+  "path_note": "Repository-relative path substituted for the local absolute path in this published receipt."
+}
