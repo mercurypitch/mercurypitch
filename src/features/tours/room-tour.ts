@@ -17,7 +17,9 @@
 //
 // - A tour that starts spends its tab's offer, so the chip never offers a
 //   tour that was just shown (the showcase hands over to Start here's tour,
-//   and the chip's offer would come due the moment Merc lets go).
+//   and the chip's offer would come due the moment Merc lets go). A Merc
+//   tour spends it once the coach has it on screen: one whose coach did not
+//   load leaves the offer for the next visit.
 // - A finished Merc tour offers what comes next, as the app names it: the
 //   plan's next stop (src/features/plan/plan-handoff.ts). The plan imports
 //   this file (enter-stop.ts starts a stop's tour here), so the plan's half is
@@ -120,7 +122,7 @@ export function startRoomTour(
     if (coachActive() === entry.key) setCoachActive(null)
   }
   Promise.all([entry.load(), loadCoach()])
-    .then(([tour, start]) => {
+    .then(async ([tour, start]) => {
       // Ended (coachActive cleared), no longer wanted, or asked for again.
       if (pending !== mine) return
       if (coachActive() !== entry.key || !still()) {
@@ -128,13 +130,15 @@ export function startRoomTour(
         return
       }
       pending = null
-      spendOffer(tab)
-      return start.startCoachTour(
+      await start.startCoachTour(
         tour,
         handoff === null
           ? { phone: isNarrow() }
           : { phone: isNarrow(), handoff },
       )
+      // Spent once the tour is on screen: a coach that did not load leaves
+      // the offer for the next visit (start.ts lets go of coachActive).
+      spendOffer(tab)
     })
     // A chunk that did not arrive starts nothing, and the page stays as it was.
     .catch(letGo)

@@ -220,6 +220,27 @@ describe("KaraokeNightApp and Merc's tour", () => {
     expect(screen.queryByTestId('tour-chip')).toBeNull()
   })
 
+  it('offers the chip again when the tour does not load, with nothing unhandled', async () => {
+    tour.start.mockRejectedValueOnce(new Error('chunk'))
+    window.history.replaceState({}, '', '/karaoke-night')
+    render(() => <KaraokeNightApp />)
+
+    fireEvent.click(await screen.findByRole('button', { name: MERC_TOUR_LINE }))
+
+    await waitFor(() => expect(tour.start).toHaveBeenCalledTimes(1))
+    expect(await screen.findByTestId('tour-chip')).toBeInTheDocument()
+  })
+
+  it("leaves an ad's landing as it was when the tour does not load", async () => {
+    tour.start.mockRejectedValueOnce(new Error('chunk'))
+    window.history.replaceState({}, '', '/karaoke?tour=first')
+    render(() => <KaraokeNightApp />)
+
+    await waitFor(() => expect(tour.start).toHaveBeenCalledTimes(1))
+    await settle()
+    expect(window.location.search).toBe('')
+  })
+
   it('puts the chip away for Not now, and starts nothing', async () => {
     window.history.replaceState({}, '', '/karaoke-night')
     render(() => <KaraokeNightApp />)

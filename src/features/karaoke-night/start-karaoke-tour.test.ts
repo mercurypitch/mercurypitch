@@ -5,9 +5,10 @@
 // The e2e build mounts no consent banner, so the bar's hold is pinned here
 // (R22): an ad's tour (`?tour=first`) waits until the real bar is answered,
 // and a tap on the chip, which is the visitor asking, starts at once under
-// it. Either way the start spends the first-visit offer, asks for what the
-// credits line needs, and takes the phone's steps wherever the page draws
-// the phone stage.
+// it. Either way the start asks for what the credits line needs, takes the
+// phone's steps wherever the page draws the phone stage, and spends the
+// first-visit offer once the coach's tour has started: a coach that did not
+// load leaves it for the next visit.
 
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type * as ViewportModule from '@/lib/use-viewport'
@@ -94,6 +95,33 @@ describe('startKaraokeTour', () => {
 
     expect(localStorage.getItem(KARAOKE_TOUR_OFFER_KEY)).toBe('true')
     expect(tour.loadKaraokeCredits).toHaveBeenCalledTimes(1)
+  })
+
+  it('spends the offer only once the coach tour has started', async () => {
+    let started!: () => void
+    coach.start.mockReturnValueOnce(
+      new Promise<void>((resolve) => {
+        started = resolve
+      }),
+    )
+
+    const done = startKaraokeTour({ afterConsent: false })
+    await settle()
+    expect(coach.start).toHaveBeenCalledTimes(1)
+    expect(localStorage.getItem(KARAOKE_TOUR_OFFER_KEY)).toBeNull()
+
+    started()
+    await done
+    expect(localStorage.getItem(KARAOKE_TOUR_OFFER_KEY)).toBe('true')
+  })
+
+  it('leaves the offer when the coach does not load, and says so', async () => {
+    coach.start.mockRejectedValueOnce(new Error('chunk'))
+
+    await expect(startKaraokeTour({ afterConsent: false })).rejects.toThrow(
+      'chunk',
+    )
+    expect(localStorage.getItem(KARAOKE_TOUR_OFFER_KEY)).toBeNull()
   })
 
   it("takes the phone's steps wherever the page draws the phone stage", async () => {
