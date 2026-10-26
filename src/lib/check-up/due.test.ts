@@ -3,7 +3,7 @@
 // ============================================================
 
 import { beforeEach, describe, expect, it } from 'vitest'
-import { CHECKUP_CARD_DISMISSED_KEY, checkupCardShown, checkupDue, dismissCheckupCard, readCardDismissal, } from './due'
+import { CHECKUP_CARD_DISMISSED_KEY, checkupCardShown, checkupCardWording, checkupDue, dismissCheckupCard, readCardDismissal, } from './due'
 
 const HOUR = 60 * 60 * 1000
 const DAY = 24 * HOUR
@@ -40,6 +40,16 @@ describe('checkupDue', () => {
     const history = [{ takenAt: 'not a date' }, take(SUNG)]
 
     expect(checkupDue(history, SUNG + 7 * DAY)).toBe(true)
+  })
+})
+
+describe("Home's card and its two wordings", () => {
+  it.each([
+    ['13 days 23 hours after the newest take', 'week', 13 * DAY + 23 * HOUR],
+    ['exactly 14 days after it', 'day', 14 * DAY],
+    ['a month after it', 'day', 30 * DAY],
+  ])('%s: %s', (_when, wording, sinceNewest) => {
+    expect(checkupCardWording(SUNG, SUNG + sinceNewest)).toBe(wording)
   })
 })
 

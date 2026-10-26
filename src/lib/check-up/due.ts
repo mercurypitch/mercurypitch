@@ -17,6 +17,10 @@
 export const CHECKUP_INTERVAL_DAYS = 7
 export const CHECKUP_INTERVAL_MS = CHECKUP_INTERVAL_DAYS * 24 * 60 * 60 * 1000
 
+/** From two weeks after the newest take, Home's card names its day instead
+ *  of saying "a week". */
+export const CHECKUP_NAME_THE_DAY_AFTER_MS = 2 * CHECKUP_INTERVAL_MS
+
 /** Where Home keeps the last "Not this week", in epoch milliseconds. */
 export const CHECKUP_CARD_DISMISSED_KEY = 'mercurypitch.checkup.notThisWeek.v1'
 
@@ -53,6 +57,16 @@ export function cardDismissed(
   now: number,
 ): boolean {
   return dismissedAt !== null && now - dismissedAt < CHECKUP_INTERVAL_MS
+}
+
+/** Which of its two wordings Home's card has for a newest take at `newest`:
+ *  "A week since your last Check-up", or the day from two weeks on. Home's
+ *  slot reads it too, since the two wrap at different widths. */
+export function checkupCardWording(
+  newest: number,
+  now: number,
+): 'week' | 'day' {
+  return now - newest >= CHECKUP_NAME_THE_DAY_AFTER_MS ? 'day' : 'week'
 }
 
 /** Home's card shows when a Check-up is due and the card was not sent away this week. */

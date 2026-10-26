@@ -1783,6 +1783,16 @@ const HOME_TOUR_STEPS: WalkthroughStep[] = [
     whenPresent: true,
   },
   {
+    title: 'Your weekly Check-up',
+    description:
+      'A week after your last voiceprint, the same 90 seconds again: glide up, glide down, hold, match five notes. The Voice Mirror then sets your first week beside your latest and says what moved.',
+    targetSelector: '[data-testid="home-checkup-card"]',
+    placement: 'bottom',
+    requiredTab: TAB_HOME,
+    // Drawn only while a Check-up is due, and never in the native app.
+    whenPresent: true,
+  },
+  {
     title: 'Your daily home',
     description:
       'Home is your launchpad every day — your streak, one guided session picked for you, and this week’s challenge, all in one place.',

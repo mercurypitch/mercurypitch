@@ -1,0 +1,110 @@
+/* ============================================================
+   HomeCheckupCardMount: the slot Home keeps for its weekly Check-up card
+   ============================================================
+
+   Until the card's chunk and its history are in, Home keeps the card's frame
+   (HomeCheckupCard.module.css's .card: one grid item across both columns, its
+   border, corners and ground), empty, so the card lands in it and the streak
+   card below does not move.
+
+   The card's height follows its own width, not the window's: Home's sidebar
+   comes in at tablet widths and narrows the card again. So the slot is a
+   container, as wide as the card, and its frame adds each part of the card
+   at the width where that part wraps onto another line. The base is the card
+   with every part on one line and no account line, 162.73 px, less the
+   slot's two border pixels. Each step adds that part's height, from the
+   card's sheet: the line, 0.9rem at 1.45; the heading, 1.1rem at 1.3; the
+   second button row, 44 px and an 8 px gap; and, signed out, the account
+   line (its 6 px margin and the card's 6 px gap, the 44 px button, and one
+   0.8rem line at 1.5 for each line of words above it). The widths are where
+   each part's words stop fitting, measured in a local build in Inter, the
+   app's first font, for "A week since your last Check-up" with an October
+   date and for the two-week wording; another font, or a long month name,
+   can move a step a few pixels either way. */
+
+.slot {
+  grid-column: 1 / -1;
+  box-sizing: border-box;
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  background: var(--bg-card);
+  container-type: inline-size;
+}
+
+.frame {
+  --line: 0px;
+  --heading: 0px;
+  --buttons: 0px;
+  --account: 56px;
+
+  height: calc(
+    160.73px + var(--line) + var(--heading) + var(--buttons) + var(--account)
+  );
+}
+
+.slot[data-account='signed-in'] .frame {
+  --account: 0px;
+}
+
+/* The account line's words go above its button. */
+@container (max-width: 700.6px) {
+  .slot[data-account='signed-out'] .frame {
+    --account: 75.2px;
+  }
+}
+
+/* And onto two lines. */
+@container (max-width: 557.2px) {
+  .slot[data-account='signed-out'] .frame {
+    --account: 94.4px;
+  }
+}
+
+/* "Sing the same 90 seconds as on 19 October, ..." onto two lines. */
+@container (max-width: 483.4px) {
+  .slot[data-words='week'] .frame {
+    --line: 20.88px;
+  }
+}
+
+/* "Sing the same 90 seconds again, ..." onto two lines. */
+@container (max-width: 406.5px) {
+  .slot[data-words='day'] .frame {
+    --line: 20.88px;
+  }
+}
+
+/* "Your last Check-up was on 5 October." onto two lines. */
+@container (max-width: 357.4px) {
+  .slot[data-words='day'] .frame {
+    --heading: 22.88px;
+  }
+}
+
+/* "Not this week" under "Start my Check-up". */
+@container (max-width: 347.3px) {
+  .frame {
+    --buttons: 52px;
+  }
+}
+
+/* "A week since your last Check-up" onto two lines. */
+@container (max-width: 311.7px) {
+  .slot[data-words='week'] .frame {
+    --heading: 22.88px;
+  }
+}
+
+/* Without container queries, a 390 px phone's card: the line and the
+   account line wrapped. */
+@supports not (container-type: inline-size) {
+  @media (max-width: 640px) {
+    .frame {
+      --line: 20.88px;
+    }
+
+    .slot[data-account='signed-out'] .frame {
+      --account: 94.4px;
+    }
+  }
+}

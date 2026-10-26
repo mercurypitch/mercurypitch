@@ -33,6 +33,7 @@ import { copyShareUrl, encodeRoutineForShare } from '@/lib/share-codec'
 import { exerciseHistory } from '@/stores/exercise-history-store'
 import { showNotification } from '@/stores/notifications-store'
 import { openAuthModal } from '@/stores/ui-store'
+import { HomeCheckupCardMount } from './HomeCheckupCardMount'
 import styles from './HomePage.module.css'
 import { HomePlanCardMount, startPlannedSession } from './HomePlanCardMount'
 
@@ -226,6 +227,13 @@ const HomePage: Component = () => {
         <HomePlanCardMount
           onHomeSession={() => startPlannedSession(routine, sessionCard)}
         />
+
+        {/* ── Weekly Check-up ────────────────────────────────────
+            Above the streak card while a Check-up is due: the newest
+            voiceprint a week old. After the plan card, which holds the first
+            place in the grid. Draws nothing otherwise, and nothing in the
+            native build, which has no Voice Mirror to open. */}
+        <HomeCheckupCardMount />
 
         {/* ── Streak ─────────────────────────────────────────── */}
         <section class={`${styles.card} home-streak-card`}>

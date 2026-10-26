@@ -101,3 +101,24 @@ describe('Home’s plan card, drawn only in the week after the plan', () => {
     expect(titles[0]).toBe('Your daily home')
   })
 })
+
+describe('Home’s weekly Check-up card, drawn only while one is due', () => {
+  const home = PAGE_TOURS[TAB_HOME] ?? []
+
+  it('has a step that drops out without the card', () => {
+    const checkup = home.find(
+      (step) => step.targetSelector === '[data-testid="home-checkup-card"]',
+    )
+
+    expect(checkup?.whenPresent).toBe(true)
+  })
+
+  it('shows the step while the card is there', () => {
+    document.body.innerHTML =
+      '<section data-testid="home-checkup-card"></section>'
+
+    startTour(home, 'home')
+
+    expect(tourSteps()[0]?.title).toBe('Your weekly Check-up')
+  })
+})
