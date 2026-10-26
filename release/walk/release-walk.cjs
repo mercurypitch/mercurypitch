@@ -676,8 +676,8 @@ async function covers(page, sel) {
       info('C: console after Show me around', said.slice(0, 12).join(' || ') || 'nothing')
       info('C: Show me around opened', `${page.url().replace(BASE, '')} | ${shown ? (await text(d)).slice(0, 120) : 'no dialog'}`)
       check('C: Show me around opens Start here (Singing)', /#\/singing$/.test(page.url()), page.url().replace(BASE, ''))
-      // Singing has no page tour (PAGE_TOURS); its tour is the Guide's Singing section, which the plan does not start.
-      info('C: a tour on Singing after Show me around', shown ? 'yes' : 'no (Singing has no page tour; its tour is in the Guide)')
+      // Singing has no page tour (PAGE_TOURS); since 0.9.23 Show me around starts the Guide's Singing section there (startRoomTour).
+      check('C: Show me around starts Singing\'s tour (the Guide\'s Singing section)', shown)
       await shot(page, 'C-show-me-around')
     } finally { await browser.close() }
   })
