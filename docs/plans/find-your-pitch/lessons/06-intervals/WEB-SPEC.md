@@ -513,11 +513,12 @@ other, paused off screen, and the still images when WebGL fails or would run on 
 - **Needed, proposed: `/exercises/fourths-and-fifths`** (CURRICULUM § 4 item 2, the Phase 1 App
   track): Interval Trainer with the `intervals` field (`[5, 7]`) set to a perfect fourth and a
   perfect fifth, both up (5 and 7 semitones), registered in `EXERCISE_SLUGS`
-  (`src/features/exercises/slug-map.ts:52-77`) with a line in `src/tests/slug-map.test.ts`. The
+  (`src/features/exercises/slug-map.ts:54-86`) with a line in `src/tests/slug-map.test.ts`. The
   difficulty stays the viewer's own; the director may add a beginner difficulty, as Lesson 4's
   proposed slug does. Beyond its registry line it needs (FACTS 47, 49):
-  - repeats: done (`use-interval-trainer-controller.ts:46-118`): a launched list repeats, never one
-    interval twice running, so this run alternates the fourth and the fifth;
+  - repeats: done (`use-interval-trainer-controller.ts:47-77`,
+    `src/features/exercises/interval-rounds.ts:20-50`): a launched list repeats, never one interval
+    twice running, so this run alternates the fourth and the fifth;
   - the octave: Interval Trainer scores the written octave (FACTS 43), so until the octave-folded
     option ships (CURRICULUM § 4 item 7) the card keeps its Settings sentence; Interval Trainer
     belongs on item 7's list beside Pitch Hold and Scale Runner;

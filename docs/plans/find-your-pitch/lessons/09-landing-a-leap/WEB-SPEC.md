@@ -564,7 +564,7 @@ paused off screen, and the still images when WebGL fails or would run on the CPU
   registered in `EXERCISE_SLUGS` as
   `{ kind: 'exercise', exercise: EXERCISE_INTERVAL_TRAINER, intervals: [3, 4, 7, 5, 12] }`, each
   upward, with a line in `src/tests/slug-map.test.ts`. It needs the `intervals` field on
-  `ExerciseLaunch` (`src/features/exercises/slug-map.ts:25-41`), passed by `applyExerciseSlug` into
+  `ExerciseLaunch` (`src/features/exercises/slug-map.ts:26-43`), passed by `applyExerciseSlug` into
   the launch override beside the notes and the difficulty (`src/App.tsx:754-765`); the trainer
   reading it in place of its fixed pool, which today has no minor third (FACTS 51, 59); and, since
   `plannedRounds` caps a run at the pool's size and `generateIntervals` plays each interval once,

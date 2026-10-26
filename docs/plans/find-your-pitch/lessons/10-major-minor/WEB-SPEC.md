@@ -685,24 +685,25 @@ still images when WebGL fails or would run on the CPU.
   rounds, each one chord on a roved root, named from six qualities, of which this lesson teaches
   two. On the public host `/ear-lab?lesson=10`, the marker before the hash the entry document adds
   (`src/seo/entry-pages.ts:453-458`). Stack needs no voice, so it stays on the rest card (FACTS 67).
-- **Needed, proposed: `/exercises/thirds-on-a-drone`** (CURRICULUM § 4 item 2, the `intervals`
-  launch field, which Drone Intonation does not read yet; FACTS 52, 53): Drone Intonation with the
-  field set to the minor and major thirds, 3 and 4 semitones up, registered in `EXERCISE_SLUGS`
-  (`src/features/exercises/slug-map.ts:52-77`) with a line in `src/tests/slug-map.test.ts`. Beyond
-  the field it needs repeats: `pickIntervals` draws each interval at most once and a run's rounds
-  are capped at the pool's size
-  (`src/features/exercises/drone-intonation/use-drone-intonation-controller.ts:26-31`, `:72-76`), so
-  a two-interval pool must be allowed to repeat, with no interval twice running, or the run is two
-  rounds long. The pairing with Lesson 6's proposed `fourths-and-fifths` is the App track's to keep
-  (FACTS 53).
+- **In the app, not yet linked: `/exercises/thirds-on-a-drone`** (CURRICULUM § 4 item 2, the
+  `intervals` launch field; FACTS 52, 53): Drone Intonation on the minor and major thirds, 3 and 4
+  semitones up, registered in `EXERCISE_SLUGS` (`src/features/exercises/slug-map.ts:54-86`) with a
+  line in `src/tests/slug-map.test.ts`. A run is as long as the difficulty asks, six rounds at the
+  default level and up to eight, not capped at the two thirds, and deals them as Interval Trainer
+  deals a launched list, never the same one twice running, so they take turns
+  (`src/features/exercises/drone-intonation/use-drone-intonation-controller.ts:47-63`, `:76-90`);
+  its setup screen names both beside the round count (FACTS 53). The card keeps
+  `/pitch-training?lesson=10` until this page is live. The pairing with Lesson 6's proposed
+  `fourths-and-fifths` is the App track's to keep (FACTS 53).
 - **Needed, proposed: `/exercises/major-or-minor`** (CURRICULUM § 4 item 5, the planned `ear-drill`
   launch kind): Stack with `stack:maj` and `stack:min` only. As Lesson 2 decided for its two-answer
   Leap run, it rates on a track of its own (`RunTrack`,
   `src/features/ear-lab/use-identification-controller.ts:56-63`), never the shared Stack rating; its
   guess floor matches the two pads it shows, a half (`src/lib/ear/drills.ts:58-60`, `:233-237`); and
   it passes `updateItem: false` (FACTS 53).
-- When either ships, LESSON.md's editorial note gives the copy, and the card, the rest card and the
-  footer switch to the slug, which carries `?lesson=10` too.
+- Once this page is live, LESSON.md's editorial note gives the copy for `thirds-on-a-drone`, and the
+  card, the rest card and the footer switch to it; when `major-or-minor` ships, the note gives the
+  second drill's. Each slug carries `?lesson=10` too.
 - **Proposed, App content** (FACTS 49, 55), for the App content track and, for Drone Intonation's
   score, the coach: its score cannot reach 100, since the fifth of it that was a "richness" reading
   was dropped without reweighting the rest. The Learn chapter "Common Musical Scales" now gives

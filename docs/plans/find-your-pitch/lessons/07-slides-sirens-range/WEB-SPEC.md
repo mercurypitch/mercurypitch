@@ -571,7 +571,7 @@ paused off screen, and the still images when WebGL fails or would run on the CPU
   Guided Warmup on its Lip trills routine, registered in `EXERCISE_SLUGS` as
   `{ kind: 'exercise', exercise: EXERCISE_WARMUP, pattern: 'lip-trill' }` with a line in
   `src/tests/slug-map.test.ts`. Beyond the entry it needs (FACTS 73 to 76a):
-  - the `pattern` field on `ExerciseLaunch` (`src/features/exercises/slug-map.ts:25-41`), passed by
+  - the `pattern` field on `ExerciseLaunch` (`src/features/exercises/slug-map.ts:26-43`), passed by
     `applyExerciseSlug` into the launch override beside the notes and the difficulty
     (`src/App.tsx:754-765`); the override's config already carries `pattern`, and the warm-up
     already reads it (`WarmupExercise.tsx:61`);
