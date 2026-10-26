@@ -164,6 +164,29 @@
     display: none;
   }
 }
+/* At 320 px the row has 262 px, and with both buttons' words the slider had
+   51: "Starts on C4" ran 42 px over Start higher, "Starts on D♭4" 50. Under
+   360 px the buttons keep their arrows and give up their words, which stay
+   their names, so the slider has 158 px and every start's words fit in it;
+   from 360 px nothing changes. */
+@media (max-width: 359px) {
+  .slide-row .btn {
+    flex: none;
+    width: 44px;
+    padding: 0;
+  }
+  .slide-row .btn .ico {
+    display: block;
+  }
+  .slide-row .slide-word {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    white-space: nowrap;
+  }
+}
 
 /* ---------------------------------------------------------------- the step text */
 /* Tavi's question in Step 3: a bubble beside her still */

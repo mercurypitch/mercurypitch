@@ -12,18 +12,20 @@
 // the mix-up card, the Try and the Notice until then; Step 5's brackets and
 // anchor board play; the two games answer by keys, and Space replays only
 // off a button. At 390 x 844, 375 and 360 px wide, every step's stage fits
-// with every target at least 44 px square and none overlapping, free play at
-// every start from C4 to B4; at 390 and 360 px the hero's compact line,
+// with every target at least 44 px square and none overlapping, free play
+// at every start from C4 to B4; at 390 and 360 px the hero's compact line,
 // which has no buttons, draws all seven notes from C and from F sharp, and
-// the cold open's sharp sign stays beside its F, in Play from F sharp and in
-// every lock hint; at 1024 x 640 the stage fits the screen under the
-// masthead. A window narrowed from 1280 px to 320, or a phone turned from
-// landscape to portrait, lays every tune line's buttons out again, on
-// screen and off, with nothing past the window's edge, and Step 3 keeps
-// its start, names, Slow and the line it is playing, and the cold open its
-// answer. Two real-mouse drags of the line close it: a drag slides the
-// start and must not land as a tap, and a drag let go off the line leaves
-// Enter and Space pressing a bead.
+// the cold open's sharp sign stays beside its F, in Play from F sharp and
+// in every lock hint; at 320 px the start slider, Step 3's and free play's,
+// holds its words at every start between two arrow buttons that keep their
+// names, and from 360 px the buttons show their words again; at 1024 x 640
+// the stage fits the screen under the masthead. A window narrowed from 1280
+// px to 320, or a phone turned from landscape to portrait, lays every tune
+// line's buttons out again, on screen and off, with nothing past the
+// window's edge, and Step 3 keeps its start, names, Slow and the line it is
+// playing, and the cold open its answer. Two real-mouse drags of the line
+// close it: a drag slides the start and must not land as a tap, and a drag
+// let go off the line leaves Enter and Space pressing a bead.
 
 import type { Locator, Page } from '@playwright/test'
 import { expect, test } from './helpers/lesson-page'
@@ -103,6 +105,19 @@ async function expectTargets(root: Locator, what: string): Promise<void> {
 
 const sideways = (page: Page): Promise<number> =>
   page.evaluate(() => document.documentElement.scrollWidth)
+
+/** How far a start slider's words run past its pill, px: 0 when they fit inside it. */
+const wordsPast = (row: Locator): Promise<number> =>
+  row.evaluate((el) => {
+    const box = (part: string): DOMRect => {
+      const found = el.querySelector(part)
+      if (found === null) throw new Error(`the slide row has no ${part}`)
+      return found.getBoundingClientRect()
+    }
+    const words = box('[data-start-value]')
+    const pill = box('[data-start-slider]')
+    return Math.max(0, words.right - pill.right, pill.left - words.left)
+  })
 
 /** Every shown button of a tune line that is not wholly inside its line's layer, which covers the drawing. */
 const strays = (page: Page, root: string): Promise<string[]> =>
@@ -684,6 +699,56 @@ test.describe('page QA (WEB-SPEC, Tests and Contract)', () => {
         timeout: 15_000,
       })
       await expectSignsOnTheirLines(hint, 'the hint with sound off')
+    })
+  }
+
+  test.describe('at 320 px', () => {
+    test.use({ viewport: { width: 320, height: 800 } })
+
+    for (const [where, root, at] of [
+      ['free play', '#freePlay', '/learn/06#freePlay'],
+      ['Step 3', TOY, '/learn/06#step-3'],
+    ] as const) {
+      test(`${where}'s start slider holds its words at every start from C4 to B4, between two 44 px arrows that keep their names`, async ({
+        page,
+      }) => {
+        // Arrange
+        await page.goto(at)
+        const row = page.locator(`${root} [data-slide-row]`)
+        const past: string[] = []
+
+        // Act: every start, the widest words (D♭4) among them
+        for (let start = 60; start <= 71; start++) {
+          await startOn(page, start, root)
+          const by = await wordsPast(row)
+          if (by > 0.5) past.push(`${start}: ${by.toFixed(1)} px`)
+        }
+
+        // Assert
+        expect(past).toEqual([])
+        for (const name of ['Start lower', 'Start higher']) {
+          const box = await row.getByRole('button', { name }).boundingBox()
+          expect(box?.width, name).toBe(44)
+          expect(box?.height, name).toBeGreaterThanOrEqual(44)
+        }
+        expect(await sideways(page)).toBe(320)
+      })
+    }
+  })
+
+  // from 360 px the buttons show their words again, as they always did
+  for (const width of [360, 390]) {
+    test(`at ${width} px the start slider's buttons show their words`, async ({
+      page,
+    }) => {
+      // Arrange + Act
+      await page.setViewportSize({ width, height: 800 })
+      await page.goto('/learn/06#freePlay')
+
+      // Assert
+      const row = page.locator('#freePlay [data-slide-row]')
+      await expect(row.getByText('Start lower')).toBeVisible()
+      await expect(row.getByText('Start higher')).toBeVisible()
     })
   }
 
