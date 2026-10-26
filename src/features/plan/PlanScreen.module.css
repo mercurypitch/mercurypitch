@@ -39,9 +39,17 @@
      with its own stacking context would paint over the chips of the one
      before it. The cover is clipped on its own, not the card.
    - Start here is the big card: a 2:1 picture over its words. Learn and Play
-     are smaller, the picture beside the words. From 900 px the cards stand
-     in two columns, Start here on the left and the rest, with the menu
-     switch last, on the right.
+     are smaller, the picture beside the words. The cards stand in one
+     column, 440 px wide on a phone and 640 px from 600 px, so a tablet held
+     upright gives them its width; from 900 px they stand in two columns,
+     Start here on the left and the rest, with the menu switch last, on the
+     right.
+   - A room's cover is Merc in the room, cropped to the card's shape. A
+     lesson's cover (`data-cover='whole'`) is its share image, 1200x630 with
+     its title written in it, so it is never cropped: beside the words it is
+     a picture inset in the card at its own shape, and in the right-hand
+     column from 900 px it spans the card over its words, as Start here's
+     does. Cut to a strip it read "at is a no".
    - Every target is 44 px or more: the cards, the switch (its box, not its
      track), Start here, Show me around and See every room.
 
@@ -57,6 +65,8 @@
   --pl-gold: #f2c46d;
   --pl-gold-ink: #f6dca6;
   --pl-chip-ink: #d7e8ff;
+  /* The one column's width, the cards' and the main button's. */
+  --pl-column: 440px;
 
   /* Fills the host's box: the scroll region, then the ways on under it. */
   display: flex;
@@ -93,7 +103,7 @@
   display: grid;
   gap: 12px;
   width: 100%;
-  max-width: 440px;
+  max-width: var(--pl-column);
   text-align: left;
 }
 
@@ -159,6 +169,21 @@
   width: 100px;
   aspect-ratio: auto;
   border-radius: 17px 0 0 17px;
+}
+
+/* A lesson's cover, whole: its own shape, the picture contained. Beside the
+   words it is inset in the card with corners of its own, as tall as its
+   width makes it, rather than a strip as tall as the card. */
+.stop[data-cover='whole'] .cover img {
+  object-fit: contain;
+}
+
+.stop[data-cover='whole']:not([data-kind='start']) .cover {
+  align-self: flex-start;
+  width: clamp(100px, 32%, 200px);
+  aspect-ratio: 1200 / 630;
+  margin: 12px 0 0 12px;
+  border-radius: 10px;
 }
 
 .body {
@@ -385,7 +410,7 @@
   justify-content: center;
   gap: 9px;
   width: 100%;
-  max-width: 440px;
+  max-width: var(--pl-column);
   min-height: 52px;
   margin: 0;
   padding: 0 32px;
@@ -473,6 +498,15 @@
   }
 }
 
+/* ── A tablet held upright ─────────────────────────────────────── */
+
+/* The one column takes the width a tablet has, rather than a phone's. */
+@media (min-width: 600px) {
+  .root {
+    --pl-column: 640px;
+  }
+}
+
 /* ── A wide screen ────────────────────────────────────────────── */
 
 @media (min-width: 900px) {
@@ -522,6 +556,27 @@
 
   .stop:not([data-kind='start']) .cover {
     width: clamp(120px, 38%, 170px);
+  }
+
+  /* A lesson in the right-hand column: its cover spans the card over the
+     words, whole, and the words take the column's width under it. */
+  .stop[data-cover='whole']:not([data-kind='start']) {
+    flex-direction: column;
+  }
+
+  .stop[data-cover='whole']:not([data-kind='start']) .cover {
+    align-self: stretch;
+    width: auto;
+    margin: 0;
+    border-radius: 17px 17px 0 0;
+  }
+
+  /* When that column runs taller than Start here, Start here keeps its own
+     height at the top of its column: stretched, it would carry a gap under
+     its words, and a taller picture would push its words out of a landscape
+     tablet's window. */
+  .stops > .stop {
+    align-self: start;
   }
 
   .why {

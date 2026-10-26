@@ -137,6 +137,16 @@ export const PLAN_DESTS = {
 /** Where a stop goes: a key of PLAN_DESTS. */
 export type PlanDest = keyof typeof PLAN_DESTS
 
+/**
+ * Does the stop's picture carry words? A lesson's cover is its share image,
+ * 1200x630 with the lesson's title written in it, so a card shows it whole.
+ * A room's cover is Merc in the room, which a card may crop to its shape.
+ */
+export function coverHasWords(dest: PlanDest): boolean {
+  const { target } = PLAN_DESTS[dest]
+  return target.kind === 'page' && target.href.startsWith('/learn/')
+}
+
 // ── The plan ───────────────────────────────────────────────────────────
 
 /** One card of the plan: where it goes, what to do there, and why. */

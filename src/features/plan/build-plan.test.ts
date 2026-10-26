@@ -36,7 +36,7 @@ import { isTabVisible, TAB_ORDER } from '@/features/tabs/constants'
 import type { MirrorResult } from '@/lib/mirror/metrics'
 import { ENTRY_PAGES } from '@/seo/entry-pages'
 import type { Plan, PlanDest, PlanStop, PlanView } from './build-plan'
-import { buildPlan, PLAN_DESTS, planStops } from './build-plan'
+import { buildPlan, coverHasWords, PLAN_DESTS, planStops } from './build-plan'
 import type { Instrument, PlanChoices, Q1Answer, Q3Id, Q4Id } from './questions'
 import { EMPTY_CHOICES, INSTRUMENTS, q2Options, Q3_MAX, q3Options, } from './questions'
 
@@ -1350,6 +1350,15 @@ describe('the plan as a value', () => {
 })
 
 describe('where the stops go', () => {
+  it('shows whole only a cover with words in it: a lesson share image', () => {
+    const whole = (Object.keys(PLAN_DESTS) as PlanDest[]).filter(coverHasWords)
+
+    expect(whole).toEqual(['lesson1', 'lesson2'])
+    for (const dest of whole) {
+      expect(PLAN_DESTS[dest].cover).toMatch(/^\/learn\/lesson-\d{2}-og\.jpg$/)
+    }
+  })
+
   /** A released lesson: `learn/NN.html` is on disk and NN is not a draft. */
   function releasedLesson(
     href: string,
