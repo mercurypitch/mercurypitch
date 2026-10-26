@@ -1573,6 +1573,43 @@ textarea {
   }
 }
 
+/* ── Touch targets ───────────────────────────────────────────
+   Under a finger every control in the top bar, and the rail's Hide panel,
+   takes a press at least 44 px each way while drawing exactly as it did:
+   an invisible box centred on each, as large as the control or 44 px,
+   whichever is more. At 390 px each took a press only as big as it drew:
+   22x22 for the logo, and 31, 29 and 28 px tall for App, Sign in and Hide
+   panel. Only the logo's box grows sideways, into the empty space beside
+   it; the others are wider than 44 and grow up and down only, inside the
+   bar's 63 px and the gap above the rail's first card, so none takes a
+   neighbour's press.
+
+   The account chip clips its own overflow, which would clip a box hung on
+   the chip itself, so the chip stays unpositioned and its box hangs on the
+   wrapper that holds only the chip (`.kn-account`, or the menu's wrapper
+   once signed in): an absolute box escapes the overflow of an element
+   between it and the box it is placed in. */
+@media (pointer: coarse) {
+  .kn-brand,
+  .kn-studio-link,
+  .kn-rail-collapse {
+    position: relative;
+  }
+
+  .kn-brand::after,
+  .kn-studio-link::after,
+  .kn-rail-collapse::after,
+  .kn-account-chip::after {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: max(100%, 44px);
+    height: max(100%, 44px);
+    content: '';
+    transform: translate(-50%, -50%);
+  }
+}
+
 /* "+N" on a library row: full-band part stems already on this device.
    Sits at the row's end; the title ellipsizes first. */
 .kn-chip--stems {
