@@ -8,10 +8,14 @@
 // Between the second and the last the tour waits for the song with nothing
 // on screen (a quiet step: no bubble, ring or dim, and not counted, so the
 // singer reads 1 of 3, 2 of 3, 3 of 3), and the last stop shows once the
-// score card has closed, however it closed. The stage host tells the coach
-// (src/lib/coach-events.ts) when a song is on stage, when a sung note arrives
-// and when the score card closes. start-karaoke-tour.ts loads this with the
-// coach, so the page's first paint carries none of it.
+// score card has closed, however it closed. A song that stops with no card
+// to close (the mic was off), or the singer taking Back off the stage, ends
+// the wait the same way. Another song staged during it ends the tour, so a
+// later song's card never brings the last stop. The stage host tells the
+// coach (src/lib/coach-events.ts) when a song is on stage, when a sung note
+// arrives, when the score card closes, when a song stops with none and when
+// Back is tapped. start-karaoke-tour.ts loads this with the coach, so the
+// page's first paint carries none of it.
 //
 // - The demo: the hero's Sing this song, the one call to action an empty
 //   stage has (karaoke.demo). Its tap stages the demo to play at once
@@ -115,6 +119,8 @@ export const KARAOKE_TOUR: CoachTour = {
       kind: 'do',
       quiet: true,
       waitFor: 'score-closed',
+      alsoFor: ['song-unscored', 'stage-left'],
+      endsOn: ['song-staged'],
       merc: 'listen',
       title: 'Sing to the end',
       body: 'Nothing on screen: the song has the stage until its score card closes.',

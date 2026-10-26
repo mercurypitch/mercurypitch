@@ -215,6 +215,37 @@ describe('startCoachTour', () => {
       expect(document.activeElement).toBe(title)
     })
 
+    it('only when the tour had it: focus the singer moved out into the page stays there', async () => {
+      // A quiet wait draws no bubble, and the singer goes on with the page;
+      // a tour that ends then (another song staged) takes nothing from them.
+      const { control } = page()
+      const other = document.createElement('button')
+      other.textContent = 'Next song'
+      document.body.append(other)
+      const handle = await startCoachTour(tour('karaoke-night', 'Only step'))
+      await settle()
+      other.focus()
+
+      handle.end()
+      await settle()
+
+      expect(document.activeElement).toBe(other)
+      expect(control).not.toBe(document.activeElement)
+    })
+
+    it('when focus had fallen to the page itself as the tour ended', async () => {
+      const { control } = page()
+      const handle = await startCoachTour(tour('karaoke-night', 'Only step'))
+      await settle()
+      ;(document.activeElement as HTMLElement | null)?.blur()
+      expect(document.activeElement).toBe(document.body)
+
+      handle.end()
+      await settle()
+
+      expect(document.activeElement).toBe(control)
+    })
+
     it('to the main heading when nothing had focus before the tour', async () => {
       const { heading, control } = page()
       control.blur()

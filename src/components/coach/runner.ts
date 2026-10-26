@@ -15,7 +15,10 @@
 // - When the singer does the thing, Merc celebrates for CELEBRATE_MS and the
 //   step moves on by itself. Skip moves on at once, with no celebration, and
 //   so does a quiet step's event: nothing of it was on screen. Back passes
-//   over a quiet step, and the way on passes one the singer is through.
+//   over a quiet step, and the way on passes one the singer is through. A
+//   step's `alsoFor` events move it on as its own does, and its `endsOn`
+//   events end the tour as an exit where it stands: what it waits for can no
+//   longer come (Karaoke's wait through a song, when another song is staged).
 // - A do-step whose thing is already done as it shows (`doneAlready`: the mic
 //   was on before the tour), or that the singer did earlier in this run and
 //   Back has returned to, does not wait: it offers Next, as a show step
@@ -32,7 +35,7 @@
 import type { Accessor } from 'solid-js'
 import { createSignal, untrack } from 'solid-js'
 import { onCoachEvent } from '@/lib/coach-events'
-import type { CoachStep, CoachTour } from '@/lib/coach-types'
+import type { CoachDoStep, CoachStep, CoachTour } from '@/lib/coach-types'
 import { trackTour } from '@/lib/guide-funnel'
 
 /** How long Merc celebrates a done do-step before the next step shows. */
@@ -107,16 +110,14 @@ export function createCoachRunner(
   const [ended, setEnded] = createSignal<CoachEnd | null>(null)
   // The do-steps the singer has done in this run, by index.
   const done = new Set<number>()
-  let unlisten: (() => void) | null = null
-  let unlistenFailure: (() => void) | null = null
+  // What the waiting step listens to: its events, its failure, its ends.
+  let listening: (() => void)[] = []
   let celebration: ReturnType<typeof setTimeout> | null = null
   let over = false
 
   const stopWaiting = (): void => {
-    unlisten?.()
-    unlisten = null
-    unlistenFailure?.()
-    unlistenFailure = null
+    for (const off of listening) off()
+    listening = []
     if (celebration !== null) clearTimeout(celebration)
     celebration = null
   }
@@ -161,25 +162,40 @@ export function createCoachRunner(
     }
     const waiting = step.kind === 'do' && !done.has(index)
     setSnapshot({ ...at, waiting })
-    if (step.kind !== 'do' || !waiting) return
-    if (step.failure !== undefined) {
-      unlistenFailure = on(step.failure.event, () => {
-        setSnapshot({ ...at, waiting: true, failed: true })
-      })
-    }
-    unlisten = on(step.waitFor, () => {
+    if (step.kind === 'do' && waiting) wait(step, at)
+  }
+
+  /** Listens while the do-step `at` shows for what moves it on or ends it. */
+  const wait = (
+    step: CoachDoStep,
+    at: Omit<CoachSnapshot, 'waiting'>,
+  ): void => {
+    const heard = (): void => {
       stopWaiting()
-      done.add(index)
+      done.add(at.index)
       if (step.quiet === true) {
-        show(index + 1)
+        show(at.index + 1)
         return
       }
       setSnapshot({ ...at, waiting: false, celebrating: true })
       celebration = setTimeout(() => {
         celebration = null
-        show(index + 1)
+        show(at.index + 1)
       }, CELEBRATE_MS)
-    })
+    }
+    if (step.failure !== undefined) {
+      listening.push(
+        on(step.failure.event, () => {
+          setSnapshot({ ...at, waiting: true, failed: true })
+        }),
+      )
+    }
+    for (const name of [step.waitFor, ...(step.alsoFor ?? [])]) {
+      listening.push(on(name, heard))
+    }
+    for (const name of step.endsOn ?? []) {
+      listening.push(on(name, () => end('exit')))
+    }
   }
 
   const current = (): CoachSnapshot | null => (over ? null : untrack(snapshot))

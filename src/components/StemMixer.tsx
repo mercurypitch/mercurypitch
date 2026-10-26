@@ -164,6 +164,8 @@ interface StemMixerProps {
   onScorecardViewed?: (score: MicScore) => void
   /** The score card going away, however it went (StemMixerScoreModal). */
   onScorecardClosed?: () => void
+  /** A run stopped (its end, or Stop) with no score card to show for it. */
+  onStoppedUnscored?: () => void
   onBack?: () => void
   /** Zen mobile stage: stage another library session from the in-stage song
    *  sheet. Undefined hides the sheet (the studio has its own pickers). */
@@ -657,7 +659,10 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
     onScoreCreated: (score) => props.onScoreCreated?.(score),
     onPlaybackStarted: karaokeVoiceCapture.startPlayback,
     onPlaybackPaused: karaokeVoiceCapture.pausePlayback,
-    onPlaybackStopped: karaokeVoiceCapture.finishScoredPlayback,
+    onPlaybackStopped: (score) => {
+      karaokeVoiceCapture.finishScoredPlayback(score)
+      if (!scoreModalOpen()) props.onStoppedUnscored?.()
+    },
     onPlaybackDiscarded: karaokeVoiceCapture.dismiss,
     onMicFrame: karaokeVoiceCapture.pushMicFrame,
     keyShift: key.keyShift,

@@ -292,6 +292,42 @@ for (const screen of SCREENS) {
   })
 }
 
+test('a song that plays out with the mic off ends the wait through it, at 1440x900 @smoke', async ({
+  page,
+}) => {
+  test.setTimeout(60_000)
+  const errors: string[] = []
+  page.on('pageerror', (error) => errors.push(error.message))
+  await page.setViewportSize({ width: 1440, height: 900 })
+  // Eight seconds: the walk reaches the wait while it plays.
+  await localKaraokeDemo(page, 8)
+  await page.goto('/karaoke-night')
+  await page
+    .getByTestId('tour-chip')
+    .getByRole('button', { name: 'Sing the demo with Merc' })
+    .click()
+  await expect(heading(page, 'Start with the demo')).toBeVisible({
+    timeout: 15_000,
+  })
+  await page.locator('[data-tour="karaoke.demo"]').click()
+  await expect(heading(page, 'Sing along')).toBeVisible({ timeout: 15_000 })
+  await bubble(page).getByRole('button', { name: 'Skip this step' }).click()
+  await expect(bubble(page)).toHaveCount(0)
+
+  // Nothing is played for the singer here: the song reaches its end with no
+  // score card to close, and the last stop shows.
+  await expect(heading(page, 'Bring your own song')).toBeVisible({
+    timeout: 20_000,
+  })
+  await expect(bubble(page)).toContainText('3 of 3')
+  await ringsTarget(
+    page,
+    page.locator('[data-tour="karaoke.own-song"]').first(),
+    { width: 1440, height: 900 },
+  )
+  expect(errors).toEqual([])
+})
+
 test('the vocal remover keeps its page to itself @smoke', async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 })
   await localKaraokeDemo(page)

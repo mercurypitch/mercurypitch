@@ -23,7 +23,9 @@
  * What a do-step can wait for, or hear go wrong. `mic-on` comes once the
  * engine has the mic, not on the tap that asked for it; `mic-failed` when it
  * could not have it (a refused permission, no device). `score-closed` when
- * Karaoke's score card has gone after a song, however it went.
+ * Karaoke's score card has gone after a song, however it went;
+ * `song-unscored` when a song stopped (at its end, or Stop) with no score
+ * card to show, and `stage-left` when the singer took Back off the stage.
  */
 export type CoachEventName =
   | 'mic-on'
@@ -31,6 +33,8 @@ export type CoachEventName =
   | 'pitch-detected'
   | 'song-staged'
   | 'score-closed'
+  | 'song-unscored'
+  | 'stage-left'
 
 /** The window event's type; its `detail` is the CoachEventName. */
 export const COACH_EVENT = 'mp:coach'

@@ -165,6 +165,40 @@ describe('KARAOKE_TOUR', () => {
   )
 
   it.each(SCREENS)(
+    'goes on to the last stop when the song stops with no score card, or the singer leaves the stage, on a $name',
+    async ({ phone }) => {
+      const { tour } = await fresh()
+      for (const name of ['song-unscored', 'stage-left'] as const) {
+        const { runner, fire } = runnerFor(tour.KARAOKE_TOUR, phone)
+        runner.skip()
+        runner.skip()
+        expect(runner.snapshot()?.step.id).toBe('score')
+
+        fire(name)
+
+        expect(runner.snapshot()?.step.id).toBe('own-song')
+        runner.dispose()
+      }
+    },
+  )
+
+  it.each(SCREENS)(
+    "ends when another song takes the stage during the wait, so a later song's card brings no last stop, on a $name",
+    async ({ phone }) => {
+      const { tour } = await fresh()
+      const { runner, fire } = runnerFor(tour.KARAOKE_TOUR, phone)
+      runner.skip()
+      runner.skip()
+
+      fire('song-staged')
+      fire('score-closed')
+
+      expect(runner.ended()).toBe('exit')
+      expect(runner.snapshot()).toBeNull()
+    },
+  )
+
+  it.each(SCREENS)(
     'keeps to three counted stops and a quiet wait, on a $name',
     async ({ phone }) => {
       const { tour } = await fresh()

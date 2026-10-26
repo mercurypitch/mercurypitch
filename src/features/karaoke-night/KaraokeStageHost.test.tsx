@@ -121,4 +121,33 @@ describe('KaraokeStageHost', () => {
     expect(heard).toEqual(['song-staged', 'pitch-detected', 'score-closed'])
     for (const off of offs) off()
   })
+
+  it('tells a waiting Merc tour when the song stops with no score card, and when the singer leaves the stage', () => {
+    const heard: string[] = []
+    const names: CoachEventName[] = ['song-unscored', 'stage-left']
+    const offs = names.map((name) => onCoachEvent(name, () => heard.push(name)))
+    const onExit = vi.fn(() => heard.push('exit'))
+
+    render(() => (
+      <KaraokeStageHost
+        song={{
+          sessionId: 'song-1',
+          title: 'Stage Song',
+          stems: { vocal: 'vocal.wav', instrumental: 'backing.wav' },
+        }}
+        onExit={onExit}
+        onSong={vi.fn()}
+      />
+    ))
+    const props = stemMixerSpy.mock.calls[0]?.[0] as {
+      onStoppedUnscored: () => void
+      onBack: () => void
+    }
+    props.onStoppedUnscored()
+    props.onBack()
+
+    // The tour hears Back before the stage goes.
+    expect(heard).toEqual(['song-unscored', 'stage-left', 'exit'])
+    for (const off of offs) off()
+  })
 })

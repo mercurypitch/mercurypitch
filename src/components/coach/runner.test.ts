@@ -66,13 +66,21 @@ const SING: CoachTour = {
   ],
 }
 
-/** Karaoke Night's shape: two do steps, a quiet wait through the song, a show. */
+/**
+ * Karaoke Night's shape: two do steps, a quiet wait through the song, a show.
+ * The wait also ends on a song stopped with no score card or a stage left,
+ * and the tour ends if another song takes the stage.
+ */
 const KARAOKE: CoachTour = {
   key: 'karaoke-night',
   steps: [
     doStep('demo', 'song-staged'),
     doStep('mic', 'pitch-detected'),
-    doStep('score', 'score-closed', { quiet: true }),
+    doStep('score', 'score-closed', {
+      quiet: true,
+      alsoFor: ['song-unscored', 'stage-left'],
+      endsOn: ['song-staged'],
+    }),
     show('own'),
   ],
 }
@@ -305,6 +313,55 @@ describe('createCoachRunner', () => {
       step: 2,
       of: 3,
     })
+  })
+
+  it.each(['song-unscored', 'stage-left'] as const)(
+    'moves a waiting step on for %s, as for its own event',
+    (name) => {
+      const runner = start(KARAOKE)
+      runner.skip()
+      runner.skip()
+      expect(runner.snapshot()?.step.id).toBe('score')
+
+      bus.send(name)
+
+      expect(runner.snapshot()).toMatchObject({ place: 3, last: true })
+      expect(runner.snapshot()?.step.id).toBe('own')
+    },
+  )
+
+  it('ends the tour, as an exit where it stands, on an event after which the step cannot be done', () => {
+    const runner = start(KARAOKE)
+    runner.skip()
+    runner.skip()
+
+    bus.send('song-staged')
+
+    expect(runner.ended()).toBe('exit')
+    expect(runner.snapshot()).toBeNull()
+    expect(track).toHaveBeenLastCalledWith('tour_exit', 'karaoke-night', {
+      step: 2,
+      of: 3,
+    })
+    // A later song's card brings nothing back.
+    bus.send('score-closed')
+    expect(runner.snapshot()).toBeNull()
+    expect(track).toHaveBeenCalledTimes(2)
+  })
+
+  it('hears those events only while their step waits', () => {
+    const runner = start(KARAOKE)
+    bus.send('song-unscored')
+    bus.send('stage-left')
+    expect(runner.snapshot()?.step.id).toBe('demo')
+
+    // The demo step's own event, not the wait's ending.
+    bus.send('song-staged')
+    expect(runner.ended()).toBeNull()
+    vi.advanceTimersByTime(CELEBRATE_MS)
+    expect(runner.snapshot()?.step.id).toBe('mic')
+    bus.send('song-staged')
+    expect(runner.ended()).toBeNull()
   })
 
   it('goes back a step, and not before the first', () => {
