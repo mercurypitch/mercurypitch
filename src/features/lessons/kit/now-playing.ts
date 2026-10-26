@@ -12,7 +12,7 @@
 // pair played again) restarts itself, so the owner leaves it alone; a
 // source that ends, by itself or by its own stop, lets go, so a later
 // claim never runs its stop twice. A page opts in by handing `NowPlaying`
-// to what it mounts; no other lesson does yet.
+// to what it mounts, as Lessons 6 to 9 do.
 
 export interface SoundOwner {
   /** Before a source sounds: stops the sound before it, when that is another source's, and records this one. */

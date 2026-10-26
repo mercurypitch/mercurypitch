@@ -203,7 +203,8 @@ need them ("needs 5" is item 5 of a lesson's list):
 - **Smaller shared parts**: `kit/siren-flow.ts` from Lesson 7's page (11's needs 7), an open turn
   for the ring's `RingRun` (11's needs 12), `kit/hold-flow.ts` and `kit/hold-run.ts` from Lesson
   5's page (13's needs 8 and 9), `writeStepsWav` for the end-to-end tests (9's needs 13, 14's needs
-  16), and a `schedule` that can be stopped (12's needs 8).
+  16), and a `schedule` that can be stopped (12's needs 8), now the kit's runs
+  (`kit/run.ts`, `playNotes` and its `stop`).
 - **Lesson 14** waits on one kit change before its page is built (its needs 12): a season close
   that knows a rest ending, with no "Now sing a whole song." after "Effortful", "Uncomfortable" or
   "Just listen today" (the lead's decision, 21 October). Item 11 of its list, Move do and the

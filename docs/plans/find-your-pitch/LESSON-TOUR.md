@@ -23,7 +23,7 @@ page in four more steps, with an X and a Skip for people who know their way arou
   from a press on Sing it, which a page still at the top has not had.
 - On Lessons 1 and 2 it waits for the opening shot to end, both characters landed and both
   bubbles up, with the page held still meanwhile, and 6 s after the page started at the most (see
-  [The opening hold](#the-opening-hold-lessons-1-and-2)). On Lessons 3 to 8 it opens as soon as
+  [The opening hold](#the-opening-hold-lessons-1-and-2)). On Lessons 3 to 9 it opens as soon as
   its chunk arrives. It never waits on the live renderer: the stills are there when there is no
   live Merc.
 
@@ -41,8 +41,8 @@ nine pages show all five steps, at 390 px and at 1440 px.
 | 4   | `#graph` (wide), `#exList` (phone)                                                                                 | The season, mapped | Every lesson in the season, and how each one builds on the ones before. Pick a lesson to see what it covers and what it builds on.                                                                                 |
 | 5   | `.lm-btn`, `#mastNav` and `.lm-tour` (wide), `.lm-btn` and `.lm-tour` (phone, where the menu carries the sections) | Find your way      | From up here you can jump to any part of this lesson, or open the lesson menu for every lesson in the season. Tour this page, in that menu, shows you this tour again. So does the question mark at the top right. |
 
-On Lessons 3, 5 and 7, whose Sing it listens once the viewer chooses to sing, step 3 adds: "If you
-choose to sing, it listens through your microphone and shows what it heard. Nothing is recorded,
+On Lessons 3, 5, 7 and 9, whose Sing it listens once the viewer chooses to sing, step 3 adds: "If
+you choose to sing, it listens through your microphone and shows what it heard. Nothing is recorded,
 kept or sent."
 
 The card's own words: "1 of 5", Back, Next (Done on the last step), Skip tour, and the X, named
@@ -134,7 +134,7 @@ the shot, and the tour then gave up, the page no longer at the top.
 - The gate keeps it small (`holdTour` in `tour-gate.ts`): the tour's chunk still loads as the page
   starts, so the card comes up as the shot ends. A replay from the question mark or the menu opens
   at once and lets the page go; a first visit's tour that then finds the tour closed gives up.
-- Lessons 3 to 8, deep links, reduced motion, a page already scrolled and return visits hold
+- Lessons 3 to 9, deep links, reduced motion, a page already scrolled and return visits hold
   nothing and wait for nothing.
 - On Lesson 1 at 1440 x 900 on the dev server the hold ran from 0.9 s to 4.9 s, and the card came
   at 4.9 s with nothing still moving; on Lesson 2 from 1.2 s to 5.2 s. In emulated touch, a swipe
@@ -247,7 +247,7 @@ left, 780 bytes.
   it. The stage is the deck itself: the counter, the arrows and the figure.
 - Step 3 no longer says it listens and shows how close you are. Lessons 1, 2, 4, 6 and 8 never
   listen, and Lessons 5 and 7 show drift and a lit band, not closeness. The microphone line is
-  added on 3, 5 and 7 only, in the pages' own words.
+  added on 3, 5, 7 and 9 only (`LISTENING_LESSONS`), in the pages' own words.
 - Step 4 lights the map itself (`#graph`, or `#exList` under 860 px), not the whole section, for
   the same reason as step 2.
 - Step 5 lights the lesson menu's button with the section links, since the claim "or to another

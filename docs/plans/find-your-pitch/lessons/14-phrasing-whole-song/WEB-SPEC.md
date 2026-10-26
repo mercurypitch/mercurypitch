@@ -830,10 +830,10 @@ among them (PR #1149), and in Lesson 9's spec, beyond the parts Lessons 2 to 9 p
    open's predict.
 4. First-paint ceilings for `learn/14.html` in `scripts/assert-first-paint-budgets.mjs`, one in its
    JavaScript table and one in its stylesheet table, beside Lessons 3 and 6's (`:103-151`,
-   `:181-189`; `:322-325`, `:335-339`). Every build emits every lesson page, and the check fails a
-   document with no ceiling (`:587-591`), so without them the Browser jobs fail before any spec
+   `:181-189`; `:267-270`, `:280-284`). Every build emits every lesson page, and the check fails a
+   document with no ceiling (`:529-533`), so without them the Browser jobs fail before any spec
    runs, as Lesson 6's did on PR #1149. Each is the page's measured first paint plus about a
-   quarter, the tables' rule (`:47-58`, `:278-288`), measured in `build:e2e`, where the check runs
+   quarter, the tables' rule (`:47-58`, `:223-233`), measured in `build:e2e`, where the check runs
    (`package.json:20`), as Lesson 6's entry warns, since a build of one page alone weighs it lighter
    (`assert-first-paint-budgets.mjs:186-188`). As on Lesson 3, the listener, the pitch detector and
    Voice Mirror's scorer arrive through a dynamic import when Start is pressed
@@ -892,10 +892,10 @@ among them (PR #1149), and in Lesson 9's spec, beyond the parts Lessons 2 to 9 p
     into the kit's quiz (`kit/quiz.ts:141-143`), beside `lessonPageHref` (`:137-139`), so Lessons 9
     and 14 take it from there.
 15. The hook and the tease: done in this package (1, 2).
-16. `src/e2e/helpers/tone-wav.ts`: Lesson 9's proposed `writeStepsWav(steps, leadSilence)`, steady
-    tones in sequence after a stretch of silence, beside `writeToneWav` (`:76`), here for the phrase
-    with take 2's breath, D3 D3 A3 A3 B3 B3 at 0.75 s, A3 for 1.2 s and 0.3 s of silence (Tests, end
-    to end 6).
+16. `src/e2e/helpers/tone-wav.ts`: Lesson 9's `writeStepsWav(steps, leadSilence)`, built (`:156`),
+    steady tones in sequence after a stretch of silence, beside `writeToneWav` (`:76`), a step of
+    `hz` 0 a rest, here for the phrase with take 2's breath, D3 D3 A3 A3 B3 B3 at 0.75 s, A3 for
+    1.2 s and 0.3 s of silence (Tests, end to end 6).
 17. App: Dynamic Swell's score (Practice links); its copy and the routines' were done in #1192.
 
 Lesson 6's page also brought kit parts this page does not use: the ear game (`kit/ear-game.ts`) and
@@ -1090,7 +1090,7 @@ parts:
     reading time while its line is in `drafts.ts`, and `seasonFor(LESSONS, defaultPageState(true))`
     keeps both, as `publish.test.ts` checks a lesson held back and one published (`:58-110`); that
     file's example of a lesson with no page is found, not named (`:45-56`). When the season's last
-    page lands, Lesson 14's in the order `docs/plans/find-your-pitch/HANDOFF.md:219` suggests,
+    page lands, Lesson 14's in the order `docs/plans/find-your-pitch/HANDOFF.md:220` suggests,
     `lessonWithNoPage` (`kit/season.test-fixtures.ts:22-36`) finds none, and each test that asks it
     for an example fails by saying so. Lesson 14's practise link carries `?lesson=14`, and `EDGES`
     holds [5, 14], [8, 14], [9, 14] and [12, 14].
@@ -1147,8 +1147,8 @@ End to end (Playwright, at 390 x 844 and 1440 x 900, on the e2e build, which sho
    "Easy" offers Start take 2; after take 2 and "Easy", Play your take 1 and Play your take 2 each
    start a buffer (a spy on `AudioBufferSourceNode.prototype.start`), the seek bar moves without
    starting one, and Delete your takes removes both and the controls. With `writeStepsWav`
-   (proposed), the phrase with its breath reads "… from about D3 to B3."; if the fake device's start
-   cannot be pinned, the unit tests carry the readings. "Effortful" shows the gentle line, no Start,
+   (built, Lesson 9's), the phrase with its breath reads "… from about D3 to B3."; if the fake
+   device's start cannot be pinned, the unit tests carry the readings. "Effortful" shows the gentle line, no Start,
    the takes' playback, and the rest card in the Wrap. "Uncomfortable" shows the doctor lines, no
    line under the chart, the takes' playback, and the rest card. "Just listen today" never calls
    `navigator.mediaDevices.getUserMedia` (a spy), shows the doctor lines and leaves the rest card. A

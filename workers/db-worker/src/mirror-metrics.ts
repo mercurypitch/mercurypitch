@@ -50,7 +50,7 @@ export const TOUR_METRIC_KEYS: ReadonlySet<string> = new Set([
  * included.
  *
  * The pages are Lessons 1 to 14. Every quiz asks questions `q1` to `q4` (the
- * 15 createQuiz sites in src/features/lessons, October 2026), so a fifth
+ * 17 createQuiz sites in src/features/lessons, October 2026), so a fifth
  * question widens `q` here first. A question has 2 to 6 options, and `visit`
  * is the first, the second or a later one (telemetry.ts caps it at 3).
  */
