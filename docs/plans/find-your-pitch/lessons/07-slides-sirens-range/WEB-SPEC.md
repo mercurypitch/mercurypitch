@@ -618,7 +618,7 @@ Lessons 2 to 6 promote into the kit (Toys table). Read again on main at `31b7f53
 
 1. The lesson host: `learn/07.html` at `/learn/07`. On main the dev and preview servers and the
    build take every `learn/NN.html` as a lesson page, with no entry of its own
-   (`vite.config.ts:78-87`, `:147-149`, `:489`), and the site worker keeps a draft out of production
+   (`vite.config.ts:79-88`, `:148-150`, `:493`), and the site worker keeps a draft out of production
    until its sign-off or until the console publishes it (`src/lesson-gate.ts:32-36`;
    `kit/drafts.ts`). Built: `/learn/07` and `/learn/07.html` in `STANDALONE_DOCUMENT_PATHS`
    (`src/lib/sw-runtime.ts`, as `/learn/01` is). Left out on purpose: `public/sitemap.xml` and

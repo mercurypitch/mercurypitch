@@ -768,7 +768,7 @@ and the four-words strip in the kit.
 
 1. The lesson host: `learn/13.html` at `/learn/13`. Every build takes every `learn/NN.html` as an
    input and routes its clean path (`tools/draft-lessons.ts:78-86`, `:110-122`;
-   `vite.config.ts:318`, `:489`), so the page needs no build change. Its line in `kit/drafts.ts`,
+   `vite.config.ts:319`, `:493`), so the page needs no build change. Its line in `kit/drafts.ts`,
    `13: "the vocal coach's sign-off (MASTER-PLAN § 12 item 8)"`, beside Lessons 3 to 8's
    (`kit/drafts.ts:31-38`), makes it a draft: production's `LESSON_DRAFTS`, "0", holds it back, and
    the dev site's and the previews', "1", show it (`wrangler.jsonc:112-116`, `:167`, `:190`,
@@ -783,7 +783,7 @@ and the four-words strip in the kit.
    release's checks (`:278-305`). `datePublished` is set in the commit that deletes the `drafts.ts`
    line or in one straight after the console publishes it, as the owner picks, and indexing is
    requested on the day the console publishes it, not at the release (`SEARCH.md` § 3.2, `:146-153`;
-   § 12, `:400-424`).
+   § 12, `:418-442`).
 2. The page's head, written in full from its first commit:
    `src/features/lessons/kit/lesson-copy.test.ts` reads every `learn/NN.html`, drafts included
    (`lesson-copy.test.ts:323-358`), and `src/tests/lesson-pages.test.ts` holds every lesson
@@ -795,7 +795,7 @@ and the four-words strip in the kit.
    hook, and every other copy carries it whole. As Lesson 2's head has them (`learn/02.html:3-145`):
    - the title, "Resonance and vowels: why ee and ah differ | MercuryPitch" (57 characters, under
      the test's ceiling of 60, `lesson-pages.test.ts:154-155`), SEARCH.md § 4's draft for Lesson 13
-     (`SEARCH.md:231`), in the query-led form the owner chose for Lessons 1 to 8 on 22 October 2026.
+     (`SEARCH.md:244`), in the query-led form the owner chose for Lessons 1 to 8 on 22 October 2026.
      Until #1187 the title had to hold the Article's headline, which `og:title` holds now
      (`lesson-pages.test.ts:184-188`), and this spec kept the series' name for the owner,
      "Resonance and vowels · Find Your Pitch | MercuryPitch" (53), Lessons 4 and 5's form then,

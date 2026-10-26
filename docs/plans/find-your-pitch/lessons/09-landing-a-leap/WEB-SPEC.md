@@ -617,7 +617,7 @@ table):
 
 1. The lesson host: `learn/09.html` at `/learn/09`. Every build takes every `learn/NN.html` as an
    input and routes its clean path (`tools/draft-lessons.ts:1-18`; `lessonPages`, `:77-86`;
-   `lessonInputs` and `lessonPaths`, `:109-122`; `vite.config.ts:318`, `:489`), so the page needs no
+   `lessonInputs` and `lessonPaths`, `:109-122`; `vite.config.ts:319`, `:493`), so the page needs no
    build change. Its line in `kit/drafts.ts`,
    `9: "the vocal coach's sign-off (MASTER-PLAN § 12 item 8)"`, beside Lessons 3 to 8's (`:30-38`),
    makes it a draft: production's `LESSON_DRAFTS`, "0", holds it back, and the dev site's and the
@@ -641,7 +641,7 @@ table):
    description, which repeat each other, may shorten the hook, and every other copy carries it
    whole. As Lesson 2's head has them (`learn/02.html:9-136`):
    - the title, "Landing a leap: singing big intervals in tune | MercuryPitch" (60 characters, the
-     test's most, `lesson-pages.test.ts:154-155`), SEARCH.md § 4's draft (`SEARCH.md:227`), and
+     test's most, `lesson-pages.test.ts:154-155`), SEARCH.md § 4's draft (`SEARCH.md:240`), and
      the h1, `h1.hook#hook`, the hook in its default wording (`lesson-copy.test.ts:323-332`; Hero);
    - the meta description, "How do you land a note you have to leap to? Hear it first, aim at its
      band, and sing do-mi-so-do as a ladder. A free lesson in your browser." (140 characters, inside

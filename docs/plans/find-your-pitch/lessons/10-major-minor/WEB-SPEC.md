@@ -682,7 +682,7 @@ still images when WebGL fails or would run on the CPU.
 - **Today, Ear Lab's Stack.** `mercurypitch.com/ear-lab`, then tap Stack (FACTS 47, 51): twelve
   rounds, each one chord on a roved root, named from six qualities, of which this lesson teaches
   two. On the public host `/ear-lab?lesson=10`, the marker before the hash the entry document adds
-  (`src/seo/entry-pages.ts:439-444`). Stack needs no voice, so it stays on the rest card (FACTS 67).
+  (`src/seo/entry-pages.ts:453-458`). Stack needs no voice, so it stays on the rest card (FACTS 67).
 - **Needed, proposed: `/exercises/thirds-on-a-drone`** (CURRICULUM § 4 item 2, the planned
   `intervals` launch field; FACTS 52, 53): Drone Intonation with the field set to the minor and
   major thirds, 3 and 4 semitones up, registered in `EXERCISE_SLUGS`
@@ -759,7 +759,7 @@ at `85e23a1af` changed there, and that page's own lines are cited at `d59c00ad6`
 
 1. The lesson host: `learn/10.html` at `/learn/10`. The dev and preview servers and every build take
    every `learn/NN.html` as a lesson page, a draft's included, with no entry of its own
-   (`vite.config.ts:78-87`, `:147-149`, `:489`; `lessonPages` and `lessonInputs`,
+   (`vite.config.ts:79-88`, `:148-150`, `:493`; `lessonPages` and `lessonInputs`,
    `tools/draft-lessons.ts:77-86`, `:109-117`). Still needed: `/learn/10` and `/learn/10.html` in
    `STANDALONE_DOCUMENT_PATHS` (`src/lib/sw-runtime.ts:93`), beside the drafts' entries, whose
    comment gives the reason: where a draft is not published, its address must reach the site

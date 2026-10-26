@@ -816,7 +816,7 @@ paused off screen, and the still images when WebGL fails or would run on the CPU
 - **Today, Ear Lab's Subdivide.** `mercurypitch.com/ear-lab`, then tap Subdivide (FACTS 52, 53): two
   bars on its drum kit, the kick on beat 1, and four pads naming the metre, the answer among three
   others drawn from its five. On the public host `/ear-lab?lesson=08`, the marker before the hash
-  the entry document adds (`src/seo/entry-pages.ts:440-444`). The main app reads the marker before
+  the entry document adds (`src/seo/entry-pages.ts:454-458`). The main app reads the marker before
   it renders and steps First Light aside for good (FACTS 57), so the card, the rest card and the
   footer carry no line about closing the intro (FACTS 54). Subdivide needs no voice, so it stays on
   the rest card.
@@ -932,7 +932,7 @@ was built on.
     (`src/lib/sw-runtime.ts:93`), beside the drafts' entries and their comment (`:138-157`), so
     that where it is held back its address reaches the site worker's 404 page, never the app
     shell; the build takes `learn/08.html` by itself, in every mode (`tools/draft-lessons.ts:16-18`;
-    `vite.config.ts:318`, `:489`).
+    `vite.config.ts:319`, `:493`).
 14. The head, from `docs/plans/find-your-pitch/SEARCH.md` § 3 and Lesson 2's document
     (`learn/02.html:3-145`), whole in the page's first commit. Two tests hold it: the kit's
     `src/features/lessons/kit/lesson-copy.test.ts:323-358` reads every `learn/NN.html`, drafts

@@ -374,7 +374,7 @@ main's.
 - Lesson 1's predict widget, promoted into the kit if Lesson 2 has not done it (Toys 2).
 - `vite.config.ts`: `/learn/04` served from `learn/04.html` in dev and preview, and `learn/04.html`
   as a build input. On main every `learn/NN.html` is both, with no entry of its own
-  (`vite.config.ts:78-87`, `:147-149`, `:489`).
+  (`vite.config.ts:79-88`, `:148-150`, `:493`).
 - `src/lib/sw-runtime.ts`: `/learn/04` and `/learn/04.html` in `STANDALONE_DOCUMENT_PATHS`, as
   `/learn/01` is (`sw-runtime.ts:131-135`), so the service worker leaves the lesson alone. On main
   they are there (`:144-145`).
