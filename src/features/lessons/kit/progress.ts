@@ -5,18 +5,18 @@
 // One list in localStorage, shared by every lesson page: a lesson's quiz
 // marks it done once every question has an answer, its explorer card
 // toggles it, and the explorer repaints on every change. In a private
-// window the list lasts for the visit only (see `store`).
+// window the list lasts for the visit only (see `store`). The app reads the
+// same list for Home's Lessons link, so its key and its parse are shared, in
+// src/lib/lesson-done.ts.
 
+import { doneLessonsFrom, LESSON_DONE_KEY } from '@/lib/lesson-done'
 import { store } from './dom'
 
-const KEY = 'fyp-done'
+const KEY = LESSON_DONE_KEY
 const listeners = new Set<() => void>()
 
 function read(): number[] {
-  const stored = store.get<unknown>(KEY, [])
-  return Array.isArray(stored)
-    ? stored.filter((n): n is number => typeof n === 'number')
-    : []
+  return doneLessonsFrom(store.get<unknown>(KEY, []))
 }
 
 export const Done = {

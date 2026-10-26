@@ -95,6 +95,39 @@ test("Home's Lessons link, beside Learn and What's new, opens the lesson @smoke"
   await expect(page).toHaveTitle(TITLE)
 })
 
+test("Home's Lessons link opens the visitor's next lesson, never a draft", async ({
+  page,
+}) => {
+  // Lesson 1 marked done on its page, as its quiz and explorer card do.
+  await page.addInitScript(() => {
+    ;(window as unknown as { E2E_TEST_MODE: boolean }).E2E_TEST_MODE = true
+    window.localStorage.setItem('fyp-done', '[1]')
+  })
+  await page.goto('/')
+  await page.waitForSelector('#app-tabs', { timeout: 10_000 })
+  await dismissOverlays(page)
+
+  await expect(page.getByTestId('home-lessons')).toHaveAttribute(
+    'href',
+    '/learn/02',
+  )
+
+  // Lessons 1 and 2 done: this bundle serves Lesson 3, a draft, and Home
+  // still offers the hub, as every environment serves it.
+  // Init scripts run in the order they were added, so this one wins.
+  await page.addInitScript(() => {
+    window.localStorage.setItem('fyp-done', '[1,2]')
+  })
+  await page.reload()
+  await page.waitForSelector('#app-tabs', { timeout: 10_000 })
+  await dismissOverlays(page)
+
+  await expect(page.getByTestId('home-lessons')).toHaveAttribute(
+    'href',
+    '/learn/',
+  )
+})
+
 test('a visitor with the studio installed still gets the lesson, not the shell @smoke', async ({
   page,
 }) => {

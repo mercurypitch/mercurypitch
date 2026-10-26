@@ -26,6 +26,7 @@ import { exerciseLabel, segmentVariantLabel, } from '@/features/routines/segment
 import type { RoutineSegment, SegmentKind } from '@/features/routines/types'
 import type { RoutineLength } from '@/features/routines/use-daily-routine'
 import { launchRoutineSegment, routinePrefs, setRoutinePrefs, useDailyRoutine, } from '@/features/routines/use-daily-routine'
+import { currentLessonHref } from '@/lib/current-lesson'
 import { navigateTo } from '@/lib/hash-router'
 import { IS_NATIVE_BUILD } from '@/lib/native-build'
 import { copyShareUrl, encodeRoutineForShare } from '@/lib/share-codec'
@@ -180,15 +181,17 @@ const HomePage: Component = () => {
           {/* Lessons and What's new. The Find Your Pitch lessons are their
               own documents (/learn/01, not an app route), so Lessons is a
               plain link and the visit leaves the app, the way /delete-account
-              does. Learn, the read-along chapters about the app, sat here
-              beside it for a release; two doors both called learn led to
+              does. It opens the visitor's current lesson: the first released
+              one not marked done, or the hub once all are (current-lesson.ts).
+              Learn, the read-along chapters about the app, sat here beside it
+              for a release; two doors both called learn led to
               different places, so Learn went back to the sidebar with Guide
               and Tour, and Home's one learning door is the singing course.
               What's new stays: Home is where you arrive. */}
           <div class={styles.headActions}>
             <a
               class={styles.headAction}
-              href="/learn/01"
+              href={currentLessonHref()}
               title="Find Your Pitch: free lessons on notes and singing"
               data-testid="home-lessons"
             >
