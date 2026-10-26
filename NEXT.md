@@ -191,3 +191,7 @@ Note: the lanes' memory gate read a stale cgroup path after the 21:00 restart (f
 - Tag lead/l9-page3-gated = d6fcfdf3a; origin feat/lesson-09-page 019bd5c93 -> d6fcfdf3a (fast-forward, leased).
 - Follow-ups added (l9/FOLLOWUPS.md, run 3 section): readout announce at stop (B15), rangeFill leaf module (B16), re-anchor base rule; COPY_TRACE item closed.
 - Next: run 4 brief (Sing it without the microphone, then the take, then the map) on d6fcfdf3a; launch at xhigh if the rate limit is allowed.
+
+## 01:20 UTC 26 Oct — L9 run 4 started
+- Brief l9/BRIEF-page-4.md: Sing it without the microphone (sing.ts, states 1-5 and 9; lesson-voice.css back to main.ts if links hold), the take (sing-take.ts through MicHold, readLadder with slotSec and voicedAt, silenced/left events, tour LISTENING_LESSONS gains 9), new learn-lesson-09-sing.spec.ts, then the map. Move do keeps the kit's `disabled` ends on this branch (Lesson 10's K3 updates them in its own change). Disk rule 700 MB before a build (943 free).
+- Builder launched at xhigh in l9-flow (rate limit allowed, resets 02:50 UTC). SLOTS: (1) L9 run 4, (2) free (nothing else can proceed: L10 page stacks on L9's, L12 waits on L10-P11).
