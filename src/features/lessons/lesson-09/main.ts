@@ -13,8 +13,8 @@
 // The page shell: the switches, the steps' deck with its ladder chart in
 // each step's state, the next lesson's card, the season map, the masthead
 // and Merc and Tavi; the cold open, the four words, the recall, the steps
-// and their sounds, Sing it with its take, and the quick check. Free play
-// does nothing until it is wired.
+// and their sounds, Sing it with its take, the quick check, and the Wrap's
+// free play.
 
 import '@fontsource-variable/inter'
 import '@fontsource-variable/outfit'
@@ -47,6 +47,7 @@ import { initRecall } from './recall'
 import { initSing } from './sing'
 import { initSteps } from './steps'
 import { initWords } from './words'
+import { initWrap } from './wrap'
 
 initSoundSwitch()
 initMotionSwitch()
@@ -72,6 +73,9 @@ createQuiz({
 
 // Sing it: the comfort check, the voice, the ladder, Merc's ladder, the take
 initSing()
+
+// the Wrap's free play: every rung of the ladder chart in one place
+initWrap()
 
 // the next lesson's card first: the explorer binds its link to the map
 createNextCard(9)

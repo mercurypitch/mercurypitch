@@ -9,10 +9,13 @@
 // submit; there is no Watch section, because Lesson 9 has no film; the page
 // opens on its cold open, with Merc's leap as the predict's free play, the
 // recall after it, shown to everyone, and before the four words; the
-// practice links carry the lesson; the share card its head names is in
-// public/, at its size; and every line of its copy says only what the
-// claims check passes (WEB-SPEC, Tests 8). The stage's names, step by step,
-// are steps.test.ts's.
+// practice links carry the lesson; the Wrap's recap and cards, the section
+// heads and the footer's lines are LESSON.md's, word for word; free play's
+// controls have names no other control on the page has; the next card's
+// mark holds only the tease's still, with no button; the share card its
+// head names is in public/, at its size; and every line of its copy says
+// only what the claims check passes (WEB-SPEC, Tests 8). The stage's names,
+// step by step, are steps.test.ts's.
 
 import { readdirSync, readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
@@ -149,6 +152,97 @@ describe("Lesson 9's page", () => {
     // Assert
     expect(links.length).toBeGreaterThanOrEqual(2)
     for (const h of links) expect(h, h).toMatch(/[?&]lesson=09(?:#|$)/)
+  })
+
+  it("carries the Wrap's words, its section heads and its footer as LESSON.md writes them", () => {
+    // Arrange: LESSON.md flat, its bold marks gone and its quotes as the page sets them
+    const flat = (t: string | null | undefined): string =>
+      (t ?? '').replace(/\s+/g, ' ').replace(/[“”]/g, '"').trim()
+    const lesson = flat(
+      readFileSync(
+        resolve(
+          process.cwd(),
+          'docs/plans/find-your-pitch/lessons/09-landing-a-leap/LESSON.md',
+        ),
+        'utf8',
+      ),
+    ).replace(/\*\*/g, '')
+    const page = doc()
+    // the footer's lines LESSON.md gives word for word; the fonts line is Lesson 1's
+    const footer = [
+      'Season 1 · Lesson 09 · Landing a leap',
+      'mercurypitch.com/pitch-training',
+      'Arpeggio Jumper and Interval Trainer are free.',
+      'Every sound on this page is synthesised in your browser.',
+    ]
+
+    // Act
+    const words = [
+      ...page.querySelectorAll('#wrap .recap li'),
+      ...page.querySelectorAll('#practiseCard [data-ending] p'),
+      ...page.querySelectorAll('.mv-tempo, .mv-title'),
+    ].map((e) => flat(e.textContent))
+    const printed = flat(page.querySelector('footer')?.textContent)
+
+    // Assert
+    expect(words.length).toBeGreaterThan(15)
+    expect(words.filter((w) => !lesson.includes(w))).toEqual([])
+    expect(footer.filter((w) => !lesson.includes(w))).toEqual([])
+    expect(footer.filter((w) => !printed.includes(w))).toEqual([])
+  })
+
+  it("gives free play's controls names no other control on the page has", () => {
+    // Arrange: each control's name as the markup gives it
+    const nameOf = (e: Element): string =>
+      e.getAttribute('aria-label') ??
+      (e.textContent ?? '').replace(/\s+/g, ' ').trim()
+    const page = doc()
+    const all = Array.from(
+      page.querySelectorAll('main :is(button, input)'),
+      nameOf,
+    )
+
+    // Act
+    const free = Array.from(
+      page.querySelectorAll('#freePlay :is(button, input)'),
+      nameOf,
+    )
+
+    // Assert
+    expect(free).toEqual([
+      'do, D3',
+      'mi, F sharp 3',
+      'so, A3',
+      'top do, D4',
+      'Free play: Hear it first',
+      'Free play: Slow',
+      'Lower voice',
+      'Higher voice',
+    ])
+    for (const name of free)
+      expect(
+        all.filter((n) => n === name),
+        name,
+      ).toHaveLength(1)
+  })
+
+  it("keeps only the tease's still in the next card's mark, hidden from a screen reader, with no button: the card is a link", () => {
+    // Act
+    const mark = doc().querySelector('[data-next-card]')
+    const kids = Array.from(mark?.children ?? [], (k) => [
+      k.tagName.toLowerCase(),
+      k.getAttribute('class'),
+      k.getAttribute('aria-hidden'),
+      k.getAttribute('focusable'),
+    ])
+
+    // Assert
+    expect(kids).toEqual([['svg', 'l09-tease', 'true', 'false']])
+    expect(mark?.querySelectorAll('button, a, input, [tabindex]')).toHaveLength(
+      0,
+    )
+    expect(mark?.querySelectorAll('.lit')).toHaveLength(3)
+    expect(mark?.querySelector('.ask')?.textContent).toBe('?')
   })
 
   it('reads no draft switch: the page state decides (kit/drafts.ts)', () => {

@@ -159,6 +159,39 @@ test("Lesson 8's card sets up Lesson 9 with its tease, one line above its hook, 
   await expect(c.locator('button')).toHaveCount(0)
 })
 
+test("Lesson 9's card names Lesson 10, coming later, sets it up with its tease above the hook and its figure after the words, and leads to the map", async ({
+  page,
+}) => {
+  // Arrange
+  await page.goto('/learn/09')
+  const c = card(page)
+  await expect(c.locator('.eyebrow')).toHaveText(
+    'Next lesson 10 · Major and minor Coming later',
+  )
+  await expect(c.locator('.next-tease')).toHaveText(
+    LESSON_COPY[10]?.tease ?? 'Lesson 10 has a tease',
+  )
+  await expect(c.locator('.next-tease')).toBeVisible()
+  const words = await c
+    .locator('.next-words > *')
+    .evaluateAll((els) => els.map((e) => e.className))
+  // the page's tease figure, kept after the words
+  const children = await c.evaluate((a) =>
+    Array.from(a.children, (k) => k.classList[0] ?? k.tagName),
+  )
+
+  // Act
+  await c.click()
+
+  // Assert
+  expect(words).toEqual(['eyebrow', 'next-tease', 'q2', 'chip'])
+  expect(children).toEqual(['next-words', 'l09-tease'])
+  await expect(c.locator('button')).toHaveCount(0)
+  await expect(c.locator('.chip')).toHaveText('See it on the map')
+  await expect(page).toHaveURL(/\/learn\/09#explorer$/)
+  await expect(page.locator('#exCardHost h3')).toHaveText('Major and minor')
+})
+
 test("Lesson 2's card, its two figures kept, leads to Lesson 3's page @smoke", async ({
   page,
 }) => {

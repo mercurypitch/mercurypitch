@@ -8,7 +8,8 @@
    floor for the stage budget and Step 1's folds strip under it, its row of
    controls (WEB-SPEC, Toys 1, "Layout and targets": every target 44 px,
    10 px apart, from 344 px up), the scrub bar, Sing it's lines, and the
-   Wrap's cards. */
+   Wrap's cards: the practice card, the next lesson's card with its tease
+   figure, and free play's rungs. */
 /* ---------------------------------------------------------------- hero: the compact chart between Merc and Tavi */
 .l9-duo {
   --merc: clamp(120px, 11vw, 168px);
@@ -138,15 +139,18 @@
 .l9-sing .ladder-choice {
   margin-bottom: 12px;
 }
-/* the ladder the take sings wears the kit's pressed ring (lesson-parts.css,
-   `.seg`), its buttons 10 px apart rather than joined */
-.l9-sing .ladder-choice .btn[aria-pressed='true'] {
+/* the ladder the take sings, and the voice free play's chart shows, wear the
+   kit's pressed ring (lesson-parts.css, `.seg`), their buttons 10 px apart
+   rather than joined */
+.l9-sing .ladder-choice .btn[aria-pressed='true'],
+.l9-free .free-voice .btn[aria-pressed='true'] {
   background: color-mix(in srgb, var(--aqua) 16%, transparent);
   box-shadow: inset 0 0 0 2px var(--aqua);
   color: var(--ink);
 }
 @media (forced-colors: active) {
-  .l9-sing .ladder-choice .btn[aria-pressed='true'] {
+  .l9-sing .ladder-choice .btn[aria-pressed='true'],
+  .l9-free .free-voice .btn[aria-pressed='true'] {
     forced-color-adjust: none;
     background: Highlight;
     color: HighlightText;
@@ -185,7 +189,47 @@
 .l9-next {
   margin-top: 18px;
 }
+/* the tease figure in the next-lesson card: the pitch spiral, still, with
+   Lesson 10's chord lit and one "?" over all three */
+.l09-tease {
+  display: block;
+  width: min(100%, 220px);
+  height: auto;
+  margin-top: 12px;
+}
+.l09-tease .coil {
+  fill: none;
+  stroke: var(--chrome);
+  stroke-width: 1.6;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.l09-tease .coil.back {
+  stroke: var(--hair-3);
+}
+.l09-tease .bead {
+  fill: var(--ink-3);
+}
+.l09-tease .bead.back {
+  fill: var(--hair-3);
+}
+.l09-tease .lit {
+  fill: var(--amber);
+}
+.l09-tease .ask {
+  fill: var(--amber);
+  font: 600 18px / 1 var(--f-display);
+  text-anchor: middle;
+}
+/* free play: the ladder chart in rung mode, its four rungs one row of 44 px
+   buttons 10 px apart from 344 px up, then the switches and the voice */
 .l9-free > .eyebrow {
   margin: 0 0 10px;
   line-height: 16px;
+}
+.l9-free .free-rungs {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 10px;
+  margin-top: 10px;
 }
