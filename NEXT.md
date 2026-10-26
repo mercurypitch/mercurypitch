@@ -207,3 +207,7 @@ Note: the lanes' memory gate read a stale cgroup path after the 21:00 restart (f
 ## 01:40 UTC 26 Oct — release walk prepared (builders running)
 - release/walk/release-walk.cjs + run.sh: production-like build (drafts hidden, no API, no analytics ids) served by serve on :3811; fenced (media.mercurypitch.com films answered by release/walk/stub-film.mp4, VP9/Opus MP4); audio probe taps the destination with an analyser and counts source starts. Phases: onbA (390, steady tone: unclean read, plan buttons, progress answer, covers at tablet sizes, Map door/section, Home link with fyp-done variants), lessons (tour 5 steps, breadcrumb, L1/L2 sound and film, next once, "?" at 9 sizes, hub), search (scripts off: breadcrumb, prev/next, entry docs' lesson links), misc (karaoke-app, 404, ear-lab boot), onbB (1440, sweep: clean read, Start here no tour), onbC (820x1180, no voiceprint, Show me around tour).
 - Run after both polish PRs merge, in the release worktree, through heavy: $S/bin/heavy $S/release/walk/run.sh <wt> $S/release/walk/out-1. Selectors to recheck against the builders' final labels.
+
+## 02:54 UTC 26 Oct — usage reset one-shot
+- Work had not stopped (both polish builders running; P at 2 commits, S at 1 at 02:15). Next reset one-shot armed: trig_016ejAAaamsQcUtyT6k2tpWN at 07:53 UTC (resetsAt 07:50). 2-hourly check-in continues (next 04:15).
+- Note: #1135's branch is feat/release-0.9.22, so the fresh release PR needs another name (feat/release-0.9.22-notes).
