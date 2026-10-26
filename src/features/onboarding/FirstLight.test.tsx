@@ -487,6 +487,7 @@ describe('a tap on a Map door, counted per door', () => {
     ['Guitar', 'onboarding_map_door_guitar'],
     ['Piano', 'onboarding_map_door_piano'],
     ['Voice Mirror', 'onboarding_map_door_mirror'],
+    ['Lessons', 'onboarding_map_door_lessons'],
   ])('counts a tap on %s as %s', async (label, event) => {
     // Arrange: a page door navigates, which jsdom cannot do.
     vi.stubGlobal('location', { href: '' })

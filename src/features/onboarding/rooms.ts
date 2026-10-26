@@ -16,6 +16,7 @@
 
 import type { ActiveTab } from '@/features/tabs/constants'
 import { TAB_ANALYSIS, TAB_EXERCISES, TAB_JAM, TAB_PATH, TAB_SINGING, } from '@/features/tabs/constants'
+import { currentLessonHref } from '@/lib/current-lesson'
 import type { OnboardingFunnelEvent } from '@/lib/funnel-event-catalog'
 
 export type RoomId =
@@ -141,7 +142,7 @@ export const ROOMS: readonly Room[] = [
  * and its entry in SIDE_DOORS no longer type-checks.
  */
 export type SideDoorId = Exclude<
-  'challenges' | 'guitar' | 'piano' | 'mirror',
+  'challenges' | 'guitar' | 'piano' | 'mirror' | 'lessons',
   RoomId
 >
 
@@ -155,14 +156,19 @@ export interface SideDoor {
   target: RoomTarget
   /** The tap's own funnel event, sent beside `onboarding_map_room`. */
   event: OnboardingFunnelEvent
+  /** A web page the native build does not carry, so its Map has no such door. */
+  webOnly?: true
 }
 
 /**
  * Four doors, one row on a phone (owner testing, 11 Oct 2026: eight
- * wrapped to three rows). The Voice Mirror stays by the owner's call. The
- * other three are the rooms the welcome mail names under "Also waiting
- * for you" (Community Challenges, Piano, Guitar; Drums has no door here).
- * Until the follow-up to PR 977 no tap on a door was counted per door
+ * wrapped to three rows), and Lessons. The Voice Mirror stays by the
+ * owner's call. Three are the rooms the welcome mail names under "Also
+ * waiting for you" (Community Challenges, Piano, Guitar; Drums has no door
+ * here). Lessons, which lead the 0.9.22 release, joined on the owner's
+ * word: "see all rooms opens the chips with rooms but without lessons".
+ * It is the fifth, so on a phone the row takes a second line. Until the
+ * follow-up to PR 977 no tap on a door was counted per door
  * (`onboarding_map_room` carries no room), so there was no usage to rank
  * them by; each now sends its own event. Leaderboard, Community, Compose
  * and Glass stay in the app's own navigation.
@@ -191,6 +197,18 @@ export const SIDE_DOORS: readonly SideDoor[] = [
     label: 'Voice Mirror',
     target: { kind: 'page', href: '/mirror' },
     event: 'onboarding_map_door_mirror',
+  },
+  {
+    id: 'lessons',
+    label: 'Lessons',
+    // The visitor's current lesson, read when the door is drawn or tapped:
+    // the first released one not marked done, or the hub once all are. The
+    // lessons are web pages, which the native build does not carry.
+    get target(): RoomTarget {
+      return { kind: 'page', href: currentLessonHref() }
+    },
+    event: 'onboarding_map_door_lessons',
+    webOnly: true,
   },
 ]
 

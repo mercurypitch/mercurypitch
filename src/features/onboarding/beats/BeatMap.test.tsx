@@ -16,10 +16,22 @@ import { cleanup, fireEvent, render } from '@solidjs/testing-library'
 import { readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { LESSONS_TITLE } from '@/lib/current-lesson'
+import { LESSON_DONE_KEY } from '@/lib/lesson-done'
 import type { MirrorResult } from '@/lib/mirror/metrics'
+import type * as NativeBuild from '@/lib/native-build'
 import { setPracticeScope, setUiMode } from '@/stores/settings-store'
 import { ROOMS, SIDE_DOORS } from '../rooms'
 import { BeatMap, ROOM_COVER_SIZES } from './BeatMap'
+
+/** Which build the Map believes it is in; the web unless a test says so. */
+const build = vi.hoisted(() => ({ native: false }))
+vi.mock('@/lib/native-build', async (importOriginal) => ({
+  ...(await importOriginal<typeof NativeBuild>()),
+  get IS_NATIVE_BUILD() {
+    return build.native
+  },
+}))
 
 const CSS = readFileSync(
   resolve(process.cwd(), 'src/features/onboarding/onboarding.module.css'),
@@ -267,7 +279,7 @@ describe('the Map stylesheet', () => {
 describe("the Map's side doors", () => {
   afterEach(cleanup)
 
-  it('offers four doors, the Voice Mirror among them, each opening its room', () => {
+  it('offers five doors, the Voice Mirror and Lessons among them, each opening its room', () => {
     // Arrange
     const onEnter = vi.fn()
     const { container } = render(() => (
@@ -293,6 +305,7 @@ describe("the Map's side doors", () => {
       'Guitar',
       'Piano',
       'Voice Mirror',
+      'Lessons',
     ])
     expect(onEnter.mock.calls).toEqual(
       SIDE_DOORS.map((door) => [door.target, door.id]),
@@ -307,6 +320,151 @@ describe("the Map's side doors", () => {
     )
 
     expect(phoneDoor?.body).toMatch(/min-height:\s*44px/)
+  })
+})
+
+// The lessons lead the release, and the Map had no way to them. A door among
+// the others and a section of their own both open the visitor's current
+// lesson: the first released one not marked done on its page.
+describe("the Map's lessons", () => {
+  afterEach(() => {
+    cleanup()
+    window.localStorage.clear()
+    build.native = false
+  })
+
+  function renderMap(onEnter: (...args: unknown[]) => void = () => {}) {
+    return render(() => (
+      <BeatMap
+        voiceprint={null}
+        onEnter={onEnter}
+        onTour={() => {}}
+        onDone={() => {}}
+        onKeep={() => {}}
+      />
+    )).container
+  }
+
+  const lessonsDoor = (map: HTMLElement): HTMLButtonElement | undefined =>
+    [
+      ...map.querySelectorAll<HTMLButtonElement>('[data-side-doors] button'),
+    ].find((door) => door.textContent === 'Lessons')
+
+  const section = (map: HTMLElement): HTMLElement | null =>
+    map.querySelector<HTMLElement>('[data-map-lessons]')
+
+  it('names the current lesson in its own section, cover and all, and opens it', () => {
+    // Arrange
+    const onEnter = vi.fn()
+    const map = renderMap(onEnter)
+    const card = section(map)?.querySelector('button')
+
+    // Act
+    if (card) fireEvent.click(card)
+
+    // Assert
+    expect(card?.textContent).toBe(`LessonsWhat is a note?${LESSONS_TITLE}`)
+    expect(card?.querySelector('img')?.getAttribute('src')).toBe(
+      '/learn/lesson-01-og.jpg',
+    )
+    expect(onEnter.mock.calls).toEqual([
+      [{ kind: 'page', href: '/learn/01' }, 'lessons'],
+    ])
+  })
+
+  it('moves on to the next lesson once one is marked done', () => {
+    // Arrange: Lesson 1 marked done on its page.
+    window.localStorage.setItem(LESSON_DONE_KEY, '[1]')
+    const onEnter = vi.fn()
+    const map = renderMap(onEnter)
+
+    // Act
+    const door = lessonsDoor(map)
+    if (door) fireEvent.click(door)
+
+    // Assert
+    expect(section(map)?.textContent).toContain('Twelve notes')
+    expect(section(map)?.querySelector('img')?.getAttribute('src')).toBe(
+      '/learn/lesson-02-og.jpg',
+    )
+    expect(onEnter.mock.calls).toEqual([
+      [{ kind: 'page', href: '/learn/02' }, 'lessons'],
+    ])
+  })
+
+  it('has no lesson to name once every released one is done, and its door opens the hub', () => {
+    // Arrange
+    window.localStorage.setItem(LESSON_DONE_KEY, '[1,2]')
+    const onEnter = vi.fn()
+    const map = renderMap(onEnter)
+
+    // Act
+    const door = lessonsDoor(map)
+    if (door) fireEvent.click(door)
+
+    // Assert
+    expect(section(map)).toBeNull()
+    expect(onEnter.mock.calls).toEqual([
+      [{ kind: 'page', href: '/learn/' }, 'lessons'],
+    ])
+  })
+
+  it('shows neither the door nor the section in the native build', () => {
+    // Arrange: the native shell carries no lesson pages.
+    build.native = true
+
+    // Act
+    const map = renderMap()
+
+    // Assert
+    expect(lessonsDoor(map)).toBeUndefined()
+    expect(section(map)).toBeNull()
+    expect(
+      [...map.querySelectorAll('[data-side-doors] button')].map(
+        (door) => door.textContent,
+      ),
+    ).toEqual(['Challenges', 'Guitar', 'Piano', 'Voice Mirror'])
+  })
+
+  it('sits under the account line, so the grid, the doors and the button keep their places', () => {
+    // Arrange
+    const map = renderMap()
+    const lessons = section(map)
+    const order = (a: Element | null, b: Element | null): boolean =>
+      a !== null &&
+      b !== null &&
+      (a.compareDocumentPosition(b) & Node.DOCUMENT_POSITION_FOLLOWING) !== 0
+
+    // Assert: the recommended room still leads, everything else follows.
+    expect(map.querySelector('[data-room]')?.getAttribute('data-room')).toBe(
+      'practice',
+    )
+    expect(order(map.querySelector('[data-side-doors]'), lessons)).toBe(true)
+    expect(order(map.querySelector('[class*="mapKeep"]'), lessons)).toBe(true)
+  })
+
+  it('shows the lesson cover whole: its own shape, contained, at every width', () => {
+    // Arrange: the cover is the share image, its title written in it.
+    const cover = RULES.filter((rule) => touches(rule, 'lessonCover'))
+    const picture = RULES.filter((rule) => touches(rule, 'lessonCoverImg'))
+    const base = cover.find(
+      (rule) => rule.selector === '.lessonCover' && rule.at.length === 0,
+    )
+    const fit = picture.find(
+      (rule) => rule.selector === '.lessonCoverImg' && rule.at.length === 0,
+    )
+
+    // Assert
+    expect(base?.body).toMatch(/aspect-ratio:\s*1200\s*\/\s*630/)
+    expect(fit?.body).toMatch(/object-fit:\s*contain/)
+    expect(fit?.body).toMatch(/height:\s*100%/)
+    for (const rule of [...cover, ...picture]) {
+      expect(rule.body, rule.selector).not.toMatch(/object-fit:\s*cover/)
+      // Only a width may change elsewhere (the phone's narrower cover).
+      if (rule !== base && rule !== fit) {
+        expect(rule.body, rule.selector).not.toMatch(/aspect-ratio|height:/)
+      }
+    }
   })
 })
 
@@ -368,12 +526,12 @@ describe("the Map and the person's menu", () => {
     expect(rooms(map)).toContain('ascent')
   })
 
-  it('leaves out the doors the menu hides, and keeps the one with no tab', () => {
+  it('leaves out the doors the menu hides, and keeps the ones with no tab', () => {
     setPracticeScope('guitar')
 
     const map = mapOf()
 
-    expect(doors(map)).toEqual(['Guitar', 'Voice Mirror'])
+    expect(doors(map)).toEqual(['Guitar', 'Voice Mirror', 'Lessons'])
   })
 
   it("follows Simple mode's smaller menu", () => {

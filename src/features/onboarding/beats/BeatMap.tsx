@@ -29,6 +29,17 @@
 // room that nothing else in the app reaches. A room that is a page (Karaoke)
 // stands for its tab in the menu; a door with no tab at all (the Voice
 // Mirror) is not in the menu, and always shows.
+//
+// The lessons have a door among the others and a section of their own,
+// which names the visitor's current lesson and wears its cover whole: the
+// cover is the lesson's share image, with its title written in the
+// picture, so cropping it cuts words. The section sits under the account
+// line, not under the grid. Under the grid it would push the doors, "Start
+// singing" and the gift line out of a 1440x900 window, which this beat is
+// built to fit (`.roomCover`, `.mapBeat`); there, the recommended room
+// still leads the grid, everything above the fold stays, and the Lessons
+// door above it opens the same lesson. The native build carries no lesson
+// pages, so it has neither.
 
 import type { Component } from 'solid-js'
 import { createMemo, For, Match, Show, Switch } from 'solid-js'
@@ -38,7 +49,10 @@ import type { StoreId } from '@/components/shared/StoreChips'
 import { StoreChips } from '@/components/shared/StoreChips'
 import type { ActiveTab } from '@/features/tabs/constants'
 import { isTabVisible, TAB_KARAOKE } from '@/features/tabs/constants'
+import type { ReleasedLesson } from '@/lib/current-lesson'
+import { currentLesson, lessonCover, LESSONS_TITLE } from '@/lib/current-lesson'
 import type { MirrorResult } from '@/lib/mirror/metrics'
+import { IS_NATIVE_BUILD } from '@/lib/native-build'
 import { hasPageTour } from '@/stores/app-store'
 import { practiceScope, uiMode } from '@/stores/settings-store'
 import { KARAOKE_GIFT_TAG, MAP_GIFT_JOIN_LINK, MAP_KEEP_GIFT_LINK, mapGiftJoin, mapGiftWaiting, } from '../copy'
@@ -127,7 +141,15 @@ export const BeatMap: Component<BeatMapProps> = (props) => {
     return [...first, ...rest]
   })
 
-  const doors = createMemo(() => SIDE_DOORS.filter(inMenu))
+  const doors = createMemo(() =>
+    SIDE_DOORS.filter(
+      (door) => inMenu(door) && !(door.webOnly === true && IS_NATIVE_BUILD),
+    ),
+  )
+
+  /** The lesson the section names: the visitor's current one, on the web. */
+  const lesson = (): ReleasedLesson | null =>
+    IS_NATIVE_BUILD ? null : currentLesson()
 
   const isFirst = (room: Room): boolean => room.id === stop().room
 
@@ -352,6 +374,15 @@ export const BeatMap: Component<BeatMapProps> = (props) => {
         </Match>
       </Switch>
 
+      <Show when={lesson()}>
+        {(shown) => (
+          <MapLessons
+            lesson={shown()}
+            onOpen={(href) => props.onEnter({ kind: 'page', href }, 'lessons')}
+          />
+        )}
+      </Show>
+
       <StoreChips
         class={styles.mapStores}
         onChipClick={(store) => props.onStoreClick?.(store)}
@@ -359,6 +390,42 @@ export const BeatMap: Component<BeatMapProps> = (props) => {
     </div>
   )
 }
+
+/**
+ * The lessons, in the Map's own card: the current lesson's cover, whole
+ * and beside the words, then "Lessons", its title and Home's line for
+ * them. A tap opens it as the Lessons door does, and counts as that door.
+ */
+const MapLessons: Component<{
+  lesson: ReleasedLesson
+  onOpen: (href: string) => void
+}> = (props) => (
+  <div class={styles.mapLessons} data-map-lessons>
+    <button
+      type="button"
+      class={styles.lessonCard}
+      onClick={() => props.onOpen(props.lesson.page)}
+    >
+      {/* Decorative: the title it carries is in the words beside it. */}
+      <span class={styles.lessonCover} aria-hidden="true">
+        <img
+          class={styles.lessonCoverImg}
+          src={lessonCover(props.lesson.n)}
+          width="1200"
+          height="630"
+          alt=""
+          loading="lazy"
+          decoding="async"
+        />
+      </span>
+      <span class={styles.lessonBody}>
+        <span class={styles.lessonKicker}>Lessons</span>
+        <span class={styles.roomTitle}>{props.lesson.title}</span>
+        <span class={styles.roomLine}>{LESSONS_TITLE}</span>
+      </span>
+    </button>
+  </div>
+)
 
 /** The offer line under the Map's gift line, while there is one. */
 const MapGiftOffer: Component<{ line?: string | null }> = (props) => (
