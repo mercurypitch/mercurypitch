@@ -253,3 +253,23 @@ Note: the lanes' memory gate read a stale cgroup path after the 21:00 restart (f
 ## 06:17 UTC 26 Oct — check-in (trigger)
 - No v0.9.22 tag; main b8479306a. #1217 CI all green on c96a3bb74 (PR Gate, 4 browser shards, unit, lint, ratchet, validate, workers, build & deploy, iOS, Android; Beside Cue x3 and prod deploy skipped), no review threads: merges once the walk's onboarding phases pass on this head. Held PRs unchanged (they wait for the tag). No builder started: L9 run 4 is sequenced after the tag.
 - Walk fixes so far (all walk-script, no app defect): Q2 pick for Singing is 'A song I love'; L1's plays unlock after a guess (kit/predict.ts), so the walk guesses first. Run 4 (out-p4) running.
+
+## 06:25 UTC 26 Oct — walk runs 4 and 5 on #1217's head
+- Run 4 (out-p4): 59 pass, 3 fail; run 5 (out-p5, onbA/lessons/onbC): 55 pass, 2 fail. Every fail traced to the walk, none to the app:
+  - Map exit waited for #app-tabs at phone width; the desktop bar unmounts there (e2e/helpers/ui.ts waitForNav). Now waits for #tab-singing.
+  - Hub counted hidden anchors: a page no worker served keeps held-back lessons in [data-if-live][hidden] (probe: release/walk/hubprobe.sh, scripts on and off). Now counts shown links: 01,02 shown, 03-08 hidden. PASS.
+  - "Map follows the current lesson": goto to #/map changed only the hash, so the document (and Home, drawn before fyp-done changed) stayed. Now reloads #/map, checks links inside main, names Lesson 2, clicks the Lessons door.
+  - Show me around with Start here = Singing (no voiceprint): no tour in 12 s. By design: Singing has no PAGE_TOURS entry; its tour is the Guide's "Singing" section (startWalkthrough(['practice'])), and enterStop/handleEnterStop start page tours only. Kept per the owner's note ("the singing tab page for sure has a tour guide"); tell the owner plainly, offer the wiring for 0.9.23. Walk: C now checks it opens #/singing (PASS) and notes the tour as info; new phase onbD checks Show me around into Exercises (has a page tour).
+- Home's Lessons link: /learn/01, then /learn/02 with [1], /learn/ with [1,2], /learn/01 with bad JSON. PASS. Hub PASS. L1/L2 sound PASS (peaks 0.30/0.25).
+- Run 6 (out-p6, onbA/onbC/onbD) running; merge #1217 after it.
+
+## 06:43 UTC 26 Oct — #1217 merged; release branch cut
+- Walk run 6 (out-p6, onbA/onbC/onbD): 29 pass, 0 fail. Map names Lesson 2 and its Lessons door opens /learn/02 after fyp-done [1]; Show me around into Exercises starts its tour in 164 ms (1 of 4); into Singing opens #/singing, no tour (known). The walk's old "Map links the lesson" anchor check was reading Home's link under the Map (the Map's door and section are buttons): replaced by section/door checks and clicks.
+- #1217 merged by rebase with expectedHeadSha: main 238ef7115 (7 commits; verify-rebase-merge: subjects, messages, authors and dates, patch-ids 7/7, tree same). Unsubscribed.
+- Release: l9-page on feat/release-0.9.22-notes from 238ef7115. polish-notes.py run (650 commits, 112 PRs, 562 first-parent; two more edits added: PR body item 6 and REACH's "read at" line). cut.py 2026-10-26. og:versions: 13 cards, no diff. changelog-stats: 33 bullets, avg 161, longest 313. Prettier: dev-changelog's #1216 paragraph re-wrapped so a code span does not cross a line. Gates (release/gates/gates.sh) running.
+
+## 06:58 UTC 26 Oct — release PR #1218 open
+- Gates (release/gates) all pass on 3a160b3c9. Then dev-changelog release steps 5 and 8 and the "head comment invites a VideoObject" item rewritten in the past tense (this PR set the dates and rewrote the comment); the same edits are in release/notes/dev-changelog-entry.md (DD placeholders kept, so cut.py can re-run with a new day) and the PR body. Prettier, 78-column check and diff --check clean. Amended to 6347932ca, pushed with lease (3a160b3c9 -> 6347932ca).
+- PR #1218 "chore(release): 0.9.22" (base main 238ef7115, head 6347932ca): server footer stripped, read back clean; subscribed. #1135 stays open (superseded; the owner closes it).
+- Walk run 7 (out-p7, every phase, fresh production-like build of the release tree in l9-page) running: run-p7.out. Do not touch l9-page until it ends.
+- Next: CI green -> tick "PR Gate" in the body -> merge by rebase with expectedHeadSha 6347932ca546d3bbca1f5c1e42319ab4e4418bf3 -> verify-rebase-merge.sh -> unsubscribe -> prod-upd 1-4 on main (Release Tours dispatch on main) -> ping the owner.

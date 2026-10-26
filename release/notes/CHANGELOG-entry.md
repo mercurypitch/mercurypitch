@@ -8,7 +8,8 @@ a plan, which Home keeps for a week.
 
 - **Find Your Pitch: free lessons on notes and singing.** The first two are
   open: _What is a note?_ and _Twelve notes_, 8 and 13 minutes. Home's
-  Lessons link opens the first, and mercurypitch.com/learn maps the season.
+  Lessons link opens the lesson you're on, and mercurypitch.com/learn maps
+  the season.
 - **Each lesson is a page you play.** Guess before you listen, play with the
   sound toys, sing along with the hosts, Merc and Tavi, then try a
   four-question quick check. No microphone needed.
@@ -20,13 +21,16 @@ a plan, which Home keeps for a week.
 - **A lesson menu on every lesson page.** The Lesson button at the top lists
   every lesson in the season and every step of this one, and shows where
   you are.
+- **Lesson pages link each other.** A trail at the top leads back to the
+  season map, and the foot of each page links the lessons either side.
 - **Your place is kept.** The season map and the card that ends each lesson
   offer Start lesson, Continue: step 3 or Read again, saved in this browser.
 - **A page for karaoke questions.** mercurypitch.com/karaoke-app answers the
   first ones: is it free, your own songs, singing with friends, and TVs.
 - **Four questions, then a plan.** What you play, what you're working
   toward, what gets in the way and what you've tried; skip any of them. The
-  answers pick up to three stops: Start here, Learn and Play.
+  answers pick up to three stops: Start here, Learn and Play. See every
+  room shows them all, the lessons too.
 - **Your plan stays close.** Home shows it for a week, ticks each stop you
   finish and starts its tour on it. Guide opens it again, and a lesson page
   offers Back to your plan.

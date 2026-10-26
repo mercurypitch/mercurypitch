@@ -1,19 +1,19 @@
-The 0.9.22 release notes and version, shaped like 0.9.21's release PR (#1093): `CHANGELOG.md`, `dev-changelog.md` and `package.json`, plus the lessons' release day (`datePublished` on Lessons 1 and 2, and the sitemap dates of `/learn/`, `/learn/01` and `/learn/02`). #1135 covered the first 40 PRs; this covers all 110. Not merged and not tagged here: Release Tours on `main`, the merge and the `v0.9.22` tag come after review.
+The 0.9.22 release notes and version, shaped like 0.9.21's release PR (#1093): `CHANGELOG.md`, `dev-changelog.md` and `package.json`, plus the lessons' release day (`datePublished` on Lessons 1 and 2, and the sitemap dates of `/learn/`, `/learn/01` and `/learn/02`). #1135 covered the first 40 PRs; this covers all 112. Not merged and not tagged here: Release Tours on `main`, the merge and the `v0.9.22` tag come after review.
 
 ## What ships
 
-637 commits since `v0.9.21` (bd524160a), from 110 PRs, on 549 first-parent entries, up to cddefd571. 23 PRs came in as merge commits, 75 were rebased and 12 squashed. Every commit came through a PR.
+650 commits since `v0.9.21` (bd524160a), from 112 PRs, on 562 first-parent entries, up to 238ef7115. 23 PRs came in as merge commits, 77 were rebased and 12 squashed. Every commit came through a PR.
 
 **On the web**
 
 - **Find Your Pitch goes live with two lessons:** Lesson 1 "What is a note?" and Lesson 2 "Twelve notes" at `/learn/01` and `/learn/02` (#1048, #1111), each with its film from `media.mercurypitch.com` (#1197), and the season's hub at `/learn/` (#1188).
-  - Every lesson page: the lesson menu (#1140, #1142), one next-lesson card (#1143), a first-visit tour (#1201), Merc and Tavi by name (#1191, #1195), plain words (#1138), the release review's accessibility fixes (#1177), the follow-ups and real run times (#1192), search-led titles (#1187) and Merc's shader compile off the page's path (#1200).
+  - Every lesson page: the lesson menu (#1140, #1142), one next-lesson card (#1143), a first-visit tour (#1201), Merc and Tavi by name (#1191, #1195), plain words (#1138), the release review's accessibility fixes (#1177), the follow-ups and real run times (#1192), search-led titles (#1187), Merc's shader compile off the page's path (#1200), and a trail back to the hub with links to the lessons either side (#1216).
   - Each quick-check question's first answer in a visit goes to the DB worker anonymously, under the app's consent rule (#1193).
 - **Lessons publish at run time** (#1150), from the state the admin console keeps (#1147, #1151). Lessons 3 to 8 ship as drafts: held back on mercurypitch.com, shown on dev, previews and local (#1111, #1129, #1127 then #1156, #1149, #1169, #1172).
   - **Production as built, before anyone touches the console:** `/learn/01` and `/learn/02` live; `/learn/03` to `/learn/08` answer the 404 page (404, `noindex`, not stored); `/learn/` links Lessons 1 and 2 and shows the rest as "Coming"; the sitemap and `llms.txt` list `/learn/`, `/learn/01` and `/learn/02`.
-- **Onboarding:** First Light's four questions and the plan they make (#1190), Home's tour on the plan card (#1194), the plan's typed lines and the email chip on a phone (#1209), keys kept in surveys and confirms (#1210), the tour and first-value counts (#1134), and the `#/map` router race (#1196).
+- **Onboarding:** First Light's four questions and the plan they make (#1190), Home's tour on the plan card (#1194), the plan's typed lines and the email chip on a phone (#1209), keys kept in surveys and confirms (#1210), the tour and first-value counts (#1134), the `#/map` router race (#1196), and the plan's polish (#1217): Start here as the main button, an unclean range read no longer taken for a narrow one, Home's Lessons link and a Lessons door on the Map to the visitor's lesson, and a tablet's width.
 - **Practice and karaoke:** the Guided Warmup without a grade (#1124), the range test's comfortable top (#1125), the hold cards (#1126), Bass-baritone (#1128), First Light's held note (#1110), the Siren's glide score (#1192), the Zen stage and tour focus (#1165), low tier overlays (#1158), the streamed vocal's pitch guide and the lyrics pick (#1189), and UVR's cancel and saves (#1178, #1184).
-- **Search:** #1105, #1106, #1107, #1109, #1122, #1116 and the 404 scene (#1118).
+- **Search:** #1105, #1106, #1107, #1109, #1122, #1116, the 404 scene (#1118), and the lesson pages' and room pages' links to the lessons in their served HTML (#1216).
 
 **Not on the web**, in `dev-changelog.md` and left out of `CHANGELOG.md`:
 
@@ -26,7 +26,7 @@ Reach comes from the code: build flags (`src/lib/native-build.ts`), `apps/`, rou
 
 ## CHANGELOG.md
 
-`node scripts/changelog-stats.mjs 0.9.22`: 32 bullets, average 159 characters, longest 313 (Smaller things). The model, 0.8.0, has 61 bullets at about 142. No line is over 78 columns, and there is no em dash.
+`node scripts/changelog-stats.mjs 0.9.22`: 33 bullets, average 161 characters, longest 313 (Smaller things). The model, 0.8.0, has 61 bullets at about 142. No line is over 78 columns, and there is no em dash.
 
 Left out of it, and kept in `dev-changelog.md`:
 
@@ -71,10 +71,10 @@ Two lines wait on the owner: the Siren bullet (its Best, grade and play count re
 
 1. **The owner's two wording calls:** the Siren bullet, and the feedback form's "No account needed." (the form also writes "Mercury Pitch" as two words).
 2. **The films play on dev** in the owner's test pass: the same `media.mercurypitch.com` files production loads.
-3. **The privacy notice** on about.mercurypitch.com covers #1190's and #1193's data (the owner says it does).
+3. **The privacy notice** on about.mercurypitch.com covers #1190's and #1193's data (the owner says it does), and the owner checks #1217's one new funnel name, `onboarding_map_door_lessons`, sent like the other Map doors'.
 4. **Release Tours on `main`** (prod-upd step 4). The baseline is 0 misses.
 5. **The release day's dates** match the tag day: if the tag slips a day, move the five dates first.
-6. **Anything merged after cddefd571** gets its bullet and its paragraph first.
+6. **Anything merged after 238ef7115** gets its bullet and its paragraph first.
 
 ## After the tag
 
@@ -86,12 +86,12 @@ Two lines wait on the owner: the Siren bullet (its Best, grade and play count re
 
 All of these are in `dev-changelog.md`; none blocks the tag on its own.
 
-- **The lesson pages' head comment invites a VideoObject** ("no VideoObject until the episode plays here", `learn/01.html` and `learn/02.html` lines 61 to 68). The films play now, and `SEARCH.md` § 3.2 says no `VideoObject` on a lesson page.
+- **The lesson pages' head comment invited a VideoObject** ("no VideoObject until the episode plays here", `learn/01.html` and `learn/02.html` lines 61 to 68). The films play now, and `SEARCH.md` § 3.2 says no `VideoObject` on a lesson page, so this PR rewrites the comment as `datePublished` goes in.
 - **The tag deploys the site and the DB worker in parallel:** a few minutes of 400s for the new event names if the site wins.
 - **#1210 merged with its body asking for a dev test first.** Its four checks are in the release test.
 - **First-paint budgets on a production build** (#1144's note): `mirror.html` and `vocal-range-test.html` went over on a production `dist`; the check runs on `build:e2e` only.
 - **The lesson share cards are outside `og:versions`**, still.
-- **Home's Lessons link opens `/learn/01`**, not the hub.
+- **Home's Lessons link opened `/learn/01` for everyone** (#1177's W-01): #1217 makes it the visitor's current lesson.
 - **#1200's freeze fix is unverified on Windows.** The CHANGELOG says only what the code does.
 - **#1134's funnel loads on Guitar Night's first paint**, which its PR asks the consent review to cover.
 - **"To your highest" without "comfortable"** is still the voice type test's description.

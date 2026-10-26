@@ -1,25 +1,26 @@
 ## [0.9.22] - 2026-10-DD
 
-637 commits since `v0.9.21` (bd524160a) before this release PR, from 110 PRs,
-on 549 first-parent entries, up to cddefd571. 23 PRs came in as merge commits:
+650 commits since `v0.9.21` (bd524160a) before this release PR, from 112 PRs,
+on 562 first-parent entries, up to 238ef7115. 23 PRs came in as merge commits:
 #1094 (1 commit), #1091 (1), #1095 (3), #1096 (1), #1097 (1), #1099 (1), #1098
 (3), #1100 (2), #1101 (3), #1102 (3), #1103 (7), #1104 (1), #1110 (2), #1112
 (4), #1113 (3), #1120 (12), #1123 (6), #1128 (1), #1130 (1), #1134 (8), #1166
-(2), #1190 (21) and #1194 (1). 75 were rebased onto `main`: #1192 (72), #1048
+(2), #1190 (21) and #1194 (1). 77 were rebased onto `main`: #1192 (72), #1048
 (62), #1149 (34), #1177 (30), #1193 (21), #1188 (15), #1154 and #1186 (14
 each), #1210 (12), #1151 (11), #1172 (10), #1111, #1170 and #1171 (9 each),
-#1087, #1138, #1163, #1164, #1169 and #1201 (8 each), #1187 (7), #1148, #1161,
-#1167, #1189 and #1200 (6 each), #1150, #1157, #1162, #1165, #1191 and #1195
-(5 each), #1116, #1158, #1168, #1185 and #1211 (4 each), #1141, #1159, #1173,
-#1196 and #1209 (3 each), #1108, #1109, #1129, #1137, #1143, #1144, #1147,
-#1156 and #1160 (2 each), and #1105, #1107, #1114, #1115, #1118, #1119, #1122,
-#1124, #1125, #1126, #1127, #1131, #1132, #1133, #1136, #1139, #1140, #1142,
-#1145, #1146, #1152, #1153, #1155 and #1197 (1 each). 12 were squashed into
-one commit each: #1106 (af0f45eea), #1090 (024c8d828), #1092 (3f1f2f548),
-#1178 (f7c542aef), #1176 (f86e4ba7b), #1180 (38d94996d), #1184 (dfa820854),
-#1183 (e42381ffe), #1182 (9df503587), #1179 (f604b1a99), #1181 (0991d274c) and
-#1175 (921e3bbf1). Every commit came through a PR: each first-parent entry's
-committer time matches one PR's merge time.
+#1087, #1138, #1163, #1164, #1169 and #1201 (8 each), #1187 and #1217 (7
+each), #1148, #1161, #1167, #1189, #1200 and #1216 (6 each), #1150, #1157,
+#1162, #1165, #1191 and #1195 (5 each), #1116, #1158, #1168, #1185 and #1211
+(4 each), #1141, #1159, #1173, #1196 and #1209 (3 each), #1108, #1109, #1129,
+#1137, #1143, #1144, #1147, #1156 and #1160 (2 each), and #1105, #1107, #1114,
+#1115, #1118, #1119, #1122, #1124, #1125, #1126, #1127, #1131, #1132, #1133,
+#1136, #1139, #1140, #1142, #1145, #1146, #1152, #1153, #1155 and #1197 (1
+each). 12 were squashed into one commit each: #1106 (af0f45eea), #1090
+(024c8d828), #1092 (3f1f2f548), #1178 (f7c542aef), #1176 (f86e4ba7b), #1180
+(38d94996d), #1184 (dfa820854), #1183 (e42381ffe), #1182 (9df503587), #1179
+(f604b1a99), #1181 (0991d274c) and #1175 (921e3bbf1). Every commit came
+through a PR: each first-parent entry's committer time matches one PR's merge
+time.
 
 On the web, the release is:
 
@@ -29,8 +30,9 @@ On the web, the release is:
   (#1188). Every lesson page has the masthead's lesson menu (#1140), one
   next-lesson card on its Wrap (#1143), a welcome tour on a first visit
   (#1201), hosts named Merc and Tavi (#1191, #1195), plainer words (#1138),
-  the release review's accessibility fixes (#1177) and anonymous first answers
-  from its quick check (#1193).
+  the release review's accessibility fixes (#1177), anonymous first answers
+  from its quick check (#1193), and a trail back to the hub with links to the
+  lessons either side (#1216).
 - **Publishing at run time.** Every build carries Lessons 1 to 8, and the site
   worker decides per request which are live (#1150), from the state the admin
   console keeps on the DB worker (#1147, #1151, migration 0071). Lessons 3 to
@@ -41,7 +43,10 @@ On the web, the release is:
   make (#1190), Home's tour on the plan card (#1194), the plan's typed lines
   above a phone's keyboard and the email chip's dismiss (#1209), Space and M
   kept in surveys and confirms and the plan review's follow-ups (#1210), the
-  tour, first-value and Map counts (#1134) and the router race (#1196).
+  tour, first-value and Map counts (#1134), the router race (#1196), and the
+  plan's polish (#1217): Start here as the main button, an unclean range read
+  no longer taken for a narrow one, Home's Lessons link and a Lessons door on
+  the Map to the visitor's lesson, and a tablet's width.
 - **Practice and karaoke.** The Guided Warmup without a grade (#1124), the
   range test's top cushioned (#1125), the hold cards (#1126), Bass-baritone
   (#1128), First Light's held note (#1110), the Siren's glide score and
@@ -50,8 +55,9 @@ On the web, the release is:
   (#1189), and UVR's cancel and saves (#1178, #1184).
 - **Search.** The studio's markup (#1105), `/karaoke-app` (#1106), the
   store-listing signals (#1107), lesson links and markup (#1109), sitemap
-  dates (#1122), Bing's findings and IndexNow (#1116), the 404 scene (#1118)
-  and search-led lesson titles (#1187).
+  dates (#1122), Bing's findings and IndexNow (#1116), the 404 scene (#1118),
+  search-led lesson titles (#1187), and the lesson pages' and room pages'
+  links to the lessons in their served HTML (#1216).
 
 Reach was read from the code, not from a production build: no build was made
 for these notes. Production as built, before anyone touches the admin console:
@@ -149,9 +155,9 @@ into the unlisted `/glass-game`. The admin console's Lessons page (#1144,
    #1190's survey answers and typed lines on the account, and #1193's lesson
    answers with what Cloudflare keeps (request logs with address and time for
    up to 7 days, D1 point-in-time recovery up to 30).
-5. **Social cards.** `pnpm run og:versions` runs on this PR at release time.
-   The lesson cards (`public/learn/lesson-NN-og.jpg`) are outside it (Found
-   while preparing this release).
+5. **Social cards.** `pnpm run og:versions` ran on this PR: 13 cards stamped,
+   no change. The lesson cards (`public/learn/lesson-NN-og.jpg`) are outside
+   it (Found while preparing this release).
 6. **What's New** is untouched: 0.9.22 is a patch.
 7. **Version files.** `package.json` goes from 0.9.21 to 0.9.22, the only file
    besides the two changelogs that the 0.9.21 release commit changed.
@@ -161,18 +167,18 @@ into the unlisted `/glass-game`. The admin console's Lessons page (#1144,
 8. **The lessons' release day** (`docs/plans/find-your-pitch/SEARCH.md` § 3.2
    and § 12 step 6, HANDOFF § 2 item 3). In this PR, with the tag day:
    - `learn/01.html`: `"datePublished": "2026-10-DD",` in the Article block,
-     between line 90 (`"isAccessibleForFree": true,`) and line 91
-     (`"position": 1,`). Neither page has one today.
-   - `learn/02.html`: the same, between line 90 and line 91
-     (`"position": 2,`).
+     after line 90 (`"isAccessibleForFree": true,`) and before
+     `"position": 1,`. Neither page had one before.
+   - `learn/02.html`: the same, before `"position": 2,`.
    - `public/sitemap.xml`: `<lastmod>` on line 97 (`/learn/`), line 101
-     (`/learn/01`) and line 105 (`/learn/02`), each 2026-10-20 today.
+     (`/learn/01`) and line 105 (`/learn/02`), each moved from 2026-10-20 to
+     2026-10-DD.
    - The hub takes no `datePublished` (§ 3.2 asks it of a lesson), only its
      sitemap date.
    - No lesson page and not the hub carries a `VideoObject` (§ 3.2: it belongs
-     on the watch page). Lines 61 to 68 of `learn/01.html` and `learn/02.html`
-     still say "no VideoObject until the episode plays here" (Found while
-     preparing this release).
+     on the watch page). The head comment on lines 61 to 68 of `learn/01.html`
+     and `learn/02.html`, which said "no VideoObject until the episode plays
+     here", now says so (Found while preparing this release).
    - Lessons 3 to 8 take their dates when the console publishes them (HANDOFF
      § 2 item 8).
 9. **The films' host.** Lessons 1 and 2 play from
@@ -205,11 +211,12 @@ into the unlisted `/glass-game`. The admin console's Lessons page (#1144,
 None of these is in a PR's notes unless it says so, and none blocks the tag on
 its own.
 
-- **The lesson pages' head comment invites a VideoObject.** `learn/01.html`
-  and `learn/02.html` lines 61 to 68: "No datePublished until the release that
-  puts the lesson on mercurypitch.com; no VideoObject until the episode plays
-  here". Both films now play, and SEARCH.md § 3.2 says no `VideoObject` on a
-  lesson page. The comment should say so when `datePublished` goes in.
+- **The lesson pages' head comment invited a VideoObject.** `learn/01.html`
+  and `learn/02.html` lines 61 to 68 said "No datePublished until the release
+  that puts the lesson on mercurypitch.com; no VideoObject until the episode
+  plays here". Both films now play, and SEARCH.md § 3.2 says no `VideoObject`
+  on a lesson page, so the release PR rewrote the comment as `datePublished`
+  went in.
 - **Sitemap dates.** `/learn/` was created on 23 October (#1188) and is dated
   2026-10-20, and `/learn/01` and `/learn/02` changed after that date. Step 8
   moves all three to the tag day.
@@ -233,9 +240,9 @@ its own.
   hub's `og:image` URLs carry no `?v=`.
 - **"To your highest" without "comfortable"** is still the voice type test's
   description (`src/seo/entry-pages.ts:584`), as #1135 found.
-- **Home's Lessons link still opens `/learn/01`**
-  (`src/pages/HomePage.tsx:191`), not the hub; #1177 lists it as W-01's open
-  half.
+- **Home's Lessons link opened `/learn/01` for everyone** (#1177's W-01, its
+  open half). #1217 makes it the visitor's current lesson, and the hub once
+  both released lessons are done.
 - **#1200's freeze fix is unverified on Windows**, where the freeze was seen;
   its PR lists the check. The CHANGELOG says only what the code does (the 10 s
   give-up).
@@ -359,6 +366,20 @@ its own.
   checks send nothing; only a page the site worker served sends. The worker
   keeps the UTC day and the seven numbers, no address, time of day or device
   id, under a random row id.
+- **#1216, lesson pages link the hub and the lessons either side** (6
+  commits). A trail under the masthead,
+  `MercuryPitch > Find Your Pitch > the lesson`, in a `nav` named
+  "Breadcrumb", written at build time from each page's own BreadcrumbList by
+  `tools/lesson-ways.ts`. Each page's foot links the lessons before and after
+  (`rel="prev"`, `rel="next"`), and a draft's link is taken out per request by
+  the site worker and the page's own reading, as every other link to a lesson
+  that is not live. The room documents link the released lessons that practise
+  in them (`lessonsPractised` in `src/seo/entry-pages.ts`, SEARCH.md § 8):
+  `/mirror` and `/vocal-range-test` Lesson 1, `/ear-lab` Lesson 2. The tour's
+  "?" ends the masthead's row at every width instead of hanging over the page
+  under 1181 px; the logo gives way to it under 561 px and from 821 to 1020
+  px, the wordmark from 1021 to 1180 px, and the trail links MercuryPitch at
+  every width.
 
 ### Web: publishing lessons at run time
 
@@ -430,6 +451,21 @@ its own.
   allowlist keeps the tour numbers alone.
 - **#1196, the address sync waits for a move's hashchange** (3 commits): a
   `#/map` link followed as the app started could be overwritten by `#/home`.
+- **#1217, the plan's polish** (7 commits). A range read that is not clean
+  (a steady tone reads 0 semitones) counts as not measured: one rule,
+  `isCleanRange` beside `singerForRange`, read by `pickFirstStop`, Keep, the
+  twin's stat card, the voiceprint share and the twin, so the plan no longer
+  sends it to the range stop. The main button is Start here and opens the
+  first stop as its card does; Show me around stays beside it, with the
+  room's page tour where it has one.
+  With a voiceprint, Start here keeps "Every take lands in Progress" where the
+  stop's runs land there (Exercises, the Ascent; not Karaoke Night). Home's
+  Lessons link opens the first released lesson this browser has not marked
+  done, or the hub (`src/lib/current-lesson.ts`; the done list's key and parse
+  move to `src/lib/lesson-done.ts`). The Map gains a Lessons door
+  (`onboarding_map_door_lessons`) and a section naming the current lesson,
+  both web only. A lesson's cover shows whole on the plan's cards, and the
+  plan's column is 640 px from 600 px wide.
 
 ### Web: karaoke, the studio and UVR
 

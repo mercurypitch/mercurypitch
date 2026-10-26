@@ -126,7 +126,8 @@ insert_before(D, "\n### Web: karaoke, the studio and UVR", f"""- **#{P}, the pla
   `isCleanRange` beside `singerForRange`, read by `pickFirstStop`, Keep, the
   twin's stat card, the voiceprint share and the twin, so the plan no longer
   sends it to the range stop. The main button is Start here and opens the
-  first stop as its card does; Show me around stays beside it with its tour.
+  first stop as its card does; Show me around stays beside it, with the
+  room's page tour where it has one.
   With a voiceprint, Start here keeps "Every take lands in Progress" where the
   stop's runs land there (Exercises, the Ascent; not Karaoke Night). Home's
   Lessons link opens the first released lesson this browser has not marked
@@ -153,6 +154,8 @@ edit(B, [
      f"3. **The privacy notice** on about.mercurypitch.com covers #1190's and #1193's data (the owner says it does), and the owner checks #{P}'s one new funnel name, `onboarding_map_door_lessons`, sent like the other Map doors'."),
     ("- **Home's Lessons link opens `/learn/01`**, not the hub.",
      f"- **Home's Lessons link opened `/learn/01` for everyone** (#1177's W-01): #{P} makes it the visitor's current lesson."),
+    ("6. **Anything merged after cddefd571** gets its bullet and its paragraph first.",
+     f"6. **Anything merged after {HEAD}** gets its bullet and its paragraph first."),
 ])
 
 # ---------- REACH ----------
@@ -162,6 +165,8 @@ edit(R, [
      f"The {PRS} PRs merged between `v0.9.21` (bd524160a) and `origin/main` at {HEAD}, in merge order."),
     ("Counts total 614 PR commits plus 23 merge commits, 637 in all, on 549 first-parent entries.",
      f"Counts total {614 + 6 + PN} PR commits plus 23 merge commits, {COMMITS} in all, on {FIRST_PARENT} first-parent entries."),
+    ("Reach was read from the code at cddefd571, not from a build.",
+     f"Reach was read from the code at cddefd571, and #1216's and #{P}'s at their own heads, not from a build."),
 ])
 p = notes / R
 t = p.read_text().rstrip('\n') + '\n'

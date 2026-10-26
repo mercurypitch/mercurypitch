@@ -382,16 +382,18 @@ async function covers(page, sel) {
       await page.waitForTimeout(1500)
       const mapText = await text(map)
       note(`A map: ${mapText}`)
-      const mapLinks = await anchorsTo(page, /\/learn\//)
-      info('A: Map lesson links', mapLinks.map((a) => `${a.href} [${a.text}]${a.vis ? '' : ' hidden'} in ${a.where}`).join(' | '))
-      check('A: the Map links the current lesson', mapLinks.some((a) => a.vis && /\/learn\/01\/?$/.test(a.href)))
+      // The Map's Lessons door and section are buttons that navigate when tapped; the anchors here are Home's, under the Map.
+      const section = map.locator('[data-map-lessons] button')
+      check('A: the Map has a Lessons section naming Lesson 1', await section.isVisible().catch(() => false) && /What is a note\?/.test(await text(section)), (await text(section).catch(() => '')).slice(0, 90))
+      check('A: the Map has a Lessons door', await map.getByRole('button', { name: 'Lessons', exact: true }).isVisible().catch(() => false))
       check('A: the Map names the lesson', /What is a note\?/.test(mapText))
       await shot(page, 'A-map-390', true)
       await page.setViewportSize(DESKTOP); await page.waitForTimeout(700)
       await shot(page, 'A-map-1440', true)
       await page.setViewportSize(PHONE); await page.waitForTimeout(700)
       await page.getByRole('button', { name: /Start singing|Done/ }).filter({ visible: true }).first().click()
-      await page.locator('#app-tabs').waitFor({ timeout: 20000 })
+      // The desktop bar (#app-tabs) unmounts at phone width; Singing sits in both bars (e2e/helpers/ui.ts waitForNav).
+      await page.locator('#tab-singing').waitFor({ state: 'visible', timeout: 20000 })
       await page.waitForTimeout(2500)
       await page.goto(BASE + '/#/home', { timeout: 60000 })
       await page.waitForTimeout(3500)
@@ -411,10 +413,26 @@ async function covers(page, sel) {
         check(`A: Home's Lessons link with fyp-done ${done}`, want.test(h || ''), String(h))
       }
       await page.evaluate(() => localStorage.setItem('fyp-done', '[1]'))
-      await page.goto(BASE + '/#/map', { timeout: 60000 }); await page.waitForTimeout(3000)
-      const mapLinks2 = await anchorsTo(page, /\/learn\//)
-      check('A: the Map follows the current lesson (Lesson 1 done)', mapLinks2.some((a) => a.vis && /\/learn\/02\/?$/.test(a.href)), mapLinks2.map((a) => a.href).join(' '))
-      await page.evaluate(() => localStorage.removeItem('fyp-done'))
+      // A goto that changes only the hash keeps the document (and Home, drawn before the list changed): load #/map afresh.
+      await page.goto(BASE + '/#/map', { timeout: 60000 }); await page.reload({ timeout: 60000 })
+      const map2 = beat(page, 'map')
+      const map2Up = await map2.waitFor({ timeout: 15000 }).then(() => true).catch(() => false)
+      await page.waitForTimeout(1500)
+      check('A: the Map names Lesson 2 (Lesson 1 done)', map2Up && /Twelve notes/.test(await text(map2)))
+      await shot(page, 'A-map-lesson-2')
+      const section2 = map2.locator('[data-map-lessons] button')
+      if (map2Up && await section2.isVisible().catch(() => false)) {
+        await Promise.all([page.waitForURL(/\/learn\//, { timeout: 30000 }).catch(() => null), section2.click()])
+        check("A: the Map's Lessons section opens Lesson 2 (Lesson 1 done)", /\/learn\/02\/?$/.test(new URL(page.url()).pathname), page.url().replace(BASE, ''))
+        await page.goto(BASE + '/#/map', { timeout: 60000 }); await page.reload({ timeout: 60000 })
+        await map2.waitFor({ timeout: 15000 }).catch(() => null); await page.waitForTimeout(1500)
+      } else check("A: the Map's Lessons section opens Lesson 2 (Lesson 1 done)", false, 'no section')
+      const door = map2.getByRole('button', { name: 'Lessons', exact: true }).filter({ visible: true }).first()
+      if (map2Up && await door.isVisible().catch(() => false)) {
+        await Promise.all([page.waitForURL(/\/learn\//, { timeout: 30000 }).catch(() => null), door.click()])
+        check("A: the Map's Lessons door opens Lesson 2 (Lesson 1 done)", /\/learn\/02\/?$/.test(new URL(page.url()).pathname), page.url().replace(BASE, ''))
+      } else info("A: the Map's Lessons door", 'not a visible button named Lessons')
+      await page.evaluate(() => localStorage.removeItem('fyp-done')).catch(() => null)
     } finally { await browser.close() }
   })
 
@@ -539,8 +557,10 @@ async function covers(page, sel) {
       await page.goto(BASE + '/learn/', { timeout: 120000 })
       await page.waitForTimeout(2500)
       const hub = await anchorsTo(page, /\/learn\/\d\d\/?$/)
-      const live = [...new Set(hub.map((a) => a.href.replace(/\/$/, '').slice(-2)))].sort()
-      check('Hub: links Lessons 1 and 2 only', live.join(',') === '01,02', live.join(','))
+      // A page no worker served keeps a held-back lesson's entry in its markup, hidden (data-if-live); the site worker drops it.
+      const live = [...new Set(hub.filter((a) => a.vis).map((a) => a.href.replace(/\/$/, '').slice(-2)))].sort()
+      const held = [...new Set(hub.filter((a) => !a.vis).map((a) => a.href.replace(/\/$/, '').slice(-2)))].sort()
+      check('Hub: shows links to Lessons 1 and 2 only', live.join(',') === '01,02', `shown ${live.join(',')} | hidden ${held.join(',')}`)
       await shot(page, 'hub-1440', true)
     } finally { await browser.close() }
   })
@@ -643,13 +663,49 @@ async function covers(page, sel) {
       await page.setViewportSize({ width: 1024, height: 768 }); await page.waitForTimeout(700)
       await shot(page, 'C-plan-1024x768')
       await coverWhole(page, q, 'C 1024x768')
+      const said = []
+      const listen = (m) => said.push(`${m.type()} ${m.text().slice(0, 140)}`)
+      page.on('console', listen)
+      const t0 = Date.now()
       await q.getByRole('button', { name: 'Show me around' }).click()
-      await page.waitForTimeout(4500)
-      const d = page.locator('[role="dialog"]:visible, [data-tour-step]:visible').first()
-      const shown = await d.isVisible().catch(() => false)
+      const d = page.locator('[role="dialog"][aria-modal="true"]:visible, [data-tour-step]:visible').first()
+      const shown = await d.waitFor({ state: 'visible', timeout: 12000 }).then(() => true).catch(() => false)
+      info('C: Show me around, tour after', shown ? `${Date.now() - t0} ms` : 'none in 12 s')
+      page.off('console', listen)
+      info('C: console after Show me around', said.slice(0, 12).join(' || ') || 'nothing')
       info('C: Show me around opened', `${page.url().replace(BASE, '')} | ${shown ? (await text(d)).slice(0, 120) : 'no dialog'}`)
-      check('C: Show me around starts a tour', shown)
+      check('C: Show me around opens Start here (Singing)', /#\/singing$/.test(page.url()), page.url().replace(BASE, ''))
+      // Singing has no page tour (PAGE_TOURS); its tour is the Guide's Singing section, which the plan does not start.
+      info('C: a tour on Singing after Show me around', shown ? 'yes' : 'no (Singing has no page tour; its tour is in the Guide)')
       await shot(page, 'C-show-me-around')
+    } finally { await browser.close() }
+  })
+
+  // ---------- D: desktop, a voiceprint, Show me around into a room with a page tour ----------
+  await phase('onbD', async () => {
+    const browser = await launch(sweep)
+    const { page } = await newPage(browser, DESKTOP)
+    try {
+      await toPlan(page, { voiceprint: true, label: 'D' })
+      await page.getByRole('button', { name: /^Continue$/ }).click()
+      await page.waitForTimeout(1500)
+      if (await beat(page, 'keep').isVisible().catch(() => false)) {
+        await page.getByRole('button', { name: /Not now/ }).filter({ visible: true }).first().click()
+      }
+      const q = await answer(page, PICKS)
+      const start = (await text(q)).match(/START HERE · ([A-Z' ]+)/)
+      info('D: Start here is', start ? start[1].trim() : '?')
+      const t0 = Date.now()
+      await q.getByRole('button', { name: 'Show me around' }).click()
+      const d = page.locator('[role="dialog"][aria-modal="true"]:visible').first()
+      const shown = await d.waitFor({ state: 'visible', timeout: 12000 }).then(() => true).catch(() => false)
+      info('D: Show me around opened', `${page.url().replace(BASE, '')} | ${shown ? `${Date.now() - t0} ms: ${(await text(d)).slice(0, 120)}` : 'no dialog'}`)
+      check('D: Show me around starts the room\'s tour', shown)
+      await shot(page, 'D-show-me-around')
+      if (shown) {
+        const steps = (await text(d)).match(/(\d+)\s*(?:OF|of|\/)\s*(\d+)/)
+        info('D: tour count', steps ? `${steps[1]} of ${steps[2]}` : (await text(d)).slice(0, 80))
+      }
     } finally { await browser.close() }
   })
 
