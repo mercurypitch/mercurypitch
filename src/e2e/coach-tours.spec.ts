@@ -25,6 +25,10 @@
 // scripts/tour-rules.mjs's, which the Guide's walk applies too.
 // Merc stays a still here (no GPU): this file reads layout, and
 // showcase.spec.ts draws him live.
+//
+// Last, the tab chip in a room that fills the window: on Piano at 1440x900
+// the room gives way to the chip's row, so its keyboard stays on screen, the
+// content area does not scroll, and the chip covers no control.
 
 import type { Locator, Page } from '@playwright/test'
 import { expect, test } from '@playwright/test'
@@ -288,3 +292,55 @@ for (const tour of [SING, KARAOKE]) {
     })
   }
 }
+
+test('the tab chip leaves Piano room for its keyboard, at 1440x900 @smoke', async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 1440, height: 900 })
+  await seedFirstVisit(page)
+  await page.addInitScript(() => {
+    localStorage.setItem('pitchperfect_active_tab', 'piano')
+  })
+  await page.goto('/#/piano')
+  const chip = page.getByTestId('tour-chip')
+  await expect(chip).toBeVisible({ timeout: 20_000 })
+  const canvas = page.locator('#falling-notes-canvas')
+
+  // The canvas follows its container, so the room settles after the chip.
+  await expect
+    .poll(async () =>
+      page.evaluate(() => {
+        const main = document.querySelector('main.main-content')
+        return main === null ? null : main.scrollHeight - main.clientHeight
+      }),
+    )
+    .toBe(0)
+  const keys = await settledBox(canvas)
+  expect(keys, 'the falling-notes canvas is laid out').not.toBeNull()
+  if (keys !== null) {
+    expect(keys.y + keys.height).toBeLessThanOrEqual(900)
+  }
+  // Nothing but the chip under the chip: it covers no control.
+  const covered = await page.evaluate(() => {
+    const el = document.querySelector('[data-testid="tour-chip"]')
+    if (el === null) return ['no chip']
+    const r = el.getBoundingClientRect()
+    const hits: string[] = []
+    for (let x = r.left + 2; x < r.right; x += 12) {
+      for (let y = r.top + 2; y < r.bottom; y += 8) {
+        for (const under of document.elementsFromPoint(x, y)) {
+          if (el.contains(under) || under.contains(el)) continue
+          if (
+            under.matches(
+              'button, a[href], input, select, canvas, [role="button"], [role="slider"]',
+            )
+          ) {
+            hits.push(under.getAttribute('aria-label') ?? under.tagName)
+          }
+        }
+      }
+    }
+    return [...new Set(hits)]
+  })
+  expect(covered).toEqual([])
+})
