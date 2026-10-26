@@ -381,12 +381,12 @@ motion or Pause animations each Merc holds a still frame and skips the reactions
   - Voice Mirror's first glide said "to your highest" (`src/features/mirror/MirrorApp.tsx:124` at
     `51f1c53de`); "to your highest comfortable note" would match the playbook's range rule
     (REQ-GVC-072) and the lesson's "keep the glides comfortable" (FACTS 51). Done: since `7ed2aa1d2`
-    it says so (`MirrorApp.tsx:125`).
+    it says so (`MirrorApp.tsx:135`).
   - Its results line added, when three or more of the five notes land, "Your ear is ahead of your
     control, the good order" (`MirrorApp.tsx:2068-2072` at `51f1c53de`). The task measured the
     voice, not the ear, so the sentence infers what was not measured (REQ-GVC-045), right after a
     lesson careful to say "most", never "all", about ears. Done: since `7ed2aa1d2` the line ends at
-    the count (`MirrorApp.tsx:2086-2090`).
+    the count (`MirrorApp.tsx:2149-2153`).
 - **Pitch Hold, needed before the lesson links it** (CURRICULUM § 4 items 1, 2, 6 and 7; FACTS 54
   to 56):
   1. A slug, proposed `/exercises/hold-a-note`, opening Pitch Hold on its setup screen.
