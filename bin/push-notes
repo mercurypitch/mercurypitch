@@ -20,7 +20,10 @@ FILES=(
   l9/BRIEF-page-3.md l9/BRIEF-page-4.md l12/BRIEF-sing-layout.md
   polish/BUILDER-RULES.md polish/BRIEF-P.md polish/BRIEF-S.md
   release/walk/release-walk.cjs release/walk/run.sh
-  release/BRIEF-notes.md release/bin/cut.py
+  release/BRIEF-notes.md release/bin/cut.py release/bin/polish-notes.py
+  release/notes/CHANGELOG-entry.pre-polish.md release/notes/dev-changelog-entry.pre-polish.md
+  release/notes/PR-BODY.pre-polish.md release/notes/REACH.pre-polish.md
+  polish/S-PR-BODY.md polish/P-PR-BODY.md polish/P-lead/gates.sh
   release/notes/CHANGELOG-entry.md release/notes/dev-changelog-entry.md release/notes/PR-BODY.md
   release/notes/REACH.md release/notes/REPORT.md release/notes/LEAD-REVIEW.md
   bin/heavy bin/heavy-pri bin/light bin/seq-fold.py bin/verify-rebase-merge.sh bin/push-notes
