@@ -130,7 +130,12 @@ export function usePracticeController(deps: Deps): PracticeController {
     },
     onMicStateChange: (active, error) => {
       setMicActive(active)
+      // A Merc tour's "start the mic" step waits for the engine to have it,
+      // not for the tap, and says how to let Merc hear when it could not
+      // ("[PracticeEngine] Mic start failed"). Free while no tour listens.
+      if (active) emitCoachEvent('mic-on')
       if (error !== undefined && error !== '') {
+        emitCoachEvent('mic-failed')
         setMicError(error)
         showNotification(error, 'error')
       } else {

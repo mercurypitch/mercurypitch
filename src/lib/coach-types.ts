@@ -9,7 +9,10 @@
 //   waits for it. The app tells the coach it happened through the event bus
 //   (src/lib/coach-events.ts), so a do-step names the event it waits for, and
 //   the type makes that name required. Skip stays open the whole time, so a
-//   refused mic or a silent room never strands anyone.
+//   refused mic or a silent room never strands anyone. A step whose thing is
+//   already done as it shows (the mic was on before the tour) does not wait,
+//   and a step can name what going wrong sounds like (`mic-failed`) and the
+//   line the bubble adds once it has.
 // - watch: something to look at or read later. The tour goes on.
 //
 // Tour content lives beside its room and imports only these types, so a
@@ -62,6 +65,17 @@ export interface CoachDoStep extends CoachStepBase {
   kind: 'do'
   /** What the singer has to do before the step moves on by itself. */
   waitFor: CoachEventName
+  /**
+   * Asked once, as the step shows: true when the singer has already done it,
+   * so the step offers Next instead of waiting for an event that will not
+   * come again.
+   */
+  doneAlready?: () => boolean
+  /**
+   * The event that says the singer tried and it failed, and the line the
+   * bubble adds once it has come, until the step moves on. Skip stays.
+   */
+  failure?: { event: CoachEventName; aside: CoachAside }
 }
 
 export type CoachStep = CoachShowStep | CoachDoStep

@@ -5,7 +5,7 @@
 import type { Mock } from 'vitest'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { CoachEventName } from '@/lib/coach-events'
-import type { CoachShowStep, CoachStep, CoachTour } from '@/lib/coach-types'
+import type { CoachDoStep, CoachShowStep, CoachStep, CoachTour, } from '@/lib/coach-types'
 import type { CoachRunnerDeps } from './runner'
 import { CELEBRATE_MS, createCoachRunner } from './runner'
 
@@ -41,13 +41,18 @@ const show = (
   ...extra,
 })
 
-const doStep = (id: string, waitFor: CoachEventName): CoachStep => ({
+const doStep = (
+  id: string,
+  waitFor: CoachEventName,
+  extra: Partial<CoachDoStep> = {},
+): CoachStep => ({
   id,
   kind: 'do',
   title: id,
   body: `${id} body`,
   merc: 'listen',
   waitFor,
+  ...extra,
 })
 
 /** Four steps like the Sing tour's: show, do, show, watch. */
@@ -124,6 +129,82 @@ describe('createCoachRunner', () => {
     bus.send('pitch-detected')
     vi.advanceTimersByTime(CELEBRATE_MS * 2)
     expect(runner.snapshot()?.index).toBe(2)
+  })
+
+  it('does not wait on a do step that is already done as it shows', () => {
+    const runner = start({
+      key: 'sing',
+      steps: [
+        doStep('mic', 'mic-on', { doneAlready: () => true }),
+        show('line'),
+      ],
+    })
+
+    // The mic was on before the tour: nothing is left to wait for.
+    expect(runner.snapshot()).toMatchObject({
+      index: 0,
+      waiting: false,
+      celebrating: false,
+    })
+    runner.next()
+    expect(runner.snapshot()?.step.id).toBe('line')
+  })
+
+  it('asks whether a do step is done only as it shows', () => {
+    let micOn = false
+    const runner = start({
+      key: 'sing',
+      steps: [
+        doStep('mic', 'mic-on', { doneAlready: () => micOn }),
+        show('line'),
+      ],
+    })
+    micOn = true
+
+    expect(runner.snapshot()).toMatchObject({ index: 0, waiting: true })
+    runner.next()
+    expect(runner.snapshot()?.index).toBe(0)
+    bus.send('mic-on')
+    expect(runner.snapshot()).toMatchObject({
+      index: 0,
+      waiting: false,
+      celebrating: true,
+    })
+  })
+
+  it('marks a waiting step failed when its failure comes, and still waits', () => {
+    const failure = {
+      event: 'mic-failed',
+      aside: { title: 'No mic.', sub: 'Allow it.' },
+    } as const
+    const runner = start({
+      key: 'sing',
+      steps: [doStep('mic', 'mic-on', { failure }), show('line')],
+    })
+    expect(runner.snapshot()).toMatchObject({ waiting: true, failed: false })
+
+    bus.send('mic-failed')
+    expect(runner.snapshot()).toMatchObject({
+      index: 0,
+      waiting: true,
+      failed: true,
+    })
+    runner.next()
+    expect(runner.snapshot()?.index).toBe(0)
+
+    // The singer allows the mic and taps it again.
+    bus.send('mic-on')
+    expect(runner.snapshot()).toMatchObject({
+      index: 0,
+      celebrating: true,
+      failed: false,
+    })
+    vi.advanceTimersByTime(CELEBRATE_MS)
+    expect(runner.snapshot()).toMatchObject({ index: 1, failed: false })
+
+    // Past the step, a failure is nobody's business.
+    bus.send('mic-failed')
+    expect(runner.snapshot()).toMatchObject({ index: 1, failed: false })
   })
 
   it('goes back a step, and not before the first', () => {

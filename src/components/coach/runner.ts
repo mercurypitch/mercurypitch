@@ -12,6 +12,10 @@
 //   for one.
 // - When the singer does the thing, Merc celebrates for CELEBRATE_MS and the
 //   step moves on by itself. Skip moves on at once, with no celebration.
+// - A do-step whose thing is already done as it shows (`doneAlready`: the mic
+//   was on before the tour) does not wait: it offers Next, as a show step
+//   does. One whose `failure` event comes while it waits is marked failed,
+//   for the layer to say why, and still waits.
 // - The tour events carry what the legacy spotlight tours' events carry
 //   (src/lib/guide-funnel.ts): tour_start how many steps this run shows,
 //   tour_done the last of them, and tour_exit the 1-based step the singer
@@ -34,8 +38,12 @@ export interface CoachSnapshot {
   index: number
   total: number
   step: CoachStep
+  /** True while a do-step waits for the singer: Next is Skip until it is done. */
+  waiting: boolean
   /** True from a do-step's event until the next step shows. */
   celebrating: boolean
+  /** True once the waiting step's failure event came, until it moves on. */
+  failed: boolean
 }
 
 export interface CoachRunner {
@@ -79,12 +87,15 @@ export function createCoachRunner(
   const [snapshot, setSnapshot] = createSignal<CoachSnapshot | null>(null)
   const [ended, setEnded] = createSignal<CoachEnd | null>(null)
   let unlisten: (() => void) | null = null
+  let unlistenFailure: (() => void) | null = null
   let celebration: ReturnType<typeof setTimeout> | null = null
   let over = false
 
   const stopWaiting = (): void => {
     unlisten?.()
     unlisten = null
+    unlistenFailure?.()
+    unlistenFailure = null
     if (celebration !== null) clearTimeout(celebration)
     celebration = null
   }
@@ -111,12 +122,19 @@ export function createCoachRunner(
       end('done')
       return
     }
-    setSnapshot({ index, total, step, celebrating: false })
-    if (step.kind !== 'do') return
+    const at = { index, total, step, celebrating: false, failed: false }
+    const waiting =
+      step.kind === 'do' && untrack(() => step.doneAlready?.()) !== true
+    setSnapshot({ ...at, waiting })
+    if (step.kind !== 'do' || !waiting) return
+    if (step.failure !== undefined) {
+      unlistenFailure = on(step.failure.event, () => {
+        setSnapshot({ ...at, waiting: true, failed: true })
+      })
+    }
     unlisten = on(step.waitFor, () => {
-      unlisten?.()
-      unlisten = null
-      setSnapshot({ index, total, step, celebrating: true })
+      stopWaiting()
+      setSnapshot({ ...at, waiting: false, celebrating: true })
       celebration = setTimeout(() => {
         celebration = null
         show(index + 1)
@@ -141,7 +159,7 @@ export function createCoachRunner(
     ended,
     next() {
       const at = current()
-      if (at === null || at.step.kind === 'do') return
+      if (at === null || at.waiting) return
       show(at.index + 1)
     },
     back() {
