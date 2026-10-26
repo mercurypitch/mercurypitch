@@ -1682,13 +1682,15 @@
                   second always higher, then you sing them back. Four of its six
                   intervals are this lesson's leaps, but not the minor third.
                   Both start low in the voice range saved in Settings, and both
-                  reach a whole octave. They want each note in the octave they
-                  play, not an octave away. Set your range there first, under
-                  Singing Voice Range (“Don't know? Find my voice” helps). If
-                  the top do felt high today, leave them for another day. Sore,
-                  hoarse or unwell today? Just listen along. Sing at about
-                  speaking volume, and stop immediately if anything feels
-                  uncomfortable. Practise it free:
+                  reach a whole octave. Interval Trainer wants each note in the
+                  octave it plays, not an octave away; Arpeggio Jumper lets you
+                  sing the whole arpeggio an octave higher or lower, and says
+                  so. Set your range there first, under Singing Voice Range
+                  (“Don't know? Find my voice” helps). If the top do felt high
+                  today, leave them for another day. Sore, hoarse or unwell
+                  today? Just listen along. Sing at about speaking volume, and
+                  stop immediately if anything feels uncomfortable. Practise it
+                  free:
                   <b>mercurypitch.com/pitch-training</b>, then tap Arpeggio
                   Jumper or Interval Trainer.
                 </p>
@@ -1710,7 +1712,43 @@
             </div>
           </a>
 
-          <div class="next-card card l9-next" data-next-card hidden></div>
+          <!-- the next lesson's card: the kit draws its words from the season
+               (kit/next-card.ts) and keeps this tease figure after them: the
+               pitch spiral, still, a turn and a bit from A2, with do, mi and
+               so lit (D3, F sharp 3, A3) and one "?" over all three -->
+          <div class="next-card card l9-next" data-next-card hidden>
+            <svg
+              class="l09-tease"
+              viewBox="0 0 156 120"
+              aria-hidden="true"
+              focusable="false"
+            >
+              <path
+                class="coil back"
+                d="M133.7 91.6L130 87.3L125.6 83.4L120.6 79.8L115.2 76.6L109.4 73.8L103.3 71.4L96.9 69.4L90.4 67.8L83.7 66.6L76.9 65.7L70.2 65.2L63.4 65.1L56.8 65.3L50.3 65.9L44.1 66.9L38.2 68.2L32.6 69.8L27.5 71.7L22.9 74L19 76.6L15.9 79.4L13.5 82.4L12.2 85.7L12 89M143.2 67L142 62.5L139.7 58.3L136.5 54.4L132.6 50.7L127.9 47.4L122.7 44.4L117 41.7L110.9 39.3L104.5 37.2L97.8 35.5L91 34"
+              />
+              <circle class="bead back" cx="133.7" cy="91.6" r="2.5" />
+              <circle class="bead back" cx="115.2" cy="76.6" r="2.3" />
+              <circle class="bead back" cx="90.4" cy="67.8" r="2.2" />
+              <circle class="bead back" cx="63.4" cy="65.1" r="2.2" />
+              <circle class="bead back" cx="38.2" cy="68.2" r="2.3" />
+              <circle class="bead back" cx="117" cy="41.7" r="2.4" />
+              <circle class="bead back" cx="91" cy="34" r="2.3" />
+              <path
+                class="coil"
+                d="M12 89L13 92.4L15.2 95.8L18.8 99L23.8 102L30.1 104.6L37.7 106.8L46.4 108.4L56 109.3L66.3 109.5L76.9 108.9L87.6 107.5L98 105.3L107.7 102.5L116.6 99L124.4 95L130.9 90.6L136 86L139.8 81.2L142.2 76.4L143.3 71.6L143.2 67"
+              />
+              <circle class="bead" cx="12" cy="89" r="2.8" />
+              <circle class="bead" cx="23.8" cy="102" r="3.1" />
+              <circle class="bead" cx="56" cy="109.3" r="3.4" />
+              <circle class="bead" cx="130.9" cy="90.6" r="3.2" />
+              <circle class="bead" cx="143.3" cy="71.6" r="2.9" />
+              <circle class="lit" cx="19" cy="76.6" r="5.4" />
+              <circle class="lit" cx="98" cy="105.3" r="7.3" />
+              <circle class="lit" cx="136.5" cy="54.4" r="5.5" />
+              <text class="ask" x="77.8" y="24">?</text>
+            </svg>
+          </div>
           <!-- Shown by kit/plan-back.ts, only to someone who answered the
                plan's questions. Beside the card, never inside its link. -->
           <a class="plan-back" data-plan-back hidden href="/#/plan"
@@ -1718,16 +1756,105 @@
           >
 
           <!-- free play: the chart's rungs on one stage, once the lesson is
-               done; shown once it is wired -->
+               done (wrap.ts). Its rungs are named with their notes in the
+               voice it shows; Hear it first and Slow are named for free play,
+               as the steps' stage has its own -->
           <div
             class="card stage-card free-play ladder-toy l9-free"
             id="freePlay"
-            hidden
           >
             <p class="eyebrow">
               <span class="fig">Free play:</span> every rung of the ladder chart
               in one place
             </p>
+            <div class="viz ladder-viz band-chart" data-free-viz>
+              <canvas
+                class="ladder-canvas"
+                role="img"
+                aria-label="Free play: the ladder chart"
+              ></canvas>
+            </div>
+            <p class="ladder-status" aria-live="polite" data-free-status></p>
+            <div
+              class="free-rungs"
+              role="group"
+              aria-label="Free play: the rungs"
+            >
+              <button
+                class="btn sm"
+                type="button"
+                data-free-rung="do"
+                aria-label="do, D3"
+              >
+                do
+              </button>
+              <button
+                class="btn sm"
+                type="button"
+                data-free-rung="mi"
+                aria-label="mi, F sharp 3"
+              >
+                mi
+              </button>
+              <button
+                class="btn sm"
+                type="button"
+                data-free-rung="so"
+                aria-label="so, A3"
+              >
+                so
+              </button>
+              <button
+                class="btn sm"
+                type="button"
+                data-free-rung="top"
+                aria-label="top do, D4"
+              >
+                top do
+              </button>
+            </div>
+            <div class="ladder-row">
+              <button
+                class="switch"
+                type="button"
+                data-free-hear
+                aria-pressed="false"
+                aria-label="Free play: Hear it first"
+              >
+                <span class="track" aria-hidden="true"></span>Hear it first
+              </button>
+              <button
+                class="switch"
+                type="button"
+                data-free-slow
+                aria-pressed="false"
+                aria-label="Free play: Slow"
+              >
+                <span class="track" aria-hidden="true"></span>Slow
+              </button>
+            </div>
+            <div
+              class="ladder-row free-voice"
+              role="group"
+              aria-label="Free play: the chart's voice"
+            >
+              <button
+                class="btn sm"
+                type="button"
+                data-free-voice="lower"
+                aria-pressed="true"
+              >
+                Lower voice
+              </button>
+              <button
+                class="btn sm"
+                type="button"
+                data-free-voice="higher"
+                aria-pressed="false"
+              >
+                Higher voice
+              </button>
+            </div>
           </div>
         </div>
       </section>

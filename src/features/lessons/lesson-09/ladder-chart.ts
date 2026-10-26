@@ -25,12 +25,14 @@
 //
 // The voice is `fyp-voice`, else the lower (do D3, or D4 for the higher),
 // and the chart follows a change made anywhere (`VoiceChoice.subscribe`);
-// Move do moves it within its four semitones (`move`). The band chart
-// reads its notes axis when it mounts and again at each `setTarget`, so
-// the axis here reads the state's window as it is now, and every change of
-// state, voice or do sets the target again. The canvas's summary names what
-// it shows in spoken names, never the sign: "Do, D3, and so, A3, with
-// Merc's leap between them"; live mode's says where do is ("Do is D3").
+// free play's voice switch sets one chart's voice for the visit and stores
+// nothing (`setVoice`); Move do moves it within its four semitones
+// (`move`). The band chart reads its notes axis when it mounts and again
+// at each `setTarget`, so the axis here reads the state's window as it is
+// now, and every change of state, voice or do sets the target again. The
+// canvas's summary names what it shows in spoken names, never the sign:
+// "Do, D3, and so, A3, with Merc's leap between them"; live mode's says
+// where do is ("Do is D3").
 
 import type { BandChart, TracePoint } from '@/features/lessons/kit/band-chart'
 import { mountBandChart } from '@/features/lessons/kit/band-chart'
@@ -406,6 +408,8 @@ export interface LadderChart {
   showLive(ladder: LadderId): void
   /** Move do: semitones from the voice's home do, within four. */
   move(shift: number): void
+  /** This chart's voice alone, for the visit: it stores nothing, and a voice chosen anywhere moves it again. */
+  setVoice(v: Voice): void
   /** Draws a phrase as it plays. */
   play(phrase: Phrase): PhraseDrawing
   /** A line in seconds of sound, over the slots shown now. */
@@ -665,6 +669,11 @@ export function mountLadderChart(
     },
     move(next) {
       shift = next
+      follow()
+    },
+    setVoice(v) {
+      if (v === voice) return
+      voice = v
       follow()
     },
     play,

@@ -263,7 +263,11 @@ export const FIRST_PAINT_BUDGETS_KB = {
   // listener, which come only inside Start's tap, so neither is here; and
   // the kit's microphone holder, which joins the runs chunk this page
   // shares with Lesson 7, so Lesson 7 measures 142 bytes more, 135,712.
-  'learn/09.html': 149,
+  // Raised to 151 for the Wrap's free play: 153,922 bytes with it, against
+  // 152,576 at 149, and 1,890 more than Sing it's take measured. Free play's
+  // rungs, its Hear it first, Slow and voice switch, and the ladder chart's
+  // voice for one chart alone.
+  'learn/09.html': 151,
 
   // The main app, and the crawlable doors that are the main app. Measured
   // 4669. It is eager by design today, so this is a ceiling on growth rather
