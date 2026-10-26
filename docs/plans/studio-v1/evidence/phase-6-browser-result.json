@@ -1,0 +1,60 @@
+{
+  "sourceRevision": "c6fd199200b7a3b45d36ac93b0cf6f222898d63d",
+  "testedAt": "2026-10-26T21:10:18.679Z",
+  "status": "passed",
+  "browserFlow": {
+    "completedStages": 8,
+    "stageNames": [
+      "Open integrated Studio and create named local song",
+      "Import real MP3 and stereo WAV through file controls",
+      "Move pulse with real mouse; trim and fade melody with numeric controls",
+      "Play, mute, solo and pause using the live arrangement",
+      "Choose Sound flavour, adjust tone and run Auto-balance",
+      "Reload and reopen saved song without autoplay",
+      "Download portable backup and restore an independent copy",
+      "Play restored audio then render and explicitly download measured WAV"
+    ],
+    "pageExceptions": 0,
+    "failedRequests": 0,
+    "noAutoplayAfterReload": true,
+    "explicitDownloadOnly": true,
+    "foregroundUnchanged": true
+  },
+  "fixture": {
+    "kind": "original synthetic melody and rhythm",
+    "mp3OriginalRate": 44100,
+    "mp3Channels": 1,
+    "canonicalRate": 48000,
+    "mp3Sha256": "c780a8d3031c9b0dc0e0647d36d2d7ffe1859be91e57eed0f87253b76a2c1e07"
+  },
+  "backup": {
+    "bytes": 9270451,
+    "originalRevision": 15,
+    "restoredRevision": 0,
+    "newProjectAndAssetIds": true,
+    "originalProjectUnchanged": true,
+    "originalMp3HashesMatch": true,
+    "freshProfileRestoreSeparatelyPassed": true
+  },
+  "wav": {
+    "bytes": 2835948,
+    "seconds": 14.770333333333333,
+    "sha256": "b91cf352e79402ccdd50edca465cb8b9316ce292e2531e98e20c09a87702facd",
+    "sampleRate": 48000,
+    "channels": 2,
+    "bitsPerSample": 16,
+    "integratedLufsDisplayed": -14.1,
+    "samplePeakDbMeasured": -2.4592805248128973,
+    "truePeakEstimateDisplayed": -2.4,
+    "ffmpegIntegratedLufs": -14.1,
+    "ffmpegTruePeakDb": -2.4
+  },
+  "limits": [
+    "local Chromium only",
+    "device output muted",
+    "no physical tablet or iOS acceptance",
+    "no headphone or speaker listening acceptance",
+    "no maximum-project stress claim",
+    "full local build stops at unchanged LFS asset guard"
+  ]
+}

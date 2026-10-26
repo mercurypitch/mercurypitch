@@ -1,6 +1,6 @@
 // Export lifecycle regressions cover final bytes, capped correction, stale work and native cancellation.
 import { describe, expect, it, vi } from 'vitest'
-import type { ChainSpec } from '@/lib/studio-fx/chain-spec'
+import type { ChainSpec, EffectSpecOf } from '@/lib/studio-fx/chain-spec'
 import { normalizeChainSpec } from '@/lib/studio-fx/chain-spec'
 import { FakeBuffer } from '@/lib/studio-fx/fake-audio-graph.test-fixtures'
 import { reserveStudioMemory, studioReservedMemoryBytes, } from '../memory-budget'
@@ -194,8 +194,10 @@ describe('Studio verified WAV job', () => {
     expect(
       finishSpecs.map(
         (spec) =>
-          spec.effects.find((effect) => effect.id === 'loudness')?.params
-            .gainDb,
+          spec.effects.find(
+            (effect): effect is EffectSpecOf<'gain'> =>
+              effect.kind === 'gain' && effect.id === 'loudness',
+          )?.params.gainDb,
       ),
     ).toEqual([0, 0])
     expect(result.safetyGainDb).toBeLessThan(-2.25)

@@ -55,9 +55,7 @@ describe('Studio sound controls', () => {
     await fireEvent.keyUp(slider, { key: 'ArrowRight' })
     expect(ui.command).toHaveBeenCalledTimes(1)
     expect(ui.project().mix.macros.tone).toBe(2)
-    await fireEvent.click(
-      screen.getByRole('button', { name: 'Lo-fi', exact: true }),
-    )
+    await fireEvent.click(screen.getByRole('button', { name: /^Lo-fi$/ }))
     expect(ui.project().master.masterEq.highCutHz).toBe(6500)
     await fireEvent.click(screen.getByRole('button', { name: 'Reset sound' }))
     expect(ui.project().mix.flavourId).toBe('natural')
