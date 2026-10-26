@@ -307,7 +307,8 @@ async function covers(page, sel) {
     await page.waitForTimeout(2500)
     return q
   }
-  const PICKS = ['Singing', 'Singing in tune', ["Telling if I'm getting better"], 'A video lesson']
+  // Question 2's options follow question 1 (plan/questions.ts q2Options): for Singing, 'A song I love'.
+  const PICKS = ['Singing', 'A song I love', ["Telling if I'm getting better"], 'A video lesson']
 
   async function planChecks(page, q, label) {
     const planText = await text(q)
@@ -458,21 +459,22 @@ async function covers(page, sel) {
       const before = await audio(page)
       await page.locator('#gateBtn').click()
       await page.waitForTimeout(800)
+      // The play buttons unlock once a guess is in (kit/predict.ts).
+      await page.locator('[data-choice="same"]').scrollIntoViewIfNeeded()
+      await page.locator('[data-choice="same"]').click()
+      await page.waitForTimeout(600)
       await resetPeak(page)
-      await page.locator('[data-play="220"]').scrollIntoViewIfNeeded()
       await page.locator('[data-play="220"]').click()
       await page.waitForTimeout(1800)
       const after = await audio(page)
       note(`L1 audio before: ${fmtAudio(before)} | after a play: ${fmtAudio(after)}`)
-      check('L1: Turn sound on, then a play button, makes sound', !!after && /running/.test(after.states) && after.starts > (before?.starts || 0) && after.maxPeak > 0.01, fmtAudio(after))
+      check('L1: Turn sound on, guess, then a play button makes sound', !!after && /running/.test(after.states) && after.starts > (before?.starts || 0) && after.maxPeak > 0.01, fmtAudio(after))
       await shot(page, 'L1-played')
-      await page.locator('[data-choice="same"]').click().catch(() => undefined)
-      await page.waitForTimeout(600)
       await resetPeak(page)
       await page.locator('[data-play="440"]').click().catch(() => undefined)
       await page.waitForTimeout(1500)
       const after2 = await audio(page)
-      check('L1: the second tone plays after a guess', !!after2 && after2.maxPeak > 0.01, fmtAudio(after2))
+      check('L1: the second tone plays too', !!after2 && after2.maxPeak > 0.01, fmtAudio(after2))
       // film
       await page.locator('#watch').scrollIntoViewIfNeeded()
       await page.locator('#bigPlay').click()
@@ -513,7 +515,12 @@ async function covers(page, sel) {
       if (await gate.count()) {
         await gate.scrollIntoViewIfNeeded(); await gate.click(); await page.waitForTimeout(800)
         await resetPeak(page)
-        const play = page.locator('[data-play]:visible').first()
+        let play = page.locator('[data-play]:visible:not([disabled])').first()
+        if (!(await play.count())) {
+          const choice = page.locator('.choice[data-choice]:visible').first()
+          await choice.scrollIntoViewIfNeeded(); await choice.click(); await page.waitForTimeout(600)
+          play = page.locator('[data-play]:visible:not([disabled])').first()
+        }
         await play.scrollIntoViewIfNeeded(); await play.click(); await page.waitForTimeout(1800)
         const a2 = await audio(page)
         check('L2: Turn sound on, then a play button, makes sound', !!a2 && a2.maxPeak > 0.01, fmtAudio(a2))

@@ -249,3 +249,7 @@ Note: the lanes' memory gate read a stale cgroup path after the 21:00 restart (f
 - Fixed the walk: h1 regex \b[A-G]#?\d\b; tour waitFor 8 s; L2 "no tour again" waits 8 s; Not now / Start singing clicks filter({visible:true}); phase errors now carry the call log's waiting-for line.
 - Run 2 (out-p2): 15 pass, 4 fail (click timeouts after Keep, after the L1 tour, B/C). Run 3 (out-p3, phases onbA,lessons,onbB,onbC) running.
 - No app defect found so far. e2e-wav's dist is the walk's production-like build: rebuild with build:e2e before running Playwright specs there again.
+
+## 06:17 UTC 26 Oct — check-in (trigger)
+- No v0.9.22 tag; main b8479306a. #1217 CI all green on c96a3bb74 (PR Gate, 4 browser shards, unit, lint, ratchet, validate, workers, build & deploy, iOS, Android; Beside Cue x3 and prod deploy skipped), no review threads: merges once the walk's onboarding phases pass on this head. Held PRs unchanged (they wait for the tag). No builder started: L9 run 4 is sequenced after the tag.
+- Walk fixes so far (all walk-script, no app defect): Q2 pick for Singing is 'A song I love'; L1's plays unlock after a guess (kit/predict.ts), so the walk guesses first. Run 4 (out-p4) running.
