@@ -67,6 +67,13 @@ interface CoachStepBase {
    */
   unseen?: string
   /**
+   * What the step points at meanwhile, with its `unseen` line: Karaoke's
+   * phone stop rings the stage's Back, and once Back has taken the stage
+   * away, Add a song, which the layer scrolls into view. Its bubble docks as
+   * any ringed step's does: `phoneCentred` is for the target itself.
+   */
+  unseenTarget?: string
+  /**
    * On a phone, the bubble stands centred rather than docked: for a stop
    * over a stage whose own transport fills the foot of the window, where a
    * docked sheet would cover it. Its target must stand clear of the middle.

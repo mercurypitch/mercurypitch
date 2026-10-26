@@ -27,8 +27,10 @@
 //   its icon while the rail is folded (karaoke.own-song). On a phone the
 //   stage still covers the page, Add a song with it, when the score card
 //   closes, so the stop rings the stage's Back (karaoke.stage-back), the way
-//   there, and names it. It stands centred, off the stage's transport, and
-//   without Back on screen (a stage with no way back) it names nothing.
+//   there, and names it. It stands centred, off the stage's transport. Once
+//   Back has taken the stage away it turns to Add a song (the layer scrolls
+//   it into view: the page was left scrolled below it) and says the wide
+//   screen's line.
 // - Under it, the credits line the plan's Karaoke Night card says
 //   (planCreditsLine), from what this page knows: who is signed in and their
 //   balance (the standalone account, which fetches the balance on every
@@ -84,6 +86,9 @@ export function loadKaraokeCredits(): void {
   })
 }
 
+/** The rail's Add a song: its card, or its icon while the rail is folded. */
+const OWN_SONG_TARGET = '[data-tour="karaoke.own-song"]'
+
 const OWN_SONG = {
   id: 'own-song',
   kind: 'show',
@@ -128,7 +133,7 @@ export const KARAOKE_TOUR: CoachTour = {
     {
       ...OWN_SONG,
       viewport: 'desktop',
-      target: '[data-tour="karaoke.own-song"]',
+      target: OWN_SONG_TARGET,
     },
     {
       ...OWN_SONG,
@@ -136,6 +141,7 @@ export const KARAOKE_TOUR: CoachTour = {
       target: '[data-tour="karaoke.stage-back"]',
       body: 'Tap Back to add any song. The Cloud GPU takes the voice out, so you sing over the band.',
       unseen: OWN_SONG.body,
+      unseenTarget: OWN_SONG_TARGET,
       phoneCentred: true,
     },
   ],

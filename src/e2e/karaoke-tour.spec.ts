@@ -17,9 +17,15 @@
 // events, by name (src/lib/coach-events.ts). Every ring holds its target,
 // fits the window and leaves the bubble off it; the last stop rings Add a
 // song on a wide screen, and on a phone the stage's Back, which it names,
-// with the bubble centred off the stage's transport. Done leaves nothing
+// with the bubble centred off the stage's transport. A tap on Back turns the
+// phone's stop to Add a song, scrolled into view and ringed. Done leaves nothing
 // behind, the address has lost `tour`, and a reload offers nothing more: the
 // offer was spent when the tour started.
+//
+// The wait through the song also ends the ways a singer ends a song: it
+// plays out with the mic off (a wide screen, a short demo), or Back takes
+// the phone stage away mid-song. Either brings the last stop, nothing sent
+// by hand.
 
 import type { Locator, Page } from '@playwright/test'
 import { expect, test } from '@playwright/test'
@@ -231,6 +237,21 @@ for (const screen of SCREENS) {
       )
       await expect(bubble(page)).toContainText('Tap Back to add any song.')
       await expect(bubble(page)).toHaveAttribute('data-place', 'centre')
+
+      // Back takes the stage away. Add a song was above the window: the stop
+      // turns to it, scrolls it into view, rings it and docks off it.
+      await page.locator('[data-tour="karaoke.stage-back"]').click()
+      const own = page.locator('[data-tour="karaoke.own-song"]').first()
+      const frame = { x: 0, y: 0, width: screen.width, height: screen.height }
+      await expect
+        .poll(async () => inside(await boxOf(own), frame), {
+          message: 'Add a song is scrolled into the window',
+        })
+        .toBe(true)
+      await ringsTarget(page, own, screen)
+      await expect(bubble(page)).toContainText('Add any song.')
+      await expect(bubble(page)).not.toContainText('Tap Back')
+      await expect(bubble(page)).not.toHaveAttribute('data-place', 'centre')
     } else {
       await ringsTarget(
         page,
@@ -245,8 +266,8 @@ for (const screen of SCREENS) {
       await page.evaluate((key) => localStorage.getItem(key), OFFER_KEY),
     ).toBe('true')
 
-    // A reload of the page the landing left behind (the demo still on its
-    // stage) offers nothing more.
+    // A reload of the page the landing left behind (on a wide screen the
+    // demo still on its stage) offers nothing more.
     await page.reload()
     await expect(page.locator('.kn-topbar')).toBeVisible()
     await page.waitForLoadState('networkidle')
@@ -325,6 +346,41 @@ test('a song that plays out with the mic off ends the wait through it, at 1440x9
     page.locator('[data-tour="karaoke.own-song"]').first(),
     { width: 1440, height: 900 },
   )
+  expect(errors).toEqual([])
+})
+
+test('Back during the wait through the song brings the last stop at once, at 390x844 @smoke', async ({
+  page,
+}) => {
+  test.setTimeout(60_000)
+  const errors: string[] = []
+  page.on('pageerror', (error) => errors.push(error.message))
+  const screen = { width: 390, height: 844 }
+  await page.setViewportSize(screen)
+  await localKaraokeDemo(page)
+  await page.goto('/karaoke-night')
+  await page
+    .getByTestId('tour-chip')
+    .getByRole('button', { name: 'Sing the demo with Merc' })
+    .click()
+  await expect(heading(page, 'Start with the demo')).toBeVisible({
+    timeout: 15_000,
+  })
+  await page.locator('[data-tour="karaoke.demo"]').click()
+  await expect(heading(page, 'Sing along')).toBeVisible({ timeout: 15_000 })
+  await bubble(page).getByRole('button', { name: 'Skip this step' }).click()
+  await expect(bubble(page)).toHaveCount(0)
+
+  // The singer leaves the stage mid-song, with no score card: the last stop
+  // shows over the page, ringing Add a song, scrolled into the window.
+  await page.locator('[data-tour="karaoke.stage-back"]').click()
+  await expect(heading(page, 'Bring your own song')).toBeVisible()
+  await expect(bubble(page)).toContainText('3 of 3')
+  const own = page.locator('[data-tour="karaoke.own-song"]').first()
+  const frame = { x: 0, y: 0, ...screen }
+  await expect.poll(async () => inside(await boxOf(own), frame)).toBe(true)
+  await ringsTarget(page, own, screen)
+  await expect(bubble(page)).toContainText('Add any song.')
   expect(errors).toEqual([])
 })
 
