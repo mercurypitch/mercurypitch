@@ -11,9 +11,10 @@
 // ============================================================
 
 import type { Component, JSX } from 'solid-js'
-import { createEffect, createSignal, For, onCleanup, onMount, Show, } from 'solid-js'
+import { createEffect, createSignal, For, lazy, onCleanup, onMount, Show, Suspense, } from 'solid-js'
 import { LegalLinks } from '@/components/LegalLinks'
 import { StoreChips } from '@/components/shared/StoreChips'
+import type { VoiceprintRecord } from '@/db/services/voiceprint-service'
 import { saveVoiceprint } from '@/db/services/voiceprint-service'
 import type { MicError } from '@/lib/mic-manager'
 import { listAudioInputs, micManager } from '@/lib/mic-manager'
@@ -40,6 +41,7 @@ import { cardToPngBlob, cardToUnfurlBlob, copyCardToClipboard, copyOutcomeStatus
 import { CardOptionsSheet } from './CardOptionsSheet'
 import { CosmicMode } from './CosmicMode'
 import type { MirrorEntryIntent } from './entry-intent'
+import { isCheckupVisit } from './entry-intent'
 import { STORE_CHIP_EVENTS, trackFunnel } from './funnel'
 import { HowItWorks } from './HowItWorks'
 import { IconAlert, IconCheck, IconCopy, IconLink, IconMore, IconRocket, IconShare, IconSpark, } from './icons'
@@ -54,6 +56,7 @@ import { RevealCard } from './RevealCard'
 import { renderSummaryCard } from './shared-voiceprint-card'
 import { SharedVoiceprintWelcome } from './SharedVoiceprintWelcome'
 import { TaskDemo } from './TaskDemo'
+import type { ThenAndNowView } from './ThenAndNowPanel'
 import { playReferenceTone } from './tone-player'
 import { TrustInfo } from './TrustInfo'
 import { twinPeekLine } from './twin-peek-line'
@@ -101,6 +104,13 @@ const isCosmicHash = (): boolean =>
 
 const sleep = (ms: number): Promise<void> =>
   new Promise((resolve) => setTimeout(resolve, ms))
+
+// The weekly Check-up's then and now: a chunk of its own, loaded once a run
+// lands and only drawn when the history holds a week (ThenAndNowPanel.tsx).
+const loadThenAndNow = () => import('./ThenAndNowPanel')
+const ThenAndNowPanel = lazy(async () =>
+  loadThenAndNow().then((m) => ({ default: m.ThenAndNowPanel })),
+)
 
 type SubPhase =
   | 'intro'
@@ -208,6 +218,11 @@ export const MirrorApp: Component<MirrorAppProps> = (props) => {
   // refusing, so the link someone actually sends unfurls with nothing.
   const [copyingLink, setCopyingLink] = createSignal(false)
   const [deltaLine, setDeltaLine] = createSignal<string | null>(null)
+  /** The weekly Check-up's comparison for the run on screen, once read. */
+  const [thenAndNowView, setThenAndNowView] =
+    createSignal<ThenAndNowView | null>(null)
+  /** Home's Check-up card sent this visit (read once: the query is fixed). */
+  const checkupVisit = isCheckupVisit(window.location.search)
   // The saved take number of the run on screen (null for unsaved/demo runs);
   // personalises download filenames ("…-take-3-…").
   const [takeN, setTakeN] = createSignal<number | null>(null)
@@ -434,6 +449,7 @@ export const MirrorApp: Component<MirrorAppProps> = (props) => {
     setFreePhase(null)
     setFreeResult(null)
     setDeltaLine(null)
+    setThenAndNowView(null)
     setTakeN(null)
     setShareStatus(null)
     setMicError(null)
@@ -902,11 +918,15 @@ export const MirrorApp: Component<MirrorAppProps> = (props) => {
     // onboarding one: stored on this device (capped), pushed to the account
     // when signed in. Before this, only onboarding ever saved - making
     // another voiceprint meant redoing the whole first run.
-    void saveVoiceprint({
+    const saved = saveVoiceprint({
       summary,
       twin: singerForRange(result.range),
       source: 'mirror',
     })
+    // The weekly Check-up's then and now, with this take in the history. It
+    // replaces the change line above once it is read, when there is a week to
+    // compare; otherwise the results stay exactly as they are.
+    void showThenAndNow(saved)
 
     // Flip is the one shipped reveal (the lenticular look lives on as the
     // "Share with twin" export; the animation stays reachable via ?mode=).
@@ -934,6 +954,28 @@ export const MirrorApp: Component<MirrorAppProps> = (props) => {
     }
   }
 
+  /** Read the Check-up's comparison for the run that just landed. A reset,
+   *  a restored take or a newer run in the meantime makes it stale, and a
+   *  read that fails leaves the results as they are. */
+  async function showThenAndNow(
+    saved: Promise<VoiceprintRecord>,
+  ): Promise<void> {
+    const gen = flowGen
+    try {
+      const [panel, record] = await Promise.all([loadThenAndNow(), saved])
+      const view = await panel.readThenAndNow(record)
+      if (!cancelled && gen === flowGen) setThenAndNowView(view)
+    } catch {
+      // No comparison is shown; the change line stays.
+    }
+  }
+
+  /** "Sing it once more": the guided run again, without the landing. */
+  function singAgain(): void {
+    resetAll()
+    void start('guided')
+  }
+
   /** Restore a saved take (deep link / back-forward): the results page as it
    *  was when that run finished, reveal reset so the twin stays a tap away. */
   function restoreAttempt(n: number): boolean {
@@ -959,6 +1001,7 @@ export const MirrorApp: Component<MirrorAppProps> = (props) => {
     setTwinTrace(false)
     setTwinData(false)
     setDeltaLine(attempt.deltaLine !== '' ? attempt.deltaLine : null)
+    setThenAndNowView(null)
     setTakeN(n)
     preloadLegendPortrait(attempt.result)
     paintCard(attempt.result, attempt.glides, attempt.deltaLine)
@@ -1345,6 +1388,7 @@ export const MirrorApp: Component<MirrorAppProps> = (props) => {
       >
         <MirrorLanding
           entryIntent={props.entryIntent}
+          checkup={checkupVisit}
           onStart={(selected) => {
             // First guided run detours through the animated overview; the
             // "Let's go" tap there becomes the mic-acquiring gesture.
@@ -1789,6 +1833,8 @@ export const MirrorApp: Component<MirrorAppProps> = (props) => {
           entryIntent={props.entryIntent}
           result={session().result as MirrorResult}
           deltaLine={deltaLine()}
+          thenAndNow={thenAndNowView()}
+          onSingAgain={singAgain}
           shareStatus={shareStatus()}
           revealed={revealed()}
           revealMode={revealMode()}
@@ -1998,6 +2044,11 @@ export const Results: Component<{
   entryIntent: MirrorEntryIntent
   result: MirrorResult
   deltaLine: string | null
+  /** The weekly Check-up's then and now, when the history holds a week. It
+   *  takes the change line's place while it shows. */
+  thenAndNow?: ThenAndNowView | null
+  /** Start the guided run again from the then-and-now panel. */
+  onSingAgain?: () => void
   shareStatus: ShareStatus | null
   revealed: boolean
   revealMode: RevealMode
@@ -2053,12 +2104,23 @@ export const Results: Component<{
 
   return (
     <section class="mirror-panel mirror-results">
-      <Show when={props.deltaLine}>
+      <Show when={(props.thenAndNow ?? null) === null && props.deltaLine}>
         <p class="mirror-delta">{props.deltaLine}</p>
       </Show>
 
       <Show when={props.entryIntent === 'vocal-range' && range() !== null}>
         <VocalRangeResultSummary range={range() as RangeResult} />
+      </Show>
+
+      <Show when={props.thenAndNow}>
+        {(view) => (
+          <Suspense>
+            <ThenAndNowPanel
+              view={view()}
+              onSingAgain={() => props.onSingAgain?.()}
+            />
+          </Suspense>
+        )}
       </Show>
 
       {/* The voiceprint card centered, with the detail "notes" flanking it

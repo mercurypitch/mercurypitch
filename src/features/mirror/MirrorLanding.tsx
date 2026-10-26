@@ -17,7 +17,9 @@
 // everything").
 //
 // The H1 and the promise of each door are what the ads and the search pages
-// promise, so they are data here and pinned by MirrorLanding.test.tsx.
+// promise, so they are data here and pinned by MirrorLanding.test.tsx. Home's
+// weekly Check-up card opens the guided door with `?checkup=1`, and then the
+// eyebrow names the Check-up; the run that follows is the same one.
 
 import type { JSX } from 'solid-js'
 import type { MirrorEntryIntent } from './entry-intent'
@@ -68,6 +70,8 @@ const DOOR_COPY: Record<MirrorEntryIntent, DoorCopy> = {
 
 export interface MirrorLandingProps {
   entryIntent: MirrorEntryIntent
+  /** Home's weekly Check-up sent this visit: the eyebrow says so. */
+  checkup?: boolean
   onStart: (mode: 'guided' | 'free') => void
   onHowItWorks: () => void
 }
@@ -84,7 +88,9 @@ export function MirrorLanding(props: MirrorLandingProps): JSX.Element {
         data-door={props.entryIntent}
       >
         <TrustInfo />
-        <p class="mirror-eyebrow">MercuryPitch</p>
+        <p class="mirror-eyebrow">
+          {props.checkup === true ? 'Weekly Check-up' : 'MercuryPitch'}
+        </p>
         <h1 class="mirror-headline">
           {door().headline.lead}
           <span class="mirror-lit">{door().headline.lit}</span>

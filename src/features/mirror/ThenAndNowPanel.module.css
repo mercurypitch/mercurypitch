@@ -1,0 +1,184 @@
+/* ============================================================
+   ThenAndNowPanel: the weekly Check-up's then and now, on the Mirror's results
+   ============================================================
+
+   A card in the Mirror's own night palette (mirror.css's variables), as the
+   account ask is: it reads as the next thing after the run rather than
+   another hero. Then and Now stand side by side at every width, since each
+   holds three short readings. Every target is 44 px or more. A module, so its
+   rules come with the panel's chunk and not with the Mirror's first paint. */
+
+.panel {
+  width: min(100%, 560px);
+  margin: 0 auto 26px;
+  padding: 20px 18px 18px;
+  border-radius: 18px;
+  border: 1px solid rgba(143, 163, 255, 0.3);
+  background: linear-gradient(
+    160deg,
+    rgba(88, 166, 255, 0.1),
+    rgba(188, 140, 255, 0.08)
+  );
+  text-align: left;
+}
+
+.eyebrow {
+  margin: 0;
+  color: var(--mirror-accent);
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+/* Two classes, to sit above .mirror-panel h2 without reaching past this
+   module. */
+.panel .title {
+  margin: 4px 0 14px;
+  font-size: 1.35rem;
+  line-height: 1.25;
+}
+
+.sides {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
+.side {
+  min-width: 0;
+  padding: 12px;
+  border-radius: 12px;
+  border: 1px solid rgba(143, 163, 255, 0.22);
+  background: rgba(9, 7, 20, 0.45);
+}
+
+.side[data-side='now'] {
+  border-color: rgba(139, 233, 184, 0.4);
+}
+
+.panel .sideTitle {
+  margin: 0;
+  font-size: 1rem;
+  line-height: 1.3;
+}
+
+.days {
+  margin: 2px 0 8px;
+  color: var(--mirror-dim);
+  font-size: 0.8rem;
+}
+
+.readings {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin: 0;
+}
+
+.readings div {
+  display: flex;
+  flex-direction: column;
+}
+
+.readings dt {
+  color: var(--mirror-dim);
+  font-size: 0.75rem;
+}
+
+.readings dd {
+  margin: 0;
+  color: var(--mirror-text);
+  font-size: 0.95rem;
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+
+.changes {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin: 14px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.changes li {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 4px 12px;
+  padding: 8px 0;
+  border-top: 1px solid rgba(143, 163, 255, 0.16);
+  font-size: 0.92rem;
+}
+
+.changeLabel {
+  color: var(--mirror-dim);
+}
+
+.changeText {
+  color: var(--mirror-text);
+  font-weight: 600;
+}
+
+.practice,
+.note,
+.againLine,
+.account {
+  margin: 10px 0 0;
+  color: var(--mirror-dim);
+  font-size: 0.85rem;
+  line-height: 1.5;
+}
+
+.practice {
+  color: var(--mirror-green);
+  font-weight: 600;
+}
+
+/* As on Home's card: the button beside the words when both fit, under them
+   when not, and never a tall second line. */
+.account {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  column-gap: 6px;
+}
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 6px;
+}
+
+/* The Mirror's secondary pill, a size down from the results' hero share. */
+.panel .again {
+  flex: 1 1 200px;
+  min-height: 48px;
+  margin-top: 10px;
+  padding: 10px 18px;
+  font-size: 0.95rem;
+}
+
+.accountButton {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  padding: 0 2px;
+  border: 0;
+  background: none;
+  color: var(--mirror-accent);
+  font-family: inherit;
+  font-size: inherit;
+  font-weight: 600;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  cursor: pointer;
+}
+
+.accountButton:focus-visible {
+  outline: 2px solid var(--mirror-accent);
+  outline-offset: 2px;
+}
