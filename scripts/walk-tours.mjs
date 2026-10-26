@@ -29,15 +29,22 @@
 //   ONLY         comma-separated tour names to walk instead of all of them,
 //                as they are printed here (e.g. ONLY="Jam,Jam (inside a room)")
 //
-// Exits 0 when every step of every tour spotlights a visible element;
-// exits 1 and prints MISS lines otherwise. The Karaoke mixer tour is not
-// walked — its targets only exist once a song is loaded in the mixer. The
-// Jam tab has two tours (the lobby's and the room's) and both are: "Jam" in
-// the Guide starts whichever screen is up, so the second walk opens the
-// preview room first.
+// Every step is also held to the two rules in tour-rules.mjs: its spotlight
+// takes at most 70% of the window's height (WIDE otherwise), and a consent
+// bar put up beside it stays on top (BAR otherwise). Merc's tours are walked
+// by src/e2e/coach-tours.spec.ts, under the same rules: this walker drives
+// the Guide's spotlight tooltip.
+//
+// Exits 0 when every step of every tour spotlights a visible element and
+// keeps both rules; exits 1 and prints MISS, WIDE or BAR lines otherwise.
+// The Karaoke mixer tour is not walked — its targets only exist once a song
+// is loaded in the mixer. The Jam tab has two tours (the lobby's and the
+// room's) and both are: "Jam" in the Guide starts whichever screen is up, so
+// the second walk opens the preview room first.
 // ============================================================
 import { readFileSync } from 'node:fs'
 import { chromium } from '@playwright/test'
+import { barOnTop, probeConsentBar, targetFits } from './tour-rules.mjs'
 
 const BASE = process.env.BASE_URL || 'http://localhost:3005'
 const MOBILE = process.env.MOBILE === '1'
@@ -94,10 +101,10 @@ try {
   })
 }
 
-const ctx = await browser.newContext({
-  viewport: MOBILE ? { width: 390, height: 844 } : { width: 1280, height: 800 },
-  hasTouch: MOBILE,
-})
+const VIEWPORT = MOBILE
+  ? { width: 390, height: 844 }
+  : { width: 1280, height: 800 }
+const ctx = await browser.newContext({ viewport: VIEWPORT, hasTouch: MOBILE })
 const page = await ctx.newPage()
 await page.addInitScript((v) => {
   window.E2E_TEST_MODE = true
@@ -172,9 +179,31 @@ const NEEDS_CLOUD_DATA = new Set([
   'Challenges::Achievements',
 ])
 
+// Steps whose spotlight was already taller than 70% of the window when the
+// rule came in (walked on 26 Oct 2026, at 1280x800 and 390x844), keyed as
+// NEEDS_CLOUD_DATA is. Each prints `wide` rather than failing the walk, so a
+// new one fails while these wait to be pointed at something smaller. Most
+// ring a whole page or panel; the Piano one is 592 px of 800 on a desktop
+// and 581 of 844 on a phone.
+const WIDE_TARGETS = new Set([
+  'Singing::Practice Mode',
+  'Settings: General::The General tab',
+  'Settings: General::Credits',
+  'Settings: General::About & What’s New',
+  'Settings: Display & Controls::Show or hide panels',
+  'Home::Choose your next room',
+  'Path::The Ascent',
+  'Path::The week card',
+  'Piano::Play the falling notes',
+  'Exercises::Pick a drill',
+  'Challenges::Take on a challenge',
+])
+
 let totalSteps = 0
 let missing = 0
 let skipped = 0
+let broken = 0
+let wide = 0
 
 async function walkTour(name, label = name) {
   await openGuide()
@@ -214,11 +243,28 @@ async function walkTour(name, label = name) {
     const box = hlVisible ? await hl.boundingBox() : null
     const ok = !!box && box.width > 14 && box.height > 14
     const excused = !ok && NEEDS_CLOUD_DATA.has(`${name}::${title}`)
+    // The two rules: a spotlight that fits, and the consent bar on top.
+    const fits = box === null || targetFits(box, VIEWPORT)
+    const knownWide = !fits && WIDE_TARGETS.has(`${name}::${title}`)
+    const onTop = barOnTop(await page.evaluate(probeConsentBar))
     totalSteps++
     if (excused) skipped++
     else if (!ok) missing++
+    if (knownWide) wide++
+    if (!onTop || (!fits && !knownWide)) broken++
+    const verdict = !ok
+      ? excused
+        ? 'skip'
+        : 'MISS'
+      : !onTop
+        ? 'BAR '
+        : !fits
+          ? knownWide
+            ? 'wide'
+            : 'WIDE'
+          : 'ok  '
     console.log(
-      `  ${ok ? 'ok  ' : excused ? 'skip' : 'MISS'}  step ${i + 1}: ${title}  ${box ? `${Math.round(box.width)}x${Math.round(box.height)}` : excused ? 'needs a cloud board' : 'no-highlight'}`,
+      `  ${verdict}  step ${i + 1}: ${title}  ${box ? `${Math.round(box.width)}x${Math.round(box.height)}` : excused ? 'needs a cloud board' : 'no-highlight'}`,
     )
     const next = page
       .locator('[class*="walkthroughNext"]:not([class*="NextSection"])')
@@ -272,7 +318,9 @@ if (wanted(JAM_ROOM_TOUR)) await walkJamRoomTour()
 
 console.log(
   `\nTOTAL steps: ${totalSteps}, steps without visible spotlight: ${missing}` +
-    (skipped > 0 ? `, skipped (need a cloud board): ${skipped}` : ''),
+    `, steps breaking a rule (WIDE or BAR): ${broken}` +
+    (skipped > 0 ? `, skipped (need a cloud board): ${skipped}` : '') +
+    (wide > 0 ? `, known wide spotlights: ${wide}` : ''),
 )
 await browser.close()
-process.exit(missing === 0 ? 0 : 1)
+process.exit(missing === 0 && broken === 0 ? 0 : 1)

@@ -127,6 +127,13 @@ jobs:
                 step="${line#*MISS  }"
                 echo "::error title=Guided tour ($VIEWPORT)::$current, $step"
                 ;;
+              # A step that breaks a rule of scripts/tour-rules.mjs: a
+              # spotlight taller than 70% of the window, or the consent bar
+              # covered. The verdict stays in the message.
+              *'WIDE  step '*|*'BAR   step '*)
+                step="${line#  }"
+                echo "::error title=Guided tour ($VIEWPORT)::$current, $step"
+                ;;
               'FATAL:'*)
                 echo "::error title=Guided tour ($VIEWPORT)::$line"
                 ;;
@@ -140,7 +147,7 @@ jobs:
             echo ""
             cat walk-time.txt 2>/dev/null || true
             echo ""
-            if grep -qE 'MISS  step|TOUR DID NOT START|COULD NOT OPEN A ROOM|^FATAL:' tours.log; then
+            if grep -qE 'MISS  step|WIDE  step|BAR   step|TOUR DID NOT START|COULD NOT OPEN A ROOM|^FATAL:' tours.log; then
               echo '```'
               # Each failed step under its tour's heading, and nothing else.
               awk '
@@ -149,7 +156,7 @@ jobs:
                   if ($0 ~ /TOUR DID NOT START|COULD NOT OPEN A ROOM/) { print; heading = "" }
                   next
                 }
-                /MISS  step|^FATAL:/ {
+                /MISS  step|WIDE  step|BAR   step|^FATAL:/ {
                   if (heading != "") { print heading; heading = "" }
                   print
                 }
