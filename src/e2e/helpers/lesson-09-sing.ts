@@ -74,9 +74,13 @@ export const TAKE_LINE =
 
 /**
  * Presses `button` as a viewer taps it, already on screen. The lesson pages
- * scroll smoothly, so Playwright's own scroll to a button glides, and a
- * glide still running as Start's card shrinks can carry Sing it off screen
- * long enough for the page to count the viewer gone and end the take.
+ * scroll smoothly, so Playwright's own scroll to a button glides, and its
+ * click can land with several hundred px of the glide still to run: as
+ * Start's card shrinks for the take, that carries Sing it off screen long
+ * enough for the page to count the viewer gone and end the take. A
+ * viewer's tap lands on a page at rest, and a tap on Start at the edge of
+ * the screen loses no take (learn-lesson-09-sing-edge.spec.ts), so the
+ * button is brought to the middle of the screen at once, before the click.
  */
 export async function tap(button: Locator): Promise<void> {
   await button.evaluate((el) =>

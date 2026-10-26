@@ -68,6 +68,15 @@
   }
 }
 
+/* the two prerequisite chips are long enough to wrap onto rows of their
+   own at every width: 16 px between the rows keeps each chip's 44 px tap box
+   whole (lesson-base.css, `.chip-link::after`, 9 px above and below it),
+   where the kit's 8 px, 6 px on a phone, let the lower chip's box cover the
+   upper one's */
+.l9-hero .meta {
+  row-gap: 16px;
+}
+
 /* ---------------------------------------------------------------- the ladder chart's stage */
 /* a figure label is one 16 px line (the stage budget counts on it) */
 .steps-stage .toy .eyebrow {
