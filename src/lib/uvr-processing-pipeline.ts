@@ -324,7 +324,7 @@ async function pollAndPersistServer(
         // on every load; the server URL is a same-session fallback that will 404
         // later, so we only keep it when the durable save fails.
         setFinalizingUvrSession(sessionId)
-        let savedPlayable = false
+        const saved = new Set<string>()
         let quotaHit = false
         await Promise.all(
           files.map(async (f) => {
@@ -350,7 +350,7 @@ async function pollAndPersistServer(
                 f.filename,
               )
               if (res.ok) {
-                savedPlayable = true
+                saved.add(f.stem)
                 outputs[f.stem] = URL.createObjectURL(blob)
               } else {
                 if (res.quotaExceeded) quotaHit = true
@@ -365,9 +365,11 @@ async function pollAndPersistServer(
           }),
         )
 
-        if (!savedPlayable) {
-          // Nothing durable landed — don't report a false "completed" that will
-          // 404 once the server URL expires.
+        if (!saved.has('vocal') || !saved.has('instrumental')) {
+          // A song is both stems. With either one missing on this device a
+          // "completed" session is a ready song that cannot play once the
+          // server URL expires, and a failed save keeps the job: the import
+          // queue collects it again for free.
           callbacks.onError(
             quotaHit
               ? 'Storage is full — free up space and try again.'
