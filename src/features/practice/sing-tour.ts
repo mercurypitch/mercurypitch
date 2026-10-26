@@ -5,12 +5,17 @@
 // Four stops, on a phone and on a wide screen alike: the mic, a sung note,
 // what the line means, and where a kept take is played back. The coach loads
 // it when the tour starts (coach-tours.ts), so it costs the tab nothing until
-// then, and it imports only the coach's types.
+// then, and it imports only the coach's types and the page's mic light.
 //
 // - The first stop is the mic, not Play: the mic is what makes Merc listen,
 //   and Play does not turn it on (R18). The phone's mic keeps its legacy hook
 //   (`singing-transport`, which the old Sing tour also names) and the wide
 //   screen's bar names its own (`sing.mic`, on the shared MicButton).
+// - It waits for the mic to start (`mic-on`, from the practice controller
+//   once the engine has it), not for the tap: a tap on a refused mic starts
+//   nothing. A mic already on when the stop shows counts as done (the page's
+//   mic light, mic-store), and one that will not start (`mic-failed`) adds
+//   how to let Merc hear. Skip stays.
 // - A target may list one hook per screen: each screen draws only its own, and
 //   the first one laid out is the one ringed (find-target.ts). The line lives
 //   in the phone stage's canvas wrapper and in the desktop's #canvas-container.
@@ -25,6 +30,7 @@
 // The lines are drafts for maff's copy pass.
 
 import type { CoachTour } from '@/lib/coach-types'
+import { micActive } from '@/stores/mic-store'
 
 const LINE = '[data-stage-canvas], #canvas-container'
 
@@ -38,7 +44,16 @@ export const SING_TOUR: CoachTour = {
   steps: [
     {
       id: 'mic',
-      kind: 'show',
+      kind: 'do',
+      waitFor: 'mic-on',
+      doneAlready: micActive,
+      failure: {
+        event: 'mic-failed',
+        aside: {
+          title: "Merc can't hear you yet.",
+          sub: 'Allow the microphone, then tap the mic again.',
+        },
+      },
       target: '[data-tour="singing-transport"], [data-tour="sing.mic"]',
       merc: 'point',
       title: 'Start the mic',

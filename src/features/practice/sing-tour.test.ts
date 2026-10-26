@@ -12,6 +12,7 @@ import { describe, expect, it, vi } from 'vitest'
 import type { CoachRunner } from '@/components/coach/runner'
 import { createCoachRunner } from '@/components/coach/runner'
 import type { CoachStep } from '@/lib/coach-types'
+import { setMicActive } from '@/stores/mic-store'
 import { SING_TOUR } from './sing-tour'
 
 const SCREENS = [
@@ -89,10 +90,41 @@ describe('SING_TOUR', () => {
   it('starts at the mic toggle, by the hook each screen gives it', () => {
     const first = SING_TOUR.steps[0]
 
-    expect(first?.kind).toBe('show')
     // The phone's mic, under its legacy hook, and the desktop bar's own.
     expect(first?.target).toContain('[data-tour="singing-transport"]')
     expect(first?.target).toContain('[data-tour="sing.mic"]')
+  })
+
+  it('waits for the mic to start, not for the tap on it', () => {
+    const first = SING_TOUR.steps[0]
+
+    expect(first?.kind).toBe('do')
+    expect(first?.waitFor).toBe('mic-on')
+  })
+
+  it('counts the mic as done when it is already on', () => {
+    setMicActive(true)
+    try {
+      const runner = runnerFor(false)
+      expect(runner.snapshot()).toMatchObject({ index: 0, waiting: false })
+      runner.dispose()
+    } finally {
+      setMicActive(false)
+    }
+    const runner = runnerFor(false)
+    expect(runner.snapshot()).toMatchObject({ index: 0, waiting: true })
+    runner.dispose()
+  })
+
+  it('says how to let Merc hear when the mic will not start', () => {
+    const first = SING_TOUR.steps[0]
+    const failure = first?.kind === 'do' ? first.failure : undefined
+
+    expect(failure?.event).toBe('mic-failed')
+    expect(failure?.aside).toEqual({
+      title: "Merc can't hear you yet.",
+      sub: 'Allow the microphone, then tap the mic again.',
+    })
   })
 
   it('rings the line where each screen draws it', () => {
@@ -124,10 +156,13 @@ describe('SING_TOUR', () => {
   })
 
   it.each(SCREENS)(
-    'moves on without a note on a $name: Next waits, Skip leaves, and the tour is still done',
+    'moves on without a mic or a note on a $name: Next waits, Skip leaves, and the tour is still done',
     ({ phone }) => {
       const runner = runnerFor(phone)
+      // No mic is coming either: Skip is the way past it.
       runner.next()
+      expect(runner.snapshot()?.index).toBe(0)
+      runner.skip()
 
       // No note is coming: the mic was refused, or the room is silent.
       runner.next()

@@ -366,6 +366,64 @@ describe('CoachLayer', () => {
     )
   })
 
+  it('says how to let Merc hear once the mic fails, and keeps Skip and End tour', () => {
+    mount({
+      tour: {
+        key: 'sing',
+        steps: [
+          {
+            id: 'mic',
+            kind: 'do',
+            title: 'Start the mic',
+            body: 'Tap the mic and Merc starts listening.',
+            merc: 'point',
+            waitFor: 'mic-on',
+            failure: {
+              event: 'mic-failed',
+              aside: { title: 'No mic yet.', sub: 'Allow it, then tap again.' },
+            },
+          },
+        ],
+      },
+    })
+    expect(screen.queryByTestId('coach-failure')).toBeNull()
+
+    bus.send('mic-failed')
+
+    const line = screen.getByTestId('coach-failure')
+    expect(line).toHaveTextContent('No mic yet. Allow it, then tap again.')
+    // Read out as it comes, with the step's own words.
+    expect(line.closest('[aria-live]')?.getAttribute('aria-live')).toBe(
+      'polite',
+    )
+    expect(screen.getByRole('button', { name: 'Skip this step' })).toBeVisible()
+    expect(screen.getByRole('button', { name: 'End tour' })).toBeVisible()
+  })
+
+  it('offers Next on a do step that is already done as it shows', () => {
+    const runner = mount({
+      tour: {
+        key: 'sing',
+        steps: [
+          {
+            id: 'mic',
+            kind: 'do',
+            title: 'Start the mic',
+            body: 'Tap the mic and Merc starts listening.',
+            merc: 'point',
+            waitFor: 'mic-on',
+            doneAlready: () => true,
+          },
+          STEPS[2] as CoachStep,
+        ],
+      },
+    })
+
+    expect(screen.queryByRole('button', { name: 'Skip this step' })).toBeNull()
+    key('Enter')
+    expect(runner.snapshot()?.step.id).toBe('takes')
+  })
+
   it('offers the next stop on the plan when the tour ends', () => {
     const go = vi.fn()
     mount({

@@ -149,6 +149,35 @@ describe('usePracticeController frame subscriptions', () => {
     expect(cancelAnimationFrame).toHaveBeenCalled()
   })
 
+  it('tells a waiting Merc tour the mic started, or could not', () => {
+    const { dispose, practiceEngine } = mountController()
+    const started = vi.fn()
+    const failed = vi.fn()
+    const offStarted = onCoachEvent('mic-on', started)
+    const offFailed = onCoachEvent('mic-failed', failed)
+    const callbacks = vi.mocked(practiceEngine.addCallbacks).mock
+      .calls[0][0] as PracticeEngineCallbacks
+
+    // Stopping is neither.
+    callbacks.onMicStateChange?.(false)
+    expect(started).not.toHaveBeenCalled()
+    expect(failed).not.toHaveBeenCalled()
+
+    // The engine's "Mic start failed" path: a refused permission.
+    callbacks.onMicStateChange?.(false, 'Permission denied')
+    expect(failed).toHaveBeenCalledOnce()
+    expect(started).not.toHaveBeenCalled()
+
+    // The engine started the mic.
+    callbacks.onMicStateChange?.(true)
+    expect(started).toHaveBeenCalledOnce()
+    expect(failed).toHaveBeenCalledOnce()
+
+    offStarted()
+    offFailed()
+    dispose()
+  })
+
   it('tells a waiting Merc tour about a clear note, and not about silence', () => {
     const { dispose, practiceEngine } = mountController()
     const heard = vi.fn()

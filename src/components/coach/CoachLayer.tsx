@@ -29,6 +29,9 @@
 //   (`on:keydown`), because a host above (First Light, the plan layer) may
 //   stop keys before Solid's delegated handlers on the document hear them
 //   (src/tests/trap-key-handlers.test.ts).
+// - A refused mic. A do-step that names a failure (Sing's mic: `mic-failed`)
+//   adds its line under the body once that comes, inside the live region, so
+//   it is read out; Skip and End tour stay where they were.
 // - Sound only from a tap. A "hold-tone" step offers "Play the note" and
 //   plays it on a context of its own, made on that tap, which the layer closes
 //   when it goes.
@@ -38,7 +41,7 @@ import { createComponent, createEffect, createMemo, createSignal, on, onCleanup,
 import { render } from 'solid-js/web'
 import { X } from '@/components/icons'
 import { MercPresence } from '@/components/room-kit/MercPresence'
-import type { CoachHandoff, CoachStep } from '@/lib/coach-types'
+import type { CoachAside, CoachHandoff, CoachStep } from '@/lib/coach-types'
 import type { DemoSound } from '@/lib/demo-audio'
 import { playHoldTone } from '@/lib/demo-audio'
 import type { MercState } from '@/lib/merc/constants'
@@ -163,7 +166,7 @@ export function CoachLayer(props: CoachLayerProps): JSX.Element {
   const pose = (): MercState => {
     const at = snapshot()
     if (at === null || at.celebrating) return 'celebrate'
-    return at.step.kind === 'do' ? 'listen' : at.step.merc
+    return at.waiting ? 'listen' : at.step.merc
   }
 
   const measureBubble = (): void => {
@@ -374,7 +377,7 @@ export function CoachLayer(props: CoachLayerProps): JSX.Element {
 
 /** What the forward button says: Skip on a step still waiting for the singer. */
 export function forwardLabel(at: CoachSnapshot): string {
-  if (at.step.kind === 'do' && !at.celebrating) return 'Skip this step'
+  if (at.waiting) return 'Skip this step'
   return at.index + 1 === at.total ? 'Done' : 'Next'
 }
 
@@ -387,11 +390,17 @@ interface StepCardProps {
 /** A step's words, what it offers besides them, and its buttons. */
 function StepCard(props: StepCardProps): JSX.Element {
   const step = (): CoachStep => props.at().step
-  // A do-step moves on by itself once the singer has done it; until then,
-  // and while Merc celebrates, the button is how to move on without it.
+  // A do-step moves on by itself once the singer has done it; until then the
+  // button is how to move on without it.
   const forward = (): void => {
-    if (step().kind === 'do') props.runner.skip()
+    if (props.at().waiting) props.runner.skip()
     else props.runner.next()
+  }
+  // What went wrong while the step waits (a refused mic), and how to fix it.
+  const failure = (): CoachAside | null => {
+    const at = props.at()
+    if (!at.failed || at.step.kind !== 'do') return null
+    return at.step.failure?.aside ?? null
   }
   return (
     <>
@@ -403,6 +412,13 @@ function StepCard(props: StepCardProps): JSX.Element {
           <p id="coach-body" class={styles.body}>
             {step().body}
           </p>
+          <Show when={failure()}>
+            {(line) => (
+              <p class={styles.aside} data-testid="coach-failure">
+                <strong>{line().title}</strong> {line().sub}
+              </p>
+            )}
+          </Show>
         </div>
         <Show when={step().aside?.()}>
           {(aside) => (
