@@ -223,3 +223,13 @@ Note: the lanes' memory gate read a stale cgroup path after the 21:00 restart (f
 - New PR #1215 (other agent, Komediruzecki, native karaoke library after restart), mergeable clean: not ours; tell the owner it lands in 0.9.22's notes only if it merges before the release PR is cut.
 - P builder: 7 commits to cbd92c5b6, running build:tours for the tour walk. Slots: (1) P, (2) free (nothing queued before the tag).
 - 04:33: test scope doc rev 18 (the "?" item restated as fixed; trail, foot links and room-page lesson links added to "Around the lessons"). P's checks go in after its hand-back. Release notes: late-PR rule (one bullet, one dev-changelog entry + counts via tmp/prs.tsv rows, one REACH row, one PR-body line) for #1216 and P's PR.
+
+## 04:39 UTC 26 Oct — #1216 merged
+- CI on 056748461: PR Gate pass, 19 pass, 4 skipped (Beside Cue x3, prod deploy), no review threads. Merged by rebase with expectedHeadSha: main b8479306a (6 commits; verify-rebase-merge: subjects, messages, authors and dates, patch-ids 6/6, tree same). Unsubscribed.
+- Next: P's hand-back -> review at max -> rebase onto b8479306a (regenerate INDEX.md, drop P's map commit and redo it) -> gates -> push -> PR -> CI -> merge. Then the release PR in l9-page on feat/release-0.9.22-notes.
+
+## 05:20 UTC 26 Oct — P handed back, reviewed, rebased, gating
+- P hand-back: 7 commits, all gates pass on cddefd571 (report in the agent transcript; logs polish/P/). Lead review at max: items 1-5 pre-read earlier, item 6 (cover/tablet CSS, coverHasWords) read now; screenshots checked (plan 820x1180 vp, 1024x768 novp, Map 390/1440, Keep unclean, Home). No code findings. Open questions ruled: RELEASED_LESSONS duplication kept (test guards it; tell owner a console-published lesson is not Home's target until released as built); door wrap OK; section placement OK; Keep's "voiceprint and range, saved" line left (owner: nothing cut).
+- Tag lead/p-handback = cbd92c5b6. Rebased onto main b8479306a: map commit dropped and regenerated (same one-line diff), head c96a3bb74, patch-ids 7/7 same. Gates: polish/P-lead/gates.sh -> gates.out (check, unit P+S test files + src/tests, scripts, validate, metrics, index, cites, build:e2e + first paint (S CSS + P JS together), drafts, 7 specs).
+- PR body draft polish/P-PR-BODY.md (fill RESULTS_AFTER_REBASE). Notes script release/bin/polish-notes.py <PR> <commits> <head> <title> (dry run passed; pre-polish copies kept as *.pre-polish.md).
+- Doc rev 19: six onboarding/plan checks added to "The questions" list.
