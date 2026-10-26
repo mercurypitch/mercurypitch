@@ -338,15 +338,16 @@ minor, and why "minor means sad" isn't the whole story.
   will be here when your voice feels comfortable: **mercurypitch.com/pitch-training**, then tap
   Drone Intonation." Then the second drill.
 
-_[Editorial: when the `intervals` launch field ships (CURRICULUM § 4 item 2; WEB-SPEC, Practice
-links), the card's address becomes "Practise it free: mercurypitch.com/exercises/thirds-on-a-drone"
-(proposed slug), which opens Drone Intonation on its minor and major thirds only, and the text's
-second sentence becomes "It asks for this lesson's two thirds, minor and major, in turn." When the
-`ear-drill` launch kind ships (CURRICULUM § 4 item 5), the second drill's address becomes
+_[Editorial: `/exercises/thirds-on-a-drone` is in the app (WEB-SPEC, Practice links; FACTS 52, 53):
+it opens Drone Intonation on its minor and major thirds only, for as many rounds as the singer's
+level asks, six at the default, never the same third twice running. Once this page is live, the
+card's address becomes "Practise it free: mercurypitch.com/exercises/thirds-on-a-drone", and the
+text's second sentence becomes "It asks for this lesson's two thirds, minor and major, in turn."
+When the `ear-drill` launch kind ships (CURRICULUM § 4 item 5), the second drill's address becomes
 "mercurypitch.com/exercises/major-or-minor" (proposed slug), Stack with only major and minor, and
-"It mixes six; listen for this lesson's two, major and minor" goes. Every link carries
-`?lesson=10`, so First Light, the app's intro, steps aside on a first visit, and the page has no
-line about closing it (FACTS 46a).]_
+"It mixes six; listen for this lesson's two, major and minor" goes. Every link carries `?lesson=10`,
+so First Light, the app's intro, steps aside on a first visit, and the page has no line about
+closing it (FACTS 46a).]_
 
 **Next lesson:** Lesson 11, Registers and the break. "Why does your voice flip at roughly the same
 note every time you slide up?" One line above it, the tease: "Slide up slowly, and your voice may

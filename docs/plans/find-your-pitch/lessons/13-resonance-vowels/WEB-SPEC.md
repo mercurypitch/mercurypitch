@@ -724,7 +724,7 @@ paused off screen, and the still images when WebGL fails or would run on the CPU
   - The Sing room's premium rooms, which `PREMIUM_EXERCISES` gates
     (`src/lib/native-build.ts:58-68`).
 - **Needed, proposed: "Long Note on vowels"** (CURRICULUM § 2.1's Practise line; § 4, "vowels"
-  among the gaps with no drill, `CURRICULUM.md:520-522`): needs 12. When it ships, LESSON.md's
+  among the gaps with no drill, `CURRICULUM.md:522-524`): needs 12. When it ships, LESSON.md's
   editorial note gives the change: the card names it, and its address replaces Voice Mirror's.
 
 ## Explorer and season data
@@ -915,7 +915,7 @@ and the four-words strip in the kit.
     length, through CURRICULUM § 4 item 2's `durationSec` launch field; its help's "as long as you
     can" and "how long you hold it", and its setup screen's "The longer and steadier, the better.",
     rewritten so that length is never rewarded (REQ-GVC-070); and a data-only slug that opens it
-    with the cue on, registered in `EXERCISE_SLUGS` (`src/features/exercises/slug-map.ts:52-77`)
+    with the cue on, registered in `EXERCISE_SLUGS` (`src/features/exercises/slug-map.ts:54-86`)
     with a line in `src/tests/slug-map.test.ts`, linked with `?lesson=13`, because a slug boots the
     main app, where First Light opens on a first visit unless the marker steps it aside.
 13. `src/e2e/helpers/tone-wav.ts`: `writeVowelWav(hz, seconds)`, beside `writeToneWav` (`:76`), the
