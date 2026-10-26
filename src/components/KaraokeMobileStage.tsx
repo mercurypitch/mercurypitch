@@ -752,7 +752,8 @@ export const KaraokeMobileStage: Component<KaraokeMobileStageProps> = (
         </button>
       </Show>
       <div class={styles.titleWrap}>
-        <p class={styles.title}>{displayTitle()}</p>
+        {/* The stage's heading: it covers the page, whose own are under it. */}
+        <h2 class={styles.title}>{displayTitle()}</h2>
         <Show when={isPlaylistActive() && nextSong()}>
           <p class={styles.subtitle}>
             Up next: {nextSong()!.songTitle}
