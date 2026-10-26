@@ -137,15 +137,18 @@ interface NamedSelector {
 }
 
 /**
- * What Merc's tours point at: each step's target, on either screen, and each
- * showcase stop's target and what it opens, for every menu.
+ * What Merc's tours point at: each step's target, on either screen, and what
+ * stands in for it while it is not on screen, and each showcase stop's target
+ * and what it opens, for every menu.
  */
 function coachSelectors(): NamedSelector[] {
   const named: NamedSelector[] = []
   for (const [tour, { steps }] of Object.entries(MERC_TOURS)) {
     for (const step of steps) {
-      if (step.target !== undefined) {
-        named.push({ tour, title: step.title, selector: step.target })
+      for (const selector of [step.target, step.unseenTarget]) {
+        if (selector !== undefined) {
+          named.push({ tour, title: step.title, selector })
+        }
       }
     }
   }

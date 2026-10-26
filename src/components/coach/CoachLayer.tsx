@@ -15,7 +15,11 @@
 //   instead (Karaoke Night's last). A target that is not there (not mounted
 //   yet, or under a full-screen stage, which makes the page inert) gets no
 //   ring, and the bubble stands centred, or in a corner for a do-step; a step
-//   whose body names its target says its `unseen` line meanwhile. One taller than RING_MAX_SHARE of the window gets no ring and no
+//   whose body names its target says its `unseen` line meanwhile, and rings
+//   its `unseenTarget` if it names one (Karaoke's Add a song, once the
+//   phone stage's Back has gone). A target out of the window is scrolled
+//   into it once, smoothly unless the singer asks for less motion. One
+//   taller than RING_MAX_SHARE of the window gets no ring and no
 //   dim either, since it would ring the page, and on a wide screen the bubble
 //   stands in a corner, never over the middle of it: the bottom right, or the
 //   corner the step names (Sing's line, which keeps its labels and the
@@ -55,6 +59,7 @@ import { createComponent, createEffect, createMemo, createSignal, on, onCleanup,
 import { render } from 'solid-js/web'
 import { X } from '@/components/icons'
 import { MercPresence } from '@/components/room-kit/MercPresence'
+import { prefersReducedMotion } from '@/components/room-kit/reduced-motion'
 import type { CoachAside, CoachCorner, CoachHandoff, CoachStep, } from '@/lib/coach-types'
 import type { DemoSound } from '@/lib/demo-audio'
 import { playHoldTone } from '@/lib/demo-audio'
@@ -109,28 +114,44 @@ const sameBox = (a: Box | null, b: Box | null): boolean =>
 interface Sighting {
   el: HTMLElement
   box: Box | 'tall'
+  /** The step's `unseenTarget`, standing in for a target not on screen. */
+  standIn: boolean
 }
 
 /**
- * The target of `step` and the box to ring; 'tall' for one taller than
- * RING_MAX_SHARE of the window, which is not ringed; null for none. Scrolls a
- * target out of view into it, once.
+ * The target of `step`, else its stand-in, and the box to ring; 'tall' for
+ * one taller than RING_MAX_SHARE of the window, which is not ringed; null for
+ * none. Scrolls each one out of view into it, once (`scrolled`).
  */
-function sight(step: CoachStep, scrolled: { done: boolean }): Sighting | null {
-  if (step.target === undefined) return null
-  const el = findTarget(step.target)
+function sight(step: CoachStep, scrolled: Set<HTMLElement>): Sighting | null {
+  const own = step.target === undefined ? null : findTarget(step.target)
+  const standIn =
+    own === null && step.unseenTarget !== undefined
+      ? findTarget(step.unseenTarget)
+      : null
+  const el = own ?? standIn
   if (el === null) return null
   let r = el.getBoundingClientRect()
-  if (r.height > window.innerHeight * RING_MAX_SHARE) return { el, box: 'tall' }
+  if (r.height > window.innerHeight * RING_MAX_SHARE) {
+    return { el, box: 'tall', standIn: standIn !== null }
+  }
   const outOfView = r.bottom < 0 || r.top > window.innerHeight
-  if (outOfView && !scrolled.done && typeof el.scrollIntoView === 'function') {
-    scrolled.done = true
-    el.scrollIntoView({ block: 'center' })
+  if (
+    outOfView &&
+    !scrolled.has(el) &&
+    typeof el.scrollIntoView === 'function'
+  ) {
+    scrolled.add(el)
+    el.scrollIntoView({
+      block: 'center',
+      behavior: prefersReducedMotion() ? 'instant' : 'smooth',
+    })
     r = el.getBoundingClientRect()
   }
   return {
     el,
     box: { top: r.top, left: r.left, width: r.width, height: r.height },
+    standIn: standIn !== null,
   }
 }
 
@@ -191,6 +212,8 @@ export function CoachLayer(props: CoachLayerProps): JSX.Element {
   const [ring, setRing] = createSignal<Box | null>(null)
   // The step's target is there but too tall to ring: keep the bubble off it.
   const [tall, setTall] = createSignal(false)
+  // What is ringed is the step's stand-in for a target not on screen.
+  const [standIn, setStandIn] = createSignal(false)
   const [size, setSize] = createSignal({ w: BUBBLE_MAX_W, h: 0 })
   const [handoff, setHandoff] = createSignal<CoachHandoff | null>(null)
   let bubble: HTMLDivElement | undefined
@@ -228,7 +251,7 @@ export function CoachLayer(props: CoachLayerProps): JSX.Element {
   const place = (): Place => {
     const r = ring()
     if (props.phone) {
-      if (step()?.phoneCentred === true) return 'centre'
+      if (step()?.phoneCentred === true && !standIn()) return 'centre'
       if (r === null) return asideForWork() ? 'dock-top' : 'dock-bottom'
       const sheetTop = window.innerHeight - footFloor() - GAP - size().h
       return r.top + r.height + GAP > sheetTop ? 'dock-top' : 'dock-bottom'
@@ -243,11 +266,12 @@ export function CoachLayer(props: CoachLayerProps): JSX.Element {
     place() === 'corner' ? (step()?.corner ?? 'bottom-right') : undefined
 
   // A body that names its target ("Tap Back") holds only while the target is
-  // on screen; until then, or once it has gone, the step says its unseen line.
+  // on screen; until then, or once it has gone, the step says its unseen line,
+  // its stand-in ringed or not.
   const body = (): string => {
     const shown = step()
     if (shown === undefined) return ''
-    const seen = ring() !== null || tall()
+    const seen = (ring() !== null || tall()) && !standIn()
     return !seen && shown.unseen !== undefined ? shown.unseen : shown.body
   }
 
@@ -271,15 +295,17 @@ export function CoachLayer(props: CoachLayerProps): JSX.Element {
         ringed = null
         setRing(null)
         setTall(false)
+        setStandIn(false)
         return
       }
-      const scrolled = { done: false }
+      const scrolled = new Set<HTMLElement>()
       const track = (): void => {
         const found = sight(shown, scrolled)
         const next = found === null || found.box === 'tall' ? null : found.box
         ringed = next === null ? null : (found?.el ?? null)
         if (!sameBox(untrack(ring), next)) setRing(next)
         setTall(found?.box === 'tall')
+        setStandIn(found?.standIn === true)
         measureBubble()
       }
       track()

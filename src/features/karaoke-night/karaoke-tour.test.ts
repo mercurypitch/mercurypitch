@@ -251,12 +251,14 @@ describe('KARAOKE_TOUR', () => {
     expect(phone.body).toBe(
       'Tap Back to add any song. The Cloud GPU takes the voice out, so you sing over the band.',
     )
-    // Without Back on screen it names nothing, and stands centred, off the
-    // stage's transport, ringed or not.
+    // Centred, off the stage's transport, while it rings Back. Once Back has
+    // taken the stage away, it turns to Add a song (which the layer scrolls
+    // into view) and names that.
+    expect(phone.phoneCentred).toBe(true)
+    expect(phone.unseenTarget).toBe('[data-tour="karaoke.own-song"]')
     expect(phone.unseen).toBe(
       'Add any song. The Cloud GPU takes the voice out, so you sing over the band.',
     )
-    expect(phone.phoneCentred).toBe(true)
   })
 
   it('starts with the demo, whose tap starts the music', async () => {

@@ -460,6 +460,69 @@ describe('CoachLayer', () => {
     expect(screen.queryByText('Add any song.')).toBeNull()
   })
 
+  it.each([
+    ['smoothly', false, 'smooth'],
+    ['at once where motion is reduced', true, 'instant'],
+  ] as const)(
+    'turns to its stand-in once its target has gone, and scrolls it into view %s',
+    (_how, reduce, behavior) => {
+      vi.useFakeTimers()
+      vi.stubGlobal('matchMedia', (query: string) => ({
+        matches: reduce && query.includes('prefers-reduced-motion'),
+        media: query,
+        addEventListener: () => undefined,
+        removeEventListener: () => undefined,
+      }))
+      const tour: CoachTour = {
+        key: 'karaoke-night',
+        steps: [
+          {
+            id: 'own-song',
+            kind: 'show',
+            target: '[data-tour="coach-test.mic"]',
+            unseenTarget: '[data-tour="coach-test.own"]',
+            phoneCentred: true,
+            merc: 'point',
+            title: 'Bring your own song',
+            body: 'Tap Back to add any song.',
+            unseen: 'Add any song.',
+          },
+        ],
+      }
+      // Karaoke Night's phone: the stage's Back on screen, and Add a song
+      // under the stage, 307 px above the window.
+      const back = addTarget({ top: 2, left: 2, width: 60, height: 60 })
+      const own = document.createElement('div')
+      own.setAttribute('data-tour', 'coach-test.own')
+      let ownTop = -307
+      own.getBoundingClientRect = () =>
+        new DOMRect(14, ownTop, 361, 203) as DOMRect
+      const scroll = vi.fn(() => {
+        ownTop = 320
+      })
+      own.scrollIntoView = scroll
+      document.body.append(own)
+      mount({ tour, phone: true })
+      expect(bubble().dataset.place).toBe('centre')
+      expect(screen.getByText('Tap Back to add any song.')).toBeTruthy()
+
+      // The singer taps Back: the stage goes, and Back with it.
+      back.remove()
+      vi.advanceTimersByTime(TRACK_MS)
+
+      expect(scroll).toHaveBeenCalledExactlyOnceWith({
+        block: 'center',
+        behavior,
+      })
+      expect(screen.getByTestId('coach-ring').style.top).toBe('320px')
+      expect(screen.getByText('Add any song.')).toBeTruthy()
+      // Docked off it, as any ringed stop: centred is for the stage's Back.
+      expect(bubble().dataset.place).toBe('dock-bottom')
+      vi.advanceTimersByTime(TRACK_MS * 3)
+      expect(scroll).toHaveBeenCalledOnce()
+    },
+  )
+
   it('stands centred on a phone when the step asks, ringed or not', () => {
     const tour: CoachTour = {
       key: 'karaoke-night',
