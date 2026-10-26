@@ -1,0 +1,127 @@
+/* ============================================================
+   HomeCheckupCard: the weekly Check-up on Home, in Home's own card shape
+   ============================================================
+
+   One grid item across both columns of Home's grid, as the plan card is
+   (HomePlanCard.module.css): it draws nothing when no Check-up is due, so the
+   span is set here rather than by a wrapper that would hold a row open. Every
+   target is 44 px. Small text is --accent-text, the accent made for text; the
+   fill is --accent. HomeCheckupCardMount.module.css copies .card's frame for
+   the slot Home keeps until this chunk is in. */
+
+.card {
+  grid-column: 1 / -1;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 16px;
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  background: var(--bg-card);
+}
+
+.eyebrow {
+  margin: 0;
+  font-size: 0.75rem;
+  font-weight: 650;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--accent-text);
+}
+
+.title {
+  margin: 0;
+  font-size: 1.1rem;
+  font-weight: 650;
+  line-height: 1.3;
+  color: var(--text-primary);
+}
+
+.line {
+  margin: 0;
+  font-size: 0.9rem;
+  line-height: 1.45;
+  color: var(--text-secondary);
+}
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.start,
+.skip {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 44px;
+  padding: 0 20px;
+  border-radius: 10px;
+  font-family: inherit;
+  font-size: 0.9rem;
+  font-weight: 650;
+  cursor: pointer;
+}
+
+/* A link, since it opens another page; drawn as Home's primary button. */
+.start {
+  border: none;
+  background: var(--accent);
+  color: var(--on-accent, var(--bg-primary));
+  text-decoration: none;
+}
+
+.start:hover {
+  background: var(--accent-hover);
+}
+
+.skip {
+  border: 1px solid var(--border);
+  background: transparent;
+  color: var(--text-secondary);
+  font-weight: 550;
+}
+
+.skip:hover {
+  border-color: var(--text-muted);
+  color: var(--text-primary);
+}
+
+/* A flex row, so the 44 px button sits beside the words when both fit and
+   under them when not, and never makes one line of the words taller. */
+.account {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  column-gap: 6px;
+  margin: 6px 0 0;
+  font-size: 0.8rem;
+  line-height: 1.5;
+  color: var(--text-secondary);
+}
+
+/* A text button, quiet beside the two above, and still a 44 px target. */
+.accountButton {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  padding: 0 2px;
+  border: none;
+  background: none;
+  color: var(--accent-text);
+  font-family: inherit;
+  font-size: inherit;
+  font-weight: 600;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  cursor: pointer;
+}
+
+.start:focus-visible,
+.skip:focus-visible,
+.accountButton:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
