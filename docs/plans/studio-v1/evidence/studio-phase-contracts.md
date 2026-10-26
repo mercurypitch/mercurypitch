@@ -1,6 +1,6 @@
 # Studio v1 technical phase contracts
 
-Draft contracts for the master plan. These describe proposed work, not shipped behavior. Based on source investigation at PR #1219 head `c90e1a87c6b2a273334efd08192cce2c25e95295`; see `source-integration.md` beside this file for evidence and exact reuse points.
+Phase contracts for the master plan, updated for the accepted v1 decisions. These describe delivery gates, not a claim that all phases have shipped. Based on source investigation at PR #1219 head `c90e1a87c6b2a273334efd08192cce2c25e95295`; see `source-integration.md` beside this file for evidence and exact reuse points.
 
 ## Phase 2: local project foundation and in-app entry
 
@@ -12,7 +12,7 @@ Draft contracts for the master plan. These describe proposed work, not shipped b
 - Track has stable ID, order, display name, role, volume, pan, mute, solo and a versioned normalized FX spec. Store musical role separately from capture source. A guitar file can be acoustic, electric or bass; source name cannot reliably decide.
 - Asset has immutable stored bytes, stable local ID, content hash, original MIME, decoded audio facts, source provenance and processing state. Project listing never reads these bytes.
 - Clip references an asset, with source trim boundaries in source frames, project placement in project frames or another explicitly chosen fixed timebase, gain and fades. Store source and project sample rates explicitly. Project tempo is initially a grid/display aid, not time stretching.
-- Derived peaks, decoded PCM, analysis and rendered bounces are caches keyed to asset/project revision. They may be discarded without losing the arrangement.
+- Original bytes and versioned 48 kHz Float32 canonical PCM are durable owned assets. Derived peaks, analysis and rendered bounces are revision-keyed caches; canonical PCM is not a disposable cache.
 - Asset insertion and the first project reference commit atomically. Explicit Add snapshots a kept take so deleting its original history later cannot damage Studio. Never auto-import the whole library.
 - Quota/decode/read failures remain distinct from an empty library. Cancelled import cannot add a late clip to another project.
 - Project IDs and content hashes do not imply an account or upload. Future cloud sync must be a separate consent and ownership design.
@@ -46,7 +46,7 @@ Selection is state, not focus or hover. Naming a clip and renaming a track are d
 - One pointer gesture produces one undoable command. Pointer cancellation restores the pre-gesture snapshot.
 - Move changes placement, trim changes source interval, split creates adjacent intervals sharing one immutable asset, duplicate creates a new clip identity, and delete removes a reference. Each command has validated bounds and an inverse.
 - Clip position does not change when viewport scroll/zoom changes. Gesture math uses content coordinates plus timeline scale. Dragging near an edge scrolls predictably; touch scrolling and editing do not compete.
-- Mute, solo and per-track gain/pan use one shared definition in live and offline playback. Overlapping clips have an explicit additive policy; no accidental comping semantics.
+- Mute, solo and per-track gain/pan use one shared definition in live and offline playback. Clips cannot overlap on the same lane in v1; a conflicting duplicate gets a new lane in the same undo step. Independent lanes sum.
 - One audio clock drives playback. Seek/stop cancels scheduled nodes; opening or restoring a project never resumes sound.
 
 **Acceptance:** red→green real-mouse Playwright `@smoke` coverage for drag/drop, trim, split and fade; keyboard equivalents; touch/pointer cancellation; undo after drag; reload persistence; stale decoding after navigation. A scripted UI run imports several small generated fixtures, makes a short arrangement, edits it, saves, reloads and plays it without test-only state injection after setup. Save selected captures and sanitized receipts; raw browser output stays in registered scratch.

@@ -1,18 +1,16 @@
 # Studio v1 design specification
 
-26 October 2026. Phase 1 proposal for review. This reconciles the lead design with the inspected app and [technical contract](technical-plan.md). Mockups illustrate the proposed interface; they do not establish audio behavior, measured loudness, browser durability or device performance.
+26 October 2026. Layout approved; dark leads and light remains available. This reconciles the lead design with the inspected app and [technical contract](technical-plan.md). Mockups illustrate the proposed interface; they do not establish audio behavior, measured loudness, browser durability or device performance.
 
 ## Confirmed scope and proposed decisions
 
 The owner confirmed a **Studio** destination inside MercuryPitch, local browser projects, desktop/tablet audio arranging, a simpler phone experience, and audio editing before MIDI integration. V1 editing comprises move, trim, split, duplicate, fades, volume, pan, mute and solo. Existing kept takes and external MP3/WAV files are sources. WAV and editable project backup are the v1 outputs; MP3 export and account cloud storage come later.
 
-**Graphite Sheet** is the lead visual proposal. The navigation-group rename, no-overlap editing rule, default master, source tints and initial placement below are recommendations for review. Deferring new recording/overdub inside Studio remains a recommendation awaiting the owner's answer. The phone scope is already decided and is not reopened here.
-
-Phase 1 ends by reviewing the chosen visuals and the remaining UX decisions before Phase 2, following the requested task sequence.
+**Graphite Sheet** is the accepted layout. The owner requested dark mode as the lead while retaining the white/light theme, and confirmed that new recording and overdubbing come later. The implementation defaults below complete the small audio editor without reopening the agreed device scope.
 
 ## Graphite Sheet
 
-Graphite waveforms on a paper-colored timeline put audio shape ahead of interface decoration. Source color occupies a narrow stripe, clip header tint and picker dot. Cobalt identifies selection, focus and the active primary action. Waveforms never become colored slabs.
+Dark mode pairs warm off-white waveforms with a graphite timeline. Light mode keeps graphite waveforms on a paper-colored timeline. Both share the same layout and controls. Source color occupies a narrow stripe, clip header tint and picker dot. Cobalt identifies selection, focus and the active primary action. Waveforms never become colored slabs.
 
 | Token     | Light     | Dark      | Purpose                                |
 | --------- | --------- | --------- | -------------------------------------- |
@@ -23,7 +21,7 @@ Graphite waveforms on a paper-colored timeline put audio shape ahead of interfac
 | Cobalt    | `#2A55C9` | `#7E9CFF` | Selection, focus, primary action, snap |
 | Vermilion | `#C8402A` | `#FF7A5E` | Errors and invalid operations          |
 
-Grid lines use Pencil at 18%; dividers use Graphite at 10%. Light is the mockup theme. Recommend following the existing app appearance setting for dark mode, with no Studio-only theme toggle. Dark source hues may be lightened, but actual contrast must be checked rather than assumed from a percentage.
+Grid lines use Pencil at 18%; dividers use Graphite at 10%. Dark leads the mockups; matching light boards remain available. Follow the existing app appearance setting for both modes, with no Studio-only theme toggle. Do not overwrite the user's saved appearance preference. Dark source hues may be lightened, but actual contrast must be checked rather than assumed from a percentage.
 
 | Source        | Tint            |
 | ------------- | --------------- |
@@ -42,7 +40,7 @@ Spacing follows 4 px increments, principally 8/12/16/24. Clip radius 4 px, butto
 
 ## Integrated app navigation
 
-The tab is **Studio**. Recommend renaming the existing navigation group **Studio** to **Create**, containing **Compose, Studio, Analysis, Settings**. This distinguishes the new destination while keeping Compose and Settings accessible; the group rename is proposed, not already shipped.
+The tab is **Studio**. Label the existing navigation group **Create**, retaining its persisted group ID. Use **Studio, Compose, Settings, Analysis** in the default order, keeping Settings among the first three destinations. Studio remains visible for every instrument and in simple mode. This distinguishes the destination from its group.
 
 The actual hash destination is `#/studio-night`. The clean `/studio-night` entry boots the same full application through the existing `bootHash` pattern. Project-specific URL encoding is deferred to the routing implementation. Existing navigation modes must reach the same feature. A return or reload opens the project stopped; restoring playhead position must never resume audio.
 
@@ -52,7 +50,7 @@ Design reference: 1440 × 960. The shared shell is represented by a 64 px collap
 
 The 56 px top bar contains the song-title menu, save state, Go to start, Play/Pause, time, compact Peak meter, Undo, Redo, Add takes, Sound and Export. The title menu offers Rename, Duplicate song, Download song backup and Delete song. Export is the primary filled button when no task panel is open.
 
-The 232 px lane header aligns with each 104 px lane. It holds the source stripe, name, provenance note, mute, solo, volume with dB readout and pan with readout. These are the only desktop/tablet track mix controls. There is no bottom mixer and no repeated set in the right panel. A corner cell contains Snap, Seconds/Beats and timeline zoom. The ruler and waveform lanes use the remaining width. Audio clips are 88 px high within each lane.
+The 232 px lane header aligns with each 104 px lane. It holds the source stripe, name, provenance note, mute, solo, volume with dB readout and pan with readout. Mute uses a speaker icon and gains a diagonal slash when muted. Solo uses a plainly readable S in a matching button. Use full Mute/Unmute and Solo labels with the track name in accessible names and tooltips. Both expose aria-pressed and a clear filled/bordered pressed state; color is not the only state cue. These are the only desktop/tablet track mix controls. There is no bottom mixer and no repeated set in the right panel. A corner cell contains Snap, Seconds/Beats and timeline zoom. The ruler and waveform lanes use the remaining width. Audio clips are 88 px high within each lane.
 
 Only one contextual panel is open at a time. The desktop panel is 360 px wide and reduces the timeline's available width without changing clip times. It can show Add takes, Sound, Export, clip Details, or track name/role/provenance/removal. Escape closes the panel and returns focus to its opener, except when it first cancels an active edit. Recompute drawing and hit testing together after a resize; never change an in-progress pointer coordinate origin silently.
 
@@ -82,7 +80,7 @@ During import, temporary placeholders may show `Preparing audio` and actual stag
 
 ## Arrangement contract
 
-**Proposed overlap rule:** a lane has at most one audible clip at any instant. Clips may touch. While dragging into occupied time, show a Vermilion invalid outline and a valid New lane target below the arrangement. Dropping on an occupied interval restores the original position with `No room here. Drop on another lane or New lane.` This is a visible rejection, not overwriting or hidden comping. The no-overlap rule is a recommendation to finalize before implementation.
+**Overlap rule:** a lane has at most one audible clip at any instant. Clips may touch. While dragging into occupied time, show a Vermilion invalid outline and a valid New lane target below the arrangement. Dropping on an occupied interval restores the original position with `No room here. Drop on another lane or New lane.` This is a visible rejection, not overwriting or hidden comping. This no-overlap default keeps every audible part visible; a second concurrent part belongs on another lane.
 
 Duplicate places a new instance at the original's exact end. Paste places the copied clip at the playhead on the focused lane. If either destination conflicts, create a new lane with the same musical role, keep the intended start time, announce `Added on a new lane`, and make the whole operation one undo step. Adding selected sources uses the new-lane rule above. These operations never copy source bytes unnecessarily or modify the original recording.
 
@@ -144,7 +142,7 @@ Download song backup produces an editable local project bundle, distinct from st
 
 ## Review and acceptance
 
-The three image boards are arrangement, sources/sound/export, and tablet/phone. Keep **Window seat** and its source names consistent across them. Each active task surface has one primary filled cobalt action: top Export in the arrangement, Add takes inside its picker, Export WAV or Download WAV in export. Other active controls use outlines or light selection tint.
+The three image boards are arrangement, sources/sound/export, and tablet/phone, each available in dark and light mode. Keep **Window seat** and its source names consistent across them. Each active task surface has one primary filled cobalt action: top Export in the arrangement, Add takes inside its picker, Export WAV or Download WAV in export. Other active controls use outlines or light selection tint.
 
 Visual checks: aligned ruler/header/lane geometry; graphite waveforms; source tints in the specified locations; text contrast at least 4.5:1 and meaningful UI marks at least 3:1; readable scaled text; visible focus; touch targets without overlap; no invented capabilities or copy. UI tests must establish these, rather than treating generated pixels as conformance evidence.
 
@@ -152,4 +150,4 @@ The eight specified light/dark primary, secondary, action and error token pairs 
 
 Interaction checks: pointer and keyboard alternatives; one undo per gesture; predictable drop/snap behavior at different zoom/scroll positions; precise split/trim fade preservation; no autoplay; exclusive preview ownership; failed/cancelled imports never marked saved; missing audio blocks export; final-byte measurements and peak verification; project backup round trip; correct simplified phone behavior.
 
-Remaining design choices are Graphite Sheet acceptance, the Create group rename, no-overlap rule, default Streaming master, per-take new-lane/playhead placement, source tints and whether new recording/overdub is deferred. Phone scope, local-first scope and audio-before-MIDI are settled. Later phases resolve implementation and device questions with evidence, while retaining this sequence and one inspectable phase commit boundary.
+The layout, dark-led presentation with both modes, recording deferral, phone scope, local-first scope and audio-before-MIDI are settled. The Create label, no-overlap editing, Streaming master, per-take new-lane/playhead placement and source tints are the implementation defaults above. Later phases resolve implementation and device questions with evidence, while retaining this sequence and one inspectable phase commit boundary.

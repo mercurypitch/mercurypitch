@@ -1,0 +1,34 @@
+{
+  "date": "2026-10-26",
+  "layout": "approved",
+  "themes": [
+    "dark",
+    "light"
+  ],
+  "leadTheme": "dark",
+  "mute": "speaker icon; slash when muted",
+  "solo": "readable S",
+  "capture": "existing kept takes and uploads; recording later",
+  "verification": {
+    "consoleErrors": [],
+    "checks": [
+      "desktop: no horizontal overflow and screenshot captured",
+      "tablet: no horizontal overflow and screenshot captured",
+      "phone: no horizontal overflow and screenshot captured",
+      "dark: all three boards loaded",
+      "desktop: no horizontal overflow and screenshot captured",
+      "tablet: no horizontal overflow and screenshot captured",
+      "phone: no horizontal overflow and screenshot captured",
+      "light: all three boards loaded",
+      "All artwork loads; image viewer opens; 100%/fit; previous/arrow navigation; Escape; focus restoration",
+      "7 local document links returned 200"
+    ],
+    "hiddenBrowser": {
+      "count": 1,
+      "allInAgentWorkspace": true,
+      "foregroundUnchanged": true,
+      "specialUnchanged": true
+    },
+    "passed": true
+  }
+}

@@ -1,10 +1,10 @@
 # Studio v1 technical plan
 
-Proposed implementation contract, grounded in PR #1219 at `c90e1a87c6b2a273334efd08192cce2c25e95295`. Source inspection and the peak-estimator reproduction are evidence; the schemas, timebase and boundaries below are design decisions to implement. See [source and app integration](evidence/source-integration.md), [FX investigation](evidence/fx-investigation.md) and [phase contracts](evidence/studio-phase-contracts.md). No implementation or device-performance claim is made here.
+Implementation contract, grounded in PR #1219 at `c90e1a87c6b2a273334efd08192cce2c25e95295`. Source inspection and the peak-estimator reproduction are evidence; the schemas, timebase and boundaries below are design decisions to implement. See [source and app integration](evidence/source-integration.md), [FX investigation](evidence/fx-investigation.md) and [phase contracts](evidence/studio-phase-contracts.md). No implementation or device-performance claim is made here.
 
 ## Boundary and ownership
 
-This remains a proposal until the Phase 1 review accepts the design and defaults. Studio is a feature of the existing app at `/studio-night`, using the same origin and local database. V1 arranges finished audio: move, trim, split, duplicate, fades, volume, pan, mute and solo. Desktop and tablet get the full arrangement surface; phone gets the approved simpler adding, listening and export flow. MIDI editing, time stretching, pitch correction and cloud storage are deferred. Deferring new recording/overdub and collaboration inside Studio is a proposed v1 boundary for the design review.
+The owner accepted the layout with dark mode leading and light retained. Studio is a feature of the existing app at `/studio-night`, using the same origin and local database. V1 arranges finished audio: move, trim, split, duplicate, fades, volume, pan, mute and solo. Desktop and tablet get the full arrangement surface; phone gets the approved simpler adding, listening and export flow. MIDI editing, time stretching, pitch correction and cloud storage are deferred. New recording and overdubbing are explicitly deferred from v1. Collaboration remains outside this local-only version.
 
 The existing kept-take catalogue already includes vocal, guitar, piano and drum sources. List its metadata without loading audio. Explicit **Add** reads only selected audio, validates/decodes it and creates a Studio-owned immutable asset. The original history item can then be deleted without breaking the project. Do not import all history or retain a fragile reference to its original blob. External MP3/WAV input uses the same asset pipeline; actual decoder support determines acceptance. UVR backing stems are a separate, lazy source adapter.
 
@@ -12,7 +12,7 @@ Provenance must describe the real signal: karaoke is dry microphone audio; guita
 
 ## Durable model
 
-Use new local tables in the next incremental Dexie schema after v12. Keep them outside the hybrid adapter's cloud allowlist. Model types live in `src/features/studio/model/`; storage and source adapters live in `src/db/services/` and the feature's integration layer. The app shell only composes the feature.
+Use new local tables in the next incremental Dexie schema after v12. Keep them outside the hybrid adapter's cloud allowlist. Model types live in `src/lib/studio/model/`; storage and source adapters live in `src/db/services/` and the feature's integration layer. Canonical PCM and preparation algorithms live in `src/lib/studio/audio/`, keeping database code independent from UI features under the repository architecture rules. The app shell only composes the feature.
 
 ```ts
 type Frame = number // validated nonnegative safe integer
@@ -21,8 +21,8 @@ type StudioProject = {
   schemaVersion: 1
   revision: number
   title: string
-  createdAt: number
-  updatedAt: number
+  createdAt: string // ISO 8601
+  updatedAt: string // ISO 8601
   sampleRate: 48000
   tempoBpm: number
   ruler: 'time' | 'bars'
@@ -76,7 +76,7 @@ type StudioAsset = {
   canonicalPcmId: string
   canonicalPcmSha256: string
   preparation: { algorithmVersion: string; gainDb: number }
-  provenance: { kind: SourceKind; sourceId?: string; importedAt: number }
+  provenance: { kind: SourceKind; sourceId?: string; importedAt: string }
 }
 ```
 
@@ -90,7 +90,7 @@ Use a fixed 48 kHz project timebase for v1. Placement, source bounds and fades a
 
 At import, decode/resample once into 48 kHz audio and validate mono/stereo. Persist the immutable original bytes plus canonical normalized Float32 PCM, frame count, channels and hashes. Canonical PCM uses a versioned binary format with an explicit little-endian header; reading it does not invoke a lossy decoder again. All clips, playback and exports reference that canonical PCM. Backups include it, so a future browser decoder cannot shift saved trim boundaries. Keep loaded AudioBuffers in a bounded evictable cache. This increases storage and backup size: admission must account for both original bytes and canonical PCM before import. The original source remains available for deliberate future re-import; a project never silently re-decodes or rebalances an owned asset.
 
-Commands operate on immutable project snapshots. Move changes placement. Head trim changes source-in and timeline start by the same frame delta, retaining the timing and gain of surviving audio; tail trim changes only source-out. Split creates adjacent source intervals sharing one asset, copying gain and source-anchored fade ramps unchanged. It adds no fade at the seam. Duplicate copies bounds, gain and ramps into a new identity at the original clip's exact end; an occupied destination follows the chosen overlap rule, never overwriting or silently moving another clip. A fade-handle edit replaces only that clip's ramp as one undoable command. Untrim reveals the retained source through its existing envelope, which the waveform must display honestly. Removing or changing that fade is explicit. Same-lane overlap behavior is finalized by the design specification before implementation; the audio scheduler can sum overlapping intervals only when the chosen UX explicitly permits them. One pointer gesture creates one undo command; cancellation restores its starting state. Selection and viewport are UI state and do not alter audio timing. Undo/redo restores complete clip snapshots, including fade anchors, through the same validator and autosave queue. Regression fixtures must prove that an untouched split inside either fade preserves the original rendered samples, and trimming preserves the positions/gains of retained samples. These two source ramps support fade handles only; general envelope automation is outside v1.
+Commands operate on immutable project snapshots. Move changes placement. Head trim changes source-in and timeline start by the same frame delta, retaining the timing and gain of surviving audio; tail trim changes only source-out. Split creates adjacent source intervals sharing one asset, copying gain and source-anchored fade ramps unchanged. It adds no fade at the seam. Duplicate copies bounds, gain and ramps into a new identity at the original clip's exact end; an occupied destination follows the chosen overlap rule, never overwriting or silently moving another clip. A fade-handle edit replaces only that clip's ramp as one undoable command. Untrim reveals the retained source through its existing envelope, which the waveform must display honestly. Removing or changing that fade is explicit. The design specification uses one audible clip per lane; the audio scheduler can sum overlapping intervals only when the chosen UX explicitly permits them. One pointer gesture creates one undo command; cancellation restores its starting state. Selection and viewport are UI state and do not alter audio timing. Undo/redo restores complete clip snapshots, including fade anchors, through the same validator and autosave queue. Regression fixtures must prove that an untouched split inside either fade preserves the original rendered samples, and trimming preserves the positions/gains of retained samples. These two source ramps support fade handles only; general envelope automation is outside v1.
 
 ## Saving, competing tabs and backup
 
