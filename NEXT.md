@@ -436,3 +436,9 @@ Note: the lanes' memory gate read a stale cgroup path after the 21:00 restart (f
 ## 18:52 UTC 26 Oct: Check-up PR #1223 open
 - head feat/weekly-check-up eef9bfb0a0a20c4f3871585d09094c23d023d338 on main f6197d91f; body = checkup/lead/PR-BODY.md, server footer stripped and read back clean; subscribed.
 - Next: merge by rebase on green with expectedHeadSha eef9bfb0a...; verify-rebase-merge.sh; unsubscribe; then #1221: rebase onto the new main, add the Check-up bullets (CHANGELOG + dev-changelog), stats, checks, push with lease 172de52a1.
+
+## 19:20 UTC 26 Oct: polish phase 2 in, phase 3 out
+- Phase 2 hand-back: ea2830552 (L6 tune line fitButtons on resize, off screen too), e939de1ce (L7 predict column play wraps under 360), 72e23c4f3 (beat-layout sweeps collect-and-assert-once, 1.9 s -> 70 ms). Builder gates: check 0/11, kit+L6+L7 unit 1108/1108, L6/L7 e2e 118, first paint unchanged, draft lessons pass; mutations red. Lead review: no code findings; nits sent (tune-line.test.ts header line 112 cols; RO swap via vi.stubGlobal + unstubAllGlobals) as a fixup of ea2830552.
+- Phase 3 sent: 11 Singing's tour from Show me around / plan stops / Map (hasRoomTour/startRoomTour in app-store; Singing -> startWalkthrough(['practice']); no change to hasPageTour/PAGE_TOURS/sidebar/Guide catalog/usePageTourOffer; no new tour key or event), 12 L6 free play "Starts on C4" over "Start higher" at 320, 13 L6 "-2 step" gap tags overlap at 320. Report the Guide's end-of-section behaviour when started this way.
+- Changelog drafts updated for the Check-up (release23/notes/*-entry.md; pre-checkup copies kept): stats 10 bullets avg 149, longest 225, no line over 78. Worker graphs: no Check-up file in site/db/jam; share link is MIRROR_SHARE_URL (no landing link).
+- #1221 CI at 18:52: 83/85 green, Beside Cue voice + journey still running.
