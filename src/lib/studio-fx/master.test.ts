@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest'
+import type { EffectSpecOf } from './chain-spec'
 import { normalizeChainSpec } from './chain-spec'
 import { masterBusChain, masterChain, masterGainDb } from './master'
 import { findFlavour, NEUTRAL_MACROS } from './mix-macros'
@@ -13,7 +14,8 @@ describe('masterGainDb', () => {
     expect(gain).toBe(36)
     expect(
       masterChain({ gainDb: gain }).effects.find(
-        (effect) => effect.id === 'loudness',
+        (effect): effect is EffectSpecOf<'gain'> =>
+          effect.kind === 'gain' && effect.id === 'loudness',
       )?.params.gainDb,
     ).toBe(gain)
   })

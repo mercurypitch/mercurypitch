@@ -33,7 +33,7 @@ export function studioGraphWorkingBytes(
 function connectLane(
   ctx: BaseAudioContext,
   lane: StudioPlannedLane,
-  output: GainNode,
+  output: AudioNode,
   disposers: (() => void)[],
 ): AudioNode {
   const chain = createStudioFxChain(ctx, lane.spec)
@@ -107,7 +107,7 @@ export function buildStudioGraph(
   const analysers: AnalyserNode[] = []
   const peakSamples = new Float32Array(4096)
   try {
-    let laneOutput = output
+    let laneOutput: AudioNode = output
     if (master) {
       const chain = createStudioFxChain(ctx, master.spec)
       chain.output.connect(output)
