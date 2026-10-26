@@ -26,6 +26,10 @@
 // resume marker in storage), not through a sung note: the beat and its frame
 // are the same either way (measured: the same boxes to the pixel on both
 // routes), and this way no microphone deadline can fail the spec.
+//
+// The other keyboard, a hardware one, has a case here too: Tab on the plan
+// meets the cards before the ways on, and Start here, the main button, first
+// among them, with Not now last.
 
 import { expect, test } from '@playwright/test'
 import { FRESH_VISITOR_INIT } from './helpers/tone-wav'
@@ -234,5 +238,60 @@ test.describe('the plan on a phone with its keyboard up', () => {
     // Assert
     await expect(questions(page).getByText('Question 4 of 4')).toBeVisible()
     expect(await furthestScrollOver(page, 600)).toBe(0)
+  })
+})
+
+/**
+ * What each Tab stop is, in the order Tab meets them: a card by its kind, the
+ * menu switch, or a button by its words.
+ */
+function tabStopName(): string {
+  const el = document.activeElement as HTMLElement | null
+  if (el === null) return ''
+  if (el.dataset.kind !== undefined) return `card:${el.dataset.kind}`
+  if (el.getAttribute('role') === 'switch') return 'switch'
+  return (el.textContent ?? '').replace(/\s+/g, ' ').trim()
+}
+
+test.describe('the plan from the keyboard', () => {
+  test.beforeEach(async ({ page }) => {
+    await page.addInitScript(FRESH_VISITOR_INIT)
+    await page.addInitScript(resumeOnTheQuestions)
+  })
+
+  test('Tab meets the plan before the ways on, and Start here first among them', async ({
+    page,
+  }) => {
+    // Arrange: past the four questions, on the plan, its heading focused
+    await toTheThirdQuestion(page)
+    await questions(page).getByRole('button', { name: 'Skip this one' }).tap()
+    await expect(questions(page).getByText('Question 4 of 4')).toBeVisible()
+    await questions(page).getByRole('button', { name: 'Skip to my plan' }).tap()
+    await expect(
+      questions(page).getByRole('heading', { level: 1 }),
+    ).toBeFocused()
+    const plan = await questions(page).evaluate((root) =>
+      [
+        ...root.querySelectorAll<HTMLElement>('[data-kind], [role="switch"]'),
+      ].map((el) =>
+        el.dataset.kind !== undefined ? `card:${el.dataset.kind}` : 'switch',
+      ),
+    )
+
+    // Act: Tab from the heading until the way out
+    const met: string[] = []
+    while (met.at(-1) !== 'Not now' && met.length < 20) {
+      await page.keyboard.press('Tab')
+      met.push(await page.evaluate(tabStopName))
+    }
+
+    // Assert
+    expect(met).toEqual([
+      ...plan,
+      'Start here',
+      'Show me around',
+      'See every room',
+      'Not now',
+    ])
   })
 })

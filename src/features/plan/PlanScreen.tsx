@@ -4,12 +4,13 @@
 //
 // What ends the four questions: Merc's line, the headline, a card for each
 // stop the plan has (Start here big, then Learn and Play), the menu switch
-// when the plan offers one, and the ways on (Show me around, See every room,
-// Not now). The plan is the host's to build; this screen shows it as it is
-// given, with every word from build-plan.ts, plan-copy.ts and questions.ts
-// and none retyped here, and says what was tapped. It opens nothing itself.
+// when the plan offers one, and the ways on (Start here, Show me around, See
+// every room, Not now). The plan is the host's to build; this screen shows it
+// as it is given, with every word from build-plan.ts, plan-copy.ts and
+// questions.ts and none retyped here, and says what was tapped. It opens
+// nothing itself.
 //
-// Five things are easy to break:
+// Six things are easy to break:
 //
 // - The chips fly as the screen mounts (fly-chips.ts): each from the pill
 //   that made it, the rest rising in. It reads where the chips stand, so no
@@ -26,14 +27,21 @@
 // - The screen fills the host's box and scrolls its own content (what the
 //   host owes the screens is in PlanExits.tsx's header). The cards and the
 //   switch are in the scroll region, and so is Change my answers, last in it,
-//   when the host gives a way to change them; Show me around and See every
-//   room are a row under it, never pinned over it, so no card is partly under
-//   them. Not now is PlanExits': it sits in the corner of the host's box,
-//   outside the region, and comes last in the DOM, so Tab meets the plan first.
+//   when the host gives a way to change them; the ways on are a row under it,
+//   never pinned over it, so no card is partly under them. Not now is
+//   PlanExits': it sits in the corner of the host's box, outside the region,
+//   and comes last in the DOM, so Tab meets the plan first.
+// - The main button starts the first stop, exactly as its card does: the same
+//   `onOpenStop` with the plan's own Start here, so the same count and the
+//   same way in, and its label is the card's own kicker (the owner: the
+//   biggest button starts the recommended stop, not a tour). Show me around
+//   stays beside it as the second button, and still enters Start here with
+//   its room's tour; See every room is the quiet link.
 //
-// What the host sees: onOpenStop with the card's own stop; onScopeChange with
-// what the switch should now be (it is the host's to keep); onShowMeAround,
-// onSeeEveryRoom, onChangeAnswers and onNotNow with nothing.
+// What the host sees: onOpenStop with the card's own stop, from the card or
+// the main button; onScopeChange with what the switch should now be (it is
+// the host's to keep); onShowMeAround, onSeeEveryRoom, onChangeAnswers and
+// onNotNow with nothing.
 
 import type { JSX } from 'solid-js'
 import { createMemo, createUniqueId, For, onCleanup, onMount, Show, } from 'solid-js'
@@ -302,20 +310,29 @@ export function PlanScreen(props: PlanScreenProps): JSX.Element {
         <button
           type="button"
           class={styles.primary}
-          onClick={() => props.onShowMeAround()}
+          onClick={() => open(props.plan.start)}
         >
-          Show me around
+          {KICKER.start}
           <span class={styles.arrow} aria-hidden="true">
             <ChevronLeft />
           </span>
         </button>
-        <button
-          type="button"
-          class={styles.skip}
-          onClick={() => props.onSeeEveryRoom()}
-        >
-          See every room
-        </button>
+        <div class={styles.more}>
+          <button
+            type="button"
+            class={styles.secondary}
+            onClick={() => props.onShowMeAround()}
+          >
+            Show me around
+          </button>
+          <button
+            type="button"
+            class={styles.skip}
+            onClick={() => props.onSeeEveryRoom()}
+          >
+            See every room
+          </button>
+        </div>
       </div>
       {/* After the cards in the DOM, so Tab reaches the plan before the way
           out; PlanExits puts the button in the corner. The props carry no

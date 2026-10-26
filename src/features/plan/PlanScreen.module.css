@@ -18,11 +18,12 @@
      host owes the screens is written in PlanExits.tsx. The root is a flex
      column. The scroll region (Merc's line, the headline, the cards, the
      menu switch and, in a review, Change my answers) takes the height the
-     ways on leave and scrolls what does not fit, and Show me around and See
-     every room are a row under it. That row is not pinned over the cards
-     with `position: sticky`: a sticky row is an overlay, so some card is
-     always partly under it, and it stops short of its scroller's bottom
-     padding (docs/agent/MISTAKES.md, "Give a pinned footer its own row").
+     ways on leave and scrolls what does not fit, and the ways on (Start
+     here, Show me around, See every room) are a row under it. That row is
+     not pinned over the cards with `position: sticky`: a sticky row is an
+     overlay, so some card is always partly under it, and it stops short of
+     its scroller's bottom padding (docs/agent/MISTAKES.md, "Give a pinned
+     footer its own row").
      From 900 px the region is only as tall as its cards, so the row follows
      them, and the region scrolls only when the box is shorter than that. On
      a phone the host's box reaches the bottom edge, so the row carries the
@@ -42,7 +43,7 @@
      in two columns, Start here on the left and the rest, with the menu
      switch last, on the right.
    - Every target is 44 px or more: the cards, the switch (its box, not its
-     track), Show me around and See every room.
+     track), Start here, Show me around and See every room.
 
    Every animation, transition and lift is at the end, behind
    `prefers-reduced-motion: no-preference`, so reduced motion is the default
@@ -356,22 +357,35 @@
 
 /* A row under the scroll region, not a layer over it: the cards scroll in
    their own box and stop at its edge, so no card is ever partly under these
-   buttons, and a focused card is scrolled fully into view. On a phone the
-   two stand one over the other, with room for the home indicator, as First
-   Light's own pinned row has. */
+   buttons, and a focused card is scrolled fully into view. On a phone Start
+   here takes the whole first line, as wide as the cards, and Show me around
+   and See every room stand one over the other under it, with room for the
+   home indicator, as First Light's own pinned row has. They do not share a
+   line: side by side they need 300 px, and a 320 px phone gives them 276. */
 .actions {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 2px;
+  gap: 6px;
   padding: 8px 0 calc(12px + env(safe-area-inset-bottom, 0px));
 }
 
+/* Show me around over See every room, under Start here. */
+.more {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+}
+
+/* The first stop, as its card opens it: the biggest button on the screen. */
 .primary {
   display: inline-flex;
   align-items: center;
   justify-content: center;
   gap: 9px;
+  width: 100%;
+  max-width: 440px;
   min-height: 52px;
   margin: 0;
   padding: 0 32px;
@@ -401,6 +415,22 @@
   display: block;
   width: 18px;
   height: 18px;
+}
+
+/* The tour of Start here's room: a button, in the quiet look the questions
+   give a way to carry on (PlanQuestions' Next with nothing picked). */
+.secondary {
+  min-height: 44px;
+  margin: 0;
+  padding: 0 18px;
+  border: 1px solid var(--pc-rule);
+  border-radius: 999px;
+  background-color: rgba(230, 237, 243, 0.08);
+  color: var(--pc-ink);
+  font: inherit;
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
 }
 
 /* The quiet way into the full grid: a hint, not a button. */
@@ -436,6 +466,10 @@
 
   .skip:hover {
     color: var(--pc-ink-2);
+  }
+
+  .secondary:hover {
+    border-color: rgba(88, 166, 255, 0.55);
   }
 }
 
@@ -494,11 +528,21 @@
     font-size: 14.5px;
   }
 
+  /* The three on one row, Start here first, each as wide as its words. */
   .actions {
     flex-direction: row;
     justify-content: center;
     gap: 14px;
     padding: 12px 0 0;
+  }
+
+  .more {
+    flex-direction: row;
+    gap: 14px;
+  }
+
+  .primary {
+    width: auto;
   }
 }
 
@@ -525,8 +569,8 @@
   }
 }
 
-/* The lift: Show me around rises under a pointer. Where there is no pointer
-   to move away, and where motion is off, it stays put. */
+/* The lift: Start here rises under a pointer. Where there is no pointer to
+   move away, and where motion is off, it stays put. */
 @media (prefers-reduced-motion: no-preference) and (hover: hover) {
   .primary:hover {
     transform: translateY(-1px);

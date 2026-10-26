@@ -32,6 +32,7 @@ import { CreditCoin } from '@/components/billing/CreditCoin'
 import type { MercState } from '@/lib/merc/constants'
 import type { Plan, PlanStop } from './build-plan'
 import { buildPlan, PLAN_DESTS } from './build-plan'
+import { KICKER } from './plan-copy'
 import type { CreditsLine } from './plan-credits'
 import { PlanExits } from './PlanExits'
 import type { PlanScreenProps } from './PlanScreen'
@@ -125,7 +126,9 @@ const scrollRegion = (): HTMLElement | null =>
 /** The credit coin drawn inside an element, if there is one. */
 const coinIn = (el: ParentNode | null | undefined): Element | null =>
   el?.querySelector('[data-coin]') ?? null
-/** The main button of the ways-on row, named in several cases. */
+/** The main button of the ways-on row: Start here, the card's own kicker. */
+const START_HERE = KICKER.start
+/** The second button of the row, named in several cases. */
 const SHOW_ME_AROUND = 'Show me around'
 
 beforeEach(() => {
@@ -419,6 +422,34 @@ describe('the ways on', () => {
     for (const on of cards()) expect(on.tagName).toBe('BUTTON')
   })
 
+  it('opens Start here from the main button, exactly as its card does', () => {
+    // Arrange
+    const host = open()
+
+    // Act
+    fireEvent.click(button(START_HERE))
+
+    // Assert: the card's own stop, and not the tour.
+    expect(host.onOpenStop.mock.calls).toEqual([[START]])
+    expect(host.onShowMeAround).not.toHaveBeenCalled()
+  })
+
+  it('keeps Show me around as a second button beside Start here', () => {
+    // Arrange
+    const host = open()
+    const main = button(START_HERE)
+    const second = button(SHOW_ME_AROUND)
+
+    // Act
+    fireEvent.click(second)
+
+    // Assert: still the tour, and dressed as the second button, not the main.
+    expect(host.onShowMeAround).toHaveBeenCalledTimes(1)
+    expect(host.onOpenStop).not.toHaveBeenCalled()
+    expect(main.className).toBe(styles.primary)
+    expect(second.className).toBe(styles.secondary)
+  })
+
   it('offers every room and a way out, and no way back', () => {
     const host = open()
     expect(screen.queryByRole('button', { name: 'Back' })).toBeNull()
@@ -451,9 +482,13 @@ describe('the ways on', () => {
 
     const order = screen.getAllByRole('button')
     expect(order.at(-1)).toBe(button('Not now'))
-    expect(order.indexOf(button(SHOW_ME_AROUND))).toBeGreaterThan(
-      order.indexOf(card('play')),
-    )
+    // The ways on follow the plan, the main button first among them.
+    expect(order.slice(order.indexOf(card('play')) + 1)).toEqual([
+      button(START_HERE),
+      button(SHOW_ME_AROUND),
+      button('See every room'),
+      button('Not now'),
+    ])
     // Not now sits in the top corner on screen, and after every card in the DOM.
     for (const on of cards()) {
       expect(on.compareDocumentPosition(button('Not now'))).toBe(
@@ -475,7 +510,12 @@ describe('the ways on', () => {
     expect(region).not.toBeNull()
     for (const on of cards()) expect(region).toContainElement(on)
     expect(region).toContainElement(screen.getByRole('switch'))
-    for (const name of [SHOW_ME_AROUND, 'See every room', 'Not now']) {
+    for (const name of [
+      START_HERE,
+      SHOW_ME_AROUND,
+      'See every room',
+      'Not now',
+    ]) {
       expect(region).not.toContainElement(button(name))
     }
   })

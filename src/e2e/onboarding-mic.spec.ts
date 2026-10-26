@@ -305,12 +305,16 @@ test.describe('First Light with a microphone', () => {
     await skipToThePlan(page)
 
     // The plan: an unclean range is not a narrow one, so the solid scores
-    // lead to Karaoke Night, not the Ascent's Range week.
+    // lead to Karaoke Night, not the Ascent's Range week; and the main
+    // button is Start here.
     const questions = beat(page, 'questions')
     await expect(questions.locator('[data-kind="start"]')).toHaveAttribute(
       'data-dest',
       'karaokeNight',
     )
+    await expect(
+      questions.getByRole('button', { name: 'Start here', exact: true }),
+    ).toBeVisible()
     await questions.getByRole('button', { name: 'See every room' }).click()
 
     const map = beat(page, 'map')
