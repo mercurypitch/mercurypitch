@@ -55,24 +55,26 @@ export function barOnTop(hits) {
  * @returns {boolean[]} one answer per button, true for a hit inside the bar
  */
 export function probeConsentBar() {
-  const bar = document.createElement('div')
+  // Run in the page (page.evaluate), so its globals are the page's.
+  const doc = globalThis.document
+  const bar = doc.createElement('div')
   bar.setAttribute('role', 'dialog')
   bar.setAttribute('aria-label', 'Cookie consent')
   bar.style.cssText =
     'position:fixed;left:16px;right:16px;bottom:16px;z-index:2147483000;' +
     'display:flex;gap:8px;justify-content:flex-end;padding:12px'
   for (const name of ['Decline', 'Accept']) {
-    const button = document.createElement('button')
+    const button = doc.createElement('button')
     button.type = 'button'
     button.textContent = name
     button.style.cssText = 'min-height:44px;min-width:88px'
     bar.append(button)
   }
-  document.body.append(bar)
+  doc.body.append(bar)
   try {
     return [...bar.querySelectorAll('button')].map((button) => {
       const box = button.getBoundingClientRect()
-      const hit = document.elementFromPoint(
+      const hit = doc.elementFromPoint(
         box.left + box.width / 2,
         box.top + box.height / 2,
       )

@@ -72,6 +72,8 @@ export default defineConfig(
             'scripts/encode-drum-kit-formats.mjs',
             'scripts/pr-prepare.mjs',
             'scripts/pr-prepare.test.mjs',
+            'scripts/tour-rules.mjs',
+            'scripts/tour-rules.test.mjs',
             'src/features/drum-night/audio/drum-velocity-contract.mjs',
             'src/features/drum-night/audio/drum-kit-runtime-codec.mjs',
             'scripts/prepare-beside-cue-v2-4-media.mjs',
