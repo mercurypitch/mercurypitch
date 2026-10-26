@@ -7,10 +7,12 @@
 // page and stalled on the next. They share how long they wait for him, too.
 //
 // A WebGL drawn on the CPU names itself: Chrome's SwiftShader, Mesa's
-// llvmpipe and softpipe, Windows' Basic Render Driver. Headless Chrome hands
-// out a SwiftShader context even when asked to fail on a performance caveat,
-// so the name decides too. A Merc drawn there holds the main thread for
-// seconds at a time, and what is under him stops answering.
+// llvmpipe and softpipe, Windows' Basic Render Driver. Asked to fail on a
+// major performance caveat, a browser mostly refuses one (headless Chromium
+// 148 returns no context), but not always: with SwiftShader made its GPU
+// (--use-angle=swiftshader) it hands one out all the same, so the name
+// decides too. A Merc drawn there holds the main thread for seconds at a
+// time, and what is under him stops answering.
 //
 // The probe (what the browser says) and the decision (what the app makes of
 // it) are apart, so the decision can be tested without a browser.
