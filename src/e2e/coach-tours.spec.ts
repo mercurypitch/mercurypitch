@@ -114,8 +114,12 @@ const KARAOKE: Tour = {
     },
     // The song: nothing on screen until its score card has closed.
     { quiet: 'score-closed' },
-    // The phone stage covers the page by then: the stop stands free.
-    screen.phone ? {} : { target: '[data-tour="karaoke.own-song"]' },
+    // The phone stage covers the page by then: the stop rings its Back.
+    {
+      target: screen.phone
+        ? '[data-tour="karaoke.stage-back"]'
+        : '[data-tour="karaoke.own-song"]',
+    },
   ],
 }
 

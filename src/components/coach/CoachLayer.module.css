@@ -22,7 +22,8 @@
    - On a phone the bubble is a sheet across the window, docked above the foot
      stack as the toasts are (lib/foot-space.ts), or at the top when that
      would cover the target, or the transport under a do-step with nothing to
-     ring. Its every control is at least 44px. */
+     ring; or centred, for a stop over a stage whose transport fills the foot
+     of the window. Its every control is at least 44px. */
 
 .layer {
   --coach-ground: #0d1117;

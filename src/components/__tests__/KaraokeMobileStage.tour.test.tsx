@@ -1,11 +1,13 @@
 // ============================================================
-// The phone stage's mic, as Karaoke Night's Merc tour names it
+// The phone stage's mic and Back, as Karaoke Night's Merc tour names them
 // ============================================================
 //
 // The tour's "Sing along" stop rings the mic the screen draws: the desktop
 // mixer's keeps the hook the legacy mixer tour names (mixer.mic), and this
 // stage's has its own, karaoke.mic (karaoke-tour.ts, R20). Without the hook
-// the stop's ring would have nothing to find on a phone.
+// the stop's ring would have nothing to find on a phone. The last stop rings
+// the stage's Back (karaoke.stage-back), which leads to Add a song: the stage
+// covers the page's own.
 
 import { cleanup, render, screen } from '@solidjs/testing-library'
 import { afterEach, beforeAll, describe, expect, it, vi } from 'vitest'
@@ -77,5 +79,14 @@ describe("KaraokeMobileStage and Merc's tour", () => {
     ).toHaveAttribute('data-tour', 'karaoke.mic')
     // The desktop mixer's legacy hook is not borrowed for it.
     expect(document.querySelector('[data-tour="mixer.mic"]')).toBeNull()
+  })
+
+  it('names its Back for the last stop: the way back to Add a song', () => {
+    render(() => KaraokeMobileStage(makeProps({ onBack: vi.fn() })))
+
+    expect(screen.getByRole('button', { name: 'Back' })).toHaveAttribute(
+      'data-tour',
+      'karaoke.stage-back',
+    )
   })
 })

@@ -10,10 +10,12 @@
 //   the target, else above it, else at its side. On a phone it is a sheet
 //   docked above the foot of the window (the tab bar, the cookie banner and
 //   the confirm-email pill, as the toasts stand: lib/foot-space.ts), and it
-//   moves to the top when that would cover the target. A target that is not
-//   there (not mounted yet, or under a full-screen stage, which makes the page
-//   inert) gets no ring, and the bubble stands centred, or in a corner for a
-//   do-step. One taller than RING_MAX_SHARE of the window gets no ring and no
+//   moves to the top when that would cover the target; a stop over a stage
+//   whose transport fills the foot of the window can ask to stand centred
+//   instead (Karaoke Night's last). A target that is not there (not mounted
+//   yet, or under a full-screen stage, which makes the page inert) gets no
+//   ring, and the bubble stands centred, or in a corner for a do-step; a step
+//   whose body names its target says its `unseen` line meanwhile. One taller than RING_MAX_SHARE of the window gets no ring and no
 //   dim either, since it would ring the page, and on a wide screen the bubble
 //   stands in a corner, never over the middle of it: the bottom right, or the
 //   corner the step names (Sing's line, which keeps its labels and the
@@ -208,6 +210,7 @@ export function CoachLayer(props: CoachLayerProps): JSX.Element {
   const place = (): Place => {
     const r = ring()
     if (props.phone) {
+      if (step()?.phoneCentred === true) return 'centre'
       if (r === null) return asideForWork() ? 'dock-top' : 'dock-bottom'
       const sheetTop = window.innerHeight - footFloor() - GAP - size().h
       return r.top + r.height + GAP > sheetTop ? 'dock-top' : 'dock-bottom'
@@ -220,6 +223,15 @@ export function CoachLayer(props: CoachLayerProps): JSX.Element {
 
   const corner = (): CoachCorner | undefined =>
     place() === 'corner' ? (step()?.corner ?? 'bottom-right') : undefined
+
+  // A body that names its target ("Tap Back") holds only while the target is
+  // on screen; until then, or once it has gone, the step says its unseen line.
+  const body = (): string => {
+    const shown = step()
+    if (shown === undefined) return ''
+    const seen = ring() !== null || tall()
+    return !seen && shown.unseen !== undefined ? shown.unseen : shown.body
+  }
 
   const bubbleStyle = (): JSX.CSSProperties => {
     const r = ring()
@@ -388,7 +400,12 @@ export function CoachLayer(props: CoachLayerProps): JSX.Element {
             fallback={
               <Show when={snapshot()}>
                 {(at) => (
-                  <StepCard at={at} runner={props.runner} onPlay={playNote} />
+                  <StepCard
+                    at={at}
+                    body={body}
+                    runner={props.runner}
+                    onPlay={playNote}
+                  />
                 )}
               </Show>
             }
@@ -415,6 +432,8 @@ export function forwardLabel(at: CoachSnapshot): string {
 
 interface StepCardProps {
   at: () => CoachSnapshot
+  /** The step's body, or its unseen line while its target is not on screen. */
+  body: () => string
   runner: CoachRunner
   onPlay: () => void
 }
@@ -442,7 +461,7 @@ function StepCard(props: StepCardProps): JSX.Element {
             {step().title}
           </h2>
           <p id="coach-body" class={styles.body}>
-            {step().body}
+            {props.body()}
           </p>
           <Show when={failure()}>
             {(line) => (

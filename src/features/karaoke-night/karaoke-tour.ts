@@ -20,9 +20,11 @@
 //   (mixer.mic, never renamed) and the phone stage's has its own
 //   (karaoke.mic), as one selector list: each screen draws one (R20).
 // - Your own song: the rail's Add a song, its card while the rail is open and
-//   its icon while the rail is folded (karaoke.own-song). On the phone stage,
-//   which covers the page when the score shows, that stop stands with no ring
-//   and says the same.
+//   its icon while the rail is folded (karaoke.own-song). On a phone the
+//   stage still covers the page, Add a song with it, when the score card
+//   closes, so the stop rings the stage's Back (karaoke.stage-back), the way
+//   there, and names it. It stands centred, off the stage's transport, and
+//   without Back on screen (a stage with no way back) it names nothing.
 // - Under it, the credits line the plan's Karaoke Night card says
 //   (planCreditsLine), from what this page knows: who is signed in and their
 //   balance (the standalone account, which fetches the balance on every
@@ -122,6 +124,13 @@ export const KARAOKE_TOUR: CoachTour = {
       viewport: 'desktop',
       target: '[data-tour="karaoke.own-song"]',
     },
-    { ...OWN_SONG, viewport: 'phone' },
+    {
+      ...OWN_SONG,
+      viewport: 'phone',
+      target: '[data-tour="karaoke.stage-back"]',
+      body: 'Tap Back to add any song. The Cloud GPU takes the voice out, so you sing over the band.',
+      unseen: OWN_SONG.body,
+      phoneCentred: true,
+    },
   ],
 }

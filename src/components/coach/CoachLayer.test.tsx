@@ -365,6 +365,61 @@ describe('CoachLayer', () => {
     expect(bubble().dataset.place).toBe('dock-top')
   })
 
+  it('says its unseen line while its target is not on screen, and names the target once it is', () => {
+    vi.useFakeTimers()
+    const tour: CoachTour = {
+      key: 'karaoke-night',
+      steps: [
+        {
+          id: 'own-song',
+          kind: 'show',
+          target: '[data-tour="coach-test.mic"]',
+          merc: 'point',
+          title: 'Bring your own song',
+          body: 'Tap Back to add any song.',
+          unseen: 'Add any song.',
+        },
+      ],
+    }
+    mount({ tour, phone: true })
+    expect(screen.getByText('Add any song.')).toBeTruthy()
+    expect(screen.queryByText('Tap Back to add any song.')).toBeNull()
+
+    addTarget({ top: 10, left: 10, width: 44, height: 44 })
+    vi.advanceTimersByTime(TRACK_MS)
+
+    expect(screen.getByTestId('coach-ring')).toBeTruthy()
+    expect(screen.getByText('Tap Back to add any song.')).toBeTruthy()
+    expect(screen.queryByText('Add any song.')).toBeNull()
+  })
+
+  it('stands centred on a phone when the step asks, ringed or not', () => {
+    const tour: CoachTour = {
+      key: 'karaoke-night',
+      steps: [
+        {
+          id: 'own-song',
+          kind: 'show',
+          target: '[data-tour="coach-test.mic"]',
+          phoneCentred: true,
+          merc: 'point',
+          title: 'Bring your own song',
+          body: 'Tap Back to add any song.',
+        },
+      ],
+    }
+    mount({ tour, phone: true })
+    expect(bubble().dataset.place).toBe('centre')
+    cleanup()
+
+    // Ringed at the top, where a docked sheet would go below it, over the
+    // stage's transport.
+    addTarget({ top: 10, left: 10, width: 44, height: 44 })
+    mount({ tour, phone: true })
+    expect(screen.getByTestId('coach-ring')).toBeTruthy()
+    expect(bubble().dataset.place).toBe('centre')
+  })
+
   it('docks above the tab bar on a phone, and at the top when it would cover the target', () => {
     mount({ phone: true })
     expect(bubble().dataset.place).toBe('dock-bottom')
