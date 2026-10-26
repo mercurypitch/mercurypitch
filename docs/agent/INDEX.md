@@ -147,6 +147,7 @@ These are the rules that break things when ignored.
 |---|---|---|---|
 | `guitar` | [guitar-live-score.ts](../../src/lib/guitar/guitar-live-score.ts) | 12.4k | Guitar live score — bounded, evidence-honest feedback while a take is running. |
 | `jam` | [jam-net-stats.ts](../../src/lib/jam/jam-net-stats.ts) | 10.8k | ── Jam network stats One RTCStatsReport, reduced to the numbers that decide whether two people can play together. |
+| `studio-fx` | [index.ts](../../src/lib/studio-fx/index.ts) | 5.3k | Studio FX — insert effect chains for Studio tracks and the master bus For a beginner, nothing needs choosing: `autoMixChain(role, clip)`... |
 | `merc` | [renderer.ts](../../src/lib/merc/renderer.ts) | 5.2k | Merc renderer — one canvas, one WebGL2 context, one simulated Merc mount() draws Merc into a container. |
 | `guided-voice` | [index.ts](../../src/lib/guided-voice/index.ts) | 4.7k | Guided Voice — local assessment science and safety foundation |
 | `ear` | [banks.ts](../../src/lib/ear/banks.ts) | 4.5k | Ear Lab — identification item banks (Leap, Stack, Contour). |

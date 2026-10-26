@@ -458,6 +458,27 @@ must import the inventory in a child Node process as well as through Vitest.
 **Rule:** where the sound can be late by more than the spacing (a TV, Bluetooth), space the clicks unevenly, take the lag most clicks agree on, refuse when another lag is nearly as well supported, and time each reply against its own peak. Guitar Night's calibration (`useGuitarListeningController.ts`) still uses the even schedule.
 **See:** `src/lib/mic-latency-route.ts`, `MAX_ONSET_DISTANCE_SEC` in `src/lib/mic-latency.ts`.
 
+### Divide out DynamicsCompressorNode's makeup gain, and let a new one settle
+
+**Symptom:** a compressor made material below its threshold 10.8 dB louder (-24 dB, 4:1); an offline bounce through it opened 17 dB down.
+**Cause:** every engine adds an automatic makeup gain, (1 / curve(0 dBFS))^0.6 per the spec, and a freshly created node starts with its detector at zero and fades in over ~300 ms (Chrome 153).
+**Rule:** cancel the makeup with `compressorAutoMakeupGain` (matched Chrome to 0.001 dB), build chains before audio starts, and pre-roll offline renders.
+**See:** `src/lib/studio-fx/compressor-curve.ts`, `src/lib/studio-fx/render.ts`.
+
+### Give a path summed beside a compressor or oversampled shaper the same node
+
+**Symptom:** a 50 % parallel compressor notched by 24 dB; a split-band de-esser would notch its own crossover.
+**Cause:** DynamicsCompressorNode has 6 ms of lookahead and a 4x WaveShaperNode 4 ms of resampling delay (Chrome 153, 48 kHz); neither is reported, so an undelayed parallel path comb-filters.
+**Rule:** run the parallel path through a compressor that never compresses (ratio 1, threshold 0) or an identity-curve shaper with the same oversample. Feedback cycles add a further quantum (128 frames) per pass in Chrome.
+**See:** `createNullCompressor` and `createIdentityShaperPath` in `src/lib/studio-fx/effect-shell.ts`.
+
+### Do not build a decibel-domain envelope from a plain rectifier
+
+**Symptom:** a level-independent transient shaper wobbled the gain of a held 41 Hz bass note by 2 dB; the same detector in linear amplitude was level-dependent and barely moved a ring.
+**Cause:** |x| ripples at twice the pitch, which a few-millisecond follower cannot smooth on low notes; in decibels the ripple is the same at every level, so no threshold hides it. A WaveShaperNode log curve of normal length is also wrong below about -40 dBFS, because the curve is sampled uniformly.
+**Rule:** rectify a 90-degree allpass pair at four phases (3 % ripple at eight times the pitch) before the followers, and give log curves 65537 points.
+**See:** `QUADRATURE_ALLPASS` and `createLogEnvelopeCurve` in `src/lib/studio-fx/dsp.ts`, `src/lib/studio-fx/effects/transient.ts`.
+
 ## Framework
 
 ### Format CSS before verifying a standalone production build
