@@ -182,6 +182,11 @@ What a reader, a crawler and an answer engine all need:
   - the room that practises it (§8).
 
   Lessons 1 and 2 link their practise room and the season map today.
+  **[shipped]** Every lesson page shows a trail under its masthead, the
+  home page and the hub as links and the lesson as the current page,
+  written at build time from its own `BreadcrumbList`
+  (`tools/lesson-ways.ts`), so the two say the same and a new page needs
+  no edit.
 
 - **Words for every figure.** The toys explain by sound and motion; their
   captions and alt text are all a crawler gets.

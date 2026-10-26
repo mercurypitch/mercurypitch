@@ -18,6 +18,7 @@ import { writeErrorPages } from './tools/generate-error-pages'
 import { glassGameAssetsPlugin } from './tools/glass-game-assets'
 import { GLASSWORKS_LISTED_ENV, glassworksListingPlugin, isGlassworksListed, unlistedEntrySlugs, } from './tools/glassworks-listing'
 import { HUB_DOCUMENT, learnHubPlugin } from './tools/learn-hub'
+import { lessonWaysPlugin } from './tools/lesson-ways'
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
 
@@ -319,6 +320,9 @@ export default defineConfig(({ command, mode }) => {
       // The hub's season map, written in before the readings in it are
       // marked just below.
       learnHubPlugin(__dirname, liveByDefault(__dirname, draftsShown)),
+      // Each lesson page's visible trail back to the hub, written from its
+      // own BreadcrumbList.
+      lessonWaysPlugin(__dirname),
       // A lesson page's words about which lessons are ready: both readings
       // stay for the worker and the page's script to settle, and the one
       // false by this build's default is marked hidden until they do.
