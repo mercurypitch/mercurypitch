@@ -11,16 +11,17 @@
 // say so; Step 4's predict waits for both versions, and holds Swap sizes,
 // the mix-up card, the Try and the Notice until then; Step 5's brackets and
 // anchor board play; the two games answer by keys, and Space replays only
-// off a button. At 390 x 844, 375 and 360 px wide, every step's stage fits
-// with every target at least 44 px square and none overlapping, free play
-// at every start from C4 to B4; at 390 and 360 px the hero's compact line,
-// which has no buttons, draws all seven notes from C and from F sharp, and
-// the cold open's sharp sign stays beside its F, in Play from F sharp and
-// in every lock hint; at 320 px the start slider, Step 3's and free play's,
-// holds its words at every start between two arrow buttons that keep their
-// names, and from 360 px the buttons show their words again; at 1024 x 640
-// the stage fits the screen under the masthead. A window narrowed from 1280
-// px to 320, or a phone turned from landscape to portrait, lays every tune
+// off a button. At 390 x 844, 375, 360 and 320 px wide, every step's stage
+// fits with every target at least 44 px square and none overlapping, free
+// play at every start from C4 to B4, and at 320 px both figures run to the
+// window's edges; at 390 and 360 px the hero's compact line, which has no
+// buttons, draws all seven notes from C and from F sharp, and the cold
+// open's sharp sign stays beside its F, in Play from F sharp and in every
+// lock hint; at 320 px the start slider, Step 3's and free play's, holds
+// its words at every start between two arrow buttons that keep their names,
+// and from 360 px the buttons show their words again; at 1024 x 640 the
+// stage fits the screen under the masthead. A window narrowed from 1280 px
+// to 320, or a phone turned from landscape to portrait, lays every tune
 // line's buttons out again, on screen and off, with nothing past the
 // window's edge, and Step 3 keeps its start, names, Slow and the line it is
 // playing, and the cold open its answer. Two real-mouse drags of the line
@@ -734,6 +735,25 @@ test.describe('page QA (WEB-SPEC, Tests and Contract)', () => {
         expect(await sideways(page)).toBe(320)
       })
     }
+
+    test("free play fits every bead, gap and bracket, none overlapping, at every start, its figure the window's width", async ({
+      page,
+    }) => {
+      // Arrange
+      await page.goto('/learn/06#freePlay')
+      const free = page.locator('#freePlay')
+
+      // Act + Assert: at every start from C4 to B4
+      for (let start = 60; start <= 71; start++) {
+        await startOn(page, start, '#freePlay')
+        await expectTargets(free, `free play from ${start}`)
+      }
+      const canvas = await free.locator('canvas').boundingBox()
+      expect(canvas?.x).toBe(0)
+      expect(canvas?.width).toBe(320)
+      expect(await strays(page, '#freePlay')).toEqual([])
+      expect(await sideways(page)).toBe(320)
+    })
   })
 
   // from 360 px the buttons show their words again, as they always did
@@ -752,7 +772,7 @@ test.describe('page QA (WEB-SPEC, Tests and Contract)', () => {
     })
   }
 
-  for (const width of [360, 375]) {
+  for (const width of [320, 360, 375]) {
     test(`at ${width} px wide nothing scrolls sideways, and every target keeps 44 px`, async ({
       page,
     }) => {
