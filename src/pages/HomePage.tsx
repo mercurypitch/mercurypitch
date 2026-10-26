@@ -26,7 +26,7 @@ import { exerciseLabel, segmentVariantLabel, } from '@/features/routines/segment
 import type { RoutineSegment, SegmentKind } from '@/features/routines/types'
 import type { RoutineLength } from '@/features/routines/use-daily-routine'
 import { launchRoutineSegment, routinePrefs, setRoutinePrefs, useDailyRoutine, } from '@/features/routines/use-daily-routine'
-import { currentLessonHref } from '@/lib/current-lesson'
+import { currentLessonHref, LESSONS_TITLE } from '@/lib/current-lesson'
 import { navigateTo } from '@/lib/hash-router'
 import { IS_NATIVE_BUILD } from '@/lib/native-build'
 import { copyShareUrl, encodeRoutineForShare } from '@/lib/share-codec'
@@ -192,7 +192,7 @@ const HomePage: Component = () => {
             <a
               class={styles.headAction}
               href={currentLessonHref()}
-              title="Find Your Pitch: free lessons on notes and singing"
+              title={LESSONS_TITLE}
               data-testid="home-lessons"
             >
               Lessons

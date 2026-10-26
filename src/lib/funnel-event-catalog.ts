@@ -231,14 +231,16 @@ export const ONBOARDING_FUNNEL_EVENTS = [
   'onboarding_map_room_karaoke',
   'onboarding_map_room_jam',
   'onboarding_map_room_analysis',
-  /** A tap on one of the Map's four doors under the room grid, one name a
+  /** A tap on one of the Map's doors under the room grid, one name a
    *  door: these events carry no metrics, so which door it was has to be
    *  in the name. Sent beside `onboarding_map_room`, which still counts
-   *  every way into a room. From the follow-up to PR 977. */
+   *  every way into a room. From the follow-up to PR 977. The Lessons
+   *  section on the Map opens the same lesson as its door, and counts as it. */
   'onboarding_map_door_challenges',
   'onboarding_map_door_guitar',
   'onboarding_map_door_piano',
   'onboarding_map_door_mirror',
+  'onboarding_map_door_lessons',
   'onboarding_skipped',
   /** The welcome's close asked "Skip the intro?" first (skip-confirm.tsx). */
   'onboarding_skip_asked_intro',

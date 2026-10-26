@@ -39,6 +39,15 @@ export const RELEASED_LESSONS: readonly ReleasedLesson[] = [
 /** The lessons' hub, the door once every released lesson is done. */
 export const LESSONS_HUB = '/learn/'
 
+/** What the lessons are, in Home's words for its Lessons link. */
+export const LESSONS_TITLE =
+  'Find Your Pitch: free lessons on notes and singing'
+
+/** A lesson's share image: 1200x630, with its title written in the picture. */
+export function lessonCover(n: number): string {
+  return `/learn/lesson-${String(n).padStart(2, '0')}-og.jpg`
+}
+
 /** The lessons this browser has marked done, or none where storage cannot be read. */
 export function readDoneLessons(): number[] {
   try {

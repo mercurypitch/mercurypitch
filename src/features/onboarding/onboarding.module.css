@@ -1695,6 +1695,62 @@
   color: #7fd3ff;
 }
 
+/* The lessons' card, under the account line (BeatMap.tsx says why there):
+   a room card's frame, with the cover beside the words. The cover is the
+   lesson's share image, 1200x630 with the title written in it, so its box
+   takes the picture's own shape and the picture is contained, never cut:
+   BeatMap.test.tsx holds both. */
+.mapLessons {
+  display: flex;
+  justify-content: center;
+  width: 100%;
+}
+
+.lessonCard {
+  composes: roomCard;
+  flex-direction: row;
+  align-items: center;
+  gap: 16px;
+  width: 100%;
+  max-width: 560px;
+  padding: 12px;
+}
+
+.lessonCover {
+  display: block;
+  flex: none;
+  width: 200px;
+  aspect-ratio: 1200 / 630;
+  overflow: hidden;
+  border-radius: 10px;
+  background: var(--ob-ground);
+}
+
+.lessonCoverImg {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+.lessonBody {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 5px;
+  min-width: 0;
+}
+
+/* "Lessons", in the voice of "And also": the section's name over the
+   lesson's own. */
+.lessonKicker {
+  font-size: 0.7rem;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--ob-ink-3);
+}
+
 /* The store chips (StoreChips.tsx), last on the Map: the about site's
    dark chips, which read as neither a room nor the Map's blue button.
    The component reads the margin; see StoreChips.module.css. */
@@ -1917,9 +1973,9 @@
   }
 
   /* The four doors in one row from a 360 px phone up (measured: 306 px
-     of chips in a 316 px row), under the label's own line. A 44 px tap
-     target (owner rule), so the height comes from min-height and the
-     sides do the trimming. */
+     of chips in a 316 px row), under the label's own line, and Lessons,
+     the fifth, on the line under them. A 44 px tap target (owner rule),
+     so the height comes from min-height and the sides do the trimming. */
   .sideDoors {
     gap: 6px;
   }
@@ -1930,6 +1986,16 @@
     min-height: 44px;
     padding: 0 10px;
     font-size: 0.8rem;
+  }
+
+  /* The lesson's cover narrower beside the words, still whole. */
+  .lessonCard {
+    align-items: center;
+    gap: 14px;
+  }
+
+  .lessonCover {
+    width: 120px;
   }
 
   /* The rail is the only thing on the gallery beat allowed to scroll
