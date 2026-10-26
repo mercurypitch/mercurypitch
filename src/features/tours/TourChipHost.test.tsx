@@ -360,6 +360,84 @@ describe('TourChipHost: the chip', () => {
   })
 })
 
+describe('the offer, spent once the chip has been seen', () => {
+  // jsdom has no IntersectionObserver; this one is driven by hand, as the
+  // page would scroll the chip in and out of view.
+  let report: ((share: number) => void) | null = null
+
+  beforeEach(() => {
+    report = null
+    vi.stubGlobal(
+      'IntersectionObserver',
+      class {
+        constructor(private readonly callback: IntersectionObserverCallback) {}
+        observe(target: Element): void {
+          report = (share) =>
+            this.callback(
+              [
+                {
+                  target,
+                  isIntersecting: share > 0,
+                  intersectionRatio: share,
+                } as IntersectionObserverEntry,
+              ],
+              this as unknown as IntersectionObserver,
+            )
+        }
+        disconnect(): void {
+          report = null
+        }
+      },
+    )
+  })
+
+  afterEach(() => {
+    vi.unstubAllGlobals()
+  })
+
+  it('spends nothing while the chip is scrolled away, and spends it once half of it is on screen', () => {
+    mount('home')
+    expect(chip()).not.toBeNull()
+    expect(localStorage.getItem(KEY('home'))).toBeNull()
+    expect(store.trackTour).not.toHaveBeenCalled()
+
+    report?.(0.2)
+    expect(localStorage.getItem(KEY('home'))).toBeNull()
+    report?.(0.6)
+
+    expect(localStorage.getItem(KEY('home'))).toBe('true')
+    expect(store.trackTour.mock.calls).toEqual([['tour_offer', 'home']])
+    report?.(1)
+    expect(store.trackTour).toHaveBeenCalledOnce()
+  })
+
+  it('leaves an offer nobody saw for the next visit', () => {
+    const { setTab } = mount('home')
+    expect(chip()).not.toBeNull()
+    setTab('ear-lab')
+
+    expect(localStorage.getItem(KEY('home'))).toBeNull()
+    expect(store.trackTour).not.toHaveBeenCalled()
+  })
+
+  it('spends a contextual offer once it is seen, too', () => {
+    store.hasPageTour.mockReturnValue(false)
+    mount('karaoke')
+    requestTourChip({
+      key: 'mixer',
+      storageKey: 'pitchperfect_mixer_tour_offered',
+      line: 'New to the mixer? Take a quick tour.',
+      onStart: () => undefined,
+    })
+    expect(chip()).not.toBeNull()
+    expect(localStorage.getItem('pitchperfect_mixer_tour_offered')).toBeNull()
+
+    report?.(0.5)
+    expect(localStorage.getItem('pitchperfect_mixer_tour_offered')).toBe('true')
+    expect(store.trackTour.mock.calls).toEqual([['tour_offer', 'mixer']])
+  })
+})
+
 describe('requestTourChip', () => {
   it('shows a chip that offerTourOnce asks for', () => {
     store.hasPageTour.mockReturnValue(false)
