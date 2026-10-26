@@ -20,6 +20,10 @@ test('Studio adjusts sound as one edit and exports measured stereo PCM from the 
   await studio.getByRole('button', { name: 'Sound', exact: true }).click()
   const before = await readStudioProject(page)
   const tone = studio.getByRole('slider', { name: 'Tone', exact: true })
+  // The Sound panel scrolls at shorter desktop heights; raw mouse coordinates do not.
+  await tone.scrollIntoViewIfNeeded()
+  await expect(tone).toBeInViewport({ ratio: 1 })
+  await tone.click({ trial: true })
   const box = await tone.boundingBox()
   if (!box) throw new Error('Tone control is not visible.')
   await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2)

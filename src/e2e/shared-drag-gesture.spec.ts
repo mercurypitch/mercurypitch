@@ -157,7 +157,7 @@ test.describe('shared drag gesture verification', () => {
     await expectCaptureReleased(scrubber)
   })
 
-  test('navigation pan releases after the pointer leaves the window and recovers (REQ-DRAG-001, REQ-DRAG-002)', async ({
+  test('navigation pan releases after the pointer leaves the window and recovers @smoke (REQ-DRAG-001, REQ-DRAG-002)', async ({
     page,
   }) => {
     await openSinging(page)
@@ -201,13 +201,12 @@ test.describe('shared drag gesture verification', () => {
       start,
     )
     await page.waitForTimeout(0)
-    // Compose rather than Settings: the strip is still pinned narrow for the
-    // second pan below, so the bar has bottomed out at one tab per group and
-    // Settings is inside Studio's overflow menu. Compose is that group's first
-    // tab, so it is inline at every cap — this step is about navigation
+    // Studio is the Create group's first tab, so it stays inline when the
+    // strip is pinned narrow for the second pan below. Compose and Settings
+    // live in the overflow menu at this width. This step is about navigation
     // surviving the drag, not about reaching a menu.
-    await openNavTab(page, 'tab-compose')
-    await expect(page.locator('#tab-compose')).toHaveAttribute(
+    await openNavTab(page, 'tab-studio-night')
+    await expect(page.locator('#tab-studio-night')).toHaveAttribute(
       'aria-current',
       'page',
     )
