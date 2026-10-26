@@ -16,7 +16,10 @@
 // - Focus goes back when the layer goes, however the tour ended (Done, End
 //   tour, Escape, a tab change): to what had it as the tour was asked for,
 //   if that is still in the page to take it, else to the page's main
-//   heading, which is focusable only while it holds focus.
+//   heading, which is focusable only while it holds focus. Only focus the
+//   tour had: in its layer, or fallen to the page itself. A tour that ends
+//   while the singer is busy in the page (a quiet wait has no bubble) leaves
+//   their focus where it is.
 //
 // The coach is shared UI: the app's tours, the plan's showcase and Karaoke
 // Night, a document of its own, all run tours on it, so it lives in
@@ -115,6 +118,12 @@ function giveFocusBack(before: HTMLElement | null): void {
   }
 }
 
+/** Focus is the tour's to give back: in its layer, or fallen to the page itself. */
+function tourHadFocus(root: HTMLElement): boolean {
+  const el = document.activeElement
+  return el === null || el === document.body || root.contains(el)
+}
+
 /** Fetches the coach and Merc's renderer ahead of a tour, without starting one. */
 export function warmCoach(): void {
   void loadCoach().catch(() => undefined)
@@ -192,9 +201,10 @@ export async function startCoachTour(
     // The layer asks for its own close from inside its effects; unmount
     // after they have run, then give focus back.
     queueMicrotask(() => {
+      const ours = tourHadFocus(root)
       unmount()
       root.remove()
-      giveFocusBack(before)
+      if (ours) giveFocusBack(before)
     })
     // How the tour itself ended: done, even after a hand-over the singer
     // put off; an exit, if it never got that far.

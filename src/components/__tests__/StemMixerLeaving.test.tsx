@@ -8,6 +8,10 @@
 // the phone stage, walking the library, switched songs the same way. Now the
 // library steps once the fade has played, and a mixer that unmounts closes
 // its context after the fade, the key shifter's tail included.
+//
+// Last, a run stopped with no score card to show says so (onStoppedUnscored),
+// and a mixer that unmounts says nothing: Karaoke Night's Merc tour waits
+// through the song for the card, and a song that has none ends that wait.
 
 import { cleanup, fireEvent, render, screen, waitFor, } from '@solidjs/testing-library'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
@@ -202,5 +206,41 @@ describe('a mixer that unmounts while its song plays', () => {
     unmount()
 
     expect(context?.close).toHaveBeenCalledTimes(1)
+  })
+})
+
+describe('a song stopped with no score card to show', () => {
+  function mountHeard(): {
+    heard: ReturnType<typeof vi.fn>
+    unmount: () => void
+  } {
+    const heard = vi.fn()
+    const { unmount } = render(() => (
+      <StemMixer
+        stems={{ vocal: 'blob:vocal', instrumental: 'blob:instrumental' }}
+        sessionId="song-b"
+        songTitle="Consent"
+        onStoppedUnscored={heard}
+      />
+    ))
+    return { heard, unmount }
+  }
+
+  it('says so once when Stop is pressed with the mic off', async () => {
+    const { heard } = mountHeard()
+    await play()
+
+    fireEvent.click(screen.getByRole('button', { name: 'Stop' }))
+
+    expect(heard).toHaveBeenCalledOnce()
+  })
+
+  it('says nothing when the mixer unmounts while its song plays', async () => {
+    const { heard, unmount } = mountHeard()
+    await play()
+
+    unmount()
+
+    expect(heard).not.toHaveBeenCalled()
   })
 })

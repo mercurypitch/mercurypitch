@@ -7,8 +7,9 @@
 // It is mounted once per staged song (KaraokeNightApp keys it by the song),
 // whichever way the song got there: the hero's demo, a song link, the rail,
 // the zen sheet. So its mount is where a waiting Merc tour hears that a song
-// is on stage (src/lib/coach-events.ts), along with the first sung note and
-// the score card closing, however it closed.
+// is on stage (src/lib/coach-events.ts), along with the first sung note, the
+// score card closing, however it closed, a song stopping with no card to
+// close, and Back, told before the stage goes.
 import { onMount } from 'solid-js'
 import { LyricsUploaderStyles } from '@/components/LyricsUploader'
 import { StemMixer, StemMixerStyles } from '@/components/StemMixer'
@@ -122,7 +123,9 @@ export function KaraokeStageHost(props: KaraokeStageHostProps) {
         trackKaraokeSessionOnce('karaoke_scorecard_view')
       }}
       onScorecardClosed={() => emitCoachEvent('score-closed')}
+      onStoppedUnscored={() => emitCoachEvent('song-unscored')}
       onBack={() => {
+        emitCoachEvent('stage-left')
         if (isPlaylistActive()) stopPlaylist()
         props.onExit()
       }}

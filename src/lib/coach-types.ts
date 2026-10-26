@@ -13,7 +13,9 @@
 //   already done as it shows (the mic was on before the tour) does not wait,
 //   and a step can name what going wrong sounds like (`mic-failed`) and the
 //   line the bubble adds once it has. A quiet do-step waits with nothing on
-//   screen and is not counted: the wait through a song.
+//   screen and is not counted: the wait through a song. A do-step can name
+//   other events that move it on as its own does, and events after which its
+//   own can no longer come, which end the tour where it stands.
 // - watch: something to look at or read later. The tour goes on.
 //
 // Tour content lives beside its room and imports only these types, so a
@@ -109,6 +111,17 @@ export interface CoachDoStep extends CoachStepBase {
    * body name it for tests and the tour checks, and are never shown.
    */
   quiet?: true
+  /**
+   * Other events that move the step on as `waitFor` does: Karaoke's song
+   * stopped with no score card to close, or the singer leaving the stage.
+   */
+  alsoFor?: readonly CoachEventName[]
+  /**
+   * Events after which `waitFor` can no longer come for this step: the tour
+   * ends, an exit where it stands. Another song on Karaoke's stage is one, so
+   * that song's score card never brings the last stop.
+   */
+  endsOn?: readonly CoachEventName[]
 }
 
 export type CoachStep = CoachShowStep | CoachDoStep
