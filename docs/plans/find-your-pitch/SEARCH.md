@@ -187,6 +187,14 @@ What a reader, a crawler and an answer engine all need:
   written at build time from its own `BreadcrumbList`
   (`tools/lesson-ways.ts`), so the two say the same and a new page needs
   no edit.
+  **[shipped]** Its foot links the lesson before it and the one after, each
+  by its number and headline as the hub names them, written at build time by
+  the same file, so a crawler that runs no script finds the next lesson.
+  Inside the lesson, the Wrap's next-lesson card, which the page's script
+  draws, stays its one way on. The site worker and the page's script take a
+  link to a lesson that is not live out of the foot, as out of any nav, so
+  on mercurypitch.com Lesson 2's foot links Lesson 1 alone until Lesson 3 is
+  live.
 
 - **Words for every figure.** The toys explain by sound and motion; their
   captions and alt text are all a crawler gets.

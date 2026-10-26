@@ -20,6 +20,7 @@ import { LESSONS, minutesSpan } from '@/features/lessons/kit/season'
 import type { LessonState } from '@/lib/lesson-state'
 import { isDraftLessonsShown, lessonDocument, lessonPages, liveByDefault, markLessonStates, } from '../tools/draft-lessons'
 import { fillHub, HUB_DOCUMENT, hubLessons } from '../tools/learn-hub'
+import { fillLessonWays, lessonWays } from '../tools/lesson-ways'
 import { HtmlRewriterDouble } from './html-rewriter.test-fixtures'
 import type { LessonGateEnv, WaitUntil } from './lesson-gate'
 import { draftsShownBy, FALLBACK_TTL_S, handleLessonRequest, hubRewriter, lessonRewriter, settleSeries, STATE_TIMEOUT_MS, STATE_TTL_S, } from './lesson-gate'
@@ -42,6 +43,14 @@ function builtHub(): string {
   )
 }
 
+/** Lesson `n`'s page as the production build writes it: its ways written in, its readings marked for drafts held back. */
+function builtLesson(n: number): string {
+  return markLessonStates(
+    fillLessonWays(repoFile(lessonDocument(n)), lessonWays(ROOT, n)),
+    liveByDefault(ROOT, false),
+  )
+}
+
 /** The files the stand-in asset layer serves, by address. */
 function filesByAddress(): Record<string, { body: string; type: string }> {
   const files: Record<string, { body: string; type: string }> = {
@@ -58,7 +67,7 @@ function filesByAddress(): Record<string, { body: string; type: string }> {
   }
   for (const n of lessonPages(ROOT))
     files[`/learn/${String(n).padStart(2, '0')}`] = {
-      body: repoFile(lessonDocument(n)),
+      body: builtLesson(n),
       type: 'text/html; charset=utf-8',
     }
   return files
@@ -687,6 +696,60 @@ describe("a page's links and readings", () => {
     expect(readings?.querySelector('[hidden]')).toBeNull()
     // A reading with no lesson number is left as it was written
     expect(readings?.querySelector('[data-if-live="x"]')).not.toBeNull()
+  })
+})
+
+describe("a lesson page's ways to the lessons either side", () => {
+  /** The links in a lesson page's foot, each its rel and address. */
+  function footWays(
+    doc: Document,
+  ): { rel: string | null; href: string | null }[] {
+    return Array.from(doc.querySelectorAll('footer .foot-ways a'), (a) => ({
+      rel: a.getAttribute('rel'),
+      href: a.getAttribute('href'),
+    }))
+  }
+
+  it("keep Lesson 1's link to Lesson 2, and take Lesson 3 out of Lesson 2's foot, where drafts are held back, as on mercurypitch.com", async () => {
+    // Arrange: no override, and LESSON_DRAFTS unset
+    const { ask } = gate()
+
+    // Act
+    const one = await page(await ask('/learn/01'))
+    const two = await page(await ask('/learn/02'))
+
+    // Assert
+    expect(footWays(one)).toEqual([{ rel: 'next', href: '/learn/02' }])
+    expect(footWays(two)).toEqual([{ rel: 'prev', href: '/learn/01' }])
+    expect(two.querySelector('a[href^="/learn/03"]')).toBeNull()
+  })
+
+  it('keep both where drafts are shown, as on the dev site, previews and local', async () => {
+    // Arrange
+    const { ask } = gate({ drafts: '1' })
+
+    // Act
+    const one = await page(await ask('/learn/01'))
+    const two = await page(await ask('/learn/02'))
+
+    // Assert
+    expect(footWays(one)).toEqual([{ rel: 'next', href: '/learn/02' }])
+    expect(footWays(two)).toEqual([
+      { rel: 'prev', href: '/learn/01' },
+      { rel: 'next', href: '/learn/03' },
+    ])
+  })
+
+  it('take out a released lesson the console holds back, from the foot of the lesson after it', async () => {
+    // Arrange: Lesson 1 held back
+    const { ask } = gate({ state: stateOf({ 1: { published: false } }) })
+
+    // Act
+    const two = await page(await ask('/learn/02'))
+
+    // Assert
+    expect(footWays(two)).toEqual([])
+    expect(two.querySelector('footer .foot-ways')).not.toBeNull()
   })
 })
 
