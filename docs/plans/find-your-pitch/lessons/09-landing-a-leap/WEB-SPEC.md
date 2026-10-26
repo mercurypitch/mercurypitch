@@ -334,11 +334,12 @@ States:
      first) and "Smaller: do-mi-so-mi-do". The chart shows the pressed ladder's slots, faint.
    - **Move do**: Lesson 4's control, word for word (`learn/04.html:1254-1263`): a group labelled
      "Move do:" with two buttons, "lower" and "higher", a semitone a tap, up to four each way from
-     D3 (or D4), each disabled at its end, as Lesson 4's are (`kit/move-do.ts:26-27`, `:51-63`,
-     `:38-49`; FACTS 75). The rungs, their names and the chart's window move with it, and the
-     chart's summary says where do is ("Do is D3"), in Lesson 4's spelling (FACTS 22). The ladder
-     choice and Move do can change before Start or Start again, and Move do before Again, whose two
-     buttons are the ladder choice there; never during a take.
+     D3 (or D4), each `aria-disabled` at its end, never `disabled`, as Lesson 4's are
+     (`kit/move-do.ts:26-27`, `:51-63`, `:38-49`; FACTS 75), so the keyboard's place stays on it,
+     and a press there neither moves do nor stops what plays. The rungs, their names and the
+     chart's window move with it, and the chart's summary says where do is ("Do is D3"), in Lesson
+     4's spelling (FACTS 22). The ladder choice and Move do can change before Start or Start again,
+     and Move do before Again, whose two buttons are the ladder choice there; never during a take.
    - Start: with sound on, it asks for the microphone (`listen('lesson-09', Sound.context())`,
      `kit/listen.ts:54-57`), then Merc sings the chosen ladder, each slot's band lighting as he
      sings it (Listen), then, at least 0.4 s after his last note ends, the take opens. With sound
@@ -699,10 +700,10 @@ table):
    between Merc and Tavi. It shows no middle note, so it does not answer the cold open's
    predict.
 4. First-paint ceilings for `learn/09.html` in `scripts/assert-first-paint-budgets.mjs`, one in its
-   JavaScript table and one in its stylesheet table, beside Lesson 3's (`:103-151`, `:308-311`).
-   Every build emits every lesson page, and the check fails a document with no ceiling (`:571-575`),
+   JavaScript table and one in its stylesheet table, beside Lesson 3's (`:103-151`, `:314-317`).
+   Every build emits every lesson page, and the check fails a document with no ceiling (`:579-583`),
    so without them the Browser jobs fail before any spec runs, as Lesson 6's did on PR #1149. Each
-   is the page's measured first paint plus about a quarter, the tables' rule (`:47-58`, `:264-274`),
+   is the page's measured first paint plus about a quarter, the tables' rule (`:47-58`, `:270-280`),
    measured in `build:e2e`, where the check runs (`package.json:20`): a build of Lesson 6's page
    alone weighed it about 8 KB lighter. As on Lesson 3, the listener, the pitch detector and Voice
    Mirror's scorer arrive through a dynamic import when Start is pressed
@@ -799,8 +800,9 @@ What the page does where nothing above says:
 - **Octave jumps from the detector**: Voice Mirror's `preprocess` and the slot's median keep a short
   jump from deciding a reading (`readTake`).
 - **Three takes used**: Again is gone and Start does not come back; Done for today remains.
-- **Move do at an end**: that button is disabled, as Lesson 4's is, and the chart's summary says
-  where do is.
+- **Move do at an end**: that button is `aria-disabled`, never `disabled`, as Lesson 4's is, so the
+  keyboard's place stays on it; a press there neither moves do nor stops what plays, and the chart's
+  summary says where do is.
 - **A visitor who types the printed address** (`mercurypitch.com/pitch-training`, without the
   marker) on a first visit meets First Light, whose way out on its first beat is the × labelled
   "Skip the intro"; the page prints no line for it, since its links carry the marker (FACTS 56).
@@ -830,8 +832,9 @@ parts:
 2. Spelling: at every Move do position, for both voices, the rungs equal `majorScale(do)` at degrees
    1, 3, 5 and 8, with no double sign and no E♯, B♯, C♭ or F♭; from D they read D, F♯, A, D; every
    accessible name says "sharp" or "flat" and holds no sign (FACTS 22).
-3. Move do: four each way and no further, each end's button disabled; from each preset's middle
-   half's bottom the full ladder fills that middle half exactly within the four (FACTS 75).
+3. Move do: four each way and no further, each end's button `aria-disabled`, never `disabled`; from
+   each preset's middle half's bottom the full ladder fills that middle half exactly within the four
+   (FACTS 75).
 4. The sounds and drawings: the cold open's three paths are do, re, so; do, mi, so; and do, fa, so
    (FACTS 91); Step 1's ratios read 1.12 and 1.50 (FACTS 30); Step 4's five leaps come in the
    syllabus's order, mi to so, do to mi, do to so, so to the top do and do to the top do, 12.4 s at

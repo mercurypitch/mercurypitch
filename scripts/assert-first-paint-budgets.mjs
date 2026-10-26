@@ -249,7 +249,13 @@ export const FIRST_PAINT_BUDGETS_KB = {
   // calls them; the kit's range fill (a chunk shared with Lessons 1, 3 and
   // 5); and the kit's `allOf`, which joins the runs chunk this page shares
   // with Lesson 7, so Lesson 7 measures 192 bytes more, 135,457.
-  'learn/09.html': 131,
+  // Raised to 143 for Sing it up to its take: 146,278 bytes with it,
+  // against 134,144 at 131, and 12,433 more than without it (133,845 once
+  // the page sat on main's kit). Sing it's card and its flow rule with the
+  // flow's lines; the kit's comfort check, feelings and Wrap's card, which
+  // join the voice choice in the chunk Lessons 3 and 5 to 8 share, so each
+  // of those measures 142 to 149 bytes less; and the warm-up's two plays.
+  'learn/09.html': 143,
 
   // The main app, and the crawlable doors that are the main app. Measured
   // 4669. It is eager by design today, so this is a ceiling on growth rather
@@ -333,8 +339,10 @@ export const FIRST_PAINT_CSS_BUDGETS_KB = {
   'learn/08.html': 116,
   // Lesson 9 (a draft, as above). Measured 83 in build:e2e as the page's
   // shell: the kit's sheets (with the shared parts), its own with the voice
-  // lessons' sheet inlined by an @import (lesson-09.css says why), and the
-  // shared Inter and Outfit @font-face rules; a quarter over.
+  // lessons' sheet inlined by an @import, and the shared Inter and Outfit
+  // @font-face rules; a quarter over. With Sing it the voice lessons' sheet
+  // is main.ts's import again, in the chunk it shares with Lessons 3 and 5
+  // to 8: 87,375 bytes, 434 more.
   'learn/09.html': 104,
 
   // The main app and the crawlable doors that are the main app. Measured

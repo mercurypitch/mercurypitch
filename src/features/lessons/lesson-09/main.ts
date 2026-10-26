@@ -12,9 +12,9 @@
 //
 // The page shell: the switches, the steps' deck with its ladder chart in
 // each step's state, the next lesson's card, the season map, the masthead
-// and Merc and Tavi; the cold open, the four words, the recall and the
-// quick check. Each other toy, and each control, does nothing until it is
-// wired: the steps' sounds, Sing it and free play.
+// and Merc and Tavi; the cold open, the four words, the recall, the steps
+// and their sounds, Sing it up to its take, and the quick check. Sing it's
+// take and free play do nothing until they are wired.
 
 import '@fontsource-variable/inter'
 import '@fontsource-variable/outfit'
@@ -28,8 +28,7 @@ import '@/features/lessons/kit/lesson-stage.css'
 // their heights (MISTAKES.md, on the lessons' base stylesheet)
 import '@/features/lessons/kit/lesson-guide.css'
 import '@/features/lessons/kit/lesson-parts.css'
-// lesson-voice.css comes in by lesson-09.css's @import until Sing it's
-// task brings the modules it shares a chunk with (lesson-09.css says why)
+import '@/features/lessons/kit/lesson-voice.css'
 import './lesson-09.css'
 import { q } from '@/features/lessons/kit/dom'
 import { createExplorer } from '@/features/lessons/kit/explorer'
@@ -45,6 +44,7 @@ import { createStepDeck } from '@/features/lessons/kit/step-deck'
 import { initColdOpen } from './cold-open'
 import { QUIZ_QUESTIONS } from './quiz-questions'
 import { initRecall } from './recall'
+import { initSing } from './sing'
 import { initSteps } from './steps'
 import { initWords } from './words'
 
@@ -69,6 +69,9 @@ createQuiz({
   keys: { seed: 'fyp-l09-seed', record: 'fyp-l09-quiz-v1' },
   deck,
 })
+
+// Sing it: the comfort check, the voice, the ladder and Merc singing it
+initSing()
 
 // the next lesson's card first: the explorer binds its link to the map
 createNextCard(9)
