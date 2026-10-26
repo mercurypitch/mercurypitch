@@ -117,10 +117,10 @@ function validateHeader(
   return view
 }
 
-async function readCanonicalPcm(
+export async function readCanonicalPcmBytes(
   blob: Blob,
   metadata: CanonicalPcmMetadata,
-  options: CanonicalPcmOptions,
+  options: CanonicalPcmOptions = {},
 ): Promise<ArrayBuffer> {
   checkImportCancelled(options.signal)
   const limits = importLimits(options.limits)
@@ -166,7 +166,7 @@ export async function validateCanonicalPcm(
   metadata: CanonicalPcmMetadata,
   options: CanonicalPcmOptions = {},
 ): Promise<void> {
-  await readCanonicalPcm(blob, metadata, options)
+  await readCanonicalPcmBytes(blob, metadata, options)
 }
 
 /** Rebuild derived channel arrays from durable PCM, never a browser codec. */
@@ -175,7 +175,7 @@ export async function decodeCanonicalPcm(
   metadata: CanonicalPcmMetadata,
   options: CanonicalPcmOptions = {},
 ): Promise<PcmAudio> {
-  const bytes = await readCanonicalPcm(blob, metadata, options)
+  const bytes = await readCanonicalPcmBytes(blob, metadata, options)
   const view = new DataView(bytes)
   const channels: Float32Array[] = []
   for (let channel = 0; channel < metadata.channels; channel++) {

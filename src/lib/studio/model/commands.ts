@@ -1,4 +1,7 @@
 // Studio commands — atomic non-destructive edits with monotonic save revisions.
+import type { TrackRole } from '@/lib/studio-fx/role-chains'
+import { isTrackRole } from '@/lib/studio-fx/role-chains'
+import { createStudioTrack } from './defaults'
 import type { StudioAsset, StudioClip, StudioProject, StudioTrack, } from './types'
 import { validateStudioProject } from './validation'
 import { requireValue } from './validation-values'
@@ -13,6 +16,11 @@ export type StudioEdit =
       readonly clip: StudioClip
     }
   | { readonly type: 'remove-track'; readonly trackId: string }
+  | {
+      readonly type: 'set-track-role'
+      readonly trackId: string
+      readonly role: TrackRole
+    }
   | {
       readonly type: 'update-track'
       readonly trackId: string
@@ -213,6 +221,33 @@ function applyEdit(project: StudioProject, edit: StudioEdit): StudioProject {
         tracks: project.tracks.filter((track) => track.id !== edit.trackId),
         clips: project.clips.filter((clip) => clip.trackId !== edit.trackId),
       }
+    case 'set-track-role': {
+      const target = getTrack(project, edit.trackId)
+      requireValue(
+        isTrackRole(edit.role),
+        `track.${target.id}.role`,
+        'Unsupported track role',
+      )
+      if (target.role === edit.role) return project
+      const resolved = createStudioTrack({
+        id: target.id,
+        name: target.name,
+        order: target.order,
+        role: edit.role,
+      })
+      const next = {
+        ...target,
+        role: resolved.role,
+        balanceGainDb: resolved.balanceGainDb,
+        fx: resolved.fx,
+      }
+      return {
+        ...project,
+        tracks: project.tracks.map((track) =>
+          track.id === target.id ? next : track,
+        ),
+      }
+    }
     case 'update-track': {
       const target = getTrack(project, edit.trackId)
       return {

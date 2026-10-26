@@ -5,12 +5,12 @@
 import type { DexieAdapter } from '@/db/adapters/dexie-adapter'
 import { getLocalDatabase } from '@/db/local-database'
 import { CANONICAL_PCM_MIME } from '@/lib/studio/audio/canonical-pcm'
-import { validatePreparedStudioAsset } from '@/lib/studio/audio/prepare-studio-asset'
 import { createStudioProject, summarizeStudioProject, } from '@/lib/studio/model/defaults'
 import { fitsStudioProjectStorageBudget } from '@/lib/studio/model/storage-limits'
 import type { StudioAsset, StudioAssetData, StudioProject, StudioProjectSummary, } from '@/lib/studio/model/types'
 import { validateStudioAsset, validateStudioProject, } from '@/lib/studio/model/validation'
 import { acquireStudioEditor, releaseStudioEditor, renewStudioEditor, requireStudioEditor, } from './studio-editor-lease'
+import { withPreparedStudioRecords } from './studio-record-preparation'
 import type { PreparedStudioRecords, StudioAssetRecord, StudioBlobRecord, } from './studio-records'
 import type { StudioEditorLease, StudioEditorToken, StudioWriteToken, } from './studio-storage-types'
 import { STUDIO_STORES, StudioStorageError, studioStorageOperation, } from './studio-storage-types'
@@ -28,6 +28,7 @@ export interface StudioService {
   loadProject(id: string): Promise<StudioProject>
   listAssets(projectId: string): Promise<StudioAsset[]>
   readAssetBytes(projectId: string, assetId: string): Promise<StudioAssetData>
+  readCanonicalAsset(projectId: string, assetId: string): Promise<Blob>
   acquireLease(
     projectId: string,
     ownerId: string,
@@ -105,59 +106,6 @@ function assertStorageBudget(assets: readonly StudioAsset[]): void {
       'A project can hold up to 128 audio assets and 480 MiB of original and prepared audio. No changes were saved. Start another project to add more audio.',
     )
   }
-}
-
-async function prepareRecords(
-  project: StudioProject,
-  inputs: readonly StudioAssetData[],
-  now: string,
-): Promise<PreparedStudioRecords[]> {
-  const result: PreparedStudioRecords[] = []
-  const ids = new Set<string>()
-  for (const input of inputs) {
-    try {
-      const asset = validateStudioAsset(structuredClone(input.asset))
-      if (asset.projectId !== project.id || ids.has(asset.id))
-        throw new Error('Asset ownership or identity mismatch')
-      ids.add(asset.id)
-      await validatePreparedStudioAsset({ ...input, asset })
-      const base = {
-        projectId: project.id,
-        assetId: asset.id,
-        createdAt: now,
-        updatedAt: now,
-      }
-      result.push({
-        metadata: {
-          id: asset.id,
-          projectId: project.id,
-          sha256: asset.sha256,
-          asset,
-          createdAt: now,
-          updatedAt: now,
-        },
-        original: {
-          ...base,
-          id: `${asset.id}-original`,
-          kind: 'original',
-          data: await input.original.arrayBuffer(),
-        },
-        canonical: {
-          ...base,
-          id: asset.canonicalPcmId,
-          kind: 'canonical',
-          data: await input.canonicalPcm.arrayBuffer(),
-        },
-      })
-    } catch (cause) {
-      throw new StudioStorageError(
-        'invalid-asset',
-        'The selected audio is incomplete or does not match its metadata.',
-        cause,
-      )
-    }
-  }
-  return result
 }
 
 async function insertRecords(
@@ -250,18 +198,24 @@ export function createStudioService(
       assets.map((value) => value.asset),
     )
     assertStorageBudget(assets.map((value) => value.asset))
-    const records = await prepareRecords(snapshot, assets, now().toISOString())
-    const db = database()
-    await db.transaction(async () => {
-      assertStorageBudget(records.map((record) => record.metadata.asset))
-      await insertRecords(db, records)
-      await db.addStrict(STUDIO_STORES.projects, snapshot)
-      await db.addStrict(
-        STUDIO_STORES.summaries,
-        summarizeStudioProject(snapshot),
-      )
-    })
-    return snapshot
+    return withPreparedStudioRecords(
+      snapshot,
+      assets,
+      now().toISOString(),
+      async (records) => {
+        const db = database()
+        await db.transaction(async () => {
+          assertStorageBudget(records.map((record) => record.metadata.asset))
+          await insertRecords(db, records)
+          await db.addStrict(STUDIO_STORES.projects, snapshot)
+          await db.addStrict(
+            STUDIO_STORES.summaries,
+            summarizeStudioProject(snapshot),
+          )
+        })
+        return snapshot
+      },
+    )
   }
   const restoreProject = async (
     project: StudioProject,
@@ -334,6 +288,39 @@ export function createStudioService(
       studioStorageOperation(() =>
         database().transaction(() => readAsset(projectId, assetId)),
       ),
+    readCanonicalAsset: (projectId, assetId) =>
+      studioStorageOperation(() =>
+        database().transaction(async () => {
+          const db = database()
+          const metadata = await db.readByIdStrict<StudioAssetRecord>(
+            STUDIO_STORES.assets,
+            assetId,
+          )
+          if (!metadata || metadata.projectId !== projectId)
+            throw new StudioStorageError(
+              'not-found',
+              'This project audio is missing.',
+            )
+          const asset = assetMetadata(metadata, projectId)
+          const row = await db.readByIdStrict<StudioBlobRecord>(
+            STUDIO_STORES.blobs,
+            asset.canonicalPcmId,
+          )
+          if (
+            !row ||
+            row.projectId !== projectId ||
+            row.assetId !== assetId ||
+            row.kind !== 'canonical' ||
+            row.data.byteLength !== asset.canonicalPcmByteLength
+          ) {
+            throw new StudioStorageError(
+              'invalid-asset',
+              'This project audio is incomplete.',
+            )
+          }
+          return new Blob([row.data], { type: CANONICAL_PCM_MIME })
+        }),
+      ),
     acquireLease: (id, ownerId, options = {}) =>
       studioStorageOperation(() =>
         acquireStudioEditor(database(), id, ownerId, now, options.takeover),
@@ -363,38 +350,40 @@ export function createStudioService(
           ...(await listAssets(snapshot.id)),
           ...assets.map((input) => input.asset),
         ])
-        const records = await prepareRecords(
+        return withPreparedStudioRecords(
           snapshot,
           assets,
           now().toISOString(),
+          async (records) => {
+            const db = database()
+            await db.transaction(async () => {
+              await requireStudioEditor(db, snapshot.id, token, now().getTime())
+              const current = await readProject(snapshot.id)
+              if (
+                current.revision !== token.expectedRevision ||
+                current.createdAt !== snapshot.createdAt
+              ) {
+                throw new StudioStorageError(
+                  'conflict',
+                  'A newer project revision is already saved. Reload or make a copy.',
+                )
+              }
+              const metadata = [
+                ...(await listAssets(snapshot.id)),
+                ...records.map((record) => record.metadata.asset),
+              ]
+              projectSnapshot(snapshot, metadata)
+              assertStorageBudget(metadata)
+              await insertRecords(db, records)
+              await db.putStrict(STUDIO_STORES.projects, snapshot)
+              await db.putStrict(
+                STUDIO_STORES.summaries,
+                summarizeStudioProject(snapshot),
+              )
+            })
+            return snapshot
+          },
         )
-        const db = database()
-        await db.transaction(async () => {
-          await requireStudioEditor(db, snapshot.id, token, now().getTime())
-          const current = await readProject(snapshot.id)
-          if (
-            current.revision !== token.expectedRevision ||
-            current.createdAt !== snapshot.createdAt
-          ) {
-            throw new StudioStorageError(
-              'conflict',
-              'A newer project revision is already saved. Reload or make a copy.',
-            )
-          }
-          const metadata = [
-            ...(await listAssets(snapshot.id)),
-            ...records.map((record) => record.metadata.asset),
-          ]
-          projectSnapshot(snapshot, metadata)
-          assertStorageBudget(metadata)
-          await insertRecords(db, records)
-          await db.putStrict(STUDIO_STORES.projects, snapshot)
-          await db.putStrict(
-            STUDIO_STORES.summaries,
-            summarizeStudioProject(snapshot),
-          )
-        })
-        return snapshot
       }),
     restoreProject: (project, assets) =>
       studioStorageOperation(() => restoreProject(project, assets)),

@@ -2,6 +2,7 @@
 // Studio asset preparation — one selected source, decoded once, owned immutably
 // ============================================================
 
+import { reserveStudioMemory } from '@/lib/studio/memory-budget'
 import type { StudioAsset, StudioAssetData } from '@/lib/studio/model/types'
 import { validateStudioAsset } from '@/lib/studio/model/validation'
 import { CANONICAL_PCM_HEADER_BYTES, encodeCanonicalPcm, sha256Bytes, validateCanonicalPcm, } from './canonical-pcm'
@@ -26,6 +27,8 @@ export interface PrepareStudioAssetOptions {
   limits?: Partial<StudioImportLimits>
   /** Owned offline decoder only. Studio never resumes or closes a host context. */
   createDecodeContext?: () => StudioDecodeContext
+  /** Known kept-source size permits admission before reading its stored payload. */
+  encodedByteLength?: number
 }
 
 let activePreparation = false
@@ -63,6 +66,26 @@ function validateEncodedSize(blob: Blob, limits: StudioImportLimits): void {
   }
 }
 
+function reservePreparation(
+  encodedBytes: number,
+  options: PrepareStudioAssetOptions,
+): () => void {
+  const limits = importLimits(options.limits)
+  if (
+    !Number.isSafeInteger(encodedBytes) ||
+    encodedBytes <= 0 ||
+    encodedBytes > limits.maxEncodedBytes
+  )
+    throw new Error('This audio is empty or too large. Choose a smaller file.')
+  // Read copies, the maximum supported stereo decode, canonical/hash copies and
+  // rolling analysis. Browser-private codec scratch memory cannot be bounded here.
+  const maximumPcmBytes = limits.maxFrames * 2 * 4 + CANONICAL_PCM_HEADER_BYTES
+  const bytes =
+    encodedBytes * 2 + maximumPcmBytes * 3 + PREPARATION_ANALYSIS_BYTES
+  admitWorkingBytes(bytes, limits)
+  return reserveStudioMemory(bytes)
+}
+
 async function prepareSelectedBlob(
   blob: Blob,
   info: StudioAssetInfo,
@@ -71,14 +94,6 @@ async function prepareSelectedBlob(
   checkImportCancelled(options.signal)
   const limits = importLimits(options.limits)
   validateEncodedSize(blob, limits)
-  // Source/read copies + admitted stereo decoded PCM + canonical/hash copies.
-  // This reserves the maximum supported decoded size before invoking the
-  // browser codec, whose private scratch allocation cannot be controlled here.
-  const maximumPcmBytes = limits.maxFrames * 2 * 4 + CANONICAL_PCM_HEADER_BYTES
-  admitWorkingBytes(
-    blob.size * 2 + maximumPcmBytes * 3 + PREPARATION_ANALYSIS_BYTES,
-    limits,
-  )
   const bytes = await blob.arrayBuffer()
   checkImportCancelled(options.signal)
   const sha256 = await sha256Bytes(bytes)
@@ -135,9 +150,14 @@ export async function prepareStudioAsset(
   info: StudioAssetInfo,
   options: PrepareStudioAssetOptions = {},
 ): Promise<StudioAssetData> {
-  return withPreparation(options.signal, () =>
-    prepareSelectedBlob(blob, info, options),
-  )
+  return withPreparation(options.signal, async () => {
+    const release = reservePreparation(blob.size, options)
+    try {
+      return await prepareSelectedBlob(blob, info, options)
+    } finally {
+      release()
+    }
+  })
 }
 
 /** Acquire admission before a selected kept take's DB payload is read. */
@@ -147,9 +167,20 @@ export async function prepareStudioAssetFrom(
   options: PrepareStudioAssetOptions = {},
 ): Promise<StudioAssetData> {
   return withPreparation(options.signal, async () => {
-    const blob = await readBlob()
-    checkImportCancelled(options.signal)
-    return prepareSelectedBlob(blob, info, options)
+    const admittedSize =
+      options.encodedByteLength ?? importLimits(options.limits).maxEncodedBytes
+    const release = reservePreparation(admittedSize, options)
+    try {
+      const blob = await readBlob()
+      checkImportCancelled(options.signal)
+      if (blob.size > admittedSize)
+        throw new Error(
+          'This audio changed since it was selected. Choose it again.',
+        )
+      return await prepareSelectedBlob(blob, info, options)
+    } finally {
+      release()
+    }
   })
 }
 

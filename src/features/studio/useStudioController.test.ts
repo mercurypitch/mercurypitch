@@ -3,12 +3,27 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 import { StudioStorageError } from '@/db/services/studio-service'
 import { isLocalSaveNavigationLocked } from '@/lib/local-save-navigation-lock'
 import type { StudioAssetInfo } from '@/lib/studio/audio/prepare-studio-asset'
+import { studioReservedMemoryBytes } from '@/lib/studio/memory-budget'
+import { createStudioProject } from '@/lib/studio/model/defaults'
 import type { StudioAssetData, StudioProject } from '@/lib/studio/model/types'
 import { controllerServiceFixture, preparedFixture, } from './controller/controller.fixture'
+import type { StudioSourceEntry } from './integration/source-catalog'
 import type { StudioController, StudioControllerOptions, } from './useStudioController'
 import { useStudioController } from './useStudioController'
 
 const cleanups: (() => void)[] = []
+const source = (id: string): StudioSourceEntry => ({
+  id,
+  source: 'freeform',
+  title: `Take ${id}`,
+  sourceLabel: 'Hear Yourself',
+  audioDescription: 'Kept microphone audio.',
+  suggestedRole: 'voice',
+  durationMs: 100,
+  sizeBytes: 3,
+  capturedAt: '2026-10-26T10:00:00.000Z',
+  mimeType: 'audio/wav',
+})
 afterEach(() => {
   for (const cleanup of cleanups.splice(0)) cleanup()
   vi.useRealTimers()
@@ -33,6 +48,186 @@ function mount(options: StudioControllerOptions = {}): {
 }
 
 describe('Studio controller', () => {
+  it('adds selected takes together at the captured playhead and retains their audio through undo and redo during save', async () => {
+    let finishSave!: (project: StudioProject) => void
+    let finishFirst!: (data: StudioAssetData) => void
+    const infos: StudioAssetInfo[] = []
+    const prepareTake = vi.fn(
+      (
+        entry: StudioSourceEntry,
+        info: { id: string; projectId: string; importedAt: string },
+      ) => {
+        const assetInfo: StudioAssetInfo = {
+          id: info.id,
+          projectId: info.projectId,
+          provenance: {
+            kind: entry.source,
+            sourceId: entry.id,
+            importedAt: info.importedAt,
+          },
+        }
+        infos.push(assetInfo)
+        if (infos.length === 1)
+          return new Promise<StudioAssetData>((resolve) => {
+            finishFirst = resolve
+          })
+        const data = preparedFixture(assetInfo)
+        return Promise.resolve({
+          ...data,
+          asset: { ...data.asset, sha256: 'c'.repeat(64) },
+        })
+      },
+    )
+    const { controller, service } = mount({ prepareTake })
+    await controller.open('one')
+    const baseline = studioReservedMemoryBytes()
+    vi.mocked(service.saveProject).mockImplementationOnce(
+      () =>
+        new Promise((resolve) => {
+          finishSave = resolve
+        }),
+    )
+    let playhead = 24000
+    const pending = controller.addTakes([source('a'), source('b')], playhead)
+    playhead = 96000
+    expect(prepareTake).toHaveBeenCalledTimes(1)
+    expect(service.saveProject).not.toHaveBeenCalled()
+    finishFirst(preparedFixture(infos[0]))
+    await vi.waitFor(() => {
+      expect(controller.problem()).toBeNull()
+      expect(service.saveProject).toHaveBeenCalledTimes(1)
+    })
+    const imported = controller.project()!
+    expect(imported.revision).toBe(1)
+    expect(imported.clips.map((clip) => clip.startFrame)).toEqual([
+      24000, 24000,
+    ])
+    expect(imported.clips[0].startFrame).not.toBe(playhead)
+    expect(imported.tracks.map((track) => track.order)).toEqual([0, 1])
+    expect(controller.undoLabel()).toBe('Undo add takes')
+    expect(controller.canUndo()).toBe(true)
+    expect(studioReservedMemoryBytes()).toBe(baseline + 86)
+    await expect(
+      controller.readCanonicalAsset(imported.clips[0].assetId),
+    ).resolves.toBeInstanceOf(Blob)
+    expect(service.readCanonicalAsset).not.toHaveBeenCalled()
+    expect(controller.undo()).toBe(true)
+    expect(controller.project()?.clips).toEqual([])
+    expect(controller.project()?.revision).toBe(2)
+    expect(controller.canRedo()).toBe(true)
+    expect(controller.redoLabel()).toBe('Redo add takes')
+    expect(controller.redo()).toBe(true)
+    expect(controller.project()?.clips).toEqual(imported.clips)
+    expect(controller.project()?.revision).toBe(3)
+    expect(controller.assets()).toHaveLength(2)
+    expect(service.saveProject).toHaveBeenCalledTimes(1)
+    finishSave(imported)
+    expect(await pending).toBe(true)
+    await vi.waitFor(() => expect(controller.saveState()).toBe('saved'))
+    expect(service.saveProject).toHaveBeenLastCalledWith(
+      expect.objectContaining({ revision: 3, clips: imported.clips }),
+      expect.objectContaining({ expectedRevision: 1 }),
+      [],
+    )
+    expect(studioReservedMemoryBytes()).toBe(baseline)
+  })
+
+  it('discards the entire selected batch and releases its admitted audio when a later take fails', async () => {
+    const baseline = studioReservedMemoryBytes()
+    const prepareTake = vi.fn(
+      async (
+        entry: StudioSourceEntry,
+        info: { id: string; projectId: string; importedAt: string },
+      ) => {
+        if (entry.id === 'b') {
+          expect(studioReservedMemoryBytes()).toBe(baseline + 43)
+          throw new Error('Unreadable take')
+        }
+        return preparedFixture({
+          id: info.id,
+          projectId: info.projectId,
+          provenance: { kind: entry.source, importedAt: info.importedAt },
+        })
+      },
+    )
+    const { controller, service } = mount({ prepareTake })
+    await controller.open('one')
+    expect(await controller.addTakes([source('a'), source('b')], 48000)).toBe(
+      false,
+    )
+    expect(controller.problem()).toContain('Unreadable take')
+    expect(controller.project()?.revision).toBe(0)
+    expect(controller.project()?.clips).toEqual([])
+    expect(controller.assets()).toEqual([])
+    expect(controller.canUndo()).toBe(false)
+    expect(service.saveProject).not.toHaveBeenCalled()
+    expect(studioReservedMemoryBytes()).toBe(baseline)
+  })
+
+  it('invalidates redo after a new edit and clears session history when switching projects', async () => {
+    const { controller } = mount()
+    await controller.open('one')
+    controller.rename('First')
+    controller.rename('Second')
+    controller.undo()
+    expect(controller.project()?.title).toBe('First')
+    expect(controller.canRedo()).toBe(true)
+    controller.rename('Third')
+    expect(controller.canRedo()).toBe(false)
+    expect(controller.redoLabel()).toBe('Redo')
+    await vi.waitFor(() => expect(controller.saveState()).toBe('saved'))
+    await controller.open('two')
+    expect(controller.canUndo()).toBe(false)
+    expect(controller.undoLabel()).toBe('Undo')
+  })
+
+  it('reads only explicitly selected audio and rejects results from the previous project', async () => {
+    const service = controllerServiceFixture()
+    const data = preparedFixture({
+      id: 'owned',
+      projectId: 'one',
+      provenance: { kind: 'file', importedAt: '2026-10-26T10:00:00.000Z' },
+    })
+    vi.mocked(service.listAssets).mockResolvedValueOnce([data.asset])
+    let finishPcm!: (blob: Blob) => void
+    let finishPreview!: (blob: Blob) => void
+    vi.mocked(service.readCanonicalAsset).mockImplementationOnce(
+      () =>
+        new Promise((resolve) => {
+          finishPcm = resolve
+        }),
+    )
+    const readSource = vi.fn(
+      () =>
+        new Promise<Blob>((resolve) => {
+          finishPreview = resolve
+        }),
+    )
+    const { controller } = mount({
+      service,
+      listSources: async () => [source('a'), source('b')],
+      readSource,
+    })
+    await controller.open('one')
+    await controller.refreshSources()
+    expect(readSource).not.toHaveBeenCalled()
+    expect(service.readCanonicalAsset).not.toHaveBeenCalled()
+    const pcm = controller.readCanonicalAsset('owned')
+    const preview = controller.readSourcePreview(source('b'))
+    expect(service.readCanonicalAsset).toHaveBeenCalledWith('one', 'owned')
+    expect(readSource).toHaveBeenCalledWith(source('b'), { signal: undefined })
+    await controller.open('two')
+    finishPcm(data.canonicalPcm)
+    finishPreview(data.original)
+    await expect(pcm).rejects.toMatchObject({ name: 'AbortError' })
+    await expect(preview).rejects.toMatchObject({ name: 'AbortError' })
+    const abort = new AbortController()
+    abort.abort()
+    await expect(
+      controller.readSourcePreview(source('a'), { signal: abort.signal }),
+    ).rejects.toMatchObject({ name: 'AbortError' })
+    expect(readSource).toHaveBeenCalledTimes(1)
+  })
   it('accepts an unchanged title without saving or reporting an error', async () => {
     const { controller, service } = mount()
     await controller.open('one')
@@ -78,7 +273,7 @@ describe('Studio controller', () => {
     vi.mocked(service.createProject).mockRejectedValueOnce(
       new Error('Storage unavailable'),
     )
-    await controller.create('New song')
+    expect(await controller.create('New song')).toBe(false)
     expect(controller.busy()).toBe(false)
     expect(controller.problem()).toContain('Storage unavailable')
     vi.mocked(service.loadProject).mockRejectedValueOnce(
@@ -93,6 +288,26 @@ describe('Studio controller', () => {
     await controller.open('two')
     expect(controller.project()?.id).toBe('two')
     expect(controller.writable()).toBe(true)
+    expect(await controller.create('New song')).toBe(true)
+    expect(controller.project()?.id).toBe('new')
+  })
+
+  it('reports successful restore only after its fresh project opens and retains failure recovery', async () => {
+    const restoreBackup = vi.fn(
+      async (
+        _blob: Blob,
+        service: ReturnType<typeof controllerServiceFixture>,
+      ) => service.restoreProject(createStudioProject({ id: 'imported' }), []),
+    )
+    const { controller } = mount({ restoreBackup })
+    await controller.open('one')
+    restoreBackup.mockRejectedValueOnce(new Error('Damaged backup'))
+    expect(await controller.restore(new Blob(['bad']))).toBe(false)
+    expect(controller.project()?.id).toBe('one')
+    expect(controller.busy()).toBe(false)
+    expect(await controller.restore(new Blob(['good']))).toBe(true)
+    expect(controller.project()?.id).toBe('restored')
+    expect(controller.problem()).toBeNull()
   })
 
   it('serializes an edit made during save without reporting the older revision as saved', async () => {

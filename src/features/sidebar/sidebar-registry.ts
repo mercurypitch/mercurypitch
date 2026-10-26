@@ -116,7 +116,7 @@ export const SIDEBAR_LAYOUT: Record<ActiveTab, readonly SidebarPanelId[]> = {
   [TAB_LEADERBOARD]: ['mic'],
   [TAB_CHALLENGES]: ['mic', 'activity'],
   [TAB_COMPOSE]: ['library', 'playback-setup', 'mic', 'note-list'],
-  [TAB_STUDIO_NIGHT]: ['mic'],
+  [TAB_STUDIO_NIGHT]: [],
   [TAB_ANALYSIS]: ['mic', 'display'],
   [TAB_SETTINGS]: ['mic'],
   [TAB_PITCH_TEST]: DEV_SURFACE_LAYOUT,

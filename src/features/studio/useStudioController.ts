@@ -2,21 +2,21 @@
 import { createSignal, onCleanup, onMount, untrack } from 'solid-js'
 import type { StudioEditorLease, StudioService, } from '@/db/services/studio-service'
 import { createStudioService, StudioStorageError, } from '@/db/services/studio-service'
-import { audioUploadValidationError } from '@/lib/audio-upload-contract'
 import { useLocalSaveNavigationLock } from '@/lib/local-save-navigation-lock'
-import { DEFAULT_STUDIO_IMPORT_LIMITS } from '@/lib/studio/audio/import-limits'
-import { prepareStudioAsset } from '@/lib/studio/audio/prepare-studio-asset'
+import { checkImportCancelled, DEFAULT_STUDIO_IMPORT_LIMITS, } from '@/lib/studio/audio/import-limits'
+import type { prepareStudioAsset } from '@/lib/studio/audio/prepare-studio-asset'
+import { reserveStudioMemory } from '@/lib/studio/memory-budget'
 import type { StudioCommand } from '@/lib/studio/model/commands'
-import { applyStudioCommand } from '@/lib/studio/model/commands'
-import { createStudioTrack } from '@/lib/studio/model/defaults'
-import { fitsStudioProjectStorageBudget } from '@/lib/studio/model/storage-limits'
 import type { StudioAsset, StudioAssetData, StudioProject, StudioProjectSummary, } from '@/lib/studio/model/types'
 import { createStudioBackup, restoreStudioBackup } from './backup/studio-backup'
+import type { StudioEditHistory } from './controller/edit-history'
+import { createStudioEditHistory, executeStudioEdit, travelStudioHistory, } from './controller/edit-history'
+import { createStudioImporter } from './controller/imports'
 import type { StudioSaveQueue, StudioSaveState } from './controller/save-queue'
 import { createStudioSaveQueue } from './controller/save-queue'
-import { prepareStudioSource } from './integration/prepare-source'
+import type { prepareStudioSource } from './integration/prepare-source'
 import type { StudioSourceEntry } from './integration/source-catalog'
-import { listStudioSources } from './integration/source-catalog'
+import { listStudioSources, readStudioSourceBlob, } from './integration/source-catalog'
 
 export interface StudioControllerOptions {
   service?: StudioService
@@ -27,6 +27,7 @@ export interface StudioControllerOptions {
   prepareTake?: typeof prepareStudioSource
   createBackup?: typeof createStudioBackup
   restoreBackup?: typeof restoreStudioBackup
+  readSource?: typeof readStudioSourceBlob
 }
 
 function message(error: unknown): string {
@@ -60,18 +61,38 @@ export function useStudioController(options: StudioControllerOptions = {}) {
   const [writable, setWritable] = createSignal(false)
   const [problem, setProblem] = createSignal<string | null>(null)
   const [disposed, setDisposed] = createSignal(false)
+  const [editHistory, setEditHistory] = createSignal<StudioEditHistory | null>(
+    null,
+  )
   let generation = 0
   let sourceGeneration = 0
   let listGeneration = 0
   let queue: StudioSaveQueue | null = null
   let lease: StudioEditorLease | null = null
-  let importAbort: AbortController | null = null
   let operationAbort: AbortController | null = null
   let renewingGeneration: number | null = null
   const busy = () =>
     loading() || working() || importing() || saveState() === 'saving'
   const hasUnsavedChanges = () =>
     !!project() && !!queue && project()!.revision > queue.durableRevision()
+  const canUndo = () =>
+    writable() &&
+    !loading() &&
+    !working() &&
+    (editHistory()?.state.past.length ?? 0) > 0
+  const canRedo = () =>
+    writable() &&
+    !loading() &&
+    !working() &&
+    (editHistory()?.state.future.length ?? 0) > 0
+  const undoLabel = () => {
+    const label = editHistory()?.pastLabels.at(-1)
+    return label === undefined ? 'Undo' : `Undo ${label}`
+  }
+  const redoLabel = () => {
+    const label = editHistory()?.futureLabels[0]
+    return label === undefined ? 'Redo' : `Redo ${label}`
+  }
   useLocalSaveNavigationLock(
     () =>
       !disposed() &&
@@ -83,11 +104,22 @@ export function useStudioController(options: StudioControllerOptions = {}) {
     untrack(() => !disposed() && generation === epoch)
   const report = (error: unknown) => setProblem(message(error))
 
-  function cancelImport(): void {
-    importAbort?.abort()
-    importAbort = null
-    setImporting(false)
-  }
+  const { addFile, addTake, addTakes, cancelImport } = createStudioImporter({
+    project,
+    assets,
+    epoch: () => generation,
+    current,
+    canEdit,
+    setImporting,
+    clearProblem: () => setProblem(null),
+    report,
+    commit,
+    flush: () => queue?.flush(),
+    createId,
+    now,
+    prepareFile: options.prepareFile,
+    prepareTake: options.prepareTake,
+  })
 
   function expireEditor(): void {
     setWritable(false)
@@ -156,6 +188,7 @@ export function useStudioController(options: StudioControllerOptions = {}) {
     operationAbort = null
     queue?.dispose()
     queue = null
+    setEditHistory(null)
     const previous = lease
     lease = null
     setWritable(false)
@@ -236,7 +269,9 @@ export function useStudioController(options: StudioControllerOptions = {}) {
         if (acquired) await service.releaseLease(id, acquired)
         return
       }
-      setProject(snapshot)
+      const history = createStudioEditHistory(snapshot)
+      setEditHistory(history)
+      setProject(history.state.present)
       setAssets(metadata)
       lease = acquired
       if (acquired && acquired.expiresAt > now().getTime()) {
@@ -256,17 +291,18 @@ export function useStudioController(options: StudioControllerOptions = {}) {
     command: StudioCommand,
     prepared: readonly StudioAssetData[] = [],
   ): boolean {
-    const snapshot = project()
-    if (!canEdit() || !queue || snapshot === null) return false
+    const history = editHistory()
+    if (!canEdit() || !queue || history === null) return false
     try {
       const metadata = [...assets(), ...prepared.map((data) => data.asset)]
-      const next = applyStudioCommand(snapshot, command, {
+      const next = executeStudioEdit(history, command, {
         assets: metadata,
         now: now(),
       })
-      if (next === snapshot) return true
-      queue.stage(next, prepared)
-      setProject(next)
+      if (next === history) return true
+      queue.stage(next.state.present, prepared)
+      setEditHistory(next)
+      setProject(next.state.present)
       setAssets(metadata)
       void queue.flush()
       return true
@@ -276,123 +312,70 @@ export function useStudioController(options: StudioControllerOptions = {}) {
     }
   }
 
-  async function importAudio(
-    title: string,
-    role: StudioSourceEntry['suggestedRole'],
-    prepare: (
-      id: string,
-      projectId: string,
-      signal: AbortSignal,
-    ) => Promise<StudioAssetData>,
-  ): Promise<void> {
-    if (!canEdit() || importing()) return
-    const epoch = generation
-    const snapshot = project()!
-    const abort = new AbortController()
-    importAbort = abort
-    setImporting(true)
-    setProblem(null)
+  function historyAction(direction: 'undo' | 'redo'): boolean {
+    const history = editHistory()
+    if (!canEdit() || !queue || history === null) return false
     try {
-      const data = await prepare(createId(), snapshot.id, abort.signal)
-      if (
-        !current(epoch) ||
-        abort.signal.aborted ||
-        importAbort !== abort ||
-        !canEdit()
-      )
-        return
-      const existing = assets().find(
-        (asset) =>
-          asset.sha256 === data.asset.sha256 &&
-          asset.canonicalPcmSha256 === data.asset.canonicalPcmSha256 &&
-          asset.preparation.algorithmVersion ===
-            data.asset.preparation.algorithmVersion,
-      )
-      const asset = existing ?? data.asset
-      if (!existing && !fitsStudioProjectStorageBudget([...assets(), asset])) {
-        throw new Error(
-          'This project has reached its local audio limit. Add this take to another project.',
-        )
-      }
-      const laneId = createId()
-      const track = createStudioTrack({
-        id: laneId,
-        name: title,
-        order: project()!.tracks.length,
-        role,
+      const next = travelStudioHistory(history, direction, {
+        assets: assets(),
+        now: now(),
       })
-      commit(
-        {
-          type: 'add-audio',
-          track,
-          clip: {
-            id: createId(),
-            trackId: laneId,
-            assetId: asset.id,
-            startFrame: 0,
-            sourceInFrame: 0,
-            sourceOutFrame: asset.normalizedFrameCount,
-            gainDb: 0,
-            fades: { curve: 'linear-amplitude' },
-          },
-        },
-        existing ? [] : [data],
-      )
-      await queue?.flush()
+      if (next === history) return true
+      queue.stage(next.state.present)
+      setEditHistory(next)
+      setProject(next.state.present)
+      void queue.flush()
+      return true
     } catch (error) {
-      if (current(epoch) && !abort.signal.aborted) report(error)
+      report(error)
+      return false
+    }
+  }
+
+  async function readCanonicalAsset(assetId: string): Promise<Blob> {
+    const snapshot = project()
+    const epoch = generation
+    if (snapshot === null || !assets().some((asset) => asset.id === assetId))
+      throw new Error('This project audio is missing.')
+    const staged = queue
+      ?.preparedAssets()
+      .find((data) => data.asset.id === assetId)
+    const blob =
+      staged?.canonicalPcm ??
+      (await service.readCanonicalAsset(snapshot.id, assetId))
+    if (!current(epoch))
+      throw new DOMException('The project changed.', 'AbortError')
+    return blob
+  }
+
+  async function readSourcePreview(
+    entry: StudioSourceEntry,
+    previewOptions: { signal?: AbortSignal } = {},
+  ): Promise<Blob> {
+    const epoch = generation
+    checkImportCancelled(previewOptions.signal)
+    if (
+      !Number.isSafeInteger(entry.sizeBytes) ||
+      entry.sizeBytes <= 0 ||
+      entry.sizeBytes > DEFAULT_STUDIO_IMPORT_LIMITS.maxEncodedBytes
+    )
+      throw new Error('This take is too large to preview here.')
+    const release = reserveStudioMemory(entry.sizeBytes * 2)
+    try {
+      const blob = await (options.readSource ?? readStudioSourceBlob)(entry, {
+        signal: previewOptions.signal,
+      })
+      checkImportCancelled(previewOptions.signal)
+      if (!current(epoch))
+        throw new DOMException('The project changed.', 'AbortError')
+      return blob
     } finally {
-      if (importAbort === abort) {
-        importAbort = null
-        setImporting(false)
-      }
+      release()
     }
   }
 
-  async function addFile(file: File): Promise<void> {
-    const error = audioUploadValidationError(
-      file,
-      DEFAULT_STUDIO_IMPORT_LIMITS.maxEncodedBytes,
-      undefined,
-      'Studio import',
-    )
-    if (error !== null) {
-      setProblem(error)
-      return
-    }
-    const title = file.name.replace(/\.[^.]+$/, '').trim() || 'Audio'
-    const importedAt = now().toISOString()
-    await importAudio(title, 'other', (id, projectId, signal) =>
-      (options.prepareFile ?? prepareStudioAsset)(
-        file,
-        {
-          id,
-          projectId,
-          originalName: file.name,
-          provenance: { kind: 'file', importedAt },
-        },
-        { signal },
-      ),
-    )
-  }
-
-  async function addTake(entry: StudioSourceEntry): Promise<void> {
-    const selected = { ...entry }
-    const importedAt = now().toISOString()
-    await importAudio(
-      selected.title,
-      selected.suggestedRole,
-      (id, projectId, signal) =>
-        (options.prepareTake ?? prepareStudioSource)(
-          selected,
-          { id, projectId, importedAt },
-          { signal },
-        ),
-    )
-  }
-
-  async function create(title?: string): Promise<void> {
-    if (!canSwitch()) return
+  async function create(title?: string): Promise<boolean> {
+    if (!canSwitch()) return false
     const epoch = generation
     const trimmedTitle = title?.trim()
     setWorking(true)
@@ -405,9 +388,12 @@ export function useStudioController(options: StudioControllerOptions = {}) {
         setWorking(false)
         await openProject(created.id, true)
         await refreshProjects()
+        return project()?.id === created.id && !disposed()
       }
+      return false
     } catch (error) {
       if (current(epoch)) report(error)
+      return false
     } finally {
       if (current(epoch)) setWorking(false)
     }
@@ -480,8 +466,8 @@ export function useStudioController(options: StudioControllerOptions = {}) {
     }
   }
 
-  async function restore(blob: Blob): Promise<void> {
-    if (!canSwitch()) return
+  async function restore(blob: Blob): Promise<boolean> {
+    if (!canSwitch()) return false
     const epoch = generation
     const abort = new AbortController()
     operationAbort = abort
@@ -497,9 +483,12 @@ export function useStudioController(options: StudioControllerOptions = {}) {
         setWorking(false)
         await openProject(restored.id, true)
         await refreshProjects()
+        return project()?.id === restored.id && !disposed()
       }
+      return false
     } catch (error) {
       if (current(epoch) && !abort.signal.aborted) report(error)
+      return false
     } finally {
       if (operationAbort === abort) {
         operationAbort = null
@@ -599,6 +588,15 @@ export function useStudioController(options: StudioControllerOptions = {}) {
     refreshSources,
     addFile,
     addTake,
+    addTakes,
+    readCanonicalAsset,
+    readSourcePreview,
+    canUndo,
+    canRedo,
+    undoLabel,
+    redoLabel,
+    undo: () => historyAction('undo'),
+    redo: () => historyAction('redo'),
     cancelImport,
     retrySave,
     takeOver,

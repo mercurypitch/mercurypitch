@@ -20,6 +20,7 @@ export type StudioStorageErrorCode =
   | 'invalid-project'
   | 'invalid-asset'
   | 'project-limit'
+  | 'memory-limit'
   | 'quota-exceeded'
   | 'storage-unavailable'
 

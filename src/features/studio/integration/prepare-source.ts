@@ -33,6 +33,6 @@ export async function prepareStudioSource(
         importedAt: info.importedAt,
       },
     },
-    options,
+    { ...options, encodedByteLength: source.sizeBytes },
   )
 }

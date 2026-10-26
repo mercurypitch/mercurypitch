@@ -610,6 +610,7 @@ const OpeningTakeoverMount: Component<OpeningTakeoverProps> = IS_NATIVE_BUILD
     )
 
 const AppShell: Component<AppProps> = (props) => {
+  const [studioSidebarExpanded, setStudioSidebarExpanded] = createSignal(false)
   const { audioEngine, playbackRuntime, practiceEngine } = useEngines()
   const guitarCtx = useGuitar()
 
@@ -3787,8 +3788,16 @@ const AppShell: Component<AppProps> = (props) => {
                 // the full-width off-canvas drawer; never apply the collapsed
                 // (40px, content-hidden) state there, or a desktop-collapsed
                 // preference leaves the mobile drawer stuck as a thin rail.
-                collapsed={sidebarCollapsed() && !isNarrow()}
-                onToggleCollapse={() => setSidebarCollapsed((prev) => !prev)}
+                collapsed={
+                  (activeTab() === TAB_STUDIO_NIGHT
+                    ? !studioSidebarExpanded()
+                    : sidebarCollapsed()) && !isNarrow()
+                }
+                onToggleCollapse={() =>
+                  activeTab() === TAB_STUDIO_NIGHT
+                    ? setStudioSidebarExpanded((prev) => !prev)
+                    : setSidebarCollapsed((prev) => !prev)
+                }
                 onAutoCalibrate={handleAutoCalibrate}
               />
             </Show>

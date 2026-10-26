@@ -26,6 +26,9 @@ export function controllerServiceFixture(): StudioService {
     readAssetBytes: vi.fn(async () => {
       throw new Error('No saved audio')
     }),
+    readCanonicalAsset: vi.fn(async () => {
+      throw new Error('No saved audio')
+    }),
     acquireLease: vi.fn(async (projectId, ownerId) => ({
       projectId,
       ownerId,
@@ -63,7 +66,9 @@ export function preparedFixture(info: StudioAssetInfo): StudioAssetData {
     asset: {
       id: info.id,
       projectId: info.projectId,
-      originalName: info.originalName,
+      ...(info.originalName === undefined
+        ? {}
+        : { originalName: info.originalName }),
       sha256: 'a'.repeat(64),
       mimeType: 'audio/wav',
       byteLength: 3,
