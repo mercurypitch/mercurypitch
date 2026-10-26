@@ -268,6 +268,16 @@ vi.mock('./karaoke-room-library', () => ({
   hydrateSong: async (row: { stems: unknown }) => Promise.resolve(row.stems),
 }))
 
+/** The songs the room said were no longer on the phone. */
+const missing = vi.hoisted(() => ({ said: [] as string[] }))
+vi.mock('./missing-song', async (importOriginal) => ({
+  ...(await importOriginal<Record<string, unknown>>()),
+  sayMissingSong: async (song: { sessionId: string }) => {
+    missing.said.push(song.sessionId)
+    return Promise.resolve()
+  },
+}))
+
 vi.mock('@/features/backgrounds/PremiumBackgroundPicker', () => ({
   PremiumBackgroundPicker: () => <div data-testid="fake-background-picker" />,
 }))
@@ -314,6 +324,18 @@ const DARK = example(
   'Nothing in the Dark',
   'nothing-in-the-dark',
 )
+
+/** A song of the singer's own whose stems are no longer on the phone:
+ *  hydrating it finds neither. */
+const LOST = {
+  sessionId: 'uvr-session-lost',
+  title: 'Lost Song',
+  artist: null,
+  durationSec: 180,
+  credit: null,
+  kind: 'yours' as const,
+  stems: { vocal: '', instrumental: '' },
+}
 
 interface FakeDevice extends NativeDeviceApi {
   /** False as on Android; a test of iOS's microphone sets it. */
@@ -449,6 +471,7 @@ beforeEach(() => {
   mixers.list = []
   library.rows = [GOODBYE, JOSEPHINE, DARK]
   seeding.done = Promise.resolve()
+  missing.said = []
   localStorage.clear()
   resetKaraokeRoomForTests()
   resetRoomArrivalHolds()
@@ -1509,6 +1532,36 @@ describe('the library', () => {
     expect(controls().closeRoomOverlay?.()).toBe(true)
     expect(screen.queryByTestId('karaoke-library')).toBeNull()
     expect(controls().closeRoomOverlay?.()).toBe(false)
+  })
+})
+
+describe('a song of your own no longer on the phone', () => {
+  it('stays off the stage, which keeps its song, and the room says why', async () => {
+    library.rows = [LOST, GOODBYE, JOSEPHINE]
+    await mountRoom()
+
+    current().hosted.stage.onOpenLibrary()
+    const sheet = await screen.findByTestId('karaoke-library')
+    fireEvent.click(within(sheet).getByRole('button', { name: /^Lost Song/u }))
+
+    await vi.waitFor(() => {
+      expect(missing.said).toEqual([LOST.sessionId])
+    })
+    expect(current().sessionId).toBe(GOODBYE.sessionId)
+    expect(karaokeStagedSong()).toBe(GOODBYE.sessionId)
+    expect(mixers.list.filter((mixer) => mixer.alive)).toHaveLength(1)
+  })
+
+  it('leaves an arrival on an example, not an empty stage', async () => {
+    library.rows = [LOST, GOODBYE, JOSEPHINE]
+    localStorage.setItem(KARAOKE_LAST_SONG_KEY, LOST.sessionId)
+
+    await mountRoom()
+
+    expect(current().sessionId).toBe(GOODBYE.sessionId)
+    expect(current().autoPlay).not.toBe(true)
+    expect(missing.said).toEqual([LOST.sessionId])
+    expect(karaokeStagedSong()).toBe(GOODBYE.sessionId)
   })
 })
 

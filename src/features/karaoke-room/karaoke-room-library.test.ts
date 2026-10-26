@@ -192,14 +192,11 @@ describe('your songs', () => {
     expect(mine.kind).toBe('yours')
   })
 
-  it('leave out a song still separating, and one that lost a stem', () => {
+  it('leave out a song still separating', () => {
     sources.sessions = [
       own('separating', 'Busy.mp3', 3_000, {
         status: 'processing',
         progress: 40,
-      }),
-      own('half', 'Half.mp3', 2_000, {
-        outputs: { vocal: 'blob:half-vocal' },
       }),
       own('whole', 'Whole.mp3', 1_000),
     ]
@@ -209,6 +206,23 @@ describe('your songs', () => {
         .filter((song) => song.kind === 'yours')
         .map((song) => song.sessionId),
     ).toEqual(['whole'])
+  })
+
+  // A launch reads every session back without its stem URLs: they are the
+  // last page's object URLs, and the row on disk keeps none. Listing only
+  // the songs with both listed none after the app started again.
+  it('are listed before their stems are opened, as a launch reads them', () => {
+    sources.sessions = [
+      own('launched', 'After a launch.mp3', 2_000, { outputs: undefined }),
+      own('half', 'Half.mp3', 1_000, {
+        outputs: { vocal: 'blob:half-vocal' },
+      }),
+    ]
+
+    const songs = roomLibrary().filter((song) => song.kind === 'yours')
+
+    expect(songs.map((song) => song.sessionId)).toEqual(['launched', 'half'])
+    expect(songs[0].stems).toEqual({ vocal: '', instrumental: '' })
   })
 })
 
