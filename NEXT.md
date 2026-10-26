@@ -352,3 +352,4 @@ Note: the lanes' memory gate read a stale cgroup path after the 21:00 restart (f
 - Asked the owner to push it with the exact SHA. Background watcher b0ym32koj polls ls-remote every 60 s and notifies when the tag exists.
 - Merges HOLD until the tag is on origin (so the tag can't land on a main that already has the held PRs). Then: watch the tag runs, merge #1198 first (already on a6f839e14, green).
 - 12:28 check-in: no v0.9.22 on origin yet (owner to push it); main a6f839e14 unchanged, so every held PR stays as at 12:02 (five green on a6f839e14; #1205/#1206/#1207/#1212 clean). No builder: L9 run 4 waits for the merges. Watcher b0ym32koj still polling.
+- 13:00 usage one-shot fired (nothing had stopped; rate limit allowed). Next one-shot trig_01TRdyC32ZSkMLVwsQ2nA6cV at 17:53Z (resetsAt 17:50). context_usage.max_tokens now 650000 (the owner's /autocompact). Still no v0.9.22 on origin.
