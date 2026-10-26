@@ -25,6 +25,7 @@ import { For, Show } from 'solid-js'
 import type { FeaturedPromo } from '@/db/services/billing-service'
 import { LegendCaricature } from '@/features/mirror/LegendCaricature'
 import type { MirrorResult } from '@/lib/mirror/metrics'
+import { cleanRange } from '@/lib/mirror/singer-match'
 import { KEEP_GIFT_CAPTION } from '../copy'
 import keep from '../keep.module.css'
 import styles from '../onboarding.module.css'
@@ -65,7 +66,8 @@ const LEADERBOARD_ROW: KeepRow = {
 export interface BeatKeepProps {
   /** The legend matched at beat 5, or null when none was. */
   twin: string | null
-  /** The voiceprint just measured: its range is the card at the top. */
+  /** The voiceprint just measured: its range is the card at the top, when
+   *  the read was clean (singer-match.ts `isCleanRange`). */
   voiceprint: MirrorResult | null
   /** The singer's glides as one line (voice-strip.ts), drawn as the gold
    *  ridge in the rows' chips. Null draws the range's own rise and fall. */
@@ -77,6 +79,10 @@ export interface BeatKeepProps {
 
 export const BeatKeep: Component<BeatKeepProps> = (props) => {
   const rows = () => (props.gift === null ? [...ROWS, LEADERBOARD_ROW] : ROWS)
+  /** No card and no ridge for a read that is not clean: the twin beat has
+   *  just said Merc could not read the range, and "A3 to A3" here would
+   *  show one anyway. */
+  const range = () => cleanRange(props.voiceprint?.range)
 
   return (
     <div
@@ -90,8 +96,8 @@ export const BeatKeep: Component<BeatKeepProps> = (props) => {
           <Show
             when={props.twin}
             fallback={
-              <Show when={props.voiceprint?.range}>
-                {(range) => <KeepRange range={range()} />}
+              <Show when={range()}>
+                {(measured) => <KeepRange range={measured()} />}
               </Show>
             }
           >
@@ -140,7 +146,7 @@ export const BeatKeep: Component<BeatKeepProps> = (props) => {
                     kind={row.chip}
                     tone={row.tone}
                     strip={props.strip ?? null}
-                    range={props.voiceprint?.range ?? null}
+                    range={range()}
                   />
                   {row.text}
                 </li>

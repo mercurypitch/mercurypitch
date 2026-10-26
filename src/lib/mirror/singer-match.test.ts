@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 import { LEGENDS } from '@/features/mirror/LegendCaricature'
 import { VOICE_LEGENDS, VOICE_TYPE_BANDS } from './legend-catalog'
 import { voiceTypeHint } from './metrics'
-import { singerForRange, singerForVoiceType, SINGERS_BY_VOICE_TYPE, } from './singer-match'
+import { cleanRange, isCleanRange, singerForRange, singerForVoiceType, SINGERS_BY_VOICE_TYPE, } from './singer-match'
 
 // The roster is imported, not restated. It used to be copied into this
 // file, which meant adding a legend passed a test suite that was still
@@ -104,5 +104,71 @@ describe('singerForVoiceType', () => {
     expect(OPTIONS.Soprano).toContain(
       singerForVoiceType(voiceTypeHint(60, 84), 60, 84),
     )
+  })
+})
+
+describe('isCleanRange', () => {
+  /** A range as computeRange hands it over: the hint is the span's own. */
+  const read = (lowMidi: number, highMidi: number) => ({
+    lowMidi,
+    highMidi,
+    voiceHint: voiceTypeHint(lowMidi, highMidi),
+  })
+
+  it("calls a steady tone's 0-semitone read, A3 to A3, unclean", () => {
+    // Arrange
+    const steady = read(57, 57)
+
+    // Act
+    const clean = cleanRange(steady)
+
+    // Assert
+    expect(isCleanRange(steady)).toBe(false)
+    expect(clean).toBeNull()
+  })
+
+  it('calls a five-semitone read inside a voice type clean, and keeps it whole', () => {
+    // Arrange
+    const fifth = read(57, 62)
+
+    // Act
+    const clean = cleanRange(fifth)
+
+    // Assert
+    expect(isCleanRange(fifth)).toBe(true)
+    expect(clean).toBe(fifth)
+  })
+
+  it('calls a span outside every voice type unclean, and no read at all too', () => {
+    expect(isCleanRange(read(20, 30))).toBe(false)
+    expect(isCleanRange(null)).toBe(false)
+    expect(cleanRange(undefined)).toBeNull()
+  })
+
+  it('judges by the notes sung, not by how the hint is spelt', () => {
+    // Arrange: E2 to G4 with its hint in lower case, as some callers keep it.
+    const spelt = { lowMidi: 40, highMidi: 67, voiceHint: 'baritone' }
+
+    // Act
+    const clean = isCleanRange(spelt)
+
+    // Assert
+    expect(clean).toBe(true)
+  })
+
+  it('calls a read clean exactly when the twin can be drawn from it', () => {
+    // The twin beat says "couldn't get a clean read" when singerForRange
+    // finds nobody; every surface reading this rule must agree with it.
+    const disagree: string[] = []
+    for (let low = 30; low <= 90; low++) {
+      for (let high = low; high <= low + 30; high++) {
+        const range = read(low, high)
+        if (isCleanRange(range) !== (singerForRange(range) !== null)) {
+          disagree.push(`${low}-${high}`)
+        }
+      }
+    }
+
+    expect(disagree).toEqual([])
   })
 })

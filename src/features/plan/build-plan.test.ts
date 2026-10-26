@@ -912,19 +912,23 @@ describe('Play', () => {
 
 describe('the voiceprint', () => {
   it('takes the stops pickFirstStop really returns', () => {
+    // A clean read from C3: pickFirstStop reads only a range a voice type fits.
+    const fromC3 = (semitones: number) => ({
+      lowMidi: 48,
+      highMidi: 48 + semitones,
+      semitones,
+    })
     const solid = {
       accuracy: { score: 90 },
       steadiness: { score: 90 },
-      range: { semitones: 18 },
+      range: fromC3(18),
     }
     const measured = (over: object) => ({ ...solid, ...over }) as MirrorResult
 
     expect(pickFirstStop(measured({ steadiness: { score: 40 } }))).toEqual(
       LONG_NOTE,
     )
-    expect(pickFirstStop(measured({ range: { semitones: 8 } }))).toEqual(
-      RANGE_WEEK,
-    )
+    expect(pickFirstStop(measured({ range: fromC3(8) }))).toEqual(RANGE_WEEK)
     expect(pickFirstStop(measured({}))).toEqual(SONG_READY)
     expect(NO_FINDING.room).toBe('practice')
   })

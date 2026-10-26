@@ -34,11 +34,11 @@ const beat = (page: import('@playwright/test').Page, name: string) =>
   page.locator(`[data-beat="${name}"]`)
 
 /**
- * From the first of the four questions to the Map: every question passed with
- * nothing picked, then "See every room" on the plan. Each screen is waited for
- * by its "Question N of 4" line, so a tap never lands on the one leaving.
+ * From the first of the four questions to the plan: every question passed
+ * with nothing picked. Each screen is waited for by its "Question N of 4"
+ * line, so a tap never lands on the one leaving.
  */
-async function skipThePlanToTheMap(page: import('@playwright/test').Page) {
+async function skipToThePlan(page: import('@playwright/test').Page) {
   const questions = beat(page, 'questions')
   await expect(questions.getByText('Question 1 of 4')).toBeVisible({
     timeout: 10000,
@@ -50,7 +50,14 @@ async function skipThePlanToTheMap(page: import('@playwright/test').Page) {
   await questions.getByRole('button', { name: 'Skip this one' }).click()
   await expect(questions.getByText('Question 4 of 4')).toBeVisible()
   await questions.getByRole('button', { name: 'Skip to my plan' }).click()
-  await questions.getByRole('button', { name: 'See every room' }).click()
+}
+
+/** On to the Map from there: "See every room" on the plan. */
+async function skipThePlanToTheMap(page: import('@playwright/test').Page) {
+  await skipToThePlan(page)
+  await beat(page, 'questions')
+    .getByRole('button', { name: 'See every room' })
+    .click()
   await expect(beat(page, 'map')).toBeVisible({ timeout: 10000 })
 }
 
@@ -267,6 +274,11 @@ test.describe('First Light with a microphone', () => {
     await expect(twin).toBeVisible({ timeout: 30000 })
     await expect(twin).toContainText(/steadiness/i)
     await expect(twin.locator('[data-stat-card]')).toHaveCount(1)
+    // A steady tone reads A3 to A3: a range read that is not clean, so the
+    // card draws no ridge and no range, as the line above it says.
+    await expect(twin).toContainText("couldn't get a clean read")
+    await expect(twin.locator('[data-ridge]')).toHaveCount(0)
+    await expect(twin.locator('[data-stat="range"]')).toHaveCount(0)
     // The line under the card names what follows the account offer: the plan
     // while it is due (a fresh visitor's is), not the Map.
     await expect(twin).toContainText('Next, your plan')
@@ -285,10 +297,21 @@ test.describe('First Light with a microphone', () => {
       // What an account keeps, in rows, with or without the launch gift
       // (the dev API decides whether a code is featured).
       await expect(keep).toContainText(/Your voiceprint and range, saved/)
+      // No range card for the unclean read.
+      await expect(keep.getByTestId('keep-range')).toHaveCount(0)
       await page.getByRole('button', { name: /Not now/ }).click()
     }
     await expect(beat(page, 'questions')).toBeVisible({ timeout: 15000 })
-    await skipThePlanToTheMap(page)
+    await skipToThePlan(page)
+
+    // The plan: an unclean range is not a narrow one, so the solid scores
+    // lead to Karaoke Night, not the Ascent's Range week.
+    const questions = beat(page, 'questions')
+    await expect(questions.locator('[data-kind="start"]')).toHaveAttribute(
+      'data-dest',
+      'karaokeNight',
+    )
+    await questions.getByRole('button', { name: 'See every room' }).click()
 
     const map = beat(page, 'map')
     await expect(map).toBeVisible({ timeout: 15000 })

@@ -16,6 +16,7 @@
 // See docs/plans/onboarding-first-light.md.
 
 import type { MirrorResult } from '@/lib/mirror/metrics'
+import { cleanRange } from '@/lib/mirror/singer-match'
 import type { RoomId } from './rooms'
 
 /** Below this, a 0–100 score counts as the thing to work on first. */
@@ -50,7 +51,10 @@ const DEFAULT_STOP: FirstStop = {
  * a fixed priority order — the singer should be sent to whichever is
  * actually further behind. Range is only consulted once both scores
  * are solid, because it is measured in semitones and cannot be
- * compared against a 0–100 score.
+ * compared against a 0–100 score. A range read that is not clean
+ * (singer-match.ts `isCleanRange`: a steady tone reads 0 semitones)
+ * counts as not measured: the twin has just said Merc could not read
+ * the range, so the plan cannot say there is more of it to use.
  */
 export function pickFirstStop(result: MirrorResult | null): FirstStop {
   if (result === null) return DEFAULT_STOP
@@ -70,7 +74,7 @@ export function pickFirstStop(result: MirrorResult | null): FirstStop {
   if (steadyWeak) return STEADINESS_STOP
   if (accurateWeak) return ACCURACY_STOP
 
-  const semitones = result.range?.semitones ?? null
+  const semitones = cleanRange(result.range)?.semitones ?? null
   if (semitones !== null && semitones < NARROW_RANGE_SEMITONES) {
     return RANGE_STOP
   }

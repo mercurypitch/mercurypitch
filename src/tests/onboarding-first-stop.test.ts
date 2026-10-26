@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { NARROW_RANGE_SEMITONES, pickFirstStop, WEAK_SCORE, } from '@/features/onboarding/first-stop'
 import type { AccuracyResult, MirrorResult, RangeResult, SteadinessResult, } from '@/lib/mirror/metrics'
+import { voiceTypeHint } from '@/lib/mirror/metrics'
 
 const range = (semitones: number): RangeResult => ({
   lowMidi: 48,
@@ -11,6 +12,17 @@ const range = (semitones: number): RangeResult => ({
   qualifyingMidis: [],
   voiceHint: 'Tenor',
 })
+
+/** What computeRange reads from a steady tone: A3 to A3, no voice type. */
+const STEADY_TONE: RangeResult = {
+  lowMidi: 57,
+  highMidi: 57,
+  lowNote: 'A3',
+  highNote: 'A3',
+  semitones: 0,
+  qualifyingMidis: [57],
+  voiceHint: voiceTypeHint(57, 57),
+}
 
 const accuracy = (score: number): AccuracyResult => ({
   score,
@@ -63,6 +75,39 @@ describe('pickFirstStop', () => {
     )
     expect(stop.room).toBe('ascent')
     expect(stop.detail).toBe('Range week')
+  })
+
+  it("does not send a steady tone's 0-semitone read to the Ascent", () => {
+    // Arrange: both scores solid, and a range read the twin called unclean.
+    const steadyTone = result({ range: STEADY_TONE })
+
+    // Act
+    const stop = pickFirstStop(steadyTone)
+
+    // Assert: read as no range, so the solid scores lead.
+    expect(stop.room).toBe('karaoke')
+    expect(stop.detail).toBeNull()
+  })
+
+  it('still sends a clean five-semitone read to the Ascent', () => {
+    // Arrange: C3 to F3, which overlaps a voice type.
+    const fifth = result({ range: range(5) })
+
+    // Act
+    const stop = pickFirstStop(fifth)
+
+    // Assert
+    expect(stop.room).toBe('ascent')
+    expect(stop.detail).toBe('Range week')
+  })
+
+  it('treats a run whose only read was an unclean range as nothing measured', () => {
+    const stop = pickFirstStop({
+      range: STEADY_TONE,
+      accuracy: null,
+      steadiness: null,
+    })
+    expect(stop.room).toBe('practice')
   })
 
   it('sends a strong voice to Karaoke', () => {
