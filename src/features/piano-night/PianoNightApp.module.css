@@ -2874,12 +2874,25 @@
     border-left: 0;
     border-radius: 18px 18px 0 0;
     opacity: 0;
-    transform: translateY(102%);
+    /* Closed, the sheet waits below the nav, off the screen. 102% of its
+       own height from the nav's top was not far enough: its top line was
+       parked inside the nav's band, over the nav (the sheet stacks at 90,
+       the nav at 60), and rose across it each time it opened. */
+    transform: translateY(
+      calc(102% + var(--mobile-nav-height) + env(safe-area-inset-bottom))
+    );
   }
 
   .drawerOpen {
     opacity: 1;
     transform: translateY(0);
+  }
+
+  /* The nav stays usable, and says which panel is open, while the sheet is
+     up (see the expanded button's mark above), so it stays over the sheet:
+     the sheet comes up from behind the nav instead of across it. */
+  .mobileNav {
+    z-index: 91;
   }
 
   .drawerTopline,
