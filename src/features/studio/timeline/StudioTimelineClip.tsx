@@ -67,7 +67,10 @@ export function StudioTimelineClip(props: StudioTimelineClipProps) {
     )
   }
   const fadeHandles = () =>
-    handles() && (fadePosition('out') - fadePosition('in') >= handleSize() || ownDraft()?.kind === 'fade-in' || ownDraft()?.kind === 'fade-out')
+    handles() &&
+    (fadePosition('out') - fadePosition('in') >= handleSize() ||
+      ownDraft()?.kind === 'fade-in' ||
+      ownDraft()?.kind === 'fade-out')
   const start = (event: PointerEvent, kind: StudioGestureKind) =>
     props.pointer.start(event, props.clip, kind)
   const handleClick = (event: MouseEvent) => {
