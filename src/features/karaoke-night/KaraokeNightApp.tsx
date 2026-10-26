@@ -78,11 +78,19 @@ const KaraokeTourChip = lazy(async () => {
   return { default: m.KaraokeTourChip }
 })
 
-/** Merc's tour, with the coach and its steps, loaded as it is asked for. */
-function startTour(afterConsent: boolean): void {
-  void import('./start-karaoke-tour').then((m) =>
-    m.startKaraokeTour({ afterConsent }),
-  )
+/**
+ * Merc's tour, with the coach and its steps, loaded as it is asked for.
+ * Settles false when it could not start (a chunk that did not arrive, after
+ * a deploy or on a dropped connection): nothing is left unhandled, and the
+ * page stays as it was. Karaoke Night has no chunk-load recovery of its own.
+ */
+function startTour(afterConsent: boolean): Promise<boolean> {
+  return import('./start-karaoke-tour')
+    .then((m) => m.startKaraokeTour({ afterConsent }))
+    .then(
+      () => true,
+      () => false,
+    )
 }
 
 // The Mercury Sing stage drags in the whole pitch/matcher stack — lazy, it
@@ -451,7 +459,7 @@ export function KaraokeNightApp() {
     // bar is answered). Tours are web only, and the vocal remover's landing,
     // which shares this entry, has none (R23).
     if (!IS_NATIVE_BUILD && tourBelongsAt(window.location.pathname)) {
-      if (searchParams.get('tour') === 'first') startTour(true)
+      if (searchParams.get('tour') === 'first') void startTour(true)
       else if (!hasSession && songLink === null && tourOfferDue())
         setTourOffered(true)
     }
@@ -706,7 +714,11 @@ export function KaraokeNightApp() {
               <KaraokeTourChip
                 onStart={() => {
                   setTourOffered(false)
-                  startTour(false)
+                  // A tour that could not start leaves the chip offered.
+                  void startTour(false).then((started) => {
+                    if (started || untrack(activeSong) !== null) return
+                    setTourOffered(true)
+                  })
                 }}
                 onDismiss={() => setTourOffered(false)}
               />

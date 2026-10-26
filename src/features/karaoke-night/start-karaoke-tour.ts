@@ -11,8 +11,10 @@
 //   going on (spec 7), and the showcase waits for it the same way. A tap on
 //   the chip is the visitor asking, so that tour starts at once, under the
 //   bar, which stays on top (the coach's layer is z-index 900).
-// - Starting spends the first-visit offer, so the chip never offers a tour
-//   that was just shown.
+// - A tour that has started spends the first-visit offer, so the chip never
+//   offers a tour that was just shown. One whose coach did not load spends
+//   nothing, and the failure goes back to the caller (KaraokeNightApp), which
+//   leaves the page as it was.
 // - The phone's steps and layout wherever the page draws the phone stage
 //   (narrow, or a phone on its side): that is where the tour's mic and score
 //   are drawn.
@@ -42,10 +44,10 @@ export interface KaraokeTourAsk {
   afterConsent: boolean
 }
 
-/** Runs Merc's tour of Karaoke Night. */
+/** Runs Merc's tour of Karaoke Night; rejects when the coach did not load. */
 export async function startKaraokeTour(ask: KaraokeTourAsk): Promise<void> {
   if (ask.afterConsent) await consentAnswered()
-  spendTourOffer()
   loadKaraokeCredits()
-  startCoachTour(KARAOKE_TOUR, { phone: isPhoneStage() })
+  await startCoachTour(KARAOKE_TOUR, { phone: isPhoneStage() })
+  spendTourOffer()
 }

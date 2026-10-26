@@ -237,8 +237,14 @@ describe('what a finished Merc tour offers next', () => {
 })
 
 describe("a tab's offer", () => {
-  it('is spent when its Merc tour starts, so the chip never offers what was just shown', async () => {
+  it('is spent once its Merc tour has started, so the chip never offers what was just shown', async () => {
     const tour = singTour()
+    let started!: () => void
+    fakes.startCoachTour.mockReturnValueOnce(
+      new Promise<void>((resolve) => {
+        started = resolve
+      }),
+    )
     startRoomTour('singing')
     expect(localStorage.getItem(tourOfferKey('singing'))).toBeNull()
 
@@ -246,8 +252,27 @@ describe("a tab's offer", () => {
     await vi.waitFor(() => {
       expect(fakes.startCoachTour).toHaveBeenCalled()
     })
+    await settled()
+    expect(localStorage.getItem(tourOfferKey('singing'))).toBeNull()
 
-    expect(localStorage.getItem(tourOfferKey('singing'))).toBe('true')
+    started()
+    await vi.waitFor(() => {
+      expect(localStorage.getItem(tourOfferKey('singing'))).toBe('true')
+    })
+  })
+
+  it('is left for the next visit when the coach does not load', async () => {
+    const tour = singTour()
+    fakes.startCoachTour.mockRejectedValueOnce(new Error('chunk'))
+    startRoomTour('singing')
+
+    tour.arrive()
+    await vi.waitFor(() => {
+      expect(fakes.startCoachTour).toHaveBeenCalled()
+    })
+    await settled()
+
+    expect(localStorage.getItem(tourOfferKey('singing'))).toBeNull()
   })
 
   it('is spent when its legacy spotlight tour starts', () => {
