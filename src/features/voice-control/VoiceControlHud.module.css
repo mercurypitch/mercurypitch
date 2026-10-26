@@ -469,3 +469,34 @@
     display: none;
   }
 }
+
+/* Docked in a phone's header, the mic draws 1.9rem (30.4 px) and took a
+   press in that much and no more. Under a finger it takes one 44 px each
+   way from an invisible box: up and down inside the 50 px row, and 7 px
+   past the mic on its right, which is the pill's 1 px border and the
+   group's 6 px gap, so the box ends where the next control's begins (the
+   install glyph, the account glyph or the support heart). The rest of the
+   44 is on the left, 6.6 px, inside the 8 px the header keeps between the
+   pill and the wordmark at the least. While voice control is on, the cog
+   sits 2.4 px to the mic's right, so there the box stops 1 px past the mic
+   and is 38 px wide. */
+@media (pointer: coarse) and (max-width: 768px) {
+  .docked .toggle {
+    position: relative;
+  }
+
+  .docked .toggle::after {
+    position: absolute;
+    top: 50%;
+    right: -7px;
+    width: 44px;
+    height: 44px;
+    content: '';
+    transform: translateY(-50%);
+  }
+
+  .docked .toggle:not(:last-child)::after {
+    right: -1px;
+    width: 38px;
+  }
+}
