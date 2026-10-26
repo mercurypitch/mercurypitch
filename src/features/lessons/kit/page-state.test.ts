@@ -2,7 +2,11 @@
 // Page state tests — the state a page was served with, or its build's defaults
 // ============================================================
 
+import { readFileSync } from 'node:fs'
+import { resolve } from 'node:path'
 import { afterEach, describe, expect, it, vi } from 'vitest'
+import { lessonDocument } from '../../../../tools/draft-lessons'
+import { fillLessonWays, lessonWays } from '../../../../tools/lesson-ways'
 import type * as PageStateModule from './page-state'
 import { followPageState, lessonLive, pageLessons, readPageState, } from './page-state'
 import { LESSONS } from './season'
@@ -163,6 +167,47 @@ describe('followPageState', () => {
     )
     expect(readings?.querySelectorAll('[hidden]')).toHaveLength(0)
     expect(readings?.querySelector('[data-if-live="x"]')).not.toBeNull()
+  })
+
+  describe("on Lesson 2's foot, as the build writes it", () => {
+    const ROOT = resolve(__dirname, '../../../..')
+    const built = new DOMParser().parseFromString(
+      fillLessonWays(
+        readFileSync(resolve(ROOT, lessonDocument(2)), 'utf8'),
+        lessonWays(ROOT, 2),
+      ),
+      'text/html',
+    )
+    const FOOT = built.querySelector('.foot-ways')?.outerHTML ?? ''
+    const ways = (doc: Document) =>
+      Array.from(doc.querySelectorAll('.foot-ways a'), (a) =>
+        a.getAttribute('href'),
+      )
+
+    it('takes out the next lesson where drafts are held back, keeping the one before', () => {
+      // Arrange: Lesson 3 a draft, with no override, as on mercurypitch.com
+      const doc = servedDocument(STATE({}, false), FOOT)
+
+      // Act
+      followPageState(doc)
+
+      // Assert
+      expect(ways(doc)).toEqual(['/learn/01'])
+      expect(doc.querySelector('.foot-ways')?.textContent).not.toContain(
+        'Lesson 3',
+      )
+    })
+
+    it('keeps both where drafts are shown', () => {
+      // Arrange
+      const doc = servedDocument(STATE({}, true), FOOT)
+
+      // Act
+      followPageState(doc)
+
+      // Assert
+      expect(ways(doc)).toEqual(['/learn/01', '/learn/03'])
+    })
   })
 
   it('leaves a page whose every lesson is live as it was', () => {

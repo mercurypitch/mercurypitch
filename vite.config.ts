@@ -321,7 +321,7 @@ export default defineConfig(({ command, mode }) => {
       // marked just below.
       learnHubPlugin(__dirname, liveByDefault(__dirname, draftsShown)),
       // Each lesson page's visible trail back to the hub, written from its
-      // own BreadcrumbList.
+      // own BreadcrumbList, and its foot's links to the lessons either side.
       lessonWaysPlugin(__dirname),
       // A lesson page's words about which lessons are ready: both readings
       // stay for the worker and the page's script to settle, and the one
