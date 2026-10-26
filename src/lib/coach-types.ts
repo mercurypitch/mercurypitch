@@ -27,6 +27,9 @@ import type { TourKey } from '@/lib/tour-ids'
 
 export type CoachStepKind = 'show' | 'do' | 'watch'
 
+/** A wide screen's corner for a bubble with nothing to stand beside. */
+export type CoachCorner = 'top-right' | 'bottom-right'
+
 /** A line under a step's body, worked out when the step shows: a price, a balance. */
 export interface CoachAside {
   title: string
@@ -42,9 +45,19 @@ interface CoachStepBase {
    * A `[data-tour="..."]` (or `#id`) selector for what the step points at, or
    * a list of them where a phone and a wide screen draw the same control
    * apart: the first match laid out is used (find-target.ts). None, or nothing
-   * on screen that matches, and the bubble stands centred.
+   * on screen that matches, and the bubble stands centred (a do-step's in a
+   * corner). A target taller than most of the window is not ringed, and the
+   * bubble stands in a corner, off it.
    */
   target?: string
+  /**
+   * That corner on a wide screen; bottom right unless the step names another.
+   * Sing's line names the top right: bottom right would hide its lowest note
+   * labels and the Monitor's status line, and the left corners the "now"
+   * marker at the canvas's left edge (sing-tour.ts). Phones dock the bubble
+   * instead.
+   */
+  corner?: CoachCorner
   /** Merc's pose while the step shows. */
   merc: MercState
   /** A lesson that explains the step, opened in a new tab. */

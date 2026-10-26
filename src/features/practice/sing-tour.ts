@@ -19,6 +19,12 @@
 // - A target may list one hook per screen: each screen draws only its own, and
 //   the first one laid out is the one ringed (find-target.ts). The line lives
 //   in the phone stage's canvas wrapper and in the desktop's #canvas-container.
+// - On a wide screen the canvas is too tall to ring, so the line's two stops
+//   stand in the top right corner, chosen by measurement at 1440x900: the
+//   live marker draws "now" down the canvas's left edge, at the height of the
+//   sung note, so the left corners would hide it for a high or a low voice;
+//   the bottom right would hide the lowest note labels, down the right edge,
+//   and the Monitor's status line. The top right clears all three.
 // - The web's Sing tab keeps no takes of its own: a run's score shows when it
 //   ends, and the takes kept to play back are Hear Yourself's. So the last
 //   stop points there: on a phone at More, which always holds it, and on a
@@ -65,6 +71,7 @@ export const SING_TOUR: CoachTour = {
       waitFor: 'pitch-detected',
       sound: 'hold-tone',
       target: LINE,
+      corner: 'top-right',
       merc: 'listen',
       title: 'Sing any note',
       body: "Hold one note, any note. Here's one you can copy.",
@@ -73,6 +80,7 @@ export const SING_TOUR: CoachTour = {
       id: 'line',
       kind: 'show',
       target: LINE,
+      corner: 'top-right',
       merc: 'point',
       title: 'That line is your voice',
       body: 'Higher notes climb, lower notes sink. On the note, the line sits on the bar.',

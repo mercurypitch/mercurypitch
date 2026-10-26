@@ -11,6 +11,7 @@ import type { Component } from 'solid-js'
 import { For, Show } from 'solid-js'
 import type { MascotState } from '@/components/Mascot'
 import { MascotDock } from '@/components/MascotDock'
+import { coachActive } from '@/lib/coach-state'
 import { sessionResults, showMascot, showPitchDisplay, showStats, } from '@/stores'
 import { getBandRating } from '@/stores/settings-store'
 import type { NoteResult, PitchResult } from '@/types'
@@ -48,10 +49,12 @@ export const SingingCanvasHud: Component<SingingCanvasHudProps> = (props) => {
     return 'encouraging'
   }
   const mascotEnergy = () => props.liveScore() ?? 0
+  // While a coach tour runs, the Merc on its bubble is the one on screen.
+  const dockMerc = () => showMascot() && coachActive() === null
 
   return (
     <>
-      <Show when={showMascot()}>
+      <Show when={dockMerc()}>
         <MascotDock state={mascotState} energy={mascotEnergy} />
       </Show>
 

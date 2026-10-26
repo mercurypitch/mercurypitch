@@ -15,8 +15,10 @@
    - The ring stands 6px outside the target, and its shadow dims the rest of
      the page a little. The bubble paints after it, so the dim never covers it.
    - On a wide screen the bubble stands beside the ring, centred when there is
-     none, and in the corner for a do-step with nothing to ring, which stays up
-     while the singer works (data-place, set by CoachLayer.tsx).
+     none, and in a corner for a do-step with nothing to ring, which stays up
+     while the singer works, and for a target too tall to ring (data-place,
+     set by CoachLayer.tsx). The corner is the bottom right unless the step
+     names the top right (data-corner).
    - On a phone the bubble is a sheet across the window, docked above the foot
      stack as the toasts are (lib/foot-space.ts), or at the top when that
      would cover the target, or the transport under a do-step with nothing to
@@ -82,6 +84,11 @@
     max(var(--consent-banner-space, 0px), var(--verify-banner-space, 0px)) +
       24px
   );
+}
+
+.bubble[data-place='corner'][data-corner='top-right'] {
+  top: 16px;
+  bottom: auto;
 }
 
 .bubble[data-place='dock-bottom'],
