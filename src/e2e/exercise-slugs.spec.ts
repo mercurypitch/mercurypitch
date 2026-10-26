@@ -12,8 +12,12 @@
 import type { Page } from '@playwright/test'
 import { expect, test } from '@playwright/test'
 
-/** Open a slug's address as production's Worker serves it. */
-async function openSlug(page: Page, slug: string): Promise<void> {
+/** Open a slug's address as production's Worker serves it, from a lesson. */
+async function openSlug(
+  page: Page,
+  slug: string,
+  lesson: string,
+): Promise<void> {
   // Production's Worker answers /exercises/<slug> with the app's shell
   // (src/worker.ts). The e2e server has no such rule, so do what it does.
   await page.route(new RegExp(`/exercises/${slug}\\?`), async (route) => {
@@ -22,13 +26,13 @@ async function openSlug(page: Page, slug: string): Promise<void> {
     })
     await route.fulfill({ response: shell })
   })
-  await page.goto(`/exercises/${slug}?lesson=09`)
+  await page.goto(`/exercises/${slug}?lesson=${lesson}`)
 }
 
 test("/exercises/leap-ladder opens Interval Trainer on Lesson 9's five leaps", async ({
   page,
 }) => {
-  await openSlug(page, 'leap-ladder')
+  await openSlug(page, 'leap-ladder', '09')
 
   await expect(page.locator('h2.exercise-title')).toHaveText('Interval Trainer')
   // A fresh profile's level asks for six rounds, and the hint names the
@@ -41,7 +45,7 @@ test("/exercises/leap-ladder opens Interval Trainer on Lesson 9's five leaps", a
 test("leaving leap-ladder's drill leaves the menu's Interval Trainer on its own pool", async ({
   page,
 }) => {
-  await openSlug(page, 'leap-ladder')
+  await openSlug(page, 'leap-ladder', '09')
   await expect(page.locator('.idle-hint')).toHaveText(
     '6 rounds · Minor 3rd through Octave',
   )
@@ -58,4 +62,37 @@ test("leaving leap-ladder's drill leaves the menu's Interval Trainer on its own 
   await expect(page.locator('.idle-hint')).toHaveText(
     '6 rounds · Major 2nd through Octave',
   )
+})
+
+test("/exercises/thirds-on-a-drone opens Drone Intonation on Lesson 10's two thirds", async ({
+  page,
+}) => {
+  await openSlug(page, 'thirds-on-a-drone', '10')
+
+  await expect(page.locator('h2.exercise-title')).toHaveText('Drone Intonation')
+  // A fresh profile's level asks for six rounds, the hint names the slug's
+  // two thirds, and the drone starts on the default tenor preset's anchor.
+  await expect(page.locator('.idle-hint')).toHaveText(
+    '6 rounds · Minor 3rd and Major 3rd · Drone: E3',
+  )
+})
+
+test("leaving thirds-on-a-drone's drill leaves the menu's Drone Intonation on its own pool", async ({
+  page,
+}) => {
+  await openSlug(page, 'thirds-on-a-drone', '10')
+  await expect(page.locator('.idle-hint')).toHaveText(
+    '6 rounds · Minor 3rd and Major 3rd · Drone: E3',
+  )
+
+  // Back clears the launch (resetExerciseLaunchState in App.tsx); without
+  // that, the slug's thirds would follow the singer into the next open.
+  await page.locator('.back-btn').click()
+  await page
+    .locator('.exercise-card', { hasText: 'Drone Intonation' })
+    .first()
+    .click()
+
+  await expect(page.locator('h2.exercise-title')).toHaveText('Drone Intonation')
+  await expect(page.locator('.idle-hint')).toHaveText('6 rounds · Drone: E3')
 })

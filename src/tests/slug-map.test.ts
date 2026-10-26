@@ -5,8 +5,9 @@
 // matcher and the slug → launch-intent registry the about-landing relies on.
 
 import { describe, expect, it } from 'vitest'
+import { droneIntervalLabel } from '@/features/exercises/drone-intonation/use-drone-intonation-controller'
 import { EXERCISE_SLUG_PATH, EXERCISE_SLUGS, } from '@/features/exercises/slug-map'
-import { EXERCISE_INTERVAL_TRAINER, EXERCISE_SCALE_RUNNER, } from '@/features/exercises/types'
+import { EXERCISE_DRONE_INTONATION, EXERCISE_INTERVAL_TRAINER, EXERCISE_SCALE_RUNNER, } from '@/features/exercises/types'
 import { clearLaunchOverride, launchIntervals, setLaunchOverride, } from '@/features/practice-intelligence/launch-override'
 import { TAB_JAM, TAB_KARAOKE } from '@/features/tabs/constants'
 
@@ -65,6 +66,14 @@ describe('EXERCISE_SLUGS', () => {
     })
   })
 
+  it("opens Drone Intonation on Lesson 10's two thirds for thirds-on-a-drone", () => {
+    expect(EXERCISE_SLUGS['thirds-on-a-drone']).toEqual({
+      kind: 'exercise',
+      exercise: EXERCISE_DRONE_INTONATION,
+      intervals: [3, 4],
+    })
+  })
+
   it('keys are lowercase kebab-case', () => {
     for (const slug of Object.keys(EXERCISE_SLUGS)) {
       expect(slug).toMatch(/^[a-z0-9-]+$/)
@@ -104,6 +113,22 @@ describe('EXERCISE_SLUGS', () => {
 
     expect(withIntervals.length).toBeGreaterThan(0)
     expect(kept).toEqual(withIntervals.map(({ intervals }) => intervals))
+  })
+
+  it('lists for Drone Intonation only intervals its own pool names', () => {
+    // Drone drills only the launch intervals it has a name for, so a slug
+    // that wrote another would lose it there silently.
+    const forDrone = Object.values(EXERCISE_SLUGS).flatMap((launch) =>
+      launch.kind === 'exercise' &&
+      launch.exercise === EXERCISE_DRONE_INTONATION
+        ? (launch.intervals ?? [])
+        : [],
+    )
+
+    const unnamed = forDrone.filter((s) => droneIntervalLabel(s) === undefined)
+
+    expect(forDrone.length).toBeGreaterThan(0)
+    expect(unnamed).toEqual([])
   })
 
   it('unknown slugs resolve to undefined (own-property only)', () => {
