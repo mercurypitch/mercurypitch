@@ -17,7 +17,11 @@
 // which has no buttons, draws all seven notes from C and from F sharp, and
 // the cold open's sharp sign stays beside its F, in Play from F sharp and in
 // every lock hint; at 1024 x 640 the stage fits the screen under the
-// masthead. Two real-mouse drags of the line close it: a drag slides the
+// masthead. A window narrowed from 1280 px to 320, or a phone turned from
+// landscape to portrait, lays every tune line's buttons out again, on
+// screen and off, with nothing past the window's edge, and Step 3 keeps
+// its start, names, Slow and the line it is playing, and the cold open its
+// answer. Two real-mouse drags of the line close it: a drag slides the
 // start and must not land as a tap, and a drag let go off the line leaves
 // Enter and Space pressing a bead.
 
@@ -99,6 +103,24 @@ async function expectTargets(root: Locator, what: string): Promise<void> {
 
 const sideways = (page: Page): Promise<number> =>
   page.evaluate(() => document.documentElement.scrollWidth)
+
+/** Every shown button of a tune line that is not wholly inside its line's layer, which covers the drawing. */
+const strays = (page: Page, root: string): Promise<string[]> =>
+  page.locator(`${root} [data-tune-hits]`).evaluate((layer) => {
+    const f = layer.getBoundingClientRect()
+    return Array.from(layer.querySelectorAll<HTMLElement>('.tune-hit'))
+      .filter((b) => b.getClientRects().length > 0)
+      .filter((b) => {
+        const r = b.getBoundingClientRect()
+        return (
+          r.left < f.left - 0.5 ||
+          r.right > f.right + 0.5 ||
+          r.top < f.top - 0.5 ||
+          r.bottom > f.bottom + 0.5
+        )
+      })
+      .map((b) => b.getAttribute('aria-label') ?? '')
+  })
 
 interface Drawn {
   /** The canvas's width, px. */
@@ -675,6 +697,59 @@ test.describe('page QA (WEB-SPEC, Tests and Contract)', () => {
       await goStep(page, 5)
       await expectTargets(page.locator(TOY), `step 5 at ${width}`)
       expect(await sideways(page)).toBe(width)
+    })
+  }
+
+  // A window that narrows, or a phone that turns: every tune line lays its
+  // buttons out again at the new width, the one off screen as well, and the
+  // step keeps all it holds. Free play's buttons, laid out at 1280 px and
+  // left there, scrolled a 320 px window 873 px sideways.
+  for (const [from, to] of [
+    [
+      { width: 1280, height: 800 },
+      { width: 320, height: 800 },
+    ],
+    [
+      { width: 844, height: 390 },
+      { width: 390, height: 844 },
+    ],
+  ] as const) {
+    test(`from ${from.width} x ${from.height} to ${to.width} x ${to.height}, every bead and gap stays on its line, and the step keeps its state`, async ({
+      page,
+    }) => {
+      // Arrange: Step 3 from E4, in do-re-mi, slow, the line playing, and the cold open answered
+      await page.setViewportSize(from)
+      await openStep(page, 3)
+      await page.locator('#predict [data-choice="gaps"]').click()
+      await startOn(page, 64)
+      await page.locator(`${TOY} [data-names="solfege"]`).click()
+      await page.locator(`${TOY} [data-tune-slow]`).click()
+      const readout = page.locator(`${TOY} [data-tune-readout]`)
+      const before = await readout.textContent()
+      const play = page.locator(`${TOY} [data-tune-play]`)
+      await play.click()
+      await expect(play).toHaveClass(/\bis-on\b/)
+
+      // Act
+      await page.setViewportSize(to)
+
+      // Assert: nothing past the window's edge, and every button on its own line
+      await expect.poll(() => sideways(page)).toBe(to.width)
+      for (const root of [TOY, '#freePlay'])
+        expect(await strays(page, root), root).toEqual([])
+      await expect(slider(page)).toHaveAttribute('aria-valuenow', '64')
+      await expect(
+        page.locator(`${TOY} [data-names="solfege"]`),
+      ).toHaveAttribute('aria-pressed', 'true')
+      await expect(page.locator(`${TOY} [data-tune-slow]`)).toHaveAttribute(
+        'aria-pressed',
+        'true',
+      )
+      await expect(readout).toHaveText(before ?? '')
+      await expect(play).toHaveClass(/\bis-on\b/)
+      await expect(
+        page.locator('#predict [data-choice="gaps"]'),
+      ).toHaveAttribute('aria-pressed', 'true')
     })
   }
 

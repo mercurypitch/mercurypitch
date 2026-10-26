@@ -11,9 +11,9 @@
 // lift, the travel and the gold glow, tune-line-motion.ts), fades a contrast
 // case in over the first line, lights a bead while its note sounds, and lays
 // a button over every bead, gap and named bracket the page asks for, each on
-// its tap zone as the layout changes (tune-line-layout.ts). Under reduced
-// motion every move lands at once; a played line still sounds and lights
-// its beads in turn. A shape may ask for its buttons as one grid
+// its tap zone as the layout changes, on screen or off (tune-line-layout.ts).
+// Under reduced motion every move lands at once; a played line still sounds
+// and lights its beads in turn. A shape may ask for its buttons as one grid
 // (`TuneShape.grid`, WAI-ARIA's layout grid): a row for each line's
 // brackets, beads and gaps, top to bottom, and one Tab stop, the button
 // last focused or pressed, from which the arrows, Home and End move. It
@@ -436,12 +436,26 @@ export function mountTuneLine(opts: TuneLineOptions): TuneLine {
     lits = lits.filter((l) => t < l.to + 0.5)
   }
 
+  /** Lays the buttons out for the canvas as it stands, without drawing. */
+  function fitButtons(): void {
+    const rect = opts.canvas.getBoundingClientRect()
+    if (rect.width > 0 && rect.height > 0)
+      measure(Math.round(rect.width), Math.round(rect.height))
+  }
+
   addDrawer({ active: opts.active, draw, wants })
   // a new size draws at once, before the page paints, so no frame shows the
-  // old drawing stretched; a new pixel ratio or font draws on the next frame
+  // old drawing stretched; a new pixel ratio or font draws on the next frame.
+  // Off screen, or off its step, the line does not draw, but its buttons
+  // still move to the new size at once: left where the old width put them,
+  // they hung past a narrower figure, and a window narrowed from 1280 px to
+  // 320 scrolled sideways to free play's last bead, 873 px past its edge.
   new ResizeObserver(() => {
     if (opts.active()) draw(performance.now(), 0)
-    else invalidate()
+    else {
+      fitButtons()
+      invalidate()
+    }
   }).observe(opts.canvas)
   watchPixelRatio(invalidate)
   void document.fonts?.ready.then(invalidate)
@@ -534,9 +548,7 @@ export function mountTuneLine(opts: TuneLineOptions): TuneLine {
     }
     hits.hidden = buttons.length === 0
     lastKey = ''
-    const rect = opts.canvas.getBoundingClientRect()
-    if (rect.width > 0 && rect.height > 0)
-      measure(Math.round(rect.width), Math.round(rect.height))
+    fitButtons()
   }
 
   opts.hits?.addEventListener('click', (e) => {
