@@ -34,7 +34,7 @@ export function StudioTransport(props: StudioTransportProps) {
         title="Go to start"
         onClick={() => props.onStart()}
       >
-        <SkipBack size={18} />
+        <SkipBack />
       </button>
       <button
         type="button"
@@ -44,8 +44,8 @@ export function StudioTransport(props: StudioTransportProps) {
         title={props.playing ? 'Pause' : 'Play'}
         onClick={() => props.onToggle()}
       >
-        <Show when={props.playing} fallback={<Play size={18} />}>
-          <Pause size={18} />
+        <Show when={props.playing} fallback={<Play />}>
+          <Pause />
         </Show>
       </button>
       <output class={styles.time} aria-label="Song position">

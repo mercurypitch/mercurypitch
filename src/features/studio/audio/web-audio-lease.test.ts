@@ -16,8 +16,13 @@ describe('Studio web audio gesture', () => {
       resume: vi.fn().mockResolvedValue(undefined),
       getAudioContext: () => context,
     }
-    const activate = vi.fn((target: typeof engine) =>
-      target.init().then(() => target.resume()),
+    const activate = vi.fn(
+      (
+        target: Pick<typeof engine, 'getAudioContext'> & {
+          init(): Promise<void>
+          resume(): Promise<void>
+        },
+      ) => target.init().then(() => target.resume()),
     )
     const ready = vi.fn()
     const lease = createStudioWebLease(Promise.resolve(engine), ready, activate)

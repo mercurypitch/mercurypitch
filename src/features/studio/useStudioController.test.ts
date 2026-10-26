@@ -296,7 +296,10 @@ describe('Studio controller', () => {
     const restoreBackup = vi.fn(
       async (
         _blob: Blob,
-        service: ReturnType<typeof controllerServiceFixture>,
+        service: Pick<
+          ReturnType<typeof controllerServiceFixture>,
+          'restoreProject'
+        >,
       ) => service.restoreProject(createStudioProject({ id: 'imported' }), []),
     )
     const { controller } = mount({ restoreBackup })
