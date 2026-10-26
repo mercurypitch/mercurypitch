@@ -10,6 +10,10 @@
 // - One offer per visitor, ever, as in the app (TourChipHost): the key is
 //   written as the chip shows or as the tour starts, and storage that will
 //   not take it means no chip, since the offer would come back on every visit.
+//   A tour asked for from the chip whose code did not arrive hands the offer
+//   back: the key goes, and the chip shown again on this visit spends it
+//   only on Not now or a tour that starts, so a visitor who gets neither is
+//   offered the tour on the next visit.
 // - Karaoke Night's own documents only. The vocal remover's landing shares
 //   this entry (vocal-remover.html) for a different job, and its visitors
 //   came to split a song, not to sing the demo (R23).
@@ -39,5 +43,14 @@ export function spendTourOffer(): boolean {
     return true
   } catch {
     return false
+  }
+}
+
+/** Takes the offer back: a tour asked for from the chip did not load. */
+export function returnTourOffer(): void {
+  try {
+    localStorage.removeItem(KARAOKE_TOUR_OFFER_KEY)
+  } catch {
+    // Storage that will not change keeps the offer spent.
   }
 }

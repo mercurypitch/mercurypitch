@@ -293,3 +293,53 @@ describe("a tab's offer", () => {
     expect(localStorage.getItem(tourOfferKey('singing'))).toBeNull()
   })
 })
+
+describe('a Merc tour that does not load', () => {
+  it('tells whoever asked, when its own chunk does not arrive', async () => {
+    const tour = singTour()
+    const failed = vi.fn()
+    startRoomTour('singing', () => true, failed)
+
+    tour.fail()
+    await settled()
+
+    expect(failed).toHaveBeenCalledOnce()
+  })
+
+  it("tells whoever asked, when the coach's chunk does not arrive", async () => {
+    const tour = singTour()
+    fakes.startCoachTour.mockRejectedValueOnce(new Error('chunk'))
+    const failed = vi.fn()
+    startRoomTour('singing', () => true, failed)
+
+    tour.arrive()
+    await settled()
+
+    expect(failed).toHaveBeenCalledOnce()
+  })
+
+  it('tells nobody about a tour that loaded and was no longer wanted', async () => {
+    const tour = singTour()
+    const failed = vi.fn()
+    startRoomTour('singing', () => false, failed)
+
+    tour.arrive()
+    await settled()
+
+    expect(fakes.startCoachTour).not.toHaveBeenCalled()
+    expect(failed).not.toHaveBeenCalled()
+  })
+
+  it('tells nobody about a tour that started', async () => {
+    const tour = singTour()
+    const failed = vi.fn()
+    startRoomTour('singing', () => true, failed)
+
+    tour.arrive()
+    await vi.waitFor(() => {
+      expect(localStorage.getItem(tourOfferKey('singing'))).toBe('true')
+    })
+
+    expect(failed).not.toHaveBeenCalled()
+  })
+})

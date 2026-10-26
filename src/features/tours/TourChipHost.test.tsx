@@ -240,6 +240,52 @@ describe('TourChipHost: the chip', () => {
     expect(store.startPageTour).not.toHaveBeenCalled()
   })
 
+  it('hands the offer back when the Merc tour it started does not load, so a later visit offers it again', async () => {
+    const load = vi.fn(async (): Promise<CoachTour> => {
+      throw new Error('chunk')
+    })
+    registry.COACH_TOURS = { singing: { key: 'sing', load } }
+    store.hasPageTour.mockReturnValue(false)
+    mount('singing')
+    expect(localStorage.getItem(KEY('singing'))).toBe('true')
+
+    fireEvent.click(screen.getByText('Merc can show you around, 30 s'))
+    await vi.waitFor(() => expect(load).toHaveBeenCalled())
+
+    // The chip comes back as Merc lets go: the same offer, so seeing it
+    // spends nothing and reports nothing.
+    await vi.waitFor(() =>
+      expect(chip()).toHaveTextContent('Merc can show you around, 30 s'),
+    )
+    expect(localStorage.getItem(KEY('singing'))).toBeNull()
+    expect(store.trackTour.mock.calls).toEqual([['tour_offer', 'sing']])
+    expect(coach.startCoachTour).not.toHaveBeenCalled()
+
+    // A later visit (chunk recovery's reload is one) offers the tour again.
+    cleanup()
+    mount('singing')
+    expect(chip()).toHaveTextContent('Merc can show you around, 30 s')
+    expect(localStorage.getItem(KEY('singing'))).toBe('true')
+    expect(store.trackTour).toHaveBeenCalledTimes(2)
+  })
+
+  it('spends a handed-back offer on Not now', async () => {
+    const load = vi.fn(async (): Promise<CoachTour> => {
+      throw new Error('chunk')
+    })
+    registry.COACH_TOURS = { singing: { key: 'sing', load } }
+    store.hasPageTour.mockReturnValue(false)
+    mount('singing')
+    fireEvent.click(screen.getByText('Merc can show you around, 30 s'))
+    await vi.waitFor(() => expect(chip()).not.toBeNull())
+    expect(localStorage.getItem(KEY('singing'))).toBeNull()
+
+    fireEvent.click(screen.getByRole('button', { name: 'Not now' }))
+
+    expect(chip()).toBeNull()
+    expect(localStorage.getItem(KEY('singing'))).toBe('true')
+  })
+
   it('starts the old tour elsewhere', () => {
     mount('home')
     fireEvent.click(screen.getByText('New to Home? Take a quick tour.'))
