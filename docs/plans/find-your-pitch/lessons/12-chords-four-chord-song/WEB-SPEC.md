@@ -672,7 +672,7 @@ labelled "flat", since the series keeps "flat" for too low (HUMANIZE pattern 6).
 since the card is a link, and it plays no sound. Its styles go under a class of its own: not Lesson
 2's `.tease` (`src/features/lessons/lesson-02/lesson-02.css:510`), which `learn-next-card.spec.ts`
 tests, and not the tease line's `.next-tease`
-(`src/features/lessons/kit/lesson-sections.css:226-228`); in the kit's shared still styles, if the
+(`src/features/lessons/kit/lesson-sections.css:296-298`); in the kit's shared still styles, if the
 page that first adds them (CURIOSITY-MOMENTS § 3.1, "one still per card") lands first, else in this
 page's stylesheet. It does not move.
 

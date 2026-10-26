@@ -258,7 +258,7 @@ its patterns with it.
   and right in turn, and crosses the middle halfway between (FACTS 12, 59). The click sounds as the
   arm reaches a side, and the lamp lights for 120 ms. The arm's motion is drawn from the audio clock
   on the kit's frame loop, never from the CSS swing the explorer card uses
-  (`lesson-sections.css:914-925`). The kit's drawing had one fixed gradient id, so one copy a page,
+  (`lesson-sections.css:984-995`). The kit's drawing had one fixed gradient id, so one copy a page,
   and this page shows up to four metronomes (the stage, the hero, the guide and free play, beside
   the explorer card's), so `metronomeSVG(id)` takes an id per copy (`kit/explorer-figures.ts:20-32`;
   What the kit and the app still need, item 6).
@@ -731,7 +731,7 @@ sits under the words the kit draws, the eyebrow, the tease line, the hook and th
 (`kit/next-card.ts:131-146`). It holds no button, since the card is a link, and it plays no sound.
 Its styles go in this page's stylesheet, under a class of its own, `.l08-tease`: never Lesson 2's
 `.tease` (`lesson-02/lesson-02.css:510`), which `learn-next-card.spec.ts` tests, nor the kit's
-`.next-tease`, which sets the tease line (`lesson-sections.css:226-232`). It does not move.
+`.next-tease`, which sets the tease line (`lesson-sections.css:296-302`). It does not move.
 
 ## Audio
 
@@ -855,7 +855,7 @@ Lesson 8's entry (`kit/season.ts:303-324`; FACTS 58), as this page wrote it:
   link)", stays as it is: it is admin only, never drawn on a lesson page (`season.ts:102-103`).
 - The signature (`kit/team-notes.ts:40`) and `fig: 'metronome'` stay as they are. The card's figure caption, "A metronome, its arm on
   beats 2 and 4" (`kit/explorer-figures.ts:207`), is the kit's and stays: the card's arm swings in
-  CSS at a fixed rate that names no tempo, 1.1 s a side (`lesson-sections.css:914-925`), and the
+  CSS at a fixed rate that names no tempo, 1.1 s a side (`lesson-sections.css:984-995`), and the
   caption describes the drawing, which claims no tempo (FACTS 58, Illustrations without claims).
 - The hook stays word for word (`season.ts:312`; FACTS 1), with no alternative, and the tease stays
   as `kit/lesson-copy.ts:113` has it: "Same song, same speed. Only the claps move.", which Lesson
@@ -911,7 +911,7 @@ was built on.
    (`8cba5c3d9`, `e364eeaa6`). The card draws Lesson 9's tease, "One note, two ways up: step by
    step, or one leap." (`kit/lesson-copy.ts:114`), above its new hook, "How do you land a note you
    have to leap to?" (`season.ts:331`), under `.next-tease` (`kit/next-card.ts:142`;
-   `lesson-sections.css:226-232`), and the old hook was the admin console's alternative in
+   `lesson-sections.css:296-302`), and the old hook was the admin console's alternative in
    `kit/lesson-copy.ts:106-112` at `b7093a0a4` until #1186 dropped it. This page adds only its
    tease figure to the slot (Toys 9).
 10. `kit/quiz.ts`: `recallStepHref` promoted beside `lessonPageHref` (`:141-143`, `:137-139`),
