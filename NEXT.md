@@ -178,3 +178,10 @@ Note: the lanes' memory gate read a stale cgroup path after the 21:00 restart (f
 ## 22:42 — #1213 rebased and pushed
 - Gates on a94b555ad (main cddefd571): check 0/11 clean, unit 37 files / 363 tests, scripts 255, pr:validate, metrics, index. Pushed with lease over 86babb444; body Checks section restated (new base, prior results kept as "previous head"), read back intact, no footer. CI re-running on a94b555ad.
 - Held PRs otherwise clean against main (merge-tree 22:18).
+
+## 22:56 — #1213 green
+- CI on a94b555ad: 19 pass, 4 skipped (the three Beside Cue jobs and the prod deploy job do not run on a PR), PR Gate pass, mergeable clean, no review threads. Holds for the owner.
+- No new PRs since #1214 (19:19); the other agent's open PRs are #1202 (Glass art), drafts #1203 and #1204.
+
+## 23:35 — owner ask: onboarding critique, linking, Search Console, follow-ups, game changer
+- Two local fenced walks on main (lesson-tour detached, restored to feat/lesson-10-app-copy bdb16f364, clean). Findings: onb/FINDINGS.md. Port 3797 freed. 965 MB free.

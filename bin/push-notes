@@ -16,7 +16,7 @@ FILES=(
   l11/INBOX.md
   l12/PLAN.md l12/DECISIONS.md
   arp/CONSENSUS.md arp/FOLLOWUPS.md arp/BRIEF-v2.md
-  tour/PLAN.md
+  tour/PLAN.md onb/FINDINGS.md
   l9/BRIEF-page-3.md l12/BRIEF-sing-layout.md
   release/BRIEF-notes.md release/bin/cut.py
   release/notes/CHANGELOG-entry.md release/notes/dev-changelog-entry.md release/notes/PR-BODY.md
@@ -55,6 +55,7 @@ session's scratchpad. This branch is never merged.
 - `l9/`, `l10/`, `l11/`, `l12/`: build plans, decisions and follow-ups.
 - `arp/`: the arpeggio grading consensus.
 - `tour/`: the lesson page tour plan.
+- `onb/`: findings from walking the onboarding and the lesson links locally.
 - `bin/`: the lane scripts builders run tests through, and the fold helper.
 
 Builder ids are replaced with "(builder)". The work itself is on the `feat/`
