@@ -10,7 +10,7 @@
 // questions.ts and none retyped here, and says what was tapped. It opens
 // nothing itself.
 //
-// Six things are easy to break:
+// Seven things are easy to break:
 //
 // - The chips fly as the screen mounts (fly-chips.ts): each from the pill
 //   that made it, the rest rising in. It reads where the chips stand, so no
@@ -38,6 +38,10 @@
 //   stays beside it as the second button, and still enters Start here with
 //   its room's tour; See every room is the quiet link.
 //
+// - A lesson's cover carries its title in the picture, so its card shows it
+//   whole (`data-cover`), where a room's cover is cropped to the card's
+//   shape. The stylesheet says how at each width.
+//
 // What the host sees: onOpenStop with the card's own stop, from the card or
 // the main button; onScopeChange with what the switch should now be (it is
 // the host's to keep); onShowMeAround, onSeeEveryRoom, onChangeAnswers and
@@ -50,7 +54,7 @@ import { GiftIcon } from '@/components/billing/GiftIcon'
 import { ChevronLeft } from '@/components/icons'
 import type { MercState } from '@/lib/merc/constants'
 import type { Plan, PlanStop, ScopeOffer } from './build-plan'
-import { PLAN_DESTS, planStops } from './build-plan'
+import { coverHasWords, PLAN_DESTS, planStops } from './build-plan'
 import { flyChips } from './fly-chips'
 import { KICKER } from './plan-copy'
 import type { CreditsLine } from './plan-credits'
@@ -163,6 +167,7 @@ function StopCard(props: StopCardProps): JSX.Element {
       class={styles.stop}
       data-kind={props.stop.kind}
       data-dest={props.stop.dest}
+      data-cover={coverHasWords(props.stop.dest) ? 'whole' : undefined}
       onClick={() => props.onOpen(props.stop)}
     >
       <span class={styles.cover}>

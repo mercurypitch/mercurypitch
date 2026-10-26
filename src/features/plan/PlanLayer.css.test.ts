@@ -173,3 +173,59 @@ describe("the way to change the answers' stylesheet", () => {
     expect(declarations(css, '\\.skip')['min-height']).toBe('44px')
   })
 })
+
+// A lesson's cover is its share image, 1200x630 with its title written in it.
+// Cut to a strip as tall as the card it read "at is a no", and on a tablet
+// the cards kept a phone's 440 px column. jsdom lays nothing out, so these
+// hold the rules; the browser walk measures where the picture lands.
+describe("the plan's stylesheet, for a lesson's cover and a tablet's width", () => {
+  const css = sheet('src/features/plan/PlanScreen.module.css')
+  const wide = inside(css, '@media (min-width: 900px)')
+  const tablet = inside(css, '@media (min-width: 600px)')
+  const WHOLE = "\\.stop\\[data-cover='whole'\\]"
+  const SIDE = `${WHOLE}:not\\(\\[data-kind='start'\\]\\)`
+
+  it('contains the picture, so no width ever cuts it', () => {
+    expect(declarations(css, `${WHOLE} \\.cover img`)).toEqual({
+      'object-fit': 'contain',
+    })
+    const bodies = [
+      ...css.matchAll(/([^{}]*data-cover='whole'[^{}]*)\{([^}]*)\}/g),
+    ].map((m) => m[2])
+    expect(bodies.length).toBeGreaterThan(0)
+    for (const body of bodies) expect(body).not.toMatch(/object-fit:\s*cover/)
+  })
+
+  it('beside the words, gives the cover its own shape, not the height of the card', () => {
+    const beside = declarations(css, `${SIDE} \\.cover`)
+
+    expect(beside['aspect-ratio']).toBe('1200 / 630')
+    expect(beside['align-self']).toBe('flex-start')
+  })
+
+  it('in the right-hand column, spans the card over the words', () => {
+    expect(declarations(wide, SIDE)).toEqual({ 'flex-direction': 'column' })
+    expect(declarations(wide, `${SIDE} \\.cover`)).toMatchObject({
+      'align-self': 'stretch',
+      width: 'auto',
+    })
+    expect(declarations(wide, `${SIDE} \\.cover`)['aspect-ratio']).toBe(
+      undefined,
+    )
+  })
+
+  it('keeps Start here at its own height when the column beside it runs taller', () => {
+    expect(declarations(wide, '\\.stops > \\.stop')).toEqual({
+      'align-self': 'start',
+    })
+  })
+
+  it("gives the one column a tablet's width from 600 px, and the main button the same", () => {
+    expect(declarations(css, '\\.stops')['max-width']).toBe('var(--pl-column)')
+    expect(declarations(css, '\\.primary')['max-width']).toBe(
+      'var(--pl-column)',
+    )
+    expect(declarations(css, '\\.root')['--pl-column']).toBe('440px')
+    expect(declarations(tablet, '\\.root')).toEqual({ '--pl-column': '640px' })
+  })
+})

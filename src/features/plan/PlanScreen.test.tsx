@@ -157,6 +157,25 @@ describe('what the plan says', () => {
     ).toBeInTheDocument()
   })
 
+  it("asks for a lesson's cover whole, and lets a room's be cut to the card", () => {
+    // Arrange: Learn is Lesson 1, whose cover carries its title.
+    const lesson: PlanStop = {
+      kind: 'learn',
+      dest: 'lesson1',
+      title: 'What is a note?',
+      why: '',
+      chips: [],
+    }
+
+    // Act
+    open({ plan: { ...AUDITION, learn: lesson } })
+
+    // Assert
+    expect(card('learn').dataset.cover).toBe('whole')
+    expect(card('start').dataset.cover).toBeUndefined()
+    expect(card('play').dataset.cover).toBeUndefined()
+  })
+
   it('shows one card for each stop the plan has', () => {
     open()
 
