@@ -699,6 +699,8 @@ describe('navigation', () => {
       '/jam',
       '/piano-night',
       '/drum-night',
+      '/studio-night',
+      '/studio-night.html',
     ]) {
       expect(app.runtime.handleFetch(navigation(path))).toBeUndefined()
     }

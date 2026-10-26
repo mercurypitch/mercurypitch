@@ -15,6 +15,9 @@ https://llmstxt.org.
 
 ## Rooms
 
+- [Studio](https://mercurypitch.com/studio-night): Bring kept takes and audio
+  files into a project saved in this browser. Download an editable project
+  backup with its copied audio.
 - [Voice Mirror](https://mercurypitch.com/mirror): Sing one note and watch a
   range draw itself. No account, no setup, about sixty seconds.
 - [Vocal Range Test](https://mercurypitch.com/vocal-range-test): Glide from the
