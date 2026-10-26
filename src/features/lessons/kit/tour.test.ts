@@ -148,18 +148,20 @@ describe('pageSteps', () => {
     expect(mast?.targets.map((el) => el.className)).toEqual(['lm-btn'])
   })
 
-  it('names the microphone in Sing it on a lesson that listens, and not on one that never does', () => {
+  it('names the microphone in Sing it on each lesson that listens, and not on one that never does', () => {
     // Arrange
     page()
     const sing = TOUR_STEPS[2]
+    const body = (lesson: number): string | undefined =>
+      pageSteps(lesson).find((s) => s.title === sing.title)?.body
 
     // Act
-    const listens = pageSteps(3).find((s) => s.title === sing.title)
-    const never = pageSteps(1).find((s) => s.title === sing.title)
+    const listens = [3, 5, 7, 9].map(body)
+    const never = [1, 2, 4, 6, 8].map(body)
 
     // Assert
-    expect(listens?.body).toBe(`${sing.body} ${sing.listening}`)
-    expect(never?.body).toBe(sing.body)
+    expect(listens).toEqual(Array(4).fill(`${sing.body} ${sing.listening}`))
+    expect(never).toEqual(Array(5).fill(sing.body))
   })
 })
 

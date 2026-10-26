@@ -11,12 +11,12 @@
 // and the tour's question mark on a wide screen, and the menu's button and
 // the question mark on a phone, where the menu carries the sections.
 //
-// Each line was checked against what the eight pages do. Lessons 1, 2, 4,
-// 6 and 8 never listen; 3, 5 and 7 can, once the viewer chooses to sing,
-// and their pages say the voice is analysed on the device and nothing is
-// recorded, kept or sent. So Sing it's line names the microphone only on
-// the lessons in `LISTENING_LESSONS`: a new lesson whose Sing it listens
-// adds its number there.
+// Each line was checked against what the nine pages do. Lessons 1, 2, 4,
+// 6 and 8 never listen; 3, 5, 7 and 9 can, once the viewer chooses to
+// sing, and their pages say the voice is analysed on the device and
+// nothing is recorded, kept or sent. So Sing it's line names the
+// microphone only on the lessons in `LISTENING_LESSONS`: a new lesson
+// whose Sing it listens adds its number there.
 //
 // The menu's "Tour this page", which names the question mark too, is the
 // one tour word not here: both are drawn on first paint (lesson-menu.ts),
@@ -32,7 +32,7 @@ export interface TourStepCopy {
 }
 
 /** The lessons whose Sing it listens through the microphone, once the viewer chooses to sing. */
-export const LISTENING_LESSONS: readonly number[] = [3, 5, 7]
+export const LISTENING_LESSONS: readonly number[] = [3, 5, 7, 9]
 
 export const TOUR_STEPS: readonly TourStepCopy[] = [
   {

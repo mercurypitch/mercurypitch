@@ -830,10 +830,10 @@ among them (PR #1149), and in Lesson 9's spec, beyond the parts Lessons 2 to 9 p
    open's predict.
 4. First-paint ceilings for `learn/14.html` in `scripts/assert-first-paint-budgets.mjs`, one in its
    JavaScript table and one in its stylesheet table, beside Lessons 3 and 6's (`:103-151`,
-   `:181-189`; `:314-317`, `:327-331`). Every build emits every lesson page, and the check fails a
-   document with no ceiling (`:579-583`), so without them the Browser jobs fail before any spec
+   `:181-189`; `:322-325`, `:335-339`). Every build emits every lesson page, and the check fails a
+   document with no ceiling (`:587-591`), so without them the Browser jobs fail before any spec
    runs, as Lesson 6's did on PR #1149. Each is the page's measured first paint plus about a
-   quarter, the tables' rule (`:47-58`, `:270-280`), measured in `build:e2e`, where the check runs
+   quarter, the tables' rule (`:47-58`, `:278-288`), measured in `build:e2e`, where the check runs
    (`package.json:20`), as Lesson 6's entry warns, since a build of one page alone weighs it lighter
    (`assert-first-paint-budgets.mjs:186-188`). As on Lesson 3, the listener, the pitch detector and
    Voice Mirror's scorer arrive through a dynamic import when Start is pressed
