@@ -280,12 +280,54 @@ describe('CoachLayer', () => {
     expect(bubble().style.top).toBe('360px')
   })
 
-  it('drops the spotlight for a target taller than most of the screen', () => {
+  it('stands in a corner, with no ring or dim, for a target taller than most of the screen', () => {
     addTarget({ top: 0, left: 0, width: 390, height: 2000 })
     mount()
 
+    // No ring, so no dim either: the dim is the ring's shadow.
     expect(screen.queryByTestId('coach-ring')).toBeNull()
-    expect(bubble().dataset.place).toBe('centre')
+    expect(bubble().dataset.place).toBe('corner')
+    expect(bubble().dataset.corner).toBe('bottom-right')
+  })
+
+  it('keeps a tall target clear from the corner its step names, show and do alike', () => {
+    // Sing's line on a wide screen: the canvas is most of the window.
+    addTarget({ top: 189, left: 309, width: 896, height: 702 })
+    const tall = '[data-tour="coach-test.mic"]'
+    const tour: CoachTour = {
+      key: 'sing',
+      steps: [
+        {
+          id: 'sing',
+          kind: 'do',
+          waitFor: 'pitch-detected',
+          target: tall,
+          corner: 'top-right',
+          merc: 'listen',
+          title: 'Sing any note',
+          body: 'Hold one note, any note.',
+        },
+        {
+          id: 'line',
+          kind: 'show',
+          target: tall,
+          corner: 'top-right',
+          merc: 'point',
+          title: 'That line is your voice',
+          body: 'Higher notes climb, lower notes sink.',
+        },
+      ],
+    }
+    mount({ tour })
+    expect(screen.queryByTestId('coach-ring')).toBeNull()
+    expect(bubble().dataset.place).toBe('corner')
+    expect(bubble().dataset.corner).toBe('top-right')
+
+    fireEvent.click(screen.getByRole('button', { name: 'Skip this step' }))
+    expect(screen.getByText('That line is your voice')).toBeTruthy()
+    expect(screen.queryByTestId('coach-ring')).toBeNull()
+    expect(bubble().dataset.place).toBe('corner')
+    expect(bubble().dataset.corner).toBe('top-right')
   })
 
   it('centres the bubble when the target is missing, and rings it once it comes', () => {

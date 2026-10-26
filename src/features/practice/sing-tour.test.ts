@@ -137,6 +137,15 @@ describe('SING_TOUR', () => {
     }
   })
 
+  it('keeps a wide screen\'s bubble at the top right, off the line\'s labels and "now"', () => {
+    // The canvas is taller than a ring may be on a wide screen, so the bubble
+    // takes a corner: the top right, measured to clear the note labels, the
+    // live marker and the Monitor's status line (sing-tour.ts).
+    const [, sing, line] = stepsFor(false)
+    expect(sing?.corner).toBe('top-right')
+    expect(line?.corner).toBe('top-right')
+  })
+
   it('ends at Hear Yourself, by what always holds it, and never says "here"', () => {
     const phoneLast = stepsFor(true).at(-1)
     const desktopLast = stepsFor(false).at(-1)

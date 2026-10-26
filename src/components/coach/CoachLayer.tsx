@@ -12,9 +12,14 @@
 //   the confirm-email pill, as the toasts stand: lib/foot-space.ts), and it
 //   moves to the top when that would cover the target. A target that is not
 //   there (not mounted yet, or under a full-screen stage, which makes the page
-//   inert) or that is taller than RING_MAX_SHARE of the window gets no ring,
-//   and the bubble stands centred. The layer keeps looking every TRACK_MS while
-//   a step shows, so a target that mounts late, or moves, is found and ringed.
+//   inert) gets no ring, and the bubble stands centred, or in a corner for a
+//   do-step. One taller than RING_MAX_SHARE of the window gets no ring and no
+//   dim either, since it would ring the page, and on a wide screen the bubble
+//   stands in a corner, never over the middle of it: the bottom right, or the
+//   corner the step names (Sing's line, which keeps its labels and the
+//   Monitor's status line clear at the top right). The layer keeps looking
+//   every TRACK_MS while a step shows, so a target that mounts late, or moves,
+//   is found and ringed.
 // - Its height. It sits over the app's stages, rails and sheets and under its
 //   modals (z 900, below --z-modal's 1000). Not every dialog is a modal at
 //   that height: Karaoke's score card is one over the phone stage (z 1000),
@@ -45,7 +50,7 @@ import { createComponent, createEffect, createMemo, createSignal, on, onCleanup,
 import { render } from 'solid-js/web'
 import { X } from '@/components/icons'
 import { MercPresence } from '@/components/room-kit/MercPresence'
-import type { CoachAside, CoachHandoff, CoachStep } from '@/lib/coach-types'
+import type { CoachAside, CoachCorner, CoachHandoff, CoachStep, } from '@/lib/coach-types'
 import type { DemoSound } from '@/lib/demo-audio'
 import { playHoldTone } from '@/lib/demo-audio'
 import type { MercState } from '@/lib/merc/constants'
@@ -93,13 +98,20 @@ const sameBox = (a: Box | null, b: Box | null): boolean =>
     a.width === b.width &&
     a.height === b.height)
 
-/** The box to ring for `step`, or null for none. Scrolls a target out of view into it, once. */
-function ringFor(step: CoachStep, scrolled: { done: boolean }): Box | null {
+/**
+ * The box to ring for `step`; 'tall' for a target that is there but taller
+ * than RING_MAX_SHARE of the window; null for none. Scrolls a target out of
+ * view into it, once.
+ */
+function ringFor(
+  step: CoachStep,
+  scrolled: { done: boolean },
+): Box | 'tall' | null {
   if (step.target === undefined) return null
   const el = findTarget(step.target)
   if (el === null) return null
   let r = el.getBoundingClientRect()
-  if (r.height > window.innerHeight * RING_MAX_SHARE) return null
+  if (r.height > window.innerHeight * RING_MAX_SHARE) return 'tall'
   const outOfView = r.bottom < 0 || r.top > window.innerHeight
   if (outOfView && !scrolled.done && typeof el.scrollIntoView === 'function') {
     scrolled.done = true
@@ -159,6 +171,8 @@ export function CoachLayer(props: CoachLayerProps): JSX.Element {
   // A quiet step draws nothing at all while the singer gets on with it.
   const quietStep = createMemo(() => isQuiet(step()))
   const [ring, setRing] = createSignal<Box | null>(null)
+  // The step's target is there but too tall to ring: keep the bubble off it.
+  const [tall, setTall] = createSignal(false)
   const [size, setSize] = createSignal({ w: BUBBLE_MAX_W, h: 0 })
   const [handoff, setHandoff] = createSignal<CoachHandoff | null>(null)
   let bubble: HTMLDivElement | undefined
@@ -186,9 +200,9 @@ export function CoachLayer(props: CoachLayerProps): JSX.Element {
     if (next.w !== last.w || next.h !== last.h) setSize(next)
   }
 
-  // A do-step with nothing to ring ("sing to the end") leaves the bubble up
-  // for as long as the singer is busy, so it stands aside: in a corner of a
-  // wide screen, and at the top of a phone, off the transport at its foot.
+  // A do-step with nothing to ring leaves the bubble up for as long as the
+  // singer is busy, so it stands aside: in a corner of a wide screen, and at
+  // the top of a phone, off the transport at its foot.
   const asideForWork = (): boolean => snapshot()?.step.kind === 'do'
 
   const place = (): Place => {
@@ -199,8 +213,13 @@ export function CoachLayer(props: CoachLayerProps): JSX.Element {
       return r.top + r.height + GAP > sheetTop ? 'dock-top' : 'dock-bottom'
     }
     if (r !== null) return 'near'
-    return asideForWork() ? 'corner' : 'centre'
+    // A target too tall to ring is still what the step is about, so the
+    // bubble keeps off its middle, whatever the step's kind.
+    return tall() || asideForWork() ? 'corner' : 'centre'
   }
+
+  const corner = (): CoachCorner | undefined =>
+    place() === 'corner' ? (step()?.corner ?? 'bottom-right') : undefined
 
   const bubbleStyle = (): JSX.CSSProperties => {
     const r = ring()
@@ -218,18 +237,17 @@ export function CoachLayer(props: CoachLayerProps): JSX.Element {
   createEffect(
     on(step, (shown) => {
       stopTone()
-      if (shown === undefined) {
+      if (shown === undefined || isQuiet(shown)) {
         setRing(null)
-        return
-      }
-      if (isQuiet(shown)) {
-        setRing(null)
+        setTall(false)
         return
       }
       const scrolled = { done: false }
       const track = (): void => {
-        const next = ringFor(shown, scrolled)
+        const found = ringFor(shown, scrolled)
+        const next = found === 'tall' ? null : found
         if (!sameBox(untrack(ring), next)) setRing(next)
+        setTall(found === 'tall')
         measureBubble()
       }
       track()
@@ -342,6 +360,7 @@ export function CoachLayer(props: CoachLayerProps): JSX.Element {
           classList={{ [styles.celebrating]: snapshot()?.celebrating === true }}
           data-testid="coach-bubble"
           data-place={place()}
+          data-corner={corner()}
           style={bubbleStyle()}
           role="dialog"
           aria-labelledby="coach-title"
