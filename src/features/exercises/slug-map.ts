@@ -35,8 +35,9 @@ export interface ExerciseLaunch {
   /** One-shot launch difficulty (1-10); higher = faster / harder. */
   difficulty?: number
   /** Intervals to drill, in semitones above the start note, each upward
-   *  (e.g. `[5, 7]`), in place of the exercise's own pool. Whole semitones
-   *  from 1 to 12, each once; Interval Trainer reads it. */
+   *  (e.g. `[5, 7]`), in place of the exercise's own pool: whole semitones
+   *  1 to 12, each once. Interval Trainer reads it, and Drone Intonation
+   *  the ones its own pool names. */
   intervals?: number[]
 }
 

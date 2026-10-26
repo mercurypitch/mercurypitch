@@ -1,9 +1,10 @@
 import { batch } from 'solid-js'
 import { difficultyFactor } from '@/features/practice-intelligence/difficulty-scaling'
-import { launchDifficulty } from '@/features/practice-intelligence/launch-override'
+import { launchDifficulty, launchIntervals, } from '@/features/practice-intelligence/launch-override'
 import { midiToFrequency as midiToFreq } from '@/lib/frequency-to-note'
 import { approximateRichness } from '@/lib/vocal-analyzer'
 import { freqToExactMidi, pitchStabilityCents, trailingSamplesByTime, } from '../exercise-scoring-utils'
+import { drawIntervalRounds } from '../interval-rounds'
 import type { ExerciseResult } from '../types'
 import { EXERCISE_DRONE_INTONATION } from '../types'
 import type { BaseExerciseController } from '../use-base-exercise'
@@ -23,9 +24,67 @@ const INTERVALS: Array<{ semitones: number; label: string }> = [
   { semitones: 12, label: 'Octave' },
 ]
 
+/** Drone's own name for an interval above the drone ("Minor 3rd" for 3),
+ *  or undefined for one outside its pool. */
+export function droneIntervalLabel(semitones: number): string | undefined {
+  return INTERVALS.find((i) => i.semitones === semitones)?.label
+}
+
+/**
+ * The intervals a launch (a lesson's slug) asked Drone Intonation to drill,
+ * read as `launchIntervals` reads them and kept to Drone's own pool: a
+ * launch may ask for any semitone up to an octave, and Drone names only its
+ * own. Undefined when no launch asked, or asked for none of Drone's, so the
+ * run keeps the pool. setBase and the idle hint both read it here.
+ */
+export function droneLaunchIntervals(): number[] | undefined {
+  const named = launchIntervals(EXERCISE_DRONE_INTONATION)?.filter(
+    (s) => droneIntervalLabel(s) !== undefined,
+  )
+  return named !== undefined && named.length > 0 ? named : undefined
+}
+
+/** Rounds a run will ask for at this difficulty (d5: 6 * 1 == 6). A run on
+ *  the pool plays each interval at most once, so the pool is the ceiling; a
+ *  launch's own intervals may come back, so two of them still make a run as
+ *  long as the difficulty asks for. */
+export function plannedRounds(
+  difficulty: number,
+  intervals?: readonly number[],
+): number {
+  // Harder = more intervals/rounds over the drone.
+  const asked = Math.max(
+    1,
+    Math.round(ROUNDS * (2 - difficultyFactor(difficulty))),
+  )
+  return intervals !== undefined && intervals.length > 0
+    ? asked
+    : Math.min(INTERVALS.length, asked)
+}
+
+/** The idle hint's words for a launch's own intervals, in Drone's names,
+ *  narrowest first: "Minor 3rd and Major 3rd". Every one is named, since a
+ *  launch's list need not run unbroken through the pool. */
+export function droneIntervalNames(intervals: readonly number[]): string {
+  const names = [...new Set(intervals)]
+    .sort((a, b) => a - b)
+    .map((s) => droneIntervalLabel(s) ?? `${s} semitones`)
+  if (names.length <= 2) return names.join(' and ')
+  return `${names.slice(0, -1).join(', ')} and ${names[names.length - 1]}`
+}
+
 function pickIntervals(
   count: number,
+  given?: readonly number[],
 ): Array<{ semitones: number; label: string }> {
+  if (given !== undefined && given.length > 0) {
+    // The draw Interval Trainer deals a launch's list with: an interval may
+    // come back, never twice running.
+    return drawIntervalRounds(given, count).map((semitones) => ({
+      semitones,
+      label: droneIntervalLabel(semitones) ?? `${semitones} semitones`,
+    }))
+  }
   const shuffled = [...INTERVALS].sort(() => Math.random() - 0.5)
   return shuffled.slice(0, count)
 }
@@ -68,12 +127,10 @@ export function useDroneIntonationController(
     scoreK = SCORE_K / factor
     // Harder = longer sustain required to match the drone.
     matchWindowMs = Math.round(MATCH_WINDOW_MS * (2 - factor))
-    // Harder = more intervals/rounds over the drone (d5: 6 * 1 == 6).
-    const roundCount = Math.min(
-      INTERVALS.length,
-      Math.max(1, Math.round(ROUNDS * (2 - factor))),
-    )
-    rounds = pickIntervals(roundCount)
+    // A launch's own intervals, if it brought any of Drone's, replace the
+    // pool, and the difficulty alone sets how many rounds they fill.
+    const given = droneLaunchIntervals()
+    rounds = pickIntervals(plannedRounds(difficulty, given), given)
     roundIndex = 0
     roundScores = []
     roundStabilities = []

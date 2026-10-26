@@ -1,10 +1,10 @@
 import type { Component } from 'solid-js'
 import { createEffect, createMemo, createSignal, onCleanup, onMount, untrack, } from 'solid-js'
-import { For } from 'solid-js'
+import { For, Show } from 'solid-js'
 import { IconDrone, IconMic } from '@/components/exercise-icons'
 import { NoteDial } from '@/components/NoteDial'
 import { updateDifficultyFromEma } from '@/features/practice-intelligence/difficulty-store'
-import { launchTargetNote } from '@/features/practice-intelligence/launch-override'
+import { launchDifficulty, launchTargetNote, } from '@/features/practice-intelligence/launch-override'
 import type { AudioEngine } from '@/lib/audio-engine'
 import { midiToNoteName, noteToMidi } from '@/lib/frequency-to-note'
 import type { PracticeEngine } from '@/lib/practice-engine'
@@ -14,22 +14,13 @@ import { vocalRangePreset } from '@/stores/settings-store'
 import { ExerciseShell } from '../ExerciseShell'
 import { EXERCISE_DRONE_INTONATION } from '../types'
 import { useBaseExercise } from '../use-base-exercise'
-import { useDroneIntonationController } from './use-drone-intonation-controller'
+import { droneIntervalLabel, droneIntervalNames, droneLaunchIntervals, plannedRounds, useDroneIntonationController, } from './use-drone-intonation-controller'
 
 interface DroneIntonationExerciseProps {
   audioEngine: AudioEngine
   practiceEngine: PracticeEngine
   onBack: () => void
   autoStart?: boolean
-}
-
-const INTERVAL_LABELS: Record<number, string> = {
-  0: 'Unison',
-  3: 'Minor 3rd',
-  4: 'Major 3rd',
-  5: 'Perfect 4th',
-  7: 'Perfect 5th',
-  12: 'Octave',
 }
 
 const DroneIntonationExercise: Component<DroneIntonationExerciseProps> = (
@@ -104,8 +95,16 @@ const DroneIntonationExercise: Component<DroneIntonationExerciseProps> = (
   const lastRoundScore = () => base.state().metrics.lastRoundScore ?? 0
 
   const intervalLabel = createMemo(
-    () => INTERVAL_LABELS[intervalSemitones()] ?? '??',
+    () => droneIntervalLabel(intervalSemitones()) ?? '??',
   )
+  // The hint promises what setBase will play: the same difficulty and the
+  // same intervals, read from the same launch.
+  const launchedIntervals = () => droneLaunchIntervals()
+  const promisedRounds = () =>
+    plannedRounds(
+      launchDifficulty(EXERCISE_DRONE_INTONATION),
+      launchedIntervals(),
+    )
 
   const pitch = () => base.currentPitch()
   const currentCents = () => {
@@ -134,7 +133,13 @@ const DroneIntonationExercise: Component<DroneIntonationExerciseProps> = (
             Sing intervals against a sustained drone. Each target is an
             equal-tempered note, in the same tuning as the rest of the app.
           </p>
-          <span class="idle-hint">6 rounds · Drone: {startNote()}</span>
+          <span class="idle-hint">
+            {promisedRounds()} rounds ·{' '}
+            <Show when={launchedIntervals()}>
+              {(given) => `${droneIntervalNames(given())} · `}
+            </Show>
+            Drone: {startNote()}
+          </span>
         </div>
       }
       idleSettings={
