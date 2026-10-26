@@ -2316,6 +2316,12 @@
   min-width: 0;
   gap: 2px;
 }
+/* The third column holds a chevron, and only Kit has one. Without it the
+   words take that column too: at 1440 px the count-in's "4 beats" was cut
+   to "4 be..." beside an empty column 24 px wide. */
+.consoleModule > span:nth-child(2):last-child {
+  grid-column: 2 / -1;
+}
 .consoleModule small {
   color: var(--vellum-muted);
   font-size: 10px;
