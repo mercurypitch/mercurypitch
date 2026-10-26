@@ -90,6 +90,20 @@ describe('integratedLoudness (ITU-R BS.1770)', () => {
 })
 
 describe('measureLoudness peaks', () => {
+  it('does not skip a larger reconstructed peak because its adjacent samples are quieter', () => {
+    const data = new Float32Array(48000)
+    data[100] = 1
+    for (let k = -7; k <= 8; k++) {
+      const t = k - 0.5
+      const weight =
+        (Math.sin(Math.PI * t) / (Math.PI * t)) *
+        (0.5 + 0.5 * Math.cos((Math.PI * t) / 8))
+      data[1000 + k] = 0.7 * Math.sign(weight)
+    }
+    // The original kernel itself reaches +3.129 dB at the skipped interval.
+    expect(measureLoudness(audio([data])).truePeakDb).toBeGreaterThan(3.12)
+  })
+
   it('reports the sample peak', () => {
     const tone = sine(1, 1000, 0.5)
     expect(measureLoudness(audio([tone])).samplePeakDb).toBeCloseTo(-6.02, 1)

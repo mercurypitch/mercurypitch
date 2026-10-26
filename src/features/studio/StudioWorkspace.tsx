@@ -1,17 +1,23 @@
 // Studio workspace — arrangement view state, contextual panels and the shared audio transport.
-import { createEffect, createMemo, createSignal, For, onCleanup, onMount, Show, } from 'solid-js'
+import { createEffect, createMemo, createSignal, For, onCleanup, onMount, Show, untrack, } from 'solid-js'
 import { ChevronDown, Plus, RotateCcw } from '@/components/icons'
 import { installSpacePlaybackToggle, isInsideOverlay, isTypingTarget, } from '@/lib/space-playback'
 import type { StudioClip } from '@/lib/studio/model/types'
 import { createReactiveMatch } from '@/lib/use-viewport'
+import { StudioOutputMeter } from './audio/StudioOutputMeter'
 import { useStudioTransport } from './audio/useStudioTransport'
 import { createStudioEditor } from './editor/studio-editor'
+import { StudioExportPanel } from './export/StudioExportPanel'
+import { useStudioExport } from './export/useStudioExport'
 import { isStudioAudioDrop, studioDropFrame, studioDroppedTake, } from './integration/drop-audio'
 import type { StudioSourceEntry } from './integration/source-catalog'
 import { StudioClipDetails } from './panels/StudioClipDetails'
 import { StudioPanel } from './panels/StudioPanel'
 import { StudioSongPanel } from './panels/StudioSongPanel'
 import { StudioTrackDetails } from './panels/StudioTrackDetails'
+import { StudioSoundPanel } from './sound/StudioSoundPanel'
+import { useStudioComparison } from './sound/useStudioComparison'
+import { useStudioSound } from './sound/useStudioSound'
 import styles from './StudioPage.module.css'
 import { StudioSourcePicker } from './StudioSourcePicker'
 import { StudioTransport } from './StudioTransport'
@@ -20,7 +26,15 @@ import { StudioTimeline } from './timeline/StudioTimeline'
 import { StudioTrackControls } from './timeline/StudioTrackControls'
 import type { StudioController } from './useStudioController'
 
-type Panel = 'sources' | 'song' | 'clip' | 'track' | 'mix' | null
+type Panel =
+  | 'sources'
+  | 'song'
+  | 'clip'
+  | 'track'
+  | 'mix'
+  | 'sound'
+  | 'export'
+  | null
 interface StudioWorkspaceProps {
   studio: StudioController
   startWithSources: boolean
@@ -47,6 +61,10 @@ export function StudioWorkspace(props: StudioWorkspaceProps) {
   const [announcement, setAnnouncement] = createSignal('')
   const [dropActive, setDropActive] = createSignal(false)
   let dropping = false
+  let disposed = false
+  onCleanup(() => {
+    disposed = true
+  })
   let opener: HTMLElement | null = null
   let audioInput!: HTMLInputElement
   let importFrame = 0
@@ -57,7 +75,62 @@ export function StudioWorkspace(props: StudioWorkspaceProps) {
     beforePlay: () => setPreviewEpoch((epoch) => epoch + 1),
   })
   const project = () => props.studio.project()!
-  const writable = () => props.studio.writable() && !props.studio.importing()
+  const canProcess = () => !props.studio.busy() && !props.studio.importing()
+  const baseWritable = () => props.studio.writable() && canProcess()
+  const sound = useStudioSound({
+    project: () => props.studio.project(),
+    assets: () => props.studio.assets(),
+    canStart: () => baseWritable() && !exporter.busy() && !comparison.busy(),
+    readCanonicalAsset: (id) => props.studio.readCanonicalAsset(id),
+    releaseAudio: releaseFinishingAudio,
+    onCommand: (command) => props.studio.dispatch(command),
+  })
+  const exporter = useStudioExport({
+    project: () => props.studio.project(),
+    assets: () => props.studio.assets(),
+    canStart: () => canProcess() && !sound.busy() && !comparison.busy(),
+    readCanonicalAsset: (id) => props.studio.readCanonicalAsset(id),
+    releaseAudio: releaseFinishingAudio,
+  })
+  const comparison = useStudioComparison({
+    project: () => props.studio.project(),
+    assets: () => props.studio.assets(),
+    canStart: () => canProcess() && !sound.busy() && !exporter.busy(),
+    readCanonicalAsset: (id) => props.studio.readCanonicalAsset(id),
+    transport,
+    beforePrepare: () => setPreviewEpoch((epoch) => epoch + 1),
+    onPrepared: (result) => void transport.setMasterGain(result),
+  })
+
+  function releaseFinishingAudio(): Promise<void> {
+    comparison.stop()
+    setPreviewEpoch((epoch) => epoch + 1)
+    return transport.releaseAudio()
+  }
+
+  async function runSongAction(action: () => unknown): Promise<void> {
+    if (finishing()) return
+    const id = props.studio.project()?.id
+
+    await releaseFinishingAudio()
+    if (!disposed && id !== undefined && props.studio.project()?.id === id)
+      action()
+  }
+  createEffect(() => {
+    const result = exporter.result()
+    if (result)
+      untrack(
+        () =>
+          void transport.setMasterGain({
+            projectId: result.token.projectId,
+            revision: result.token.revision,
+            gainDb: result.gainDb,
+            safetyGainDb: result.safetyGainDb,
+          }),
+      )
+  })
+  const finishing = () => sound.busy() || exporter.busy() || comparison.busy()
+  const writable = () => baseWritable() && !finishing()
   const selectedClip = () =>
     project().clips.find((clip) => clip.id === selectedClipId())
   const selectedTrack = () =>
@@ -71,6 +144,8 @@ export function StudioWorkspace(props: StudioWorkspaceProps) {
       clip: 'Clip details',
       track: 'Track details',
       mix: 'Mix',
+      sound: 'Sound',
+      export: 'Export',
     })[panel() ?? 'song']
   const status = () =>
     !props.studio.writable()
@@ -129,7 +204,7 @@ export function StudioWorkspace(props: StudioWorkspaceProps) {
     setPreviewEpoch((epoch) => epoch + 1)
     editor.cancel()
     try {
-      await transport.releaseAudio()
+      await releaseFinishingAudio()
       if (props.studio.project()?.id !== projectId || !writable()) return
       const added = files.length
         ? await props.studio.addFiles(files, frame)
@@ -146,17 +221,17 @@ export function StudioWorkspace(props: StudioWorkspaceProps) {
   }
 
   function openPanel(next: Panel): void {
+    if (next !== 'sound') comparison.stop()
     if (next !== 'sources') transport.stopPreview()
-    if (!panel())
-      opener =
-        document.activeElement instanceof HTMLElement
-          ? document.activeElement
-          : null
+    const active = document.activeElement
+    if (active instanceof HTMLElement && !active.closest('[data-studio-panel]'))
+      opener = active
     setPanel(next)
     if (next === 'sources') void props.studio.refreshSources()
   }
 
   function closePanel(): void {
+    comparison.stop()
     transport.stopPreview()
     setPanel(null)
     queueMicrotask(() => {
@@ -165,6 +240,8 @@ export function StudioWorkspace(props: StudioWorkspaceProps) {
   }
 
   function togglePlayback(): void {
+    if (finishing()) return
+    comparison.stop()
     if (transport.playing()) transport.pause()
     else void transport.play()
   }
@@ -179,7 +256,7 @@ export function StudioWorkspace(props: StudioWorkspaceProps) {
   ): Promise<boolean> {
     const frame = transport.playheadFrame()
     const projectId = project().id
-    await transport.releaseAudio()
+    await releaseFinishingAudio()
     if (props.studio.project()?.id !== projectId) return false
     const added = await props.studio.addTakes(entries, frame)
     if (added) closePanel()
@@ -190,7 +267,8 @@ export function StudioWorkspace(props: StudioWorkspaceProps) {
     const remove = installSpacePlaybackToggle({
       toggle: togglePlayback,
       ownsSpace: () => !isInsideOverlay(document.activeElement),
-      enabled: () => !transport.pending() && project().clips.length > 0,
+      enabled: () =>
+        !transport.pending() && !finishing() && project().clips.length > 0,
     })
     onCleanup(remove)
   })
@@ -206,6 +284,7 @@ export function StudioWorkspace(props: StudioWorkspaceProps) {
   })
 
   function historyAction(direction: 'undo' | 'redo'): void {
+    if (!writable()) return
     editor.cancel()
     if (direction === 'undo') props.studio.undo()
     else props.studio.redo()
@@ -245,10 +324,13 @@ export function StudioWorkspace(props: StudioWorkspaceProps) {
     return (
       <StudioTransport
         playing={transport.playing()}
-        pending={transport.pending()}
+        pending={transport.pending() || finishing()}
         playheadFrame={transport.playheadFrame()}
         peakL={transport.peakL()}
         peakR={transport.peakR()}
+        meter={transport.meter()}
+        meterReady={transport.meterReady()}
+        onResetPeakHold={transport.resetPeakHold}
         hasAudio={project().clips.length > 0}
         repeating={transport.repeating()}
         onRepeat={() => void transport.setRepeat(!transport.repeating())}
@@ -262,6 +344,7 @@ export function StudioWorkspace(props: StudioWorkspaceProps) {
     <div
       ref={workspace}
       tabIndex={-1}
+      data-tour="studio.workspace"
       class={styles.workspace}
       classList={{
         [styles.phone]: phone(),
@@ -300,7 +383,7 @@ export function StudioWorkspace(props: StudioWorkspaceProps) {
           const projectId = project().id
           const currentProject = props.studio.project
           const addFile = props.studio.addFile
-          void transport.releaseAudio().then(async () => {
+          void releaseFinishingAudio().then(async () => {
             if (
               currentProject()?.id === projectId &&
               (await addFile(file, frame))
@@ -324,6 +407,7 @@ export function StudioWorkspace(props: StudioWorkspaceProps) {
             class={styles.songTitle}
             title="Song options"
             aria-label="Song options"
+            data-tour="studio.song-options"
             aria-expanded={panel() === 'song'}
             onClick={() =>
               panel() === 'song' ? closePanel() : openPanel('song')
@@ -336,17 +420,17 @@ export function StudioWorkspace(props: StudioWorkspaceProps) {
             {status()}
           </span>
         </div>
-        <Show when={!phone() || panel() === null}>
+        <Show when={!phone()}>
           <Transport />
         </Show>
         <div class={styles.topActions}>
-          <div class={styles.historyButtons}>
+          <div class={styles.historyButtons} data-tour="studio.history">
             <button
               type="button"
               class={styles.iconButton}
               aria-label={props.studio.undoLabel() ?? 'Undo'}
               title={props.studio.undoLabel() ?? 'Undo'}
-              disabled={!props.studio.canUndo()}
+              disabled={!writable() || !props.studio.canUndo()}
               onClick={() => historyAction('undo')}
             >
               <RotateCcw size={17} />
@@ -356,7 +440,7 @@ export function StudioWorkspace(props: StudioWorkspaceProps) {
               class={`${styles.iconButton} ${styles.redo}`}
               aria-label={props.studio.redoLabel() ?? 'Redo'}
               title={props.studio.redoLabel() ?? 'Redo'}
-              disabled={!props.studio.canRedo()}
+              disabled={!writable() || !props.studio.canRedo()}
               onClick={() => historyAction('redo')}
             >
               <RotateCcw size={17} />
@@ -367,6 +451,7 @@ export function StudioWorkspace(props: StudioWorkspaceProps) {
             class={styles.button}
             disabled={!writable() || props.studio.busy()}
             aria-expanded={panel() === 'sources'}
+            data-tour="studio.add-takes"
             onClick={() => openPanel('sources')}
           >
             <Plus size={16} /> Add takes
@@ -376,13 +461,49 @@ export function StudioWorkspace(props: StudioWorkspaceProps) {
               type="button"
               class={styles.button}
               aria-expanded={panel() === 'mix'}
+              data-tour="studio.mix"
               onClick={() => openPanel('mix')}
             >
               Mix
             </button>
           </Show>
+          <button
+            type="button"
+            class={styles.button}
+            data-tour="studio.sound"
+            aria-expanded={panel() === 'sound'}
+            onClick={() => openPanel('sound')}
+          >
+            Sound
+          </button>
+          <button
+            type="button"
+            class={styles.primaryButton}
+            data-tour="studio.export"
+            aria-expanded={panel() === 'export'}
+            onClick={() => openPanel('export')}
+          >
+            Export
+          </button>
         </div>
       </div>
+      <Show when={phone() && panel() === null}>
+        <Transport />
+      </Show>
+      <Show
+        when={finishing() && panel() !== (exporter.busy() ? 'export' : 'sound')}
+      >
+        <div class={styles.notice} role="status">
+          <p>Preparing song audio…</p>
+          <button
+            type="button"
+            class={styles.button}
+            onClick={() => openPanel(exporter.busy() ? 'export' : 'sound')}
+          >
+            Show progress
+          </button>
+        </div>
+      </Show>
       <Show when={transport.error()}>
         {(error) => (
           <p class={styles.inlineError} role="alert">
@@ -462,6 +583,38 @@ export function StudioWorkspace(props: StudioWorkspaceProps) {
               </Show>
             }
           >
+            <Show when={panel() === 'sound'}>
+              <StudioSoundPanel
+                project={project()}
+                writable={writable()}
+                balance={sound}
+                comparison={comparison}
+                meter={
+                  <>
+                    <StudioOutputMeter
+                      snapshot={transport.meter()}
+                      ready={transport.meterReady()}
+                      peakL={transport.peakL()}
+                      peakR={transport.peakR()}
+                      onReset={transport.resetPeakHold}
+                    />
+                    <p class={styles.help}>
+                      {transport.masterReady()
+                        ? 'Playback uses measured master settings.'
+                        : 'Preview levels. Export or Compare measures the whole song.'}
+                    </p>
+                  </>
+                }
+                onCommand={props.studio.dispatch}
+              />
+            </Show>
+            <Show when={panel() === 'export'}>
+              <StudioExportPanel
+                project={project()}
+                controller={exporter}
+                canExport={canProcess() && !sound.busy() && !comparison.busy()}
+              />
+            </Show>
             <Show when={panel() === 'sources'}>
               <StudioSourcePicker
                 studio={props.studio}
@@ -479,15 +632,11 @@ export function StudioWorkspace(props: StudioWorkspaceProps) {
               <StudioSongPanel
                 studio={props.studio}
                 writable={writable()}
+                processing={finishing()}
                 onLibrary={props.onLibrary}
-                onBackup={() =>
-                  void transport.releaseAudio().then(props.onBackup)
-                }
+                onBackup={() => void runSongAction(props.onBackup)}
                 onDelete={props.onDelete}
-                onFork={() => {
-                  const fork = props.studio.fork
-                  void transport.releaseAudio().then(fork)
-                }}
+                onFork={() => void runSongAction(props.studio.fork)}
               />
             </Show>
             <Show

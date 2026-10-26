@@ -33,6 +33,20 @@ const SWAP_SECONDS = SWAP_TIME_CONSTANT * 6
 const CACHE_LIMIT = 8
 
 const impulseCache = new WeakMap<BaseAudioContext, Map<string, AudioBuffer>>()
+const impulseOwners = new WeakMap<BaseAudioContext, number>()
+
+/** Cached impulses belong to live units, not the lifetime of a borrowed context. */
+function retainImpulseCache(ctx: BaseAudioContext): () => void {
+  impulseOwners.set(ctx, (impulseOwners.get(ctx) ?? 0) + 1)
+  return () => {
+    const remaining = (impulseOwners.get(ctx) ?? 1) - 1
+    if (remaining > 0) impulseOwners.set(ctx, remaining)
+    else {
+      impulseOwners.delete(ctx)
+      impulseCache.delete(ctx)
+    }
+  }
+}
 
 interface ImpulseSetting {
   readonly decayS: number
@@ -221,6 +235,7 @@ export function createReverbUnit(
     shell.setBalance(equalPowerMix(p.mix / 100), glide)
   }
   apply(spec.params, false)
+  const releaseImpulseCache = retainImpulseCache(ctx)
 
   return assembleUnit({
     kind: 'reverb',
@@ -234,6 +249,10 @@ export function createReverbUnit(
       ...ducker.nodes,
     ],
     apply: (params, glide) => apply(params as EffectParams<'reverb'>, glide),
-    onDispose: () => switcher.dispose(),
+    onDispose: () => {
+      switcher.dispose()
+      for (const slot of slots) slot.convolver.buffer = null
+      releaseImpulseCache()
+    },
   })
 }

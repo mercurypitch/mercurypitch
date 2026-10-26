@@ -13,7 +13,7 @@ interface Props {
 }
 export function StudioViewControls(props: Props) {
   return (
-    <div class={styles.viewControls}>
+    <div class={styles.viewControls} data-tour="studio.view-controls">
       <label>
         Ruler
         <select

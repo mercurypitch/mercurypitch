@@ -67,11 +67,13 @@ export function scheduleStudioSegmentGain(
   for (let i = 1; i < boundaries.length; i++) {
     const from = boundaries[i - 1]
     const to = boundaries[i]
+    const fromTime = when + (from - start) / 48000
+    const toTime = when + (to - start) / 48000
     const first = studioSegmentGain(segment, from)
     const last = studioSegmentGain(segment, to)
     const middle = studioSegmentGain(segment, (from + to) / 2)
     if (first === last && first === middle) {
-      param.setValueAtTime(first, when + (from - start) / 48000)
+      param.setValueAtTime(first, fromTime)
       continue
     }
     const curve = Float32Array.from({ length: CURVE_POINTS }, (_, index) =>
@@ -80,10 +82,8 @@ export function scheduleStudioSegmentGain(
         from + ((to - from) * index) / (CURVE_POINTS - 1),
       ),
     )
-    param.setValueCurveAtTime(
-      curve,
-      when + (from - start) / 48000,
-      (to - from) / 48000,
-    )
+    // Derive duration from the exact next timestamp. Independent frame division
+    // can round an adjacent curve past that boundary and native AudioParam rejects it.
+    param.setValueCurveAtTime(curve, fromTime, toTime - fromTime)
   }
 }

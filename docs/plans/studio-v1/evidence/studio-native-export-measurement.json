@@ -1,0 +1,21 @@
+{
+  "sha256": "617bd152a041a1c41832701e397c95ff014486411648646f43369a58dff3e681",
+  "bytes": 1088684,
+  "studio": {
+    "integratedLufs": -14.000265550654362,
+    "samplePeakDb": -9.386902954273586,
+    "truePeakDb": -9.386866020457404,
+    "frames": 272160,
+    "sampleRate": 48000,
+    "channels": 2,
+    "bitDepth": 16
+  },
+  "ffmpeg": {
+    "integratedLufs": -14,
+    "truePeakDb": -9.4
+  },
+  "difference": {
+    "integratedLufs": -0.00026555065436184577,
+    "truePeakDb": 0.013133979542596208
+  }
+}

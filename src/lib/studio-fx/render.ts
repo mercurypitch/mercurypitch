@@ -37,6 +37,8 @@ type ContextFactory = (
 ) => OfflineAudioContext
 
 export interface RenderThroughChainOptions {
+  /** Native work already started settles normally; abort prevents later stages and result copying. */
+  readonly signal?: AbortSignal
   /** Override the estimated tail. */
   readonly tailSeconds?: number
   /** Injectable for tests and non-browser runtimes. */
@@ -146,6 +148,7 @@ export async function renderThroughChain(
   spec: unknown,
   options: RenderThroughChainOptions = {},
 ): Promise<AudioBuffer> {
+  options.signal?.throwIfAborted()
   const chainSpec = normalizeChainSpec(spec)
   const createContext = options.createContext ?? defaultContext
   const tail = Math.max(
@@ -158,12 +161,14 @@ export async function renderThroughChain(
     source.sampleRate,
     createContext,
   )
+  options.signal?.throwIfAborted()
   const { rendered, ctx, preRoll } = await renderChain(
     chainSpec,
     source,
     latency + length,
     createContext,
   )
+  options.signal?.throwIfAborted()
   const start = preRoll + latency
   const output = ctx.createBuffer(2, length, source.sampleRate)
   for (let channel = 0; channel < 2; channel++) {

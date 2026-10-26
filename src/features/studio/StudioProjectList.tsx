@@ -15,13 +15,14 @@ interface StudioProjectListProps {
 
 export function StudioProjectList(props: StudioProjectListProps) {
   return (
-    <div class={styles.library}>
+    <div class={styles.library} data-tour="studio.library">
       <div class={styles.libraryHeading}>
         <h1>Your songs</h1>
         <div class={styles.actions}>
           <button
             type="button"
             class={styles.button}
+            data-tour="studio.open-backup"
             disabled={props.blocked}
             onClick={() => props.onRestore()}
           >
@@ -30,6 +31,7 @@ export function StudioProjectList(props: StudioProjectListProps) {
           <button
             type="button"
             class={styles.primaryButton}
+            data-tour="studio.new-song"
             disabled={props.blocked}
             onClick={() => props.onCreate()}
           >
@@ -92,7 +94,7 @@ export function StudioProjectList(props: StudioProjectListProps) {
           </For>
         </nav>
       </Show>
-      <p class={styles.localNote}>
+      <p class={styles.localNote} data-tour="studio.local-note">
         Saved in this browser. Download a song backup to keep a copy elsewhere.
       </p>
     </div>

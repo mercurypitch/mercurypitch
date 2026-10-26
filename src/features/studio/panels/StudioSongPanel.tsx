@@ -5,6 +5,7 @@ import type { StudioController } from '../useStudioController'
 interface Props {
   studio: StudioController
   writable: boolean
+  processing?: boolean
   onLibrary(): void
   onBackup(): void
   onDelete(): void
@@ -37,7 +38,7 @@ export function StudioSongPanel(props: Props) {
       <button
         type="button"
         class={styles.button}
-        disabled={props.studio.busy()}
+        disabled={props.studio.busy() || props.processing}
         onClick={() => props.onFork()}
       >
         Duplicate song
@@ -45,7 +46,7 @@ export function StudioSongPanel(props: Props) {
       <button
         type="button"
         class={styles.button}
-        disabled={props.studio.busy()}
+        disabled={props.studio.busy() || props.processing}
         onClick={() => props.onBackup()}
       >
         Save project backup

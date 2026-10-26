@@ -479,6 +479,13 @@ must import the inventory in a child Node process as well as through Vitest.
 **Rule:** rectify a 90-degree allpass pair at four phases (3 % ripple at eight times the pitch) before the followers, and give log curves 65537 points.
 **See:** `QUADRATURE_ALLPASS` and `createLogEnvelopeCurve` in `src/lib/studio-fx/dsp.ts`, `src/lib/studio-fx/effects/transient.ts`.
 
+### Derive adjacent AudioParam curve durations from shared timestamps
+
+**Symptom:** A legal Studio trim/fade played at some clock offsets but threw a native curve-overlap error at others.
+**Cause:** Independent frame-to-second calculations rounded the previous curve's endpoint beyond the next event timestamp.
+**Rule:** Compute absolute boundaries once and use `nextTime - startTime` for curve duration. Verify fractional epochs in a native AudioParam; a fake that only records calls misses this failure.
+**See:** `src/lib/studio/playback/edge-envelope.ts` and `src/e2e/studio-audio-envelope.spec.ts`.
+
 ## Framework
 
 ### Format CSS before verifying a standalone production build
@@ -2056,6 +2063,13 @@ test's stand-in follow redirects for any other mode, as the runtime does.
 **Rule:** never approve a purge or set `CI=true` against borrowed dependencies. Prefer direct installed tools for documentation-only work. When using the shared cache for local preparation, `pnpm_config_verify_deps_before_run=warn` prevents automatic installation for that invocation; record the mismatch and leave clean-install validation to CI. Remove only the link you created, not its target.
 **App/test work:** a borrowed install can also fail Vite resolution with an external `/@fs/...` dependency path. Replace only the owned symlink with a separate frozen install from the package cache; do not change the shared target or weaken the test config.
 **See:** `package.json` (`packageManager`), `pnpm-workspace.yaml` (`patchedDependencies`).
+
+### Assert literal registry identities as well as imported constants
+
+**Symptom:** Studio tour tests passed while the browser rejected a missing named tab export and never mounted the app.
+**Cause:** Vitest transformed the missing import to `undefined`; both the dynamic registry key and test argument used that value, so symmetric assertions still passed. The browser enforces named exports.
+**Rule:** validate the public literal key alongside registry behavior, keep typechecking, and verify the real browser entry. A passing transformed test does not prove an imported symbol exists.
+**See:** `src/tests/studio-tour.test.ts`, `src/lib/tour-ids.test.ts`, `src/stores/app-store.ts`.
 
 ## Process
 

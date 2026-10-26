@@ -1,0 +1,132 @@
+.output {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
+  font-variant-numeric: tabular-nums;
+  color: var(--studio-graphite);
+}
+.stereo {
+  flex: 1;
+  min-width: 76px;
+}
+.bars {
+  display: grid;
+  gap: 4px;
+}
+.bars > div {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+.bars span {
+  width: 8px;
+  font-size: 9px;
+  color: var(--studio-pencil);
+}
+.rail {
+  height: 6px;
+  background: var(--studio-paper);
+  flex: 1;
+  position: relative;
+  overflow: hidden;
+}
+.rail i {
+  display: block;
+  height: 100%;
+  background: var(--studio-cobalt);
+}
+.rail b {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 2px;
+  transform: translateX(-2px);
+  background: var(--studio-graphite);
+}
+.peakLabel {
+  display: block;
+  margin-top: 3px;
+  font-size: 10px;
+  color: var(--studio-pencil);
+}
+.clipped .peakLabel {
+  color: var(--studio-danger, #d34c56);
+  font-weight: 700;
+}
+.clipped .rail i {
+  background: var(--studio-danger, #d34c56);
+}
+.windows {
+  display: flex;
+  gap: 12px;
+  margin: 0;
+}
+.windows dt {
+  font-size: 10px;
+  color: var(--studio-pencil);
+}
+.windows dd {
+  margin: 0;
+  min-width: 37px;
+  font-size: 17px;
+  line-height: 21px;
+}
+.detail {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  width: 100%;
+  font-size: 11px;
+  color: var(--studio-pencil);
+}
+.detail button {
+  min-height: 44px;
+  align-self: flex-start;
+  padding: 0 12px;
+  color: var(--studio-graphite);
+  background: var(--studio-sheet);
+  border: 1px solid var(--studio-divider);
+  border-radius: 6px;
+  font: inherit;
+  cursor: pointer;
+}
+.detail button:focus-visible {
+  outline: 2px solid var(--studio-cobalt);
+  outline-offset: 2px;
+}
+.detail button:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+.compact {
+  width: 176px;
+  flex-shrink: 0;
+  gap: 10px;
+}
+.compact .stereo {
+  min-width: 60px;
+}
+.compact .windows {
+  gap: 8px;
+}
+.compact .windows dd {
+  font-size: 14px;
+  min-width: 34px;
+}
+@media (max-width: 1100px) {
+  .compact {
+    width: 60px;
+  }
+  .compact .windows {
+    display: none;
+  }
+}
+@media (max-width: 600px) {
+  .compact {
+    width: 48px;
+  }
+  .compact .stereo {
+    min-width: 48px;
+  }
+}

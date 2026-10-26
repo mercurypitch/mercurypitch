@@ -5,6 +5,7 @@ import type { AudioContextLease } from '@/lib/audio-context-lease'
 import type { PreviewPlayer } from '@/lib/preview-player'
 import { createPreviewPlayer } from '@/lib/preview-player'
 import { DEFAULT_STUDIO_IMPORT_LIMITS } from '@/lib/studio/audio/import-limits'
+import type { StudioMasterGainToken } from '@/lib/studio/export/sound-graph'
 import { reserveStudioMemory } from '@/lib/studio/memory-budget'
 import type { StudioAsset, StudioProject } from '@/lib/studio/model/types'
 import type { StudioTransportState } from '@/lib/studio/playback/transport'
@@ -19,6 +20,33 @@ export interface UseStudioTransportOptions {
   readCanonicalAsset(assetId: string): Promise<Blob>
   audioLease?: AudioContextLease
   beforePlay?: () => void
+}
+
+export interface StudioPreviewOptions {
+  gainDb?: number
+  startSeconds?: number
+  /** Exact rendered-WAV duration for prepared comparisons; source previews default to five minutes. */
+  durationSeconds?: number
+}
+
+function previewSettings(options: StudioPreviewOptions) {
+  const gainDb = options.gainDb ?? 0
+  const durationSeconds =
+    options.durationSeconds ?? DEFAULT_STUDIO_IMPORT_LIMITS.maxFrames / 48000
+  const startSeconds = options.startSeconds ?? 0
+  if (
+    !Number.isFinite(gainDb) ||
+    gainDb > 0 ||
+    gainDb < -120 ||
+    !Number.isFinite(durationSeconds) ||
+    durationSeconds <= 0 ||
+    durationSeconds > 3600 ||
+    !Number.isFinite(startSeconds) ||
+    startSeconds < 0 ||
+    startSeconds > durationSeconds
+  )
+    throw new Error('This preview has invalid timing or level settings.')
+  return { gainDb, durationSeconds, startSeconds }
 }
 
 export function useStudioTransport(options: UseStudioTransportOptions) {
@@ -44,6 +72,8 @@ export function useStudioTransport(options: UseStudioTransportOptions) {
     peakL: 0,
     peakR: 0,
     error: null,
+    meter: null,
+    masterReady: false,
   })
   const [repeating, setRepeating] = createSignal(false)
   const [previewPending, setPreviewPending] = createSignal(false)
@@ -110,11 +140,11 @@ export function useStudioTransport(options: UseStudioTransportOptions) {
     return runtime.play(project, assets)
   }
 
-  function previewContext(blob: Blob): AudioContext {
+  function previewContext(blob: Blob, prepared = false): AudioContext {
     const ctx = lease.ensure()
     if (!ctx || ctx.state !== 'running')
       throw new Error('The audio device is not ready.')
-    if (!blob.size || blob.size > 64 * 1024 * 1024)
+    if (!blob.size || (!prepared && blob.size > 64 * 1024 * 1024))
       throw new Error('This take is too large to preview here.')
     return ctx
   }
@@ -122,14 +152,18 @@ export function useStudioTransport(options: UseStudioTransportOptions) {
   function previewFailure(
     played: boolean,
     player: PreviewPlayer,
+    durationSeconds: number,
   ): string | null {
     if (!played) return 'This take could not be previewed.'
-    if (player.duration > 300)
-      return 'Choose a take shorter than five minutes to preview in Studio.'
+    if (player.duration > durationSeconds + 0.1)
+      return 'This audio is longer than its preview allowance.'
     return null
   }
 
-  async function previewSource(blob: Blob): Promise<boolean> {
+  async function previewSource(
+    blob: Blob,
+    settings: StudioPreviewOptions = {},
+  ): Promise<boolean> {
     if (disposed) return false
     // The picker primes before its original-byte read. A direct Blob preview
     // can still activate synchronously when invoked by its own click.
@@ -142,30 +176,42 @@ export function useStudioTransport(options: UseStudioTransportOptions) {
     let url: string | undefined
     let player: PreviewPlayer | undefined
     try {
+      const resolved = previewSettings(settings)
       // Unlock now; waiting for the song's release must not lose the gesture.
       await runtime.releaseAudio()
       await Promise.all(retiringPreviews)
       if (!(await unlocked))
         throw new Error('Audio could not start. Try Preview again.')
       if (disposed || token !== previewGeneration) return false
-      const ctx = previewContext(blob)
+      const ctx = previewContext(blob, settings.durationSeconds !== undefined)
       // Media decoding is browser-managed. Reserve the supported five-minute
       // stereo working allowance as well as encoded bytes, not just file size.
       release = reserveStudioMemory(
-        blob.size * 2 + DEFAULT_STUDIO_IMPORT_LIMITS.maxFrames * 2 * 4 * 2,
+        blob.size * 2 + Math.ceil(resolved.durationSeconds * 48000) * 2 * 4 * 2,
       )
       url = URL.createObjectURL(blob)
       player = createPreviewPlayer({
         audioGraph: { context: ctx, destination: ctx.destination },
         onEnded: stopPreview,
+        createProcessing(context) {
+          const gain = context.createGain()
+          gain.gain.value = Math.pow(10, resolved.gainDb / 20)
+          return { input: gain, output: gain, dispose: () => gain.disconnect() }
+        },
       })
       preview = { player, url, release }
       player = undefined
       url = undefined
       release = undefined
-      const played = await preview.player.play(preview.url)
+      const played = await preview.player.play(preview.url, {
+        startSeconds: resolved.startSeconds,
+      })
       if (disposed || token !== previewGeneration) return false
-      const failure = previewFailure(played, preview.player)
+      const failure = previewFailure(
+        played,
+        preview.player,
+        resolved.durationSeconds,
+      )
       if (failure !== null) {
         setPreviewError(failure)
         stopPreview()
@@ -197,6 +243,7 @@ export function useStudioTransport(options: UseStudioTransportOptions) {
     const project = options.project()
     const assets = options.assets()
     if (project?.id !== observedId) {
+      runtime.setMasterGain(null)
       runtime.stop()
       stopPreview()
       observedId = project?.id ?? null
@@ -250,10 +297,37 @@ export function useStudioTransport(options: UseStudioTransportOptions) {
     playheadFrame: () => state().playheadFrame,
     peakL: () => state().peakL,
     peakR: () => state().peakR,
+    meter: () => state().meter,
+    meterReady: () => state().meter !== null,
+    masterReady: () => state().masterReady,
+    resetPeakHold: () => runtime.resetPeakHold(),
+    async setMasterGain(value: StudioMasterGainToken): Promise<void> {
+      const project = options.project()
+      const assets = options.assets()
+      if (
+        !project ||
+        project.id !== value.projectId ||
+        project.revision !== value.revision ||
+        disposed
+      )
+        return
+      try {
+        runtime.setMasterGain(value)
+        await runtime.setSnapshot(project, assets)
+      } catch (error) {
+        if (!disposed)
+          setPreviewError(
+            error instanceof Error
+              ? error.message
+              : 'The prepared master could not be applied.',
+          )
+      }
+    },
     pending: () => state().pending || previewPending(),
     error: () => previewError() ?? state().error,
     previewing,
     previewPending,
+    previewPositionSeconds: () => preview?.player.currentTime ?? 0,
     play,
     pause: () => runtime.pause(),
     stop() {

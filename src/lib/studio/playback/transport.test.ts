@@ -90,8 +90,8 @@ describe('Studio borrowed transport', () => {
     const envelope = f.ctx.created
       .filter((node) => node.nodeType === 'gain')
       .at(-1) as ReturnType<PlaybackContext['createGain']>
-    expect(envelope.gain.ramps).toEqual([{ value: 1, time: 0.6 }])
-    f.ctx.currentTime = 0.52
+    expect(envelope.gain.ramps).toEqual([{ value: 1, time: 0.61 }])
+    f.ctx.currentTime = 0.53
     await vi.advanceTimersByTimeAsync(33)
     expect(f.transport.getState().playheadFrame).toBe(480)
     expect(f.transport.getState()).toMatchObject({ peakL: 0.2, peakR: 0.4 })
@@ -104,6 +104,46 @@ describe('Studio borrowed transport', () => {
     expect(f.release).toHaveBeenCalledOnce()
     f.transport.dispose()
     expect(f.ctx.closeCount).toBe(0)
+    expect(studioReservedMemoryBytes()).toBe(0)
+  })
+
+  it('retains an explicitly measured gain while paused and invalidates it on an edit', async () => {
+    vi.useFakeTimers()
+    const f = fixture()
+    f.transport.setMasterGain({
+      projectId: f.project.id,
+      revision: f.project.revision,
+      gainDb: 3,
+      safetyGainDb: -1,
+    })
+    await f.transport.setSnapshot(f.project, [f.asset])
+    expect(f.transport.getState()).toMatchObject({
+      masterReady: true,
+      playing: false,
+    })
+    expect(f.unlock).not.toHaveBeenCalled()
+    await f.transport.play(f.project, [f.asset])
+    const master = f.buildGraph.mock.calls[0][6].spec as {
+      effects: { id: string; params: Record<string, number> }[]
+    }
+    expect(
+      master.effects.find((effect) => effect.id === 'loudness')?.params.gainDb,
+    ).toBe(3)
+    expect(
+      master.effects.find((effect) => effect.id === 'peak-safety')?.params
+        .gainDb,
+    ).toBe(-1)
+    const released = f.transport.releaseAudio()
+    await vi.advanceTimersByTimeAsync(240)
+    await released
+    expect(f.transport.getState().masterReady).toBe(true)
+    await f.transport.setSnapshot({ ...f.project, revision: 1 }, [f.asset])
+    expect(f.transport.getState()).toMatchObject({
+      masterReady: false,
+      playing: false,
+    })
+    expect(f.buildGraph).toHaveBeenCalledOnce()
+    f.transport.dispose()
     expect(studioReservedMemoryBytes()).toBe(0)
   })
 
@@ -165,7 +205,7 @@ describe('Studio borrowed transport', () => {
     f.transport.setRepeat(true)
     await f.transport.play(project, [asset], 48000)
     expect(f.buildGraph.mock.calls[0][5]).toBe(48000)
-    f.ctx.currentTime = 3.01
+    f.ctx.currentTime = 3.02
     await vi.advanceTimersByTimeAsync(33)
     expect(f.transport.getState().playing).toBe(true)
     expect(f.transport.getState().playheadFrame).toBe(72000)

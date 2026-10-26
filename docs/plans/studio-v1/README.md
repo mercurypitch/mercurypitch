@@ -2,7 +2,7 @@
 
 **Date:** 26 October 2026
 
-**Status:** Layout approved with dark mode leading and light mode retained. Phases 2 through 4 are implemented and locally verified. Song finishing remains Phase 5; final device/listening acceptance remains Phase 6.
+**Status:** Layout approved with dark mode leading and light mode retained. Phases 2 through 5 are implemented. Local browser verification covers arranging, song finishing and measured WAV downloads. Phase 6 records independent acceptance; physical-device and listening acceptance remain open.
 
 **Branch:** `feat/studio-fx-chain`, existing draft [PR #1219](https://github.com/mercurypitch/mercurypitch/pull/1219)
 
@@ -42,15 +42,15 @@ Implementation defaults: seconds as the initial ruler, one clip at a time per la
 
 The generated images are proposals. Numbers in their meters are illustrative. The gallery is not a working audio editor. The written contract controls if a generated label, control or waveform differs from it.
 
-## What exists, and what still needs building
+## Foundation investigation and implemented result
 
 The common `VoiceTakeRecord` catalogue already covers kept Karaoke, Hear Yourself, Guitar Night, Piano Night and Drum Night performances. Adapt `listVoiceTakes()` and `getVoiceTakeBlob()` rather than creating five competing source libraries. Listing must read metadata only; audio is loaded when previewed or selected.
 
 Source meaning matters. Karaoke is a dry microphone take, not the backing song. Guitar recording may be dry input rather than the heard amp sound. Piano replay is currently a mono 24 kHz felt-synth render of the player's notes, not the complete authored arrangement or sampled piano output. Drums are the kept live kit performance. Existing metadata does not establish sample-accurate alignment with a backing song. Source labels and import behavior must reflect these distinctions.
 
-The FX branch has ten role chains, five macros, seven named flavours, source preparation, live chains and offline mixing/mastering. It has no Studio project document, arrangement scheduler, multi-clip lane abstraction, editor or encoded song-download pipeline. Integrated loudness exists; live momentary/short-term loudness and the meter UI remain work.
+The inspected FX foundation had ten role chains, five macros, seven named flavours, source preparation, live chains and offline mixing/mastering. Phases 2–5 add the Studio project document, lane scheduler, editor, live momentary/short-term metering, revision-safe comparison and an encoded song-download pipeline.
 
-**Confirmed export blocker:** the current true-peak estimator's candidate shortcut can report 0 dBTP for a buffer whose own interpolation kernel reaches +3.129 dB at a skipped position. The limiter protects sample peaks and the browser master probe checks sample peaks. Repair and validate the estimator, then verify/correct final-file true peaks before claiming peak-safe exports. The exact reproduction is in [evidence/true-peak-repro.mjs](evidence/true-peak-repro.mjs). This is not an independent standards-conformance test.
+**Foundation defect, repaired in Phase 5:** the original true-peak estimator's candidate shortcut could report 0 dBTP for a buffer whose own interpolation kernel reached +3.129 dB at a skipped position. The replacement checks every phase and padded boundary; export measures the actual encoded WAV and applies bounded safety correction. Independent comparison found finite-estimator differences, so the interface labels true peak as estimated. See [DSP verification](phase-5-dsp-verification.md) for the 87-fixture results and 0.75 dB margin limits. The exact reproduction is in [evidence/true-peak-repro.mjs](evidence/true-peak-repro.mjs). This is not an independent standards-conformance test.
 
 The inspected engine foundation at `c90e1a8` had passing GitHub CI. Each later phase needs its own head-specific check results. That is separate from this investigation: source review and the dependency-free peak reproduction were performed here; the full unit/browser suite and physical-device audio were not rerun. All 1,514 LFS entries remain pointers. No dependencies were installed for reconnaissance.
 
@@ -151,4 +151,4 @@ The owner accepted the existing layout, requested dark as the lead and explicitl
 
 V1 arranges kept takes and uploaded files; recording and overdubbing are deferred. The remaining implementation defaults follow the approved small editor: one audible clip per lane, duplicate conflicts create a new lane, seconds ruler initially, and one contextual panel. The navigation group keeps its stored identity but is labelled Create; its default order is Studio, Compose, Settings, Analysis, so Settings remains among the first three destinations. Studio is reachable in simple mode for every instrument.
 
-Phase 2 provides local storage, imports, backups and app navigation. Phase 3 provides both themes, waveform lanes, source selection, exact numeric edits, track balance and real audio transport. [Phase 2 verification](phase-2-verification.md) and [Phase 3 verification](phase-3-verification.md) distinguish their tested behavior from later work. [Phase 4 verification](phase-4-verification.md) records direct manipulation, keyboard edits, repeat and file-drop proof. Mastering and device acceptance remain. The complete Studio tour will be registered with the finished editing and export controls before Phase 6.
+Phase 2 provides local storage, imports, backups and app navigation. Phase 3 provides both themes, waveform lanes, source selection, exact numeric edits, track balance and real audio transport. [Phase 2 verification](phase-2-verification.md) and [Phase 3 verification](phase-3-verification.md) distinguish their tested behavior from later work. [Phase 4 verification](phase-4-verification.md) records direct manipulation, keyboard edits, repeat and file-drop proof. [Phase 5 verification](phase-5-verification.md) records Sound, Compare, responsive export and tour proof. [Phase 5 DSP verification](phase-5-dsp-verification.md) records final-file loudness, peak estimation, reference fixtures and lifecycle limits. The Studio tour now covers the library, arranging, Sound and Export at desktop, tablet and phone widths. Physical-device and listening acceptance remain Phase 6.

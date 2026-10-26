@@ -4,12 +4,15 @@ import { isTrackRole } from '@/lib/studio-fx/role-chains'
 import { createStudioTrack } from './defaults'
 import type { StudioPasteEdit } from './placement-commands'
 import { moveStudioClipToNewTrack, pasteStudioClip } from './placement-commands'
+import type { StudioSoundEdit } from './sound-commands'
+import { applyStudioSoundEdit, isStudioSoundEdit } from './sound-commands'
 import type { StudioAsset, StudioClip, StudioProject, StudioTrack, } from './types'
 import { validateStudioProject } from './validation'
 import { requireValue } from './validation-values'
 
 export type StudioEdit =
   | StudioPasteEdit
+  | StudioSoundEdit
   | { readonly type: 'rename-project'; readonly title: string }
   | { readonly type: 'add-track'; readonly track: StudioTrack }
   | { readonly type: 'add-clip'; readonly clip: StudioClip }
@@ -216,6 +219,7 @@ function editClip(
 }
 
 function applyEdit(project: StudioProject, edit: StudioEdit): StudioProject {
+  if (isStudioSoundEdit(edit)) return applyStudioSoundEdit(project, edit)
   if ('clipId' in edit) return editClip(project, edit)
   switch (edit.type) {
     case 'paste-clip':

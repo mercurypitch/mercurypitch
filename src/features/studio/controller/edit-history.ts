@@ -29,6 +29,10 @@ const EDIT_LABELS: Record<StudioEdit['type'], string> = {
   'set-fades': 'change fades',
   'set-clip-gain': 'change clip volume',
   'set-project-settings': 'change song settings',
+  'set-sound-flavour': 'change flavour',
+  'set-sound-macros': 'adjust sound',
+  'set-master-preset': 'change master target',
+  'apply-auto-balance': 'auto-balance',
 }
 
 function commandLabel(command: StudioCommand): string {

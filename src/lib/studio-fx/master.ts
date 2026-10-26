@@ -5,7 +5,8 @@
 // After fx-lab's master: a subsonic cut, a mono low end, trace saturation
 // (drive below 0 dB rounds only the highest peaks), light 1.35:1 glue blended
 // at 72 % so tails keep breathing, then one measured gain toward the target
-// loudness and a true-peak-safe ceiling. The gain is never allowed to buy
+// loudness and a sample ceiling. Studio verifies estimated true peak after
+// encoding and applies a separate safety attenuation. The gain never buys
 // loudness with more than a set amount of limiting: past that, the song is
 // delivered quieter and intact rather than squashed.
 //
@@ -28,6 +29,9 @@ export const DEFAULT_TARGET_LUFS = -14
 
 export const MASTER_CEILING_DB = -1.5
 const MAX_LIMITING_DB = 5
+// These match the actual gain effect; larger values would silently clamp in the graph.
+export const MASTER_MIN_GAIN_DB = -24
+export const MASTER_MAX_GAIN_DB = 36
 
 export interface LoudnessPreset {
   readonly id: string
@@ -98,20 +102,17 @@ export function masterChain(
   options: MasterSound & {
     readonly gainDb?: number
     readonly ceilingDb?: number
+    readonly safetyGainDb?: number
   } = {},
 ): ChainSpec {
   return normalizeChainSpec({
     effects: [
       ...masterBusChain(options).effects,
-      { id: 'loudness', kind: 'gain', params: { gainDb: options.gainDb ?? 0 } },
-      {
-        id: 'ceiling',
-        kind: 'limiter',
-        params: {
-          ceilingDb: options.ceilingDb ?? MASTER_CEILING_DB,
-          releaseMs: 100,
-        },
-      },
+      ...masterFinishChain(
+        options.gainDb ?? 0,
+        options.ceilingDb ?? MASTER_CEILING_DB,
+        options.safetyGainDb,
+      ).effects,
     ],
   })
 }
@@ -152,8 +153,8 @@ export function masterGainDb(
   const toTarget = resolved.target - measurement.integratedLufs
   return clamp(
     Math.min(toTarget, peakAllowedGainDb(measurement, resolved)),
-    -36,
-    40,
+    MASTER_MIN_GAIN_DB,
+    MASTER_MAX_GAIN_DB,
   )
 }
 
@@ -170,7 +171,11 @@ export interface MasteredMix {
 const MAX_GAIN_PASSES = 3
 const LOUDNESS_TOLERANCE_DB = 0.2
 
-function finishChain(gainDb: number, ceilingDb: number): ChainSpec {
+export function masterFinishChain(
+  gainDb: number,
+  ceilingDb: number,
+  safetyGainDb = 0,
+): ChainSpec {
   return normalizeChainSpec({
     effects: [
       { id: 'loudness', kind: 'gain', params: { gainDb } },
@@ -179,6 +184,15 @@ function finishChain(gainDb: number, ceilingDb: number): ChainSpec {
         kind: 'limiter',
         params: { ceilingDb, releaseMs: 100 },
       },
+      ...(safetyGainDb < 0
+        ? [
+            {
+              id: 'peak-safety',
+              kind: 'gain',
+              params: { gainDb: safetyGainDb },
+            },
+          ]
+        : []),
     ],
   })
 }
@@ -203,13 +217,13 @@ export async function renderMasteredMix(
   const finish = async (gain: number) => {
     const buffer = await renderThroughChain(
       bussed,
-      finishChain(gain, resolved.ceiling),
+      masterFinishChain(gain, resolved.ceiling),
       render,
     )
     return { buffer, gainDb: gain, before, after: measureLoudness(buffer) }
   }
   let mastered = await finish(masterGainDb(before, options))
-  const cap = Math.min(40, peakAllowedGainDb(before, resolved))
+  const cap = Math.min(MASTER_MAX_GAIN_DB, peakAllowedGainDb(before, resolved))
   for (let pass = 1; pass < MAX_GAIN_PASSES; pass++) {
     const short = resolved.target - mastered.after.integratedLufs
     if (!Number.isFinite(short) || Math.abs(short) <= LOUDNESS_TOLERANCE_DB) {

@@ -4,6 +4,7 @@ import { compileStudioArrangement } from '../model/arrangement-plan'
 import { applyStudioCommand } from '../model/commands'
 import { studioFixture } from '../model/model.test-fixtures'
 import { STUDIO_EDGE_POLICY_VERSION, studioSegmentGain } from './edge-envelope'
+import { captureStudioEnvelope, trimmedFadeSegment, } from './edge-envelope.test-fixtures'
 
 describe('Studio edge policy', () => {
   it('freezes half-cosine 3ms boundary samples and short-group behavior', () => {
@@ -96,4 +97,30 @@ describe('Studio edge policy', () => {
         studioSegmentGain(before, frame),
       )
   })
+})
+
+it('uses shared absolute timestamps for adjacent fades without changing curve sample values', () => {
+  for (const rate of [44100, 48000])
+    for (let quantum = 0; quantum < 256; quantum++) {
+      const when = 0.5 + (quantum * 4096) / rate
+      const events = captureStudioEnvelope(when)
+      for (let index = 0; index < events.length; index++) {
+        const event = events[index]
+        if (event.kind !== 'curve') continue
+        const next = events[index + 1]
+        if (index + 1 < events.length)
+          expect(event.duration).toBe(next.time - event.time)
+        expect(event.duration).toBeGreaterThan(0)
+        const startFrame =
+          trimmedFadeSegment.startFrame +
+          Math.round((event.time - when) * 48000)
+        const endFrame = startFrame + Math.round(event.duration * 48000)
+        expect(event.values[0]).toBe(
+          Math.fround(studioSegmentGain(trimmedFadeSegment, startFrame)),
+        )
+        expect(event.values.at(-1)).toBe(
+          Math.fround(studioSegmentGain(trimmedFadeSegment, endFrame)),
+        )
+      }
+    }
 })

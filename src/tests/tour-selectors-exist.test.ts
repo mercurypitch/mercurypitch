@@ -26,6 +26,7 @@ import { SING_TOUR } from '@/features/practice/sing-tour'
 import type { PracticeScope, UiMode } from '@/features/tabs/constants'
 import { showcaseStops } from '@/features/tours/coach/showcase-stops'
 import type { CoachTour } from '@/lib/coach-types'
+import { STUDIO_WORKSPACE_TOUR_STEPS } from '@/lib/studio-tour'
 import type { WalkthroughStep } from '@/stores/app-store'
 import { JAM_ROOM_TOUR_STEPS, PAGE_TOURS, PRACTICE_MODES_TOUR_STEPS, STEM_MIXER_TOUR_STEPS, VOICE_TOUR_STEPS, WALKTHROUGH_STEPS, } from '@/stores/app-store'
 
@@ -63,6 +64,7 @@ const DEFINITION_FILES = new Set([
   'sing-tour.ts',
   'karaoke-tour.ts',
   'showcase-stops.ts',
+  'studio-tour.ts',
 ])
 
 function sourceText(): string {
@@ -117,6 +119,7 @@ const ALL_TOURS: Record<string, readonly WalkthroughStep[]> = {
   voice: VOICE_TOUR_STEPS,
   // The Jam tab's second tour: not in PAGE_TOURS, which holds one per tab.
   'jam-room': JAM_ROOM_TOUR_STEPS,
+  studio: STUDIO_WORKSPACE_TOUR_STEPS,
   ...Object.fromEntries(
     Object.entries(PAGE_TOURS).map(([tab, steps]) => [`page:${tab}`, steps]),
   ),
