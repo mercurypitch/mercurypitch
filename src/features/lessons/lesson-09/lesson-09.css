@@ -2,23 +2,13 @@
    Lesson 9 — Landing a leap: the page's own figures
    ============================================================
    Everything else is the kit's (lesson-base, lesson-sections, lesson-stage,
-   lesson-parts and lesson-voice). The voice lessons' sheet comes in by the
-   @import below, which the build inlines, and not as main.ts's import:
-   Lessons 3 and 5 to 8 share it in one chunk with the comfort check and the
-   voice choice (kit/comfort.ts, kit/voice-choice.ts), which this page's
-   shell does not load yet. Imported here alone, it would leave that chunk
-   for a sheet of its own, which those pages link after their own sheet, so
-   its rules would win over theirs (docs/agent/MISTAKES.md, "Take the
-   lessons' base stylesheet into another page by @import"). Once Sing it
-   loads both modules, the import moves back to main.ts.
+   lesson-parts and lesson-voice, each imported by main.ts).
 
    Here: the compact ladder chart between Merc and Tavi, the ladder chart's
    floor for the stage budget and Step 1's folds strip under it, its row of
    controls (WEB-SPEC, Toys 1, "Layout and targets": every target 44 px,
    10 px apart, from 344 px up), the scrub bar, Sing it's lines, and the
    Wrap's cards. */
-@import '../kit/lesson-voice.css';
-
 /* ---------------------------------------------------------------- hero: the compact chart between Merc and Tavi */
 .l9-duo {
   --merc: clamp(120px, 11vw, 168px);

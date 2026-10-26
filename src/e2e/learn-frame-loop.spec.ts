@@ -20,8 +20,9 @@
 // there the whole page asks for no frame at all at rest. Lesson 9's checks
 // here are the explorer, the cold open's chart, at rest and through Merc's
 // leap, and the steps' ladder chart with Step 1's folds strip, at rest and
-// through Step's two notes, while the strip's folds open and close, and
-// through Step 5's landing, whose line moves only while it plays. Lessons
+// through Step's two notes, while the strip's folds open and close,
+// through Step 5's landing, whose line moves only while it plays, and Sing
+// it's chart, whose rungs light only while Merc sings his ladder. Lessons
 // 1 to 5 each have drawers of their own that still draw every frame (S-26 in
 // docs/plans/find-your-pitch/RELEASE-REVIEW.md), which keep their loop
 // running whatever these three do, so there only the figures are watched.
@@ -324,7 +325,7 @@ test('Lesson 8: the explorer rests, and so does the whole page', async ({
   await explorerRests(page, 8, true)
 })
 
-test('Lesson 9: the ladder charts, the folds strip, the landing and the explorer rest, and so does the whole page', async ({
+test("Lesson 9: the ladder charts, the folds strip, the landing, Sing it's chart and the explorer rest, and so does the whole page", async ({
   page,
 }) => {
   const hero = '#heroLadder canvas'
@@ -347,6 +348,13 @@ test('Lesson 9: the ladder charts, the folds strip, the landing and the explorer
   await scrollTo(page, ladder)
   await runRests(page, [ladder], true, () =>
     page.locator('#toyLadder [data-ladder-play="landing"]').click(),
+  )
+  // Sing it's chart, the pressed ladder's slots, lit as Merc sings each rung
+  const sing = '#singChart canvas'
+  await comfort(page, 'listen')
+  await scrollTo(page, sing)
+  await runRests(page, [sing], true, () =>
+    page.locator('[data-panel="prepare"] [data-merc-ladder]').click(),
   )
   await explorerRests(page, 9, true)
 })
