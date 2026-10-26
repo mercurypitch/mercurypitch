@@ -452,3 +452,12 @@ Note: the lanes' memory gate read a stale cgroup path after the 21:00 restart (f
 - #1221 REBUILT on 9d11b2be9: feat/release-0.9.23-notes 0d267ea21 (cut.py on a reset to main; old commit tagged lead/rel23-pre-checkup = 172de52a1), pushed with lease over 172de52a1. CHANGELOG adds ### Added (4 Check-up bullets) + Fixed (Keep row); stats 10 bullets avg 149, longest 225; dev-changelog adds the Check-up bullet and counts 59 commits / 10 PRs up to 9d11b2be9. og:versions no change; diff --check, Prettier, index, 6 changelog test files 120/120, pr:validate pass. pnpm check NOT rerun (text-only; runs before the merge). Body = release23/PR-BODY.md (read back, no footer). Pre-checkup copies: *.pre-checkup.* in release23.
 - Next on #1221: after the polish PR merges, rebuild again (reset to main + cut.py), add its bullets.
 - 19:16 main 9d11b2be9 Build & Deploy 40384438371 success (dev has the Check-up). #1221's old-head suite (172de52a1) completed green; the new head 0d267ea21 runs its own CI.
+
+## 20:10 UTC 26 Oct: L9 run 5 out, run 4 under review
+- L9 run 4 report saved: l9/page-4/REPORT.md (9fa070b38 no-mic, 493dffc25 take, 3cb38d891 map; all gates pass, 373 specs; L9 JS 152,032 B, budget 149).
+- Decided: 149 stands (no lazy move of the after panel); the leave flake becomes a run 5 check (real edge taps, both viewports); /exercises/leap-ladder on the card waits for a two-link kit card (follow-up after the page merges).
+- L9 RUN 5 SENT (SendMessage, builder resumed): brief l9/BRIEF-page-5.md (B14 Wrap + footer + tease + card words to LESSON.md's #1213 sentence; B15 page-wide e2e at both viewports + edge taps + open() padding; B16 ceilings measure+quarter, rangeFill leaf try, app-check, lesson:words, stale headers, docs list; map). Logs l9/page-5/.
+- Lead review of run 4 at max: l9/review-page4/. Findings go to the builder as fixup requests.
+- Agents: polish phase 3 + L9 run 5 = 2 of 2.
+- 20:32 L9 RUN 4 REVIEWED (l9/review-page4/REPORT.md): F1 bug (no-voice take leaves do's guide glow at 1; fix in takeLadder's finally) fixup of 493dffc25; N1 tour-copy header wrap (493dffc25); N2 listen voice line words into the markup (9fa070b38); N3 ladder choice 12 px below (a7b9c8e84). Sent to the builder as fixup requests (decision 16). rd back at origin/main 9d11b2be9 (probe file removed).
+- Owner list adds: no sound-off hint for Play Merc's ladder on the listen/no-mic paths (no line exists); run 4's copy gaps.
