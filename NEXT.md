@@ -461,3 +461,6 @@ Note: the lanes' memory gate read a stale cgroup path after the 21:00 restart (f
 - Agents: polish phase 3 + L9 run 5 = 2 of 2.
 - 20:32 L9 RUN 4 REVIEWED (l9/review-page4/REPORT.md): F1 bug (no-voice take leaves do's guide glow at 1; fix in takeLadder's finally) fixup of 493dffc25; N1 tour-copy header wrap (493dffc25); N2 listen voice line words into the markup (9fa070b38); N3 ladder choice 12 px below (a7b9c8e84). Sent to the builder as fixup requests (decision 16). rd back at origin/main 9d11b2be9 (probe file removed).
 - Owner list adds: no sound-off hint for Play Merc's ladder on the listen/no-mic paths (no line exists); run 4's copy gaps.
+- 20:45 #1221 CI on 0d267ea21: 86 checks, all green (one skipped by scope). Stays draft until the polish PR merges.
+- 20:47 POLISH PHASE 3 committed by the builder (gates running): e241064e9 Singing's tour (hasRoomTour/startRoomTour in app-store: page tour else the Guide's 'practice' section under 'guide'; FirstLight, enterStop, BeatMap use them; hasPageTour/PAGE_TOURS/sidebar/offer unchanged), 4b5a625d9 L6 slide buttons icon-only under 360 (words sr-only, still the names), e297e38ba L6 tune figure to the window edges under 342. Lead pre-read: no findings.
+- L9 PR body skeleton: l9/pr/PR-BODY.md (placeholders COMMITS, REVIEW_FIXES, FIRSTPAINT, CHECKS, COPY_GAPS, L3_HEADROOM).
