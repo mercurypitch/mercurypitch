@@ -246,6 +246,30 @@
     display: none;
   }
 }
+/* At 320 px the row has 262 px, and with both buttons' words the slider had
+   51: "Do is C4" ran 19 px past it, "Do is D♭4" 28, and at 344 px the flat
+   and sharp starts still ran up to 4 px past. Under 360 px the buttons keep
+   their arrows and give up their words, which stay their names, so the
+   slider has 158 px at 320 and every start's words fit in it; from 360 px
+   nothing changes. Lesson 6's slide row does the same. */
+@media (max-width: 359px) {
+  .slide-row .btn {
+    flex: none;
+    width: 44px;
+    padding: 0;
+  }
+  .slide-row .btn .ico {
+    display: block;
+  }
+  .slide-row .slide-word {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    white-space: nowrap;
+  }
+}
 
 /* ---------------------------------------------------------------- sing it */
 .l4-sing {

@@ -9,11 +9,13 @@
 // this lesson: every stair, the start slider and the names switch work by
 // keyboard alone and say what the page shows; and at 390 x 844 the
 // staircase, its buttons and the keyboard strip fit, overlapping nothing,
-// at every start from C4 to B4. A real-mouse drag of the staircase closes
-// it, since a drag slides the start and must not land as a tap. Move do's
-// lower button at the lowest do keeps the keyboard's place, the
-// accessibility tree says it is unavailable, and a press there leaves do
-// where it is.
+// at every start from C4 to B4. At 320 and 344 px both start sliders hold
+// their words at every start between two arrow buttons that keep their
+// names, and from 360 px the buttons show their words again. A real-mouse
+// drag of the staircase closes it, since a drag slides the start and must
+// not land as a tap. Move do's lower button at the lowest do keeps the
+// keyboard's place, the accessibility tree says it is unavailable, and a
+// press there leaves do where it is.
 
 import type { Locator, Page } from '@playwright/test'
 import { axState } from './helpers/ax-state'
@@ -24,8 +26,8 @@ const TITLE = 'The major scale: do-re-mi and the home note | MercuryPitch'
 
 /** The steps' staircase, and its parts. */
 const TOY = '#toyStairs'
-const slider = (page: Page): Locator =>
-  page.locator(`${TOY} [data-start-slider]`)
+const slider = (page: Page, root = TOY): Locator =>
+  page.locator(`${root} [data-start-slider]`)
 const said = (page: Page): Locator => page.locator(`${TOY} [data-stairs-said]`)
 const stair = (page: Page, i: number): Locator =>
   page.locator(`${TOY} [data-stair="${i}"]`)
@@ -43,13 +45,29 @@ async function goStep(page: Page, step: number): Promise<void> {
   await expect(page.locator('#stepNow')).toHaveText(String(step))
 }
 
-/** Slides the steps' staircase to `midi` (C4 60 to B4 71) by keyboard. */
-async function startOn(page: Page, midi: number): Promise<void> {
-  await slider(page).focus()
+/** Slides a staircase, the steps' unless told, to `midi` (C4 60 to B4 71) by keyboard. */
+async function startOn(page: Page, midi: number, root = TOY): Promise<void> {
+  await slider(page, root).focus()
   await page.keyboard.press('Home')
   for (let m = 60; m < midi; m++) await page.keyboard.press('ArrowUp')
-  await expect(slider(page)).toHaveAttribute('aria-valuenow', String(midi))
+  await expect(slider(page, root)).toHaveAttribute(
+    'aria-valuenow',
+    String(midi),
+  )
 }
+
+/** How far a start slider's words run past its pill, px: 0 when they fit inside it. */
+const wordsPast = (row: Locator): Promise<number> =>
+  row.evaluate((el) => {
+    const box = (part: string): DOMRect => {
+      const found = el.querySelector(part)
+      if (found === null) throw new Error(`the slide row has no ${part}`)
+      return found.getBoundingClientRect()
+    }
+    const words = box('[data-start-value]')
+    const pill = box('[data-start-slider]')
+    return Math.max(0, words.right - pill.right, pill.left - words.left)
+  })
 
 interface Box {
   readonly name: string
@@ -480,6 +498,56 @@ test.describe('page QA (WEB-SPEC, Contract)', () => {
       )
     })
   })
+
+  for (const width of [320, 344]) {
+    for (const [where, root, at] of [
+      ['Step 4', TOY, '/learn/04#step-4'],
+      ['free play', '#freePlay', '/learn/04#freePlay'],
+    ] as const) {
+      test(`at ${width} px ${where}'s start slider holds its words at every start from C4 to B4, between two 44 px arrows that keep their names`, async ({
+        page,
+      }) => {
+        // Arrange
+        await page.setViewportSize({ width, height: 800 })
+        await page.goto(at)
+        const row = page.locator(`${root} [data-slide-row]`)
+        const past: string[] = []
+
+        // Act: every start, the widest words (Do is D♭4) among them
+        for (let start = 60; start <= 71; start++) {
+          await startOn(page, start, root)
+          const by = await wordsPast(row)
+          if (by > 0.5) past.push(`${start}: ${by.toFixed(1)} px`)
+        }
+
+        // Assert
+        expect(past).toEqual([])
+        for (const name of ['Start lower', 'Start higher']) {
+          const box = await row.getByRole('button', { name }).boundingBox()
+          expect(box?.width, name).toBe(44)
+          expect(box?.height, name).toBeGreaterThanOrEqual(44)
+        }
+        expect(
+          await page.evaluate(() => document.documentElement.scrollWidth),
+        ).toBe(width)
+      })
+    }
+  }
+
+  for (const width of [360, 390]) {
+    test(`at ${width} px the start slider's buttons show their words`, async ({
+      page,
+    }) => {
+      // Arrange + Act
+      await page.setViewportSize({ width, height: 800 })
+      await page.goto('/learn/04#freePlay')
+
+      // Assert
+      const row = page.locator('#freePlay [data-slide-row]')
+      await expect(row.getByText('Start lower')).toBeVisible()
+      await expect(row.getByText('Start higher')).toBeVisible()
+    })
+  }
 })
 
 test('dragging the staircase with a real mouse slides its start, and the drag presses no stair @smoke', async ({
