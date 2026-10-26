@@ -273,3 +273,12 @@ Note: the lanes' memory gate read a stale cgroup path after the 21:00 restart (f
 - PR #1218 "chore(release): 0.9.22" (base main 238ef7115, head 6347932ca): server footer stripped, read back clean; subscribed. #1135 stays open (superseded; the owner closes it).
 - Walk run 7 (out-p7, every phase, fresh production-like build of the release tree in l9-page) running: run-p7.out. Do not touch l9-page until it ends.
 - Next: CI green -> tick "PR Gate" in the body -> merge by rebase with expectedHeadSha 6347932ca546d3bbca1f5c1e42319ab4e4418bf3 -> verify-rebase-merge.sh -> unsubscribe -> prod-upd 1-4 on main (Release Tours dispatch on main) -> ping the owner.
+
+## 07:14 UTC 26 Oct — walk run 7 on the release tree
+- Run 7 (out-p7; every phase; fresh production-like build of l9-page at 6347932ca, drafts hidden): 77 pass, 0 fail, 26 info. One info was the Map's Lessons door not found on the second #/map visit: a walk artifact. A fresh load at #/map opens the Map and rewrites the hash to #/home (a hash change keeps #/map), so the walk's reload after it landed on Home. Probes: release/walk/mapprobe*.cjs. Walk fixed (about:blank, then a fresh load; no reload). Run 8 (out-p8, onbA only): 23 pass, 0 fail, the door opens /learn/02 after fyp-done [1].
+- app-check: the repo's Playwright wants another browser revision; scratch copy of the scripts (release/appcheck/scripts) launches /opt/pw-browsers/chromium via PW_EXEC. Self-test passed. Sweep on l9-page/dist running (release/appcheck/sweep).
+
+## 07:18 UTC 26 Oct — #1218 merged; prod-upd 1-3 pass; Release Tours dispatched
+- #1218 CI: 85 of 86 checks pass (PR Gate 07:11), prod deploy job skipped; no reviews; body updated with CI and the walk (no footer). Merged by rebase with expectedHeadSha 6347932ca: main a6f839e14 (verify-rebase-merge: subjects, messages, authors and dates, patch-id 1/1, tree same). Unsubscribed.
+- prod-upd: 1) remote main a6f839e14, its tree = the walked and CI-tested tree; 2) CHANGELOG "## [0.9.22] - 2026-10-26" = package.json 0.9.22, stats avg 161; 3) no v0.9.22 locally or on origin; 4) Release Tours run 40284829464 dispatched on main at a6f839e14 (07:16), waiting.
+- Owner still to do: privacy check, then tag (steps 5-7 are the owner's). If the tag slips past 2026-10-26, the five dates move first.

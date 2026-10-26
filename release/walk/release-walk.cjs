@@ -414,7 +414,8 @@ async function covers(page, sel) {
       }
       await page.evaluate(() => localStorage.setItem('fyp-done', '[1]'))
       // A goto that changes only the hash keeps the document (and Home, drawn before the list changed): load #/map afresh.
-      await page.goto(BASE + '/#/map', { timeout: 60000 }); await page.reload({ timeout: 60000 })
+      // No reload after it: a fresh load at #/map opens the Map and rewrites the hash to #/home, so a reload lands on Home.
+      await page.goto('about:blank'); await page.goto(BASE + '/#/map', { timeout: 60000 })
       const map2 = beat(page, 'map')
       const map2Up = await map2.waitFor({ timeout: 15000 }).then(() => true).catch(() => false)
       await page.waitForTimeout(1500)
@@ -424,7 +425,7 @@ async function covers(page, sel) {
       if (map2Up && await section2.isVisible().catch(() => false)) {
         await Promise.all([page.waitForURL(/\/learn\//, { timeout: 30000 }).catch(() => null), section2.click()])
         check("A: the Map's Lessons section opens Lesson 2 (Lesson 1 done)", /\/learn\/02\/?$/.test(new URL(page.url()).pathname), page.url().replace(BASE, ''))
-        await page.goto(BASE + '/#/map', { timeout: 60000 }); await page.reload({ timeout: 60000 })
+        await page.goto(BASE + '/#/map', { timeout: 60000 })
         await map2.waitFor({ timeout: 15000 }).catch(() => null); await page.waitForTimeout(1500)
       } else check("A: the Map's Lessons section opens Lesson 2 (Lesson 1 done)", false, 'no section')
       const door = map2.getByRole('button', { name: 'Lessons', exact: true }).filter({ visible: true }).first()
