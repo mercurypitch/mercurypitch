@@ -566,10 +566,6 @@
     top: 6px;
   }
 
-  .songBtn {
-    max-width: 150px;
-  }
-
   .trackDock {
     grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
     max-height: 104px;
@@ -594,6 +590,10 @@
 }
 
 @media (max-width: 768px) {
+  /* The name gives way only when the chips need the room: it shrinks, and
+     ellipsizes, as the row fills. It had a fixed 150 px cap on top of that,
+     which cut "C Major Scale (C4)" to "C Major Scale (..." at 390 px beside
+     70 px of empty row. */
   .songBtn {
     order: 1;
     flex: 0 1 auto;
