@@ -357,6 +357,9 @@ body {
   border: 1px solid var(--mirror-line, rgba(138, 151, 166, 0.35));
   background: rgba(11, 16, 38, 0.55);
   color: var(--mirror-dim);
+  /* The page's family, as the Mirror's other controls take it: a button
+     is otherwise drawn in the browser's own. */
+  font-family: inherit;
   cursor: pointer;
 }
 .mirror-info-btn:hover,
