@@ -2071,6 +2071,13 @@ test's stand-in follow redirects for any other mode, as the runtime does.
 **Rule:** validate the public literal key alongside registry behavior, keep typechecking, and verify the real browser entry. A passing transformed test does not prove an imported symbol exists.
 **See:** `src/tests/studio-tour.test.ts`, `src/lib/tour-ids.test.ts`, `src/stores/app-store.ts`.
 
+### Scroll pointer targets into the tested viewport before reading their bounds
+
+**Symptom:** Studio's Tone drag passed at 1440×1000 but never changed the saved revision in CI at 1280×720.
+**Cause:** `boundingBox()` returned the offscreen slider at y896.67; raw `page.mouse` input does not scroll a locator into view.
+**Rule:** scroll the actual control into view, read fresh bounds, verify the intended hit target, and retain the real gesture and result assertions at the CI viewport. A non-null bounding box does not prove pointer reachability.
+**See:** `src/e2e/studio-finishing.spec.ts`, PR Gate run `40402793827`.
+
 ## Process
 
 ### Validate native notation, not just the exporter importing its own bytes

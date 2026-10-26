@@ -96,6 +96,15 @@ test lookups and formatting without changing application runtime behavior. Its
 root TypeScript check passes after these corrections. Its own CI results remain
 the authoritative gate; local browser proof is separate.
 
+The full CI browser suite at `c94bc4302` exposed two test-interaction assumptions:
+the navigation-pan check still selected Compose as its group's first inline tab,
+and the Tone check sent raw mouse input to y896.67 in a 720-pixel-high viewport.
+Both failures reproduced locally at 1280×720. The navigation check now selects
+Studio, which is the first Create tab; the Tone check scrolls the slider into
+view, verifies its viewport and hit-target reachability, then reads fresh bounds.
+Both focused browser checks pass with their navigation, revision, undo and WAV
+assertions retained. This follow-up changes tests and documentation only.
+
 ## Remaining acceptance
 
 - Physical tablet/phone and Safari/WebKit behavior, including audio interruption,
