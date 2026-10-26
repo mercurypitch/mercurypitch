@@ -2,7 +2,7 @@
 
 **Date:** 26 October 2026
 
-**Status:** Phase 1 design package ready for review. Later implementation phases remain planned.
+**Status:** Layout approved with dark mode leading and light mode retained. Phase 2 local data and app integration is in progress.
 
 **Branch:** `feat/studio-fx-chain`, existing draft [PR #1219](https://github.com/mercurypitch/mercurypitch/pull/1219)
 
@@ -16,7 +16,7 @@ Studio turns recordings people already keep in MercuryPitch into a finished demo
 
 The standard is a small, understandable instrument for assembling a song: readable audio, direct edits, useful feedback, recoverable mistakes and sound that survives export. Apple-quality is a design aspiration, not an award or a shipped-quality claim.
 
-This plan replaces the September proposal for the new work. The original documents, mockups, archive and Linear attachments remain historical references. Their overdub requirement is not inherited automatically; the proposed recording deferral awaits review. The new proposal removes the permanent mixer and includes integrated FX.
+This plan replaces the September proposal for the new work. The original documents, mockups, archive and Linear attachments remain historical references. New recording and overdubbing are deferred from v1 by the owner. The new proposal removes the permanent mixer and includes integrated FX.
 
 ## Decisions already made
 
@@ -31,7 +31,7 @@ This plan replaces the September proposal for the new work. The original documen
 | Export             | Stereo WAV and an editable local project backup in v1. MP3 export later; MP3 import stays in v1.                                                                       |
 | Delivery           | Six phases, each recorded as a coherent commit on the existing PR branch. Keep the PR draft through manual acceptance. No merge or release is authorized by this plan. |
 
-Recommended v1 defaults to review with the mockups: no new microphone recording/overdub in Studio, seconds as the initial ruler, role-based FX with simple song controls, and one contextual panel at a time. Importing MP3 does not promise MP3 encoding. These are proposals where the owner has not already chosen them.
+Implementation defaults: seconds as the initial ruler, one clip at a time per lane, role-based FX with simple song controls, and one contextual panel at a time. Importing MP3 does not promise MP3 encoding. These defaults implement the approved simple layout; new recording remains out of scope.
 
 ## Read the design
 
@@ -52,7 +52,7 @@ The FX branch has ten role chains, five macros, seven named flavours, source pre
 
 **Confirmed export blocker:** the current true-peak estimator's candidate shortcut can report 0 dBTP for a buffer whose own interpolation kernel reaches +3.129 dB at a skipped position. The limiter protects sample peaks and the browser master probe checks sample peaks. Repair and validate the estimator, then verify/correct final-file true peaks before claiming peak-safe exports. The exact reproduction is in [evidence/true-peak-repro.mjs](evidence/true-peak-repro.mjs). This is not an independent standards-conformance test.
 
-The current head's GitHub CI passed when inspected. That is separate from this investigation: source review and the dependency-free peak reproduction were performed here; the full unit/browser suite and physical-device audio were not rerun. All 1,514 LFS entries remain pointers. No dependencies were installed for reconnaissance.
+The inspected engine foundation at `c90e1a8` had passing GitHub CI. Each later phase needs its own head-specific check results. That is separate from this investigation: source review and the dependency-free peak reproduction were performed here; the full unit/browser suite and physical-device audio were not rerun. All 1,514 LFS entries remain pointers. No dependencies were installed for reconnaissance.
 
 ## A first song, end to end
 
@@ -71,7 +71,7 @@ The current head's GitHub CI passed when inspected. That is separate from this i
 
 **Deliver:** the fresh desktop arrangement, take selection and finish/export views, tablet and phone adaptations, exact editing/feedback rules, first-song flow, error states, master plan and source-backed architecture. Preserve existing handoff material. Add a lightweight reviewable contract to PR #1219; keep full-resolution art and design files in the requested dotfiles Studio directory.
 
-**Review:** Can a new user find their takes, distinguish a clip from a lane, make an edit, undo it, understand saving and export a song without learning a full DAW? Does the default screen give the timeline most of the space? Are the tablet gestures and phone limitations clear? Select or revise the actual mockups before Phase 2 starts.
+**Review:** Can a new user find their takes, distinguish a clip from a lane, make an edit, undo it, understand saving and export a song without learning a full DAW? Does the default screen give the timeline most of the space? Are the tablet gestures and phone limitations clear? The owner accepted the layout, requested dark mode as the lead with light retained, and confirmed recording later. Both theme sets preserve the layout; Mute now uses a speaker icon and Solo retains a readable S.
 
 **Commit:** `docs(studio): define v1 design and phased delivery contract`.
 
@@ -121,7 +121,7 @@ Register the Studio tour and verify its target selectors. Resolve the current na
 
 ## Work that can run in parallel
 
-After design acceptance, Phase 2 persistence and source adapters can be developed alongside pure timing/edit commands and test fixtures, with one agreed schema. During Phase 3, visual implementation and transport integration can proceed in separate files. Phase 4 interaction tests can be authored against the intended behavior while controls are completed. Meter reference fixtures and peak-correction research can start before Phase 5 without changing the visible UI.
+With the layout accepted, Phase 2 persistence and source adapters can be developed alongside pure timing/edit commands and test fixtures, with one agreed schema. During Phase 3, visual implementation and transport integration can proceed in separate files. Phase 4 interaction tests can be authored against the intended behavior while controls are completed. Meter reference fixtures and peak-correction research can start before Phase 5 without changing the visible UI.
 
 The project schema, clip semantics, audio ownership and approved layout are shared dependencies. Do not independently invent these in competing branches. Use one integration owner and inspect the combined state before each phase commit. Parallel work does not remove a phase's acceptance gate.
 
@@ -145,6 +145,10 @@ For every phase record: source SHA, changed behavior, commands/results, browser 
 
 Only scope-confirmed work is committed. Full-resolution images and local reports stay in the personal Studio handoff, with lightweight source/design contracts on the PR. Do not repack or replace the older Linear archive as a side effect.
 
-## Review before implementation
+## Accepted direction and implementation defaults
 
-The owner has already settled device and audio-only scope. The next review is concrete: approve or revise the new visual direction, the single-panel editing flow and its tablet/phone adaptation. WAV plus project backup is confirmed. Review the recommended defaults for no new Studio recording in v1, same-lane overlap behavior and navigation placement. Those decisions are recorded in the final design contract before Phase 2 work.
+The owner accepted the existing layout, requested dark as the lead and explicitly retained the white/light mode. Both use the app appearance setting. Mute uses a speaker icon with a slash when muted. Solo uses a readable S, with a full Solo label in its tooltip and accessible name. Pressed state uses shape/border/fill as well as color.
+
+V1 arranges kept takes and uploaded files; recording and overdubbing are deferred. The remaining implementation defaults follow the approved small editor: one audible clip per lane, duplicate conflicts create a new lane, seconds ruler initially, and one contextual panel. The navigation group keeps its stored identity but is labelled Create; its default order is Studio, Compose, Settings, Analysis, so Settings remains among the first three destinations. Studio is reachable in simple mode for every instrument.
+
+Phase 2 is underway. Phase 3 will implement both themes over real project data. Physical-device and listening acceptance remain Phase 6 work.
