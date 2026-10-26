@@ -432,3 +432,7 @@ Note: the lanes' memory gate read a stale cgroup path after the 21:00 restart (f
 - Check-up gates on a3ba74b78 finished 18:18: check 0/11, unit 26370 pass / 2 fail (EchoDemo timeouts, not touched), scripts 255, validate, metrics no regressions, index ok, plan-cites 156, e2e 21 passed; main baseline build done (fp-before.txt).
 - 18:34 #1221: pnpm check on 172de52a1 passed (0/11, no files changed); body ticked, read back clean; CI running. rd back at detached origin/main f6197d91f.
 - CHECK-UP FOCUS FIX FOLDED: feat/weekly-check-up eef9bfb0a (tag lead/checkup-gated = a3ba74b78): commits 2+3 changed by the fix only, 7 others same patch-ids; card test 12/12, mutant red; EchoDemo alone 15/15; index ok; plan-cites 156. pnpm check running (bg b7w4mub6k -> $S/checkup/lead/check-focus.out). Then: fill {{CHECK_FOCUS}} in PR-BODY.md, push --force-with-lease=feat/weekly-check-up:a3ba74b78, open PR, strip footer, subscribe, merge on green.
+
+## 18:52 UTC 26 Oct: Check-up PR #1223 open
+- head feat/weekly-check-up eef9bfb0a0a20c4f3871585d09094c23d023d338 on main f6197d91f; body = checkup/lead/PR-BODY.md, server footer stripped and read back clean; subscribed.
+- Next: merge by rebase on green with expectedHeadSha eef9bfb0a...; verify-rebase-merge.sh; unsubscribe; then #1221: rebase onto the new main, add the Check-up bullets (CHANGELOG + dev-changelog), stats, checks, push with lease 172de52a1.
