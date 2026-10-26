@@ -113,6 +113,15 @@ describe('renderProgressShareCard', () => {
     expect(identifiedText).toContain('May–August 2026  ·  @aria')
   })
 
+  it('keeps its own kicker and address, and draws no mascot, unless asked', async () => {
+    await renderProgressShareCard(moment, 'square', { backgroundUrl: null })
+
+    const texts = recorder.fillText.mock.calls.map(([text]) => text)
+    expect(texts).toContain('O N E   M O M E N T')
+    expect(texts).toContain('mercurypitch.com/progress')
+    expect(recorder.drawImage).not.toHaveBeenCalled()
+  })
+
   it('draws no graph when the payload has no measured pitch trace', async () => {
     await renderProgressShareCard(moment, 'square', { backgroundUrl: null })
     expect(recorder.lineTo).not.toHaveBeenCalled()

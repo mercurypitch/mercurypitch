@@ -12,6 +12,9 @@
 // The rules are src/lib/check-up/then-and-now.ts's; this file reads the
 // history with the take just saved in it, and draws. A chunk of its own,
 // loaded once a run lands, so the Mirror's first paint carries none of it.
+// The share card's renderer and Merc's still load once the panel is on
+// screen, so the card is drawn before the tap: Safari only shares inside the
+// tap that asked.
 //
 // Signed out, the readings are this browser's and the panel says so, since
 // several people can sing on one (REQ-VPR-007). For a browser that has never
@@ -20,7 +23,7 @@
 // opens the same dialog and records no funnel event of its own.
 
 import type { JSX } from 'solid-js'
-import { createUniqueId, For, Show } from 'solid-js'
+import { createSignal, createUniqueId, For, onCleanup, onMount, Show, } from 'solid-js'
 import { accountHeld } from '@/db/services/auth-service'
 import { loadProgressSessionRecords } from '@/db/services/progress-session-records'
 import type { VoiceprintRecord } from '@/db/services/voiceprint-service'
@@ -28,6 +31,7 @@ import { listVoiceprints } from '@/db/services/voiceprint-service'
 import type { CheckupChange, CheckupMetric, CheckupSide, ThenAndNow, } from '@/lib/check-up/then-and-now'
 import { ABOUT_THE_SAME, changeWords, CHECKUP_METRICS, historyNote, practiceBetween, practiceLine, rangeNotes, sideDays, thenAndNow, } from '@/lib/check-up/then-and-now'
 import { askForAccount, asksForAccount } from './account-ask'
+import type { CardFormat } from './card-renderer'
 import styles from './ThenAndNowPanel.module.css'
 
 /** What the panel draws: the comparison, and the practice counted in between. */
@@ -104,17 +108,86 @@ function Side(props: {
   )
 }
 
+/** What a delivery came to, in the panel's words; nothing for a closed sheet. */
+function shareWords(outcome: string): string | null {
+  if (outcome === 'shared') return 'Shared.'
+  if (outcome === 'downloaded') return 'Saved as a picture.'
+  if (outcome === 'dismissed') return null
+  return "The card couldn't be made. Try again."
+}
+
 export interface ThenAndNowPanelProps {
   view: ThenAndNowView
+  /** The shape the Mirror's card options have chosen. */
+  format: CardFormat
   /** Start the guided run again, straight from here. */
   onSingAgain: () => void
   /** The clock, for a test; the wall clock otherwise. */
   now?: () => number
 }
 
+/** What the panel takes from the share card's module, which loads on its
+ *  own once the panel is on screen. */
+interface ThenAndNowCard {
+  renderThenAndNowCard: (
+    comparison: ThenAndNow,
+    practice: number,
+    format: CardFormat,
+  ) => Promise<HTMLCanvasElement>
+  shareThenAndNowCard: (
+    canvas: HTMLCanvasElement,
+    shouldDeliver?: () => boolean,
+  ) => Promise<{ outcome: string }>
+}
+
 export function ThenAndNowPanel(props: ThenAndNowPanelProps): JSX.Element {
   const titleId = createUniqueId()
   const now = (): number => props.now?.() ?? Date.now()
+  const [sharing, setSharing] = createSignal(false)
+  const [status, setStatus] = createSignal<string | null>(null)
+  let disposed = false
+  let drawn: { format: CardFormat; canvas: Promise<HTMLCanvasElement> } | null =
+    null
+  const cardModule = (): Promise<ThenAndNowCard> =>
+    import('@/features/progress/then-and-now-card')
+
+  /** The card in this shape, drawn once and kept for the tap. */
+  function draw(format: CardFormat): Promise<HTMLCanvasElement> {
+    if (drawn === null || drawn.format !== format) {
+      const { comparison, practice } = props.view
+      drawn = {
+        format,
+        canvas: cardModule().then((card) =>
+          card.renderThenAndNowCard(comparison, practice, format),
+        ),
+      }
+    }
+    return drawn.canvas
+  }
+
+  onMount(() => {
+    draw(props.format).catch(() => undefined)
+  })
+  onCleanup(() => {
+    disposed = true
+  })
+
+  async function share(): Promise<void> {
+    if (sharing()) return
+    const format = props.format
+    setSharing(true)
+    setStatus(null)
+    try {
+      const [card, canvas] = await Promise.all([cardModule(), draw(format)])
+      const result = await card.shareThenAndNowCard(canvas, () => !disposed)
+      if (!disposed) setStatus(shareWords(result.outcome))
+    } catch {
+      if (!disposed) setStatus(shareWords('failed'))
+    } finally {
+      if (!disposed) setSharing(false)
+    }
+  }
+
   const comparison = (): ThenAndNow<VoiceprintRecord> => props.view.comparison
 
   return (
@@ -158,6 +231,14 @@ export function ThenAndNowPanel(props: ThenAndNowPanelProps): JSX.Element {
       <div class={styles.actions}>
         <button
           type="button"
+          class={`mirror-cta ${styles.share}`}
+          aria-disabled={sharing() ? 'true' : undefined}
+          onClick={() => void share()}
+        >
+          Share then and now
+        </button>
+        <button
+          type="button"
           class={`mirror-cta mirror-cta-secondary ${styles.again}`}
           onClick={() => props.onSingAgain()}
         >
@@ -166,6 +247,9 @@ export function ThenAndNowPanel(props: ThenAndNowPanelProps): JSX.Element {
       </div>
       <p class={styles.againLine}>
         Your Check-up keeps the better of your last two takes this week.
+      </p>
+      <p class={styles.status} role="status">
+        {status() ?? ''}
       </p>
 
       <Show when={asksForAccount()}>
