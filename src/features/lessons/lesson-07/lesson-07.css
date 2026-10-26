@@ -73,6 +73,20 @@
     margin-top: 2px;
   }
 }
+/* "Play “Twinkle” on the column" is 288 px on one line, and at 320 px the
+   predict card has 254 px inside it: the button ran 17 px past the card and
+   the page scrolled sideways. Under 360 px its words wrap, two balanced
+   lines, as the kit's long button labels do (the deck's Next, Lesson 6's
+   anchors); from 360 px they fit on their line and nothing changes. */
+@media (max-width: 359px) {
+  .predict .plays .btn {
+    white-space: normal;
+    line-height: 1.25;
+    padding-block: 8px;
+    text-align: center;
+    text-wrap: balance;
+  }
+}
 
 /* ---------------------------------------------------------------- the range chart's stage */
 /* a figure label is one 16 px line (the stage budget counts on it) */

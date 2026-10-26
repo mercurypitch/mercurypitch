@@ -13,10 +13,12 @@
 // names. At 390 x 844 and at 344 px wide every target on every step's stage
 // is at least 44 px square, none overlap, and nothing scrolls sideways; at
 // 390 and 360 px the hero's column fits its stage, every bead of "Twinkle"
-// drawn inside it. On a phone with touch, a long press on Higher climbs the
-// note to the column's top without scrolling, selecting or opening a menu;
-// a swipe elsewhere on the stage scrolls the page; and a drag that starts
-// on the note's handle moves the note.
+// drawn inside it; at 320, 360 and 390 px the predict's play on the column
+// fits inside its card, its words wrapping at 320 and on one line from 360.
+// On a phone with touch, a long press on Higher climbs the note to the
+// column's top without scrolling, selecting or opening a menu; a swipe
+// elsewhere on the stage scrolls the page; and a drag that starts on the
+// note's handle moves the note.
 
 import type { Locator, Page } from '@playwright/test'
 import { expect, test } from './helpers/lesson-page'
@@ -299,6 +301,51 @@ test.describe('page QA (WEB-SPEC, Tests and Contract)', () => {
           expect(await sideways(page), `step ${step}`).toBeLessThanOrEqual(0)
         }
       })
+    })
+  }
+
+  // "Play “Twinkle” on the column" asks 288 px on one line, and at 320 px the
+  // predict card has 254 inside it: its words wrap there, and from 360 px
+  // they keep their one line, the button 44 px tall as before.
+  for (const width of [320, 360, 390]) {
+    test(`at ${width} px the predict's play on the column fits inside its card`, async ({
+      page,
+    }) => {
+      // Arrange
+      await page.setViewportSize({ width, height: 800 })
+      await page.goto('/learn/07')
+      const play = page.locator('#predict [data-play="column"]')
+      await expect(play).toBeVisible()
+
+      // Act: how far inside the card's padding the button stays on each side
+      const fit = await play.evaluate((el) => {
+        const card = el.closest('.card')
+        if (card === null) return null
+        const c = card.getBoundingClientRect()
+        const cs = getComputedStyle(card)
+        const b = el.getBoundingClientRect()
+        return {
+          left:
+            b.left -
+            (c.left +
+              parseFloat(cs.borderLeftWidth) +
+              parseFloat(cs.paddingLeft)),
+          right:
+            c.right -
+            parseFloat(cs.borderRightWidth) -
+            parseFloat(cs.paddingRight) -
+            b.right,
+          height: b.height,
+        }
+      })
+
+      // Assert
+      expect(fit).not.toBeNull()
+      expect(fit?.left ?? -1).toBeGreaterThanOrEqual(0)
+      expect(fit?.right ?? -1).toBeGreaterThanOrEqual(0)
+      expect(fit?.height ?? 0).toBeGreaterThanOrEqual(44)
+      if (width >= 360) expect(fit?.height).toBe(44)
+      expect(await sideways(page)).toBeLessThanOrEqual(0)
     })
   }
 
