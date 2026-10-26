@@ -191,84 +191,8 @@ export async function loadSessionRecords(limit = 50): Promise<SessionRecord[]> {
   }
 }
 
-export interface ProgressSessionRecords {
-  records: SessionRecord[]
-  /** False only when the audited repository read itself failed. */
-  available: boolean
-  /** False when the safety ceiling was reached before the repository count. */
-  complete: boolean
-  totalAvailable: number | null
-}
-
-/**
- * Load a bounded, paginated Progress history without calling a truncated page
- * "all time". The caller receives completeness explicitly and can label the
- * coverage honestly when the safety ceiling is reached.
- */
-export async function loadProgressSessionRecords(
-  options: {
-    pageSize?: number
-    maxRecords?: number
-  } = {},
-): Promise<ProgressSessionRecords> {
-  const pageSize = Math.min(1000, Math.max(1, options.pageSize ?? 500))
-  const maxRecords = Math.max(pageSize, options.maxRecords ?? 5000)
-  const ownerId = getUserId()
-
-  try {
-    const db = await getDb()
-    if (getUserId() !== ownerId) throw new Error('identity changed')
-    const repo = db.getRepository<SessionRecord>('sessionRecords')
-    const where = { userId: ownerId }
-    const initialTotal = await repo.count({ where, throwOnError: true })
-    const records: SessionRecord[] = []
-    const seen = new Set<string>()
-    const target = Math.min(initialTotal, maxRecords)
-    let offset = 0
-
-    while (offset < target) {
-      const requested = Math.min(pageSize, target - offset)
-      const page = await repo.findAll({
-        where,
-        orderBy: 'endedAt',
-        orderDir: 'desc',
-        limit: requested,
-        offset,
-        throwOnError: true,
-      })
-      if (getUserId() !== ownerId) throw new Error('identity changed')
-      if (page.length === 0) break
-      offset += page.length
-      for (const record of page) {
-        if (seen.has(record.id)) continue
-        seen.add(record.id)
-        records.push(record)
-      }
-      if (page.length < requested) break
-    }
-
-    records.sort((a, b) => {
-      const ended = b.endedAt.localeCompare(a.endedAt)
-      return ended !== 0 ? ended : b.id.localeCompare(a.id)
-    })
-    const finalTotal = await repo.count({ where, throwOnError: true })
-    if (getUserId() !== ownerId) throw new Error('identity changed')
-    const stableRead =
-      initialTotal === finalTotal && records.length === initialTotal
-    const totalAvailable = finalTotal >= records.length ? finalTotal : null
-
-    return {
-      records,
-      available: true,
-      complete: initialTotal <= maxRecords && stableRead,
-      totalAvailable,
-    }
-  } catch {
-    return {
-      records: [],
-      available: false,
-      complete: false,
-      totalAvailable: null,
-    }
-  }
-}
+// The bounded Progress read lives in a module of its own, so a page that needs
+// only that read (the Voice Mirror's weekly Check-up, counting the practice
+// between its two weeks) does not carry the rest of this service with it.
+export type { ProgressSessionRecords } from './progress-session-records'
+export { loadProgressSessionRecords } from './progress-session-records'

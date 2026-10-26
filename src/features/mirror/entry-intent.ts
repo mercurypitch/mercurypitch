@@ -27,3 +27,20 @@ export function mirrorEntryIntent(pathname: string): MirrorEntryIntent {
   }
   return 'voice-mirror'
 }
+
+/** The query flag Home's weekly Check-up card opens the Mirror with. */
+export const CHECKUP_PARAM = 'checkup'
+
+/**
+ * Whether this visit is the weekly Check-up (`/mirror?checkup=1`, from Home's
+ * card). It changes only what the landing says: the run is the same guided
+ * run, so every take compares with every other (REQ-GVC-060). It sits beside
+ * the `?v=` of a shared voiceprint without touching it.
+ */
+export function isCheckupVisit(search: string): boolean {
+  try {
+    return new URLSearchParams(search).get(CHECKUP_PARAM) === '1'
+  } catch {
+    return false
+  }
+}
