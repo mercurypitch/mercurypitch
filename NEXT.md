@@ -233,3 +233,7 @@ Note: the lanes' memory gate read a stale cgroup path after the 21:00 restart (f
 - Tag lead/p-handback = cbd92c5b6. Rebased onto main b8479306a: map commit dropped and regenerated (same one-line diff), head c96a3bb74, patch-ids 7/7 same. Gates: polish/P-lead/gates.sh -> gates.out (check, unit P+S test files + src/tests, scripts, validate, metrics, index, cites, build:e2e + first paint (S CSS + P JS together), drafts, 7 specs).
 - PR body draft polish/P-PR-BODY.md (fill RESULTS_AFTER_REBASE). Notes script release/bin/polish-notes.py <PR> <commits> <head> <title> (dry run passed; pre-polish copies kept as *.pre-polish.md).
 - Doc rev 19: six onboarding/plan checks added to "The questions" list.
+
+## 05:40 UTC 26 Oct — notes script corrected
+- The owner never answered the two wording calls (Siren bullet; feedback form's "No account needed." and "Mercury Pitch" two words): the 01:07 message does not cover them. polish-notes.py no longer claims "the owner's calls are in": the dev-changelog line and the PR body's "Before the tag" item 1 stay as drafted (open for the owner). Both CHANGELOG lines are accurate as written. Dry run again (release/dryrun2): all edits match once, no line over 78 characters.
+- Main CI green on b8479306a (PR Gate, Build & Deploy, both Mobile). Open PRs unchanged (#1215 still open).

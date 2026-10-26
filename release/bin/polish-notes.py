@@ -103,9 +103,6 @@ edit_para(D, "- **Search.** The studio's markup", [
     ("the 404 scene (#1118) and search-led lesson titles (#1187).",
      "the 404 scene (#1118), search-led lesson titles (#1187), and the lesson pages' and room pages' links to the lessons in their served HTML (#1216)."),
 ])
-edit_para(D, "- **The feedback form writes \"Mercury Pitch\" as two words**", [
-    ("The wording is the owner's open call anyway.", "The owner keeps the line as it is for this release."),
-])
 edit_para(D, "- **Home's Lessons link still opens `/learn/01`**", [
     ("**Home's Lessons link still opens `/learn/01`** (`src/pages/HomePage.tsx:191`), not the hub; #1177 lists it as W-01's open half.",
      f"**Home's Lessons link opened `/learn/01` for everyone** (#1177's W-01, its open half). #{P} makes it the visitor's current lesson, and the hub once both released lessons are done."),
@@ -152,8 +149,6 @@ edit(B, [
      f"the tour and first-value counts (#1134), the `#/map` router race (#1196), and the plan's polish (#{P}): Start here as the main button, an unclean range read no longer taken for a narrow one, Home's Lessons link and a Lessons door on the Map to the visitor's lesson, and a tablet's width."),
     ("- **Search:** #1105, #1106, #1107, #1109, #1122, #1116 and the 404 scene (#1118).",
      "- **Search:** #1105, #1106, #1107, #1109, #1122, #1116, the 404 scene (#1118), and the lesson pages' and room pages' links to the lessons in their served HTML (#1216)."),
-    ("1. **The owner's two wording calls:** the Siren bullet, and the feedback form's \"No account needed.\" (the form also writes \"Mercury Pitch\" as two words).",
-     f"1. **The owner's calls are in:** the Siren bullet and the feedback form's \"No account needed.\" stay as written, \"Mercury Pitch\" stays two words in that form for now, and Home's Lessons link opens the visitor's current lesson (#{P})."),
     ("3. **The privacy notice** on about.mercurypitch.com covers #1190's and #1193's data (the owner says it does).",
      f"3. **The privacy notice** on about.mercurypitch.com covers #1190's and #1193's data (the owner says it does), and the owner checks #{P}'s one new funnel name, `onboarding_map_door_lessons`, sent like the other Map doors'."),
     ("- **Home's Lessons link opens `/learn/01`**, not the hub.",
