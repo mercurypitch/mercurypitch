@@ -255,7 +255,15 @@ export const FIRST_PAINT_BUDGETS_KB = {
   // flow's lines; the kit's comfort check, feelings and Wrap's card, which
   // join the voice choice in the chunk Lessons 3 and 5 to 8 share, so each
   // of those measures 142 to 149 bytes less; and the warm-up's two plays.
-  'learn/09.html': 143,
+  // Raised to 149 for Sing it's take: 152,032 bytes with it, against
+  // 146,432 at 143, and 5,754 more than without it. Sing it's take wiring
+  // (Start, Start again and the Agains, the readings, the feelings, the
+  // count, the closing lines and the after panel's buttons, and letting the
+  // microphone go on leaving); the loader for the take's own module and the
+  // listener, which come only inside Start's tap, so neither is here; and
+  // the kit's microphone holder, which joins the runs chunk this page
+  // shares with Lesson 7, so Lesson 7 measures 142 bytes more, 135,712.
+  'learn/09.html': 149,
 
   // The main app, and the crawlable doors that are the main app. Measured
   // 4669. It is eager by design today, so this is a ceiling on growth rather

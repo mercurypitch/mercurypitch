@@ -5,47 +5,16 @@
 // WEB-SPEC's end-to-end check 6 (Tests), its parts that need no voice:
 // "Just listen today" never calls `navigator.mediaDevices.getUserMedia` (a
 // spy), even with Merc's ladder played, shows its line and the doctor
-// lines, and leaves the rest card in the Wrap; and with the sound off,
-// Start asks for no microphone and its hint says the sound is off, naming
-// Start. The voice is stored as an earlier lesson stores it, so the card
-// goes from the comfort check straight to its path.
+// lines, and leaves the rest card in the Wrap; with the sound off, Start
+// asks for no microphone and its hint says the sound is off, naming Start;
+// and a refused permission shows the no-microphone line and keeps the
+// practice card. The voice is stored as an earlier lesson stores it, so
+// the card goes from the comfort check straight to its path. The takes are
+// the fake microphone's, one spec for each sound it plays:
+// learn-lesson-09-sing-a3.spec.ts, -d3 and -steps.
 
-import type { Locator, Page } from '@playwright/test'
 import { expect, test } from './helpers/lesson-page'
-
-/** Counts each ask for the microphone, from before the page's first script. */
-async function watchMic(page: Page): Promise<void> {
-  await page.addInitScript(() => {
-    const w = window as unknown as { micAsks: number }
-    w.micAsks = 0
-    const media = navigator.mediaDevices as MediaDevices | undefined
-    if (media === undefined) return
-    const ask = media.getUserMedia.bind(media)
-    media.getUserMedia = (constraints) => {
-      w.micAsks += 1
-      return ask(constraints)
-    }
-  })
-}
-
-const micAsks = (page: Page): Promise<number> =>
-  page.evaluate(() => (window as unknown as { micAsks: number }).micAsks)
-
-/** Opens Sing it with the lower voice stored, and answers the comfort check. */
-async function toSing(page: Page, comfort: 'sing' | 'listen'): Promise<void> {
-  await page.addInitScript(() => {
-    if (sessionStorage.getItem('l09.seeded') === '1') return
-    sessionStorage.setItem('l09.seeded', '1')
-    localStorage.setItem('fyp-voice', JSON.stringify('lower'))
-  })
-  await page.goto('/learn/09#sing')
-  await page.locator(`[data-comfort="${comfort}"]`).click()
-}
-
-const status = (page: Page): Locator => page.locator('#singStatus')
-const prepare = (page: Page): Locator => page.locator('[data-panel="prepare"]')
-const ending = (page: Page, which: 'practise' | 'rest'): Locator =>
-  page.locator(`#practiseCard [data-ending="${which}"]`)
+import { ending, micAsks, prepare, start, status, toSing, watchMic, } from './helpers/lesson-09-sing'
 
 test('"Just listen today" never asks for the microphone, even with Merc\'s ladder played, and rests the Wrap', async ({
   page,
@@ -60,7 +29,7 @@ test('"Just listen today" never asks for the microphone, even with Merc\'s ladde
     'Good call. Merc sings the ladder, and nothing listens. Rest your voice.',
   )
   await expect(page.locator('.doctor[data-listen-why="listen"]')).toBeVisible()
-  await expect(prepare(page).locator('[data-sing="start"]')).toBeHidden()
+  await expect(start(page)).toBeHidden()
   await expect(page.locator('#warmup')).toBeHidden()
   await expect(play).toHaveClass(/is-on/)
   await expect(ending(page, 'rest')).toBeVisible()
@@ -72,7 +41,7 @@ test('with sound off, Start asks for no microphone, and its hint says sound is o
   page,
 }) => {
   await watchMic(page)
-  await toSing(page, 'sing')
+  await toSing(page)
   // the switch turns sound on from unset, then off
   await page.locator('#soundSwitch').click()
   await page.locator('#soundSwitch').click()
@@ -81,7 +50,7 @@ test('with sound off, Start asks for no microphone, and its hint says sound is o
     'false',
   )
 
-  await prepare(page).locator('[data-sing="start"]').click()
+  await start(page).click()
 
   await expect(page.locator('[data-start-hint]')).toHaveText(
     "Sound is off, so nothing played. Turn sound on to hear Merc's ladder, then press Start.",
@@ -89,4 +58,21 @@ test('with sound off, Start asks for no microphone, and its hint says sound is o
   await expect(page.locator('[data-start-hint]')).toBeVisible()
   await expect(status(page)).toHaveText('Your turn: do-mi-so-do, slowly.')
   expect(await micAsks(page)).toBe(0)
+})
+
+test('a refused microphone listens only, and keeps the practice card', async ({
+  page,
+}) => {
+  await watchMic(page, true)
+  await toSing(page)
+
+  await start(page).click()
+
+  await expect(status(page)).toHaveText(
+    'No microphone? Sing along anyway: Merc sings the ladder first, and nothing listens.',
+  )
+  await expect(page.locator('[data-listen-why="nomic"]')).toBeVisible()
+  await expect(start(page)).toBeHidden()
+  await expect(ending(page, 'practise')).toBeVisible()
+  expect(await micAsks(page)).toBe(1)
 })

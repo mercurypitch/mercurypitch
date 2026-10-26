@@ -1544,6 +1544,7 @@
                     type="button"
                     data-sing="again"
                     aria-label="Again: do-mi-so-do"
+                    aria-describedby="againHint"
                     hidden
                   >
                     <svg class="ico" aria-hidden="true">
@@ -1555,6 +1556,7 @@
                     type="button"
                     data-sing="again-smaller"
                     aria-label="Again, smaller ladder"
+                    aria-describedby="againHint"
                     hidden
                   >
                     <svg class="ico" aria-hidden="true">
@@ -1565,6 +1567,7 @@
                     class="btn"
                     type="button"
                     data-sing="start-again"
+                    aria-describedby="againHint"
                     hidden
                   >
                     <svg class="ico" aria-hidden="true">
@@ -1575,6 +1578,14 @@
                     Done for today
                   </button>
                 </div>
+                <!-- with the sound off, beside Start again or Again: the flow's line (ladder-flow.ts) -->
+                <p
+                  class="guide-hint"
+                  id="againHint"
+                  data-again-hint
+                  aria-live="polite"
+                  hidden
+                ></p>
               </div>
             </div>
           </div>

@@ -13,8 +13,8 @@
 // The page shell: the switches, the steps' deck with its ladder chart in
 // each step's state, the next lesson's card, the season map, the masthead
 // and Merc and Tavi; the cold open, the four words, the recall, the steps
-// and their sounds, Sing it up to its take, and the quick check. Sing it's
-// take and free play do nothing until they are wired.
+// and their sounds, Sing it with its take, and the quick check. Free play
+// does nothing until it is wired.
 
 import '@fontsource-variable/inter'
 import '@fontsource-variable/outfit'
@@ -70,7 +70,7 @@ createQuiz({
   deck,
 })
 
-// Sing it: the comfort check, the voice, the ladder and Merc singing it
+// Sing it: the comfort check, the voice, the ladder, Merc's ladder, the take
 initSing()
 
 // the next lesson's card first: the explorer binds its link to the map
