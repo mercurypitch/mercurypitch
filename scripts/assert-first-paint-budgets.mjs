@@ -257,6 +257,8 @@ export const FIRST_PAINT_BUDGETS_KB = {
   'jam-rooms.html': 5400,
   'ear-lab.html': 5400,
   'pitch-training.html': 5400,
+  // Studio boots this same app shell; CI measured 4219 KB on 2026-10-26.
+  'studio-night.html': 5400,
 }
 
 /**
@@ -355,6 +357,8 @@ export const FIRST_PAINT_CSS_BUDGETS_KB = {
   'jam-rooms.html': 1260,
   'ear-lab.html': 1260,
   'pitch-training.html': 1260,
+  // Studio's integrated entry links the same shell CSS; CI measured 1066 KB.
+  'studio-night.html': 1260,
 }
 
 /**
