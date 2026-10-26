@@ -438,6 +438,57 @@ describe('CoachLayer', () => {
     expect(runner.snapshot()?.step.id).toBe('takes')
   })
 
+  it('draws nothing during a quiet wait, and counts it nowhere', async () => {
+    addTarget()
+    const runner = mount({
+      tour: {
+        key: 'karaoke-night',
+        steps: [
+          {
+            id: 'mic',
+            kind: 'do',
+            title: 'Sing along',
+            body: 'Tap the mic and sing along.',
+            merc: 'listen',
+            waitFor: 'pitch-detected',
+          },
+          {
+            id: 'score',
+            kind: 'do',
+            quiet: true,
+            title: 'Sing to the end',
+            body: 'Your score shows when the song ends.',
+            merc: 'listen',
+            waitFor: 'score-closed',
+          },
+          {
+            id: 'own',
+            kind: 'show',
+            title: 'Bring your own song',
+            body: 'Add any song.',
+            target: '[data-tour="coach-test.mic"]',
+            merc: 'point',
+          },
+        ],
+      },
+    })
+    expect(bubble()).toHaveTextContent('1 of 2')
+    fireEvent.click(screen.getByRole('button', { name: 'Skip this step' }))
+
+    expect(runner.snapshot()?.step.id).toBe('score')
+    expect(screen.queryByTestId('coach-bubble')).toBeNull()
+    expect(screen.queryByTestId('coach-ring')).toBeNull()
+    expect(screen.queryByText('Sing to the end')).toBeNull()
+    expect(document.querySelectorAll('[inert]')).toHaveLength(0)
+
+    bus.send('score-closed')
+    await Promise.resolve()
+    expect(bubble()).toHaveTextContent('2 of 2')
+    expect(screen.getByTestId('coach-ring')).toBeVisible()
+    expect(document.activeElement).toBe(bubble())
+    expect(screen.getByRole('button', { name: 'Done' })).toBeVisible()
+  })
+
   it('offers the next stop on the plan when the tour ends', () => {
     const go = vi.fn()
     mount({

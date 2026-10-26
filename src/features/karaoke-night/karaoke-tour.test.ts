@@ -2,11 +2,12 @@
 // Karaoke Night's Merc tour: from the demo song to your own
 // ============================================================
 //
-// Three stops wait for the singer: the demo on stage, a sung note, the score.
-// The last says where your own song goes and, under it, the credits line the
-// plan's Karaoke Night card says (planCreditsLine), worked out from what this
-// page knows. The runner drops the other screen's steps, so each screen is
-// read through it, as the layer reads the tour.
+// Two stops wait for the singer: the demo on stage, a sung note. Then the tour
+// waits quietly through the song, with nothing on screen, until the score
+// card closes. The last says where your own song goes and, under it, the
+// credits line the plan's Karaoke Night card says (planCreditsLine), worked
+// out from what this page knows. The runner drops the other screen's steps,
+// so each screen is read through it, as the layer reads the tour.
 
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { planCreditsLine } from '@/components/billing/plan-credits'
@@ -130,7 +131,7 @@ afterEach(() => {
 
 describe('KARAOKE_TOUR', () => {
   it.each(SCREENS)(
-    'waits for the demo to be staged, then for a sung note, then for the score, on a $name',
+    'waits for the demo to be staged, then for a sung note, then quietly for the score card to close, on a $name',
     async ({ phone }) => {
       vi.useFakeTimers()
       const { tour } = await fresh()
@@ -152,16 +153,19 @@ describe('KARAOKE_TOUR', () => {
       vi.advanceTimersByTime(CELEBRATE_MS)
       expect(at()).toBe('score')
 
-      fire('score-shown')
-      vi.advanceTimersByTime(CELEBRATE_MS)
+      // The song plays with nothing of Merc's on screen; the last stop
+      // shows once the score card has closed, at once.
+      expect(runner.snapshot()).toMatchObject({ waiting: true })
+      fire('score-closed')
       expect(at()).toBe('own-song')
+      expect(runner.snapshot()).toMatchObject({ place: 3, total: 3 })
       runner.next()
       expect(runner.ended()).toBe('done')
     },
   )
 
   it.each(SCREENS)(
-    'keeps to four stops, the first three waiting for the singer, on a $name',
+    'keeps to three counted stops and a quiet wait, on a $name',
     async ({ phone }) => {
       const { tour } = await fresh()
       const steps = stepsFor(tour.KARAOKE_TOUR, phone)
@@ -175,9 +179,13 @@ describe('KARAOKE_TOUR', () => {
       expect(steps.map((step) => step.waitFor)).toEqual([
         'song-staged',
         'pitch-detected',
-        'score-shown',
+        'score-closed',
         undefined,
       ])
+      // The wait through the song draws nothing and is not counted.
+      expect(
+        steps.map((step) => (step.kind === 'do' ? step.quiet : undefined)),
+      ).toEqual([undefined, undefined, true, undefined])
       expect(tour.KARAOKE_TOUR.key).toBe('karaoke-night')
     },
   )
@@ -204,6 +212,16 @@ describe('KARAOKE_TOUR', () => {
     )
     // The phone stage covers the page when the score shows.
     expect(lastStep(tour.KARAOKE_TOUR, true).target).toBeUndefined()
+  })
+
+  it('says at the mic when the score shows', async () => {
+    const { tour } = await fresh()
+    for (const { phone } of SCREENS) {
+      const [, mic] = stepsFor(tour.KARAOKE_TOUR, phone)
+      expect(mic?.body).toBe(
+        'Tap the mic and sing along. Your score shows when the song ends.',
+      )
+    }
   })
 
   it('says it plainly, with no em dash', async () => {

@@ -67,6 +67,66 @@ describe('StemMixerScoreModal visibility milestone', () => {
   })
 })
 
+describe('StemMixerScoreModal closing', () => {
+  it('reports the card closing once, from its Close button', () => {
+    const [showScore, setShowScore] = createSignal(true)
+    const [score] = createSignal<MicScore | null>(GENUINE_SCORE)
+    const onClosed = vi.fn()
+
+    render(() => (
+      <StemMixerScoreModal
+        showScore={showScore}
+        score={score}
+        onClose={() => setShowScore(false)}
+        onClosed={onClosed}
+      />
+    ))
+    expect(onClosed).not.toHaveBeenCalled()
+
+    fireEvent.click(screen.getByRole('button', { name: 'Close score' }))
+    expect(onClosed).toHaveBeenCalledOnce()
+    setShowScore(false)
+    expect(onClosed).toHaveBeenCalledOnce()
+  })
+
+  it('reports a card the run clears by itself, and one whose stage goes away', () => {
+    const [showScore, setShowScore] = createSignal(true)
+    const [score] = createSignal<MicScore | null>(GENUINE_SCORE)
+    const onClosed = vi.fn()
+    const { unmount } = render(() => (
+      <StemMixerScoreModal
+        showScore={showScore}
+        score={score}
+        onClose={() => undefined}
+        onClosed={onClosed}
+      />
+    ))
+
+    setShowScore(false)
+    expect(onClosed).toHaveBeenCalledOnce()
+    setShowScore(true)
+    unmount()
+    expect(onClosed).toHaveBeenCalledTimes(2)
+  })
+
+  it('reports nothing for a card that never opened', () => {
+    const [showScore] = createSignal(false)
+    const [score] = createSignal<MicScore | null>(GENUINE_SCORE)
+    const onClosed = vi.fn()
+    const { unmount } = render(() => (
+      <StemMixerScoreModal
+        showScore={showScore}
+        score={score}
+        onClose={() => undefined}
+        onClosed={onClosed}
+      />
+    ))
+
+    unmount()
+    expect(onClosed).not.toHaveBeenCalled()
+  })
+})
+
 const VOICE_SCORE: MicScore = {
   totalNotes: 100,
   matchedNotes: 40,

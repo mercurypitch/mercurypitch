@@ -3,12 +3,13 @@
 // ============================================================
 //
 // A Merc tour's do-step waits for the singer to do something: start the mic,
-// sing a note, put a song on stage, reach the score. The code that knows (the
-// Sing tab's practice controller, Karaoke Night's stage host) says so here,
-// and so does a mic that would not start, so the step can say why. The
-// coach (src/features/tours/coach/) listens while a step waits. It is an event
-// on `window`, so the two halves share nothing but this file: Karaoke Night's
-// stage and the coach are chunks of their own, and neither imports the other.
+// sing a note, put a song on stage, get through a song and close its score
+// card. The code that knows (the Sing tab's practice controller, Karaoke
+// Night's stage host) says so here, and so does a mic that would not start,
+// so the step can say why. The coach (src/features/tours/coach/) listens
+// while a step waits. It is an event on `window`, so the two halves share
+// nothing but this file: Karaoke Night's stage and the coach are chunks of
+// their own, and neither imports the other.
 //
 // The emits sit on hot paths (a pitch arrives every frame while a note is
 // held), so an emit with no tour listening is one comparison: nothing is
@@ -21,14 +22,15 @@
 /**
  * What a do-step can wait for, or hear go wrong. `mic-on` comes once the
  * engine has the mic, not on the tap that asked for it; `mic-failed` when it
- * could not have it (a refused permission, no device).
+ * could not have it (a refused permission, no device). `score-closed` when
+ * Karaoke's score card has gone after a song, however it went.
  */
 export type CoachEventName =
   | 'mic-on'
   | 'mic-failed'
   | 'pitch-detected'
   | 'song-staged'
-  | 'score-shown'
+  | 'score-closed'
 
 /** The window event's type; its `detail` is the CoachEventName. */
 export const COACH_EVENT = 'mp:coach'

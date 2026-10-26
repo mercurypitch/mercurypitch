@@ -2,13 +2,16 @@
 // KARAOKE_TOUR — Merc's first-job tour of Karaoke Night
 // ============================================================
 //
-// Four stops, from the demo song to your own: put the demo on stage, sing
-// along with the mic on, sing to the end for the score, and where your own
-// song goes in, with what that costs. The first three wait for the singer:
-// the stage host tells the coach (src/lib/coach-events.ts) when a song is on
-// stage, when a sung note arrives and when the score shows, and Skip moves on
-// from any of them. start-karaoke-tour.ts loads this with the coach, so the
-// page's first paint carries none of it.
+// Three stops, from the demo song to your own: put the demo on stage, sing
+// along with the mic on, and where your own song goes in, with what that
+// costs. The first two wait for the singer, and Skip moves on from either.
+// Between the second and the last the tour waits for the song with nothing
+// on screen (a quiet step: no bubble, ring or dim, and not counted, so the
+// singer reads 1 of 3, 2 of 3, 3 of 3), and the last stop shows once the
+// score card has closed, however it closed. The stage host tells the coach
+// (src/lib/coach-events.ts) when a song is on stage, when a sung note arrives
+// and when the score card closes. start-karaoke-tour.ts loads this with the
+// coach, so the page's first paint carries none of it.
 //
 // - The demo: the hero's Sing this song, the one call to action an empty
 //   stage has (karaoke.demo).
@@ -102,15 +105,16 @@ export const KARAOKE_TOUR: CoachTour = {
       target: '[data-tour="karaoke.mic"], [data-tour="mixer.mic"]',
       merc: 'listen',
       title: 'Sing along',
-      body: "Tap the mic and sing along. You'll see how you score.",
+      body: 'Tap the mic and sing along. Your score shows when the song ends.',
     },
     {
       id: 'score',
       kind: 'do',
-      waitFor: 'score-shown',
+      quiet: true,
+      waitFor: 'score-closed',
       merc: 'listen',
       title: 'Sing to the end',
-      body: 'Your score shows when the song ends.',
+      body: 'Nothing on screen: the song has the stage until its score card closes.',
     },
     {
       ...OWN_SONG,

@@ -13,7 +13,7 @@ describe('the coach event bus', () => {
   it('calls a listener for its own event only', () => {
     const heard: string[] = []
     const offPitch = onCoachEvent('pitch-detected', () => heard.push('pitch'))
-    const offScore = onCoachEvent('score-shown', () => heard.push('score'))
+    const offScore = onCoachEvent('score-closed', () => heard.push('score'))
 
     emitCoachEvent('pitch-detected')
     emitCoachEvent('song-staged')
@@ -36,11 +36,11 @@ describe('the coach event bus', () => {
 
   it('dispatches nothing while no one listens', () => {
     const dispatch = vi.spyOn(window, 'dispatchEvent')
-    const off = onCoachEvent('score-shown', () => undefined)
+    const off = onCoachEvent('score-closed', () => undefined)
     off()
 
     emitCoachEvent('pitch-detected')
-    emitCoachEvent('score-shown')
+    emitCoachEvent('score-closed')
 
     expect(dispatch).not.toHaveBeenCalled()
   })

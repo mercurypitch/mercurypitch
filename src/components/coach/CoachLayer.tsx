@@ -16,9 +16,13 @@
 //   and the bubble stands centred. The layer keeps looking every TRACK_MS while
 //   a step shows, so a target that mounts late, or moves, is found and ringed.
 // - Its height. It sits over the app's stages, rails and sheets and under its
-//   modals (z 900, below --z-modal's 1000), so a dialog the app raises mid-tour
-//   (Karaoke's score card) is drawn over the bubble and keeps the focus its
-//   trap holds. The toasts and the cookie banner are above both.
+//   modals (z 900, below --z-modal's 1000). Not every dialog is a modal at
+//   that height: Karaoke's score card is one over the phone stage (z 1000),
+//   but on a wide screen it is an overlay inside the mixer (z 100), under
+//   the coach. So no stop is drawn while it can be up: the wait through the
+//   song is a quiet step, which draws nothing (no bubble, ring or dim), and
+//   the stop after it shows once the card has closed. The toasts and the
+//   cookie banner are above the coach.
 // - Focus and keys. Focus moves to the bubble on each step, which a screen
 //   reader reads by its title, and the title and body are a polite live
 //   region besides. The bubble is not modal: the page stays live, and Tab
@@ -49,6 +53,7 @@ import { stillFor } from '@/lib/merc/stills'
 import styles from './CoachLayer.module.css'
 import { findTarget } from './find-target'
 import type { CoachRunner, CoachSnapshot } from './runner'
+import { isQuiet } from './runner'
 
 /** A target taller than this share of the window gets no ring: it would ring the page. */
 export const RING_MAX_SHARE = 0.7
@@ -151,6 +156,8 @@ export function CoachLayer(props: CoachLayerProps): JSX.Element {
   const snapshot = (): CoachSnapshot | null => props.runner.snapshot()
   // The step itself, apart from the celebration flag: what to ring and focus.
   const step = createMemo(() => snapshot()?.step)
+  // A quiet step draws nothing at all while the singer gets on with it.
+  const quietStep = createMemo(() => isQuiet(step()))
   const [ring, setRing] = createSignal<Box | null>(null)
   const [size, setSize] = createSignal({ w: BUBBLE_MAX_W, h: 0 })
   const [handoff, setHandoff] = createSignal<CoachHandoff | null>(null)
@@ -212,6 +219,10 @@ export function CoachLayer(props: CoachLayerProps): JSX.Element {
     on(step, (shown) => {
       stopTone()
       if (shown === undefined) {
+        setRing(null)
+        return
+      }
+      if (isQuiet(shown)) {
         setRing(null)
         return
       }
@@ -309,68 +320,70 @@ export function CoachLayer(props: CoachLayerProps): JSX.Element {
 
   return (
     <div class={styles.layer} data-testid="coach-layer">
-      <Show when={ring()}>
-        {(box) => (
-          <div
-            class={styles.ring}
-            data-testid="coach-ring"
-            aria-hidden="true"
-            style={{
-              top: `${box().top}px`,
-              left: `${box().left}px`,
-              width: `${box().width}px`,
-              height: `${box().height}px`,
-            }}
-          />
-        )}
-      </Show>
-      <div
-        ref={bubble}
-        class={styles.bubble}
-        classList={{ [styles.celebrating]: snapshot()?.celebrating === true }}
-        data-testid="coach-bubble"
-        data-place={place()}
-        style={bubbleStyle()}
-        role="dialog"
-        aria-labelledby="coach-title"
-        aria-describedby="coach-body"
-        tabindex="-1"
-        on:keydown={onKey}
-      >
-        <button
-          type="button"
-          class={styles.close}
-          aria-label="End tour"
-          onClick={end}
-        >
-          <X />
-        </button>
-        <MercPresence
-          state={pose}
-          stillSrc={stillFor(pose())}
-          size={props.phone ? 72 : 96}
-          testId="coach-merc"
-          class={styles.merc}
-        />
-        <Show
-          when={handoff()}
-          fallback={
-            <Show when={snapshot()}>
-              {(at) => (
-                <StepCard at={at} runner={props.runner} onPlay={playNote} />
-              )}
-            </Show>
-          }
-        >
-          {(next) => (
-            <HandoffCard
-              handoff={next()}
-              onLater={() => props.onClose()}
-              onGo={go}
+      <Show when={!quietStep()}>
+        <Show when={ring()}>
+          {(box) => (
+            <div
+              class={styles.ring}
+              data-testid="coach-ring"
+              aria-hidden="true"
+              style={{
+                top: `${box().top}px`,
+                left: `${box().left}px`,
+                width: `${box().width}px`,
+                height: `${box().height}px`,
+              }}
             />
           )}
         </Show>
-      </div>
+        <div
+          ref={bubble}
+          class={styles.bubble}
+          classList={{ [styles.celebrating]: snapshot()?.celebrating === true }}
+          data-testid="coach-bubble"
+          data-place={place()}
+          style={bubbleStyle()}
+          role="dialog"
+          aria-labelledby="coach-title"
+          aria-describedby="coach-body"
+          tabindex="-1"
+          on:keydown={onKey}
+        >
+          <button
+            type="button"
+            class={styles.close}
+            aria-label="End tour"
+            onClick={end}
+          >
+            <X />
+          </button>
+          <MercPresence
+            state={pose}
+            stillSrc={stillFor(pose())}
+            size={props.phone ? 72 : 96}
+            testId="coach-merc"
+            class={styles.merc}
+          />
+          <Show
+            when={handoff()}
+            fallback={
+              <Show when={snapshot()}>
+                {(at) => (
+                  <StepCard at={at} runner={props.runner} onPlay={playNote} />
+                )}
+              </Show>
+            }
+          >
+            {(next) => (
+              <HandoffCard
+                handoff={next()}
+                onLater={() => props.onClose()}
+                onGo={go}
+              />
+            )}
+          </Show>
+        </div>
+      </Show>
     </div>
   )
 }
@@ -378,7 +391,7 @@ export function CoachLayer(props: CoachLayerProps): JSX.Element {
 /** What the forward button says: Skip on a step still waiting for the singer. */
 export function forwardLabel(at: CoachSnapshot): string {
   if (at.waiting) return 'Skip this step'
-  return at.index + 1 === at.total ? 'Done' : 'Next'
+  return at.last ? 'Done' : 'Next'
 }
 
 interface StepCardProps {
@@ -451,7 +464,7 @@ function StepCard(props: StepCardProps): JSX.Element {
       </div>
       <div class={styles.foot}>
         <span class={styles.count}>
-          {props.at().index + 1} of {props.at().total}
+          {props.at().place} of {props.at().total}
         </span>
         <Show when={props.at().index > 0}>
           <button

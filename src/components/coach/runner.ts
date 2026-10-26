@@ -6,12 +6,16 @@
 // rules can be tested with a fake clock and a fake event bus.
 //
 // - The steps for the other kind of screen are dropped when the runner is made,
-//   so "2 of 4" counts what this singer will see.
+//   so "2 of 4" counts what this singer will see. A quiet step (Karaoke's wait
+//   through the song) is not counted either: it draws nothing, so "N of M"
+//   counts the stops the singer reads, and the tour events count the same.
 // - A do-step listens only from the moment it shows. A note sung during the
 //   step before does not count, or the tour would rush past the step that asks
 //   for one.
 // - When the singer does the thing, Merc celebrates for CELEBRATE_MS and the
-//   step moves on by itself. Skip moves on at once, with no celebration.
+//   step moves on by itself. Skip moves on at once, with no celebration, and
+//   so does a quiet step's event: nothing of it was on screen. Back passes
+//   over a quiet step, and the way on passes one the singer is through.
 // - A do-step whose thing is already done as it shows (`doneAlready`: the mic
 //   was on before the tour), or that the singer did earlier in this run and
 //   Back has returned to, does not wait: it offers Next, as a show step
@@ -35,9 +39,14 @@ import { trackTour } from '@/lib/guide-funnel'
 export const CELEBRATE_MS = 900
 
 export interface CoachSnapshot {
-  /** 0-based, among the steps this screen shows. */
+  /** 0-based, among the steps this screen shows, quiet ones included. */
   index: number
+  /** 1-based, among the counted steps: what "N of M" says. */
+  place: number
+  /** How many counted steps this screen shows. */
   total: number
+  /** The final step: its forward button says Done. */
+  last: boolean
   step: CoachStep
   /** True while a do-step waits for the singer: Next is Skip until it is done. */
   waiting: boolean
@@ -75,6 +84,10 @@ export interface CoachRunnerDeps {
 const forScreen = (step: CoachStep, phone: boolean): boolean =>
   step.viewport === undefined || step.viewport === (phone ? 'phone' : 'desktop')
 
+/** A wait that draws nothing and is not counted (coach-types.ts). */
+export const isQuiet = (step: CoachStep | undefined): boolean =>
+  step?.kind === 'do' && step.quiet === true
+
 export function createCoachRunner(
   tour: CoachTour,
   deps: CoachRunnerDeps = {},
@@ -84,7 +97,12 @@ export function createCoachRunner(
   const steps = tour.steps.filter((step) =>
     forScreen(step, deps.phone === true),
   )
-  const total = steps.length
+  // Each step's place in "N of M": a quiet step keeps its predecessor's.
+  const places: number[] = []
+  for (const step of steps) {
+    places.push((places.at(-1) ?? 0) + (isQuiet(step) ? 0 : 1))
+  }
+  const total = places.at(-1) ?? 0
   const [snapshot, setSnapshot] = createSignal<CoachSnapshot | null>(null)
   const [ended, setEnded] = createSignal<CoachEnd | null>(null)
   // The do-steps the singer has done in this run, by index.
@@ -105,7 +123,7 @@ export function createCoachRunner(
 
   const end = (result: CoachEnd): void => {
     if (over) return
-    const place = untrack(snapshot)
+    const at = untrack(snapshot)
     over = true
     stopWaiting()
     setSnapshot(null)
@@ -113,7 +131,7 @@ export function createCoachRunner(
     if (result === 'done') {
       track('tour_done', tour.key, { step: total, of: total })
     } else {
-      track('tour_exit', tour.key, { step: (place?.index ?? 0) + 1, of: total })
+      track('tour_exit', tour.key, { step: at?.place ?? 1, of: total })
     }
     deps.onEnd?.(result)
   }
@@ -125,9 +143,21 @@ export function createCoachRunner(
       end('done')
       return
     }
-    const at = { index, total, step, celebrating: false, failed: false }
     if (step.kind === 'do' && untrack(() => step.doneAlready?.()) === true) {
       done.add(index)
+    }
+    if (isQuiet(step) && done.has(index)) {
+      show(index + 1)
+      return
+    }
+    const at = {
+      index,
+      place: places[index] ?? 0,
+      total,
+      last: index === steps.length - 1,
+      step,
+      celebrating: false,
+      failed: false,
     }
     const waiting = step.kind === 'do' && !done.has(index)
     setSnapshot({ ...at, waiting })
@@ -140,6 +170,10 @@ export function createCoachRunner(
     unlisten = on(step.waitFor, () => {
       stopWaiting()
       done.add(index)
+      if (step.quiet === true) {
+        show(index + 1)
+        return
+      }
       setSnapshot({ ...at, waiting: false, celebrating: true })
       celebration = setTimeout(() => {
         celebration = null
@@ -150,7 +184,7 @@ export function createCoachRunner(
 
   const current = (): CoachSnapshot | null => (over ? null : untrack(snapshot))
 
-  if (total === 0) {
+  if (steps.length === 0) {
     // Nothing for this screen: the tour is done before it starts, and there
     // is nothing to report.
     over = true
@@ -170,8 +204,10 @@ export function createCoachRunner(
     },
     back() {
       const at = current()
-      if (at === null || at.index === 0) return
-      show(at.index - 1)
+      if (at === null) return
+      let to = at.index - 1
+      while (to >= 0 && isQuiet(steps[to])) to -= 1
+      if (to >= 0) show(to)
     },
     skip() {
       const at = current()
