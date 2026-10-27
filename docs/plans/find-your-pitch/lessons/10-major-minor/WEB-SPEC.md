@@ -172,23 +172,24 @@ FACTS 5a). Each section's heading, and the line above it, are in LESSON.md ("Sec
 
 ## Length
 
-The learner copy is 2,336 words today, every branch counted (FACTS 3; 2,341 at `1308fd2e7`, 2,376 on
+The learner copy is 2,331 words today, every branch counted (FACTS 3; 2,336 before the Wrap's
+next-lesson line took Lesson 11's current hook, 2,341 at `1308fd2e7`, 2,376 on
 the review's count), under the series' cap, Lesson 3's page at 2,379 words on the same count once
-the note under its title is marked Editorial (2,382 at `616c97edb`). It runs about 17 minutes: 9.82
-of reading at 238 words a minute and 7.0 of sound, toys and tasks, 16.82 in all. That is past
+the note under its title is marked Editorial (2,382 at `616c97edb`). It runs about 17 minutes: 9.79
+of reading at 238 words a minute and 7.0 of sound, toys and tasks, 16.79 in all. That is past
 MASTER-PLAN § 4.2's 8 to 12 minutes of active time, as Lessons 3, 5, 6 and 7 are (16, 18, 17 and 16
 minutes). Each step's text, with its Try, its Notice and any predict, runs 92 to 120 words (Steps 1
 to 5: 103, 98, 120, 92 and 114), inside § 4.2's 50 to 120 a step. Four parts carry more:
 
 - **Step 3, 168 words with its drawer.** Its Go deeper drawer (48 words) says why the predict keeps
   do at home, and is closed by default; Major or minor?, its ear game, is a card under the Notice.
-- **Step 4, 364 words with its mix-up card and drawer.** The mix-up card (141 words) sits in the
+- **Step 4, 363 words with its mix-up card and drawer.** The mix-up card (141 words) sits in the
   step whose toy refutes it, as in Lessons 2 to 7, and holds the three studies the lesson's
   misconception needs; the drawer (130 words), closed by default, holds three more, the children's
   study among them, which the review of 20 October moved there to shorten the card.
-- **Sing it, 295 words.** It holds the series' singing lines, which are Lesson 3's word for word and
+- **Sing it, 293 words.** It holds the series' singing lines, which are Lesson 3's word for word and
   are not cut (LESSON.md's intro).
-- **The Wrap, 356 words.** The practice card names two drills and says how Drone Intonation spells
+- **The Wrap, 351 words.** The practice card names two drills and says how Drone Intonation spells
   and scores a note, which the learner needs before opening it (FACTS 48 to 50).
 
 The activities are timed from the spec's own lengths (FACTS 3): the cold open's three plays (1.6 s,

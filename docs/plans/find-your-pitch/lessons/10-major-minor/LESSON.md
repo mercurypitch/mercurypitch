@@ -349,9 +349,8 @@ When the `ear-drill` launch kind ships (CURRICULUM § 4 item 5), the second dril
 so First Light, the app's intro, steps aside on a first visit, and the page has no line about
 closing it (FACTS 46a).]_
 
-**Next lesson:** Lesson 11, Registers and the break. "Why does your voice flip at roughly the same
-note every time you slide up?" One line above it, the tease: "Slide up slowly, and your voice may
-flip."
+**Next lesson:** Lesson 11, Registers and the break. "Why does your voice sometimes flip as you
+slide up?" One line above it, the tease: "Slide up slowly, and your voice may flip."
 
 (The kit's next-lesson card, drawn from the season and its lesson copy: the tease line sits above
 the hook, as CURIOSITY-MOMENTS § 3.1 sets it, FACTS 5. Beside the card's words, a still: a siren's
