@@ -658,7 +658,7 @@ paused off screen, and the still images when WebGL fails or would run on the CPU
   lowest note at the default level (FACTS 40, 62; REQ-GVC-011): a question on the coach's list.
 - **App content, small** (MASTER-PLAN § 7's App content track), proposed, for the Siren exercise
   (FACTS 41, 42):
-  - its help (`src/features/exercises/exercise-help.ts:150-157`): ":150" "Glide your full range up
+  - its help (`src/features/exercises/exercise-help.ts:168-175`): ":150" "Glide your full range up
     and down like a smooth siren." becomes "Glide up and down like a smooth siren, within an easy
     part of your range."; ":152" drops "through your range"; ":153" becomes LESSON.md's "Stay
     relaxed and let the pitch flow. If your voice flips between your low and high voice, let it:
@@ -666,7 +666,7 @@ paused off screen, and the still images when WebGL fails or would run on the CPU
     connected it is, becomes "Most of your score is how close you come to the second note.", as the
     code scores it (70 %, FACTS 41), and stays true with the slide part below fixed (#1192): no
     change. When the help changes, the card's sentence about it goes (LESSON.md's editorial note).
-  - its menu card (`src/features/exercises/ExerciseMenu.tsx:175-176`), "Glide smoothly across your
+  - its menu card (`src/features/exercises/ExerciseMenu.tsx:177-178`), "Glide smoothly across your
     range. Develop seamless register transitions and vocal flexibility.", becomes "Glide smoothly
     between two notes and back. Develop vocal flexibility.", which promises nothing about the
     switch.

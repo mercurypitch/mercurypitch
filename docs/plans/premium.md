@@ -1,5 +1,14 @@
 # Premium Features & Payments Plan
 
+**Status:** outdated, 27 Oct 2026. Kept as the history of web billing (the Stripe donations, and
+the credits for server-side stem separation), not as the plan. Its premise no longer holds on the
+phone: the native app sells one subscription, Mercury Pitch Cloud, which grants songs to the
+Karaoke room each month (`src/features/karaoke-room/karaoke-songs.ts`,
+`workers/db-worker/src/revenuecat.ts`) and carries the premium Merc rooms, practice that runs on
+the device (`PREMIUM_EXERCISES` in `src/lib/native-build.ts`, owner 9 Oct 2026;
+[ear-rooms.md](ear-rooms.md)). For what is free and what is paid today, read the code, not this
+file.
+
 Philosophy: **MercuryPitch stays free.** Everything that runs on the user's
 device — pitch training, vocal analysis, the stem mixer, client-side stem
 separation, community features, cloud accounts — is free forever, supported

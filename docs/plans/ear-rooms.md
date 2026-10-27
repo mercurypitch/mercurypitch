@@ -154,14 +154,17 @@ Both turn an Ear Lab drill into a voice room for the same subscriber.
 The "With Merc" row is the first thing on the Ear Lab tab, so a singer who only uses the free bench
 meets Merc's rooms on every visit. First note is the room that leads to imports: today it plays
 the example songs, and with imports in it, every song a singer brings becomes practice, which is
-what Cloud sells. A free taste lets the rooms show their worth (one free run a day across the
-rooms is the proposal). Measure the chain per room: row taps, room starts, offer views, trials.
+what Cloud sells. A free taste lets the rooms show their worth: one run, or three, then the
+paywall (owner, 27 Oct 2026). The gate comes with the V1 flip (`PREMIUM_EXERCISES` in
+`src/lib/native-build.ts`). Measure the chain per room: row taps, room starts, offer views, trials.
+
+Practice on the device can be paid on the phone. `docs/plans/premium.md`, which said everything
+that runs on the device stays free, is marked outdated (owner, 27 Oct 2026).
 
 ## Open questions for the owner
 
-- The free taste: one run a day across the rooms, or the Learning level free in every room.
-- `docs/plans/premium.md` says what runs on the device stays free, and the native plan sells
-  on-device Merc rooms. One of the two changes before the V1 flip.
+- The free taste's size: one run or three, and whether they count per room or across the Ear
+  rooms.
 - Should a room's best appear on the Ear Lab bench as its own instrument line, or only on the
   "With Merc" row?
 - Harmony: headphones only, or a take-turns fallback on the speaker.

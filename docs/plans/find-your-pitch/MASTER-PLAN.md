@@ -390,7 +390,7 @@ Judge lessons by retrieval, not by "that was so clear": fluency inflates perceiv
 | Claims errors in a teaching series                                                                                                                              | FACTS.md per lesson, critic rounds that check truth, the playbook's claims rules                                                                                                 |
 | Content ID claims on melodies                                                                                                                                   | Public-domain or original tunes only; everything synthesised                                                                                                                     |
 | Interactive pages are expensive and break over time                                                                                                             | One shared toy kit; interactivity only where it explains                                                                                                                         |
-| Premium positioning conflict (`docs/plans/premium.md:48`: pitch training never premium; `docs/specs/guided-voice-check.ears.md` REQ-GVC-025: safety never paid) | Lessons free as the top of the funnel; whether premium stays the Merc practice rooms, which already conflict with `premium.md:3-8`, is § 12 item 3                               |
+| Premium positioning conflict (`docs/plans/premium.md:57`: pitch training never premium; `docs/specs/guided-voice-check.ears.md` REQ-GVC-025: safety never paid) | Lessons free as the top of the funnel; whether premium stays the Merc practice rooms, which already conflict with `premium.md:12-17`, is § 12 item 3                             |
 | First-time visitors from a lesson see onboarding first                                                                                                          | The `?lesson=` marker in Phase 1, or embrace First Light for Lesson 1                                                                                                            |
 | Builders produce uneven quality                                                                                                                                 | The shared kit, the build guide, handoff frames, and a critic that never saw the build                                                                                           |
 
@@ -487,9 +487,9 @@ the item is marked decided here and the Phase 1 Decisions track closes when ever
    shared, versioned film kit vendored into that repository with a drift check; until then tool
    changes stay small and are logged in the film's `tools/CHANGES.md`.
 3. **Decided (22 October 2026): the lessons are free**, the top of the funnel (pitch training never
-   premium, `docs/plans/premium.md:48`; safety never paid, `docs/specs/guided-voice-check.ears.md`
+   premium, `docs/plans/premium.md:57`; safety never paid, `docs/specs/guided-voice-check.ears.md`
    REQ-GVC-025). Still open: whether premium stays the Merc practice rooms, which already sit
-   uneasily with `premium.md:3-8` (everything that runs on the device is free forever).
+   uneasily with `premium.md:12-17` (everything that runs on the device is free forever).
 4. **Decided (22 October 2026): 1080p for Season 1; 4K is looked at again for Season 2.**
 5. **Decided (16 October 2026): British English in general,** with American wording where the
    owner prefers it, case by case. Narration and lesson copy stay as drafted ("semitone" and "tone"
