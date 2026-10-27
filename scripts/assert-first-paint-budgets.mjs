@@ -268,7 +268,11 @@ export const FIRST_PAINT_BUDGETS_KB = {
   // chunk (lesson-10/sing.ts), less 7 in Lesson 6's questions' chunk.
   // Lessons 4, 6, 8 and 9 load the same merged chunk and are 144 to 190
   // bytes lighter for it.
-  'learn/10.html': 167,
+  // Raised to 168 for Sing it's guide and count-in, "How did that feel?",
+  // stopping on leaving and the Wrap's card: 171,528 bytes with them, 1,188
+  // more, all in Lesson 10's own chunk (lesson-10/sing.ts); the feelings and
+  // the card are the comfort check's chunk, which the page already loads.
+  'learn/10.html': 168,
 
   // The main app, and the crawlable doors that are the main app. Measured
   // 4669. It is eager by design today, so this is a ceiling on growth rather

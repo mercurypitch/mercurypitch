@@ -18,11 +18,11 @@
 //
 // The switches, the cold open on the hero's spiral, the recall after it
 // and the four words, the steps' deck with the chord beads in each step's
-// state, every step's controls, both games and Step 5's predict, Sing it's
-// comfort check, voice choice, Merc's notes and Move do, the quick check,
-// the next lesson's card, the season map, the masthead and Merc and Tavi.
-// The rest does nothing until it is wired: Sing it's guide and its
-// feelings, and free play.
+// state, every step's controls, both games and Step 5's predict, Sing it
+// whole (its comfort check, voice choice, Merc's notes, Move do, the guide
+// and "How did that feel?") with the Wrap's card its ending picks, the
+// quick check, the next lesson's card, the season map, the masthead and
+// Merc and Tavi. The rest does nothing until it is wired: free play.
 
 import '@fontsource-variable/inter'
 import '@fontsource-variable/outfit'
