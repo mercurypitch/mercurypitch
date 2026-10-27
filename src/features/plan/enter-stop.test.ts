@@ -5,9 +5,10 @@
 // The plan layer, Home's card and the showcase's end open a stop the same way:
 // a tab is switched to, a page is navigated to, and a room's tour starts only
 // when the person asked for it ("Show me around") and the room has one: its
-// Merc tour where it has one, else its spotlight tour. Karaoke Night is the
-// one page with a tour, opened by its address. First Light keeps a path of
-// its own for a tapped card, which also has to close First Light.
+// Merc tour where it has one, else the store's room tour (its spotlight tour,
+// or Singing's Guide section). Karaoke Night is the one page with a tour,
+// opened by its address. First Light keeps a path of its own for a tapped
+// card, which also has to close First Light.
 //
 // Before that, a menu that hides the stop's room is made whole, and the
 // person is told. That is `widenMenuFor`, its own function because First
@@ -17,12 +18,12 @@
 // The tab and settings stores are the real ones, and so is startRoomTour,
 // handed to the room tour door (src/lib/room-tour-door.ts) as App hands it.
 // Only the edges are faked: the browser's navigation (jsdom cannot go
-// anywhere), the tours (a real walkthrough, or the coach's layer) and the
-// toast (which is the notifications store's to draw).
+// anywhere), the tours (the store's room tour, a real walkthrough, or the
+// coach's layer) and the toast (which is the notifications store's to draw).
 
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import type { PracticeScope, UiMode } from '@/features/tabs/constants'
-import { startRoomTour } from '@/features/tours/room-tour'
+import type { ActiveTab, PracticeScope, UiMode, } from '@/features/tabs/constants'
+import { hasRoomTour, startRoomTour } from '@/features/tours/room-tour'
 import { coachActive, setCoachActive } from '@/lib/coach-state'
 import type { CoachTour } from '@/lib/coach-types'
 import { provideRoomTourDoor } from '@/lib/room-tour-door'
@@ -36,8 +37,8 @@ import { enterStop, widenMenuFor } from './enter-stop'
 import { MENU_WHOLE } from './plan-copy'
 
 const mocks = vi.hoisted(() => ({
-  hasPageTour: vi.fn<(tab: string) => boolean>(),
-  startPageTour: vi.fn<(tab: string) => void>(),
+  hasGuideRoomTour: vi.fn<(tab: string) => boolean>(),
+  startGuideRoomTour: vi.fn<(tab: string) => void>(),
   showNotification: vi.fn<(message: string) => void>(),
   startCoachTour: vi.fn(),
 }))
@@ -53,8 +54,8 @@ vi.mock('@/components/coach/start', () => ({
 
 vi.mock('@/stores/app-store', async (importOriginal) => ({
   ...(await importOriginal<typeof AppStoreModule>()),
-  hasPageTour: mocks.hasPageTour,
-  startPageTour: mocks.startPageTour,
+  hasGuideRoomTour: mocks.hasGuideRoomTour,
+  startGuideRoomTour: mocks.startGuideRoomTour,
 }))
 
 vi.mock('@/stores/notifications-store', async (importOriginal) => ({
@@ -85,13 +86,13 @@ const START = 'settings'
 
 let browser: { href: string }
 
-provideRoomTourDoor(startRoomTour)
+provideRoomTourDoor(startRoomTour, hasRoomTour)
 
 beforeEach(() => {
   vi.clearAllMocks()
   registry.COACH_TOURS = {}
   setCoachActive(null)
-  mocks.hasPageTour.mockReturnValue(false)
+  mocks.hasGuideRoomTour.mockReturnValue(false)
   setActiveTab(START)
   setPracticeScope('all')
   setUiMode('advanced')
@@ -122,35 +123,54 @@ describe('a stop that is a tab', () => {
   })
 
   it('starts no tour unless one is asked for, even where the room has one', () => {
-    mocks.hasPageTour.mockReturnValue(true)
+    mocks.hasGuideRoomTour.mockReturnValue(true)
 
     enterStop(stopAt('guitar'))
     enterStop(stopAt('guitar'), false)
 
-    expect(mocks.startPageTour).not.toHaveBeenCalled()
+    expect(mocks.startGuideRoomTour).not.toHaveBeenCalled()
   })
 
   it("starts the room's tour, in the room, when asked and the room has one", () => {
-    mocks.hasPageTour.mockReturnValue(true)
+    mocks.hasGuideRoomTour.mockReturnValue(true)
     const tabWhenStarted: string[] = []
-    mocks.startPageTour.mockImplementation(() => {
+    mocks.startGuideRoomTour.mockImplementation(() => {
       tabWhenStarted.push(activeTab())
     })
 
     enterStop(stopAt('guitar'), true)
 
-    expect(mocks.hasPageTour).toHaveBeenCalledWith('guitar')
-    expect(mocks.startPageTour).toHaveBeenCalledExactlyOnceWith('guitar')
+    expect(mocks.hasGuideRoomTour).toHaveBeenCalledWith('guitar')
+    expect(mocks.startGuideRoomTour).toHaveBeenCalledExactlyOnceWith('guitar')
     expect(tabWhenStarted).toEqual(['guitar'])
   })
 
   it('only enters a room that has no tour, when one is asked for', () => {
-    mocks.hasPageTour.mockReturnValue(false)
+    mocks.hasGuideRoomTour.mockReturnValue(false)
 
     enterStop(stopAt('guitar'), true)
 
     expect(activeTab()).toBe('guitar')
-    expect(mocks.startPageTour).not.toHaveBeenCalled()
+    expect(mocks.startGuideRoomTour).not.toHaveBeenCalled()
+  })
+
+  it("starts Singing's Guide section through the store where Singing has no Merc tour", async () => {
+    // Arrange: no Merc tour listed for Singing, and the store's own answer to
+    // whether it has a room tour of the Guide's kind
+    const store =
+      await vi.importActual<typeof AppStoreModule>('@/stores/app-store')
+    mocks.hasGuideRoomTour.mockImplementation((tab) =>
+      store.hasGuideRoomTour(tab as ActiveTab),
+    )
+
+    // Act
+    enterStop(stopAt('sing'), true)
+
+    // Assert
+    expect(activeTab()).toBe('singing')
+    expect(store.hasPageTour('singing')).toBe(false)
+    expect(mocks.startGuideRoomTour).toHaveBeenCalledExactlyOnceWith('singing')
+    expect(mocks.startCoachTour).not.toHaveBeenCalled()
   })
 
   it("starts the room's Merc tour, in the room, where it has one", async () => {
@@ -158,7 +178,7 @@ describe('a stop that is a tab', () => {
     registry.COACH_TOURS = {
       guitar: { key: 'sing', load: async () => tour },
     }
-    mocks.hasPageTour.mockReturnValue(true)
+    mocks.hasGuideRoomTour.mockReturnValue(true)
 
     enterStop(stopAt('guitar'), true)
 
@@ -168,7 +188,7 @@ describe('a stop that is a tab', () => {
     await vi.waitFor(() => {
       expect(mocks.startCoachTour).toHaveBeenCalledWith(tour, { phone: false })
     })
-    expect(mocks.startPageTour).not.toHaveBeenCalled()
+    expect(mocks.startGuideRoomTour).not.toHaveBeenCalled()
   })
 })
 
@@ -188,19 +208,19 @@ describe('a stop that is a page', () => {
     enterStop(stopAt('karaokeNight'), true)
 
     expect(browser.href).toBe('/karaoke?tour=first')
-    expect(mocks.startPageTour).not.toHaveBeenCalled()
+    expect(mocks.startGuideRoomTour).not.toHaveBeenCalled()
   })
 
   it.each(PAGES.filter(([dest]) => dest !== 'karaokeNight'))(
     'opens %s plainly, with no tour of its own to ask for',
     (dest, room) => {
       const target = room.target as { kind: 'page'; href: string }
-      mocks.hasPageTour.mockReturnValue(true)
+      mocks.hasGuideRoomTour.mockReturnValue(true)
 
       enterStop(stopAt(dest), true)
 
       expect(browser.href).toBe(target.href)
-      expect(mocks.startPageTour).not.toHaveBeenCalled()
+      expect(mocks.startGuideRoomTour).not.toHaveBeenCalled()
     },
   )
 })
@@ -300,7 +320,7 @@ describe('widenMenuFor', () => {
 
     expect(activeTab()).toBe(START)
     expect(browser.href).toBe('')
-    expect(mocks.startPageTour).not.toHaveBeenCalled()
+    expect(mocks.startGuideRoomTour).not.toHaveBeenCalled()
   })
 
   it('is not folded into enterStop, which moves the person and leaves the menu as it is', () => {

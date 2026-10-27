@@ -62,6 +62,8 @@ vi.mock('@/stores/app-store', async (importOriginal) =>
 
 import { PLAN_OPENED_KEY, PLAN_RECORD_KEY } from '@/features/plan/plan-keys'
 import { savePlanAnswers } from '@/features/plan/plan-store'
+import { hasRoomTour, startRoomTour } from '@/features/tours/room-tour'
+import { provideRoomTourDoor } from '@/lib/room-tour-door'
 import { applyPersistedValue } from '@/lib/storage'
 import { currentBeat, flowOpen, openBeat, recordFirstNote, recordVoiceprint, resetOnboarding, savedVoiceprints, track, voiceprint, } from '@/stores/onboarding-store'
 import { setActiveTab } from '@/stores/ui-store'
@@ -74,6 +76,11 @@ import type { Plate } from './plates'
 import { plateSrc } from './plates'
 import { ROOMS } from './rooms'
 import { ridgeShape } from './voice-strip'
+
+// The Map asks the room tour door whether a room has a tour, and First Light
+// starts one through it; App opens it as it draws. These cases draw no App, so
+// they open it as App does.
+provideRoomTourDoor(startRoomTour, hasRoomTour)
 
 function beat(name: Beat): HTMLElement | null {
   return document.querySelector<HTMLElement>(`[data-beat="${name}"]`)

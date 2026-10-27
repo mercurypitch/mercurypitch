@@ -31,6 +31,8 @@ vi.mock('@/stores', async () => {
   return {
     hasPageTour: () => true,
     startPageTour: vi.fn(),
+    hasGuideRoomTour: () => true,
+    startGuideRoomTour: vi.fn(),
     pageTourKey: (tab: string) => tab,
     walkthroughActive,
     tourOfferRetired,

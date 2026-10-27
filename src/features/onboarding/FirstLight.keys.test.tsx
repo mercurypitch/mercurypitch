@@ -62,7 +62,7 @@ vi.mock('@/stores/app-store', async (importOriginal) =>
 import { PLAN_OPENED_KEY, PLAN_RECORD_KEY } from '@/features/plan/plan-keys'
 import { next, OTHER_FIELD, passTo, SOMETHING_ELSE, tap, } from '@/features/plan/PlanQuestions.fixture'
 import { TAB_EXERCISES, TAB_SINGING } from '@/features/tabs/constants'
-import { startRoomTour } from '@/features/tours/room-tour'
+import { hasRoomTour, startRoomTour } from '@/features/tours/room-tour'
 import { provideRoomTourDoor } from '@/lib/room-tour-door'
 import { applyPersistedValue } from '@/lib/storage'
 import { currentBeat, flowOpen, openBeat, recordVoiceprint, resetOnboarding, savedVoiceprints, } from '@/stores/onboarding-store'
@@ -77,7 +77,7 @@ import { ROOMS } from './rooms'
 
 // First Light starts a room's tour through the room tour door, which App opens
 // as it draws. These cases draw no App, so they open it as App does.
-provideRoomTourDoor(startRoomTour)
+provideRoomTourDoor(startRoomTour, hasRoomTour)
 
 /** Every beat the flow can show. */
 const BEATS: readonly Beat[] = [
@@ -256,12 +256,13 @@ describe("the Map's tour link in the flow", () => {
   }
 
   it("draws one on Practice too, whose Enter asks the room tour door for Singing's", async () => {
-    // Arrange: Singing has no page tour, but its room has a tour
-    // (hasRoomTour), so its card draws the link. Which tour the door starts
-    // is the tours' to decide (room-tour.test.ts); the flow only asks it.
+    // Arrange: Singing has no page tour, but its room has a tour, Merc's,
+    // as the door answers (hasRoomTour), so its card draws the link. Which
+    // tour the door starts is the tours' to decide (room-tour.test.ts); the
+    // flow only asks it.
     const asked = vi.fn<(tab: string) => void>()
-    provideRoomTourDoor(asked)
-    onTestFinished(() => provideRoomTourDoor(startRoomTour))
+    provideRoomTourDoor(asked, hasRoomTour)
+    onTestFinished(() => provideRoomTourDoor(startRoomTour, hasRoomTour))
     const link = await tourLink('practice')
     link.focus()
 
@@ -290,8 +291,8 @@ describe("the Map's tour link in the flow", () => {
       // Assert: handled (the card's own button does not also activate), counted
       // as the room and the tour, and kept from the app behind.
       expect(unhandled).toBe(false)
-      expect(mocks.startPageTour).toHaveBeenCalledTimes(1)
-      expect(mocks.startPageTour).toHaveBeenCalledWith(TAB_EXERCISES)
+      expect(mocks.startGuideRoomTour).toHaveBeenCalledTimes(1)
+      expect(mocks.startGuideRoomTour).toHaveBeenCalledWith(TAB_EXERCISES)
       expect(tracked().slice(-2)).toEqual([
         'onboarding_map_room',
         'onboarding_map_room_exercises',
@@ -313,7 +314,7 @@ describe("the Map's tour link in the flow", () => {
     }
 
     // Assert
-    expect(mocks.startPageTour).not.toHaveBeenCalled()
+    expect(mocks.startGuideRoomTour).not.toHaveBeenCalled()
     expect(flowOpen()).toBe(true)
     expect(heard).toEqual([])
   })

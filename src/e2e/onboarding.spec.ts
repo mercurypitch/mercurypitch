@@ -4,8 +4,9 @@
 //
 // Covers the paths a real visitor walks on their first load, at both a
 // desktop and a phone viewport. See docs/plans/onboarding-first-light.md.
-// Among them: the plan's Show me around into Singing, whose tour is the
-// Guide's Singing section, since Singing never had a page tour of its own.
+// Among them: the plan's Show me around into Singing, which runs Merc's
+// showcase and then Merc's Sing tour. The Guide's Singing section, Singing's
+// tour of the Guide's kind, is its tour only where Merc's does not apply.
 //
 // This file runs WITHOUT a microphone, which is what makes the
 // silent-input case here meaningful: `voice-session` rejects a dead
@@ -260,11 +261,11 @@ test.describe('First Light onboarding', () => {
     expect(overflows).toBe(false)
   })
 
-  for (const [name, size] of [
-    ['a phone', PHONE],
-    ['a desktop', DESKTOP],
+  for (const [name, size, mic] of [
+    ['a phone', PHONE, '[data-tour="singing-transport"]'],
+    ['a desktop', DESKTOP, '[data-tour="sing.mic"]'],
   ] as const) {
-    test(`Show me around into Singing walks the Guide's Singing section, on ${name}`, async ({
+    test(`Show me around into Singing ends in Merc's Sing tour, on ${name}`, async ({
       page,
     }) => {
       // Arrange: on the plan with nothing answered, so Start here is Sing,
@@ -285,20 +286,24 @@ test.describe('First Light onboarding', () => {
         'sing',
       )
 
-      // Act
+      // Act: Merc's showcase comes first; its Skip ends it as its last stop
+      // would, and Start here opens with its tour.
       await questions.getByRole('button', { name: 'Show me around' }).click()
+      await page.getByTestId('showcase-skip').click({ timeout: 15000 })
 
-      // Assert: in Singing, on the section's first step, its spotlight over
-      // the step's target
+      // Assert: in Singing, on Merc's first stop, its ring over the mic, and
+      // no Guide spotlight beside it
       await expect(page).toHaveURL(/#\/singing$/)
+      const bubble = page.getByTestId('coach-bubble')
       await expect(
-        page.getByRole('dialog', { name: 'Welcome to MercuryPitch' }),
-      ).toBeVisible({ timeout: 12000 })
-      const spotlight = page.locator('[class*="walkthroughHighlight"]')
-      await expect(spotlight).toBeVisible()
-      await expect
-        .poll(() => coversCentreOf(page, spotlight, '#app-title'))
-        .toBe(true)
+        bubble.getByRole('heading', { name: 'Start the mic' }),
+      ).toBeVisible({ timeout: 15000 })
+      const ring = page.getByTestId('coach-ring')
+      await expect(ring).toBeVisible()
+      await expect.poll(() => coversCentreOf(page, ring, mic)).toBe(true)
+      await expect(page.locator('[class*="walkthroughHighlight"]')).toHaveCount(
+        0,
+      )
     })
   }
 

@@ -300,7 +300,7 @@ import { useSessionSequencer } from '@/features/session/useSessionSequencer'
 import { appModeBounce } from '@/features/tabs/app-mode-guard'
 import { PLAYBACK_MODE_ONCE, PLAYBACK_MODE_REPEAT, PLAYBACK_MODE_SESSION, TAB_ANALYSIS, TAB_CHALLENGES, TAB_COMMUNITY, TAB_COMPOSE, TAB_EAR_LAB, TAB_EXERCISES, TAB_GUITAR, TAB_HOME, TAB_JAM, TAB_KARAOKE, TAB_LAB, TAB_LAB_DIFF, TAB_LAB_TRANSCRIBE, TAB_LEADERBOARD, TAB_PATH, TAB_PIANO, TAB_PITCH_ALGO, TAB_PITCH_TEST, TAB_PROGRESS, TAB_SETTINGS, TAB_SINGING, TAB_VOICE_HISTORY, tabLabel, visibleTabOrder, } from '@/features/tabs/constants'
 import type { TourHandoff } from '@/features/tours/room-tour'
-import { provideTourHandoff, startRoomTour } from '@/features/tours/room-tour'
+import { hasRoomTour, provideTourHandoff, startRoomTour, } from '@/features/tours/room-tour'
 import { TourChipHost } from '@/features/tours/TourChipHost'
 import { leaveVoiceConstellation } from '@/features/voice-constellation/navigation'
 import { useVoiceConstellationIsolation } from '@/features/voice-constellation/useVoiceConstellationIsolation'
@@ -1023,8 +1023,9 @@ const AppShell: Component<AppProps> = (props) => {
   // aside by now: index.tsx does that before the render.
   const firstLight = useFirstLight(voiceConstellationOpen)
   // First Light's Map and the plan's Start here start a tab's tour through
-  // the room tour door (src/lib/room-tour-door.ts); this is what opens it.
-  provideRoomTourDoor(startRoomTour)
+  // the room tour door (src/lib/room-tour-door.ts), and the Map asks it
+  // whether a room has one; this is what opens it.
+  provideRoomTourDoor(startRoomTour, hasRoomTour)
 
   // ── The plan layer ──────────────────────────────────────────
   // Opened by its route, by Guide's first row and, on the web, by Home's card

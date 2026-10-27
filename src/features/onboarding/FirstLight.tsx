@@ -330,8 +330,9 @@ export const FirstLight: Component<FirstLightProps> = (props) => {
 
   /**
    * Open a room and walk its tour: Merc's where it has one, else its
-   * spotlight tour, started through the room tour door as every way in
-   * starts one (src/lib/room-tour-door.ts).
+   * spotlight tour or, for Practice, the Guide's Singing section, started
+   * through the room tour door as every way in starts one
+   * (src/lib/room-tour-door.ts).
    *
    * No delay before the tour, matching every other caller (TourChipHost,
    * offerTourOnce): page-tour steps carry `requiredTab`, so the Walkthrough

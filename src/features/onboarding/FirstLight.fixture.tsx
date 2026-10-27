@@ -35,8 +35,8 @@ import type * as AppStoreModule from '@/stores/app-store'
 export const mocks = {
   /** The funnel's events, as the flow reports them. */
   trackOnboarding: vi.fn(),
-  /** The page tours the room tour door started, by tab. */
-  startPageTour: vi.fn(),
+  /** The rooms' tours of the Guide's kind the room tour door started, by tab: a page tour, or Singing's Guide section. */
+  startGuideRoomTour: vi.fn(),
   /** What the star field (when it is `fake.watchedStarField`) was last told about being paused. */
   starFieldPaused: null as boolean | null,
   /** Put a launch gift on offer through `fake.promoStore`, or take it off with null. */
@@ -128,10 +128,10 @@ export const fake = {
     canRunLiveMerc: (): boolean => false,
   }),
 
-  /** Starting a page tour opens a real walkthrough; the room tour door only has to ask, in `mocks.startPageTour`. Whether a room has one is the store's real answer. */
+  /** Starting a room's tour of the Guide's kind opens a real walkthrough; the room tour door only has to ask, in `mocks.startGuideRoomTour`. Whether a room has one is the store's real answer. */
   appStore: async (importOriginal: ImportOriginal) => ({
     ...(await importOriginal<typeof AppStoreModule>()),
-    startPageTour: mocks.startPageTour,
+    startGuideRoomTour: mocks.startGuideRoomTour,
   }),
 }
 
