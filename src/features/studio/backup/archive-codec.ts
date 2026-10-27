@@ -14,6 +14,8 @@ export const STUDIO_BACKUP_LIMITS = {
   entries: 257,
   inputChunkBytes: 16 * 1024,
 } as const
+/** Written ZIP chunks fold into the output Blob at this size. */
+const FOLD_BYTES = 8 * 1024 * 1024
 
 export class StudioBackupError extends Error {
   constructor(message: string) {
@@ -283,10 +285,15 @@ export async function writeStudioArchive(
       )
     }
   }
-  // Stored ZIP chunks and the final Blob coexist, plus bounded headers/input.
-  const release = reserveStudioMemory(sourceBytes * 2 + 1024 * 1024)
+  // ZIP chunks fold into the output Blob every few megabytes, so the archive
+  // holds its own size plus one pending fold and bounded headers/input.
+  const release = reserveStudioMemory(
+    sourceBytes + Math.min(FOLD_BYTES, sourceBytes) + 1024 * 1024,
+  )
   let transferred = false
+  let folded = new Blob([], { type: 'application/zip' })
   const parts: Uint8Array<ArrayBuffer>[] = []
+  let pendingBytes = 0
   let outputBytes = 0
   const status: { complete: boolean; failure: Error | null } = {
     complete: false,
@@ -305,6 +312,12 @@ export async function writeStudioArchive(
       return
     }
     parts.push(new Uint8Array(chunk))
+    pendingBytes += chunk.byteLength
+    if (pendingBytes >= FOLD_BYTES) {
+      folded = new Blob([folded, ...parts], { type: 'application/zip' })
+      parts.length = 0
+      pendingBytes = 0
+    }
     status.complete = final
   })
   try {
@@ -334,7 +347,7 @@ export async function writeStudioArchive(
     if (status.failure !== null) throw status.failure
     if (!status.complete)
       throw new StudioBackupError('The project backup could not be completed.')
-    const result = new Blob(parts, { type: 'application/zip' })
+    const result = new Blob([folded, ...parts], { type: 'application/zip' })
     transferred = true
     return retainStudioResource(result, release)
   } finally {

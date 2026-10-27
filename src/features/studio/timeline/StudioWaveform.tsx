@@ -1,5 +1,5 @@
 // Studio waveform — peaks and loudness in the lane's hue, with fade geometry, rendered without playback.
-import { createEffect, createSignal, onCleanup } from 'solid-js'
+import { createEffect, createSignal, onCleanup, untrack } from 'solid-js'
 import { studioClipGainAtSourceFrame } from '@/lib/studio/model/arrangement-plan'
 import type { StudioAsset, StudioClip } from '@/lib/studio/model/types'
 import styles from './StudioTimeline.module.css'
@@ -75,12 +75,19 @@ export function StudioWaveform(props: StudioWaveformProps) {
     'loading' | 'ready' | 'missing' | 'busy'
   >('loading')
 
+  // A waveform refused for memory tries again later, backing off to 30 s.
+  const [retry, setRetry] = createSignal(0)
+  let retryTimer: ReturnType<typeof setTimeout> | undefined
+  onCleanup(() => clearTimeout(retryTimer))
+
   createEffect(() => {
     const asset = props.asset
     const resource = props.resource
+    const attempt = retry()
     const generation = ++request
     setEnvelope(null)
-    setStatus(asset === undefined ? 'missing' : 'loading')
+    if (asset === undefined) setStatus('missing')
+    else if (untrack(status) !== 'busy') setStatus('loading')
     if (asset !== undefined) {
       void resource
         .get(asset)
@@ -91,14 +98,19 @@ export function StudioWaveform(props: StudioWaveformProps) {
           }
         })
         .catch((error: unknown) => {
-          if (generation === request)
-            setStatus(
-              error instanceof StudioWaveformBusyError ? 'busy' : 'missing',
+          if (generation !== request) return
+          const busy = error instanceof StudioWaveformBusyError
+          setStatus(busy ? 'busy' : 'missing')
+          if (busy)
+            retryTimer = setTimeout(
+              () => setRetry(attempt + 1),
+              Math.min(30_000, 2000 * 2 ** attempt),
             )
         })
     }
     onCleanup(() => {
       request++
+      clearTimeout(retryTimer)
     })
   })
 

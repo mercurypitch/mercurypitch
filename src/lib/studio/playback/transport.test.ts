@@ -1,6 +1,6 @@
 // Studio transport lifecycle tests cover delayed preparation, ownership, real clock latency and teardown races.
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { studioReservedMemoryBytes } from '../memory-budget'
+import { setStudioWorkingBytes, studioReservedMemoryBytes, } from '../memory-budget'
 import { studioFixture } from '../model/model.test-fixtures'
 import type { StudioBufferCache, StudioBufferLease } from './buffer-cache'
 import { PlaybackContext } from './playback.test-fixtures'
@@ -139,6 +139,33 @@ describe('Studio borrowed transport', () => {
     expect(studioReservedMemoryBytes()).toBe(0)
   })
 
+  it('waits for the fading run when a seek cannot hold two graphs at once', async () => {
+    vi.useFakeTimers()
+    const f = fixture()
+    await f.transport.play(f.project, [f.asset])
+    const one = studioReservedMemoryBytes()
+    setStudioWorkingBytes(one + Math.floor(one / 2))
+    try {
+      const seeking = f.transport.seek(100, f.project, [f.asset])
+      await vi.advanceTimersByTimeAsync(239)
+      expect(f.buildGraph).toHaveBeenCalledOnce()
+      await vi.advanceTimersByTimeAsync(1)
+      await seeking
+      expect(f.buildGraph).toHaveBeenCalledTimes(2)
+      expect(f.transport.getState()).toMatchObject({
+        playing: true,
+        error: null,
+      })
+      const released = f.transport.releaseAudio()
+      await vi.advanceTimersByTimeAsync(240)
+      await released
+    } finally {
+      setStudioWorkingBytes(null)
+    }
+    f.transport.dispose()
+    expect(studioReservedMemoryBytes()).toBe(0)
+  })
+
   it('warms the cache and chain timing before Play, without unlocking audio', async () => {
     const f = fixture()
     await f.transport.warm(f.project, [f.asset])
@@ -150,6 +177,35 @@ describe('Studio borrowed transport', () => {
     expect(await f.transport.play(f.project, [f.asset])).toBe(true)
     expect(f.measureLatencies).toHaveBeenCalledTimes(measured)
     await f.transport.releaseAudio()
+    f.transport.dispose()
+    expect(studioReservedMemoryBytes()).toBe(0)
+  })
+
+  it('stops a warm-up in flight and waits for it before releasing audio', async () => {
+    const f = fixture()
+    let seen: AbortSignal | undefined
+    let settle!: (value: StudioBufferLease) => void
+    vi.mocked(f.cache.acquire).mockImplementationOnce(
+      (_assets, _ctx, _read, signal) => {
+        seen = signal
+        return new Promise((resolve) => {
+          settle = resolve
+        })
+      },
+    )
+    const warming = f.transport.warm(f.project, [f.asset])
+    await vi.waitFor(() => expect(f.cache.acquire).toHaveBeenCalledOnce())
+    let released = false
+    const release = f.transport.releaseAudio().then(() => {
+      released = true
+    })
+    expect(seen?.aborted).toBe(true)
+    await Promise.resolve()
+    expect(released).toBe(false)
+    settle({ buffers: new Map(), release: f.release })
+    await Promise.all([warming, release])
+    expect(f.release).toHaveBeenCalledOnce()
+    expect(f.cache.clear).toHaveBeenCalled()
     f.transport.dispose()
     expect(studioReservedMemoryBytes()).toBe(0)
   })
@@ -209,6 +265,36 @@ describe('Studio borrowed transport', () => {
     expect(f.release).toHaveBeenCalledOnce()
     f.transport.dispose()
     expect(f.ctx.closeCount).toBe(0)
+    expect(studioReservedMemoryBytes()).toBe(0)
+  })
+
+  it('lengthens the next warmup after a build that missed its start', async () => {
+    vi.useFakeTimers()
+    const f = fixture()
+    let clock = 0
+    const now = vi.spyOn(performance, 'now').mockImplementation(() => clock)
+    f.buildGraph.mockImplementationOnce(() => {
+      clock += 300
+      return {
+        ...f.graph,
+        scheduleUntil: () => {
+          throw new Error('Studio playback could not keep up.')
+        },
+      }
+    })
+    expect(await f.transport.play(f.project, [f.asset])).toBe(false)
+    expect(f.transport.getState().error).toMatch(/keep up/)
+    expect(await f.transport.play(f.project, [f.asset])).toBe(true)
+    const envelope = f.ctx.created
+      .filter((node) => node.nodeType === 'gain')
+      .at(-1) as ReturnType<PlaybackContext['createGain']>
+    // 0.5 s warmup (the cap) instead of the first guess's 0.24 s.
+    expect(envelope.gain.ramps).toEqual([{ value: 1, time: 0.61 }])
+    now.mockRestore()
+    const released = f.transport.releaseAudio()
+    await vi.advanceTimersByTimeAsync(240)
+    await released
+    f.transport.dispose()
     expect(studioReservedMemoryBytes()).toBe(0)
   })
 

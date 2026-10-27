@@ -181,6 +181,31 @@ describe('Studio timeline', () => {
     }
   })
 
+  it('draws a waveform refused for memory once the room comes back', async () => {
+    const { project: song, asset } = studioFixture()
+    let release = reserveStudioMemory(studioWorkingBytes())
+    const read = vi.fn(() => Promise.reject(new Error('Unreadable')))
+    try {
+      render(() => (
+        <StudioTimeline
+          {...base}
+          project={song}
+          assets={[asset]}
+          readCanonicalAsset={read}
+        />
+      ))
+      await waitFor(() =>
+        expect(screen.getByText('Waveform unavailable')).toBeInTheDocument(),
+      )
+      release()
+      release = () => undefined
+      await waitFor(() => expect(read).toHaveBeenCalled(), { timeout: 4000 })
+    } finally {
+      cleanup()
+      release()
+    }
+  })
+
   it('only enables splitting when the playhead lies strictly inside the selected clip', () => {
     const [playhead, setPlayhead] = createSignal(48000)
     render(() => (

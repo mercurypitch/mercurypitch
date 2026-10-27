@@ -94,8 +94,10 @@ function importCommands(
 
 export function createStudioImporter(options: ImportControllerOptions) {
   let active: AbortController | null = null
+  let cancels = 0
 
   function cancelImport(): void {
+    cancels++
     active?.abort()
     active = null
     options.setImporting(false)
@@ -109,10 +111,17 @@ export function createStudioImporter(options: ImportControllerOptions) {
     items: readonly ImportItem[],
     startFrame: number,
   ): Promise<boolean> {
+    // A queued file belongs to the song it was picked for, and Cancel drops it.
+    const epoch = options.epoch()
+    const cancelled = cancels
     const run =
       active === null
         ? importNow(items, startFrame)
-        : turn.then(() => importNow(items, startFrame))
+        : turn.then(() =>
+            epoch === options.epoch() && cancelled === cancels
+              ? importNow(items, startFrame)
+              : false,
+          )
     turn = run.catch(() => undefined)
     return run
   }

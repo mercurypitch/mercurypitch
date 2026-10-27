@@ -1,16 +1,17 @@
 // Studio transport tests — the typed clock seeks silently, clamps to the song and refuses non-times.
 import { cleanup, fireEvent, render, screen } from '@solidjs/testing-library'
+import { createSignal } from 'solid-js'
 import { afterEach, expect, it, vi } from 'vitest'
 import { StudioTransport } from './StudioTransport'
 
 afterEach(cleanup)
 
-function renderTransport(onSeek = vi.fn()) {
+function renderTransport(onSeek = vi.fn(), frame = () => 48000) {
   render(() => (
     <StudioTransport
       playing={false}
       pending={false}
-      playheadFrame={48000}
+      playheadFrame={frame()}
       endFrame={60 * 48000}
       peakL={0}
       peakR={0}
@@ -58,4 +59,18 @@ it('keeps the playhead for text that is not a time and steps a second with the a
   expect(onSeek).toHaveBeenLastCalledWith(96000)
   fireEvent.keyDown(clock, { key: 'ArrowDown', shiftKey: true })
   expect(onSeek).toHaveBeenLastCalledWith(43200)
+})
+
+it('holds the focused time while the song plays, so typing replaces it', () => {
+  const [frame, setFrame] = createSignal(83.456 * 48000)
+  const { onSeek, clock } = renderTransport(vi.fn(), frame)
+  fireEvent.focus(clock)
+  setFrame(84 * 48000)
+  expect(clock).toHaveValue('1:23.456')
+  fireEvent.keyDown(clock, { key: 'Enter' })
+  expect(onSeek).not.toHaveBeenCalled()
+  type(clock, '50')
+  expect(onSeek).toHaveBeenLastCalledWith(50 * 48000)
+  fireEvent.blur(clock)
+  expect(clock).toHaveValue('1:24.000')
 })

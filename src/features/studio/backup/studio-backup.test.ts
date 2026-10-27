@@ -8,7 +8,7 @@ import { DexieAdapter } from '@/db/adapters/dexie-adapter'
 import { studioArrangementFixture, studioAssetFixture, } from '@/db/services/studio.fixture'
 import { createStudioService } from '@/db/services/studio-service'
 import { sha256Bytes } from '@/lib/studio/audio/canonical-pcm'
-import { releaseStudioResource, reserveStudioMemory, studioReservedMemoryBytes, studioWorkingBytes, } from '@/lib/studio/memory-budget'
+import { releaseStudioResource, reserveStudioMemory, setStudioWorkingBytes, studioReservedMemoryBytes, studioWorkingBytes, } from '@/lib/studio/memory-budget'
 import { readStudioArchive as rawReadStudioArchive, STUDIO_BACKUP_LIMITS, writeStudioArchive as rawWriteStudioArchive, } from './archive-codec'
 import { createStudioBackup as rawCreateStudioBackup, readStudioBackup as rawReadStudioBackup, restoreStudioBackup, } from './studio-backup'
 
@@ -276,7 +276,7 @@ describe('portable Studio backups', () => {
     try {
       await expect(
         createStudioBackup(project, read, { assetMetadata: [data.asset] }),
-      ).rejects.toThrow()
+      ).rejects.toThrow(/Studio needs more memory/)
       expect(read).not.toHaveBeenCalled()
       await expect(restoreStudioBackup(archive, service)).rejects.toThrow(
         /memory/,
@@ -286,5 +286,21 @@ describe('portable Studio backups', () => {
       release()
     }
     expect(studioReservedMemoryBytes()).toBe(held)
+  })
+
+  it('writes an archive within its own size plus one fold, not twice its size', async () => {
+    const held = studioReservedMemoryBytes()
+    const MiB = 1024 * 1024
+    const entries = new Map<string, Blob>([
+      ['manifest.json', new Blob(['{}'])],
+      ['assets/0/canonical.pcm', new Blob([new Uint8Array(20 * MiB)])],
+    ])
+    setStudioWorkingBytes(held + 30 * MiB)
+    try {
+      const archive = await writeStudioArchive(entries)
+      expect(archive.size).toBeGreaterThan(20 * MiB)
+    } finally {
+      setStudioWorkingBytes(null)
+    }
   })
 })
