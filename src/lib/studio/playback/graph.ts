@@ -3,13 +3,25 @@ import { createStudioFxChain } from '@/lib/studio-fx/chain'
 import type { ChainSpec } from '@/lib/studio-fx/chain-spec'
 import type { StudioArrangementPlan, StudioPlannedLane, StudioPlannedSegment, } from '../model/arrangement-plan'
 import { studioPanGains } from '../model/arrangement-plan'
+import type { StudioTrack } from '../model/types'
 import { scheduleStudioSegmentGain } from './edge-envelope'
 
 export interface StudioGraph {
   readonly output: GainNode
   scheduleUntil(time: number): void
   readPeaks(): readonly [number, number]
+  /** Whether this track has a lane here: silent lanes are never built. */
+  hasLane(trackId: string): boolean
+  /** Glide a built lane's volume and pan, or silence it, while it plays. */
+  setLaneMix(track: StudioTrack, audible: boolean): void
   dispose(): void
+}
+
+/** Left and right lane gains: pan law times volume and balance. */
+function laneGains(track: StudioTrack): readonly [number, number] {
+  const [left, right] = studioPanGains(track.pan)
+  const gain = Math.pow(10, (track.gainDb + track.balanceGainDb) / 20)
+  return [left * gain, right * gain]
 }
 
 export function studioGraphWorkingBytes(
@@ -35,18 +47,19 @@ function connectLane(
   lane: StudioPlannedLane,
   output: AudioNode,
   disposers: (() => void)[],
+  mixes: Map<string, GainNode[]>,
 ): AudioNode {
   const chain = createStudioFxChain(ctx, lane.spec)
   disposers.push(() => chain.dispose())
   const split = ctx.createChannelSplitter(2)
   const merge = ctx.createChannelMerger(2)
-  const [left, right] = studioPanGains(lane.track.pan)
+  const gains: GainNode[] = []
+  mixes.set(lane.track.id, gains)
   chain.output.connect(split)
-  for (const [index, balance] of [left, right].entries()) {
+  for (const [index, value] of laneGains(lane.track).entries()) {
     const gain = ctx.createGain()
-    gain.gain.value =
-      balance *
-      Math.pow(10, (lane.track.gainDb + lane.track.balanceGainDb) / 20)
+    gain.gain.value = value
+    gains.push(gain)
     split.connect(gain, index)
     gain.connect(merge, 0, index)
     disposers.push(() => gain.disconnect())
@@ -92,6 +105,7 @@ export function buildStudioGraph(
   const output = ctx.createGain()
   const disposers: (() => void)[] = []
   const sources = new Map<AudioBufferSourceNode, GainNode>()
+  const mixes = new Map<string, GainNode[]>()
   const scheduled: {
     segment: StudioPlannedSegment
     input: AudioNode
@@ -118,7 +132,7 @@ export function buildStudioGraph(
       if (!lane.audible || !lane.segments.length) continue
       if (lane.compensationSeconds === null)
         throw new Error('Studio chain timing has not been measured.')
-      const input = connectLane(ctx, lane, laneOutput, disposers)
+      const input = connectLane(ctx, lane, laneOutput, disposers, mixes)
       for (const segment of lane.segments)
         scheduled.push({
           segment,
@@ -215,6 +229,18 @@ export function buildStudioGraph(
           segment.sourceInFrame / 48000,
           (segment.sourceOutFrame - segment.sourceInFrame) / 48000,
         )
+      }
+    },
+    hasLane: (trackId) => mixes.has(trackId),
+    setLaneMix(track, audible) {
+      const gains = mixes.get(track.id)
+      if (!gains || disposed) return
+      const values = audible ? laneGains(track) : [0, 0]
+      const now = ctx.currentTime
+      // A 12 ms glide, so a fader release or a mute does not click.
+      for (const [index, gain] of gains.entries()) {
+        gain.gain.cancelScheduledValues(now)
+        gain.gain.setTargetAtTime(values[index], now, 0.012)
       }
     },
     readPeaks() {

@@ -19,6 +19,8 @@ function fixture() {
     output: ctx.createGain() as unknown as GainNode,
     scheduleUntil: vi.fn(),
     readPeaks: () => [0.2, 0.4] as const,
+    hasLane: vi.fn((id: string) => id === 'track-1'),
+    setLaneMix: vi.fn(),
     dispose: vi.fn(),
   }
   const buildGraph = vi.fn().mockReturnValue(graph)
@@ -65,6 +67,71 @@ describe('Studio borrowed transport', () => {
       playing: true,
       playheadFrame: 100,
     })
+    const released = f.transport.releaseAudio()
+    await vi.advanceTimersByTimeAsync(240)
+    await released
+    f.transport.dispose()
+    expect(studioReservedMemoryBytes()).toBe(0)
+  })
+
+  it('moves volume, pan and Solo on the running graph without restarting', async () => {
+    vi.useFakeTimers()
+    const f = fixture()
+    await f.transport.play(f.project, [f.asset])
+    const [track] = f.project.tracks
+    const louder = { ...track, gainDb: -3, pan: 0.5, solo: true }
+    await f.transport.setSnapshot(
+      { ...f.project, revision: 1, tracks: [louder] },
+      [f.asset],
+    )
+    expect(f.buildGraph).toHaveBeenCalledOnce()
+    expect(f.graph.setLaneMix).toHaveBeenCalledWith(louder, true)
+    expect(f.transport.getState().playing).toBe(true)
+    const muted = { ...louder, mute: true }
+    await f.transport.setSnapshot(
+      { ...f.project, revision: 2, tracks: [muted] },
+      [f.asset],
+    )
+    expect(f.graph.setLaneMix).toHaveBeenLastCalledWith(muted, false)
+    expect(f.buildGraph).toHaveBeenCalledOnce()
+    // Any other edit, here a moved clip, still restarts.
+    await f.transport.setSnapshot(
+      {
+        ...f.project,
+        revision: 3,
+        tracks: [louder],
+        clips: [{ ...f.project.clips[0], startFrame: 960 }],
+      },
+      [f.asset],
+    )
+    expect(f.buildGraph).toHaveBeenCalledTimes(2)
+    const released = f.transport.releaseAudio()
+    await vi.advanceTimersByTimeAsync(240)
+    await released
+    f.transport.dispose()
+    expect(studioReservedMemoryBytes()).toBe(0)
+  })
+
+  it('restarts to bring in a lane that was silent when Play built the graph', async () => {
+    vi.useFakeTimers()
+    const f = fixture()
+    const [track] = f.project.tracks
+    const [clip] = f.project.clips
+    const project = {
+      ...f.project,
+      tracks: [track, { ...track, id: 'quiet', order: 1, mute: true }],
+      clips: [clip, { ...clip, id: 'quiet-clip', trackId: 'quiet' }],
+    }
+    f.measureLatencies.mockResolvedValue([441, 441])
+    await f.transport.play(project, [f.asset])
+    const unmuted = {
+      ...project,
+      revision: 1,
+      tracks: [track, { ...project.tracks[1], mute: false }],
+    }
+    await f.transport.setSnapshot(unmuted, [f.asset])
+    expect(f.graph.setLaneMix).not.toHaveBeenCalled()
+    expect(f.buildGraph).toHaveBeenCalledTimes(2)
     const released = f.transport.releaseAudio()
     await vi.advanceTimersByTimeAsync(240)
     await released
