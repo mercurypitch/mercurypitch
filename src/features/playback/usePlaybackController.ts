@@ -93,6 +93,16 @@ interface PlaybackControllerDeps {
   totalBeats: Accessor<number>
   endPracticeSession: () => SessionResult | null | undefined
   setShouldAutoStartPlayback: Setter<boolean>
+  /**
+   * A melody Play takes in place of the library's: Merc's, while he sings
+   * through the tab (sing-demo-host.ts). Null, or absent, plays the library's.
+   */
+  melodyOverride?: () => readonly MelodyItem[] | null
+  /**
+   * False while the run on the transport is nobody's to keep (Merc's): Stop
+   * then ends no practice session and works out no result.
+   */
+  keepsRun?: () => boolean
 }
 
 export function usePlaybackController(
@@ -361,10 +371,13 @@ export function usePlaybackController(
       setPlaybackDisplayBeats(null)
     }
 
+    const override = deps.melodyOverride?.() ?? null
     let baseMelody =
       forcedDurationBeats !== undefined
         ? (playbackDisplayMelody() ?? [])
-        : melodyStore.items()
+        : override !== null
+          ? [...override]
+          : melodyStore.items()
 
     if (baseMelody.length === 0) {
       buildScaleMelody(scaleType(), 8)
@@ -411,7 +424,7 @@ export function usePlaybackController(
 
     if (settings().tonicAnchor === true) {
       const melody = melodyStore.getCurrentMelody()
-      const firstNote = melody?.items?.[0]?.note
+      const firstNote = (override ?? melody?.items)?.[0]?.note
       const tonicFreq =
         firstNote?.freq ??
         keyTonicFreq(keyName(), melodyStore.getCurrentOctave())
@@ -485,11 +498,13 @@ export function usePlaybackController(
     // skips the seed step, leaving the runtime with stale melody data.
     setSessionMode(false)
     setEditorPlaybackState('stopped')
-    const result = endPracticeSession()
+    // A run nobody keeps (Merc's demo) ends no session and shows no result.
+    const keeps = deps.keepsRun?.() ?? true
+    const result = keeps ? endPracticeSession() : null
 
     // If we're not running a multi-item session but we just finished a practice run
     // with actual notes, calculate and display the single-run summary.
-    if (!wasInSession && noteResults.length > 0) {
+    if (keeps && !wasInSession && noteResults.length > 0) {
       const pr = practiceEngine.calculatePracticeResult(
         noteResults,
         melodyStore.getCurrentMelody()?.name ?? 'Practice Run',
