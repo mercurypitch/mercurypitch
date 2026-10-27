@@ -9,7 +9,7 @@
 // nothing at all, so Home is as it was. Which of the three it is, and what a
 // tick means, are plan-progress.ts's; this draws what that says.
 //
-// Six things are easy to break:
+// Seven things are easy to break:
 //
 // - Home reaches this file only through a lazy import behind IS_NATIVE_BUILD
 //   (src/pages/HomePlanCardMount.tsx, held by home-card-mount.test.ts): it
@@ -41,6 +41,14 @@
 //   key that cannot be read is a card that was not hidden. The X goes with the
 //   card, so the focus it had goes to the page's main region, and a keyboard
 //   user is not dropped at the top of the page.
+// - Then a toast says where the plan still is, with Undo, on a channel of its
+//   own, so a second X replaces the first toast and never stands above it.
+//   Undo clears the hide, the card is drawn again where it was, first in
+//   Home's grid, and the focus goes to its X, which is where it was when the
+//   card went: a keyboard user is back where they left off, inside the card,
+//   and the next Tab reaches its rows. An Undo after Home has gone still
+//   clears the hide, and the card comes back the next time Home draws.
+//   Neither the X nor Undo tells the funnel anything.
 //
 // The card follows the record, the menu and the stops opened, so it turns into
 // the plan when the questions are answered behind it and loses a row the menu
@@ -50,21 +58,25 @@ import type { JSX } from 'solid-js'
 import { createEffect, createMemo, createUniqueId, Index, Match, onCleanup, Show, Switch, untrack, } from 'solid-js'
 import { CheckSmall, X } from '@/components/icons'
 import { trackGuide } from '@/lib/guide-funnel'
+import { showActionNotification } from '@/stores/notifications-store'
 import { practiceScope, uiMode } from '@/stores/settings-store'
 import type { PlanDest, PlanStop } from './build-plan'
 import { PLAN_DESTS } from './build-plan'
 import { enterStop, widenMenuFor } from './enter-stop'
 import styles from './HomePlanCard.module.css'
 import { PLAN_CARD_SLOT_SETTLE_MS, rememberPlanCardSlot, } from './plan-card-slot'
-import { KICKER } from './plan-copy'
+import { KICKER, PLAN_PLACES } from './plan-copy'
 import { homePlanCardState } from './plan-progress'
-import { hidePlanCard, markStopOpened, openPlanLayer, planCardHidden, planRecord, } from './plan-store'
+import { hidePlanCard, markStopOpened, openPlanLayer, planCardHidden, planRecord, showPlanCard, } from './plan-store'
 import { MERC_INTRO } from './questions'
 
 interface Row {
   stop: PlanStop
   done: boolean
 }
+
+/** The toast the X raises is the only one on this channel, so a second X replaces it. */
+const HIDDEN_CHANNEL = 'plan-card-hidden'
 
 export interface HomePlanCardProps {
   /**
@@ -78,9 +90,13 @@ export interface HomePlanCardProps {
 // ── Pieces of the card ─────────────────────────────────────────────────
 
 /** The X that hides the card. A picture from the project's icons, named for a screen reader. */
-function HideButton(props: { onHide: () => void }): JSX.Element {
+function HideButton(props: {
+  onHide: () => void
+  keepX: (x: HTMLButtonElement) => void
+}): JSX.Element {
   return (
     <button
+      ref={(el) => props.keepX(el)}
       type="button"
       class={styles.hide}
       aria-label="Hide your plan"
@@ -138,6 +154,7 @@ function PlanCard(props: {
   onOpen: (stop: PlanStop) => void
   onHide: () => void
   keep: (card: HTMLElement) => void
+  keepX: (x: HTMLButtonElement) => void
 }): JSX.Element {
   const headingId = createUniqueId()
   return (
@@ -151,7 +168,7 @@ function PlanCard(props: {
         <h2 id={headingId} class={styles.title}>
           Your plan
         </h2>
-        <HideButton onHide={props.onHide} />
+        <HideButton onHide={props.onHide} keepX={props.keepX} />
       </div>
       <ul class={styles.rows} role="list">
         {/* Index, not For: a tick changes a row that stays, and the row's
@@ -168,6 +185,7 @@ function PlanCard(props: {
 function AskCard(props: {
   onHide: () => void
   keep: (card: HTMLElement) => void
+  keepX: (x: HTMLButtonElement) => void
 }): JSX.Element {
   const headingId = createUniqueId()
   return (
@@ -181,7 +199,7 @@ function AskCard(props: {
         <h2 id={headingId} class={styles.title}>
           Your plan, in four taps
         </h2>
-        <HideButton onHide={props.onHide} />
+        <HideButton onHide={props.onHide} keepX={props.keepX} />
       </div>
       <div class={styles.ask}>
         <p class={styles.line}>{MERC_INTRO.q1}</p>
@@ -215,11 +233,31 @@ export function HomePlanCard(props: HomePlanCardProps): JSX.Element {
   }
   const asking = (): boolean => card()?.kind === 'ask'
 
+  // The card's X as it is drawn now, for Undo to give the focus back to.
+  let x: HTMLButtonElement | undefined
+  const keepX = (el: HTMLButtonElement): void => {
+    x = el
+  }
+
+  const undo = (): void => {
+    // The card is drawn again at once, where it was (the Switch below follows
+    // the hide), and its X with it. A Home that has gone has no X to focus:
+    // the card is back the next time Home draws.
+    showPlanCard()
+    if (x?.isConnected === true) x.focus()
+  }
+
   const hide = (): void => {
     hidePlanCard()
     // The X is gone with the card, and the focus it had would fall to the top
     // of the page: keep it in the page's main region, where it was.
     document.getElementById('main-content')?.focus({ preventScroll: true })
+    showActionNotification(
+      PLAN_PLACES.offHome,
+      'info',
+      { label: PLAN_PLACES.undo, onClick: undo },
+      { channel: HIDDEN_CHANNEL },
+    )
   }
 
   // What Home keeps for the card on its next load, before this chunk is in:
@@ -280,11 +318,17 @@ export function HomePlanCard(props: HomePlanCardProps): JSX.Element {
     <Switch>
       <Match when={rows()}>
         {(stops) => (
-          <PlanCard rows={stops()} onOpen={open} onHide={hide} keep={keep} />
+          <PlanCard
+            rows={stops()}
+            onOpen={open}
+            onHide={hide}
+            keep={keep}
+            keepX={keepX}
+          />
         )}
       </Match>
       <Match when={asking()}>
-        <AskCard onHide={hide} keep={keep} />
+        <AskCard onHide={hide} keep={keep} keepX={keepX} />
       </Match>
     </Switch>
   )

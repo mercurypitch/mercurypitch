@@ -1,5 +1,5 @@
 // ============================================================
-// Plan copy — the words on the plan's cards
+// Plan copy — the words on the plan's cards, and where the plan lives
 // ============================================================
 //
 // The approved mockup's tables and cards, except the guitar and piano
@@ -205,6 +205,20 @@ export const KICKER: Readonly<Record<'start' | 'learn' | 'play', string>> = {
  */
 export const MENU_WHOLE =
   'Your menu shows every room again. You can change it in Settings, App Mode.'
+
+// ── Where the plan lives ───────────────────────────────────────────────
+
+/**
+ * The words that say where the plan is once Home's card is hidden, and the
+ * ways back to it. They go to the owner's copy pass together, so they are
+ * written together, here, and read from here by every screen that says them.
+ */
+export const PLAN_PLACES = {
+  /** The toast the card's X raises: where the plan still is. */
+  offHome: 'Your plan is off Home. Settings and the Guide still have it.',
+  /** The toast's action, which puts the card back. */
+  undo: 'Undo',
+} as const
 
 // ── Play ───────────────────────────────────────────────────────────────
 
