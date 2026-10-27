@@ -42,6 +42,9 @@ interface StudioMixDeskProps {
   /** Finger-sized strips and dials. */
   tablet?: boolean
   meter: StudioMixMeterSource
+  /** The selected lane: its strip is marked, and a strip's name selects its lane. */
+  selectedTrackId?: string | null
+  onSelectTrack?(trackId: string): void
   onCommand(command: StudioCommand): boolean
   onClose(): void
 }
@@ -319,10 +322,12 @@ export function StudioMixDesk(props: StudioMixDeskProps) {
             {(id, index) => {
               const track = () =>
                 props.project.tracks.find((item) => item.id === id)!
+              const selected = () => props.selectedTrackId === id
               return (
                 <div
                   class={styles.strip}
                   data-studio-mix-strip={id}
+                  data-selected={selected() ? '' : undefined}
                   data-silent={
                     track().mute || (anySolo() && !track().solo)
                       ? ''
@@ -342,9 +347,15 @@ export function StudioMixDesk(props: StudioMixDeskProps) {
                     soloedOut={anySolo() && !track().solo}
                     onCommand={props.onCommand}
                     identity={
-                      <span class={styles.stripName} title={track().name}>
+                      <button
+                        type="button"
+                        class={styles.stripName}
+                        title={track().name}
+                        aria-current={selected() ? 'true' : undefined}
+                        onClick={() => props.onSelectTrack?.(id)}
+                      >
                         {track().name}
-                      </span>
+                      </button>
                     }
                   />
                 </div>

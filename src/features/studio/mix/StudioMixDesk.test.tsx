@@ -26,9 +26,13 @@ function song(): StudioProject {
   }
 }
 
-function mount(options: { writable?: boolean; open?: boolean } = {}) {
+function mount(
+  options: { writable?: boolean; open?: boolean; selected?: string } = {},
+) {
   const [project, setProject] = createSignal(song())
   const [open, setOpen] = createSignal(options.open ?? true)
+  const [selected, setSelected] = createSignal(options.selected ?? null)
+  const select = vi.fn((id: string) => setSelected(id))
   const [meter, setMeter] = createSignal<StudioMeterSnapshot | null>(null)
   const command = vi.fn((edit: StudioCommand) => {
     setProject((current) => applyStudioCommand(current, edit, { assets: [] }))
@@ -52,13 +56,15 @@ function mount(options: { writable?: boolean; open?: boolean } = {}) {
             peakR: () => 0,
             resetPeakHold,
           }}
+          selectedTrackId={selected()}
+          onSelectTrack={select}
           onCommand={command}
           onClose={close}
         />
       </Show>
     </>
   ))
-  return { project, command, close, open, setMeter }
+  return { project, command, close, open, setMeter, select }
 }
 
 // jsdom has no PointerEvent: a MouseEvent under a pointer event's name keeps
@@ -176,6 +182,24 @@ describe('Studio mixing desk', () => {
     fireEvent.dblClick(face)
     expect(ui.command).toHaveBeenCalledTimes(2)
     expect(ui.project().mix.macros.tone).toBe(0)
+  })
+
+  it('marks the selected lane’s strip, and a strip’s name selects its lane', () => {
+    const ui = mount({ selected: 'piano' })
+    const strip = (id: string) =>
+      desk().querySelector<HTMLElement>(`[data-studio-mix-strip="${id}"]`)!
+    expect(strip('piano')).toHaveAttribute('data-selected')
+    expect(strip('drums')).not.toHaveAttribute('data-selected')
+    const name = screen.getByRole('button', { name: 'Drums' })
+    expect(name).toHaveAttribute('title', 'Drums')
+    fireEvent.click(name)
+    expect(ui.select).toHaveBeenCalledWith('drums')
+    expect(strip('drums')).toHaveAttribute('data-selected')
+    expect(strip('piano')).not.toHaveAttribute('data-selected')
+    expect(screen.getByRole('button', { name: 'Drums' })).toHaveAttribute(
+      'aria-current',
+      'true',
+    )
   })
 
   it('shows a lane silenced by another lane’s solo as silent, with Mute unpressed but marked', () => {
