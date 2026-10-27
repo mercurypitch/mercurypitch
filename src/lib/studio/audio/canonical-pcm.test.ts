@@ -2,7 +2,7 @@
 import { describe, expect, it } from 'vitest'
 import { sampledAudio } from './audio.fixture'
 import type { CanonicalPcmMetadata } from './canonical-pcm'
-import { CANONICAL_PCM_HEADER_BYTES, decodeCanonicalPcm, encodeCanonicalPcm, sha256Bytes, validateCanonicalPcm, } from './canonical-pcm'
+import { CANONICAL_PCM_HEADER_BYTES, decodeCanonicalPcm, encodeCanonicalPcm, sha256Bytes, validateCanonicalPcm, validateCanonicalPcmBytes, } from './canonical-pcm'
 
 async function fixture() {
   const audio = sampledAudio([
@@ -81,6 +81,36 @@ describe('canonical Studio PCM', () => {
     new DataView(bytes).setFloat32(CANONICAL_PCM_HEADER_BYTES, NaN, true)
     await expect(
       validateCanonicalPcm(new Blob([bytes]), {
+        ...metadata,
+        canonicalPcmSha256: await sha256Bytes(bytes),
+      }),
+    ).rejects.toThrow('invalid samples')
+  })
+
+  it('checks held bytes in place the same way: checksum, size, metadata and samples', async () => {
+    const { blob, metadata } = await fixture()
+    const bytes = await blob.arrayBuffer()
+    await expect(
+      validateCanonicalPcmBytes(bytes, metadata),
+    ).resolves.toBeUndefined()
+    await expect(
+      validateCanonicalPcmBytes(bytes, {
+        ...metadata,
+        canonicalPcmSha256: '0'.repeat(64),
+      }),
+    ).rejects.toThrow('checksum')
+    await expect(
+      validateCanonicalPcmBytes(bytes.slice(0, bytes.byteLength - 1), metadata),
+    ).rejects.toThrow('size')
+    await expect(
+      validateCanonicalPcmBytes(bytes, {
+        ...metadata,
+        normalizedFrameCount: 3,
+      }),
+    ).rejects.toThrow('metadata')
+    new DataView(bytes).setFloat32(CANONICAL_PCM_HEADER_BYTES, NaN, true)
+    await expect(
+      validateCanonicalPcmBytes(bytes, {
         ...metadata,
         canonicalPcmSha256: await sha256Bytes(bytes),
       }),

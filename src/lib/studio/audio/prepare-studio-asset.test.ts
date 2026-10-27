@@ -5,7 +5,7 @@ import { sampledAudio, toneAudio } from './audio.fixture'
 import { decodeCanonicalPcm, sha256Bytes } from './canonical-pcm'
 import type { PcmAudio } from './import-limits'
 import type { StudioAssetInfo } from './prepare-studio-asset'
-import { prepareStudioAsset, prepareStudioAssetFrom, validatePreparedStudioAsset, } from './prepare-studio-asset'
+import { prepareStudioAsset, prepareStudioAssetFrom, validatePreparedStudioAsset, validatePreparedStudioBytes, } from './prepare-studio-asset'
 
 const info: StudioAssetInfo = {
   id: 'asset-1',
@@ -217,5 +217,34 @@ describe('Studio asset preparation', () => {
         },
       }),
     ).rejects.toThrow()
+  })
+
+  it('checks audio held as bytes without reserving or copying it, and rejects tampered bytes', async () => {
+    const data = await prepareStudioAsset(
+      new Blob(['abc']),
+      info,
+      decoder(sampledAudio([[0, 0.5]])),
+    )
+    const bytes = {
+      asset: data.asset,
+      original: await data.original.arrayBuffer(),
+      canonicalPcm: await data.canonicalPcm.arrayBuffer(),
+    }
+    const held = studioReservedMemoryBytes()
+
+    await expect(validatePreparedStudioBytes(bytes)).resolves.toBeUndefined()
+    expect(studioReservedMemoryBytes()).toBe(held)
+    await expect(
+      validatePreparedStudioBytes({
+        ...bytes,
+        original: new TextEncoder().encode('xyz').buffer,
+      }),
+    ).rejects.toThrow('checksum')
+    await expect(
+      validatePreparedStudioBytes({
+        ...bytes,
+        original: new TextEncoder().encode('abcd').buffer,
+      }),
+    ).rejects.toThrow('metadata')
   })
 })
