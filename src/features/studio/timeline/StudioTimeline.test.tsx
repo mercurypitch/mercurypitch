@@ -308,6 +308,20 @@ describe('Studio timeline', () => {
     expect(fit).toBeGreaterThanOrEqual(1)
   })
 
+  it('fits a song to the width to a tenth of a pixel per second, filling a narrow window', () => {
+    const zoom = vi.fn()
+    // 141 s of song plus a second of room, across 536 px of lane: 3.77 px/s.
+    const song = {
+      ...project,
+      clips: [{ ...project.clips[0], sourceOutFrame: 140 * 48000 }],
+    }
+    render(() => <StudioTimeline {...base} project={song} onZoom={zoom} />)
+
+    fireEvent.click(screen.getByRole('button', { name: 'Fit song to width' }))
+
+    expect(zoom).toHaveBeenCalledWith(3.7)
+  })
+
   it('moves zoom and the selected clip commands into a dock beside the lanes while the desk is open', () => {
     const [deskOpen, setDeskOpen] = createSignal(false)
     const { container } = render(() => (
