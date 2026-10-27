@@ -22,6 +22,7 @@
 // speaker plays it.
 
 import { roomOutput } from '@/components/room-kit/room-output'
+import { outputLatency } from '@/components/room-kit/round-voice'
 import { playVoiceContour } from '@/lib/demo-audio'
 import { midiToFrequency } from '@/lib/frequency-to-note'
 import { phraseToVoicePoints } from '@/lib/sequence/phrase-voice'
@@ -89,14 +90,6 @@ export interface Call {
   readonly notes: readonly CallNote[]
   /** When the call has ended at the speaker, frames' clock. */
   readonly endsAt: number
-}
-
-/** How far the speaker is behind the audio clock, s. */
-function outputLatency(ctx: AudioContext): number {
-  const out = ctx.outputLatency
-  if (Number.isFinite(out) && out > 0) return out
-  const base = ctx.baseLatency
-  return Number.isFinite(base) && base > 0 ? base : 0
 }
 
 /**

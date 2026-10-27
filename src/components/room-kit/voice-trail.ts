@@ -1,16 +1,17 @@
 // ============================================================
-// The voice's trail on the water — where the voice sits against home
+// The voice's trail — where the voice sits against the note it is after
 // ============================================================
 //
-// The singer's turn draws the voice as a short trail of light over the
-// sea, its newest point at the head, older points drifting left. Up is
-// higher. Home's line is the lighthouse's beam, and the voice is read
-// against the nearest octave of home, as the engine hears it: a voice an
-// octave under home sits on the beam, because it is home.
+// A room's turn draws the voice as a short trail of light, its newest
+// point at the head, older points drifting left. Up is higher. The note
+// the voice is after is a line across the room (Home note's lighthouse
+// beam, First note's spotlight), and the voice is read against its nearest
+// octave, as the sequence engine hears it at the levels that fold: a voice
+// an octave under the note sits on the line, because it is that note.
 //
 // The live picture is what the research says moves a voice: seeing the
 // pitch while matching it (Blanco et al. 2021). So the trail is drawn
-// every frame the voice is heard, and the tolerance band around the beam
+// every frame the voice is heard, and the tolerance band around the line
 // is the level's own, so "in the light" on screen is "landing" in the
 // engine.
 //
@@ -21,17 +22,17 @@ import type { PitchFrame } from '@/lib/pitch-f0-stream'
 
 /** The trail's length on screen, s. */
 export const TRAIL_SECONDS = 2.6
-/** The trail shows this far either side of home, cents: half an octave. */
+/** The trail shows this far either side of the note, cents: half an octave. */
 export const TRAIL_REACH_CENTS = 600
 
-/** One reading on the trail: seconds on the frames' clock, cents off home. */
+/** One reading on the trail: seconds on the frames' clock, cents off the note. */
 export interface TrailPoint {
   readonly t: number
   /** Null where the voice was not heard: the trail breaks there. */
   readonly cents: number | null
 }
 
-/** Cents off home, folded to home's nearest octave. */
+/** Cents off the note `home`, folded to its nearest octave. */
 export function foldedCents(midi: number, home: number): number {
   const off = (midi - home) * 100
   return off - 1200 * Math.round(off / 1200)
@@ -50,7 +51,7 @@ export function trailPoint(frame: PitchFrame, home: number): TrailPoint {
 export interface TrailGeometry {
   /** The newest point's x. */
   readonly headX: number
-  /** Home's line. */
+  /** The note's line. */
   readonly lineY: number
   /** Px for TRAIL_SECONDS of trail. */
   readonly width: number

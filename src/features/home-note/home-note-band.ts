@@ -14,32 +14,18 @@
 // the 1e-4 floor, a setTargetAtTime close, the oscillators stopped only
 // after the tail.
 //
-// Merc's voice comes in through a seam, RoundVoice, the shape of Echo's
-// call voice: the native screen hands the room his sampled voice, and
+// Merc's voice comes in through the room kit's seam, RoundVoice
+// (round-voice.ts): the native screen hands the room his sampled voice, and
 // without one (a browser build, a test) the room sings him with the synth
-// "ooh" the rooms already use (demo-audio.ts).
+// "ooh" (SYNTH_VOICE).
 
 import { roomOutput } from '@/components/room-kit/room-output'
-import { playVoiceContour } from '@/lib/demo-audio'
+import type { RoundVoice } from '@/components/room-kit/round-voice'
 import { midiToFrequency } from '@/lib/frequency-to-note'
-import type { PhraseNote } from '@/lib/sequence/sequence-engine'
 import type { HomeRound, VoicedChord } from './home-note-round'
 import { voiceChord } from './home-note-round'
 import type { HomeNoteLevel } from './home-note-rules'
 import { CHORD_SECONDS, MERC_GAP_SECONDS, MERC_HOME_SECONDS, RESOLVE_SECONDS, SOUND_LEAD_SECONDS, } from './home-note-rules'
-
-/** A voice that sings Merc's notes: Echo's call voice has this shape. */
-export interface RoundVoice {
-  sing(
-    ctx: AudioContext,
-    notes: readonly PhraseNote[],
-    startAt: number,
-  ): {
-    readonly onsets: readonly number[]
-    readonly endAt: number
-    stop(): void
-  }
-}
 
 /** A scheduled sound of the room's, on the audio clock. */
 export interface BandSound {
@@ -60,11 +46,6 @@ const OPEN = 0.06
 const RELEASE = 0.18
 const STOP_SLACK = 0.06
 const FLOOR = 0.0001
-
-/** Merc's synth voice: his vibrato (merc-voice-set.ts measures the set's). */
-const SYNTH_VIBRATO = { hz: 5.5, cents: 14, rampSec: 0.35 }
-/** The synth voice's level while he sings (demo-audio's held level). */
-const SYNTH_LEVEL = 0.8
 
 const waves = new WeakMap<AudioContext, PeriodicWave>()
 
@@ -146,36 +127,6 @@ export function playChord(
   }
 }
 
-/** Merc sung by the synth "ooh", at any pitch, exactly. */
-export const SYNTH_VOICE: RoundVoice = {
-  sing(ctx, notes, startAt) {
-    const onsets = notes.map((note) => startAt + note.at)
-    const endAt = notes.reduce(
-      (latest, note) => Math.max(latest, startAt + note.at + note.seconds),
-      startAt,
-    )
-    if (notes.length === 0) return { onsets, endAt, stop: () => undefined }
-    const ref = notes[0].midi
-    const points = notes.flatMap((note) => {
-      const cents = (note.midi - ref) * 100
-      const end = note.at + note.seconds
-      return [
-        { t: note.at, cents, level: SYNTH_LEVEL },
-        { t: end, cents, level: SYNTH_LEVEL },
-        { t: end, cents, level: 0 },
-      ]
-    })
-    const sound = playVoiceContour(ctx, points, {
-      hz: midiToFrequency(ref),
-      startAt,
-      destination: roomOutput(ctx),
-      vibrato: SYNTH_VIBRATO,
-      lowNoteOctave: true,
-    })
-    return { onsets, endAt, stop: () => sound.stop() }
-  },
-}
-
 /** Several sounds as one. */
 function together(sounds: readonly BandSound[], endAt: number): BandSound {
   return {
@@ -246,12 +197,4 @@ export function playResolve(
     [chord, { endAt: merc.endAt + RELEASE, stop: () => merc.stop() }],
     Math.max(chord.endAt, merc.endAt + RELEASE),
   )
-}
-
-/** How far the speaker is behind the audio clock, s. */
-export function outputLatency(ctx: AudioContext): number {
-  const out = ctx.outputLatency
-  if (Number.isFinite(out) && out > 0) return out
-  const base = ctx.baseLatency
-  return Number.isFinite(base) && base > 0 ? base : 0
 }

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
+import { TRAIL_REACH_CENTS } from '@/components/room-kit/voice-trail'
 import { bandHalfHeight, layoutHarbour, MERC_SIZE_W } from './harbour-layout'
-import { TRAIL_REACH_CENTS } from './voice-trail'
 
 const FEET = 0.81
 
