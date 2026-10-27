@@ -49,10 +49,17 @@ export function admitWorkingBytes(
   }
 }
 
+// One yield per slice of work, not per chunk: a timer yield costs at least
+// 4 ms once nested, which made a three-minute song's passes take seconds.
+const SLICE_MS = 12
+let sliceStarted = -Infinity
+
 /** Yield between large chunks so route changes and Cancel can be observed. */
 export async function importCheckpoint(signal?: AbortSignal): Promise<void> {
   checkImportCancelled(signal)
+  if (performance.now() - sliceStarted < SLICE_MS) return
   await new Promise<void>((resolve) => setTimeout(resolve, 0))
+  sliceStarted = performance.now()
   checkImportCancelled(signal)
 }
 

@@ -1,10 +1,11 @@
 // Studio PCM cache — immutable shared buffers with pinned ownership and admitted transient copies.
 import { CANONICAL_PCM_HEADER_BYTES, readCanonicalPcmBytes, } from '../audio/canonical-pcm'
 import { importCheckpoint } from '../audio/import-limits'
-import { reserveStudioMemory } from '../memory-budget'
+import { registerStudioMemoryReclaimer, reserveStudioMemory, } from '../memory-budget'
 import type { StudioAsset } from '../model/types'
 
 const CACHE_BYTES = 384 * 1024 * 1024
+const LITTLE_ENDIAN = new Uint8Array(new Uint32Array([1]).buffer)[0] === 1
 interface Entry {
   buffer: AudioBuffer
   bytes: number
@@ -17,11 +18,25 @@ export interface StudioBufferLease {
 }
 
 async function copyCanonicalSamples(
-  pcm: DataView,
+  pcm: DataView<ArrayBuffer>,
   buffer: AudioBuffer,
   signal: AbortSignal,
 ): Promise<void> {
   for (let channel = 0; channel < buffer.numberOfChannels; channel++) {
+    if (LITTLE_ENDIAN) {
+      buffer.copyToChannel(
+        new Float32Array(
+          pcm.buffer,
+          pcm.byteOffset +
+            CANONICAL_PCM_HEADER_BYTES +
+            channel * buffer.length * 4,
+          buffer.length,
+        ),
+        channel,
+      )
+      await importCheckpoint(signal)
+      continue
+    }
     const output = buffer.getChannelData(channel)
     for (let from = 0; from < output.length; from += 65536) {
       for (
@@ -45,6 +60,8 @@ export function createStudioBufferCache() {
   let disposed = false
   let loading = false
   let clearPending = false
+  // Buffers no run is playing are the first memory an import or save may take.
+  const unregister = registerStudioMemoryReclaimer(() => evict(true))
   const key = (asset: StudioAsset) =>
     `${asset.canonicalPcmSha256}:${asset.channels}:${asset.normalizedFrameCount}`
 
@@ -159,6 +176,7 @@ export function createStudioBufferCache() {
     },
     dispose() {
       disposed = true
+      unregister()
       evict(true)
     },
   }

@@ -3,7 +3,7 @@ import { Blob as NodeBlob } from 'node:buffer'
 import { webcrypto } from 'node:crypto'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { studioAssetFixture } from '@/db/services/studio.fixture'
-import { reserveStudioMemory, STUDIO_WORKING_BYTES, studioReservedMemoryBytes, } from '@/lib/studio/memory-budget'
+import { reserveStudioMemory, studioReservedMemoryBytes, studioWorkingBytes, } from '@/lib/studio/memory-budget'
 import { buildStudioWaveform, createStudioWaveformResource, STUDIO_WAVEFORM_BUCKETS, } from './waveform-resource'
 
 beforeEach(() => {
@@ -79,13 +79,13 @@ describe('Studio waveform resource', () => {
     const data = await studioAssetFixture('song')
     const read = vi.fn(() => Promise.resolve(data.canonicalPcm))
     const resource = createStudioWaveformResource(read)
-    const releaseOtherAudio = reserveStudioMemory(STUDIO_WORKING_BYTES)
+    const releaseOtherAudio = reserveStudioMemory(studioWorkingBytes())
     try {
       await expect(resource.get(data.asset)).rejects.toMatchObject({
         name: 'StudioWaveformBusyError',
       })
       expect(read).not.toHaveBeenCalled()
-      expect(studioReservedMemoryBytes()).toBe(STUDIO_WORKING_BYTES)
+      expect(studioReservedMemoryBytes()).toBe(studioWorkingBytes())
     } finally {
       releaseOtherAudio()
     }

@@ -24,15 +24,17 @@ function fixture() {
   const buildGraph = vi.fn().mockReturnValue(graph)
   const unlock = vi.fn().mockResolvedValue(true)
   const changed = vi.fn()
+  const measureLatencies = vi.fn().mockResolvedValue([441])
   const transport = createStudioTransport({
     lease: { ensure: () => ctx.liveContext, unlock },
     readCanonicalAsset: vi.fn(),
     changed,
     cache,
     buildGraph,
-    measureLatencies: vi.fn().mockResolvedValue([441]),
+    measureLatencies,
   })
   return {
+    measureLatencies,
     project,
     asset,
     ctx,
@@ -49,6 +51,42 @@ function fixture() {
 afterEach(() => vi.useRealTimers())
 
 describe('Studio borrowed transport', () => {
+  it('measures each chain once and restarts a seek while the old run still fades', async () => {
+    vi.useFakeTimers()
+    const f = fixture()
+    await f.transport.play(f.project, [f.asset])
+    const measured = f.measureLatencies.mock.calls.length
+    await f.transport.seek(100, f.project, [f.asset])
+    // The first run's 240 ms release timer has not run yet.
+    expect(f.graph.dispose).not.toHaveBeenCalled()
+    expect(f.buildGraph).toHaveBeenCalledTimes(2)
+    expect(f.measureLatencies).toHaveBeenCalledTimes(measured)
+    expect(f.transport.getState()).toMatchObject({
+      playing: true,
+      playheadFrame: 100,
+    })
+    const released = f.transport.releaseAudio()
+    await vi.advanceTimersByTimeAsync(240)
+    await released
+    f.transport.dispose()
+    expect(studioReservedMemoryBytes()).toBe(0)
+  })
+
+  it('warms the cache and chain timing before Play, without unlocking audio', async () => {
+    const f = fixture()
+    await f.transport.warm(f.project, [f.asset])
+    expect(f.unlock).not.toHaveBeenCalled()
+    expect(f.cache.acquire).toHaveBeenCalledOnce()
+    expect(f.release).toHaveBeenCalledOnce()
+    const measured = f.measureLatencies.mock.calls.length
+    expect(measured).toBeGreaterThan(0)
+    expect(await f.transport.play(f.project, [f.asset])).toBe(true)
+    expect(f.measureLatencies).toHaveBeenCalledTimes(measured)
+    await f.transport.releaseAudio()
+    f.transport.dispose()
+    expect(studioReservedMemoryBytes()).toBe(0)
+  })
+
   it('only starts the newest edit when revisions change during preparation', async () => {
     vi.useFakeTimers()
     const f = fixture()
@@ -79,7 +117,7 @@ describe('Studio borrowed transport', () => {
     expect(studioReservedMemoryBytes()).toBe(0)
   })
 
-  it('does not autoplay and schedules its attack after warmup plus measured 44.1k latency', async () => {
+  it('does not autoplay and schedules its attack after the first warmup plus measured 44.1k latency', async () => {
     vi.useFakeTimers()
     const f = fixture()
     expect(f.unlock).not.toHaveBeenCalled()
@@ -90,8 +128,8 @@ describe('Studio borrowed transport', () => {
     const envelope = f.ctx.created
       .filter((node) => node.nodeType === 'gain')
       .at(-1) as ReturnType<PlaybackContext['createGain']>
-    expect(envelope.gain.ramps).toEqual([{ value: 1, time: 0.61 }])
-    f.ctx.currentTime = 0.53
+    expect(envelope.gain.ramps).toEqual([{ value: 1, time: 0.35 }])
+    f.ctx.currentTime = 0.27
     await vi.advanceTimersByTimeAsync(33)
     expect(f.transport.getState().playheadFrame).toBe(480)
     expect(f.transport.getState()).toMatchObject({ peakL: 0.2, peakR: 0.4 })
@@ -205,7 +243,7 @@ describe('Studio borrowed transport', () => {
     f.transport.setRepeat(true)
     await f.transport.play(project, [asset], 48000)
     expect(f.buildGraph.mock.calls[0][5]).toBe(48000)
-    f.ctx.currentTime = 3.02
+    f.ctx.currentTime = 2.76
     await vi.advanceTimersByTimeAsync(33)
     expect(f.transport.getState().playing).toBe(true)
     expect(f.transport.getState().playheadFrame).toBe(72000)

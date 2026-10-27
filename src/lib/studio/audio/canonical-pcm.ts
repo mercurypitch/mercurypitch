@@ -10,6 +10,15 @@ export const CANONICAL_PCM_HEADER_BYTES = 32
 export const CANONICAL_PCM_MIME = 'application/vnd.mercurypitch.pcm'
 const MAGIC = 0x4d43504d // MPCM as little-endian bytes.
 const CHUNK_SAMPLES = 65_536
+// Canonical PCM is little-endian Float32, so on a little-endian platform (every
+// browser in use) samples are read and written through typed views, not per value.
+const LITTLE_ENDIAN = new Uint8Array(new Uint32Array([1]).buffer)[0] === 1
+
+function allFinite(samples: Float32Array, from: number, to: number): boolean {
+  for (let index = from; index < to; index++)
+    if (!Number.isFinite(samples[index])) return false
+  return true
+}
 
 export interface CanonicalPcmMetadata {
   channels: 1 | 2
@@ -29,6 +38,38 @@ export async function sha256Bytes(bytes: ArrayBuffer): Promise<string> {
   return Array.from(new Uint8Array(hash), (value) =>
     value.toString(16).padStart(2, '0'),
   ).join('')
+}
+
+async function writeChannel(
+  samples: Float32Array,
+  output: Float32Array,
+  signal?: AbortSignal,
+): Promise<void> {
+  for (let from = 0; from < samples.length; from += CHUNK_SAMPLES) {
+    const end = Math.min(samples.length, from + CHUNK_SAMPLES)
+    if (!allFinite(samples, from, end))
+      throw new Error('This audio contains invalid samples.')
+    output.set(samples.subarray(from, end), from)
+    await importCheckpoint(signal)
+  }
+}
+
+async function writeChannelByValue(
+  samples: Float32Array,
+  view: DataView,
+  offset: number,
+  signal?: AbortSignal,
+): Promise<void> {
+  for (let from = 0; from < samples.length; from += CHUNK_SAMPLES) {
+    const end = Math.min(samples.length, from + CHUNK_SAMPLES)
+    for (let frame = from; frame < end; frame++) {
+      const sample = samples[frame]
+      if (!Number.isFinite(sample))
+        throw new Error('This audio contains invalid samples.')
+      view.setFloat32(offset + frame * 4, sample, true)
+    }
+    await importCheckpoint(signal)
+  }
 }
 
 export async function encodeCanonicalPcm(
@@ -56,20 +97,14 @@ export async function encodeCanonicalPcm(
     const samples = audio.getChannelData(channel)
     if (samples.length !== audio.length)
       throw new Error('Audio channel lengths do not match')
-    for (let from = 0; from < samples.length; from += CHUNK_SAMPLES) {
-      const end = Math.min(samples.length, from + CHUNK_SAMPLES)
-      for (let frame = from; frame < end; frame++) {
-        const sample = samples[frame]
-        if (!Number.isFinite(sample))
-          throw new Error('This audio contains invalid samples.')
-        view.setFloat32(
-          CANONICAL_PCM_HEADER_BYTES + (channel * audio.length + frame) * 4,
-          sample,
-          true,
-        )
-      }
-      await importCheckpoint(options.signal)
-    }
+    const offset = CANONICAL_PCM_HEADER_BYTES + channel * audio.length * 4
+    if (LITTLE_ENDIAN)
+      await writeChannel(
+        samples,
+        new Float32Array(bytes, offset, audio.length),
+        options.signal,
+      )
+    else await writeChannelByValue(samples, view, offset, options.signal)
   }
   return new Blob([bytes], { type: CANONICAL_PCM_MIME })
 }
@@ -141,6 +176,21 @@ export async function readCanonicalPcmBytes(
     throw new Error('Studio audio checksum failed')
   checkImportCancelled(options.signal)
   const sampleCount = (bytes.byteLength - CANONICAL_PCM_HEADER_BYTES) / 4
+  if (LITTLE_ENDIAN) {
+    const samples = new Float32Array(
+      bytes,
+      CANONICAL_PCM_HEADER_BYTES,
+      sampleCount,
+    )
+    for (let from = 0; from < sampleCount; from += CHUNK_SAMPLES) {
+      if (
+        !allFinite(samples, from, Math.min(sampleCount, from + CHUNK_SAMPLES))
+      )
+        throw new Error('Studio audio contains invalid samples')
+      await importCheckpoint(options.signal)
+    }
+    return bytes
+  }
   for (let from = 0; from < sampleCount; from += CHUNK_SAMPLES) {
     for (
       let sample = from;
@@ -179,6 +229,18 @@ export async function decodeCanonicalPcm(
   const view = new DataView(bytes)
   const channels: Float32Array[] = []
   for (let channel = 0; channel < metadata.channels; channel++) {
+    if (LITTLE_ENDIAN) {
+      // Views share the bytes just read, so decoding adds no second copy.
+      channels.push(
+        new Float32Array(
+          bytes,
+          CANONICAL_PCM_HEADER_BYTES +
+            channel * metadata.normalizedFrameCount * 4,
+          metadata.normalizedFrameCount,
+        ),
+      )
+      continue
+    }
     const samples = new Float32Array(metadata.normalizedFrameCount)
     for (let from = 0; from < samples.length; from += CHUNK_SAMPLES) {
       for (

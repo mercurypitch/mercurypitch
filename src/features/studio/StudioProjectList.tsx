@@ -1,7 +1,8 @@
 // Studio project list — local songs and explicit backup restore share one entry surface.
 import { For, Show } from 'solid-js'
-import { Plus, WaveformBars } from '@/components/icons'
+import { Download, Plus, WaveformBars } from '@/components/icons'
 import type { StudioProjectSummary } from '@/lib/studio/model/types'
+import { ArchiveDown } from './studio-icons'
 import styles from './StudioPage.module.css'
 
 interface StudioProjectListProps {
@@ -10,6 +11,8 @@ interface StudioProjectListProps {
   blocked: boolean
   onCreate(): void
   onOpen(id: string): void
+  onExport(id: string): void
+  onBackup(id: string): void
   onRestore(): void
 }
 
@@ -62,34 +65,60 @@ export function StudioProjectList(props: StudioProjectListProps) {
         <nav class={styles.songList} aria-label="Studio projects">
           <For each={props.projects}>
             {(project) => (
-              <button
-                type="button"
-                class={styles.songRow}
-                aria-current={
-                  project.id === props.activeId ? 'true' : undefined
-                }
-                disabled={props.blocked}
-                onClick={() => props.onOpen(project.id)}
-              >
-                <WaveformBars size={24} />
-                <span>
-                  <strong>{project.title}</strong>
-                  <small>
-                    {project.trackCount}{' '}
-                    {project.trackCount === 1 ? 'track' : 'tracks'} ·{' '}
-                    {new Date(project.updatedAt).toLocaleDateString(undefined, {
-                      month: 'short',
-                      day: 'numeric',
-                    })}
-                  </small>
-                </span>
-                <span class={styles.songDuration}>
-                  {Math.floor(project.durationFrames / 2_880_000)}:
-                  {Math.floor((project.durationFrames / 48_000) % 60)
-                    .toString()
-                    .padStart(2, '0')}
-                </span>
-              </button>
+              <div class={styles.songItem}>
+                <button
+                  type="button"
+                  class={styles.songRow}
+                  aria-current={
+                    project.id === props.activeId ? 'true' : undefined
+                  }
+                  disabled={props.blocked}
+                  onClick={() => props.onOpen(project.id)}
+                >
+                  <WaveformBars size={24} />
+                  <span>
+                    <strong>{project.title}</strong>
+                    <small>
+                      {project.trackCount}{' '}
+                      {project.trackCount === 1 ? 'track' : 'tracks'} ·{' '}
+                      {new Date(project.updatedAt).toLocaleDateString(
+                        undefined,
+                        { month: 'short', day: 'numeric' },
+                      )}
+                    </small>
+                  </span>
+                  <span class={styles.songDuration}>
+                    {Math.floor(project.durationFrames / 2_880_000)}:
+                    {Math.floor((project.durationFrames / 48_000) % 60)
+                      .toString()
+                      .padStart(2, '0')}
+                  </span>
+                </button>
+                <div class={styles.songActions}>
+                  <button
+                    type="button"
+                    class={styles.songAction}
+                    aria-label={`Export ${project.title}`}
+                    title="Open the song at Export"
+                    disabled={props.blocked || project.durationFrames === 0}
+                    onClick={() => props.onExport(project.id)}
+                  >
+                    <Download />
+                    <span>Export</span>
+                  </button>
+                  <button
+                    type="button"
+                    class={styles.songAction}
+                    aria-label={`Save a backup of ${project.title}`}
+                    title="Save a backup file of this song"
+                    disabled={props.blocked}
+                    onClick={() => props.onBackup(project.id)}
+                  >
+                    <ArchiveDown size={16} />
+                    <span>Backup</span>
+                  </button>
+                </div>
+              </div>
             )}
           </For>
         </nav>

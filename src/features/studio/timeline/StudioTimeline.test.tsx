@@ -2,7 +2,7 @@
 import { cleanup, fireEvent, render, screen, waitFor, } from '@solidjs/testing-library'
 import { createSignal, untrack } from 'solid-js'
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { reserveStudioMemory, STUDIO_WORKING_BYTES, } from '@/lib/studio/memory-budget'
+import { reserveStudioMemory, studioWorkingBytes, } from '@/lib/studio/memory-budget'
 import type { StudioCommand } from '@/lib/studio/model/commands'
 import { applyStudioCommand } from '@/lib/studio/model/commands'
 import { createStudioProject, createStudioTrack, } from '@/lib/studio/model/defaults'
@@ -159,7 +159,7 @@ describe('Studio timeline', () => {
 
   it('does not label valid project audio missing when waveform memory is busy', async () => {
     const { project: song, asset } = studioFixture()
-    const release = reserveStudioMemory(STUDIO_WORKING_BYTES)
+    const release = reserveStudioMemory(studioWorkingBytes())
     const read = vi.fn(() => Promise.reject(new Error('Must not read')))
     try {
       render(() => (
@@ -195,5 +195,62 @@ describe('Studio timeline', () => {
     expect(screen.getByRole('button', { name: 'Split' })).toBeEnabled()
     setPlayhead(144000)
     expect(screen.getByRole('button', { name: 'Split' })).toBeDisabled()
+  })
+  // jsdom has no PointerEvent; without one the events lose button and clientX.
+  if (typeof window.PointerEvent === 'undefined')
+    window.PointerEvent = class extends MouseEvent {
+      readonly pointerId: number
+      constructor(type: string, init: PointerEventInit = {}) {
+        super(type, init)
+        this.pointerId = init.pointerId ?? 1
+      }
+    } as unknown as typeof PointerEvent
+
+  function scrubbable(): HTMLElement {
+    const ruler = screen.getByRole('slider', { name: 'Song playhead' })
+    let captured = false
+    ruler.getBoundingClientRect = () => ({ left: 0 }) as DOMRect
+    ruler.setPointerCapture = () => {
+      captured = true
+    }
+    ruler.hasPointerCapture = () => captured
+    return ruler
+  }
+
+  it('scrubs a stopped song under the pointer along the ruler', () => {
+    const seek = vi.fn()
+    render(() => <StudioTimeline {...base} onSeek={seek} />)
+    const ruler = scrubbable()
+    fireEvent.pointerDown(ruler, { button: 0, pointerId: 1, clientX: 40 })
+    expect(seek).toHaveBeenLastCalledWith(96000)
+    fireEvent.pointerMove(ruler, { pointerId: 1, clientX: 60 })
+    expect(seek).toHaveBeenLastCalledWith(144000)
+    fireEvent.pointerUp(ruler, { pointerId: 1, clientX: 60 })
+    expect(seek).toHaveBeenLastCalledWith(144000)
+  })
+
+  it('jumps a playing song once, when the ruler drag ends', () => {
+    const seek = vi.fn()
+    render(() => <StudioTimeline {...base} playing={true} onSeek={seek} />)
+    const ruler = scrubbable()
+    fireEvent.pointerDown(ruler, { button: 0, pointerId: 1, clientX: 40 })
+    fireEvent.pointerMove(ruler, { pointerId: 1, clientX: 60 })
+    expect(seek).not.toHaveBeenCalled()
+    fireEvent.pointerUp(ruler, { pointerId: 1, clientX: 60 })
+    expect(seek).toHaveBeenCalledOnce()
+    expect(seek).toHaveBeenCalledWith(144000)
+  })
+
+  it('fits a song longer than the widest zoom stop allows', () => {
+    const zoom = vi.fn()
+    const long = {
+      ...project,
+      clips: [{ ...project.clips[0], sourceOutFrame: 400 * 48000 }],
+    }
+    render(() => <StudioTimeline {...base} project={long} onZoom={zoom} />)
+    fireEvent.click(screen.getByRole('button', { name: 'Fit song to width' }))
+    const [fit] = zoom.mock.calls[0] as [number]
+    expect(fit).toBeLessThan(10)
+    expect(fit).toBeGreaterThanOrEqual(1)
   })
 })

@@ -268,6 +268,38 @@ describe('Studio controller', () => {
     expect(isLocalSaveNavigationLocked()).toBe(false)
   })
 
+  it('queues a file picked while the last import is still saving', async () => {
+    const service = controllerServiceFixture()
+    const saves: (() => void)[] = []
+    vi.mocked(service.saveProject).mockImplementation(
+      (project) =>
+        new Promise((resolve) => {
+          saves.push(() => resolve(project))
+        }),
+    )
+    const { controller } = mount({
+      service,
+      prepareFile: async (_blob, info) => preparedFixture(info),
+    })
+    await controller.open('one')
+    const first = controller.addFile(
+      new File(['abc'], 'First.wav', { type: 'audio/wav' }),
+    )
+    await vi.waitFor(() => expect(saves).toHaveLength(1))
+    const second = controller.addFile(
+      new File(['def'], 'Second.wav', { type: 'audio/wav' }),
+    )
+    saves.shift()?.()
+    expect(await first).toBe(true)
+    await vi.waitFor(() => expect(saves).toHaveLength(1))
+    saves.shift()?.()
+    expect(await second).toBe(true)
+    expect(controller.project()?.tracks.map((track) => track.name)).toEqual([
+      'First',
+      'Second',
+    ])
+  })
+
   it('recovers from create/open failure without leaving operations busy', async () => {
     const { controller, service } = mount()
     vi.mocked(service.createProject).mockRejectedValueOnce(

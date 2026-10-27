@@ -77,13 +77,24 @@ function reservePreparation(
     encodedBytes > limits.maxEncodedBytes
   )
     throw new Error('This audio is empty or too large. Choose a smaller file.')
-  // Read copies, the maximum supported stereo decode, canonical/hash copies and
-  // rolling analysis. Browser-private codec scratch memory cannot be bounded here.
+  // Read copies and rolling analysis. The decode, canonical and hash copies are
+  // admitted once the decode reports its real length (reserveDecoded), not at
+  // the five-minute maximum, which alone took most of the Studio budget.
+  // Browser-private codec scratch memory cannot be bounded here.
   const maximumPcmBytes = limits.maxFrames * 2 * 4 + CANONICAL_PCM_HEADER_BYTES
-  const bytes =
-    encodedBytes * 2 + maximumPcmBytes * 3 + PREPARATION_ANALYSIS_BYTES
-  admitWorkingBytes(bytes, limits)
-  return reserveStudioMemory(bytes)
+  admitWorkingBytes(
+    encodedBytes * 2 + maximumPcmBytes * 3 + PREPARATION_ANALYSIS_BYTES,
+    limits,
+  )
+  return reserveStudioMemory(encodedBytes * 2 + PREPARATION_ANALYSIS_BYTES)
+}
+
+/** The decoded channels, the canonical encode and its hash copy. */
+function reserveDecoded(audio: PcmAudio): () => void {
+  return reserveStudioMemory(
+    (audio.length * audio.numberOfChannels * 4 + CANONICAL_PCM_HEADER_BYTES) *
+      3,
+  )
 }
 
 async function prepareSelectedBlob(
@@ -112,11 +123,19 @@ async function prepareSelectedBlob(
   }
   checkImportCancelled(options.signal)
   validatePcmDimensions(decoded, limits)
-  const preparation = await sourcePreparation(decoded, options.signal)
-  const canonicalPcm = await encodeCanonicalPcm(decoded, options)
-  checkImportCancelled(options.signal)
-  const canonicalPcmSha256 = await sha256Bytes(await canonicalPcm.arrayBuffer())
-  checkImportCancelled(options.signal)
+  const releaseDecoded = reserveDecoded(decoded)
+  let preparation: StudioAsset['preparation']
+  let canonicalPcm: Blob
+  let canonicalPcmSha256: string
+  try {
+    preparation = await sourcePreparation(decoded, options.signal)
+    canonicalPcm = await encodeCanonicalPcm(decoded, options)
+    checkImportCancelled(options.signal)
+    canonicalPcmSha256 = await sha256Bytes(await canonicalPcm.arrayBuffer())
+    checkImportCancelled(options.signal)
+  } finally {
+    releaseDecoded()
+  }
   const asset = validateStudioAsset({
     id: info.id,
     projectId: info.projectId,

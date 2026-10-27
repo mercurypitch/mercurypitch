@@ -7,6 +7,8 @@ export interface StudioTimelineProps {
   assets: readonly StudioAsset[]
   selectedClipId: string | null
   playheadFrame: number
+  /** A playing song jumps once a ruler drag ends, not under every move. */
+  playing?: boolean
   pixelsPerSecond: number
   writable: boolean
   phone: boolean

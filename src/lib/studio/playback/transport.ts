@@ -18,7 +18,11 @@ import type { StudioLatencyReader } from './prepare-plan'
 import { planAssets, planLatencySeconds, prepareStudioPlan, } from './prepare-plan'
 
 const RELEASE_MS = 240
-const WARMUP_SECONDS = 0.5
+// Lead time between building the graph and its first sound. It follows how
+// long the last build took, so a fast machine starts in about a tenth of a
+// second and a slow one still schedules ahead of its clock.
+const MIN_WARMUP_SECONDS = 0.1
+const MAX_WARMUP_SECONDS = 0.5
 const LOOKAHEAD_SECONDS = 2
 export interface StudioTransportState {
   playing: boolean
@@ -54,6 +58,27 @@ interface Run {
 
 export function createStudioTransport(options: StudioTransportOptions) {
   const cache = options.cache ?? createStudioBufferCache()
+  // Chain latency depends on which effects there are, not on their settings,
+  // so one measurement per effect list serves every later Play and seek.
+  const latencies = new Map<string, number>()
+  const measureLatencies: StudioLatencyReader = async (specs, rate) => {
+    const frames: number[] = []
+    for (const spec of specs) {
+      const key = `${rate}:${spec.effects.map((effect) => effect.kind).join(',')}`
+      let value = latencies.get(key)
+      if (value === undefined) {
+        ;[value] = await (options.measureLatencies ?? measureTrackLatencies)(
+          [spec],
+          rate,
+        )
+        latencies.set(key, value)
+      }
+      frames.push(value)
+    }
+    return frames
+  }
+  let buildSeconds = 0.1
+  let warming: Promise<void> = Promise.resolve()
   const retired = new Set<Run>()
   const retiredTimers = new Map<Run, ReturnType<typeof setTimeout>>()
   let active: Run | null = null
@@ -200,10 +225,7 @@ export function createStudioTransport(options: StudioTransportOptions) {
   ): Promise<number> {
     await prepareStudioLiveMeter(ctx)
     signal.throwIfAborted()
-    const [frames] = await (options.measureLatencies ?? measureTrackLatencies)(
-      [spec],
-      ctx.sampleRate,
-    )
+    const [frames] = await measureLatencies([spec], ctx.sampleRate)
     signal.throwIfAborted()
     if (!Number.isSafeInteger(frames) || frames < 0)
       throw new Error('Studio master timing could not be measured.')
@@ -247,6 +269,9 @@ export function createStudioTransport(options: StudioTransportOptions) {
       releaseMemory = reserveStudioMemory(
         studioGraphWorkingBytes(content, ctx.sampleRate, sound.full),
       )
+      // A background warm-up does the same reads; wait for it, not around it.
+      await warming
+      attempt.signal.throwIfAborted()
       const masterLatency = await prepareMaster(ctx, sound.full, attempt.signal)
       const plan = await prepareStudioPlan(
         project,
@@ -254,7 +279,7 @@ export function createStudioTransport(options: StudioTransportOptions) {
         ctx.sampleRate,
         repeat ? 0 : from,
         attempt.signal,
-        options.measureLatencies,
+        measureLatencies,
       )
       buffers = await cache.acquire(
         planAssets(plan, assets),
@@ -265,7 +290,13 @@ export function createStudioTransport(options: StudioTransportOptions) {
       attempt.signal.throwIfAborted()
       if (token !== generation || disposed)
         throw new DOMException('Playback cancelled', 'AbortError')
-      const epoch = ctx.currentTime + WARMUP_SECONDS
+      const built = performance.now()
+      const epoch =
+        ctx.currentTime +
+        Math.min(
+          MAX_WARMUP_SECONDS,
+          Math.max(MIN_WARMUP_SECONDS, buildSeconds * 2 + 0.04),
+        )
       const audibleEpoch = epoch + planLatencySeconds(plan) + masterLatency
       graph = (options.buildGraph ?? buildStudioGraph)(
         ctx,
@@ -284,6 +315,7 @@ export function createStudioTransport(options: StudioTransportOptions) {
       envelope.connect(ctx.destination)
       meter = createStudioLiveMeter(ctx, envelope, audibleEpoch)
       graph.scheduleUntil(ctx.currentTime + LOOKAHEAD_SECONDS)
+      buildSeconds = (performance.now() - built) / 1000
       active = {
         ctx,
         graph,
@@ -363,8 +395,71 @@ export function createStudioTransport(options: StudioTransportOptions) {
       await new Promise<void>((resolve) => releasedListeners.add(resolve))
   }
 
+  /**
+   * Read the song's audio and measure its chains before anyone presses Play,
+   * so the press only builds the graph. Best effort: a failure here is
+   * reported, if at all, by the Play that needs the same work.
+   */
+  function warm(
+    project: StudioProject,
+    assets: readonly StudioAsset[],
+  ): Promise<void> {
+    // A function, so each check reads the state after the awaits before it.
+    const busy = () => disposed || preparing || active !== null
+    if (busy()) return warming
+    const run = warming.then(async () => {
+      if (busy()) return
+      // Before the first gesture the app has no AudioContext yet. Buffers are
+      // not tied to one, and the device rate is one of the two common ones.
+      const live = options.lease.ensure()
+      const factory =
+        live ??
+        (typeof OfflineAudioContext === 'undefined'
+          ? null
+          : new OfflineAudioContext(1, 1, 48000))
+      if (!factory) return
+      const rates = live ? [live.sampleRate] : [48000, 44100]
+      const signal = new AbortController().signal
+      try {
+        playableContent(project, assets, 0)
+        if (live) await prepareStudioLiveMeter(live)
+        const plans: Awaited<ReturnType<typeof prepareStudioPlan>>[] = []
+        for (const rate of rates) {
+          await measureLatencies(
+            [resolveStudioSoundGraph(project, masterGain ?? undefined).full],
+            rate,
+          )
+          plans.push(
+            await prepareStudioPlan(
+              project,
+              assets,
+              rate,
+              0,
+              signal,
+              measureLatencies,
+            ),
+          )
+        }
+        const plan = plans.at(-1)
+        if (plan === undefined || busy()) return
+        const lease = await cache.acquire(
+          planAssets(plan, assets),
+          factory,
+          options.readCanonicalAsset,
+          signal,
+        )
+        lease.release()
+      } catch {
+        // Play repeats this work and reports its own failure.
+      }
+    })
+    warming = run
+    return run
+  }
+
   return {
     play,
+    warm,
     setRepeat(enabled: boolean) {
       repeat = enabled
     },
@@ -406,7 +501,8 @@ export function createStudioTransport(options: StudioTransportOptions) {
       const token = ++restartGeneration
       const frame = active ? position(active) : state.playheadFrame
       pause(true)
-      await waitForRelease()
+      // The old run fades out on its own while the new one prepares.
+      await preparationDone
       if (wantsPlayback && !disposed && token === restartGeneration)
         await play(project, assets, frame)
     },
@@ -425,7 +521,7 @@ export function createStudioTransport(options: StudioTransportOptions) {
         pause()
         return
       }
-      await waitForRelease()
+      await preparationDone
       if (wantsPlayback && !disposed && token === restartGeneration)
         await play(project, assets, state.playheadFrame)
     },

@@ -8,7 +8,7 @@ import { DexieAdapter } from '@/db/adapters/dexie-adapter'
 import { studioArrangementFixture, studioAssetFixture, } from '@/db/services/studio.fixture'
 import { createStudioService } from '@/db/services/studio-service'
 import { sha256Bytes } from '@/lib/studio/audio/canonical-pcm'
-import { releaseStudioResource, reserveStudioMemory, STUDIO_WORKING_BYTES, studioReservedMemoryBytes, } from '@/lib/studio/memory-budget'
+import { releaseStudioResource, reserveStudioMemory, studioReservedMemoryBytes, studioWorkingBytes, } from '@/lib/studio/memory-budget'
 import { readStudioArchive as rawReadStudioArchive, STUDIO_BACKUP_LIMITS, writeStudioArchive as rawWriteStudioArchive, } from './archive-codec'
 import { createStudioBackup as rawCreateStudioBackup, readStudioBackup as rawReadStudioBackup, restoreStudioBackup, } from './studio-backup'
 
@@ -271,7 +271,7 @@ describe('portable Studio backups', () => {
   it('rejects backup and restore before audio reads when working memory is already occupied', async () => {
     const { project, data, archive } = await fixture()
     const held = studioReservedMemoryBytes()
-    const release = reserveStudioMemory(STUDIO_WORKING_BYTES - held - 64)
+    const release = reserveStudioMemory(studioWorkingBytes() - held - 64)
     const read = vi.fn()
     try {
       await expect(

@@ -3,8 +3,8 @@
 // The dock sits on the tab bar, and toasts were anchored just above the tab
 // bar, so the first-visit "New to Studio? Take a quick tour." offer covered
 // the play button and the clock (review round 2, 27 Oct 2026). The dock now
-// publishes its height as --page-dock-space (lib/foot-space.ts) and the toast
-// floor adds it.
+// publishes the room it takes, tab bar included, as --page-dock-space
+// (lib/foot-space.ts), and the toast floor stands on the larger of the two.
 import { expect, test } from '@playwright/test'
 import { studioRegion } from './helpers/dedicatedstudio-fixture'
 import { dismissOverlays, waitForNav } from './helpers/ui'

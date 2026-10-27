@@ -70,6 +70,10 @@
 .ruler {
   position: relative;
   cursor: pointer;
+  /* Drag scrubs the playhead; the labels are not text to select. */
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
   background-image: linear-gradient(
     to right,
     var(--studio-tick) 1px,

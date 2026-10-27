@@ -155,13 +155,27 @@ export function StudioTimeline(props: StudioTimelineProps) {
     typeof ResizeObserver === 'undefined' ? null : new ResizeObserver(measure)
   onCleanup(() => observer?.disconnect())
 
-  function seekRuler(event: MouseEvent): void {
-    const rect =
-      event.currentTarget instanceof HTMLElement
-        ? event.currentTarget.getBoundingClientRect()
-        : null
-    if (rect !== null)
-      props.onSeek(pixelToFrame(event.clientX - rect.left, scale(), endFrame()))
+  // Dragging along the ruler scrubs. A stopped song follows the pointer; a
+  // playing one moves its playhead line and jumps there on release, so it
+  // does not restart under every pointer move.
+  const [scrubFrame, setScrubFrame] = createSignal<number | null>(null)
+  const shownPlayhead = () => scrubFrame() ?? props.playheadFrame
+
+  function rulerFrame(event: PointerEvent, ruler: HTMLElement): number {
+    const rect = ruler.getBoundingClientRect()
+    return pixelToFrame(event.clientX - rect.left, scale(), endFrame())
+  }
+
+  function scrubTo(event: PointerEvent, ruler: HTMLElement): void {
+    const frame = rulerFrame(event, ruler)
+    setScrubFrame(frame)
+    if (props.playing !== true) props.onSeek(frame)
+  }
+
+  function endScrub(commit: boolean): void {
+    const frame = scrubFrame()
+    setScrubFrame(null)
+    if (commit && frame !== null) props.onSeek(frame)
   }
 
   function zoomStep(direction: 1 | -1): void {
@@ -175,13 +189,15 @@ export function StudioTimeline(props: StudioTimelineProps) {
 
   function zoomToFit(): void {
     const seconds = Math.max(1, contentEnd() / STUDIO_SAMPLE_RATE + 1)
+    // Fit may go below the first zoom stop: a long song must still fit.
     const fit = Math.floor((contentWidth() - 24) / seconds)
     props.onZoom?.(
       Math.max(
-        STUDIO_ZOOM_STOPS[0],
+        1,
         Math.min(STUDIO_ZOOM_STOPS[STUDIO_ZOOM_STOPS.length - 1], fit),
       ),
     )
+    viewport.scrollLeft = 0
   }
 
   return (
@@ -238,7 +254,24 @@ export function StudioTimeline(props: StudioTimelineProps) {
               aria-valuemax={endFrame() / STUDIO_SAMPLE_RATE}
               aria-valuenow={props.playheadFrame / STUDIO_SAMPLE_RATE}
               aria-valuetext={formatStudioTime(props.playheadFrame)}
-              onClick={seekRuler}
+              onPointerDown={(event) => {
+                if (event.button !== 0) return
+                const ruler = event.currentTarget
+                event.preventDefault()
+                ruler.focus({ preventScroll: true })
+                ruler.setPointerCapture(event.pointerId)
+                scrubTo(event, ruler)
+              }}
+              onPointerMove={(event) => {
+                if (
+                  scrubFrame() !== null &&
+                  event.currentTarget.hasPointerCapture(event.pointerId)
+                )
+                  scrubTo(event, event.currentTarget)
+              }}
+              onPointerUp={() => endScrub(true)}
+              onPointerCancel={() => endScrub(false)}
+              onLostPointerCapture={() => endScrub(true)}
               onKeyDown={(event) => {
                 const direction =
                   event.key === 'ArrowLeft'
@@ -278,7 +311,7 @@ export function StudioTimeline(props: StudioTimelineProps) {
                 class={styles.playheadCap}
                 aria-hidden="true"
                 style={{
-                  left: `${frameToPixel(props.playheadFrame, scale())}px`,
+                  left: `${frameToPixel(shownPlayhead(), scale())}px`,
                 }}
               />
             </div>
@@ -416,7 +449,7 @@ export function StudioTimeline(props: StudioTimelineProps) {
               class={styles.playhead}
               aria-hidden="true"
               style={{
-                left: `calc(var(--studio-header-width) + ${frameToPixel(props.playheadFrame, scale())}px)`,
+                left: `calc(var(--studio-header-width) + ${frameToPixel(shownPlayhead(), scale())}px)`,
               }}
             />
           </Show>

@@ -85,9 +85,9 @@ test('Studio imports audio, reloads and restores a backup in a fresh browser @sm
   ).toContainText('Keep a recording in the app')
   await page.reload()
   await expect(
-    studio.getByRole('button', { name: /First Studio song/ }),
+    studio.getByRole('button', { name: /^First Studio song/ }),
   ).toBeEnabled()
-  await studio.getByRole('button', { name: /First Studio song/ }).click()
+  await studio.getByRole('button', { name: /^First Studio song/ }).click()
   // Unload cannot guarantee an async lease release. A fresh document must
   // explicitly take over the remaining lease instead of silently stealing it.
   const resumeEditing = studio.getByRole('button', { name: 'Edit in this tab' })
@@ -182,7 +182,7 @@ test('Studio makes a second tab read only until explicit takeover @smoke', async
   try {
     await openStudio(second, true)
     const other = second.getByRole('region', { name: 'Studio', exact: true })
-    await other.getByRole('button', { name: /Two tabs/ }).click()
+    await other.getByRole('button', { name: /^Two tabs/ }).click()
     await other.getByRole('button', { name: 'Song options' }).click()
     await expect(
       other.getByRole('textbox', { name: 'Project name' }),
@@ -470,7 +470,7 @@ test('Studio plays four owned audio lanes and stops after reopening @smoke', asy
   ).toHaveAttribute('aria-valuenow', '-60')
   await expect(position).toHaveText(paused!)
   await page.reload()
-  await studio.getByRole('button', { name: /Window seat/ }).click()
+  await studio.getByRole('button', { name: /^Window seat/ }).click()
   await expect(
     studio.getByRole('button', { name: 'Play song', exact: true }),
   ).toBeVisible()
