@@ -7,7 +7,8 @@
 // sends the same `update-track` command and glides into a playing song the
 // same way. The master side is the Sound panel's: the same flavour buttons,
 // the same macro drafts drawn as dials, and the transport's output meter.
-// The engine meters only the master, so the strips carry no level meters.
+// Each strip's meter shows its lane after the fader, read on the
+// transport's meter tick.
 //
 // The desk takes its height from the arrangement above it: as tall as its
 // strips like, but never so tall that fewer than two lanes stay in view. A
@@ -18,6 +19,7 @@ import { X } from '@/components/icons'
 import type { StudioMeterSnapshot } from '@/lib/studio/metering/stream-meter'
 import type { StudioCommand } from '@/lib/studio/model/commands'
 import type { StudioProject } from '@/lib/studio/model/types'
+import type { StudioLaneLevel } from '@/lib/studio/playback/transport'
 import { MACRO_KEYS } from '@/lib/studio-fx/mix-macros'
 import { StudioOutputMeter } from '../audio/StudioOutputMeter'
 import { StudioFlavourChoices, studioSoundAdjusted, } from '../sound/StudioFlavourChoices'
@@ -26,14 +28,16 @@ import common from '../StudioPage.module.css'
 import { StudioTrackControls } from '../timeline/StudioTrackControls'
 import { studioTrackColor, studioTrackHue } from '../timeline/track-hues'
 import styles from './StudioMixDesk.module.css'
+import { StudioStripMeter } from './StudioStripMeter'
 
-/** What the desk reads from the transport: the master output meter. */
+/** What the desk reads from the transport: the master output meter, and each lane's level. */
 export interface StudioMixMeterSource {
   meter(): StudioMeterSnapshot | null
   meterReady(): boolean
   peakL(): number
   peakR(): number
   resetPeakHold(): void
+  laneLevel?(trackId: string): StudioLaneLevel | undefined
 }
 
 interface StudioMixDeskProps {
@@ -357,6 +361,10 @@ export function StudioMixDesk(props: StudioMixDeskProps) {
                         {track().name}
                       </button>
                     }
+                  />
+                  <StudioStripMeter
+                    name={track().name}
+                    level={props.meter.laneLevel?.(id)}
                   />
                 </div>
               )

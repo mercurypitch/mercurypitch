@@ -316,6 +316,9 @@ export function useStudioTransport(options: UseStudioTransportOptions) {
     peakR: () => state().peakR,
     meter: () => state().meter,
     meterReady: () => state().meter !== null,
+    /** A lane's level after its fader while the song plays; undefined when it is not heard. */
+    laneLevel: (trackId: string) =>
+      state().lanes.find((lane) => lane.trackId === trackId),
     masterReady: () => state().masterReady,
     resetPeakHold: () => runtime.resetPeakHold(),
     /** Play a lane's moving fader or pan without saving it; null ends it. */
