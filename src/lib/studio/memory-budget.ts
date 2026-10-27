@@ -5,6 +5,14 @@ export const STUDIO_WORKING_BYTES = 512 * MIB
 /** Desktops the app already trusts with 2 GiB or more of decoded audio. */
 export const STUDIO_DESKTOP_WORKING_BYTES = 1024 * MIB
 
+/** A reservation that does not fit the budget. Something smaller may still fit. */
+export class StudioMemoryError extends Error {
+  constructor(message: string) {
+    super(message)
+    this.name = 'StudioMemoryError'
+  }
+}
+
 let reservedBytes = 0
 let budgetBytes: number | null = null
 const reclaimers = new Set<() => void>()
@@ -76,7 +84,7 @@ export function reserveStudioMemory(bytes: number): () => void {
 }
 
 function memoryError(): Error {
-  return new Error(
+  return new StudioMemoryError(
     'Studio needs more memory for this audio. Stop playback or choose shorter files.',
   )
 }

@@ -1,7 +1,7 @@
 // Studio PCM cache — immutable shared buffers with pinned ownership and admitted transient copies.
 import { CANONICAL_PCM_HEADER_BYTES, readCanonicalPcmBytes, } from '../audio/canonical-pcm'
 import { importCheckpoint } from '../audio/import-limits'
-import { registerStudioMemoryReclaimer, reserveStudioMemory, } from '../memory-budget'
+import { registerStudioMemoryReclaimer, reserveStudioMemory, StudioMemoryError, } from '../memory-budget'
 import type { StudioAsset } from '../model/types'
 
 const CACHE_BYTES = 384 * 1024 * 1024
@@ -124,22 +124,22 @@ export function createStudioBufferCache() {
   ): Promise<StudioBufferLease> {
     if (disposed || loading)
       throw new Error('Studio audio is still preparing. Try again in a moment.')
+    const unique = new Map(assets.map((asset) => [key(asset), asset]))
+    const required = [...unique.values()].reduce(
+      (total, asset) => total + asset.normalizedFrameCount * asset.channels * 4,
+      0,
+    )
+    // Before any eviction: a smaller set may follow, and keeps what it shares.
+    if (required > CACHE_BYTES)
+      throw new StudioMemoryError(
+        'This arrangement needs too much memory to play. Use shorter takes.',
+      )
     loading = true
     clearPending = false
     const pinned: Entry[] = []
     const buffers = new Map<string, AudioBuffer>()
     try {
-      const unique = new Map(assets.map((asset) => [key(asset), asset]))
       evict(true, new Set(unique.keys()))
-      const required = [...unique.values()].reduce(
-        (total, asset) =>
-          total + asset.normalizedFrameCount * asset.channels * 4,
-        0,
-      )
-      if (required > CACHE_BYTES)
-        throw new Error(
-          'This arrangement needs too much memory to play. Use shorter takes.',
-        )
       for (const asset of assets) {
         signal.throwIfAborted()
         const id = key(asset)
