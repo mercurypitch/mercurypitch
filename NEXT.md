@@ -679,3 +679,10 @@ Note: the lanes' memory gate read a stale cgroup path after the 21:00 restart (f
 - Release Tours 40563948325 (run 13): desktop TOTAL 144, 0 without spotlight, 0 WIDE/BAR, 4 skipped, known wide 10 (306 s); mobile TOTAL 127, 0, 0, 4, known wide 9 (278 s).
 - Checklist doc rev 18: lead .54 "0.9.23 is live..."; After-the-tag items .4286 and .4431 ticked with results; the owner's prod look (.4550) left open.
 - Owner told once. #157 (kit fixes) still waits on their go.
+
+## 19:55 UTC 27 Oct: L10 run 5 HANDED BACK, REVIEWED at max, two lead fixes, FOLDED; gates running
+- Builder (xhigh, 377 tool uses, 113 min) handed back 87b28fe48 (tag lead/l10-page5-handback) on a273d0337: four export-only fixups (Steps 1-2, 3-4, Step 5, Sing it part 2), a455e9aec the Wrap (wrap.ts free play, tease still, E2E 10/11, budgets JS 169 / CSS 89), 9fbdf5950 specs (E2E 4 sweep + targets, motion spec, sing keyboard, frame loop; helper src/e2e/helpers/lesson-qa.ts), 87b28fe48 map.
+- Review (l10 DECISIONS 34): F1 the rest card kept a live /pitch-training link after a rest answer (REQ-GVC-055; from run 4, my brief's E2E 10 wording pinned it) -> address in words, Stack the one link (fixup of Sing it part 2; sing-sweep test, mutant caught); F2 free play's Major·Minor stopped the pattern (Step 4 and free play's Slow act from the next quaver) -> chord-beads runFollows for playRun runs (fixup of the Wrap; 2 wrap tests, both mutants caught); E2E 10 now asserts the rest card links Stack only.
+- Folded (rebase -i --autosquash e9fca7149^): head a918f12c5, 29 commits on d37453987, tree = pre-fold (tag lead/l10-page5-prefold); range-diff vs lead/l10-page4-gated: only commits 19-21, 24 changed. Map unchanged.
+- FOLLOWUPS "From run 5" written (copy labels, lit Play kit bug, WebGL Merc device check, lesson-qa helper for L9, four L10 spec files, builder cd).
+- Gates: l10/page-5/review/gates.sh (bg b2leswvsx) -> gates/summary.txt. NEXT: on green, tag lead/l10-page5-gated, push feat/lesson-10-page with lease over a273d0337, tell the owner (the rest card fix, run 5 done); then P22 brief (final pass).

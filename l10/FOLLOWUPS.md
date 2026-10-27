@@ -39,6 +39,13 @@
   - The cold open's run: `Names.set('flats')` in main.ts (decision 27), and Play the chord's place on a phone (decision 28).
   - Step 5's task shows its Notice and the "Do or la?" drawer, kept hidden (`data-scale-reveal`) until the reveal.
 
+- **From run 5 (27 Oct, the Wrap and the page-wide checks):**
+  - Copy pass: free play's four group labels are the builder's words: "Free play: major or minor", "Free play: chord or scale", "Free play: the names switch" (the steps' group is "Names on the stairs") and "Free play: the chord beads".
+  - Kit (task for 0.9.24, owner's go): free play's lit Play shows the `.btn.primary.is-on` dark-on-dark words too (l10/page-5/shots/*-03-free-play-lit.png).
+  - A live WebGL Merc under reduced motion is not verified in a browser (headless Chromium runs the stills); a device check, as for Lessons 6 and 9.
+  - src/e2e/helpers/lesson-qa.ts measures the keyboard reach, live regions, 44 px targets and rest; Lesson 9's QA spec keeps its own copies of the same measures. A later tidy: move Lesson 9's onto the helper.
+  - Lesson 10's browser specs are four files now (the reduced-motion one is learn-lesson-10-motion.spec.ts), each under 600 lines.
+  - The builder used `cd` three times (no work changed); BUILDER-RULES already forbids it.
 - **From run 4 (27 Oct, Sing it):**
   - The ring at 390 px: "Sing with the line · 6" wraps to three lines in the 128 px ring and the countdown falls below the circle (l10/page-4/shots/390x844-07-guide-mid-sweep.png); at 1440 "SING WITH THE" crosses the ring. The same words and CSS as Lesson 6's (a draft), so Lesson 6 shows it too. For the copy pass or the kit: a shorter turn line for the small ring, or the state line under the ring.
   - The ring's state words are Lesson 6's, not in Lesson 10's docs: "Listen", "Get ready", "Sing with the line · n", "Rest"; "Rest" also shows after Merc's notes, when the viewer's turn comes next. Copy pass.
