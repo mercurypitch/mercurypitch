@@ -398,6 +398,11 @@
   background: var(--studio-solo);
   color: var(--studio-on-solo);
 }
+/* Silent because another lane is soloed: Mute is unpressed but dashed. */
+.controls button.muteButton[data-soloed-out] {
+  border-style: dashed;
+  border-color: var(--studio-text-2);
+}
 .controls button.mixButton:focus-visible {
   outline: 2px solid var(--studio-accent);
   outline-offset: 1px;
@@ -629,6 +634,11 @@
   gap: 8px;
   min-height: 0;
 }
+/* A silent strip (muted, or another lane soloed) dims its pan and fader. */
+.stripControls[data-silent] .knob,
+.stripControls[data-silent] .volume {
+  opacity: 0.45;
+}
 .stripControls .knob {
   align-self: center;
   min-height: 30px;
@@ -762,6 +772,19 @@
 .stripControls.touchControls button.mixButton {
   width: 100%;
   height: 44px;
+}
+/* A short desk: shorter gaps and pointer-sized buttons, so the fader keeps
+   its travel. Finger-sized controls keep their 44 px. */
+@container (max-height: 300px) {
+  .stripControls {
+    gap: 5px;
+  }
+  .stripControls:not(.touchControls) .knob {
+    min-height: 26px;
+  }
+  .stripControls:not(.touchControls) button.mixButton {
+    height: 24px;
+  }
 }
 
 /* Clips */

@@ -246,9 +246,11 @@
   gap: 4px;
   min-height: 0;
 }
+/* The desk keeps every word at 11 px or more. */
 .vertical .channel > span {
   width: auto;
-  line-height: 10px;
+  font-size: 11px;
+  line-height: 11px;
   text-align: center;
 }
 .vertical .rail {
@@ -289,15 +291,16 @@
 .vertical .scale {
   position: absolute;
   top: 0;
-  bottom: 14px;
+  bottom: 15px;
   left: 0;
-  width: 20px;
+  width: 22px;
   height: auto;
   margin: 0;
+  font-size: 11px;
 }
 .vertical .scale span {
   right: 0;
-  line-height: 10px;
+  line-height: 11px;
   transform: translateY(50%);
 }
 .vertical .scale span:last-child {
@@ -311,11 +314,11 @@
 .vertical .peakLabel span,
 .vertical .peakLabel strong {
   margin-bottom: 2px;
-  font-size: 9.5px;
+  font-size: 11px;
 }
 .vertical .peakLabel small {
   margin-left: 2px;
-  font-size: 10px;
+  font-size: 11px;
 }
 .loudness {
   display: flex;
@@ -328,11 +331,9 @@
 }
 .loudness span {
   color: var(--studio-muted);
-  font-size: 9px;
+  font-size: 11px;
   white-space: nowrap;
   font-weight: 600;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
 }
 .loudness strong {
   margin: 4px 0 2px;
@@ -343,7 +344,7 @@
 }
 .loudness small {
   color: var(--studio-muted);
-  font-size: 10px;
+  font-size: 11px;
   font-weight: 500;
 }
 @media (pointer: coarse) {

@@ -115,6 +115,8 @@ test.describe('on a tablet', () => {
       'button, input[aria-label$=" volume"], [title^="Pan "], [title*="drag up or down"]',
     )
     for (const target of await targets.all()) {
+      // A short desk swaps its Close button between two places; one is hidden.
+      if (!(await target.isVisible())) continue
       const box = await target.boundingBox()
       const name =
         (await target.getAttribute('aria-label')) ??

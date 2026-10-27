@@ -17,6 +17,8 @@ export interface StudioTrackControlsProps {
   strip?: boolean
   /** The lane's name and source, laid out in the same grid as the controls. */
   identity?: JSX.Element
+  /** Silent because another lane is soloed: Mute shows it, unpressed. */
+  soloedOut?: boolean
   onCommand(command: StudioCommand): boolean
 }
 
@@ -259,9 +261,16 @@ export function StudioTrackControls(props: StudioTrackControlsProps) {
       type="button"
       class={`${styles.mixButton} ${styles.muteButton}`}
       disabled={!props.writable}
-      title={`${props.track.mute ? 'Unmute' : 'Mute'} ${props.track.name}`}
+      title={`${props.track.mute ? 'Unmute' : 'Mute'} ${props.track.name}${
+        props.soloedOut === true && !props.track.mute
+          ? '. Silent while another lane is soloed.'
+          : ''
+      }`}
       aria-label={`${props.track.mute ? 'Unmute' : 'Mute'} ${props.track.name}`}
       aria-pressed={props.track.mute}
+      data-soloed-out={
+        props.soloedOut === true && !props.track.mute ? '' : undefined
+      }
       onClick={() => update({ mute: !props.track.mute })}
     >
       <Show when={props.track.mute} fallback={<Volume2 />}>
@@ -395,6 +404,9 @@ export function StudioTrackControls(props: StudioTrackControlsProps) {
     <div
       class={styles.controls}
       data-tour={props.strip === true ? undefined : 'studio.track-controls'}
+      data-silent={
+        props.track.mute || props.soloedOut === true ? '' : undefined
+      }
       classList={{
         [styles.compactControls]: props.compact === true,
         [styles.touchControls]: props.compact === true || props.tablet === true,

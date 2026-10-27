@@ -1,14 +1,21 @@
 /* Studio mixing desk — a drawer under the arrangement: lane strips that scroll sideways, then the song's master. */
+/* Its height is what the strips like, unless that would leave fewer than two
+   lanes in view above it (--studio-desk-room, measured): then the desk gives
+   way, down to a floor where compact strips still work. */
 .desk {
-  container-type: inline-size;
+  --desk-height: 318px;
+  --desk-floor: 196px;
+  container-type: size;
   position: relative;
   z-index: 8;
   display: flex;
   flex: none;
   flex-direction: column;
-  height: 318px;
-  /* A short window keeps the timeline above usable: the desk gives way first. */
-  max-height: 60%;
+  height: clamp(
+    var(--desk-floor),
+    var(--studio-desk-room, var(--desk-height)),
+    var(--desk-height)
+  );
   min-height: 0;
   border-top: 1px solid var(--studio-line-strong);
   background: var(--studio-panel);
@@ -17,7 +24,62 @@
   animation: studio-desk 0.2s ease-out;
 }
 .touch {
-  height: 334px;
+  --desk-height: 334px;
+}
+/* Under about 820 px of window height the desk starts compact. A finger
+   needs the travel, so a tablet's compact desk is as tall as compact gets. */
+@media (max-height: 819px) {
+  .desk {
+    --desk-height: 272px;
+  }
+  .touch {
+    --desk-height: 300px;
+  }
+}
+/* The top edge drags to another height; a grip shows where to take it. */
+.resize {
+  position: absolute;
+  z-index: 2;
+  top: -6px;
+  right: 0;
+  left: 0;
+  height: 12px;
+  cursor: ns-resize;
+  touch-action: none;
+  outline: none;
+}
+.resize::before {
+  content: '';
+  position: absolute;
+  top: 4px;
+  left: 50%;
+  width: 36px;
+  height: 4px;
+  border-radius: 2px;
+  background: var(--studio-line-strong);
+  transform: translateX(-50%);
+  transition: background-color 0.12s ease-out;
+}
+.resize:hover::before,
+.resizing .resize::before {
+  background: var(--studio-text-2);
+}
+.resize:focus-visible::before {
+  background: var(--studio-accent);
+  box-shadow:
+    0 0 0 2px var(--studio-panel),
+    0 0 0 4px var(--studio-accent);
+}
+.touch .resize {
+  top: -12px;
+  height: 24px;
+}
+.touch .resize::before {
+  top: 10px;
+  width: 44px;
+}
+.resizing {
+  user-select: none;
 }
 .heading {
   display: flex;
@@ -91,12 +153,15 @@
     transparent
   );
 }
+/* Every strip has the same width, whatever its lane is called. */
 .strip {
+  --strip-width: 116px;
   position: relative;
   display: flex;
-  flex: 1 0 116px;
+  flex: none;
   flex-direction: column;
-  max-width: 176px;
+  width: var(--strip-width);
+  min-width: 0;
   min-height: 0;
   padding: 12px 8px 8px;
   border: 1px solid var(--studio-line);
@@ -131,7 +196,7 @@
 }
 /* Two 44 px buttons side by side, and nothing wider. */
 .touch .strip {
-  flex-basis: 112px;
+  --strip-width: 112px;
 }
 .empty {
   align-self: center;
@@ -185,13 +250,9 @@
   gap: 6px;
   min-width: 0;
 }
-/* The dials sit on the desk's floor, level with the strips' buttons. */
-.group:last-child {
-  margin-top: auto;
-}
 .groupLabel {
   color: var(--studio-muted);
-  font-size: 10.5px;
+  font-size: 11px;
   font-weight: 600;
   letter-spacing: 0.04em;
   line-height: 14px;
@@ -242,12 +303,62 @@
     display: none;
   }
 }
+/* A short desk: a tighter heading and strips, so the faders keep their travel. */
+@container (max-height: 300px) {
+  .heading {
+    min-height: 32px;
+  }
+  .body {
+    padding-bottom: 10px;
+  }
+  .strip {
+    padding: 9px 6px 6px;
+  }
+  .masterControls {
+    gap: 6px;
+  }
+  .dials {
+    --dial-size: 52px;
+  }
+}
+/* A short tablet desk gives its title row to the strips: Close moves into
+   the master's heading, and the region keeps its name for screen readers. */
+.masterClose {
+  display: none;
+}
+.masterHeading .masterClose {
+  margin-left: 0;
+}
+@container (max-height: 300px) {
+  .touch .heading {
+    display: none;
+  }
+  .touch .body {
+    padding-top: 10px;
+  }
+  .touch .masterClose {
+    display: grid;
+  }
+}
+/* On a short tablet desk the flavours keep to one row and scroll sideways. */
+@container (max-height: 300px) and (max-width: 1100px) {
+  .touch .flavours {
+    flex-wrap: nowrap;
+    max-width: none;
+    overflow-x: auto;
+    scrollbar-width: none;
+    overscroll-behavior-x: contain;
+  }
+  .touch .flavours > * {
+    flex: none;
+  }
+}
 /* A tall, narrow window (a tablet held upright): the master moves under the
    strips and both get the full width. A short one scrolls inside the desk. */
 @media (max-width: 860px) {
   .desk {
-    height: 540px;
-    max-height: 66%;
+    --desk-height: 540px;
+    --desk-floor: 260px;
   }
   .body {
     flex-direction: column;
@@ -257,7 +368,7 @@
   }
   .strips {
     flex: none;
-    height: 262px;
+    height: 290px;
   }
   .master {
     padding: 12px 0 0;
