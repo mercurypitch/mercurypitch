@@ -272,7 +272,11 @@ export const FIRST_PAINT_BUDGETS_KB = {
   // stopping on leaving and the Wrap's card: 171,528 bytes with them, 1,188
   // more, all in Lesson 10's own chunk (lesson-10/sing.ts); the feelings and
   // the card are the comfort check's chunk, which the page already loads.
-  'learn/10.html': 168,
+  // 171,678 bytes once the kit kept the guide's breath word on the canvas.
+  // Raised to 169 for the Wrap's free play: 172,548 bytes with it, 870 more,
+  // all in Lesson 10's own chunk (lesson-10/wrap.ts, on the steps' controls
+  // and the chord beads the page already loads).
+  'learn/10.html': 169,
 
   // The main app, and the crawlable doors that are the main app. Measured
   // 4669. It is eager by design today, so this is a ceiling on growth rather
@@ -367,7 +371,10 @@ export const FIRST_PAINT_CSS_BUDGETS_KB = {
   // page links the ear game's sheet in that chunk rather than inlining it.
   // 89,870 with Sing it, whose comfort check and voice choice bring the
   // voice lessons' sheet, which the page now links in their chunk too.
-  'learn/10.html': 88,
+  // Raised to 89 for the Wrap: 90,214 bytes, 344 more, in the page's own
+  // sheet (lesson-10.css): the next card's tease still and free play's card
+  // laid out as the steps' stage is.
+  'learn/10.html': 89,
 
   // The main app and the crawlable doors that are the main app. Measured
   // 1009, of which 871 is the single `index` sheet that src/index.tsx

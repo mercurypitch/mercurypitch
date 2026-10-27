@@ -21,8 +21,9 @@
 // state, every step's controls, both games and Step 5's predict, Sing it
 // whole (its comfort check, voice choice, Merc's notes, Move do, the guide
 // and "How did that feel?") with the Wrap's card its ending picks, the
-// quick check, the next lesson's card, the season map, the masthead and
-// Merc and Tavi. The rest does nothing until it is wired: free play.
+// quick check, the Wrap's free play, with every control of the chord beads
+// on the steps' names store, the next lesson's card with the page's tease
+// still, the season map, the masthead and Merc and Tavi.
 
 import '@fontsource-variable/inter'
 import '@fontsource-variable/outfit'
@@ -68,6 +69,7 @@ import { initRecall } from './recall'
 import { initSing } from './sing'
 import { initSteps } from './steps'
 import { initWords } from './words'
+import { initWrap } from './wrap'
 
 Names.set('flats')
 
@@ -81,8 +83,8 @@ initColdOpen()
 initRecall()
 initWords()
 
-// the names on Step 5's stairs: one page-wide choice, Letters on every
-// visit, never stored
+// the names on Step 5's stairs and on free play's beads: one page-wide
+// choice, Letters on every visit, never stored
 const stairNames = createModeStore<LettersSolfegeMode>(
   LETTERS_SOLFEGE_MODES,
   'letters',
@@ -108,6 +110,9 @@ const check = createQuiz({
   deck,
 })
 bindQuizPlays(check.host)
+
+// free play: every control of the chord beads, on the steps' names store
+initWrap(stairNames)
 
 // the next lesson's card first: the explorer binds its link to the map
 createNextCard(10)

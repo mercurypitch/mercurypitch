@@ -16,8 +16,8 @@
    Here: the hero's spiral between Merc and Tavi, with the three plays under
    it; the chord beads' figure at its 340 px and the layer its targets take
    over it (WEB-SPEC, Toys 1, "Layout and targets"), and its rows of
-   controls; Tavi's line in Step 4; Sing it's guide beside its ring; and the
-   Wrap's cards. */
+   controls, there and in free play; Tavi's line in Step 4; Sing it's guide
+   beside its ring; and the Wrap's cards, with the next card's tease still. */
 
 /* ---------------------------------------------------------------- hero: the spiral between Merc and Tavi */
 .l10-duo {
@@ -118,10 +118,11 @@
 }
 /* The targets' layer covers the canvas exactly, inside the figure's 1 px
    border, after the controls in the tab order: the eyebrow on the first
-   row, the figure and its layer on the second, the controls after them. On
-   touch it keeps the figure's `touch-action: pan-y`: a vertical swipe
-   scrolls the page. */
-.toy.chord-toy.is-active {
+   row, the figure and its layer on the second, the controls after them, on
+   the steps' stage and on free play's card alike. On touch it keeps the
+   figure's `touch-action: pan-y`: a vertical swipe scrolls the page. */
+.toy.chord-toy.is-active,
+.l10-free {
   display: grid;
   grid-template-columns: minmax(0, 1fr);
   align-content: start;
@@ -283,6 +284,34 @@
 }
 .l10-next {
   margin-top: 18px;
+}
+/* the tease still in the next-lesson card: a siren's line in Merc's amber
+   climbing Lesson 7's range chart, its column at the left with the middle
+   lit, and crossing a seam shaded grey, never red (WEB-SPEC, Toys 9) */
+.l10-tease {
+  display: block;
+  width: min(100%, 320px);
+  height: auto;
+  margin-top: 12px;
+}
+.l10-tease .rows {
+  stroke: var(--hair);
+}
+.l10-tease .col {
+  fill: none;
+  stroke: var(--chrome);
+  stroke-opacity: 0.45;
+}
+.l10-tease .lit,
+.l10-tease .seam {
+  fill: var(--chrome);
+  fill-opacity: 0.16;
+}
+.l10-tease .siren {
+  fill: none;
+  stroke: var(--amber);
+  stroke-width: 2.5;
+  stroke-linecap: round;
 }
 .l10-free > .eyebrow {
   margin: 0 0 10px;

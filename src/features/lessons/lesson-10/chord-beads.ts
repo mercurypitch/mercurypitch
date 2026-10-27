@@ -115,7 +115,9 @@ export interface ChordBeads {
    * Plays a sound the page builds of the kit's runs itself, as `play`
    * plays its notes: the page's one sound, each note lit as the run starts
    * it (`onNote`, never called before `start` returns, as the kit's runs
-   * never call it); false when cut short.
+   * never call it); false when cut short. Such a run reads what is set as
+   * each of its notes starts, as the pattern does, so a change of quality
+   * plays on into it.
    */
   playRun(start: (onNote: (n: RunNote) => void) => Run): Promise<boolean>
   /** Stops a play where it stands: its notes fall silent and its lights go out. */
@@ -234,6 +236,9 @@ export function mountChordBeads(
   let rootWas = settings.root
   let lits: { midi: number; from: number; to: number }[] = []
   let run: Run | null = null
+  // whether the run playing is one the page builds (`playRun`), which reads
+  // what is set as each of its notes starts, as the pattern does
+  let runFollows = false
   let dirty = true
   let size: { w: number; h: number } | null = null
   let layout: ChordLayout | null = null
@@ -495,8 +500,10 @@ export function mountChordBeads(
     opts.owner?.release(stop)
   }
 
-  function playRun(
+  /** Starts a run as the page's one sound, each note lit as the run starts it; `follows` for a run the page builds. */
+  function startRun(
     start: (onNote: (n: RunNote) => void) => Run,
+    follows: boolean,
   ): Promise<boolean> {
     stop()
     opts.owner?.claim(stop)
@@ -507,6 +514,7 @@ export function mountChordBeads(
       invalidate()
     })
     run = r
+    runFollows = follows
     return r.done.then((heard) => {
       if (run === r) {
         run = null
@@ -516,9 +524,16 @@ export function mountChordBeads(
     })
   }
 
+  function playRun(
+    start: (onNote: (n: RunNote) => void) => Run,
+  ): Promise<boolean> {
+    return startRun(start, true)
+  }
+
   function play(notes: readonly RunNote[], audible: boolean): Promise<boolean> {
-    return playRun((onNote) =>
-      playNotes(notes, { audible, kind: 'soft', onNote }),
+    return startRun(
+      (onNote) => playNotes(notes, { audible, kind: 'soft', onNote }),
+      false,
     )
   }
 
@@ -588,8 +603,10 @@ export function mountChordBeads(
     },
     setQuality(quality) {
       if (quality === settings.quality) return 0
-      // Step 4's switches act from the next quaver, so its sound plays on
-      if (settings.state !== 'pattern') stop()
+      // Step 4's switches act from the next quaver, so its sound plays on,
+      // and so does free play's pattern, which reads what is set as each
+      // quaver starts, as Step 4's does (pattern.ts)
+      if (settings.state !== 'pattern' && !(run !== null && runFollows)) stop()
       const t = now()
       qualityWas = namedAt(t).quality
       minor = tween(
