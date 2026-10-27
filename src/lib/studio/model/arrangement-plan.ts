@@ -47,7 +47,11 @@ export interface StudioArrangementPlan {
 export interface StudioPlanOptions {
   readonly startFrame?: number
   readonly endFrame?: number
-  /** Already measured at this context's actual rate, which need not be 48 kHz. */
+  /**
+   * Already measured at this context's actual rate, which need not be 48 kHz.
+   * Every audible track needs one. A silent track with one is aligned with
+   * the rest, so playback can bring it in without moving the others.
+   */
   readonly latencies?: {
     readonly sampleRate: number
     readonly framesByTrack: Readonly<Record<string, number>>
@@ -179,9 +183,11 @@ export function compileStudioArrangement(
     : 0
   const seconds = new Map<string, number>()
   if (options.latencies) {
-    for (const track of snapshot.tracks.filter(isAudible)) {
+    const { framesByTrack } = options.latencies
+    for (const track of snapshot.tracks) {
+      if (!isAudible(track) && !Object.hasOwn(framesByTrack, track.id)) continue
       const frames = frameValue(
-        options.latencies.framesByTrack[track.id],
+        framesByTrack[track.id],
         `plan.latencies.${track.id}`,
       )
       seconds.set(track.id, frames / rate)

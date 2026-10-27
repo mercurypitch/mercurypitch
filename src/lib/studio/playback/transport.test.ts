@@ -2,7 +2,8 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { NEUTRAL_MACROS } from '@/lib/studio-fx/mix-macros'
 import { resolveStudioSoundGraph } from '../export/sound-graph'
-import { setStudioWorkingBytes, studioReservedMemoryBytes, } from '../memory-budget'
+import { setStudioWorkingBytes, StudioMemoryError, studioReservedMemoryBytes, } from '../memory-budget'
+import type { StudioArrangementPlan } from '../model/arrangement-plan'
 import { studioLaneSpec } from '../model/arrangement-plan'
 import { applyStudioCommand } from '../model/commands'
 import { createStudioTrack } from '../model/defaults'
@@ -28,6 +29,8 @@ function fixture() {
     setLaneMix: vi.fn(),
     setLaneSpec: vi.fn(),
     setMasterSpec: vi.fn(),
+    repeat: vi.fn(() => true),
+    stopRepeating: vi.fn(() => 0),
     dispose: vi.fn(),
   }
   const buildGraph = vi.fn().mockReturnValue(graph)
@@ -54,6 +57,42 @@ function fixture() {
     changed,
     release,
     transport,
+  }
+}
+
+/**
+ * The fixture's song with a second, muted lane playing its own take. The
+ * fake graph then reports the lanes its options build, as the real one does.
+ */
+function withQuietLane(f: ReturnType<typeof fixture>) {
+  const [track] = f.project.tracks
+  const [clip] = f.project.clips
+  f.buildGraph.mockImplementation(
+    (
+      _ctx: unknown,
+      plan: StudioArrangementPlan,
+      _buffers: unknown,
+      _epoch: number,
+      options?: { silentLanes?: boolean },
+    ) => {
+      const built = plan.lanes
+        .filter(
+          (lane) =>
+            lane.segments.length > 0 &&
+            (lane.audible || options?.silentLanes === true),
+        )
+        .map((lane) => lane.track.id)
+      f.graph.hasLane.mockImplementation((id: string) => built.includes(id))
+      return f.graph
+    },
+  )
+  return {
+    ...f.project,
+    tracks: [track, { ...track, id: 'quiet', order: 1, mute: true }],
+    clips: [
+      clip,
+      { ...clip, id: 'quiet-clip', trackId: 'quiet', assetId: 'quiet-asset' },
+    ],
   }
 }
 
@@ -247,26 +286,104 @@ describe('Studio borrowed transport', () => {
     expect(studioReservedMemoryBytes()).toBe(0)
   })
 
-  it('restarts to bring in a lane that was silent when Play built the graph', async () => {
+  it('brings in a lane that was muted when Play built the graph by gliding its gain, without a restart', async () => {
     vi.useFakeTimers()
     const f = fixture()
-    const [track] = f.project.tracks
-    const [clip] = f.project.clips
-    const project = {
-      ...f.project,
-      tracks: [track, { ...track, id: 'quiet', order: 1, mute: true }],
-      clips: [clip, { ...clip, id: 'quiet-clip', trackId: 'quiet' }],
-    }
-    f.measureLatencies.mockResolvedValue([441, 441])
-    await f.transport.play(project, [f.asset])
+    const project = withQuietLane(f)
+    const quietAsset = { ...f.asset, id: 'quiet-asset' }
+    f.measureLatencies.mockResolvedValue([441])
+    await f.transport.play(project, [f.asset, quietAsset])
+    expect(f.buildGraph.mock.calls[0][4]).toMatchObject({ silentLanes: true })
+    const plan = f.buildGraph.mock.calls[0][1] as StudioArrangementPlan
+    // Measured and aligned with the rest, though silent for now.
+    expect(plan.lanes[1].chainLatencySeconds).toBe(0.01)
+    expect(f.cache.acquire).toHaveBeenCalledWith(
+      [f.asset, quietAsset],
+      expect.anything(),
+      expect.anything(),
+      expect.anything(),
+    )
     const unmuted = {
       ...project,
       revision: 1,
-      tracks: [track, { ...project.tracks[1], mute: false }],
+      tracks: [project.tracks[0], { ...project.tracks[1], mute: false }],
     }
-    await f.transport.setSnapshot(unmuted, [f.asset])
-    expect(f.graph.setLaneMix).not.toHaveBeenCalled()
+    await f.transport.setSnapshot(unmuted, [f.asset, quietAsset])
+    expect(f.graph.setLaneMix).toHaveBeenCalledWith(unmuted.tracks[1], true)
+    expect(f.buildGraph).toHaveBeenCalledOnce()
+    // Solo on the first lane silences the second again, still in place.
+    const soloed = {
+      ...unmuted,
+      revision: 2,
+      tracks: [{ ...unmuted.tracks[0], solo: true }, unmuted.tracks[1]],
+    }
+    await f.transport.setSnapshot(soloed, [f.asset, quietAsset])
+    expect(f.graph.setLaneMix).toHaveBeenLastCalledWith(soloed.tracks[1], false)
+    expect(f.buildGraph).toHaveBeenCalledOnce()
+    const released = f.transport.releaseAudio()
+    await vi.advanceTimersByTimeAsync(240)
+    await released
+    f.transport.dispose()
+    expect(studioReservedMemoryBytes()).toBe(0)
+  })
+
+  it('builds only the lanes heard when the muted ones do not fit in memory, and restarts to bring one in', async () => {
+    vi.useFakeTimers()
+    const f = fixture()
+    const project = withQuietLane(f)
+    const quietAsset = { ...f.asset, id: 'quiet-asset' }
+    vi.mocked(f.cache.acquire).mockRejectedValueOnce(
+      new StudioMemoryError('Studio needs more memory for this audio.'),
+    )
+    expect(await f.transport.play(project, [f.asset, quietAsset])).toBe(true)
+    expect(f.cache.acquire).toHaveBeenLastCalledWith(
+      [f.asset],
+      expect.anything(),
+      expect.anything(),
+      expect.anything(),
+    )
+    expect(f.buildGraph.mock.calls[0][4]).toMatchObject({ silentLanes: false })
+    await f.transport.setSnapshot(
+      {
+        ...project,
+        revision: 1,
+        tracks: [project.tracks[0], { ...project.tracks[1], mute: false }],
+      },
+      [f.asset, quietAsset],
+    )
     expect(f.buildGraph).toHaveBeenCalledTimes(2)
+    const released = f.transport.releaseAudio()
+    await vi.advanceTimersByTimeAsync(240)
+    await released
+    f.transport.dispose()
+    expect(studioReservedMemoryBytes()).toBe(0)
+  })
+
+  it('plays on from the playhead with the lanes heard when the whole song does not fit, and restarts to loop', async () => {
+    vi.useFakeTimers()
+    const f = fixture()
+    const { project, asset } = twoSecondSong(f)
+    const full = new StudioMemoryError(
+      'Studio needs more memory for this audio.',
+    )
+    vi.mocked(f.cache.acquire)
+      .mockRejectedValueOnce(full)
+      .mockRejectedValueOnce(full)
+    expect(await f.transport.play(project, [asset], 48000)).toBe(true)
+    const plan = f.buildGraph.mock.calls[0][1] as StudioArrangementPlan
+    expect(plan.startFrame).toBe(48000)
+    expect(f.buildGraph.mock.calls[0][4]).toMatchObject({
+      fromFrame: 48000,
+      silentLanes: false,
+    })
+    // Its graph cannot loop to the start, so Repeat starts again from there.
+    f.transport.setRepeat(true)
+    await f.transport.setSnapshot(project, [asset])
+    expect(f.graph.repeat).not.toHaveBeenCalled()
+    expect(f.buildGraph).toHaveBeenCalledTimes(2)
+    expect(
+      (f.buildGraph.mock.calls[1][1] as StudioArrangementPlan).startFrame,
+    ).toBe(0)
     const released = f.transport.releaseAudio()
     await vi.advanceTimersByTimeAsync(240)
     await released
@@ -449,7 +566,7 @@ describe('Studio borrowed transport', () => {
     })
     expect(f.unlock).not.toHaveBeenCalled()
     await f.transport.play(f.project, [f.asset])
-    const master = f.buildGraph.mock.calls[0][6].spec as {
+    const master = f.buildGraph.mock.calls[0][4].master.spec as {
       effects: { id: string; params: Record<string, number> }[]
     }
     expect(
@@ -530,7 +647,10 @@ describe('Studio borrowed transport', () => {
     }
     f.transport.setRepeat(true)
     await f.transport.play(project, [asset], 48000)
-    expect(f.buildGraph.mock.calls[0][5]).toBe(48000)
+    expect(f.buildGraph.mock.calls[0][4]).toMatchObject({
+      fromFrame: 48000,
+      repeat: true,
+    })
     f.ctx.currentTime = 2.76
     await vi.advanceTimersByTimeAsync(33)
     expect(f.transport.getState().playing).toBe(true)
@@ -542,4 +662,85 @@ describe('Studio borrowed transport', () => {
     f.transport.dispose()
     expect(studioReservedMemoryBytes()).toBe(0)
   })
+
+  it('loops the running song once Repeat is turned on, and lets it end once turned off, without a restart', async () => {
+    vi.useFakeTimers()
+    const f = fixture()
+    const { project, asset } = twoSecondSong(f)
+    await f.transport.play(project, [asset], 0)
+    expect(f.buildGraph.mock.calls[0][4]).toMatchObject({
+      fromFrame: 0,
+      repeat: false,
+    })
+    const plan = f.buildGraph.mock.calls[0][1] as StudioArrangementPlan
+    // The first pass is heard from 0.26 s: 2 s of song, then its tail.
+    const tail = plan.tailFrames / 48000
+    f.ctx.currentTime = 1.5
+    f.transport.setRepeat(true)
+    expect(f.graph.repeat).toHaveBeenCalledOnce()
+    await f.transport.setSnapshot(project, [asset])
+    f.ctx.currentTime = 2.26 + tail + 0.5
+    await vi.advanceTimersByTimeAsync(33)
+    expect(f.transport.getState()).toMatchObject({
+      playing: true,
+      playheadFrame: Math.floor((tail + 0.5) * 48000) % 96000,
+    })
+
+    // Off during the second pass: it ends after that pass and its tail.
+    f.graph.stopRepeating.mockReturnValue(1)
+    f.transport.setRepeat(false)
+    await f.transport.setSnapshot(project, [asset])
+    f.ctx.currentTime = 4.25 + tail
+    await vi.advanceTimersByTimeAsync(33)
+    expect(f.transport.getState().playing).toBe(true)
+    f.ctx.currentTime = 4.27 + tail
+    await vi.advanceTimersByTimeAsync(33)
+    expect(f.transport.getState()).toMatchObject({
+      playing: false,
+      playheadFrame: 96000,
+    })
+    expect(f.buildGraph).toHaveBeenCalledOnce()
+    const released = f.transport.releaseAudio()
+    await vi.advanceTimersByTimeAsync(240)
+    await released
+    f.transport.dispose()
+    expect(studioReservedMemoryBytes()).toBe(0)
+  })
+
+  it('starts again from the top when Repeat comes on after the loop point has gone by', async () => {
+    vi.useFakeTimers()
+    const f = fixture()
+    const { project, asset } = twoSecondSong(f)
+    await f.transport.play(project, [asset], 0)
+    f.graph.repeat.mockReturnValue(false)
+    f.ctx.currentTime = 2.3
+    f.transport.setRepeat(true)
+    await f.transport.setSnapshot(project, [asset])
+    expect(f.buildGraph).toHaveBeenCalledTimes(2)
+    expect(f.buildGraph.mock.calls[1][4]).toMatchObject({
+      fromFrame: 0,
+      repeat: true,
+    })
+    expect(f.transport.getState().playing).toBe(true)
+    const released = f.transport.releaseAudio()
+    await vi.advanceTimersByTimeAsync(240)
+    await released
+    f.transport.dispose()
+    expect(studioReservedMemoryBytes()).toBe(0)
+  })
 })
+
+/** A song of one 2 s take from the start. */
+function twoSecondSong(f: ReturnType<typeof fixture>) {
+  return {
+    project: {
+      ...f.project,
+      clips: [{ ...f.project.clips[0], startFrame: 0, sourceOutFrame: 96000 }],
+    },
+    asset: {
+      ...f.asset,
+      normalizedFrameCount: 96000,
+      canonicalPcmByteLength: 384032,
+    },
+  }
+}

@@ -11,7 +11,10 @@ export interface StudioGraph {
   readonly output: GainNode
   scheduleUntil(time: number): void
   readPeaks(): readonly [number, number]
-  /** Whether this track has a lane here: silent lanes are never built. */
+  /**
+   * Whether this track has a lane here. Playback builds every lane with
+   * clips, silent ones at zero gain; a render builds only what it hears.
+   */
   hasLane(trackId: string): boolean
   /** Glide a built lane's volume and pan, or silence it, while it plays. */
   setLaneMix(track: StudioTrack, audible: boolean): void
@@ -22,7 +25,44 @@ export interface StudioGraph {
   setLaneSpec(trackId: string, spec: ChainSpec): void
   /** The same for the master chain, when the graph has one. */
   setMasterSpec(spec: ChainSpec): void
+  /**
+   * Loop back to the song's start when the pass that is playing ends. False
+   * when that loop point has already gone by, or the song is too short.
+   */
+  repeat(): boolean
+  /**
+   * Stop looping: the pass that has begun is the last, and a pass queued
+   * ahead of it never plays. Returns the last pass; the first is 0.
+   */
+  stopRepeating(): number
   dispose(): void
+}
+
+export interface StudioGraphOptions {
+  /** Read the output's peaks, as live playback does. */
+  readonly metering?: boolean
+  /** Where the first pass starts, in a plan compiled from the song's start. */
+  readonly fromFrame?: number
+  /** Loop from the plan's start after each pass; `repeat` and `stopRepeating` change it while playing. */
+  readonly repeat?: boolean
+  /**
+   * Build the lanes that are silent now too, at zero gain, so Mute and Solo
+   * bring them in while the song plays. Their latencies must be measured.
+   */
+  readonly silentLanes?: boolean
+  readonly master?: { readonly spec: ChainSpec }
+}
+
+/**
+ * A pass this close to its start counts as begun: the audio thread renders
+ * ahead of the clock the page reads, so its first sources may already play.
+ */
+const BEGUN_MARGIN_SECONDS = 0.05
+
+interface Scheduled {
+  readonly segment: StudioPlannedSegment
+  readonly input: AudioNode
+  readonly when: number
 }
 
 /** Left and right lane gains: pan law times volume and balance. */
@@ -32,17 +72,26 @@ function laneGains(track: StudioTrack): readonly [number, number] {
   return [left * gain, right * gain]
 }
 
+/** The lanes a graph builds: those with clips, and only the audible ones unless silent lanes are wanted. */
+export function studioGraphLanes(
+  plan: StudioArrangementPlan,
+  silentLanes = false,
+): StudioPlannedLane[] {
+  return plan.lanes.filter(
+    (lane) => lane.segments.length > 0 && (silentLanes || lane.audible),
+  )
+}
+
 export function studioGraphWorkingBytes(
   plan: StudioArrangementPlan,
   rate: number,
   masterSpec?: ChainSpec,
+  silentLanes = false,
 ): number {
-  const count = plan.lanes
-    .filter((lane) => lane.audible && lane.segments.length > 0)
-    .reduce(
-      (sum, lane) => sum + lane.spec.effects.length,
-      masterSpec?.effects.length ?? 0,
-    )
+  const count = studioGraphLanes(plan, silentLanes).reduce(
+    (sum, lane) => sum + lane.spec.effects.length,
+    masterSpec?.effects.length ?? 0,
+  )
   // Includes the engine's bounded eight-impulse cache, generation copies,
   // delay lines and node overhead. Browser-private native allocations vary.
   return Math.ceil(
@@ -66,7 +115,8 @@ function connectLane(
   const gains: GainNode[] = []
   mixes.set(lane.track.id, gains)
   chain.output.connect(split)
-  for (const [index, value] of laneGains(lane.track).entries()) {
+  const values = lane.audible ? laneGains(lane.track) : [0, 0]
+  for (const [index, value] of values.entries()) {
     const gain = ctx.createGain()
     gain.gain.value = value
     gains.push(gain)
@@ -103,89 +153,99 @@ function connectPeakAnalysers(
   return analysers
 }
 
+/** The first pass from `fromFrame`: what ends before it is skipped, what spans it starts part-way. */
+function firstPass(
+  cycle: readonly Scheduled[],
+  fromFrame: number,
+): Scheduled[] {
+  return cycle
+    .flatMap((item) => {
+      const end =
+        item.segment.startFrame +
+        item.segment.sourceOutFrame -
+        item.segment.sourceInFrame
+      if (end <= fromFrame) return []
+      const skipped = Math.max(0, fromFrame - item.segment.startFrame)
+      return [
+        {
+          ...item,
+          when: item.when + skipped / 48000,
+          segment: {
+            ...item.segment,
+            startFrame: item.segment.startFrame + skipped,
+            sourceInFrame: item.segment.sourceInFrame + skipped,
+          },
+        },
+      ]
+    })
+    .sort((a, b) => a.when - b.when)
+}
+
+function stopSource(source: AudioBufferSourceNode, gain: GainNode): void {
+  source.onended = null
+  try {
+    source.stop()
+  } catch {
+    /* An ended source needs only disconnecting. */
+  }
+  source.disconnect()
+  gain.disconnect()
+}
+
 export function buildStudioGraph(
   ctx: BaseAudioContext,
   plan: StudioArrangementPlan,
   buffers: ReadonlyMap<string, AudioBuffer>,
   epoch: number,
-  metering = true,
-  repeatFromFrame?: number,
-  master?: { spec: ChainSpec },
+  options: StudioGraphOptions = {},
 ): StudioGraph {
   const output = ctx.createGain()
   const disposers: (() => void)[] = []
-  const sources = new Map<AudioBufferSourceNode, GainNode>()
+  const sources = new Map<
+    AudioBufferSourceNode,
+    { gain: GainNode; pass: number }
+  >()
   const mixes = new Map<string, GainNode[]>()
   const chains = new Map<string, StudioFxChain>()
   let masterChain: StudioFxChain | null = null
-  const scheduled: {
-    segment: StudioPlannedSegment
-    input: AudioNode
-    when: number
-  }[] = []
-  let next = 0
-  let cycle = 0
-  let repeating: typeof scheduled = []
-  const repeatSeconds = (plan.endFrame - plan.startFrame) / 48000
-  if (repeatFromFrame !== undefined && repeatSeconds < 0.25)
+  // One pass of the whole plan, timed so the second pass starts where the
+  // first, which may begin part-way through, ends.
+  const cycle: Scheduled[] = []
+  const fromFrame = options.fromFrame ?? plan.startFrame
+  const offset = (fromFrame - plan.startFrame) / 48000
+  const cycleSeconds = (plan.endFrame - plan.startFrame) / 48000
+  if (options.repeat === true && cycleSeconds < 0.25)
     throw new Error('A song needs at least a quarter second to repeat.')
+  let looping = options.repeat === true
   let disposed = false
   const analysers: AnalyserNode[] = []
   const peakSamples = new Float32Array(4096)
   try {
     let laneOutput: AudioNode = output
-    if (master) {
-      const chain = createStudioFxChain(ctx, master.spec)
+    if (options.master) {
+      const chain = createStudioFxChain(ctx, options.master.spec)
       chain.output.connect(output)
       laneOutput = chain.input
       masterChain = chain
       disposers.push(() => chain.dispose())
     }
-    for (const lane of plan.lanes) {
-      if (!lane.audible || !lane.segments.length) continue
+    for (const lane of studioGraphLanes(plan, options.silentLanes)) {
       if (lane.compensationSeconds === null)
         throw new Error('Studio chain timing has not been measured.')
       const input = connectLane(ctx, lane, laneOutput, disposers, mixes, chains)
       for (const segment of lane.segments)
-        scheduled.push({
+        cycle.push({
           segment,
           input,
           when:
             epoch +
             (segment.startFrame - plan.startFrame) / 48000 +
-            lane.compensationSeconds,
+            lane.compensationSeconds -
+            offset,
         })
     }
-    scheduled.sort((a, b) => a.when - b.when)
-    if (repeatFromFrame !== undefined) {
-      const offset = (repeatFromFrame - plan.startFrame) / 48000
-      repeating = scheduled.map((item) => ({
-        ...item,
-        when: item.when - offset,
-      }))
-      const first = repeating.flatMap((item) => {
-        const end =
-          item.segment.startFrame +
-          item.segment.sourceOutFrame -
-          item.segment.sourceInFrame
-        if (end <= repeatFromFrame) return []
-        const skipped = Math.max(0, repeatFromFrame - item.segment.startFrame)
-        return [
-          {
-            ...item,
-            when: item.when + skipped / 48000,
-            segment: {
-              ...item.segment,
-              startFrame: item.segment.startFrame + skipped,
-              sourceInFrame: item.segment.sourceInFrame + skipped,
-            },
-          },
-        ]
-      })
-      first.sort((a, b) => a.when - b.when)
-      scheduled.splice(0, scheduled.length, ...first)
-    }
-    if (metering) {
+    cycle.sort((a, b) => a.when - b.when)
+    if (options.metering === true) {
       analysers.push(
         ...connectPeakAnalysers(ctx, output, peakSamples.length, disposers),
       )
@@ -195,53 +255,63 @@ export function buildStudioGraph(
     output.disconnect()
     throw error
   }
+  let scheduled = firstPass(cycle, fromFrame)
+  let next = 0
+  // The pass being scheduled, which runs up to two seconds ahead of the one heard.
+  let pass = 0
+  /** Whether pass `index` has begun, or is about to, on the context clock. */
+  const begun = (index: number) =>
+    (index === 0 ? epoch : epoch - offset + index * cycleSeconds) <=
+    ctx.currentTime + BEGUN_MARGIN_SECONDS
+
+  function start({ segment, input, when }: Scheduled): void {
+    if (when < ctx.currentTime - 0.02)
+      throw new Error(
+        'Studio playback could not keep up. Press Play to try again.',
+      )
+    const buffer = buffers.get(segment.assetId)
+    if (!buffer) throw new Error('Studio audio is missing.')
+    const source = ctx.createBufferSource()
+    const gain = ctx.createGain()
+    source.buffer = buffer
+    gain.channelCount = 2
+    gain.channelCountMode = 'explicit'
+    gain.channelInterpretation = 'speakers'
+    gain.gain.value = 0
+    source.connect(gain)
+    gain.connect(input)
+    sources.set(source, { gain, pass })
+    source.onended = () => {
+      source.disconnect()
+      gain.disconnect()
+      sources.delete(source)
+    }
+    scheduleStudioSegmentGain(gain.gain, segment, when)
+    source.start(
+      when,
+      segment.sourceInFrame / 48000,
+      (segment.sourceOutFrame - segment.sourceInFrame) / 48000,
+    )
+  }
+
   return {
     output,
     scheduleUntil(time) {
       if (disposed) return
       while (true) {
         if (next >= scheduled.length) {
-          if (!repeating.length) break
-          cycle++
-          scheduled.splice(
-            0,
-            scheduled.length,
-            ...repeating.map((item) => ({
-              ...item,
-              when: item.when + cycle * repeatSeconds,
-            })),
-          )
+          if (!looping || !cycle.length) break
+          pass++
+          const shift = pass * cycleSeconds
+          scheduled = cycle.map((item) => ({
+            ...item,
+            when: item.when + shift,
+          }))
           next = 0
         }
         if (scheduled[next].when > time) break
-        const { segment, input, when } = scheduled[next++]
-        if (when < ctx.currentTime - 0.02)
-          throw new Error(
-            'Studio playback could not keep up. Press Play to try again.',
-          )
-        const buffer = buffers.get(segment.assetId)
-        if (!buffer) throw new Error('Studio audio is missing.')
-        const source = ctx.createBufferSource()
-        const gain = ctx.createGain()
-        source.buffer = buffer
-        gain.channelCount = 2
-        gain.channelCountMode = 'explicit'
-        gain.channelInterpretation = 'speakers'
-        gain.gain.value = 0
-        source.connect(gain)
-        gain.connect(input)
-        sources.set(source, gain)
-        source.onended = () => {
-          source.disconnect()
-          gain.disconnect()
-          sources.delete(source)
-        }
-        scheduleStudioSegmentGain(gain.gain, segment, when)
-        source.start(
-          when,
-          segment.sourceInFrame / 48000,
-          (segment.sourceOutFrame - segment.sourceInFrame) / 48000,
-        )
+        start(scheduled[next])
+        next++
       }
     },
     hasLane: (trackId) => mixes.has(trackId),
@@ -262,6 +332,29 @@ export function buildStudioGraph(
     setMasterSpec(spec) {
       if (!disposed) masterChain?.setSpec(spec)
     },
+    repeat() {
+      if (disposed || cycleSeconds < 0.25 || !cycle.length) return false
+      if (!looping && begun(pass + 1)) return false
+      looping = true
+      return true
+    },
+    stopRepeating() {
+      looping = false
+      let last = pass
+      while (last > 0 && !begun(last)) last--
+      if (last === pass) return last
+      // Passes queued ahead have not begun: none of them plays. The one
+      // that has began was scheduled in full before the next was queued.
+      for (const [source, entry] of sources) {
+        if (entry.pass <= last) continue
+        stopSource(source, entry.gain)
+        sources.delete(source)
+      }
+      pass = last
+      scheduled = []
+      next = 0
+      return last
+    },
     readPeaks() {
       return [0, 1].map((channel) => {
         const analyser = analysers[channel]
@@ -276,16 +369,7 @@ export function buildStudioGraph(
     dispose() {
       if (disposed) return
       disposed = true
-      for (const [source, gain] of sources) {
-        source.onended = null
-        try {
-          source.stop()
-        } catch {
-          /* An ended source needs only disconnecting. */
-        }
-        source.disconnect()
-        gain.disconnect()
-      }
+      for (const [source, { gain }] of sources) stopSource(source, gain)
       sources.clear()
       for (const dispose of disposers) dispose()
       output.disconnect()

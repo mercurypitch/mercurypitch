@@ -4,7 +4,6 @@ import { closeEnvelope } from '@/lib/preview-player'
 import type { ChainSpec } from '@/lib/studio-fx/chain-spec'
 import type { MacroKey } from '@/lib/studio-fx/mix-macros'
 import { measureTrackLatencies } from '@/lib/studio-fx/mixdown'
-import { estimateTailSeconds } from '@/lib/studio-fx/render'
 import type { StudioMasterGain, StudioMasterGainToken, } from '../export/sound-graph'
 import { resolveStudioSoundGraph } from '../export/sound-graph'
 import { reserveStudioMemory } from '../memory-budget'
@@ -16,6 +15,8 @@ import type { StudioBufferCache, StudioBufferLease } from './buffer-cache'
 import { createStudioBufferCache } from './buffer-cache'
 import type { StudioGraph } from './graph'
 import { buildStudioGraph, studioGraphWorkingBytes } from './graph'
+import type { StudioRunLayout } from './live-edit'
+import { audibility, firstThatFits, graphShape, laneTailFrames, soundKey, studioRunLayouts, } from './live-edit'
 import type { StudioLatencyReader } from './prepare-plan'
 import { planAssets, planLatencySeconds, prepareStudioPlan, } from './prepare-plan'
 
@@ -62,8 +63,15 @@ interface Run {
   startFrame: number
   endFrame: number
   audibleEpoch: number
-  endsAt: number
-  repeat: boolean
+  /**
+   * Where the song stops, counting each pass from the song's start: the end
+   * of the pass that has begun, or Infinity while it repeats.
+   */
+  untilFrame: number
+  /** The longest chain tail among the lanes heard now. */
+  tailFrames: number
+  /** Its plan starts at the song's start, so it can loop there. */
+  canLoop: boolean
 }
 
 export function createStudioTransport(options: StudioTransportOptions) {
@@ -126,7 +134,7 @@ export function createStudioTransport(options: StudioTransportOptions) {
     const frame =
       run.startFrame +
       Math.floor(Math.max(0, run.ctx.currentTime - run.audibleEpoch) * 48000)
-    return run.repeat ? frame % run.endFrame : Math.min(run.endFrame, frame)
+    return frame >= run.untilFrame ? run.endFrame : frame % run.endFrame
   }
 
   function observeSnapshot(project: StudioProject): void {
@@ -155,26 +163,42 @@ export function createStudioTransport(options: StudioTransportOptions) {
     }
   }
 
+  /** Glide each lane to its volume and pan, or to silence; the lanes heard set the end. */
   function applyMix(run: Run, project: StudioProject): void {
     const audible = audibility(project)
     for (const track of project.tracks)
       run.graph.setLaneMix(track, audible(track))
+    run.tailFrames = laneTailFrames(run.graph, project)
   }
 
   /** Move the running chains to the project's sound; their tails set the end. */
   function applySound(run: Run, project: StudioProject): void {
-    let tail = 0
     for (const track of project.tracks) {
-      if (!run.graph.hasLane(track.id)) continue
-      const spec = studioLaneSpec(track, project.mix.macros)
-      run.graph.setLaneSpec(track.id, spec)
-      tail = Math.max(tail, estimateTailSeconds(spec))
+      if (run.graph.hasLane(track.id))
+        run.graph.setLaneSpec(
+          track.id,
+          studioLaneSpec(track, project.mix.macros),
+        )
     }
     run.graph.setMasterSpec(resolveStudioSoundGraph(project, run.measured).full)
-    if (!run.repeat)
-      run.endsAt =
-        run.audibleEpoch +
-        (run.endFrame - run.startFrame + Math.ceil(tail * 48000)) / 48000
+    run.tailFrames = laneTailFrames(run.graph, project)
+  }
+
+  /**
+   * Make the running graph follow the Repeat switch: on, it loops at the
+   * song's end; off, the pass that has begun is the last. False when the
+   * loop point has already gone by, so only a restart can loop.
+   */
+  function followRepeat(run: Run): boolean {
+    if (repeat === (run.untilFrame === Infinity)) return true
+    if (!repeat) {
+      run.untilFrame = (run.graph.stopRepeating() + 1) * run.endFrame
+      return true
+    }
+    if (!run.canLoop || !run.graph.repeat()) return false
+    run.untilFrame = Infinity
+    run.graph.scheduleUntil(run.ctx.currentTime + LOOKAHEAD_SECONDS)
+    return true
   }
 
   /** A control moved while the song was getting ready: start as it sounds. */
@@ -187,15 +211,17 @@ export function createStudioTransport(options: StudioTransportOptions) {
 
   /**
    * Apply an edit to the running graph, so the song keeps playing. Lane
-   * volume, balance, pan, Mute and Solo glide; the macros, a flavour's master
-   * EQ and the ceiling move the running chains, which send only the values
-   * that changed. An edit to nothing the graph plays, such as an empty new
-   * lane or a name, changes nothing. False when it needs a restart: other
-   * clips or chain shapes, or a lane with material that was silent when Play
-   * built the graph.
+   * volume, balance, pan, Mute and Solo glide, silent lanes included, and
+   * Repeat moves the loop; the macros, a flavour's master EQ and the ceiling
+   * move the running chains, which send only the values that changed. An
+   * edit to nothing the graph plays, such as an empty new lane or a name,
+   * changes nothing. False when it needs a restart: other clips or chain
+   * shapes, Repeat turned on after the loop point, or a lane brought in that
+   * Play left out because memory was short.
    */
   function playInPlace(run: Run, project: StudioProject): boolean {
     if (graphShape(run.project) !== graphShape(project)) return false
+    if (!followRepeat(run)) return false
     const live = withDrafts(project)
     const audible = audibility(live)
     const missing = live.tracks.some(
@@ -357,34 +383,23 @@ export function createStudioTransport(options: StudioTransportOptions) {
       // Called immediately by an explicit UI action, before asset reads.
       const ctx = await unlockContext(attempt.signal)
       observeSnapshot(project)
-      const { content, from } = playableContent(project, assets, startFrame)
+      const { from } = playableContent(project, assets, startFrame)
       const measured: StudioMasterGain = {
         gainDb: masterGain?.gainDb ?? 0,
         safetyGainDb: masterGain?.safetyGainDb ?? 0,
       }
       const sound = resolveStudioSoundGraph(project, measured)
-      releaseMemory = await reserveGraph(
-        studioGraphWorkingBytes(content, ctx.sampleRate, sound.full),
-        attempt.signal,
-      )
       // A background warm-up does the same reads; wait for it, not around it.
       await warming
       attempt.signal.throwIfAborted()
       const masterLatency = await prepareMaster(ctx, sound.full, attempt.signal)
-      const plan = await prepareStudioPlan(
-        project,
-        assets,
-        ctx.sampleRate,
-        repeat ? 0 : from,
-        attempt.signal,
-        measureLatencies,
+      const admitted = await firstThatFits(
+        studioRunLayouts(from, repeat),
+        (layout) =>
+          admit(project, assets, ctx, sound.full, layout, attempt.signal),
       )
-      buffers = await cache.acquire(
-        planAssets(plan, assets),
-        ctx,
-        options.readCanonicalAsset,
-        attempt.signal,
-      )
+      ;({ buffers, releaseMemory } = admitted)
+      const { plan, silentLanes } = admitted
       attempt.signal.throwIfAborted()
       if (token !== generation || disposed)
         throw new DOMException('Playback cancelled', 'AbortError')
@@ -401,9 +416,13 @@ export function createStudioTransport(options: StudioTransportOptions) {
         plan,
         buffers.buffers,
         epoch,
-        true,
-        repeat ? from : undefined,
-        { spec: sound.full },
+        {
+          metering: true,
+          fromFrame: from,
+          repeat,
+          silentLanes,
+          master: { spec: sound.full },
+        },
       )
       envelope = ctx.createGain()
       envelope.gain.value = 0
@@ -430,10 +449,9 @@ export function createStudioTransport(options: StudioTransportOptions) {
         startFrame: from,
         endFrame: plan.endFrame,
         audibleEpoch,
-        endsAt: repeat
-          ? Infinity
-          : audibleEpoch + (plan.endFrame - from + plan.tailFrames) / 48000,
-        repeat,
+        untilFrame: repeat ? Infinity : plan.endFrame,
+        tailFrames: plan.tailFrames,
+        canLoop: plan.startFrame === 0,
       }
       buffers = undefined
       releaseMemory = undefined
@@ -486,7 +504,7 @@ export function createStudioTransport(options: StudioTransportOptions) {
         peakR,
         meter,
       })
-      if (run.ctx.currentTime >= run.endsAt) pause()
+      if (run.ctx.currentTime >= endsAt(run)) pause()
     } catch (error) {
       pause()
       publish({
@@ -510,6 +528,42 @@ export function createStudioTransport(options: StudioTransportOptions) {
       await new Promise<void>((resolve) => releasedListeners.add(resolve))
       signal.throwIfAborted()
       return reserveStudioMemory(bytes)
+    }
+  }
+
+  /** The plan, graph memory and audio for a run built as `layout` says. */
+  async function admit(
+    project: StudioProject,
+    assets: readonly StudioAsset[],
+    ctx: AudioContext,
+    master: ChainSpec,
+    { silentLanes, start }: StudioRunLayout,
+    signal: AbortSignal,
+  ) {
+    const plan = await prepareStudioPlan(
+      project,
+      assets,
+      ctx.sampleRate,
+      start,
+      signal,
+      measureLatencies,
+      silentLanes,
+    )
+    const releaseMemory = await reserveGraph(
+      studioGraphWorkingBytes(plan, ctx.sampleRate, master, silentLanes),
+      signal,
+    )
+    try {
+      const buffers = await cache.acquire(
+        planAssets(plan, assets, silentLanes),
+        ctx,
+        options.readCanonicalAsset,
+        signal,
+      )
+      return { plan, silentLanes, buffers, releaseMemory }
+    } catch (error) {
+      releaseMemory()
+      throw error
     }
   }
 
@@ -563,16 +617,19 @@ export function createStudioTransport(options: StudioTransportOptions) {
               0,
               signal,
               measureLatencies,
+              true,
             ),
           )
         }
         const plan = plans.at(-1)
         if (plan === undefined || busy() || signal.aborted) return
-        const lease = await cache.acquire(
-          planAssets(plan, assets),
-          factory,
-          options.readCanonicalAsset,
-          signal,
+        const lease = await firstThatFits([true, false], (silentLanes) =>
+          cache.acquire(
+            planAssets(plan, assets, silentLanes),
+            factory,
+            options.readCanonicalAsset,
+            signal,
+          ),
         )
         lease.release()
       } catch {
@@ -588,8 +645,13 @@ export function createStudioTransport(options: StudioTransportOptions) {
   return {
     play,
     warm,
+    /**
+     * A running song follows at once. When the loop point has already gone
+     * by, the setSnapshot that follows starts it again from the top.
+     */
     setRepeat(enabled: boolean) {
       repeat = enabled
+      if (active && !preparing) followRepeat(active)
     },
     setMasterGain(value: StudioMasterGainToken | null) {
       if (
@@ -699,40 +761,10 @@ export function createStudioTransport(options: StudioTransportOptions) {
 
 export type StudioTransport = ReturnType<typeof createStudioTransport>
 
-function audibility(project: StudioProject): (track: StudioTrack) => boolean {
-  const hasSolo = project.tracks.some((track) => track.solo)
-  return (track) => !track.mute && (!hasSolo || track.solo)
-}
-
-/**
- * What a running graph is built from: the clips, and the effect list of each
- * lane that has any. Two projects with the same shape play through the same
- * graph; mix and sound settings move it in place.
- */
-function graphShape(project: StudioProject): string {
-  const used = new Set(project.clips.map((clip) => clip.trackId))
-  const byId = <T extends { id: string }>(a: T, b: T) =>
-    a.id < b.id ? -1 : a.id > b.id ? 1 : 0
-  return JSON.stringify({
-    clips: [...project.clips].sort(byId),
-    lanes: project.tracks
-      .filter((track) => used.has(track.id))
-      .sort(byId)
-      .map((track) => [
-        track.id,
-        track.fx.baseSpec.effects.map(
-          (effect) => `${effect.id}:${effect.kind}`,
-        ),
-      ]),
-  })
-}
-
-/** Everything the running chains play with. */
-function soundKey(project: StudioProject): string {
-  return JSON.stringify([
-    project.mix.macros,
-    project.master.masterEq,
-    project.master.ceilingDbtp,
-    project.tracks.map((track) => [track.id, track.fx]),
-  ])
+/** When a run has played out, its tail included: never while it repeats. */
+function endsAt(run: Run): number {
+  return run.untilFrame === Infinity
+    ? Infinity
+    : run.audibleEpoch +
+        (run.untilFrame - run.startFrame + run.tailFrames) / 48000
 }
