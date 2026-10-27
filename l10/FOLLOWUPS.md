@@ -39,6 +39,14 @@
   - The cold open's run: `Names.set('flats')` in main.ts (decision 27), and Play the chord's place on a phone (decision 28).
   - Step 5's task shows its Notice and the "Do or la?" drawer, kept hidden (`data-scale-reveal`) until the reveal.
 
+- **From run 4 (27 Oct, Sing it):**
+  - The ring at 390 px: "Sing with the line · 6" wraps to three lines in the 128 px ring and the countdown falls below the circle (l10/page-4/shots/390x844-07-guide-mid-sweep.png); at 1440 "SING WITH THE" crosses the ring. The same words and CSS as Lesson 6's (a draft), so Lesson 6 shows it too. For the copy pass or the kit: a shorter turn line for the small ring, or the state line under the ring.
+  - The ring's state words are Lesson 6's, not in Lesson 10's docs: "Listen", "Get ready", "Sing with the line · n", "Rest"; "Rest" also shows after Merc's notes, when the viewer's turn comes next. Copy pass.
+  - No status line while Merc's notes play; Lessons 6 and 8 say one ("Merc sings the first version.", "Merc sings the line."). Copy pass; LESSON.md's own "Merc sings do-mi-so, then do-me-so" is a candidate.
+  - Sing it's markup has no Stop: Merc's notes and a sweep stop on any of Sing it's presses, another sound, the Sound switch (notes only) or leaving. The coach or P22: is a Stop wanted for the 10 s notes and the 11 s sweep?
+  - WEB-SPEC Toys 6's "answering Easy later does not bring the practice card back" cannot happen under the kit's lock (Easy is disabled after Effortful, and the guide is away); the tests assert the lock. P22's docs pass says so.
+  - After Effortful, "Play Merc's notes" sits right on "do is E3" (the guide's notes hidden between them): spacing, P22.
+  - CSS headroom: 89,870 of 88 KB (242 B). The Wrap's run raises it to 89 in the commit that needs it (decision 25).
 - **From run 3 (27 Oct, head 703621d37 after the fold):**
   - Kit, and live on Lesson 2: a lit primary button (`.btn.primary.is-on`) shows its dark words on `.btn.is-on`'s dark teal, because `.btn.is-on` (lesson-base.css:521) sets the background and not the colour. Seen on Lesson 10's Play the pattern (l10/page-3/shots/*-step4-pattern.png); the same rule lights the kit ear game's Play (Lessons 6, 8, 10) and Lesson 2's published "Play a step", climb, lift, slide and unroll buttons while they sound. Lesson 7 already dodges it (`.range-toy .btn:not(.primary).is-on`). A kit fix for 0.9.24: give `.btn.primary.is-on` light words, or keep its own fill with a ring. Owner's call on the look; Lesson 2 is published, so not in this branch.
   - Kit step deck, every lesson: a focus or click on a stage control within about 1 s of opening `/learn/NN#step-N` stops the deck's smooth scroll short, and once the 1.1 s lock ends the deck follows the page to Step 1. The e2e waits for the page to hold still; the kit should not lose the step.
