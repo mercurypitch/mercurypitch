@@ -1,4 +1,4 @@
-// Studio mixing desk, live — with a real mouse: a fader drags from where it is and ignores a click on its rail, a held fader and dial are heard before they save, and sound edits keep the song playing.
+// Studio mixing desk, live — with a real mouse: a fader drags from where it is and ignores a click on its rail, a held fader and dial are heard before they save, sound edits keep the song playing, and a muted lane comes in without a dropout.
 import { expect, type Locator, type Page, test } from '@playwright/test'
 import { center, openArrangement, readStudioProject, STUDIO_RATE, studioRegion, } from './helpers/dedicatedstudio-fixture'
 
@@ -378,5 +378,53 @@ test.describe('Studio mixing desk, live', () => {
     await expect(
       studio.getByRole('button', { name: 'Pause song', exact: true }),
     ).toBeVisible()
+  })
+
+  test('a lane muted when Play started comes in with its Mute, and one outside a solo with an un-solo, with no dropout and no restart @smoke', async ({
+    page,
+  }) => {
+    test.setTimeout(180_000)
+    await tapOutput(page)
+    await openArrangement(page)
+    const studio = studioRegion(page)
+    const lanes = studio.locator('[data-studio-track]')
+    await importSteady(page, 'Pad', [330])
+    // As loud as the pad: the song is 3 dB louder once it comes in.
+    await importSteady(page, 'Low', [165])
+    // The fixture's phrase swells; it stays out. Low waits, muted.
+    await lanes
+      .getByRole('button', { name: 'Mute Phrase', exact: true })
+      .click()
+    await lanes.getByRole('button', { name: 'Mute Low', exact: true }).click()
+    const unmuteLow = lanes.getByRole('button', {
+      name: 'Unmute Low',
+      exact: true,
+    })
+    await expect(unmuteLow).toHaveAttribute('aria-pressed', 'true')
+    const play = studio.getByRole('button', { name: 'Play song', exact: true })
+    await play.click()
+    await expect
+      .poll(() => outputLevel(page), { timeout: 15_000 })
+      .toBeGreaterThan(-40)
+    const unmute = await traceLevel(page, () => unmuteLow.click())
+    expect(unmute.after - unmute.before).toBeGreaterThan(2)
+    expect(unmute.dip).toBeLessThan(3)
+    expect(unmute.sources).toBe(0)
+
+    // Play again with Pad soloed: Low is silent from the start this time.
+    await studio
+      .getByRole('button', { name: 'Pause song', exact: true })
+      .click()
+    const soloPad = lanes.getByRole('button', { name: 'Solo Pad', exact: true })
+    await soloPad.click()
+    await expect(soloPad).toHaveAttribute('aria-pressed', 'true')
+    await play.click()
+    await expect
+      .poll(() => outputLevel(page), { timeout: 15_000 })
+      .toBeGreaterThan(-40)
+    const unsolo = await traceLevel(page, () => soloPad.click())
+    expect(unsolo.after - unsolo.before).toBeGreaterThan(2)
+    expect(unsolo.dip).toBeLessThan(3)
+    expect(unsolo.sources).toBe(0)
   })
 })

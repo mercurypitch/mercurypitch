@@ -63,7 +63,7 @@ export async function renderStudioArrangement(
     )({ numberOfChannels: 2, sampleRate: 48000, length: total })
     lease = await cache.acquire(planAssets(plan, assets), ctx, read, signal)
     signal.throwIfAborted()
-    graph = buildStudioGraph(ctx, plan, lease.buffers, 0.5, false)
+    graph = buildStudioGraph(ctx, plan, lease.buffers, 0.5)
     graph.output.connect(ctx.destination)
     graph.scheduleUntil(Infinity)
     // Native rendering may continue after abort. Keep all reservations until it settles.

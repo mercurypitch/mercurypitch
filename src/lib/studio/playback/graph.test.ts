@@ -40,7 +40,6 @@ describe('shared Studio graph', () => {
       plan,
       new Map([[asset.id, buffer]]),
       0.5,
-      false,
     )
     graph.scheduleUntil(0.6)
     const sources = ctx.ofType<PlaybackSource>('source')
@@ -78,7 +77,7 @@ describe('shared Studio graph', () => {
     const ctx = new PlaybackContext()
     ctx.state = 'suspended'
     ctx.currentTime = 2
-    const graph = buildStudioGraph(ctx.asContext, plan, new Map(), 0.5, false)
+    const graph = buildStudioGraph(ctx.asContext, plan, new Map(), 0.5)
     expect(graph.hasLane('track-1')).toBe(true)
     expect(graph.hasLane('missing')).toBe(false)
     const lane = ctx
@@ -125,15 +124,9 @@ describe('shared Studio graph', () => {
     })
     const ctx = new PlaybackContext()
     ctx.state = 'suspended'
-    const graph = buildStudioGraph(
-      ctx.asContext,
-      plan,
-      new Map(),
-      0.5,
-      false,
-      undefined,
-      { spec: trim(0) },
-    )
+    const graph = buildStudioGraph(ctx.asContext, plan, new Map(), 0.5, {
+      master: { spec: trim(0) },
+    })
     const nodes = ctx.created.length
     const at = (gain: number) =>
       ctx
@@ -165,7 +158,7 @@ describe('shared Studio graph', () => {
     })
     const ctx = new PlaybackContext()
     ctx.state = 'suspended'
-    const graph = buildStudioGraph(ctx.asContext, plan, new Map(), 0.5, false)
+    const graph = buildStudioGraph(ctx.asContext, plan, new Map(), 0.5)
     ctx.currentTime = 1
     expect(() => graph.scheduleUntil(2)).toThrow(/keep up/)
     graph.dispose()
@@ -196,8 +189,7 @@ describe('shared Studio graph', () => {
       plan,
       new Map([[asset.id, buffer]]),
       0.5,
-      false,
-      48000,
+      { fromFrame: 48000, repeat: true },
     )
     graph.scheduleUntil(3.6)
     const sources = ctx.ofType<PlaybackSource>('source')
@@ -210,6 +202,129 @@ describe('shared Studio graph', () => {
       (source) => source.connections[0].node.connections[0].node,
     )
     expect(new Set(inputs).size).toBe(1)
+    graph.dispose()
+  })
+
+  it('builds a lane that is silent now at zero gain, so Mute and Solo bring it in while it plays, and a render leaves it out', () => {
+    const { project, asset, clip } = studioFixture()
+    const dry = {
+      ...project.tracks[0],
+      balanceGainDb: 0,
+      fx: {
+        ...project.tracks[0].fx,
+        baseSpec: { version: 1 as const, effects: [] },
+      },
+    }
+    const song = {
+      ...project,
+      tracks: [dry, { ...dry, id: 'quiet', order: 1, mute: true }],
+      clips: [clip, { ...clip, id: 'quiet-clip', trackId: 'quiet' }],
+    }
+    const plan = compileStudioArrangement(song, [asset], {
+      latencies: {
+        sampleRate: 48000,
+        framesByTrack: { 'track-1': 0, quiet: 480 },
+      },
+    })
+    // The silent lane's chain is the slowest, so the audible lane waits for it.
+    expect(plan.lanes[0].compensationSeconds).toBe(0.01)
+    expect(plan.lanes[1].compensationSeconds).toBe(0)
+    const ctx = new PlaybackContext()
+    ctx.state = 'suspended'
+    const buffer = ctx.createBuffer(1, 1000, 48000) as unknown as AudioBuffer
+    const buffers = new Map([[asset.id, buffer]])
+    const graph = buildStudioGraph(ctx.asContext, plan, buffers, 0.5, {
+      silentLanes: true,
+    })
+    expect(graph.hasLane('quiet')).toBe(true)
+    graph.scheduleUntil(1)
+    expect(ctx.ofType<PlaybackSource>('source')).toHaveLength(2)
+    // Its left and right mix gains are the only lane gains at zero.
+    const silent = ctx
+      .ofType<ReturnType<PlaybackContext['createGain']>>('gain')
+      .filter((gain) => gain.gain.events.length === 0 && gain.gain.value === 0)
+    expect(silent).toHaveLength(2)
+    ctx.currentTime = 0.8
+    graph.setLaneMix({ ...song.tracks[1], mute: false }, true)
+    expect(silent.map((gain) => gain.gain.lastWrite)).toEqual([
+      { kind: 'target', time: 0.8, value: 1, timeConstant: 0.012 },
+      { kind: 'target', time: 0.8, value: 1, timeConstant: 0.012 },
+    ])
+    expect(ctx.ofType<PlaybackSource>('source')).toHaveLength(2)
+    graph.dispose()
+
+    // A render builds only what it hears.
+    const render = new PlaybackContext()
+    render.state = 'suspended'
+    const offline = buildStudioGraph(render.asContext, plan, buffers, 0.5)
+    expect(offline.hasLane('quiet')).toBe(false)
+    offline.scheduleUntil(1)
+    expect(render.ofType<PlaybackSource>('source')).toHaveLength(1)
+    offline.dispose()
+  })
+
+  it('loops a song that started without Repeat once it is turned on, and ends after the pass that has begun once it is turned off', () => {
+    const { project, asset, clip } = studioFixture()
+    const longAsset = {
+      ...asset,
+      normalizedFrameCount: 96000,
+      canonicalPcmByteLength: 384032,
+    }
+    const song = {
+      ...project,
+      clips: [{ ...clip, startFrame: 0, sourceOutFrame: 96000 }],
+      tracks: project.tracks.map((track) => ({
+        ...track,
+        fx: { ...track.fx, baseSpec: { version: 1 as const, effects: [] } },
+      })),
+    }
+    const plan = compileStudioArrangement(song, [longAsset], {
+      latencies: { sampleRate: 48000, framesByTrack: { 'track-1': 0 } },
+    })
+    const ctx = new PlaybackContext()
+    ctx.state = 'suspended'
+    const buffer = ctx.createBuffer(1, 96000, 48000) as unknown as AudioBuffer
+    // A 2 s song played from 1 s: its first pass ends at 1.5 s.
+    const graph = buildStudioGraph(
+      ctx.asContext,
+      plan,
+      new Map([[asset.id, buffer]]),
+      0.5,
+      { fromFrame: 48000 },
+    )
+    const starts = () =>
+      ctx.ofType<PlaybackSource>('source').map((source) => source.starts[0])
+    graph.scheduleUntil(3.6)
+    expect(starts()).toEqual([[0.5, 1, 1]])
+
+    ctx.currentTime = 1.4
+    expect(graph.repeat()).toBe(true)
+    graph.scheduleUntil(3.6)
+    expect(starts()).toEqual([
+      [0.5, 1, 1],
+      [1.5, 0, 2],
+      [3.5, 0, 2],
+    ])
+
+    // Off during the second pass: the third, queued ahead, never plays.
+    ctx.currentTime = 2
+    expect(graph.stopRepeating()).toBe(1)
+    const third = ctx.ofType<PlaybackSource>('source')[2]
+    expect(third.stops).toBe(1)
+    expect(third.connections).toHaveLength(0)
+    graph.scheduleUntil(8)
+    expect(starts()).toHaveLength(3)
+
+    // On again before the second pass ends: the third pass is back.
+    ctx.currentTime = 3
+    expect(graph.repeat()).toBe(true)
+    graph.scheduleUntil(4)
+    expect(starts().at(-1)).toEqual([3.5, 0, 2])
+    expect(graph.stopRepeating()).toBe(1)
+
+    // Once the loop point has gone by, it is too late to loop in place.
+    ctx.currentTime = 3.6
+    expect(graph.repeat()).toBe(false)
     graph.dispose()
   })
 })
