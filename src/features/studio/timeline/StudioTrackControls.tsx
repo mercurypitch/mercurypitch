@@ -1,6 +1,6 @@
 // Studio track controls — the lane's name beside mute and solo, then a fader and a pan knob; a moving control is heard at once and saves as one edit when it stops.
 import type { JSX } from 'solid-js'
-import { createEffect, createMemo, createSignal, Show, untrack } from 'solid-js'
+import { createEffect, createMemo, createSignal, For, Show, untrack, } from 'solid-js'
 import { Volume2, VolumeX } from '@/components/icons'
 import { createStudioKeyBurst } from '@/features/studio/mix/key-burst'
 import { useStudioLiveMix } from '@/features/studio/mix/live-mix'
@@ -37,6 +37,8 @@ const FINE = 0.25
 const PAN_PIXELS = 150
 // The pan ring: radius 13, with 270 of its 360 degrees drawn.
 const KNOB_RING = 2 * Math.PI * 13
+// A strip's fader is labelled at 0 dB and every 12 dB, like its ladder marks.
+const FADER_MARKS = [12, 0, -12, -24, -36, -48, -60]
 const KNOB_TRAVEL = (270 / 360) * KNOB_RING
 
 type MixKind = 'gainDb' | 'pan'
@@ -328,6 +330,17 @@ export function StudioTrackControls(props: StudioTrackControlsProps) {
         onChange={() => rangeChange('gainDb')}
         onBlur={() => bursts.gainDb.flush()}
       />
+      <Show when={props.strip === true}>
+        <span class={styles.faderScale} aria-hidden="true">
+          <For each={FADER_MARKS}>
+            {(db) => (
+              <span style={{ '--at': String(gainPercent(db) / 100) }}>
+                {db > 0 ? `+${db}` : db < 0 ? `\u2212${-db}` : '0'}
+              </span>
+            )}
+          </For>
+        </span>
+      </Show>
       <output class={styles.gainValue}>{gain().toFixed(1)} dB</output>
     </div>
   )
