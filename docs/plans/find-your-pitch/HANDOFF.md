@@ -191,7 +191,6 @@ Each WEB-SPEC's "What the kit and the app still need" lists its parts, checked a
 day it was written; re-check each against main before building. The shared pieces, and which pages
 need them ("needs 5" is item 5 of a lesson's list):
 
-- **The names switch** from Lesson 4 (10 and 12).
 - **The band chart's rungs** (`kit/band-chart.ts`): Lesson 9 brings them, and Lesson 14's song line
   reuses them.
 - **The range chart** (`kit/range-chart.ts`), new with Lesson 7's page: Lesson 11 adds four options
@@ -224,6 +223,12 @@ need them ("needs 5" is item 5 of a lesson's list):
     `afterFeeling(f, { restAfterEffort: true })` in `kit/comfort.ts`, as Lessons 9, 11, 13 and 14
     ask. Lessons 6, 7 and 8 pass it in place of their own overrides. The specs of 9, 11, 13 and 14
     say it is built, and those of 10 and 12 follow Lesson 6, so their pages can pass it too.
+  - **Lesson 10's kit parts.** In #1206: the names switch's modes and their syllables are in the
+    kit (`kit/names-modes.ts`), as Lessons 10 and 12 ask, and Lessons 4 and 6 use them; Move do's
+    ends are `aria-disabled`, so a keyboard user's focus stays on them, with a reach for each side;
+    the spiral rests when nothing on it moves; and the spiral's own notes go through a page's
+    one-sound owner. In #1207, chords on the kit's runs: notes that share an onset start together,
+    a note may carry its own tone and level, and `allOf` joins several runs into one.
 
 A suggested order: 9 (it brings the rungs), then 10, 12, 11, 13 and 14.
 

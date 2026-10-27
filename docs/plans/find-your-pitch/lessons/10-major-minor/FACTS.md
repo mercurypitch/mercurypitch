@@ -23,8 +23,9 @@ hold unless this file says otherwise. Main moved on 21 October to `d59c00ad6`, w
 Content Studio's Lessons page, where the admin console publishes and words each lesson: no line
 cited here at `85e23a1af` changed there (the review's `drift.py`, run from `85e23a1af` to
 `d59c00ad6`), and that page's own lines are cited at `d59c00ad6` (1, 7). Lesson 6's page, PR #1149,
-is not on main: where this package says what that page does, it was read on its branch,
-`feat/lesson-06-page`, at `f6333d527`. Web sources were fetched and read on 19 October 2026, and on
+was read on its branch, `feat/lesson-06-page`, at `f6333d527`, before it merged; where this package
+says what that page does, it is read on main now.
+Web sources were fetched and read on 19 October 2026, and on
 20 October one abstract more and the Royal Conservatory shop's page for its 2025 voice syllabus:
 PubMed abstracts through NCBI's E-utilities, two full texts through Europe PMC, two Open Music
 Theory chapters on LibreTexts, the Royal Conservatory's syllabus as a PDF (text extracted with
@@ -237,7 +238,7 @@ FACTS 6), to two decimals, as `verify10.py` printed them.
 
 ## Illustrations without claims
 
-- The hero's ring is Lessons 1 and 2's spiral seen from above (`kit/spiral.ts`, `setView('top')`),
+- The hero's ring is Lessons 1 and 2's spiral seen from above (`kit/spiral.ts`, `view: 'top'`),
   a drawing of the twelve notes, not a claim about how a chord sounds. The halos and the triangle
   that join do, mi and so are the page's marks, and the moving bead's slide pictures one note
   moving a semitone. Nothing on it tells the two moves apart before the reveal, so the figure
@@ -296,10 +297,12 @@ FACTS 6), to two decimals, as `verify10.py` printed them.
   Kodály; a web search found only a choral teacher's blog that names a Kodály-based textbook using
   it, read as a search summary. The page says only "Some teachers, especially in choirs and with
   children" (29).
-- That a voice flips "at roughly the same note every time": Lesson 11's hook, which the next-lesson
-  card prints as the season gives it (5). This page's own line, the tease, claims only that a
-  voice "may flip" on a slow slide up; whether a flip lands near one note on repeated slides is
-  Lesson 11's FACTS to settle (CURIOSITY-MOMENTS § 2, Lesson 11, `CURIOSITY-MOMENTS.md:212-215`).
+- That a voice flips "at roughly the same note every time": Lesson 11's old hook, which the owner
+  dropped on 22 October 2026, since no source in Lesson 11's FACTS.md supports it (5); the
+  next-lesson card prints the hook the season gives. This page's own line, the tease, claims only
+  that a voice "may flip" on a slow slide up; whether a flip lands near one note on repeated
+  slides is Lesson 11's FACTS to settle (CURIOSITY-MOMENTS § 2, Lesson 11,
+  `CURIOSITY-MOMENTS.md:212-215`).
 - "The major-minor link is learned, not innate" or "it is universal": the authors of
   Athanasopoulos 2021 read their data as "a learned cultural convention"; Bowling and colleagues
   (2012, abstract) argue the opposite way, that the link "is based on universal vocal
