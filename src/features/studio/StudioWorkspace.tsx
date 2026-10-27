@@ -16,6 +16,7 @@ import type { StudioSourceEntry } from './integration/source-catalog'
 import { createStudioLiveMix, StudioLiveMixContext } from './mix/live-mix'
 import { StudioMixDesk } from './mix/StudioMixDesk'
 import { StudioPhoneMix } from './mix/StudioPhoneMix'
+import { createStudioPanels } from './panels/studio-panels'
 import { StudioClipDetails } from './panels/StudioClipDetails'
 import { StudioPanel } from './panels/StudioPanel'
 import { StudioSongPanel } from './panels/StudioSongPanel'
@@ -31,15 +32,6 @@ import { StudioTimeline } from './timeline/StudioTimeline'
 import { studioContentEnd } from './timeline/timeline-geometry'
 import type { StudioController } from './useStudioController'
 
-type Panel =
-  | 'sources'
-  | 'song'
-  | 'clip'
-  | 'track'
-  | 'mix'
-  | 'sound'
-  | 'export'
-  | null
 interface StudioWorkspaceProps {
   studio: StudioController
   /** The drawer a newly opened song starts with. */
@@ -60,7 +52,21 @@ export function StudioWorkspace(props: StudioWorkspaceProps) {
     '(max-width: 1100px), (pointer: coarse) and (max-height: 500px)',
   )
   const tablet = () => coarse() && !phone()
-  const [panel, setPanel] = createSignal<Panel>(null)
+  const {
+    panel,
+    open: openPanel,
+    close: closePanel,
+    toggle: togglePanel,
+    afterAdd,
+  } = createStudioPanels({
+    beforeChange: (next) => {
+      if (next !== 'sound') comparison.stop()
+      if (next !== 'sources') transport.stopPreview()
+    },
+    onOpen: (next) => {
+      if (next === 'sources') void props.studio.refreshSources()
+    },
+  })
   // Mix is a drawer under the timeline, except on a phone, where it is a sheet.
   const deskOpen = () => panel() === 'mix' && !phone()
   const [selectedClipId, setSelectedClipId] = createSignal<string | null>(null)
@@ -80,7 +86,6 @@ export function StudioWorkspace(props: StudioWorkspaceProps) {
   onCleanup(() => {
     disposed = true
   })
-  let opener: HTMLElement | null = null
   let audioInput!: HTMLInputElement
   let importFrame = 0
   let importTrack: string | null = null
@@ -243,31 +248,12 @@ export function StudioWorkspace(props: StudioWorkspaceProps) {
           ? await props.studio.addTake(source, frame, lane)
           : false
       if (added) {
-        closePanel()
+        afterAdd()
         setAnnouncement('Audio added.')
       }
     } finally {
       dropping = false
     }
-  }
-
-  function openPanel(next: Panel): void {
-    if (next !== 'sound') comparison.stop()
-    if (next !== 'sources') transport.stopPreview()
-    const active = document.activeElement
-    if (active instanceof HTMLElement && !active.closest('[data-studio-panel]'))
-      opener = active
-    setPanel(next)
-    if (next === 'sources') void props.studio.refreshSources()
-  }
-
-  function closePanel(): void {
-    comparison.stop()
-    transport.stopPreview()
-    setPanel(null)
-    queueMicrotask(() => {
-      if (opener?.isConnected === true) opener.focus()
-    })
   }
 
   function togglePlayback(): void {
@@ -306,7 +292,7 @@ export function StudioWorkspace(props: StudioWorkspaceProps) {
     await releaseFinishingAudio()
     if (props.studio.project()?.id !== projectId) return false
     const added = await props.studio.addTakes(entries, frame, selectedTrackId())
-    if (added) closePanel()
+    if (added) afterAdd()
     return added
   }
   onMount(() => {
@@ -449,7 +435,7 @@ export function StudioWorkspace(props: StudioWorkspaceProps) {
               currentProject()?.id === projectId &&
               (await addFile(file, frame, lane))
             )
-              closePanel()
+              afterAdd()
           })
         }}
       />
@@ -471,9 +457,7 @@ export function StudioWorkspace(props: StudioWorkspaceProps) {
               aria-label="Song options"
               data-tour="studio.song-options"
               aria-expanded={panel() === 'song'}
-              onClick={() =>
-                panel() === 'song' ? closePanel() : openPanel('song')
-              }
+              onClick={() => togglePanel('song')}
             >
               <span>{project().title}</span>
               <ChevronDown size={14} />
@@ -530,7 +514,7 @@ export function StudioWorkspace(props: StudioWorkspaceProps) {
               aria-expanded={panel() === 'sources'}
               data-tour="studio.add-takes"
               title="Add takes"
-              onClick={() => openPanel('sources')}
+              onClick={() => togglePanel('sources')}
             >
               <Plus size={16} />
               <span class={styles.label}>Add takes</span>
@@ -541,9 +525,7 @@ export function StudioWorkspace(props: StudioWorkspaceProps) {
               aria-expanded={panel() === 'mix'}
               data-tour="studio.mix"
               title="Mix"
-              onClick={() =>
-                panel() === 'mix' ? closePanel() : openPanel('mix')
-              }
+              onClick={() => togglePanel('mix')}
             >
               <MixingDesk size={16} />
               <span class={styles.label}>Mix</span>
@@ -554,7 +536,7 @@ export function StudioWorkspace(props: StudioWorkspaceProps) {
               data-tour="studio.sound"
               aria-expanded={panel() === 'sound'}
               title="Sound"
-              onClick={() => openPanel('sound')}
+              onClick={() => togglePanel('sound')}
             >
               <SlidersHorizontal />
               <span class={styles.label}>Sound</span>
@@ -565,7 +547,7 @@ export function StudioWorkspace(props: StudioWorkspaceProps) {
               data-tour="studio.export"
               title="Export"
               aria-expanded={panel() === 'export'}
-              onClick={() => openPanel('export')}
+              onClick={() => togglePanel('export')}
             >
               <Download />
               <span class={styles.exportLabel}>Export</span>
