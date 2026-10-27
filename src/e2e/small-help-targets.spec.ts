@@ -8,7 +8,7 @@
 // and its ring its own. The "i" and the "?" get an invisible box centred on
 // the ring; the dismiss grows into the toast's padding, because the phone's
 // toast stack scrolls and a box past the toast's edge would be cut off by
-// it. The toast's action ("Start tour" on a tour offer), 23.7 px tall,
+// it. The toast's action ("Enable mic" on the mic offer), 23.7 px tall,
 // takes the same presses from a box centred on it, inside the toast and
 // beside the dismiss's. None of them may take a neighbour's press.
 // Measured by hit-testing (helpers/hit-area.ts).
@@ -60,6 +60,23 @@ const toastsAtRest = (region: Locator): Promise<unknown> =>
       element.getAnimations({ subtree: true }).map((a) => a.finished),
     ),
   )
+
+// A toast with an action beside its dismiss: practice that starts with the
+// mic off is offered the mic, once (usePlaybackMicNudge). The reload makes
+// it a returning visit, with First Light spent.
+async function micOffer(page: Page): Promise<Locator> {
+  await open(page, '/#/singing')
+  await page.reload()
+  await page
+    .getByRole('main')
+    .getByRole('button', { name: 'Play', exact: true })
+    .click()
+  const region = page.getByRole('region', { name: 'Notifications' })
+  const action = region.getByRole('button', { name: 'Enable mic' })
+  await expect(action).toBeVisible()
+  await toastsAtRest(region)
+  return action
+}
 
 for (const vp of VIEWPORTS) {
   test.describe(`on a ${vp.name}`, () => {
@@ -116,20 +133,12 @@ for (const vp of VIEWPORTS) {
     test(`a toast's dismiss takes a ${vp.least} px press inside the toast`, async ({
       page,
     }) => {
-      // Arrange: a returning visitor's first visit to a tab with a tour is
-      // offered it in a toast, with an action button beside the dismiss.
-      // The reload is that visit: on the first load First Light had the
-      // screen, and nothing is offered under it.
-      await open(page, '/#/exercises')
-      await page.reload()
-      const region = page.getByRole('region', { name: 'Notifications' })
-      const dismiss = region
+      // Arrange: the mic offer, with its action beside the dismiss.
+      const action = await micOffer(page)
+      const dismiss = action
+        .locator('xpath=ancestor::div[1]')
         .getByRole('button', { name: 'Dismiss notification' })
-        .first()
       await expect(dismiss).toBeVisible()
-      const action = region.getByRole('button', { name: 'Start tour' })
-      await expect(action).toBeVisible()
-      await toastsAtRest(region)
 
       // Act
       const area = await hitArea(dismiss)
@@ -162,7 +171,8 @@ for (const vp of VIEWPORTS) {
 }
 
 // The toast's action, beside its dismiss, on the phones the toast is
-// narrowest on as well: at 320 px its message wraps onto two lines.
+// narrowest on as well: at 320 px its message wraps onto seven lines, two
+// more than at 390 px.
 const TOAST_VIEWPORTS = [
   ...VIEWPORTS,
   {
@@ -183,13 +193,8 @@ for (const vp of TOAST_VIEWPORTS) {
     test(`a toast's action takes a ${vp.least} px press beside the dismiss's`, async ({
       page,
     }) => {
-      // Arrange: the tour offer, as above, on the visit after First Light.
-      await open(page, '/#/exercises')
-      await page.reload()
-      const region = page.getByRole('region', { name: 'Notifications' })
-      const action = region.getByRole('button', { name: 'Start tour' })
-      await expect(action).toBeVisible()
-      await toastsAtRest(region)
+      // Arrange: the mic offer, as above.
+      const action = await micOffer(page)
       const toast = action.locator('xpath=ancestor::div[1]')
       const dismiss = toast.getByRole('button', {
         name: 'Dismiss notification',
