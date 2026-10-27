@@ -5,6 +5,57 @@ app, so every entry is one to three short sentences a stranger can follow — no
 PR numbers, no file names, no rationale. The full engineering history, at
 whatever length it needs, is in [`dev-changelog.md`](./dev-changelog.md).
 
+## [0.9.23] - 2026-10-27
+
+A weekly Check-up shows how your voice has moved. Arpeggio Jumper grades the
+notes you sing, and the scales chapter and Drone Intonation say what is true.
+
+### Added
+
+- **A weekly Check-up.** A week after your last voice check, Home offers the
+  same 90 seconds again. The results set where you started beside where you
+  are now.
+- **Only real changes are named.** Your range, accuracy and steadiness each
+  say what moved, or "About the same" when a change is too small to count.
+- **Share then and now.** The card shows your two dates, what changed and
+  Merc, and never your name.
+- **No account needed.** Your Check-ups stay in this browser. A free account
+  keeps every one, on every device.
+
+### Changed
+
+- **Arpeggio Jumper grades the notes you sing.** Your grade is now the
+  average of your note scores, so a clean run can reach 100. Sing the whole
+  arpeggio an octave higher or lower and it is scored there, and the result
+  says so.
+- **A run with nothing heard, or stopped before the end, is not scored.**
+  Arpeggio Jumper says why, and keeps the run out of your scores and level.
+- **Your earlier Arpeggio Jumper runs are kept apart.** They no longer count
+  toward its level or your averages, and on Progress their Skill Thread reads
+  "(earlier scoring)".
+
+### Fixed
+
+- **The scales chapter names E flat major as C minor's relative major.** It
+  said A major. It also calls minor's sadder sound a tendency, not a rule.
+- **Drone Intonation says what it tunes to.** Every target is an
+  equal-tempered note, in the tuning the rest of the app uses. It no longer
+  promises "just intonation".
+- **Onboarding's account offer names the weekly Check-up.** It said your
+  range was saved, even after a range read that was not clean.
+- **Show me around tours Practice too.** When your plan starts on Practice,
+  Show me around now plays its tour, and the Map offers Take the tour there.
+- **Easier to press on a phone.** The header, Karaoke Night's top bar,
+  Exercises' filters and Start buttons, Settings' tabs, Jam's join form, the
+  small "i" and "?" and a toast's buttons each take a full finger's press.
+  They look the same.
+- **Smaller things.** On a phone the Map's other rooms wrap into even rows,
+  and Piano Night's closed settings sheet no longer sits over the nav.
+  Karaoke Night, Piano Night and the Voice Mirror draw their buttons in the
+  app's font, and Drum Night's count-in, Guitar's song name and Piano
+  Night's song line are no longer cut short. Drone Intonation's setup
+  screen says how many rounds the run will be.
+
 ## [0.9.22] - 2026-10-26
 
 Find Your Pitch opens with its first two free lessons, each with its film,
