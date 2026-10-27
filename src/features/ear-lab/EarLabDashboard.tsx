@@ -51,8 +51,11 @@ export type EarLabView =
 
 interface EarLabDashboardProps {
   onNavigate: (view: EarLabView) => void
-  /** The room's Today control lives on the shell; the bench hands it
-   *  the scroll that brings today's regulation into view. */
+  /**
+   * Merc's Ear rooms, over the bench: the page passes its "With Merc" row
+   * on a build that has them, and nothing on any other (EarLabPage.tsx).
+   */
+  withMerc?: JSX.Element
 }
 
 const FACULTY_ORDER: FacultyId[] = [
@@ -176,6 +179,8 @@ export function EarLabDashboard(props: EarLabDashboardProps): JSX.Element {
         </h1>
         <p class={styles.lede}>{line().lede}</p>
       </div>
+
+      {props.withMerc}
 
       <div class={styles.grid}>
         <div class={styles.regulatorCell} data-tour="ear.column">

@@ -35,6 +35,7 @@ export const PREMIUM_ROOM_SCREENS: Readonly<
   'lip-roll': { fullBleed: true },
   'ng-slides': { fullBleed: true },
   'warm-up': { fullBleed: true },
+  'home-note': { fullBleed: true },
 }
 
 /** Is this screen a premium room (a phone holds it in portrait)? */

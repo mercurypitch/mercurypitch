@@ -21,6 +21,8 @@ const art = vi.hoisted(() => ({
   lip: 0,
   long: 0,
   warm: 0,
+  /** Merc's voice set, which Home note sings with. */
+  voice: 0,
 }))
 const warmUp = vi.hoisted(() => ({ next: 'lip-roll-bay' as string | null }))
 vi.mock('@/features/warm-up/path-art', () => ({
@@ -51,6 +53,12 @@ vi.mock('@/features/ng-slides/bridge-art', () => ({
     art.ng += 1
   },
 }))
+vi.mock('@/features/echo/merc-sampler', () => ({
+  preloadMercVoice: () => {
+    art.voice += 1
+    return Promise.resolve()
+  },
+}))
 vi.mock('@/lib/native-build', async (importOriginal) => ({
   ...(await importOriginal<typeof NativeBuild>()),
   get PREMIUM_EXERCISES() {
@@ -65,6 +73,7 @@ beforeEach(() => {
   art.lip = 0
   art.long = 0
   art.warm = 0
+  art.voice = 0
   warmUp.next = 'lip-roll-bay'
   setActiveTab(TAB_SINGING)
   resetRunShell()
@@ -144,6 +153,22 @@ describe('the shell in a build with the premium exercises', () => {
     })
     expect(art.ng).toBe(0)
     expect(art.preloads).toBe(0)
+  })
+
+  it("pushes Home note for its id, and starts Merc's voice loading on the same tap", async () => {
+    build.premium = true
+    const api = installPremiumExercises()
+
+    api.openExercise?.('home-note-lighthouse')
+
+    expect(pushed()).toBe('home-note')
+    await vi.waitFor(() => {
+      expect(art.voice).toBe(1)
+    })
+    // Its harbour is drawn: no room's plates load for it.
+    expect([art.preloads, art.ng, art.lip, art.long, art.warm]).toEqual([
+      0, 0, 0, 0, 0,
+    ])
   })
 
   it("starts no other room's art", async () => {

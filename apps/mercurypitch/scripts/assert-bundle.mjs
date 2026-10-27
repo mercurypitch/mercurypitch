@@ -355,6 +355,18 @@ const KARAOKE_STAGE_2 = [
   ],
   ['mp_warm_up_today', "the Warm-up's run of the day"],
   ['mp_warm_up_opened', "the Warm-up path's first open of the day"],
+  // Home note, the first Ear room: its room, its card in the picker, its
+  // level lines and its bests, built and folded exactly as the rooms are.
+  // Its harbour is drawn, so it has no plates. The Ear Lab's way in to it
+  // (EarMercRow.tsx) is a lazy island on the same switch (EarLabPage.tsx).
+  ['home-note-room', 'the premium Home note exercise'],
+  [
+    'The band plays an intro. Sing the note that feels like home',
+    "the exercise picker's Home note card",
+  ],
+  ['Two chords only, and less room around home', "Home note's level control"],
+  ['mp_home_note_bests', "Home note's bests"],
+  ['ear-merc-row', "the Ear Lab's way in to the Ear rooms"],
   // The days warmed up, the week's dots, synced with the account: its key
   // and its pull merge (settings-progress.ts) fold with the rest.
   ['pitchperfect_warm_up_days', "the Warm-up's days warmed up"],

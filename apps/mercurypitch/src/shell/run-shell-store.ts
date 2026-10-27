@@ -102,6 +102,7 @@ export type PushedScreen =
   | 'lip-roll'
   | 'ng-slides'
   | 'warm-up'
+  | 'home-note'
   | 'developer'
 
 /** How long an untouched tab column stays open (brief §6). */

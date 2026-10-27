@@ -12,7 +12,8 @@
 // so the room shows it at once instead of a frame later; Long note's
 // lantern plates the same way; Ng slides' river and its glass start
 // loading on the same tap. The Warm-up's path opens its stops' rooms the
-// same way, by id (WarmUpScreen.tsx).
+// same way, by id (WarmUpScreen.tsx). Home note has no plates (its harbour
+// is drawn); its tap starts Merc's voice set loading, which it sings with.
 //
 // A build without the premium exercises (the store build, until the V1
 // flip) gets nothing. PREMIUM_EXERCISES is a compile-time constant there, so
@@ -22,7 +23,7 @@
 // draws no way in (assert-bundle.mjs STAGE 2 holds the output to it).
 
 import type { PremiumExerciseId } from '@/lib/domain/exercise-contracts'
-import { EXERCISE_ECHO_STARS, EXERCISE_LIP_ROLL_BAY, EXERCISE_LONG_NOTE_LANTERN, EXERCISE_NG_SLIDES_BRIDGE, EXERCISE_WARM_UP_PATH, } from '@/lib/domain/exercise-contracts'
+import { EXERCISE_ECHO_STARS, EXERCISE_HOME_NOTE_LIGHTHOUSE, EXERCISE_LIP_ROLL_BAY, EXERCISE_LONG_NOTE_LANTERN, EXERCISE_NG_SLIDES_BRIDGE, EXERCISE_WARM_UP_PATH, } from '@/lib/domain/exercise-contracts'
 import { PREMIUM_EXERCISES } from '@/lib/native-build'
 import type { NativeShellApi } from '@/stores/native-shell-store'
 import type { PushedScreen } from './run-shell-store'
@@ -38,6 +39,7 @@ const SCREENS: Readonly<Record<PremiumExerciseId, PushedScreen>> = {
   [EXERCISE_LIP_ROLL_BAY]: 'lip-roll',
   [EXERCISE_NG_SLIDES_BRIDGE]: 'ng-slides',
   [EXERCISE_WARM_UP_PATH]: 'warm-up',
+  [EXERCISE_HOME_NOTE_LIGHTHOUSE]: 'home-note',
 }
 
 /**
@@ -74,6 +76,11 @@ export function preloadExercise(id: PremiumExerciseId): void {
       void import('@/features/warm-up/warm-up-store').then((store) => {
         const next = store.nextWarmUpRoom()
         if (next !== null) preloadExercise(next)
+      })
+      return
+    case EXERCISE_HOME_NOTE_LIGHTHOUSE:
+      void import('@/features/echo/merc-sampler').then((voice) => {
+        void voice.preloadMercVoice()
       })
   }
 }

@@ -6,10 +6,15 @@
 // 'calibration' view is the Hairline stage opened in its sealed
 // protocol (the bench's amber control). The Ear Report is a stage
 // of its own inside the same room.
+//
+// On a phone build with the premium exercises, Merc's Ear rooms open from
+// a "With Merc" row over the bench (features/premium-exercises/
+// EarMercRow.tsx), loaded lazily behind PREMIUM_EXERCISES so the web and
+// the store build carry none of it.
 // ============================================================
 
-import type { JSX } from 'solid-js'
-import { createEffect, createSignal, onCleanup, Show } from 'solid-js'
+import type { Component, JSX } from 'solid-js'
+import { createEffect, createSignal, lazy, onCleanup, Show } from 'solid-js'
 import { BasslineDrill } from '@/features/ear-lab/BasslineDrill'
 import { BeatHuntDrill } from '@/features/ear-lab/BeatHuntDrill'
 import { CadenceDrill } from '@/features/ear-lab/CadenceDrill'
@@ -36,11 +41,30 @@ import { SpanDrill } from '@/features/ear-lab/SpanDrill'
 import { StackDrill } from '@/features/ear-lab/StackDrill'
 import { SubdivideDrill } from '@/features/ear-lab/SubdivideDrill'
 import { releaseWildStems } from '@/features/ear-lab/wild-store'
+import type { PremiumExerciseId } from '@/lib/domain/exercise-contracts'
+import { PREMIUM_EXERCISES } from '@/lib/native-build'
 import { disarmSprintSegment } from '@/stores/ear-lab-store'
+import { nativeShellApi } from '@/stores/native-shell-store'
 import { pendingEarDrill, setPendingEarDrill } from '@/stores/ui-store'
+
+interface EarMercRowProps {
+  onOpen: (id: PremiumExerciseId) => void
+}
+
+const EarMercRow: Component<EarMercRowProps> = PREMIUM_EXERCISES
+  ? lazy(async () =>
+      import('@/features/premium-exercises/ear-entry').then((module) => ({
+        default: module.EarMercRow,
+      })),
+    )
+  : () => null
 
 export function EarLabPage(): JSX.Element {
   const [view, setView] = createSignal<EarLabView>('dashboard')
+  // A build without the premium exercises registers no opener, and the
+  // bench draws no way in.
+  const mercRooms = (): boolean =>
+    PREMIUM_EXERCISES && nativeShellApi()?.openExercise !== undefined
   // Leaving the lab lets the decoded stems go (tens of megabytes a
   // song) along with the desk's rendered source. The books they were
   // read into stay, so coming back does not read the songs again.
@@ -71,7 +95,16 @@ export function EarLabPage(): JSX.Element {
     <div id="ear-lab-page">
       <EarRoomShell onNavigate={setView} bridge={view() === 'dashboard'}>
         <Show when={view() === 'dashboard'}>
-          <EarLabDashboard onNavigate={setView} />
+          <EarLabDashboard
+            onNavigate={setView}
+            withMerc={
+              mercRooms() ? (
+                <EarMercRow
+                  onOpen={(id) => nativeShellApi()?.openExercise?.(id)}
+                />
+              ) : undefined
+            }
+          />
         </Show>
         <Show when={view() === 'hairline'}>
           <HairlineDrill onBack={back} />

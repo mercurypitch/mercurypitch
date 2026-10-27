@@ -13,25 +13,27 @@
 //
 // Each entry names its group, and the picker draws the groups under
 // headings in the Karaoke library's style: Pitch (Long note, Echo), then
-// Warm-ups (the Warm-up heading its group, then Lip roll and Ng slides). Catalogue order is the order the
-// picker lists them, so a group's entries sit together here, in its
-// heading's order (catalogue.test.ts holds that).
+// Warm-ups (the Warm-up heading its group, then Lip roll and Ng slides),
+// then Ear (Home note, the first Ear room: docs/plans/ear-rooms.md).
+// Catalogue order is the order the picker lists them, so a group's entries
+// sit together here, in its heading's order (catalogue.test.ts holds that).
 // There is no card for an exercise that is not built: a card that does
 // nothing is a dead tap.
 
 import type { Component } from 'solid-js'
 import { longNoteEntry } from '@/features/long-note/long-note-entry'
 import type { PremiumExerciseId } from '@/lib/domain/exercise-contracts'
-import { EXERCISE_ECHO_STARS, EXERCISE_LIP_ROLL_BAY, EXERCISE_LONG_NOTE_LANTERN, EXERCISE_NG_SLIDES_BRIDGE, EXERCISE_WARM_UP_PATH, } from '@/lib/domain/exercise-contracts'
+import { EXERCISE_ECHO_STARS, EXERCISE_HOME_NOTE_LIGHTHOUSE, EXERCISE_LIP_ROLL_BAY, EXERCISE_LONG_NOTE_LANTERN, EXERCISE_NG_SLIDES_BRIDGE, EXERCISE_WARM_UP_PATH, } from '@/lib/domain/exercise-contracts'
 import type { WeekDot } from '@/lib/warm-up-days'
 import { echoEntry } from './echo-entry'
-import { BridgeGlyph, EchoGlyph, LanternGlyph, WarmUpGlyph, WaveGlyph, } from './glyphs'
+import { BridgeGlyph, EchoGlyph, LanternGlyph, LighthouseGlyph, WarmUpGlyph, WaveGlyph, } from './glyphs'
+import { homeEntry } from './home-entry'
 import { lipEntry } from './lip-entry'
 import { ngEntry } from './ng-entry'
 import { warmEntry } from './warm-entry'
 
 /** The headings the picker sorts its cards under. */
-export type ExerciseGroupId = 'pitch' | 'warm-ups'
+export type ExerciseGroupId = 'pitch' | 'warm-ups' | 'ear'
 
 export interface ExerciseGroup {
   readonly id: ExerciseGroupId
@@ -43,6 +45,7 @@ export interface ExerciseGroup {
 export const EXERCISE_GROUPS: readonly ExerciseGroup[] = [
   { id: 'pitch', title: 'Pitch' },
   { id: 'warm-ups', title: 'Warm-ups' },
+  { id: 'ear', title: 'Ear' },
 ]
 
 export interface PremiumExercise {
@@ -117,6 +120,15 @@ export const EXERCISE_CATALOGUE: readonly PremiumExercise[] = [
     Glyph: BridgeGlyph,
     bestOnNote: false,
     ...ngEntry(),
+  },
+  {
+    id: EXERCISE_HOME_NOTE_LIGHTHOUSE,
+    name: 'Home note',
+    group: 'ear',
+    line: 'The band plays an intro. Sing the note that feels like home.',
+    Glyph: LighthouseGlyph,
+    bestOnNote: false,
+    ...homeEntry(),
   },
 ]
 
