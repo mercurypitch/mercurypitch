@@ -218,65 +218,14 @@ export const FIRST_PAINT_BUDGETS_KB = {
   // that boundary holds.
   'learn/09.html': 188,
   // Lesson 10, "Major and minor", a draft too, built in every mode as
-  // Lesson 3 is. Measured 72,938 bytes in build:e2e for its page shell: the
-  // kit's deck, switches, masthead, next-lesson card, explorer and Merc and
-  // Tavi, with none of its toys wired yet. The ceiling is the smallest
-  // whole KB above that, so each toy that joins raises it, with its measure,
-  // until the page is whole and takes a quarter over. Raised to 92 for the
-  // chord beads on the stage: 93,499 bytes with them, 20,561 more, of which
-  // 15,919 are the toy, its painter and the page's chords, layout, lines and
-  // sounds in Lesson 10's own chunk, and 4,642 the kit's runs, tune-line
-  // glow and light, scale degrees, names modes and sound owner it brings.
-  // Raised to 120 for the cold open on the hero's spiral: 122,366 bytes
-  // with it, 28,867 more. 19,250 are the kit's spiral, its keys, the names
-  // store and the still sky in chunks of their own (kit/spiral.ts,
-  // spiral-draw.ts, spiral-keys.ts, names.ts, still-sky.ts); about 3,300
-  // the kit's predict and hero sky, which join the chunk every lesson page
-  // shares (kit/predict.ts, hero-sky.ts); and about 6,300 the cold open
-  // and its marks in Lesson 10's own chunk.
-  // Raised to 140 for the recall and the quick check: 142,509 bytes with
-  // them, 20,143 more. 13,342 are Lesson 6's questions and its quiz plays,
-  // with the Lesson 4 and Lesson 2 questions its recall asks, in three
-  // chunks (lesson-06/quiz-questions.ts, quiz-play.ts; lesson-04 and
-  // lesson-02/quiz-questions.ts); 4,555 the kit's quiz, which joins the
-  // chunk every lesson page shares (kit/quiz.ts); and 3,006 the recall,
-  // the quiz play and the page's questions in Lesson 10's own chunk, less
-  // 760 for the major scale's degrees, now in Lesson 4's questions' chunk.
-  // Raised to 142 for the four words: 145,187 bytes with them, 2,678 more.
-  // 2,002 are the words and their sounds in Lesson 10's own chunk
-  // (lesson-10/words.ts, and wordSounds in sounds.ts), and 676 the kit's
-  // words strip, a chunk Lessons 1, 7, 8 and 9 already load
-  // (kit/words-strip.ts).
-  // Raised to 147 for Steps 1 and 2 and the game on thirds: 150,332 bytes
-  // with them, 5,145 more. 2,677 are the kit's ear game, a chunk Lessons 6
-  // and 8 already load (kit/ear-game.ts), and 2,468 the steps' controls and
-  // the games in Lesson 10's own chunk (lesson-10/steps.ts, games.ts).
-  // Raised to 149 for Steps 3 and 4, the game on chords and the pattern:
-  // 152,508 bytes with them, 2,176 more, all in Lesson 10's own chunk
-  // (lesson-10/steps.ts, games.ts, pattern.ts).
-  // Raised to 151 for Step 5, its predict and the names switch: 153,840
-  // bytes with them, 1,332 more, all in Lesson 10's own chunk
-  // (lesson-10/steps.ts, and the names store in main.ts).
-  // Raised to 167 for Sing it's comfort check, voice choice, Merc's notes
-  // and Move do: 170,340 bytes with them, 16,500 more. 10,696 are the
-  // kit's chunks Lessons 1 to 9 already load: the slide guide (4,693), the
-  // ring (3,065), the comfort check and the voice choice (2,342), Merc and
-  // Tavi's images (150), and Move do, 446 net, since its chunk now also
-  // holds the major scale's degrees and Lesson 4's questions, which were a
-  // chunk of their own here (kit/slide-guide.ts, sing.ts, comfort.ts,
-  // voice-choice.ts, move-do.ts). 5,811 are Sing it in Lesson 10's own
-  // chunk (lesson-10/sing.ts), less 7 in Lesson 6's questions' chunk.
-  // Lessons 4, 6, 8 and 9 load the same merged chunk and are 144 to 190
-  // bytes lighter for it.
-  // Raised to 168 for Sing it's guide and count-in, "How did that feel?",
-  // stopping on leaving and the Wrap's card: 171,528 bytes with them, 1,188
-  // more, all in Lesson 10's own chunk (lesson-10/sing.ts); the feelings and
-  // the card are the comfort check's chunk, which the page already loads.
-  // 171,678 bytes once the kit kept the guide's breath word on the canvas.
-  // Raised to 169 for the Wrap's free play: 172,548 bytes with it, 870 more,
-  // all in Lesson 10's own chunk (lesson-10/wrap.ts, on the steps' controls
-  // and the chord beads the page already loads).
-  'learn/10.html': 169,
+  // Lesson 3 is: its own module on the kit, with the chord beads, the
+  // hero's spiral seen from above, the ear game, the slide guide and free
+  // play. Measured 169 in build:e2e (172,612 bytes); the budget is a
+  // quarter over that. Sing it opens no microphone, so the only dynamic
+  // imports are the four Lesson 1 makes too: Merc's renderer, the welcome
+  // tour, the quizzes' answers sent anonymously and the way back to the
+  // plan (kit/tour.ts, telemetry.ts and plan-back.ts).
+  'learn/10.html': 211,
 
   // The main app, and the crawlable doors that are the main app. Measured
   // 4669. It is eager by design today, so this is a ceiling on growth rather
@@ -362,19 +311,11 @@ export const FIRST_PAINT_CSS_BUDGETS_KB = {
   // the kit's sheets (with the voice lessons' and the shared parts), its
   // own, and the shared Inter and Outfit @font-face rules; a quarter over.
   'learn/09.html': 108,
-  // Lesson 10 (a draft, as above). Measured 89,118 bytes in build:e2e for
-  // its page shell: the kit's sheets (with the slide guide's, the voice
-  // lessons' and the ear game's, inlined into its own by @import, and the
-  // shared parts), its own, and the shared Inter and Outfit @font-face
-  // rules. The smallest whole KB above that, as for its script. 89,436
-  // bytes with the game on thirds, which brings the kit's ear game, so the
-  // page links the ear game's sheet in that chunk rather than inlining it.
-  // 89,870 with Sing it, whose comfort check and voice choice bring the
-  // voice lessons' sheet, which the page now links in their chunk too.
-  // Raised to 89 for the Wrap: 90,214 bytes, 344 more, in the page's own
-  // sheet (lesson-10.css): the next card's tease still and free play's card
-  // laid out as the steps' stage is.
-  'learn/10.html': 89,
+  // Lesson 10 (a draft, as above). Measured 89 in build:e2e (90,214
+  // bytes): the kit's sheets (with the slide guide's, the voice lessons',
+  // the ear game's and the shared parts), its own, and the shared Inter and
+  // Outfit @font-face rules; a quarter over.
+  'learn/10.html': 111,
 
   // The main app and the crawlable doors that are the main app. Measured
   // 1009, of which 871 is the single `index` sheet that src/index.tsx
