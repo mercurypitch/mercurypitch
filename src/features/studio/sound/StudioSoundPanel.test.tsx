@@ -42,7 +42,8 @@ function mount() {
 }
 
 describe('Studio sound controls', () => {
-  it('commits a held macro key only on release and resets the selected flavour without accumulated EQ', async () => {
+  it('saves a run of macro keys once the keys go quiet, and resets the selected flavour without accumulated EQ', async () => {
+    vi.useFakeTimers()
     const ui = mount()
     const slider = screen.getByRole('slider', { name: 'Tone' })
     await fireEvent.keyDown(slider, { key: 'ArrowRight' })
@@ -51,10 +52,19 @@ describe('Studio sound controls', () => {
     await fireEvent.keyDown(slider, { key: 'ArrowRight', repeat: true })
     await fireEvent.input(slider, { target: { value: '2' } })
     await fireEvent.change(slider)
-    expect(ui.command).not.toHaveBeenCalled()
     await fireEvent.keyUp(slider, { key: 'ArrowRight' })
+    // A second press soon after belongs to the same run.
+    vi.advanceTimersByTime(300)
+    await fireEvent.keyDown(slider, { key: 'ArrowRight' })
+    await fireEvent.input(slider, { target: { value: '3' } })
+    await fireEvent.change(slider)
+    await fireEvent.keyUp(slider, { key: 'ArrowRight' })
+    vi.advanceTimersByTime(499)
+    expect(ui.command).not.toHaveBeenCalled()
+    vi.advanceTimersByTime(1)
+    vi.useRealTimers()
     expect(ui.command).toHaveBeenCalledTimes(1)
-    expect(ui.project().mix.macros.tone).toBe(2)
+    expect(ui.project().mix.macros.tone).toBe(3)
     await fireEvent.click(screen.getByRole('button', { name: /^Lo-fi$/ }))
     expect(ui.project().master.masterEq.highCutHz).toBe(6500)
     await fireEvent.click(screen.getByRole('button', { name: 'Reset sound' }))

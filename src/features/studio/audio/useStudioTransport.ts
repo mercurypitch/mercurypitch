@@ -8,8 +8,9 @@ import { DEFAULT_STUDIO_IMPORT_LIMITS } from '@/lib/studio/audio/import-limits'
 import type { StudioMasterGainToken } from '@/lib/studio/export/sound-graph'
 import { reserveStudioMemory } from '@/lib/studio/memory-budget'
 import type { StudioAsset, StudioProject } from '@/lib/studio/model/types'
-import type { StudioTransportState } from '@/lib/studio/playback/transport'
+import type { StudioLaneDraft, StudioTransportState, } from '@/lib/studio/playback/transport'
 import { createStudioTransport } from '@/lib/studio/playback/transport'
+import type { MacroKey } from '@/lib/studio-fx/mix-macros'
 import { initAudioEngine } from '@/stores/app-store'
 import { nativeDeviceApi } from '@/stores/native-shell-store'
 import { createStudioWebLease } from './web-audio-lease'
@@ -316,6 +317,12 @@ export function useStudioTransport(options: UseStudioTransportOptions) {
     meterReady: () => state().meter !== null,
     masterReady: () => state().masterReady,
     resetPeakHold: () => runtime.resetPeakHold(),
+    /** Play a lane's moving fader or pan without saving it; null ends it. */
+    previewLane: (trackId: string, draft: StudioLaneDraft | null) =>
+      runtime.previewLane(trackId, draft),
+    /** Play a moving macro dial or slider without saving it; null ends it. */
+    previewMacro: (name: MacroKey, value: number | null) =>
+      runtime.previewMacro(name, value),
     async setMasterGain(value: StudioMasterGainToken): Promise<void> {
       const project = options.project()
       const assets = options.assets()

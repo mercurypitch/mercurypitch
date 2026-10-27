@@ -9,7 +9,10 @@ import { createStudioProject, createStudioTrack, } from '@/lib/studio/model/defa
 import type { StudioProject } from '@/lib/studio/model/types'
 import { StudioMixDesk } from './StudioMixDesk'
 
-afterEach(cleanup)
+afterEach(() => {
+  cleanup()
+  vi.useRealTimers()
+})
 
 function song(): StudioProject {
   return {
@@ -125,18 +128,21 @@ describe('Studio mixing desk', () => {
     expect(ui.command).toHaveBeenCalledTimes(4)
   })
 
-  it('turns a master dial with the keys into one set-sound-macros, the Sound panel’s command', () => {
+  it('turns a master dial with a run of keys into one set-sound-macros, the Sound panel’s command', () => {
+    vi.useFakeTimers()
     const ui = mount()
     const space = screen.getByRole('slider', { name: 'Space' })
     expect(space).toHaveAttribute('aria-valuetext', 'Centre')
-    fireEvent.keyDown(space, { key: 'ArrowUp' })
-    fireEvent.input(space, { target: { value: '5' } })
-    fireEvent.change(space)
-    fireEvent.keyDown(space, { key: 'ArrowUp', repeat: true })
-    fireEvent.input(space, { target: { value: '10' } })
-    fireEvent.change(space)
+    for (const value of ['5', '10']) {
+      fireEvent.keyDown(space, { key: 'ArrowUp' })
+      fireEvent.input(space, { target: { value } })
+      fireEvent.change(space)
+      fireEvent.keyUp(space, { key: 'ArrowUp' })
+      vi.advanceTimersByTime(200)
+    }
     expect(ui.command).not.toHaveBeenCalled()
-    fireEvent.keyUp(space, { key: 'ArrowUp' })
+    vi.advanceTimersByTime(300)
+    vi.useRealTimers()
     expect(ui.command).toHaveBeenCalledTimes(1)
     expect(ui.command).toHaveBeenCalledWith({
       type: 'set-sound-macros',

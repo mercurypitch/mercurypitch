@@ -13,6 +13,7 @@ import { StudioExportPanel } from './export/StudioExportPanel'
 import { useStudioExport } from './export/useStudioExport'
 import { isStudioAudioDrop, studioDropFrame, studioDroppedTake, } from './integration/drop-audio'
 import type { StudioSourceEntry } from './integration/source-catalog'
+import { createStudioLiveMix, StudioLiveMixContext } from './mix/live-mix'
 import { StudioMixDesk } from './mix/StudioMixDesk'
 import { StudioPhoneMix } from './mix/StudioPhoneMix'
 import { StudioClipDetails } from './panels/StudioClipDetails'
@@ -88,6 +89,11 @@ export function StudioWorkspace(props: StudioWorkspaceProps) {
     assets: () => props.studio.assets(),
     readCanonicalAsset: (id) => props.studio.readCanonicalAsset(id),
     beforePlay: () => setPreviewEpoch((epoch) => epoch + 1),
+  })
+  // A fader, pan knob or dial is heard while it moves, before it saves.
+  const liveMix = createStudioLiveMix({
+    previewLane: (trackId, draft) => transport.previewLane(trackId, draft),
+    previewMacro: (name, value) => transport.previewMacro(name, value),
   })
   const project = () => props.studio.project()!
   const canProcess = () => !props.studio.busy() && !props.studio.importing()
@@ -392,7 +398,8 @@ export function StudioWorkspace(props: StudioWorkspaceProps) {
     )
   }
 
-  return (
+  // Every control below reads the live mix: a moving fader sounds before it saves.
+  const view = () => (
     <div
       ref={workspace}
       tabIndex={-1}
@@ -767,5 +774,11 @@ export function StudioWorkspace(props: StudioWorkspaceProps) {
         <Transport foot />
       </Show>
     </div>
+  )
+
+  return (
+    <StudioLiveMixContext.Provider value={liveMix}>
+      {view()}
+    </StudioLiveMixContext.Provider>
   )
 }
