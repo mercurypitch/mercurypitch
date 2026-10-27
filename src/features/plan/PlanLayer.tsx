@@ -4,7 +4,8 @@
 //
 // The second host of the plan (First Light's BeatPlan is the first): a
 // full-screen layer over the app, opened from Guide's first row, from
-// `#/plan`, from Home's card and by the one takeover an existing user gets.
+// `#/plan`, from Home's card, from Settings and by the one takeover an
+// existing user gets.
 // It hosts one run of usePlanFlowController in the mode it is opened in, with
 // Merc above the screens, which are the same two the beat hosts. App decides
 // when it is open and hands the mode in; the layer closes itself only by

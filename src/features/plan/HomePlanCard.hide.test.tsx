@@ -24,7 +24,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { applyPersistedValue } from '@/lib/storage'
 import { HomePlanCard } from './HomePlanCard'
 import { ago, answeredAgo, AUDITION, fresh, sent } from './plan-choices.fixture'
-import { PLAN_CARD_DISMISSED_KEY, PLAN_CARD_SLOT_KEY, PLAN_RECORD_KEY, } from './plan-keys'
+import { PLAN_CARD_DISMISSED_KEY, PLAN_RECORD_KEY } from './plan-keys'
 import type { PlanRecordV1 } from './plan-record'
 import { markPlanShown, planRecord } from './plan-store'
 
@@ -137,13 +137,11 @@ describe('hiding the card', () => {
     expect(() => tap(hide())).not.toThrow()
 
     expect(container).toBeEmptyDOMElement()
-    // Each refused write is said once: the hiding, and the slot Home would
-    // have kept for the card (none, now), which the card writes as it goes.
-    expect(warn.mock.calls.map((call) => String(call[0])).sort()).toEqual(
-      [PLAN_CARD_DISMISSED_KEY, PLAN_CARD_SLOT_KEY]
-        .map((key) => `[storage] Failed to write key "${key}":`)
-        .sort(),
-    )
+    // The refused write is said once. The card writes nothing for Home's
+    // slot as it goes: the hide alone keeps the slot shut.
+    expect(warn.mock.calls.map((call) => String(call[0]))).toEqual([
+      `[storage] Failed to write key "${PLAN_CARD_DISMISSED_KEY}":`,
+    ])
   })
 
   it(

@@ -1,0 +1,27 @@
+/* ============================================================
+   PlanSettings: the press each of the section's buttons takes
+   ============================================================
+
+   The section wears Settings' own classes (SettingsPanel.module.css), so it
+   reads as one of Settings' sections. Settings' button draws about 34 px
+   tall, so under a finger each takes a 44 px press from an invisible box
+   centred on it, as the toast's action does (Notifications.module.css), and
+   draws as before. The box is at least as wide as the button and 5 px taller
+   on each side, inside the 10 px the row keeps between its buttons, so no
+   press takes a neighbour's. This sheet sets nothing Settings' class sets. */
+
+.way {
+  position: relative;
+}
+
+@media (pointer: coarse) {
+  .way::before {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: max(100%, 44px);
+    height: max(100%, 44px);
+    content: '';
+    transform: translate(-50%, -50%);
+  }
+}
