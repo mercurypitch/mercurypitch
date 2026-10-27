@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 import { roleChain } from './auto-mix'
 import type { ChainSpec } from './chain-spec'
 import { normalizeChainSpec } from './chain-spec'
+import { masterBusChain } from './master'
 import type { MixMacros } from './mix-macros'
 import { applyMixMacros, MACRO_KEYS, MIX_FLAVOURS, NEUTRAL_MACROS, normalizeMacros, trackMacros, } from './mix-macros'
 import { TRACK_ROLES } from './role-chains'
@@ -122,6 +123,39 @@ describe('MIX_FLAVOURS', () => {
       expect(normalizeMacros(flavour.macros)).toEqual(flavour.macros)
       expect(Object.keys(flavour.macros).sort()).toEqual([...MACRO_KEYS].sort())
     }
+  })
+
+  // Studio playback moves a running chain to a new flavour in place
+  // (StudioFxChain.setSpec). A different effect list would mean a re-patch.
+  it('never add, remove or reorder an effect, in any role or on the master', () => {
+    const shape = (chain: ChainSpec) =>
+      chain.effects.map((effect) => `${effect.id}:${effect.kind}`)
+    const extremes = [
+      ...MIX_FLAVOURS.map((flavour) => flavour.macros),
+      macros({ space: 100, tone: 100, punch: 100, warmth: 100, width: 100 }),
+      macros({
+        space: -100,
+        tone: -100,
+        punch: -100,
+        warmth: -100,
+        width: -100,
+      }),
+    ]
+    for (const role of TRACK_ROLES) {
+      const chain = roleChain(role, { bpm: 96 })
+      for (const values of extremes)
+        expect(shape(applyMixMacros(chain, values))).toEqual(shape(chain))
+    }
+    const master = masterBusChain()
+    for (const flavour of MIX_FLAVOURS)
+      expect(
+        shape(
+          masterBusChain({
+            macros: flavour.macros,
+            masterEq: flavour.masterEq,
+          }),
+        ),
+      ).toEqual(shape(master))
   })
 
   it('start from Natural, the chains as voiced', () => {

@@ -2,13 +2,15 @@
 import type { AudioContextLease } from '@/lib/audio-context-lease'
 import { closeEnvelope } from '@/lib/preview-player'
 import type { ChainSpec } from '@/lib/studio-fx/chain-spec'
+import type { MacroKey } from '@/lib/studio-fx/mix-macros'
 import { measureTrackLatencies } from '@/lib/studio-fx/mixdown'
-import type { StudioMasterGainToken } from '../export/sound-graph'
+import { estimateTailSeconds } from '@/lib/studio-fx/render'
+import type { StudioMasterGain, StudioMasterGainToken, } from '../export/sound-graph'
 import { resolveStudioSoundGraph } from '../export/sound-graph'
 import { reserveStudioMemory } from '../memory-budget'
 import { createStudioLiveMeter, prepareStudioLiveMeter, } from '../metering/live-meter'
 import type { StudioMeterSnapshot } from '../metering/stream-meter'
-import { compileStudioArrangement } from '../model/arrangement-plan'
+import { compileStudioArrangement, studioLaneSpec, } from '../model/arrangement-plan'
 import type { StudioAsset, StudioProject, StudioTrack } from '../model/types'
 import type { StudioBufferCache, StudioBufferLease } from './buffer-cache'
 import { createStudioBufferCache } from './buffer-cache'
@@ -34,6 +36,9 @@ export interface StudioTransportState {
   meter: StudioMeterSnapshot | null
   masterReady: boolean
 }
+/** A lane's volume or pan while its control is still moving. */
+export type StudioLaneDraft = Partial<Pick<StudioTrack, 'gainDb' | 'pan'>>
+
 export interface StudioTransportOptions {
   lease: AudioContextLease
   readCanonicalAsset(id: string): Promise<Blob>
@@ -49,6 +54,8 @@ interface Run {
   /** Tracks with material from where this run started. */
   sounding: ReadonlySet<string>
   envelope: GainNode
+  /** The measured master gains it was built with; sound edits keep them. */
+  measured: StudioMasterGain
   meter: ReturnType<typeof createStudioLiveMeter>
   buffers: StudioBufferLease
   releaseMemory: () => void
@@ -97,6 +104,9 @@ export function createStudioTransport(options: StudioTransportOptions) {
   let repeat = false
   let masterGain: StudioMasterGainToken | null = null
   let restartGeneration = 0
+  // Controls still moving: heard at once, saved only when the gesture ends.
+  const laneDrafts = new Map<string, StudioLaneDraft>()
+  const macroDrafts = new Map<MacroKey, number>()
   let state: StudioTransportState = {
     playing: false,
     pending: false,
@@ -129,26 +139,75 @@ export function createStudioTransport(options: StudioTransportOptions) {
     publish({ masterReady: masterGain !== null })
   }
 
+  /** The project as it sounds now: saved values under the controls still moving. */
+  function withDrafts(project: StudioProject): StudioProject {
+    if (!laneDrafts.size && !macroDrafts.size) return project
+    return {
+      ...project,
+      mix: {
+        ...project.mix,
+        macros: { ...project.mix.macros, ...Object.fromEntries(macroDrafts) },
+      },
+      tracks: project.tracks.map((track) => {
+        const draft = laneDrafts.get(track.id)
+        return draft ? { ...track, ...draft } : track
+      }),
+    }
+  }
+
+  function applyMix(run: Run, project: StudioProject): void {
+    const audible = audibility(project)
+    for (const track of project.tracks)
+      run.graph.setLaneMix(track, audible(track))
+  }
+
+  /** Move the running chains to the project's sound; their tails set the end. */
+  function applySound(run: Run, project: StudioProject): void {
+    let tail = 0
+    for (const track of project.tracks) {
+      if (!run.graph.hasLane(track.id)) continue
+      const spec = studioLaneSpec(track, project.mix.macros)
+      run.graph.setLaneSpec(track.id, spec)
+      tail = Math.max(tail, estimateTailSeconds(spec))
+    }
+    run.graph.setMasterSpec(resolveStudioSoundGraph(project, run.measured).full)
+    if (!run.repeat)
+      run.endsAt =
+        run.audibleEpoch +
+        (run.endFrame - run.startFrame + Math.ceil(tail * 48000)) / 48000
+  }
+
+  /** A control moved while the song was getting ready: start as it sounds. */
+  function applyDrafts(run: Run): void {
+    if (!laneDrafts.size && !macroDrafts.size) return
+    const live = withDrafts(run.project)
+    applyMix(run, live)
+    applySound(run, live)
+  }
+
   /**
-   * Apply an edit that only moved lane volume, balance, pan, Mute or Solo to
-   * the running graph, so the song keeps playing. False when it needs a
-   * restart: any other change, or a lane with material that was silent when
-   * Play built the graph.
+   * Apply an edit to the running graph, so the song keeps playing. Lane
+   * volume, balance, pan, Mute and Solo glide; the macros, a flavour's master
+   * EQ and the ceiling move the running chains, which send only the values
+   * that changed. An edit to nothing the graph plays, such as an empty new
+   * lane or a name, changes nothing. False when it needs a restart: other
+   * clips or chain shapes, or a lane with material that was silent when Play
+   * built the graph.
    */
-  function mixInPlace(run: Run, project: StudioProject): boolean {
-    if (!sameExceptMix(run.project, project)) return false
-    const hasSolo = project.tracks.some((track) => track.solo)
-    const audible = (track: StudioTrack) =>
-      !track.mute && (!hasSolo || track.solo)
-    const missing = project.tracks.some(
+  function playInPlace(run: Run, project: StudioProject): boolean {
+    if (graphShape(run.project) !== graphShape(project)) return false
+    const live = withDrafts(project)
+    const audible = audibility(live)
+    const missing = live.tracks.some(
       (track) =>
         audible(track) &&
         run.sounding.has(track.id) &&
         !run.graph.hasLane(track.id),
     )
     if (missing) return false
-    for (const track of project.tracks)
-      run.graph.setLaneMix(track, audible(track))
+    applyMix(run, live)
+    if (macroDrafts.size || soundKey(run.project) !== soundKey(project))
+      applySound(run, live)
     run.project = project
     return true
   }
@@ -299,7 +358,11 @@ export function createStudioTransport(options: StudioTransportOptions) {
       const ctx = await unlockContext(attempt.signal)
       observeSnapshot(project)
       const { content, from } = playableContent(project, assets, startFrame)
-      const sound = resolveStudioSoundGraph(project, masterGain ?? undefined)
+      const measured: StudioMasterGain = {
+        gainDb: masterGain?.gainDb ?? 0,
+        safetyGainDb: masterGain?.safetyGainDb ?? 0,
+      }
+      const sound = resolveStudioSoundGraph(project, measured)
       releaseMemory = await reserveGraph(
         studioGraphWorkingBytes(content, ctx.sampleRate, sound.full),
         attempt.signal,
@@ -360,6 +423,7 @@ export function createStudioTransport(options: StudioTransportOptions) {
             .map((lane) => lane.track.id),
         ),
         envelope,
+        measured,
         meter,
         buffers,
         releaseMemory,
@@ -376,6 +440,7 @@ export function createStudioTransport(options: StudioTransportOptions) {
       graph = undefined
       envelope = undefined
       meter = null
+      applyDrafts(active)
       publish({ playing: true, pending: false, playheadFrame: from })
       return true
     } catch (error) {
@@ -543,9 +608,31 @@ export function createStudioTransport(options: StudioTransportOptions) {
     resetPeakHold() {
       active?.meter?.clearPeakHold()
     },
+    /**
+     * Hear a lane's volume or pan while its control moves, without saving.
+     * Null ends the preview and returns the lane to its saved values, so call
+     * it after the gesture's own commit.
+     */
+    previewLane(trackId: string, draft: StudioLaneDraft | null): void {
+      if (draft === null) laneDrafts.delete(trackId)
+      else laneDrafts.set(trackId, { ...draft })
+      const run = active
+      if (!run) return
+      const live = withDrafts(run.project)
+      const track = live.tracks.find((item) => item.id === trackId)
+      if (track) run.graph.setLaneMix(track, audibility(live)(track))
+    },
+    /** The same for a sound macro: the running chains follow a moving dial. */
+    previewMacro(name: MacroKey, value: number | null): void {
+      if (value === null) macroDrafts.delete(name)
+      else macroDrafts.set(name, value)
+      if (active) applySound(active, withDrafts(active.project))
+    },
     pause: () => pause(),
     stop() {
       pause()
+      laneDrafts.clear()
+      macroDrafts.clear()
       publish({ playheadFrame: 0, error: null })
       cache.clear()
     },
@@ -564,7 +651,7 @@ export function createStudioTransport(options: StudioTransportOptions) {
     ): Promise<void> {
       observeSnapshot(project)
       if (!wantsPlayback || disposed) return
-      if (active && !preparing && mixInPlace(active, project)) return
+      if (active && !preparing && playInPlace(active, project)) return
       const token = ++restartGeneration
       const frame = active ? position(active) : state.playheadFrame
       pause(true)
@@ -612,21 +699,40 @@ export function createStudioTransport(options: StudioTransportOptions) {
 
 export type StudioTransport = ReturnType<typeof createStudioTransport>
 
-/** Two snapshots that differ at most in lane volume, balance, pan, Mute and Solo. */
-function sameExceptMix(a: StudioProject, b: StudioProject): boolean {
-  const shape = (project: StudioProject) =>
-    JSON.stringify({
-      ...project,
-      revision: 0,
-      updatedAt: '',
-      tracks: project.tracks.map((track) => ({
-        ...track,
-        gainDb: 0,
-        balanceGainDb: 0,
-        pan: 0,
-        mute: false,
-        solo: false,
-      })),
-    })
-  return a.tracks.length === b.tracks.length && shape(a) === shape(b)
+function audibility(project: StudioProject): (track: StudioTrack) => boolean {
+  const hasSolo = project.tracks.some((track) => track.solo)
+  return (track) => !track.mute && (!hasSolo || track.solo)
+}
+
+/**
+ * What a running graph is built from: the clips, and the effect list of each
+ * lane that has any. Two projects with the same shape play through the same
+ * graph; mix and sound settings move it in place.
+ */
+function graphShape(project: StudioProject): string {
+  const used = new Set(project.clips.map((clip) => clip.trackId))
+  const byId = <T extends { id: string }>(a: T, b: T) =>
+    a.id < b.id ? -1 : a.id > b.id ? 1 : 0
+  return JSON.stringify({
+    clips: [...project.clips].sort(byId),
+    lanes: project.tracks
+      .filter((track) => used.has(track.id))
+      .sort(byId)
+      .map((track) => [
+        track.id,
+        track.fx.baseSpec.effects.map(
+          (effect) => `${effect.id}:${effect.kind}`,
+        ),
+      ]),
+  })
+}
+
+/** Everything the running chains play with. */
+function soundKey(project: StudioProject): string {
+  return JSON.stringify([
+    project.mix.macros,
+    project.master.masterEq,
+    project.master.ceilingDbtp,
+    project.tracks.map((track) => [track.id, track.fx]),
+  ])
 }
