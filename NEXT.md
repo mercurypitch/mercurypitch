@@ -717,3 +717,8 @@ Note: the lanes' memory gate read a stale cgroup path after the 21:00 restart (f
 - Tag lead/l10-page6-gated = 71289c89f. Decision 35 appended to l10/DECISIONS.md with the gate line.
 - PR body: l10/pr/BODY.final.md from fill.py (python3 -I fill.py 11 139). No footer, no emoji.
 - NEXT: checkout -B feat/lesson-10-page lead/l10-pr-candidate (c2e0333d8, same tree); push --force-with-lease over a918f12c5; open PR; subscribe; on green merge by rebase with expectedHeadSha; verify-rebase-merge.sh; unsubscribe; records; owner message (trail question, A5 in 0.9.24). Then Lesson 12's page: cherry-pick rooms (09f317afa painter, 526fc5fe5 card) and sing-layout (01f4365b6 strip, bf8d0b9f0 flow, e283d5824 guide) onto main, regenerate the map, then the page runs.
+
+## 23:00 UTC 27 Oct: Lesson 10 PR #1234 OPENED (task #160)
+- feat/lesson-10-page pushed with lease a918f12c5 -> c2e0333d869b05a4e7419a430a2476bac84a5805 (31 commits on d37453987; tree = lead/l10-page6-gated 71289c89f). PR #1234 "feat(lessons): Lesson 10's page, Major and minor, as a draft"; server footer stripped, read back clean (ends at Headroom). Subscribed. mergeable_state blocked (CI running).
+- Check-ins already armed: one-shot trig_01Hg2Lksnfr6Q4H3sgZ7ExWm 23:53 UTC; 2 h routine trig_01JGQdH9F56vCzkd9UvFFRJv.
+- NEXT: on green, merge by rebase with expectedHeadSha c2e0333d869b05a4e7419a430a2476bac84a5805; bash $S/bin/verify-rebase-merge.sh; unsubscribe; records (MASTER-PLAN 11, CURIOSITY-MOMENTS later); owner message. Then the Lesson 12 page builder from the new main.
