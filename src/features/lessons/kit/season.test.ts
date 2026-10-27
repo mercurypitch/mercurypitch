@@ -299,6 +299,26 @@ describe('a draft lesson (drafts.ts)', () => {
     }
   })
 
+  it("keeps Lesson 10's page, its reading time and its ear drill's link in every build", async () => {
+    for (const drafts of ['1', '0'] as const) {
+      // Act
+      const season = await seasonBuilt(drafts)
+
+      // Assert: a draft, as Lesson 3 is, with no film; Ear Lab's Stack needs no voice
+      const L10 = season.LESSONS[10]
+      expect([L10.page, L10.minutes, L10.film], drafts).toEqual([
+        '/learn/10',
+        17,
+        undefined,
+      ])
+      expect(L10.pr.link?.href, drafts).toBe('/ear-lab?lesson=10')
+      expect(L10.pr.link?.note, drafts).toBe('then tap Stack')
+      expect(L10.pr.link?.note, drafts).not.toMatch(
+        /needs|slug|deep link|launch|durationSec|placeholder|for now|first visit/i,
+      )
+    }
+  })
+
   it('gives every lesson page in the repository its page in the season, whichever way a build reads drafts', async () => {
     // Arrange: every learn/NN.html, as the build takes them (tools/draft-lessons.ts)
     const pages = readdirSync(resolve(__dirname, '../../../../learn'))

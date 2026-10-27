@@ -1,0 +1,269 @@
+/* ============================================================
+   Lesson 10 — Major and minor: the page's own figures and cards
+   ============================================================
+   Everything else is the kit's (lesson-base, lesson-sections, lesson-stage,
+   lesson-parts, lesson-guide, lesson-voice and lesson-ear-game). The last
+   three come in by the @imports below, which the build inlines, and not as
+   main.ts's imports. Each shares a chunk with modules this page's shell
+   does not load yet: the slide guide's sheet with Lesson 2's quiz modules
+   (Lessons 2, 4, 6, 8 and 9), the voice lessons' sheet with the comfort
+   check and the voice choice (Lessons 3 and 5 to 9), and the ear game's
+   sheet with the ear game (Lessons 6 and 8). Imported here alone, each
+   would leave its chunk for a sheet of its own, which those pages link
+   after their own sheet, so its rules would win over theirs
+   (docs/agent/MISTAKES.md, "Take the lessons' base stylesheet into another
+   page by @import"). Once the page loads those modules, each import moves
+   back to main.ts.
+
+   Here: the hero's spiral between Merc and Tavi, with the three plays under
+   it; the chord beads' figure at its 340 px and the layer its targets take
+   over it (WEB-SPEC, Toys 1, "Layout and targets"), and its rows of
+   controls; Tavi's line in Step 4; Sing it's guide beside its ring; and the
+   Wrap's cards. */
+@import '../kit/lesson-guide.css';
+@import '../kit/lesson-voice.css';
+@import '../kit/lesson-ear-game.css';
+
+/* ---------------------------------------------------------------- hero: the spiral between Merc and Tavi */
+.l10-duo {
+  --merc: clamp(120px, 11vw, 168px);
+  --spiral-h: clamp(270px, 25vw, 340px);
+  grid-template-columns: var(--merc) minmax(0, 1fr) var(--merc);
+  align-items: end;
+  height: calc(var(--spiral-h) + var(--merc) * 0.165);
+  margin-top: 6px;
+}
+/* the floor line runs under the spiral's base, where Merc and Tavi stand */
+.l10-duo .floor {
+  top: var(--spiral-h);
+}
+.l10-duo .merc {
+  grid-row: 1;
+  z-index: 1;
+  pointer-events: none;
+}
+.l10-duo .merc-blue {
+  grid-column: 1;
+}
+.l10-duo .merc-orange {
+  grid-column: 3;
+}
+.l10-duo .hero-spiral {
+  position: relative;
+  grid-column: 2;
+  grid-row: 1;
+  align-self: start;
+  min-width: 0;
+  height: var(--spiral-h);
+  touch-action: pan-y;
+}
+.l10-duo .hero-spiral canvas {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+/* the three plays sit under the stage, outside the predict card */
+.l10-hero .hero-plays {
+  margin-top: 14px;
+  padding-top: 0;
+  border-top: 0;
+}
+/* The gate's button is one width with either label. "Turn sound off" is
+   1.6 px wider than "Turn sound on", and at 1440 px this gate's line sits
+   that close to a wrap, so the gate grew a line as sound came on. */
+.l10-hero .gate .btn {
+  min-width: 9.5em;
+}
+@media (max-width: 1080px) {
+  .l10-duo {
+    --merc: clamp(120px, 20vw, 190px);
+    --spiral-h: clamp(270px, 42vw, 360px);
+  }
+  /* Play the chord sits right under the stage, before the sound gate (the
+     kit orders the hero's parts at this width), as near a phone's first
+     screen as the stage lets it come */
+  .l10-hero .hero-plays {
+    order: 4;
+  }
+}
+/* on a phone the spiral takes the stage's width, and Merc and Tavi stand smaller either side of its base */
+@media (max-width: 560px) {
+  .l10-duo {
+    --merc: min(25vw, 100px);
+    --spiral-h: 264px;
+    margin-top: 2px;
+  }
+  .l10-duo .hero-spiral {
+    grid-column: 1 / -1;
+  }
+}
+
+/* ---------------------------------------------------------------- the chord beads' stage */
+/* a figure label is one 16 px line (the stage budget counts on it) */
+.steps-stage .toy .eyebrow {
+  line-height: 16px;
+}
+/* The figure is 340 px tall at every width: the full window, C4 to F sharp
+   5, at 15 px a semitone, with room for the targets and the name strip
+   (WEB-SPEC, Toys 1), where the kit's figures are 330, 280 or 250 px. Stuck
+   beside the text, the kit caps a figure at the room its controls leave, so
+   there it keeps all 340; in the deck on a phone held sideways the kit's cap
+   stands, and the toy draws its compact layout. */
+.viz.chord-viz {
+  height: 340px;
+}
+@media (min-width: 961px) and (min-height: 561px) {
+  .steps-stage .chord-viz {
+    --viz-min: 340px;
+  }
+}
+/* The targets' layer covers the canvas exactly, inside the figure's 1 px
+   border, after the controls in the tab order: the eyebrow on the first
+   row, the figure and its layer on the second, the controls after them. On
+   touch it keeps the figure's `touch-action: pan-y`: a vertical swipe
+   scrolls the page. */
+.toy.chord-toy.is-active {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  align-content: start;
+}
+.chord-toy > * {
+  grid-column: 1;
+  min-width: 0;
+}
+.chord-toy > .eyebrow {
+  grid-row: 1;
+}
+.chord-toy > .chord-viz,
+.chord-toy > .chord-targets {
+  grid-row: 2;
+}
+.chord-targets {
+  position: relative;
+  margin: 1px;
+  z-index: 1;
+  touch-action: pan-y;
+  pointer-events: none;
+}
+.chord-targets > * {
+  pointer-events: auto;
+}
+/* the wide figure gives up its side borders on phones (kit/lesson-stage.css),
+   and the targets' layer follows it to the card's edge */
+@media (max-width: 960px) {
+  .chord-toy > .chord-targets {
+    margin: 1px -12px;
+  }
+}
+/* each step's controls, at most two rows beside the text, wrapping on a phone */
+.chord-toy .chord-row {
+  margin-top: 10px;
+}
+.chord-toy .btn {
+  min-width: 0;
+  white-space: normal;
+  line-height: 1.2;
+}
+
+/* ---------------------------------------------------------------- the step text */
+/* Tavi's question in Step 4: a bubble beside her still */
+.l10-says {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 0 0 16px;
+}
+.l10-says img {
+  width: 72px;
+  height: 72px;
+  flex: none;
+  object-fit: contain;
+}
+.l10-says .bubble {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+.l10-says .bubble::after {
+  display: none;
+}
+
+/* ---------------------------------------------------------------- Sing it */
+.l10-sing .sing-card .turn {
+  padding: 0 0 14px;
+  border-bottom: 1px solid var(--hair);
+}
+.l10-sing .sing-card .stop-line {
+  margin: 14px 0 0;
+  font-weight: 600;
+  color: var(--ink);
+}
+.l10-sing .sing-btns .move-do {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.l10-sing .move-lbl {
+  font: 500 var(--fs-12) / 1.3 var(--f-mono);
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+}
+.l10-sing .move-sep {
+  color: var(--ink-3);
+}
+.l10-sing .sing-card .guide-hint {
+  margin: 0 0 8px;
+  font-size: var(--fs-14);
+  color: var(--ink-3);
+}
+.l10-sing .sing-card .unscored {
+  font-size: var(--fs-16);
+  color: var(--ink-2);
+}
+.l10-sing .sing-card .do-readout {
+  margin: 0 0 12px;
+  font: 600 var(--fs-16) / 1.35 var(--f-display);
+  font-variant-numeric: tabular-nums;
+  color: var(--ink);
+}
+/* the guide beside its ring */
+.l10-guide {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 18px;
+  align-items: center;
+}
+@media (max-width: 560px) {
+  .l10-guide {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .l10-guide .ring {
+    margin-inline: auto;
+  }
+}
+
+/* ---------------------------------------------------------------- the wrap */
+.l10-app {
+  grid-template-columns: minmax(0, 1fr);
+  align-items: start;
+}
+.l10-app .addr-line,
+.l10-app .second-drill {
+  margin: 0 0 8px;
+  color: var(--ink-2);
+}
+.l10-app .second-drill {
+  margin-top: 14px;
+}
+.l10-app a.addr {
+  text-decoration: none;
+}
+.l10-next {
+  margin-top: 18px;
+}
+.l10-free > .eyebrow {
+  margin: 0 0 10px;
+  line-height: 16px;
+}

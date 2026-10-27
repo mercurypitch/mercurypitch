@@ -117,8 +117,8 @@ for (const viewport of [
       expect(await heard(page)).toEqual({ contexts: 0, sources: 0 })
       await expect(page.locator('.lm-btn')).toBeVisible()
       await expect(page.locator('#wrap a.next-card')).toHaveAttribute(
-        'data-select-lesson',
-        '10',
+        'href',
+        '/learn/10',
       )
       expect(errors).toEqual([])
     })

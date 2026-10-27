@@ -729,7 +729,7 @@ paused off screen, and the still images when WebGL fails or would run on the CPU
 
 ## Explorer and season data
 
-- **Season data**: Lesson 13's entry in `kit/season.ts` (`:375-384`) gains a plain
+- **Season data**: Lesson 13's entry in `kit/season.ts` (`:386-395`) gains a plain
   `minutes: 16` and `page: '/learn/13'` after its topics, in every build, under the comment
   Lesson 3's entry carries (`season.ts:210-211`), "A draft until its sign-off (drafts.ts):
   built in every mode, and live where the page state publishes it (publish.ts).", as Lesson
@@ -737,7 +737,7 @@ paused off screen, and the still images when WebGL fails or would run on the CPU
   `kit/publish.ts`'s to say: `seasonFor` draws a lesson held back as one coming later, with
   no page and no reading time (`kit/publish.ts:102-124`), so the entry reads neither
   `DRAFT_LESSONS` nor any build flag, which `kit/drafts.test.ts` keeps to the publishing
-  rules alone. Its `pr`, today `{ needs: 'Long Note on vowels' }` (`kit/season.ts:382`),
+  rules alone. Its `pr`, today `{ needs: 'Long Note on vowels' }` (`kit/season.ts:393`),
   gains the link, proposed with the page (FACTS 64), as Lesson 3's reads (`:215-222`):
 
   ```ts
@@ -748,9 +748,9 @@ paused off screen, and the still images when WebGL fails or would run on the CPU
   `kit/explorer.ts:177-182`); `needs` keeps "Long Note on vowels" for the team, and no card draws it
   (`kit/season.ts:27-31`). The link lands with the page, not before it: every lesson page's explorer
   prints it, and only this page says why the hold is suggested on vowels. Its hook is the entry's
-  (`kit/season.ts:381`), and its tease is `kit/lesson-copy.ts`'s (`:118`), with no alternative hook,
+  (`kit/season.ts:392`), and its tease is `kit/lesson-copy.ts`'s (`:118`), with no alternative hook,
   as FACTS 1 and 10 record: this spec changes no hook or tease line. Its signature (`kit/team-notes.ts:45`)
-  is the team's and never drawn (`:5-9`). `EDGES` already holds [11, 13] (`kit/season.ts:425`).
+  is the team's and never drawn (`:5-9`). `EDGES` already holds [11, 13] (`kit/season.ts:436`).
 
 - **The explorer card**: what the kit draws for a lesson with a page and no published film: its
   state and main action from `kit/lesson-state.ts` ("Start lesson", "Continue: step N" or "Read
@@ -771,7 +771,7 @@ and the four-words strip in the kit.
    input and routes its clean path (`tools/draft-lessons.ts:78-86`, `:110-122`;
    `vite.config.ts:319`, `:493`), so the page needs no build change. Its line in `kit/drafts.ts`,
    `13: "the vocal coach's sign-off (MASTER-PLAN § 12 item 8)"`, beside Lessons 3 to 8's
-   (`kit/drafts.ts:31-39`), makes it a draft: production's `LESSON_DRAFTS`, "0", holds it back, and
+   (`kit/drafts.ts:31-40`), makes it a draft: production's `LESSON_DRAFTS`, "0", holds it back, and
    the dev site's and the previews', "1", show it (`wrangler.jsonc:112-116`, `:167`, `:190`,
    `:232`), until the console sets it either way, and the Content Studio's Lessons page names that
    reason when asked to publish it (`src/features/admin/AdminLessonsPage.tsx:186-241`;
@@ -856,15 +856,15 @@ and the four-words strip in the kit.
    (`lesson-06/page.test.ts:126-141`); the shared test makes a page test of this page's own
    unnecessary.
 4. First-paint ceilings for `learn/13.html` in `scripts/assert-first-paint-budgets.mjs`, one in its
-   JavaScript table and one in its stylesheet table, beside Lessons 5 and 6's (`:164`, `:189`;
-   `:274`, `:284`). Every build emits every lesson page, and the check fails a document with no
-   ceiling (`:570`, `:602`), so without them the Browser jobs fail before any spec runs. Each is the
-   page's measured first paint plus about a quarter, the tables' rule (`:47-58`, `:223-233`),
+   JavaScript table and one in its stylesheet table, beside Lessons 5 and 6's (`:173`, `:204`;
+   `:296`, `:306`). Every build emits every lesson page, and the check fails a document with no
+   ceiling (`:598`, `:630`), so without them the Browser jobs fail before any spec runs. Each is the
+   page's measured first paint plus about a quarter, the tables' rule (`:47-58`, `:245-255`),
    measured in `build:e2e`, where the check runs (`package.json:20`): a build of Lesson 6's page
-   alone weighed it about 8 KB lighter (`assert-first-paint-budgets.mjs:186-188`). The vowel model
+   alone weighed it about 8 KB lighter (`assert-first-paint-budgets.mjs:201-203`). The vowel model
    and the strip load at first paint, since the hero's still needs them; the listener and the hold
    reader arrive through a dynamic import when Start is pressed, as on Lesson 5
-   (`assert-first-paint-budgets.mjs:160-163`), and the ceiling holds only while that boundary does.
+   (`assert-first-paint-budgets.mjs:169-172`), and the ceiling holds only while that boundary does.
 5. `kit/sound.ts`, proposed: two options on `VoiceOptions` (`:30-46`), `partials` and
    `resonators` (Audio). `partials` gives a voice's source amplitudes whatever its `kind` (today
    `build` picks the wave from the kind, `:172-173`); `resonators`, a list of `{ hz, q }` built as
@@ -1158,10 +1158,10 @@ End to end (Playwright, at 390 x 844 and 1440 x 900, on the e2e build, which sho
 9. Every practice link carries `?lesson=13`; opening `/mirror?lesson=13` in a fresh profile boots
    Voice Mirror with no intro, as `src/e2e/lesson-marker.spec.ts:121` checks its own documents.
 10. The Wrap's next card names Lesson 14, says "Coming later" and leads to the map, never to a page,
-    as `src/e2e/learn-next-card.spec.ts` checks a card for a lesson not written yet (`:243`); its
+    as `src/e2e/learn-next-card.spec.ts` checks a card for a lesson not written yet (`:253`); its
     tease, "‘Twinkle, twinkle, little star’, twice. The second ‘star’ swells.", sits one line above
     the hook, the card's words in the order eyebrow, tease, hook and way on, then the figure, as
-    that spec checks Lessons 1 and 2's cards (`:117-134`, `:195-211`).
+    that spec checks Lessons 1 and 2's cards (`:124-141`, `:205-221`).
 11. With reduced motion emulated, a column jumps to its height, a vowel change lands at once, the
     ring holds still, and nothing moves on its own.
 12. After a full run, storage holds only the keys in the Contract.

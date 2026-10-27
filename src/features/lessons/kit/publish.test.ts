@@ -100,6 +100,31 @@ describe('seasonFor', () => {
     expect([season[9].page, season[9].minutes]).toEqual(['/learn/09', 16])
   })
 
+  it('draws Lesson 10 held back, by its draft line or by the console, with neither its page nor its reading time', () => {
+    // Act: a draft where drafts are held back, and one the console holds back
+    const seasons = [
+      seasonFor(LESSONS, defaultPageState(false)),
+      seasonFor(LESSONS, served({ 10: { published: false } }, true)),
+    ]
+
+    // Assert
+    for (const season of seasons)
+      expect([season[10].page, season[10].minutes]).toEqual([
+        undefined,
+        undefined,
+      ])
+    expect([LESSONS[10].page, LESSONS[10].minutes]).toEqual(['/learn/10', 17])
+  })
+
+  it('keeps Lesson 10, a draft, its page and its reading time where drafts are shown', () => {
+    // Act
+    const season = seasonFor(LESSONS, defaultPageState(true))
+
+    // Assert
+    expect(DRAFT_LESSONS[10]).toBeDefined()
+    expect([season[10].page, season[10].minutes]).toEqual(['/learn/10', 17])
+  })
+
   it('keeps every page where everything is published, the same objects as the season', () => {
     // Act
     const season = seasonFor(LESSONS, defaultPageState(true))

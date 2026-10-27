@@ -9,7 +9,7 @@
 // yet "Coming later" and a way to the map, never a link to a page. These
 // are the lesson polish plan's checks for it (D2), with the prerequisite
 // chip's 44 px target (A6). The e2e build shows drafts, as the dev deploy
-// does, so Lessons 3 and 5 to 9 are live here; a page that holds them
+// does, so Lessons 3 and 5 to 10 are live here; a page that holds them
 // back is next-card.test.ts's, and one the site worker served with the
 // console's state is learn-publish-state.spec.ts's. A lesson with a tease
 // (kit/lesson-copy.ts) is set up by it on the card before, one line above
@@ -21,6 +21,7 @@
 import type { Locator, Page } from '@playwright/test'
 import { expect, test } from './helpers/lesson-page'
 import { LESSON_COPY } from '../features/lessons/kit/lesson-copy'
+import { LESSONS } from '../features/lessons/kit/season'
 import { lessonWithNoPage } from '../features/lessons/kit/season.test-fixtures'
 
 /** The card at the foot of this page's Wrap. */
@@ -80,6 +81,12 @@ const CARDS: readonly (readonly [string, string, string, string])[] = [
     '/learn/08',
     'Next lesson 09 · Landing a leap Ready · 16 min',
     '/learn/09',
+    'Start lesson',
+  ],
+  [
+    '/learn/09',
+    'Next lesson 10 · Major and minor Ready · 17 min',
+    '/learn/10',
     'Start lesson',
   ],
   [
@@ -159,14 +166,14 @@ test("Lesson 8's card sets up Lesson 9 with its tease, one line above its hook, 
   await expect(c.locator('button')).toHaveCount(0)
 })
 
-test("Lesson 9's card names Lesson 10, coming later, sets it up with its tease above the hook and its figure after the words, and leads to the map", async ({
+test("Lesson 9's card names Lesson 10, ready, sets it up with its tease above the hook and its figure after the words, and leads to its page", async ({
   page,
 }) => {
   // Arrange
   await page.goto('/learn/09')
   const c = card(page)
   await expect(c.locator('.eyebrow')).toHaveText(
-    'Next lesson 10 · Major and minor Coming later',
+    'Next lesson 10 · Major and minor Ready · 17 min',
   )
   await expect(c.locator('.next-tease')).toHaveText(
     LESSON_COPY[10]?.tease ?? 'Lesson 10 has a tease',
@@ -179,6 +186,9 @@ test("Lesson 9's card names Lesson 10, coming later, sets it up with its tease a
   const children = await c.evaluate((a) =>
     Array.from(a.children, (k) => k.classList[0] ?? k.tagName),
   )
+  // read before the click, which leaves this page for Lesson 10's
+  await expect(c.locator('button')).toHaveCount(0)
+  await expect(c.locator('.chip')).toHaveText('Start lesson')
 
   // Act
   await c.click()
@@ -186,10 +196,10 @@ test("Lesson 9's card names Lesson 10, coming later, sets it up with its tease a
   // Assert
   expect(words).toEqual(['eyebrow', 'next-tease', 'q2', 'chip'])
   expect(children).toEqual(['next-words', 'l09-tease'])
-  await expect(c.locator('button')).toHaveCount(0)
-  await expect(c.locator('.chip')).toHaveText('See it on the map')
-  await expect(page).toHaveURL(/\/learn\/09#explorer$/)
-  await expect(page.locator('#exCardHost h3')).toHaveText('Major and minor')
+  await expect(page).toHaveURL(/\/learn\/10$/)
+  await expect(page.getByRole('heading', { level: 1 })).toHaveText(
+    LESSONS[10].hook,
+  )
 })
 
 test("Lesson 2's card, its two figures kept, leads to Lesson 3's page @smoke", async ({
