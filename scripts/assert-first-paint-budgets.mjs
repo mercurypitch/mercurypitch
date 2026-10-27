@@ -257,7 +257,18 @@ export const FIRST_PAINT_BUDGETS_KB = {
   // Raised to 151 for Step 5, its predict and the names switch: 153,840
   // bytes with them, 1,332 more, all in Lesson 10's own chunk
   // (lesson-10/steps.ts, and the names store in main.ts).
-  'learn/10.html': 151,
+  // Raised to 167 for Sing it's comfort check, voice choice, Merc's notes
+  // and Move do: 170,340 bytes with them, 16,500 more. 10,696 are the
+  // kit's chunks Lessons 1 to 9 already load: the slide guide (4,693), the
+  // ring (3,065), the comfort check and the voice choice (2,342), Merc and
+  // Tavi's images (150), and Move do, 446 net, since its chunk now also
+  // holds the major scale's degrees and Lesson 4's questions, which were a
+  // chunk of their own here (kit/slide-guide.ts, sing.ts, comfort.ts,
+  // voice-choice.ts, move-do.ts). 5,811 are Sing it in Lesson 10's own
+  // chunk (lesson-10/sing.ts), less 7 in Lesson 6's questions' chunk.
+  // Lessons 4, 6, 8 and 9 load the same merged chunk and are 144 to 190
+  // bytes lighter for it.
+  'learn/10.html': 167,
 
   // The main app, and the crawlable doors that are the main app. Measured
   // 4669. It is eager by design today, so this is a ceiling on growth rather
@@ -350,6 +361,8 @@ export const FIRST_PAINT_CSS_BUDGETS_KB = {
   // rules. The smallest whole KB above that, as for its script. 89,436
   // bytes with the game on thirds, which brings the kit's ear game, so the
   // page links the ear game's sheet in that chunk rather than inlining it.
+  // 89,870 with Sing it, whose comfort check and voice choice bring the
+  // voice lessons' sheet, which the page now links in their chunk too.
   'learn/10.html': 88,
 
   // The main app and the crawlable doors that are the main app. Measured
