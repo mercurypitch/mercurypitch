@@ -1,6 +1,6 @@
 // Studio memory budget tests cover reclaimable caches and the pinned budget seam.
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { registerStudioMemoryReclaimer, reserveStudioMemory, setStudioWorkingBytes, studioReservedMemoryBytes, } from './memory-budget'
+import { isStudioMemoryRefusal, registerStudioMemoryReclaimer, reserveStudioMemory, setStudioWorkingBytes, StudioMemoryError, studioReservedMemoryBytes, } from './memory-budget'
 
 afterEach(() => setStudioWorkingBytes(null))
 
@@ -32,5 +32,37 @@ describe('Studio memory budget', () => {
     expect(studioReservedMemoryBytes()).toBe(800)
     unregister()
     held()
+  })
+
+  it('tells a lack of memory apart from damaged or missing audio', () => {
+    setStudioWorkingBytes(10)
+    let refusal: unknown
+    try {
+      reserveStudioMemory(11)
+    } catch (error) {
+      refusal = error
+    }
+
+    expect(refusal).toBeInstanceOf(StudioMemoryError)
+    expect(isStudioMemoryRefusal(refusal)).toBe(true)
+    expect(
+      isStudioMemoryRefusal(
+        new Error('Studio needs more memory to copy this song.'),
+      ),
+    ).toBe(true)
+    expect(
+      isStudioMemoryRefusal(new RangeError('Array buffer allocation failed')),
+    ).toBe(true)
+    expect(isStudioMemoryRefusal(new RangeError('Out of memory'))).toBe(true)
+    // A damaged header reads past its end: that is damage, not memory.
+    expect(
+      isStudioMemoryRefusal(
+        new RangeError('Offset is outside the bounds of the DataView'),
+      ),
+    ).toBe(false)
+    expect(
+      isStudioMemoryRefusal(new Error('This project audio is missing.')),
+    ).toBe(false)
+    expect(isStudioMemoryRefusal('Studio needs more memory')).toBe(false)
   })
 })

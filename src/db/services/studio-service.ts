@@ -5,12 +5,13 @@
 import type { DexieAdapter } from '@/db/adapters/dexie-adapter'
 import { getLocalDatabase } from '@/db/local-database'
 import { CANONICAL_PCM_MIME } from '@/lib/studio/audio/canonical-pcm'
-import { reserveStudioMemory } from '@/lib/studio/memory-budget'
+import { isStudioMemoryRefusal, reserveStudioMemory, } from '@/lib/studio/memory-budget'
 import { createStudioProject, summarizeStudioProject, } from '@/lib/studio/model/defaults'
 import { fitsStudioProjectStorageBudget } from '@/lib/studio/model/storage-limits'
-import type { StudioAsset, StudioAssetData, StudioProject, StudioProjectSummary, } from '@/lib/studio/model/types'
+import type { StudioAsset, StudioAssetBytes, StudioAssetData, StudioProject, StudioProjectSummary, } from '@/lib/studio/model/types'
 import { validateStudioAsset, validateStudioProject, } from '@/lib/studio/model/validation'
 import { acquireStudioEditor, releaseStudioEditor, renewStudioEditor, requireStudioEditor, } from './studio-editor-lease'
+import type { StudioAssetInput } from './studio-record-preparation'
 import { withPreparedStudioRecords } from './studio-record-preparation'
 import type { PreparedStudioRecords, StudioAssetRecord, StudioBlobRecord, } from './studio-records'
 import type { StudioEditorLease, StudioEditorToken, StudioWriteToken, } from './studio-storage-types'
@@ -49,9 +50,11 @@ export interface StudioService {
     project: StudioProject,
     assets?: readonly StudioAssetData[],
   ): Promise<StudioProject>
+  /** Bytes handed over are stored as they are; Blobs are read and copied. */
   restoreProject(
     project: StudioProject,
-    assets: readonly StudioAssetData[],
+    assets: readonly StudioAssetInput[],
+    options?: { signal?: AbortSignal },
   ): Promise<StudioProject>
   deleteProject(id: string, token: StudioWriteToken): Promise<void>
 }
@@ -99,6 +102,9 @@ function assetMetadata(
     )
   }
 }
+
+const COPY_MEMORY =
+  'Studio needs more memory to copy this song. Stop playback and try again.'
 
 function assertStorageBudget(assets: readonly StudioAsset[]): void {
   if (!fitsStudioProjectStorageBudget(assets)) {
@@ -148,10 +154,11 @@ export function createStudioService(
       )
     return projectSnapshot(project, await listAssets(id))
   }
-  const readAsset = async (
+  /** The stored rows' own buffers: a copy of a song reads each take once. */
+  const readAssetRows = async (
     projectId: string,
     assetId: string,
-  ): Promise<StudioAssetData> => {
+  ): Promise<StudioAssetBytes> => {
     const db = database()
     const row = await db.readByIdStrict<StudioAssetRecord>(
       STUDIO_STORES.assets,
@@ -184,15 +191,23 @@ export function createStudioService(
         'This project audio is incomplete.',
       )
     }
+    return { asset, original: original.data, canonicalPcm: canonical.data }
+  }
+  const readAsset = async (
+    projectId: string,
+    assetId: string,
+  ): Promise<StudioAssetData> => {
+    const rows = await readAssetRows(projectId, assetId)
     return {
-      asset,
-      original: new Blob([original.data], { type: asset.mimeType }),
-      canonicalPcm: new Blob([canonical.data], { type: CANONICAL_PCM_MIME }),
+      asset: rows.asset,
+      original: new Blob([rows.original], { type: rows.asset.mimeType }),
+      canonicalPcm: new Blob([rows.canonicalPcm], { type: CANONICAL_PCM_MIME }),
     }
   }
   const insertProject = async (
     project: StudioProject,
-    assets: readonly StudioAssetData[],
+    assets: readonly StudioAssetInput[],
+    signal?: AbortSignal,
   ): Promise<StudioProject> => {
     const snapshot = projectSnapshot(
       project,
@@ -216,11 +231,13 @@ export function createStudioService(
         })
         return snapshot
       },
+      signal,
     )
   }
   const restoreProject = async (
     project: StudioProject,
-    assets: readonly StudioAssetData[],
+    assets: readonly StudioAssetInput[],
+    signal?: AbortSignal,
   ): Promise<StudioProject> => {
     const source = projectSnapshot(
       project,
@@ -260,7 +277,7 @@ export function createStudioService(
         canonicalPcmId: createId(),
       },
     }))
-    return insertProject(restored, copied)
+    return insertProject(restored, copied, signal)
   }
 
   return {
@@ -386,42 +403,47 @@ export function createStudioService(
           },
         )
       }),
-    restoreProject: (project, assets) =>
-      studioStorageOperation(() => restoreProject(project, assets)),
+    restoreProject: (project, assets, options = {}) =>
+      studioStorageOperation(() =>
+        restoreProject(project, assets, options.signal),
+      ),
     forkProject: (project, assets = []) =>
       studioStorageOperation(async () => {
         const supplied = new Map(assets.map((data) => [data.asset.id, data]))
-        const selected: StudioAssetData[] = []
+        const used = [...new Set(project.clips.map((clip) => clip.assetId))]
         const metadata = await listAssets(project.id)
-        const releases: (() => void)[] = []
+        let storedBytes = 0
+        for (const id of used) {
+          if (supplied.has(id)) continue
+          const asset = metadata.find((value) => value.id === id)
+          if (!asset)
+            throw new StudioStorageError(
+              'not-found',
+              'This project audio is missing.',
+            )
+          storedBytes += asset.byteLength + asset.canonicalPcmByteLength
+        }
+        // The copy holds each saved take once: the rows' own buffers are
+        // checked in place and written to the new project as they are.
+        let release: () => void
         try {
-          for (const id of new Set(project.clips.map((clip) => clip.assetId))) {
-            if (!supplied.has(id)) {
-              const asset = metadata.find((value) => value.id === id)
-              if (!asset)
-                throw new StudioStorageError(
-                  'not-found',
-                  'This project audio is missing.',
-                )
-              try {
-                releases.push(
-                  reserveStudioMemory(
-                    2 * (asset.byteLength + asset.canonicalPcmByteLength),
-                  ),
-                )
-              } catch (cause) {
-                throw new StudioStorageError(
-                  'memory-limit',
-                  'Studio needs more memory to copy this song. Stop playback and try again.',
-                  cause,
-                )
-              }
-            }
-            selected.push(supplied.get(id) ?? (await readAsset(project.id, id)))
-          }
+          release = reserveStudioMemory(storedBytes)
+        } catch (cause) {
+          throw new StudioStorageError('memory-limit', COPY_MEMORY, cause)
+        }
+        try {
+          const selected: StudioAssetInput[] = []
+          for (const id of used)
+            selected.push(
+              supplied.get(id) ?? (await readAssetRows(project.id, id)),
+            )
           return await restoreProject(project, selected)
+        } catch (error) {
+          if (isStudioMemoryRefusal(error))
+            throw new StudioStorageError('memory-limit', COPY_MEMORY, error)
+          throw error
         } finally {
-          for (const release of releases) release()
+          release()
         }
       }),
     deleteProject: (id, token) =>

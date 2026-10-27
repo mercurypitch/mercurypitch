@@ -16,6 +16,13 @@ export const STUDIO_BACKUP_LIMITS = {
 } as const
 /** Written ZIP chunks fold into the output Blob at this size. */
 const FOLD_BYTES = 8 * 1024 * 1024
+/**
+ * Reading needs this much beyond the entries themselves. A stored entry is
+ * copied straight from one 16 KiB input chunk; a deflated one can inflate a
+ * chunk about a thousandfold, which the inflater hands over in one piece.
+ */
+const STORED_WORKING_BYTES = 1024 * 1024
+const INFLATE_WORKING_BYTES = 20 * 1024 * 1024
 
 export class StudioBackupError extends Error {
   constructor(message: string) {
@@ -136,29 +143,44 @@ async function readDirectory(
   return entries
 }
 
-/** Limits apply during inflation, before complete files are retained. */
+/**
+ * Limits apply during inflation, before complete files are retained. Each
+ * entry inflates into one buffer of its declared size, so the archive's
+ * contents are held once: no parts list, no Blob copy of them.
+ */
 export async function readStudioArchive(
   archive: Blob,
   signal?: AbortSignal,
-): Promise<Map<string, Blob>> {
+): Promise<Map<string, ArrayBuffer>> {
   if (archive.size === 0 || archive.size > STUDIO_BACKUP_LIMITS.archiveBytes) {
     throw new StudioBackupError(
       'The project backup exceeds the supported archive size.',
     )
   }
-  const entries = new Map<string, Blob>()
+  const entries = new Map<string, ArrayBuffer>()
   const seen = new Set<string>()
   let total = 0
   let pending = 0
   const status: { failure: Error | null } = { failure: null }
   const directory = await readDirectory(archive)
-  const expandedBytes = [...directory.values()].reduce(
-    (sum, entry) => sum + entry.size,
-    0,
-  )
-  // Inflater output parts and their immutable Blob copies coexist. The caller
-  // owns the selected archive; keep decoded output admitted through restore.
-  const release = reserveStudioMemory(expandedBytes * 2 + 20 * 1024 * 1024)
+  let expandedBytes = 0
+  let deflated = false
+  for (const entry of directory.values()) {
+    expandedBytes += entry.size
+    deflated ||= entry.compression === 8
+  }
+  // The caller owns the selected archive. The entries stay admitted through
+  // restore; the working room goes as soon as reading ends.
+  const release = reserveStudioMemory(expandedBytes)
+  let releaseWorking: () => void
+  try {
+    releaseWorking = reserveStudioMemory(
+      deflated ? INFLATE_WORKING_BYTES : STORED_WORKING_BYTES,
+    )
+  } catch (error) {
+    release()
+    throw error
+  }
   let transferred = false
   const unzip = new Unzip((file) => {
     const limit = entryLimit(file.name)
@@ -184,20 +206,18 @@ export async function readStudioArchive(
     }
     seen.add(file.name)
     pending++
+    const bytes = new Uint8Array(declared.size)
     let size = 0
     let crc32 = 0xffffffff
-    const parts: Uint8Array<ArrayBuffer>[] = []
     file.ondata = (error, data, final) => {
       if (status.failure !== null) return
       if (error) {
         status.failure = error
         return
       }
-      size += data.byteLength
-      total += data.byteLength
       if (
-        size > Math.min(limit, declared.size) ||
-        total > STUDIO_BACKUP_LIMITS.totalBytes
+        size + data.byteLength > Math.min(limit, declared.size) ||
+        total + data.byteLength > STUDIO_BACKUP_LIMITS.totalBytes
       ) {
         status.failure = new StudioBackupError(
           'The expanded project backup exceeds its size limit.',
@@ -205,7 +225,9 @@ export async function readStudioArchive(
         file.terminate()
         return
       }
-      parts.push(new Uint8Array(data))
+      bytes.set(data, size)
+      size += data.byteLength
+      total += data.byteLength
       crc32 = updateStudioCrc32(crc32, data)
       if (final) {
         if (size !== declared.size) {
@@ -220,7 +242,7 @@ export async function readStudioArchive(
           )
           return
         }
-        entries.set(file.name, new Blob(parts))
+        entries.set(file.name, bytes.buffer)
         pending--
       }
     }
@@ -256,6 +278,7 @@ export async function readStudioArchive(
       'The project backup is not a readable ZIP archive.',
     )
   } finally {
+    releaseWorking()
     if (!transferred) release()
   }
 }

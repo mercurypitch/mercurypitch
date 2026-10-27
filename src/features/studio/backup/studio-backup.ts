@@ -3,10 +3,10 @@
 // ============================================================
 
 import type { StudioService } from '@/db/services/studio-service'
-import { CANONICAL_PCM_MIME } from '@/lib/studio/audio/canonical-pcm'
+import { StudioStorageError } from '@/db/services/studio-service'
 import { validatePreparedStudioAsset } from '@/lib/studio/audio/prepare-studio-asset'
-import { releaseStudioResource, reserveStudioMemory, retainStudioResource, } from '@/lib/studio/memory-budget'
-import type { StudioAsset, StudioAssetData, StudioProject, } from '@/lib/studio/model/types'
+import { isStudioMemoryRefusal, releaseStudioResource, reserveStudioMemory, retainStudioResource, StudioMemoryError, } from '@/lib/studio/memory-budget'
+import type { StudioAsset, StudioAssetBytes, StudioAssetData, StudioProject, } from '@/lib/studio/model/types'
 import { validateStudioAsset, validateStudioProject, } from '@/lib/studio/model/validation'
 import { readStudioArchive, studioBackupAssetPath, StudioBackupError, writeStudioArchive, } from './archive-codec'
 
@@ -18,6 +18,13 @@ interface StudioBackupManifest {
   project: StudioProject
   assets: { asset: StudioAsset; originalPath: string; canonicalPath: string }[]
 }
+
+const BACKUP_MEMORY =
+  'Studio needs more memory to make this backup. Stop playback and try again.'
+const RESTORE_MEMORY =
+  'Studio needs more memory to open this backup. Stop playback and try again.'
+const AUDIO_CHECK =
+  'The project backup audio failed its size, format or checksum check.'
 
 export interface StudioBackupOptions {
   signal?: AbortSignal
@@ -131,11 +138,7 @@ export async function createStudioBackup(
           releaseValidation()
         }
       } catch (error) {
-        if (options.signal?.aborted === true || isMemoryError(error))
-          throw error
-        throw new StudioBackupError(
-          'The backup could not include every audio asset. Restore the missing audio and try again.',
-        )
+        throw backupFailure(error, options.signal)
       }
       const originalPath = studioBackupAssetPath(assets.length, 'original')
       const canonicalPath = studioBackupAssetPath(assets.length, 'canonical')
@@ -171,11 +174,24 @@ export async function createStudioBackup(
   }
 }
 
-/** Validate every byte/reference before creating any rows in the local database. */
+/** Say what stopped a backup: missing room is not missing audio. */
+function backupFailure(error: unknown, signal?: AbortSignal): unknown {
+  if (signal?.aborted === true) return error
+  if (isStudioMemoryRefusal(error)) return new StudioMemoryError(BACKUP_MEMORY)
+  return new StudioBackupError(
+    'The backup could not include every audio asset. Restore the missing audio and try again.',
+  )
+}
+
+/**
+ * Check the archive, its manifest and every entry's size before any rows are
+ * created. The audio is handed over as the bytes the archive was read into;
+ * the service checks their hashes and samples, in place, before it writes.
+ */
 export async function readStudioBackup(
   archive: Blob,
   options: Pick<StudioBackupOptions, 'signal'> = {},
-): Promise<{ project: StudioProject; assets: StudioAssetData[] }> {
+): Promise<{ project: StudioProject; assets: StudioAssetBytes[] }> {
   options.signal?.throwIfAborted()
   const entries = await readStudioArchive(archive, options.signal)
   let transferred = false
@@ -183,7 +199,7 @@ export async function readStudioBackup(
     let manifest: StudioBackupManifest
     try {
       manifest = manifestFromJson(
-        JSON.parse(await entries.get('manifest.json')!.text()),
+        JSON.parse(new TextDecoder().decode(entries.get('manifest.json'))),
       )
     } catch (error) {
       if (error instanceof StudioBackupError) throw error
@@ -196,37 +212,20 @@ export async function readStudioBackup(
         'The project backup contains missing or unrelated files.',
       )
     }
-    const assets: StudioAssetData[] = []
-    for (const entry of manifest.assets) {
-      options.signal?.throwIfAborted()
+    const assets = manifest.assets.map((entry): StudioAssetBytes => {
       const original = entries.get(entry.originalPath)
-      const canonical = entries.get(entry.canonicalPath)
-      if (!original || !canonical)
+      const canonicalPcm = entries.get(entry.canonicalPath)
+      if (!original || !canonicalPcm)
         throw new StudioBackupError(
           'The project backup is missing audio files.',
         )
-      const data: StudioAssetData = {
-        asset: entry.asset,
-        original: original.slice(0, original.size, entry.asset.mimeType),
-        canonicalPcm: canonical.slice(0, canonical.size, CANONICAL_PCM_MIME),
-      }
-      try {
-        const releaseValidation = reserveStudioMemory(
-          2 * Math.max(data.original.size, data.canonicalPcm.size),
-        )
-        try {
-          await validatePreparedStudioAsset(data, { signal: options.signal })
-        } finally {
-          releaseValidation()
-        }
-      } catch (error) {
-        if (options.signal?.aborted === true) throw error
-        throw new StudioBackupError(
-          'The project backup audio failed its size, format or checksum check.',
-        )
-      }
-      assets.push(data)
-    }
+      if (
+        original.byteLength !== entry.asset.byteLength ||
+        canonicalPcm.byteLength !== entry.asset.canonicalPcmByteLength
+      )
+        throw new StudioBackupError(AUDIO_CHECK)
+      return { asset: entry.asset, original, canonicalPcm }
+    })
     const result = { project: manifest.project, assets }
     transferred = true
     return retainStudioResource(result, () => releaseStudioResource(entries))
@@ -235,24 +234,36 @@ export async function readStudioBackup(
   }
 }
 
+/**
+ * Restore holds the song's audio once: the archive's entries, read into
+ * buffers that the service checks in place and stores as they are.
+ */
 export async function restoreStudioBackup(
   archive: Blob,
   service: Pick<StudioService, 'restoreProject'>,
   options: Pick<StudioBackupOptions, 'signal'> = {},
 ): Promise<StudioProject> {
-  const validated = await readStudioBackup(archive, options)
   try {
-    options.signal?.throwIfAborted()
-    return await service.restoreProject(validated.project, validated.assets)
-  } finally {
-    releaseStudioResource(validated)
+    const validated = await readStudioBackup(archive, options)
+    try {
+      options.signal?.throwIfAborted()
+      return await service.restoreProject(validated.project, validated.assets, {
+        signal: options.signal,
+      })
+    } finally {
+      releaseStudioResource(validated)
+    }
+  } catch (error) {
+    throw restoreFailure(error, options.signal)
   }
 }
 
-/** The budget's own refusal: missing room, not missing audio. */
-function isMemoryError(error: unknown): boolean {
-  return (
-    error instanceof Error &&
-    error.message.startsWith('Studio needs more memory')
-  )
+/** Say what stopped a restore in the backup's own terms. */
+function restoreFailure(error: unknown, signal?: AbortSignal): unknown {
+  if (signal?.aborted === true) return error
+  // Missing room, not a damaged backup.
+  if (isStudioMemoryRefusal(error)) return new StudioMemoryError(RESTORE_MEMORY)
+  if (error instanceof StudioStorageError && error.code === 'invalid-asset')
+    return new StudioBackupError(AUDIO_CHECK)
+  return error
 }

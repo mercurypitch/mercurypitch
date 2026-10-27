@@ -26,6 +26,16 @@ describe('portable Studio backups', () => {
   const readStudioArchive = track(rawReadStudioArchive)
   const writeStudioArchive = track(rawWriteStudioArchive)
   const readStudioBackup = track(rawReadStudioBackup)
+  const text = (bytes: ArrayBuffer | undefined) =>
+    new TextDecoder().decode(bytes)
+  /** Read entries back into the Blobs the writer takes. */
+  const blobs = (entries: ReadonlyMap<string, ArrayBuffer | Blob>) =>
+    new Map(
+      [...entries].map(([path, value]) => [
+        path,
+        value instanceof ArrayBuffer ? new Blob([value]) : value,
+      ]),
+    )
   let db: DexieAdapter
   let service: ReturnType<typeof createStudioService>
   let sequence: number
@@ -127,7 +137,7 @@ describe('portable Studio backups', () => {
   it('rejects future project/effect versions and invalid references before inserting any restored rows', async () => {
     const { archive } = await fixture()
     const entries = await readStudioArchive(archive)
-    const base = JSON.parse(await entries.get('manifest.json')!.text())
+    const base = JSON.parse(text(entries.get('manifest.json')))
     const mutations = [
       (manifest: typeof base) => {
         manifest.version = 2
@@ -159,10 +169,10 @@ describe('portable Studio backups', () => {
     for (const mutate of mutations) {
       const manifest = structuredClone(base)
       mutate(manifest)
-      const changed = new Map(entries)
+      const changed = new Map<string, ArrayBuffer | Blob>(entries)
       changed.set('manifest.json', new Blob([JSON.stringify(manifest)]))
       await expect(
-        restoreStudioBackup(await writeStudioArchive(changed), service),
+        restoreStudioBackup(await writeStudioArchive(blobs(changed)), service),
       ).rejects.toThrow()
       expect(await service.listProjects()).toHaveLength(1)
     }
@@ -171,22 +181,36 @@ describe('portable Studio backups', () => {
   it('verifies original hashes and canonical finite samples even if an attacker updates the declared hash', async () => {
     const { archive } = await fixture()
     const entries = await readStudioArchive(archive)
-    const badOriginal = new Map(entries)
-    badOriginal.set('assets/0/original.bin', new Blob(['corrupt original']))
+    const badOriginal = new Map<string, ArrayBuffer | Blob>(entries)
+    badOriginal.set(
+      'assets/0/original.bin',
+      new Blob([
+        'corrupt original'.padEnd(
+          entries.get('assets/0/original.bin')!.byteLength,
+        ),
+      ]),
+    )
     await expect(
-      readStudioBackup(await writeStudioArchive(badOriginal)),
+      restoreStudioBackup(
+        await writeStudioArchive(blobs(badOriginal)),
+        service,
+      ),
     ).rejects.toThrow('checksum')
 
-    const manifest = JSON.parse(await entries.get('manifest.json')!.text())
-    const damaged = await entries.get('assets/0/canonical.pcm')!.arrayBuffer()
+    const manifest = JSON.parse(text(entries.get('manifest.json')))
+    const damaged = entries.get('assets/0/canonical.pcm')!.slice(0)
     new DataView(damaged).setFloat32(32, Number.NaN, true)
     manifest.assets[0].asset.canonicalPcmSha256 = await sha256Bytes(damaged)
-    const badCanonical = new Map(entries)
-    badCanonical.set('assets/0/canonical.pcm', new Blob([damaged]))
+    const badCanonical = new Map<string, ArrayBuffer | Blob>(entries)
+    badCanonical.set('assets/0/canonical.pcm', damaged)
     badCanonical.set('manifest.json', new Blob([JSON.stringify(manifest)]))
     await expect(
-      readStudioBackup(await writeStudioArchive(badCanonical)),
+      restoreStudioBackup(
+        await writeStudioArchive(blobs(badCanonical)),
+        service,
+      ),
     ).rejects.toThrow('checksum')
+    expect(await service.listProjects()).toHaveLength(1)
   })
 
   it('rejects same-length valid JSON corruption of saved edits through the ZIP checksum', async () => {
@@ -223,7 +247,7 @@ describe('portable Studio backups', () => {
     const entries = await readStudioArchive(archive)
     entries.delete('assets/0/original.bin')
     await expect(
-      readStudioBackup(await writeStudioArchive(entries)),
+      readStudioBackup(await writeStudioArchive(blobs(entries))),
     ).rejects.toThrow('missing')
     const duplicateBytes = zipSync({
       'manifest.json': new TextEncoder().encode('{}'),
@@ -286,6 +310,36 @@ describe('portable Studio backups', () => {
       release()
     }
     expect(studioReservedMemoryBytes()).toBe(held)
+  })
+
+  it('reads an archive into one buffer per entry, holding its contents once', async () => {
+    const MiB = 1024 * 1024
+    const audio = new Uint8Array(4 * MiB).fill(7)
+    const stored = await writeStudioArchive(
+      new Map([
+        ['manifest.json', new Blob(['{}'])],
+        ['assets/0/canonical.pcm', new Blob([audio])],
+      ]),
+    )
+    const before = studioReservedMemoryBytes()
+
+    const entries = await readStudioArchive(stored)
+
+    // A byte-for-byte comparison of 4 MiB through toEqual takes seconds.
+    const same = (bytes: ArrayBuffer | undefined) =>
+      Buffer.from(bytes!).equals(Buffer.from(audio.buffer))
+    expect(studioReservedMemoryBytes() - before).toBe(4 * MiB + 2)
+    expect(same(entries.get('assets/0/canonical.pcm'))).toBe(true)
+    // Deflated entries, as other ZIP tools write them, read the same way.
+    const deflated = await readStudioArchive(
+      new Blob([
+        zipSync({
+          'manifest.json': new TextEncoder().encode('{}'),
+          'assets/0/original.bin': audio,
+        }),
+      ]),
+    )
+    expect(same(deflated.get('assets/0/original.bin'))).toBe(true)
   })
 
   it('writes an archive within its own size plus one fold, not twice its size', async () => {
