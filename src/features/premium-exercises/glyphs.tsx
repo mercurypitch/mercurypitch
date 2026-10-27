@@ -108,3 +108,22 @@ export const PlayGlyph: Component = () => (
     <path d="M8 5.5v13l11-6.5z" fill="currentColor" />
   </svg>
 )
+
+/** A lighthouse: its roof and lit lantern over a tapering tower, two rays out. */
+export const LighthouseGlyph: Component = () => (
+  <svg
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    stroke-width="1.7"
+    stroke-linecap="round"
+    stroke-linejoin="round"
+    aria-hidden="true"
+  >
+    <path d="M10.4 11h3.2l1.1 9.5H9.3z" />
+    <rect x="9.9" y="6.6" width="4.2" height="4.4" rx="0.6" />
+    <path d="M9.4 6.6 12 4l2.6 2.6" />
+    <path d="M7.5 20.5h9" />
+    <path d="M3 7.6l4.6 0.9M3 10.6l4.6-0.9M21 7.6l-4.6 0.9M21 10.6l-4.6-0.9" />
+  </svg>
+)

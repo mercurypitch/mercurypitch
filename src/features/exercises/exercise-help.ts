@@ -6,7 +6,7 @@
 // "vibrato" mean — `summary` is the one-liner, `body` is the gentle detail.
 
 import type { ExerciseType } from './types'
-import { EXERCISE_ARPEGGIO_JUMPER, EXERCISE_CALL_RESPONSE, EXERCISE_CHORD_STACKER, EXERCISE_DRONE_INTONATION, EXERCISE_DYNAMIC_SWELL, EXERCISE_ECHO_STARS, EXERCISE_INTERVAL_TRAINER, EXERCISE_LIP_ROLL_BAY, EXERCISE_LONG_NOTE, EXERCISE_LONG_NOTE_LANTERN, EXERCISE_MIRROR_MELODY, EXERCISE_NG_SLIDES_BRIDGE, EXERCISE_PITCH_HOLD, EXERCISE_PITCH_PURSUIT, EXERCISE_ROUTINE_RUNNER, EXERCISE_SCALE_RUNNER, EXERCISE_SIGHT_SINGING, EXERCISE_SIREN, EXERCISE_SLIDE, EXERCISE_STACCATO, EXERCISE_VIBRATO, EXERCISE_WARMUP, } from './types'
+import { EXERCISE_ARPEGGIO_JUMPER, EXERCISE_CALL_RESPONSE, EXERCISE_CHORD_STACKER, EXERCISE_DRONE_INTONATION, EXERCISE_DYNAMIC_SWELL, EXERCISE_ECHO_STARS, EXERCISE_HOME_NOTE_LIGHTHOUSE, EXERCISE_INTERVAL_TRAINER, EXERCISE_LIP_ROLL_BAY, EXERCISE_LONG_NOTE, EXERCISE_LONG_NOTE_LANTERN, EXERCISE_MIRROR_MELODY, EXERCISE_NG_SLIDES_BRIDGE, EXERCISE_PITCH_HOLD, EXERCISE_PITCH_PURSUIT, EXERCISE_ROUTINE_RUNNER, EXERCISE_SCALE_RUNNER, EXERCISE_SIGHT_SINGING, EXERCISE_SIREN, EXERCISE_SLIDE, EXERCISE_STACCATO, EXERCISE_VIBRATO, EXERCISE_WARMUP, } from './types'
 
 export interface ExerciseHelp {
   /** One-line summary shown in the idle area and the menu card. */
@@ -68,6 +68,15 @@ export const EXERCISE_HELP: Record<ExerciseType, ExerciseHelp> = {
       'Close your mouth on the "ng" at the end of "sing" and hum. Each slide starts on the note Merc plays, rises a fifth along the arch, holds the top for a moment and comes back down. The five slides start a semitone apart, each one higher than the last.',
       'The bridge moves at the pace of the slides. Where your hum follows the line, that stretch of glass lights and stays lit. A hum that jumps from note to note instead of sliding leaves dark gaps. Your Accuracy Tier sets how fast the slides go and how close you need to stay.',
       'The big number is how much of the bridge you lit. At Professional, the top of each slide counts too: Tops is how many slides reached the top note in tune.',
+    ],
+  },
+  [EXERCISE_HOME_NOTE_LIGHTHOUSE]: {
+    summary:
+      'The band plays a short intro and stops. Sing the note it calls home, and the lighthouse lights when your voice gets there.',
+    body: [
+      "Every key has a home: the note its chords lean on and settle back to. After a song's intro, it is often where the first line starts. Listen to the chords, then sing the note that feels finished, in any octave.",
+      'Your voice draws a line over the water. The lighthouse beam is home: hold your voice in the band of light around it and the band plays home under you. Miss it, and Merc sings it so you hear where it was. A run is six keys.',
+      'Your Accuracy Tier sets how much help the intro gives and how close you need to be. At Learning, Merc sings home after the chords and you match him. At Singer, nobody sings it first. At Professional, the band plays only two chords. The big number is how many keys you found; under it, how quickly.',
     ],
   },
   [EXERCISE_VIBRATO]: {

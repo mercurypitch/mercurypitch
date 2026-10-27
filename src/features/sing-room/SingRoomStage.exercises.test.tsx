@@ -229,6 +229,7 @@ describe('at rest', () => {
       'warm-up-path',
       'lip-roll-bay',
       'ng-slides-bridge',
+      'home-note-lighthouse',
     ])
     fireEvent.click(cards[0])
 

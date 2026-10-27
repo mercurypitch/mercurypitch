@@ -1,0 +1,201 @@
+/* Home note's world: the night harbour (HarbourScene.tsx). Every colour
+   here is a stand-in's flat colour; the beam, the band, the trail and the
+   lamp are the exercise and keep their look under a painting. */
+
+.scene {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  background: #050818;
+  isolation: isolate;
+}
+
+.backdrop,
+.overlay {
+  position: absolute;
+  left: 0;
+  top: 0;
+  display: block;
+  pointer-events: none;
+}
+
+.star {
+  fill: #e8ecff;
+  opacity: 0.75;
+}
+
+.moon {
+  fill: #fdf3d2;
+}
+
+.hills {
+  fill: #0a1030;
+}
+
+.rocks {
+  fill: #0b0f24;
+}
+
+.tower {
+  fill: #c9ccd8;
+}
+
+.stripe {
+  fill: #7c3040;
+}
+
+.gallery,
+.roof {
+  fill: #23253a;
+}
+
+/* The lantern room's glass: warm while the lamp burns. */
+.lantern {
+  fill: #ffe7a8;
+  opacity: 0.55;
+}
+
+.pier {
+  fill: #1c1a2c;
+}
+
+/* The sea's slow swell: four faint lines drifting sideways. */
+.wave {
+  fill: none;
+  stroke: rgba(150, 170, 255, 0.16);
+  stroke-width: 1.4;
+  animation: home-swell 7s ease-in-out infinite alternate;
+}
+
+@keyframes home-swell {
+  from {
+    transform: translateX(-3%);
+  }
+
+  to {
+    transform: translateX(3%);
+  }
+}
+
+/* Home's band: the level's tolerance around the beam, fading away from
+   the lamp as the beam does. Faint until the singer's turn, warm while the
+   voice is in it. */
+.band {
+  opacity: 0.08;
+  mix-blend-mode: plus-lighter;
+  transition: opacity 220ms ease;
+}
+
+@supports not (mix-blend-mode: plus-lighter) {
+  .band {
+    mix-blend-mode: screen;
+  }
+}
+
+.turn .band {
+  opacity: 0.13;
+}
+
+.lit .band {
+  opacity: 0.3;
+}
+
+/* Home's beam, from the lamp across the sea. */
+.beam {
+  stroke-width: 2;
+  stroke-dasharray: 6 8;
+  opacity: 0.55;
+  transition: opacity 220ms ease;
+}
+
+.turn .beam {
+  stroke-dasharray: none;
+  opacity: 0.9;
+}
+
+/* The voice's trail: violet like the singer's line everywhere in the app,
+   gold while it rides the beam. */
+.trail {
+  fill: none;
+  stroke: #a78bfa;
+  stroke-width: 3.5;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  filter: drop-shadow(0 0 4px rgba(167, 139, 250, 0.7));
+}
+
+.lit .trail {
+  stroke: #ffd977;
+  filter: drop-shadow(0 0 6px rgba(255, 217, 119, 0.85));
+}
+
+.head {
+  fill: #f1ecff;
+  filter: drop-shadow(0 0 6px rgba(167, 139, 250, 0.9));
+}
+
+.lit .head {
+  fill: #fff4cf;
+}
+
+/* The lamp: dim at rest, lit while the voice is home. */
+.lamp {
+  opacity: 0.45;
+  transform-box: fill-box;
+  transform-origin: center;
+  transition:
+    opacity 260ms ease,
+    transform 260ms ease;
+}
+
+.lit .lamp {
+  opacity: 1;
+  transform: scale(1.35);
+}
+
+/* One flash of the lamp per chord of the band. Keyed on the beat, so each
+   chord starts it again. */
+.pulse {
+  fill: rgba(255, 226, 154, 0.5);
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: home-pulse 640ms ease-out forwards;
+}
+
+@keyframes home-pulse {
+  from {
+    opacity: 0.9;
+    transform: scale(0.6);
+  }
+
+  to {
+    opacity: 0;
+    transform: scale(1.8);
+  }
+}
+
+.still .wave,
+.still .pulse {
+  animation: none;
+}
+
+.still .pulse {
+  opacity: 0;
+}
+
+.still .lamp,
+.still .band,
+.still .beam {
+  transition: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .wave,
+  .pulse {
+    animation: none;
+  }
+
+  .pulse {
+    opacity: 0;
+  }
+}

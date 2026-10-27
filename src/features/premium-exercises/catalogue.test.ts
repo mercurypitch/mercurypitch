@@ -30,7 +30,7 @@ describe('the exercise catalogue', () => {
     expect(grouped).toEqual(EXERCISE_CATALOGUE.map((exercise) => exercise.id))
   })
 
-  it('heads the pitch rooms Pitch and the warm-ups Warm-ups', () => {
+  it('heads the pitch rooms Pitch, the warm-ups Warm-ups and the Ear rooms Ear', () => {
     expect(
       catalogueGroups().map((group) => [
         group.title,
@@ -39,6 +39,20 @@ describe('the exercise catalogue', () => {
     ).toEqual([
       ['Pitch', ['Long note', 'Echo']],
       ['Warm-ups', ['Warm-up', 'Lip roll', 'Ng slides']],
+      ['Ear', ['Home note']],
+    ])
+  })
+
+  it('names Home note by its task, with no note of its own to open on', () => {
+    const home = catalogueEntry('home-note-lighthouse')
+    expect(home?.name).toBe('Home note')
+    expect(home?.line).toBe(
+      'The band plays an intro. Sing the note that feels like home.',
+    )
+    expect([home?.note(), home?.demoAutoPlays(), home?.bestOnNote]).toEqual([
+      null,
+      false,
+      false,
     ])
   })
 

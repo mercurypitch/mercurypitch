@@ -335,3 +335,22 @@
   width: 14px;
   height: 14px;
 }
+
+/* ── The Ear Lab's "With Merc" row (EarMercRow.tsx) ────────────── */
+
+/* Over the bench, in the app's own type rather than the bench's serif: the
+   rooms it opens are Merc's, not the Lab's instruments. */
+.earRow {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 4px 0 18px;
+}
+
+.earKicker {
+  margin: 0;
+  font: 600 12px/16px var(--font-body, sans-serif);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-tertiary, #8b949e);
+}
