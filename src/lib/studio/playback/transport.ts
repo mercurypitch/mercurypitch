@@ -1,4 +1,11 @@
 // Studio transport — one borrowed clock, explicit playback intent and generation-owned graph cleanup.
+//
+// An edit the running graph cannot follow builds a new run while the old one
+// keeps playing ("held"), then hands over on the same frame with a short
+// crossfade (handoff.ts), so the song never stops for an edit. A newer edit
+// replaces a run that is not heard yet, so a burst of edits builds one run at
+// a time. Only when memory cannot hold both graphs does the song fade out and
+// restart where it was.
 import type { AudioContextLease } from '@/lib/audio-context-lease'
 import { closeEnvelope } from '@/lib/preview-player'
 import type { ChainSpec } from '@/lib/studio-fx/chain-spec'
@@ -7,26 +14,39 @@ import { measureTrackLatencies } from '@/lib/studio-fx/mixdown'
 import type { StudioMasterGain, StudioMasterGainToken, } from '../export/sound-graph'
 import { resolveStudioSoundGraph } from '../export/sound-graph'
 import { reserveStudioMemory } from '../memory-budget'
-import { createStudioLiveMeter, prepareStudioLiveMeter, } from '../metering/live-meter'
+import { createStudioLaneMeter, prepareStudioLiveMeter, } from '../metering/live-meter'
 import type { StudioMeterSnapshot } from '../metering/stream-meter'
-import { compileStudioArrangement, studioLaneSpec, } from '../model/arrangement-plan'
-import type { StudioAsset, StudioProject, StudioTrack } from '../model/types'
-import type { StudioBufferCache, StudioBufferLease } from './buffer-cache'
+import type { StudioArrangementPlan } from '../model/arrangement-plan'
+import { compileStudioArrangement } from '../model/arrangement-plan'
+import type { StudioAsset, StudioProject } from '../model/types'
+import type { StudioBufferCache } from './buffer-cache'
 import { createStudioBufferCache } from './buffer-cache'
-import type { StudioGraph } from './graph'
 import { buildStudioGraph, studioGraphWorkingBytes } from './graph'
+import { cancelHandoff, handoffTiming, scheduleHandoff } from './handoff'
+import type { StudioDrafts, StudioLaneDraft } from './in-place'
+import { applyDrafts, applyMix, applySound, followRepeat, playInPlace, withDrafts, } from './in-place'
 import type { StudioRunLayout } from './live-edit'
-import { audibility, firstThatFits, graphShape, laneTailFrames, soundKey, studioRunLayouts, } from './live-edit'
+import { audibility, firstThatFits, studioRunLayouts } from './live-edit'
 import type { StudioLatencyReader } from './prepare-plan'
-import { planAssets, planLatencySeconds, prepareStudioPlan, } from './prepare-plan'
+import { createLatencyCache, planAssets, planLatencySeconds, prepareStudioPlan, } from './prepare-plan'
+import type { StudioLaneLevel, StudioRun, StudioRunParts, StudioRunTiming, } from './run'
+import { buildStudioRun, openRunEnvelope, readLaneLevels, releaseRun, RUN_LOOKAHEAD_SECONDS, runEndsAt, runPosition, } from './run'
+import { warmStudioPlayback } from './warm-up'
+
+export type { StudioLaneDraft } from './in-place'
+export type { StudioLaneLevel } from './run'
 
 const RELEASE_MS = 240
+// A handed-over run is silent once its crossfade ends; free it a little later.
+const HANDOFF_RELEASE_SLACK_MS = 60
+// A handover this close is left to happen: taking it back could catch its crossfade begun.
+const CANCEL_MARGIN_SECONDS = 0.05
 // Lead time between building the graph and its first sound. It follows how
 // long the last build took, so a fast machine starts in about a tenth of a
 // second and a slow one still schedules ahead of its clock.
 const MIN_WARMUP_SECONDS = 0.1
 const MAX_WARMUP_SECONDS = 0.5
-const LOOKAHEAD_SECONDS = 2
+
 export interface StudioTransportState {
   playing: boolean
   pending: boolean
@@ -36,9 +56,9 @@ export interface StudioTransportState {
   error: string | null
   meter: StudioMeterSnapshot | null
   masterReady: boolean
+  /** Every built lane's level while the song plays; empty when it does not. */
+  lanes: readonly StudioLaneLevel[]
 }
-/** A lane's volume or pan while its control is still moving. */
-export type StudioLaneDraft = Partial<Pick<StudioTrack, 'gainDb' | 'pan'>>
 
 export interface StudioTransportOptions {
   lease: AudioContextLease
@@ -47,60 +67,34 @@ export interface StudioTransportOptions {
   cache?: StudioBufferCache
   measureLatencies?: StudioLatencyReader
   buildGraph?: typeof buildStudioGraph
+  createLaneMeter?: typeof createStudioLaneMeter
 }
-interface Run {
-  ctx: AudioContext
-  graph: StudioGraph
-  project: StudioProject
-  /** Tracks with material from where this run started. */
-  sounding: ReadonlySet<string>
-  envelope: GainNode
-  /** The measured master gains it was built with; sound edits keep them. */
-  measured: StudioMasterGain
-  meter: ReturnType<typeof createStudioLiveMeter>
-  buffers: StudioBufferLease
-  releaseMemory: () => void
-  startFrame: number
-  endFrame: number
-  audibleEpoch: number
-  /**
-   * Where the song stops, counting each pass from the song's start: the end
-   * of the pass that has begun, or Infinity while it repeats.
-   */
-  untilFrame: number
-  /** The longest chain tail among the lanes heard now. */
-  tailFrames: number
-  /** Its plan starts at the song's start, so it can loop there. */
-  canLoop: boolean
+
+/** A run taking over: `from` is heard until `at`, then crossfades to `to`. */
+interface Handoff {
+  readonly from: StudioRun
+  readonly to: StudioRun
+  readonly at: number
 }
 
 export function createStudioTransport(options: StudioTransportOptions) {
   const cache = options.cache ?? createStudioBufferCache()
-  // Chain latency depends on which effects there are, not on their settings,
-  // so one measurement per effect list serves every later Play and seek.
-  const latencies = new Map<string, number>()
-  const measureLatencies: StudioLatencyReader = async (specs, rate) => {
-    const frames: number[] = []
-    for (const spec of specs) {
-      const key = `${rate}:${spec.effects.map((effect) => effect.kind).join(',')}`
-      let value = latencies.get(key)
-      if (value === undefined) {
-        ;[value] = await (options.measureLatencies ?? measureTrackLatencies)(
-          [spec],
-          rate,
-        )
-        latencies.set(key, value)
-      }
-      frames.push(value)
-    }
-    return frames
-  }
+  const measureLatencies = createLatencyCache(
+    options.measureLatencies ?? measureTrackLatencies,
+  )
+  const buildGraph = options.buildGraph ?? buildStudioGraph
+  const createLaneMeter = options.createLaneMeter ?? createStudioLaneMeter
   let buildSeconds = 0.1
   let warming: Promise<void> = Promise.resolve()
   let warmAbort: AbortController | null = null
-  const retired = new Set<Run>()
-  const retiredTimers = new Map<Run, ReturnType<typeof setTimeout>>()
-  let active: Run | null = null
+  const retired = new Set<StudioRun>()
+  const retiredTimers = new Map<StudioRun, ReturnType<typeof setTimeout>>()
+  // The newest run: heard, or about to be once its handover begins.
+  let active: StudioRun | null = null
+  // The run heard while the next one is built to take over from it.
+  let held: StudioRun | null = null
+  // Handovers not over yet, oldest first.
+  const handoffs: Handoff[] = []
   let abort: AbortController | null = null
   let preparing = false
   let preparationSettled: (() => void) | null = null
@@ -112,9 +106,7 @@ export function createStudioTransport(options: StudioTransportOptions) {
   let repeat = false
   let masterGain: StudioMasterGainToken | null = null
   let restartGeneration = 0
-  // Controls still moving: heard at once, saved only when the gesture ends.
-  const laneDrafts = new Map<string, StudioLaneDraft>()
-  const macroDrafts = new Map<MacroKey, number>()
+  const drafts: StudioDrafts = { lanes: new Map(), macros: new Map() }
   let state: StudioTransportState = {
     playing: false,
     pending: false,
@@ -124,17 +116,28 @@ export function createStudioTransport(options: StudioTransportOptions) {
     error: null,
     meter: null,
     masterReady: false,
+    lanes: [],
   }
   let watchedContext: AudioContext | null = null
   const publish = (update: Partial<StudioTransportState>) => {
     state = { ...state, ...update }
     if (!disposed) options.changed(state)
   }
-  const position = (run: Run) => {
-    const frame =
-      run.startFrame +
-      Math.floor(Math.max(0, run.ctx.currentTime - run.audibleEpoch) * 48000)
-    return frame >= run.untilFrame ? run.endFrame : frame % run.endFrame
+
+  /** Every run heard or about to be: fading out in a handover, held, newest. */
+  function liveRuns(): StudioRun[] {
+    const runs = handoffs.map(({ from }) => from)
+    if (held) runs.push(held)
+    if (active) runs.push(active)
+    return runs
+  }
+
+  /** The run heard now: the newest one whose handover has begun. */
+  function heard(): StudioRun | null {
+    const run = active ?? held
+    if (!run) return null
+    const now = run.ctx.currentTime
+    return handoffs.find(({ at }) => now < at)?.from ?? run
   }
 
   function observeSnapshot(project: StudioProject): void {
@@ -147,105 +150,12 @@ export function createStudioTransport(options: StudioTransportOptions) {
     publish({ masterReady: masterGain !== null })
   }
 
-  /** The project as it sounds now: saved values under the controls still moving. */
-  function withDrafts(project: StudioProject): StudioProject {
-    if (!laneDrafts.size && !macroDrafts.size) return project
-    return {
-      ...project,
-      mix: {
-        ...project.mix,
-        macros: { ...project.mix.macros, ...Object.fromEntries(macroDrafts) },
-      },
-      tracks: project.tracks.map((track) => {
-        const draft = laneDrafts.get(track.id)
-        return draft ? { ...track, ...draft } : track
-      }),
-    }
-  }
-
-  /** Glide each lane to its volume and pan, or to silence; the lanes heard set the end. */
-  function applyMix(run: Run, project: StudioProject): void {
-    const audible = audibility(project)
-    for (const track of project.tracks)
-      run.graph.setLaneMix(track, audible(track))
-    run.tailFrames = laneTailFrames(run.graph, project)
-  }
-
-  /** Move the running chains to the project's sound; their tails set the end. */
-  function applySound(run: Run, project: StudioProject): void {
-    for (const track of project.tracks) {
-      if (run.graph.hasLane(track.id))
-        run.graph.setLaneSpec(
-          track.id,
-          studioLaneSpec(track, project.mix.macros),
-        )
-    }
-    run.graph.setMasterSpec(resolveStudioSoundGraph(project, run.measured).full)
-    run.tailFrames = laneTailFrames(run.graph, project)
-  }
-
-  /**
-   * Make the running graph follow the Repeat switch: on, it loops at the
-   * song's end; off, the pass that has begun is the last. False when the
-   * loop point has already gone by, so only a restart can loop.
-   */
-  function followRepeat(run: Run): boolean {
-    if (repeat === (run.untilFrame === Infinity)) return true
-    if (!repeat) {
-      run.untilFrame = (run.graph.stopRepeating() + 1) * run.endFrame
-      return true
-    }
-    if (!run.canLoop || !run.graph.repeat()) return false
-    run.untilFrame = Infinity
-    run.graph.scheduleUntil(run.ctx.currentTime + LOOKAHEAD_SECONDS)
-    return true
-  }
-
-  /** A control moved while the song was getting ready: start as it sounds. */
-  function applyDrafts(run: Run): void {
-    if (!laneDrafts.size && !macroDrafts.size) return
-    const live = withDrafts(run.project)
-    applyMix(run, live)
-    applySound(run, live)
-  }
-
-  /**
-   * Apply an edit to the running graph, so the song keeps playing. Lane
-   * volume, balance, pan, Mute and Solo glide, silent lanes included, and
-   * Repeat moves the loop; the macros, a flavour's master EQ and the ceiling
-   * move the running chains, which send only the values that changed. An
-   * edit to nothing the graph plays, such as an empty new lane or a name,
-   * changes nothing. False when it needs a restart: other clips or chain
-   * shapes, Repeat turned on after the loop point, or a lane brought in that
-   * Play left out because memory was short.
-   */
-  function playInPlace(run: Run, project: StudioProject): boolean {
-    if (graphShape(run.project) !== graphShape(project)) return false
-    if (!followRepeat(run)) return false
-    const live = withDrafts(project)
-    const audible = audibility(live)
-    const missing = live.tracks.some(
-      (track) =>
-        audible(track) &&
-        run.sounding.has(track.id) &&
-        !run.graph.hasLane(track.id),
-    )
-    if (missing) return false
-    applyMix(run, live)
-    if (macroDrafts.size || soundKey(run.project) !== soundKey(project))
-      applySound(run, live)
-    run.project = project
-    return true
-  }
-
-  function release(run: Run): void {
-    run.meter?.dispose()
-    run.graph.dispose()
-    run.envelope.disconnect()
-    run.buffers.release()
-    run.releaseMemory()
+  function release(run: StudioRun): void {
+    releaseRun(run)
     retired.delete(run)
     retiredTimers.delete(run)
+    const index = handoffs.findIndex(({ from }) => from === run)
+    if (index >= 0) handoffs.splice(index, 1)
     if (disposed) cache.dispose()
     if (!retired.size) {
       for (const settled of releasedListeners) settled()
@@ -253,10 +163,9 @@ export function createStudioTransport(options: StudioTransportOptions) {
     }
   }
 
-  function retire(): void {
-    const run = active
-    active = null
-    if (!run) return
+  /** Fade a run out now and free it once silent; one already fading fades now instead. */
+  function retire(run: StudioRun): void {
+    clearTimeout(retiredTimers.get(run))
     retired.add(run)
     if (run.ctx.state !== 'running') {
       release(run)
@@ -269,6 +178,20 @@ export function createStudioTransport(options: StudioTransportOptions) {
     )
   }
 
+  /** Fade out every run heard or about to be. The playhead stays where it was heard. */
+  function silence(): Partial<StudioTransportState> {
+    const shown = heard()
+    const stopped = { peakL: 0, peakR: 0, meter: null, lanes: [] }
+    const update = shown
+      ? { ...stopped, playheadFrame: runPosition(shown) }
+      : stopped
+    for (const run of liveRuns()) retire(run)
+    active = null
+    held = null
+    handoffs.length = 0
+    return update
+  }
+
   function pause(preserveIntent = false): void {
     if (!preserveIntent) {
       wantsPlayback = false
@@ -276,19 +199,11 @@ export function createStudioTransport(options: StudioTransportOptions) {
     }
     generation++
     abort?.abort()
-    if (active) publish({ playheadFrame: position(active) })
-    retire()
-    publish({
-      playing: false,
-      pending: preparing,
-      peakL: 0,
-      peakR: 0,
-      meter: null,
-    })
+    publish({ ...silence(), playing: false, pending: preparing })
   }
 
   function onClockState(): void {
-    if (watchedContext?.state !== 'running' && (active || preparing)) {
+    if (watchedContext?.state !== 'running' && (active || held || preparing)) {
       pause()
       publish({ error: 'Audio was interrupted. Press Play to continue.' })
       for (const run of [...retired]) {
@@ -316,6 +231,11 @@ export function createStudioTransport(options: StudioTransportOptions) {
     return ctx
   }
 
+  /** Where a run from `frame` starts: at the top once the song has ended there. */
+  function firstFrame(endFrame: number, frame: number): number {
+    return frame >= endFrame ? 0 : Math.max(0, Math.floor(frame))
+  }
+
   function playableContent(
     project: StudioProject,
     assets: readonly StudioAsset[],
@@ -324,11 +244,9 @@ export function createStudioTransport(options: StudioTransportOptions) {
     const content = compileStudioArrangement(project, assets)
     if (!content.lanes.some((lane) => lane.audible && lane.segments.length > 0))
       throw new Error('Add an audible take before playing.')
-    const from =
-      startFrame >= content.endFrame ? 0 : Math.max(0, Math.floor(startFrame))
     if (repeat && content.endFrame < 12000)
       throw new Error('A song needs at least a quarter second to repeat.')
-    return { content, from }
+    return { content, from: firstFrame(content.endFrame, startFrame) }
   }
 
   async function prepareMaster(
@@ -350,6 +268,37 @@ export function createStudioTransport(options: StudioTransportOptions) {
     if (built !== null) buildSeconds = (performance.now() - built) / 1000
   }
 
+  /**
+   * When the new run is heard and from which frame: in step with the held
+   * run, or, starting from silence, as soon as it can be built from
+   * `restartFrom`. Null when the held run plays its last pass out before it
+   * could take over, so the song ends there.
+   */
+  function runTiming(
+    ctx: AudioContext,
+    plan: StudioArrangementPlan,
+    latency: number,
+    restartFrom: number,
+  ): StudioRunTiming | null {
+    const warmup = Math.min(
+      MAX_WARMUP_SECONDS,
+      Math.max(MIN_WARMUP_SECONDS, buildSeconds * 2 + 0.04),
+    )
+    const earliest = ctx.currentTime + warmup + latency
+    if (held) {
+      const timing = handoffTiming(held, earliest, plan.endFrame)
+      if (timing || !repeat) return timing
+      // Repeat came on after the held run's loop point: start again from the top.
+      retire(held)
+      held = null
+      return { fromFrame: 0, audibleEpoch: earliest }
+    }
+    return {
+      fromFrame: firstFrame(plan.endFrame, restartFrom),
+      audibleEpoch: earliest,
+    }
+  }
+
   async function play(
     project: StudioProject,
     assets: readonly StudioAsset[],
@@ -365,19 +314,40 @@ export function createStudioTransport(options: StudioTransportOptions) {
     wantsPlayback = true
     restartGeneration++
     pause(true)
-    const token = ++generation
+    return start(project, assets, startFrame)
+  }
+
+  /** A preparation begins: Play and edits wait for it to settle. */
+  function begin(): AbortController {
     const attempt = new AbortController()
     abort = attempt
     preparing = true
     preparationDone = new Promise<void>((resolve) => {
       preparationSettled = resolve
     })
-    publish({ pending: true, error: null })
-    let buffers: StudioBufferLease | undefined
-    let releaseMemory: (() => void) | undefined
-    let graph: StudioGraph | undefined
-    let envelope: GainNode | undefined
-    let meter: ReturnType<typeof createStudioLiveMeter> = null
+    // A held run plays on, so the song is not waiting for anything.
+    publish(held ? { error: null } : { pending: true, error: null })
+    return attempt
+  }
+
+  function settle(attempt: AbortController): void {
+    preparing = false
+    if (!active && !held) publish({ pending: false })
+    preparationSettled?.()
+    preparationSettled = null
+    if (abort === attempt) abort = null
+  }
+
+  /** Build and start a run: from `startFrame`, or taking over from the held run. */
+  async function start(
+    project: StudioProject,
+    assets: readonly StudioAsset[],
+    startFrame: number,
+  ): Promise<boolean> {
+    const token = ++generation
+    const attempt = begin()
+    const handingOver = held !== null
+    let admitted: Awaited<ReturnType<typeof admit>> | undefined
     let built: number | null = null
     try {
       // Called immediately by an explicit UI action, before asset reads.
@@ -393,118 +363,178 @@ export function createStudioTransport(options: StudioTransportOptions) {
       await warming
       attempt.signal.throwIfAborted()
       const masterLatency = await prepareMaster(ctx, sound.full, attempt.signal)
-      const admitted = await firstThatFits(
-        studioRunLayouts(from, repeat),
-        (layout) =>
-          admit(project, assets, ctx, sound.full, layout, attempt.signal),
+      admitted = await firstThatFits(studioRunLayouts(from, repeat), (layout) =>
+        admit(project, assets, ctx, sound.full, layout, attempt.signal),
       )
-      ;({ buffers, releaseMemory } = admitted)
-      const { plan, silentLanes } = admitted
       attempt.signal.throwIfAborted()
       if (token !== generation || disposed)
         throw new DOMException('Playback cancelled', 'AbortError')
       built = performance.now()
-      const epoch =
-        ctx.currentTime +
-        Math.min(
-          MAX_WARMUP_SECONDS,
-          Math.max(MIN_WARMUP_SECONDS, buildSeconds * 2 + 0.04),
-        )
-      const audibleEpoch = epoch + planLatencySeconds(plan) + masterLatency
-      graph = (options.buildGraph ?? buildStudioGraph)(
+      const latency = planLatencySeconds(admitted.plan) + masterLatency
+      // A held run dropped for memory leaves the playhead where it stopped.
+      const timing = runTiming(
         ctx,
-        plan,
-        buffers.buffers,
-        epoch,
-        {
-          metering: true,
-          fromFrame: from,
-          repeat,
-          silentLanes,
-          master: { spec: sound.full },
-        },
+        admitted.plan,
+        latency,
+        handingOver ? state.playheadFrame : from,
       )
-      envelope = ctx.createGain()
-      envelope.gain.value = 0
-      envelope.gain.setValueAtTime(0.0001, audibleEpoch)
-      envelope.gain.exponentialRampToValueAtTime(1, audibleEpoch + 0.09)
-      graph.output.connect(envelope)
-      envelope.connect(ctx.destination)
-      meter = createStudioLiveMeter(ctx, envelope, audibleEpoch)
-      graph.scheduleUntil(ctx.currentTime + LOOKAHEAD_SECONDS)
-      active = {
+      if (!timing) return playOut()
+      launch({
+        ...admitted,
         ctx,
-        graph,
         project,
-        sounding: new Set(
-          plan.lanes
-            .filter((lane) => lane.segments.length > 0)
-            .map((lane) => lane.track.id),
-        ),
-        envelope,
+        master: sound.full,
         measured,
-        meter,
-        buffers,
-        releaseMemory,
-        startFrame: from,
-        endFrame: plan.endFrame,
-        audibleEpoch,
-        untilFrame: repeat ? Infinity : plan.endFrame,
-        tailFrames: plan.tailFrames,
-        canLoop: plan.startFrame === 0,
-      }
-      buffers = undefined
-      releaseMemory = undefined
-      graph = undefined
-      envelope = undefined
-      meter = null
-      applyDrafts(active)
-      publish({ playing: true, pending: false, playheadFrame: from })
+        timing,
+        latency,
+      })
+      admitted = undefined
       return true
     } catch (error) {
-      if (token === generation && !disposed && !attempt.signal.aborted) {
-        wantsPlayback = false
-        publish({
-          pending: false,
-          playing: false,
-          error:
-            error instanceof Error
-              ? error.message
-              : 'Studio could not play this project.',
-        })
-      }
+      if (token === generation && !disposed && !attempt.signal.aborted)
+        failed(error)
       return false
     } finally {
       learnWarmup(built)
-      meter?.dispose()
-      graph?.dispose()
-      envelope?.disconnect()
-      buffers?.release()
-      releaseMemory?.()
-      preparing = false
-      if (!active) publish({ pending: false })
-      preparationSettled?.()
-      preparationSettled = null
-      if (abort === attempt) abort = null
+      admitted?.buffers.release()
+      admitted?.releaseMemory()
+      settle(attempt)
     }
   }
 
+  /** Start a built run: the held run hands over to it, or it opens from silence. */
+  function launch(
+    parts: Omit<
+      StudioRunParts,
+      'repeat' | 'buildGraph' | 'createLaneMeter' | 'open'
+    >,
+  ): void {
+    const outgoing = held
+    const run = buildStudioRun({
+      ...parts,
+      repeat,
+      buildGraph,
+      createLaneMeter,
+      open: outgoing
+        ? (envelope, time) => scheduleHandoff(outgoing.envelope, envelope, time)
+        : openRunEnvelope,
+    })
+    active = run
+    if (outgoing) handOver(outgoing, run, parts.timing.audibleEpoch)
+    applyDrafts(run, drafts)
+    const { fromFrame } = parts.timing
+    publish(
+      outgoing
+        ? { playing: true }
+        : { playing: true, pending: false, playheadFrame: fromFrame },
+    )
+  }
+
+  /** The held run reaches its end before a new run could take over: it plays out. */
+  function playOut(): boolean {
+    active = held
+    held = null
+    return true
+  }
+
+  function failed(error: unknown): void {
+    wantsPlayback = false
+    // A held run cannot hand over to a run that failed: it stops too.
+    publish({
+      ...silence(),
+      pending: false,
+      playing: false,
+      error:
+        error instanceof Error
+          ? error.message
+          : 'Studio could not play this project.',
+    })
+  }
+
+  /** `from` is heard until `at`, then fades as `to` comes in; it is freed once silent. */
+  function handOver(from: StudioRun, to: StudioRun, at: number): void {
+    held = null
+    handoffs.push({ from, to, at })
+    retired.add(from)
+    releaseWhenSilent(from, to.openAt)
+  }
+
+  /** Free a handed-over run after its crossfade, by the audio clock, which can fall behind. */
+  function releaseWhenSilent(run: StudioRun, silentAt: number): void {
+    const wait = Math.max(0, silentAt - run.ctx.currentTime) * 1000
+    retiredTimers.set(
+      run,
+      setTimeout(() => {
+        if (run.ctx.state === 'running' && run.ctx.currentTime < silentAt)
+          releaseWhenSilent(run, silentAt)
+        else release(run)
+      }, wait + HANDOFF_RELEASE_SLACK_MS),
+    )
+  }
+
+  /**
+   * Take back a handover that has not begun: its `from` plays on at full
+   * level, and its `to`, never heard, is freed at once. False when it
+   * begins too soon to take back.
+   */
+  function cancelHandover(handoff: Handoff): boolean {
+    const { from, to, at } = handoff
+    if (at - to.ctx.currentTime < CANCEL_MARGIN_SECONDS) return false
+    cancelHandoff(from.envelope, at)
+    from.openAt = Math.max(from.openAt, at)
+    clearTimeout(retiredTimers.get(from))
+    retiredTimers.delete(from)
+    retired.delete(from)
+    handoffs.splice(handoffs.indexOf(handoff), 1)
+    release(to)
+    return true
+  }
+
+  /**
+   * Hold the run heard while the next one is built for `project`. A newer
+   * edit replaces the run built for an older one, until that run is heard,
+   * so a burst of edits never stacks runs. Without a run to hold, the song
+   * stops and restarts. Returns where a restart starts.
+   */
+  function hold(project: StudioProject): number {
+    if (active && !preparing) {
+      const pending = handoffs.find(({ to }) => to === active)
+      held = pending && cancelHandover(pending) ? pending.from : active
+      active = null
+    } else if (held) {
+      generation++
+      abort?.abort()
+    } else {
+      const shown = heard()
+      const frame = shown ? runPosition(shown) : state.playheadFrame
+      pause(true)
+      return frame
+    }
+    // Mute, Solo and the faders reach the held run at once.
+    applyMix(held, withDrafts(project, drafts))
+    return runPosition(heard() ?? held)
+  }
+
   const timer = setInterval(() => {
-    const run = active
+    const run = active ?? held
     if (!run) return
     try {
-      run.graph.scheduleUntil(run.ctx.currentTime + LOOKAHEAD_SECONDS)
-      const meter = run.meter?.read() ?? null
+      const ahead = run.ctx.currentTime + RUN_LOOKAHEAD_SECONDS
+      for (const live of liveRuns()) live.graph.scheduleUntil(ahead)
+      const shown = heard() ?? run
+      const meter = shown.meter?.read() ?? null
       const [peakL, peakR] = meter
         ? [meter.peakL, meter.peakR]
-        : run.graph.readPeaks()
+        : shown.graph.readPeaks()
       publish({
-        playheadFrame: position(run),
+        playheadFrame: runPosition(shown),
         peakL,
         peakR,
         meter,
+        // A tick with nothing new, or a run just taken over, keeps the last.
+        lanes: readLaneLevels(shown) ?? state.lanes,
       })
-      if (run.ctx.currentTime >= endsAt(run)) pause()
+      if (run.ctx.currentTime >= runEndsAt(run)) pause()
     } catch (error) {
       pause()
       publish({
@@ -514,8 +544,10 @@ export function createStudioTransport(options: StudioTransportOptions) {
   }, 33)
 
   /**
-   * A seek or edit starts the next run while the last one fades for 240 ms.
-   * When both graphs do not fit, wait for the fade instead of failing.
+   * A seek or edit starts the next run while the last one still plays or
+   * fades. When both graphs do not fit, a held run stops, so the song fades
+   * out and restarts where it was, and the new run waits for the fade:
+   * waiting while it still played would wait forever.
    */
   async function reserveGraph(
     bytes: number,
@@ -524,6 +556,7 @@ export function createStudioTransport(options: StudioTransportOptions) {
     try {
       return reserveStudioMemory(bytes)
     } catch (error) {
+      if (held) publish({ ...silence(), playing: false, pending: true })
       if (!retired.size) throw error
       await new Promise<void>((resolve) => releasedListeners.add(resolve))
       signal.throwIfAborted()
@@ -537,14 +570,14 @@ export function createStudioTransport(options: StudioTransportOptions) {
     assets: readonly StudioAsset[],
     ctx: AudioContext,
     master: ChainSpec,
-    { silentLanes, start }: StudioRunLayout,
+    { silentLanes, start: planStart }: StudioRunLayout,
     signal: AbortSignal,
   ) {
     const plan = await prepareStudioPlan(
       project,
       assets,
       ctx.sampleRate,
-      start,
+      planStart,
       signal,
       measureLatencies,
       silentLanes,
@@ -575,63 +608,29 @@ export function createStudioTransport(options: StudioTransportOptions) {
 
   /**
    * Read the song's audio and measure its chains before anyone presses Play,
-   * so the press only builds the graph. Best effort: a failure here is
-   * reported, if at all, by the Play that needs the same work.
+   * so the press only builds the graph.
    */
   function warm(
     project: StudioProject,
     assets: readonly StudioAsset[],
   ): Promise<void> {
     // A function, so each check reads the state after the awaits before it.
-    const busy = () => disposed || preparing || active !== null
+    const busy = () => disposed || preparing || active !== null || held !== null
     if (busy()) return warming
     const abort = new AbortController()
     warmAbort = abort
     const run = warming.then(async () => {
       if (busy() || abort.signal.aborted) return
-      // Before the first gesture the app has no AudioContext yet. Buffers are
-      // not tied to one, and the device rate is one of the two common ones.
-      const live = options.lease.ensure()
-      const factory =
-        live ??
-        (typeof OfflineAudioContext === 'undefined'
-          ? null
-          : new OfflineAudioContext(1, 1, 48000))
-      if (!factory) return
-      const rates = live ? [live.sampleRate] : [48000, 44100]
-      const signal = abort.signal
       try {
         playableContent(project, assets, 0)
-        if (live) await prepareStudioLiveMeter(live)
-        const plans: Awaited<ReturnType<typeof prepareStudioPlan>>[] = []
-        for (const rate of rates) {
-          await measureLatencies(
-            [resolveStudioSoundGraph(project, masterGain ?? undefined).full],
-            rate,
-          )
-          plans.push(
-            await prepareStudioPlan(
-              project,
-              assets,
-              rate,
-              0,
-              signal,
-              measureLatencies,
-              true,
-            ),
-          )
-        }
-        const plan = plans.at(-1)
-        if (plan === undefined || busy() || signal.aborted) return
-        const lease = await firstThatFits([true, false], (silentLanes) =>
-          cache.acquire(
-            planAssets(plan, assets, silentLanes),
-            factory,
-            options.readCanonicalAsset,
-            signal,
-          ),
-        )
-        lease.release()
+        await warmStudioPlayback(project, assets, abort.signal, {
+          lease: options.lease,
+          cache,
+          measureLatencies,
+          readCanonicalAsset: options.readCanonicalAsset,
+          masterGain: masterGain ?? undefined,
+          busy,
+        })
       } catch {
         // Play repeats this work and reports its own failure.
       } finally {
@@ -651,7 +650,7 @@ export function createStudioTransport(options: StudioTransportOptions) {
      */
     setRepeat(enabled: boolean) {
       repeat = enabled
-      if (active && !preparing) followRepeat(active)
+      for (const run of [active, held]) if (run) followRepeat(run, enabled)
     },
     setMasterGain(value: StudioMasterGainToken | null) {
       if (
@@ -668,7 +667,7 @@ export function createStudioTransport(options: StudioTransportOptions) {
       publish({ masterReady: masterGain !== null })
     },
     resetPeakHold() {
-      active?.meter?.clearPeakHold()
+      heard()?.meter?.clearPeakHold()
     },
     /**
      * Hear a lane's volume or pan while its control moves, without saving.
@@ -676,25 +675,26 @@ export function createStudioTransport(options: StudioTransportOptions) {
      * it after the gesture's own commit.
      */
     previewLane(trackId: string, draft: StudioLaneDraft | null): void {
-      if (draft === null) laneDrafts.delete(trackId)
-      else laneDrafts.set(trackId, { ...draft })
-      const run = active
-      if (!run) return
-      const live = withDrafts(run.project)
-      const track = live.tracks.find((item) => item.id === trackId)
-      if (track) run.graph.setLaneMix(track, audibility(live)(track))
+      if (draft === null) drafts.lanes.delete(trackId)
+      else drafts.lanes.set(trackId, { ...draft })
+      for (const run of liveRuns()) {
+        const live = withDrafts(run.project, drafts)
+        const track = live.tracks.find((item) => item.id === trackId)
+        if (track) run.graph.setLaneMix(track, audibility(live)(track))
+      }
     },
     /** The same for a sound macro: the running chains follow a moving dial. */
     previewMacro(name: MacroKey, value: number | null): void {
-      if (value === null) macroDrafts.delete(name)
-      else macroDrafts.set(name, value)
-      if (active) applySound(active, withDrafts(active.project))
+      if (value === null) drafts.macros.delete(name)
+      else drafts.macros.set(name, value)
+      for (const run of liveRuns())
+        applySound(run, withDrafts(run.project, drafts))
     },
     pause: () => pause(),
     stop() {
       pause()
-      laneDrafts.clear()
-      macroDrafts.clear()
+      drafts.lanes.clear()
+      drafts.macros.clear()
       publish({ playheadFrame: 0, error: null })
       cache.clear()
     },
@@ -713,14 +713,23 @@ export function createStudioTransport(options: StudioTransportOptions) {
     ): Promise<void> {
       observeSnapshot(project)
       if (!wantsPlayback || disposed) return
-      if (active && !preparing && playInPlace(active, project)) return
+      if (
+        active &&
+        !preparing &&
+        playInPlace(active, project, { drafts, repeat })
+      ) {
+        // A run heard until its handover follows the mix too.
+        for (const { from } of handoffs)
+          applyMix(from, withDrafts(project, drafts))
+        return
+      }
       const token = ++restartGeneration
-      const frame = active ? position(active) : state.playheadFrame
-      pause(true)
-      // The old run fades out on its own while the new one prepares.
+      const frame = hold(project)
+      // A held run plays on, and a faded one fades on its own, while the
+      // last preparation settles.
       await preparationDone
       if (wantsPlayback && !disposed && token === restartGeneration)
-        await play(project, assets, frame)
+        await start(project, assets, frame)
     },
     async seek(
       frame: number,
@@ -760,11 +769,3 @@ export function createStudioTransport(options: StudioTransportOptions) {
 }
 
 export type StudioTransport = ReturnType<typeof createStudioTransport>
-
-/** When a run has played out, its tail included: never while it repeats. */
-function endsAt(run: Run): number {
-  return run.untilFrame === Infinity
-    ? Infinity
-    : run.audibleEpoch +
-        (run.untilFrame - run.startFrame + run.tailFrames) / 48000
-}
