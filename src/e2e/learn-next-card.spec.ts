@@ -202,6 +202,51 @@ test("Lesson 9's card names Lesson 10, ready, sets it up with its tease above th
   )
 })
 
+test("Lesson 10's card sets up Lesson 11 with its tease, one line above its hook, and its still after the words holds no button, no words and no red", async ({
+  page,
+}) => {
+  // Act
+  await page.goto('/learn/10')
+
+  // Assert
+  const c = card(page)
+  await expect(c.locator('.next-tease')).toHaveText(
+    LESSON_COPY[11]?.tease ?? 'Lesson 11 has a tease',
+  )
+  await expect(c.locator('.next-tease')).toBeVisible()
+  expect(
+    await c
+      .locator('.next-words > *')
+      .evaluateAll((els) => els.map((e) => e.className)),
+  ).toEqual(['eyebrow', 'next-tease', 'q2', 'chip'])
+  // the page's tease still, kept after the words
+  expect(
+    await c.evaluate((a) =>
+      Array.from(a.children, (k) => k.classList[0] ?? k.tagName),
+    ),
+  ).toEqual(['next-words', 'l10-tease'])
+  await expect(c.locator('button')).toHaveCount(0)
+  const still = c.locator('svg.l10-tease')
+  await expect(still).toBeVisible()
+  await expect(still).toHaveAttribute('aria-hidden', 'true')
+  // a picture: no words or notes on it, nothing red, and nothing moving
+  expect(
+    await still.evaluate((svg) => ({
+      words: (svg.textContent ?? '').trim(),
+      red: Array.from(svg.querySelectorAll('*')).flatMap((el) => {
+        const s = getComputedStyle(el)
+        return [s.fill, s.stroke].filter((paint) => {
+          const m = /^rgba?\((\d+), (\d+), (\d+)/.exec(paint)
+          if (m === null) return false
+          const [r, g, b] = m.slice(1).map(Number)
+          return r > 150 && g < 110 && b < 110
+        })
+      }),
+      moving: svg.getAnimations({ subtree: true }).length,
+    })),
+  ).toEqual({ words: '', red: [], moving: 0 })
+})
+
 test("Lesson 2's card, its two figures kept, leads to Lesson 3's page @smoke", async ({
   page,
 }) => {

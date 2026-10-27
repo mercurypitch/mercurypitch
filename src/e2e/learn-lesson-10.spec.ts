@@ -16,7 +16,9 @@
 // gold on the spiral until it shows, its ring naming each black key by its
 // flat; its ninth, the recall shown to everyone and marking nothing done,
 // with Lesson 6's step links in a new tab, and the quick check marking
-// Lesson 10 done; and its fourteenth: a visitor with the studio installed
+// Lesson 10 done; its tenth, every practice link carrying lesson=10 before
+// any hash and opening a tab of its own, the Wrap's card in both its
+// versions; and its fourteenth: a visitor with the studio installed
 // still gets the lesson, not the shell. The chord beads by keyboard, and
 // Step 5's predict, are learn-lesson-10-beads.spec.ts's. Each toy's own
 // checks join them as that toy is wired.
@@ -350,6 +352,75 @@ for (const viewport of [
     })
   })
 }
+
+/** Every link on the page into the app, other than the lesson pages and the home and plan links, with its target and rel. */
+const appLinks = (page: Page): Promise<(string | null)[][]> =>
+  page
+    .locator('a[href^="/"]')
+    .evaluateAll((links) =>
+      links
+        .map((a) => [
+          a.getAttribute('href'),
+          a.getAttribute('target'),
+          a.getAttribute('rel'),
+        ])
+        .filter(
+          ([href]) =>
+            href !== null &&
+            href !== '/' &&
+            !href.startsWith('/learn/') &&
+            !href.startsWith('/#'),
+        ),
+    )
+
+// WEB-SPEC, End to end 10, as learn-lesson-08.spec.ts checks its card
+test("every practice link carries lesson=10 before any hash and opens a tab of its own, and the Wrap's rest card links no singing drill", async ({
+  page,
+}) => {
+  // Arrange: the map's card for this lesson drawn, with its practise link
+  await page.goto('/learn/10')
+  await expect(page.locator('#exCardHost h3')).toHaveText('Major and minor')
+  const practise = page.locator('#practiseCard')
+  /** The card's links a viewer sees, each with its target and rel. */
+  const shown = (): Promise<(string | null)[][]> =>
+    practise
+      .locator('a:visible')
+      .evaluateAll((links) =>
+        links.map((a) => [
+          a.getAttribute('href'),
+          a.getAttribute('target'),
+          a.getAttribute('rel'),
+        ]),
+      )
+  await expect(practise.locator('[data-ending="practise"]')).toBeVisible()
+  const practiseLinks = await shown()
+
+  // Act: "Just listen today" leaves the rest card in the Wrap
+  await page.locator('[data-comfort="listen"]').click()
+  await expect(practise.locator('[data-ending="rest"]')).toBeVisible()
+  await expect(practise.locator('[data-ending="practise"]')).toBeHidden()
+
+  // Assert: the practise card links Drone Intonation and Stack, each in a
+  // new tab; the rest card only Stack, which needs no voice, with Drone
+  // Intonation's address in its words alone, since nothing may send the
+  // learner to sing after a rest answer (REQ-GVC-055)
+  const drone = ['/pitch-training?lesson=10', '_blank', 'noopener']
+  const stack = ['/ear-lab?lesson=10', '_blank', 'noopener']
+  expect(practiseLinks).toEqual([drone, stack])
+  expect(await shown()).toEqual([stack])
+  await expect(practise.locator('[data-ending="rest"]')).toContainText(
+    'mercurypitch.com/pitch-training, then tap Drone Intonation.',
+  )
+  // and every link into the app, the map card's and the footer's among them
+  const all = await appLinks(page)
+  expect(new Set(all.map(([href]) => href))).toEqual(
+    new Set(['/pitch-training?lesson=10', '/ear-lab?lesson=10']),
+  )
+  for (const [href, target, rel] of all) {
+    expect(href, `${href}`).toMatch(/^\/[a-z-]+\?lesson=10(#|$)/)
+    expect([target, rel], `${href}`).toEqual(['_blank', 'noopener'])
+  }
+})
 
 // WEB-SPEC, End to end 14, as Lesson 3's spec checks its own
 test('a visitor with the studio installed still gets the lesson, not the shell @smoke', async ({

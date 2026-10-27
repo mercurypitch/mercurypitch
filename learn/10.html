@@ -1866,7 +1866,38 @@
             </div>
           </div>
 
-          <div class="next-card card l10-next" data-next-card hidden></div>
+          <!-- the next lesson's card: the kit draws its words from the season
+               (kit/next-card.ts) and keeps this tease still after them, a
+               siren's line climbing Lesson 7's range chart and crossing a
+               shaded grey seam: a picture, with no words or notes, and no
+               button, since the card is a link -->
+          <div class="next-card card l10-next" data-next-card hidden>
+            <svg
+              class="l10-tease"
+              viewBox="0 0 320 112"
+              aria-hidden="true"
+              focusable="false"
+            >
+              <path
+                class="rows"
+                d="M44 12H312M44 22H312M44 32H312M44 42H312M44 52H312M44 62H312M44 72H312M44 82H312M44 92H312M44 102H312"
+              />
+              <rect
+                class="col"
+                x="12.5"
+                y="8.5"
+                width="20"
+                height="97"
+                rx="4"
+              />
+              <rect class="lit" x="13" y="33" width="19" height="48" />
+              <rect class="seam" x="44" y="46" width="268" height="14" />
+              <path
+                class="siren"
+                d="M48 100C104 98 134 80 158 62C164 57 170 54 176 48C212 24 262 16 306 14"
+              />
+            </svg>
+          </div>
           <!-- Shown by kit/plan-back.ts, only to someone who answered the
                plan's questions. Beside the card, never inside its link. -->
           <a class="plan-back" data-plan-back hidden href="/#/plan"
@@ -1874,16 +1905,135 @@
           >
 
           <!-- free play: every chord-beads control on one stage, once the
-               lesson is done; shown once it is wired -->
+               lesson is done (wrap.ts). Its controls carry the steps' names,
+               and its groups are named for free play, as the steps' stage has
+               its own; its beads and gaps are buttons laid over the drawing,
+               last in the tab order -->
           <div
             class="card stage-card free-play chord-toy l10-free"
             id="freePlay"
-            hidden
           >
             <p class="eyebrow">
               <span class="fig">Free play:</span> try every control of the chord
               beads in one place
             </p>
+            <div class="viz chord-viz wide" data-chord-viz>
+              <canvas aria-hidden="true"></canvas>
+              <p class="sr" id="fpChordSummary" data-chord-summary>
+                C major: C 4, E 4, G 4. Gaps of 4 and 3 semitones; root to fifth
+                7, a perfect fifth.
+              </p>
+              <p class="sr" aria-live="polite" data-chord-said></p>
+            </div>
+            <div class="controls chord-row">
+              <button class="btn sm primary" type="button" data-free-play>
+                <svg class="ico" aria-hidden="true"><use href="#i-play" /></svg
+                >Play
+              </button>
+              <button
+                class="btn sm primary"
+                type="button"
+                data-chord-play="pattern"
+              >
+                <svg class="ico" aria-hidden="true"><use href="#i-play" /></svg
+                >Play the pattern
+              </button>
+              <button
+                class="switch"
+                type="button"
+                data-chord-slow
+                aria-pressed="false"
+              >
+                <span class="track" aria-hidden="true"></span>Slow
+              </button>
+            </div>
+            <div class="controls chord-row">
+              <div
+                class="seg"
+                role="group"
+                aria-label="Free play: major or minor"
+                data-chord-quality
+              >
+                <button
+                  class="btn sm"
+                  type="button"
+                  data-quality="major"
+                  aria-pressed="true"
+                >
+                  Major
+                </button>
+                <button
+                  class="btn sm"
+                  type="button"
+                  data-quality="minor"
+                  aria-pressed="false"
+                >
+                  Minor
+                </button>
+              </div>
+              <div
+                class="seg"
+                role="group"
+                aria-label="Free play: chord or scale"
+                data-chord-view
+              >
+                <button
+                  class="btn sm"
+                  type="button"
+                  data-view="chord"
+                  aria-pressed="true"
+                >
+                  Chord
+                </button>
+                <button
+                  class="btn sm"
+                  type="button"
+                  data-view="scale"
+                  aria-pressed="false"
+                >
+                  Scale
+                </button>
+              </div>
+            </div>
+            <div class="controls chord-row">
+              <button class="btn sm" type="button" data-chord-root="-1">
+                <svg class="ico" aria-hidden="true"><use href="#i-down" /></svg
+                >Root lower
+              </button>
+              <button class="btn sm" type="button" data-chord-root="1">
+                <svg class="ico" aria-hidden="true"><use href="#i-up" /></svg
+                >Root higher
+              </button>
+              <div
+                class="seg"
+                role="group"
+                aria-label="Free play: the names switch"
+              >
+                <button
+                  class="btn sm"
+                  type="button"
+                  data-names="letters"
+                  aria-pressed="true"
+                >
+                  Letters
+                </button>
+                <button
+                  class="btn sm"
+                  type="button"
+                  data-names="solfege"
+                  aria-pressed="false"
+                >
+                  Do-re-mi
+                </button>
+              </div>
+            </div>
+            <div
+              class="chord-targets"
+              role="group"
+              aria-label="Free play: the chord beads"
+              aria-describedby="fpChordSummary"
+              data-chord-targets
+            ></div>
           </div>
         </div>
       </section>
