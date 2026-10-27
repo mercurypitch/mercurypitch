@@ -707,10 +707,10 @@ table):
    between Merc and Tavi. It shows no middle note, so it does not answer the cold open's
    predict.
 4. First-paint ceilings for `learn/09.html` in `scripts/assert-first-paint-budgets.mjs`, one in its
-   JavaScript table and one in its stylesheet table, beside Lesson 3's (`:103-151`, `:310-313`).
-   Every build emits every lesson page, and the check fails a document with no ceiling (`:580-584`),
+   JavaScript table and one in its stylesheet table, beside Lesson 3's (`:103-151`, `:313-316`).
+   Every build emits every lesson page, and the check fails a document with no ceiling (`:583-587`),
    so without them the Browser jobs fail before any spec runs, as Lesson 6's did on PR #1149. Each
-   is the page's measured first paint plus about a quarter, the tables' rule (`:47-58`, `:266-276`),
+   is the page's measured first paint plus about a quarter, the tables' rule (`:47-58`, `:269-279`),
    measured in `build:e2e`, where the check runs (`package.json:20`): a build of Lesson 6's page
    alone weighed it about 8 KB lighter. As on Lesson 3, the listener, the pitch detector and Voice
    Mirror's scorer arrive through a dynamic import when Start is pressed

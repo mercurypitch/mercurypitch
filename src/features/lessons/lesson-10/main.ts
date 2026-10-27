@@ -18,10 +18,10 @@
 //
 // The switches, the cold open on the hero's spiral, the recall after it
 // and the four words, the steps' deck with the chord beads in each step's
-// state, Steps 1 and 2's controls and the game on thirds, the quick check,
-// the next lesson's card, the season map, the masthead and Merc and Tavi.
-// The rest does nothing until it is wired: Steps 3 to 5's own controls,
-// the game on chords, Step 5's predict, free play and Sing it.
+// state, Steps 1 to 4's controls and both games, the quick check, the
+// next lesson's card, the season map, the masthead and Merc and Tavi. The
+// rest does nothing until it is wired: Step 5's own controls and its
+// predict, free play and Sing it.
 
 import '@fontsource-variable/inter'
 import '@fontsource-variable/outfit'

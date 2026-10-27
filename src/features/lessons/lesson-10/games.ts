@@ -1,22 +1,25 @@
 // ============================================================
-// Lesson 10 games — Major or minor?, on thirds in Step 1
+// Lesson 10 games — Major or minor?, on thirds in Step 1 and chords in Step 3
 // ============================================================
 //
-// The kit's ear game (WEB-SPEC, Toys 5) on its card in its step's text,
-// under the Notice: eight rounds of Major or minor? on thirds in Step 1,
-// each a root from C4 to G4, then the note 3 or 4 semitones above it,
-// dealt by game-rounds.ts from the kit's fresh seed, half the rounds each
-// answer. Each round plays as one of the kit's runs, in the soft tone, and
-// a missed one plays again at 1.5 times its lengths (FACTS 78). The kit's
-// rounds carry no level, so the notes of a round that start together sound
-// as a chord's voices, 0.075 each (FACTS 81); a note on its own takes the
-// soft tone's. One sound at a time: a round, and a miss's replay, is the
-// page's one sound (kit/now-playing.ts), so it stops whatever played before
-// it and gives way to whatever plays next; steps.ts stops the games when
-// the viewer leaves their step. A miss's replay starts on a timer, not a
-// tap, so it only reads the sound switch: with sound off it plays silently
-// and shows no sound-off note. The Play button's first words are the
-// markup's.
+// The kit's ear game (WEB-SPEC, Toys 5) in two modes, each on its card in
+// its step's text, under the Notice: eight rounds on thirds in Step 1, each
+// a root from C4 to G4, then the note 3 or 4 semitones above it; ten rounds
+// on chords in Step 3, each the first five notes of a major or minor scale
+// on such a root, then its triad together, as the Royal Conservatory's 2019
+// voice syllabus sets its chord test (FACTS 21, 43, 78). game-rounds.ts
+// deals them from the kit's fresh seed, half the rounds each answer. Each
+// round plays as one of the kit's runs, in the soft tone, and a missed one
+// plays again at 1.5 times its lengths (FACTS 78). The kit's rounds carry
+// no level, so the notes of a round that start together, a chords round's
+// triad, sound as a chord's voices, 0.075 each (FACTS 81); a note on its
+// own takes the soft tone's. One sound at a time: a round, and a miss's
+// replay, is the page's one sound (kit/now-playing.ts), so it stops
+// whatever played before it, the other game's round included, and gives
+// way to whatever plays next; steps.ts stops the games when the viewer
+// leaves their step. A miss's replay starts on a timer, not a tap, so it
+// only reads the sound switch: with sound off it plays silently and shows
+// no sound-off note. The Play button's first words are the markup's.
 
 import { q } from '@/features/lessons/kit/dom'
 import type { EarGame, EarNote, EarPlaying, EarRound, } from '@/features/lessons/kit/ear-game'
@@ -26,7 +29,7 @@ import type { RunNote } from '@/features/lessons/kit/run'
 import { playNotes } from '@/features/lessons/kit/run'
 import { Sound } from '@/features/lessons/kit/sound'
 import type { Quality } from './chords'
-import { ANSWERS, dealThirds, MISS_SLOWER } from './game-rounds'
+import { ANSWERS, dealChords, dealThirds, MISS_SLOWER } from './game-rounds'
 import { CHORD_GAIN } from './sounds'
 
 export interface Games {
@@ -94,6 +97,7 @@ function mountGame(
 export function initGames(): Games {
   const games: readonly EarGame[] = [
     mountGame(q('#thirdsGame'), dealThirds, 'Play eight more'),
+    mountGame(q('#chordsGame'), dealChords, 'Play ten more'),
   ]
   return {
     stop() {

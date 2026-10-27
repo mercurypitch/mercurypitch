@@ -23,6 +23,10 @@
 // a third hands the focus to Play the triad, each change reaches the toy's
 // polite line, and at 390 x 844 every target is at least 44 px square with
 // none overlapping. Each toy's own checks join it as that toy is wired.
+//
+// Over the 600-line cap (TESTING.md): its checks share this file's probes
+// of the page (`watchSound`, `heard`, `openStep`, `tabsFrom` and
+// `expectTargets`), so a split moves those into a helper first.
 
 import type { Locator, Page } from '@playwright/test'
 import { expect, test } from './helpers/lesson-page'
@@ -288,10 +292,26 @@ const focusedName = (page: Page): Promise<string> =>
       .trim()
   })
 
-/** Opens step `n` from the address, as a step link does. */
+/** Whether the page has kept still for 300 ms. */
+const still = (page: Page): Promise<boolean> =>
+  page.evaluate(
+    () =>
+      new Promise<boolean>((resolve) => {
+        const y = window.scrollY
+        window.setTimeout(() => resolve(window.scrollY === y), 300)
+      }),
+  )
+
+/**
+ * Opens step `n` from the address, as a step link does, and waits for the
+ * deck's smooth scroll to bring it beside the stage: a focus that lands
+ * before then stops the scroll short, and on a desktop the deck follows
+ * the page to the step whose text is in view there.
+ */
 async function openStep(page: Page, n: number): Promise<void> {
   await page.goto(`/learn/10#step-${n}`)
   await expect(page.locator('#stepNow')).toHaveText(String(n))
+  await expect.poll(() => still(page)).toBe(true)
 }
 
 /** The names Tab meets from `from`, one for each of `count` presses. */
@@ -353,7 +373,7 @@ async function expectTargets(page: Page, what: string): Promise<void> {
   )
 }
 
-// WEB-SPEC, End to end 4, Steps 1 and 2, at a phone's size and a desktop's
+// WEB-SPEC, End to end 4, Steps 1 to 4, at a phone's size and a desktop's
 for (const viewport of [
   { width: 390, height: 844 },
   { width: 1440, height: 900 },
@@ -439,6 +459,100 @@ for (const viewport of [
         '3, minor third: E 4 up to G 4',
       ])
     })
+
+    test('Step 3: Tab reaches the root buttons, the beads and both gaps; Root lower keeps the focus at C4, and Root higher slides the chord and says where', async ({
+      page,
+    }) => {
+      // Arrange
+      await openStep(page, 3)
+      const said = page.locator(`${TOY} [data-chord-said]`)
+      const [lower, higher] = ['-1', '1'].map((d) =>
+        page.locator(`${TOY} [data-chord-root="${d}"]`),
+      )
+
+      // Act
+      const met = await tabsFrom(
+        page,
+        page.locator(`${TOY} [data-chord-play="triad"]`),
+        10,
+      )
+
+      // Assert
+      expect(met).toEqual([
+        'Slow',
+        'Major',
+        'Minor',
+        'Root lower',
+        'Root higher',
+        'C 4, the root',
+        'E 4, the third',
+        'G 4, the fifth',
+        '4, major third: C 4 up to E 4',
+        '3, minor third: E 4 up to G 4',
+      ])
+
+      // Act, Assert: Root lower at its end keeps the focus and does nothing
+      await expect(lower).toHaveAttribute('aria-disabled', 'true')
+      await lower.focus()
+      await page.keyboard.press('Enter')
+      await expect(lower).toBeFocused()
+      await expect(said).toHaveText('')
+
+      // Root higher by keyboard, said once, and Root lower free again
+      await higher.focus()
+      await page.keyboard.press('Enter')
+      await expect(said).toHaveText('Root higher: D, F sharp, A. D major.')
+      await expect(lower).toHaveAttribute('aria-disabled', 'false')
+      await expect(page.locator(`${TOY} [data-bead="1"]`)).toHaveAttribute(
+        'aria-label',
+        'F sharp 4, the third',
+      )
+    })
+
+    test('Step 4: Slow · Fast toggles aria-pressed by keyboard, and the pattern plays on through a switch to the end', async ({
+      page,
+    }) => {
+      test.setTimeout(60_000)
+      // Arrange
+      await openStep(page, 4)
+      await page.locator('#soundSwitch').click()
+      const play = page.locator(`${TOY} [data-chord-play="pattern"]`)
+      const [slow, fast] = ['slow', 'fast'].map((t) =>
+        page.locator(`${TOY} [data-chord-tempo] [data-tempo="${t}"]`),
+      )
+
+      // Act: Tab from Play the pattern, then Fast by keyboard
+      const met = await tabsFrom(page, play, 7)
+      await fast.focus()
+      await page.keyboard.press('Space')
+
+      // Assert
+      expect(met).toEqual([
+        'Major',
+        'Minor',
+        'Slow',
+        'Fast',
+        'C 4, the root',
+        'E 4, the third',
+        'G 4, the fifth',
+      ])
+      await expect(fast).toHaveAttribute('aria-pressed', 'true')
+      await expect(slow).toHaveAttribute('aria-pressed', 'false')
+
+      // Act, Assert: the pattern played, Minor pressed while it plays on, to its end
+      await play.focus()
+      await page.keyboard.press('Enter')
+      await expect(play).toHaveClass(/\bis-on\b/)
+      const minor = page.locator(
+        `${TOY} [data-chord-quality] [data-quality="minor"]`,
+      )
+      await minor.focus()
+      await page.keyboard.press('Enter')
+      await expect(minor).toHaveAttribute('aria-pressed', 'true')
+      await expect(play).toHaveClass(/\bis-on\b/)
+      await expect(play).not.toHaveClass(/\bis-on\b/, { timeout: 10_000 })
+      await expect(page.locator('#stepNow')).toHaveText('4')
+    })
   })
 }
 
@@ -465,6 +579,30 @@ test.describe('the chord beads’ targets at 390 x 844', () => {
     await page.locator(`${TOY} [data-chord-stack]`).click()
     await expect(page.locator(`${TOY} .chord-hit`)).toHaveCount(5)
     await expectTargets(page, 'Step 2 stacked')
+  })
+
+  test('every target of Steps 3 and 4 is at least 44 px square, and none overlaps another, at every root', async ({
+    page,
+  }) => {
+    // Arrange
+    await openStep(page, 3)
+    const higher = page.locator(`${TOY} [data-chord-root="1"]`)
+
+    // Act, Assert: Step 3 in minor on C4 to B4, then Step 4
+    await page
+      .locator(`${TOY} [data-chord-quality] [data-quality="minor"]`)
+      .click()
+    for (const root of ['C', 'D', 'E', 'F', 'G', 'A', 'B']) {
+      await expect(page.locator(`${TOY} [data-bead="0"]`)).toHaveAttribute(
+        'aria-label',
+        new RegExp(`^${root} 4, the root$`),
+      )
+      await expectTargets(page, `Step 3 on ${root}4`)
+      if (root !== 'B') await higher.click()
+    }
+    await page.getByRole('button', { name: 'Next step', exact: true }).click()
+    await expect(page.locator('#stepNow')).toHaveText('4')
+    await expectTargets(page, 'Step 4')
   })
 })
 
