@@ -16,8 +16,8 @@ const EDIT_LABELS: Record<StudioEdit['type'], string> = {
   'add-clip': 'add clip',
   'add-audio': 'add take',
   'remove-track': 'remove lane',
-  'update-track': 'change track',
-  'set-track-role': 'change track role',
+  'update-track': 'change lane',
+  'set-track-role': 'change lane role',
   'remove-clip': 'remove clip',
   'move-clip': 'move clip',
   'move-clip-to-new-track': 'move clip to new lane',
@@ -35,7 +35,22 @@ const EDIT_LABELS: Record<StudioEdit['type'], string> = {
   'apply-auto-balance': 'auto-balance',
 }
 
+type TrackChanges = Extract<StudioEdit, { type: 'update-track' }>['changes']
+
+/** What one lane edit changed, in the words of the control that changed it. */
+function trackChangeLabel(changes: TrackChanges): string {
+  const keys = Object.keys(changes)
+  if (keys.length !== 1) return EDIT_LABELS['update-track']
+  if (changes.gainDb !== undefined) return 'volume'
+  if (changes.pan !== undefined) return 'pan'
+  if (changes.mute !== undefined) return changes.mute ? 'mute' : 'unmute'
+  if (changes.solo !== undefined) return changes.solo ? 'solo' : 'unsolo'
+  if (changes.name !== undefined) return 'rename lane'
+  return EDIT_LABELS['update-track']
+}
+
 function commandLabel(command: StudioCommand): string {
+  if (command.type === 'update-track') return trackChangeLabel(command.changes)
   if (command.type !== 'batch') return EDIT_LABELS[command.type]
   return command.commands.every((edit) => edit.type === 'add-audio')
     ? 'add takes'
