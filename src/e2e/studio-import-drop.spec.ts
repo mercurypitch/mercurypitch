@@ -9,9 +9,13 @@ test('Studio drops files into new lanes in one reversible import @smoke', async 
 }) => {
   await openArrangement(page)
   const before = await readStudioProject(page)
-  const audio = studioRegion(page).locator('[data-studio-lane-audio]').first()
+  // Below the lanes: a drop there starts new lanes, one per file.
+  const audio = studioRegion(page).locator('[data-studio-new-lane]')
+  const lane = studioRegion(page).locator('[data-studio-lane-audio]').first()
+  const laneBounds = await lane.boundingBox()
   const bounds = await audio.boundingBox()
-  if (!bounds) throw new Error('An audio lane must be visible.')
+  if (!bounds || !laneBounds)
+    throw new Error('The new lane row must be visible.')
   const transfer = await page.evaluateHandle((encoded) => {
     const data = new DataTransfer()
     const bytes = Uint8Array.from(atob(encoded), (char) => char.charCodeAt(0))
@@ -20,15 +24,21 @@ test('Studio drops files into new lanes in one reversible import @smoke', async 
     return data
   }, audioFixture(2).toString('base64'))
   try {
-    const coordinates = { clientX: bounds.x + 160, clientY: bounds.y + 45 }
+    const coordinates = {
+      clientX: laneBounds.x + 160,
+      clientY: bounds.y + bounds.height / 2,
+    }
     await audio.dispatchEvent('dragover', {
       dataTransfer: transfer,
       ...coordinates,
     })
     await expect(
-      studioRegion(page).getByText('Drop audio to add new lanes', {
-        exact: true,
-      }),
+      studioRegion(page).getByText(
+        'Drop on a lane, or below the lanes for a new one',
+        {
+          exact: true,
+        },
+      ),
     ).toBeVisible()
     await audio.dispatchEvent('drop', {
       dataTransfer: transfer,
