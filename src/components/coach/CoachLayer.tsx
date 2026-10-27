@@ -52,7 +52,8 @@
 //   it is read out; Skip and End tour stay where they were.
 // - Sound only from a tap. A "hold-tone" step offers "Play the note" and
 //   plays it on a context of its own, made on that tap, which the layer closes
-//   when it goes.
+//   when it goes. While it plays, the button, Merc and a line say so, and a
+//   line after it says how to hear it (hold-tone.ts).
 
 import type { JSX } from 'solid-js'
 import { createComponent, createEffect, createMemo, createSignal, on, onCleanup, onMount, Show, untrack, } from 'solid-js'
@@ -61,12 +62,12 @@ import { X } from '@/components/icons'
 import { MercPresence } from '@/components/room-kit/MercPresence'
 import { prefersReducedMotion } from '@/components/room-kit/reduced-motion'
 import type { CoachAside, CoachCorner, CoachHandoff, CoachStep, } from '@/lib/coach-types'
-import type { DemoSound } from '@/lib/demo-audio'
-import { playHoldTone } from '@/lib/demo-audio'
 import type { MercState } from '@/lib/merc/constants'
 import { stillFor } from '@/lib/merc/stills'
 import styles from './CoachLayer.module.css'
 import { findTarget } from './find-target'
+import type { HoldTone } from './hold-tone'
+import { createHoldTone, HOLD_TONE_NAME, HOLD_TONE_SEC, TONE_HEAR_LINE, TONE_PLAYING_LINE, } from './hold-tone'
 import type { CoachRunner, CoachSnapshot } from './runner'
 import { isQuiet } from './runner'
 
@@ -74,9 +75,6 @@ import { isQuiet } from './runner'
 export const RING_MAX_SHARE = 0.7
 /** How often a showing step looks for its target again, in ms. */
 export const TRACK_MS = 300
-/** The note a "hold-tone" step plays: A3, in reach of most voices or an octave of them. */
-export const HOLD_TONE_HZ = 220
-
 const GAP = 12
 const MARGIN = 16
 const BUBBLE_MAX_W = 360
@@ -219,17 +217,13 @@ export function CoachLayer(props: CoachLayerProps): JSX.Element {
   let bubble: HTMLDivElement | undefined
   // The element under the ring, for Tab into it and Shift+Tab back.
   let ringed: HTMLElement | null = null
-  let audio: AudioContext | null = null
-  let tone: DemoSound | null = null
-
-  const stopTone = (): void => {
-    tone?.stop()
-    tone = null
-  }
+  const tone = createHoldTone()
 
   const pose = (): MercState => {
     const at = snapshot()
     if (at === null || at.celebrating) return 'celebrate'
+    // he sings the note with the speaker, so a muted one still shows it
+    if (tone.playing() !== null) return 'sing'
     return at.waiting ? 'listen' : at.step.merc
   }
 
@@ -290,7 +284,7 @@ export function CoachLayer(props: CoachLayerProps): JSX.Element {
   // every resize and scroll, so a late or moving target is ringed where it is.
   createEffect(
     on(step, (shown) => {
-      stopTone()
+      tone.reset()
       if (shown === undefined || isQuiet(shown)) {
         ringed = null
         setRing(null)
@@ -328,7 +322,7 @@ export function CoachLayer(props: CoachLayerProps): JSX.Element {
       () => props.runner.ended(),
       (result) => {
         if (result === null) return
-        stopTone()
+        tone.reset()
         const next =
           result === 'done' ? (untrack(() => props.handoff?.()) ?? null) : null
         if (next === null) {
@@ -350,17 +344,6 @@ export function CoachLayer(props: CoachLayerProps): JSX.Element {
     const next = handoff()
     props.onClose()
     next?.go()
-  }
-
-  const playNote = (): void => {
-    stopTone()
-    try {
-      audio ??= new AudioContext()
-      void audio.resume().catch(() => undefined)
-      tone = playHoldTone(audio, HOLD_TONE_HZ)
-    } catch {
-      // No audio here. The step still waits for the singer, and Skip is there.
-    }
   }
 
   const lastControl = (): HTMLElement | null => {
@@ -423,11 +406,7 @@ export function CoachLayer(props: CoachLayerProps): JSX.Element {
   }
 
   onMount(measureBubble)
-  onCleanup(() => {
-    stopTone()
-    void audio?.close().catch(() => undefined)
-    audio = null
-  })
+  onCleanup(() => tone.close())
 
   return (
     <div class={styles.layer} data-testid="coach-layer">
@@ -454,6 +433,7 @@ export function CoachLayer(props: CoachLayerProps): JSX.Element {
           data-testid="coach-bubble"
           data-place={place()}
           data-corner={corner()}
+          data-pose={pose()}
           style={bubbleStyle()}
           role="dialog"
           aria-labelledby="coach-title"
@@ -485,7 +465,7 @@ export function CoachLayer(props: CoachLayerProps): JSX.Element {
                     at={at}
                     body={body}
                     runner={props.runner}
-                    onPlay={playNote}
+                    tone={tone}
                   />
                 )}
               </Show>
@@ -516,7 +496,7 @@ interface StepCardProps {
   /** The step's body, or its unseen line while its target is not on screen. */
   body: () => string
   runner: CoachRunner
-  onPlay: () => void
+  tone: HoldTone
 }
 
 /** A step's words, what it offers besides them, and its buttons. */
@@ -533,6 +513,12 @@ function StepCard(props: StepCardProps): JSX.Element {
     const at = props.at()
     if (!at.failed || at.step.kind !== 'do') return null
     return at.step.failure?.aside ?? null
+  }
+  // The note playing, or how to hear it once it has played.
+  const toneLine = (): string | null => {
+    if (step().sound !== 'hold-tone') return null
+    if (props.tone.playing() !== null) return TONE_PLAYING_LINE
+    return props.tone.played() ? TONE_HEAR_LINE : null
   }
   return (
     <>
@@ -551,6 +537,13 @@ function StepCard(props: StepCardProps): JSX.Element {
               </p>
             )}
           </Show>
+          <Show when={toneLine()}>
+            {(line) => (
+              <p class={styles.aside} data-testid="coach-tone-line">
+                {line()}
+              </p>
+            )}
+          </Show>
         </div>
         <Show when={step().aside?.()}>
           {(aside) => (
@@ -560,13 +553,7 @@ function StepCard(props: StepCardProps): JSX.Element {
           )}
         </Show>
         <Show when={step().sound === 'hold-tone'}>
-          <button
-            type="button"
-            class={styles.play}
-            onClick={() => props.onPlay()}
-          >
-            Play the note
-          </button>
+          <ToneButton tone={props.tone} />
         </Show>
         <Show when={step().lesson}>
           {(lesson) => (
@@ -599,6 +586,38 @@ function StepCard(props: StepCardProps): JSX.Element {
         </button>
       </div>
     </>
+  )
+}
+
+/**
+ * "Play the note": while the note plays it names it and is lit, and a mark
+ * runs across it for the note's length (none under reduced motion). Both
+ * labels stay in it, one hidden, so it keeps one width.
+ */
+function ToneButton(props: { tone: HoldTone }): JSX.Element {
+  const playing = (): boolean => props.tone.playing() !== null
+  return (
+    <button
+      type="button"
+      class={styles.play}
+      data-playing={playing() ? '' : undefined}
+      onClick={() => props.tone.play()}
+    >
+      <span class={styles.playLabel} aria-hidden={playing()}>
+        Play the note
+      </span>
+      <span class={styles.playLabel} aria-hidden={!playing()}>
+        Playing {HOLD_TONE_NAME}
+      </span>
+      <Show when={props.tone.playing()} keyed>
+        <span
+          class={styles.playMark}
+          data-testid="coach-tone-mark"
+          aria-hidden="true"
+          style={{ 'animation-duration': `${HOLD_TONE_SEC * 1000}ms` }}
+        />
+      </Show>
+    </button>
   )
 }
 

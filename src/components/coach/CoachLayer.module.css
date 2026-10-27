@@ -230,12 +230,39 @@
 }
 
 .play {
+  position: relative;
+  display: inline-grid;
+  place-items: center;
+  align-content: center;
   align-self: flex-start;
+  overflow: hidden;
   padding: 0 14px;
   border: 1px solid var(--coach-teal);
   background: transparent;
   color: var(--coach-teal);
   font-weight: 600;
+}
+
+/* Both labels in one cell, the other one hidden: the button keeps one width
+   while the note plays (CoachLayer.tsx, ToneButton). */
+.playLabel {
+  grid-area: 1 / 1;
+}
+
+.playLabel[aria-hidden='true'] {
+  visibility: hidden;
+}
+
+/* Lit while the note plays, as a pressed key is. */
+.play[data-playing] {
+  background: var(--coach-teal);
+  color: var(--coach-ground);
+}
+
+/* The note's length, run across the button's foot; still, it says nothing
+   the label does not, so reduced motion has none. */
+.playMark {
+  display: none;
 }
 
 .close:focus-visible,
@@ -258,6 +285,19 @@
 }
 
 @media (prefers-reduced-motion: no-preference) {
+  .playMark {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    display: block;
+    width: 100%;
+    height: 3px;
+    background: rgb(13 17 23 / 0.55);
+    transform-origin: left center;
+    /* the duration is the note's, set where it plays */
+    animation: coach-tone-run linear forwards;
+  }
+
   .ring {
     transition:
       top 160ms ease-out,
@@ -271,5 +311,15 @@
       top 160ms ease-out,
       left 160ms ease-out,
       border-color 200ms ease-out;
+  }
+}
+
+@keyframes coach-tone-run {
+  from {
+    transform: scaleX(0);
+  }
+
+  to {
+    transform: scaleX(1);
   }
 }

@@ -29,6 +29,10 @@
 // Done leaves focus on the page's main heading the singer can see, named
 // per tour and screen.
 //
+// Then the Sing tour's note: a tap on Play the note shows it playing (the
+// button names it and is lit, Merc sings, a line says so), and once it has
+// played a line says how to hear it, so a muted speaker still shows it.
+//
 // Last, the tab chip in a room that fills the window: on Piano at 1440x900
 // the room gives way to the chip's row, so its keyboard stays on screen, the
 // content area does not scroll, and the chip covers no control.
@@ -330,6 +334,36 @@ for (const tour of [SING, KARAOKE]) {
     })
   }
 }
+
+test("the Sing tour's Play the note shows the note playing after a tap, at 1440x900", async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 1440, height: 900 })
+  await seedFirstVisit(page)
+  await SING.open(page)
+  const chip = page.getByTestId('tour-chip')
+  await expect(chip).toBeVisible({ timeout: 20_000 })
+  await chip.getByRole('button', { name: SING.chip }).click()
+  const bubble = page.getByTestId('coach-bubble')
+  await expect(bubble).toContainText('1 of 4')
+  await bubble.getByRole('button', { name: 'Skip this step' }).click()
+  await expect(bubble).toContainText('2 of 4')
+
+  await bubble.getByRole('button', { name: 'Play the note' }).click()
+
+  const line = bubble.getByTestId('coach-tone-line')
+  await expect(
+    bubble.getByRole('button', { name: 'Playing A3' }),
+  ).toHaveAttribute('data-playing', '')
+  await expect(bubble).toHaveAttribute('data-pose', 'sing')
+  await expect(line).toHaveText('Playing A3 now.')
+  // and back at rest once it has played, with how to hear it
+  await expect(
+    bubble.getByRole('button', { name: 'Play the note' }),
+  ).not.toHaveAttribute('data-playing')
+  await expect(bubble).toHaveAttribute('data-pose', 'listen')
+  await expect(line).toContainText('Heard nothing?')
+})
 
 test('the tab chip leaves Piano room for its keyboard, at 1440x900 @smoke', async ({
   page,
