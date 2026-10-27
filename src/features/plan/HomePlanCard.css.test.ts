@@ -44,9 +44,10 @@ describe('the stylesheet', () => {
     expect(rule('.card')['grid-column']).toBe('1 / -1')
   })
 
-  it('makes every target at least 44 px: the X, a row, and Start', () => {
+  it('makes every target at least 44 px: the X, a row, Change my answers, and Start', () => {
     expect(rule('.hide')).toMatchObject({ width: '44px', height: '44px' })
     expect(rule('.row')['min-height']).toBe('44px')
+    expect(rule('.change')['min-height']).toBe('44px')
     expect(rule('.start')['min-height']).toBe('44px')
   })
 

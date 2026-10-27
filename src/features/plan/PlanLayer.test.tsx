@@ -9,7 +9,8 @@
 // stay inside it (and that a press on its words leaves the focus there, so the
 // keys after it do too), which greeting each mode gets, what each mode tells
 // the funnel as it opens, and how it opens an answered plan and lets the
-// person change the answers. What each way out hands the app is in
+// person change the answers, on the plan or (from Home or Settings) straight
+// on its questions. What each way out hands the app is in
 // PlanLayer.ways.test.tsx, and the stylesheet is read as text in
 // PlanLayer.css.test.ts, since jsdom applies no CSS. The screens are the real
 // ones, tapped the way a singer taps them. Only the edges are faked: the
@@ -413,5 +414,51 @@ describe('a review', () => {
     expect(box()).toHaveAttribute('data-phase', 'plan')
     expect(host.onClose).not.toHaveBeenCalled()
     expect(planRecord()?.status).toBe('answered')
+  })
+})
+
+describe('a review opened on its questions, from Home or Settings', () => {
+  it('opens on the first question with the answers given picked', () => {
+    answered()
+
+    open('change')
+
+    expect(box()).toHaveAttribute('data-phase', 'questions')
+    expect(isOn(1)).toBe(true)
+    expect(isPressed('Singing')).toBe(true)
+  })
+
+  it('tells the funnel nothing as it opens, as a review does', () => {
+    answered()
+
+    open('change')
+
+    expect(sent()).toEqual([])
+  })
+
+  it('goes back to the plan as it was from Not now, with its way to change the answers, and the layer stays', () => {
+    answered()
+    const record = planRecord()
+    const host = open('change')
+
+    tap('Not now')
+
+    expect(box()).toHaveAttribute('data-phase', 'plan')
+    expect(changeAnswers()).toBeInTheDocument()
+    expect(host.onClose).not.toHaveBeenCalled()
+    expect(planRecord()).toEqual(record)
+  })
+
+  it('saves the new answers with Done and shows the plan they make, telling the funnel nothing for them', () => {
+    answered()
+    const first = planRecord()
+    open('change')
+
+    toThePlan()
+
+    expect(box()).toHaveAttribute('data-phase', 'plan')
+    expect(planRecord()?.choices.q1).toBe('guitar')
+    expect(planRecord()?.at).not.toBe(first?.at)
+    expect(sent()).toEqual([])
   })
 })

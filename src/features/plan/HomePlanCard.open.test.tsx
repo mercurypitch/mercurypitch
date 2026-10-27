@@ -1,5 +1,5 @@
 // ============================================================
-// HomePlanCard — what a tap on a row does
+// HomePlanCard — what a tap on a row, or on Change my answers, does
 // ============================================================
 //
 // A row opens its stop the way the plan layer does, and no differently: the
@@ -8,14 +8,16 @@
 // what the main-path case in HomePlanCard.test.tsx (a Learn row opens and is
 // ticked) leaves out: the other kinds of row, the tick that follows an opening
 // and the focus it keeps, the menu made whole, and the Start here row that is
-// Home's own session.
+// Home's own session. Last, the answered card's Change my answers, which opens
+// the layer on the four questions and tells the funnel nothing (what the layer
+// does in that mode is PlanLayer.test.tsx's).
 //
 // The stores are the real ones, put back between cases
 // (plan-choices.fixture.ts). Only the edges are faked: enterStop, which would
 // move the app and the browser (enter-stop.test.ts has its own cases, with
 // widenMenuFor's), the toast, and the funnel's console.
 
-import { cleanup, fireEvent, render, within } from '@solidjs/testing-library'
+import { cleanup, fireEvent, render, screen, within, } from '@solidjs/testing-library'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type * as NotificationsStoreModule from '@/stores/notifications-store'
 import { practiceScope, setPracticeScope, setUiMode, uiMode, } from '@/stores/settings-store'
@@ -24,10 +26,10 @@ import { buildPlan, planStops } from './build-plan'
 import type * as EnterStopModule from './enter-stop'
 import { enterStop } from './enter-stop'
 import { HomePlanCard } from './HomePlanCard'
-import { answeredAgo, AUDITION, fresh, seeFirstValue, sent, SHORT_ON_TIME, STARTING, } from './plan-choices.fixture'
-import { MENU_WHOLE } from './plan-copy'
+import { ago, answeredAgo, AUDITION, fresh, seeFirstValue, sent, SHORT_ON_TIME, STARTING, } from './plan-choices.fixture'
+import { MENU_WHOLE, PLAN_PLACES } from './plan-copy'
 import { PLAN_OPENED_KEY } from './plan-keys'
-import { stopOpened } from './plan-store'
+import { markPlanShown, planLayerMode, stopOpened } from './plan-store'
 
 const mocks = vi.hoisted(() => ({
   showNotification: vi.fn<(message: string) => void>(),
@@ -237,5 +239,55 @@ describe("the Start here row that is today's session", () => {
 
     expect(mocks.onHomeSession).not.toHaveBeenCalled()
     expect(enterStop).toHaveBeenCalledExactlyOnceWith(START)
+  })
+})
+
+// ── Change my answers ──────────────────────────────────────────────────
+
+describe('Change my answers', () => {
+  const change = (): HTMLElement | null =>
+    screen.queryByRole('button', { name: PLAN_PLACES.changeAnswers })
+
+  it('stands in the answered card, under its rows', () => {
+    answeredAgo(1)
+
+    const card = within(mount()).getByRole('region', { name: 'Your plan' })
+
+    expect(
+      within(card).getByRole('button', { name: PLAN_PLACES.changeAnswers }),
+    ).toBe(change())
+    for (const kind of ['start', 'learn', 'play'] as const) {
+      expect(row(kind).compareDocumentPosition(change()!)).toBe(
+        Node.DOCUMENT_POSITION_FOLLOWING,
+      )
+    }
+  })
+
+  it('opens the plan layer on the four questions, with the answers given', () => {
+    answeredAgo(1)
+    mount()
+
+    tap(change()!)
+
+    expect(planLayerMode()).toBe('change')
+  })
+
+  it('tells the funnel nothing and enters no stop', () => {
+    answeredAgo(1)
+    mount()
+
+    tap(change()!)
+
+    expect(sent()).toEqual([])
+    expect(enterStop).not.toHaveBeenCalled()
+  })
+
+  it('is not on the ask, which keeps its Start', () => {
+    markPlanShown('layer', ago(1))
+
+    mount()
+
+    expect(change()).toBeNull()
+    expect(screen.getByRole('button', { name: 'Start' })).toBeInTheDocument()
   })
 })

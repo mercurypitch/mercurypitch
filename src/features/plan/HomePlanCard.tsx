@@ -9,7 +9,7 @@
 // nothing at all, so Home is as it was. Which of the three it is, and what a
 // tick means, are plan-progress.ts's; this draws what that says.
 //
-// Seven things are easy to break:
+// Eight things are easy to break:
 //
 // - Home reaches this file only through a lazy import behind IS_NATIVE_BUILD
 //   (src/pages/HomePlanCardMount.tsx, held by home-card-mount.test.ts): it
@@ -28,6 +28,13 @@
 //   enterStop) and never starts a tour: a tour is what "Show me around" asks
 //   for. Whether a stop is then ticked is plan-progress.ts's: opening a room
 //   that has a first value ticks nothing.
+// - The answered card ends with a quiet Change my answers, which opens the
+//   plan layer on the four questions with the answers given picked (the
+//   layer's `change`: a review, opened where its own Change my answers opens
+//   it). So Not now goes back to the plan as it was, Done saves the new answers
+//   and shows the new plan, which this card then draws, and nothing is told
+//   to the funnel: a review tells nothing for answers. The ask has none; its
+//   Start opens the four taps.
 // - The Start here that is today's session is Home's own: the card is on Home,
 //   so entering the Home tab would go nowhere. The card tells the funnel and
 //   marks the stop as any row does, and hands the rest to Home (`onHomeSession`),
@@ -148,10 +155,11 @@ function PlanRow(props: {
   )
 }
 
-/** The answered plan: a row for each stop. */
+/** The answered plan: a row for each stop, and a quiet way back to its questions. */
 function PlanCard(props: {
   rows: readonly Row[]
   onOpen: (stop: PlanStop) => void
+  onChange: () => void
   onHide: () => void
   keep: (card: HTMLElement) => void
   keepX: (x: HTMLButtonElement) => void
@@ -177,6 +185,13 @@ function PlanCard(props: {
           {(row) => <PlanRow row={row()} onOpen={props.onOpen} />}
         </Index>
       </ul>
+      <button
+        type="button"
+        class={styles.change}
+        onClick={() => props.onChange()}
+      >
+        {PLAN_PLACES.changeAnswers}
+      </button>
     </section>
   )
 }
@@ -321,6 +336,7 @@ export function HomePlanCard(props: HomePlanCardProps): JSX.Element {
           <PlanCard
             rows={stops()}
             onOpen={open}
+            onChange={() => openPlanLayer('change')}
             onHide={hide}
             keep={keep}
             keepX={keepX}

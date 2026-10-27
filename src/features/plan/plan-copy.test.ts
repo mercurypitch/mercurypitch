@@ -7,8 +7,10 @@
 // Learn, Play) are written once, in plan-copy.ts, and the plan's screen and
 // Home's card both read them from there; and the notice that the menu was made
 // whole is written once, in plan-copy.ts, and enter-stop.ts is what says it,
-// for the plan layer and for Home's card alike. A second copy of either would
-// be the one that falls behind when the other is reworded.
+// for the plan layer and for Home's card alike; and the way back to the
+// questions, Change my answers, is written once there too, for the plan's
+// screen and the card. A second copy of any of them would be the one that
+// falls behind when the other is reworded.
 //
 // It reads the plan's own source files, so it sees a word that was typed
 // into a screen as well as one that was imported.
@@ -16,7 +18,7 @@
 import { readdirSync, readFileSync } from 'node:fs'
 import ts from 'typescript'
 import { describe, expect, it } from 'vitest'
-import { MENU_WHOLE } from './plan-copy'
+import { MENU_WHOLE, PLAN_PLACES } from './plan-copy'
 
 const PLAN = 'src/features/plan'
 
@@ -120,5 +122,24 @@ describe('the notice that the menu was made whole', () => {
     )
 
     expect(readers).toEqual(['enter-stop.ts'])
+  })
+})
+
+// ── The way back to the questions ──────────────────────────────────────
+
+describe('Change my answers', () => {
+  it('is written once, in plan-copy.ts', () => {
+    expect(filesSaying([PLAN_PLACES.changeAnswers])).toEqual(['plan-copy.ts'])
+  })
+
+  it('is read from plan-copy.ts by the plan screen and by the card', () => {
+    for (const name of ['PlanScreen.tsx', 'HomePlanCard.tsx']) {
+      expect([
+        name,
+        importedFromPlanCopy(name).some((clause) =>
+          /\bPLAN_PLACES\b/u.test(clause),
+        ),
+      ]).toEqual([name, true])
+    }
   })
 })

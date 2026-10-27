@@ -38,11 +38,15 @@
 //   who opens the four taps from Home or the Guide, and a review of answers
 //   already given get the plain one, which is true for both) and what the
 //   funnel is told as the run starts, which is the controller's to say and
-//   not this file's. A review opens on the plan and is the one mode that
+//   not this file's. A review opens on the plan and is the one run that
 //   offers "Change my answers", which opens the questions on the answers
-//   given. No voiceprint is passed (nothing was measured in this run, and the
-//   controller falls back on the record's) and no gift (without one the
-//   controller asks the server's featured promo itself).
+//   given. `change` (Home's card, Settings) is that review opened on its
+//   questions: the run is a review's, and the layer takes it to the questions
+//   as the plan's own Change my answers does, so it tells the funnel nothing,
+//   Not now goes back to the plan as it was, and Done saves the new answers
+//   and shows the new plan. No voiceprint is passed (nothing was measured in
+//   this run, and the controller falls back on the record's) and no gift
+//   (without one the controller asks the server's featured promo itself).
 // - Focus and keys. The layer says it is modal, so it holds focus: it opens on
 //   the screen's heading, which a screen reader reads as where the person
 //   landed, and Tab cycles inside. Keys stay inside it too (isolateKeyboard),
@@ -92,7 +96,8 @@ export interface PlanLayerProps {
 
 export function PlanLayer(props: PlanLayerProps): JSX.Element {
   const mode = untrack(() => props.mode)
-  const review = mode === 'review'
+  // A review, opened on the plan or on its questions.
+  const review = mode === 'review' || mode === 'change'
 
   let layer: HTMLDivElement | undefined
   useFocusTrap(() => layer, {
@@ -112,7 +117,13 @@ export function PlanLayer(props: PlanLayerProps): JSX.Element {
     else if (exit.to === 'stop') enterStop(exit.stop)
   }
 
-  const c = usePlanFlowController({ mode, onExit: hand })
+  const c = usePlanFlowController({
+    mode: mode === 'change' ? 'review' : mode,
+    onExit: hand,
+  })
+  // Opened to change the answers: on the questions, as the plan's own Change
+  // my answers opens them, before anything is drawn.
+  if (mode === 'change') c.changeAnswers()
 
   // His size follows the phase, and a turn of the phone; it stops listening
   // when the layer goes.

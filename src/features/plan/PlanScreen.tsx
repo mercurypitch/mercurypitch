@@ -60,7 +60,7 @@ import { canRunLiveMerc } from '@/lib/merc/gpu-gate'
 import type { Plan, PlanStop, ScopeOffer } from './build-plan'
 import { coverHasWords, PLAN_DESTS, planStops } from './build-plan'
 import { flyChips } from './fly-chips'
-import { KICKER } from './plan-copy'
+import { KICKER, PLAN_PLACES } from './plan-copy'
 import { warmPlanShowcase } from './plan-showcase'
 import { PlanExits } from './PlanExits'
 import styles from './PlanScreen.module.css'
@@ -312,7 +312,7 @@ export function PlanScreen(props: PlanScreenProps): JSX.Element {
             class={styles.change}
             onClick={() => props.onChangeAnswers?.()}
           >
-            Change my answers
+            {PLAN_PLACES.changeAnswers}
           </button>
         </Show>
       </div>

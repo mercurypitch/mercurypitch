@@ -3,12 +3,13 @@
    ============================================================
 
    One grid item across both columns of Home's grid: a row for each stop of
-   the plan, or Merc's line and a Start. Every target is 44 px. Small text is
-   set in --accent-text, the accent made for text, and never --accent, which
-   is a fill and does not clear 4.5:1 on a row's ground in the light theme.
-   HomePlanCard.css.test.ts holds the span, the targets and the colour.
-   HomePlanCardMount.module.css copies .card's frame for the slot Home keeps
-   before this chunk is in; HomePlanCardMount.css.test.ts holds the copy. */
+   the plan and Change my answers, or Merc's line and a Start. Every target
+   is 44 px. Small text is set in --accent-text, the accent made for text,
+   and never --accent, which is a fill and does not clear 4.5:1 on a row's
+   ground in the light theme. HomePlanCard.css.test.ts holds the span, the
+   targets and the colour. HomePlanCardMount.module.css copies .card's frame
+   for the slot Home keeps before this chunk is in;
+   HomePlanCardMount.css.test.ts holds the copy. */
 
 .card {
   /* Across both columns of Home's grid, as the Ascent card is (AscentCard.module.css).
@@ -70,6 +71,7 @@
 
 .hide:focus-visible,
 .row:focus-visible,
+.change:focus-visible,
 .start:focus-visible {
   outline: 2px solid var(--accent);
   outline-offset: 2px;
@@ -155,6 +157,33 @@
   border-radius: 50%;
   background: var(--accent);
   color: var(--on-accent, var(--bg-primary));
+}
+
+/* The way back to the plan's questions: quiet, as the plan screen's own is,
+   under the rows. 44 px tall, like every target here, and its margins give
+   back what the target takes beyond its line of text, above into the card's
+   gap and below into its padding, so the card grows by the line and not by
+   the target. The text lines up with the rows' edge. */
+.change {
+  align-self: flex-start;
+  min-height: 44px;
+  margin: -10px 0 -12px -8px;
+  padding: 0 8px;
+  border: none;
+  border-radius: 10px;
+  background: none;
+  color: var(--text-secondary);
+  font-family: inherit;
+  font-size: 0.85rem;
+  font-weight: 600;
+  text-decoration: underline;
+  text-decoration-color: var(--border);
+  text-underline-offset: 3px;
+  cursor: pointer;
+}
+
+.change:hover {
+  color: var(--text-primary);
 }
 
 /* ── The ask: Merc's line, and the way in ───────────────────────── */
