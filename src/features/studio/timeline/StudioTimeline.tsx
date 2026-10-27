@@ -1,4 +1,5 @@
 // Studio timeline — one aligned scroll surface for real audio clips, track headers and silent seeking.
+import type { JSX } from 'solid-js'
 import { createEffect, createMemo, createSignal, For, on, onCleanup, Show, } from 'solid-js'
 import { Plus } from '@/components/icons'
 import { STUDIO_SAMPLE_RATE } from '@/lib/studio/model/types'
@@ -54,6 +55,8 @@ export function StudioTimeline(props: StudioTimelineProps) {
   let lastFillerTap = -Infinity
   const headerWidth = () =>
     props.phone ? 104 : props.tablet === true ? 232 : 240
+  // With the desk open, zoom and the clip bar leave the lanes for a dock.
+  const docked = () => !props.phone && props.deskOpen === true
   const contentWidth = () => Math.max(1, width() - headerWidth())
   const contentEnd = () => studioContentEnd(props.project.clips)
   const endFrame = () =>
@@ -146,6 +149,12 @@ export function StudioTimeline(props: StudioTimelineProps) {
     }),
   )
   onCleanup(() => clearTimeout(statusTimer))
+  // Seven docked buttons stack in one column when the arrangement is tall
+  // enough (the sizes in .dock), and go two to a row when it is not.
+  const dockColumns = () =>
+    height() + floor() >= (props.tablet === true ? 7 * 44 + 4 : 7 * 30 + 26)
+      ? 1
+      : 2
   const measure = () => {
     setWidth(viewport.clientWidth)
     setGutter(viewport.offsetWidth - viewport.clientWidth)
@@ -201,6 +210,73 @@ export function StudioTimeline(props: StudioTimelineProps) {
     viewport.scrollLeft = 0
   }
 
+  // Zoom floats at the arrangement's foot, or heads the dock beside it.
+  const zoomControls = (place?: JSX.CSSProperties) => (
+    <div
+      class={styles.zoom}
+      role="group"
+      aria-label="Timeline zoom"
+      style={place}
+    >
+      <button
+        type="button"
+        aria-label="Zoom out"
+        title="Zoom out"
+        disabled={props.pixelsPerSecond <= STUDIO_ZOOM_STOPS[0]}
+        onClick={() => zoomStep(-1)}
+      >
+        <ZoomOut size={15} />
+      </button>
+      <button
+        type="button"
+        aria-label="Zoom in"
+        title="Zoom in"
+        disabled={
+          props.pixelsPerSecond >=
+          STUDIO_ZOOM_STOPS[STUDIO_ZOOM_STOPS.length - 1]
+        }
+        onClick={() => zoomStep(1)}
+      >
+        <ZoomIn size={15} />
+      </button>
+      <button
+        type="button"
+        aria-label="Fit song to width"
+        title="Fit song to width"
+        disabled={props.project.clips.length === 0}
+        onClick={zoomToFit}
+      >
+        <FitWidth size={15} />
+      </button>
+    </div>
+  )
+  // A floating bar steps aside during a drag; a docked one covers nothing.
+  const clipBar = (inDock: boolean) => (
+    <Show
+      when={
+        !props.phone &&
+        (inDock || (!pointer.active() && props.drawerOpen !== true)) &&
+        selectedClip()
+      }
+    >
+      {(selected) => (
+        <StudioClipToolbar
+          clip={selected()}
+          label={selectedName() ?? 'Clip'}
+          color={selectedColor()}
+          left={headerWidth() + 12}
+          bottom={floor() + 12}
+          docked={inDock}
+          playheadFrame={props.playheadFrame}
+          writable={props.writable}
+          onCommand={props.onCommand}
+          onDetails={() => props.onClipDetails(selected().id)}
+          onRemove={() => props.onSelectClip(null)}
+        />
+      )}
+    </Show>
+  )
+
   return (
     <div
       class={styles.timeline}
@@ -208,6 +284,7 @@ export function StudioTimeline(props: StudioTimelineProps) {
         [styles.phone]: props.phone,
         [styles.tablet]: !props.phone && props.tablet === true,
         [styles.editing]: pointer.active(),
+        [styles.docking]: docked(),
       }}
       aria-label="Song arrangement"
       data-tour={props.phone ? 'studio.timeline-overview' : 'studio.timeline'}
@@ -518,75 +595,29 @@ export function StudioTimeline(props: StudioTimelineProps) {
           </div>
         </Show>
       </div>
-      <Show when={!props.phone}>
-        <div
-          class={styles.zoom}
-          classList={{ [styles.docked]: props.deskOpen === true }}
-          role="group"
-          aria-label="Timeline zoom"
-          style={
-            props.deskOpen === true
-              ? { right: `${gutter()}px` }
-              : {
-                  right: `${gutter() + 12}px`,
-                  bottom: `${floor() + 12}px`,
-                }
-          }
-        >
-          <button
-            type="button"
-            aria-label="Zoom out"
-            title="Zoom out"
-            disabled={props.pixelsPerSecond <= STUDIO_ZOOM_STOPS[0]}
-            onClick={() => zoomStep(-1)}
-          >
-            <ZoomOut size={15} />
-          </button>
-          <button
-            type="button"
-            aria-label="Zoom in"
-            title="Zoom in"
-            disabled={
-              props.pixelsPerSecond >=
-              STUDIO_ZOOM_STOPS[STUDIO_ZOOM_STOPS.length - 1]
-            }
-            onClick={() => zoomStep(1)}
-          >
-            <ZoomIn size={15} />
-          </button>
-          <button
-            type="button"
-            aria-label="Fit song to width"
-            title="Fit song to width"
-            disabled={props.project.clips.length === 0}
-            onClick={zoomToFit}
-          >
-            <FitWidth size={15} />
-          </button>
-        </div>
-      </Show>
       <Show
-        when={
-          !props.phone &&
-          !pointer.active() &&
-          props.drawerOpen !== true &&
-          selectedClip()
+        when={docked()}
+        fallback={
+          <>
+            <Show when={!props.phone}>
+              {zoomControls({
+                right: `${gutter() + 12}px`,
+                bottom: `${floor() + 12}px`,
+              })}
+            </Show>
+            {clipBar(false)}
+          </>
         }
       >
-        {(selected) => (
-          <StudioClipToolbar
-            clip={selected()}
-            label={selectedName() ?? 'Clip'}
-            color={selectedColor()}
-            left={headerWidth() + 12}
-            bottom={floor() + 12}
-            playheadFrame={props.playheadFrame}
-            writable={props.writable}
-            onCommand={props.onCommand}
-            onDetails={() => props.onClipDetails(selected().id)}
-            onRemove={() => props.onSelectClip(null)}
-          />
-        )}
+        <div
+          class={styles.dock}
+          classList={{ [styles.dockPaired]: dockColumns() === 2 }}
+          data-studio-dock=""
+          style={{ '--studio-dock-columns': dockColumns() }}
+        >
+          {zoomControls()}
+          {clipBar(true)}
+        </div>
       </Show>
       <p
         class={styles.status}

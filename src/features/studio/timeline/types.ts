@@ -23,8 +23,8 @@ export interface StudioTimelineProps {
   /** A drawer covers the timeline: the clip bar and the empty hint would be cut. */
   drawerOpen?: boolean
   /**
-   * The mixing desk takes the space below: the zoom buttons move up into the
-   * ruler, where they cover no lane.
+   * The mixing desk takes the space below: zoom and the selected clip's
+   * commands move to a dock beside the lanes, clear of every lane and the ruler.
    */
   deskOpen?: boolean
   onPointerEditStart?(): void
