@@ -21,11 +21,12 @@
 //
 // Sizes are baked into public/site.webmanifest — if you change a viewport
 // here, update the matching `sizes` there. Exits non-zero if any shot fails.
+import { chromium } from '@playwright/test'
+import { Buffer } from 'node:buffer'
 import { createReadStream, existsSync, mkdirSync, readFileSync, statSync, } from 'node:fs'
 import { createServer } from 'node:http'
 import { createRequire } from 'node:module'
 import { dirname, extname, join, normalize, resolve } from 'node:path'
-import { chromium } from '@playwright/test'
 import { optimizePngs } from './optimize-pwa-images.mjs'
 
 const DIST = resolve('dist')
@@ -499,6 +500,7 @@ const DEMO_ME = {
  * files, with Google's family names and the packages' unicode ranges.
  */
 const FONT_ORIGIN = 'https://fonts.gstatic.com/__local'
+
 function localFonts() {
   const families = {
     Inter: 'inter',
@@ -529,6 +531,7 @@ function localFonts() {
 const LOOPBACK = new Set(['127.0.0.1', 'localhost', '[::1]'])
 /** What the run answered and what it refused, printed at the end. */
 const ledger = { fixture: new Map(), refused: new Map() }
+
 function note(kind, key) {
   ledger[kind].set(key, (ledger[kind].get(key) ?? 0) + 1)
 }
@@ -672,7 +675,7 @@ async function lockNetwork(context, { fonts, tables, wav }) {
  * instead of the app.
  */
 function seedReturningSinger({ version, whatsNewLine, tourTabs, storage }) {
-  const set = (key, value) => localStorage.setItem(key, value)
+  const set = (key, value) => globalThis.localStorage.setItem(key, value)
   // A choice already made, so the consent banner never renders. Declined,
   // which is also all the network here would allow.
   set(
@@ -708,8 +711,11 @@ function blockPeerConnections() {
     )
   }
   for (const name of ['RTCPeerConnection', 'webkitRTCPeerConnection']) {
-    if (name in window) {
-      Object.defineProperty(window, name, { configurable: true, value: refuse })
+    if (name in globalThis.window) {
+      Object.defineProperty(globalThis.window, name, {
+        configurable: true,
+        value: refuse,
+      })
     }
   }
 }
@@ -857,13 +863,14 @@ for (const shot of SHOTS) {
         // Scroll the element's scroller just far enough that none of it
         // shows, when its top edge would otherwise cut it in half.
         await page.evaluate((selector) => {
-          const element = document.querySelector(selector)
+          const element = globalThis.document.querySelector(selector)
           let scroller = element?.parentElement ?? null
           while (
             scroller !== null &&
             !(
-              /(auto|scroll)/.test(getComputedStyle(scroller).overflowY) &&
-              scroller.scrollHeight > scroller.clientHeight
+              /(auto|scroll)/.test(
+                globalThis.getComputedStyle(scroller).overflowY,
+              ) && scroller.scrollHeight > scroller.clientHeight
             )
           ) {
             scroller = scroller.parentElement
@@ -884,11 +891,13 @@ for (const shot of SHOTS) {
     // would otherwise photograph as system sans without anyone noticing.
     // (Karaoke Night links no web fonts at all, by design.)
     const fonts = await page.evaluate(async () => {
-      await document.fonts.ready
-      const faces = [...document.fonts]
+      await globalThis.document.fonts.ready
+      const faces = [...globalThis.document.fonts]
       return {
         linked:
-          document.querySelector('link[href*="fonts.googleapis.com"]') !== null,
+          globalThis.document.querySelector(
+            'link[href*="fonts.googleapis.com"]',
+          ) !== null,
         loaded: faces.filter((face) => face.status === 'loaded').length,
         failed: faces
           .filter((face) => face.status === 'error')
@@ -917,7 +926,10 @@ for (const shot of SHOTS) {
     // bring the version back without a word. A frame that shows it fails.
     const version = `v${appVersion}`
     if (
-      await page.evaluate((v) => document.body.innerText.includes(v), version)
+      await page.evaluate(
+        (v) => globalThis.document.body.innerText.includes(v),
+        version,
+      )
     ) {
       throw new Error(
         `the frame shows the app version (${version}); hide it with the style above`,

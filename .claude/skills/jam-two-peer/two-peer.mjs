@@ -35,13 +35,16 @@ async function launch(name) {
     viewport: { width: 1280, height: 800 },
   })
   await ctx.addInitScript((line) => {
-    localStorage.setItem('pitchperfect_welcome_version', '99.0.0')
-    localStorage.setItem('pitchperfect_survey_dismissed', '1')
+    globalThis.localStorage.setItem('pitchperfect_welcome_version', '99.0.0')
+    globalThis.localStorage.setItem('pitchperfect_survey_dismissed', '1')
     // Mark the Jam page tour as already offered, so no tour chip sits above
     // the room in the shots and moves the header's mic/camera/leave buttons
     // down. TourChipHost reads this key and stays quiet.
-    localStorage.setItem('pitchperfect_page_tour_offered_jam', 'true')
-    localStorage.setItem('pitchperfect_whats_new_seen_v2', line)
+    globalThis.localStorage.setItem(
+      'pitchperfect_page_tour_offered_jam',
+      'true',
+    )
+    globalThis.localStorage.setItem('pitchperfect_whats_new_seen_v2', line)
   }, RELEASE_LINE)
   const page = await ctx.newPage()
   page.on('console', (m) => {
@@ -56,7 +59,7 @@ async function launch(name) {
  *  voice is an <audio> of its own, appended to <body>. */
 const backing = (page) =>
   page.evaluate(() => {
-    const el = document.querySelector('#jam-panel audio')
+    const el = globalThis.document.querySelector('#jam-panel audio')
     return el === null
       ? null
       : { paused: el.paused, t: Math.round(el.currentTime * 100) / 100 }
@@ -73,11 +76,13 @@ try {
   await host.page.getByRole('button', { name: /create room/i }).click()
   // waitForFunction(fn, ARG, options): the options are the THIRD argument.
   await host.page.waitForFunction(
-    () => /#\/jam:[A-Z0-9]+/i.test(location.hash),
+    () => /#\/jam:[A-Z0-9]+/i.test(globalThis.location.hash),
     undefined,
     { timeout: 30000 },
   )
-  const code = (await host.page.evaluate(() => location.hash)).split(':')[1]
+  const code = (await host.page.evaluate(() => globalThis.location.hash)).split(
+    ':',
+  )[1]
   console.log('room:', code)
 
   await guest.page.goto(`${APP}/#/jam:${code}`, {
@@ -91,7 +96,8 @@ try {
     ['guest', guest],
   ]) {
     await peer.page.waitForFunction(
-      () => /\b[1-9]\d* peers? connected/i.test(document.body.innerText),
+      () =>
+        /\b[1-9]\d* peers? connected/i.test(globalThis.document.body.innerText),
       undefined,
       { timeout: 45000 },
     )
@@ -181,7 +187,7 @@ try {
     // The guest's own backing track must start, and keep moving.
     await guest.page.waitForFunction(
       () => {
-        const el = document.querySelector('#jam-panel audio')
+        const el = globalThis.document.querySelector('#jam-panel audio')
         return el !== null && !el.paused && el.currentTime > 0
       },
       undefined,
@@ -190,7 +196,9 @@ try {
     const first = await tracks()
     await guest.page.waitForFunction(
       (t) =>
-        (document.querySelector('#jam-panel audio')?.currentTime ?? 0) >= t + 1,
+        (globalThis.document.querySelector('#jam-panel audio')?.currentTime ??
+          0) >=
+        t + 1,
       first.guest.t,
       { timeout: 10000 },
     )
@@ -202,8 +210,11 @@ try {
   // only the lyric column scrolls inside it.
   const scroll = await host.page.evaluate(() => ({
     pageScrollable:
-      document.documentElement.scrollHeight > window.innerHeight + 4,
-    pageOverflow: document.documentElement.scrollHeight - window.innerHeight,
+      globalThis.document.documentElement.scrollHeight >
+      globalThis.window.innerHeight + 4,
+    pageOverflow:
+      globalThis.document.documentElement.scrollHeight -
+      globalThis.window.innerHeight,
   }))
   console.log('page scroll:', JSON.stringify(scroll))
   await host.page.screenshot({ path: `${OUT}/host.png` })
