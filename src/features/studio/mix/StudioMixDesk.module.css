@@ -87,8 +87,8 @@
   align-items: center;
   justify-content: space-between;
   gap: 12px;
-  min-height: 42px;
-  padding: 2px 8px 0 16px;
+  min-height: 32px;
+  padding: 0 8px 0 16px;
 }
 .heading h2 {
   margin: 0;
@@ -169,6 +169,10 @@
   background: var(--studio-card);
   scroll-snap-align: start;
 }
+/* In light, a strip's edge holds 1.3:1 against the desk. */
+:global(html[data-theme='light']) .strip:not([data-selected]) {
+  border-color: var(--studio-line-strong);
+}
 /* The selected lane's strip: an accent frame and a tinted name. */
 .strip[data-selected] {
   border-color: var(--studio-accent);
@@ -206,7 +210,7 @@
   font-size: 12.5px;
   font-weight: 600;
   line-height: 16px;
-  text-align: left;
+  text-align: center;
   text-overflow: ellipsis;
   white-space: nowrap;
   cursor: pointer;
@@ -357,9 +361,6 @@
 }
 /* A short desk: a tighter heading and strips, so the faders keep their travel. */
 @container (max-height: 300px) {
-  .heading {
-    min-height: 32px;
-  }
   .body {
     padding-bottom: 10px;
   }
