@@ -37,16 +37,26 @@
 //   still carries it, so a plan changed while it was on its way is never
 //   marked as sent.
 //
-// The stops the person opened, and the layer's mode, are not synced: the
-// first is kept on this device under an `mp.` key and the second is not
-// kept at all.
+// The stops the person opened, Home's card hidden, and the layer's mode, are
+// not synced: the first two are kept on this device under `mp.` keys and the
+// last is not kept at all.
+//
+// Home's card hidden is one signal here, for every screen that asks: the
+// card, Merc's hand-over at the end of a tour (plan-handoff.ts) and Settings.
+// It holds the hide as plan-card-rules.ts reads it from storage, and the rule
+// that says which record it hides is that file's (hidesCard), so Home's slot,
+// which reads storage before this store is loaded, agrees with all three. The
+// hide is set in the signal first and written after, so a device that refuses
+// the write still hides the card for the visit; and saving answers clears it,
+// so answering again always brings the card back.
 
 import type { Accessor } from 'solid-js'
 import { createSignal, untrack } from 'solid-js'
-import { createPersistedSignal, storageGet } from '@/lib/storage'
+import { createPersistedSignal, storageGet, storageRemove, storageSet, } from '@/lib/storage'
 import type { PlanDest, VoiceprintStop } from './build-plan'
-import { isNameList } from './plan-card-rules'
-import { PLAN_OPENED_KEY, PLAN_RECORD_KEY } from './plan-keys'
+import type { PlanCardHide } from './plan-card-rules'
+import { hideOnDevice, hidesCard, isNameList } from './plan-card-rules'
+import { PLAN_CARD_DISMISSED_KEY, PLAN_OPENED_KEY, PLAN_RECORD_KEY, } from './plan-keys'
 import type { PlanRecordV1, PlanStatus, PlanTexts, PlanVia, } from './plan-record'
 import { isPlanRecordV1, pickedLines, writePlanTexts } from './plan-record'
 import type { PlanChoices } from './questions'
@@ -141,8 +151,10 @@ function keptVoiceprint(
  * Saves the answers: the record becomes answered, dated now, with no synced
  * date so that a changed plan syncs again, and the typed lines go to this
  * device first, each only if its option is picked (an earlier line whose
- * option is no longer picked is stored over with an empty one). This is the
- * one write that replaces a stored value that could not be read.
+ * option is no longer picked is stored over with an empty one). Home's card
+ * comes back with the new plan: a hide on this device is cleared before the
+ * record is written, an old `true` with it. This is the one write that
+ * replaces a stored value that could not be read.
  */
 export function savePlanAnswers(
   c: PlanChoices,
@@ -154,6 +166,7 @@ export function savePlanAnswers(
   const kept = keptVoiceprint(voiceprint)
   if (kept) record.voiceprint = kept
   writePlanTexts(pickedLines(record.choices, t))
+  showPlanCard()
   setPlanRecord(record)
 }
 
@@ -208,6 +221,44 @@ export function stopOpened(dest: PlanDest): boolean {
 export function markStopOpened(dest: PlanDest): void {
   if (untrack(() => stopOpened(dest))) return
   setOpenedStops((names) => [...names, dest])
+}
+
+// ── Home's card, hidden on this device ─────────────────────────────────
+
+/**
+ * The hide this device holds, read from storage once, as the store loads, by
+ * the card's rule (plan-card-rules.ts), and kept here for the visit. Not
+ * synced: the key starts `mp.`.
+ */
+const [cardHide, setCardHide] = createSignal<PlanCardHide>(hideOnDevice())
+
+/**
+ * Is Home's card hidden on this device, for the record as it stands? Reactive
+ * in the hide and the record: a hide made, undone or cleared reaches a card
+ * that is drawn, and a plan answered since is not hidden by the old one,
+ * while a Not now since, which holds no answers, is.
+ */
+export function planCardHidden(): boolean {
+  return hidesCard(cardHide(), planRecord())
+}
+
+/**
+ * The X: hides Home's card for the record it shows, by that record's date.
+ * The signal first, then the key, so a device that refuses the write still
+ * hides the card for the visit. The date is stored as JSON, so it reads back
+ * as the same string whatever it says. Nothing without a record.
+ */
+export function hidePlanCard(): void {
+  const at = untrack(planRecord)?.at
+  if (at === undefined) return
+  setCardHide(at)
+  storageSet(PLAN_CARD_DISMISSED_KEY, JSON.stringify(at))
+}
+
+/** Clears the hide: Home's card shows again for the record it is due for. */
+export function showPlanCard(): void {
+  setCardHide(null)
+  storageRemove(PLAN_CARD_DISMISSED_KEY)
 }
 
 // ── The layer ──────────────────────────────────────────────────────────

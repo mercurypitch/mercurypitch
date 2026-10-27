@@ -10,9 +10,10 @@
 // imported by a test of a rule or a card.
 //
 // The stores are the real ones. A case that writes to them (a record, a first
-// value, a stop opened) starts from `fresh()`: `localStorage.clear()` does not
-// reach the module signals the plan keeps over its keys, and a record left by
-// one case would be the next case's starting point.
+// value, a stop opened, the card hidden) starts from `fresh()`:
+// `localStorage.clear()` does not reach the module signals the plan keeps over
+// its keys, and a record left by one case would be the next case's starting
+// point.
 
 import type { FirstValueKind } from '@/lib/first-value'
 import { FIRST_VALUE_KEY, resetFirstValueForTests } from '@/lib/first-value'
@@ -21,7 +22,7 @@ import { applyPersistedValue } from '@/lib/storage'
 import { setPracticeScope, setUiMode } from '@/stores/settings-store'
 import { PLAN_OPENED_KEY, PLAN_RECORD_KEY } from './plan-keys'
 import type { PlanRecordV1, PlanTexts } from './plan-record'
-import { closePlanLayer, savePlanAnswers } from './plan-store'
+import { closePlanLayer, savePlanAnswers, showPlanCard } from './plan-store'
 import type { PlanChoices } from './questions'
 
 // ── Answers, each named for the plan it makes ──────────────────────────
@@ -73,11 +74,12 @@ export const SHORT_ON_TIME: PlanChoices = {
 
 // ── The device ─────────────────────────────────────────────────────────
 
-/** The plan as nobody has met it: no record, nothing opened, no first value, a whole menu. */
+/** The plan as nobody has met it: no record, nothing opened, no card hidden, no first value, a whole menu. */
 export function fresh(): void {
   localStorage.clear()
   applyPersistedValue(PLAN_RECORD_KEY, 'null', { persist: false })
   applyPersistedValue(PLAN_OPENED_KEY, '[]', { persist: false })
+  showPlanCard()
   resetFirstValueForTests()
   closePlanLayer()
   setPracticeScope('all')

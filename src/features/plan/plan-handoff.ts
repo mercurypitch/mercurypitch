@@ -14,8 +14,9 @@
 // - Which plan. Home's card's (homePlanCardState): rebuilt from the record with
 //   the voiceprint it kept and the menu as it stands, so a room the menu hides
 //   never gets a stop (R19), and offered only while that card would show it.
-//   A plan out of its week, or hidden on this device, offers nothing, nor does
-//   a record that holds no answers.
+//   A plan out of its week, or hidden on this device (the store's
+//   planCardHidden, which the card and Settings read too), offers nothing, nor
+//   does a record that holds no answers.
 // - Go opens the stop as a row of Home's card does: the funnel is told, the
 //   stop marked opened, the menu made whole if it lacks the stop's room, and
 //   the stop entered, with no tour (a tour is what "Show me around" asks for).
@@ -30,9 +31,8 @@ import type { ActiveTab } from '@/types'
 import type { PlanDest, PlanStop, PlanView } from './build-plan'
 import { PLAN_DESTS } from './build-plan'
 import { enterStop, widenMenuFor } from './enter-stop'
-import { hiddenOnDevice } from './plan-card-rules'
 import { homePlanCardState } from './plan-progress'
-import { markStopOpened, planRecord } from './plan-store'
+import { markStopOpened, planCardHidden, planRecord } from './plan-store'
 
 /** Opens a stop as a row of Home's card does. */
 function openStop(stop: PlanStop): void {
@@ -54,7 +54,7 @@ export function planHandoff(
 ): CoachHandoff | null {
   const state = homePlanCardState({
     record: untrack(planRecord),
-    dismissed: hiddenOnDevice(),
+    dismissed: untrack(planCardHidden),
     now: Date.now(),
     view,
   })

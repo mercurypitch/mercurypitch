@@ -18,7 +18,7 @@ export const PLAN_RECORD_KEY = 'pitchperfect_plan_v1'
 /** What the person typed under "Something else" and "Another app". */
 export const PLAN_TEXT_KEY = 'mp.plan.text.v1'
 
-/** Set when the person hides the plan card. */
+/** Set when the person hides Home's plan card: the date of the plan it showed (`true` from before the date was kept). */
 export const PLAN_CARD_DISMISSED_KEY = 'mp.plan.card.dismissed.v1'
 
 /** Which of the plan's stops the person has opened. */

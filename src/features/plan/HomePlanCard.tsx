@@ -32,33 +32,33 @@
 //   so entering the Home tab would go nowhere. The card tells the funnel and
 //   marks the stop as any row does, and hands the rest to Home (`onHomeSession`),
 //   which builds the session or takes the person to the one in progress.
-// - The X hides the card for good on this device. The signal hides it at once
-//   and the key is written after, so a device that refuses the write still
-//   loses the card for this visit, and a key that cannot be read is a card
-//   that was not hidden. A stored value is a hiding only when it is `true`.
-//   The X goes with the card, so the focus it had goes to the page's main
-//   region, and a keyboard user is not dropped at the top of the page.
+// - The X hides the card on this device for the plan it shows, not for good:
+//   the store keeps that record's date (hidePlanCard, plan-store.ts), so a
+//   plan answered again, here or on another device, has its card back for its
+//   week, and the rule for which record a hide hides is plan-card-rules.ts's.
+//   The store's signal hides it at once and the key is written after, so a
+//   device that refuses the write still loses the card for this visit, and a
+//   key that cannot be read is a card that was not hidden. The X goes with the
+//   card, so the focus it had goes to the page's main region, and a keyboard
+//   user is not dropped at the top of the page.
 //
 // The card follows the record, the menu and the stops opened, so it turns into
 // the plan when the questions are answered behind it and loses a row the menu
 // hides. It draws no Merc: the layer that the Start opens has the one Merc.
 
 import type { JSX } from 'solid-js'
-import { createEffect, createMemo, createSignal, createUniqueId, Index, Match, onCleanup, Show, Switch, untrack, } from 'solid-js'
+import { createEffect, createMemo, createUniqueId, Index, Match, onCleanup, Show, Switch, untrack, } from 'solid-js'
 import { CheckSmall, X } from '@/components/icons'
 import { trackGuide } from '@/lib/guide-funnel'
-import { storageSet } from '@/lib/storage'
 import { practiceScope, uiMode } from '@/stores/settings-store'
 import type { PlanDest, PlanStop } from './build-plan'
 import { PLAN_DESTS } from './build-plan'
 import { enterStop, widenMenuFor } from './enter-stop'
 import styles from './HomePlanCard.module.css'
-import { hiddenOnDevice } from './plan-card-rules'
 import { PLAN_CARD_SLOT_SETTLE_MS, rememberPlanCardSlot, } from './plan-card-slot'
 import { KICKER } from './plan-copy'
-import { PLAN_CARD_DISMISSED_KEY } from './plan-keys'
 import { homePlanCardState } from './plan-progress'
-import { markStopOpened, openPlanLayer, planRecord } from './plan-store'
+import { hidePlanCard, markStopOpened, openPlanLayer, planCardHidden, planRecord, } from './plan-store'
 import { MERC_INTRO } from './questions'
 
 interface Row {
@@ -200,12 +200,10 @@ function AskCard(props: {
 // ── The card ───────────────────────────────────────────────────────────
 
 export function HomePlanCard(props: HomePlanCardProps): JSX.Element {
-  const [hidden, setHidden] = createSignal(hiddenOnDevice())
-
   const card = createMemo(() =>
     homePlanCardState({
       record: planRecord(),
-      dismissed: hidden(),
+      dismissed: planCardHidden(),
       now: Date.now(),
       // The menu as it stands, so the rows are the ones the person can open.
       view: { scope: practiceScope(), mode: uiMode() },
@@ -218,8 +216,7 @@ export function HomePlanCard(props: HomePlanCardProps): JSX.Element {
   const asking = (): boolean => card()?.kind === 'ask'
 
   const hide = (): void => {
-    setHidden(true)
-    storageSet(PLAN_CARD_DISMISSED_KEY, true)
+    hidePlanCard()
     // The X is gone with the card, and the focus it had would fall to the top
     // of the page: keep it in the page's main region, where it was.
     document.getElementById('main-content')?.focus({ preventScroll: true })
