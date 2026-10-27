@@ -163,6 +163,15 @@ export function offered(s: SingState) {
   }
 }
 
+/** The tab hidden, as switching to another tab hides it: `document.hidden`, then its event. */
+export function hideTab(): void {
+  Object.defineProperty(document, 'hidden', {
+    configurable: true,
+    get: () => true,
+  })
+  document.dispatchEvent(new Event('visibilitychange'))
+}
+
 /** After each test: the page gone, and the browser as it was. */
 export function closeSing(): void {
   window.dispatchEvent(new Event('pagehide'))

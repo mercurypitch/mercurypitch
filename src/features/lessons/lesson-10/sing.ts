@@ -2,40 +2,61 @@
 // Lesson 10 Sing it — do-mi-so, then do-me-so, with nothing listening
 // ============================================================
 //
-// The comfort check, the voice choice, Merc's notes and Move do (WEB-SPEC,
-// Toys 6). What shows when is the pure flow's (sing-flow.ts): this plays
-// and draws it, every control shown exactly when the flow offers it, and
-// its status line, a polite live region, written only when its words
-// change, so a screen reader hears each once. The comfort check comes
-// first on every visit and is never stored (REQ-GVC-020, 021); with no
-// voice stored the voice choice comes before either path and nothing plays
-// until one is chosen, since the voice picks the Merc who sings. "Just
-// listen today" shows its line and the doctor lines, and Play Merc's notes
-// alone: nothing asks the viewer to sing, and the Wrap rests.
+// The comfort check, the voice choice, Merc's notes, Move do, the guide and
+// "How did that feel?" after every sweep (WEB-SPEC, Toys 6). What shows
+// when is the pure flow's (sing-flow.ts): this plays and draws it, every
+// control shown exactly when the flow offers it, and its status line, a
+// polite live region, written only when its words change, so a screen
+// reader hears each once. The comfort check comes first on every visit and
+// is never stored (REQ-GVC-020, 021); with no voice stored the voice choice
+// comes before either path and nothing plays until one is chosen, since
+// the voice picks the Merc who sings. "Just listen today" shows its line
+// and the doctor lines, and Play Merc's notes alone: nothing asks the
+// viewer to sing, and the Wrap rests.
 //
 // Play Merc's notes sings do-mi-so, then do-me-so, from do = E3, or E4 for
 // the higher voice, in Merc's "ooh", the kit run's default: 10.0 s, the
 // guide's path lighting in the app's target amber in step while the ring
 // shows the still of the Merc singing (FACTS 63, 65, 80; sing-guide.ts).
 // Move do moves do a semitone each way, up to four, and Merc's notes, the
-// guide, the readout and the ring's do move with it; at either end its
-// button is aria-disabled, and a press there does nothing. Start the guide
-// waits, aria-disabled under its hint, until Merc's notes have been heard
-// to their end with sound on (hear it first: playbook rule 16).
+// guide, its count-in, the readout and the ring's do move with it; at
+// either end its button is aria-disabled, and a press there does nothing.
+// Start the guide waits, aria-disabled under its hint, until Merc's notes
+// have been heard to their end with sound on (hear it first: playbook rule
+// 16). Then it is the viewer's turn: do once, softly, at half a tapped
+// note's level for 0.8 s and 0.2 s of quiet (kit/move-do.ts `countIn`),
+// then the kit's chrome line sweeps the path for 10.0 s past the gap and
+// its breath mark, 4.2 s in, while the ring breathes with the still of the
+// Merc last heard; Merc does not sing (FACTS 65, 66, 80). Under reduced
+// motion the path's notes light one after another instead of the line, and
+// the ring holds still (kit/slide-guide.ts, kit/sing.ts `calm`).
 //
-// Merc's notes are the page's one sound (kit/now-playing.ts): a press of
-// any of Sing it's controls while they play stops them and then acts, and a
-// sound anywhere else on the page stops them too. Notes cut short, by a
-// press, another sound, or every sound stopping (the Sound switch, a hidden
-// page), have not been heard, and the guide and the ring rest with them.
-// Focus moves only to text, never to a button (REQ-GVC-080). The page has
-// no microphone and scores nothing; only the voice is stored, by the kit's
-// voice choice.
+// Each sweep that ends asks "How did that feel?" afresh, under the kit's
+// lock, so an answer stands until the next sweep (FACTS 67). Easy and
+// Workable leave the guide as it was; Effortful and Uncomfortable put the
+// guide and Move do away for the visit, and Play Merc's notes still plays
+// at the do Move do last set. The visit's ending picks the Wrap's card
+// (kit/comfort.ts `VisitEnding`, `mountPractiseCard`), in memory only:
+// the rest card after "Just listen today", "Effortful" or "Uncomfortable".
+//
+// Merc's notes and a sweep are the page's one sound (kit/now-playing.ts):
+// a press of any of Sing it's controls while one runs stops it and then
+// acts, and a sound anywhere else on the page stops it too. Notes cut
+// short, by a press, another sound, or every sound stopping (the Sound
+// switch, a hidden page), have not been heard, and a sweep cut short asks
+// nothing: the card goes back to what it showed before it ran. Lesson 3's
+// rule for leaving holds: off screen for 600 ms, or the page hidden or
+// gone, and whatever plays stops, the guide and the ring with it. Focus
+// moves only to text, never to a button, so Space never starts the guide
+// by itself (REQ-GVC-080). The page has no microphone and scores nothing;
+// only the voice is stored, by the kit's voice choice.
 
-import { mountComfort, VisitEnding } from '@/features/lessons/kit/comfort'
+import type { Feeling } from '@/features/lessons/kit/comfort'
+import { mountComfort, mountFeelings, mountPractiseCard, VisitEnding, } from '@/features/lessons/kit/comfort'
 import { q, qa } from '@/features/lessons/kit/dom'
 import { majorScale } from '@/features/lessons/kit/major-scale'
-import { nextShift, setMoveEnds } from '@/features/lessons/kit/move-do'
+import type { Which } from '@/features/lessons/kit/merc-duo'
+import { COUNT_IN_SEC, countIn, nextShift, setMoveEnds, } from '@/features/lessons/kit/move-do'
 import { hz, nameHtml } from '@/features/lessons/kit/notes'
 import { NowPlaying } from '@/features/lessons/kit/now-playing'
 import type { Run } from '@/features/lessons/kit/run'
@@ -48,7 +69,7 @@ import type { Voice } from '@/features/lessons/kit/voice-choice'
 import { bindVoiceButtons, mercOf, VoiceChoice, } from '@/features/lessons/kit/voice-choice'
 import type { Comfort, Panel, SingEvent } from './sing-flow'
 import { HINT, nextState, openState, singView } from './sing-flow'
-import { guidePath, guideRows, readoutHtml, SING_SEC, singDo, singNotes, } from './sing-guide'
+import { BREATH_SEC, guidePath, guideRows, readoutHtml, SING_SEC, singDo, singNotes, } from './sing-guide'
 
 /** The ring's label, in the markup's form: do's name, as the readout names it, and its frequency, "Do: E3 · 165 Hz". */
 export const ringLabel = (doMidi: number): string =>
@@ -56,7 +77,8 @@ export const ringLabel = (doMidi: number): string =>
 
 /**
  * The ring's state lines, Lesson 6's for the same guide: "Listen" while
- * Merc sings, "Rest" after, never "Again whenever you like", which after
+ * Merc sings, "Get ready" through the count-in, the countdown through the
+ * sweep, and "Rest" after, never "Again whenever you like", which after
  * "Effortful" would ask for a repeat (REQ-GVC-021).
  */
 const RING_WORDS = {
@@ -64,6 +86,10 @@ const RING_WORDS = {
   turn: (n: number) => `Sing with the line · ${n}`,
   done: 'Rest',
 } as const
+const COUNT_IN_WORD = 'Get ready'
+
+/** How long the section may be off screen before what plays stops, ms (Lesson 3's rule). */
+const AWAY_MS = 600
 
 /** Writes a live line only when its words change, so a screen reader hears it once. */
 function say(el: HTMLElement, text: string): void {
@@ -89,6 +115,24 @@ function shownLine(card: HTMLElement): HTMLElement | null {
   return Array.from(lines).find((p) => p.closest('[hidden]') === null) ?? null
 }
 
+/** Calls `leave` once `section` has been off screen for 600 ms, when the page is hidden, and when it goes. */
+export function onLeave(section: HTMLElement, leave: () => void): void {
+  // leaving is staying away: a panel that grows or shrinks can take the
+  // section off screen for a moment, and that must not stop a sweep
+  let away = 0
+  new IntersectionObserver((entries) => {
+    window.clearTimeout(away)
+    // only the section is watched, so a report's last entry is where it stands now
+    const last = entries[entries.length - 1]
+    if (last !== undefined && !last.isIntersecting)
+      away = window.setTimeout(leave, AWAY_MS)
+  }).observe(section)
+  document.addEventListener('visibilitychange', () => {
+    if (document.hidden) leave()
+  })
+  window.addEventListener('pagehide', () => leave())
+}
+
 export function initSing(stills: RingStills): void {
   const card = q('#singCard')
   const statusEl = q('#singStatus')
@@ -98,6 +142,7 @@ export function initSing(stills: RingStills): void {
   const hint = q('[data-guide-hint]', card)
   const moves = qa<HTMLButtonElement>('[data-move-do]', card)
   const readout = q('[data-do-readout]', card)
+  const feelPanel = q('[data-panel="feel"]', card)
   const ringEl = q('.ring', card)
   // under reduced motion the ring holds its breathing circle still, and
   // has no ripples; its words are Lesson 6's, whose guide this is
@@ -105,18 +150,23 @@ export function initSing(stills: RingStills): void {
 
   let state = openState(VoiceChoice.voice)
   let shift = 0
-  // the stops so far: a play that finds them changed was cut short
+  // the stops so far: a run that finds them changed was cut short
   let stops = 0
+  // what plays: Merc's notes, or the count-in's note before a sweep
   let playing: Run | null = null
+  let counting: ReturnType<typeof countIn> = null
   // the do line's markup as last written, so a press that changes nothing writes nothing
   let doLine = readout.innerHTML.trim()
 
   const voice = (): Voice => state.voice ?? 'lower'
   const doMidi = (): number => singDo(voice(), shift)
+  // the Merc last heard singing Merc's notes, whose still the ring shows through a sweep
+  let heardMerc: Which = mercOf(voice())
   const guide = mountGuide(q('#chordGuide', card), {
     rows: guideRows(doMidi()),
     path: guidePath(doMidi()),
     rest: 'amber',
+    breaths: [BREATH_SEC],
   })
 
   function render(): void {
@@ -129,6 +179,9 @@ export function initSing(stills: RingStills): void {
     startBtn.setAttribute('aria-disabled', String(!v.startEnabled))
     hint.hidden = v.hint === null
     if (v.hint !== null) say(hint, HINT[v.hint])
+    for (const el of qa('[data-after]', feelPanel))
+      el.hidden = el.dataset.after !== v.after
+    q('[data-after-doctor]', feelPanel).hidden = !v.doctor
     say(statusEl, v.status)
     if (VisitEnding.ending !== v.card) VisitEnding.set(v.card)
   }
@@ -138,17 +191,23 @@ export function initSing(stills: RingStills): void {
     render()
   }
 
-  /** Stops Merc's notes where they stand: the guide and the ring rest, and the card goes back to the flow's. */
+  /**
+   * Stops Merc's notes or the sweep where they stand: the guide and the
+   * ring rest, a sweep cut short asks nothing, and the card goes back to
+   * what the flow showed before.
+   */
   function stopRun(): void {
-    if (playing === null) return
+    if (playing === null && !state.sweeping) return
     stops += 1
-    const r = playing
+    playing?.stop()
     playing = null
-    r.stop()
+    counting?.stop()
+    counting = null
     guide.stop()
     ring.stop()
-    notesBtn.classList.remove('is-on')
+    for (const b of [notesBtn, startBtn]) b.classList.remove('is-on')
     NowPlaying.release(stopRun)
+    if (state.sweeping) state = nextState(state, { type: 'sweepCut' })
     render()
   }
 
@@ -188,7 +247,39 @@ export function initSing(stills: RingStills): void {
     playing = null
     notesBtn.classList.remove('is-on')
     NowPlaying.release(stopRun)
+    heardMerc = which
     dispatch({ type: 'played', heard: audible })
+  }
+
+  /** The viewer's turn: the count-in on do, then the sweep; "How did that feel?" once it ends. */
+  async function startGuide(): Promise<void> {
+    const v = singView(state)
+    if (!v.singParts || !v.startEnabled) return
+    stopRun()
+    NowPlaying.claim(stopRun)
+    const mine = stops
+    const d = doMidi()
+    dispatch({ type: 'sweepStart' })
+    startBtn.classList.add('is-on')
+    counting = countIn(d, Sound.canPlay())
+    // ready through the count-in, then breathing through the sweep
+    void ring.run({
+      which: heardMerc,
+      label: ringLabel(d),
+      listen: COUNT_IN_SEC,
+      turn: SING_SEC,
+      ripples: false,
+      words: { listen: COUNT_IN_WORD },
+    })
+    await guide.sweep(COUNT_IN_SEC)
+    if (mine !== stops) return
+    counting = null
+    startBtn.classList.remove('is-on')
+    NowPlaying.release(stopRun)
+    // asked afresh, with no answer pressed
+    feelings.reset()
+    dispatch({ type: 'sweepEnd' })
+    focusText(q<HTMLElement>('.feel-q', feelPanel))
   }
 
   function answer(comfort: Comfort): void {
@@ -205,7 +296,15 @@ export function initSing(stills: RingStills): void {
     dispatch({ type: 'voice', voice: v })
     relabel()
   })
+  // the kit's lock: an answer stands until the next sweep asks afresh
+  const feelings = mountFeelings(feelPanel, (f: Feeling) => {
+    dispatch({ type: 'feel', feeling: f })
+    focusText(
+      feelPanel.querySelector<HTMLElement>('[data-after]:not([hidden])'),
+    )
+  })
   notesBtn.addEventListener('click', () => void playMerc())
+  startBtn.addEventListener('click', () => void startGuide())
   for (const b of moves)
     b.addEventListener('click', () => {
       // at its end the button is aria-disabled, so it keeps the keyboard's
@@ -216,6 +315,10 @@ export function initSing(stills: RingStills): void {
       shift = nextShift(shift, b)
       relabel()
     })
+
+  onLeave(q('#sing'), stopRun)
+  // the Wrap's card, in the version the visit's ending picks
+  mountPractiseCard(q('#practiseCard'))
 
   relabel()
   render()
