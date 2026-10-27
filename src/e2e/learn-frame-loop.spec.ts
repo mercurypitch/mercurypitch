@@ -24,10 +24,11 @@
 // through Step 5's landing, whose line moves only while it plays, Sing
 // it's chart, whose rungs light only while Merc sings his ladder, and free
 // play's chart, whose rung swells and whose arc draws only through a leap.
-// Lesson 10's are the steps' chord beads, at rest and through a gap's two
-// notes, which light their beads only while they sound, then the explorer
-// and the page at rest; the hero's spiral, Sing it's guide and ring join
-// them once they are wired.
+// Lesson 10's are the cold open's spiral, at rest and through Play the
+// chord, whose halos light only while it sounds, the steps' chord beads, at
+// rest and through a gap's two notes, which light their beads only while
+// they sound, then the explorer and the page at rest; Sing it's guide and
+// ring join them once they are wired.
 // Lessons 1 to 5 each have drawers of their own that still draw every
 // frame (S-26 in docs/plans/find-your-pitch/RELEASE-REVIEW.md), which keep
 // their loop running whatever these three do, so there only the figures
@@ -372,12 +373,14 @@ test("Lesson 9: the ladder charts, the folds strip, the landing, Sing it's chart
   await explorerRests(page, 9, true)
 })
 
-test('Lesson 10: the chord beads and the explorer rest, and so does the whole page', async ({
+test("Lesson 10: the cold open's spiral, the chord beads and the explorer rest, and so does the whole page", async ({
   page,
 }) => {
+  const hero = '#heroSpiral canvas'
   const beads = '#toyChord [data-chord-viz] canvas'
   await open(page, 10)
 
+  await runRests(page, [hero], true, () => page.locator('#heroPlay').click())
   await scrollTo(page, beads)
   await runRests(page, [beads], true, () =>
     page.locator('#toyChord .chord-hit-gap').first().click(),

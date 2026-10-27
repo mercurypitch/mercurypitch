@@ -11,12 +11,16 @@
 // arrives. A draft until Lesson 6's page is live and the vocal coach has
 // looked at the sung checkpoint (kit/drafts.ts).
 //
-// The switches, the steps' deck with the chord beads in each step's state,
-// the next lesson's card, the season map, the masthead and Merc and Tavi.
-// The rest does nothing until it is wired: the steps' controls and free
-// play, the cold open on the hero's spiral (which sets the page's names to
-// flats, the only part that reads them), the recall and the quick check,
-// the four words, the two games, Step 5's predict and Sing it.
+// The page's names are flats, set before the cold open mounts: the hero's
+// spiral is the only part that reads them, so its ring names every black
+// key by its flat and each move lands on E flat or G flat (WEB-SPEC, Toys
+// 2). They are never stored, and the page shows no switch for them.
+//
+// The switches, the cold open on the hero's spiral, the steps' deck with
+// the chord beads in each step's state, the next lesson's card, the season
+// map, the masthead and Merc and Tavi. The rest does nothing until it is
+// wired: the steps' controls and free play, the recall and the quick
+// check, the four words, the two games, Step 5's predict and Sing it.
 
 import '@fontsource-variable/inter'
 import '@fontsource-variable/outfit'
@@ -35,15 +39,21 @@ import { startFrameLoop } from '@/features/lessons/kit/frame-loop'
 import { G_CLEF_PATH } from '@/features/lessons/kit/glyphs'
 import { initMercs } from '@/features/lessons/kit/merc-duo'
 import { Motion } from '@/features/lessons/kit/motion-switch'
+import { Names } from '@/features/lessons/kit/names'
 import { createNextCard } from '@/features/lessons/kit/next-card'
 import { engraveClefs, initMasthead, initMotionSwitch, initSoundSwitch, } from '@/features/lessons/kit/page-chrome'
 import { initReveals } from '@/features/lessons/kit/reveal'
 import { createStepDeck } from '@/features/lessons/kit/step-deck'
+import { initColdOpen } from './cold-open'
 import { initSteps } from './steps'
+
+Names.set('flats')
 
 initSoundSwitch()
 initMotionSwitch()
 Motion.init()
+
+initColdOpen()
 
 // five steps, one chord-beads toy
 const deck = createStepDeck({

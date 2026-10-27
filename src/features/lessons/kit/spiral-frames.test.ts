@@ -149,6 +149,22 @@ describe("the spiral on the page's frame loop", () => {
     expect(asked).toHaveLength(0)
   })
 
+  it('looks down its axis from its first frame when the page starts it there, with no move to make', async () => {
+    // Arrange: motion on, the camera started over the axis, as Lesson 10's hero mounts it
+    const { asked, settle, spiral } = await onLoop({ view: 'top' }, false)
+    const before = spiral.top
+
+    // Act
+    spiral.setTurning(false)
+    const frames = settle()
+
+    // Assert: over the axis before its first frame, which is its only one
+    expect(before).toBe(1)
+    expect(frames).toBe(1)
+    expect(spiral.top).toBe(1)
+    expect(asked).toHaveLength(0)
+  })
+
   it('turns by itself on every frame while motion plays, as Lesson 1 shows it', async () => {
     // Arrange: motion on, the spiral free to turn
     const { painted, settle, spiral } = await onLoop({}, false)
