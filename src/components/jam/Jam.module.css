@@ -167,6 +167,42 @@
   width: 100%;
 }
 
+/* ── The connect form under a finger ─────────────────────────────
+   The fields draw 38 and 39 px tall, Create Room and Join Room 38, and
+   each took a press in exactly that much. A field's own box cannot be
+   grown (an input has no pseudo-elements), but a press on its <label> is
+   a press on the field: the browser focuses it. So the label's invisible
+   box covers its field, from the label to 3 px under the input, and the
+   input, positioned after it, keeps its own presses on top. The label and
+   the 6 px gap now take the field's press too, and the 3 px under it make
+   that press reach 22 px each side of the field's centre. The buttons get
+   a box centred on each, 3 px above and below. Between a field and the
+   button under it are 14 px, which hold both boxes with 8 px to spare.
+   Nothing here draws differently. */
+@media (pointer: coarse) {
+  .connect .field,
+  .connect .input,
+  .connect .btn {
+    position: relative;
+  }
+
+  .connect .label::after {
+    position: absolute;
+    inset: 0 0 -3px;
+    content: '';
+  }
+
+  .connect .btn::before {
+    position: absolute;
+    top: 50%;
+    left: 0;
+    width: 100%;
+    height: 44px;
+    content: '';
+    transform: translateY(-50%);
+  }
+}
+
 .btnSm {
   padding: 6px 12px;
   font-size: 0.8rem;
