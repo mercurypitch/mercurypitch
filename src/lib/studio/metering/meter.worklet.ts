@@ -1,4 +1,4 @@
-// Studio live meter — every render quantum contributes to bounded loudness windows and peak holds.
+// Studio live meters — every render quantum feeds the master's loudness windows and peak holds, and each lane's peak.
 import { createStudioMeter } from './stream-meter'
 
 declare const sampleRate: number
@@ -6,6 +6,9 @@ declare const currentFrame: number
 declare class AudioWorkletProcessor {
   readonly port: MessagePort
 }
+// Every input and output carries 128 frames a call (the Web Audio render quantum).
+const QUANTUM_FRAMES = 128
+
 declare function registerProcessor(
   name: string,
   processor: typeof AudioWorkletProcessor,
@@ -61,3 +64,60 @@ class StudioMeterProcessor extends AudioWorkletProcessor {
   }
 }
 registerProcessor('studio-meter', StudioMeterProcessor)
+
+/** The highest absolute sample in `channel` from frame `from` on, or `peak` when that is higher. */
+function channelPeak(
+  channel: Float32Array,
+  from: number,
+  peak: number,
+): number {
+  let highest = peak
+  for (let frame = from; frame < channel.length; frame++) {
+    const level = Math.abs(channel[frame])
+    if (level > highest) highest = level
+  }
+  return highest
+}
+
+/** One input per lane: the louder channel's highest sample, sent 30 times a second. */
+class StudioLaneMeterProcessor extends AudioWorkletProcessor {
+  private peaks: Float32Array | null
+  private readonly startFrame: number
+  private frames = 0
+  constructor(
+    options: {
+      numberOfInputs?: number
+      processorOptions?: { startAtTime?: number }
+    } = {},
+  ) {
+    super()
+    this.peaks = new Float32Array(options.numberOfInputs ?? 1)
+    this.startFrame = Math.round(
+      (options.processorOptions?.startAtTime ?? 0) * sampleRate,
+    )
+    this.port.onmessage = (event: MessageEvent<string>) => {
+      if (event.data !== 'dispose') return
+      this.peaks = null
+      this.port.postMessage({ kind: 'disposed' })
+    }
+  }
+  process(inputs: Float32Array[][]): boolean {
+    const peaks = this.peaks
+    if (peaks === null) return false
+    // As the master meter: only frames from the run's start count.
+    const from = Math.max(0, this.startFrame - currentFrame)
+    if (from >= QUANTUM_FRAMES) return true
+    const lanes = Math.min(inputs.length, peaks.length)
+    for (let lane = 0; lane < lanes; lane++)
+      for (const channel of inputs[lane])
+        peaks[lane] = channelPeak(channel, from, peaks[lane])
+    this.frames += QUANTUM_FRAMES - from
+    if (this.frames >= sampleRate / 30) {
+      this.port.postMessage(peaks)
+      peaks.fill(0)
+      this.frames %= Math.round(sampleRate / 30)
+    }
+    return true
+  }
+}
+registerProcessor('studio-lane-meter', StudioLaneMeterProcessor)

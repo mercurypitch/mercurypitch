@@ -25,6 +25,13 @@ export interface StudioGraph {
   setLaneSpec(trackId: string, spec: ChainSpec): void
   /** The same for the master chain, when the graph has one. */
   setMasterSpec(spec: ChainSpec): void
+  /** Each built lane's output after its fader and pan, for a level meter to tap. */
+  laneOutputs(): ReadonlyMap<string, AudioNode>
+  /**
+   * The gain reduction of a lane's enabled compressors and limiters, in dB
+   * (zero or below, summed: they run in series), or null when it has none.
+   */
+  readLaneReduction(trackId: string): number | null
   /**
    * Loop back to the song's start when the pass that is playing ends. False
    * when that loop point has already gone by, or the song is too short.
@@ -65,6 +72,17 @@ interface Scheduled {
   readonly when: number
 }
 
+/** The broadband dynamics in a chain, whose reductions add up to the lane's. */
+function dynamicsIds(spec: ChainSpec): string[] {
+  return spec.effects
+    .filter(
+      (effect) =>
+        effect.enabled &&
+        (effect.kind === 'compressor' || effect.kind === 'limiter'),
+    )
+    .map((effect) => effect.id)
+}
+
 /** Left and right lane gains: pan law times volume and balance. */
 function laneGains(track: StudioTrack): readonly [number, number] {
   const [left, right] = studioPanGains(track.pan)
@@ -99,21 +117,30 @@ export function studioGraphWorkingBytes(
   )
 }
 
+/** What the graph keeps of each lane: its chain, its fader gains and their output. */
+interface BuiltLanes {
+  readonly mixes: Map<string, GainNode[]>
+  readonly chains: Map<string, StudioFxChain>
+  readonly outputs: Map<string, AudioNode>
+  readonly dynamics: Map<string, string[]>
+}
+
 function connectLane(
   ctx: BaseAudioContext,
   lane: StudioPlannedLane,
   output: AudioNode,
   disposers: (() => void)[],
-  mixes: Map<string, GainNode[]>,
-  chains: Map<string, StudioFxChain>,
+  built: BuiltLanes,
 ): AudioNode {
   const chain = createStudioFxChain(ctx, lane.spec)
-  chains.set(lane.track.id, chain)
+  built.chains.set(lane.track.id, chain)
+  built.dynamics.set(lane.track.id, dynamicsIds(chain.getSpec()))
   disposers.push(() => chain.dispose())
   const split = ctx.createChannelSplitter(2)
   const merge = ctx.createChannelMerger(2)
   const gains: GainNode[] = []
-  mixes.set(lane.track.id, gains)
+  built.mixes.set(lane.track.id, gains)
+  built.outputs.set(lane.track.id, merge)
   chain.output.connect(split)
   const values = lane.audible ? laneGains(lane.track) : [0, 0]
   for (const [index, value] of values.entries()) {
@@ -205,8 +232,13 @@ export function buildStudioGraph(
     AudioBufferSourceNode,
     { gain: GainNode; pass: number }
   >()
-  const mixes = new Map<string, GainNode[]>()
-  const chains = new Map<string, StudioFxChain>()
+  const built: BuiltLanes = {
+    mixes: new Map(),
+    chains: new Map(),
+    outputs: new Map(),
+    dynamics: new Map(),
+  }
+  const { mixes, chains } = built
   let masterChain: StudioFxChain | null = null
   // One pass of the whole plan, timed so the second pass starts where the
   // first, which may begin part-way through, ends.
@@ -232,7 +264,7 @@ export function buildStudioGraph(
     for (const lane of studioGraphLanes(plan, options.silentLanes)) {
       if (lane.compensationSeconds === null)
         throw new Error('Studio chain timing has not been measured.')
-      const input = connectLane(ctx, lane, laneOutput, disposers, mixes, chains)
+      const input = connectLane(ctx, lane, laneOutput, disposers, built)
       for (const segment of lane.segments)
         cycle.push({
           segment,
@@ -327,10 +359,23 @@ export function buildStudioGraph(
       }
     },
     setLaneSpec(trackId, spec) {
-      if (!disposed) chains.get(trackId)?.setSpec(spec)
+      const chain = chains.get(trackId)
+      if (disposed || !chain) return
+      chain.setSpec(spec)
+      built.dynamics.set(trackId, dynamicsIds(chain.getSpec()))
     },
     setMasterSpec(spec) {
       if (!disposed) masterChain?.setSpec(spec)
+    },
+    laneOutputs: () => built.outputs,
+    readLaneReduction(trackId) {
+      const chain = chains.get(trackId)
+      const ids = built.dynamics.get(trackId)
+      if (disposed || !chain || ids === undefined || ids.length === 0)
+        return null
+      let reduction = 0
+      for (const id of ids) reduction += Math.min(0, chain.readReductionDb(id))
+      return reduction
     },
     repeat() {
       if (disposed || cycleSeconds < 0.25 || !cycle.length) return false
