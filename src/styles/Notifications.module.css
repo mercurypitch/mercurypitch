@@ -138,6 +138,7 @@
 }
 
 .actionBtn {
+  position: relative;
   flex-shrink: 0;
   padding: 0.24rem 0.5rem;
   color: var(--toast-accent);
@@ -151,6 +152,30 @@
 
 .actionBtn:hover {
   background: color-mix(in srgb, var(--toast-accent) 14%, transparent);
+}
+
+/* The action draws 23.7 px tall. It takes a press of at least 24 px from
+   an invisible box centred on it (WCAG 2.5.8), and under a finger 44 px:
+   as tall as the toast inside its border, which the dismiss beside it
+   already makes 46 px, so the box stays inside the toast, where the
+   phone's scrolling stack cannot cut it off. It is at least as wide as
+   the button, 44 px for a short label, and the 8 px between the action and
+   the dismiss keep the two presses apart. */
+.actionBtn::before {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: max(100%, 24px);
+  height: max(100%, 24px);
+  content: '';
+  transform: translate(-50%, -50%);
+}
+
+@media (pointer: coarse) {
+  .actionBtn::before {
+    width: max(100%, 44px);
+    height: max(100%, 44px);
+  }
 }
 
 .secondaryActionBtn {
