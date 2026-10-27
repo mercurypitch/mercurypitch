@@ -550,7 +550,7 @@ is not live (`:206-209`).
   (`quiz.ts:186-216`); where Lesson 7 is not live, each keeps its words with no link (Edge cases).
   The address is the quiz's `away.href` (`quiz.ts:94-101`), the kit's `recallStepHref`, which Lesson
   8's page moved into `kit/quiz.ts` (`:141-143`; What the kit and the app still need, 11), and the
-  kit's step deck opens at the step an address names (`kit/step-deck.ts:18-23`, `:292-300`), as
+  kit's step deck opens at the step an address names (`kit/step-deck.ts:18-23`, `:298-306`), as
   Lesson 7's does.
 - **Quick check**: LESSON.md's four questions, ids `l11-q1` to `l11-q4`, keys `fyp-l11-seed` and
   `fyp-l11-quiz-v1`, and `lesson: 11`, so answering all four marks Lesson 11 done in the explorer.
@@ -608,9 +608,9 @@ a line are one sound to the owner, started and stopped together. Leaving a step 
 anything it has queued, the rest of a sequence (Step 4's five slides) or a replay, whatever the
 route: Previous or Next, a swipe, the wide page's scroll, the lesson menu's jump, a `#step-N`
 address and a quick-check step link all reach the deck's `show`, which calls each toy's
-`onStep(step, previous)` (`kit/step-deck.ts:45-47`, `:140-181`), and the page stops the step's
+`onStep(step, previous)` (`kit/step-deck.ts:45-47`, `:145-186`), and the page stops the step's
 sound whenever `step` differs from `previous`; a layout switch calls it with the same step
-(`:188-191`) and stops nothing. A play cut short, by a new play or a stop, never counts as heard:
+(`:193-196`) and stops nothing. A play cut short, by a new play or a stop, never counts as heard:
 the cold open's `play` resolves `false` for it, and the predict counts only a play that runs to its
 end (Toys 2). Both rules' kit parts are on main, from Lesson 6's page (#1149): the owner,
 `NowPlaying` (`kit/now-playing.ts:17-39`), which every source claims with its own stop before it
