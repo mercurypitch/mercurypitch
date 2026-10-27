@@ -391,7 +391,7 @@ upper gear" and "Play: a siren that flips".
 
 The range chart in live mode, inside Sing it's card, with Merc's amber siren as the shape and the
 viewer's line drawn against the window. It is the kit's `.sing-chart` (240 px; 210 px at 420 px wide
-and under, `kit/lesson-voice.css:40-46`, `:385-388`), over Lesson 7's windows, so the plot gives
+and under, `kit/lesson-voice.css:40-46`, `:392-395`), over Lesson 7's windows, so the plot gives
 6.81 px a semitone for the lower voice's 32 semitones and 7.03 for the higher's 31 (5.88 and 6.06
 at 210 px; FACTS 83). Merc's siren is drawn in its one gear (thick for the lower voice, thin for the
 higher) with no seam; the viewer's line is violet, 3 px, and nothing is ever drawn on it or beside

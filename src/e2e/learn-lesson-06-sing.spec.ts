@@ -12,7 +12,9 @@
 // a version has played; "How did that feel?" as each sweep ends, and what
 // each answer shows and puts away; the Wrap's practise card each branch
 // picks. Nothing listens: no call to getUserMedia, and no request that
-// sends anything.
+// sends anything. A line shown under a row of buttons (the do readout
+// under the plays, a feeling's answer under the four feelings) stands
+// clear of the row, as a line stands under a line (kit/lesson-voice.css).
 // Merc's versions are 9.6 s and a sweep 10.6 s with its count-in, so the
 // longest test runs about 45 s.
 
@@ -82,6 +84,15 @@ test.describe('Sing it, with no microphone', () => {
 
   const feel = (page: Page, f: string): Promise<void> =>
     page.locator(`[data-feel="${f}"]`).click()
+
+  /** The room between a row of buttons and the line shown under it, in px. */
+  async function gapUnder(row: Locator, line: Locator): Promise<number> {
+    const above = await row.boundingBox()
+    const below = await line.boundingBox()
+    expect(above, 'the row is laid out').not.toBeNull()
+    expect(below, 'the line is laid out').not.toBeNull()
+    return (below?.y ?? 0) - ((above?.y ?? 0) + (above?.height ?? 0))
+  }
 
   test('the comfort check comes first; with no voice stored, nothing after the choice shows until one is chosen', async ({
     page,
@@ -233,6 +244,13 @@ test.describe('Sing it, with no microphone', () => {
     await expect(page.locator('[data-after="gentle"]')).toHaveText(
       'Keep it gentle: rest before you sing again.',
     )
+    // the answer stands clear of the four feelings, not flush under them
+    expect(
+      await gapUnder(
+        page.locator('.feelings'),
+        page.locator('[data-after="gentle"]'),
+      ),
+    ).toBeGreaterThanOrEqual(11.5)
     await expect(page.locator('[data-guide-start]')).toBeHidden()
     await expect(page.locator('.move-do')).toBeHidden()
     await expect(
@@ -292,6 +310,14 @@ test.describe('Sing it, with no microphone', () => {
     await expect(status(page)).toHaveText(
       'Just listening today: press a Play button to hear Merc.',
     )
+    // the do readout stands clear of the plays above it, the hint and the
+    // guide's line hidden between them
+    expect(
+      await gapUnder(
+        page.locator('[data-panel="versions"] .sing-btns'),
+        page.locator('[data-do-readout]'),
+      ),
+    ).toBeGreaterThanOrEqual(11.5)
     await expect(
       page.locator('#practiseCard [data-ending="rest"]'),
     ).toBeVisible()

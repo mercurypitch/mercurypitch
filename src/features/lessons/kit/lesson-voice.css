@@ -220,6 +220,13 @@
 .sing-card p {
   margin: 0 0 12px;
 }
+/* a row of buttons (the plays, the feelings) with a line shown after it stands
+   clear of that line, as a line stands under a line: the line has no top margin,
+   and the hidden lines between them (the guide's hint, a feeling's other
+   answers) take no room. A row with no line after it keeps its place. */
+.sing-card :is(.sing-btns, .feelings):has(~ p:not([hidden])) {
+  margin-bottom: 12px;
+}
 .comfort-head {
   display: flex;
   gap: 10px;
