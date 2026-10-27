@@ -232,10 +232,10 @@ without forking it (`spiral.ts:28-32`), with a strip of DOM buttons under it, so
 the stage-fit test reach every action.
 
 - **Seen from above.** `setView('top')` at mount looks straight down the axis, so one turn is a ring
-  of twelve (`spiral.ts:177-178`; `src/features/lessons/kit/spiral-draw.ts:17-21`), and `ring: 60`
+  of twelve (`spiral.ts:179-180`; `src/features/lessons/kit/spiral-draw.ts:17-21`), and `ring: 60`
   keeps the turn from C4 lit from above (`spiral.ts:132-133`), so C4 to B4 sit on it and the other
   turns fade (`ringFade`, `spiral-draw.ts:106-116`). `setTurning(false)` holds it still
-  (`spiral.ts:175-176`), and `range: () => [60, 71]` keeps the slider on the lit turn
+  (`spiral.ts:177-178`), and `range: () => [60, 71]` keeps the slider on the lit turn
   (`spiral.ts:130-131`). The notes sit at 30 degrees a semitone, A at the front
   (`spiral-draw.ts:130-131`), and the ring's radius is the smaller of 0.27 of the figure's width and
   0.29 of its height (`spiral-draw.ts:136`). Every name follows the page's sharps-or-flats choice
@@ -243,7 +243,7 @@ the stage-fit test reach every action.
   so the black keys read C♯, D♯, F♯, G♯ and A♯, and G major's F♯ is spelled as its key spells it
   (FACTS 10). The page shows no switch for it. A black key's bead is a "?" until it is lit on that
   copy (`spiral.ts:18-20`; `spiral-draw.ts:12-14`), so the page lights the turn's five with `light`
-  at mount (`spiral.ts:167-168`): Step 1's Notice is about the black keys, and they carry names
+  at mount (`spiral.ts:169-170`): Step 1's Notice is about the black keys, and they carry names
   from the start.
 - **A room** is drawn each frame in the spiral's `overlay` (`spiral.ts:120-121`) from where the beads
   landed (`BeadHit`, `spiral-draw.ts:34-40`), as Lesson 2's trail is
@@ -337,7 +337,7 @@ the stage-fit test reach every action.
   it and its toy's first row of controls share the screen, down to its `--viz-min`, 150 px unless a
   lesson's stylesheet sets more (`lesson-stage.css:1111-1128`): 162 px at 844 x 390, and 150 px on
   the shortest phones. The page leaves that floor alone. Below 240 px of height the toy draws its
-  compact layout: the ring's beads carry letters only (`setLabels('letter')`, `spiral.ts:174`), the
+  compact layout: the ring's beads carry letters only (`setLabels('letter')`, `spiral.ts:176`), the
   centre's label moves into the figure's top-left corner, and the syllables under Do-re-mi move onto
   the chips alone; the ring's radius is 47 px at 162 px, too tight for bead taps, so the chips carry
   every chord. At 844 x 390 the chord strip is one row of seven, each chip 44 px tall and wider than
@@ -861,7 +861,7 @@ heard play (Toys 3; Edge cases) (`git diff --stat`).
    major key from its tonic (their notes, gaps, quality and numeral), each room's sides round the
    ring, a tune's notes against its chords (on a corner or between), and the strip's layout. The
    kit's spiral needs nothing: `setView('top')`, `ring`, `range`, `overlay`, `light`, `setLabels`
-   and `setTurning` are on main (`kit/spiral.ts:103-139`, `:152-185`).
+   and `setTurning` are on main (`kit/spiral.ts:103-141`, `:154-187`).
 4. `lesson-12/cold-open.ts`, new (Toys 2): the hero's ring, its rooms and the tunes' walk.
 5. The names switch (Toys 1): Lesson 4's (`lesson-04/stairs-words.ts`), with a choice of modes, as
    Lesson 10's spec moves it into the kit (its What the kit and the app still need, item 5). If
@@ -949,10 +949,10 @@ heard play (Toys 3; Edge cases) (`git diff --stat`).
     card does not answer the cold open's predict (FACTS 1a).
 14. The first-paint budget, in the change that adds the page: `learn/12.html` in both of
     `scripts/assert-first-paint-budgets.mjs`'s tables, its JavaScript (`FIRST_PAINT_BUDGETS_KB`,
-    `:59`) and its render-blocking CSS (`FIRST_PAINT_CSS_BUDGETS_KB`, `:260`), measured, with the
+    `:59`) and its render-blocking CSS (`FIRST_PAINT_CSS_BUDGETS_KB`, `:267`), measured, with the
     lessons' headroom, a quarter over. Every build emits every lesson page, a draft's included
     (`scripts/assert-first-paint-budgets.mjs:103-105`), and a document it emits with no budget
-    fails the check (`assert-first-paint-budgets.mjs:598-602`, and for CSS `:628-634`; FACTS 76),
+    fails the check (`assert-first-paint-budgets.mjs:605-609`, and for CSS `:635-641`; FACTS 76),
     which `build:e2e` runs (`package.json:20`). The page's WebGL renderer, as on every lesson page,
     arrives after first paint (Merc and Tavi).
 15. On release (SEARCH.md § 12), once its `drafts.ts` line is deleted: `public/sitemap.xml` and

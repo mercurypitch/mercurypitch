@@ -10,12 +10,15 @@
 // as itself, never as the 404 page or the studio's cached app shell, and
 // its module must boot. Then WEB-SPEC's first end-to-end check (Tests, End
 // to end 1), at a phone's size and a desktop's: no AudioContext before the
-// first tap, and nothing plays before a play button; and its fourteenth: a
-// visitor with the studio installed still gets the lesson, not the shell.
-// This is the page shell's spec; each toy's own checks join it as that toy
-// is wired.
+// first tap, and nothing plays before a play button; its second, the cold
+// open: Play the chord before a choice, the moves locked until one, the
+// reveal waiting for both moves heard to their end with sound on, and no
+// gold on the spiral until it shows, its ring naming each black key by its
+// flat; and its fourteenth: a visitor with the studio installed still gets
+// the lesson, not the shell. Each toy's own checks join it as that toy is
+// wired.
 
-import type { Page } from '@playwright/test'
+import type { Locator, Page } from '@playwright/test'
 import { expect, test } from './helpers/lesson-page'
 
 // 60 characters at most (src/tests/lesson-pages.test.ts)
@@ -134,6 +137,135 @@ for (const viewport of [
       // Assert
       expect(after.contexts).toBe(1)
       expect(await heard(page)).toEqual(after)
+    })
+  })
+}
+
+/** How many of the hero spiral's pixels are the page's gold (#ffd84d), which only mi's halo takes, from the reveal. */
+const goldPixels = (page: Page): Promise<number> =>
+  page.locator('#heroSpiral canvas').evaluate((c: HTMLCanvasElement) => {
+    const ctx = c.getContext('2d')
+    if (ctx === null) return -1
+    const { data } = ctx.getImageData(0, 0, c.width, c.height)
+    let n = 0
+    for (let i = 0; i < data.length; i += 4)
+      if (
+        data[i] > 225 &&
+        data[i + 1] > 190 &&
+        data[i + 1] < 235 &&
+        data[i + 2] < 130
+      )
+        n += 1
+    return n
+  })
+
+// WEB-SPEC, End to end 2, at a phone's size and a desktop's
+for (const viewport of [
+  { width: 390, height: 844 },
+  { width: 1440, height: 900 },
+]) {
+  test.describe(`the cold open at ${viewport.width} x ${viewport.height}`, () => {
+    test.use({ viewport })
+
+    test('Play the chord plays before a choice, the moves wait for one, and the reveal waits for both heard to their end with sound on', async ({
+      page,
+    }) => {
+      test.setTimeout(90_000)
+      // Arrange
+      const errors: string[] = []
+      page.on('pageerror', (e) => errors.push(e.message))
+      await watchSound(page)
+      await page.goto('/learn/10')
+      const chord = page.locator('#heroPlay')
+      const [mi, so] = ['move-mi', 'move-so'].map((p) =>
+        page.locator(`.hero-plays [data-play="${p}"]`),
+      )
+      const spiral = page.locator('#heroSpiral canvas')
+      const reveal = page.locator('#predict .reveal')
+      const hint = page.locator('#predict .lock-hint')
+      const said = page.locator('[data-hero-said]')
+      const sound = page.locator('#soundSwitch')
+      /** Plays `b` and waits for it to finish. */
+      const playThrough = async (b: Locator): Promise<void> => {
+        await b.click()
+        await expect(b).toHaveClass(/\bis-on\b/)
+        await expect(b).not.toHaveClass(/\bis-on\b/, { timeout: 10_000 })
+      }
+
+      // Act, Assert: Play the chord before a choice plays and reveals nothing
+      await sound.click()
+      await expect(sound).toHaveAttribute('aria-pressed', 'true')
+      for (const b of [mi, so]) await expect(b).toBeDisabled()
+      await playThrough(chord)
+      await expect(said).toHaveText('C, E and G together.')
+      await expect(reveal).toBeHidden()
+      expect((await heard(page)).sources).toBeGreaterThan(0)
+
+      // the choice unlocks the two moves
+      await page.locator('#predict [data-choice="mi"]').click()
+      for (const b of [mi, so]) await expect(b).toBeEnabled()
+
+      // mi heard to its end, landed on E flat 4, leaves it hidden, with nothing gold
+      await playThrough(mi)
+      await expect(said).toHaveText('Mi moved down a semitone: C, E flat, G.')
+      await expect(hint).toHaveText(
+        'Now hear both moves, mi down and so down, for the answer.',
+      )
+      await expect(reveal).toBeHidden()
+      expect(await goldPixels(page)).toBe(0)
+
+      // so cut short by a note played on the spiral brings nothing
+      await so.click()
+      await expect(so).toHaveClass(/\bis-on\b/)
+      await spiral.focus()
+      await page.keyboard.press('Enter')
+      await expect(so).not.toHaveClass(/\bis-on\b/)
+      await expect(reveal).toBeHidden()
+
+      // and so does so cut short as the Sound switch silences it
+      await so.click()
+      await expect(so).toHaveClass(/\bis-on\b/)
+      await sound.click()
+      await expect(sound).toHaveAttribute('aria-pressed', 'false')
+      await expect(so).not.toHaveClass(/\bis-on\b/)
+      await expect(reveal).toBeHidden()
+
+      // with sound off, so says nothing played, and still no reveal
+      await playThrough(so)
+      await expect(hint).toHaveText(
+        'Sound is off, so nothing played. Turn sound on to hear the chord, then play it again.',
+      )
+      await expect(reveal).toBeHidden()
+      expect(await goldPixels(page)).toBe(0)
+
+      // sound on, so heard to its end brings the reveal, and mi's gold halo
+      await sound.click()
+      await expect(sound).toHaveAttribute('aria-pressed', 'true')
+      await playThrough(so)
+      await expect(reveal).toBeVisible()
+      await expect(reveal.locator('.mono')).toHaveText('You said: mi')
+      await expect.poll(() => goldPixels(page)).toBeGreaterThan(0)
+      expect(errors).toEqual([])
+    })
+
+    test('the ring names each black key by its flat, and nothing on the spiral is gold before the reveal', async ({
+      page,
+    }) => {
+      // Arrange
+      await page.goto('/learn/10')
+      const spiral = page.locator('#heroSpiral canvas')
+      await spiral.scrollIntoViewIfNeeded()
+
+      // Act: from the slider's first note, A3, six up to E flat 4
+      await spiral.focus()
+      for (let i = 0; i < 6; i++) await page.keyboard.press('ArrowRight')
+
+      // Assert: the page's names are flats (WEB-SPEC, Toys 2)
+      await expect(spiral).toHaveAttribute(
+        'aria-valuetext',
+        'E flat 4, 311 hertz',
+      )
+      expect(await goldPixels(page)).toBe(0)
     })
   })
 }

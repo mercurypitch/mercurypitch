@@ -256,7 +256,7 @@ step 4's; step 5's; and free play's.
   return. Under reduced motion both land in their end state at once.
 - **Keyboard** (step 3): Lesson 1's Unroll button and keyboard (A2 to A5 on a wide stage, low notes
   left, A3 blue, A4 orange; its labels "Unroll the spiral" and "Roll it back up",
-  `kit/spiral.ts:211-214`), now with every key lit and playable, the black keys named by
+  `kit/spiral.ts:213-216`), now with every key lit and playable, the black keys named by
   the toggle. Two keys played one after the other draw a step bar between them, a notch per
   semitone, labelled with its number of semitones: "1" and "2" as the film's bars are, and "3" and
   up the same way. Phones show the octave A3 to A4 ("On phones", below).
@@ -292,7 +292,7 @@ figure.
   the 51 px below the black keys, and wherever no black key's zone reaches. Names sit on the keys;
   step bars draw under them, y 256 to 300. On a phone narrower than 386 px the keyboard shows as
   many white keys as fit at 44 px or wider (seven from 342 px up), from A3, and two 44 px buttons
-  under it pan one white key at a time, where Lesson 1's pan an octave (`kit/spiral.ts:392-404`).
+  under it pan one white key at a time, where Lesson 1's pan an octave (`kit/spiral.ts:394-406`).
 - **Straighten**, and step 4's row: thirteen equal tiles across the same 356 px, 27.4 px each. On
   phones they are a picture, not targets: they light as notes play, and every control is a 44 px
   button. A tile narrower than 44 px takes no taps; on the desktop stage the tiles are about 50 px

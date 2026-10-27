@@ -234,7 +234,14 @@ export const FIRST_PAINT_BUDGETS_KB = {
   // 15,919 are the toy, its painter and the page's chords, layout, lines and
   // sounds in Lesson 10's own chunk, and 4,642 the kit's runs, tune-line
   // glow and light, scale degrees, names modes and sound owner it brings.
-  'learn/10.html': 92,
+  // Raised to 120 for the cold open on the hero's spiral: 122,366 bytes
+  // with it, 28,867 more. 19,250 are the kit's spiral, its keys, the names
+  // store and the still sky in chunks of their own (kit/spiral.ts,
+  // spiral-draw.ts, spiral-keys.ts, names.ts, still-sky.ts); about 3,300
+  // the kit's predict and hero sky, which join the chunk every lesson page
+  // shares (kit/predict.ts, hero-sky.ts); and about 6,300 the cold open
+  // and its marks in Lesson 10's own chunk.
+  'learn/10.html': 120,
 
   // The main app, and the crawlable doors that are the main app. Measured
   // 4669. It is eager by design today, so this is a ceiling on growth rather

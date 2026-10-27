@@ -136,6 +136,8 @@ export interface SpiralOptions {
    * here claims it, and stops when another sound claims it; default none.
    */
   readonly owner?: SoundOwner
+  /** Where the camera starts: 'top' looks down the axis from the first frame, with no move; default 'side'. */
+  readonly view?: SpiralCamera
 }
 
 /** What a page's keys layer is built from: the canvas size, the time and the figure's state. */
@@ -251,8 +253,8 @@ export function mountSpiral(
   let narrow = false
   let pan = 7
   let panTarget = 7
-  let top = 0
-  let topTarget = 0
+  let top = opts.view === 'top' ? 1 : 0
+  let topTarget = top
   const pulses = new Map<number, number>()
   const drifting = (): boolean => userDrift && !Motion.paused
   // on a page with an owner, the note the viewer last played here, and the
