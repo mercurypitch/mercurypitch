@@ -6,10 +6,12 @@
 // it, and a neighbour's can take part of it away. So this asks the browser,
 // with `elementFromPoint`, how far from the control's centre a press still
 // lands on it, along the centre row and column, and whether the middle of
-// every edge of its own drawn box still does. Read before any assertion that a control is
-// "at least 44 px" or that two controls do not share a press; `neighbourAreas`
-// gives the presses of the controls near enough for a grown box to reach,
-// and `bringToMiddle` puts a control where a hit-test can read all of it.
+// every edge of its own drawn box still does. A press on a field's <label>
+// lands on the field, as it does in the browser. Read before any assertion
+// that a control is "at least 44 px" or that two controls do not share a
+// press; `neighbourAreas` gives the presses of the controls near enough for
+// a grown box to reach, and `bringToMiddle` puts a control where a hit-test
+// can read all of it.
 
 import type { Locator } from '@playwright/test'
 
@@ -32,7 +34,11 @@ export function hitArea(control: Locator): Promise<HitArea> {
     const cy = r.top + r.height / 2
     const lands = (x: number, y: number): boolean => {
       const target = document.elementFromPoint(x, y)
-      return target !== null && (target === element || element.contains(target))
+      if (target === null) return false
+      if (target === element || element.contains(target)) return true
+      // A press on a field's <label> is a press on the field: the browser
+      // hands it the focus. The app-check sweep counts it the same way.
+      return target instanceof HTMLLabelElement && target.control === element
     }
     const reach = (dx: number, dy: number): number => {
       let n = 0
