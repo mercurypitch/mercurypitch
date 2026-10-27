@@ -26,6 +26,7 @@ describe('TOUR_IDS', () => {
       'practice-modes': 16,
       sing: 17,
       'karaoke-night': 18,
+      'sing-more': 19,
     })
   })
 
