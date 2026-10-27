@@ -105,18 +105,20 @@
 .steps-stage .toy .eyebrow {
   line-height: 16px;
 }
-/* The figure is 340 px tall at every width: the full window, C4 to F sharp
+/* The drawing is 340 px tall at every width: the full window, C4 to F sharp
    5, at 15 px a semitone, with room for the targets and the name strip
-   (WEB-SPEC, Toys 1), where the kit's figures are 330, 280 or 250 px. Stuck
-   beside the text, the kit caps a figure at the room its controls leave, so
-   there it keeps all 340; in the deck on a phone held sideways the kit's cap
-   stands, and the toy draws its compact layout. */
+   (WEB-SPEC, Toys 1), where the kit's figures are 330, 280 or 250 px. The
+   figure is 342 px with its 1 px borders, so its canvas has all 340: at 338
+   the toy would draw its compact layout. Stuck beside the text, the kit caps
+   a figure at the room its controls leave, so there it keeps all 342; in the
+   deck on a phone held sideways the kit's cap stands, and the toy draws its
+   compact layout. */
 .viz.chord-viz {
-  height: 340px;
+  height: 342px;
 }
 @media (min-width: 961px) and (min-height: 561px) {
   .steps-stage .chord-viz {
-    --viz-min: 340px;
+    --viz-min: 342px;
   }
 }
 /* The targets' layer covers the canvas exactly, inside the figure's 1 px
@@ -149,6 +151,30 @@
 }
 .chord-targets > * {
   pointer-events: auto;
+}
+.chord-targets[hidden] {
+  display: none;
+}
+/* a bead's and a gap's button: clear over the drawing, which shows what it
+   plays, at least 44 px each way (chord-layout.ts) */
+.chord-hit {
+  position: absolute;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  border-radius: 10px;
+  background: transparent;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+.chord-hit:focus-visible {
+  outline: 2px solid var(--aqua);
+  outline-offset: -2px;
+}
+@media (hover: hover) {
+  .chord-hit:hover {
+    background: rgba(195, 204, 214, 0.06);
+  }
 }
 /* the wide figure gives up its side borders on phones (kit/lesson-stage.css),
    and the targets' layer follows it to the card's edge */

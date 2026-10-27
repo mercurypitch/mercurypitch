@@ -229,8 +229,12 @@ export const FIRST_PAINT_BUDGETS_KB = {
   // kit's deck, switches, masthead, next-lesson card, explorer and Merc and
   // Tavi, with none of its toys wired yet. The ceiling is the smallest
   // whole KB above that, so each toy that joins raises it, with its measure,
-  // until the page is whole and takes a quarter over.
-  'learn/10.html': 72,
+  // until the page is whole and takes a quarter over. Raised to 92 for the
+  // chord beads on the stage: 93,499 bytes with them, 20,561 more, of which
+  // 15,919 are the toy, its painter and the page's chords, layout, lines and
+  // sounds in Lesson 10's own chunk, and 4,642 the kit's runs, tune-line
+  // glow and light, scale degrees, names modes and sound owner it brings.
+  'learn/10.html': 92,
 
   // The main app, and the crawlable doors that are the main app. Measured
   // 4669. It is eager by design today, so this is a ceiling on growth rather

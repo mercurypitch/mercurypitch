@@ -9,14 +9,21 @@
 // it shows on (`data-part`, a list of step numbers), so no two controls on
 // the stage ever share a name: Slow serves Steps 1, 2, 3 and 5, Step 4 has
 // Slow · Fast, and Step 5 has a Major · Minor of its own, which waits for
-// its predict. Here the page shell only: the figure's label and which parts
-// show follow the step, through the deck's `onStep`, whatever the route
+// its predict. The figure's label, which parts show and the chord beads'
+// state follow the step, through the deck's `onStep`, whatever the route
 // (Next or Back, a swipe, the lesson menu, an address that names a step, the
-// quiz's step links). The beads and their sounds are wired separately;
-// until then a control does nothing.
+// quiz's step links): each step opens its state on C4, and leaving a step
+// stops the beads' sound. The steps' own controls are wired once each
+// step's plays are; until then a control does nothing, and the beads play
+// only their own buttons' notes.
 
 import { q, qa } from '@/features/lessons/kit/dom'
+import { NowPlaying } from '@/features/lessons/kit/now-playing'
+import type { StepDeck } from '@/features/lessons/kit/step-deck'
 import { registerToy } from '@/features/lessons/kit/step-deck'
+import type { ChordBeads } from './chord-beads'
+import { mountChordBeads } from './chord-beads'
+import type { BeadState } from './chord-layout'
 
 /** Each step's figure label. */
 export const FIG: Readonly<Record<number, string>> = {
@@ -25,6 +32,15 @@ export const FIG: Readonly<Record<number, string>> = {
   3: '<span class="fig">Fig. 3</span> Move the third',
   4: '<span class="fig">Fig. 4</span> The chord\'s pattern',
   5: '<span class="fig">Fig. 5</span> The chord in its scale',
+}
+
+/** Each step's state of the chord beads (WEB-SPEC, Toys 1). */
+export const STEP_STATE: Readonly<Record<number, BeadState>> = {
+  1: 'thirds',
+  2: 'stack',
+  3: 'slide',
+  4: 'pattern',
+  5: 'scale',
 }
 
 /** The steps a part shows on, from its `data-part` list ("1 3 4"). */
@@ -40,10 +56,18 @@ export function showParts(root: ParentNode, n: number): void {
     el.hidden = !partSteps(el).includes(n)
 }
 
-/** Follows the deck: registered before `deck.start()`, so an address that names a step opens it. */
-export function initSteps(): void {
+/**
+ * Mounts the stage's chord beads and follows the deck: registered before
+ * `deck.start()`, so an address that names a step opens it.
+ */
+export function initSteps(deck: StepDeck): ChordBeads {
   const root = q('#toyChord')
   const label = q('[data-fig-label]', root)
+  const beads = mountChordBeads(root, {
+    state: STEP_STATE[1],
+    active: deck.toyActive(1),
+    owner: NowPlaying,
+  })
   registerToy({
     onStep(n, previous) {
       // the step showing shown again, as the phone deck and the wide page
@@ -52,6 +76,8 @@ export function initSteps(): void {
       if (n === previous) return
       showParts(root, n)
       label.innerHTML = FIG[n] ?? FIG[1]
+      beads.setState(STEP_STATE[n] ?? STEP_STATE[1])
     },
   })
+  return beads
 }
