@@ -175,6 +175,8 @@
   grid-row: 2;
   grid-column: 1 / -1;
   display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
   align-items: center;
   gap: 8px;
 }
@@ -285,6 +287,17 @@
 }
 
 @media (prefers-reduced-motion: no-preference) {
+  /* A step that runs something (Merc singing) pulses its ring; still, the
+     ring says the same. */
+  .pulse::after {
+    position: absolute;
+    inset: -2px;
+    border: 2px solid var(--coach-teal);
+    border-radius: 12px;
+    content: '';
+    animation: coach-ring-pulse 1.6s ease-out infinite;
+  }
+
   .playMark {
     position: absolute;
     bottom: 0;
@@ -321,5 +334,17 @@
 
   to {
     transform: scaleX(1);
+  }
+}
+
+@keyframes coach-ring-pulse {
+  from {
+    opacity: 0.7;
+    transform: scale(1);
+  }
+
+  to {
+    opacity: 0;
+    transform: scale(1.14);
   }
 }

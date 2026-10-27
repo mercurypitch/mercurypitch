@@ -357,3 +357,119 @@ describe('startCoachTour', () => {
     expect(coachActive()).toBeNull()
   })
 })
+
+describe('"Show me more"', () => {
+  const NEXT_ON_PLAN = { title: 'Next on your plan', body: 'Sing a scale.' }
+
+  /** A promise and the hands that settle it, for steps that load on cue. */
+  function deferred<T>(): {
+    promise: Promise<T>
+    resolve: (value: T) => void
+    reject: (error: unknown) => void
+  } {
+    let resolve!: (value: T) => void
+    let reject!: (error: unknown) => void
+    const promise = new Promise<T>((yes, no) => {
+      resolve = yes
+      reject = no
+    })
+    return { promise, resolve, reject }
+  }
+
+  /** The Sing tour, one stop long, offering `steps` as its second tour. */
+  const offering = (steps: () => Promise<CoachTour>): CoachTour => ({
+    ...tour('sing', 'Keep a take'),
+    more: { key: 'sing-more', label: 'Show me more', load: steps },
+  })
+
+  const press = (label: string): void => {
+    const button = [
+      ...(roots()[0]?.querySelectorAll<HTMLButtonElement>('button') ?? []),
+    ].find((b) => b.textContent === label)
+    if (!button) throw new Error(`no ${label}`)
+    button.click()
+  }
+
+  /** Waits for what a tour's layer shows, across the load and the mount. */
+  const showing = async (text: string): Promise<void> => {
+    await vi.waitFor(() => {
+      expect(roots()).toHaveLength(1)
+      expect(roots()[0]).toHaveTextContent(text)
+    })
+  }
+
+  it('starts the tour it offers in its place, its steps loaded on the tap, and hands over only at its end', async () => {
+    const load = vi.fn(async () => tour('sing-more', 'Repeat goes round'))
+    const go = vi.fn()
+    const first = await startCoachTour(offering(load), {
+      handoff: () => ({ ...NEXT_ON_PLAN, go }),
+    })
+    expect(load).not.toHaveBeenCalled()
+
+    press('Show me more')
+
+    expect(load).toHaveBeenCalledOnce()
+    await expect(first.ended).resolves.toBe('done')
+    expect(trackTour).toHaveBeenCalledWith('tour_done', 'sing', {
+      step: 1,
+      of: 1,
+    })
+    // No hand-over between the two, and the coach still named meanwhile.
+    expect(document.body).not.toHaveTextContent(NEXT_ON_PLAN.title)
+    expect(coachActive()).toBe('sing-more')
+    await showing('Repeat goes round')
+    expect(coachActive()).toBe('sing-more')
+
+    press('Done')
+    await showing(NEXT_ON_PLAN.title)
+    press('Go')
+    expect(go).toHaveBeenCalledOnce()
+    await settle()
+    expect(coachActive()).toBeNull()
+  })
+
+  it('leaves Done on the offering tour to hand over as it always has', async () => {
+    const load = vi.fn(async () => tour('sing-more', 'Repeat goes round'))
+    await startCoachTour(offering(load), {
+      handoff: () => ({ ...NEXT_ON_PLAN, go: vi.fn() }),
+    })
+
+    press('Done')
+
+    await showing(NEXT_ON_PLAN.title)
+    expect(load).not.toHaveBeenCalled()
+  })
+
+  it('gives focus back and lets go when the tour it offers does not load', async () => {
+    const control = document.createElement('button')
+    document.body.append(control)
+    control.focus()
+    const steps = deferred<CoachTour>()
+    await startCoachTour(offering(() => steps.promise))
+    await settle()
+
+    press('Show me more')
+    await settle()
+    expect(coachActive()).toBe('sing-more')
+    steps.reject(new Error('chunk failed'))
+
+    await vi.waitFor(() => expect(coachActive()).toBeNull())
+    expect(roots()).toHaveLength(0)
+    expect(document.activeElement).toBe(control)
+  })
+
+  it('never shows the tour it offers once the page has moved on', async () => {
+    const steps = deferred<CoachTour>()
+    await startCoachTour(offering(() => steps.promise))
+
+    press('Show me more')
+    await settle()
+    endCoachTour()
+    steps.resolve(tour('sing-more', 'Repeat goes round'))
+    await settle()
+    await settle()
+
+    expect(roots()).toHaveLength(0)
+    expect(coachActive()).toBeNull()
+  })
+})

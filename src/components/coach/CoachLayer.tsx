@@ -54,6 +54,13 @@
 //   plays it on a context of its own, made on that tap, which the layer closes
 //   when it goes. While it plays, the button, Merc and a line say so, and a
 //   line after it says how to hear it (hold-tone.ts).
+// - A step that runs something (`run`: Merc singing through the room) starts
+//   it as it shows and stops it as it goes, however it goes. While it runs,
+//   Merc takes its pose, its line of what he does is read in the live region,
+//   and the ring pulses (not under reduced motion). A step that keeps its
+//   corner (`keepCorner`) stands there on a wide screen with its ring too.
+// - "Show me more". A tour that offers another (`more`) shows it beside Done
+//   on its last stop; start.ts starts that tour in this one's place.
 
 import type { JSX } from 'solid-js'
 import { createComponent, createEffect, createMemo, createSignal, on, onCleanup, onMount, Show, untrack, } from 'solid-js'
@@ -61,7 +68,7 @@ import { render } from 'solid-js/web'
 import { X } from '@/components/icons'
 import { MercPresence } from '@/components/room-kit/MercPresence'
 import { prefersReducedMotion } from '@/components/room-kit/reduced-motion'
-import type { CoachAside, CoachCorner, CoachHandoff, CoachStep, } from '@/lib/coach-types'
+import type { CoachAside, CoachCorner, CoachHandoff, CoachStep, CoachStepRun, } from '@/lib/coach-types'
 import type { MercState } from '@/lib/merc/constants'
 import { stillFor } from '@/lib/merc/stills'
 import styles from './CoachLayer.module.css'
@@ -88,6 +95,8 @@ export interface CoachLayerProps {
   handoff?: () => CoachHandoff | null
   /** The layer is finished with: the host unmounts it. */
   onClose: () => void
+  /** The tour's offer of another, beside Done on its last stop (start.ts). */
+  more?: { label: string; go: () => void }
 }
 
 interface Box {
@@ -214,6 +223,8 @@ export function CoachLayer(props: CoachLayerProps): JSX.Element {
   const [standIn, setStandIn] = createSignal(false)
   const [size, setSize] = createSignal({ w: BUBBLE_MAX_W, h: 0 })
   const [handoff, setHandoff] = createSignal<CoachHandoff | null>(null)
+  // What the step on screen runs (Merc singing), while it runs.
+  const [run, setRun] = createSignal<CoachStepRun | null>(null)
   let bubble: HTMLDivElement | undefined
   // The element under the ring, for Tab into it and Shift+Tab back.
   let ringed: HTMLElement | null = null
@@ -224,6 +235,8 @@ export function CoachLayer(props: CoachLayerProps): JSX.Element {
     if (at === null || at.celebrating) return 'celebrate'
     // he sings the note with the speaker, so a muted one still shows it
     if (tone.playing() !== null) return 'sing'
+    const running = run()?.pose() ?? null
+    if (running !== null) return running
     return at.waiting ? 'listen' : at.step.merc
   }
 
@@ -250,7 +263,7 @@ export function CoachLayer(props: CoachLayerProps): JSX.Element {
       const sheetTop = window.innerHeight - footFloor() - GAP - size().h
       return r.top + r.height + GAP > sheetTop ? 'dock-top' : 'dock-bottom'
     }
-    if (r !== null) return 'near'
+    if (r !== null) return step()?.keepCorner === true ? 'corner' : 'near'
     // A target too tall to ring is still what the step is about, so the
     // bubble keeps off its middle, whatever the step's kind.
     return tall() || asideForWork() ? 'corner' : 'centre'
@@ -304,6 +317,9 @@ export function CoachLayer(props: CoachLayerProps): JSX.Element {
       }
       track()
       focusBubble()
+      // What the step runs while it shows, stopped as it goes.
+      const running = shown.run?.() ?? null
+      setRun(running)
       const timer = setInterval(track, TRACK_MS)
       window.addEventListener('resize', track)
       window.addEventListener('scroll', track, { capture: true, passive: true })
@@ -311,6 +327,8 @@ export function CoachLayer(props: CoachLayerProps): JSX.Element {
         clearInterval(timer)
         window.removeEventListener('resize', track)
         window.removeEventListener('scroll', track, { capture: true })
+        running?.stop()
+        setRun(null)
       })
     }),
   )
@@ -415,7 +433,9 @@ export function CoachLayer(props: CoachLayerProps): JSX.Element {
           {(box) => (
             <div
               class={styles.ring}
+              classList={{ [styles.pulse]: run() !== null }}
               data-testid="coach-ring"
+              data-running={run() === null ? undefined : ''}
               aria-hidden="true"
               style={{
                 top: `${box().top}px`,
@@ -464,8 +484,10 @@ export function CoachLayer(props: CoachLayerProps): JSX.Element {
                   <StepCard
                     at={at}
                     body={body}
+                    said={() => run()?.said() ?? ''}
                     runner={props.runner}
                     tone={tone}
+                    more={props.more}
                   />
                 )}
               </Show>
@@ -495,8 +517,11 @@ interface StepCardProps {
   at: () => CoachSnapshot
   /** The step's body, or its unseen line while its target is not on screen. */
   body: () => string
+  /** A line of what Merc is doing, from the step's run; '' says nothing. */
+  said: () => string
   runner: CoachRunner
   tone: HoldTone
+  more?: { label: string; go: () => void }
 }
 
 /** A step's words, what it offers besides them, and its buttons. */
@@ -513,6 +538,11 @@ function StepCard(props: StepCardProps): JSX.Element {
     const at = props.at()
     if (!at.failed || at.step.kind !== 'do') return null
     return at.step.failure?.aside ?? null
+  }
+  // Another tour, offered beside Done on the last stop.
+  const moreOffer = (): { label: string; go: () => void } | null => {
+    const at = props.at()
+    return at.last && !at.waiting ? (props.more ?? null) : null
   }
   // The note playing, or how to hear it once it has played.
   const toneLine = (): string | null => {
@@ -540,6 +570,13 @@ function StepCard(props: StepCardProps): JSX.Element {
           <Show when={toneLine()}>
             {(line) => (
               <p class={styles.aside} data-testid="coach-tone-line">
+                {line()}
+              </p>
+            )}
+          </Show>
+          <Show when={props.said()}>
+            {(line) => (
+              <p class={styles.aside} data-testid="coach-said">
                 {line()}
               </p>
             )}
@@ -580,6 +617,17 @@ function StepCard(props: StepCardProps): JSX.Element {
           >
             Back
           </button>
+        </Show>
+        <Show when={moreOffer()}>
+          {(more) => (
+            <button
+              type="button"
+              class={styles.back}
+              onClick={() => more().go()}
+            >
+              {more().label}
+            </button>
+          )}
         </Show>
         <button type="button" class={styles.next} onClick={forward}>
           {forwardLabel(props.at())}

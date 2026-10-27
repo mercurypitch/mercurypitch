@@ -18,6 +18,10 @@
 //   own can no longer come, which end the tour where it stands.
 // - watch: something to look at or read later. The tour goes on.
 //
+// A step can also run something while it shows (`run`): Merc singing through
+// the room, the way the rooms' demos do. And a tour's last stop can offer a
+// second tour beside Done (`more`), which starts in its place.
+//
 // Tour content lives beside its room and imports only these types, so a
 // room's tour costs its chunk a few hundred bytes of strings. They live in lib
 // beside the event bus, so a room's feature writes its tour without importing
@@ -31,6 +35,20 @@ export type CoachStepKind = 'show' | 'do' | 'watch'
 
 /** A wide screen's corner for a bubble with nothing to stand beside. */
 export type CoachCorner = 'top-right' | 'bottom-right'
+
+/**
+ * What a step runs while it shows: Merc singing through the room. Started as
+ * the step shows and stopped as it goes, however it goes (Next, Back, Skip,
+ * End tour, the tour ending under it); `stop` puts back all it changed.
+ */
+export interface CoachStepRun {
+  /** Merc's pose while it runs (he sings); null leaves the step's own. */
+  pose: () => MercState | null
+  /** A short line of what Merc is doing, read out politely; '' says nothing. */
+  said: () => string
+  /** Stops it and puts the room back as it found it. Safe to call twice. */
+  stop: () => void
+}
 
 /** A line under a step's body, worked out when the step shows: a price, a balance. */
 export interface CoachAside {
@@ -89,6 +107,14 @@ interface CoachStepBase {
   viewport?: 'phone' | 'desktop'
   /** A line under the body, read when the step shows; null shows nothing. */
   aside?: () => CoachAside | null
+  /** Run while the step shows, from its first moment (see CoachStepRun). */
+  run?: () => CoachStepRun
+  /**
+   * On a wide screen the bubble stands in its corner (`corner`) even with a
+   * ring, rather than beside it: a stop whose ring is on a control while the
+   * part of the page to watch is elsewhere (Merc's line on the Sing stage).
+   */
+  keepCorner?: true
 }
 
 export interface CoachShowStep extends CoachStepBase {
@@ -133,9 +159,21 @@ export interface CoachDoStep extends CoachStepBase {
 
 export type CoachStep = CoachShowStep | CoachDoStep
 
+/** A second tour the last stop offers beside Done, started in its place. */
+export interface CoachMore {
+  /** The tour it starts, as its offer is named while its steps load. */
+  key: TourKey
+  /** What the offer says: "Show me more". */
+  label: string
+  /** Its steps, loaded on the tap, so no page's first paint carries them. */
+  load: () => Promise<CoachTour>
+}
+
 export interface CoachTour {
   key: TourKey
   steps: readonly CoachStep[]
+  /** Offered on the last stop beside Done; Done still ends the tour. */
+  more?: CoachMore
 }
 
 /** What the bubble offers once a tour is done: the next thing to try. */

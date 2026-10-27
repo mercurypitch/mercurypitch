@@ -28,6 +28,7 @@ export type TourKey =
   | 'practice-modes'
   | 'sing'
   | 'karaoke-night'
+  | 'sing-more'
 
 /** One permanent number per tour. The table is append-only: see the banner. */
 export const TOUR_IDS: Readonly<Record<TourKey, number>> = {
@@ -50,4 +51,6 @@ export const TOUR_IDS: Readonly<Record<TourKey, number>> = {
   // reserved for the Merc tours for Sing and Karaoke Night
   sing: 17,
   'karaoke-night': 18,
+  // Merc's second Sing tour, "Show me more", from the first one's last stop
+  'sing-more': 19,
 }

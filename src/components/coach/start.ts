@@ -22,13 +22,21 @@
 //   tour had: in its layer, or fallen to the page itself. A tour that ends
 //   while the singer is busy in the page (a quiet wait has no bubble) leaves
 //   their focus where it is.
+// - "Show me more". A tour that offers another (`more`) shows it beside Done
+//   on its last stop. A tap ends this tour done, with no hand-over, and
+//   starts that one in its place once its steps have loaded (they load on the
+//   tap): its own runner and layer, the same screen and the same hand-over at
+//   its end, and the focus to give back that this one held. coachActive()
+//   names it meanwhile, so nothing lands in the gap; ended meanwhile (a tab
+//   change), or with steps that did not arrive, it never shows, and focus
+//   goes back as it would have.
 //
 // The coach is shared UI: the app's tours, the plan's showcase and Karaoke
 // Night, a document of its own, all run tours on it, so it lives in
 // components and imports no feature.
 
 import { coachActive, setCoachActive } from '@/lib/coach-state'
-import type { CoachHandoff, CoachTour } from '@/lib/coach-types'
+import type { CoachHandoff, CoachMore, CoachTour } from '@/lib/coach-types'
 import type { CoachEnd } from './runner'
 
 export interface CoachHandle {
@@ -187,7 +195,19 @@ export async function startCoachTour(
   opts: CoachStartOptions = {},
 ): Promise<CoachHandle> {
   // A tour that replaces one on screen gives focus back where that one found it.
-  const before = focusedNow() ?? (running !== null ? runningFocus : null)
+  return runTour(
+    tour,
+    opts,
+    focusedNow() ?? (running !== null ? runningFocus : null),
+  )
+}
+
+/** Starts `tour`, giving focus back to `before` when its layer goes. */
+async function runTour(
+  tour: CoachTour,
+  opts: CoachStartOptions,
+  before: HTMLElement | null,
+): Promise<CoachHandle> {
   running?.end()
   running = null
   const mine = ++generation
@@ -219,6 +239,9 @@ export async function startCoachTour(
   document.body.append(root)
 
   let closed = false
+  // "Show me more" was tapped: the tour it offers comes in this one's place,
+  // its steps loading since the tap.
+  let goingOn: { more: CoachMore; steps: Promise<CoachTour> } | null = null
   let unmount: () => void = () => undefined
   const close = (): void => {
     if (closed) return
@@ -228,14 +251,17 @@ export async function startCoachTour(
       running = null
       runningFocus = null
     }
-    if (mine === generation) setCoachActive(null)
+    const next = goingOn
+    if (mine === generation) setCoachActive(next?.more.key ?? null)
     // The layer asks for its own close from inside its effects; unmount
-    // after they have run, then give focus back.
+    // after they have run, then give focus back, or hand it on.
     queueMicrotask(() => {
       const ours = tourHadFocus(root)
       unmount()
       root.remove()
-      if (ours) giveFocusBack(before)
+      if (next !== null && mine === generation) {
+        goOn(next.steps, opts, ours ? before : null)
+      } else if (ours) giveFocusBack(before)
     })
     // How the tour itself ended: done, even after a hand-over the singer
     // put off; an exit, if it never got that far.
@@ -254,11 +280,53 @@ export async function startCoachTour(
   }
   running = handle
   runningFocus = before
+  const more = tour.more
   unmount = mountCoachLayer(root, {
     runner,
     phone: opts.phone === true,
-    handoff: opts.handoff,
+    // Done gives the hand-over; "Show me more" hands on to its tour instead.
+    handoff: () => (goingOn === null ? (opts.handoff?.() ?? null) : null),
     onClose: close,
+    ...(more === undefined
+      ? {}
+      : {
+          more: {
+            label: more.label,
+            go: () => {
+              if (closed || goingOn !== null) return
+              goingOn = { more, steps: more.load() }
+              runner.next()
+            },
+          },
+        }),
   })
   return handle
+}
+
+/**
+ * Starts the tour "Show me more" asked for once its `steps` have loaded,
+ * unless another tour, or none (endCoachTour), was asked for meanwhile. One
+ * that does not arrive lets go of coachActive and gives focus back.
+ */
+function goOn(
+  steps: Promise<CoachTour>,
+  opts: CoachStartOptions,
+  before: HTMLElement | null,
+): void {
+  const asked = generation
+  const gaveUp = (): void => {
+    giveFocusBack(before)
+  }
+  void steps.then(
+    (next) => {
+      if (asked !== generation) return
+      // runTour lets go of coachActive itself if the coach does not load.
+      void runTour(next, opts, before).catch(gaveUp)
+    },
+    () => {
+      if (asked !== generation) return
+      setCoachActive(null)
+      gaveUp()
+    },
+  )
 }
