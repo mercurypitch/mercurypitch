@@ -242,7 +242,12 @@ export const FIRST_PAINT_BUDGETS_KB = {
   // chunk every lesson page shares (kit/quiz.ts); and 3,006 the recall,
   // the quiz play and the page's questions in Lesson 10's own chunk, less
   // 760 for the major scale's degrees, now in Lesson 4's questions' chunk.
-  'learn/10.html': 140,
+  // Raised to 142 for the four words: 145,187 bytes with them, 2,678 more.
+  // 2,002 are the words and their sounds in Lesson 10's own chunk
+  // (lesson-10/words.ts, and wordSounds in sounds.ts), and 676 the kit's
+  // words strip, a chunk Lessons 1, 7, 8 and 9 already load
+  // (kit/words-strip.ts).
+  'learn/10.html': 142,
 
   // The main app, and the crawlable doors that are the main app. Measured
   // 4669. It is eager by design today, so this is a ceiling on growth rather
