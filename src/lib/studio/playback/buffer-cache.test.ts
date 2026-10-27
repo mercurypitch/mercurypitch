@@ -2,7 +2,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { toneAudio } from '../audio/audio.fixture'
 import { encodeCanonicalPcm, sha256Bytes } from '../audio/canonical-pcm'
-import { reserveStudioMemory, setStudioWorkingBytes, studioReservedMemoryBytes, } from '../memory-budget'
+import { reserveStudioMemory, setStudioWorkingBytes, StudioMemoryError, studioReservedMemoryBytes, } from '../memory-budget'
 import { studioFixture } from '../model/model.test-fixtures'
 import { createStudioBufferCache } from './buffer-cache'
 import { PlaybackContext } from './playback.test-fixtures'
@@ -134,6 +134,36 @@ describe('Studio buffer ownership', () => {
     expect(studioReservedMemoryBytes()).toBe(4000)
     expect(second.buffers.get('second')).not.toBe(first.buffers.get(asset.id))
     second.release()
+    cache.dispose()
+    expect(studioReservedMemoryBytes()).toBe(0)
+  })
+
+  it('keeps the buffers it holds when a set is too large to admit, so a smaller set that shares them reads nothing again', async () => {
+    const { asset } = studioFixture()
+    const blob = await encodeCanonicalPcm(toneAudio(1000))
+    const small = {
+      ...asset,
+      canonicalPcmSha256: await sha256Bytes(await blob.arrayBuffer()),
+    }
+    // 480 MB of decoded samples: more than the cache ever holds.
+    const huge = {
+      ...small,
+      id: 'huge',
+      canonicalPcmSha256: 'f'.repeat(64),
+      normalizedFrameCount: 120_000_000,
+    }
+    const ctx = new PlaybackContext()
+    const cache = createStudioBufferCache()
+    const read = vi.fn().mockResolvedValue(blob)
+    const signal = new AbortController().signal
+    ;(await cache.acquire([small], ctx.asContext, read, signal)).release()
+    await expect(
+      cache.acquire([small, huge], ctx.asContext, read, signal),
+    ).rejects.toBeInstanceOf(StudioMemoryError)
+    expect(studioReservedMemoryBytes()).toBe(4000)
+    const lease = await cache.acquire([small], ctx.asContext, read, signal)
+    expect(read).toHaveBeenCalledTimes(1)
+    lease.release()
     cache.dispose()
     expect(studioReservedMemoryBytes()).toBe(0)
   })
