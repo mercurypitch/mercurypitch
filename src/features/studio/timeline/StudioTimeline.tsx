@@ -210,8 +210,9 @@ export function StudioTimeline(props: StudioTimelineProps) {
 
   function zoomToFit(): void {
     const seconds = Math.max(1, contentEnd() / STUDIO_SAMPLE_RATE + 1)
-    // Fit may go below the first zoom stop: a long song must still fit.
-    const fit = Math.floor((contentWidth() - 24) / seconds)
+    // Fit may go below the first zoom stop: a long song must still fit. It
+    // rounds down to a tenth, so a narrow window is filled, not three-quarters.
+    const fit = Math.floor(((contentWidth() - 24) / seconds) * 10) / 10
     props.onZoom?.(
       Math.max(
         1,
