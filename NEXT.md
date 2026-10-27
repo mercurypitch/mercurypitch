@@ -506,3 +506,11 @@ Note: the lanes' memory gate read a stale cgroup path after the 21:00 restart (f
 - rel23: NEVER run `pnpm <script>` there: pnpm's deps check wants to reinstall over the symlinked node_modules (it aborted for no TTY). Run binaries directly (./node_modules/.bin/prettier, node scripts/...).
 - L9 fold (l9-flow): fixups 9dacee291 (G1 brief-absence test + double honours cancelled; mutation 600->0 killed), 33e07f223 (D1a shell: ladder choice pressed ring), d5cc18722 (D1b Wrap: free-voice joins the shared rule; n1 networkidle reason), f036df055 (n2/n3 rewraps, QA header, pressed-ring e2e test). Still: WEB-SPEC drift fixup of 5fc791532 (item 8 order "as Lessons 6 to 8", mercHop built in kit/merc-hop.ts :23 used by cold-open.ts:123, Contract + mercurypitch_mic_holder src/lib/mic-lock.ts:24 / :212-221), first-paint comment bytes in scripts/assert-first-paint-budgets.mjs after D1 CSS, then autosquash + drop map commits + rebase on main + FACTS 59/60 + reanchor + map + gates.
 - "Explain" capital: not a defect (all 8 pages capitalise after the label).
+
+## 01:58 UTC 27 Oct: after the container restart
+- Restart ~01:40 killed every bg job. Presses builder resumed by SendMessage (its tree intact: presses on feat/phone-presses-0923 e9ba7b85e + uncommitted batch-E work).
+- #1226 MERGED by rebase (main 4576b214d; 2 commits; subjects, messages, authors and dates, patch-ids, tree same). Unsubscribed. rd back at detached origin/main.
+- #1227 MERGED by rebase (main 8d8693d53; 1 commit; same checks; tree = merge-tree replay 8f976af5f). Unsubscribed. polish23/dist removed (worktree kept: real node_modules, use it for vitest on release content).
+- dev-changelog draft gains Tests only bullets for #1226 + #1227 (pre-tests copy kept). Counts paragraph still says 85/15 up to 7e3c523c2: recount at the final rebuild.
+- #1221 CI on a22860237: Browser 1-3 green (3/4 passes with the ported fix), 4/4 + some Beside Cue adventure jobs running at 01:50.
+- L9 (l9-flow) folded tip d9a761c07 tagged lead/l9-run5-folded; REBASED onto 8d8693d53 clean: 8ced7058e, 20 commits, patch-ids same. build:e2e running (bg b796eai8v -> l9/final/build.log). Then: L9 specs incl. the new pressed-ring QA test, full learn-* run, L9 unit, fp-bytes + budgets comments amend, gates, map commit, PR body l9/pr/PR-BODY.md, PR (draft lesson), merge.
