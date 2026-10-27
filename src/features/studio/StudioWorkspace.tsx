@@ -40,7 +40,8 @@ type Panel =
   | null
 interface StudioWorkspaceProps {
   studio: StudioController
-  startWithSources: boolean
+  /** The drawer a newly opened song starts with. */
+  startPanel: 'sources' | 'export' | null
   onLibrary(): void
   onBackup(): void
   onDelete(): void
@@ -273,7 +274,7 @@ export function StudioWorkspace(props: StudioWorkspaceProps) {
     return added
   }
   onMount(() => {
-    if (props.startWithSources) openPanel('sources')
+    if (props.startPanel !== null) openPanel(props.startPanel)
     const remove = installSpacePlaybackToggle({
       toggle: togglePlayback,
       ownsSpace: () => !isInsideOverlay(document.activeElement),
@@ -580,6 +581,7 @@ export function StudioWorkspace(props: StudioWorkspaceProps) {
             keyboardPreviewClip={keyboardPreview()}
             onPointerEditStart={editor.cancel}
             playheadFrame={transport.playheadFrame()}
+            playing={transport.playing()}
             pixelsPerSecond={zoom()}
             writable={writable()}
             phone={phone()}

@@ -101,7 +101,23 @@ export function createStudioImporter(options: ImportControllerOptions) {
     options.setImporting(false)
   }
 
-  async function importItems(
+  // A file picked while the last import is still saving waits its turn; it
+  // used to be dropped without a word.
+  let turn: Promise<unknown> = Promise.resolve()
+
+  function importItems(
+    items: readonly ImportItem[],
+    startFrame: number,
+  ): Promise<boolean> {
+    const run =
+      active === null
+        ? importNow(items, startFrame)
+        : turn.then(() => importNow(items, startFrame))
+    turn = run.catch(() => undefined)
+    return run
+  }
+
+  async function importNow(
     items: readonly ImportItem[],
     startFrame: number,
   ): Promise<boolean> {

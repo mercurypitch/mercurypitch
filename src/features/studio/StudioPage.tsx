@@ -11,7 +11,9 @@ export function StudioPage() {
   const studio = useStudioController()
   const [downloadError, setDownloadError] = createSignal<string | null>(null)
   const [library, setLibrary] = createSignal(true)
-  const [startWithSources, setStartWithSources] = createSignal(false)
+  const [startPanel, setStartPanel] = createSignal<'sources' | 'export' | null>(
+    null,
+  )
   const [confirmation, setConfirmation] = createSignal<
     'delete' | 'discard' | null
   >(null)
@@ -20,17 +22,26 @@ export function StudioPage() {
 
   async function create(): Promise<void> {
     if (await studio.create()) {
-      setStartWithSources(true)
+      setStartPanel('sources')
       setLibrary(false)
     }
   }
 
-  async function open(id: string): Promise<void> {
+  async function open(
+    id: string,
+    panel: 'export' | null = null,
+  ): Promise<void> {
     await studio.open(id)
     if (studio.project()?.id === id) {
-      setStartWithSources(false)
+      setStartPanel(panel)
       setLibrary(false)
     }
+  }
+
+  // A backup from the list loads the song behind the list and saves its file.
+  async function backupFromList(id: string): Promise<void> {
+    if (studio.project()?.id !== id) await studio.open(id)
+    if (studio.project()?.id === id) await downloadBackup()
   }
 
   async function downloadBackup(): Promise<void> {
@@ -78,7 +89,7 @@ export function StudioPage() {
           if (!file) return
           void studio.restore(file).then((restored) => {
             if (restored) {
-              setStartWithSources(false)
+              setStartPanel(null)
               setLibrary(false)
             }
           })
@@ -146,6 +157,8 @@ export function StudioPage() {
               blocked={blocked()}
               onCreate={() => void create()}
               onOpen={(id) => void open(id)}
+              onExport={(id) => void open(id, 'export')}
+              onBackup={(id) => void backupFromList(id)}
               onRestore={() => backupInput.click()}
             />
           }
@@ -154,7 +167,7 @@ export function StudioPage() {
             {(_id) => (
               <StudioWorkspace
                 studio={studio}
-                startWithSources={startWithSources()}
+                startPanel={startPanel()}
                 onLibrary={() => {
                   setLibrary(true)
                   void studio.refreshProjects()

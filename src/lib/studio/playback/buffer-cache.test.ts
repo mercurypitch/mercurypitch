@@ -1,13 +1,50 @@
 // Studio cache tests cover hash identity, direct canonical loading and deferred cancellation cleanup.
-import { describe, expect, it, vi } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 import { toneAudio } from '../audio/audio.fixture'
 import { encodeCanonicalPcm, sha256Bytes } from '../audio/canonical-pcm'
-import { studioReservedMemoryBytes } from '../memory-budget'
+import { reserveStudioMemory, setStudioWorkingBytes, studioReservedMemoryBytes, } from '../memory-budget'
 import { studioFixture } from '../model/model.test-fixtures'
 import { createStudioBufferCache } from './buffer-cache'
 import { PlaybackContext } from './playback.test-fixtures'
 
+afterEach(() => setStudioWorkingBytes(null))
+
 describe('Studio buffer ownership', () => {
+  it('gives up buffers no run is playing when another reservation needs the room', async () => {
+    const { asset } = studioFixture()
+    const blob = await encodeCanonicalPcm(toneAudio(1000))
+    const metadata = {
+      ...asset,
+      canonicalPcmSha256: await sha256Bytes(await blob.arrayBuffer()),
+    }
+    const ctx = new PlaybackContext()
+    const cache = createStudioBufferCache()
+    const read = vi.fn().mockResolvedValue(blob)
+    setStudioWorkingBytes(100_000)
+    const lease = await cache.acquire(
+      [metadata],
+      ctx.asContext,
+      read,
+      new AbortController().signal,
+    )
+    lease.release()
+    const cached = studioReservedMemoryBytes()
+    expect(cached).toBeGreaterThan(0)
+    const other = reserveStudioMemory(100_000 - cached + 1)
+    expect(studioReservedMemoryBytes()).toBe(100_000 - cached + 1)
+    other()
+    const again = await cache.acquire(
+      [metadata],
+      ctx.asContext,
+      read,
+      new AbortController().signal,
+    )
+    expect(read).toHaveBeenCalledTimes(2)
+    again.release()
+    cache.dispose()
+    expect(studioReservedMemoryBytes()).toBe(0)
+  })
+
   it('loads validated canonical samples once and shares duplicate asset content without gain mutation', async () => {
     const { asset } = studioFixture()
     const pcm = toneAudio(1000)

@@ -260,6 +260,21 @@ export function useStudioTransport(options: UseStudioTransportOptions) {
     observedRevision = project?.revision ?? -1
   })
 
+  // Warm the playback cache once edits settle, so Play starts without reading.
+  let warmTimer: ReturnType<typeof setTimeout> | undefined
+  const isPlaying = createMemo(() => state().playing)
+  createEffect(() => {
+    const project = options.project()
+    const assets = options.assets()
+    clearTimeout(warmTimer)
+    if (!hostReady() || !project || project.clips.length === 0 || isPlaying())
+      return
+    warmTimer = setTimeout(() => {
+      if (!disposed) void runtime.warm(project, assets)
+    }, 400)
+  })
+  onCleanup(() => clearTimeout(warmTimer))
+
   function onVisibility(): void {
     if (document.hidden) {
       runtime.pause()

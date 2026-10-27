@@ -155,3 +155,23 @@ export const SkipBackFilled: Component<{ size?: number }> = (p) => (
     <path d="M19 6.08v11.84a1 1 0 0 1-1.54.84l-8.9-5.92a1 1 0 0 1 0-1.68l8.9-5.92A1 1 0 0 1 19 6.08Z" />
   </svg>
 )
+
+// Archive — a lidded box with an arrow into it: the song's backup file.
+export const ArchiveDown: Component<{ size?: number }> = (p) => (
+  <svg
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    stroke-width="2"
+    stroke-linecap="round"
+    stroke-linejoin="round"
+    width={p.size ?? 24}
+    height={p.size ?? 24}
+    aria-hidden="true"
+  >
+    <rect x="3" y="4" width="18" height="4" rx="1" />
+    <path d="M5 8v11a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V8" />
+    <path d="M12 11v6" />
+    <path d="m9 14 3 3 3-3" />
+  </svg>
+)

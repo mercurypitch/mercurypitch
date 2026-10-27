@@ -6,7 +6,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import 'fake-indexeddb/auto'
 import { DexieAdapter, MERCURY_PITCH_DB_NAME, } from '@/db/adapters/dexie-adapter'
 import { CLOUD_ENTITIES } from '@/db/adapters/hybrid-adapter'
-import { reserveStudioMemory, STUDIO_WORKING_BYTES, studioReservedMemoryBytes, } from '@/lib/studio/memory-budget'
+import { reserveStudioMemory, studioReservedMemoryBytes, studioWorkingBytes, } from '@/lib/studio/memory-budget'
 import { fitsStudioProjectStorageBudget, STUDIO_PROJECT_STORAGE_LIMITS, } from '@/lib/studio/model/storage-limits'
 import type { StudioProject } from '@/lib/studio/model/types'
 import { studioArrangementFixture, studioAssetFixture } from './studio.fixture'
@@ -119,7 +119,7 @@ describe('local Studio persistence', () => {
     const originalRead = vi.spyOn(data.original, 'arrayBuffer')
     const canonicalRead = vi.spyOn(data.canonicalPcm, 'arrayBuffer')
     const snapshot = studioArrangementFixture(empty)
-    const releaseOtherAudio = reserveStudioMemory(STUDIO_WORKING_BYTES)
+    const releaseOtherAudio = reserveStudioMemory(studioWorkingBytes())
     try {
       await expect(
         service.saveProject(snapshot, { ...lease, expectedRevision: 0 }, [
@@ -130,7 +130,7 @@ describe('local Studio persistence', () => {
       expect(canonicalRead).not.toHaveBeenCalled()
       expect(await service.loadProject(empty.id)).toEqual(empty)
       expect(await service.listAssets(empty.id)).toEqual([])
-      expect(studioReservedMemoryBytes()).toBe(STUDIO_WORKING_BYTES)
+      expect(studioReservedMemoryBytes()).toBe(studioWorkingBytes())
     } finally {
       releaseOtherAudio()
     }
@@ -144,7 +144,7 @@ describe('local Studio persistence', () => {
   it('admits project copies before loading persisted audio and preserves the source on failure', async () => {
     const { project } = await savedArrangement()
     const read = vi.spyOn(db, 'readByIndexStrict')
-    const release = reserveStudioMemory(STUDIO_WORKING_BYTES)
+    const release = reserveStudioMemory(studioWorkingBytes())
     try {
       await expect(service.forkProject(project)).rejects.toMatchObject({
         code: 'memory-limit',

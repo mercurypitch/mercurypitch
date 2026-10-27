@@ -1,6 +1,6 @@
 // @vitest-environment node
 import { describe, expect, it, vi } from 'vitest'
-import { reserveStudioMemory, STUDIO_WORKING_BYTES, studioReservedMemoryBytes, } from '@/lib/studio/memory-budget'
+import { reserveStudioMemory, studioReservedMemoryBytes, studioWorkingBytes, } from '@/lib/studio/memory-budget'
 import { sampledAudio, toneAudio } from './audio.fixture'
 import { decodeCanonicalPcm, sha256Bytes } from './canonical-pcm'
 import type { PcmAudio } from './import-limits'
@@ -104,6 +104,31 @@ describe('Studio asset preparation', () => {
     expect(createDecodeContext).not.toHaveBeenCalled()
   })
 
+  it('admits decode memory at the decoded length, not the five-minute maximum', async () => {
+    let finish!: (audio: PcmAudio) => void
+    let started!: () => void
+    const ready = new Promise<void>((resolve) => {
+      started = resolve
+    })
+    const pending = prepareStudioAsset(new Blob(['a']), info, {
+      createDecodeContext: () => ({
+        sampleRate: 48000,
+        decodeAudioData: () => {
+          started()
+          return new Promise((resolve) => {
+            finish = resolve
+          })
+        },
+      }),
+    })
+    await ready
+    // Before the decode reports its length, only the read copies and analysis.
+    expect(studioReservedMemoryBytes()).toBeLessThan(1024 * 1024)
+    finish(toneAudio(4800, 2))
+    await pending
+    expect(studioReservedMemoryBytes()).toBe(0)
+  })
+
   it('retains the single preparation slot while an aborted native decode is settling', async () => {
     let finish!: (audio: PcmAudio) => void
     let started!: () => void
@@ -148,7 +173,7 @@ describe('Studio asset preparation', () => {
   })
 
   it('admits shared memory before reading a kept source and releases on failed read', async () => {
-    const release = reserveStudioMemory(STUDIO_WORKING_BYTES - 1024)
+    const release = reserveStudioMemory(studioWorkingBytes() - 1024)
     const read = vi.fn(async () => new Blob(['a']))
     try {
       await expect(
