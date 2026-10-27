@@ -2,7 +2,7 @@
 // Local only: every request that leaves 127.0.0.1 is aborted and listed,
 // except the lesson films, which are answered with a local stub file.
 // Usage: WALK_VERSION=<package.json version> node release-walk.cjs <base> <outdir> <stub.mp4> [phase,...]
-// Phases: onbA lessons search misc onbB onbC onbD checkup (default: all, in that order)
+// Phases: onbA lessons search misc onbB onbC onbD merc checkup (default: all, in that order)
 const { chromium } = require('playwright')
 const fs = require('fs')
 const path = require('path')
@@ -670,16 +670,63 @@ async function covers(page, sel) {
       page.on('console', listen)
       const t0 = Date.now()
       await q.getByRole('button', { name: 'Show me around' }).click()
-      const d = page.locator('[role="dialog"][aria-modal="true"]:visible, [data-tour-step]:visible').first()
-      const shown = await d.waitFor({ state: 'visible', timeout: 12000 }).then(() => true).catch(() => false)
-      info('C: Show me around, tour after', shown ? `${Date.now() - t0} ms` : 'none in 12 s')
+      // Since #1203: Merc's showcase walks the tab bar (a stop each 2.5 s),
+      // then Start here opens with Merc's Sing tour, walked here for real
+      // with the fake microphone's steady A3.
+      const sc = page.getByTestId('showcase')
+      const scShown = await sc.waitFor({ state: 'visible', timeout: 12000 }).then(() => true).catch(() => false)
+      info('C: showcase after', scShown ? `${Date.now() - t0} ms` : 'none in 12 s')
+      check("C: Show me around runs Merc's showcase", scShown)
+      if (scShown) {
+        await shot(page, 'C-showcase')
+        const lines = []
+        const t1 = Date.now()
+        while (Date.now() - t1 < 45000 && (await sc.isVisible().catch(() => false))) {
+          const l = await text(page.getByTestId('showcase-line'))
+          if (l && lines[lines.length - 1] !== l) lines.push(l)
+          await page.waitForTimeout(250)
+        }
+        info('C: showcase lines', `${lines.length}: ${lines.join(' | ')}`.slice(0, 600))
+        check('C: the showcase walks its stops and ends on its own', lines.length >= 4 && !(await sc.isVisible().catch(() => false)), `${lines.length} lines in ${Date.now() - t1} ms`)
+      }
+      const bubble = page.getByTestId('coach-bubble')
+      const shown = await bubble.waitFor({ state: 'visible', timeout: 15000 }).then(() => true).catch(() => false)
       page.off('console', listen)
-      info('C: console after Show me around', said.slice(0, 12).join(' || ') || 'nothing')
-      info('C: Show me around opened', `${page.url().replace(BASE, '')} | ${shown ? (await text(d)).slice(0, 120) : 'no dialog'}`)
+      info('C: console after Show me around', said.slice(0, 16).join(' || ') || 'nothing')
+      info('C: Show me around opened', `${page.url().replace(BASE, '')} | ${shown ? (await text(bubble)).slice(0, 120) : 'no bubble'}`)
       check('C: Show me around opens Start here (Singing)', /#\/singing$/.test(page.url()), page.url().replace(BASE, ''))
-      // Singing has no page tour (PAGE_TOURS); since 0.9.23 Show me around starts the Guide's Singing section there (startRoomTour).
-      check('C: Show me around starts Singing\'s tour (the Guide\'s Singing section)', shown)
+      check("C: then Merc's Sing tour, on Start the mic", shown && /Start the mic/.test(await text(bubble)) && /1 of 4/.test(await text(bubble)), shown ? (await text(bubble)).slice(0, 100) : 'no bubble')
+      check('C: and no Guide spotlight beside it', (await page.locator('[class*="walkthroughHighlight"]').count()) === 0)
       await shot(page, 'C-show-me-around')
+      if (shown) {
+        const mercs = async () => page.evaluate(() => document.querySelectorAll('[data-presence] canvas').length).catch(() => -1)
+        info('C: Merc canvases on stop 1', String(await mercs()))
+        await page.locator('[data-tour="sing.mic"]:visible, [data-tour="singing-transport"]:visible').first().click()
+        const sang = await bubble.filter({ hasText: 'Sing any note' }).waitFor({ state: 'visible', timeout: 15000 }).then(() => true).catch(() => false)
+        check('C: the mic stop moves on once the mic is on', sang, (await text(bubble)).slice(0, 100))
+        const line = await bubble.filter({ hasText: 'That line is your voice' }).waitFor({ state: 'visible', timeout: 20000 }).then(() => true).catch(() => false)
+        check('C: a sung note moves the tour on', line, (await text(bubble)).slice(0, 100))
+        await shot(page, 'C-sing-tour-line')
+        info('C: Merc canvases on stop 3', String(await mercs()))
+        if (line) {
+          await bubble.getByRole('button', { name: 'Next', exact: true }).click()
+          const keep = await bubble.filter({ hasText: 'Keep a take' }).waitFor({ state: 'visible', timeout: 8000 }).then(() => true).catch(() => false)
+          check('C: the last stop names Hear Yourself', keep && /Hear Yourself/.test(await text(bubble)), (await text(bubble)).slice(0, 140))
+          await bubble.getByRole('button', { name: 'Done', exact: true }).click()
+          await page.waitForTimeout(1200)
+          const after = await text(page.getByTestId('coach-bubble'))
+          info('C: after Done', after.slice(0, 160) || 'nothing')
+          const handoff = /Next on your plan/.test(after)
+          check('C: Merc offers the plan\'s next stop', handoff, after.slice(0, 160))
+          if (handoff) {
+            await shot(page, 'C-handoff')
+            await page.getByTestId('coach-bubble').getByRole('button', { name: 'Later', exact: true }).click()
+          }
+          const gone = await page.locator('#coach-root').waitFor({ state: 'detached', timeout: 8000 }).then(() => true).catch(() => false)
+          check('C: the tour leaves nothing behind', gone)
+          check('C: and no tour chip comes back', !(await page.getByTestId('tour-chip').isVisible().catch(() => false)))
+        }
+      }
     } finally { await browser.close() }
   })
 
@@ -697,16 +744,113 @@ async function covers(page, sel) {
       const q = await answer(page, PICKS)
       const start = (await text(q)).match(/START HERE · ([A-Z' ]+)/)
       info('D: Start here is', start ? start[1].trim() : '?')
-      const t0 = Date.now()
       await q.getByRole('button', { name: 'Show me around' }).click()
+      // Since #1203 Merc's showcase comes first; its Skip ends it as its last
+      // stop would, and Start here opens with its room's tour.
+      const sc = page.getByTestId('showcase')
+      const scShown = await sc.waitFor({ state: 'visible', timeout: 12000 }).then(() => true).catch(() => false)
+      check("D: Show me around runs Merc's showcase", scShown)
+      if (scShown) await page.getByTestId('showcase-skip').click()
+      const t0 = Date.now()
       const d = page.locator('[role="dialog"][aria-modal="true"]:visible').first()
       const shown = await d.waitFor({ state: 'visible', timeout: 12000 }).then(() => true).catch(() => false)
+      check("D: the showcase's Skip ends it", !(await sc.isVisible().catch(() => false)))
       info('D: Show me around opened', `${page.url().replace(BASE, '')} | ${shown ? `${Date.now() - t0} ms: ${(await text(d)).slice(0, 120)}` : 'no dialog'}`)
       check('D: Show me around starts the room\'s tour', shown)
       await shot(page, 'D-show-me-around')
       if (shown) {
         const steps = (await text(d)).match(/(\d+)\s*(?:OF|of|\/)\s*(\d+)/)
         info('D: tour count', steps ? `${steps[1]} of ${steps[2]}` : (await text(d)).slice(0, 80))
+      }
+    } finally { await browser.close() }
+  })
+
+  // ---------- Merc's tours (#1203): the chips, the Map's door, the ad landing ----------
+  // A visitor past onboarding who declined the plan, so no plan layer opens.
+  const pastOnboarding = async (page) => {
+    const plan = { v: 1, status: 'declined', choices: { q1: null, q2: null, q3: [], q4: [] }, at: '2020-01-01T00:00:00.000Z', via: 'layer' }
+    await page.addInitScript(({ version, plan }) => {
+      if (sessionStorage.getItem('walk.merc.seeded') === '1') return
+      sessionStorage.setItem('walk.merc.seeded', '1')
+      localStorage.setItem('pitchperfect_welcome_version', version)
+      localStorage.setItem('pitchperfect_onboarding_done', '1')
+      localStorage.setItem('pitchperfect_plan_v1', JSON.stringify(plan))
+    }, { version: VERSION, plan })
+  }
+  const endTour = async (page, label) => {
+    const bubble = page.getByTestId('coach-bubble')
+    await bubble.getByRole('button', { name: 'End tour' }).click().catch(() => undefined)
+    const gone = await page.locator('#coach-root').waitFor({ state: 'detached', timeout: 8000 }).then(() => true).catch(() => false)
+    check(`${label}: End tour leaves nothing behind`, gone)
+  }
+  await phase('merc', async () => {
+    const browser = await launch(steady)
+    try {
+      for (const [name, vp] of [['phone', PHONE], ['desktop', DESKTOP]]) {
+        // A tab's first visit: the chip by the page title, then Merc's tour from it.
+        const { page } = await newPage(browser, vp)
+        await pastOnboarding(page)
+        await page.goto(BASE + '/#/singing', { timeout: 180000 })
+        await dismissWelcome(page)
+        const chip = page.getByTestId('tour-chip')
+        const up = await chip.waitFor({ state: 'visible', timeout: 25000 }).then(() => true).catch(() => false)
+        const box = up ? await chip.boundingBox() : null
+        check(`merc ${name}: Singing's first visit offers Merc's tour in a chip`, up && /Merc can show you around, 30 s/.test(await text(chip)), up ? `${await text(chip)} @${box && `${Math.round(box.x)},${Math.round(box.y)} ${Math.round(box.width)}x${Math.round(box.height)}`}` : 'no chip')
+        check(`merc ${name}: the chip sits in the top of the page`, !!box && box.y < vp.height * 0.35, box ? `y ${Math.round(box.y)} of ${vp.height}` : 'no box')
+        check(`merc ${name}: no corner toast offers the tour`, !(await page.getByText('Take a quick tour').filter({ visible: true }).count().catch(() => 0)))
+        await shot(page, `merc-${name}-singing-chip`)
+        if (up) {
+          await chip.getByRole('button', { name: 'Merc can show you around, 30 s' }).click()
+          const bubble = page.getByTestId('coach-bubble')
+          const on = await bubble.filter({ hasText: 'Start the mic' }).waitFor({ state: 'visible', timeout: 15000 }).then(() => true).catch(() => false)
+          check(`merc ${name}: the chip starts Merc's Sing tour`, on && /1 of 4/.test(await text(bubble)), (await text(bubble)).slice(0, 100))
+          await shot(page, `merc-${name}-sing-tour`)
+          await endTour(page, `merc ${name} Sing`)
+          await page.reload()
+          await page.waitForTimeout(4000)
+          check(`merc ${name}: the offer is spent after a reload`, !(await chip.isVisible().catch(() => false)))
+        }
+        // Home keeps its spotlight tour, offered by the same chip.
+        await page.goto(BASE + '/#/home', { timeout: 60000 })
+        const home = await chip.waitFor({ state: 'visible', timeout: 20000 }).then(() => true).catch(() => false)
+        check(`merc ${name}: Home's first visit offers its tour in a chip`, home && /Take a quick tour/.test(await text(chip)), home ? await text(chip) : 'no chip')
+        if (home) {
+          await chip.getByRole('button', { name: 'Not now' }).click()
+          const shut = await chip.waitFor({ state: 'detached', timeout: 5000 }).then(() => true).catch(() => false)
+          check(`merc ${name}: Not now takes the chip away`, shut)
+        }
+        // Karaoke Night's first visit: the chip offers the demo.
+        await page.goto(BASE + '/karaoke-night', { timeout: 120000 })
+        const kchip = await chip.waitFor({ state: 'visible', timeout: 25000 }).then(() => true).catch(() => false)
+        check(`merc ${name}: Karaoke Night's first visit offers the demo with Merc`, kchip && /Sing the demo with Merc/.test(await text(chip)), kchip ? await text(chip) : 'no chip')
+        await shot(page, `merc-${name}-karaoke-chip`)
+        await page.context().close()
+      }
+      // An ad's landing on Karaoke Night starts the tour by itself.
+      const { page } = await newPage(browser, PHONE)
+      await page.goto(BASE + '/karaoke?tour=first', { timeout: 120000 })
+      const bubble = page.getByTestId('coach-bubble')
+      const on = await bubble.filter({ hasText: 'Start with the demo' }).waitFor({ state: 'visible', timeout: 25000 }).then(() => true).catch(() => false)
+      check("merc: /karaoke?tour=first starts Karaoke Night's tour", on && /1 of 3/.test(await text(bubble)), (await text(bubble)).slice(0, 100))
+      check('merc: and the parameter leaves the address', !/tour=first/.test(page.url()), page.url().replace(BASE, ''))
+      await shot(page, 'merc-karaoke-ad-landing')
+      if (on) await endTour(page, 'merc karaoke')
+      await page.context().close()
+      // The Map's Take the tour on Practice opens Merc's Sing tour.
+      const map = await newPage(browser, DESKTOP)
+      await pastOnboarding(map.page)
+      await map.page.goto(BASE + '/#/map', { timeout: 180000 })
+      const practice = map.page.locator('[data-beat="map"] button').filter({ hasText: 'Practice' }).first()
+      const door = practice.getByText('Take the tour', { exact: true })
+      const offered = await door.waitFor({ state: 'visible', timeout: 25000 }).then(() => true).catch(() => false)
+      check("merc: the Map offers Practice's tour", offered)
+      if (offered) {
+        await door.click()
+        const b = map.page.getByTestId('coach-bubble')
+        const sing = await b.filter({ hasText: 'Start the mic' }).waitFor({ state: 'visible', timeout: 20000 }).then(() => true).catch(() => false)
+        check("merc: the Map's Take the tour opens Merc's Sing tour", sing && /#\/singing$/.test(map.page.url()), `${map.page.url().replace(BASE, '')} | ${(await text(b)).slice(0, 80)}`)
+        await shot(map.page, 'merc-map-take-the-tour')
+        if (sing) await endTour(map.page, 'merc map')
       }
     } finally { await browser.close() }
   })
