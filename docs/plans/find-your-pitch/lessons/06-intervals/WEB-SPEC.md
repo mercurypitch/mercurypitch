@@ -346,7 +346,7 @@ the tune: 'How I won-der'" (FACTS 68). The octave row plays Lesson 1's A3 and A4
 reads "Play Lesson 1's two As". A row lights while it sounds; one sound at a time (a new tap stops
 the last). On phones (below 960 px) each row stacks: the name, label and semitones on one line
 beside the figure, and under them the two buttons side by side, each half the row's width and at
-least 44 px tall, as the kit's small buttons are (`btn sm`, `kit/lesson-base.css:525-529`). At
+least 44 px tall, as the kit's small buttons are (`btn sm`, `kit/lesson-base.css:530-534`). At
 390 px a card with 1 px borders and 16 px padding leaves a 324 px row, so with an 8 px gap each
 button is 158 px wide; a label wraps if it must. Under reduced motion the row lights with no transition.
 

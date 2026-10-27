@@ -305,7 +305,7 @@ figure.
 - **Stage heights** at 390 x 844, from the card's 1 px borders, its 12 px and 14 px top and bottom
   padding, the stage head's 44 px buttons and 12 px gap, the figure label's 16 px line and 10 px gap
   (`kit/lesson-stage.css:710-715`, `:777-779`), the 310 px figure, and Lesson 1's 14 px control gap,
-  10 px row gap and 44 px buttons (`kit/lesson-stage.css:885-891`; `kit/lesson-base.css:525-533`):
+  10 px row gap and 44 px buttons (`kit/lesson-stage.css:885-891`; `kit/lesson-base.css:530-538`):
   - Step 3, 478 px. Under the figure, one row: Unroll the spiral (Roll it back up) and Straighten
     (Bend it back). The predict, its two plays, Play E to F and the mix-up card's play are in the
     step's text below the stage.
