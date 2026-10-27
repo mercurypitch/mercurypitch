@@ -499,3 +499,10 @@ Note: the lanes' memory gate read a stale cgroup path after the 21:00 restart (f
 - L9 BUILDER ended its turn with "Waiting on the full browser run." while its bg e2e (learn- + lesson-marker + exercise-slugs, 495 tests, -> l9/page-5/gates/e2e.log) runs; at 23:45 it was 209/495. Its other gates are in l9/page-5/gates/ (DONE 23:35). Resume it by SendMessage when e2e.log has its "exit" line, to read the result and write its report. Branch unchanged: 8f0814e41.
 - Warm-up gates (bo2loaez9): check exit 0, files changed 0, 11 warnings; metrics + pr:validate still running.
 - Slots: presses + L9 (idle until resumed) = 2 of 2.
+
+## 01:31 UTC 27 Oct
+- #1226 (warm-up) open, body clean, CI running. #1227 (learn-ways toy at rest) open 33ab24201, body clean, subscribed.
+- #1221 rebuilt: 7e3c523c2 + 4b61b1e79 (ported #1227, same patch-id) + a22860237 release commit; pushed with lease over 219f5bc1e (local tag lead/rel23-219f5bc1e). One comment posted (footer stripped).
+- rel23: NEVER run `pnpm <script>` there: pnpm's deps check wants to reinstall over the symlinked node_modules (it aborted for no TTY). Run binaries directly (./node_modules/.bin/prettier, node scripts/...).
+- L9 fold (l9-flow): fixups 9dacee291 (G1 brief-absence test + double honours cancelled; mutation 600->0 killed), 33e07f223 (D1a shell: ladder choice pressed ring), d5cc18722 (D1b Wrap: free-voice joins the shared rule; n1 networkidle reason), f036df055 (n2/n3 rewraps, QA header, pressed-ring e2e test). Still: WEB-SPEC drift fixup of 5fc791532 (item 8 order "as Lessons 6 to 8", mercHop built in kit/merc-hop.ts :23 used by cold-open.ts:123, Contract + mercurypitch_mic_holder src/lib/mic-lock.ts:24 / :212-221), first-paint comment bytes in scripts/assert-first-paint-budgets.mjs after D1 CSS, then autosquash + drop map commits + rebase on main + FACTS 59/60 + reanchor + map + gates.
+- "Explain" capital: not a defect (all 8 pages capitalise after the label).
