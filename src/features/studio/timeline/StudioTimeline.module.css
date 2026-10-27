@@ -416,7 +416,8 @@
   width: 14px;
   height: 14px;
 }
-.controls button.mixButton:hover:not(:disabled) {
+/* A pressed Mute or Solo keeps its colour under the pointer. */
+.controls button.mixButton:hover:not(:disabled):not([aria-pressed='true']) {
   background: var(--studio-hover);
   color: var(--studio-text);
 }
