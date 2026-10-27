@@ -1,40 +1,55 @@
+/* Studio output meter — green to -18, amber to -6, red above, on one fixed -60 to 0 dBFS travel. */
 .output {
   display: flex;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: 12px;
+  flex-direction: column;
+  gap: 14px;
+  min-width: 0;
   font-variant-numeric: tabular-nums;
-  color: var(--studio-graphite);
+  color: var(--studio-text);
 }
 .stereo {
-  flex: 1;
-  min-width: 76px;
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  min-width: 0;
 }
 .bars {
+  position: relative;
   display: grid;
-  gap: 4px;
+  flex: 1;
+  gap: 5px;
+  min-width: 0;
 }
-.bars > div {
+.channel {
   display: flex;
   align-items: center;
-  gap: 4px;
+  gap: 6px;
 }
-.bars span {
+.channel > span {
+  flex: none;
   width: 8px;
-  font-size: 9px;
-  color: var(--studio-pencil);
+  color: var(--studio-muted);
+  font-size: 10px;
+  font-weight: 600;
+  line-height: 1;
 }
 .rail {
-  height: 6px;
-  background: var(--studio-paper);
-  flex: 1;
   position: relative;
+  flex: 1;
+  height: 8px;
+  border-radius: 2px;
+  background: var(--studio-rail);
   overflow: hidden;
 }
 .rail i {
-  display: block;
-  height: 100%;
-  background: var(--studio-cobalt);
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    to right,
+    var(--studio-meter-ok) 0 70%,
+    var(--studio-meter-hot) 70% 90%,
+    var(--studio-meter-over) 90%
+  );
 }
 .rail b {
   position: absolute;
@@ -42,91 +57,170 @@
   bottom: 0;
   width: 2px;
   transform: translateX(-2px);
-  background: var(--studio-graphite);
+  background: var(--studio-text);
+}
+.scale {
+  position: relative;
+  height: 12px;
+  margin-left: 14px;
+  color: var(--studio-muted);
+  font-size: 10px;
+  line-height: 12px;
+}
+.scale span {
+  position: absolute;
+  transform: translateX(-50%);
+}
+.scale span:last-child {
+  transform: translateX(-100%);
 }
 .peakLabel {
+  flex: none;
+  min-width: 64px;
+  color: var(--studio-text);
+  font-size: 15px;
+  font-weight: 600;
+  line-height: 1;
+  text-align: right;
+}
+.peakLabel span,
+.peakLabel strong {
   display: block;
-  margin-top: 3px;
+  margin-bottom: 4px;
+  color: var(--studio-muted);
   font-size: 10px;
-  color: var(--studio-pencil);
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
 }
-.clipped .peakLabel {
-  color: var(--studio-danger, #d34c56);
-  font-weight: 700;
+.peakLabel small {
+  margin-left: 3px;
+  color: var(--studio-muted);
+  font-size: 11px;
+  font-weight: 500;
 }
-.clipped .rail i {
-  background: var(--studio-danger, #d34c56);
+.compact .peakLabel small {
+  margin-left: 2px;
+  font-size: 10px;
+}
+.clipped .peakLabel,
+.clipped .peakLabel strong {
+  color: var(--studio-danger);
 }
 .windows {
-  display: flex;
-  gap: 12px;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
   margin: 0;
+}
+.windows > div {
+  padding: 10px 12px;
+  border: 1px solid var(--studio-line);
+  border-radius: 8px;
+  background: var(--studio-card);
 }
 .windows dt {
-  font-size: 10px;
-  color: var(--studio-pencil);
+  color: var(--studio-text-2);
+  font-size: 11px;
+}
+.windows dt span {
+  color: var(--studio-muted);
 }
 .windows dd {
-  margin: 0;
-  min-width: 37px;
-  font-size: 17px;
-  line-height: 21px;
+  margin: 2px 0 0;
+  font-size: 20px;
+  font-weight: 600;
+  line-height: 26px;
+  letter-spacing: -0.01em;
 }
 .detail {
   display: flex;
-  flex-direction: column;
-  gap: 8px;
-  width: 100%;
-  font-size: 11px;
-  color: var(--studio-pencil);
+  align-items: center;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+  gap: 8px 12px;
+  color: var(--studio-muted);
+  font-size: 12px;
+}
+.detail span {
+  flex: 1;
+  text-wrap: pretty;
 }
 .detail button {
-  min-height: 44px;
-  align-self: flex-start;
-  padding: 0 12px;
-  color: var(--studio-graphite);
-  background: var(--studio-sheet);
-  border: 1px solid var(--studio-divider);
-  border-radius: 6px;
+  min-height: 32px;
+  margin-right: -8px;
+  padding: 0 8px;
+  border: 0;
+  border-radius: 7px;
+  background: transparent;
+  color: var(--studio-accent-text);
   font: inherit;
+  font-weight: 500;
   cursor: pointer;
 }
+.detail button:hover:not(:disabled) {
+  background: var(--studio-hover);
+}
 .detail button:focus-visible {
-  outline: 2px solid var(--studio-cobalt);
+  outline: 2px solid var(--studio-accent);
   outline-offset: 2px;
 }
 .detail button:disabled {
-  opacity: 0.5;
+  opacity: 0.45;
   cursor: default;
 }
+
+/* In the transport: two thin rails and a peak readout */
 .compact {
-  width: 176px;
-  flex-shrink: 0;
-  gap: 10px;
+  flex-direction: row;
+  flex: none;
+  width: 148px;
+  gap: 0;
 }
 .compact .stereo {
-  min-width: 60px;
-}
-.compact .windows {
+  flex: 1;
+  align-items: center;
   gap: 8px;
 }
-.compact .windows dd {
-  font-size: 14px;
-  min-width: 34px;
+.compact .bars {
+  gap: 4px;
 }
-@media (max-width: 1100px) {
-  .compact {
-    width: 60px;
-  }
-  .compact .windows {
-    display: none;
-  }
+.compact .channel {
+  gap: 4px;
+}
+.compact .channel > span {
+  width: 8px;
+  font-size: 10px;
+}
+.compact .rail {
+  height: 5px;
+  border-radius: 2px;
+}
+.compact .peakLabel {
+  min-width: 46px;
+  text-align: left;
+  color: var(--studio-text-2);
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.compact .peakLabel span {
+  display: none;
+}
+.compact .peakLabel strong {
+  margin-bottom: 1px;
+  font-size: 9px;
 }
 @media (max-width: 600px) {
   .compact {
-    width: 48px;
+    width: 56px;
   }
-  .compact .stereo {
-    min-width: 48px;
+  .compact .peakLabel {
+    display: none;
+  }
+}
+@media (pointer: coarse) {
+  .detail button {
+    min-height: 44px;
   }
 }

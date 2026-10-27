@@ -1,102 +1,263 @@
-/* Graphite Sheet: the same arrangement geometry in the app's dark and light themes. */
+/* Studio — a console on the app's own theme tokens: every preset applies, and each lane carries one hue. */
 .page {
-  --studio-paper: #17181b;
-  --studio-sheet: #222428;
-  --studio-graphite: #e7e4dd;
-  --studio-pencil: #9ea1a7;
-  --studio-cobalt: #7e9cff;
-  --studio-error: #ff7a5e;
-  --studio-grid: color-mix(in srgb, var(--studio-pencil) 18%, transparent);
-  --studio-divider: color-mix(in srgb, var(--studio-graphite) 16%, transparent);
-  min-width: 0;
+  --studio-bg: var(--bg-primary);
+  --studio-bar: var(--bg-secondary);
+  --studio-panel: var(--bg-secondary);
+  --studio-raised: var(--bg-card);
+  --studio-clip-base: var(--bg-card);
+  --studio-control: var(--bg-tertiary);
+  --studio-chip: color-mix(
+    in srgb,
+    var(--text-primary) 13%,
+    var(--bg-tertiary)
+  );
+  --studio-line: var(--border-subtle);
+  --studio-line-strong: var(--border);
+  --studio-grid: color-mix(in srgb, var(--text-primary) 5%, transparent);
+  --studio-grid-strong: color-mix(
+    in srgb,
+    var(--text-primary) 11%,
+    transparent
+  );
+  --studio-tick: color-mix(in srgb, var(--text-primary) 20%, transparent);
+  --studio-tick-major: color-mix(in srgb, var(--text-primary) 38%, transparent);
+  --studio-text: var(--text-primary);
+  --studio-text-2: var(--text-secondary);
+  --studio-muted: var(--text-muted);
+  --studio-hover: var(--bg-hover);
+  --studio-accent: var(--accent);
+  --studio-accent-hover: var(--accent-hover);
+  --studio-accent-text: var(--accent-text);
+  --studio-accent-soft: var(--accent-surface);
+  --studio-on-accent: var(--on-accent);
+  --studio-playhead: var(--accent);
+  --studio-danger: var(--status-danger-fg);
+  --studio-danger-soft: var(--status-danger-bg);
+  --studio-warning: var(--status-warning-fg);
+  --studio-success: var(--status-success-fg);
+  --studio-solo: var(--status-warning-fill);
+  --studio-on-solo: var(--status-warning-on-fill);
+  --studio-mute-fill: color-mix(
+    in srgb,
+    var(--text-primary) 20%,
+    var(--bg-tertiary)
+  );
+  --studio-fader-fill: color-mix(
+    in srgb,
+    var(--text-primary) 52%,
+    var(--bg-tertiary)
+  );
+  --studio-thumb: var(--text-primary);
+  --studio-thumb-ring: 0 0 0 1px rgb(1 4 9 / 0.28), 0 1px 3px rgb(1 4 9 / 0.35);
+  /* Slider and meter rails: about 3:1 against the panel, so the travel reads. */
+  --studio-rail: color-mix(
+    in srgb,
+    var(--text-primary) 36%,
+    var(--bg-secondary)
+  );
+  --studio-tooltip: var(--bg-inverse);
+  --studio-on-tooltip: var(--text-inverse);
+  --studio-meter-ok: var(--green);
+  --studio-meter-hot: var(--yellow);
+  --studio-meter-over: var(--red);
+  --studio-shadow: 0 10px 28px rgb(1 4 9 / 0.38), 0 1px 3px rgb(1 4 9 / 0.3);
+  /* The fade at a scroll edge, and the dim behind an overlaid panel. */
+  --studio-edge-shade: rgb(1 4 9 / 0.62);
+  --studio-scrim: rgb(1 4 9 / 0.45);
+  --studio-sheet-shadow: 0 -16px 40px rgb(1 4 9 / 0.32);
+  /* Cards, tiles and lists inside panels share one depth. */
+  --studio-card: var(--bg-primary);
+  --studio-list: var(--bg-secondary);
+  --studio-hue-rose: #f0789f;
+  --studio-hue-amber: #e3a53f;
+  --studio-hue-teal: #3cc7b4;
+  --studio-hue-violet: #a991f7;
+  --studio-hue-green: #5cc271;
+  --studio-hue-orange: #ec8a4f;
+  display: flex;
+  flex: 1 0 auto;
+  flex-direction: column;
   width: 100%;
-  background: var(--studio-paper);
-  color: var(--studio-graphite);
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  min-width: 0;
+  background: var(--studio-bg);
+  color: var(--studio-text);
+  font-family: inherit;
   font-size: 13px;
   line-height: 1.4;
-  font-variant-numeric: tabular-nums;
-  border: 1px solid var(--studio-divider);
-  border-radius: 10px;
-  overflow: clip;
 }
 :global(html[data-theme='light']) .page {
-  --studio-paper: #f5f3ee;
-  --studio-sheet: #fff;
-  --studio-graphite: #26282c;
-  --studio-pencil: #686b71;
-  --studio-cobalt: #2a55c9;
-  --studio-error: #c8402a;
+  --studio-shadow:
+    0 10px 28px rgb(31 35 40 / 0.14), 0 1px 3px rgb(31 35 40 / 0.12);
+  --studio-thumb: #ffffff;
+  --studio-edge-shade: rgb(31 35 40 / 0.13);
+  --studio-scrim: rgb(31 35 40 / 0.18);
+  --studio-sheet-shadow: 0 -2px 8px rgb(31 35 40 / 0.08);
+  --studio-list: #ffffff;
+  /* Clips tint into white, so a hue stays clean instead of turning beige. */
+  --studio-clip-base: #ffffff;
+  --studio-thumb-ring:
+    0 0 0 1px rgb(31 35 40 / 0.3), 0 1px 3px rgb(31 35 40 / 0.25);
+  --studio-rail: color-mix(
+    in srgb,
+    var(--text-primary) 50%,
+    var(--bg-secondary)
+  );
+  --studio-hue-rose: #c2457a;
+  --studio-hue-amber: #a86b05;
+  --studio-hue-teal: #0d7f73;
+  --studio-hue-violet: #7552d6;
+  --studio-hue-green: #2c8a43;
+  --studio-hue-orange: #c05621;
+}
+/* The Studio fills the content area edge to edge; phones keep room for the tab bar. */
+@media (min-width: 769px) {
+  :global(.main-content):has(.page) {
+    padding-bottom: 0;
+  }
 }
 .page :is(button, input, select):focus-visible {
-  outline: 2px solid var(--studio-cobalt);
-  outline-offset: 3px;
-}
-.button,
-.primaryButton,
-.iconButton,
-.playButton,
-.textButton,
-.dangerButton,
-.filterButton,
-.fileButton,
-.songTitle,
-.songRow {
-  appearance: none;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  min-height: 36px;
-  border: 1px solid var(--studio-divider);
-  border-radius: 6px;
-  padding: 7px 12px;
-  background: var(--studio-sheet);
-  color: var(--studio-graphite);
-  font: inherit;
-  cursor: pointer;
-  text-decoration: none;
-}
-.button:hover,
-.iconButton:hover,
-.textButton:hover,
-.songTitle:hover,
-.filterButton:hover,
-.songRow:hover {
-  background: color-mix(
-    in srgb,
-    var(--studio-graphite) 8%,
-    var(--studio-sheet)
-  );
+  outline: 2px solid var(--studio-accent);
+  outline-offset: 2px;
 }
 .page button:disabled {
   opacity: 0.45;
   cursor: default;
 }
+.srOnly,
+.detailsName {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: 0;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+/* Buttons */
+.button,
 .primaryButton,
-.playButton {
-  background: var(--studio-cobalt);
-  color: var(--studio-paper);
-  border-color: var(--studio-cobalt);
+.dangerButton {
+  appearance: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  gap: 7px;
+  min-height: 34px;
+  padding: 0 13px;
+  border: 1px solid var(--studio-line-strong);
+  border-radius: 8px;
+  background: transparent;
+  color: var(--studio-text);
+  font: inherit;
+  font-size: 13px;
+  font-weight: 500;
+  line-height: 1;
+  white-space: nowrap;
+  cursor: pointer;
+  transition:
+    background-color 0.12s ease-out,
+    border-color 0.12s ease-out;
+}
+.button svg,
+.primaryButton svg,
+.dangerButton svg {
+  flex: none;
+  width: 16px;
+  height: 16px;
+}
+.button:hover:not(:disabled),
+.button[aria-expanded='true'] {
+  background: var(--studio-hover);
+}
+.button[aria-expanded='true'] {
+  border-color: color-mix(in srgb, var(--studio-text) 30%, transparent);
+}
+.primaryButton {
+  border-color: var(--studio-accent);
+  background: var(--studio-accent);
+  color: var(--studio-on-accent);
   font-weight: 600;
 }
-:global(html[data-theme='light']) .primaryButton,
-:global(html[data-theme='light']) .playButton {
-  color: white;
+.primaryButton:hover:not(:disabled) {
+  border-color: var(--studio-accent-hover);
+  background: var(--studio-accent-hover);
+}
+.dangerButton {
+  border-color: color-mix(in srgb, var(--studio-danger) 45%, transparent);
+  color: var(--studio-danger);
+}
+.dangerButton:hover:not(:disabled) {
+  background: var(--studio-danger-soft);
 }
 .iconButton,
 .playButton {
-  width: 36px;
-  padding: 8px;
+  appearance: none;
+  display: grid;
+  place-items: center;
   flex-shrink: 0;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--studio-text-2);
+  font: inherit;
+  cursor: pointer;
+  transition:
+    background-color 0.12s ease-out,
+    color 0.12s ease-out;
+}
+.iconButton svg {
+  width: 17px;
+  height: 17px;
+}
+.iconButton:hover:not(:disabled) {
+  background: var(--studio-hover);
+  color: var(--studio-text);
+}
+.iconButton[aria-pressed='true'] {
+  background: var(--studio-accent-soft);
+  color: var(--studio-accent-text);
+}
+.playButton {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: var(--studio-accent);
+  color: var(--studio-on-accent);
+  box-shadow: 0 2px 8px
+    color-mix(in srgb, var(--studio-accent) 30%, transparent);
+}
+.playButton svg {
+  width: 20px;
+  height: 20px;
+}
+.playButton:hover:not(:disabled) {
+  background: var(--studio-accent-hover);
+}
+.playButton:disabled {
+  box-shadow: none;
 }
 .textButton {
-  border-color: transparent;
+  appearance: none;
+  display: inline-flex;
+  align-items: center;
+  min-height: 28px;
+  padding: 0 6px;
+  border: 0;
+  border-radius: 6px;
   background: transparent;
+  color: var(--studio-accent-text);
+  font: inherit;
+  font-size: 12.5px;
+  font-weight: 500;
+  cursor: pointer;
 }
-.dangerButton {
-  color: var(--studio-error);
-  background: transparent;
+.textButton:hover:not(:disabled) {
+  background: var(--studio-hover);
 }
 .actions {
   display: flex;
@@ -104,266 +265,659 @@
   align-items: center;
   gap: 8px;
 }
-.workspace {
+.help {
+  margin: 0;
+  color: var(--studio-muted);
+  font-size: 12px;
+  line-height: 1.5;
+  text-wrap: pretty;
+}
+.page > .help {
+  padding: 10px 16px;
+  color: var(--studio-danger);
+}
+.inlineError {
+  margin: 0;
+  padding: 9px 12px;
+  border-radius: 8px;
+  background: var(--studio-danger-soft);
+  color: var(--studio-danger);
+  font-size: 12.5px;
+}
+.notice {
+  display: flex;
+  flex: none;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px 16px;
+  padding: 8px 16px;
+  border-bottom: 1px solid var(--studio-line);
+  background: var(--studio-accent-soft);
+  color: var(--studio-text);
+  font-size: 12.5px;
+}
+.notice[role='alert'] {
+  background: var(--studio-danger-soft);
+}
+.notice p {
+  margin: 0;
+}
+.notice .button {
+  min-height: 30px;
+  background: var(--studio-bg);
+}
+.loading {
+  margin: 0;
+  padding: 64px 24px;
+  color: var(--studio-muted);
+  text-align: center;
+}
+
+/* Library */
+.library {
   display: flex;
   flex-direction: column;
-  min-height: 580px;
-  height: min(840px, calc(100dvh - 144px));
+  gap: 20px;
+  width: 100%;
+  max-width: 880px;
+  margin: 0 auto;
+  padding: 40px 32px 48px;
+  box-sizing: border-box;
+}
+.libraryHeading {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 16px;
+}
+.libraryHeading h1 {
+  margin: 0;
+  font-size: 26px;
+  font-weight: 650;
+  line-height: 1.15;
+  letter-spacing: -0.02em;
+}
+.songList {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  border: 1px solid var(--studio-line);
+  border-radius: 12px;
+  background: var(--studio-list);
+}
+.songRow {
+  appearance: none;
+  display: grid;
+  grid-template-columns: 40px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 14px;
+  width: 100%;
+  padding: 12px 18px 12px 14px;
+  border: 0;
+  border-bottom: 1px solid var(--studio-line);
+  background: transparent;
+  color: var(--studio-text);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.songRow:last-child {
+  border-bottom: 0;
+}
+.songRow:hover:not(:disabled) {
+  background: var(--studio-hover);
+}
+.songRow[aria-current='true'] {
+  background: color-mix(in srgb, var(--studio-accent) 6%, transparent);
+}
+.songRow > svg {
+  box-sizing: border-box;
+  width: 40px;
+  height: 40px;
+  padding: 9px;
+  border-radius: 10px;
+  background: var(--studio-accent-soft);
+  color: var(--studio-accent-text);
+}
+.songRow > span {
+  min-width: 0;
+}
+.songRow strong {
+  display: block;
+  overflow: hidden;
+  font-size: 14px;
+  font-weight: 600;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+.songRow small {
+  display: block;
+  margin-top: 2px;
+  color: var(--studio-muted);
+  font-size: 12px;
+}
+.songRow .songDuration {
+  color: var(--studio-text-2);
+  font-size: 13px;
+  font-variant-numeric: tabular-nums;
+}
+.empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  padding: 64px 24px;
+  border: 1px solid var(--studio-line);
+  border-radius: 14px;
+  background: var(--studio-bar);
+  text-align: center;
+}
+.empty > svg {
+  box-sizing: border-box;
+  width: 64px;
+  height: 64px;
+  margin-bottom: 6px;
+  padding: 14px;
+  border-radius: 50%;
+  background: var(--studio-accent-soft);
+  color: var(--studio-accent-text);
+}
+.empty h2 {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 600;
+}
+.empty p {
+  max-width: 360px;
+  margin: 0;
+  color: var(--studio-text-2);
+  text-wrap: balance;
+}
+.empty .button {
+  margin-top: 10px;
+  min-height: 38px;
+  padding: 0 18px;
+}
+.localNote {
+  margin: 0;
+  color: var(--studio-muted);
+  font-size: 12px;
+}
+
+/* Workspace: top bar, arrangement and panel */
+.workspace {
+  position: relative;
+  display: flex;
+  flex: 1 1 0;
+  flex-direction: column;
+  min-height: 520px;
+  outline: none;
 }
 .topBar {
-  flex-wrap: wrap;
-  min-height: 72px;
-  flex-shrink: 0;
-  display: flex;
+  container-type: inline-size;
+  position: relative;
+  z-index: 20;
+  display: grid;
+  flex: none;
+  grid-template-columns: minmax(0, 1fr) auto minmax(max-content, 1fr);
   align-items: center;
   gap: 16px;
-  padding: 8px 16px;
-  border-bottom: 1px solid var(--studio-divider);
-  background: var(--studio-sheet);
+  min-height: 60px;
+  padding: 0 16px;
+  border-bottom: 1px solid var(--studio-line);
+  background: var(--studio-bar);
 }
 .songIdentity {
-  min-width: 100px;
-  flex: 1;
-  max-width: 280px;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 1px;
+  min-width: 0;
 }
 .songTitle {
-  justify-content: flex-start;
+  appearance: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
   max-width: 100%;
-  padding: 2px 0;
   min-height: 28px;
+  margin-left: -8px;
+  padding: 0 8px;
   border: 0;
+  border-radius: 7px;
   background: transparent;
+  color: var(--studio-text);
+  font: inherit;
   font-size: 17px;
-  font-weight: 600;
+  font-weight: 650;
+  letter-spacing: -0.015em;
+  cursor: pointer;
 }
 .songTitle span {
   overflow: hidden;
-  text-overflow: ellipsis;
   white-space: nowrap;
+  text-overflow: ellipsis;
 }
 .songTitle svg {
-  flex-shrink: 0;
+  flex: none;
+  color: var(--studio-muted);
+  transition: transform 0.15s ease-out;
+}
+/* Touch keeps a tapped title's hover fill; only a real pointer shows it. */
+@media (hover: hover) {
+  .songTitle:hover {
+    background: var(--studio-hover);
+  }
+}
+.songTitle[aria-expanded='true'] svg {
+  transform: rotate(180deg);
 }
 .saveStatus {
-  display: block;
-  color: var(--studio-pencil);
-  font-size: 11px;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  min-height: 16px;
+  color: var(--studio-muted);
+  font-size: 11.5px;
+  white-space: nowrap;
 }
-.topActions {
-  margin-left: auto;
+.saveStatus svg {
+  color: var(--studio-success);
+}
+.saveStatus[data-state='error'],
+.saveStatus[data-state='unsaved'] {
+  color: var(--studio-warning);
+}
+.saveStatus[data-state='read-only'] {
+  color: var(--studio-text-2);
+}
+.transport {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 6px;
+  padding: 4px 10px 4px 6px;
+  border: 1px solid var(--studio-line);
+  border-radius: 14px;
+  background: var(--studio-bg);
+}
+.clock {
+  box-sizing: border-box;
+  width: 116px;
+  height: 36px;
+  margin: 0 4px;
+  padding: 0 8px;
+  border: 1px solid transparent;
+  border-radius: 9px;
+  background: var(--studio-control);
+  color: var(--studio-text);
+  font: inherit;
+  font-size: 20px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.01em;
+  text-align: center;
+}
+.clock:hover {
+  border-color: var(--studio-line-strong);
+}
+.clock:focus {
+  border-color: var(--studio-accent);
+  outline: none;
+}
+.topActions {
+  display: flex;
+  align-items: center;
+  justify-self: end;
+  gap: 8px;
 }
 .historyButtons {
   display: flex;
   gap: 2px;
 }
-.historyButtons .iconButton {
-  border-color: transparent;
+.divider {
+  width: 1px;
+  height: 22px;
+  margin: 0 4px;
+  background: var(--studio-line-strong);
 }
-.redo svg {
-  transform: scaleX(-1);
+@container (max-width: 900px) {
+  .workspace:not(.phone) .label {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
+  .workspace:not(.phone) .topActions .button {
+    width: 34px;
+    padding: 0;
+  }
 }
-.transport {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  flex-shrink: 0;
-}
-.time {
-  min-width: 80px;
-  font-size: 20px;
-  line-height: 24px;
-  text-align: center;
-}
-.peak {
-  width: 52px;
-  margin-left: 8px;
-}
-.peak span {
-  display: block;
-  color: var(--studio-pencil);
-  font-size: 10px;
-}
-.peakBars {
-  height: 12px;
-  background: var(--studio-paper);
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-}
-.peakBars i {
-  display: block;
-  height: 5px;
-  background: var(--studio-cobalt);
-  max-width: 100%;
+@container (max-width: 1120px) {
+  .transport > div:last-child {
+    display: none;
+  }
+  .topBar .transport {
+    padding-right: 6px;
+  }
 }
 .editor {
-  display: flex;
-  min-height: 0;
-  flex: 1;
   position: relative;
+  display: flex;
+  flex: 1;
+  min-height: 0;
 }
 .arrangement {
   display: flex;
-  flex-direction: column;
   flex: 1;
+  flex-direction: column;
   min-width: 0;
   min-height: 0;
 }
-.viewControls {
-  display: flex;
-  align-items: center;
-  gap: 20px;
-  padding: 8px 16px;
-  min-height: 44px;
-  border-bottom: 1px solid var(--studio-divider);
+.workspace:has(.dropHint) .arrangement {
+  outline: 2px dashed var(--studio-accent);
+  outline-offset: -8px;
 }
-.viewControls label {
+.dropHint {
+  position: absolute;
+  z-index: 60;
+  top: 76px;
+  left: 50%;
   display: flex;
   align-items: center;
   gap: 8px;
-  color: var(--studio-pencil);
-  font-size: 11px;
+  padding: 10px 18px;
+  border-radius: 999px;
+  background: var(--studio-accent);
+  box-shadow: var(--studio-shadow);
+  color: var(--studio-on-accent);
+  font-weight: 600;
+  pointer-events: none;
+  transform: translateX(-50%);
 }
-.viewControls input[type='number'] {
-  width: 60px;
-}
-.viewControls .zoom {
-  margin-left: auto;
-}
-.zoom input {
-  width: 100px;
-  accent-color: var(--studio-cobalt);
-}
-.viewControls select,
-.viewControls input[type='number'],
-.fieldInput input,
-.stackedField input,
-.stackedField select {
-  appearance: auto;
-  background: var(--studio-paper);
-  color: var(--studio-graphite);
-  border: 1px solid var(--studio-divider);
-  border-radius: 5px;
-  font: inherit;
-  padding: 7px 8px;
-  min-width: 0;
-  transition: none;
-}
+
+/* Panel: a column beside the arrangement, an overlay below 1100 px, a sheet on phones */
 .panelShade {
+  flex: none;
   width: 360px;
-  min-width: 320px;
-  flex-shrink: 0;
+  border-left: 1px solid var(--studio-line);
+  background: var(--studio-panel);
 }
 .panel {
   display: flex;
   flex-direction: column;
   height: 100%;
   min-height: 0;
-  background: var(--studio-sheet);
-  border-left: 1px solid var(--studio-divider);
+  background: var(--studio-panel);
   outline: none;
 }
 .panelHeading {
   display: flex;
-  flex-shrink: 0;
+  flex: none;
   align-items: center;
   justify-content: space-between;
   gap: 12px;
-  padding: 12px 16px;
-  border-bottom: 1px solid var(--studio-divider);
+  min-height: 52px;
+  padding: 0 10px 0 18px;
+  border-bottom: 1px solid var(--studio-line);
 }
 .panelHeading h2 {
+  margin: 0;
   font-size: 15px;
   font-weight: 600;
-  margin: 0;
+  letter-spacing: -0.01em;
 }
 .panelBody {
-  padding: 20px 16px;
+  flex: 1;
+  min-height: 0;
+  padding: 18px 18px 28px;
   overflow: auto;
   overscroll-behavior: contain;
-  flex: 1;
+  scrollbar-width: thin;
+  /* Content fades out at a scrolled edge. The padding is deeper than the
+     fade, so nothing fades while the list rests at its top or bottom. */
+  -webkit-mask-image: linear-gradient(
+    to bottom,
+    transparent,
+    #000 14px,
+    #000 calc(100% - 14px),
+    transparent
+  );
+  mask-image: linear-gradient(
+    to bottom,
+    transparent,
+    #000 14px,
+    #000 calc(100% - 14px),
+    transparent
+  );
 }
+.panelBody p {
+  text-wrap: pretty;
+}
+@media (max-width: 1100px), (pointer: coarse) and (max-height: 500px) {
+  .panelShade {
+    position: absolute;
+    z-index: 30;
+    inset: 0;
+    display: flex;
+    justify-content: flex-end;
+    width: auto;
+    border-left: 0;
+    background: var(--studio-scrim);
+    animation: studio-shade 0.16s ease-out;
+  }
+  .panel {
+    width: min(400px, 100%);
+    border-left: 1px solid var(--studio-line);
+    box-shadow: -16px 0 40px rgb(1 4 9 / 0.32);
+    animation: studio-panel 0.2s ease-out;
+  }
+}
+@keyframes studio-shade {
+  from {
+    opacity: 0;
+  }
+}
+@keyframes studio-panel {
+  from {
+    transform: translateX(24px);
+    opacity: 0;
+  }
+}
+
+/* Panel content */
 .detailsFields {
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: 14px;
 }
 .detailsFields h3 {
-  font-size: 13px;
   margin: 0;
-}
-.detailsName {
-  margin: 0 0 4px;
-  overflow-wrap: anywhere;
+  font-size: 13px;
   font-weight: 600;
 }
+.detailsFields > .button {
+  justify-content: flex-start;
+  min-height: 40px;
+}
+.detailsFields > .dangerButton {
+  min-height: 40px;
+}
 .field {
-  display: flex;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 140px;
   align-items: center;
-  justify-content: space-between;
-  gap: 12px;
+  gap: 6px 12px;
+  color: var(--studio-text-2);
+  font-size: 13px;
+}
+.field > .help {
+  grid-column: 1 / -1;
+  color: var(--studio-danger);
 }
 .fieldInput {
   display: flex;
   align-items: center;
-  gap: 8px;
+  height: 34px;
+  padding-right: 10px;
+  border: 1px solid var(--studio-line-strong);
+  border-radius: 8px;
+  background: var(--studio-bg);
+}
+.fieldInput:focus-within {
+  border-color: var(--studio-accent);
+}
+.page .fieldInput input:focus-visible {
+  outline: none;
 }
 .fieldInput input {
-  width: 100px;
+  flex: 1;
+  min-width: 0;
+  height: 100%;
+  padding: 0 0 0 10px;
+  border: 0;
+  background: transparent;
+  color: var(--studio-text);
+  font: inherit;
+  font-variant-numeric: tabular-nums;
   text-align: right;
 }
 .fieldInput span {
-  min-width: 18px;
-  color: var(--studio-pencil);
+  margin-left: 6px;
+  color: var(--studio-muted);
+  font-size: 12px;
 }
-.fieldInput input[aria-invalid='true'] {
-  border-color: var(--studio-error);
+.fieldInput:has(input[aria-invalid='true']) {
+  border-color: var(--studio-danger);
 }
 .stackedField {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 6px;
+}
+.stackedField > span {
+  color: var(--studio-text-2);
+  font-size: 12px;
+  font-weight: 500;
 }
 .stackedField input,
 .stackedField select {
-  min-height: 36px;
-  width: 100%;
   box-sizing: border-box;
+  width: 100%;
+  min-width: 0;
+  height: 36px;
+  padding: 0 10px;
+  border: 1px solid var(--studio-line-strong);
+  border-radius: 8px;
+  background: var(--studio-bg);
+  color: var(--studio-text);
+  font: inherit;
 }
 .fieldDivider {
   height: 1px;
-  background: var(--studio-divider);
   margin: 4px 0;
+  background: var(--studio-line);
 }
-.help,
-.localNote {
-  color: var(--studio-pencil);
-  font-size: 12px;
-  line-height: 1.55;
-  margin: 0;
+.menuList {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  border: 1px solid var(--studio-line);
+  border-radius: 10px;
+  background: var(--studio-bg);
+}
+.menuItem {
+  appearance: none;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  min-height: 44px;
+  padding: 0 14px;
+  border: 0;
+  border-bottom: 1px solid var(--studio-line);
+  background: transparent;
+  color: var(--studio-text);
+  font: inherit;
+  font-size: 13px;
+  font-weight: 500;
+  text-align: left;
+  cursor: pointer;
+}
+.menuItem:last-child {
+  border-bottom: 0;
+}
+.menuItem:hover:not(:disabled) {
+  background: var(--studio-hover);
+}
+.menuItem > svg {
+  flex: none;
+  width: 16px;
+  height: 16px;
+  color: var(--studio-text-2);
+}
+.menuItem > span {
+  flex: 1;
+}
+.menuItem > svg:last-child {
+  width: 14px;
+  height: 14px;
+  color: var(--studio-muted);
+  transform: rotate(-90deg);
+}
+.menuItem:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+.menuItem:focus-visible {
+  outline: 2px solid var(--studio-accent);
+  outline-offset: -2px;
+}
+.menuItem.menuDanger,
+.menuItem.menuDanger > svg {
+  color: var(--studio-danger);
+}
+.menuItem.menuDanger {
+  border: 1px solid color-mix(in srgb, var(--studio-danger) 35%, transparent);
+  border-radius: 10px;
+}
+.menuItem.menuDanger:hover:not(:disabled) {
+  background: var(--studio-danger-soft);
 }
 .assetList {
-  list-style: none;
-  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
   margin: 0;
-  display: grid;
-  gap: 12px;
+  padding: 0;
+  list-style: none;
 }
 .assetList li {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 4px 12px;
+  padding: 9px 12px;
+  border-radius: 8px;
+  background: var(--studio-control);
   overflow-wrap: anywhere;
 }
 .assetList span {
-  display: block;
-  color: var(--studio-pencil);
+  color: var(--studio-muted);
   font-size: 12px;
+  white-space: nowrap;
 }
+
+/* Add takes */
 .sources {
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: 14px;
+  min-height: 100%;
 }
 .filters {
   display: flex;
@@ -371,270 +925,257 @@
   gap: 6px;
 }
 .filterButton {
-  min-height: 30px;
-  font-size: 12px;
-  padding: 5px 10px;
+  appearance: none;
+  min-height: 28px;
+  padding: 0 11px;
+  border: 1px solid var(--studio-line-strong);
+  border-radius: 999px;
   background: transparent;
+  color: var(--studio-text-2);
+  font: inherit;
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+}
+.filterButton:hover {
+  color: var(--studio-text);
 }
 .filterButton[aria-pressed='true'] {
-  border-color: var(--studio-cobalt);
-  color: var(--studio-cobalt);
-  background: color-mix(in srgb, var(--studio-cobalt) 10%, transparent);
+  border-color: color-mix(in srgb, var(--studio-accent) 50%, transparent);
+  background: var(--studio-accent-soft);
+  color: var(--studio-accent-text);
 }
 .fileButton {
-  justify-content: flex-start;
-  padding: 12px;
+  appearance: none;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  padding: 14px;
+  border: 1px dashed var(--studio-line-strong);
+  border-radius: 10px;
+  background: transparent;
+  color: var(--studio-text);
+  font: inherit;
   text-align: left;
+  cursor: pointer;
+}
+.fileButton:hover:not(:disabled) {
+  border-color: var(--studio-accent);
+  background: color-mix(in srgb, var(--studio-accent) 6%, transparent);
+}
+.fileButton svg {
+  flex: none;
+  box-sizing: border-box;
+  width: 36px;
+  height: 36px;
+  padding: 8px;
+  border-radius: 9px;
+  background: var(--studio-accent-soft);
+  color: var(--studio-accent-text);
+}
+.fileButton span {
+  font-size: 13px;
+  font-weight: 600;
 }
 .fileButton small {
   display: block;
-  font-size: 11px;
-  color: var(--studio-pencil);
-  margin-top: 3px;
+  margin-top: 2px;
+  color: var(--studio-muted);
+  font-size: 12px;
+  font-weight: 400;
 }
 .sourceHeading {
   display: flex;
   align-items: center;
   justify-content: space-between;
+  gap: 12px;
+  margin-top: 4px;
 }
 .sourceHeading h3 {
-  font-size: 13px;
   margin: 0;
+  font-size: 13px;
+  font-weight: 600;
 }
 .sourceList {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin: 0;
   padding: 0;
-  margin: -8px 0 0;
   list-style: none;
 }
 .sourceList li {
   display: flex;
-  gap: 12px;
-  align-items: flex-start;
-  padding: 14px 0;
-  border-bottom: 1px solid var(--studio-divider);
+  align-items: center;
+  gap: 6px;
+  padding: 8px 6px 8px 12px;
+  border: 1px solid var(--studio-line);
+  border-radius: 10px;
+  background: var(--studio-bg);
+}
+.sourceList li:has(input:checked) {
+  border-color: color-mix(in srgb, var(--studio-accent) 55%, transparent);
+  background: color-mix(in srgb, var(--studio-accent) 7%, var(--studio-bg));
 }
 .sourceChoice {
   display: flex;
-  gap: 12px;
   flex: 1;
+  align-items: flex-start;
+  gap: 10px;
   min-width: 0;
   cursor: pointer;
 }
 .sourceChoice input {
-  margin-top: 3px;
-  accent-color: var(--studio-cobalt);
-  flex-shrink: 0;
+  flex: none;
   width: 16px;
   height: 16px;
+  margin: 2px 0 0;
+  accent-color: var(--studio-accent);
+}
+.sourceChoice > span {
+  min-width: 0;
 }
 .sourceChoice strong {
   display: block;
+  overflow: hidden;
+  font-size: 13px;
   font-weight: 600;
-  overflow-wrap: anywhere;
+  white-space: nowrap;
+  text-overflow: ellipsis;
 }
-.sourceChoice small,
-.sourceDescription {
+.sourceChoice small {
   display: block;
-  color: var(--studio-pencil);
-  font-size: 11px;
-  margin-top: 3px;
-}
-.sourceDescription {
+  color: var(--studio-muted);
   font-size: 12px;
-  line-height: 1.45;
-  margin-top: 6px;
 }
-.inlineError {
-  margin: 0;
-  padding: 12px 16px;
-  color: var(--studio-error);
-  overflow-wrap: anywhere;
+.sourceDescription {
+  display: -webkit-box;
+  margin-top: 3px;
+  overflow: hidden;
+  color: var(--studio-text-2);
+  font-size: 12px;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
 }
-.notice {
-  padding: 12px 16px;
-  background: var(--studio-sheet);
-  border-bottom: 1px solid var(--studio-divider);
-  display: flex;
-  gap: 12px;
-  align-items: center;
-  flex-wrap: wrap;
+.sources > .primaryButton {
+  position: sticky;
+  bottom: 0;
+  min-height: 40px;
+  box-shadow: 0 -10px 16px var(--studio-panel);
 }
-.notice p {
-  margin: 0;
-  flex: 1;
-}
-.loading {
-  padding: 24px;
-}
-.library {
-  padding: 32px;
-  min-height: 500px;
-  max-width: 1000px;
-  margin: 0 auto;
-}
-.libraryHeading {
-  display: flex;
-  gap: 16px;
-  align-items: center;
-  justify-content: space-between;
-  margin-bottom: 32px;
-}
-.libraryHeading h1 {
-  margin: 0;
-  font-size: 24px;
-  font-weight: 600;
-}
-.empty {
-  padding: 64px 24px;
-  max-width: 440px;
-  margin: 0 auto;
-  text-align: center;
-}
-.empty > svg {
-  color: var(--studio-pencil);
-  margin-bottom: 16px;
-}
-.empty h2 {
-  font-size: 20px;
-  font-weight: 600;
-  margin: 0 0 8px;
-}
-.empty p {
-  color: var(--studio-pencil);
-  margin: 0 0 24px;
-}
-.songList {
-  display: flex;
-  flex-direction: column;
-  margin-bottom: 32px;
-  border-top: 1px solid var(--studio-divider);
-}
-.songRow {
-  justify-content: flex-start;
-  gap: 20px;
-  border: 0;
-  border-bottom: 1px solid var(--studio-divider);
-  border-radius: 0;
-  background: transparent;
-  padding: 20px 8px;
-  text-align: left;
-}
-.songRow > span {
-  min-width: 0;
-}
-.songRow strong {
-  display: block;
-  font-size: 15px;
-  overflow-wrap: anywhere;
-}
-.songRow small {
-  display: block;
-  color: var(--studio-pencil);
-  margin-top: 4px;
-}
-.songRow .songDuration {
-  margin-left: auto;
-  color: var(--studio-pencil);
-}
+
+/* Phone mix list */
 .phoneMix {
   display: flex;
   flex-direction: column;
-  gap: 20px;
+  gap: 8px;
 }
 .phoneTrack {
-  border-bottom: 1px solid var(--studio-divider);
-  padding-bottom: 20px;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 8px 12px 10px 18px;
+  border: 1px solid var(--studio-line);
+  border-radius: 10px;
+  background: var(--studio-bg);
 }
-.phoneTrack > button {
-  font-size: 15px;
-  font-weight: 600;
-  padding-left: 0;
-}
-.srOnly {
+.phoneTrack::before {
+  content: '';
   position: absolute;
-  width: 1px;
-  height: 1px;
-  overflow: hidden;
-  clip-path: inset(50%);
-  white-space: nowrap;
+  top: 12px;
+  bottom: 12px;
+  left: 7px;
+  width: 3px;
+  border-radius: 2px;
+  background: var(--studio-track);
 }
-@media (max-width: 1100px), (pointer: coarse) and (max-height: 500px) {
-  .topBar {
-    gap: 12px;
-  }
-  .peak {
-    display: none;
-  }
-  .panelShade {
-    position: absolute;
-    inset: 0;
-    width: auto;
-    background: #0005;
-    z-index: 12;
-    display: flex;
-    justify-content: flex-end;
-  }
-  .panel {
-    width: min(400px, 100%);
-    box-shadow: -4px 0 20px #0002;
-  }
+.phoneTrack > .textButton {
+  align-self: flex-start;
+  margin-left: -6px;
+  color: var(--studio-text);
+  font-size: 14px;
+  font-weight: 600;
 }
+
+/* Touch: finger-sized targets */
 @media (pointer: coarse) {
   .button,
   .primaryButton,
-  .iconButton,
-  .playButton,
-  .textButton,
   .dangerButton,
+  .textButton,
   .filterButton,
   .songTitle {
     min-height: 44px;
   }
-  .iconButton,
-  .playButton {
+  .iconButton {
     width: 44px;
+    height: 44px;
+  }
+  .playButton {
+    width: 48px;
+    height: 48px;
+  }
+  .clock {
+    height: 44px;
+  }
+  .workspace:not(.phone) .topActions .button {
+    min-width: 44px;
+  }
+  .topBar {
+    min-height: 68px;
   }
 }
+
+/* Phone: identity and history, four equal actions, the overview, then the dock */
+.workspace.phone {
+  min-height: 440px;
+}
 .phone .topBar {
-  position: relative;
-  flex-wrap: wrap;
-  padding: 12px;
-  gap: 12px;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 6px 8px;
+  min-height: 0;
+  padding: 8px 12px 12px;
 }
 .phone .songIdentity {
-  padding-right: 96px;
-  box-sizing: border-box;
-  width: 100%;
-  max-width: none;
-  flex: 1 0 100%;
-}
-.phone .transport {
-  position: absolute;
-  bottom: 0;
-  left: 0;
-  z-index: 13;
-  width: 100%;
-  min-height: 64px;
-  padding-bottom: env(safe-area-inset-bottom);
-  justify-content: center;
-  background: var(--studio-sheet);
-  border-top: 1px solid var(--studio-divider);
-}
-.workspace.phone {
-  position: relative;
-  padding-bottom: calc(64px + env(safe-area-inset-bottom));
-  box-sizing: border-box;
+  grid-column: 1 / 4;
+  grid-row: 1;
 }
 .phone .topActions {
-  gap: 8px;
-  width: 100%;
-  margin: 0;
-  justify-content: flex-end;
+  display: contents;
 }
 .phone .historyButtons {
-  position: absolute;
-  top: 12px;
-  right: 12px;
+  grid-column: 4;
+  grid-row: 1;
+  align-self: start;
+  justify-self: end;
+}
+.phone .divider {
+  display: none;
+}
+.phone .topActions > button {
+  grid-row: 2;
+  width: 100%;
+  min-height: 44px;
+  padding: 0 4px;
+}
+.phone .topActions > button svg {
+  display: none;
+}
+.phone > .transport,
+.phonePanelOpen .panel .transport {
+  flex: none;
+  justify-content: center;
+  gap: 10px;
+  padding: 8px 12px;
+  border: 0;
+  border-top: 1px solid var(--studio-line);
+  border-radius: 0;
+  background: var(--studio-bar);
+}
+.phone .clock {
+  width: 104px;
 }
 .phone .panelShade {
   align-items: flex-end;
@@ -642,68 +1183,67 @@
 .phone .panel {
   width: 100%;
   max-height: 100%;
+  height: auto;
+  border-top: 1px solid var(--studio-line);
   border-left: 0;
-  border-top: 1px solid var(--studio-divider);
-  border-radius: 14px 14px 0 0;
+  border-radius: 16px 16px 0 0;
+  box-shadow: var(--studio-sheet-shadow);
+  animation-name: studio-sheet;
 }
-.phone .panelBody {
-  padding-bottom: max(20px, env(safe-area-inset-bottom));
+.phone .panelHeading {
+  position: relative;
+  padding-top: 8px;
+}
+.phone .panelHeading::before {
+  content: '';
+  position: absolute;
+  top: 6px;
+  left: 50%;
+  width: 36px;
+  height: 4px;
+  border-radius: 2px;
+  background: var(--studio-line-strong);
+  transform: translateX(-50%);
+}
+@keyframes studio-sheet {
+  from {
+    transform: translateY(32px);
+    opacity: 0;
+  }
 }
 @media (max-width: 600px) {
-  .page {
-    border-radius: 8px;
-  }
-  .workspace {
-    min-height: 460px;
-    height: calc(100dvh - 190px);
-  }
   .library {
-    padding: 20px 16px;
+    gap: 16px;
+    padding: 24px 16px 32px;
   }
   .libraryHeading {
-    flex-wrap: wrap;
-    gap: 16px;
-    margin-bottom: 16px;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 12px;
   }
   .libraryHeading h1 {
     font-size: 22px;
   }
+  .libraryHeading .actions > button {
+    flex: 1;
+  }
+  .songRow {
+    padding: 12px 14px 12px 12px;
+  }
   .empty {
-    padding: 40px 8px;
-  }
-  .notice {
-    font-size: 12px;
+    padding: 44px 16px;
   }
 }
-
-.workspace.phone.phonePanelOpen {
-  padding-bottom: 0;
-}
-.phonePanelOpen .panel .transport {
-  position: static;
-  flex-shrink: 0;
-}
-
-.editNotice {
-  margin: 0;
-  padding: 6px 16px;
-  color: var(--studio-pencil);
-  font-size: 12px;
-}
-.dropHint {
-  position: absolute;
-  z-index: 60;
-  inset: 70px 24px auto;
-  padding: 16px;
-  pointer-events: none;
-  text-align: center;
-  border: 1px solid var(--studio-cobalt);
-  background: var(--studio-sheet);
-  color: var(--studio-graphite);
-  border-radius: 8px;
-}
-.iconButton[aria-pressed='true'] {
-  background: var(--studio-cobalt);
-  color: var(--studio-paper);
-  border-color: var(--studio-cobalt);
+@media (prefers-reduced-motion: reduce) {
+  .panelShade,
+  .panel {
+    animation: none;
+  }
+  .songTitle svg,
+  .button,
+  .primaryButton,
+  .iconButton,
+  .playButton {
+    transition: none;
+  }
 }

@@ -6,37 +6,29 @@
 
 The owner confirmed a **Studio** destination inside MercuryPitch, local browser projects, desktop/tablet audio arranging, a simpler phone experience, and audio editing before MIDI integration. V1 editing comprises move, trim, split, duplicate, fades, volume, pan, mute and solo. Existing kept takes and external MP3/WAV files are sources. WAV and editable project backup are the v1 outputs; MP3 export and account cloud storage come later.
 
-**Graphite Sheet** is the accepted layout. The owner requested dark mode as the lead while retaining the white/light theme, and confirmed that new recording and overdubbing come later. The implementation defaults below complete the small audio editor without reopening the agreed device scope.
+The owner requested dark mode as the lead while retaining the white/light theme, and confirmed that new recording and overdubbing come later. The implementation defaults below complete the small audio editor without reopening the agreed device scope.
 
-## Graphite Sheet
+## Console on the app theme
 
-Dark mode pairs warm off-white waveforms with a graphite timeline. Light mode keeps graphite waveforms on a paper-colored timeline. Both share the same layout and controls. Source color occupies a narrow stripe, clip header tint and picker dot. Cobalt identifies selection, focus and the active primary action. Waveforms never become colored slabs.
+27 October 2026: the first build's own **Graphite Sheet** palette (paper `#17181B`, sheet `#222428`, cobalt `#7E9CFF`, a cream light mode) is retired. It ignored the app's theme presets and read as a separate product. The Studio now paints with the app's tokens, so every preset (dark, light, midnight, forest and the rest) applies. The layout follows the top-transport comp chosen on 26 October (VIS-05); the verdict and the comps are in the agent-out run `2026-10-27/511a65893cbe4d96b5a6efd8065e50b6`.
 
-| Token     | Light     | Dark      | Purpose                                |
-| --------- | --------- | --------- | -------------------------------------- |
-| Paper     | `#F5F3EE` | `#17181B` | Timeline                               |
-| Sheet     | `#FFFFFF` | `#222428` | Clips, bars, headers, panels           |
-| Graphite  | `#26282C` | `#E7E4DD` | Waveforms, primary text, playhead      |
-| Pencil    | `#686B71` | `#9EA1A7` | Secondary text, ruler                  |
-| Cobalt    | `#2A55C9` | `#7E9CFF` | Selection, focus, primary action, snap |
-| Vermilion | `#C8402A` | `#FF7A5E` | Errors and invalid operations          |
+| Studio token                             | App token                                                    | Purpose                                                                |
+| ---------------------------------------- | ------------------------------------------------------------ | ---------------------------------------------------------------------- |
+| `--studio-bg`                            | `--bg-primary`                                               | Arrangement floor, inset fields                                        |
+| `--studio-bar`                           | `--bg-secondary`                                             | Top bar, ruler, lane headers, panel                                    |
+| `--studio-clip-base`                     | `--bg-card` (white in light mode)                            | The neutral a lane hue is mixed into for clips                         |
+| `--studio-control`                       | `--bg-tertiary`                                              | Segmented control, tiles, quiet buttons                                |
+| `--studio-rail`                          | `--text-primary` into `--bg-secondary` (36% dark, 50% light) | Fader, macro, meter and progress rails, at about 3:1 against the panel |
+| `--studio-line` / `--studio-line-strong` | `--border-subtle` / `--border`                               | Dividers, outlines                                                     |
+| `--studio-accent`                        | `--accent`                                                   | Selection, focus, playhead, primary action                             |
+| `--studio-solo`                          | `--status-warning-fill`                                      | Pressed Solo                                                           |
+| `--studio-danger`                        | `--status-danger-fg`                                         | Errors, invalid drops, clip light                                      |
 
-Grid lines use Pencil at 18%; dividers use Graphite at 10%. Dark leads the mockups; matching light boards remain available. Follow the existing app appearance setting for both modes, with no Studio-only theme toggle. Do not overwrite the user's saved appearance preference. Dark source hues may be lightened, but actual contrast must be checked rather than assumed from a percentage.
-
-| Source        | Tint            |
-| ------------- | --------------- |
-| Karaoke       | Rose `#C2566B`  |
-| Hear Yourself | Plum `#8C5BA8`  |
-| Guitar        | Ochre `#B07A1E` |
-| Piano         | Teal `#2F8C86`  |
-| Drums         | Olive `#6E8B3D` |
-| External file | Stone `#8C7B6B` |
-
-Use a 4 px lane stripe, clip-header tint at 16%, and a picker dot. Source labels remain visible so color is never the only identifier. Source provenance and musical FX role are separate: a guitar-origin take can have a bass role without inventing a different source.
+Each lane carries one hue, chosen by musical role so a vocal reads as a vocal everywhere: rose for voice, amber for acoustic guitar, orange for electric guitar and bass, teal for piano and keys, violet for drums, green for backing. Tracks without a known role, such as uploaded files, rotate through the six so neighbours differ. Dark values: rose `#F0789F`, amber `#E3A53F`, teal `#3CC7B4`, violet `#A991F7`, green `#5CC271`, orange `#EC8A4F`; light mode uses deeper values of the same hues. The hue draws a 3 px edge on the lane header, the pan knob's arc, the clip body (14% into `--studio-clip-base`), its title band (30%) and its outline (46%). Waveforms are drawn in the hue mixed toward the text colour: the peak envelope as a translucent fill and the RMS body solid inside it, so loud and quiet passages read at a glance. Source labels stay visible under each lane name, so colour is never the only identifier, and source provenance stays separate from the musical role.
 
 Use system sans-serif with tabular figures for time, gain and meter values. Song title 17/22 semibold; panel heading 15/20 semibold; body and lane names 13/18; clip names and ruler 11/14 medium; time 20/24 medium. Phone body is 15/20 and labels 12/16. These are default mockup sizes, not a reason to disable text scaling.
 
-Spacing follows 4 px increments, principally 8/12/16/24. Clip radius 4 px, buttons 6 px, panels 10 px, phone sheet top corners 14 px. Only floating toolbars and sheets use a small shadow. No glow, decorative gradients, fabricated hardware, MIDI note blocks or unrelated dashboard statistics.
+Spacing follows 4 px increments, principally 8/12/16/24. Clip radius 5 px, buttons 8 px, the transport capsule 14 px, phone sheet top corners 16 px. Only floating toolbars, the gesture status pill and sheets use a shadow. No glow, decorative gradients, fabricated hardware, MIDI note blocks or unrelated dashboard statistics.
 
 ## Integrated app navigation
 
@@ -48,21 +40,21 @@ The actual hash destination is `#/studio-night`. The clean `/studio-night` entry
 
 Design reference: 1440 × 960. The shared shell is represented by a 64 px collapsed navigation rail; real shell behavior and labels remain authoritative during integration.
 
-The 56 px top bar contains the song-title menu, save state, Go to start, Play/Pause, time, compact Peak meter, Undo, Redo, Add takes, Sound and Export. The title menu offers Rename, Duplicate song, Download song backup and Delete song. Export is the primary filled button when no task panel is open.
+The 60 px top bar has three zones. Left: the song-title menu and save state. Centre: a transport capsule with Go to start, a round Play/Pause, Repeat, an editable clock and a compact stereo peak meter. Right: Undo, Redo, Add takes, Sound and Export. The clock shows `m:ss.mmm` and accepts typed seconds or minutes (`65.5`, `1:05.5`); arrow keys step one second. The title menu offers Rename, Duplicate song, Download song backup and Delete song. Export is the primary filled button.
 
-The 232 px lane header aligns with each 104 px lane. It holds the source stripe, name, provenance note, mute, solo, volume with dB readout and pan with readout. Mute uses a speaker icon and gains a diagonal slash when muted. Solo uses a plainly readable S in a matching button. Use full Mute/Unmute and Solo labels with the track name in accessible names and tooltips. Both expose aria-pressed and a clear filled/bordered pressed state; color is not the only state cue. These are the only desktop/tablet track mix controls. There is no bottom mixer and no repeated set in the right panel. A corner cell contains Snap, Seconds/Beats and timeline zoom. The ruler and waveform lanes use the remaining width. Audio clips are 88 px high within each lane.
+The 240 px lane header aligns with each 96 px lane. It holds the source stripe, then two rows: name and provenance note beside mute and solo, then the volume fader with its dB readout and a pan knob that always shows its value (C, L 30, R 12). Mute uses a speaker icon and gains a diagonal slash when muted. Solo uses a plainly readable S in a matching button. Use full Mute/Unmute and Solo labels with the track name in accessible names and tooltips. Both expose aria-pressed and a clear filled/bordered pressed state; color is not the only state cue. These are the only desktop/tablet track mix controls. There is no bottom mixer and no repeated set in the right panel. The ruler's corner cell holds Snap and a Time/Beats switch, with tempo beside it in Beats. Zoom out, Zoom in and Fit song to width float as one raised cluster in the lower right corner of the timeline, clear of the ruler and the scrollbars. The ruler and waveform lanes use the remaining width. Audio clips are 84 px high within each lane.
 
 Only one contextual panel is open at a time. The desktop panel is 360 px wide and reduces the timeline's available width without changing clip times. It can show Add takes, Sound, Export, clip Details, or track name/role/provenance/removal. Escape closes the panel and returns focus to its opener, except when it first cancels an active edit. Recompute drawing and hit testing together after a resize; never change an in-progress pointer coordinate origin silently.
 
-The selected clip gets a cobalt outline and a contextual toolbar with Split, Duplicate, Delete and Details. The toolbar sits above the clip, stays within the viewport and does not cover the transport. It disappears during dragging. Split is unavailable unless the playhead lies strictly inside the clip; the explanation is `Move the playhead over the clip`.
+The selected clip gets an accent outline and a contextual toolbar with Split, Duplicate, Delete and Details. The toolbar floats at the timeline's foot, just past the lane headers and level with the zoom cluster, and leads with the track's hue and name so it says which clip it acts on. With enough lanes it floats over the bottom lane, as the zoom cluster does, and its label keeps it tied to the selection. It hides while a drawer overlays the timeline and during dragging. Split is unavailable unless the playhead lies strictly inside the clip; the explanation is `Move the playhead over the clip`.
 
-On narrow desktop windows, collapse optional top-bar controls into labelled menus before shrinking essential targets. If a 360 px panel leaves insufficient arranging width, use the tablet overlay behavior. These breakpoints require actual layout measurement, not a screenshot-only assumption.
+On narrow desktop windows, Add takes and Sound drop their visible labels (keeping accessible names and tooltips) and then the compact meter hides, before any essential target shrinks. If a 360 px panel leaves insufficient arranging width, use the tablet overlay behavior. These breakpoints require actual layout measurement, not a screenshot-only assumption.
 
 ## Tablet and phone
 
-**Tablet, 1024 × 768 reference:** full editing. The shared app menu replaces a permanent collapsed rail. Headers are 176 px, lanes 132 px, and contextual toolbar targets 44 px. Name and source appear above mute/solo, volume and a `Pan C` button that opens the pan slider in that header. A 400 px right panel overlays the timeline. It must retain a reachable close action and preserve selection, zoom and scroll on dismissal.
+**Tablet, 1024 × 768 reference:** full editing. The shared app menu replaces a permanent collapsed rail. Headers are 232 px, lanes 132 px, the ruler 48 px, and every timeline target 44 px. The header keeps the desktop's two rows: name and source beside mute and solo, then the volume fader, its dB reading under the right end, and the pan knob with its value beside it. A 400 px right panel overlays the timeline. It must retain a reachable close action and preserve selection, zoom and scroll on dismissal.
 
-**Phone, 390 × 844 reference:** adding, listening, simple mixing and export. Fit a song overview to width, with 72 px lanes and no trim/fade handles. An action row offers Add takes, Mix, Sound and Export above a persistent transport. Mix opens a bottom sheet with each track's mute, solo, volume, pan and menu; this is the phone's only set of mix controls. Tapping a clip may expose its identity and the explanation `Edit clips on a tablet or computer.` It does not pretend that a miniature desktop editor is available.
+**Phone, 390 × 844 reference:** adding, listening, simple mixing and export. Fit a song overview to width, with 64 px lanes and no trim/fade handles. An action row offers Add takes, Mix, Sound and Export; the transport is docked under the overview. Mix opens a bottom sheet with each track's mute, solo, volume, pan and menu; this is the phone's only set of mix controls. Tapping a clip may expose its identity and the explanation `Edit clips on a tablet or computer.` It does not pretend that a miniature desktop editor is available.
 
 Phone sheets may scroll above the fixed transport and must account for safe-area insets and the on-screen keyboard. Essential controls remain reachable in portrait and landscape. Device-size mocks are a design reference; touch and actual-device acceptance occur in later phases.
 
@@ -90,7 +82,7 @@ Fade squares and trim marks may be visually small. Their actual targets are at l
 
 Pointer move begins after a small threshold. Touch on an unselected clip or empty timeline scrolls; select first to edit. Pinch zoom must not turn into a clip edit. Pointer cancellation and Escape restore the starting state. Each completed gesture commits one undo step; intermediate drag/slider values are transient. Scrolling, hovering and selection are not undo operations.
 
-Ruler selection seeks silently with no scrub audio. Seconds is the initial ruler. Beats asks for tempo and adds a grid without changing audio speed, pitch or placement. Snap is proposed on by default for clip edges, the playhead and a zoom-dependent grid. Alt bypasses snap for pointer/keyboard edits; a visible toggle supplies the equivalent on touch. A cobalt hairline identifies the current snap target.
+Ruler selection seeks silently with no scrub audio. Time is the initial ruler. Beats asks for tempo and adds a grid without changing audio speed, pitch or placement. Snap is proposed on by default for clip edges, the playhead and a zoom-dependent grid. Alt bypasses snap for pointer/keyboard edits; a visible toggle supplies the equivalent on touch. An accent hairline identifies the current snap target.
 
 Details provides keyboard-editable Start, Trim start, Trim end, Fade in and Fade out values with units and steppers. Validation is immediate and retains the previous valid edit on failure. This is the precise alternative to dragging.
 
@@ -142,11 +134,11 @@ Download song backup produces an editable local project bundle, distinct from st
 
 ## Review and acceptance
 
-The three image boards are arrangement, sources/sound/export, and tablet/phone, each available in dark and light mode. Keep **Window seat** and its source names consistent across them. Each active task surface has one primary filled cobalt action: top Export in the arrangement, Add takes inside its picker, Export WAV or Download WAV in export. Other active controls use outlines or light selection tint.
+The three image boards are arrangement, sources/sound/export, and tablet/phone, each available in dark and light mode. Keep **Window seat** and its source names consistent across them. Each active task surface has one primary filled accent action: top Export in the arrangement, Add takes inside its picker, Export WAV or Download WAV in export. Other active controls use outlines or light selection tint.
 
-Visual checks: aligned ruler/header/lane geometry; graphite waveforms; source tints in the specified locations; text contrast at least 4.5:1 and meaningful UI marks at least 3:1; readable scaled text; visible focus; touch targets without overlap; no invented capabilities or copy. UI tests must establish these, rather than treating generated pixels as conformance evidence.
+Visual checks: aligned ruler/header/lane geometry; waveforms and clip tints in the lane hue; source labels under each lane name; text contrast at least 4.5:1 and meaningful UI marks at least 3:1; readable scaled text; visible focus; touch targets without overlap; no invented capabilities or copy. UI tests must establish these, rather than treating generated pixels as conformance evidence.
 
-The eight specified light/dark primary, secondary, action and error token pairs pass 4.5:1 in [the token calculation](evidence/design-token-contrast.json). This calculation does not audit generated image pixels or validate an implemented screen. The three image boards do not depict every failure state. Their copy and recovery behavior are defined above and must be exercised during implementation.
+The retired Graphite token pairs passed 4.5:1 in [the first token calculation](evidence/design-token-contrast.json). The Studio now inherits the app's theme tokens. [The lane-hue calculation](evidence/lane-hue-contrast.json) covers what the Studio adds: clip titles on their hue band measure at least 7.28:1, the solid waveform body against its clip at least 5.97:1 in dark and 3.67:1 in light, hue marks against the floor at least 3.96:1, and the slider and meter rails about 3:1 against the panel. Light mode tints clips into white and draws the waveform in the pure hue, so amber reads as gold rather than brown on beige; the waveform is a graphic, so the 3:1 floor for marks applies, not the 4.5:1 floor for text. This calculation does not audit generated image pixels or validate an implemented screen. The three image boards do not depict every failure state. Their copy and recovery behavior are defined above and must be exercised during implementation.
 
 Interaction checks: pointer and keyboard alternatives; one undo per gesture; predictable drop/snap behavior at different zoom/scroll positions; precise split/trim fade preservation; no autoplay; exclusive preview ownership; failed/cancelled imports never marked saved; missing audio blocks export; final-byte measurements and peak verification; project backup round trip; correct simplified phone behavior.
 

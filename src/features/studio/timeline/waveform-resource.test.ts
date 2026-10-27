@@ -31,6 +31,9 @@ describe('Studio waveform resource', () => {
     expect(Math.min(...wave.minima)).toBe(-0.25)
     expect(Math.max(...wave.maxima)).toBe(0.5)
     expect(wave.maxima[0]).toBe(0)
+    expect(wave.rms[0]).toBe(0)
+    expect(Math.max(...wave.rms)).toBeGreaterThan(0)
+    expect(Math.max(...wave.rms)).toBeLessThanOrEqual(0.5)
   })
 
   it('serializes canonical reads and shares one result between duplicate clips', async () => {
@@ -88,7 +91,9 @@ describe('Studio waveform resource', () => {
     }
     const result = await resource.get(data.asset)
     expect(studioReservedMemoryBytes()).toBe(
-      result.minima.byteLength + result.maxima.byteLength,
+      result.minima.byteLength +
+        result.maxima.byteLength +
+        result.rms.byteLength,
     )
     resource.dispose()
     expect(studioReservedMemoryBytes()).toBe(0)

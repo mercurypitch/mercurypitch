@@ -340,10 +340,15 @@
        pins it at every width), and a toast drew over it too: 56 px of it at
        390x844 with no banner at all (14 Oct 2026). It publishes its own
        footprint, which already counts the banner under it, as
-       --verify-banner-space. The whole stack is in lib/foot-space.ts.
+       --verify-banner-space. A page's own transport docked on the tab bar
+       (the Studio's phone dock, or the transport at the foot of its open
+       sheet) publishes its room, tab bar included, as --page-dock-space, so
+       a tour offer no longer covers its play button. The whole stack is in
+       lib/foot-space.ts.
        Pinned by src/e2e/toast-above-confirm-bar.spec.ts. */
     --toast-floor: max(
       var(--tabbar-total, 54px),
+      var(--page-dock-space, 0px),
       var(--consent-banner-space, 0px),
       var(--verify-banner-space, 0px)
     );

@@ -114,15 +114,22 @@ export async function setStudioZoom(
   page: Page,
   pixelsPerSecond: number,
 ): Promise<void> {
-  const zoom = studioRegion(page).getByRole('slider', {
-    name: 'Timeline zoom',
-    exact: true,
-  })
-  await zoom.focus()
-  await zoom.press('Home')
-  for (let value = 10; value < pixelsPerSecond; value += 5)
-    await zoom.press('ArrowRight')
-  await expect(zoom).toHaveValue(String(pixelsPerSecond))
+  const studio = studioRegion(page)
+  const timeline = studio.locator('[data-studio-scale]')
+  for (let step = 0; step < 12; step++) {
+    const scale = Number(await timeline.getAttribute('data-studio-scale'))
+    if (scale === pixelsPerSecond) break
+    await studio
+      .getByRole('button', {
+        name: scale < pixelsPerSecond ? 'Zoom in' : 'Zoom out',
+        exact: true,
+      })
+      .click()
+  }
+  await expect(timeline).toHaveAttribute(
+    'data-studio-scale',
+    String(pixelsPerSecond),
+  )
 }
 
 export async function setClipStart(

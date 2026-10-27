@@ -31,6 +31,7 @@ export function StudioExportPanel(props: Props) {
       <div class={styles.format}>
         <strong>WAV</strong>
         <span>48 kHz · 16-bit · Stereo</span>
+        <small>Uncompressed. Opens in any audio editor.</small>
       </div>
       <dl class={styles.details}>
         <div>

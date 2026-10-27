@@ -1,13 +1,15 @@
-// Studio clip surface — stable focus, viewport-bounded waveforms and separate pointer handles.
+// Studio clip surface — stable focus, viewport-bounded waveforms in the lane's hue and separate pointer handles.
 import { Show } from 'solid-js'
 import type { StudioAsset, StudioClip } from '@/lib/studio/model/types'
 import type { StudioGestureKind } from './gesture-draft'
-import { studioSourcePresentation } from './source-presentation'
 import styles from './StudioTimeline.module.css'
 import { StudioWaveform } from './StudioWaveform'
 import { clipEndFrame, formatStudioTime, frameToPixel, pixelToFrame, } from './timeline-geometry'
 import type { StudioPointerEditor } from './useStudioPointer'
 import type { StudioWaveformResource } from './waveform-resource'
+
+// The title band names the take; the file's extension adds nothing there.
+const AUDIO_EXTENSION = /\.(wav|mp3|m4a|aac|ogg|oga|opus|flac|webm|aiff?)$/i
 
 interface StudioTimelineClipProps {
   clip: StudioClip
@@ -104,9 +106,6 @@ export function StudioTimelineClip(props: StudioTimelineClipProps) {
         data-clip-id={props.clip.id}
         aria-label={`${props.trackName}, ${title()}, ${formatStudioTime(clip().startFrame)} to ${formatStudioTime(clipEndFrame(clip()))}`}
         aria-pressed={props.selected}
-        style={{
-          '--studio-source': studioSourcePresentation(props.asset).color,
-        }}
         onPointerDown={(event) => start(event, 'move')}
         onClick={(event) => {
           if (!props.pointer.suppressClick(event)) props.onSelect()
@@ -119,7 +118,7 @@ export function StudioTimelineClip(props: StudioTimelineClipProps) {
             'padding-left': `${Math.max(8, visibleLeft() - left() + 8)}px`,
           }}
         >
-          {title()}
+          {title().replace(AUDIO_EXTENSION, '')}
         </span>
         <Show when={visibleRight() > visibleLeft()}>
           <span

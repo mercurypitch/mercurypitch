@@ -1,8 +1,9 @@
 // Studio workspace — arrangement view state, contextual panels and the shared audio transport.
 import { createEffect, createMemo, createSignal, For, onCleanup, onMount, Show, untrack, } from 'solid-js'
-import { ChevronDown, Plus, RotateCcw } from '@/components/icons'
+import { CheckSmall, ChevronDown, Download, Plus, RotateCcw, SlidersHorizontal, } from '@/components/icons'
 import { installSpacePlaybackToggle, isInsideOverlay, isTypingTarget, } from '@/lib/space-playback'
 import type { StudioClip } from '@/lib/studio/model/types'
+import { STUDIO_SAMPLE_RATE } from '@/lib/studio/model/types'
 import { createReactiveMatch } from '@/lib/use-viewport'
 import { StudioOutputMeter } from './audio/StudioOutputMeter'
 import { useStudioTransport } from './audio/useStudioTransport'
@@ -18,12 +19,14 @@ import { StudioTrackDetails } from './panels/StudioTrackDetails'
 import { StudioSoundPanel } from './sound/StudioSoundPanel'
 import { useStudioComparison } from './sound/useStudioComparison'
 import { useStudioSound } from './sound/useStudioSound'
+import { RotateCw } from './studio-icons'
 import styles from './StudioPage.module.css'
 import { StudioSourcePicker } from './StudioSourcePicker'
 import { StudioTransport } from './StudioTransport'
-import { StudioViewControls } from './StudioViewControls'
 import { StudioTimeline } from './timeline/StudioTimeline'
 import { StudioTrackControls } from './timeline/StudioTrackControls'
+import { studioContentEnd } from './timeline/timeline-geometry'
+import { studioTrackColor, studioTrackHue } from './timeline/track-hues'
 import type { StudioController } from './useStudioController'
 
 type Panel =
@@ -47,6 +50,13 @@ export function StudioWorkspace(props: StudioWorkspaceProps) {
   const phone = createReactiveMatch(
     '(max-width: 600px), (pointer: coarse) and (max-height: 500px)',
   )
+  // Touch screens wider than a phone edit with finger-sized targets.
+  const coarse = createReactiveMatch('(pointer: coarse)')
+  // Where an open panel overlays the timeline instead of standing beside it.
+  const overlay = createReactiveMatch(
+    '(max-width: 1100px), (pointer: coarse) and (max-height: 500px)',
+  )
+  const tablet = () => coarse() && !phone()
   const [panel, setPanel] = createSignal<Panel>(null)
   const [selectedClipId, setSelectedClipId] = createSignal<string | null>(null)
   const [selectedTrackId, setSelectedTrackId] = createSignal<string | null>(
@@ -320,12 +330,17 @@ export function StudioWorkspace(props: StudioWorkspaceProps) {
     }
   }
 
-  function Transport() {
+  function Transport(local: { foot?: boolean }) {
     return (
       <StudioTransport
+        footSpace={local.foot === true ? '--page-dock-space' : undefined}
         playing={transport.playing()}
         pending={transport.pending() || finishing()}
         playheadFrame={transport.playheadFrame()}
+        endFrame={Math.max(
+          60 * STUDIO_SAMPLE_RATE,
+          studioContentEnd(project().clips) + 10 * STUDIO_SAMPLE_RATE,
+        )}
         peakL={transport.peakL()}
         peakR={transport.peakR()}
         meter={transport.meter()}
@@ -336,6 +351,7 @@ export function StudioWorkspace(props: StudioWorkspaceProps) {
         onRepeat={() => void transport.setRepeat(!transport.repeating())}
         onToggle={togglePlayback}
         onStart={() => void transport.seek(0)}
+        onSeek={(frame) => void transport.seek(frame)}
       />
     )
   }
@@ -348,6 +364,7 @@ export function StudioWorkspace(props: StudioWorkspaceProps) {
       class={styles.workspace}
       classList={{
         [styles.phone]: phone(),
+        [styles.tablet]: tablet(),
         [styles.phonePanelOpen]: phone() && panel() !== null,
       }}
       onKeyDown={keyDown}
@@ -392,15 +409,15 @@ export function StudioWorkspace(props: StudioWorkspaceProps) {
           })
         }}
       />
-      <Show when={announcement()}>
-        <p class={styles.editNotice} role="status">
-          {announcement()}
-        </p>
-      </Show>
+      <p class={styles.srOnly} role="status">
+        {announcement()}
+      </p>
       <Show when={dropActive()}>
-        <div class={styles.dropHint}>Drop audio to add new lanes</div>
+        <div class={styles.dropHint}>
+          <Plus size={18} /> Drop audio to add new lanes
+        </div>
       </Show>
-      <div class={styles.topBar}>
+      <header class={styles.topBar}>
         <div class={styles.songIdentity}>
           <button
             type="button"
@@ -416,7 +433,20 @@ export function StudioWorkspace(props: StudioWorkspaceProps) {
             <span>{project().title}</span>
             <ChevronDown size={14} />
           </button>
-          <span class={styles.saveStatus} role="status">
+          <span
+            class={styles.saveStatus}
+            data-state={
+              props.studio.writable() ? props.studio.saveState() : 'read-only'
+            }
+            role="status"
+          >
+            <Show
+              when={
+                props.studio.writable() && props.studio.saveState() === 'saved'
+              }
+            >
+              <CheckSmall size={12} />
+            </Show>
             {status()}
           </span>
         </div>
@@ -429,7 +459,7 @@ export function StudioWorkspace(props: StudioWorkspaceProps) {
               type="button"
               class={styles.iconButton}
               aria-label={props.studio.undoLabel() ?? 'Undo'}
-              title={props.studio.undoLabel() ?? 'Undo'}
+              title={`${props.studio.undoLabel() ?? 'Undo'} (Ctrl+Z)`}
               disabled={!writable() || !props.studio.canUndo()}
               onClick={() => historyAction('undo')}
             >
@@ -437,24 +467,27 @@ export function StudioWorkspace(props: StudioWorkspaceProps) {
             </button>
             <button
               type="button"
-              class={`${styles.iconButton} ${styles.redo}`}
+              class={styles.iconButton}
               aria-label={props.studio.redoLabel() ?? 'Redo'}
-              title={props.studio.redoLabel() ?? 'Redo'}
+              title={`${props.studio.redoLabel() ?? 'Redo'} (Ctrl+Shift+Z)`}
               disabled={!writable() || !props.studio.canRedo()}
               onClick={() => historyAction('redo')}
             >
-              <RotateCcw size={17} />
+              <RotateCw size={17} />
             </button>
           </div>
+          <span class={styles.divider} aria-hidden="true" />
           <button
             type="button"
             class={styles.button}
             disabled={!writable() || props.studio.busy()}
             aria-expanded={panel() === 'sources'}
             data-tour="studio.add-takes"
+            title="Add takes"
             onClick={() => openPanel('sources')}
           >
-            <Plus size={16} /> Add takes
+            <Plus size={16} />
+            <span class={styles.label}>Add takes</span>
           </button>
           <Show when={phone()}>
             <button
@@ -472,9 +505,11 @@ export function StudioWorkspace(props: StudioWorkspaceProps) {
             class={styles.button}
             data-tour="studio.sound"
             aria-expanded={panel() === 'sound'}
+            title="Sound"
             onClick={() => openPanel('sound')}
           >
-            Sound
+            <SlidersHorizontal />
+            <span class={styles.label}>Sound</span>
           </button>
           <button
             type="button"
@@ -483,13 +518,11 @@ export function StudioWorkspace(props: StudioWorkspaceProps) {
             aria-expanded={panel() === 'export'}
             onClick={() => openPanel('export')}
           >
-            Export
+            <Download />
+            <span>Export</span>
           </button>
         </div>
-      </div>
-      <Show when={phone() && panel() === null}>
-        <Transport />
-      </Show>
+      </header>
       <Show
         when={finishing() && panel() !== (exporter.busy() ? 'export' : 'sound')}
       >
@@ -540,15 +573,6 @@ export function StudioWorkspace(props: StudioWorkspaceProps) {
       </Show>
       <div class={styles.editor}>
         <div class={styles.arrangement}>
-          <Show when={!phone()}>
-            <StudioViewControls
-              project={project()}
-              writable={writable()}
-              zoom={zoom()}
-              onZoom={setZoom}
-              onCommand={props.studio.dispatch}
-            />
-          </Show>
           <StudioTimeline
             project={project()}
             assets={props.studio.assets()}
@@ -559,6 +583,12 @@ export function StudioWorkspace(props: StudioWorkspaceProps) {
             pixelsPerSecond={zoom()}
             writable={writable()}
             phone={phone()}
+            tablet={tablet()}
+            onZoom={setZoom}
+            drawerOpen={panel() !== null && overlay()}
+            onAddTakes={
+              panel() === 'sources' ? undefined : () => openPanel('sources')
+            }
             onSelectClip={setSelectedClipId}
             onSeek={(frame) => void transport.seek(frame)}
             onCommand={props.studio.dispatch}
@@ -579,7 +609,7 @@ export function StudioWorkspace(props: StudioWorkspaceProps) {
             onClose={closePanel}
             footer={
               <Show when={phone()}>
-                <Transport />
+                <Transport foot />
               </Show>
             }
           >
@@ -668,12 +698,23 @@ export function StudioWorkspace(props: StudioWorkspaceProps) {
             </Show>
             <Show when={panel() === 'mix' && phone()}>
               <div class={styles.phoneMix}>
-                <For each={project().tracks.map((track) => track.id)}>
-                  {(id) => {
+                <For
+                  each={[...project().tracks]
+                    .sort((a, b) => a.order - b.order)
+                    .map((track) => track.id)}
+                >
+                  {(id, index) => {
                     const track = () =>
                       project().tracks.find((item) => item.id === id)!
                     return (
-                      <div class={styles.phoneTrack}>
+                      <div
+                        class={styles.phoneTrack}
+                        style={{
+                          '--studio-track': studioTrackColor(
+                            studioTrackHue(track(), index()),
+                          ),
+                        }}
+                      >
                         <button
                           type="button"
                           class={styles.textButton}
@@ -699,6 +740,9 @@ export function StudioWorkspace(props: StudioWorkspaceProps) {
           </StudioPanel>
         </Show>
       </div>
+      <Show when={phone() && panel() === null}>
+        <Transport foot />
+      </Show>
     </div>
   )
 }

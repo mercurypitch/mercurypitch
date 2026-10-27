@@ -1,364 +1,707 @@
-/* Studio arrangement shares one coordinate surface and the approved app appearance tokens. */
+/* Studio arrangement — one coordinate surface. Lanes carry a track hue; the app's tokens carry the theme. */
 .timeline {
-  --studio-row-height: 104px;
-  --studio-clip-height: 88px;
+  --studio-row-height: 96px;
+  --studio-clip-inset: 6px;
+  --studio-ruler-height: 36px;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  flex: 1;
   min-width: 0;
-  color: var(--studio-graphite);
-  background: var(--studio-paper);
+  min-height: 0;
+  color: var(--studio-text);
+  background: var(--studio-bg);
 }
 .viewport {
   position: relative;
+  flex: 1;
+  min-height: 0;
   overflow: auto;
-  max-height: min(70dvh, 900px);
-  min-height: 360px;
-  scrollbar-gutter: stable;
+  scrollbar-width: thin;
+  scrollbar-color: var(--studio-line-strong) transparent;
   overscroll-behavior: contain;
+  /* Focus scrolling keeps a clip clear of the sticky header and ruler. */
+  scroll-padding: var(--studio-ruler-height) 0 0 var(--studio-header-width);
 }
 .surface {
   position: relative;
+  display: flex;
+  flex-direction: column;
   width: calc(var(--studio-header-width) + var(--studio-time-width));
-  min-height: 360px;
+  min-height: 100%;
+  /* One major grid line per ruler label, continuing under the last lane. */
+  background-image: linear-gradient(
+    to right,
+    var(--studio-grid) 1px,
+    transparent 1px
+  );
+  background-size: var(--studio-major) 100%;
+  background-position: var(--studio-header-width) 0;
 }
 .rulerRow,
-.lane {
+.lane,
+.newLane,
+.filler {
   display: grid;
+  flex: none;
   grid-template-columns: var(--studio-header-width) var(--studio-time-width);
 }
+
+/* Ruler */
 .rulerRow {
   position: sticky;
   top: 0;
-  height: 48px;
   z-index: 5;
-  background: var(--studio-sheet);
-  border-bottom: 1px solid var(--studio-divider);
+  height: var(--studio-ruler-height);
+  background: var(--studio-bar);
+  border-bottom: 1px solid var(--studio-line);
 }
 .corner {
   position: sticky;
   left: 0;
   z-index: 6;
-  background: var(--studio-sheet);
-  border-right: 1px solid var(--studio-divider);
-  padding: 8px 12px;
-}
-.corner label {
   display: flex;
   align-items: center;
-  gap: 8px;
-  color: var(--studio-pencil);
-  font-size: 11px;
-}
-.corner input {
-  width: 85px;
   min-width: 0;
-  padding: 5px;
-  font-size: 11px;
-  font-variant-numeric: tabular-nums;
-  background: var(--studio-paper);
-  color: var(--studio-graphite);
-  border: 1px solid var(--studio-divider);
-  border-radius: 4px;
+  padding: 0 8px 0 16px;
+  background: var(--studio-bar);
+  border-right: 1px solid var(--studio-line);
 }
 .ruler {
   position: relative;
   cursor: pointer;
-  outline-offset: -3px;
+  background-image: linear-gradient(
+    to right,
+    var(--studio-tick) 1px,
+    transparent 1px
+  );
+  background-size: var(--studio-minor) 5px;
+  background-position: 0 100%;
+  background-repeat: repeat-x;
+}
+.ruler:focus-visible {
+  outline: 2px solid var(--studio-accent);
+  outline-offset: -2px;
 }
 .tick {
   position: absolute;
-  top: 5px;
-  height: 42px;
-  padding-left: 5px;
-  border-left: 1px solid var(--studio-grid);
+  top: 0;
+  bottom: 0;
+  padding: 9px 0 0 6px;
+  color: var(--studio-text-2);
   font-size: 11px;
-  font-variant-numeric: tabular-nums;
+  font-weight: 500;
+  line-height: 1;
   white-space: nowrap;
+  pointer-events: none;
 }
 .tick::after {
   content: '';
   position: absolute;
+  left: 0;
   bottom: 0;
-  left: -1px;
-  height: 10px;
-  border-left: 1px solid var(--studio-pencil);
+  width: 1px;
+  height: 11px;
+  background: var(--studio-tick-major);
 }
+.playheadCap {
+  position: absolute;
+  bottom: 0;
+  width: 11px;
+  height: 13px;
+  margin-left: -5px;
+  background: var(--studio-accent);
+  clip-path: polygon(0 0, 100% 0, 100% 58%, 50% 100%, 0 58%);
+  pointer-events: none;
+}
+
+/* View controls in the corner cell; zoom floats over the arrangement's corner */
+.viewControls {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+}
+.snapToggle {
+  display: inline-flex;
+  align-items: center;
+  flex: none;
+  gap: 5px;
+  height: 26px;
+  padding: 0 8px 0 6px;
+  border: 1px solid var(--studio-line-strong);
+  border-radius: 6px;
+  background: transparent;
+  color: var(--studio-text-2);
+  font: inherit;
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+}
+.snapToggle:hover {
+  background: var(--studio-hover);
+  color: var(--studio-text);
+}
+.snapToggle[aria-pressed='true'] {
+  border-color: color-mix(in srgb, var(--studio-accent) 45%, transparent);
+  background: var(--studio-accent-soft);
+  color: var(--studio-accent-text);
+}
+.segmented {
+  display: inline-flex;
+  flex: none;
+  gap: 2px;
+  padding: 2px;
+  border-radius: 7px;
+  background: var(--studio-control);
+}
+.segmented button {
+  height: 22px;
+  padding: 0 9px;
+  border: 0;
+  border-radius: 5px;
+  background: transparent;
+  color: var(--studio-text-2);
+  font: inherit;
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+}
+.segmented button:hover:not(:disabled) {
+  color: var(--studio-text);
+}
+.segmented button[aria-checked='true'] {
+  background: var(--studio-chip);
+  color: var(--studio-text);
+  box-shadow: 0 1px 2px rgb(1 4 9 / 0.25);
+}
+.tempo {
+  display: inline-flex;
+  align-items: center;
+  min-width: 0;
+}
+.tempo input {
+  width: 44px;
+  height: 26px;
+  padding: 0 4px 0 7px;
+  border: 1px solid var(--studio-line-strong);
+  border-radius: 6px;
+  background: var(--studio-bg);
+  color: var(--studio-text);
+  font: inherit;
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+}
+.tempo span {
+  display: none;
+}
+.snapToggle:focus-visible,
+.segmented button:focus-visible,
+.tempo input:focus-visible,
+.zoom button:focus-visible {
+  outline: 2px solid var(--studio-accent);
+  outline-offset: 1px;
+}
+.zoom {
+  position: absolute;
+  z-index: 7;
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  padding: 3px;
+  border: 1px solid var(--studio-line-strong);
+  border-radius: 10px;
+  background: var(--studio-raised);
+  box-shadow: var(--studio-shadow);
+}
+.zoom button {
+  display: grid;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  padding: 0;
+  border: 0;
+  border-radius: 7px;
+  background: transparent;
+  color: var(--studio-text-2);
+  cursor: pointer;
+}
+.zoom button:hover:not(:disabled) {
+  background: var(--studio-hover);
+  color: var(--studio-text);
+}
+.zoom button:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+/* Lanes */
 .lane {
+  --track-body: color-mix(
+    in srgb,
+    var(--studio-track) 14%,
+    var(--studio-clip-base)
+  );
+  --track-band: color-mix(
+    in srgb,
+    var(--studio-track) 30%,
+    var(--studio-clip-base)
+  );
+  --track-edge: color-mix(in srgb, var(--studio-track) 46%, transparent);
+  --track-wave: color-mix(in srgb, var(--studio-track) 74%, var(--studio-text));
   height: var(--studio-row-height);
-  border-bottom: 1px solid var(--studio-divider);
+  border-bottom: 1px solid var(--studio-line);
+}
+/* Light clips tint into white and draw the pure hue, so amber reads as gold, not mud. */
+:global(html[data-theme='light']) .lane {
+  --track-wave: var(--studio-track);
 }
 .trackHeader {
   position: sticky;
   left: 0;
   z-index: 4;
-  background: var(--studio-sheet);
-  border-left: 4px solid var(--studio-source);
-  border-right: 1px solid var(--studio-divider);
-  padding: 10px 8px 8px 10px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 8px;
   min-width: 0;
+  padding: 8px 12px 8px 16px;
+  background: var(--studio-bar);
+  border-right: 1px solid var(--studio-line);
+  transition: background-color 0.15s ease-out;
 }
+.trackHeader::before {
+  content: '';
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: 3px;
+  background: var(--studio-track);
+}
+.lane:has(.selectedClip) .trackHeader {
+  background: color-mix(in srgb, var(--studio-accent) 9%, var(--studio-bar));
+}
+/* The name and its source form one button that opens the track's details. */
 .timeline button.trackName {
-  display: block;
-  max-width: 100%;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: flex-start;
+  gap: 1px;
+  box-sizing: border-box;
+  width: calc(100% + 6px);
+  min-width: 0;
+  min-height: 30px;
+  margin: 0 0 0 -6px;
+  padding: 2px 6px;
   border: 0;
+  border-radius: 6px;
   background: transparent;
-  color: var(--studio-graphite);
-  padding: 0;
-  min-height: 20px;
+  color: var(--studio-text);
+  font: inherit;
   text-align: left;
+  cursor: pointer;
+}
+.trackNameText {
+  max-width: 100%;
   font-size: 13px;
   font-weight: 600;
+  line-height: 18px;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  border-radius: 2px;
+}
+.timeline button.trackName:hover {
+  background: var(--studio-hover);
+}
+.timeline button.trackName:focus-visible {
+  outline: 2px solid var(--studio-accent);
+  outline-offset: 0;
 }
 .sourceLabel {
-  margin: 2px 0 8px;
-  color: var(--studio-pencil);
+  max-width: 100%;
+  color: var(--studio-muted);
   font-size: 11px;
   line-height: 14px;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }
+
+/* Track controls: the name beside mute and solo, then the fader and the pan knob */
 .controls {
   display: grid;
-  grid-template-columns: 28px 28px minmax(42px, 1fr) 48px;
-  gap: 4px;
+  grid-template-columns: 26px 26px minmax(0, 1fr) auto;
+  grid-template-areas: 'mute solo volume knob';
+  align-items: center;
+  column-gap: 6px;
+  min-width: 0;
+}
+.withIdentity {
+  grid-template-columns: minmax(0, 1fr) 26px 26px;
+  grid-template-areas:
+    'identity mute solo'
+    'volume knob knob';
+  row-gap: 8px;
+  column-gap: 4px;
+}
+.identityCell {
+  grid-area: identity;
+  display: flex;
   align-items: center;
   min-width: 0;
 }
+.muteButton {
+  grid-area: mute;
+}
+.soloButton {
+  grid-area: solo;
+}
 .controls button.mixButton {
-  width: 28px;
-  height: 28px;
-  min-height: 28px;
-  padding: 4px;
-  border: 1px solid var(--studio-divider);
-  border-radius: 5px;
-  background: var(--studio-sheet);
-  color: var(--studio-graphite);
+  display: grid;
+  place-items: center;
+  width: 26px;
+  height: 26px;
+  min-height: 0;
+  padding: 0;
+  border: 1px solid var(--studio-line-strong);
+  border-radius: 6px;
+  background: transparent;
+  color: var(--studio-text-2);
   font: inherit;
   font-size: 12px;
+  font-weight: 700;
   cursor: pointer;
+  transition:
+    background-color 0.12s ease-out,
+    color 0.12s ease-out;
 }
 .mixButton svg {
-  width: 16px;
-  height: 16px;
+  width: 14px;
+  height: 14px;
 }
-.controls button.mixButton[aria-pressed='true'] {
-  color: var(--studio-cobalt);
-  border: 2px solid var(--studio-cobalt);
-  background: color-mix(in srgb, var(--studio-cobalt) 15%, var(--studio-sheet));
+.controls button.mixButton:hover:not(:disabled) {
+  background: var(--studio-hover);
+  color: var(--studio-text);
 }
-.controls input {
-  accent-color: var(--studio-cobalt);
-  margin: 0;
-  width: 100%;
-  min-width: 0;
-  height: 22px;
-  cursor: pointer;
+.controls button.muteButton[aria-pressed='true'] {
+  border-color: transparent;
+  background: var(--studio-mute-fill);
+  color: var(--studio-text);
+}
+.controls button.soloButton[aria-pressed='true'] {
+  border-color: transparent;
+  background: var(--studio-solo);
+  color: var(--studio-on-solo);
+}
+.controls button.mixButton:focus-visible {
+  outline: 2px solid var(--studio-accent);
+  outline-offset: 1px;
 }
 .volume {
-  min-width: 0;
+  grid-area: volume;
   display: flex;
-  flex-direction: column;
-  align-items: stretch;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+  padding-right: 8px;
 }
-.volume output {
-  font-size: 10px;
-  line-height: 12px;
+.fader {
+  -webkit-appearance: none;
+  appearance: none;
+  flex: 1;
+  min-width: 0;
+  height: 22px;
+  margin: 0;
+  background: transparent;
+  cursor: pointer;
+  --rail:
+    linear-gradient(
+      to right,
+      transparent calc(var(--unity) - 1px),
+      var(--studio-muted) calc(var(--unity) - 1px),
+      var(--studio-muted) var(--unity),
+      transparent var(--unity)
+    ),
+    linear-gradient(
+      to right,
+      var(--studio-fader-fill) var(--fill),
+      var(--studio-rail) var(--fill)
+    );
+}
+.fader::-webkit-slider-runnable-track {
+  height: 4px;
+  border-radius: 2px;
+  background: var(--rail);
+}
+.fader::-moz-range-track {
+  height: 4px;
+  border-radius: 2px;
+  background: var(--rail);
+}
+.fader::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 12px;
+  height: 12px;
+  margin-top: -4px;
+  border: 0;
+  border-radius: 50%;
+  background: var(--studio-thumb);
+  box-shadow: var(--studio-thumb-ring);
+}
+.fader::-moz-range-thumb {
+  width: 12px;
+  height: 12px;
+  border: 0;
+  border-radius: 50%;
+  background: var(--studio-thumb);
+  box-shadow: var(--studio-thumb-ring);
+}
+.fader:focus-visible {
+  outline: none;
+}
+.fader:focus-visible::-webkit-slider-thumb {
+  box-shadow: 0 0 0 3px var(--studio-accent);
+}
+.fader:focus-visible::-moz-range-thumb {
+  box-shadow: 0 0 0 3px var(--studio-accent);
+}
+.gainValue {
+  flex: none;
+  min-width: 42px;
+  color: var(--studio-text-2);
+  font-size: 11px;
   font-variant-numeric: tabular-nums;
-  color: var(--studio-pencil);
-  text-align: center;
   white-space: nowrap;
 }
-.pan {
-  min-width: 0;
-  display: flex;
-  flex-direction: column;
-}
-.pan span {
-  color: var(--studio-pencil);
-  font-size: 10px;
-  line-height: 12px;
-  text-align: center;
-  white-space: nowrap;
-}
-.pan input {
-  height: 20px;
-}
-.controls :disabled {
-  opacity: 0.5;
-  cursor: default;
-}
-.laneAudio {
+.knob {
+  grid-area: knob;
   position: relative;
+  display: flex;
+  align-items: center;
+  gap: 4px;
   min-width: 0;
+  border-radius: 8px;
+  cursor: ns-resize;
+  touch-action: none;
 }
-.gridLine {
-  position: absolute;
-  top: 0;
-  bottom: 0;
-  border-left: 1px solid var(--studio-grid);
-  pointer-events: none;
-}
-.timeline button.clip {
+.knobInput {
   position: absolute;
   inset: 0;
   width: 100%;
   height: 100%;
-  min-height: 0;
-  /* Native block buttons vertically center their anonymous content box. */
+  margin: 0;
+  opacity: 0;
+  pointer-events: none;
+}
+.knob:has(.knobInput:focus-visible) {
+  outline: 2px solid var(--studio-accent);
+  outline-offset: 1px;
+}
+.knob:has(.knobInput:disabled) {
+  opacity: 0.5;
+  cursor: default;
+}
+.knobDial {
+  flex: none;
+  width: 28px;
+  height: 28px;
+  overflow: visible;
+}
+.knobFace {
+  fill: var(--studio-control);
+  stroke: var(--studio-line-strong);
+  stroke-width: 1;
+}
+.knobArc,
+.knobValueArc {
+  fill: none;
+  stroke-width: 2.2;
+  stroke-linecap: round;
+  transform-origin: 16px 16px;
+}
+.knobArc {
+  stroke: var(--studio-rail);
+  transform: rotate(135deg);
+}
+.knobValueArc {
+  stroke: var(--studio-track, var(--studio-accent));
+}
+.knobPointer {
+  stroke: var(--studio-text);
+  stroke-width: 2;
+  stroke-linecap: round;
+  transform-origin: 16px 16px;
+}
+.panValue {
+  min-width: 22px;
+  color: var(--studio-text-2);
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+.knobTurning .panValue {
+  color: var(--studio-text);
+}
+.controls :disabled {
+  cursor: default;
+}
+.controls button:disabled,
+.fader:disabled {
+  opacity: 0.5;
+}
+
+/* Touch: 44 px targets; on a tablet the fader keeps its own row */
+.touchControls {
+  grid-template-columns: 44px 44px minmax(0, 1fr) auto;
+  column-gap: 8px;
+}
+.touchControls.withIdentity {
+  grid-template-columns: minmax(0, 1fr) 20px 20px 44px;
+  grid-template-areas:
+    'identity mute mute solo'
+    'volume volume knob knob';
+  row-gap: 6px;
+  column-gap: 4px;
+}
+.touchControls button.mixButton {
+  width: 44px;
+  height: 44px;
+  border-radius: 8px;
+}
+.touchControls .mixButton svg {
+  width: 18px;
+  height: 18px;
+}
+.touchControls .knob {
+  min-height: 44px;
+}
+.touchControls .knobDial {
+  width: 36px;
+  height: 36px;
+}
+.touchControls .fader {
+  height: 44px;
+}
+.touchControls .panValue {
+  min-width: 26px;
+  font-size: 12px;
+}
+/* Touch faders run the whole cell; the dB reading sits under the right end. */
+.touchControls .volume {
+  position: relative;
+  padding-right: 4px;
+}
+.touchControls .gainValue {
+  position: absolute;
+  right: 4px;
+  bottom: -3px;
+  min-width: 0;
+  color: var(--studio-muted);
+  font-size: 10.5px;
+  line-height: 1;
+  pointer-events: none;
+}
+.touchControls .fader::-webkit-slider-thumb {
+  width: 18px;
+  height: 18px;
+  margin-top: -7px;
+}
+.touchControls .fader::-moz-range-thumb {
+  width: 18px;
+  height: 18px;
+}
+
+/* Clips */
+.laneAudio {
+  position: relative;
+  min-width: 0;
+}
+.lane[data-silent] .clipShell {
+  opacity: 0.4;
+  filter: saturate(0.35);
+}
+.clipShell {
+  position: absolute;
+  top: var(--studio-clip-inset);
+  bottom: var(--studio-clip-inset);
+}
+.timeline button.clip {
+  position: absolute;
+  inset: 0;
   display: flex;
   flex-direction: column;
   align-items: stretch;
   justify-content: flex-start;
+  width: 100%;
+  height: 100%;
+  min-height: 0;
   padding: 0;
   overflow: hidden;
-  border: 1px solid var(--studio-divider);
-  border-radius: 4px;
-  color: var(--studio-graphite);
-  background: var(--studio-sheet);
-  cursor: pointer;
+  border: 1px solid var(--track-edge);
+  border-radius: 5px;
+  background: var(--track-body);
+  color: var(--studio-text);
+  font: inherit;
   text-align: left;
+  cursor: pointer;
   touch-action: pan-x pan-y;
   user-select: none;
+  transition:
+    border-color 0.12s ease-out,
+    box-shadow 0.12s ease-out;
 }
-.clipShell {
-  position: absolute;
-  top: 8px;
-  height: var(--studio-clip-height);
+.timeline button.clip:hover {
+  border-color: color-mix(in srgb, var(--studio-track) 78%, transparent);
+}
+.timeline button.clip:focus-visible {
+  outline: 2px solid var(--studio-accent);
+  outline-offset: 2px;
+}
+.timeline button.selectedClip,
+.timeline button.selectedClip:hover {
+  z-index: 2;
+  border-color: var(--studio-accent);
+  box-shadow:
+    0 0 0 1px var(--studio-accent),
+    0 6px 18px rgb(1 4 9 / 0.28);
 }
 .timeline button.editableClip {
   touch-action: none;
+  cursor: grab;
 }
 .draggingClip {
   z-index: 8;
-  opacity: 0.9;
 }
-.invalidClip button.clip {
-  outline: 2px solid var(--studio-error);
+.draggingClip button.clip {
+  cursor: grabbing;
+  box-shadow:
+    0 0 0 1px var(--studio-accent),
+    0 14px 32px rgb(1 4 9 / 0.42);
 }
-.timeline button.editHandle {
-  position: absolute;
-  z-index: 3;
-  width: 28px;
-  height: 28px;
-  min-height: 28px;
-  padding: 0;
-  background: transparent;
-  border: 0;
-  border-radius: 4px;
-  touch-action: none;
-  cursor: ew-resize;
-}
-.editHandle span {
-  display: block;
-  width: 5px;
-  height: 18px;
-  margin: auto;
-  border-radius: 2px;
-  background: var(--studio-cobalt);
-  box-shadow: 0 0 0 1px var(--studio-sheet);
-  pointer-events: none;
-}
-.trimHead {
-  left: -14px;
-  bottom: 2px;
-}
-.trimTail {
-  right: -14px;
-  bottom: 2px;
-}
-.fadeHandle {
-  top: -2px;
-  transform: translateX(-50%);
-}
-.fadeHandle span {
-  width: 9px;
-  height: 9px;
-  transform: rotate(45deg);
-}
-.tablet button.editHandle {
-  width: 44px;
-  height: 44px;
-  min-height: 44px;
-}
-.tablet .trimHead {
-  left: -22px;
-}
-.tablet .trimTail {
-  right: -22px;
-}
-.editOptions {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  min-height: 36px;
-  padding: 4px 12px;
-  border-bottom: 1px solid var(--studio-divider);
-  color: var(--studio-pencil);
-  font-size: 11px;
-}
-.timeline .editOptions button {
-  padding: 5px 8px;
-  min-height: 28px;
-  border: 1px solid var(--studio-divider);
-  background: var(--studio-sheet);
-  color: var(--studio-graphite);
-  border-radius: 4px;
-  font: inherit;
-}
-.timeline .editOptions button[aria-pressed='true'] {
-  color: var(--studio-cobalt);
-}
-.editOptions [role='status'] {
-  margin-left: auto;
-}
-.newLane {
-  display: grid;
-  grid-template-columns: var(--studio-header-width) 1fr;
-  min-height: 64px;
-  border-bottom: 1px dashed var(--studio-divider);
-  color: var(--studio-pencil);
-  font-size: 12px;
-}
-.newLane span {
-  padding: 22px 14px;
-}
-.newLane span:first-child {
-  position: sticky;
-  left: 0;
-  background: var(--studio-sheet);
-  border-right: 1px solid var(--studio-divider);
-}
-.snapLine {
-  position: absolute;
-  top: 48px;
-  bottom: 0;
-  width: 1px;
-  background: var(--studio-cobalt);
-  pointer-events: none;
-  z-index: 9;
-}
-.timeline button.selectedClip {
-  border: 2px solid var(--studio-cobalt);
-  outline: 1px solid var(--studio-cobalt);
-  outline-offset: 0;
-  z-index: 2;
+.invalidClip button.clip,
+.invalidClip button.clip:hover {
+  border-color: var(--studio-danger);
+  box-shadow:
+    0 0 0 1px var(--studio-danger),
+    0 14px 32px rgb(1 4 9 / 0.42);
 }
 .clipTitle {
   display: block;
-  height: 23px;
-  padding: 4px 8px;
-  background: color-mix(in srgb, var(--studio-source) 16%, transparent);
+  flex: none;
+  height: 20px;
+  padding: 3px 8px;
+  background: var(--track-band);
+  color: var(--studio-text);
   font-size: 11px;
-  font-weight: 500;
-  line-height: 15px;
+  font-weight: 600;
+  line-height: 14px;
   white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 .visibleWave {
   position: absolute;
-  top: 23px;
+  top: 20px;
   bottom: 0;
   display: block;
 }
@@ -367,7 +710,7 @@
   width: 100%;
   height: 100%;
   min-height: 1px;
-  color: var(--studio-graphite);
+  color: var(--track-wave);
 }
 .waveform canvas {
   display: block;
@@ -378,208 +721,450 @@
   position: absolute;
   inset: 0;
   display: flex;
-  justify-content: center;
   align-items: center;
+  justify-content: center;
+  color: var(--studio-text-2);
   font-size: 11px;
-  color: var(--studio-pencil);
   white-space: nowrap;
 }
 .missing {
   background: repeating-linear-gradient(
     135deg,
-    transparent 0,
-    transparent 7px,
-    var(--studio-grid) 7px,
-    var(--studio-grid) 8px
+    transparent 0 7px,
+    var(--studio-grid-strong) 7px 8px
   );
+}
+
+/* Edit handles: trim marks low on the edges, fade squares high, never overlapping */
+.timeline button.editHandle {
+  position: absolute;
+  z-index: 3;
+  width: 28px;
+  height: 28px;
+  min-height: 0;
+  padding: 0;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  touch-action: none;
+  cursor: ew-resize;
+}
+.editHandle span {
+  display: block;
+  margin: auto;
+  background: var(--studio-accent);
+  box-shadow: 0 0 0 1.5px var(--studio-clip-base);
+  pointer-events: none;
+}
+.trimHead,
+.trimTail {
+  bottom: 2px;
+}
+.trimHead {
+  left: -14px;
+}
+.trimTail {
+  right: -14px;
+}
+.trimHead span,
+.trimTail span {
+  width: 4px;
+  height: 20px;
+  border-radius: 2px;
+}
+.fadeHandle {
+  top: -14px;
+  transform: translateX(-50%);
+}
+.fadeHandle span {
+  width: 9px;
+  height: 9px;
+  border-radius: 2px;
+}
+.timeline button.editHandle:focus-visible {
+  outline: 2px solid var(--studio-accent);
+  outline-offset: 0;
+}
+.tablet button.editHandle {
+  width: 44px;
+  height: 44px;
+}
+.tablet .trimHead {
+  left: -22px;
+}
+.tablet .trimTail {
+  right: -22px;
+}
+.tablet .fadeHandle {
+  top: -22px;
+}
+.tablet .trimHead span,
+.tablet .trimTail span {
+  width: 5px;
+  height: 26px;
+}
+.tablet .fadeHandle span {
+  width: 12px;
+  height: 12px;
+}
+
+/* Selected-clip toolbar */
+.toolbar {
+  position: absolute;
+  z-index: 8;
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  padding: 3px;
+  border: 1px solid var(--studio-line-strong);
+  border-radius: 10px;
+  background: var(--studio-raised);
+  box-shadow: var(--studio-shadow);
+  white-space: nowrap;
+}
+.toolbarLabel {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  max-width: 180px;
+  padding: 0 8px 0 10px;
+  overflow: hidden;
+  color: var(--studio-text);
+  font-size: 12.5px;
+  font-weight: 600;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.toolbarLabel::before {
+  content: '';
+  flex: none;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--studio-track, var(--studio-accent));
+}
+.toolbar button {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 30px;
+  padding: 0 10px;
+  border: 0;
+  border-radius: 7px;
+  background: transparent;
+  color: var(--studio-text);
+  font: inherit;
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+}
+.toolbar button svg {
+  width: 15px;
+  height: 15px;
+  color: var(--studio-text-2);
+}
+.toolbar button:hover:not(:disabled) {
+  background: var(--studio-hover);
+}
+.toolbar button:focus-visible {
+  outline: 2px solid var(--studio-accent);
+  outline-offset: -2px;
+}
+.toolbar button:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+.toolbarDivider {
+  flex: none;
+  width: 1px;
+  height: 18px;
+  margin: 0 3px;
+  background: var(--studio-line-strong);
+}
+.tablet .toolbar button {
+  height: 44px;
+  padding: 0 14px;
+}
+
+/* New lane, filler and the playhead */
+.newLane {
+  height: 56px;
+}
+.newLaneLabel,
+.fillerHeader {
+  position: sticky;
+  left: 0;
+  z-index: 4;
+  background: var(--studio-bar);
+  border-right: 1px solid var(--studio-line);
+}
+.newLaneLabel {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 0 16px;
+  color: var(--studio-muted);
+  font-size: 12px;
+  font-weight: 500;
+}
+.newLaneDrop {
+  display: flex;
+  align-items: center;
+  margin: 8px 12px 8px 8px;
+  border: 1px dashed var(--studio-line-strong);
+  border-radius: 8px;
+  color: var(--studio-muted);
+  font-size: 12px;
+  transition:
+    background-color 0.12s ease-out,
+    border-color 0.12s ease-out;
+}
+.newLaneDrop span {
+  position: sticky;
+  left: calc(var(--studio-header-width) + 20px);
+  padding-left: 12px;
+  white-space: nowrap;
+}
+.editing .newLaneDrop {
+  border-color: color-mix(in srgb, var(--studio-accent) 60%, transparent);
+  background: color-mix(in srgb, var(--studio-accent) 7%, transparent);
+  color: var(--studio-accent-text);
+}
+/* Room under the last row, so the floating clip bar and zoom never hide it. */
+.filler {
+  flex: 1;
+  min-height: 64px;
+}
+.tablet .filler {
+  min-height: 80px;
+}
+.phone .filler {
+  min-height: 0;
+}
+
+.snapLine {
+  position: absolute;
+  top: var(--studio-ruler-height);
+  bottom: 0;
+  z-index: 9;
+  width: 1px;
+  background: var(--studio-accent);
+  pointer-events: none;
 }
 .playhead {
   position: absolute;
-  top: 48px;
+  top: var(--studio-ruler-height);
   bottom: 0;
-  width: 1px;
-  background: var(--studio-graphite);
-  pointer-events: none;
   z-index: 3;
+  width: 1px;
+  background: var(--studio-playhead);
+  pointer-events: none;
 }
-.playhead::before {
-  content: '';
-  position: absolute;
-  left: -5px;
-  top: 0;
-  width: 0;
-  height: 0;
-  border-left: 5px solid transparent;
-  border-right: 5px solid transparent;
-  border-top: 8px solid var(--studio-graphite);
-}
+
+/* Empty song and gesture status */
 .empty {
-  position: sticky;
-  left: 0;
-  width: min(100%, 600px);
-  padding: 80px 24px;
-  color: var(--studio-pencil);
-  font-size: 13px;
-}
-.toolbar {
   position: absolute;
-  top: -36px;
-  z-index: 7;
+  inset: var(--studio-ruler-height) 0 0 var(--studio-header-width);
   display: flex;
-  padding: 3px;
-  gap: 2px;
-  border: 1px solid var(--studio-divider);
-  border-radius: 6px;
-  background: var(--studio-sheet);
-  box-shadow: 0 3px 12px #0002;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  padding: 24px;
+  color: var(--studio-text-2);
+  font-size: 13px;
+  text-align: center;
+  pointer-events: none;
 }
-.timeline .toolbar button {
+.empty p {
+  margin: 0;
+}
+.emptyArt {
+  width: 132px;
+  height: auto;
+}
+.emptyArt rect {
+  fill: none;
+  stroke: var(--studio-line-strong);
+  stroke-width: 1.5;
+  stroke-dasharray: 4 4;
+}
+.timeline button.emptyAction {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  height: 36px;
+  padding: 0 16px;
   border: 0;
-  border-radius: 3px;
-  background: transparent;
-  color: var(--studio-graphite);
-  font-size: 11px;
-  padding: 7px 9px;
-  min-height: 30px;
-  white-space: nowrap;
+  border-radius: 8px;
+  background: var(--studio-accent);
+  color: var(--studio-on-accent);
+  font: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  pointer-events: auto;
 }
-.timeline button:focus-visible,
-.timeline input:focus-visible,
-.ruler:focus-visible,
-.controls button:focus-visible,
-.controls input:focus-visible {
-  outline: 2px solid var(--studio-cobalt);
+.timeline button.emptyAction:hover {
+  background: var(--studio-accent-hover);
+}
+.timeline button.emptyAction:focus-visible {
+  outline: 2px solid var(--studio-accent);
   outline-offset: 2px;
 }
+.status {
+  position: absolute;
+  top: calc(var(--studio-ruler-height) + 12px);
+  left: 50%;
+  z-index: 9;
+  max-width: calc(100% - 32px);
+  margin: 0;
+  padding: 8px 14px;
+  border: 1px solid var(--studio-line-strong);
+  border-radius: 999px;
+  background: var(--studio-raised);
+  box-shadow: var(--studio-shadow);
+  color: var(--studio-text);
+  font-size: 12px;
+  opacity: 0;
+  pointer-events: none;
+  transform: translate(-50%, -6px);
+  transition:
+    opacity 0.18s ease-out,
+    transform 0.18s ease-out;
+}
+.statusVisible {
+  opacity: 1;
+  transform: translate(-50%, 0);
+}
+
+/* Tablet and phone */
+.tablet {
+  --studio-row-height: 132px;
+  --studio-clip-inset: 8px;
+  --studio-ruler-height: 48px;
+}
+.tablet .tick {
+  padding-top: 14px;
+}
+.tablet .snapToggle,
+.tablet .zoom button {
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  padding: 0;
+  border-radius: 8px;
+}
+.tablet .snapLabel {
+  display: none;
+}
+.tablet .viewControls {
+  gap: 4px;
+}
+.tablet .segmented {
+  padding: 0;
+  border-radius: 8px;
+}
+.tablet .segmented button {
+  height: 44px;
+  padding: 0 10px;
+  border-radius: 8px;
+}
+.tablet .tempo input {
+  width: 44px;
+  height: 44px;
+}
+.tablet .corner {
+  padding: 0 6px 0 16px;
+}
+.timeline.tablet button.trackName {
+  min-height: 44px;
+}
+.phone {
+  --studio-row-height: 64px;
+  --studio-clip-inset: 5px;
+  --studio-ruler-height: 28px;
+}
+.phone .trackHeader {
+  padding: 6px 8px 6px 12px;
+}
+.timeline.phone button.trackName {
+  width: calc(100% + 6px);
+  min-height: 44px;
+}
+.phone .trackNameText {
+  font-size: 12px;
+  line-height: 15px;
+  white-space: normal;
+  overflow-wrap: anywhere;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+}
+.phone .corner {
+  padding: 0;
+}
+.phone .tick {
+  padding-top: 6px;
+  font-size: 10px;
+}
+.phone .clipTitle {
+  height: 15px;
+  padding: 1px 6px;
+  font-size: 10px;
+  line-height: 13px;
+}
+.phone .visibleWave {
+  top: 15px;
+}
+.phoneNote {
+  position: absolute;
+  bottom: 12px;
+  left: 12px;
+  right: 12px;
+  z-index: 9;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+  padding: 10px 14px;
+  border: 1px solid var(--studio-line-strong);
+  border-radius: 12px;
+  background: var(--studio-raised);
+  box-shadow: var(--studio-shadow);
+  color: var(--studio-text-2);
+  font-size: 12.5px;
+  line-height: 1.35;
+}
+.phoneNote svg {
+  flex: none;
+  color: var(--studio-accent-text);
+}
+.phoneNote strong {
+  flex: none;
+  max-width: 40%;
+  overflow: hidden;
+  color: var(--studio-text);
+  font-weight: 600;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
 .srOnly {
   position: absolute;
   width: 1px;
   height: 1px;
-  padding: 0;
   overflow: hidden;
   clip-path: inset(50%);
   white-space: nowrap;
 }
-.tablet {
-  --studio-row-height: 132px;
-  --studio-clip-height: 112px;
-}
-.tablet .trackHeader {
-  padding: 10px 8px;
-}
-.tablet .trackName,
-.tablet .sourceLabel {
-  max-width: calc(100% - 60px);
-}
-.tablet .controls {
-  grid-template-columns: 44px 44px minmax(40px, 1fr);
-}
-.tablet .controls button.mixButton {
-  width: 44px;
-  height: 44px;
-  min-height: 44px;
-}
-.tablet .volume input {
-  height: 44px;
-}
-.panDisclosure {
-  position: absolute;
-  right: 8px;
-  top: 4px;
-  z-index: 6;
-}
-.panDisclosure summary {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  min-width: 52px;
-  min-height: 44px;
-  padding: 4px;
-  cursor: pointer;
-  color: var(--studio-graphite);
-  background: var(--studio-sheet);
-  border: 1px solid var(--studio-divider);
-  border-radius: 5px;
-  font-size: 11px;
-  list-style: none;
-}
-.panDisclosure summary::-webkit-details-marker {
-  display: none;
-}
-.panDisclosure .pan {
-  position: absolute;
-  top: calc(100% + 4px);
-  right: 0;
-  width: 156px;
-  padding: 8px;
-  border: 1px solid var(--studio-divider);
-  border-radius: 6px;
-  background: var(--studio-sheet);
-}
-.panDisclosure .pan input {
-  height: 44px;
-}
-.panDisclosure summary:focus-visible {
-  outline: 2px solid var(--studio-cobalt);
-  outline-offset: 2px;
-}
-.tablet .toolbar button {
-  min-height: 44px;
-}
-.phone {
-  --studio-row-height: 72px;
-  --studio-clip-height: 58px;
-}
-.phone .viewport {
-  min-height: 240px;
-  max-height: 50dvh;
-}
-.phone .surface {
-  min-height: 240px;
-}
-.phone .trackHeader {
-  display: flex;
-  align-items: center;
-  padding: 6px;
-}
-.phone button.trackName {
-  font-size: 11px;
-  white-space: normal;
-  overflow-wrap: anywhere;
-}
-.phone .corner {
-  padding: 10px 5px;
-}
-.phone .corner label > span {
-  display: none;
-}
-.phone .corner input {
-  width: 80px;
-}
-.phone .clipTitle {
-  height: 16px;
-  font-size: 9px;
-  line-height: 12px;
-  padding-top: 2px;
-}
-.phone .visibleWave {
-  top: 16px;
-}
-.phoneNote {
-  margin: 0;
-  padding: 10px 12px;
-  font-size: 12px;
-  color: var(--studio-pencil);
-  background: var(--studio-sheet);
-}
-.compactControls {
-  grid-template-columns: 44px 44px minmax(70px, 1fr) 64px;
-}
-.compactControls button.mixButton {
-  width: 44px;
-  height: 44px;
-  min-height: 44px;
-}
-.compactControls input {
-  height: 44px;
+
+@media (prefers-reduced-motion: reduce) {
+  .status,
+  .newLaneDrop,
+  .trackHeader,
+  .timeline button.clip,
+  .controls button.mixButton {
+    transition: none;
+  }
 }

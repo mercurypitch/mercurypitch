@@ -1,5 +1,5 @@
 // Studio output meter — continuous loudness windows, stereo sample peaks and explicit peak-hold reset.
-import { Show } from 'solid-js'
+import { For, Show } from 'solid-js'
 import type { StudioMeterSnapshot } from '@/lib/studio/metering/stream-meter'
 import styles from './StudioOutputMeter.module.css'
 
@@ -15,8 +15,11 @@ const decibels = (amplitude: number) =>
   amplitude > 0 ? 20 * Math.log10(amplitude) : -Infinity
 const reading = (value: number | null | undefined) =>
   value == null ? '—' : Number.isFinite(value) ? value.toFixed(1) : '−∞'
-const percent = (amplitude: number) =>
-  `${Math.max(0, Math.min(100, ((decibels(amplitude) + 60) / 60) * 100))}%`
+const level = (amplitude: number) =>
+  Math.max(0, Math.min(100, ((decibels(amplitude) + 60) / 60) * 100))
+const percent = (amplitude: number) => `${level(amplitude)}%`
+// Scale marks in dBFS, placed on the same -60 to 0 travel as the bars.
+const SCALE = [-48, -36, -24, -18, -12, -6, 0]
 
 export function StudioOutputMeter(props: Props) {
   const peakL = () => props.snapshot?.peakL ?? props.peakL ?? 0
@@ -24,6 +27,10 @@ export function StudioOutputMeter(props: Props) {
   const peak = () => Math.max(peakL(), peakR())
   const clipped = () =>
     props.snapshot?.clipL === true || props.snapshot?.clipR === true
+  const channels = () => [
+    { name: 'L', peak: peakL(), hold: props.snapshot?.holdL ?? 0 },
+    { name: 'R', peak: peakR(), hold: props.snapshot?.holdR ?? 0 },
+  ]
   return (
     <div
       class={styles.output}
@@ -40,55 +47,72 @@ export function StudioOutputMeter(props: Props) {
         aria-valuetext={
           peak() > 0 ? `${reading(decibels(peak()))} dBFS` : 'Silent'
         }
+        title="Output sample peak, left and right"
       >
         <div class={styles.bars} aria-hidden="true">
-          <div>
-            <span>L</span>
-            <div class={styles.rail}>
-              <i style={{ width: percent(peakL()) }} />
-              <b style={{ left: percent(props.snapshot?.holdL ?? 0) }} />
+          <For each={channels()}>
+            {(channel) => (
+              <div class={styles.channel}>
+                <span>{channel.name}</span>
+                <div class={styles.rail}>
+                  <i
+                    style={{
+                      'clip-path': `inset(0 ${100 - level(channel.peak)}% 0 0)`,
+                    }}
+                  />
+                  <b style={{ left: percent(channel.hold) }} />
+                </div>
+              </div>
+            )}
+          </For>
+          <Show when={props.compact !== true}>
+            <div class={styles.scale}>
+              <For each={SCALE}>
+                {(mark) => (
+                  <span style={{ left: `${((mark + 60) / 60) * 100}%` }}>
+                    {mark < 0 ? `\u2212${-mark}` : mark}
+                  </span>
+                )}
+              </For>
             </div>
-          </div>
-          <div>
-            <span>R</span>
-            <div class={styles.rail}>
-              <i style={{ width: percent(peakR()) }} />
-              <b style={{ left: percent(props.snapshot?.holdR ?? 0) }} />
-            </div>
-          </div>
+          </Show>
         </div>
         <span class={styles.peakLabel}>
-          {clipped() ? 'CLIP' : 'Peak'} {reading(decibels(peak()))}
+          <Show when={clipped()} fallback={<span>Peak</span>}>
+            <strong>CLIP</strong>
+          </Show>{' '}
+          {reading(decibels(peak()))}
+          <small>dB</small>
         </span>
       </div>
-      <dl class={styles.windows} aria-label="Live loudness">
-        <div>
-          <dt title="Momentary loudness, 400 milliseconds">
-            M <span>LUFS</span>
-          </dt>
-          <dd>{props.ready ? reading(props.snapshot?.momentaryLufs) : '—'}</dd>
-        </div>
-        <div>
-          <dt title="Short-term loudness, 3 seconds">
-            S <span>LUFS</span>
-          </dt>
-          <dd>{props.ready ? reading(props.snapshot?.shortTermLufs) : '—'}</dd>
-        </div>
-      </dl>
       <Show when={props.compact !== true}>
+        <dl class={styles.windows} aria-label="Live loudness">
+          <div>
+            <dt title="Momentary loudness, 400 milliseconds">
+              Momentary <span>LUFS</span>
+            </dt>
+            <dd>
+              {props.ready ? reading(props.snapshot?.momentaryLufs) : '—'}
+            </dd>
+          </div>
+          <div>
+            <dt title="Short-term loudness, 3 seconds">
+              Short-term <span>LUFS</span>
+            </dt>
+            <dd>
+              {props.ready ? reading(props.snapshot?.shortTermLufs) : '—'}
+            </dd>
+          </div>
+        </dl>
         <div class={styles.detail}>
-          <span>
-            {props.ready
-              ? 'Live loudness. Export measures the whole song.'
-              : 'Live loudness is unavailable until playback starts.'}
-          </span>
-          <button
-            type="button"
-            onClick={() => props.onReset()}
-            disabled={!props.ready}
+          <Show
+            when={props.ready}
+            fallback={<span>Press play to see live loudness.</span>}
           >
-            Reset peak hold
-          </button>
+            <button type="button" onClick={() => props.onReset()}>
+              Reset peak hold
+            </button>
+          </Show>
         </div>
       </Show>
     </div>

@@ -18,7 +18,9 @@ it('updates measured windows, marks clipping and resets held peaks through its e
     />
   ))
   expect(screen.getByRole('meter')).toHaveAttribute('aria-valuetext', 'Silent')
-  expect(screen.getByRole('button', { name: 'Reset peak hold' })).toBeDisabled()
+  // Nothing is held before playback, so there is nothing to reset yet.
+  expect(screen.queryByRole('button', { name: 'Reset peak hold' })).toBeNull()
+  expect(screen.getByText('Press play to see live loudness.')).toBeTruthy()
   setSnapshot({
     frames: 19200,
     momentaryLufs: -18.2,
