@@ -522,6 +522,11 @@ button {
   background: color-mix(in srgb, var(--c, var(--aqua)) 18%, transparent);
   border-color: color-mix(in srgb, var(--c, var(--aqua)) 70%, transparent);
 }
+/* lit, a primary button loses its light gradient for the dark lit ground, so
+   it takes light words as every other lit button has, hovered or not */
+.btn.primary.is-on {
+  color: var(--ink);
+}
 .btn.sm {
   min-height: 44px;
   padding: 0 14px;
