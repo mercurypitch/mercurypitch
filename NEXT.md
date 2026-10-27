@@ -636,3 +636,8 @@ Note: the lanes' memory gate read a stale cgroup path after the 21:00 restart (f
 - Rate limit allowed. Builder at xhigh in l10-page on feat/lesson-10-page 2f2294398, brief l10/BRIEF-page-3.md: P16 Steps 1-2 + thirds game (games.ts), P17 Steps 3-4 + chords game + pattern.ts, P18 Step 5 predict + names switch + stop on leaving a step (every route), then map. It measures first paint before its first commit (l10/page-3/fp-before.txt, css-before/). Main's lists/fp from the lead's build of d37453987: l10/page-3/base/main-css-links/, main-fp-report.txt (build bg bbemghtu6 running in polish23 at 12:30).
 - SLOTS: (1) L10 run 3, (2) free. Queue after: L10 run 4 (P19 Sing it), run 5 (P20 Wrap + P21 sweeps), P22 final, then the L10 PR; Lesson 12's page after.
 - Check-in trigger trig_01JGQdH9F56vCzkd9UvFFRJv prompt updated (0.9.23 waits for the owner's tag; check the tag's runs; lesson pages next). One-shot trig_01Gx8FmW65cNbjVfrKBZ7Ujj deleted (its job is done).
+
+## 13:31 UTC 27 Oct: tag push test (owner asked "You can try a test push")
+- One annotated test tag `push-check-2026-10-27` on d37453987, pushed once (no workflow matches it: the only tag triggers are v*, mp-v*, bc-v*). Refused: HTTP 403, the same text as 26 Oct ("RPC failed; HTTP 403 ... send-pack: unexpected disconnect while reading sideband packet"). The remote never had it; the local tag is deleted.
+- The owner's secrets question: answered with a network secret on api.github.com (Authorization, Bearer, a fine-grained token on this repo only, Contents read and write). It reaches new sessions only; such a session would make the tag through the REST API (the tag object, then the refs/tags ref), with one read-only call first.
+- v0.9.23 still waits on the owner's privacy check and tag push.
