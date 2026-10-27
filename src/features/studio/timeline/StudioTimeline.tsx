@@ -521,12 +521,17 @@ export function StudioTimeline(props: StudioTimelineProps) {
       <Show when={!props.phone}>
         <div
           class={styles.zoom}
+          classList={{ [styles.docked]: props.deskOpen === true }}
           role="group"
           aria-label="Timeline zoom"
-          style={{
-            right: `${gutter() + 12}px`,
-            bottom: `${floor() + 12}px`,
-          }}
+          style={
+            props.deskOpen === true
+              ? { right: `${gutter()}px` }
+              : {
+                  right: `${gutter() + 12}px`,
+                  bottom: `${floor() + 12}px`,
+                }
+          }
         >
           <button
             type="button"

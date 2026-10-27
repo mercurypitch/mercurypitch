@@ -22,6 +22,11 @@ export interface StudioTimelineProps {
   keyboardPreviewClip?: StudioClip | null
   /** A drawer covers the timeline: the clip bar and the empty hint would be cut. */
   drawerOpen?: boolean
+  /**
+   * The mixing desk takes the space below: the zoom buttons move up into the
+   * ruler, where they cover no lane.
+   */
+  deskOpen?: boolean
   onPointerEditStart?(): void
   onSelectClip(id: string | null): void
   onSeek(frame: number): void

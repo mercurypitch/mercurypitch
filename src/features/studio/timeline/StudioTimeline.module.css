@@ -238,6 +238,17 @@
   opacity: 0.4;
   cursor: default;
 }
+/* With the desk open below, the buttons are the ruler's right-hand corner. */
+.zoom.docked {
+  top: 0;
+  height: calc(var(--studio-ruler-height) - 1px);
+  padding: 0 4px;
+  border: 0;
+  border-left: 1px solid var(--studio-line);
+  border-radius: 0;
+  background: var(--studio-bar);
+  box-shadow: none;
+}
 
 /* Lanes */
 .lane {

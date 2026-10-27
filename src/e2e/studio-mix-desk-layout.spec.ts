@@ -47,6 +47,53 @@ async function fourLanes(page: Page): Promise<void> {
     await importStudioAudio(page, name, 2)
 }
 
+/**
+ * Square pixels of lane rows the zoom buttons cover, counting only what
+ * shows: below the ruler and inside the arrangement's viewport.
+ */
+async function zoomOverLanes(page: Page): Promise<number> {
+  return timelineViewport(page).evaluate((viewport) => {
+    const zoom = document
+      .querySelector('[aria-label="Timeline zoom"]')!
+      .getBoundingClientRect()
+    const view = viewport.getBoundingClientRect()
+    const ruler = viewport
+      .querySelector('[aria-label="Song playhead"]')!
+      .getBoundingClientRect()
+    let area = 0
+    for (const lane of viewport.querySelectorAll('[data-studio-track]')) {
+      const row = lane.getBoundingClientRect()
+      const top = Math.max(row.top, ruler.bottom, zoom.top)
+      const bottom = Math.min(row.bottom, view.bottom, zoom.bottom)
+      const left = Math.max(row.left, view.left, zoom.left)
+      const right = Math.min(row.right, view.right, zoom.right)
+      if (bottom > top && right > left) area += (bottom - top) * (right - left)
+    }
+    return Math.round(area)
+  })
+}
+
+/** The zoom buttons cover no lane at rest, half-way down, or at the end. */
+async function expectZoomClearOfLanes(page: Page): Promise<void> {
+  const viewport = timelineViewport(page)
+  for (const at of [0, 0.5, 1]) {
+    await viewport.evaluate((element, share) => {
+      element.scrollTop = (element.scrollHeight - element.clientHeight) * share
+    }, at)
+    expect(await zoomOverLanes(page), `scrolled ${at * 100}% down`).toBe(0)
+  }
+  await viewport.evaluate((element) => {
+    element.scrollTop = 0
+  })
+}
+
+const scaleOf = async (page: Page) =>
+  Number(
+    await studioRegion(page)
+      .locator('[data-studio-scale]')
+      .getAttribute('data-studio-scale'),
+  )
+
 async function deskHeight(desk: Locator): Promise<number> {
   return Math.round((await desk.boundingBox())!.height)
 }
@@ -269,6 +316,29 @@ for (const theme of ['dark', 'light'] as const) {
   })
 }
 
+test('with Mix open on a short window, the zoom buttons move up into the ruler, clear of every lane, and still zoom', async ({
+  page,
+}) => {
+  test.setTimeout(150_000)
+  await page.setViewportSize({ width: 1280, height: 720 })
+  await fourLanes(page)
+  const desk = await openDesk(page)
+  await expectZoomClearOfLanes(page)
+  const scale = await scaleOf(page)
+  await studioRegion(page)
+    .getByRole('button', { name: 'Zoom in', exact: true })
+    .click()
+  await expect.poll(() => scaleOf(page)).toBeGreaterThan(scale)
+  // Closed again, they return to the arrangement's foot.
+  await page.keyboard.press('Escape')
+  await expect(desk).toHaveCount(0)
+  const zoom = (await studioRegion(page)
+    .getByRole('group', { name: 'Timeline zoom' })
+    .boundingBox())!
+  const view = (await timelineViewport(page).boundingBox())!
+  expect(view.y + view.height - (zoom.y + zoom.height)).toBeLessThan(40)
+})
+
 test.describe('on a tablet', () => {
   test.use({
     viewport: { width: 1024, height: 768 },
@@ -311,5 +381,37 @@ test.describe('on a tablet', () => {
         .map((child) => child.textContent?.trim() ?? child.tagName)
     })
     expect(clipped).toEqual([])
+  })
+
+  test('with Mix open, the zoom buttons sit in the ruler at finger size, clear of every lane', async ({
+    page,
+  }) => {
+    test.setTimeout(150_000)
+    await fourLanes(page)
+    await studioRegion(page)
+      .getByRole('button', { name: 'Mix', exact: true })
+      .tap()
+    const desk = studioRegion(page).getByRole('region', {
+      name: 'Mix',
+      exact: true,
+    })
+    await expect(desk).toBeVisible()
+    await settled(desk)
+    await expectZoomClearOfLanes(page)
+    const zoom = studioRegion(page).getByRole('group', {
+      name: 'Timeline zoom',
+    })
+    for (const name of ['Zoom out', 'Zoom in', 'Fit song to width']) {
+      const button = (await zoom
+        .getByRole('button', { name, exact: true })
+        .boundingBox())!
+      expect(
+        Math.min(button.width, button.height),
+        name,
+      ).toBeGreaterThanOrEqual(44)
+    }
+    const scale = await scaleOf(page)
+    await zoom.getByRole('button', { name: 'Zoom in', exact: true }).tap()
+    await expect.poll(() => scaleOf(page)).toBeGreaterThan(scale)
   })
 })

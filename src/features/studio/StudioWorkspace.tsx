@@ -640,6 +640,7 @@ export function StudioWorkspace(props: StudioWorkspaceProps) {
             tablet={tablet()}
             onZoom={setZoom}
             drawerOpen={panel() !== null && overlay() && !deskOpen()}
+            deskOpen={deskOpen()}
             onAddTakes={
               panel() === 'sources' ? undefined : () => openPanel('sources')
             }
