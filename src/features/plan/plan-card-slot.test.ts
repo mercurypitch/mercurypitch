@@ -92,13 +92,34 @@ describe('the slot Home keeps before the card is in', () => {
     },
   )
 
-  it('keeps nothing open for a hidden card or a record out of its week', () => {
+  it('keeps nothing open for a record out of its week', () => {
     stored('answered', 8)
-    expect(readPlanCardSlot(NOW, PHONE)).toBeNull()
 
+    expect(readPlanCardSlot(NOW, PHONE)).toBeNull()
+  })
+
+  it('keeps nothing open for a card hidden for its record, even where it kept a height', () => {
+    const at = stored('answered', 1)
+    kept(at, PHONE, 259.2)
+    localStorage.setItem(PLAN_CARD_DISMISSED_KEY, JSON.stringify(at))
+
+    expect(readPlanCardSlot(NOW, PHONE)).toBeNull()
+  })
+
+  it('keeps nothing open on a device that hid the card before the X kept a date', () => {
     stored('answered', 1)
     localStorage.setItem(PLAN_CARD_DISMISSED_KEY, 'true')
+
     expect(readPlanCardSlot(NOW, PHONE)).toBeNull()
+  })
+
+  it('keeps the slot open for a plan answered since its card was hidden', () => {
+    const hidden = stored('answered', 3)
+    localStorage.setItem(PLAN_CARD_DISMISSED_KEY, JSON.stringify(hidden))
+
+    stored('answered', 1)
+
+    expect(readPlanCardSlot(NOW, PHONE)).toEqual({ kind: 'plan', height: null })
   })
 
   it('keeps the height the card drew at for this record, in a window this wide', () => {

@@ -21,8 +21,7 @@ import type * as EnterStopModule from './enter-stop'
 import { enterStop } from './enter-stop'
 import { answeredAgo, AUDITION, fresh, seeFirstValue, sent, SHORT_ON_TIME, TOGETHER, } from './plan-choices.fixture'
 import { planHandoff, tabHandoff } from './plan-handoff'
-import { PLAN_CARD_DISMISSED_KEY } from './plan-keys'
-import { declinePlan, markPlanShown, markStopOpened, stopOpened, } from './plan-store'
+import { declinePlan, hidePlanCard, markPlanShown, markStopOpened, stopOpened, } from './plan-store'
 
 vi.mock('./enter-stop', async (importOriginal) => ({
   ...(await importOriginal<typeof EnterStopModule>()),
@@ -99,8 +98,17 @@ describe('planHandoff', () => {
 
     fresh()
     answeredAgo(1)
-    localStorage.setItem(PLAN_CARD_DISMISSED_KEY, 'true')
+    hidePlanCard()
     expect(planHandoff('sing', WHOLE)).toBeNull()
+  })
+
+  it('offers the plan again once it is answered again after its card was hidden', () => {
+    answeredAgo(2)
+    hidePlanCard()
+
+    answeredAgo(1)
+
+    expect(planHandoff('sing', WHOLE)?.title).toBe('Next on your plan')
   })
 
   it('never offers a room the menu hides', () => {

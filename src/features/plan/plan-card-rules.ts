@@ -4,9 +4,11 @@
 //
 // Home's "Your plan" card follows these rules, and so do three readers that
 // cannot share a store: the card itself (HomePlanCard.tsx, through
-// plan-progress.ts), the store (plan-store.ts), and Home's slot for the card
-// (plan-card-slot.ts), which Home reads before the card's chunk is in. Each
-// rule is written once, here, and each of them imports it:
+// plan-progress.ts), the store (plan-store.ts), through which the card, Merc's
+// hand-over at the end of a tour and Settings read whether the card is hidden,
+// and Home's slot for the card (plan-card-slot.ts), which Home reads before the
+// card's chunk is in. Each rule is written once, here, and each of them imports
+// it:
 //
 // - The week: a record answered, skipped or turned down keeps its card for
 //   PLAN_CARD_DAYS, counted from the record's own date, on either side.
@@ -16,7 +18,15 @@
 //   only a caller knows which stops the plan has.
 // - What finishes a stop (DONE_WHEN): the first values that do, or an opening
 //   from the plan for a room that has none.
-// - Hidden on this device: the X stores `true` under PLAN_CARD_DISMISSED_KEY.
+// - Hidden on this device: the X stores the date (`at`) of the record whose
+//   card it hid under PLAN_CARD_DISMISSED_KEY, and that card is hidden while
+//   the record carries that date, and after it, while no answers come: Not
+//   now again writes a record with a new date but no plan. A plan answered
+//   again, here or on another device, is a record with a new date, so its
+//   card shows for its own week. A stored `true` (the X wrote that before it
+//   kept a date) hides any record, until the person answers again on this
+//   device, which clears the key (plan-store.ts). Storage that cannot be read
+//   holds no hide.
 // - The stops opened from the plan: a list of names under PLAN_OPENED_KEY.
 //
 // Home imports this file statically, in the native build too, so it holds no
@@ -113,9 +123,53 @@ export function stopDoneBy(
   return rule.some((kind) => firstValueSeen(kind))
 }
 
-/** Has the person hidden the card on this device? Storage that cannot be read says no. */
-export function hiddenOnDevice(): boolean {
-  return storageGet<unknown>(PLAN_CARD_DISMISSED_KEY) === true
+/**
+ * A hide on this device, as it is stored under PLAN_CARD_DISMISSED_KEY: the
+ * date (`at`) of the record whose card the X hid, or `true`, which the X
+ * stored before it kept a date and which hides the card of any record. Null
+ * is no hide.
+ */
+export type PlanCardHide = string | true | null
+
+/**
+ * The hide stored on this device: a date, or `true`, and nothing else. A
+ * value that is neither (an empty string, a number, damage) is no hide, and
+ * so is storage that cannot be read.
+ */
+export function hideOnDevice(): PlanCardHide {
+  const val = storageGet<unknown>(PLAN_CARD_DISMISSED_KEY)
+  if (val === true) return true
+  return typeof val === 'string' && val.length > 0 ? val : null
+}
+
+/**
+ * Does this hide hide the card of this record? A date hides the record that
+ * carries it, and a record written since that holds no answers: Not now
+ * again, here or on another device, is no new plan, so its ask stays off
+ * Home. A record answered since is a new plan, and is not hidden. A date that
+ * does not read hides only the record that carries it. `true` hides every
+ * record.
+ */
+export function hidesCard(
+  hide: PlanCardHide,
+  record: PlanCardRecord | null,
+): boolean {
+  if (hide === true) return true
+  if (hide === null || record === null) return false
+  if (record.at === hide) return true
+  return (
+    record.status !== 'answered' && Date.parse(record.at) > Date.parse(hide)
+  )
+}
+
+/**
+ * Is this record's card hidden on this device? Read from storage as it
+ * stands, for a caller that holds no store (Home's slot); the store keeps the
+ * same hide in a signal (plan-store.ts), which is what a screen reads.
+ * Storage that cannot be read says no.
+ */
+export function hiddenOnDevice(record: PlanCardRecord | null): boolean {
+  return hidesCard(hideOnDevice(), record)
 }
 
 /** Is this a list of names, as the opened stops are stored? */

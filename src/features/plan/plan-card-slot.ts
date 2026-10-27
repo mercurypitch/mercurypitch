@@ -104,7 +104,7 @@ export function readPlanCardSlot(
   width: number,
 ): PlanCardSlot | null {
   const record = storedRecord()
-  const kind = planCardKind({ record, dismissed: hiddenOnDevice(), now })
+  const kind = planCardKind({ record, dismissed: hiddenOnDevice(record), now })
   if (kind === null || record === null) return null
   const last = kept()
   if (last === null || last.at !== record.at) return { kind, height: null }

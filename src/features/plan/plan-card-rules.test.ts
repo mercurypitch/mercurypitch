@@ -3,7 +3,9 @@
 // ============================================================
 //
 // The card (through plan-progress.ts), the store and Home's slot for the card
-// all read these rules, so each is held here once. plan-progress.test.ts runs
+// all read these rules, so each is held here once. Which record a hide hides
+// is one of them: the card, Merc's hand-over and Settings read it through the
+// store, and Home's slot from storage. plan-progress.test.ts runs
 // the week and the kind through the card's whole state; these cases run each
 // rule on its own, and read the module's source: Home imports it statically,
 // in the native build too, so it must carry no plan code and say no words.
@@ -13,13 +15,17 @@ import ts from 'typescript'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { FIRST_VALUE_KEY, resetFirstValueForTests } from '@/lib/first-value'
 import { moduleShape } from './module-shape.fixture'
-import { hiddenOnDevice, isNameList, openedOnDevice, PLAN_CARD_DAYS, PLAN_CARD_KINDS, planCardKind, stopDoneBy, } from './plan-card-rules'
+import { hiddenOnDevice, hideOnDevice, hidesCard, isNameList, openedOnDevice, PLAN_CARD_DAYS, PLAN_CARD_KINDS, planCardKind, stopDoneBy, } from './plan-card-rules'
 import { PLAN_CARD_DISMISSED_KEY, PLAN_OPENED_KEY } from './plan-keys'
 
 const DAY = 24 * 60 * 60 * 1000
 const NOW = Date.parse('2026-10-23T12:00:00.000Z')
 const at = (daysAgo: number): string =>
   new Date(NOW - daysAgo * DAY).toISOString()
+/** A record with answers, dated `daysAgo`, as the hide reads it. */
+const answered = (daysAgo: number) => ({ status: 'answered', at: at(daysAgo) })
+/** A record with none (Not now), dated `daysAgo`. */
+const declined = (daysAgo: number) => ({ status: 'declined', at: at(daysAgo) })
 
 beforeEach(() => {
   localStorage.clear()
@@ -118,17 +124,66 @@ describe('when a stop is done', () => {
 
 // ── What the device holds ──────────────────────────────────────────────
 
+describe('a hide', () => {
+  it('hides the card of the record whose date it is, and of no plan answered since', () => {
+    expect(hidesCard(at(1), answered(1))).toBe(true)
+    expect(hidesCard(at(1), answered(0))).toBe(false)
+    expect(hidesCard(at(1), null)).toBe(false)
+  })
+
+  it('hides a record written since that holds no answers: Not now again is no new plan', () => {
+    expect(hidesCard(at(2), declined(2))).toBe(true)
+    expect(hidesCard(at(2), declined(1))).toBe(true)
+    expect(hidesCard(at(2), { status: 'shown', at: at(1) })).toBe(true)
+  })
+
+  it('hides no record from before its date, and one that does not read hides only its own', () => {
+    expect(hidesCard(at(1), declined(2))).toBe(false)
+    expect(hidesCard('soon', declined(1))).toBe(false)
+    expect(hidesCard('soon', { status: 'declined', at: 'soon' })).toBe(true)
+  })
+
+  it('that is true, from before the X kept a date, hides the card of any record', () => {
+    expect(hidesCard(true, answered(1))).toBe(true)
+    expect(hidesCard(true, answered(0))).toBe(true)
+  })
+
+  it('that is none hides nothing', () => {
+    expect(hidesCard(null, answered(1))).toBe(false)
+    expect(hidesCard(null, declined(1))).toBe(false)
+  })
+})
+
 describe('what the device says', () => {
-  it('the card is hidden only when the X stored true', () => {
-    expect(hiddenOnDevice()).toBe(false)
+  it('a card is hidden for the record whose date the X stored, and for no other', () => {
+    localStorage.setItem(PLAN_CARD_DISMISSED_KEY, JSON.stringify(at(1)))
 
-    for (const value of ['""', '"true"', '1', '{}', 'nope']) {
-      localStorage.setItem(PLAN_CARD_DISMISSED_KEY, value)
-      expect(hiddenOnDevice()).toBe(false)
-    }
+    expect(hideOnDevice()).toBe(at(1))
+    expect(hiddenOnDevice(answered(1))).toBe(true)
+    expect(hiddenOnDevice(answered(0))).toBe(false)
+  })
 
+  it('a true stored before the X kept a date still hides the card, whatever the record', () => {
     localStorage.setItem(PLAN_CARD_DISMISSED_KEY, 'true')
-    expect(hiddenOnDevice()).toBe(true)
+
+    expect(hideOnDevice()).toBe(true)
+    expect(hiddenOnDevice(answered(1))).toBe(true)
+    expect(hiddenOnDevice(answered(0))).toBe(true)
+  })
+
+  it.each(['', '""', '1', '{}', '[]', 'false', 'null'])(
+    'reads %j under the key as no hide',
+    (value) => {
+      localStorage.setItem(PLAN_CARD_DISMISSED_KEY, value)
+
+      expect(hideOnDevice()).toBeNull()
+      expect(hiddenOnDevice(answered(1))).toBe(false)
+    },
+  )
+
+  it('reads no hide when nothing is stored', () => {
+    expect(hideOnDevice()).toBeNull()
+    expect(hiddenOnDevice(answered(1))).toBe(false)
   })
 
   it('the card is not hidden when storage cannot be read', () => {
@@ -138,7 +193,8 @@ describe('what the device says', () => {
       throw new Error('SecurityError')
     })
 
-    expect(hiddenOnDevice()).toBe(false)
+    expect(hideOnDevice()).toBeNull()
+    expect(hiddenOnDevice(answered(1))).toBe(false)
   })
 
   it('reads the opened stops as a list of names, and nothing else as one', () => {
@@ -207,6 +263,7 @@ describe('each rule in one place', () => {
     'src/features/plan/plan-progress.ts',
     'src/features/plan/plan-store.ts',
     'src/features/plan/plan-card-slot.ts',
+    'src/features/plan/plan-handoff.ts',
   ]
   const RULES = [
     'PLAN_CARD_DAYS',
@@ -214,6 +271,8 @@ describe('each rule in one place', () => {
     'planCardKind',
     'DONE_WHEN',
     'stopDoneBy',
+    'hideOnDevice',
+    'hidesCard',
     'hiddenOnDevice',
     'isNameList',
     'openedOnDevice',
