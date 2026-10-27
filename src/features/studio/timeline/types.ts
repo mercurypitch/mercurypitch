@@ -6,6 +6,11 @@ export interface StudioTimelineProps {
   project: StudioProject
   assets: readonly StudioAsset[]
   selectedClipId: string | null
+  /** The lane new takes join when they fit there. */
+  selectedTrackId?: string | null
+  onSelectTrack?(id: string): void
+  /** Double-click or double-tap under the lane headers makes a new lane. */
+  onNewLane?(): void
   playheadFrame: number
   /** A playing song jumps once a ruler drag ends, not under every move. */
   playing?: boolean

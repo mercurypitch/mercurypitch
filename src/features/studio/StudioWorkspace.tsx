@@ -2,6 +2,7 @@
 import { createEffect, createMemo, createSignal, For, onCleanup, onMount, Show, untrack, } from 'solid-js'
 import { CheckSmall, ChevronDown, Download, Plus, RotateCcw, SlidersHorizontal, } from '@/components/icons'
 import { installSpacePlaybackToggle, isInsideOverlay, isTypingTarget, } from '@/lib/space-playback'
+import { createStudioTrack } from '@/lib/studio/model/defaults'
 import type { StudioClip } from '@/lib/studio/model/types'
 import { STUDIO_SAMPLE_RATE } from '@/lib/studio/model/types'
 import { createReactiveMatch } from '@/lib/use-viewport'
@@ -79,6 +80,7 @@ export function StudioWorkspace(props: StudioWorkspaceProps) {
   let opener: HTMLElement | null = null
   let audioInput!: HTMLInputElement
   let importFrame = 0
+  let importTrack: string | null = null
   const transport = useStudioTransport({
     project: () => props.studio.project(),
     assets: () => props.studio.assets(),
@@ -215,6 +217,12 @@ export function StudioWorkspace(props: StudioWorkspaceProps) {
     const projectId = project().id
     const files = [...transfer.files]
     const source = studioDroppedTake(transfer, props.studio.sources())
+    // A drop on a lane adds to that lane; anywhere else starts a new one.
+    const lane =
+      event.target instanceof Element
+        ? (event.target.closest<HTMLElement>('[data-studio-track]')?.dataset
+            .studioTrack ?? null)
+        : null
     dropping = true
     setPreviewEpoch((epoch) => epoch + 1)
     editor.cancel()
@@ -222,13 +230,13 @@ export function StudioWorkspace(props: StudioWorkspaceProps) {
       await releaseFinishingAudio()
       if (props.studio.project()?.id !== projectId || !writable()) return
       const added = files.length
-        ? await props.studio.addFiles(files, frame)
+        ? await props.studio.addFiles(files, frame, lane)
         : source
-          ? await props.studio.addTake(source, frame)
+          ? await props.studio.addTake(source, frame, lane)
           : false
       if (added) {
         closePanel()
-        setAnnouncement('Audio added on new lanes.')
+        setAnnouncement('Audio added.')
       }
     } finally {
       dropping = false
@@ -261,8 +269,24 @@ export function StudioWorkspace(props: StudioWorkspaceProps) {
     else void transport.play()
   }
 
+  /** A new empty lane, selected, so the next take lands on it. */
+  function addLane(): void {
+    const tracks = project().tracks
+    const track = createStudioTrack({
+      id: globalThis.crypto.randomUUID(),
+      name: `Lane ${tracks.length + 1}`,
+      order: Math.max(-1, ...tracks.map((item) => item.order)) + 1,
+    })
+    if (props.studio.dispatch({ type: 'add-track', track })) {
+      setSelectedClipId(null)
+      setSelectedTrackId(track.id)
+      setAnnouncement(`${track.name} added and selected.`)
+    }
+  }
+
   function chooseFile(): void {
     importFrame = transport.playheadFrame()
+    importTrack = selectedTrackId()
     audioInput.click()
   }
 
@@ -273,7 +297,7 @@ export function StudioWorkspace(props: StudioWorkspaceProps) {
     const projectId = project().id
     await releaseFinishingAudio()
     if (props.studio.project()?.id !== projectId) return false
-    const added = await props.studio.addTakes(entries, frame)
+    const added = await props.studio.addTakes(entries, frame, selectedTrackId())
     if (added) closePanel()
     return added
   }
@@ -286,6 +310,11 @@ export function StudioWorkspace(props: StudioWorkspaceProps) {
         !transport.pending() && !finishing() && project().clips.length > 0,
     })
     onCleanup(remove)
+  })
+  // Selecting a clip selects its lane, so the next take can join it.
+  createEffect(() => {
+    const clip = selectedClip()
+    if (clip) setSelectedTrackId(clip.trackId)
   })
   createEffect(() => {
     if (selectedClipId() !== null && !selectedClip()) {
@@ -402,13 +431,14 @@ export function StudioWorkspace(props: StudioWorkspaceProps) {
           event.currentTarget.value = ''
           if (!file) return
           const frame = importFrame
+          const lane = importTrack
           const projectId = project().id
           const currentProject = props.studio.project
           const addFile = props.studio.addFile
           void releaseFinishingAudio().then(async () => {
             if (
               currentProject()?.id === projectId &&
-              (await addFile(file, frame))
+              (await addFile(file, frame, lane))
             )
               closePanel()
           })
@@ -419,7 +449,7 @@ export function StudioWorkspace(props: StudioWorkspaceProps) {
       </p>
       <Show when={dropActive()}>
         <div class={styles.dropHint}>
-          <Plus size={18} /> Drop audio to add new lanes
+          <Plus size={18} /> Drop on a lane, or below the lanes for a new one
         </div>
       </Show>
       <header class={styles.topBar}>
@@ -582,6 +612,9 @@ export function StudioWorkspace(props: StudioWorkspaceProps) {
             project={project()}
             assets={props.studio.assets()}
             selectedClipId={selectedClipId()}
+            selectedTrackId={selectedTrackId()}
+            onSelectTrack={setSelectedTrackId}
+            onNewLane={writable() ? addLane : undefined}
             keyboardPreviewClip={keyboardPreview()}
             onPointerEditStart={editor.cancel}
             playheadFrame={transport.playheadFrame()}

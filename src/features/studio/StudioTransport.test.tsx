@@ -63,7 +63,7 @@ it('keeps the playhead for text that is not a time and steps a second with the a
 
 it('holds the focused time while the song plays, so typing replaces it', () => {
   const [frame, setFrame] = createSignal(83.456 * 48000)
-  const { onSeek, clock } = renderTransport(vi.fn(), frame)
+  const { onSeek, clock } = renderTransport(vi.fn(), () => frame())
   fireEvent.focus(clock)
   setFrame(84 * 48000)
   expect(clock).toHaveValue('1:23.456')
