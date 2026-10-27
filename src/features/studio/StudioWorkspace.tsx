@@ -462,111 +462,115 @@ export function StudioWorkspace(props: StudioWorkspaceProps) {
         </div>
       </Show>
       <header class={styles.topBar}>
-        <div class={styles.songIdentity}>
-          <button
-            type="button"
-            class={styles.songTitle}
-            title="Song options"
-            aria-label="Song options"
-            data-tour="studio.song-options"
-            aria-expanded={panel() === 'song'}
-            onClick={() =>
-              panel() === 'song' ? closePanel() : openPanel('song')
-            }
-          >
-            <span>{project().title}</span>
-            <ChevronDown size={14} />
-          </button>
-          <span
-            class={styles.saveStatus}
-            data-state={
-              props.studio.writable() ? props.studio.saveState() : 'read-only'
-            }
-            role="status"
-          >
-            <Show
-              when={
-                props.studio.writable() && props.studio.saveState() === 'saved'
+        <div class={styles.topBarRow}>
+          <div class={styles.songIdentity}>
+            <button
+              type="button"
+              class={styles.songTitle}
+              title="Song options"
+              aria-label="Song options"
+              data-tour="studio.song-options"
+              aria-expanded={panel() === 'song'}
+              onClick={() =>
+                panel() === 'song' ? closePanel() : openPanel('song')
               }
             >
-              <CheckSmall size={12} />
-            </Show>
-            {status()}
-          </span>
-        </div>
-        <Show when={!phone()}>
-          <Transport />
-        </Show>
-        <div class={styles.topActions}>
-          <div class={styles.historyButtons} data-tour="studio.history">
+              <span>{project().title}</span>
+              <ChevronDown size={14} />
+            </button>
+            <span
+              class={styles.saveStatus}
+              data-state={
+                props.studio.writable() ? props.studio.saveState() : 'read-only'
+              }
+              role="status"
+            >
+              <Show
+                when={
+                  props.studio.writable() &&
+                  props.studio.saveState() === 'saved'
+                }
+              >
+                <CheckSmall size={12} />
+              </Show>
+              {status()}
+            </span>
+          </div>
+          <Show when={!phone()}>
+            <Transport />
+          </Show>
+          <div class={styles.topActions}>
+            <div class={styles.historyButtons} data-tour="studio.history">
+              <button
+                type="button"
+                class={styles.iconButton}
+                aria-label={props.studio.undoLabel() ?? 'Undo'}
+                title={`${props.studio.undoLabel() ?? 'Undo'} (Ctrl+Z)`}
+                disabled={!writable() || !props.studio.canUndo()}
+                onClick={() => historyAction('undo')}
+              >
+                <RotateCcw size={17} />
+              </button>
+              <button
+                type="button"
+                class={styles.iconButton}
+                aria-label={props.studio.redoLabel() ?? 'Redo'}
+                title={`${props.studio.redoLabel() ?? 'Redo'} (Ctrl+Shift+Z)`}
+                disabled={!writable() || !props.studio.canRedo()}
+                onClick={() => historyAction('redo')}
+              >
+                <RotateCw size={17} />
+              </button>
+            </div>
+            <span class={styles.divider} aria-hidden="true" />
             <button
               type="button"
-              class={styles.iconButton}
-              aria-label={props.studio.undoLabel() ?? 'Undo'}
-              title={`${props.studio.undoLabel() ?? 'Undo'} (Ctrl+Z)`}
-              disabled={!writable() || !props.studio.canUndo()}
-              onClick={() => historyAction('undo')}
+              class={styles.button}
+              disabled={!writable()}
+              aria-expanded={panel() === 'sources'}
+              data-tour="studio.add-takes"
+              title="Add takes"
+              onClick={() => openPanel('sources')}
             >
-              <RotateCcw size={17} />
+              <Plus size={16} />
+              <span class={styles.label}>Add takes</span>
             </button>
             <button
               type="button"
-              class={styles.iconButton}
-              aria-label={props.studio.redoLabel() ?? 'Redo'}
-              title={`${props.studio.redoLabel() ?? 'Redo'} (Ctrl+Shift+Z)`}
-              disabled={!writable() || !props.studio.canRedo()}
-              onClick={() => historyAction('redo')}
+              class={styles.button}
+              aria-expanded={panel() === 'mix'}
+              data-tour="studio.mix"
+              title="Mix"
+              onClick={() =>
+                panel() === 'mix' ? closePanel() : openPanel('mix')
+              }
             >
-              <RotateCw size={17} />
+              <MixingDesk size={16} />
+              <span class={styles.label}>Mix</span>
+            </button>
+            <button
+              type="button"
+              class={styles.button}
+              data-tour="studio.sound"
+              aria-expanded={panel() === 'sound'}
+              title="Sound"
+              onClick={() => openPanel('sound')}
+            >
+              <SlidersHorizontal />
+              <span class={styles.label}>Sound</span>
+            </button>
+            <button
+              type="button"
+              class={styles.primaryButton}
+              data-tour="studio.export"
+              title="Export"
+              aria-expanded={panel() === 'export'}
+              onClick={() => openPanel('export')}
+            >
+              <Download />
+              <span class={styles.exportLabel}>Export</span>
             </button>
           </div>
-          <span class={styles.divider} aria-hidden="true" />
-          <button
-            type="button"
-            class={styles.button}
-            disabled={!writable()}
-            aria-expanded={panel() === 'sources'}
-            data-tour="studio.add-takes"
-            title="Add takes"
-            onClick={() => openPanel('sources')}
-          >
-            <Plus size={16} />
-            <span class={styles.label}>Add takes</span>
-          </button>
-          <button
-            type="button"
-            class={styles.button}
-            aria-expanded={panel() === 'mix'}
-            data-tour="studio.mix"
-            title="Mix"
-            onClick={() =>
-              panel() === 'mix' ? closePanel() : openPanel('mix')
-            }
-          >
-            <MixingDesk size={16} />
-            <span class={styles.label}>Mix</span>
-          </button>
-          <button
-            type="button"
-            class={styles.button}
-            data-tour="studio.sound"
-            aria-expanded={panel() === 'sound'}
-            title="Sound"
-            onClick={() => openPanel('sound')}
-          >
-            <SlidersHorizontal />
-            <span class={styles.label}>Sound</span>
-          </button>
-          <button
-            type="button"
-            class={styles.primaryButton}
-            data-tour="studio.export"
-            aria-expanded={panel() === 'export'}
-            onClick={() => openPanel('export')}
-          >
-            <Download />
-            <span>Export</span>
-          </button>
         </div>
       </header>
       <Show
