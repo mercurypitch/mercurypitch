@@ -175,3 +175,26 @@ export const ArchiveDown: Component<{ size?: number }> = (p) => (
     <path d="m9 14 3 3 3-3" />
   </svg>
 )
+
+// Mixing desk — three fader caps in a console's frame, unlike Sound's open sliders.
+export const MixingDesk: Component<{ size?: number }> = (p) => (
+  <svg
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    stroke-width="2"
+    stroke-linecap="round"
+    stroke-linejoin="round"
+    width={p.size ?? 24}
+    height={p.size ?? 24}
+    aria-hidden="true"
+  >
+    <rect x="3" y="3" width="18" height="18" rx="3" />
+    <path d="M8 7v10" />
+    <path d="M12 7v10" />
+    <path d="M16 7v10" />
+    <path d="M6.5 14h3" />
+    <path d="M10.5 9.5h3" />
+    <path d="M14.5 12h3" />
+  </svg>
+)

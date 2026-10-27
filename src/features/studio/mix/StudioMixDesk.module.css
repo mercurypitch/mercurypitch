@@ -1,0 +1,285 @@
+/* Studio mixing desk — a drawer under the arrangement: lane strips that scroll sideways, then the song's master. */
+.desk {
+  container-type: inline-size;
+  position: relative;
+  z-index: 8;
+  display: flex;
+  flex: none;
+  flex-direction: column;
+  height: 318px;
+  /* A short window keeps the timeline above usable: the desk gives way first. */
+  max-height: 60%;
+  min-height: 0;
+  border-top: 1px solid var(--studio-line-strong);
+  background: var(--studio-panel);
+  box-shadow: var(--studio-sheet-shadow);
+  outline: none;
+  animation: studio-desk 0.2s ease-out;
+}
+.touch {
+  height: 334px;
+}
+.heading {
+  display: flex;
+  flex: none;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  min-height: 42px;
+  padding: 2px 8px 0 16px;
+}
+.heading h2 {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+}
+.body {
+  display: flex;
+  flex: 1;
+  gap: 16px;
+  min-height: 0;
+  padding: 0 16px 14px;
+}
+
+/* Strips: one per lane, in lane order, scrolling sideways past the width. */
+.strips {
+  display: flex;
+  flex: 1 1 auto;
+  gap: 8px;
+  min-width: 0;
+  min-height: 0;
+  /* Room for a focused control's ring at the edges. */
+  padding: 3px;
+  margin: -3px;
+  overflow-x: auto;
+  overflow-y: hidden;
+  overscroll-behavior-x: contain;
+  scroll-snap-type: x proximity;
+  scroll-padding-inline: 3px;
+  scrollbar-width: thin;
+  scrollbar-color: var(--studio-line-strong) transparent;
+}
+/* More strips past an edge: that edge fades out. */
+.strips[data-more-after] {
+  -webkit-mask-image: linear-gradient(
+    to right,
+    #000 calc(100% - 40px),
+    transparent
+  );
+  mask-image: linear-gradient(to right, #000 calc(100% - 40px), transparent);
+}
+.strips[data-more-before] {
+  -webkit-mask-image: linear-gradient(
+    to left,
+    #000 calc(100% - 40px),
+    transparent
+  );
+  mask-image: linear-gradient(to left, #000 calc(100% - 40px), transparent);
+}
+.strips[data-more-before][data-more-after] {
+  -webkit-mask-image: linear-gradient(
+    to right,
+    transparent,
+    #000 40px calc(100% - 40px),
+    transparent
+  );
+  mask-image: linear-gradient(
+    to right,
+    transparent,
+    #000 40px calc(100% - 40px),
+    transparent
+  );
+}
+.strip {
+  position: relative;
+  display: flex;
+  flex: 1 0 116px;
+  flex-direction: column;
+  max-width: 176px;
+  min-height: 0;
+  padding: 12px 8px 8px;
+  border: 1px solid var(--studio-line);
+  border-radius: 10px;
+  background: var(--studio-card);
+  scroll-snap-align: start;
+}
+/* The lane's hue across the top, as in the lane header's edge. */
+.strip::before {
+  content: '';
+  position: absolute;
+  top: -1px;
+  right: -1px;
+  left: -1px;
+  height: 3px;
+  border-radius: 10px 10px 0 0;
+  background: var(--studio-track);
+}
+.strip[data-silent]::before {
+  opacity: 0.4;
+}
+.stripName {
+  display: block;
+  min-width: 0;
+  overflow: hidden;
+  color: var(--studio-text);
+  font-size: 12.5px;
+  font-weight: 600;
+  line-height: 16px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+/* Two 44 px buttons side by side, and nothing wider. */
+.touch .strip {
+  flex-basis: 112px;
+}
+.empty {
+  align-self: center;
+  margin: 0 auto;
+  color: var(--studio-muted);
+  font-size: 12.5px;
+}
+
+/* Master: heading, flavours and the five dials, with the meter beside them. */
+.master {
+  display: flex;
+  flex: none;
+  gap: 14px;
+  min-height: 0;
+  padding-left: 16px;
+  border-left: 1px solid var(--studio-line);
+}
+.masterControls {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  width: 484px;
+  min-width: 0;
+  min-height: 0;
+}
+.masterHeading {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 28px;
+}
+.masterHeading h3 {
+  margin: 0;
+  font-size: 13px;
+  font-weight: 600;
+}
+.masterHeading button {
+  margin-left: auto;
+}
+.adjusted {
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: var(--studio-control);
+  color: var(--studio-text-2);
+  font-size: 11px;
+  font-weight: 500;
+}
+.group {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+}
+/* The dials sit on the desk's floor, level with the strips' buttons. */
+.group:last-child {
+  margin-top: auto;
+}
+.groupLabel {
+  color: var(--studio-muted);
+  font-size: 10.5px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  line-height: 14px;
+  text-transform: uppercase;
+}
+.flavours {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.dials {
+  --dial-size: 64px;
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 4px;
+}
+.meter {
+  display: flex;
+  flex-direction: column;
+  width: 80px;
+  min-height: 0;
+  padding-left: 14px;
+  border-left: 1px solid var(--studio-line);
+}
+
+/* A narrower desk (a tablet, a small window): the flavours take two rows,
+   and the strips scroll sooner, so the dials keep room for their words. */
+@container (max-width: 1100px) {
+  .masterControls {
+    width: 420px;
+  }
+  /* Four pills, then three, rather than six and one left over. */
+  .flavours {
+    max-width: 320px;
+  }
+  .dials {
+    --dial-size: 54px;
+  }
+  .master {
+    gap: 12px;
+    padding-left: 12px;
+  }
+  .meter {
+    padding-left: 12px;
+  }
+  /* Finger-sized pills need the height: the group names stay with screen readers. */
+  .touch .groupLabel {
+    display: none;
+  }
+}
+/* A tall, narrow window (a tablet held upright): the master moves under the
+   strips and both get the full width. A short one scrolls inside the desk. */
+@media (max-width: 860px) {
+  .desk {
+    height: 540px;
+    max-height: 66%;
+  }
+  .body {
+    flex-direction: column;
+    gap: 12px;
+    overflow-y: auto;
+    overscroll-behavior-y: contain;
+  }
+  .strips {
+    flex: none;
+    height: 262px;
+  }
+  .master {
+    padding: 12px 0 0;
+    border-top: 1px solid var(--studio-line);
+    border-left: 0;
+  }
+  .masterControls {
+    flex: 1;
+    width: auto;
+  }
+  .flavours {
+    max-width: none;
+  }
+}
+@keyframes studio-desk {
+  from {
+    transform: translateY(24px);
+    opacity: 0;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .desk {
+    animation: none;
+  }
+}

@@ -66,6 +66,7 @@ describe('Studio tour selection', () => {
       'snap',
       'timeline',
       'track-controls',
+      'mix',
       'history',
       'transport',
       'sound',
@@ -75,7 +76,6 @@ describe('Studio tour selection', () => {
     startPageTour(TAB_STUDIO_NIGHT)
 
     expect(targets()).toEqual(hooks.map(selector))
-    expect(targets()).not.toContain(selector('mix'))
     expect(targets()).not.toContain(selector('timeline-overview'))
   })
 

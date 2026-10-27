@@ -219,6 +219,133 @@
     display: none;
   }
 }
+
+/* Upright, in the mixing desk: two segmented rails filling from the floor,
+   the peak under them, then the short-term loudness. */
+.vertical {
+  flex: 1;
+  gap: 8px;
+  min-height: 0;
+}
+.vertical .stereo {
+  flex: 1;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 6px;
+  min-height: 0;
+}
+.vertical .bars {
+  display: flex;
+  justify-content: flex-end;
+  gap: 4px;
+  min-height: 0;
+  padding-left: 24px;
+}
+.vertical .channel {
+  flex-direction: column-reverse;
+  gap: 4px;
+  min-height: 0;
+}
+.vertical .channel > span {
+  width: auto;
+  line-height: 10px;
+  text-align: center;
+}
+.vertical .rail {
+  flex: 1;
+  width: 9px;
+  height: auto;
+  min-height: 0;
+  border-radius: 1px;
+  -webkit-mask-image: repeating-linear-gradient(
+    to top,
+    #000 0 3px,
+    transparent 3px 4px
+  );
+  mask-image: repeating-linear-gradient(
+    to top,
+    #000 0 3px,
+    transparent 3px 4px
+  );
+}
+.vertical .rail i {
+  background: linear-gradient(
+    to top,
+    var(--studio-meter-ok) 0 70%,
+    var(--studio-meter-hot) 70% 90%,
+    var(--studio-meter-over) 90%
+  );
+}
+.vertical .rail b {
+  top: auto;
+  right: 0;
+  left: 0;
+  width: auto;
+  height: 2px;
+  /* Like the level, a hold at the floor sits just out of sight. */
+  transform: translateY(2px);
+}
+/* The marks share the rails' travel: from the floor to above the L and R labels. */
+.vertical .scale {
+  position: absolute;
+  top: 0;
+  bottom: 14px;
+  left: 0;
+  width: 20px;
+  height: auto;
+  margin: 0;
+}
+.vertical .scale span {
+  right: 0;
+  line-height: 10px;
+  transform: translateY(50%);
+}
+.vertical .scale span:last-child {
+  transform: translateY(100%);
+}
+.vertical .peakLabel {
+  min-width: 0;
+  font-size: 12px;
+  text-align: center;
+}
+.vertical .peakLabel span,
+.vertical .peakLabel strong {
+  margin-bottom: 2px;
+  font-size: 9.5px;
+}
+.vertical .peakLabel small {
+  margin-left: 2px;
+  font-size: 10px;
+}
+.loudness {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin: 0;
+  padding-top: 8px;
+  border-top: 1px solid var(--studio-line);
+  line-height: 1;
+}
+.loudness span {
+  color: var(--studio-muted);
+  font-size: 9px;
+  white-space: nowrap;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+.loudness strong {
+  margin: 4px 0 2px;
+  color: var(--studio-text);
+  font-size: 17px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+}
+.loudness small {
+  color: var(--studio-muted);
+  font-size: 10px;
+  font-weight: 500;
+}
 @media (pointer: coarse) {
   .detail button {
     min-height: 44px;

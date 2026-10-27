@@ -75,13 +75,14 @@ for (const [name, width, phone] of [
     const common = [
       'song-options',
       'add-takes',
+      'mix',
       'history',
       'transport',
       'sound',
       'export',
     ]
     const arranging = ['view-controls', 'snap', 'timeline', 'track-controls']
-    const overview = ['timeline-overview', 'mix']
+    const overview = ['timeline-overview']
     await assertVisibleTargets(page, [
       ...common,
       ...(phone ? overview : arranging),

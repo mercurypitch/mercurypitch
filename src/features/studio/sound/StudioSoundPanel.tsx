@@ -4,10 +4,11 @@ import { For, Show } from 'solid-js'
 import type { StudioSoundEdit } from '@/lib/studio/model/sound-commands'
 import type { StudioProject } from '@/lib/studio/model/types'
 import { LOUDNESS_PRESETS } from '@/lib/studio-fx/master'
-import { MACRO_KEYS, MIX_FLAVOURS } from '@/lib/studio-fx/mix-macros'
+import { MACRO_KEYS } from '@/lib/studio-fx/mix-macros'
 import { runStudioPanelAction } from '../export/action-focus'
 import common from '../StudioPage.module.css'
 import { StudioComparisonControls } from './StudioComparisonControls'
+import { StudioFlavourChoices, studioSoundAdjusted, } from './StudioFlavourChoices'
 import { StudioMacroControl } from './StudioMacroControl'
 import styles from './StudioSound.module.css'
 import type { StudioComparisonController } from './useStudioComparison'
@@ -24,14 +25,6 @@ export interface StudioSoundPanelProps {
 
 export function StudioSoundPanel(props: StudioSoundPanelProps) {
   const enabled = () => props.writable && !props.balance.busy()
-  const adjusted = () => {
-    const flavour = MIX_FLAVOURS.find(
-      (item) => item.id === props.project.mix.flavourId,
-    )
-    return MACRO_KEYS.some(
-      (key) => props.project.mix.macros[key] !== flavour?.macros[key],
-    )
-  }
   return (
     <div class={styles.panel}>
       <Show when={props.meter}>
@@ -45,29 +38,16 @@ export function StudioSoundPanel(props: StudioSoundPanelProps) {
       <section class={styles.section} aria-label="Flavour">
         <div class={styles.heading}>
           <h3>Flavour</h3>
-          <Show when={adjusted()}>
+          <Show when={studioSoundAdjusted(props.project)}>
             <span class={styles.subtle}>Adjusted</span>
           </Show>
         </div>
         <div class={styles.flavours}>
-          <For each={MIX_FLAVOURS}>
-            {(flavour) => (
-              <button
-                type="button"
-                class={styles.choice}
-                aria-pressed={props.project.mix.flavourId === flavour.id}
-                disabled={!enabled()}
-                onClick={() =>
-                  props.onCommand({
-                    type: 'set-sound-flavour',
-                    flavourId: flavour.id,
-                  })
-                }
-              >
-                {flavour.label}
-              </button>
-            )}
-          </For>
+          <StudioFlavourChoices
+            project={props.project}
+            enabled={enabled()}
+            onCommand={props.onCommand}
+          />
         </div>
       </section>
       <section class={styles.section} aria-label="Adjust sound">

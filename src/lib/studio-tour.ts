@@ -97,10 +97,10 @@ export const STUDIO_WORKSPACE_TOUR_STEPS: StudioTourStep[] = [
     whenPresent: true,
   },
   {
-    title: 'Mix on your phone',
+    title: 'Mix every track',
     targetSelector: '[data-tour="studio.mix"]',
     description:
-      'Open Mix for each track’s volume, pan, mute and solo controls while you listen.',
+      'Open Mix to set each track’s volume, pan, Mute and Solo in one place while you listen. On a tablet or computer, the song’s sound and output meter sit beside them.',
     placement: 'bottom',
     whenPresent: true,
   },

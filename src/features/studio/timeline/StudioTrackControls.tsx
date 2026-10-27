@@ -11,6 +11,8 @@ export interface StudioTrackControlsProps {
   writable: boolean
   compact?: boolean
   tablet?: boolean
+  /** A mixing desk channel strip: a vertical fader between the knob and the buttons. */
+  strip?: boolean
   /** The lane's name and source, laid out in the same grid as the controls. */
   identity?: JSX.Element
   onCommand(command: StudioCommand): boolean
@@ -106,14 +108,148 @@ export function StudioTrackControls(props: StudioTrackControlsProps) {
     commit('pan', pan())
   }
 
+  const muteButton = () => (
+    <button
+      type="button"
+      class={`${styles.mixButton} ${styles.muteButton}`}
+      disabled={!props.writable}
+      title={`${props.track.mute ? 'Unmute' : 'Mute'} ${props.track.name}`}
+      aria-label={`${props.track.mute ? 'Unmute' : 'Mute'} ${props.track.name}`}
+      aria-pressed={props.track.mute}
+      onClick={() => update({ mute: !props.track.mute })}
+    >
+      <Show when={props.track.mute} fallback={<Volume2 />}>
+        <VolumeX />
+      </Show>
+    </button>
+  )
+  const soloButton = () => (
+    <button
+      type="button"
+      class={`${styles.mixButton} ${styles.soloButton}`}
+      disabled={!props.writable}
+      title={`Solo ${props.track.name}`}
+      aria-label={`Solo ${props.track.name}`}
+      aria-pressed={props.track.solo}
+      onClick={() => update({ solo: !props.track.solo })}
+    >
+      S
+    </button>
+  )
+  const volume = () => (
+    <label class={styles.volume}>
+      <span class={styles.srOnly}>{props.track.name} volume</span>
+      <input
+        class={styles.fader}
+        aria-label={`${props.track.name} volume`}
+        type="range"
+        min={GAIN_MIN}
+        max={GAIN_MAX}
+        step="0.5"
+        value={gain()}
+        disabled={!props.writable}
+        title="Double-click for 0 dB"
+        style={{
+          '--fill': `${gainPercent(gain())}%`,
+          '--unity': `${gainPercent(0)}%`,
+        }}
+        aria-valuetext={`${gain().toFixed(1)} dB`}
+        onInput={(event) => {
+          setEditing('gainDb')
+          setGain(event.currentTarget.valueAsNumber)
+        }}
+        onChange={(event) =>
+          commit('gainDb', event.currentTarget.valueAsNumber)
+        }
+        onDblClick={() => {
+          if (props.writable) commit('gainDb', 0)
+        }}
+        onPointerCancel={cancel}
+      />
+      <output class={styles.gainValue}>{gain().toFixed(1)} dB</output>
+    </label>
+  )
+  const knob = () => (
+    <span
+      class={styles.knob}
+      classList={{ [styles.knobTurning]: turning() }}
+      title={`Pan ${studioPanLabel(pan())}. Drag up or down; double-click to centre.`}
+      onPointerDown={knobDown}
+      onPointerMove={knobMove}
+      onPointerUp={knobUp}
+      onPointerCancel={() => {
+        drag = null
+        setTurning(false)
+        cancel()
+      }}
+      onDblClick={() => {
+        if (props.writable) commit('pan', 0)
+      }}
+    >
+      <input
+        ref={panInput}
+        class={styles.knobInput}
+        aria-label={`${props.track.name} pan`}
+        type="range"
+        min="-1"
+        max="1"
+        step="0.01"
+        value={pan()}
+        disabled={!props.writable}
+        aria-valuetext={
+          pan() === 0
+            ? 'Centre'
+            : `${Math.round(Math.abs(pan()) * 100)} percent ${pan() < 0 ? 'left' : 'right'}`
+        }
+        onInput={(event) => {
+          setEditing('pan')
+          setPan(event.currentTarget.valueAsNumber)
+        }}
+        onChange={(event) => commit('pan', event.currentTarget.valueAsNumber)}
+      />
+      <svg class={styles.knobDial} viewBox="0 0 32 32" aria-hidden="true">
+        <circle class={styles.knobFace} cx="16" cy="16" r="9" />
+        <circle
+          class={styles.knobArc}
+          cx="16"
+          cy="16"
+          r="13"
+          style={{ 'stroke-dasharray': `${KNOB_TRAVEL} ${KNOB_RING}` }}
+        />
+        <circle
+          class={styles.knobValueArc}
+          cx="16"
+          cy="16"
+          r="13"
+          style={{
+            transform: `rotate(${-90 + Math.min(0, angle())}deg)`,
+            'stroke-dasharray': `${(Math.abs(angle()) / 360) * KNOB_RING} ${KNOB_RING}`,
+          }}
+        />
+        <line
+          class={styles.knobPointer}
+          x1="16"
+          y1="16"
+          x2="16"
+          y2="9"
+          style={{ transform: `rotate(${angle()}deg)` }}
+        />
+      </svg>
+      <span class={styles.panValue} aria-hidden="true">
+        {studioPanLabel(pan())}
+      </span>
+    </span>
+  )
+
   return (
     <div
       class={styles.controls}
-      data-tour="studio.track-controls"
+      data-tour={props.strip === true ? undefined : 'studio.track-controls'}
       classList={{
         [styles.compactControls]: props.compact === true,
         [styles.touchControls]: props.compact === true || props.tablet === true,
         [styles.withIdentity]: props.identity !== undefined,
+        [styles.stripControls]: props.strip === true,
       }}
       onKeyDown={(event) => {
         if (event.key === 'Escape' && editing() !== null) {
@@ -126,130 +262,25 @@ export function StudioTrackControls(props: StudioTrackControlsProps) {
       <Show when={props.identity}>
         <div class={styles.identityCell}>{props.identity}</div>
       </Show>
-      <button
-        type="button"
-        class={`${styles.mixButton} ${styles.muteButton}`}
-        disabled={!props.writable}
-        title={`${props.track.mute ? 'Unmute' : 'Mute'} ${props.track.name}`}
-        aria-label={`${props.track.mute ? 'Unmute' : 'Mute'} ${props.track.name}`}
-        aria-pressed={props.track.mute}
-        onClick={() => update({ mute: !props.track.mute })}
+      {/* A desk strip reads top to bottom: pan, the fader, then mute and solo. */}
+      <Show
+        when={props.strip === true}
+        fallback={
+          <>
+            {muteButton()}
+            {soloButton()}
+            {volume()}
+            {knob()}
+          </>
+        }
       >
-        <Show when={props.track.mute} fallback={<Volume2 />}>
-          <VolumeX />
-        </Show>
-      </button>
-      <button
-        type="button"
-        class={`${styles.mixButton} ${styles.soloButton}`}
-        disabled={!props.writable}
-        title={`Solo ${props.track.name}`}
-        aria-label={`Solo ${props.track.name}`}
-        aria-pressed={props.track.solo}
-        onClick={() => update({ solo: !props.track.solo })}
-      >
-        S
-      </button>
-      <label class={styles.volume}>
-        <span class={styles.srOnly}>{props.track.name} volume</span>
-        <input
-          class={styles.fader}
-          aria-label={`${props.track.name} volume`}
-          type="range"
-          min={GAIN_MIN}
-          max={GAIN_MAX}
-          step="0.5"
-          value={gain()}
-          disabled={!props.writable}
-          title="Double-click for 0 dB"
-          style={{
-            '--fill': `${gainPercent(gain())}%`,
-            '--unity': `${gainPercent(0)}%`,
-          }}
-          aria-valuetext={`${gain().toFixed(1)} dB`}
-          onInput={(event) => {
-            setEditing('gainDb')
-            setGain(event.currentTarget.valueAsNumber)
-          }}
-          onChange={(event) =>
-            commit('gainDb', event.currentTarget.valueAsNumber)
-          }
-          onDblClick={() => {
-            if (props.writable) commit('gainDb', 0)
-          }}
-          onPointerCancel={cancel}
-        />
-        <output class={styles.gainValue}>{gain().toFixed(1)} dB</output>
-      </label>
-      <span
-        class={styles.knob}
-        classList={{ [styles.knobTurning]: turning() }}
-        title={`Pan ${studioPanLabel(pan())}. Drag up or down; double-click to centre.`}
-        onPointerDown={knobDown}
-        onPointerMove={knobMove}
-        onPointerUp={knobUp}
-        onPointerCancel={() => {
-          drag = null
-          setTurning(false)
-          cancel()
-        }}
-        onDblClick={() => {
-          if (props.writable) commit('pan', 0)
-        }}
-      >
-        <input
-          ref={panInput}
-          class={styles.knobInput}
-          aria-label={`${props.track.name} pan`}
-          type="range"
-          min="-1"
-          max="1"
-          step="0.01"
-          value={pan()}
-          disabled={!props.writable}
-          aria-valuetext={
-            pan() === 0
-              ? 'Centre'
-              : `${Math.round(Math.abs(pan()) * 100)} percent ${pan() < 0 ? 'left' : 'right'}`
-          }
-          onInput={(event) => {
-            setEditing('pan')
-            setPan(event.currentTarget.valueAsNumber)
-          }}
-          onChange={(event) => commit('pan', event.currentTarget.valueAsNumber)}
-        />
-        <svg class={styles.knobDial} viewBox="0 0 32 32" aria-hidden="true">
-          <circle class={styles.knobFace} cx="16" cy="16" r="9" />
-          <circle
-            class={styles.knobArc}
-            cx="16"
-            cy="16"
-            r="13"
-            style={{ 'stroke-dasharray': `${KNOB_TRAVEL} ${KNOB_RING}` }}
-          />
-          <circle
-            class={styles.knobValueArc}
-            cx="16"
-            cy="16"
-            r="13"
-            style={{
-              transform: `rotate(${-90 + Math.min(0, angle())}deg)`,
-              'stroke-dasharray': `${(Math.abs(angle()) / 360) * KNOB_RING} ${KNOB_RING}`,
-            }}
-          />
-          <line
-            class={styles.knobPointer}
-            x1="16"
-            y1="16"
-            x2="16"
-            y2="9"
-            style={{ transform: `rotate(${angle()}deg)` }}
-          />
-        </svg>
-        <span class={styles.panValue} aria-hidden="true">
-          {studioPanLabel(pan())}
-        </span>
-      </span>
+        {knob()}
+        {volume()}
+        <div class={styles.stripButtons}>
+          {muteButton()}
+          {soloButton()}
+        </div>
+      </Show>
     </div>
   )
 }
