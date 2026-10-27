@@ -525,6 +525,26 @@ describe('Studio controller', () => {
     expect(controller.project()?.clips.at(-1)?.trackId).not.toBe(lane)
   })
 
+  it('says which lane a take missed and where, and stays quiet when it fits', async () => {
+    const { controller } = mount({
+      prepareFile: async (_blob, info) => preparedFixture(info),
+    })
+    await controller.open('one')
+    const file = new File(['abc'], 'Take.wav', { type: 'audio/wav' })
+    await controller.addFile(file)
+    const lane = controller.project()!.tracks[0]
+    const frames = controller.assets()[0].normalizedFrameCount
+
+    await controller.addFile(file, frames, lane.id)
+    const afterFit = controller.laneNotice()
+    await controller.addFile(file, 0, lane.id)
+
+    expect(afterFit).toBeNull()
+    expect(controller.laneNotice()).toEqual({
+      text: `No room on ${lane.name} at 0:00. Added on a new lane.`,
+    })
+  })
+
   it('opens locked projects read-only and takeover reloads the latest durable snapshot', async () => {
     const { controller, service } = mount()
     vi.mocked(service.acquireLease).mockRejectedValueOnce(

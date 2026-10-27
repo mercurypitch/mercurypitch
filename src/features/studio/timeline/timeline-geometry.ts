@@ -47,6 +47,11 @@ export function formatStudioTime(frame: number): string {
   return `${minutes}:${String(Math.floor(milliseconds / 1000) % 60).padStart(2, '0')}.${String(milliseconds % 1000).padStart(3, '0')}`
 }
 
+/** A moment for a sentence: `0:05`, or `0:05.5` between whole seconds. */
+export function formatStudioMoment(frame: number): string {
+  return formatStudioTime(frame).replace(/\.?0+$/, '')
+}
+
 /** Seconds from typed clock text: `65.5`, `1:05.5` or `1:05:30`; null when it is not a time. */
 export function parseStudioTime(text: string): number | null {
   const parts = text.trim().split(':')
