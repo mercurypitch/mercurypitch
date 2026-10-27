@@ -7,8 +7,9 @@ whatever length it needs, is in [`dev-changelog.md`](./dev-changelog.md).
 
 ## [0.9.23] - 2026-10-27
 
-A weekly Check-up shows how your voice has moved. Arpeggio Jumper grades the
-notes you sing, and the scales chapter and Drone Intonation say what is true.
+A weekly Check-up shows how your voice has moved, and Merc shows you around.
+Arpeggio Jumper grades the notes you sing, and the scales chapter and Drone
+Intonation say what is true.
 
 ### Added
 
@@ -21,6 +22,17 @@ notes you sing, and the scales chapter and Drone Intonation say what is true.
   Merc, and never your name.
 - **No account needed.** Your Check-ups stay in this browser. A free account
   keeps every one, on every device.
+- **Merc shows you around.** After your plan, Show me around has Merc hop
+  along the tab bar, then opens your first stop with its tour. On the Map,
+  Practice offers Take the tour too.
+- **Tours that wait for you.** Merc's tours of Singing and Karaoke Night
+  wait while you start the mic and sing, and Skip is always there. After
+  Singing's, Merc offers your plan's next stop.
+- **A tour offer by the page title.** The first time you open a tab, a line
+  by its title offers its tour, in place of the notice in the corner.
+- **Change your plan's answers.** Home's plan card and a new Your plan
+  section in Settings open the four questions with your answers already
+  picked.
 
 ### Changed
 
@@ -43,8 +55,9 @@ notes you sing, and the scales chapter and Drone Intonation say what is true.
   promises "just intonation".
 - **Onboarding's account offer names the weekly Check-up.** It said your
   range was saved, even after a range read that was not clean.
-- **Show me around tours Practice too.** When your plan starts on Practice,
-  Show me around now plays its tour, and the Map offers Take the tour there.
+- **Home's plan card can come back.** Its X hides only the plan it showed,
+  and says where the plan is, with Undo. New answers bring the card back,
+  and so does Settings.
 - **Easier to press on a phone.** The header, Karaoke Night's top bar,
   Exercises' filters and Start buttons, Settings' tabs, Jam's join form, the
   small "i" and "?" and a toast's buttons each take a full finger's press.
