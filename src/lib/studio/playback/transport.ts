@@ -24,7 +24,7 @@ import { createStudioBufferCache } from './buffer-cache'
 import { buildStudioGraph, studioGraphWorkingBytes } from './graph'
 import { cancelHandoff, handoffTiming, scheduleHandoff } from './handoff'
 import type { StudioDrafts, StudioLaneDraft } from './in-place'
-import { applyDrafts, applyMix, applySound, followRepeat, playInPlace, withDrafts, } from './in-place'
+import { applyDrafts, applyMix, applySound, followMaster, followRepeat, playInPlace, withDrafts, } from './in-place'
 import type { StudioRunLayout } from './live-edit'
 import { audibility, firstThatFits, studioRunLayouts } from './live-edit'
 import type { StudioLatencyReader } from './prepare-plan'
@@ -652,6 +652,7 @@ export function createStudioTransport(options: StudioTransportOptions) {
       repeat = enabled
       for (const run of [active, held]) if (run) followRepeat(run, enabled)
     },
+    /** A playing song glides to a newly measured master gain. */
     setMasterGain(value: StudioMasterGainToken | null) {
       if (
         value &&
@@ -665,6 +666,9 @@ export function createStudioTransport(options: StudioTransportOptions) {
         throw new Error('The prepared master has invalid gain settings.')
       masterGain = value === null ? null : { ...value }
       publish({ masterReady: masterGain !== null })
+      for (const run of liveRuns())
+        if (followMaster(run, masterGain))
+          applySound(run, withDrafts(run.project, drafts))
     },
     resetPeakHold() {
       heard()?.meter?.clearPeakHold()
@@ -716,7 +720,7 @@ export function createStudioTransport(options: StudioTransportOptions) {
       if (
         active &&
         !preparing &&
-        playInPlace(active, project, { drafts, repeat })
+        playInPlace(active, project, { drafts, repeat, masterGain })
       ) {
         // A run heard until its handover follows the mix too.
         for (const { from } of handoffs)
