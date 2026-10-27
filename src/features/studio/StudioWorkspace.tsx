@@ -1,5 +1,5 @@
 // Studio workspace — arrangement view state, contextual panels and the shared audio transport.
-import { createEffect, createMemo, createSignal, For, onCleanup, onMount, Show, untrack, } from 'solid-js'
+import { createEffect, createMemo, createSignal, onCleanup, onMount, Show, untrack, } from 'solid-js'
 import { CheckSmall, ChevronDown, Download, Plus, RotateCcw, SlidersHorizontal, } from '@/components/icons'
 import { installSpacePlaybackToggle, isInsideOverlay, isTypingTarget, } from '@/lib/space-playback'
 import { createStudioTrack } from '@/lib/studio/model/defaults'
@@ -13,6 +13,8 @@ import { StudioExportPanel } from './export/StudioExportPanel'
 import { useStudioExport } from './export/useStudioExport'
 import { isStudioAudioDrop, studioDropFrame, studioDroppedTake, } from './integration/drop-audio'
 import type { StudioSourceEntry } from './integration/source-catalog'
+import { StudioMixDesk } from './mix/StudioMixDesk'
+import { StudioPhoneMix } from './mix/StudioPhoneMix'
 import { StudioClipDetails } from './panels/StudioClipDetails'
 import { StudioPanel } from './panels/StudioPanel'
 import { StudioSongPanel } from './panels/StudioSongPanel'
@@ -20,14 +22,12 @@ import { StudioTrackDetails } from './panels/StudioTrackDetails'
 import { StudioSoundPanel } from './sound/StudioSoundPanel'
 import { useStudioComparison } from './sound/useStudioComparison'
 import { useStudioSound } from './sound/useStudioSound'
-import { RotateCw } from './studio-icons'
+import { MixingDesk, RotateCw } from './studio-icons'
 import styles from './StudioPage.module.css'
 import { StudioSourcePicker } from './StudioSourcePicker'
 import { StudioTransport } from './StudioTransport'
 import { StudioTimeline } from './timeline/StudioTimeline'
-import { StudioTrackControls } from './timeline/StudioTrackControls'
 import { studioContentEnd } from './timeline/timeline-geometry'
-import { studioTrackColor, studioTrackHue } from './timeline/track-hues'
 import type { StudioController } from './useStudioController'
 
 type Panel =
@@ -60,6 +60,8 @@ export function StudioWorkspace(props: StudioWorkspaceProps) {
   )
   const tablet = () => coarse() && !phone()
   const [panel, setPanel] = createSignal<Panel>(null)
+  // Mix is a drawer under the timeline, except on a phone, where it is a sheet.
+  const deskOpen = () => panel() === 'mix' && !phone()
   const [selectedClipId, setSelectedClipId] = createSignal<string | null>(null)
   const [selectedTrackId, setSelectedTrackId] = createSignal<string | null>(
     null,
@@ -524,17 +526,19 @@ export function StudioWorkspace(props: StudioWorkspaceProps) {
             <Plus size={16} />
             <span class={styles.label}>Add takes</span>
           </button>
-          <Show when={phone()}>
-            <button
-              type="button"
-              class={styles.button}
-              aria-expanded={panel() === 'mix'}
-              data-tour="studio.mix"
-              onClick={() => openPanel('mix')}
-            >
-              Mix
-            </button>
-          </Show>
+          <button
+            type="button"
+            class={styles.button}
+            aria-expanded={panel() === 'mix'}
+            data-tour="studio.mix"
+            title="Mix"
+            onClick={() =>
+              panel() === 'mix' ? closePanel() : openPanel('mix')
+            }
+          >
+            <MixingDesk size={16} />
+            <span class={styles.label}>Mix</span>
+          </button>
           <button
             type="button"
             class={styles.button}
@@ -624,7 +628,7 @@ export function StudioWorkspace(props: StudioWorkspaceProps) {
             phone={phone()}
             tablet={tablet()}
             onZoom={setZoom}
-            drawerOpen={panel() !== null && overlay()}
+            drawerOpen={panel() !== null && overlay() && !deskOpen()}
             onAddTakes={
               panel() === 'sources' ? undefined : () => openPanel('sources')
             }
@@ -641,8 +645,18 @@ export function StudioWorkspace(props: StudioWorkspaceProps) {
             }}
             readCanonicalAsset={props.studio.readCanonicalAsset}
           />
+          <Show when={deskOpen()}>
+            <StudioMixDesk
+              project={project()}
+              writable={writable()}
+              tablet={tablet()}
+              meter={transport}
+              onCommand={props.studio.dispatch}
+              onClose={closePanel}
+            />
+          </Show>
         </div>
-        <Show when={panel()}>
+        <Show when={panel() !== null && !deskOpen()}>
           <StudioPanel
             title={panelTitle()}
             onClose={closePanel}
@@ -736,45 +750,15 @@ export function StudioWorkspace(props: StudioWorkspaceProps) {
               />
             </Show>
             <Show when={panel() === 'mix' && phone()}>
-              <div class={styles.phoneMix}>
-                <For
-                  each={[...project().tracks]
-                    .sort((a, b) => a.order - b.order)
-                    .map((track) => track.id)}
-                >
-                  {(id, index) => {
-                    const track = () =>
-                      project().tracks.find((item) => item.id === id)!
-                    return (
-                      <div
-                        class={styles.phoneTrack}
-                        style={{
-                          '--studio-track': studioTrackColor(
-                            studioTrackHue(track(), index()),
-                          ),
-                        }}
-                      >
-                        <button
-                          type="button"
-                          class={styles.textButton}
-                          onClick={() => {
-                            setSelectedTrackId(id)
-                            openPanel('track')
-                          }}
-                        >
-                          {track().name}
-                        </button>
-                        <StudioTrackControls
-                          track={track()}
-                          writable={writable()}
-                          compact={true}
-                          onCommand={props.studio.dispatch}
-                        />
-                      </div>
-                    )
-                  }}
-                </For>
-              </div>
+              <StudioPhoneMix
+                project={project()}
+                writable={writable()}
+                onCommand={props.studio.dispatch}
+                onTrackDetails={(id) => {
+                  setSelectedTrackId(id)
+                  openPanel('track')
+                }}
+              />
             </Show>
           </StudioPanel>
         </Show>

@@ -1,0 +1,127 @@
+/* Studio macro dial — a centre-zero knob: the accent arc grows from twelve o'clock towards the end it leans to. */
+.dial {
+  /* A host may size the face with --dial-size; a finger gets at least 56 px. */
+  --face: var(--dial-size, 52px);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+  min-width: 0;
+  -webkit-user-select: none;
+  user-select: none;
+}
+.title {
+  color: var(--studio-text);
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 16px;
+  white-space: nowrap;
+}
+.face {
+  position: relative;
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: var(--face);
+  height: var(--face);
+  border-radius: 50%;
+  cursor: ns-resize;
+  touch-action: none;
+}
+.face svg {
+  grid-area: 1 / 1;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+}
+/* The native range stays for keys and assistive tech; the drawing takes the pointer. */
+.input {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  opacity: 0;
+  pointer-events: none;
+}
+.face:has(.input:focus-visible) {
+  outline: 2px solid var(--studio-accent);
+  outline-offset: 2px;
+}
+.face:has(.input:disabled) {
+  opacity: 0.5;
+  cursor: default;
+}
+.zero {
+  stroke: var(--studio-muted);
+  stroke-width: 1.5;
+  stroke-linecap: round;
+}
+.track,
+.arc {
+  fill: none;
+  stroke-width: 3;
+  stroke-linecap: round;
+  transform-origin: 24px 24px;
+}
+.track {
+  stroke: var(--studio-rail);
+  transform: rotate(135deg);
+}
+.arc {
+  stroke: var(--studio-accent);
+}
+.idle {
+  opacity: 0;
+}
+.cap {
+  fill: var(--studio-control);
+  stroke: var(--studio-line-strong);
+  stroke-width: 1;
+}
+.pointer {
+  stroke: var(--studio-text);
+  stroke-width: 2;
+  stroke-linecap: round;
+  transform-origin: 24px 24px;
+}
+.value {
+  grid-area: 1 / 1;
+  color: var(--studio-text-2);
+  font-size: 10.5px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+  pointer-events: none;
+}
+.turning .value {
+  color: var(--studio-text);
+}
+/* Each word sits just under its own end of the ring, in the open foot of the dial. */
+.ends {
+  position: relative;
+  flex: none;
+  width: var(--face);
+  height: 13px;
+  margin-top: calc(var(--face) * -0.16 - 3px);
+  color: var(--studio-muted);
+  font-size: 10px;
+  line-height: 13px;
+  white-space: nowrap;
+}
+.ends span {
+  position: absolute;
+  top: 0;
+  transform: translateX(-50%);
+}
+.ends span:first-child {
+  left: 18%;
+}
+.ends span:last-child {
+  left: 82%;
+}
+@media (pointer: coarse) {
+  .dial {
+    --face: max(var(--dial-size, 52px), 56px);
+  }
+}
