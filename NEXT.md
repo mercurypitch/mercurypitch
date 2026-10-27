@@ -624,3 +624,10 @@ Note: the lanes' memory gate read a stale cgroup path after the 21:00 restart (f
 - Release Tours dispatched: run 40502692131 (run 12) on d374539879158c8dd886837c59525a9301ca74aa. Build & Deploy 40502660364 on d37453987 (dev) in progress. Dev had both PRs from 12:07 (run 40500829655).
 - Checklist doc rev 13: .1035 ticked, #1232 row linked + "Merged at 12:17 UTC", intro .54 says Release Tours is the last check, .760 "four of them" fixed, .1436 dev has both since 12:07.
 - NEXT: Release Tours result -> tick .1140, intro .54 final; ping the owner (checklist link, dev check, tag commands with d37453987). Then L10 run 3 brief + builder.
+
+## 12:33 UTC 27 Oct: 0.9.23 READY TO TAG; owner pinged
+- Release Tours run 40502692131 (run 12) on d374539879158c8dd886837c59525a9301ca74aa: success; desktop TOTAL 144, 0 without spotlight, 0 WIDE/BAR, 4 skipped (known wide 10); mobile TOTAL 127, 0, 0, 4 (known wide 9).
+- Build & Deploy 40502660364 on d37453987: success 12:21 (dev has the notes).
+- Checklist doc rev 15: .1140 ticked with results, intro .54 "ready to tag", .1436 dev since 12:07 / notes 12:21.
+- L10 branch REBASED by the lead onto d37453987: feat/lesson-10-page 2f2294398 (tag lead/l10-page3-base; was 05cf30376 = lead/l10-page2-gated). One conflict, L11 FACTS 47-49: kept the branch's season.ts:365-373 and drafts :30-40, main's SettingsPanel :617/:652. range-diff: 17 of 18 identical, #11 differs only there. plan-cites 157 = main (same findings, l10/page-3/base/cites-*.txt). docs:index current. Pushed with lease over 05cf30376.
+- NEXT: L10 run 3 brief (l10/BRIEF-page-3.md: P16, P17, P18 + map), check rate limit, launch the builder at xhigh in l10-page. After the tag: watch the tag's Build & Deploy and Release Tours.
