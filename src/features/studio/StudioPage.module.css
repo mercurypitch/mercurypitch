@@ -502,19 +502,30 @@
   min-height: 520px;
   outline: none;
 }
+/* The top bar: the song on the left, the transport dead centre, the actions
+   on the right. Both sides get the same width, so the transport never moves;
+   as the bar narrows, the actions fold to icons and the meter steps out
+   before anything can crowd it, and a narrow bar gives the transport its
+   own row. */
 .topBar {
   container-type: inline-size;
   position: relative;
   z-index: 20;
-  display: grid;
+  /* A <header>: the app's own header rule would add padding and a flex row. */
+  display: block;
   flex: none;
-  grid-template-columns: minmax(0, 1fr) auto minmax(max-content, 1fr);
-  align-items: center;
-  gap: 16px;
-  min-height: 60px;
-  padding: 0 16px;
+  padding: 0;
   border-bottom: 1px solid var(--studio-line);
   background: var(--studio-bar);
+}
+.topBarRow {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+  align-items: center;
+  gap: 16px;
+  /* 60 px with the bar's border, as before the row had its own box. */
+  min-height: 59px;
+  padding: 0 16px;
 }
 .songIdentity {
   display: flex;
@@ -565,9 +576,12 @@
   display: inline-flex;
   align-items: center;
   gap: 4px;
+  max-width: 100%;
   min-height: 16px;
+  overflow: hidden;
   color: var(--studio-muted);
   font-size: 11.5px;
+  text-overflow: ellipsis;
   white-space: nowrap;
 }
 .saveStatus svg {
@@ -617,7 +631,12 @@
   display: flex;
   align-items: center;
   justify-self: end;
-  gap: 8px;
+  gap: 6px;
+  min-width: 0;
+}
+.topActions .button,
+.topActions .primaryButton {
+  padding: 0 11px;
 }
 .historyButtons {
   display: flex;
@@ -626,10 +645,13 @@
 .divider {
   width: 1px;
   height: 22px;
-  margin: 0 4px;
+  margin: 0 2px;
   background: var(--studio-line-strong);
 }
-@container (max-width: 900px) {
+/* Folding, widest first. Each step leaves the actions no wider than the
+   song's side, so the transport stays centred (thresholds measured with
+   the labels in English at 13 px). */
+@container (max-width: 1389px) {
   .workspace:not(.phone) .label {
     position: absolute;
     width: 1px;
@@ -643,12 +665,39 @@
     padding: 0;
   }
 }
-@container (max-width: 1120px) {
+@container (max-width: 1109px) {
   .transport > div:last-child {
     display: none;
   }
   .topBar .transport {
     padding-right: 6px;
+  }
+}
+@container (max-width: 949px) {
+  .workspace:not(.phone) .exportLabel {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
+  .workspace:not(.phone) .topActions .primaryButton {
+    width: 34px;
+    padding: 0;
+  }
+}
+/* Too narrow for one row: the song and the actions, then the transport. */
+@container (max-width: 849px) {
+  .workspace:not(.phone) .topBarRow {
+    grid-template-columns: minmax(0, 1fr) auto;
+    row-gap: 6px;
+    padding-block: 8px;
+  }
+  .workspace:not(.phone) .topBarRow > .transport {
+    grid-row: 2;
+    grid-column: 1 / -1;
+    justify-self: center;
   }
 }
 .editor {
@@ -1170,8 +1219,57 @@
   .workspace:not(.phone) .topActions .button {
     min-width: 44px;
   }
-  .topBar {
-    min-height: 68px;
+  .topBarRow {
+    min-height: 67px;
+  }
+  /* Finger-sized actions are wider, so each fold comes sooner. */
+  @container (max-width: 1479px) {
+    .workspace:not(.phone) .label {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      overflow: hidden;
+      clip-path: inset(50%);
+      white-space: nowrap;
+    }
+    .workspace:not(.phone) .topActions .button {
+      width: 44px;
+      padding: 0;
+    }
+  }
+  @container (max-width: 1219px) {
+    .transport > div:last-child {
+      display: none;
+    }
+    .topBar .transport {
+      padding-right: 6px;
+    }
+  }
+  @container (max-width: 1059px) {
+    .workspace:not(.phone) .exportLabel {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      overflow: hidden;
+      clip-path: inset(50%);
+      white-space: nowrap;
+    }
+    .workspace:not(.phone) .topActions .primaryButton {
+      width: 44px;
+      padding: 0;
+    }
+  }
+  @container (max-width: 959px) {
+    .workspace:not(.phone) .topBarRow {
+      grid-template-columns: minmax(0, 1fr) auto;
+      row-gap: 6px;
+      padding-block: 8px;
+    }
+    .workspace:not(.phone) .topBarRow > .transport {
+      grid-row: 2;
+      grid-column: 1 / -1;
+      justify-self: center;
+    }
   }
 }
 
@@ -1179,7 +1277,7 @@
 .workspace.phone {
   min-height: 440px;
 }
-.phone .topBar {
+.phone .topBarRow {
   grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 6px 8px;
   min-height: 0;
