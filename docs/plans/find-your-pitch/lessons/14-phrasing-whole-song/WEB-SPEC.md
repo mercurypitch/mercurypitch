@@ -62,7 +62,7 @@ and wordmark, and the motion rules. On this page:
   where level is height in a strip of its own, as Lesson 5 draws it.
 - A breath mark is the kit's, the one Lesson 6's slide guide draws: a small tick over the line with
   the word "breathe", in the line's colour, lit once the voice reaches it (`kit/slide-guide.ts`: the
-  header, `:20-23`; `breaths`, `:62-63`; `breathAt`, `:324-336`; `drawBreaths`, `:338-363`), the
+  header, `:20-25`; `breaths`, `:64-65`; `breathAt`, `:342-361`; `drawBreaths`, `:363-388`), the
   tick a score's comma (26).
 - The words sit under the notes, each syllable under its note in the chart's mono at 11 px, ink-2,
   the sounding one ink (91).
@@ -844,7 +844,7 @@ among them (PR #1149), and in Lesson 9's spec, beyond the parts Lessons 2 to 9 p
    syllable (Lesson 9 WEB-SPEC, What the kit and the app still need, 5; if Lesson 9's page has not
    brought them, this one does); the words strip, its syllables centred under their notes at 11 px;
    the chord strip; breath marks, the slide guide's tick and word (`kit/slide-guide.ts`: `breathAt`,
-   `:324-336`; `drawBreaths`, `:338-363`), moved into a drawing both charts share; the light along a
+   `:342-361`; `drawBreaths`, `:363-388`), moved into a drawing both charts share; the light along a
    band, from a level curve, kept once sounded; and Step 3's two windows over one band. The existing
    single band is the case with none of these, so Lessons 3, 5 and 9's figures see no change; a unit
    test proves it.

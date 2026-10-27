@@ -572,7 +572,7 @@ and the line references are main's.
   (`kit/voice-choice.ts:20`).
 - Lesson 4's scale guide, generalised to any number of rows and any path, with its count-in and
   Move do (Toys 6), and the feeling question as a kit part shared with Lesson 3. On main: the guide
-  takes any rows and any path, with its count-in (`mountGuide`, `kit/slide-guide.ts:381`), and the
+  takes any rows and any path, with its count-in (`mountGuide`, `kit/slide-guide.ts:406`), and the
   feeling question is the kit's (`mountFeelings`, `kit/comfort.ts:175`); Move do is still Lesson
   4's (`lesson-04/sing.ts`).
 - `vite.config.ts`: `/learn/06` served from `learn/06.html` in dev and preview, and `learn/06.html`

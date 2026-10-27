@@ -878,7 +878,7 @@ the others take it.
 
 Lesson 6's page (#1149) also brought kit parts this page does not use: the ear game
 (`kit/ear-game.ts`), the tune line (`kit/tune-line.ts`, with its layout, drawing and motion modules)
-and the slide guide's `breaths` (`kit/slide-guide.ts:63`). The siren is one breath and draws on the
+and the slide guide's `breaths` (`kit/slide-guide.ts:65`). The siren is one breath and draws on the
 range chart.
 
 Already on main, so this page needs nothing more from them: run-time publishing (`kit/publish.ts`,
