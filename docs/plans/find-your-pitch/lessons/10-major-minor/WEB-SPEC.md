@@ -102,7 +102,7 @@ FACTS 5a). Each section's heading, and the line above it, are in LESSON.md ("Sec
 1. **Masthead**: Lesson 4's (wordmark, "Season 1 · Lesson 10", anchors Lesson, Sing and Explorer,
    the Sound toggle off by default, Pause animations with its reduced-motion lock), through
    `initMasthead` (`src/features/lessons/kit/page-chrome.ts:122-154`) with Lesson 4's map of
-   sections and `{ lesson: 10, deck }` (`lesson-04/main.ts:99-110`), which draws the lesson menu,
+   sections and `{ lesson: 10, deck }` (`lesson-04/main.ts:109-119`), which draws the lesson menu,
    remembers the steps the viewer reaches and first settles the page's links to other lessons for
    the state it was served with (`followPageState`, `src/features/lessons/kit/page-chrome.ts:126`).
 2. **Hero, with the cold open**, laid out as Lesson 2's (`learn/02.html:333-506`). Its copy holds
@@ -149,7 +149,7 @@ FACTS 5a). Each section's heading, and the line above it, are in LESSON.md ("Sec
    links open in a new tab. The two versions sit in one `#practiseCard`, shown by the visit's
    ending, as Lesson 5's are (`lesson-05/wrap.ts:23-25`; `comfort.ts:126-149`). The next lesson's
    card is the kit's, drawn from the season by `createNextCard(10)` before
-   `createExplorer({ current: 10 })`, as Lesson 4's page draws its own (`lesson-04/main.ts:94-96`;
+   `createExplorer({ current: 10 })`, as Lesson 4's page draws its own (`lesson-04/main.ts:95`, `:105`;
    `kit/next-card.ts:181-209`, from the season as the page's state shows it). Its eyebrow reads
    "Next lesson 11 · Registers and the break" with "Coming later"; then Lesson 11's tease, "Slide up
    slowly, and your voice may flip.", above Lesson 11's hook, and "See it on the map" while Lesson
@@ -663,11 +663,11 @@ still images when WebGL fails or would run on the CPU.
 
 - They live in the hero, on either side of the spiral, and are on screen while the cold open plays.
   Tavi asks and Merc answers in the bubbles (LESSON.md). While a chord sounds, both listen
-  (`mercListen`, `merc-duo.ts:206`); neither sings, since the chord is not sung. Tavi celebrates
+  (`mercListen`, `merc-duo.ts:207`); neither sings, since the chord is not sung. Tavi celebrates
   once as the reveal shows, the puzzled guesser who then gets it (`mercCelebrate('orange', 1600)`,
   `:217`, as Lesson 2's cold open does, `lesson-02/cold-open.ts:56`; playbook rule 15), a quiet one,
   since the reveal calls no choice right: the page mounts the pair with `{ sparkles: 'none' }`
-  (`MercDuoOptions`, `merc-duo.ts:120-126`). The page asks for no other state.
+  (`MercDuoOptions`, `merc-duo.ts:119-125`). The page asks for no other state.
 - In Sing it Merc and Tavi appear as stills, in the ring (Toys 6).
 - Under reduced motion or Pause animations each Merc holds a still frame and skips the reactions.
 
@@ -739,8 +739,8 @@ built:
   (`src/features/lessons/kit/drafts.test.ts:57-68`), so the entry folds nothing away.
 
 - `pr.link`, proposed: `href` `/ear-lab?lesson=10`, `addr` `mercurypitch.com/ear-lab`, `label` "Ear
-  Lab" and `note` "then tap Stack", which `practiseMarkup` prints after the address as "Ear Lab,
-  then tap Stack" (`kit/explorer.ts:177-182`). Stack is the lesson's ear drill and needs no voice,
+  Lab" and `note` "then tap Stack", which `practiseMarkup` joins with a comma after the address
+  (`kit/explorer.ts:177-182`), so the card reads "Ear Lab, then tap Stack". Stack is the lesson's ear drill and needs no voice,
   so the card stays right whatever Sing it's ending, as Lesson 6's card links Leap
   (`season.ts:278-281`). For the owner (Decisions for the owner), the other choice: Drone
   Intonation, `href` `/pitch-training?lesson=10`, `label` "Exercises" and `note` "then tap Drone
