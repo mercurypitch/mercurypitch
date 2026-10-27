@@ -9,7 +9,7 @@ import { reserveStudioMemory } from '../memory-budget'
 import { createStudioLiveMeter, prepareStudioLiveMeter, } from '../metering/live-meter'
 import type { StudioMeterSnapshot } from '../metering/stream-meter'
 import { compileStudioArrangement } from '../model/arrangement-plan'
-import type { StudioAsset, StudioProject } from '../model/types'
+import type { StudioAsset, StudioProject, StudioTrack } from '../model/types'
 import type { StudioBufferCache, StudioBufferLease } from './buffer-cache'
 import { createStudioBufferCache } from './buffer-cache'
 import type { StudioGraph } from './graph'
@@ -45,6 +45,9 @@ export interface StudioTransportOptions {
 interface Run {
   ctx: AudioContext
   graph: StudioGraph
+  project: StudioProject
+  /** Tracks with material from where this run started. */
+  sounding: ReadonlySet<string>
   envelope: GainNode
   meter: ReturnType<typeof createStudioLiveMeter>
   buffers: StudioBufferLease
@@ -123,6 +126,30 @@ export function createStudioTransport(options: StudioTransportOptions) {
     )
       masterGain = null
     publish({ masterReady: masterGain !== null })
+  }
+
+  /**
+   * Apply an edit that only moved lane volume, balance, pan, Mute or Solo to
+   * the running graph, so the song keeps playing. False when it needs a
+   * restart: any other change, or a lane with material that was silent when
+   * Play built the graph.
+   */
+  function mixInPlace(run: Run, project: StudioProject): boolean {
+    if (!sameExceptMix(run.project, project)) return false
+    const hasSolo = project.tracks.some((track) => track.solo)
+    const audible = (track: StudioTrack) =>
+      !track.mute && (!hasSolo || track.solo)
+    const missing = project.tracks.some(
+      (track) =>
+        audible(track) &&
+        run.sounding.has(track.id) &&
+        !run.graph.hasLane(track.id),
+    )
+    if (missing) return false
+    for (const track of project.tracks)
+      run.graph.setLaneMix(track, audible(track))
+    run.project = project
+    return true
   }
 
   function release(run: Run): void {
@@ -319,6 +346,12 @@ export function createStudioTransport(options: StudioTransportOptions) {
       active = {
         ctx,
         graph,
+        project,
+        sounding: new Set(
+          plan.lanes
+            .filter((lane) => lane.segments.length > 0)
+            .map((lane) => lane.track.id),
+        ),
         envelope,
         meter,
         buffers,
@@ -498,6 +531,7 @@ export function createStudioTransport(options: StudioTransportOptions) {
     ): Promise<void> {
       observeSnapshot(project)
       if (!wantsPlayback || disposed) return
+      if (active && !preparing && mixInPlace(active, project)) return
       const token = ++restartGeneration
       const frame = active ? position(active) : state.playheadFrame
       pause(true)
@@ -543,3 +577,22 @@ export function createStudioTransport(options: StudioTransportOptions) {
 }
 
 export type StudioTransport = ReturnType<typeof createStudioTransport>
+
+/** Two snapshots that differ at most in lane volume, balance, pan, Mute and Solo. */
+function sameExceptMix(a: StudioProject, b: StudioProject): boolean {
+  const shape = (project: StudioProject) =>
+    JSON.stringify({
+      ...project,
+      revision: 0,
+      updatedAt: '',
+      tracks: project.tracks.map((track) => ({
+        ...track,
+        gainDb: 0,
+        balanceGainDb: 0,
+        pan: 0,
+        mute: false,
+        solo: false,
+      })),
+    })
+  return a.tracks.length === b.tracks.length && shape(a) === shape(b)
+}

@@ -62,6 +62,44 @@ describe('shared Studio graph', () => {
     ).toBe(true)
   })
 
+  it('glides a playing lane to new volume and pan, and to silence on Mute', () => {
+    const { project, asset } = studioFixture()
+    const dry = {
+      ...project,
+      tracks: project.tracks.map((track) => ({
+        ...track,
+        balanceGainDb: 0,
+        fx: { ...track.fx, baseSpec: { version: 1 as const, effects: [] } },
+      })),
+    }
+    const plan = compileStudioArrangement(dry, [asset], {
+      latencies: { sampleRate: 48000, framesByTrack: { 'track-1': 0 } },
+    })
+    const ctx = new PlaybackContext()
+    ctx.state = 'suspended'
+    ctx.currentTime = 2
+    const graph = buildStudioGraph(ctx.asContext, plan, new Map(), 0.5, false)
+    expect(graph.hasLane('track-1')).toBe(true)
+    expect(graph.hasLane('missing')).toBe(false)
+    const lane = ctx
+      .ofType<ReturnType<PlaybackContext['createGain']>>('gain')
+      .filter((gain) => gain.gain.events.length === 0)
+    const before = lane.map((gain) => gain.gain.value)
+    graph.setLaneMix({ ...dry.tracks[0], gainDb: -6, pan: 1 }, true)
+    const targets = (gain: (typeof lane)[number]) =>
+      gain.gain.events.filter((event) => event.kind === 'target')
+    const moved = lane.filter((gain) => targets(gain).length === 1)
+    expect(moved).toHaveLength(2)
+    const [left, right] = moved.map((gain) => targets(gain)[0])
+    expect(left).toMatchObject({ time: 2, timeConstant: 0.012 })
+    expect(left.value).toBeCloseTo(0, 6)
+    expect(right.value).toBeCloseTo(Math.pow(10, -6 / 20), 6)
+    expect(before.length).toBeGreaterThanOrEqual(2)
+    graph.setLaneMix(dry.tracks[0], false)
+    expect(moved.map((gain) => targets(gain)[1].value)).toEqual([0, 0])
+    graph.dispose()
+  })
+
   it('rejects scheduler underrun rather than starting late material as if it were aligned', () => {
     const { project, asset } = studioFixture()
     const dry = {
