@@ -204,17 +204,26 @@
   background: var(--exercise-hard-bg);
 }
 
-/* Difficulty filter pills above the gallery. */
+/* Difficulty filter pills above the gallery: a frame, and the row of pills
+   inside it. The row is what scrolls on a phone (mobile-polish.css); the
+   frame keeps the size the tour spotlights. A column, so the row's margins
+   stay inside the frame instead of collapsing through it. */
 .exercise-filter {
   display: flex;
-  flex-wrap: wrap;
-  justify-content: center;
-  gap: 6px;
+  flex-direction: column;
   max-width: 1120px;
   margin: 0 auto 14px;
 }
 
+.exercise-filter-row {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 6px;
+}
+
 .exercise-filter-pill {
+  position: relative;
   padding: 4px 14px;
   border-radius: 999px;
   border: 1px solid var(--border);
@@ -239,6 +248,24 @@
   background: var(--accent);
   color: var(--on-accent, var(--bg-primary));
   border-color: var(--accent);
+}
+
+/* Under a finger each pill takes a 44 px press from an invisible box
+   centred on it, and draws as before: 25 px tall here, 36 px on a phone.
+   The pills are at least 46 px wide and 6 px apart, so the box only grows
+   up and down, into the 18 px above the row and the 14 px below it; on a
+   phone the row scrolls, and grows its own padding to hold the boxes
+   (mobile-polish.css). */
+@media (pointer: coarse) {
+  .exercise-filter-pill::before {
+    position: absolute;
+    top: 50%;
+    left: 0;
+    width: 100%;
+    height: 44px;
+    content: '';
+    transform: translateY(-50%);
+  }
 }
 
 .exercise-card p {
@@ -320,6 +347,7 @@
 /* ── Exercise Card Start Button ────────────────────────────── */
 
 .exercise-card-start-btn {
+  position: relative;
   align-self: center;
   /* Clear gap from the tags/stats above so it never touches them. */
   margin-top: 12px;
@@ -334,6 +362,23 @@
   transition:
     background 0.15s,
     transform 0.15s;
+}
+
+/* Start draws 25 px tall, and under a finger takes a 44 px press from an
+   invisible box centred on it: 9.5 px above, into the 12 px between it and
+   the tags, and 9.5 px below, into the card's 12 px padding. The box is
+   only as wide as the button, so it stays inside the card at every width
+   the gallery has. */
+@media (pointer: coarse) {
+  .exercise-card-start-btn::before {
+    position: absolute;
+    top: 50%;
+    left: 0;
+    width: 100%;
+    height: 44px;
+    content: '';
+    transform: translateY(-50%);
+  }
 }
 
 .exercise-card-start-btn:active {

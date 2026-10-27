@@ -13,7 +13,7 @@
 
 import type { Locator, Page } from '@playwright/test'
 import { expect, test } from '@playwright/test'
-import { hitArea, sharePress } from './helpers/hit-area'
+import { hitArea, neighbourAreas, sharePress } from './helpers/hit-area'
 import { dismissOverlays } from './helpers/ui'
 
 const VIEWPORTS = [
@@ -47,26 +47,6 @@ const sizeOf = (target: Locator): Promise<[number, number]> =>
     return [r.width, r.height]
   })
 
-/** Every other visible control within 60 px of `control`. */
-async function neighboursOf(page: Page, control: Locator) {
-  await control.evaluate((element) => {
-    const r = element.getBoundingClientRect()
-    const all = document.querySelectorAll(
-      'button, a[href], input, select, textarea',
-    )
-    for (const other of Array.from(all)) {
-      if (other === element) continue
-      const o = other.getBoundingClientRect()
-      if (o.width === 0 || o.height === 0) continue
-      const dx = Math.max(o.left - r.right, r.left - o.right, 0)
-      const dy = Math.max(o.top - r.bottom, r.top - o.bottom, 0)
-      if (dx <= 60 && dy <= 60) other.setAttribute('data-e2e-near', '')
-    }
-  })
-  const near = await page.locator('[data-e2e-near]').all()
-  return Promise.all(near.map((other) => hitArea(other)))
-}
-
 for (const vp of VIEWPORTS) {
   test.describe(`on a ${vp.name}`, () => {
     test.use(vp.use)
@@ -82,7 +62,7 @@ for (const vp of VIEWPORTS) {
       // Act
       const area = await hitArea(trigger)
       const glyph = await sizeOf(trigger.locator('svg').first())
-      const neighbours = await neighboursOf(page, trigger)
+      const neighbours = await neighbourAreas(trigger)
 
       // Assert
       expect(area.hit[0]).toBeGreaterThanOrEqual(vp.least)
@@ -107,7 +87,7 @@ for (const vp of VIEWPORTS) {
       const glyph = await about.evaluate(
         (element) => getComputedStyle(element).fontSize,
       )
-      const neighbours = await neighboursOf(page, about)
+      const neighbours = await neighbourAreas(about)
 
       // Assert
       expect(area.hit[0]).toBeGreaterThanOrEqual(vp.least)
