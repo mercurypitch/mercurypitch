@@ -779,8 +779,9 @@ at `85e23a1af` changed there, and that page's own lines are cited at `d59c00ad6`
 3. `lesson-10/chord-beads.ts`, new (Toys 1): the chord beads, generic over a chord, with its pure
    layout helper for the targets and the compact layout.
 4. `lesson-10/cold-open.ts`, new (Toys 2): the hero's spiral, its overlay and the bead slide. The
-   kit's spiral needs nothing: `setView('top')`, `ring`, `overlay`, `light` and `setTurning` are on
-   main (`kit/spiral.ts:103-141`, `:154-187`).
+   kit's spiral needs one option, `view: 'top'`, which starts the camera over the axis with no move
+   to make, where `setView('top')` would turn it there for 1.2 s; `ring`, `overlay`, `light` and
+   `setTurning` are on main (`kit/spiral.ts:103-141`, `:154-187`).
 5. The names switch (Toys 1): Lesson 4's (`lesson-04/stairs-words.ts`), promoted into the kit with a
    choice of modes and the page's own syllables, as Lesson 6's spec lists it. Lesson 6's page keeps
    its two modes on its own page (`NamesMode` and `NAMES_MODES`, `lesson-06/tune-words.ts:21-23` at `5e08dd4a3`,
@@ -1067,7 +1068,10 @@ bundle, which no site worker serves and which shows drafts: `build:e2e` sets `VI
 6. The first screen: the kit's `src/e2e/learn-cold-open-fold.spec.ts` takes every lesson page too
    (`lessonPages(REPO)`, `:27-32`): it holds the title on the first screen at its seven sizes and
    reports where the first Play and the predict's choices sit (`:12-17`). At 390 x 844, "Play the
-   chord" should be on the first screen; the app-check sweep confirms it with screenshots.
+   chord" should be on the first screen. It is not: under the drawn spiral it sits at 870 to 914 px,
+   or 908 to 952 px with the reduced-motion note. The layouts that would fit it shrink the hero's
+   ring or cut the meta chips' words, and a phone browser's own bars take more than the 108 px it
+   misses by, so it stays where the spiral puts it, as Lesson 9's does.
 7. Sing it: the comfort check shows first, every visit; with no stored voice the voice choice
    follows either answer, under "Choose a voice to sing with. If you chose one in an earlier lesson,
    pick it again:", and nothing plays until a voice is chosen; a stored `fyp-voice` shows pressed
