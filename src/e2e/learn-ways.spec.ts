@@ -145,6 +145,16 @@ test.describe('on the narrowest phone, 320 x 568', () => {
   }) => {
     // Act
     await page.goto('/learn/06')
+    // The first step's toy slides 18 px in from the side as it enters
+    // (lesson-stage.css), and under 342 px its figure spans the window, so
+    // until the slide ends the page is up to 18 px wider than the window.
+    // Nobody can scroll to that, since the page clips sideways, but a slow
+    // runner measured it. The page is measured with the toy at rest.
+    await page
+      .locator('#stepsStage .toy.is-active')
+      .evaluate((toy) =>
+        Promise.all(toy.getAnimations().map((a) => a.finished)),
+      )
 
     // Assert
     const trail = page.getByRole('navigation', { name: 'Breadcrumb' })
