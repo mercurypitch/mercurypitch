@@ -218,7 +218,7 @@ describe('the headings', () => {
     expect(groups().map(idsUnder)).toEqual([
       ['long-note-lantern', 'echo-stars'],
       ['warm-up-path', 'lip-roll-bay', 'ng-slides-bridge'],
-      ['home-note-lighthouse'],
+      ['home-note-lighthouse', 'first-note-stage'],
     ])
   })
 
@@ -390,6 +390,7 @@ describe("a card's level", () => {
       'Singer',
       'Singer',
       'Singer',
+      'Singer',
     ])
   })
 
@@ -397,6 +398,7 @@ describe("a card's level", () => {
     await openPicker({ level: 'professional' })
 
     expect(levels()).toEqual([
+      'Professional',
       'Professional',
       'Professional',
       'Professional',
@@ -418,6 +420,7 @@ describe('the last exercise opened', () => {
       null,
       null,
       null,
+      null,
     ])
   })
 
@@ -427,6 +430,7 @@ describe('the last exercise opened', () => {
     expect(cards().map((one) => one.getAttribute('aria-current'))).toEqual([
       null,
       'true',
+      null,
       null,
       null,
       null,
@@ -444,6 +448,7 @@ describe('the last exercise opened', () => {
       'true',
       null,
       null,
+      null,
     ])
   })
 
@@ -454,6 +459,7 @@ describe('the last exercise opened', () => {
       null,
       null,
       'true',
+      null,
       null,
       null,
       null,
@@ -470,6 +476,7 @@ describe('the last exercise opened', () => {
       null,
       'true',
       null,
+      null,
     ])
   })
 
@@ -477,6 +484,7 @@ describe('the last exercise opened', () => {
     await openPicker()
 
     expect(cards().map((one) => one.getAttribute('aria-current'))).toEqual([
+      null,
       null,
       null,
       null,

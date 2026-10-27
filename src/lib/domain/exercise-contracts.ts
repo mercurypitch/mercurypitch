@@ -63,6 +63,14 @@ export const EXERCISE_LIP_ROLL_BAY = 'lip-roll-bay' as const
  */
 export const EXERCISE_HOME_NOTE_LIGHTHOUSE = 'home-note-lighthouse' as const
 /**
+ * The premium First note, the second Ear room (an example song's band
+ * plays up to where its singer comes in and stops, and the singer sings
+ * that first note). Named as the others are: the exercise and what it
+ * draws. Its ruler is entries sung on the note at the first try, then
+ * notes found: an ear's first guess, then a voice's correction.
+ */
+export const EXERCISE_FIRST_NOTE_STAGE = 'first-note-stage' as const
+/**
  * The premium Warm-up: the rooms above run one after another, each a stop
  * on a glass path through the night, with the singer's song on top. Not an
  * exercise with a ruler of its own: each stop records in its own room, so
@@ -95,11 +103,12 @@ export type ExerciseType =
   | typeof EXERCISE_NG_SLIDES_BRIDGE
   | typeof EXERCISE_LIP_ROLL_BAY
   | typeof EXERCISE_HOME_NOTE_LIGHTHOUSE
+  | typeof EXERCISE_FIRST_NOTE_STAGE
 
 /**
  * The premium exercises the phone app opens from the Sing screen (Long note,
  * Echo, Ng slides, Lip roll, then the Warm-up) and from the Ear Lab (Home
- * note). A type here, below the features, so the shell bridge in
+ * note, First note). A type here, below the features, so the shell bridge in
  * `src/stores` can name one without importing a feature.
  */
 export type PremiumExerciseId =
@@ -109,6 +118,7 @@ export type PremiumExerciseId =
   | typeof EXERCISE_LIP_ROLL_BAY
   | typeof EXERCISE_WARM_UP_PATH
   | typeof EXERCISE_HOME_NOTE_LIGHTHOUSE
+  | typeof EXERCISE_FIRST_NOTE_STAGE
 
 // ── Config ──────────────────────────────────────────────────────
 

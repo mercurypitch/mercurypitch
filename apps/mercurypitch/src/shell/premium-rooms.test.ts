@@ -42,6 +42,12 @@ describe('premium rooms', () => {
     expect(isPremiumRoom('home-note')).toBe(true)
   })
 
+  it('draws First note, the second Ear room, full-bleed too, held upright on a phone', () => {
+    expect(PREMIUM_ROOM_SCREENS['first-note']).toEqual({ fullBleed: true })
+    expect(isFullBleed('first-note')).toBe(true)
+    expect(isPremiumRoom('first-note')).toBe(true)
+  })
+
   it('leaves every other screen under the opaque bar, free to turn', () => {
     for (const screen of ['settings', 'karaoke', 'developer'] as const) {
       expect(isFullBleed(screen)).toBe(false)

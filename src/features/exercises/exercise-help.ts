@@ -6,7 +6,7 @@
 // "vibrato" mean — `summary` is the one-liner, `body` is the gentle detail.
 
 import type { ExerciseType } from './types'
-import { EXERCISE_ARPEGGIO_JUMPER, EXERCISE_CALL_RESPONSE, EXERCISE_CHORD_STACKER, EXERCISE_DRONE_INTONATION, EXERCISE_DYNAMIC_SWELL, EXERCISE_ECHO_STARS, EXERCISE_HOME_NOTE_LIGHTHOUSE, EXERCISE_INTERVAL_TRAINER, EXERCISE_LIP_ROLL_BAY, EXERCISE_LONG_NOTE, EXERCISE_LONG_NOTE_LANTERN, EXERCISE_MIRROR_MELODY, EXERCISE_NG_SLIDES_BRIDGE, EXERCISE_PITCH_HOLD, EXERCISE_PITCH_PURSUIT, EXERCISE_ROUTINE_RUNNER, EXERCISE_SCALE_RUNNER, EXERCISE_SIGHT_SINGING, EXERCISE_SIREN, EXERCISE_SLIDE, EXERCISE_STACCATO, EXERCISE_VIBRATO, EXERCISE_WARMUP, } from './types'
+import { EXERCISE_ARPEGGIO_JUMPER, EXERCISE_CALL_RESPONSE, EXERCISE_CHORD_STACKER, EXERCISE_DRONE_INTONATION, EXERCISE_DYNAMIC_SWELL, EXERCISE_ECHO_STARS, EXERCISE_FIRST_NOTE_STAGE, EXERCISE_HOME_NOTE_LIGHTHOUSE, EXERCISE_INTERVAL_TRAINER, EXERCISE_LIP_ROLL_BAY, EXERCISE_LONG_NOTE, EXERCISE_LONG_NOTE_LANTERN, EXERCISE_MIRROR_MELODY, EXERCISE_NG_SLIDES_BRIDGE, EXERCISE_PITCH_HOLD, EXERCISE_PITCH_PURSUIT, EXERCISE_ROUTINE_RUNNER, EXERCISE_SCALE_RUNNER, EXERCISE_SIGHT_SINGING, EXERCISE_SIREN, EXERCISE_SLIDE, EXERCISE_STACCATO, EXERCISE_VIBRATO, EXERCISE_WARMUP, } from './types'
 
 export interface ExerciseHelp {
   /** One-line summary shown in the idle area and the menu card. */
@@ -77,6 +77,15 @@ export const EXERCISE_HELP: Record<ExerciseType, ExerciseHelp> = {
       "Every key has a home: the note its chords lean on and settle back to. After a song's intro, it is often where the first line starts. Listen to the chords, then sing the note that feels finished, in any octave.",
       'Your voice draws a line over the water. The lighthouse beam is home: hold your voice in the band of light around it and the band plays home under you. Miss it, and Merc sings it so you hear where it was. A run is six keys.',
       'Your Accuracy Tier sets how much help the intro gives and how close you need to be. At Learning, Merc sings home after the chords and you match him. At Singer, nobody sings it first. At Professional, the band plays only two chords. The big number is how many keys you found; under it, how quickly.',
+    ],
+  },
+  [EXERCISE_FIRST_NOTE_STAGE]: {
+    summary:
+      "A song plays up to where its singer comes in, then stops. Come in on the singer's first note.",
+    body: [
+      "After a song's intro, the hardest note is the first one: there is nobody singing it yet. The band leads in and its last four beats count you down. When it stops, sing the note the singer would sing, in any octave.",
+      'Your first steady note is your entry, heard by ear alone. Then the line shows where the note is, and your voice draws a line of its own: hold it in the band of light and the song carries on with its singer back in, with you. Miss it, and Merc sings it before the singer comes in. A run is six entries from three songs.',
+      'Your Accuracy Tier sets when the line shows and how close you need to be. At Learning, it shows from the start. At Singer, once you have come in. At Professional, only when you land. The big number is how many entries you came in on the note; under it, how many you found.',
     ],
   },
   [EXERCISE_VIBRATO]: {

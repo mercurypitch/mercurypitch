@@ -141,6 +141,15 @@ const HomeNoteScreen: Component = PREMIUM_EXERCISES
     )
   : () => null
 
+/** First note, the second Ear room: the same ternary as Long note's. */
+const FirstNoteScreen: Component = PREMIUM_EXERCISES
+  ? lazy(async () =>
+      import('./FirstNoteScreen').then((module) => ({
+        default: module.FirstNoteScreen,
+      })),
+    )
+  : () => null
+
 /**
  * The native onboarding (src/onboarding), on a build with it
  * (`NATIVE_ONBOARDING`) and no other: the same ternary as Long note's. It
@@ -461,6 +470,7 @@ export const NativeShell: Component = () => {
             ngSlides={PREMIUM_EXERCISES ? NgSlidesScreen : undefined}
             warmUp={PREMIUM_EXERCISES ? WarmUpScreen : undefined}
             homeNote={PREMIUM_EXERCISES ? HomeNoteScreen : undefined}
+            firstNote={PREMIUM_EXERCISES ? FirstNoteScreen : undefined}
           />
 
           {/* Inside the root, not beside it: the sheet copies the custom
