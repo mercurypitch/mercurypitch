@@ -564,7 +564,12 @@ export function StudioWorkspace(props: StudioWorkspaceProps) {
         </div>
       </header>
       <Show
-        when={finishing() && panel() !== (exporter.busy() ? 'export' : 'sound')}
+        when={
+          finishing() &&
+          panel() !== (exporter.busy() ? 'export' : 'sound') &&
+          // The desk shows its own Auto-balance progress.
+          !(deskOpen() && sound.busy())
+        }
       >
         <div class={styles.notice} role="status">
           <p>Preparing song audio…</p>
@@ -577,7 +582,7 @@ export function StudioWorkspace(props: StudioWorkspaceProps) {
           </button>
         </div>
       </Show>
-      <Show when={transport.error()}>
+      <Show when={transport.error() ?? (deskOpen() ? sound.error() : null)}>
         {(error) => (
           <p class={styles.inlineError} role="alert">
             {error()}
@@ -654,6 +659,7 @@ export function StudioWorkspace(props: StudioWorkspaceProps) {
               writable={writable()}
               tablet={tablet()}
               meter={transport}
+              balance={sound}
               selectedTrackId={selectedTrackId()}
               onSelectTrack={(id) => {
                 setSelectedClipId(null)

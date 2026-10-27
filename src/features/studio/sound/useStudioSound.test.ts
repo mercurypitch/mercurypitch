@@ -50,6 +50,7 @@ describe('Studio auto-balance lifecycle', () => {
     })
     expect(await ui.controller.autoBalance()).toBe(true)
     expect(ui.controller.notice()).toBe('No audible tracks to balance.')
+    expect(ui.controller.outcome()).toEqual({ kind: 'nothing' })
     expect(ui.controller.error()).toBeNull()
   })
   it('applies one command with the exact measured revision and no user-fader changes', async () => {
@@ -63,6 +64,32 @@ describe('Studio auto-balance lifecycle', () => {
     expect(ui.controller.notice()).toContain(
       'volume and pan settings are unchanged',
     )
+    expect(ui.controller.outcome()).toEqual({ kind: 'applied' })
+  })
+
+  it('says how each run ended with a fresh outcome, and forgets it when the next starts', async () => {
+    const ui = mount()
+    await ui.controller.autoBalance()
+    const first = ui.controller.outcome()
+    const native = deferred<StudioBalanceProposal>()
+    ui.analyze.mockReturnValueOnce(native.promise)
+    const pending = ui.controller.autoBalance()
+    expect(ui.controller.outcome()).toBeNull()
+    await flush()
+    ui.controller.cancel()
+    native.resolve({
+      projectId: 'project-1',
+      revision: 0,
+      balanceGainDbByTrack: { 'track-1': 4 },
+    })
+    await pending
+    const cancelled = ui.controller.outcome()
+    await ui.controller.autoBalance()
+
+    expect(first).toEqual({ kind: 'applied' })
+    expect(cancelled).toEqual({ kind: 'cancelled' })
+    expect(ui.controller.outcome()).toEqual({ kind: 'applied' })
+    expect(ui.controller.outcome()).not.toBe(first)
   })
 
   it('keeps cancellation busy until native work settles and never applies the late proposal', async () => {

@@ -26,6 +26,7 @@ function mount() {
     progress: () => null,
     error: () => null,
     notice: () => null,
+    outcome: () => null,
     autoBalance: vi.fn(async () => true),
     cancel: vi.fn(),
     dispose: vi.fn(),
