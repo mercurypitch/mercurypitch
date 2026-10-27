@@ -3,6 +3,11 @@ import { FakeAudioContext, FakeGain, FakeNode, FakeParam, } from '@/lib/studio-f
 
 export class PlaybackParam extends FakeParam {
   ramps: { value: number; time: number }[] = []
+  linearRamps: { value: number; time: number }[] = []
+  linearRampToValueAtTime(value: number, time: number) {
+    this.linearRamps.push({ value, time })
+    return this
+  }
   curves: { values: Float32Array; time: number; duration: number }[] = []
   exponentialRampToValueAtTime(value: number, time: number) {
     this.ramps.push({ value, time })

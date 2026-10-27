@@ -8,6 +8,30 @@ import { studioGraphLanes } from './graph'
 export type StudioLatencyReader = typeof measureTrackLatencies
 
 /**
+ * Chain latency depends on which effects there are, not on their settings,
+ * so one measurement per effect list and rate serves every later Play, seek
+ * and restart.
+ */
+export function createLatencyCache(
+  measure: StudioLatencyReader,
+): StudioLatencyReader {
+  const latencies = new Map<string, number>()
+  return async (specs, rate) => {
+    const frames: number[] = []
+    for (const spec of specs) {
+      const key = `${rate}:${spec.effects.map((effect) => effect.kind).join(',')}`
+      let value = latencies.get(key)
+      if (value === undefined) {
+        ;[value] = await measure([spec], rate)
+        latencies.set(key, value)
+      }
+      frames.push(value)
+    }
+    return frames
+  }
+}
+
+/**
  * The plan with each lane's chain latency measured at this rate. With
  * `silentLanes`, the muted lanes with clips are measured and aligned too,
  * so a graph built with them can bring one in while it plays.

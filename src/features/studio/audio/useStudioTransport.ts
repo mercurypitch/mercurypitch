@@ -75,6 +75,7 @@ export function useStudioTransport(options: UseStudioTransportOptions) {
     error: null,
     meter: null,
     masterReady: false,
+    lanes: [],
   })
   const [repeating, setRepeating] = createSignal(false)
   const [previewPending, setPreviewPending] = createSignal(false)

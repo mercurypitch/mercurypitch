@@ -7,101 +7,16 @@ import type { StudioArrangementPlan } from '../model/arrangement-plan'
 import { studioLaneSpec } from '../model/arrangement-plan'
 import { applyStudioCommand } from '../model/commands'
 import { createStudioTrack } from '../model/defaults'
-import { studioFixture } from '../model/model.test-fixtures'
-import type { StudioBufferCache, StudioBufferLease } from './buffer-cache'
-import { PlaybackContext } from './playback.test-fixtures'
-import { createStudioTransport } from './transport'
-
-function fixture() {
-  const { project, asset } = studioFixture()
-  const ctx = new PlaybackContext(44100)
-  const release = vi.fn()
-  const cache = {
-    acquire: vi.fn().mockResolvedValue({ buffers: new Map(), release }),
-    clear: vi.fn(),
-    dispose: vi.fn(),
-  } as unknown as StudioBufferCache
-  const graph = {
-    output: ctx.createGain() as unknown as GainNode,
-    scheduleUntil: vi.fn(),
-    readPeaks: () => [0.2, 0.4] as const,
-    hasLane: vi.fn((id: string) => id === 'track-1'),
-    setLaneMix: vi.fn(),
-    setLaneSpec: vi.fn(),
-    setMasterSpec: vi.fn(),
-    repeat: vi.fn(() => true),
-    stopRepeating: vi.fn(() => 0),
-    dispose: vi.fn(),
-  }
-  const buildGraph = vi.fn().mockReturnValue(graph)
-  const unlock = vi.fn().mockResolvedValue(true)
-  const changed = vi.fn()
-  const measureLatencies = vi.fn().mockResolvedValue([441])
-  const transport = createStudioTransport({
-    lease: { ensure: () => ctx.liveContext, unlock },
-    readCanonicalAsset: vi.fn(),
-    changed,
-    cache,
-    buildGraph,
-    measureLatencies,
-  })
-  return {
-    measureLatencies,
-    project,
-    asset,
-    ctx,
-    cache,
-    graph,
-    buildGraph,
-    unlock,
-    changed,
-    release,
-    transport,
-  }
-}
-
-/**
- * The fixture's song with a second, muted lane playing its own take. The
- * fake graph then reports the lanes its options build, as the real one does.
- */
-function withQuietLane(f: ReturnType<typeof fixture>) {
-  const [track] = f.project.tracks
-  const [clip] = f.project.clips
-  f.buildGraph.mockImplementation(
-    (
-      _ctx: unknown,
-      plan: StudioArrangementPlan,
-      _buffers: unknown,
-      _epoch: number,
-      options?: { silentLanes?: boolean },
-    ) => {
-      const built = plan.lanes
-        .filter(
-          (lane) =>
-            lane.segments.length > 0 &&
-            (lane.audible || options?.silentLanes === true),
-        )
-        .map((lane) => lane.track.id)
-      f.graph.hasLane.mockImplementation((id: string) => built.includes(id))
-      return f.graph
-    },
-  )
-  return {
-    ...f.project,
-    tracks: [track, { ...track, id: 'quiet', order: 1, mute: true }],
-    clips: [
-      clip,
-      { ...clip, id: 'quiet-clip', trackId: 'quiet', assetId: 'quiet-asset' },
-    ],
-  }
-}
+import type { StudioBufferLease } from './buffer-cache'
+import type { PlaybackContext } from './playback.test-fixtures'
+import { transportFixture, withQuietLane } from './transport.test-fixtures'
 
 afterEach(() => vi.useRealTimers())
 
 describe('Studio borrowed transport', () => {
   it('measures each chain once and restarts a seek while the old run still fades', async () => {
     vi.useFakeTimers()
-    const f = fixture()
+    const f = transportFixture()
     await f.transport.play(f.project, [f.asset])
     const measured = f.measureLatencies.mock.calls.length
     await f.transport.seek(100, f.project, [f.asset])
@@ -122,7 +37,7 @@ describe('Studio borrowed transport', () => {
 
   it('moves volume, pan and Solo on the running graph without restarting', async () => {
     vi.useFakeTimers()
-    const f = fixture()
+    const f = transportFixture()
     await f.transport.play(f.project, [f.asset])
     const [track] = f.project.tracks
     const louder = { ...track, gainDb: -3, pan: 0.5, solo: true }
@@ -160,7 +75,7 @@ describe('Studio borrowed transport', () => {
 
   it('keeps playing through a flavour and Reset sound, moving the running chains instead', async () => {
     vi.useFakeTimers()
-    const f = fixture()
+    const f = transportFixture()
     await f.transport.play(f.project, [f.asset])
     const [track] = f.project.tracks
     const warm = applyStudioCommand(
@@ -201,7 +116,7 @@ describe('Studio borrowed transport', () => {
 
   it('keeps playing when an empty lane is added, and restarts for a new effect list', async () => {
     vi.useFakeTimers()
-    const f = fixture()
+    const f = transportFixture()
     await f.transport.play(f.project, [f.asset])
     const lane = createStudioTrack({ id: 'lane-2', name: 'Lane 2', order: 1 })
     const added = applyStudioCommand(
@@ -229,7 +144,7 @@ describe('Studio borrowed transport', () => {
 
   it('plays a moving fader and dial without saving, and returns to the saved values after', async () => {
     vi.useFakeTimers()
-    const f = fixture()
+    const f = transportFixture()
     await f.transport.play(f.project, [f.asset])
     const [track] = f.project.tracks
     f.transport.previewLane(track.id, { gainDb: -20, pan: 0.5 })
@@ -267,7 +182,7 @@ describe('Studio borrowed transport', () => {
 
   it('starts as a control already sounds when Play comes mid-gesture', async () => {
     vi.useFakeTimers()
-    const f = fixture()
+    const f = transportFixture()
     const [track] = f.project.tracks
     f.transport.previewLane(track.id, { gainDb: -12 })
     expect(f.graph.setLaneMix).not.toHaveBeenCalled()
@@ -288,7 +203,7 @@ describe('Studio borrowed transport', () => {
 
   it('brings in a lane that was muted when Play built the graph by gliding its gain, without a restart', async () => {
     vi.useFakeTimers()
-    const f = fixture()
+    const f = transportFixture()
     const project = withQuietLane(f)
     const quietAsset = { ...f.asset, id: 'quiet-asset' }
     f.measureLatencies.mockResolvedValue([441])
@@ -329,7 +244,7 @@ describe('Studio borrowed transport', () => {
 
   it('builds only the lanes heard when the muted ones do not fit in memory, and restarts to bring one in', async () => {
     vi.useFakeTimers()
-    const f = fixture()
+    const f = transportFixture()
     const project = withQuietLane(f)
     const quietAsset = { ...f.asset, id: 'quiet-asset' }
     vi.mocked(f.cache.acquire).mockRejectedValueOnce(
@@ -361,7 +276,7 @@ describe('Studio borrowed transport', () => {
 
   it('plays on from the playhead with the lanes heard when the whole song does not fit, and restarts to loop', async () => {
     vi.useFakeTimers()
-    const f = fixture()
+    const f = transportFixture()
     const { project, asset } = twoSecondSong(f)
     const full = new StudioMemoryError(
       'Studio needs more memory for this audio.',
@@ -393,7 +308,7 @@ describe('Studio borrowed transport', () => {
 
   it('waits for the fading run when a seek cannot hold two graphs at once', async () => {
     vi.useFakeTimers()
-    const f = fixture()
+    const f = transportFixture()
     await f.transport.play(f.project, [f.asset])
     const one = studioReservedMemoryBytes()
     setStudioWorkingBytes(one + Math.floor(one / 2))
@@ -419,7 +334,7 @@ describe('Studio borrowed transport', () => {
   })
 
   it('warms the cache and chain timing before Play, without unlocking audio', async () => {
-    const f = fixture()
+    const f = transportFixture()
     await f.transport.warm(f.project, [f.asset])
     expect(f.unlock).not.toHaveBeenCalled()
     expect(f.cache.acquire).toHaveBeenCalledOnce()
@@ -434,7 +349,7 @@ describe('Studio borrowed transport', () => {
   })
 
   it('stops a warm-up in flight and waits for it before releasing audio', async () => {
-    const f = fixture()
+    const f = transportFixture()
     let seen: AbortSignal | undefined
     let settle!: (value: StudioBufferLease) => void
     vi.mocked(f.cache.acquire).mockImplementationOnce(
@@ -464,7 +379,7 @@ describe('Studio borrowed transport', () => {
 
   it('only starts the newest edit when revisions change during preparation', async () => {
     vi.useFakeTimers()
-    const f = fixture()
+    const f = transportFixture()
     let settle!: (value: StudioBufferLease) => void
     vi.mocked(f.cache.acquire).mockImplementationOnce(
       () =>
@@ -494,7 +409,7 @@ describe('Studio borrowed transport', () => {
 
   it('does not autoplay and schedules its attack after the first warmup plus measured 44.1k latency', async () => {
     vi.useFakeTimers()
-    const f = fixture()
+    const f = transportFixture()
     expect(f.unlock).not.toHaveBeenCalled()
     expect(await f.transport.play(f.project, [f.asset])).toBe(true)
     expect(f.buildGraph.mock.calls[0][1].lanes[0].chainLatencySeconds).toBe(
@@ -522,7 +437,7 @@ describe('Studio borrowed transport', () => {
 
   it('lengthens the next warmup after a build that missed its start', async () => {
     vi.useFakeTimers()
-    const f = fixture()
+    const f = transportFixture()
     let clock = 0
     const now = vi.spyOn(performance, 'now').mockImplementation(() => clock)
     f.buildGraph.mockImplementationOnce(() => {
@@ -552,7 +467,7 @@ describe('Studio borrowed transport', () => {
 
   it('retains an explicitly measured gain while paused and invalidates it on an edit', async () => {
     vi.useFakeTimers()
-    const f = fixture()
+    const f = transportFixture()
     f.transport.setMasterGain({
       projectId: f.project.id,
       revision: f.project.revision,
@@ -591,7 +506,7 @@ describe('Studio borrowed transport', () => {
   })
 
   it('holds native preparation admission through cancellation and rejects stale completion', async () => {
-    const f = fixture()
+    const f = transportFixture()
     let settle!: (value: StudioBufferLease) => void
     vi.mocked(f.cache.acquire).mockImplementation(
       () =>
@@ -616,7 +531,7 @@ describe('Studio borrowed transport', () => {
 
   it('a retired generation cannot stop the next run and interruption never resumes itself', async () => {
     vi.useFakeTimers()
-    const f = fixture()
+    const f = transportFixture()
     await f.transport.play(f.project, [f.asset])
     f.transport.pause()
     const nextGraph = { ...f.graph, dispose: vi.fn() }
@@ -635,7 +550,7 @@ describe('Studio borrowed transport', () => {
   })
   it('wraps the displayed audio-clock position while one graph keeps repeating', async () => {
     vi.useFakeTimers()
-    const f = fixture()
+    const f = transportFixture()
     const project = {
       ...f.project,
       clips: [{ ...f.project.clips[0], startFrame: 0, sourceOutFrame: 96000 }],
@@ -665,7 +580,7 @@ describe('Studio borrowed transport', () => {
 
   it('loops the running song once Repeat is turned on, and lets it end once turned off, without a restart', async () => {
     vi.useFakeTimers()
-    const f = fixture()
+    const f = transportFixture()
     const { project, asset } = twoSecondSong(f)
     await f.transport.play(project, [asset], 0)
     expect(f.buildGraph.mock.calls[0][4]).toMatchObject({
@@ -709,7 +624,7 @@ describe('Studio borrowed transport', () => {
 
   it('starts again from the top when Repeat comes on after the loop point has gone by', async () => {
     vi.useFakeTimers()
-    const f = fixture()
+    const f = transportFixture()
     const { project, asset } = twoSecondSong(f)
     await f.transport.play(project, [asset], 0)
     f.graph.repeat.mockReturnValue(false)
@@ -731,7 +646,7 @@ describe('Studio borrowed transport', () => {
 })
 
 /** A song of one 2 s take from the start. */
-function twoSecondSong(f: ReturnType<typeof fixture>) {
+function twoSecondSong(f: ReturnType<typeof transportFixture>) {
   return {
     project: {
       ...f.project,
