@@ -39,6 +39,12 @@
   - The cold open's run: `Names.set('flats')` in main.ts (decision 27), and Play the chord's place on a phone (decision 28).
   - Step 5's task shows its Notice and the "Do or la?" drawer, kept hidden (`data-scale-reveal`) until the reveal.
 
+- **From run 6 (27 Oct, the final pass):**
+  - Owner, for the series: the Contract asks 44 px of every target, and the kit's trail links are 24 px by the kit's own decision (lesson-sections.css:8-15, WCAG 2.5.8), on every lesson page, Lessons 1 and 2 published among them. Keep them and say so in the Contract, or give the links a 44 px hit area by an invisible pad that changes no layout.
+  - 0.9.24 Part A item 5 (sent to the polish builder): the sing card's lines sit flush under their button rows (`.sing-card .sing-btns` has a top margin only), after "Effortful" and under Play Merc's notes, on Lessons 6, 8 and 10. When it is on main, check Lesson 10 at 390 and 1440 after its rebase.
+  - Whichever of Lesson 10 and 0.9.24 merges second: take out `.l10-hero .gate .btn` (the gate's one-width workaround) once Part A 3 is on main, and re-check Lessons 3 to 5's first-paint headroom (223, 745 and 775 bytes on this branch), since the polish's kit fixes ride on every lesson page.
+  - lesson-words.test.mjs holds the Length's total and the steps' own text, not its part counts (Step 3 with its drawer, Step 4 with its card and drawer, Sing it, the Wrap); two had gone stale. A later tidy: hold them too, or drop them from the Lengths.
+  - Lesson 4's raise comment in the budget script gives the measure at its raise, 132,369; the page is 132,375 on the head. Fine as a record; the next raise there restates it.
 - **From run 5 (27 Oct, the Wrap and the page-wide checks):**
   - Copy pass: free play's four group labels are the builder's words: "Free play: major or minor", "Free play: chord or scale", "Free play: the names switch" (the steps' group is "Names on the stairs") and "Free play: the chord beads".
   - Kit (task for 0.9.24, owner's go): free play's lit Play shows the `.btn.primary.is-on` dark-on-dark words too (l10/page-5/shots/*-03-free-play-lit.png).
