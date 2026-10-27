@@ -31,7 +31,7 @@ The repo's CLAUDE.md and AGENTS.md apply. These are the ones that bite in this c
 
 ## Repo gates before you report
 - A new module: node scripts/gen-agent-index.mjs, then pnpm docs:index:check.
-- Code a lesson package cites (docs/plans/find-your-pitch/**) moved or changed lines: pnpm plan:cites reanchor --base origin/main --write, then node scripts/plan-cites.mjs check. Main reports 183 findings; your branch must not report more.
+- Code a lesson package cites (docs/plans/find-your-pitch/**) moved or changed lines: pnpm plan:cites reanchor --base origin/main --write, then node scripts/plan-cites.mjs check. On a branch whose own commits move cited lines (a page built over several commits), use --base HEAD before each commit instead: from origin/main the tool sees those citations as edited and moves nothing. Main reports 183 findings; your branch must not report more.
 - pnpm pr:validate.
 - Tests sit beside their module and follow docs/agent/TESTING.md (Arrange, Act, Assert; no waitForTimeout; no .count() assertions in e2e).
 

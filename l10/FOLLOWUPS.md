@@ -38,3 +38,12 @@
   - Kit: one width for the sound gate's button on every page. Stack both labels in one grid cell, the inactive one `visibility: hidden`, so no lesson's gate line can sit within the labels' 1.6 px of a wrap. Lesson 10's `.l10-hero .gate .btn` rule then goes.
   - The cold open's run: `Names.set('flats')` in main.ts (decision 27), and Play the chord's place on a phone (decision 28).
   - Step 5's task shows its Notice and the "Do or la?" drawer, kept hidden (`data-scale-reveal`) until the reveal.
+
+- **From run 3 (27 Oct, head 703621d37 after the fold):**
+  - Kit, and live on Lesson 2: a lit primary button (`.btn.primary.is-on`) shows its dark words on `.btn.is-on`'s dark teal, because `.btn.is-on` (lesson-base.css:521) sets the background and not the colour. Seen on Lesson 10's Play the pattern (l10/page-3/shots/*-step4-pattern.png); the same rule lights the kit ear game's Play (Lessons 6, 8, 10) and Lesson 2's published "Play a step", climb, lift, slide and unroll buttons while they sound. Lesson 7 already dodges it (`.range-toy .btn:not(.primary).is-on`). A kit fix for 0.9.24: give `.btn.primary.is-on` light words, or keep its own fill with a ring. Owner's call on the look; Lesson 2 is published, so not in this branch.
+  - Kit step deck, every lesson: a focus or click on a stage control within about 1 s of opening `/learn/NN#step-N` stops the deck's smooth scroll short, and once the 1.1 s lock ends the deck follows the page to Step 1. The e2e waits for the page to hold still; the kit should not lose the step.
+  - Step 5: Play C minor from a folded major chord writes two polite lines in one tick (the spread's, then the quality's; the last stands), and the scale starts while the 0.6 s spread is still moving. The spec is silent; P22 or the coach: one line, and the scale after the spread lands?
+  - Step 5's names switch says nothing in the polite line (the switch's own pressed state does). WEB-SPEC's live-region rule is per action; a line for it would be new copy, for the copy pass.
+  - FACTS 78 "a root from C4 to G4": the games deal all eight semitones, MIDI 60 to 67. P22's docs pass says so in FACTS 78.
+  - End to end 13, the reduced-motion sweep, and the -qa and -sing specs of Lessons 6 and 9 were not run this run: the next runs.
+  - At PR time, the three module-map commits become one at the end.
