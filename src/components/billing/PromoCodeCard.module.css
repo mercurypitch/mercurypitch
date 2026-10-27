@@ -50,6 +50,7 @@
 }
 
 .phBadgeLink {
+  position: relative;
   display: inline-block;
   line-height: 0;
   border-radius: 6px;
@@ -61,6 +62,22 @@
 .phBadgeLink:hover {
   opacity: 0.9;
   transform: translateY(-1px);
+}
+
+/* The badge draws 38 px tall, and under a finger takes a 44 px press from
+   an invisible box as wide as it, 3 px above and below. The card clips
+   (overflow: hidden), but the box stays inside its 16 px padding above
+   and the 12 px gap to the text below. */
+@media (pointer: coarse) {
+  .phBadgeLink::before {
+    position: absolute;
+    top: 50%;
+    left: 0;
+    width: 100%;
+    height: 44px;
+    content: '';
+    transform: translateY(-50%);
+  }
 }
 
 .phBadgeImg {

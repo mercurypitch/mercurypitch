@@ -916,6 +916,7 @@ input:checked + .settingsSlider:before {
 }
 
 .settingsTab {
+  position: relative;
   flex: 0 0 auto;
   padding: 8px 14px;
   border: none;
@@ -938,6 +939,36 @@ input:checked + .settingsSlider:before {
 .settingsTabActive {
   color: var(--accent);
   border-bottom-color: var(--accent);
+}
+
+/* Under a finger each tab takes a 44 px press from an invisible box 5 px
+   above and below its 34 px. The box is placed from the tab's top, not
+   centred: the tab's 2 px underline is a border, outside the box the press
+   is placed in, so that box's middle is a pixel above the tab's. The tabs
+   are at least 61 px wide and 4 px apart, so the box grows no wider. The
+   strip scrolls sideways and cuts off whatever reaches past it, so it grows
+   5 px of padding each way to hold the boxes and gives them back in margin.
+   Its rule under the tabs is drawn as a background in the padding, 1 px
+   under them where the border was, so nothing on the page moves or looks
+   different. */
+@media (pointer: coarse) {
+  .settingsTabs {
+    margin-top: -5px;
+    margin-bottom: 12px;
+    padding-block: 5px;
+    border-bottom: 0;
+    background: linear-gradient(var(--border), var(--border)) left bottom 4px /
+      100% 1px no-repeat;
+  }
+
+  .settingsTab::before {
+    position: absolute;
+    top: -5px;
+    left: 0;
+    width: 100%;
+    height: 44px;
+    content: '';
+  }
 }
 
 /* Mobile: the tab row scrolls horizontally with a hidden scrollbar;
