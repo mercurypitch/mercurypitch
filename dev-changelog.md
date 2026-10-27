@@ -11,13 +11,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [0.9.23] - 2026-10-27
 
-115 commits since `v0.9.22` (a6f839e14) before this release PR, from 20
-PRs, on 112 first-parent entries, up to 939caf850. 3 PRs came in as merge
-commits, over one commit each: #1215, #1220 and #1222. 17 were rebased onto
-`main`: #1229 (21 commits), #1225 (17), #1213 (10), #1208 and #1223 (9
-each), #1206 (7), #1205, #1207 and #1212 (6 each), #1228 (5), #1198 and
-#1224 (3 each), #1199 and #1226 (2 each), and #1214, #1227 and #1230 (1
-each). Every commit came through a PR.
+151 commits since `v0.9.22` (a6f839e14) before this notes PR, from 23 PRs, on
+148 first-parent entries, up to 3a2e2efe4. 3 PRs came in as merge commits, over
+one commit each: #1215, #1220 and #1222. 20 were rebased onto `main`: #1203
+(28 commits), #1229 (21), #1225 (17), #1213 (10), #1208 and #1223 (9 each),
+#1206 and #1231 (7 each), #1205, #1207 and #1212 (6 each), #1228 (5), #1198
+and #1224 (3 each), #1199 and #1226 (2 each), and #1214, #1221 (the release
+commit), #1227 and #1230 (1 each). Every commit came through a PR.
 
 On the web:
 
@@ -51,6 +51,126 @@ On the web:
     6,497 B under 440,320. No ceiling moves.
   - Open with the owner: the words, the thresholds, a sign-up source for the
     Check-up, comparing a shared browser's takes, and the card's place.
+- **Merc leads the tours** (#1203).
+  - Show me around on the plan runs Merc's showcase (`Showcase.tsx`,
+    `start-showcase.ts`, `showcase-stops.ts` in `src/features/tours/coach`):
+    Merc stands by each group of the top bar, or on a phone by the rail's
+    four tabs and then More, for 2.5 s or until a tap, then Start here opens
+    with its room's tour. Nothing hops while the cookie banner waits, Skip
+    is there from the start, each stop fades in place under reduced motion,
+    and `showcase_done` and `showcase_skipped` are sent (both were already
+    in the event catalog).
+  - The coach: `src/lib/coach-events.ts` carries what the singer did
+    (`mic-on`, `mic-failed`, `pitch-detected`, `song-staged`,
+    `score-closed`, `song-unscored`, `stage-left`) as one `mp:coach` window
+    event, so the app and Karaoke Night share only that file. A Merc tour is
+    at most four steps (show, do, watch); a do-step listens from the moment
+    it shows, Skip moves on, and Back to a step already done offers Next.
+    The runner, `CoachLayer` and `TourChip` live in `src/components/coach`
+    and load with the first tour; `coach-imports.test.ts` holds that the
+    coach imports no feature. The tour events carry what the Guide's do.
+  - The layer rings a step's target and lets taps through to it. A missing
+    target, one under an inert page, or one taller than 70% of the window
+    gets no ring, and the bubble stands in a corner. On a phone the bubble
+    is a sheet above the foot stack. It sits at z-index 900: over stages and
+    sheets, under modals, the toasts and the cookie banner. Keys in the
+    bubble never reach the app's shortcuts, Tab reaches the ringed target,
+    and focus goes back to the page, or to its main heading the singer can
+    see, when a tour ends.
+  - The chip: `TourChipHost` replaces `usePageTourOffer` (deleted) and its
+    corner toast with a chip at the top of the main column: "Merc can show
+    you around, 30 s" for a Merc tour, the toast's line for the Guide's. A
+    tab's offer is spent once half the chip has been seen
+    (IntersectionObserver), not when it is set (Path restores its scroll
+    below the chip), and handed back when the tour's code does not load.
+    The chip loads with the first offer: in the first paint it put
+    `index.html` 777 B over its allowance. Piano's room gives way to it on a
+    wide screen.
+  - Sing's tour (`src/features/practice/sing-tour.ts`): Start the mic (it
+    waits for the engine's `mic-on`, and says what to do when the mic is
+    refused), Sing any note (with a 220 Hz note to copy), what the line is,
+    and Hear Yourself for kept takes, with Lesson 1 linked. On a wide screen
+    the docked Merc hides while a tour runs, and the bubble stands top
+    right, clear of the live marker and the note labels. At the end
+    `plan-handoff.ts` offers the plan's next stop ("Next on your plan", Go
+    and Later) while Home's plan card would show the plan.
+  - Karaoke Night's tour (`src/features/karaoke-night/karaoke-tour.ts`):
+    the demo (Sing this song), the mic, a quiet wait through the song that
+    draws nothing and ends on `score-closed`, `song-unscored` or
+    `stage-left`, and Add a song with the plan card's credits line (now
+    `src/components/billing/plan-credits.ts` and `src/lib/credit-facts.ts`).
+    On a phone the last stop rings the stage's Back, then Add a song once
+    the stage has gone. `/karaoke?tour=first`, an ad's landing, starts it
+    once the consent bar is answered; a first visit to an empty stage gets
+    the chip, "Sing the demo with Merc", under the top bar. The vocal
+    remover's page gets neither.
+  - One door for a room's tour, the owner's ruling: the chip, Show me
+    around (`enterStop`), First Light and the Map's Take the tour all start
+    a room's tour through `room-tour.ts`, reached from the plan and First
+    Light through `src/lib/room-tour-door.ts`, which App opens. A tab with a
+    Merc tour gets Merc's. Any other gets the app store's room tour, #1225's
+    `hasRoomTour` and `startRoomTour` renamed `hasGuideRoomTour` and
+    `startGuideRoomTour`. The native build lists no Merc tour, as before.
+  - The Guide's walk (`scripts/walk-tours.mjs`) holds every step to
+    `scripts/tour-rules.mjs`: a ringed target at most 70% of the window tall,
+    and the consent bar on top. A step that breaks one prints WIDE or BAR and
+    fails the walk as a MISS does, and Release Tours annotates both. The
+    eleven Guide steps already taller, mostly whole pages, are named in
+    `WIDE_TARGETS` and print `wide`. New e2e: `showcase.spec.ts`,
+    `coach-tours.spec.ts` and `karaoke-tour.spec.ts`;
+    `tour-selectors-exist.test.ts` reads the Merc tours' hooks, and
+    `small-help-targets.spec.ts` measures a toast's buttons on the mic offer,
+    since a tab's tour offer is a chip now. ESLint now parses
+    `scripts/tour-rules.mjs`, `scripts/walk-tours.mjs`,
+    `scripts/gen-pwa-screenshots.mjs` and the jam two-peer script.
+  - Cross-feature imports go from 548 to 550: `showcase-stops.ts` reads the
+    tab bar's order, rail and labels from `features/tabs/constants`. The
+    rest go through `src/lib` and `src/components`.
+  - First paint, measured on this tree against the release commit
+    (`build:e2e`, static graph): the main app's documents +5,424 B of
+    JavaScript and +72 B of CSS; Karaoke Night's documents and the vocal
+    remover +1,910 B and +44 B; Guitar Night +547 B; the Mirror, the range
+    pages and Glass +67 B, which leaves the Mirror's bundle 6,430 B under its
+    440,320; Piano Night +22 B. Drum Night and the lessons are unchanged, and
+    no ceiling moves.
+  - Karaoke Night's chip, its first and last stops' lines and two of the
+    showcase's are the owner's words. Merc's other lines are drafts for the
+    copy pass.
+- **Home's plan card comes back, and Settings keeps the plan** (#1231).
+  - The card's X stores the date of the plan it hid
+    (`mp.plan.card.dismissed.v1`, a JSON string where it was `true`).
+    `hidesCard()` in `plan-card-rules.ts` hides that plan, and any later
+    record that holds no answers (Not now again, on any device), so only new
+    answers bring the card back; `savePlanAnswers` clears the hide. A device
+    that stored `true` still hides every plan until it answers again. Home's
+    slot, Merc's "Next on your plan" (`plan-handoff.ts`) and Settings read
+    the one rule.
+  - The X's toast, "Your plan is off Home. Settings and the Guide still
+    have it.", offers Undo for 10 s on its own channel (`plan-card-hidden`).
+    Undo puts the card back and focuses its X.
+  - Change my answers ends the answered card: the plan layer's new `change`
+    mode is a review opened on its questions, with the answers given picked.
+    Not now goes back to the plan as it was; Done shows the new plan, and
+    Home's card follows.
+  - Settings, General, after App Mode: `PlanSettings.tsx`, "Your plan". See
+    my plan and Change my answers with an answered plan, Show on Home while
+    the card is hidden and would otherwise show, and Answer the four
+    questions with none (it sends `plan_shown_skipper`, as the skipper
+    card's Start does). `SettingsPage` hands it to `SettingsPanel` as a
+    prop, so no component imports the plan, and it loads in its own chunk
+    through `load-plan-settings.ts`. The native build leaves it out
+    (`settings-plan-mount.test.ts`, and `assert-bundle.mjs`'s "the plan is
+    not in the bundle").
+  - No analytics event or property is added. New e2e:
+    `plan-card-comes-back.spec.ts`, 14 cases at 390x844 with touch and at
+    1440x900. Five lessons' FACTS files are re-anchored: the section moves
+    `SettingsPanel.tsx`'s lines 15 down.
+  - First paint (`build:e2e`, static graph) against #1203's head:
+    `index.html`, Ear Lab, Jam, Jam's rooms and Pitch Training +868 B of
+    JavaScript each, CSS unchanged. No ceiling moves.
+  - Open with the owner: the words in `plan-copy.ts`; See my plan, then Not
+    now, goes to Home as the Guide's row does, even from Settings; the
+    Settings tour has no step for the section.
 - **Arpeggio Jumper on its second scoring** (#1213).
   - The grade is the mean of the note scores. Before, it blended the note
     average with the best note (30 %) and a richness read on the wrong scale
@@ -88,7 +208,8 @@ On the web:
     drew no tour link for it. `hasRoomTour` and `startRoomTour` give a room
     its page tour, or for Singing the Guide's 'practice' section under the
     'guide' key. `hasPageTour`, `PAGE_TOURS`, the sidebar and the tour offer
-    are unchanged; both are off on the native build.
+    are unchanged; both are off on the native build. #1203 puts them behind
+    its room tour door as `hasGuideRoomTour` and `startGuideRoomTour`.
   - 44 px presses under a coarse pointer from transparent pseudo-elements:
     the phone header's menu (42x34), wordmark (20 px tall), mic (30x30) and
     heart (34x25); Karaoke Night's logo (22x22), App, Sign in and Hide
@@ -227,8 +348,9 @@ Tests only:
 
 1. **Migrations:** none. Nothing under `workers/db-worker/migrations`
    changed since `v0.9.22`.
-2. **Secrets, variables and bindings:** none new. No `wrangler*`, `.env*` or
-   workflow file changed.
+2. **Secrets, variables and bindings:** none new. No `wrangler*` or `.env*`
+   file changed. One workflow did: Release Tours' report annotates the
+   walk's new WIDE and BAR lines as it does MISS lines (#1203).
 3. **Worker code:** the site worker's lesson gate reads the season and the
    drafts list, and #1229 gives Lesson 9 its page and run time, as a draft.
    On mercurypitch.com the gate answers `/learn/09` with the 404 page, and
