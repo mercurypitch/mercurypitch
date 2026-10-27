@@ -50,3 +50,17 @@ it('updates measured windows, marks clipping and resets held peaks through its e
   fireEvent.click(screen.getByRole('button', { name: 'Reset peak hold' }))
   expect(reset).toHaveBeenCalledTimes(1)
 })
+
+it('makes the upright peak reading the reset, outside the meter it reads', () => {
+  const reset = vi.fn()
+  render(() => (
+    <StudioOutputMeter vertical snapshot={null} ready={false} onReset={reset} />
+  ))
+
+  const button = screen.getByRole('button', { name: /^Peak/ })
+  fireEvent.click(button)
+
+  expect(button).toHaveAttribute('title', 'Reset peak hold')
+  expect(screen.getByRole('meter')).not.toContainElement(button)
+  expect(reset).toHaveBeenCalledTimes(1)
+})

@@ -104,7 +104,9 @@
   font-size: 10px;
 }
 .clipped .peakLabel,
-.clipped .peakLabel strong {
+.clipped .peakLabel strong,
+.peakLabel.clipped,
+.peakLabel.clipped strong {
   color: var(--studio-danger);
 }
 .windows {
@@ -349,6 +351,33 @@
 }
 @media (pointer: coarse) {
   .detail button {
+    min-height: 44px;
+  }
+}
+/* The desk's peak reading clears the held peak when pressed. */
+button.peakLabel {
+  appearance: none;
+  display: block;
+  width: 100%;
+  margin: 0;
+  padding: 4px 0;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  font-family: inherit;
+  cursor: pointer;
+}
+@media (hover: hover) {
+  button.peakLabel:hover {
+    background: var(--studio-hover);
+  }
+}
+button.peakLabel:focus-visible {
+  outline: 2px solid var(--studio-accent);
+  outline-offset: 1px;
+}
+@media (pointer: coarse) {
+  button.peakLabel {
     min-height: 44px;
   }
 }
