@@ -247,7 +247,11 @@ export const FIRST_PAINT_BUDGETS_KB = {
   // (lesson-10/words.ts, and wordSounds in sounds.ts), and 676 the kit's
   // words strip, a chunk Lessons 1, 7, 8 and 9 already load
   // (kit/words-strip.ts).
-  'learn/10.html': 142,
+  // Raised to 147 for Steps 1 and 2 and the game on thirds: 150,332 bytes
+  // with them, 5,145 more. 2,677 are the kit's ear game, a chunk Lessons 6
+  // and 8 already load (kit/ear-game.ts), and 2,468 the steps' controls and
+  // the games in Lesson 10's own chunk (lesson-10/steps.ts, games.ts).
+  'learn/10.html': 147,
 
   // The main app, and the crawlable doors that are the main app. Measured
   // 4669. It is eager by design today, so this is a ceiling on growth rather
@@ -337,7 +341,9 @@ export const FIRST_PAINT_CSS_BUDGETS_KB = {
   // its page shell: the kit's sheets (with the slide guide's, the voice
   // lessons' and the ear game's, inlined into its own by @import, and the
   // shared parts), its own, and the shared Inter and Outfit @font-face
-  // rules. The smallest whole KB above that, as for its script.
+  // rules. The smallest whole KB above that, as for its script. 89,436
+  // bytes with the game on thirds, which brings the kit's ear game, so the
+  // page links the ear game's sheet in that chunk rather than inlining it.
   'learn/10.html': 88,
 
   // The main app and the crawlable doors that are the main app. Measured
