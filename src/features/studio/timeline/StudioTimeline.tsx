@@ -358,6 +358,7 @@ export function StudioTimeline(props: StudioTimelineProps) {
                         track={track()}
                         writable={props.writable}
                         tablet={props.tablet === true}
+                        soloedOut={anySolo() && !track().solo}
                         onCommand={props.onCommand}
                         identity={
                           <TrackName

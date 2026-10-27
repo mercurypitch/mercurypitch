@@ -178,6 +178,26 @@ describe('Studio mixing desk', () => {
     expect(ui.project().mix.macros.tone).toBe(0)
   })
 
+  it('shows a lane silenced by another lane’s solo as silent, with Mute unpressed but marked', () => {
+    mount()
+    fireEvent.click(screen.getByRole('button', { name: 'Solo Drums' }))
+    const voice = desk().querySelector<HTMLElement>(
+      '[data-studio-mix-strip="voice"]',
+    )!
+    const mute = screen.getByRole('button', { name: 'Mute Lead vocal' })
+    expect(voice).toHaveAttribute('data-silent')
+    expect(mute).toHaveAttribute('aria-pressed', 'false')
+    expect(mute).toHaveAttribute('data-soloed-out')
+    expect(mute.getAttribute('title')).toBe(
+      'Mute Lead vocal. Silent while another lane is soloed.',
+    )
+    expect(
+      voice.querySelector('[data-silent]:not([data-studio-mix-strip])'),
+    ).not.toBeNull()
+    const drums = screen.getByRole('button', { name: 'Mute Drums' })
+    expect(drums).not.toHaveAttribute('data-soloed-out')
+  })
+
   it('picks a flavour and resets the sound from the master side', () => {
     const ui = mount()
     fireEvent.click(screen.getByRole('button', { name: 'Warm' }))
