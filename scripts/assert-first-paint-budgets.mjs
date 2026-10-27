@@ -254,7 +254,10 @@ export const FIRST_PAINT_BUDGETS_KB = {
   // Raised to 149 for Steps 3 and 4, the game on chords and the pattern:
   // 152,508 bytes with them, 2,176 more, all in Lesson 10's own chunk
   // (lesson-10/steps.ts, games.ts, pattern.ts).
-  'learn/10.html': 149,
+  // Raised to 151 for Step 5, its predict and the names switch: 153,840
+  // bytes with them, 1,332 more, all in Lesson 10's own chunk
+  // (lesson-10/steps.ts, and the names store in main.ts).
+  'learn/10.html': 151,
 
   // The main app, and the crawlable doors that are the main app. Measured
   // 4669. It is eager by design today, so this is a ceiling on growth rather

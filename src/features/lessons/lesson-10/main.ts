@@ -18,10 +18,10 @@
 //
 // The switches, the cold open on the hero's spiral, the recall after it
 // and the four words, the steps' deck with the chord beads in each step's
-// state, Steps 1 to 4's controls and both games, the quick check, the
-// next lesson's card, the season map, the masthead and Merc and Tavi. The
-// rest does nothing until it is wired: Step 5's own controls and its
-// predict, free play and Sing it.
+// state, every step's controls, both games and Step 5's predict, the
+// quick check, the next lesson's card, the season map, the masthead and
+// Merc and Tavi. The rest does nothing until it is wired: free play and
+// Sing it.
 
 import '@fontsource-variable/inter'
 import '@fontsource-variable/outfit'
@@ -48,7 +48,9 @@ import { startFrameLoop } from '@/features/lessons/kit/frame-loop'
 import { G_CLEF_PATH } from '@/features/lessons/kit/glyphs'
 import { initMercs } from '@/features/lessons/kit/merc-duo'
 import { Motion } from '@/features/lessons/kit/motion-switch'
-import { Names } from '@/features/lessons/kit/names'
+import { createModeStore, Names } from '@/features/lessons/kit/names'
+import type { LettersSolfegeMode } from '@/features/lessons/kit/names-modes'
+import { LETTERS_SOLFEGE_MODES } from '@/features/lessons/kit/names-modes'
 import { createNextCard } from '@/features/lessons/kit/next-card'
 import { engraveClefs, initMasthead, initMotionSwitch, initSoundSwitch, } from '@/features/lessons/kit/page-chrome'
 import { createQuiz } from '@/features/lessons/kit/quiz'
@@ -73,12 +75,19 @@ initColdOpen()
 initRecall()
 initWords()
 
+// the names on Step 5's stairs: one page-wide choice, Letters on every
+// visit, never stored
+const stairNames = createModeStore<LettersSolfegeMode>(
+  LETTERS_SOLFEGE_MODES,
+  'letters',
+)
+
 // five steps, one chord-beads toy
 const deck = createStepDeck({
   toyFor: () => 1,
   after: { label: 'Sing it', selector: '#sing' },
 })
-initSteps(deck)
+initSteps(deck, stairNames)
 deck.start()
 
 // the quick check: answering all four marks Lesson 10 done; question 2's
