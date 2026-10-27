@@ -4,12 +4,39 @@
 
 import { cleanup, fireEvent, render, screen, waitFor, within, } from '@solidjs/testing-library'
 import { createSignal, untrack } from 'solid-js'
-import { afterEach, beforeEach, describe, expect, it, onTestFinished, vi, } from 'vitest'
+import { afterEach, beforeAll, beforeEach, describe, expect, it, onTestFinished, vi, } from 'vitest'
 
 // The room mounts its whole lazy graph per case — the slowest are ~1.6s here.
 // That is the surface under test, not avoidable setup, so it gets room to run
 // on a CI box rather than a timeout that only fails when the runner is busy.
 vi.setConfig({ testTimeout: 20000 })
+
+// The room loads its drawers' panels, its stage views, its toasts, its account
+// chip and the shared AuthModal lazily (DrumNightApp.tsx), each the first time
+// a case opens it. A first import builds the part's module graph inside the case's
+// wait for it: for the AuthModal, the Projects library and the room picker
+// that took most of the wait's second, and failed it on a busy machine.
+// Import them all once before the cases, so each wait measures the room, not
+// that build. The imports are work the cases did, so they keep the cases' 20 s.
+beforeAll(async () => {
+  await Promise.all([
+    import('@/components/account/AuthModal'),
+    import('@/components/Notifications'),
+    import('@/features/backgrounds/PremiumBackgroundPicker'),
+    import('./DrumKitWorkspace'),
+    import('./DrumNightAccount'),
+    import('./groove/DrumGrooveEditor'),
+    import('./patterns/DrumPatternPicker'),
+    import('./persistence/DrumProjectLibraryHost'),
+    import('./persistence/DrumTakeHistoryHost'),
+    import('./play-along/DrumFamilyBalance'),
+    import('./play-along/DrumPlayAlongMixer'),
+    import('./play-along/DrumPlayAlongSongsPanel'),
+    import('./play-along/DrumPlayAlongStage'),
+    import('./session/DrumScoreSheet'),
+    import('./session/DrummerSeatView'),
+  ])
+}, 20000)
 
 import { consumeGoogleRedirect, hasValidToken, takeGoogleRedirectResult, } from '@/db/services/auth-service'
 import type { PlayAlongBandPreparationPort } from '@/features/play-along/band-preparation-port'
