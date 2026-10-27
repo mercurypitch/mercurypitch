@@ -18,10 +18,11 @@
 //
 // The switches, the cold open on the hero's spiral, the recall after it
 // and the four words, the steps' deck with the chord beads in each step's
-// state, every step's controls, both games and Step 5's predict, the
-// quick check, the next lesson's card, the season map, the masthead and
-// Merc and Tavi. The rest does nothing until it is wired: free play and
-// Sing it.
+// state, every step's controls, both games and Step 5's predict, Sing it's
+// comfort check, voice choice, Merc's notes and Move do, the quick check,
+// the next lesson's card, the season map, the masthead and Merc and Tavi.
+// The rest does nothing until it is wired: Sing it's guide and its
+// feelings, and free play.
 
 import '@fontsource-variable/inter'
 import '@fontsource-variable/outfit'
@@ -29,18 +30,20 @@ import '@/features/lessons/kit/lesson-fonts.css'
 import '@/features/lessons/kit/lesson-base.css'
 import '@/features/lessons/kit/lesson-sections.css'
 import '@/features/lessons/kit/lesson-stage.css'
-// Sing it's guide, once it is wired; and Lesson 6's questions bring Lesson
-// 2's quiz modules onto this page, so taking this sheet here keeps it in
+// Sing it's guide; and Lesson 6's questions bring Lesson 2's quiz
+// modules onto this page, so taking this sheet here keeps it in
 // their chunk, and Lessons 2, 4, 6, 8 and 9 still link it before their own
 // sheets (MISTAKES.md, on the lessons' base stylesheet)
 import '@/features/lessons/kit/lesson-guide.css'
 import '@/features/lessons/kit/lesson-parts.css'
+// Sing it brings the kit's comfort check and voice choice, so taking the
+// voice lessons' sheet here keeps it in the chunk it shares with them, and
+// Lessons 3 and 5 to 9 still link it before their own sheets
+import '@/features/lessons/kit/lesson-voice.css'
 // the steps' games bring the kit's ear game, so taking this sheet here
 // keeps it in the chunk it shares with them, and Lessons 6 and 8 still link
 // it before their own sheets
 import '@/features/lessons/kit/lesson-ear-game.css'
-// lesson-voice.css comes in by lesson-10.css's @import until the modules it
-// shares a chunk with are loaded here (lesson-10.css says why)
 import './lesson-10.css'
 import { q } from '@/features/lessons/kit/dom'
 import { createExplorer } from '@/features/lessons/kit/explorer'
@@ -56,10 +59,13 @@ import { engraveClefs, initMasthead, initMotionSwitch, initSoundSwitch, } from '
 import { createQuiz } from '@/features/lessons/kit/quiz'
 import { initReveals } from '@/features/lessons/kit/reveal'
 import { createStepDeck } from '@/features/lessons/kit/step-deck'
+import mercBlue from '@/features/lessons/lesson-01/assets/merc-blue.png'
+import mercOrange from '@/features/lessons/lesson-01/assets/merc-orange.png'
 import { initColdOpen } from './cold-open'
 import { bindQuizPlays } from './quiz-play'
 import { QUIZ_QUESTIONS } from './quiz-questions'
 import { initRecall } from './recall'
+import { initSing } from './sing'
 import { initSteps } from './steps'
 import { initWords } from './words'
 
@@ -89,6 +95,9 @@ const deck = createStepDeck({
 })
 initSteps(deck, stairNames)
 deck.start()
+
+// Sing it: nothing listens, and only the voice is stored
+initSing({ blue: mercBlue, orange: mercOrange })
 
 // the quick check: answering all four marks Lesson 10 done; question 2's
 // chord plays from its slot
