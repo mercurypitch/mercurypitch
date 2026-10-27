@@ -253,6 +253,7 @@ const NO_FILM = [
   { n: 6, title: 'Intervals: the distance between notes' },
   { n: 7, title: 'Slides, sirens and your range' },
   { n: 8, title: 'Beat, tempo and the backbeat' },
+  { n: 10, title: 'Major and minor' },
 ] as const
 
 for (const { n, title } of NO_FILM) {

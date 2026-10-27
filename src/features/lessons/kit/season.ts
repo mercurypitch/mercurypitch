@@ -348,8 +348,19 @@ const ENTRIES: readonly Lesson[] = [
     title: 'Major and minor',
     short: 'Major and minor',
     topics: ['T14', 'T15', 'T19'],
+    // A draft until its sign-off (drafts.ts), as Lesson 3 is.
+    minutes: 17,
+    page: '/learn/10',
     hook: 'Which single note turns a major chord into a minor one?',
-    pr: { needs: 'Drone Intonation and Ear Lab Stack' },
+    pr: {
+      needs: 'Drone Intonation and Ear Lab Stack',
+      link: {
+        href: '/ear-lab?lesson=10',
+        addr: 'mercurypitch.com/ear-lab',
+        label: 'Ear Lab',
+        note: 'then tap Stack',
+      },
+    },
   },
   {
     n: 11,

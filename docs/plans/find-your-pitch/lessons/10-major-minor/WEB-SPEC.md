@@ -40,7 +40,7 @@ slide guide with Move do, and free play in the Wrap. It is published only after 
 `/learn/06`, is, because its recall check asks Lesson 6's questions and its prerequisite chip names
 Lesson 6 (FACTS 2, 7), and after the vocal coach has looked at its voice lines (LESSON.md, For the
 vocal coach). Until both are done it is a draft (`src/features/lessons/kit/drafts.ts:5-24`,
-`:30-39`). Every build carries `learn/10.html`, as it carries every lesson page
+`:30-40`). Every build carries `learn/10.html`, as it carries every lesson page
 (`tools/draft-lessons.ts:8-14`), and its line in `drafts.ts` holds it back on mercurypitch.com: the
 site worker answers `/learn/10` with the 404 page, and every page's explorer shows Lesson 10 with no
 link, as a lesson not written yet (`src/lesson-gate.ts:10-12`;
@@ -717,7 +717,7 @@ still images when WebGL fails or would run on the CPU.
 
 ## Explorer and season data
 
-Lesson 10's entry (`src/features/lessons/kit/season.ts:345-353`), proposed for when this page is
+Lesson 10's entry (`src/features/lessons/kit/season.ts:345-364`), proposed for when this page is
 built:
 
 - `minutes: 17` and `page: '/learn/10'`, written plainly, as Lesson 3's entry is
@@ -747,7 +747,7 @@ built:
   `pr.needs`, "Drone Intonation and Ear Lab Stack", stays until the slugs ship: it is "Admin only,
   never drawn on a lesson page" (`season.ts:102-103`, and the fields the team keeps, `:27-31`).
 - The signature stays as it is (`kit/team-notes.ts:42`). The entry has no `fig`, so the card draws no figure.
-- The hook stays word for word (`season.ts:351`; FACTS 1). The tease Lesson 9's card shows for this
+- The hook stays word for word (`season.ts:354`; FACTS 1). The tease Lesson 9's card shows for this
   lesson, and Lesson 11's tease on this page's card, are the kit's lesson copy
   (`kit/lesson-copy.ts:115`, `:116`; FACTS 5, 5b).
 - The card reads "Ready · read", with "17 min", once the page is live (`explorer.ts:153-160`).
@@ -766,7 +766,7 @@ at `85e23a1af` changed there, and that page's own lines are cited at `d59c00ad6`
    `STANDALONE_DOCUMENT_PATHS` (`src/lib/sw-runtime.ts:93`), beside the drafts' entries, whose
    comment gives the reason: where a draft is not published, its address must reach the site
    worker's 404 page, never the app shell (`:138-157`).
-2. `src/features/lessons/kit/drafts.ts:30-39`: Lesson 10's line, in the form of Lessons 3 and 5's:
+2. `src/features/lessons/kit/drafts.ts:30-40`: Lesson 10's line, in the form of Lessons 3 and 5's:
    `10: "Lesson 6's page at /learn/06, and the vocal coach's look at the sung checkpoint"`. While it
    stands, the page is held back on mercurypitch.com and served on the dev site and every PR
    preview, and the console can publish it there before both are done, with no release
@@ -825,8 +825,11 @@ at `85e23a1af` changed there, and that page's own lines are cited at `d59c00ad6`
       "Major and minor: Find Your Pitch, Lesson 10 | MercuryPitch"; `og:title` holds the headline
       now (`:184-188`). The site worker never rewrites the title, whichever hook the console picks;
     - description, 80 to 160 characters: "Which single note turns a major chord into a minor one? A
-      seventeen-minute lesson with sound toys: thirds, major and minor triads, and the natural minor
-      scale." (159 characters; 171 with the alternative hook, Edge cases);
+      seventeen-minute lesson with sound toys: major and minor chords by ear, and the natural minor
+      scale." (158 characters; 170 with the alternative hook, Edge cases). It leaves out "thirds",
+      which a Lesson 6 graduate could take for the cold open's answer, the chord's third; `teaches`
+      keeps "Major and minor thirds", in the structured data no viewer sees (the lead's decision 1,
+      24 October 2026);
     - `og:title` and `twitter:title` "Major and minor: Find Your Pitch, Lesson 10", the lesson's
       name and the series', as on Lessons 1, 2, 3 and 5 (`learn/02.html:26-29`, `:45-48`);
       `og:description` and `twitter:description` the hook, as on Lessons 3 and 5;
@@ -1085,10 +1088,10 @@ bundle, which no site worker serves and which shows drafts: `build:e2e` sets `VI
 10. Every practice link carries `?lesson=10` before any hash: `/pitch-training?lesson=10` and
     `/ear-lab?lesson=10`.
 11. The next-lesson card: a row for `/learn/10` in `src/e2e/learn-next-card.spec.ts`'s cards
-    (`:36-91`), with the eyebrow "Next lesson 11 · Registers and the break Coming later", the link
+    (`:37-98`), with the eyebrow "Next lesson 11 · Registers and the break Coming later", the link
     `#explorer` and "See it on the map" while Lesson 11 has no page, as Lesson 7's row reads for
     Lesson 8; its `.next-tease` reads Lesson 11's tease, one line above its hook, as the spec checks
-    Lesson 1's card (`:117-134`); its still inside the card holds no button.
+    Lesson 1's card (`:124-141`); its still inside the card holds no button.
 12. No planning words: the kit's `src/e2e/learn-no-planning-text.spec.ts` reads every lesson page,
     this one included (`lessonPages`, `:45-47`), for the team's words (`:22-40`), and the
     alternative hook's note never reaches the page (`:77-79`).
@@ -1116,7 +1119,9 @@ words only. The page stores the quiz seeds and records (`fyp-l10-recall-seed`, `
 `fyp-voice` (`voice-choice.ts:20`), the masthead's Pause animations choice, `fyp-motion`
 (`src/features/lessons/kit/motion-switch.ts:12`), and the steps the viewer reached, the kit's
 `fyp-pos` (`src/features/lessons/kit/position.ts:20`), which `initMasthead` keeps
-(`page-chrome.ts:122-154`); nothing from the toys, the ear game or Sing it but the voice.
+(`page-chrome.ts:122-154`), and its record of the welcome tour, `fyp-tour`
+(`src/features/lessons/kit/tour-gate.ts:29`), which every lesson page stores through the kit;
+nothing from the toys, the ear game or Sing it but the voice.
 
 Page QA before publishing (PRODUCTION-PIPELINE § 5) adds, for this page, every check against a local
 or dev build, never production:

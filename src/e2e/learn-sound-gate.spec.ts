@@ -7,12 +7,23 @@
 // a shorter one once it is on. Both lines share one cell, the one not
 // current hidden (kit/lesson-stage.css), so the gate keeps the taller
 // line's height in both states. Before, it shrank the first time sound came
-// on, 42 px on Lesson 7, and moved the page below it. Lessons 1 to 9, at a
+// on, 42 px on Lesson 7, and moved the page below it. Lessons 1 to 10, at a
 // phone's size and a desktop's; the e2e build shows the drafts.
 
 import { expect, test } from './helpers/lesson-page'
 
-const LESSONS = ['01', '02', '03', '04', '05', '06', '07', '08', '09'] as const
+const LESSONS = [
+  '01',
+  '02',
+  '03',
+  '04',
+  '05',
+  '06',
+  '07',
+  '08',
+  '09',
+  '10',
+] as const
 const VIEWPORTS = [
   { width: 390, height: 844 },
   { width: 1440, height: 900 },
