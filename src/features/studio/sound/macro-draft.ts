@@ -1,5 +1,5 @@
 // ============================================================
-// Studio macro draft — one undoable sound change per pointer gesture or held key
+// Studio macro draft — one undoable sound change per pointer gesture or run of keys
 // ============================================================
 //
 // Shared by the Sound panel's slider and the mixing desk's dial, so both edit
@@ -7,7 +7,13 @@
 // remembers the revision it started from: an edit that lands from elsewhere
 // (undo, another control, another tab) drops the draft instead of saving it
 // over the newer song.
-import { createEffect, createSignal } from 'solid-js'
+//
+// While it moves, the draft goes to the live mix: the playing song follows
+// the control, and the other view of the same macro shows the same value. A
+// run of arrow keys saves once, when the keys go quiet (key-burst.ts).
+import { createEffect, createSignal, untrack } from 'solid-js'
+import { createStudioKeyBurst, STUDIO_RANGE_KEYS, } from '@/features/studio/mix/key-burst'
+import { useStudioLiveMix } from '@/features/studio/mix/live-mix'
 import type { StudioSoundEdit } from '@/lib/studio/model/sound-commands'
 import type { StudioProject } from '@/lib/studio/model/types'
 import type { MacroKey } from '@/lib/studio-fx/mix-macros'
@@ -20,17 +26,6 @@ export interface StudioMacroDraftProps {
   onCommand(command: StudioSoundEdit): boolean
 }
 
-const RANGE_KEYS = new Set([
-  'ArrowLeft',
-  'ArrowRight',
-  'ArrowUp',
-  'ArrowDown',
-  'Home',
-  'End',
-  'PageUp',
-  'PageDown',
-])
-
 /** What a screen reader hears: how far the control leans, and towards which end. */
 export function studioMacroValueText(name: MacroKey, value: number): string {
   if (value === 0) return 'Centre'
@@ -39,23 +34,29 @@ export function studioMacroValueText(name: MacroKey, value: number): string {
 }
 
 export function createStudioMacroDraft(props: StudioMacroDraftProps) {
+  const live = useStudioLiveMix()
   const [draft, setDraft] = createSignal<number | null>(null)
   let baseline: { id: string; revision: number } | null = null
-  let keyHeld = false
   let pointerHeld = false
   let blockedPointer = false
   let blockedKey = false
   let ignoreChange = false
+  const burst = createStudioKeyBurst(() => commit())
   const saved = () => props.project.mix.macros[props.name]
-  const value = () => draft() ?? saved()
+  const value = () => draft() ?? live.macro(props.name) ?? saved()
+
+  function end(): void {
+    setDraft(null)
+    if (live.macro(props.name) !== undefined) live.setMacro(props.name, null)
+  }
 
   function cancel(): void {
     baseline = null
     blockedPointer = pointerHeld
-    blockedKey = keyHeld
-    keyHeld = false
+    blockedKey = burst.active()
+    burst.cancel()
     ignoreChange = true
-    setDraft(null)
+    end()
   }
   createEffect(() => {
     const project = props.project
@@ -66,7 +67,7 @@ export function createStudioMacroDraft(props: StudioMacroDraftProps) {
         baseline.id !== project.id ||
         baseline.revision !== project.revision)
     )
-      cancel()
+      untrack(cancel)
   })
 
   function begin(next: number): void {
@@ -76,13 +77,15 @@ export function createStudioMacroDraft(props: StudioMacroDraftProps) {
       revision: props.project.revision,
     }
     setDraft(next)
+    live.setMacro(props.name, next)
   }
 
+  // The command first, then the preview ends: the song never hears the old value.
   function commit(): void {
     const next = draft()
     const current = baseline
     baseline = null
-    keyHeld = false
+    burst.cancel()
     if (
       next !== null &&
       current?.id === props.project.id &&
@@ -94,7 +97,7 @@ export function createStudioMacroDraft(props: StudioMacroDraftProps) {
         macros: { ...props.project.mix.macros, [props.name]: next },
       })
     }
-    setDraft(null)
+    end()
   }
 
   return {
@@ -114,28 +117,30 @@ export function createStudioMacroDraft(props: StudioMacroDraftProps) {
       begin(event.currentTarget.valueAsNumber)
     },
     change(): void {
-      if (!keyHeld && !ignoreChange) commit()
+      if (burst.active()) burst.moved()
+      else if (!ignoreChange) commit()
     },
     keyDown(event: KeyboardEvent): void {
-      if (RANGE_KEYS.has(event.key)) {
+      if (STUDIO_RANGE_KEYS.has(event.key)) {
         if (event.repeat && blockedKey) {
           event.preventDefault()
           return
         }
         blockedKey = false
         blockedPointer = false
-        keyHeld = true
       }
       if (event.key === 'Escape' && draft() !== null) {
         event.preventDefault()
         event.stopPropagation()
         cancel()
+        return
       }
+      burst.keyDown(event)
     },
     keyUp(event: KeyboardEvent): void {
-      if (RANGE_KEYS.has(event.key)) {
+      if (STUDIO_RANGE_KEYS.has(event.key)) {
         blockedKey = false
-        commit()
+        burst.moved()
       }
     },
     pointerDown(): void {

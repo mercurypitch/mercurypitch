@@ -402,6 +402,8 @@
   outline: 2px solid var(--studio-accent);
   outline-offset: 1px;
 }
+/* The whole fader drags, from wherever the pointer goes down; the native
+   range under it only takes the keys and the screen reader. */
 .volume {
   grid-area: volume;
   display: flex;
@@ -409,8 +411,14 @@
   gap: 6px;
   min-width: 0;
   padding-right: 8px;
+  cursor: ew-resize;
+  touch-action: pan-y;
+}
+.volume:has(.fader:disabled) {
+  cursor: default;
 }
 .fader {
+  --cap: 12px;
   -webkit-appearance: none;
   appearance: none;
   flex: 1;
@@ -418,7 +426,7 @@
   height: 22px;
   margin: 0;
   background: transparent;
-  cursor: pointer;
+  pointer-events: none;
   --rail:
     linear-gradient(
       to right,
@@ -445,17 +453,17 @@
 }
 .fader::-webkit-slider-thumb {
   -webkit-appearance: none;
-  width: 12px;
-  height: 12px;
-  margin-top: -4px;
+  width: var(--cap);
+  height: var(--cap);
+  margin-top: calc(2px - var(--cap) / 2);
   border: 0;
   border-radius: 50%;
   background: var(--studio-thumb);
   box-shadow: var(--studio-thumb-ring);
 }
 .fader::-moz-range-thumb {
-  width: 12px;
-  height: 12px;
+  width: var(--cap);
+  height: var(--cap);
   border: 0;
   border-radius: 50%;
   background: var(--studio-thumb);
@@ -477,6 +485,9 @@
   font-size: 11px;
   font-variant-numeric: tabular-nums;
   white-space: nowrap;
+}
+.faderMoving .gainValue {
+  color: var(--studio-text);
 }
 .knob {
   grid-area: knob;
@@ -585,6 +596,7 @@
   height: 36px;
 }
 .touchControls .fader {
+  --cap: 18px;
   height: 44px;
 }
 .touchControls .panValue {
@@ -605,15 +617,6 @@
   font-size: 10.5px;
   line-height: 1;
   pointer-events: none;
-}
-.touchControls .fader::-webkit-slider-thumb {
-  width: 18px;
-  height: 18px;
-  margin-top: -7px;
-}
-.touchControls .fader::-moz-range-thumb {
-  width: 18px;
-  height: 18px;
 }
 
 /* Mixing desk strip: pan on top, a vertical fader, then mute and solo.
@@ -636,15 +639,17 @@
   gap: 4px;
   min-height: 0;
   padding: 0;
+  cursor: ns-resize;
+  touch-action: pan-x;
 }
 /* The cap's centre stops half a cap from each end; the ladder marks every
-   12 dB of the -60 to +24 dB range on that travel, so 0 dB is the sixth mark. */
+   12 dB of the -60 to +12 dB range on that travel, so 0 dB is the sixth mark. */
 .stripControls .fader {
   --cap: 14px;
   --ladder: repeating-linear-gradient(
     to top,
     var(--studio-tick) 0 1px,
-    transparent 1px calc((100% - 1px) / 7)
+    transparent 1px calc((100% - 1px) / 6)
   );
   --rail:
     linear-gradient(

@@ -50,8 +50,9 @@ test('Studio mixing desk moves a lane fader and a master dial as one edit each, 
   const rail = await fader.boundingBox()
   if (!rail) throw new Error('The Harmony fader is not visible.')
   const x = rail.x + rail.width / 2
-  // Unity gain sits 60 of the fader's 84 dB up from the floor.
-  await page.mouse.move(x, rail.y + rail.height * (1 - 60 / 84))
+  // Unity gain sits 60 of the fader's 72 dB up from the floor. The fader
+  // drags from where it is, so the drag below moves it by its length.
+  await page.mouse.move(x, rail.y + rail.height * (1 - 60 / 72))
   await page.mouse.down()
   await page.mouse.move(x, rail.y + rail.height * 0.8, { steps: 10 })
   expect((await readStudioProject(page)).revision).toBe(before.revision)
