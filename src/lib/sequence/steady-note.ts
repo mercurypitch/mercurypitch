@@ -27,6 +27,11 @@
 // The readings are the voice as sung: not held to a semitone, so a wrong
 // note keeps its name, and not folded, so it keeps its octave. Only its
 // distance from the note asked for is folded, at the levels that fold.
+//
+// First note asks the other question of the same stretches: not which was
+// nearest, but which came first. The singer's entry is the first note
+// their voice sat on (firstSteadyNote), found as soon as it has lasted the
+// land time, so it can be judged while they are still singing it.
 
 import type { PitchPoint } from '@/lib/hold/hold-reading'
 import { keptReading, startsRun } from '@/lib/hold/hold-reading'
@@ -58,6 +63,13 @@ export interface SteadyOptions {
   readonly heldOver: boolean
   /** The smoothed centre's time constant, seconds (the hold engine's). */
   readonly centreTauSec: number
+  /**
+   * A gap between readings longer than this starts a new run, seconds. The
+   * Mirror's voiced-run gap by default; a caller whose tracker may read
+   * only a few times a second widens it, as the hold engine, which counts
+   * the time between voiced readings, already reads such a voice as one.
+   */
+  readonly runGapSec?: number
 }
 
 /** Float sums of frame times drift; thresholds compare with this slack. */
@@ -66,11 +78,19 @@ const EPS = 1e-6
 /** A reading this far from the smoothed centre starts it again, cents. */
 export const RESEED_CENTS = 100
 
-/** Voiced readings split where a gap starts a new run (startsRun). */
-function voicedRuns(points: readonly PitchPoint[]): PitchPoint[][] {
+/** Voiced readings split where a gap starts a new run (startsRun, or `gapSec`). */
+function voicedRuns(
+  points: readonly PitchPoint[],
+  gapSec?: number,
+): PitchPoint[][] {
   const runs: PitchPoint[][] = []
   for (const [i, point] of points.entries()) {
-    if (i === 0 || startsRun(points[i - 1], point)) runs.push([])
+    const breaks =
+      i > 0 &&
+      (gapSec === undefined
+        ? startsRun(points[i - 1], point)
+        : point.t - points[i - 1].t > gapSec + EPS)
+    if (i === 0 || breaks) runs.push([])
     runs[runs.length - 1].push(point)
   }
   return runs
@@ -167,7 +187,7 @@ export function closestSteadyNote(
   options: SteadyOptions,
 ): SteadyNote | null {
   let best: SteadyNote | null = null
-  for (const [i, run] of voicedRuns(points).entries()) {
+  for (const [i, run] of voicedRuns(points, options.runGapSec).entries()) {
     for (const note of steadyNotesOfRun(
       run,
       options,
@@ -179,4 +199,21 @@ export function closestSteadyNote(
     }
   }
   return best
+}
+
+/**
+ * The first steady note among the readings (oldest first, cents off the
+ * note asked for as sung): the earliest stretch the voice sat still for the
+ * land time, taken as soon as it has lasted that long, so a stretch still
+ * being sung counts. Null until the voice has sat still that long.
+ */
+export function firstSteadyNote(
+  points: readonly PitchPoint[],
+  options: SteadyOptions,
+): SteadyNote | null {
+  for (const [i, run] of voicedRuns(points, options.runGapSec).entries()) {
+    const notes = steadyNotesOfRun(run, options, options.heldOver && i === 0)
+    if (notes.length > 0) return notes[0]
+  }
+  return null
 }

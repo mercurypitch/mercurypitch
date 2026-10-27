@@ -106,7 +106,8 @@ These are the rules that break things when ignored.
 | `piano-project` | [piano-project.ts](../../src/features/piano-project/piano-project.ts) | 3.1k | PianoProject — lossless-enough, tick-native Standard MIDI authority Source-track order and absolute ticks stay authoritative. |
 | `ng-slides` | [useNgController.ts](../../src/features/ng-slides/useNgController.ts) | 3.0k | useNgController: one Ng slides run, from the tap to the result The glide rooms' core (room-kit glide/useGlideRoom.ts) runs the run: the m... |
 | `guitar-practice` | [useGuitarPracticeController.ts](../../src/features/guitar-practice/useGuitarPracticeController.ts) | 2.9k | useGuitarPracticeController — Guitar Hero-style game logic |
-| `home-note` | [home-note-band.ts](../../src/features/home-note/home-note-band.ts) | 2.3k | Home note's band — the intro's chords, Merc's home note, the resolve The band is a soft organ: each chord a bass and a close triad (home-... |
+| `first-note` | [first-note-machine.ts](../../src/features/first-note/first-note-machine.ts) | 2.2k | First note's room states — a pure reducer intro at rest: the stage, Merc, the mic starting the microphone is opening, from the singer's t... |
+| `home-note` | [home-note-band.ts](../../src/features/home-note/home-note-band.ts) | 2.1k | Home note's band — the intro's chords, Merc's home note, the resolve The band is a soft organ: each chord a bass and a close triad (home-... |
 | `analysis` | [AnalysisDashboard.tsx](../../src/features/analysis/AnalysisDashboard.tsx) | 2.0k | Analysis dashboard — one responsive page for every take Replaces VocalAnalysis.tsx (3,102 lines) and AnalysisMobileOverview.tsx. |
 | `routines` | [use-daily-routine.ts](../../src/features/routines/use-daily-routine.ts) | 2.0k | Runs banked against the segment now in progress, cleared when it ticks off. |
 | `path` | [path-content.ts](../../src/features/path/path-content.ts) | 1.7k | The Ascent — guided-path content (data, not code) One path = an ordered list of themed weeks (the celestial orbs). |
@@ -155,7 +156,7 @@ These are the rules that break things when ignored.
 | `pitch-algorithms` | [index.ts](../../src/lib/pitch-algorithms/index.ts) | 2.0k | Pitch Algorithms Library Export |
 | `shazam` | [melody-matcher.ts](../../src/lib/shazam/melody-matcher.ts) | 2.0k | Melody Matcher — Multi-feature DTW scoring against fingerprints Phase 3 of Shazam Sing Takes a LivePitchContour (from the live pitch buff... |
 | `glide` | [glide-engine.ts](../../src/lib/glide/glide-engine.ts) | 1.9k | Glide engine — a voice following a moving target: the lit share of each arch Ng slides' engine, and Lip roll's. |
-| `sequence` | [sequence-engine.ts](../../src/lib/sequence/sequence-engine.ts) | 1.8k | Sequence engine — a phrase sung back note by note: each lands or misses Echo's engine, and later Note runner's and the onboarding's sung... |
+| `sequence` | [sequence-engine.ts](../../src/lib/sequence/sequence-engine.ts) | 1.9k | Sequence engine — a phrase sung back note by note: each lands or misses Echo's engine, and later Note runner's and the onboarding's sung... |
 | `hold` | [hold-engine.ts](../../src/lib/hold/hold-engine.ts) | 1.7k | Hold engine — one held note: lock, breaks, the lantern's fill and the end A pure tick on a state object, the shape of `tickPhysics` in `s... |
 | `pitch-pipeline` | [index.ts](../../src/lib/pitch-pipeline/index.ts) | 1.1k | Barrel for the shared vocal pitch denoise + note-segmentation pipeline. |
 | `sync` | [sync-protocol.ts](../../src/lib/sync/sync-protocol.ts) | 1.1k | ── Sync wire protocol How a portable bundle crosses a DataChannel: the receiver pulls. |
@@ -247,6 +248,7 @@ These are the rules that break things when ignored.
 | [saved-midi-songs-store.ts](../../src/stores/saved-midi-songs-store.ts) | 150 | Saved MIDI Songs Store — imported MIDI songs (localStorage) Imported MIDI files for guitar/piano practice are kept in a shared store so t... |
 | [sync-ui-store.ts](../../src/stores/sync-ui-store.ts) | 150 | ── Sync UI state Whether the sync dialog is showing, whether a session is alive behind it, and — in the words the surfaces say out loud —... |
 | [console-store.ts](../../src/stores/console-store.ts) | 100 | Console Store — in-app console log capture for the debug overlay Mirrors console output into a ring buffer the ConsoleLog panel renders,... |
+| [first-note-store.ts](../../src/stores/first-note-store.ts) | 100 | First note's records — the best at each level A best is the most entries a run came in on the note, and among runs that came in on as man... |
 | [home-note-store.ts](../../src/stores/home-note-store.ts) | 100 | Home note's records — the best at each level A best is the most rounds found in a run, and among runs that found as many, the quickest to... |
 | [index.ts](../../src/stores/index.ts) | 100 | Stores barrel export |
 | [mic-store.ts](../../src/stores/mic-store.ts) | 100 | Mic Store — page-facing mic indicator (NOT the device owner) Device ownership lives in src/lib/mic-manager.ts. |

@@ -1,0 +1,204 @@
+/* First note's world: the Karaoke room's theatre (StageScene.tsx). The
+   line, the band, the trail and the countdown are the exercise and keep
+   their look over any painting. */
+
+.scene {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  /* The curtain's colours, under the picture and in its place if it is
+     missing (a browser build carries no native art). */
+  background: radial-gradient(
+    120% 70% at 50% 30%,
+    #5a1420 0%,
+    #2a0a10 55%,
+    #0c0406 100%
+  );
+  isolation: isolate;
+}
+
+.art {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: 50% 40%;
+  user-select: none;
+}
+
+/* The house lights down: the curtain stays, the gold steps back so the
+   line reads over it. */
+.shade {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    180deg,
+    rgba(5, 3, 8, 0.8) 0%,
+    rgba(5, 3, 8, 0.58) 22%,
+    rgba(5, 3, 8, 0.26) 42%,
+    rgba(5, 3, 8, 0.32) 62%,
+    rgba(5, 3, 8, 0.84) 100%
+  );
+}
+
+.overlay {
+  position: absolute;
+  left: 0;
+  top: 0;
+  display: block;
+  pointer-events: none;
+}
+
+/* The note's band and line: hidden until the level shows them. */
+.band,
+.line {
+  opacity: 0;
+  transition: opacity 260ms ease;
+}
+
+.band {
+  mix-blend-mode: plus-lighter;
+}
+
+@supports not (mix-blend-mode: plus-lighter) {
+  .band {
+    mix-blend-mode: screen;
+  }
+}
+
+.line {
+  stroke-width: 2.5;
+  filter: drop-shadow(0 0 5px rgba(255, 214, 120, 0.85));
+}
+
+.lineOn .band {
+  opacity: 0.22;
+}
+
+.lineOn .line {
+  opacity: 0.9;
+}
+
+.lineOn.lit .band {
+  opacity: 0.34;
+}
+
+/* The voice's trail: violet like the singer's line everywhere in the app,
+   gold while it is in the note's band. */
+.trail {
+  fill: none;
+  stroke: #a78bfa;
+  stroke-width: 3.5;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  filter: drop-shadow(0 0 4px rgba(167, 139, 250, 0.7));
+}
+
+.lit .trail {
+  stroke: #ffd977;
+  filter: drop-shadow(0 0 6px rgba(255, 217, 119, 0.85));
+}
+
+.head {
+  fill: #f1ecff;
+  filter: drop-shadow(0 0 6px rgba(167, 139, 250, 0.9));
+}
+
+.lit .head {
+  fill: #fff4cf;
+  filter: drop-shadow(0 0 10px rgba(255, 217, 119, 1));
+}
+
+/* The lead-in's countdown, under the song's name: the way to the entry,
+   and its last four beats. */
+.countdown {
+  position: absolute;
+  left: 50%;
+  top: calc(var(--pushed-top, 0px) + 108px);
+  width: min(280px, 76%);
+  transform: translateX(-50%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 14px;
+  pointer-events: none;
+}
+
+.track {
+  position: relative;
+  width: 100%;
+  height: 6px;
+  border-radius: 3px;
+  background: rgba(255, 255, 255, 0.16);
+}
+
+.fill {
+  position: absolute;
+  inset: 0;
+  border-radius: 3px;
+  background: linear-gradient(90deg, #a78bfa, #ffd36b);
+  transform-origin: left center;
+  transition: transform 90ms linear;
+}
+
+/* Where the singer comes in. */
+.mark {
+  position: absolute;
+  right: -2px;
+  top: -8px;
+  width: 4px;
+  height: 22px;
+  border-radius: 2px;
+  background: #ffd36b;
+  box-shadow: 0 0 10px rgba(255, 211, 107, 0.8);
+}
+
+.beats {
+  display: flex;
+  gap: 14px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.beat {
+  width: 14px;
+  height: 14px;
+  box-sizing: border-box;
+  border: 1.5px solid rgba(255, 211, 107, 0.6);
+  border-radius: 50%;
+  transition:
+    background-color 80ms ease,
+    transform 80ms ease;
+}
+
+.beatLit {
+  background: #ffd36b;
+  box-shadow: 0 0 12px rgba(255, 211, 107, 0.8);
+  transform: scale(1.15);
+}
+
+.still .band,
+.still .line,
+.still .fill,
+.still .beat {
+  transition: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .band,
+  .line,
+  .fill,
+  .beat {
+    transition: none;
+  }
+}
+
+/* A short phone (360 x 640, 375 x 667): the countdown under the song,
+   which sits higher there (FirstNoteRoom.module.css). */
+@media (max-height: 700px) {
+  .countdown {
+    top: calc(var(--pushed-top, 0px) + 96px);
+  }
+}

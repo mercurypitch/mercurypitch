@@ -7,7 +7,7 @@
 import { describe, expect, it } from 'vitest'
 import type { PitchPoint } from '@/lib/hold/hold-reading'
 import type { SteadyOptions } from './steady-note'
-import { closestSteadyNote } from './steady-note'
+import { closestSteadyNote, firstSteadyNote } from './steady-note'
 
 const C4 = 60
 
@@ -213,4 +213,66 @@ describe('closestSteadyNote', () => {
       expect(note?.cents).toBeCloseTo(cents, 6)
     },
   )
+})
+
+describe('firstSteadyNote', () => {
+  it('takes the first note the voice sat on, not the nearest', () => {
+    // Arrange: a tone under, held, then onto the note itself.
+    const points = readings([...held(-200, 0.5), ...held(0, 0.5)])
+
+    // Act
+    const note = firstSteadyNote(points, SINGER)
+
+    // Assert
+    expect(note).toEqual({ midi: C4 - 2, cents: -200 })
+  })
+
+  it('takes a stretch still being sung once it has lasted the land time', () => {
+    // Arrange: a scoop up, then 0.3 s on a note 20 cents flat, still going.
+    const scoop = [-180, -150, -120, -90, -60, -40]
+    const points = readings([...scoop, ...held(-20, 0.3)])
+
+    // Act
+    const note = firstSteadyNote(points, SINGER)
+
+    // Assert
+    expect(note?.midi).toBe(C4)
+    expect(note?.cents).toBeCloseTo(-20, 0)
+  })
+
+  it('finds nothing before the voice has sat still for the land time', () => {
+    // Arrange: 0.2 s of a note, under Singer's 250 ms.
+    const points = readings(held(30, 0.2))
+
+    // Act / Assert
+    expect(firstSteadyNote(points, SINGER)).toBeNull()
+  })
+
+  it('reads a voice heard only five times a second as one run, given the gap', () => {
+    // Arrange: 20 cents sharp for a second, a reading every 0.2 s.
+    const points = Array.from({ length: 6 }, (_, i) => ({
+      t: i * 0.2,
+      cents: 20,
+    }))
+
+    // Act / Assert: the Mirror's gap splits every reading off...
+    expect(firstSteadyNote(points, SINGER)).toBeNull()
+    // ...and a wider one keeps them a run.
+    expect(firstSteadyNote(points, { ...SINGER, runGapSec: 0.3 })).toEqual({
+      midi: C4,
+      cents: 20,
+    })
+  })
+
+  it('folds the note to the nearest octave at the levels that fold', () => {
+    // Arrange: the note an octave under, and 15 cents sharp of it.
+    const points = readings(held(-1185, 0.4))
+
+    // Act
+    const note = firstSteadyNote(points, { ...SINGER, octaveFold: true })
+
+    // Assert
+    expect(note?.midi).toBe(C4 - 12)
+    expect(note?.cents).toBeCloseTo(15, 0)
+  })
 })

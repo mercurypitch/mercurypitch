@@ -59,6 +59,8 @@ export interface ShellScreensProps {
   warmUp?: Component
   /** Home note, the first Ear room, passed in as Long note is. */
   homeNote?: Component
+  /** First note, the second Ear room, passed in as Long note is. */
+  firstNote?: Component
 }
 
 const TITLES: Record<Exclude<PushedScreenId, 'this-phone'>, string> = {
@@ -80,6 +82,7 @@ const TITLES: Record<Exclude<PushedScreenId, 'this-phone'>, string> = {
   'ng-slides': 'Ng slides',
   'warm-up': 'Warm-up',
   'home-note': 'Home note',
+  'first-note': 'First note',
   developer: 'Developer',
 }
 
@@ -140,6 +143,10 @@ export function ShellScreens(props: ShellScreensProps): JSX.Element {
       case 'home-note': {
         const HomeNote = props.homeNote
         return HomeNote === undefined ? null : <HomeNote />
+      }
+      case 'first-note': {
+        const FirstNote = props.firstNote
+        return FirstNote === undefined ? null : <FirstNote />
       }
       case 'developer': {
         const Developer = props.developer

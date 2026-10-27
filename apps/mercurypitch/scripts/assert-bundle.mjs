@@ -367,6 +367,20 @@ const KARAOKE_STAGE_2 = [
   ['Two chords only, and less room around home', "Home note's level control"],
   ['mp_home_note_bests', "Home note's bests"],
   ['ear-merc-row', "the Ear Lab's way in to the Ear rooms"],
+  // First note, the second Ear room: its room, its card, its level lines,
+  // its result and its bests, on the same switch. Its theatre and songs are
+  // the Karaoke room's, which every build ships.
+  ['first-note-room', 'the premium First note exercise'],
+  [
+    'A song plays up to the singer. Come in on their first note',
+    "the exercise picker's First note card",
+  ],
+  [
+    'No line until you land, and less room around the note',
+    "First note's level control",
+  ],
+  ['Came in on the note', "First note's result"],
+  ['mp_first_note_bests', "First note's bests"],
   // The days warmed up, the week's dots, synced with the account: its key
   // and its pull merge (settings-progress.ts) fold with the rest.
   ['pitchperfect_warm_up_days', "the Warm-up's days warmed up"],

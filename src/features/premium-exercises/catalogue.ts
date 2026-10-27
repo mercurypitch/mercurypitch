@@ -14,7 +14,7 @@
 // Each entry names its group, and the picker draws the groups under
 // headings in the Karaoke library's style: Pitch (Long note, Echo), then
 // Warm-ups (the Warm-up heading its group, then Lip roll and Ng slides),
-// then Ear (Home note, the first Ear room: docs/plans/ear-rooms.md).
+// then Ear (Home note and First note, the Ear rooms: docs/plans/ear-rooms.md).
 // Catalogue order is the order the picker lists them, so a group's entries
 // sit together here, in its heading's order (catalogue.test.ts holds that).
 // There is no card for an exercise that is not built: a card that does
@@ -23,10 +23,11 @@
 import type { Component } from 'solid-js'
 import { longNoteEntry } from '@/features/long-note/long-note-entry'
 import type { PremiumExerciseId } from '@/lib/domain/exercise-contracts'
-import { EXERCISE_ECHO_STARS, EXERCISE_HOME_NOTE_LIGHTHOUSE, EXERCISE_LIP_ROLL_BAY, EXERCISE_LONG_NOTE_LANTERN, EXERCISE_NG_SLIDES_BRIDGE, EXERCISE_WARM_UP_PATH, } from '@/lib/domain/exercise-contracts'
+import { EXERCISE_ECHO_STARS, EXERCISE_FIRST_NOTE_STAGE, EXERCISE_HOME_NOTE_LIGHTHOUSE, EXERCISE_LIP_ROLL_BAY, EXERCISE_LONG_NOTE_LANTERN, EXERCISE_NG_SLIDES_BRIDGE, EXERCISE_WARM_UP_PATH, } from '@/lib/domain/exercise-contracts'
 import type { WeekDot } from '@/lib/warm-up-days'
 import { echoEntry } from './echo-entry'
-import { BridgeGlyph, EchoGlyph, LanternGlyph, LighthouseGlyph, WarmUpGlyph, WaveGlyph, } from './glyphs'
+import { firstEntry } from './first-entry'
+import { BridgeGlyph, EchoGlyph, LanternGlyph, LighthouseGlyph, SpotlightGlyph, WarmUpGlyph, WaveGlyph, } from './glyphs'
 import { homeEntry } from './home-entry'
 import { lipEntry } from './lip-entry'
 import { ngEntry } from './ng-entry'
@@ -129,6 +130,15 @@ export const EXERCISE_CATALOGUE: readonly PremiumExercise[] = [
     Glyph: LighthouseGlyph,
     bestOnNote: false,
     ...homeEntry(),
+  },
+  {
+    id: EXERCISE_FIRST_NOTE_STAGE,
+    name: 'First note',
+    group: 'ear',
+    line: 'A song plays up to the singer. Come in on their first note.',
+    Glyph: SpotlightGlyph,
+    bestOnNote: false,
+    ...firstEntry(),
   },
 ]
 

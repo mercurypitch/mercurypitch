@@ -127,3 +127,20 @@ export const LighthouseGlyph: Component = () => (
     <path d="M3 7.6l4.6 0.9M3 10.6l4.6-0.9M21 7.6l-4.6 0.9M21 10.6l-4.6-0.9" />
   </svg>
 )
+
+/** A stage microphone on its stand, a spotlight's two edges falling on it. */
+export const SpotlightGlyph: Component = () => (
+  <svg
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    stroke-width="1.7"
+    stroke-linecap="round"
+    stroke-linejoin="round"
+    aria-hidden="true"
+  >
+    <rect x="10" y="7" width="4" height="6.4" rx="2" />
+    <path d="M12 13.4v6.6M9 20.5h6" />
+    <path d="M10.4 3.5 5.6 9.6M13.6 3.5l4.8 6.1" />
+  </svg>
+)

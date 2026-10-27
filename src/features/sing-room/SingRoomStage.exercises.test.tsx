@@ -230,6 +230,7 @@ describe('at rest', () => {
       'lip-roll-bay',
       'ng-slides-bridge',
       'home-note-lighthouse',
+      'first-note-stage',
     ])
     fireEvent.click(cards[0])
 

@@ -39,7 +39,7 @@ describe('the exercise catalogue', () => {
     ).toEqual([
       ['Pitch', ['Long note', 'Echo']],
       ['Warm-ups', ['Warm-up', 'Lip roll', 'Ng slides']],
-      ['Ear', ['Home note']],
+      ['Ear', ['Home note', 'First note']],
     ])
   })
 
@@ -50,6 +50,19 @@ describe('the exercise catalogue', () => {
       'The band plays an intro. Sing the note that feels like home.',
     )
     expect([home?.note(), home?.demoAutoPlays(), home?.bestOnNote]).toEqual([
+      null,
+      false,
+      false,
+    ])
+  })
+
+  it('names First note by its task, with no note of its own to open on', () => {
+    const first = catalogueEntry('first-note-stage')
+    expect(first?.name).toBe('First note')
+    expect(first?.line).toBe(
+      'A song plays up to the singer. Come in on their first note.',
+    )
+    expect([first?.note(), first?.demoAutoPlays(), first?.bestOnNote]).toEqual([
       null,
       false,
       false,
