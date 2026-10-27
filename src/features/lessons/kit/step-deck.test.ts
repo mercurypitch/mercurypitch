@@ -7,7 +7,15 @@ import { resolve } from 'node:path'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import './browser-doubles.test-fixtures'
 import { ANNOUNCE_DELAY_MS } from './announce'
+import type * as MotionSwitch from './motion-switch'
 import { createStepDeck, DECK_QUERY, registerToy, stepFromHash, } from './step-deck'
+
+/** The system's reduced-motion setting, as the deck reads it. */
+const motion = vi.hoisted(() => ({ reduced: false }))
+vi.mock('./motion-switch', async (original) => ({
+  ...(await original<typeof MotionSwitch>()),
+  reducedMotion: () => motion.reduced,
+}))
 
 /** The query of lesson-stage.css's top-level @media block that hides the deck's other steps, or null. */
 function deckBlockQuery(css: string): string | null {
@@ -78,6 +86,9 @@ const beat = (): Promise<void> =>
   new Promise((r) => setTimeout(r, ANNOUNCE_DELAY_MS + 10))
 
 afterEach(() => {
+  // a test that fails leaves no spy or setting behind for the next
+  vi.restoreAllMocks()
+  motion.reduced = false
   window.location.hash = ''
   document.body.textContent = ''
   document.documentElement.classList.remove('touring')
@@ -337,5 +348,60 @@ describe('createStepDeck', () => {
     frames.mockRestore()
     scroll.mockRestore()
     document.documentElement.style.scrollPaddingTop = ''
+  })
+
+  it("goes to the step an address names at once: 'auto' would take the page's smooth scroll, and a press could stop it short", () => {
+    // Arrange
+    deckPage(3)
+    window.location.hash = '#step-3'
+    const frames = vi
+      .spyOn(globalThis, 'requestAnimationFrame')
+      .mockImplementation((frame) => {
+        frame(0)
+        return 0
+      })
+    const scroll = vi
+      .spyOn(window, 'scrollTo')
+      .mockImplementation(() => undefined)
+    const deck = createStepDeck({
+      toyFor: (n) => n,
+      after: { label: 'The quick check', selector: '#quiz' },
+    })
+
+    // Act
+    deck.start()
+
+    // Assert
+    const ways = scroll.mock.calls.map(
+      ([to]) => (to as ScrollToOptions).behavior,
+    )
+    expect(ways).toEqual(['instant'])
+    frames.mockRestore()
+    scroll.mockRestore()
+  })
+
+  it('jumps at once under reduced motion, and glides otherwise', () => {
+    // Arrange
+    deckPage(3)
+    const scroll = vi
+      .spyOn(window, 'scrollTo')
+      .mockImplementation(() => undefined)
+    const deck = createStepDeck({
+      toyFor: (n) => n,
+      after: { label: 'The quick check', selector: '#quiz' },
+    })
+
+    // Act
+    motion.reduced = true
+    deck.jump(3)
+    motion.reduced = false
+    deck.jump(1)
+
+    // Assert
+    const ways = scroll.mock.calls.map(
+      ([to]) => (to as ScrollToOptions).behavior,
+    )
+    expect(ways).toEqual(['instant', 'smooth'])
+    scroll.mockRestore()
   })
 })

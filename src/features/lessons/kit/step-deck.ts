@@ -111,7 +111,12 @@ export function createStepDeck(opts: StepDeckOptions): StepDeck {
   let deck = false
   let lockUntil = 0
   const listeners = new Set<(step: number) => void>()
-  const behavior = (): ScrollBehavior => (reducedMotion() ? 'auto' : 'smooth')
+  // "At once" is 'instant', never 'auto': 'auto' takes the page's own
+  // `scroll-behavior: smooth` (kit/lesson-base.css), so it glides, and focus
+  // coming to a control while it glides (a Tab, a press on the stage) brings
+  // that control into view and stops the glide short of its step
+  const behavior = (): ScrollBehavior =>
+    reducedMotion() ? 'instant' : 'smooth'
   announcer()
   /** Says the step the viewer moved to. */
   const sayStep = (): void =>
@@ -266,7 +271,8 @@ export function createStepDeck(opts: StepDeckOptions): StepDeck {
     // otherwise land after this step and show the step that scroll reached
     lockUntil = performance.now() + 1100
     show(n)
-    requestAnimationFrame(() => bring(n, 'auto'))
+    // at once, so nothing the viewer does can stop it short of the step
+    requestAnimationFrame(() => bring(n, 'instant'))
   }
 
   const stageSeen = watch(stage)

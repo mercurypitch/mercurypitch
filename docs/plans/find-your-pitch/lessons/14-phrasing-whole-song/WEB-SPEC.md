@@ -625,7 +625,7 @@ the link where that lesson is not live (`:186-190`).
   deck (`quiz.ts:186-216`); where Lesson 5 is not live, each keeps its words with no link
   (`:206-209`; Edge cases). The address is the quiz's `away.href` (`quiz.ts:94-101`), the kit's
   `recallStepHref` (`:141-143`) in place of the default `/learn/05#lesson`, and the kit's step deck
-  opens at the step an address names (`kit/step-deck.ts:18-23`, `:292-300`).
+  opens at the step an address names (`kit/step-deck.ts:18-23`, `:298-306`).
 - **Quick check**: LESSON.md's four questions, ids `l14-q1` to `l14-q4`, keys `fyp-l14-seed` and
   `fyp-l14-quiz-v1` (`lesson-04/main.ts:84`), and `lesson: 14`, so answering all four marks Lesson
   14 done in the explorer. Three answers each, shuffled per question from the stored seed, one-line
@@ -655,8 +655,8 @@ last, whichever control made it. Leaving a step stops its sound and anything it 
 of the song, the second of two takes or a chord under a line, whatever the route: Previous or Next,
 a swipe, the wide page's scroll, the lesson menu's jump, a `#step-N` address and a quick-check step
 link all reach the deck's `show`, which calls each toy's `onStep(step, previous)`
-(`kit/step-deck.ts:45-47`, `:140-181`), and the page stops the step's sound whenever `step` differs
-from `previous`; a layout switch calls it with the same step (`:188-191`) and stops nothing. Leaving
+(`kit/step-deck.ts:45-47`, `:145-186`), and the page stops the step's sound whenever `step` differs
+from `previous`; a layout switch calls it with the same step (`:193-196`) and stops nothing. Leaving
 Sing it's section, or the tab going hidden, stops a playing take as it releases the microphone. A
 play cut short, by a new play, a stop, the Sound toggle or a hidden tab, never counts as heard: the
 cold open's `play` resolves `false` for it, and the predict counts only a play that runs to its end

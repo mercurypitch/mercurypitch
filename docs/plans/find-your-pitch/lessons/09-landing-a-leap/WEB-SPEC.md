@@ -502,7 +502,7 @@ live (`:186-190`).
   its words with no link (`:206-209`; Edge cases). The address is the quiz's `away.href`
   (`quiz.ts:94-101`), the kit's `recallStepHref` (`:141-143`) in place of the default
   `/learn/06#lesson`, and the kit's step deck opens at the step an address names
-  (`kit/step-deck.ts:18-23`, `:292-300`).
+  (`kit/step-deck.ts:18-23`, `:298-306`).
 - **Quick check**: LESSON.md's four questions, ids `l09-q1` to `l09-q4`, keys `fyp-l09-seed` and
   `fyp-l09-quiz-v1` (`lesson-04/main.ts:84`), and `lesson: 9`, so answering all four marks Lesson 9
   done in the explorer. Three answers each, shuffled per question from the stored seed, one-line
@@ -529,8 +529,8 @@ the owner stops whatever was sounding, so a new tap stops the last, whichever co
 Leaving a step stops its sound and anything it has queued, the rest of a sequence or a replay,
 whatever the route: Previous or Next, a swipe, the wide page's scroll, the lesson menu's jump, a
 `#step-N` address and a quick-check step link all reach the deck's `show`, which calls each toy's
-`onStep(step, previous)` (`kit/step-deck.ts:45-47`, `:140-172`), and the page stops the step's sound
-whenever `step` differs from `previous`; a layout switch calls it with the same step (`:188-191`)
+`onStep(step, previous)` (`kit/step-deck.ts:45-47`, `:145-177`), and the page stops the step's sound
+whenever `step` differs from `previous`; a layout switch calls it with the same step (`:193-196`)
 and stops nothing. A play cut short, by a new play or a stop, never counts as heard: the cold open's
 `play` resolves `false` for it, and the predict counts only a play that runs to its end (Toys 2).
 Both rules' kit parts come with PR #1149's fix pass, from Lesson 6's page review: the owner, and

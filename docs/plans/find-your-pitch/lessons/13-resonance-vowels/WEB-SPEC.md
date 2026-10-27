@@ -662,8 +662,8 @@ reset as they do when it is stopped. Leaving a step stops its sound and anything
 rest of Step 4's five vowels, or a harmonic still to play), whatever the route: Previous or Next, a
 swipe, the wide page's scroll, the lesson menu's jump, a `#step-N` address and a quick-check step
 link all reach the deck's `show`, which calls each toy's `onStep(step, previous)`
-(`kit/step-deck.ts:45-47`, `:140-181`), and the page stops the step's sound whenever `step` differs
-from `previous`; a layout switch calls it with the same step (`:188-191`) and stops nothing, as
+(`kit/step-deck.ts:45-47`, `:145-186`), and the page stops the step's sound whenever `step` differs
+from `previous`; a layout switch calls it with the same step (`:193-196`) and stops nothing, as
 Lesson 6's steps do (`lesson-06/steps.ts:78-89`). A play cut short, by a new play or a stop, never
 counts as heard: the cold open's `play` resolves `false` for it, and the predict counts only a play
 that runs to its end (Toys 2; `kit/predict.ts:31-41`, `:184-188`). Both parts came with PR #1149,
