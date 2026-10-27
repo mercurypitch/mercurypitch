@@ -266,9 +266,12 @@ export function showPlanCard(): void {
 /**
  * How the plan layer opens in the app. `existing` is the one takeover an
  * existing user gets, `skipper` is someone who opens the four taps from
- * Home or the Guide, and `review` is an answered plan, opened on the plan.
+ * Home, the Guide or Settings, `review` is an answered plan, opened on the
+ * plan, and `change` is the same review opened on its four questions, with
+ * the answers given picked, as the plan's own Change my answers opens them
+ * (from Home's card and Settings).
  */
-export type PlanLayerMode = 'existing' | 'skipper' | 'review'
+export type PlanLayerMode = 'existing' | 'skipper' | 'review' | 'change'
 
 const [layerMode, setLayerMode] = createSignal<PlanLayerMode | null>(null)
 

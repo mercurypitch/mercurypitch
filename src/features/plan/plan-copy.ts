@@ -214,6 +214,8 @@ export const MENU_WHOLE =
  * written together, here, and read from here by every screen that says them.
  */
 export const PLAN_PLACES = {
+  /** The way back to the four questions, on the answers given: on the plan screen and Home's card. */
+  changeAnswers: 'Change my answers',
   /** The toast the card's X raises: where the plan still is. */
   offHome: 'Your plan is off Home. Settings and the Guide still have it.',
   /** The toast's action, which puts the card back. */
