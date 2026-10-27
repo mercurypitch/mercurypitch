@@ -18,10 +18,10 @@
 //
 // The switches, the cold open on the hero's spiral, the recall after it
 // and the four words, the steps' deck with the chord beads in each step's
-// state, the quick check, the next lesson's card, the season map, the
-// masthead and Merc and Tavi. The rest does nothing until it is wired: the
-// steps' controls and free play, the two games, Step 5's predict and Sing
-// it.
+// state, Steps 1 and 2's controls and the game on thirds, the quick check,
+// the next lesson's card, the season map, the masthead and Merc and Tavi.
+// The rest does nothing until it is wired: Steps 3 to 5's own controls,
+// the game on chords, Step 5's predict, free play and Sing it.
 
 import '@fontsource-variable/inter'
 import '@fontsource-variable/outfit'
@@ -35,9 +35,12 @@ import '@/features/lessons/kit/lesson-stage.css'
 // sheets (MISTAKES.md, on the lessons' base stylesheet)
 import '@/features/lessons/kit/lesson-guide.css'
 import '@/features/lessons/kit/lesson-parts.css'
-// lesson-voice.css and lesson-ear-game.css come in by lesson-10.css's
-// @import until the modules they share a chunk with are loaded here
-// (lesson-10.css says why)
+// the steps' games bring the kit's ear game, so taking this sheet here
+// keeps it in the chunk it shares with them, and Lessons 6 and 8 still link
+// it before their own sheets
+import '@/features/lessons/kit/lesson-ear-game.css'
+// lesson-voice.css comes in by lesson-10.css's @import until the modules it
+// shares a chunk with are loaded here (lesson-10.css says why)
 import './lesson-10.css'
 import { q } from '@/features/lessons/kit/dom'
 import { createExplorer } from '@/features/lessons/kit/explorer'

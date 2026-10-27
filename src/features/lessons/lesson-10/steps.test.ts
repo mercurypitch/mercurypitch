@@ -7,9 +7,11 @@
 // stage ever share an accessible name (WEB-SPEC, Toys 1, "Keyboard and
 // screen readers"), each step has a control to press, in at most two rows
 // (Toys 1, "The stuck stage"), and the figure's label follows the step.
-// Step 5's Major · Minor is its own, and waits for its predict. An address
-// that names a step opens it in its own parts, and the step showing, shown
-// again, changes nothing.
+// Step 5's Major · Minor is its own, and waits for its predict. Step 2
+// opens with Stack a third, and Play the triad takes its place once the
+// third is stacked (steps-thirds.test.ts). An address that names a step
+// opens it in its own parts, and the step showing, shown again, changes
+// nothing.
 
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import '@/features/lessons/kit/browser-doubles.test-fixtures'
@@ -80,7 +82,7 @@ describe("Lesson 10's stage, step by step", () => {
 
   it.each([
     [1, ['Play the third', 'Slow', 'Major', 'Minor']],
-    [2, ['Stack a third', 'Play the triad', 'Slow']],
+    [2, ['Stack a third', 'Slow']],
     [
       3,
       ['Play the triad', 'Slow', 'Major', 'Minor', 'Root lower', 'Root higher'],
