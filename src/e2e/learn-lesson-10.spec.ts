@@ -18,13 +18,22 @@
 // with Lesson 6's step links in a new tab, and the quick check marking
 // Lesson 10 done; its tenth, every practice link carrying lesson=10 before
 // any hash and opening a tab of its own, the Wrap's card in both its
-// versions; and its fourteenth: a visitor with the studio installed
-// still gets the lesson, not the shell. The chord beads by keyboard, and
-// Step 5's predict, are learn-lesson-10-beads.spec.ts's. Each toy's own
-// checks join them as that toy is wired.
+// versions; its fourteenth: a visitor with the studio installed still
+// gets the lesson, not the shell; and its fourth, page-wide, at both sizes:
+// from the top Tab reaches every control, bead and gap button the page
+// shows, step by step, free play's among them; each toggle flips
+// `aria-pressed` by keyboard; Stack a third hands the focus to Play the
+// triad; each change reaches its own live region, in spoken names, never a
+// sharp or flat sign; and at 390 x 844 every section's targets, in each
+// state a viewer reaches, are at least 44 px square with none overlapping.
+// The chord beads step by step by keyboard, and Step 5's predict, are
+// learn-lesson-10-beads.spec.ts's; Sing it by keyboard is
+// learn-lesson-10-sing.spec.ts's; the page under reduced motion is
+// learn-lesson-10-motion.spec.ts's.
 
 import type { Locator, Page } from '@playwright/test'
 import { expect, test } from './helpers/lesson-page'
+import { expectTargets, expectTogglesFlip, liveSaid, scrollStill, tagReachable, unreached, watchLive, } from './helpers/lesson-qa'
 
 // 60 characters at most (src/tests/lesson-pages.test.ts)
 const TITLE = 'Major and minor: the one note that changes | MercuryPitch'
@@ -420,6 +429,146 @@ test("every practice link carries lesson=10 before any hash and opens a tab of i
     expect(href, `${href}`).toMatch(/^\/[a-z-]+\?lesson=10(#|$)/)
     expect([target, rel], `${href}`).toEqual(['_blank', 'noopener'])
   }
+})
+
+/** Presses `b` by keyboard. */
+async function press(page: Page, b: Locator, key = 'Enter'): Promise<void> {
+  await b.focus()
+  await page.keyboard.press(key)
+}
+
+// WEB-SPEC, End to end 4, page-wide, at a phone's size and a desktop's
+for (const viewport of [
+  { width: 390, height: 844 },
+  { width: 1440, height: 900 },
+]) {
+  test.describe(`the whole page by keyboard at ${viewport.width} x ${viewport.height}`, () => {
+    test.use({ viewport })
+    test.describe.configure({ timeout: 180_000 })
+
+    test("Tab reaches every control from the top, then each step's controls, beads and gaps; each toggle flips aria-pressed, Stack a third hands the focus to Play the triad, and each change reaches its live region", async ({
+      page,
+    }) => {
+      // Arrange: sound on, so no hint says it is off, and every live text kept
+      await watchLive(page)
+      await page.goto('/learn/10')
+      await page.locator('#gateBtn').click()
+      await expect(page.locator('#exList .ex-row')).toHaveCount(15)
+      const toy = (sel: string): Locator => page.locator(`#toyChord ${sel}`)
+      const free = (sel: string): Locator => page.locator(`#freePlay ${sel}`)
+
+      // Act, Assert: from the top, free play's beads and gaps among them
+      const shown = await tagReachable(page, 'body', 'top')
+      expect(shown).toBeGreaterThan(60)
+      expect(await unreached(page, null, 'top', shown)).toEqual([])
+      expect(await expectTogglesFlip(page, '#mast', 'the masthead')).toBe(2)
+      expect(await expectTogglesFlip(page, '#freePlay', 'free play')).toBe(4)
+      await press(page, free('[data-chord-root="1"]'))
+      await press(page, free('[data-quality="minor"]'))
+
+      // each step by keyboard: its stage's controls, beads and gaps, and its
+      // text. A walk scrolls the page, and on a wide screen the step in the
+      // viewport's middle picks the toy, so after one the step's address
+      // opens it again, as a step link does
+      const reopen = async (n: number): Promise<void> => {
+        await page.evaluate((s) => {
+          window.location.hash = ''
+          window.location.hash = `#step-${s}`
+        }, n)
+        await expect(page.locator('#stepNow')).toHaveText(String(n))
+        await expect.poll(() => scrollStill(page)).toBe(true)
+      }
+      await reopen(1)
+      for (const n of [1, 2, 3, 4, 5]) {
+        if (n > 1) await press(page, page.getByLabel('Next step'))
+        await expect(page.locator('#stepNow')).toHaveText(String(n))
+        await expect.poll(() => scrollStill(page)).toBe(true)
+        if (n === 2) {
+          await press(page, toy('[data-chord-stack]'))
+          await expect(toy('[data-chord-play="triad"]')).toBeFocused()
+        }
+        if (n === 5)
+          await press(page, page.locator('#predictScale [data-choice="three"]'))
+        expect(
+          await expectTogglesFlip(page, '#toyChord', `Step ${n}`),
+        ).toBeGreaterThan(0)
+        const count = await tagReachable(page, '#lesson', `step${n}`)
+        expect(
+          await unreached(page, '#lesson', `step${n}`, count),
+          `Step ${n}`,
+        ).toEqual([])
+        // the walk scrolled past the step's text
+        await reopen(n)
+      }
+
+      // Assert: each change said in its own live region, and never a sign
+      const said = await liveSaid(page)
+      for (const line of [
+        { where: 'freePlay', text: 'Root higher: D, F sharp, A. D major.' },
+        {
+          where: 'freePlay',
+          text: 'Minor: the third moved down a semitone, to F 4. D minor.',
+        },
+        {
+          where: 'toyChord',
+          text: 'Minor: the top note moved down a semitone, to E flat 4. A minor third.',
+        },
+        { where: 'toyChord', text: 'Stacked: C, E, G. C major.' },
+        {
+          where: 'toyChord',
+          text: 'Scale: C, D, E, F, G, A, B, C. C major scale.',
+        },
+        {
+          where: 'announcer',
+          text: 'Step 2 of 5: What if I stack another third on top?',
+        },
+      ])
+        expect(said).toContainEqual(line)
+      expect(said.filter((s) => /[♯♭]/u.test(s.text))).toEqual([])
+    })
+  })
+}
+
+// WEB-SPEC, End to end 4's targets, page-wide, at 390 x 844
+test.describe('every target on the page at 390 x 844', () => {
+  test.use({ viewport: { width: 390, height: 844 } })
+  test.describe.configure({ timeout: 120_000 })
+
+  test('is at least 44 px square, none overlapping, and nothing scrolls sideways, in every section and state', async ({
+    page,
+  }) => {
+    // Arrange
+    await page.goto('/learn/10')
+    const counted: Record<string, number> = {}
+    const check = async (scope: string, what: string): Promise<void> => {
+      counted[what] = await expectTargets(page, scope, what)
+    }
+
+    // Act, Assert: section by section, each state a viewer reaches
+    await check('section.hero', 'the cold open')
+    await page.locator('#predict [data-choice="mi"]').click()
+    await check('section.hero', 'the cold open, chosen')
+    await check('#recall', 'the recall')
+    await check('#words', 'the four words')
+    await check('#sing', 'Sing it: the comfort check')
+    await page.locator('[data-comfort="sing"]').click()
+    await check('#sing', 'Sing it: the voice choice')
+    await page.locator('[data-voice="lower"]').click()
+    await check('#sing', 'Sing it: ready')
+    await check('#check', 'the quick check')
+    await check('#wrap', 'the Wrap and free play')
+    await page.locator('#freePlay [data-view="scale"]').click()
+    await check('#wrap', 'the Wrap, free play spread')
+    await check('#explorer', 'the season map')
+    await page.reload()
+    await page.locator('[data-comfort="listen"]').click()
+    await check('#sing', 'Sing it: just listen')
+
+    expect(
+      Object.entries(counted).filter(([, n]) => n === 0),
+      'a section with no target',
+    ).toEqual([])
+  })
 })
 
 // WEB-SPEC, End to end 14, as Lesson 3's spec checks its own

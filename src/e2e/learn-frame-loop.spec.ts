@@ -27,8 +27,9 @@
 // Lesson 10's are the cold open's spiral, at rest and through Play the
 // chord, whose halos light only while it sounds, the steps' chord beads, at
 // rest and through a gap's two notes, which light their beads only while
-// they sound, then the explorer and the page at rest; Sing it's guide and
-// ring join them once they are wired.
+// they sound, Sing it's ring and guide, whose path lights only while Merc
+// sings his notes, free play's chord beads, through a gap's two notes as
+// the steps' are, then the explorer and the page at rest.
 // Lessons 1 to 5 each have drawers of their own that still draw every
 // frame (S-26 in docs/plans/find-your-pitch/RELEASE-REVIEW.md), which keep
 // their loop running whatever these three do, so there only the figures
@@ -373,7 +374,7 @@ test("Lesson 9: the ladder charts, the folds strip, the landing, Sing it's chart
   await explorerRests(page, 9, true)
 })
 
-test("Lesson 10: the cold open's spiral, the chord beads and the explorer rest, and so does the whole page", async ({
+test("Lesson 10: the cold open's spiral, the chord beads, Sing it's ring and guide, free play and the explorer rest, and so does the whole page", async ({
   page,
 }) => {
   const hero = '#heroSpiral canvas'
@@ -384,6 +385,21 @@ test("Lesson 10: the cold open's spiral, the chord beads and the explorer rest, 
   await scrollTo(page, beads)
   await runRests(page, [beads], true, () =>
     page.locator('#toyChord .chord-hit-gap').first().click(),
+  )
+  // Sing it's ring and guide, the path lit as Merc sings his notes
+  const guide = '#chordGuide canvas'
+  await comfort(page, 'sing')
+  await expect(page.locator('[data-notes-play]')).toBeVisible()
+  await scrollTo(page, guide)
+  await runRests(page, ['#ring', guide], true, () =>
+    page.locator('[data-notes-play]').click(),
+  )
+  await expectNoRipples(page, '#ring')
+  // free play's chord beads, lit only while a gap's two notes sound
+  const free = '#freePlay [data-chord-viz] canvas'
+  await scrollTo(page, free)
+  await runRests(page, [free], true, () =>
+    page.locator('#freePlay .chord-hit-gap').first().click(),
   )
   await explorerRests(page, 10, true)
 })

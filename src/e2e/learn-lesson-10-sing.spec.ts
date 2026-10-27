@@ -18,13 +18,16 @@
 // and keeping the keyboard, a press there stopping nothing; Merc's notes
 // stopped once the section has been away 600 ms, the ring with them; and
 // under reduced motion the ring holding still and the guide lighting the
-// path's notes in turn in place of its travelling line. Merc's notes are
-// 10.0 s and a sweep 11.0 s with its count-in, so the longest test runs
-// about 45 s.
+// path's notes in turn in place of its travelling line. And by keyboard
+// alone, its part of WEB-SPEC's fourth check: Tab meets each state's
+// controls in the order its flow shows them, and each status line reaches
+// its live region. Merc's notes are 10.0 s and a sweep 11.0 s with its
+// count-in, so the longest test runs about 45 s.
 
 import type { Locator, Page } from '@playwright/test'
 import { axState } from './helpers/ax-state'
 import { expect, test } from './helpers/lesson-page'
+import { liveSaid, scrollStill, tabsWithin, watchLive, } from './helpers/lesson-qa'
 
 /** Counts every ask for the microphone and every request that sends something. */
 async function watchQuiet(page: Page): Promise<() => Promise<string[]>> {
@@ -274,6 +277,85 @@ for (const viewport of [
       await expect(page.locator('[data-guide-start]')).toBeHidden()
       await expect(page.locator('.move-do')).toBeHidden()
       await expectRested(page)
+    })
+
+    // WEB-SPEC, End to end 4: Sing it's part of the page's keyboard sweep
+    test('by keyboard alone, Tab meets its controls in the order its flow shows them, and each status reaches its live region', async ({
+      page,
+    }) => {
+      // Arrange: no voice stored, every live text kept
+      await watchLive(page)
+      await toSing(page)
+      const card = page.locator('#singCard')
+      // a walk off the card's end scrolls the page away, and the scroll
+      // back lands before a press: what plays stops once Sing it has been
+      // off screen 600 ms (sing.ts `onLeave`)
+      const press = async (sel: string): Promise<void> => {
+        await card.locator(sel).focus()
+        await expect.poll(() => scrollStill(page)).toBe(true)
+        await page.keyboard.press('Enter')
+      }
+      // from the card's start, and from where the flow puts the keyboard's place
+      const fromTop = (): Promise<string[]> =>
+        tabsWithin(page, '#singCard', '#singCard')
+      const fromHere = (): Promise<string[]> =>
+        tabsWithin(page, null, '#singCard')
+      const voices = [
+        'Lower: sing with Merc, around A3',
+        'Higher: sing with Tavi, around A4',
+      ]
+      const notes = [
+        "Play Merc's notes",
+        'Start the guide',
+        'Move do lower',
+        'Move do higher',
+      ]
+      const feelings = ['Easy', 'Workable', 'Effortful', 'Uncomfortable']
+
+      // Act: the comfort check, the voice, Merc's notes, the guide, the answer
+      const met = [await fromTop()]
+      await press('[data-comfort="sing"]')
+      met.push(await fromHere())
+      await press('[data-voice="lower"]')
+      met.push(await fromHere(), await fromTop())
+      await press('[data-notes-play]')
+      await expect(card.locator('[data-notes-play]')).toHaveClass(/\bis-on\b/)
+      await expect(card.locator('[data-notes-play]')).not.toHaveClass(
+        /\bis-on\b/,
+        { timeout: 30_000 },
+      )
+      await press('[data-guide-start]')
+      await expect(panel(page, 'feel')).toBeVisible({ timeout: 30_000 })
+      met.push(await fromHere(), await fromTop())
+      await press('[data-feel="easy"]')
+      await expect(status(page)).toHaveText(
+        'Do-mi-so, then do-me-so: you just moved the third.',
+      )
+
+      // Assert: each state's controls in the card's order, the comfort
+      // answer and the sweep's end handing the place on to what comes next
+      expect(met).toEqual([
+        ["I'm comfortable: let's sing", 'Just listen today'],
+        voices,
+        [voices[1], ...notes],
+        [...voices, ...notes],
+        feelings,
+        [...voices, ...notes, ...feelings],
+      ])
+      // and the flow's lines, in turn, in its status line
+      expect(
+        (await liveSaid(page))
+          .filter((s) => s.where === 'singStatus')
+          .map((s) => s.text),
+      ).toEqual([
+        'Before you sing: how is your voice today?',
+        "Choose the voice you'll sing with.",
+        "Play Merc's notes first: Merc sings them, then the guide is yours.",
+        "Start the guide when you're ready, or play Merc's notes again.",
+        'Your turn: sing with the guide.',
+        'How did that feel?',
+        'Do-mi-so, then do-me-so: you just moved the third.',
+      ])
     })
   })
 }
