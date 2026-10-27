@@ -1,6 +1,11 @@
 // Studio transport lifecycle tests cover delayed preparation, ownership, real clock latency and teardown races.
 import { afterEach, describe, expect, it, vi } from 'vitest'
+import { NEUTRAL_MACROS } from '@/lib/studio-fx/mix-macros'
+import { resolveStudioSoundGraph } from '../export/sound-graph'
 import { setStudioWorkingBytes, studioReservedMemoryBytes, } from '../memory-budget'
+import { studioLaneSpec } from '../model/arrangement-plan'
+import { applyStudioCommand } from '../model/commands'
+import { createStudioTrack } from '../model/defaults'
 import { studioFixture } from '../model/model.test-fixtures'
 import type { StudioBufferCache, StudioBufferLease } from './buffer-cache'
 import { PlaybackContext } from './playback.test-fixtures'
@@ -21,6 +26,8 @@ function fixture() {
     readPeaks: () => [0.2, 0.4] as const,
     hasLane: vi.fn((id: string) => id === 'track-1'),
     setLaneMix: vi.fn(),
+    setLaneSpec: vi.fn(),
+    setMasterSpec: vi.fn(),
     dispose: vi.fn(),
   }
   const buildGraph = vi.fn().mockReturnValue(graph)
@@ -105,6 +112,134 @@ describe('Studio borrowed transport', () => {
       [f.asset],
     )
     expect(f.buildGraph).toHaveBeenCalledTimes(2)
+    const released = f.transport.releaseAudio()
+    await vi.advanceTimersByTimeAsync(240)
+    await released
+    f.transport.dispose()
+    expect(studioReservedMemoryBytes()).toBe(0)
+  })
+
+  it('keeps playing through a flavour and Reset sound, moving the running chains instead', async () => {
+    vi.useFakeTimers()
+    const f = fixture()
+    await f.transport.play(f.project, [f.asset])
+    const [track] = f.project.tracks
+    const warm = applyStudioCommand(
+      f.project,
+      { type: 'set-sound-flavour', flavourId: 'warm' },
+      { assets: [f.asset] },
+    )
+    await f.transport.setSnapshot(warm, [f.asset])
+    expect(f.graph.setLaneSpec).toHaveBeenLastCalledWith(
+      track.id,
+      studioLaneSpec(track, warm.mix.macros),
+    )
+    expect(f.graph.setMasterSpec).toHaveBeenLastCalledWith(
+      resolveStudioSoundGraph(warm).full,
+    )
+    const reset = applyStudioCommand(
+      warm,
+      { type: 'set-sound-flavour', flavourId: 'natural' },
+      { assets: [f.asset] },
+    )
+    await f.transport.setSnapshot(reset, [f.asset])
+    expect(f.graph.setLaneSpec).toHaveBeenLastCalledWith(
+      track.id,
+      studioLaneSpec(track, NEUTRAL_MACROS),
+    )
+    expect(f.buildGraph).toHaveBeenCalledOnce()
+    expect(f.graph.dispose).not.toHaveBeenCalled()
+    expect(f.transport.getState()).toMatchObject({
+      playing: true,
+      pending: false,
+    })
+    const released = f.transport.releaseAudio()
+    await vi.advanceTimersByTimeAsync(240)
+    await released
+    f.transport.dispose()
+    expect(studioReservedMemoryBytes()).toBe(0)
+  })
+
+  it('keeps playing when an empty lane is added, and restarts for a new effect list', async () => {
+    vi.useFakeTimers()
+    const f = fixture()
+    await f.transport.play(f.project, [f.asset])
+    const lane = createStudioTrack({ id: 'lane-2', name: 'Lane 2', order: 1 })
+    const added = applyStudioCommand(
+      f.project,
+      { type: 'add-track', track: lane },
+      { assets: [f.asset] },
+    )
+    await f.transport.setSnapshot(added, [f.asset])
+    expect(f.buildGraph).toHaveBeenCalledOnce()
+    expect(f.transport.getState().playing).toBe(true)
+    // A new role brings other effects, other latency: that needs a new graph.
+    const drums = applyStudioCommand(
+      added,
+      { type: 'set-track-role', trackId: 'track-1', role: 'drums' },
+      { assets: [f.asset] },
+    )
+    await f.transport.setSnapshot(drums, [f.asset])
+    expect(f.buildGraph).toHaveBeenCalledTimes(2)
+    const released = f.transport.releaseAudio()
+    await vi.advanceTimersByTimeAsync(240)
+    await released
+    f.transport.dispose()
+    expect(studioReservedMemoryBytes()).toBe(0)
+  })
+
+  it('plays a moving fader and dial without saving, and returns to the saved values after', async () => {
+    vi.useFakeTimers()
+    const f = fixture()
+    await f.transport.play(f.project, [f.asset])
+    const [track] = f.project.tracks
+    f.transport.previewLane(track.id, { gainDb: -20, pan: 0.5 })
+    expect(f.graph.setLaneMix).toHaveBeenLastCalledWith(
+      { ...track, gainDb: -20, pan: 0.5 },
+      true,
+    )
+    f.transport.previewMacro('space', 60)
+    expect(f.graph.setLaneSpec).toHaveBeenLastCalledWith(
+      track.id,
+      studioLaneSpec(track, { ...f.project.mix.macros, space: 60 }),
+    )
+    // The gesture commits its last value, then its preview ends.
+    const saved = {
+      ...f.project,
+      revision: 1,
+      tracks: [{ ...track, gainDb: -20, pan: 0.5 }],
+    }
+    await f.transport.setSnapshot(saved, [f.asset])
+    f.transport.previewLane(track.id, null)
+    expect(f.graph.setLaneMix).toHaveBeenLastCalledWith(saved.tracks[0], true)
+    // A dial let go without a saved change returns to the saved sound.
+    f.transport.previewMacro('space', null)
+    expect(f.graph.setLaneSpec).toHaveBeenLastCalledWith(
+      track.id,
+      studioLaneSpec(track, f.project.mix.macros),
+    )
+    expect(f.buildGraph).toHaveBeenCalledOnce()
+    const released = f.transport.releaseAudio()
+    await vi.advanceTimersByTimeAsync(240)
+    await released
+    f.transport.dispose()
+    expect(studioReservedMemoryBytes()).toBe(0)
+  })
+
+  it('starts as a control already sounds when Play comes mid-gesture', async () => {
+    vi.useFakeTimers()
+    const f = fixture()
+    const [track] = f.project.tracks
+    f.transport.previewLane(track.id, { gainDb: -12 })
+    expect(f.graph.setLaneMix).not.toHaveBeenCalled()
+    await f.transport.play(f.project, [f.asset])
+    expect(f.graph.setLaneMix).toHaveBeenLastCalledWith(
+      { ...track, gainDb: -12 },
+      true,
+    )
+    f.transport.stop()
+    await f.transport.play(f.project, [f.asset])
+    expect(f.graph.setLaneMix).toHaveBeenCalledTimes(1)
     const released = f.transport.releaseAudio()
     await vi.advanceTimersByTimeAsync(240)
     await released

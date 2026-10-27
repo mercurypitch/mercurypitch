@@ -1,4 +1,5 @@
 // Studio graph — shared lane processing and source scheduling for live and offline consumers.
+import type { StudioFxChain } from '@/lib/studio-fx/chain'
 import { createStudioFxChain } from '@/lib/studio-fx/chain'
 import type { ChainSpec } from '@/lib/studio-fx/chain-spec'
 import type { StudioArrangementPlan, StudioPlannedLane, StudioPlannedSegment, } from '../model/arrangement-plan'
@@ -14,6 +15,13 @@ export interface StudioGraph {
   hasLane(trackId: string): boolean
   /** Glide a built lane's volume and pan, or silence it, while it plays. */
   setLaneMix(track: StudioTrack, audible: boolean): void
+  /**
+   * Move a built lane's chain to new settings while it plays. The chain sends
+   * only the values that changed, and each one glides (StudioFxChain.setSpec).
+   */
+  setLaneSpec(trackId: string, spec: ChainSpec): void
+  /** The same for the master chain, when the graph has one. */
+  setMasterSpec(spec: ChainSpec): void
   dispose(): void
 }
 
@@ -48,8 +56,10 @@ function connectLane(
   output: AudioNode,
   disposers: (() => void)[],
   mixes: Map<string, GainNode[]>,
+  chains: Map<string, StudioFxChain>,
 ): AudioNode {
   const chain = createStudioFxChain(ctx, lane.spec)
+  chains.set(lane.track.id, chain)
   disposers.push(() => chain.dispose())
   const split = ctx.createChannelSplitter(2)
   const merge = ctx.createChannelMerger(2)
@@ -106,6 +116,8 @@ export function buildStudioGraph(
   const disposers: (() => void)[] = []
   const sources = new Map<AudioBufferSourceNode, GainNode>()
   const mixes = new Map<string, GainNode[]>()
+  const chains = new Map<string, StudioFxChain>()
+  let masterChain: StudioFxChain | null = null
   const scheduled: {
     segment: StudioPlannedSegment
     input: AudioNode
@@ -126,13 +138,14 @@ export function buildStudioGraph(
       const chain = createStudioFxChain(ctx, master.spec)
       chain.output.connect(output)
       laneOutput = chain.input
+      masterChain = chain
       disposers.push(() => chain.dispose())
     }
     for (const lane of plan.lanes) {
       if (!lane.audible || !lane.segments.length) continue
       if (lane.compensationSeconds === null)
         throw new Error('Studio chain timing has not been measured.')
-      const input = connectLane(ctx, lane, laneOutput, disposers, mixes)
+      const input = connectLane(ctx, lane, laneOutput, disposers, mixes, chains)
       for (const segment of lane.segments)
         scheduled.push({
           segment,
@@ -242,6 +255,12 @@ export function buildStudioGraph(
         gain.gain.cancelScheduledValues(now)
         gain.gain.setTargetAtTime(values[index], now, 0.012)
       }
+    },
+    setLaneSpec(trackId, spec) {
+      if (!disposed) chains.get(trackId)?.setSpec(spec)
+    },
+    setMasterSpec(spec) {
+      if (!disposed) masterChain?.setSpec(spec)
     },
     readPeaks() {
       return [0, 1].map((channel) => {

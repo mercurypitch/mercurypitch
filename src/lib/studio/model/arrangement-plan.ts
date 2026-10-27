@@ -1,5 +1,6 @@
 // Studio arrangement plan — one immutable lane schedule for later live playback and offline rendering.
 import type { ChainSpec } from '@/lib/studio-fx/chain-spec'
+import type { MixMacros } from '@/lib/studio-fx/mix-macros'
 import { applyMixMacros, trackMacros } from '@/lib/studio-fx/mix-macros'
 import { estimateTailSeconds } from '@/lib/studio-fx/render'
 import type { StudioAsset, StudioClip, StudioProject, StudioTrack, } from './types'
@@ -134,6 +135,21 @@ function laneSegments(
   })
 }
 
+/**
+ * A lane's chain as it plays: the track's voiced chain under the song's
+ * macros, with the lane's own space offset. Playback moves a running chain to
+ * this when the sound changes, so it must stay the plan's only recipe.
+ */
+export function studioLaneSpec(
+  track: Pick<StudioTrack, 'fx'>,
+  macros: MixMacros,
+): ChainSpec {
+  return applyMixMacros(
+    track.fx.baseSpec,
+    trackMacros(macros, { space: track.fx.spaceOffset }),
+  )
+}
+
 /** A plan is data only: it allocates no audio graph, starts no playback and owns no context. */
 export function compileStudioArrangement(
   project: StudioProject,
@@ -180,10 +196,7 @@ export function compileStudioArrangement(
       return {
         track,
         audible,
-        spec: applyMixMacros(
-          track.fx.baseSpec,
-          trackMacros(snapshot.mix.macros, { space: track.fx.spaceOffset }),
-        ),
+        spec: studioLaneSpec(track, snapshot.mix.macros),
         segments: laneSegments(snapshot, track.id, owned, start, end),
         chainLatencySeconds: latency,
         compensationSeconds: latency === null ? null : slowest - latency,

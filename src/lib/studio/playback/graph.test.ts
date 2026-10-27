@@ -100,6 +100,57 @@ describe('shared Studio graph', () => {
     graph.dispose()
   })
 
+  it('moves a playing lane chain and the master chain to new settings without new nodes', () => {
+    const { project, asset } = studioFixture()
+    const trim = (gainDb: number) => ({
+      version: 1 as const,
+      effects: [
+        {
+          id: 'balance',
+          kind: 'gain' as const,
+          enabled: true,
+          params: { gainDb },
+        },
+      ],
+    })
+    const song = {
+      ...project,
+      tracks: project.tracks.map((track) => ({
+        ...track,
+        fx: { ...track.fx, baseSpec: trim(0) },
+      })),
+    }
+    const plan = compileStudioArrangement(song, [asset], {
+      latencies: { sampleRate: 48000, framesByTrack: { 'track-1': 0 } },
+    })
+    const ctx = new PlaybackContext()
+    ctx.state = 'suspended'
+    const graph = buildStudioGraph(
+      ctx.asContext,
+      plan,
+      new Map(),
+      0.5,
+      false,
+      undefined,
+      { spec: trim(0) },
+    )
+    const nodes = ctx.created.length
+    const at = (gain: number) =>
+      ctx
+        .ofType<ReturnType<PlaybackContext['createGain']>>('gain')
+        .filter((node) => Math.abs(node.gain.destination - gain) < 1e-6)
+    expect(at(Math.pow(10, -7.5 / 20))).toHaveLength(0)
+    graph.setLaneSpec('track-1', trim(-7.5))
+    expect(at(Math.pow(10, -7.5 / 20))).toHaveLength(1)
+    graph.setMasterSpec(trim(-13.5))
+    expect(at(Math.pow(10, -13.5 / 20))).toHaveLength(1)
+    // A lane the graph never built has no chain to move.
+    graph.setLaneSpec('missing', trim(-4.5))
+    expect(at(Math.pow(10, -4.5 / 20))).toHaveLength(0)
+    expect(ctx.created.length).toBe(nodes)
+    graph.dispose()
+  })
+
   it('rejects scheduler underrun rather than starting late material as if it were aligned', () => {
     const { project, asset } = studioFixture()
     const dry = {
