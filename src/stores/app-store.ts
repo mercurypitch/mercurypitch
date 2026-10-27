@@ -2268,10 +2268,12 @@ export function startPageTour(tab: ActiveTab): void {
  * Singing is the Guide's own subject: its first section, 'practice', has
  * always walked the singing stage, so the tab never had a page tour. The ways
  * into a room that ask for its tour (the plan's "Show me around" and the
- * Map's "Take the tour") asked only for a page tour, and a singer sent to
- * Singing got none. Only those ways read this: the page-tour offer, the
- * sidebar's Tour button and the Guide still ask `hasPageTour`, so Singing
- * gains no first-visit offer and no second Tour button.
+ * Map's "Take the tour") ask the room tour door (src/lib/room-tour-door.ts),
+ * which starts the tab's Merc tour where it has one and these otherwise
+ * (startRoomTour in src/features/tours/room-tour.ts). Only those ways read
+ * this: the page-tour offer, the sidebar's Tour button and the Guide still
+ * ask `hasPageTour`, so Singing gains no first-visit offer and no second Tour
+ * button from it.
  */
 const ROOM_GUIDE_SECTIONS: Partial<Record<ActiveTab, string>> = {
   [TAB_SINGING]: 'practice',
@@ -2284,21 +2286,22 @@ function roomSectionSteps(tab: ActiveTab): WalkthroughStep[] {
 }
 
 /**
- * Whether a room's tour can be offered: the tab's page tour when it has one,
- * else the Guide section that tours it (Singing's). False on the native build,
- * as `hasPageTour` is.
+ * Whether a room has a tour of the Guide's kind: the tab's page tour when it
+ * has one, else the Guide section that tours it (Singing's). False on the
+ * native build, as `hasPageTour` is.
  */
-export function hasRoomTour(tab: ActiveTab): boolean {
+export function hasGuideRoomTour(tab: ActiveTab): boolean {
   if (!TOURS_AVAILABLE) return false
   return hasPageTour(tab) || roomSectionSteps(tab).length > 0
 }
 
 /**
- * Start a room's tour: the tab's page tour when it has one, else the Guide
- * section that tours it, under the Guide's own 'guide' key, as the Guide
- * starts it. A no-op on the native build and for a room with neither.
+ * Start a room's tour of the Guide's kind: the tab's page tour when it has
+ * one, else the Guide section that tours it, under the Guide's own 'guide'
+ * key, as the Guide starts it. A no-op on the native build and for a room
+ * with neither.
  */
-export function startRoomTour(tab: ActiveTab): void {
+export function startGuideRoomTour(tab: ActiveTab): void {
   if (!TOURS_AVAILABLE) return
   if (hasPageTour(tab)) {
     startPageTour(tab)

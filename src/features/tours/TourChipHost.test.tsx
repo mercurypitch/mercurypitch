@@ -37,6 +37,11 @@ vi.mock('@/stores', async () => {
   return {
     hasPageTour: (tab: string) => store.hasPageTour(tab),
     startPageTour: (tab: string) => store.startPageTour(tab),
+    // The store's room tour of the Guide's kind, which startRoomTour starts
+    // for a tab with no Merc tour: its page tour, for every tab these cases
+    // use (only Singing has a Guide section, and here it has Merc's).
+    hasGuideRoomTour: (tab: string) => store.hasPageTour(tab),
+    startGuideRoomTour: (tab: string) => store.startPageTour(tab),
     pageTourKey: (tab: string) =>
       tab === 'guitar' ? null : tab === 'home' ? 'home' : 'ear-lab',
     walkthroughActive,

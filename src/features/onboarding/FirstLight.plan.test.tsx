@@ -52,7 +52,7 @@ import { markPlanShown, planRecord, savePlanAnswers, } from '@/features/plan/pla
 import { next, passTo, quiet, tap } from '@/features/plan/PlanQuestions.fixture'
 import type { PlanChoices, Q3Id } from '@/features/plan/questions'
 import { q2Options, q3Options } from '@/features/plan/questions'
-import { startRoomTour } from '@/features/tours/room-tour'
+import { hasRoomTour, startRoomTour } from '@/features/tours/room-tour'
 import { GUIDE_FUNNEL_STORAGE_KEY } from '@/lib/guide-funnel'
 import { provideRoomTourDoor } from '@/lib/room-tour-door'
 import { applyPersistedValue } from '@/lib/storage'
@@ -67,7 +67,7 @@ import styles from './onboarding.module.css'
 
 // First Light starts a room's tour through the room tour door, which App opens
 // as it draws. These cases draw no App, so they open it as App does.
-provideRoomTourDoor(startRoomTour)
+provideRoomTourDoor(startRoomTour, hasRoomTour)
 
 function beat(name: Beat): HTMLElement | null {
   return document.querySelector<HTMLElement>(`[data-beat="${name}"]`)
@@ -317,7 +317,7 @@ describe('the four questions and the plan in the flow', () => {
         screen.getByRole('heading', { name: 'Start the mic' }),
       ).toBeVisible(),
     )
-    expect(mocks.startPageTour).not.toHaveBeenCalled()
+    expect(mocks.startGuideRoomTour).not.toHaveBeenCalled()
   })
 
   it('goes to a Start here that is a page of its own from Show me around, and starts no tour', async () => {
@@ -340,7 +340,7 @@ describe('the four questions and the plan in the flow', () => {
     // over, with no tour.
     expect(flowOpen()).toBe(false)
     await waitFor(() => expect(location.href).toBe('/guitar-night'))
-    expect(mocks.startPageTour).not.toHaveBeenCalled()
+    expect(mocks.startGuideRoomTour).not.toHaveBeenCalled()
   })
 
   it('starts the tour of Start here after the showcase when the room has one', async () => {
@@ -355,7 +355,7 @@ describe('the four questions and the plan in the flow', () => {
     // Assert
     expect(flowOpen()).toBe(false)
     await waitFor(() =>
-      expect(mocks.startPageTour).toHaveBeenCalledWith('guitar'),
+      expect(mocks.startGuideRoomTour).toHaveBeenCalledWith('guitar'),
     )
     expect(activeTab()).toBe('guitar')
   })
@@ -370,7 +370,7 @@ describe('the four questions and the plan in the flow', () => {
     // Assert: in, as the card goes in; the tour is Show me around's.
     expect(activeTab()).toBe('guitar')
     expect(flowOpen()).toBe(false)
-    expect(mocks.startPageTour).not.toHaveBeenCalled()
+    expect(mocks.startGuideRoomTour).not.toHaveBeenCalled()
   })
 
   it("enters a card's stop, closes First Light, and starts no tour", async () => {
@@ -383,7 +383,7 @@ describe('the four questions and the plan in the flow', () => {
     // Assert
     expect(activeTab()).toBe('guitar')
     expect(flowOpen()).toBe(false)
-    expect(mocks.startPageTour).not.toHaveBeenCalled()
+    expect(mocks.startGuideRoomTour).not.toHaveBeenCalled()
     expect(planEvents()).toContain('plan_stop_start')
   })
 

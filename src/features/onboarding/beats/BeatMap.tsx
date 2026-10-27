@@ -53,7 +53,7 @@ import type { ReleasedLesson } from '@/lib/current-lesson'
 import { currentLesson, lessonCover, LESSONS_TITLE } from '@/lib/current-lesson'
 import type { MirrorResult } from '@/lib/mirror/metrics'
 import { IS_NATIVE_BUILD } from '@/lib/native-build'
-import { hasRoomTour } from '@/stores/app-store'
+import { hasTabTour } from '@/lib/room-tour-door'
 import { practiceScope, uiMode } from '@/stores/settings-store'
 import { KARAOKE_GIFT_TAG, MAP_GIFT_JOIN_LINK, MAP_KEEP_GIFT_LINK, mapGiftJoin, mapGiftWaiting, } from '../copy'
 import { pickFirstStop } from '../first-stop'
@@ -239,13 +239,13 @@ export const BeatMap: Component<BeatMapProps> = (props) => {
                 </Show>
 
                 {/* A tour is offered only where one exists and can
-                    actually spotlight something: the tab's page tour, or
-                    Practice's, the Guide's Singing section (hasRoomTour).
-                    Nested inside the card's button, so it stops the click
-                    that would otherwise just open the room without the
-                    tour. */}
+                    actually spotlight something: the tab's Merc tour, else
+                    its page tour, or Practice's, the Guide's Singing section,
+                    as the room tour door answers (hasTabTour). Nested inside
+                    the card's button, so it stops the click that would
+                    otherwise just open the room without the tour. */}
                 <Show
-                  when={room.tourTab !== undefined && hasRoomTour(room.tourTab)}
+                  when={room.tourTab !== undefined && hasTabTour(room.tourTab)}
                 >
                   <span
                     class={styles.roomTour}

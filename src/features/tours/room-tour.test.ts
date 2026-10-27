@@ -1,8 +1,10 @@
 // startRoomTour: a tab's tour, whichever kind it has. A Merc tour is named in
 // coachActive from the ask, so an offer due while it loads waits for it; one
 // ended, unwanted or asked for again while it loads never shows; a chunk that
-// does not arrive lets go. A tab without one gets its legacy spotlight tour,
-// and a tab with neither gets nothing. A Merc tour ends on what the app names
+// does not arrive lets go. A tab without one gets the room's tour of the
+// Guide's kind (startGuideRoomTour in the app store: its legacy spotlight
+// tour, or Singing's Guide section), and a tab with neither gets nothing;
+// hasRoomTour says which tabs have one. A Merc tour ends on what the app names
 // next (provideTourHandoff), and a tour that starts spends its tab's offer.
 
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
@@ -12,12 +14,14 @@ import type { CoachTour } from '@/lib/coach-types'
 
 const fakes = vi.hoisted(() => ({
   hasPageTour: vi.fn((_tab: string) => false),
-  startPageTour: vi.fn(),
+  hasGuideRoomTour: vi.fn((_tab: string) => false),
+  startGuideRoomTour: vi.fn(),
   startCoachTour: vi.fn(),
 }))
 vi.mock('@/stores', () => ({
   hasPageTour: (tab: string) => fakes.hasPageTour(tab),
-  startPageTour: (tab: string) => fakes.startPageTour(tab),
+  hasGuideRoomTour: (tab: string) => fakes.hasGuideRoomTour(tab),
+  startGuideRoomTour: (tab: string) => fakes.startGuideRoomTour(tab),
 }))
 vi.mock('@/lib/use-viewport', () => ({ isNarrow: () => true }))
 vi.mock('@/components/coach/start', () => ({
@@ -28,7 +32,7 @@ const registry = vi.hoisted(() => ({
 }))
 vi.mock('./coach-tours', () => registry)
 
-import { provideTourHandoff, startRoomTour, tourOfferKey } from './room-tour'
+import { hasRoomTour, provideTourHandoff, startRoomTour, tourOfferKey, } from './room-tour'
 
 const TOUR: CoachTour = { key: 'sing', steps: [] }
 
@@ -50,6 +54,7 @@ const settled = (): Promise<void> => new Promise((r) => setTimeout(r, 20))
 beforeEach(() => {
   vi.clearAllMocks()
   fakes.hasPageTour.mockReturnValue(false)
+  fakes.hasGuideRoomTour.mockReturnValue(false)
   registry.COACH_TOURS = {}
   setCoachActive(null)
   provideTourHandoff(null)
@@ -76,7 +81,7 @@ describe('startRoomTour', () => {
     expect(fakes.startCoachTour).toHaveBeenCalledExactlyOnceWith(TOUR, {
       phone: true,
     })
-    expect(fakes.startPageTour).not.toHaveBeenCalled()
+    expect(fakes.startGuideRoomTour).not.toHaveBeenCalled()
   })
 
   it('starts nothing for a tour ended while it loaded', async () => {
@@ -130,21 +135,52 @@ describe('startRoomTour', () => {
     expect(coachActive()).toBeNull()
   })
 
-  it("starts a tab's legacy spotlight tour where it has no Merc tour", () => {
+  it("starts a tab's legacy spotlight tour, as the store starts a room's, where it has no Merc tour", () => {
     fakes.hasPageTour.mockReturnValue(true)
+    fakes.hasGuideRoomTour.mockReturnValue(true)
 
     expect(startRoomTour('guitar')).toBe(true)
 
-    expect(fakes.startPageTour).toHaveBeenCalledExactlyOnceWith('guitar')
+    expect(fakes.startGuideRoomTour).toHaveBeenCalledExactlyOnceWith('guitar')
+    expect(coachActive()).toBeNull()
+  })
+
+  it("starts Singing's Guide section where Merc's tour does not apply", () => {
+    // Arrange: no Merc tour listed for Singing, which has no page tour; the
+    // store's room tour for it is the Guide's Singing section.
+    fakes.hasGuideRoomTour.mockImplementation((tab) => tab === 'singing')
+
+    // Act + Assert
+    expect(startRoomTour('singing')).toBe(true)
+    expect(fakes.startGuideRoomTour).toHaveBeenCalledExactlyOnceWith('singing')
+    expect(fakes.startCoachTour).not.toHaveBeenCalled()
     expect(coachActive()).toBeNull()
   })
 
   it('starts nothing, and says so, for a tab with neither', () => {
     expect(startRoomTour('settings')).toBe(false)
 
-    expect(fakes.startPageTour).not.toHaveBeenCalled()
+    expect(fakes.startGuideRoomTour).not.toHaveBeenCalled()
     expect(fakes.startCoachTour).not.toHaveBeenCalled()
     expect(localStorage.getItem(tourOfferKey('settings'))).toBeNull()
+  })
+})
+
+describe('hasRoomTour', () => {
+  it('says a tab has a tour where it has a Merc tour, without asking the store', () => {
+    singTour()
+
+    expect(hasRoomTour('singing')).toBe(true)
+    expect(fakes.hasGuideRoomTour).not.toHaveBeenCalled()
+  })
+
+  it("says so for a tab with only the Guide's kind, and not for a tab with neither", () => {
+    fakes.hasGuideRoomTour.mockImplementation((tab) => tab === 'singing')
+
+    expect([hasRoomTour('singing'), hasRoomTour('settings')]).toEqual([
+      true,
+      false,
+    ])
   })
 })
 
@@ -277,10 +313,20 @@ describe("a tab's offer", () => {
 
   it('is spent when its legacy spotlight tour starts', () => {
     fakes.hasPageTour.mockReturnValue(true)
+    fakes.hasGuideRoomTour.mockReturnValue(true)
 
     startRoomTour('guitar')
 
     expect(localStorage.getItem(tourOfferKey('guitar'))).toBe('true')
+  })
+
+  it("is not written for Singing's Guide section, which the chip never offers", () => {
+    fakes.hasGuideRoomTour.mockImplementation((tab) => tab === 'singing')
+
+    startRoomTour('singing')
+
+    expect(fakes.startGuideRoomTour).toHaveBeenCalledExactlyOnceWith('singing')
+    expect(localStorage.getItem(tourOfferKey('singing'))).toBeNull()
   })
 
   it('is kept for a Merc tour that never showed', async () => {

@@ -3,10 +3,14 @@
 // ============================================================
 //
 // The one way the app starts a tab's tour: its Merc tour where it has one
-// (COACH_TOURS), else its legacy spotlight tour. The tour chip, the plan's
-// Start here after the showcase (enterStop) and First Light's Map all start
-// tours through it, so a tab never gets the old tour from one door and Merc's
-// from another.
+// (COACH_TOURS), else the room's tour of the Guide's kind (startGuideRoomTour
+// in the app store): its legacy spotlight tour, or for Singing, which never
+// had one, the Guide's Singing section. The tour chip, the plan's Start here
+// after the showcase (enterStop) and First Light's Map all start tours
+// through it, so a tab never gets the old tour from one door and Merc's from
+// another. hasRoomTour answers whether a tab has either, for the Map's tour
+// link. The native build lists no Merc tour and has no tour of the Guide's
+// kind, so both start nothing there.
 //
 // A Merc tour is named in coachActive() from this call, while its code loads,
 // so an offer that comes due in the meantime (a pause lifting as First Light
@@ -32,7 +36,7 @@
 import { coachActive, setCoachActive } from '@/lib/coach-state'
 import type { CoachHandoff } from '@/lib/coach-types'
 import { isNarrow } from '@/lib/use-viewport'
-import { hasPageTour, startPageTour } from '@/stores'
+import { hasGuideRoomTour, hasPageTour, startGuideRoomTour } from '@/stores'
 import type { ActiveTab } from '@/types'
 import { COACH_TOURS } from './coach-tours'
 
@@ -96,6 +100,11 @@ function loadCoach(): ReturnType<typeof importCoach> {
 
 let pending: object | null = null
 
+/** Whether `tab` has a tour to start: a Merc tour, or one of the Guide's kind. */
+export function hasRoomTour(tab: ActiveTab): boolean {
+  return COACH_TOURS[tab] !== undefined || hasGuideRoomTour(tab)
+}
+
 /**
  * Starts `tab`'s tour. `still` says, once a Merc tour has loaded, whether it
  * is still wanted (the chip asks whether its tab is still on screen), and
@@ -109,9 +118,10 @@ export function startRoomTour(
 ): boolean {
   const entry = COACH_TOURS[tab]
   if (entry === undefined) {
-    if (!hasPageTour(tab)) return false
-    spendOffer(tab)
-    startPageTour(tab)
+    if (!hasGuideRoomTour(tab)) return false
+    // Only a page tour has an offer to spend: the chip offers no Guide section.
+    if (hasPageTour(tab)) spendOffer(tab)
+    startGuideRoomTour(tab)
     return true
   }
   const mine = {}

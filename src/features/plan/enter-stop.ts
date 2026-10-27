@@ -7,7 +7,8 @@
 // copy of how: a tab is switched to, a page is navigated to, and the room's
 // tour starts only when the person asked for it ("Show me around", whose
 // showcase ends here) and the room has one. A tab's tour is its Merc tour
-// where it has one, else its legacy spotlight tour: the tours decide
+// where it has one, else its legacy spotlight tour, or for Singing, which
+// never had one, the Guide's Singing section: the tours decide
 // (startRoomTour), and the plan starts one through the room tour door
 // (src/lib/room-tour-door.ts) rather than importing them. Of the pages,
 // Karaoke Night runs a Merc tour of its own, opened by its address
