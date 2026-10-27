@@ -1,4 +1,5 @@
 // Studio song options — local project identity, copies, backups and deletion.
+import { ChevronDown, Copy, Download, MusicLibrary, Trash2, } from '@/components/icons'
 import styles from '../StudioPage.module.css'
 import type { StudioController } from '../useStudioController'
 
@@ -27,38 +28,44 @@ export function StudioSongPanel(props: Props) {
           }}
         />
       </label>
-      <button
-        type="button"
-        class={styles.button}
-        disabled={props.studio.busy() || props.studio.hasUnsavedChanges()}
-        onClick={() => props.onLibrary()}
-      >
-        All songs
-      </button>
-      <button
-        type="button"
-        class={styles.button}
-        disabled={props.studio.busy() || props.processing}
-        onClick={() => props.onFork()}
-      >
-        Duplicate song
-      </button>
-      <button
-        type="button"
-        class={styles.button}
-        disabled={props.studio.busy() || props.processing}
-        onClick={() => props.onBackup()}
-      >
-        Save project backup
-      </button>
+      <div class={styles.menuList}>
+        <button
+          type="button"
+          class={styles.menuItem}
+          disabled={props.studio.busy() || props.studio.hasUnsavedChanges()}
+          onClick={() => props.onLibrary()}
+        >
+          <MusicLibrary />
+          <span>All songs</span>
+          <ChevronDown />
+        </button>
+        <button
+          type="button"
+          class={styles.menuItem}
+          disabled={props.studio.busy() || props.processing}
+          onClick={() => props.onFork()}
+        >
+          <Copy />
+          <span>Duplicate song</span>
+        </button>
+        <button
+          type="button"
+          class={styles.menuItem}
+          disabled={props.studio.busy() || props.processing}
+          onClick={() => props.onBackup()}
+        >
+          <Download />
+          <span>Save project backup</span>
+        </button>
+      </div>
       <p class={styles.help}>
-        Includes your arrangement and copied audio. Saved projects stay in this
-        browser.
+        A backup holds your arrangement and copied audio. Saved projects stay in
+        this browser.
       </p>
       <div class={styles.fieldDivider} />
       <button
         type="button"
-        class={styles.dangerButton}
+        class={`${styles.menuItem} ${styles.menuDanger}`}
         disabled={
           !props.writable ||
           props.studio.busy() ||
@@ -66,7 +73,8 @@ export function StudioSongPanel(props: Props) {
         }
         onClick={() => props.onDelete()}
       >
-        Delete project
+        <Trash2 />
+        <span>Delete project</span>
       </button>
     </div>
   )

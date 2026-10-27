@@ -1,84 +1,195 @@
-/* Studio export results use readable measurements and an indeterminate native-render progress indicator. */
+/* Studio export — a format card, the targets, three measured tiles and one full-width action. */
 .panel {
   display: flex;
   flex-direction: column;
-  gap: 20px;
+  gap: 18px;
 }
 .format {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: center;
+  gap: 2px 14px;
+  padding: 14px 16px;
+  border: 1px solid var(--studio-line);
+  border-radius: 12px;
+  background: var(--studio-card);
 }
 .format strong {
-  font-size: 24px;
+  grid-row: span 2;
+  display: grid;
+  place-items: center;
+  width: 52px;
+  height: 52px;
+  border-radius: 10px;
+  background: var(--studio-accent-soft);
+  color: var(--studio-accent-text);
+  font-size: 15px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+}
+.format span {
+  align-self: end;
+  color: var(--studio-text);
+  font-size: 14px;
   font-weight: 600;
-  letter-spacing: -0.03em;
 }
-.format span,
-.details dt {
-  color: var(--studio-pencil);
+.format small {
+  align-self: start;
+  text-wrap: pretty;
+  color: var(--studio-muted);
+  font-size: 12px;
 }
-.details,
-.measurements {
+.details {
   display: flex;
   flex-direction: column;
-  gap: 12px;
   margin: 0;
 }
 .details > div {
   display: flex;
+  align-items: baseline;
   justify-content: space-between;
   gap: 20px;
+  padding: 9px 0;
+  border-bottom: 1px solid var(--studio-line);
+}
+.details > div:first-child {
+  padding-top: 0;
+}
+.details dt {
+  color: var(--studio-text-2);
 }
 .details dd {
   margin: 0;
+  color: var(--studio-text);
+  font-weight: 500;
+  font-variant-numeric: tabular-nums;
   text-align: right;
 }
 .resultHeading {
-  margin: 0;
-  font-size: 15px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 4px 0 -6px;
+  color: var(--studio-text);
+  font-size: 13px;
   font-weight: 600;
 }
+.resultHeading::before {
+  content: '';
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--studio-success);
+}
 .measurements {
-  gap: 0;
-  border: 1px solid var(--studio-divider);
-  border-radius: 8px;
-  padding: 0 14px;
-  background: var(--studio-sheet);
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+  margin: 0;
 }
 .measurements > div {
   display: flex;
-  align-items: baseline;
-  justify-content: space-between;
-  gap: 12px;
-  padding: 14px 0;
-}
-.measurements > div + div {
-  border-top: 1px solid var(--studio-divider);
+  flex-direction: column-reverse;
+  justify-content: flex-end;
+  gap: 4px;
+  min-width: 0;
+  padding: 12px;
+  border: 1px solid var(--studio-line);
+  border-radius: 10px;
+  background: var(--studio-card);
 }
 .measurements dt {
-  color: var(--studio-pencil);
-  font-size: 12px;
+  color: var(--studio-text-2);
+  font-size: 11px;
+  line-height: 1.3;
 }
 .measurements dd {
   margin: 0;
+  color: var(--studio-text);
   font-size: 19px;
+  font-weight: 600;
+  line-height: 1.1;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.01em;
   white-space: nowrap;
 }
 .measurements dd span {
-  color: var(--studio-pencil);
+  display: block;
+  margin-top: 2px;
+  color: var(--studio-muted);
   font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0;
+}
+.panel > button {
+  width: 100%;
+  min-height: 44px;
 }
 .progress {
   display: flex;
   flex-direction: column;
   gap: 10px;
+  color: var(--studio-text-2);
 }
 .progress progress {
+  -webkit-appearance: none;
+  appearance: none;
   width: 100%;
-  height: 5px;
-  accent-color: var(--studio-cobalt);
+  height: 6px;
+  border: 0;
+  border-radius: 3px;
+  background: var(--studio-rail);
+  overflow: hidden;
+  accent-color: var(--studio-accent);
+}
+.progress progress::-webkit-progress-bar {
+  border-radius: 3px;
+  background: var(--studio-rail);
+}
+.progress progress::-webkit-progress-value {
+  border-radius: 3px;
+  background: var(--studio-accent);
+}
+.progress progress::-moz-progress-bar {
+  border-radius: 3px;
+  background: var(--studio-accent);
+}
+.progress progress:indeterminate {
+  background: linear-gradient(
+      90deg,
+      transparent 0 30%,
+      var(--studio-accent) 30% 70%,
+      transparent 70%
+    )
+    var(--studio-rail);
+  background-size: 200% 100%;
+  animation: studio-progress 1.2s linear infinite;
+}
+.progress progress:indeterminate::-webkit-progress-bar {
+  background: transparent;
+}
+.progress progress:indeterminate::-moz-progress-bar {
+  background: transparent;
+}
+@keyframes studio-progress {
+  from {
+    background-position: 100% 0;
+  }
+  to {
+    background-position: -100% 0;
+  }
 }
 .error {
-  color: var(--studio-error);
+  margin: 0;
+  color: var(--studio-danger);
+}
+@media (max-width: 360px) {
+  .measurements {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .progress progress:indeterminate {
+    animation: none;
+  }
 }

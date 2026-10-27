@@ -165,23 +165,25 @@ export function StudioSourcePicker(props: StudioSourcePickerProps) {
 
   return (
     <div class={styles.sources}>
-      <div class={styles.filters} role="group" aria-label="Take source">
-        <For each={FILTERS}>
-          {(name) => (
-            <button
-              type="button"
-              class={styles.filterButton}
-              aria-pressed={filter() === name}
-              onClick={() => {
-                if (filter() !== name) stopPreview()
-                setFilter(name)
-              }}
-            >
-              {name}
-            </button>
-          )}
-        </For>
-      </div>
+      <Show when={props.studio.sources().length > 0}>
+        <div class={styles.filters} role="group" aria-label="Take source">
+          <For each={FILTERS}>
+            {(name) => (
+              <button
+                type="button"
+                class={styles.filterButton}
+                aria-pressed={filter() === name}
+                onClick={() => {
+                  if (filter() !== name) stopPreview()
+                  setFilter(name)
+                }}
+              >
+                {name}
+              </button>
+            )}
+          </For>
+        </div>
+      </Show>
       <p class={styles.help}>
         Takes start at the playhead. Line them up by ear.
       </p>
@@ -278,16 +280,19 @@ export function StudioSourcePicker(props: StudioSourcePickerProps) {
           </ul>
         </Show>
       </Show>
-      <button
-        type="button"
-        class={styles.primaryButton}
-        disabled={
-          !choices().length || props.studio.busy() || !props.studio.writable()
-        }
-        onClick={() => void addSelected()}
-      >
-        Add {choices().length || ''} {choices().length === 1 ? 'take' : 'takes'}
-      </button>
+      <Show when={props.studio.sources().length > 0}>
+        <button
+          type="button"
+          class={styles.primaryButton}
+          disabled={
+            !choices().length || props.studio.busy() || !props.studio.writable()
+          }
+          onClick={() => void addSelected()}
+        >
+          Add {choices().length || ''}{' '}
+          {choices().length === 1 ? 'take' : 'takes'}
+        </button>
+      </Show>
     </div>
   )
 }

@@ -60,7 +60,7 @@ export const STUDIO_WORKSPACE_TOUR_STEPS: StudioTourStep[] = [
     title: 'Choose your view',
     targetSelector: '[data-tour="studio.view-controls"]',
     description:
-      'Use seconds or beats on the ruler, and zoom in for close edits. Tempo changes the beat reference; it does not stretch the audio.',
+      'Snap, and the ruler in time or beats. Tempo only sets the beat grid; it never stretches your audio. Zoom sits in the lower right corner of the timeline.',
     placement: 'bottom',
     whenPresent: true,
   },

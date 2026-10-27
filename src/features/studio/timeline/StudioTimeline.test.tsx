@@ -126,11 +126,6 @@ describe('Studio timeline', () => {
       key: 'ArrowRight',
     })
     expect(seek).toHaveBeenCalledWith(48000)
-    fireEvent.change(
-      screen.getByRole('spinbutton', { name: 'Playhead in seconds' }),
-      { target: { value: '1.234' } },
-    )
-    expect(seek).toHaveBeenLastCalledWith(59232)
     expect(base.readCanonicalAsset).not.toHaveBeenCalled()
   })
 

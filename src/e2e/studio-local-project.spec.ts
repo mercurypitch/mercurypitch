@@ -247,16 +247,21 @@ test('Studio shows both themes and edits a real take with one set of track contr
     studio.getByRole('button', { name: 'Solo Vocal', exact: true }),
   ).toHaveAttribute('aria-pressed', 'true')
   const pan = studio.getByRole('slider', { name: 'Vocal pan', exact: true })
-  if (!(await pan.isVisible()))
-    await studio.getByLabel('Vocal pan controls').click()
   await pan.focus()
   await pan.press('ArrowRight')
   await expect(pan).toHaveValue('0.01')
-  const ruler = studio.getByRole('combobox', { name: 'Timeline ruler' })
-  await ruler.selectOption('bars')
-  await expect(ruler).toHaveValue('bars')
-  await ruler.selectOption('time')
-  await expect(ruler).toHaveValue('time')
+  const ruler = studio.getByRole('radiogroup', { name: 'Timeline ruler' })
+  await ruler.getByRole('radio', { name: 'Beats', exact: true }).click()
+  await expect(
+    ruler.getByRole('radio', { name: 'Beats', exact: true }),
+  ).toBeChecked()
+  await expect(
+    studio.getByRole('spinbutton', { name: 'Tempo in beats per minute' }),
+  ).toBeVisible()
+  await ruler.getByRole('radio', { name: 'Time', exact: true }).click()
+  await expect(
+    ruler.getByRole('radio', { name: 'Time', exact: true }),
+  ).toBeChecked()
   const playhead = studio.getByRole('spinbutton', {
     name: 'Playhead in seconds',
   })
@@ -283,9 +288,10 @@ test('Studio shows both themes and edits a real take with one set of track contr
       (value) => document.documentElement.setAttribute('data-theme', value),
       theme,
     )
+    // The Studio paints with the app's own theme tokens.
     await expect(studio).toHaveCSS(
       'background-color',
-      theme === 'dark' ? 'rgb(23, 24, 27)' : 'rgb(245, 243, 238)',
+      theme === 'dark' ? 'rgb(13, 17, 23)' : 'rgb(243, 244, 246)',
     )
     await page.screenshot({
       path: testInfo.outputPath(`studio-${theme}.png`),
@@ -430,10 +436,10 @@ test('Studio plays four owned audio lanes and stops after reopening @smoke', asy
       theme,
     )
     await expect(
-      studio.getByRole('combobox', { name: 'Timeline ruler' }),
+      studio.getByRole('radiogroup', { name: 'Timeline ruler' }),
     ).toHaveCSS(
       'background-color',
-      theme === 'dark' ? 'rgb(23, 24, 27)' : 'rgb(245, 243, 238)',
+      theme === 'dark' ? 'rgb(33, 38, 45)' : 'rgb(221, 225, 230)',
     )
     await page.screenshot({
       path: testInfo.outputPath(`studio-song-${theme}.png`),

@@ -47,6 +47,17 @@ export function formatStudioTime(frame: number): string {
   return `${minutes}:${String(Math.floor(milliseconds / 1000) % 60).padStart(2, '0')}.${String(milliseconds % 1000).padStart(3, '0')}`
 }
 
+/** Seconds from typed clock text: `65.5`, `1:05.5` or `1:05:30`; null when it is not a time. */
+export function parseStudioTime(text: string): number | null {
+  const parts = text.trim().split(':')
+  if (parts.length > 3 || parts.some((part) => !/^\d*\.?\d*$/.test(part)))
+    return null
+  if (parts.some((part) => part === '' || part === '.')) return null
+  if (parts.slice(1).some((part) => Number(part) >= 60)) return null
+  const seconds = parts.reduce((total, part) => total * 60 + Number(part), 0)
+  return Number.isFinite(seconds) ? seconds : null
+}
+
 export interface StudioRulerTick {
   frame: number
   pixel: number

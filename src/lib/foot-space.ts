@@ -6,7 +6,9 @@
 // a custom property on <html>. The foot of a phone screen holds a stack, and
 // no layer of it may cover another:
 //
-//   toasts                      stand on all three (Notifications.module.css)
+//   toasts                      stand on all of these (Notifications.module.css)
+//   a page's docked transport   --page-dock-space      (StudioTransport, phone;
+//                                 it sits on the tab bar, so it counts it too)
 //   confirm-email bar           --verify-banner-space  (VerifyEmailBanner)
 //   cookie consent banner       --consent-banner-space (ConsentBanner)
 //   tab bar                     --tabbar-space         (BottomTabBar)
@@ -33,8 +35,13 @@ export function publishFootSpace(el: HTMLElement, name: string): void {
     const style = window.getComputedStyle(el)
     let next: string | null = null
     if (style.display !== 'none') {
-      const gap = Number.parseFloat(style.bottom)
-      const space = el.offsetHeight + (Number.isFinite(gap) ? gap : 0)
+      // A bar in the page flow has no `bottom`; its gap is what lies below
+      // it, such as the tab bar under the Studio's phone dock.
+      const bottom = Number.parseFloat(style.bottom)
+      const gap = Number.isFinite(bottom)
+        ? bottom
+        : Math.max(0, window.innerHeight - el.getBoundingClientRect().bottom)
+      const space = el.offsetHeight + gap
       next = `${Math.ceil(space)}px`
     }
     if (next === last) return

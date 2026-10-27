@@ -1,4 +1,4 @@
-// Studio waveform — neutral source envelopes with retained fade geometry, rendered without playback.
+// Studio waveform — peaks and loudness in the lane's hue, with fade geometry, rendered without playback.
 import { createEffect, createSignal, onCleanup } from 'solid-js'
 import { studioClipGainAtSourceFrame } from '@/lib/studio/model/arrangement-plan'
 import type { StudioAsset, StudioClip } from '@/lib/studio/model/types'
@@ -14,15 +14,17 @@ export interface StudioWaveformProps {
   sourceOutFrame: number
 }
 
-function drawEnvelope(
-  context: CanvasRenderingContext2D,
+/** Column extremes and loudness, gain applied, ready to draw as two fills. */
+function envelopeColumns(
   wave: StudioWaveformEnvelope,
   clip: StudioClip,
   width: number,
-  mid: number,
   sourceInFrame: number,
   sourceOutFrame: number,
-): void {
+) {
+  const high = new Float32Array(width)
+  const low = new Float32Array(width)
+  const body = new Float32Array(width)
   const duration = sourceOutFrame - sourceInFrame
   for (let x = 0; x < width; x++) {
     const from = sourceInFrame + (x / width) * duration
@@ -32,16 +34,34 @@ function drawEnvelope(
       wave.minima.length - 1,
       Math.floor(to / wave.framesPerBucket),
     )
-    let low = 0
-    let high = 0
+    let top = 0
+    let bottom = 0
+    let loud = 0
     for (let bucket = first; bucket <= last; bucket++) {
-      low = Math.min(low, wave.minima[bucket])
-      high = Math.max(high, wave.maxima[bucket])
+      bottom = Math.min(bottom, wave.minima[bucket])
+      top = Math.max(top, wave.maxima[bucket])
+      loud = Math.max(loud, wave.rms[bucket])
     }
     const gain = studioClipGainAtSourceFrame(clip, (from + to) / 2)
-    context.moveTo(x + 0.5, mid - Math.min(1, high * gain) * (mid - 3))
-    context.lineTo(x + 0.5, mid - Math.max(-1, low * gain) * (mid - 3))
+    high[x] = Math.min(1, top * gain)
+    low[x] = Math.max(-1, bottom * gain)
+    body[x] = Math.min(high[x], -low[x], loud * gain)
   }
+  return { high, low, body }
+}
+
+function fillBand(
+  context: CanvasRenderingContext2D,
+  upper: (x: number) => number,
+  lower: (x: number) => number,
+  width: number,
+): void {
+  context.beginPath()
+  context.moveTo(0, upper(0))
+  for (let x = 0; x < width; x++) context.lineTo(x + 1, upper(x))
+  for (let x = width - 1; x >= 0; x--) context.lineTo(x, lower(x))
+  context.closePath()
+  context.fill()
 }
 
 export function StudioWaveform(props: StudioWaveformProps) {
@@ -94,43 +114,70 @@ export function StudioWaveform(props: StudioWaveformProps) {
     if (!context) return
     context.setTransform(ratio, 0, 0, ratio, 0, 0)
     context.clearRect(0, 0, width, height)
-    context.strokeStyle = globalThis.getComputedStyle(canvas).color
-    context.lineWidth = 1
+    const color = globalThis.getComputedStyle(canvas).color
+    context.fillStyle = color
+    context.strokeStyle = color
     const mid = height / 2
+    const reach = mid - 2
     const wave = envelope()
     const clip = props.clip
-    context.beginPath()
-    context.moveTo(0, mid)
-    context.lineTo(width, mid)
+    const columns = Math.ceil(width)
+    // Silence still shows as a hairline, so an empty clip reads as audio.
+    context.globalAlpha = 0.35
+    context.fillRect(0, Math.round(mid) - 0.5, width, 1)
     if (wave) {
-      drawEnvelope(
-        context,
+      const { high, low, body } = envelopeColumns(
         wave,
         clip,
-        width,
-        mid,
+        columns,
         props.sourceInFrame,
         props.sourceOutFrame,
       )
+      context.globalAlpha = 0.42
+      fillBand(
+        context,
+        (x) => mid - high[x] * reach,
+        (x) => mid - low[x] * reach,
+        columns,
+      )
+      context.globalAlpha = 1
+      fillBand(
+        context,
+        (x) => mid - body[x] * reach,
+        (x) => mid + body[x] * reach,
+        columns,
+      )
     }
-    context.stroke()
     if (
       props.clip.fades.in !== undefined ||
       props.clip.fades.out !== undefined
     ) {
-      context.globalAlpha = 0.65
-      context.beginPath()
-      for (let x = 0; x <= width; x += 2) {
+      // Shade what a fade removes and trace the gain curve over it.
+      const curve: number[] = []
+      for (let x = 0; x <= columns; x += 2) {
         const source =
           props.sourceInFrame +
           (x / width) * (props.sourceOutFrame - props.sourceInFrame)
         const gain = studioClipGainAtSourceFrame({ ...clip, gainDb: 0 }, source)
-        const y = 2 + (1 - gain) * (height - 4)
-        if (x === 0) context.moveTo(x, y)
-        else context.lineTo(x, y)
+        curve.push(x, 1 + (1 - gain) * (height - 2))
       }
+      context.beginPath()
+      context.moveTo(0, 0)
+      for (let i = 0; i < curve.length; i += 2)
+        context.lineTo(curve[i], curve[i + 1])
+      context.lineTo(columns, 0)
+      context.closePath()
+      context.globalAlpha = 0.14
+      context.fill()
+      context.beginPath()
+      for (let i = 0; i < curve.length; i += 2)
+        if (i === 0) context.moveTo(curve[i], curve[i + 1])
+        else context.lineTo(curve[i], curve[i + 1])
+      context.globalAlpha = 0.9
+      context.lineWidth = 1.25
       context.stroke()
     }
+    context.globalAlpha = 1
   }
 
   function schedule(): void {

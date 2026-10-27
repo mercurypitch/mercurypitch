@@ -1,0 +1,111 @@
+{
+  "date": "2026-10-27",
+  "method": "WCAG 2.x relative luminance; colour-mix in sRGB as the stylesheet does",
+  "mixes": {
+    "clipBase": "--bg-card (#1c2128) in dark, white in light",
+    "titleBand": "hue 30% into the clip base",
+    "clipBody": "hue 14% into the clip base",
+    "waveBody": "dark: hue 74% toward --text-primary; light: the pure hue",
+    "rail": "--text-primary into --bg-secondary: 36% in dark, 50% in light"
+  },
+  "requirements": {
+    "text": 4.5,
+    "marks": 3.0
+  },
+  "themes": {
+    "dark": {
+      "tokens": {
+        "clip-base": "#1c2128",
+        "text-primary": "#e6edf3",
+        "bg-primary": "#0d1117",
+        "bg-secondary": "#161b22"
+      },
+      "railOnPanel": 3.02,
+      "hues": {
+        "rose": {
+          "value": "#f0789f",
+          "clipTitleOnBand": 8.13,
+          "waveBodyOnClip": 5.97,
+          "hueMarkOnFloor": 7.11
+        },
+        "amber": {
+          "value": "#e3a53f",
+          "clipTitleOnBand": 7.38,
+          "waveBodyOnClip": 6.79,
+          "hueMarkOnFloor": 8.76
+        },
+        "teal": {
+          "value": "#3cc7b4",
+          "clipTitleOnBand": 7.28,
+          "waveBodyOnClip": 6.8,
+          "hueMarkOnFloor": 9.03
+        },
+        "violet": {
+          "value": "#a991f7",
+          "clipTitleOnBand": 7.88,
+          "waveBodyOnClip": 6.1,
+          "hueMarkOnFloor": 7.28
+        },
+        "green": {
+          "value": "#5cc271",
+          "clipTitleOnBand": 7.51,
+          "waveBodyOnClip": 6.55,
+          "hueMarkOnFloor": 8.48
+        },
+        "orange": {
+          "value": "#ec8a4f",
+          "clipTitleOnBand": 8.01,
+          "waveBodyOnClip": 6.17,
+          "hueMarkOnFloor": 7.49
+        }
+      }
+    },
+    "light": {
+      "tokens": {
+        "clip-base": "#ffffff",
+        "text-primary": "#1f2328",
+        "bg-primary": "#f3f4f6",
+        "bg-secondary": "#e8eaed"
+      },
+      "railOnPanel": 3.03,
+      "hues": {
+        "rose": {
+          "value": "#c2457a",
+          "clipTitleOnBand": 10.34,
+          "waveBodyOnClip": 3.92,
+          "hueMarkOnFloor": 4.31
+        },
+        "amber": {
+          "value": "#a86b05",
+          "clipTitleOnBand": 10.76,
+          "waveBodyOnClip": 3.69,
+          "hueMarkOnFloor": 4.0
+        },
+        "teal": {
+          "value": "#0d7f73",
+          "clipTitleOnBand": 10.44,
+          "waveBodyOnClip": 4.04,
+          "hueMarkOnFloor": 4.44
+        },
+        "violet": {
+          "value": "#7552d6",
+          "clipTitleOnBand": 10.3,
+          "waveBodyOnClip": 4.41,
+          "hueMarkOnFloor": 4.85
+        },
+        "green": {
+          "value": "#2c8a43",
+          "clipTitleOnBand": 10.76,
+          "waveBodyOnClip": 3.67,
+          "hueMarkOnFloor": 3.96
+        },
+        "orange": {
+          "value": "#c05621",
+          "clipTitleOnBand": 10.48,
+          "waveBodyOnClip": 3.79,
+          "hueMarkOnFloor": 4.15
+        }
+      }
+    }
+  }
+}

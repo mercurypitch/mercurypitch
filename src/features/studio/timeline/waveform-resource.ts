@@ -21,6 +21,8 @@ export interface StudioWaveformEnvelope {
   framesPerBucket: number
   minima: Float32Array
   maxima: Float32Array
+  /** Loudness body per bucket, across all channels: drawn inside the peaks. */
+  rms: Float32Array
 }
 
 /** Preserve actual amplitude, including silence; no per-clip visual normalization. */
@@ -35,6 +37,7 @@ export async function buildStudioWaveform(
   const buckets = Math.ceil(audio.length / framesPerBucket)
   const minima = new Float32Array(buckets)
   const maxima = new Float32Array(buckets)
+  const rms = new Float32Array(buckets)
   for (let channel = 0; channel < audio.numberOfChannels; channel++) {
     const samples = audio.getChannelData(channel)
     for (let start = 0; start < samples.length; start += 65_536) {
@@ -46,11 +49,21 @@ export async function buildStudioWaveform(
         const bucket = Math.floor(frame / framesPerBucket)
         minima[bucket] = Math.min(minima[bucket], value)
         maxima[bucket] = Math.max(maxima[bucket], value)
+        rms[bucket] += value * value
       }
       await importCheckpoint(signal)
     }
   }
-  return { frameCount: audio.length, framesPerBucket, minima, maxima }
+  for (let bucket = 0; bucket < buckets; bucket++) {
+    const frames = Math.min(
+      framesPerBucket,
+      audio.length - bucket * framesPerBucket,
+    )
+    rms[bucket] = Math.sqrt(
+      rms[bucket] / Math.max(1, frames * audio.numberOfChannels),
+    )
+  }
+  return { frameCount: audio.length, framesPerBucket, minima, maxima, rms }
 }
 
 export function createStudioWaveformResource(
@@ -76,7 +89,7 @@ export function createStudioWaveformResource(
           Math.ceil(asset.normalizedFrameCount / STUDIO_WAVEFORM_BUCKETS),
         )
         const envelopeBytes =
-          Math.ceil(asset.normalizedFrameCount / bucketSize) * 8
+          Math.ceil(asset.normalizedFrameCount / bucketSize) * 12
         let releaseEnvelope: (() => void) | undefined
         let releaseRead: (() => void) | undefined
         try {

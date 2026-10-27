@@ -88,6 +88,7 @@ export function StudioMacroControl(props: Props) {
         step="1"
         value={value()}
         disabled={!props.writable}
+        style={{ '--value': value() }}
         aria-valuetext={`${value()}`}
         onInput={(event) => {
           if (blockedPointer || blockedKey) {
