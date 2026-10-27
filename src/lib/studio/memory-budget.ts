@@ -89,6 +89,22 @@ function memoryError(): Error {
   )
 }
 
+/**
+ * Whether a failure means there was not enough memory: this budget's refusal,
+ * a caller's message built on it, or the engine failing to allocate. Such a
+ * failure must say so, never pass for missing or damaged audio.
+ */
+export function isStudioMemoryRefusal(error: unknown): boolean {
+  if (error instanceof StudioMemoryError) return true
+  if (!(error instanceof Error)) return false
+  if (error.message.startsWith('Studio needs more memory')) return true
+  // V8 says "Array buffer allocation failed"; Gecko and WebKit "out of memory".
+  return (
+    (error instanceof RangeError || error.name === 'InternalError') &&
+    /allocation failed|out of memory/i.test(error.message)
+  )
+}
+
 export function studioReservedMemoryBytes(): number {
   return reservedBytes
 }

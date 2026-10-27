@@ -3,6 +3,7 @@
 // ============================================================
 
 import { isQuotaError } from '@/db/durable-write'
+import { isStudioMemoryRefusal } from '@/lib/studio/memory-budget'
 
 export const STUDIO_STORES = {
   projects: 'studioProjects',
@@ -56,6 +57,14 @@ export async function studioStorageOperation<T>(
     return await operation()
   } catch (error) {
     if (error instanceof StudioStorageError) throw error
+    // A cancelled operation stays a cancellation for its caller to recognize.
+    if ((error as { name?: unknown } | null)?.name === 'AbortError') throw error
+    if (isStudioMemoryRefusal(error))
+      throw new StudioStorageError(
+        'memory-limit',
+        'Studio needs more memory for this audio. Stop playback and try again.',
+        error,
+      )
     throw new StudioStorageError(
       isQuotaError(error) ? 'quota-exceeded' : 'storage-unavailable',
       isQuotaError(error)
