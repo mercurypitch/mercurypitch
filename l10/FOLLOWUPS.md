@@ -33,3 +33,8 @@
 - **From the sing-quiz review (25 Oct, head e409678d5):**
   - P22: the spec's Toys 6 takes the flow's status lines, the series' with "Merc's notes" and "them", and "Your turn: sing with the guide." while a sweep runs.
   - If the coach settles the feeling answer on `changeable`, the flow takes Lesson 8's rested rule and line ("Merc can still sing the notes for you.", to be settled then).
+
+- **From the page's first run (27 Oct, head 0c4e9fa5c):**
+  - Kit: one width for the sound gate's button on every page. Stack both labels in one grid cell, the inactive one `visibility: hidden`, so no lesson's gate line can sit within the labels' 1.6 px of a wrap. Lesson 10's `.l10-hero .gate .btn` rule then goes.
+  - The cold open's run: `Names.set('flats')` in main.ts (decision 27), and Play the chord's place on a phone (decision 28).
+  - Step 5's task shows its Notice and the "Do or la?" drawer, kept hidden (`data-scale-reveal`) until the reveal.

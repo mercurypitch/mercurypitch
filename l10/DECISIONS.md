@@ -71,3 +71,21 @@ Answers to PLAN.md section 6, 24 October 2026. Lesson 9's decisions (`../l9/DECI
 24. **K1's syllables replace the literals** now that K1 is in the base (FOLLOWUPS, chords run; decision 19): `lines.ts`, `sing-guide.ts` and `hero-marks.ts` read `MAJOR_SOLFEGE` and `MINOR_SOLFEGE` by degree, each as a fixup of its own module's commit.
 25. **First paint while the page is built** follows Lesson 9's decision 30: the shell and each toy raise Lesson 10's ceilings to the smallest whole KB above the measure, with the measure and the cause in the comment, so each raise stays a tripwire; P22 sets the tables' rule, the measure plus about a quarter. The plan's P11 line ("the measured size plus a quarter") is superseded.
 26. **The practice card ships as WEB-SPEC's Practice links has it today**: Drone Intonation at `/pitch-training?lesson=10`, then Stack. `/exercises/thirds-on-a-drone` (#1224) is in the app, and the card, the rest card and the footer switch to it "once this page is live" (LESSON.md's editorial note). The page goes live by the console, without a release, so the switch needs a decision before Lesson 10 is published: for R1 and the owner. The season's `pr.link` is decision 3's Stack.
+
+## After the page's first run (27 October 2026)
+
+27. **The first run is accepted** (lead review at max; `feat/lesson-10-page` 0c4e9fa5c after the fold, pushed as a backup with no PR; tag lead/l10-page1-gated; the pre-fold head lead/l10-page1-prefold 289885fb6 has the same tree). The three syllable fixups folded into the lines, sing guide and hero marks commits, and the shell's into the shell. The one fix folded: lesson-10.css's comment on the hero plays no longer says Play the chord is on a phone's first screen. Checked by the lead:
+    - Every line of LESSON.md's learner part is on the page, quizzes and the recall aside (the kit renders those from their modules). The words the docs do not have are listed in 29.
+    - Lessons 1 to 9 link the same stylesheets, in the same order, as main. `reveal-B96lFMqx.css` is `predict-B96lFMqx.css` under another name, with the same content hash. The kit's guide, voice and ear-game sheets come in by lesson-10.css's `@import` (MISTAKES.md's entry), and each moves back to main.ts with the module whose chunk it shares.
+    - Three mutations, each caught: the drafts line, the worker's path and a practice link.
+    - Gates on the folded head: docs index, plan-cites 156 (as main), pr:validate, and Lesson 10's unit tests (29 of 29). The builder's build, browser runs and the rest stand, since the only change since is a CSS comment.
+    - **`Names.set('flats')` waits for the cold open's run.** Only the spiral modules read Names (`kit/spiral.ts`, `spiral-draw.ts`, `spiral-keys.ts`), and the beads spell through `spellOn`, so the shell would load names.ts for nothing. That run puts it in main.ts before the cold open mounts, as the plan's boot order has it, and fixes main.ts's header to match.
+    - The gate's one-width rule stands: Lesson 10's gate is 114 px in both states at 1440 x 900, as Lesson 9's is (FOLLOWUPS has the kit-wide version).
+    - The Lesson 3 and Lesson 4 raises stand, with their comments: 132 and 130 KB. Both come back once the cold open and the quizzes load the kit's predict, quiz and hero sky.
+28. **Play the chord at 390 x 844** sits at 908 to 952 px, 108 px below the first screen. Lesson 9's is below too, at 1025 px; Lesson 6's is on it, at 784 to 828 px. The cold open's run decides, with the spiral drawn and measured by `learn-cold-open-fold.spec.ts`. The choices: a shorter phone stage or ring (264 px now), or the meta chips on fewer rows. The spec's "should" stays the target.
+29. **Copy the builder wrote**, for the owner's copy pass and P22's spec corrections:
+    - the five figure labels (steps.ts `FIG`);
+    - the ear games' play labels, "Play a pair" and "Play a chord", which also have no ask line yet;
+    - the spiral's screen-reader description;
+    - "Free play: try every control of the chord beads in one place".
+30. **Lesson 5's first-paint headroom is 483 bytes.** The next change that grows every lesson page raises its ceiling, under decision 25's rule.
