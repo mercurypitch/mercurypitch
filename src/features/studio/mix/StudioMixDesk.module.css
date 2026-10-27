@@ -60,9 +60,13 @@
   transform: translateX(-50%);
   transition: background-color 0.12s ease-out;
 }
-.resize:hover::before,
 .resizing .resize::before {
   background: var(--studio-text-2);
+}
+@media (hover: hover) {
+  .resize:hover::before {
+    background: var(--studio-text-2);
+  }
 }
 .resize:focus-visible::before {
   background: var(--studio-accent);
@@ -215,9 +219,11 @@
   white-space: nowrap;
   cursor: pointer;
 }
-.strips button.stripName:hover {
-  text-decoration: underline;
-  text-underline-offset: 2px;
+@media (hover: hover) {
+  .strips button.stripName:hover {
+    text-decoration: underline;
+    text-underline-offset: 2px;
+  }
 }
 .strips button.stripName:focus-visible {
   outline: 2px solid var(--studio-accent);

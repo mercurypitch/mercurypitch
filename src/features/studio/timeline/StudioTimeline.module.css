@@ -142,9 +142,11 @@
   font-weight: 500;
   cursor: pointer;
 }
-.snapToggle:hover {
-  background: var(--studio-hover);
-  color: var(--studio-text);
+@media (hover: hover) {
+  .snapToggle:hover {
+    background: var(--studio-hover);
+    color: var(--studio-text);
+  }
 }
 .snapToggle[aria-pressed='true'] {
   border-color: color-mix(in srgb, var(--studio-accent) 45%, transparent);
@@ -171,8 +173,10 @@
   font-weight: 500;
   cursor: pointer;
 }
-.segmented button:hover:not(:disabled) {
-  color: var(--studio-text);
+@media (hover: hover) {
+  .segmented button:hover:not(:disabled) {
+    color: var(--studio-text);
+  }
 }
 .segmented button[aria-checked='true'] {
   background: var(--studio-chip);
@@ -230,9 +234,11 @@
   color: var(--studio-text-2);
   cursor: pointer;
 }
-.zoom button:hover:not(:disabled) {
-  background: var(--studio-hover);
-  color: var(--studio-text);
+@media (hover: hover) {
+  .zoom button:hover:not(:disabled) {
+    background: var(--studio-hover);
+    color: var(--studio-text);
+  }
 }
 .zoom button:disabled {
   opacity: 0.4;
@@ -347,8 +353,10 @@
   overflow: hidden;
   text-overflow: ellipsis;
 }
-.timeline button.trackName:hover {
-  background: var(--studio-hover);
+@media (hover: hover) {
+  .timeline button.trackName:hover {
+    background: var(--studio-hover);
+  }
 }
 .timeline button.trackName:focus-visible {
   outline: 2px solid var(--studio-accent);
@@ -417,9 +425,11 @@
   height: 14px;
 }
 /* A pressed Mute or Solo keeps its colour under the pointer. */
-.controls button.mixButton:hover:not(:disabled):not([aria-pressed='true']) {
-  background: var(--studio-hover);
-  color: var(--studio-text);
+@media (hover: hover) {
+  .controls button.mixButton:hover:not(:disabled):not([aria-pressed='true']) {
+    background: var(--studio-hover);
+    color: var(--studio-text);
+  }
 }
 .controls button.muteButton[aria-pressed='true'] {
   border-color: transparent;
@@ -906,20 +916,30 @@
     border-color 0.12s ease-out,
     box-shadow 0.12s ease-out;
 }
-.timeline button.clip:hover {
-  border-color: color-mix(in srgb, var(--studio-track) 78%, transparent);
+@media (hover: hover) {
+  .timeline button.clip:hover {
+    border-color: color-mix(in srgb, var(--studio-track) 78%, transparent);
+  }
 }
 .timeline button.clip:focus-visible {
   outline: 2px solid var(--studio-accent);
   outline-offset: 2px;
 }
-.timeline button.selectedClip,
-.timeline button.selectedClip:hover {
+.timeline button.selectedClip {
   z-index: 2;
   border-color: var(--studio-accent);
   box-shadow:
     0 0 0 1px var(--studio-accent),
     0 6px 18px rgb(1 4 9 / 0.28);
+}
+@media (hover: hover) {
+  .timeline button.selectedClip:hover {
+    z-index: 2;
+    border-color: var(--studio-accent);
+    box-shadow:
+      0 0 0 1px var(--studio-accent),
+      0 6px 18px rgb(1 4 9 / 0.28);
+  }
 }
 .timeline button.editableClip {
   touch-action: none;
@@ -934,12 +954,19 @@
     0 0 0 1px var(--studio-accent),
     0 14px 32px rgb(1 4 9 / 0.42);
 }
-.invalidClip button.clip,
-.invalidClip button.clip:hover {
+.invalidClip button.clip {
   border-color: var(--studio-danger);
   box-shadow:
     0 0 0 1px var(--studio-danger),
     0 14px 32px rgb(1 4 9 / 0.42);
+}
+@media (hover: hover) {
+  .invalidClip button.clip:hover {
+    border-color: var(--studio-danger);
+    box-shadow:
+      0 0 0 1px var(--studio-danger),
+      0 14px 32px rgb(1 4 9 / 0.42);
+  }
 }
 .clipTitle {
   display: block;
@@ -1119,8 +1146,10 @@
   height: 15px;
   color: var(--studio-text-2);
 }
-.toolbar button:hover:not(:disabled) {
-  background: var(--studio-hover);
+@media (hover: hover) {
+  .toolbar button:hover:not(:disabled) {
+    background: var(--studio-hover);
+  }
 }
 .toolbar button:focus-visible {
   outline: 2px solid var(--studio-accent);
@@ -1195,9 +1224,11 @@
 .timeline button.newLaneLabel {
   cursor: pointer;
 }
-.timeline button.newLaneLabel:hover {
-  color: var(--studio-text);
-  background: color-mix(in srgb, var(--studio-accent) 7%, var(--studio-bar));
+@media (hover: hover) {
+  .timeline button.newLaneLabel:hover {
+    color: var(--studio-text);
+    background: color-mix(in srgb, var(--studio-accent) 7%, var(--studio-bar));
+  }
 }
 .timeline button.newLaneLabel:focus-visible {
   outline: 2px solid var(--studio-accent);
@@ -1278,8 +1309,10 @@
   cursor: pointer;
   pointer-events: auto;
 }
-.timeline button.emptyAction:hover {
-  background: var(--studio-accent-hover);
+@media (hover: hover) {
+  .timeline button.emptyAction:hover {
+    background: var(--studio-accent-hover);
+  }
 }
 .timeline button.emptyAction:focus-visible {
   outline: 2px solid var(--studio-accent);
