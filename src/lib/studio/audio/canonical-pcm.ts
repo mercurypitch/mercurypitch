@@ -4,6 +4,7 @@
 
 import type { PcmAudio, StudioImportLimits } from './import-limits'
 import { admitWorkingBytes, checkImportCancelled, importCheckpoint, importLimits, validatePcmDimensions, } from './import-limits'
+import { sha256InPlace } from './sha256'
 
 export const CANONICAL_PCM_VERSION = 1
 export const CANONICAL_PCM_HEADER_BYTES = 32
@@ -152,29 +153,28 @@ function validateHeader(
   return view
 }
 
-export async function readCanonicalPcmBytes(
-  blob: Blob,
+function checkCanonicalSize(
+  byteLength: number,
   metadata: CanonicalPcmMetadata,
-  options: CanonicalPcmOptions = {},
-): Promise<ArrayBuffer> {
-  checkImportCancelled(options.signal)
-  const limits = importLimits(options.limits)
+  limits: StudioImportLimits,
+): void {
   const maximumSize = CANONICAL_PCM_HEADER_BYTES + limits.maxFrames * 2 * 4
   if (
-    blob.size !== metadata.canonicalPcmByteLength ||
-    blob.size > maximumSize ||
-    blob.size < CANONICAL_PCM_HEADER_BYTES ||
+    byteLength !== metadata.canonicalPcmByteLength ||
+    byteLength > maximumSize ||
+    byteLength < CANONICAL_PCM_HEADER_BYTES ||
     !/^[a-f0-9]{64}$/.test(metadata.canonicalPcmSha256)
   ) {
     throw new Error('Studio audio size or hash is invalid')
   }
-  admitWorkingBytes(blob.size * 3, limits)
-  const bytes = await blob.arrayBuffer()
-  checkImportCancelled(options.signal)
-  const view = validateHeader(bytes, metadata, limits)
-  if ((await sha256Bytes(bytes)) !== metadata.canonicalPcmSha256)
-    throw new Error('Studio audio checksum failed')
-  checkImportCancelled(options.signal)
+}
+
+/** Every sample must be a finite number; the header was checked first. */
+async function checkSamples(
+  bytes: ArrayBuffer,
+  view: DataView,
+  signal?: AbortSignal,
+): Promise<void> {
   const sampleCount = (bytes.byteLength - CANONICAL_PCM_HEADER_BYTES) / 4
   if (LITTLE_ENDIAN) {
     const samples = new Float32Array(
@@ -187,9 +187,9 @@ export async function readCanonicalPcmBytes(
         !allFinite(samples, from, Math.min(sampleCount, from + CHUNK_SAMPLES))
       )
         throw new Error('Studio audio contains invalid samples')
-      await importCheckpoint(options.signal)
+      await importCheckpoint(signal)
     }
-    return bytes
+    return
   }
   for (let from = 0; from < sampleCount; from += CHUNK_SAMPLES) {
     for (
@@ -205,9 +205,47 @@ export async function readCanonicalPcmBytes(
         throw new Error('Studio audio contains invalid samples')
       }
     }
-    await importCheckpoint(options.signal)
+    await importCheckpoint(signal)
   }
+}
+
+export async function readCanonicalPcmBytes(
+  blob: Blob,
+  metadata: CanonicalPcmMetadata,
+  options: CanonicalPcmOptions = {},
+): Promise<ArrayBuffer> {
+  checkImportCancelled(options.signal)
+  const limits = importLimits(options.limits)
+  checkCanonicalSize(blob.size, metadata, limits)
+  admitWorkingBytes(blob.size * 3, limits)
+  const bytes = await blob.arrayBuffer()
+  checkImportCancelled(options.signal)
+  const view = validateHeader(bytes, metadata, limits)
+  if ((await sha256Bytes(bytes)) !== metadata.canonicalPcmSha256)
+    throw new Error('Studio audio checksum failed')
+  checkImportCancelled(options.signal)
+  await checkSamples(bytes, view, options.signal)
   return bytes
+}
+
+/**
+ * The same checks for canonical PCM the caller already holds as bytes. The
+ * hash reads them in place, so checking a take needs no second copy of it.
+ */
+export async function validateCanonicalPcmBytes(
+  bytes: ArrayBuffer,
+  metadata: CanonicalPcmMetadata,
+  options: CanonicalPcmOptions = {},
+): Promise<void> {
+  checkImportCancelled(options.signal)
+  const limits = importLimits(options.limits)
+  checkCanonicalSize(bytes.byteLength, metadata, limits)
+  const view = validateHeader(bytes, metadata, limits)
+  if (
+    (await sha256InPlace(bytes, options.signal)) !== metadata.canonicalPcmSha256
+  )
+    throw new Error('Studio audio checksum failed')
+  await checkSamples(bytes, view, options.signal)
 }
 
 /** Validate restore bytes without creating an AudioContext or allocating channels. */

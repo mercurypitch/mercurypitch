@@ -3,12 +3,13 @@
 // ============================================================
 
 import { reserveStudioMemory } from '@/lib/studio/memory-budget'
-import type { StudioAsset, StudioAssetData } from '@/lib/studio/model/types'
+import type { StudioAsset, StudioAssetBytes, StudioAssetData, } from '@/lib/studio/model/types'
 import { validateStudioAsset } from '@/lib/studio/model/validation'
-import { CANONICAL_PCM_HEADER_BYTES, encodeCanonicalPcm, sha256Bytes, validateCanonicalPcm, } from './canonical-pcm'
+import { CANONICAL_PCM_HEADER_BYTES, encodeCanonicalPcm, sha256Bytes, validateCanonicalPcm, validateCanonicalPcmBytes, } from './canonical-pcm'
 import type { PcmAudio, StudioImportLimits } from './import-limits'
 import { admitWorkingBytes, checkImportCancelled, importLimits, validatePcmDimensions, } from './import-limits'
 import { PREPARATION_ANALYSIS_BYTES, sourcePreparation, } from './preparation-gain'
+import { sha256InPlace } from './sha256'
 
 export interface StudioAssetInfo {
   id: string
@@ -224,4 +225,25 @@ export async function validatePreparedStudioAsset(
   if (originalHash !== asset.sha256)
     throw new Error('Original audio checksum failed')
   await validateCanonicalPcm(data.canonicalPcm, asset, options)
+}
+
+/**
+ * The same checks for audio held as bytes. Both hashes read the bytes in
+ * place, so this allocates nothing the size of the audio.
+ */
+export async function validatePreparedStudioBytes(
+  data: StudioAssetBytes,
+  options: Omit<PrepareStudioAssetOptions, 'createDecodeContext'> = {},
+): Promise<void> {
+  checkImportCancelled(options.signal)
+  const asset = validateStudioAsset(data.asset)
+  const limits = importLimits(options.limits)
+  const size = data.original.byteLength
+  if (size <= 0 || size > limits.maxEncodedBytes)
+    throw new Error('This audio is empty or too large. Choose a smaller file.')
+  if (size !== asset.byteLength)
+    throw new Error('Original audio does not match its saved metadata')
+  if ((await sha256InPlace(data.original, options.signal)) !== asset.sha256)
+    throw new Error('Original audio checksum failed')
+  await validateCanonicalPcmBytes(data.canonicalPcm, asset, options)
 }

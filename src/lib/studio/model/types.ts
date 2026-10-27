@@ -111,6 +111,16 @@ export interface StudioAssetData {
   readonly canonicalPcm: Blob
 }
 
+/**
+ * Audio handed over as bytes the caller no longer uses: a restored backup or
+ * a copied song. Storage keeps these buffers as they are, without a copy.
+ */
+export interface StudioAssetBytes {
+  readonly asset: StudioAsset
+  readonly original: ArrayBuffer
+  readonly canonicalPcm: ArrayBuffer
+}
+
 export interface StudioProjectSummary {
   readonly id: string
   readonly title: string

@@ -537,5 +537,6 @@
   "src/lib/studio/metering/true-peak.test.ts",
   "src/lib/studio/export/wav-measure.test.ts",
   "src/lib/studio/export/render-wav.test.ts",
-  "src/features/studio/timeline/gesture-draft.test.ts"
+  "src/features/studio/timeline/gesture-draft.test.ts",
+  "src/lib/studio/audio/sha256.test.ts"
 ]
