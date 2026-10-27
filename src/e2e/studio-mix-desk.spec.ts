@@ -14,6 +14,15 @@ async function openDesk(page: Page, tap = false): Promise<Locator> {
     exact: true,
   })
   await expect(desk).toBeVisible()
+  // The desk slides up as it opens. Boxes read mid-slide sit up to 24 px low,
+  // at fractional positions where a 44 px button can read 43.99997 px.
+  await desk.evaluate((element) =>
+    Promise.all(
+      element
+        .getAnimations()
+        .map((animation) => animation.finished.catch(() => undefined)),
+    ),
+  )
   return desk
 }
 
