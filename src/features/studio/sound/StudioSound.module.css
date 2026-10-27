@@ -73,15 +73,23 @@
     background-color 0.12s ease-out,
     color 0.12s ease-out;
 }
-.choice:hover:not(:disabled) {
-  color: var(--studio-text);
-  background: var(--studio-hover);
+@media (hover: hover) {
+  .choice:hover:not(:disabled) {
+    color: var(--studio-text);
+    background: var(--studio-hover);
+  }
 }
-.choice[aria-pressed='true'],
-.choice[aria-pressed='true']:hover:not(:disabled) {
+.choice[aria-pressed='true'] {
   border-color: color-mix(in srgb, var(--studio-accent) 55%, transparent);
   background: var(--studio-accent-soft);
   color: var(--studio-accent-text);
+}
+@media (hover: hover) {
+  .choice[aria-pressed='true']:hover:not(:disabled) {
+    border-color: color-mix(in srgb, var(--studio-accent) 55%, transparent);
+    background: var(--studio-accent-soft);
+    color: var(--studio-accent-text);
+  }
 }
 
 /* Macro sliders fill outward from the centre */

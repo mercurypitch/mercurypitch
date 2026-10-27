@@ -166,9 +166,13 @@
   width: 16px;
   height: 16px;
 }
-.button:hover:not(:disabled),
 .button[aria-expanded='true'] {
   background: var(--studio-hover);
+}
+@media (hover: hover) {
+  .button:hover:not(:disabled) {
+    background: var(--studio-hover);
+  }
 }
 .button[aria-expanded='true'] {
   border-color: color-mix(in srgb, var(--studio-text) 30%, transparent);
@@ -179,16 +183,20 @@
   color: var(--studio-on-accent);
   font-weight: 600;
 }
-.primaryButton:hover:not(:disabled) {
-  border-color: var(--studio-accent-hover);
-  background: var(--studio-accent-hover);
+@media (hover: hover) {
+  .primaryButton:hover:not(:disabled) {
+    border-color: var(--studio-accent-hover);
+    background: var(--studio-accent-hover);
+  }
 }
 .dangerButton {
   border-color: color-mix(in srgb, var(--studio-danger) 45%, transparent);
   color: var(--studio-danger);
 }
-.dangerButton:hover:not(:disabled) {
-  background: var(--studio-danger-soft);
+@media (hover: hover) {
+  .dangerButton:hover:not(:disabled) {
+    background: var(--studio-danger-soft);
+  }
 }
 .iconButton,
 .playButton {
@@ -213,9 +221,11 @@
   width: 17px;
   height: 17px;
 }
-.iconButton:hover:not(:disabled) {
-  background: var(--studio-hover);
-  color: var(--studio-text);
+@media (hover: hover) {
+  .iconButton:hover:not(:disabled) {
+    background: var(--studio-hover);
+    color: var(--studio-text);
+  }
 }
 .iconButton[aria-pressed='true'] {
   background: var(--studio-accent-soft);
@@ -234,8 +244,10 @@
   width: 20px;
   height: 20px;
 }
-.playButton:hover:not(:disabled) {
-  background: var(--studio-accent-hover);
+@media (hover: hover) {
+  .playButton:hover:not(:disabled) {
+    background: var(--studio-accent-hover);
+  }
 }
 .playButton:disabled {
   box-shadow: none;
@@ -255,8 +267,10 @@
   font-weight: 500;
   cursor: pointer;
 }
-.textButton:hover:not(:disabled) {
-  background: var(--studio-hover);
+@media (hover: hover) {
+  .textButton:hover:not(:disabled) {
+    background: var(--studio-hover);
+  }
 }
 .actions {
   display: flex;
@@ -354,8 +368,10 @@
 .songItem:last-child {
   border-bottom: 0;
 }
-.songItem:has(.songRow:hover:not(:disabled)) {
-  background: var(--studio-hover);
+@media (hover: hover) {
+  .songItem:has(.songRow:hover:not(:disabled)) {
+    background: var(--studio-hover);
+  }
 }
 .songItem:has(.songRow[aria-current='true']) {
   background: color-mix(in srgb, var(--studio-accent) 6%, transparent);
@@ -438,9 +454,11 @@
   width: 16px;
   height: 16px;
 }
-.songAction:hover:not(:disabled) {
-  border-color: var(--studio-text-2);
-  background: var(--studio-hover);
+@media (hover: hover) {
+  .songAction:hover:not(:disabled) {
+    border-color: var(--studio-text-2);
+    background: var(--studio-hover);
+  }
 }
 .songAction:focus-visible {
   outline: 2px solid var(--studio-accent);
@@ -621,8 +639,10 @@
   letter-spacing: -0.01em;
   text-align: center;
 }
-.clock:hover {
-  border-color: var(--studio-line-strong);
+@media (hover: hover) {
+  .clock:hover {
+    border-color: var(--studio-line-strong);
+  }
 }
 .clock:focus {
   border-color: var(--studio-accent);
@@ -947,8 +967,10 @@
 .menuItem:last-child {
   border-bottom: 0;
 }
-.menuItem:hover:not(:disabled) {
-  background: var(--studio-hover);
+@media (hover: hover) {
+  .menuItem:hover:not(:disabled) {
+    background: var(--studio-hover);
+  }
 }
 .menuItem > svg {
   flex: none;
@@ -981,8 +1003,10 @@
   border: 1px solid color-mix(in srgb, var(--studio-danger) 35%, transparent);
   border-radius: 10px;
 }
-.menuItem.menuDanger:hover:not(:disabled) {
-  background: var(--studio-danger-soft);
+@media (hover: hover) {
+  .menuItem.menuDanger:hover:not(:disabled) {
+    background: var(--studio-danger-soft);
+  }
 }
 .assetList {
   display: flex;
@@ -1034,8 +1058,10 @@
   font-weight: 500;
   cursor: pointer;
 }
-.filterButton:hover {
-  color: var(--studio-text);
+@media (hover: hover) {
+  .filterButton:hover {
+    color: var(--studio-text);
+  }
 }
 .filterButton[aria-pressed='true'] {
   border-color: color-mix(in srgb, var(--studio-accent) 50%, transparent);
@@ -1057,9 +1083,11 @@
   text-align: left;
   cursor: pointer;
 }
-.fileButton:hover:not(:disabled) {
-  border-color: var(--studio-accent);
-  background: color-mix(in srgb, var(--studio-accent) 6%, transparent);
+@media (hover: hover) {
+  .fileButton:hover:not(:disabled) {
+    border-color: var(--studio-accent);
+    background: color-mix(in srgb, var(--studio-accent) 6%, transparent);
+  }
 }
 .fileButton svg {
   flex: none;

@@ -160,8 +160,10 @@
   font-weight: 500;
   cursor: pointer;
 }
-.detail button:hover:not(:disabled) {
-  background: var(--studio-hover);
+@media (hover: hover) {
+  .detail button:hover:not(:disabled) {
+    background: var(--studio-hover);
+  }
 }
 .detail button:focus-visible {
   outline: 2px solid var(--studio-accent);
