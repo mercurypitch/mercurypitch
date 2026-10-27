@@ -1,6 +1,6 @@
-// Studio mixing desk layout — the desk leaves lanes to arrange, its top edge drags to a height the device keeps, and the selected lane reads at a glance in dark and light.
+// Studio mixing desk layout — the desk leaves lanes to arrange, its top edge drags to a height the device keeps, zoom and the clip bar dock beside the lanes, and the selected lane reads at a glance in dark and light.
 import { expect, type Locator, type Page, test } from '@playwright/test'
-import { importStudioAudio, openArrangement, studioRegion, timelineViewport, } from './helpers/dedicatedstudio-fixture'
+import { importStudioAudio, openArrangement, readStudioProject, studioClip, studioRegion, timelineViewport, } from './helpers/dedicatedstudio-fixture'
 
 const DESK_HEIGHT_KEY = 'mercurypitch.studio.mix-desk-height.v1'
 
@@ -48,43 +48,105 @@ async function fourLanes(page: Page): Promise<void> {
 }
 
 /**
- * Square pixels of lane rows the zoom buttons cover, counting only what
- * shows: below the ruler and inside the arrangement's viewport.
+ * Square pixels the zoom buttons and the selected-clip bar cover: of lane
+ * rows below the ruler and inside the viewport, and of the ruler a person can
+ * see and scrub, right of its sticky corner.
  */
-async function zoomOverLanes(page: Page): Promise<number> {
+async function dockedCover(
+  page: Page,
+): Promise<{ lanes: number; ruler: number }> {
   return timelineViewport(page).evaluate((viewport) => {
-    const zoom = document
-      .querySelector('[aria-label="Timeline zoom"]')!
-      .getBoundingClientRect()
     const view = viewport.getBoundingClientRect()
-    const ruler = viewport
-      .querySelector('[aria-label="Song playhead"]')!
-      .getBoundingClientRect()
-    let area = 0
-    for (const lane of viewport.querySelectorAll('[data-studio-track]')) {
-      const row = lane.getBoundingClientRect()
-      const top = Math.max(row.top, ruler.bottom, zoom.top)
-      const bottom = Math.min(row.bottom, view.bottom, zoom.bottom)
-      const left = Math.max(row.left, view.left, zoom.left)
-      const right = Math.min(row.right, view.right, zoom.right)
-      if (bottom > top && right > left) area += (bottom - top) * (right - left)
+    const right = view.left + viewport.clientWidth
+    const bottom = view.top + viewport.clientHeight
+    const ruler = viewport.querySelector('[aria-label="Song playhead"]')!
+    const track = ruler.getBoundingClientRect()
+    const corner = ruler.previousElementSibling!.getBoundingClientRect()
+    const cover = (
+      box: DOMRect,
+      area: { left: number; top: number; right: number; bottom: number },
+    ) => {
+      const width =
+        Math.min(box.right, area.right) - Math.max(box.left, area.left)
+      const height =
+        Math.min(box.bottom, area.bottom) - Math.max(box.top, area.top)
+      return width > 0 && height > 0 ? width * height : 0
     }
-    return Math.round(area)
+    let lanes = 0
+    let scrub = 0
+    const controls = document.querySelectorAll(
+      '[aria-label="Timeline zoom"], [aria-label="Selected clip"]',
+    )
+    for (const control of controls) {
+      const box = control.getBoundingClientRect()
+      scrub += cover(box, {
+        left: Math.max(track.left, corner.right),
+        top: track.top,
+        right: Math.min(track.right, right),
+        bottom: track.bottom,
+      })
+      for (const lane of viewport.querySelectorAll('[data-studio-track]')) {
+        const row = lane.getBoundingClientRect()
+        lanes += cover(box, {
+          left: Math.max(row.left, view.left),
+          top: Math.max(row.top, track.bottom),
+          right: Math.min(row.right, right),
+          bottom: Math.min(row.bottom, bottom),
+        })
+      }
+    }
+    return { lanes: Math.round(lanes), ruler: Math.round(scrub) }
   })
 }
 
-/** The zoom buttons cover no lane at rest, half-way down, or at the end. */
-async function expectZoomClearOfLanes(page: Page): Promise<void> {
+/** Zoom and the clip bar cover no lane and no ruler at rest, half-way down, or at the end. */
+async function expectDockClear(page: Page): Promise<void> {
   const viewport = timelineViewport(page)
   for (const at of [0, 0.5, 1]) {
     await viewport.evaluate((element, share) => {
       element.scrollTop = (element.scrollHeight - element.clientHeight) * share
     }, at)
-    expect(await zoomOverLanes(page), `scrolled ${at * 100}% down`).toBe(0)
+    expect(await dockedCover(page), `scrolled ${at * 100}% down`).toEqual({
+      lanes: 0,
+      ruler: 0,
+    })
   }
   await viewport.evaluate((element) => {
     element.scrollTop = 0
   })
+}
+
+const DOCKED = [
+  'Zoom out',
+  'Zoom in',
+  'Fit song to width',
+  'Split',
+  'Duplicate',
+  'Delete',
+  'Details',
+]
+
+/** The smallest side of each docked button, or 0 when any part of it is out of sight. */
+async function dockedTargets(page: Page): Promise<Record<string, number>> {
+  const sizes: Record<string, number> = {}
+  for (const name of DOCKED) {
+    const button = studioRegion(page)
+      .locator('[aria-label="Timeline zoom"], [aria-label="Selected clip"]')
+      .getByRole('button', { name, exact: true })
+    sizes[name] = await button.evaluate((element) => {
+      const box = element.getBoundingClientRect()
+      const host = element.closest('[data-studio-dock]') ?? document.body
+      const room = host.getBoundingClientRect()
+      const inside =
+        box.top >= room.top - 0.5 &&
+        box.bottom <= room.bottom + 0.5 &&
+        box.left >= room.left - 0.5 &&
+        box.right <= room.right + 0.5 &&
+        box.bottom <= window.innerHeight
+      return inside ? Math.round(Math.min(box.width, box.height)) : 0
+    })
+  }
+  return sizes
 }
 
 const scaleOf = async (page: Page) =>
@@ -316,20 +378,51 @@ for (const theme of ['dark', 'light'] as const) {
   })
 }
 
-test('with Mix open on a short window, the zoom buttons move up into the ruler, clear of every lane, and still zoom', async ({
+test("with Mix open, zoom and the selected clip's commands stand beside the arrangement, clear of every lane and the ruler, and still work", async ({
   page,
 }) => {
   test.setTimeout(150_000)
   await page.setViewportSize({ width: 1280, height: 720 })
   await fourLanes(page)
+  // Harmony's clip is on lane 2, where the floating bar sat with Mix open.
+  await studioClip(page, 'Harmony').click()
+  const bar = studioRegion(page).getByRole('toolbar', {
+    name: 'Selected clip',
+  })
+  await expect(bar).toBeVisible()
   const desk = await openDesk(page)
-  await expectZoomClearOfLanes(page)
+  await expect(bar).toBeVisible()
+  await expectDockClear(page)
+  for (const [name, size] of Object.entries(await dockedTargets(page)))
+    expect(size, name).toBeGreaterThanOrEqual(28)
   const scale = await scaleOf(page)
   await studioRegion(page)
     .getByRole('button', { name: 'Zoom in', exact: true })
     .click()
   await expect.poll(() => scaleOf(page)).toBeGreaterThan(scale)
-  // Closed again, they return to the arrangement's foot.
+  const before = (await readStudioProject(page)).clips.length
+  await bar.getByRole('button', { name: 'Duplicate', exact: true }).click()
+  await expect
+    .poll(async () => (await readStudioProject(page)).clips.length)
+    .toBe(before + 1)
+
+  // A desk dragged tall leaves a short arrangement: the dock keeps every
+  // command in sight, two to a row.
+  const edge = desk.getByRole('separator', { name: 'Mix height' })
+  const grip = (await edge.boundingBox())!
+  await page.mouse.move(grip.x + grip.width / 2, grip.y + grip.height / 2)
+  await page.mouse.down()
+  await page.mouse.move(grip.x + grip.width / 2, 0, { steps: 8 })
+  await page.mouse.up()
+  await expect
+    .poll(async () => (await timelineViewport(page).boundingBox())!.height)
+    .toBeLessThan(200)
+  await expectDockClear(page)
+  for (const [name, size] of Object.entries(await dockedTargets(page)))
+    expect(size, `${name} on a short arrangement`).toBeGreaterThanOrEqual(28)
+  await desk.getByRole('separator', { name: 'Mix height' }).dblclick()
+
+  // Closed again, zoom returns to the arrangement's foot.
   await page.keyboard.press('Escape')
   await expect(desk).toHaveCount(0)
   const zoom = (await studioRegion(page)
@@ -383,11 +476,15 @@ test.describe('on a tablet', () => {
     expect(clipped).toEqual([])
   })
 
-  test('with Mix open, the zoom buttons sit in the ruler at finger size, clear of every lane', async ({
+  test("with Mix open, zoom and the selected clip's commands stand beside the arrangement at finger size, clear of every lane and the ruler", async ({
     page,
   }) => {
     test.setTimeout(150_000)
     await fourLanes(page)
+    await studioClip(page, 'Harmony').tap()
+    await expect(
+      studioRegion(page).getByRole('toolbar', { name: 'Selected clip' }),
+    ).toBeVisible()
     await studioRegion(page)
       .getByRole('button', { name: 'Mix', exact: true })
       .tap()
@@ -397,21 +494,35 @@ test.describe('on a tablet', () => {
     })
     await expect(desk).toBeVisible()
     await settled(desk)
-    await expectZoomClearOfLanes(page)
-    const zoom = studioRegion(page).getByRole('group', {
-      name: 'Timeline zoom',
-    })
-    for (const name of ['Zoom out', 'Zoom in', 'Fit song to width']) {
-      const button = (await zoom
-        .getByRole('button', { name, exact: true })
-        .boundingBox())!
-      expect(
-        Math.min(button.width, button.height),
-        name,
-      ).toBeGreaterThanOrEqual(44)
-    }
+    await expectDockClear(page)
+    for (const [name, size] of Object.entries(await dockedTargets(page)))
+      expect(size, name).toBeGreaterThanOrEqual(44)
     const scale = await scaleOf(page)
-    await zoom.getByRole('button', { name: 'Zoom in', exact: true }).tap()
+    await studioRegion(page)
+      .getByRole('group', { name: 'Timeline zoom' })
+      .getByRole('button', { name: 'Zoom in', exact: true })
+      .tap()
     await expect.poll(() => scaleOf(page)).toBeGreaterThan(scale)
+  })
+
+  test('in portrait, with Mix open, every docked command stays in sight at finger size', async ({
+    page,
+  }) => {
+    test.setTimeout(150_000)
+    await page.setViewportSize({ width: 768, height: 1024 })
+    await fourLanes(page)
+    await studioClip(page, 'Harmony').tap()
+    await studioRegion(page)
+      .getByRole('button', { name: 'Mix', exact: true })
+      .tap()
+    const desk = studioRegion(page).getByRole('region', {
+      name: 'Mix',
+      exact: true,
+    })
+    await expect(desk).toBeVisible()
+    await settled(desk)
+    await expectDockClear(page)
+    for (const [name, size] of Object.entries(await dockedTargets(page)))
+      expect(size, name).toBeGreaterThanOrEqual(44)
   })
 })

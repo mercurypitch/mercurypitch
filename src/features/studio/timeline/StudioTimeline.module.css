@@ -238,17 +238,6 @@
   opacity: 0.4;
   cursor: default;
 }
-/* With the desk open below, the buttons are the ruler's right-hand corner. */
-.zoom.docked {
-  top: 0;
-  height: calc(var(--studio-ruler-height) - 1px);
-  padding: 0 4px;
-  border: 0;
-  border-left: 1px solid var(--studio-line);
-  border-radius: 0;
-  background: var(--studio-bar);
-  box-shadow: none;
-}
 
 /* Lanes */
 .lane {
@@ -1394,6 +1383,79 @@
   overflow: hidden;
   clip-path: inset(50%);
   white-space: nowrap;
+}
+
+/* The dock: with the desk open, zoom and the selected clip's commands stand
+   in a column beside the lanes, where they cover no lane and no part of the
+   ruler. dockColumns() in StudioTimeline.tsx adds up these sizes to decide
+   when the buttons go two to a row. */
+.timeline.docking {
+  flex-direction: row;
+}
+.dock {
+  --studio-dock-button: 30px;
+  --studio-dock-gap: 2px;
+  display: flex;
+  flex: none;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 4px;
+  overflow: hidden auto;
+  scrollbar-width: none;
+  border-left: 1px solid var(--studio-line);
+  background: var(--studio-bar);
+}
+/* Two to a row: an arrangement one lane tall (132 px) still fits all seven. */
+.dock.dockPaired {
+  gap: 4px;
+  padding-block: 2px;
+}
+.timeline.tablet .dock {
+  --studio-dock-button: 44px;
+  --studio-dock-gap: 0px;
+  gap: 4px;
+  padding: 0 4px;
+}
+.dock .zoom,
+.timeline .toolbarDocked {
+  position: static;
+  display: grid;
+  grid-template-columns: repeat(
+    var(--studio-dock-columns, 1),
+    var(--studio-dock-button)
+  );
+  gap: var(--studio-dock-gap);
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+}
+/* The selected lane's hue runs down the dock's edge beside its commands. */
+.timeline .toolbarDocked {
+  margin-left: -4px;
+  padding-left: 4px;
+  box-shadow: inset 3px 0 0 var(--studio-track, var(--studio-accent));
+}
+.toolbarDocked .toolbarLabel,
+.toolbarDocked .toolbarText {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+.toolbarDocked .toolbarDivider {
+  display: none;
+}
+.timeline .toolbarDocked button {
+  justify-content: center;
+  width: var(--studio-dock-button);
+  height: var(--studio-dock-button);
+  padding: 0;
 }
 
 @media (prefers-reduced-motion: reduce) {

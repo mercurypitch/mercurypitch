@@ -1,4 +1,5 @@
-// Studio clip toolbar — the selected clip's name and commands, floating at the timeline's foot like zoom.
+// Studio clip toolbar — the selected clip's name and commands, floating at the timeline's foot like zoom,
+// or stacked as icons in the dock beside the arrangement while the desk is open.
 import { Copy, Split, Trash2 } from '@/components/icons'
 import type { StudioCommand } from '@/lib/studio/model/commands'
 import type { StudioClip } from '@/lib/studio/model/types'
@@ -16,6 +17,8 @@ interface StudioClipToolbarProps {
   /** Offsets inside the timeline: past the lane headers, above the scrollbar. */
   left: number
   bottom: number
+  /** In the dock beside the arrangement: icons only, the name kept for assistive tech. */
+  docked?: boolean
   onCommand(command: StudioCommand): boolean
   onDetails(): void
   onRemove(): void
@@ -28,15 +31,23 @@ export function StudioClipToolbar(props: StudioClipToolbarProps) {
   return (
     <div
       class={styles.toolbar}
+      classList={{ [styles.toolbarDocked]: props.docked === true }}
       role="toolbar"
       aria-label="Selected clip"
-      style={{
-        left: `${props.left}px`,
-        bottom: `${props.bottom}px`,
-        '--studio-track': props.color,
-      }}
+      aria-orientation={props.docked === true ? 'vertical' : undefined}
+      style={
+        props.docked === true
+          ? { '--studio-track': props.color }
+          : {
+              left: `${props.left}px`,
+              bottom: `${props.bottom}px`,
+              '--studio-track': props.color,
+            }
+      }
     >
-      <span class={styles.toolbarLabel}>{props.label}</span>
+      <span class={styles.toolbarLabel}>
+        <span class={styles.toolbarText}>{props.label}</span>
+      </span>
       <span class={styles.toolbarDivider} aria-hidden="true" />
       <button
         type="button"
@@ -56,7 +67,7 @@ export function StudioClipToolbar(props: StudioClipToolbarProps) {
         }
       >
         <Split size={15} />
-        Split
+        <span class={styles.toolbarText}>Split</span>
       </button>
       <button
         type="button"
@@ -72,7 +83,7 @@ export function StudioClipToolbar(props: StudioClipToolbarProps) {
         }
       >
         <Copy size={15} />
-        Duplicate
+        <span class={styles.toolbarText}>Duplicate</span>
       </button>
       <span class={styles.toolbarDivider} aria-hidden="true" />
       <button
@@ -85,7 +96,7 @@ export function StudioClipToolbar(props: StudioClipToolbarProps) {
         }}
       >
         <Trash2 />
-        Delete
+        <span class={styles.toolbarText}>Delete</span>
       </button>
       <span class={styles.toolbarDivider} aria-hidden="true" />
       <button
@@ -94,7 +105,7 @@ export function StudioClipToolbar(props: StudioClipToolbarProps) {
         onClick={() => props.onDetails()}
       >
         <InfoCircle size={15} />
-        Details
+        <span class={styles.toolbarText}>Details</span>
       </button>
     </div>
   )

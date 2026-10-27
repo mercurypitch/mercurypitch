@@ -1,5 +1,5 @@
 // Studio timeline controls tests — visible state, native edits, silent seeking and phone scope.
-import { cleanup, fireEvent, render, screen, waitFor, } from '@solidjs/testing-library'
+import { cleanup, fireEvent, render, screen, waitFor, within, } from '@solidjs/testing-library'
 import { createSignal, untrack } from 'solid-js'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { reserveStudioMemory, studioWorkingBytes, } from '@/lib/studio/memory-budget'
@@ -306,5 +306,30 @@ describe('Studio timeline', () => {
     const [fit] = zoom.mock.calls[0] as [number]
     expect(fit).toBeLessThan(10)
     expect(fit).toBeGreaterThanOrEqual(1)
+  })
+
+  it('moves zoom and the selected clip commands into a dock beside the lanes while the desk is open', () => {
+    const [deskOpen, setDeskOpen] = createSignal(false)
+    const { container } = render(() => (
+      <StudioTimeline {...base} selectedClipId="clip" deskOpen={deskOpen()} />
+    ))
+    expect(container.querySelector('[data-studio-dock]')).toBeNull()
+
+    setDeskOpen(true)
+    const dock = container.querySelector('[data-studio-dock]')!
+    const bar = screen.getByRole('toolbar', { name: 'Selected clip' })
+
+    expect(dock).toContainElement(bar)
+    expect(dock).toContainElement(
+      screen.getByRole('group', { name: 'Timeline zoom' }),
+    )
+    expect(bar).toHaveAttribute('aria-orientation', 'vertical')
+    for (const name of ['Split', 'Duplicate', 'Delete', 'Details'])
+      expect(within(bar).getByRole('button', { name })).toBeInTheDocument()
+    setDeskOpen(false)
+    expect(container.querySelector('[data-studio-dock]')).toBeNull()
+    expect(
+      screen.getByRole('toolbar', { name: 'Selected clip' }),
+    ).not.toHaveAttribute('aria-orientation')
   })
 })
