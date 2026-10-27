@@ -1,5 +1,6 @@
 // Studio graph tests prove shared lane topology, actual-rate compensation and source ownership.
 import { describe, expect, it } from 'vitest'
+import { normalizeChainSpec } from '@/lib/studio-fx/chain-spec'
 import { compileStudioArrangement } from '../model/arrangement-plan'
 import { studioFixture } from '../model/model.test-fixtures'
 import { buildStudioGraph } from './graph'
@@ -142,6 +143,50 @@ describe('shared Studio graph', () => {
     expect(at(Math.pow(10, -4.5 / 20))).toHaveLength(0)
     expect(ctx.created.length).toBe(nodes)
     graph.dispose()
+  })
+
+  it("hands out each lane's output after its fader and pan, and the summed reduction of its compressors and limiters", () => {
+    const { project, asset, clip } = studioFixture()
+    const dynamics = normalizeChainSpec({
+      effects: [{ kind: 'eq' }, { kind: 'compressor' }, { kind: 'limiter' }],
+    })
+    const [track] = project.tracks
+    const song = {
+      ...project,
+      tracks: [
+        { ...track, fx: { ...track.fx, baseSpec: dynamics } },
+        {
+          ...track,
+          id: 'plain',
+          order: 1,
+          fx: { ...track.fx, baseSpec: { version: 1 as const, effects: [] } },
+        },
+      ],
+      clips: [clip, { ...clip, id: 'plain-clip', trackId: 'plain' }],
+    }
+    const plan = compileStudioArrangement(song, [asset], {
+      latencies: {
+        sampleRate: 48000,
+        framesByTrack: { 'track-1': 0, plain: 0 },
+      },
+    })
+    const ctx = new PlaybackContext()
+    ctx.state = 'suspended'
+    const graph = buildStudioGraph(ctx.asContext, plan, new Map(), 0.5)
+    expect([...graph.laneOutputs().keys()].sort()).toEqual(['plain', 'track-1'])
+    // Each fake DynamicsCompressorNode reads 3 dB of reduction.
+    expect(graph.readLaneReduction('track-1')).toBe(-6)
+    expect(graph.readLaneReduction('plain')).toBeNull()
+    expect(graph.readLaneReduction('missing')).toBeNull()
+    graph.setLaneSpec('track-1', {
+      ...dynamics,
+      effects: dynamics.effects.map((effect) =>
+        effect.kind === 'limiter' ? { ...effect, enabled: false } : effect,
+      ),
+    })
+    expect(graph.readLaneReduction('track-1')).toBe(-3)
+    graph.dispose()
+    expect(graph.readLaneReduction('track-1')).toBeNull()
   })
 
   it('rejects scheduler underrun rather than starting late material as if it were aligned', () => {

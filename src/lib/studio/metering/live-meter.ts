@@ -1,4 +1,4 @@
-// Studio live-meter attachment — borrowed context, silent analysis branch and bounded cleanup.
+// Studio live-meter attachment — borrowed context, silent analysis branches and bounded cleanup.
 import { reserveStudioMemory } from '../memory-budget'
 import workletUrl from './meter.worklet.ts?worker&url'
 import type { StudioMeterSnapshot } from './stream-meter'
@@ -30,12 +30,12 @@ export function prepareStudioLiveMeter(
 }
 
 /** A borrowed clock can outlive this graph; disconnect alone does not stop a worklet. */
-function ownMeterProcessor(
+function ownMeterProcessor<T>(
   context: AudioContext,
   node: AudioWorkletNode,
   release: () => void,
+  receive: (data: T) => void,
 ) {
-  let snapshot: StudioMeterSnapshot | null = null
   let disposed = false
   let released = false
   const finish = () => {
@@ -49,21 +49,18 @@ function ownMeterProcessor(
   const closed = () => {
     if (context.state === 'closed') finish()
   }
-  node.port.onmessage = (
-    event: MessageEvent<StudioMeterSnapshot | { kind: 'disposed' }>,
-  ) => {
-    if ('kind' in event.data) finish()
-    else if (!disposed) snapshot = event.data
+  node.port.onmessage = (event: MessageEvent<T | { kind: 'disposed' }>) => {
+    const data = event.data
+    if (typeof data === 'object' && data !== null && 'kind' in data) finish()
+    else if (!disposed) receive(data as T)
   }
   return {
-    read: () => snapshot,
     clearPeakHold: () => {
       if (!disposed) node.port.postMessage('clear-hold')
     },
     dispose() {
       if (disposed) return
       disposed = true
-      snapshot = null
       context.addEventListener('statechange', closed)
       if (context.state === 'closed') finish()
       else node.port.postMessage('dispose')
@@ -83,6 +80,7 @@ export function createStudioLiveMeter(
   let node: AudioWorkletNode | undefined
   let sink: GainNode | undefined
   let owner: ReturnType<typeof ownMeterProcessor> | undefined
+  let snapshot: StudioMeterSnapshot | null = null
   const disconnect = () => {
     if (node) {
       try {
@@ -104,7 +102,14 @@ export function createStudioLiveMeter(
       channelInterpretation: 'speakers',
       processorOptions: { startAtTime },
     })
-    owner = ownMeterProcessor(context, node, release)
+    owner = ownMeterProcessor<StudioMeterSnapshot>(
+      context,
+      node,
+      release,
+      (data) => {
+        snapshot = data
+      },
+    )
     sink = context.createGain()
     sink.gain.value = 0
     source.connect(node)
@@ -113,8 +118,101 @@ export function createStudioLiveMeter(
     const owned = owner
     let disposed = false
     return {
-      read: owned.read,
+      read: () => snapshot,
       clearPeakHold: owned.clearPeakHold,
+      dispose() {
+        if (disposed) return
+        disposed = true
+        snapshot = null
+        disconnect()
+        owned.dispose()
+      },
+    }
+  } catch {
+    disconnect()
+    if (owner) owner.dispose()
+    else release()
+    return null
+  }
+}
+
+/**
+ * Every lane's post-fader peak through one worklet node, an input per lane:
+ * each lane is tapped once, and the audio thread sends all of them about 30
+ * times a second. Peaks are the louder channel's, so a lane panned hard to
+ * one side reads its true level instead of a mono sum 6 dB under it.
+ */
+export function createStudioLaneMeter(
+  context: AudioContext,
+  lanes: ReadonlyMap<string, AudioNode>,
+  startAtTime: number,
+) {
+  if (!ready.has(context) || lanes.size === 0) return null
+  const ids = [...lanes.keys()]
+  // The highest sample each lane sent since the last read, and whether any came.
+  const peaks = new Float32Array(ids.length)
+  let fresh = false
+  let node: AudioWorkletNode | undefined
+  let sink: GainNode | undefined
+  let owner: ReturnType<typeof ownMeterProcessor> | undefined
+  const tapped: AudioNode[] = []
+  const disconnect = () => {
+    for (const lane of tapped) {
+      try {
+        lane.disconnect(node!)
+      } catch {
+        /* Already gone with its graph. */
+      }
+    }
+    node?.disconnect()
+    sink?.disconnect()
+  }
+  try {
+    node = new AudioWorkletNode(context, 'studio-lane-meter', {
+      numberOfInputs: ids.length,
+      numberOfOutputs: 1,
+      outputChannelCount: [1],
+      channelCount: 2,
+      channelCountMode: 'explicit',
+      channelInterpretation: 'speakers',
+      processorOptions: { startAtTime },
+    })
+    owner = ownMeterProcessor<Float32Array>(
+      context,
+      node,
+      () => {},
+      (data) => {
+        for (let lane = 0; lane < peaks.length; lane++)
+          peaks[lane] = Math.max(peaks[lane], data[lane] ?? 0)
+        fresh = true
+      },
+    )
+    sink = context.createGain()
+    sink.gain.value = 0
+    for (const [index, id] of ids.entries()) {
+      const lane = lanes.get(id)!
+      lane.connect(node, 0, index)
+      tapped.push(lane)
+    }
+    node.connect(sink)
+    sink.connect(context.destination)
+    const owned = owner
+    let disposed = false
+    return {
+      /**
+       * Each lane's peak since the last read, as a linear amplitude; reading
+       * clears them. Null when nothing came since: the audio thread sends
+       * about as often as the meter tick reads, so some ticks find nothing,
+       * and that is not silence.
+       */
+      read(): ReadonlyMap<string, number> | null {
+        if (!fresh) return null
+        fresh = false
+        const read = new Map<string, number>()
+        for (const [index, id] of ids.entries()) read.set(id, peaks[index])
+        peaks.fill(0)
+        return read
+      },
       dispose() {
         if (disposed) return
         disposed = true
@@ -124,8 +222,7 @@ export function createStudioLiveMeter(
     }
   } catch {
     disconnect()
-    if (owner) owner.dispose()
-    else release()
+    owner?.dispose()
     return null
   }
 }
