@@ -49,6 +49,18 @@ const sizeOf = (target: Locator): Promise<[number, number]> =>
     return [r.width, r.height]
   })
 
+// A toast slides 16 px in from the right as it enters on a desktop, and
+// rises 10 px on a phone (Notifications.module.css). Until it stops it
+// reaches past its stack, and a press hit-tested at one moment sits a few
+// pixels from the toast's box read at the next. A CI run measured one
+// mid-slide, so the toasts are measured at rest.
+const toastsAtRest = (region: Locator): Promise<unknown> =>
+  region.evaluate((element) =>
+    Promise.all(
+      element.getAnimations({ subtree: true }).map((a) => a.finished),
+    ),
+  )
+
 for (const vp of VIEWPORTS) {
   test.describe(`on a ${vp.name}`, () => {
     test.use(vp.use)
@@ -117,6 +129,7 @@ for (const vp of VIEWPORTS) {
       await expect(dismiss).toBeVisible()
       const action = region.getByRole('button', { name: 'Start tour' })
       await expect(action).toBeVisible()
+      await toastsAtRest(region)
 
       // Act
       const area = await hitArea(dismiss)
@@ -176,6 +189,7 @@ for (const vp of TOAST_VIEWPORTS) {
       const region = page.getByRole('region', { name: 'Notifications' })
       const action = region.getByRole('button', { name: 'Start tour' })
       await expect(action).toBeVisible()
+      await toastsAtRest(region)
       const toast = action.locator('xpath=ancestor::div[1]')
       const dismiss = toast.getByRole('button', {
         name: 'Dismiss notification',
