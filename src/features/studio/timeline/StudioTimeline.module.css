@@ -281,9 +281,41 @@
   width: 3px;
   background: var(--studio-track);
 }
+/* The selected lane: an accent edge and a tint on its header (at least 1.5:1
+   against an unselected one, dark and light), and a wash over its body. */
+.lane {
+  --studio-selected-header: color-mix(
+    in srgb,
+    var(--studio-accent) 28%,
+    var(--studio-bar)
+  );
+}
+:global(html[data-theme='light']) .lane {
+  --studio-selected-header: color-mix(
+    in srgb,
+    var(--studio-accent) 32%,
+    var(--studio-bar)
+  );
+}
 .lane[data-selected] .trackHeader,
 .lane:has(.selectedClip) .trackHeader {
-  background: color-mix(in srgb, var(--studio-accent) 9%, var(--studio-bar));
+  background: var(--studio-selected-header);
+}
+.lane[data-selected] .trackHeader::before,
+.lane:has(.selectedClip) .trackHeader::before {
+  width: 4px;
+  background: var(--studio-accent);
+}
+/* On the tint, the source line takes the name's colour to keep its contrast. */
+.lane[data-selected] .sourceLabel,
+.lane:has(.selectedClip) .sourceLabel {
+  color: var(--studio-text);
+}
+.lane[data-selected] .laneAudio {
+  background: color-mix(in srgb, var(--studio-accent) 9%, transparent);
+  box-shadow:
+    inset 0 1px 0 color-mix(in srgb, var(--studio-accent) 55%, transparent),
+    inset 0 -1px 0 color-mix(in srgb, var(--studio-accent) 55%, transparent);
 }
 /* The name and its source form one button that opens the track's details. */
 .timeline button.trackName {

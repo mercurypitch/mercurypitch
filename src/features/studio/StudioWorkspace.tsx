@@ -662,6 +662,11 @@ export function StudioWorkspace(props: StudioWorkspaceProps) {
               writable={writable()}
               tablet={tablet()}
               meter={transport}
+              selectedTrackId={selectedTrackId()}
+              onSelectTrack={(id) => {
+                setSelectedClipId(null)
+                setSelectedTrackId(id)
+              }}
               onCommand={props.studio.dispatch}
               onClose={closePanel}
             />

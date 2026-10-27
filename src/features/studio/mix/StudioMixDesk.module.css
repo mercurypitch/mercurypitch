@@ -169,6 +169,12 @@
   background: var(--studio-card);
   scroll-snap-align: start;
 }
+/* The selected lane's strip: an accent frame and a tinted name. */
+.strip[data-selected] {
+  border-color: var(--studio-accent);
+  box-shadow: inset 0 0 0 1px var(--studio-accent);
+  background: color-mix(in srgb, var(--studio-accent) 8%, var(--studio-card));
+}
 /* The lane's hue across the top, as in the lane header's edge. */
 .strip::before {
   content: '';
@@ -183,20 +189,45 @@
 .strip[data-silent]::before {
   opacity: 0.4;
 }
-.stripName {
+/* The name selects its lane; the full name is in its title. */
+.strips button.stripName {
   display: block;
+  width: 100%;
   min-width: 0;
+  min-height: 0;
+  margin: 0;
+  padding: 0;
   overflow: hidden;
+  border: 0;
+  border-radius: 4px;
+  background: none;
   color: var(--studio-text);
+  font: inherit;
   font-size: 12.5px;
   font-weight: 600;
   line-height: 16px;
+  text-align: left;
   text-overflow: ellipsis;
   white-space: nowrap;
+  cursor: pointer;
+}
+.strips button.stripName:hover {
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+.strips button.stripName:focus-visible {
+  outline: 2px solid var(--studio-accent);
+  outline-offset: 1px;
+}
+.strip[data-selected] button.stripName {
+  color: var(--studio-accent-text);
 }
 /* Two 44 px buttons side by side, and nothing wider. */
 .touch .strip {
   --strip-width: 112px;
+}
+.touch .strips button.stripName {
+  min-height: 44px;
 }
 .empty {
   align-self: center;
