@@ -16,11 +16,12 @@
 // key by its flat and each move lands on E flat or G flat (WEB-SPEC, Toys
 // 2). They are never stored, and the page shows no switch for them.
 //
-// The switches, the cold open on the hero's spiral and the recall after
-// it, the steps' deck with the chord beads in each step's state, the quick
-// check, the next lesson's card, the season map, the masthead and Merc and
-// Tavi. The rest does nothing until it is wired: the steps' controls and
-// free play, the four words, the two games, Step 5's predict and Sing it.
+// The switches, the cold open on the hero's spiral, the recall after it
+// and the four words, the steps' deck with the chord beads in each step's
+// state, the quick check, the next lesson's card, the season map, the
+// masthead and Merc and Tavi. The rest does nothing until it is wired: the
+// steps' controls and free play, the two games, Step 5's predict and Sing
+// it.
 
 import '@fontsource-variable/inter'
 import '@fontsource-variable/outfit'
@@ -55,6 +56,7 @@ import { bindQuizPlays } from './quiz-play'
 import { QUIZ_QUESTIONS } from './quiz-questions'
 import { initRecall } from './recall'
 import { initSteps } from './steps'
+import { initWords } from './words'
 
 Names.set('flats')
 
@@ -62,9 +64,11 @@ initSoundSwitch()
 initMotionSwitch()
 Motion.init()
 
-// the cold open comes first, and the recall follows it, asked of everyone
+// the cold open comes first, the recall follows it, asked of everyone,
+// and the four words come before the first step
 initColdOpen()
 initRecall()
+initWords()
 
 // five steps, one chord-beads toy
 const deck = createStepDeck({
