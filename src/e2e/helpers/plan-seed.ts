@@ -22,6 +22,10 @@
 // whose Start here is the Sing room, dated as long ago, so Home draws no plan
 // card under it either.
 //
+// A spec about Home's card itself (plan-card-comes-back.spec.ts) needs the card
+// on Home, so it seeds an answered plan dated when the spec runs, inside the
+// card's week: a singer preparing for an audition, whose plan has three stops.
+//
 // Built in this one place, and importing no Playwright, so that
 // src/tests/e2e-plan-seed.test.ts can load it and hold it to the plan's own
 // reader. A change to the record's format then fails that one test, and not
@@ -58,6 +62,23 @@ export function answeredPlanSeed(): PlanSeed {
     status: 'answered',
     choices: { q1: 'singing', q2: null, q3: [], q4: [] },
     at: TURNED_DOWN_AT,
+    via: 'layer',
+  }
+  return { key: PLAN_RECORD_KEY, value: JSON.stringify(record) }
+}
+
+/** An answered plan of three stops, dated `at`: a spec passes the moment it runs, so Home draws its card. */
+export function thisWeeksPlanSeed(at: string): PlanSeed {
+  const record: PlanRecordV1 = {
+    v: 1,
+    status: 'answered',
+    choices: {
+      q1: 'singing',
+      q2: 'audition',
+      q3: ['progress', 'tune'],
+      q4: ['teacher'],
+    },
+    at,
     via: 'layer',
   }
   return { key: PLAN_RECORD_KEY, value: JSON.stringify(record) }

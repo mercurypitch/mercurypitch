@@ -16,9 +16,9 @@
 
 import type { Page } from '@playwright/test'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { answeredPlanSeed, settledPlanSeed } from '@/e2e/helpers/plan-seed'
+import { answeredPlanSeed, settledPlanSeed, thisWeeksPlanSeed, } from '@/e2e/helpers/plan-seed'
 import { dismissOverlays } from '@/e2e/helpers/ui'
-import { buildPlan, PLAN_DESTS } from '@/features/plan/build-plan'
+import { buildPlan, PLAN_DESTS, planStops } from '@/features/plan/build-plan'
 import { planCardKind } from '@/features/plan/plan-card-rules'
 import { PLAN_RECORD_KEY } from '@/features/plan/plan-keys'
 import { isPlanRecordV1 } from '@/features/plan/plan-record'
@@ -86,6 +86,29 @@ describe('the answered seed', () => {
     for (const now of [Date.now(), Date.now() + 10 * YEAR_MS]) {
       expect(planCardKind({ record, dismissed: false, now })).toBeNull()
     }
+  })
+})
+
+describe("this week's seed", () => {
+  const NOW = '2026-10-27T09:00:00.000Z'
+
+  it("is a record the plan's own reader accepts, under its own key, dated as asked", () => {
+    const seed = thisWeeksPlanSeed(NOW)
+    const record: unknown = JSON.parse(seed.value)
+
+    expect(seed.key).toBe(PLAN_RECORD_KEY)
+    expect(isPlanRecordV1(record)).toBe(true)
+    expect((record as { at: string }).at).toBe(NOW)
+  })
+
+  it('is a plan Home shows as its card, with three stops, on the day it is dated', () => {
+    const record: unknown = JSON.parse(thisWeeksPlanSeed(NOW).value)
+    if (!isPlanRecordV1(record)) throw new Error('a plan record')
+
+    expect(
+      planCardKind({ record, dismissed: false, now: Date.parse(NOW) }),
+    ).toBe('plan')
+    expect(planStops(buildPlan(record.choices))).toHaveLength(3)
   })
 })
 
