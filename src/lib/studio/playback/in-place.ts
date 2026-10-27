@@ -1,5 +1,6 @@
-// Studio in-place edits — a playing run follows the mix, the sound and Repeat without a restart.
+// Studio in-place edits — a playing run follows the mix, the sound, Repeat and a measured master gain without a restart.
 import type { MacroKey } from '@/lib/studio-fx/mix-macros'
+import type { StudioMasterGain } from '../export/sound-graph'
 import { resolveStudioSoundGraph } from '../export/sound-graph'
 import { studioLaneSpec } from '../model/arrangement-plan'
 import type { StudioProject, StudioTrack } from '../model/types'
@@ -20,6 +21,8 @@ export interface StudioDrafts {
 export interface StudioLiveSettings {
   readonly drafts: StudioDrafts
   readonly repeat: boolean
+  /** The newest measured master gain, or null to keep the run's own. */
+  readonly masterGain: StudioMasterGain | null
 }
 
 /** The project as it sounds now: saved values under the controls still moving. */
@@ -60,6 +63,25 @@ export function applySound(run: StudioRun, project: StudioProject): void {
 }
 
 /**
+ * Take up a newly measured master gain, which the running master then glides
+ * to. Null leaves the run's own, so an edit that makes the measurement stale
+ * does not change the level of the song playing.
+ */
+export function followMaster(
+  run: StudioRun,
+  gain: StudioMasterGain | null,
+): boolean {
+  if (
+    !gain ||
+    (gain.gainDb === run.measured.gainDb &&
+      gain.safetyGainDb === run.measured.safetyGainDb)
+  )
+    return false
+  run.measured = { gainDb: gain.gainDb, safetyGainDb: gain.safetyGainDb }
+  return true
+}
+
+/**
  * Make the running graph follow the Repeat switch: on, it loops at the
  * song's end; off, the pass that has begun is the last. False when the
  * loop point has already gone by, so only a restart can loop.
@@ -87,8 +109,9 @@ export function applyDrafts(run: StudioRun, drafts: StudioDrafts): void {
 /**
  * Apply an edit to the running graph, so the song keeps playing. Lane
  * volume, balance, pan, Mute and Solo glide, silent lanes included, and
- * Repeat moves the loop; the macros, a flavour's master EQ and the ceiling
- * move the running chains, which send only the values that changed. An edit to nothing the graph plays, such as an empty
+ * Repeat moves the loop; the macros, a flavour's master EQ, the ceiling and
+ * a newly measured master gain move the running chains, which send only the
+ * values that changed. An edit to nothing the graph plays, such as an empty
  * new lane or a name, changes nothing. False when it needs a new run: other
  * clips or chain shapes, Repeat turned on after the loop point, or a lane
  * brought in that Play left out because memory was short.
@@ -110,7 +133,9 @@ export function playInPlace(
   )
   if (missing) return false
   applyMix(run, live)
+  const master = followMaster(run, settings.masterGain)
   if (
+    master ||
     settings.drafts.macros.size > 0 ||
     soundKey(run.project) !== soundKey(project)
   )

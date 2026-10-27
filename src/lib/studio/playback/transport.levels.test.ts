@@ -1,5 +1,6 @@
-// Studio transport level tests — each lane's meter reaches the song playing.
+// Studio transport level tests — a newly measured master gain and each lane's meter reach the song playing.
 import { afterEach, describe, expect, it, vi } from 'vitest'
+import { resolveStudioSoundGraph } from '../export/sound-graph'
 import { studioReservedMemoryBytes } from '../memory-budget'
 import { transportFixture } from './transport.test-fixtures'
 
@@ -14,6 +15,54 @@ async function finish(f: ReturnType<typeof transportFixture>) {
 }
 
 describe('Studio transport levels', () => {
+  it('glides a playing song to a newly measured master gain, without a restart', async () => {
+    vi.useFakeTimers()
+    const f = transportFixture()
+    await f.transport.play(f.project, [f.asset], 0)
+    f.graph.setMasterSpec.mockClear()
+
+    const measured = { gainDb: 4.5, safetyGainDb: -1.5 }
+    f.transport.setMasterGain({
+      projectId: f.project.id,
+      revision: f.project.revision,
+      ...measured,
+    })
+    expect(f.graph.setMasterSpec).toHaveBeenCalledExactlyOnceWith(
+      resolveStudioSoundGraph(f.project, measured).full,
+    )
+    // The hook's setSnapshot that follows has nothing left to move.
+    await f.transport.setSnapshot(f.project, [f.asset])
+    expect(f.graph.setMasterSpec).toHaveBeenCalledOnce()
+    expect(f.buildGraph).toHaveBeenCalledOnce()
+    expect(f.transport.getState()).toMatchObject({
+      playing: true,
+      masterReady: true,
+    })
+    await finish(f)
+  })
+
+  it('keeps a playing song at its measured level when an edit makes the measurement stale', async () => {
+    vi.useFakeTimers()
+    const f = transportFixture()
+    f.transport.setMasterGain({
+      projectId: f.project.id,
+      revision: f.project.revision,
+      gainDb: 4.5,
+      safetyGainDb: -1.5,
+    })
+    await f.transport.play(f.project, [f.asset], 0)
+    f.graph.setMasterSpec.mockClear()
+    const [track] = f.project.tracks
+    await f.transport.setSnapshot(
+      { ...f.project, revision: 1, tracks: [{ ...track, gainDb: -3 }] },
+      [f.asset],
+    )
+    expect(f.transport.getState().masterReady).toBe(false)
+    expect(f.graph.setMasterSpec).not.toHaveBeenCalled()
+    expect(f.buildGraph).toHaveBeenCalledOnce()
+    await finish(f)
+  })
+
   it("publishes each lane's peak after its fader and its gain reduction on the meter tick, and none once paused", async () => {
     vi.useFakeTimers()
     const read = vi.fn(() => new Map([['track-1', 0.5]]))
