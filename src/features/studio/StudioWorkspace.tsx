@@ -14,6 +14,7 @@ import { useStudioExport } from './export/useStudioExport'
 import { isStudioAudioDrop, studioDropFrame, studioDroppedTake, } from './integration/drop-audio'
 import type { StudioSourceEntry } from './integration/source-catalog'
 import { createStudioLiveMix, StudioLiveMixContext } from './mix/live-mix'
+import { installStudioMixShortcut, STUDIO_MIX_SHORTCUT, } from './mix/mix-shortcut'
 import { StudioMixDesk } from './mix/StudioMixDesk'
 import { StudioPhoneMix } from './mix/StudioPhoneMix'
 import { createStudioPanels } from './panels/studio-panels'
@@ -304,6 +305,12 @@ export function StudioWorkspace(props: StudioWorkspaceProps) {
         !transport.pending() && !finishing() && project().clips.length > 0,
     })
     onCleanup(remove)
+    onCleanup(
+      installStudioMixShortcut({
+        scope: () => workspace,
+        toggle: () => togglePanel('mix'),
+      }),
+    )
   })
   // Selecting a clip selects its lane, so the next take can join it.
   createEffect(() => {
@@ -524,7 +531,8 @@ export function StudioWorkspace(props: StudioWorkspaceProps) {
               class={styles.button}
               aria-expanded={panel() === 'mix'}
               data-tour="studio.mix"
-              title="Mix"
+              title={`Mix (${STUDIO_MIX_SHORTCUT})`}
+              aria-keyshortcuts={STUDIO_MIX_SHORTCUT}
               onClick={() => togglePanel('mix')}
             >
               <MixingDesk size={16} />
