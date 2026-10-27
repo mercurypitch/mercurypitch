@@ -9,7 +9,8 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { CoachEventName } from '@/lib/coach-events'
 import type { CoachHandoff, CoachStep, CoachTour } from '@/lib/coach-types'
 import type * as GpuGateModule from '@/lib/merc/gpu-gate'
-import { CoachLayer, HOLD_TONE_HZ, TRACK_MS } from './CoachLayer'
+import { CoachLayer, TRACK_MS } from './CoachLayer'
+import { HOLD_TONE_HZ, HOLD_TONE_SEC, TONE_HEAR_LINE, TONE_PLAYING_LINE, } from './hold-tone'
 import type { CoachRunnerDeps } from './runner'
 import { CELEBRATE_MS, createCoachRunner } from './runner'
 
@@ -568,7 +569,97 @@ describe('CoachLayer', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Play the note' }))
 
     expect(playHoldTone).toHaveBeenCalledOnce()
-    expect(playHoldTone).toHaveBeenCalledWith(expect.anything(), HOLD_TONE_HZ)
+    expect(playHoldTone).toHaveBeenCalledWith(
+      expect.anything(),
+      HOLD_TONE_HZ,
+      HOLD_TONE_SEC,
+    )
+  })
+
+  it('shows the note playing for as long as it lasts, with Merc singing, then says how to hear it', () => {
+    vi.useFakeTimers()
+    mount()
+    fireEvent.click(screen.getByRole('button', { name: 'Next' }))
+    expect(bubble().dataset.pose).toBe('listen')
+    expect(screen.queryByTestId('coach-tone-line')).toBeNull()
+
+    fireEvent.click(screen.getByRole('button', { name: 'Play the note' }))
+
+    const playing = screen.getByRole('button', { name: 'Playing A3' })
+    expect(playing).toHaveAttribute('data-playing')
+    expect(screen.getByTestId('coach-tone-mark')).toBeInTheDocument()
+    expect(bubble().dataset.pose).toBe('sing')
+    const line = screen.getByTestId('coach-tone-line')
+    expect(line).toHaveTextContent(TONE_PLAYING_LINE)
+    expect(line.closest('[aria-live]')?.getAttribute('aria-live')).toBe(
+      'polite',
+    )
+
+    vi.advanceTimersByTime(HOLD_TONE_SEC * 1000 - 1)
+    expect(playing).toHaveAttribute('data-playing')
+    expect(bubble().dataset.pose).toBe('sing')
+
+    vi.advanceTimersByTime(1)
+    const rested = screen.getByRole('button', { name: 'Play the note' })
+    expect(rested).not.toHaveAttribute('data-playing')
+    expect(screen.queryByTestId('coach-tone-mark')).toBeNull()
+    expect(bubble().dataset.pose).toBe('listen')
+    expect(screen.getByTestId('coach-tone-line')).toHaveTextContent(
+      TONE_HEAR_LINE,
+    )
+  })
+
+  it('plays the note again from the start on a second tap', () => {
+    vi.useFakeTimers()
+    mount()
+    fireEvent.click(screen.getByRole('button', { name: 'Next' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Play the note' }))
+    const first = playHoldTone.mock.results[0]?.value as { stop: Mock }
+    const firstMark = screen.getByTestId('coach-tone-mark')
+
+    vi.advanceTimersByTime(1000)
+    fireEvent.click(screen.getByRole('button', { name: 'Playing A3' }))
+
+    expect(first.stop).toHaveBeenCalled()
+    expect(playHoldTone).toHaveBeenCalledTimes(2)
+    // the mark starts again with it
+    expect(screen.getByTestId('coach-tone-mark')).not.toBe(firstMark)
+    vi.advanceTimersByTime(HOLD_TONE_SEC * 1000 - 1)
+    expect(bubble().dataset.pose).toBe('sing')
+    vi.advanceTimersByTime(1)
+    expect(bubble().dataset.pose).toBe('listen')
+  })
+
+  it('stops the note when the step goes, and Merc and the button go back to rest', () => {
+    vi.useFakeTimers()
+    const runner = mount()
+    fireEvent.click(screen.getByRole('button', { name: 'Next' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Play the note' }))
+    const played = playHoldTone.mock.results[0]?.value as { stop: Mock }
+
+    fireEvent.click(screen.getByRole('button', { name: 'Skip this step' }))
+
+    expect(runner.snapshot()?.step.id).toBe('takes')
+    expect(played.stop).toHaveBeenCalled()
+    expect(bubble().dataset.pose).toBe('idle')
+    fireEvent.click(screen.getByRole('button', { name: 'Back' }))
+    expect(
+      screen.getByRole('button', { name: 'Play the note' }),
+    ).not.toHaveAttribute('data-playing')
+    expect(screen.queryByTestId('coach-tone-line')).toBeNull()
+    expect(bubble().dataset.pose).toBe('listen')
+  })
+
+  it('stops the note when the tour ends', () => {
+    mount()
+    fireEvent.click(screen.getByRole('button', { name: 'Next' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Play the note' }))
+    const played = playHoldTone.mock.results[0]?.value as { stop: Mock }
+
+    fireEvent.click(screen.getByRole('button', { name: 'End tour' }))
+
+    expect(played.stop).toHaveBeenCalled()
+    expect(onClose).toHaveBeenCalledOnce()
   })
 
   it('opens the lesson of a watch step in a new tab', () => {
