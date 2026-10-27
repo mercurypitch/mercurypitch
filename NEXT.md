@@ -631,3 +631,8 @@ Note: the lanes' memory gate read a stale cgroup path after the 21:00 restart (f
 - Checklist doc rev 15: .1140 ticked with results, intro .54 "ready to tag", .1436 dev since 12:07 / notes 12:21.
 - L10 branch REBASED by the lead onto d37453987: feat/lesson-10-page 2f2294398 (tag lead/l10-page3-base; was 05cf30376 = lead/l10-page2-gated). One conflict, L11 FACTS 47-49: kept the branch's season.ts:365-373 and drafts :30-40, main's SettingsPanel :617/:652. range-diff: 17 of 18 identical, #11 differs only there. plan-cites 157 = main (same findings, l10/page-3/base/cites-*.txt). docs:index current. Pushed with lease over 05cf30376.
 - NEXT: L10 run 3 brief (l10/BRIEF-page-3.md: P16, P17, P18 + map), check rate limit, launch the builder at xhigh in l10-page. After the tag: watch the tag's Build & Deploy and Release Tours.
+
+## 12:31 UTC 27 Oct: Lesson 10 run 3 builder LAUNCHED
+- Rate limit allowed. Builder at xhigh in l10-page on feat/lesson-10-page 2f2294398, brief l10/BRIEF-page-3.md: P16 Steps 1-2 + thirds game (games.ts), P17 Steps 3-4 + chords game + pattern.ts, P18 Step 5 predict + names switch + stop on leaving a step (every route), then map. It measures first paint before its first commit (l10/page-3/fp-before.txt, css-before/). Main's lists/fp from the lead's build of d37453987: l10/page-3/base/main-css-links/, main-fp-report.txt (build bg bbemghtu6 running in polish23 at 12:30).
+- SLOTS: (1) L10 run 3, (2) free. Queue after: L10 run 4 (P19 Sing it), run 5 (P20 Wrap + P21 sweeps), P22 final, then the L10 PR; Lesson 12's page after.
+- Check-in trigger trig_01JGQdH9F56vCzkd9UvFFRJv prompt updated (0.9.23 waits for the owner's tag; check the tag's runs; lesson pages next). One-shot trig_01Gx8FmW65cNbjVfrKBZ7Ujj deleted (its job is done).
