@@ -281,6 +281,7 @@
   width: 3px;
   background: var(--studio-track);
 }
+.lane[data-selected] .trackHeader,
 .lane:has(.selectedClip) .trackHeader {
   background: color-mix(in srgb, var(--studio-accent) 9%, var(--studio-bar));
 }
@@ -904,6 +905,12 @@
 }
 .newLaneLabel {
   display: flex;
+  box-sizing: border-box;
+  width: 100%;
+  margin: 0;
+  border: 0;
+  border-right: 1px solid var(--studio-line);
+  font-family: inherit;
   align-items: center;
   gap: 6px;
   padding: 0 16px;
@@ -933,6 +940,17 @@
   border-color: color-mix(in srgb, var(--studio-accent) 60%, transparent);
   background: color-mix(in srgb, var(--studio-accent) 7%, transparent);
   color: var(--studio-accent-text);
+}
+.timeline button.newLaneLabel {
+  cursor: pointer;
+}
+.timeline button.newLaneLabel:hover {
+  color: var(--studio-text);
+  background: color-mix(in srgb, var(--studio-accent) 7%, var(--studio-bar));
+}
+.timeline button.newLaneLabel:focus-visible {
+  outline: 2px solid var(--studio-accent);
+  outline-offset: -2px;
 }
 /* Room under the last row, so the floating clip bar and zoom never hide it. */
 .filler {

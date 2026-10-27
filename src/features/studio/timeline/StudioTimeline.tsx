@@ -51,6 +51,7 @@ export function StudioTimeline(props: StudioTimelineProps) {
   const [height, setHeight] = createSignal(400)
   const [scroll, setScroll] = createSignal(0)
   const [snap, setSnap] = createSignal(true)
+  let lastFillerTap = -Infinity
   const headerWidth = () =>
     props.phone ? 104 : props.tablet === true ? 232 : 240
   const contentWidth = () => Math.max(1, width() - headerWidth())
@@ -330,6 +331,7 @@ export function StudioTimeline(props: StudioTimelineProps) {
                   class={styles.lane}
                   data-track-id={id}
                   data-studio-track={id}
+                  data-selected={props.selectedTrackId === id ? '' : undefined}
                   data-silent={
                     track().mute || (anySolo() && !track().solo)
                       ? ''
@@ -372,8 +374,9 @@ export function StudioTimeline(props: StudioTimelineProps) {
                     class={styles.laneAudio}
                     data-studio-lane-audio=""
                     onClick={(event) => {
-                      if (event.target === event.currentTarget)
-                        props.onSelectClip(null)
+                      if (event.target !== event.currentTarget) return
+                      props.onSelectClip(null)
+                      props.onSelectTrack?.(id)
                     }}
                   >
                     <For each={clipIds()}>
@@ -414,10 +417,26 @@ export function StudioTimeline(props: StudioTimelineProps) {
               data-studio-new-lane=""
               aria-label="New lane"
             >
-              <span class={styles.newLaneLabel}>
-                <Plus size={14} />
-                New lane
-              </span>
+              <Show
+                when={props.onNewLane}
+                fallback={
+                  <span class={styles.newLaneLabel}>
+                    <Plus size={14} />
+                    New lane
+                  </span>
+                }
+              >
+                {(add) => (
+                  <button
+                    type="button"
+                    class={styles.newLaneLabel}
+                    onClick={() => add()()}
+                  >
+                    <Plus size={14} />
+                    New lane
+                  </button>
+                )}
+              </Show>
               <span class={styles.newLaneDrop}>
                 <span>
                   {pointer.active()
@@ -428,7 +447,22 @@ export function StudioTimeline(props: StudioTimelineProps) {
             </div>
           </Show>
           <div class={styles.filler} aria-hidden="true">
-            <span class={styles.fillerHeader} />
+            <span
+              class={styles.fillerHeader}
+              data-studio-new-lane-area=""
+              title={
+                props.onNewLane ? 'Double-click for a new lane' : undefined
+              }
+              onPointerUp={(event) => {
+                // Double-click with a mouse, double-tap with a finger: the
+                // browser's dblclick is unreliable on touch screens.
+                if (!props.onNewLane || event.button !== 0) return
+                if (event.timeStamp - lastFillerTap < 400) {
+                  lastFillerTap = -Infinity
+                  props.onNewLane()
+                } else lastFillerTap = event.timeStamp
+              }}
+            />
           </div>
           <Show
             when={

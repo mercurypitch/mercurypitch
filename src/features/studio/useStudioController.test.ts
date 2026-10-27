@@ -501,6 +501,30 @@ describe('Studio controller', () => {
     )
   })
 
+  it('adds to the chosen lane where it fits and to a new lane where it would overlap', async () => {
+    const { controller } = mount({
+      prepareFile: async (_blob, info) => preparedFixture(info),
+    })
+    await controller.open('one')
+    const file = new File(['abc'], 'Take.wav', { type: 'audio/wav' })
+    await controller.addFile(file)
+    const lane = controller.project()!.tracks[0].id
+    const frames = controller.assets()[0].normalizedFrameCount
+    await controller.addFile(file, frames, lane)
+    expect(controller.project()?.tracks).toHaveLength(1)
+    expect(
+      controller
+        .project()
+        ?.clips.map((clip) => [clip.trackId, clip.startFrame]),
+    ).toEqual([
+      [lane, 0],
+      [lane, frames],
+    ])
+    await controller.addFile(file, 0, lane)
+    expect(controller.project()?.tracks).toHaveLength(2)
+    expect(controller.project()?.clips.at(-1)?.trackId).not.toBe(lane)
+  })
+
   it('opens locked projects read-only and takeover reloads the latest durable snapshot', async () => {
     const { controller, service } = mount()
     vi.mocked(service.acquireLease).mockRejectedValueOnce(

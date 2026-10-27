@@ -60,35 +60,66 @@ function retainNewAudio(
   return data.asset
 }
 
+/** Whether a clip of this length starts here on the lane without overlapping one. */
+function laneHasRoom(
+  project: StudioProject,
+  trackId: string,
+  startFrame: number,
+  frames: number,
+): boolean {
+  if (!project.tracks.some((track) => track.id === trackId)) return false
+  return project.clips.every(
+    (clip) =>
+      clip.trackId !== trackId ||
+      clip.startFrame + clip.sourceOutFrame - clip.sourceInFrame <=
+        startFrame ||
+      startFrame + frames <= clip.startFrame,
+  )
+}
+
 function importCommands(
   items: readonly { item: ImportItem; asset: StudioAsset }[],
   project: StudioProject,
   startFrame: number,
   createId: () => string,
+  targetTrackId: string | null,
 ): StudioEdit[] {
   const firstOrder =
     Math.max(-1, ...project.tracks.map((track) => track.order)) + 1
-  return items.map(({ item, asset }, index) => {
+  // The first item lands on the chosen lane when it fits; the rest, or an item
+  // that would overlap a clip there, get lanes of their own.
+  const target =
+    targetTrackId !== null &&
+    items.length > 0 &&
+    laneHasRoom(
+      project,
+      targetTrackId,
+      startFrame,
+      items[0].asset.normalizedFrameCount,
+    )
+      ? targetTrackId
+      : null
+  let order = firstOrder
+  return items.map(({ item, asset }, index): StudioEdit => {
+    const clip = (trackId: string) => ({
+      id: createId(),
+      trackId,
+      assetId: asset.id,
+      startFrame,
+      sourceInFrame: 0,
+      sourceOutFrame: asset.normalizedFrameCount,
+      gainDb: 0,
+      fades: { curve: 'linear-amplitude' as const },
+    })
+    if (index === 0 && target !== null)
+      return { type: 'add-clip', clip: clip(target) }
     const track = createStudioTrack({
       id: createId(),
       name: item.title,
-      order: firstOrder + index,
+      order: order++,
       role: item.role,
     })
-    return {
-      type: 'add-audio',
-      track,
-      clip: {
-        id: createId(),
-        trackId: track.id,
-        assetId: asset.id,
-        startFrame,
-        sourceInFrame: 0,
-        sourceOutFrame: asset.normalizedFrameCount,
-        gainDb: 0,
-        fades: { curve: 'linear-amplitude' },
-      },
-    }
+    return { type: 'add-audio', track, clip: clip(track.id) }
   })
 }
 
@@ -110,16 +141,17 @@ export function createStudioImporter(options: ImportControllerOptions) {
   function importItems(
     items: readonly ImportItem[],
     startFrame: number,
+    trackId: string | null,
   ): Promise<boolean> {
     // A queued file belongs to the song it was picked for, and Cancel drops it.
     const epoch = options.epoch()
     const cancelled = cancels
     const run =
       active === null
-        ? importNow(items, startFrame)
+        ? importNow(items, startFrame, trackId)
         : turn.then(() =>
             epoch === options.epoch() && cancelled === cancels
-              ? importNow(items, startFrame)
+              ? importNow(items, startFrame, trackId)
               : false,
           )
     turn = run.catch(() => undefined)
@@ -129,6 +161,7 @@ export function createStudioImporter(options: ImportControllerOptions) {
   async function importNow(
     items: readonly ImportItem[],
     startFrame: number,
+    trackId: string | null,
   ): Promise<boolean> {
     const snapshot = options.project()
     if (
@@ -172,6 +205,7 @@ export function createStudioImporter(options: ImportControllerOptions) {
         currentProject,
         startFrame,
         options.createId,
+        trackId,
       )
       const prepared = retained.values()
       // Transfer admission synchronously to the queue. No allocation or await
@@ -195,9 +229,11 @@ export function createStudioImporter(options: ImportControllerOptions) {
     }
   }
 
+  /** `trackId` is the lane to add to; without room there, a new lane. */
   async function addFiles(
     files: readonly File[],
     startFrame = 0,
+    trackId: string | null = null,
   ): Promise<boolean> {
     if (!files.length || files.length > 128) {
       options.report(new Error('Choose between one and 128 audio files.'))
@@ -233,13 +269,16 @@ export function createStudioImporter(options: ImportControllerOptions) {
           ),
       })),
       startFrame,
+      trackId,
     )
   }
-  const addFile = (file: File, startFrame = 0) => addFiles([file], startFrame)
+  const addFile = (file: File, startFrame = 0, trackId: string | null = null) =>
+    addFiles([file], startFrame, trackId)
 
   async function addTakes(
     entries: readonly StudioSourceEntry[],
     startFrame = 0,
+    trackId: string | null = null,
   ): Promise<boolean> {
     const importedAt = options.now().toISOString()
     const selected = [
@@ -257,6 +296,7 @@ export function createStudioImporter(options: ImportControllerOptions) {
           ),
       })),
       startFrame,
+      trackId,
     )
   }
 
@@ -264,8 +304,11 @@ export function createStudioImporter(options: ImportControllerOptions) {
     addFile,
     addFiles,
     addTakes,
-    addTake: (entry: StudioSourceEntry, startFrame = 0) =>
-      addTakes([entry], startFrame),
+    addTake: (
+      entry: StudioSourceEntry,
+      startFrame = 0,
+      trackId: string | null = null,
+    ) => addTakes([entry], startFrame, trackId),
     cancelImport,
   }
 }

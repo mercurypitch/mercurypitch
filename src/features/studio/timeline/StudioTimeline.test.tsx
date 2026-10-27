@@ -266,6 +266,35 @@ describe('Studio timeline', () => {
     expect(seek).toHaveBeenCalledWith(144000)
   })
 
+  it('makes a new lane from its button or a double tap under the headers', () => {
+    const add = vi.fn()
+    const { container } = render(() => (
+      <StudioTimeline {...base} onNewLane={add} />
+    ))
+    fireEvent.click(screen.getByRole('button', { name: 'New lane' }))
+    expect(add).toHaveBeenCalledOnce()
+    const area = container.querySelector('[data-studio-new-lane-area]')!
+    fireEvent.pointerUp(area, { button: 0 })
+    expect(add).toHaveBeenCalledOnce()
+    fireEvent.pointerUp(area, { button: 0 })
+    expect(add).toHaveBeenCalledTimes(2)
+  })
+
+  it('selects a lane from its empty space and marks it', () => {
+    const select = vi.fn()
+    const { container } = render(() => (
+      <StudioTimeline
+        {...base}
+        selectedTrackId="voice"
+        onSelectTrack={select}
+      />
+    ))
+    const lane = container.querySelector('[data-studio-track="voice"]')!
+    expect(lane).toHaveAttribute('data-selected')
+    fireEvent.click(lane.querySelector('[data-studio-lane-audio]')!)
+    expect(select).toHaveBeenCalledWith('voice')
+  })
+
   it('fits a song longer than the widest zoom stop allows', () => {
     const zoom = vi.fn()
     const long = {
