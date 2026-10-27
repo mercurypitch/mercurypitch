@@ -753,7 +753,8 @@ async function covers(page, sel) {
       await shot(page, 'checkup-home-card')
       await card.getByRole('link', { name: 'Start my Check-up' }).click()
       await page.waitForURL(/\/mirror\?checkup=1$/, { timeout: 30000 })
-      const eyebrow = await text(page.locator('.mirror-eyebrow'))
+      // textContent, since the eyebrow's CSS uppercases what innerText reads
+      const eyebrow = clean(await page.locator('.mirror-eyebrow').first().textContent({ timeout: 5000 }).catch(() => ''))
       check('checkup: the Mirror opens as the Weekly Check-up', eyebrow === 'Weekly Check-up', eyebrow)
       await page.getByRole('button', { name: 'Find my voice twin' }).click()
       const results = page.locator('.mirror-results')
