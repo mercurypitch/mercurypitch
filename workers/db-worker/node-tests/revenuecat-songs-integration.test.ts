@@ -27,7 +27,10 @@ const DEVICE = '00000000-0000-4000-8000-00000000c0a1'
 const DEVICE_SECRET = 'rc1Aa2Bb3Cc4Dd5Ee6Ff7Gg8Hh9Ii0Jj1Kk2Ll3Mm4'
 const ACCOUNT = '00000000-0000-4000-8000-00000000c0b2'
 const OTHER_ACCOUNT = '00000000-0000-4000-8000-00000000c0c3'
-const PERIOD_END = Date.parse('2026-10-27T12:00:00.000Z')
+// Halfway through a month's period whenever the suite runs: the worker reads a
+// subscription as current only while its end is later than the clock, so a
+// fixed date here passes until that day and fails every run after it.
+const PERIOD_END = Math.floor(Date.now() / 1000) * 1000 + 15 * 86_400_000
 
 let sqlite: DatabaseSync
 let env: Env
