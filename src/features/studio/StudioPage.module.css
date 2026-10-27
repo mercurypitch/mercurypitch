@@ -93,8 +93,9 @@
   --studio-list: #ffffff;
   /* Clips tint into white, so a hue stays clean instead of turning beige. */
   --studio-clip-base: #ffffff;
+  /* The cap's outline holds 3:1 against a white strip. */
   --studio-thumb-ring:
-    0 0 0 1px rgb(31 35 40 / 0.3), 0 1px 3px rgb(31 35 40 / 0.25);
+    0 0 0 1px rgb(31 35 40 / 0.56), 0 1px 3px rgb(31 35 40 / 0.25);
   --studio-rail: color-mix(
     in srgb,
     var(--text-primary) 50%,
@@ -1334,21 +1335,6 @@
   border-radius: 16px 16px 0 0;
   box-shadow: var(--studio-sheet-shadow);
   animation-name: studio-sheet;
-}
-.phone .panelHeading {
-  position: relative;
-  padding-top: 8px;
-}
-.phone .panelHeading::before {
-  content: '';
-  position: absolute;
-  top: 6px;
-  left: 50%;
-  width: 36px;
-  height: 4px;
-  border-radius: 2px;
-  background: var(--studio-line-strong);
-  transform: translateX(-50%);
 }
 @keyframes studio-sheet {
   from {
