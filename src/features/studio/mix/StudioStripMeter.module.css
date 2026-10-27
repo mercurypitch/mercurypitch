@@ -1,0 +1,60 @@
+/* Studio strip meter — a lane's level beside its fader in the master meter's segments and colours, and its gain reduction hanging from the top. */
+.meter {
+  position: absolute;
+  display: flex;
+  gap: 2px;
+}
+/* As the master's upright rails: 3 px segments on the -60 to 0 dBFS travel. */
+.rail {
+  position: relative;
+  width: 9px;
+  height: 100%;
+  border-radius: 1px;
+  background: var(--studio-rail);
+  overflow: hidden;
+  -webkit-mask-image: repeating-linear-gradient(
+    to top,
+    #000 0 3px,
+    transparent 3px 4px
+  );
+  mask-image: repeating-linear-gradient(
+    to top,
+    #000 0 3px,
+    transparent 3px 4px
+  );
+}
+.rail i {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    to top,
+    var(--studio-meter-ok) 0 70%,
+    var(--studio-meter-hot) 70% 90%,
+    var(--studio-meter-over) 90%
+  );
+}
+/* The peak hold; at the floor it sits just out of sight, like the level.
+   It moves by transform, so a new reading lays nothing out. */
+.rail b {
+  position: absolute;
+  right: 0;
+  bottom: -2px;
+  left: 0;
+  height: 2px;
+  background: var(--studio-text);
+}
+/* Gain reduction: 0 to 24 dB from the top, in a neutral tone so it never reads as level. */
+.reduction {
+  position: relative;
+  width: 4px;
+  height: 100%;
+  border-radius: 1px;
+  background: var(--studio-rail);
+  overflow: hidden;
+}
+.reduction i {
+  position: absolute;
+  inset: 0;
+  transform-origin: top;
+  background: var(--studio-text-2);
+}

@@ -308,6 +308,7 @@ export function StudioTrackControls(props: StudioTrackControlsProps) {
       <input
         ref={faderInput}
         class={styles.fader}
+        data-studio-fader
         aria-label={`${props.track.name} volume`}
         type="range"
         min={STUDIO_FADER_MIN_DB}
