@@ -112,10 +112,11 @@ export async function createStudioBackup(
           throw new Error(
             'Audio metadata is required before reading a backup source',
           )
+        // The read Blobs stay held until the archive is written: count once.
         if (!staged.has(id))
           releases.push(
             reserveStudioMemory(
-              2 * (known.byteLength + known.canonicalPcmByteLength),
+              known.byteLength + known.canonicalPcmByteLength,
             ),
           )
         data = staged.get(id) ?? (await readAsset(id))
@@ -130,7 +131,8 @@ export async function createStudioBackup(
           releaseValidation()
         }
       } catch (error) {
-        if (options.signal?.aborted === true) throw error
+        if (options.signal?.aborted === true || isMemoryError(error))
+          throw error
         throw new StudioBackupError(
           'The backup could not include every audio asset. Restore the missing audio and try again.',
         )
@@ -245,4 +247,12 @@ export async function restoreStudioBackup(
   } finally {
     releaseStudioResource(validated)
   }
+}
+
+/** The budget's own refusal: missing room, not missing audio. */
+function isMemoryError(error: unknown): boolean {
+  return (
+    error instanceof Error &&
+    error.message.startsWith('Studio needs more memory')
+  )
 }

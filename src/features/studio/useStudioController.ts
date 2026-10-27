@@ -72,8 +72,9 @@ export function useStudioController(options: StudioControllerOptions = {}) {
   let lease: StudioEditorLease | null = null
   let operationAbort: AbortController | null = null
   let renewingGeneration: number | null = null
-  const busy = () =>
-    loading() || working() || importing() || saveState() === 'saving'
+  /** Edits wait on loading, imports and whole-song work, not on a save. */
+  const editBlocked = () => loading() || working() || importing()
+  const busy = () => editBlocked() || saveState() === 'saving'
   const hasUnsavedChanges = () =>
     !!project() && !!queue && project()!.revision > queue.durableRevision()
   const canUndo = () =>
@@ -585,6 +586,7 @@ export function useStudioController(options: StudioControllerOptions = {}) {
     sourceError,
     loading,
     busy,
+    editBlocked,
     importing,
     saveState,
     writable,

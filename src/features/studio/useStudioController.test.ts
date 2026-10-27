@@ -300,6 +300,36 @@ describe('Studio controller', () => {
     ])
   })
 
+  it('drops a queued file when the import is cancelled', async () => {
+    const service = controllerServiceFixture()
+    const saves: (() => void)[] = []
+    vi.mocked(service.saveProject).mockImplementation(
+      (project) =>
+        new Promise((resolve) => {
+          saves.push(() => resolve(project))
+        }),
+    )
+    const { controller } = mount({
+      service,
+      prepareFile: async (_blob, info) => preparedFixture(info),
+    })
+    await controller.open('one')
+    const first = controller.addFile(
+      new File(['abc'], 'First.wav', { type: 'audio/wav' }),
+    )
+    await vi.waitFor(() => expect(saves).toHaveLength(1))
+    const second = controller.addFile(
+      new File(['def'], 'Second.wav', { type: 'audio/wav' }),
+    )
+    controller.cancelImport()
+    saves.shift()?.()
+    await first
+    expect(await second).toBe(false)
+    expect(controller.project()?.tracks.map((track) => track.name)).toEqual([
+      'First',
+    ])
+  })
+
   it('recovers from create/open failure without leaving operations busy', async () => {
     const { controller, service } = mount()
     vi.mocked(service.createProject).mockRejectedValueOnce(
@@ -358,6 +388,8 @@ describe('Studio controller', () => {
     controller.rename('First title')
     const first = controller.project()!
     expect(controller.saveState()).toBe('saving')
+    expect(controller.busy()).toBe(true)
+    expect(controller.editBlocked()).toBe(false)
     expect(isLocalSaveNavigationLocked()).toBe(true)
     controller.rename('Latest title')
     expect(service.saveProject).toHaveBeenCalledTimes(1)

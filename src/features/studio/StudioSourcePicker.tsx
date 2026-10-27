@@ -12,6 +12,7 @@ interface StudioSourcePickerProps {
     | 'sources'
     | 'sourceError'
     | 'busy'
+    | 'editBlocked'
     | 'writable'
     | 'importing'
     | 'refreshSources'
@@ -190,7 +191,7 @@ export function StudioSourcePicker(props: StudioSourcePickerProps) {
       <button
         type="button"
         class={styles.fileButton}
-        disabled={props.studio.busy() || !props.studio.writable()}
+        disabled={props.studio.editBlocked() || !props.studio.writable()}
         onClick={() => {
           stopPreview()
           props.onFile()
@@ -232,7 +233,9 @@ export function StudioSourcePicker(props: StudioSourcePickerProps) {
             <For each={visible()}>
               {(source) => (
                 <li
-                  draggable={props.studio.writable() && !props.studio.busy()}
+                  draggable={
+                    props.studio.writable() && !props.studio.editBlocked()
+                  }
                   onDragStart={(event) => {
                     if (!event.dataTransfer) return
                     event.dataTransfer.setData(STUDIO_TAKE_DRAG_TYPE, source.id)

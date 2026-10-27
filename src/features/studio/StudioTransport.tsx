@@ -32,7 +32,10 @@ interface StudioTransportProps {
 
 export function StudioTransport(props: StudioTransportProps) {
   // While typing, the clock holds the draft; otherwise it follows the playhead.
+  // Focus freezes the time it showed, so a playing song cannot rewrite the
+  // selected text under the first keystroke.
   const [draft, setDraft] = createSignal<string | null>(null)
+  let focusedText: string | null = null
   const seek = (seconds: number) =>
     props.onSeek(
       Math.round(
@@ -44,7 +47,7 @@ export function StudioTransport(props: StudioTransportProps) {
   function commit(input: HTMLInputElement): void {
     const text = draft()
     setDraft(null)
-    if (text === null) return
+    if (text === null || text === focusedText) return
     const seconds = parseStudioTime(text)
     if (seconds !== null) seek(seconds)
     input.value = formatStudioTime(props.playheadFrame)
@@ -106,7 +109,16 @@ export function StudioTransport(props: StudioTransportProps) {
         aria-valuetext={formatStudioTime(props.playheadFrame)}
         title="Type a time, such as 1:05.5 or 65.5"
         value={draft() ?? formatStudioTime(props.playheadFrame)}
-        onFocus={(event) => event.currentTarget.select()}
+        onFocus={(event) => {
+          focusedText = formatStudioTime(props.playheadFrame)
+          setDraft(focusedText)
+          event.currentTarget.value = focusedText
+          event.currentTarget.select()
+        }}
+        onBlur={() => {
+          focusedText = null
+          setDraft(null)
+        }}
         onInput={(event) => setDraft(event.currentTarget.value)}
         onChange={(event) => commit(event.currentTarget)}
         onKeyDown={(event) => {
@@ -114,13 +126,16 @@ export function StudioTransport(props: StudioTransportProps) {
           if (event.key === 'Enter') {
             event.preventDefault()
             commit(input)
-          } else if (event.key === 'Escape' && draft() !== null) {
+          } else if (event.key === 'Escape' && draft() !== focusedText) {
             event.preventDefault()
             event.stopPropagation()
-            setDraft(null)
-            input.value = formatStudioTime(props.playheadFrame)
+            focusedText = formatStudioTime(props.playheadFrame)
+            setDraft(focusedText)
+            input.value = focusedText
+            input.select()
           } else if (event.key === 'ArrowUp' || event.key === 'ArrowDown') {
             event.preventDefault()
+            focusedText = null
             setDraft(null)
             const step = event.shiftKey ? 0.1 : 1
             seek(

@@ -46,6 +46,7 @@ function mount() {
     sources: () => entries,
     sourceError: () => null,
     busy: () => false,
+    editBlocked: () => false,
     writable: () => true,
     importing: () => false,
     refreshSources: vi.fn(async () => undefined),

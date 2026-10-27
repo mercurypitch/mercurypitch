@@ -82,6 +82,7 @@ export function createStudioTransport(options: StudioTransportOptions) {
   }
   let buildSeconds = 0.1
   let warming: Promise<void> = Promise.resolve()
+  let warmAbort: AbortController | null = null
   const retired = new Set<Run>()
   const retiredTimers = new Map<Run, ReturnType<typeof setTimeout>>()
   let active: Run | null = null
@@ -259,6 +260,11 @@ export function createStudioTransport(options: StudioTransportOptions) {
     return frames / ctx.sampleRate
   }
 
+  /** A build that missed its start still teaches the next warmup. */
+  function learnWarmup(built: number | null): void {
+    if (built !== null) buildSeconds = (performance.now() - built) / 1000
+  }
+
   async function play(
     project: StudioProject,
     assets: readonly StudioAsset[],
@@ -287,14 +293,16 @@ export function createStudioTransport(options: StudioTransportOptions) {
     let graph: StudioGraph | undefined
     let envelope: GainNode | undefined
     let meter: ReturnType<typeof createStudioLiveMeter> = null
+    let built: number | null = null
     try {
       // Called immediately by an explicit UI action, before asset reads.
       const ctx = await unlockContext(attempt.signal)
       observeSnapshot(project)
       const { content, from } = playableContent(project, assets, startFrame)
       const sound = resolveStudioSoundGraph(project, masterGain ?? undefined)
-      releaseMemory = reserveStudioMemory(
+      releaseMemory = await reserveGraph(
         studioGraphWorkingBytes(content, ctx.sampleRate, sound.full),
+        attempt.signal,
       )
       // A background warm-up does the same reads; wait for it, not around it.
       await warming
@@ -317,7 +325,7 @@ export function createStudioTransport(options: StudioTransportOptions) {
       attempt.signal.throwIfAborted()
       if (token !== generation || disposed)
         throw new DOMException('Playback cancelled', 'AbortError')
-      const built = performance.now()
+      built = performance.now()
       const epoch =
         ctx.currentTime +
         Math.min(
@@ -342,7 +350,6 @@ export function createStudioTransport(options: StudioTransportOptions) {
       envelope.connect(ctx.destination)
       meter = createStudioLiveMeter(ctx, envelope, audibleEpoch)
       graph.scheduleUntil(ctx.currentTime + LOOKAHEAD_SECONDS)
-      buildSeconds = (performance.now() - built) / 1000
       active = {
         ctx,
         graph,
@@ -385,6 +392,7 @@ export function createStudioTransport(options: StudioTransportOptions) {
       }
       return false
     } finally {
+      learnWarmup(built)
       meter?.dispose()
       graph?.dispose()
       envelope?.disconnect()
@@ -422,6 +430,24 @@ export function createStudioTransport(options: StudioTransportOptions) {
     }
   }, 33)
 
+  /**
+   * A seek or edit starts the next run while the last one fades for 240 ms.
+   * When both graphs do not fit, wait for the fade instead of failing.
+   */
+  async function reserveGraph(
+    bytes: number,
+    signal: AbortSignal,
+  ): Promise<() => void> {
+    try {
+      return reserveStudioMemory(bytes)
+    } catch (error) {
+      if (!retired.size) throw error
+      await new Promise<void>((resolve) => releasedListeners.add(resolve))
+      signal.throwIfAborted()
+      return reserveStudioMemory(bytes)
+    }
+  }
+
   async function waitForRelease(): Promise<void> {
     await preparationDone
     if (retired.size)
@@ -440,8 +466,10 @@ export function createStudioTransport(options: StudioTransportOptions) {
     // A function, so each check reads the state after the awaits before it.
     const busy = () => disposed || preparing || active !== null
     if (busy()) return warming
+    const abort = new AbortController()
+    warmAbort = abort
     const run = warming.then(async () => {
-      if (busy()) return
+      if (busy() || abort.signal.aborted) return
       // Before the first gesture the app has no AudioContext yet. Buffers are
       // not tied to one, and the device rate is one of the two common ones.
       const live = options.lease.ensure()
@@ -452,7 +480,7 @@ export function createStudioTransport(options: StudioTransportOptions) {
           : new OfflineAudioContext(1, 1, 48000))
       if (!factory) return
       const rates = live ? [live.sampleRate] : [48000, 44100]
-      const signal = new AbortController().signal
+      const signal = abort.signal
       try {
         playableContent(project, assets, 0)
         if (live) await prepareStudioLiveMeter(live)
@@ -474,7 +502,7 @@ export function createStudioTransport(options: StudioTransportOptions) {
           )
         }
         const plan = plans.at(-1)
-        if (plan === undefined || busy()) return
+        if (plan === undefined || busy() || signal.aborted) return
         const lease = await cache.acquire(
           planAssets(plan, assets),
           factory,
@@ -484,6 +512,8 @@ export function createStudioTransport(options: StudioTransportOptions) {
         lease.release()
       } catch {
         // Play repeats this work and reports its own failure.
+      } finally {
+        if (warmAbort === abort) warmAbort = null
       }
     })
     warming = run
@@ -521,6 +551,9 @@ export function createStudioTransport(options: StudioTransportOptions) {
     },
     async releaseAudio(): Promise<void> {
       pause()
+      // Export, Compare and auto-balance need the room a warm-up holds.
+      warmAbort?.abort()
+      await warming
       cache.clear()
       await waitForRelease()
       cache.clear()
@@ -568,6 +601,7 @@ export function createStudioTransport(options: StudioTransportOptions) {
       if (disposed) return
       pause()
       disposed = true
+      warmAbort?.abort()
       clearInterval(timer)
       watchedContext?.removeEventListener('statechange', onClockState)
       watchedContext = null

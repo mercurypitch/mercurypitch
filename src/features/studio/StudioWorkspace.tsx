@@ -87,11 +87,15 @@ export function StudioWorkspace(props: StudioWorkspaceProps) {
   })
   const project = () => props.studio.project()!
   const canProcess = () => !props.studio.busy() && !props.studio.importing()
-  const baseWritable = () => props.studio.writable() && canProcess()
+  // The save queue takes edits while a save runs, so a save never disables
+  // a fader mid-drag or unmounts the trim handles.
+  const baseWritable = () =>
+    props.studio.writable() && !props.studio.editBlocked()
   const sound = useStudioSound({
     project: () => props.studio.project(),
     assets: () => props.studio.assets(),
-    canStart: () => baseWritable() && !exporter.busy() && !comparison.busy(),
+    canStart: () =>
+      baseWritable() && canProcess() && !exporter.busy() && !comparison.busy(),
     readCanonicalAsset: (id) => props.studio.readCanonicalAsset(id),
     releaseAudio: releaseFinishingAudio,
     onCommand: (command) => props.studio.dispatch(command),
@@ -202,7 +206,7 @@ export function StudioWorkspace(props: StudioWorkspaceProps) {
     if (!isStudioAudioDrop(transfer) || !transfer) return
     event.preventDefault()
     setDropActive(false)
-    if (!writable() || dropping || props.studio.busy()) return
+    if (!writable() || dropping) return
     const frame = studioDropFrame(
       event.target,
       event.clientX,
@@ -481,7 +485,7 @@ export function StudioWorkspace(props: StudioWorkspaceProps) {
           <button
             type="button"
             class={styles.button}
-            disabled={!writable() || props.studio.busy()}
+            disabled={!writable()}
             aria-expanded={panel() === 'sources'}
             data-tour="studio.add-takes"
             title="Add takes"
