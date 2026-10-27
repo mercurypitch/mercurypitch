@@ -9,6 +9,241 @@ The short, user-facing summary rendered in the app's Changelog modal lives in
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.9.23] - 2026-10-27
+
+115 commits since `v0.9.22` (a6f839e14) before this release PR, from 20
+PRs, on 112 first-parent entries, up to 939caf850. 3 PRs came in as merge
+commits, over one commit each: #1215, #1220 and #1222. 17 were rebased onto
+`main`: #1229 (21 commits), #1225 (17), #1213 (10), #1208 and #1223 (9
+each), #1206 (7), #1205, #1207 and #1212 (6 each), #1228 (5), #1198 and
+#1224 (3 each), #1199 and #1226 (2 each), and #1214, #1227 and #1230 (1
+each). Every commit came through a PR.
+
+On the web:
+
+- **The weekly Check-up** (#1223; spec `docs/specs/weekly-check-up.ears.md`).
+  - Home shows a card while the newest voiceprint is 7 days old or more,
+    above the streak card and after the plan card. "Not this week" hides it
+    for 7 days, the one value this stores, and leaves the focus in
+    `#main-content`. Home's tour gains a step that drops out with the card.
+  - The card's chunk loads after first paint, into a slot of the card's
+    height. Container queries on the slot's width, per wording and with or
+    without the account line, matched the card within 0.03 px at 22 widths
+    from 320 to 1920 px.
+  - `/mirror?checkup=1` is the same guided run with a "Weekly Check-up"
+    eyebrow. After any guided run whose history spans 7 days, the results
+    show Then and Now in place of the "since" line.
+  - Then is the oldest take and the next within 7 days; Now is the newest
+    and the one before it within 7 days. Each side keeps the best of its
+    takes per metric, and an unclean range read counts for no range. A
+    change is named at 2 semitones of span or 5 points of accuracy or
+    steadiness, provisional until take-to-take noise is measured.
+  - "Share then and now" draws a card with the Progress card's renderer: at
+    most three facts, never a change under its threshold, the two dates and
+    Merc, and no name. The share text carries the Mirror's tagged link.
+  - Signed out, it works in this browser, says the readings are this
+    browser's, and offers an account to keep every Check-up. No analytics
+    event.
+  - Onboarding's Keep row reads "Every weekly Check-up, kept". It said "Your
+    voiceprint and range, saved", even after an unclean range read.
+  - First paint: Home +1,446 B of JavaScript and +1,152 B of CSS; the Mirror
+    and the three range pages that share its bundle +1,027 B, leaving
+    6,497 B under 440,320. No ceiling moves.
+  - Open with the owner: the words, the thresholds, a sign-up source for the
+    Check-up, comparing a shared browser's takes, and the card's place.
+- **Arpeggio Jumper on its second scoring** (#1213).
+  - The grade is the mean of the note scores. Before, it blended the note
+    average with the best note (30 %) and a richness read on the wrong scale
+    (25 %), so a flawless run could not pass 75 and the level never rose
+    above 5.
+  - Each note is scored on the frames voiced in its own window, read one
+    measured microphone round trip later, with its first 15 % left out. The
+    run is scored in the guide's octave or the one above or below, whichever
+    gives the least total error, and each note keeps its own target there.
+  - A run with no note voiced, or stopped before its end, is not recorded and
+    does not move the level. The idle panel says why.
+  - Version 1 runs leave the drill's threads, averages, level and weak list:
+    the stats, the difficulty EMA and its play count, the weak list and the
+    per-drill trends read `exerciseHistoryOnCurrentScoring()`. A Progress
+    period that spans the rescore labels the older Skill Thread "(earlier
+    scoring)".
+  - The help and the menu card say what the grade is.
+  - Leaderboard averages that include older Arpeggio Jumper runs mix the two
+    scorings.
+- **The dead richness term out of four grades** (#1213): Call-Response, Mirror
+  Melody, Scale Runner and Drone Intonation added `approximateRichness` (25 %,
+  25 %, 20 % and 20 %), which reads the detector's 0-1 clarity as 0-100 and
+  so is always 0 or 1. No version bump: each grade moves by at most 0.25
+  before rounding.
+- **Copy that says what is true** (#1214).
+  - Learn's "Common Musical Scales" chapter names Eb Major as C minor's
+    relative major (it said A major) and gives minor's mood as a tendency.
+  - Drone Intonation's idle line and help say every target is
+    equal-tempered, the app's tuning, where they promised just or pure
+    intonation.
+- **Polish from the 0.9.22 sweep and the onboarding walk** (#1225).
+  - Show me around (First Light, Home's plan card, the plan layer's
+    `enterStop`) and the Map's Take the tour asked only for a page tour, and
+    Singing has none, so a plan starting on Practice got no tour and the Map
+    drew no tour link for it. `hasRoomTour` and `startRoomTour` give a room
+    its page tour, or for Singing the Guide's 'practice' section under the
+    'guide' key. `hasPageTour`, `PAGE_TOURS`, the sidebar and the tour offer
+    are unchanged; both are off on the native build.
+  - 44 px presses under a coarse pointer from transparent pseudo-elements:
+    the phone header's menu (42x34), wordmark (20 px tall), mic (30x30) and
+    heart (34x25); Karaoke Night's logo (22x22), App, Sign in and Hide
+    panel. InfoPopover's "i" and the Jam page's "?" (20 px) and a toast's
+    dismiss (22 px) take 24 px, and 44 px under a finger (WCAG 2.5.8).
+  - The rooms that do not load `app.css` set the font family on their form
+    controls: Karaoke Night's page, Piano Night's shell fields and the
+    Mirror's privacy button. They had fallen back to Arial.
+  - Piano Night's closed settings sheet waited inside the nav's band (moved
+    down 102 % of its height from the nav's top), an invisible layer over
+    the nav. Closed, it now waits wholly below the screen, and the nav
+    stacks above it.
+  - The Map's "And also" row (five doors with Lessons) wrapped four and one
+    at 390 and 430 px. On a phone the label takes its own line and the doors
+    wrap with `text-wrap: balance`.
+  - Three labels cut beside room they could use: Drum Night's count-in,
+    Guitar's song name (a 150 px cap) and Piano Night's line under the
+    title.
+- **Full presses on a phone, the rest of the sweep's list** (#1228).
+  - 44 px presses under a coarse pointer, from transparent pseudo-elements,
+    on Exercises' difficulty pills (36 px), "NEW" chip (30) and every card's
+    Start (25); Settings' section tabs (34), and on Credits the Product Hunt
+    badge (38) and Ko-fi (29); and Jam's Create Room and Join Room (38).
+  - Jam's fields: an input has no pseudo-elements, so each field's label
+    carries the box over its field, and a press on a label is a press on its
+    field. The display name field takes 64 px and the room code field 62.
+  - A toast's action ("Start tour") takes 24 px on a desktop, where it drew
+    23.7, and 44 px under a finger, inside the toast and 8 px clear of the
+    dismiss.
+  - The pills' row and the tab strip scroll, and a scroller cuts off what
+    reaches past it, so each grows padding for the boxes and gives it back
+    in margin. The Exercises tour's spotlit frame keeps its 38 px; the tab
+    strip's rule is drawn as a 1 px background where its border was.
+  - Left as they are: Piano Night's keys, the two ellipses judged in #1225,
+    and two inline links that cannot grow without covering a line of text.
+  - First paint: the main app's documents +52 B of JavaScript and +1,775 B
+    of CSS; Guitar Night, the karaoke documents and the vocal remover +257 B
+    of CSS.
+- **`/exercises/leap-ladder`** (#1198): Interval Trainer on Lesson 9's five
+  leaps (`[3, 4, 7, 5, 12]`), through a new `intervals` field on exercise
+  launches. Without a list Interval Trainer keeps its pool, shuffle and cap.
+  Nothing in production links to it yet, as Lesson 9 is a draft.
+- **Drone Intonation reads a launch's intervals, and
+  `/exercises/thirds-on-a-drone`** (#1224). Of a launch's `intervals`, Drone
+  keeps those its pool names and deals them with Interval Trainer's draw,
+  now shared in `interval-rounds.ts`: the difficulty's round count, never
+  one twice running. Its idle hint said "6 rounds" at every level; it now
+  reads `plannedRounds` as `setBase` does and names a launch's intervals.
+  The slug, Drone on `[3, 4]`, waits for Lesson 10's page to link it.
+
+For the lessons, all drafts that mercurypitch.com holds back:
+
+- **#1199:** the kit reads a sung ladder a rung at a time, for Lesson 9.
+  `readingWords` gives a take's reading without its advice, which
+  `readingLine` adds after it; no line changes.
+- **#1207:** Lesson 7's stoppable sound runs and its microphone holder move
+  into the kit. A sound run ends with its last-ending note, and the kit's
+  sound runs play chords, for Lesson 10.
+- **#1208:** the band chart paints rungs and Merc's arcs for Lesson 9, with a
+  record of what it paints for Lessons 3 and 5. The e2e helper
+  `writeStepsWav` makes stepped fake-microphone takes.
+- **#1206:**
+  - The spiral plays through a page's sound owner, and rests when nothing on
+    it moves.
+  - Move do keeps focus at its ends, with a reach for each side.
+  - The names modes and their syllables move into the kit.
+  - Lessons 1 and 2, which are live, pass no sound owner. Lesson 1's spiral
+    rests when still, while its sky keeps drawing.
+- **#1205:** Lesson 12's music: its chords, rooms, loop and tunes, spoken
+  numerals, sounds, lines and quick check.
+- **#1225:** phone layouts. Lesson 6's tune lines lay out their
+  buttons again on a resize, on screen or off (the page had scrolled 873 px
+  sideways after narrowing from 1280 px), and under 342 px its tune figures
+  run to the window's edges so the canvas keeps its 308 px floor. The start
+  sliders' buttons make room for the slider's note: under 360 px in Lesson 4
+  and under 390 px in Lesson 6 they drop their words (still their names),
+  and from 390 to 459 px Lesson 6's drop their arrows instead, where "Starts
+  on D♭4" had run up to 21 px onto Start higher (measured at 18 widths from
+  320 to 1024 px). Lesson 7's "Play 'Twinkle' on the column" wraps inside
+  its card.
+- **#1229:** Lesson 9's page, `/learn/09`, "Landing a leap": the cold
+  open and its predict, the recall and quick check, the four words, Steps 1
+  to 5 on the ladder chart, Sing it with a take read a rung at a time by the
+  kit's ladder reader, and the Wrap with free play. Sing it waits for the
+  vocal coach's sign-off. Two kit changes come with it: the band chart rests
+  while its scene stands still, and the folds' vibration and stills move
+  into the kit. Lessons 1 to 8 gain 180 to 874 bytes of first-paint script,
+  for Lesson 9's season entry and the kit chunks it shares only in part, and
+  Lesson 3's ceiling goes from 130 to 131 KB.
+
+The karaoke track (#1215, #1220, #1222), kept out of `CHANGELOG.md` while
+the native app is unreleased:
+
+- **#1222:** collecting a separated song from the server completes only once
+  both stems are saved on the device. With one missing, a "completed" song
+  could not play once the server's copy expired; the collection now fails
+  as a save failure and keeps the job id, so the native import queue
+  collects it again without separating it again. `pollAndPersistServer` in
+  `src/lib/uvr-processing-pipeline.ts` is the server path the web's vocal
+  remover, Karaoke Night and the auto-resume use too, so there a server
+  separation with a stem that did not save now reports the save failure.
+  The on-device separation path is unchanged.
+- **#1215:** the native Karaoke room lists the singer's own songs from the
+  saved rows, so they stay listed after a restart, and opens their stems
+  when a song is cued. A song whose stems are gone offers Download again
+  while the server keeps them, Remove after that, and Try again when the
+  read itself failed.
+- **#1220:** the native karaoke probe expects the room's copy for a song too
+  big to decode whole on a phone with no `AudioDecoder`.
+
+Admin only:
+
+- **#1212:** the console's Lessons page asks before it publishes a lesson
+  ahead of one the lesson builds on or ahead of the lesson a recall asks,
+  and before "Use default" puts a lesson live.
+
+Tests only:
+
+- **#1225:** the beat layout sweeps assert once (about 830,000 `expect`
+  calls; 1.9 s to 70 ms), and `EchoDemo.test.tsx` reads each frame from one
+  page walk (its slowest case 4.9 s to 1.1 s).
+- **#1226:** Drum Night's and Guitar Night's tests import the rooms' lazy
+  parts in `beforeAll`, before any case waits for one. Under load the first
+  import had run past Testing Library's 1 s wait: Drum Night's sign-in
+  dialog took 843 to 1,088 ms and now about 100 ms. Guitar Night's account
+  chip is looked for in the room's top bar.
+- **#1227:** the 320 px check in `learn-ways.spec.ts` measures Lesson 6's
+  trail once the step's toy has finished sliding in. Mid-slide the page is
+  up to 18 px wider than the window, and a slow runner measured 1 px.
+- **#1230:** `small-help-targets.spec.ts` measures a toast's buttons once
+  the toast has finished sliding in. For the first 105 ms of its 0.22 s
+  slide it reaches past its stack, and a CI run read the stack as scrolling
+  sideways.
+
+### Release steps
+
+1. **Migrations:** none. Nothing under `workers/db-worker/migrations`
+   changed since `v0.9.22`.
+2. **Secrets, variables and bindings:** none new. No `wrangler*`, `.env*` or
+   workflow file changed.
+3. **Worker code:** the site worker's lesson gate reads the season and the
+   drafts list, and #1229 gives Lesson 9 its page and run time, as a draft.
+   On mercurypitch.com the gate answers `/learn/09` with the 404 page, and
+   leaves it out of the sitemap and `llms.txt`, until the console publishes
+   it, as it does every draft. The DB worker's only change is a comment in
+   `mirror-metrics.ts`, and the Jam worker's graph has none (each traced
+   with esbuild from its `wrangler` `main`).
+4. **Links into about.mercurypitch.com** (prod-upd step 0c): none added.
+5. **Social cards:** `pnpm run og:versions` on this PR stamped the cards with
+   no change.
+6. **What's New** is untouched: 0.9.23 is a patch.
+7. **Version files:** `package.json` goes from 0.9.22 to 0.9.23.
+8. **Native:** only `apps/mercurypitch/scripts/`, the karaoke probes
+   (#1215, #1220). The native app is not released yet.
+
 ## [0.9.22] - 2026-10-26
 
 650 commits since `v0.9.21` (bd524160a) before this release PR, from 112 PRs,
