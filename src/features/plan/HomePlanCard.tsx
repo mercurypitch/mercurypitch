@@ -18,8 +18,11 @@
 // - Home keeps a slot for the card until this chunk is in, at the height the
 //   card last drew at on this device (plan-card-slot.ts), so the card keeps
 //   that height for Home's next load once it settles, and keeps 0 for a
-//   record it draws nothing for (every stop done, or the X), or Home would
-//   hold a slot open for a card that is not coming.
+//   record it draws nothing for (every stop done, or out of its week), or
+//   Home would hold a slot open for a card that is not coming. A card the X
+//   hid keeps the height it had: the hide alone keeps Home's slot shut, since
+//   the slot reads it, and Settings' Show on Home then brings the card back
+//   at that height, with no jump.
 // - It is one grid item of Home's grid, so it draws no wrapper of its own, and
 //   an absent card leaves no hole: the Switch below renders nothing, not an
 //   empty element.
@@ -280,11 +283,12 @@ export function HomePlanCard(props: HomePlanCardProps): JSX.Element {
   // font that lands), and 0 for a record it draws nothing for. A height is
   // kept once it has held for PLAN_CARD_SLOT_SETTLE_MS, so a window dragged
   // wider writes once and not once a frame; one not yet settled is kept as the
-  // page goes away or Home does, unless the card has gone first (the X, or its
-  // last stop done), which keeps its 0. A card that is not laid out (a page
-  // that is not displayed) measures 0 and keeps nothing, so a hidden Home does
-  // not wipe what the card kept. Each keeps it for the record the card drew,
-  // which a store write gives the card before it is in storage.
+  // page goes away or Home does, unless the card has gone first (the X, which
+  // keeps the height it had settled at, or its last stop done, which keeps its
+  // 0). A card that is not laid out (a page that is not displayed) measures 0
+  // and keeps nothing, so a hidden Home does not wipe what the card kept. Each
+  // keeps it for the record the card drew, which a store write gives the card
+  // before it is in storage.
   const drawnStops = (): PlanDest[] =>
     (untrack(rows) ?? []).map((row) => row.stop.dest)
   const drawnAt = (): string | undefined => untrack(planRecord)?.at
@@ -315,7 +319,9 @@ export function HomePlanCard(props: HomePlanCardProps): JSX.Element {
   }
   createEffect(() => {
     const at = planRecord()?.at
-    if (card() === null) rememberPlanCardSlot(0, window.innerWidth, [], at)
+    if (card() === null && !planCardHidden()) {
+      rememberPlanCardSlot(0, window.innerWidth, [], at)
+    }
   })
 
   const open = (stop: PlanStop): void => {

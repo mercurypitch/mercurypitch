@@ -8,7 +8,9 @@
 // 273 px on a phone). These cases hold the card to its half: it keeps the
 // height it settles at, once, not on every frame of a resize; it keeps none
 // for a record it draws nothing for, so Home does not hold a slot open for a
-// card that will not come; and a card that is not laid out keeps nothing.
+// card that will not come; a card the X hid keeps the height it had, which
+// the hide alone keeps shut, so it comes back at that height; and a card that
+// is not laid out keeps nothing.
 //
 // jsdom lays nothing out, so the card's box is given a height here, and the
 // ResizeObserver is a stand-in that reports when it starts to observe, as the
@@ -20,7 +22,7 @@ import { HomePlanCard } from './HomePlanCard'
 import { PLAN_CARD_SLOT_SETTLE_MS, readPlanCardSlot } from './plan-card-slot'
 import { ago, answeredAgo, fresh, seeFirstValue, SINGING_ONLY, } from './plan-choices.fixture'
 import { PLAN_CARD_SLOT_KEY, PLAN_RECORD_KEY } from './plan-keys'
-import { markPlanShown, planRecord } from './plan-store'
+import { markPlanShown, planRecord, showPlanCard } from './plan-store'
 
 const WIDTH = 390
 const DRAWN = 259.2
@@ -228,7 +230,7 @@ describe("what the card leaves for Home's next load", () => {
     expect(readPlanCardSlot(Date.now(), WIDTH)).toBeNull()
   })
 
-  it('keeps no slot once the X has hidden it, even with a height not yet settled', async () => {
+  it('keeps no slot once the X has hidden it, and writes nothing for a height not yet settled', async () => {
     answeredAgo(1)
     mount()
     await wait()
@@ -236,11 +238,29 @@ describe("what the card leaves for Home's next load", () => {
     fireEvent.click(screen.getByRole('button', { name: 'Hide your plan' }))
     await wait(PLAN_CARD_SLOT_SETTLE_MS)
 
-    // One write, the 0: the height not yet settled is not written first.
-    expect(slotWrites()).toBe(1)
-    expect(keptSlot()).toEqual({ at: recordAt(), w: WIDTH, h: 0, dests: [] })
+    // The hide alone keeps Home's slot shut: nothing is written, not the
+    // height not yet settled, and not a 0.
+    expect(slotWrites()).toBe(0)
     expect(watched()).toEqual([])
     expect(readPlanCardSlot(Date.now(), WIDTH)).toBeNull()
+  })
+
+  it('keeps the height it settled at under the X, so Show on Home brings it back at that height', async () => {
+    answeredAgo(1)
+    const unmount = mount()
+    await wait(PLAN_CARD_SLOT_SETTLE_MS)
+    fireEvent.click(screen.getByRole('button', { name: 'Hide your plan' }))
+    await wait(PLAN_CARD_SLOT_SETTLE_MS)
+    unmount()
+    expect(readPlanCardSlot(Date.now(), WIDTH)).toBeNull()
+
+    // Settings' Show on Home, with Home not drawn.
+    showPlanCard()
+
+    expect(readPlanCardSlot(Date.now(), WIDTH)).toEqual({
+      kind: 'plan',
+      height: DRAWN,
+    })
   })
 
   it('keeps nothing, and writes nothing, for someone with no plan at all', async () => {

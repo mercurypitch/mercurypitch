@@ -2,7 +2,7 @@
 // Settings Panel — Pitch detection and accuracy configuration
 // ============================================================
 
-import type { Component } from 'solid-js'
+import type { Component, JSX } from 'solid-js'
 import { createEffect, createMemo, createSignal, For, lazy, Show, Suspense, } from 'solid-js'
 import { AccountSection } from '@/components/account/AccountSection'
 import { DeleteAccountRow } from '@/components/account/DeleteAccountRow'
@@ -127,7 +127,18 @@ const DANGER_ACTIONS: Record<
   },
 }
 
-export const SettingsPanel: Component = () => {
+export interface SettingsPanelProps {
+  /**
+   * "Your plan", drawn in General after App Mode: given by the host on the web
+   * only (src/pages/SettingsPage.tsx), and never in the native build, which
+   * has no plan. The plan is a feature and this component may not import
+   * one, so the host hands the section over, as App hands GuideSelection its
+   * plan row, and gives none where there is no plan.
+   */
+  plan?: () => JSX.Element
+}
+
+export const SettingsPanel: Component<SettingsPanelProps> = (props) => {
   const s = () => settings()
   const [pendingDanger, setPendingDanger] = createSignal<DangerAction | null>(
     null,
@@ -500,6 +511,10 @@ export const SettingsPanel: Component = () => {
               </SafeSelect>
             </div>
           </div>
+
+          {/* Your plan: the host's section, on the web only. A ternary, not a
+              <Show>, so the constant folds the call out of the native build. */}
+          {IS_NATIVE_BUILD ? null : props.plan?.()}
 
           {/* Guided Path Section */}
           <div class={styles.settingsSection}>

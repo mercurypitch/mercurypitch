@@ -214,12 +214,25 @@ export const MENU_WHOLE =
  * written together, here, and read from here by every screen that says them.
  */
 export const PLAN_PLACES = {
-  /** The way back to the four questions, on the answers given: on the plan screen and Home's card. */
+  /** The way back to the four questions, on the answers given: on the plan screen, Home's card and Settings. */
   changeAnswers: 'Change my answers',
   /** The toast the card's X raises: where the plan still is. */
   offHome: 'Your plan is off Home. Settings and the Guide still have it.',
   /** The toast's action, which puts the card back. */
   undo: 'Undo',
+  /** Settings' section, in the General tab. */
+  title: 'Your plan',
+  /** Its line, with an answered plan. */
+  answeredLine:
+    "Merc's plan from your four answers. Home shows it for a week after you answer.",
+  /** Opens the plan, as the Guide's row does. */
+  seePlan: 'See my plan',
+  /** Clears the hide, while Home's card is hidden and would otherwise show. */
+  showOnHome: 'Show on Home',
+  /** Its line, with no answered plan. */
+  askLine: 'Four questions, and Merc picks where you start.',
+  /** Opens the four taps, as the skipper's card's Start does. */
+  answer: 'Answer the four questions',
 } as const
 
 // ── Play ───────────────────────────────────────────────────────────────
