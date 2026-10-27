@@ -7,7 +7,9 @@
 // with `elementFromPoint`, how far from the control's centre a press still
 // lands on it, along the centre row and column, and whether the middle of
 // every edge of its own drawn box still does. Read before any assertion that a control is
-// "at least 44 px" or that two controls do not share a press.
+// "at least 44 px" or that two controls do not share a press; `neighbourAreas`
+// gives the presses of the controls near enough for a grown box to reach,
+// and `bringToMiddle` puts a control where a hit-test can read all of it.
 
 import type { Locator } from '@playwright/test'
 
@@ -61,6 +63,51 @@ export function hitArea(control: Locator): Promise<HitArea> {
       ownsItsBox: points.every(([x, y]) => lands(x, y)),
     }
   })
+}
+
+/** Scroll `control` to the middle of its scrollers and the screen, before
+ *  hit-testing it: a hit-test reads only what is on screen and on top, so
+ *  a control left at an edge, under the phone's tab bar, loses part of its
+ *  press to the bar. */
+export async function bringToMiddle(control: Locator): Promise<void> {
+  await control.evaluate((element) =>
+    element.scrollIntoView({
+      behavior: 'instant',
+      block: 'center',
+      inline: 'center',
+    }),
+  )
+}
+
+/** The press of every other visible control within `within` px of
+ *  `control`'s drawn box: the ones a grown box could reach. */
+export async function neighbourAreas(
+  control: Locator,
+  within = 60,
+): Promise<HitArea[]> {
+  const page = control.page()
+  await control.evaluate((element, within) => {
+    for (const marked of Array.from(
+      document.querySelectorAll('[data-e2e-near]'),
+    ))
+      marked.removeAttribute('data-e2e-near')
+    const r = element.getBoundingClientRect()
+    const all = document.querySelectorAll(
+      'button, a[href], input, select, textarea',
+    )
+    for (const other of Array.from(all)) {
+      if (other === element) continue
+      const o = other.getBoundingClientRect()
+      if (o.width === 0 || o.height === 0) continue
+      const dx = Math.max(o.left - r.right, r.left - o.right, 0)
+      const dy = Math.max(o.top - r.bottom, r.top - o.bottom, 0)
+      if (dx <= within && dy <= within) other.setAttribute('data-e2e-near', '')
+    }
+  }, within)
+  const near = await page.locator('[data-e2e-near]').all()
+  const areas: HitArea[] = []
+  for (const other of near) areas.push(await hitArea(other))
+  return areas
 }
 
 /** Whether two reach rectangles share any press (more than half a pixel). */

@@ -389,14 +389,14 @@
    ============================================================ */
 @media (max-width: 768px) {
   /* Difficulty filter: one scrolling chip row, never wrapped. */
-  .exercise-filter {
+  .exercise-filter-row {
     flex-wrap: nowrap;
     overflow-x: auto;
     scrollbar-width: none;
     -webkit-overflow-scrolling: touch;
     padding-bottom: 2px;
   }
-  .exercise-filter::-webkit-scrollbar {
+  .exercise-filter-row::-webkit-scrollbar {
     display: none;
   }
   .exercise-filter-pill {
@@ -412,6 +412,18 @@
   .exercise-card:active {
     transform: scale(0.985);
     transition: transform 0.08s ease;
+  }
+}
+
+/* The pills' 44 px presses (exercises.css) reach 4 px above and below
+   their 36 px, and a scroller cuts off whatever reaches past it. So under
+   a finger the row grows 4 px of padding each way to hold them, and gives
+   it back in margin: the pills stay where they were, and the frame around
+   the row, which the Exercises tour spotlights, keeps its 38 px. */
+@media (pointer: coarse) and (max-width: 768px) {
+  .exercise-filter-row {
+    margin-block: -4px;
+    padding-block: 4px 6px;
   }
 }
 

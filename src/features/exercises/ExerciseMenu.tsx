@@ -345,23 +345,30 @@ const ExerciseMenu: Component<ExerciseMenuProps> = (props) => {
         <Show when={props.headerAction}>{props.headerAction}</Show>
       </div>
 
+      {/* A frame and the row of pills in it. On a phone the row scrolls,
+          and a scroller cuts off whatever reaches past it, so under a
+          finger the row grows to hold the pills' presses while the frame,
+          which the Exercises tour spotlights, keeps its size (see
+          mobile-polish.css). */}
       <div
         class="exercise-filter"
         role="group"
         aria-label="Filter by difficulty"
       >
-        <For each={DIFFICULTY_FILTERS}>
-          {(f) => (
-            <button
-              type="button"
-              class="exercise-filter-pill"
-              classList={{ active: diffFilter() === f.id }}
-              onClick={() => setDiffFilter(f.id)}
-            >
-              {f.label}
-            </button>
-          )}
-        </For>
+        <div class="exercise-filter-row">
+          <For each={DIFFICULTY_FILTERS}>
+            {(f) => (
+              <button
+                type="button"
+                class="exercise-filter-pill"
+                classList={{ active: diffFilter() === f.id }}
+                onClick={() => setDiffFilter(f.id)}
+              >
+                {f.label}
+              </button>
+            )}
+          </For>
+        </div>
       </div>
 
       {/* Practice intel: suggestions (or a getting-started nudge), then recent
