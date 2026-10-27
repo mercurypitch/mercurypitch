@@ -25,6 +25,10 @@ interface StudioMacroDialProps {
 // The ring: radius 18, with 270 of its 360 degrees drawn.
 const RING = 2 * Math.PI * 18
 const TRAVEL = (270 / 360) * RING
+// The focus ring: radius 23 (clear of the zero mark), 240 degrees, ending
+// above the end words.
+const FOCUS_RING = 2 * Math.PI * 23
+const FOCUS_ARC = (240 / 360) * FOCUS_RING
 // Pixels of vertical drag for the whole -100 to 100 range.
 const DRAG_PIXELS = 160
 // A press that moves less than this is a click, not a turn.
@@ -125,6 +129,13 @@ export function StudioMacroDial(props: StudioMacroDialProps) {
           onBlur={() => draft.commit()}
         />
         <svg viewBox="0 0 48 48" aria-hidden="true">
+          <circle
+            class={styles.focusRing}
+            cx="24"
+            cy="24"
+            r="23"
+            style={{ 'stroke-dasharray': `${FOCUS_ARC} ${FOCUS_RING}` }}
+          />
           <line class={styles.zero} x1="24" y1="1.5" x2="24" y2="3.5" />
           <circle
             class={styles.track}
