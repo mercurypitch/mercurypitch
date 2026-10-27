@@ -60,6 +60,15 @@ export function StudioOutputMeter(props: Props) {
     { name: 'R', peak: peakR(), hold: props.snapshot?.holdR ?? 0 },
   ]
   const full = () => props.compact !== true && !vertical()
+  const peakReading = () => (
+    <>
+      <Show when={clipped()} fallback={<span>Peak</span>}>
+        <strong>CLIP</strong>
+      </Show>{' '}
+      {reading(decibels(peak()))}
+      <small>dB</small>
+    </>
+  )
   return (
     <div
       class={styles.output}
@@ -112,15 +121,21 @@ export function StudioOutputMeter(props: Props) {
             </div>
           </Show>
         </div>
-        <span class={styles.peakLabel}>
-          <Show when={clipped()} fallback={<span>Peak</span>}>
-            <strong>CLIP</strong>
-          </Show>{' '}
-          {reading(decibels(peak()))}
-          <small>dB</small>
-        </span>
+        <Show when={!vertical()}>
+          <span class={styles.peakLabel}>{peakReading()}</span>
+        </Show>
       </div>
       <Show when={vertical()}>
+        {/* Upright, the reading is also the reset: a meter's parts cannot be buttons. */}
+        <button
+          type="button"
+          class={styles.peakLabel}
+          classList={{ [styles.clipped]: clipped() }}
+          title="Reset peak hold"
+          onClick={() => props.onReset()}
+        >
+          {peakReading()}
+        </button>
         <p class={styles.loudness} title="Short-term loudness, 3 seconds">
           <span>Short-term</span>
           <strong>
