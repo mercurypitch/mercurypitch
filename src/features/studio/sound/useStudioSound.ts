@@ -15,6 +15,9 @@ export interface StudioSoundControllerOptions {
   analyze?: typeof analyzeStudioBalance
 }
 
+/** How an Auto-balance run ended. */
+export type StudioBalanceOutcome = 'applied' | 'nothing' | 'cancelled'
+
 export function useStudioSound(options: StudioSoundControllerOptions) {
   const [busy, setBusy] = createSignal(false)
   const [cancelling, setCancelling] = createSignal(false)
@@ -24,6 +27,11 @@ export function useStudioSound(options: StudioSoundControllerOptions) {
   } | null>(null)
   const [error, setError] = createSignal<string | null>(null)
   const [notice, setNotice] = createSignal<string | null>(null)
+  // How the last run ended, as a fresh object each time, for places too small
+  // for the notice sentence.
+  const [outcome, setOutcome] = createSignal<{
+    kind: StudioBalanceOutcome
+  } | null>(null)
   let active: StudioRenderJob | null = null
   let disposed = false
 
@@ -56,8 +64,10 @@ export function useStudioSound(options: StudioSoundControllerOptions) {
   function finishJob(job: StudioRenderJob): void {
     if (active === job) active = null
     if (disposed) return
-    if (job.abort.signal.aborted && isCurrent(job))
+    if (job.abort.signal.aborted && isCurrent(job)) {
       setNotice('Auto-balance cancelled.')
+      setOutcome({ kind: 'cancelled' })
+    }
     setBusy(false)
     setCancelling(false)
   }
@@ -78,6 +88,7 @@ export function useStudioSound(options: StudioSoundControllerOptions) {
     setProgress(null)
     setError(null)
     setNotice(null)
+    setOutcome(null)
     try {
       await options.releaseAudio()
       job.abort.signal.throwIfAborted()
@@ -107,12 +118,15 @@ export function useStudioSound(options: StudioSoundControllerOptions) {
         sourceRevision: proposal.revision,
         balanceGainDbByTrack: proposal.balanceGainDbByTrack,
       })
-      if (applied)
+      if (applied) {
+        const balanced = Object.keys(proposal.balanceGainDbByTrack).length > 0
         setNotice(
-          Object.keys(proposal.balanceGainDbByTrack).length
+          balanced
             ? 'Balance applied. Your volume and pan settings are unchanged.'
             : 'No audible tracks to balance.',
         )
+        setOutcome({ kind: balanced ? 'applied' : 'nothing' })
+      }
       return applied
     } catch (cause) {
       if (!disposed && !job.abort.signal.aborted && isCurrent(job))
@@ -139,6 +153,7 @@ export function useStudioSound(options: StudioSoundControllerOptions) {
     progress,
     error,
     notice,
+    outcome,
     autoBalance,
     cancel,
     dispose,

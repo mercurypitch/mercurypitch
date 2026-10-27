@@ -14,7 +14,7 @@
 // strips like, but never so tall that fewer than two lanes stay in view. A
 // short desk draws compact strips. Its top edge drags to another height,
 // which this device remembers; a double-click there returns to automatic.
-import { createEffect, createMemo, createSignal, createUniqueId, For, on, onCleanup, onMount, Show, } from 'solid-js'
+import { createEffect, createMemo, createSignal, createUniqueId, For, on, onCleanup, onMount, } from 'solid-js'
 import { X } from '@/components/icons'
 import type { StudioMeterSnapshot } from '@/lib/studio/metering/stream-meter'
 import type { StudioCommand } from '@/lib/studio/model/commands'
@@ -22,11 +22,13 @@ import type { StudioProject } from '@/lib/studio/model/types'
 import type { StudioLaneLevel } from '@/lib/studio/playback/transport'
 import { MACRO_KEYS } from '@/lib/studio-fx/mix-macros'
 import { StudioOutputMeter } from '../audio/StudioOutputMeter'
-import { StudioFlavourChoices, studioSoundAdjusted, } from '../sound/StudioFlavourChoices'
+import { StudioFlavourChoices } from '../sound/StudioFlavourChoices'
 import { StudioMacroDial } from '../sound/StudioMacroDial'
 import common from '../StudioPage.module.css'
 import { StudioTrackControls } from '../timeline/StudioTrackControls'
 import { studioTrackColor, studioTrackHue } from '../timeline/track-hues'
+import type { StudioDeskBalanceSource } from './StudioDeskBalance'
+import { StudioDeskBalance } from './StudioDeskBalance'
 import styles from './StudioMixDesk.module.css'
 import { StudioStripMeter } from './StudioStripMeter'
 
@@ -46,6 +48,8 @@ interface StudioMixDeskProps {
   /** Finger-sized strips and dials. */
   tablet?: boolean
   meter: StudioMixMeterSource
+  /** The Sound panel's Auto-balance, offered beside Reset sound. */
+  balance?: StudioDeskBalanceSource
   /** The selected lane: its strip is marked, and a strip's name selects its lane. */
   selectedTrackId?: string | null
   onSelectTrack?(trackId: string): void
@@ -380,22 +384,12 @@ export function StudioMixDesk(props: StudioMixDeskProps) {
           <div class={styles.masterControls}>
             <div class={styles.masterHeading}>
               <h3>Master</h3>
-              <Show when={studioSoundAdjusted(props.project)}>
-                <span class={styles.adjusted}>Adjusted</span>
-              </Show>
-              <button
-                type="button"
-                class={common.textButton}
-                disabled={!props.writable}
-                onClick={() =>
-                  props.onCommand({
-                    type: 'set-sound-flavour',
-                    flavourId: 'natural',
-                  })
-                }
-              >
-                Reset sound
-              </button>
+              <StudioDeskBalance
+                project={props.project}
+                writable={props.writable}
+                balance={props.balance}
+                onCommand={props.onCommand}
+              />
               {/* A short tablet desk drops its title row; Close moves here. */}
               <button
                 type="button"

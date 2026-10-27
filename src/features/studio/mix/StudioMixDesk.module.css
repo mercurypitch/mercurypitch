@@ -264,16 +264,37 @@
   font-size: 13px;
   font-weight: 600;
 }
-.masterHeading button {
+/* Auto-balance and Reset sound, paired at the heading's end. */
+.masterActions {
+  display: flex;
+  align-items: center;
+  gap: 2px;
   margin-left: auto;
 }
-.adjusted {
+.adjusted,
+.outcome {
   padding: 2px 8px;
   border-radius: 999px;
   background: var(--studio-control);
   color: var(--studio-text-2);
   font-size: 11px;
   font-weight: 500;
+  white-space: nowrap;
+}
+/* How Auto-balance ended, for a few seconds where "Adjusted" sits. */
+.outcome {
+  background: color-mix(
+    in srgb,
+    var(--studio-accent) 14%,
+    var(--studio-control)
+  );
+  color: var(--studio-accent-text);
+}
+.balanceStatus {
+  padding: 0 6px;
+  color: var(--studio-text-2);
+  font-size: 12px;
+  white-space: nowrap;
 }
 .group {
   display: flex;
