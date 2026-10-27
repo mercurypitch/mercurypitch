@@ -1090,7 +1090,7 @@ parts:
     reading time while its line is in `drafts.ts`, and `seasonFor(LESSONS, defaultPageState(true))`
     keeps both, as `publish.test.ts` checks a lesson held back and one published (`:58-135`); that
     file's example of a lesson with no page is found, not named (`:45-56`). When the season's last
-    page lands, Lesson 14's in the order `docs/plans/find-your-pitch/HANDOFF.md:220` suggests,
+    page lands, Lesson 14's in the order `docs/plans/find-your-pitch/HANDOFF.md:233` suggests,
     `lessonWithNoPage` (`kit/season.test-fixtures.ts:22-36`) finds none, and each test that asks it
     for an example fails by saying so. Lesson 14's practise link carries `?lesson=14`, and `EDGES`
     holds [5, 14], [8, 14], [9, 14] and [12, 14].
