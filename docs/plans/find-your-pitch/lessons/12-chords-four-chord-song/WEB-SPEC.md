@@ -633,7 +633,7 @@ Step 1 again" and opens in a new tab, through `away` (`:94-101`, `linkAway` at `
 keeps a link's words and drops the link wherever that lesson is not live.
 
 - **Recall**: Lesson 10's questions 1 and 2, word for word with their feedback (LESSON.md; FACTS 7),
-  under Lesson 10's ids, `l10-q1` and `l10-q2` (`lessons/10-major-minor/WEB-SPEC.md:606-607`). If
+  under Lesson 10's ids, `l10-q1` and `l10-q2` (`lessons/10-major-minor/WEB-SPEC.md:649-650`). If
   Lesson 10's page lands first, they are imported from its `lesson-10/quiz-questions.ts` and
   filtered by id, as Lesson 4's page takes Lesson 2's (`lesson-04/quiz-questions.ts:28-29`);
   otherwise they are written into this page's `lesson-12/quiz-questions.ts` as Lesson 3 writes

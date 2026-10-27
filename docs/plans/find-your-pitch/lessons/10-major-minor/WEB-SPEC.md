@@ -140,9 +140,11 @@ FACTS 5a). Each section's heading, and the line above it, are in LESSON.md ("Sec
    use, with LESSON.md's eyebrow, title, text, address and second drill: Drone Intonation, linked
    `/pitch-training?lesson=10`, and Ear Lab's Stack, linked `/ear-lab?lesson=10` (Practice links).
    It has no first-visit line, since the marker steps First Light aside (FACTS 46, 46a). After
-   "Effortful", "Uncomfortable" or "Just listen today" it is the rest card instead, with Drone
-   Intonation named and Stack still offered, since Stack needs no voice (Toys 6; FACTS 67). Both
-   links open in a new tab. The two versions sit in one `#practiseCard`, shown by the visit's
+   "Effortful", "Uncomfortable" or "Just listen today" it is the rest card instead: Drone
+   Intonation is named in words with its address and no link, since nothing may send the learner
+   to sing then (REQ-GVC-055), and Stack is the card's one link, still offered since Stack needs no
+   voice (Toys 6; FACTS 67). Every link on either card opens in a new tab. The two versions sit in
+   one `#practiseCard`, shown by the visit's
    ending, as Lesson 5's are (`lesson-05/wrap.ts:23-25`; `comfort.ts:126-149`). The next lesson's
    card is the kit's, drawn from the season by `createNextCard(10)` before
    `createExplorer({ current: 10 })`, as Lesson 4's page draws its own (`lesson-04/main.ts:95`, `:105`;
@@ -229,7 +231,10 @@ page: Lesson 12 draws its chords as rooms on the spiral and needs no chord's not
   free play); it plays its two notes. To the left, a bracket joins the root to the fifth, labelled
   "7 · perfect fifth" (Steps 2 to 4, and free play). Along the figure's foot, the name strip names
   the chord, "C major · do-mi-so" or "C minor · do-me-so" (Steps 2 to 4), or the third, "Major third
-  · 4 semitones" (Step 1).
+  · 4 semitones" (Step 1). Above the figure, the stage's label names each step's state: "Fig. 1 Two
+  beads, a third", "Fig. 2 Three beads, two thirds", "Fig. 3 Move the third", "Fig. 4 The chord's
+  pattern" and "Fig. 5 The chord in its scale" (`FIG`, `lesson-10/steps.ts:75-81`), the builder's
+  words, waiting on the copy pass.
 - **The signature.** When the third changes quality, its bead slides down or up one row in 0.4 s and
   lands as its name changes, E to E♭. The gap numbers swap, 4 and 3 to 3 and 4, the bracket stays "7
   · perfect fifth", and the name strip changes "major" to "minor". A soft halo round the whole chord
@@ -277,14 +282,17 @@ page: Lesson 12 draws its chords as rooms on the spiral and needs no chord's not
   `spellScale` (`notes.ts:165-177`; FACTS 27). Major · Minor waits for the predict's choice: in Step
   5 the toy draws it disabled until the predict's `onChoice` says a choice is in, and the predict's
   `unlocks` enables it (`src/features/lessons/kit/predict.ts:64-67`), so the stage cannot answer the
-  predict first.
+  predict first. The scale state draws no name strip: Drawing gives it to Steps 1 to 4 only
+  (`STRIP_IN`, `lesson-10/chord-layout.ts:86-92`).
 - **Free play** (Wrap): its own copy of the toy in a card, as Lesson 4's is
   (`lesson-04/main.ts:90-92`), with every control: Root lower and Root higher, Major · Minor, Chord
   · Scale, **Play** (the chord, note by note and together, or the scale, whichever shows), **Play
   the pattern**, **Slow** (doubling Play's lengths, and playing the pattern at Step 4's slow tempo
   rather than its fast one) and the names switch. Spread into a scale on a root slid to B4, it
   reaches B5, 987.77 Hz, the scale's top do (FACTS 70a), in the scale's own window (Layout and
-  targets). Nothing locks: the guided steps come first on the page (playbook rule 17).
+  targets). Nothing locks: the guided steps come first on the page (playbook rule 17). It draws no
+  name strip, chord or scale, as Step 5 draws none. The card opens on the line "Free play: try
+  every control of the chord beads in one place", the builder's words, waiting on the copy pass.
 - **Readouts** sit inside the figure, as Lesson 1's do (`learn/01.html:614-636`, `.readout`), so no
   status line takes height.
 - **Layout and targets** (FACTS 82). Rows are 15 px a semitone, so the closest two beads, a minor
@@ -316,10 +324,14 @@ page: Lesson 12 draws its chords as rooms on the spiral and needs no chord's not
   below its `--viz-min`, 180 px unless a lesson's stylesheet sets more (`lesson-stage.css:687-704`),
   so the page sets `--viz-min: 340px` on the stuck stage only, under
   `@media (min-width: 961px) and (min-height: 561px)`, the stage's stuck condition and the opposite
-  of the deck's query (`lesson-stage.css:1037-1093`). The stage, with its head, the 340 px figure,
-  at most two rows of 44 px controls and the card's padding, is about 540 px, inside the smallest
-  room, 555 px. No step shows a status line under its figure, and the ear game and Step 5's predict
-  sit in the step text, not on the stage, which is what keeps every step to two rows of controls.
+  of the deck's query (`lesson-stage.css:1037-1093`). The stage, with its head, the 342 px figure,
+  its rows of 44 px controls and the card's padding, measures 514 px with one row (Steps 1 and 2)
+  and 568 px with two (Steps 3 to 5), so it fits the rooms of 604 and 581 px; in the rooms of 564
+  and 555 px, at 1024 x 640 and 1133 x 631, Steps 3 to 5's card is capped at the room and scrolls
+  itself 4 and 13 px, inside the 60 px a stage may scroll (`STAGE_SCROLL_BUDGET`,
+  `src/e2e/learn-stage-fit.spec.ts:57-58`; FACTS 82). No step shows a status line under its
+  figure, and the ear game and Step 5's predict sit in the step text, not on the stage, which is
+  what keeps every step to two rows of controls beside the text.
 - **The compact layout** (FACTS 82). On a phone held sideways the kit caps the deck's figure so that
   it and its toy's first row of controls share the screen, down to its `--viz-min`, 150 px unless a
   lesson's stylesheet sets more (`lesson-stage.css:1111-1128`): 162 px at 844 x 390, and 150 px on
@@ -335,7 +347,11 @@ page: Lesson 12 draws its chords as rooms on the spiral and needs no chord's not
 - **Keyboard and screen readers.** The figure is a group named for its state, with a summary that
   changes with it: "C major: C 4, E 4, G 4. Gaps of 4 and 3 semitones; root to fifth 7, a perfect
   fifth." Each bead is a button named by its note and role, "C 4, the root"; each gap button by what
-  it plays, "Play the major third, C 4 up to E 4". A polite live region says what each action
+  it shows, then what it plays, "4, major third: C 4 up to E 4", so its name starts with its label
+  (WCAG 2.5.3), as Lesson 6's gap buttons are named (`gapNames`, `lesson-10/lines.ts:152-163`). In
+  free play each group of controls is named for itself, "Free play: major or minor", "Free play:
+  chord or scale", "Free play: the names switch" and "Free play: the chord beads", the builder's
+  words, waiting on the copy pass. A polite live region says what each action
   changed, once: "Minor: the third moved down a semitone, to E flat 4. C minor." or "Stacked: C, E,
   G. C major." Every accessible name and live text uses words, never a ♯ or ♭ sign (`wordName`,
   `notes.ts:193`). Tab order: the stage's controls in reading order, then the beads from the root
@@ -385,7 +401,11 @@ taken further without forking it (`spiral.ts:28-32`):
 - **Speaking for it.** The drawing is a slider for the notes, as Lesson 2's hero copy is
   (`role="slider"`, `learn/02.html:408-413`), its values set by the kit; a polite live region beside
   it speaks for the moves: "C, E and G together." as the chord plays, and LESSON.md's "Mi moved down
-  a semitone: C, E flat, G." or "So moved down a semitone: C, E, G flat." as a move lands.
+  a semitone: C, E flat, G." or "So moved down a semitone: C, E, G flat." as a move lands. Its
+  description (`aria-describedby`) is the builder's, waiting on the copy pass: "Lesson 1's spiral
+  seen from above, so one turn is a ring of twelve notes, every black key named by its flat. Do,
+  mi and so, C 4, E 4 and G 4, are circled alike and joined by a thin triangle. With the keyboard,
+  the arrow keys pick a note and Enter plays it."
 
 ### 3. Predict widgets
 
@@ -449,11 +469,12 @@ tone? (`lesson-02/ear-game.ts:1-16`) generalised to N answers. This page needs t
 game already has. It sits in its step's text column, under the Notice, as Lesson 2's game card does
 (its DECISIONS 82).
 
-- **On thirds** (Step 1): eight rounds, each a root from C4 to G4, then the note 3 or 4 semitones
-  above it, 0.6 s and 0.8 s, 0.15 s apart (FACTS 78).
+- **On thirds** (Step 1): eight rounds, each a root from C4 to G4, any of the eight keys, black ones
+  too, then the note 3 or 4 semitones above it, 0.6 s and 0.8 s, 0.15 s apart (FACTS 78).
 - **On chords** (Step 3): ten rounds, each, as the test in the Royal Conservatory's 2019 voice
-  syllabus does, the first five notes of a major or minor scale on a root from C4 to G4, 0.32 s
-  each, 0.25 s of silence, then its triad together for 1.2 s (FACTS 21, 43, 78).
+  syllabus does, the first five notes of a major or minor scale on a root from C4 to G4, any of the
+  eight keys, 0.32 s each, 0.25 s of silence, then its triad together for 1.2 s (FACTS 21, 43,
+  78).
 - **Answers**: two buttons side by side, "Major" and "Minor", each at least 44 px tall. As in Lesson
   2's game, the keys 1 and 2 answer while the card has focus and Space plays the round again, a
   focused button keeping Space for itself; the answers use `aria-disabled`, never `disabled`, so a
@@ -481,6 +502,11 @@ game already has. It sits in its step's text column, under the Notice, as Lesson
   `kit/ear-game.ts:139-140`).
 - **The count** at the end, "7 of 10" (or "5 of 8"), counts the rounds answered right first time; no
   rating, no streak, nothing stored. Then Play again.
+- **Labels**: the Play button reads "Play a pair" on thirds, Lesson 6's (`lesson-06/games.ts:42`),
+  and "Play a chord" on chords, the builder's after it; neither has an ask line yet. Between rounds
+  it reads Lesson 6's "Play it again" and "Next round" (`lesson-10/games.ts:75`), and at the end
+  "Play eight more" or "Play ten more" (`:99-100`), the button this section calls Play again. All
+  wait on the copy pass.
 - States: ready (a Play button); playing; answering; feedback shown; finished, with the count and
   Play again. Under reduced motion the answer lights and the line appear with no transition.
 
@@ -561,7 +587,22 @@ States:
      singing for today: rest your voice.", and the doctor lines, puts the guide and Move do away for
      the visit, and the Wrap shows the rest card (REQ-GVC-023, REQ-GVC-055).
    - A guide put away and a rest card picked stay so for the visit. The page keeps the ending in
-     memory for the visit, never in storage.
+     memory for the visit, never in storage. No later answer can change it: after "Effortful" or
+     "Uncomfortable" the kit's lock holds the answer, so Easy cannot be pressed, and the guide is
+     away, so no sweep ends to ask again.
+
+Where LESSON.md and this spec word no status line, the page takes the series' (`STATUS`,
+`lesson-10/sing-flow.ts:168-178`): the four Lessons 6 and 8 share word for word, "Before you sing:
+how is your voice today?", "Choose the voice you'll sing with.", "Choose a voice: it picks the Merc
+who sings." and "How did that feel?"; three in Lesson 8's form, with "Merc's notes" and "them" for
+its "Merc's line" and "it" (`lesson-08/sing-flow.ts:159-167`), "Just listening today: press Play
+Merc's notes to hear them.", "Play Merc's notes first: Merc sings them, then the guide is yours."
+and "Start the guide when you're ready, or play Merc's notes again."; and while a sweep runs,
+Lesson 8's "Your turn: sing with the guide." The ring's state words are Lesson 6's for the same
+guide (`RING_WORDS`, `lesson-10/sing.ts:84-89`; `lesson-06/sing.ts:75-79`, `:196`; Lesson 6's
+LESSON.md, `lessons/06-intervals/LESSON.md:248-250`): "Ready when you are" before anything plays,
+"Listen" while Merc sings, "Get ready" through the count-in, "Sing with the line · n" through the
+sweep, and "Rest" after. Both sets wait on the copy pass.
 
 The flow is a pure rule (`lesson-10/sing-flow.ts`), as Lesson 6's page makes its own
 (`lesson-06/sing-flow.ts`, the shape it follows): from the comfort answer,
@@ -603,14 +644,16 @@ keeps a link's words and drops the link wherever that lesson is not live.
   done. Its links open Lesson 6's page at the step, `/learn/06#step-5` and `/learn/06#step-2`, in a
   new tab, through `away: { href: recallStepHref }`; the kit's step deck opens a page at the step
   its address names (`src/features/lessons/kit/step-deck.ts:19-23`). Its second question's slot
-  holds its play button, Lesson 6's C4 then F4 (FACTS 71), named "Play two notes".
+  holds Lesson 6's own play button, C4 then F4 (FACTS 71), which shows and is named "Play", as on
+  Lessons 6 and 9's pages, which ask the same question.
 - **Quick check**: LESSON.md's four questions, ids `l10-q1` to `l10-q4`, keys `fyp-l10-seed` and
   `fyp-l10-quiz-v1`, and `lesson: 10`, so answering all four marks Lesson 10 done in the explorer.
   Three answers each, shuffled per question from the stored seed, one-line feedback for every
   answer, and a check icon and ink (not gold) on the right one. The kit prints "Right." or "Not
   quite." before each line (`quiz.ts:315`), so no feedback line starts with "Right", "Yes" or
   "Correct". Question 2's slot holds its play button, D4, F4 and A4 together for 1.4 s, a D minor
-  triad (FACTS 79), named "Play the question's chord", so it never shares a name with the cold
+  triad (FACTS 79), which shows "Play" and is named "Play the question's chord", so its name holds
+  what it shows (WCAG 2.5.3) and never shares a name with the cold
   open's Play the chord; the kit keeps a slot's controls across answers, and the page handles them
   with a listener on the quiz's `host`. "Try Step 1 again" to "Try Step 5 again" use the kit's
   `data-goto-step`. Answers stay local; #1193 sends each first answer in a visit, anonymously.
@@ -688,11 +731,14 @@ still images when WebGL fails or would run on the CPU.
   Range, first (CURRICULUM § 4 item 7). It names black keys with sharps, typed with a #, so the card
   says how this lesson's E♭ shows there (FACTS 50). The link is `/pitch-training?lesson=10`, and the
   marker lets First Light, the main app's intro, step aside on a first visit (FACTS 46a), so the
-  card, the rest card and the footer carry no first-visit line.
+  card, the rest card and the footer carry no first-visit line. The rest card names Drone
+  Intonation and its address in words, with no link: after a rest answer nothing may send the
+  learner to sing (REQ-GVC-055).
 - **Today, Ear Lab's Stack.** `mercurypitch.com/ear-lab`, then tap Stack (FACTS 47, 51): twelve
   rounds, each one chord on a roved root, named from six qualities, of which this lesson teaches
   two. On the public host `/ear-lab?lesson=10`, the marker before the hash the entry document adds
-  (`src/seo/entry-pages.ts:453-458`). Stack needs no voice, so it stays on the rest card (FACTS 67).
+  (`src/seo/entry-pages.ts:453-458`). Stack needs no voice, so it stays on the rest card, as its one
+  link (FACTS 67).
 - **In the app, not yet linked: `/exercises/thirds-on-a-drone`** (CURRICULUM § 4 item 2, the
   `intervals` launch field; FACTS 52, 53): Drone Intonation on the minor and major thirds, 3 and 4
   semitones up, registered in `EXERCISE_SLUGS` (`src/features/exercises/slug-map.ts:54-86`) with a
@@ -1031,7 +1077,8 @@ parts it adds:
    rest card; Start the guide waits for Merc's notes heard with sound on; the feeling question
    follows every sweep, asked afresh; "Easy" and "Workable" give "Do-mi-so, then do-me-so: you just
    moved the third." and keep the guide; "Effortful" and "Uncomfortable" put the guide and Move do
-   away for the visit and pick the rest card, and no later answer brings them back; nothing is
+   away for the visit and pick the rest card, and the kit's lock holds the answer, so a second
+   changes nothing; nothing is
    written to storage but `fyp-voice`.
 9. Move do: clamps at four semitones either way; at every position both chords lie inside every
    preset of the chosen voice, checked against `VOCAL_RANGES` imported from
@@ -1091,9 +1138,9 @@ bundle, which no site worker serves and which shows drafts: `build:e2e` sets `VI
    card in the Wrap; Start the guide stays `aria-disabled` until Merc's notes have played; the
    feeling question appears when each sweep ends; "Easy" shows "Do-mi-so, then do-me-so: you just
    moved the third."; "Effortful" hides the guide and Move do and shows the gentle line;
-   "Uncomfortable" does the same with the doctor lines; after either, the Wrap shows the rest card
-   with Stack still offered, and answering "Easy" later does not bring the practice card back on
-   this visit.
+   "Uncomfortable" does the same with the doctor lines; after either, the Wrap shows the rest card,
+   Drone Intonation in words with no link and Stack its one link, and no later answer can bring the
+   practice card back, since the kit's lock holds the answer and the guide is away.
 8. No call to `navigator.mediaDevices.getUserMedia` at any point (a spy, as
    `src/e2e/learn-lesson-03.spec.ts:323-332` sets one).
 9. The recall: shown open to everyone, with an empty `fyp-done` too; its answers mark nothing done;
@@ -1157,6 +1204,8 @@ or dev build, never production:
 - The network panel and the browser's microphone indicator stay quiet through Sing it: no request,
   no microphone.
 - The Wrap shows the rest card after "Effortful", after "Uncomfortable" and after "Just listen
-  today", and the Drone Intonation card otherwise; every link opens in a new tab.
+  today", and the Drone Intonation card otherwise; the rest card names Drone Intonation and its
+  address in words with no link (REQ-GVC-055), and Stack is its one link; every link opens in a
+  new tab.
 - The app-check sweep at phone and desktop width, with Sing it open in each state and the cold open
   before and after its reveal.
