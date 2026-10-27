@@ -14,9 +14,11 @@
 // open: Play the chord before a choice, the moves locked until one, the
 // reveal waiting for both moves heard to their end with sound on, and no
 // gold on the spiral until it shows, its ring naming each black key by its
-// flat; and its fourteenth: a visitor with the studio installed still gets
-// the lesson, not the shell. Each toy's own checks join it as that toy is
-// wired.
+// flat; its ninth, the recall shown to everyone and marking nothing done,
+// with Lesson 6's step links in a new tab, and the quick check marking
+// Lesson 10 done; and its fourteenth: a visitor with the studio installed
+// still gets the lesson, not the shell. Each toy's own checks join it as
+// that toy is wired.
 
 import type { Locator, Page } from '@playwright/test'
 import { expect, test } from './helpers/lesson-page'
@@ -266,6 +268,84 @@ for (const viewport of [
         'E flat 4, 311 hertz',
       )
       expect(await goldPixels(page)).toBe(0)
+    })
+  })
+}
+
+// WEB-SPEC, End to end 9, at a phone's size and a desktop's
+for (const viewport of [
+  { width: 390, height: 844 },
+  { width: 1440, height: 900 },
+]) {
+  test.describe(`the quizzes at ${viewport.width} x ${viewport.height}`, () => {
+    test.use({ viewport })
+
+    test("the recall shows open to everyone, marks nothing done and links Lesson 6's steps in a new tab; the quick check marks Lesson 10 done", async ({
+      page,
+    }) => {
+      // Arrange: no lesson done
+      await page.goto('/learn/10')
+      expect(await page.evaluate(() => localStorage.getItem('fyp-done'))).toBe(
+        null,
+      )
+      const recall = page.locator('#recall-qs')
+      const check = page.locator('#qs')
+      /** Answers `option`, in `quiz`. */
+      const answer = (quiz: Locator, option: string): Promise<void> =>
+        quiz.getByRole('button', { name: option, exact: true }).click()
+
+      // Act: the recall, open, both answered with the misconception
+      await expect(page.locator('#recallQuiz')).toBeVisible()
+      await expect(recall.locator('.q')).toHaveCount(2)
+      await answer(recall, '5 semitones: a perfect fourth')
+      await answer(recall, 'A step')
+
+      // Assert: nothing marked done, and each step link opens Lesson 6 in a new tab
+      expect(await page.evaluate(() => localStorage.getItem('fyp-done'))).toBe(
+        null,
+      )
+      const links = await recall
+        .locator('.fb a')
+        .evaluateAll((as) =>
+          as.map((a) => [
+            a.getAttribute('href'),
+            a.getAttribute('target'),
+            a.textContent,
+          ]),
+        )
+      expect(links).toEqual([
+        ['/learn/06#step-5', '_blank', 'Try Lesson 6, Step 5 again'],
+        ['/learn/06#step-2', '_blank', 'Try Lesson 6, Step 2 again'],
+      ])
+
+      // Act: question 2's chord plays from its slot, then the quick check,
+      // a wrong answer's step link first
+      const chord = check.getByRole('button', {
+        name: "Play the question's chord",
+      })
+      await chord.click()
+      await expect(chord).toHaveClass(/\bis-on\b/)
+      await expect(chord).not.toHaveClass(/\bis-on\b/, { timeout: 10_000 })
+      await answer(check, "They're right: minor sounds sad to everyone")
+      await check.locator('a', { hasText: 'Try Step 4 again' }).click()
+      await expect(page.locator('#stepNow')).toHaveText('4')
+      await answer(check, '3')
+      await answer(check, 'Minor')
+      await answer(check, 'E, A and B: mi, la and ti become me, le and te')
+
+      // Assert: every line starts the kit's way, and Lesson 10 is done
+      await expect(page.locator('#scoreN')).toHaveText('3')
+      const lines = await page
+        .locator('#recall-qs .fb, #qs .fb')
+        .evaluateAll((els) => els.map((e) => e.textContent?.trim() ?? ''))
+      expect(lines).toHaveLength(6)
+      for (const line of lines) expect(line).toMatch(/^(Right\.|Not quite\.)/)
+      expect(await page.evaluate(() => localStorage.getItem('fyp-done'))).toBe(
+        '[10]',
+      )
+      // the map's card on a desktop, the list's open row on a phone
+      await page.locator('#explorer').scrollIntoViewIfNeeded()
+      await expect(page.locator('#explorer .ex-card')).toContainText('Done')
     })
   })
 }

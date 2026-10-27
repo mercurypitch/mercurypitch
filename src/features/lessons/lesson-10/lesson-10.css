@@ -2,25 +2,24 @@
    Lesson 10 — Major and minor: the page's own figures and cards
    ============================================================
    Everything else is the kit's (lesson-base, lesson-sections, lesson-stage,
-   lesson-parts, lesson-guide, lesson-voice and lesson-ear-game). The last
-   three come in by the @imports below, which the build inlines, and not as
-   main.ts's imports. Each shares a chunk with modules this page's shell
-   does not load yet: the slide guide's sheet with Lesson 2's quiz modules
-   (Lessons 2, 4, 6, 8 and 9), the voice lessons' sheet with the comfort
-   check and the voice choice (Lessons 3 and 5 to 9), and the ear game's
-   sheet with the ear game (Lessons 6 and 8). Imported here alone, each
-   would leave its chunk for a sheet of its own, which those pages link
-   after their own sheet, so its rules would win over theirs
-   (docs/agent/MISTAKES.md, "Take the lessons' base stylesheet into another
-   page by @import"). Once the page loads those modules, each import moves
-   back to main.ts.
+   lesson-guide, lesson-parts, lesson-voice and lesson-ear-game). The last
+   two come in by the @imports below, which the build inlines, and not as
+   main.ts's imports. Each shares a chunk with modules this page does not
+   load yet: the voice lessons' sheet with the comfort check and the voice
+   choice (Lessons 3 and 5 to 9), and the ear game's sheet with the ear
+   game (Lessons 6 and 8). Imported here alone, each would leave its chunk
+   for a sheet of its own, which those pages link after their own sheet,
+   so its rules would win over theirs (docs/agent/MISTAKES.md, "Take the
+   lessons' base stylesheet into another page by @import"). Once the page
+   loads those modules, each import moves back to main.ts, as the slide
+   guide's did with the quizzes, which bring Lesson 2's quiz modules, the
+   chunk it shares.
 
    Here: the hero's spiral between Merc and Tavi, with the three plays under
    it; the chord beads' figure at its 340 px and the layer its targets take
    over it (WEB-SPEC, Toys 1, "Layout and targets"), and its rows of
    controls; Tavi's line in Step 4; Sing it's guide beside its ring; and the
    Wrap's cards. */
-@import '../kit/lesson-guide.css';
 @import '../kit/lesson-voice.css';
 @import '../kit/lesson-ear-game.css';
 

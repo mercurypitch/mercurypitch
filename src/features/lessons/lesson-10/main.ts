@@ -16,11 +16,11 @@
 // key by its flat and each move lands on E flat or G flat (WEB-SPEC, Toys
 // 2). They are never stored, and the page shows no switch for them.
 //
-// The switches, the cold open on the hero's spiral, the steps' deck with
-// the chord beads in each step's state, the next lesson's card, the season
-// map, the masthead and Merc and Tavi. The rest does nothing until it is
-// wired: the steps' controls and free play, the recall and the quick
-// check, the four words, the two games, Step 5's predict and Sing it.
+// The switches, the cold open on the hero's spiral and the recall after
+// it, the steps' deck with the chord beads in each step's state, the quick
+// check, the next lesson's card, the season map, the masthead and Merc and
+// Tavi. The rest does nothing until it is wired: the steps' controls and
+// free play, the four words, the two games, Step 5's predict and Sing it.
 
 import '@fontsource-variable/inter'
 import '@fontsource-variable/outfit'
@@ -28,10 +28,15 @@ import '@/features/lessons/kit/lesson-fonts.css'
 import '@/features/lessons/kit/lesson-base.css'
 import '@/features/lessons/kit/lesson-sections.css'
 import '@/features/lessons/kit/lesson-stage.css'
+// Sing it's guide, once it is wired; and Lesson 6's questions bring Lesson
+// 2's quiz modules onto this page, so taking this sheet here keeps it in
+// their chunk, and Lessons 2, 4, 6, 8 and 9 still link it before their own
+// sheets (MISTAKES.md, on the lessons' base stylesheet)
+import '@/features/lessons/kit/lesson-guide.css'
 import '@/features/lessons/kit/lesson-parts.css'
-// lesson-guide.css, lesson-voice.css and lesson-ear-game.css come in by
-// lesson-10.css's @import until the modules they share a chunk with are
-// loaded here (lesson-10.css says why)
+// lesson-voice.css and lesson-ear-game.css come in by lesson-10.css's
+// @import until the modules they share a chunk with are loaded here
+// (lesson-10.css says why)
 import './lesson-10.css'
 import { q } from '@/features/lessons/kit/dom'
 import { createExplorer } from '@/features/lessons/kit/explorer'
@@ -42,9 +47,13 @@ import { Motion } from '@/features/lessons/kit/motion-switch'
 import { Names } from '@/features/lessons/kit/names'
 import { createNextCard } from '@/features/lessons/kit/next-card'
 import { engraveClefs, initMasthead, initMotionSwitch, initSoundSwitch, } from '@/features/lessons/kit/page-chrome'
+import { createQuiz } from '@/features/lessons/kit/quiz'
 import { initReveals } from '@/features/lessons/kit/reveal'
 import { createStepDeck } from '@/features/lessons/kit/step-deck'
 import { initColdOpen } from './cold-open'
+import { bindQuizPlays } from './quiz-play'
+import { QUIZ_QUESTIONS } from './quiz-questions'
+import { initRecall } from './recall'
 import { initSteps } from './steps'
 
 Names.set('flats')
@@ -53,7 +62,9 @@ initSoundSwitch()
 initMotionSwitch()
 Motion.init()
 
+// the cold open comes first, and the recall follows it, asked of everyone
 initColdOpen()
+initRecall()
 
 // five steps, one chord-beads toy
 const deck = createStepDeck({
@@ -62,6 +73,16 @@ const deck = createStepDeck({
 })
 initSteps(deck)
 deck.start()
+
+// the quick check: answering all four marks Lesson 10 done; question 2's
+// chord plays from its slot
+const check = createQuiz({
+  questions: QUIZ_QUESTIONS,
+  lesson: 10,
+  keys: { seed: 'fyp-l10-seed', record: 'fyp-l10-quiz-v1' },
+  deck,
+})
+bindQuizPlays(check.host)
 
 // the next lesson's card first: the explorer binds its link to the map
 createNextCard(10)

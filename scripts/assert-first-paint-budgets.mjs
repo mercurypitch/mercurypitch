@@ -153,16 +153,7 @@ export const FIRST_PAINT_BUDGETS_KB = {
   // Merc and Tavi's two images, which Lessons 1 to 8 import and Lesson 9
   // does not, keep a chunk of their own. Each merges again once Lesson 9
   // loads the rest, and 130 can be tried then.
-  // Raised to 132 for Lesson 10's page shell: 133,668 bytes on its branch
-  // before it, 134,203 with it, against 134,144 at 131. 216 of the 535 are
-  // Lesson 10's season entry, with its page, minutes and practice link, and
-  // its drafts line, on every lesson page. The other 319 are the kit's
-  // predict, quiz and hero sky (kit/predict.ts, quiz.ts, hero-sky.ts) in a
-  // chunk of their own again, with its preload and imports, since Lesson
-  // 10's shell loads none of them. Once its cold open and quizzes load them
-  // (the hero sky through kit/still-sky.ts), the chunk goes, and 131 holds
-  // again.
-  'learn/03.html': 132,
+  'learn/03.html': 131,
   // Lesson 5, a draft too, built in every mode as Lesson 3 is. Measured 122
   // with the lesson menu and the next-lesson card (109 before them), and 129
   // with the page state.
@@ -186,12 +177,14 @@ export const FIRST_PAINT_BUDGETS_KB = {
   // rest adds 323 (kit/slide-guide.ts). Raised to 129 for the lesson answer
   // events (#1193): 130,767 bytes on main before them, 131,214 with them,
   // against 131,072 at 128. All 447 are the kit's, as on Lesson 3.
-  // Raised to 130 for Lesson 10's page shell: 131,823 bytes on its branch
-  // before it, 132,362 with it, against 132,096 at 129. The 539 are Lesson
-  // 10's, as on Lesson 3: its season entry and drafts line (216), and the
-  // predict, quiz and hero sky's chunk of their own (323). Once Lesson 10's
-  // cold open and quizzes load those three, the chunk goes, and 129 holds
-  // again.
+  // Raised to 130 for Lesson 10's page: 131,823 bytes on main before it,
+  // 132,369 with its chord beads, cold open and quizzes, against 132,096 at
+  // 129. 216 of the 546 are Lesson 10's season entry and drafts line, on
+  // every lesson page. The other 330 are modules Lesson 4 now shares with
+  // Lesson 10 (the major scale's degrees, the names store and its modes,
+  // and the spiral's keys), regrouped into chunks of their own, each with
+  // its imports. The kit's predict, quiz and hero sky are in the chunk
+  // every lesson page shares again, as on main.
   'learn/04.html': 130,
   // Lesson 6, "Intervals: the distance between notes", a draft too, built
   // in every mode as Lesson 3 is: its own module on the kit, with the tune
@@ -241,7 +234,15 @@ export const FIRST_PAINT_BUDGETS_KB = {
   // the kit's predict and hero sky, which join the chunk every lesson page
   // shares (kit/predict.ts, hero-sky.ts); and about 6,300 the cold open
   // and its marks in Lesson 10's own chunk.
-  'learn/10.html': 120,
+  // Raised to 140 for the recall and the quick check: 142,509 bytes with
+  // them, 20,143 more. 13,342 are Lesson 6's questions and its quiz plays,
+  // with the Lesson 4 and Lesson 2 questions its recall asks, in three
+  // chunks (lesson-06/quiz-questions.ts, quiz-play.ts; lesson-04 and
+  // lesson-02/quiz-questions.ts); 4,555 the kit's quiz, which joins the
+  // chunk every lesson page shares (kit/quiz.ts); and 3,006 the recall,
+  // the quiz play and the page's questions in Lesson 10's own chunk, less
+  // 760 for the major scale's degrees, now in Lesson 4's questions' chunk.
+  'learn/10.html': 140,
 
   // The main app, and the crawlable doors that are the main app. Measured
   // 4669. It is eager by design today, so this is a ceiling on growth rather
