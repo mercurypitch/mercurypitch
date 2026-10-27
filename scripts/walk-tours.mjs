@@ -42,8 +42,8 @@
 // room's) and both are: "Jam" in the Guide starts whichever screen is up, so
 // the second walk opens the preview room first.
 // ============================================================
-import { readFileSync } from 'node:fs'
 import { chromium } from '@playwright/test'
+import { readFileSync } from 'node:fs'
 import { barOnTop, probeConsentBar, targetFits } from './tour-rules.mjs'
 
 const BASE = process.env.BASE_URL || 'http://localhost:3005'
@@ -107,10 +107,10 @@ const VIEWPORT = MOBILE
 const ctx = await browser.newContext({ viewport: VIEWPORT, hasTouch: MOBILE })
 const page = await ctx.newPage()
 await page.addInitScript((v) => {
-  window.E2E_TEST_MODE = true
+  globalThis.window.E2E_TEST_MODE = true
   // Skip first-run overlays so tours start cleanly.
-  localStorage.setItem('pitchperfect_welcome_version', v)
-  localStorage.setItem('pitchperfect_survey_seen', '1')
+  globalThis.localStorage.setItem('pitchperfect_welcome_version', v)
+  globalThis.localStorage.setItem('pitchperfect_survey_seen', '1')
 }, APP_VERSION)
 page.on('pageerror', (e) =>
   console.log('  [pageerror]', String(e).slice(0, 120)),
@@ -318,9 +318,9 @@ if (wanted(JAM_ROOM_TOUR)) await walkJamRoomTour()
 
 console.log(
   `\nTOTAL steps: ${totalSteps}, steps without visible spotlight: ${missing}` +
-    `, steps breaking a rule (WIDE or BAR): ${broken}` +
-    (skipped > 0 ? `, skipped (need a cloud board): ${skipped}` : '') +
-    (wide > 0 ? `, known wide spotlights: ${wide}` : ''),
+    `, steps breaking a rule (WIDE or BAR): ${broken}${
+      skipped > 0 ? `, skipped (need a cloud board): ${skipped}` : ''
+    }${wide > 0 ? `, known wide spotlights: ${wide}` : ''}`,
 )
 await browser.close()
 process.exit(missing === 0 && broken === 0 ? 0 : 1)
