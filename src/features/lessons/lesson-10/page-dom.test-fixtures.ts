@@ -18,6 +18,7 @@ import '@/features/lessons/kit/browser-doubles.test-fixtures'
 import { Sound } from '@/features/lessons/kit/sound'
 import type { StepDeck } from '@/features/lessons/kit/step-deck'
 import { createStepDeck } from '@/features/lessons/kit/step-deck'
+import type { ChordBeads } from './chord-beads'
 import { initSteps } from './steps'
 
 const PAGE = readFileSync(resolve(process.cwd(), 'learn/10.html'), 'utf8')
@@ -48,14 +49,14 @@ export const settle = async (): Promise<void> => {
 }
 
 /** The page's deck with its steps mounted, opened on step 1 as the page opens it. */
-export function mountSteps(): StepDeck {
+export function mountSteps(): StepDeck & { readonly beads: ChordBeads } {
   loadPage()
   vi.spyOn(window, 'scrollTo').mockImplementation(() => undefined)
   const deck = createStepDeck({
     toyFor: () => 1,
     after: { label: 'Sing it', selector: '#sing' },
   })
-  initSteps()
+  const beads = initSteps(deck)
   deck.start()
-  return deck
+  return Object.assign(deck, { beads })
 }

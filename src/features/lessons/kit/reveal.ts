@@ -24,6 +24,9 @@ export const EASE = {
 /** power3.out and power2.out as functions, for values a canvas reads. */
 export const easeOut3 = (t: number): number => 1 - (1 - t) ** 3
 export const easeOut2 = (t: number): number => 1 - (1 - t) ** 2
+/** expo.out as a function, the curve `EASE.expoOut` draws in CSS, for a canvas's spread and fold. */
+export const easeOutExpo = (t: number): number =>
+  t >= 1 ? 1 : 1 - 2 ** (-10 * t)
 
 /** GSAP's elastic.out(amplitude 1, period p). */
 export function elasticOut(t: number, period = 0.45): number {

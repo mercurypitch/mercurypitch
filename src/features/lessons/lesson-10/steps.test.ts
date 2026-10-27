@@ -15,7 +15,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 import '@/features/lessons/kit/browser-doubles.test-fixtures'
 import { summary } from './lines'
 import { el, loadPage, mountSteps } from './page-dom.test-fixtures'
-import { FIG, partSteps, showParts } from './steps'
+import { FIG, partSteps, showParts, STEP_STATE } from './steps'
 
 afterEach(() => {
   vi.restoreAllMocks()
@@ -30,11 +30,12 @@ function shows(e: HTMLElement): boolean {
   return true
 }
 
-/** The accessible name of each control showing on the stage, in page order. */
+/** The accessible name of each control showing on the stage, in page order, the beads' own buttons aside. */
 const stageNames = (): string[] =>
   Array.from(
     document.querySelectorAll<HTMLElement>('#stepsStage :is(button, input)'),
   )
+    .filter((b) => b.closest('[data-chord-targets]') === null)
     .filter(shows)
     .map(
       (b) =>
@@ -131,6 +132,40 @@ describe("Lesson 10's stage, step by step", () => {
       [[false, false]],
       [[true, true]],
     ])
+  })
+
+  it('opens the chord beads in each step’s state, on C4, as the step shows', () => {
+    // Arrange
+    const deck = mountSteps()
+
+    // Act
+    const byStep = [1, 2, 3, 4, 5, 3].map((n) => {
+      deck.show(n)
+      return [deck.beads.settings.state, deck.beads.settings.root]
+    })
+
+    // Assert: WEB-SPEC, Sections, item 5, and Toys 1's states
+    expect(byStep).toEqual([
+      [STEP_STATE[1], 60],
+      ['stack', 60],
+      ['slide', 60],
+      ['pattern', 60],
+      ['scale', 60],
+      ['slide', 60],
+    ])
+    expect(STEP_STATE[1]).toBe('thirds')
+  })
+
+  it('stops the beads’ sound when the step changes', async () => {
+    // Arrange
+    const deck = mountSteps()
+    const played = deck.beads.play([{ t: 0, midi: 60, dur: 1 }], false)
+
+    // Act
+    deck.show(2)
+
+    // Assert
+    await expect(played).resolves.toBe(false)
   })
 
   it('hides every part a step leaves out', () => {
