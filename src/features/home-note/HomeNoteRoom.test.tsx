@@ -72,11 +72,14 @@ const band = vi.hoisted(() => ({
   stopped: 0,
 }))
 
-vi.mock('./home-note-band', () => ({
+vi.mock('@/components/room-kit/round-voice', () => ({
   SYNTH_VOICE: {
     sing: () => ({ onsets: [], endAt: 0, stop: () => undefined }),
   },
   outputLatency: () => 0,
+}))
+
+vi.mock('./home-note-band', () => ({
   playIntro: (ctx: AudioContext, round: HomeRound, level: HomeNoteLevel) => {
     band.intros.push({ home: round.home, level: level.intro.join(' ') })
     return {

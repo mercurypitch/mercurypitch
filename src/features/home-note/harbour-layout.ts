@@ -12,8 +12,8 @@
 // trail's head must stay left of the lamp, and the reach must leave the
 // head (the chip) and the dock (the mic) clear on a short phone.
 
-import type { TrailGeometry } from './voice-trail'
-import { TRAIL_REACH_CENTS } from './voice-trail'
+import type { TrailGeometry } from '@/components/room-kit/voice-trail'
+import { TRAIL_REACH_CENTS } from '@/components/room-kit/voice-trail'
 
 /** Merc's canvas, square, as a share of the room's width. */
 export const MERC_SIZE_W = 0.4
