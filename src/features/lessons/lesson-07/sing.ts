@@ -263,7 +263,13 @@ export function initSing(stills: RingStills): void {
     mercSing(mercOf(v), sirenEnds(v).low, false)
     live.merc(SIREN_SEC, { glow: false })
     live.chart.describe(sirenSaid(v, 'ng'))
-    if (!heard) return
+    // cut short (the page hidden, the Sound switch off): the ring stops with
+    // the siren, rather than listening on to the end of a play that is over,
+    // and says Ready only for a Start an earlier play readied
+    if (!heard) {
+      ring.stop(offers(visit).startReady ? 'Ready' : 'Rest')
+      return
+    }
     const sounded = audible && Sound.state === 'on'
     dispatch({ type: 'played', audible: sounded })
     say(statusEl, statusNow())

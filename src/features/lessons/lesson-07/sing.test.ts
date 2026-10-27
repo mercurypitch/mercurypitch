@@ -758,6 +758,34 @@ describe("Lesson 7's Sing it: the ring at rest", () => {
     expect(ringSays(p)).toBe('Rest')
   })
 
+  it("stops the ring with Merc's siren when the Sound switch cuts the play short", async () => {
+    // Arrange: Merc's siren two seconds into its six, on a ring the frame
+    // loop draws, with the sound on
+    vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] })
+    const p = await load()
+    const draw = await drawnRing(p)
+    p.el('[data-comfort="sing"]').click()
+    p.el('[data-panel="voice"] [data-voice="lower"]').click()
+    vi.spyOn(p.Sound, 'canPlay').mockReturnValue(true)
+    p.el('[data-panel="prepare"] [data-merc-siren]').click()
+    await vi.advanceTimersByTimeAsync(2000)
+    draw(2)
+    const during = ringSays(p)
+
+    // Act: the Sound switch off mid-play, then the frames go on
+    p.Sound.set('off')
+    await vi.advanceTimersByTimeAsync(0)
+    draw(3)
+
+    // Assert: the ring rests where the siren stopped, and the play that
+    // was cut short readies nothing
+    expect(during).toBe('Listen')
+    expect(ringSays(p)).toBe('Rest')
+    expect(p.el('[data-sing="start"]').getAttribute('aria-disabled')).toBe(
+      'true',
+    )
+  })
+
   it("ends Merc's siren on Rest once a refused microphone leaves the visit listening only", async () => {
     // Arrange: Merc's siren heard, then Start with no audio context to open
     // the microphone in, as the refused-microphone test reaches it: the
