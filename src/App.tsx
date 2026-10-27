@@ -286,6 +286,7 @@ import { PIANO_NIGHT_PATH } from '@/features/piano-night/route'
 import { usePlaybackController } from '@/features/playback/usePlaybackController'
 import type { BackingNote } from '@/features/playback/useSingingBacking'
 import { useSingingBacking } from '@/features/playback/useSingingBacking'
+import { provideSingDemoHost, singDemo, } from '@/features/practice/sing-demo-host'
 import { usePracticeController } from '@/features/practice/usePracticeController'
 import { SparklineChart } from '@/features/practice-intelligence/components/SparklineChart'
 import { clearLaunchOverride, setLaunchOverride, } from '@/features/practice-intelligence/launch-override'
@@ -334,7 +335,7 @@ import type { MidiSongNote } from '@/lib/midi-song'
 import { initDefaultOGTags, setMelodyOGTags } from '@/lib/og-tags'
 import { segmentContourToMelody } from '@/lib/pitch-pipeline'
 import { provideRoomTourDoor } from '@/lib/room-tour-door'
-import { melodyIndicesAtBeat, melodyTotalBeats, midiToFreq, midiToNote, } from '@/lib/scale-data'
+import { freqToMidi, keyTonicFreq, melodyIndicesAtBeat, melodyTotalBeats, midiToFreq, midiToNote, } from '@/lib/scale-data'
 import { installSelectBlurOnPointerChange } from '@/lib/select-blur'
 import { buildScaleMelody, buildSessionPlaybackMelody, } from '@/lib/session-builder'
 import { copyShareUrl, decodeSharePayload, encodeMelodyForShare, fetchShortPayload, generateMelodyItemsFromCompact, } from '@/lib/share-codec'
@@ -1551,6 +1552,10 @@ const AppShell: Component<AppProps> = (props) => {
     totalBeats: totalBeatsAccessor,
     endPracticeSession,
     setShouldAutoStartPlayback,
+    // While Merc sings through the tab (sing-demo-host.ts), the transport
+    // plays his melody, not the library's, and his run is nobody's to keep.
+    melodyOverride: () => singDemo()?.melody ?? null,
+    keepsRun: () => singDemo() === null,
   })
 
   const {
@@ -1766,6 +1771,8 @@ const AppShell: Component<AppProps> = (props) => {
     buildScaleMelody,
     setCurrentBeat: ((_v: number) => {}) as never,
     setCurrentNoteIndex: ((_v: number) => {}) as never,
+    // Repeat's next round plays what the first did: Merc's melody, while he sings.
+    roundMelody: () => singDemo()?.melody ?? melodyStore.items(),
     // Session playback replaces the imported-song context. The karaoke
     // backing rides the shared runtime (useSingingBacking), so a loaded MIDI
     // song would otherwise keep sounding underneath every session item; the
@@ -2467,7 +2474,8 @@ const AppShell: Component<AppProps> = (props) => {
   const singingBacking = useSingingBacking({
     playbackRuntime,
     audioEngine,
-    isPlaying,
+    // no band under Merc's demo: he sings his own melody, not the song
+    isPlaying: () => isPlaying() && singDemo() === null,
     bpm,
   })
 
@@ -2653,7 +2661,8 @@ const AppShell: Component<AppProps> = (props) => {
       activeTab() === TAB_PIANO
         ? fallingNotes.gameState() === 'playing' &&
           fallingNotes.inputMode() === 'mic'
-        : isPlaying(),
+        : // Merc singing is not the singer practising with the mic off
+          isPlaying() && singDemo() === null,
     micActive: () =>
       activeTab() === TAB_PIANO ? fallingNotes.isMicActive() : micActive(),
     isRelevantTab: () =>
@@ -2666,10 +2675,11 @@ const AppShell: Component<AppProps> = (props) => {
 
   // Each singing playback start counts as real app usage (gates the survey).
   // Edge-triggered via on(): the effect must depend only on the playing
-  // signal, never on anything recordActivity() touches.
+  // signal, never on anything recordActivity() touches. Merc's demo run is
+  // not the singer's (sing-demo-host.ts): it counts for nothing.
   createEffect(
     on(isPlaying, (playing) => {
-      if (playing) recordActivity()
+      if (playing && singDemo() === null) recordActivity()
     }),
   )
 
@@ -2698,7 +2708,8 @@ const AppShell: Component<AppProps> = (props) => {
   const micInsights = useMicInsights({
     enabled: () => activeTab() === TAB_SINGING,
     micActive,
-    isPlaying,
+    // Merc's demo run asks nothing of the singer's mic (sing-demo-host.ts)
+    isPlaying: () => isPlaying() && singDemo() === null,
     getLevel: () => practiceEngine.getInputLevel(),
     isDetecting: () => (currentPitch()?.frequency ?? 0) > 0,
   })
@@ -2829,7 +2840,8 @@ const AppShell: Component<AppProps> = (props) => {
 
       if (!isRestItem) {
         setTargetPitch(item.note.freq)
-        if (activeTab() === TAB_SINGING) {
+        // Merc's demo run scores nothing (sing-demo-host.ts).
+        if (activeTab() === TAB_SINGING && singDemo() === null) {
           practiceEngine.onNoteStart(item.note, index)
         }
       } else {
@@ -2903,7 +2915,7 @@ const AppShell: Component<AppProps> = (props) => {
       // run back to back this changes nothing — the runtime emits the end and
       // the next start on the same tick, in that order. It is what a rest or a
       // gap needs: neither fires a start, so nothing else would ever close it.
-      if (activeTab() === TAB_SINGING) {
+      if (activeTab() === TAB_SINGING && singDemo() === null) {
         practiceEngine.onNoteEnd()
       }
       // If this was the last active note, clear target pitch
@@ -2932,7 +2944,7 @@ const AppShell: Component<AppProps> = (props) => {
 
     // eslint-disable-next-line solid/reactivity
     playbackRuntime.on('complete', () => {
-      practiceEngine.onPlaybackComplete()
+      if (singDemo() === null) practiceEngine.onPlaybackComplete()
       const mode = playMode()
 
       const ids = sessionMelodyIds()
@@ -3144,6 +3156,46 @@ const AppShell: Component<AppProps> = (props) => {
 
     // Wire runtime events
     setupRuntimeEvents()
+
+    // What Merc's "Show me more" tour drives when he sings through the Sing
+    // tab (src/features/practice/sing-demo.ts). Tours are web only.
+    provideSingDemoHost(
+      IS_NATIVE_BUILD
+        ? null
+        : {
+            audioEngine,
+            playbackRuntime,
+            onSingTab: () =>
+              activeTab() === TAB_SINGING &&
+              singingZenLaunch() === null &&
+              challengeStageLaunch() === null,
+            isPlaying,
+            melody: () => melodyStore.items(),
+            melodyKind: () => melodyStore.getCurrentKind(),
+            tonicMidi: () =>
+              freqToMidi(
+                keyTonicFreq(keyNameSignal(), melodyStore.getCurrentOctave()),
+              ),
+            bpm,
+            playMode,
+            setPlayMode,
+            repeatCycles,
+            setRepeatCycles,
+            currentRepeat,
+            setCurrentRepeat,
+            spacedRestMode,
+            setSpacedRestMode,
+            loop: () => ({ enabled: loopEnabled(), a: loopA(), b: loopB() }),
+            setLoop: (loop) => {
+              setLoopEnabled(loop.enabled)
+              setLoopA(loop.a)
+              setLoopB(loop.b)
+            },
+            play: handlePracticePlay,
+            reset: () => void resetPlaybackState(),
+          },
+    )
+    onCleanup(() => provideSingDemoHost(null))
 
     // Accumulate foreground usage time (gates the onboarding survey).
     startUsageTracking()

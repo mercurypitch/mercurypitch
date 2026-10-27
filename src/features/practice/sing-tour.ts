@@ -32,6 +32,9 @@
 //   (at 1440 px the bar folds Hear Yourself's own tab into the group's menu,
 //   so the tab itself is not always there to ring). No line says "here",
 //   which would point at nothing if the bubble stood centred.
+// - The last stop offers "Show me more" beside Done: a second tour, where
+//   Merc sings through the tab (sing-more-tour.ts), loaded only on the tap.
+//   Done on the last stop of either gives the same hand-over.
 //
 // The lines are drafts for maff's copy pass.
 
@@ -47,6 +50,11 @@ const LESSON_1 = {
 
 export const SING_TOUR: CoachTour = {
   key: 'sing',
+  more: {
+    key: 'sing-more',
+    label: 'Show me more',
+    load: async () => import('./sing-more-tour').then((m) => m.SING_MORE_TOUR),
+  },
   steps: [
     {
       id: 'mic',

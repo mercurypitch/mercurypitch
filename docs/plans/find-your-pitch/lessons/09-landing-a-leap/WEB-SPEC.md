@@ -584,7 +584,7 @@ paused off screen, and the still images when WebGL fails or would run on the CPU
   upward (`src/features/exercises/slug-map.ts:70-74`), with its line in
   `src/tests/slug-map.test.ts:61-67`. The `intervals` field on `ExerciseLaunch`
   (`src/features/exercises/slug-map.ts:26-43`) is passed by `applyExerciseSlug` into the launch
-  override beside the notes and the difficulty (`src/App.tsx:762-764`), and the trainer reads it in
+  override beside the notes and the difficulty (`src/App.tsx:763-765`), and the trainer reads it in
   place of its fixed pool, which still has no minor third (FACTS 51, 59); a launched list runs as
   many rounds as the difficulty asks, every leap once before any twice (FACTS 60). The set keeps the
   plan's octave, which this page makes optional, as the rules allow: played from a preset's anchor,
@@ -598,7 +598,7 @@ paused off screen, and the still images when WebGL fails or would run on the CPU
 - **Optional, proposed: `/exercises/arpeggio-jumper`**, a data-only slug (CURRICULUM § 4 item 1)
   that opens Arpeggio Jumper on its setup screen with its defaults, so the card can link the drill
   itself; its notes, if any, are fitted to the singer's range as every slug's are
-  (`src/App.tsx:750`).
+  (`src/App.tsx:751`).
 - **Not linked**, with the reasons in FACTS: the Ascent's "Tuning & Ear" week (FACTS 61), which the
   CURRICULUM card listed and CURRICULUM § 4 item 8's rewrite now takes, beside weeks 2 and 3, so
   that its coach note, its focus line, its first goal and its two videos are checked against the

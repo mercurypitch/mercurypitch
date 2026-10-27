@@ -14,6 +14,8 @@
 //   #tempo, speed-select, cycles, cycle-progress-value,
 //   practice-sub-mode, countin-display, practice-header-bar,
 //   plus btn-mic / btn-precount via MicButton / PrecCountButton.
+// and the hooks Merc's tours ring: sing.mic (on MicButton), sing.repeat and
+// sing.rest (src/features/practice/sing-more-tour.ts).
 // ============================================================
 
 import type { Accessor, Component } from 'solid-js'
@@ -162,6 +164,7 @@ export const SingingControlBar: Component<SingingControlBarProps> = (props) => {
           type="button"
           id="btn-repeat"
           data-testid="btn-repeat"
+          data-tour="sing.repeat"
           role="radio"
           aria-checked={props.playMode() === PLAYBACK_MODE_REPEAT}
           class={styles.segBtn}
@@ -251,7 +254,7 @@ export const SingingControlBar: Component<SingingControlBarProps> = (props) => {
         </div>
       </Show>
       <Show when={props.playMode() === PLAYBACK_MODE_ONCE}>
-        <div class={styles.field}>
+        <div class={styles.field} data-tour="sing.rest">
           <IconRest />
           <SafeSelect
             id="spaced-rest-mode"

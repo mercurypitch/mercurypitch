@@ -348,6 +348,7 @@ export const SingingMobileStage: Component<SingingMobileStageProps> = (
             }}
             title="Play mode"
             aria-label={`Play mode: ${modeLabel(props.playMode())}. Tap to change`}
+            data-tour="sing.mode"
           >
             {modeLabel(props.playMode())}
           </button>

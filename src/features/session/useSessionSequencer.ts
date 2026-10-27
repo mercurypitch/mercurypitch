@@ -77,6 +77,11 @@ interface Deps {
   buildScaleMelody: (scaleType: string, beats: number, label?: string) => void
   setCurrentBeat: Setter<number>
   setCurrentNoteIndex: Setter<number>
+  /**
+   * What Repeat's next round plays: the library's melody, unless the host
+   * names another (Merc's, while he sings through the tab).
+   */
+  roundMelody?: () => readonly MelodyItem[]
 }
 
 export function useSessionSequencer(deps: Deps): SessionSequencer {
@@ -212,7 +217,9 @@ export function useSessionSequencer(deps: Deps): SessionSequencer {
       scheduleCleanup(() => {
         practiceEngine.resetSession()
         practiceEngine.startSession()
-        playbackRuntime.setMelody(melodyStore.items())
+        playbackRuntime.setMelody([
+          ...(deps.roundMelody?.() ?? melodyStore.items()),
+        ])
         playbackRuntime.start(countIn())
       }, 0)
     } else {

@@ -6,6 +6,11 @@
 // `registerMicIndicator` on start and must release unconditionally on
 // unmount -- the device itself is owned by @/lib/mic-manager.ts, and skipping
 // the release leaks the mic into whatever page the user visits next.
+//
+// While Merc sings through the tab (sing-demo-host.ts) the frame loop draws
+// his scripted pitch at the transport's beat in place of the mic's, and
+// leaves the mic, its detector and every frame listener alone: a mic already
+// on stays on, its line paused, and nothing downstream hears his frames.
 
 import type { Accessor, Setter } from 'solid-js'
 import { createSignal, onCleanup, onMount } from 'solid-js'
@@ -21,6 +26,8 @@ import { micActive, setMicActive, setMicError, showNotification, } from '@/store
 import { micLatencyMs } from '@/stores/mic-latency-store'
 import type { PitchSample } from '@/types'
 import type { NoteResult, PitchResult, PracticeResult } from '@/types'
+import type { SingDemo } from './sing-demo-host'
+import { singDemo } from './sing-demo-host'
 
 export interface PracticeFrame {
   /** Monotonic timestamp for this detection frame. */
@@ -172,10 +179,39 @@ export function usePracticeController(deps: Deps): PracticeController {
     setCountInBeat(0)
   })
 
+  /** One frame of Merc's line: his pitch at the beat, drawn as a singer's is. */
+  const drawDemoFrame = (demo: SingDemo): void => {
+    const running = deps.isPlaying() && !isCountingIn()
+    const beat = playbackRuntime.getCurrentBeat()
+    const pitch = running ? demo.pitchAt(beat) : null
+    setCurrentPitch(pitch)
+    if (!running) return
+    setPitchHistory((prev) => {
+      // A rest closes his line with one gap, as a singer's silence does.
+      const last = prev.at(-1)
+      if (pitch === null && (last === undefined || last.freq === null)) {
+        return prev
+      }
+      // His voice and his line share the transport's beat: no mic round trip.
+      const sample: PitchSample =
+        pitch === null
+          ? { freq: null, time: beat }
+          : { freq: pitch.frequency, time: beat, cents: pitch.cents }
+      const next = [...prev, sample]
+      return next.length > 2000 ? next.slice(-2000) : next
+    })
+  }
+
   // Animation loop
   let animId = 0
   onMount(() => {
     const loop = () => {
+      const demo = singDemo()
+      if (demo !== null) {
+        drawDemoFrame(demo)
+        animId = requestAnimationFrame(loop)
+        return
+      }
       const pitch = practiceEngine.update()
       const beat = playbackRuntime.getCurrentBeat()
       const micIsActive = practiceEngine.isMicActive()
