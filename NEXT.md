@@ -616,3 +616,11 @@ Note: the lanes' memory gate read a stale cgroup path after the 21:00 restart (f
 - Native planner DONE (task 153): canvas 24 boards (Main = A1) + 30 notes, published v30; PLAN.md 496 lines sent to the owner (SendUserFile) with decisions + Q1-Q11. 10 key citations re-verified by the lead. Flag: Info.plist purpose string "is not uploaded" and L9 briefing "nothing is recorded, kept or sent" break the owner's no-denial rule (pre-existing; native not released).
 - Checklist doc rev 11: ticks for #1203 and #1231; state rows updated; #1232 row added; native row points at the canvas.
 - AFTER #1232 MERGES: verify; dispatch Release Tours on main (expect 144/127, 0 misses); prod-upd 1-3 on the final main; doc ticks (notes, release checks); owner ping with checklist link + dev check + tag commands. L10 run 3 builder after that (heavy lane).
+
+## 12:20 UTC 27 Oct: #1232 MERGED; Release Tours running on the final main
+- run.sh on 3e3bc7e3f DONE (release23/tours/final2.out): walk 132 pass / 0 fail / 28 info, drafts hidden; build:tours exit 1 = the LFS stop only (glass3d/merc-v2.glb pointer; CI runs git lfs pull first), drafts hidden in that build; tours desktop 144 / phone 127, 0 MISS, 0 WIDE/BAR, 4 skipped; sweep 108 views PASS 465 WARN 12 FAIL 0, the same 12 ids as the release commit's (bin/sweep-compare.py).
+- #1232 body = release23/tours/PR-BODY.v2.final.md (results in Checks; read back clean, no footer). Merged by rebase 12:17 (main d37453987 on 3a2e2efe4): verify 1/1 subjects, messages, authors/dates, patch-ids, tree same. Unsubscribed.
+- prod-upd 1-3 on d37453987: package.json and CHANGELOG 0.9.23 (2026-10-27); no v0.9.23 tag local or remote; stats 17/173/397.
+- Release Tours dispatched: run 40502692131 (run 12) on d374539879158c8dd886837c59525a9301ca74aa. Build & Deploy 40502660364 on d37453987 (dev) in progress. Dev had both PRs from 12:07 (run 40500829655).
+- Checklist doc rev 13: .1035 ticked, #1232 row linked + "Merged at 12:17 UTC", intro .54 says Release Tours is the last check, .760 "four of them" fixed, .1436 dev has both since 12:07.
+- NEXT: Release Tours result -> tick .1140, intro .54 final; ping the owner (checklist link, dev check, tag commands with d37453987). Then L10 run 3 brief + builder.
