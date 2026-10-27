@@ -20,15 +20,22 @@
 // to E♭4, and back. Step 2 opens on Step 1's two beads in C major: Stack a
 // third drops G4 in and gives its place, and the focus, to Play the triad,
 // which plays the three at 0.55 s each, then together for 1.2 s (FACTS
-// 75), and the middle bead turns gold. Slow (`aria-pressed`) doubles every
-// length of the stage's plays, the gap buttons' too. Every play is the
-// beads' own, the page's one sound (kit/now-playing.ts): its button is lit
-// while it sounds, a press stops the sound before it, and a newer one
-// stops it. Major · Minor and Stack a third stop the stage's sound first,
-// and the toy says each change once in its polite line. The game on thirds
-// sits in Step 1's text (games.ts). Root lower and Root higher, the
-// pattern, Chord · Scale, Step 5's own Major · Minor and the names switch
-// do nothing until they are wired.
+// 75), and the middle bead turns gold. Step 3: Major · Minor moves the
+// middle bead, and Root lower and Root higher slide the whole chord,
+// silently, to the next white-key root between C4 and B4, its names
+// respelled; at either end the button is `aria-disabled`, keeps the focus,
+// and a press does nothing, not even stop what sounds. Step 4: Play the
+// pattern (pattern.ts) breaks the chord into quavers, each bead lit as it
+// sounds, and Major · Minor and Slow · Fast act from the next quaver, so
+// the pattern plays on through them; the figure's readout says what is set
+// (FACTS 76). Slow (`aria-pressed`) doubles every length of the other
+// steps' plays, the gap buttons' too. Every play is the beads' own, the
+// page's one sound (kit/now-playing.ts): its button is lit while it sounds,
+// a press stops the sound before it, and a newer one stops it. Major ·
+// Minor (but in Step 4), a slide and Stack a third stop the stage's sound
+// first, and the toy says each change once in its polite line. The games
+// sit in Steps 1 and 3's text (games.ts). Chord · Scale, Step 5's own
+// Major · Minor and the names switch do nothing until they are wired.
 
 import { q, qa } from '@/features/lessons/kit/dom'
 import { NowPlaying } from '@/features/lessons/kit/now-playing'
@@ -40,8 +47,10 @@ import type { BeadsSettings, ChordBeads } from './chord-beads'
 import { mountChordBeads } from './chord-beads'
 import type { BeadState } from './chord-layout'
 import type { Quality } from './chords'
-import { QUALITIES } from './chords'
+import { nextRoot, QUALITIES } from './chords'
 import { initGames } from './games'
+import { playPattern } from './pattern'
+import type { Tempo } from './sounds'
 import { slow, thirdSound, triadSound } from './sounds'
 
 /** Each step's figure label. */
@@ -143,47 +152,106 @@ export function playLights(): PlayLight {
 
 // -------------------------------------------------------------- the stage
 
+/** Step 4's tempos, as its switch offers them. */
+const TEMPOS: readonly Tempo[] = ['slow', 'fast']
+
 /** The stage's controls, as each step opens. */
 interface Stage {
   /** Step `n` has opened its state: its controls show what the beads show. */
   opened(n: number): void
 }
 
-/** Wires Steps 1 and 2's controls on the stage. */
-function bindStage(root: HTMLElement, beads: ChordBeads): Stage {
-  const quality = q('[data-chord-quality]', root)
-  const slowBtn = q<HTMLButtonElement>('[data-chord-slow]', root)
-  const stackBtn = q<HTMLButtonElement>('[data-chord-stack]', root)
-  const triadBtn = q<HTMLButtonElement>('[data-chord-play="triad"]', root)
+/** The stage's plays: Play the third, Play the triad and Play the pattern. */
+function bindPlays(root: HTMLElement, beads: ChordBeads): void {
   const light = playLights()
-
   for (const id of NOTES_PLAYS) {
     const btn = q<HTMLButtonElement>(`[data-chord-play="${id}"]`, root)
     btn.addEventListener('click', () => {
       light(btn, beads.play(stageNotes(id, beads.settings), Sound.canPlay()))
     })
   }
-  bindSwitch<Quality>(quality, 'data-quality', QUALITIES, (qy) => {
-    beads.setQuality(qy)
+  // each quaver reads what is set as it starts (pattern.ts)
+  const pattern = q<HTMLButtonElement>('[data-chord-play="pattern"]', root)
+  pattern.addEventListener('click', () => {
+    const audible = Sound.canPlay()
+    light(
+      pattern,
+      beads.playRun((onNote) =>
+        playPattern({ audible, set: () => beads.settings, onNote }),
+      ),
+    )
   })
-  slowBtn.addEventListener('click', () => {
-    const on = slowBtn.getAttribute(PRESSED) !== 'true'
-    slowBtn.setAttribute(PRESSED, String(on))
-    beads.setSlow(on)
-  })
-  // the fifth drops in, and Play the triad takes Stack a third's place
+}
+
+/** Step 2's Stack a third, which gives its place to Play the triad. */
+function bindStack(root: HTMLElement, beads: ChordBeads): Stage {
+  const stackBtn = q<HTMLButtonElement>('[data-chord-stack]', root)
+  const triadBtn = q<HTMLButtonElement>('[data-chord-play="triad"]', root)
   stackBtn.addEventListener('click', () => {
     beads.stack()
     stackBtn.hidden = true
     triadBtn.hidden = false
     triadBtn.focus()
   })
+  return {
+    opened(n) {
+      // Step 2 opens unstacked: Stack a third first, Play the triad after
+      if (n === 2) triadBtn.hidden = !beads.settings.stacked
+    },
+  }
+}
 
+/** Step 3's Root lower and Root higher, each `aria-disabled` where no white key lies past the root. */
+export function bindRoots(root: HTMLElement, beads: ChordBeads): Stage {
+  const buttons = qa<HTMLButtonElement>('[data-chord-root]', root)
+  const dirOf = (b: HTMLElement): -1 | 1 =>
+    Number(b.dataset.chordRoot) < 0 ? -1 : 1
+  const markEnds = (): void => {
+    for (const b of buttons)
+      b.setAttribute(
+        'aria-disabled',
+        String(nextRoot(beads.settings.root, dirOf(b)) === null),
+      )
+  }
+  for (const b of buttons)
+    b.addEventListener('click', () => {
+      // at its end a press neither moves the chord nor stops what sounds,
+      // and the button keeps the focus (WEB-SPEC, Edge cases)
+      if (b.getAttribute('aria-disabled') === 'true') return
+      beads.slideRoot(dirOf(b))
+      markEnds()
+    })
+  return { opened: markEnds }
+}
+
+/** Slow: every length of Steps 1, 2, 3 and 5's plays twice as long. */
+function bindSlow(root: HTMLElement, beads: ChordBeads): void {
+  const slowBtn = q<HTMLButtonElement>('[data-chord-slow]', root)
+  slowBtn.addEventListener('click', () => {
+    const on = slowBtn.getAttribute(PRESSED) !== 'true'
+    slowBtn.setAttribute(PRESSED, String(on))
+    beads.setSlow(on)
+  })
+}
+
+/** Wires the stage's controls for Steps 1 to 4. */
+function bindStage(root: HTMLElement, beads: ChordBeads): Stage {
+  const quality = q('[data-chord-quality]', root)
+  const tempo = q('[data-chord-tempo]', root)
+  bindPlays(root, beads)
+  bindSwitch<Quality>(quality, 'data-quality', QUALITIES, (qy) => {
+    beads.setQuality(qy)
+  })
+  bindSwitch<Tempo>(tempo, 'data-tempo', TEMPOS, (t) => {
+    beads.setTempo(t)
+  })
+  bindSlow(root, beads)
+  const parts = [bindStack(root, beads), bindRoots(root, beads)]
   return {
     opened(n) {
       pressOn(quality, 'data-quality', beads.settings.quality)
-      // Step 2 opens unstacked: Stack a third first, Play the triad after
-      if (n === 2) triadBtn.hidden = !beads.settings.stacked
+      pressOn(tempo, 'data-tempo', beads.settings.tempo)
+      for (const part of parts) part.opened(n)
     },
   }
 }
@@ -210,7 +278,8 @@ export function initSteps(deck: StepDeck): ChordBeads {
       // markup already shows it, and what sounds plays on
       if (n === previous) return
       // a step left behind keeps nothing sounding: its game's round, and a
-      // miss's replay still to come; the beads stop as their state changes
+      // miss's replay still to come; the beads, and Step 4's pattern, stop
+      // as their state changes
       games.stop()
       showParts(root, n)
       label.innerHTML = FIG[n] ?? FIG[1]

@@ -251,7 +251,10 @@ export const FIRST_PAINT_BUDGETS_KB = {
   // with them, 5,145 more. 2,677 are the kit's ear game, a chunk Lessons 6
   // and 8 already load (kit/ear-game.ts), and 2,468 the steps' controls and
   // the games in Lesson 10's own chunk (lesson-10/steps.ts, games.ts).
-  'learn/10.html': 147,
+  // Raised to 149 for Steps 3 and 4, the game on chords and the pattern:
+  // 152,508 bytes with them, 2,176 more, all in Lesson 10's own chunk
+  // (lesson-10/steps.ts, games.ts, pattern.ts).
+  'learn/10.html': 149,
 
   // The main app, and the crawlable doors that are the main app. Measured
   // 4669. It is eager by design today, so this is a ceiling on growth rather
