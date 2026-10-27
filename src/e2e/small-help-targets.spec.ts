@@ -1,5 +1,5 @@
 // ============================================================
-// The small "i", "?" and dismiss buttons take a full press
+// The small "i", "?" and a toast's buttons take a full press
 // ============================================================
 // Three marks were drawn, and took a press, smaller than the 24 px a target
 // may be: InfoPopover's "i" (a 20 px ring), the Jam page's "?" beside its
@@ -8,8 +8,10 @@
 // and its ring its own. The "i" and the "?" get an invisible box centred on
 // the ring; the dismiss grows into the toast's padding, because the phone's
 // toast stack scrolls and a box past the toast's edge would be cut off by
-// it. None of them may take a neighbour's press. Measured by hit-testing
-// (helpers/hit-area.ts).
+// it. The toast's action ("Start tour" on a tour offer), 23.7 px tall,
+// takes the same presses from a box centred on it, inside the toast and
+// beside the dismiss's. None of them may take a neighbour's press.
+// Measured by hit-testing (helpers/hit-area.ts).
 
 import type { Locator, Page } from '@playwright/test'
 import { expect, test } from '@playwright/test'
@@ -142,6 +144,72 @@ for (const vp of VIEWPORTS) {
       expect(area.ownsItsBox).toBe(true)
       expect(fits).toEqual({ inside: true, stackScrollsSideways: false })
       expect(sharePress(area.rect, actionArea.rect)).toBe(false)
+    })
+  })
+}
+
+// The toast's action, beside its dismiss, on the phones the toast is
+// narrowest on as well: at 320 px its message wraps onto two lines.
+const TOAST_VIEWPORTS = [
+  ...VIEWPORTS,
+  {
+    name: '320 px phone',
+    use: {
+      viewport: { width: 320, height: 640 },
+      hasTouch: true,
+      isMobile: true,
+    },
+    least: 44,
+  },
+] as const
+
+for (const vp of TOAST_VIEWPORTS) {
+  test.describe(`on a ${vp.name}`, () => {
+    test.use(vp.use)
+
+    test(`a toast's action takes a ${vp.least} px press beside the dismiss's`, async ({
+      page,
+    }) => {
+      // Arrange: the tour offer, as above, on the visit after First Light.
+      await open(page, '/#/exercises')
+      await page.reload()
+      const region = page.getByRole('region', { name: 'Notifications' })
+      const action = region.getByRole('button', { name: 'Start tour' })
+      await expect(action).toBeVisible()
+      const toast = action.locator('xpath=ancestor::div[1]')
+      const dismiss = toast.getByRole('button', {
+        name: 'Dismiss notification',
+      })
+
+      // Act
+      const area = await hitArea(action)
+      const dismissArea = await hitArea(dismiss)
+      // Hit-testing works in whole pixels and already reads the 23.7 px
+      // button as 24, so the box it takes its press from is read too.
+      const pressBox = await action.evaluate((element) => {
+        const box = getComputedStyle(element, '::before')
+        return [parseFloat(box.width), parseFloat(box.height)]
+      })
+      const t = await toast.evaluate((element) => {
+        const r = element.getBoundingClientRect()
+        return [r.left, r.top, r.right, r.bottom]
+      })
+
+      // Assert
+      expect(area.hit[0]).toBeGreaterThanOrEqual(vp.least)
+      expect(area.hit[1]).toBeGreaterThanOrEqual(vp.least)
+      expect(area.box[1]).toBeCloseTo(23.66, 1)
+      expect(pressBox[0]).toBeGreaterThanOrEqual(vp.least)
+      expect(pressBox[1]).toBeGreaterThanOrEqual(vp.least)
+      expect(area.ownsItsBox).toBe(true)
+      expect(dismissArea.hit[1]).toBeGreaterThanOrEqual(vp.least)
+      expect(sharePress(area.rect, dismissArea.rect)).toBe(false)
+      // Inside the toast, give or take the pixel a hit-test rounds to: the
+      // phone's stack scrolls, and would cut off a press past its edge.
+      expect(area.rect[0]).toBeGreaterThanOrEqual(t[0] - 1)
+      expect(area.rect[1]).toBeGreaterThanOrEqual(t[1] - 1)
+      expect(area.rect[2]).toBeLessThanOrEqual(t[2] + 1)
+      expect(area.rect[3]).toBeLessThanOrEqual(t[3] + 1)
     })
   })
 }
