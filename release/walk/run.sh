@@ -27,7 +27,8 @@ for i in $(seq 1 60); do
   sleep 1
 done
 echo "server answered: $c after ${i}s"
-( cd "$S/release/walk" && timeout 2400 node release-walk.cjs http://127.0.0.1:$PORT "$OUT" "$S/release/walk/stub-film.mp4" "$PHASES" )
+VERSION=$(node -p "require('$W/package.json').version")
+( cd "$S/release/walk" && WALK_VERSION=$VERSION timeout 3000 node release-walk.cjs http://127.0.0.1:$PORT "$OUT" "$S/release/walk/stub-film.mp4" "$PHASES" )
 echo "walk exit: $?"
 PGID=$(ps -o pgid= -p $SPID 2>/dev/null | tr -d ' ')
 [ -n "$PGID" ] && kill -TERM -- -"$PGID" 2>/dev/null

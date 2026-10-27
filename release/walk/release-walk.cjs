@@ -1,8 +1,8 @@
-// 0.9.22 release walk: the critical paths in a real browser, with sound.
+// 0.9.23 release walk: the critical paths in a real browser, with sound.
 // Local only: every request that leaves 127.0.0.1 is aborted and listed,
 // except the lesson films, which are answered with a local stub file.
-// Usage: node release-walk.cjs <base> <outdir> <stub.mp4> [phase,...]
-// Phases: onbA lessons search misc onbB onbC (default: all, in that order)
+// Usage: WALK_VERSION=<package.json version> node release-walk.cjs <base> <outdir> <stub.mp4> [phase,...]
+// Phases: onbA lessons search misc onbB onbC onbD checkup (default: all, in that order)
 const { chromium } = require('playwright')
 const fs = require('fs')
 const path = require('path')
@@ -11,6 +11,7 @@ const BASE = process.argv[2]
 const OUT = process.argv[3]
 const STUB = fs.readFileSync(process.argv[4])
 const ONLY = (process.argv[5] || '').split(',').filter(Boolean)
+const VERSION = process.env.WALK_VERSION || ''
 const want = (p) => ONLY.length === 0 || ONLY.includes(p)
 const PHONE = { width: 390, height: 844 }
 const DESKTOP = { width: 1440, height: 900 }
@@ -706,6 +707,100 @@ async function covers(page, sel) {
       if (shown) {
         const steps = (await text(d)).match(/(\d+)\s*(?:OF|of|\/)\s*(\d+)/)
         info('D: tour count', steps ? `${steps[1]} of ${steps[2]}` : (await text(d)).slice(0, 80))
+      }
+    } finally { await browser.close() }
+  })
+
+  // ---------- the weekly Check-up (0.9.23) ----------
+  // A returning visitor whose last two takes are 8 and 16 days old, seeded as
+  // the voiceprint service stores them (src/e2e/weekly-check-up.spec.ts does
+  // the same): Home offers the Check-up, the Mirror runs it with a steady A3,
+  // and the results set Then beside Now. A second visitor turns it down.
+  const checkupSeed = async (page) => {
+    const DAY = 86400000
+    const take = (d) => ({ id: `walk-${d}`, takenAt: new Date(Date.now() - d * DAY).toISOString(), twin: null, source: 'mirror', madeBy: 'anonymous', summary: { lowMidi: 43, highMidi: 60, semitones: 17, accuracy: 50, steadiness: 40 } })
+    const plan = { v: 1, status: 'declined', choices: { q1: null, q2: null, q3: [], q4: [] }, at: '2020-01-01T00:00:00.000Z', via: 'layer' }
+    await page.addInitScript(({ takes, version, plan }) => {
+      if (sessionStorage.getItem('walk.checkup.seeded') === '1') return
+      sessionStorage.setItem('walk.checkup.seeded', '1')
+      localStorage.setItem('pitchperfect_welcome_version', version)
+      localStorage.setItem('pitchperfect_onboarding_done', '1')
+      localStorage.setItem('pitchperfect_plan_v1', JSON.stringify(plan))
+      localStorage.setItem('mirror.howto.v1', JSON.stringify({ seenAt: Date.now() }))
+      localStorage.setItem('mercurypitch.voiceprints.v1', JSON.stringify(takes))
+    }, { takes: [take(8), take(16)], version: VERSION, plan })
+  }
+  await phase('checkup', async () => {
+    check('checkup: the walk knows the app version', VERSION !== '', VERSION || 'WALK_VERSION unset')
+    const browser = await launch(steady)
+    try {
+      const { page } = await newPage(browser, DESKTOP)
+      await checkupSeed(page)
+      await page.goto(BASE + '/#/home', { timeout: 180000 })
+      await dismissWelcome(page)
+      const card = page.getByTestId('home-checkup-card')
+      const shown = await card.waitFor({ state: 'visible', timeout: 30000 }).then(() => true).catch(() => false)
+      check('checkup: Home offers the Check-up a week after the last take', shown, shown ? await text(card) : 'no card')
+      if (!shown) { await shot(page, 'checkup-home-no-card', true); return }
+      check('checkup: the card says it is a week', /A week since your last Check-up/.test(await text(card)))
+      check('checkup: signed out, the card offers an account', await card.getByTestId('home-checkup-account').isVisible())
+      const order = await page.evaluate(() => {
+        const c = document.querySelector('[data-testid="home-checkup-card"]')
+        const s = document.querySelector('.home-streak-card')
+        return { card: c ? Math.round(c.getBoundingClientRect().top) : null, streak: s ? Math.round(s.getBoundingClientRect().top) : null }
+      })
+      check('checkup: the card sits above the streak card', order.streak === null || order.card < order.streak, JSON.stringify(order))
+      await shot(page, 'checkup-home-card')
+      await card.getByRole('link', { name: 'Start my Check-up' }).click()
+      await page.waitForURL(/\/mirror\?checkup=1$/, { timeout: 30000 })
+      const eyebrow = await text(page.locator('.mirror-eyebrow'))
+      check('checkup: the Mirror opens as the Weekly Check-up', eyebrow === 'Weekly Check-up', eyebrow)
+      await page.getByRole('button', { name: 'Find my voice twin' }).click()
+      const results = page.locator('.mirror-results')
+      const ready = page.getByRole('button', { name: "I'm ready" })
+      const done = page.getByRole('button', { name: "I'm done" })
+      const t0 = Date.now()
+      while (Date.now() - t0 < 240000 && !(await results.isVisible().catch(() => false))) {
+        if (await ready.isVisible().catch(() => false)) await ready.click().catch(() => undefined)
+        if (await done.isVisible().catch(() => false)) await done.click().catch(() => undefined)
+        await page.waitForTimeout(500)
+      }
+      const ran = await results.isVisible().catch(() => false)
+      check('checkup: the guided run reaches its results', ran, `${Math.round((Date.now() - t0) / 1000)} s`)
+      const panel = page.getByTestId('mirror-then-and-now')
+      const paneled = await panel.waitFor({ state: 'visible', timeout: 15000 }).then(() => true).catch(() => false)
+      check('checkup: the results set Then beside Now', paneled, paneled ? await text(panel) : 'no panel')
+      if (paneled) {
+        check('checkup: Then is the first week, G2 to C4', /G2 to C4/.test(await text(panel.locator('[data-side="then"]'))))
+        check('checkup: Now has no clean range from a steady A3', /No clean read/.test(await text(panel.locator('[data-side="now"]'))))
+        check('checkup: it says the readings are this browser\'s', /These readings are this browser's\./.test(await text(panel)))
+        check('checkup: the panel offers an account', await panel.getByTestId('mirror-then-and-now-account').isVisible())
+        check('checkup: the panel takes the change line\'s place', !(await page.locator('.mirror-delta').isVisible().catch(() => false)))
+        check('checkup: Share then and now is offered', await page.getByRole('button', { name: /Share then and now/ }).isVisible().catch(() => false))
+      }
+      await shot(page, 'checkup-then-and-now', true)
+      await page.goto(BASE + '/#/home')
+      await page.locator('.home-streak-card').waitFor({ state: 'visible', timeout: 30000 }).catch(() => undefined)
+      await page.waitForLoadState('networkidle').catch(() => undefined)
+      check('checkup: Home shows no card the day a take was sung', !(await card.isVisible().catch(() => false)))
+
+      const second = await newPage(browser, PHONE)
+      await checkupSeed(second.page)
+      await second.page.goto(BASE + '/#/home', { timeout: 180000 })
+      await dismissWelcome(second.page)
+      const card2 = second.page.getByTestId('home-checkup-card')
+      const shown2 = await card2.waitFor({ state: 'visible', timeout: 30000 }).then(() => true).catch(() => false)
+      check('checkup: on a phone Home offers the Check-up too', shown2)
+      if (shown2) {
+        await shot(second.page, 'checkup-home-card-phone')
+        await card2.getByRole('button', { name: 'Not this week' }).click()
+        const gone = await card2.waitFor({ state: 'detached', timeout: 5000 }).then(() => true).catch(() => false)
+        const focus = await second.page.evaluate(() => { const a = document.activeElement; const m = document.getElementById('main-content'); return a === m ? 'main-content' : (m && m.contains(a) ? 'inside main' : (a ? a.tagName : 'none')) })
+        check('checkup: Not this week hides the card, the focus kept in main', gone && focus !== 'BODY' && focus !== 'none', `gone ${gone}, focus ${focus}`)
+        await second.page.reload()
+        await second.page.locator('.home-streak-card').waitFor({ state: 'visible', timeout: 30000 }).catch(() => undefined)
+        await second.page.waitForLoadState('networkidle').catch(() => undefined)
+        check('checkup: after Not this week the card stays away on a reload', !(await card2.isVisible().catch(() => false)))
       }
     } finally { await browser.close() }
   })
