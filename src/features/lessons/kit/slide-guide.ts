@@ -18,10 +18,12 @@
 // path rests in chrome (Lesson 2) or in amber (Lesson 4). Under reduced
 // motion the model lights the whole path at once, and the sweep lights the
 // path's segments one after another instead of a travelling line. A path
-// with no rest to breathe in can carry breath marks (Lesson 6's, after
-// "star"): a small tick over the path in its own colour with the word
-// "breathe", lit as the voice or the sweep reaches it. A page whose run can
-// be cut short ends it where it stands (`stop`), and the guide rests. It
+// can carry breath marks (Lesson 6's after "star", where its tune has no
+// rest to breathe in; Lesson 10's where its gap starts): a small tick over
+// the path in its own colour with the word "breathe" over it, or beside it
+// where the guide's top leaves no room, lit as the voice or the sweep
+// reaches it. A page whose run can be cut short ends it where it stands
+// (`stop`), and the guide rests. It
 // draws only when what it shows has changed (a run's phase, new rows or a
 // new path, a new size, pixel ratio or font) and through a run; at rest it
 // asks the page's frame loop for nothing (frame-loop.ts, `wants`).
@@ -321,18 +323,41 @@ function drawSweep(
   ctx.stroke()
 }
 
+/** A breath mark: its tick's foot, and where its word stands. */
+export interface BreathMark {
+  readonly x: number
+  /** The tick's foot: the tick rises 8 px from it, up and to the right. */
+  readonly y: number
+  /** The word's anchor: its foot, centred over the tick, or its top, `beside` the tick on its right. */
+  readonly word: {
+    readonly x: number
+    readonly y: number
+    readonly beside: boolean
+  }
+}
+
+/** The breath word's size, and the space between its foot and the tick's, px. */
+const BREATH_WORD = 11
+
 /**
  * Where a breath mark `t` seconds in sits: over the path there, clear of the
- * higher of the two notes either side of it.
+ * higher of the two notes either side of it, its word over the tick. After a
+ * note on the top row (Lesson 10's, as so ends) the space above the row has
+ * room for the tick but not for a word over it, which would be drawn off the
+ * canvas, so the word stands beside the tick, on its right.
  */
 export function breathAt(
   f: Frame,
   path: readonly GuidePoint[],
   t: number,
-): { x: number; y: number } {
+): BreathMark {
   const before = f.yOf(pitchAt(path, t - 0.05))
   const after = f.yOf(pitchAt(path, t + 0.05))
-  return { x: f.xOf(t), y: Math.min(before, after) - 9 }
+  const x = f.xOf(t)
+  const y = Math.min(before, after) - 9
+  return y - 2 * BREATH_WORD >= 0
+    ? { x, y, word: { x, y: y - BREATH_WORD, beside: false } }
+    : { x, y, word: { x: x + 6, y: Math.max(0, y - 8), beside: true } }
 }
 
 /** The breath marks: each a tick and its word, in `color`, full once `reached` has passed it. */
@@ -344,12 +369,10 @@ function drawBreaths(
   color: string,
   reached: number,
 ): void {
-  ctx.font = '500 11px "JetBrains Mono", monospace'
-  ctx.textAlign = 'center'
-  ctx.textBaseline = 'bottom'
+  ctx.font = `500 ${BREATH_WORD}px "JetBrains Mono", monospace`
   ctx.lineCap = 'round'
   for (const t of breaths) {
-    const { x, y } = breathAt(f, path, t)
+    const { x, y, word } = breathAt(f, path, t)
     const lit = reached >= t
     ctx.strokeStyle = rgba(color, lit ? 1 : 0.7)
     ctx.fillStyle = rgba(color, lit ? 1 : 0.7)
@@ -358,7 +381,9 @@ function drawBreaths(
     ctx.moveTo(x - 1.5, y)
     ctx.lineTo(x + 2.5, y - 8)
     ctx.stroke()
-    ctx.fillText('breathe', x, y - 11)
+    ctx.textAlign = word.beside ? 'left' : 'center'
+    ctx.textBaseline = word.beside ? 'top' : 'bottom'
+    ctx.fillText('breathe', word.x, word.y)
   }
 }
 

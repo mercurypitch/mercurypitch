@@ -490,15 +490,15 @@ bar of four crotchets, 0.5 s a crotchet, 8.0 s a play (FACTS 35 to 37, 68).
 ### 6. Sing it
 
 The guide is the kit's slide guide (`src/features/lessons/kit/slide-guide.ts`, `mountGuide` at
-`:381`), as Lesson 4's page uses it (`lesson-04/sing.ts`), on eight rows from fa up to do, a
+`:406`), as Lesson 4's page uses it (`lesson-04/sing.ts`), on eight rows from fa up to do, a
 semitone apart: the four the line uses named fa, so, la and do, and the other four faint
-(`GuideRow`, `slide-guide.ts:38-45`). The rows show syllables only, no letters, so no spelling can
+(`GuideRow`, `slide-guide.ts:40-47`). The rows show syllables only, no letters, so no spelling can
 go wrong wherever Move do puts do; a readout names do and the line in Lesson 4's names for the key,
 "do is C4: C4, G3, A3, F3, C4", spoken "do is C 4" (FACTS 60). Merc's path is do, so, la, fa, do,
 each root 1.6 s with 0.4 s of silence after it and the last do 2.0 s, every note after a silence
-marked `gap` (`slide-guide.ts:16-17`, `:51-52`), so nothing is drawn across a silence: 10.0 s in
+marked `gap` (`slide-guide.ts:16-17`, `:53-54`), so nothing is drawn across a silence: 10.0 s in
 all (FACTS 61). The path carries the kit's breath mark, from Lesson 6's page (`breaths`,
-`slide-guide.ts:62-63`), in the gap after la, 5.6 s in: a small tick in the
+`slide-guide.ts:64-65`), in the gap after la, 5.6 s in: a small tick in the
 path's own colour with the word "breathe" (FACTS 62). Under Merc's notes and under the guide the
 chords play, I, V, vi, IV and I, 2.0 s each, so each chord starts with its root (FACTS 73). Beside
 the guide, the kit's breathing ring (`mountRing`, `src/features/lessons/kit/sing.ts:135`) shows the
@@ -870,7 +870,7 @@ heard play (Toys 3; Edge cases) (`git diff --stat`).
    shows Letters · Do-re-mi, with the major scale's syllables on the key's tonic. The page-wide
    store is the kit's already (`createModeStore`, `kit/names.ts:27`).
 6. The breath mark on the slide guide (Toys 6): on main, from Lesson 6's page (`breaths`,
-   `slide-guide.ts:62-63`). Nothing to add.
+   `slide-guide.ts:64-65`). Nothing to add.
 7. Move do and the count-in's note (Toys 6): Lesson 4's, in the kit since #1192 moved it there
    (`kit/move-do.ts:26-49`; `:65-74`), as Lesson 10's spec planned (its item 7). It sets `disabled`
    at its limits; this page needs `aria-disabled`, never `disabled`, so a keyboard user's focus

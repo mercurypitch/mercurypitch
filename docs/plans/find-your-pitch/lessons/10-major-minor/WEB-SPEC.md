@@ -487,12 +487,12 @@ game already has. It sits in its step's text column, under the Notice, as Lesson
 ### 6. Sing it
 
 The guide is the kit's slide guide (`src/features/lessons/kit/slide-guide.ts`, `mountGuide` at
-`:381`), as Lesson 4's page uses it (`lesson-04/sing.ts`), on eight rows from do up to so: the four
+`:406`), as Lesson 4's page uses it (`lesson-04/sing.ts`), on eight rows from do up to so: the four
 the chords use named do, me, mi and so, and the other four faint (`GuideRow`,
-`slide-guide.ts:38-45`). The rows show syllables only, no letters, so no spelling can go wrong
+`slide-guide.ts:40-47`). The rows show syllables only, no letters, so no spelling can go wrong
 wherever Move do puts do; a readout names do in Lesson 4's names for the key, "do is E3", spoken "do
 is E 3" (FACTS 64). Merc's path is do-mi-so, 1.2 s a note and the top note 1.8 s, then do-me-so, the
-second phrase's first point marked `gap` (`:16-17`, `:51-52`), so nothing is drawn across the 1.6 s
+second phrase's first point marked `gap` (`:16-17`, `:53-54`), so nothing is drawn across the 1.6 s
 between them: 10.0 s in all (FACTS 65). The path carries the kit's breath mark, from Lesson 6's page
 (`breaths`, `slide-guide.ts` on `feat/lesson-06-page`), at the start of the gap, 4.2 s in: a small
 tick in the path's own colour with the word "breathe" (FACTS 66). Beside the guide, the kit's
@@ -799,7 +799,7 @@ at `85e23a1af` changed there, and that page's own lines are cited at `d59c00ad6`
    page was to move Move do into the kit itself and take Lesson 6's copy with it; #1192 did both,
    and Lessons 4, 6 and 8 use the kit's, as this page will. The kit's guide already
    waits through a count-in before its sweep (`sweep`,
-   `src/features/lessons/kit/slide-guide.ts:77-78`). Lesson 4's Move do and Lesson 6's both set
+   `src/features/lessons/kit/slide-guide.ts:79-80`). Lesson 4's Move do and Lesson 6's both set
    `disabled` at their limits (the kit's `setMoveEnds` since #1192, `kit/move-do.ts:51-63`), which
    drops a keyboard user's focus there; the kit's is to take `aria-disabled`, both pages with it.
 8. The breath mark on the slide guide (Toys 6): the kit's, from Lesson 6's page (`breaths`,

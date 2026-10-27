@@ -153,10 +153,36 @@ describe('breathAt', () => {
     // Act
     const mark = breathAt(f, SLIDE, 3.2)
 
-    // Assert: at 3.2 s across, and above A♯3, the higher side, not A3
+    // Assert: at 3.2 s across, and above A♯3, the higher side, not A3; its
+    // word over the tick
     expect(mark.x).toBe(f.xOf(3.2))
     expect(mark.y).toBeLessThan(f.yOf(pitchAt(SLIDE, 3.15)))
     expect(mark.y).toBeLessThan(f.yOf(57))
+    expect(mark.word).toEqual({ x: mark.x, y: mark.y - 11, beside: false })
+  })
+
+  it('stands the word beside the tick after a note on the top row, where a word over it would leave the canvas', () => {
+    // Arrange: up to B3, the top lane, held, then a silence: a breath as B3
+    // ends, as Lesson 10's comes as so ends
+    const peak: readonly GuidePoint[] = [
+      { t: 0, midi: 57 },
+      { t: 1, midi: 59 },
+      { t: 2, midi: 59 },
+      { t: 3, midi: 57, gap: true },
+      { t: 4, midi: 57 },
+    ]
+    const f = guideFrame(300, 190, LANES, peak)
+
+    // Act
+    const mark = breathAt(f, peak, 2)
+
+    // Assert: the tick over B3, and the word on its right, its top on the
+    // canvas and its foot above B3's row
+    expect(mark.y).toBeLessThan(f.yOf(59))
+    expect(mark.word.beside).toBe(true)
+    expect(mark.word.x).toBeGreaterThan(mark.x)
+    expect(mark.word.y).toBeGreaterThanOrEqual(0)
+    expect(mark.word.y + 11).toBeLessThan(f.yOf(59))
   })
 })
 
