@@ -332,4 +332,20 @@ describe('Studio timeline', () => {
       screen.getByRole('toolbar', { name: 'Selected clip' }),
     ).not.toHaveAttribute('aria-orientation')
   })
+
+  it('says a notice in the status pill, and says it again when it comes again', () => {
+    const missed = 'No room on Harmony at 0:05. Added on a new lane.'
+    const [notice, setNotice] = createSignal<{ text: string } | null>(null)
+    const { container } = render(() => (
+      <StudioTimeline {...base} notice={notice()} />
+    ))
+    const status = container.querySelector('p[role="status"]')!
+    expect(status).toHaveTextContent('')
+    setNotice({ text: missed })
+    expect(status).toHaveTextContent(missed)
+    setNotice(null)
+    expect(status).toHaveTextContent(missed)
+    setNotice({ text: 'No room on Bass at 1:00. Added on a new lane.' })
+    expect(status).toHaveTextContent('No room on Bass at 1:00.')
+  })
 })

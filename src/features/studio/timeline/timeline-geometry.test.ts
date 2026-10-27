@@ -1,6 +1,6 @@
 // Studio timeline geometry tests — source trims and viewport coordinates preserve exact frame positions.
 import { describe, expect, it } from 'vitest'
-import { clipEndFrame, formatStudioTime, frameToPixel, parseStudioTime, pixelToFrame, studioRulerTicks, } from './timeline-geometry'
+import { clipEndFrame, formatStudioMoment, formatStudioTime, frameToPixel, parseStudioTime, pixelToFrame, studioRulerTicks, } from './timeline-geometry'
 
 describe('Studio timeline geometry', () => {
   it('round-trips frame positions at fractional zoom and clamps seeks to the song range', () => {
@@ -29,6 +29,15 @@ describe('Studio timeline geometry', () => {
     ).toBe(192000)
     expect(formatStudioTime(2023200)).toBe('0:42.150')
     expect(formatStudioTime(2879999)).toBe('1:00.000')
+  })
+
+  it('writes a moment for a sentence without the trailing zeros of the clock', () => {
+    expect(formatStudioMoment(240000)).toBe('0:05')
+    expect(formatStudioMoment(264000)).toBe('0:05.5')
+    expect(formatStudioMoment(2023200)).toBe('0:42.15')
+    expect(formatStudioMoment(480000)).toBe('0:10')
+    expect(formatStudioMoment(2880000)).toBe('1:00')
+    expect(formatStudioMoment(0)).toBe('0:00')
   })
 
   it('reads typed clock times in seconds or minutes and refuses anything else', () => {

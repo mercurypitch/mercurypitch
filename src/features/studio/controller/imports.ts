@@ -8,6 +8,7 @@ import { fitsStudioProjectStorageBudget } from '@/lib/studio/model/storage-limit
 import type { StudioAsset, StudioAssetData, StudioProject, } from '@/lib/studio/model/types'
 import { prepareStudioSource } from '../integration/prepare-source'
 import type { StudioSourceEntry } from '../integration/source-catalog'
+import { formatStudioMoment } from '../timeline/timeline-geometry'
 import { createRetainedStudioAudio } from './retained-audio'
 
 interface ImportItem {
@@ -18,6 +19,21 @@ interface ImportItem {
     projectId: string,
     signal: AbortSignal,
   ): Promise<StudioAssetData>
+}
+
+/** A take meant for a lane that had no room where it starts, so it got a lane of its own. */
+export interface StudioMissedLane {
+  trackId: string
+  trackName: string
+  startFrame: number
+  /** Lanes the import made, so the notice can say "a new lane" or "new lanes". */
+  newLanes: number
+}
+
+/** What the timeline says when a take had no room on its chosen lane. */
+export function studioMissedLaneText(miss: StudioMissedLane): string {
+  const lanes = miss.newLanes > 1 ? 'new lanes' : 'a new lane'
+  return `No room on ${miss.trackName} at ${formatStudioMoment(miss.startFrame)}. Added on ${lanes}.`
 }
 
 interface ImportControllerOptions {
@@ -35,6 +51,8 @@ interface ImportControllerOptions {
   now(): Date
   prepareFile?: typeof prepareStudioAsset
   prepareTake?: typeof prepareStudioSource
+  /** Told once an import that missed its chosen lane is saved. */
+  onMissedLane?(miss: StudioMissedLane): void
 }
 
 function sameAudio(a: StudioAsset, b: StudioAsset): boolean {
@@ -216,7 +234,16 @@ export function createStudioImporter(options: ImportControllerOptions) {
         prepared,
       )
       await options.flush()
-      return committed && options.current(epoch)
+      const landed = committed && options.current(epoch)
+      const chosen = currentProject.tracks.find((track) => track.id === trackId)
+      if (landed && chosen !== undefined && commands[0].type !== 'add-clip')
+        options.onMissedLane?.({
+          trackId: chosen.id,
+          trackName: chosen.name,
+          startFrame,
+          newLanes: commands.length,
+        })
+      return landed
     } catch (error) {
       if (options.current(epoch) && !abort.signal.aborted) options.report(error)
       return false

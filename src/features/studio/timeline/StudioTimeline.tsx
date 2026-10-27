@@ -16,7 +16,7 @@ import type { StudioTimelineProps } from './types'
 import { useStudioPointer } from './useStudioPointer'
 import { createStudioWaveformResource } from './waveform-resource'
 
-export type { StudioTimelineProps } from './types'
+export type { StudioTimelineNotice, StudioTimelineProps } from './types'
 
 function TrackName(props: {
   id: string
@@ -137,16 +137,27 @@ export function StudioTimeline(props: StudioTimelineProps) {
     headerWidth,
     snap,
   })
-  // Gesture results stay readable to assistive tech; the visible pill fades.
+  // Gesture results and notices stay readable to assistive tech; the visible pill fades.
+  const [statusText, setStatusText] = createSignal('')
   const [statusShown, setStatusShown] = createSignal(false)
   let statusTimer: ReturnType<typeof setTimeout> | undefined
+
+  function showStatus(message: string): void {
+    clearTimeout(statusTimer)
+    setStatusText(message)
+    setStatusShown(message !== '')
+    if (message !== '')
+      statusTimer = setTimeout(() => setStatusShown(false), 4000)
+  }
+  createEffect(on(pointer.message, showStatus))
   createEffect(
-    on(pointer.message, (message) => {
-      clearTimeout(statusTimer)
-      setStatusShown(message !== '')
-      if (message !== '')
-        statusTimer = setTimeout(() => setStatusShown(false), 4000)
-    }),
+    on(
+      () => props.notice,
+      (notice) => {
+        if (notice) showStatus(notice.text)
+      },
+      { defer: true },
+    ),
   )
   onCleanup(() => clearTimeout(statusTimer))
   // Seven docked buttons stack in one column when the arrangement is tall
@@ -625,7 +636,7 @@ export function StudioTimeline(props: StudioTimelineProps) {
         role="status"
         aria-live="polite"
       >
-        {pointer.message()}
+        {statusText()}
       </p>
       <Show when={props.phone && selectedName()}>
         {(name) => (

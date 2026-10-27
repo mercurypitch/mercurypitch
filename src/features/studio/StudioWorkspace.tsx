@@ -621,6 +621,7 @@ export function StudioWorkspace(props: StudioWorkspaceProps) {
             onSelectTrack={setSelectedTrackId}
             onNewLane={writable() ? addLane : undefined}
             keyboardPreviewClip={keyboardPreview()}
+            notice={props.studio.laneNotice()}
             onPointerEditStart={editor.cancel}
             playheadFrame={transport.playheadFrame()}
             playing={transport.playing()}

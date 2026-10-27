@@ -12,7 +12,7 @@ import type { StudioAsset, StudioAssetData, StudioProject, StudioProjectSummary,
 import { createStudioBackup, restoreStudioBackup } from './backup/studio-backup'
 import type { StudioEditHistory } from './controller/edit-history'
 import { createStudioEditHistory, executeStudioEdit, travelStudioHistory, } from './controller/edit-history'
-import { createStudioImporter } from './controller/imports'
+import { createStudioImporter, studioMissedLaneText, } from './controller/imports'
 import type { StudioSaveQueue, StudioSaveState } from './controller/save-queue'
 import { createStudioSaveQueue } from './controller/save-queue'
 import type { prepareStudioSource } from './integration/prepare-source'
@@ -61,6 +61,11 @@ export function useStudioController(options: StudioControllerOptions = {}) {
   const [saveState, setSaveState] = createSignal<StudioSaveState>('saved')
   const [writable, setWritable] = createSignal(false)
   const [problem, setProblem] = createSignal<string | null>(null)
+  // Where a take went when its lane had no room: a fresh object per miss, so
+  // the same sentence twice is still said twice.
+  const [laneNotice, setLaneNotice] = createSignal<{ text: string } | null>(
+    null,
+  )
   const [disposed, setDisposed] = createSignal(false)
   const [editHistory, setEditHistory] = createSignal<StudioEditHistory | null>(
     null,
@@ -122,6 +127,8 @@ export function useStudioController(options: StudioControllerOptions = {}) {
       now,
       prepareFile: options.prepareFile,
       prepareTake: options.prepareTake,
+      onMissedLane: (miss) =>
+        setLaneNotice({ text: studioMissedLaneText(miss) }),
     })
 
   function expireEditor(): void {
@@ -591,6 +598,7 @@ export function useStudioController(options: StudioControllerOptions = {}) {
     saveState,
     writable,
     problem,
+    laneNotice,
     hasUnsavedChanges,
     create,
     open: (id: string) => openProject(id),

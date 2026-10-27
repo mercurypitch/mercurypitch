@@ -2,6 +2,11 @@
 import type { StudioCommand } from '@/lib/studio/model/commands'
 import type { StudioAsset, StudioClip, StudioProject, } from '@/lib/studio/model/types'
 
+/** A sentence for the timeline's status pill; a new object shows it again. */
+export interface StudioTimelineNotice {
+  text: string
+}
+
 export interface StudioTimelineProps {
   project: StudioProject
   assets: readonly StudioAsset[]
@@ -27,6 +32,8 @@ export interface StudioTimelineProps {
    * commands move to a dock beside the lanes, clear of every lane and the ruler.
    */
   deskOpen?: boolean
+  /** Said in the status pill and to assistive tech, such as where a take landed. */
+  notice?: StudioTimelineNotice | null
   onPointerEditStart?(): void
   onSelectClip(id: string | null): void
   onSeek(frame: number): void
