@@ -254,16 +254,28 @@ describe('Studio timeline', () => {
     expect(seek).toHaveBeenLastCalledWith(144000)
   })
 
-  it('jumps a playing song once, when the ruler drag ends', () => {
+  it('jumps a playing song where the press lands, at once, and not again while the hand stays put', () => {
     const seek = vi.fn()
     render(() => <StudioTimeline {...base} playing={true} onSeek={seek} />)
     const ruler = scrubbable()
     fireEvent.pointerDown(ruler, { button: 0, pointerId: 1, clientX: 40 })
-    fireEvent.pointerMove(ruler, { pointerId: 1, clientX: 60 })
-    expect(seek).not.toHaveBeenCalled()
-    fireEvent.pointerUp(ruler, { pointerId: 1, clientX: 60 })
+    expect(seek).toHaveBeenCalledExactlyOnceWith(96000)
+    fireEvent.pointerMove(ruler, { pointerId: 1, clientX: 42 })
+    fireEvent.pointerUp(ruler, { pointerId: 1, clientX: 42 })
     expect(seek).toHaveBeenCalledOnce()
-    expect(seek).toHaveBeenCalledWith(144000)
+  })
+
+  it('moves a playing song only once more for a drag, when it ends', () => {
+    const seek = vi.fn()
+    render(() => <StudioTimeline {...base} playing={true} onSeek={seek} />)
+    const ruler = scrubbable()
+    fireEvent.pointerDown(ruler, { button: 0, pointerId: 1, clientX: 40 })
+    fireEvent.pointerMove(ruler, { pointerId: 1, clientX: 50 })
+    fireEvent.pointerMove(ruler, { pointerId: 1, clientX: 60 })
+    expect(seek).toHaveBeenCalledExactlyOnceWith(96000)
+    fireEvent.pointerUp(ruler, { pointerId: 1, clientX: 60 })
+    expect(seek).toHaveBeenCalledTimes(2)
+    expect(seek).toHaveBeenLastCalledWith(144000)
   })
 
   it('makes a new lane from its button or a double tap under the headers', () => {

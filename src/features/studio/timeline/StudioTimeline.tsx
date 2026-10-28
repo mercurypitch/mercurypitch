@@ -43,6 +43,8 @@ function TrackName(props: {
 
 /** Zoom stops in pixels per second; Fit may land between them. */
 export const STUDIO_ZOOM_STOPS = [10, 15, 20, 30, 40, 60, 80, 120, 160, 200]
+/** How far a press on a playing song's ruler moves before it becomes a drag, in pixels. */
+const RULER_DRAG_SLOP_PX = 4
 
 export function StudioTimeline(props: StudioTimelineProps) {
   let viewport!: HTMLDivElement
@@ -176,11 +178,13 @@ export function StudioTimeline(props: StudioTimelineProps) {
     typeof ResizeObserver === 'undefined' ? null : new ResizeObserver(measure)
   onCleanup(() => observer?.disconnect())
 
-  // Dragging along the ruler scrubs. A stopped song follows the pointer; a
-  // playing one moves its playhead line and jumps there on release, so it
-  // does not restart under every pointer move.
+  // Dragging along the ruler scrubs. A stopped song follows the pointer. A
+  // playing one jumps where the press lands, at once, as a DAW's does; a
+  // drag from there moves its playhead line and jumps again on release, so
+  // it does not jump under every pointer move.
   const [scrubFrame, setScrubFrame] = createSignal<number | null>(null)
   const shownPlayhead = () => scrubFrame() ?? props.playheadFrame
+  let press: { x: number; dragged: boolean } | null = null
 
   function rulerFrame(event: PointerEvent, ruler: HTMLElement): number {
     const rect = ruler.getBoundingClientRect()
@@ -193,8 +197,24 @@ export function StudioTimeline(props: StudioTimelineProps) {
     if (props.playing !== true) props.onSeek(frame)
   }
 
+  function pressRuler(event: PointerEvent, ruler: HTMLElement): void {
+    press = { x: event.clientX, dragged: false }
+    if (props.playing === true) props.onSeek(rulerFrame(event, ruler))
+    else scrubTo(event, ruler)
+  }
+
+  function dragRuler(event: PointerEvent, ruler: HTMLElement): void {
+    if (!press) return
+    // A hand that stays put on a playing song already jumped it on the press.
+    const near = Math.abs(event.clientX - press.x) < RULER_DRAG_SLOP_PX
+    if (props.playing === true && !press.dragged && near) return
+    press.dragged = true
+    scrubTo(event, ruler)
+  }
+
   function endScrub(commit: boolean): void {
     const frame = scrubFrame()
+    press = null
     setScrubFrame(null)
     if (commit && frame !== null) props.onSeek(frame)
   }
@@ -350,14 +370,11 @@ export function StudioTimeline(props: StudioTimelineProps) {
                 event.preventDefault()
                 ruler.focus({ preventScroll: true })
                 ruler.setPointerCapture(event.pointerId)
-                scrubTo(event, ruler)
+                pressRuler(event, ruler)
               }}
               onPointerMove={(event) => {
-                if (
-                  scrubFrame() !== null &&
-                  event.currentTarget.hasPointerCapture(event.pointerId)
-                )
-                  scrubTo(event, event.currentTarget)
+                if (event.currentTarget.hasPointerCapture(event.pointerId))
+                  dragRuler(event, event.currentTarget)
               }}
               onPointerUp={() => endScrub(true)}
               onPointerCancel={() => endScrub(false)}
