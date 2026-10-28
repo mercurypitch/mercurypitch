@@ -113,7 +113,7 @@ session.
 - **Audio.** Every musical example is synthesised at its exact frequency in `mix.py`. Merc's sung
   notes are the app's Echo "ooh" set: ElevenLabs takes re-pitched onto exact contours, development
   placeholders that the app withholds from its store build (`src/features/echo/merc-voice-set.ts`);
-  the two-voice tune (s17) uses the app's synthesised "ooh" (`src/lib/demo-audio.ts`). The owner
+  the two-voice tune (s17) uses the app's synthesised "ooh" (`src/lib/demo-voice.ts`). The owner
   holds the Echo samples' rights, so they stay until a voice actor replaces them (MASTER-PLAN § 12
   item 1). The bed is a quiet open-fifth pad in the key that plays only in
   act transitions and under the dressed pauses (predict, hum, quiz), where critic 03 found the mix

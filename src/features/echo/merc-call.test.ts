@@ -19,7 +19,7 @@ vi.mock('@/components/room-kit/room-output', () => ({
   roomOutput: () => ROOM_OUTPUT,
 }))
 
-vi.mock('@/lib/demo-audio', () => ({
+vi.mock('@/lib/demo-voice', () => ({
   playVoiceContour: (_ctx: unknown, points: unknown, options: unknown) => {
     played.calls.push({ points, options })
     return {

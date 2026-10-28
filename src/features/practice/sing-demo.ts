@@ -17,7 +17,7 @@
 // - His line and his voice are one contour (contourCents): a small scoop
 //   into each note and a vibrato that grows in, on the note the transport
 //   plays. The frame loop draws it at the transport's beat; the voice
-//   (lib/demo-audio.ts, playVoiceContour) starts with each of the
+//   (lib/demo-voice.ts, playVoiceContour) starts with each of the
 //   transport's notes, on the app's audio context, so what is heard is what
 //   is drawn. The tab's guide note plays under him as it does for a singer.
 // - Nothing is kept. While it runs the tab scores nothing and records
@@ -32,8 +32,9 @@
 
 import { createSignal } from 'solid-js'
 import type { CoachStepRun } from '@/lib/coach-types'
-import type { DemoSound, VoicePoint } from '@/lib/demo-audio'
-import { playVoiceContour } from '@/lib/demo-audio'
+import type { DemoSound } from '@/lib/demo-audio'
+import type { VoicePoint } from '@/lib/demo-voice'
+import { playVoiceContour } from '@/lib/demo-voice'
 import { midiToFreq, midiToNote } from '@/lib/scale-data'
 import type { MelodyItem, PitchResult } from '@/types'
 import type { SingDemoHost } from './sing-demo-host'

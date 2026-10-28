@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
-import type { VoicePoint } from './demo-audio'
-import { flutterMakeup, LIP_FLUTTER, playHoldTone, playVoiceContour, } from './demo-audio'
+import { playHoldTone } from './demo-audio'
+import type { VoicePoint } from './demo-voice'
+import { flutterMakeup, LIP_FLUTTER, playVoiceContour } from './demo-voice'
 import { lowNoteOctaveLevel, normalizedFundamental, } from './low-note-reinforcement'
 
 type Call = readonly [

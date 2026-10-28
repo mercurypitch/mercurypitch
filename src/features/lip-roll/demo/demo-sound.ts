@@ -5,14 +5,14 @@
 // The glide rooms' demo sound (room-kit glide/glide-demo-sound.ts): each
 // take opens with the wave's root, as the room's count-in plays it, then
 // Merc's buzz along the take. The buzz is the open "ooh" with a lip
-// trill's 25 Hz flutter on it (demo-audio.ts LIP_FLUTTER), on the pitch
+// trill's 25 Hz flutter on it (demo-voice.ts LIP_FLUTTER), on the pitch
 // the frames carry, so the voice heard is the voice the engine was fed. A
 // trill has no vibrato of its own, so the buzz has none.
 
 import type { DemoSoundtrack } from '@/components/demo-kit/demo-sound'
 import type { GlideDemoVoice } from '@/components/room-kit/glide/glide-demo-sound'
 import { createGlideDemoSound } from '@/components/room-kit/glide/glide-demo-sound'
-import { LIP_FLUTTER } from '@/lib/demo-audio'
+import { LIP_FLUTTER } from '@/lib/demo-voice'
 import type { LipDemoTake } from './demo-script'
 
 export type LipDemoSound = DemoSoundtrack<LipDemoTake>

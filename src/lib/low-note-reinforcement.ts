@@ -16,7 +16,7 @@
 // Two knobs fade in together across the same span, and both are exactly 1
 // and 0 at C3 upward: nothing above the bottom two octaves changes. The
 // classic exercises' engine (audio-engine.ts) uses both on its sine voice;
-// the premium rooms' notes (reference-tone.ts, demo-audio.ts) take the
+// the premium rooms' notes (reference-tone.ts, demo-voice.ts) take the
 // octave. The piano fallback synth pairs a triangle with an octave sine,
 // and the mirror's tone player runs a partial series, for the same reason.
 //

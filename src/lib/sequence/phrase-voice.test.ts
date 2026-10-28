@@ -3,7 +3,7 @@
 // ============================================================
 
 import { describe, expect, it } from 'vitest'
-import type { VoicePoint } from '@/lib/demo-audio'
+import type { VoicePoint } from '@/lib/demo-voice'
 import { echoPhrase } from './phrase-bank'
 import { phraseToVoicePoints } from './phrase-voice'
 import type { Phrase } from './sequence-engine'

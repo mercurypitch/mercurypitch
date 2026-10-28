@@ -72,7 +72,7 @@ import { createSongPlayer } from './song-player'
 
 /** The chip while the singer sings, before their entry. */
 export const YOUR_TURN = 'Your turn'
-/** Merc's voice while he sings the note (demo-audio's held level). */
+/** Merc's voice while he sings the note (demo-voice's held level). */
 const SUNG_LEVEL = 0.8
 
 /** Draws the voice's trail: its readings and now, frames' clock; null clears it. */
