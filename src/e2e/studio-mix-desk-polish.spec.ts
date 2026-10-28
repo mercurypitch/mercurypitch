@@ -327,6 +327,45 @@ test.describe('on a tablet', () => {
   })
 })
 
+test("on a laptop, each dial's end words stand 8 px apart and clear of the next dial's", async ({
+  page,
+}) => {
+  test.setTimeout(120_000)
+  await page.setViewportSize({ width: 1366, height: 768 })
+  await openArrangement(page)
+  const desk = await openDesk(page)
+  const layout = await desk
+    .getByRole('group', { name: 'Adjust', exact: true })
+    .evaluate((group) => {
+      const column = group.getBoundingClientRect()
+      return {
+        left: column.left,
+        right: column.right,
+        dials: [...group.children].map((dial) =>
+          [...dial.lastElementChild!.children].map((word) => {
+            const box = word.getBoundingClientRect()
+            return { text: word.textContent, left: box.left, right: box.right }
+          }),
+        ),
+      }
+    })
+  expect(layout.dials).toHaveLength(5)
+  layout.dials.forEach(([low, high], index) => {
+    expect(
+      high.left - low.right,
+      `${low.text} / ${high.text}`,
+    ).toBeGreaterThanOrEqual(8)
+    const next = layout.dials[index + 1]
+    if (next)
+      expect(
+        next[0].left - high.right,
+        `${high.text} / ${next[0].text}`,
+      ).toBeGreaterThanOrEqual(8)
+  })
+  expect(layout.dials[0][0].left).toBeGreaterThanOrEqual(layout.left)
+  expect(layout.dials[4][1].right).toBeLessThanOrEqual(layout.right)
+})
+
 test.describe('on a tablet held upright', () => {
   test.use({
     viewport: { width: 768, height: 1024 },
