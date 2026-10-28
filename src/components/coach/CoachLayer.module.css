@@ -23,7 +23,13 @@
      stack as the toasts are (lib/foot-space.ts), or at the top when that
      would cover the target, or the transport under a do-step with nothing to
      ring; or centred, for a stop over a stage whose transport fills the foot
-     of the window. Its every control is at least 44px. */
+     of the window. Its every control is at least 44px.
+   - Wherever it stands, its words give way first: the card is capped (45dvh
+     on a phone, the window less a margin elsewhere), and words that do not
+     fit scroll in their own row above the buttons, which stay put with the
+     X, and their foot fades while there are more below (data-more, set by
+     CoachLayer.tsx). Only a row of buttons taller than the cap scrolls the
+     whole card. */
 
 .layer {
   --coach-ground: #0d1117;
@@ -56,6 +62,9 @@
   box-sizing: border-box;
   display: grid;
   grid-template-columns: auto minmax(0, 1fr);
+  /* The words' row takes what the buttons leave under the cap, and no less
+     than Merc; it fits its words when they fit. */
+  grid-template-rows: 1fr auto;
   column-gap: 12px;
   row-gap: 10px;
   align-items: start;
@@ -125,14 +134,29 @@
   grid-column: 1;
 }
 
+/* The words scroll here when they do not fit their row. The 4px of padding,
+   taken back by the margin, keep a focus ring inside the scroll's clip and
+   every word where it stood; content-box sizing caps the margin box at the
+   row. The scroll padding brings a focused control clear of the fade. */
 .content {
   grid-row: 1;
   grid-column: 2;
+  box-sizing: content-box;
   display: flex;
   flex-direction: column;
   gap: 8px;
   min-width: 0;
-  padding-right: 36px;
+  min-height: 0;
+  max-height: 100%;
+  margin: -4px;
+  padding: 4px 40px 4px 4px;
+  overflow-y: auto;
+  scroll-padding: 4px 0 28px;
+  outline: none;
+}
+
+.bubble[data-more] .content {
+  mask-image: linear-gradient(to bottom, #000 calc(100% - 28px), transparent);
 }
 
 .title {
@@ -198,8 +222,10 @@
   cursor: pointer;
 }
 
+/* Over the words' corner, which a fade lifts into a layer of its own. */
 .close {
   position: absolute;
+  z-index: 1;
   top: 4px;
   right: 4px;
   display: grid;
