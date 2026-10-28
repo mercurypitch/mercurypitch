@@ -1,7 +1,7 @@
 // Studio backups round-trip through a fresh database and reject damaged archives before writing.
 import { zipSync } from 'fflate'
 import { Blob as NodeBlob } from 'node:buffer'
-import { webcrypto } from 'node:crypto'
+import { createHash, webcrypto } from 'node:crypto'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import 'fake-indexeddb/auto'
 import { DexieAdapter } from '@/db/adapters/dexie-adapter'
@@ -9,8 +9,10 @@ import { studioArrangementFixture, studioAssetFixture, } from '@/db/services/stu
 import { createStudioService } from '@/db/services/studio-service'
 import { sha256Bytes } from '@/lib/studio/audio/canonical-pcm'
 import { releaseStudioResource, reserveStudioMemory, setStudioWorkingBytes, studioReservedMemoryBytes, studioWorkingBytes, } from '@/lib/studio/memory-budget'
-import { readStudioArchive as rawReadStudioArchive, STUDIO_BACKUP_LIMITS, writeStudioArchive as rawWriteStudioArchive, } from './archive-codec'
-import { createStudioBackup as rawCreateStudioBackup, readStudioBackup as rawReadStudioBackup, restoreStudioBackup, } from './studio-backup'
+import { readStudioArchive as rawReadStudioArchive, STUDIO_BACKUP_LIMITS, } from './archive-codec'
+import type { StudioArchiveSink } from './archive-writer'
+import { writeStudioArchive as rawWriteStudioArchive } from './archive-writer'
+import { createStudioBackup as rawCreateStudioBackup, readStudioBackup as rawReadStudioBackup, restoreStudioBackup, writeStudioBackup, } from './studio-backup'
 
 describe('portable Studio backups', () => {
   const resources: object[] = []
@@ -356,5 +358,90 @@ describe('portable Studio backups', () => {
     } finally {
       setStudioWorkingBytes(null)
     }
+  })
+
+  /** A file on disk: it keeps the written bytes and reserves nothing. */
+  function fileSink(write?: () => Promise<void>) {
+    const written: Uint8Array[] = []
+    const sink: StudioArchiveSink & { bytes(): Buffer } = {
+      reserve: () => {},
+      async write(parts) {
+        await write?.()
+        written.push(...parts)
+      },
+      bytes: () => Buffer.concat(written),
+    }
+    return sink
+  }
+  const sha256 = (bytes: Uint8Array) =>
+    createHash('sha256').update(bytes).digest('hex')
+
+  it('writes the same bytes the old writer wrote for the same song, in memory or streamed to a file', async () => {
+    vi.useFakeTimers({ toFake: ['Date'] })
+    vi.setSystemTime(new Date(2026, 9, 28, 12, 0, 0))
+    try {
+      const { project, data, archive } = await fixture()
+      const sink = fileSink()
+      await writeStudioBackup(
+        project,
+        (id) => service.readAssetBuffers(project.id, id),
+        sink,
+        { assetMetadata: [data.asset] },
+      )
+
+      // SHA-256 of the writer before backups could stream, measured on the
+      // same song at the same local time under three time zones.
+      const old =
+        '29a48fe5c9b85d3d7683c61ef88eac35579a4891901407129edf094f41563156'
+      expect(sha256(new Uint8Array(await archive.arrayBuffer()))).toBe(old)
+      expect(sha256(sink.bytes())).toBe(old)
+    } finally {
+      vi.useRealTimers()
+    }
+  })
+
+  it('stops a backup whose take fails its check on the way into the file', async () => {
+    const { project, data } = await fixture()
+    const damaged = new Uint8Array(await data.canonicalPcm.arrayBuffer())
+    new DataView(damaged.buffer).setFloat32(36, Number.NaN, true)
+    const read = vi.fn(async () => ({
+      ...data,
+      canonicalPcm: new Blob([damaged]),
+    }))
+
+    await expect(
+      writeStudioBackup(project, read, fileSink(), {
+        assetMetadata: [data.asset],
+      }),
+    ).rejects.toThrow('every audio asset')
+  })
+
+  it('stops when cancelled while a take is read, and says a file that refuses its bytes could not be written', async () => {
+    const { project, data } = await fixture()
+    const cancel = new AbortController()
+    const read = vi.fn(async () => {
+      cancel.abort()
+      return data
+    })
+    await expect(
+      writeStudioBackup(project, read, fileSink(), {
+        assetMetadata: [data.asset],
+        signal: cancel.signal,
+      }),
+    ).rejects.toMatchObject({ name: 'AbortError' })
+
+    const full = fileSink(() =>
+      Promise.reject(new DOMException('No room', 'QuotaExceededError')),
+    )
+    await expect(
+      writeStudioBackup(
+        project,
+        (id) => service.readAssetBytes(project.id, id),
+        full,
+        { assetMetadata: [data.asset] },
+      ),
+    ).rejects.toThrow(
+      'The backup file could not be written. Check the disk has room and try again.',
+    )
   })
 })

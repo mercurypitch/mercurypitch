@@ -539,5 +539,7 @@
   "src/lib/studio/export/render-wav.test.ts",
   "src/features/studio/timeline/gesture-draft.test.ts",
   "src/features/studio/backup/studio-backup-memory.test.ts",
-  "src/lib/studio/audio/sha256.test.ts"
+  "src/lib/studio/audio/sha256.test.ts",
+  "src/features/studio/backup/archive-writer.test.ts",
+  "src/lib/studio/audio/stream-check.test.ts"
 ]

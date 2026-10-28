@@ -4,11 +4,13 @@
 
 import type { StudioService } from '@/db/services/studio-service'
 import { StudioStorageError } from '@/db/services/studio-service'
-import { validatePreparedStudioAsset } from '@/lib/studio/audio/prepare-studio-asset'
+import { checkCanonicalStream, checkOriginalStream, } from '@/lib/studio/audio/stream-check'
 import { isStudioMemoryRefusal, releaseStudioResource, reserveStudioMemory, retainStudioResource, StudioMemoryError, } from '@/lib/studio/memory-budget'
 import type { StudioAsset, StudioAssetBytes, StudioAssetData, StudioProject, } from '@/lib/studio/model/types'
 import { validateStudioAsset, validateStudioProject, } from '@/lib/studio/model/validation'
-import { readStudioArchive, studioBackupAssetPath, StudioBackupError, writeStudioArchive, } from './archive-codec'
+import { readStudioArchive, studioBackupAssetPath, StudioBackupError, } from './archive-codec'
+import type { StudioArchiveSink, StudioArchiveWriter, StudioEntryCheck, } from './archive-writer'
+import { createStudioArchiveWriter, createStudioMemorySink, } from './archive-writer'
 
 export { StudioBackupError } from './archive-codec'
 
@@ -25,6 +27,8 @@ const RESTORE_MEMORY =
   'Studio needs more memory to open this backup. Stop playback and try again.'
 const AUDIO_CHECK =
   'The project backup audio failed its size, format or checksum check.'
+const BACKUP_WRITE =
+  'The backup file could not be written. Check the disk has room and try again.'
 
 export interface StudioBackupOptions {
   signal?: AbortSignal
@@ -94,84 +98,197 @@ function manifestFromJson(value: unknown): StudioBackupManifest {
   return { format: 'mercurypitch-studio', version: 1, project, assets }
 }
 
-/** Freeze the current arrangement, including unsaved edits; never export history. */
+interface BackupSource {
+  id: string
+  /** Audio an unsaved import already holds: read from memory, never reserved again. */
+  staged: StudioAssetData | undefined
+  /** The take's metadata, as the manifest records it. */
+  asset: StudioAsset
+}
+
+/** Every take the arrangement plays, once each, with the metadata the manifest records. */
+function backupSources(
+  snapshot: StudioProject,
+  options: StudioBackupOptions,
+): BackupSource[] {
+  const staged = new Map(
+    (options.preparedAssets ?? []).map((data) => [data.asset.id, data]),
+  )
+  return [...new Set(snapshot.clips.map((clip) => clip.assetId))].map((id) => {
+    const asset =
+      staged.get(id)?.asset ??
+      options.assetMetadata?.find((known) => known.id === id)
+    if (!asset)
+      throw backupFailure(
+        new Error('Audio metadata is required before reading a backup source'),
+        options.signal,
+      )
+    return { id, staged: staged.get(id), asset: structuredClone(asset) }
+  })
+}
+
+/** The same metadata, whatever order its keys were written in. */
+function canonicalJson(value: unknown): string {
+  if (value === null || typeof value !== 'object') return JSON.stringify(value)
+  if (Array.isArray(value)) return `[${value.map(canonicalJson).join(',')}]`
+  return `{${Object.keys(value)
+    .sort()
+    .map(
+      (key) =>
+        `${JSON.stringify(key)}:${canonicalJson((value as Record<string, unknown>)[key])}`,
+    )
+    .join(',')}}`
+}
+
+/**
+ * Freeze the current arrangement, including unsaved edits, into the sink;
+ * never export history. One take is read at a time and checked as it streams
+ * into the archive, so a backup holds one take and one batch, not the song.
+ * A saved take is best read as its stored buffers: a Blob made of them is a
+ * second copy, held where the page cannot see it to collect it.
+ */
+export async function writeStudioBackup(
+  project: StudioProject,
+  readAsset: (assetId: string) => Promise<StudioAssetData | StudioAssetBytes>,
+  sink: StudioArchiveSink,
+  options: StudioBackupOptions = {},
+): Promise<void> {
+  const snapshot = validateStudioProject(structuredClone(project))
+  const sources = backupSources(snapshot, options)
+  const assets: StudioBackupManifest['assets'] = sources.map(
+    ({ asset }, index) => ({
+      asset,
+      originalPath: studioBackupAssetPath(index, 'original'),
+      canonicalPath: studioBackupAssetPath(index, 'canonical'),
+    }),
+  )
+  validateStudioProject(
+    snapshot,
+    assets.map(({ asset }) => asset),
+  )
+  const manifest: StudioBackupManifest = {
+    format: 'mercurypitch-studio',
+    version: 1,
+    project: snapshot,
+    assets,
+  }
+  // Keep the manifest first to make the archive straightforward to inspect.
+  const manifestBlob = new Blob([JSON.stringify(manifest)], {
+    type: 'application/json',
+  })
+  try {
+    sink.reserve(
+      assets.reduce(
+        (bytes, { asset }) =>
+          bytes + asset.byteLength + asset.canonicalPcmByteLength,
+        manifestBlob.size,
+      ),
+    )
+  } catch (error) {
+    throw backupFailure(error, options.signal)
+  }
+  const writer = createStudioArchiveWriter(sink, options.signal)
+  try {
+    await writer.add('manifest.json', manifestBlob)
+    for (const [index, source] of sources.entries())
+      await writeSource(
+        writer,
+        source,
+        assets[index],
+        readAsset,
+        snapshot.id,
+        options.signal,
+      )
+    await writer.finish()
+  } catch (error) {
+    throw writeFailure(error, options.signal)
+  } finally {
+    writer.terminate()
+  }
+}
+
+/** Read one take, check it as it streams into the archive, and let it go. */
+async function writeSource(
+  writer: StudioArchiveWriter,
+  source: BackupSource,
+  entry: StudioBackupManifest['assets'][number],
+  readAsset: (assetId: string) => Promise<StudioAssetData | StudioAssetBytes>,
+  projectId: string,
+  signal?: AbortSignal,
+): Promise<void> {
+  signal?.throwIfAborted()
+  let release = () => {}
+  let data: StudioAssetData | StudioAssetBytes
+  let checks: [StudioEntryCheck, StudioEntryCheck]
+  try {
+    // A take read from storage counts against the budget while it is held.
+    if (!source.staged)
+      release = reserveStudioMemory(
+        source.asset.byteLength + source.asset.canonicalPcmByteLength,
+      )
+    data = source.staged ?? (await readAsset(source.id))
+    if (
+      data.asset.id !== source.id ||
+      data.asset.projectId !== projectId ||
+      canonicalJson(data.asset) !== canonicalJson(source.asset)
+    )
+      throw new Error('Audio ownership mismatch')
+    checks = [
+      checkOriginalStream(data.original, source.asset),
+      checkCanonicalStream(data.canonicalPcm, source.asset),
+    ]
+  } catch (error) {
+    release()
+    throw backupFailure(error, signal)
+  }
+  try {
+    await writer.add(
+      entry.originalPath,
+      data.original,
+      guarded(checks[0], signal),
+    )
+    await writer.add(
+      entry.canonicalPath,
+      data.canonicalPcm,
+      guarded(checks[1], signal),
+    )
+  } finally {
+    release()
+  }
+}
+
+/** A check's failure is the audio's, not the file's. */
+function guarded(
+  check: StudioEntryCheck,
+  signal?: AbortSignal,
+): StudioEntryCheck {
+  const run = (step: () => void) => {
+    try {
+      step()
+    } catch (error) {
+      throw backupFailure(error, signal)
+    }
+  }
+  return {
+    update: (bytes) => run(() => check.update(bytes)),
+    finish: () => run(() => check.finish()),
+  }
+}
+
+/** The whole backup as one Blob held in memory, such as a test reads back. */
 export async function createStudioBackup(
   project: StudioProject,
   readAsset: (assetId: string) => Promise<StudioAssetData>,
   options: StudioBackupOptions = {},
 ): Promise<Blob> {
-  const snapshot = validateStudioProject(structuredClone(project))
-  const staged = new Map(
-    (options.preparedAssets ?? []).map((data) => [data.asset.id, data]),
-  )
-  const entries = new Map<string, Blob>()
-  const assets: StudioBackupManifest['assets'] = []
-  const releases: (() => void)[] = []
+  const sink = createStudioMemorySink()
   try {
-    for (const id of new Set(snapshot.clips.map((clip) => clip.assetId))) {
-      options.signal?.throwIfAborted()
-      let data: StudioAssetData
-      try {
-        const known =
-          staged.get(id)?.asset ??
-          options.assetMetadata?.find((asset) => asset.id === id)
-        if (!known)
-          throw new Error(
-            'Audio metadata is required before reading a backup source',
-          )
-        // The read Blobs stay held until the archive is written: count once.
-        if (!staged.has(id))
-          releases.push(
-            reserveStudioMemory(
-              known.byteLength + known.canonicalPcmByteLength,
-            ),
-          )
-        data = staged.get(id) ?? (await readAsset(id))
-        if (data.asset.id !== id || data.asset.projectId !== snapshot.id)
-          throw new Error('Audio ownership mismatch')
-        const releaseValidation = reserveStudioMemory(
-          2 * Math.max(data.original.size, data.canonicalPcm.size),
-        )
-        try {
-          await validatePreparedStudioAsset(data, { signal: options.signal })
-        } finally {
-          releaseValidation()
-        }
-      } catch (error) {
-        throw backupFailure(error, options.signal)
-      }
-      const originalPath = studioBackupAssetPath(assets.length, 'original')
-      const canonicalPath = studioBackupAssetPath(assets.length, 'canonical')
-      assets.push({
-        asset: structuredClone(data.asset),
-        originalPath,
-        canonicalPath,
-      })
-      entries.set(originalPath, data.original)
-      entries.set(canonicalPath, data.canonicalPcm)
-    }
-    validateStudioProject(
-      snapshot,
-      assets.map(({ asset }) => asset),
-    )
-    const manifest: StudioBackupManifest = {
-      format: 'mercurypitch-studio',
-      version: 1,
-      project: snapshot,
-      assets,
-    }
-    // Keep the manifest first to make the archive straightforward to inspect.
-    const ordered = new Map<string, Blob>([
-      [
-        'manifest.json',
-        new Blob([JSON.stringify(manifest)], { type: 'application/json' }),
-      ],
-      ...entries,
-    ])
-    return await writeStudioArchive(ordered, options.signal)
-  } finally {
-    for (const release of releases) release()
+    await writeStudioBackup(project, readAsset, sink, options)
+  } catch (error) {
+    sink.free()
+    throw error
   }
+  return retainStudioResource(sink.blob(), sink.free)
 }
 
 /** Say what stopped a backup: missing room is not missing audio. */
@@ -181,6 +298,18 @@ function backupFailure(error: unknown, signal?: AbortSignal): unknown {
   return new StudioBackupError(
     'The backup could not include every audio asset. Restore the missing audio and try again.',
   )
+}
+
+/** A failure while writing: the backup's own errors as they are, anything else the file refused. */
+function writeFailure(error: unknown, signal?: AbortSignal): unknown {
+  if (
+    signal?.aborted === true ||
+    error instanceof StudioBackupError ||
+    error instanceof StudioMemoryError
+  )
+    return error
+  if (isStudioMemoryRefusal(error)) return new StudioMemoryError(BACKUP_MEMORY)
+  return new StudioBackupError(BACKUP_WRITE)
 }
 
 /**

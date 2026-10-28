@@ -1,4 +1,4 @@
-// Studio restore and copy memory — a restored backup or a copied song holds its audio once, and a lack of room says so, never that audio is missing.
+// Studio backup, restore and copy memory — a backup to a file holds one take, a restored backup or a copied song holds its audio once, and a lack of room says so, never that audio is missing.
 import { Blob as NodeBlob } from 'node:buffer'
 import { webcrypto } from 'node:crypto'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
@@ -7,10 +7,12 @@ import { DexieAdapter } from '@/db/adapters/dexie-adapter'
 import { createStudioService } from '@/db/services/studio-service'
 import { encodeCanonicalPcm, sha256Bytes, } from '@/lib/studio/audio/canonical-pcm'
 import type * as MemoryBudget from '@/lib/studio/memory-budget'
-import { releaseStudioResource, setStudioWorkingBytes, studioReservedMemoryBytes, } from '@/lib/studio/memory-budget'
+import { releaseStudioResource, reserveStudioMemory, setStudioWorkingBytes, studioReservedMemoryBytes, } from '@/lib/studio/memory-budget'
 import { createStudioTrack } from '@/lib/studio/model/defaults'
 import type { StudioAssetData, StudioProject } from '@/lib/studio/model/types'
-import { createStudioBackup, restoreStudioBackup } from './studio-backup'
+import type { StudioArchiveSink } from './archive-writer'
+import { studioArchiveHeldBytes } from './archive-writer'
+import { createStudioBackup, restoreStudioBackup, writeStudioBackup, } from './studio-backup'
 
 const peak = vi.hoisted(() => ({ bytes: 0 }))
 vi.mock('@/lib/studio/memory-budget', async (importOriginal) => {
@@ -160,6 +162,39 @@ describe('Studio restore and copy memory', () => {
     const result = await work()
     return [result, peak.bytes - before]
   }
+
+  it('writes a backup to a file holding one take at a time, where memory held the song twice', async () => {
+    let release = () => {}
+    const file: StudioArchiveSink = {
+      reserve(archiveBytes) {
+        release = reserveStudioMemory(
+          studioArchiveHeldBytes(archiveBytes, false),
+        )
+      },
+      write: async () => {},
+    }
+    const [, held] = await peakOf(() =>
+      writeStudioBackup(
+        song,
+        (id) => service.readAssetBuffers(song.id, id),
+        file,
+        {
+          assetMetadata: takes.map((data) => data.asset),
+        },
+      ),
+    )
+    release()
+    const [archive, inMemory] = await peakOf(backup)
+    releaseStudioResource(archive)
+
+    const take =
+      takes[0].asset.byteLength + takes[0].asset.canonicalPcmByteLength
+    expect(held).toBeLessThanOrEqual(take + studioArchiveHeldBytes(0, false))
+    expect(held).toBeLessThan(audioBytes)
+    // In memory, the archive and the take being read.
+    expect(inMemory).toBeGreaterThan(audioBytes)
+    expect(inMemory).toBeLessThanOrEqual(audioBytes + take + 10 * MiB)
+  })
 
   it('restores a backup holding the song audio once, not three times over', async () => {
     const archive = await backup()

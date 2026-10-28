@@ -26,6 +26,9 @@ export function controllerServiceFixture(): StudioService {
     readAssetBytes: vi.fn(async () => {
       throw new Error('No saved audio')
     }),
+    readAssetBuffers: vi.fn(async () => {
+      throw new Error('No saved audio')
+    }),
     readCanonicalAsset: vi.fn(async () => {
       throw new Error('No saved audio')
     }),
