@@ -377,10 +377,19 @@ const ENTRIES: readonly Lesson[] = [
     title: 'Chords and the four-chord song',
     short: 'Chords',
     topics: ['T19', 'T20', 'T21'],
+    // A draft until its sign-off (drafts.ts), as Lesson 3 is.
+    minutes: 15,
+    page: '/learn/12',
     hook: 'How can two songs share the same four chords and still sound different?',
     pr: {
       needs:
         'Chord Stacker with major and minor triads (today it has only maj7, min7, dom7, dim7 and maj6)',
+      link: {
+        href: '/ear-lab?lesson=12',
+        addr: 'mercurypitch.com/ear-lab',
+        label: 'Ear Lab',
+        note: 'then tap Cadence',
+      },
     },
   },
   {

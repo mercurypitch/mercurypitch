@@ -715,7 +715,7 @@ paused off screen, and the still images when WebGL fails or would run on the CPU
 
 ## Explorer and season data
 
-- **Season data**: Lesson 14's entry in `kit/season.ts` (`:396-410`) gains a plain `minutes: 18` and
+- **Season data**: Lesson 14's entry in `kit/season.ts` (`:405-419`) gains a plain `minutes: 18` and
   `page: '/learn/14'` after its topics, in every build, under the comment Lesson 5's entry carries,
   `// A draft until its sign-off (drafts.ts), as Lesson 3 is.` (`season.ts:250`), as Lesson 3's own
   are written (`season.ts:210-213`) and Lesson 6's (`:270-272`; 8, 12). Whether the page is live is
@@ -723,11 +723,11 @@ paused off screen, and the still images when WebGL fails or would run on the CPU
   and no reading time (`:102-124`), so the entry reads neither `DRAFT_LESSONS` nor `DRAFTS_SHOWN`,
   which `kit/drafts.test.ts` keeps to the publishing rules alone (`:57-67`). Its link stays as it
   is, `href: '/karaoke-night?lesson=14'`, `addr: 'mercurypitch.com/karaoke-night'` and
-  `label: 'Karaoke Night'` (`season.ts:403-409`), with no `needs`. Its topics stay; its hook is the
-  entry's, the default (`:402`), and its tease, which Lesson 13's card draws, is
+  `label: 'Karaoke Night'` (`season.ts:412-418`), with no `needs`. Its topics stay; its hook is the
+  entry's, the default (`:411`), and its tease, which Lesson 13's card draws, is
   `kit/lesson-copy.ts`'s (`:120`), with the old tease kept as `band` (`:121-126`) and the old hook,
   `compelling`, dropped by #1186, as 1 and 2 record. `EDGES` already holds [5, 14], [8, 14], [9,
-  14] and [12, 14] (`season.ts:437-440`).
+  14] and [12, 14] (`season.ts:446-449`).
 - **The explorer card**: what the kit draws for a lesson with a page and no published film: its
   state and main action from `kit/lesson-state.ts` ("Start lesson", "Continue: step N" or "Read
   again"), its hook, its topics, the lessons it builds on, its practise link and its minutes
@@ -748,7 +748,7 @@ among them (PR #1149), and in Lesson 9's spec, beyond the parts Lessons 2 to 9 p
    `lessonInputs` and `lessonPaths`, `:109-122`; `vite.config.ts:319`, `:493`), so the page needs no
    build change. Its line in `kit/drafts.ts`,
    `14: "the vocal coach's sign-off (MASTER-PLAN § 12 item 8)"`, beside Lessons 3 to 8's
-   (`:30-40`), makes it a draft: production's `LESSON_DRAFTS`, "0", holds it back, and the dev
+   (`:30-41`), makes it a draft: production's `LESSON_DRAFTS`, "0", holds it back, and the dev
    site's and the previews', "1", show it (`wrangler.jsonc:165-167`, `:188-190`, `:231-232`), until
    the console sets it either way, and the Content Studio's Lessons page names that reason when
    asked to publish it (11). `/learn/14` and `/learn/14.html` go in `STANDALONE_DOCUMENT_PATHS`
@@ -830,12 +830,12 @@ among them (PR #1149), and in Lesson 9's spec, beyond the parts Lessons 2 to 9 p
    open's predict.
 4. First-paint ceilings for `learn/14.html` in `scripts/assert-first-paint-budgets.mjs`, one in its
    JavaScript table and one in its stylesheet table, beside Lessons 3 and 6's (`:103-151`,
-   `:189-197`; `:284-287`, `:297-301`). Every build emits every lesson page, and the check fails a
-   document with no ceiling (`:551-555`), so without them the Browser jobs fail before any spec
+   `:198-206`; `:301-304`, `:314-318`). Every build emits every lesson page, and the check fails a
+   document with no ceiling (`:574-578`), so without them the Browser jobs fail before any spec
    runs, as Lesson 6's did on PR #1149. Each is the page's measured first paint plus about a
-   quarter, the tables' rule (`:47-58`, `:240-250`), measured in `build:e2e`, where the check runs
+   quarter, the tables' rule (`:47-58`, `:257-267`), measured in `build:e2e`, where the check runs
    (`package.json:20`), as Lesson 6's entry warns, since a build of one page alone weighs it lighter
-   (`assert-first-paint-budgets.mjs:194-196`). As on Lesson 3, the listener, the pitch detector and
+   (`assert-first-paint-budgets.mjs:203-205`). As on Lesson 3, the listener, the pitch detector and
    Voice Mirror's scorer arrive through a dynamic import when Start is pressed
    (`scripts/assert-first-paint-budgets.mjs:107-111`), and the record module and the app's recorder
    with them, so the ceiling holds only while that boundary does.
@@ -1086,9 +1086,9 @@ parts:
 14. Season data: Lesson 14's entry has `minutes: 18` and `page: '/learn/14'` in every build,
     whichever way `VITE_DRAFT_LESSONS` reads, as `season.test.ts` checks Lessons 3 to 5's
     (`:241-266`), and the same file's check of every page in the repository then covers it
-    (`:322-339`); `seasonFor(LESSONS, defaultPageState(false))` gives Lesson 14 no page and no
+    (`:350-367`); `seasonFor(LESSONS, defaultPageState(false))` gives Lesson 14 no page and no
     reading time while its line is in `drafts.ts`, and `seasonFor(LESSONS, defaultPageState(true))`
-    keeps both, as `publish.test.ts` checks a lesson held back and one published (`:58-135`); that
+    keeps both, as `publish.test.ts` checks a lesson held back and one published (`:58-162`); that
     file's example of a lesson with no page is found, not named (`:45-56`). When the season's last
     page lands, Lesson 14's in the order `docs/plans/find-your-pitch/HANDOFF.md:233` suggests,
     `lessonWithNoPage` (`kit/season.test-fixtures.ts:22-36`) finds none, and each test that asks it

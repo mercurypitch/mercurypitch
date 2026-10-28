@@ -9,7 +9,7 @@
 // yet "Coming later" and a way to the map, never a link to a page. These
 // are the lesson polish plan's checks for it (D2), with the prerequisite
 // chip's 44 px target (A6). The e2e build shows drafts, as the dev deploy
-// does, so Lessons 3 and 5 to 10 are live here; a page that holds them
+// does, so Lessons 3, 5 to 10 and 12 are live here; a page that holds them
 // back is next-card.test.ts's, and one the site worker served with the
 // console's state is learn-publish-state.spec.ts's. A lesson with a tease
 // (kit/lesson-copy.ts) is set up by it on the card before, one line above
@@ -92,6 +92,12 @@ const CARDS: readonly (readonly [string, string, string, string])[] = [
   [
     `/learn/${pad(LATER.n - 1)}`,
     `Next lesson ${pad(LATER.n)} · ${LATER.title} Coming later`,
+    '#explorer',
+    'See it on the map',
+  ],
+  [
+    '/learn/12',
+    'Next lesson 13 · Resonance and vowels Coming later',
     '#explorer',
     'See it on the map',
   ],
@@ -247,6 +253,32 @@ test("Lesson 10's card sets up Lesson 11 with its tease, one line above its hook
   ).toEqual({ words: '', red: [], moving: 0 })
 })
 
+test("Lesson 12's card sets up Lesson 13 with its tease, one line above its hook, and holds no button", async ({
+  page,
+}) => {
+  // Act
+  await page.goto('/learn/12')
+
+  // Assert
+  const c = card(page)
+  await expect(c.locator('.next-tease')).toHaveText(
+    LESSON_COPY[13]?.tease ?? 'Lesson 13 has a tease',
+  )
+  await expect(c.locator('.next-tease')).toBeVisible()
+  expect(
+    await c
+      .locator('.next-words > *')
+      .evaluateAll((els) => els.map((e) => e.className)),
+  ).toEqual(['eyebrow', 'next-tease', 'q2', 'chip'])
+  // the card's words alone: the page's tease still joins them with the Wrap
+  expect(
+    await c.evaluate((a) =>
+      Array.from(a.children, (k) => k.classList[0] ?? k.tagName),
+    ),
+  ).toEqual(['next-words'])
+  await expect(c.locator('button')).toHaveCount(0)
+})
+
 test("Lesson 2's card, its two figures kept, leads to Lesson 3's page @smoke", async ({
   page,
 }) => {
@@ -357,6 +389,7 @@ for (const [width, height, name] of [
       '/learn/07',
       '/learn/08',
       '/learn/09',
+      '/learn/12',
     ]) {
       test(`${path}: every prerequisite chip is a 44 px target`, async ({
         page,

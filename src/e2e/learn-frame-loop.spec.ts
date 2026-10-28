@@ -6,8 +6,8 @@
 // (kit/frame-loop.ts), and it stops asking for frames once every figure
 // has nothing new to draw. The ring, the slide guide and the explorer never
 // said so, and kept it asking every frame for as long as the page was open.
-// On every page from Lesson 1 to Lesson 10, each figure that uses one of the
-// three is scrolled into view and left to settle, and then it changes
+// On every lesson page, Lessons 1 to 10 and 12, each figure that uses one of
+// the three is scrolled into view and left to settle, and then it changes
 // nothing for a whole second: no paint of its canvas, no change to the
 // ring's drawing. A run of the figure (a sung note, Merc's slide, scale or
 // version, Merc's siren, Lesson 13's plate in the explorer) brings its
@@ -16,11 +16,11 @@
 // phone, where the explorer is a list, Lesson 8's whole page rests again
 // once a second tap on Lesson 13's row folds its card away.
 //
-// On Lessons 6 to 10 every figure now says when it has nothing to draw, so
-// there the whole page asks for no frame at all at rest. Lesson 9's checks
-// here are the explorer, the cold open's chart, at rest and through Merc's
-// leap, and the steps' ladder chart with Step 1's folds strip, at rest and
-// through Step's two notes, while the strip's folds open and close,
+// On Lessons 6 to 10 and 12 every figure now says when it has nothing to
+// draw, so there the whole page asks for no frame at all at rest. Lesson 9's
+// checks here are the explorer, the cold open's chart, at rest and through
+// Merc's leap, and the steps' ladder chart with Step 1's folds strip, at
+// rest and through Step's two notes, while the strip's folds open and close,
 // through Step 5's landing, whose line moves only while it plays, Sing
 // it's chart, whose rungs light only while Merc sings his ladder, and free
 // play's chart, whose rung swells and whose arc draws only through a leap.
@@ -29,7 +29,9 @@
 // rest and through a gap's two notes, which light their beads only while
 // they sound, Sing it's ring and guide, whose path lights only while Merc
 // sings his notes, free play's chord beads, through a gap's two notes as
-// the steps' are, then the explorer and the page at rest.
+// the steps' are, then the explorer and the page at rest. Lesson 12's are
+// its page shell's, the explorer and the page at rest; the hero's ring, the
+// ring of rooms, Sing it's guide and ring join them once they are wired.
 // Lessons 1 to 5 each have drawers of their own that still draw every
 // frame (S-26 in docs/plans/find-your-pitch/RELEASE-REVIEW.md), which keep
 // their loop running whatever these three do, so there only the figures
@@ -402,6 +404,14 @@ test("Lesson 10: the cold open's spiral, the chord beads, Sing it's ring and gui
     page.locator('#freePlay .chord-hit-gap').first().click(),
   )
   await explorerRests(page, 10, true)
+})
+
+test('Lesson 12: the explorer rests, and so does the whole page', async ({
+  page,
+}) => {
+  await open(page, 12)
+
+  await explorerRests(page, 12, true)
 })
 
 test.describe('on a phone', () => {

@@ -538,6 +538,36 @@ describe("a draft lesson on Lesson 1's map, on a page no worker served (drafts.t
     expect(hidden?.innerHTML).not.toContain('/learn/10')
     expect(hidden?.innerHTML).toContain('/ear-lab?lesson=10')
   })
+
+  it('treats Lesson 12, a draft too, the same way either side of the switch, its ear drill kept', async () => {
+    // Arrange
+    const lessonTwelve = async (drafts: '1' | '0'): Promise<Element | null> => {
+      vi.stubEnv('VITE_DRAFT_LESSONS', drafts)
+      vi.resetModules()
+      const { createExplorer: explorerBuilt } = await import('./explorer')
+      explorerPage()
+      explorerBuilt({ current: 1 }).select(12, false)
+      return document.querySelector('#exCardHost .ex-card')
+    }
+
+    // Act
+    const shown = await lessonTwelve('1')
+    const shownLinks = cardLinks()
+    const hidden = await lessonTwelve('0')
+
+    // Assert: to read where drafts show; coming later, and nothing to the page, where they do not (WEB-SPEC, Tests 12)
+    expect(shown?.querySelector('h3')?.textContent).toBe(
+      'Chords and the four-chord song',
+    )
+    expect(shownLinks).toEqual(['/learn/12'])
+    expect(hidden?.querySelector('.chip')?.textContent).toBe('Coming later')
+    expect(hidden?.querySelectorAll('a.btn, [data-done]')).toHaveLength(0)
+    expect(hidden?.innerHTML).not.toContain('/learn/12')
+    expect(
+      hidden?.querySelector('a.addr[href="/ear-lab?lesson=12"]'),
+    ).not.toBeNull()
+    expect(hidden?.textContent).toContain('Ear Lab, then tap Cadence')
+  })
 })
 
 describe("Lesson 1's map on a page the worker served (page-state.ts)", () => {
