@@ -1,20 +1,24 @@
 // ============================================================
-// Lesson 12 steps tests — the one stage, in each step's parts
+// Lesson 12 steps tests — the one stage, in each step's parts and its order
 // ============================================================
 //
 // On the page's own markup and its own deck: every step shows the chord
 // strip and the controls its `data-part` lists name, and hides the rest, so
 // no two controls on the stage ever share an accessible name (WEB-SPEC,
 // Toys 1, "Keyboard and screen readers"); each step has the controls the
-// spec gives it, the strip's seven chips first, in one row of its own
-// beside the text (Toys 1, "The stuck stage"), and the figure's label
-// follows the step. An address that names a step opens it in its own
-// parts, and the step showing, shown again, changes nothing. The markup is
-// Step 1's: its chips named as the toy names them, and its figure summed
-// up as the toy sums it up.
+// spec gives it, in one row of its own beside the text (Toys 1, "The stuck
+// stage"), and the figure's label and the ring's state follow the step.
+// The stage reads in one order, which the markup holds and no tab index
+// changes: the ring's slider, the step's own controls, then the chips from
+// I to vii°. Step 2's key switch presses the key that shows, and a press
+// while the rooms still turn leaves it as it was. An address that names a
+// step opens it in its own parts, and the step showing, shown again,
+// changes nothing. The markup is Step 1's: its chips named as the toy
+// names them, and its figure summed up as the toy sums it up.
 
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import '@/features/lessons/kit/browser-doubles.test-fixtures'
+import type * as MotionModule from '@/features/lessons/kit/motion-switch'
 import { MAJOR_SOLFEGE } from '@/features/lessons/kit/names-modes'
 import { showParts } from '@/features/lessons/kit/step-parts'
 import { chipName, figureSummary } from './lines'
@@ -22,7 +26,16 @@ import { chordsOf } from './music'
 import { el, loadPage, mountSteps } from './page-dom.test-fixtures'
 import { FIG } from './steps'
 
+const motion = vi.hoisted(() => ({ reduced: true }))
+
+vi.mock('@/features/lessons/kit/motion-switch', async (actual) => ({
+  ...(await actual<typeof MotionModule>()),
+  reducedMotion: () => motion.reduced,
+}))
+
 afterEach(() => {
+  motion.reduced = true
+  vi.useRealTimers()
   vi.restoreAllMocks()
   window.location.hash = ''
   document.body.textContent = ''
@@ -52,11 +65,23 @@ const stageNames = (): string[] =>
 
 /** The step's own controls: the stage's names less its nav and the seven chips. */
 const ownNames = (): string[] =>
-  stageNames().filter(
-    (name) =>
-      !['Previous step', 'Next step'].includes(name) &&
-      !name.startsWith('The chord on '),
+  Array.from(
+    document.querySelectorAll<HTMLElement>(
+      '#toyRooms :is(button, input):not([data-chord-strip] *)',
+    ),
   )
+    .filter(shows)
+    .map((b) => b.getAttribute('aria-label') ?? spoken(b))
+
+/** What Tab meets on the ring's toy, in the order it meets them: every control showing that takes the focus. */
+const tabOrder = (): string[] =>
+  Array.from(
+    document.querySelectorAll<HTMLElement>(
+      '#toyRooms :is(button, input, [tabindex])',
+    ),
+  )
+    .filter((e) => shows(e) && e.tabIndex >= 0)
+    .map((b) => b.getAttribute('aria-label') ?? spoken(b))
 
 /** The figure label's words. */
 const label = (): string =>
@@ -200,5 +225,90 @@ describe("Lesson 12's stage, step by step", () => {
         .replace(/\s+/g, ' ')
         .trim(),
     ).toBe(figureSummary('C', []))
+  })
+})
+
+describe("Lesson 12's stage, in one order", () => {
+  it.each([1, 2, 3, 4, 5])(
+    "takes step %i's slider first, then its own controls, then the chips from I to vii°, with no tab index of its own",
+    (n) => {
+      // Arrange
+      const deck = mountSteps()
+
+      // Act
+      deck.show(n)
+
+      // Assert: the markup's order is the focus order
+      const met = tabOrder()
+      expect(met).toEqual([
+        'The ring of rooms: pick a note, C4 to B4',
+        ...ownNames(),
+        ...chips().map((c) => c.getAttribute('aria-label') ?? ''),
+      ])
+      expect(
+        Array.from(
+          document.querySelectorAll<HTMLElement>('#stepsStage [tabindex]'),
+        ).filter((e) => e.tabIndex > 0),
+      ).toEqual([])
+      expect(chips()[0].getAttribute('aria-label')).toBe(
+        n === 1 ? 'The chord on do: C, E, G' : 'Chord one, C major: C, E, G',
+      )
+    },
+  )
+})
+
+describe("Lesson 12's Step 2, the key switch", () => {
+  /** The key switch's two buttons, C and G. */
+  const key = (k: string): HTMLButtonElement =>
+    el<HTMLButtonElement>(`#toyRooms [data-rooms-key] [data-key="${k}"]`)
+  const pressed = (): string[] =>
+    ['C', 'G'].filter((k) => key(k).getAttribute('aria-pressed') === 'true')
+
+  it('presses G as the rooms turn to G, and C as they turn back', () => {
+    // Arrange
+    const deck = mountSteps()
+    deck.show(2)
+
+    // Act
+    key('G').click()
+    const inG = { pressed: pressed(), key: deck.rooms.settings.key }
+    key('C').click()
+
+    // Assert
+    expect(inG).toEqual({ pressed: ['G'], key: 'G' })
+    expect(pressed()).toEqual(['C'])
+    expect(deck.rooms.settings.key).toBe('C')
+  })
+
+  it('leaves the switch as it was when C is pressed while the rooms still turn to G', () => {
+    // Arrange: the turn moves, as with no reduced motion
+    motion.reduced = false
+    vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout', 'performance'] })
+    const deck = mountSteps()
+    deck.show(2)
+    key('G').click()
+
+    // Act
+    vi.advanceTimersByTime(200)
+    key('C').click()
+
+    // Assert
+    expect(pressed()).toEqual(['G'])
+    expect(deck.rooms.settings.key).toBe('G')
+  })
+
+  it('opens Step 2 in C every time, the switch on C, whatever key it was left in', () => {
+    // Arrange
+    const deck = mountSteps()
+    deck.show(2)
+    key('G').click()
+
+    // Act
+    deck.show(3)
+    deck.show(2)
+
+    // Assert
+    expect(pressed()).toEqual(['C'])
+    expect(deck.rooms.settings).toMatchObject({ mode: 'numerals', key: 'C' })
   })
 })

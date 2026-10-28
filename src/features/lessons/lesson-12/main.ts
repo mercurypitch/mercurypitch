@@ -16,11 +16,12 @@
 // spells it (WEB-SPEC, Toys 1). They are never stored, and the page shows no
 // switch for them.
 //
-// The page shell: the switches, the steps' deck with each step's controls,
-// the next lesson's card, the season map, the masthead and Merc and Tavi.
-// Each toy does nothing until it is wired: the ring of rooms on the stage
-// and in free play, the cold open on the hero's ring, the recall and the
-// quick check, the four words, the tunes and Sing it.
+// The switches, the steps' deck with the ring of rooms in each step's
+// state, its chord strip and Step 2's key switch, the next lesson's card,
+// the season map, the masthead and Merc and Tavi. The rest does nothing
+// until it is wired: the other steps' controls and free play, the cold
+// open on the hero's ring, the recall and the quick check, the four
+// words, the tunes and Sing it.
 
 import '@fontsource-variable/inter'
 import '@fontsource-variable/outfit'
@@ -54,7 +55,7 @@ const deck = createStepDeck({
   toyFor: () => 1,
   after: { label: 'Sing it', selector: '#sing' },
 })
-initSteps()
+initSteps(deck)
 deck.start()
 
 // the next lesson's card first: the explorer binds its link to the map

@@ -813,7 +813,9 @@
                      controls are in this one toy, each marked with the steps
                      it shows on, so no two of them share a name: Slow serves
                      Steps 3, 4 and 5. Step 4's moves are a readout inside the
-                     figure, so no status line takes height. -->
+                     figure, so no status line takes height. The figure, the
+                     step's own row and then the chips, in the order the eye,
+                     the keyboard and a screen reader meet them. -->
                 <div class="toy is-active rooms-toy" data-toy="1" id="toyRooms">
                   <p class="eyebrow" data-fig-label>
                     <span class="fig">Fig. 1</span> C major's seven chords
@@ -834,76 +836,6 @@
                       C major's seven chords, none lit.
                     </p>
                     <p class="sr" aria-live="polite" data-rooms-said></p>
-                  </div>
-                  <div
-                    class="chord-strip"
-                    role="group"
-                    aria-label="The seven chords"
-                    data-chord-strip
-                  >
-                    <button
-                      class="btn l12-chip"
-                      type="button"
-                      data-chip="0"
-                      aria-label="The chord on do: C, E, G"
-                    >
-                      <b data-chip-top>on do</b
-                      ><span data-chip-notes>C E G</span>
-                    </button>
-                    <button
-                      class="btn l12-chip"
-                      type="button"
-                      data-chip="1"
-                      aria-label="The chord on re: D, F, A"
-                    >
-                      <b data-chip-top>on re</b
-                      ><span data-chip-notes>D F A</span>
-                    </button>
-                    <button
-                      class="btn l12-chip"
-                      type="button"
-                      data-chip="2"
-                      aria-label="The chord on mi: E, G, B"
-                    >
-                      <b data-chip-top>on mi</b
-                      ><span data-chip-notes>E G B</span>
-                    </button>
-                    <button
-                      class="btn l12-chip"
-                      type="button"
-                      data-chip="3"
-                      aria-label="The chord on fa: F, A, C"
-                    >
-                      <b data-chip-top>on fa</b
-                      ><span data-chip-notes>F A C</span>
-                    </button>
-                    <button
-                      class="btn l12-chip"
-                      type="button"
-                      data-chip="4"
-                      aria-label="The chord on so: G, B, D"
-                    >
-                      <b data-chip-top>on so</b
-                      ><span data-chip-notes>G B D</span>
-                    </button>
-                    <button
-                      class="btn l12-chip"
-                      type="button"
-                      data-chip="5"
-                      aria-label="The chord on la: A, C, E"
-                    >
-                      <b data-chip-top>on la</b
-                      ><span data-chip-notes>A C E</span>
-                    </button>
-                    <button
-                      class="btn l12-chip"
-                      type="button"
-                      data-chip="6"
-                      aria-label="The chord on ti: B, D, F"
-                    >
-                      <b data-chip-top>on ti</b
-                      ><span data-chip-notes>B D F</span>
-                    </button>
                   </div>
                   <div class="controls rooms-row" data-part="2 3 4 5" hidden>
                     <div
@@ -1036,6 +968,76 @@
                       hidden
                     >
                       <span class="track" aria-hidden="true"></span>Slow
+                    </button>
+                  </div>
+                  <div
+                    class="chord-strip"
+                    role="group"
+                    aria-label="The seven chords"
+                    data-chord-strip
+                  >
+                    <button
+                      class="btn l12-chip"
+                      type="button"
+                      data-chip="0"
+                      aria-label="The chord on do: C, E, G"
+                    >
+                      <b data-chip-top>on do</b
+                      ><span data-chip-notes>C E G</span>
+                    </button>
+                    <button
+                      class="btn l12-chip"
+                      type="button"
+                      data-chip="1"
+                      aria-label="The chord on re: D, F, A"
+                    >
+                      <b data-chip-top>on re</b
+                      ><span data-chip-notes>D F A</span>
+                    </button>
+                    <button
+                      class="btn l12-chip"
+                      type="button"
+                      data-chip="2"
+                      aria-label="The chord on mi: E, G, B"
+                    >
+                      <b data-chip-top>on mi</b
+                      ><span data-chip-notes>E G B</span>
+                    </button>
+                    <button
+                      class="btn l12-chip"
+                      type="button"
+                      data-chip="3"
+                      aria-label="The chord on fa: F, A, C"
+                    >
+                      <b data-chip-top>on fa</b
+                      ><span data-chip-notes>F A C</span>
+                    </button>
+                    <button
+                      class="btn l12-chip"
+                      type="button"
+                      data-chip="4"
+                      aria-label="The chord on so: G, B, D"
+                    >
+                      <b data-chip-top>on so</b
+                      ><span data-chip-notes>G B D</span>
+                    </button>
+                    <button
+                      class="btn l12-chip"
+                      type="button"
+                      data-chip="5"
+                      aria-label="The chord on la: A, C, E"
+                    >
+                      <b data-chip-top>on la</b
+                      ><span data-chip-notes>A C E</span>
+                    </button>
+                    <button
+                      class="btn l12-chip"
+                      type="button"
+                      data-chip="6"
+                      aria-label="The chord on ti: B, D, F"
+                    >
+                      <b data-chip-top>on ti</b
+                      ><span data-chip-notes>B D F</span>
                     </button>
                   </div>
                 </div>
