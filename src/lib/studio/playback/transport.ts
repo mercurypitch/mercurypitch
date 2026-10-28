@@ -404,7 +404,7 @@ export function createStudioTransport(options: StudioTransportOptions) {
   function launch(
     parts: Omit<
       StudioRunParts,
-      'repeat' | 'buildGraph' | 'createLaneMeter' | 'open'
+      'repeat' | 'buildGraph' | 'createLaneMeter' | 'fromSilence' | 'open'
     >,
   ): void {
     const outgoing = held
@@ -414,6 +414,7 @@ export function createStudioTransport(options: StudioTransportOptions) {
       repeat,
       buildGraph,
       createLaneMeter,
+      fromSilence: !outgoing,
       open: outgoing
         ? (envelope, time) => scheduleHandoff(outgoing.envelope, envelope, time)
         : openRunEnvelope,
