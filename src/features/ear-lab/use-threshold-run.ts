@@ -259,9 +259,8 @@ export function useThresholdRun(
     // A replay of the last verdict still sounding stops: the next trial
     // is not played over it.
     if (replaying()) {
-      replayToken += 1
       options?.cancelStimulus?.()
-      setReplaying(false)
+      endReplay()
     }
 
     if (mode() === 'calibration') {
@@ -458,6 +457,7 @@ export function useThresholdRun(
     cancelled = true
     pacer.cancel()
     options?.cancelStimulus?.()
+    endReplay()
 
     // Nothing answered: nothing to credit, and no sprint segment, session
     // or streak is booked for a run that never happened.
@@ -478,6 +478,7 @@ export function useThresholdRun(
     cancelled = true
     pacer.cancel()
     options?.cancelStimulus?.()
+    endReplay()
     setPhase('idle')
     setResult(null)
     setLastCorrect(null)
@@ -487,12 +488,30 @@ export function useThresholdRun(
     cancelled = true
     pacer.cancel()
     options?.cancelStimulus?.()
+    endReplay()
+  }
+
+  /** A replay silenced from outside may never end on its own (a drill
+   *  whose stimulus resolves on a timer the silencing cleared): its flag
+   *  goes now, and its end, if it comes, finds a newer token. */
+  function endReplay(): void {
+    replayToken += 1
+    setReplaying(false)
   }
 
   /** The sound was taken away. A question still sounding is void; a
-   *  verdict counting down waits for Next. */
+   *  verdict counting down waits for Next, and a replay of it stops, to
+   *  be heard whole once the sound is back. */
   function holdQuestion(): void {
     if (phase() === 'reveal') {
+      if (replaying()) {
+        question += 1
+        options?.cancelStimulus?.()
+        batch(() => {
+          endReplay()
+          setStimulusStep(0)
+        })
+      }
       pacer.pause()
       return
     }

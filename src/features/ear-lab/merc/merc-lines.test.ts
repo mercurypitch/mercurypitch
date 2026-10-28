@@ -143,15 +143,29 @@ describe("Merc's lines", () => {
 describe("a seal's tracks", () => {
   const format = (value: number): string => value.toFixed(1)
 
-  it('says each by its letter, in track order', () => {
-    expect(lines.tracksLine([9.4, 10.2, 9.9], format)).toBe(
-      'A 9.4 · B 10.2 · C 9.9',
+  it('says each by its letter, in track order, with its unit', () => {
+    expect(lines.tracksLine([9.4, 10.2, 9.9], format, 'dB')).toBe(
+      'A 9.4 dB · B 10.2 dB · C 9.9 dB',
     )
   })
 
   it('names a track that found nothing, and keeps the others in place', () => {
-    expect(lines.tracksLine([9.4, null, 9.9], format)).toBe(
-      'A 9.4 · B no reading · C 9.9',
+    expect(lines.tracksLine([9.4, null, 9.9], format, 'dB')).toBe(
+      'A 9.4 dB · B no reading · C 9.9 dB',
     )
+  })
+
+  it('never puts the unit after a track that found nothing', () => {
+    expect(lines.tracksLine([9.4, 10.2, null], format, 'dB')).toBe(
+      'A 9.4 dB · B 10.2 dB · C no reading',
+    )
+  })
+
+  it('says nothing when no track found a reading', () => {
+    expect(lines.tracksLine([null, null, null], format, 'dB')).toBe('')
+  })
+
+  it('leaves the space out of a reading with no unit', () => {
+    expect(lines.tracksLine([9.4], format, '')).toBe('A 9.4')
   })
 })

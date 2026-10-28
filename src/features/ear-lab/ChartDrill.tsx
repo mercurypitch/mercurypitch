@@ -48,8 +48,6 @@ import { useIdentificationController } from './use-identification-controller'
 /** The task in one line: the idle status, and Merc's first bubble. */
 const PROMPT = 'A written bar over the click. Tap it at sight.'
 
-/** The native room's beat for each phase of the run. */
-
 const MISS = 'miss'
 
 const CHART_DESCRIPTION =
@@ -86,6 +84,10 @@ export function ChartDrill(props: { onBack: () => void }): JSX.Element {
   let scheduled: ScheduledClick[] = []
   let timers: Array<ReturnType<typeof setTimeout>> = []
   let trialCancelled = false
+  /** Bumped by every silencing. A replay still waiting on the audio
+   *  engine when it comes (the room closed, the run stopped, the sound
+   *  taken away) sounds nothing once the engine is ready. */
+  let silenced = 0
   let takeHandle: AnchoredTake | null = null
   /** The round's first onset, in ms: the place a take is anchored
    *  on, and so what turns the ledger's taps into beats. */
@@ -104,6 +106,7 @@ export function ChartDrill(props: { onBack: () => void }): JSX.Element {
   }
 
   function cancelAudio(): void {
+    silenced += 1
     trialCancelled = true
     stopSounds()
     takeHandle?.cancel()
@@ -115,6 +118,15 @@ export function ChartDrill(props: { onBack: () => void }): JSX.Element {
     setGrid(null)
     setLiveTaps([])
     setScore(null)
+  }
+
+  /** A replay at the reveal silenced, its lamps out with it: the take
+   *  and the reveal stay on the drum. */
+  function silenceReplay(): void {
+    silenced += 1
+    stopSounds()
+    setBar(null)
+    setBeat(0)
   }
 
   const later = (ms: number, fn: () => void) => {
@@ -229,10 +241,11 @@ export function ChartDrill(props: { onBack: () => void }): JSX.Element {
       // and then the written rhythm, with no take after it. The reveal
       // and the take stay on the drum. Resolves as the bar ends.
       replay: async () => {
+        const asked = silenced
         await audioEngine.init()
         await audioEngine.resume()
         const ctx = audioEngine.getAudioContext()
-        if (!ctx) return
+        if (!ctx || asked !== silenced) return
         stopSounds()
         trialCancelled = false
         const start = ctx.currentTime + PULSE_TIMING.leadS
@@ -266,6 +279,7 @@ export function ChartDrill(props: { onBack: () => void }): JSX.Element {
 
   const controller = useIdentificationController(drill, CHART_BANK, makeTrial, {
     cancelAudio,
+    silenceReplay,
     // The take runs on the call's clock: sound taken away during it
     // voids the round, and the call plays again from its count-in.
     timedAnswer: true,

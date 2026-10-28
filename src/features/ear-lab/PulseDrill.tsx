@@ -52,8 +52,6 @@ const MISS = 'miss'
 /** The task in one line: the idle status, and Merc's first bubble. */
 const PROMPT = 'A bar of onsets, then a bar of yours. Tap the call back.'
 
-/** The native room's beat for each phase of the run. */
-
 const PULSE_DESCRIPTION =
   'Four clicks count you in and a bar of onsets sounds. Then it waits: nothing plays until your first tap (pad or Space), which is the first onset, wherever you place it. From there the beat keeps you company and the bar fills left to right. Tap the rest of the call at the same tempo, every onset in order, nothing extra. The reading is the finest subdivision you clear: quarters, eighths, triplets, sixteenths.'
 
@@ -88,6 +86,10 @@ export function PulseDrill(props: { onBack: () => void }): JSX.Element {
   let scheduled: ScheduledClick[] = []
   let timers: Array<ReturnType<typeof setTimeout>> = []
   let trialCancelled = false
+  /** Bumped by every silencing. A replay still waiting on the audio
+   *  engine when it comes (the room closed, the run stopped, the sound
+   *  taken away) sounds nothing once the engine is ready. */
+  let silenced = 0
   let takeHandle: AnchoredTake | null = null
   /** The round's first onset, in ms: the place a take is anchored
    *  on, and so what turns the ledger's taps into beats. */
@@ -106,6 +108,7 @@ export function PulseDrill(props: { onBack: () => void }): JSX.Element {
   }
 
   function cancelAudio(): void {
+    silenced += 1
     trialCancelled = true
     stopSounds()
     takeHandle?.cancel()
@@ -116,6 +119,15 @@ export function PulseDrill(props: { onBack: () => void }): JSX.Element {
     setBarRun(null)
     setGrid(null)
     setLiveTaps([])
+  }
+
+  /** A replay at the reveal silenced, its lamps out with it: the take
+   *  and the reveal stay on the drum. */
+  function silenceReplay(): void {
+    silenced += 1
+    stopSounds()
+    setBar(null)
+    setBeat(0)
   }
 
   const later = (ms: number, fn: () => void) => {
@@ -240,10 +252,11 @@ export function PulseDrill(props: { onBack: () => void }): JSX.Element {
       // take after it, so the reveal and the take stay on the drum.
       // Resolves as the call ends.
       replay: async () => {
+        const asked = silenced
         await audioEngine.init()
         await audioEngine.resume()
         const ctx = audioEngine.getAudioContext()
-        if (!ctx) return
+        if (!ctx || asked !== silenced) return
         stopSounds()
         trialCancelled = false
         soundCall(
@@ -264,6 +277,7 @@ export function PulseDrill(props: { onBack: () => void }): JSX.Element {
 
   const controller = useIdentificationController(drill, PULSE_BANK, makeTrial, {
     cancelAudio,
+    silenceReplay,
     // The take runs on the call's clock: sound taken away during it
     // voids the round, and the call plays again from its count-in.
     timedAnswer: true,
