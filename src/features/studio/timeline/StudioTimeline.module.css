@@ -108,15 +108,19 @@
   height: 11px;
   background: var(--studio-tick-major);
 }
+/* The playhead and its cap move by transform while the song plays, so a
+   tick repaints them and lays nothing out. */
 .playheadCap {
   position: absolute;
   bottom: 0;
+  left: 0;
   width: 11px;
   height: 13px;
   margin-left: -5px;
   background: var(--studio-accent);
   clip-path: polygon(0 0, 100% 0, 100% 58%, 50% 100%, 0 58%);
   pointer-events: none;
+  will-change: transform;
 }
 
 /* View controls in the corner cell; zoom floats over the arrangement's corner */
@@ -1259,10 +1263,12 @@
   position: absolute;
   top: var(--studio-ruler-height);
   bottom: 0;
+  left: var(--studio-header-width);
   z-index: 3;
   width: 1px;
   background: var(--studio-playhead);
   pointer-events: none;
+  will-change: transform;
 }
 
 /* Empty song and gesture status */

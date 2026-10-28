@@ -22,24 +22,27 @@ test('Studio measures audible output and clears measured-master status after an 
   await studio.getByRole('button', { name: 'Play song', exact: true }).click()
   await expect(windows.nth(0)).toHaveText(/^-?\d+\.\d$/, { timeout: 10_000 })
   await expect(windows.nth(1)).toHaveText(/^-?\d+\.\d$/, { timeout: 10_000 })
-  const holds = studio
-    .getByRole('meter', { name: 'Output sample peak' })
-    .last()
-    .locator('b')
-  const before = await holds
-    .first()
-    .evaluate((element) => parseFloat((element as HTMLElement).style.left))
+  // Where the left hold mark stands on its rail, in percent: the mark is a
+  // band clipped out of a box as large as the rail, and its right inset is
+  // the travel above it.
+  const holdAt = () =>
+    studio
+      .getByRole('meter', { name: 'Output sample peak' })
+      .last()
+      .locator('b')
+      .first()
+      .evaluate((element) => {
+        const inset = /^inset\(\S+ (\S+)%/.exec(
+          (element as HTMLElement).style.clipPath,
+        )
+        return inset ? 100 - Number(inset[1]) : NaN
+      })
+  const before = await holdAt()
   expect(before).toBeGreaterThan(0)
   await studio
     .getByRole('button', { name: 'Reset peak hold', exact: true })
     .click()
-  await expect
-    .poll(() =>
-      holds
-        .first()
-        .evaluate((element) => parseFloat((element as HTMLElement).style.left)),
-    )
-    .toBeLessThan(before - 0.1)
+  await expect.poll(holdAt).toBeLessThan(before - 0.1)
   await expect(
     studio.getByRole('button', { name: 'Pause song', exact: true }),
   ).toBeVisible()

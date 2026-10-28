@@ -401,7 +401,7 @@ export function StudioTimeline(props: StudioTimelineProps) {
                 class={styles.playheadCap}
                 aria-hidden="true"
                 style={{
-                  left: `${frameToPixel(shownPlayhead(), scale())}px`,
+                  transform: `translateX(${frameToPixel(shownPlayhead(), scale())}px)`,
                 }}
               />
             </div>
@@ -573,7 +573,7 @@ export function StudioTimeline(props: StudioTimelineProps) {
               class={styles.playhead}
               aria-hidden="true"
               style={{
-                left: `calc(var(--studio-header-width) + ${frameToPixel(shownPlayhead(), scale())}px)`,
+                transform: `translateX(${frameToPixel(shownPlayhead(), scale())}px)`,
               }}
             />
           </Show>
