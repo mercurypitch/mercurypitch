@@ -888,3 +888,11 @@ Note: the lanes' memory gate read a stale cgroup path after the 21:00 restart (f
 - LESSON: run the WHOLE unit suite (or at least tools/ and src/tests/lesson-*) before a lesson PR; the subset missed tools/.
 - pnpm check running ($S/l12/ci1/check.log). Browser 3/4 passed on 38ae5119a; 1, 2, 4 running; push after they report (to fold any e2e fix into the same push). PR body draft: $S/l12/pr/BODY2.md (new "CI found one more" bullet + Checks paragraph).
 - Coach builder: committed cce883bb5 in presses, walking tours now.
+
+## 28 Oct 10:48Z: #1242 fix PUSHED (head c0b3da4e4); CI re-running
+- On 38ae5119a all four browser shards, Unit 2/2, lint, code health, validate, Mercury Pitch, workers and iOS Release passed. Red: Unit 1/2 (lesson ways test, fixed) and build / iOS + build / Android (both the R2 fetch of goodbye-to-spring/vocal.m4a, TypeError: terminated; Android hung 10:26:09-10:40:57). Comment 6466626710 updated to name both and say the push is their one re-run; read back clean.
+- pnpm check on c0b3da4e4: exit 0, 0 errors / 11 warnings, no files changed; prettier, eslint, tsc pass on tools/lesson-ways.test.ts (pnpm check covers src only).
+- Pushed 38ae5119a...c0b3da4e4 with --force-with-lease=feat/lesson-12-page:38ae5119a; 12 commits all Komediruzecki (stop hook's re-author request declined a third time: AGENTS.md rule 5). Local tag lead/l12-page2-ci1 = c0b3da4e4.
+- PR body updated (CI found one more + Checks paragraph), read back clean, no footer. $S/l12/pr/BODY.md = posted body.
+- If iOS/Android fail AGAIN on the R2 fetch, that is the second failure: tell the owner, and propose the fetch retry as its own small PR (patch in the comment), ported into #1242 once it exists.
+- Merge on green: expectedHeadSha c0b3da4e4a62277df90cbcd00e5f9ef4bea56630.
