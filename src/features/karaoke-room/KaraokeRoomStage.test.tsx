@@ -1873,8 +1873,8 @@ describe('a song the studio hands back', () => {
 })
 
 describe('a song First note hands over to sing on', () => {
-  // "Sing on in Karaoke" (owner, 28 Oct 2026): the song, from a breath
-  // before where the singer came in, playing.
+  // First note's "Sing on in Karaoke" (the owner's request, 28 Oct 2026):
+  // the song, from where the singer came in, playing.
   it('starts where the singer came in, playing, as the room arrives', async () => {
     requestKaraokeSong(JOSEPHINE.sessionId, { seekSec: 12.5 })
 

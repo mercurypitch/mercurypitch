@@ -16,8 +16,8 @@
 // so the room's feature reaches into no other feature. Until his set has
 // loaded the call goes to the synth "ooh", as Echo's does.
 //
-// The two ways out to the Karaoke room are the screen's too, since only
-// the shell can change the tab (owner, 28 Oct 2026):
+// The two ways out to the Karaoke room, both the owner's requests (28 Oct
+// 2026), are the screen's too, since only the shell can change the tab:
 //
 //   Sing on in Karaoke   the song on the Karaoke room's stage, playing from
 //                        the place the singer came in on

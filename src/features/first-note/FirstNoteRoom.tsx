@@ -16,14 +16,15 @@
 // back in. After a miss, Merc sings the note before the singer comes in.
 //
 // The skill is the one a karaoke singer needs when an intro ends: coming
-// in on the right note, from the band alone. "Show the words", off by
-// default, puts the words of the line they come in on over the stage while
-// the band counts in and in their turn (owner, 28 Oct 2026).
+// in on the right note, from the band alone. "Show the words", the optional
+// hint the owner asked for (28 Oct 2026), puts the words of the line they
+// come in on over the stage while the band counts in and in their turn; it
+// ships off by default, our choice.
 //
-// "Sing on in Karaoke" (owner, 28 Oct 2026) takes the singer from a
-// landing, or from a song's row at the result, to the whole song in the
-// Karaoke room, from a breath before where they came in. Only the shell can
-// change the tab, so the native screen hands the way in (`onSingOn`).
+// "Sing on in Karaoke", the owner's request (28 Oct 2026), takes the singer
+// from a landing, or from a song's row at the result, to the whole song in
+// the Karaoke room, from a breath before where they came in. Only the shell
+// can change the tab, so the native screen hands the way in (`onSingOn`).
 //
 // The page around the world is the room kit's shell (RoomShell.tsx): the
 // root, the chip or the result in the head, the level in the bar, Merc's
@@ -83,9 +84,10 @@ export interface FirstNoteRoomProps {
    */
   onOwnSongs?: () => void
   /**
-   * "Sing on in Karaoke": the whole song in the Karaoke room, from `seconds`
-   * into it, a breath before where the singer came in (owner, 28 Oct 2026).
-   * The native shell's, as `onOwnSongs` is; absent, the room offers none.
+   * "Sing on in Karaoke" (the owner's request, 28 Oct 2026): the whole song
+   * in the Karaoke room, from `seconds` into it, a breath before where the
+   * singer came in. The native shell's, as `onOwnSongs` is; absent, the
+   * room offers none.
    */
   onSingOn?: (sessionId: string, seconds: number) => void
 }

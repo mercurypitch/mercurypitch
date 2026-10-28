@@ -1,9 +1,22 @@
 # Ear rooms — Merc-led ear training in the native app
 
-**Status:** in progress. Two rooms are built on `feat/ear-room-home-note` and ship together:
-**Home note** (Room 1) and **First note** (Room 2). Both have stand-in or borrowed art and no demo
-yet. Rooms 3 and 4 are proposals. The owner's design canvas ("Ear rooms", 27 Oct 2026) has phone
-mock-ups of all four and of the Ear Lab's way in.
+**Status:** in progress. Two rooms are built and on TestFlight: **Home note** (Room 1) and **First
+note** (Room 2). The owner tried both on 28 Oct 2026 ("fun and work well"). The second round, on
+`feat/ear-rooms-own-songs`, brings First note the singer's own songs, an optional words hint and a
+way on to the Karaoke room, and gets Home note ready for its painting (its prompt is below; the
+owner makes it). Neither room has a demo yet. Rooms 3 and 4 are proposals. The owner's design
+canvas ("Ear rooms", 27 Oct 2026) has phone mock-ups of all four and of the Ear Lab's way in.
+
+**The owner's decision and requests of 28 Oct 2026.**
+
+- Decided: the free taste is three runs per room, then the paywall. The gate comes with the V1 flip
+  and is not built yet.
+- Asked for: the singer's own songs, imported and split in the Karaoke room, as First note's songs
+  too.
+- Asked for: an optional hint with the words of the line the singer comes in on. It ships off by
+  default, which is our choice rather than the owner's, so the room stays ear first.
+- Asked for: a way to go on and sing the whole song in the Karaoke room from where the singer came
+  in. It is offered after a landing and from the result.
 
 ## Why
 
@@ -129,8 +142,9 @@ The entry and the files land together: an entry that matches no file fails the n
 **The skill.** Coming in on the right note when a song's intro ends, from the band alone: the
 karaoke moment itself, on real songs.
 
-**The task.** A run is six entries, two from each of the three example songs the app ships (Josh
-Woodward, CC BY 4.0, credited under the chip while they play). In each, the song's band plays the
+**The task.** A run is up to six entries, two from each of the three example songs the app ships
+(Josh Woodward, CC BY 4.0, credited under the chip while they play), or shared out over the
+singer's own songs or a mix (see "Your songs" below). In each, the song's band plays the
 eight seconds before its singer comes in, with the singer's voice muted and the last four beats
 counted down, and stops there. The singer sings the singer's first note, in any octave. Their
 **entry** is the first note their voice sits on (200 ms, steady within 40 cents,
@@ -153,29 +167,80 @@ says nothing about the note.
 under it the notes found by the end of the turn and the level. The best is kept per level: more
 entries on the note, then more found, then closer entries. A run with no voice keeps nothing.
 
-**The entries.** Read once from the stems and committed
+**The entries.** The rules live in one module that the script and the phone both run
+(`src/features/first-note/entry-rules.ts`; it imports nothing, so Node runs it as it is). An entry
+is a line of the song that follows a breath on the vocal stem. Its note is the voice's first steady
+stretch, read by YIN, and is kept only when the song's stored notes (the mixer's, another tracker)
+name the same note, the singer sat within 30 cents of it, and it is near the song's middle note.
+The stored notes alone were not enough: the same chorus line reads as F5, C5 and D5 in its three
+choruses. The beats come from the band stem's onsets, and an entry whose lead-in shows no clear
+grid gets none.
+
+The examples' entries are read once from the stems and committed
 (`src/features/first-note/first-note-entries.json`, made by
-`apps/mercurypitch/scripts/generate-first-note-entries.mjs`). An entry is a lyric line that follows
-a breath on the vocal stem. Its note is the voice's first steady stretch, read by YIN, and is kept
-only when the mixer's own notes (`notes.json`, another tracker) name the same note, the singer sat
-within 30 cents of it, and it is near the song's middle note. The stored notes alone were not
-enough: the same chorus line reads as F5, C5 and D5 in its three choruses. The beats come from the
-band stem's onsets. Nineteen entries pass, from D3 to D4. Each song records the sha256 of the vocal
-it was read from, and `apps/mercurypitch/src/first-note-entries.test.ts` fails when a stem's pin
-changes and the entries were not made again.
+`apps/mercurypitch/scripts/generate-first-note-entries.mjs`), with each line's words. Nineteen
+entries pass, from D3 to D4. Each song records the sha256 of the vocal it was read from, and
+`apps/mercurypitch/src/first-note-entries.test.ts` fails when a stem's pin changes and the entries
+were not made again. Moving the rules into the shared module changed none of them: the script wrote
+the same entries again, the words added.
+
+**Your songs** (the owner's request, 28 Oct 2026). A song the singer imported and split in the
+Karaoke room is a song here too. The pill over the mic at rest names where a run's songs come from
+and opens the Songs sheet (`FirstNoteSongs.tsx`): the examples, your songs, or a mix, and each of
+your songs with what the phone knows of it, as the canvas's C1 draws it. With none split yet, the
+sheet says how one comes to be here, and on the phone "Sing your own songs" opens the Karaoke
+room's songs, where Import is (A2).
+
+The phone reads each song once, by the same rules (`own-song-read.ts`). Its notes are the Karaoke
+room's own read; a song the room has not read is read here the same way, and the notes are kept for
+the room too. The vocal is walked chunk by chunk where the phone streams, as the mixer walks it, and
+a song too long for the walk to hold sits out ("Left out: too long for this phone to read"). Where
+the phone cannot stream, a stem is decoded whole only within the walk's ceiling (about six minutes),
+and the vocal is let go before the band is read, so the phone never holds two decoded stems. The
+lines are the song's synced lyrics, or where the voice comes in after a breath when it has none.
+Only the band's lead-ins are read for the beats, never the whole band. The rules' work runs in
+steps, and the read lets the screen draw after every line and lead-in, and inside one every 8 ms.
+
+The entries are kept on the phone (`mp_first_note_own_entries`) under the song and its stems, so a
+stem replaced in the studio is read again (`first-note-own-songs.ts`); a read is let go only when
+its song is gone from the phone. Songs are read one at a time, only while the room is at rest with
+your songs chosen, a song that turns up meanwhile included; a run lets go of the read, so it never
+competes with the microphone. A song with fewer than two clean entries sits out and says so ("Left
+out: only 1 clear entry, it needs 2"); a read that fails says "Could not read this song", and the
+cause goes to the log. A run shares up to six entries over the chosen songs in turn: three songs
+give two each, four give two, two, one and one. A song gives no more than it has, so a run on one
+song with four entries is four rounds; a run shorter than six is kept in the history, scored
+against the entries it had, and never counts as a best.
+
+**Show the words.** The owner asked for an optional hint (28 Oct 2026); it ships off by default, our
+choice, so the room stays ear first. It is a switch in the Songs sheet, kept on the phone
+(`mp_first_note_words`). On, the words of the line the singer comes in on show in Merc's place over
+his head while the band counts in and in the turn, gold-edged so they never read as his, and the
+pill over the mic says "Words". The examples' words come from their word-timed lyrics; a song of
+the singer's own has them when its lyrics are synced.
+
+**Sing on in Karaoke** (the owner's request, 28 Oct 2026). After a landing, "Sing on in Karaoke"
+stands over the mic while the song carries on; at the result each song has a row with how its
+entries went and "Sing on" (canvas C4). Either opens the Karaoke room with that song playing from
+the first beat counted before the entry (or three seconds ahead where there are no beats), so the
+singer comes in again with the rest of the song after it. The seam is the room's own song request,
+which now carries a place to start (`requestKaraokeSong(id, { seekSec })`); only the shell changes
+the tab, so `FirstNoteScreen` hands the way in.
 
 **Playback.** The stems stream from the phone's files through two `<audio>` elements routed into the
 room's audio context (`src/features/first-note/song-player.ts`), on the house envelopes. Decoding a
 whole song for eight seconds of it would cost tens of megabytes a stem. The world is the Karaoke
 room's painted theatre (`/karaoke/broadway-theater-portrait.webp`), which the native app ships.
 
-**Not in v1, said plainly.**
+**Not yet, said plainly.**
 
-- The singer's own imported songs. A phone has no notes for them (a phone cannot analyse a streamed
-  vocal, audit K1), so they need an on-device read like the Field Book's first.
 - No "How it works" demo, no Warm-up stop, and no account sync of the best (`mp_first_note_bests`
-  is device-only).
-- No paywall of its own. Like every premium room it rides `PREMIUM_EXERCISES` until the V1 flip.
+  is device-only), nor of the reads of the singer's songs, which belong to the phone that has the
+  songs.
+- A song of the singer's own is read again only when its stems change: lyrics synced after the
+  read bring their words at the next read, not before.
+- No paywall of its own yet. Like every premium room it rides `PREMIUM_EXERCISES` until the V1
+  flip, which brings the free taste with it: three runs per room, then the paywall.
 
 ## Rooms 3 and 4 (proposals)
 
@@ -193,19 +258,18 @@ Both turn an Ear Lab drill into a voice room for the same subscriber.
 ## How they earn
 
 The "With Merc" row is the first thing on the Ear Lab tab, so a singer who only uses the free bench
-meets Merc's rooms on every visit. First note is the room that leads to imports: today it plays
-the example songs, and with imports in it, every song a singer brings becomes practice, which is
-what Cloud sells. A free taste lets the rooms show their worth: one run, or three, then the
-paywall (owner, 27 Oct 2026). The gate comes with the V1 flip (`PREMIUM_EXERCISES` in
-`src/lib/native-build.ts`). Measure the chain per room: row taps, room starts, offer views, trials.
+meets Merc's rooms on every visit. First note is the room that leads to imports: every song a
+singer brings becomes practice, and a singer with none is shown the way to Cloud from the Songs
+sheet, which is what Cloud sells. A free taste lets the rooms show their worth: three runs per
+room, then the paywall (owner, 28 Oct 2026). The gate comes with the V1 flip (`PREMIUM_EXERCISES`
+in `src/lib/native-build.ts`). Measure the chain per room: row taps, room starts, offer views,
+trials.
 
 Practice on the device can be paid on the phone. `docs/plans/premium.md`, which said everything
 that runs on the device stays free, is marked outdated (owner, 27 Oct 2026).
 
 ## Open questions for the owner
 
-- The free taste's size: one run or three, and whether they count per room or across the Ear
-  rooms.
 - Should a room's best appear on the Ear Lab bench as its own instrument line, or only on the
   "With Merc" row?
 - Harmony: headphones only, or a take-turns fallback on the speaker.
