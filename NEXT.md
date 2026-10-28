@@ -873,3 +873,9 @@ Note: the lanes' memory gate read a stale cgroup path after the 21:00 restart (f
 - PR body draft: l12/pr/BODY.md (@@HEAD@@ and @@GATES2@@ to fill). dev-changelog bullet for L12: release24/notes3/l12-bullet.md (@@L12PR@@).
 - l10-page is now detached at 866e53c30 (was the merged notes branch); rel23 detached at be7a6cdaa (never pnpm there).
 - No v0.9.24 tag on origin; main 866e53c30.
+
+## 28 Oct 10:26Z: Lesson 12 PR #1242 open (head 38ae5119a); gates 2 all pass
+- Gates 2 on 38ae5119a: e2e 116/116; pnpm check 0 errors / 11 warnings, no files changed (10:22); pr:validate, docs:index pass; plan-cites 151 = main's by key.
+- Tag lead/l12-page2-gated = 38ae5119a. Pushed feat/lesson-12-page 6d12247ab...38ae5119a with --force-with-lease (lease on 6d12247ab).
+- PR #1242 "feat(lessons): Lesson 12's page as a draft, with the ring of rooms and Steps 1 to 4" opened 10:24 (not a GitHub draft; the page is a lesson draft). Server footer stripped, body read back clean (l12/pr/BODY.md). Subscribed.
+- Next: CI green -> merge by rebase with expectedHeadSha 38ae5119a127a045d4e95dfbeb038de8f05004ff -> bin/verify-rebase-merge.sh -> unsubscribe. The coach fix PR then carries the dev-changelog lines for both (release24/notes3/l12-bullet.md, @@L12PR@@ = 1242).
