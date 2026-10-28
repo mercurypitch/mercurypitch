@@ -17,6 +17,11 @@ export interface StudioTrackControlsProps {
   strip?: boolean
   /** The lane's name and source, laid out in the same grid as the controls. */
   identity?: JSX.Element
+  /**
+   * A desk strip's level meter, drawn inside the fader's drag area: a press
+   * on it drags the fader, while a pointer resting there reads its title.
+   */
+  meter?: JSX.Element
   /** Silent because another lane is soloed: Mute shows it, unpressed. */
   soloedOut?: boolean
   onCommand(command: StudioCommand): boolean
@@ -341,6 +346,7 @@ export function StudioTrackControls(props: StudioTrackControlsProps) {
           </For>
         </span>
       </Show>
+      {props.meter}
       <output class={styles.gainValue}>{gain().toFixed(1)} dB</output>
     </div>
   )

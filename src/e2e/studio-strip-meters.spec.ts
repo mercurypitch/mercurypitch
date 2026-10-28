@@ -116,6 +116,50 @@ test.describe('Studio strip meters', () => {
     )
   })
 
+  test('a press on a strip meter drags its fader, and the meter still names itself there @smoke', async ({
+    page,
+  }) => {
+    test.setTimeout(120_000)
+    await openArrangement(page)
+    const desk = await openDesk(page)
+    const strip = desk.locator('[data-studio-mix-strip]').first()
+    const meter = strip.locator('[data-studio-strip-meter]')
+    const fader = strip.getByRole('slider', { name: 'Phrase volume' })
+    await expect(fader).toHaveValue('0')
+    const box = (await meter.boundingBox())!
+    const x = box.x + box.width / 2
+    const y = box.y + box.height / 2
+
+    // A real press in the meter's middle and a drag upward raise the
+    // lane's volume, as a press on the fader beside it does.
+    await page.mouse.move(x, y)
+    await page.mouse.down()
+    await page.mouse.move(x, y - 12, { steps: 4 })
+    await page.mouse.move(x, y - 24, { steps: 4 })
+    await page.mouse.up()
+    await expect
+      .poll(async () => Number(await fader.inputValue()))
+      .toBeGreaterThan(5)
+
+    // The press lands on the meter, inside the fader's drag area, and a
+    // pointer resting there still reads the meter's own title.
+    const landed = await strip.evaluate(
+      (element, [x, y]) => {
+        const hit = document.elementFromPoint(x, y)
+        const fader = element.querySelector('[data-studio-fader]')!
+        return {
+          title: hit?.closest('[title]')?.getAttribute('title') ?? null,
+          dragArea: fader.parentElement!.contains(hit),
+        }
+      },
+      [x, y],
+    )
+    expect(landed).toEqual({
+      title: 'Phrase: press Play to see its level',
+      dragArea: true,
+    })
+  })
+
   test("a strip meter reads on its fader's own dB marks: 0 dBFS beside 0 dB, the floor beside −60", async ({
     page,
   }) => {
