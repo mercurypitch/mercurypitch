@@ -24,9 +24,9 @@ import { NowPlaying } from '@/features/lessons/kit/now-playing'
 import type * as RunModule from '@/features/lessons/kit/run'
 import { resetRuns, runs, } from '@/features/lessons/kit/run-recorder.test-fixtures'
 import { Sound } from '@/features/lessons/kit/sound'
-import { el, loadPage, settle, soundOn } from './page-dom.test-fixtures'
-import type { Rooms, RoomsMode } from './rooms'
-import { mountRooms, OPENING_ROOMS } from './rooms'
+import { chips, COMPACT, el, FULL, loadPage, mountRing, said, settle, soundOn, summary, words, } from './page-dom.test-fixtures'
+import type { RoomsMode } from './rooms'
+import { OPENING_ROOMS } from './rooms'
 import { TURN_SEC } from './rooms-draw'
 import { chip } from './sounds'
 
@@ -42,45 +42,6 @@ vi.mock('@/features/lessons/kit/motion-switch', async (actual) => ({
   ...(await actual<typeof MotionModule>()),
   reducedMotion: () => motion.reduced,
 }))
-
-/** A phone's figure at 390 x 844 (FACTS 75), and the deck's at 844 x 390. */
-const FULL = { w: 356, h: 310 }
-const COMPACT = { w: 778, h: 162 }
-
-/** The figure's canvas, sized as the browser would lay it out. */
-function sizeFigure(size: { w: number; h: number }): void {
-  vi.spyOn(
-    el<HTMLCanvasElement>('#toyRooms [data-rooms-viz] canvas'),
-    'getBoundingClientRect',
-  ).mockReturnValue(new DOMRect(0, 0, size.w, size.h))
-}
-
-/** The stage's ring, mounted on the page's markup in `mode`. */
-function mount(
-  mode: RoomsMode = 'build',
-  size: { w: number; h: number } = FULL,
-): Rooms {
-  loadPage()
-  sizeFigure(size)
-  return mountRooms(el('#toyRooms'), {
-    mode,
-    active: () => true,
-    owner: NowPlaying,
-  })
-}
-
-/** The chord strip's seven chips, I to vii°. */
-const chips = (): HTMLButtonElement[] =>
-  Array.from(
-    document.querySelectorAll<HTMLButtonElement>(
-      '#toyRooms [data-chord-strip] button',
-    ),
-  )
-const words = (b: Element, part: string): string =>
-  b.querySelector(`[data-chip-${part}]`)?.textContent ?? ''
-const said = (): string => el('#toyRooms [data-rooms-said]').textContent ?? ''
-const summary = (): string =>
-  el('#toyRooms [data-rooms-summary]').textContent ?? ''
 
 beforeEach(() => {
   motion.reduced = true
@@ -127,7 +88,7 @@ describe("Lesson 12's ring of rooms, state by state", () => {
     'opens %s on its own rooms, none lit, its chips topped as the spec words them',
     (mode, tops, first) => {
       // Arrange
-      const rooms = mount('build')
+      const rooms = mountRing('build')
 
       // Act
       rooms.setMode(mode)
@@ -152,7 +113,7 @@ describe("Lesson 12's ring of rooms, state by state", () => {
 
   it('names every chip in words from Step 2 on: chord, quality and notes, no sign and no numeral', () => {
     // Arrange
-    const rooms = mount('numerals')
+    const rooms = mountRing('numerals')
 
     // Act
     rooms.setKey('G')
@@ -173,7 +134,7 @@ describe("Lesson 12's ring of rooms, state by state", () => {
 
   it("builds Step 1's rooms a chip at a time, each left faint as the next lights, the newest lit", () => {
     // Arrange
-    const rooms = mount('build')
+    const rooms = mountRing('build')
     const press = (degree: number): void => chips()[degree].click()
 
     // Act
@@ -193,7 +154,7 @@ describe("Lesson 12's ring of rooms, state by state", () => {
 
   it("keeps Step 2's seven rooms as they are when a chip lights one", () => {
     // Arrange
-    const rooms = mount('numerals')
+    const rooms = mountRing('numerals')
 
     // Act
     chips()[5].click()
@@ -207,7 +168,7 @@ describe("Lesson 12's ring of rooms, state by state", () => {
 describe("Lesson 12's chips, the page's one sound", () => {
   it('plays a chip as its chord in the soft tone, 1.4 s from the key’s own octave, lit while it sounds', async () => {
     // Arrange
-    const rooms = mount('build')
+    const rooms = mountRing('build')
 
     // Act
     chips()[6].click()
@@ -227,7 +188,7 @@ describe("Lesson 12's chips, the page's one sound", () => {
 
   it("claims the page's one sound, and another sound's claim stops it where it stands", async () => {
     // Arrange
-    const rooms = mount('build')
+    const rooms = mountRing('build')
     chips()[0].click()
 
     // Act: another source on the page takes the sound
@@ -243,7 +204,7 @@ describe("Lesson 12's chips, the page's one sound", () => {
 
   it('stops the chord before when another chip plays, and lights only the new one', async () => {
     // Arrange
-    const rooms = mount('build')
+    const rooms = mountRing('build')
     chips()[0].click()
 
     // Act
@@ -261,7 +222,7 @@ describe("Lesson 12's chips, the page's one sound", () => {
   it('lights the room and the chip in silence with sound off, for as long as the chord would sound', async () => {
     // Arrange
     vi.spyOn(Sound, 'canPlay').mockReturnValue(false)
-    const rooms = mount('build')
+    const rooms = mountRing('build')
 
     // Act
     chips()[2].click()
@@ -280,7 +241,7 @@ describe("Lesson 12's chips, the page's one sound", () => {
 describe("Lesson 12's key switch", () => {
   it('relabels the chips to G major, vii° reading F♯ A C and spoken F sharp, and C restores them', () => {
     // Arrange
-    const rooms = mount('numerals')
+    const rooms = mountRing('numerals')
     const vii = chips()[6]
 
     // Act
@@ -302,7 +263,7 @@ describe("Lesson 12's key switch", () => {
 
   it('turns the rooms in silence and says the key once', () => {
     // Arrange
-    const rooms = mount('numerals')
+    const rooms = mountRing('numerals')
 
     // Act
     const turned = rooms.setKey('G')
@@ -319,7 +280,7 @@ describe("Lesson 12's key switch", () => {
 
   it('stops a chord still sounding first, and a chip after it sounds in the new key, from G3', () => {
     // Arrange
-    const rooms = mount('numerals')
+    const rooms = mountRing('numerals')
     chips()[0].click()
 
     // Act
@@ -339,7 +300,7 @@ describe("Lesson 12's key switch", () => {
 
   it('does nothing for the key already showing, and stops nothing', () => {
     // Arrange
-    const rooms = mount('numerals')
+    const rooms = mountRing('numerals')
     chips()[1].click()
 
     // Act
@@ -354,7 +315,7 @@ describe("Lesson 12's key switch", () => {
   it('ignores a second press while the rooms still turn, and takes one once they have landed', () => {
     // Arrange: the turn moves, as with no reduced motion
     motion.reduced = false
-    const rooms = mount('numerals')
+    const rooms = mountRing('numerals')
     rooms.setKey('G')
     const first = rooms.state().turn
 
@@ -382,7 +343,7 @@ describe("Lesson 12's key switch", () => {
 
   it('takes every press under reduced motion, where each turn lands at once', () => {
     // Arrange
-    const rooms = mount('numerals')
+    const rooms = mountRing('numerals')
 
     // Act
     const presses = [rooms.setKey('G'), rooms.setKey('C'), rooms.setKey('G')]
@@ -394,7 +355,7 @@ describe("Lesson 12's key switch", () => {
 
   it('opens each state back in C, whatever key the last one was in', () => {
     // Arrange
-    const rooms = mount('numerals')
+    const rooms = mountRing('numerals')
     rooms.setKey('G')
 
     // Act
@@ -411,7 +372,7 @@ describe("Lesson 12's key switch", () => {
 describe("Lesson 12's ring, as the kit's spiral from above", () => {
   it('looks down on the lit turn C4 to B4, held still, its five black keys lit and its slider kept to the turn', () => {
     // Arrange, Act
-    const rooms = mount('build')
+    const rooms = mountRing('build')
     const slider = el('#toyRooms canvas')
 
     // Assert: WEB-SPEC, Toys 1, Seen from above
@@ -430,21 +391,21 @@ describe("Lesson 12's ring, as the kit's spiral from above", () => {
 
   it('draws the compact layout below 240 px tall, its label in the corner, and the full one at 240', () => {
     // Arrange, Act
-    const compact = mount('numerals', COMPACT)
+    const compact = mountRing('numerals', COMPACT)
     const atCompact = [compact.compact, compact.state().compact]
-    const edge = mount('numerals', { w: 778, h: 240 })
-    const below = mount('numerals', { w: 778, h: 239 })
+    const edge = mountRing('numerals', { w: 778, h: 240 })
+    const below = mountRing('numerals', { w: 778, h: 239 })
 
     // Assert: WEB-SPEC, Toys 1, The compact layout
     expect(atCompact).toEqual([true, true])
     expect(edge.compact).toBe(false)
     expect(below.compact).toBe(true)
-    expect(mount('numerals', FULL).state().compact).toBe(false)
+    expect(mountRing('numerals', FULL).state().compact).toBe(false)
   })
 
   it('keeps every chord a chip in the compact layout, where the ring is too small to tap', () => {
     // Arrange
-    const rooms = mount('build', COMPACT)
+    const rooms = mountRing('build', COMPACT)
 
     // Act
     chips()[5].click()

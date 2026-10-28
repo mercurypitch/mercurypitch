@@ -7,7 +7,9 @@
 // turn is a ring of twelve and C4 to B4 sit on it, held still, its slider
 // kept on that turn, its five black keys lit at mount so each carries its
 // sharp, and a tap on a bead the page's one sound in the soft tone. The
-// rooms are drawn in its overlay by rooms-draw.ts.
+// rooms are drawn in its overlay by rooms-draw.ts, and the page's own
+// marks after them (rooms-marks.ts): the syllables beside the beads under
+// Do-re-mi, and Step 4's roots.
 //
 // It draws in the states the steps use, each opening in C major, silent:
 // build (Step 1), no room until a chip is played, and each one played
@@ -20,20 +22,27 @@
 // silent: a play still sounding stops first, then every room turns seven
 // semitones round the ring in 0.6 s on the kit's expo-out curve, and the
 // chips take the new key's notes; a press while a turn still runs does
-// nothing, so a second press never makes the rooms jump.
+// nothing, so a second press never makes the rooms jump. Play I, then vi
+// lights I, slides its corner on G to A as vi comes in (D to E in G) and
+// leaves vi lit; Play the loop lights each room and its chip while its
+// chord sounds; Play the roots joins each root to the one before and
+// names each move in the figure's readout. Slow doubles every length.
 //
 // Every play is the page's one sound (kit/now-playing.ts): it stops the
 // sound before it, a newer one stops it, and one cut short leaves what it
 // drew where it stood. With sound off a play's visuals still run, in
 // silence (`Sound.canPlay`). Below 240 px of height (strip-layout.ts) the
 // figure draws its compact layout: the centre's label in its top-left
-// corner and letters only on the beads. Every word is lines.ts's; the toy
-// only places them. The figure asks the frame loop for frames only while
-// something moves (rooms-draw.ts, `roomsAnimating`).
+// corner, Step 4's moves readout in its top-right, letters only on the
+// beads, and the syllables on the chips alone.
+// Every word is lines.ts's; the toy only places them. The figure asks the
+// frame loop for frames only while something moves (rooms-draw.ts,
+// `roomsAnimating`; rooms-marks.ts, `marksAnimating`).
 
 import { q } from '@/features/lessons/kit/dom'
 import { wake } from '@/features/lessons/kit/frame-loop'
 import { reducedMotion } from '@/features/lessons/kit/motion-switch'
+import type { LettersSolfegeMode } from '@/features/lessons/kit/names-modes'
 import { MAJOR_SOLFEGE } from '@/features/lessons/kit/names-modes'
 import { signName } from '@/features/lessons/kit/notes'
 import type { SoundOwner } from '@/features/lessons/kit/now-playing'
@@ -44,13 +53,15 @@ import { Sound } from '@/features/lessons/kit/sound'
 import type { Spiral } from '@/features/lessons/kit/spiral'
 import { mountSpiral } from '@/features/lessons/kit/spiral'
 import type { Naming } from './lines'
-import { chipName, figureSummary, keyTurnedLine } from './lines'
+import { chipName, figureSummary, keyTurnedLine, rootMoves, slideLine, } from './lines'
 import type { KeyName } from './music'
-import { chordsOf, LOOP_DEGREES } from './music'
-import type { KeyTurn, LabelMode, RoomsState } from './rooms-draw'
+import { BAR_SEC, chordsOf, LOOP_DEGREES } from './music'
+import type { KeyTurn, LabelMode, Play, RoomsState } from './rooms-draw'
 import { drawRooms, roomsAnimating, TURN_SEC } from './rooms-draw'
+import type { RingMarks, RootMark } from './rooms-marks'
+import { drawMarks, marksAnimating, syllablesOf } from './rooms-marks'
 import type { SoundNote } from './sounds'
-import { chip } from './sounds'
+import { chip, iThenVi, loop, roots, slow } from './sounds'
 import { compactFor } from './strip-layout'
 
 /** The ring's states, one for each step (WEB-SPEC, Toys 1). */
@@ -81,10 +92,17 @@ const LABEL: Readonly<Record<RoomsMode, LabelMode>> = {
   tunes: 'numeral',
 }
 
+/** Play I, then vi's vi: the degree its slide lands on. */
+const VI = 5
+
 /** What the toy shows that its controls set. */
 export interface RoomsSettings {
   readonly mode: RoomsMode
   readonly key: KeyName
+  /** The names on the chips and beside the beads: the page's names switch. */
+  readonly names: LettersSolfegeMode
+  /** Slow: every play at twice its lengths. */
+  readonly slow: boolean
 }
 
 export interface RoomsOptions {
@@ -100,7 +118,7 @@ export interface Rooms {
   readonly settings: RoomsSettings
   /** The rooms drawn, by degree, faint unless lit. */
   readonly drawn: readonly number[]
-  /** The lit room's degree, or null. */
+  /** The lit room's degree, or null; a slide decides it while it runs. */
   readonly lit: number | null
   /** The chip lit while its chord sounds, by degree, or null. */
   readonly sounding: number | null
@@ -114,8 +132,18 @@ export interface Rooms {
    * turn still runs.
    */
   setKey(key: KeyName): boolean
+  /** The names on the chips and beside the beads; what sounds stops first. */
+  setNames(names: LettersSolfegeMode): void
+  /** Slow, from the next play. */
+  setSlow(on: boolean): void
   /** A chip's chord, lighting its room; false when cut short. */
   playChip(degree: number): Promise<boolean>
+  /** Play I, then vi, and the corner's slide. */
+  playSlide(): Promise<boolean>
+  /** Play the loop, each room lit while its chord sounds. */
+  playLoop(): Promise<boolean>
+  /** Play the roots alone, each joined to the one before and its move named. */
+  playRoots(): Promise<boolean>
   /**
    * Plays a sound the page builds of the kit's runs itself, as the toy's
    * own plays sound: the page's one sound, stopped by the next; false when
@@ -128,6 +156,8 @@ export interface Rooms {
   stop(): void
   /** What the painter draws now: its times are on the frame's clock, ms. */
   state(): RoomsState
+  /** What the page draws over the rooms now. */
+  marks(): RingMarks
   /** Whether the overlay has a frame to draw (frame-loop.ts). */
   wants(): boolean
 }
@@ -153,15 +183,23 @@ export function mountRooms(root: HTMLElement, opts: RoomsOptions): Rooms {
   )
   const summary = root.querySelector('[data-rooms-summary]')
   const said = root.querySelector('[data-rooms-said]')
+  const moves = root.querySelector('[data-rooms-moves]')
+  const readout = moves?.closest('.readout') ?? null
+  const movesAtRest = moves?.textContent ?? ''
 
   let settings: RoomsSettings = {
     mode: opts.mode ?? 'build',
     key: 'C',
+    names: 'letters',
+    slow: false,
   }
   let drawn: number[] = [...OPENING_ROOMS[settings.mode]]
   let lit: number | null = null
   let turn: KeyTurn | null = null
+  let slide: Play | null = null
   let sounding: number | null = null
+  let rootMarks: RootMark[] = []
+  let rootsPlaying = false
   let run: Run | null = null
   let ending: Hooks['ended'] | null = null
   // the figure's last height, px; 0 before it has one
@@ -175,9 +213,15 @@ export function mountRooms(root: HTMLElement, opts: RoomsOptions): Rooms {
     wake()
   }
 
-  const naming = (): Naming => ({ syllable, solfege: false })
+  const naming = (): Naming => ({
+    syllable,
+    solfege: settings.names === 'solfege',
+  })
 
   const compact = (): boolean => figureH > 0 && compactFor(figureH)
+
+  /** A length as a play takes it: twice as long under Slow. */
+  const scaled = (seconds: number): number => seconds * (settings.slow ? 2 : 1)
 
   function state(): RoomsState {
     return {
@@ -187,8 +231,18 @@ export function mountRooms(root: HTMLElement, opts: RoomsOptions): Rooms {
       lit,
       label: LABEL[settings.mode],
       compact: compact(),
-      slide: null,
+      slide,
       walk: null,
+      reduced: reducedMotion(),
+    }
+  }
+
+  function marks(): RingMarks {
+    const sung = settings.names === 'solfege' && !compact()
+    return {
+      syllables: sung ? syllablesOf(settings.key) : [],
+      roots: rootMarks,
+      rootsPlaying,
       reduced: reducedMotion(),
     }
   }
@@ -203,6 +257,7 @@ export function mountRooms(root: HTMLElement, opts: RoomsOptions): Rooms {
   function syncChips(): void {
     const chords = chordsOf(settings.key)
     const step = settings.mode === 'build' ? 'build' : 'numerals'
+    const sung = settings.names === 'solfege'
     chips.forEach((b, i) => {
       const chord = chords[i]
       const top = b.querySelector('[data-chip-top]')
@@ -211,9 +266,9 @@ export function mountRooms(root: HTMLElement, opts: RoomsOptions): Rooms {
         top.textContent =
           step === 'build' ? `on ${syllable(chord.degree)}` : chord.numeral
       if (notes !== null)
-        notes.textContent = chord.spelled
-          .map((s) => signName(s, { octave: false }))
-          .join(' ')
+        notes.textContent = sung
+          ? [0, 2, 4].map((up) => syllable((chord.degree + up) % 7)).join(' ')
+          : chord.spelled.map((s) => signName(s, { octave: false })).join(' ')
       b.setAttribute('aria-label', chipName(chord, step, naming()))
       b.classList.toggle('is-on', sounding === i)
     })
@@ -223,6 +278,13 @@ export function mountRooms(root: HTMLElement, opts: RoomsOptions): Rooms {
   function syncSummary(): void {
     if (summary !== null)
       summary.textContent = figureSummary(settings.key, drawn)
+  }
+
+  function clearRoots(): void {
+    if (rootMarks.length > 0) changed()
+    rootMarks = []
+    rootsPlaying = false
+    if (moves !== null) moves.textContent = movesAtRest
   }
 
   // ------------------------------------------------------------ sound
@@ -246,6 +308,7 @@ export function mountRooms(root: HTMLElement, opts: RoomsOptions): Rooms {
     hooks: Hooks = {},
   ): Promise<boolean> {
     stop()
+    clearRoots()
     opts.owner?.claim(stop)
     const r = begin((n, i) => {
       if (run === r) hooks.onNote?.(n, i)
@@ -265,11 +328,12 @@ export function mountRooms(root: HTMLElement, opts: RoomsOptions): Rooms {
     })
   }
 
-  /** A fixed sound in the soft tone. */
+  /** A fixed sound in the soft tone, at twice its lengths under Slow. */
   function sound(notes: readonly SoundNote[], hooks: Hooks): Promise<boolean> {
     const audible = Sound.canPlay()
+    const played = settings.slow ? slow(notes) : [...notes]
     return start(
-      (onNote) => playNotes(notes, { audible, kind: 'soft', onNote }),
+      (onNote) => playNotes(played, { audible, kind: 'soft', onNote }),
       hooks,
     )
   }
@@ -295,6 +359,66 @@ export function mountRooms(root: HTMLElement, opts: RoomsOptions): Rooms {
     return done
   }
 
+  function playSlide(): Promise<boolean> {
+    // vi has sounded once its chord starts, so the slide has landed
+    let landed = false
+    const done = sound(iThenVi(settings.key), {
+      onNote: (n) => {
+        if (n.t === 0 || landed) return
+        landed = true
+        say(slideLine(settings.key, naming()))
+      },
+      ended: () => {
+        slide = null
+        lit = landed ? VI : 0
+      },
+    })
+    slide = { at: now(), by: settings.slow ? 2 : 1 }
+    lit = 0
+    changed()
+    return done
+  }
+
+  function playLoop(): Promise<boolean> {
+    const bar = scaled(BAR_SEC)
+    return sound(loop(settings.key), {
+      onNote: (n) => {
+        const degree = LOOP_DEGREES[Math.floor(n.t / bar + 1e-6)] ?? null
+        if (degree === lit && sounding === degree) return
+        lit = degree
+        light(degree)
+        changed()
+      },
+      ended: () => {
+        lit = null
+        light(null)
+      },
+    })
+  }
+
+  function playRoots(): Promise<boolean> {
+    const words = rootMoves(syllable)
+    const done = sound(roots(settings.key), {
+      onNote: (n, i) => {
+        const t = now()
+        rootMarks = [
+          ...rootMarks,
+          { midi: n.midi, from: t, to: t + n.dur * 1000 },
+        ]
+        if (moves !== null) moves.textContent = words[i] ?? ''
+        changed()
+      },
+      ended: () => {
+        // a root cut short stops sounding now
+        const t = now()
+        rootMarks = rootMarks.map((r) => (r.to > t ? { ...r, to: t } : r))
+        rootsPlaying = false
+      },
+    })
+    rootsPlaying = true
+    return done
+  }
+
   // a chip plays its chord in the key that shows
   strip?.addEventListener('click', (e) => {
     const b = (e.target as Element).closest<HTMLButtonElement>('[data-chip]')
@@ -314,18 +438,28 @@ export function mountRooms(root: HTMLElement, opts: RoomsOptions): Rooms {
       dirty = false
       figureH = f.H
       drawRooms(f.ctx, f, state(), easeOutExpo)
+      drawMarks(f.ctx, f, marks())
     },
-    overlayWants: () => dirty || roomsAnimating(state(), now()),
+    overlayWants: () => {
+      const t = now()
+      return dirty || roomsAnimating(state(), t) || marksAnimating(marks(), t)
+    },
   })
   spiral.setTurning(false)
-  // letters on the beads, the compact layout's labels, in every layout
+  // the compact layout's letters only, which the full layout shares: its
+  // syllables are the page's marks, drawn beside the beads
   spiral.setLabels('letter')
   RING_BLACK.forEach((m) => spiral.light(m))
 
-  /** The figure's height now, if it has one. */
+  /**
+   * The figure's height now, if it has one. In the compact layout the
+   * centre's label takes the figure's top-left corner, so Step 4's moves
+   * readout goes to its top-right, clear of it.
+   */
   function measure(): void {
     const h = canvas.getBoundingClientRect().height
     if (h > 0) figureH = h
+    readout?.classList.toggle('right', compact())
   }
   new ResizeObserver(() => {
     measure()
@@ -354,10 +488,12 @@ export function mountRooms(root: HTMLElement, opts: RoomsOptions): Rooms {
     },
     setMode(mode) {
       stop()
+      clearRoots()
       settings = { ...settings, mode, key: 'C' }
       drawn = [...OPENING_ROOMS[mode]]
       lit = null
       turn = null
+      slide = null
       light(null)
       say('')
       syncChips()
@@ -370,6 +506,7 @@ export function mountRooms(root: HTMLElement, opts: RoomsOptions): Rooms {
         turn !== null && !reducedMotion() && t - turn.at < TURN_SEC * 1000
       if (key === settings.key || turning) return false
       stop()
+      clearRoots()
       turn = { from: settings.key, at: t }
       settings = { ...settings, key }
       syncChips()
@@ -378,11 +515,28 @@ export function mountRooms(root: HTMLElement, opts: RoomsOptions): Rooms {
       changed()
       return true
     },
+    setNames(names) {
+      if (names === settings.names) return
+      stop()
+      settings = { ...settings, names }
+      syncChips()
+      changed()
+    },
+    setSlow(on) {
+      settings = { ...settings, slow: on }
+    },
     playChip,
+    playSlide,
+    playLoop,
+    playRoots,
     playRun: (begin) => start(begin),
     stop,
     state,
-    wants: () => dirty || roomsAnimating(state(), now()),
+    marks,
+    wants: () => {
+      const t = now()
+      return dirty || roomsAnimating(state(), t) || marksAnimating(marks(), t)
+    },
   }
   return toy
 }

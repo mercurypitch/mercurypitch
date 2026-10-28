@@ -14,12 +14,16 @@
 // while the rooms still turn leaves it as it was. An address that names a
 // step opens it in its own parts, and the step showing, shown again,
 // changes nothing. The markup is Step 1's: its chips named as the toy
-// names them, and its figure summed up as the toy sums it up.
+// names them, and its figure summed up as the toy sums it up. Left mid-loop
+// on the kit's own run, Step 4's loop stops and leaves no timer of its own
+// behind, so no bar of it lights after (every route out is
+// steps-leave.test.ts's).
 
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import '@/features/lessons/kit/browser-doubles.test-fixtures'
 import type * as MotionModule from '@/features/lessons/kit/motion-switch'
 import { MAJOR_SOLFEGE } from '@/features/lessons/kit/names-modes'
+import { Sound } from '@/features/lessons/kit/sound'
 import { showParts } from '@/features/lessons/kit/step-parts'
 import { chipName, figureSummary } from './lines'
 import { chordsOf } from './music'
@@ -310,5 +314,32 @@ describe("Lesson 12's Step 2, the key switch", () => {
     // Assert
     expect(pressed()).toEqual(['C'])
     expect(deck.rooms.settings).toMatchObject({ mode: 'numerals', key: 'C' })
+  })
+})
+
+describe("Lesson 12's Step 4, left mid-loop on the kit's own run", () => {
+  it('stops the run and clears every timer it set, so no bar of it lights after', () => {
+    // Arrange: sound off, so the kit's run times its bars in silence
+    vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout', 'performance'] })
+    vi.spyOn(Sound, 'canPlay').mockReturnValue(false)
+    const deck = mountSteps()
+    deck.show(4)
+    const resting = vi.getTimerCount()
+    el('#toyRooms [data-rooms-play="loop"]').click()
+    vi.advanceTimersByTime(3000)
+    const midLoop = { timers: vi.getTimerCount(), lit: deck.rooms.lit }
+
+    // Act: the deck moves on, as each route moves it (steps-leave.test.ts)
+    deck.show(5)
+    const left = vi.getTimerCount()
+    vi.advanceTimersByTime(10_000)
+
+    // Assert: in V's bar, then nothing left to fire
+    expect(midLoop.timers).toBeGreaterThan(resting)
+    expect(midLoop.lit).toBe(4)
+    expect(left).toBe(resting)
+    expect(deck.current).toBe(5)
+    expect(deck.rooms.lit).toBeNull()
+    expect(deck.rooms.sounding).toBeNull()
   })
 })

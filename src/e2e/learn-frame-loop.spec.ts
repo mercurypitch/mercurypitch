@@ -31,9 +31,10 @@
 // sings his notes, free play's chord beads, through a gap's two notes as
 // the steps' are, then the explorer and the page at rest. Lesson 12's are
 // the steps' ring of rooms, at rest, through Step 2's key turn, which moves
-// only while the rooms turn, and once a chip's chord has sounded, which
-// paints the ring once; then the explorer and the page at rest. The hero's
-// ring, Sing it's guide and ring join them once they are wired.
+// only while the rooms turn, once a chip's chord has sounded, which paints
+// the ring once, and through Step 4's Play the roots, whose beads pulse
+// only while each root sounds; then the explorer and the page at rest. The
+// hero's ring, Sing it's guide and ring join them once they are wired.
 // Lessons 1 to 5 each have drawers of their own that still draw every
 // frame (S-26 in docs/plans/find-your-pitch/RELEASE-REVIEW.md), which keep
 // their loop running whatever these three do, so there only the figures
@@ -425,6 +426,14 @@ test('Lesson 12: the ring of rooms and the explorer rest, and so does the whole 
   await page.locator('#toyRooms [data-chip="0"]').click()
   await expectRest(page, rooms)
   await expectRest(page, null)
+  // Step 4's roots, each bead pulsing only while its root sounds
+  await page.getByRole('button', { name: 'Next step', exact: true }).click()
+  await page.getByRole('button', { name: 'Next step', exact: true }).click()
+  await expect(page.locator('#stepNow')).toHaveText('4')
+  await scrollTo(page, rooms)
+  await runRests(page, [rooms], true, () =>
+    page.locator('#toyRooms [data-rooms-play="roots"]').click(),
+  )
   await explorerRests(page, 12, true)
 })
 
