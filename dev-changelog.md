@@ -11,9 +11,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [0.9.24] - 2026-10-28
 
-48 commits since `v0.9.23` (d37453987) before this notes PR, from 4 PRs, all
-rebased onto `main`: #1234 (31 commits), #1236 (12), #1233 (4) and #1235 (1).
-Every commit came through a PR.
+51 commits since `v0.9.23` (d37453987) before this second notes PR, from 6
+PRs, all rebased onto `main`: #1234 (31 commits), #1236 (12), #1233 (4), #1238
+(2, one of them #1239's), #1235 (1) and the first notes PR, #1237 (1). Every
+commit came through a PR.
 
 On the web:
 
@@ -122,6 +123,30 @@ On the web:
     at 1280x800 again, over the 70% of the window the Guide's walk allows a
     spotlight, so the walk names it among its known wide ones
     (`scripts/walk-tours.mjs`).
+- **The tour offer keeps off a control's invisible press** (#1238).
+  - Under a finger, the phone header's mic draws 30 px and takes a press 44 px
+    wide from a transparent `::after` (6d89f65a1) that reaches 6.6 px past its
+    left; the menu and the wordmark take theirs the same way. On the Sing,
+    Path, Piano, Guitar and Analysis tabs at 390x844 the offer is Merc alone in
+    the top bar, and its end stood 4 px short of the mic's drawn box, so on the
+    left 3 px of its press: a tap there started the tour instead of voice
+    control, and the release's app-check sweep measured the mic's press at 41
+    px. `tour-chip-floats.spec.ts` runs without touch, where the press boxes do
+    not exist.
+  - The room (`src/components/coach/chip-room.ts`) reads a control as far as
+    it takes a press: its own box, plus the box of any `::before` or `::after`
+    stood in its padding box that draws, takes presses and is only moved, not
+    turned or scaled. Chromium reports such a part's used `left`, `top`,
+    `width` and `height`, and its translate as a matrix, so the box lands where
+    a hit-test finds the press; a layer from elsewhere in the document is read
+    the same way. A part with `pointer-events: none`, and a control that
+    positions nothing, count as before.
+  - Tests: `TourChip.float.test.tsx`, a bar mic whose `::after` reaches 7 px
+    past its left: the chip ends 4 px short of the press, at 209 px, where the
+    old reader put it at 216 px. `header-touch-targets.spec.ts`, at 390x844
+    under touch with the offer in the bar on the five tabs: the menu, the
+    wordmark, the mic and the heart each take a 44 px press both ways, and
+    every header control owns its box.
 - **The lesson kit's buttons and step links, on the live Lessons 1 and 2 too**
   (#1236).
   - `.btn.is-on` swapped a primary button's light gradient for the dark lit
@@ -165,7 +190,9 @@ On the web:
   script. Glass is 575 bytes lighter, the Voice Mirror and its three range
   pages 101, and Karaoke Night's four documents 12 bytes of CSS. Lessons 1 to
   10 gain 26 bytes of script each (67 on Lesson 7) and 105 to 354 of CSS.
-  Every page stays under its ceiling, and no ceiling changes.
+  Every page stays under its ceiling, and no ceiling changes. #1238 moves none
+  of it: the room it reads loads only with the offer's own chunk, on demand,
+  and Lessons 1 to 10 weigh the same to the byte before and after it.
 
 For the lessons, all drafts that mercurypitch.com holds back:
 
@@ -229,6 +256,12 @@ Tests only:
   period at a fixed 2026-10-27T12:00Z, so from that moment the three tests
   that expect a subscriber failed on every branch. The period now ends fifteen
   days after the suite starts.
+- **#1238, with #1239's commit:** the stage test in
+  `dark-stage-surfaces.spec.ts` fetched the demo song's stems, 10.1 MB, from
+  the public R2 bucket, and the lyrics panel it waits for shows only once they
+  have loaded, so a slow download outlasted its 15 s wait: it went red on #1237
+  and on #1238. It routes the stems to a 4 s local tone and the lyrics to one
+  line, as `jam-control-bar.spec.ts` does. #1239 closed as landed with #1238.
 
 Docs only:
 
