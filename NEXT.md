@@ -879,3 +879,12 @@ Note: the lanes' memory gate read a stale cgroup path after the 21:00 restart (f
 - Tag lead/l12-page2-gated = 38ae5119a. Pushed feat/lesson-12-page 6d12247ab...38ae5119a with --force-with-lease (lease on 6d12247ab).
 - PR #1242 "feat(lessons): Lesson 12's page as a draft, with the ring of rooms and Steps 1 to 4" opened 10:24 (not a GitHub draft; the page is a lesson draft). Server footer stripped, body read back clean (l12/pr/BODY.md). Subscribed.
 - Next: CI green -> merge by rebase with expectedHeadSha 38ae5119a127a045d4e95dfbeb038de8f05004ff -> bin/verify-rebase-merge.sh -> unsubscribe. The coach fix PR then carries the dev-changelog lines for both (release24/notes3/l12-bullet.md, @@L12PR@@ = 1242).
+- 10:26: #1242 CI running (22 checks: Browser 1-4, Unit 1-2, Lint, Code health, Validate, Mercury Pitch, native builds, Build & Deploy App preview). Safety-net send_later trig_013TKR8FBRGNYZASma7pc5WQ at 11:15Z.
+
+## 28 Oct 10:40Z: #1242 CI red on 38ae5119a, both diagnosed; fix folded locally (head c0b3da4e4), not pushed yet
+- build / iOS: R2 fetch of goodbye-to-spring/vocal.m4a terminated (TypeError: terminated in fetch-karaoke-examples.mjs, no retry). Not this PR's; comment 6466626710 posted with the proposed retry patch, footer stripped and read back clean. The next push re-runs it (counts as the one re-run).
+- Unit tests (1/2): THIS PR'S. tools/lesson-ways.test.ts assumed every lesson page has a neighbour with a page; L12 has none (no L11/L13 page). Two checks failed (per-page foot nav for L12; last.prev = /learn/10). The module (n±1 only) and learn-ways.spec.ts are right. Test made data-driven: the whole foot list compared (none where neither neighbour has a page), first/last other side = pageOf(n±1). Old test reproduced both failures locally; new 51/51; 4 related files 141 pass; 2 mutations (empty nav, reach past a gap) caught.
+- Folded into commit 6 (shell) with amend! (message gains one sentence, $S/l12/ci1/192da555b-msg.new.txt): head c0b3da4e4; every other commit's patch-id and message unchanged; tree diff vs 38ae5119a = that test file only.
+- LESSON: run the WHOLE unit suite (or at least tools/ and src/tests/lesson-*) before a lesson PR; the subset missed tools/.
+- pnpm check running ($S/l12/ci1/check.log). Browser 3/4 passed on 38ae5119a; 1, 2, 4 running; push after they report (to fold any e2e fix into the same push). PR body draft: $S/l12/pr/BODY2.md (new "CI found one more" bullet + Checks paragraph).
+- Coach builder: committed cce883bb5 in presses, walking tours now.
