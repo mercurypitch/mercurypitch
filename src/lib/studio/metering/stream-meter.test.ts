@@ -199,8 +199,8 @@ it("the lane worklet sends each lane's louder-channel peak about 30 times a seco
   const messages: (number[] | { kind: string })[] = []
   const port = {
     onmessage: null as ((event: { data: string }) => void) | null,
-    postMessage: (value: Float32Array | { kind: string }) =>
-      messages.push(value instanceof Float32Array ? [...value] : value),
+    postMessage: (value: { peaks: Float32Array } | { kind: string }) =>
+      messages.push('peaks' in value ? [...value.peaks] : value),
   }
   let Lanes!: new (options: {
     numberOfInputs: number
@@ -267,11 +267,10 @@ it("the lane worklet sends each lane's louder-channel peak about 30 times a seco
   }
 })
 
-it('taps every lane once into one meter node and reads the highest peak since the last read, or nothing when nothing new came', async () => {
+/** A lane meter's surroundings on a fake audio thread; `created` holds the worklet nodes made. */
+function laneMeterRig() {
   const port = {
-    onmessage: null as
-      | ((event: { data: Float32Array | { kind: 'disposed' } }) => void)
-      | null,
+    onmessage: null as ((event: { data: unknown }) => void) | null,
     postMessage: vi.fn(),
     close: vi.fn(),
   }
@@ -302,13 +301,28 @@ it('taps every lane once into one meter node and reads the highest peak since th
       disconnect: vi.fn(),
     }),
   })
-  const context = clock as unknown as AudioContext
   const lane = () => ({ connect: vi.fn(), disconnect: vi.fn() })
   const [vocal, bass] = [lane(), lane()]
   const lanes = new Map([
     ['vocal', vocal as unknown as AudioNode],
     ['bass', bass as unknown as AudioNode],
   ])
+  /** A message from the audio thread: each lane's peak, in `measurement`. */
+  const send = (measurement: number, ...peaks: number[]) =>
+    port.onmessage?.({ data: { measurement, peaks: Float32Array.from(peaks) } })
+  return {
+    port,
+    created,
+    context: clock as unknown as AudioContext,
+    vocal,
+    bass,
+    lanes,
+    send,
+  }
+}
+
+it('taps every lane once into one meter node and reads the highest peak since the last read, or nothing when nothing new came', async () => {
+  const { port, created, context, vocal, bass, lanes, send } = laneMeterRig()
   try {
     expect(createStudioLaneMeter(context, lanes, 0.5)).toBeNull()
     await prepareStudioLiveMeter(context)
@@ -319,7 +333,7 @@ it('taps every lane once into one meter node and reads the highest peak since th
       numberOfInputs: 2,
       channelCount: 2,
       channelCountMode: 'explicit',
-      processorOptions: { startAtTime: 0.5 },
+      processorOptions: { startAtTime: 0.5, measurement: meter.measurement },
     })
     expect(vocal.connect).toHaveBeenCalledExactlyOnceWith(
       expect.anything(),
@@ -331,8 +345,8 @@ it('taps every lane once into one meter node and reads the highest peak since th
       0,
       1,
     )
-    port.onmessage?.({ data: Float32Array.of(0.25, 0.75) })
-    port.onmessage?.({ data: Float32Array.of(0.5, 0.125) })
+    send(meter.measurement, 0.25, 0.75)
+    send(meter.measurement, 0.5, 0.125)
     expect(meter.read()).toEqual(
       new Map([
         ['vocal', 0.5],
@@ -341,7 +355,7 @@ it('taps every lane once into one meter node and reads the highest peak since th
     )
     // Nothing new since the last read: no reading, rather than silence.
     expect(meter.read()).toBeNull()
-    port.onmessage?.({ data: Float32Array.of(0, 0.25) })
+    send(meter.measurement, 0, 0.25)
     expect(meter.read()).toEqual(
       new Map([
         ['vocal', 0],
@@ -353,6 +367,40 @@ it('taps every lane once into one meter node and reads the highest peak since th
     expect(vocal.disconnect).toHaveBeenCalledOnce()
     port.onmessage?.({ data: { kind: 'disposed' } })
     expect(port.close).toHaveBeenCalledOnce()
+  } finally {
+    vi.unstubAllGlobals()
+  }
+})
+
+it("drops lane peaks the audio thread sent before it heard a seek, and starts a new measurement at each seek and in each run's meter", async () => {
+  const { port, context, lanes, send } = laneMeterRig()
+  try {
+    await prepareStudioLiveMeter(context)
+    const meter = createStudioLaneMeter(context, lanes, 0.5)!
+    const before = meter.measurement
+    send(before, 0.9, 0.9)
+    meter.restart(1.25)
+    const after = meter.measurement
+    expect(after).not.toBe(before)
+    expect(port.postMessage).toHaveBeenLastCalledWith({
+      restartAt: 1.25,
+      measurement: after,
+    })
+    // On its way when the seek was sent: the old place's peaks, not a reading.
+    send(before, 0.8, 0.8)
+    expect(meter.read()).toBeNull()
+    send(after, 0.0625, 0.125)
+    expect(meter.read()).toEqual(
+      new Map([
+        ['vocal', 0.0625],
+        ['bass', 0.125],
+      ]),
+    )
+    // A run built later measures under a number of its own.
+    const later = createStudioLaneMeter(context, lanes, 2)!
+    expect([before, after]).not.toContain(later.measurement)
+    later.dispose()
+    meter.dispose()
   } finally {
     vi.unstubAllGlobals()
   }

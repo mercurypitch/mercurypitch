@@ -184,7 +184,12 @@ describe('Studio transport levels', () => {
     vi.useFakeTimers()
     const read = vi.fn(() => new Map([['track-1', 0.5]]))
     const dispose = vi.fn()
-    const createLaneMeter = vi.fn(() => ({ read, restart: vi.fn(), dispose }))
+    const createLaneMeter = vi.fn(() => ({
+      read,
+      restart: vi.fn(),
+      dispose,
+      measurement: 7,
+    }))
     const f = transportFixture({ createLaneMeter })
     const outputs = new Map([
       ['track-1', f.ctx.createGain() as unknown as AudioNode],
@@ -203,7 +208,7 @@ describe('Studio transport levels', () => {
     f.ctx.currentTime = 0.5
     await vi.advanceTimersByTimeAsync(33)
     expect(f.transport.getState().lanes).toEqual([
-      { trackId: 'track-1', peak: 0.5, reductionDb: -3.5 },
+      { trackId: 'track-1', peak: 0.5, reductionDb: -3.5, measurement: 7 },
     ])
     expect(f.graph.readLaneReduction).toHaveBeenCalledWith('track-1')
 
@@ -223,6 +228,7 @@ describe('Studio transport levels', () => {
       read,
       restart: vi.fn(),
       dispose: vi.fn(),
+      measurement: 7,
     }))
     const f = transportFixture({ createLaneMeter })
     f.graph.laneOutputs.mockReturnValue(
@@ -232,7 +238,9 @@ describe('Studio transport levels', () => {
     await f.transport.play(f.project, [f.asset], 0)
     f.ctx.currentTime = 0.5
     await vi.advanceTimersByTimeAsync(33)
-    const heard = [{ trackId: 'track-1', peak: 0.5, reductionDb: null }]
+    const heard = [
+      { trackId: 'track-1', peak: 0.5, reductionDb: null, measurement: 7 },
+    ]
     expect(f.transport.getState().lanes).toEqual(heard)
 
     // The audio thread sends about as often as the tick reads, so a tick
@@ -244,7 +252,7 @@ describe('Studio transport levels', () => {
     read.mockReturnValueOnce(new Map([['track-1', 0.25]]))
     await vi.advanceTimersByTimeAsync(33)
     expect(f.transport.getState().lanes).toEqual([
-      { trackId: 'track-1', peak: 0.25, reductionDb: null },
+      { trackId: 'track-1', peak: 0.25, reductionDb: null, measurement: 7 },
     ])
     await finish(f)
   })

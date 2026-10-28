@@ -4,7 +4,7 @@ import type { StudioMeterSnapshot } from './stream-meter'
 
 type Processor = new (options: {
   numberOfInputs?: number
-  processorOptions: { startAtTime: number }
+  processorOptions: { startAtTime: number; measurement?: number }
 }) => { process(inputs: Float32Array[][]): boolean }
 
 /** Load the worklet with a fake audio thread; `messages` collects what it posts. */
@@ -13,7 +13,11 @@ async function loadWorklet(name: string) {
   const port = {
     onmessage: null as ((event: { data: unknown }) => void) | null,
     postMessage: (value: unknown) =>
-      messages.push(value instanceof Float32Array ? [...value] : value),
+      messages.push(
+        typeof value === 'object' && value !== null && 'peaks' in value
+          ? { ...value, peaks: [...(value.peaks as Float32Array)] }
+          : value,
+      ),
   }
   let loaded!: Processor
   vi.stubGlobal('sampleRate', 48000)
@@ -88,6 +92,32 @@ describe('Studio meter worklet restart', () => {
       const spike = frame < 960 ? 0.9 : 0.2
       lanes.process([[quantum(frame, 0, spike), quantum(frame, 0, spike)]])
     }
-    expect(messages).toEqual([[expect.closeTo(0.2, 6)]])
+    expect(messages).toEqual([
+      { measurement: 0, peaks: [expect.closeTo(0.2, 6)] },
+    ])
+  })
+
+  it('names the measurement each lane message belongs to, so the page can drop one sent before a restart is heard', async () => {
+    const { Processor, messages, send } = await loadWorklet('studio-lane-meter')
+    const lanes = new Processor({
+      numberOfInputs: 1,
+      processorOptions: { startAtTime: 0, measurement: 4 },
+    })
+    const play = (from: number, to: number) => {
+      for (let frame = from; frame < to; frame += 128) {
+        vi.stubGlobal('currentFrame', frame)
+        const spike = frame < 2112 ? 0.9 : 0.2
+        lanes.process([[quantum(frame, 0, spike), quantum(frame, 0, spike)]])
+      }
+    }
+    // The first message, from the place playing before the seek.
+    play(0, 1664)
+    // The seek is heard from frame 2112; until then the old place plays on.
+    send({ restartAt: 2112 / 48000, measurement: 5 })
+    play(1664, 3328)
+    expect(messages).toEqual([
+      { measurement: 4, peaks: [expect.closeTo(0.9, 6)] },
+      { measurement: 5, peaks: [expect.closeTo(0.2, 6)] },
+    ])
   })
 })

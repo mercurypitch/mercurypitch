@@ -41,6 +41,11 @@ export interface StudioLaneLevel {
   readonly peak: number
   /** Its compressors' and limiters' gain reduction in dB, or null without any. */
   readonly reductionDb: number | null
+  /**
+   * The lane meter's measurement the peak came from. A seek, or a run that
+   * takes over, starts a new one from the frame it is heard.
+   */
+  readonly measurement: number
 }
 
 export interface StudioRun {
@@ -111,10 +116,12 @@ export function readLaneLevels(run: StudioRun): StudioLaneLevel[] | null {
   if (!run.laneMeter) return []
   const peaks = run.laneMeter.read()
   if (!peaks) return null
+  const { measurement } = run.laneMeter
   return [...peaks].map(([trackId, peak]) => ({
     trackId,
     peak,
     reductionDb: run.graph.readLaneReduction(trackId),
+    measurement,
   }))
 }
 
