@@ -4,7 +4,7 @@
 
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { TAB_EAR_LAB, TAB_GUITAR, TAB_HOME, TAB_PIANO, TAB_PROGRESS, TAB_SINGING, } from '@/features/tabs/constants'
-import { registerRunControls } from '@/stores/native-shell-store'
+import { registerRoomBack, registerRunControls, } from '@/stores/native-shell-store'
 import { setPlaybackState } from '@/stores/playback-state-store'
 import { setActiveTab } from '@/stores/ui-store'
 import { canGoBack, installHistoryDepth } from './history-depth'
@@ -184,6 +184,31 @@ describe('a door open in flight', () => {
   it('an open that refuses the cancel is not a handled press', () => {
     registerDoorOpen(() => false)
     expect(performBack(host(false))).toBe('minimize')
+  })
+})
+
+describe('a room or a sheet drawn over its tab', () => {
+  // The Ear Lab's drill room and the sheets its tab lays over itself
+  // answer Back with their own Close.
+  it('is asked, and the press is its', () => {
+    const answer = vi.fn(() => true)
+    unregister = registerRoomBack(answer)
+    const back = host(true)
+
+    expect(performBack(back)).toBe('room-overlay')
+    expect(answer).toHaveBeenCalledTimes(1)
+    expect(back.back).not.toHaveBeenCalled()
+  })
+
+  it('is not asked while a screen is pushed over the tab', () => {
+    // A station sheet open, then Settings pushed over the tab: the press
+    // is for Settings, not the sheet it hides.
+    const answer = vi.fn(() => true)
+    unregister = registerRoomBack(answer)
+    pushScreen('settings')
+
+    expect(performBack(host(true))).toBe('pushed')
+    expect(answer).not.toHaveBeenCalled()
   })
 })
 

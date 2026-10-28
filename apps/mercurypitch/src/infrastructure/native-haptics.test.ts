@@ -18,6 +18,7 @@ const device = vi.hoisted(() => ({
   hapticTap: vi.fn(async () => undefined),
   hapticSuccess: vi.fn(async () => undefined),
   hapticWarning: vi.fn(async () => undefined),
+  hapticSeal: vi.fn(async () => undefined),
 }))
 
 vi.mock('@irchiinnuss/mobile-runtime/platform', () => device)
@@ -47,9 +48,11 @@ describe('installNativeHaptics', () => {
     haptics.tapLight()
     haptics.success()
     haptics.warning()
+    haptics.seal?.()
     expect(device.hapticTap).toHaveBeenCalledTimes(2)
     expect(device.hapticSuccess).toHaveBeenCalledTimes(1)
     expect(device.hapticWarning).toHaveBeenCalledTimes(1)
+    expect(device.hapticSeal).toHaveBeenCalledTimes(1)
     expect(vibrate).not.toHaveBeenCalled()
   })
 
