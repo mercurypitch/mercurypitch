@@ -1,0 +1,21 @@
+test(e2e): Serve the demo song to the Jam stage layout spec
+
+Every test in jam-stage-layout.spec.ts opens Goodbye to Spring, and the
+room takes a song only once its words have arrived: exampleSong awaits
+demoLyricsText, which fetches lyrics.lrc from the public R2 bucket, and
+the stems stream from the same bucket. The spec routed neither. On
+#1243's CI, while the bucket stalled transfers, one of its tests failed
+all three tries and five passed only on a retry. With no route to the
+bucket at all, as in a sandbox, the song has no words and every test
+fails.
+
+The spec now serves the song itself before each test, as
+jam-control-bar.spec.ts does. lyrics.lrc is the gold copy in
+fixtures/lrc, the same words the bucket serves. Each stem is a 220 Hz
+tone as long as the song, 246 s, served in byte ranges: the room parks
+on line 6, 56 s in, and an element that cannot seek lands every jump on
+zero.
+
+With every r2.dev request aborted, the 14 tests pass and none tries the
+bucket. Without the new routes, all 14 fail waiting for line 6, and 42
+requests try it.
