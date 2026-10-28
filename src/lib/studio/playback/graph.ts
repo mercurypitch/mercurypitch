@@ -23,10 +23,27 @@ export interface StudioGraph {
    * the new ones (seek-crossfade.ts); the chains, master and meters play on.
    * The frame enters a lane with no compensation at the returned time:
    * seekTime(at), so pass a time from seekTime to keep two graphs in step.
-   * Null when the plan starts after `fromFrame` or ends before it. Call
-   * scheduleUntil after it, as the new sources start at once.
+   * Null when the plan starts after `fromFrame` or ends before it, or the
+   * graph is parked. Call scheduleUntil after it, as the new sources start
+   * at once.
    */
   seek(fromFrame: number, at: number): number | null
+  /**
+   * Stop every source now, playing or waiting, and schedule nothing more.
+   * The chains, master and faders stay built, silent, for resume. The peak
+   * analysers let go of the output: an analyser pulls what feeds it on
+   * every render quantum, so it would keep the chains processing silence.
+   * Call it once the run's envelope has closed.
+   */
+  park(): void
+  /**
+   * Play again after park from `fromFrame`, which enters a lane with no
+   * compensation at `epoch`, looping when `repeat`. Its sources play at full
+   * level from their first frame, since the run's envelope opens over them.
+   * False, still parked, when the plan does not reach the frame or cannot
+   * loop. Call scheduleUntil after it.
+   */
+  resume(fromFrame: number, epoch: number, repeat: boolean): boolean
   readPeaks(): readonly [number, number]
   /**
    * Whether this track has a lane here. Playback builds every lane with
@@ -221,12 +238,13 @@ function connectLane(
   return chain.input
 }
 
+/** Two analysers on `output`, one per channel, and the splitter that taps it for them. */
 function connectPeakAnalysers(
   ctx: BaseAudioContext,
   output: AudioNode,
   fftSize: number,
   disposers: (() => void)[],
-): AnalyserNode[] {
+): { tap: AudioNode; analysers: AnalyserNode[] } {
   const split = ctx.createChannelSplitter(2)
   output.connect(split)
   disposers.push(() => split.disconnect())
@@ -239,7 +257,7 @@ function connectPeakAnalysers(
     analysers.push(analyser)
     disposers.push(() => analyser.disconnect())
   }
-  return analysers
+  return { tap: split, analysers }
 }
 
 /** The first pass from `fromFrame`: what ends before it is skipped, what spans it starts part-way. */
@@ -294,7 +312,10 @@ export function buildStudioGraph(
     throw new Error('A song needs at least a quarter second to repeat.')
   let looping = options.repeat === true
   let disposed = false
+  // Parked: every source stopped, nothing scheduled, until resume.
+  let parked = false
   const analysers: AnalyserNode[] = []
+  let peakTap: AudioNode | null = null
   const peakSamples = new Float32Array(4096)
   try {
     let laneOutput: AudioNode = output
@@ -323,9 +344,14 @@ export function buildStudioGraph(
         })
     }
     if (options.metering === true) {
-      analysers.push(
-        ...connectPeakAnalysers(ctx, output, peakSamples.length, disposers),
+      const peaks = connectPeakAnalysers(
+        ctx,
+        output,
+        peakSamples.length,
+        disposers,
       )
+      analysers.push(...peaks.analysers)
+      peakTap = peaks.tap
     }
   } catch (error) {
     for (const dispose of disposers) dispose()
@@ -393,7 +419,7 @@ export function buildStudioGraph(
   return {
     output,
     scheduleUntil(time) {
-      if (disposed) return
+      if (disposed || parked) return
       while (true) {
         if (timeline.next >= timeline.scheduled.length) {
           if (!looping || !timeline.cycle.length) break
@@ -412,7 +438,12 @@ export function buildStudioGraph(
     },
     seekTime,
     seek(fromFrame, at) {
-      if (disposed || fromFrame < plan.startFrame || fromFrame >= plan.endFrame)
+      if (
+        disposed ||
+        parked ||
+        fromFrame < plan.startFrame ||
+        fromFrame >= plan.endFrame
+      )
         return null
       const time = seekTime(at)
       if (time === current.at && unheard()) {
@@ -426,6 +457,33 @@ export function buildStudioGraph(
       }
       timeline = timelineFrom(planned, plan, fromFrame, time)
       return time
+    },
+    park() {
+      if (disposed || parked) return
+      parked = true
+      for (const set of sets) {
+        emptyStudioSourceSet(set)
+        closeStudioSourceSet(set)
+      }
+      sets.clear()
+      if (peakTap) output.disconnect(peakTap)
+    },
+    resume(fromFrame, epoch, repeat) {
+      if (
+        disposed ||
+        !parked ||
+        fromFrame < plan.startFrame ||
+        fromFrame >= plan.endFrame ||
+        (repeat && (cycleSeconds < 0.25 || !planned.length))
+      )
+        return false
+      parked = false
+      looping = repeat
+      if (peakTap) output.connect(peakTap)
+      current = openStudioSourceSet(ctx, lanes, null)
+      sets.add(current)
+      timeline = timelineFrom(planned, plan, fromFrame, epoch)
+      return true
     },
     hasLane: (trackId) => mixes.has(trackId),
     setLaneMix(track, audible) {

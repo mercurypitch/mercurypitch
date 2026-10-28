@@ -1,5 +1,7 @@
 // Studio playback preparation — measured context-rate latency without changing durable project data.
+import type { ChainSpec } from '@/lib/studio-fx/chain-spec'
 import { measureTrackLatencies } from '@/lib/studio-fx/mixdown'
+import { prepareStudioLiveMeter } from '../metering/live-meter'
 import type { StudioArrangementPlan } from '../model/arrangement-plan'
 import { compileStudioArrangement } from '../model/arrangement-plan'
 import type { StudioAsset, StudioProject } from '../model/types'
@@ -72,6 +74,25 @@ export async function prepareStudioPlan(
       ),
     },
   })
+}
+
+/**
+ * Load the live meter's worklet on `ctx` and measure the master chain there:
+ * its latency in seconds, which every lane's clips are heard after.
+ */
+export async function prepareStudioMaster(
+  ctx: AudioContext,
+  spec: ChainSpec,
+  signal: AbortSignal,
+  measure: StudioLatencyReader,
+): Promise<number> {
+  await prepareStudioLiveMeter(ctx)
+  signal.throwIfAborted()
+  const [frames] = await measure([spec], ctx.sampleRate)
+  signal.throwIfAborted()
+  if (!Number.isSafeInteger(frames) || frames < 0)
+    throw new Error('Studio master timing could not be measured.')
+  return frames / ctx.sampleRate
 }
 
 export function planLatencySeconds(plan: StudioArrangementPlan): number {

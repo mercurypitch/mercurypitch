@@ -1,0 +1,201 @@
+// ============================================================
+// Studio kept run — Pause keeps the built graph, so Play only starts its sources again
+// ============================================================
+//
+// Pause used to free the song's graph a quarter second after the press, so
+// every Play built it again: measure the chains, reserve the memory, lease
+// the audio, build each lane's effects and the master, and start a tenth of
+// a second or more past that build to stay ahead of the clock. In headless
+// Chromium the first sound came 172 to 208 ms after the press.
+//
+// Pause now keeps the newest run. Its envelope closes as before, and once it
+// is silent its sources stop and its meters go, but its chains, master and
+// leased audio stay. Play starts the same graph from the playhead: new
+// sources a device callback ahead (seekEarliest), and the house attack, so
+// the first sound comes 87 to 98 ms after the press. An edit while paused
+// moves the kept graph as it would a playing one; one the graph cannot
+// follow lets it go, and Play builds afresh.
+//
+// Left connected, a kept graph costs about two points of a core for as long
+// as it waits: the whole headless Chromium used 4.1 to 4.3 % of one core
+// with it on a two-lane song, against 1.8 to 2.3 % with no graph, since
+// compressors and analysers process silence on every quantum. So once its
+// chains' tails have rung out through the closed envelope, the envelope
+// lets go of the speakers and the peak analysers of the output (graph.ts),
+// and nothing renders the graph until Play connects it again: 1.9 to 2.1 %.
+// Not before: a reverb stopped mid-tail would ring on under the next Play.
+//
+// What it still holds is memory: the graph's and its pinned audio. It is let
+// go when the memory budget needs the room, when the song stops or changes,
+// when Play gets another audio context, after KEEP_IDLE_MS without Play or
+// an edit, and after KEEP_HIDDEN_MS with the page hidden. Five minutes
+// covers pausing to change a passage and playing it again; past that, the
+// memory back is worth the tenth of a second the next Play spends building.
+// A hidden page cannot take a Play press, and a phone may discard it.
+import { closeEnvelope } from '@/lib/preview-player'
+import { registerStudioMemoryReclaimer } from '../memory-budget'
+import type { createStudioLaneMeter } from '../metering/live-meter'
+import { createStudioLiveMeter } from '../metering/live-meter'
+import type { StudioProject } from '../model/types'
+import type { StudioLiveSettings } from './in-place'
+import { fitsInPlace, followInPlace } from './in-place'
+import type { StudioRun } from './run'
+import { openRunEnvelope, releaseRun, RUN_LOOKAHEAD_SECONDS } from './run'
+import { seekEarliest } from './seek'
+
+/** Pause's fade, as a stopped run's: 180 ms down, silent by 240 ms. */
+const FADE_SECONDS = 0.18
+const SILENT_AFTER_MS = 240
+/** Past the longest chain tail, before the graph stops being rendered. */
+const TAIL_MARGIN_MS = 1000
+/** How long a kept run waits for Play, or an edit, while the page is in view. */
+export const KEEP_IDLE_MS = 5 * 60_000
+/** How long it waits while the page is hidden. */
+export const KEEP_HIDDEN_MS = 30_000
+
+export interface StudioKeptRunOptions {
+  /** Fade a run out now and free it once silent: the transport's own stop. */
+  retire(run: StudioRun): void
+  /** Drop the audio no run plays, so what a kept run gave back is free. */
+  clearCache(): void
+  createLaneMeter: typeof createStudioLaneMeter
+}
+
+export function createStudioKeptRun(options: StudioKeptRunOptions) {
+  let kept: StudioRun | null = null
+  // Its sources have stopped, so Play can start it again.
+  let silent = false
+  // Its envelope has let go of the speakers, so nothing renders it.
+  let unrendered = false
+  let hidden = false
+  let silenceTimer: ReturnType<typeof setTimeout> | undefined
+  let idleTimer: ReturnType<typeof setTimeout> | undefined
+  const unregister = registerStudioMemoryReclaimer(() => {
+    if (!kept || !silent) return
+    letGo()
+    options.clearCache()
+  })
+
+  function detach(): StudioRun | null {
+    const run = kept
+    kept = null
+    silent = false
+    clearTimeout(silenceTimer)
+    if (run && unrendered) run.envelope.connect(run.ctx.destination)
+    unrendered = false
+    clearTimeout(idleTimer)
+    return run
+  }
+
+  /** Free the kept run: at once when it is silent, after its fade when not. */
+  function letGo(): void {
+    const quiet = silent
+    const run = detach()
+    if (!run) return
+    if (quiet) releaseRun(run)
+    else options.retire(run)
+  }
+
+  function waitForPlay(): void {
+    clearTimeout(idleTimer)
+    idleTimer = setTimeout(letGo, hidden ? KEEP_HIDDEN_MS : KEEP_IDLE_MS)
+  }
+
+  return {
+    /** Fade `run` out and keep its graph; its sources and meters stop once it is silent. */
+    keep(run: StudioRun): void {
+      letGo()
+      // A fade needs the clock to run; on a stopped one the run just goes.
+      if (run.ctx.state !== 'running') {
+        options.retire(run)
+        return
+      }
+      kept = run
+      closeEnvelope(run.envelope, run.ctx, FADE_SECONDS)
+      silenceTimer = setTimeout(() => {
+        run.graph.park()
+        run.meter?.dispose()
+        run.laneMeter?.dispose()
+        run.meter = null
+        run.laneMeter = null
+        silent = true
+        silenceTimer = setTimeout(
+          () => {
+            run.envelope.disconnect(run.ctx.destination)
+            unrendered = true
+          },
+          run.tailFrames / 48 + TAIL_MARGIN_MS,
+        )
+      }, SILENT_AFTER_MS)
+      waitForPlay()
+    },
+    /**
+     * Start the kept run again from `from`, heard as soon as the clock
+     * allows, when its graph can play `project` on `ctx`. Null, with the run
+     * let go, when it cannot: Play builds a new one.
+     */
+    take(
+      ctx: AudioContext,
+      project: StudioProject,
+      from: number,
+      settings: StudioLiveSettings,
+    ): StudioRun | null {
+      if (
+        !kept ||
+        !silent ||
+        kept.ctx !== ctx ||
+        !fitsInPlace(kept, project, settings.drafts)
+      ) {
+        letGo()
+        return null
+      }
+      // Detached first: the meters below reserve memory, and the reclaimer
+      // must not free the run they are for.
+      const run = detach()!
+      const epoch = seekEarliest(ctx)
+      if (!run.graph.resume(from, epoch, settings.repeat)) {
+        releaseRun(run)
+        return null
+      }
+      followInPlace(run, project, settings)
+      const audibleEpoch = epoch + run.latency
+      run.startFrame = from
+      run.audibleEpoch = audibleEpoch
+      run.untilFrame = settings.repeat ? Infinity : run.endFrame
+      run.silentUntil = audibleEpoch
+      run.envelope.gain.cancelScheduledValues(0)
+      run.openAt = openRunEnvelope(run.envelope, audibleEpoch)
+      run.meter = createStudioLiveMeter(ctx, run.envelope, audibleEpoch)
+      run.laneMeter = options.createLaneMeter(
+        ctx,
+        run.graph.laneOutputs(),
+        audibleEpoch,
+      )
+      run.graph.scheduleUntil(ctx.currentTime + RUN_LOOKAHEAD_SECONDS)
+      return run
+    },
+    /** An edit while paused: the kept graph moves with it, or goes when it cannot follow. */
+    follow(project: StudioProject, settings: StudioLiveSettings): void {
+      if (!kept) return
+      if (!fitsInPlace(kept, project, settings.drafts)) {
+        letGo()
+        return
+      }
+      followInPlace(kept, project, settings)
+      waitForPlay()
+    },
+    letGo,
+    /** A kept run still fading fades out and goes, as a stopped one does. */
+    settle(): void {
+      if (kept && !silent) letGo()
+    },
+    setPageHidden(value: boolean): void {
+      hidden = value
+      if (kept) waitForPlay()
+    },
+    dispose(): void {
+      letGo()
+      unregister()
+    },
+  }
+}

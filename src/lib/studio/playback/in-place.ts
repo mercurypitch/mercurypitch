@@ -146,15 +146,50 @@ export function playInPlace(
 ): boolean {
   if (graphShape(run.project) !== graphShape(project)) return false
   if (!followRepeat(run, settings.repeat)) return false
-  const live = withDrafts(project, settings.drafts)
+  if (missingLane(run, project, settings.drafts)) return false
+  followInPlace(run, project, settings)
+  return true
+}
+
+/** A lane heard now, with material, that the run left out because memory was short. */
+function missingLane(
+  run: StudioRun,
+  project: StudioProject,
+  drafts: StudioDrafts,
+): boolean {
+  const live = withDrafts(project, drafts)
   const audible = audibility(live)
-  const missing = live.tracks.some(
+  return live.tracks.some(
     (track) =>
       audible(track) &&
       run.sounding.has(track.id) &&
       !run.graph.hasLane(track.id),
   )
-  if (missing) return false
+}
+
+/**
+ * Whether a run's graph can play `project` as it is: the same clips and
+ * lane effect lists, and every lane heard now built. Mix and sound it moves
+ * with followInPlace; Repeat is the caller's.
+ */
+export function fitsInPlace(
+  run: StudioRun,
+  project: StudioProject,
+  drafts: StudioDrafts,
+): boolean {
+  return (
+    graphShape(run.project) === graphShape(project) &&
+    !missingLane(run, project, drafts)
+  )
+}
+
+/** Move a run that fits `project` to its mix and sound, and to a newly measured master gain. */
+export function followInPlace(
+  run: StudioRun,
+  project: StudioProject,
+  settings: StudioLiveSettings,
+): void {
+  const live = withDrafts(project, settings.drafts)
   applyMix(run, live)
   const master = followMaster(run, settings.masterGain)
   if (
@@ -164,5 +199,4 @@ export function playInPlace(
   )
     applySound(run, live)
   run.project = project
-  return true
 }

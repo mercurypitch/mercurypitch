@@ -278,6 +278,8 @@ export function useStudioTransport(options: UseStudioTransportOptions) {
   onCleanup(() => clearTimeout(warmTimer))
 
   function onVisibility(): void {
+    // A graph Pause kept is let go sooner while nobody can press Play.
+    runtime.setPageHidden(document.hidden)
     if (document.hidden) {
       runtime.pause()
       stopPreview()

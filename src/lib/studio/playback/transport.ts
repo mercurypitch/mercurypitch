@@ -14,7 +14,7 @@ import { measureTrackLatencies } from '@/lib/studio-fx/mixdown'
 import type { StudioMasterGainToken } from '../export/sound-graph'
 import { resolveStudioSoundGraph } from '../export/sound-graph'
 import { reserveStudioMemory } from '../memory-budget'
-import { createStudioLaneMeter, prepareStudioLiveMeter, } from '../metering/live-meter'
+import { createStudioLaneMeter } from '../metering/live-meter'
 import type { StudioMeterSnapshot } from '../metering/stream-meter'
 import type { StudioArrangementPlan } from '../model/arrangement-plan'
 import { compileStudioArrangement } from '../model/arrangement-plan'
@@ -26,13 +26,14 @@ import type { StudioHandoff } from './handoff'
 import { cancelHandoff, HANDOFF_CANCEL_MARGIN_SECONDS, handoffTiming, scheduleHandoff, } from './handoff'
 import type { StudioDrafts, StudioLaneDraft } from './in-place'
 import { applyDrafts, applyMix, applySound, followMaster, followRepeat, heldMix, playInPlace, withDrafts, } from './in-place'
+import { createStudioKeptRun } from './kept-run'
 import type { StudioRunLayout } from './live-edit'
 import { audibility, firstThatFits, studioRunLayouts } from './live-edit'
 import { createStudioMasterLevel } from './master-level'
 import type { StudioLatencyReader } from './prepare-plan'
-import { createLatencyCache, planAssets, planLatencySeconds, playableStudioFrom, prepareStudioPlan, studioFirstFrame, } from './prepare-plan'
+import { createLatencyCache, planAssets, planLatencySeconds, playableStudioFrom, prepareStudioMaster, prepareStudioPlan, studioFirstFrame, } from './prepare-plan'
 import type { StudioLaneLevel, StudioRun, StudioRunParts, StudioRunTiming, } from './run'
-import { buildStudioRun, openRunEnvelope, readLaneLevels, releaseRun, RUN_LOOKAHEAD_SECONDS, runEndsAt, runPosition, } from './run'
+import { buildStudioRun, openRunEnvelope, readLaneLevels, releaseRun, RUN_LOOKAHEAD_SECONDS, runEndsAt, runPosition, runWarmupSeconds, } from './run'
 import { seekInPlace, seekShownFrame, seekTiming } from './seek'
 import { warmStudioPlayback } from './warm-up'
 
@@ -42,11 +43,6 @@ export type { StudioLaneLevel } from './run'
 const RELEASE_MS = 240
 // A handed-over run is silent once its crossfade ends; free it a little later.
 const HANDOFF_RELEASE_SLACK_MS = 60
-// Lead time between building the graph and its first sound. It follows how
-// long the last build took, so a fast machine starts in about a tenth of a
-// second and a slow one still schedules ahead of its clock.
-const MIN_WARMUP_SECONDS = 0.1
-const MAX_WARMUP_SECONDS = 0.5
 
 export interface StudioTransportState {
   playing: boolean
@@ -105,6 +101,13 @@ export function createStudioTransport(options: StudioTransportOptions) {
   // Where the render clock was when the song last fell silent.
   let stoppedAt = 0
   const drafts: StudioDrafts = { lanes: new Map(), macros: new Map() }
+  const liveSettings = () => ({ drafts, repeat, masterGain: master.fresh() })
+  // The run Pause kept, for Play to start again without a build.
+  const kept = createStudioKeptRun({
+    retire,
+    clearCache: () => cache.clear(),
+    createLaneMeter,
+  })
   let state: StudioTransportState = {
     playing: false,
     pending: false,
@@ -186,15 +189,19 @@ export function createStudioTransport(options: StudioTransportOptions) {
   /**
    * Fade out every run heard or about to be. The playhead stays on the frame
    * at the speakers; a restart for memory goes on from the frame rendered.
+   * `keep` keeps the newest run's graph for Play, unless it is held for an edit.
    */
-  function silence(): Partial<StudioTransportState> {
+  function silence(keep = false): Partial<StudioTransportState> {
     const shown = heard()
     const stopped = { peakL: 0, peakR: 0, meter: null, lanes: [] }
     const update = shown
       ? { ...stopped, playheadFrame: shownFrame(shown) }
       : stopped
     stoppedAt = shown ? renderedFrame(shown) : state.playheadFrame
-    for (const run of liveRuns()) retire(run)
+    const keeping = keep && !held ? active : null
+    for (const run of liveRuns())
+      if (run === keeping) kept.keep(run)
+      else retire(run)
     active = null
     held = null
     handoffs.length = 0
@@ -202,14 +209,14 @@ export function createStudioTransport(options: StudioTransportOptions) {
     return update
   }
 
-  function pause(preserveIntent = false): void {
+  function pause(preserveIntent = false, keep = false): void {
     if (!preserveIntent) {
       wantsPlayback = false
       restartGeneration++
     }
     generation++
     abort?.abort()
-    publish({ ...silence(), playing: false, pending: preparing })
+    publish({ ...silence(keep), playing: false, pending: preparing })
   }
 
   function onClockState(): void {
@@ -241,20 +248,6 @@ export function createStudioTransport(options: StudioTransportOptions) {
     return ctx
   }
 
-  async function prepareMaster(
-    ctx: AudioContext,
-    spec: ChainSpec,
-    signal: AbortSignal,
-  ): Promise<number> {
-    await prepareStudioLiveMeter(ctx)
-    signal.throwIfAborted()
-    const [frames] = await measureLatencies([spec], ctx.sampleRate)
-    signal.throwIfAborted()
-    if (!Number.isSafeInteger(frames) || frames < 0)
-      throw new Error('Studio master timing could not be measured.')
-    return frames / ctx.sampleRate
-  }
-
   /** A build that missed its start still teaches the next warmup. */
   function learnWarmup(built: number | null): void {
     if (built !== null) buildSeconds = (performance.now() - built) / 1000
@@ -272,11 +265,7 @@ export function createStudioTransport(options: StudioTransportOptions) {
     latency: number,
     restartFrom: number,
   ): StudioRunTiming | null {
-    const warmup = Math.min(
-      MAX_WARMUP_SECONDS,
-      Math.max(MIN_WARMUP_SECONDS, buildSeconds * 2 + 0.04),
-    )
-    const earliest = ctx.currentTime + warmup + latency
+    const earliest = ctx.currentTime + runWarmupSeconds(buildSeconds) + latency
     if (held && seekTarget !== null)
       return seekTiming(held, plan.endFrame, seekTarget, earliest)
     if (held) {
@@ -348,6 +337,14 @@ export function createStudioTransport(options: StudioTransportOptions) {
       const ctx = await unlockContext(attempt.signal)
       observeSnapshot(project)
       const from = playableStudioFrom(project, assets, startFrame, repeat)
+      const resumed = handingOver
+        ? null
+        : kept.take(ctx, project, from, liveSettings())
+      if (resumed !== null) {
+        active = resumed
+        publish({ playing: true, pending: false, playheadFrame: from })
+        return true
+      }
       // An edit makes the measurement stale. Until the next one, a run
       // starts at the level heard: the held run's, or the song's last.
       const measured = master.startingGain(project, held?.measured ?? null)
@@ -355,7 +352,12 @@ export function createStudioTransport(options: StudioTransportOptions) {
       // A background warm-up does the same reads; wait for it, not around it.
       await warming
       attempt.signal.throwIfAborted()
-      const masterLatency = await prepareMaster(ctx, sound.full, attempt.signal)
+      const masterLatency = await prepareStudioMaster(
+        ctx,
+        sound.full,
+        attempt.signal,
+        measureLatencies,
+      )
       admitted = await firstThatFits(studioRunLayouts(from, repeat), (layout) =>
         admit(project, assets, ctx, sound.full, layout, attempt.signal),
       )
@@ -526,7 +528,7 @@ export function createStudioTransport(options: StudioTransportOptions) {
     if (run === held && seekTarget !== null)
       publish({ ...silence(), playing: false, pending: true })
     else {
-      pause()
+      pause(false, true)
       // The render clock is past the end; the speakers trail it by their
       // output path, which can be longer than the tail.
       publish({ playheadFrame: run.endFrame })
@@ -702,9 +704,12 @@ export function createStudioTransport(options: StudioTransportOptions) {
       for (const run of liveRuns())
         applySound(run, withDrafts(run.project, drafts))
     },
-    pause: () => pause(),
+    /** The newest run keeps its graph for Play, less long with the page hidden. */
+    pause: () => pause(false, true),
+    setPageHidden: (hidden: boolean) => kept.setPageHidden(hidden),
     stop() {
       pause()
+      kept.letGo()
       drafts.lanes.clear()
       drafts.macros.clear()
       publish({ playheadFrame: 0, error: null })
@@ -712,6 +717,7 @@ export function createStudioTransport(options: StudioTransportOptions) {
     },
     async releaseAudio(): Promise<void> {
       pause()
+      kept.letGo()
       // Export, Compare and auto-balance need the room a warm-up holds.
       warmAbort?.abort()
       await warming
@@ -724,15 +730,12 @@ export function createStudioTransport(options: StudioTransportOptions) {
       assets: readonly StudioAsset[],
     ): Promise<void> {
       observeSnapshot(project)
+      if (!wantsPlayback) kept.follow(project, liveSettings())
       if (!wantsPlayback || disposed) return
       if (
         active &&
         !preparing &&
-        playInPlace(active, project, {
-          drafts,
-          repeat,
-          masterGain: master.fresh(),
-        })
+        playInPlace(active, project, liveSettings())
       ) {
         // A run heard until its handover follows the mix too.
         for (const { from } of handoffs)
@@ -757,7 +760,7 @@ export function createStudioTransport(options: StudioTransportOptions) {
       const target = Math.min(frame, end)
       const token = ++restartGeneration
       if (!wantsPlayback || disposed || target >= end) {
-        pause()
+        pause(false, true)
         publish({ playheadFrame: target })
         return
       }
@@ -775,12 +778,14 @@ export function createStudioTransport(options: StudioTransportOptions) {
     },
     prepareToSuspend() {
       pause()
+      kept.settle()
       return retired.size ? RELEASE_MS : 0
     },
     getState: () => state,
     dispose() {
       if (disposed) return
       pause()
+      kept.dispose()
       disposed = true
       warmAbort?.abort()
       clearInterval(timer)
