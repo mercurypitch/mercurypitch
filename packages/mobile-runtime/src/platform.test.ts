@@ -173,6 +173,7 @@ describe('on the web', () => {
     ['hapticTap', (p: Platform) => p.hapticTap()],
     ['hapticSuccess', (p: Platform) => p.hapticSuccess()],
     ['hapticWarning', (p: Platform) => p.hapticWarning()],
+    ['hapticSeal', (p: Platform) => p.hapticSeal()],
     ['keepAwake', (p: Platform) => p.keepAwake(true)],
     ['holdPortrait', (p: Platform) => p.holdPortrait(true)],
     ['setStatusBar', (p: Platform) => p.setStatusBar('dark')],
@@ -247,6 +248,14 @@ describe('on a phone', () => {
     await platform.hapticTap()
 
     expect(haptics.impact).toHaveBeenCalledWith({ style: 'LIGHT' })
+  })
+
+  it('seals with the heaviest impact the device has', async () => {
+    const platform = await loadPlatform(true)
+
+    await platform.hapticSeal()
+
+    expect(haptics.impact).toHaveBeenCalledWith({ style: 'HEAVY' })
   })
 
   it.each([
