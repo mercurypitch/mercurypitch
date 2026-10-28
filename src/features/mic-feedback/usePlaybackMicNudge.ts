@@ -1,4 +1,5 @@
 import { createEffect } from 'solid-js'
+import { coachBusy } from '@/lib/coach-state'
 import { createPersistedSignal } from '@/lib/storage'
 import { removeNotification, showActionNotification, } from '@/stores/notifications-store'
 
@@ -30,13 +31,20 @@ export const [micPracticeOffered, setMicPracticeOffered] =
  * Fires once ever (persisted), only on a mic-relevant surface, and never when
  * the mic is already on. Accepting enables the mic right there; ignoring it
  * counts as declining and it does not come back.
+ *
+ * It never stands over Merc's bubble: while he has the screen (a tour, or the
+ * showcase) the offer waits, unspent, and one already up goes when he comes.
  */
 export function usePlaybackMicNudge(opts: PlaybackMicNudgeOptions): void {
+  // The offer once shown, so Merc can take it down if it is still up.
+  let offer: number | null = null
+
   createEffect(() => {
     if (!opts.isPlaying()) return
     if (!opts.isRelevantTab()) return
     if (opts.micActive()) return
     if (micPracticeOffered()) return
+    if (coachBusy()) return
 
     setMicPracticeOffered(true)
     const id = showActionNotification(
@@ -53,5 +61,13 @@ export function usePlaybackMicNudge(opts: PlaybackMicNudgeOptions): void {
       // default toast lifetime, but let it go quietly if ignored.
       { durationMs: 15_000 },
     )
+    offer = id
+  })
+
+  // Taken down, it stays spent: it has been seen.
+  createEffect(() => {
+    if (!coachBusy() || offer === null) return
+    removeNotification(offer)
+    offer = null
   })
 }
