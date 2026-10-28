@@ -354,10 +354,13 @@ export function createStudioTransport(options: StudioTransportOptions) {
       const ctx = await unlockContext(attempt.signal)
       observeSnapshot(project)
       const { from } = playableContent(project, assets, startFrame)
-      const measured: StudioMasterGain = {
-        gainDb: masterGain?.gainDb ?? 0,
-        safetyGainDb: masterGain?.safetyGainDb ?? 0,
-      }
+      // An edit makes the measurement stale. Until the next one, a run that
+      // takes over keeps the held run's, so the handover keeps the level.
+      const measured: StudioMasterGain = masterGain
+        ? { gainDb: masterGain.gainDb, safetyGainDb: masterGain.safetyGainDb }
+        : held
+          ? { ...held.measured }
+          : { gainDb: 0, safetyGainDb: 0 }
       const sound = resolveStudioSoundGraph(project, measured)
       // A background warm-up does the same reads; wait for it, not around it.
       await warming
