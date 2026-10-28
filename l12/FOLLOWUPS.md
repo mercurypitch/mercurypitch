@@ -10,3 +10,8 @@
 - Compact layout at 844 x 390: chips 440 px, buttons get 330 px beside them; the page checks its step buttons fit.
 - Tab order: spec says buttons, switches, chips; the layout draws chips first. The page decides.
 - Higher voice chords at the loop's own pitch: FACTS 73 says nothing about the octave; confirm with the spec owner or the coach.
+
+## From page run 2's review (28 Oct)
+- In G, the halo and the room lines round F♯'s corner cross the kit's "F♯" name beside its bead (page-2/step2-G-390x844.png). Legible; a painter change: a plate under a corner's name, or the edges stopping short of it. Run 3, with the tune toy.
+- The names switch shows on Step 3 only, and its choice holds on Steps 1, 2, 4 and 5 (spec; Lesson 10 the same). If the owner or the coach finds Do-re-mi stuck on Step 4 with no switch, show it on Steps 3 and 4 (data-part "3 4") and re-measure the stage fit.
+- page-dom fixtures: the Step 3 tab-order spec reads the slide button by its text; its accessible name is now pinned in the slide test.
