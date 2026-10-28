@@ -1872,6 +1872,60 @@ describe('a song the studio hands back', () => {
   })
 })
 
+describe('a song First note hands over to sing on', () => {
+  // "Sing on in Karaoke" (owner, 28 Oct 2026): the song, from a breath
+  // before where the singer came in, playing.
+  it('starts where the singer came in, playing, as the room arrives', async () => {
+    requestKaraokeSong(JOSEPHINE.sessionId, { seekSec: 12.5 })
+
+    await mountRoom()
+
+    expect(current().sessionId).toBe(JOSEPHINE.sessionId)
+    expect(current().initialSeekSec).toBe(12.5)
+    expect(current().autoPlay).toBe(true)
+    expect(karaokeSongRequest()).toBeNull()
+  })
+
+  it('is the answer before a song parked on the way out', async () => {
+    const unmount = await mountRoom()
+    current().setLoading(false)
+    current().setPlaying(true)
+    current().setElapsed(31)
+    controls().park()
+    unmount()
+
+    requestKaraokeSong(DARK.sessionId, { seekSec: 40 })
+    await mountRoom()
+
+    expect(current().sessionId).toBe(DARK.sessionId)
+    expect(current().initialSeekSec).toBe(40)
+    expect(current().autoPlay).toBe(true)
+  })
+
+  it('goes on the stage of the room that is already here, at its place', async () => {
+    await mountRoom()
+
+    requestKaraokeSong(DARK.sessionId, { seekSec: 22 })
+
+    await vi.waitFor(() => {
+      expect(current().sessionId).toBe(DARK.sessionId)
+    })
+    expect(current().initialSeekSec).toBe(22)
+    expect(current().autoPlay).toBe(true)
+  })
+
+  it('leaves an arrival as it would be when the room does not have the song', async () => {
+    requestKaraokeSong('a-song-the-room-cannot-play', { seekSec: 22 })
+
+    await mountRoom()
+
+    expect(current().sessionId).not.toBe('a-song-the-room-cannot-play')
+    expect(current().initialSeekSec).toBeUndefined()
+    expect(current().autoPlay).not.toBe(true)
+    expect(karaokeSongRequest()).toBeNull()
+  })
+})
+
 describe('the songs, asked for from First note', () => {
   // "Sing your own songs", for a singer with none split yet: the library,
   // where Import is.

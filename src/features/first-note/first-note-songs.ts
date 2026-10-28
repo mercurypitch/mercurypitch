@@ -173,6 +173,24 @@ export function planRun(
   return planned
 }
 
+/**
+ * "Sing on in Karaoke" starts the whole song this far ahead of an entry
+ * whose lead-in has no beats to count (owner, 28 Oct 2026), s.
+ */
+export const SING_ON_LEAD_SEC = 3
+
+/**
+ * Where the Karaoke room starts a song the singer sings on with: a breath
+ * before the entry, on the first of the four beats the room counted where
+ * the song has them, so they come in on the note again with the rest of
+ * the song after it. Seconds on the song's clock.
+ */
+export function singOnFrom(entry: FirstNoteEntry): number {
+  const from =
+    entry.beats.length > 0 ? entry.beats[0] : entry.at - SING_ON_LEAD_SEC
+  return Math.max(0, Number(from.toFixed(2)))
+}
+
 /** The songs of a run, each once, in the order the run first plays them. */
 export function songsOfRun(rounds: readonly FirstNoteRound[]): FirstNoteSong[] {
   const songs: FirstNoteSong[] = []

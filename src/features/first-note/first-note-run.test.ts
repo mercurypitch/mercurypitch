@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import type { RoundOutcome } from './first-note-machine'
-import { foundLine, keepFirstNoteRun, resultMoment, summarizeRun, } from './first-note-run'
+import { foundLine, keepFirstNoteRun, resultMoment, resultsBySong, summarizeRun, } from './first-note-run'
 import type { FirstNoteRound } from './first-note-songs'
 import { FIRST_NOTE_SONGS, planRun } from './first-note-songs'
 
@@ -110,6 +110,19 @@ describe('a finished First note run', () => {
     })
     expect(recorded.calls).toEqual([])
     expect(firstNoteBest('singer')).toBeNull()
+  })
+
+  it('tells each song apart: its entries on the note, and where it began', () => {
+    // The run plays a song's two entries together, in its own order.
+    const outcomes = ROUNDS.map((_, i) => round(i, i % 2 === 0 ? 5 : 80, true))
+    const songs = resultsBySong(outcomes)
+    expect(songs).toHaveLength(3)
+    for (const [i, result] of songs.entries()) {
+      expect(result.song).toBe(ROUNDS[i * 2].song)
+      expect(result.rounds).toBe(2)
+      expect(result.onNote).toBe(1)
+      expect(result.first).toBe(ROUNDS[i * 2].entry)
+    }
   })
 
   it('gives Merc the moment the run earned', () => {

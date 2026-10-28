@@ -9,32 +9,37 @@
 // is at rest (first-note-own-songs.ts). In each entry, the song's band
 // plays its lead-in, counting down its last four beats, and stops where
 // the singer comes in; the singer sings that first note. Their entry is
-// judged by ear:
-// at Singer the note's line shows only once they have come in, and the
-// chip says whether they came in on the note. Then the voice draws its
-// trail against the line and lands when it holds in the band of light
-// around it, and the song carries on from there with its singer back in.
-// After a miss, Merc sings the note before the singer comes in.
+// judged by ear: at Singer the note's line shows only once they have come
+// in, and the chip says whether they came in on the note. Then the voice
+// draws its trail against the line and lands when it holds in the band of
+// light around it, and the song carries on from there with its singer
+// back in. After a miss, Merc sings the note before the singer comes in.
 //
 // The skill is the one a karaoke singer needs when an intro ends: coming
 // in on the right note, from the band alone. "Show the words", off by
 // default, puts the words of the line they come in on over the stage while
 // the band counts in and in their turn (owner, 28 Oct 2026).
 //
+// "Sing on in Karaoke" (owner, 28 Oct 2026) takes the singer from a
+// landing, or from a song's row at the result, to the whole song in the
+// Karaoke room, from a breath before where they came in. Only the shell can
+// change the tab, so the native screen hands the way in (`onSingOn`).
+//
 // The page around the world is the room kit's shell (RoomShell.tsx): the
 // root, the chip or the result in the head, the level in the bar, Merc's
 // line in his bubble, the mic or Again and Done in the dock, the live
 // region. This room brings its world (StageScene.tsx), Merc on the boards,
 // its words, its stylesheet and its test ids (`first-note-`), and what only
-// it has: the song and its credit under the chip, and "Hear the band
-// again" over the mic in the singer's turn.
+// it has: the song and its credit under the chip, "Hear the band again"
+// over the mic in the singer's turn, and "Sing on in Karaoke" there after
+// a landing.
 //
 // No "How it works" demo yet: Merc's intro line says the task, and
 // Learning shows the line from the start.
 
 import type { JSX } from 'solid-js'
-import { createEffect, createMemo, createSignal, onCleanup, onMount, Show, untrack, } from 'solid-js'
-import { Volume2 } from '@/components/icons'
+import { createEffect, createMemo, createSignal, For, onCleanup, onMount, Show, untrack, } from 'solid-js'
+import { SingMic, Volume2 } from '@/components/icons'
 import { MERC_FEET, MercView } from '@/components/room-kit/MercView'
 import type { MicState } from '@/components/room-kit/mic-state'
 import { micLabel as labelFor } from '@/components/room-kit/mic-state'
@@ -49,8 +54,10 @@ import { bandHalfHeight, layoutStage, RESTING_LINE_SHARE, } from './first-note-l
 import type { FirstNotePhase } from './first-note-machine'
 import { isRunPhase } from './first-note-machine'
 import { readOwnSongs, stopReadingOwnSongs, waitingOwnSongs, } from './first-note-own-songs'
-import type { FirstNoteSummary } from './first-note-run'
-import { foundLine, ON_NOTE_DETAIL } from './first-note-run'
+import type { FirstNoteSummary, SongResult } from './first-note-run'
+import { foundLine, ON_NOTE_DETAIL, resultsBySong } from './first-note-run'
+import type { FirstNoteEntry, FirstNoteSong } from './first-note-songs'
+import { singOnFrom } from './first-note-songs'
 import { FirstNoteLevel } from './FirstNoteLevel'
 import styles from './FirstNoteRoom.module.css'
 import { FirstNoteSongsButton, FirstNoteSongsSheet } from './FirstNoteSongs'
@@ -75,6 +82,12 @@ export interface FirstNoteRoomProps {
    * change the tab). Absent, the Songs sheet says how and offers no button.
    */
   onOwnSongs?: () => void
+  /**
+   * "Sing on in Karaoke": the whole song in the Karaoke room, from `seconds`
+   * into it, a breath before where the singer came in (owner, 28 Oct 2026).
+   * The native shell's, as `onOwnSongs` is; absent, the room offers none.
+   */
+  onSingOn?: (sessionId: string, seconds: number) => void
 }
 
 /** A stage before its first measure: a phone's size, so nothing is zero. */
@@ -144,6 +157,15 @@ export function FirstNoteRoom(props: FirstNoteRoomProps): JSX.Element {
     untrack(readOwnSongs)
   })
   onCleanup(stopReadingOwnSongs)
+
+  /** The song, whole, in the Karaoke room, from a breath before `entry`. */
+  const singOn = (song: FirstNoteSong, entry: FirstNoteEntry): void => {
+    const go = props.onSingOn
+    if (go === undefined) return
+    // A run in flight is dropped, as Back drops it: the singer chose to go.
+    if (isRunPhase(phase())) room.stop()
+    go(song.sessionId, singOnFrom(entry))
+  }
 
   let stageEl: HTMLDivElement | undefined
   const size = createMeasure(
@@ -278,7 +300,12 @@ export function FirstNoteRoom(props: FirstNoteRoomProps): JSX.Element {
 
       <ShellHead shell={shell} summary={room.summary} chip={room.chip()}>
         {(summary) => (
-          <FirstResult summary={summary()} level={room.resultLevel()} />
+          <FirstResult
+            summary={summary()}
+            level={room.resultLevel()}
+            songs={resultsBySong(room.state().outcomes)}
+            onSingOn={props.onSingOn === undefined ? undefined : singOn}
+          />
         )}
       </ShellHead>
 
@@ -353,6 +380,25 @@ export function FirstNoteRoom(props: FirstNoteRoomProps): JSX.Element {
                 <span>Hear the band again</span>
               </button>
             </Show>
+            <Show
+              when={
+                props.onSingOn !== undefined && phase() === 'landed'
+                  ? room.round()
+                  : null
+              }
+            >
+              {(round) => (
+                <button
+                  type="button"
+                  class={styles.hear}
+                  onClick={() => singOn(round().song, round().entry)}
+                  data-testid="first-note-sing-on"
+                >
+                  <SingMic />
+                  <span>Sing on in Karaoke</span>
+                </button>
+              )}
+            </Show>
           </>
         }
       />
@@ -369,9 +415,17 @@ export function FirstNoteRoom(props: FirstNoteRoomProps): JSX.Element {
 interface FirstResultProps {
   summary: FirstNoteSummary
   level: string
+  /** Each song of the run, and how its entries went. */
+  songs: readonly SongResult[]
+  /** Sing a song on in the Karaoke room; absent where the shell has none. */
+  onSingOn?: (song: FirstNoteSong, entry: FirstNoteEntry) => void
 }
 
-/** The result: entries on the note, then notes found, and at which level. */
+/**
+ * The result: entries on the note, then notes found, and at which level;
+ * under them each song, how its entries went, and "Sing on" for the whole
+ * song from where the singer first came in (the Ear rooms canvas, C4).
+ */
 function FirstResult(props: FirstResultProps): JSX.Element {
   return (
     <div class={styles.resultHead}>
@@ -384,6 +438,38 @@ function FirstResult(props: FirstResultProps): JSX.Element {
       <p class={styles.levelNote} data-testid="first-note-result-level">
         {foundLine(props.summary, props.level)}
       </p>
+      <Show when={props.songs.length > 0}>
+        <ul
+          class={styles.bySong}
+          aria-label="By song"
+          data-testid="first-note-by-song"
+        >
+          <For each={props.songs}>
+            {(row) => (
+              <li class={styles.bySongRow}>
+                <span class={styles.bySongTitle}>{row.song.title}</span>
+                <span class={styles.bySongCount}>
+                  {`${row.onNote} of ${row.rounds}`}
+                </span>
+                <Show when={props.onSingOn}>
+                  {(go) => (
+                    <button
+                      type="button"
+                      class={styles.singOn}
+                      aria-label={`Sing ${row.song.title} on in Karaoke, from where you came in`}
+                      onClick={() => go()(row.song, row.first)}
+                      data-testid="first-note-result-sing-on"
+                    >
+                      <SingMic />
+                      <span>Sing on</span>
+                    </button>
+                  )}
+                </Show>
+              </li>
+            )}
+          </For>
+        </ul>
+      </Show>
     </div>
   )
 }

@@ -10,7 +10,7 @@ import { resetFirstNoteChoicesForTests } from './first-note-choices'
 import { resetOwnSongsForTests, setOwnSongReaderForTests, } from './first-note-own-songs'
 import { BETWEEN_ROUNDS_MS, FIRST_NOTE_ROUNDS, MERC_GAP_SECONDS, MERC_NOTE_SECONDS, } from './first-note-rules'
 import type { FirstNoteEntry, FirstNoteSong } from './first-note-songs'
-import { FIRST_NOTE_SONGS } from './first-note-songs'
+import { FIRST_NOTE_SONGS, singOnFrom } from './first-note-songs'
 
 // ── The singer's own songs, as the Karaoke room's library lists them ──
 
@@ -118,6 +118,7 @@ const songs = vi.hoisted(() => ({
   leadIns: [] as {
     slug: string
     midi: number
+    at: number
     vocal: string
     words: string
   }[],
@@ -153,6 +154,7 @@ vi.mock('./song-player', () => ({
       songs.leadIns.push({
         slug: song.slug,
         midi: entry.midi,
+        at: entry.at,
         vocal: song.stems.vocal,
         words: entry.words ?? '',
       })
@@ -725,6 +727,76 @@ describe('First note', () => {
       fireEvent.click(screen.getByTestId('first-note-songs'))
       expect(within(sheet()).getByTestId('first-note-no-songs')).toBeTruthy()
       expect(screen.queryByTestId('first-note-own-songs')).toBeNull()
+    })
+  })
+
+  describe('Sing on in Karaoke', () => {
+    /** The example song and entry a lead-in played. */
+    const played = (
+      lead: (typeof songs.leadIns)[number],
+    ): { song: FirstNoteSong; entry: FirstNoteEntry } => {
+      const song = FIRST_NOTE_SONGS.find((one) => one.slug === lead.slug)
+      const entry = song?.entries.find((one) => one.at === lead.at)
+      if (song === undefined || entry === undefined) {
+        throw new Error(`No entry at ${lead.at} in ${lead.slug}`)
+      }
+      return { song, entry }
+    }
+
+    it('follows a landing, with the song from a breath before the entry', async () => {
+      const onSingOn = vi.fn()
+      render(() => (
+        <FirstNoteRoom onDone={() => undefined} onSingOn={onSingOn} />
+      ))
+      await startRun()
+      await toTurn()
+      expect(screen.queryByTestId('first-note-sing-on')).toBeNull()
+      singing(target())
+      run(600)
+      expect(phase()).toBe('landed')
+
+      fireEvent.click(screen.getByTestId('first-note-sing-on'))
+      const { song, entry } = played(songs.leadIns[0])
+      expect(onSingOn).toHaveBeenCalledWith(song.sessionId, singOnFrom(entry))
+      // The run is dropped on the way, as Back drops it.
+      expect(phase()).toBe('intro')
+      expect(recorded.calls).toEqual([])
+      expect(fake.released).toBeGreaterThan(0)
+    })
+
+    it('is offered for each song at the result, from where the singer first came in', async () => {
+      const onSingOn = vi.fn()
+      render(() => (
+        <FirstNoteRoom onDone={() => undefined} onSingOn={onSingOn} />
+      ))
+      await startRun()
+      for (let round = 0; round < FIRST_NOTE_ROUNDS; round++) {
+        await toTurn()
+        singing(target())
+        run(600)
+        await toNextEntry()
+      }
+      expect(phase()).toBe('result')
+
+      const rows = within(
+        screen.getByTestId('first-note-by-song'),
+      ).getAllByRole('listitem')
+      expect(rows).toHaveLength(3)
+      const { song, entry } = played(songs.leadIns[0])
+      expect(rows[0].textContent).toContain(song.title)
+      expect(rows[0].textContent).toContain('2 of 2')
+      fireEvent.click(within(rows[0]).getByTestId('first-note-result-sing-on'))
+      expect(onSingOn).toHaveBeenCalledWith(song.sessionId, singOnFrom(entry))
+    })
+
+    it('is not offered where the shell has no way to the Karaoke room', async () => {
+      render(() => <FirstNoteRoom onDone={() => undefined} />)
+      await startRun()
+      await toTurn()
+      singing(target())
+      run(600)
+      expect(phase()).toBe('landed')
+      expect(screen.queryByTestId('first-note-sing-on')).toBeNull()
     })
   })
 

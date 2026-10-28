@@ -183,9 +183,16 @@ export function takeParkedKaraokeSong(): ParkedSong | null {
 /**
  * A song the studio handed back (plan S8 §11): the room puts it on the
  * stage, playing. One request at a time; the room takes it once.
+ *
+ * First note hands one over too ("Sing on in Karaoke", owner, 28 Oct 2026),
+ * with the place the singer came in on (`seekSec`): the room starts the
+ * song there, playing, even on an arrival, which otherwise cues a song
+ * paused at its start.
  */
 export interface KaraokeSongRequest {
   readonly sessionId: string
+  /** Where to start, s into the song; absent for its start. */
+  readonly seekSec?: number
 }
 
 const [songRequest, setSongRequest] = createSignal<KaraokeSongRequest | null>(
@@ -199,9 +206,16 @@ export const karaokeSongRequest = songRequest
  * Hand a song to the room. It is also the song on the stage from here on,
  * so a room that is not on the screen arrives on it.
  */
-export function requestKaraokeSong(sessionId: string): void {
+export function requestKaraokeSong(
+  sessionId: string,
+  place: { readonly seekSec?: number } = {},
+): void {
   setStagedSong(sessionId)
-  setSongRequest({ sessionId })
+  setSongRequest(
+    place.seekSec === undefined
+      ? { sessionId }
+      : { sessionId, seekSec: place.seekSec },
+  )
 }
 
 /** The request, once: taking it clears it. */

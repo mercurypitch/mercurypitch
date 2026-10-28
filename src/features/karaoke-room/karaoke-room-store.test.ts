@@ -93,6 +93,22 @@ describe('a song the studio hands back', () => {
   })
 })
 
+describe('a song First note hands over to sing on', () => {
+  it('carries the place the singer came in on', async () => {
+    const store = await freshStore()
+
+    store.requestKaraokeSong('mine', { seekSec: 12.5 })
+
+    expect(store.karaokeStagedSong()).toBe('mine')
+    expect(store.takeKaraokeSongRequest()).toEqual({
+      sessionId: 'mine',
+      seekSec: 12.5,
+    })
+    store.requestKaraokeSong('mine')
+    expect(store.takeKaraokeSongRequest()).toEqual({ sessionId: 'mine' })
+  })
+})
+
 describe('the songs asked for from outside the room', () => {
   it('are asked for once', async () => {
     const store = await freshStore()

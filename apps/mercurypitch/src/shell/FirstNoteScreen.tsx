@@ -16,9 +16,13 @@
 // so the room's feature reaches into no other feature. Until his set has
 // loaded the call goes to the synth "ooh", as Echo's does.
 //
-// The way out to the Karaoke room is the screen's too, since only the shell
-// can change the tab: "Sing your own songs", for a singer with none split
-// yet, opens the room's songs, where Import is, the way to Cloud.
+// The two ways out to the Karaoke room are the screen's too, since only
+// the shell can change the tab (owner, 28 Oct 2026):
+//
+//   Sing on in Karaoke   the song on the Karaoke room's stage, playing from
+//                        the place the singer came in on
+//   Sing your own songs  for a singer with none split yet: the room's
+//                        songs, where Import is, the way to Cloud
 //
 // Opening is the choice: the screen records First note as the last
 // exercise the moment it mounts, as LongNoteScreen does for Long note.
@@ -27,7 +31,7 @@ import type { JSX } from 'solid-js'
 import { onMount } from 'solid-js'
 import { MERC_CALL } from '@/features/echo/merc-sampler'
 import { FirstNoteRoom } from '@/features/first-note/FirstNoteRoom'
-import { requestKaraokeLibrary } from '@/features/karaoke-room/karaoke-room-store'
+import { requestKaraokeLibrary, requestKaraokeSong, } from '@/features/karaoke-room/karaoke-room-store'
 import { rememberLastExercise } from '@/features/premium-exercises/last-exercise'
 import { TAB_KARAOKE } from '@/features/tabs/constants'
 import { EXERCISE_FIRST_NOTE_STAGE } from '@/lib/domain/exercise-contracts'
@@ -40,6 +44,10 @@ export function FirstNoteScreen(): JSX.Element {
     <FirstNoteRoom
       onDone={popScreen}
       voice={MERC_CALL}
+      onSingOn={(sessionId, seconds) => {
+        requestKaraokeSong(sessionId, { seekSec: seconds })
+        goToTab(TAB_KARAOKE)
+      }}
       onOwnSongs={() => {
         requestKaraokeLibrary()
         goToTab(TAB_KARAOKE)
