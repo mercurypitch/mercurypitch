@@ -35,6 +35,7 @@ FILES=(
   rebase-1026/bodies/1213-new.md rebase-1026/bodies/1214-new.md
   train/train.sh train/tips.txt train/wordmerged.txt train/resolve1214.py train/step.sh rebase-1026/bodies/1212-final.md rebase-1026/bodies/1213-final.md
   l10/BRIEF-page-6.md l10/pr/BODY.md l10/pr/BODY.final.md l10/pr/fill.py l12/BRIEF-page-1.md l12/FOLLOWUPS.md
+  r2fix/karaoke-fetch-retry.patch r2fix/COMMIT-MSG.txt coachfoot/PR-BODY.md release24/notes3/l12-bullet.md
 )
 
 tmp=$(mktemp -d "$S/.notes-XXXXXX")

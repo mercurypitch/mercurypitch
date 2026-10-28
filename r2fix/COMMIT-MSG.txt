@@ -1,0 +1,26 @@
+fix(native): Try each example stem again when its download stalls
+
+Every native build fetches the Karaoke room's six example stems from the
+public R2 bucket (sync-native-assets.mjs calls ensureKaraokeExamples), and
+each was fetched once, with no time limit, its body read outside any catch.
+On 28 October the bucket hung some transfers for minutes and then dropped
+them: on #1242 the PR gate's Mercury Pitch build waited 5 min 41 s on the
+first stem and failed with `TypeError: terminated`, and the iOS and Android
+builds 11 and 20 min, while iOS Release, in the same run, fetched all six in
+about a minute.
+
+Each file now gets three tries, 5 and then 10 s apart. A try is abandoned
+once 30 s pass with nothing arriving, before the answer or between any two
+parts of its body, so a slow transfer that is still moving is never cut off.
+A 5xx or a 429 is tried again; any other answer that is not ok stops at
+once, as before. Each failed try is logged, and the build's error names the
+tries. The pin check and the `.part` file are as they were.
+
+Tests, six new in karaoke-examples.test.ts: a fetch that fails and then
+succeeds; a body that drops part-way; a 503 and then the file, and a 404
+tried once; three failures, named, with nothing written; and, against a
+server on the machine, a transfer that stalls after two bytes is abandoned
+and tried again, while one that sends a byte every 100 ms under a 300 ms
+limit is not cut off. With one try, with no reset per part, with no signal,
+with a 404 tried again, or with a body error thrown past the retry, at least
+one of them fails.

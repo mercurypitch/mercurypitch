@@ -1,0 +1,358 @@
+diff --git a/apps/mercurypitch/scripts/fetch-karaoke-examples.mjs b/apps/mercurypitch/scripts/fetch-karaoke-examples.mjs
+index a6edf5487..bb70313fd 100644
+--- a/apps/mercurypitch/scripts/fetch-karaoke-examples.mjs
++++ b/apps/mercurypitch/scripts/fetch-karaoke-examples.mjs
+@@ -19,6 +19,12 @@
+ // `ensureKaraokeExamples()` before it stages the bundle, so the Vite build
+ // (the PR gate, CI's native builds, a local `cap sync`) fetches on first use
+ // and verifies every time after that.
++//
++// The public bucket sometimes stalls a transfer for minutes and then drops
++// it, and one dropped stem used to fail the whole build. So each file gets
++// three tries, a few seconds apart, and a try is abandoned once 30 seconds
++// pass with nothing arriving. A server error is tried again; an answer that
++// refuses the file (a 404 or a 403) stops at once.
+ 
+ import { createHash } from 'node:crypto'
+ import { existsSync, mkdirSync, readFileSync, renameSync, rmSync, writeFileSync, } from 'node:fs'
+@@ -83,6 +89,92 @@ export const KARAOKE_EXAMPLE_PINS = [
+   },
+ ]
+ 
++/** How many times a file is tried before the build stops. */
++const TRIES = 3
++
++/** How long a try may go with nothing arriving before it is abandoned, ms. */
++const STALL_MS = 30_000
++
++/** The wait after a failed try, this many ms times the tries so far. */
++const BACKOFF_MS = 5_000
++
++/** @param {number} ms */
++const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms))
++
++/** @param {unknown} error */
++const messageOf = (error) =>
++  error instanceof Error ? error.message : String(error)
++
++/** Whether an answer is worth asking for again: the server failing, or asking for a pause. */
++const retryable = (/** @type {number} */ status) =>
++  status >= 500 || status === 429
++
++/**
++ * One try at a file, abandoned once `stallMs` pass with nothing arriving:
++ * before the answer, or between any two parts of its body. A transfer that
++ * is slow but moving is never cut off.
++ *
++ * @param {string} url
++ * @param {typeof fetch} fetchImpl
++ * @param {number} stallMs
++ * @returns {Promise<{ bytes: Uint8Array } | { status: number }>}
++ */
++async function fetchOnce(url, fetchImpl, stallMs) {
++  const stall = new AbortController()
++  /** @type {ReturnType<typeof setTimeout> | undefined} */
++  let timer
++  const arrived = () => {
++    clearTimeout(timer)
++    timer = setTimeout(
++      () => stall.abort(new Error(`nothing arrived for ${stallMs / 1000} s`)),
++      stallMs,
++    )
++  }
++  arrived()
++  try {
++    const response = await fetchImpl(url, { signal: stall.signal })
++    if (!response.ok) return { status: response.status }
++    /** @type {Uint8Array[]} */
++    const parts = []
++    for await (const part of response.body ?? []) {
++      arrived()
++      parts.push(part)
++    }
++    return { bytes: Buffer.concat(parts) }
++  } finally {
++    clearTimeout(timer)
++  }
++}
++
++/**
++ * One pinned file's bytes, in up to `TRIES` tries.
++ *
++ * @param {KaraokeExamplePin} pin
++ * @param {{ fetchImpl: typeof fetch, wait: (ms: number) => Promise<unknown>, stallMs: number, log: (line: string) => void }} how
++ * @returns {Promise<{ bytes: Uint8Array } | { status: number, tries: number } | { error: unknown, tries: number }>}
++ */
++async function download(pin, { fetchImpl, wait, stallMs, log }) {
++  for (let tries = 1; ; tries++) {
++    /** @type {{ status: number, tries: number } | { error: unknown, tries: number }} */
++    let failed
++    try {
++      const got = await fetchOnce(pin.url, fetchImpl, stallMs)
++      if ('bytes' in got) return got
++      failed = { status: got.status, tries }
++      if (!retryable(got.status)) return failed
++    } catch (error) {
++      failed = { error, tries }
++    }
++    if (tries === TRIES) return failed
++    const why =
++      'status' in failed ? `answered ${failed.status}` : messageOf(failed.error)
++    log(
++      `[karaoke-examples] ${pin.path}: try ${tries} of ${TRIES} failed (${why}); trying again`,
++    )
++    await wait(tries * BACKOFF_MS)
++  }
++}
++
+ /** @param {Uint8Array} bytes */
+ function sha256Of(bytes) {
+   return createHash('sha256').update(bytes).digest('hex')
+@@ -112,6 +204,10 @@ function matches(path, pin) {
+  * @param {typeof fetch} [options.fetchImpl]
+  * @param {readonly KaraokeExamplePin[]} [options.pins]
+  * @param {(line: string) => void} [options.log]
++ * @param {(ms: number) => Promise<unknown>} [options.wait] The pause between
++ *   tries (tests pass one that does not wait).
++ * @param {number} [options.stallMs] How long a try may go with nothing
++ *   arriving, ms.
+  * @returns {Promise<{ fetched: string[], kept: string[] }>}
+  */
+ export async function ensureKaraokeExamples(options = {}) {
+@@ -119,6 +215,8 @@ export async function ensureKaraokeExamples(options = {}) {
+   const fetchImpl = options.fetchImpl ?? fetch
+   const pins = options.pins ?? KARAOKE_EXAMPLE_PINS
+   const log = options.log ?? (() => undefined)
++  const wait = options.wait ?? sleep
++  const stallMs = options.stallMs ?? STALL_MS
+   /** @type {string[]} */
+   const fetched = []
+   /** @type {string[]} */
+@@ -131,20 +229,18 @@ export async function ensureKaraokeExamples(options = {}) {
+       continue
+     }
+     log(`[karaoke-examples] fetching ${pin.path}`)
+-    let response
+-    try {
+-      response = await fetchImpl(pin.url)
+-    } catch (error) {
++    const got = await download(pin, { fetchImpl, wait, stallMs, log })
++    if ('error' in got) {
+       throw new Error(
+-        `[karaoke-examples] ${pin.path}: could not reach ${pin.url} (${error instanceof Error ? error.message : String(error)}). The native build ships the example songs and fetches them once; it needs the network the first time.`,
++        `[karaoke-examples] ${pin.path}: could not fetch ${pin.url} in ${got.tries} tries (${messageOf(got.error)}). The native build ships the example songs and fetches them once; it needs the network the first time.`,
+       )
+     }
+-    if (!response.ok) {
++    if ('status' in got) {
+       throw new Error(
+-        `[karaoke-examples] ${pin.path}: ${pin.url} answered ${response.status}.`,
++        `[karaoke-examples] ${pin.path}: ${pin.url} answered ${got.status}${got.tries > 1 ? ` on try ${got.tries} of ${TRIES}` : ''}.`,
+       )
+     }
+-    const bytes = new Uint8Array(await response.arrayBuffer())
++    const { bytes } = got
+     const hash = sha256Of(bytes)
+     if (bytes.byteLength !== pin.bytes || hash !== pin.sha256) {
+       throw new Error(
+diff --git a/apps/mercurypitch/src/karaoke-examples.test.ts b/apps/mercurypitch/src/karaoke-examples.test.ts
+index 8bda867b9..5c0ea57da 100644
+--- a/apps/mercurypitch/src/karaoke-examples.test.ts
++++ b/apps/mercurypitch/src/karaoke-examples.test.ts
+@@ -12,6 +12,9 @@
+ 
+ import { createHash } from 'node:crypto'
+ import { existsSync, mkdirSync, mkdtempSync, readFileSync, writeFileSync, } from 'node:fs'
++import type { ServerResponse } from 'node:http'
++import { createServer } from 'node:http'
++import type { AddressInfo } from 'node:net'
+ import { tmpdir } from 'node:os'
+ import { join } from 'node:path'
+ import { describe, expect, it, vi } from 'vitest'
+@@ -220,6 +223,186 @@ describe('fetching them', () => {
+     const dir = mkdtempSync(join(tmpdir(), 'mp-examples-'))
+     expect(checkKaraokeExamples(dir, [pin])).toEqual([pin.path])
+   })
++
++  const noWait = () => vi.fn(async () => Promise.resolve())
++
++  it('tries a file again when its fetch fails, a few seconds later, and writes it', async () => {
++    const dir = mkdtempSync(join(tmpdir(), 'mp-examples-'))
++    const fetchImpl = vi
++      .fn()
++      .mockRejectedValueOnce(new TypeError('fetch failed'))
++      .mockResolvedValueOnce(new Response(bytes, { status: 200 }))
++    const wait = noWait()
++    const lines: string[] = []
++    const result = (await ensureKaraokeExamples({
++      root: dir,
++      pins: [pin],
++      fetchImpl,
++      wait,
++      log: (line: string) => lines.push(line),
++    })) as { fetched: string[]; kept: string[] }
++    expect(result.fetched).toEqual([pin.path])
++    expect(fetchImpl).toHaveBeenCalledTimes(2)
++    expect(wait.mock.calls).toEqual([[5000]])
++    expect(lines).toContain(
++      `[karaoke-examples] ${pin.path}: try 1 of 3 failed (fetch failed); trying again`,
++    )
++    expect([...readFileSync(join(dir, pin.path))]).toEqual([...bytes])
++  })
++
++  it('tries a file again when its transfer drops part-way', async () => {
++    const dir = mkdtempSync(join(tmpdir(), 'mp-examples-'))
++    const dropped = new ReadableStream<Uint8Array>({
++      start(controller) {
++        controller.enqueue(bytes.subarray(0, 2))
++        controller.error(new TypeError('terminated'))
++      },
++    })
++    const fetchImpl = vi
++      .fn()
++      .mockResolvedValueOnce(new Response(dropped, { status: 200 }))
++      .mockResolvedValueOnce(new Response(bytes, { status: 200 }))
++    const result = (await ensureKaraokeExamples({
++      root: dir,
++      pins: [pin],
++      fetchImpl,
++      wait: noWait(),
++    })) as { fetched: string[]; kept: string[] }
++    expect(result.fetched).toEqual([pin.path])
++    expect(fetchImpl).toHaveBeenCalledTimes(2)
++  })
++
++  it('tries a file again when the server fails, but not when it refuses the file', async () => {
++    const busy = vi
++      .fn()
++      .mockResolvedValueOnce(new Response(null, { status: 503 }))
++      .mockResolvedValueOnce(new Response(bytes, { status: 200 }))
++    const refused = vi
++      .fn()
++      .mockResolvedValue(new Response(null, { status: 404 }))
++    const wait = noWait()
++    const fetched = (await ensureKaraokeExamples({
++      root: mkdtempSync(join(tmpdir(), 'mp-examples-')),
++      pins: [pin],
++      fetchImpl: busy,
++      wait,
++    })) as { fetched: string[]; kept: string[] }
++    expect(fetched.fetched).toEqual([pin.path])
++    expect(busy).toHaveBeenCalledTimes(2)
++    await expect(
++      ensureKaraokeExamples({
++        root: mkdtempSync(join(tmpdir(), 'mp-examples-')),
++        pins: [pin],
++        fetchImpl: refused,
++        wait,
++      }),
++    ).rejects.toThrow(/answered 404\.$/u)
++    expect(refused).toHaveBeenCalledTimes(1)
++    expect(wait).toHaveBeenCalledTimes(1)
++  })
++
++  it('stops after three tries, saying so, and writes nothing', async () => {
++    const dir = mkdtempSync(join(tmpdir(), 'mp-examples-'))
++    const unreachable = vi.fn().mockRejectedValue(new TypeError('fetch failed'))
++    const failing = vi
++      .fn()
++      .mockResolvedValue(new Response(null, { status: 503 }))
++    const wait = noWait()
++    await expect(
++      ensureKaraokeExamples({
++        root: dir,
++        pins: [pin],
++        fetchImpl: unreachable,
++        wait,
++      }),
++    ).rejects.toThrow(/could not fetch \S+ in 3 tries \(fetch failed\)/u)
++    expect(unreachable).toHaveBeenCalledTimes(3)
++    expect(wait.mock.calls).toEqual([[5000], [10000]])
++    await expect(
++      ensureKaraokeExamples({
++        root: dir,
++        pins: [pin],
++        fetchImpl: failing,
++        wait,
++      }),
++    ).rejects.toThrow(/answered 503 on try 3 of 3\.$/u)
++    expect(failing).toHaveBeenCalledTimes(3)
++    expect(existsSync(join(dir, pin.path))).toBe(false)
++    expect(existsSync(join(dir, `${pin.path}.part`))).toBe(false)
++  })
++
++  /** A server on this machine that answers each request, numbered from 1, as `send` writes it. */
++  async function serving(
++    send: (request: number, response: ServerResponse) => void,
++  ) {
++    let requests = 0
++    const server = createServer((_request, response) => {
++      requests += 1
++      send(requests, response)
++    })
++    await new Promise<void>((resolve) => server.listen(0, '127.0.0.1', resolve))
++    const { port } = server.address() as AddressInfo
++    return {
++      url: `http://127.0.0.1:${port}/vocal.m4a`,
++      requests: () => requests,
++      close: async () => {
++        server.closeAllConnections()
++        await new Promise((resolve) => server.close(resolve))
++      },
++    }
++  }
++
++  it('abandons a transfer once nothing has arrived for a while, and tries again', async () => {
++    const dir = mkdtempSync(join(tmpdir(), 'mp-examples-'))
++    const server = await serving((request, response) => {
++      response.writeHead(200, { 'content-length': String(bytes.byteLength) })
++      // The first answer sends two bytes and then nothing more.
++      if (request === 1) response.write(bytes.subarray(0, 2))
++      else response.end(bytes)
++    })
++    try {
++      const result = (await ensureKaraokeExamples({
++        root: dir,
++        pins: [{ ...pin, url: server.url }],
++        wait: noWait(),
++        stallMs: 300,
++      })) as { fetched: string[]; kept: string[] }
++      expect(result.fetched).toEqual([pin.path])
++      expect(server.requests()).toBe(2)
++    } finally {
++      await server.close()
++    }
++  })
++
++  it('never cuts off a transfer that is slow but moving', async () => {
++    const dir = mkdtempSync(join(tmpdir(), 'mp-examples-'))
++    const server = await serving((_request, response) => {
++      response.writeHead(200, { 'content-length': String(bytes.byteLength) })
++      // A byte every 100 ms: 800 ms in all, well past the 300 ms below.
++      let sent = 0
++      const timer = setInterval(() => {
++        response.write(bytes.subarray(sent, sent + 1))
++        sent += 1
++        if (sent === bytes.byteLength) {
++          clearInterval(timer)
++          response.end()
++        }
++      }, 100)
++    })
++    try {
++      const result = (await ensureKaraokeExamples({
++        root: dir,
++        pins: [{ ...pin, url: server.url }],
++        wait: noWait(),
++        stallMs: 300,
++      })) as { fetched: string[]; kept: string[] }
++      expect(result.fetched).toEqual([pin.path])
++      expect(server.requests()).toBe(1)
++      expect([...readFileSync(join(dir, pin.path))]).toEqual([...bytes])
++    } finally {
++      await server.close()
++    }
++  })
+ })
+ 
+ describe('the native asset manifest carries them', () => {
