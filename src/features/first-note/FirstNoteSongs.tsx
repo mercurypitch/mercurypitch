@@ -11,6 +11,11 @@
 // for the phone to read, no voice in it). A singer with no song of their
 // own split yet is told how one comes to be here, with the way to it when
 // the shell offers one (A2: the Karaoke room's songs, where Import is).
+//
+// Last, "Show the words": the hint that puts the words of the line the
+// singer comes in on over the stage (owner, 28 Oct 2026). Off by default,
+// and here rather than on the stage, so the room stays ear first and a
+// singer who wants the words finds them where the songs are chosen.
 
 import type { Component, JSX } from 'solid-js'
 import { createMemo, For, Show } from 'solid-js'
@@ -19,7 +24,7 @@ import { CheckSmall, ChevronDown, Music, StageCurtains, X, } from '@/components/
 import { Sheet } from '@/components/mobile/Sheet'
 import { thisDeviceLower } from '@/lib/device-noun'
 import type { FirstNoteSource } from './first-note-choices'
-import { FIRST_NOTE_SOURCES, firstNoteSource, setFirstNoteSource, } from './first-note-choices'
+import { FIRST_NOTE_SOURCES, firstNoteShowsWords, firstNoteSource, setFirstNoteShowsWords, setFirstNoteSource, } from './first-note-choices'
 import type { OwnSong, OwnSongFailure, OwnSongState, } from './first-note-own-songs'
 import { ownSong, ownSongIds, ownSongs } from './first-note-own-songs'
 import { OWN_SONG_MIN_ENTRIES } from './first-note-rules'
@@ -129,9 +134,10 @@ export function FirstNoteSongsButton(
   const label = (): string => {
     const name = SOURCE_NAMES[firstNoteSource()]
     const now = reading()
+    const words = firstNoteShowsWords() ? '. The words show' : ''
     return now === null
-      ? `Songs: ${name}`
-      : `Songs: ${name}. Reading ${now.title}: ${now.progress}%`
+      ? `Songs: ${name}${words}`
+      : `Songs: ${name}${words}. Reading ${now.title}: ${now.progress}%`
   }
   return (
     <button
@@ -144,6 +150,11 @@ export function FirstNoteSongsButton(
     >
       <Music />
       <span>{SOURCE_NAMES[firstNoteSource()]}</span>
+      <Show when={firstNoteShowsWords()}>
+        <span class={styles.pillWords} aria-hidden="true">
+          Words
+        </span>
+      </Show>
       <Show when={reading()}>
         {(now) => (
           <span class={styles.pillNote} aria-hidden="true">
@@ -240,6 +251,33 @@ export function FirstNoteSongsSheet(
               </For>
             </ul>
           </Show>
+        </section>
+
+        <section class={styles.section} aria-labelledby="first-note-hint">
+          <h3 id="first-note-hint" class={styles.sectionHead}>
+            <span>While you sing</span>
+          </h3>
+          <div class={styles.hintRow}>
+            <span class={styles.songText}>
+              <span class={styles.hintName}>Show the words</span>
+              <span class={styles.hintLine}>
+                The words of the line you come in on, while the band counts in
+                and in your turn. Off, you come in by ear alone.
+              </span>
+            </span>
+            <button
+              type="button"
+              role="switch"
+              class={styles.switch}
+              classList={{ [styles.switchOn]: firstNoteShowsWords() }}
+              aria-checked={firstNoteShowsWords()}
+              aria-label="Show the words"
+              onClick={() => setFirstNoteShowsWords(!firstNoteShowsWords())}
+              data-testid="first-note-words-switch"
+            >
+              <i />
+            </button>
+          </div>
         </section>
       </div>
     </Sheet>

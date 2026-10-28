@@ -115,7 +115,12 @@ const LEAD_MS = 2000
 const LINE_MS = 1500
 
 const songs = vi.hoisted(() => ({
-  leadIns: [] as { slug: string; midi: number; vocal: string }[],
+  leadIns: [] as {
+    slug: string
+    midi: number
+    vocal: string
+    words: string
+  }[],
   lines: [] as { slug: string; midi: number }[],
   /** The next lead-in fails to play. */
   failNext: false,
@@ -149,6 +154,7 @@ vi.mock('./song-player', () => ({
         slug: song.slug,
         midi: entry.midi,
         vocal: song.stems.vocal,
+        words: entry.words ?? '',
       })
       const fails = songs.failNext
       songs.failNext = false
@@ -719,6 +725,62 @@ describe('First note', () => {
       fireEvent.click(screen.getByTestId('first-note-songs'))
       expect(within(sheet()).getByTestId('first-note-no-songs')).toBeTruthy()
       expect(screen.queryByTestId('first-note-own-songs')).toBeNull()
+    })
+  })
+
+  describe('the words, a hint the singer asks for', () => {
+    const words = (): HTMLElement | null =>
+      screen.queryByTestId('first-note-words')
+
+    it('stay away by default: the room is ear first', async () => {
+      render(() => <FirstNoteRoom onDone={() => undefined} />)
+      await startRun()
+      expect(phase()).toBe('band')
+      expect(words()).toBeNull()
+      await toTurn()
+      expect(words()).toBeNull()
+    })
+
+    it('show the line the singer comes in on, while the band counts in and in the turn', async () => {
+      render(() => <FirstNoteRoom onDone={() => undefined} />)
+      fireEvent.click(screen.getByTestId('first-note-songs'))
+      const sheet = screen.getByTestId('first-note-songs-sheet')
+      const toggle = within(sheet).getByRole('switch', {
+        name: 'Show the words',
+      })
+      expect(toggle.getAttribute('aria-checked')).toBe('false')
+      fireEvent.click(toggle)
+      expect(toggle.getAttribute('aria-checked')).toBe('true')
+      // Remembered on this device.
+      expect(localStorage.getItem('mp_first_note_words')).toBe('true')
+      fireEvent.click(within(sheet).getByRole('button', { name: 'Close' }))
+      // The pill says so before the run.
+      expect(screen.getByTestId('first-note-songs').textContent).toContain(
+        'Words',
+      )
+
+      await startRun()
+      const line = songs.leadIns[0].words
+      expect(line).not.toBe('')
+      expect(words()?.textContent).toContain(line)
+      expect(screen.getByTestId('first-note-said').textContent).toContain(
+        `Your line: ${line}`,
+      )
+      await toTurn()
+      expect(words()?.textContent).toContain(line)
+
+      // Landed: Merc has the place again, and the song sings the line.
+      singing(target())
+      run(600)
+      expect(phase()).toBe('landed')
+      expect(words()).toBeNull()
+    })
+
+    it('come back on as they were left', async () => {
+      localStorage.setItem('mp_first_note_words', 'true')
+      render(() => <FirstNoteRoom onDone={() => undefined} />)
+      await startRun()
+      expect(words()?.textContent).toContain(songs.leadIns[0].words)
     })
   })
 
