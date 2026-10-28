@@ -77,7 +77,6 @@ import type { Component } from 'solid-js'
 import { createEffect, createMemo, createSignal, on, onCleanup, onMount, Show, untrack, } from 'solid-js'
 import type { GuideLevel, HostedMixerControls, StemMixerHosting, } from '@/components/stem-mixer-hosting'
 import { StemMixer } from '@/components/StemMixer'
-import { DEMO_SESSION_ID } from '@/features/karaoke-night/demo-song'
 import { whenBundledExamplesSeeded } from '@/features/karaoke-night/seed-examples'
 import { roomName } from '@/features/rooms/room-names'
 import { MUSIC_LEVEL } from '@/features/stem-mixer/master-headroom'
@@ -88,12 +87,13 @@ import { NO_LYRIC_GLANCE } from '@/lib/lyric-glance'
 import { KARAOKE_IMPORT } from '@/lib/native-build'
 import type { NativeMediaAction, NativeNowPlaying, PinnedRoomToggle, } from '@/stores/native-shell-store'
 import { nativeDeviceApi, nativeShellApi, registerRunControls, roomArrivalHeld, } from '@/stores/native-shell-store'
+import { arrivalCue, arrivalSong } from './karaoke-arrival'
 import { importsInFlight, markKaraokeSongPlayed } from './karaoke-import-queue'
+import { createKaraokeNotesOption } from './karaoke-notes-option'
 import styles from './karaoke-room.module.css'
 import type { RoomSong, RoomStems } from './karaoke-room-library'
 import { hydrateSong, roomLibrary } from './karaoke-room-library'
-import type { ParkedSong } from './karaoke-room-store'
-import { KARAOKE_LYRICS_SIZE_LABELS, karaokeBackgroundPlay, karaokeLibraryRequest, karaokeLyricsSize, karaokeNoteGlyphs, karaokePinned, karaokePlayNext, karaokeSongRequest, karaokeStagedSong, lastSungSong, parkKaraokeSong, rememberSungSong, setKaraokeLyricsSize, setKaraokeNoteGlyphs, setKaraokePlayNext, setKaraokeStagedSong, takeKaraokeLibraryRequest, takeKaraokeSongRequest, takeParkedKaraokeSong, } from './karaoke-room-store'
+import { KARAOKE_LYRICS_SIZE_LABELS, karaokeBackgroundPlay, karaokeLibraryRequest, karaokeLyricsSize, karaokeNoteGlyphs, karaokePinned, karaokePlayNext, karaokeSongRequest, karaokeStagedSong, lastSungSong, parkKaraokeSong, rememberSungSong, setKaraokeLyricsSize, setKaraokePlayNext, setKaraokeStagedSong, takeKaraokeLibraryRequest, takeKaraokeSongRequest, takeParkedKaraokeSong, } from './karaoke-room-store'
 import { karaokeSongs, songsOptionRow } from './karaoke-songs'
 import { KaraokeLibrarySheet } from './KaraokeLibrarySheet'
 import { KaraokeLyricsWindow } from './KaraokeLyricsWindow'
@@ -130,31 +130,6 @@ interface CueOptions {
   readonly seekSec?: number
   readonly guide?: GuideLevel | null
   readonly arriving?: boolean
-}
-
-/**
- * The song an arrival cues: a parked song first, then the one on the stage
- * when the room was last here, then the last one sung, then Goodbye to
- * Spring, then whatever the library has first.
- */
-export function arrivalSong(
-  rows: readonly RoomSong[],
-  parked: ParkedSong | null,
-  staged: string | null,
-  lastSung: string | null,
-): RoomSong | null {
-  const find = (id: string | null | undefined): RoomSong | undefined =>
-    id === null || id === undefined
-      ? undefined
-      : rows.find((row) => row.sessionId === id)
-  return (
-    find(parked?.sessionId) ??
-    find(staged) ??
-    find(lastSung) ??
-    find(DEMO_SESSION_ID) ??
-    rows.at(0) ??
-    null
-  )
 }
 
 export const KaraokeRoomStage: Component = () => {
@@ -237,35 +212,26 @@ export const KaraokeRoomStage: Component = () => {
   let arrived = false
   createEffect(() => {
     if (arrived || roomArrivalHeld() || !seeded()) return
-    // First note's "Sing on in Karaoke" names the song and the place the
-    // singer came in on: it is the answer, before a parked song, and it
-    // starts there, playing, because the singer asked to sing on.
-    const request = untrack(karaokeSongRequest)
-    const singOn =
-      request?.seekSec === undefined
-        ? undefined
-        : library().find((row) => row.sessionId === request.sessionId)
-    const song =
-      singOn ??
-      arrivalSong(library(), parked, untrack(karaokeStagedSong), lastSungSong())
-    if (song === null) return
+    // First note's "Sing on in Karaoke" is the answer before a parked song
+    // (karaoke-arrival.ts).
+    const arrival = arrivalCue(
+      library(),
+      parked,
+      untrack(karaokeStagedSong),
+      lastSungSong(),
+      untrack(karaokeSongRequest),
+    )
+    if (arrival === null) return
     arrived = true
     // A song the studio handed back while the room was away is the staged
     // song, so this arrival is its answer.
     takeKaraokeSongRequest()
-    const resuming =
-      singOn === undefined &&
-      parked !== null &&
-      parked.sessionId === song.sessionId
     // A parked song that is no longer in the library cannot come back.
-    if (!resuming) setRunOn(false)
-    let seekSec: number | undefined
-    if (resuming) seekSec = parked.seconds > 0 ? parked.seconds : undefined
-    else if (singOn !== undefined) seekSec = request?.seekSec
-    void cueSong(song, {
-      autoPlay: singOn !== undefined,
-      seekSec,
-      guide: resuming ? parked.guide : null,
+    if (!arrival.resuming) setRunOn(false)
+    void cueSong(arrival.song, {
+      autoPlay: arrival.autoPlay,
+      seekSec: arrival.seekSec,
+      guide: arrival.guide,
       arriving: true,
     })
     if (takeKaraokeLibraryRequest()) setLibraryOpen(true)
@@ -403,59 +369,11 @@ export const KaraokeRoomStage: Component = () => {
     return false
   }
 
-  const hasNotes = (): boolean => mixer()?.hasNotes() === true
-
-  // The notes over the lyrics, offered for every song that has them or can
-  // have them read (owner, 28 Oct 2026). A song with none yet has them read
-  // from its vocal on the tap, as turning the mic on does: the switch goes
-  // on, the read starts, and the stage says how far it has got. A song
-  // still loading is read once it can be. Only a loaded song whose vocal
-  // cannot be read has no switch (K1: absent, never dead).
-  const findingNotes = (): boolean => mixer()?.findingNotes() === true
-  const notesProgress = (): number => mixer()?.notesProgress() ?? 0
-  /** The cue whose notes were asked for before the read could start. */
-  const [readAsked, setReadAsked] = createSignal<number | null>(null)
-  const notesOffered = (): boolean => {
-    const controls = mixer()
-    if (controls === null) return cue() !== null
-    return (
-      controls.hasNotes() ||
-      controls.canFindNotes() ||
-      controls.findingNotes() ||
-      controls.loading()
-    )
-  }
-  // On while the notes are on screen or on their way, as the stage's own
-  // switch reads: a saved "on" for a song without notes reads off, and a
-  // tap on it is what asks for them.
-  const notesOn = (): boolean =>
-    karaokeNoteGlyphs() &&
-    (hasNotes() || findingNotes() || readAsked() === (cue()?.key ?? null))
-  const toggleNotes = (): void => {
-    if (notesOn()) {
-      setKaraokeNoteGlyphs(false)
-      setReadAsked(null)
-      return
-    }
-    setKaraokeNoteGlyphs(true)
-    if (hasNotes()) return
-    const controls = mixer()
-    if (controls?.canFindNotes() === true) controls.findNotes()
-    else setReadAsked(cue()?.key ?? null)
-  }
-  // A read asked for while the song loaded starts as soon as it can, and
-  // only for the song it was asked for.
-  createEffect(() => {
-    const asked = readAsked()
-    if (asked === null) return
-    if (asked !== cue()?.key) {
-      setReadAsked(null)
-      return
-    }
-    const controls = mixer()
-    if (controls === null || !controls.canFindNotes()) return
-    setReadAsked(null)
-    untrack(() => controls.findNotes())
+  // The notes over the lyrics, for every song that has them or can have
+  // them read, read on the tap (karaoke-notes-option.ts).
+  const notes = createKaraokeNotesOption({
+    mixer,
+    cueKey: () => cue()?.key ?? null,
   })
 
   // As zen's pill reads it: a share of the level the app ships at.
@@ -480,13 +398,13 @@ export const KaraokeRoomStage: Component = () => {
           },
         }
       case 'notes':
-        return notesOffered()
+        return notes.offered()
           ? {
               icon: 'notes',
               label: 'Show notes over the lyrics',
-              pressed: notesOn(),
-              progress: findingNotes() ? notesProgress() : undefined,
-              onToggle: toggleNotes,
+              pressed: notes.on(),
+              progress: notes.finding() ? notes.progress() : undefined,
+              onToggle: notes.toggle,
             }
           : null
       case 'play-next':
@@ -844,14 +762,7 @@ export const KaraokeRoomStage: Component = () => {
       <KaraokeRoomOptions
         isOpen={optionsOpen()}
         close={() => setOptionsOpen(false)}
-        notes={{
-          offered: notesOffered,
-          on: notesOn,
-          has: hasNotes,
-          finding: findingNotes,
-          progress: notesProgress,
-          toggle: toggleNotes,
-        }}
+        notes={notes}
         musicPercent={musicPercent}
         onResetMusicLevel={() => mixer()?.resetMusicLevel()}
         keyControl={() => mixer()?.key ?? null}

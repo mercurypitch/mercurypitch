@@ -195,6 +195,48 @@ export function loudness(samples: Float32Array, rate: number): VoiceLevel {
   }
 }
 
+/** YIN's difference at each lag up to `maxLag`, over `width` samples from `start`. */
+function differences(
+  samples: Float32Array,
+  start: number,
+  width: number,
+  maxLag: number,
+): Float64Array {
+  const diff = new Float64Array(maxLag + 1)
+  for (let lag = 1; lag <= maxLag; lag++) {
+    let sum = 0
+    for (let i = 0; i < width; i++) {
+      const d = samples[start + i] - samples[start + i + lag]
+      sum += d * d
+    }
+    diff[lag] = sum
+  }
+  return diff
+}
+
+/** The differences, each over the running mean of those before it. */
+function normalised(diff: Float64Array): Float64Array {
+  const norm = new Float64Array(diff.length)
+  norm[0] = 1
+  let running = 0
+  for (let lag = 1; lag < diff.length; lag++) {
+    running += diff[lag]
+    norm[lag] = running > 0 ? (diff[lag] * lag) / running : 1
+  }
+  return norm
+}
+
+/** The first lag that dips under YIN_THRESHOLD, at the dip's floor; -1 for none. */
+function firstDip(norm: Float64Array, minLag: number, maxLag: number): number {
+  for (let t = minLag; t < maxLag; t++) {
+    if (norm[t] < YIN_THRESHOLD) {
+      while (t + 1 < maxLag && norm[t + 1] < norm[t]) t++
+      return t
+    }
+  }
+  return -1
+}
+
 /**
  * One YIN reading at sample `start`, MIDI, or null where no pitch is
  * clear. The frame spans the same time at any rate as YIN_FRAME does at
@@ -210,30 +252,8 @@ export function yinMidi(
   const minLag = Math.floor(rate / F_MAX)
   const width = frame - maxLag
   if (start < 0 || start + frame > samples.length) return null
-  const diff = new Float64Array(maxLag + 1)
-  for (let lag = 1; lag <= maxLag; lag++) {
-    let sum = 0
-    for (let i = 0; i < width; i++) {
-      const d = samples[start + i] - samples[start + i + lag]
-      sum += d * d
-    }
-    diff[lag] = sum
-  }
-  const norm = new Float64Array(maxLag + 1)
-  norm[0] = 1
-  let running = 0
-  for (let lag = 1; lag <= maxLag; lag++) {
-    running += diff[lag]
-    norm[lag] = running > 0 ? (diff[lag] * lag) / running : 1
-  }
-  let lag = -1
-  for (let t = minLag; t < maxLag; t++) {
-    if (norm[t] < YIN_THRESHOLD) {
-      while (t + 1 < maxLag && norm[t + 1] < norm[t]) t++
-      lag = t
-      break
-    }
-  }
+  const norm = normalised(differences(samples, start, width, maxLag))
+  const lag = firstDip(norm, minLag, maxLag)
   if (lag < 1) return null
   const a = norm[lag - 1]
   const b = norm[lag]
@@ -377,6 +397,36 @@ export interface EntryReading {
 }
 
 /**
+ * Why the voice's first steady stretch is not a note to judge anyone
+ * against, or null when it is: it settles too late after the voice comes
+ * in at `voiceIn`, the stored notes name another note, it was sung out of
+ * tune, or it is far from the song's `middle` note.
+ */
+function whyNot(
+  steady: { readonly t: number; readonly midi: number },
+  voiceIn: number,
+  stored: StoredNote | null,
+  middle: number,
+): string | null {
+  const midi = Math.round(steady.midi)
+  if (steady.t - voiceIn > STEADY_WITHIN_SEC) {
+    return `the note settles ${(steady.t - voiceIn).toFixed(2)} s in`
+  }
+  if (stored === null || stored.midi !== midi) {
+    const named =
+      stored === null ? 'none' : (stored.noteName ?? noteName(stored.midi))
+    return `YIN ${noteName(midi)}, notes ${named}`
+  }
+  if (Math.abs(steady.midi - midi) * 100 > IN_TUNE_CENTS) {
+    return `${Math.round((steady.midi - midi) * 100)} cents off ${noteName(midi)}`
+  }
+  if (Math.abs(midi - middle) > RANGE_SEMITONES) {
+    return `${noteName(midi)} is far from the song's ${noteName(middle)}`
+  }
+  return null
+}
+
+/**
  * Line `i` of the song as an entry; why it is not one ("the note settles
  * 0.64 s in"); or null for a line with no breath before it. `middle` is the
  * song's middle note (`middleNote`). In steps, a step after each pitch
@@ -397,17 +447,12 @@ export function* entrySteps(
   if (steady === null) return `${start.toFixed(2)} no steady note`
   const voiceIn = runStart(level, steady.t)
   const midi = Math.round(steady.midi)
-  const stored = storedNoteAt(notes, steady.t + 0.1)
-  const why =
-    steady.t - voiceIn > STEADY_WITHIN_SEC
-      ? `the note settles ${(steady.t - voiceIn).toFixed(2)} s in`
-      : stored === null || stored.midi !== midi
-        ? `YIN ${noteName(midi)}, notes ${stored === null ? 'none' : (stored.noteName ?? noteName(stored.midi))}`
-        : Math.abs(steady.midi - midi) * 100 > IN_TUNE_CENTS
-          ? `${Math.round((steady.midi - midi) * 100)} cents off ${noteName(midi)}`
-          : Math.abs(midi - middle) > RANGE_SEMITONES
-            ? `${noteName(midi)} is far from the song's ${noteName(middle)}`
-            : null
+  const why = whyNot(
+    steady,
+    voiceIn,
+    storedNoteAt(notes, steady.t + 0.1),
+    middle,
+  )
   if (why !== null) return `${start.toFixed(2)} ${why}`
   const at = Math.max(0, voiceIn - STOP_LEAD_SEC)
   const next = lines[i + 1]?.start ?? at + LINE_MAX_SEC
