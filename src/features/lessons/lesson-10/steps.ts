@@ -59,6 +59,7 @@ import type { RunNote } from '@/features/lessons/kit/run'
 import { Sound } from '@/features/lessons/kit/sound'
 import type { StepDeck } from '@/features/lessons/kit/step-deck'
 import { registerToy } from '@/features/lessons/kit/step-deck'
+import { showParts } from '@/features/lessons/kit/step-parts'
 import type { BeadsSettings, ChordBeads } from './chord-beads'
 import { mountChordBeads } from './chord-beads'
 import type { BeadState } from './chord-layout'
@@ -87,19 +88,6 @@ export const STEP_STATE: Readonly<Record<number, BeadState>> = {
   3: 'slide',
   4: 'pattern',
   5: 'scale',
-}
-
-/** The steps a part shows on, from its `data-part` list ("1 3 4"). */
-export const partSteps = (el: Element): readonly number[] =>
-  (el.getAttribute('data-part') ?? '')
-    .split(/\s+/)
-    .filter((word) => word !== '')
-    .map(Number)
-
-/** Shows the parts of `root` that step `n` uses, and hides the rest. */
-export function showParts(root: ParentNode, n: number): void {
-  for (const el of qa<HTMLElement>('[data-part]', root))
-    el.hidden = !partSteps(el).includes(n)
 }
 
 // -------------------------------------------------------------- the plays

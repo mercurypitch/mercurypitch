@@ -46,6 +46,7 @@ import { playNotes } from '@/features/lessons/kit/run'
 import { Sound } from '@/features/lessons/kit/sound'
 import type { StepDeck } from '@/features/lessons/kit/step-deck'
 import { registerToy } from '@/features/lessons/kit/step-deck'
+import { showParts } from '@/features/lessons/kit/step-parts'
 import type { Voice } from '@/features/lessons/kit/voice-choice'
 import { mercOf, VoiceChoice } from '@/features/lessons/kit/voice-choice'
 import type { FoldsStrip } from './folds-strip'
@@ -74,19 +75,6 @@ export const STEP_STATE: Readonly<Record<number, ChartState>> = {
   3: 'ladder',
   4: 'order',
   5: 'landing',
-}
-
-/** The steps a part shows on, from its `data-part` list ("1 2"). */
-export const partSteps = (el: Element): readonly number[] =>
-  (el.getAttribute('data-part') ?? '')
-    .split(/\s+/)
-    .filter((word) => word !== '')
-    .map(Number)
-
-/** Shows the parts of `root` that step `n` uses, and hides the rest. */
-export function showParts(root: ParentNode, n: number): void {
-  for (const el of qa<HTMLElement>('[data-part]', root))
-    el.hidden = !partSteps(el).includes(n)
 }
 
 // -------------------------------------------------------------- the plays

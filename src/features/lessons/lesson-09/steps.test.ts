@@ -27,11 +27,12 @@ import { NowPlaying } from '@/features/lessons/kit/now-playing'
 import type * as RunModule from '@/features/lessons/kit/run'
 import { resetRuns, runs, } from '@/features/lessons/kit/run-recorder.test-fixtures'
 import { Sound } from '@/features/lessons/kit/sound'
+import { showParts } from '@/features/lessons/kit/step-parts'
 import { VoiceChoice } from '@/features/lessons/kit/voice-choice'
 import { foldsLine, HEAR_LINE, moveLine } from './lines'
 import { el, loadPage, mountSteps, settle, soundOn, } from './page-dom.test-fixtures'
 import { hearFirstNotes, leapNotes, MERC_LEAP, SLOW, stepNotes } from './sounds'
-import { FIG, partSteps, showParts } from './steps'
+import { FIG } from './steps'
 
 const duo = vi.hoisted(() => ({ sing: vi.fn() }))
 
@@ -177,18 +178,6 @@ describe("Lesson 9's stage, step by step", () => {
         (e) => e.hidden,
       ),
     ).toEqual(before)
-  })
-
-  it("reads a part's steps from its list, and nothing from an empty one", () => {
-    // Arrange
-    const both = document.createElement('p')
-    both.setAttribute('data-part', ' 1  2 ')
-    const none = document.createElement('p')
-    none.setAttribute('data-part', '')
-
-    // Act / Assert
-    expect(partSteps(both)).toEqual([1, 2])
-    expect(partSteps(none)).toEqual([])
   })
 })
 
