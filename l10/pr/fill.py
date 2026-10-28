@@ -1,11 +1,11 @@
 #!/usr/bin/env python3
 # Fill BODY.md's placeholders into BODY.final.md.
-# usage: python3 -I fill.py <warnings> <e2e-count>
+# usage: python3 -I fill.py <warnings> <e2e-count> <e2e-count-again> <cites-again> <fixed-head> <main>
 import pathlib
 import sys
 
 d = pathlib.Path(__file__).resolve().parent
-warnings, e2e = sys.argv[1], sys.argv[2]
+warnings, e2e, e2e2, cites2, fixed, main = sys.argv[1:7]
 
 commits = "\n".join(
     line.strip() for line in (d / "commits.txt").read_text().splitlines() if line.strip()
@@ -53,7 +53,7 @@ note = (
     "file. Lesson 10's ceilings are a quarter over its measure (25)."
 )
 
-checks = f"""These ran on the same tree before its twelve `(lesson-10)` subjects were reworded and its five module-map commits were squashed into one (31): `71289c89f` on `main` `d37453987`. The tree is identical, and the 30 other patches are unchanged.
+checks = f"""These ran on `71289c89f` on `main` `d37453987`: this code before its twelve `(lesson-10)` subjects were reworded, its five module-map commits were squashed into one (31), and CI's fix above went into 24.
 
 - `pnpm check`: no errors and the {warnings} warnings `main` has. It changed no files.
 - Unit tests for the lessons and the lesson pages: 201 files, 2,418 tests, all pass.
@@ -63,7 +63,9 @@ checks = f"""These ran on the same tree before its twelve `(lesson-10)` subjects
 - `build:e2e`: in this checkout Vite stops when it copies the Glassworks model, a Git LFS pointer here, after it has written the site, so the six bundle asserts ran on that site by hand. All pass, the first-paint budgets among them, and the drafts assert finds Lessons 3 to 10 shown by default and pages 1 to 10 built. Every lesson page's first paint is the table above, to the byte.
 - In the browser, on that build: Lesson 10's four specs, the next-lesson card's and the stage-fit spec, {e2e} tests with no retries: all pass.
 
-Earlier, on code this head carries unchanged (every commit since touches only `docs/`), all 42 `learn-` specs ran on a `build:e2e`: 596 passed and 2 skipped, Lessons 1 and 2's own skips."""
+CI's fix changes one test helper and nothing that is built, and the branch now sits on `main` `{main}`, which adds #1235's worker test and changes no page. On `{fixed}`, the fixed branch before that rebase, with the same build: `pnpm check` (no errors, the same {warnings} warnings, no files changed), `pr:validate`, `metrics:check`, `docs:index:check` and `plan-cites check` ({cites2} findings) pass again, and the same {e2e2} browser tests pass with no retries.
+
+Earlier, on the same page code (every commit since touches only `docs/` or that test helper), all 42 `learn-` specs ran on a `build:e2e`: 596 passed and 2 skipped, Lessons 1 and 2's own skips."""
 
 headroom = (
     "Lessons 3, 4 and 5 have 223, 745 and 775 bytes of script left under their ceilings. "

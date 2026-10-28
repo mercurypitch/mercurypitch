@@ -39,6 +39,10 @@ The lead reviews' findings, folded into the commits they fix:
 - **A cold open test compared two real-clock readings exactly**, and failed once on 1600.0000000000005. It now compares to 6 places, as its sibling does (13).
 - **Docs brought up to the page**: where Play the chord sits on a phone, and why it stays there (16); the stuck stage's measured heights, the games' eight roots and the level of two notes together (29); Lesson 11's current hook in the next-lesson line, and two of the Length's word counts (26); the spec reads main, not Lesson 6's branch, and HANDOFF records #1206 and #1207 (28); six citations read again (27).
 
+CI found one more, folded the same way:
+
+- **The page-wide target check measured a card mid-landing.** The Wrap's checks scroll the season map's bar into view, and the kit's reveal lands that bar from `scale(.975)` over a second (`kit/reveal.ts`), so its filter chips were measured in the first frame, 42.9 px tall; CI's Chromium read 43. Each target is now measured at rest, once the entrance its scroll started has played out (24).
+
 ## First paint (build:e2e, bytes)
 
 @@TABLE@@
