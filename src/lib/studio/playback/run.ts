@@ -26,6 +26,15 @@ export const RUN_OPEN_SECONDS = 0.09
 /** How far ahead of the clock a run schedules its clips. */
 export const RUN_LOOKAHEAD_SECONDS = 2
 
+/**
+ * Lead time between building a run's graph and its first sound. It follows
+ * how long the last build took, so a fast machine starts in about a tenth of
+ * a second and a slow one still schedules ahead of its clock.
+ */
+export function runWarmupSeconds(buildSeconds: number): number {
+  return Math.min(0.5, Math.max(0.1, buildSeconds * 2 + 0.04))
+}
+
 /** Where a run sits on the clock. */
 export interface StudioRunTiming {
   /** The song frame its clips start from. */
@@ -74,8 +83,9 @@ export interface StudioRun {
   /**
    * When its envelope starts to open from silence: nothing it plays sooner
    * is heard. -Infinity for a run that fades in over the one it takes over.
+   * A run Pause kept sets it again when Play starts it (keep.ts).
    */
-  readonly silentUntil: number
+  silentUntil: number
   /**
    * Where the song stops, counting each pass from the song's start: the end
    * of the pass that has begun, or Infinity while it repeats.

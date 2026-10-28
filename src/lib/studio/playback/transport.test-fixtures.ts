@@ -23,6 +23,10 @@ export function fakeStudioGraph(ctx: PlaybackContext) {
     readLaneReduction: vi.fn((_trackId: string): number | null => null),
     repeat: vi.fn(() => true),
     stopRepeating: vi.fn(() => 0),
+    park: vi.fn(),
+    resume: vi.fn(
+      (_fromFrame: number, _epoch: number, _repeat: boolean) => true,
+    ),
     dispose: vi.fn(),
   }
 }
