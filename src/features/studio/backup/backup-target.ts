@@ -69,7 +69,10 @@ function joined(
   return bytes
 }
 
-/** A file being written: it holds one batch at a time, never the archive. */
+/**
+ * A file being written: it holds one batch at a time, never the archive. A
+ * picked file is the person's: it goes only once this backup wrote into it.
+ */
 function streamingTarget(
   kind: 'file' | 'download',
   name: string,
@@ -79,6 +82,7 @@ function streamingTarget(
 ): StudioBackupTarget {
   let release = () => {}
   let state: 'writing' | 'closed' | 'gone' = 'writing'
+  let wrote = false
   const free = () => {
     release()
     release = () => {}
@@ -91,7 +95,10 @@ function streamingTarget(
       free()
       release = reserveStudioMemory(studioArchiveHeldBytes(archiveBytes, false))
     },
-    write: (parts) => writable.write(joined(parts)),
+    write: (parts) => {
+      wrote = true
+      return writable.write(joined(parts))
+    },
     async close() {
       free()
       await writable.close()
@@ -101,10 +108,10 @@ function streamingTarget(
     async discard() {
       free()
       if (state === 'gone' || (state === 'closed' && kind === 'file')) return
-      // Unclosed, the written bytes never reach the file; then the file goes.
+      // Unclosed, the written bytes never reach the file.
       if (state === 'writing') await writable.abort().catch(() => undefined)
       state = 'gone'
-      await remove().catch(() => undefined)
+      if (kind === 'download' || wrote) await remove().catch(() => undefined)
     },
   }
 }
@@ -134,18 +141,20 @@ async function pickedTarget(
       ? 'cancelled'
       : null
   }
-  // Chromium creates the chosen file, empty, as soon as it is picked.
-  const remove = () => handle.remove?.() ?? Promise.resolve()
+  // Chromium creates the chosen file, or empties the one already there, as
+  // soon as it is picked (SELECT_SAVEAS_FILE in its
+  // file_system_access_manager_impl.cc). That is why the page asks whatever
+  // could refuse the backup before the picker opens.
   try {
     return streamingTarget(
       'file',
       handle.name,
       await handle.createWritable(),
       async () => null,
-      remove,
+      () => handle.remove?.() ?? Promise.resolve(),
     )
   } catch {
-    await remove().catch(() => undefined)
+    // Nothing went in: the file stays as the picker left it.
     return null
   }
 }
