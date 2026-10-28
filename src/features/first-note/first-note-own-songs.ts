@@ -119,15 +119,15 @@ function keptSignal(): Signal<KeptReads> {
   return kept
 }
 
-/** Songs being read, and songs whose read failed in this launch. */
-const [live, setLive] = createSignal<
-  Readonly<
-    Record<
-      string,
-      { readonly reading: number } | { readonly failed: OwnSongFailure }
-    >
-  >
->({})
+/**
+ * A song being read, or one whose read failed in this launch, with the stems
+ * that failed (`stemsKey`): a song split again is read again.
+ */
+type LiveRead =
+  | { readonly reading: number }
+  | { readonly failed: OwnSongFailure; readonly stems: string }
+
+const [live, setLive] = createSignal<Readonly<Record<string, LiveRead>>>({})
 
 /**
  * The song's stems, as a key: their sizes and lengths, as the session row
@@ -149,10 +149,11 @@ function ownRoomSongs(): RoomSong[] {
 
 function stateOf(song: RoomSong): OwnSongState {
   const now = live()[song.sessionId]
-  if (now !== undefined) {
-    return 'reading' in now
-      ? { kind: 'reading', progress: now.reading }
-      : { kind: 'failed', why: now.failed }
+  if (now !== undefined && 'reading' in now) {
+    return { kind: 'reading', progress: now.reading }
+  }
+  if (now !== undefined && now.stems === stemsKey(song.sessionId)) {
+    return { kind: 'failed', why: now.failed }
   }
   const read = keptSignal()[0]()[song.sessionId]
   if (read === undefined || read.stems !== stemsKey(song.sessionId)) {
@@ -331,10 +332,7 @@ export function setOwnSongReaderForTests(next: SongReader | null): void {
   reader = next ?? realReader
 }
 
-function setLiveFor(
-  sessionId: string,
-  value: { reading: number } | { failed: OwnSongFailure } | null,
-): void {
+function setLiveFor(sessionId: string, value: LiveRead | null): void {
   setLive((now) => {
     const next = { ...now }
     if (value === null) delete next[sessionId]
@@ -386,7 +384,7 @@ async function readNext(): Promise<void> {
       keep(sessionId, stems, read)
       setLiveFor(sessionId, null)
     } else {
-      setLiveFor(sessionId, { failed: read.out })
+      setLiveFor(sessionId, { failed: read.out, stems })
     }
   } catch (error) {
     if (controller.signal.aborted) {
@@ -396,7 +394,7 @@ async function readNext(): Promise<void> {
     // The cause is the developer's, not the singer's: the sheet says only
     // that the song could not be read.
     console.warn('[first-note] could not read a song:', error)
-    setLiveFor(sessionId, { failed: 'unreadable' })
+    setLiveFor(sessionId, { failed: 'unreadable', stems })
   } finally {
     if (inFlight?.controller === controller) inFlight = null
     void readNext()

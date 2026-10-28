@@ -18,13 +18,22 @@ vi.mock('@/features/stem-mixer/stem-stream-source', () => ({
   openStemStream: async () => null,
 }))
 
-/** Each stem's length as the phone tells it, s; by the blob's contents. */
+/** Each stem's length as the phone tells it, s; by the blob's contents. A
+ *  probe can be held open (`held`), to let go of the read in its middle. */
 const lengths = vi.hoisted(() => ({
   of: {} as Record<string, number | null>,
+  held: null as { reached: () => void; open: Promise<void> } | null,
 }))
 vi.mock('@/lib/audio-duration', () => ({
-  audioDurationSecs: async (blob: Blob) =>
-    lengths.of[await blob.text()] ?? null,
+  audioDurationSecs: async (blob: Blob, signal?: AbortSignal) => {
+    if (lengths.held !== null) {
+      lengths.held.reached()
+      await lengths.held.open
+    }
+    // As the real probe: a read let go learns no length.
+    if (signal?.aborted === true) return null
+    return lengths.of[await blob.text()] ?? null
+  },
 }))
 
 const RATE = 44_100
@@ -304,6 +313,7 @@ describe('on a phone that cannot stream', () => {
     decoded = []
     channels = []
     lengths.of = { vocal: 12, instrumental: 12 }
+    lengths.held = null
     vi.stubGlobal('OfflineAudioContext', OfflineDecoder)
   })
 
@@ -330,6 +340,31 @@ describe('on a phone that cannot stream', () => {
       dropped: [],
       out: 'too-long',
     })
+    expect(decoded).toEqual([])
+  })
+
+  it('decodes nothing once the room lets go while a stem is measured', async () => {
+    // A decode cannot be stopped once it starts, and holds the stem's
+    // memory while the singer's run begins.
+    let reached!: () => void
+    let open!: () => void
+    const atProbe = new Promise<void>((resolve) => {
+      reached = resolve
+    })
+    lengths.held = {
+      reached,
+      open: new Promise<void>((resolve) => {
+        open = resolve
+      }),
+    }
+    phoneSeams()
+    const controller = new AbortController()
+    const read = readOwnSong('mine', { signal: controller.signal })
+    await atProbe
+    controller.abort()
+    open()
+
+    await expect(read).rejects.toMatchObject({ name: 'AbortError' })
     expect(decoded).toEqual([])
   })
 

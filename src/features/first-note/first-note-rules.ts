@@ -2,9 +2,10 @@
 // First note's rules — what each level shows, and its timing
 // ============================================================
 //
-// A run is FIRST_NOTE_ROUNDS entries: ENTRIES_PER_SONG from each of the
-// example songs, or shared out over the singer's own songs or a mix of the
-// two (first-note-songs.ts). In each, the band plays the song's
+// A run is up to FIRST_NOTE_ROUNDS entries: ENTRIES_PER_SONG from each of
+// the example songs, or shared out over the singer's own songs or a mix of
+// the two (first-note-songs.ts), and fewer when those songs hold fewer, a
+// run that never counts as a best. In each, the band plays the song's
 // lead-in and stops where its singer comes in, and the singer sings that
 // first note. Their entry is judged by ear first: the first note their
 // voice sits on (ENTRY_MS of it, steady inside ENTRY_STEADY_CENTS) is
