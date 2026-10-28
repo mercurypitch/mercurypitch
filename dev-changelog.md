@@ -9,6 +9,147 @@ The short, user-facing summary rendered in the app's Changelog modal lives in
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.9.25] - 2026-10-28
+
+24 commits since `v0.9.24` (5155a5663), from 5 PRs: #1245 (10 commits),
+#1244 (8), #1248 (3: the two coach fixes and these notes), #1246 (2) and
+#1247 (1). All were rebased onto `main`, and every commit came through a PR.
+
+On the web:
+
+- **Play the note keeps its place, its line under it** (#1248).
+  - The Sing tour's note stop, a hold-tone step, put its line ("Playing A3
+    now.", then "Heard nothing? Turn the volume up, ...") in the bubble's top
+    live region, after the title and body and above Play the note, so each
+    line pushed the button down as it came. At 320x568, where the bubble is
+    capped at 45dvh and its words scroll (#1243), the second line took the
+    button under the fold: a Tab away, but out of sight of the finger that
+    had just tapped it.
+  - The button and its line move to `src/components/coach/ToneStop.tsx`,
+    where the line stands under the button in a polite live region of its
+    own. The button keeps the place it was tapped in, at 1440x900 and at
+    320x568, where it stays whole in view with the words unscrolled and only
+    the line goes under the fold. The pair is one item of the words' column
+    (`.tone` in `CoachLayer.module.css`), so an empty line adds no gap.
+    `CoachLayer.tsx` goes from 797 lines to 754.
+  - Tests: `coach-tours.spec.ts` reads the button's settled box before the
+    tap and after the note: the same top to a pixel and the line under it,
+    and at 320x568 the button whole inside the words' box with the words
+    unscrolled, in place of the Tab that brought it back into view. The unit
+    tests of the line's words and its live region pass unchanged.
+- **The first-run mic offer waits while Merc has the screen** (#1248).
+  - The offer ("Your mic is off ...", with Enable mic) comes once ever, the
+    first time practice starts on Singing or Piano with the mic off, and
+    stays 15 s (`src/features/mic-feedback/usePlaybackMicNudge.ts`). Play
+    pressed before the Sing tour put it over the tour's bubble in the top
+    right corner at 1440x900, as it has since 0.9.23.
+  - It now reads `coachBusy()` (`src/lib/coach-state.ts`: a Merc tour asked
+    for or running, or the showcase). While that is true the offer waits,
+    unspent, and once Merc is done it comes as before if practice still runs
+    with the mic off. An offer already up when he takes the screen is taken
+    down and stays spent: it has been seen, and the Sing tour starts at the
+    mic.
+  - Tests: two new cases in `src/tests/playback-mic-nudge.test.tsx`, each
+    failing without the change. A plan's citation of the hook
+    (`docs/plans/signal-quality-advisor.md`) is re-anchored past the new
+    lines, and the module map is regenerated.
+
+Nothing else changes on the web. #1245 shares one decode between the Jam
+room's pitch read and First note's (`decodeAudioBytes` in
+`src/lib/decode-audio-to-mono.ts`, the same OfflineAudioContext decode at
+44.1 kHz), and the stem mixer hands a hosting room its notes read
+(`stem-mixer-hosting.ts`), which only the native Karaoke room uses.
+
+On the native app's test builds only (`PREMIUM_EXERCISES` and
+`EAR_LAB_WITH_MERC`, off on the web and in the store build, which
+`assert-bundle.mjs` holds to carrying none of them):
+
+- **#1245: First note on the singer's own songs, a words hint, and Sing on
+  in Karaoke.**
+  - First note plays the songs a singer split in the Karaoke room as well as
+    the three examples: the pill over the mic opens a Songs sheet with the
+    examples, your songs or a mix. The rules that find an entry are one
+    module the script and the phone share
+    (`src/features/first-note/entry-rules.ts`). A song is read once on the
+    phone (`own-song-read.ts`), its notes kept for the Karaoke room too, and
+    its entries kept under the song and its stems (`first-note-own-songs.ts`),
+    so a stem replaced in the studio is read again. A song with fewer than
+    two clean entries says so and sits out.
+  - "Show the words", a switch in the Songs sheet, shows the line the singer
+    comes in on while the band counts in. The owner asked for the hint on
+    28 Oct; that it ships off by default is the team's choice. It is
+    remembered on the device (`mp_first_note_words`).
+  - "Sing on in Karaoke", after a landing or from the result's rows, hands
+    the song to the Karaoke room, starting on the first of the four beats
+    counted before the entry. The room's song request gains an optional
+    `seekSec`.
+  - The Karaoke room offers the notes over the lyrics for every song that
+    has them or can have them read. Turning them on starts the same read the
+    mic starts for the pitch ribbon, and the chip fills a ring as it goes.
+  - Home note's harbour has its painting (upright 1440x2560, on its side
+    2048x1152, WebP), pinned at the lamp, with the drawing until it loads.
+    It rides the room's chunk and folds away with it (`PREMIUM_IMAGES`).
+  - Code health: `KaraokeRoomStage.tsx` is back under 800 lines
+    (`karaoke-notes-option.ts`, `karaoke-arrival.ts`), and the entry rules'
+    YIN reading is split into steps with the same arithmetic. The baseline
+    takes three deliberate cross-feature imports: First note reads the
+    Karaoke room's library and walks a vocal with the stem mixer's gatherer.
+  - From review: a read that is let go stops before it starts a whole
+    decode, and a song split again is read again.
+  - `docs/plans/ear-rooms.md` records the round and the owner's word of
+    28 Oct: the free taste is three runs per room, then the paywall, built
+    with the V1 flip.
+- **#1244: The Ear Lab with Merc.**
+  - The native Ear Lab tab is the bench with Merc: the glass, Today's three,
+    six stations, the Ear Path and the Ear Report. Every drill runs in
+    Merc's room, one lazy chunk (`stage-switch.tsx`), with a painting per
+    station.
+  - The drills' engines gain the seams it needs, and nothing else changes
+    for the web: a replay policy, a reveal that waits for Next after a miss,
+    a question voided by a stop and played again on resume, a rated run
+    rolled back when it is left, Android's back for a room over a tab, and a
+    heavy haptic on a seal.
+  - Fixes in the same PR: the store build no longer carries Merc's stills,
+    the serif or the station paintings; the room no longer scrolls sideways
+    (`overflow: clip`); Hear it again stops with the run; and a seal's plate
+    gives each track's reading its own unit.
+
+Builds and tests only:
+
+- **#1246:** each of the native builds' six example stems gets three tries,
+  5 and then 10 s apart, and a try is abandoned after 30 s with nothing
+  arriving (`apps/mercurypitch/scripts/fetch-karaoke-examples.mjs`): on
+  28 Oct the R2 bucket hung transfers for minutes. `jam-stage-layout.spec.ts`
+  serves the demo song itself instead of fetching it from the bucket.
+- **#1247:** the native builds keep the example stems in the Actions cache
+  (`.github/actions/fetch-assets`), keyed by the hash of
+  `apps/mercurypitch/scripts/fetch-karaoke-examples.mjs`, which holds their
+  pins, so a build reaches R2 only when that file changes.
+
+### Release steps
+
+1. **Migrations:** none. Nothing under `workers/db-worker/migrations` changed
+   since `v0.9.24`.
+2. **Secrets, variables and bindings:** none new. No `wrangler*` or `.env*`
+   file changed. #1247 adds the composite action
+   `.github/actions/fetch-assets` and its steps in `capacitor-app.yml`,
+   `mercurypitch-mobile.yml` and `pr-gate.yml`, and none reads a new secret
+   or variable.
+3. **Worker code:** no change. Traced with esbuild from each `wrangler`
+   `main`, no changed file is in the site worker's graph or the Jam
+   worker's; the DB worker's takes `src/lib/native-build.ts`, whose one
+   change is the new `EAR_LAB_WITH_MERC` constant, which it never reads.
+4. **Links into about.mercurypitch.com** (prod-upd step 0c): none new.
+5. **Social cards:** `pnpm run og:versions` stamped the 13 cards it reads
+   with no change.
+6. **What's New** is untouched: 0.9.25 is a patch.
+7. **Version files:** `package.json` goes from 0.9.24 to 0.9.25.
+8. **Native:** `apps/mercurypitch` gains First note's Songs sheet and Sing on
+   wiring, the room header and haptics the Ear Lab with Merc uses, and the
+   bundle assert's new checks (#1245, #1244), and its builds fetch the stems
+   with retries and from the Actions cache (#1246, #1247). The native app is
+   not released yet.
+
 ## [0.9.24] - 2026-10-28
 
 67 commits since `v0.9.23` (d37453987), from 10 PRs: #1234 (31 commits),

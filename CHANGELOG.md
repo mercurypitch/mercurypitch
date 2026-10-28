@@ -5,6 +5,20 @@ app, so every entry is one to three short sentences a stranger can follow — no
 PR numbers, no file names, no rationale. The full engineering history, at
 whatever length it needs, is in [`dev-changelog.md`](./dev-changelog.md).
 
+## [0.9.25] - 2026-10-28
+
+Merc's Sing tour keeps Play the note where you tapped it, and the mic offer
+waits for him.
+
+### Fixed
+
+- **Play the note stays where you tapped it.** In the Sing tour, the line
+  about the note now comes under the button, so on a small phone the button
+  no longer slips out of view.
+- **The mic offer waits for Merc.** The first-time notice that your mic is
+  off no longer covers his tour. It waits until he is done, and one already
+  showing goes when he starts.
+
 ## [0.9.24] - 2026-10-28
 
 Merc sings through the Sing tab to show you how it is done, and a tab's tour
