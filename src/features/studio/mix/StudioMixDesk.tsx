@@ -365,10 +365,12 @@ export function StudioMixDesk(props: StudioMixDeskProps) {
                         {track().name}
                       </button>
                     }
-                  />
-                  <StudioStripMeter
-                    name={track().name}
-                    level={props.meter.laneLevel?.(id)}
+                    meter={
+                      <StudioStripMeter
+                        name={track().name}
+                        level={props.meter.laneLevel?.(id)}
+                      />
+                    }
                   />
                 </div>
               )

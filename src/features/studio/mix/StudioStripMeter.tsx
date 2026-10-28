@@ -6,8 +6,10 @@
 // the fader's own value; the numbers are in its title. With no level (the
 // song stopped, or the lane not built) it sits at the floor.
 //
-// Its 0 dBFS stands beside the fader's 0 dB mark and its floor beside the
-// -60 mark, so a level reads against the marks printed beside the fader.
+// It lives inside the fader's drag area: a press on it starts a fader drag
+// there, and a pointer resting on it still reads its title. Its 0 dBFS
+// stands beside the fader's 0 dB mark and its floor beside the -60 mark, so
+// a level reads against the marks printed beside the fader.
 import { createMemo, createSignal, onCleanup, onMount, Show } from 'solid-js'
 import type { StudioLaneLevel } from '@/lib/studio/playback/transport'
 import { STUDIO_FADER_MAX_DB, STUDIO_FADER_MIN_DB, } from '../timeline/StudioTrackControls'
@@ -65,7 +67,7 @@ export function StudioStripMeter(props: Props) {
   const decibels = (db: number) =>
     Number.isFinite(db) ? db.toFixed(1) : '-inf'
 
-  // The strip lays the fader out; the meter follows the fader's box, from
+  // The fader's area lays the fader out; the meter follows its box, from
   // the 0 dB mark down the cap's travel, so it never moves the controls.
   onMount(() => {
     const host = meter.parentElement
