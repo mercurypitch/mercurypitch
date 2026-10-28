@@ -3,7 +3,8 @@
 // ============================================================
 //
 // A run is FIRST_NOTE_ROUNDS entries: ENTRIES_PER_SONG from each of the
-// example songs (first-note-songs.ts). In each, the band plays the song's
+// example songs, or shared out over the singer's own songs or a mix of the
+// two (first-note-songs.ts). In each, the band plays the song's
 // lead-in and stops where its singer comes in, and the singer sings that
 // first note. Their entry is judged by ear first: the first note their
 // voice sits on (ENTRY_MS of it, steady inside ENTRY_STEADY_CENTS) is
@@ -29,10 +30,16 @@
 import type { SequencePreset } from '@/lib/sequence/sequence-engine'
 import type { ExerciseLevel } from '@/stores/exercise-level'
 
-/** Entries from each song in a run. */
+/** Entries from each example song in a run. */
 export const ENTRIES_PER_SONG = 2
-/** Entries in a run: two from each of the three songs. */
+/** Entries in a run: two from each of the three examples. */
 export const FIRST_NOTE_ROUNDS = 6
+/**
+ * A song of the singer's own with fewer clean entries than this sits out
+ * its runs, and the room says so: a song with one place to come in would
+ * ask the same thing every run.
+ */
+export const OWN_SONG_MIN_ENTRIES = 2
 
 /** The singer's entry: the first note held this long, ms ... */
 export const ENTRY_MS = 200

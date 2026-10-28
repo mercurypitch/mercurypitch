@@ -69,20 +69,37 @@ describe('a finished First note run', () => {
       round(0, 10, true),
       round(1, -60, true),
       round(2, null, false),
+      round(3, 0, true),
+      round(4, null, false),
+      round(5, 20, true),
     ])
     const kept = keepFirstNoteRun('singer', summary, 1000)
     expect(kept).toEqual({ kept: true, improved: false })
     expect(recorded.calls).toHaveLength(1)
     expect(recorded.calls[0]).toMatchObject({
       type: 'first-note-stage',
-      score: 33,
-      metrics: { entriesOnNote: 1, entriesFound: 2, rounds: 3 },
+      score: 50,
+      metrics: { entriesOnNote: 3, entriesFound: 4, rounds: 6 },
     })
     expect(firstNoteBest('singer')).toMatchObject({
-      onNote: 1,
-      found: 2,
-      rounds: 3,
+      onNote: 3,
+      found: 4,
+      rounds: 6,
     })
+  })
+
+  it('keeps a shorter run in the history, against its own entries, and never as a best', () => {
+    // The singer's own songs, with two entries between them.
+    const summary = summarizeRun([round(0, 10, true), round(1, 0, true)])
+    expect(keepFirstNoteRun('singer', summary, 1000)).toEqual({
+      kept: true,
+      improved: false,
+    })
+    expect(recorded.calls[0]).toMatchObject({
+      score: 100,
+      metrics: { entriesOnNote: 2, rounds: 2 },
+    })
+    expect(firstNoteBest('singer')).toBeNull()
   })
 
   it('keeps nothing from a run with no voice in it', () => {

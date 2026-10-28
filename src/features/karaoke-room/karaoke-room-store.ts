@@ -211,11 +211,33 @@ export function takeKaraokeSongRequest(): KaraokeSongRequest | null {
   return request
 }
 
+const [libraryRequest, setLibraryRequest] = createSignal(false)
+
+/**
+ * The room's songs asked for from outside it: First note's "Sing your own
+ * songs", for a singer with none split yet. The library sheet is where
+ * Import is, and Import is the way to Cloud.
+ */
+export const karaokeLibraryRequest = libraryRequest
+
+/** Ask the room to open its songs, now or as it arrives. */
+export function requestKaraokeLibrary(): void {
+  setLibraryRequest(true)
+}
+
+/** The library request, once: taking it clears it. */
+export function takeKaraokeLibraryRequest(): boolean {
+  const asked = untrack(libraryRequest)
+  if (asked) setLibraryRequest(false)
+  return asked
+}
+
 /** Tests only: a room that has never been visited, with every default. */
 export function resetKaraokeRoomForTests(): void {
   parkedSong = null
   setStagedSong(null)
   setSongRequest(null)
+  setLibraryRequest(false)
   setPlayNextSignal(true)
   setBackgroundPlaySignal(true)
   setPictureInPictureSignal(true)

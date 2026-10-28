@@ -18,6 +18,7 @@
 
 import { batch, createSignal } from 'solid-js'
 import { savePitchAnalysisToDb } from '@/db/services/session-pitch-analysis-service'
+import { decodeAudioBytes } from '@/lib/decode-audio-to-mono'
 import type { JamPitchNeed, JamPitchProvisionState, } from '@/lib/jam/jam-pitch-provision'
 import { JAM_PITCH_IDLE, jamPitchNeed } from '@/lib/jam/jam-pitch-provision'
 import type { JamSong } from '@/lib/jam/jam-song'
@@ -67,11 +68,8 @@ export function setJamPitchProvisionSeams(
 }
 
 /**
- * Fetch a stem and decode it to mono samples.
- *
- * OfflineAudioContext rather than the room's live context: decoding needs
- * no output device and no user gesture, and a room on a phone should not
- * open a second hardware context to read a file.
+ * Fetch a stem and decode it: its first channel, as the samples to read.
+ * Decoded off the room's live context (decode-audio-to-mono.ts).
  */
 async function decodeVocalStem(
   url: string,
@@ -79,14 +77,7 @@ async function decodeVocalStem(
 ): Promise<{ samples: Float32Array; sampleRate: number }> {
   const res = await fetch(url, { signal })
   if (!res.ok) throw new Error(`vocal stem fetch failed: ${res.status}`)
-  const bytes = await res.arrayBuffer()
-  if (typeof OfflineAudioContext !== 'function') {
-    throw new Error('This browser cannot decode audio outside playback')
-  }
-  // Length and channel count are irrelevant: decodeAudioData allocates its
-  // own buffer and only borrows the sample rate.
-  const ctx = new OfflineAudioContext(1, 1, 44100)
-  const buffer = await ctx.decodeAudioData(bytes)
+  const buffer = await decodeAudioBytes(await res.arrayBuffer())
   return { samples: buffer.getChannelData(0), sampleRate: buffer.sampleRate }
 }
 

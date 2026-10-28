@@ -2,10 +2,14 @@
 // FirstNoteRoom — a song leads in; come in on the singer's first note
 // ============================================================
 //
-// The second Ear room (docs/plans/ear-rooms.md). A run is six entries from
-// the example songs the app ships. In each, the song's band plays its
-// lead-in, counting down its last four beats, and stops where the singer
-// comes in; the singer sings that first note. Their entry is judged by ear:
+// The second Ear room (docs/plans/ear-rooms.md). A run is up to six entries
+// from the example songs the app ships, the singer's own songs, or a mix: the
+// pill over the mic at rest opens the Songs sheet (FirstNoteSongs.tsx),
+// and the room reads a song of the singer's own for its entries while it
+// is at rest (first-note-own-songs.ts). In each entry, the song's band
+// plays its lead-in, counting down its last four beats, and stops where
+// the singer comes in; the singer sings that first note. Their entry is
+// judged by ear:
 // at Singer the note's line shows only once they have come in, and the
 // chip says whether they came in on the note. Then the voice draws its
 // trail against the line and lands when it holds in the band of light
@@ -27,7 +31,7 @@
 // Learning shows the line from the start.
 
 import type { JSX } from 'solid-js'
-import { createMemo, onMount, Show } from 'solid-js'
+import { createEffect, createMemo, createSignal, onCleanup, onMount, Show, untrack, } from 'solid-js'
 import { Volume2 } from '@/components/icons'
 import { MERC_FEET, MercView } from '@/components/room-kit/MercView'
 import type { MicState } from '@/components/room-kit/mic-state'
@@ -38,12 +42,16 @@ import { createRoomShell, RoomShell, ShellBarEnd, ShellBubble, ShellDock, ShellH
 import surface from '@/components/room-kit/RoomSurface.module.css'
 import type { RoundVoice } from '@/components/room-kit/round-voice'
 import { headOf, trailPath, trailY } from '@/components/room-kit/voice-trail'
+import { sourceHasOwnSongs } from './first-note-choices'
 import { bandHalfHeight, layoutStage, RESTING_LINE_SHARE, } from './first-note-layout'
 import type { FirstNotePhase } from './first-note-machine'
+import { isRunPhase } from './first-note-machine'
+import { readOwnSongs, stopReadingOwnSongs, waitingOwnSongs, } from './first-note-own-songs'
 import type { FirstNoteSummary } from './first-note-run'
 import { foundLine, ON_NOTE_DETAIL } from './first-note-run'
 import { FirstNoteLevel } from './FirstNoteLevel'
 import styles from './FirstNoteRoom.module.css'
+import { FirstNoteSongsButton, FirstNoteSongsSheet } from './FirstNoteSongs'
 import { StageScene } from './StageScene'
 import type { FirstNoteController } from './useFirstNoteController'
 import { useFirstNoteController } from './useFirstNoteController'
@@ -59,6 +67,12 @@ export interface FirstNoteRoomProps {
   art?: string
   /** No animation at all (the fixtures). */
   still?: boolean
+  /**
+   * The way to the Karaoke room's songs, where Import is, for a singer
+   * with none of their own split yet: the native shell's (only it can
+   * change the tab). Absent, the Songs sheet says how and offers no button.
+   */
+  onOwnSongs?: () => void
 }
 
 /** A stage before its first measure: a phone's size, so nothing is zero. */
@@ -98,9 +112,14 @@ function micName(phase: FirstNotePhase): string {
 }
 
 export function FirstNoteRoom(props: FirstNoteRoomProps): JSX.Element {
+  const [songsOpen, setSongsOpen] = createSignal(false)
   /* eslint-disable solid/reactivity -- read once, as documented */
   const room =
-    props.controller ?? useFirstNoteController({ voice: props.voice })
+    props.controller ??
+    useFirstNoteController({
+      voice: props.voice,
+      onNoSongs: () => setSongsOpen(true),
+    })
   /* eslint-enable solid/reactivity */
   const shell = createRoomShell<string, string>({
     ids: 'first-note',
@@ -109,6 +128,20 @@ export function FirstNoteRoom(props: FirstNoteRoomProps): JSX.Element {
     demo: null,
   })
   const phase = (): FirstNotePhase => room.state().phase
+
+  // The singer's own songs are read at rest, one at a time, while they are
+  // chosen; a run lets go of the read, so it never competes with the mic.
+  // A song that turns up waiting at rest is read too: the session store
+  // loading after the room opened, or a split finishing while it rests.
+  createEffect(() => {
+    if (isRunPhase(phase()) || !sourceHasOwnSongs()) {
+      untrack(stopReadingOwnSongs)
+      return
+    }
+    waitingOwnSongs()
+    untrack(readOwnSongs)
+  })
+  onCleanup(stopReadingOwnSongs)
 
   let stageEl: HTMLDivElement | undefined
   const size = createMeasure(
@@ -238,7 +271,9 @@ export function FirstNoteRoom(props: FirstNoteRoomProps): JSX.Element {
         {(round) => (
           <p class={styles.song} data-testid="first-note-song">
             <span class={styles.songTitle}>{round().song.title}</span>
-            <span class={styles.songCredit}>{round().song.credit}</span>
+            <Show when={round().song.credit !== ''}>
+              <span class={styles.songCredit}>{round().song.credit}</span>
+            </Show>
           </p>
         )}
       </Show>
@@ -264,19 +299,40 @@ export function FirstNoteRoom(props: FirstNoteRoomProps): JSX.Element {
         mic={firstMicState(phase())}
         micLabel={micName(phase())}
         still={props.still}
-        overMic={
-          <Show when={room.canHearAgain()}>
-            <button
-              type="button"
-              class={styles.hear}
-              onClick={() => room.hearAgain()}
-              data-testid="first-note-hear-again"
-            >
-              <Volume2 />
-              <span>Hear the band again</span>
-            </button>
-          </Show>
+        besideResult={
+          <button
+            type="button"
+            class={styles.textButton}
+            onClick={() => setSongsOpen(true)}
+            data-testid="first-note-change-songs"
+          >
+            Change the songs
+          </button>
         }
+        overMic={
+          <>
+            <Show when={phase() === 'intro'}>
+              <FirstNoteSongsButton onOpen={() => setSongsOpen(true)} />
+            </Show>
+            <Show when={room.canHearAgain()}>
+              <button
+                type="button"
+                class={styles.hear}
+                onClick={() => room.hearAgain()}
+                data-testid="first-note-hear-again"
+              >
+                <Volume2 />
+                <span>Hear the band again</span>
+              </button>
+            </Show>
+          </>
+        }
+      />
+
+      <FirstNoteSongsSheet
+        isOpen={songsOpen()}
+        close={() => setSongsOpen(false)}
+        onOwnSongs={props.onOwnSongs}
       />
     </RoomShell>
   )

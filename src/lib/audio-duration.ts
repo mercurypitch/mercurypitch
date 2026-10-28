@@ -1,6 +1,6 @@
 // Audio duration probes metadata without playback and releases its element, timer and object URL.
 export function audioDurationSecs(
-  file: File,
+  file: Blob,
   signal?: AbortSignal,
 ): Promise<number | null> {
   if (signal?.aborted === true) return Promise.resolve(null)

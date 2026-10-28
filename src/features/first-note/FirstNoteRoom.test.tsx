@@ -1,11 +1,61 @@
-import { cleanup, fireEvent, render, screen } from '@solidjs/testing-library'
+import { cleanup, fireEvent, render, screen, within, } from '@solidjs/testing-library'
+import { createSignal } from 'solid-js'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type * as CaptureModule from '@/components/room-kit/useExerciseCapture'
+import type { RoomSong } from '@/features/karaoke-room/karaoke-room-library'
 import { midiToF0 } from '@/lib/glass/test-frames'
 import type { PitchFrame } from '@/lib/pitch-f0-stream'
 import { setExerciseLevel } from '@/stores/exercise-level'
+import { resetFirstNoteChoicesForTests } from './first-note-choices'
+import { resetOwnSongsForTests, setOwnSongReaderForTests, } from './first-note-own-songs'
 import { BETWEEN_ROUNDS_MS, FIRST_NOTE_ROUNDS, MERC_GAP_SECONDS, MERC_NOTE_SECONDS, } from './first-note-rules'
 import type { FirstNoteEntry, FirstNoteSong } from './first-note-songs'
+import { FIRST_NOTE_SONGS } from './first-note-songs'
+
+// ── The singer's own songs, as the Karaoke room's library lists them ──
+
+const library = vi.hoisted(() => ({
+  songs: [] as RoomSong[],
+  /** Read with the songs, so a test can change them under the room. */
+  version: (() => 0) as () => number,
+  setVersion: (() => undefined) as (next: number) => unknown,
+}))
+
+vi.mock('@/features/karaoke-room/karaoke-room-library', () => ({
+  roomLibrary: () => {
+    library.version()
+    return library.songs
+  },
+  hydrateSong: async (song: RoomSong) => ({
+    vocal: `blob:fresh-${song.sessionId}-vocal`,
+    instrumental: `blob:fresh-${song.sessionId}-band`,
+  }),
+}))
+
+/** The library changes under the room: the session store loads, a split finishes. */
+function libraryNow(songs: RoomSong[]): void {
+  library.songs = songs
+  library.setVersion(library.version() + 1)
+}
+
+const ownSong = (sessionId: string, title: string): RoomSong => ({
+  sessionId,
+  title,
+  artist: null,
+  durationSec: 200,
+  credit: null,
+  kind: 'yours',
+  stems: { vocal: 'blob:dead-vocal', instrumental: 'blob:dead-band' },
+})
+
+const ownEntry = (at: number, midi: number): FirstNoteEntry => ({
+  at,
+  midi,
+  from: at - 8,
+  until: at + 4,
+  beats: [],
+  words: `The line at ${at}`,
+})
 
 // ── A capture the test feeds by hand ────────────────────────────
 
@@ -65,7 +115,7 @@ const LEAD_MS = 2000
 const LINE_MS = 1500
 
 const songs = vi.hoisted(() => ({
-  leadIns: [] as { slug: string; midi: number }[],
+  leadIns: [] as { slug: string; midi: number; vocal: string }[],
   lines: [] as { slug: string; midi: number }[],
   /** The next lead-in fails to play. */
   failNext: false,
@@ -95,7 +145,11 @@ function fakeSound(ms: number, from: number, fails: boolean) {
 vi.mock('./song-player', () => ({
   createSongPlayer: () => ({
     leadIn: (song: FirstNoteSong, entry: FirstNoteEntry) => {
-      songs.leadIns.push({ slug: song.slug, midi: entry.midi })
+      songs.leadIns.push({
+        slug: song.slug,
+        midi: entry.midi,
+        vocal: song.stems.vocal,
+      })
       const fails = songs.failNext
       songs.failNext = false
       return fakeSound(LEAD_MS, entry.from, fails)
@@ -239,6 +293,12 @@ describe('First note', () => {
     merc.sung = []
     recorded.calls = []
     localStorage.removeItem('mp_first_note_bests')
+    resetFirstNoteChoicesForTests()
+    resetOwnSongsForTests()
+    library.songs = []
+    const [version, setVersion] = createSignal(0)
+    library.version = version
+    library.setVersion = setVersion
     rafQueue = []
     source = null
     vi.stubGlobal('requestAnimationFrame', (cb: FrameRequestCallback) => {
@@ -258,6 +318,7 @@ describe('First note', () => {
 
   afterEach(() => {
     cleanup()
+    setOwnSongReaderForTests(null)
     vi.useRealTimers()
     vi.unstubAllGlobals()
     vi.restoreAllMocks()
@@ -424,6 +485,241 @@ describe('First note', () => {
     expect(line()).toBe('shown')
     await toTurn()
     expect(line()).toBe('shown')
+  })
+
+  describe("the songs: the examples, the singer's own, or a mix", () => {
+    const sheet = (): HTMLElement =>
+      screen.getByTestId('first-note-songs-sheet')
+    const choose = (source: 'examples' | 'yours' | 'mix'): void => {
+      fireEvent.click(screen.getByTestId('first-note-songs'))
+      fireEvent.click(
+        within(sheet()).getByTestId(`first-note-source-${source}`),
+      )
+      fireEvent.click(within(sheet()).getByRole('button', { name: 'Close' }))
+    }
+
+    it('names the choice over the mic at rest, the examples at first', () => {
+      render(() => <FirstNoteRoom onDone={() => undefined} />)
+      const pill = screen.getByTestId('first-note-songs')
+      expect(pill.textContent).toContain('The examples')
+      fireEvent.click(pill)
+      const choices = within(sheet()).getAllByRole('radio')
+      expect(choices.map((one) => one.textContent)).toEqual([
+        expect.stringContaining('The examples'),
+        expect.stringContaining('Your songs'),
+        expect.stringContaining('A mix'),
+      ])
+      expect(choices[0].getAttribute('aria-checked')).toBe('true')
+      // The singer's own songs can make a shorter run: up to six.
+      expect(sheet().textContent).toContain('Each run is up to six entries.')
+    })
+
+    it("reads a song of the singer's own that turns up while the room rests", async () => {
+      const read = vi.fn(async () => ({
+        entries: [ownEntry(20, 55), ownEntry(40, 57)],
+        dropped: [],
+      }))
+      setOwnSongReaderForTests(read)
+      render(() => <FirstNoteRoom onDone={() => undefined} />)
+      choose('yours')
+      await settle()
+      expect(read).not.toHaveBeenCalled()
+
+      // The session store, loading after the room opened, brings a song.
+      libraryNow([ownSong('late', 'Wild Mountain Thyme')])
+      await settle()
+      expect(read).toHaveBeenCalledTimes(1)
+      expect(read.mock.calls[0]).toEqual(['late', expect.anything()])
+    })
+
+    it("keeps a song's row in place while its read goes on", async () => {
+      library.songs = [
+        ownSong('mine', 'Danny Boy'),
+        ownSong('next', 'Scarborough Fair'),
+      ]
+      let progress: (percent: number) => void = () => undefined
+      setOwnSongReaderForTests(
+        (_id, run) =>
+          new Promise(() => {
+            progress = (percent) => run.onProgress?.(percent)
+          }),
+      )
+      render(() => <FirstNoteRoom onDone={() => undefined} />)
+      choose('mix')
+      await settle()
+      fireEvent.click(screen.getByTestId('first-note-songs'))
+      const [reading, waiting] = within(sheet()).getAllByTestId(
+        'first-note-own-song',
+      )
+
+      progress(30)
+      progress(31)
+      const [readingNow, waitingNow] = within(sheet()).getAllByTestId(
+        'first-note-own-song',
+      )
+      expect(readingNow).toBe(reading)
+      expect(waitingNow).toBe(waiting)
+      expect(
+        within(readingNow)
+          .getByRole('progressbar')
+          .getAttribute('aria-valuenow'),
+      ).toBe('31')
+    })
+
+    it('says plainly that a song could not be read, with no error in sight', async () => {
+      vi.spyOn(console, 'warn').mockImplementation(() => undefined)
+      library.songs = [
+        ownSong('broken', 'Danny Boy'),
+        ownSong('long', 'The Long Song'),
+      ]
+      setOwnSongReaderForTests(async (id) => {
+        if (id === 'broken') {
+          throw new Error('EncodingError: Unable to decode audio data')
+        }
+        return { entries: [], dropped: [], out: 'too-long' }
+      })
+      render(() => <FirstNoteRoom onDone={() => undefined} />)
+      choose('yours')
+      await settle()
+
+      fireEvent.click(screen.getByTestId('first-note-songs'))
+      const [broken, long] = within(sheet()).getAllByTestId(
+        'first-note-own-song',
+      )
+      expect(broken.dataset.state).toBe('failed')
+      expect(broken.textContent).toContain('Could not read this song')
+      expect(broken.textContent).not.toMatch(/decode|Error/)
+      expect(long.textContent).toContain(
+        'Left out: too long for this phone to read',
+      )
+    })
+
+    it("plays the singer's own song once it is read, from stems minted for the run", async () => {
+      library.songs = [ownSong('mine', 'Danny Boy')]
+      setOwnSongReaderForTests(async (_id, run) => {
+        run.onProgress?.(50)
+        return {
+          entries: [ownEntry(20, 55), ownEntry(40, 57), ownEntry(60, 59)],
+          dropped: [],
+        }
+      })
+      render(() => <FirstNoteRoom onDone={() => undefined} />)
+      choose('yours')
+      await settle()
+
+      fireEvent.click(screen.getByTestId('first-note-songs'))
+      const row = within(sheet()).getByTestId('first-note-own-song')
+      expect(row.dataset.state).toBe('ready')
+      expect(row.textContent).toContain('3 entries')
+      fireEvent.click(within(sheet()).getByRole('button', { name: 'Close' }))
+
+      await startRun()
+      await settle()
+      expect(phase()).toBe('band')
+      expect(songs.leadIns[0]).toMatchObject({
+        slug: 'mine',
+        vocal: 'blob:fresh-mine-vocal',
+      })
+      // Three entries are all the run there is in one song with three.
+      expect(chip()).toBe('Entry 1 of 3')
+      // A song of the singer's own has no credit to show.
+      expect(screen.getByTestId('first-note-song').textContent).toBe(
+        'Danny Boy',
+      )
+    })
+
+    it('shows how far a read has got, over the mic and in the sheet', async () => {
+      library.songs = [ownSong('mine', 'Danny Boy')]
+      setOwnSongReaderForTests(
+        (_id, run) =>
+          new Promise(() => {
+            run.onProgress?.(42)
+          }),
+      )
+      render(() => <FirstNoteRoom onDone={() => undefined} />)
+      choose('mix')
+      await settle()
+
+      expect(screen.getByTestId('first-note-songs').textContent).toContain(
+        '42%',
+      )
+      fireEvent.click(screen.getByTestId('first-note-songs'))
+      const row = within(sheet()).getByTestId('first-note-own-song')
+      expect(row.dataset.state).toBe('reading')
+      expect(
+        within(row).getByRole('progressbar').getAttribute('aria-valuenow'),
+      ).toBe('42')
+    })
+
+    it('lets go of a read when a run starts, and the mix plays the examples meanwhile', async () => {
+      library.songs = [ownSong('mine', 'Danny Boy')]
+      let stopped = false
+      setOwnSongReaderForTests(
+        (_id, run) =>
+          new Promise((_resolve, reject) => {
+            run.signal?.addEventListener('abort', () => {
+              stopped = true
+              const error = new Error('stopped')
+              error.name = 'AbortError'
+              reject(error)
+            })
+          }),
+      )
+      render(() => <FirstNoteRoom onDone={() => undefined} />)
+      choose('mix')
+      await settle()
+      expect(stopped).toBe(false)
+
+      await startRun()
+      expect(phase()).toBe('band')
+      expect(stopped).toBe(true)
+      const examples = new Set(FIRST_NOTE_SONGS.map((song) => song.slug))
+      expect(examples.has(songs.leadIns[0].slug)).toBe(true)
+    })
+
+    it('says plainly that a song with too few clear entries sits out', async () => {
+      library.songs = [ownSong('mine', 'Amazing Grace')]
+      setOwnSongReaderForTests(async () => ({
+        entries: [ownEntry(20, 55)],
+        dropped: [],
+      }))
+      render(() => <FirstNoteRoom onDone={() => undefined} />)
+      choose('yours')
+      await settle()
+
+      fireEvent.click(screen.getByTestId('first-note-songs'))
+      const row = within(sheet()).getByTestId('first-note-own-song')
+      expect(row.dataset.state).toBe('few')
+      expect(row.textContent).toContain(
+        'Left out: only 1 clear entry, it needs 2',
+      )
+    })
+
+    it('opens the songs instead of starting when none of the chosen can play', async () => {
+      const onOwnSongs = vi.fn()
+      render(() => (
+        <FirstNoteRoom onDone={() => undefined} onOwnSongs={onOwnSongs} />
+      ))
+      choose('yours')
+      expect(screen.queryByTestId('first-note-songs-sheet')).toBeNull()
+
+      fireEvent.click(screen.getByTestId('first-note-mic'))
+      await settle()
+      expect(phase()).toBe('intro')
+      // No song of the singer's own yet: how one comes to be here, and the way.
+      const empty = within(sheet()).getByTestId('first-note-no-songs')
+      expect(empty.textContent).toContain('No songs of your own yet')
+      fireEvent.click(within(empty).getByTestId('first-note-own-songs'))
+      expect(onOwnSongs).toHaveBeenCalledTimes(1)
+    })
+
+    it('offers no way to the songs where the shell has none', () => {
+      render(() => <FirstNoteRoom onDone={() => undefined} />)
+      choose('yours')
+      fireEvent.click(screen.getByTestId('first-note-songs'))
+      expect(within(sheet()).getByTestId('first-note-no-songs')).toBeTruthy()
+      expect(screen.queryByTestId('first-note-own-songs')).toBeNull()
+    })
   })
 
   it('keeps the line hidden after the entry at Professional, until the voice lands', async () => {

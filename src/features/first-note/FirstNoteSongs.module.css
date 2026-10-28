@@ -1,0 +1,293 @@
+/* First note's songs (FirstNoteSongs.tsx): the pill over the mic at rest,
+   and the sheet it opens. The pill takes the room's dark glass, as "Hear
+   the band again" does in the same place; the sheet takes the level
+   sheet's rows (room-kit LevelControl.module.css). */
+
+.pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 44px;
+  max-width: 100%;
+  padding: 0 14px 0 16px;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  border-radius: 22px;
+  background: rgba(20, 8, 12, 0.66);
+  color: var(--text-primary);
+  font: 600 15px/1 var(--font-body, sans-serif);
+  white-space: nowrap;
+}
+
+.pill svg {
+  flex: none;
+  width: 18px;
+  height: 18px;
+}
+
+.pill > svg:last-child {
+  width: 14px;
+  height: 14px;
+  opacity: 0.8;
+}
+
+.pillNote {
+  color: #ffd36b;
+  font-variant-numeric: tabular-nums;
+}
+
+/* ── The sheet ──────────────────────────────────────────────── */
+
+.sheet {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding-bottom: 8px;
+}
+
+.head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  padding-top: 4px;
+}
+
+.title {
+  margin: 0;
+  font: 600 18px/24px var(--font-body, sans-serif);
+  color: var(--text-primary);
+}
+
+.sub {
+  margin: 2px 0 0;
+  font: 400 13px/18px var(--font-body, sans-serif);
+  color: var(--text-secondary);
+}
+
+.close {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  margin: -6px -8px 0 0;
+  border: 0;
+  border-radius: 22px;
+  background: transparent;
+  color: var(--text-secondary);
+}
+
+.sources {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.source {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  min-height: 60px;
+  padding: 8px 12px;
+  border: 1px solid color-mix(in srgb, var(--text-primary) 10%, transparent);
+  border-radius: 14px;
+  background: color-mix(in srgb, var(--text-primary) 4%, transparent);
+  color: inherit;
+  font: inherit;
+  text-align: left;
+}
+
+.source[aria-checked='true'] {
+  border-color: color-mix(in srgb, var(--accent, #58a6ff) 60%, transparent);
+  background: color-mix(in srgb, var(--accent, #58a6ff) 12%, transparent);
+}
+
+.sourceIcon,
+.songIcon {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--text-primary) 8%, transparent);
+  color: var(--text-primary);
+}
+
+.sourceIcon svg,
+.songIcon svg {
+  width: 20px;
+  height: 20px;
+}
+
+.sourceText,
+.songText {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.sourceName,
+.songTitle {
+  overflow: hidden;
+  font: 600 15px/20px var(--font-body, sans-serif);
+  color: var(--text-primary);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.sourceLine,
+.songLine {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font: 400 13px/18px var(--font-body, sans-serif);
+  color: var(--text-secondary);
+}
+
+.mark {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 20px;
+  height: 20px;
+  color: var(--accent, #58a6ff);
+}
+
+.section {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.sectionHead {
+  display: flex;
+  justify-content: space-between;
+  margin: 4px 2px 0;
+  font: 600 12px/16px var(--font-body, sans-serif);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-secondary);
+}
+
+.sectionCount {
+  letter-spacing: 0.02em;
+  text-transform: none;
+  font-weight: 500;
+}
+
+.songs {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.song {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-height: 52px;
+  padding: 6px 10px;
+  border-radius: 12px;
+}
+
+.songOut .songTitle {
+  color: var(--text-secondary);
+}
+
+.songOut .songIcon {
+  opacity: 0.6;
+}
+
+.bar {
+  flex: none;
+  width: 72px;
+  height: 4px;
+  overflow: hidden;
+  border-radius: 2px;
+  background: color-mix(in srgb, var(--text-primary) 14%, transparent);
+}
+
+.barFill {
+  display: block;
+  height: 100%;
+  background: var(--accent, #a78bfa);
+}
+
+/* No song of the singer's own yet (the canvas's A2). */
+.empty {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 14px;
+  border: 1px solid color-mix(in srgb, var(--text-primary) 12%, transparent);
+  border-radius: 16px;
+}
+
+.emptyTitle {
+  margin: 0;
+  font: 600 16px/22px var(--font-body, sans-serif);
+  color: var(--text-primary);
+}
+
+.emptyLine {
+  margin: 0;
+  font: 400 14px/20px var(--font-body, sans-serif);
+  color: var(--text-secondary);
+}
+
+.steps {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 4px 0 0;
+  padding: 0;
+  list-style: none;
+  font: 600 14px/20px var(--font-body, sans-serif);
+  color: var(--text-primary);
+}
+
+.steps li {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.step {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 24px;
+  height: 24px;
+  box-sizing: border-box;
+  border: 1px solid color-mix(in srgb, #f0c75e 60%, transparent);
+  border-radius: 50%;
+  color: #f0c75e;
+  font: 600 12px/1 var(--font-body, sans-serif);
+}
+
+.cta {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  min-height: 48px;
+  margin-top: 6px;
+  padding: 0 20px;
+  border: 0;
+  border-radius: 24px;
+  background: var(--accent, #7c4dff);
+  color: #fff;
+  font: 600 16px/1 var(--font-body, sans-serif);
+}
+
+.cta svg {
+  width: 20px;
+  height: 20px;
+}

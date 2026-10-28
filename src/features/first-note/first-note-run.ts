@@ -11,13 +11,17 @@
 // A run in which no voice was heard is not a run (an aborted run is not a
 // result): the singer put the phone down. Every other finished run is kept,
 // once, through recordExerciseResult (which credits practice and the
-// streak), and the level's best takes it when it beats the last.
+// streak), and the level's best takes it when it beats the last. A run of
+// fewer than FIRST_NOTE_ROUNDS entries (the singer's own songs, with fewer
+// between them) is scored in the history against the entries it had, and
+// is never a best: a best is six entries against six.
 
 import { EXERCISE_FIRST_NOTE_STAGE } from '@/lib/domain/exercise-contracts'
 import { recordExerciseResult } from '@/stores/exercise-history-store'
 import type { ExerciseLevel } from '@/stores/exercise-level'
 import { recordFirstNoteBest } from '@/stores/first-note-store'
 import type { RoundOutcome } from './first-note-machine'
+import { FIRST_NOTE_ROUNDS } from './first-note-rules'
 import type { FirstMoment } from './merc-lines'
 
 export interface FirstNoteSummary {
@@ -79,7 +83,10 @@ export interface KeptRun {
   readonly improved: boolean
 }
 
-/** A finished run is kept: the history, and the level's best. */
+/**
+ * A finished run is kept: the history, against the entries it had, and the
+ * level's best, for a run of all FIRST_NOTE_ROUNDS entries only.
+ */
 export function keepFirstNoteRun(
   level: ExerciseLevel,
   summary: FirstNoteSummary,
@@ -100,7 +107,9 @@ export function keepFirstNoteRun(
     },
     completedAt: now,
   })
-  if (summary.cents === null) return { kept: true, improved: false }
+  if (summary.cents === null || summary.rounds < FIRST_NOTE_ROUNDS) {
+    return { kept: true, improved: false }
+  }
   const { improved } = recordFirstNoteBest(level, {
     onNote: summary.onNote,
     found: summary.found,

@@ -151,6 +151,15 @@
   height: 18px;
 }
 
+/* "Change the songs", under Again and Done: the Songs sheet again. */
+.textButton {
+  min-height: 44px;
+  border: 0;
+  background: transparent;
+  color: var(--text-secondary);
+  font: 500 15px/1 var(--font-body, sans-serif);
+}
+
 /* The room's one live region, for screen readers. */
 .said {
   position: absolute;
