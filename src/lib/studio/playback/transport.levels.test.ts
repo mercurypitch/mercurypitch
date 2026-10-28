@@ -2,6 +2,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { resolveStudioSoundGraph } from '../export/sound-graph'
 import { studioReservedMemoryBytes } from '../memory-budget'
+import type { StudioBufferLease } from './buffer-cache'
 import { freshGraphs, transportFixture } from './transport.test-fixtures'
 
 afterEach(() => vi.useRealTimers())
@@ -102,6 +103,79 @@ describe('Studio transport levels', () => {
     })
     expect(graphs[1].setMasterSpec).toHaveBeenCalledExactlyOnceWith(
       resolveStudioSoundGraph(moved, fresh).full,
+    )
+    await finish(f)
+  })
+
+  it('starts Play after an edit at the last measured master gain, not the 0 dB preview, until another song opens', async () => {
+    vi.useFakeTimers()
+    const f = transportFixture()
+    freshGraphs(f)
+    const measured = { gainDb: 4.5, safetyGainDb: -1.5 }
+    f.transport.setMasterGain({
+      projectId: f.project.id,
+      revision: f.project.revision,
+      ...measured,
+    })
+    await f.transport.play(f.project, [f.asset], 0)
+    const [track] = f.project.tracks
+    const edited = {
+      ...f.project,
+      revision: 1,
+      tracks: [{ ...track, gainDb: -3 }],
+    }
+    await f.transport.setSnapshot(edited, [f.asset])
+    expect(f.transport.getState().masterReady).toBe(false)
+
+    f.transport.pause()
+    await f.transport.play(edited, [f.asset], 4800)
+    const master = (call: number) =>
+      (f.buildGraph.mock.calls[call][4] as { master: { spec: unknown } }).master
+        .spec
+    expect(master(1)).toEqual(resolveStudioSoundGraph(edited, measured).full)
+    expect(f.transport.getState().masterReady).toBe(false)
+
+    // Another song opening forgets it.
+    f.transport.setMasterGain(null)
+    f.transport.pause()
+    await f.transport.play(edited, [f.asset], 0)
+    expect(master(2)).toEqual(resolveStudioSoundGraph(edited).full)
+    await finish(f)
+  })
+
+  it('starts a seek that must build a run, with nothing heard yet, at the last measured master gain', async () => {
+    vi.useFakeTimers()
+    const f = transportFixture()
+    freshGraphs(f)
+    const measured = { gainDb: 4.5, safetyGainDb: -1.5 }
+    f.transport.setMasterGain({
+      projectId: f.project.id,
+      revision: f.project.revision,
+      ...measured,
+    })
+    await f.transport.play(f.project, [f.asset], 0)
+    const edited = { ...f.project, revision: 1 }
+    await f.transport.setSnapshot(edited, [f.asset])
+    f.transport.pause()
+    // Play is still reading audio when the seek comes.
+    let settle!: (value: StudioBufferLease) => void
+    vi.mocked(f.cache.acquire).mockImplementationOnce(
+      () =>
+        new Promise((resolve) => {
+          settle = resolve
+        }),
+    )
+    const playing = f.transport.play(edited, [f.asset], 0)
+    await vi.waitFor(() => expect(f.cache.acquire).toHaveBeenCalledTimes(2))
+    const seeking = f.transport.seek(4800, edited, [f.asset])
+    settle({ buffers: new Map(), release: f.release })
+    await Promise.all([playing, seeking])
+
+    expect(f.buildGraph).toHaveBeenCalledTimes(2)
+    const [, , , , options] = f.buildGraph.mock.calls[1]
+    expect(options.fromFrame).toBe(4800)
+    expect(options.master.spec).toEqual(
+      resolveStudioSoundGraph(edited, measured).full,
     )
     await finish(f)
   })
