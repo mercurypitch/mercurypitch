@@ -71,7 +71,7 @@ heading, and the line above it, are in LESSON.md ("Section headings").
 
 1. **Masthead**: Lesson 1's (wordmark, "Season 1 · Lesson 09", anchors Lesson, Sing and Explorer,
    the Sound toggle off by default, Pause animations with its reduced-motion lock), through
-   `initMasthead(sections, { lesson: 9, deck })` (`kit/page-chrome.ts:110-126`): before anything else
+   `initMasthead(sections, { lesson: 9, deck })` (`kit/page-chrome.ts:115-131`): before anything else
    the page's links to other lessons follow the state it was served with (`followPageState`,
    `kit/page-state.ts:84-108`; Edge cases), then "Season 1 · Lesson 09" opens the lesson menu
    (`kit/lesson-menu.ts`), and the page's steps are remembered as the viewer moves through them
@@ -93,7 +93,7 @@ heading, and the line above it, are in LESSON.md ("Section headings").
    (1024 x 640) the stage and the choices too (CURIOSITY-MOMENTS § 3.1, "Above the fold",
    `docs/plans/find-your-pitch/CURIOSITY-MOMENTS.md:280-282`). Of the plan's levers, the recall's
    place is already used, since it follows the predict; the others are Merc and Tavi's size
-   (`--merc`, `kit/lesson-stage.css:204`) and the hook's length, and this hook is a short one.
+   (`--merc`, `kit/lesson-stage.css:212`) and the hook's length, and this hook is a short one.
    `src/e2e/learn-cold-open-fold.spec.ts` holds the title on the first screen at its seven sizes and
    reports where the first control and the choices sit (End to end 5).
 3. **Recall from Lesson 6**: Lesson 6's questions 2 and 3, for everyone (Toys 5).
@@ -824,7 +824,7 @@ What the page does where nothing above says:
   is served with. The site worker, and then the masthead's `followPageState`, make every link to a
   lesson that
   is not live no link (`src/lesson-gate.ts:523-533`, `:547-567`; `kit/page-state.ts:64-108`, called
-  by `initMasthead`, `kit/page-chrome.ts:126`): the "After Lesson 3" or "After Lesson 6" chip stays
+  by `initMasthead`, `kit/page-chrome.ts:131`): the "After Lesson 3" or "After Lesson 6" chip stays
   as a plain chip, and any other link keeps its words. The kit's quiz does the same for the recall's
   step links, which keep their words, "Try Lesson 6, Step 5 again", with no link
   (`kit/quiz.ts:186-216`). The recall still shows, and the explorer and the lesson menu draw the

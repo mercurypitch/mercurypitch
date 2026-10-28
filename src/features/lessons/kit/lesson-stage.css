@@ -70,6 +70,14 @@
 .gate p > [data-gate-line] {
   grid-area: 1 / 1;
 }
+/* the button's two labels share one cell as well (kit/page-chrome.ts), so it is as wide with
+   sound on as off, and the line beside it never rewraps */
+#gateBtn {
+  display: inline-grid;
+}
+#gateBtn > [data-gate-line] {
+  grid-area: 1 / 1;
+}
 /* hidden, not removed: it keeps its height, and a screen reader reads only the current line */
 .gate:not(.is-on) [data-gate-line='on'],
 .gate.is-on [data-gate-line='off'] {

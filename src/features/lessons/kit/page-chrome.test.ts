@@ -54,4 +54,31 @@ describe('initSoundSwitch', () => {
     expect(document.querySelectorAll('#gateText > *')).toHaveLength(2)
     expect([before, on, gateOn()]).toEqual([false, true, false])
   })
+
+  it("keeps both of the button's labels in it, the current one marked by the gate as its line is", () => {
+    // Arrange
+    chrome()
+    initSoundSwitch()
+    const label = (state: 'off' | 'on'): string =>
+      document.querySelector(`#gateBtn [data-gate-line="${state}"]`)
+        ?.textContent ?? ''
+    const labels = (): string[] =>
+      [...document.querySelectorAll('#gateBtn > *')].map(
+        (el) => el.textContent ?? '',
+      )
+    const before = labels()
+
+    // Act
+    Sound.set('on')
+    const on = labels()
+
+    // Assert: one cell holds both (kit/lesson-stage.css), so the button
+    // keeps one width; the gate's class picks the label that shows
+    expect([label('off'), label('on')]).toEqual([
+      'Turn sound on',
+      'Turn sound off',
+    ])
+    expect(on).toEqual(before)
+    expect(gateOn()).toBe(true)
+  })
 })

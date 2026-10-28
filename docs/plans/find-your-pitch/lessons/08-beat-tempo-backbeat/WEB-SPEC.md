@@ -128,16 +128,16 @@ items 3 and 4, and § 12 item 13; CURIOSITY-MOMENTS § 3.1, "the order to copy")
 the hero, one `section.hero` laid out as Lesson 2's (`learn/02.html:333-506`). Above 1080 px it
 has two columns, the hero's copy and the gate on the left, the stage and the predict on the right
 (`lesson-stage.css:16-21`); at 1080 px and below it is one column in the order listed here, with
-the promise after the predict (`lesson-stage.css:365-408`). So on a phone the title and the first
+the promise after the predict (`lesson-stage.css:373-416`). So on a phone the title and the first
 Play come before anything asks for an answer (CURIOSITY-MOMENTS § 3.1, "Above the fold"). Each
 section's heading, and the line above it, are in LESSON.md ("Section headings").
 
 1. **Masthead**: Lesson 3's (wordmark, "Season 1 · Lesson 08", anchors Lesson, Sing and Explorer,
    the Sound toggle off by default, Pause animations with its reduced-motion lock), through
-   `initMasthead` (`kit/page-chrome.ts:122-154`) with Lesson 3's map of sections and
+   `initMasthead` (`kit/page-chrome.ts:127-159`) with Lesson 3's map of sections and
    `{ lesson: 8, deck }` (`lesson-03/main.ts:104-112`), which draws the lesson menu, remembers the
    steps the viewer reaches, and first settles the page's own links to other lessons by the state
-   the page was served with (`followPageState`, `kit/page-chrome.ts:126`).
+   the page was served with (`followPageState`, `kit/page-chrome.ts:131`).
 2. **The hook**, the hero's copy: the kicker, the hook question as the title (`h1.hook#hook`, as
    `kit/lesson-copy.test.ts:323-332` requires of every page from its first commit), the meta as
    four chips ("16 minutes", FACTS 4; "After Lesson 1", a link; "Also useful: Lesson 6, Intervals",
@@ -150,7 +150,7 @@ section's heading, and the line above it, are in LESSON.md ("Section headings").
    claps on 2 and 4" (`twinkle-24`), locked until a choice (Toys 2).
 4. **The sound gate**: LESSON.md's line and its button. At 1080 px and below it sits between the
    stage and the predict, so its button comes before the choices in the reading order, as it does
-   in the tab order (`lesson-stage.css:386-396`).
+   in the tab order (`lesson-stage.css:394-404`).
 5. **The cold open's predict**: the predict card, `#predict`, under the stage, as Lesson 2's is
    (`learn/02.html:452`): LESSON.md's predict, its two `[data-choice]` buttons, the lock hint and
    the reveal (Toys 2).
@@ -318,20 +318,20 @@ its patterns with it.
   "Claps on 1 and 3" or "Claps moved to 2 and 4" as each version starts. Its cells light as Merc
   sings them, Merc or Tavi.
 - **Layout and targets** (FACTS 80). The figure is 250 px tall at every width, the kit's height on
-  the narrowest phones (`lesson-stage.css:1094-1110`), set by this page's stylesheet, because the
+  the narrowest phones (`lesson-stage.css:1102-1118`), set by this page's stylesheet, because the
   tallest drawing, the grid with its number strip and bar labels, is 182 px; the morph keeps that
   height in every state. On phones (below 961 px, where the stage sits above the text) the figure
-  spans the card's inner width (`.viz.wide`, `lesson-stage.css:1283-1293`), 356 px at 390 x 844.
+  spans the card's inner width (`.viz.wide`, `lesson-stage.css:1291-1301`), 356 px at 390 x 844.
   The grid's four beat columns sit beside the 56 px label column with 4 px between, so a cell is 72
   px wide at 390 px, 60.5 px at 344 px and never under 44 px at any width from 344 to 1440 px, and
   each lane is 44 px tall: every cell is a target of at least 44 x 44 px, and none overlaps
   another. Where the kit caps the figure under 182 px, on a phone held sideways (162 px at 844 x
-  390, `lesson-stage.css:1111-1128`), the bar labels go and the numbers move into the cells' top
+  390, `lesson-stage.css:1119-1136`), the bar labels go and the numbers move into the cells' top
   corners, so the grid needs 140 px (FACTS 80). On touch the figure keeps the kit's `touch-action:
 pan-y` (`lesson-stage.css:776`), so a swipe still scrolls; every action is a button.
 - **The stuck stage** (FACTS 80). Beside the text the kit gives the stage the room the window
   leaves under the masthead and caps the figure at that room less the rest of the stage, which
-  `stage-fit.ts` measures (`lesson-stage.css:662-704`; `stage-fit.ts:22-44`). The beat machine's
+  `stage-fit.ts` measures (`lesson-stage.css:670-712`; `stage-fit.ts:22-44`). The beat machine's
   stages, from the kit's stylesheets with a model that reproduces three measured stages, are at
   1024 px wide:
 
@@ -698,7 +698,7 @@ lesson is not live where the page is served, the words stay with no link, which 
   `<div data-if-live="6">`. Where Lesson 6 is not live, the site worker takes out the wrapper and
   the section in it (`src/lesson-gate.ts:20-21`), and on a page no worker served `followPageState`
   does the same as the page boots (`kit/page-state.ts:84-108`, run first in `initMasthead`,
-  `kit/page-chrome.ts:126`); where it is live, the wrapper goes and the section stays. The build
+  `kit/page-chrome.ts:131`); where it is live, the wrapper goes and the section stays. The build
   marks the wrapper's tag `hidden` where its build's default holds Lesson 6 back, as it marks a
   reading's span, so a page no worker served reads right before its script runs: this page taught
   the build's marker that `<div>` form (`tools/draft-lessons.ts:134`, in `markLessonStates`,
@@ -1217,7 +1217,7 @@ figures' accessible names and every live region use words only. The page stores 
 records (`fyp-l08-recall-seed`, `fyp-l08-recall-v1`, `fyp-l08-seed`, `fyp-l08-quiz-v1`),
 `fyp-done`, `fyp-voice`, the masthead's Pause animations choice, `fyp-motion`
 (`kit/motion-switch.ts:12`), and the steps the viewer reached, the kit's `fyp-pos`
-(`kit/position.ts:20`), which `initMasthead` keeps (`kit/page-chrome.ts:122-154`), and the kit's
+(`kit/position.ts:20`), which `initMasthead` keeps (`kit/page-chrome.ts:127-159`), and the kit's
 record of the welcome tour, `fyp-tour` (`kit/tour-gate.ts:29`); nothing from the toys, the take or
 Sing it but the voice.
 

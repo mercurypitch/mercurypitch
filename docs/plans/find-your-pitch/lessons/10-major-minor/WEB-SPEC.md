@@ -97,10 +97,10 @@ FACTS 5a). Each section's heading, and the line above it, are in LESSON.md ("Sec
 
 1. **Masthead**: Lesson 4's (wordmark, "Season 1 · Lesson 10", anchors Lesson, Sing and Explorer,
    the Sound toggle off by default, Pause animations with its reduced-motion lock), through
-   `initMasthead` (`src/features/lessons/kit/page-chrome.ts:122-154`) with Lesson 4's map of
+   `initMasthead` (`src/features/lessons/kit/page-chrome.ts:127-159`) with Lesson 4's map of
    sections and `{ lesson: 10, deck }` (`lesson-04/main.ts:109-119`), which draws the lesson menu,
    remembers the steps the viewer reaches and first settles the page's links to other lessons for
-   the state it was served with (`followPageState`, `src/features/lessons/kit/page-chrome.ts:126`).
+   the state it was served with (`followPageState`, `src/features/lessons/kit/page-chrome.ts:131`).
 2. **Hero, with the cold open**, laid out as Lesson 2's (`learn/02.html:333-506`). Its copy holds
    the kicker, the hook question as the title (the `<h1 class="hook" id="hook">` every lesson page
    has, `learn/04.html:332`), the meta as three chips, the promise and the sound gate from
@@ -114,7 +114,7 @@ FACTS 5a). Each section's heading, and the line above it, are in LESSON.md ("Sec
    choice. The predict card sits under the stage, as Lesson 2's does (`:452`): LESSON.md's predict,
    its two choices, the lock hint and the reveal (Toys 3). On a phone the hero's parts run kicker,
    title, meta, the stage, the gate, the predict, then the promise
-   (`src/features/lessons/kit/lesson-stage.css:365-408`), so the title and the first Play come
+   (`src/features/lessons/kit/lesson-stage.css:373-416`), so the title and the first Play come
    before anything asks for an answer (CURIOSITY-MOMENTS § 3.1, "Above the fold"; FACTS 5a).
 3. **Recall from Lesson 6**, straight after the hero (`learn/02.html:509`): Lesson 6's questions 2
    and 3, shown to everyone, since Lesson 6 is a prerequisite (Toys 8; FACTS 7).
@@ -308,23 +308,23 @@ page: Lesson 12 draws its chords as rooms on the spiral and needs no chord's not
   stairs in place, as the compact window does, so a scale on B4 shows B4 to B5. The page's
   stylesheet sets that height on the figure's own class at every width, since the kit's figures are
   330 px on a desktop, 280 px in the deck and 250 px up to 420 px wide, or 380, 340 and 310 for a
-  tall one (`lesson-stage.css:780-798`, `:1084-1089`, `:1094-1100`), as Lesson 6's 350 px figure is
+  tall one (`lesson-stage.css:788-806`, `:1092-1097`, `:1102-1108`), as Lesson 6's 350 px figure is
   taller than the kit's own. Across the narrowest figure, 310 px at 344 px wide, a row of the
   bracket (60 px), the names (56 px), a bead's target (44 px) and the gap buttons (120 px), with
   their spaces, takes 300 px. On phones (up to 960 px wide, where the stage sits above the text) the
   figure spans the card's inner width (`.viz.wide`,
-  `src/features/lessons/kit/lesson-stage.css:1282-1293`), 356 px at 390 x 844. In the scale state no
+  `src/features/lessons/kit/lesson-stage.css:1290-1301`), 356 px at 390 x 844. In the scale state no
   stair is a target: the plays are the predict's buttons, so the eight stairs share the figure's
   width, 38.8 px each at 344 px. On touch the figure keeps the kit's `touch-action: pan-y`
-  (`lesson-stage.css:780-788`), so a swipe still scrolls the page; every action is a button.
+  (`lesson-stage.css:788-796`), so a swipe still scrolls the page; every action is a button.
 - **The stuck stage.** Beside the text, the stage has the room the window leaves under the masthead,
-  its height less the 58 px masthead and 18 px (`lesson-stage.css:662-683`; `--mast`,
+  its height less the 58 px masthead and 18 px (`lesson-stage.css:670-691`; `--mast`,
   `src/features/lessons/kit/lesson-base.css:94`): 564, 555, 604 and 581 px at the kit's four short
   landscape sizes (`src/e2e/learn-stage-fit.spec.ts:35-55`). The kit shrinks a figure to fit, never
-  below its `--viz-min`, 180 px unless a lesson's stylesheet sets more (`lesson-stage.css:687-704`),
+  below its `--viz-min`, 180 px unless a lesson's stylesheet sets more (`lesson-stage.css:695-712`),
   so the page sets `--viz-min: 340px` on the stuck stage only, under
   `@media (min-width: 961px) and (min-height: 561px)`, the stage's stuck condition and the opposite
-  of the deck's query (`lesson-stage.css:1037-1093`). The stage, with its head, the 342 px figure,
+  of the deck's query (`lesson-stage.css:1045-1101`). The stage, with its head, the 342 px figure,
   its rows of 44 px controls and the card's padding, measures 514 px with one row (Steps 1 and 2)
   and 568 px with two (Steps 3 to 5), so it fits the rooms of 604 and 581 px; in the rooms of 564
   and 555 px, at 1024 x 640 and 1133 x 631, Steps 3 to 5's card is capped at the room and scrolls
@@ -334,7 +334,7 @@ page: Lesson 12 draws its chords as rooms on the spiral and needs no chord's not
   what keeps every step to two rows of controls beside the text.
 - **The compact layout** (FACTS 82). On a phone held sideways the kit caps the deck's figure so that
   it and its toy's first row of controls share the screen, down to its `--viz-min`, 150 px unless a
-  lesson's stylesheet sets more (`lesson-stage.css:1111-1128`): 162 px at 844 x 390, and 150 px on
+  lesson's stylesheet sets more (`lesson-stage.css:1119-1136`): 162 px at 844 x 390, and 150 px on
   the shortest phones. The page leaves that floor alone, and the toy reads its figure's height
   whenever it changes and, below 340 px, draws its compact layout. Its window is the chord's own
   eight rows, root to fifth, 105 px, with 22 px above and below for the targets, 149 px in all, so
@@ -670,7 +670,7 @@ Lesson 2's `.tease` (`src/features/lessons/lesson-02/lesson-02.css:510`), which
 `learn-next-card.spec.ts` tests, and not the tease line's `.next-tease`
 (`src/features/lessons/kit/lesson-sections.css:296-298`). The kit has no shared still styles: each
 page keeps its own, as Lesson 8 keeps `.l08-tease` (`lesson-08/lesson-08.css:271-301`), and this
-page's is `.l10-tease`, in its own stylesheet (`lesson-10/lesson-10.css:288-315`). It does not move.
+page's is `.l10-tease`, in its own stylesheet (`lesson-10/lesson-10.css:282-309`). It does not move.
 
 ## Audio
 
@@ -1183,7 +1183,7 @@ words only. The page stores the quiz seeds and records (`fyp-l10-recall-seed`, `
 `fyp-voice` (`voice-choice.ts:20`), the masthead's Pause animations choice, `fyp-motion`
 (`src/features/lessons/kit/motion-switch.ts:12`), and the steps the viewer reached, the kit's
 `fyp-pos` (`src/features/lessons/kit/position.ts:20`), which `initMasthead` keeps
-(`page-chrome.ts:122-154`), and its record of the welcome tour, `fyp-tour`
+(`page-chrome.ts:127-159`), and its record of the welcome tour, `fyp-tour`
 (`src/features/lessons/kit/tour-gate.ts:29`), which every lesson page stores through the kit;
 nothing from the toys, the ear game or Sing it but the voice.
 

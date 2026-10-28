@@ -179,7 +179,7 @@ live and free play.
   (`kit/tune-line.ts`), and the song must sit on the column's rows. Do runs from the
   column's bottom to 15 semitones up, so the tune never leaves the column, and opens on E3 (or E4)
   (FACTS 84). With a mouse or pen a vertical drag also slides it; on touch the stage keeps
-  `touch-action: pan-y`, as Lesson 1's does (`kit/lesson-stage.css:787`), so a swipe scrolls
+  `touch-action: pan-y`, as Lesson 1's does (`kit/lesson-stage.css:795`), so a swipe scrolls
   the page and the buttons slide. The beads carry no names. A readout names the move and the place,
   never the key: "Moved up 2 semitones: all of it in the lit middle", "reaching into the dimmed top
   end" or "reaching into the dimmed bottom end", so no note needs a key's spelling. From E3 the tune
