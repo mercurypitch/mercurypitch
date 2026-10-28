@@ -1,6 +1,7 @@
-/* Home note's world: the night harbour (HarbourScene.tsx). Every colour
-   here is a stand-in's flat colour; the beam, the band, the trail and the
-   lamp are the exercise and keep their look under a painting. */
+/* Home note's world: the night harbour (HarbourScene.tsx). Every colour of
+   the drawing is a stand-in's flat colour, until the painting loads over
+   it; the beam, the band, the trail and the lamp are the exercise and keep
+   their look over either. */
 
 .scene {
   position: absolute;
@@ -17,6 +18,61 @@
   top: 0;
   display: block;
   pointer-events: none;
+}
+
+/* The painting (docs/plans/ear-rooms.md), over the drawing once it has
+   loaded, and the drawing at rest under it: its swell stops moving. Pinned
+   at the lamp by the scene (object-position), so a crop keeps the
+   lighthouse under the drawn lamp. */
+.painting {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.paintingImage {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  opacity: 0;
+  transition: opacity 400ms ease;
+  user-select: none;
+}
+
+.painted .paintingImage {
+  opacity: 1;
+}
+
+.painted .backdrop {
+  display: none;
+}
+
+/* Over a painting, the head and the dock keep their dusk dark enough to
+   read on; the beam's water stays as painted. */
+.paintingShade {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  pointer-events: none;
+  background: linear-gradient(
+    180deg,
+    rgba(5, 8, 24, 0.55) 0%,
+    rgba(5, 8, 24, 0) 18%,
+    rgba(5, 8, 24, 0) 78%,
+    rgba(5, 8, 24, 0.6) 100%
+  );
+}
+
+.painted .paintingShade {
+  opacity: 1;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .paintingImage {
+    transition: none;
+  }
 }
 
 .star {

@@ -83,6 +83,47 @@ which the native screen hands in. The band is a small organ synth in the room
 **Next, from the canvas.** The intro's chords as small lamps under the chip (I, IV, V lit as each
 plays), and the result's six keys as lamps that replay their intro when tapped.
 
+### The harbour's painting (for the owner to make)
+
+The room is ready for a painted harbour (`src/features/home-note/HarbourScene.tsx`): it asks for
+`/ear-rooms/harbour-portrait.webp`, and `/ear-rooms/harbour-landscape.webp` on a screen held on its
+side, shows the painting once it has loaded, and keeps today's drawing until then and wherever the
+app does not carry the files. The beam (home's line), the band of light around it, the singer's
+trail, the lamp's glow and Merc are drawn over it by the app, so the painting must leave them out.
+The app pins the picture at the lantern, so the lantern has to sit at **84% across and 44% down** in
+both files; a taller or wider screen crops around that point.
+
+Copy-paste prompt, in the house style of the other room paintings (Echo's rooftops, Lip roll's
+bay, the Karaoke room's theatre: painted, cinematic, deep navy with warm gold light, a quiet sky):
+
+> A quiet harbour at dusk, a cinematic digital matte painting with soft film-like light and fine
+> painterly texture, like a hand-painted background from an animated feature. Deep indigo and navy
+> sky overhead, warming to a last band of amber and rose along the horizon behind low dark hills.
+> A white lighthouse with two deep red bands stands on dark wet rocks near the right edge; its
+> lantern room glows warm gold, a soft round glow with no beam, centred 84% across and 44% down
+> the frame. A calm, glassy sea fills the frame below a horizon 60% down, long gentle swells with
+> faint gold and violet reflections. At the lower left a weathered wooden pier runs in from the left
+> edge to a third of the way across, its deck 73% down, empty, wide enough for a small character to
+> stand on at 20% across. A few tiny harbour lights low on the far shore at the left. The top fifth
+> of the sky is calm and nearly empty, a few faint first stars; the bottom sixth is dark water,
+> nearly black. No beam of light, no people, no boats, no birds, no text, no logos, no frame.
+> Portrait, 9:16.
+
+For the landscape twin, the same prompt ending instead: "Landscape, 16:9: the same harbour, wider,
+with more sea and sky to the left; the lantern still 84% across and 44% down, the horizon 60% down,
+the pier from the left edge to a third of the way across with its deck 73% down."
+
+Keep clear for the exercise: the band from 25% to 63% down across the left two-thirds (the trail's
+reach either side of the beam) has no bright stars, lights or boats; the lower left above the pier
+is open for Merc; the top and bottom edges stay dark enough for the chip and the mic.
+
+To ship it: export WebP at q90, 1440 x 2560 and 2048 x 1152 (the theatre's sizes), as
+`harbour-portrait.webp` and `harbour-landscape.webp` in `apps/mercurypitch/native-only/ear-rooms/`,
+and add one entry to `apps/mercurypitch/native-assets.mjs` in the same change:
+`{ glob: 'ear-rooms/harbour-*.webp', root: 'native', reason: "Home note's harbour, upright and on its side (src/features/home-note/HarbourScene.tsx)." }`.
+The entry and the files land together: an entry that matches no file fails the native build
+(`scripts/sync-native-assets.mjs`).
+
 ## Room 2: First note
 
 **The skill.** Coming in on the right note when a song's intro ends, from the band alone: the
