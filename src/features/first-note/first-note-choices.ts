@@ -8,8 +8,9 @@
 //   the songs   the examples the app ships (the default), the singer's own
 //               songs, or a mix of the two
 //   the words   "Show the words": the words of the line the singer comes in
-//               on, while the band counts in and in their turn. Off by
-//               default, so the room stays ear first (owner, 28 Oct 2026)
+//               on, while the band counts in and in their turn. The owner
+//               asked for an optional hint (28 Oct 2026); it ships off by
+//               default, our choice, so the room stays ear first
 //
 // Built on first read, as the room's bests are (first-note-store.ts), so
 // nothing at this module's top level touches storage.

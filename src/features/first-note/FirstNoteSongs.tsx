@@ -12,10 +12,11 @@
 // own split yet is told how one comes to be here, with the way to it when
 // the shell offers one (A2: the Karaoke room's songs, where Import is).
 //
-// Last, "Show the words": the hint that puts the words of the line the
-// singer comes in on over the stage (owner, 28 Oct 2026). Off by default,
-// and here rather than on the stage, so the room stays ear first and a
-// singer who wants the words finds them where the songs are chosen.
+// Last, "Show the words": the optional hint the owner asked for (28 Oct
+// 2026), which puts the words of the line the singer comes in on over the
+// stage. It ships off by default, our choice, and lives here rather than on
+// the stage, so the room stays ear first and a singer who wants the words
+// finds them where the songs are chosen.
 
 import type { Component, JSX } from 'solid-js'
 import { createMemo, For, Show } from 'solid-js'

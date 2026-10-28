@@ -174,8 +174,8 @@ export function planRun(
 }
 
 /**
- * "Sing on in Karaoke" starts the whole song this far ahead of an entry
- * whose lead-in has no beats to count (owner, 28 Oct 2026), s.
+ * "Sing on in Karaoke" (the owner's request, 28 Oct 2026) starts the whole
+ * song this far ahead of an entry whose lead-in has no beats to count, s.
  */
 export const SING_ON_LEAD_SEC = 3
 
