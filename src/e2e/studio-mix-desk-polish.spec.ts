@@ -260,6 +260,71 @@ test.describe('on a tablet', () => {
       ),
     ).toBe(resting)
   })
+
+  test('in light, the flavour row fades out at the edge where more flavours wait', async ({
+    page,
+  }) => {
+    test.setTimeout(120_000)
+    await page.addInitScript(() => {
+      localStorage.setItem('pitchperfect_theme', 'light')
+    })
+    await openArrangement(page)
+    const desk = await openDesk(page, true)
+    const row = desk.getByRole('group', { name: 'Flavour', exact: true })
+    const edges = () =>
+      row.evaluate((element) => {
+        const style = getComputedStyle(element)
+        return {
+          scrolls: element.scrollWidth > element.clientWidth + 1,
+          before: element.hasAttribute('data-more-before'),
+          after: element.hasAttribute('data-more-after'),
+          faded: (style.maskImage || style.webkitMaskImage) !== 'none',
+        }
+      })
+    // A short tablet desk keeps the flavours to one row that scrolls.
+    await expect
+      .poll(edges)
+      .toEqual({ scrolls: true, before: false, after: true, faded: true })
+
+    await row.evaluate((element) => {
+      element.scrollLeft = element.scrollWidth
+    })
+    await expect
+      .poll(edges)
+      .toEqual({ scrolls: true, before: true, after: false, faded: true })
+
+    // Back at the start, Tab to the first chip the fade reaches: it comes
+    // out from under the fade.
+    const reached = await row.evaluate((element) => {
+      element.scrollLeft = 0
+      const fade = element.getBoundingClientRect().right - 32
+      const chips = [...element.querySelectorAll('button')]
+      const first = chips.findIndex(
+        (chip) => chip.getBoundingClientRect().right > fade + 1,
+      )
+      chips[first - 1].focus()
+      return chips[first].textContent
+    })
+    await expect.poll(edges).toMatchObject({ before: false, after: true })
+    await page.keyboard.press('Tab')
+    await expect
+      .poll(() =>
+        row.evaluate((element) => {
+          const chip = document.activeElement!
+          const box = chip.getBoundingClientRect()
+          const shown = element.getBoundingClientRect()
+          return {
+            chip: chip.textContent,
+            underFade:
+              (element.hasAttribute('data-more-after') &&
+                box.right > shown.right - 31) ||
+              (element.hasAttribute('data-more-before') &&
+                box.left < shown.left + 31),
+          }
+        }),
+      )
+      .toEqual({ chip: reached, underFade: false })
+  })
 })
 
 test.describe('on a tablet held upright', () => {

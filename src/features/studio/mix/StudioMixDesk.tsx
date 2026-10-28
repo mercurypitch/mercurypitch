@@ -57,6 +57,23 @@ interface StudioMixDeskProps {
   onClose(): void
 }
 
+/** Which edges of a sideways row hide more of it. */
+interface HiddenEdges {
+  readonly before: boolean
+  readonly after: boolean
+}
+const NO_MORE: HiddenEdges = { before: false, after: false }
+
+/** A row's hidden edges now; the last value when nothing changed, so no fade redraws. */
+function hiddenEdges(row: HTMLElement, last: HiddenEdges): HiddenEdges {
+  const { scrollLeft, scrollWidth, clientWidth } = row
+  const before = scrollLeft > 1
+  const after = scrollLeft + clientWidth < scrollWidth - 1
+  return last.before === before && last.after === after
+    ? last
+    : { before, after }
+}
+
 export const STUDIO_DESK_HEIGHT_KEY = 'mercurypitch.studio.mix-desk-height.v1'
 export const STUDIO_DESK_MIN_HEIGHT = 196
 const RESIZE_STEP = 16
@@ -95,6 +112,7 @@ interface ArrangementRoom {
 export function StudioMixDesk(props: StudioMixDeskProps) {
   let desk: HTMLElement | undefined
   let strips: HTMLDivElement | undefined
+  let flavours: HTMLDivElement | undefined
   const flavourLabel = createUniqueId()
   const adjustLabel = createUniqueId()
   // Rows follow lane ids, so a commit mid-gesture never rebuilds a strip.
@@ -104,8 +122,10 @@ export function StudioMixDesk(props: StudioMixDeskProps) {
       .map((track) => track.id),
   )
   const anySolo = () => props.project.tracks.some((track) => track.solo)
-  // Which edges of the strip row hide more strips, so a fade can say so.
-  const [more, setMore] = createSignal({ before: false, after: false })
+  // Which edges of the strip row hide more strips, so a fade can say so;
+  // the same for the flavour row where a short tablet desk scrolls it.
+  const [more, setMore] = createSignal(NO_MORE)
+  const [moreFlavours, setMoreFlavours] = createSignal(NO_MORE)
   const [room, setRoom] = createSignal<ArrangementRoom | null>(null)
   const [chosen, setChosen] = createSignal(storedDeskHeight())
   const [resizing, setResizing] = createSignal(false)
@@ -213,13 +233,22 @@ export function StudioMixDesk(props: StudioMixDeskProps) {
   }
 
   function measure(): void {
-    if (!strips) return
-    const { scrollLeft, scrollWidth, clientWidth } = strips
-    const before = scrollLeft > 1
-    const after = scrollLeft + clientWidth < scrollWidth - 1
-    const last = more()
-    if (last.before !== before || last.after !== after)
-      setMore({ before, after })
+    if (strips) setMore((last) => hiddenEdges(strips!, last))
+  }
+
+  function measureFlavours(): void {
+    if (flavours) setMoreFlavours((last) => hiddenEdges(flavours!, last))
+  }
+
+  // Tab scrolls a chip only as far as the row's edge, where the fade covers
+  // part of it; a chip reached by keyboard moves on by the row's scroll
+  // padding, clear of the fade.
+  function revealFlavour(event: FocusEvent): void {
+    const chip = event.target
+    if (!(chip instanceof HTMLElement) || chip === flavours) return
+    if (typeof chip.scrollIntoView !== 'function') return
+    if (chip.matches(':focus-visible'))
+      chip.scrollIntoView({ block: 'nearest', inline: 'nearest' })
   }
   createEffect(on(trackIds, () => queueMicrotask(measure)))
 
@@ -229,9 +258,13 @@ export function StudioMixDesk(props: StudioMixDeskProps) {
         ? null
         : new ResizeObserver(() => {
             measure()
+            measureFlavours()
             measureRoom()
           })
     if (strips) observer?.observe(strips)
+    // The row's own box, and its chips: a late font widens them alone.
+    for (const row of flavours ? [flavours, ...flavours.children] : [])
+      observer?.observe(row)
     if (desk?.parentElement) observer?.observe(desk.parentElement)
     // A sideways scrollbar appearing shrinks the viewport's content box.
     const viewport = timelineViewport()
@@ -408,9 +441,14 @@ export function StudioMixDesk(props: StudioMixDeskProps) {
                 Flavour
               </span>
               <div
+                ref={flavours}
                 class={styles.flavours}
                 role="group"
                 aria-labelledby={flavourLabel}
+                data-more-before={moreFlavours().before ? '' : undefined}
+                data-more-after={moreFlavours().after ? '' : undefined}
+                onScroll={measureFlavours}
+                onFocusIn={revealFlavour}
               >
                 <StudioFlavourChoices
                   project={props.project}
