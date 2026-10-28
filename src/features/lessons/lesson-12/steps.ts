@@ -23,11 +23,22 @@
 // controls, then the chips from I to vii°. Step 2's key switch C · G
 // (`aria-pressed`, from C) turns every room in silence, after stopping a
 // play still sounding, and the ring says the key once in its polite line;
-// a press while the rooms still turn does nothing. The other steps' own
-// controls are wired once their plays are; until then they do nothing.
+// a press while the rooms still turn does nothing. Step 3's Play I, then vi
+// slides the corner on G to A; its names switch, Letters · Do-re-mi, is
+// the page's one store (main.ts), so the choice holds on every step and in
+// every copy of the ring, and a change stops what sounds first. Step 4's
+// Play the loop and Play the roots are one round each. Each play's button
+// is lit while it sounds (kit/play-lights.ts), as Lesson 10's are. Slow
+// (`aria-pressed`) serves Steps 3, 4 and 5, and holds from step to step,
+// from the next play. Step 5's tunes are wired with the tune toy; until
+// then they do nothing.
 
 import { q, qa } from '@/features/lessons/kit/dom'
+import type { ModeStore } from '@/features/lessons/kit/names'
+import { bindModeToggle } from '@/features/lessons/kit/names'
+import type { LettersSolfegeMode } from '@/features/lessons/kit/names-modes'
 import { NowPlaying } from '@/features/lessons/kit/now-playing'
+import { playLights } from '@/features/lessons/kit/play-lights'
 import type { StepDeck } from '@/features/lessons/kit/step-deck'
 import { registerToy } from '@/features/lessons/kit/step-deck'
 import { showParts } from '@/features/lessons/kit/step-parts'
@@ -73,11 +84,56 @@ function bindKey(root: HTMLElement, rooms: Rooms): () => void {
   return show
 }
 
+/** The steps' plays, each the ring's: Step 3's slide, Step 4's loop and roots. */
+const PLAYS: Readonly<Record<string, (rooms: Rooms) => Promise<boolean>>> = {
+  slide: (rooms) => rooms.playSlide(),
+  loop: (rooms) => rooms.playLoop(),
+  roots: (rooms) => rooms.playRoots(),
+}
+
+/** Each play button starts its play, lit while it sounds: the page's one sound, stopping the last. */
+function bindPlays(root: HTMLElement, rooms: Rooms): void {
+  const light = playLights()
+  for (const b of qa<HTMLButtonElement>('button[data-rooms-play]', root)) {
+    const play = PLAYS[b.dataset.roomsPlay ?? '']
+    if (play !== undefined)
+      b.addEventListener('click', () => {
+        light(b, play(rooms))
+      })
+  }
+}
+
+/** Slow, a switch: pressed, every play from the next at twice its lengths. */
+function bindSlow(root: HTMLElement, rooms: Rooms): void {
+  const b = q<HTMLButtonElement>('button[data-rooms-slow]', root)
+  b.addEventListener('click', () => {
+    const on = b.getAttribute('aria-pressed') !== 'true'
+    b.setAttribute('aria-pressed', String(on))
+    rooms.setSlow(on)
+  })
+}
+
+/** The names switch, Letters · Do-re-mi: the page's one store, which the ring follows. */
+function bindNames(
+  root: HTMLElement,
+  rooms: Rooms,
+  names: ModeStore<LettersSolfegeMode>,
+): void {
+  bindModeToggle(root, names, 'data-names')
+  names.subscribe((mode) => {
+    rooms.setNames(mode)
+  })
+}
+
 /**
  * Mounts the stage's ring of rooms and follows the deck: registered before
- * `deck.start()`, so an address that names a step opens it.
+ * `deck.start()`, so an address that names a step opens it. `names` is the
+ * page's names store, Letters or Do-re-mi.
  */
-export function initSteps(deck: StepDeck): Rooms {
+export function initSteps(
+  deck: StepDeck,
+  names: ModeStore<LettersSolfegeMode>,
+): Rooms {
   const root = q('#toyRooms')
   const label = q('[data-fig-label]', root)
   const rooms = mountRooms(root, {
@@ -86,6 +142,9 @@ export function initSteps(deck: StepDeck): Rooms {
     owner: NowPlaying,
   })
   const showKey = bindKey(root, rooms)
+  bindPlays(root, rooms)
+  bindSlow(root, rooms)
+  bindNames(root, rooms, names)
   registerToy({
     onStep(n, previous) {
       // the step showing shown again, as the phone deck and the wide page
@@ -94,7 +153,8 @@ export function initSteps(deck: StepDeck): Rooms {
       if (n === previous) return
       showParts(root, n)
       label.innerHTML = FIG[n] ?? FIG[1]
-      // the step left keeps nothing sounding: opening a state stops the ring
+      // the step left keeps nothing sounding, by any route: opening a state
+      // stops the ring's play and every note of it still to come
       rooms.setMode(STEP_MODE[n] ?? STEP_MODE[1])
       showKey()
     },

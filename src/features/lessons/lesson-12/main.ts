@@ -14,14 +14,16 @@
 // The page's names stay the kit's default, sharps, so the rings name the
 // black keys C sharp to A sharp and G major's F sharp is spelled as its key
 // spells it (WEB-SPEC, Toys 1). They are never stored, and the page shows no
-// switch for them.
+// switch for them. The ring's names switch, Letters · Do-re-mi, is one
+// page-wide choice: Letters on every visit, held for the visit in memory
+// and never stored, so every copy of the ring follows it.
 //
 // The switches, the steps' deck with the ring of rooms in each step's
-// state, its chord strip and Step 2's key switch, the next lesson's card,
+// state, its chord strip, Step 2's key switch, Step 3's slide and names
+// switch, Step 4's loop and roots and their Slow, the next lesson's card,
 // the season map, the masthead and Merc and Tavi. The rest does nothing
-// until it is wired: the other steps' controls and free play, the cold
-// open on the hero's ring, the recall and the quick check, the four
-// words, the tunes and Sing it.
+// until it is wired: Step 5's tunes and free play, the cold open on the
+// hero's ring, the recall and the quick check, the four words and Sing it.
 
 import '@fontsource-variable/inter'
 import '@fontsource-variable/outfit'
@@ -40,6 +42,9 @@ import { startFrameLoop } from '@/features/lessons/kit/frame-loop'
 import { G_CLEF_PATH } from '@/features/lessons/kit/glyphs'
 import { initMercs } from '@/features/lessons/kit/merc-duo'
 import { Motion } from '@/features/lessons/kit/motion-switch'
+import { createModeStore } from '@/features/lessons/kit/names'
+import type { LettersSolfegeMode } from '@/features/lessons/kit/names-modes'
+import { LETTERS_SOLFEGE_MODES } from '@/features/lessons/kit/names-modes'
 import { createNextCard } from '@/features/lessons/kit/next-card'
 import { engraveClefs, initMasthead, initMotionSwitch, initSoundSwitch, } from '@/features/lessons/kit/page-chrome'
 import { initReveals } from '@/features/lessons/kit/reveal'
@@ -50,12 +55,19 @@ initSoundSwitch()
 initMotionSwitch()
 Motion.init()
 
+// the names on the ring and its chips: one page-wide choice, Letters on
+// every visit, never stored
+const ringNames = createModeStore<LettersSolfegeMode>(
+  LETTERS_SOLFEGE_MODES,
+  'letters',
+)
+
 // five steps, one ring of rooms
 const deck = createStepDeck({
   toyFor: () => 1,
   after: { label: 'Sing it', selector: '#sing' },
 })
-initSteps(deck)
+initSteps(deck, ringNames)
 deck.start()
 
 // the next lesson's card first: the explorer binds its link to the map

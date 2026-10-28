@@ -14,17 +14,20 @@
 // visitor with the studio installed still gets the lesson, not the shell.
 // Its fourth, the ring of rooms, step by step as each step is wired: Step
 // 2's key switch relabels the chips to G major's, vii° reading F♯ A C, and
-// C puts them back. With it, the stage by keyboard: Tab meets the ring's
-// slider, the step's own controls, then the chips from I to vii°, in the
-// order they stand on screen; a chip plays by keyboard and the summary
-// counts its room; the key switch toggles `aria-pressed` and says the key
-// once in the polite line; and at 390 x 844 every target is at least 44
-// px square with none overlapping. Each toy's own checks join it as that
-// toy is wired.
+// C puts them back; Step 3's Play I, then vi ends with the centre reading
+// "vi · A minor", read from the words the ring's last frame draws, and
+// says once what stayed and what moved. With it, the stage by keyboard:
+// Tab meets the ring's slider, the step's own controls, then the chips
+// from I to vii°, in the order they stand on screen; a chip plays by
+// keyboard and the summary counts its room; the key switch, the names
+// switch and Slow toggle `aria-pressed`, and the key switch says the key
+// once in the polite line; and at 390 x 844 every target of Steps 1 to 4
+// is at least 44 px square with none overlapping. Each toy's own checks
+// join it as that toy is wired.
 
 import type { Locator, Page } from '@playwright/test'
 import { expect, test } from './helpers/lesson-page'
-import { expectTargets, liveSaid, openStep, tabsWithin, watchLive, } from './helpers/lesson-qa'
+import { expectTargets, expectTogglesFlip, liveSaid, openStep, tabsWithin, watchLive, } from './helpers/lesson-qa'
 
 // 60 characters at most (src/tests/lesson-pages.test.ts)
 const TITLE = 'The four-chord song: how chords work | MercuryPitch'
@@ -213,7 +216,52 @@ const stageRows = (
     }
   })
 
-// WEB-SPEC, End to end 4, Step 2's half, at a phone's size and a desktop's
+/** The seven chips' names from Step 2 on, I to vii°, in C. */
+const CHIPS = [
+  'Chord one, C major: C, E, G',
+  'Chord two, D minor: D, F, A',
+  'Chord three, E minor: E, G, B',
+  'Chord four, F major: F, A, C',
+  'Chord five, G major: G, B, D',
+  'Chord six, A minor: A, C, E',
+  'Chord seven, B diminished: B, D, F',
+]
+
+/**
+ * Records the words each canvas draws, frame by frame, from before the
+ * page's first script: every frame a figure draws clears its canvas first,
+ * so a clear starts the canvas's new frame, and its time is kept with it.
+ */
+async function watchCanvasWords(page: Page): Promise<void> {
+  await page.addInitScript(() => {
+    const w = window as unknown as {
+      framesOf: WeakMap<HTMLCanvasElement, { at: number; words: string[] }>
+    }
+    w.framesOf = new WeakMap()
+    const proto = CanvasRenderingContext2D.prototype
+    const clear = proto.clearRect
+    const fill = proto.fillText
+    proto.clearRect = function (this: CanvasRenderingContext2D, ...a) {
+      w.framesOf.set(this.canvas, { at: performance.now(), words: [] })
+      clear.apply(this, a)
+    }
+    proto.fillText = function (this: CanvasRenderingContext2D, ...a) {
+      w.framesOf.get(this.canvas)?.words.push(String(a[0]))
+      fill.apply(this, a)
+    }
+  })
+}
+
+/** The ring's latest frame: when it was drawn, on the page's clock, and the words in it. */
+const ringFrame = (page: Page): Promise<{ at: number; words: string[] }> =>
+  page.locator(`${TOY} [data-rooms-viz] canvas`).evaluate((canvas) => {
+    const w = window as unknown as {
+      framesOf: WeakMap<Element, { at: number; words: string[] }>
+    }
+    return w.framesOf.get(canvas) ?? { at: 0, words: [] }
+  })
+
+// WEB-SPEC, End to end 4, at a phone's size and a desktop's
 for (const viewport of [
   { width: 390, height: 844 },
   { width: 1440, height: 900 },
@@ -316,6 +364,7 @@ for (const viewport of [
         'Chord six, A minor: A, C, E',
         'Chord seven, B diminished: B, D, F',
       ])
+      expect(met.slice(3)).toEqual(CHIPS)
       expect(rows.row[0]).toBeGreaterThanOrEqual(rows.figure[1])
       expect(rows.strip[0]).toBeGreaterThanOrEqual(rows.row[1])
       await expect(g).toHaveAttribute('aria-pressed', 'true')
@@ -328,6 +377,90 @@ for (const viewport of [
         )
         .toEqual(['G major: every chord turned round the ring.'])
     })
+
+    test('Step 3: Play I, then vi ends with the centre reading "vi · A minor", and says what stayed and what moved', async ({
+      page,
+    }) => {
+      // Arrange
+      await watchCanvasWords(page)
+      await watchLive(page)
+      await openStep(page, '/learn/12', 3)
+      const play = page.locator(`${TOY} [data-rooms-play="slide"]`)
+
+      // Act: its words as they stand, then the play, which runs 3.1 s, I,
+      // the quiet and vi (FACTS 69)
+      const beforeComma = await play.evaluate((b) => {
+        // the space between the I and the comma after it, px
+        const said = b.querySelector('.sr')
+        const shown = said?.previousElementSibling ?? null
+        const comma = said?.nextSibling ?? null
+        if (shown === null || comma === null) return Number.NaN
+        const range = document.createRange()
+        range.setStart(comma, 0)
+        range.setEnd(comma, 1)
+        return (
+          range.getBoundingClientRect().left -
+          shown.getBoundingClientRect().right
+        )
+      })
+      const from = await page.evaluate(() => performance.now())
+      await play.click()
+      await expect
+        .poll(async () => (await ringFrame(page)).at - from, {
+          timeout: 10_000,
+        })
+        .toBeGreaterThan(3100)
+      const last = await ringFrame(page)
+
+      // Assert: the button reads "Play I, then vi" to the eye, the I against
+      // its comma, and "Play one, then six minor" to a reader (Chrome sets
+      // each said word apart with a space, as everywhere on the page, so the
+      // comma may follow one)
+      expect(beforeComma).toBeLessThan(1)
+      await expect(play).toHaveAccessibleName(/^Play one ?, then six minor$/)
+      // the frame drawn as the play ends
+      expect(last.words).toContain('vi · A minor')
+      expect(last.words).not.toContain('I · C major')
+      expect(
+        (await liveSaid(page))
+          .map((x) => x.text)
+          .filter((t) => t.includes('then six')),
+      ).toEqual([
+        'One, C major, then six, A minor: C and E stay, and G becomes A.',
+      ])
+    })
+
+    test("Steps 3 and 4: Tab meets the slider, the step's own controls, then the chips; the names switch and Slow toggle aria-pressed by keyboard", async ({
+      page,
+    }) => {
+      // Arrange
+      await openStep(page, '/learn/12', 3)
+
+      // Act
+      const step3 = await tabsWithin(page, `${TOY} [data-fig-label]`, TOY)
+      const toggled = await expectTogglesFlip(page, TOY, 'Step 3')
+      await page.getByRole('button', { name: 'Next step', exact: true }).click()
+      await expect(page.locator('#stepNow')).toHaveText('4')
+      const step4 = await tabsWithin(page, `${TOY} [data-fig-label]`, TOY)
+
+      // Assert: Play I, then vi reads its numerals as words to a reader
+      expect(step3).toEqual([
+        SLIDER,
+        expect.stringMatching(/^Play I.*then vi/),
+        'Letters',
+        'Do-re-mi',
+        'Slow',
+        ...CHIPS,
+      ])
+      expect(toggled).toBe(2)
+      expect(step4).toEqual([
+        SLIDER,
+        'Play the loop',
+        'Play the roots',
+        'Slow',
+        ...CHIPS,
+      ])
+    })
   })
 }
 
@@ -335,7 +468,7 @@ for (const viewport of [
 test.describe("the ring of rooms' targets at 390 x 844", () => {
   test.use({ viewport: { width: 390, height: 844 } })
 
-  test('every target of Steps 1 and 2 is at least 44 px square, and none overlaps another, in C and in G', async ({
+  test('every target of Steps 1 to 4 is at least 44 px square, and none overlaps another, in C and in G', async ({
     page,
   }) => {
     // Arrange
@@ -348,5 +481,43 @@ test.describe("the ring of rooms' targets at 390 x 844", () => {
     expect(await expectTargets(page, TOY, 'Step 2')).toBe(10)
     await keyButton(page, 'G').click()
     expect(await expectTargets(page, TOY, 'Step 2 in G')).toBe(10)
+    await page.getByRole('button', { name: 'Next step', exact: true }).click()
+    await expect(page.locator('#stepNow')).toHaveText('3')
+    expect(await expectTargets(page, TOY, 'Step 3')).toBe(12)
+    await page.getByRole('button', { name: 'Next step', exact: true }).click()
+    await expect(page.locator('#stepNow')).toHaveText('4')
+    expect(await expectTargets(page, TOY, 'Step 4')).toBe(11)
+  })
+})
+
+// WEB-SPEC, Toys 1, the compact layout, at a phone held sideways
+test.describe('the ring of rooms at 844 x 390', () => {
+  test.use({ viewport: { width: 844, height: 390 } })
+
+  test("Step 4's moves readout sits in the figure's top-right, clear of the label the compact layout draws in its top-left", async ({
+    page,
+  }) => {
+    // Arrange
+    await watchCanvasWords(page)
+    await openStep(page, '/learn/12', 4)
+
+    // Act
+    await page.locator(`${TOY} [data-chip="4"]`).click()
+    await expect
+      .poll(async () => (await ringFrame(page)).words)
+      .toContain('V · G major')
+    const [figure, readout] = await Promise.all(
+      [`${TOY} [data-rooms-viz]`, `${TOY} [data-rooms-viz] .readout`].map(
+        (sel) => page.locator(sel).boundingBox(),
+      ),
+    )
+
+    // Assert: the figure is compact, under 240 px tall
+    expect(figure).not.toBeNull()
+    expect(readout).not.toBeNull()
+    if (figure === null || readout === null) return
+    expect(figure.height).toBeLessThan(240)
+    expect(readout.x).toBeGreaterThan(figure.x + figure.width / 2)
+    expect(readout.y - figure.y).toBeLessThan(40)
   })
 })
