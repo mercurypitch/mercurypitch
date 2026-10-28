@@ -6,10 +6,10 @@ import { useLocalSaveNavigationLock } from '@/lib/local-save-navigation-lock'
 import { checkImportCancelled, DEFAULT_STUDIO_IMPORT_LIMITS, } from '@/lib/studio/audio/import-limits'
 import type { prepareStudioAsset } from '@/lib/studio/audio/prepare-studio-asset'
 import { reserveStudioMemory } from '@/lib/studio/memory-budget'
-import { releaseStudioResource } from '@/lib/studio/memory-budget'
 import type { StudioCommand } from '@/lib/studio/model/commands'
 import type { StudioAsset, StudioAssetData, StudioProject, StudioProjectSummary, } from '@/lib/studio/model/types'
-import { createStudioBackup, restoreStudioBackup } from './backup/studio-backup'
+import type { StudioBackupTarget } from './backup/backup-target'
+import { restoreStudioBackup, writeStudioBackup } from './backup/studio-backup'
 import type { StudioEditHistory } from './controller/edit-history'
 import { createStudioEditHistory, executeStudioEdit, travelStudioHistory, } from './controller/edit-history'
 import { createStudioImporter, studioMissedLaneText, } from './controller/imports'
@@ -26,7 +26,7 @@ export interface StudioControllerOptions {
   listSources?: typeof listStudioSources
   prepareFile?: typeof prepareStudioAsset
   prepareTake?: typeof prepareStudioSource
-  createBackup?: typeof createStudioBackup
+  writeBackup?: typeof writeStudioBackup
   restoreBackup?: typeof restoreStudioBackup
   readSource?: typeof readStudioSourceBlob
 }
@@ -449,9 +449,10 @@ export function useStudioController(options: StudioControllerOptions = {}) {
     }
   }
 
-  async function backup(): Promise<Blob | null> {
+  /** Write the open song's backup into the target. False when it did not finish. */
+  async function backup(target: StudioBackupTarget): Promise<boolean> {
     const snapshot = project()
-    if (!snapshot || working() || importing() || loading()) return null
+    if (!snapshot || working() || importing() || loading()) return false
     const prepared = queue?.preparedAssets() ?? []
     const epoch = generation
     const abort = new AbortController()
@@ -459,21 +460,20 @@ export function useStudioController(options: StudioControllerOptions = {}) {
     setWorking(true)
     setProblem(null)
     try {
-      const blob = await (options.createBackup ?? createStudioBackup)(
+      await (options.writeBackup ?? writeStudioBackup)(
         snapshot,
-        (id) => service.readAssetBytes(snapshot.id, id),
+        (id) => service.readAssetBuffers(snapshot.id, id),
+        target,
         {
           preparedAssets: prepared,
           signal: abort.signal,
           assetMetadata: assets(),
         },
       )
-      if (current(epoch) && !abort.signal.aborted) return blob
-      releaseStudioResource(blob)
-      return null
+      return current(epoch) && !abort.signal.aborted
     } catch (error) {
       if (current(epoch) && !abort.signal.aborted) report(error)
-      return null
+      return false
     } finally {
       if (operationAbort === abort) {
         operationAbort = null

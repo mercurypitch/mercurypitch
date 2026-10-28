@@ -81,7 +81,7 @@ These are the rules that break things when ignored.
 | `ear-lab` | [ThresholdDrillView.tsx](../../src/features/ear-lab/ThresholdDrillView.tsx) | 17.1k | ThresholdDrillView — every Ruler-A drill on the stage. |
 | `exercises` | [ExerciseShell.tsx](../../src/features/exercises/ExerciseShell.tsx) | 14.5k | ExerciseShell — shared chrome for every exercise runner Owns the layout that used to be duplicated across all 18 exercise components: the... |
 | `admin` | [AdminPremiumPerksPage.tsx](../../src/features/admin/AdminPremiumPerksPage.tsx) | 14.2k | AdminPremiumPerksPage — protected art and supporter access console THESIS: a premium background is not live until its exact art revision... |
-| `studio` | [StudioWorkspace.tsx](../../src/features/studio/StudioWorkspace.tsx) | 11.2k | Studio workspace — arrangement view state, contextual panels and the shared audio transport. |
+| `studio` | [StudioWorkspace.tsx](../../src/features/studio/StudioWorkspace.tsx) | 11.8k | Studio workspace — arrangement view state, contextual panels and the shared audio transport. |
 | `voice-history` | [VoiceHistoryPage.tsx](../../src/features/voice-history/VoiceHistoryPage.tsx) | 10.3k | Hear Yourself History — local listening desk for kept performance takes |
 | `echo` | [echo-celebration.ts](../../src/features/echo/echo-celebration.ts) | 9.6k | Echo's celebration star, in numbers (generated) Written by scripts/sync-echo-art.mjs from the Echo A0 art's echo-celebration-star.json (i... |
 | `piano-night` | [piano-night-music-source.ts](../../src/features/piano-night/piano-night-music-source.ts) | 8.5k | Piano Night music source — lazy, failure-bearing local catalogue boundary Piano Night discovers canonical projects and lightweight compos... |
@@ -131,7 +131,6 @@ These are the rules that break things when ignored.
 | `backgrounds` | [PremiumBackgroundPicker.tsx](../../src/features/backgrounds/PremiumBackgroundPicker.tsx) | 550 | PremiumBackgroundPicker — compact accessible stage gallery Locked cards intentionally render an atmospheric placeholder and never ask the... |
 | `session` | [useSessionSequencer.ts](../../src/features/session/useSessionSequencer.ts) | 450 | useSessionSequencer — drives a multi-item practice session item by item Between items it rewrites global musical context (key, scale, bpm... |
 | `keyboard` | [useKeyboardShortcuts.ts](../../src/features/keyboard/useKeyboardShortcuts.ts) | 400 | useKeyboardShortcuts — global hotkeys, mounted once by App One document-level keydown listener for the whole app. |
-| `practice` | [usePracticeController.ts](../../src/features/practice/usePracticeController.ts) | 400 | usePracticeController — mic capture and scoring for the Singing tab Owns one mic lease for the duration of the practice run. |
 | `tabs` | [constants.ts](../../src/features/tabs/constants.ts) | 400 | ── Tab ID constants Use these everywhere instead of raw strings. |
 | `jam` | [useJamRoomBackground.ts](../../src/features/jam/useJamRoomBackground.ts) | 300 | Jam room background controller — shared host selection and protected bytes A Jam background is room state, not a personal preference. |
 | `rooms` | [contract.ts](../../src/features/rooms/contract.ts) | 300 | The room contract. |
@@ -149,7 +148,7 @@ These are the rules that break things when ignored.
 |---|---|---|---|
 | `guitar` | [guitar-live-score.ts](../../src/lib/guitar/guitar-live-score.ts) | 12.4k | Guitar live score — bounded, evidence-honest feedback while a take is running. |
 | `jam` | [jam-net-stats.ts](../../src/lib/jam/jam-net-stats.ts) | 10.8k | ── Jam network stats One RTCStatsReport, reduced to the numbers that decide whether two people can play together. |
-| `studio` | [transport.ts](../../src/lib/studio/playback/transport.ts) | 7.2k | Studio transport — one borrowed clock, explicit playback intent and generation-owned graph cleanup. |
+| `studio` | [transport.ts](../../src/lib/studio/playback/transport.ts) | 7.8k | Studio transport — one borrowed clock, explicit playback intent and generation-owned graph cleanup. |
 | `merc` | [renderer.ts](../../src/lib/merc/renderer.ts) | 5.2k | Merc renderer — one canvas, one WebGL2 context, one simulated Merc mount() draws Merc into a container. |
 | `studio-fx` | [index.ts](../../src/lib/studio-fx/index.ts) | 5.1k | Studio FX — insert effect chains for Studio tracks and the master bus For a beginner, nothing needs choosing: `autoMixChain(role, clip)`... |
 | `guided-voice` | [index.ts](../../src/lib/guided-voice/index.ts) | 4.7k | Guided Voice — local assessment science and safety foundation |

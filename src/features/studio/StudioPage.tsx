@@ -1,7 +1,8 @@
 // Studio page — local song entry, save recovery and an integrated arrangement workspace.
 import { createSignal, Show } from 'solid-js'
 import { ConfirmDialog } from '@/components/ConfirmDialog'
-import { releaseStudioResource } from '@/lib/studio/memory-budget'
+import type { StudioBackupTarget } from './backup/backup-target'
+import { downloadStudioBackup, openStudioBackupTarget, studioBackupFileName, } from './backup/backup-target'
 import styles from './StudioPage.module.css'
 import { StudioProjectList } from './StudioProjectList'
 import { StudioWorkspace } from './StudioWorkspace'
@@ -10,6 +11,7 @@ import { useStudioController } from './useStudioController'
 export function StudioPage() {
   const studio = useStudioController()
   const [downloadError, setDownloadError] = createSignal<string | null>(null)
+  const [savedAs, setSavedAs] = createSignal<string | null>(null)
   const [library, setLibrary] = createSignal(true)
   const [startPanel, setStartPanel] = createSignal<'sources' | 'export' | null>(
     null,
@@ -38,34 +40,46 @@ export function StudioPage() {
     }
   }
 
+  // A backup asks where it goes first, while the click still counts as the
+  // person's: Chromium refuses a save picker opened seconds later.
+  function chooseBackupTarget(
+    title: string | undefined,
+  ): Promise<StudioBackupTarget | null> {
+    setDownloadError(null)
+    setSavedAs(null)
+    return openStudioBackupTarget(studioBackupFileName(title))
+  }
+
   // A backup from the list loads the song behind the list and saves its file.
   async function backupFromList(id: string): Promise<void> {
+    const title = studio.projects().find((song) => song.id === id)?.title
+    const target = await chooseBackupTarget(title)
+    if (!target) return
     if (studio.project()?.id !== id) await studio.open(id)
-    if (studio.project()?.id === id) await downloadBackup()
+    if (studio.project()?.id === id) await saveBackup(target)
+    else await target.discard()
   }
 
   async function downloadBackup(): Promise<void> {
-    const title = studio.project()?.title ?? 'Studio project'
-    const blob = await studio.backup()
-    if (!blob) return
-    setDownloadError(null)
-    let url: string | undefined
+    const target = await chooseBackupTarget(studio.project()?.title)
+    if (target) await saveBackup(target)
+  }
+
+  async function saveBackup(target: StudioBackupTarget): Promise<void> {
+    if (!(await studio.backup(target))) {
+      await target.discard()
+      return
+    }
     try {
-      url = URL.createObjectURL(blob)
-      const anchor = document.createElement('a')
-      anchor.href = url
-      anchor.download = `${title.replace(/[^\p{L}\p{N} ._-]/gu, '').slice(0, 100) || 'Studio project'}.mpstudio`
-      anchor.click()
-      const savedUrl = url
-      setTimeout(() => {
-        URL.revokeObjectURL(savedUrl)
-        releaseStudioResource(blob)
-      }, 10_000)
+      const file = await target.close()
+      if (file) downloadStudioBackup(target, file)
+      else setSavedAs(target.name)
     } catch {
-      if (url !== undefined) URL.revokeObjectURL(url)
-      releaseStudioResource(blob)
+      await target.discard()
       setDownloadError(
-        'The backup could not download. Try Save project backup again.',
+        target.kind === 'file'
+          ? 'The backup could not be saved. Try Save project backup again.'
+          : 'The backup could not download. Try Save project backup again.',
       )
     }
   }
@@ -76,6 +90,13 @@ export function StudioPage() {
         <p role="alert" class={styles.help}>
           {downloadError()}
         </p>
+      </Show>
+      <Show when={savedAs()}>
+        {(name) => (
+          <p role="status" class={styles.help}>
+            Backup saved as {name()}.
+          </p>
+        )}
       </Show>
       <input
         ref={backupInput}
