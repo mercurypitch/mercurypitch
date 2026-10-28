@@ -44,6 +44,29 @@ export function withDrafts(
   }
 }
 
+/**
+ * The mix for a run that plays on while a newer one is built or takes over:
+ * the new Mute, Solo, volume and pan, but each lane's balance from its own
+ * project. A balance comes with a lane's sound (a new role brings both),
+ * and this run still plays the old sound: the new balance on the old chain
+ * would jump the level, and the master's dynamics with it, before the new
+ * run brings both in together.
+ */
+export function heldMix(run: StudioRun, project: StudioProject): StudioProject {
+  const balances = new Map(
+    run.project.tracks.map((track) => [track.id, track.balanceGainDb]),
+  )
+  return {
+    ...project,
+    tracks: project.tracks.map((track) => {
+      const balanceGainDb = balances.get(track.id) ?? track.balanceGainDb
+      return balanceGainDb === track.balanceGainDb
+        ? track
+        : { ...track, balanceGainDb }
+    }),
+  }
+}
+
 /** Glide each lane to its volume and pan, or to silence; the lanes heard set the end. */
 export function applyMix(run: StudioRun, project: StudioProject): void {
   const audible = audibility(project)
