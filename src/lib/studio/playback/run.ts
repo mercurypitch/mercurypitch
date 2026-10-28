@@ -67,6 +67,11 @@ export interface StudioRun {
   /** When its envelope is fully open: a later handoff starts no sooner. */
   openAt: number
   /**
+   * When its envelope starts to open from silence: nothing it plays sooner
+   * is heard. -Infinity for a run that fades in over the one it takes over.
+   */
+  readonly silentUntil: number
+  /**
    * Where the song stops, counting each pass from the song's start: the end
    * of the pass that has begun, or Infinity while it repeats.
    */
@@ -147,6 +152,8 @@ export interface StudioRunParts {
   readonly latency: number
   readonly buildGraph: typeof buildStudioGraph
   readonly createLaneMeter: typeof createStudioLaneMeter
+  /** It opens from silence, not over a run it takes over from. */
+  readonly fromSilence: boolean
   /** Open the new envelope at `time` and return when it is fully open. Called last. */
   open(envelope: GainNode, time: number): number
 }
@@ -210,6 +217,7 @@ export function buildStudioRun(parts: StudioRunParts): StudioRun {
       audibleEpoch: timing.audibleEpoch,
       latency: parts.latency,
       openAt,
+      silentUntil: parts.fromSilence ? timing.audibleEpoch : -Infinity,
       untilFrame: parts.repeat ? Infinity : plan.endFrame,
       tailFrames: plan.tailFrames,
       canLoop: plan.startFrame === 0,

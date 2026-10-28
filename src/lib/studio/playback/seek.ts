@@ -68,8 +68,12 @@ export function seekRuns(runs: readonly StudioRun[], frame: number): boolean {
     return false
   const ctx = runs[0].ctx
   const earliest = seekEarliest(ctx)
-  // When the new frame is heard: no run's graph can bring it in sooner.
-  let audible = Math.max(...runs.map((run) => earliest + run.latency))
+  // When the new frame is heard: no run's graph can bring it in sooner,
+  // and a run still silent brings it in as its envelope opens, so the
+  // first thing heard is the frame clicked.
+  let audible = Math.max(
+    ...runs.map((run) => Math.max(earliest + run.latency, run.silentUntil)),
+  )
   for (const run of runs)
     audible = Math.max(
       audible,

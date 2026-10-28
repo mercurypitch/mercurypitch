@@ -123,6 +123,32 @@ describe('Studio transport seek', () => {
     await finish(f)
   })
 
+  it('plays the clicked frame first when a seek comes before a new run is heard', async () => {
+    vi.useFakeTimers()
+    const f = transportFixture()
+    await f.transport.play(f.project, [f.asset], 0)
+    const [, , , epoch] = f.buildGraph.mock.calls[0]
+    // The run's envelope opens from silence when frame 0 would be heard.
+    const opens = epoch + LATENCY
+    const attack = envelopeOf(f.graph).gain.ramps.slice()
+    f.ctx.currentTime = opens - 0.1
+
+    await f.transport.seek(48000, f.project, [f.asset])
+
+    // The new frame enters as the envelope opens, so none of it plays
+    // into a closed envelope, and the envelope opens as it was going to.
+    expect(f.graph.seek).toHaveBeenCalledExactlyOnceWith(48000, epoch)
+    expect(envelopeOf(f.graph).gain.ramps).toEqual(attack)
+    expect(f.transport.getState()).toMatchObject({
+      playing: true,
+      playheadFrame: 48000,
+    })
+    f.ctx.currentTime = opens + 0.125
+    await vi.advanceTimersByTimeAsync(33)
+    expect(f.transport.getState().playheadFrame).toBeCloseTo(48000 + 6000, -1)
+    await finish(f)
+  })
+
   it('ends a song that plays once at the end of the pass from the seek frame, and keeps a repeating one going', async () => {
     vi.useFakeTimers()
     const once = transportFixture()

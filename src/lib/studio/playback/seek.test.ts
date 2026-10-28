@@ -13,6 +13,7 @@ function fakeRun(
     firstFrame?: number
     untilFrame?: number
     unheardSeekAt?: number
+    silentUntil?: number
   },
 ) {
   const pending = options.unheardSeekAt ?? -Infinity
@@ -30,6 +31,7 @@ function fakeRun(
     startFrame: 0,
     audibleEpoch: 0.26,
     openAt: 0.35,
+    silentUntil: options.silentUntil ?? -Infinity,
     meter: { restart: vi.fn() },
     laneMeter: { restart: vi.fn() },
   }
@@ -85,6 +87,26 @@ describe('Studio seek', () => {
     expect(seekRuns(asRuns(waiting, other), 4800)).toBe(true)
     expect(waiting.graph.seek).toHaveBeenCalledWith(4800, 1.03)
     expect(other.graph.seek).toHaveBeenCalledWith(4800, 1.03)
+  })
+
+  it('brings the frame in as a run still silent opens, so the frame clicked is the first heard', () => {
+    // Play built this run to open at 0.26 s; the seek comes at 0.1 s.
+    const ctx = { currentTime: 0.1, sampleRate: 48000 }
+    const opening = fakeRun(ctx, { latency: 0.02, silentUntil: 0.26 })
+    // A run that takes over in a handover is heard through the other till then.
+    const taking = fakeRun(ctx, { latency: 0.02 })
+    expect(seekRuns(asRuns(opening, taking), 4800)).toBe(true)
+    for (const run of [opening, taking]) {
+      expect(run.graph.seek).toHaveBeenCalledWith(4800, expect.closeTo(0.24, 9))
+      expect(run.meter.restart).toHaveBeenCalledWith(expect.closeTo(0.26, 9))
+    }
+    // Once it is heard, a seek moves it at once again.
+    ctx.currentTime = 0.5
+    seekRuns(asRuns(opening), 9600)
+    expect(opening.graph.seek).toHaveBeenLastCalledWith(
+      9600,
+      expect.closeTo(0.515, 9),
+    )
   })
 
   it('moves nothing when one plan does not reach the frame', () => {
