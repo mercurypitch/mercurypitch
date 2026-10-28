@@ -22,7 +22,7 @@ import type { ActiveTab, PracticeScope } from '@/features/tabs/constants'
 import { TAB_EAR_LAB, TAB_GUITAR, TAB_HOME, TAB_PIANO, TAB_PROGRESS, TAB_SINGING, } from '@/features/tabs/constants'
 import { navigateTo } from '@/lib/hash-router'
 import { KARAOKE_IMPORT } from '@/lib/native-build'
-import { nativeRunControls } from '@/stores/native-shell-store'
+import { askRoomBack, nativeRunControls } from '@/stores/native-shell-store'
 import { canGoBack } from './history-depth'
 import { clearScreens, closeColumn, closeMore, columnOpen, currentTab, dismissKeepAlert, keepAlertOpen, moreOpen, parkRun, popScreen, pushed, runOwner, runState, } from './run-shell-store'
 import { declineOffer, offerOpen } from './settings/account-offer'
@@ -292,6 +292,13 @@ export function performBack(host: BackHost): BackOutcome {
     !shellOverlayOpen() &&
     nativeRunControls()?.closeRoomOverlay?.() === true
   ) {
+    return 'room-overlay'
+  }
+  // A room drawn over its tab (the Ear Lab's drill room, or a sheet the
+  // tab laid over itself): its own Close. Only with nothing of the
+  // shell's over it, as for the door: a screen pushed over the tab is
+  // what the press is for, not the sheet it hides.
+  if (!shellOverlayOpen() && pushed() === null && askRoomBack()) {
     return 'room-overlay'
   }
   const outcome = resolveBack(host.canGoBack)

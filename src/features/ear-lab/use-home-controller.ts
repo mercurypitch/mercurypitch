@@ -25,7 +25,8 @@ import { cadenceChordMidis, HOME_SET, homeItemState, pickHomeItem, probeMidi, ro
 import { HOME_TIMING } from '@/lib/ear/timing'
 import { trackFirstValue } from '@/lib/first-value'
 import { midiToFreq } from '@/lib/scale-data'
-import { creditEarSession, earItemStates, earPlayerRating, markSprintSegmentDone, recordIdentificationAnswer, takeSprintRunLength, } from '@/stores/ear-lab-store'
+import type { RatedRunMark } from '@/stores/ear-lab-store'
+import { creditEarSession, earItemStates, earPlayerRating, markRatedRun, markSprintSegmentDone, recordIdentificationAnswer, rollBackRatedRun, takeSprintRunLength, } from '@/stores/ear-lab-store'
 import { createRevealPacer } from './reveal-pacing'
 
 export type HomePhase =
@@ -124,6 +125,12 @@ export function useHomeController(
     earPlayerRating(set.tapDrillId),
   )
   const [result, setResult] = createSignal<HomeResult | null>(null)
+  /** True while an answered round's probe sounds again (the native
+   *  room's Hear it again). */
+  const [replaying, setReplaying] = createSignal(false)
+  /** The question in flight was voided (the sound was taken away); it
+   *  waits for resumeQuestion(). */
+  const [held, setHeld] = createSignal(false)
 
   let rootMidi = 60
   let lastItemId: string | undefined
@@ -133,6 +140,11 @@ export function useHomeController(
   let ratingAtStart = 0
   let startedAt = 0
   let cancelled = false
+  /** The ledger as this run found it, for abandon(). */
+  let mark: RatedRunMark | null = null
+  /** Bumped each time a question is sounded from its start: the sound
+   *  it replaces must not arm the answer when it resolves. */
+  let question = 0
   /** Bumped by every start(): a round still sounding its cadence when the
    *  run was stopped and started again must not carry on into the new
    *  run once its await resolves. */
@@ -167,6 +179,8 @@ export function useHomeController(
   /** Rounds in this run: the catalogue's dozen, or the fewer a
    *  sprint segment promised on its card. */
   const [totalRounds, setTotalRounds] = createSignal(HOME_ROUNDS)
+  /** The run took the shorter length a Today's segment armed. */
+  const [short, setShort] = createSignal(false)
 
   function start(runMode: HomeAnswerMode): void {
     cancelled = false
@@ -175,14 +189,18 @@ export function useHomeController(
     outcomes = []
     skipped = 0
     ratingAtStart = earPlayerRating(drillIdFor(set, runMode)).rating
+    mark = markRatedRun(drillIdFor(set, runMode))
     const armed = takeSprintRunLength(set.tapDrillId)
     batch(() => {
+      setShort(armed?.rounds !== undefined)
       setTotalRounds(armed?.rounds ?? HOME_ROUNDS)
       setMode(runMode)
       setRound(0)
       setResult(null)
       setLastCents(null)
       setUnclear(false)
+      setReplaying(false)
+      setHeld(false)
       setRating(earPlayerRating(drillIdFor(set, runMode)))
     })
     void playRound()
@@ -213,6 +231,21 @@ export function useHomeController(
       setCadenceStep(0)
       setPhase('cadence')
     })
+    await soundQuestion(pick.degree)
+  }
+
+  /** The cadence, then the probe, then the answer opens: one question
+   *  from its start, the first time or again after the sound was taken
+   *  away. */
+  async function soundQuestion(degree: HomeDegree): Promise<void> {
+    const mine = run
+    question += 1
+    const asked = question
+    const stale = (): boolean => cancelled || mine !== run || asked !== question
+    batch(() => {
+      setCadenceStep(0)
+      setPhase('cadence')
+    })
 
     const chords = cadenceChordMidis(rootMidi)
     for (let i = 0; i < chords.length; i++) {
@@ -225,7 +258,7 @@ export function useHomeController(
 
     setPhase('probe')
     await audioEngine.playTone(
-      midiToFreq(probeMidi(rootMidi, pick.degree.degree, set)),
+      midiToFreq(probeMidi(rootMidi, degree.degree, set)),
       HOME_TIMING.probeMs,
     )
     // The answer opens once the probe has died away, so a sung answer
@@ -329,8 +362,30 @@ export function useHomeController(
       .catch(() => undefined)
       .then(() => {
         if (cancelled || mine !== run) return
-        pacer.hold()
+        pacer.hold(correct)
       })
+  }
+
+  /** Hear an answered round again: its probe, falling home. Never
+   *  before the answer, as often as wanted after; a hold counting down
+   *  stops and waits for Next. */
+  function replayAllowed(): boolean {
+    return phase() === 'reveal' && !replaying() && currentDegree() !== null
+  }
+
+  async function replay(): Promise<void> {
+    const target = currentDegree()
+    if (!replayAllowed() || target === null) return
+    const mine = run
+    pacer.pause()
+    setReplaying(true)
+    try {
+      await playResolution(target.degree)
+    } catch {
+      // A probe that failed to sound is no reason to strand the verdict.
+    } finally {
+      if (mine === run) setReplaying(false)
+    }
   }
 
   /** Tap answer (the seven buttons). */
@@ -432,6 +487,45 @@ export function useHomeController(
     options?.cancelAudio?.()
   }
 
+  /** The sound was taken away. The cadence or probe still sounding, or
+   *  a sung answer's window, is void; a verdict counting down waits for
+   *  Next. */
+  function holdQuestion(): void {
+    if (phase() === 'reveal') {
+      pacer.pause()
+      return
+    }
+    const inFlight =
+      phase() === 'cadence' ||
+      phase() === 'probe' ||
+      (phase() === 'answer' && mode() === 'mic')
+    if (!inFlight || cancelled) return
+    question += 1
+    clearTimeout(timer)
+    options?.cancelAudio?.()
+    setHeld(true)
+  }
+
+  /** The voided question, from its start: the same key and the same
+   *  note. */
+  async function resumeQuestion(): Promise<void> {
+    const target = currentDegree()
+    if (!held() || cancelled || target === null) return
+    setHeld(false)
+    await soundQuestion(target)
+  }
+
+  /** Leave mid-run keeping nothing: the answers this run wrote are put
+   *  back, and nothing is credited or booked. */
+  function abandon(): void {
+    const running = phase() !== 'idle' && phase() !== 'done'
+    dispose()
+    if (running && mark !== null && outcomes.length > 0) {
+      rollBackRatedRun(mark)
+    }
+    mark = null
+  }
+
   onCleanup(dispose)
 
   return {
@@ -451,10 +545,21 @@ export function useHomeController(
     /** Auto-advance off: the run waits on the verdict for next(). */
     parked: pacer.parked,
     next: pacer.next,
+    /** A hold counting down waits for Next instead. */
+    pause: pacer.pause,
+    replaying,
+    replayAllowed,
+    replay,
+    /** A Today's short run. */
+    short,
+    held,
+    holdQuestion,
+    resumeQuestion,
     start,
     answer,
     stop,
     reset,
     dispose,
+    abandon,
   }
 }

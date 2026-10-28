@@ -79,6 +79,20 @@ export const PREMIUM_EXERCISES: boolean = KARAOKE_IMPORT
 export const NATIVE_ONBOARDING: boolean = KARAOKE_IMPORT
 
 /**
+ * Whether this build carries the Ear Lab with Merc: the phone's own Ear Lab
+ * tab (the room, the glass, Today and the six stations) and the drill room
+ * every one of the nineteen instruments runs in, Merc at its console. It is
+ * a new face on the same drills: their engines, their honesty rules and
+ * their words are the web's, and the web keeps the bench it has. On in a
+ * native test build, TestFlight among them, so the owner can play it before
+ * it ships, and off in the store build until the owner flips it. Folded like
+ * `KARAOKE_IMPORT`, so the store build carries none of it (assert-bundle.mjs
+ * STAGE 2): the room and the tab are one lazy chunk behind this constant
+ * (EarStage.tsx, EarLabPage.tsx).
+ */
+export const EAR_LAB_WITH_MERC: boolean = KARAOKE_IMPORT
+
+/**
  * The origin `/api/uvr/*` is asked on. Empty on the web, whose page is on
  * the worker that serves it. A native page is on capacitor://localhost, so
  * a native build names the web host that goes with its db-worker.

@@ -648,6 +648,31 @@ export function setExerciseFocus(on: boolean): void {
   setExerciseFocusSignal(on)
 }
 
+// ── A room drawn over a tab answers Back first ───────────────
+//
+// The Ear Lab's drill room (EAR_LAB_WITH_MERC) covers its tab, rail and
+// all, with no run for the shell to drive, so `closeRoomOverlay` (a run
+// control) is the wrong slot for it, as it is for a held note. It hands
+// the shell its own answer instead: Android's back asks it after the
+// shell's own overlays and before history, as a swipe down or Close does
+// ("End the run?" mid-run, out of the room otherwise).
+
+let roomBack: (() => boolean) | null = null
+
+/** While a full-screen room is up: Back is its to answer. Returns the
+ *  release. */
+export function registerRoomBack(answer: () => boolean): () => void {
+  roomBack = answer
+  return () => {
+    if (roomBack === answer) roomBack = null
+  }
+}
+
+/** Ask the room drawn over the tab, if there is one. True: it answered. */
+export function askRoomBack(): boolean {
+  return roomBack?.() === true
+}
+
 // ── Where "Skip to main content" goes ────────────────────────
 //
 // The app's skip link points at `#main-content`, which under the native
