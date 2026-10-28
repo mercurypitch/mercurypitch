@@ -190,7 +190,6 @@ describe('Studio transport handoff', () => {
     [
       ['Pause', (f) => f.transport.pause()],
       ['Stop', (f) => f.transport.stop()],
-      ['a seek', (f) => f.transport.seek(4800, f.project, [f.asset])],
       ['releasing audio', (f) => f.transport.releaseAudio()],
       ['closing Studio', (f) => f.transport.dispose()],
     ]

@@ -26,14 +26,17 @@ export class PlaybackSource extends FakeNode {
   onended: (() => void) | null = null
   starts: number[][] = []
   stops = 0
+  /** When each stop asked to stop: undefined for at once. */
+  stopTimes: (number | undefined)[] = []
   constructor() {
     super('source')
   }
   start(...values: number[]) {
     this.starts.push(values)
   }
-  stop() {
+  stop(when?: number) {
     this.stops++
+    this.stopTimes.push(when)
   }
 }
 export class PlaybackContext extends FakeAudioContext {

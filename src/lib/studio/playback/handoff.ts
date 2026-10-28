@@ -19,6 +19,15 @@ import { runTimelineFrame, STUDIO_RUN_RATE } from './run'
 
 export const HANDOFF_SECONDS = 0.03
 
+/** A run taking over: `from` is heard until `at`, then crossfades to `to`. */
+export interface StudioHandoff {
+  readonly from: StudioRun
+  readonly to: StudioRun
+  readonly at: number
+  /** `to` starts where a seek asked, not on the frame `from` plays then. */
+  seek: boolean
+}
+
 /**
  * Where and when a new run takes over from `held`: the first whole frame the
  * held run plays no sooner than `earliest`, and no sooner than its own
