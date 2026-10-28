@@ -5,8 +5,9 @@
 // A test that drives Lesson 12's modules as the page does loads
 // learn/12.html's body into jsdom (`loadPage`), so every selector meets the
 // markup it meets in a browser, and mounts the steps on the page's own deck
-// as main.ts does (`mountSteps`). The page's scripts never run: the test
-// mounts what it drives.
+// as main.ts does (`mountSteps`), handing back the ring of rooms they
+// mount. Sound is on, as after a first tap, with `soundOn`. The page's
+// scripts never run: the test mounts what it drives.
 // Every sound on the page is one of the kit's runs, so a test that hears
 // them swaps kit/run.ts for the kit's recorder
 // (kit/run-recorder.test-fixtures.ts, whose header gives the `vi.mock`).
@@ -15,8 +16,10 @@ import { readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
 import { vi } from 'vitest'
 import '@/features/lessons/kit/browser-doubles.test-fixtures'
+import { Sound } from '@/features/lessons/kit/sound'
 import type { StepDeck } from '@/features/lessons/kit/step-deck'
 import { createStepDeck } from '@/features/lessons/kit/step-deck'
+import type { Rooms } from './rooms'
 import { initSteps } from './steps'
 
 const PAGE = readFileSync(resolve(process.cwd(), 'learn/12.html'), 'utf8')
@@ -28,6 +31,12 @@ export function loadPage(): void {
   document.body.innerHTML = body[1]
 }
 
+/** Sound on, as after the first tap. */
+export function soundOn(): void {
+  vi.spyOn(Sound, 'canPlay').mockReturnValue(true)
+  vi.spyOn(Sound, 'state', 'get').mockReturnValue('on')
+}
+
 /** The element `selector` finds, or a failure naming it. */
 export function el<T extends HTMLElement = HTMLElement>(selector: string): T {
   const found = document.querySelector<T>(selector)
@@ -35,15 +44,20 @@ export function el<T extends HTMLElement = HTMLElement>(selector: string): T {
   return found
 }
 
-/** The page's deck with its steps mounted, opened on step 1 as the page opens it. */
-export function mountSteps(): StepDeck {
+/** Lets the promises the page awaits settle. */
+export const settle = async (): Promise<void> => {
+  for (let i = 0; i < 5; i++) await Promise.resolve()
+}
+
+/** The page's deck with its steps mounted, opened on step 1 as the page opens it, and the ring of rooms on its stage. */
+export function mountSteps(): StepDeck & { readonly rooms: Rooms } {
   loadPage()
   vi.spyOn(window, 'scrollTo').mockImplementation(() => undefined)
   const deck = createStepDeck({
     toyFor: () => 1,
     after: { label: 'Sing it', selector: '#sing' },
   })
-  initSteps()
+  const rooms = initSteps(deck)
   deck.start()
-  return deck
+  return Object.assign(deck, { rooms })
 }

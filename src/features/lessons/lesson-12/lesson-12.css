@@ -107,11 +107,12 @@
     --viz-min: 300px;
   }
 }
-/* The chord strip: seven chips under the figure, one per degree, I to vii°,
-   in scale order, each a button of two lines at least 44 px tall, 8 px
-   apart. One row of seven where the figure is at least 440 px wide, and two
-   rows, four and three, below that (FACTS 75): the deck's figure reaches
-   440 px at a 472 px window, and the stuck stage's is 445 px or more. */
+/* The chord strip: seven chips under the figure and the step's own row,
+   one per degree, I to vii°, in scale order, each a button of two lines at
+   least 44 px tall, 8 px apart. One row of seven where the figure is at
+   least 440 px wide, and two rows, four and three, below that (FACTS 75):
+   the deck's figure reaches 440 px at a 472 px window, and the stuck
+   stage's is 445 px or more. */
 .chord-strip {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
@@ -140,7 +141,9 @@
   font-size: var(--fs-12);
   color: var(--ink-2);
 }
-/* each step's own controls, one row beside the text, wrapping on a phone */
+/* each step's own controls, one row straight under the figure, wrapping on
+   a phone: the eye, the keyboard and a screen reader meet the figure, its
+   row, then the chips, in the markup's order */
 .rooms-toy .rooms-row {
   margin-top: 10px;
 }

@@ -237,13 +237,15 @@ export const FIRST_PAINT_BUDGETS_KB = {
   // plan (kit/tour.ts, telemetry.ts and plan-back.ts).
   'learn/10.html': 211,
   // Lesson 12, "Chords and the four-chord song", a draft too, built in
-  // every mode as Lesson 3 is. Measured 73,215 bytes in build:e2e for its
-  // page shell: the kit's deck, switches, masthead, next-lesson card,
-  // explorer and Merc and Tavi, with none of its toys wired yet. The
-  // ceiling is the smallest whole KB above that, so each toy that joins
-  // raises it, with its measure, until the page is whole and takes a
-  // quarter over.
-  'learn/12.html': 72,
+  // every mode as Lesson 3 is. Its page shell, the kit's deck, switches,
+  // masthead, next-lesson card, explorer and Merc and Tavi, measured 73,364
+  // bytes in build:e2e. The steps' ring of rooms brings it to 107,522: the
+  // kit's spiral seen from above, with its keys (17,850 bytes), the kit's
+  // runs, names and sound owner, and the ring's own states, painter, lines
+  // and sounds in the page's module. The ceiling is the smallest whole KB
+  // above the measure, so each toy that joins raises it, with its measure,
+  // until the page is whole and takes a quarter over.
+  'learn/12.html': 106,
 
   // The main app, and the crawlable doors that are the main app. Measured
   // 4669. It is eager by design today, so this is a ceiling on growth rather
