@@ -91,3 +91,26 @@ export function planAssets(
   )
   return assets.filter((asset) => ids.has(asset.id))
 }
+
+/** Where a run from `frame` starts: at the top once the song has ended there. */
+export function studioFirstFrame(endFrame: number, frame: number): number {
+  return frame >= endFrame ? 0 : Math.max(0, Math.floor(frame))
+}
+
+/**
+ * Where a run asked to start at `startFrame` begins. Throws when nothing
+ * would sound, or when a song too short to loop is set to repeat.
+ */
+export function playableStudioFrom(
+  project: StudioProject,
+  assets: readonly StudioAsset[],
+  startFrame: number,
+  repeat: boolean,
+): number {
+  const content = compileStudioArrangement(project, assets)
+  if (!content.lanes.some((lane) => lane.audible && lane.segments.length > 0))
+    throw new Error('Add an audible take before playing.')
+  if (repeat && content.endFrame < 12000)
+    throw new Error('A song needs at least a quarter second to repeat.')
+  return studioFirstFrame(content.endFrame, startFrame)
+}
