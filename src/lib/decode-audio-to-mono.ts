@@ -5,10 +5,32 @@
 // Vocal Analysis and Hear Yourself both need real samples before running the
 // take-analysis worker. Keeping fetch, decode, and channel folding here avoids
 // small differences in how the same recording is measured across surfaces.
+// The Jam room's pitch read and First note's read of a song of the singer's
+// own take one channel of the same decode (decodeAudioBytes).
 
 export interface DecodedMonoAudio {
   samples: Float32Array
   sampleRate: number
+}
+
+/** The rate every decode here is read at: decodeAudioData resamples to it. */
+export const DECODE_RATE = 44_100
+
+/**
+ * Browser-supported audio bytes, decoded: every channel, at DECODE_RATE.
+ *
+ * An OfflineAudioContext rather than a live one: decoding needs no output
+ * device and no user gesture, and a phone should not open a second hardware
+ * context to read a file. Its length and channels are irrelevant:
+ * decodeAudioData allocates its own buffer and only borrows the rate.
+ */
+export async function decodeAudioBytes(
+  bytes: ArrayBuffer,
+): Promise<AudioBuffer> {
+  if (typeof OfflineAudioContext === 'undefined') {
+    throw new Error('Offline audio decoding is unavailable in this browser.')
+  }
+  return await new OfflineAudioContext(1, 2, DECODE_RATE).decodeAudioData(bytes)
 }
 
 /** Fold any decoded channel layout into an equal-weight mono signal. */
@@ -32,11 +54,7 @@ export function mixAudioChannelsToMono(
 export async function decodeAudioBytesToMono(
   bytes: ArrayBuffer,
 ): Promise<DecodedMonoAudio> {
-  if (typeof OfflineAudioContext === 'undefined') {
-    throw new Error('Offline audio decoding is unavailable in this browser.')
-  }
-  const context = new OfflineAudioContext(1, 2, 44_100)
-  const buffer = await context.decodeAudioData(bytes)
+  const buffer = await decodeAudioBytes(bytes)
   const channels = Array.from({ length: buffer.numberOfChannels }, (_, index) =>
     buffer.getChannelData(index),
   )

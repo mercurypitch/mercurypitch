@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { ENTRIES_PER_SONG, FIRST_NOTE_ROUNDS } from './first-note-rules'
 import type { FirstNoteSong } from './first-note-songs'
-import { FIRST_NOTE_SONGS, LINE_SHARES, pickEntries, planRun, } from './first-note-songs'
+import { FIRST_NOTE_SONGS, LINE_SHARES, pickEntries, planRun, shareRun, songsOfRun, } from './first-note-songs'
 
 /** A seeded random source, the same run every time. */
 function seeded(seed = 7): () => number {
@@ -14,6 +14,8 @@ function seeded(seed = 7): () => number {
 
 const SONG: FirstNoteSong = {
   slug: 'test-song',
+  sessionId: 'test-song',
+  kind: 'yours',
   title: 'Test Song',
   artist: 'Someone',
   credit: 'Someone · CC BY 4.0',
@@ -57,6 +59,67 @@ describe("First note's songs", () => {
       expect(slugs[i]).toBe(slugs[i + 1])
       expect(rounds[i].entry.at).toBeLessThan(rounds[i + 1].entry.at)
     }
+  })
+
+  it('names each example by the session the Karaoke room plays it under', () => {
+    expect(FIRST_NOTE_SONGS.map((song) => song.sessionId)).toEqual([
+      'karaoke-night-demo',
+      'karaoke-night-demo:josephine',
+      'karaoke-night-demo:nothing-in-the-dark',
+    ])
+    expect(FIRST_NOTE_SONGS.every((song) => song.kind === 'example')).toBe(true)
+  })
+
+  it('carries the words of the line each example entry comes in on', () => {
+    for (const song of FIRST_NOTE_SONGS) {
+      for (const entry of song.entries) {
+        expect(entry.words, `${song.slug} at ${entry.at}`).toMatch(/\w/u)
+        // The word timings are out of them.
+        expect(entry.words).not.toMatch(/\[\d+:\d+/u)
+      }
+    }
+    expect(FIRST_NOTE_SONGS[1].entries[0].words).toBe(
+      "I'll be right behind you, Josephine",
+    )
+  })
+
+  it('shares a run out over any songs, one entry each in turn', () => {
+    const song = (id: string, entries: number): FirstNoteSong => ({
+      ...SONG,
+      slug: id,
+      sessionId: id,
+      entries: Array.from({ length: entries }, (_, i) => ({
+        at: 10 + i * 10,
+        midi: 50 + i,
+        from: 2 + i * 10,
+        until: 15 + i * 10,
+        beats: [],
+      })),
+    })
+    // Three songs give two each; four give two, two, one and one.
+    expect(shareRun([song('a', 5), song('b', 5), song('c', 5)], 6)).toEqual([
+      2, 2, 2,
+    ])
+    expect(
+      shareRun([song('a', 5), song('b', 5), song('c', 5), song('d', 5)], 6),
+    ).toEqual([2, 2, 1, 1])
+    // One song gives what it has, up to the run.
+    expect(shareRun([song('a', 4)], 6)).toEqual([4])
+    expect(shareRun([song('a', 9)], 6)).toEqual([6])
+    // Seven songs: one each to the first six.
+    expect(
+      shareRun(
+        ['a', 'b', 'c', 'd', 'e', 'f', 'g'].map((id) => song(id, 3)),
+        6,
+      ),
+    ).toEqual([1, 1, 1, 1, 1, 1, 0])
+    // A song short of entries passes its turn to the others.
+    expect(shareRun([song('a', 1), song('b', 9)], 6)).toEqual([1, 5])
+
+    const rounds = planRun([song('mine', 9)], seeded(5))
+    expect(rounds).toHaveLength(FIRST_NOTE_ROUNDS)
+    expect(new Set(rounds.map((round) => round.entry.at)).size).toBe(6)
+    expect(songsOfRun(rounds).map((one) => one.slug)).toEqual(['mine'])
   })
 
   it("places each round's line somewhere new, inside the stage's range", () => {

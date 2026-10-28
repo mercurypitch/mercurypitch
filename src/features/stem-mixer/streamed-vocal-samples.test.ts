@@ -9,7 +9,7 @@
 // be the memory the stream exists to avoid.
 
 import { describe, expect, it } from 'vitest'
-import { canGatherStreamedVocal, gatherStreamedVocal, STREAMED_ANALYSIS_MAX_BYTES, streamedAnalysisStep, streamedTooLongMessage, windowForStep, } from './streamed-vocal-samples'
+import { canGatherStreamedVocal, gatherStreamedVocal, STREAMED_ANALYSIS_MAX_BYTES, streamedAnalysisStep, streamedTooLongMessage, wholeDecodeFits, windowForStep, } from './streamed-vocal-samples'
 import type { StemStreamChunk } from './streaming-stem-voice'
 
 /** A decoded chunk: `values` on channel 0 from `timestamp`, at `rate`. */
@@ -91,6 +91,23 @@ describe('streamedAnalysisStep', () => {
         STREAMED_ANALYSIS_MAX_BYTES,
       )
     }
+  })
+})
+
+describe('wholeDecodeFits', () => {
+  const MIB = 1024 * 1024
+
+  it('decodes whole only a song the walk would keep every sample of', () => {
+    // Five minutes at 44.1 kHz: one channel is 53 MB, under 64 MiB.
+    expect(wholeDecodeFits(300, 9 * MIB, 44_100)).toBe(true)
+    // Seven minutes would stream at every second sample; a decode cannot.
+    expect(wholeDecodeFits(420, 9 * MIB, 44_100)).toBe(false)
+    expect(wholeDecodeFits(3600, 9 * MIB, 44_100)).toBe(false)
+  })
+
+  it('holds a stem of no known length to the size the mixer decodes whole', () => {
+    expect(wholeDecodeFits(null, 12 * MIB, 44_100)).toBe(true)
+    expect(wholeDecodeFits(null, 12 * MIB + 1, 44_100)).toBe(false)
   })
 })
 

@@ -92,3 +92,15 @@ describe('a song the studio hands back', () => {
     expect(store.takeKaraokeSongRequest()).toBeNull()
   })
 })
+
+describe('the songs asked for from outside the room', () => {
+  it('are asked for once', async () => {
+    const store = await freshStore()
+
+    expect(store.takeKaraokeLibraryRequest()).toBe(false)
+    store.requestKaraokeLibrary()
+    expect(store.karaokeLibraryRequest()).toBe(true)
+    expect(store.takeKaraokeLibraryRequest()).toBe(true)
+    expect(store.takeKaraokeLibraryRequest()).toBe(false)
+  })
+})

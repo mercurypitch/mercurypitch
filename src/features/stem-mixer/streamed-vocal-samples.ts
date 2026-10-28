@@ -25,6 +25,7 @@
 // Tests: streamed-vocal-samples.test.ts.
 
 import { thisDeviceLower } from '@/lib/device-noun'
+import { HOSTED_WHOLE_DECODE_MAX_BYTES } from './stem-memory'
 import type { StemStreamChunk } from './streaming-stem-voice'
 
 /**
@@ -88,6 +89,25 @@ export function canGatherStreamedVocal(source: StreamedVocalSource): boolean {
   return (
     streamedAnalysisStep(source.durationSeconds, source.sampleRate) !== null
   )
+}
+
+/**
+ * Whether a stem `seconds` long, `bytes` on the device, may be decoded whole
+ * at `sampleRate` for a read where the device cannot stream it. A decode
+ * holds every channel until it is let go, and cannot keep every second or
+ * fourth sample as the walk does, so it is held to the walk's ceiling at its
+ * finest step: about six minutes at 44.1 kHz, some 128 MiB for two channels
+ * at the peak, under the ~180 MiB iOS killed the app for (stem-memory.ts). A
+ * stem whose length the device cannot tell is held to the size the mixer
+ * decodes whole.
+ */
+export function wholeDecodeFits(
+  seconds: number | null,
+  bytes: number,
+  sampleRate: number,
+): boolean {
+  if (seconds === null) return bytes <= HOSTED_WHOLE_DECODE_MAX_BYTES
+  return streamedAnalysisStep(seconds, sampleRate) === 1
 }
 
 /** What the analysis says for a song too long to gather. */

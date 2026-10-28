@@ -93,7 +93,7 @@ import styles from './karaoke-room.module.css'
 import type { RoomSong, RoomStems } from './karaoke-room-library'
 import { hydrateSong, roomLibrary } from './karaoke-room-library'
 import type { ParkedSong } from './karaoke-room-store'
-import { KARAOKE_LYRICS_SIZE_LABELS, karaokeBackgroundPlay, karaokeLyricsSize, karaokeNoteGlyphs, karaokePinned, karaokePlayNext, karaokeSongRequest, karaokeStagedSong, lastSungSong, parkKaraokeSong, rememberSungSong, setKaraokeLyricsSize, setKaraokeNoteGlyphs, setKaraokePlayNext, setKaraokeStagedSong, takeKaraokeSongRequest, takeParkedKaraokeSong, } from './karaoke-room-store'
+import { KARAOKE_LYRICS_SIZE_LABELS, karaokeBackgroundPlay, karaokeLibraryRequest, karaokeLyricsSize, karaokeNoteGlyphs, karaokePinned, karaokePlayNext, karaokeSongRequest, karaokeStagedSong, lastSungSong, parkKaraokeSong, rememberSungSong, setKaraokeLyricsSize, setKaraokeNoteGlyphs, setKaraokePlayNext, setKaraokeStagedSong, takeKaraokeLibraryRequest, takeKaraokeSongRequest, takeParkedKaraokeSong, } from './karaoke-room-store'
 import { karaokeSongs, songsOptionRow } from './karaoke-songs'
 import { KaraokeLibrarySheet } from './KaraokeLibrarySheet'
 import { KaraokeLyricsWindow } from './KaraokeLyricsWindow'
@@ -257,6 +257,7 @@ export const KaraokeRoomStage: Component = () => {
       guide: resuming ? parked.guide : null,
       arriving: true,
     })
+    if (takeKaraokeLibraryRequest()) setLibraryOpen(true)
   })
 
   // A song the studio handed back (plan S8 §11): on the stage, playing. One
@@ -273,6 +274,13 @@ export const KaraokeRoomStage: Component = () => {
       }
       void cueSong(song, { autoPlay: true })
     })
+  })
+
+  // The room's songs, asked for from outside it (First note, for a singer
+  // with none of their own yet): the library, where Import is.
+  createEffect(() => {
+    if (!karaokeLibraryRequest() || !arrived) return
+    if (untrack(takeKaraokeLibraryRequest)) setLibraryOpen(true)
   })
 
   // A song that starts is a run, and the one the next arrival cues.

@@ -9,8 +9,10 @@
 // the voice's trail, the note's line, Merc's state and voice, his lines and
 // the chip.
 //
-// A run is FIRST_NOTE_ROUNDS entries from the example songs, planned as it
-// starts (first-note-songs.ts). Each round: the song's band leads in, with
+// A run is up to FIRST_NOTE_ROUNDS entries from the songs the singer chose
+// (the examples, their own, or a mix: first-note-choices.ts), planned as it
+// starts (first-note-songs.ts); a song of their own gets stems that play
+// once the mic has opened. Each round: the song's band leads in, with
 // its last four beats counted down, and stops where its singer comes in.
 // The singer's turn opens. The first note their voice sits on is their
 // entry, judged by ear alone at the levels that hide the line; then the
@@ -57,14 +59,16 @@ import { createSequenceState, RESPONSE_GATE_SECONDS, tickSequence, } from '@/lib
 import { firstSteadyNote } from '@/lib/sequence/steady-note'
 import type { ExerciseLevel } from '@/stores/exercise-level'
 import { exerciseLevel, exerciseLevelName } from '@/stores/exercise-level'
+import { firstNoteSource } from './first-note-choices'
 import type { EntryHeard, FirstNoteEvent, FirstNoteState, RoundOutcome, } from './first-note-machine'
 import { firstNoteReducer, INITIAL_FIRST_NOTE_STATE, isRunPhase, liveRound, } from './first-note-machine'
+import { playableSong, songsFrom } from './first-note-own-songs'
 import type { FirstNoteLevel } from './first-note-rules'
 import { BETWEEN_ROUNDS_MS, ENTRY_MS, ENTRY_RUN_GAP_SEC, ENTRY_STEADY_CENTS, FIRST_NOTE_LEVELS, MERC_GAP_SECONDS, MERC_NOTE_SECONDS, } from './first-note-rules'
 import type { FirstNoteSummary } from './first-note-run'
 import { keepFirstNoteRun, resultMoment, summarizeRun } from './first-note-run'
 import type { FirstNoteRound, FirstNoteSong } from './first-note-songs'
-import { FIRST_NOTE_SONGS, planRun } from './first-note-songs'
+import { planRun, songsOfRun } from './first-note-songs'
 import type { FirstLineFields, FirstMoment } from './merc-lines'
 import { createFirstLines } from './merc-lines'
 import type { SongPlayer, SongPlayerFactory, SongSound } from './song-player'
@@ -98,8 +102,18 @@ export interface FirstNoteControllerOptions {
    * sings him with the synth "ooh".
    */
   readonly voice?: RoundVoice
-  /** The songs (a test's); the example songs by default. */
-  readonly songs?: readonly FirstNoteSong[]
+  /**
+   * The songs a run plays (a test's), read at each start; by default the
+   * ones the singer chose: the examples, their own, or both.
+   */
+  readonly songs?: readonly FirstNoteSong[] | (() => readonly FirstNoteSong[])
+  /** A song with stems that play now (a test's); first-note-own-songs.ts's by default. */
+  readonly playable?: (song: FirstNoteSong) => Promise<FirstNoteSong>
+  /**
+   * The mic's tap found no song to sing (the singer's own chosen, none read
+   * yet): the room shows where the songs come from instead of starting.
+   */
+  readonly onNoSongs?: () => void
   /** The song player (a test's); the streamed one by default. */
   readonly player?: SongPlayerFactory
   readonly random?: () => number
@@ -145,7 +159,12 @@ export function useFirstNoteController(
 ): FirstNoteController {
   const capture = useExerciseCapture('first-note', 'First note')
   const voiceOfMerc = options.voice ?? SYNTH_VOICE
-  const songs = options.songs ?? FIRST_NOTE_SONGS
+  const given = options.songs
+  const songsNow = (): readonly FirstNoteSong[] => {
+    if (given === undefined) return songsFrom(firstNoteSource())
+    return typeof given === 'function' ? given() : given
+  }
+  const playable = options.playable ?? playableSong
   const makePlayer = options.player ?? createSongPlayer
   const random = options.random ?? Math.random
   const lines = createFirstLines(random)
@@ -188,6 +207,8 @@ export function useFirstNoteController(
   // ── The run ────────────────────────────────────────────────
   let audio: AudioContext | null = null
   let player: SongPlayer | null = null
+  /** The run's songs with stems that play, by slug. */
+  let playing = new Map<string, FirstNoteSong>()
   let sound: SongSound | null = null
   /** Merc singing the note after a miss. */
   let mercSound: { stop(): void } | null = null
@@ -209,6 +230,9 @@ export function useFirstNoteController(
 
   const frameNow = (): number => (performance.now() - windowStartedAt) / 1000
   const live = (): FirstNoteRound | null => liveRound(untrack(state))
+  /** The round's song, with its stems minted for this run. */
+  const songOf = (round: FirstNoteRound): FirstNoteSong =>
+    playing.get(round.song.slug) ?? round.song
   const phraseOf = (round: FirstNoteRound): Phrase => ({
     notes: [{ midi: round.entry.midi, at: 0, seconds: MERC_NOTE_SECONDS }],
   })
@@ -250,6 +274,7 @@ export function useFirstNoteController(
   const letGoOfSongs = (): void => {
     player?.dispose()
     player = null
+    playing = new Map()
   }
 
   /** The round's lead-in: a fresh capture window, then the band. */
@@ -266,13 +291,13 @@ export function useFirstNoteController(
     engine = createSequenceState(Number.POSITIVE_INFINITY)
     leadCount += 1
     const lead = leadCount
-    const playing = player.leadIn(round.song, round.entry)
-    sound = playing
+    const leadIn = player.leadIn(songOf(round), round.entry)
+    sound = leadIn
     setCountdown({ progress: 0, beats: round.entry.beats.length, lit: 0 })
     setChip(`Entry ${round.index + 1} of ${untrack(state).rounds.length}`)
     merc.set('listen')
     startLoop()
-    void playing.done.then((played) => {
+    void leadIn.done.then((played) => {
       if (lead !== leadCount || phase() !== 'band') return
       if (played) toTurn()
       else songFailed()
@@ -453,9 +478,9 @@ export function useFirstNoteController(
   /** The song carries on from the entry, its singer back in. */
   const playLine = (round: FirstNoteRound): void => {
     if (player === null) return
-    const playing = player.line(round.song, round.entry)
-    sound = playing
-    nextAfter(playing.done, round.index)
+    const line = player.line(songOf(round), round.entry)
+    sound = line
+    nextAfter(line.done, round.index)
   }
 
   /** After a miss: Merc sings the note, then the singer comes in. */
@@ -556,8 +581,12 @@ export function useFirstNoteController(
 
   // ── What the singer does ───────────────────────────────────
   const start = (): void => {
-    const from = phase()
-    if (from !== 'intro' && from !== 'result' && from !== 'blocked') return
+    if (isRunPhase(phase())) return
+    const songs = untrack(songsNow)
+    if (songs.length === 0) {
+      options.onNoSongs?.()
+      return
+    }
     level.take()
     runLevel = untrack(exerciseLevel)
     rules = untrack(level.preset)
@@ -575,7 +604,7 @@ export function useFirstNoteController(
       alive: life.alive,
       state,
       clock: true,
-      onOpen: (_run, ctx) => {
+      onOpen: (run, ctx) => {
         audio = ctx
         letGoOfSongs()
         // With `clock: true` the mic opens only on a running clock: a null
@@ -586,7 +615,25 @@ export function useFirstNoteController(
           return
         }
         player = makePlayer(ctx)
-        beginRound(0)
+        // A song of the singer's own plays from the phone's store, through
+        // URLs minted for this page; an example's are its files.
+        const own = songsOfRun(rounds).filter((song) => song.kind === 'yours')
+        if (own.length === 0) {
+          beginRound(0)
+          return
+        }
+        const stillThisRun = (): boolean =>
+          untrack(state).run === run && phase() === 'starting'
+        Promise.all(own.map(playable)).then(
+          (ready) => {
+            if (!stillThisRun()) return
+            playing = new Map(ready.map((song) => [song.slug, song]))
+            beginRound(0)
+          },
+          () => {
+            if (stillThisRun()) songFailed()
+          },
+        )
       },
       onFail: (run, block) => {
         dispatch({ type: 'blocked', run, block })

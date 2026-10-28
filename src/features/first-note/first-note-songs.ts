@@ -7,19 +7,26 @@
 // (first-note-entries.json, made by apps/mercurypitch/scripts/
 // generate-first-note-entries.mjs): for each, where the band's lead-in
 // starts, the moment the singer comes in, their first note, the four beats
-// before it, and the end of the line they sing.
+// before it, the end of the line they sing, and its words. A song of the
+// singer's own is read the same way on the phone (own-song-read.ts) and
+// takes the same shape here.
 //
-// A run takes ENTRIES_PER_SONG entries from each song, the songs in a
-// random order and each song's entries in the song's own order, so the
-// singer moves through a song as it goes. Two entries on one note are one
-// task twice, so a song's picks differ in note where they can.
+// A run is up to FIRST_NOTE_ROUNDS entries, shared out over its songs in a
+// random order: two from each of the three examples, one or more from each
+// of a singer's own. A song gives no more entries than it has, so songs of
+// the singer's own with fewer between them make a shorter run, which the
+// history keeps and no best counts (first-note-run.ts). Each song's entries
+// come in the song's own order, so the singer moves through a song as it
+// goes. Two entries on one note are one task twice, so a song's picks
+// differ in note where they can.
 //
 // Each round also places the note's line somewhere new on the stage
 // (LINE_SHARES): at the levels that hide the line until the singer comes
 // in, a line always at one height would show where the note is.
 
+import { demoSessionId } from '@/lib/example-session'
 import entriesFile from './first-note-entries.json'
-import { ENTRIES_PER_SONG } from './first-note-rules'
+import { FIRST_NOTE_ROUNDS } from './first-note-rules'
 
 /** One place a singer comes in. Seconds on the song's own clock. */
 export interface FirstNoteEntry {
@@ -33,15 +40,28 @@ export interface FirstNoteEntry {
   readonly until: number
   /** The last four beats before `at`, or none where the grid is unclear. */
   readonly beats: readonly number[]
+  /**
+   * The words of the line the singer comes in on, for the hint that shows
+   * them; '' or absent where the song has no synced lyrics.
+   */
+  readonly words?: string
 }
 
 export interface FirstNoteSong {
+  /** The song's own name in the room: an example's slug, or a session id. */
   readonly slug: string
+  /** The song's session, where the Karaoke room plays it whole. */
+  readonly sessionId: string
+  /** An example the app ships, or a song of the singer's own. */
+  readonly kind: 'example' | 'yours'
   readonly title: string
   readonly artist: string
-  /** What the licence asks to be shown with it: "Josh Woodward · CC BY 4.0". */
+  /**
+   * What the licence asks to be shown with it: "Josh Woodward · CC BY 4.0".
+   * '' for a song of the singer's own.
+   */
   readonly credit: string
-  /** The stems, at the app's own origin. */
+  /** The stems: at the app's own origin, or minted from the phone's store. */
   readonly stems: { readonly vocal: string; readonly instrumental: string }
   readonly entries: readonly FirstNoteEntry[]
 }
@@ -63,6 +83,8 @@ export const LINE_SHARES = { low: 0.36, high: 0.5 } as const
 export const FIRST_NOTE_SONGS: readonly FirstNoteSong[] = entriesFile.songs.map(
   (song) => ({
     slug: song.slug,
+    sessionId: demoSessionId(song.slug),
+    kind: 'example' as const,
     title: song.title,
     artist: song.artist,
     credit: `${song.artist} · ${song.attribution.license}`,
@@ -100,17 +122,47 @@ export function pickEntries(
   return picks.sort((a, b) => a.at - b.at)
 }
 
-/** A run: ENTRIES_PER_SONG from each song, the songs in a random order. */
+/**
+ * How many of a run's `rounds` each song gives, in the run's order: one
+ * each in turn, while a song has entries left, until the run is full. Three
+ * songs give two each; four give two, two, one and one; seven give one each
+ * to the first six. Songs with fewer entries between them than `rounds`
+ * give all they have: the run is shorter.
+ */
+export function shareRun(
+  songs: readonly FirstNoteSong[],
+  rounds: number,
+): number[] {
+  const shares = songs.map(() => 0)
+  let left = rounds
+  let gave = true
+  while (left > 0 && gave) {
+    gave = false
+    for (const [i, song] of songs.entries()) {
+      if (left === 0) break
+      if (shares[i] >= song.entries.length) continue
+      shares[i] += 1
+      left -= 1
+      gave = true
+    }
+  }
+  return shares
+}
+
+/** A run: `rounds` entries shared out over the songs, in a random order. */
 export function planRun(
   songs: readonly FirstNoteSong[],
   random: () => number,
-  perSong: number = ENTRIES_PER_SONG,
+  rounds: number = FIRST_NOTE_ROUNDS,
 ): FirstNoteRound[] {
-  const rounds: FirstNoteRound[] = []
-  for (const song of shuffled(songs, random)) {
-    for (const entry of pickEntries(song, perSong, random)) {
-      rounds.push({
-        index: rounds.length,
+  const planned: FirstNoteRound[] = []
+  const order = shuffled(songs, random)
+  const shares = shareRun(order, rounds)
+  for (const [i, song] of order.entries()) {
+    if (shares[i] === 0) continue
+    for (const entry of pickEntries(song, shares[i], random)) {
+      planned.push({
+        index: planned.length,
         song,
         entry,
         lineShare:
@@ -118,5 +170,14 @@ export function planRun(
       })
     }
   }
-  return rounds
+  return planned
+}
+
+/** The songs of a run, each once, in the order the run first plays them. */
+export function songsOfRun(rounds: readonly FirstNoteRound[]): FirstNoteSong[] {
+  const songs: FirstNoteSong[] = []
+  for (const round of rounds) {
+    if (!songs.includes(round.song)) songs.push(round.song)
+  }
+  return songs
 }

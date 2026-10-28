@@ -307,7 +307,7 @@ vi.mock('@/lib/backgrounds/background-surface', () => ({
 }))
 
 import { actAsIpad } from '@/tests/helpers/ipad-navigator'
-import { KARAOKE_LAST_SONG_KEY, KARAOKE_PINNED_KEY, karaokeLyricsSize, karaokeNoteGlyphs, karaokePlayNext, karaokeSongRequest, karaokeStagedSong, requestKaraokeSong, resetKaraokeRoomForTests, setKaraokeBackgroundPlay, setKaraokePictureInPicture, setKaraokePlayNext, } from './karaoke-room-store'
+import { KARAOKE_LAST_SONG_KEY, KARAOKE_PINNED_KEY, karaokeLibraryRequest, karaokeLyricsSize, karaokeNoteGlyphs, karaokePlayNext, karaokeSongRequest, karaokeStagedSong, requestKaraokeLibrary, requestKaraokeSong, resetKaraokeRoomForTests, setKaraokeBackgroundPlay, setKaraokePictureInPicture, setKaraokePlayNext, } from './karaoke-room-store'
 import { resetKaraokeSongsForTests } from './karaoke-songs'
 import { KaraokeRoomStage, MIC_RESTORE_DELAY_MS, UNKNOWN_ARTIST, } from './KaraokeRoomStage'
 
@@ -1869,6 +1869,29 @@ describe('a song the studio hands back', () => {
     await settleFor(30)
     expect(mixers.list).toHaveLength(1)
     expect(karaokeSongRequest()).toBeNull()
+  })
+})
+
+describe('the songs, asked for from First note', () => {
+  // "Sing your own songs", for a singer with none split yet: the library,
+  // where Import is.
+  it('open as the room arrives', async () => {
+    requestKaraokeLibrary()
+
+    await mountRoom()
+
+    expect(await screen.findByTestId('karaoke-library')).toBeTruthy()
+    expect(karaokeLibraryRequest()).toBe(false)
+  })
+
+  it('open over the room that is already here', async () => {
+    await mountRoom()
+    expect(screen.queryByTestId('karaoke-library')).toBeNull()
+
+    requestKaraokeLibrary()
+
+    expect(await screen.findByTestId('karaoke-library')).toBeTruthy()
+    expect(karaokeLibraryRequest()).toBe(false)
   })
 })
 
