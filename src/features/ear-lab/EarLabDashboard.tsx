@@ -73,15 +73,16 @@ function monthLabel(at: number): string {
   return new Date(at).toLocaleDateString(undefined, { month: 'long' })
 }
 
-interface Headline {
+export interface Headline {
   lead: string
   rest: string
   lede: string
 }
 
 /** The coach's line: the number that matters most right now, in its
- *  own unit, and how it has moved. Never a percent, never a streak. */
-function headline(): Headline {
+ *  own unit, and how it has moved. Never a percent, never a streak.
+ *  The native tab says the same (features/ear-lab/merc). */
+export function headline(): Headline {
   const sealed = latestCalibration()
   const runs = calibrationHistory()
   if (sealed) {

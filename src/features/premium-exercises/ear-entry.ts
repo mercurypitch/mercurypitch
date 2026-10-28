@@ -8,3 +8,6 @@
 // signals, reaches its graph.
 
 export { EarMercRow } from './EarMercRow'
+// The Ear Lab with Merc's tab draws the rooms its own way, from the same
+// catalogue group (EarRoomsRow.tsx), behind the same switch.
+export { EarRoomsRow } from './EarRoomsRow'

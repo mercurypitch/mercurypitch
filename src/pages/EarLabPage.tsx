@@ -11,6 +11,11 @@
 // a "With Merc" row over the bench (features/premium-exercises/
 // EarMercRow.tsx), loaded lazily behind PREMIUM_EXERCISES so the web and
 // the store build carry none of it.
+//
+// On a phone build with the Ear Lab with Merc (EAR_LAB_WITH_MERC) the
+// bench is the native tab instead (features/ear-lab/merc/MercBench.tsx),
+// with the Ear rooms as its own row, and every drill opens in the native
+// room (EarStage.tsx). Both are one lazy chunk behind the switch.
 // ============================================================
 
 import type { Component, JSX } from 'solid-js'
@@ -42,7 +47,7 @@ import { StackDrill } from '@/features/ear-lab/StackDrill'
 import { SubdivideDrill } from '@/features/ear-lab/SubdivideDrill'
 import { releaseWildStems } from '@/features/ear-lab/wild-store'
 import type { PremiumExerciseId } from '@/lib/domain/exercise-contracts'
-import { PREMIUM_EXERCISES } from '@/lib/native-build'
+import { EAR_LAB_WITH_MERC, PREMIUM_EXERCISES } from '@/lib/native-build'
 import { disarmSprintSegment } from '@/stores/ear-lab-store'
 import { nativeShellApi } from '@/stores/native-shell-store'
 import { pendingEarDrill, setPendingEarDrill } from '@/stores/ui-store'
@@ -55,6 +60,30 @@ const EarMercRow: Component<EarMercRowProps> = PREMIUM_EXERCISES
   ? lazy(async () =>
       import('@/features/premium-exercises/ear-entry').then((module) => ({
         default: module.EarMercRow,
+      })),
+    )
+  : () => null
+
+/** The Ear rooms as the native tab draws them: the same switch and the
+ *  same lazy island as the row above. */
+const EarRoomsRow: Component<EarMercRowProps> = PREMIUM_EXERCISES
+  ? lazy(async () =>
+      import('@/features/premium-exercises/ear-entry').then((module) => ({
+        default: module.EarRoomsRow,
+      })),
+    )
+  : () => null
+
+interface MercBenchProps {
+  onNavigate: (view: EarLabView) => void
+  rooms?: JSX.Element
+}
+
+/** The native tab, on a build with the Ear Lab with Merc only. */
+const MercBench: Component<MercBenchProps> = EAR_LAB_WITH_MERC
+  ? lazy(async () =>
+      import('@/features/ear-lab/merc/entry').then((module) => ({
+        default: module.MercBench,
       })),
     )
   : () => null
@@ -95,16 +124,29 @@ export function EarLabPage(): JSX.Element {
     <div id="ear-lab-page">
       <EarRoomShell onNavigate={setView} bridge={view() === 'dashboard'}>
         <Show when={view() === 'dashboard'}>
-          <EarLabDashboard
-            onNavigate={setView}
-            withMerc={
-              mercRooms() ? (
-                <EarMercRow
-                  onOpen={(id) => nativeShellApi()?.openExercise?.(id)}
-                />
-              ) : undefined
-            }
-          />
+          {EAR_LAB_WITH_MERC ? (
+            <MercBench
+              onNavigate={setView}
+              rooms={
+                mercRooms() ? (
+                  <EarRoomsRow
+                    onOpen={(id) => nativeShellApi()?.openExercise?.(id)}
+                  />
+                ) : undefined
+              }
+            />
+          ) : (
+            <EarLabDashboard
+              onNavigate={setView}
+              withMerc={
+                mercRooms() ? (
+                  <EarMercRow
+                    onOpen={(id) => nativeShellApi()?.openExercise?.(id)}
+                  />
+                ) : undefined
+              }
+            />
+          )}
         </Show>
         <Show when={view() === 'hairline'}>
           <HairlineDrill onBack={back} />

@@ -50,7 +50,7 @@ const GO_WORD: Record<PathView, string> = {
   regulation: "Today's regulation",
 }
 
-function attemptedIds(): Set<string> {
+export function attemptedIds(): Set<string> {
   const ids = new Set<string>()
   for (const id of TRACKED_IDS) {
     if (
@@ -63,14 +63,18 @@ function attemptedIds(): Set<string> {
   return ids
 }
 
+/** The path as the store has it now: every orb, lit or dark. The
+ *  native tab reads the same train (features/ear-lab/merc). */
+export function currentEarPath(): PathMilestone[] {
+  return earPath({
+    attempted: attemptedIds(),
+    seals: calibrationHistory().map((run) => Object.keys(run.parts)),
+    regulationDays: sprintHistory().length,
+  })
+}
+
 export function EarPath(props: EarPathProps): JSX.Element {
-  const milestones = createMemo(() =>
-    earPath({
-      attempted: attemptedIds(),
-      seals: calibrationHistory().map((run) => Object.keys(run.parts)),
-      regulationDays: sprintHistory().length,
-    }),
-  )
+  const milestones = createMemo(() => currentEarPath())
   const next = createMemo(() => nextOnPath(milestones()))
   const count = createMemo(() => pathCount(milestones()))
 
