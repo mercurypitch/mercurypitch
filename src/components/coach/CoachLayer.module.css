@@ -271,6 +271,23 @@
   font-weight: 600;
 }
 
+/* Play the note, and under it the note's line (ToneStop.tsx). One item of
+   the words' column, so an empty line adds no gap; the line takes its own
+   space. */
+.tone {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+}
+
+.toneLive {
+  align-self: stretch;
+}
+
+.toneLine {
+  margin-top: 8px;
+}
+
 /* Both labels in one cell, the other one hidden: the button keeps one width
    while the note plays (CoachLayer.tsx, ToneButton). */
 .playLabel {

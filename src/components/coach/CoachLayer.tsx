@@ -59,7 +59,8 @@
 // - Sound only from a tap. A "hold-tone" step offers "Play the note" and
 //   plays it on a context of its own, made on that tap, which the layer closes
 //   when it goes. While it plays, the button, Merc and a line say so, and a
-//   line after it says how to hear it (hold-tone.ts).
+//   line after it says how to hear it (hold-tone.ts). The line stands under
+//   the button, which never moves as it comes and goes (ToneStop.tsx).
 // - A step that runs something (`run`: Merc singing through the room) starts
 //   it as it shows and stops it as it goes, however it goes. While it runs,
 //   Merc takes its pose, its line of what he does is read in the live region,
@@ -80,9 +81,10 @@ import { stillFor } from '@/lib/merc/stills'
 import styles from './CoachLayer.module.css'
 import { findTarget } from './find-target'
 import type { HoldTone } from './hold-tone'
-import { createHoldTone, HOLD_TONE_NAME, HOLD_TONE_SEC, TONE_HEAR_LINE, TONE_PLAYING_LINE, } from './hold-tone'
+import { createHoldTone } from './hold-tone'
 import type { CoachRunner, CoachSnapshot } from './runner'
 import { isQuiet } from './runner'
+import { ToneStop } from './ToneStop'
 
 /** A target taller than this share of the window gets no ring: it would ring the page. */
 export const RING_MAX_SHARE = 0.7
@@ -622,12 +624,6 @@ function StepCard(props: StepCardProps): JSX.Element {
     const at = props.at()
     return at.last && !at.waiting ? (props.more ?? null) : null
   }
-  // The note playing, or how to hear it once it has played.
-  const toneLine = (): string | null => {
-    if (step().sound !== 'hold-tone') return null
-    if (props.tone.playing() !== null) return TONE_PLAYING_LINE
-    return props.tone.played() ? TONE_HEAR_LINE : null
-  }
   return (
     <>
       <div ref={props.words} class={styles.content} tabindex="-1">
@@ -642,13 +638,6 @@ function StepCard(props: StepCardProps): JSX.Element {
             {(line) => (
               <p class={styles.aside} data-testid="coach-failure">
                 <strong>{line().title}</strong> {line().sub}
-              </p>
-            )}
-          </Show>
-          <Show when={toneLine()}>
-            {(line) => (
-              <p class={styles.aside} data-testid="coach-tone-line">
-                {line()}
               </p>
             )}
           </Show>
@@ -668,7 +657,7 @@ function StepCard(props: StepCardProps): JSX.Element {
           )}
         </Show>
         <Show when={step().sound === 'hold-tone'}>
-          <ToneButton tone={props.tone} />
+          <ToneStop tone={props.tone} />
         </Show>
         <Show when={step().lesson}>
           {(lesson) => (
@@ -712,38 +701,6 @@ function StepCard(props: StepCardProps): JSX.Element {
         </button>
       </div>
     </>
-  )
-}
-
-/**
- * "Play the note": while the note plays it names it and is lit, and a mark
- * runs across it for the note's length (none under reduced motion). Both
- * labels stay in it, one hidden, so it keeps one width.
- */
-function ToneButton(props: { tone: HoldTone }): JSX.Element {
-  const playing = (): boolean => props.tone.playing() !== null
-  return (
-    <button
-      type="button"
-      class={styles.play}
-      data-playing={playing() ? '' : undefined}
-      onClick={() => props.tone.play()}
-    >
-      <span class={styles.playLabel} aria-hidden={playing()}>
-        Play the note
-      </span>
-      <span class={styles.playLabel} aria-hidden={!playing()}>
-        Playing {HOLD_TONE_NAME}
-      </span>
-      <Show when={props.tone.playing()} keyed>
-        <span
-          class={styles.playMark}
-          data-testid="coach-tone-mark"
-          aria-hidden="true"
-          style={{ 'animation-duration': `${HOLD_TONE_SEC * 1000}ms` }}
-        />
-      </Show>
-    </button>
   )
 }
 
