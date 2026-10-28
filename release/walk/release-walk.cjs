@@ -794,8 +794,20 @@ async function covers(page, sel) {
         await dismissWelcome(page)
         const chip = page.getByTestId('tour-chip')
         const up = await chip.waitFor({ state: 'visible', timeout: 25000 }).then(() => true).catch(() => false)
+        if (up) await page.waitForTimeout(2500) // 0.9.24: it settles its spot in the page's first two seconds
         const box = up ? await chip.boundingBox() : null
-        check(`merc ${name}: Singing's first visit offers Merc's tour in a chip`, up && /Merc can show you around, 30 s/.test(await text(chip)), up ? `${await text(chip)} @${box && `${Math.round(box.x)},${Math.round(box.y)} ${Math.round(box.width)}x${Math.round(box.height)}`}` : 'no chip')
+        // 0.9.24: the offer floats. Where its words do not fit it is Merc
+        // alone ('mini'); its start button keeps the whole line as its name.
+        const offer = async (line, short) => {
+          const form = await chip.getAttribute('data-form').catch(() => null)
+          const where = await chip.getAttribute('data-place').catch(() => null)
+          const named = (await chip.getByRole('button', { name: line, exact: true }).count().catch(() => 0)) === 1
+          const shown = await text(chip)
+          const words = form === 'full' ? shown.includes(line) : form === 'short' ? short !== undefined && shown === short : form === 'mini' ? shown === '' : false
+          return { ok: named && words, detail: `${form} in the ${where}, shows "${shown}", button named "${line}" ${named}` }
+        }
+        const sing = up ? await offer('Merc can show you around, 30 s') : null
+        check(`merc ${name}: Singing's first visit offers Merc's tour in a chip`, up && sing.ok, up ? `${sing.detail} @${box && `${Math.round(box.x)},${Math.round(box.y)} ${Math.round(box.width)}x${Math.round(box.height)}`}` : 'no chip')
         check(`merc ${name}: the chip sits in the top of the page`, !!box && box.y < vp.height * 0.35, box ? `y ${Math.round(box.y)} of ${vp.height}` : 'no box')
         check(`merc ${name}: no corner toast offers the tour`, !(await page.getByText('Take a quick tour').filter({ visible: true }).count().catch(() => 0)))
         await shot(page, `merc-${name}-singing-chip`)
@@ -813,7 +825,9 @@ async function covers(page, sel) {
         // Home keeps its spotlight tour, offered by the same chip.
         await page.goto(BASE + '/#/home', { timeout: 60000 })
         const home = await chip.waitFor({ state: 'visible', timeout: 20000 }).then(() => true).catch(() => false)
-        check(`merc ${name}: Home's first visit offers its tour in a chip`, home && /Take a quick tour/.test(await text(chip)), home ? await text(chip) : 'no chip')
+        if (home) await page.waitForTimeout(2500)
+        const homeOffer = home ? await offer('New to Home? Take a quick tour.', 'Quick tour') : null
+        check(`merc ${name}: Home's first visit offers its tour in a chip`, home && homeOffer.ok, home ? homeOffer.detail : 'no chip')
         if (home) {
           await chip.getByRole('button', { name: 'Not now' }).click()
           const shut = await chip.waitFor({ state: 'detached', timeout: 5000 }).then(() => true).catch(() => false)
