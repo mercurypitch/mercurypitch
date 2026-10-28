@@ -95,57 +95,65 @@ export function StudioTransport(props: StudioTransportProps) {
       >
         <Repeat size={18} />
       </button>
-      <input
-        class={styles.clock}
-        type="text"
-        role="spinbutton"
-        inputMode="decimal"
-        autocomplete="off"
-        spellcheck={false}
-        aria-label="Playhead in seconds"
-        aria-valuemin={0}
-        aria-valuemax={props.endFrame / STUDIO_SAMPLE_RATE}
-        aria-valuenow={props.playheadFrame / STUDIO_SAMPLE_RATE}
-        aria-valuetext={formatStudioTime(props.playheadFrame)}
-        title="Type a time, such as 1:05.5 or 65.5"
-        value={draft() ?? formatStudioTime(props.playheadFrame)}
-        onFocus={(event) => {
-          focusedText = formatStudioTime(props.playheadFrame)
-          setDraft(focusedText)
-          event.currentTarget.value = focusedText
-          event.currentTarget.select()
-        }}
-        onBlur={() => {
-          focusedText = null
-          setDraft(null)
-        }}
-        onInput={(event) => setDraft(event.currentTarget.value)}
-        onChange={(event) => commit(event.currentTarget)}
-        onKeyDown={(event) => {
-          const input = event.currentTarget
-          if (event.key === 'Enter') {
-            event.preventDefault()
-            commit(input)
-          } else if (event.key === 'Escape' && draft() !== focusedText) {
-            event.preventDefault()
-            event.stopPropagation()
+      {/* The clock changes on every tick. Its box is not the bar's flex
+          item, so a new time lays out only the clock. */}
+      <span class={styles.clockBox}>
+        <input
+          class={styles.clock}
+          type="text"
+          role="spinbutton"
+          inputMode="decimal"
+          autocomplete="off"
+          spellcheck={false}
+          aria-label="Playhead in seconds"
+          aria-valuemin={0}
+          aria-valuemax={props.endFrame / STUDIO_SAMPLE_RATE}
+          aria-valuenow={props.playheadFrame / STUDIO_SAMPLE_RATE}
+          aria-valuetext={formatStudioTime(props.playheadFrame)}
+          title="Type a time, such as 1:05.5 or 65.5"
+          value={draft() ?? formatStudioTime(props.playheadFrame)}
+          onFocus={(event) => {
             focusedText = formatStudioTime(props.playheadFrame)
             setDraft(focusedText)
-            input.value = focusedText
-            input.select()
-          } else if (event.key === 'ArrowUp' || event.key === 'ArrowDown') {
-            event.preventDefault()
+            event.currentTarget.value = focusedText
+            event.currentTarget.select()
+          }}
+          onBlur={() => {
             focusedText = null
             setDraft(null)
-            const step = event.shiftKey ? 0.1 : 1
-            seek(
-              props.playheadFrame / STUDIO_SAMPLE_RATE +
-                (event.key === 'ArrowUp' ? step : -step),
-            )
-          }
-        }}
-      />
-      <output class={styles.srOnly} aria-label="Song position" aria-live="off">
+          }}
+          onInput={(event) => setDraft(event.currentTarget.value)}
+          onChange={(event) => commit(event.currentTarget)}
+          onKeyDown={(event) => {
+            const input = event.currentTarget
+            if (event.key === 'Enter') {
+              event.preventDefault()
+              commit(input)
+            } else if (event.key === 'Escape' && draft() !== focusedText) {
+              event.preventDefault()
+              event.stopPropagation()
+              focusedText = formatStudioTime(props.playheadFrame)
+              setDraft(focusedText)
+              input.value = focusedText
+              input.select()
+            } else if (event.key === 'ArrowUp' || event.key === 'ArrowDown') {
+              event.preventDefault()
+              focusedText = null
+              setDraft(null)
+              const step = event.shiftKey ? 0.1 : 1
+              seek(
+                props.playheadFrame / STUDIO_SAMPLE_RATE +
+                  (event.key === 'ArrowUp' ? step : -step),
+              )
+            }
+          }}
+        />
+      </span>
+      <output
+        class={`${styles.srOnly} ${styles.livePosition}`}
+        aria-label="Song position"
+        aria-live="off"
+      >
         {formatStudioTime(props.playheadFrame)}
       </output>
       <StudioOutputMeter

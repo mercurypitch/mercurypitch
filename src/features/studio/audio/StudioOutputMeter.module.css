@@ -51,12 +51,12 @@
     var(--studio-meter-over) 90%
   );
 }
+/* The held peak: the trailing edge of a box as large as the rail, moved by
+   its transform, so a new hold repaints but lays nothing out. At the floor
+   it sits just out of sight, like the level. */
 .rail b {
   position: absolute;
-  top: 0;
-  bottom: 0;
-  width: 2px;
-  transform: translateX(-2px);
+  inset: 0;
   background: var(--studio-text);
 }
 .scale {
@@ -92,6 +92,18 @@
   font-weight: 600;
   letter-spacing: 0.04em;
   text-transform: uppercase;
+}
+/* A reading that changes on every meter tick has a box of its own, sized
+   for the longest (-60.0): new digits then lay out only that box, never
+   the desk around it. */
+.reading {
+  position: relative;
+  display: inline-block;
+  contain: size layout;
+  width: 5ch;
+  height: 1lh;
+  text-align: right;
+  vertical-align: bottom;
 }
 .peakLabel small {
   margin-left: 3px;
@@ -282,15 +294,6 @@
     var(--studio-meter-over) 90%
   );
 }
-.vertical .rail b {
-  top: auto;
-  right: 0;
-  left: 0;
-  width: auto;
-  height: 2px;
-  /* Like the level, a hold at the floor sits just out of sight. */
-  transform: translateY(2px);
-}
 /* The marks share the rails' travel: from the floor to above the L and R labels. */
 .vertical .scale {
   position: absolute;
@@ -359,6 +362,9 @@
   font-size: 11px;
   white-space: nowrap;
   font-weight: 600;
+}
+.loudness .reading {
+  text-align: center;
 }
 .loudness strong {
   margin: 4px 0 2px;

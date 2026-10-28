@@ -132,6 +132,13 @@
   clip-path: inset(50%);
   white-space: nowrap;
 }
+/* The spoken song position changes on every tick: pinned to a corner and
+   contained, it lays out only itself. */
+.livePosition {
+  top: 0;
+  left: 0;
+  contain: strict;
+}
 
 /* Buttons */
 .button,
@@ -622,7 +629,13 @@
   border-radius: 14px;
   background: var(--studio-bg);
 }
+.clockBox {
+  display: block;
+  flex: none;
+}
+/* Fixed in size and on a layer of its own, the clock lays out alone. */
 .clock {
+  position: relative;
   box-sizing: border-box;
   width: 116px;
   height: 36px;

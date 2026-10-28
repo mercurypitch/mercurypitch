@@ -1,5 +1,10 @@
 // Studio output meter — continuous loudness windows, stereo sample peaks and explicit peak-hold reset.
-import { For, Show } from 'solid-js'
+//
+// It redraws on every meter tick, so a tick changes only styles and the
+// text of the readings: the rails and their labels stay the same elements,
+// and the held peak is a band clipped out of its rail, so a tick lays
+// nothing out again.
+import { For, Index, Show } from 'solid-js'
 import type { StudioMeterSnapshot } from '@/lib/studio/metering/stream-meter'
 import styles from './StudioOutputMeter.module.css'
 
@@ -19,7 +24,6 @@ const reading = (value: number | null | undefined) =>
   value == null ? '—' : Number.isFinite(value) ? value.toFixed(1) : '−∞'
 const level = (amplitude: number) =>
   Math.max(0, Math.min(100, ((decibels(amplitude) + 60) / 60) * 100))
-const percent = (amplitude: number) => `${level(amplitude)}%`
 // Scale marks in dBFS, placed on the same -60 to 0 travel as the bars.
 const SCALE = [-48, -36, -24, -18, -12, -6, 0]
 // An upright meter is shorter: fewer marks, so their labels never touch.
@@ -28,6 +32,10 @@ const markAt = (mark: number) => `${((mark + 60) / 60) * 100}%`
 
 function Rail(props: { peak: number; hold: number; vertical: boolean }) {
   const unlit = () => 100 - level(props.peak)
+  // The held peak is a 2 px band, just under the level it holds, clipped out
+  // of a mark as large as the rail: it moves without a layout, and its box
+  // never leaves the rail. A hold at the floor sits just out of sight.
+  const hold = () => level(props.hold)
   return (
     <div class={styles.rail}>
       <i
@@ -38,13 +46,26 @@ function Rail(props: { peak: number; hold: number; vertical: boolean }) {
         }}
       />
       <b
-        style={
-          props.vertical
-            ? { bottom: percent(props.hold) }
-            : { left: percent(props.hold) }
-        }
+        style={{
+          'clip-path': props.vertical
+            ? `inset(${100 - hold()}% 0 calc(${hold()}% - 2px) 0)`
+            : `inset(0 ${100 - hold()}% 0 calc(${hold()}% - 2px))`,
+        }}
       />
     </div>
+  )
+}
+
+/** "Peak" or "CLIP", then the reading: elements kept, so a tick only changes the text. */
+function PeakReading(props: { clipped: boolean; value: string }) {
+  return (
+    <>
+      <Show when={props.clipped} fallback={<span>Peak</span>}>
+        <strong>CLIP</strong>
+      </Show>{' '}
+      <data class={styles.reading}>{props.value}</data>
+      <small>dB</small>
+    </>
   )
 }
 
@@ -55,20 +76,13 @@ export function StudioOutputMeter(props: Props) {
   const peak = () => Math.max(peakL(), peakR())
   const clipped = () =>
     props.snapshot?.clipL === true || props.snapshot?.clipR === true
+  // By position, not identity: a tick brings new readings, never new rails.
   const channels = () => [
     { name: 'L', peak: peakL(), hold: props.snapshot?.holdL ?? 0 },
     { name: 'R', peak: peakR(), hold: props.snapshot?.holdR ?? 0 },
   ]
   const full = () => props.compact !== true && !vertical()
-  const peakReading = () => (
-    <>
-      <Show when={clipped()} fallback={<span>Peak</span>}>
-        <strong>CLIP</strong>
-      </Show>{' '}
-      {reading(decibels(peak()))}
-      <small>dB</small>
-    </>
-  )
+  const peakText = () => reading(decibels(peak()))
   return (
     <div
       class={styles.output}
@@ -91,18 +105,18 @@ export function StudioOutputMeter(props: Props) {
         title="Output sample peak, left and right"
       >
         <div class={styles.bars} aria-hidden="true">
-          <For each={channels()}>
+          <Index each={channels()}>
             {(channel) => (
               <div class={styles.channel}>
-                <span>{channel.name}</span>
+                <span>{channel().name}</span>
                 <Rail
-                  peak={channel.peak}
-                  hold={channel.hold}
+                  peak={channel().peak}
+                  hold={channel().hold}
                   vertical={vertical()}
                 />
               </div>
             )}
-          </For>
+          </Index>
           <Show when={props.compact !== true}>
             <div class={styles.scale}>
               <For each={vertical() ? VERTICAL_SCALE : SCALE}>
@@ -123,7 +137,9 @@ export function StudioOutputMeter(props: Props) {
           </Show>
         </div>
         <Show when={!vertical()}>
-          <span class={styles.peakLabel}>{peakReading()}</span>
+          <span class={styles.peakLabel}>
+            <PeakReading clipped={clipped()} value={peakText()} />
+          </span>
         </Show>
       </div>
       <Show when={vertical()}>
@@ -135,12 +151,14 @@ export function StudioOutputMeter(props: Props) {
           title="Reset peak hold"
           onClick={() => props.onReset()}
         >
-          {peakReading()}
+          <PeakReading clipped={clipped()} value={peakText()} />
         </button>
         <p class={styles.loudness} title="Short-term loudness, 3 seconds">
           <span>Short-term</span>
           <strong>
-            {props.ready ? reading(props.snapshot?.shortTermLufs) : '—'}
+            <data class={styles.reading}>
+              {props.ready ? reading(props.snapshot?.shortTermLufs) : '—'}
+            </data>
           </strong>
           <small>LUFS</small>
         </p>
