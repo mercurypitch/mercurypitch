@@ -385,6 +385,59 @@ export const KaraokeRoomStage: Component = () => {
 
   const hasNotes = (): boolean => mixer()?.hasNotes() === true
 
+  // The notes over the lyrics, offered for every song that has them or can
+  // have them read (owner, 28 Oct 2026). A song with none yet has them read
+  // from its vocal on the tap, as turning the mic on does: the switch goes
+  // on, the read starts, and the stage says how far it has got. A song
+  // still loading is read once it can be. Only a loaded song whose vocal
+  // cannot be read has no switch (K1: absent, never dead).
+  const findingNotes = (): boolean => mixer()?.findingNotes() === true
+  const notesProgress = (): number => mixer()?.notesProgress() ?? 0
+  /** The cue whose notes were asked for before the read could start. */
+  const [readAsked, setReadAsked] = createSignal<number | null>(null)
+  const notesOffered = (): boolean => {
+    const controls = mixer()
+    if (controls === null) return cue() !== null
+    return (
+      controls.hasNotes() ||
+      controls.canFindNotes() ||
+      controls.findingNotes() ||
+      controls.loading()
+    )
+  }
+  // On while the notes are on screen or on their way, as the stage's own
+  // switch reads: a saved "on" for a song without notes reads off, and a
+  // tap on it is what asks for them.
+  const notesOn = (): boolean =>
+    karaokeNoteGlyphs() &&
+    (hasNotes() || findingNotes() || readAsked() === (cue()?.key ?? null))
+  const toggleNotes = (): void => {
+    if (notesOn()) {
+      setKaraokeNoteGlyphs(false)
+      setReadAsked(null)
+      return
+    }
+    setKaraokeNoteGlyphs(true)
+    if (hasNotes()) return
+    const controls = mixer()
+    if (controls?.canFindNotes() === true) controls.findNotes()
+    else setReadAsked(cue()?.key ?? null)
+  }
+  // A read asked for while the song loaded starts as soon as it can, and
+  // only for the song it was asked for.
+  createEffect(() => {
+    const asked = readAsked()
+    if (asked === null) return
+    if (asked !== cue()?.key) {
+      setReadAsked(null)
+      return
+    }
+    const controls = mixer()
+    if (controls === null || !controls.canFindNotes()) return
+    setReadAsked(null)
+    untrack(() => controls.findNotes())
+  })
+
   // As zen's pill reads it: a share of the level the app ships at.
   const musicPercent = (): number | null => {
     const controls = mixer()
@@ -394,8 +447,8 @@ export const KaraokeRoomStage: Component = () => {
     )
   }
 
-  // The one option beside the gear, as it is now. The notes are absent for
-  // a song without them, as their row is.
+  // The one option beside the gear, as it is now. The notes are there for
+  // every song their row is there for, with a ring while they are read.
   const pinnedToggle = (): PinnedRoomToggle | null => {
     switch (karaokePinned()) {
       case 'lyrics-size':
@@ -407,14 +460,13 @@ export const KaraokeRoomStage: Component = () => {
           },
         }
       case 'notes':
-        return hasNotes()
+        return notesOffered()
           ? {
               icon: 'notes',
               label: 'Show notes over the lyrics',
-              pressed: karaokeNoteGlyphs(),
-              onToggle: () => {
-                setKaraokeNoteGlyphs(!karaokeNoteGlyphs())
-              },
+              pressed: notesOn(),
+              progress: findingNotes() ? notesProgress() : undefined,
+              onToggle: toggleNotes,
             }
           : null
       case 'play-next':
@@ -772,7 +824,14 @@ export const KaraokeRoomStage: Component = () => {
       <KaraokeRoomOptions
         isOpen={optionsOpen()}
         close={() => setOptionsOpen(false)}
-        hasNotes={hasNotes}
+        notes={{
+          offered: notesOffered,
+          on: notesOn,
+          has: hasNotes,
+          finding: findingNotes,
+          progress: notesProgress,
+          toggle: toggleNotes,
+        }}
         musicPercent={musicPercent}
         onResetMusicLevel={() => mixer()?.resetMusicLevel()}
         keyControl={() => mixer()?.key ?? null}

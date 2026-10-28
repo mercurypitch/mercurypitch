@@ -57,6 +57,20 @@ export interface HostedMixerControls {
   readonly duration: Accessor<number>
   /** The song has its notes (a stored analysis), so notes can be shown. */
   readonly hasNotes: Accessor<boolean>
+  /**
+   * The song has no notes yet and a read can start now: its vocal is in,
+   * decoded or streamed. False while the song loads, and once it has notes.
+   */
+  readonly canFindNotes: Accessor<boolean>
+  /**
+   * Read the notes from the vocal, once: the same read turning the mic on
+   * starts for the pitch ribbon. Quiet, and nothing when it cannot start.
+   */
+  readonly findNotes: () => void
+  /** The notes are being read from the vocal. */
+  readonly findingNotes: Accessor<boolean>
+  /** How far that read has got, 0 to 100. */
+  readonly notesProgress: Accessor<number>
   readonly musicLevel: Accessor<number>
   readonly play: () => void
   readonly pause: () => void

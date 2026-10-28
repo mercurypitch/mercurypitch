@@ -168,6 +168,41 @@ describe('RoomHeader', () => {
       expect(pinned?.getAttribute('aria-label')).toBe('Text size: Medium')
       expect(pinned?.hasAttribute('aria-pressed')).toBe(false)
     })
+
+    it('rings the switch while the work it started runs, from 0', () => {
+      const [progress, setProgress] = createSignal<number | undefined>(0)
+      const rendered = renderShell(() => (
+        <RoomHeader
+          title={() => 'Broadway Theater'}
+          onBack={() => {}}
+          onGear={() => {}}
+          pinned={() => ({
+            icon: 'notes',
+            label: 'Show notes over the lyrics',
+            pressed: true,
+            progress: progress(),
+            onToggle: () => {},
+          })}
+        />
+      ))
+      unmount = rendered.unmount
+
+      const pinned = pinnedButton(rendered.container)
+      const ring = (): SVGElement | null =>
+        rendered.container.querySelector(
+          '[data-testid="shell-room-pinned-progress"]',
+        )
+      expect(pinned?.getAttribute('aria-busy')).toBe('true')
+      expect(ring()).not.toBeNull()
+      setProgress(60)
+      expect(
+        ring()?.querySelector('circle')?.getAttribute('stroke-dasharray'),
+      ).toBe('60 100')
+
+      setProgress(undefined)
+      expect(ring()).toBeNull()
+      expect(pinned?.hasAttribute('aria-busy')).toBe(false)
+    })
   })
 
   describe('while a screen is pushed', () => {

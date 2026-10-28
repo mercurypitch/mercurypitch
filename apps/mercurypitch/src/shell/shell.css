@@ -748,6 +748,25 @@
   color: var(--accent);
 }
 
+/* The pinned option's work while it runs (the Karaoke room's notes being
+   read from the vocal): a ring that fills round the button. */
+.mp-iconbtn--busy {
+  position: relative;
+}
+
+.mp-iconbtn__ring {
+  position: absolute;
+  inset: -1px;
+  width: calc(100% + 2px);
+  height: calc(100% + 2px);
+  transform: rotate(-90deg);
+  pointer-events: none;
+  fill: none;
+  stroke: var(--accent);
+  stroke-width: 2.5;
+  stroke-linecap: round;
+}
+
 /* A chip with a picker behind it (R5). Taller, because it is a control now
    and a control on this surface is 44pt; the glass and the text are the
    label's, so the two read as one thing in two states rather than as two

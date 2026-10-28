@@ -13,7 +13,7 @@ import { cleanup, render } from '@solidjs/testing-library'
 import { createSignal } from 'solid-js'
 import { afterEach, describe, expect, it } from 'vitest'
 import type { KeyShiftBinding } from '@/components/key-shift/KeyShiftControl'
-import { KaraokeRoomOptions } from '@/features/karaoke-room/KaraokeRoomOptions'
+import { KaraokeRoomOptions, notesRowSub, } from '@/features/karaoke-room/KaraokeRoomOptions'
 
 afterEach(cleanup)
 
@@ -39,7 +39,14 @@ function mountOptions() {
     <KaraokeRoomOptions
       isOpen={open()}
       close={() => setOpen(false)}
-      hasNotes={() => false}
+      notes={{
+        offered: () => false,
+        on: () => false,
+        has: () => false,
+        finding: () => false,
+        progress: () => 0,
+        toggle: () => {},
+      }}
       musicPercent={() => null}
       onResetMusicLevel={() => {}}
       onAllSettings={() => {}}
@@ -87,5 +94,26 @@ describe('Find my key notices while the sheet is open', () => {
     setKey(songKey('second', holds))
 
     expect(holds).toEqual([])
+  })
+})
+
+describe('the notes row', () => {
+  const notes = (has: boolean, finding: boolean, progress = 0) => ({
+    offered: () => true,
+    on: () => finding,
+    has: () => has,
+    finding: () => finding,
+    progress: () => progress,
+    toggle: () => {},
+  })
+
+  it('says a song has its notes, will have them read, or how far the read has got', () => {
+    expect(notesRowSub(notes(true, false))).toBe('This song has its notes')
+    expect(notesRowSub(notes(false, false))).toBe(
+      'Turning this on reads them from the vocal',
+    )
+    expect(notesRowSub(notes(false, true, 42.6))).toBe(
+      'Reading the vocal to find the notes: 43%',
+    )
   })
 })

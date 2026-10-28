@@ -122,6 +122,11 @@ export interface PinnedRoomToggle {
   readonly label: string
   /** A switch's state. Absent for a control that steps, not switches. */
   readonly pressed?: boolean
+  /**
+   * How far the work the switch started has got, 0 to 100, while it runs:
+   * the notes being read from the vocal. Absent when nothing is running.
+   */
+  readonly progress?: number
   readonly onToggle: () => void
 }
 

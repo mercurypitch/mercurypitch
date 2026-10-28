@@ -127,14 +127,34 @@ export const RoomHeader: Component<RoomHeaderProps> = (props) => {
             <button
               type="button"
               class="mp-iconbtn"
-              classList={{ 'mp-iconbtn--on': toggle().pressed === true }}
+              classList={{
+                'mp-iconbtn--on': toggle().pressed === true,
+                'mp-iconbtn--busy': toggle().progress !== undefined,
+              }}
               aria-label={toggle().label}
               aria-pressed={pressedState(toggle().pressed)}
+              aria-busy={toggle().progress !== undefined ? 'true' : undefined}
               data-testid="shell-room-pinned"
               data-pinned={toggle().icon}
               onClick={() => toggle().onToggle()}
             >
               <Dynamic component={PINNED_ICONS[toggle().icon]} />
+              <Show when={toggle().progress !== undefined}>
+                <svg
+                  class="mp-iconbtn__ring"
+                  viewBox="0 0 44 44"
+                  aria-hidden="true"
+                  data-testid="shell-room-pinned-progress"
+                >
+                  <circle
+                    cx="22"
+                    cy="22"
+                    r="20.5"
+                    pathLength="100"
+                    stroke-dasharray={`${Math.max(2, Math.min(100, toggle().progress ?? 0))} 100`}
+                  />
+                </svg>
+              </Show>
             </button>
           )}
         </Show>
