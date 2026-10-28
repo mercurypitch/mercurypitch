@@ -11,7 +11,7 @@ import { closeEnvelope } from '@/lib/preview-player'
 import type { ChainSpec } from '@/lib/studio-fx/chain-spec'
 import type { MacroKey } from '@/lib/studio-fx/mix-macros'
 import { measureTrackLatencies } from '@/lib/studio-fx/mixdown'
-import type { StudioMasterGain, StudioMasterGainToken, } from '../export/sound-graph'
+import type { StudioMasterGainToken } from '../export/sound-graph'
 import { resolveStudioSoundGraph } from '../export/sound-graph'
 import { reserveStudioMemory } from '../memory-budget'
 import { createStudioLaneMeter, prepareStudioLiveMeter, } from '../metering/live-meter'
@@ -28,6 +28,7 @@ import type { StudioDrafts, StudioLaneDraft } from './in-place'
 import { applyDrafts, applyMix, applySound, followMaster, followRepeat, heldMix, playInPlace, withDrafts, } from './in-place'
 import type { StudioRunLayout } from './live-edit'
 import { audibility, firstThatFits, studioRunLayouts } from './live-edit'
+import { createStudioMasterLevel } from './master-level'
 import type { StudioLatencyReader } from './prepare-plan'
 import { createLatencyCache, planAssets, planLatencySeconds, prepareStudioPlan, } from './prepare-plan'
 import type { StudioLaneLevel, StudioRun, StudioRunParts, StudioRunTiming, } from './run'
@@ -99,7 +100,7 @@ export function createStudioTransport(options: StudioTransportOptions) {
   let generation = 0
   let wantsPlayback = false
   let repeat = false
-  let masterGain: StudioMasterGainToken | null = null
+  const master = createStudioMasterLevel()
   let restartGeneration = 0
   // A seek the heard run could not follow: the next run starts here.
   let seekTarget: number | null = null
@@ -142,13 +143,7 @@ export function createStudioTransport(options: StudioTransportOptions) {
     seekShownFrame(run, active ?? held ?? run, handoffs, seekTarget)
 
   function observeSnapshot(project: StudioProject): void {
-    if (
-      masterGain &&
-      (masterGain.projectId !== project.id ||
-        masterGain.revision !== project.revision)
-    )
-      masterGain = null
-    publish({ masterReady: masterGain !== null })
+    publish({ masterReady: master.observe(project) })
   }
 
   function release(run: StudioRun): void {
@@ -358,13 +353,9 @@ export function createStudioTransport(options: StudioTransportOptions) {
       const ctx = await unlockContext(attempt.signal)
       observeSnapshot(project)
       const { from } = playableContent(project, assets, startFrame)
-      // An edit makes the measurement stale. Until the next one, a run that
-      // takes over keeps the held run's, so the handover keeps the level.
-      const measured: StudioMasterGain = masterGain
-        ? { gainDb: masterGain.gainDb, safetyGainDb: masterGain.safetyGainDb }
-        : held
-          ? { ...held.measured }
-          : { gainDb: 0, safetyGainDb: 0 }
+      // An edit makes the measurement stale. Until the next one, a run
+      // starts at the level heard: the held run's, or the song's last.
+      const measured = master.startingGain(project, held?.measured ?? null)
       const sound = resolveStudioSoundGraph(project, measured)
       // A background warm-up does the same reads; wait for it, not around it.
       await warming
@@ -642,7 +633,7 @@ export function createStudioTransport(options: StudioTransportOptions) {
           cache,
           measureLatencies,
           readCanonicalAsset: options.readCanonicalAsset,
-          masterGain: masterGain ?? undefined,
+          masterGain: master.startingGain(project, null),
           busy,
         })
       } catch {
@@ -668,20 +659,10 @@ export function createStudioTransport(options: StudioTransportOptions) {
     },
     /** A playing song glides to a newly measured master gain. */
     setMasterGain(value: StudioMasterGainToken | null) {
-      if (
-        value &&
-        (!Number.isFinite(value.gainDb) ||
-          value.gainDb < -24 ||
-          value.gainDb > 36 ||
-          !Number.isFinite(value.safetyGainDb) ||
-          value.safetyGainDb > 0 ||
-          value.safetyGainDb < -24)
-      )
-        throw new Error('The prepared master has invalid gain settings.')
-      masterGain = value === null ? null : { ...value }
-      publish({ masterReady: masterGain !== null })
+      master.set(value)
+      publish({ masterReady: master.fresh() !== null })
       for (const run of liveRuns())
-        if (followMaster(run, masterGain))
+        if (followMaster(run, master.fresh()))
           applySound(run, withDrafts(run.project, drafts))
     },
     resetPeakHold() {
@@ -734,7 +715,11 @@ export function createStudioTransport(options: StudioTransportOptions) {
       if (
         active &&
         !preparing &&
-        playInPlace(active, project, { drafts, repeat, masterGain })
+        playInPlace(active, project, {
+          drafts,
+          repeat,
+          masterGain: master.fresh(),
+        })
       ) {
         // A run heard until its handover follows the mix too.
         for (const { from } of handoffs)
