@@ -110,23 +110,31 @@ describe.each(lessonPages(ROOT))(
               },
             ]
           : []
-
-      // Act
-      const nav = built.querySelector('footer.foot > nav.foot-ways')
-      const links = Array.from(nav?.querySelectorAll('a') ?? [], (a) => ({
-        rel: a.getAttribute('rel'),
-        href: a.getAttribute('href'),
-        words: words(a),
-      }))
-
-      // Assert
-      expect(nav?.parentElement?.firstElementChild).toBe(nav)
-      expect(nav?.getAttribute('aria-label')).toBe('Season 1 lessons')
-      expect(links).toEqual([
+      const ways = [
         ...way(n - 1, 'prev', ''),
         ...way(n + 1, 'next', 'Next lesson '),
-      ])
-      expect(links.length).toBeGreaterThan(0)
+      ]
+
+      // Act
+      const navs = Array.from(
+        built.querySelectorAll('nav.foot-ways'),
+        (nav) => ({
+          first: nav.matches('footer.foot > :first-child'),
+          label: nav.getAttribute('aria-label'),
+          links: Array.from(nav.querySelectorAll('a'), (a) => ({
+            rel: a.getAttribute('rel'),
+            href: a.getAttribute('href'),
+            words: words(a),
+          })),
+        }),
+      )
+
+      // Assert: no list at all where neither lesson beside it has a page
+      expect(navs).toEqual(
+        ways.length === 0
+          ? []
+          : [{ first: true, label: 'Season 1 lessons', links: ways }],
+      )
     })
 
     it('links the next lesson from its foot alone: inside the lesson, the Wrap draws its next-lesson card', () => {
@@ -146,15 +154,21 @@ describe.each(lessonPages(ROOT))(
 
 describe('the lessons either side', () => {
   it('are none before the first lesson page or after the last', () => {
-    // Act
-    const first = lessonWays(ROOT, PAGES[0])
-    const last = lessonWays(ROOT, PAGES[PAGES.length - 1])
+    // Arrange
+    const [a, z] = [PAGES[0], PAGES[PAGES.length - 1]]
+    const pageOf = (m: number) =>
+      PAGES.includes(m) ? lessonPath(m) : undefined
 
-    // Assert
+    // Act
+    const first = lessonWays(ROOT, a)
+    const last = lessonWays(ROOT, z)
+
+    // Assert: on its other side each links the lesson beside it when that
+    // lesson has a page, and never reaches past one that has none
     expect(first.prev).toBeUndefined()
-    expect(first.next?.href).toBe(lessonPath(PAGES[1]))
+    expect(first.next?.href).toBe(pageOf(a + 1))
     expect(last.next).toBeUndefined()
-    expect(last.prev?.href).toBe(lessonPath(PAGES[PAGES.length - 2]))
+    expect(last.prev?.href).toBe(pageOf(z - 1))
   })
 
   it('write nothing in the foot of a lesson with neither, and their names as text', () => {

@@ -15,8 +15,13 @@
 
 import type { Page } from '@playwright/test'
 import { expect, test } from '@playwright/test'
+import { fileURLToPath } from 'node:url'
 import { HOLD_CAP } from '../features/lessons/kit/opening-hold'
 import { TOUR_KEY, TOUR_VERSION } from '../features/lessons/kit/tour-gate'
+import { lessonPages, lessonPath } from '../../tools/draft-lessons'
+
+/** Every lesson page the e2e bundle carries: every build carries every one. */
+const LESSONS = lessonPages(fileURLToPath(new URL('../..', import.meta.url)))
 
 const PHONE = { width: 390, height: 844 }
 const DESKTOP = { width: 1440, height: 900 }
@@ -452,16 +457,14 @@ test('a deep link skips the tour this time, and the next lesson page opened at t
   await expect(card(page).getByRole('heading')).toHaveText(TITLES[0])
 })
 
-test('every lesson page, 1 to 10, offers the same five steps', async ({
-  page,
-}) => {
+test('every lesson page offers the same five steps', async ({ page }) => {
   // Arrange
   await page.setViewportSize(DESKTOP)
   const counts: string[] = []
 
   // Act
-  for (let n = 1; n <= 10; n++) {
-    await page.goto(`/learn/${String(n).padStart(2, '0')}`)
+  for (const n of LESSONS) {
+    await page.goto(lessonPath(n))
     await expect(card(page)).toBeVisible(OPENED)
     // its words, not as drawn: the count is set in capitals
     counts.push((await card(page).locator('.tour-count').textContent()) ?? '')
@@ -469,20 +472,23 @@ test('every lesson page, 1 to 10, offers the same five steps', async ({
     await page.evaluate((k) => localStorage.removeItem(k), TOUR_KEY)
   }
 
-  // Assert
-  expect(counts).toEqual(Array.from({ length: 10 }, () => '1 of 5'))
+  // Assert: Lesson 12's among them, built before Lesson 11's
+  expect(LESSONS).toContain(12)
+  expect(counts).toEqual(LESSONS.map(() => '1 of 5'))
 })
 
-for (const [name, size] of [
-  ['phone', PHONE],
-  ['desktop', DESKTOP],
+for (const [n, name, size] of [
+  [10, 'phone', PHONE],
+  [10, 'desktop', DESKTOP],
+  [12, 'phone', PHONE],
+  [12, 'desktop', DESKTOP],
 ] as const) {
-  test(`on Lesson 10, a written lesson's page, on a ${name} (${size.width} x ${size.height}) each of the five steps lights its targets`, async ({
+  test(`on Lesson ${n}, a written lesson's page, on a ${name} (${size.width} x ${size.height}) each of the five steps lights its targets`, async ({
     page,
   }) => {
     // Arrange
     await page.setViewportSize(size)
-    await page.goto('/learn/10')
+    await page.goto(lessonPath(n))
     await expect(card(page)).toBeVisible(OPENED)
     const lights: boolean[] = []
 

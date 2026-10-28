@@ -319,6 +319,34 @@ describe('a draft lesson (drafts.ts)', () => {
     }
   })
 
+  it("keeps Lesson 12's page, its reading time and its ear drill's link in every build", async () => {
+    for (const drafts of ['1', '0'] as const) {
+      // Act
+      const season = await seasonBuilt(drafts)
+
+      // Assert: a draft, as Lesson 3 is, with no film; Ear Lab's Cadence needs no voice
+      const L12 = season.LESSONS[12]
+      expect([L12.page, L12.minutes, L12.film], drafts).toEqual([
+        '/learn/12',
+        15,
+        undefined,
+      ])
+      expect(L12.pr.link, drafts).toEqual({
+        href: '/ear-lab?lesson=12',
+        addr: 'mercurypitch.com/ear-lab',
+        label: 'Ear Lab',
+        note: 'then tap Cadence',
+      })
+      expect(L12.pr.link?.note, drafts).not.toMatch(
+        /needs|slug|deep link|launch|durationSec|placeholder|for now|first visit/i,
+      )
+      // the drill it still needs stays the team's (WEB-SPEC, Explorer and season data)
+      expect(L12.pr.needs, drafts).toMatch(
+        /^Chord Stacker with major and minor triads/,
+      )
+    }
+  })
+
   it('gives every lesson page in the repository its page in the season, whichever way a build reads drafts', async () => {
     // Arrange: every learn/NN.html, as the build takes them (tools/draft-lessons.ts)
     const pages = readdirSync(resolve(__dirname, '../../../../learn'))

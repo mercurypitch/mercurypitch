@@ -1,0 +1,257 @@
+/* ============================================================
+   Lesson 12 — Chords and the four-chord song: the page's own figures and cards
+   ============================================================
+   Everything else is the kit's (lesson-base, lesson-sections, lesson-stage,
+   lesson-parts, lesson-guide and lesson-voice). The last two come in by the
+   @imports below, which the build inlines, and not as main.ts's imports.
+   Each shares a chunk with modules this page's shell does not load yet: the
+   slide guide's sheet with Lesson 2's quiz modules (Lessons 2, 4, 6, 8, 9
+   and 10), and the voice lessons' sheet with the comfort check and the
+   voice choice (Lessons 3 and 5 to 10). Imported here alone, each would
+   leave its chunk for a sheet of its own, which those pages link after
+   their own sheet, so its rules would win over theirs
+   (docs/agent/MISTAKES.md, "Take the lessons' base stylesheet into another
+   page by @import"). Once the page loads those modules, each import moves
+   back to main.ts.
+
+   Here: the hero's ring between Merc and Tavi, with the three plays under
+   it; the ring of rooms' figure, its chord strip of seven chips and each
+   step's row of controls (WEB-SPEC, Toys 1, "Layout and targets" and "The
+   stuck stage"); Tavi's line in Step 5; Sing it's guide beside its ring;
+   and the Wrap's cards. */
+@import '../kit/lesson-guide.css';
+@import '../kit/lesson-voice.css';
+
+/* ---------------------------------------------------------------- hero: the ring between Merc and Tavi */
+.l12-duo {
+  --merc: clamp(120px, 11vw, 168px);
+  --spiral-h: clamp(270px, 25vw, 340px);
+  grid-template-columns: var(--merc) minmax(0, 1fr) var(--merc);
+  align-items: end;
+  height: calc(var(--spiral-h) + var(--merc) * 0.165);
+  margin-top: 6px;
+}
+/* the floor line runs under the ring's base, where Merc and Tavi stand */
+.l12-duo .floor {
+  top: var(--spiral-h);
+}
+.l12-duo .merc {
+  grid-row: 1;
+  z-index: 1;
+  pointer-events: none;
+}
+.l12-duo .merc-blue {
+  grid-column: 1;
+}
+.l12-duo .merc-orange {
+  grid-column: 3;
+}
+.l12-duo .hero-spiral {
+  position: relative;
+  grid-column: 2;
+  grid-row: 1;
+  align-self: start;
+  min-width: 0;
+  height: var(--spiral-h);
+  touch-action: pan-y;
+}
+.l12-duo .hero-spiral canvas {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+/* the three plays sit under the stage, outside the predict card */
+.l12-hero .hero-plays {
+  margin-top: 14px;
+  padding-top: 0;
+  border-top: 0;
+}
+@media (max-width: 1080px) {
+  .l12-duo {
+    --merc: clamp(120px, 20vw, 190px);
+    --spiral-h: clamp(270px, 42vw, 360px);
+  }
+  /* Play the four chords sits right under the stage, before the sound gate
+     (the kit orders the hero's parts at this width), as near a phone's
+     first screen as the stage lets it come */
+  .l12-hero .hero-plays {
+    order: 4;
+  }
+}
+/* on a phone the ring takes the stage's width, and Merc and Tavi stand smaller either side of its base */
+@media (max-width: 560px) {
+  .l12-duo {
+    --merc: min(25vw, 100px);
+    --spiral-h: 264px;
+    margin-top: 2px;
+  }
+  .l12-duo .hero-spiral {
+    grid-column: 1 / -1;
+  }
+}
+
+/* ---------------------------------------------------------------- the ring of rooms' stage */
+/* a figure label is one 16 px line (the stage budget counts on it) */
+.steps-stage .toy .eyebrow {
+  line-height: 16px;
+}
+/* The figure is the kit's tall one, 380 px beside the text, 340 px in the
+   deck and 310 px up to 420 px wide. Stuck beside the text, the kit shrinks
+   it to the room its controls leave, never below 300 px here, where the
+   ring's radius is at least 87 px and its beads at least 45 px apart; the
+   deck keeps the kit's floors (WEB-SPEC, Toys 1, "The stuck stage"). */
+@media (min-width: 961px) and (min-height: 561px) {
+  .steps-stage .rooms-viz {
+    --viz-min: 300px;
+  }
+}
+/* The chord strip: seven chips under the figure, one per degree, I to vii°,
+   in scale order, each a button of two lines at least 44 px tall, 8 px
+   apart. One row of seven where the figure is at least 440 px wide, and two
+   rows, four and three, below that (FACTS 75): the deck's figure reaches
+   440 px at a 472 px window, and the stuck stage's is 445 px or more. */
+.chord-strip {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 8px;
+  margin-top: 10px;
+}
+@media (min-width: 472px) {
+  .chord-strip {
+    grid-template-columns: repeat(7, minmax(0, 1fr));
+  }
+}
+.l12-chip {
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+  min-height: 44px;
+  padding: 4px 2px;
+  border-radius: 12px;
+  font-size: var(--fs-14);
+  line-height: 1.15;
+}
+.l12-chip b {
+  font-weight: 600;
+}
+.l12-chip span {
+  font-size: var(--fs-12);
+  color: var(--ink-2);
+}
+/* each step's own controls, one row beside the text, wrapping on a phone */
+.rooms-toy .rooms-row {
+  margin-top: 10px;
+}
+.rooms-toy .rooms-row .btn {
+  min-width: 0;
+  white-space: normal;
+  line-height: 1.2;
+}
+/* a one-letter choice, the key switch's C and G, is still a 44 px target
+   each way (WEB-SPEC, Toys 1), as Lesson 8's Bars of 2, 3 or 4 are */
+.rooms-toy .seg .btn {
+  min-width: 44px;
+}
+
+/* ---------------------------------------------------------------- the step text */
+/* Tavi's question in Step 5: a bubble beside her still */
+.l12-says {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 0 0 16px;
+}
+.l12-says img {
+  width: 72px;
+  height: 72px;
+  flex: none;
+  object-fit: contain;
+}
+.l12-says .bubble {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+.l12-says .bubble::after {
+  display: none;
+}
+
+/* ---------------------------------------------------------------- Sing it */
+.l12-sing .sing-card .turn {
+  padding: 0 0 14px;
+  border-bottom: 1px solid var(--hair);
+}
+.l12-sing .sing-card .stop-line {
+  margin: 14px 0 0;
+  font-weight: 600;
+  color: var(--ink);
+}
+.l12-sing .sing-btns .move-do {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.l12-sing .move-lbl {
+  font: 500 var(--fs-12) / 1.3 var(--f-mono);
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+}
+.l12-sing .move-sep {
+  color: var(--ink-3);
+}
+.l12-sing .sing-card .guide-hint {
+  margin: 0 0 8px;
+  font-size: var(--fs-14);
+  color: var(--ink-3);
+}
+.l12-sing .sing-card .unscored {
+  font-size: var(--fs-16);
+  color: var(--ink-2);
+}
+.l12-sing .sing-card .do-readout {
+  margin: 0 0 12px;
+  font: 600 var(--fs-16) / 1.35 var(--f-display);
+  font-variant-numeric: tabular-nums;
+  color: var(--ink);
+}
+/* the guide beside its ring */
+.l12-guide {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 18px;
+  align-items: center;
+}
+@media (max-width: 560px) {
+  .l12-guide {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .l12-guide .ring {
+    margin-inline: auto;
+  }
+}
+
+/* ---------------------------------------------------------------- the wrap */
+.l12-app {
+  grid-template-columns: minmax(0, 1fr);
+  align-items: start;
+}
+.l12-app .addr-line,
+.l12-app .second-drill {
+  margin: 0 0 8px;
+  color: var(--ink-2);
+}
+.l12-app .second-drill {
+  margin-top: 14px;
+}
+.l12-app a.addr {
+  text-decoration: none;
+}
+.l12-next {
+  margin-top: 18px;
+}
+.l12-free > .eyebrow {
+  margin: 0 0 10px;
+  line-height: 16px;
+}

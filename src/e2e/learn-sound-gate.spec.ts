@@ -11,8 +11,8 @@
 // labels ("Turn sound on", "Turn sound off") share one cell the same way,
 // so the button keeps one width and the line beside it never rewraps: a
 // longer label used to widen the button, and near a wrap the gate grew a
-// line. Lessons 1 to 10, at two phone widths and a desktop's; the e2e
-// build shows the drafts.
+// line. Lessons 1 to 10 and 12, at two phone widths and a desktop's; the
+// e2e build shows the drafts.
 
 import { expect, test } from './helpers/lesson-page'
 
@@ -27,6 +27,7 @@ const LESSONS = [
   '08',
   '09',
   '10',
+  '12',
 ] as const
 const VIEWPORTS = [
   { width: 344, height: 844 },

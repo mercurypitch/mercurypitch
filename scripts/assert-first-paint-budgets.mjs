@@ -153,7 +153,17 @@ export const FIRST_PAINT_BUDGETS_KB = {
   // Merc and Tavi's two images, which Lessons 1 to 8 import and Lesson 9
   // does not, keep a chunk of their own. Each merges again once Lesson 9
   // loads the rest, and 130 can be tried then.
-  'learn/03.html': 131,
+  // Raised to 132 for Lesson 12's page shell: 133,947 bytes on its branch
+  // before it, 134,468 with it, against 134,144 at 131. 219 of the 521 are
+  // Lesson 12's season entry, with its page, minutes and practice link, and
+  // its drafts line, on every lesson page. The other 302 are the kit's
+  // predict, quiz and hero sky (kit/predict.ts, quiz.ts, hero-sky.ts) in a
+  // chunk of their own again, with its preload and imports, since Lesson
+  // 12's shell loads none of them, as Lesson 10's did. Once its cold open
+  // and quizzes load them (the hero sky through kit/still-sky.ts), the chunk
+  // goes, to about 134,166 bytes: 22 over 131, so 131 comes back only once
+  // 22 more are found.
+  'learn/03.html': 132,
   // Lesson 5, a draft too, built in every mode as Lesson 3 is. Measured 122
   // with the lesson menu and the next-lesson card (109 before them), and 129
   // with the page state.
@@ -226,6 +236,14 @@ export const FIRST_PAINT_BUDGETS_KB = {
   // tour, the quizzes' answers sent anonymously and the way back to the
   // plan (kit/tour.ts, telemetry.ts and plan-back.ts).
   'learn/10.html': 211,
+  // Lesson 12, "Chords and the four-chord song", a draft too, built in
+  // every mode as Lesson 3 is. Measured 73,215 bytes in build:e2e for its
+  // page shell: the kit's deck, switches, masthead, next-lesson card,
+  // explorer and Merc and Tavi, with none of its toys wired yet. The
+  // ceiling is the smallest whole KB above that, so each toy that joins
+  // raises it, with its measure, until the page is whole and takes a
+  // quarter over.
+  'learn/12.html': 72,
 
   // The main app, and the crawlable doors that are the main app. Measured
   // 4669. It is eager by design today, so this is a ceiling on growth rather
@@ -316,6 +334,12 @@ export const FIRST_PAINT_CSS_BUDGETS_KB = {
   // the ear game's and the shared parts), its own, and the shared Inter and
   // Outfit @font-face rules; a quarter over.
   'learn/10.html': 111,
+  // Lesson 12 (a draft, as above). Measured 88,243 bytes in build:e2e for
+  // its page shell: the kit's sheets (with the guide's and the voice
+  // lessons', inlined into its own by @import, and the shared parts), its
+  // own, and the shared Inter and Outfit @font-face rules. The smallest
+  // whole KB above that, as for its script.
+  'learn/12.html': 87,
 
   // The main app and the crawlable doors that are the main app. Measured
   // 1009, of which 871 is the single `index` sheet that src/index.tsx

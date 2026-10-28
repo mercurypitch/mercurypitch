@@ -710,7 +710,7 @@ paused off screen, and the still images when WebGL fails or would run on the CPU
   the drill's help asks and why a flip may come anyway (Decisions). Its hook is the entry's
   (`season.ts:371`), which this package changed, and its tease is `kit/lesson-copy.ts`'s (`:116`),
   whose entry held the alternative `same-note` (`:124-132` at `b7093a0a4`) until #1186 dropped it
-  (FACTS 1). `EDGES` already holds [7, 11] (`season.ts:434`).
+  (FACTS 1). `EDGES` already holds [7, 11] (`season.ts:443`).
 - **The explorer card**: what the kit draws for a lesson with a page and no published film: its
   state and main action from `kit/lesson-state.ts` ("Start lesson", "Continue: step N" or "Read
   again"), its minutes, no Watch button (`kit/season.ts:23-25`), and the learner's fields only,
@@ -729,7 +729,7 @@ the others take it.
    `lessonInputs` and `lessonPaths`, `:109-122`; `vite.config.ts:319`, `:493`), so the page needs no
    build change. Its line in `kit/drafts.ts`,
    `11: "the vocal coach's sign-off (MASTER-PLAN § 12 item 8)"`, beside Lessons 3 to 8's
-   (`:30-40`), makes it a draft: production's `LESSON_DRAFTS`, "0", holds it back, and the dev
+   (`:30-41`), makes it a draft: production's `LESSON_DRAFTS`, "0", holds it back, and the dev
    site's and the previews', "1", show it (`wrangler.jsonc:165-167`, `:188-190`, `:231-232`), until
    the console sets it either way, and the Content Studio's Lessons page names that reason when
    asked to publish it (FACTS 9). `/learn/11` and `/learn/11.html` go in `STANDALONE_DOCUMENT_PATHS`
@@ -811,10 +811,10 @@ the others take it.
    carries no label on the seam and no word but the title's, so it says nothing of whether a flip is
    a mistake and does not answer the cold open's predict.
 4. First-paint ceilings for `learn/11.html` in `scripts/assert-first-paint-budgets.mjs`, one in its
-   JavaScript table and one in its stylesheet table, beside Lesson 3's (`:103-151`, `:284-287`).
-   Every build emits every lesson page, and the check fails a document with no ceiling (`:550-556`),
+   JavaScript table and one in its stylesheet table, beside Lesson 3's (`:103-151`, `:301-304`).
+   Every build emits every lesson page, and the check fails a document with no ceiling (`:573-579`),
    so without them the Browser jobs fail before any spec runs, as Lesson 6's did on PR #1149. Each
-   is the page's measured first paint plus about a quarter, the tables' rule (`:47-58`, `:240-250`),
+   is the page's measured first paint plus about a quarter, the tables' rule (`:47-58`, `:257-267`),
    measured in `build:e2e`, where the check runs (`package.json:20`): a build of Lesson 6's page
    alone weighed it about 8 KB lighter. As on Lesson 3, the listener and the pitch detector arrive
    through a dynamic import when Start is pressed
@@ -1067,9 +1067,9 @@ parts:
 12. Season data: Lesson 11's entry has `minutes: 16` and `page: '/learn/11'` in every build,
     whichever way `VITE_DRAFT_LESSONS` reads, as `season.test.ts` checks Lessons 3 to 5's
     (`:241-266`), and the same file's check of every page in the repository then covers it
-    (`:322-339`); `seasonFor(LESSONS, defaultPageState(false))` gives Lesson 11 no page and no
+    (`:350-367`); `seasonFor(LESSONS, defaultPageState(false))` gives Lesson 11 no page and no
     reading time while its line is in `drafts.ts`, and `seasonFor(LESSONS, defaultPageState(true))`
-    keeps both, as `publish.test.ts` checks a lesson held back and one published (`:58-135`). That
+    keeps both, as `publish.test.ts` checks a lesson held back and one published (`:58-162`). That
     file's example of a lesson with no page is found, not named (`:45-56`, through
     `lessonWithNoPage` in `kit/season.test-fixtures.ts:22-36`), so this page's arrival does not
     break it. Lesson 11's practise link carries `?lesson=11`, and `EDGES` holds [7, 11].
@@ -1143,7 +1143,7 @@ End to end (Playwright, at 390 x 844 and 1440 x 900, on the e2e build, which sho
 10. The Wrap's next card names Lesson 12, says "Coming later" and leads to the map, never to a page,
     as `src/e2e/learn-next-card.spec.ts` checks a card for a lesson not written yet; its tease,
     "Four chords, round and round.", sits one line above the hook, the card's words in the order
-    eyebrow, tease, hook and way on, as that spec checks Lesson 1's card (`:124-141`).
+    eyebrow, tease, hook and way on, as that spec checks Lesson 1's card (`:130-147`).
 11. With reduced motion emulated, a line draws at once, the gauge shows its end, the ring holds
     still with "Listening", and nothing moves on its own.
 12. After a full run, storage holds only the keys in the Contract.

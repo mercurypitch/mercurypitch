@@ -36,7 +36,7 @@ slide guide with Move do, and free play in the Wrap. It is published only after 
 `/learn/06`, is, because its recall check asks Lesson 6's questions and its prerequisite chip names
 Lesson 6 (FACTS 2, 7), and after the vocal coach has looked at its voice lines (LESSON.md, For the
 vocal coach). Until both are done it is a draft (`src/features/lessons/kit/drafts.ts:5-24`,
-`:30-40`). Every build carries `learn/10.html`, as it carries every lesson page
+`:30-41`). Every build carries `learn/10.html`, as it carries every lesson page
 (`tools/draft-lessons.ts:8-14`), and its line in `drafts.ts` holds it back on mercurypitch.com: the
 site worker answers `/learn/10` with the 404 page, and every page's explorer shows Lesson 10 with no
 link, as a lesson not written yet (`src/lesson-gate.ts:10-12`;
@@ -822,7 +822,7 @@ at `85e23a1af` changed there, and that page's own lines are cited at `d59c00ad6`
    the drafts' entries, whose
    comment gives the reason: where a draft is not published, its address must reach the site
    worker's 404 page, never the app shell (`:138-157`).
-2. `src/features/lessons/kit/drafts.ts:30-40`: Lesson 10's line, in the form of Lessons 3 and 5's:
+2. `src/features/lessons/kit/drafts.ts:30-41`: Lesson 10's line, in the form of Lessons 3 and 5's:
    `10: "Lesson 6's page at /learn/06, and the vocal coach's look at the sung checkpoint"`. While it
    stands, the page is held back on mercurypitch.com and served on the dev site and every PR
    preview, and the console can publish it there before both are done, with no release
@@ -1149,13 +1149,13 @@ bundle, which no site worker serves and which shows drafts: `build:e2e` sets `VI
    starts "Right." or "Not quite.".
 10. Every practice link carries `?lesson=10` before any hash: `/pitch-training?lesson=10` and
     `/ear-lab?lesson=10`.
-11. The next-lesson card: `src/e2e/learn-next-card.spec.ts`'s cards (`:37-98`) end on the row for
+11. The next-lesson card: `src/e2e/learn-next-card.spec.ts`'s cards (`:37-104`) end on the row for
     the page before the season's first lesson with no page (`lessonWithNoPage`, `:34`), which is
     this page's while Lesson 11 has none: the eyebrow "Next lesson 11 · Registers and the break
     Coming later", the link `#explorer` and "See it on the map", as that row was Lesson 9's on main
     while this page had none. Lesson 9's row reads "Start lesson" and links this page. Its
     `.next-tease` reads Lesson 11's tease, one line above its hook, as the spec checks Lesson 1's
-    card (`:124-141`) and this one's (`:205-248`); its still inside the card holds no button.
+    card (`:130-147`) and this one's (`:211-254`); its still inside the card holds no button.
 12. No planning words: the kit's `src/e2e/learn-no-planning-text.spec.ts` reads every lesson page,
     this one included (`lessonPages`, `:45-47`), for the team's words (`:22-40`), and the
     alternative hook's note never reaches the page (`:77-79`).

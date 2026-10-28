@@ -928,7 +928,7 @@ was built on.
 11. `kit/comfort.ts`, built by #1192: `restAfterEffort`, which this page's flow passes
     (`lesson-08/sing-flow.ts:121`) to pick the rest card after "Effortful", as Lesson 6's does; both
     picked it by hand before. The kit's default stays the coach's (`kit/comfort.ts:69-78`).
-12. `src/features/lessons/kit/drafts.ts:30-40`: Lesson 8's line, "the vocal coach's sign-off
+12. `src/features/lessons/kit/drafts.ts:30-41`: Lesson 8's line, "the vocal coach's sign-off
     (MASTER-PLAN § 12 item 8)", in the form of Lessons 3 and 5's, and the season entry above. The
     console puts the page live on mercurypitch.com by publishing it, with no release
     (`kit/drafts.ts:13`); releasing it in code means deleting that line (`drafts.ts:18-24`).
@@ -997,8 +997,8 @@ was built on.
     (`src/tests/lesson-pages.test.ts:307-344`). When its line leaves `drafts.ts`, the release adds a
     line to each static file (`public/llms.txt`'s Lessons list, `:66-80`), as `kit/drafts.ts:18-21`
     asks and `lesson-pages.test.ts:282-290` checks. The first-paint budget comes with the page,
-    beside the other drafts' (`scripts/assert-first-paint-budgets.mjs:103-159`, Lessons 3 and 5),
-    at `:205-211`, and its CSS ceiling at `:306-309`, since every build carries every lesson page.
+    beside the other drafts' (`scripts/assert-first-paint-budgets.mjs:103-168`, Lessons 3 and 5),
+    at `:214-220`, and its CSS ceiling at `:323-326`, since every build carries every lesson page.
 17. The App content items under Practice links: the App and App content tracks' to weigh, and not
     built with the page.
 18. From #1149's fix pass, both needed before this page's predicts and plays are built:
@@ -1108,7 +1108,7 @@ parts:
 13. `metronomeSVG(id)`: two copies have distinct gradient ids.
 14. The season entry: Lesson 8 keeps `page` and `minutes` in every build, as Lessons 3 and 5 do
     (`kit/season.test.ts:241-266`), and the season gives the page its entry, as it must every lesson
-    document in `learn/` (`kit/season.test.ts:322-339`); a state that holds it back draws it with
+    document in `learn/` (`kit/season.test.ts:350-367`); a state that holds it back draws it with
     neither (`kit/publish.test.ts:59-74`); its link's `note` matches none of the backlog words
     (`kit/season.test.ts:177-190`).
 15. Step 5's lock: before the predict's choice, Play, March, Rock and Tempo are `disabled` and none
@@ -1179,7 +1179,7 @@ draft shown as `build:e2e` shows it):
 10. Every practice link carries `?lesson=08` before any hash: `/drum-night?drawer=learn&lesson=08`
     and `/ear-lab?lesson=08`.
 11. The next-lesson card: a row for `/learn/08` in `src/e2e/learn-next-card.spec.ts`'s `CARDS`
-    (`:37-98`), `['/learn/08', 'Next lesson 09 · Landing a leap Coming later', '#explorer', 'See it
+    (`:37-104`), `['/learn/08', 'Next lesson 09 · Landing a leap Coming later', '#explorer', 'See it
 on the map']`, while Lesson 9 has no page; a test as the spec's Lesson 1 test is (`:117-134`):
     `.next-tease` reads `LESSON_COPY[9].tease`, and the card's words run eyebrow, `next-tease`,
     `q2`, `chip`; and its tease figure, after the words, holds no button.
