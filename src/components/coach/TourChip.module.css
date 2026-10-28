@@ -2,10 +2,17 @@
    TourChip: a page's tour, offered by its title
    ============================================================
 
-   A pill in the page's flow, never over it. Its two parts are both 44px
-   tall, the line that starts the tour and the Not now beside it. It wears
-   the page's own surface and ink (the app's theme tokens), with fallbacks
-   for a document that does not set them, as Karaoke Night's does not. */
+   A pill. Its two parts are both 44px tall, the line that starts the tour
+   and the Not now beside it. It wears the page's own surface and ink (the
+   app's theme tokens), with fallbacks for a document that does not set
+   them, as Karaoke Night's does not.
+
+   Floating (given a room: chip-float.ts places it), it stands over the page
+   where nothing is, from an anchor that takes no room, or in the window
+   when it stands in the bar over the page. It sits under the tab bar,
+   stages, sheets and dialogs (the z-scale in mobile-kit.css), and it is not
+   drawn until it is placed. Its forms: the whole line, a short one, and
+   Merc alone (data-form). */
 
 .chip {
   display: inline-flex;
@@ -17,6 +24,43 @@
   color: var(--text-primary, #e6edf3);
   font-size: 0.875rem;
   line-height: 1.3;
+}
+
+.chip[data-floating] {
+  box-shadow: 0 6px 18px rgb(0 0 0 / 0.28);
+}
+
+.chip[data-floating]:not([data-place]) {
+  visibility: hidden;
+}
+
+.chip[data-place] {
+  position: absolute;
+  z-index: var(--z-control-overlay, 30);
+  max-width: none;
+}
+
+.chip[data-place='bar'] {
+  position: fixed;
+}
+
+.chip[data-floating] .line,
+.short {
+  white-space: nowrap;
+}
+
+.short,
+.chip[data-form='short'] .line,
+.chip[data-form='mini'] .line {
+  display: none;
+}
+
+.chip[data-form='short'] .short {
+  display: inline;
+}
+
+.chip[data-form='mini'] .start {
+  padding: 0 8px;
 }
 
 .start,

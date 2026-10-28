@@ -22,6 +22,7 @@ vi.mock('@/stores', () => ({
   },
 }))
 vi.mock('./TourChipHost', () => ({
+  QUICK_TOUR_SHORT: 'Quick tour',
   requestTourChip: (req: unknown) => store.requestTourChip(req),
 }))
 
@@ -42,7 +43,7 @@ describe('offerTourOnce', () => {
     store.toursAvailable = true
   })
 
-  it('asks for the chip with its line, its key and where to record it', () => {
+  it('asks for the chip with its line, its short one, its key and where to record it', () => {
     offerTourOnce('offered-key', 'New here?', STEPS, 'mixer')
 
     expect(store.requestTourChip).toHaveBeenCalledTimes(1)
@@ -50,6 +51,7 @@ describe('offerTourOnce', () => {
       key: 'mixer',
       storageKey: 'offered-key',
       line: 'New here?',
+      short: 'Quick tour',
     })
     // The chip host records it as the chip shows, not before.
     expect(localStorage.getItem('offered-key')).toBe(null)

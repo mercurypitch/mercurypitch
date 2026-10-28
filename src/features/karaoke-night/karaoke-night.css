@@ -604,11 +604,12 @@ textarea {
   grid-template-columns: 56px 1fr;
 }
 
-/* Merc's first-visit tour offer (KaraokeTourChip): a row of its own across
-   the rail and the stage, above both, in the page's flow. */
+/* Merc's first-visit tour offer (KaraokeTourChip): the chip's anchor, out
+   of the grid's flow, so it takes no row and no gap; the chip floats from it
+   over the page's free room (TourChip). Its static place is the grid's
+   corner, and it scrolls with the page. */
 .kn-tour-slot {
-  grid-column: 1 / -1;
-  display: flex;
+  position: absolute;
 }
 
 .kn-rail-collapse {
