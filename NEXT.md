@@ -970,3 +970,7 @@ Note: the lanes' memory gate read a stale cgroup path after the 21:00 restart (f
 - Go message = rel25/OWNER-GO.md (tag commands with b803c7d4357f0693e8517cd27e8f9651186d0bb4; tag message "Release v0.9.25: Play the note stays put, and the mic offer waits for Merc"), sent in chat + push notification.
 - NEXT: the owner's side pushes v0.9.25 -> watch its Build & Deploy (prod: site deploy, LESSON_DRAFTS 0, DB backup with no migrations, Jam/DB workers, IndexNow) and Release Tours (144/127, 0 misses), report once (task #178). If origin/main moves before the tag, tell the owner (the rev-parse line will stop the tagger).
 - ~22:58Z OWNER: "Yeah the date is irrelevant he will tag now". Watching origin for v0.9.25 (background ls-remote loop, 40 min cap). On the tag: its Build & Deploy + Release Tours, then report once (task #178).
+
+## 28 Oct 23:03Z: v0.9.25 TAGGED (owner's side); tag runs started (task #178)
+- v0.9.25 = annotated tag 35f3c6a91 (tagger Komediruzecki, 2026-10-29 00:01:59 +0100 = 23:01:59Z, "Release v0.9.25: Play the note stays put, and the mic offer waits for Merc") -> b803c7d43. Seen on origin 23:02:36.
+- Tag runs (23:02:15): Build & Deploy 40784428886 (queued at first), Release Tours 40784428892 (run 19). Check-in send_later at ~23:14Z. Then report once.
