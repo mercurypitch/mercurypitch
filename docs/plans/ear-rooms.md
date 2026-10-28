@@ -3,8 +3,7 @@
 **Status:** in progress. Two rooms are built and on TestFlight: **Home note** (Room 1) and **First
 note** (Room 2). The owner tried both on 28 Oct 2026 ("fun and work well"). The second round, on
 `feat/ear-rooms-own-songs`, brings First note the singer's own songs, an optional words hint and a
-way on to the Karaoke room, and gets Home note ready for its painting (its prompt is below; the
-owner makes it). Neither room has a demo yet. Rooms 3 and 4 are proposals. The owner's design
+way on to the Karaoke room, and gives Home note its painted harbour. Neither room has a demo yet. Rooms 3 and 4 are proposals. The owner's design
 canvas ("Ear rooms", 27 Oct 2026) has phone mock-ups of all four and of the Ear Lab's way in.
 
 **The owner's decision and requests of 28 Oct 2026.**
@@ -96,17 +95,23 @@ which the native screen hands in. The band is a small organ synth in the room
 **Next, from the canvas.** The intro's chords as small lamps under the chip (I, IV, V lit as each
 plays), and the result's six keys as lamps that replay their intro when tapped.
 
-### The harbour's painting (for the owner to make)
+### The harbour's painting
 
-The room is ready for a painted harbour (`src/features/home-note/HarbourScene.tsx`): it asks for
-`/ear-rooms/harbour-portrait.webp`, and `/ear-rooms/harbour-landscape.webp` on a screen held on its
-side, shows the painting once it has loaded, and keeps today's drawing until then and wherever the
-app does not carry the files. The beam (home's line), the band of light around it, the singer's
-trail, the lamp's glow and Merc are drawn over it by the app, so the painting must leave them out.
-The app pins the picture at the lantern, so the lantern has to sit at **84% across and 44% down** in
-both files; a taller or wider screen crops around that point.
+The room paints its harbour (`src/features/home-note/HarbourScene.tsx`): `harbour-portrait.webp`,
+and `harbour-landscape.webp` on a screen held on its side, both in `src/features/home-note/art/`. It
+shows the painting once it has loaded and keeps the drawing until then. The beam (home's line), the
+band of light around it, the singer's trail, the lamp's glow and Merc are drawn over it by the app,
+so the painting must leave them out. The app pins the picture at the lantern, so the lantern has to
+sit at **84% across and 44% down** in both files; a taller or wider screen crops around that point.
 
-Copy-paste prompt, in the house style of the other room paintings (Echo's rooftops, Lip roll's
+**Made** on 28 Oct 2026 on Higgsfield with GPT Image 2.5 (high, 4K), from the prompt below: four
+portraits, the best cropped so its lantern sits exactly at 84% / 44%. Its pier stopped where Merc's
+feet fall on a phone (the room crops the painting to the screen around the lantern, so his 20%
+across lands near 31% of the painting), so Nano Banana 2 lengthened it in a masked edit and only the
+pier was blended back. The landscape was made from the portrait (GPT Image 2.5, the portrait as
+its reference) and given the same jetty.
+
+The prompt, in the house style of the other room paintings (Echo's rooftops, Lip roll's
 bay, the Karaoke room's theatre: painted, cinematic, deep navy with warm gold light, a quiet sky):
 
 > A quiet harbour at dusk, a cinematic digital matte painting with soft film-like light and fine
@@ -130,12 +135,10 @@ Keep clear for the exercise: the band from 25% to 63% down across the left two-t
 reach either side of the beam) has no bright stars, lights or boats; the lower left above the pier
 is open for Merc; the top and bottom edges stay dark enough for the chip and the mic.
 
-To ship it: export WebP at q90, 1440 x 2560 and 2048 x 1152 (the theatre's sizes), as
-`harbour-portrait.webp` and `harbour-landscape.webp` in `apps/mercurypitch/native-only/ear-rooms/`,
-and add one entry to `apps/mercurypitch/native-assets.mjs` in the same change:
-`{ glob: 'ear-rooms/harbour-*.webp', root: 'native', reason: "Home note's harbour, upright and on its side (src/features/home-note/HarbourScene.tsx)." }`.
-The entry and the files land together: an entry that matches no file fails the native build
-(`scripts/sync-native-assets.mjs`).
+It ships as WebP at q90, 1440 x 2560 and 2048 x 1152 (the theatre's sizes), imported by the room,
+so it rides the room's chunk: in a build without the premium exercises both files fold away with
+the room (`apps/mercurypitch/vite.config.ts`, `PREMIUM_IMAGES`), and `assert-bundle.mjs` finds them
+by name if they ever reach a store build.
 
 ## Room 2: First note
 

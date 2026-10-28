@@ -12,11 +12,10 @@
 // lamp.
 //
 // THE PAINTING. The harbour at dusk is painted (docs/plans/ear-rooms.md has
-// its prompt): an upright plate and its landscape twin under /ear-rooms/,
-// in the native app's own files. It shows once it has loaded, and the
-// drawing below stays as its stand-in until then, and for good where the
-// app does not carry it (the web, a build before the files land). Either
-// way the beam, the band of light, the trail and the lamp are drawn over
+// how): an upright plate and its landscape twin in ./art/, which fold away
+// with the room in a build without it (vite.config.ts, PREMIUM_IMAGES). It
+// shows once it has loaded, and the drawing below stays as its stand-in
+// until then. Either way the beam, the band of light, the trail and the lamp are drawn over
 // it: they are the exercise. The painting is pinned at the lamp, which the
 // plate puts at the layout's own place (84% across, 44% down), so however
 // a screen crops it, its lighthouse stands under the drawn lamp.
@@ -31,19 +30,21 @@
 
 import type { JSX } from 'solid-js'
 import { createMemo, createSignal, For, onMount, Show } from 'solid-js'
+import harbourLandscape from './art/harbour-landscape.webp'
+import harbourPortrait from './art/harbour-portrait.webp'
 import type { HarbourLayout } from './harbour-layout'
 import styles from './HarbourScene.module.css'
 
-/** The harbour's painting, upright and on its side, at the app's origin. */
+/** The harbour's painting, upright and on its side. */
 export interface HarbourArt {
   readonly portrait: string
   readonly landscape: string
 }
 
-/** Where the native app carries the painting, once it is made. */
+/** The painting the room ships with. */
 export const HARBOUR_ART: HarbourArt = {
-  portrait: '/ear-rooms/harbour-portrait.webp',
-  landscape: '/ear-rooms/harbour-landscape.webp',
+  portrait: harbourPortrait,
+  landscape: harbourLandscape,
 }
 
 export interface HarbourSceneProps {

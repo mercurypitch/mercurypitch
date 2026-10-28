@@ -10,8 +10,8 @@
 // `scripts/assert-bundle.mjs` STAGE 2 checks a store binary. A store binary
 // is made only from a release tag, so this reads the switch on every pull
 // request instead, for every picture in every premium room's folder, at
-// any depth (Echo's, Ng slides' and Lip roll's are in an art/ folder of
-// their own), and every voice file (Merc's sung "ooh" set for Echo's
+// any depth (Echo's, Ng slides', Lip roll's and Home note's are in an art/
+// folder of their own), and every voice file (Merc's sung "ooh" set for Echo's
 // calls, in its voice/ folder; vite.config.ts, PREMIUM_VOICES). The Cloud
 // offer's art (src/features/karaoke-room/assets/) is Stage 2 and folds the
 // same way.
@@ -27,7 +27,14 @@ const FEATURES = fileURLToPath(
   new URL('../../../src/features/', import.meta.url),
 )
 /** The premium rooms that paint pictures today, by folder, and the Warm-up's path. */
-const ROOMS = ['long-note', 'echo', 'ng-slides', 'lip-roll', 'warm-up'] as const
+const ROOMS = [
+  'long-note',
+  'echo',
+  'ng-slides',
+  'lip-roll',
+  'warm-up',
+  'home-note',
+] as const
 
 /** Every .webp and .mp3 under `dir`, as paths relative to it. */
 function picturesIn(dir: string): string[] {
