@@ -34,7 +34,8 @@
   position: relative;
   z-index: 1;
   min-height: 100%;
-  overflow-x: hidden;
+  /* Clip, not hidden, as in the room: nothing scrolls the tab sideways. */
+  overflow-x: clip;
   container: merc-bench / inline-size;
   background: var(--merc-room);
   padding-bottom: calc(96px + env(safe-area-inset-bottom, 0px));
@@ -67,7 +68,7 @@
   position: relative;
   height: 82cqw;
   max-height: 440px;
-  overflow: hidden;
+  overflow: clip;
 }
 
 .painting {

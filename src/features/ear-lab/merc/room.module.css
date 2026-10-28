@@ -34,7 +34,9 @@
   z-index: 40;
   display: grid;
   grid-template-rows: auto auto minmax(0, 1fr) auto;
-  overflow: hidden;
+  /* Clip, not hidden: a hidden box is still a scroll container, and a
+     focus move scrolled the room sideways onto the painting's overhang. */
+  overflow: clip;
   padding-top: env(safe-area-inset-top, 0px);
   background: var(--merc-room);
   color: var(--merc-parchment);
