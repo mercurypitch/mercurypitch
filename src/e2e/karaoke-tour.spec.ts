@@ -287,14 +287,13 @@ for (const screen of SCREENS) {
 
     const chip = page.getByTestId('tour-chip')
     await expect(chip).toBeVisible()
-    // In the page's flow: under the top bar, inside the window, and on a row
-    // of its own, with the rail (and on a wide screen the stage) below it.
+    // Floating under the top bar and inside the window, over the page's free
+    // room: tour-chip-floats.spec.ts holds that it moves and covers nothing.
+    await expect(chip).toHaveAttribute('data-place', 'column')
     const top = await boxOf(page.locator('.kn-topbar'))
     const box = await boxOf(chip)
     expect(box.y).toBeGreaterThanOrEqual(top.y + top.height)
     expect(box.y + box.height).toBeLessThanOrEqual(screen.height)
-    const rail = await boxOf(page.locator('aside.kn-rail'))
-    expect(rail.y).toBeGreaterThanOrEqual(box.y + box.height)
 
     await chip.getByRole('button', { name: 'Sing the demo with Merc' }).click()
     await expect(chip).toHaveCount(0)

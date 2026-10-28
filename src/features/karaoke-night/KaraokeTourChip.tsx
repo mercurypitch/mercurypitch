@@ -2,8 +2,10 @@
 // KaraokeTourChip — Karaoke Night's first-visit offer of Merc's tour
 // ============================================================
 //
-// The coach's chip (TourChip), in the page's own flow under the top bar,
-// where the app puts it by the page title. KaraokeNightApp mounts it only on
+// The coach's chip (TourChip), floating under the top bar where nothing is,
+// as the app's floats by the page title: from an anchor out of the page's
+// grid, so the rail and the stage stand where they stand without it, and it
+// covers none of them. KaraokeNightApp mounts it only on
 // a first visit to an empty stage, and loads it then, so the page's first
 // paint carries none of it. The offer is spent as the chip shows
 // (karaoke-tour-offer.ts), and storage that will not record it shows no chip.
@@ -21,6 +23,8 @@ import { spendTourOffer } from './karaoke-tour-offer'
 
 /** What the chip offers on Karaoke Night. */
 export const KARAOKE_CHIP_LINE = 'Sing the demo with Merc'
+/** Words of it, where it does not fit. A draft. */
+export const KARAOKE_CHIP_SHORT = 'Sing the demo'
 
 export interface KaraokeTourChipProps {
   onStart: () => void
@@ -36,11 +40,14 @@ export function KaraokeTourChip(props: KaraokeTourChipProps): JSX.Element {
   onMount(() => {
     if (shown && !again) trackTour('tour_offer', 'karaoke-night')
   })
+  let slot: HTMLDivElement | undefined
   return (
     <Show when={shown}>
-      <div class="kn-tour-slot">
+      <div ref={slot} class="kn-tour-slot">
         <TourChip
           line={KARAOKE_CHIP_LINE}
+          short={KARAOKE_CHIP_SHORT}
+          room={{ column: () => slot?.parentElement ?? null }}
           onStart={props.onStart}
           onDismiss={props.onDismiss}
         />

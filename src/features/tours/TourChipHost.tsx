@@ -4,8 +4,13 @@
 //
 // The coach's chip at the top of the main content column. It replaces the
 // corner toast that offered a tab's tour, which landed over whatever the
-// singer was doing. What it keeps from the toast, each pinned in
-// TourChipHost.test.tsx:
+// singer was doing. It floats there, from an anchor that takes no room, in
+// the free room by the page title, or the nearest free spot (TourChip,
+// chip-place.ts): showing it and taking it down move nothing on the page,
+// and it covers no text, control or stage. Where a phone's column has no
+// room at all (the Sing and Piano stages), it may stand in the top bar,
+// between its title and its buttons. What it keeps from the toast, each
+// pinned in TourChipHost.test.tsx:
 //
 // - One offer per tab, ever. `pitchperfect_page_tour_offered_<tab>` is
 //   written, and tour_offer sent, once the chip has been seen (at least half
@@ -62,6 +67,12 @@ import { COACH_TOURS } from './coach-tours'
 import { startRoomTour, tourOfferKey } from './room-tour'
 import styles from './TourChipHost.module.css'
 
+/**
+ * What a legacy tour's line ("New to Home? Take a quick tour.") shrinks to
+ * where it does not fit: words of it, so it stays the button's name. A draft.
+ */
+export const QUICK_TOUR_SHORT = 'Quick tour'
+
 /** A contextual tour's offer: shown in the tab chip's place, once ever. */
 export interface TourChipRequest {
   /** The tour, as the offer is reported. */
@@ -69,12 +80,15 @@ export interface TourChipRequest {
   /** Written as the chip shows, so the tour is offered once. */
   storageKey: string
   line: string
+  /** Words of `line` it shrinks to where it does not fit. */
+  short?: string
   onStart: () => void
 }
 
 interface Chip {
   /** A legacy or contextual tour's own line; a Merc tour's is the chip's. */
   line?: string
+  short?: string
   start: () => void
   /** The chip has been on screen: spend the offer and report it. */
   seen: () => void
@@ -158,6 +172,9 @@ function returnOffer(key: string): void {
   }
 }
 
+/** The app's top bar, over the main column (App.tsx): the first header drawn. */
+const appBar = (): Element | null => document.querySelector('header')
+
 export interface TourChipHostProps {
   tab: () => ActiveTab
   /** Something else has the screen, or is still deciding whether it will. */
@@ -211,11 +228,13 @@ export function TourChipHost(props: TourChipHostProps): JSX.Element {
     const line = entry
       ? undefined
       : `New to ${tabLabel(tab)}? Take a quick tour.`
+    const short = entry ? undefined : QUICK_TOUR_SHORT
     const start = (): void => startTour(tab)
     if (handedBack.has(key)) {
       // The offer handed back, shown again: seen already, and reported.
       setChip({
         line,
+        short,
         start,
         seen: () => undefined,
         dismissed: () => {
@@ -227,6 +246,7 @@ export function TourChipHost(props: TourChipHostProps): JSX.Element {
     }
     setChip({
       line,
+      short,
       start,
       // The offer does not depend on a key to report; only the report does.
       seen: spend(key, entry ? entry.key : pageTourKey(tab)),
@@ -269,6 +289,7 @@ export function TourChipHost(props: TourChipHostProps): JSX.Element {
       if (walkthroughActive() || offeredAlready(req.storageKey)) return
       setChip({
         line: req.line,
+        short: req.short,
         start: req.onStart,
         seen: spend(req.storageKey, req.key),
       })
@@ -276,24 +297,33 @@ export function TourChipHost(props: TourChipHostProps): JSX.Element {
   )
 
   // Keyed: each offer is a chip of its own, watched for being seen anew.
+  // The slot is the chip's anchor in the column, and takes no room in it.
   return (
     <Show when={chip()} keyed>
-      {(shown) => (
-        <div class={styles.slot}>
-          <LoadedTourChip
-            line={shown.line}
-            onSeen={shown.seen}
-            onStart={() => {
-              setChip(null)
-              shown.start()
-            }}
-            onDismiss={() => {
-              setChip(null)
-              shown.dismissed?.()
-            }}
-          />
-        </div>
-      )}
+      {(shown) => {
+        let slot: HTMLDivElement | undefined
+        return (
+          <div ref={slot} class={styles.slot}>
+            <LoadedTourChip
+              line={shown.line}
+              short={shown.short}
+              room={{
+                column: () => slot?.parentElement ?? null,
+                bar: appBar,
+              }}
+              onSeen={shown.seen}
+              onStart={() => {
+                setChip(null)
+                shown.start()
+              }}
+              onDismiss={() => {
+                setChip(null)
+                shown.dismissed?.()
+              }}
+            />
+          </div>
+        )
+      }}
     </Show>
   )
 }

@@ -1,7 +1,7 @@
 import type { TourKey } from '@/lib/tour-ids'
 import type { WalkthroughStep } from '@/stores'
 import { startTour, TOURS_AVAILABLE } from '@/stores'
-import { requestTourChip } from './TourChipHost'
+import { QUICK_TOUR_SHORT, requestTourChip } from './TourChipHost'
 
 /**
  * Offer a contextual spotlight tour exactly once, the first time its host view
@@ -33,6 +33,9 @@ export function offerTourOnce(
     key,
     storageKey,
     line: message,
+    // Its one message is the toast's own (UvrPanel: "New to the mixer? Take
+    // a quick tour."), so these are words of it.
+    short: QUICK_TOUR_SHORT,
     onStart: () => startTour(steps, key),
   })
 }

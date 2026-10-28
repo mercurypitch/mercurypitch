@@ -3788,8 +3788,8 @@ const AppShell: Component<AppProps> = (props) => {
 
             {/* Tab content */}
             <main class="main-content" id="main-content" tabindex="-1">
-              {/* A tab's first visit offers its tour here, by the page title
-                  and in the flow. Tours are web only. */}
+              {/* A tab's first visit offers its tour here, floating by the
+                  page title over its free room. Tours are web only. */}
               {IS_NATIVE_BUILD ? null : (
                 <TourChipHost tab={activeTab} paused={tourOfferPaused} />
               )}

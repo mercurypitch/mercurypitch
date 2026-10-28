@@ -34,8 +34,9 @@
 // played a line says how to hear it, so a muted speaker still shows it.
 //
 // Last, the tab chip in a room that fills the window: on Piano at 1440x900
-// the room gives way to the chip's row, so its keyboard stays on screen, the
-// content area does not scroll, and the chip covers no control.
+// the chip floats over the room's free corner (tour-chip-floats.spec.ts
+// holds every tab to that), so its keyboard stays on screen, the content
+// area does not scroll, and the chip covers no control.
 
 import type { Locator, Page } from '@playwright/test'
 import { expect, test } from '@playwright/test'
@@ -365,7 +366,7 @@ test("the Sing tour's Play the note shows the note playing after a tap, at 1440x
   await expect(line).toContainText('Heard nothing?')
 })
 
-test('the tab chip leaves Piano room for its keyboard, at 1440x900 @smoke', async ({
+test('the tab chip floats clear of Piano and its keyboard, at 1440x900 @smoke', async ({
   page,
 }) => {
   await page.setViewportSize({ width: 1440, height: 900 })
@@ -378,7 +379,7 @@ test('the tab chip leaves Piano room for its keyboard, at 1440x900 @smoke', asyn
   await expect(chip).toBeVisible({ timeout: 20_000 })
   const canvas = page.locator('#falling-notes-canvas')
 
-  // The canvas follows its container, so the room settles after the chip.
+  // The canvas follows its container: the room settles as it loads.
   await expect
     .poll(async () =>
       page.evaluate(() => {
