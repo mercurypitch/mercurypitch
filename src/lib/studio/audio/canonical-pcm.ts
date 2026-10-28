@@ -115,9 +115,23 @@ function validateHeader(
   metadata: CanonicalPcmMetadata,
   limits: StudioImportLimits,
 ): DataView {
-  if (bytes.byteLength < CANONICAL_PCM_HEADER_BYTES)
-    throw new Error('Studio audio header is incomplete')
   const view = new DataView(bytes)
+  checkCanonicalPcmHeader(view, bytes.byteLength, metadata, limits)
+  return view
+}
+
+/**
+ * The header of canonical PCM `byteLength` bytes long, read from its first
+ * bytes: what a reader that streams the take checks before its samples.
+ */
+export function checkCanonicalPcmHeader(
+  view: DataView,
+  byteLength: number,
+  metadata: CanonicalPcmMetadata,
+  limits: StudioImportLimits,
+): void {
+  if (view.byteLength < CANONICAL_PCM_HEADER_BYTES)
+    throw new Error('Studio audio header is incomplete')
   const channels = view.getUint16(12, true)
   const frames = view.getUint32(16, true)
   if (
@@ -142,7 +156,7 @@ function validateHeader(
   const expectedSize = CANONICAL_PCM_HEADER_BYTES + frames * channels * 4
   if (
     view.getUint32(20, true) !== expectedSize - CANONICAL_PCM_HEADER_BYTES ||
-    bytes.byteLength !== expectedSize ||
+    byteLength !== expectedSize ||
     metadata.canonicalPcmByteLength !== expectedSize ||
     metadata.channels !== channels ||
     metadata.normalizedSampleRate !== 48_000 ||
@@ -150,10 +164,10 @@ function validateHeader(
   ) {
     throw new Error('Studio audio does not match its saved metadata')
   }
-  return view
 }
 
-function checkCanonicalSize(
+/** The size and hash a take of canonical PCM declares must be possible before any of it is read. */
+export function checkCanonicalSize(
   byteLength: number,
   metadata: CanonicalPcmMetadata,
   limits: StudioImportLimits,
