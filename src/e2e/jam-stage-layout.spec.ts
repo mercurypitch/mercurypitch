@@ -28,13 +28,64 @@
 
 import type { Locator, Page } from '@playwright/test'
 import { expect, test } from '@playwright/test'
-import { mkdirSync } from 'node:fs'
+import { mkdirSync, readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { fakeMicArgs, writeToneWav } from './helpers/tone-wav'
 import { dismissOverlays } from './helpers/ui'
 
 /** A4, which the seeded targets sit around. */
 const TONE = writeToneWav(440, 6)
+
+/**
+ * The demo song, served from here instead of the public bucket.
+ *
+ * The room takes the song only once its words have arrived, so a bucket
+ * that stalls a transfer left every test here waiting out five seconds
+ * for a stage that never came. The cases measure the song's own lines,
+ * so its words are the gold copy in `fixtures/lrc`, the same lines the
+ * bucket serves; and the stems are a tone as long as the song, served in
+ * ranges, because the room parks on line 6, 56 s in, and an element
+ * that cannot seek lands every jump on zero.
+ */
+const SONG_SEC = 246
+const STEM_WAV = readFileSync(writeToneWav(220, SONG_SEC))
+const LYRICS = readFileSync(
+  new URL('../../fixtures/lrc/goodbye-to-spring.v2.lrc', import.meta.url),
+  'utf8',
+)
+
+/** See serveSeekableTone in jam-lyrics-follow.spec.ts. */
+async function serveDemoSong(page: Page): Promise<void> {
+  await page.route('**/demo/goodbye-to-spring/*.m4a', async (route) => {
+    const total = STEM_WAV.byteLength
+    const asked = /bytes=(\d+)-(\d*)/.exec(
+      route.request().headers().range ?? '',
+    )
+    if (asked === null) {
+      await route.fulfill({
+        contentType: 'audio/wav',
+        headers: { 'Accept-Ranges': 'bytes' },
+        body: STEM_WAV,
+      })
+      return
+    }
+    const start = Number(asked[1])
+    const end =
+      asked[2] === '' ? total - 1 : Math.min(Number(asked[2]), total - 1)
+    await route.fulfill({
+      status: 206,
+      contentType: 'audio/wav',
+      headers: {
+        'Accept-Ranges': 'bytes',
+        'Content-Range': `bytes ${start}-${end}/${total}`,
+      },
+      body: STEM_WAV.subarray(start, end + 1),
+    })
+  })
+  await page.route('**/demo/goodbye-to-spring/lyrics.lrc', (route) =>
+    route.fulfill({ contentType: 'text/plain', body: LYRICS }),
+  )
+}
 
 /**
  * Where a screenshot goes.
@@ -156,6 +207,12 @@ async function openSongRoom(page: Page, options: { seek?: boolean } = {}) {
 test.use({
   permissions: ['microphone'],
   launchOptions: { args: fakeMicArgs(TONE) },
+})
+
+// Every test here opens the demo song, and a page's routes outlive its
+// reloads, so once before each test covers the ones that reload too.
+test.beforeEach(async ({ page }) => {
+  await serveDemoSong(page)
 })
 
 /**
