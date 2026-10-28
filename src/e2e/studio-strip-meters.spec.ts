@@ -115,4 +115,32 @@ test.describe('Studio strip meters', () => {
       'Pad: press Play to see its level',
     )
   })
+
+  test("a strip meter reads on its fader's own dB marks: 0 dBFS beside 0 dB, the floor beside −60", async ({
+    page,
+  }) => {
+    test.setTimeout(120_000)
+    await openArrangement(page)
+    const desk = await openDesk(page)
+    const strip = desk.locator('[data-studio-mix-strip]').first()
+    const marks = await strip.evaluate((element) =>
+      Object.fromEntries(
+        [...element.querySelectorAll('[aria-hidden="true"] > span')]
+          .filter(
+            (mark) =>
+              /^(\+12|0|−\d\d)$/.test(mark.textContent ?? '') &&
+              mark.getClientRects().length > 0,
+          )
+          .map((mark) => {
+            const box = mark.getBoundingClientRect()
+            return [mark.textContent, box.top + box.height / 2]
+          }),
+      ),
+    )
+    const box = (await strip
+      .locator('[data-studio-strip-meter]')
+      .boundingBox())!
+    expect(Math.abs(box.y - marks['0'])).toBeLessThanOrEqual(1)
+    expect(Math.abs(box.y + box.height - marks['−60'])).toBeLessThanOrEqual(1)
+  })
 })
