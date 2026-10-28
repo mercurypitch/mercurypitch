@@ -9,6 +9,264 @@ The short, user-facing summary rendered in the app's Changelog modal lives in
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.9.24] - 2026-10-28
+
+48 commits since `v0.9.23` (d37453987) before this notes PR, from 4 PRs, all
+rebased onto `main`: #1234 (31 commits), #1236 (12), #1233 (4) and #1235 (1).
+Every commit came through a PR.
+
+On the web:
+
+- **Merc's Sing tour shows its note playing, and offers Show me more**
+  (#1236).
+  - Play the note, a hold-tone step, played A3 for 1.6 s and changed nothing
+    on screen, so with the speaker muted nothing said it worked. While the
+    note plays, the button reads "Playing A3" and is lit, a mark runs across
+    it for the note's length (none under reduced motion), Merc takes his
+    singing pose, and a polite line says it is playing. Once it has played, a
+    line stays that says how to hear it: the volume, and the device's mute. A
+    second tap plays it again from the start, and leaving the step, Skip and
+    End tour stop it. Both labels stay in the button, one hidden, so it keeps
+    one width. The note's player and its state are
+    `src/components/coach/hold-tone.ts`.
+  - The coach gains what Show me more needs (`src/lib/coach-types.ts`,
+    `CoachLayer.tsx`, `start.ts`). A step can `run` something while it shows:
+    it starts as the step shows and stops as the step goes, however it goes,
+    while Merc takes its pose, its line is read in the bubble's live region
+    and the ring pulses (not under reduced motion). A step can `keepCorner`:
+    on a wide screen the bubble keeps the corner the step names, even with a
+    ring up. A tour can offer another (`more`) beside Done on its last stop:
+    the tap ends this tour done with no hand-over between, loads the other's
+    steps and starts it in its place, with the same screen, the same hand-over
+    at its end and the same focus to give back. A tab change meanwhile, or
+    steps that do not arrive, start nothing and give focus back as before. The
+    second Sing tour is tour 19, `'sing-more'` (`src/lib/tour-ids.ts`).
+  - Show me more (`src/features/practice/sing-more-tour.ts`, `sing-demo.ts`
+    and `sing-demo-host.ts`, one chunk loaded on the tap): Merc sings through
+    the Sing tab, as the rooms' demos do. Repeat goes twice round, one note
+    sung flat the first time and on it the second, with the ring on the wide
+    bar's Repeat or the phone stage's play-mode button. Spaced rest goes once
+    through with a half rest after each note, the rests silent, with the ring
+    on the wide bar's Spaced rest; it is wide screens only, as the phone stage
+    has no Spaced rest to ring or set. He sings the singer's own melody when a
+    stop of it lasts 8 to 20 s, else do to sol in their key and octave, about
+    a second a note in whole beats at their tempo.
+  - The tab's transport plays the demo's melody (`singDemo()`), never the
+    library's, which is not written. The practice controller's frame loop
+    draws his scripted pitch at the transport's beat in place of the mic's,
+    and leaves the mic, its detector, the frame listeners and the recorder
+    alone. His voice (`playVoiceContour`, `src/lib/demo-voice.ts`) starts with
+    each of the transport's notes on the app's audio context, from the same
+    contour, so what is heard is what is drawn.
+  - While he sings nothing is kept (`App.tsx` gates each on
+    `singDemo() === null`): no note is scored, Stop ends no practice session
+    and shows no result, his Play records no activity, the first-run mic offer
+    is not spent, the mic hints say nothing, and no karaoke backing plays
+    under him. The mic is never asked for; one already on stays on, its line
+    paused. When the stop goes, however it goes, or the page is hidden, his
+    voice releases, the transport resets as a tab change resets it, and the
+    play mode, repeat cycles and round, Spaced rest and A-B loop are put back.
+    The tempo is never changed. A wide screen's bubble keeps the top right
+    corner, off his line; a phone's docks.
+  - Zen is not a stop. Its stage runs its own session, which opens the mic and
+    keeps every pass as a take, so it cannot take a scripted voice without a
+    larger change.
+  - Tests: `CoachLayer.test.tsx` (the playing state, its lines, Merc's pose,
+    the restart and the stops), `CoachLayer.run.test.tsx` (a run's life, pose,
+    line, pulse and corner, and where Show me more stands), `start.test.ts`
+    (the hand-on, a failed load and a tab change during it),
+    `sing-demo.test.ts`, `sing-demo-tab.test.ts` and `sing-more-tour.test.ts`.
+    In the browser, `sing-show-more.spec.ts` at 390x844 and 1440x900: each
+    stop rings and sets its control and draws his line, with no mic hint
+    showing; Done, End tour and leaving the tab mid-song silence every source,
+    clear the line, put the controls back and keep nothing; no `getUserMedia`
+    from the tap on; reduced motion keeps the line and drops the pulse.
+    `coach-tours.spec.ts` checks that Play the note shows it is playing.
+- **The tour offer floats where it covers nothing** (#1236).
+  - A tab's first-visit chip took a row at the top of the main column and
+    pushed the page down as it showed. It floats now, from an anchor that
+    takes no room: a row of no height in the main column
+    (`src/features/tours/TourChipHost.tsx`, in a flex column with no gap) and,
+    on Karaoke Night, an anchor out of the page's grid
+    (`KaraokeTourChip.tsx`). Showing it and taking it down move nothing.
+  - Where it stands is a rule, a pure function
+    (`src/components/coach/chip-place.ts`), over what is on screen
+    (`chip-room.ts`). Lines of text, controls, canvases and stages are never
+    under it; pictures, drawings and cards only where nothing else is free. It
+    takes the free room at the top of its column (its first 72 px), whole or
+    as Merc and a short line, at the end of the first free row; then the
+    nearest free spot further down; then Merc alone at the top; then the top
+    bar between its title and its buttons, since a phone's Sing and Piano
+    stages leave their column no room at all; then the same over art. It keeps
+    clear of the foot stack and a phone's toasts (`src/lib/foot-space.ts`),
+    and of layers from elsewhere in the document, found by hit-testing where
+    it would go.
+  - `chip-float.ts` measures the three forms and places the chip before it is
+    drawn, places it again when the window or the column changes size, takes
+    the best spot while the page settles in its first two seconds, then keeps
+    a spot while it stays clear. A scroll that carries it out of view before
+    it was seen, or while the page settles (Path glides to the singer's week
+    as it opens), has it placed again where the page comes to rest.
+  - The start button keeps the whole line as its name in every form, the short
+    words being part of it, so a screen reader hears the same offer. The chip
+    stays first in its column's order and takes no focus, and what
+    `TourChipHost.test.tsx` pins still holds: one offer per tab, spent once
+    seen, the pauses, one chip at a time, the lazy chunk.
+  - Tests: `chip-place.test.ts` holds the rule, and `TourChip.float.test.tsx`
+    the forms, the names and a kept spot on a page laid out by hand. In the
+    browser, `tour-chip-floats.spec.ts` opens every tab with an offer due, and
+    Karaoke Night, at 390x844, 1024x768 and 1440x900, and asserts that the
+    chip covers no control, canvas, stage or visible text and that nothing
+    moves as it goes. The Piano and Karaoke Night chip checks no longer expect
+    a row of its own. With no row above it, Jam's room stage is 589 px of 800
+    at 1280x800 again, over the 70% of the window the Guide's walk allows a
+    spotlight, so the walk names it among its known wide ones
+    (`scripts/walk-tours.mjs`).
+- **The lesson kit's buttons and step links, on the live Lessons 1 and 2 too**
+  (#1236).
+  - `.btn.is-on` swapped a primary button's light gradient for the dark lit
+    ground and left its dark words, so a lit primary read 1.6:1: Lesson 2's
+    "Play a step", and on the drafts the climb, lift, slide and unroll buttons
+    while they sound and the ear game's Play on Lessons 6 and 8. A lit primary
+    takes the light words every other lit button has (`.btn.primary.is-on` in
+    `kit/lesson-base.css`). Lesson 7's `.range-toy .btn:not(.primary).is-on`
+    keeps its amber pressed choices, and its lit Plays now read 10:1.
+    `learn-lit-button.spec.ts` holds a lit primary to 4.5:1 or better on
+    Lesson 2 and on Lesson 6's ear game.
+  - A step link (`/learn/NN#step-N`) scrolled with `'auto'`, which takes the
+    page's `scroll-behavior: smooth`, so it glided, and focus coming to a
+    stage control mid-glide brought that control into view and stopped the
+    glide short, with the deck on the linked step beside another step's text.
+    The link's scroll, and every reduced-motion scroll, now goes at once
+    (`'instant'`, `kit/step-deck.ts`). The deck's unit tests pin it: a
+    headless browser does not stop the glide short, so
+    `learn-step-link.spec.ts` passes either way.
+  - The sound gate's button said "Turn sound on", then "Turn sound off", so it
+    changed width as sound came on, and a gate line near a wrap rewrapped. Its
+    two labels share one grid cell, as the gate's two lines do, the one not
+    current hidden from a screen reader too (`kit/page-chrome.ts`,
+    `kit/lesson-stage.css`), so the button keeps the wider label's width and
+    the gate its height. Lesson 10's own `min-width` on the button goes.
+    `learn-sound-gate.spec.ts` measures the button and the gate before and
+    after the tap at 344, 390 and 1440 px on Lessons 1 to 10.
+- **Merc's sung voice gets a module of its own** (#1236). `playVoiceContour`
+  lived in `src/lib/demo-audio.ts` beside the short demo cues, which the Voice
+  Mirror, its three range pages and Glass load with their first paint. Nothing
+  in the web build had sung with it, so the bundler had left it out of their
+  chunk; once Show me more sang with it, it rode their first paint, 2,714
+  bytes of script each that never run there. It moves, unchanged, to
+  `src/lib/demo-voice.ts`, on demo-audio's `sound`, now exported, and its
+  importers (the room kit, the demo kit, Echo, Lip roll, the phrase voice and
+  the Sing tab's demo) and their mocks take it from there. Lesson 2's FACTS,
+  its brief, the Merc bible and the production pipeline name the new module.
+- **First paint** (#1236), measured on `build:e2e` builds of `main`
+  (4a488dc6f) and of the polish head: the main app's five documents gain 1,625
+  bytes of script and lose 5 of CSS, and Guitar Night gains 15 bytes of
+  script. Glass is 575 bytes lighter, the Voice Mirror and its three range
+  pages 101, and Karaoke Night's four documents 12 bytes of CSS. Lessons 1 to
+  10 gain 26 bytes of script each (67 on Lesson 7) and 105 to 354 of CSS.
+  Every page stays under its ceiling, and no ceiling changes.
+
+For the lessons, all drafts that mercurypitch.com holds back:
+
+- **#1234:** Lesson 10's page, `/learn/10`, "Major and minor": the chord beads
+  on the stage in each step's state, with 44 px targets at every width; the
+  cold open on the hero's spiral and its predict; the recall from Lesson 6 and
+  the quick check; the four words, each heard; Steps 1 to 5, with the ear
+  games on thirds and on chords, the pattern and the names switch; Sing it,
+  with the comfort check, the voice choice, Merc's notes, Move do, the guide
+  and "How did that feel?"; and the Wrap, with free play and the next card's
+  tease. It waits for Lesson 6's page to go live and for the vocal coach's
+  look at Sing it (`kit/drafts.ts`). Three kit changes come with it: the
+  spiral's `view: 'top'`, `easeOutExpo` among the canvas curves, and the
+  guide's breath word kept on the canvas after a top-row note. Lessons 1 to 9
+  gain 248 to 691 bytes of first-paint script, for Lesson 10's season entry
+  and drafts line and the kit chunks it shares only in part; Lesson 4's
+  ceiling goes from 129 to 130 KB, and Lesson 10's are a quarter over its
+  measure (211 KB of script, 111 KB of CSS).
+- **#1236:** Lesson 7's listening ring stops with the siren when the page is
+  hidden or the Sound switch goes off mid-play, where it listened on to the
+  end of a play that was over, and says Ready only for a Start an earlier play
+  readied. A sing card's rows of buttons keep 12 px over a shown line, where
+  they sat flush: on Lessons 6 and 8, the do readout under the plays while
+  only listening, and a feeling's answer under the four feelings.
+
+On the native app's test builds only (`PREMIUM_EXERCISES`, off on the web and
+in the store build, which `assert-bundle.mjs` holds to carrying none of either
+room):
+
+- **#1233: Home note and First note, the first two Ear rooms.**
+  - Home note: the band plays a short intro in a key and stops, and the singer
+    sings the note the chords lean on, in any octave. The voice draws a trail
+    against the lighthouse's beam and lands when it holds in the band of light
+    around it; the band then plays home's chord under the voice, and after a
+    miss Merc sings home over it. Learning plays I IV V I with Merc singing
+    home first (50 cents), Singer I IV V (35 cents) and Professional IV V (25
+    cents), in six keys in the singer's window. The best result per level is
+    kept on the device (`mp_home_note_bests`).
+  - First note: on the three example songs the app ships, the band plays the
+    eight seconds before the singer comes in, the vocal muted and the last
+    four beats counted down, and stops; the singer sings that first note, in
+    any octave, and when the voice holds it the song carries on with its
+    singer back in. After a miss Merc sings the note. The entry is judged
+    before the note's line shows: at Learning the line shows from the start,
+    at Singer once they have come in, at Professional only when they land. Its
+    nineteen entries are read once from the stems
+    (`apps/mercurypitch/scripts/generate-first-note-entries.mjs`) and pinned
+    by each vocal's sha256. The best per level is kept on the device
+    (`mp_first_note_bests`).
+  - The voice trail and Merc's sung voice move into the room kit
+    (`src/components/room-kit/voice-trail.ts`, `round-voice.ts`), and Echo's
+    `merc-call` takes the kit's output-latency sum, with no change to what
+    Home note or Echo does. `firstSteadyNote`
+    (`src/lib/sequence/steady-note.ts`) takes its caller's run gap.
+  - Both rooms open from a new Ear heading in the Sing room's picker and from
+    a "With Merc" row on the native Ear Lab's bench.
+
+Tests only:
+
+- **#1235:** the DB worker's RevenueCat songs suite ended its subscription
+  period at a fixed 2026-10-27T12:00Z, so from that moment the three tests
+  that expect a subscriber failed on every branch. The period now ends fifteen
+  days after the suite starts.
+
+Docs only:
+
+- **#1233:** `docs/plans/premium.md` gets a Status line, as the native app now
+  sells Mercury Pitch Cloud, which carries the premium Merc rooms.
+  `docs/plans/ear-rooms.md` records the owner's answer on the Ear rooms' free
+  taste (27 Oct: one run or three, then the paywall; the number, and whether
+  the runs count per room or across the rooms, stay open). 64 plan citations
+  are re-anchored.
+- **#1236:** the lessons' plan citations of the kit, `App.tsx` and the coach
+  are re-anchored past the new lines, and the module map is regenerated.
+
+### Release steps
+
+1. **Migrations:** none. Nothing under `workers/db-worker/migrations` changed
+   since `v0.9.23`.
+2. **Secrets, variables and bindings:** none new. No `wrangler*`, `.env*` or
+   workflow file changed.
+3. **Worker code:** the site worker's lesson gate reads the season and the
+   drafts list, and #1234 gives Lesson 10 its page and its 17 minutes, as a
+   draft. On mercurypitch.com the gate answers `/learn/10` with the 404 page,
+   and leaves it out of the sitemap and `llms.txt`, until the console
+   publishes it, as it does every draft. The DB worker's only change is a
+   comment in `mirror-metrics.ts`, which now counts 19 `createQuiz` sites, and
+   the Jam worker's graph has none (each traced with esbuild from its
+   `wrangler` `main`).
+4. **Links into about.mercurypitch.com** (prod-upd step 0c): none new. Lesson
+   10's footer links the landing's Privacy, Terms and Imprint pages, as every
+   lesson page does.
+5. **Social cards:** `pnpm run og:versions` on this PR stamped the cards with
+   no change.
+6. **What's New** is untouched: 0.9.24 is a patch.
+7. **Version files:** `package.json` goes from 0.9.23 to 0.9.24.
+8. **Native:** `apps/mercurypitch/src/shell` gains the two Ear rooms' screens
+   and their wiring, and `apps/mercurypitch/scripts` the First note entries'
+   generator and the bundle assert's new checks (#1233). The native app is not
+   released yet.
+
 ## [0.9.23] - 2026-10-27
 
 151 commits since `v0.9.22` (a6f839e14) before this notes PR, from 23 PRs, on

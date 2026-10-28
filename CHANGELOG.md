@@ -5,6 +5,35 @@ app, so every entry is one to three short sentences a stranger can follow — no
 PR numbers, no file names, no rationale. The full engineering history, at
 whatever length it needs, is in [`dev-changelog.md`](./dev-changelog.md).
 
+## [0.9.24] - 2026-10-28
+
+Merc sings through the Sing tab to show you how it is done, and a tab's tour
+offer no longer moves the page.
+
+### Added
+
+- **Show me more.** At the end of the Sing tour, Merc sings through the Sing
+  tab himself, in Repeat and with a rest after each note. On a phone he
+  shows Repeat. Nothing he sings is scored or kept.
+
+### Changed
+
+- **Play the note shows it is playing.** In the Sing tour it lights up and
+  reads "Playing A3" while the note sounds. Once it has played, a line says
+  how to hear it: your volume, and your device's mute.
+- **A tab's tour offer floats over the page.** It no longer pushes the page
+  down, and it stands where it covers no words or buttons. Where a phone has
+  no room for its words, it is Merc alone.
+
+### Fixed
+
+- **Lesson 2's lit buttons are readable.** "Play a step" showed dark words on
+  a dark ground while it played.
+- **A link to a lesson's step lands on that step**, even if you press the
+  page as it scrolls there.
+- **Smaller things.** A lesson's Turn sound on button keeps its width when
+  sound comes on, so the line beside it stays where it was.
+
 ## [0.9.23] - 2026-10-27
 
 A weekly Check-up shows how your voice has moved, and Merc shows you around.
