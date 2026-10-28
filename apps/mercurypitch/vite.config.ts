@@ -222,11 +222,12 @@ const FOLDED_IMAGE = '\0mercurypitch:folded-premium-image'
 /** What a Stage 2 stylesheet is in a build without it: nothing at all. */
 const FOLDED_STYLE = '\0mercurypitch:folded-stage-2-style'
 
-/** Whether a relative import from `importer` names a premium picture or voice. */
+/** Whether a relative import from `importer` names a premium picture or
+ *  voice, with or without a query: `?url` names the same file. */
 function isPremiumAsset(source: string, importer: string | undefined): boolean {
   if (importer === undefined || !source.startsWith('.')) return false
   const from = dirname(importer.replace(/\?.*$/u, ''))
-  const path = resolve(from, source).replace(/\\/gu, '/')
+  const path = resolve(from, source.replace(/\?.*$/u, '')).replace(/\\/gu, '/')
   return PREMIUM_IMAGES.test(path) || PREMIUM_VOICES.test(path)
 }
 
