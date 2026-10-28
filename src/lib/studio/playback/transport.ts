@@ -520,6 +520,17 @@ export function createStudioTransport(options: StudioTransportOptions) {
     return shownFrame(heard() ?? held)
   }
 
+  /**
+   * A run has played out. One held while a seek's run is built goes quiet,
+   * and that run starts from silence at the seek frame once it is ready;
+   * otherwise the song has ended.
+   */
+  function playedOut(run: StudioRun): void {
+    if (run === held && seekTarget !== null)
+      publish({ ...silence(), playing: false, pending: true })
+    else pause()
+  }
+
   const timer = setInterval(() => {
     const run = active ?? held
     if (!run) return
@@ -539,7 +550,7 @@ export function createStudioTransport(options: StudioTransportOptions) {
         // A tick with nothing new, or a run just taken over, keeps the last.
         lanes: readLaneLevels(shown) ?? state.lanes,
       })
-      if (run.ctx.currentTime >= runEndsAt(run)) pause()
+      if (run.ctx.currentTime >= runEndsAt(run)) playedOut(run)
     } catch (error) {
       pause()
       publish({

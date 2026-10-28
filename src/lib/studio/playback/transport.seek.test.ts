@@ -1,10 +1,10 @@
 // Studio transport seek tests — a seek while playing moves the running graph; a run that cannot follow hands over.
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { studioReservedMemoryBytes } from '../memory-budget'
+import { StudioMemoryError, studioReservedMemoryBytes } from '../memory-budget'
 import type { StudioArrangementPlan } from '../model/arrangement-plan'
 import type { StudioProject } from '../model/types'
 import type { StudioBufferLease } from './buffer-cache'
-import { RUN_LOOKAHEAD_SECONDS } from './run'
+import { RUN_LOOKAHEAD_SECONDS, STUDIO_RUN_RATE } from './run'
 import { envelopeOf, freshGraphs, transportFixture, } from './transport.test-fixtures'
 
 // The fixture's chains: 10 ms of lane and 10 ms of master latency.
@@ -50,6 +50,49 @@ function holdNextRead(f: ReturnType<typeof transportFixture>) {
 }
 
 afterEach(() => vi.useRealTimers())
+
+/** When the run built by the `call`th build has played out, its tail included. */
+function endOfBuild(f: ReturnType<typeof transportFixture>, call: number) {
+  const [, plan, , epoch, options] = f.buildGraph.mock.calls[call]
+  const { endFrame, tailFrames } = plan as StudioArrangementPlan
+  return (
+    epoch +
+    LATENCY +
+    (endFrame - options.fromFrame + tailFrames) / STUDIO_RUN_RATE
+  )
+}
+
+/**
+ * The held run plays out while the seek's run is still being read: the song
+ * goes quiet for the build, then plays on from the seek frame.
+ */
+async function playsOnPastHeldEnd(
+  f: ReturnType<typeof transportFixture>,
+  graphs: ReturnType<typeof freshGraphs>,
+  heldEnd: number,
+  release: () => void,
+  seeking: Promise<void>,
+  frame: number,
+) {
+  f.ctx.currentTime = heldEnd + 0.01
+  await vi.advanceTimersByTimeAsync(33)
+  expect(f.transport.getState()).toMatchObject({
+    playing: false,
+    pending: true,
+  })
+  release()
+  await seeking
+  const built = f.buildGraph.mock.calls.at(-1)!
+  expect(built[4].fromFrame).toBe(frame)
+  // From silence: the held run has gone, so there is nothing to cross.
+  expect(envelopeOf(graphs.at(-1)!).gain.ramps).toHaveLength(1)
+  expect(f.transport.getState()).toMatchObject({
+    playing: true,
+    pending: false,
+    playheadFrame: frame,
+    error: null,
+  })
+}
 
 describe('Studio transport seek', () => {
   it('moves the playing run on its running graph: no new build, measurement or fade, and the playhead shows the frame at once', async () => {
@@ -225,6 +268,50 @@ describe('Studio transport seek', () => {
     expect(options.fromFrame).toBe(120000)
     expect(faded(envelopeOf(graphs[0]))).toBe(false)
     expect(f.transport.getState().playheadFrame).toBe(120000)
+    await finish(f)
+  })
+  it('plays on from a seek past the end of a shorter song when the held run ends before the seek run is built', async () => {
+    vi.useFakeTimers()
+    const f = transportFixture()
+    const graphs = freshGraphs(f)
+    await f.transport.play(f.project, [f.asset], 0)
+    const heldEnd = endOfBuild(f, 0)
+    const releaseEdit = holdNextRead(f)
+    f.ctx.currentTime = 1
+    // The edit makes the song a second longer than the run playing it.
+    const longer = movedClip(f.project, 48000, 1)
+    const editing = f.transport.setSnapshot(longer, [f.asset])
+    await vi.waitFor(() => expect(f.cache.acquire).toHaveBeenCalledTimes(2))
+    const seeking = f.transport.seek(120000, longer, [f.asset])
+    const releaseSeek = holdNextRead(f)
+    releaseEdit()
+    await editing
+    await vi.waitFor(() => expect(f.cache.acquire).toHaveBeenCalledTimes(3))
+
+    await playsOnPastHeldEnd(f, graphs, heldEnd, releaseSeek, seeking, 120000)
+    await finish(f)
+  })
+
+  it('plays on from a seek before the start of a run built short of memory when that run ends before the seek run is built', async () => {
+    vi.useFakeTimers()
+    const f = transportFixture()
+    const graphs = freshGraphs(f)
+    // Memory holds only a plan from where Play starts, not from the top.
+    vi.mocked(f.cache.acquire)
+      .mockRejectedValueOnce(new StudioMemoryError('Studio needs more memory.'))
+      .mockRejectedValueOnce(new StudioMemoryError('Studio needs more memory.'))
+    await f.transport.play(f.project, [f.asset], 60000)
+    expect(
+      (f.buildGraph.mock.calls[0][1] as StudioArrangementPlan).startFrame,
+    ).toBe(60000)
+    const heldEnd = endOfBuild(f, 0)
+    f.ctx.currentTime = heldEnd - 0.5
+    const releaseSeek = holdNextRead(f)
+    const seeking = f.transport.seek(10000, f.project, [f.asset])
+    expect(graphs[0].seek).not.toHaveBeenCalled()
+    await vi.waitFor(() => expect(f.cache.acquire).toHaveBeenCalledTimes(4))
+
+    await playsOnPastHeldEnd(f, graphs, heldEnd, releaseSeek, seeking, 10000)
     await finish(f)
   })
 })
