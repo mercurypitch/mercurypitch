@@ -92,6 +92,34 @@
   text-align: left;
 }
 
+/* "Show the words": the line the singer comes in on, in Merc's place over
+   his head while the band counts in and in the turn (his bubble is not up
+   then). Gold-edged, like the note's line, so it never reads as his. */
+.words {
+  position: absolute;
+  right: 16px;
+  max-width: min(72%, 300px);
+  padding: 10px 14px 12px;
+  border: 1px solid rgba(255, 211, 107, 0.4);
+  border-radius: 16px;
+  background: rgba(20, 8, 12, 0.74);
+  pointer-events: none;
+}
+
+.wordsLabel {
+  display: block;
+  color: rgba(255, 211, 107, 0.85);
+  font: 600 11px/14px var(--font-body, sans-serif);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.wordsText {
+  margin: 4px 0 0;
+  color: #fff3d6;
+  font: 600 17px/1.35 var(--font-body, sans-serif);
+}
+
 .bottom {
   position: absolute;
   left: 0;

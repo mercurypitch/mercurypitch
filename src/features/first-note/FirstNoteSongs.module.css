@@ -35,6 +35,15 @@
   font-variant-numeric: tabular-nums;
 }
 
+/* "Show the words" is on: said on the pill, so it is no surprise. */
+.pillWords {
+  padding: 3px 7px;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.12);
+  color: var(--text-secondary);
+  font: 600 12px/1 var(--font-body, sans-serif);
+}
+
 /* ── The sheet ──────────────────────────────────────────────── */
 
 .sheet {
@@ -290,4 +299,71 @@
 .cta svg {
   width: 20px;
   height: 20px;
+}
+
+/* "Show the words": a row with its switch, the Karaoke options' look
+   (karaoke-room.module.css) on a whole 44 px target. */
+.hintRow {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 4px 2px 4px 10px;
+}
+
+.hintName {
+  font: 600 15px/20px var(--font-body, sans-serif);
+  color: var(--text-primary);
+}
+
+.hintLine {
+  font: 400 13px/18px var(--font-body, sans-serif);
+  color: var(--text-secondary);
+}
+
+.switch {
+  position: relative;
+  flex: none;
+  width: 52px;
+  height: 44px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  cursor: pointer;
+}
+
+.switch::before {
+  content: '';
+  position: absolute;
+  left: 4px;
+  top: 9px;
+  width: 44px;
+  height: 26px;
+  border-radius: 999px;
+  background: var(--bg-tertiary, #21262d);
+}
+
+.switch i {
+  position: absolute;
+  top: 12px;
+  left: 7px;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: var(--text-secondary, #a8b3bf);
+  transition: transform 0.15s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.switchOn::before {
+  background: var(--accent-primary, #58a6ff);
+}
+
+.switchOn i {
+  background: #fff;
+  transform: translateX(18px);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .switch i {
+    transition: none;
+  }
 }

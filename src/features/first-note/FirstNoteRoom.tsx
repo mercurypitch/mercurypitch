@@ -17,7 +17,9 @@
 // After a miss, Merc sings the note before the singer comes in.
 //
 // The skill is the one a karaoke singer needs when an intro ends: coming
-// in on the right note, from the band alone.
+// in on the right note, from the band alone. "Show the words", off by
+// default, puts the words of the line they come in on over the stage while
+// the band counts in and in their turn (owner, 28 Oct 2026).
 //
 // The page around the world is the room kit's shell (RoomShell.tsx): the
 // root, the chip or the result in the head, the level in the bar, Merc's
@@ -42,7 +44,7 @@ import { createRoomShell, RoomShell, ShellBarEnd, ShellBubble, ShellDock, ShellH
 import surface from '@/components/room-kit/RoomSurface.module.css'
 import type { RoundVoice } from '@/components/room-kit/round-voice'
 import { headOf, trailPath, trailY } from '@/components/room-kit/voice-trail'
-import { sourceHasOwnSongs } from './first-note-choices'
+import { firstNoteShowsWords, sourceHasOwnSongs } from './first-note-choices'
 import { bandHalfHeight, layoutStage, RESTING_LINE_SHARE, } from './first-note-layout'
 import type { FirstNotePhase } from './first-note-machine'
 import { isRunPhase } from './first-note-machine'
@@ -196,14 +198,27 @@ export function FirstNoteRoom(props: FirstNoteRoomProps): JSX.Element {
     return height - (merc.top + merc.size * 0.2)
   }
 
+  /**
+   * The words of the line the singer comes in on, with "Show the words"
+   * on: while the band counts in and in their turn, where Merc's bubble is
+   * between rounds (it is not up then). Null without words to show.
+   */
+  const words = (): string | null => {
+    if (!firstNoteShowsWords()) return null
+    if (phase() !== 'band' && phase() !== 'sing') return null
+    const text = room.round()?.entry.words ?? ''
+    return text === '' ? null : text
+  }
+
   /** What a screen reader hears, from the one polite region. */
   const said = (): string => {
     const round = room.round()
     switch (phase()) {
-      case 'band':
-        return round === null
-          ? ''
-          : `Entry ${round.index + 1} of ${room.state().rounds.length}: ${round.song.title}. Listen to the band.`
+      case 'band': {
+        if (round === null) return ''
+        const line = words()
+        return `Entry ${round.index + 1} of ${room.state().rounds.length}: ${round.song.title}. Listen to the band.${line === null ? '' : ` Your line: ${line}`}`
+      }
       case 'sing':
         return [room.chip(), 'Sing the first note.']
           .filter((part) => part !== null && part !== 'Your turn')
@@ -284,6 +299,19 @@ export function FirstNoteRoom(props: FirstNoteRoomProps): JSX.Element {
         line={room.line()}
         bottom={bubbleBottom()}
       />
+
+      <Show when={words()}>
+        {(text) => (
+          <div
+            class={styles.words}
+            style={{ bottom: `${bubbleBottom()}px` }}
+            data-testid="first-note-words"
+          >
+            <span class={styles.wordsLabel}>Your line</span>
+            <p class={styles.wordsText}>{text()}</p>
+          </div>
+        )}
+      </Show>
 
       <ShellBarEnd
         shell={shell}
