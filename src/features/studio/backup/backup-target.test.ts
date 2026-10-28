@@ -4,7 +4,7 @@ import { webcrypto } from 'node:crypto'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { studioReservedMemoryBytes } from '@/lib/studio/memory-budget'
 import { STUDIO_ARCHIVE_BATCH_BYTES } from './archive-writer'
-import { downloadStudioBackup, openStudioBackupTarget, STUDIO_BACKUP_FOLDER, studioBackupFileName, } from './backup-target'
+import { downloadStudioBackup, openStudioBackupTarget, STUDIO_BACKUP_FOLDER, studioBackupFileName, sweepStudioBackupCopies, } from './backup-target'
 
 const MiB = 1024 * 1024
 
@@ -53,12 +53,13 @@ function fakeStorage(existing: ReturnType<typeof fakeHandle>[] = []) {
       for (const entry of [...files]) yield entry
     },
   }
-  const getDirectory = vi.fn(async () => ({
+  const root = {
     getDirectoryHandle: vi.fn(async (name: string) => {
       expect(name).toBe(STUDIO_BACKUP_FOLDER)
       return folder
     }),
-  }))
+  }
+  const getDirectory = vi.fn(async () => root)
   vi.stubGlobal('navigator', { storage: { getDirectory } })
   vi.stubGlobal(
     'FileSystemFileHandle',
@@ -66,7 +67,7 @@ function fakeStorage(existing: ReturnType<typeof fakeHandle>[] = []) {
       createWritable() {}
     },
   )
-  return { folder, getDirectory }
+  return { folder, getDirectory, root }
 }
 
 const bytes = (...values: number[]) => new Uint8Array(values)
@@ -229,6 +230,49 @@ describe('Studio backup targets', () => {
     await target.discard()
     expect(folder.files.has('recent.mpstudio')).toBe(true)
     expect(folder.files.size).toBe(1)
+  })
+
+  it('keeps a downloaded private copy ten minutes, and a sweep takes only a copy older than that', async () => {
+    const tenMinutes = 10 * 60_000
+    const left = fakeHandle('left.mpstudio', Date.now() - tenMinutes - 1000)
+    const young = fakeHandle('young.mpstudio', Date.now() - tenMinutes + 1000)
+    const { folder } = fakeStorage([left, young])
+
+    const target = (await openStudioBackupTarget('Song.mpstudio'))!
+
+    expect(target).toMatchObject({ kind: 'download', keepMs: tenMinutes })
+    await vi.waitFor(() =>
+      expect(folder.removeEntry).toHaveBeenCalledWith('left.mpstudio'),
+    )
+    expect(folder.files.has('young.mpstudio')).toBe(true)
+    await target.discard()
+  })
+
+  it('sweeps copies a closed tab left behind when the Studio opens, and makes no folder for it', async () => {
+    const left = fakeHandle('left.mpstudio', Date.now() - 11 * 60_000)
+    const young = fakeHandle('young.mpstudio', Date.now() - 60_000)
+    const { folder, root } = fakeStorage([left, young])
+
+    await sweepStudioBackupCopies()
+
+    expect(root.getDirectoryHandle).toHaveBeenCalledExactlyOnceWith(
+      STUDIO_BACKUP_FOLDER,
+    )
+    expect([...folder.files.keys()]).toEqual(['young.mpstudio'])
+    expect(folder.getFileHandle).not.toHaveBeenCalled()
+  })
+
+  it('sweeps nothing where there is no folder or no private file system', async () => {
+    const { root } = fakeStorage()
+    root.getDirectoryHandle.mockRejectedValueOnce(
+      new DOMException(
+        'A requested file or directory could not be found.',
+        'NotFoundError',
+      ),
+    )
+    await expect(sweepStudioBackupCopies()).resolves.toBeUndefined()
+    vi.stubGlobal('navigator', {})
+    await expect(sweepStudioBackupCopies()).resolves.toBeUndefined()
   })
 
   it('keeps the archive in memory only where no file can be written', async () => {

@@ -1,8 +1,8 @@
 // Studio page — local song entry, save recovery and an integrated arrangement workspace.
-import { createSignal, Show } from 'solid-js'
+import { createSignal, onMount, Show } from 'solid-js'
 import { ConfirmDialog } from '@/components/ConfirmDialog'
 import type { StudioBackupTarget } from './backup/backup-target'
-import { downloadStudioBackup, openStudioBackupTarget, studioBackupFileName, } from './backup/backup-target'
+import { downloadStudioBackup, openStudioBackupTarget, studioBackupFileName, sweepStudioBackupCopies, } from './backup/backup-target'
 import styles from './StudioPage.module.css'
 import { StudioProjectList } from './StudioProjectList'
 import { StudioWorkspace } from './StudioWorkspace'
@@ -21,6 +21,7 @@ export function StudioPage() {
   >(null)
   let backupInput!: HTMLInputElement
   const blocked = () => studio.busy() || studio.hasUnsavedChanges()
+  onMount(() => void sweepStudioBackupCopies())
 
   async function create(): Promise<void> {
     if (await studio.create()) {
