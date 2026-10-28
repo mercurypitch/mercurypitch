@@ -26,7 +26,24 @@ Nothing here changes what the app ships or does: one change is a build script, t
 
 ## Checks
 
-@@CHECKS@@
+On `24391ce39`, on `main` `5155a5663` (v0.9.24):
+
+- `pnpm check`: no errors and the 11 warnings `main` has. It changed no files.
+- `karaoke-examples.test.ts`: 21 tests pass, the six new ones among them.
+- `pnpm pr:validate`: pass.
+
+Earlier, on the same code:
+
+- **On `main` `866e53c30`:** the app's `tsc`, eslint and prettier pass, and its vitest suite passes, 167 files and 1,860 tests. No file under `apps/mercurypitch` changed between `866e53c30` and `5155a5663`.
+- **Mutations:** each of these fails at least one new test.
+  - one try only;
+  - the stall timer not reset per body part;
+  - no abort signal;
+  - a 404 tried again;
+  - a body error thrown past the retry.
+- **`jam-stage-layout.spec.ts`, on a `build:e2e` of `main` `9fd052508`,** with every request to `r2.dev` aborted and logged. (#1243, merged since, touches none of these files.)
+  - 14 tests pass, and none tries the bucket.
+  - With the spec's new routes removed, all 14 fail waiting for line 6, and 42 requests try the bucket.
 
 ## Left open
 
