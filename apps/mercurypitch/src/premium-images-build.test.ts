@@ -14,7 +14,8 @@
 // folder of their own), and every voice file (Merc's sung "ooh" set for Echo's
 // calls, in its voice/ folder; vite.config.ts, PREMIUM_VOICES). The Cloud
 // offer's art (src/features/karaoke-room/assets/) is Stage 2 and folds the
-// same way.
+// same way, and so do the Ear Lab with Merc's pictures and serif
+// (src/features/ear-lab/merc/; EAR_LAB_WITH_MERC rides the same switch).
 
 import { readdirSync } from 'node:fs'
 import { join, relative } from 'node:path'
@@ -152,6 +153,45 @@ describe("the Cloud offer's art in a native build", () => {
     const fold = await foldFor('dev')
     for (const name of art) {
       expect(fold(`./assets/${name}`, importer), name).toBeNull()
+    }
+  }, 60000)
+})
+
+describe("the Ear Lab with Merc's pictures and serif in a native build", () => {
+  const dir = join(FEATURES, 'ear-lab', 'merc')
+  const importer = join(dir, 'MercDrillRoom.tsx')
+  const entry = join(dir, 'entry.ts')
+  const pictures = picturesIn(dir)
+  const serif = [
+    '@fontsource-variable/crimson-pro/wght.css',
+    '@fontsource-variable/crimson-pro/wght-italic.css',
+  ]
+
+  it("has Merc's stills to fold, so the checks below are not vacuous", () => {
+    expect(pictures).toContain(join('stills', 'merc-point.webp'))
+  })
+
+  it('resolves them to nothing in the store build', async () => {
+    const fold = await foldFor('production')
+    for (const name of pictures) {
+      const id = fold(`./${name}`, importer)
+      expect(typeof id === 'string' && id.startsWith('\0'), name).toBe(true)
+    }
+    for (const sheet of serif) {
+      const id = fold(sheet, entry)
+      expect(typeof id === 'string' && id.startsWith('\0'), sheet).toBe(true)
+    }
+    // Only Crimson Pro: the app's own fonts are left to Vite.
+    expect(fold('@fontsource-variable/inter/wght.css', entry)).toBeNull()
+  }, 60000)
+
+  it('leaves them to Vite in a build with the room', async () => {
+    const fold = await foldFor('dev')
+    for (const name of pictures) {
+      expect(fold(`./${name}`, importer), name).toBeNull()
+    }
+    for (const sheet of serif) {
+      expect(fold(sheet, entry), sheet).toBeNull()
     }
   }, 60000)
 })

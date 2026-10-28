@@ -157,12 +157,15 @@ function isLaunchOffer(id: string): boolean {
  * a build without the premium exercises they resolve to an empty module and
  * are never emitted, at any depth inside those folders. The Cloud offer's
  * art (src/features/karaoke-room/assets/) rides the same switch: the offer
- * is Stage 2, and it would ride into the store build the same way.
+ * is Stage 2, and it would ride into the store build the same way. So do
+ * the Ear Lab with Merc's pictures (src/features/ear-lab/merc/: Merc's
+ * stills and the stations' paintings), whose chunk folds away with
+ * EAR_LAB_WITH_MERC: measured 28 Oct, the store build carried the stills.
  * `assert-bundle.mjs` STAGE 2 checks the bundle;
  * src/premium-images-build.test.ts checks this switch on every PR.
  */
 const PREMIUM_IMAGES =
-  /\/src\/features\/(?:(?:long-note|echo|ng-slides|lip-roll|warm-up|home-note)\/(?:[^/]+\/)*[^/]+|karaoke-room\/assets\/[^/]+)\.webp$/u
+  /\/src\/features\/(?:(?:long-note|echo|ng-slides|lip-roll|warm-up|home-note|ear-lab\/merc)\/(?:[^/]+\/)*[^/]+|karaoke-room\/assets\/[^/]+)\.webp$/u
 
 /**
  * The premium exercises' voices (Merc's sung "ooh" set for Echo's calls in
@@ -204,8 +207,20 @@ const PREMIUM_VOICES =
  */
 const NATIVE_CSS_TARGET = ['safari16', 'ios16']
 
+/**
+ * Merc's serif (Crimson Pro), which only the Ear Lab with Merc's chunk
+ * imports (src/features/ear-lab/merc/entry.ts). Vite emits a stylesheet's
+ * fonts as it loads the stylesheet, which is before tree-shaking drops the
+ * folded chunk: measured 28 Oct, the store build carried the font files
+ * with nothing naming them. Folded with the pictures, by the same switch.
+ */
+const STAGE_2_STYLES = /^@fontsource-variable\/crimson-pro\//u
+
 /** What every premium picture or voice is in a build without them. */
 const FOLDED_IMAGE = '\0mercurypitch:folded-premium-image'
+
+/** What a Stage 2 stylesheet is in a build without it: nothing at all. */
+const FOLDED_STYLE = '\0mercurypitch:folded-stage-2-style'
 
 /** Whether a relative import from `importer` names a premium picture or voice. */
 function isPremiumAsset(source: string, importer: string | undefined): boolean {
@@ -312,14 +327,17 @@ export default defineConfig(({ mode, command }) => {
       },
       {
         // The premium exercises' pictures and voices, out of a build that
-        // has no premium exercises (PREMIUM_IMAGES, PREMIUM_VOICES, above).
+        // has no premium exercises (PREMIUM_IMAGES, PREMIUM_VOICES, above),
+        // and the Ear Lab with Merc's serif with them (STAGE_2_STYLES).
         name: 'mercurypitch:fold-premium-images',
         enforce: 'pre',
         resolveId(source, importer) {
-          if (karaokeImport || !isPremiumAsset(source, importer)) return null
-          return FOLDED_IMAGE
+          if (karaokeImport) return null
+          if (STAGE_2_STYLES.test(source)) return FOLDED_STYLE
+          return isPremiumAsset(source, importer) ? FOLDED_IMAGE : null
         },
         load(id) {
+          if (id === FOLDED_STYLE) return ''
           return id === FOLDED_IMAGE ? 'export default ""' : null
         },
       },
