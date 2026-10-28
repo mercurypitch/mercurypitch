@@ -389,6 +389,7 @@ for (const [width, height, name] of [
       '/learn/07',
       '/learn/08',
       '/learn/09',
+      '/learn/10',
       '/learn/12',
     ]) {
       test(`${path}: every prerequisite chip is a 44 px target`, async ({
