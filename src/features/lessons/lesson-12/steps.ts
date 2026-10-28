@@ -16,8 +16,9 @@
 // step links). The rooms and their sounds are wired separately; until then
 // a control does nothing.
 
-import { q, qa } from '@/features/lessons/kit/dom'
+import { q } from '@/features/lessons/kit/dom'
 import { registerToy } from '@/features/lessons/kit/step-deck'
+import { showParts } from '@/features/lessons/kit/step-parts'
 
 /** Each step's figure label. */
 export const FIG: Readonly<Record<number, string>> = {
@@ -26,19 +27,6 @@ export const FIG: Readonly<Record<number, string>> = {
   3: '<span class="fig">Fig. 3</span> The chord on la',
   4: '<span class="fig">Fig. 4</span> The four-chord loop',
   5: '<span class="fig">Fig. 5</span> Two tunes over the loop',
-}
-
-/** The steps a part shows on, from its `data-part` list ("3 4 5"). */
-export const partSteps = (el: Element): readonly number[] =>
-  (el.getAttribute('data-part') ?? '')
-    .split(/\s+/)
-    .filter((word) => word !== '')
-    .map(Number)
-
-/** Shows the parts of `root` that step `n` uses, and hides the rest. */
-export function showParts(root: ParentNode, n: number): void {
-  for (const el of qa<HTMLElement>('[data-part]', root))
-    el.hidden = !partSteps(el).includes(n)
 }
 
 /** Follows the deck: registered before `deck.start()`, so an address that names a step opens it. */

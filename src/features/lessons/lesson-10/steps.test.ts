@@ -15,9 +15,10 @@
 
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import '@/features/lessons/kit/browser-doubles.test-fixtures'
+import { showParts } from '@/features/lessons/kit/step-parts'
 import { summary } from './lines'
 import { el, loadPage, mountSteps } from './page-dom.test-fixtures'
-import { FIG, partSteps, showParts, STEP_STATE } from './steps'
+import { FIG, STEP_STATE } from './steps'
 
 afterEach(() => {
   vi.restoreAllMocks()
@@ -224,17 +225,5 @@ describe("Lesson 10's stage, step by step", () => {
         .replace(/\s+/g, ' ')
         .trim(),
     ).toBe(summary({ kind: 'third', root: 60, quality: 'major' }))
-  })
-
-  it("reads a part's steps from its list, and nothing from an empty one", () => {
-    // Arrange
-    const both = document.createElement('p')
-    both.setAttribute('data-part', ' 1  3 ')
-    const none = document.createElement('p')
-    none.setAttribute('data-part', '')
-
-    // Act / Assert
-    expect(partSteps(both)).toEqual([1, 3])
-    expect(partSteps(none)).toEqual([])
   })
 })
