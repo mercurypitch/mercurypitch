@@ -26,6 +26,12 @@
 //   Monitor's status line clear at the top right). The layer keeps looking
 //   every TRACK_MS while a step shows, so a target that mounts late, or moves,
 //   is found and ringed.
+// - Words that do not fit. The bubble is capped (CoachLayer.module.css), and
+//   its words scroll in a box of their own above its buttons, which stay in
+//   view with End tour however tall the words grow. While some are below the
+//   box's foot the bubble says so (`data-more`, which fades it); each step
+//   starts them at the top. From the bubble the keys that scroll a box scroll
+//   them, and the box adds no Tab stop: a press on it focuses the bubble.
 // - Its height. It sits over the app's stages, rails and sheets and under its
 //   modals (z 900, below --z-modal's 1000). Not every dialog is a modal at
 //   that height: Karaoke's score card is one over the phone stage (z 1000),
@@ -85,6 +91,11 @@ export const TRACK_MS = 300
 const GAP = 12
 const MARGIN = 16
 const BUBBLE_MAX_W = 360
+/** The words' box's padding at its foot, room for a focus ring (CoachLayer.module.css). */
+const WORDS_PAD = 4
+/** How far an arrow key scrolls the words, and a page key's share of their box: a browser's. */
+const LINE_PX = 40
+const PAGE_SHARE = 0.875
 const FOCUSABLE =
   'button:not([disabled]), a[href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])'
 
@@ -182,6 +193,26 @@ function footFloor(): number {
 const clamp = (value: number, low: number, high: number): number =>
   Math.min(Math.max(value, low), Math.max(low, high))
 
+/** How far each key that scrolls a box moves it, given its page. */
+const SCROLL_KEYS: Partial<Record<string, (page: number) => number>> = {
+  ArrowDown: () => LINE_PX,
+  ArrowUp: () => -LINE_PX,
+  PageDown: (page) => page,
+  PageUp: (page) => -page,
+  End: () => Infinity,
+  Home: () => -Infinity,
+}
+
+/** Where the event's key scrolls `box` to, as a browser scrolls one; null for a key that scrolls nothing. */
+function scrolledTop(event: KeyboardEvent, box: HTMLElement): number | null {
+  const name =
+    event.key === ' ' ? (event.shiftKey ? 'PageUp' : 'PageDown') : event.key
+  const by = SCROLL_KEYS[name]
+  if (by === undefined) return null
+  const top = box.scrollTop + by(box.clientHeight * PAGE_SHARE)
+  return clamp(top, 0, box.scrollHeight - box.clientHeight)
+}
+
 /** Where a wide screen's bubble of `size` stands beside `ring`: below, above, then a side. */
 function besideRing(ring: Box, size: { w: number; h: number }): Box {
   const vw = window.innerWidth
@@ -225,7 +256,11 @@ export function CoachLayer(props: CoachLayerProps): JSX.Element {
   const [handoff, setHandoff] = createSignal<CoachHandoff | null>(null)
   // What the step on screen runs (Merc singing), while it runs.
   const [run, setRun] = createSignal<CoachStepRun | null>(null)
+  // Some of the words are below the foot of their box.
+  const [more, setMore] = createSignal(false)
   let bubble: HTMLDivElement | undefined
+  // The step's words, in the box that scrolls them when they do not fit.
+  let words: HTMLDivElement | undefined
   // The element under the ring, for Tab into it and Shift+Tab back.
   let ringed: HTMLElement | null = null
   const tone = createHoldTone()
@@ -240,6 +275,27 @@ export function CoachLayer(props: CoachLayerProps): JSX.Element {
     return at.waiting ? 'listen' : at.step.merc
   }
 
+  // The foot of the words' box past its padding: is there more under it?
+  const markMore = (): void => {
+    const box = words
+    setMore(
+      box !== undefined &&
+        box.scrollHeight - box.clientHeight - box.scrollTop > WORDS_PAD + 1,
+    )
+  }
+
+  // The words' box takes no focus of its own: its tabindex keeps a browser
+  // from making it a Tab stop, and a press on it focuses the bubble.
+  const wordsRef = (el: HTMLDivElement): void => {
+    words = el
+    el.addEventListener('scroll', markMore, { passive: true })
+    el.addEventListener('focus', () => bubble?.focus({ preventScroll: true }))
+    // A line the step adds (the note's, Merc's) can take them past it at once.
+    const grown = new MutationObserver(markMore)
+    grown.observe(el, { childList: true, subtree: true, characterData: true })
+    onCleanup(() => grown.disconnect())
+  }
+
   const measureBubble = (): void => {
     if (bubble === undefined) return
     const next = {
@@ -248,6 +304,7 @@ export function CoachLayer(props: CoachLayerProps): JSX.Element {
     }
     const last = untrack(size)
     if (next.w !== last.w || next.h !== last.h) setSize(next)
+    markMore()
   }
 
   // A do-step with nothing to ring leaves the bubble up for as long as the
@@ -305,6 +362,8 @@ export function CoachLayer(props: CoachLayerProps): JSX.Element {
         setStandIn(false)
         return
       }
+      // A step's words start at its title, wherever the last one's were.
+      if (words !== undefined) words.scrollTop = 0
       const scrolled = new Set<HTMLElement>()
       const track = (): void => {
         const found = sight(shown, scrolled)
@@ -349,6 +408,7 @@ export function CoachLayer(props: CoachLayerProps): JSX.Element {
         }
         setHandoff(next)
         focusBubble()
+        queueMicrotask(markMore)
       },
     ),
   )
@@ -395,6 +455,18 @@ export function CoachLayer(props: CoachLayerProps): JSX.Element {
     document.removeEventListener('keydown', tabBackToBubble, true),
   )
 
+  // From the bubble, a key that scrolls a box scrolls words that do not fit,
+  // as it scrolled the bubble when words and buttons scrolled together.
+  const scrollWords = (event: KeyboardEvent): boolean => {
+    const box = words
+    if (box === undefined || box.scrollHeight <= box.clientHeight) return false
+    const top = scrolledTop(event, box)
+    if (top === null) return false
+    event.preventDefault()
+    box.scrollTop = top
+    return true
+  }
+
   const onKey = (event: KeyboardEvent): void => {
     // Inside the bubble, no key reaches the app's shortcuts on the window.
     event.stopPropagation()
@@ -407,6 +479,7 @@ export function CoachLayer(props: CoachLayerProps): JSX.Element {
       end()
       return
     }
+    if (event.target === bubble && scrollWords(event)) return
     const at = snapshot()
     if (at === null) return
     // Enter on a button or the lesson link is theirs.
@@ -454,6 +527,7 @@ export function CoachLayer(props: CoachLayerProps): JSX.Element {
           data-place={place()}
           data-corner={corner()}
           data-pose={pose()}
+          data-more={more() ? '' : undefined}
           style={bubbleStyle()}
           role="dialog"
           aria-labelledby="coach-title"
@@ -482,6 +556,7 @@ export function CoachLayer(props: CoachLayerProps): JSX.Element {
               <Show when={snapshot()}>
                 {(at) => (
                   <StepCard
+                    words={wordsRef}
                     at={at}
                     body={body}
                     said={() => run()?.said() ?? ''}
@@ -495,6 +570,7 @@ export function CoachLayer(props: CoachLayerProps): JSX.Element {
           >
             {(next) => (
               <HandoffCard
+                words={wordsRef}
                 handoff={next()}
                 onLater={() => props.onClose()}
                 onGo={go}
@@ -514,6 +590,8 @@ export function forwardLabel(at: CoachSnapshot): string {
 }
 
 interface StepCardProps {
+  /** Takes the words' box, which scrolls them when they do not fit. */
+  words: (el: HTMLDivElement) => void
   at: () => CoachSnapshot
   /** The step's body, or its unseen line while its target is not on screen. */
   body: () => string
@@ -552,7 +630,7 @@ function StepCard(props: StepCardProps): JSX.Element {
   }
   return (
     <>
-      <div class={styles.content}>
+      <div ref={props.words} class={styles.content} tabindex="-1">
         <div aria-live="polite">
           <h2 id="coach-title" class={styles.title}>
             {step().title}
@@ -670,6 +748,8 @@ function ToneButton(props: { tone: HoldTone }): JSX.Element {
 }
 
 interface HandoffCardProps {
+  /** Takes the words' box, as StepCard's does. */
+  words: (el: HTMLDivElement) => void
   handoff: CoachHandoff
   onLater: () => void
   onGo: () => void
@@ -679,7 +759,12 @@ interface HandoffCardProps {
 function HandoffCard(props: HandoffCardProps): JSX.Element {
   return (
     <>
-      <div class={styles.content} aria-live="polite">
+      <div
+        ref={props.words}
+        class={styles.content}
+        tabindex="-1"
+        aria-live="polite"
+      >
         <h2 id="coach-title" class={styles.title}>
           {props.handoff.title}
         </h2>

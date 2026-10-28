@@ -33,6 +33,12 @@
 // button names it and is lit, Merc sings, a line says so), and once it has
 // played a line says how to hear it, so a muted speaker still shows it.
 //
+// On a small phone (320x568, touch) the bubble is capped at 45dvh, and the
+// Sing tour's words outgrow it: at the note stop once the note has played,
+// at the last stop, and in Show me more. The words scroll there, their foot
+// faded, and the buttons, the count and End tour stay whole inside the
+// bubble and on top at their middles; Play the note is still a Tab away.
+//
 // Last, the tab chip in a room that fills the window: on Piano at 1440x900
 // the chip floats over the room's free corner (tour-chip-floats.spec.ts
 // holds every tab to that), so its keyboard stays on screen, the content
@@ -364,6 +370,138 @@ test("the Sing tour's Play the note shows the note playing after a tap, at 1440x
   ).not.toHaveAttribute('data-playing')
   await expect(bubble).toHaveAttribute('data-pose', 'listen')
   await expect(line).toContainText('Heard nothing?')
+})
+
+/**
+ * What keeps the bubble's controls from a finger: each named button, End
+ * tour and the count, not whole inside the bubble, or not what lies under
+ * its own middle. Empty when every one is in view and on top.
+ */
+async function controlsOutOfView(
+  page: Page,
+  names: readonly string[],
+): Promise<string[]> {
+  return page.evaluate((wanted) => {
+    const bubble = document.querySelector('[data-testid="coach-bubble"]')
+    if (bubble === null) return ['no bubble']
+    const frame = bubble.getBoundingClientRect()
+    const nameOf = (el: Element): string =>
+      (el.getAttribute('aria-label') ?? el.textContent ?? '').trim()
+    const count = [...bubble.querySelectorAll('span')].find((el) =>
+      /^\d+ of \d+$/.test((el.textContent ?? '').trim()),
+    )
+    const found: [string, Element | undefined][] = [
+      ...wanted.map((name): [string, Element | undefined] => [
+        name,
+        [...bubble.querySelectorAll('button')].find(
+          (el) => nameOf(el) === name,
+        ),
+      ]),
+      ['the count', count],
+    ]
+    const problems: string[] = []
+    for (const [name, el] of found) {
+      if (el === undefined) {
+        problems.push(`${name}: not there`)
+        continue
+      }
+      const r = el.getBoundingClientRect()
+      if (
+        r.top < frame.top - 0.5 ||
+        r.bottom > frame.bottom + 0.5 ||
+        r.left < frame.left - 0.5 ||
+        r.right > frame.right + 0.5
+      ) {
+        problems.push(
+          `${name}: ${Math.round(r.top)} to ${Math.round(r.bottom)}, the bubble ${Math.round(frame.top)} to ${Math.round(frame.bottom)}`,
+        )
+      }
+      const under = document.elementFromPoint(
+        r.left + r.width / 2,
+        r.top + r.height / 2,
+      )
+      if (under === null || !el.contains(under)) {
+        problems.push(`${name}: covered at its middle`)
+      }
+    }
+    return problems
+  }, names)
+}
+
+test.describe('on a small phone', () => {
+  test.use({
+    viewport: { width: 320, height: 568 },
+    isMobile: true,
+    hasTouch: true,
+  })
+
+  test("the Sing tour's words scroll under its buttons, which stay whole and on top, at 320x568", async ({
+    page,
+  }) => {
+    test.setTimeout(90_000)
+    await seedFirstVisit(page)
+    await SING.open(page)
+    const chip = page.getByTestId('tour-chip')
+    await expect(chip).toBeVisible({ timeout: 20_000 })
+    await chip.getByRole('button', { name: SING.chip }).tap()
+    const bubble = page.getByTestId('coach-bubble')
+    const words = bubble.locator('[tabindex="-1"]').filter({
+      has: page.locator('#coach-title'),
+    })
+    await expect(bubble).toContainText('1 of 4', { timeout: 15_000 })
+    await bubble.getByRole('button', { name: 'Skip this step' }).tap()
+    await expect(bubble).toContainText('2 of 4')
+
+    // The note stop, once the note has played and the line on how to hear
+    // it has pushed the words past the bubble's cap.
+    await bubble.getByRole('button', { name: 'Play the note' }).tap()
+    await expect(bubble.getByTestId('coach-tone-line')).toContainText(
+      'Heard nothing?',
+      { timeout: 10_000 },
+    )
+    await expect
+      .poll(() =>
+        controlsOutOfView(page, ['End tour', 'Back', 'Skip this step']),
+      )
+      .toEqual([])
+    expect(
+      await words.evaluate((el) => el.scrollHeight > el.clientHeight),
+      'the words fit: the case no longer tests a scroll',
+    ).toBe(true)
+    await expect(bubble).toHaveAttribute('data-more', '')
+    // Play the note, under the fold now, is a Tab away and comes into view.
+    await bubble.getByRole('button', { name: 'End tour' }).focus()
+    await page.keyboard.press('Tab')
+    const play = bubble.getByRole('button', { name: 'Play the note' })
+    await expect(play).toBeFocused()
+    await expect
+      .poll(async () => {
+        const held = await words.boundingBox()
+        const shown = await play.boundingBox()
+        return held !== null && shown !== null && inside(shown, held)
+      })
+      .toBe(true)
+
+    await bubble.getByRole('button', { name: 'Skip this step' }).tap()
+    await expect(bubble).toContainText('3 of 4')
+    await bubble.getByRole('button', { name: 'Next' }).tap()
+    await expect(bubble).toContainText('4 of 4')
+
+    // The last stop, its lesson link and a second row of buttons.
+    await expect
+      .poll(() =>
+        controlsOutOfView(page, ['End tour', 'Back', 'Show me more', 'Done']),
+      )
+      .toEqual([])
+
+    await bubble.getByRole('button', { name: 'Show me more' }).tap()
+    await expect(page.getByTestId('coach-said')).toContainText('Round 1 of 2', {
+      timeout: 15_000,
+    })
+    await expect
+      .poll(() => controlsOutOfView(page, ['End tour', 'Done']))
+      .toEqual([])
+  })
 })
 
 test('the tab chip floats clear of Piano and its keyboard, at 1440x900 @smoke', async ({
