@@ -1,13 +1,82 @@
 // Studio seek while playing — a press on the ruler moves the playing song there at once, with no dip, no gap and no sources left behind.
 import { expect, test } from '@playwright/test'
 import { openArrangement, setStudioZoom, studioRegion, } from './helpers/dedicatedstudio-fixture'
+import type { StudioCapture, StudioClickStamp, } from './helpers/studio-output-capture'
 import { audioClock, captureOutput, captureStudioOutput, clearClicks, importWav, liveSources, noiseWav, readClicks, readSeek, twoPartWav, untilAudioClock, } from './helpers/studio-output-capture'
 
 // At 20 pixels a second the ruler shows the whole 40 second song.
 const ZOOM = 20
 
+/**
+ * A capture as captureOutput returns one: 330 Hz until 50 ms after the
+ * click, then 990 Hz, with `gapMs` of silence between them.
+ */
+function syntheticSeek(
+  sampleRate: number,
+  gapMs: number,
+): { capture: StudioCapture; click: StudioClickStamp } {
+  const startFrame = 100_000
+  const clickIndex = 9600
+  const switchIndex = clickIndex + Math.round(0.05 * sampleRate)
+  const resumeIndex = switchIndex + Math.round((gapMs / 1000) * sampleRate)
+  const samples = Float32Array.from({ length: 32768 }, (_, index) => {
+    if (index >= switchIndex && index < resumeIndex) return 0
+    const hz = index < switchIndex ? 330 : 990
+    return 0.1 * Math.sin((2 * Math.PI * hz * index) / sampleRate)
+  })
+  const contextTime = (startFrame + clickIndex) / sampleRate
+  return {
+    capture: { sampleRate, startFrame, samples },
+    click: {
+      kind: 'down',
+      performanceMs: 0,
+      contextTime,
+      outputContextTime: contextTime,
+      outputPerformanceMs: 0,
+      baseLatency: 0.01,
+      outputLatency: 0,
+    },
+  }
+}
+
 test.describe('Studio seek while playing', () => {
   test.use({ viewport: { width: 1440, height: 900 } })
+
+  // A machine with no sound card, such as the CI runner, plays at 44.1 kHz,
+  // where a millisecond is not a whole number of frames. The reader once
+  // found no tone there and read every level as NaN, so its dip and silence
+  // passed on nothing. No browser: this checks the reader itself.
+  test('reads a seek the same at 44.1 and 48 kHz, and reads a broken one as broken', () => {
+    for (const rate of [44100, 48000]) {
+      const clean = syntheticSeek(rate, 0)
+      const heard = readSeek(clean.capture, clean.click, 990, 300)
+      expect(heard.beforeDb).toBeCloseTo(-23, 0)
+      expect(heard.afterDb).toBeCloseTo(-23, 0)
+      expect(heard.dipDb['30']).toBeLessThan(0.5)
+      expect(heard.silentMs).toBe(0)
+      // Timed to a quarter millisecond in 5 ms windows: within a millisecond.
+      expect(Math.abs(heard.clickToSoundMs! - 50)).toBeLessThan(1)
+
+      const gap = syntheticSeek(rate, 20)
+      const broken = readSeek(gap.capture, gap.click, 990, 300)
+      expect(broken.silentMs).toBeGreaterThan(10)
+      expect(broken.dipDb['10']).toBeGreaterThan(40)
+      expect(Math.abs(broken.clickToSoundMs! - 70)).toBeLessThan(1)
+
+      // A capture that misses the click, or holds no level, is no reading.
+      const late = {
+        ...clean.capture,
+        startFrame: clean.capture.startFrame + 9600,
+      }
+      expect(() => readSeek(late, clean.click, 990, 300)).toThrow(
+        'does not hold the click',
+      )
+      const silent = { ...clean.capture, samples: new Float32Array(32768) }
+      expect(() => readSeek(silent, clean.click, 990, 300)).toThrow(
+        'holds no level',
+      )
+    }
+  })
 
   test('a press on the ruler moves a playing song there at once with no dip or gap, and fifty more leave no sources behind @smoke', async ({
     page,

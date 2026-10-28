@@ -250,7 +250,7 @@ export async function liveSources(
 
 const db = (power: number) => (power > 0 ? 10 * Math.log10(power) : -120)
 
-/** Mean power over each window of `windowFrames`, stepping by `stepFrames`. */
+/** Mean power over each window of `windowFrames`, stepping by `stepFrames`: both whole frames. */
 function powerTrace(
   capture: StudioCapture,
   windowFrames: number,
@@ -266,7 +266,7 @@ function powerTrace(
   return trace
 }
 
-/** Amplitude of one frequency over `windowFrames` from `at` (Goertzel). */
+/** Amplitude of one frequency over `windowFrames` from `at` (Goertzel), both whole frames. */
 function toneAmplitude(
   capture: StudioCapture,
   at: number,
@@ -310,6 +310,13 @@ export interface SeekReading {
  * Read one seek from a capture: the click's audio-clock stamp, a tone only
  * the new position plays, and the level before the click against the level
  * from `settleMs` after it. Windows step every millisecond.
+ *
+ * Every window, step and position is a whole frame. A millisecond is 48
+ * frames at 48 kHz but 44.1 at 44.1 kHz, the rate of a machine with no
+ * sound card, such as the CI runner: there, fractional positions read
+ * samples that do not exist, every power came out NaN, the dip and silence
+ * read zero and no tone was found. A capture that does not hold the click
+ * and the settled level, or that reads as no level at all, throws.
  */
 export function readSeek(
   capture: StudioCapture,
@@ -317,63 +324,80 @@ export function readSeek(
   newHz: number,
   settleMs: number,
 ): SeekReading {
-  const ms = capture.sampleRate / 1000
+  const frames = (milliseconds: number) =>
+    Math.max(1, Math.round((milliseconds * capture.sampleRate) / 1000))
+  const toMs = (count: number) => (count * 1000) / capture.sampleRate
+  const step = frames(1)
   const clickFrame = Math.round(click.contextTime * capture.sampleRate)
+  const settledFrame = clickFrame + frames(settleMs)
+  const settledAt = settledFrame - capture.startFrame
+  if (
+    clickFrame - frames(30) < capture.startFrame ||
+    settledAt + frames(30) > capture.samples.length
+  )
+    throw new Error(
+      'The capture does not hold the click and the settled level after it.',
+    )
   const median = (values: number[]) =>
     [...values].sort((a, b) => a - b)[Math.floor(values.length / 2)] ?? 0
-  const trace5 = powerTrace(capture, 5 * ms, ms)
+  const trace5 = powerTrace(capture, frames(5), step)
   const beforeDb = db(
     median(
       trace5
-        .filter(({ frame }) => frame < clickFrame - 5 * ms)
+        .filter(({ frame }) => frame < clickFrame - frames(5))
         .map(({ power }) => power),
     ),
   )
   const afterDb = db(
     median(
       trace5
-        .filter(({ frame }) => frame >= clickFrame + settleMs * ms)
+        .filter(({ frame }) => frame >= settledFrame)
         .map(({ power }) => power),
     ),
   )
+  if (
+    !Number.isFinite(beforeDb + afterDb) ||
+    Math.min(beforeDb, afterDb) <= -120
+  )
+    throw new Error('The capture holds no level to read a seek from.')
   const floor = Math.min(beforeDb, afterDb)
-  const settledFrame = clickFrame + settleMs * ms
   const dip = (windowMs: number) => {
-    const windows = powerTrace(capture, windowMs * ms, ms)
+    const windowFrames = frames(windowMs)
+    const windows = powerTrace(capture, windowFrames, step)
     const quietest = (keep: (frame: number) => boolean) =>
       Math.min(
         ...windows.filter(({ frame }) => keep(frame)).map(({ power }) => power),
       )
     const steady = Math.min(
-      quietest((frame) => frame + windowMs * ms <= clickFrame),
+      quietest((frame) => frame + windowFrames <= clickFrame),
       quietest((frame) => frame >= settledFrame),
     )
     const around = quietest(
-      (frame) => frame + windowMs * ms > clickFrame && frame < settledFrame,
+      (frame) => frame + windowFrames > clickFrame && frame < settledFrame,
     )
     return Math.max(0, db(steady) - db(around))
   }
-  let silentMs = 0
+  let silentSteps = 0
   let run = 0
   for (const { frame, power } of trace5) {
-    if (frame < clickFrame || frame >= clickFrame + settleMs * ms) continue
+    if (frame < clickFrame || frame >= settledFrame) continue
     run = db(power) <= floor - 40 ? run + 1 : 0
-    silentMs = Math.max(silentMs, run)
+    silentSteps = Math.max(silentSteps, run)
   }
   // The new tone's settled amplitude, then the first 5 ms window holding half
   // of it: by then half the window holds the new tone, so time its middle.
-  const windowFrames = 5 * ms
-  const settledAt = clickFrame + settleMs * ms - capture.startFrame
-  const target = toneAmplitude(capture, settledAt, 20 * ms, newHz)
+  const windowFrames = frames(5)
+  const target = toneAmplitude(capture, settledAt, frames(20), newHz)
   let clickToSoundMs: number | null = null
   for (
-    let at = Math.max(0, clickFrame - capture.startFrame);
+    let at = clickFrame - capture.startFrame;
     at + windowFrames < settledAt;
-    at += ms / 4
+    at += frames(0.25)
   ) {
     if (toneAmplitude(capture, at, windowFrames, newHz) >= target / 2) {
-      clickToSoundMs =
-        (capture.startFrame + at + windowFrames / 2 - clickFrame) / ms
+      clickToSoundMs = toMs(
+        capture.startFrame + at + windowFrames / 2 - clickFrame,
+      )
       break
     }
   }
@@ -381,7 +405,7 @@ export function readSeek(
     beforeDb,
     afterDb,
     dipDb: { '5': dip(5), '10': dip(10), '30': dip(30) },
-    silentMs,
+    silentMs: toMs(silentSteps * step),
     clickToSoundMs,
     outputPathMs:
       (click.contextTime -
