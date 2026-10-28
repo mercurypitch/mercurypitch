@@ -451,6 +451,34 @@ const KARAOKE_STAGE_2 = [
     'cloud_view_onboarding_exit',
     "the Cloud offer from the native onboarding's Not now",
   ],
+  // The Ear Lab with Merc, on the same switch until the owner flips it
+  // (EAR_LAB_WITH_MERC, src/lib/native-build.ts): the tab and the drill
+  // room are one lazy chunk behind it (EarStage.tsx, EarLabPage.tsx), and
+  // the Ear rooms' row on its tab rides PREMIUM_EXERCISES. Crimson Pro,
+  // Merc's serif, is imported by that chunk alone and found by file name.
+  ['merc-bench', "the Ear Lab with Merc's tab"],
+  ['data-merc-room', "the Ear Lab with Merc's drill room"],
+  ["New here? Start with today's three.", "Merc's line on a first visit"],
+  [
+    'Nothing from this run is kept, and Today stays as it was.',
+    "the drill room's End the run",
+  ],
+  ['mercurypitch_ear_merc_today', "the day's moves, kept for its close"],
+  [
+    'The microphone is off for Mercury Pitch, so nothing started.',
+    "the drill room's refused microphone",
+  ],
+  ['ear-rooms-row', "the Ear Lab with Merc's Ear rooms row"],
+  [
+    /\/crimson-pro-latin-wght-normal-[\w-]{8}\.woff2$/u,
+    "Merc's serif (Crimson Pro)",
+  ],
+  // His stills there, imported by the chunk at the size it shows them:
+  // the coach's own live in the web's public/, which no native build lists.
+  [
+    /\/merc-(?:point|listen|celebrate)-[\w-]{8}\.webp$/u,
+    "Merc's stills in the Ear Lab with Merc",
+  ],
 ]
 
 /**

@@ -1,0 +1,108 @@
+/* The Ear rooms on the native Ear Lab tab: two cards a row, one line
+   each, the Premium tag by the heading. */
+
+.row {
+  display: grid;
+  gap: 10px;
+}
+
+.head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.title {
+  margin: 0;
+  font:
+    600 20px/1.1 'Crimson Pro Variable',
+    'Crimson Pro',
+    'Iowan Old Style',
+    Georgia,
+    serif;
+  color: #efe6d6;
+}
+
+.tag {
+  min-height: 22px;
+  display: inline-flex;
+  align-items: center;
+  padding: 0 8px;
+  border-radius: 6px;
+  border: 1px solid rgb(201 164 94 / 60%);
+  font:
+    600 11px/1 'Inter Variable',
+    'Inter',
+    sans-serif;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: #e7c67d;
+}
+
+.cards {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.card {
+  width: 100%;
+  min-height: 76px;
+  box-sizing: border-box;
+  padding: 10px 12px;
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  text-align: left;
+  border-radius: 16px;
+  border: 1px solid rgb(239 230 214 / 14%);
+  background: rgb(20 23 28 / 90%);
+  color: #efe6d6;
+  font-family: inherit;
+  cursor: pointer;
+}
+
+.card:focus-visible {
+  outline: 2px solid #e7c67d;
+  outline-offset: 2px;
+}
+
+.art {
+  flex: none;
+  width: 34px;
+  height: 34px;
+  display: grid;
+  place-items: center;
+  border-radius: 10px;
+  background: rgb(239 230 214 / 7%);
+}
+
+.art :global(svg) {
+  width: 22px;
+  height: 22px;
+}
+
+.text {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+
+.name {
+  font:
+    600 15px/1.1 'Inter Variable',
+    'Inter',
+    sans-serif;
+}
+
+.line {
+  font:
+    400 13px/1.3 'Inter Variable',
+    'Inter',
+    sans-serif;
+  color: #b9b1a4;
+}
