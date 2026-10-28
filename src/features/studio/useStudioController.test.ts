@@ -6,6 +6,7 @@ import type { StudioAssetInfo } from '@/lib/studio/audio/prepare-studio-asset'
 import { studioReservedMemoryBytes } from '@/lib/studio/memory-budget'
 import { createStudioProject } from '@/lib/studio/model/defaults'
 import type { StudioAssetData, StudioProject } from '@/lib/studio/model/types'
+import type { StudioBackupTarget } from './backup/backup-target'
 import { controllerServiceFixture, preparedFixture, } from './controller/controller.fixture'
 import type { StudioSourceEntry } from './integration/source-catalog'
 import type { StudioController, StudioControllerOptions, } from './useStudioController'
@@ -406,10 +407,10 @@ describe('Studio controller', () => {
   })
 
   it('retains failed audio imports and subsequent edits for backup and retry', async () => {
-    const createBackup = vi.fn(async () => new Blob(['backup']))
+    const writeBackup = vi.fn(async () => undefined)
     const { controller, service } = mount({
       prepareFile: async (_blob, info) => preparedFixture(info),
-      createBackup,
+      writeBackup,
     })
     await controller.open('one')
     vi.mocked(service.saveProject).mockRejectedValueOnce(
@@ -426,10 +427,20 @@ describe('Studio controller', () => {
     expect(service.saveProject).toHaveBeenCalledTimes(1)
     await controller.open('two')
     expect(controller.project()?.id).toBe('one')
-    expect(await controller.backup()).toBeInstanceOf(Blob)
-    expect(createBackup).toHaveBeenCalledWith(
+    const target = {
+      kind: 'download',
+      name: 'Unsaved title.mpstudio',
+      keepMs: 0,
+      reserve: vi.fn(),
+      write: vi.fn(),
+      close: vi.fn(),
+      discard: vi.fn(),
+    } satisfies StudioBackupTarget
+    expect(await controller.backup(target)).toBe(true)
+    expect(writeBackup).toHaveBeenCalledWith(
       expect.objectContaining({ title: 'Unsaved title', revision: 2 }),
       expect.any(Function),
+      target,
       expect.objectContaining({
         preparedAssets: [
           expect.objectContaining({

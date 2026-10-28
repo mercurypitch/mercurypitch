@@ -33,6 +33,11 @@ function audioFixture(durationSeconds = 1, frequency = 220): Buffer {
 async function openStudio(page: Page, direct = false): Promise<void> {
   await page.addInitScript(() => {
     ;(window as unknown as { E2E_TEST_MODE?: boolean }).E2E_TEST_MODE = true
+    // Headless Chromium has a save picker that cancels at once. This suite
+    // saves its backup as browsers without one do: as a download.
+    ;(
+      window as unknown as { showSaveFilePicker?: unknown }
+    ).showSaveFilePicker = undefined
   })
   await page.goto(direct ? '/studio-night' : '/')
   await waitForNav(page, 30_000)
