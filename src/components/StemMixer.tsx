@@ -2403,6 +2403,10 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
       hasNotes: () =>
         pitchAnalysis.offlineSegmentedNotes().length > 0 ||
         pitchAnalysis.offlineMergedNotes().length > 0,
+      canFindNotes: () => canFindZenNotes(),
+      findNotes: () => ensureZenNotes(),
+      findingNotes: pitchAnalysis.isAnalyzing,
+      notesProgress: pitchAnalysis.progress,
       musicLevel: audio.musicLevel,
       play: () => audio.handlePlay(),
       pause: () => audio.handlePause(),

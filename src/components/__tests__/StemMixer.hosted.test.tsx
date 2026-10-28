@@ -242,6 +242,10 @@ describe('the mixer the Karaoke room hosts', () => {
     })
     expect(controls()!.playing()).toBe(false)
     expect(controls()!.hasNotes()).toBe(false)
+    // No read running, and none asked for: the room starts one on the tap.
+    expect(controls()!.findingNotes()).toBe(false)
+    expect(controls()!.notesProgress()).toBe(0)
+    expect(typeof controls()!.findNotes).toBe('function')
   })
 
   it('hands the room the guide vocal, and takes it back after a park', async () => {
@@ -275,6 +279,8 @@ describe('the mixer the Karaoke room hosts', () => {
     await waitFor(() => {
       expect(controls()?.hasNotes()).toBe(true)
     })
+    // A song with its notes has nothing left to read.
+    expect(controls()?.canFindNotes()).toBe(false)
   })
 
   it("hands the key to the room's options, and keeps it off the stage", async () => {

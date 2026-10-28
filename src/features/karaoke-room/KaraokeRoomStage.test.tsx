@@ -44,6 +44,13 @@ interface FakeMixer {
   /** The singer moving the sing pill. */
   setGuideLevel: Setter<GuideLevel>
   setHasNotes: Setter<boolean>
+  /** The song's vocal can be read for its notes now. */
+  setCanFindNotes: Setter<boolean>
+  /** A read of the notes running, as the mixer reports it. */
+  setFindingNotes: Setter<boolean>
+  setNotesProgress: Setter<number>
+  /** The room asking the mixer to read the notes. */
+  findNotes: Mock
   setMusicLevel: Setter<number>
   /** The line being sung and the next, as the stage has them. */
   setLyricGlance: Setter<LyricGlance>
@@ -104,6 +111,9 @@ vi.mock('@/components/StemMixer', async () => {
         setClockStarts((count) => count + 1)
       }
       const [hasNotes, setHasNotes] = createSignal(true)
+      const [canFindNotes, setCanFindNotes] = createSignal(false)
+      const [findingNotes, setFindingNotes] = createSignal(false)
+      const [notesProgress, setNotesProgress] = createSignal(0)
       const [musicLevel, setMusicLevel] = createSignal(0.7)
       const [lyricGlance, setLyricGlance] = createSignal<LyricGlance>({
         current: null,
@@ -148,6 +158,10 @@ vi.mock('@/components/StemMixer', async () => {
         setLoadError,
         setGuideLevel,
         setHasNotes,
+        setCanFindNotes,
+        setFindingNotes,
+        setNotesProgress,
+        findNotes: vi.fn(() => setFindingNotes(true)),
         setMusicLevel,
         setLyricGlance,
         setMicOn,
@@ -185,6 +199,10 @@ vi.mock('@/components/StemMixer', async () => {
           speed,
           duration,
           hasNotes,
+          canFindNotes,
+          findNotes: mixer.findNotes,
+          findingNotes,
+          notesProgress,
           musicLevel,
           play: mixer.play,
           pause: mixer.pause,
@@ -1601,17 +1619,67 @@ describe('the Karaoke options', () => {
     expect(localStorage.getItem('sm-zen-lyrics-size')).toBe('bigger')
   })
 
-  it('offer the notes only for a song that has them', async () => {
+  it('switch the notes of a song that has them', async () => {
     await mountRoom()
     const sheet = await openOptions()
     const notes = switchNamed(sheet, 'Show notes over the lyrics')
     expect(notes.getAttribute('aria-checked')).toBe('false')
+    expect(within(sheet).getByText('This song has its notes')).toBeTruthy()
 
     fireEvent.click(notes)
     expect(karaokeNoteGlyphs()).toBe(true)
     expect(current().hosted.stage.noteGlyphs()).toBe(true)
+    expect(current().findNotes).not.toHaveBeenCalled()
+  })
 
+  it('read the notes of a song without them when they are turned on', async () => {
+    await mountRoom()
+    current().setLoading(false)
     current().setHasNotes(false)
+    current().setCanFindNotes(true)
+    const sheet = await openOptions()
+    const notes = switchNamed(sheet, 'Show notes over the lyrics')
+    expect(notes.getAttribute('aria-checked')).toBe('false')
+    expect(
+      within(sheet).getByText('Turning this on reads them from the vocal'),
+    ).toBeTruthy()
+
+    fireEvent.click(notes)
+
+    expect(current().findNotes).toHaveBeenCalledTimes(1)
+    expect(karaokeNoteGlyphs()).toBe(true)
+    expect(notes.getAttribute('aria-checked')).toBe('true')
+    current().setNotesProgress(40)
+    expect(
+      within(sheet).getByText('Reading the vocal to find the notes: 40%'),
+    ).toBeTruthy()
+  })
+
+  it('read the notes of a song still loading once it can be read', async () => {
+    await mountRoom()
+    current().setHasNotes(false)
+    const sheet = await openOptions()
+
+    fireEvent.click(switchNamed(sheet, 'Show notes over the lyrics'))
+    expect(current().findNotes).not.toHaveBeenCalled()
+    expect(
+      switchNamed(sheet, 'Show notes over the lyrics').getAttribute(
+        'aria-checked',
+      ),
+    ).toBe('true')
+
+    current().setLoading(false)
+    current().setCanFindNotes(true)
+
+    expect(current().findNotes).toHaveBeenCalledTimes(1)
+  })
+
+  it('offer no notes for a loaded song whose vocal cannot be read', async () => {
+    await mountRoom()
+    current().setLoading(false)
+    current().setHasNotes(false)
+    const sheet = await openOptions()
+
     expect(
       within(sheet).queryByRole('switch', {
         name: 'Show notes over the lyrics',
@@ -1836,10 +1904,36 @@ describe('the option pinned beside the gear', () => {
     expect(localStorage.getItem(KARAOKE_PINNED_KEY)).toBe('notes')
   })
 
-  it('draws no notes button for a song without notes', async () => {
+  it('reads the notes of a song without them, with a ring while it reads', async () => {
+    await mountRoom()
+    await choose('notes')
+    current().setLoading(false)
+    current().setHasNotes(false)
+    current().setCanFindNotes(true)
+
+    const pinned = controls().pinnedToggle?.()
+    expect(pinned).toMatchObject({ icon: 'notes', pressed: false })
+    expect(pinned?.progress).toBeUndefined()
+    pinned?.onToggle()
+
+    expect(current().findNotes).toHaveBeenCalledTimes(1)
+    current().setNotesProgress(30)
+    expect(controls().pinnedToggle?.()).toMatchObject({
+      pressed: true,
+      progress: 30,
+    })
+
+    current().setFindingNotes(false)
+    current().setHasNotes(true)
+    expect(controls().pinnedToggle?.()).toMatchObject({ pressed: true })
+    expect(controls().pinnedToggle?.()?.progress).toBeUndefined()
+  })
+
+  it('draws no notes button for a loaded song whose vocal cannot be read', async () => {
     await mountRoom()
     await choose('notes')
 
+    current().setLoading(false)
     current().setHasNotes(false)
 
     expect(controls().pinnedToggle?.() ?? null).toBeNull()

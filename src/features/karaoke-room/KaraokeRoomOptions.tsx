@@ -7,8 +7,11 @@
 // options are; the stage keeps only what is used mid-song. Opening the sheet
 // does not stop the song.
 //
-//   Lyrics   text size; the notes over the lyrics, only for a song that has
-//            them (K1: absent, never dead).
+//   Lyrics   text size; the notes over the lyrics, for a song that has them
+//            or can have them read from its vocal: turning them on for a
+//            song without them reads them, as turning the mic on does
+//            (owner, 28 Oct 2026). Absent only where no read can run (K1:
+//            absent, never dead).
 //   Playing  the next song by itself; the key, a step either way, back to
 //            the song's own and Find my key (the stage's landscape column
 //            has no room for it); the music level and its way back to
@@ -26,7 +29,7 @@ import { OptionSection, OptionsSheet } from '@/components/mobile/OptionsSheet'
 import { ZEN_LYRICS_SIZES } from '@/features/stem-mixer/zen-navigation'
 import styles from './karaoke-room.module.css'
 import type { KaraokePinned } from './karaoke-room-store'
-import { KARAOKE_LYRICS_SIZE_LABELS, karaokeLyricsSize, karaokeNoteGlyphs, karaokePinned, karaokePlayNext, setKaraokeLyricsSize, setKaraokeNoteGlyphs, setKaraokePinned, setKaraokePlayNext, } from './karaoke-room-store'
+import { KARAOKE_LYRICS_SIZE_LABELS, karaokeLyricsSize, karaokePinned, karaokePlayNext, setKaraokeLyricsSize, setKaraokePinned, setKaraokePlayNext, } from './karaoke-room-store'
 
 /** What each choice is called in the "Beside the gear" list. */
 const PINNED_CHOICES: ReadonlyArray<{ value: KaraokePinned; label: string }> = [
@@ -72,11 +75,35 @@ const Row: Component<{
   </div>
 )
 
+/** The notes over the lyrics, as the room has them for the song on stage. */
+export interface KaraokeNotesOption {
+  /** The song has its notes, or a read can give it them. */
+  offered: () => boolean
+  /** The notes are on screen, or on their way. */
+  on: () => boolean
+  /** The song has its notes already. */
+  has: () => boolean
+  /** The notes are being read from the vocal. */
+  finding: () => boolean
+  /** How far the read has got, 0 to 100. */
+  progress: () => number
+  toggle: () => void
+}
+
+/** What the notes row says under its name. */
+export function notesRowSub(notes: KaraokeNotesOption): string {
+  if (notes.finding()) {
+    return `Reading the vocal to find the notes: ${Math.round(notes.progress())}%`
+  }
+  if (notes.has()) return 'This song has its notes'
+  return 'Turning this on reads them from the vocal'
+}
+
 interface KaraokeRoomOptionsProps {
   isOpen: boolean
   close: () => void
-  /** The song on the stage has its notes. */
-  hasNotes: () => boolean
+  /** The notes over the lyrics for the song on the stage. */
+  notes: KaraokeNotesOption
   /** The music level as a share of the shipped level, or null for none yet. */
   musicPercent: () => number | null
   onResetMusicLevel: () => void
@@ -137,15 +164,15 @@ export const KaraokeRoomOptions: Component<KaraokeRoomOptionsProps> = (
               </For>
             </span>
           </Row>
-          <Show when={props.hasNotes()}>
+          <Show when={props.notes.offered()}>
             <Row
               label="Show notes over the lyrics"
-              sub="This song has its notes"
+              sub={notesRowSub(props.notes)}
             >
               <Switch
-                on={karaokeNoteGlyphs()}
+                on={props.notes.on()}
                 label="Show notes over the lyrics"
-                onToggle={() => setKaraokeNoteGlyphs(!karaokeNoteGlyphs())}
+                onToggle={() => props.notes.toggle()}
               />
             </Row>
           </Show>
