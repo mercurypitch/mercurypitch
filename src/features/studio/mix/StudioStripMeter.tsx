@@ -1,12 +1,16 @@
-// Studio strip meter — a lane's level after its fader, drawn beside the fader in the master meter's segments.
+// Studio strip meter — a lane's level after its fader, drawn beside the fader on the fader's own dB marks, in the master meter's segments.
 //
 // The transport reads every lane's peak on the same tick as the master
 // meter, so this component runs no loop of its own: it redraws when the
 // level it is given changes. It is hidden from screen readers, which hear
 // the fader's own value; the numbers are in its title. With no level (the
 // song stopped, or the lane not built) it sits at the floor.
+//
+// Its 0 dBFS stands beside the fader's 0 dB mark and its floor beside the
+// -60 mark, so a level reads against the marks printed beside the fader.
 import { createMemo, createSignal, onCleanup, onMount, Show } from 'solid-js'
 import type { StudioLaneLevel } from '@/lib/studio/playback/transport'
+import { STUDIO_FADER_MAX_DB, STUDIO_FADER_MIN_DB, } from '../timeline/StudioTrackControls'
 import type { StripHold } from './strip-meter'
 import { amplitudeDb, reductionTravel, stepStripHold, stripHoldDb, stripMeterTitle, stripTravel, } from './strip-meter'
 import styles from './StudioStripMeter.module.css'
@@ -20,6 +24,11 @@ interface Props {
 
 /** The gap between the fader and the meter, in pixels. */
 const FADER_GAP = 6
+const FADER_RANGE_DB = STUDIO_FADER_MAX_DB - STUDIO_FADER_MIN_DB
+/** Where the fader's 0 dB mark sits on its travel, as a share from the top. */
+const ZERO_MARK = STUDIO_FADER_MAX_DB / FADER_RANGE_DB
+/** The share of the travel from the 0 dB mark down to the floor. */
+const FLOOR_SPAN = -STUDIO_FADER_MIN_DB / FADER_RANGE_DB
 
 const reducedMotion =
   typeof window !== 'undefined' && typeof window.matchMedia === 'function'
@@ -56,27 +65,29 @@ export function StudioStripMeter(props: Props) {
   const decibels = (db: number) =>
     Number.isFinite(db) ? db.toFixed(1) : '-inf'
 
-  // The strip lays the fader out; the meter follows its box, inside the
-  // cap's travel, so it never moves the strip's own controls.
+  // The strip lays the fader out; the meter follows the fader's box, from
+  // the 0 dB mark down the cap's travel, so it never moves the controls.
   onMount(() => {
-    const strip = meter.parentElement
-    const fader = strip?.querySelector<HTMLElement>('[data-studio-fader]')
-    if (!strip || !fader || typeof ResizeObserver === 'undefined') return
+    const host = meter.parentElement
+    const fader = host?.querySelector<HTMLElement>('[data-studio-fader]')
+    if (!host || !fader || typeof ResizeObserver === 'undefined') return
     const measure = () => {
-      const outer = strip.getBoundingClientRect()
+      const outer = host.getBoundingClientRect()
       const inner = fader.getBoundingClientRect()
       const cap =
         Number.parseFloat(
           window.getComputedStyle(fader).getPropertyValue('--cap'),
         ) || 0
+      const travel = Math.max(0, inner.height - cap)
       setBox({
-        top: inner.top - outer.top - strip.clientTop + cap / 2,
-        left: inner.right - outer.left - strip.clientLeft + FADER_GAP,
-        height: Math.max(0, inner.height - cap),
+        top:
+          inner.top - outer.top - host.clientTop + cap / 2 + travel * ZERO_MARK,
+        left: inner.right - outer.left - host.clientLeft + FADER_GAP,
+        height: travel * FLOOR_SPAN,
       })
     }
     const observer = new ResizeObserver(measure)
-    observer.observe(strip)
+    observer.observe(host)
     observer.observe(fader)
     onCleanup(() => observer.disconnect())
   })

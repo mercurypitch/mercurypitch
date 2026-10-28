@@ -3,6 +3,8 @@ import { cleanup, render } from '@solidjs/testing-library'
 import { createSignal } from 'solid-js'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import type { StudioLaneLevel } from '@/lib/studio/playback/transport'
+import { STUDIO_FADER_MIN_DB } from '../timeline/StudioTrackControls'
+import { STRIP_FLOOR_DB } from './strip-meter'
 import { StudioStripMeter } from './StudioStripMeter'
 
 afterEach(() => {
@@ -45,14 +47,18 @@ function mount(initial?: StudioLaneLevel) {
 }
 
 describe('Studio strip meter', () => {
-  it('stands beside the fader over the travel of its cap, out of the accessibility tree', () => {
+  it('stands beside the fader from its 0 dB mark to its -60 mark, out of the accessibility tree', () => {
     const { meter, observed, strip, fader } = mount()
     expect(meter).toHaveAttribute('aria-hidden', 'true')
     expect(observed).toEqual([strip, fader])
-    // 70 px below the strip's top plus half the cap; 6 px right of the fader.
-    expect(meter.style.top).toBe('77px')
+    // The cap's 186 px of travel spans the fader's +12 to -60 dB: the meter
+    // starts 12 dB (31 px) down it, 70 px below the strip's top plus half
+    // the cap, and runs the 60 dB (155 px) to the floor; 6 px right of it.
+    expect(meter.style.top).toBe('108px')
     expect(meter.style.left).toBe('81px')
-    expect(meter.style.height).toBe('186px')
+    expect(meter.style.height).toBe('155px')
+    // Its floor is the fader's lowest mark.
+    expect(STRIP_FLOOR_DB).toBe(STUDIO_FADER_MIN_DB)
   })
 
   it('draws the level after the fader and the gain reduction while the song plays, and the floor once it stops', () => {
