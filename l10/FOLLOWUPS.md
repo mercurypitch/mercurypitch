@@ -55,6 +55,10 @@
   - src/e2e/helpers/lesson-qa.ts measures the keyboard reach, live regions, 44 px targets and rest; Lesson 9's QA spec keeps its own copies of the same measures. A later tidy: move Lesson 9's onto the helper.
   - Lesson 10's browser specs are four files now (the reduced-motion one is learn-lesson-10-motion.spec.ts), each under 600 lines.
   - The builder used `cd` three times (no work changed); BUILDER-RULES already forbids it.
+- **After the merge (28 Oct; #1234 merged by rebase, main 98103c15c):**
+  - Docs that still say Lessons 9 and 10 have no page: MASTER-PLAN.md § 11 ("Lesson 8 has a page, `/learn/08`, a draft; 9 and 10 have none yet") and CURIOSITY-MOMENTS.md's Lesson 9 and 10 headings ("written; no page yet"). A lead docs commit in the next lesson PR, in the other lessons' heading form ("page built, a draft until ...", from `kit/drafts.ts`).
+  - The 0.9.24 polish PR merges second, so it removes `.l10-hero .gate .btn` once the kit's one-width gate button covers Lesson 10, runs its gate-width check on /learn/10 too, sees its lit primary button and sing card line fixes on Lesson 10's free play, Play the pattern, the ear games' Play and Sing it after Effortful, and measures Lessons 3, 4, 5 and 10 against their ceilings again (223, 745 and 775 B of script left on 3 to 5).
+  - The trail's 24 px links against the Contract's 44 px: asked of the owner on 28 Oct, with the PR merged.
 - **From run 4 (27 Oct, Sing it):**
   - The ring at 390 px: "Sing with the line · 6" wraps to three lines in the 128 px ring and the countdown falls below the circle (l10/page-4/shots/390x844-07-guide-mid-sweep.png); at 1440 "SING WITH THE" crosses the ring. The same words and CSS as Lesson 6's (a draft), so Lesson 6 shows it too. For the copy pass or the kit: a shorter turn line for the small ring, or the state line under the ring.
   - The ring's state words are Lesson 6's, not in Lesson 10's docs: "Listen", "Get ready", "Sing with the line · n", "Rest"; "Rest" also shows after Merc's notes, when the viewer's turn comes next. Copy pass.
