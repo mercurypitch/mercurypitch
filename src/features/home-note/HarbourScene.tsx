@@ -11,19 +11,40 @@
 // inside it is a voice the engine will land. A landed round lights the
 // lamp.
 //
-// Every shape here is a stand-in, drawn from the layout in flat colour, as
-// Ng slides' plates were before their paintings: the painting replaces the
-// backdrop group without touching the beam, the band or the trail, which
-// are the exercise. Placed from one measurement (harbour-layout.ts).
+// THE PAINTING. The harbour at dusk is painted (docs/plans/ear-rooms.md has
+// its prompt): an upright plate and its landscape twin under /ear-rooms/,
+// in the native app's own files. It shows once it has loaded, and the
+// drawing below stays as its stand-in until then, and for good where the
+// app does not carry it (the web, a build before the files land). Either
+// way the beam, the band of light, the trail and the lamp are drawn over
+// it: they are the exercise. The painting is pinned at the lamp, which the
+// plate puts at the layout's own place (84% across, 44% down), so however
+// a screen crops it, its lighthouse stands under the drawn lamp.
+//
+// The drawing: every shape a stand-in, drawn from the layout in flat
+// colour, as Ng slides' plates were before their paintings. Placed from one
+// measurement (harbour-layout.ts).
 //
 // The trail is drawn every frame of the turn, so it is not a signal: the
 // room hands its path and head to the controller's sink, which writes
 // them directly.
 
 import type { JSX } from 'solid-js'
-import { createMemo, For, onMount, Show } from 'solid-js'
+import { createMemo, createSignal, For, onMount, Show } from 'solid-js'
 import type { HarbourLayout } from './harbour-layout'
 import styles from './HarbourScene.module.css'
+
+/** The harbour's painting, upright and on its side, at the app's origin. */
+export interface HarbourArt {
+  readonly portrait: string
+  readonly landscape: string
+}
+
+/** Where the native app carries the painting, once it is made. */
+export const HARBOUR_ART: HarbourArt = {
+  portrait: '/ear-rooms/harbour-portrait.webp',
+  landscape: '/ear-rooms/harbour-landscape.webp',
+}
 
 export interface HarbourSceneProps {
   layout: HarbourLayout
@@ -39,6 +60,8 @@ export interface HarbourSceneProps {
   trailRef: (path: SVGPathElement, head: SVGCircleElement) => void
   /** Nothing moves (reduced motion, the fixtures). */
   still?: boolean
+  /** The painting; HARBOUR_ART by default, null for the drawing alone. */
+  art?: HarbourArt | null
 }
 
 /** A seeded spread of stars over the sky, the same on every visit. */
@@ -61,13 +84,26 @@ function stars(
 export function HarbourScene(props: HarbourSceneProps): JSX.Element {
   let trailEl: SVGPathElement | undefined
   let headEl: SVGCircleElement | undefined
+  let paintingEl: HTMLImageElement | undefined
+  /** The painting has loaded: it is the backdrop, and the drawing rests. */
+  const [painted, setPainted] = createSignal(false)
   onMount(() => {
     if (trailEl !== undefined && headEl !== undefined) {
       props.trailRef(trailEl, headEl)
     }
+    // A painting the page already held has loaded before its handler could
+    // hear it.
+    if (paintingEl?.complete === true && paintingEl.naturalWidth > 0) {
+      setPainted(true)
+    }
   })
+  const art = (): HarbourArt | null =>
+    props.art === undefined ? HARBOUR_ART : props.art
   const sky = createMemo(() => stars(props.layout.width, props.layout.height))
   const L = () => props.layout
+  /** The painting pinned at the lamp, as the layout places it. */
+  const pinnedAt = (): string =>
+    `${((L().lampX / L().width) * 100).toFixed(2)}% ${((L().beamY / L().height) * 100).toFixed(2)}%`
   /** The lighthouse: its tower, two bands, the gallery, the lantern room and its roof. */
   const lighthouse = () => {
     const { lampX, beamY, seaY, width } = L()
@@ -116,8 +152,10 @@ export function HarbourScene(props: HarbourSceneProps): JSX.Element {
         [styles.turn]: props.turn,
         [styles.lit]: props.lit,
         [styles.still]: props.still === true,
+        [styles.painted]: painted(),
       }}
       data-testid="home-note-scene"
+      data-art={painted() ? 'painting' : 'drawing'}
     >
       <svg
         class={styles.backdrop}
@@ -198,6 +236,30 @@ export function HarbourScene(props: HarbourSceneProps): JSX.Element {
           )}
         </For>
       </svg>
+
+      <Show when={art()}>
+        {(plate) => (
+          <picture class={styles.painting}>
+            <source
+              media="(orientation: landscape)"
+              srcset={plate().landscape}
+            />
+            <img
+              ref={paintingEl}
+              class={styles.paintingImage}
+              src={plate().portrait}
+              alt=""
+              aria-hidden="true"
+              draggable={false}
+              style={{ 'object-position': pinnedAt() }}
+              onLoad={() => setPainted(true)}
+              onError={() => setPainted(false)}
+              data-testid="home-note-painting"
+            />
+          </picture>
+        )}
+      </Show>
+      <div class={styles.paintingShade} aria-hidden="true" />
 
       {/* The exercise: home's band and beam, the trail, the lamp. */}
       <svg
