@@ -27,9 +27,18 @@ export interface StudioBackupTarget extends StudioArchiveSink {
 
 /** The folder in the origin private file system that holds backups on their way to downloads. */
 export const STUDIO_BACKUP_FOLDER = 'studio-backups'
-/** A private copy this old belongs to no download still running. */
-const STALE_MS = 10 * 60 * 1000
-const PRIVATE_KEEP_MS = 60_000
+/**
+ * How long a private copy stays once its download starts, and the age past
+ * which a sweep takes one a closed tab left. The browser reads the copy only
+ * as the download runs, and a copy gone before then fails it: a save dialog
+ * left open a while, or a slow phone, must not lose the backup.
+ *
+ * The cost: each backup that downloads keeps its copy, as large as the
+ * backup (at most the archive's 512 MiB), for these 10 minutes beside the
+ * downloaded file, counted against the site's storage quota that also holds
+ * the Studio's songs. Backups in a row each keep theirs that long.
+ */
+const PRIVATE_KEEP_MS = 10 * 60 * 1000
 const MEMORY_KEEP_MS = 10_000
 
 interface SavePickerOptions {
@@ -170,11 +179,29 @@ async function sweep(folder: FileSystemDirectoryHandle): Promise<void> {
     if (handle.kind !== 'file') continue
     try {
       const file = await (handle as FileSystemFileHandle).getFile()
-      if (Date.now() - file.lastModified > STALE_MS)
+      if (Date.now() - file.lastModified > PRIVATE_KEEP_MS)
         await folder.removeEntry(entry)
     } catch {
       // Another tab still writing it holds it; it is not stale.
     }
+  }
+}
+
+/**
+ * Sweep the private copies a closed tab left, when the Studio opens: a tab
+ * closed mid-backup leaves its copy until the next sweep. It makes no folder.
+ */
+export async function sweepStudioBackupCopies(): Promise<void> {
+  if (
+    typeof navigator === 'undefined' ||
+    typeof navigator.storage?.getDirectory !== 'function'
+  )
+    return
+  try {
+    const root = await navigator.storage.getDirectory()
+    await sweep(await root.getDirectoryHandle(STUDIO_BACKUP_FOLDER))
+  } catch {
+    // No folder yet, or no storage to look in: nothing was left.
   }
 }
 

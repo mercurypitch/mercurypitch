@@ -6,10 +6,11 @@ import type * as BackupTarget from './backup/backup-target'
 import type { StudioBackupTarget } from './backup/backup-target'
 import { StudioPage } from './StudioPage'
 
-const picker = vi.hoisted(() => ({ open: vi.fn() }))
+const picker = vi.hoisted(() => ({ open: vi.fn(), sweep: vi.fn() }))
 vi.mock('./backup/backup-target', async (importOriginal) => ({
   ...(await importOriginal<typeof BackupTarget>()),
   openStudioBackupTarget: picker.open,
+  sweepStudioBackupCopies: picker.sweep,
 }))
 const studio = vi.hoisted(() => ({ current: {} as Record<string, unknown> }))
 vi.mock('./useStudioController', () => ({
@@ -20,6 +21,7 @@ vi.mock('./StudioWorkspace', () => ({ StudioWorkspace: () => null }))
 afterEach(() => {
   cleanup()
   picker.open.mockReset()
+  picker.sweep.mockReset()
 })
 
 function song(id: string, title: string): StudioProjectSummary {
@@ -70,6 +72,11 @@ function mountPage(problem: string | null = null) {
 }
 
 describe('Studio page backups', () => {
+  it('sweeps private backup copies a closed tab left behind when the Studio opens', () => {
+    mountPage()
+    expect(picker.sweep).toHaveBeenCalledOnce()
+  })
+
   it('asks whether a song in the list can be backed up before the save picker opens, and opens none when it cannot', async () => {
     const controller = mountPage()
     controller.canBackup.mockReturnValue(false)
