@@ -9,7 +9,7 @@
 //     same level if none of it had sounded.
 //   - A replay at the reveal is listen-only where the drill says so, is
 //     held until its sound ends, and stops when the next question
-//     starts.
+//     starts, on Stop, and when the sound is taken away.
 //   - Ending mid-run keeps nothing: a rated run's answers are put back.
 // ============================================================
 
@@ -296,6 +296,134 @@ describe('a replay at the reveal', () => {
       await replayed
       expect(controller.replayAllowed()).toBe(true)
       expect(controller.answeredId()).toBe('not-it')
+      dispose()
+    })
+  })
+
+  // Pulse's and the Chart's replays end on a timer their silencing
+  // clears: once silenced, the replay itself never ends.
+  const endless = (): Promise<void> => new Promise<void>(() => undefined)
+
+  it('on a rated run, ends with Stop though its sound never does', async () => {
+    await createRoot(async (dispose) => {
+      const cancel = vi.fn()
+      const controller = useIdentificationController(
+        leap,
+        LEAP_BANK,
+        (picked) => ({
+          expectedId: picked.itemId,
+          play: async () => undefined,
+          replay: endless,
+        }),
+        { cancelAudio: cancel },
+      )
+      controller.start()
+      await settle()
+      controller.answer('not-it')
+      await settle()
+      void controller.replay()
+      expect(controller.replaying()).toBe(true)
+
+      controller.stop()
+      expect(cancel).toHaveBeenCalled()
+      expect(controller.phase()).toBe('done')
+      expect(controller.replaying()).toBe(false)
+      dispose()
+    })
+  })
+
+  it('on a rated run, stops when the sound is taken away, and the verdict stays', async () => {
+    await createRoot(async (dispose) => {
+      const cancel = vi.fn()
+      const silence = vi.fn()
+      let listens = 0
+      const controller = useIdentificationController(
+        leap,
+        LEAP_BANK,
+        (picked) => ({
+          expectedId: picked.itemId,
+          play: async () => undefined,
+          replay: () => {
+            listens += 1
+            return endless()
+          },
+        }),
+        { cancelAudio: cancel, silenceReplay: silence },
+      )
+      controller.start()
+      await settle()
+      controller.answer('not-it')
+      await settle()
+      void controller.replay()
+      expect(controller.replaying()).toBe(true)
+
+      controller.holdQuestion()
+      // Only the replay is silenced: the take and the reveal stay.
+      expect(silence).toHaveBeenCalledTimes(1)
+      expect(cancel).not.toHaveBeenCalled()
+      expect(controller.replaying()).toBe(false)
+      expect(controller.phase()).toBe('reveal')
+      expect(controller.answeredId()).toBe('not-it')
+      expect(controller.held()).toBe(false)
+      // Heard whole once the sound is back.
+      expect(controller.replayAllowed()).toBe(true)
+      void controller.replay()
+      expect(listens).toBe(2)
+      dispose()
+    })
+  })
+
+  it('on a staircase, ends with Stop though its sound never does', async () => {
+    await createRoot(async (dispose) => {
+      const cancel = vi.fn()
+      const run = useThresholdRun(
+        hairline,
+        (_level, api) => (api.replay ? endless() : Promise.resolve()),
+        { replayable: true, cancelStimulus: cancel },
+      )
+      run.start('practice')
+      await settle()
+      run.answerCorrect(true)
+      void run.replay()
+      expect(run.replaying()).toBe(true)
+
+      run.stop()
+      expect(cancel).toHaveBeenCalled()
+      expect(run.phase()).toBe('done')
+      expect(run.replaying()).toBe(false)
+      dispose()
+    })
+  })
+
+  it('on a staircase, stops when the sound is taken away, and plays whole again', async () => {
+    await createRoot(async (dispose) => {
+      const cancel = vi.fn()
+      const asked: Array<{ replay: boolean; cancelled: () => boolean }> = []
+      const run = useThresholdRun(
+        hairline,
+        (_level, api) => {
+          asked.push({ replay: api.replay, cancelled: api.cancelled })
+          return api.replay ? endless() : Promise.resolve()
+        },
+        { replayable: true, cancelStimulus: cancel },
+      )
+      run.start('practice')
+      await settle()
+      run.answerCorrect(true)
+      void run.replay()
+      expect(run.replaying()).toBe(true)
+
+      run.holdQuestion()
+      expect(cancel).toHaveBeenCalledTimes(1)
+      expect(run.replaying()).toBe(false)
+      // The replay's own loop is told to stop, not only its sound.
+      expect(asked[1]?.cancelled()).toBe(true)
+      expect(run.phase()).toBe('reveal')
+      expect(run.held()).toBe(false)
+      expect(run.replayAllowed()).toBe(true)
+      void run.replay()
+      expect(asked.map((call) => call.replay)).toEqual([false, true, true])
+      expect(asked[2]?.cancelled()).toBe(false)
       dispose()
     })
   })

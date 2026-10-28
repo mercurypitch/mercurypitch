@@ -225,7 +225,12 @@ export function SealedPlateView(props: {
       ? null
       : { index: before.index, on: dateLabel(before.at) }
   }
-  const tracks = () => tracksLine(props.plate.tracks ?? [], props.plate.format)
+  const tracks = () =>
+    tracksLine(
+      props.plate.tracks ?? [],
+      props.plate.format,
+      props.plate.unitShort.trim(),
+    )
   return (
     <>
       <section
@@ -255,9 +260,7 @@ export function SealedPlateView(props: {
           )}
         </Show>
         <p class={styles.stats}>
-          <Show when={tracks() !== ''}>
-            Tracks {tracks()} {props.plate.unitShort.trim()} ·{' '}
-          </Show>
+          <Show when={tracks() !== ''}>Tracks {tracks()} · </Show>
           {props.plate.trials} questions
         </p>
         <p class={styles.small}>{SEALED_SMALL_PRINT}</p>

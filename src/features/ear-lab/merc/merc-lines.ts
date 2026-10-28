@@ -150,16 +150,20 @@ export function modeWords(
 }
 
 /** A seal's tracks on its plate, each by its letter in track order: "A
- *  9.4 · B 10.2 · C 9.9", and a track that found no threshold said so
- *  in its place rather than closing the gap. */
+ *  9.4 dB · B 10.2 dB · C 9.9 dB", and a track that found no threshold
+ *  said so in its place rather than closing the gap. Nothing when no
+ *  track found one. */
 export function tracksLine(
   values: ReadonlyArray<number | null>,
   format: (value: number) => string,
+  unit: string,
 ): string {
+  if (values.every((value) => value === null)) return ''
+  const after = unit === '' ? '' : ` ${unit}`
   return values
     .map((value, i) => {
       const letter = String.fromCharCode(65 + i)
-      return `${letter} ${value === null ? 'no reading' : format(value)}`
+      return `${letter} ${value === null ? 'no reading' : `${format(value)}${after}`}`
     })
     .join(' · ')
 }

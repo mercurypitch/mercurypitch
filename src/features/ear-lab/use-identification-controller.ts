@@ -22,8 +22,8 @@
 // Hear it again after the answer sounds the prompt to listen to: the
 // verdict and what the answer left on the stage stay. A drill whose
 // play() also opens its answer (Pulse's and the Chart's takes) gives
-// the trial a replay() that only sounds; the next question silences a
-// replay still sounding.
+// the trial a replay() that only sounds. The next question, Stop and
+// the sound taken away each silence a replay still sounding.
 // ============================================================
 
 import { batch, createSignal, onCleanup } from 'solid-js'
@@ -88,6 +88,9 @@ export interface IdentificationOptions {
    *  before the phase flips — a prompt committed to the audio clock
    *  outlives its setTimeout. */
   cancelAudio?: () => void
+  /** Silence a replay at the reveal and nothing else, leaving what the
+   *  answer put on the stage. Without one, cancelAudio does it. */
+  silenceReplay?: () => void
   /** Read at start(): the track this run rates under, or null for
    *  the drill's own. */
   track?: () => RunTrack | null
@@ -178,9 +181,8 @@ export function useIdentificationController(
     // A replay of the last verdict still sounding stops: the next
     // question is not asked over it.
     if (replaying()) {
-      replayToken += 1
       options?.cancelAudio?.()
-      setReplaying(false)
+      endReplay()
     }
     if (round() >= totalRounds()) {
       finish(true)
@@ -310,6 +312,7 @@ export function useIdentificationController(
     cancelled = true
     pacer.cancel()
     options?.cancelAudio?.()
+    endReplay()
     if (outcomes.length === 0) {
       // Nothing answered: the end card reports an empty run, and no sprint
       // segment, session or streak is booked for it.
@@ -330,12 +333,26 @@ export function useIdentificationController(
     cancelled = true
     pacer.cancel()
     options?.cancelAudio?.()
+    endReplay()
+  }
+
+  /** A replay silenced from outside never ends on its own: its flag
+   *  goes now, and its end, if it comes, finds a newer token. */
+  function endReplay(): void {
+    replayToken += 1
+    setReplaying(false)
   }
 
   /** The sound was taken away. A prompt still sounding (or a timed
-   *  take on it) is void; a verdict counting down waits for Next. */
+   *  take on it) is void; a verdict counting down waits for Next, and
+   *  a replay of it stops, to be heard whole once the sound is back. */
   function holdQuestion(): void {
     if (phase() === 'reveal') {
+      const silence = options?.silenceReplay ?? options?.cancelAudio
+      if (replaying() && silence) {
+        silence()
+        endReplay()
+      }
       pacer.pause()
       return
     }
