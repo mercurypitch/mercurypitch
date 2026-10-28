@@ -108,29 +108,24 @@
   color: var(--studio-text);
 }
 /* Each word sits just under its own end of the ring, in the open foot of the
-   dial. The words overlap the face, so a press there still turns the dial. */
+   dial. Short words stand at the ends of a row a little narrower than the
+   face; two long ones widen it, centred on the dial, so 8 px always stays
+   between them. The room between dials takes the extra width. The words
+   overlap the face, so a press there still turns the dial. */
 .ends {
-  position: relative;
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
   pointer-events: none;
   flex: none;
-  width: var(--face);
+  width: max-content;
+  min-width: calc(var(--face) * 0.9);
   height: 13px;
   margin-top: calc(var(--face) * -0.16 - 3px);
   color: var(--studio-muted);
   font-size: 11px;
   line-height: 13px;
   white-space: nowrap;
-}
-.ends span {
-  position: absolute;
-  top: 0;
-  transform: translateX(-50%);
-}
-.ends span:first-child {
-  left: 18%;
-}
-.ends span:last-child {
-  left: 82%;
 }
 @media (pointer: coarse) {
   .dial {
