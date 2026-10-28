@@ -11,10 +11,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [0.9.24] - 2026-10-28
 
-51 commits since `v0.9.23` (d37453987) before this second notes PR, from 6
-PRs, all rebased onto `main`: #1234 (31 commits), #1236 (12), #1233 (4), #1238
-(2, one of them #1239's), #1235 (1) and the first notes PR, #1237 (1). Every
-commit came through a PR.
+67 commits since `v0.9.23` (d37453987), from 10 PRs: #1234 (31 commits),
+#1236 (12), #1242 (12), #1233 (4), #1238 (2, one of them #1239's), #1243 (2:
+the coach bubble's fix and these notes), #1235 (1), the two earlier notes
+PRs, #1237 and #1241 (1 each), and #1240 (1). All were rebased onto `main`
+but #1240, which came in with a merge commit of its own. Every commit came
+through a PR.
 
 On the web:
 
@@ -147,6 +149,32 @@ On the web:
     under touch with the offer in the bar on the five tabs: the menu, the
     wordmark, the mic and the heart each take a 44 px press both ways, and
     every header control owns its box.
+- **The coach's bubble keeps its buttons in view while its words scroll**
+  (#1243).
+  - At 320x568 the Sing tour's bubble docks at the top of the screen, capped
+    at 45dvh, and it scrolled as a whole. Once Play the note added its line on
+    how to hear the note, 302 px sat in a 254 px box: Back and Skip this step
+    showed 8 of their 44 px and the count was hidden. Done showed 6 px at the
+    last stop, and 14 and 34 px in Show me more's two rounds. Larger text did
+    the same on any phone.
+  - The bubble's grid gives the words a row of their own (`1fr auto`,
+    `src/components/coach/CoachLayer.module.css`), which takes what the
+    buttons leave under the cap and never less than Merc, and the words
+    scroll in it instead of the bubble. While some are below the fold their
+    foot fades (`data-more`, set from their scroll position in
+    `CoachLayer.tsx`), each step starts them at the top, and from the bubble
+    the arrow, Page, Home, End and Space keys scroll them. Their box takes
+    `tabindex="-1"`, since Chromium makes a scroll box with no control in it
+    a Tab stop, and hands a press on it back to the bubble. Only a row of
+    buttons taller than the cap still scrolls the whole bubble.
+  - Where everything fits, at 375x667, 390x844, 844x390, 1024x768 and
+    1440x900, the bubble, its words and its buttons stand where they did at
+    all 56 of the tours' moments, to 0.01 px.
+  - Tests: `CoachLayer.words.test.tsx`, and a 320x568 touch case in
+    `coach-tours.spec.ts` that fails under the old stylesheet: each named
+    button, the count and End tour whole inside the bubble and on top at
+    their middles, at the note stop after the note, the last stop and Show
+    me more.
 - **The lesson kit's buttons and step links, on the live Lessons 1 and 2 too**
   (#1236).
   - `.btn.is-on` swapped a primary button's light gradient for the dark lit
@@ -217,6 +245,23 @@ For the lessons, all drafts that mercurypitch.com holds back:
   readied. A sing card's rows of buttons keep 12 px over a shown line, where
   they sat flush: on Lessons 6 and 8, the do readout under the plays while
   only listening, and a feeling's answer under the four feelings.
+- **#1242:** Lesson 12's page, `/learn/12`, "Chords and the four-chord
+  song", as far as Step 4: the page shell, with every word of the lesson; the
+  ring of rooms on the steps' stage, the kit's spiral seen from above with the
+  page's rooms painted over it, and its strip of seven chord chips, 44 px at
+  every width; Step 1's seven chords a chip at a time, Step 2's key switch, C
+  and G, Step 3's Play I, then vi with the names switch, Letters and
+  Do-re-mi, and Step 4's loop and roots with Slow. Step 5, the cold open, the
+  recall and the quick check, the four words and Sing it are not wired yet.
+  It waits for Lesson 10's page to go live and for the vocal coach's look at
+  the sung checkpoint (`kit/drafts.ts`). Two helpers move into the kit, the
+  step parts (`kit/step-parts.ts`) and the play lights (`kit/play-lights.ts`),
+  and `/learn/10` joins the next card's 44 px prerequisite-chip check.
+  Lessons 1 to 10 gain 521 to 1,238 bytes of first-paint script, for Lesson
+  12's season entry and drafts line and the kit chunks it shares; Lesson 3's
+  ceiling goes from 131 to 132 KB, and Lesson 12's are the smallest whole KB
+  above its measure (110 KB of script, 87 KB of CSS), to rise as each toy
+  joins.
 
 On the native app's test builds only (`PREMIUM_EXERCISES`, off on the web and
 in the store build, which `assert-bundle.mjs` holds to carrying none of either
@@ -273,6 +318,14 @@ Docs only:
   are re-anchored.
 - **#1236:** the lessons' plan citations of the kit, `App.tsx` and the coach
   are re-anchored past the new lines, and the module map is regenerated.
+- **#1242:** the lessons' plan citations of the season and of the first-paint
+  budget file are re-anchored past the new lines, the lesson tour's plan
+  counts eleven pages, and the module map is regenerated.
+
+Repository only:
+
+- **#1240:** `.gitignore` takes `.playwright-mcp/`, the folder the Playwright
+  MCP server writes its page snapshots to.
 
 ### Release steps
 
@@ -281,18 +334,21 @@ Docs only:
 2. **Secrets, variables and bindings:** none new. No `wrangler*`, `.env*` or
    workflow file changed.
 3. **Worker code:** the site worker's lesson gate reads the season and the
-   drafts list, and #1234 gives Lesson 10 its page and its 17 minutes, as a
-   draft. On mercurypitch.com the gate answers `/learn/10` with the 404 page,
-   and leaves it out of the sitemap and `llms.txt`, until the console
-   publishes it, as it does every draft. The DB worker's only change is a
+   drafts list, and #1234 gives Lesson 10 its page and its 17 minutes, and
+   #1242 Lesson 12 its page and its 15 minutes, both as drafts. On
+   mercurypitch.com the gate answers `/learn/10` and `/learn/12` with the 404
+   page, and leaves them out of the sitemap and `llms.txt`, until the console
+   publishes them, as it does every draft. The DB worker's only change is a
    comment in `mirror-metrics.ts`, which now counts 19 `createQuiz` sites, and
    the Jam worker's graph has none (each traced with esbuild from its
    `wrangler` `main`).
-4. **Links into about.mercurypitch.com** (prod-upd step 0c): none new. Lesson
-   10's footer links the landing's Privacy, Terms and Imprint pages, as every
-   lesson page does.
-5. **Social cards:** `pnpm run og:versions` on this PR stamped the cards with
-   no change.
+4. **Links into about.mercurypitch.com** (prod-upd step 0c): none new. The
+   footers of Lessons 10 and 12 link the landing's Privacy, Terms and Imprint
+   pages, as every lesson page does.
+5. **Social cards:** `pnpm run og:versions` on this PR stamped the 13 cards it
+   reads with no change. Lesson 12's card (`public/learn/lesson-12-og.jpg`,
+   #1242) is outside that set, as every lesson's card is, and new, so no
+   platform holds an older picture at its address.
 6. **What's New** is untouched: 0.9.24 is a patch.
 7. **Version files:** `package.json` goes from 0.9.23 to 0.9.24.
 8. **Native:** `apps/mercurypitch/src/shell` gains the two Ear rooms' screens
