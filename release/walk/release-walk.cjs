@@ -1,8 +1,8 @@
-// 0.9.23 release walk: the critical paths in a real browser, with sound.
+// 0.9.24 release walk: the critical paths in a real browser, with sound.
 // Local only: every request that leaves 127.0.0.1 is aborted and listed,
 // except the lesson films, which are answered with a local stub file.
 // Usage: WALK_VERSION=<package.json version> node release-walk.cjs <base> <outdir> <stub.mp4> [phase,...]
-// Phases: onbA lessons search misc onbB onbC onbD merc checkup (default: all, in that order)
+// Phases: onbA lessons search misc onbB onbC onbD merc checkup polish24 (default: all, in that order)
 const { chromium } = require('playwright')
 const fs = require('fs')
 const path = require('path')
@@ -946,6 +946,124 @@ async function covers(page, sel) {
         await second.page.locator('.home-streak-card').waitFor({ state: 'visible', timeout: 30000 }).catch(() => undefined)
         await second.page.waitForLoadState('networkidle').catch(() => undefined)
         check('checkup: after Not this week the card stays away on a reload', !(await card2.isVisible().catch(() => false)))
+      }
+    } finally { await browser.close() }
+  })
+
+  // ---------- the 0.9.24 polish ----------
+  // The tab's tour offer floats: its anchor takes no room, it covers no words
+  // or controls, and taking it down moves nothing. The Sing tour's Play the
+  // note shows it is playing, and sounds; its last stop offers Show me more,
+  // where Merc sings Repeat (and on a wide screen a Spaced rest) through the
+  // Sing tab, and Done puts the controls back.
+  const singControls = (page, phone) => page.evaluate((phone) => {
+    if (phone) return (document.querySelector('[data-tour="sing.mode"]')?.textContent ?? '').trim()
+    const mode = document.querySelector('#btn-once[aria-checked="true"], #btn-repeat[aria-checked="true"]')?.id ?? '-'
+    const rest = document.querySelector('#spaced-rest-mode')?.value ?? '-'
+    const cycles = document.querySelector('#cycles')?.value ?? '-'
+    return `${mode} ${rest} ${cycles}`
+  }, phone)
+  const landmarks = (page) => page.evaluate(() => {
+    const main = document.getElementById('main-content')
+    if (!main) return []
+    const els = [...main.querySelectorAll('h1, h2, button, a[href]')].filter((el) => !el.closest('[data-testid="tour-chip"]')).slice(0, 8)
+    return els.map((el) => { const r = el.getBoundingClientRect(); return `${Math.round(r.left)},${Math.round(r.top)}` })
+  })
+  const seen = (loc, ms) => loc.waitFor({ state: 'visible', timeout: ms }).then(() => true).catch(() => false)
+  await phase('polish24', async () => {
+    const browser = await launch(steady)
+    try {
+      for (const [name, vp, phone] of [['phone', PHONE, true], ['desktop', DESKTOP, false]]) {
+        // Home: the offer floats, and Not now moves nothing.
+        const home = await newPage(browser, vp)
+        await pastOnboarding(home.page)
+        await home.page.goto(BASE + '/#/home', { timeout: 180000 })
+        await dismissWelcome(home.page)
+        const hchip = home.page.getByTestId('tour-chip')
+        if (await seen(hchip, 25000)) {
+          await home.page.waitForTimeout(2500)
+          const anchor = await hchip.evaluate((el) => Math.round(el.parentElement?.getBoundingClientRect().height ?? -1))
+          const cov = await covers(home.page, '[data-testid="tour-chip"]')
+          check(`polish24 ${name}: Home's offer floats from an anchor that takes no room`, anchor === 0, `anchor height ${anchor}`)
+          check(`polish24 ${name}: Home's offer covers no words or controls`, cov.shown && cov.hits.length === 0, cov.shown ? `${cov.rect} ${cov.hits.slice(0, 4).join('; ')}` : 'not shown')
+          await shot(home.page, `p24-${name}-home-chip`)
+          const before = await landmarks(home.page)
+          const y0 = await home.page.evaluate(() => (document.getElementById('main-content')?.scrollTop ?? 0) + window.scrollY)
+          await hchip.getByRole('button', { name: 'Not now' }).click()
+          await hchip.waitFor({ state: 'detached', timeout: 5000 }).catch(() => undefined)
+          const after = await landmarks(home.page)
+          const y1 = await home.page.evaluate(() => (document.getElementById('main-content')?.scrollTop ?? 0) + window.scrollY)
+          check(`polish24 ${name}: taking Home's offer down moves nothing`, before.length > 0 && JSON.stringify(before) === JSON.stringify(after) && y0 === y1, `${before.length} landmarks, ${JSON.stringify(before) === JSON.stringify(after) ? 'same' : `${before.join(' ')} -> ${after.join(' ')}`}, scroll ${y0} -> ${y1}`)
+        } else check(`polish24 ${name}: Home offers its tour`, false, 'no chip')
+        await home.page.context().close()
+
+        // Singing: the offer, Play the note, then Show me more.
+        const { page } = await newPage(browser, vp)
+        await pastOnboarding(page)
+        await page.goto(BASE + '/#/singing', { timeout: 180000 })
+        await dismissWelcome(page)
+        const chip = page.getByTestId('tour-chip')
+        if (!(await seen(chip, 25000))) { check(`polish24 ${name}: Singing offers Merc's tour`, false, 'no chip'); await page.context().close(); continue }
+        await page.waitForTimeout(2500)
+        const cov = await covers(page, '[data-testid="tour-chip"]')
+        const form = await chip.getAttribute('data-form').catch(() => null)
+        const where = await chip.getAttribute('data-place').catch(() => null)
+        check(`polish24 ${name}: Singing's offer covers no words or controls`, cov.shown && cov.hits.length === 0, `${form} in the ${where}, ${cov.shown ? `${cov.rect} ${cov.hits.slice(0, 4).join('; ')}` : 'not shown'}`)
+        await shot(page, `p24-${name}-singing-chip`)
+        await chip.getByRole('button', { name: 'Merc can show you around, 30 s' }).click()
+        const bubble = page.getByTestId('coach-bubble')
+        const step = (n) => seen(bubble.filter({ hasText: `${n} of 4` }), 15000)
+        if (!(await step(1))) { check(`polish24 ${name}: the offer starts the Sing tour`, false); await page.context().close(); continue }
+        await bubble.getByRole('button', { name: 'Skip this step' }).click()
+        await step(2)
+        await resetPeak(page)
+        await bubble.getByRole('button', { name: 'Play the note' }).click()
+        const playingBtn = bubble.getByRole('button', { name: 'Playing A3' })
+        const playing = await seen(playingBtn, 3000)
+        const lit = playing ? await playingBtn.getAttribute('data-playing').catch(() => null) : null
+        const pose = await bubble.getAttribute('data-pose').catch(() => null)
+        const line = await text(bubble.getByTestId('coach-tone-line'))
+        check(`polish24 ${name}: Play the note reads Playing A3, lit, with Merc singing`, playing && lit !== null && pose === 'sing' && /Playing A3 now/.test(line), `lit ${lit !== null}, pose ${pose}, line "${line}"`)
+        await shot(page, `p24-${name}-play-the-note`)
+        const rested = await seen(bubble.getByRole('button', { name: 'Play the note' }), 6000)
+        const help = await text(bubble.getByTestId('coach-tone-line'))
+        const heard = await audio(page)
+        check(`polish24 ${name}: the note sounds, then a line says how to hear it`, rested && /Heard nothing\?/.test(help) && !!heard && heard.audible > 0, `"${help}" | ${fmtAudio(heard)}`)
+        await bubble.getByRole('button', { name: 'Skip this step' }).click()
+        await step(3)
+        await bubble.getByRole('button', { name: 'Next' }).click()
+        await step(4)
+        const more = bubble.getByRole('button', { name: 'Show me more' })
+        const offered = (await seen(more, 5000)) && (await bubble.getByRole('button', { name: 'Done' }).isVisible().catch(() => false))
+        check(`polish24 ${name}: the Sing tour's last stop offers Show me more beside Done`, offered)
+        if (!offered) { await endTour(page, `polish24 ${name}`); await page.context().close(); continue }
+        const held = await singControls(page, phone)
+        await more.click()
+        const said = page.getByTestId('coach-said')
+        const repeat = await seen(bubble.filter({ hasText: 'Repeat goes round again' }), 15000)
+        const round1 = await seen(said.filter({ hasText: 'Round 1 of 2' }), 15000)
+        const set = await singControls(page, phone)
+        check(`polish24 ${name}: Show me more sets Repeat and Merc sings round 1`, repeat && round1 && /Repeat|btn-repeat/.test(set), `controls ${held} -> ${set}`)
+        await shot(page, `p24-${name}-show-me-more-repeat`)
+        await resetPeak(page)
+        const round2 = await seen(said.filter({ hasText: 'Round 2 of 2' }), 30000)
+        const sung = await audio(page)
+        check(`polish24 ${name}: Repeat comes round again, and Merc is heard`, round2 && !!sung && sung.audible > 0, fmtAudio(sung))
+        if (!phone) {
+          await bubble.getByRole('button', { name: 'Next' }).click()
+          const spaced = await seen(bubble.filter({ hasText: 'Spaced rest leaves a gap' }), 15000)
+          const rests = await seen(said.filter({ hasText: 'then rests' }), 15000)
+          const set2 = await singControls(page, phone)
+          check(`polish24 ${name}: then Once with a half Spaced rest`, spaced && rests && set2 === 'btn-once half -', `controls ${set2}`)
+          await shot(page, `p24-${name}-show-me-more-rest`)
+        }
+        await bubble.getByRole('button', { name: 'Done' }).click()
+        const over = await page.locator('#coach-root').waitFor({ state: 'detached', timeout: 8000 }).then(() => true).catch(() => false)
+        await page.waitForTimeout(800)
+        const back = await singControls(page, phone)
+        const score = await page.locator('#score-pct').count().catch(() => 0)
+        check(`polish24 ${name}: Done ends it, puts the controls back and keeps no score`, over && back === held && score === 0, `${held} -> ${back}, score cards ${score}`)
+        await page.context().close()
       }
     } finally { await browser.close() }
   })
