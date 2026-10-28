@@ -2,7 +2,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { resolveStudioSoundGraph } from '../export/sound-graph'
 import { studioReservedMemoryBytes } from '../memory-budget'
-import { transportFixture } from './transport.test-fixtures'
+import { freshGraphs, transportFixture } from './transport.test-fixtures'
 
 afterEach(() => vi.useRealTimers())
 
@@ -60,6 +60,49 @@ describe('Studio transport levels', () => {
     expect(f.transport.getState().masterReady).toBe(false)
     expect(f.graph.setMasterSpec).not.toHaveBeenCalled()
     expect(f.buildGraph).toHaveBeenCalledOnce()
+    await finish(f)
+  })
+
+  it("starts the run that takes over at the held run's measured master gain, until a new measurement comes", async () => {
+    vi.useFakeTimers()
+    const f = transportFixture()
+    const graphs = freshGraphs(f)
+    const measured = { gainDb: 4.5, safetyGainDb: -1.5 }
+    f.transport.setMasterGain({
+      projectId: f.project.id,
+      revision: f.project.revision,
+      ...measured,
+    })
+    await f.transport.play(f.project, [f.asset], 0)
+    // A moved clip needs a new graph, and makes the measurement stale.
+    const moved = {
+      ...f.project,
+      revision: 1,
+      clips: [{ ...f.project.clips[0], startFrame: 960 }],
+    }
+    f.ctx.currentTime = 1
+    await f.transport.setSnapshot(moved, [f.asset])
+    expect(graphs).toHaveLength(2)
+    expect(f.transport.getState()).toMatchObject({
+      playing: true,
+      masterReady: false,
+    })
+    const master = (call: number) =>
+      (f.buildGraph.mock.calls[call][4] as { master: { spec: unknown } }).master
+        .spec
+    // Not the unmeasured 0 dB, which would jump the level at the handover.
+    expect(master(1)).toEqual(resolveStudioSoundGraph(moved, measured).full)
+    expect(master(1)).toEqual(master(0))
+
+    const fresh = { gainDb: 2, safetyGainDb: -0.5 }
+    f.transport.setMasterGain({
+      projectId: moved.id,
+      revision: moved.revision,
+      ...fresh,
+    })
+    expect(graphs[1].setMasterSpec).toHaveBeenCalledExactlyOnceWith(
+      resolveStudioSoundGraph(moved, fresh).full,
+    )
     await finish(f)
   })
 
