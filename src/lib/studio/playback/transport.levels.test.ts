@@ -110,7 +110,7 @@ describe('Studio transport levels', () => {
     vi.useFakeTimers()
     const read = vi.fn(() => new Map([['track-1', 0.5]]))
     const dispose = vi.fn()
-    const createLaneMeter = vi.fn(() => ({ read, dispose }))
+    const createLaneMeter = vi.fn(() => ({ read, restart: vi.fn(), dispose }))
     const f = transportFixture({ createLaneMeter })
     const outputs = new Map([
       ['track-1', f.ctx.createGain() as unknown as AudioNode],
@@ -145,7 +145,11 @@ describe('Studio transport levels', () => {
     const read = vi.fn<() => ReadonlyMap<string, number> | null>(
       () => new Map([['track-1', 0.5]]),
     )
-    const createLaneMeter = vi.fn(() => ({ read, dispose: vi.fn() }))
+    const createLaneMeter = vi.fn(() => ({
+      read,
+      restart: vi.fn(),
+      dispose: vi.fn(),
+    }))
     const f = transportFixture({ createLaneMeter })
     f.graph.laneOutputs.mockReturnValue(
       new Map([['track-1', f.ctx.createGain() as unknown as AudioNode]]),

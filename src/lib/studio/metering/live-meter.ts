@@ -58,6 +58,10 @@ function ownMeterProcessor<T>(
     clearPeakHold: () => {
       if (!disposed) node.port.postMessage('clear-hold')
     },
+    /** Measure again from `time` on the audio clock: a seek heard then. */
+    restart: (time: number) => {
+      if (!disposed) node.port.postMessage({ restartAt: time })
+    },
     dispose() {
       if (disposed) return
       disposed = true
@@ -120,6 +124,8 @@ export function createStudioLiveMeter(
     return {
       read: () => snapshot,
       clearPeakHold: owned.clearPeakHold,
+      /** Loudness windows, peaks and holds start again from `time`, when a seek is heard. */
+      restart: owned.restart,
       dispose() {
         if (disposed) return
         disposed = true
@@ -212,6 +218,12 @@ export function createStudioLaneMeter(
         for (const [index, id] of ids.entries()) read.set(id, peaks[index])
         peaks.fill(0)
         return read
+      },
+      /** Peaks from before `time`, when a seek is heard, are dropped. */
+      restart(time: number) {
+        peaks.fill(0)
+        fresh = false
+        owned.restart(time)
       },
       dispose() {
         if (disposed) return

@@ -9,6 +9,16 @@ declare class AudioWorkletProcessor {
 // Every input and output carries 128 frames a call (the Web Audio render quantum).
 const QUANTUM_FRAMES = 128
 
+/** A command from the page: clear the peak holds, start measuring again, or stop. */
+type MeterCommand = 'clear-hold' | 'dispose' | { readonly restartAt: number }
+
+/** The frame a restart message asks to measure from: when a seek is heard. */
+function restartFrame(command: MeterCommand): number | null {
+  return typeof command === 'object'
+    ? Math.round(command.restartAt * sampleRate)
+    : null
+}
+
 declare function registerProcessor(
   name: string,
   processor: typeof AudioWorkletProcessor,
@@ -17,7 +27,8 @@ declare function registerProcessor(
 class StudioMeterProcessor extends AudioWorkletProcessor {
   private meter: ReturnType<typeof createStudioMeter> | null =
     createStudioMeter({ sampleRate, channels: 2 })
-  private readonly startFrame: number
+  private startFrame: number
+  private restartAt: number | null = null
   private sentFrames = 0
   private numericFrames = 0
   private momentaryLufs: number | null = null
@@ -27,13 +38,29 @@ class StudioMeterProcessor extends AudioWorkletProcessor {
     this.startFrame = Math.round(
       (options.processorOptions?.startAtTime ?? 0) * sampleRate,
     )
-    this.port.onmessage = (event: MessageEvent<string>) => {
-      if (event.data === 'clear-hold') this.meter?.clearPeakHold()
+    this.port.onmessage = (event: MessageEvent<MeterCommand>) => {
+      const restart = restartFrame(event.data)
+      if (restart !== null) this.restartAt = restart
+      else if (event.data === 'clear-hold') this.meter?.clearPeakHold()
       else if (event.data === 'dispose') {
         this.meter = null
         this.port.postMessage({ kind: 'disposed' })
       }
     }
+  }
+  /**
+   * A seek heard from the restart frame: the loudness windows, peaks and
+   * holds start again there, as a new run's meter would.
+   */
+  private restartBy(end: number): void {
+    if (this.restartAt === null || this.restartAt >= end) return
+    this.meter?.reset()
+    this.startFrame = this.restartAt
+    this.restartAt = null
+    this.sentFrames = 0
+    this.numericFrames = 0
+    this.momentaryLufs = null
+    this.shortTermLufs = null
   }
   process(inputs: Float32Array[][]): boolean {
     const meter = this.meter
@@ -41,6 +68,7 @@ class StudioMeterProcessor extends AudioWorkletProcessor {
     if (inputs.length === 0) return true
     const channels = inputs[0]
     if (channels.length !== 2 || channels[0].length === 0) return true
+    this.restartBy(currentFrame + channels[0].length)
     const from = Math.max(0, this.startFrame - currentFrame)
     if (from >= channels[0].length) return true
     meter.push(channels, from)
@@ -82,7 +110,8 @@ function channelPeak(
 /** One input per lane: the louder channel's highest sample, sent 30 times a second. */
 class StudioLaneMeterProcessor extends AudioWorkletProcessor {
   private peaks: Float32Array | null
-  private readonly startFrame: number
+  private startFrame: number
+  private restartAt: number | null = null
   private frames = 0
   constructor(
     options: {
@@ -95,7 +124,9 @@ class StudioLaneMeterProcessor extends AudioWorkletProcessor {
     this.startFrame = Math.round(
       (options.processorOptions?.startAtTime ?? 0) * sampleRate,
     )
-    this.port.onmessage = (event: MessageEvent<string>) => {
+    this.port.onmessage = (event: MessageEvent<MeterCommand>) => {
+      const restart = restartFrame(event.data)
+      if (restart !== null) this.restartAt = restart
       if (event.data !== 'dispose') return
       this.peaks = null
       this.port.postMessage({ kind: 'disposed' })
@@ -104,6 +135,15 @@ class StudioLaneMeterProcessor extends AudioWorkletProcessor {
   process(inputs: Float32Array[][]): boolean {
     const peaks = this.peaks
     if (peaks === null) return false
+    // A seek heard from the restart frame: peaks from before it are dropped.
+    if (
+      this.restartAt !== null &&
+      this.restartAt < currentFrame + QUANTUM_FRAMES
+    ) {
+      peaks.fill(0)
+      this.startFrame = this.restartAt
+      this.restartAt = null
+    }
     // As the master meter: only frames from the run's start count.
     const from = Math.max(0, this.startFrame - currentFrame)
     if (from >= QUANTUM_FRAMES) return true
