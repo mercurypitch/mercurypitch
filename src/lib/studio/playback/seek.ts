@@ -14,7 +14,7 @@
 import type { StudioHandoff } from './handoff'
 import { crossSameFrames } from './handoff'
 import type { StudioRun, StudioRunTiming } from './run'
-import { RUN_LOOKAHEAD_SECONDS, runPosition } from './run'
+import { RUN_LOOKAHEAD_SECONDS, runHeardPosition } from './run'
 
 /** Room for this thread to finish scheduling a seek before the audio thread can reach it. */
 const SEEK_SCHEDULING_SECONDS = 0.005
@@ -131,18 +131,21 @@ export function seekTiming(
 }
 
 /**
- * The frame the playhead shows while `heard` plays: a seek's own, from the
- * click on, while the song still plays the frames before it, waiting for a
- * run built at `target` or handing over to one.
+ * The frame the playhead shows while `heard` plays: the one at the speakers
+ * (runHeardPosition), or a seek's own from the click on, while the song
+ * still plays the frames before it, waiting for a run built at `target` or
+ * handing over to one. A restart reads the same frame on the render clock,
+ * with `position` runPosition.
  */
 export function seekShownFrame(
   heard: StudioRun,
   newest: StudioRun,
   handoffs: readonly StudioHandoff[],
   target: number | null,
+  position: (run: StudioRun) => number = runHeardPosition,
 ): number {
   if (target !== null) return target
   const now = heard.ctx.currentTime
   const seeking = handoffs.some(({ seek, at }) => seek && now < at)
-  return runPosition(seeking ? newest : heard)
+  return position(seeking ? newest : heard)
 }

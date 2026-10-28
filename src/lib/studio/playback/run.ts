@@ -92,12 +92,49 @@ export function runTimelineFrame(run: StudioRun, time: number): number {
   return run.startFrame + (time - run.audibleEpoch) * STUDIO_RUN_RATE
 }
 
-/** The song frame a run is heard at now: held at its start until it sounds, wrapped while it repeats. */
-export function runPosition(run: StudioRun): number {
+/** A latency the browser reports, or none for a missing or nonsensical one. */
+function reportedSeconds(value: unknown): number {
+  return typeof value === 'number' && Number.isFinite(value) && value > 0
+    ? value
+    : 0
+}
+
+/**
+ * The audio-clock time at the speakers: the render clock less the output
+ * path, `outputLatency` and `baseLatency`. Read afresh on every call, since
+ * the spec lets both change while the context runs (headphones plugged in, a
+ * Bluetooth route). Headless Chromium reports 24 to 56 ms of output latency
+ * from one read to the next, on top of 10.7 ms of base latency.
+ */
+export function heardTime(ctx: BaseAudioContext): number {
+  const { outputLatency, baseLatency } = ctx as Partial<
+    Pick<AudioContext, 'outputLatency' | 'baseLatency'>
+  >
+  return (
+    ctx.currentTime -
+    reportedSeconds(outputLatency) -
+    reportedSeconds(baseLatency)
+  )
+}
+
+/**
+ * The song frame a run plays at `time` on the render clock: held at its
+ * start until then, wrapped while it repeats. Scheduling and restarts read
+ * it at the clock; what the playhead shows reads it at heardTime.
+ */
+export function runPosition(
+  run: StudioRun,
+  time = run.ctx.currentTime,
+): number {
   const frame = Math.floor(
-    runTimelineFrame(run, Math.max(run.ctx.currentTime, run.audibleEpoch)),
+    runTimelineFrame(run, Math.max(time, run.audibleEpoch)),
   )
   return frame >= run.untilFrame ? run.endFrame : frame % run.endFrame
+}
+
+/** The song frame at the speakers now: what the playhead shows. */
+export function runHeardPosition(run: StudioRun): number {
+  return runPosition(run, heardTime(run.ctx))
 }
 
 /** When a run has played out, its tail included: never while it repeats. */

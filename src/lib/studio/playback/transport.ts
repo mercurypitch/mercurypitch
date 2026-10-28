@@ -30,7 +30,7 @@ import type { StudioRunLayout } from './live-edit'
 import { audibility, firstThatFits, studioRunLayouts } from './live-edit'
 import { createStudioMasterLevel } from './master-level'
 import type { StudioLatencyReader } from './prepare-plan'
-import { createLatencyCache, planAssets, planLatencySeconds, prepareStudioPlan, } from './prepare-plan'
+import { createLatencyCache, planAssets, planLatencySeconds, playableStudioFrom, prepareStudioPlan, studioFirstFrame, } from './prepare-plan'
 import type { StudioLaneLevel, StudioRun, StudioRunParts, StudioRunTiming, } from './run'
 import { buildStudioRun, openRunEnvelope, readLaneLevels, releaseRun, RUN_LOOKAHEAD_SECONDS, runEndsAt, runPosition, } from './run'
 import { seekInPlace, seekShownFrame, seekTiming } from './seek'
@@ -102,6 +102,8 @@ export function createStudioTransport(options: StudioTransportOptions) {
   let restartGeneration = 0
   // A seek the heard run could not follow: the next run starts here.
   let seekTarget: number | null = null
+  // Where the render clock was when the song last fell silent.
+  let stoppedAt = 0
   const drafts: StudioDrafts = { lanes: new Map(), macros: new Map() }
   let state: StudioTransportState = {
     playing: false,
@@ -136,9 +138,18 @@ export function createStudioTransport(options: StudioTransportOptions) {
     return handoffs.find(({ at }) => now < at)?.from ?? run
   }
 
-  /** Where the playhead stands: a seek's frame from the click on. */
+  /** Where the playhead stands: the frame at the speakers, or a seek's frame from the click on. */
   const shownFrame = (run: StudioRun) =>
     seekShownFrame(run, active ?? held ?? run, handoffs, seekTarget)
+  /** The same frame on the render clock, where a restart goes on from. */
+  const renderedFrame = (run: StudioRun) =>
+    seekShownFrame(
+      run,
+      active ?? held ?? run,
+      handoffs,
+      seekTarget,
+      runPosition,
+    )
 
   function observeSnapshot(project: StudioProject): void {
     publish({ masterReady: master.observe(project) })
@@ -172,13 +183,17 @@ export function createStudioTransport(options: StudioTransportOptions) {
     )
   }
 
-  /** Fade out every run heard or about to be. The playhead stays where it was heard. */
+  /**
+   * Fade out every run heard or about to be. The playhead stays on the frame
+   * at the speakers; a restart for memory goes on from the frame rendered.
+   */
   function silence(): Partial<StudioTransportState> {
     const shown = heard()
     const stopped = { peakL: 0, peakR: 0, meter: null, lanes: [] }
     const update = shown
       ? { ...stopped, playheadFrame: shownFrame(shown) }
       : stopped
+    stoppedAt = shown ? renderedFrame(shown) : state.playheadFrame
     for (const run of liveRuns()) retire(run)
     active = null
     held = null
@@ -224,24 +239,6 @@ export function createStudioTransport(options: StudioTransportOptions) {
       throw new Error('The audio device is not ready. Press Play to try again.')
     watch(ctx)
     return ctx
-  }
-
-  /** Where a run from `frame` starts: at the top once the song has ended there. */
-  function firstFrame(endFrame: number, frame: number): number {
-    return frame >= endFrame ? 0 : Math.max(0, Math.floor(frame))
-  }
-
-  function playableContent(
-    project: StudioProject,
-    assets: readonly StudioAsset[],
-    startFrame: number,
-  ) {
-    const content = compileStudioArrangement(project, assets)
-    if (!content.lanes.some((lane) => lane.audible && lane.segments.length > 0))
-      throw new Error('Add an audible take before playing.')
-    if (repeat && content.endFrame < 12000)
-      throw new Error('A song needs at least a quarter second to repeat.')
-    return { content, from: firstFrame(content.endFrame, startFrame) }
   }
 
   async function prepareMaster(
@@ -291,7 +288,7 @@ export function createStudioTransport(options: StudioTransportOptions) {
       return { fromFrame: 0, audibleEpoch: earliest }
     }
     return {
-      fromFrame: firstFrame(plan.endFrame, restartFrom),
+      fromFrame: studioFirstFrame(plan.endFrame, restartFrom),
       audibleEpoch: earliest,
     }
   }
@@ -350,7 +347,7 @@ export function createStudioTransport(options: StudioTransportOptions) {
       // Called immediately by an explicit UI action, before asset reads.
       const ctx = await unlockContext(attempt.signal)
       observeSnapshot(project)
-      const { from } = playableContent(project, assets, startFrame)
+      const from = playableStudioFrom(project, assets, startFrame, repeat)
       // An edit makes the measurement stale. Until the next one, a run
       // starts at the level heard: the held run's, or the song's last.
       const measured = master.startingGain(project, held?.measured ?? null)
@@ -367,12 +364,12 @@ export function createStudioTransport(options: StudioTransportOptions) {
         throw new DOMException('Playback cancelled', 'AbortError')
       built = performance.now()
       const latency = planLatencySeconds(admitted.plan) + masterLatency
-      // A held run dropped for memory leaves the playhead where it stopped.
+      // A held run dropped for memory goes on from where it stopped.
       const timing = runTiming(
         ctx,
         admitted.plan,
         latency,
-        handingOver ? state.playheadFrame : from,
+        handingOver ? stoppedAt : from,
       )
       if (!timing) return playOut()
       launch({
@@ -528,7 +525,12 @@ export function createStudioTransport(options: StudioTransportOptions) {
   function playedOut(run: StudioRun): void {
     if (run === held && seekTarget !== null)
       publish({ ...silence(), playing: false, pending: true })
-    else pause()
+    else {
+      pause()
+      // The render clock is past the end; the speakers trail it by their
+      // output path, which can be longer than the tail.
+      publish({ playheadFrame: run.endFrame })
+    }
   }
 
   const timer = setInterval(() => {
@@ -638,7 +640,7 @@ export function createStudioTransport(options: StudioTransportOptions) {
     const run = warming.then(async () => {
       if (busy() || abort.signal.aborted) return
       try {
-        playableContent(project, assets, 0)
+        playableStudioFrom(project, assets, 0, repeat)
         await warmStudioPlayback(project, assets, abort.signal, {
           lease: options.lease,
           cache,
