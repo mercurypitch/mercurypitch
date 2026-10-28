@@ -166,6 +166,11 @@ jobs:
                     # Documentation-only changes still run the generated-index
                     # check above, but do not require a dependency install.
                     ;;
+                  .github/actions/fetch-assets/*)
+                    # Only the native builds fetch through it: the Mercury
+                    # Pitch job below and mercurypitch-mobile.yml.
+                    mercurypitch=true
+                    ;;
                   *)
                     root=true
                     ;;
@@ -582,6 +587,18 @@ jobs:
 
       - name: Test Mercury Pitch
         run: pnpm mercurypitch:test
+
+      # The Karaoke room's six example stems, which the build ships and git
+      # does not hold, from the Actions cache on the same key as
+      # mercurypitch-mobile.yml. r2.dev rate-limits: on 28 Oct 2026 it cut
+      # this job's download off mid-file and held the native builds' for up
+      # to half an hour.
+      - name: Fetch the Karaoke room's example songs
+        uses: ./.github/actions/fetch-assets
+        with:
+          command: node apps/mercurypitch/scripts/fetch-karaoke-examples.mjs
+          path: apps/mercurypitch/native-only/karaoke/examples/**/*.m4a
+          key-files: apps/mercurypitch/scripts/fetch-karaoke-examples.mjs
 
       - name: Build Mercury Pitch
         # The build is the check that matters here and it is not the same one

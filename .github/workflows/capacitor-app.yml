@@ -176,6 +176,32 @@ on:
         required: false
         type: string
         default: ''
+      fetch-assets:
+        description: >-
+          Optional shell run in each job before its first web build, to fetch
+          what the build ships but git does not hold. It must fetch what is
+          missing and fail on anything wrong: the files it fills
+          (fetch-assets-path) come back from the Actions cache, keyed on the
+          hash of fetch-assets-key-files, so a build reaches the network only
+          when those change (.github/actions/fetch-assets). Empty means nothing
+          runs.
+        required: false
+        type: string
+        default: ''
+      fetch-assets-path:
+        description: >-
+          The files fetch-assets fills, as actions/cache paths. Name the files
+          (a glob), never a directory that also holds committed ones.
+        required: false
+        type: string
+        default: ''
+      fetch-assets-key-files:
+        description: >-
+          A hashFiles() pattern for the files that pin what fetch-assets
+          fetches.
+        required: false
+        type: string
+        default: ''
       native-test-profile-script:
         description: >-
           Optional package script that builds, stamps, syncs and verifies an
@@ -434,6 +460,17 @@ jobs:
 
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
+
+      # What the build ships but git does not hold (the fetch-assets input),
+      # from the Actions cache. The build would fetch it itself; this keeps the
+      # network out of every build but the first after a pin moves.
+      - name: Fetch assets git does not hold
+        if: inputs.fetch-assets != ''
+        uses: ./.github/actions/fetch-assets
+        with:
+          command: ${{ inputs.fetch-assets }}
+          path: ${{ inputs.fetch-assets-path }}
+          key-files: ${{ inputs.fetch-assets-key-files }}
 
       # The caller's own build switches (the web-build-env input), into
       # $GITHUB_ENV so the build AND the check that reads the build see the
@@ -832,6 +869,17 @@ jobs:
         if: env.HAS_ASC == 'true'
         run: pnpm install --frozen-lockfile
 
+      # What the build ships but git does not hold (the fetch-assets input),
+      # from the Actions cache. The build would fetch it itself; this keeps the
+      # network out of every build but the first after a pin moves.
+      - name: Fetch assets git does not hold
+        if: inputs.fetch-assets != '' && env.HAS_ASC == 'true'
+        uses: ./.github/actions/fetch-assets
+        with:
+          command: ${{ inputs.fetch-assets }}
+          path: ${{ inputs.fetch-assets-path }}
+          key-files: ${{ inputs.fetch-assets-key-files }}
+
       # The caller's own build switches (the web-build-env input), into
       # $GITHUB_ENV so the build AND the check that reads the build see the
       # same values. Nothing runs for a caller that passes none.
@@ -1172,6 +1220,17 @@ jobs:
 
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
+
+      # What the build ships but git does not hold (the fetch-assets input),
+      # from the Actions cache. The build would fetch it itself; this keeps the
+      # network out of every build but the first after a pin moves.
+      - name: Fetch assets git does not hold
+        if: inputs.fetch-assets != ''
+        uses: ./.github/actions/fetch-assets
+        with:
+          command: ${{ inputs.fetch-assets }}
+          path: ${{ inputs.fetch-assets-path }}
+          key-files: ${{ inputs.fetch-assets-key-files }}
 
       # The caller's own build switches (the web-build-env input), into
       # $GITHUB_ENV so the build AND the check that reads the build see the

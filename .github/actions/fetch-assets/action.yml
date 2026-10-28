@@ -1,0 +1,54 @@
+name: Fetch assets
+description: >-
+  Fetches what a build ships but git does not hold, through the Actions cache:
+  restores the files, runs the command that fetches and checks them, and saves
+  them when the cache had none. A build reaches the network only when the
+  files named by key-files change. Run after setup.
+
+# The command is the gate, not the cache. It must check every file it is
+# responsible for and fetch whatever is missing or wrong (Mercury Pitch's
+# scripts/fetch-karaoke-examples.mjs checks each stem against its sha256 pin),
+# so a stale or damaged cache entry costs a download, never a wrong file in a
+# binary. An entry cannot be overwritten, so a save is tried only when the
+# restore missed, and a save that loses a race with a parallel job warns
+# rather than failing the build.
+
+inputs:
+  command:
+    description: Shell that fetches what is missing and fails on anything wrong.
+    required: true
+  path:
+    description: >-
+      The files the command fills, as actions/cache paths. Name the files
+      themselves (a glob such as dir/**/*.m4a), never a directory that also
+      holds committed files: a restore writes over what the checkout has.
+    required: true
+  key-files:
+    description: A hashFiles() pattern for the files that pin what is fetched.
+    required: true
+
+runs:
+  using: composite
+  steps:
+    - name: Restore from the cache
+      id: restore
+      uses: actions/cache/restore@v4
+      with:
+        path: ${{ inputs.path }}
+        key: fetch-assets-${{ hashFiles(inputs.key-files) }}
+        enableCrossOsArchive: true
+
+    - name: Fetch what is missing
+      shell: bash
+      env:
+        FETCH_ASSETS: ${{ inputs.command }}
+      run: bash -euo pipefail -c "$FETCH_ASSETS"
+
+    - name: Save to the cache
+      if: steps.restore.outputs.cache-hit != 'true'
+      continue-on-error: true
+      uses: actions/cache/save@v4
+      with:
+        path: ${{ inputs.path }}
+        key: ${{ steps.restore.outputs.cache-primary-key }}
+        enableCrossOsArchive: true

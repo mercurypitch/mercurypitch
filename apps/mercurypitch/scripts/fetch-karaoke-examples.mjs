@@ -25,6 +25,10 @@
 // three tries, a few seconds apart, and a try is abandoned once 30 seconds
 // pass with nothing arriving. A server error is tried again; an answer that
 // refuses the file (a 404 or a 403) stops at once.
+//
+// CI keeps the six files in its Actions cache (.github/actions/fetch-assets),
+// keyed on this file's hash, so most builds never reach the bucket at all. A
+// change here sends the next builds back to R2 once, to fill it again.
 
 import { createHash } from 'node:crypto'
 import { existsSync, mkdirSync, readFileSync, renameSync, rmSync, writeFileSync, } from 'node:fs'
