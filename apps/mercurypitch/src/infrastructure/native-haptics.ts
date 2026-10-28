@@ -8,13 +8,14 @@
 // iOS WebKit does not, so on an iPhone every one of them did nothing.
 // Installed once, from `main.tsx`, the device's own haptics take its place
 // (Warm-up 13f), the same three moments the shell's own controls use: a
-// light impact, a success, a warning.
+// light impact, a success, a warning; and the Ear Lab's seal, the heaviest
+// impact, for a calibration marked.
 //
 // Like native-shell.ts, it reaches the plugin only through the platform
 // package's wrappers, which answer a device without it by doing nothing,
 // never by throwing into a room.
 
-import { hapticSuccess, hapticTap, hapticWarning, } from '@irchiinnuss/mobile-runtime/platform'
+import { hapticSeal, hapticSuccess, hapticTap, hapticWarning, } from '@irchiinnuss/mobile-runtime/platform'
 import { installHaptics } from '@/lib/platform'
 
 /** A haptic is never worth an unhandled rejection. */
@@ -28,5 +29,6 @@ export function installNativeHaptics(): () => void {
     tapLight: () => quietly(hapticTap()),
     success: () => quietly(hapticSuccess()),
     warning: () => quietly(hapticWarning()),
+    seal: () => quietly(hapticSeal()),
   })
 }

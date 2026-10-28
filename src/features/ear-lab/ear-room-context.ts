@@ -22,13 +22,19 @@ export interface EarRoomApi {
   openPanel: (panel: RackPanel) => void
   /** The bench's level, 0-1, on top of the app's own volume. */
   volume: () => number
+  /** Set that level, kept for next time (the native room's "?"). */
+  setVolume: (value: number) => void
   clickVoice: () => ClickVoice
+  /** Choose the click, and hear it once. */
+  chooseClick: (voice: ClickVoice) => void
 }
 
 export const EarRoomContext = createContext<EarRoomApi>({
   openPanel: () => undefined,
   volume: () => EAR_VOLUME.defaultValue,
+  setVolume: () => undefined,
   clickVoice: earClickVoice,
+  chooseClick: () => undefined,
 })
 
 export function useEarRoom(): EarRoomApi {

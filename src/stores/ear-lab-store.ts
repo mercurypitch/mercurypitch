@@ -235,6 +235,60 @@ export function recordIdentificationAnswer(args: {
   return nextPlayer
 }
 
+/**
+ * A rated run's ledger as it found it: the player's rating on its track,
+ * every item's difficulty and the confusions. Rated runs write each answer
+ * as it lands, so a run the native room's Close ends ("Nothing from it is
+ * kept") puts this back rather than keeping half a run.
+ */
+export interface RatedRunMark {
+  readonly drillId: string
+  readonly rating: Rating | undefined
+  readonly items: Readonly<Record<string, Rating>>
+  readonly confusions: Readonly<Record<string, number>>
+}
+
+export function markRatedRun(drillId: string): RatedRunMark {
+  return {
+    drillId,
+    rating: ratings()[drillId],
+    items: itemStates(),
+    confusions: confusions(),
+  }
+}
+
+/** Every key whose value moved since `before`, put back as it was. */
+function restoreMoved<T>(
+  now: Record<string, T>,
+  before: Readonly<Record<string, T>>,
+  owned: (key: string) => boolean,
+): Record<string, T> {
+  const next = { ...now }
+  for (const key of new Set([...Object.keys(now), ...Object.keys(before)])) {
+    if (!owned(key) || now[key] === before[key]) continue
+    if (key in before) next[key] = before[key]
+    else delete next[key]
+  }
+  return next
+}
+
+/** Put back what a rated run wrote since its mark: its rating, the item
+ *  difficulties it moved and the confusions it booked on its own track. */
+export function rollBackRatedRun(mark: RatedRunMark): void {
+  setRatings((now) =>
+    restoreMoved(
+      now,
+      mark.rating ? { [mark.drillId]: mark.rating } : {},
+      (key) => key === mark.drillId,
+    ),
+  )
+  setItemStates((now) => restoreMoved(now, mark.items, () => true))
+  const prefix = `${mark.drillId}|`
+  setConfusions((now) =>
+    restoreMoved(now, mark.confusions, (key) => key.startsWith(prefix)),
+  )
+}
+
 /** Confusion counts for a drill, keyed `expected>answered`. */
 export function earConfusions(drillId: string): Record<string, number> {
   const out: Record<string, number> = {}

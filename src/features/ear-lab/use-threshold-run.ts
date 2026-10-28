@@ -19,6 +19,18 @@
 // The drill supplies one hook: playStimulus(level), which may
 // report visual steps (which tone / which click) through the
 // provided api.
+//
+// A drill that can sound a trial again exactly as it was (options.
+// replayable) lets the native room offer Hear it again: once before
+// the answer on a practice question, never on a sealed one, and as
+// often as wanted once answered (replay-policy.ts). The plate counts
+// the replays taken before an answer.
+//
+// Sound taken away mid-question (a call, headphones out) voids the
+// question in flight: holdQuestion() silences it and resumeQuestion()
+// sounds the same trial again from its start, once any of it was heard
+// (the drill has stored it by then), or a fresh one at the same level
+// if the hold came first. Answers already given stand.
 // ============================================================
 
 import { batch, createSignal, onCleanup } from 'solid-js'
@@ -32,6 +44,7 @@ import type { StaircaseState, ThresholdEstimate } from '@/lib/ear/staircase'
 import { createStaircase, recordTrial, thresholdOf } from '@/lib/ear/staircase'
 import { trackFirstValue } from '@/lib/first-value'
 import { completeCalibrationRun, creditEarSession, latestThresholdReading, markSprintSegmentDone, recordThresholdReading, takeSprintRunLength, } from '@/stores/ear-lab-store'
+import { canReplay, PRACTICE_REPLAYS_PER_QUESTION } from './replay-policy'
 import { createRevealPacer } from './reveal-pacing'
 
 export type ThresholdRunMode = 'practice' | 'calibration'
@@ -53,6 +66,11 @@ export interface ThresholdRunResult {
   mode: ThresholdRunMode
   /** Set on calibration runs: the Mercury Index that got marked. */
   markedIndex?: number
+  /** Questions heard twice before their answer (practice only). */
+  replays?: number
+  /** A calibration's three tracks, each its own reading, in track order:
+   *  null for a track that found no threshold. */
+  trackValues?: Array<number | null>
 }
 
 export interface StimulusApi {
@@ -61,12 +79,21 @@ export interface StimulusApi {
   /** True once the run was stopped or torn down — stimulus loops
    *  must check this after every await and bail. */
   cancelled: () => boolean
+  /** The trial asked for again: a replayable drill sounds the very
+   *  stimulus it played last, not a fresh one at the same level. Only
+   *  ever true once this trial's stimulus has begun to sound, so what
+   *  the drill kept is this trial's and not the last one's. */
+  replay: boolean
 }
 
 export interface ThresholdRunOptions {
   /** Silence anything already committed to the audio clock. Called
    *  on stop and on unmount, before the phase flips. */
   cancelStimulus?: () => void
+  /** playStimulus honours `api.replay`, so a trial can be heard again.
+   *  A function when it depends on the run (Span's sung answers: a
+   *  replay in the answer window would be heard by the microphone). */
+  replayable?: boolean | (() => boolean)
 }
 
 export function useThresholdRun(
@@ -90,17 +117,37 @@ export function useThresholdRun(
   /** Calibration only: reversals per interleaved track, for the strip. */
   const [trackReversals, setTrackReversals] = createSignal<number[]>([])
   const [activeTrack, setActiveTrack] = createSignal(0)
+  /** Replays taken before an answer, this run and this question. */
+  const [replays, setReplays] = createSignal(0)
+  const [replaysThisTrial, setReplaysThisTrial] = createSignal(0)
+  /** True while a replay sounds, before or after the answer. */
+  const [replaying, setReplaying] = createSignal(false)
+  /** The run took the shorter length a Today's segment armed. */
+  const [short, setShort] = createSignal(false)
+  /** The question in flight was voided; it waits for resumeQuestion(). */
+  const [held, setHeld] = createSignal(false)
 
   let single: StaircaseState | null = null
   let tracks: CalibrationTrack[] = []
   let activeTrackIndex = 0
   let startedAt = 0
   let cancelled = false
+  /** Bumped when a question is sounded again from its start: the sound
+   *  it replaces must not arm the answer when it resolves. */
+  let question = 0
   /** Bumped by every start(). A round still awaiting its stimulus when
    *  the run was stopped and started again would otherwise resume once
    *  that stimulus resolves — `cancelled` is false again by then — and
    *  arm the new run's question over the old trial. */
   let run = 0
+  /** Bumped by every new trial; a replay or a resumed question keeps it. */
+  let trial = 0
+  /** The last trial whose stimulus began to sound: by its first step the
+   *  drill has stored it, and it can be sounded again exactly. */
+  let heardTrial = 0
+  /** Bumped by every replay and by the next trial, which silences one
+   *  still sounding: only the latest replay's end clears the flag. */
+  let replayToken = 0
   const pacer = createRevealPacer(
     () => {
       setLastCorrect(null)
@@ -108,6 +155,16 @@ export function useThresholdRun(
     },
     () => cancelled,
   )
+
+  /** The step reporter a stimulus is given: it also notes that this
+   *  trial's stimulus has begun to sound. */
+  function stepper(stale: () => boolean): (index: number) => void {
+    const mine = trial
+    return (index) => {
+      if (index > 0 && !stale()) heardTrial = mine
+      setStimulusStep(index)
+    }
+  }
 
   /** Turns each track needs: the sealed protocol's six, or the
    *  drill's own for practice. */
@@ -163,11 +220,15 @@ export function useThresholdRun(
       setReversalsDone(0)
       setResult(null)
       setLastCorrect(null)
+      setReplays(0)
+      setReplaying(false)
+      setHeld(false)
     })
     // The sprint card arms the shorter length its segment promised.
     // Whichever run starts next takes it, in either mode, so it cannot
     // leak into a later run of the drill from the bench.
     const armed = takeSprintRunLength(drill.id)
+    setShort(runMode === 'practice' && armed?.reversals !== undefined)
     if (runMode === 'practice') {
       const reversalsToStop =
         armed?.reversals ?? drill.staircase.reversalsToStop
@@ -191,8 +252,17 @@ export function useThresholdRun(
 
   async function playRound(): Promise<void> {
     const mine = run
-    const stale = (): boolean => cancelled || mine !== run
+    question += 1
+    const asked = question
+    const stale = (): boolean => cancelled || mine !== run || asked !== question
     if (stale()) return
+    // A replay of the last verdict still sounding stops: the next trial
+    // is not played over it.
+    if (replaying()) {
+      replayToken += 1
+      options?.cancelStimulus?.()
+      setReplaying(false)
+    }
 
     if (mode() === 'calibration') {
       const index = nextTrackIndex(tracks)
@@ -208,12 +278,18 @@ export function useThresholdRun(
     }
 
     const currentLevel = currentStaircase()?.level ?? drill.staircase.start
+    trial += 1
     batch(() => {
       setLevel(currentLevel)
       setStimulusStep(0)
+      setReplaysThisTrial(0)
       setPhase('stimulus')
     })
-    const api: StimulusApi = { step: setStimulusStep, cancelled: stale }
+    const api: StimulusApi = {
+      step: stepper(stale),
+      cancelled: stale,
+      replay: false,
+    }
     await playStimulus(currentLevel, api)
     // Stop may have landed while the stimulus was sounding, or the run
     // may have been started again; arming the answer here would
@@ -252,7 +328,68 @@ export function useThresholdRun(
 
     // The verdict is on the stage; the pacer decides when the next
     // trial sounds — the rack's hold, or Next.
-    pacer.hold()
+    pacer.hold(correct)
+  }
+
+  /** Whether Hear it again would sound now (replay-policy.ts). */
+  function replayAllowed(): boolean {
+    const replayable = options?.replayable
+    if (
+      replayable === undefined ||
+      replayable === false ||
+      (typeof replayable === 'function' && !replayable())
+    ) {
+      return false
+    }
+    const now = phase()
+    return canReplay({
+      run: mode() === 'calibration' ? 'sealed' : 'practice',
+      beat:
+        now === 'stimulus'
+          ? 'listen'
+          : now === 'answer' || now === 'reveal'
+            ? now
+            : 'other',
+      sounding: now === 'stimulus' || replaying(),
+      usedThisQuestion: replaysThisTrial(),
+    })
+  }
+
+  /** Sound this trial again. Before the answer the pads wait for it, as
+   *  they did the first time; after it, a hold counting down stops and
+   *  waits for Next. */
+  async function replay(): Promise<void> {
+    if (!replayAllowed()) return
+    const mine = run
+    const asked = question
+    replayToken += 1
+    const token = replayToken
+    const stale = (): boolean => cancelled || mine !== run || asked !== question
+    const before = phase()
+    if (before === 'answer') {
+      batch(() => {
+        setReplaysThisTrial((n) => n + 1)
+        setReplays((n) => n + 1)
+        setStimulusStep(0)
+        setPhase('stimulus')
+      })
+    } else {
+      pacer.pause()
+      setStimulusStep(0)
+    }
+    setReplaying(true)
+    try {
+      // Replays come only once the trial has been heard through.
+      await playStimulus(level(), {
+        step: stepper(stale),
+        cancelled: stale,
+        replay: true,
+      })
+    } finally {
+      if (mine === run && token === replayToken) setReplaying(false)
+    }
+    if (stale()) return
+    if (before === 'answer') setPhase('answer')
   }
 
   function finish(complete: boolean): void {
@@ -270,7 +407,12 @@ export function useThresholdRun(
           provisional: estimate.provisional,
         })
       }
-      setResult({ estimate, trials: trials(), mode: 'practice' })
+      setResult({
+        estimate,
+        trials: trials(),
+        mode: 'practice',
+        replays: replays(),
+      })
     } else {
       const pooled = calibrationReading(tracks, drill.staircase.stepMode)
       let markedIndex: number | undefined
@@ -288,6 +430,10 @@ export function useThresholdRun(
         trials: trials(),
         mode: 'calibration',
         markedIndex,
+        // In track order, so the plate names each by its letter.
+        trackValues: tracks.map(
+          (track) => thresholdOf(track.state)?.value ?? null,
+        ),
       })
     }
 
@@ -343,6 +489,50 @@ export function useThresholdRun(
     options?.cancelStimulus?.()
   }
 
+  /** The sound was taken away. A question still sounding is void; a
+   *  verdict counting down waits for Next. */
+  function holdQuestion(): void {
+    if (phase() === 'reveal') {
+      pacer.pause()
+      return
+    }
+    if (phase() !== 'stimulus' || cancelled) return
+    question += 1
+    options?.cancelStimulus?.()
+    batch(() => {
+      setReplaying(false)
+      setStimulusStep(0)
+      setHeld(true)
+    })
+  }
+
+  /** The voided question, from its start: the same trial, at the same
+   *  level. Sounded again as it was once any of it was heard; a hold
+   *  that came before its first step may also have come before the drill
+   *  stored it (the Grid waits on the audio context first), so then it is
+   *  played fresh, never the last trial's stimulus at this level. */
+  async function resumeQuestion(): Promise<void> {
+    if (!held() || cancelled) return
+    const mine = run
+    question += 1
+    const asked = question
+    const stale = (): boolean => cancelled || mine !== run || asked !== question
+    setHeld(false)
+    await playStimulus(level(), {
+      step: stepper(stale),
+      cancelled: stale,
+      replay: heardTrial === trial,
+    })
+    if (stale()) return
+    setPhase('answer')
+  }
+
+  /** Leave mid-run keeping nothing. A threshold run writes nothing
+   *  until it finishes, so cancelling is the whole of it. */
+  function abandon(): void {
+    dispose()
+  }
+
   onCleanup(dispose)
 
   /** Letter grade from where the reading lands on the drill's own
@@ -376,12 +566,33 @@ export function useThresholdRun(
     /** Auto-advance off: the run waits on the verdict for next(). */
     parked: pacer.parked,
     next: pacer.next,
+    /** A hold counting down waits for Next instead. */
+    pause: pacer.pause,
     result,
     grade,
+    replays,
+    replaying,
+    replayAllowed,
+    replay,
+    /** Replays still open before this answer: practice questions count
+     *  them, every other run has none to count. */
+    replaysLeft: (): number | null =>
+      mode() === 'practice' && phase() !== 'reveal'
+        ? Math.max(0, PRACTICE_REPLAYS_PER_QUESTION - replaysThisTrial())
+        : null,
+    /** The drill can sound a trial again at all (some runs of it). */
+    replayable:
+      options?.replayable !== undefined && options.replayable !== false,
+    /** A Today's short run. */
+    short,
+    held,
+    holdQuestion,
+    resumeQuestion,
     start,
     answerCorrect,
     stop,
     reset,
     dispose,
+    abandon,
   }
 }

@@ -25,6 +25,9 @@ export interface HapticsService {
   success(): void
   /** Cautionary pattern — destructive confirm, run aborted. */
   warning(): void
+  /** The heaviest press, for a mark made for good (a calibration sealed).
+   *  Optional: a device without one feels the success pattern. */
+  seal?(): void
 }
 
 export interface KeepAwakeService {
@@ -72,6 +75,7 @@ const WEB_HAPTICS: HapticsService = {
   tapLight: () => vibrate(10),
   success: () => vibrate([15, 30, 40]),
   warning: () => vibrate([30, 40, 30]),
+  seal: () => vibrate(60),
 }
 
 let installedHaptics: HapticsService = WEB_HAPTICS
@@ -138,6 +142,10 @@ export const platform: PlatformServices = {
     tapLight: () => installedHaptics.tapLight(),
     success: () => installedHaptics.success(),
     warning: () => installedHaptics.warning(),
+    seal: () =>
+      installedHaptics.seal
+        ? installedHaptics.seal()
+        : installedHaptics.success(),
   },
 
   keepAwake: {

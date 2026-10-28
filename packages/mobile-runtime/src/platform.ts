@@ -101,7 +101,7 @@ export type AppLifecycleHandler = (state: AppLifecycleState) => void
 // Haptics
 // ------------------------------------------------------------
 //
-// Three named moments rather than the plugin's full palette. A product that
+// Four named moments rather than the plugin's full palette. A product that
 // needs to pick an impact style is describing physics; these describe events,
 // which is what a UI actually knows.
 
@@ -126,6 +126,15 @@ export async function hapticWarning(): Promise<void> {
   await attempt(async () => {
     const { Haptics, NotificationType } = await import('@capacitor/haptics')
     await Haptics.notification({ type: NotificationType.Warning })
+  })
+}
+
+/** Something marked for good: a calibration sealed. The heaviest press the
+ *  device has, kept for the rare moment that earns it. */
+export async function hapticSeal(): Promise<void> {
+  await attempt(async () => {
+    const { Haptics, ImpactStyle } = await import('@capacitor/haptics')
+    await Haptics.impact({ style: ImpactStyle.Heavy })
   })
 }
 
