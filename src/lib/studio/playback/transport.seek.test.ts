@@ -258,8 +258,19 @@ describe('Studio transport seek', () => {
     const at = epoch + LATENCY
     const [held, next] = graphs.map(envelopeOf)
     expect(faded(held)).toBe(false)
-    expect(held.gain.linearRamps).toEqual([{ value: 0, time: at + 0.03 }])
-    expect(next.gain.linearRamps).toEqual([{ value: 1, time: at + 0.03 }])
+    // The two places are unrelated: they cross at equal power, as a seek
+    // in place does, so the level holds through the 30 ms.
+    expect(held.gain.linearRamps.at(-1)).toEqual({ value: 0, time: at + 0.03 })
+    expect(next.gain.linearRamps.at(-1)).toEqual({ value: 1, time: at + 0.03 })
+    const halfway = held.gain.linearRamps.find(
+      ({ time }) => Math.abs(time - (at + 0.015)) < 1e-9,
+    )
+    expect(halfway?.value).toBeCloseTo(Math.SQRT1_2, 9)
+    for (const [index, { value }] of held.gain.linearRamps.entries())
+      expect(value ** 2 + next.gain.linearRamps[index].value ** 2).toBeCloseTo(
+        1,
+        12,
+      )
     // The old place plays until the handover, but the playhead stays on the new one.
     f.ctx.currentTime = at - 0.02
     await vi.advanceTimersByTimeAsync(33)

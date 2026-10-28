@@ -23,7 +23,7 @@ import type { StudioBufferCache } from './buffer-cache'
 import { createStudioBufferCache } from './buffer-cache'
 import { buildStudioGraph, studioGraphWorkingBytes } from './graph'
 import type { StudioHandoff } from './handoff'
-import { cancelHandoff, handoffTiming, scheduleHandoff } from './handoff'
+import { cancelHandoff, HANDOFF_CANCEL_MARGIN_SECONDS, handoffTiming, scheduleHandoff, } from './handoff'
 import type { StudioDrafts, StudioLaneDraft } from './in-place'
 import { applyDrafts, applyMix, applySound, followMaster, followRepeat, heldMix, playInPlace, withDrafts, } from './in-place'
 import type { StudioRunLayout } from './live-edit'
@@ -42,8 +42,6 @@ export type { StudioLaneLevel } from './run'
 const RELEASE_MS = 240
 // A handed-over run is silent once its crossfade ends; free it a little later.
 const HANDOFF_RELEASE_SLACK_MS = 60
-// A handover this close is left to happen: taking it back could catch its crossfade begun.
-const CANCEL_MARGIN_SECONDS = 0.05
 // Lead time between building the graph and its first sound. It follows how
 // long the last build took, so a fast machine starts in about a tenth of a
 // second and a slow one still schedules ahead of its clock.
@@ -416,7 +414,8 @@ export function createStudioTransport(options: StudioTransportOptions) {
       createLaneMeter,
       fromSilence: !outgoing,
       open: outgoing
-        ? (envelope, time) => scheduleHandoff(outgoing.envelope, envelope, time)
+        ? (envelope, time) =>
+            scheduleHandoff(outgoing.envelope, envelope, time, seek)
         : openRunEnvelope,
     })
     active = run
@@ -482,7 +481,7 @@ export function createStudioTransport(options: StudioTransportOptions) {
    */
   function cancelHandover(handoff: StudioHandoff): boolean {
     const { from, to, at } = handoff
-    if (at - to.ctx.currentTime < CANCEL_MARGIN_SECONDS) return false
+    if (at - to.ctx.currentTime < HANDOFF_CANCEL_MARGIN_SECONDS) return false
     cancelHandoff(from.envelope, at)
     from.openAt = Math.max(from.openAt, at)
     clearTimeout(retiredTimers.get(from))

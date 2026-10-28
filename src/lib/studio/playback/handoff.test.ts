@@ -78,10 +78,41 @@ describe('Studio handoff crossfade', () => {
     expect(next.gain.linearRamps).toEqual([{ value: 1, time: done }])
   })
 
+  it("crosses a seek's two unrelated places at equal power: the gains' squares sum to one all the way", () => {
+    const ctx = new PlaybackContext()
+    const held = ctx.createGain()
+    const next = ctx.createGain()
+    const done = scheduleHandoff(
+      held as unknown as GainNode,
+      next as unknown as GainNode,
+      3,
+      true,
+    )
+    expect(done).toBeCloseTo(3.03, 12)
+    expect(held.gain.events).toEqual([{ kind: 'set', time: 3, value: 1 }])
+    expect(next.gain.events).toEqual([{ kind: 'set', time: 3, value: 0 }])
+    const out = held.gain.linearRamps
+    const into = next.gain.linearRamps
+    expect(out.length).toBeGreaterThanOrEqual(8)
+    expect(into.map(({ time }) => time)).toEqual(out.map(({ time }) => time))
+    for (const [index, { value }] of out.entries())
+      expect(value ** 2 + into[index].value ** 2).toBeCloseTo(1, 12)
+    // Halfway each side is at -3 dB, where a linear pair would be at -6 dB.
+    const middle = out[out.length / 2 - 1]
+    expect(middle.time).toBeCloseTo(3.015, 12)
+    expect(middle.value).toBeCloseTo(Math.SQRT1_2, 12)
+    expect(out.at(-1)).toEqual({ value: 0, time: done })
+    expect(into.at(-1)).toEqual({ value: 1, time: done })
+  })
+
   it('takes back only the fade of a crossfade not begun, keeping the hold at its start', () => {
     const ctx = new PlaybackContext()
     const held = ctx.createGain()
     cancelHandoff(held as unknown as GainNode, 3)
-    expect(held.gain.events).toEqual([{ kind: 'cancel', time: 3.015 }])
+    // Before the first point either fade draws, after the hold at 3 s.
+    const [cancel] = held.gain.events
+    expect(cancel).toMatchObject({ kind: 'cancel' })
+    expect(cancel.time).toBeGreaterThan(3)
+    expect(cancel.time).toBeLessThan(3 + 0.03 / 8)
   })
 })

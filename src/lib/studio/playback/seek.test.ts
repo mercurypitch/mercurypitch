@@ -1,6 +1,7 @@
 // Studio seek tests — every run heard moves to one frame from one shared moment, and its meters start again there.
 import { describe, expect, it, vi } from 'vitest'
 import type { StudioHandoff } from './handoff'
+import { PlaybackContext } from './playback.test-fixtures'
 import type { StudioRun } from './run'
 import { RUN_LOOKAHEAD_SECONDS } from './run'
 import { seekEarliest, seekInPlace, seekRuns, seekTiming } from './seek'
@@ -34,6 +35,7 @@ function fakeRun(
     silentUntil: options.silentUntil ?? -Infinity,
     meter: { restart: vi.fn() },
     laneMeter: { restart: vi.fn() },
+    envelope: new PlaybackContext().createGain(),
   }
 }
 
@@ -148,8 +150,22 @@ describe('Studio seek', () => {
     expect(done.graph.seek).not.toHaveBeenCalled()
     expect(fading.graph.seek).toHaveBeenCalledOnce()
     expect(newest.graph.seek).toHaveBeenCalledOnce()
-    // Both now play the same frames: the handover is no longer a seek's.
+    // Both now play the same frames: the handover is no longer a seek's,
+    // and the crossfade it has not begun turns linear.
     expect(handoffs.every((handoff) => !handoff.seek)).toBe(true)
+    for (const [envelope, value] of [
+      [fading.envelope, 0],
+      [newest.envelope, 1],
+    ] as const) {
+      expect(envelope.gain.events).toEqual([
+        { kind: 'cancel', time: expect.closeTo(1.2 + 0.03 / 16, 12) },
+      ])
+      expect(envelope.gain.linearRamps).toEqual([
+        { value, time: expect.closeTo(1.23, 12) },
+      ])
+    }
+    // The handover already over is left alone.
+    expect(done.envelope.gain.events).toEqual([])
   })
 
   it('hands a seek the held run cannot follow to the new run at that frame, once the held run is fully open', () => {

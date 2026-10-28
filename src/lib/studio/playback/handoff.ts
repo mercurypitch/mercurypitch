@@ -14,10 +14,22 @@
 // Linear is right here and only here: the crossfade sits inside continuous
 // material (.claude/memory/audio-pop-free-playback.md). A start from silence
 // keeps the exponential attack, and a stop keeps the setTargetAtTime release.
+//
+// A seek the playing run cannot follow is the exception: it hands over to a
+// run built at the target, so the two sides are different places in the
+// song, unrelated, and their powers add. That crossfade is equal-power, as a
+// seek in place is (seek-crossfade.ts): a linear pair sags 3 dB halfway.
 import type { StudioRun, StudioRunTiming } from './run'
 import { runTimelineFrame, STUDIO_RUN_RATE } from './run'
 
 export const HANDOFF_SECONDS = 0.03
+/** A handover this close is left to happen: taking it back could catch its crossfade begun. */
+export const HANDOFF_CANCEL_MARGIN_SECONDS = 0.05
+/**
+ * Straight segments in an equal-power crossfade. Each sags under the curve
+ * by cos²(π/32), 0.04 dB at most, and every segment ends on it.
+ */
+const POWER_SEGMENTS = 8
 
 /** A run taking over: `from` is heard until `at`, then crossfades to `to`. */
 export interface StudioHandoff {
@@ -54,30 +66,70 @@ export function handoffTiming(
   }
 }
 
+/** The crossfade from `time`: linear, or equal-power for two unrelated places. */
+function crossfade(
+  held: GainNode,
+  next: GainNode,
+  time: number,
+  unrelated: boolean,
+): void {
+  const segments = unrelated ? POWER_SEGMENTS : 1
+  for (let segment = 1; segment <= segments; segment++) {
+    const [out, into] = crossfadeGains(segment / segments, unrelated)
+    const at = time + (HANDOFF_SECONDS * segment) / segments
+    held.gain.linearRampToValueAtTime(out, at)
+    next.gain.linearRampToValueAtTime(into, at)
+  }
+}
+
+/** The held and next gains `share` of the way through a crossfade. */
+function crossfadeGains(share: number, unrelated: boolean): [number, number] {
+  if (share >= 1) return [0, 1]
+  if (!unrelated) return [1 - share, share]
+  const angle = (Math.PI / 2) * share
+  return [Math.cos(angle), Math.sin(angle)]
+}
+
 /**
  * Crossfade from the held run's envelope to the next one's at `time`. The
  * held envelope is fully open by then (handoffTiming waits for it), and
  * nothing is scheduled on it after `time`, so the ramps simply append.
+ * `unrelated` when the next run plays another place: a seek's.
  */
 export function scheduleHandoff(
   held: GainNode,
   next: GainNode,
   time: number,
+  unrelated = false,
 ): number {
   held.gain.setValueAtTime(1, time)
-  held.gain.linearRampToValueAtTime(0, time + HANDOFF_SECONDS)
   next.gain.value = 0
   next.gain.setValueAtTime(0, time)
-  next.gain.linearRampToValueAtTime(1, time + HANDOFF_SECONDS)
+  crossfade(held, next, time, unrelated)
   return time + HANDOFF_SECONDS
 }
 
 /**
  * Take back a crossfade that has not begun, so the held envelope stays open.
- * Only the fade's end is cancelled: cancelling at `time` itself would also
- * drop an attack that ends there and close the envelope. The hold at `time`
- * stays, so the next handoff from this envelope starts at `time` or later.
+ * Only the fade is cancelled, from before the first point it draws:
+ * cancelling at `time` itself would also drop an attack that ends there and
+ * close the envelope. The hold at `time` stays, so the next handoff from
+ * this envelope starts at `time` or later.
  */
 export function cancelHandoff(held: GainNode, time: number): void {
-  held.gain.cancelScheduledValues(time + HANDOFF_SECONDS / 2)
+  held.gain.cancelScheduledValues(time + HANDOFF_SECONDS / POWER_SEGMENTS / 2)
+}
+
+/**
+ * A seek's handover whose two runs a later seek in place has put on the
+ * same frames crosses linearly after all, as an edit's does: equal power
+ * over the same audio would swell 3 dB halfway. Left alone once it is too
+ * close to change, or when it begins before the two runs meet.
+ */
+export function crossSameFrames({ from, to, at }: StudioHandoff): void {
+  const now = from.ctx.currentTime
+  if (at - now < HANDOFF_CANCEL_MARGIN_SECONDS || at < from.audibleEpoch) return
+  cancelHandoff(from.envelope, at)
+  cancelHandoff(to.envelope, at)
+  crossfade(from.envelope, to.envelope, at, false)
 }
