@@ -837,3 +837,9 @@ Note: the lanes' memory gate read a stale cgroup path after the 21:00 restart (f
 - prod-upd 1-3 on ccb8f912a: CHANGELOG first heading 0.9.24, package.json 0.9.24, no v0.9.24 tag locally or on origin.
 - Release Tours run 15 (id 40654022450) dispatched 08:02 on ccb8f912a. One-shot send_later at ~08:21 to read it.
 - Dev: Build & Deploy for 7a8271d64 (#1238) succeeded 07:51; ccb8f912a's running (docs only).
+
+## 08:20 UTC 28 Oct: 2-hourly check-in; Release Tours run 15 GREEN on ccb8f912a
+- Run 40654022450 (run 15) on ccb8f912a, both jobs success (08:02-08:10): desktop 144 steps, 0 without a visible spotlight, 0 WIDE/BAR, 4 skipped (cloud board), 11 known wide; phone 127 / 0 / 0 / 4 / 9. Logs read from the run zip (rt15/x/). prod-upd step 4 passes on ccb8f912a. The 08:22 one-shot (trig_01T13qKM8SAQD7Hy6ebkfdL5) deleted: nothing left for it.
+- Open PRs: none of this session's. #1240 (Komediruzecki, 07:59, .gitignore for .playwright-mcp/, on 7a8271d64) is the owner's or another session's: not touched. If it merges before the tag, main moves: re-read origin/main before sending the tag SHA.
+- Running: the journeys tester (presses) and the Lesson 12 builder (rd; P13 in progress, uncommitted edits in rd are the builder's). Both slots in use.
+- NEXT: tester's report -> owner dev test list (release24/OWNER-DEVTEST.draft.md) -> owner tests -> tag commands with origin/main's SHA at that time. Lesson 12 hand-back -> lead review at max.
