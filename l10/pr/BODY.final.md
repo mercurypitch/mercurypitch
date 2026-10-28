@@ -69,6 +69,10 @@ The lead reviews' findings, folded into the commits they fix:
 - **A cold open test compared two real-clock readings exactly**, and failed once on 1600.0000000000005. It now compares to 6 places, as its sibling does (13).
 - **Docs brought up to the page**: where Play the chord sits on a phone, and why it stays there (16); the stuck stage's measured heights, the games' eight roots and the level of two notes together (29); Lesson 11's current hook in the next-lesson line, and two of the Length's word counts (26); the spec reads main, not Lesson 6's branch, and HANDOFF records #1206 and #1207 (28); six citations read again (27).
 
+CI found one more, folded the same way:
+
+- **The page-wide target check measured a card mid-landing.** The Wrap's checks scroll the season map's bar into view, and the kit's reveal lands that bar from `scale(.975)` over a second (`kit/reveal.ts`), so its filter chips were measured in the first frame, 42.9 px tall; CI's Chromium read 43. Each target is now measured at rest, once the entrance its scroll started has played out (24).
+
 ## First paint (build:e2e, bytes)
 
 | Page | Script on `main` | Script here | Ceiling | Left | CSS on `main` | CSS here | Ceiling |
@@ -88,7 +92,7 @@ Measured in `build:e2e` on `main` `d37453987` and on this branch; Left is what t
 
 ## Checks
 
-These ran on the same tree before its twelve `(lesson-10)` subjects were reworded and its five module-map commits were squashed into one (31): `71289c89f` on `main` `d37453987`. The tree is identical, and the 30 other patches are unchanged.
+These ran on `71289c89f` on `main` `d37453987`: this code before its twelve `(lesson-10)` subjects were reworded, its five module-map commits were squashed into one (31), and CI's fix above went into 24.
 
 - `pnpm check`: no errors and the 11 warnings `main` has. It changed no files.
 - Unit tests for the lessons and the lesson pages: 201 files, 2,418 tests, all pass.
@@ -98,7 +102,9 @@ These ran on the same tree before its twelve `(lesson-10)` subjects were reworde
 - `build:e2e`: in this checkout Vite stops when it copies the Glassworks model, a Git LFS pointer here, after it has written the site, so the six bundle asserts ran on that site by hand. All pass, the first-paint budgets among them, and the drafts assert finds Lessons 3 to 10 shown by default and pages 1 to 10 built. Every lesson page's first paint is the table above, to the byte.
 - In the browser, on that build: Lesson 10's four specs, the next-lesson card's and the stage-fit spec, 139 tests with no retries: all pass.
 
-Earlier, on code this head carries unchanged (every commit since touches only `docs/`), all 42 `learn-` specs ran on a `build:e2e`: 596 passed and 2 skipped, Lessons 1 and 2's own skips.
+CI's fix changes one test helper and nothing that is built, and the branch now sits on `main` `68a3c40e7`, which adds #1235's worker test and changes no page. On `06f7021f0`, the fixed branch before that rebase, with the same build: `pnpm check` (no errors, the same 11 warnings, no files changed), `pr:validate`, `metrics:check`, `docs:index:check` and `plan-cites check` (the same 151 findings) pass again, and the same 139 browser tests pass with no retries.
+
+Earlier, on the same page code (every commit since touches only `docs/` or that test helper), all 42 `learn-` specs ran on a `build:e2e`: 596 passed and 2 skipped, Lessons 1 and 2's own skips.
 
 ## Left open
 

@@ -63,7 +63,7 @@ checks = f"""These ran on `71289c89f` on `main` `d37453987`: this code before it
 - `build:e2e`: in this checkout Vite stops when it copies the Glassworks model, a Git LFS pointer here, after it has written the site, so the six bundle asserts ran on that site by hand. All pass, the first-paint budgets among them, and the drafts assert finds Lessons 3 to 10 shown by default and pages 1 to 10 built. Every lesson page's first paint is the table above, to the byte.
 - In the browser, on that build: Lesson 10's four specs, the next-lesson card's and the stage-fit spec, {e2e} tests with no retries: all pass.
 
-CI's fix changes one test helper and nothing that is built, and the branch now sits on `main` `{main}`, which adds #1235's worker test and changes no page. On `{fixed}`, the fixed branch before that rebase, with the same build: `pnpm check` (no errors, the same {warnings} warnings, no files changed), `pr:validate`, `metrics:check`, `docs:index:check` and `plan-cites check` ({cites2} findings) pass again, and the same {e2e2} browser tests pass with no retries.
+CI's fix changes one test helper and nothing that is built, and the branch now sits on `main` `{main}`, which adds #1235's worker test and changes no page. On `{fixed}`, the fixed branch before that rebase, with the same build: `pnpm check` (no errors, the same {warnings} warnings, no files changed), `pr:validate`, `metrics:check`, `docs:index:check` and `plan-cites check` (the same {cites2} findings) pass again, and the same {e2e2} browser tests pass with no retries.
 
 Earlier, on the same page code (every commit since touches only `docs/` or that test helper), all 42 `learn-` specs ran on a `build:e2e`: 596 passed and 2 skipped, Lessons 1 and 2's own skips."""
 
