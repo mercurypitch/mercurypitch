@@ -22,6 +22,8 @@ interface Props {
   name: string
   /** Its level while the song plays; undefined while it does not. */
   level: StudioLaneLevel | undefined
+  /** Counts seeks: a change starts the peak hold again, as the master meter's does. */
+  holdEpoch?: number
 }
 
 /** The gap between the fader and the meter, in pixels. */
@@ -40,6 +42,7 @@ const reducedMotion =
 export function StudioStripMeter(props: Props) {
   let meter!: HTMLDivElement
   let hold: StripHold | null = null
+  let heldEpoch: number | undefined
   const [box, setBox] = createSignal<{
     top: number
     left: number
@@ -47,6 +50,12 @@ export function StudioStripMeter(props: Props) {
   } | null>(null)
   const reading = createMemo(() => {
     const level = props.level
+    // A seek starts the hold again: the new place's peaks are not the old one's.
+    const epoch = props.holdEpoch
+    if (epoch !== heldEpoch) {
+      heldEpoch = epoch
+      hold = null
+    }
     if (!level) {
       hold = null
       return null
