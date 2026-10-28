@@ -39,6 +39,9 @@
   - The cold open's run: `Names.set('flats')` in main.ts (decision 27), and Play the chord's place on a phone (decision 28).
   - Step 5's task shows its Notice and the "Do or la?" drawer, kept hidden (`data-scale-reveal`) until the reveal.
 
+- **From the PR's first CI run (28 Oct):**
+  - learn-lesson-09-qa.spec.ts:138 keeps its own copy of the page-wide target measure, without Lesson 10's at-rest wait; it calls emulateMedia after goto, when kit/reveal.ts has already armed its observers, so a check right after another section's can catch a card mid-landing (97.5 % scale) as Lesson 10's did. Make it import expectTargets from helpers/lesson-qa.ts once Lesson 10 is on main, or emulate reduced motion before goto.
+  - kit/reveal.ts reads reduced motion once, at initReveals; a viewer who turns it on mid-visit still gets the landings. Small; worth a matchMedia check in from().
 - **From run 6 (27 Oct, the final pass):**
   - Owner, for the series: the Contract asks 44 px of every target, and the kit's trail links are 24 px by the kit's own decision (lesson-sections.css:8-15, WCAG 2.5.8), on every lesson page, Lessons 1 and 2 published among them. Keep them and say so in the Contract, or give the links a 44 px hit area by an invisible pad that changes no layout.
   - 0.9.24 Part A item 5 (sent to the polish builder): the sing card's lines sit flush under their button rows (`.sing-card .sing-btns` has a top margin only), after "Effortful" and under Play Merc's notes, on Lessons 6, 8 and 10. When it is on main, check Lesson 10 at 390 and 1440 after its rebase.
