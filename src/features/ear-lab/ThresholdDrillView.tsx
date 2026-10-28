@@ -12,18 +12,28 @@
 // pendulums under the instrument and, sealed, etches the glass.
 //
 // Mirrors IdentificationDrillView on the Ruler-B side.
+//
+// On a phone build with the Ear Lab with Merc it also hands the native
+// room what it draws on its own (`room`, stage-room.ts): the run line
+// and its staircase trace, Hear it again, the plate in numbers. A run a
+// station row or Today's button asked for starts as the room opens.
 // ============================================================
 
 import type { JSX } from 'solid-js'
-import { createEffect, createSignal, Show, untrack } from 'solid-js'
+import { createEffect, createSignal, onMount, Show, untrack } from 'solid-js'
 import { calibrationDueAt } from '@/lib/ear/calibration'
+import { findThresholdDrill } from '@/lib/ear/drills'
+import { EAR_LAB_WITH_MERC } from '@/lib/native-build'
 import { useArmingCue } from './arming-cue'
 import { IconPlay, IconSeal } from './ear-icons'
 import type { StageKey, StageReserve } from './EarStage'
-import { ConsoleLead, ConsoleNote, EarStage, EndPlate, PlateBadge, PlateLine, PlayPad, TurnsStrip, } from './EarStage'
+import { ConsoleLead, ConsoleNote, EndPlate, PlateBadge, PlateLine, PlayPad, TurnsStrip, } from './EarStage'
 import styles from './EarStage.module.css'
 import { dateLabel } from './instruments'
 import { useLastCall } from './reveal-pacing'
+import type { RoomBeat, StageRoom, ThresholdPlate, TracePoint, } from './stage-room'
+import { takeRoomStart } from './stage-room'
+import { EarStage } from './stage-switch'
 import { TrackPendulums } from './TrackPendulums'
 import { useCompactStage } from './use-compact-stage'
 import type { ThresholdRunMode, useThresholdRun } from './use-threshold-run'
@@ -86,6 +96,17 @@ interface ThresholdDrillViewProps {
   onBack: () => void
   /** The back control's label when back is not the bench. */
   backLabel?: string
+  /** A trial sounds in this many parts (Hairline's two tones): the
+   *  native room says which is playing. */
+  parts?: number
+}
+
+const BEAT: Record<string, RoomBeat> = {
+  idle: 'idle',
+  stimulus: 'listen',
+  answer: 'answer',
+  reveal: 'reveal',
+  done: 'done',
 }
 
 export function ThresholdDrillView(
@@ -212,6 +233,153 @@ export function ThresholdDrillView(
   const estimate = () => props.run.result()?.estimate ?? null
   const again = (): ThresholdRunMode => props.run.result()?.mode ?? 'practice'
 
+  /** What the native room draws on its own; nothing on any other build. */
+  // eslint-disable-next-line solid/reactivity -- built once; each field reads the run when the room asks
+  const room = EAR_LAB_WITH_MERC ? roomFor() : undefined
+
+  function roomFor(): StageRoom {
+    // The newest reading as the run found it, for "finer than last time".
+    let previous: number | null = null
+    createEffect(() => {
+      if (phase() === 'stimulus' && props.run.trials() === 0) {
+        previous = untrack(props.latestValue)
+      }
+    })
+
+    // The staircase as it went: one point per verdict, marked where it
+    // turned round.
+    const [trace, setTrace] = createSignal<TracePoint[]>([])
+    let turnsSeen = 0
+    createEffect(() => {
+      const now = phase()
+      untrack(() => {
+        if (now === 'stimulus' && props.run.trials() === 0) {
+          setTrace([])
+          turnsSeen = 0
+        }
+        if (now !== 'reveal' || calibrating()) return
+        const turns = props.run.reversalsDone()
+        setTrace((points) => [
+          ...points,
+          { level: props.run.level(), turn: turns > turnsSeen },
+        ])
+        turnsSeen = turns
+      })
+    })
+
+    const scale = findThresholdDrill(props.drillId)?.scale
+    const lowerIsBetter = scale === undefined || scale.expert < scale.novice
+
+    const note = (marked: number | undefined): string => {
+      if (marked !== undefined) {
+        return `Etched on the glass as ${dateLabel(Date.now())} · ${marked}. Next calibration due ${dateLabel(calibrationDueAt(Date.now()))}.`
+      }
+      if (estimate() !== null) {
+        return 'Practice run: the glass is not marked. A sealed calibration marks it.'
+      }
+      return calibrating()
+        ? 'Stopped before the tracks could finish. A calibration only counts when all three run to the end, so nothing was marked.'
+        : 'Stopped before the staircase turned. Nothing to read yet, and nothing marked.'
+    }
+
+    const plate = (): ThresholdPlate | null => {
+      const result = props.run.result()
+      if (result === null) return null
+      const reading = result.estimate
+      return {
+        kind: 'threshold',
+        value: reading?.value ?? null,
+        format: props.formatValue,
+        unit: props.unitLabel,
+        unitShort: props.unitShort,
+        lowerIsBetter,
+        previous,
+        calibration: result.mode === 'calibration',
+        markedIndex: result.markedIndex,
+        provisional:
+          reading !== null && 'provisional' in reading && reading.provisional,
+        note: note(result.markedIndex),
+        tracks: result.trackValues,
+        trials: result.trials,
+        turns: props.run.reversalsDone(),
+        replays: result.replays ?? 0,
+      }
+    }
+
+    return {
+      // The ritual only ever runs a sealed calibration, so it says so
+      // before Begin too.
+      run: () => (ritual() || calibrating() ? 'sealed' : 'practice'),
+      short: () => props.run.short(),
+      beat: () => BEAT[phase()] ?? 'idle',
+      sounding: () => phase() === 'stimulus' || props.run.replaying(),
+      get prompt() {
+        return ritual() ? RITUAL_STATUS : props.prompt
+      },
+      line: () => {
+        if (!running()) return null
+        if (calibrating()) {
+          return {
+            kind: 'calibration',
+            track: props.run.activeTrack() + 1,
+            tracks: TRACK_NAMES.length,
+            left: props.run.questionsLeft(),
+            answered: props.run.trials(),
+          }
+        }
+        return {
+          kind: 'threshold',
+          level: `${props.levelCaption} ${props.levelLabel()}`,
+          left: props.run.questionsLeft(),
+          trace: trace(),
+          turns: props.run.reversalsDone(),
+        }
+      },
+      pinned: () => {
+        const parts = props.parts
+        const step = props.run.stimulusStep()
+        return parts !== undefined && step > 0 && phase() === 'stimulus'
+          ? `Playing ${step} of ${parts}`
+          : null
+      },
+      replay: props.run.replayable
+        ? {
+            allowed: () => props.run.replayAllowed(),
+            play: () => void props.run.replay(),
+            left: () => props.run.replaysLeft(),
+          }
+        : undefined,
+      parked: () => props.run.parked(),
+      next: () => props.run.next(),
+      pause: () => props.run.pause(),
+      hold: () => props.run.holdQuestion(),
+      held: () => props.run.held(),
+      resume: () => void props.run.resumeQuestion(),
+      abandon: () => props.run.abandon(),
+      get ritual() {
+        return ritual()
+      },
+      plate,
+      again: () => start(again()),
+      // Read where it is shown: Span's sung answers are practice only,
+      // and the answer mode can change under "?".
+      get calibrate() {
+        return props.practiceOnly?.() === true || ritual()
+          ? undefined
+          : // eslint-disable-next-line solid/reactivity -- a press's handler, called from the room's button
+            () => start('calibration')
+      },
+    }
+  }
+
+  // A station row or Today's button asked for a run: it starts as the
+  // room opens, still inside the tap that opened it.
+  onMount(() => {
+    if (!EAR_LAB_WITH_MERC) return
+    const request = takeRoomStart(props.drillId)
+    if (request !== null && phase() === 'idle') start('practice')
+  })
+
   return (
     <EarStage
       drillId={props.drillId}
@@ -242,6 +410,7 @@ export function ThresholdDrillView(
       reserve={reserve}
       armed={() => phase() === 'answer'}
       done={() => phase() === 'done'}
+      room={room}
       instrument={() => (
         <>
           {/* At rest in the ritual the pendulums stand alone, as the

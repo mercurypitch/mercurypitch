@@ -42,14 +42,18 @@ export function HairlineDrill(props: HairlineDrillProps): JSX.Element {
 
   const [higherFirst, setHigherFirst] = createSignal(false)
   const [picked, setPicked] = createSignal<1 | 2 | null>(null)
+  /** The trial's base, kept so a replay sounds the same two tones. */
+  let base = 0
 
   const run = useThresholdRun(
     drill,
     async (level, api) => {
-      const base = roveBaseFreq(Math.random)
-      const first = Math.random() < 0.5
-      setHigherFirst(first)
-      setPicked(null)
+      if (!api.replay || base === 0) {
+        base = roveBaseFreq(Math.random)
+        setHigherFirst(Math.random() < 0.5)
+        setPicked(null)
+      }
+      const first = higherFirst()
       const higher = base * 2 ** (level / 1200)
 
       // Each tone is waited out: the pads arm only once the second has
@@ -73,7 +77,7 @@ export function HairlineDrill(props: HairlineDrillProps): JSX.Element {
     },
     // Stop cuts the tone that is already sounding; without this the
     // drill keeps playing after the plate appears.
-    { cancelStimulus: () => audioEngine.stopTone(60) },
+    { cancelStimulus: () => audioEngine.stopTone(60), replayable: true },
   )
 
   const answer = (choice: 1 | 2) => {
@@ -93,12 +97,15 @@ export function HairlineDrill(props: HairlineDrillProps): JSX.Element {
   }
 
   const sounding = () =>
-    run.phase() === 'stimulus' ? (run.stimulusStep() as 0 | 1 | 2) : 0
+    run.phase() === 'stimulus' || run.replaying()
+      ? (run.stimulusStep() as 0 | 1 | 2)
+      : 0
 
   return (
     <ThresholdDrillView
       title="Hairline"
       drillId="hairline"
+      parts={2}
       // The ruler starts low enough for the whole paragraph, which needs
       // five lines at 1280 px and wider; three cut it at "readi…". On a
       // narrower desk five would still cut it, and the card keeps three.

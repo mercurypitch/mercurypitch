@@ -23,6 +23,7 @@ import { findThresholdDrill } from '@/lib/ear/drills'
 import type { GridPattern } from '@/lib/ear/grid-pattern'
 import { generateGridPattern, GRID_ANSWER_POSITIONS, gridPatternDuration, } from '@/lib/ear/grid-pattern'
 import { GRID_TIMING } from '@/lib/ear/timing'
+import { EAR_LAB_WITH_MERC } from '@/lib/native-build'
 import { latestThresholdReading } from '@/stores/ear-lab-store'
 import type { ScheduledClick } from './click-synth'
 import { scheduleClick } from './click-synth'
@@ -82,9 +83,13 @@ export function GridDrill(props: GridDrillProps): JSX.Element {
 
     cancelStimulus()
 
-    const current = generateGridPattern(level)
-    setPattern(current)
-    setPicked(null)
+    // A replay sounds the same lattice with the same click nudged.
+    const kept = api.replay ? pattern() : null
+    const current = kept ?? generateGridPattern(level)
+    if (kept === null) {
+      setPattern(current)
+      setPicked(null)
+    }
     const start = ctx.currentTime + GRID_TIMING.leadInS
     // Clicks bypass the engine, so the room's level is applied here:
     // the stage volume on top of the app's, the same as every tone.
@@ -96,13 +101,20 @@ export function GridDrill(props: GridDrillProps): JSX.Element {
     for (const [i, offset] of current.clickTimes.entries()) {
       scheduled.push(scheduleClick(ctx, start + offset, click))
       // The chase light rides on setTimeout — close enough for eyes;
-      // only the audio needs (and gets) the sample-accurate clock.
+      // only the audio needs (and gets) the sample-accurate clock. In
+      // the native room it keeps to the lattice: a lamp that lit when
+      // its nudged click sounded would show the eye what the ear is
+      // asked, so all six light alike.
+      const lit =
+        EAR_LAB_WITH_MERC && i === current.displacedIndex
+          ? offset - current.shiftMs / 1000
+          : offset
       stepTimers.push(
         setTimeout(
           () => {
             if (!api.cancelled()) api.step(i + 1)
           },
-          (GRID_TIMING.leadInS + offset) * 1000,
+          (GRID_TIMING.leadInS + lit) * 1000,
         ),
       )
     }
@@ -118,7 +130,10 @@ export function GridDrill(props: GridDrillProps): JSX.Element {
     })
   }
 
-  const run = useThresholdRun(drill, playStimulus, { cancelStimulus })
+  const run = useThresholdRun(drill, playStimulus, {
+    cancelStimulus,
+    replayable: true,
+  })
 
   const answer = (position: number) => {
     if (run.phase() !== 'answer') return

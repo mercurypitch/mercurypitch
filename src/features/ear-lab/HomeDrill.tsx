@@ -12,23 +12,34 @@
 //
 // The component owns the microphone lifecycle (micManager + f0
 // stream); the controller only opens answer windows on it.
+//
+// On a phone build with the Ear Lab with Merc it also hands the native
+// room what it draws on its own (`room`, stage-room.ts), says the way a
+// run answers in the room's mode line, and points a refused microphone
+// at the phone's Settings rather than a browser's.
 // ============================================================
 
 import type { JSX } from 'solid-js'
-import { createEffect, createSignal, For, onCleanup, Show, untrack, } from 'solid-js'
+import { createEffect, createSignal, For, onCleanup, onMount, Show, untrack, } from 'solid-js'
 import { useEngines } from '@/contexts/EngineContext'
-import { isProvisional } from '@/lib/ear/elo'
+import { isProvisional, PROVISIONAL_ATTEMPTS } from '@/lib/ear/elo'
 import type { DegreeSet } from '@/lib/ear/item-bank'
 import { degreeLabel, HOME_SET } from '@/lib/ear/item-bank'
 import { micManager } from '@/lib/mic-manager'
+import { EAR_LAB_WITH_MERC } from '@/lib/native-build'
 import type { F0Stream } from '@/lib/pitch-f0-stream'
 import { createF0Stream } from '@/lib/pitch-f0-stream'
 import { earPlayerRating, homeAnswerMode, setHomeAnswerMode, } from '@/stores/ear-lab-store'
+import { nativeShellApi } from '@/stores/native-shell-store'
 import { useArmingCue } from './arming-cue'
 import { IconMic, IconPlay } from './ear-icons'
 import type { PadState, StageKey } from './EarStage'
-import { ConsoleLink, ConsoleNote, ConsoleStack, ConsoleWarning, EarStage, EndPlate, ModeToggle, OutcomeDots, Pads, PlateBadge, PlateDelta, PlateLine, PlayPad, StagePad, } from './EarStage'
+import { ConsoleLink, ConsoleNote, ConsoleStack, ConsoleWarning, EndPlate, ModeToggle, OutcomeDots, Pads, PlateBadge, PlateDelta, PlateLine, PlayPad, StagePad, } from './EarStage'
 import { useLastCall } from './reveal-pacing'
+import { runSlips } from './slips'
+import type { RatingPlate, RoomBeat, StageRoom } from './stage-room'
+import { takeRoomStart } from './stage-room'
+import { EarStage } from './stage-switch'
 import { TuningFork } from './TuningFork'
 import type { HomeAnswerMode, SingCapture } from './use-home-controller'
 import { useHomeController } from './use-home-controller'
@@ -74,6 +85,21 @@ const MODES: ReadonlyArray<{ id: HomeAnswerMode; label: string }> = [
   { id: 'tap', label: 'Tap' },
   { id: 'mic', label: 'Sing or play' },
 ]
+
+const BEAT: Record<string, RoomBeat> = {
+  idle: 'idle',
+  cadence: 'listen',
+  probe: 'listen',
+  answer: 'answer',
+  reveal: 'reveal',
+  done: 'done',
+}
+
+/** A refused microphone, said for where the singer is: the phone's
+ *  Settings in the native room, the browser's everywhere else. */
+const MIC_REFUSED = EAR_LAB_WITH_MERC
+  ? 'The microphone is off for Mercury Pitch, so nothing started. Turn it on in Settings and press Begin again, or answer by tapping.'
+  : 'The microphone is not available, so nothing started. Allow microphone access in the browser and press Begin again, or answer by tapping.'
 
 export function HomeDrill(props: HomeDrillProps): JSX.Element {
   const { audioEngine } = useEngines()
@@ -153,9 +179,7 @@ export function HomeDrill(props: HomeDrillProps): JSX.Element {
           throw error
         }
       } catch {
-        setMicError(
-          'The microphone is not available, so nothing started. Allow microphone access in the browser and press Begin again, or answer by tapping.',
-        )
+        setMicError(MIC_REFUSED)
         return
       } finally {
         setMicPending(false)
@@ -274,6 +298,107 @@ export function HomeDrill(props: HomeDrillProps): JSX.Element {
 
   useArmingCue(() => phase() === 'answer')
 
+  /** What the native room draws on its own; nothing on any other build. */
+  const room: StageRoom | undefined = EAR_LAB_WITH_MERC
+    ? {
+        run: () => 'rated',
+        short: () => controller.short(),
+        beat: () => BEAT[phase()] ?? 'idle',
+        sounding: () =>
+          phase() === 'cadence' ||
+          phase() === 'probe' ||
+          controller.replaying(),
+        prompt: copy.prompt,
+        line: () =>
+          running()
+            ? {
+                kind: 'rounds',
+                round: Math.min(controller.round() + 1, controller.totalRounds),
+                total: controller.totalRounds,
+                answered: controller.round() + (phase() === 'reveal' ? 1 : 0),
+              }
+            : null,
+        pinned: () =>
+          phase() === 'answer' && controller.mode() === 'mic'
+            ? 'Listening for your note'
+            : null,
+        replay: {
+          allowed: () => controller.replayAllowed(),
+          play: () => void controller.replay(),
+        },
+        parked: () => controller.parked(),
+        next: () => controller.next(),
+        pause: () => controller.pause(),
+        hold: () => controller.holdQuestion(),
+        held: () => controller.held(),
+        resume: () => void controller.resumeQuestion(),
+        abandon: () => controller.abandon(),
+        modeNote: () =>
+          (phase() === 'idle' ? homeAnswerMode() : controller.mode()) === 'mic'
+            ? 'sung answers'
+            : 'tapped answers',
+        plate: (): RatingPlate | null => {
+          const result = controller.result()
+          if (result === null) return null
+          const slipName = (id: string): string => {
+            const degree = set.degrees.find(
+              (entry) => `deg-${entry.degree}` === id,
+            )
+            return degree ? `${degreeLabel(degree)} ${degree.solfege}` : id
+          }
+          const voice = earVsVoice()
+          const lines = [
+            result.skipped > 0 ? `${result.skipped} skipped (unclear)` : null,
+            result.medianAbsCents !== null
+              ? `Voice typically ${result.medianAbsCents}¢ off when right`
+              : null,
+            voice,
+          ].filter((line): line is string => line !== null)
+          return {
+            kind: 'rating',
+            rating: Math.round(result.rating.rating),
+            before: Math.round(result.rating.rating - result.ratingDelta),
+            source: result.mode === 'mic' ? 'Voice rating' : copy.ratingUnit,
+            settling: isProvisional(result.rating)
+              ? PROVISIONAL_ATTEMPTS - result.rating.attempts
+              : null,
+            rounds: result.total,
+            right: result.correct,
+            outcomes: result.outcomes.map((outcome) => ({
+              correct: outcome.correct,
+              skipped: !outcome.correct && outcome.answered === 0,
+              title: `Degree ${labelOf(outcome.degree)}${
+                outcome.correct
+                  ? ''
+                  : outcome.answered === 0
+                    ? ' (skipped)'
+                    : ` (answered ${labelOf(outcome.answered)})`
+              }`,
+            })),
+            slips: runSlips(
+              result.outcomes.map((outcome) => ({
+                correct: outcome.correct,
+                expected: `deg-${outcome.degree}`,
+                answered:
+                  outcome.answered === 0 ? null : `deg-${outcome.answered}`,
+              })),
+              slipName,
+            ),
+            lines,
+          }
+        },
+        again: () => void handleStart(),
+      }
+    : undefined
+
+  // A station row or Today's button asked for a run, its way of
+  // answering already chosen: it starts as the room opens.
+  onMount(() => {
+    if (!EAR_LAB_WITH_MERC) return
+    const request = takeRoomStart(copy.drillId)
+    if (request !== null && phase() === 'idle') void handleStart()
+  })
+
   const lastCall = useLastCall(phase, () => {
     const answered = controller.answeredDegree()
     const degree = target()
@@ -317,6 +442,7 @@ export function HomeDrill(props: HomeDrillProps): JSX.Element {
       lastCall={lastCall}
       armed={() => phase() === 'answer'}
       done={() => phase() === 'done'}
+      room={room}
       instrument={() => (
         <TuningFork
           cadenceStep={
@@ -377,6 +503,15 @@ export function HomeDrill(props: HomeDrillProps): JSX.Element {
                 </Show>
                 <Show when={micError() !== ''}>
                   <ConsoleWarning>{micError()}</ConsoleWarning>
+                  {EAR_LAB_WITH_MERC ? (
+                    <Show when={nativeShellApi()?.openAppSettings}>
+                      {(openSettings) => (
+                        <ConsoleLink onClick={() => void openSettings()()}>
+                          Open Settings
+                        </ConsoleLink>
+                      )}
+                    </Show>
+                  ) : null}
                   <ConsoleLink onClick={() => void useTapInstead()}>
                     Use Tap instead
                   </ConsoleLink>

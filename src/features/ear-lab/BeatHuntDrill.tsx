@@ -52,6 +52,12 @@ export function BeatHuntDrill(props: BeatHuntDrillProps): JSX.Element {
   const [rateHz, setRateHz] = createSignal(0)
   let scheduled: ScheduledDyad[] = []
   let timers: Array<ReturnType<typeof setTimeout>> = []
+  /** The trial as it sounded, for a replay. */
+  let last: {
+    base: number
+    first: boolean
+    phases: readonly [number, number]
+  } | null = null
 
   function cancelStimulus(): void {
     for (const timer of timers) clearTimeout(timer)
@@ -68,10 +74,17 @@ export function BeatHuntDrill(props: BeatHuntDrillProps): JSX.Element {
     if (!ctx || api.cancelled()) return
 
     cancelStimulus()
-    const base = roveBaseHz(Math.random)
-    const first = Math.random() < 0.5
-    setDetunedFirst(first)
-    setPicked(null)
+    // A replay sounds the same two pairs, phases and all.
+    if (!api.replay || last === null) {
+      last = {
+        base: roveBaseHz(Math.random),
+        first: Math.random() < 0.5,
+        phases: [Math.random(), Math.random()],
+      }
+      setDetunedFirst(last.first)
+      setPicked(null)
+    }
+    const { base, first, phases } = last
     setRateHz(beatRateHz(base, level))
 
     const start = ctx.currentTime + BEAT_TIMING.leadInS
@@ -89,7 +102,7 @@ export function BeatHuntDrill(props: BeatHuntDrillProps): JSX.Element {
           hzB,
           lenS,
           gainLevel,
-          phaseS: randomPhaseS(hzB, Math.random),
+          phaseS: randomPhaseS(hzB, () => phases[pair - 1]),
         }),
       )
       const onMs = (BEAT_TIMING.leadInS + (pair - 1) * (lenS + gapS)) * 1000
@@ -117,7 +130,10 @@ export function BeatHuntDrill(props: BeatHuntDrillProps): JSX.Element {
     })
   }
 
-  const run = useThresholdRun(drill, playStimulus, { cancelStimulus })
+  const run = useThresholdRun(drill, playStimulus, {
+    cancelStimulus,
+    replayable: true,
+  })
 
   const detunedPair = (): 1 | 2 => (detunedFirst() ? 1 : 2)
   const pairWord = () => (detunedFirst() ? 'first' : 'second')
@@ -141,6 +157,7 @@ export function BeatHuntDrill(props: BeatHuntDrillProps): JSX.Element {
     <ThresholdDrillView
       title="Beat Hunt"
       drillId="beat-hunt"
+      parts={2}
       measures="Resolution · beats"
       description="Two pairs of tones. One pair is in tune with itself; in the other, one tone is pulled a few cents off, and the pair beats: a slow swell and fade where the two waves fall in and out of step. Find the beating pair. The detune shrinks toward the finest beat your ear still catches; that number, in cents, is your reading."
       prompt="Two pairs of tones. Which pair was beating?"

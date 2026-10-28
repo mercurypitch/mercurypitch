@@ -67,9 +67,12 @@ export function DriftDrill(props: DriftDrillProps): JSX.Element {
     if (!ctx || api.cancelled()) return
 
     cancelStimulus()
-    const current = pickDriftWay(Math.random)
-    setWay(current)
-    setPicked(null)
+    // A replay sounds the same train: the same way, at the same level.
+    const current = api.replay ? way() : pickDriftWay(Math.random)
+    if (!api.replay) {
+      setWay(current)
+      setPicked(null)
+    }
     const onsets = driftOnsetsMs(
       DRIFT_TIMING.periodMs,
       level,
@@ -105,7 +108,10 @@ export function DriftDrill(props: DriftDrillProps): JSX.Element {
     })
   }
 
-  const run = useThresholdRun(drill, playStimulus, { cancelStimulus })
+  const run = useThresholdRun(drill, playStimulus, {
+    cancelStimulus,
+    replayable: true,
+  })
 
   const answer = (choice: DriftWay) => {
     if (run.phase() !== 'answer') return

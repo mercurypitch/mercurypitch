@@ -6,16 +6,26 @@
 // movement this run.
 //
 // Mirrors ThresholdDrillView on the Ruler-A side.
+//
+// On a phone build with the Ear Lab with Merc it also hands the native
+// room what it draws on its own (`room`, stage-room.ts): the round line,
+// the rating's move at the verdict, the plate in numbers. A run a
+// station row or Today's button asked for starts as the room opens.
 // ============================================================
 
 import type { JSX } from 'solid-js'
-import { createEffect, For, Show, untrack } from 'solid-js'
-import { isProvisional } from '@/lib/ear/elo'
+import { createEffect, For, onMount, Show, untrack } from 'solid-js'
+import { isProvisional, PROVISIONAL_ATTEMPTS } from '@/lib/ear/elo'
+import { EAR_LAB_WITH_MERC } from '@/lib/native-build'
 import { useArmingCue } from './arming-cue'
 import { IconPlay } from './ear-icons'
 import type { PadState, StageKey } from './EarStage'
-import { EarStage, EndPlate, OutcomeDots, Pads, PlateBadge, PlateDelta, PlateLine, PlayPad, StagePad, } from './EarStage'
+import { EndPlate, OutcomeDots, Pads, PlateBadge, PlateDelta, PlateLine, PlayPad, StagePad, } from './EarStage'
 import { useLastCall } from './reveal-pacing'
+import { slipsOf } from './slips'
+import type { RatingPlate, StageRoom } from './stage-room'
+import { identificationBeat, takeRoomStart } from './stage-room'
+import { EarStage } from './stage-switch'
 import type { useIdentificationController } from './use-identification-controller'
 
 export interface IdentificationChoice {
@@ -165,6 +175,85 @@ export function IdentificationDrillView(
 
   useArmingCue(() => phase() === 'answer')
 
+  /** What the native room draws on its own; nothing on any other build. */
+  const room: StageRoom | undefined = EAR_LAB_WITH_MERC
+    ? {
+        run: () => 'rated',
+        short: () => props.controller.short(),
+        beat: () => identificationBeat(phase()),
+        sounding: () => phase() === 'playing' || props.controller.replaying(),
+        get prompt() {
+          return props.prompt
+        },
+        line: () =>
+          running()
+            ? {
+                kind: 'rounds',
+                round: Math.min(
+                  props.controller.round() + 1,
+                  props.controller.totalRounds,
+                ),
+                total: props.controller.totalRounds,
+                answered:
+                  props.controller.round() + (phase() === 'reveal' ? 1 : 0),
+              }
+            : null,
+        replay: {
+          allowed: () => props.controller.replayAllowed(),
+          play: () => void props.controller.replay(),
+        },
+        parked: () => props.controller.parked(),
+        next: () => props.controller.next(),
+        pause: () => props.controller.pause(),
+        hold: () => props.controller.holdQuestion(),
+        held: () => props.controller.held(),
+        resume: () => void props.controller.resumeQuestion(),
+        abandon: () => props.controller.abandon(),
+        plate: (): RatingPlate | null => {
+          const result = props.controller.result()
+          if (result === null) return null
+          return {
+            kind: 'rating',
+            rating: Math.round(result.rating.rating),
+            before: Math.round(result.rating.rating - result.ratingDelta),
+            source: `${props.title} rating`,
+            settling: isProvisional(result.rating)
+              ? PROVISIONAL_ATTEMPTS - result.rating.attempts
+              : null,
+            rounds: result.total,
+            right: result.correct,
+            rightWord: props.answerVerb ?? 'named',
+            outcomes: result.outcomes.map((outcome) => ({
+              correct: outcome.correct,
+              title: `${props.revealName(outcome.expectedId)}${
+                outcome.correct
+                  ? ''
+                  : ` (answered ${props.revealName(outcome.answeredId)})`
+              }`,
+            })),
+            // eslint-disable-next-line solid/reactivity -- runs inside plate(), which the room reads tracked
+            slips: slipsOf(result.outcomes, (id) => {
+              const choice = props.choices.find((entry) => entry.id === id)
+              return (
+                choice?.sub ??
+                choice?.label ??
+                sentenceCase(props.revealName(id))
+              )
+            }),
+          }
+        },
+        again: () => start(),
+      }
+    : undefined
+
+  // A station row or Today's button asked for a run: it starts as the
+  // room opens, still inside the tap that opened it.
+  onMount(() => {
+    if (!EAR_LAB_WITH_MERC) return
+    const request = takeRoomStart(props.drillId)
+    if (request !== null && phase() === 'idle') start()
+  })
+
   const lastCall = useLastCall(phase, () => {
     const expected = props.controller.expectedId()
     const answered = props.controller.answeredId()
@@ -206,6 +295,7 @@ export function IdentificationDrillView(
       lastCall={lastCall}
       armed={() => phase() === 'answer'}
       done={() => phase() === 'done'}
+      room={room}
       instrument={props.instrument}
       console={() => (
         <Show

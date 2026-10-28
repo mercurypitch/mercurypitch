@@ -45,6 +45,8 @@ export function WeightDrill(props: DeskDrillProps): JSX.Element {
   const [sounding, setSounding] = createSignal(0)
   const [picked, setPicked] = createSignal<'first' | 'second' | null>(null)
   let handle: ExcerptHandle | null = null
+  /** Where in the song the trial's slice starts, for a replay. */
+  let sliceStart: number | null = null
   const level = () => room.volume() * audioEngine.getVolume()
 
   function cancelStimulus(): void {
@@ -59,15 +61,22 @@ export function WeightDrill(props: DeskDrillProps): JSX.Element {
     const ctx = audioEngine.getAudioContext()
     if (!ctx || api.cancelled()) return
     const buffer = props.source.buffer
-    const start = randomSliceStart(buffer.duration, DESK_TIMING.sliceS)
+    // A replay sounds the same slice in the same order.
+    const replaying = api.replay && sliceStart !== null && heavier() !== null
+    if (!replaying) {
+      sliceStart = randomSliceStart(buffer.duration, DESK_TIMING.sliceS)
+    }
+    const start = sliceStart ?? 0
     const [plain, heavy] = await Promise.all([
       renderFault(buffer, start, DESK_TIMING.sliceS, null),
       renderFault(buffer, start, DESK_TIMING.sliceS, lowShelf(db)),
     ])
     matchLoudness(plain, heavy)
-    const first = heavierFirst()
-    setHeavier(first ? 'first' : 'second')
-    setPicked(null)
+    const first = replaying ? heavier() === 'first' : heavierFirst()
+    if (!replaying) {
+      setHeavier(first ? 'first' : 'second')
+      setPicked(null)
+    }
     const order = first ? [heavy, plain] : [plain, heavy]
     for (const [i, render] of order.entries()) {
       if (api.cancelled()) return
@@ -91,6 +100,7 @@ export function WeightDrill(props: DeskDrillProps): JSX.Element {
 
   const run = useThresholdRun(DESK_DRILLS.weight, playStimulus, {
     cancelStimulus,
+    replayable: true,
   })
 
   const answer = (which: 'first' | 'second') => {
@@ -109,6 +119,7 @@ export function WeightDrill(props: DeskDrillProps): JSX.Element {
     <ThresholdDrillView
       title="Weight"
       drillId="desk-weight"
+      parts={2}
       measures="Color · the desk"
       description="The same slice of the mix twice; one carries a low shelf under 120 Hz, the two matched for loudness. Say which is heavier. The shelf thins while you are right and thickens when you slip; the reading is the thinnest shelf you still hear. Practice only: the desk reads on its own plate and the Column never moves for it."
       prompt="Two renders. Which has the weight?"
