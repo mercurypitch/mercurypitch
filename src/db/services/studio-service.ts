@@ -30,6 +30,11 @@ export interface StudioService {
   loadProject(id: string): Promise<StudioProject>
   listAssets(projectId: string): Promise<StudioAsset[]>
   readAssetBytes(projectId: string, assetId: string): Promise<StudioAssetData>
+  /** The stored buffers themselves, with no Blob copy: what a backup streams from. */
+  readAssetBuffers(
+    projectId: string,
+    assetId: string,
+  ): Promise<StudioAssetBytes>
   readCanonicalAsset(projectId: string, assetId: string): Promise<Blob>
   acquireLease(
     projectId: string,
@@ -305,6 +310,10 @@ export function createStudioService(
     readAssetBytes: (projectId, assetId) =>
       studioStorageOperation(() =>
         database().transaction(() => readAsset(projectId, assetId)),
+      ),
+    readAssetBuffers: (projectId, assetId) =>
+      studioStorageOperation(() =>
+        database().transaction(() => readAssetRows(projectId, assetId)),
       ),
     readCanonicalAsset: (projectId, assetId) =>
       studioStorageOperation(() =>

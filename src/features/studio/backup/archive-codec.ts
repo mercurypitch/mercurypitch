@@ -1,8 +1,8 @@
 // ============================================================
-// Studio archive codec — bounded ZIP streams with exact entry names.
+// Studio archive codec — reading bounded ZIP streams with exact entry names.
 // ============================================================
 
-import { Unzip, UnzipInflate, Zip, ZipPassThrough } from 'fflate'
+import { Unzip, UnzipInflate } from 'fflate'
 import { reserveStudioMemory, retainStudioResource, } from '@/lib/studio/memory-budget'
 import { updateStudioCrc32 } from './crc32'
 
@@ -14,8 +14,6 @@ export const STUDIO_BACKUP_LIMITS = {
   entries: 257,
   inputChunkBytes: 16 * 1024,
 } as const
-/** Written ZIP chunks fold into the output Blob at this size. */
-const FOLD_BYTES = 8 * 1024 * 1024
 /**
  * Reading needs this much beyond the entries themselves. A stored entry is
  * copied straight from one 16 KiB input chunk; a deflated one can inflate a
@@ -38,7 +36,8 @@ export function studioBackupAssetPath(
   return `assets/${index}/${kind === 'original' ? 'original.bin' : 'canonical.pcm'}`
 }
 
-function entryLimit(path: string): number {
+/** The largest an entry at this path may be; any other path is refused. */
+export function studioBackupEntryLimit(path: string): number {
   if (path === 'manifest.json') return STUDIO_BACKUP_LIMITS.manifestBytes
   if (
     /^assets\/(0|[1-9][0-9]{0,2})\/(original\.bin|canonical\.pcm)$/.test(path)
@@ -110,7 +109,7 @@ async function readDirectory(
         'The project backup has a damaged entry name.',
       )
     const name = decoder.decode(data.subarray(at + 46, at + 46 + nameLength))
-    const limit = entryLimit(name)
+    const limit = studioBackupEntryLimit(name)
     const size = view.getUint32(at + 24, true)
     const compressedSize = view.getUint32(at + 20, true)
     const compression = view.getUint16(at + 10, true)
@@ -183,7 +182,7 @@ export async function readStudioArchive(
   }
   let transferred = false
   const unzip = new Unzip((file) => {
-    const limit = entryLimit(file.name)
+    const limit = studioBackupEntryLimit(file.name)
     const declared = directory.get(file.name)
     if (
       !declared ||
@@ -279,102 +278,6 @@ export async function readStudioArchive(
     )
   } finally {
     releaseWorking()
-    if (!transferred) release()
-  }
-}
-
-/** Store already-encoded audio without compression or a whole-archive byte copy. */
-export async function writeStudioArchive(
-  entries: ReadonlyMap<string, Blob>,
-  signal?: AbortSignal,
-): Promise<Blob> {
-  if (
-    entries.size > STUDIO_BACKUP_LIMITS.entries ||
-    !entries.has('manifest.json')
-  ) {
-    throw new StudioBackupError(
-      'The project backup has an invalid entry count.',
-    )
-  }
-  let sourceBytes = 0
-  for (const [path, blob] of entries) {
-    sourceBytes += blob.size
-    if (
-      blob.size > entryLimit(path) ||
-      sourceBytes > STUDIO_BACKUP_LIMITS.totalBytes
-    ) {
-      throw new StudioBackupError(
-        'The project exceeds the supported backup size.',
-      )
-    }
-  }
-  // ZIP chunks fold into the output Blob every few megabytes, so the archive
-  // holds its own size plus one pending fold and bounded headers/input.
-  const release = reserveStudioMemory(
-    sourceBytes + Math.min(FOLD_BYTES, sourceBytes) + 1024 * 1024,
-  )
-  let transferred = false
-  let folded = new Blob([], { type: 'application/zip' })
-  const parts: Uint8Array<ArrayBuffer>[] = []
-  let pendingBytes = 0
-  let outputBytes = 0
-  const status: { complete: boolean; failure: Error | null } = {
-    complete: false,
-    failure: null,
-  }
-  const zip = new Zip((error, chunk, final) => {
-    if (error) {
-      status.failure = error
-      return
-    }
-    outputBytes += chunk.byteLength
-    if (outputBytes > STUDIO_BACKUP_LIMITS.archiveBytes) {
-      status.failure = new StudioBackupError(
-        'The project backup exceeds the supported archive size.',
-      )
-      return
-    }
-    parts.push(new Uint8Array(chunk))
-    pendingBytes += chunk.byteLength
-    if (pendingBytes >= FOLD_BYTES) {
-      folded = new Blob([folded, ...parts], { type: 'application/zip' })
-      parts.length = 0
-      pendingBytes = 0
-    }
-    status.complete = final
-  })
-  try {
-    for (const [path, blob] of entries) {
-      checkAbort(signal)
-      const entry = new ZipPassThrough(path)
-      zip.add(entry)
-      if (blob.size === 0) entry.push(new Uint8Array(), true)
-      for (
-        let offset = 0;
-        offset < blob.size;
-        offset += STUDIO_BACKUP_LIMITS.inputChunkBytes
-      ) {
-        checkAbort(signal)
-        const end = Math.min(
-          blob.size,
-          offset + STUDIO_BACKUP_LIMITS.inputChunkBytes,
-        )
-        entry.push(
-          new Uint8Array(await blob.slice(offset, end).arrayBuffer()),
-          end === blob.size,
-        )
-        if (status.failure !== null) throw status.failure
-      }
-    }
-    zip.end()
-    if (status.failure !== null) throw status.failure
-    if (!status.complete)
-      throw new StudioBackupError('The project backup could not be completed.')
-    const result = new Blob([folded, ...parts], { type: 'application/zip' })
-    transferred = true
-    return retainStudioResource(result, release)
-  } finally {
-    zip.terminate()
     if (!transferred) release()
   }
 }

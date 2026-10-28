@@ -87,6 +87,11 @@ describe('local Studio persistence', () => {
     expect(await owned.canonicalPcm.arrayBuffer()).toEqual(
       await data.canonicalPcm.arrayBuffer(),
     )
+    // A backup streams from the stored buffers, with no Blob copy of them.
+    const stored = await service.readAssetBuffers(project.id, data.asset.id)
+    expect(stored.asset).toEqual(data.asset)
+    expect(stored.original).toEqual(await data.original.arrayBuffer())
+    expect(stored.canonicalPcm).toEqual(await data.canonicalPcm.arrayBuffer())
   })
 
   it('rolls back project, metadata and both blobs after a real uniqueness violation', async () => {
