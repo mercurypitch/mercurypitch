@@ -14,12 +14,13 @@ import { transportFixture, withQuietLane } from './transport.test-fixtures'
 afterEach(() => vi.useRealTimers())
 
 describe('Studio borrowed transport', () => {
-  it('measures each chain once and restarts a seek while the old run still fades', async () => {
+  it('measures each chain once and starts again while the old run still fades', async () => {
     vi.useFakeTimers()
     const f = transportFixture()
     await f.transport.play(f.project, [f.asset])
     const measured = f.measureLatencies.mock.calls.length
-    await f.transport.seek(100, f.project, [f.asset])
+    f.transport.pause()
+    await f.transport.play(f.project, [f.asset], 100)
     // The first run's 240 ms release timer has not run yet.
     expect(f.graph.dispose).not.toHaveBeenCalled()
     expect(f.buildGraph).toHaveBeenCalledTimes(2)
@@ -306,18 +307,19 @@ describe('Studio borrowed transport', () => {
     expect(studioReservedMemoryBytes()).toBe(0)
   })
 
-  it('waits for the fading run when a seek cannot hold two graphs at once', async () => {
+  it('waits for the fading run when Play cannot hold two graphs at once', async () => {
     vi.useFakeTimers()
     const f = transportFixture()
     await f.transport.play(f.project, [f.asset])
     const one = studioReservedMemoryBytes()
     setStudioWorkingBytes(one + Math.floor(one / 2))
     try {
-      const seeking = f.transport.seek(100, f.project, [f.asset])
+      f.transport.pause()
+      const playing = f.transport.play(f.project, [f.asset], 100)
       await vi.advanceTimersByTimeAsync(239)
       expect(f.buildGraph).toHaveBeenCalledOnce()
       await vi.advanceTimersByTimeAsync(1)
-      await seeking
+      await playing
       expect(f.buildGraph).toHaveBeenCalledTimes(2)
       expect(f.transport.getState()).toMatchObject({
         playing: true,

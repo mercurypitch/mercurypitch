@@ -6,10 +6,27 @@ import type { StudioArrangementPlan, StudioPlannedLane, StudioPlannedSegment, } 
 import { studioPanGains } from '../model/arrangement-plan'
 import type { StudioTrack } from '../model/types'
 import { scheduleStudioSegmentGain } from './edge-envelope'
+import type { StudioLaneInput, StudioSourceSet } from './seek-crossfade'
+import { closeStudioSourceSet, emptyStudioSourceSet, openStudioSourceSet, retireStudioSourceSet, stopStudioSource, } from './seek-crossfade'
 
 export interface StudioGraph {
   readonly output: GainNode
   scheduleUntil(time: number): void
+  /**
+   * When a seek asked for no sooner than `earliest` would start: then, or
+   * at the newest seek's own time while that one is not heard yet, since a
+   * newer seek takes its place there.
+   */
+  seekTime(earliest: number): number
+  /**
+   * Play from `fromFrame` instead, crossfading each lane from its sources to
+   * the new ones (seek-crossfade.ts); the chains, master and meters play on.
+   * The frame enters a lane with no compensation at the returned time:
+   * seekTime(at), so pass a time from seekTime to keep two graphs in step.
+   * Null when the plan starts after `fromFrame` or ends before it. Call
+   * scheduleUntil after it, as the new sources start at once.
+   */
+  seek(fromFrame: number, at: number): number | null
   readPeaks(): readonly [number, number]
   /**
    * Whether this track has a lane here. Playback builds every lane with
@@ -68,8 +85,53 @@ const BEGUN_MARGIN_SECONDS = 0.05
 
 interface Scheduled {
   readonly segment: StudioPlannedSegment
-  readonly input: AudioNode
+  /** Its lane, as an index into the graph's lane inputs. */
+  readonly lane: number
   readonly when: number
+}
+
+/** A segment's place in one pass: seconds after the plan's start, its lane's compensation included. */
+interface Planned {
+  readonly segment: StudioPlannedSegment
+  readonly lane: number
+  readonly base: number
+}
+
+/** Where the graph reads: frame `fromFrame` enters a lane with no compensation at `epoch`. */
+interface Timeline {
+  readonly epoch: number
+  /** Seconds from the plan's start to `fromFrame`. */
+  readonly offset: number
+  /** One pass of the whole plan, timed so the second pass starts where the first, which may begin part-way through, ends. */
+  readonly cycle: readonly Scheduled[]
+  scheduled: Scheduled[]
+  next: number
+  /** The pass being scheduled, which runs up to two seconds ahead of the one heard. */
+  pass: number
+}
+
+function timelineFrom(
+  planned: readonly Planned[],
+  plan: StudioArrangementPlan,
+  fromFrame: number,
+  epoch: number,
+): Timeline {
+  const offset = (fromFrame - plan.startFrame) / 48000
+  const cycle = planned
+    .map(({ segment, lane, base }) => ({
+      segment,
+      lane,
+      when: epoch - offset + base,
+    }))
+    .sort((a, b) => a.when - b.when)
+  return {
+    epoch,
+    offset,
+    cycle,
+    scheduled: firstPass(cycle, fromFrame),
+    next: 0,
+    pass: 0,
+  }
 }
 
 /** The broadband dynamics in a chain, whose reductions add up to the lane's. */
@@ -208,17 +270,6 @@ function firstPass(
     .sort((a, b) => a.when - b.when)
 }
 
-function stopSource(source: AudioBufferSourceNode, gain: GainNode): void {
-  source.onended = null
-  try {
-    source.stop()
-  } catch {
-    /* An ended source needs only disconnecting. */
-  }
-  source.disconnect()
-  gain.disconnect()
-}
-
 export function buildStudioGraph(
   ctx: BaseAudioContext,
   plan: StudioArrangementPlan,
@@ -228,10 +279,6 @@ export function buildStudioGraph(
 ): StudioGraph {
   const output = ctx.createGain()
   const disposers: (() => void)[] = []
-  const sources = new Map<
-    AudioBufferSourceNode,
-    { gain: GainNode; pass: number }
-  >()
   const built: BuiltLanes = {
     mixes: new Map(),
     chains: new Map(),
@@ -240,11 +287,8 @@ export function buildStudioGraph(
   }
   const { mixes, chains } = built
   let masterChain: StudioFxChain | null = null
-  // One pass of the whole plan, timed so the second pass starts where the
-  // first, which may begin part-way through, ends.
-  const cycle: Scheduled[] = []
-  const fromFrame = options.fromFrame ?? plan.startFrame
-  const offset = (fromFrame - plan.startFrame) / 48000
+  const lanes: StudioLaneInput[] = []
+  const planned: Planned[] = []
   const cycleSeconds = (plan.endFrame - plan.startFrame) / 48000
   if (options.repeat === true && cycleSeconds < 0.25)
     throw new Error('A song needs at least a quarter second to repeat.')
@@ -265,18 +309,19 @@ export function buildStudioGraph(
       if (lane.compensationSeconds === null)
         throw new Error('Studio chain timing has not been measured.')
       const input = connectLane(ctx, lane, laneOutput, disposers, built)
+      const index = lanes.push({
+        input,
+        compensation: lane.compensationSeconds,
+      })
       for (const segment of lane.segments)
-        cycle.push({
+        planned.push({
           segment,
-          input,
-          when:
-            epoch +
+          lane: index - 1,
+          base:
             (segment.startFrame - plan.startFrame) / 48000 +
-            lane.compensationSeconds -
-            offset,
+            lane.compensationSeconds,
         })
     }
-    cycle.sort((a, b) => a.when - b.when)
     if (options.metering === true) {
       analysers.push(
         ...connectPeakAnalysers(ctx, output, peakSamples.length, disposers),
@@ -287,16 +332,28 @@ export function buildStudioGraph(
     output.disconnect()
     throw error
   }
-  let scheduled = firstPass(cycle, fromFrame)
-  let next = 0
-  // The pass being scheduled, which runs up to two seconds ahead of the one heard.
-  let pass = 0
+  let timeline = timelineFrom(
+    planned,
+    plan,
+    options.fromFrame ?? plan.startFrame,
+    epoch,
+  )
+  // The sources of each Play and each seek still sounding; the newest is current.
+  let current = openStudioSourceSet(ctx, lanes, null)
+  const sets = new Set([current])
   /** Whether pass `index` has begun, or is about to, on the context clock. */
   const begun = (index: number) =>
-    (index === 0 ? epoch : epoch - offset + index * cycleSeconds) <=
+    (index === 0
+      ? timeline.epoch
+      : timeline.epoch - timeline.offset + index * cycleSeconds) <=
     ctx.currentTime + BEGUN_MARGIN_SECONDS
 
-  function start({ segment, input, when }: Scheduled): void {
+  function close(set: StudioSourceSet): void {
+    closeStudioSourceSet(set)
+    sets.delete(set)
+  }
+
+  function start({ segment, lane, when }: Scheduled): void {
     if (when < ctx.currentTime - 0.02)
       throw new Error(
         'Studio playback could not keep up. Press Play to try again.',
@@ -311,12 +368,14 @@ export function buildStudioGraph(
     gain.channelInterpretation = 'speakers'
     gain.gain.value = 0
     source.connect(gain)
-    gain.connect(input)
-    sources.set(source, { gain, pass })
+    const set = current
+    gain.connect(set.fades[lane].fadeOut)
+    set.sources.set(source, { gain, pass: timeline.pass, lane, when })
     source.onended = () => {
       source.disconnect()
       gain.disconnect()
-      sources.delete(source)
+      set.sources.delete(source)
+      if (set.retired && !set.sources.size) close(set)
     }
     scheduleStudioSegmentGain(gain.gain, segment, when)
     source.start(
@@ -326,25 +385,47 @@ export function buildStudioGraph(
     )
   }
 
+  /** Whether the newest seek is still ahead of the clock, so a newer one can take its place. */
+  const unheard = () => current.at > ctx.currentTime
+  const seekTime = (earliest: number) =>
+    unheard() ? Math.max(earliest, current.at) : earliest
+
   return {
     output,
     scheduleUntil(time) {
       if (disposed) return
       while (true) {
-        if (next >= scheduled.length) {
-          if (!looping || !cycle.length) break
-          pass++
-          const shift = pass * cycleSeconds
-          scheduled = cycle.map((item) => ({
+        if (timeline.next >= timeline.scheduled.length) {
+          if (!looping || !timeline.cycle.length) break
+          timeline.pass++
+          const shift = timeline.pass * cycleSeconds
+          timeline.scheduled = timeline.cycle.map((item) => ({
             ...item,
             when: item.when + shift,
           }))
-          next = 0
+          timeline.next = 0
         }
-        if (scheduled[next].when > time) break
-        start(scheduled[next])
-        next++
+        if (timeline.scheduled[timeline.next].when > time) break
+        start(timeline.scheduled[timeline.next])
+        timeline.next++
       }
+    },
+    seekTime,
+    seek(fromFrame, at) {
+      if (disposed || fromFrame < plan.startFrame || fromFrame >= plan.endFrame)
+        return null
+      const time = seekTime(at)
+      if (time === current.at && unheard()) {
+        // The last seek is not heard yet: this one takes its place.
+        emptyStudioSourceSet(current)
+      } else {
+        const last = current
+        if (!retireStudioSourceSet(last, lanes, time)) close(last)
+        current = openStudioSourceSet(ctx, lanes, time)
+        sets.add(current)
+      }
+      timeline = timelineFrom(planned, plan, fromFrame, time)
+      return time
     },
     hasLane: (trackId) => mixes.has(trackId),
     setLaneMix(track, audible) {
@@ -378,26 +459,27 @@ export function buildStudioGraph(
       return reduction
     },
     repeat() {
-      if (disposed || cycleSeconds < 0.25 || !cycle.length) return false
-      if (!looping && begun(pass + 1)) return false
+      if (disposed || cycleSeconds < 0.25 || !timeline.cycle.length)
+        return false
+      if (!looping && begun(timeline.pass + 1)) return false
       looping = true
       return true
     },
     stopRepeating() {
       looping = false
-      let last = pass
+      let last = timeline.pass
       while (last > 0 && !begun(last)) last--
-      if (last === pass) return last
+      if (last === timeline.pass) return last
       // Passes queued ahead have not begun: none of them plays. The one
       // that has began was scheduled in full before the next was queued.
-      for (const [source, entry] of sources) {
+      for (const [source, entry] of current.sources) {
         if (entry.pass <= last) continue
-        stopSource(source, entry.gain)
-        sources.delete(source)
+        stopStudioSource(source, entry.gain)
+        current.sources.delete(source)
       }
-      pass = last
-      scheduled = []
-      next = 0
+      timeline.pass = last
+      timeline.scheduled = []
+      timeline.next = 0
       return last
     },
     readPeaks() {
@@ -414,8 +496,11 @@ export function buildStudioGraph(
     dispose() {
       if (disposed) return
       disposed = true
-      for (const [source, { gain }] of sources) stopSource(source, gain)
-      sources.clear()
+      for (const set of sets) {
+        emptyStudioSourceSet(set)
+        closeStudioSourceSet(set)
+      }
+      sets.clear()
       for (const dispose of disposers) dispose()
       output.disconnect()
     },

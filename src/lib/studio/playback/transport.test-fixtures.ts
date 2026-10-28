@@ -12,6 +12,8 @@ export function fakeStudioGraph(ctx: PlaybackContext) {
   return {
     output: ctx.createGain() as unknown as GainNode,
     scheduleUntil: vi.fn(),
+    seekTime: vi.fn((earliest: number) => earliest),
+    seek: vi.fn((_frame: number, at: number): number | null => at),
     readPeaks: () => [0.2, 0.4] as const,
     hasLane: vi.fn((id: string) => id === 'track-1'),
     setLaneMix: vi.fn(),

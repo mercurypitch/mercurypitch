@@ -22,6 +22,7 @@ import type { StudioAsset, StudioProject } from '../model/types'
 import type { StudioBufferCache } from './buffer-cache'
 import { createStudioBufferCache } from './buffer-cache'
 import { buildStudioGraph, studioGraphWorkingBytes } from './graph'
+import type { StudioHandoff } from './handoff'
 import { cancelHandoff, handoffTiming, scheduleHandoff } from './handoff'
 import type { StudioDrafts, StudioLaneDraft } from './in-place'
 import { applyDrafts, applyMix, applySound, followMaster, followRepeat, heldMix, playInPlace, withDrafts, } from './in-place'
@@ -31,6 +32,7 @@ import type { StudioLatencyReader } from './prepare-plan'
 import { createLatencyCache, planAssets, planLatencySeconds, prepareStudioPlan, } from './prepare-plan'
 import type { StudioLaneLevel, StudioRun, StudioRunParts, StudioRunTiming, } from './run'
 import { buildStudioRun, openRunEnvelope, readLaneLevels, releaseRun, RUN_LOOKAHEAD_SECONDS, runEndsAt, runPosition, } from './run'
+import { seekInPlace, seekShownFrame, seekTiming } from './seek'
 import { warmStudioPlayback } from './warm-up'
 
 export type { StudioLaneDraft } from './in-place'
@@ -70,13 +72,6 @@ export interface StudioTransportOptions {
   createLaneMeter?: typeof createStudioLaneMeter
 }
 
-/** A run taking over: `from` is heard until `at`, then crossfades to `to`. */
-interface Handoff {
-  readonly from: StudioRun
-  readonly to: StudioRun
-  readonly at: number
-}
-
 export function createStudioTransport(options: StudioTransportOptions) {
   const cache = options.cache ?? createStudioBufferCache()
   const measureLatencies = createLatencyCache(
@@ -94,7 +89,7 @@ export function createStudioTransport(options: StudioTransportOptions) {
   // The run heard while the next one is built to take over from it.
   let held: StudioRun | null = null
   // Handovers not over yet, oldest first.
-  const handoffs: Handoff[] = []
+  const handoffs: StudioHandoff[] = []
   let abort: AbortController | null = null
   let preparing = false
   let preparationSettled: (() => void) | null = null
@@ -106,6 +101,8 @@ export function createStudioTransport(options: StudioTransportOptions) {
   let repeat = false
   let masterGain: StudioMasterGainToken | null = null
   let restartGeneration = 0
+  // A seek the heard run could not follow: the next run starts here.
+  let seekTarget: number | null = null
   const drafts: StudioDrafts = { lanes: new Map(), macros: new Map() }
   let state: StudioTransportState = {
     playing: false,
@@ -139,6 +136,10 @@ export function createStudioTransport(options: StudioTransportOptions) {
     const now = run.ctx.currentTime
     return handoffs.find(({ at }) => now < at)?.from ?? run
   }
+
+  /** Where the playhead stands: a seek's frame from the click on. */
+  const shownFrame = (run: StudioRun) =>
+    seekShownFrame(run, active ?? held ?? run, handoffs, seekTarget)
 
   function observeSnapshot(project: StudioProject): void {
     if (
@@ -183,12 +184,13 @@ export function createStudioTransport(options: StudioTransportOptions) {
     const shown = heard()
     const stopped = { peakL: 0, peakR: 0, meter: null, lanes: [] }
     const update = shown
-      ? { ...stopped, playheadFrame: runPosition(shown) }
+      ? { ...stopped, playheadFrame: shownFrame(shown) }
       : stopped
     for (const run of liveRuns()) retire(run)
     active = null
     held = null
     handoffs.length = 0
+    seekTarget = null
     return update
   }
 
@@ -285,6 +287,8 @@ export function createStudioTransport(options: StudioTransportOptions) {
       Math.max(MIN_WARMUP_SECONDS, buildSeconds * 2 + 0.04),
     )
     const earliest = ctx.currentTime + warmup + latency
+    if (held && seekTarget !== null)
+      return seekTiming(held, plan.endFrame, seekTarget, earliest)
     if (held) {
       const timing = handoffTiming(held, earliest, plan.endFrame)
       if (timing || !repeat) return timing
@@ -413,6 +417,7 @@ export function createStudioTransport(options: StudioTransportOptions) {
     >,
   ): void {
     const outgoing = held
+    const seek = seekTarget !== null
     const run = buildStudioRun({
       ...parts,
       repeat,
@@ -423,11 +428,13 @@ export function createStudioTransport(options: StudioTransportOptions) {
         : openRunEnvelope,
     })
     active = run
-    if (outgoing) handOver(outgoing, run, parts.timing.audibleEpoch)
+    seekTarget = null
+    const at = parts.timing.audibleEpoch
+    if (outgoing) handOver({ from: outgoing, to: run, at, seek })
     applyDrafts(run, drafts)
     const { fromFrame } = parts.timing
     publish(
-      outgoing
+      outgoing && !seek
         ? { playing: true }
         : { playing: true, pending: false, playheadFrame: fromFrame },
     )
@@ -455,9 +462,10 @@ export function createStudioTransport(options: StudioTransportOptions) {
   }
 
   /** `from` is heard until `at`, then fades as `to` comes in; it is freed once silent. */
-  function handOver(from: StudioRun, to: StudioRun, at: number): void {
+  function handOver(handoff: StudioHandoff): void {
+    const { from, to } = handoff
     held = null
-    handoffs.push({ from, to, at })
+    handoffs.push(handoff)
     retired.add(from)
     releaseWhenSilent(from, to.openAt)
   }
@@ -480,7 +488,7 @@ export function createStudioTransport(options: StudioTransportOptions) {
    * level, and its `to`, never heard, is freed at once. False when it
    * begins too soon to take back.
    */
-  function cancelHandover(handoff: Handoff): boolean {
+  function cancelHandover(handoff: StudioHandoff): boolean {
     const { from, to, at } = handoff
     if (at - to.ctx.currentTime < CANCEL_MARGIN_SECONDS) return false
     cancelHandoff(from.envelope, at)
@@ -502,7 +510,10 @@ export function createStudioTransport(options: StudioTransportOptions) {
   function hold(project: StudioProject): number {
     if (active && !preparing) {
       const pending = handoffs.find(({ to }) => to === active)
-      held = pending && cancelHandover(pending) ? pending.from : active
+      const cancelled = pending !== undefined && cancelHandover(pending)
+      held = cancelled ? pending.from : active
+      // A seek taken back before it was heard: the next run starts there.
+      if (cancelled && pending.seek) seekTarget ??= pending.to.startFrame
       active = null
     } else if (held) {
       generation++
@@ -515,7 +526,7 @@ export function createStudioTransport(options: StudioTransportOptions) {
     }
     // Mute, Solo and the faders reach the held run at once.
     applyMix(held, heldMix(held, withDrafts(project, drafts)))
-    return runPosition(heard() ?? held)
+    return shownFrame(heard() ?? held)
   }
 
   const timer = setInterval(() => {
@@ -530,7 +541,7 @@ export function createStudioTransport(options: StudioTransportOptions) {
         ? [meter.peakL, meter.peakR]
         : shown.graph.readPeaks()
       publish({
-        playheadFrame: runPosition(shown),
+        playheadFrame: shownFrame(shown),
         peakL,
         peakR,
         meter,
@@ -744,18 +755,25 @@ export function createStudioTransport(options: StudioTransportOptions) {
       assets: readonly StudioAsset[],
     ): Promise<void> {
       if (!Number.isSafeInteger(frame) || frame < 0) return
-      const wasPlaying = wantsPlayback
-      const token = ++restartGeneration
-      pause(true)
       const end = compileStudioArrangement(project, assets).endFrame
-      publish({ playheadFrame: Math.min(frame, end) })
-      if (!wasPlaying || state.playheadFrame >= end) {
+      const target = Math.min(frame, end)
+      const token = ++restartGeneration
+      if (!wantsPlayback || disposed || target >= end) {
         pause()
+        publish({ playheadFrame: target })
         return
       }
+      const newest = active ?? held
+      const moved = newest !== null && seekInPlace(handoffs, newest, target)
+      // A run that cannot move hands over to one built at the target.
+      seekTarget = moved || !newest ? null : target
+      publish({ playheadFrame: target })
+      if (moved && !held) return
+      // A run held for an edit moved too: the run to replace it starts here.
+      hold(project)
       await preparationDone
       if (wantsPlayback && !disposed && token === restartGeneration)
-        await play(project, assets, state.playheadFrame)
+        await start(project, assets, target)
     },
     prepareToSuspend() {
       pause()

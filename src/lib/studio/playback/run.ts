@@ -58,8 +58,12 @@ export interface StudioRun {
   releaseMemory: () => void
   startFrame: number
   endFrame: number
+  /** Its plan's first frame: a seek can move it no earlier. */
+  readonly firstFrame: number
   /** When `startFrame` is heard. */
   audibleEpoch: number
+  /** Seconds from a clip's start to the speakers: lane compensation and the master's latency. */
+  readonly latency: number
   /** When its envelope is fully open: a later handoff starts no sooner. */
   openAt: number
   /**
@@ -202,7 +206,9 @@ export function buildStudioRun(parts: StudioRunParts): StudioRun {
       releaseMemory: parts.releaseMemory,
       startFrame: timing.fromFrame,
       endFrame: plan.endFrame,
+      firstFrame: plan.startFrame,
       audibleEpoch: timing.audibleEpoch,
+      latency: parts.latency,
       openAt,
       untilFrame: parts.repeat ? Infinity : plan.endFrame,
       tailFrames: plan.tailFrames,
