@@ -782,3 +782,11 @@ Note: the lanes' memory gate read a stale cgroup path after the 21:00 restart (f
 - Plan: when the run completes, ONE comment (release24/ci-comment-1.md; no footer, strip any) + rerun_failed_jobs ONCE (run 40632457086). Proposed fix (not in this PR): route '**/demo/goodbye-to-spring/*.m4a' with TONE_WAV like jam-control-bar.spec.ts. If the re-run fails too: it is real -> own fix PR, port into #1237.
 - Chip fix 3ab4654d5 gates2 ALL PASS: build (LFS stop only), 5 asserts, e2e 66 passed, pnpm check 0/11 (490 s), no dirty files. run-red.sh running (bo70dvdi7), then run-sweep.sh.
 - Usage one-shot trig_01Q7FmWJg71zeBSwRk4uVzPb fired 04:53 (work had not stopped). Next one-shot trig_018rmrJr4HTasnHjNpE5bJmS at 09:53Z (resetsAt 09:50Z + 3 min), prompt updated to this state. 2h trig_01JGQdH9F56vCzkd9UvFFRJv stays.
+
+## 05:20 UTC 28 Oct: #1237 MERGED (main acddb2a87); Release Tours run 14 dispatched; #1238 and #1239 open, held
+- #1237: one comment (6461078692, footer stripped; edited after: re-run passed, fix is #1239). Re-run of Browser tests (1/4) passed 05:17 (attempt 2); all 86 checks green (1 skipped: prod jobs). Merged by rebase, expectedHeadSha b26c6d716a1a4ff5eb96003664cbb4dfd6ef887c -> main acddb2a87484b3d2e1b2b304e2fe1df5465e7eba. verify-rebase-merge.sh: 1 commit; subjects, messages, authors and dates, patch-ids 1/1, tree same. package.json and CHANGELOG 0.9.24; no v0.9.24 tag anywhere. Unsubscribed.
+- Release Tours dispatched on main: run 40637278939 (run 14) on acddb2a87 at 05:19.
+- #1238 (chip press box) feat/chip-press-box 3ab4654d5: OPEN 05:16, footer stripped, read back, subscribed. Sweep PASS 465 FAIL 0 WARN 12 (the 10 x 41 px lines gone; analysis phone passes); walk merc,polish24 45/45; pr:validate + index pass. HOLD merge until the owner tags.
+- #1239 (stage test stems) feat/stage-test-stems fefbcdd68 (polish23 worktree; its stale dist deleted): OPEN 05:17, footer stripped, read back, subscribed. Local with the R2 host unresolvable (scratch -c config, removed): main's spec fails at :109 like CI; fix 5/5 + 3/3; check 0/11; pr:validate pass. HOLD merge until the owner tags.
+- Owner ping: release24/OWNER-PING.md (only @@RT@@ left). Send when run 14 is green on acddb2a87 with 0 misses on both viewports.
+- Deleted: release24/tours-build/dist, ci1237-shard1.
