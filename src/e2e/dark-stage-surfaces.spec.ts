@@ -3,9 +3,14 @@
 // ============================================================
 
 import { expect, test } from '@playwright/test'
+import { readFileSync } from 'node:fs'
+import { writeToneWav } from '@/e2e/helpers/tone-wav'
 import { dismissOverlays } from '@/e2e/helpers/ui'
 
 test.use({ viewport: { width: 1024, height: 700 } })
+
+/** A short tone to stand in for the demo song's stems. */
+const TONE_WAV = readFileSync(writeToneWav(440, 4))
 
 test.beforeEach(async ({ page }) => {
   await page.addInitScript(() => {
@@ -90,6 +95,11 @@ test('Piano Night owns a complete dark native palette @smoke', async ({
 test('performance confirmations keep their stage skin outside the stage @smoke', async ({
   page,
 }) => {
+  // The lyrics panel comes up once the stems have loaded. They are 10 MB on
+  // the public bucket, and a slow download there outlasted the wait below.
+  await page.route('**/demo/goodbye-to-spring/*.m4a', (route) =>
+    route.fulfill({ contentType: 'audio/wav', body: TONE_WAV }),
+  )
   await page.route('**/demo/goodbye-to-spring/lyrics.lrc', (route) =>
     route.fulfill({
       body: '[00:00.00]Portal theme contract',
