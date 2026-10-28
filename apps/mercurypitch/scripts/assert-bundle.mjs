@@ -258,11 +258,12 @@ const KARAOKE_STAGE_2 = [
   // PREMIUM_IMAGES).
   [/\/lantern-[a-z-]+-[\w-]{8}\.webp$/u, "the Long note lantern's plates"],
   // The same for every premium exercise painted after it: each plate and
-  // sprite is named for its room (echo-, bridge-, bay-, and warm- for the
-  // Warm-up's night and orbs), and the folders they sit in fold with Long
-  // note's (vite.config.ts, PREMIUM_IMAGES).
+  // sprite is named for its room (echo-, bridge-, bay-, warm- for the
+  // Warm-up's night and orbs, and harbour- for Home note's painting), and
+  // the folders they sit in fold with Long note's (vite.config.ts,
+  // PREMIUM_IMAGES).
   [
-    /\/(?:echo|bridge|bay|warm)-[a-z0-9-]+-[\w-]{8}\.webp$/u,
+    /\/(?:echo|bridge|bay|warm|harbour)-[a-z0-9-]+-[\w-]{8}\.webp$/u,
     "the premium exercises' plates",
   ],
   // Merc's voice for Echo's calls, found by file name the same way: the ten
@@ -357,8 +358,8 @@ const KARAOKE_STAGE_2 = [
   ['mp_warm_up_opened', "the Warm-up path's first open of the day"],
   // Home note, the first Ear room: its room, its card in the picker, its
   // level lines and its bests, built and folded exactly as the rooms are.
-  // Its harbour is drawn until its painting lands (/ear-rooms/, native-only
-  // like the theatre). The Ear Lab's way in to it (EarMercRow.tsx) is a lazy
+  // Its harbour painting is found by file name with the plates above. The
+  // Ear Lab's way in to it (EarMercRow.tsx) is a lazy
   // island on the same switch (EarLabPage.tsx).
   ['home-note-room', 'the premium Home note exercise'],
   [

@@ -34,11 +34,10 @@ describe('the harbour', () => {
     scene()
     const img = screen.getByTestId('home-note-painting') as HTMLImageElement
     expect(img.getAttribute('src')).toBe(HARBOUR_ART.portrait)
-    expect(img.getAttribute('src')).toBe('/ear-rooms/harbour-portrait.webp')
+    expect(HARBOUR_ART.portrait).toMatch(/harbour-portrait\.webp$/u)
     const source = img.parentElement?.querySelector('source')
-    expect(source?.getAttribute('srcset')).toBe(
-      '/ear-rooms/harbour-landscape.webp',
-    )
+    expect(source?.getAttribute('srcset')).toBe(HARBOUR_ART.landscape)
+    expect(HARBOUR_ART.landscape).toMatch(/harbour-landscape\.webp$/u)
     expect(source?.getAttribute('media')).toBe('(orientation: landscape)')
     // The layout's lamp: 84% across, 44% down.
     expect(img.style.objectPosition).toBe('84.00% 44.00%')
