@@ -69,6 +69,70 @@
   font: 600 14px/1.2 var(--font-body, sans-serif);
 }
 
+/* Each song of the run, under the numbers: how its entries went, and
+   "Sing on" for the whole song in the Karaoke room (canvas C4). Three
+   rows and a half at most; a longer mix scrolls in its place. */
+.bySong {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  width: min(340px, calc(100vw - 32px));
+  max-height: 174px;
+  margin: 12px 0 0;
+  padding: 6px;
+  overflow-y: auto;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 16px;
+  background: rgba(20, 8, 12, 0.7);
+  list-style: none;
+}
+
+.bySongRow {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 44px;
+  padding: 0 4px 0 10px;
+}
+
+.bySongTitle {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  color: var(--text-primary);
+  font: 600 14px/1.25 var(--font-body, sans-serif);
+  text-align: left;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.bySongCount {
+  flex: none;
+  color: #ffd36b;
+  font: 600 13px/1 var(--font-body, sans-serif);
+  font-variant-numeric: tabular-nums;
+}
+
+.singOn {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 36px;
+  min-width: 44px;
+  padding: 0 12px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.08);
+  color: var(--text-primary);
+  font: 600 13px/1 var(--font-body, sans-serif);
+}
+
+.singOn svg {
+  width: 16px;
+  height: 16px;
+}
+
 /* The demo's Skip has no demo here yet; the kit still names the class. */
 .skip {
   display: none;

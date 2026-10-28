@@ -237,31 +237,43 @@ export const KaraokeRoomStage: Component = () => {
   let arrived = false
   createEffect(() => {
     if (arrived || roomArrivalHeld() || !seeded()) return
-    const song = arrivalSong(
-      library(),
-      parked,
-      untrack(karaokeStagedSong),
-      lastSungSong(),
-    )
+    // First note's "Sing on in Karaoke" names the song and the place the
+    // singer came in on: it is the answer, before a parked song, and it
+    // starts there, playing, because the singer asked to sing on.
+    const request = untrack(karaokeSongRequest)
+    const singOn =
+      request?.seekSec === undefined
+        ? undefined
+        : library().find((row) => row.sessionId === request.sessionId)
+    const song =
+      singOn ??
+      arrivalSong(library(), parked, untrack(karaokeStagedSong), lastSungSong())
     if (song === null) return
     arrived = true
     // A song the studio handed back while the room was away is the staged
     // song, so this arrival is its answer.
     takeKaraokeSongRequest()
-    const resuming = parked !== null && parked.sessionId === song.sessionId
+    const resuming =
+      singOn === undefined &&
+      parked !== null &&
+      parked.sessionId === song.sessionId
     // A parked song that is no longer in the library cannot come back.
     if (!resuming) setRunOn(false)
+    let seekSec: number | undefined
+    if (resuming) seekSec = parked.seconds > 0 ? parked.seconds : undefined
+    else if (singOn !== undefined) seekSec = request?.seekSec
     void cueSong(song, {
-      autoPlay: false,
-      seekSec: resuming && parked.seconds > 0 ? parked.seconds : undefined,
+      autoPlay: singOn !== undefined,
+      seekSec,
       guide: resuming ? parked.guide : null,
       arriving: true,
     })
     if (takeKaraokeLibraryRequest()) setLibraryOpen(true)
   })
 
-  // A song the studio handed back (plan S8 §11): on the stage, playing. One
-  // that the room cannot play leaves the stage as it was.
+  // A song the studio handed back (plan S8 §11), or First note: on the
+  // stage, playing, from where it asks. One that the room cannot play
+  // leaves the stage as it was.
   createEffect(() => {
     if (karaokeSongRequest() === null || !arrived) return
     untrack(() => {
@@ -272,7 +284,7 @@ export const KaraokeRoomStage: Component = () => {
         setKaraokeStagedSong(cue()?.song.sessionId ?? null)
         return
       }
-      void cueSong(song, { autoPlay: true })
+      void cueSong(song, { autoPlay: true, seekSec: request.seekSec })
     })
   })
 

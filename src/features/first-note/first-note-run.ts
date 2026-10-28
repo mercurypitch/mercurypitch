@@ -22,6 +22,7 @@ import type { ExerciseLevel } from '@/stores/exercise-level'
 import { recordFirstNoteBest } from '@/stores/first-note-store'
 import type { RoundOutcome } from './first-note-machine'
 import { FIRST_NOTE_ROUNDS } from './first-note-rules'
+import type { FirstNoteEntry, FirstNoteSong } from './first-note-songs'
 import type { FirstMoment } from './merc-lines'
 
 export interface FirstNoteSummary {
@@ -62,6 +63,39 @@ export function summarizeRun(
     ),
     voiced: outcomes.some((outcome) => outcome.voiced),
   }
+}
+
+/** One song of a finished run: how its entries went, and where it began. */
+export interface SongResult {
+  readonly song: FirstNoteSong
+  /** Its entries the singer came in on the note. */
+  readonly onNote: number
+  /** Its entries in the run. */
+  readonly rounds: number
+  /** Its first entry in the run: where "Sing on in Karaoke" picks it up. */
+  readonly first: FirstNoteEntry
+}
+
+/** Each song of a run once, in the order the run played them. */
+export function resultsBySong(outcomes: readonly RoundOutcome[]): SongResult[] {
+  const results: SongResult[] = []
+  for (const outcome of outcomes) {
+    const { song, entry } = outcome.round
+    const at = results.findIndex((result) => result.song === song)
+    const onNote = outcome.entry?.onNote === true ? 1 : 0
+    if (at === -1) {
+      results.push({ song, onNote, rounds: 1, first: entry })
+      continue
+    }
+    const known = results[at]
+    results[at] = {
+      ...known,
+      onNote: known.onNote + onNote,
+      rounds: known.rounds + 1,
+      first: entry.at < known.first.at ? entry : known.first,
+    }
+  }
+  return results
 }
 
 /** The result's line under the count. */

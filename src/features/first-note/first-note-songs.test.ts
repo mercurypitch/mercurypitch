@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { ENTRIES_PER_SONG, FIRST_NOTE_ROUNDS } from './first-note-rules'
 import type { FirstNoteSong } from './first-note-songs'
-import { FIRST_NOTE_SONGS, LINE_SHARES, pickEntries, planRun, shareRun, songsOfRun, } from './first-note-songs'
+import { FIRST_NOTE_SONGS, LINE_SHARES, pickEntries, planRun, shareRun, SING_ON_LEAD_SEC, singOnFrom, songsOfRun, } from './first-note-songs'
 
 /** A seeded random source, the same run every time. */
 function seeded(seed = 7): () => number {
@@ -120,6 +120,16 @@ describe("First note's songs", () => {
     expect(rounds).toHaveLength(FIRST_NOTE_ROUNDS)
     expect(new Set(rounds.map((round) => round.entry.at)).size).toBe(6)
     expect(songsOfRun(rounds).map((one) => one.slug)).toEqual(['mine'])
+  })
+
+  it('sings on in Karaoke from the first beat counted, or a breath before the entry', () => {
+    const counted = { ...SONG.entries[0], beats: [6.4, 7.1, 7.8, 8.5] }
+    expect(singOnFrom(counted)).toBe(6.4)
+    expect(singOnFrom({ ...SONG.entries[0], at: 20, beats: [] })).toBe(
+      20 - SING_ON_LEAD_SEC,
+    )
+    // Never before the song starts.
+    expect(singOnFrom({ ...SONG.entries[0], at: 1.2, beats: [] })).toBe(0)
   })
 
   it("places each round's line somewhere new, inside the stage's range", () => {
