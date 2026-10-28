@@ -17,7 +17,7 @@
 import type { DemoSoundtrack, SungDemoTake, } from '@/components/demo-kit/demo-sound'
 import { createDemoSoundtrack, outputLatency, } from '@/components/demo-kit/demo-sound'
 import { startRoomTone } from '@/components/room-kit/room-tones'
-import type { VoiceContourOptions } from '@/lib/demo-audio'
+import type { VoiceContourOptions } from '@/lib/demo-voice'
 import type { ReferenceTone } from '@/lib/reference-tone'
 import { COUNT_IN_TONE_SEC } from './glide-room-contract'
 

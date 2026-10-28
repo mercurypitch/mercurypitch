@@ -7,10 +7,10 @@
 // the pitch arrives on the next note's onset, the time the engine's rhythm
 // judge measures against. A gap between notes is a rest.
 
-import type { VoicePoint } from '@/lib/demo-audio'
+import type { VoicePoint } from '@/lib/demo-voice'
 import type { Phrase } from './sequence-engine'
 
-/** His level on a held note (demo-audio.ts measured a held note at 0.8). */
+/** His level on a held note (demo-voice.ts measured a held note at 0.8). */
 const SUNG_LEVEL = 0.8
 
 /** How long he takes to move into the next note sung straight on, s. */

@@ -69,7 +69,7 @@ import { createHomeLines } from './merc-lines'
 
 /** The chip while the singer sings. */
 export const YOUR_TURN = 'Your turn'
-/** Merc's voice while he sings home (demo-audio's held level). */
+/** Merc's voice while he sings home (demo-voice's held level). */
 const SUNG_LEVEL = 0.8
 
 /** Draws the voice's trail: its readings and now, frames' clock; null clears it. */

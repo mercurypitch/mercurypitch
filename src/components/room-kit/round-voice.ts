@@ -7,13 +7,13 @@
 // RoundVoice, the shape of Echo's call voice (echo/merc-sampler.ts): the
 // native screen hands a room his sampled voice, so no room's feature
 // reaches into Echo's. Without one (a browser build, a test) the room
-// sings him with the synth "ooh" the rooms already use (demo-audio.ts),
+// sings him with the synth "ooh" the rooms already use (demo-voice.ts),
 // at any pitch, exactly.
 //
 // And the one sum every room that schedules sound against its frames does:
 // how far the speaker is behind the audio clock.
 
-import { playVoiceContour } from '@/lib/demo-audio'
+import { playVoiceContour } from '@/lib/demo-voice'
 import { midiToFrequency } from '@/lib/frequency-to-note'
 import type { PhraseNote } from '@/lib/sequence/sequence-engine'
 import { roomOutput } from './room-output'
@@ -33,7 +33,7 @@ export interface RoundVoice {
 
 /** Merc's synth voice: his vibrato (merc-voice-set.ts measures the set's). */
 const SYNTH_VIBRATO = { hz: 5.5, cents: 14, rampSec: 0.35 }
-/** The synth voice's level while he sings (demo-audio's held level). */
+/** The synth voice's level while he sings (demo-voice's held level). */
 const SYNTH_LEVEL = 0.8
 
 /** Merc sung by the synth "ooh", at any pitch, exactly. */

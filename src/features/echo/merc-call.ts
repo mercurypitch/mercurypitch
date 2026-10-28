@@ -6,7 +6,7 @@
 // change without the room knowing. The owner decided on 13 Oct 2026 that
 // Merc sings the calls with vibrato: the room's voice is MERC_CALL
 // (merc-sampler.ts), his recorded "ooh". The synth "ooh" here
-// (playVoiceContour, demo-audio.ts, singing the phrase's line from
+// (playVoiceContour, demo-voice.ts, singing the phrase's line from
 // phrase-voice.ts) sings while his voice loads, if it cannot load, and any
 // call his voice set does not reach.
 //
@@ -23,7 +23,7 @@
 
 import { roomOutput } from '@/components/room-kit/room-output'
 import { outputLatency } from '@/components/room-kit/round-voice'
-import { playVoiceContour } from '@/lib/demo-audio'
+import { playVoiceContour } from '@/lib/demo-voice'
 import { midiToFrequency } from '@/lib/frequency-to-note'
 import { phraseToVoicePoints } from '@/lib/sequence/phrase-voice'
 import type { PhraseNote } from '@/lib/sequence/sequence-engine'

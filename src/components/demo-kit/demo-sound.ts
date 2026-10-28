@@ -14,8 +14,9 @@
 
 import { roomOutput } from '@/components/room-kit/room-output'
 import { startRoomTone } from '@/components/room-kit/room-tones'
-import type { DemoSound, VoiceContourOptions } from '@/lib/demo-audio'
-import { flutterMakeup, playVoiceContour } from '@/lib/demo-audio'
+import type { DemoSound } from '@/lib/demo-audio'
+import type { VoiceContourOptions } from '@/lib/demo-voice'
+import { flutterMakeup, playVoiceContour } from '@/lib/demo-voice'
 import { midiToFrequency } from '@/lib/frequency-to-note'
 import type { DemoVoicePoint } from './demo-plan'
 

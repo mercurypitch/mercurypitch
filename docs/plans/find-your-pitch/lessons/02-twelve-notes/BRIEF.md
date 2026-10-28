@@ -195,7 +195,7 @@ direction: it never asks semitone or tone.
 - Merc's sung A3 and A4 in the cold open: `src/features/echo/voice/echo-merc-ooh-57-A3.mp3`,
   `-69-A4.mp3` (ElevenLabs-derived, `src/features/echo/merc-voice-set.ts`; the owner holds their
   rights, so they stay until a voice actor replaces them: MASTER-PLAN § 12 item 1).
-- Merc's two sung slides: the synthesised "ooh" (`src/lib/demo-audio.ts` timbre, Lesson 1's
+- Merc's two sung slides: the synthesised "ooh" (`src/lib/demo-voice.ts` timbre, Lesson 1's
   `voice_tone()`), following the contour in FACTS 50 and 51.
 - Every other example is synthesised at its exact frequency by `tools/mix.py` (FACTS 41 to 53).
 - The spiral, keyboard and lanes: Lesson 1's scene code (`output/motion/lesson-01/compositions`,

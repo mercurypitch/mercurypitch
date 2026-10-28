@@ -2,14 +2,14 @@
 // The demo soundtrack: Merc's voice as loud as the room's note
 // ============================================================
 //
-// Every demo voice sits level with the room's Hear tone (demo-audio.ts
+// Every demo voice sits level with the room's Hear tone (demo-voice.ts
 // VOICE_PEAK). Lip roll's buzz did not: its flutter only ever dips the
 // level, and the buzz measured 4.5 to 5 LU under the room's own count-in
 // tone (EBU R128 on Chromium's render, 15 Oct). The soundtrack gives a
 // fluttered voice its loudness back, and leaves every other sound as it was.
 
 import { describe, expect, it } from 'vitest'
-import { flutterMakeup, LIP_FLUTTER } from '@/lib/demo-audio'
+import { flutterMakeup, LIP_FLUTTER } from '@/lib/demo-voice'
 import { createDemoSoundtrack } from './demo-sound'
 
 interface Node {

@@ -13,7 +13,7 @@ import { singDemo } from './sing-demo-host'
 const { playVoiceContour } = vi.hoisted(() => ({
   playVoiceContour: vi.fn(() => ({ stop: vi.fn() })),
 }))
-vi.mock('@/lib/demo-audio', () => ({ playVoiceContour }))
+vi.mock('@/lib/demo-voice', () => ({ playVoiceContour }))
 
 const note = (midi: number, startBeat: number, duration = 1): MelodyItem => ({
   id: midi * 10 + startBeat,

@@ -58,7 +58,7 @@ import { MERC_SAMPLES, SAMPLE_ONSET, SAMPLE_SUSTAIN_END, SAMPLE_SUSTAIN_START, s
  * the synth's held level (phrase-voice.ts), as the set was auditioned.
  */
 export const SAMPLED_GAIN = 0.8
-/** The house envelope (demo-audio.ts): release and the slack after it, s. */
+/** The house envelope (demo-voice.ts): release and the slack after it, s. */
 const RELEASE = 0.18
 const STOP_SLACK = 0.06
 /** A note opens from the floor over this long, under the sample's attack. */

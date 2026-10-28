@@ -58,7 +58,7 @@ import { startRoomTone } from './room-tones'
 /**
  * How long a room's sound plays on once it is stopped, ms. Every sound a
  * room makes closes on the house release: 180 ms of decay, and 60 ms more
- * before its source stops (reference-tone.ts, demo-audio.ts,
+ * before its source stops (reference-tone.ts, demo-voice.ts,
  * merc-sampler.ts). The last 10 ms are the audio clock's margin, up to the
  * 250 ms the shared clock grants a park.
  */

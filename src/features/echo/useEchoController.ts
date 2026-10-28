@@ -86,7 +86,7 @@ import { voicePath } from './voice-path'
 
 /** Merc's happy face after a landing, before he listens again, ms. */
 const LOCK_FACE_MS = 450
-/** Merc's voice while he sings his call (demo-audio's held level). */
+/** Merc's voice while he sings his call (demo-voice's held level). */
 const SUNG_LEVEL = 0.8
 
 /** The level's id for Echo's rules (ECHO_LEVELS): one per accuracy tier. */
