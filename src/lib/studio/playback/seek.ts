@@ -12,6 +12,7 @@
 // was short, or a shorter song's that an edit is replacing. The transport
 // then hands over to a run built at the target instead (handoff.ts).
 import type { StudioHandoff } from './handoff'
+import { crossSameFrames } from './handoff'
 import type { StudioRun, StudioRunTiming } from './run'
 import { RUN_LOOKAHEAD_SECONDS, runPosition } from './run'
 
@@ -105,7 +106,10 @@ export function seekInPlace(
   frame: number,
 ): boolean {
   if (!seekRuns(runsToSeek(handoffs, newest), frame)) return false
-  for (const handoff of handoffs) handoff.seek = false
+  for (const handoff of handoffs) {
+    if (handoff.seek) crossSameFrames(handoff)
+    handoff.seek = false
+  }
   return true
 }
 
