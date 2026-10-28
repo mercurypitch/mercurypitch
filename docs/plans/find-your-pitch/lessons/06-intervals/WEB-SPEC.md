@@ -223,7 +223,7 @@ and keeps its identity" (`research/brand-motion.md` § 3.3), and playbook rule 6
   notes and lights them (FACTS 64). In Steps 3 and 4 the gap numbers are labels in the same strip.
 - **Slide** (Step 3, and free play): Start lower and Start higher (a semitone each), or, with a
   mouse or pen, a vertical drag on the line; starts run from C4 to B4. On touch the stage keeps
-  `touch-action: pan-y`, as Lesson 1's does (`kit/lesson-stage.css:780-787`), so a swipe still
+  `touch-action: pan-y`, as Lesson 1's does (`kit/lesson-stage.css:788-795`), so a swipe still
   scrolls the page and the buttons do the sliding. A slide is the signature move: the line lifts
   (a soft shadow, the rows dim), travels, and settles on its new rows, where the letters change and
   the gap numbers glow gold once, unchanged. A faint chrome ghost of the line on C stays in place

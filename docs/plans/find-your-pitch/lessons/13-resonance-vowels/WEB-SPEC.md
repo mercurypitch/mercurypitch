@@ -86,9 +86,9 @@ section's heading, and the line above it, are in LESSON.md ("Section headings").
 
 1. **Masthead**: Lesson 1's (wordmark, "Season 1 · Lesson 13", anchors Lesson, Sing and Explorer,
    the Sound toggle off by default, Pause animations with its reduced-motion lock), through
-   `initMasthead(sections, { lesson: 13, deck })` (`kit/page-chrome.ts:122-154`): before anything
+   `initMasthead(sections, { lesson: 13, deck })` (`kit/page-chrome.ts:127-159`): before anything
    else the page's links to other lessons follow the state it was served with (`followPageState`,
-   `:126`; `kit/page-state.ts:64-108`; Edge cases), then "Season 1 · Lesson 13" opens the lesson
+   `:131`; `kit/page-state.ts:64-108`; Edge cases), then "Season 1 · Lesson 13" opens the lesson
    menu (`kit/lesson-menu.ts`), and the page's steps are remembered as the viewer moves through
    them (`kit/position.ts`).
 2. **Hero**, laid out as Lesson 2's is (`learn/02.html:333-506`). The hero copy holds the kicker;
@@ -109,7 +109,7 @@ section's heading, and the line above it, are in LESSON.md ("Section headings").
    in landscape (1024 x 640) the stage and the choices too (CURIOSITY-MOMENTS § 3.1, "Above the
    fold", `docs/plans/find-your-pitch/CURIOSITY-MOMENTS.md:300-302`). Of the plan's levers, the
    recall's place is already used, since it follows the predict; the others are Merc and Tavi's size
-   (`--merc`, `kit/lesson-stage.css:204`) and the hook's length, and this hook, at 97 characters,
+   (`--merc`, `kit/lesson-stage.css:212`) and the hook's length, and this hook, at 97 characters,
    is a long one: on a phone the strip's gloss may go under the stage's fold before the choices
    do, and the gloss is the line to move below the choices if End to end 5 reports them off the
    first screen. `src/e2e/learn-cold-open-fold.spec.ts` holds the title on the first screen at its
@@ -205,7 +205,7 @@ the strip draws is the one `verify13.py` asserted (FACTS 40 to 42).
   (FACTS 42): the tallest bar, then the tallest bar above it that stands at least one segment over
   both its neighbours, each with the cap and the chevron (Look).
 - **Heights.** The figure is the kit's `.viz.tall`, 380 px beside the text, 340 px in the deck and
-  310 px at 420 px wide and under (`kit/lesson-stage.css:796-798`, `:1087-1089`, `:1098-1100`). The
+  310 px at 420 px wide and under (`kit/lesson-stage.css:804-806`, `:1095-1097`, `:1106-1108`). The
   plot takes 30 % of it, rounded, the bar numbers an 18 px row, and 28 px go to the insets, 12 above
   the plot, 8 between plot and strip and 8 under the numbers; the strip takes the rest: at 380 px a
   114 px plot and a 220 px strip, a segment every 18.3 px (16.3 lit); at 340 px, 102 and 192, every
@@ -240,7 +240,7 @@ the strip draws is the one `verify13.py` asserted (FACTS 40 to 42).
   after the 18th its next press starts again from the 1st alone. **All** plays all 18, 2.0 s, and
   lights all 18. No peak is capped in this state, since the source has none. Merc's line draws
   level through every play (the step's Notice). The readout at the plot's top left
-  (`.viz .readout`, `kit/lesson-stage.css:799-806`) reads "A3 · 220 Hz apart" and, under it,
+  (`.viz .readout`, `kit/lesson-stage.css:807-814`) reads "A3 · 220 Hz apart" and, under it,
   "harmonics: 3 of 18". The live region: "Harmonics 1 to 3 of A 3: 220, 440 and 660 hertz, 220
   hertz apart." (up to the 18th, "Harmonics 1 to 18 of A 3, up to 3,960 hertz, 220 hertz apart.");
   after All, "All 18 harmonics of A 3, 220 hertz apart. The line stayed level."
@@ -1020,7 +1020,7 @@ What the page does where nothing above says:
   but the publish order is a rule for whoever uses it (the intro), so the page follows the state it
   is served with.
   The site worker, and then the masthead's `followPageState`, make every link to a lesson that is
-  not live no link (`kit/page-state.ts:64-108`, called by `initMasthead`, `kit/page-chrome.ts:126`):
+  not live no link (`kit/page-state.ts:64-108`, called by `initMasthead`, `kit/page-chrome.ts:131`):
   the "After Lesson 11" chip stays as a plain chip, and any other link keeps its words. The kit's
   quiz does the same for the recall's step links, which keep their words, "Try Lesson 11, Step 2
   again", with no link (`kit/quiz.ts:206-209`). The recall still shows, and the explorer and the

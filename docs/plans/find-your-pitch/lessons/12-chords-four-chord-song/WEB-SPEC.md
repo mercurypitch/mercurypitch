@@ -109,10 +109,10 @@ FACTS 5a). Each section's heading, and the line above it, are in LESSON.md ("Sec
 
 1. **Masthead**: Lesson 4's (wordmark, "Season 1 · Lesson 12", anchors Lesson, Sing and Explorer,
    the Sound toggle off by default, Pause animations with its reduced-motion lock), through
-   `initMasthead` (`src/features/lessons/kit/page-chrome.ts:122-154`) with Lesson 4's map of
+   `initMasthead` (`src/features/lessons/kit/page-chrome.ts:127-159`) with Lesson 4's map of
    sections and `{ lesson: 12, deck }` (`lesson-04/main.ts:99-110`), which draws the lesson menu,
    remembers the steps the viewer reaches and first settles the page's links to other lessons for
-   the state it was served with (`followPageState`, `src/features/lessons/kit/page-chrome.ts:126`).
+   the state it was served with (`followPageState`, `src/features/lessons/kit/page-chrome.ts:131`).
 2. **Hero, with the cold open**, laid out as Lesson 2's (`learn/02.html:333-506`). Its copy holds
    the kicker, the hook question as the title (the `<h1 class="hook" id="hook">` every lesson page
    has, `learn/04.html:332`), the meta as three chips, the promise and the sound gate from
@@ -126,7 +126,7 @@ FACTS 5a). Each section's heading, and the line above it, are in LESSON.md ("Sec
    choice. The predict card sits under the stage, as Lesson 2's does (`:452`): LESSON.md's predict,
    its two choices, the lock hint and the reveal (Toys 3). On a phone the hero's parts run kicker,
    title, meta, the stage, the gate, the predict, then the promise
-   (`src/features/lessons/kit/lesson-stage.css:365-408`), so the title and the first Play come
+   (`src/features/lessons/kit/lesson-stage.css:373-416`), so the title and the first Play come
    before anything asks for an answer (CURIOSITY-MOMENTS § 3.1, "Above the fold"; FACTS 5a).
 3. **Recall from Lesson 10**, straight after the hero (`learn/02.html:509`): Lesson 10's questions
    1 and 2, shown to everyone, since Lesson 10 is a prerequisite (Toys 8; FACTS 7).
@@ -310,8 +310,8 @@ the stage-fit test reach every action.
   centre's label, Step 4's moves and Step 5's count, so no status line takes height.
 - **Layout and targets** (FACTS 75). The steps figure is the kit's tall figure, `.viz.tall`: 380 px
   tall on a desktop, 340 px in the deck and 310 px up to 420 px wide
-  (`src/features/lessons/kit/lesson-stage.css:780-798`, `:1084-1089`, `:1094-1100`), as wide as the
-  stage card's inner width on phones (`.viz.wide`, `lesson-stage.css:1282-1293`). At 344, 360, 375
+  (`src/features/lessons/kit/lesson-stage.css:788-806`, `:1092-1097`, `:1102-1108`), as wide as the
+  stage card's inner width on phones (`.viz.wide`, `lesson-stage.css:1290-1301`). At 344, 360, 375
   and 390 px the figure is 310, 326, 341 and 356 px wide, the ring's radius 83.7, 88.0, 89.9 and
   89.9 px, and neighbouring beads sit 43.3, 45.6, 46.5 and 46.5 px apart. A bead tap snaps to the
   nearest bead within 22 px (`spiral.ts:8-10`), so every point of the ring belongs to one bead, but
@@ -319,15 +319,15 @@ the stage-fit test reach every action.
   and every action has its own button of at least 44 px, the chips first. A bead's tap plays its
   note in the soft tone, as on Lesson 2's spiral. On a desktop the figure is 445, 480 and 651 px
   wide at 961, 1024 and 1440 px, the ring 110.2 px in radius. On touch the figure keeps the kit's
-  `touch-action: pan-y` (`lesson-stage.css:780-788`), so a swipe still scrolls the page.
+  `touch-action: pan-y` (`lesson-stage.css:788-796`), so a swipe still scrolls the page.
 - **The stuck stage.** Beside the text, the stage has the room the window leaves under the masthead,
-  its height less the 58 px masthead and 18 px (`lesson-stage.css:662-683`; `--mast`,
+  its height less the 58 px masthead and 18 px (`lesson-stage.css:670-691`; `--mast`,
   `src/features/lessons/kit/lesson-base.css:94`): 564, 555, 604 and 581 px at the kit's four short
   landscape sizes (`src/e2e/learn-stage-fit.spec.ts:35-55`). The kit shrinks a figure to fit, never
-  below its `--viz-min`, 180 px unless a lesson's stylesheet sets more (`lesson-stage.css:687-704`).
+  below its `--viz-min`, 180 px unless a lesson's stylesheet sets more (`lesson-stage.css:695-712`).
   The page sets `--viz-min: 300px` on the stuck stage only, under
   `@media (min-width: 961px) and (min-height: 561px)`, outside the deck's query,
-  `(max-width: 960px), (max-height: 560px)` (`lesson-stage.css:1037-1038`): at 300 px the ring's
+  `(max-width: 960px), (max-height: 560px)` (`lesson-stage.css:1045-1046`): at 300 px the ring's
   radius is at least 87 px and its beads at least 45 px apart. The stage, with its head, the figure,
   one row of chips, one row of the step's own buttons and the card's padding, is about 580 px with
   the 380 px figure, so in the smallest room, 555 px, the kit shrinks the figure to about 355 px,
@@ -335,7 +335,7 @@ the stage-fit test reach every action.
   step to two rows of controls there.
 - **The compact layout** (FACTS 75). On a phone held sideways the kit caps the deck's figure so that
   it and its toy's first row of controls share the screen, down to its `--viz-min`, 150 px unless a
-  lesson's stylesheet sets more (`lesson-stage.css:1111-1128`): 162 px at 844 x 390, and 150 px on
+  lesson's stylesheet sets more (`lesson-stage.css:1119-1136`): 162 px at 844 x 390, and 150 px on
   the shortest phones. The page leaves that floor alone. Below 240 px of height the toy draws its
   compact layout: the ring's beads carry letters only (`setLabels('letter')`, `spiral.ts:176`), the
   centre's label moves into the figure's top-left corner, and the syllables under Do-re-mi move onto
@@ -1301,7 +1301,7 @@ only. The page stores the quiz seeds and records (`fyp-l12-recall-seed`, `fyp-l1
 `fyp-voice` (`voice-choice.ts:20`), the masthead's Pause animations choice, `fyp-motion`
 (`src/features/lessons/kit/motion-switch.ts:12`), and the steps the viewer reached, the kit's
 `fyp-pos` (`src/features/lessons/kit/position.ts:20`), which `initMasthead` keeps
-(`page-chrome.ts:122-154`); nothing from the toys or Sing it but the voice. The key and the names
+(`page-chrome.ts:127-159`); nothing from the toys or Sing it but the voice. The key and the names
 switch hold for the visit, in memory.
 
 Page QA before publishing (PRODUCTION-PIPELINE § 5) adds, for this page, every check against a local

@@ -26,7 +26,9 @@ export interface GateLines {
  * whose gate says more once sound is on (a voice lesson names the
  * microphone) passes its own line. Both lines stay in the gate, in one cell
  * (kit/lesson-stage.css), so it keeps the taller one's height in either
- * state; the one not current is hidden, from a screen reader too.
+ * state; the one not current is hidden, from a screen reader too. The
+ * button's two labels share one cell the same way, so it keeps the wider
+ * one's width and the line beside it never rewraps.
  */
 export function initSoundSwitch(lines: Partial<GateLines> = {}): void {
   const sw = q('#soundSwitch')
@@ -48,12 +50,15 @@ export function initSoundSwitch(lines: Partial<GateLines> = {}): void {
   }
   // the markup's line until now, and the same words after: first paint keeps it
   gateText.replaceChildren(line('off', offText), line('on', onText))
+  gateBtn.replaceChildren(
+    line('off', 'Turn sound on'),
+    line('on', 'Turn sound off'),
+  )
   Sound.subscribe((state) => {
     const on = state === 'on'
     sw.setAttribute('aria-pressed', String(on))
-    // the gate's class picks the line that shows (kit/lesson-stage.css)
+    // the gate's class picks the line and the label that show (kit/lesson-stage.css)
     gate.classList.toggle('is-on', on)
-    gateBtn.textContent = on ? 'Turn sound off' : 'Turn sound on'
     // "Sound is off" waits for an answer (toast.ts): sound on from any control is one
     if (on) hideToast()
   })

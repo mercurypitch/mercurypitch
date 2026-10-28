@@ -65,12 +65,6 @@
   padding-top: 0;
   border-top: 0;
 }
-/* The gate's button is one width with either label. "Turn sound off" is
-   1.6 px wider than "Turn sound on", and at 1440 px this gate's line sits
-   that close to a wrap, so the gate grew a line as sound came on. */
-.l10-hero .gate .btn {
-  min-width: 9.5em;
-}
 @media (max-width: 1080px) {
   .l10-duo {
     --merc: clamp(120px, 20vw, 190px);

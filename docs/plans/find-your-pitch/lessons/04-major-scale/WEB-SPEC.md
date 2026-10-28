@@ -138,7 +138,7 @@ transforms is one object on the page.
 - **Slide** (steps 3 to 5, and free play): Start lower and Start higher (a semitone each), a tap on
   a key of the strip, or, with a mouse or pen, a vertical drag on the staircase; starts run from C4
   to B4. On touch the stage keeps `touch-action: pan-y`, as Lesson 1's does
-  (`kit/lesson-stage.css:780-787`), so a vertical swipe still scrolls the page, and the buttons
+  (`kit/lesson-stage.css:788-795`), so a vertical swipe still scrolls the page, and the buttons
   and keys do the sliding. A slide is silent: Play up plays the scale from its new start. The
   staircase keeps its shape: only its height, its letters and the lit keys change. On desktop the
   stage shows all twenty-five rows from C4 to C6, so the climb is visible; on a phone it shows the
