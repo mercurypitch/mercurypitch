@@ -12,6 +12,9 @@
 
 import { createHash } from 'node:crypto'
 import { existsSync, mkdirSync, mkdtempSync, readFileSync, writeFileSync, } from 'node:fs'
+import type { ServerResponse } from 'node:http'
+import { createServer } from 'node:http'
+import type { AddressInfo } from 'node:net'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { describe, expect, it, vi } from 'vitest'
@@ -219,6 +222,186 @@ describe('fetching them', () => {
   it('reports a missing file without the network', () => {
     const dir = mkdtempSync(join(tmpdir(), 'mp-examples-'))
     expect(checkKaraokeExamples(dir, [pin])).toEqual([pin.path])
+  })
+
+  const noWait = () => vi.fn(async () => Promise.resolve())
+
+  it('tries a file again when its fetch fails, a few seconds later, and writes it', async () => {
+    const dir = mkdtempSync(join(tmpdir(), 'mp-examples-'))
+    const fetchImpl = vi
+      .fn()
+      .mockRejectedValueOnce(new TypeError('fetch failed'))
+      .mockResolvedValueOnce(new Response(bytes, { status: 200 }))
+    const wait = noWait()
+    const lines: string[] = []
+    const result = (await ensureKaraokeExamples({
+      root: dir,
+      pins: [pin],
+      fetchImpl,
+      wait,
+      log: (line: string) => lines.push(line),
+    })) as { fetched: string[]; kept: string[] }
+    expect(result.fetched).toEqual([pin.path])
+    expect(fetchImpl).toHaveBeenCalledTimes(2)
+    expect(wait.mock.calls).toEqual([[5000]])
+    expect(lines).toContain(
+      `[karaoke-examples] ${pin.path}: try 1 of 3 failed (fetch failed); trying again`,
+    )
+    expect([...readFileSync(join(dir, pin.path))]).toEqual([...bytes])
+  })
+
+  it('tries a file again when its transfer drops part-way', async () => {
+    const dir = mkdtempSync(join(tmpdir(), 'mp-examples-'))
+    const dropped = new ReadableStream<Uint8Array>({
+      start(controller) {
+        controller.enqueue(bytes.subarray(0, 2))
+        controller.error(new TypeError('terminated'))
+      },
+    })
+    const fetchImpl = vi
+      .fn()
+      .mockResolvedValueOnce(new Response(dropped, { status: 200 }))
+      .mockResolvedValueOnce(new Response(bytes, { status: 200 }))
+    const result = (await ensureKaraokeExamples({
+      root: dir,
+      pins: [pin],
+      fetchImpl,
+      wait: noWait(),
+    })) as { fetched: string[]; kept: string[] }
+    expect(result.fetched).toEqual([pin.path])
+    expect(fetchImpl).toHaveBeenCalledTimes(2)
+  })
+
+  it('tries a file again when the server fails, but not when it refuses the file', async () => {
+    const busy = vi
+      .fn()
+      .mockResolvedValueOnce(new Response(null, { status: 503 }))
+      .mockResolvedValueOnce(new Response(bytes, { status: 200 }))
+    const refused = vi
+      .fn()
+      .mockResolvedValue(new Response(null, { status: 404 }))
+    const wait = noWait()
+    const fetched = (await ensureKaraokeExamples({
+      root: mkdtempSync(join(tmpdir(), 'mp-examples-')),
+      pins: [pin],
+      fetchImpl: busy,
+      wait,
+    })) as { fetched: string[]; kept: string[] }
+    expect(fetched.fetched).toEqual([pin.path])
+    expect(busy).toHaveBeenCalledTimes(2)
+    await expect(
+      ensureKaraokeExamples({
+        root: mkdtempSync(join(tmpdir(), 'mp-examples-')),
+        pins: [pin],
+        fetchImpl: refused,
+        wait,
+      }),
+    ).rejects.toThrow(/answered 404\.$/u)
+    expect(refused).toHaveBeenCalledTimes(1)
+    expect(wait).toHaveBeenCalledTimes(1)
+  })
+
+  it('stops after three tries, saying so, and writes nothing', async () => {
+    const dir = mkdtempSync(join(tmpdir(), 'mp-examples-'))
+    const unreachable = vi.fn().mockRejectedValue(new TypeError('fetch failed'))
+    const failing = vi
+      .fn()
+      .mockResolvedValue(new Response(null, { status: 503 }))
+    const wait = noWait()
+    await expect(
+      ensureKaraokeExamples({
+        root: dir,
+        pins: [pin],
+        fetchImpl: unreachable,
+        wait,
+      }),
+    ).rejects.toThrow(/could not fetch \S+ in 3 tries \(fetch failed\)/u)
+    expect(unreachable).toHaveBeenCalledTimes(3)
+    expect(wait.mock.calls).toEqual([[5000], [10000]])
+    await expect(
+      ensureKaraokeExamples({
+        root: dir,
+        pins: [pin],
+        fetchImpl: failing,
+        wait,
+      }),
+    ).rejects.toThrow(/answered 503 on try 3 of 3\.$/u)
+    expect(failing).toHaveBeenCalledTimes(3)
+    expect(existsSync(join(dir, pin.path))).toBe(false)
+    expect(existsSync(join(dir, `${pin.path}.part`))).toBe(false)
+  })
+
+  /** A server on this machine that answers each request, numbered from 1, as `send` writes it. */
+  async function serving(
+    send: (request: number, response: ServerResponse) => void,
+  ) {
+    let requests = 0
+    const server = createServer((_request, response) => {
+      requests += 1
+      send(requests, response)
+    })
+    await new Promise<void>((resolve) => server.listen(0, '127.0.0.1', resolve))
+    const { port } = server.address() as AddressInfo
+    return {
+      url: `http://127.0.0.1:${port}/vocal.m4a`,
+      requests: () => requests,
+      close: async () => {
+        server.closeAllConnections()
+        await new Promise((resolve) => server.close(resolve))
+      },
+    }
+  }
+
+  it('abandons a transfer once nothing has arrived for a while, and tries again', async () => {
+    const dir = mkdtempSync(join(tmpdir(), 'mp-examples-'))
+    const server = await serving((request, response) => {
+      response.writeHead(200, { 'content-length': String(bytes.byteLength) })
+      // The first answer sends two bytes and then nothing more.
+      if (request === 1) response.write(bytes.subarray(0, 2))
+      else response.end(bytes)
+    })
+    try {
+      const result = (await ensureKaraokeExamples({
+        root: dir,
+        pins: [{ ...pin, url: server.url }],
+        wait: noWait(),
+        stallMs: 300,
+      })) as { fetched: string[]; kept: string[] }
+      expect(result.fetched).toEqual([pin.path])
+      expect(server.requests()).toBe(2)
+    } finally {
+      await server.close()
+    }
+  })
+
+  it('never cuts off a transfer that is slow but moving', async () => {
+    const dir = mkdtempSync(join(tmpdir(), 'mp-examples-'))
+    const server = await serving((_request, response) => {
+      response.writeHead(200, { 'content-length': String(bytes.byteLength) })
+      // A byte every 100 ms: 800 ms in all, well past the 300 ms below.
+      let sent = 0
+      const timer = setInterval(() => {
+        response.write(bytes.subarray(sent, sent + 1))
+        sent += 1
+        if (sent === bytes.byteLength) {
+          clearInterval(timer)
+          response.end()
+        }
+      }, 100)
+    })
+    try {
+      const result = (await ensureKaraokeExamples({
+        root: dir,
+        pins: [{ ...pin, url: server.url }],
+        wait: noWait(),
+        stallMs: 300,
+      })) as { fetched: string[]; kept: string[] }
+      expect(result.fetched).toEqual([pin.path])
+      expect(server.requests()).toBe(1)
+      expect([...readFileSync(join(dir, pin.path))]).toEqual([...bytes])
+    } finally {
+      await server.close()
+    }
   })
 })
 

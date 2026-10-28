@@ -19,6 +19,12 @@
 // `ensureKaraokeExamples()` before it stages the bundle, so the Vite build
 // (the PR gate, CI's native builds, a local `cap sync`) fetches on first use
 // and verifies every time after that.
+//
+// The public bucket sometimes stalls a transfer for minutes and then drops
+// it, and one dropped stem used to fail the whole build. So each file gets
+// three tries, a few seconds apart, and a try is abandoned once 30 seconds
+// pass with nothing arriving. A server error is tried again; an answer that
+// refuses the file (a 404 or a 403) stops at once.
 
 import { createHash } from 'node:crypto'
 import { existsSync, mkdirSync, readFileSync, renameSync, rmSync, writeFileSync, } from 'node:fs'
@@ -83,6 +89,92 @@ export const KARAOKE_EXAMPLE_PINS = [
   },
 ]
 
+/** How many times a file is tried before the build stops. */
+const TRIES = 3
+
+/** How long a try may go with nothing arriving before it is abandoned, ms. */
+const STALL_MS = 30_000
+
+/** The wait after a failed try, this many ms times the tries so far. */
+const BACKOFF_MS = 5_000
+
+/** @param {number} ms */
+const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms))
+
+/** @param {unknown} error */
+const messageOf = (error) =>
+  error instanceof Error ? error.message : String(error)
+
+/** Whether an answer is worth asking for again: the server failing, or asking for a pause. */
+const retryable = (/** @type {number} */ status) =>
+  status >= 500 || status === 429
+
+/**
+ * One try at a file, abandoned once `stallMs` pass with nothing arriving:
+ * before the answer, or between any two parts of its body. A transfer that
+ * is slow but moving is never cut off.
+ *
+ * @param {string} url
+ * @param {typeof fetch} fetchImpl
+ * @param {number} stallMs
+ * @returns {Promise<{ bytes: Uint8Array } | { status: number }>}
+ */
+async function fetchOnce(url, fetchImpl, stallMs) {
+  const stall = new AbortController()
+  /** @type {ReturnType<typeof setTimeout> | undefined} */
+  let timer
+  const arrived = () => {
+    clearTimeout(timer)
+    timer = setTimeout(
+      () => stall.abort(new Error(`nothing arrived for ${stallMs / 1000} s`)),
+      stallMs,
+    )
+  }
+  arrived()
+  try {
+    const response = await fetchImpl(url, { signal: stall.signal })
+    if (!response.ok) return { status: response.status }
+    /** @type {Uint8Array[]} */
+    const parts = []
+    for await (const part of response.body ?? []) {
+      arrived()
+      parts.push(part)
+    }
+    return { bytes: Buffer.concat(parts) }
+  } finally {
+    clearTimeout(timer)
+  }
+}
+
+/**
+ * One pinned file's bytes, in up to `TRIES` tries.
+ *
+ * @param {KaraokeExamplePin} pin
+ * @param {{ fetchImpl: typeof fetch, wait: (ms: number) => Promise<unknown>, stallMs: number, log: (line: string) => void }} how
+ * @returns {Promise<{ bytes: Uint8Array } | { status: number, tries: number } | { error: unknown, tries: number }>}
+ */
+async function download(pin, { fetchImpl, wait, stallMs, log }) {
+  for (let tries = 1; ; tries++) {
+    /** @type {{ status: number, tries: number } | { error: unknown, tries: number }} */
+    let failed
+    try {
+      const got = await fetchOnce(pin.url, fetchImpl, stallMs)
+      if ('bytes' in got) return got
+      failed = { status: got.status, tries }
+      if (!retryable(got.status)) return failed
+    } catch (error) {
+      failed = { error, tries }
+    }
+    if (tries === TRIES) return failed
+    const why =
+      'status' in failed ? `answered ${failed.status}` : messageOf(failed.error)
+    log(
+      `[karaoke-examples] ${pin.path}: try ${tries} of ${TRIES} failed (${why}); trying again`,
+    )
+    await wait(tries * BACKOFF_MS)
+  }
+}
+
 /** @param {Uint8Array} bytes */
 function sha256Of(bytes) {
   return createHash('sha256').update(bytes).digest('hex')
@@ -112,6 +204,10 @@ function matches(path, pin) {
  * @param {typeof fetch} [options.fetchImpl]
  * @param {readonly KaraokeExamplePin[]} [options.pins]
  * @param {(line: string) => void} [options.log]
+ * @param {(ms: number) => Promise<unknown>} [options.wait] The pause between
+ *   tries (tests pass one that does not wait).
+ * @param {number} [options.stallMs] How long a try may go with nothing
+ *   arriving, ms.
  * @returns {Promise<{ fetched: string[], kept: string[] }>}
  */
 export async function ensureKaraokeExamples(options = {}) {
@@ -119,6 +215,8 @@ export async function ensureKaraokeExamples(options = {}) {
   const fetchImpl = options.fetchImpl ?? fetch
   const pins = options.pins ?? KARAOKE_EXAMPLE_PINS
   const log = options.log ?? (() => undefined)
+  const wait = options.wait ?? sleep
+  const stallMs = options.stallMs ?? STALL_MS
   /** @type {string[]} */
   const fetched = []
   /** @type {string[]} */
@@ -131,20 +229,18 @@ export async function ensureKaraokeExamples(options = {}) {
       continue
     }
     log(`[karaoke-examples] fetching ${pin.path}`)
-    let response
-    try {
-      response = await fetchImpl(pin.url)
-    } catch (error) {
+    const got = await download(pin, { fetchImpl, wait, stallMs, log })
+    if ('error' in got) {
       throw new Error(
-        `[karaoke-examples] ${pin.path}: could not reach ${pin.url} (${error instanceof Error ? error.message : String(error)}). The native build ships the example songs and fetches them once; it needs the network the first time.`,
+        `[karaoke-examples] ${pin.path}: could not fetch ${pin.url} in ${got.tries} tries (${messageOf(got.error)}). The native build ships the example songs and fetches them once; it needs the network the first time.`,
       )
     }
-    if (!response.ok) {
+    if ('status' in got) {
       throw new Error(
-        `[karaoke-examples] ${pin.path}: ${pin.url} answered ${response.status}.`,
+        `[karaoke-examples] ${pin.path}: ${pin.url} answered ${got.status}${got.tries > 1 ? ` on try ${got.tries} of ${TRIES}` : ''}.`,
       )
     }
-    const bytes = new Uint8Array(await response.arrayBuffer())
+    const { bytes } = got
     const hash = sha256Of(bytes)
     if (bytes.byteLength !== pin.bytes || hash !== pin.sha256) {
       throw new Error(
