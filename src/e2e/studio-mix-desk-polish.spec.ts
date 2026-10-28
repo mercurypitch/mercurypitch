@@ -1,4 +1,4 @@
-// Studio mixing desk details — every pixel of a dial face turns it, its focus ring clears the end words, faders read in dB, strips line up on their axis, light strip edges hold 1.3:1, the title row is slim, and a tap leaves no hover behind.
+// Studio mixing desk details — every pixel of a dial face turns it, its focus ring clears the end words, faders read in dB, strips line up on their axis, light strip edges hold 1.3:1, the title row is slim, a tap leaves no hover behind, and the meter prints no mark over another while its peak reading takes a finger without taking travel.
 import { expect, type Locator, type Page, test } from '@playwright/test'
 import { importStudioAudio, openArrangement, studioRegion, } from './helpers/dedicatedstudio-fixture'
 
@@ -22,6 +22,42 @@ async function openDesk(page: Page, tap = false): Promise<Locator> {
     ),
   )
   return desk
+}
+
+/**
+ * The desk meter's marks top to bottom, and the height between its rails and
+ * the loudness under them: `spent`, against the peak reading's words and the
+ * column's two gaps, `allowed`.
+ */
+async function deskMeter(desk: Locator) {
+  return desk.evaluate((element) => {
+    const meter = element.querySelector('[role="meter"]')!
+    const scale = meter.querySelector('[aria-hidden="true"]')!.lastElementChild!
+    const marks = [...scale.children]
+      .filter((mark) => mark.getClientRects().length > 0)
+      .map((mark) => {
+        const box = mark.getBoundingClientRect()
+        return { text: mark.textContent, top: box.top, bottom: box.bottom }
+      })
+      .sort((above, below) => above.top - below.top)
+    const reading = element.querySelector('button[title="Reset peak hold"]')!
+    const words = [...reading.children].map((part) =>
+      part.getBoundingClientRect(),
+    )
+    const loudness = element.querySelector('[title^="Short-term loudness"]')!
+    const gap = Number.parseFloat(getComputedStyle(meter.parentElement!).rowGap)
+    return {
+      marks: marks.map((mark) => mark.text),
+      gaps: marks.slice(1).map((mark, index) => mark.top - marks[index].bottom),
+      spent:
+        loudness.getBoundingClientRect().top -
+        meter.getBoundingClientRect().bottom,
+      allowed:
+        Math.max(...words.map((part) => part.bottom)) -
+        Math.min(...words.map((part) => part.top)) +
+        2 * gap,
+    }
+  })
 }
 
 test('Mix desk dials turn from every pixel of their face and draw focus clear of their end words @smoke', async ({
@@ -178,6 +214,19 @@ test('in light, a Mix desk strip edge holds 1.3:1 against the desk', async ({
   expect(contrast).toBeGreaterThanOrEqual(1.3)
 })
 
+test('on a laptop, the Mix desk meter prints its four marks clear of each other, and its peak reading takes only the height of its words', async ({
+  page,
+}) => {
+  test.setTimeout(120_000)
+  await page.setViewportSize({ width: 1366, height: 768 })
+  await openArrangement(page)
+  const meter = await deskMeter(await openDesk(page))
+
+  expect(meter.marks).toEqual(['0', '−12', '−24', '−48'])
+  for (const gap of meter.gaps) expect(gap).toBeGreaterThanOrEqual(2)
+  expect(meter.spent).toBeLessThanOrEqual(meter.allowed + 1)
+})
+
 test.describe('on a tablet', () => {
   test.use({
     viewport: { width: 1024, height: 768 },
@@ -210,5 +259,66 @@ test.describe('on a tablet', () => {
         (element) => getComputedStyle(element).backgroundColor,
       ),
     ).toBe(resting)
+  })
+})
+
+test.describe('on a tablet held upright', () => {
+  test.use({
+    viewport: { width: 768, height: 1024 },
+    hasTouch: true,
+    isMobile: true,
+  })
+
+  test('the desk meter drops the marks it has no room for, and its peak reading takes a 44 px press without taking travel', async ({
+    page,
+  }) => {
+    test.setTimeout(120_000)
+    await openArrangement(page)
+    const desk = await openDesk(page, true)
+    // The desk scrolls on an upright tablet: bring the meter's foot into view.
+    await desk
+      .getByTitle('Short-term loudness, 3 seconds', { exact: true })
+      .scrollIntoViewIfNeeded()
+    const meter = await deskMeter(desk)
+
+    expect(meter.marks[0]).toBe('0')
+    expect(meter.marks.length).toBeGreaterThanOrEqual(3)
+    for (const gap of meter.gaps) expect(gap).toBeGreaterThanOrEqual(2)
+    expect(meter.spent).toBeLessThanOrEqual(meter.allowed + 1)
+
+    // The run of the reading's centre line a press lands on. The reading
+    // names the button; its title says what a press does.
+    const reset = desk.getByTitle('Reset peak hold', { exact: true })
+    const reach = await reset.evaluate((button) => {
+      const box = button.getBoundingClientRect()
+      const x = box.left + box.width / 2
+      const hits: number[] = []
+      for (let y = Math.floor(box.top) - 40; y <= box.bottom + 40; y++)
+        if (button.contains(document.elementFromPoint(x, y))) hits.push(y)
+      return { x, first: Math.min(...hits), last: Math.max(...hits) }
+    })
+    expect(reach.last - reach.first + 1).toBeGreaterThanOrEqual(44)
+
+    // Real taps down that run. A phone moves a tap near an edge to the
+    // nearest words, so these stop 4 px short of each end.
+    await reset.evaluate((button) => {
+      const counted = window as unknown as { presses: number }
+      counted.presses = 0
+      button.addEventListener('click', () => counted.presses++)
+    })
+    let taps = 0
+    for (const offset of [4, 10, 16, 22, 28, 34, 40]) {
+      await page.touchscreen.tap(reach.x, reach.first + offset)
+      taps++
+      await expect
+        .poll(
+          () =>
+            page.evaluate(
+              () => (window as unknown as { presses: number }).presses,
+            ),
+          { message: `a tap ${offset} px into the press` },
+        )
+        .toBe(taps)
+    }
   })
 })
