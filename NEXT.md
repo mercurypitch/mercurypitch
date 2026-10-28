@@ -830,3 +830,10 @@ Note: the lanes' memory gate read a stale cgroup path after the 21:00 restart (f
 - JOURNEYS TESTER launched 07:58 at xhigh (slot 2 of 2 agents), brief journeys24/BRIEF.md, in presses detached at 7a8271d64; report journeys24/REPORT.md. Journeys A (offer on every tab, 5 sizes), B (mic press edge on 5 phone tabs), C (Sing tour, Play the note), D (Show me more, nothing kept, controls restored, fake-mic practice after, reduced motion), E (Lessons 1 and 2). R2 bucket blocked by the tester.
 - Triggers trig_01JGQdH9F56vCzkd9UvFFRJv (2-hourly, next 08:15) and trig_018rmrJr4HTasnHjNpE5bJmS (09:53Z) rewritten to this plan.
 - Worktrees: polish23 (feat/stage-test-stems, PR closed) is spare; presses is the tester's; l10-page is the notes branch; rd the Lesson 12 builder's; rel23 detached (node_modules symlink to rd: never let pnpm purge it).
+
+## 08:05 UTC 28 Oct: #1241 MERGED (main ccb8f912a); Release Tours run 15 dispatched; owner said "Yes sounds great"
+- Owner replied "Yes sounds great" to the plan (test list when the tester reports; Lesson 12 merges as a draft when reviewed; they may tag before it lands and it then rides 0.9.25). No change to the plan.
+- #1241: PR Gate pass, the rest skipped by scope (docs only); merged by rebase with expectedHeadSha 6056ba3c9 -> main ccb8f912a215f12c0c1831781de8469e551eef71. verify-rebase-merge.sh: 1 commit; subjects, messages, authors and dates, patch-ids 1/1, tree same. Unsubscribed.
+- prod-upd 1-3 on ccb8f912a: CHANGELOG first heading 0.9.24, package.json 0.9.24, no v0.9.24 tag locally or on origin.
+- Release Tours run 15 (id 40654022450) dispatched 08:02 on ccb8f912a. One-shot send_later at ~08:21 to read it.
+- Dev: Build & Deploy for 7a8271d64 (#1238) succeeded 07:51; ccb8f912a's running (docs only).
