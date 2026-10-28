@@ -8,10 +8,9 @@
 //     rated run, today's short run, sealed calibration), and "?".
 //   - The run line: a staircase's level and about how many are left,
 //     with its trace; a rated run's rounds in neutral dots.
-//   - The world: one crop of the Regulator Room, the instrument in the
-//     lamp light on a contact shadow. A station's own painting takes its
-//     place when one is dropped in (stations.ts); Wild keeps the
-//     glasshouse.
+//   - The world: the station's painting, one crop in the Regulator
+//     Room's frame, the instrument in the lamp light on a contact shadow
+//     (stations.ts); Wild keeps the glasshouse.
 //   - The console: Merc and his bubble (the task in full on the first
 //     question, then nothing until the verdict), the drill's own pads,
 //     and the pinned row: Hear it again, and the lamp or Next.
@@ -62,7 +61,7 @@ import { noteReturn, recordTodayMove, roomOrigin, setRoomOrigin, todayMoveOf, } 
 import { CalibrationBefore, ExitConfirm, HelpSheet, SoundStopped, } from './Sheets'
 import { ROOM_SKIN } from './skin'
 import { watchSoundStop } from './sound-stop'
-import { drillName, stationOf, stationPainting } from './stations'
+import { drillName, sharesTheLamp, stationOf, stationPainting, } from './stations'
 import { mercStill } from './stills'
 
 /** Two-sound questions, said "pair" in the room's words. */
@@ -115,10 +114,8 @@ export function MercDrillRoom(props: EarStageProps): JSX.Element {
     done() ? (room?.plate?.() ?? null) : null,
   )
   // eslint-disable-next-line solid/reactivity -- a room is mounted per drill
-  const painting = stationPainting(stationOf(props.drillId))
-  /** The Regulator Room's bulb is dimmed where it sits; another
-   *  painting keeps its own light. */
-  const regulator = painting.endsWith('/regulator-room-portrait.webp')
+  const station = stationOf(props.drillId)
+  const painting = stationPainting(station)
 
   // ── The room over the tab ─────────────────────────────────────
 
@@ -502,7 +499,7 @@ export function MercDrillRoom(props: EarStageProps): JSX.Element {
       <StageSkinContext.Provider value={ROOM_SKIN}>
         <section
           class={styles.room}
-          classList={{ [styles.ownLight]: !regulator }}
+          classList={{ [styles.ownLight]: !sharesTheLamp(station) }}
           data-ear-drill={props.drillId}
           data-testid="ear-stage"
           data-merc-room=""

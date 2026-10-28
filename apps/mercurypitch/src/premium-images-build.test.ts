@@ -27,7 +27,8 @@ import { describe, expect, it } from 'vitest'
 const FEATURES = fileURLToPath(
   new URL('../../../src/features/', import.meta.url),
 )
-/** The premium rooms that paint pictures today, by folder, and the Warm-up's path. */
+/** The premium rooms that paint pictures today, by folder, the Warm-up's
+ *  path, and the Ear Lab with Merc (Merc's stills, the stations' paintings). */
 const ROOMS = [
   'long-note',
   'echo',
@@ -35,6 +36,7 @@ const ROOMS = [
   'lip-roll',
   'warm-up',
   'home-note',
+  'ear-lab/merc',
 ] as const
 
 /** Every .webp and .mp3 under `dir`, as paths relative to it. */
@@ -157,41 +159,45 @@ describe("the Cloud offer's art in a native build", () => {
   }, 60000)
 })
 
-describe("the Ear Lab with Merc's pictures and serif in a native build", () => {
+describe("the Ear Lab with Merc's serif, and a picture asked for by URL", () => {
   const dir = join(FEATURES, 'ear-lab', 'merc')
-  const importer = join(dir, 'MercDrillRoom.tsx')
+  const stations = join(dir, 'stations.ts')
   const entry = join(dir, 'entry.ts')
-  const pictures = picturesIn(dir)
   const serif = [
     '@fontsource-variable/crimson-pro/wght.css',
     '@fontsource-variable/crimson-pro/wght-italic.css',
   ]
 
-  it("has Merc's stills to fold, so the checks below are not vacuous", () => {
-    expect(pictures).toContain(join('stills', 'merc-point.webp'))
+  it("has the stations' paintings, so the room's pictures above are not only Merc's", () => {
+    expect(picturesIn(join(dir, 'paintings'))).toEqual(
+      expect.arrayContaining([
+        'station-resolution.webp',
+        'station-function.webp',
+        'station-shape.webp',
+        'station-colour.webp',
+        'station-time.webp',
+      ]),
+    )
   })
 
   it('resolves them to nothing in the store build', async () => {
     const fold = await foldFor('production')
-    for (const name of pictures) {
-      const id = fold(`./${name}`, importer)
-      expect(typeof id === 'string' && id.startsWith('\0'), name).toBe(true)
-    }
     for (const sheet of serif) {
       const id = fold(sheet, entry)
       expect(typeof id === 'string' && id.startsWith('\0'), sheet).toBe(true)
     }
+    // A query names the same file: ?url folds as the bare import does.
+    const byUrl = fold('./paintings/station-time.webp?url', stations)
+    expect(typeof byUrl === 'string' && byUrl.startsWith('\0')).toBe(true)
     // Only Crimson Pro: the app's own fonts are left to Vite.
     expect(fold('@fontsource-variable/inter/wght.css', entry)).toBeNull()
   }, 60000)
 
   it('leaves them to Vite in a build with the room', async () => {
     const fold = await foldFor('dev')
-    for (const name of pictures) {
-      expect(fold(`./${name}`, importer), name).toBeNull()
-    }
     for (const sheet of serif) {
       expect(fold(sheet, entry), sheet).toBeNull()
     }
+    expect(fold('./paintings/station-time.webp?url', stations)).toBeNull()
   }, 60000)
 })
