@@ -97,6 +97,38 @@ describe('usePlaybackMicNudge', () => {
     harness.dispose()
   })
 
+  it('waits, unspent, while Merc has the screen', async () => {
+    const { usePlaybackMicNudge } = await loadNudge()
+    const { setCoachActive } = await import('@/lib/coach-state')
+    const harness = mount(usePlaybackMicNudge)
+
+    setCoachActive('sing')
+    harness.setPlaying(true)
+    expect(await liveToastCount()).toBe(0)
+    expect(localStorage.getItem(OFFERED_KEY)).toBeNull()
+    setCoachActive(null)
+    expect(await liveToastCount()).toBe(1)
+    expect(localStorage.getItem(OFFERED_KEY)).toBe('true')
+    harness.dispose()
+  })
+
+  it('goes when Merc takes the screen, and stays spent', async () => {
+    const { usePlaybackMicNudge } = await loadNudge()
+    const { setCoachActive, setShowcaseOn } = await import('@/lib/coach-state')
+    const harness = mount(usePlaybackMicNudge)
+
+    harness.setPlaying(true)
+    expect(await liveToastCount()).toBe(1)
+    setShowcaseOn(true)
+    expect(await liveToastCount()).toBe(0)
+    setShowcaseOn(false)
+    setCoachActive('sing')
+    setCoachActive(null)
+    expect(await liveToastCount()).toBe(0)
+    expect(localStorage.getItem(OFFERED_KEY)).toBe('true')
+    harness.dispose()
+  })
+
   it('enables the mic through the offered action', async () => {
     const { usePlaybackMicNudge } = await loadNudge()
     const harness = mount(usePlaybackMicNudge)

@@ -117,7 +117,7 @@ banners; this is a global one-shot toast.
 
 ## 4. Notification + deep link
 
-Pattern: `usePlaybackMicNudge` (`src/features/mic-feedback/usePlaybackMicNudge.ts:34-57`)
+Pattern: `usePlaybackMicNudge` (`src/features/mic-feedback/usePlaybackMicNudge.ts:38-73`)
 — persisted stamp, `showActionNotification`, `removeNotification(id)` inside
 the action before acting.
 
