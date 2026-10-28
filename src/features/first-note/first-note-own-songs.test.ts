@@ -312,6 +312,20 @@ describe("the singer's own songs", () => {
     library.setSongs?.([own('a', 'Scarborough Fair'), own('b', 'Danny Boy')])
     expect(states().a).toBe('waiting')
   })
+
+  it('read again a song left out, once it is split again', async () => {
+    readOwnSongs()
+    await settle()
+    pending[0].resolve({ entries: [], dropped: [], out: 'no-voice' })
+    await settle()
+    stopReadingOwnSongs()
+    expect(states().a).toBe('failed')
+
+    // Split again: new stems, so what failed no longer stands.
+    library.meta.a = { ...library.meta.a, vocal: { size: 101, duration: 200 } }
+    library.setSongs?.([own('a', 'Scarborough Fair'), own('b', 'Danny Boy')])
+    expect(states().a).toBe('waiting')
+  })
 })
 
 describe('the songs a run plays', () => {

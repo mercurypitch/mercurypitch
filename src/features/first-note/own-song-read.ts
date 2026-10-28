@@ -167,18 +167,29 @@ export function keepNear(
  * A stem decoded whole, where it fits as the walk's ceiling allows
  * (`wholeDecodeFits`): null where it does not.
  */
-async function decodeWhole(blob: Blob): Promise<AudioBuffer | null> {
-  const seconds = await audioDurationSecs(blob)
+async function decodeWhole(
+  blob: Blob,
+  signal: AbortSignal | undefined,
+): Promise<AudioBuffer | null> {
+  // A decode cannot be stopped once it starts, so a read let go while the
+  // length is probed or the bytes load starts none.
+  const seconds = await audioDurationSecs(blob, signal)
+  throwIfAborted(signal)
   if (!wholeDecodeFits(seconds, blob.size, DECODE_RATE)) return null
-  return await decodeAudioBytes(await blob.arrayBuffer())
+  const bytes = await blob.arrayBuffer()
+  throwIfAborted(signal)
+  return await decodeAudioBytes(bytes)
 }
 
 /**
  * The vocal decoded whole, kept as the walk keeps it: channel 0, at the
  * walk's step for its length (`streamedAnalysisStep`). Null when too long.
  */
-async function decodeVocal(blob: Blob): Promise<VocalStem | null> {
-  const whole = await decodeWhole(blob)
+async function decodeVocal(
+  blob: Blob,
+  signal: AbortSignal | undefined,
+): Promise<VocalStem | null> {
+  const whole = await decodeWhole(blob, signal)
   if (whole === null) return null
   const step = streamedAnalysisStep(whole.duration, whole.sampleRate)
   if (step === null) return null
@@ -252,7 +263,7 @@ const realSeams: OwnSongReadSeams = {
   },
   vocal: async (blob, run) => {
     const stream = await openStemStream(blob)
-    if (stream === null) return await decodeVocal(blob)
+    if (stream === null) return await decodeVocal(blob, run.signal)
     try {
       if (!canGatherStreamedVocal(stream)) return null
       return await gatherStreamedVocal(stream, run)
@@ -263,7 +274,7 @@ const realSeams: OwnSongReadSeams = {
   band: async (blob, spans, signal) => {
     const stream = await openStemStream(blob)
     if (stream === null) {
-      const whole = await decodeWhole(blob)
+      const whole = await decodeWhole(blob, signal)
       if (whole === null) return null
       const channel = {
         samples: whole.getChannelData(0),
