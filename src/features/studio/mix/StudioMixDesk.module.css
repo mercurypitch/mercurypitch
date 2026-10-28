@@ -399,7 +399,8 @@
     display: grid;
   }
 }
-/* On a short tablet desk the flavours keep to one row and scroll sideways. */
+/* On a short tablet desk the flavours keep to one row and scroll sideways.
+   A focused chip scrolls clear of the fades below. */
 @container (max-height: 300px) and (max-width: 1100px) {
   .touch .flavours {
     flex-wrap: nowrap;
@@ -407,10 +408,44 @@
     overflow-x: auto;
     scrollbar-width: none;
     overscroll-behavior-x: contain;
+    scroll-padding-inline: 32px;
   }
   .touch .flavours > * {
     flex: none;
   }
+}
+/* More flavours past an edge of the row: that edge fades out, so a cut chip
+   reads as a row that goes on. A mask shows the desk itself through the
+   fade, in either theme. */
+.flavours[data-more-after] {
+  -webkit-mask-image: linear-gradient(
+    to right,
+    #000 calc(100% - 32px),
+    transparent
+  );
+  mask-image: linear-gradient(to right, #000 calc(100% - 32px), transparent);
+}
+.flavours[data-more-before] {
+  -webkit-mask-image: linear-gradient(
+    to left,
+    #000 calc(100% - 32px),
+    transparent
+  );
+  mask-image: linear-gradient(to left, #000 calc(100% - 32px), transparent);
+}
+.flavours[data-more-before][data-more-after] {
+  -webkit-mask-image: linear-gradient(
+    to right,
+    transparent,
+    #000 32px calc(100% - 32px),
+    transparent
+  );
+  mask-image: linear-gradient(
+    to right,
+    transparent,
+    #000 32px calc(100% - 32px),
+    transparent
+  );
 }
 /* A tall, narrow window (a tablet held upright): the master moves under the
    strips and both get the full width. A short one scrolls inside the desk. */
