@@ -20,8 +20,11 @@ const LEGACY = 'New to Leaderboard? Take a quick tour.'
 const WIDTH: Record<string, number> = { full: 300, short: 160, mini: 90 }
 
 const boxes = new WeakMap<Element, Box>()
+/** A control's ::after, as the browser computes it: the box it takes a press in. */
+const afters = new WeakMap<Element, Record<string, string>>()
 const realRect = Element.prototype.getBoundingClientRect
 const realRects = Range.prototype.getClientRects
+const realStyle = window.getComputedStyle
 
 const rect = (b: Box): DOMRect =>
   ({
@@ -65,6 +68,15 @@ beforeEach(() => {
     configurable: true,
   })
   Range.prototype.getClientRects = () => [] as unknown as DOMRectList
+  // jsdom computes no pseudo-element: a control without an ::after here has
+  // none to draw.
+  vi.spyOn(window, 'getComputedStyle').mockImplementation((el, pseudo) => {
+    if (pseudo === undefined || pseudo === null) return realStyle(el)
+    const part = pseudo === '::after' ? (afters.get(el) ?? {}) : {}
+    return {
+      getPropertyValue: (name: string) => part[name] ?? '',
+    } as CSSStyleDeclaration
+  })
   Element.prototype.getBoundingClientRect = function (this: Element) {
     if (this instanceof HTMLElement && this.dataset.testid === 'tour-chip') {
       return rect(chipBox(this))
@@ -91,6 +103,7 @@ afterEach(() => {
   cleanup()
   document.body.replaceChildren()
   vi.unstubAllGlobals()
+  vi.restoreAllMocks()
   vi.useRealTimers()
   Element.prototype.getBoundingClientRect = realRect
   Range.prototype.getClientRects = realRects
@@ -118,13 +131,41 @@ function control(parent: HTMLElement, at: Box, name = 'Control'): HTMLElement {
   return button
 }
 
+/** A bar's control, and the box its ::after takes a press in, if it has one. */
+interface BarControl {
+  at: Box
+  press?: Box
+}
+
+/** Gives `button` an invisible ::after over `press`, stood in its own box. */
+function pressIn(button: HTMLElement, at: Box, press: Box): void {
+  button.style.position = 'relative'
+  afters.set(button, {
+    content: '""',
+    position: 'absolute',
+    left: `${press.left - at.left}px`,
+    top: `${press.top - at.top}px`,
+    width: `${press.right - press.left}px`,
+    height: `${press.bottom - press.top}px`,
+    transform: 'none',
+  })
+}
+
 /** A phone's page: its top bar (none for `bar: null`), and its column with `blocks` in it. */
 function mount(
   blocks: Box[],
-  opts: { line?: string; short?: string; bar?: Box[] | null } = {},
+  opts: {
+    line?: string
+    short?: string
+    bar?: (Box | BarControl)[] | null
+  } = {},
 ): { column: HTMLElement; bar: HTMLElement } {
   const bar = laidOut(document.createElement('header'), box(0, 0, 390, 50))
-  for (const at of opts.bar ?? []) control(bar, at)
+  for (const each of opts.bar ?? []) {
+    const { at, press } = 'at' in each ? each : { at: each, press: undefined }
+    const button = control(bar, at)
+    if (press !== undefined) pressIn(button, at, press)
+  }
   const barOf = (): HTMLElement | null => (opts.bar === null ? null : bar)
   const column = laidOut(document.createElement('main'), box(0, 50, 390, 794))
   const slot = laidOut(document.createElement('div'), box(0, 50, 390, 0))
@@ -186,6 +227,20 @@ describe('TourChip, floating', () => {
       screen.getByRole('button', { name: MERC_TOUR_LINE }),
     ).toHaveAttribute('aria-label', MERC_TOUR_LINE)
     expect(screen.getByRole('button', { name: 'Not now' })).toBeVisible()
+  })
+
+  it('stands clear of the invisible box a control takes its press in', () => {
+    // A phone header's mic draws 30 px and takes a press 44 px wide, 7 px
+    // past its left, from its ::after (AppHeader.css, the voice pill).
+    const mic = box(310, 10, 30, 30)
+    mount([box(12, 58, 366, 700)], {
+      bar: [box(62, 15, 111, 20), { at: mic, press: box(303, 3, 44, 44) }],
+    })
+
+    const chip = chipEl()
+    expect(chip.dataset).toMatchObject({ place: 'bar', form: 'mini' })
+    // its end a gap short of the press, not of the mic's drawn box
+    expect(chip.style.left).toBe(`${303 - 4 - WIDTH.mini}px`)
   })
 
   it('never shrinks to words a line was not given', () => {

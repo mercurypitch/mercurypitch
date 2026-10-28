@@ -7,7 +7,8 @@
 // and the boxes in it the chip must not cover.
 //
 // - Hard: every line of text (its own line boxes, so a title's empty end is
-//   free room), every control, and canvases, video and stages.
+//   free room), every control as far as it takes a press, and canvases,
+//   video and stages.
 // - Art: pictures and drawings (img, svg), and cards: a box that shows a
 //   background, a border or a shadow, inside the page's edges. A band from
 //   edge to edge of it (a toolbar's ground, a panel's) is the page itself.
@@ -138,6 +139,76 @@ function showsBox(style: CSSStyleDeclaration): boolean {
 const clipsOverflow = (style: CSSStyleDeclaration): boolean =>
   style.overflowX !== 'visible' || style.overflowY !== 'visible'
 
+const union = (a: Box, b: Box): Box => ({
+  left: Math.min(a.left, b.left),
+  top: Math.min(a.top, b.top),
+  right: Math.max(a.right, b.right),
+  bottom: Math.max(a.bottom, b.bottom),
+})
+
+/** The parts a control can take a press in beyond its own box. */
+const PRESS_PARTS = ['::before', '::after'] as const
+
+/** How far a transform moves a box, when all it does is move it. */
+function moveOf(transform: string): { x: number; y: number } | null {
+  if (transform === '' || transform === 'none') return { x: 0, y: 0 }
+  const matrix = /^matrix\(([^)]+)\)$/.exec(transform)
+  if (matrix === null) return null
+  const [a, b, c, d, x, y] = matrix[1].split(',').map(Number)
+  return a === 1 && b === 0 && c === 0 && d === 1 ? { x, y } : null
+}
+
+/**
+ * The window box `part` (a ::before or ::after of `el`, drawn at `at`) takes
+ * a press in: none where it draws nothing or takes no press, and none where
+ * it is not stood in `el`'s own padding box or is turned or scaled.
+ */
+function partPress(
+  el: Element,
+  at: DOMRect,
+  part: CSSStyleDeclaration,
+): Box | null {
+  const value = (name: string): string => part.getPropertyValue(name)
+  if (['', 'none', 'normal'].includes(value('content'))) return null
+  if (value('display') === 'none' || value('visibility') === 'hidden') {
+    return null
+  }
+  if (value('pointer-events') === 'none') return null
+  if (value('position') !== 'absolute') return null
+  const move = moveOf(value('transform'))
+  const [left, top, width, height] = ['left', 'top', 'width', 'height'].map(
+    (name) => Number.parseFloat(value(name)),
+  )
+  if (move === null || ![left, top, width, height].every(Number.isFinite)) {
+    return null
+  }
+  const x = at.left + el.clientLeft + left + cssPx(part, 'margin-left')
+  const y = at.top + el.clientTop + top + cssPx(part, 'margin-top')
+  return {
+    left: x + move.x,
+    top: y + move.y,
+    right: x + move.x + width,
+    bottom: y + move.y + height,
+  }
+}
+
+/**
+ * Where control `el` takes a press: its own box, and the invisible one a
+ * small control is given so a finger can hit it, a ::before or ::after
+ * stood in its padding box (AppHeader.css; the docked voice mic's reaches
+ * 6.6 px past its left). A press the chip stood on would go to the chip.
+ */
+function pressOf(el: Element, style: CSSStyleDeclaration, at: DOMRect): Box {
+  let press = boxOf(at)
+  // Only a control that positions its children stands a part in its box.
+  if (style.position === '' || style.position === 'static') return press
+  for (const name of PRESS_PARTS) {
+    const part = partPress(el, at, window.getComputedStyle(el, name))
+    if (part !== null) press = union(press, part)
+  }
+  return press
+}
+
 interface Walk {
   area: Box
   /** The page's own box: a band from edge to edge of it is the page. */
@@ -181,10 +252,13 @@ function readElement(el: Element, clip: Box, walk: Walk): void {
   if (el === walk.skip) return
   const style = window.getComputedStyle(el)
   if (style.display === 'none' || style.visibility === 'hidden') return
-  const seen = meet(boxOf(el.getBoundingClientRect()), clip)
+  const at = el.getBoundingClientRect()
+  const seen = meet(boxOf(at), clip)
   const shows = style.display !== 'contents' && !isEmpty(seen)
   const kind = shows ? kindOf(el, style, seen, walk.edge) : null
-  if (kind !== null && touches(seen, walk.area)) walk[kind].push(seen)
+  // A control counts as far as it takes a press, and that as far as it shows.
+  const taken = kind === 'hard' ? meet(pressOf(el, style, at), clip) : seen
+  if (kind !== null && touches(taken, walk.area)) walk[kind].push(taken)
   // A control holds its own words, and a picture has none.
   if (kind === 'hard' || el.matches('img, picture')) return
   if (el.tagName.toLowerCase() === 'svg') {
@@ -273,10 +347,12 @@ export function layersOver(
   }
   const over: Box[] = []
   for (const el of found) {
-    const seen = boxOf(el.getBoundingClientRect())
-    if (kindOf(el, window.getComputedStyle(el), seen, edge) !== null) {
-      over.push(seen)
-    }
+    const style = window.getComputedStyle(el)
+    const at = el.getBoundingClientRect()
+    const seen = boxOf(at)
+    const kind = kindOf(el, style, seen, edge)
+    if (kind !== null)
+      over.push(kind === 'hard' ? pressOf(el, style, at) : seen)
   }
   return over
 }
