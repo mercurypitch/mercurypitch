@@ -310,6 +310,27 @@
 .vertical .scale span:last-child {
   transform: translateY(100%);
 }
+/* A short meter drops −12, then −24, then −48 rather than print one mark
+   over another. Each mark is 11 px tall and keeps 2 px clear: 0 hangs from
+   the top, −12 sits a fifth of the way down, −24 two fifths, −48 four. */
+.vertical .scale {
+  container: studio-meter-scale / size;
+}
+@container studio-meter-scale (max-height: 92.5px) {
+  .scale span[data-db='-12'] {
+    display: none;
+  }
+}
+@container studio-meter-scale (max-height: 46.25px) {
+  .scale span[data-db='-24'] {
+    display: none;
+  }
+}
+@container studio-meter-scale (max-height: 27.5px) {
+  .scale span[data-db='-48'] {
+    display: none;
+  }
+}
 .vertical .peakLabel {
   min-width: 0;
   font-size: 12px;
@@ -356,15 +377,17 @@
     min-height: 44px;
   }
 }
-/* The desk's peak reading clears the held peak when pressed. */
+/* The desk's peak reading clears the held peak when pressed. It takes only
+   the height of its words: the rest of the column is the meter's travel. */
 button.peakLabel {
   appearance: none;
+  position: relative;
   display: block;
   width: 100%;
   margin: 0;
-  padding: 4px 0;
+  padding: 0;
   border: 0;
-  border-radius: 6px;
+  border-radius: 4px;
   background: transparent;
   font-family: inherit;
   cursor: pointer;
@@ -372,14 +395,20 @@ button.peakLabel {
 @media (hover: hover) {
   button.peakLabel:hover {
     background: var(--studio-hover);
+    box-shadow: 0 0 0 3px var(--studio-hover);
   }
 }
 button.peakLabel:focus-visible {
   outline: 2px solid var(--studio-accent);
-  outline-offset: 1px;
+  outline-offset: 3px;
 }
+/* A finger still gets 44 px, and the margins give that room back to the
+   meter. The box grows mostly upward, over the gap and the foot of the
+   rails: a phone moves a tap near a button's edge to the nearest words, and
+   the loudness words sit right under this reading's middle. */
 @media (pointer: coarse) {
   button.peakLabel {
     min-height: 44px;
+    margin: -14px 0 -5px;
   }
 }

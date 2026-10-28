@@ -108,6 +108,7 @@ export function StudioOutputMeter(props: Props) {
               <For each={vertical() ? VERTICAL_SCALE : SCALE}>
                 {(mark) => (
                   <span
+                    data-db={mark}
                     style={
                       vertical()
                         ? { bottom: markAt(mark) }
