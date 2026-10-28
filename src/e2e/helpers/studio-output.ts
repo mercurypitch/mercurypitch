@@ -49,7 +49,12 @@ export function steadyWav(
   return bytes
 }
 
-/** Everything the page sends to a speaker, summed into one analyser; and every buffer source it starts. */
+/**
+ * Everything the page sends to its speakers, summed into one analyser, and
+ * every buffer source it starts there. Offline renders are left out: a
+ * latency measurement renders to its own destination, and a tap there would
+ * halve the mean while it runs, which reads as a 3 dB dip.
+ */
 export async function tapOutput(page: Page): Promise<void> {
   await page.addInitScript(() => {
     const connect = AudioNode.prototype.connect as (
@@ -62,7 +67,10 @@ export async function tapOutput(page: Page): Promise<void> {
     ) {
       const result = connect.apply(this, args)
       const target = args[0]
-      if (target instanceof AudioDestinationNode) {
+      if (
+        target instanceof AudioDestinationNode &&
+        target.context instanceof AudioContext
+      ) {
         const context = target.context as BaseAudioContext & {
           __studioTap?: AnalyserNode
         }
@@ -82,7 +90,8 @@ export async function tapOutput(page: Page): Promise<void> {
     BaseAudioContext.prototype.createBufferSource = function (
       this: BaseAudioContext,
     ) {
-      window.__studioSources = (window.__studioSources ?? 0) + 1
+      if (this instanceof AudioContext)
+        window.__studioSources = (window.__studioSources ?? 0) + 1
       return create.call(this)
     }
   })
