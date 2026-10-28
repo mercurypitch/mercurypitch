@@ -2,6 +2,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { setStudioWorkingBytes, studioReservedMemoryBytes, } from '../memory-budget'
 import type { StudioArrangementPlan } from '../model/arrangement-plan'
+import { applyStudioCommand } from '../model/commands'
 import type { StudioProject } from '../model/types'
 import type { StudioBufferLease } from './buffer-cache'
 import { envelopeOf, freshGraphs, transportFixture, } from './transport.test-fixtures'
@@ -237,6 +238,60 @@ describe('Studio transport handoff', () => {
       expect(studioReservedMemoryBytes()).toBe(0)
     },
   )
+
+  it('keeps the playing run at the balance of its own sound while a new sound role is built, and moves its fader at once', async () => {
+    vi.useFakeTimers()
+    const f = transportFixture()
+    const graphs = freshGraphs(f)
+    await f.transport.play(f.project, [f.asset], 0)
+    let settle!: (value: StudioBufferLease) => void
+    vi.mocked(f.cache.acquire).mockImplementationOnce(
+      () =>
+        new Promise((resolve) => {
+          settle = resolve
+        }),
+    )
+    const options = { assets: [f.asset] }
+    const [guitar] = f.project.tracks
+    const voice = applyStudioCommand(
+      f.project,
+      { type: 'set-track-role', trackId: guitar.id, role: 'voice' },
+      options,
+    )
+    expect(voice.tracks[0].balanceGainDb).not.toBe(guitar.balanceGainDb)
+    f.ctx.currentTime = 1
+    graphs[0].setLaneMix.mockClear()
+    const editing = f.transport.setSnapshot(voice, [f.asset])
+    await vi.waitFor(() => expect(f.cache.acquire).toHaveBeenCalledTimes(2))
+
+    // The old chain plays on at the balance that goes with it: the new
+    // role's balance comes in with the new chain, at the handover.
+    expect(graphs[0].setLaneMix).toHaveBeenLastCalledWith(
+      expect.objectContaining({ balanceGainDb: guitar.balanceGainDb }),
+      true,
+    )
+    const quieter = applyStudioCommand(
+      voice,
+      { type: 'update-track', trackId: guitar.id, changes: { gainDb: -3 } },
+      options,
+    )
+    const moving = f.transport.setSnapshot(quieter, [f.asset])
+    expect(graphs[0].setLaneMix).toHaveBeenLastCalledWith(
+      expect.objectContaining({
+        gainDb: -3,
+        balanceGainDb: guitar.balanceGainDb,
+      }),
+      true,
+    )
+    settle({ buffers: new Map(), release: f.release })
+    await Promise.all([editing, moving])
+    expect(graphs).toHaveLength(2)
+    const released = f.transport.releaseAudio()
+    await vi.advanceTimersByTimeAsync(240)
+    await released
+    f.transport.dispose()
+    expect(studioReservedMemoryBytes()).toBe(0)
+  })
 
   it('stops a held run at once when the audio device is interrupted', async () => {
     vi.useFakeTimers()
