@@ -357,8 +357,9 @@ const KARAOKE_STAGE_2 = [
   ['mp_warm_up_opened', "the Warm-up path's first open of the day"],
   // Home note, the first Ear room: its room, its card in the picker, its
   // level lines and its bests, built and folded exactly as the rooms are.
-  // Its harbour is drawn, so it has no plates. The Ear Lab's way in to it
-  // (EarMercRow.tsx) is a lazy island on the same switch (EarLabPage.tsx).
+  // Its harbour is drawn until its painting lands (/ear-rooms/, native-only
+  // like the theatre). The Ear Lab's way in to it (EarMercRow.tsx) is a lazy
+  // island on the same switch (EarLabPage.tsx).
   ['home-note-room', 'the premium Home note exercise'],
   [
     'The band plays an intro. Sing the note that feels like home',
@@ -381,6 +382,14 @@ const KARAOKE_STAGE_2 = [
   ],
   ['Came in on the note', "First note's result"],
   ['mp_first_note_bests', "First note's bests"],
+  // Its songs (the singer's own, read on the phone), its words hint and
+  // its way on to the Karaoke room (owner, 28 Oct 2026), in the same lazy
+  // chunk: the Songs sheet, the reads it keeps, the hint's switch and Sing
+  // on. The read itself is a chunk of its own that only the room imports.
+  ['first-note-songs-sheet', "First note's Songs sheet"],
+  ['mp_first_note_own_entries', "First note's reads of the singer's songs"],
+  ['mp_first_note_words', "First note's words hint"],
+  ['Sing on in Karaoke', "First note's way on to the Karaoke room"],
   // The days warmed up, the week's dots, synced with the account: its key
   // and its pull merge (settings-progress.ts) fold with the rest.
   ['pitchperfect_warm_up_days', "the Warm-up's days warmed up"],
