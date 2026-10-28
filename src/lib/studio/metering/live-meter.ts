@@ -6,6 +6,18 @@ import { studioMeterWorkingBytes } from './stream-meter'
 
 const loading = new WeakMap<AudioContext, Promise<boolean>>()
 const ready = new WeakSet<AudioContext>()
+/**
+ * The last lane measurement handed out. Every lane meter, and every restart
+ * of one, takes the next number, so a reading names the run and the place
+ * its peaks came from.
+ */
+let laneMeasurements = 0
+
+/** What the lane worklet sends: each lane's peak, under the measurement it belongs to. */
+interface StudioLaneMessage {
+  readonly measurement: number
+  readonly peaks: Float32Array
+}
 
 export function prepareStudioLiveMeter(
   context: AudioContext,
@@ -58,9 +70,17 @@ function ownMeterProcessor<T>(
     clearPeakHold: () => {
       if (!disposed) node.port.postMessage('clear-hold')
     },
-    /** Measure again from `time` on the audio clock: a seek heard then. */
-    restart: (time: number) => {
-      if (!disposed) node.port.postMessage({ restartAt: time })
+    /**
+     * Measure again from `time` on the audio clock, a seek heard then; a lane
+     * meter names the measurement it sends from there.
+     */
+    restart: (time: number, measurement?: number) => {
+      if (disposed) return
+      node.port.postMessage(
+        measurement === undefined
+          ? { restartAt: time }
+          : { restartAt: time, measurement },
+      )
     },
     dispose() {
       if (disposed) return
@@ -125,7 +145,7 @@ export function createStudioLiveMeter(
       read: () => snapshot,
       clearPeakHold: owned.clearPeakHold,
       /** Loudness windows, peaks and holds start again from `time`, when a seek is heard. */
-      restart: owned.restart,
+      restart: (time: number) => owned.restart(time),
       dispose() {
         if (disposed) return
         disposed = true
@@ -146,7 +166,9 @@ export function createStudioLiveMeter(
  * Every lane's post-fader peak through one worklet node, an input per lane:
  * each lane is tapped once, and the audio thread sends all of them about 30
  * times a second. Peaks are the louder channel's, so a lane panned hard to
- * one side reads its true level instead of a mono sum 6 dB under it.
+ * one side reads its true level instead of a mono sum 6 dB under it. Each
+ * meter, and each restart of one, is a measurement of its own: peaks sent
+ * under an older one are the old place's and are dropped.
  */
 export function createStudioLaneMeter(
   context: AudioContext,
@@ -158,6 +180,7 @@ export function createStudioLaneMeter(
   // The highest sample each lane sent since the last read, and whether any came.
   const peaks = new Float32Array(ids.length)
   let fresh = false
+  let measurement = ++laneMeasurements
   let node: AudioWorkletNode | undefined
   let sink: GainNode | undefined
   let owner: ReturnType<typeof ownMeterProcessor> | undefined
@@ -181,15 +204,17 @@ export function createStudioLaneMeter(
       channelCount: 2,
       channelCountMode: 'explicit',
       channelInterpretation: 'speakers',
-      processorOptions: { startAtTime },
+      processorOptions: { startAtTime, measurement },
     })
-    owner = ownMeterProcessor<Float32Array>(
+    owner = ownMeterProcessor<StudioLaneMessage>(
       context,
       node,
       () => {},
       (data) => {
+        // Sent before the audio thread heard the last restart.
+        if (data.measurement !== measurement) return
         for (let lane = 0; lane < peaks.length; lane++)
-          peaks[lane] = Math.max(peaks[lane], data[lane] ?? 0)
+          peaks[lane] = Math.max(peaks[lane], data.peaks[lane] ?? 0)
         fresh = true
       },
     )
@@ -205,6 +230,10 @@ export function createStudioLaneMeter(
     const owned = owner
     let disposed = false
     return {
+      /** The measurement its readings belong to: each restart starts another. */
+      get measurement() {
+        return measurement
+      },
       /**
        * Each lane's peak since the last read, as a linear amplitude; reading
        * clears them. Null when nothing came since: the audio thread sends
@@ -223,7 +252,8 @@ export function createStudioLaneMeter(
       restart(time: number) {
         peaks.fill(0)
         fresh = false
-        owned.restart(time)
+        measurement = ++laneMeasurements
+        owned.restart(time, measurement)
       },
       dispose() {
         if (disposed) return

@@ -9,8 +9,14 @@ declare class AudioWorkletProcessor {
 // Every input and output carries 128 frames a call (the Web Audio render quantum).
 const QUANTUM_FRAMES = 128
 
-/** A command from the page: clear the peak holds, start measuring again, or stop. */
-type MeterCommand = 'clear-hold' | 'dispose' | { readonly restartAt: number }
+/**
+ * A command from the page: clear the peak holds, start measuring again, or
+ * stop. A lane restart names the measurement its peaks are sent under.
+ */
+type MeterCommand =
+  | 'clear-hold'
+  | 'dispose'
+  | { readonly restartAt: number; readonly measurement?: number }
 
 /** The frame a restart message asks to measure from: when a seek is heard. */
 function restartFrame(command: MeterCommand): number | null {
@@ -107,16 +113,23 @@ function channelPeak(
   return highest
 }
 
-/** One input per lane: the louder channel's highest sample, sent 30 times a second. */
+/**
+ * One input per lane: the louder channel's highest sample, sent 30 times a
+ * second under the measurement it belongs to. A restart's peaks go out under
+ * its own measurement from the frame it is heard, so the page can drop the
+ * old place's peaks still on their way when it asked.
+ */
 class StudioLaneMeterProcessor extends AudioWorkletProcessor {
   private peaks: Float32Array | null
   private startFrame: number
   private restartAt: number | null = null
+  private measurement: number
+  private nextMeasurement: number
   private frames = 0
   constructor(
     options: {
       numberOfInputs?: number
-      processorOptions?: { startAtTime?: number }
+      processorOptions?: { startAtTime?: number; measurement?: number }
     } = {},
   ) {
     super()
@@ -124,10 +137,16 @@ class StudioLaneMeterProcessor extends AudioWorkletProcessor {
     this.startFrame = Math.round(
       (options.processorOptions?.startAtTime ?? 0) * sampleRate,
     )
+    this.measurement = options.processorOptions?.measurement ?? 0
+    this.nextMeasurement = this.measurement
     this.port.onmessage = (event: MessageEvent<MeterCommand>) => {
-      const restart = restartFrame(event.data)
-      if (restart !== null) this.restartAt = restart
-      if (event.data !== 'dispose') return
+      const command = event.data
+      const restart = restartFrame(command)
+      if (restart !== null && typeof command === 'object') {
+        this.restartAt = restart
+        this.nextMeasurement = command.measurement ?? this.measurement
+      }
+      if (command !== 'dispose') return
       this.peaks = null
       this.port.postMessage({ kind: 'disposed' })
     }
@@ -143,6 +162,7 @@ class StudioLaneMeterProcessor extends AudioWorkletProcessor {
       peaks.fill(0)
       this.startFrame = this.restartAt
       this.restartAt = null
+      this.measurement = this.nextMeasurement
     }
     // As the master meter: only frames from the run's start count.
     const from = Math.max(0, this.startFrame - currentFrame)
@@ -153,7 +173,7 @@ class StudioLaneMeterProcessor extends AudioWorkletProcessor {
         peaks[lane] = channelPeak(channel, from, peaks[lane])
     this.frames += QUANTUM_FRAMES - from
     if (this.frames >= sampleRate / 30) {
-      this.port.postMessage(peaks)
+      this.port.postMessage({ measurement: this.measurement, peaks })
       peaks.fill(0)
       this.frames %= Math.round(sampleRate / 30)
     }
