@@ -78,6 +78,7 @@ export function useStudioTransport(options: UseStudioTransportOptions) {
     lanes: [],
   })
   const [repeating, setRepeating] = createSignal(false)
+  const [peakEpoch, setPeakEpoch] = createSignal(0)
   const [previewPending, setPreviewPending] = createSignal(false)
   const [previewError, setPreviewError] = createSignal<string | null>(null)
   const [previewing, setPreviewing] = createSignal(false)
@@ -363,8 +364,12 @@ export function useStudioTransport(options: UseStudioTransportOptions) {
     async seek(frame: number): Promise<void> {
       const project = options.project()
       const assets = options.assets()
+      // The strips' peak holds start again, as the master meter's does.
+      setPeakEpoch((epoch) => epoch + 1)
       if (project) await runtime.seek(frame, project, assets)
     },
+    /** Counts seeks: each one starts the lane meters' peak holds again. */
+    peakEpoch,
     previewSource,
     primeAudio,
     stopPreview,

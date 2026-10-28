@@ -40,6 +40,8 @@ export interface StudioMixMeterSource {
   peakR(): number
   resetPeakHold(): void
   laneLevel?(trackId: string): StudioLaneLevel | undefined
+  /** Counts seeks: each one starts the strips' peak holds again. */
+  peakEpoch?(): number
 }
 
 interface StudioMixDeskProps {
@@ -402,6 +404,7 @@ export function StudioMixDesk(props: StudioMixDeskProps) {
                       <StudioStripMeter
                         name={track().name}
                         level={props.meter.laneLevel?.(id)}
+                        holdEpoch={props.meter.peakEpoch?.()}
                       />
                     }
                   />

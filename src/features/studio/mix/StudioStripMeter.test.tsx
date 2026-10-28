@@ -29,10 +29,11 @@ function mount(initial?: StudioLaneLevel) {
     },
   )
   const [level, setLevel] = createSignal<StudioLaneLevel | undefined>(initial)
+  const [epoch, setEpoch] = createSignal(0)
   const { container } = render(() => (
     <div data-strip>
       <input data-studio-fader type="range" style={{ '--cap': '14px' }} />
-      <StudioStripMeter name="Bass" level={level()} />
+      <StudioStripMeter name="Bass" level={level()} holdEpoch={epoch()} />
     </div>
   ))
   const strip = container.querySelector<HTMLElement>('[data-strip]')!
@@ -43,7 +44,7 @@ function mount(initial?: StudioLaneLevel) {
   const meter = container.querySelector<HTMLElement>(
     '[data-studio-strip-meter]',
   )!
-  return { meter, setLevel, observed, strip, fader }
+  return { meter, setLevel, setEpoch, observed, strip, fader }
 }
 
 describe('Studio strip meter', () => {
@@ -81,6 +82,16 @@ describe('Studio strip meter', () => {
     expect(meter).not.toHaveAttribute('data-level-db')
     expect(level().style.clipPath).toBe('inset(100% 0 0 0)')
     expect(meter.querySelectorAll('i')).toHaveLength(1)
+  })
+
+  it('holds the highest peak until a seek starts the hold again at the level heard then', () => {
+    const { meter, setLevel, setEpoch } = mount()
+    setLevel({ trackId: 'bass', peak: 0.5, reductionDb: null })
+    setLevel({ trackId: 'bass', peak: 0.125, reductionDb: null })
+    expect(meter.title).toBe('Bass: peak -6.0 dB after the fader')
+
+    setEpoch(1)
+    expect(meter.title).toBe('Bass: peak -18.1 dB after the fader')
   })
 
   it('shows no gain reduction rail for a lane without a compressor or limiter', () => {
