@@ -31,13 +31,15 @@
 //
 // Then the Sing tour's note: a tap on Play the note shows it playing (the
 // button names it and is lit, Merc sings, a line says so), and once it has
-// played a line says how to hear it, so a muted speaker still shows it.
+// played a line says how to hear it, so a muted speaker still shows it. The
+// line comes under the button, which does not move from where it was tapped.
 //
 // On a small phone (320x568, touch) the bubble is capped at 45dvh, and the
 // Sing tour's words outgrow it: at the note stop once the note has played,
 // at the last stop, and in Show me more. The words scroll there, their foot
 // faded, and the buttons, the count and End tour stay whole inside the
-// bubble and on top at their middles; Play the note is still a Tab away.
+// bubble and on top at their middles. Play the note stays whole in view
+// with the words unscrolled: only its line goes under the fold.
 //
 // Last, the tab chip in a room that fills the window: on Piano at 1440x900
 // the chip floats over the room's free corner (tour-chip-floats.spec.ts
@@ -356,7 +358,10 @@ test("the Sing tour's Play the note shows the note playing after a tap, at 1440x
   await bubble.getByRole('button', { name: 'Skip this step' }).click()
   await expect(bubble).toContainText('2 of 4')
 
-  await bubble.getByRole('button', { name: 'Play the note' }).click()
+  // Both labels stay in the button, so this finds it playing or at rest.
+  const tone = bubble.locator('button').filter({ hasText: 'Play the note' })
+  const tapped = await settledBox(tone)
+  await tone.click()
 
   const line = bubble.getByTestId('coach-tone-line')
   await expect(
@@ -370,6 +375,13 @@ test("the Sing tour's Play the note shows the note playing after a tap, at 1440x
   ).not.toHaveAttribute('data-playing')
   await expect(bubble).toHaveAttribute('data-pose', 'listen')
   await expect(line).toContainText('Heard nothing?')
+  // The line came under the button, which has not moved from the tap.
+  const rest = await settledBox(tone)
+  const under = await line.boundingBox()
+  expect(Math.abs((rest?.y ?? 0) - (tapped?.y ?? Infinity))).toBeLessThan(1)
+  expect(
+    rest !== null && under !== null && under.y >= rest.y + rest.height,
+  ).toBe(true)
 })
 
 /**
@@ -453,8 +465,11 @@ test.describe('on a small phone', () => {
     await expect(bubble).toContainText('2 of 4')
 
     // The note stop, once the note has played and the line on how to hear
-    // it has pushed the words past the bubble's cap.
-    await bubble.getByRole('button', { name: 'Play the note' }).tap()
+    // it has pushed the words past the bubble's cap. The line comes under
+    // Play the note, so the button stays where it was tapped, in view.
+    const tone = bubble.locator('button').filter({ hasText: 'Play the note' })
+    const tapped = await settledBox(tone)
+    await tone.tap()
     await expect(bubble.getByTestId('coach-tone-line')).toContainText(
       'Heard nothing?',
       { timeout: 10_000 },
@@ -469,18 +484,14 @@ test.describe('on a small phone', () => {
       'the words fit: the case no longer tests a scroll',
     ).toBe(true)
     await expect(bubble).toHaveAttribute('data-more', '')
-    // Play the note, under the fold now, is a Tab away and comes into view.
-    await bubble.getByRole('button', { name: 'End tour' }).focus()
-    await page.keyboard.press('Tab')
-    const play = bubble.getByRole('button', { name: 'Play the note' })
-    await expect(play).toBeFocused()
-    await expect
-      .poll(async () => {
-        const held = await words.boundingBox()
-        const shown = await play.boundingBox()
-        return held !== null && shown !== null && inside(shown, held)
-      })
-      .toBe(true)
+    const shown = await settledBox(tone)
+    const held = await words.boundingBox()
+    expect(
+      held !== null && shown !== null && inside(shown, held),
+      'Play the note is whole in view with the words unscrolled',
+    ).toBe(true)
+    expect(await words.evaluate((el) => el.scrollTop)).toBe(0)
+    expect(Math.abs((shown?.y ?? 0) - (tapped?.y ?? Infinity))).toBeLessThan(1)
 
     await bubble.getByRole('button', { name: 'Skip this step' }).tap()
     await expect(bubble).toContainText('3 of 4')
