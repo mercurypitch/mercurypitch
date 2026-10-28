@@ -80,11 +80,16 @@ export function SpanDrill(props: SpanDrillProps): JSX.Element {
     await audioEngine.resume()
     if (api.cancelled()) return
 
-    const current = randomPhrase(level)
-    rootMidi = roveRootMidi()
-    setPhrase(current)
-    setAnswered([])
-    setVerdict(null)
+    // A replay sounds the same phrase in the same key, and keeps the
+    // notes already tapped back.
+    const kept = api.replay && phrase().length > 0
+    const current = kept ? phrase() : randomPhrase(level)
+    if (!kept) {
+      rootMidi = roveRootMidi()
+      setPhrase(current)
+      setAnswered([])
+      setVerdict(null)
+    }
 
     for (const chord of cadenceChordMidis(rootMidi)) {
       if (api.cancelled()) return
@@ -104,7 +109,11 @@ export function SpanDrill(props: SpanDrillProps): JSX.Element {
     await wait(SPAN_TIMING.tailMs)
   }
 
-  const run = useThresholdRun(drill, playStimulus, { cancelStimulus })
+  const run = useThresholdRun(drill, playStimulus, {
+    cancelStimulus,
+    // Never over a sung answer: the microphone would hear the replay.
+    replayable: () => !sungRun(),
+  })
   /** The run in progress reads under the voice track. */
   const sungRun = () => run.trackId() === SPAN_SING_ID
 

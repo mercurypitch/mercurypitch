@@ -17,16 +17,17 @@
 // ============================================================
 
 import type { JSX } from 'solid-js'
-import { createEffect, createSignal, Show, untrack } from 'solid-js'
+import { createEffect, createSignal, onMount, Show, untrack } from 'solid-js'
 import { useEngines } from '@/contexts/EngineContext'
 import type { EarBankItem } from '@/lib/ear/banks'
 import { CHART_BANK } from '@/lib/ear/banks'
 import { findIdentificationDrill } from '@/lib/ear/drills'
-import { isProvisional } from '@/lib/ear/elo'
+import { isProvisional, PROVISIONAL_ATTEMPTS } from '@/lib/ear/elo'
 import type { Subdivision } from '@/lib/ear/rhythm-take'
 import { anchorTaps, barBeats, clearedSubdivision, finestSubdivision, toleranceFor, } from '@/lib/ear/rhythm-take'
 import { createTapLedger } from '@/lib/ear/tap-input'
 import { PULSE_TIMING } from '@/lib/ear/timing'
+import { EAR_LAB_WITH_MERC } from '@/lib/native-build'
 import { micLatencyMs } from '@/stores/mic-latency-store'
 import type { AnchoredTake } from './anchored-take'
 import { startAnchoredTake } from './anchored-take'
@@ -34,12 +35,20 @@ import type { ScheduledClick } from './click-synth'
 import { scheduleClick } from './click-synth'
 import { IconPlay } from './ear-icons'
 import { useEarRoom } from './ear-room-context'
-import { ConsoleNote, EarStage, EndPlate, OutcomeDots, PlateBadge, PlateDelta, PlateLine, PlayPad, TapPad, } from './EarStage'
+import { ConsoleNote, EndPlate, OutcomeDots, PlateBadge, PlateDelta, PlateLine, PlayPad, TapPad, } from './EarStage'
 import { useLastCall } from './reveal-pacing'
 import type { DrumBar, DrumReveal } from './RhythmDrum'
 import { RhythmDrum } from './RhythmDrum'
+import type { RatingPlate, StageRoom } from './stage-room'
+import { identificationBeat, takeRoomStart } from './stage-room'
+import { EarStage } from './stage-switch'
 import type { IdentificationTrial } from './use-identification-controller'
 import { useIdentificationController } from './use-identification-controller'
+
+/** The task in one line: the idle status, and Merc's first bubble. */
+const PROMPT = 'A written bar over the click. Tap it at sight.'
+
+/** The native room's beat for each phase of the run. */
 
 const MISS = 'miss'
 
@@ -85,12 +94,18 @@ export function ChartDrill(props: { onBack: () => void }): JSX.Element {
   const period = PULSE_TIMING.periodMs
   const countMs = PULSE_TIMING.beats * period
 
-  function cancelAudio(): void {
-    trialCancelled = true
+  /** Silence the clicks and lamps in flight, and nothing else: a replay
+   *  at the reveal leaves the take and the reveal on the drum. */
+  function stopSounds(): void {
     for (const timer of timers) clearTimeout(timer)
     timers = []
     for (const click of scheduled) click.cancel()
     scheduled = []
+  }
+
+  function cancelAudio(): void {
+    trialCancelled = true
+    stopSounds()
     takeHandle?.cancel()
     takeHandle = null
     ledger.disarm()
@@ -114,6 +129,21 @@ export function ChartDrill(props: { onBack: () => void }): JSX.Element {
     const onsetsMs = item.payload.map((b) => b * period)
     const patternBeats = barBeats(item.payload)
     const toleranceMs = toleranceFor(item)
+    /** The count-in from `start`, with its lamps. */
+    const soundCountIn = (
+      ctx: AudioContext,
+      start: number,
+      soft: { voice: 'soft'; gainLevel: number },
+    ) => {
+      const s = period / 1000
+      for (let k = 0; k < PULSE_TIMING.beats; k++) {
+        scheduled.push(scheduleClick(ctx, start + k * s, soft))
+        later(PULSE_TIMING.leadS * 1000 + k * period, () => {
+          setBar('count')
+          setBeat(k + 1)
+        })
+      }
+    }
     return {
       expectedId: item.itemId,
       play: async () => {
@@ -137,16 +167,9 @@ export function ChartDrill(props: { onBack: () => void }): JSX.Element {
         const startMs = performance.now() + PULSE_TIMING.leadS * 1000
         const level = room.volume() * audioEngine.getVolume()
         const soft = { voice: 'soft' as const, gainLevel: level * 0.6 }
-        const s = period / 1000
 
         // Only the count-in sounds — the pattern is on the paper.
-        for (let k = 0; k < PULSE_TIMING.beats; k++) {
-          scheduled.push(scheduleClick(ctx, start + k * s, soft))
-          later(PULSE_TIMING.leadS * 1000 + k * period, () => {
-            setBar('count')
-            setBeat(k + 1)
-          })
-        }
+        soundCountIn(ctx, start, soft)
 
         // The count-in ends and the lamps stop: the bar is the player's
         // and nothing is running in it until they start it.
@@ -201,11 +224,51 @@ export function ChartDrill(props: { onBack: () => void }): JSX.Element {
           )
         })
       },
+      // Hear it again after the answer: the question's only sound was
+      // its count-in, so what is heard is the chart itself, the count-in
+      // and then the written rhythm, with no take after it. The reveal
+      // and the take stay on the drum. Resolves as the bar ends.
+      replay: async () => {
+        await audioEngine.init()
+        await audioEngine.resume()
+        const ctx = audioEngine.getAudioContext()
+        if (!ctx) return
+        stopSounds()
+        trialCancelled = false
+        const start = ctx.currentTime + PULSE_TIMING.leadS
+        const level = room.volume() * audioEngine.getVolume()
+        soundCountIn(ctx, start, { voice: 'soft', gainLevel: level * 0.6 })
+        const call = { voice: room.clickVoice(), gainLevel: level }
+        for (const onset of onsetsMs) {
+          scheduled.push(
+            scheduleClick(ctx, start + countMs / 1000 + onset / 1000, call),
+          )
+        }
+        for (let k = 0; k < patternBeats; k++) {
+          later(PULSE_TIMING.leadS * 1000 + countMs + k * period, () => {
+            setBar('call')
+            setBeat(k + 1)
+          })
+        }
+        await new Promise<void>((resolve) => {
+          later(
+            PULSE_TIMING.leadS * 1000 + countMs + patternBeats * period,
+            () => {
+              setBar(null)
+              setBeat(0)
+              resolve()
+            },
+          )
+        })
+      },
     }
   }
 
   const controller = useIdentificationController(drill, CHART_BANK, makeTrial, {
     cancelAudio,
+    // The take runs on the call's clock: sound taken away during it
+    // voids the round, and the call plays again from its count-in.
+    timedAnswer: true,
   })
 
   const phase = () => controller.phase()
@@ -253,7 +316,7 @@ export function ChartDrill(props: { onBack: () => void }): JSX.Element {
         return `Not quite: ${parts.join(', ')}.`
       }
       default:
-        return 'A written bar over the click. Tap it at sight.'
+        return PROMPT
     }
   }
 
@@ -273,6 +336,82 @@ export function ChartDrill(props: { onBack: () => void }): JSX.Element {
     if (phase() === 'playing') {
       ratingBefore = untrack(() => controller.rating().rating)
     }
+  })
+
+  /** What the native room draws on its own; nothing on any other build. */
+  const mercRoom: StageRoom | undefined = EAR_LAB_WITH_MERC
+    ? {
+        run: () => 'rated',
+        short: () => controller.short(),
+        beat: () => identificationBeat(phase()),
+        sounding: () => phase() === 'playing' || controller.replaying(),
+        prompt: PROMPT,
+        line: () =>
+          running()
+            ? {
+                kind: 'rounds',
+                noun: 'Chart',
+                round: Math.min(controller.round() + 1, controller.totalRounds),
+                total: controller.totalRounds,
+                answered: controller.round() + (phase() === 'reveal' ? 1 : 0),
+                extra: `${Math.round(60_000 / period)} BPM`,
+              }
+            : null,
+        pinned: () =>
+          phase() === 'answer' && bar() === 'response' && beat() > 0
+            ? `Beat ${beat()} of ${beats()}`
+            : null,
+        replay: {
+          allowed: () => controller.replayAllowed(),
+          play: () => void controller.replay(),
+        },
+        parked: () => controller.parked(),
+        next: () => controller.next(),
+        pause: () => controller.pause(),
+        hold: () => controller.holdQuestion(),
+        held: () => controller.held(),
+        resume: () => void controller.resumeQuestion(),
+        abandon: () => controller.abandon(),
+        plate: (): RatingPlate | null => {
+          const result = controller.result()
+          if (result === null) return null
+          const lines = [
+            cleared() ? `Clears ${cleared()}` : null,
+            raw() ? 'Raw taps, round trip unmeasured' : null,
+          ].filter((line): line is string => line !== null)
+          return {
+            kind: 'rating',
+            rating: Math.round(result.rating.rating),
+            before: Math.round(result.rating.rating - result.ratingDelta),
+            source: 'Chart rating',
+            settling: isProvisional(result.rating)
+              ? PROVISIONAL_ATTEMPTS - result.rating.attempts
+              : null,
+            settlingNoun: 'charts',
+            rounds: result.total,
+            right: result.correct,
+            rightWord: 'tapped clean',
+            outcomes: result.outcomes.map((outcome) => ({
+              correct: outcome.correct,
+              title:
+                CHART_BANK.find((i) => i.itemId === outcome.expectedId)?.name ??
+                outcome.expectedId,
+            })),
+            // A rhythm is met or missed, never heard as another one.
+            slips: [],
+            lines,
+          }
+        },
+        again: () => controller.start(),
+      }
+    : undefined
+
+  // A station row or Today's button asked for a run: it starts as the
+  // room opens, still inside the tap that opened it.
+  onMount(() => {
+    if (!EAR_LAB_WITH_MERC) return
+    const request = takeRoomStart(drill.id)
+    if (request !== null && phase() === 'idle') controller.start()
   })
 
   const lastCall = useLastCall(phase, () => ({
@@ -309,6 +448,7 @@ export function ChartDrill(props: { onBack: () => void }): JSX.Element {
       lastCall={lastCall}
       armed={() => phase() === 'answer'}
       done={() => phase() === 'done'}
+      room={mercRoom}
       instrument={() => (
         <RhythmDrum
           bar={bar()}

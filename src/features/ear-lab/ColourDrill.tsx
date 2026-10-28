@@ -41,6 +41,8 @@ export function ColourDrill(props: DeskDrillProps): JSX.Element {
   const [playing, setPlaying] = createSignal(false)
   const [picked, setPicked] = createSignal<string | null>(null)
   let handle: ExcerptHandle | null = null
+  /** Where in the song the trial's slice starts, for a replay. */
+  let sliceStart: number | null = null
   const level = () => room.volume() * audioEngine.getVolume()
 
   function cancelStimulus(): void {
@@ -54,11 +56,16 @@ export function ColourDrill(props: DeskDrillProps): JSX.Element {
     await audioEngine.resume()
     const ctx = audioEngine.getAudioContext()
     if (!ctx || api.cancelled()) return
-    const chosen = pickBand()
-    setBand(chosen)
-    setPicked(null)
+    // A replay sounds the same slice with the same band boosted.
+    const kept = api.replay ? band() : null
+    const chosen = kept ?? pickBand()
     const buffer = props.source.buffer
-    const start = randomSliceStart(buffer.duration, DESK_TIMING.sliceS)
+    if (kept === null || sliceStart === null) {
+      setBand(chosen)
+      setPicked(null)
+      sliceStart = randomSliceStart(buffer.duration, DESK_TIMING.sliceS)
+    }
+    const start = sliceStart
     const render = await renderFault(
       buffer,
       start,
@@ -84,6 +91,7 @@ export function ColourDrill(props: DeskDrillProps): JSX.Element {
 
   const run = useThresholdRun(DESK_DRILLS.colour, playStimulus, {
     cancelStimulus,
+    replayable: true,
   })
 
   const answer = (bandId: string) => {

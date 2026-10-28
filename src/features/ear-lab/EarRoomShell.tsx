@@ -8,6 +8,11 @@
 // readiness wizard and the "why no percent" plate. Entry is silent:
 // nothing here creates an AudioContext or asks for the microphone —
 // the wizard does that only once its panel is opened and used.
+//
+// The Ear Lab with Merc (EAR_LAB_WITH_MERC, a phone build) draws its own
+// tab and drill room, so there the session bar and the bridge fold away:
+// the shell keeps the room's picture (the alley's door ends on it), the
+// sound, the rack and the context the drills read.
 // ============================================================
 
 import type { JSX } from 'solid-js'
@@ -21,7 +26,7 @@ import { useBackgroundSurfaceController } from '@/lib/backgrounds/background-sur
 import { calibrationDueAt } from '@/lib/ear/calibration'
 import { REVEAL_HOLD } from '@/lib/ear/timing'
 import { STEADY_LATENCY_SPREAD_MS } from '@/lib/mic-latency'
-import { IS_NATIVE_BUILD } from '@/lib/native-build'
+import { EAR_LAB_WITH_MERC, IS_NATIVE_BUILD } from '@/lib/native-build'
 import { earRevealHoldMs, latestCalibration, setEarRevealHoldMs, } from '@/stores/ear-lab-store'
 import { micLatencyMs, micLatencySpreadMs } from '@/stores/mic-latency-store'
 import type { ClickVoice } from './click-synth'
@@ -35,6 +40,7 @@ import type { EarLabView } from './EarLabDashboard'
 import styles from './EarRoomShell.module.css'
 import { AutoAdvanceSwitch } from './EarStage'
 import { formatRevealHold } from './reveal-pacing'
+import { RulersNote } from './RulersNote'
 import { TapCheck } from './TapCheck'
 
 export type { EarRoomApi, RackPanel } from './ear-room-context'
@@ -157,7 +163,9 @@ export function EarRoomShell(props: EarRoomShellProps): JSX.Element {
   const roomApi: EarRoomApi = {
     openPanel: open,
     volume,
+    setVolume: updateVolume,
     clickVoice: earClickVoice,
+    chooseClick: chooseVoice,
   }
 
   createEffect(() => {
@@ -206,151 +214,156 @@ export function EarRoomShell(props: EarRoomShellProps): JSX.Element {
             takes is fixed at build time — though both branches are still in
             the module, since a `Show` chooses which to RENDER and does not
             remove either. The Ear Lab room proper is Phase 7. */}
-        <div
-          class={styles.sessionBar}
-          classList={{ [styles.sessionBarBare]: IS_NATIVE_BUILD }}
-          data-testid="ear-session-bar"
-        >
-          <Show
-            when={!IS_NATIVE_BUILD}
-            fallback={<h2 class={styles.srOnly}>Ear Lab</h2>}
+        {EAR_LAB_WITH_MERC ? null : (
+          <div
+            class={styles.sessionBar}
+            classList={{ [styles.sessionBarBare]: IS_NATIVE_BUILD }}
+            data-testid="ear-session-bar"
           >
-            <div class={styles.sessionCopy} data-testid="ear-session-copy">
-              <h2 class={styles.sessionTitle}>Ear Lab</h2>
-              <p class={styles.sessionMeta}>
-                <span>{roomLabel()}</span>
-                <i aria-hidden="true" />
-                <Show when={sealed()} fallback={<span>Not yet marked</span>}>
-                  {(run) => (
-                    <span>
-                      Index <b>{run().index}</b>
-                      <span class={styles.metaExtra}>
-                        <i aria-hidden="true" /> sealed {dateLabel(run().at)}
-                        <i aria-hidden="true" /> due{' '}
-                        {dateLabel(calibrationDueAt(run().at))}
+            <Show
+              when={!IS_NATIVE_BUILD}
+              fallback={<h2 class={styles.srOnly}>Ear Lab</h2>}
+            >
+              <div class={styles.sessionCopy} data-testid="ear-session-copy">
+                <h2 class={styles.sessionTitle}>Ear Lab</h2>
+                <p class={styles.sessionMeta}>
+                  <span>{roomLabel()}</span>
+                  <i aria-hidden="true" />
+                  <Show when={sealed()} fallback={<span>Not yet marked</span>}>
+                    {(run) => (
+                      <span>
+                        Index <b>{run().index}</b>
+                        <span class={styles.metaExtra}>
+                          <i aria-hidden="true" /> sealed {dateLabel(run().at)}
+                          <i aria-hidden="true" /> due{' '}
+                          {dateLabel(calibrationDueAt(run().at))}
+                        </span>
                       </span>
-                    </span>
-                  )}
-                </Show>
-              </p>
+                    )}
+                  </Show>
+                </p>
+              </div>
+            </Show>
+
+            <div class={styles.sessionChips}>
+              <button
+                type="button"
+                class={styles.chip}
+                data-tour="ear.latency"
+                data-testid="ear-readiness-chip"
+                onClick={() => open('readiness')}
+                aria-label={
+                  measured()
+                    ? `Round trip ${latencyMs()} milliseconds, ${latencyWord()}. Open the readiness panel`
+                    : 'Round trip not measured. Open the readiness panel'
+                }
+              >
+                <span
+                  class={styles.chipDot}
+                  classList={{
+                    [styles.chipDotOn]: measured() && latencySteady() !== false,
+                    [styles.chipDotWarn]:
+                      measured() && latencySteady() === false,
+                  }}
+                />
+                <span class={styles.chipCopy}>
+                  <b>
+                    <Show when={measured()} fallback="Round trip">
+                      {latencyMs()} ms
+                    </Show>
+                  </b>
+                  <small>
+                    <Show when={measured()} fallback="unmeasured">
+                      round trip · {latencyWord()}
+                    </Show>
+                  </small>
+                </span>
+              </button>
+
+              <button
+                type="button"
+                class={styles.chip}
+                data-tour="ear.rulers"
+                data-testid="ear-rulers-chip"
+                onClick={() => open('rulers')}
+                aria-label="Why there is no percent here"
+                title="Why there is no percent here"
+              >
+                <IconInfo size={18} class={styles.chipIcon} />
+                <span class={styles.chipText}>No percent</span>
+              </button>
+
+              <button
+                type="button"
+                class={`${styles.chip} ${styles.roomChip}`}
+                onClick={() => open('room')}
+                aria-label={`Room: ${roomLabel()}. Choose the room`}
+                data-testid="ear-room-chip"
+              >
+                <span
+                  class={styles.roomThumb}
+                  style={background.resolvedStyle()}
+                  aria-hidden="true"
+                />
+                <span class={styles.chipCopy}>
+                  <b>{roomLabel()}</b>
+                  <small>{roomAccess()}</small>
+                </span>
+              </button>
             </div>
-          </Show>
-
-          <div class={styles.sessionChips}>
-            <button
-              type="button"
-              class={styles.chip}
-              data-tour="ear.latency"
-              data-testid="ear-readiness-chip"
-              onClick={() => open('readiness')}
-              aria-label={
-                measured()
-                  ? `Round trip ${latencyMs()} milliseconds, ${latencyWord()}. Open the readiness panel`
-                  : 'Round trip not measured. Open the readiness panel'
-              }
-            >
-              <span
-                class={styles.chipDot}
-                classList={{
-                  [styles.chipDotOn]: measured() && latencySteady() !== false,
-                  [styles.chipDotWarn]: measured() && latencySteady() === false,
-                }}
-              />
-              <span class={styles.chipCopy}>
-                <b>
-                  <Show when={measured()} fallback="Round trip">
-                    {latencyMs()} ms
-                  </Show>
-                </b>
-                <small>
-                  <Show when={measured()} fallback="unmeasured">
-                    round trip · {latencyWord()}
-                  </Show>
-                </small>
-              </span>
-            </button>
-
-            <button
-              type="button"
-              class={styles.chip}
-              data-tour="ear.rulers"
-              data-testid="ear-rulers-chip"
-              onClick={() => open('rulers')}
-              aria-label="Why there is no percent here"
-              title="Why there is no percent here"
-            >
-              <IconInfo size={18} class={styles.chipIcon} />
-              <span class={styles.chipText}>No percent</span>
-            </button>
-
-            <button
-              type="button"
-              class={`${styles.chip} ${styles.roomChip}`}
-              onClick={() => open('room')}
-              aria-label={`Room: ${roomLabel()}. Choose the room`}
-              data-testid="ear-room-chip"
-            >
-              <span
-                class={styles.roomThumb}
-                style={background.resolvedStyle()}
-                aria-hidden="true"
-              />
-              <span class={styles.chipCopy}>
-                <b>{roomLabel()}</b>
-                <small>{roomAccess()}</small>
-              </span>
-            </button>
           </div>
-        </div>
+        )}
 
         <div class={styles.stage}>{props.children}</div>
 
-        <Show when={props.bridge !== false}>
-          <div class={styles.bridge}>
-            <button
-              type="button"
-              class={`${styles.bridgeButton} ${styles.bridgeToday}`}
-              onClick={() => open('today')}
-            >
-              <IconToday size={20} />
-              <span>Today</span>
-            </button>
+        {EAR_LAB_WITH_MERC ? null : (
+          <Show when={props.bridge !== false}>
+            <div class={styles.bridge}>
+              <button
+                type="button"
+                class={`${styles.bridgeButton} ${styles.bridgeToday}`}
+                onClick={() => open('today')}
+              >
+                <IconToday size={20} />
+                <span>Today</span>
+              </button>
 
-            <button
-              type="button"
-              class={styles.primary}
-              data-tour="ear.actions"
-              onClick={() => go('calibration')}
-            >
-              <IconSeal size={22} class={styles.primaryIcon} />
-              <span class={styles.primaryCopy}>
-                <b>
-                  <span class={styles.primaryLong}>Run Calibration</span>
-                  <span class={styles.primaryShort}>Calibrate</span>
-                </b>
-                <small>about 50 questions · marks the glass</small>
-              </span>
-            </button>
+              <button
+                type="button"
+                class={styles.primary}
+                data-tour="ear.actions"
+                onClick={() => go('calibration')}
+              >
+                <IconSeal size={22} class={styles.primaryIcon} />
+                <span class={styles.primaryCopy}>
+                  <b>
+                    <span class={styles.primaryLong}>Run Calibration</span>
+                    <span class={styles.primaryShort}>Calibrate</span>
+                  </b>
+                  <small>about 50 questions · marks the glass</small>
+                </span>
+              </button>
 
-            <button
-              type="button"
-              class={`${styles.bridgeButton} ${styles.bridgeInstruments}`}
-              onClick={() => open('instruments')}
-            >
-              <IconRack size={20} />
-              <span>Instruments</span>
-            </button>
+              <button
+                type="button"
+                class={`${styles.bridgeButton} ${styles.bridgeInstruments}`}
+                onClick={() => open('instruments')}
+              >
+                <IconRack size={20} />
+                <span>Instruments</span>
+              </button>
 
-            <button
-              type="button"
-              class={`${styles.bridgeButton} ${styles.bridgeReport}`}
-              onClick={() => go('report')}
-            >
-              <IconReport size={20} />
-              <span>Ear Report</span>
-            </button>
-          </div>
-        </Show>
+              <button
+                type="button"
+                class={`${styles.bridgeButton} ${styles.bridgeReport}`}
+                onClick={() => go('report')}
+              >
+                <IconReport size={20} />
+                <span>Ear Report</span>
+              </button>
+            </div>
+          </Show>
+        )}
 
         <Show when={panel() !== null}>
           <div class={styles.scrim} onClick={close} aria-hidden="true" />
@@ -584,17 +597,7 @@ export function EarRoomShell(props: EarRoomShellProps): JSX.Element {
 
           <Show when={panel() === 'rulers'}>
             <div class={`${styles.rackPanel} ${styles.plate}`}>
-              <p>
-                Adaptive drills hold everyone near 75% correct forever, so a
-                score can never show growth. The Ear Lab reports thresholds in
-                real units (cents, milliseconds, notes) that keep falling, and
-                ratings against items of frozen difficulty that keep rising.
-              </p>
-              <p>
-                Calibration re-measures you on a sealed protocol. The marks on
-                the glass are earned, not estimated; practice only ever draws
-                the fainter line above them.
-              </p>
+              <RulersNote />
             </div>
           </Show>
         </aside>

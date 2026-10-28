@@ -19,16 +19,17 @@
 // ============================================================
 
 import type { JSX } from 'solid-js'
-import { createEffect, createSignal, Show, untrack } from 'solid-js'
+import { createEffect, createSignal, onMount, Show, untrack } from 'solid-js'
 import { useEngines } from '@/contexts/EngineContext'
 import type { EarBankItem } from '@/lib/ear/banks'
 import { PULSE_BANK } from '@/lib/ear/banks'
 import { findIdentificationDrill } from '@/lib/ear/drills'
-import { isProvisional } from '@/lib/ear/elo'
+import { isProvisional, PROVISIONAL_ATTEMPTS } from '@/lib/ear/elo'
 import type { Subdivision } from '@/lib/ear/rhythm-take'
 import { anchorTaps, barBeats, clearedSubdivision, finestSubdivision, toleranceFor, } from '@/lib/ear/rhythm-take'
 import { createTapLedger } from '@/lib/ear/tap-input'
 import { PULSE_TIMING } from '@/lib/ear/timing'
+import { EAR_LAB_WITH_MERC } from '@/lib/native-build'
 import { micLatencyMs } from '@/stores/mic-latency-store'
 import type { AnchoredTake } from './anchored-take'
 import { startAnchoredTake } from './anchored-take'
@@ -36,14 +37,22 @@ import type { ScheduledClick } from './click-synth'
 import { scheduleClick } from './click-synth'
 import { IconPlay } from './ear-icons'
 import { useEarRoom } from './ear-room-context'
-import { ConsoleNote, EarStage, EndPlate, OutcomeDots, PlateBadge, PlateDelta, PlateLine, PlayPad, TapPad, } from './EarStage'
+import { ConsoleNote, EndPlate, OutcomeDots, PlateBadge, PlateDelta, PlateLine, PlayPad, TapPad, } from './EarStage'
 import { useLastCall } from './reveal-pacing'
 import type { DrumBar, DrumReveal } from './RhythmDrum'
 import { RhythmDrum } from './RhythmDrum'
+import type { RatingPlate, StageRoom } from './stage-room'
+import { identificationBeat, takeRoomStart } from './stage-room'
+import { EarStage } from './stage-switch'
 import type { IdentificationTrial } from './use-identification-controller'
 import { useIdentificationController } from './use-identification-controller'
 
 const MISS = 'miss'
+
+/** The task in one line: the idle status, and Merc's first bubble. */
+const PROMPT = 'A bar of onsets, then a bar of yours. Tap the call back.'
+
+/** The native room's beat for each phase of the run. */
 
 const PULSE_DESCRIPTION =
   'Four clicks count you in and a bar of onsets sounds. Then it waits: nothing plays until your first tap (pad or Space), which is the first onset, wherever you place it. From there the beat keeps you company and the bar fills left to right. Tap the rest of the call at the same tempo, every onset in order, nothing extra. The reading is the finest subdivision you clear: quarters, eighths, triplets, sixteenths.'
@@ -87,12 +96,18 @@ export function PulseDrill(props: { onBack: () => void }): JSX.Element {
   const period = PULSE_TIMING.periodMs
   const countMs = PULSE_TIMING.beats * period
 
-  function cancelAudio(): void {
-    trialCancelled = true
+  /** Silence the clicks and lamps in flight, and nothing else: a replay
+   *  at the reveal leaves the take and the reveal on the drum. */
+  function stopSounds(): void {
     for (const timer of timers) clearTimeout(timer)
     timers = []
     for (const click of scheduled) click.cancel()
     scheduled = []
+  }
+
+  function cancelAudio(): void {
+    trialCancelled = true
+    stopSounds()
     takeHandle?.cancel()
     takeHandle = null
     ledger.disarm()
@@ -116,6 +131,32 @@ export function PulseDrill(props: { onBack: () => void }): JSX.Element {
     const patternBeats = barBeats(item.payload)
     const barMs = patternBeats * period
     const toleranceMs = toleranceFor(item)
+    /** The count-in and the call from `start`, with their lamps: the
+     *  count-in keeps the beat; the call bar carries only its onsets, so
+     *  the pattern is heard and not counted along. */
+    const soundCall = (ctx: AudioContext, start: number, level: number) => {
+      const soft = { voice: 'soft' as const, gainLevel: level * 0.6 }
+      const call = { voice: room.clickVoice(), gainLevel: level }
+      const s = period / 1000
+      for (let k = 0; k < PULSE_TIMING.beats; k++) {
+        scheduled.push(scheduleClick(ctx, start + k * s, soft))
+        later(PULSE_TIMING.leadS * 1000 + k * period, () => {
+          setBar('count')
+          setBeat(k + 1)
+        })
+      }
+      for (const onset of onsetsMs) {
+        scheduled.push(
+          scheduleClick(ctx, start + countMs / 1000 + onset / 1000, call),
+        )
+      }
+      for (let k = 0; k < patternBeats; k++) {
+        later(PULSE_TIMING.leadS * 1000 + countMs + k * period, () => {
+          setBar('call')
+          setBeat(k + 1)
+        })
+      }
+    }
     return {
       expectedId: item.itemId,
       play: async () => {
@@ -138,29 +179,7 @@ export function PulseDrill(props: { onBack: () => void }): JSX.Element {
         const startMs = performance.now() + PULSE_TIMING.leadS * 1000
         const level = room.volume() * audioEngine.getVolume()
         const soft = { voice: 'soft' as const, gainLevel: level * 0.6 }
-        const call = { voice: room.clickVoice(), gainLevel: level }
-        const s = period / 1000
-
-        // The count-in keeps the beat; the call bar carries only its
-        // onsets, so the pattern is heard and not counted along.
-        for (let k = 0; k < PULSE_TIMING.beats; k++) {
-          scheduled.push(scheduleClick(ctx, start + k * s, soft))
-          later(PULSE_TIMING.leadS * 1000 + k * period, () => {
-            setBar('count')
-            setBeat(k + 1)
-          })
-        }
-        for (const onset of onsetsMs) {
-          scheduled.push(
-            scheduleClick(ctx, start + countMs / 1000 + onset / 1000, call),
-          )
-        }
-        for (let k = 0; k < patternBeats; k++) {
-          later(PULSE_TIMING.leadS * 1000 + countMs + k * period, () => {
-            setBar('call')
-            setBeat(k + 1)
-          })
-        }
+        soundCall(ctx, start, level)
         // The call ends and the lamps stop: the bar is the player's and
         // nothing is running in it until they start it.
         later(PULSE_TIMING.leadS * 1000 + countMs + barMs, () => {
@@ -217,11 +236,37 @@ export function PulseDrill(props: { onBack: () => void }): JSX.Element {
           )
         })
       },
+      // Hear it again after the answer: the call to listen to, with no
+      // take after it, so the reveal and the take stay on the drum.
+      // Resolves as the call ends.
+      replay: async () => {
+        await audioEngine.init()
+        await audioEngine.resume()
+        const ctx = audioEngine.getAudioContext()
+        if (!ctx) return
+        stopSounds()
+        trialCancelled = false
+        soundCall(
+          ctx,
+          ctx.currentTime + PULSE_TIMING.leadS,
+          room.volume() * audioEngine.getVolume(),
+        )
+        await new Promise<void>((resolve) => {
+          later(PULSE_TIMING.leadS * 1000 + countMs + barMs, () => {
+            setBar(null)
+            setBeat(0)
+            resolve()
+          })
+        })
+      },
     }
   }
 
   const controller = useIdentificationController(drill, PULSE_BANK, makeTrial, {
     cancelAudio,
+    // The take runs on the call's clock: sound taken away during it
+    // voids the round, and the call plays again from its count-in.
+    timedAnswer: true,
   })
 
   const phase = () => controller.phase()
@@ -269,7 +314,7 @@ export function PulseDrill(props: { onBack: () => void }): JSX.Element {
         return `Not quite: ${parts.join(', ')}.`
       }
       default:
-        return 'A bar of onsets, then a bar of yours. Tap the call back.'
+        return PROMPT
     }
   }
 
@@ -289,6 +334,82 @@ export function PulseDrill(props: { onBack: () => void }): JSX.Element {
     if (phase() === 'playing') {
       ratingBefore = untrack(() => controller.rating().rating)
     }
+  })
+
+  /** What the native room draws on its own; nothing on any other build. */
+  const mercRoom: StageRoom | undefined = EAR_LAB_WITH_MERC
+    ? {
+        run: () => 'rated',
+        short: () => controller.short(),
+        beat: () => identificationBeat(phase()),
+        sounding: () => phase() === 'playing' || controller.replaying(),
+        prompt: PROMPT,
+        line: () =>
+          running()
+            ? {
+                kind: 'rounds',
+                noun: 'Call',
+                round: Math.min(controller.round() + 1, controller.totalRounds),
+                total: controller.totalRounds,
+                answered: controller.round() + (phase() === 'reveal' ? 1 : 0),
+                extra: `${Math.round(60_000 / period)} BPM`,
+              }
+            : null,
+        pinned: () =>
+          phase() === 'answer' && bar() === 'response' && beat() > 0
+            ? `Beat ${beat()} of ${beats()}`
+            : null,
+        replay: {
+          allowed: () => controller.replayAllowed(),
+          play: () => void controller.replay(),
+        },
+        parked: () => controller.parked(),
+        next: () => controller.next(),
+        pause: () => controller.pause(),
+        hold: () => controller.holdQuestion(),
+        held: () => controller.held(),
+        resume: () => void controller.resumeQuestion(),
+        abandon: () => controller.abandon(),
+        plate: (): RatingPlate | null => {
+          const result = controller.result()
+          if (result === null) return null
+          const lines = [
+            cleared() ? `Clears ${cleared()}` : null,
+            raw() ? 'Raw taps, round trip unmeasured' : null,
+          ].filter((line): line is string => line !== null)
+          return {
+            kind: 'rating',
+            rating: Math.round(result.rating.rating),
+            before: Math.round(result.rating.rating - result.ratingDelta),
+            source: 'Pulse rating',
+            settling: isProvisional(result.rating)
+              ? PROVISIONAL_ATTEMPTS - result.rating.attempts
+              : null,
+            settlingNoun: 'calls',
+            rounds: result.total,
+            right: result.correct,
+            rightWord: 'tapped back clean',
+            outcomes: result.outcomes.map((outcome) => ({
+              correct: outcome.correct,
+              title:
+                PULSE_BANK.find((i) => i.itemId === outcome.expectedId)?.name ??
+                outcome.expectedId,
+            })),
+            // A rhythm is met or missed, never heard as another one.
+            slips: [],
+            lines,
+          }
+        },
+        again: () => controller.start(),
+      }
+    : undefined
+
+  // A station row or Today's button asked for a run: it starts as the
+  // room opens, still inside the tap that opened it.
+  onMount(() => {
+    if (!EAR_LAB_WITH_MERC) return
+    const request = takeRoomStart(drill.id)
+    if (request !== null && phase() === 'idle') controller.start()
   })
 
   const lastCall = useLastCall(phase, () => ({
@@ -325,6 +446,7 @@ export function PulseDrill(props: { onBack: () => void }): JSX.Element {
       lastCall={lastCall}
       armed={() => phase() === 'answer'}
       done={() => phase() === 'done'}
+      room={mercRoom}
       instrument={() => (
         <RhythmDrum
           bar={bar()}

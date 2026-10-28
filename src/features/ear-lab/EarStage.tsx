@@ -13,10 +13,17 @@
 // instrument, pads and plate; the stage only lays them out, colours
 // a reveal AND says it, and works the keyboard (Space begins, digits
 // answer). Built to be lifted out of the Ear Lab later.
+//
+// On a phone build with the Ear Lab with Merc (EAR_LAB_WITH_MERC) the
+// stage is the native room instead (features/ear-lab/merc, a lazy chunk
+// the constant folds away everywhere else; stage-switch.tsx picks). The
+// drills cannot tell: they compose the same parts, and each part below
+// asks the room's skin (StageSkin, below) for its own version when one
+// is provided.
 // ============================================================
 
-import type { JSX } from 'solid-js'
-import { createEffect, createSignal, For, onCleanup, onMount, Show, useContext, } from 'solid-js'
+import type { Component, JSX } from 'solid-js'
+import { createComponent, createContext, createEffect, createSignal, For, onCleanup, onMount, Show, useContext, } from 'solid-js'
 import { EngineContext } from '@/contexts/EngineContext'
 import { activateAudioPlayback, unlockAudio } from '@/lib/audio-unlock'
 import { clickTap, isTapKey, keyTap, pointerTap, TAP_FLASH_MS, } from '@/lib/ear/tap-rule'
@@ -26,6 +33,7 @@ import { IconBack, IconCheck, IconClose, IconStop, IconTap } from './ear-icons'
 import styles from './EarStage.module.css'
 import { InstrumentCard } from './InstrumentCard'
 import { formatKeyHint, keyMatches } from './key-hint'
+import type { StageRoom } from './stage-room'
 
 export type StageTone = 'neutral' | 'right' | 'wrong'
 
@@ -57,7 +65,7 @@ export interface StageReserve {
   lastCall: LastCall
 }
 
-interface EarStageProps {
+export interface EarStageProps {
   /** DOM hook (tests, the audit): data-ear-drill. */
   drillId: string
   name: string
@@ -101,6 +109,9 @@ interface EarStageProps {
   /** Flip to true to move focus onto the first live pad (the answer
    *  phase opening), so a keyboard user is already on the console. */
   focusConsole?: () => boolean
+  /** What the native room needs beyond the stage's own props. Built
+   *  only behind EAR_LAB_WITH_MERC; the web's stage ignores it. */
+  room?: StageRoom
 }
 
 function isTypingTarget(target: EventTarget | null): boolean {
@@ -214,24 +225,22 @@ export function AutoAdvanceSwitch(props: AutoAdvanceSwitchProps): JSX.Element {
   )
 }
 
-export function EarStage(props: EarStageProps): JSX.Element {
-  let consoleEl: HTMLDivElement | undefined
-  const reserve = (): StageReserve | null => props.reserve?.() ?? null
-  const keyHint = (): string | undefined => formatKeyHint(props.keys?.() ?? [])
-
-  // A first visit offers the bench's tour in a chip by the page title
-  // (TourChipHost). The tour walks the bench, which the stage has replaced,
-  // so opening a drill retires the offer. The guide control still starts it.
-  onMount(() => removeNotificationsByChannel(TOUR_OFFER_CHANNEL))
-
-  // Every keydown, registered or not, so a keyup can tell a key the
-  // browser took from one pressed before the pads armed. A keyup with
-  // no keydown behind it is a key something upstream swallowed — an
-  // extension binding the digits — and the console says so, once.
+/**
+ * The stage's keys: Space begins and digits answer, from anywhere on the
+ * page but a text field. Returns whether a key the stage listens for was
+ * swallowed upstream: every keydown is noted, registered or not, so a
+ * keyup can tell a key the browser took from one pressed before the pads
+ * armed. A keyup with no keydown behind it is a key something upstream
+ * swallowed — an extension binding the digits — and the console says so,
+ * once. The web's stage and the native room both work their keys here.
+ */
+export function useStageKeys(
+  keys: () => StageKey[] | undefined,
+): () => boolean {
   const pressed = new Set<string>()
   const [swallowed, setSwallowed] = createSignal(false)
   const registered = (event: KeyboardEvent): boolean =>
-    (props.keys?.() ?? []).some((entry) =>
+    (keys() ?? []).some((entry) =>
       entry.key === 'Space'
         ? event.code === 'Space'
         : keyMatches(entry.key, event),
@@ -256,15 +265,15 @@ export function EarStage(props: EarStageProps): JSX.Element {
   })
 
   createEffect(() => {
-    const keys = props.keys?.()
-    if (!keys || keys.length === 0) return
+    const live = keys()
+    if (!live || live.length === 0) return
     const onKey = (event: KeyboardEvent) => {
       if (event.defaultPrevented || event.metaKey || event.ctrlKey) return
       if (event.altKey || isTypingTarget(event.target)) return
       const isSpace = event.code === 'Space'
       // A focused button already fires on Space; let the browser have it.
       if (isSpace && event.target instanceof HTMLButtonElement) return
-      const match = keys.find((entry) =>
+      const match = live.find((entry) =>
         entry.key === 'Space' ? isSpace : keyMatches(entry.key, event),
       )
       if (!match) return
@@ -274,6 +283,36 @@ export function EarStage(props: EarStageProps): JSX.Element {
     document.addEventListener('keydown', onKey)
     onCleanup(() => document.removeEventListener('keydown', onKey))
   })
+
+  return swallowed
+}
+
+/** The console parts the room draws in its own way. */
+export interface StageSkin {
+  PlayPad: Component<PlayPadProps>
+  StagePad: Component<StagePadProps>
+  Pads: Component<PadsProps>
+  TapPad: Component<TapPadProps>
+  EndPlate: Component<EndPlateProps>
+  ModeToggle: Component<ModeToggleProps<string>>
+}
+
+/** Provided by the room only; the web's stage never sees one. */
+export const StageSkinContext = createContext<StageSkin | null>(null)
+
+/** The web's stage: the bar, the instrument, the console. The views
+ *  render it through stage-switch.tsx, which picks it or the room. */
+export function BenchStage(props: EarStageProps): JSX.Element {
+  let consoleEl: HTMLDivElement | undefined
+  const reserve = (): StageReserve | null => props.reserve?.() ?? null
+  const keyHint = (): string | undefined => formatKeyHint(props.keys?.() ?? [])
+
+  // A first visit offers the bench's tour in a chip by the page title
+  // (TourChipHost). The tour walks the bench, which the stage has replaced,
+  // so opening a drill retires the offer. The guide control still starts it.
+  onMount(() => removeNotificationsByChannel(TOUR_OFFER_CHANNEL))
+
+  const swallowed = useStageKeys(() => props.keys?.())
 
   createEffect(() => {
     if (props.focusConsole?.() !== true) return
@@ -461,7 +500,7 @@ export function EarStage(props: EarStageProps): JSX.Element {
 
 /* ── Console parts ───────────────────────────────────────────── */
 
-interface PlayPadProps {
+export interface PlayPadProps {
   label: string
   sub?: string
   keycap?: string
@@ -480,6 +519,11 @@ interface PlayPadProps {
 /** The lead pad of a console: Begin, Practice, Calibrate — or, once a
  *  run is on, the lamp that says whether to listen or to answer. */
 export function PlayPad(props: PlayPadProps): JSX.Element {
+  const skin = useContext(StageSkinContext)
+  return createComponent(skin?.PlayPad ?? BenchPlayPad, props)
+}
+
+function BenchPlayPad(props: PlayPadProps): JSX.Element {
   const engines = useContext(EngineContext)
   return (
     <button
@@ -541,7 +585,7 @@ export function ConsoleNote(props: { children: JSX.Element }): JSX.Element {
   return <p class={styles.consoleNote}>{props.children}</p>
 }
 
-interface TapPadProps {
+export interface TapPadProps {
   label: string
   sub?: string
   keycap?: string
@@ -559,6 +603,11 @@ interface TapPadProps {
  *  and on a click no pointer or key made (a screen reader, a switch,
  *  voice control), and flashes brass for each. */
 export function TapPad(props: TapPadProps): JSX.Element {
+  const skin = useContext(StageSkinContext)
+  return createComponent(skin?.TapPad ?? BenchTapPad, props)
+}
+
+function BenchTapPad(props: TapPadProps): JSX.Element {
   const [hit, setHit] = createSignal(false)
   let flash: ReturnType<typeof setTimeout> | undefined
   // the pad's latest pointer up and its latest Space or Enter: the click
@@ -646,7 +695,7 @@ export function consoleSingleClass(): string {
   return styles.consoleSingle
 }
 
-interface PadsProps {
+export interface PadsProps {
   columns: number
   label: string
   /** Narrow rungs in one row (Home's ladder, Leap's twelve). */
@@ -655,6 +704,11 @@ interface PadsProps {
 }
 
 export function Pads(props: PadsProps): JSX.Element {
+  const skin = useContext(StageSkinContext)
+  return createComponent(skin?.Pads ?? BenchPads, props)
+}
+
+function BenchPads(props: PadsProps): JSX.Element {
   return (
     <div
       class={styles.pads}
@@ -671,7 +725,7 @@ export function Pads(props: PadsProps): JSX.Element {
 
 export type PadState = 'right' | 'wrong' | null
 
-interface StagePadProps {
+export interface StagePadProps {
   keycap?: string
   label: string
   sub?: string
@@ -686,6 +740,11 @@ interface StagePadProps {
 /** One answer pad. A reveal colours it and marks it — the mark and the
  *  status line carry the verdict for anyone who cannot see the colour. */
 export function StagePad(props: StagePadProps): JSX.Element {
+  const skin = useContext(StageSkinContext)
+  return createComponent(skin?.StagePad ?? BenchStagePad, props)
+}
+
+function BenchStagePad(props: StagePadProps): JSX.Element {
   return (
     <button
       type="button"
@@ -731,7 +790,7 @@ export function StagePad(props: StagePadProps): JSX.Element {
   )
 }
 
-interface ModeToggleProps<T extends string> {
+export interface ModeToggleProps<T extends string> {
   label: string
   value: T
   options: ReadonlyArray<{ id: T; label: string }>
@@ -741,6 +800,14 @@ interface ModeToggleProps<T extends string> {
 export function ModeToggle<T extends string>(
   props: ModeToggleProps<T>,
 ): JSX.Element {
+  const skin = useContext(StageSkinContext)
+  return createComponent(
+    skin?.ModeToggle ?? BenchModeToggle,
+    props as unknown as ModeToggleProps<string>,
+  )
+}
+
+function BenchModeToggle(props: ModeToggleProps<string>): JSX.Element {
   return (
     <div class={styles.toggle} role="radiogroup" aria-label={props.label}>
       <For each={props.options}>
@@ -767,7 +834,7 @@ export function ConsoleWarning(props: { children: JSX.Element }): JSX.Element {
 
 /* ── The end plate ───────────────────────────────────────────── */
 
-interface EndPlateProps {
+export interface EndPlateProps {
   /** "Reading", "Rating", "Sealed", "Stopped". */
   kicker: string
   /** The number, already formatted; '—' when there is none. */
@@ -786,6 +853,11 @@ interface EndPlateProps {
 }
 
 export function EndPlate(props: EndPlateProps): JSX.Element {
+  const skin = useContext(StageSkinContext)
+  return createComponent(skin?.EndPlate ?? BenchEndPlate, props)
+}
+
+function BenchEndPlate(props: EndPlateProps): JSX.Element {
   let first: HTMLButtonElement | undefined
   onMount(() => queueMicrotask(() => first?.focus({ preventScroll: true })))
 
