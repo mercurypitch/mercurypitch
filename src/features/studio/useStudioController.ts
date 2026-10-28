@@ -19,6 +19,15 @@ import type { prepareStudioSource } from './integration/prepare-source'
 import type { StudioSourceEntry } from './integration/source-catalog'
 import { listStudioSources, readStudioSourceBlob, } from './integration/source-catalog'
 
+/**
+ * How long a song switch for a picked backup waits for a save in flight. An
+ * edit's save writes the arrangement; an import's audio is saved while the
+ * import still holds the Studio busy, and a backup is refused then.
+ */
+export const STUDIO_SAVE_WAIT_MS = 10_000
+const SWITCH_REFUSED =
+  'Save these changes, make a copy, or discard them before opening another project.'
+
 export interface StudioControllerOptions {
   service?: StudioService
   now?: () => Date
@@ -158,15 +167,56 @@ export function useStudioController(options: StudioControllerOptions = {}) {
     return true
   }
 
-  function canSwitch(): boolean {
+  /** Whether switching songs now would lose edits; a save in flight counts unless `waitsForSave`. */
+  function unsavedWork(waitsForSave: boolean): boolean {
+    if (importing()) return true
+    if (saveState() === 'saving') return !waitsForSave
+    return hasUnsavedChanges()
+  }
+
+  function canSwitch(waitsForSave = false): boolean {
     if (disposed() || loading() || working()) return false
-    if (importing() || saveState() === 'saving' || hasUnsavedChanges()) {
-      setProblem(
-        'Save these changes, make a copy, or discard them before opening another project.',
-      )
+    if (unsavedWork(waitsForSave)) {
+      setProblem(SWITCH_REFUSED)
       return false
     }
     return true
+  }
+
+  /**
+   * Whether a backup of song `id`, or of the open song, can start. The page
+   * asks before it opens a save picker, which empties the file picked: a
+   * refusal after it would cost that file. A save in flight is no reason to
+   * refuse; the switch to the song waits for it.
+   */
+  function canBackup(id?: string): boolean {
+    if (id !== undefined && id !== project()?.id) return canSwitch(true)
+    return (
+      !!project() && !disposed() && !loading() && !working() && !importing()
+    )
+  }
+
+  /** Wait for a save in flight to land, but no longer than STUDIO_SAVE_WAIT_MS. */
+  async function settleSave(): Promise<void> {
+    const saving = saveState() === 'saving' ? queue?.flush() : undefined
+    if (!saving) return
+    let timer: ReturnType<typeof setTimeout> | undefined
+    await Promise.race([
+      saving,
+      new Promise((resolve) => {
+        timer = setTimeout(resolve, STUDIO_SAVE_WAIT_MS)
+      }),
+    ])
+    clearTimeout(timer)
+  }
+
+  /** Open song `id` for a backup whose file is picked: true once it is open. */
+  async function openForBackup(id: string): Promise<boolean> {
+    if (project()?.id !== id) {
+      await settleSave()
+      await openProject(id)
+    }
+    return project()?.id === id
   }
 
   async function refreshProjects(): Promise<void> {
@@ -620,6 +670,8 @@ export function useStudioController(options: StudioControllerOptions = {}) {
     retrySave,
     takeOver,
     fork,
+    canBackup,
+    openForBackup,
     backup,
     restore,
     discardAndReload,

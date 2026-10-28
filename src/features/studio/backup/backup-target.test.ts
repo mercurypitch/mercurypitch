@@ -143,6 +143,40 @@ describe('Studio backup targets', () => {
     expect(picked.remove).toHaveBeenCalled()
   })
 
+  it('leaves a picked file it wrote nothing into: a backup refused after the pick only lets the file go', async () => {
+    const picked = fakeHandle('Last week.mpstudio')
+    vi.stubGlobal(
+      'showSaveFilePicker',
+      vi.fn(async () => picked),
+    )
+    fakeStorage()
+    const target = (await openStudioBackupTarget('Last week.mpstudio'))!
+    target.reserve(MiB)
+
+    await target.discard()
+
+    expect(picked.writable.abort).toHaveBeenCalled()
+    expect(picked.remove).not.toHaveBeenCalled()
+  })
+
+  it('leaves a picked file it cannot open for writing, and downloads the backup instead', async () => {
+    const picked = fakeHandle('Last week.mpstudio')
+    picked.createWritable.mockRejectedValueOnce(
+      new DOMException('The request is not allowed.', 'NotAllowedError'),
+    )
+    vi.stubGlobal(
+      'showSaveFilePicker',
+      vi.fn(async () => picked),
+    )
+    fakeStorage()
+
+    const target = (await openStudioBackupTarget('Last week.mpstudio'))!
+
+    expect(target).toMatchObject({ kind: 'download' })
+    expect(picked.remove).not.toHaveBeenCalled()
+    await target.discard()
+  })
+
   it('downloads a private file when the picker refuses, and removes it once the download has it', async () => {
     vi.useFakeTimers()
     vi.stubGlobal(

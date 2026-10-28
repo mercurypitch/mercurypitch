@@ -41,7 +41,9 @@ export function StudioPage() {
   }
 
   // A backup asks where it goes first, while the click still counts as the
-  // person's: Chromium refuses a save picker opened seconds later.
+  // person's: Chromium refuses a save picker opened seconds later. Chromium
+  // also empties the file picked at once, so the song is asked first whether
+  // its backup can start.
   function chooseBackupTarget(
     title: string | undefined,
   ): Promise<StudioBackupTarget | null> {
@@ -50,17 +52,19 @@ export function StudioPage() {
     return openStudioBackupTarget(studioBackupFileName(title))
   }
 
-  // A backup from the list loads the song behind the list and saves its file.
+  // A backup from the list loads the song behind the list, once a save in
+  // flight lands, and saves its file.
   async function backupFromList(id: string): Promise<void> {
+    if (!studio.canBackup(id)) return
     const title = studio.projects().find((song) => song.id === id)?.title
     const target = await chooseBackupTarget(title)
     if (!target) return
-    if (studio.project()?.id !== id) await studio.open(id)
-    if (studio.project()?.id === id) await saveBackup(target)
+    if (await studio.openForBackup(id)) await saveBackup(target)
     else await target.discard()
   }
 
   async function downloadBackup(): Promise<void> {
+    if (!studio.canBackup()) return
     const target = await chooseBackupTarget(studio.project()?.title)
     if (target) await saveBackup(target)
   }
