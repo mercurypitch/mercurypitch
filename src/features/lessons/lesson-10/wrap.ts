@@ -41,6 +41,7 @@ import { watch } from '@/features/lessons/kit/frame-loop'
 import type { ModeStore } from '@/features/lessons/kit/names'
 import type { LettersSolfegeMode } from '@/features/lessons/kit/names-modes'
 import { NowPlaying } from '@/features/lessons/kit/now-playing'
+import { playLights } from '@/features/lessons/kit/play-lights'
 import type { RunNote } from '@/features/lessons/kit/run'
 import { Sound } from '@/features/lessons/kit/sound'
 import type { BeadsSettings, ChordBeads } from './chord-beads'
@@ -48,7 +49,7 @@ import { mountChordBeads } from './chord-beads'
 import { playPattern } from './pattern'
 import { onLeave } from './sing'
 import type { Tempo } from './sounds'
-import { bindNames, bindQuality, bindRoots, bindSwitch, playLights, scaleNotes, stageNotes, } from './steps'
+import { bindNames, bindQuality, bindRoots, bindSwitch, scaleNotes, stageNotes, } from './steps'
 
 /** Free play's pattern tempo: Step 4's slow one under Slow, its fast one otherwise (WEB-SPEC, Toys 1). */
 export const freeTempo = (slowOn: boolean): Tempo => (slowOn ? 'slow' : 'fast')

@@ -54,6 +54,7 @@ import type { ModeStore } from '@/features/lessons/kit/names'
 import { bindModeToggle } from '@/features/lessons/kit/names'
 import type { LettersSolfegeMode } from '@/features/lessons/kit/names-modes'
 import { NowPlaying } from '@/features/lessons/kit/now-playing'
+import { playLights } from '@/features/lessons/kit/play-lights'
 import { mountPredict } from '@/features/lessons/kit/predict'
 import type { RunNote } from '@/features/lessons/kit/run'
 import { Sound } from '@/features/lessons/kit/sound'
@@ -144,28 +145,6 @@ export function bindQuality(seg: ParentNode, beads: ChordBeads): () => void {
   })
   return () => {
     pressOn(seg, QUALITY, beads.settings.quality)
-  }
-}
-
-/** Lights a play's button while its sound, `done`, plays. */
-type PlayLight = (btn: HTMLButtonElement, done: Promise<boolean>) => void
-
-/**
- * Lights a play's button while its sound plays, and puts it out when the
- * sound ends, by itself or cut short; a newer play puts out the one before.
- */
-export function playLights(): PlayLight {
-  let lit: { readonly btn: HTMLButtonElement } | null = null
-  return (btn, done) => {
-    lit?.btn.classList.remove('is-on')
-    const mine = { btn }
-    lit = mine
-    btn.classList.add('is-on')
-    void done.then(() => {
-      if (lit !== mine) return
-      lit = null
-      btn.classList.remove('is-on')
-    })
   }
 }
 
