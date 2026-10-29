@@ -30,8 +30,13 @@
 //       Each intro segment is its own box: a tall render of the drop, whose middle square lands on
 //       the pass's own pixels and whose column above shows the fall, and for a pass under a head the
 //       head itself. Each plays from its `from` film frame to its `until`, the first fading in over
-//       its first 6 frames, high above the corner where the fall starts; the pass then shows at once
-//       from the last `until`, with no fade and no ease. merc-tags.py writes the segments' tags,
+//       its first 6 frames; the pass then shows at once from the last `until`, with no fade and no
+//       ease. The first segment falls from above the frame (DECISIONS 86): its box is lifted at the
+//       fall's first frame until the body's foot is above the frame's top, and the lift runs out as
+//       D (1 - (j / 33)^2) at the renderer's contact, frame 33, so the fall stays one parabola; the
+//       landing light the renderer draws under the corner from frame 0 is masked off below the
+//       body's glow while the box is lifted, so it lights only as he lands, and the segment's
+//       reflection is lowered by the same lift. merc-tags.py writes the segments' tags,
 //       tag + '-seg1', tag + '-seg1-refl' and so on, into every scene they meet.
 //       Returns draw(t): the body box on screen (for rows.keep.boxes), or null while he is unseen.
 //   L.MERC_WHOLE
@@ -76,6 +81,12 @@
   L.MERC_WHOLE = window.MERC_WHOLE || {}
   L.MERC_INTRO = window.MERC_INTRO || {}
   const INTRO_FADE = 6   // frames: the first segment's fade in, where the fall starts
+  const FALL_N = 33      // frames: the renderer's fall (DROP_T, 0.55 s at 60 fps), contact on the 33rd
+  // Per drawn size, measured on every tall render (each size's talls agree to 2 rows): the body's
+  // lowest drawn row at frame 0 and at frame 33, between which it follows the fall's parabola to a
+  // row up to frame 31; its lowest row at frame 32, where it stretches 8 to 10 rows past the
+  // parabola; the first row of the landing light under the corner; and the glow under the body
+  const FALL = { 225: { b0: 201, b33: 391, b32: 388, pool: 350, halo: 16 }, 390: { b0: 352, b33: 671, b32: 664, pool: 605, halo: 20 } }
 
   // One intro segment's two boxes in `parent`, placed so the render's own square sits on the pass's
   // square (left x - size / 2, top feetY - size * feet): a tall render's padding goes above and below
@@ -85,18 +96,22 @@
     const top = feetY - size * feet
     const k = size / (seg.drawn || size)                   // screen px per drawn px
     const pad = seg.tall ? seg.pad * k : 0
-    const fit = (v, box) => {
+    // each video sits in its own layer, which the long fall lifts and masks
+    const fit = (v, box, y) => {
       v.muted = true
-      Object.assign(v.style, { position: 'absolute', left: '0', top: -pad + 'px', width: size + 'px', height: size + 2 * pad + 'px' })
-      box.appendChild(v)
+      const layer = L.el('div', {}, box)
+      layer.setAttribute('data-layout-allow-overflow', '')
+      Object.assign(layer.style, { position: 'absolute', left: '0', top: y + 'px', width: size + 'px', height: size + 2 * pad + 'px' })
+      Object.assign(v.style, { position: 'absolute', left: '0', top: '0', width: size + 'px', height: size + 2 * pad + 'px' })
+      layer.appendChild(v)
+      return layer
     }
     const box = L.el('div', { class: 'merc' }, parent)
     Object.assign(box.style, { position: 'absolute', left: x - size / 2 + 'px', top: top - pad + 'px', width: size + 'px', height: pad + size + 'px', overflow: 'hidden', opacity: '0' })
     box.setAttribute('data-layout-allow-overflow', '')
     // the video's top sits at the box's top: no padding to skip above
-    fit(video, box)
-    video.style.top = '0'
-    let rbox = null
+    const layer = fit(video, box, 0)
+    let rbox = null, rlayer = null
     if (refl) {
       rbox = L.el('div', { class: 'refl-box' }, parent)
       Object.assign(rbox.style, {
@@ -105,9 +120,41 @@
         webkitMaskImage: 'linear-gradient(0deg, #000 28%, transparent 60%)', maskImage: 'linear-gradient(0deg, #000 28%, transparent 60%)',
       })
       rbox.setAttribute('data-layout-allow-overflow', '')
-      fit(refl, rbox)
+      rlayer = fit(refl, rbox, -pad)
     }
-    return { box, rbox }
+    return { box, rbox, layer, rlayer, k, lift0: top - pad }
+  }
+
+  // The first tall segment's long fall (DECISIONS 86): fall(j, flip) places it for the tall's frame j.
+  // While the box is lifted, its layers keep everything above the landing light's first row, and
+  // below it only a window over the body (its glow and the light right under it, which ride with
+  // him), so the light lands with him rather than riding in the air beside his feet.
+  const longFall = (seg, b) => {
+    const G = FALL[seg.drawn]
+    if (!seg.tall || !G) return null
+    const { k } = b, d = seg.drawn
+    const D = b.lift0 + (G.b0 + G.halo) * k + 8   // puts his foot and its glow 8 px above the frame at frame 0
+    const x0 = (0.5 - 0.31) * d * k, x1 = (0.5 + 0.31) * d * k, top = G.pool * k
+    const set = (l, image, comp) => {
+      if (!l) return
+      l.style.webkitMaskImage = image
+      l.style.maskImage = image
+      l.style.maskComposite = comp
+    }
+    return (j, flip) => {
+      const u = j >= 0 && j < FALL_N ? j / FALL_N : 1
+      const lift = D * (1 - u * u)
+      b.box.style.transform = `translate(0px, ${f1(-lift)}px)${flip}`
+      if (b.rlayer) b.rlayer.style.transform = `translate(0px, ${f1(-lift)}px)`
+      if (u >= 1) { for (const l of [b.layer, b.rlayer]) set(l, 'none', 'add'); return }
+      const foot = (j === FALL_N - 1 ? G.b32 : G.b0 + (G.b33 - G.b0) * u * u) + G.halo
+      const image = [
+        `linear-gradient(180deg, #000 ${f1(top - 3)}px, transparent ${f1(top + 3)}px)`,
+        `linear-gradient(90deg, transparent ${f1(x0)}px, #000 ${f1(x0 + 8)}px, #000 ${f1(x1 - 8)}px, transparent ${f1(x1)}px)`,
+        `linear-gradient(180deg, #000 ${f1(foot * k - 3)}px, transparent ${f1(foot * k + 3)}px)`,
+      ].join(', ')
+      for (const l of [b.layer, b.rlayer]) set(l, image, 'add, intersect, add')
+    }
   }
 
   L.mercGate = (layer, { sid, pass, tag, x, feetY = 840, size = 300, feet = 0.8, hop = null, hopDx = 360, mirror = false, floor = true, fade = 18 } = {}) => {
@@ -143,7 +190,7 @@
       if (!v) return null
       const b = segBoxes(wrap, { x, feetY, size, feet, seg, video: v, refl: document.getElementById(`${tag}-seg${i + 1}-refl`) })
       if (mirror) { b.box.style.transform = 'scaleX(-1)'; if (b.rbox) b.rbox.style.transform = 'scaleY(-1) scaleX(-1)' }
-      return { ...seg, ...b }
+      return { ...seg, ...b, fall: i === 0 ? longFall(seg, b) : null }
     })
     if (intro.length) {
       const from = intro[0].from, until = intro[intro.length - 1].until
@@ -155,6 +202,7 @@
           const a = n >= sg.from && n < sg.until ? (i === 0 ? L.ease('power1.out')(Math.min(1, (n - sg.from + 1) / INTRO_FADE)) : 1) : 0
           sg.box.style.opacity = a.toFixed(3)
           if (sg.rbox) sg.rbox.style.opacity = (0.16 * a).toFixed(3)
+          if (sg.fall) sg.fall(n - sg.from, flip)
           any = Math.max(any, a)
         })
         const inSpan = t >= ds && t <= ds + dd

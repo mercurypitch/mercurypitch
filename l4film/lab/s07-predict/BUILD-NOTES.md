@@ -89,3 +89,40 @@ Running notes so a container restart or a usage-limit pause can resume. Builder 
 - m08-orange still rendering at 09:25 (1.3 MB part file, 32 min in). Once it lands and merc-whole.py runs:
   re-render lab s08 (and s07's last 0.5 s) and re-measure; s08's diagram-only holds (longest 2.1 s at 219.66)
   must then be covered by Tavi's idle.
+
+## Fix round 1 (component critic C-01, review/component-C-01/REPORT.md), from 12:50
+
+Sources re-read: DECISIONS 81, 83, 85; FACTS 77; BUILD-GUIDE § Handoff confirmations (Tavi's entrances stay as
+the director tagged them: m07 from 147.34 with its tall intro, m08-in from 198.27, the splice at 203.65).
+
+- Item 1 (S8 dead): lights instead of 1.05 pulses. 8b: stair 1 lights on "Start" and the light climbs the stairs
+  on "pattern"; on "any of the twelve notes" the six keys outside D major come up in turn (0.12 s apart) so all
+  twelve stand lit, and go back in turn from "get". 8d: each stair's hairline flashes to its key in turn on "keys
+  under it change" (its black key flashing, its white key scaling); the four entries scale in turn on "Every
+  start"; the header scales on "needs"; "D 2" flashes F#4 and C#5, "G 1" lights F#5, "E 4" flashes E's four; on the
+  slide back E's black keys go dark in turn (0.25 s apart); the stairs light in turn on "fits the white keys alone".
+  A black key's flash is a chrome face (50 %) over the lit key, an accent written in the scene.
+- Item 2: header "BLACK KEYS" with L.kicker (mono 30 px, .18em, ink-2) at x 140, baseline 172; the tally's text is
+  FACTS 77's, real spaces, with word spacing (entries +0.3 em: a 32 px space; probe +0.5 em: 44 px round each dot).
+  The line is about 805 px now (HANDOFFS said 476), x 140 to about 945, clear of every start's stairs.
+- Item 3: the "?" from x 1360, baseline 330 (world): 80.9 px from the bead at rest on stair 8, 24.6 px from the
+  echo ring at its largest (lab/s07-predict/item2/clearance.mjs).
+- Item 4: all eight names out over the slide's first 30 %, in over its last 30 %: none shows between, so no stair
+  holds two letters and no letter rides more than a fifth of the way to another key. Checked every 1/60 s
+  (lab/s07-predict/scratch/names-check.py): PASS on all four slides.
+- Item 5: the pills stay up; the lane ("Predict." and both pills) eases 50 px left with the push to F-white and back
+  with the pull. At x 140 white-d's drop and its first hop cross "No: it changes" by 23 px; at x 90 they clear it
+  by 26.7 px (drop) and 33.9 px (hops) (lab/s07-predict/scratch/pills.mjs).
+- Item 6: the ghosts one at a time (0.5 s apart; each 0.2 s in, 0.6 s slide, fit), the rim (the outline, ink 3.5 px
+  with a chrome glow) flashing as each fits; ghosts at 40 %.
+- Item 7: two beads; slide-g's fades in 0.25 s riding stair 8, slide-e's drops 0.2 s onto E's moving stair 1.
+- Item 8: the steps at x 354 + 46 k (both rows).
+- Item 9: the strip (and both sets of hairlines) fades over the CU-D push and returns with the crane; stair 7's
+  arrow fades 0.35 s before the crane.
+- Item 10: the strip dims to 25 % from the staircase's dim (1.0 s, power1.in) and returns as the card leaves.
+- Item 11: the "?" shrinks away on "changes" (0.35 s, power2.in); the rows leave over 0.4 s drifting 24 px left,
+  from 0.5 s before the crane; the flashes rise over 0.15 s.
+- DECISIONS 85: the dashed staircase's lines, fills and flashes are cut clear of the real staircase's two golds
+  (gap and corner, as the real staircase comes to full); S8's ghosts and rim are cut clear of E's golds.
+- For the holds (about 1 s per 30 s with Tavi): S7's stair 3 and 7 letters scale and their keys flash on
+  "changes" (+0.45 s); F#4 and C#5 flash on "black" and "keys" instead of scaling.

@@ -351,12 +351,13 @@ storyboard's § Build checks and the critic's items, as storyboard time and then
 `tools/board-clock.py` gives for it: write the anchor, never the time. Merc placement: feet point and
 shown size; a hero-view Merc's feet line is 0.80 of his square, a front-view one's 0.81 (`L.merc`).
 Every drop takes 0.85 s, the renderer's whole fall and splat, starting 1.1 s before its host's first
-word, and is shown whole from high above its corner by its intro (DECISIONS 81); every hop out takes
+word, and falls in whole from above the frame by its intro (DECISIONS 81, 86); every hop out takes
 0.6 s (STORYBOARD § Merc performances). `L.mercGate` does all of it, the trap 23 gate and the intro
 included: give it the scene id, the pass, its tag's id, the corner and the hop's start, and run
 `tools/merc-tags.py <scene-id>` so the intro's segment tags are there. Keep every mark 20 px clear of
-a dropping Merc's column, his body's width from the top of the intro's box (at size 300 in the hero
-view, y 323) down to his feet, for the drop's 0.85 s.
+a dropping Merc's column, his body's width down to his feet, for the drop's 0.85 s: from the frame's
+top while he falls (its first 0.55 s, DECISIONS 86), from the top of the intro's box (at size 300 in
+the hero view, y 323) after that.
 
 ### s01-cold-open: Cold open, seven stairs, one short of home (0.00 to 34.18)
 
@@ -588,8 +589,8 @@ view, y 323) down to his feet, for the drop's 0.85 s.
   between F-near and F-names-1 (s, ox and oy each move one way only: plot them from the lab or print
   them from `cam.state(t)` at 0.05 s steps); "scale degrees" lands at 241.44 with the top stair's
   right edge at x 1294; the truck in S9d is a truck (the layers part); "solfège" lands at 249.50 once
-  the pull has landed; nothing comes within 20 px of Tavi's column (x 1700 to 1900, from y 323 down)
-  in any frame of the pull; "do = C?" at 252.58 once "solfège" has gone; "movable do" under the moved
+  the pull has landed; nothing comes within 20 px of Tavi's column (x 1700 to 1900, from the frame's
+  top down) in any frame of the pull; "do = C?" at 252.58 once "solfège" has gone; "movable do" under the moved
   "fixed do"; on D the top house stops 74 px short of the pills.
 
 ### s10-ti: Ti, one short of home (270.63 to 295.94)
@@ -643,9 +644,9 @@ view, y 323) down to his feet, for the drop's 0.85 s.
 - Merc: m09-orange and m10-blue in the corners for o10, both hopping out at `at('o10', 'end')` (Merc
   starting b35 as he goes); m11-orange drops back into her corner at `at('o11', 'start', -1.1)` (320.48), as
   the pull out runs, and m11-blue into his at `at('b36', 'end', 0.05)` (321.03), as his own line
-  ends; nothing comes within 20 px of either column (Tavi x 1700 to 1900, Merc x 10 to 210, from y
-  323 down) in any frame of the pull; both hop out at `at('b38', 'end', -0.19)`. m10-blue and m11-blue
-  are mirrored in the scene, as in s10.
+  ends; nothing comes within 20 px of either column (Tavi x 1700 to 1900, Merc x 10 to 210, from the
+  frame's top down) in any frame of the pull or the falls; both hop out at `at('b38', 'end', -0.19)`.
+  m10-blue and m11-blue are mirrored in the scene, as in s10.
 - Checks: the dim chips' letters on the fourth shelf at 4.5:1 or better; the chips 8 px apart at the
   closest and never touching, in every frame of the shelves' close and spread; no numbers anywhere on
   the chart; "leading note" lands at 330.8 once Tavi's two labels have gone.
@@ -669,7 +670,7 @@ view, y 323) down to his feet, for the drop's 0.85 s.
 - Merc: m12-blue (feet (240, 840)) and m12-orange (feet (1700, 840)), rendered at 520 and shown at
   360, front, turned toward each other; Merc drops in at `at('b39', 'start', -1.1)` (342.50) and
   Tavi 0.12 s after him, both under the act 4 card and down as it leaves; the card's type keeps
-  20 px from both columns (Merc x 144 to 336, Tavi x 1604 to 1796, from y 223 down).
+  20 px from both columns (Merc x 144 to 336, Tavi x 1604 to 1796, from the frame's top down).
 - Checks: the tip and S13d's reverse tip read as the same staircase changing shape, with no frame
   where it is absent (a 2 s clip of 343.6 to 345.6 first); the beads drop onto the path 22 px or more
   from its names; the bead on do's segment keeps 21 px under the house; the lane names fade in only

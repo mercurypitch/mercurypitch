@@ -526,3 +526,37 @@ replaced it. The builder's record: critics never read it.
     their own overlay on top, the same shape. Checked on stills: the S6 to S7 cut (none over 24
     levels, from 0.04 % of the frame), S5's close-up at 21.9 (unchanged), and S14's "S" (4 px clear
     of the gold at 34.0, against 7 px before).
+86. **Every drop falls in from above the frame.** Component critic B-02 (item 1) saw Tavi appear at
+    full size about 250 px above the floor within a frame or two and then fall (s05 40.40, s06
+    23.97): a tall intro starts the body in the column just above the corner square, and the
+    6-frame fade only softened the pop. `L.mercGate` now lifts the first tall segment's box at the
+    fall's first frame until the body's foot and its glow sit 8 px above the frame's top (620 px at
+    size 300), and lets the lift run out as D (1 - (j / 33)^2) to the renderer's contact on tall
+    frame 33. The renderer's own fall is a parabola from rest over those 33 frames (`DROP_T`,
+    0.55 s), so the sum is still one fall from rest, only steeper: from above the frame to the
+    floor in the same 0.55 s, entering the frame at about tall frame 5. Contact, the splat, the hand
+    over at frame 40 and everything after are pixel-identical to before (the director's 60 fps gate
+    renders of m06b, m10-blue mirrored and m12-blue at size 360, scratchpad `l4entr/longfall/`; m06b
+    against the old kit: 0 levels of difference outside the fall). The renderer lights the landing
+    pool under the corner from frame 0, and a lifted box would carry it through the air, so while
+    the box is lifted its layers show everything above the pool's first row and, below it, only a
+    window over the body (the centre 62 % of the square) down to his foot's glow: the pool lights as
+    he lands, with the splat. The segment's reflection is lowered by the same lift under the same
+    mask. The per-size constants (`FALL` in hosts.js) are measured on all eleven talls (each size's
+    agree to 2 rows).
+    - Not done: B-02 also found her rebound still moving as her line starts (12 px over s06 0.0 to
+      0.17; 30 px over 24.90 to 25.24, the line at 25.05). The spring's tail is in the passes:
+      settling 0.15 s before the line means starting every drop 0.3 s earlier and rendering all
+      eleven drop passes and their heads again (the m12 pair is still rendering). That is hours of
+      queue for a follow-through of under 0.2 s overlapping a first syllable, which is overlapping
+      action (motion principle 3). It stays, and the next verification critic judges it.
+    - The column rule (decisions 81 and 83) now covers a falling host's column from the frame's top
+      (y 0) down to the feet, for the fall's 0.55 s.
+    - Component critic D-01's item 6 (Tavi's floor glow painted on the still-zoomed keys in S9d's
+      and S11c's pulls) was that pool, lit through the fall; it now lights at contact, when each pull
+      has landed (decision 83).
+    - Checked on stills at tall frames 6, 10, 14, 18 and 22 of all eleven falls (scratchpad
+      `l4entr/longfall/cols/`): the only marks in a falling column were S11's kicker and credits,
+      in Merc's column through m11-blue's fall (25.10 to 25.65), now in that scene's fix round.
+      S09's strip is a world surface (decision 83); S10's "do" chip clears Merc's column by 30 px,
+      and S05's "S" riser label clears Tavi's body by about 30 px.

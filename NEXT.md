@@ -1347,3 +1347,40 @@ Note: the lanes' memory gate read a stale cgroup path after the 21:00 restart (f
   name) and the marker move took it; the new-kit version is $S/l4entr/semigold/. F's measurement
   of it stands in F's report.
 - Agents now: B-02 + builder C. Next free slot: D-01 (once s09-s11 clips land), then A-01.
+- 13:00 s11, s09, s10 clips re-rendered with the new kit (bvz11flzq, exit 0; lab/s{09,10,11}-*/clip.mp4).
+  13:03 component critic D-01 launched (paths only, $S/l4entr/critics/D.txt), report to
+  review/component-D-01/REPORT.md. Agents now: builder C (fix round) + D-01. Next slot: A-01.
+
+## 2026-10-29 ~13:35Z: D-01 back, the long fall in the kit
+- D-01 (s09 REVISE, s10 REVISE on frame 0 only, s11 REVISE; 16 items) saved to
+  review/component-D-01/REPORT.md. Item 1 (Mercs missing on frame 0 of s10 and s11) is a lab
+  artifact: a clip's frame 0 is scene time 0, which is no film frame (s10's first film frame is at
+  0.016), and merc-tags started a running pass half a frame before the first film frame. Fixed in
+  tools/merc-tags.py (backup $S/l4entr/merc-tags.before-scenestart.py): a pass already running at
+  the scene's start now starts at 0.000; media-start unchanged, the gate's P0 unchanged (14991 for
+  m09 in s10 and s11). Changed tags: s10 m09, s11 m09 and m10, s13 m12 pair. NOTE: merc-tags.py has
+  no --help; `--help` was read as "all scenes" and wrote, which here was exactly the intended set
+  (the old script's --check confirmed it: 10 tags, s10/s11/s13 only; s07/s08 untouched).
+- DECISIONS 86: every drop falls in from above the frame. hosts.js installed 13:29:37 (backup
+  $S/l4entr/hosts.before-longfall.js; prototype history $S/l4entr/longfall/lib/hosts.v1.js). The
+  first tall segment's box is lifted D (1 - (j/33)^2), D = 620 px at size 300, so the foot starts
+  8 px above the frame; the landing pool is masked (full width above its first row, a window over
+  the body below it, down to his foot's glow) until contact. Proven at 60 fps with the director's
+  gate test $S/l4entr/dgate.mjs (one pass alone, the scene's tags shifted; PNG frames): m06b
+  (orange), m10-blue (mirrored), m12-blue (size 360, 390-drawn tall). Outside the fall 0 levels of
+  difference from the old kit. The snapshot tool's stills are NOT frame-accurate for video against
+  DOM (they showed the body "cut" when it was not); judge video sync on renders only.
+  $S/l4entr/dlab.mjs: lab stills and clips built in the scratchpad (no builder's lab files touched),
+  with an optional lib override folder.
+- Builder C told (13:31) about the kit change: re-render s07's clip (its 13:27 clip has the old
+  entrance), column rule now y 0 to the feet during each fall.
+- Check: 5 errors, all the missing m12 mains (expected); 78 usual warnings.
+- Column check for every drop running (background b2vwql2cg, stills in $S/l4entr/longfall/cols/).
+
+## 2026-10-29 ~13:40Z: column rule written down
+- Column check done: all eleven falls clear except S11's kicker and credits in Merc's column during
+  m11-blue's fall (25.10-25.65), sent to builder D as item 17. Written to DECISIONS 86 (last bullet;
+  backup $S/l4entr/DECISIONS.before-86col.md) and BUILD-GUIDE.md (backup
+  $S/l4entr/BUILD-GUIDE.before-longfall.md): the general rule (from the frame's top for the fall's
+  first 0.55 s, from y 323 after), S09, S11 and S12 checks.
+- Builder C: interim notice only (waiting on its own render); no report yet.

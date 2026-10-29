@@ -24,7 +24,11 @@
              rest at 45 %, no key names; no sum, brackets or legend.
              Out (to s08, same group): F0; Tavi's m08 dropping in (shown from s08's first frames); the staircase on D
              at full, letters D E F# G A B C# D, riser labels T T S T T T S, F#4 and C#5 lit (their names gone),
-             "D major" up. Every time is a cue, a word or a duration (BUILD-GUIDE, "The clock"). */
+             "D major" up. Every time is a cue, a word or a duration (BUILD-GUIDE, "The clock").
+             Component critic C-01: Tavi's "?" stands beside the top stair (item 3); the names switch out, then in, on
+             the slide (item 4); the pills stay up through the listen, the lane easing 50 px left in F-white (item 5);
+             the step rows on a 46 px pitch (item 8); the strip fades for CU-D and stair 7's arrow before the crane
+             (item 9); the strip dims under the card (item 10); the timing items (item 11). */
           const SID = 's07-predict'
           const D = L.dur(SID)
           const at = (cue, edge, off) => L.at(SID, cue, edge, off)
@@ -69,6 +73,7 @@
             wdEnd: at('white-d', 'end'),
             now: word('b19', 'Now'),                                    // 7e: the pull to F0, 1.0 s
             slide: word('b19', 'from D', 'start', 0.06),                // the slide to D, 0.9 s
+            pattern19: word('b19', 'pattern'),                          // the real staircase's risers grow in turn
             mdEnd: at('major-d', 'end'),
             changes: word('b20', 'changes'),                            // 7f: the check; "Yes" and the "?" fade
             climb: word('b20', 'The white keys climb'),                 // the pills leave; the step rows build
@@ -91,7 +96,6 @@
           }
           A.back = A.now + 0.6                                          // the real staircase returns as the pull lands
           A.landed = A.pull + 1.0                                       // "D major" lands as the pull lands
-          A.pillsBack = A.now + 1.0                                     // the pills return once the pull out of F-white has landed
           const STEPS = [6, 7, 8, 9, 10, 11, 12].map((k) => word('b20', k))   // "tone, semitone, tone, tone, tone, semitone, tone"
           const WD = (k) => at('white-d', 'start', 0.45 * k)            // white-d's onsets (FACTS 68)
           const MD = (k) => at('major-d', 'start', 0.45 * k)            // major-d's onsets
@@ -119,13 +123,22 @@
           // a soft chrome halo behind the letter (a shape, not a second copy of the text, so no sweep reads it as a label)
           const glowLab = [3, 7].map(() => L.svg('ellipse', { rx: 34, ry: 22, fill: L.C.chrome, opacity: 0, filter: `url(#${SID}-soft)` }, nameGlow))
           const kb = L.strip(mid, {})
+          // F#4's and C#5's flash on "black keys" (a chrome face over the lit key, an accent; 7h)
+          const keyFlash = { 6: null, 13: null }
+          for (const m of [6, 13]) keyFlash[m] = L.svg('rect', { x: ST.keyX(m) - 32, y: 760, width: 64, height: 76, rx: 3, fill: L.C.chrome, opacity: 0, display: 'none' }, mid)
 
           // Tavi's dashed staircase, over the real one: each block a dashed ink-2 outline (L.GUESS) traced on through a
           // mask (the dashes stay put while it draws), an ink-2 fill at 25 % where a row says, a solid tread flash
           // (stairs 3 and 7, 7g) and the dashed riser flashes (7f, 7g: the left edge of stair n + 1 between the two
           // treads); dashed hairlines down to the white keys D4 to D5; its "?" above the top stair
           const gG = L.svg('g', { class: 'guess-stairs' }, mid)
-          const gFill = L.svg('g', {}, gG), gLine = L.svg('g', {}, gG), gFlash = L.svg('g', {}, gG)
+          // the real staircase's two golds (DECISIONS 85: the 8 px gap and the corner along the upper tread) are cut out
+          // of the dashed staircase's lines, fills and flashes wherever they stand, as the real staircase comes to full
+          const goldMask = L.svg('mask', { id: SID + '-gold', maskUnits: 'userSpaceOnUse', x: -200, y: -200, width: 2320, height: 1480 }, defs)
+          L.svg('rect', { x: -200, y: -200, width: 2320, height: 1480, fill: '#fff' }, goldMask)
+          const goldCut = [3, 7].map(() => [L.svg('rect', { width: 14, fill: '#000' }, goldMask), L.svg('rect', { width: 66, height: 12, fill: '#000' }, goldMask)])
+          const gCut = L.svg('g', { mask: `url(#${SID}-gold)` }, gG)
+          const gFill = L.svg('g', {}, gCut), gLine = L.svg('g', {}, gCut), gFlash = L.svg('g', {}, gCut)
           const guess = DH.map((h, i) => {
             const n = i + 1, cx = dX(n), tr = dTread(n), xa = cx - 56, xb = cx + 56
             const d = blockPath(xa, xb, tr, dFoot)
@@ -148,8 +161,8 @@
           }
           const flash = (t, t0, hold = 0.15, down = 0.6) => {
             if (t < t0) return 0
-            if (t < t0 + 0.08) return L.ease('power2.out')((t - t0) / 0.08)
-            return 1 - P(t, t0 + 0.08 + hold, down, 'none')
+            if (t < t0 + 0.15) return L.ease('power2.out')((t - t0) / 0.15)
+            return 1 - P(t, t0 + 0.15 + hold, down, 'none')
           }
           // the tread flashes to solid ink-2 (STORYBOARD 7g), the guess's own colour; the riser flashes are ink
           const treadFlash = { 3: flashLine(`M${dX(3) - 50} ${dTread(3)} L${dX(3) + 50} ${dTread(3)}`, L.C.ink2), 7: flashLine(`M${dX(7) - 50} ${dTread(7)} L${dX(7) + 50} ${dTread(7)}`, L.C.ink2) }
@@ -159,11 +172,11 @@
             const xr = dX(k + 1) - 56, y0 = dTread(k) - 1, y1 = dTread(k + 1)
             return flashLine(`M${xr} ${y0} L${xr} ${y1 + 6} Q${xr} ${y1} ${xr + 6} ${y1} L${dX(k + 1) + 50} ${y1}`)
           })
-          // its "?" (Outfit 600 64 px, ink-2), right-aligned to the top stair's right edge, baseline 250: centred on the
-          // column (HANDOFFS' x 1258) it stood in the path of the bead's hop onto stair 8 in white-d and major-d
+          // its "?" (Outfit 600 64 px, ink-2) beside the top stair (item 3): from world x 1360, baseline 330, so the
+          // bead's hops onto stair 8 and its echo ring on the held D5 (to x 1336) pass clear of it in both runs
           const qG = L.svg('g', { opacity: 0 }, gG)
-          const qT = L.svg('text', { x: dX(8) + 56, y: 250, 'text-anchor': 'end', fill: L.GUESS.stroke, style: "font: 600 64px 'Outfit', sans-serif", text: '?' }, qG)
-          const qC = [dX(8) + 56 - 16, 226]                               // the glyph's centre, for its pulses
+          const qT = L.svg('text', { x: 1360, y: 330, fill: L.GUESS.stroke, style: "font: 600 64px 'Outfit', sans-serif", text: '?' }, qG)
+          const qC = [1375.5, 306.5]                                       // the glyph's centre, for its pulses
           // 7g: a small ink arrow from each dashed tread up to the real tread above it (stairs 3 and 7)
           const arrows = [3, 7].map((n) => L.arrow(mid, { x1: dX(n), y1: dTread(n) - 3, x2: dX(n), y2: ST.tread(n, 2) + 4, color: L.C.ink, width: 3, head: 8 }))
           const gBead = L.svg('g', {}, mid)
@@ -200,19 +213,13 @@
             { y: 380, name: 'WHITE KEYS', fill: L.C.ink2, steps: ['T', 'S', 'T', 'T', 'T', 'S', 'T'] },
             { y: 450, name: 'MAJOR', fill: L.C.ink, steps: ['T', 'T', 'S', 'T', 'T', 'T', 'S'] },
           ]
-          const probe = L.svg('text', { x: 340, y: 380, opacity: 0, style: STEPF, text: 'T S T T T S T' }, hud)
-          const colX = [0, 2, 4, 6, 8, 10, 12].map((i) => 340 + 30 + 37 * i / 2)   // replaced by the probe once the fonts are in
+          // the steps on a 46 px pitch (item 8: at the font's own spacing the seven read as one word), the first
+          // letter's left edge at x 340
+          const colX = [0, 1, 2, 3, 4, 5, 6].map((k) => 354 + 46 * k)
           for (const R of ROWS) {
             R.nameEl = L.svg('text', { x: 140, y: R.y, fill: R.fill, opacity: 0, style: MONO, text: R.name }, hud)
-            R.els = R.steps.map((s) => L.svg('text', { y: R.y, fill: R.fill, opacity: 0, 'text-anchor': 'middle', style: STEPF, text: s }, hud))
+            R.els = R.steps.map((s, k) => L.svg('text', { x: colX[k], y: R.y, fill: R.fill, opacity: 0, 'text-anchor': 'middle', style: STEPF, text: s }, hud))
           }
-          L.afterFonts(() => {
-            for (let k = 0; k < 7; k++) {
-              const i = 2 * k
-              colX[k] = (probe.getStartPositionOfChar(i).x + probe.getEndPositionOfChar(i).x) / 2
-            }
-            for (const R of ROWS) R.els.forEach((el, k) => el.setAttribute('x', f1(colX[k])))
-          })
           // "D major" (serif italic 120 px at x 140, baseline 300), its "D" a text of its own so it can pulse on "named"
           const dmG = L.svg('g', { opacity: 0 }, hud)
           const dmD = L.svg('text', { x: 140, y: 300, fill: L.C.ink, style: SERIF, text: 'D' }, dmG)
@@ -229,16 +236,19 @@
           // stair lights (40 % chrome, L.light: up 0.3 s, back 0.4 s, linear): major-d's landings; the gold pair's
           // upper stairs on "fall"; stair 1 on "first note". The larger light (up 0.4, back 0.8) for stairs 3 and 7 on
           // "notes", in CU-D, where a stair is a large area
-          const LIT = { 1: [A.first], 2: [], 3: [], 4: [A.fall], 5: [], 6: [], 7: [], 8: [A.fall] }
+          // stairs 3 and 7 light with their black keys on "black" and "keys" (F-keys-D, 7h)
+          const LIT = { 1: [A.first], 2: [], 3: [A.black], 4: [A.fall], 5: [], 6: [], 7: [A.keys22], 8: [A.fall] }
           for (let k = 0; k < 8; k++) LIT[k + 1].push(MD(k))
           const LITL = { 3: [A.notes], 7: [A.notes] }
           const lit = (t, n) => Math.max(L.light(t, LIT[n]), LITL[n] ? L.light(t, LITL[n], 0.4, 0.8) : 0)
           const SCALE = { 3: [A.third], 7: [A.seventh] }
-          // riser pulses: the bar grows 15 % and its label scales 1.25 (as group B's): the gold pair on "fall"; every
-          // riser in turn on "Keeping the pattern"
+          // riser pulses: the bar grows 15 % and its label scales 1.25 (as group B's): every riser in turn on "the major
+          // pattern" (7e, on C, as the real staircase is back); the gold pair on "fall"; every riser in turn on "Keeping
+          // the pattern"
           const GROW = { 1: [], 2: [], 3: [A.fall], 4: [], 5: [], 6: [], 7: [A.fall] }
           const GROWL = { 1: [], 2: [], 3: [A.fall], 4: [], 5: [], 6: [], 7: [A.fall] }
           for (let n = 1; n <= 7; n++) {
+            GROW[n].push(A.pattern19 + 0.1 * (n - 1)); GROWL[n].push(A.pattern19 + 0.1 * (n - 1))
             GROW[n].push(A.keeping + 0.15 * (n - 1))
             if (n <= 5) GROWL[n].push(A.keeping + 0.15 * (n - 1))     // risers 6 and 7 sit at F-keys-D's top edge
           }
@@ -251,12 +261,26 @@
           WHITE_D.forEach((m, k) => { addKey(m, FILL(k)); addKey(m, A.whiteK + 0.06 * k) })
           addKey(2, A.doh); addKey(4, A.ray); addKey(5, A.mee); addKey(2, A.d18)
           WHITE_D.forEach((m, k) => addKey(m, A.climbW + 0.06 * k))
-          addKey(6, A.black); addKey(13, A.keys22); addKey(6, A.fs); addKey(13, A.cs)   // and again as each is named
+          addKey(6, A.fs); addKey(13, A.cs)                                // as each is named
           const KEYLONG = { 2: [A.note] }
           // labels a framing would cut at the frame's edge leave before it and return after it: stair 1's letter in
           // CU-D (its column is cut by the left edge); riser 7's label in F-keys-D (above the frame's top)
           const edgeName1 = (t) => clamp(1 - P(t, A.push - 0.1, 0.25) + P(t, A.crane + 0.5, 0.3))
           const edgeRiser7 = (t) => clamp(1 - P(t, A.crane - 0.05, 0.25) + P(t, A.pull + 0.5, 0.3))
+          // the names on the slide (item 4): C's letters leave over its first 30 % (up 10 px, power2.in) and D's arrive
+          // over its last 30 % (from 10 px below), all eight together, so no frame holds a stair's two letters at once
+          const slideNames = (t, t0, T, from, to) => {
+            const out = P(t, t0, 0.3 * T, 'power2.in'), inn = P(t, t0 + 0.7 * T, 0.3 * T, 'power2.out')
+            return [{ text: from, a: 1 - out, dy: -10 * out }, { text: to, a: inn, dy: 10 * (1 - inn) }]
+          }
+          // the strip (items 9 and 10): dimmed with the staircase under the card, back to full as the card leaves (Tavi's
+          // "Same white keys" is about it); gone through CU-D, where only its tops showed in the caption band, and back
+          // with the crane onto the keys
+          // (from the staircase's dim, over 0.8 s, power1.in, so it is still settling as the card lands)
+          const stripA = (t) => (1 - 0.75 * P(t, A.act2, 0.8, 'power1.in') * (1 - P(t, A.cardOut + 0.1, 0.45))) * (1 - P(t, A.push, 1.0, 'power2.inOut') * (1 - P(t, A.crane, 1.0, 'power2.inOut')))
+          // the top-left lane ("Predict." and the pills) eases 50 px left with the push into F-white and back with the pull
+          // out (item 5): there white-d's bead drops onto the dashed stair 1 and rises off it 27 px from "No: it changes"
+          const laneDx = (t) => -50 * P(t, A.pz, 4.3, 'sine.inOut') * (1 - P(t, A.now, 1.0, 'power2.inOut'))
 
           L.clock(tl, D, (t) => {
             cam.apply(t)
@@ -277,9 +301,11 @@
               stair: (n) => {
                 let names
                 if (t < A.back) names = [{ text: LET_C[n - 1], a: offA }]
-                else names = L.swap(t, A.slide, n - 1, LET_C[n - 1], LET_D[n - 1]).map((it) => ({ ...it, a: it.a * onA }))
+                else names = slideNames(t, A.slide, 0.9, LET_C[n - 1], LET_D[n - 1]).map((it) => ({ ...it, a: it.a * onA }))
                 if (n === 1) names = names.map((it) => ({ ...it, a: it.a * edgeName1(t) }))
-                if (n === 3 || n === 7) { const sc = labelPulse(t, n === 3 ? A.fs : A.cs); names = names.map((it) => ({ ...it, scale: sc })) }
+                // stair 3's and stair 7's letters, the two the pattern changed, scale as the check lands on "changes" and
+                // as their keys are named
+                if (n === 3 || n === 7) { const sc = labelPulse(t, [A.changes + 0.45, n === 3 ? A.fs : A.cs]); names = names.map((it) => ({ ...it, scale: sc })) }
                 return { lit: lit(t, n), scale: SCALE[n] ? L.pulse(t, SCALE[n], 'tile') : 1, names }
               },
               riser: (n) => {
@@ -290,6 +316,17 @@
                 return { state: semi ? 'semi' : 'tone', scale: L.pulse(t, GROW[n], 'bar'), labels }
               },
             })
+            // the golds' cut-outs in the dashed staircase, where the real staircase's two semitones stand now
+            {
+              const k = clamp((stA - 0.25) / 0.75)
+              ;[3, 7].forEach((n, i) => {
+                const x = ST.riserX(n, w), yLo = ST.tread(n, s0), yHi = ST.tread(n + 1, s0)
+                const [gap, corner] = goldCut[i]
+                gap.setAttribute('x', f1(x - 7)); gap.setAttribute('y', f1(yHi - 6)); gap.setAttribute('height', f1(yLo - yHi + 8))
+                corner.setAttribute('x', f1(x + 1)); corner.setAttribute('y', f1(yHi - 6))
+                gap.setAttribute('fill-opacity', k.toFixed(3)); corner.setAttribute('fill-opacity', k.toFixed(3))
+              })
+            }
             // stair 3's and stair 7's letters glow as "F sharp" and "C sharp" land on their keys (accents)
             glowLab.forEach((el, i) => {
               el.setAttribute('cx', f1(ST.colX(i ? 7 : 3, w))); el.setAttribute('cy', f1(ST.foot(s0) - 25))
@@ -301,7 +338,9 @@
             const uW = P(t, A.guess + 0.25, 0.6, 'none')
             const nameA = (t0) => P(t, t0, 0.2) * (1 - P(t, GONE, 0.3))
             const nameDy = (t0) => 20 * (1 - P(t, t0, 0.6, 'power2.out'))
+            const sA = stripA(t)
             kb.draw({
+              a: sA,
               key: (m) => {
                 const f = lerp(lerp(inSet(CMAJ, m), inSet(WHITE_D, m), uW), inSet(DMAJ, m), uS)
                 let sc = KEYP[m] ? L.pulse(t, KEYP[m], 'key') : 1
@@ -313,6 +352,13 @@
               },
               hair: { a: stA, w, s0 },
             })
+            // F#4 and C#5 flash with their letters on "changes" (to 50 %), and with their stairs on "black" and "keys"
+            // (to 75 %: up 0.15 s, held 0.1 s, back 0.35 s)
+            for (const [m, t0] of [[6, A.black], [13, A.keys22]]) {
+              const e = Math.max(0.75 * L.env(t, t0, 0.15, 0.1, 0.35), 0.5 * L.env(t, A.changes + 0.45, 0.15, 0.1, 0.6)) * sA
+              keyFlash[m].setAttribute('opacity', e.toFixed(3))
+              keyFlash[m].setAttribute('display', e <= 0.004 ? 'none' : 'inline')
+            }
 
             // Tavi's dashed staircase: drawn on stair by stair (7b); filled ink-2 at 25 % in turn and clear (7c), on "doh
             // ray mee" (stairs 1 to 3) and as the bead lands in white-d (held until the pull); the flashes; gone at 195.4
@@ -333,7 +379,7 @@
                 // its hairline draws down to its white key once the stair has drawn
                 const hu = P(t, DRAW(n) + 0.3, 0.25, 'power2.out')
                 G.hair.setAttribute('y2', f1(dFoot + (760 - dFoot) * hu))
-                G.hair.setAttribute('opacity', (hu > 0 ? 0.7 + 0.3 * bright : 0).toFixed(3))
+                G.hair.setAttribute('opacity', (hu > 0 ? (0.7 + 0.3 * bright) * stripA(t) : 0).toFixed(3))
                 G.hair.setAttribute('stroke', bright > 0.01 ? `rgb(${[168, 179, 191].map((v, i) => Math.round(lerp(v, [230, 237, 243][i], bright))).join(',')})` : L.GUESS.stroke)
               }
               for (const n of [3, 7]) {
@@ -346,16 +392,17 @@
                 if (k === 2 || k === 6) e = Math.max(e, flash(t, A.places, 0.3, 0.7))
                 F.g.setAttribute('opacity', e.toFixed(3))
               })
-              // the "?": lands as the top stair has drawn, scales 1.2 on "same scale?", grows through "changes" and
-              // fades at its end (power4.in: under 0.2 s at the part-faded alphas, so it never sits as a dim label)
-              const qa = P(t, DRAW(8) + 0.35, 0.25) * (1 - P(t, A.changes, 1.0, 'power4.in'))
-              const qs = L.pulse(t, A.same, 'label') * (1 + 0.35 * P(t, A.changes, 1.0, 'none'))
+              // the "?": lands as the top stair has drawn, scales 1.2 on "same scale?", and shrinks away on "changes"
+              // (0.35 s, power2.in: about 0.1 s at the part-faded alphas, so it never sits as a dim label; item 11)
+              const qa = P(t, DRAW(8) + 0.35, 0.25) * (1 - P(t, A.changes, 0.35, 'power2.in'))
+              const qs = L.pulse(t, A.same, 'label') * (1 - 0.35 * P(t, A.changes, 0.35, 'power2.in'))
               const qdy = 12 * (1 - P(t, DRAW(8) + 0.35, 0.5, 'power2.out'))
               qG.setAttribute('opacity', qa.toFixed(3))
               qG.setAttribute('transform', `translate(${f1(qC[0])} ${f1(qC[1] + qdy)}) scale(${qs.toFixed(4)}) translate(${f1(-qC[0])} ${f1(-qC[1])})`)
             }
             // 7g's two arrows, rising on "a semitone low", gone with the dashed staircase
-            arrows.forEach((ar) => ar.draw(P(t, A.low, 0.35, 'power2.out'), (t >= A.low ? 1 : 0) * gA))
+            // stair 7's leaves before the crane, which would cut it at the frame's top edge (item 9)
+            arrows.forEach((ar, i) => ar.draw(P(t, A.low, 0.35, 'power2.out'), (t >= A.low ? 1 : 0) * gA * (i ? 1 - P(t, A.crane - 0.35, 0.3) : 1)))
 
             // the chrome beads: white-d's on the dashed treads (7d), major-d's on the real ones (7e); each drops onto
             // stair 1, hops up a stair on each note, sends an echo ring on its held D5 and leaves as its sound ends
@@ -385,41 +432,39 @@
             {
               const u = P(t, A.predict, 0.7, 'power1.out')
               predT.setAttribute('opacity', (P(t, A.predict, 0.2) * (1 - leave)).toFixed(3))
-              predT.setAttribute('transform', `translate(${f1(-30 * lu)} ${f1(24 * (1 - u))})`)
+              predT.setAttribute('transform', `translate(${f1(-30 * lu + laneDx(t))} ${f1(24 * (1 - u))})`)
             }
-            // the pills land on "Is it still doh ray mee?" and leave with the ring timer as the pause ends: in F-white the
-            // bead's drop onto the dashed stair 1 (screen x 420 to 476, from y 423) would cross "No: it changes" (to x 443,
-            // y 497). They come back once the pull has landed, for the check on "changes"
+            // the pills land on "Is it still doh ray mee?" and stay up through the listen (item 5), the lane easing left
+            // in F-white; on "changes" "No" gains its check and scales, "Yes" drops away; both leave on "climb"
             pills.forEach((p, i) => {
-              const t0 = A.is + 0.3 * i, t1 = A.pillsBack + 0.1 * i
-              const second = t >= t1
-              const a1 = P(t, t0, 0.25) * (1 - P(t, A.pzEnd, 0.3))
+              const t0 = A.is + 0.3 * i
               const out = i === 0 ? P(t, A.changes + 0.1, 0.4) : leave
-              const a2 = P(t, t1, 0.25) * (1 - out)
-              const u = P(t, second ? t1 : t0, 0.5, 'power3.out')
-              const away = second ? 0 : P(t, A.pzEnd, 0.3, 'power2.in')
-              const check = i === 1 ? P(t, A.changes, 0.3, 'power2.out') : 0
+              const a = P(t, t0, 0.25) * (1 - out)
+              const u = P(t, t0, 0.5, 'power3.out')
+              const check = i === 1 ? P(t, A.changes, 0.45, 'power2.out') : 0
               const sc = i === 1 ? L.pulse(t, A.changes, 'key', { long: true }) : 1
-              const dy = i === 0 ? 10 * P(t, A.changes + 0.1, 0.4, 'power2.in') : 0
-              p.draw({ alpha: Math.max(a1, a2), scale: sc, check, dx: -30 * (1 - u) - 30 * away - 30 * lu, dy })
+              const dy = i === 0 ? 14 * P(t, A.changes + 0.1, 0.4, 'power2.in') : 0
+              p.draw({ alpha: a, scale: sc, check, dx: -30 * (1 - u) - 30 * lu + laneDx(t), dy })
             })
             ring.draw(t, A.pz, A.pzEnd - A.pz)
             // the step rows: "WHITE KEYS" once the pills have gone, a letter landing on each word as its dashed riser
             // flashes; "MAJOR" and its row with the first word; both leave before the crane
             {
-              const out = 1 - P(t, A.crane - 0.3, 0.2)
+              // the rows leave over 0.4 s before the crane (item 11: 0.2 s read as a cut), drifting 24 px left
+              const out = 1 - P(t, A.crane - 0.5, 0.4)
+              const ox = -24 * P(t, A.crane - 0.5, 0.4, 'power2.in')
               const land = (el, t0) => {
                 const a = P(t, t0, 0.15) * out
                 const sc = 1 + 0.5 * (1 - P(t, t0, 0.6, 'power1.out'))
                 const cx = parseFloat(el.getAttribute('x')) || 400
                 const yb = parseFloat(el.getAttribute('y'))
                 el.setAttribute('opacity', a.toFixed(3))
-                el.setAttribute('transform', `translate(${f1(cx)} ${f1(yb - 17)}) scale(${sc.toFixed(4)}) translate(${f1(-cx)} ${f1(-yb + 17)})`)
+                el.setAttribute('transform', `translate(${f1(cx + ox)} ${f1(yb - 17)}) scale(${sc.toFixed(4)}) translate(${f1(-cx)} ${f1(-yb + 17)})`)
               }
               const nameIn = (R, t0) => {
                 const u = P(t, t0, 0.7, 'power2.out')
                 R.nameEl.setAttribute('opacity', (P(t, t0, 0.2) * out).toFixed(3))
-                R.nameEl.setAttribute('transform', `translate(${f1(-30 * (1 - u))} 0)`)
+                R.nameEl.setAttribute('transform', `translate(${f1(-30 * (1 - u) + ox)} 0)`)
               }
               nameIn(ROWS[0], A.climb + 0.24)
               nameIn(ROWS[1], STEPS[0])
@@ -432,7 +477,7 @@
                   const sc = L.pulse(t, [A.short, A.places], 'label', { long: true })
                   if (t >= A.short - 0.01) {
                     const cx = parseFloat(el.getAttribute('x')) || 400
-                    el.setAttribute('transform', `translate(${f1(cx)} ${f1(R.y - 17)}) scale(${sc.toFixed(4)}) translate(${f1(-cx)} ${f1(-R.y + 17)})`)
+                    el.setAttribute('transform', `translate(${f1(cx + ox)} ${f1(R.y - 17)}) scale(${sc.toFixed(4)}) translate(${f1(-cx)} ${f1(-R.y + 17)})`)
                   }
                 }
               }

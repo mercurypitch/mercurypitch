@@ -25,8 +25,10 @@ frame P + j, P = filmStart * FPS. The renderer picks the frame for film frame
 n as floor((n / FPS - start) * FPS) into frames extracted from media-start
 (ffmpeg -ss, fps=FPS:round=up on millisecond timestamps). So the tags are
 written in frames: the clip starts half a frame before its first film frame
-and ends half a frame after its last, and media-start sits half a frame past
-the wanted source frame. Every value is then half a frame from any rounding
+(or at the scene's own start, when the pass is already running there, so a
+lab render's frame at scene time 0, which is no film frame, shows it too) and
+ends half a frame after its last, and media-start sits half a frame past the
+wanted source frame. Every value is then half a frame from any rounding
 edge, three-decimal rounding cannot tip it, and film frame n shows pass frame
 n - P exactly, across scene cuts too (no repeated or skipped frame).
 
@@ -84,7 +86,7 @@ def window(pass_id, scene_id, lead=0.0):
     n1 = min(s1, P + N - 1 - k)
     if n1 - n0 + 1 < 2:
         return None
-    start = max(sc['start'], (n0 - 0.5) / fps)      # half a frame before n0 (never before the scene)
+    start = sc['start'] if n0 == s0 else (n0 - 0.5) / fps   # half a frame before n0, or the scene's start
     ds = round(start - sc['start'], 3)
     vc = math.ceil((sc['start'] + ds) * fps - 1e-6)  # the film frame the renderer counts from
     assert vc == n0, (pass_id, scene_id, vc, n0)
@@ -107,7 +109,7 @@ def seg_window(seg, scene_id):
     n1 = min(s1, P + seg['frames'] - 1, seg['until'] + 1)
     if n1 - n0 + 1 < 2:
         return None
-    start = max(sc['start'], (n0 - 0.5) / fps)
+    start = sc['start'] if n0 == s0 else (n0 - 0.5) / fps
     ds = round(start - sc['start'], 3)
     vc = math.ceil((sc['start'] + ds) * fps - 1e-6)
     assert vc == n0, (seg['shot'], scene_id, vc, n0)
