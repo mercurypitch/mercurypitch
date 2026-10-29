@@ -1620,3 +1620,20 @@ Note: the lanes' memory gate read a stale cgroup path after the 21:00 restart (f
 - Next slots, in order: A round 2 (A-fix2-msg), critic D-03 (critics/D3.txt; first copy the three
   clips to $S/l4entr/d3/<scene>/clip.mp4), then E-02 / F-02 as E and F hand back (E2.txt, F2.txt,
   copies in e2/ and f2/), C small (C-fix2-msg), B small (B-fix4-msg), then A-03, C-03, B-04.
+- 20:11 builder E handed back round 2 (E-01 items; report saved $S/l4entr/E-round2-report.txt).
+  Clips now 60 fps with hosts (lab/s12-sing/clip.mp4, lab/s13-your-turn/clip.mp4; round 1 kept as
+  clip-r1.mp4; rendered via lab/s12-sing/tools/hostpass60.sh). Path 6 px (luma 150, lit 202, fill 27,
+  ground 16.5; phone still lab/s13-your-turn/phone-400x225.png); risers ride their treads, gold gone
+  by 343.94; reverse tip 403.944-405.164, Merc on 6p^2-8p^3+3p^4 (times kept); bead hops 0.18 s
+  centred on onsets (within ~25 ms); band thins/cools in place; "wait on ti" from its left edge;
+  Tavi 300 at (1800, 840), >= 20.6 px from lanes. Holds s12 0.3/30, s13 0.7/30 (from 1.2).
+  Seams: S11-S12 10, S12-S13 1440 px over 16 (all hosts), S13-S14 10. check: 1 layout error (s06).
+- 20:20 critic D-03 launched on frozen copies in $S/l4entr/d3/ (report to review/component-D-03/).
+  Agents now: F + D-03 (cap).
+- 20:3x docs aligned to E's build: DECISIONS 99; board 12b, 12c, 12d, 13b, 13c, m12 row; HANDOFFS
+  § The guide (S12), § S12a's tip, § The guide in S13, § S13d's reverse tip; BUILD-GUIDE s12, s13
+  (backups $S/l4entr/*.before-99.md).
+- Next slots, in order: A round 2 (A-fix2-msg), critic E-02 (copy lab/s12-sing/clip.mp4 and
+  lab/s13-your-turn/clip.mp4 to $S/l4entr/e2/<scene>/clip.mp4 first; critics/E2.txt), F-02 when F
+  hands back (f2/; F2.txt), C small (C-fix2-msg), B small (B-fix4-msg), then A-03, C-03, B-04.
+  When D-03 returns: save its text verbatim to review/component-D-03/REPORT.md, LEDGER row, triage.

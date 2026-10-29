@@ -810,3 +810,33 @@ replaced it. The builder's record: critics never read it.
       cascades and pulses gone: holds 0.3 s per 30 s. The credit clears the chips by 86 px. Each
       answer label's glow is now a filter on its own text, not a blurred copy of it, so the full
       check finds no layout errors in S9 to S11.
+
+99. **S12 and S13 after builder E's round 2 (component critic E-01's items): the board takes the
+    build's numbers where they differ, and names every beat tied to a word.**
+    - **Merc's breath keeps its times (404.0 to 405.2) on a new curve, 6p² − 8p³ + 3p⁴**: no speed
+      at either end, three quarters of the way by p 0.544. On power2.inOut his body cleared stair 1
+      only at 404.727; on this curve stair 1's block can grow from 404.656, as decision 96 asks, and
+      the staircase is still by 405.164, leaving a 0.3 s settle that the Mercs' idle keeps alive.
+      The reverse tip's other times are in HANDOFFS § S13d's reverse tip; the end state (§ E to F)
+      is unchanged, and S13's last frame against S14's first differs by 10 at most.
+    - **The count-in's bead drops 184 px over 0.35 s from 393.89**, landing at 394.24 as before.
+      The 0.2 s drop left a 0.2 s hold before it. HANDOFFS § Beads' 0.2 s default stays for every
+      other bead.
+    - **The S12a blocks fade 344.24 to 344.96, as built.** The board and HANDOFFS had 343.7 to
+      344.3, written before the build; the built curve is kept because the risers now ride their
+      treads and fade with the blocks, so nothing stays where its stair was, and the gold pair
+      fades 343.70 to 343.99 (no gold pixel in the clip from 343.942).
+    - **S12's beads hop, centred on each onset** (HANDOFFS § The guide (S12)). The bead's 1.2 pulse
+      at each run's end (356.79, 372.32) and the run-end glow are out: neither was tied to a word.
+    - **The beats the board did not name are all tied to words and stay** (rows 12b, 12d and 13b
+      now name them): in S12 the house ring on "listen" (359.33), do's segment and the path's start
+      on "Try" (361.85), a sweep do to do over "octave up." (362.50 to 363.32), do's segment and the
+      house on "go?", ti's segment on b39's "tee,"; in S13 a sweep do to do on "Otherwise,"
+      (377.66), the lane names on "doh," "ray," "mee," and "tee,", the top do's name on "octave",
+      lights along do's segment on "my note," and the top do's on "up.", the top do's segment on
+      "go.", the stop line's pulse on "immediately", and the "volume." swell (382.37), which now
+      eases back over the word's last 0.5 s so the frame is still moving when the word ends.
+    - **Measured by builder E** (60 fps clips with hosts): S12 holds 0.3 s per 30 s, longest 0.2;
+      S13 0.5 s inside plus the 0.3 s settle (0.7 per 30 s), longest 0.1, from 1.2 s; S12 to S13
+      1440 px over 16, all of it the hosts (the guide region 0); S11 to S12 and S13 to S14 at most
+      10. The fresh critic E-02 verifies all of it.

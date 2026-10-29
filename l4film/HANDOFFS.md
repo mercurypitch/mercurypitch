@@ -398,13 +398,17 @@ risers measured (no labels), hairlines; the strip with D major's keys, F♯4 and
   path's start (600, 737), 22 px clear of the names: Merc's 348.0 to 348.19, Tavi's 363.53 to
   363.72. A bead's centre crosses into the next lane within 40 ms of the voice's onset of that
   note, measured from the sung track (DECISIONS 96), and the pulses on the hold and the landing ring
-  key to the same onsets. A bead parks on do's segment with its right edge at x 1440 at the latest
-  (centre 1418 or left of it), never past the path's end.
+  key to the same onsets. As built (DECISIONS 99): each step is a 0.18 s hop (`hopAt`, lift 10)
+  placed so its passage into the note's lane is centred on the onset (a tone's two crossings sit
+  about 21 ms either side of it); the onsets come from the stems (note changes within 4 ms of FACTS
+  68), and the two attacks out of silence, the first note and do, are keyed at FACTS + 20 ms. A bead
+  parks on do's segment with its right edge at x 1440 at the latest (centre 1418 or left of it),
+  never past the path's end; no pulse or glow marks a run's end.
 - **S12a's tip (343.7 to 345.5).** The rows D4 to D5 (world k 2 to 14) stretch onto lanes 0 to 12
-  (the names carry no octave) and the other rows fade; the blocks fade (343.7 to 344.3) while each
+  (the names carry no octave) and the other rows fade; the blocks fade (344.24 to 344.96, as built) while each
   tread slides and stretches onto its segment, ti's onto the hold; every riser rides with its stair
-  (no part of one stays where the stair was) and fades with the blocks, the gold pair gone by
-  343.99; the top house rides to (1381,
+  (no part of one stays where the stair was) and fades with the blocks (the tone risers 344.24 to
+  344.96), the gold pair fading 343.70 to 343.99; the top house rides to (1381,
   116); the bottom house and the stair names fade (343.7 to 344.0); the lane names fade in (345.3 to
   345.6) **(provisional: the lab decides the curves)**.
 - **S12 to S13 (372.92).** The S12 guide with every segment lit, the orange bead on D4's segment end
@@ -423,8 +427,9 @@ risers measured (no labels), hairlines; the strip with D major's keys, F♯4 and
   (ti, do) show a 4 px gap; the other five are empty. The fills replace S12's lane rules over 373.24
   to 373.54. The cursor a vertical chrome line, 4 px with a soft glow, spanning the lanes; the
   segment under it at full chrome with the same glow, back to 70 % as the cursor leaves it (about
-  0.1 s each way). The count-in's bead drops onto (1090, 700), the middle of do's segment, 28 px
-  clear of the names, landing at 394.24 and gone by 395.24. Merc moves to size 300 at (240, 840)
+  0.1 s each way). The count-in's bead drops 184 px onto (1090, 700), the middle of do's segment,
+  over 0.35 s (from 393.89; the drop's default of 0.2 s left a hold before it), 28 px clear of the
+  names, landing at 394.24 and gone by 395.24. Merc moves to size 300 at (240, 840)
   (body x 160 to 320); Tavi to size 300 at (1800, 840), her recap corner (body x 1720 to 1880, top y
   648: 20 px clear of the lanes' end, the keep-out, and 40 px from the frame's edge).
 - **The care block (S13).** Left-aligned at x 380 (DECISIONS 94: Merc's talking arcs reach x 351),
@@ -449,8 +454,14 @@ risers measured (no labels), hairlines; the strip with D major's keys, F♯4 and
   or more clear of it. Then, in this order and overlapping: rows C♯5 to G5 fade in above; the strip
   rises from y +240 (power3.out), its hairlines fading in over its last 0.2 s; the names fade in at
   baseline 724; both houses fade in lit. Everything of the staircase is still by about 405.15.
-  Merc moves 404.0 to 405.2 from (240, 840) to (110, 840), at 300 throughout, clear of every row
-  and stair as he goes (the rows are masked); Tavi stays at (1800, 840). The frame settles for about
+  Merc moves 404.0 to 405.2 from (240, 840) to (110, 840), at 300 throughout, on 6p² − 8p³ + 3p⁴
+  (no speed at either end, three quarters of the way by p 0.544), clear of every row and stair as
+  he goes (the rows are masked); Tavi stays at (1800, 840). As built (DECISIONS 99): the narrowing
+  403.944 to 404.844 (power2.inOut, the path 6 px to 3 px), the fills out and C's rows in 403.944 to
+  404.444, blocks 2 to 8 404.564 to 405.064 (power2.out), stair 1's 404.656 to 405.156 (from the
+  moment Merc's body is 20 px clear), the rows above 404.684 to 404.984, the strip 404.724 to
+  405.124 (power3.out) with its hairlines from 404.924, the stair names 404.884 to 405.134, the
+  houses 404.944 to 405.144; the staircase still from 405.164. The frame settles for about
   0.3 s before the cut, the Mercs' idle keeping it alive **(provisional: the lab decides the curves
   within these limits)**.
 

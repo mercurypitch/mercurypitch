@@ -677,8 +677,8 @@ the hero view, y 323) after that.
   **provisional**, the lab decides the curves); the guide (lanes x 600 to 1440, 46 px; names
   right-aligned at x 556; the path's amber band at 35 %, lighting to full behind the bead; "wait"
   over the hold; the house at (1381, 116)); `L.bead4` (each bead drops onto the path's start (600,
-  737) and rides it, stepping up a lane on each note at the onsets above, lifting and dimming in the
-  rest; DECISIONS 96: each crossing within 40 ms of the voice's onset as measured from the sung
+  737) and rides it, stepping up a lane on each note at the onsets above (a 0.18 s hop centred on
+  each onset; DECISIONS 99), lifting and dimming in the rest; DECISIONS 96: each crossing within 40 ms of the voice's onset as measured from the sung
   track, and a bead parks with its right edge at x 1440 at the latest); `L.arrow`; the chip "one octave up" (`L.pill`, mono 30 px); `L.echoRings`.
 - Merc: m12-blue (feet (240, 840)) and m12-orange (feet (1700, 840)), rendered at 520 and shown at
   360, front, turned toward each other; Merc drops in at `at('b39', 'start', -1.1)` (342.50) and
@@ -705,7 +705,8 @@ the hero view, y 323) after that.
   path, a solid 6 px chrome line at 70 %, 372.94 to 373.54; the lane rules giving way to faint fills
   on the eight named lanes, 373.24 to 373.54; the names in ink-2); "Your turn." (serif italic 120 px at x 380, baseline 200); the care block
   (HANDOFFS § The care block: every line, size, baseline and break as given); the count-in's bead
-  (dropping onto (1090, 700), landing at `at('count-in')`, gone 1.0 s later); the cursor (a vertical
+  (dropping 184 px onto (1090, 700) over 0.35 s, landing at `at('count-in')`, gone 1.0 s later;
+  DECISIONS 99); the cursor (a vertical
   chrome line, 4 px with a soft glow, sweeping the lanes at your-turn's onsets, the segment under it
   at full chrome with the same glow); the reverse tip into the staircase on C (HANDOFFS § S13d's
   reverse tip, from `at('your-turn', 'end', 0.10)`, the staircase still by about 405.15:
@@ -714,8 +715,8 @@ the hero view, y 323) after that.
 - Merc: m12 (both). Over the guide's move Merc scales to 300 in place and Tavi to 300, moving to
   (1800, 840), her recap corner (20 px from the lanes' end, 40 px from the frame's edge); through
   your-turn both idle (the passes draw no arcs); over the breath, from `at('your-turn', 'end', 0.16)`
-  for 1.2 s, Merc moves to (110, 840) at 300, clear of every row and stair as he goes (the rows are
-  masked); Tavi stays.
+  for 1.2 s, Merc moves to (110, 840) at 300 on 6p² − 8p³ + 3p⁴ (DECISIONS 99), clear of every row
+  and stair as he goes (the rows are masked); Tavi stays.
 - Checks: nothing in S13 suggests the film or the app hears the viewer (no microphone, no listening
   ring, no ring timer, no Merc listening, nothing of the app's drawing over the turn); S12's marks
   leave first (372.94 to 373.24) while the band thins into the path in place (no frame without a

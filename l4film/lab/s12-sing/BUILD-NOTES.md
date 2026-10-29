@@ -156,3 +156,17 @@ Running notes so a container restart or a usage-limit pause can resume. Builder 
 - Handoffs (seek HOSTS=1 exact frames): S11 to S12 max 10; S12 to S13 1440 px over 16, all hosts
   (Merc 1261, Tavi 179), the guide 0; S13 to S14 max 10.
 - Text sweep: no run under 4.5:1 in either scene. merc-tags --check: 16 tags, 0 stale.
+- 19:59 S13 at 60 fps with hosts: holds 1.0 s inside (0.9 per 30), longest 0.3 (10.3 s, the pause at the
+  end of the drawn-out "volume.", 383.22; 20.9 s, before the count-in's drop, 393.82), final 0.3 (the
+  breath's settle, 405.12 on). Fixes: the "volume." swell held over the word (up 0.15 s from its start,
+  back over its last 0.5 s, sine.in, so it moves until the word ends at 383.44); the count-in's drop
+  lengthened to 0.35 s at the kit's own pull (184 px, from 393.89).
+- 20:11 S13 final: holds 0.5 s inside (0.5 per 30), longest 0.1; final hold 0.3 s (the settle); with
+  it, 0.8 s (0.7 per 30). Keep-outs from the clip (hosts' painted extent at threshold 24): Tavi's paint
+  from x 1708 (body 1720.5) against the lanes' end 1700; Merc's paint at stair 1's start (404.656)
+  between 242 and 223 (body 222.0, 20 px); segment 1 against Merc's paint at least 31 px.
+- npm run check: lint 0 errors, runtime 0, motion 0, contrast 59/59; layout 1 error, in s06 (129.21),
+  not mine. clock-lint silent on both; merc-tags --check 16 tags, 0 stale.
+- Clips: lab/s12-sing/clip.mp4, lab/s13-your-turn/clip.mp4 (60 fps, hosts); round 1 kept as clip-r1.mp4
+  and measure-r1. Sheets: lab/s12-sing/tip-sheet.png, lab/s13-your-turn/handover-sheet.png,
+  rev-sheet.png, phone-400x225.png.
