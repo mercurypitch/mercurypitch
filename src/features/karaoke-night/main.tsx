@@ -6,7 +6,10 @@
 // leaf stores directly — never the app shell (app-store).
 // ============================================================
 
+// quiet-console comes before every app module: it silences production
+// console narration before anything can log (src/lib/quiet-console.ts).
 import { render } from 'solid-js/web'
+import '@/lib/quiet-console'
 import '@/styles/dark-stage.css'
 import '@/styles/mixer-shared.css'
 import '@/styles/mobile-kit.css'
