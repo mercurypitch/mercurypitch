@@ -61,10 +61,17 @@ describe('the premium rooms on a short or a wide screen', () => {
   it('Ng slides keeps its bridge in a column on a wide screen', () => {
     const css = readFileSync(ROOMS['Ng slides'], 'utf8')
     const [room] = roomRules(css)
-    expect(room).toContain('max-width: calc(100dvh * 5 / 6);')
+    // vh first, so a WebView older than dvh keeps the column.
+    expect(room).toMatch(
+      /max-width: calc\(100vh \* 5 \/ 6\);\s*max-width: calc\(100dvh \* 5 \/ 6\);/u,
+    )
     expect(room).toContain('margin-inline: auto;')
-    // The river's dark either side, and the bridge's edges fading into it.
-    expect(room).toContain('box-shadow: 0 0 0 100vmax #05081a;')
-    expect(css).toMatch(/@media \(min-aspect-ratio: 5 \/ 6\)\s*\{\s*\.scene/u)
+    // The river's dark either side, and the bridge's edges fading into it
+    // under a veil each: a mask would draw the moving scene through it.
+    expect(room).toContain('box-shadow: 0 0 0 100vmax var(--ng-river);')
+    expect(css).toMatch(
+      /@media \(min-aspect-ratio: 5 \/ 6\)\s*\{\s*\.scene::before,\s*\.scene::after/u,
+    )
+    expect(css).not.toMatch(/mask-image/u)
   })
 })
