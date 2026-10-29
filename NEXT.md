@@ -1384,3 +1384,12 @@ Note: the lanes' memory gate read a stale cgroup path after the 21:00 restart (f
   $S/l4entr/BUILD-GUIDE.before-longfall.md): the general rule (from the frame's top for the fall's
   first 0.55 s, from y 323 after), S09, S11 and S12 checks.
 - Builder C: interim notice only (waiting on its own render); no report yet.
+- 13:42 FIXED A WATCHER BUG. queue.sh worker 2 (PID 11789, "m12-blue m12-orange") would have started
+  a second m12-orange the moment m12-blue finished, and the watcher (11384) only killed that bash 20-50 s
+  later, leaving the new pass orphaned; both passes write assets/merc/m12-orange-merc.part.webm with
+  ffmpeg -y, so it would have truncated worker 1's part file (4260/8438 frames, ~4 h). Killed bash 11789
+  (SIGKILL, bash only) and the watcher. The m12-blue pass itself (node 11792, now under PID 1) runs on:
+  7830/8438 at 13:39, ~3 s/frame, lands ~14:10. Its "exit" line will not reach worker-2.log; read
+  l4merc/logs/m12-blue.log instead. Worker 1 (11372, queue.sh m12-orange) untouched; whole-watch.sh
+  regenerates whole.js when m12-blue lands. Lesson: a queue that may start the next pass must be stopped
+  before the current one ends, never after.
