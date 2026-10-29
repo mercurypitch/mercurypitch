@@ -77,7 +77,7 @@ These are the rules that break things when ignored.
 | `lessons` | [spiral.ts](../../src/features/lessons/kit/spiral.ts) | 57.0k | Lesson spiral — the pitch spiral and the keyboard it unrolls into One control with three ways in: drag to turn the spiral and tap a bead... |
 | `guitar-night` | [guitar-night-score-voice-commands.ts](../../src/features/guitar-night/guitar-night-score-voice-commands.ts) | 43.9k | Guitar Night score voice commands — hands-free Rehearse controls The score room and its command overlay share this one capability-shaped... |
 | `drum-night` | [index.ts](../../src/features/drum-night/session/index.ts) | 32.2k | Drum Night session boundary — import, score, kit, and evidence coaching. |
-| `ear-lab` | [ThresholdDrillView.tsx](../../src/features/ear-lab/ThresholdDrillView.tsx) | 23.5k | ThresholdDrillView — every Ruler-A drill on the stage. |
+| `ear-lab` | [ThresholdDrillView.tsx](../../src/features/ear-lab/ThresholdDrillView.tsx) | 25.4k | ThresholdDrillView — every Ruler-A drill on the stage. |
 | `stem-mixer` | [stem-mixer-voice-commands.ts](../../src/features/stem-mixer/stem-mixer-voice-commands.ts) | 17.8k | StemMixer voice commands — the karaoke tab's own spoken set Registered by StemMixer for exactly its mount lifetime, which ends the global... |
 | `exercises` | [ExerciseShell.tsx](../../src/features/exercises/ExerciseShell.tsx) | 14.5k | ExerciseShell — shared chrome for every exercise runner Owns the layout that used to be duplicated across all 18 exercise components: the... |
 | `admin` | [AdminPremiumPerksPage.tsx](../../src/features/admin/AdminPremiumPerksPage.tsx) | 14.2k | AdminPremiumPerksPage — protected art and supporter access console THESIS: a premium background is not live until its exact art revision... |
@@ -93,12 +93,12 @@ These are the rules that break things when ignored.
 | `voice-control` | [useVoiceControlController.ts](../../src/features/voice-control/useVoiceControlController.ts) | 6.1k | useVoiceControlController — voice control's dispatcher and lifecycle Owns the listener (started/stopped with the persisted enable flag, e... |
 | `karaoke-room` | [karaoke-room-store.ts](../../src/features/karaoke-room/karaoke-room-store.ts) | 5.9k | The Karaoke room's memory: what it keeps across an unmount The room is a tab, and a tab unmounts every time the singer leaves it. |
 | `piano` | [piano-sampled-instrument.ts](../../src/features/piano/instrument/piano-sampled-instrument.ts) | 5.7k | Piano sampled instrument — lazy Salamander playback on one bounded graph Construction is deliberately inert. |
+| `first-note` | [first-note-own-songs.ts](../../src/features/first-note/first-note-own-songs.ts) | 5.1k | First note's own songs — which the phone has read, and a run's songs A song the singer imported and split in the Karaoke room is a song o... |
 | `play-along` | [useSongController.ts](../../src/features/play-along/useSongController.ts) | 5.0k | Shared song selection controller owns lazy catalogs, stale-safe staging, and leases. |
 | `challenges` | [ChallengeStage.tsx](../../src/features/challenges/ChallengeStage.tsx) | 4.9k | ChallengeStage — the Legend Attempt performed on the zen canvas "Sing it" no longer runs the plain sight-singing drill: the challenge's m... |
 | `zen` | [ZenPitchStage.tsx](../../src/features/zen/ZenPitchStage.tsx) | 4.9k | _(no header comment)_ |
 | `glass` | [GlassApp.tsx](../../src/features/glass/GlassApp.tsx) | 4.7k | Glass — the shattering voice mirror (P2: self-voice loop). |
 | `long-note` | [long-note-machine.ts](../../src/features/long-note/long-note-machine.ts) | 4.7k | Long note's room states — a pure reducer intro → starting → listen → hold → result, and Again round through starting with the same note (... |
-| `first-note` | [first-note-own-songs.ts](../../src/features/first-note/first-note-own-songs.ts) | 4.6k | First note's own songs — which the phone has read, and a run's songs A song the singer imported and split in the Karaoke room is a song o... |
 | `karaoke-night` | [KaraokeNightApp.tsx](../../src/features/karaoke-night/KaraokeNightApp.tsx) | 4.5k | KaraokeNightApp — the standalone Karaoke Night shell A separate entry surface from the in-app Karaoke tab: its own stage, song rails and... |
 | `guitar-tab-3d` | [GuitarTab3DView.tsx](../../src/features/guitar-tab-3d/GuitarTab3DView.tsx) | 4.4k | GuitarTab3DView — 3D-style falling-notes guitar tab playback A drop-in alternate renderer for the same falling-notes data the 2D "hero" v... |
 | `sing-room` | [sing-room-store.ts](../../src/features/sing-room/sing-room-store.ts) | 4.0k | The Sing room's state, held where the room is not AT MODULE SCOPE, and that is the whole point. |
@@ -130,8 +130,8 @@ These are the rules that break things when ignored.
 | `whats-new` | [whats-new-content.tsx](../../src/features/whats-new/whats-new-content.tsx) | 650 | What's New — the 0.9 line, in the visitor's terms One page for the whole release LINE, not one per version, because that is the granulari... |
 | `backgrounds` | [PremiumBackgroundPicker.tsx](../../src/features/backgrounds/PremiumBackgroundPicker.tsx) | 550 | PremiumBackgroundPicker — compact accessible stage gallery Locked cards intentionally render an atmospheric placeholder and never ask the... |
 | `session` | [useSessionSequencer.ts](../../src/features/session/useSessionSequencer.ts) | 450 | useSessionSequencer — drives a multi-item practice session item by item Between items it rewrites global musical context (key, scale, bpm... |
+| `tabs` | [constants.ts](../../src/features/tabs/constants.ts) | 450 | ── Tab ID constants Use these everywhere instead of raw strings. |
 | `keyboard` | [useKeyboardShortcuts.ts](../../src/features/keyboard/useKeyboardShortcuts.ts) | 400 | useKeyboardShortcuts — global hotkeys, mounted once by App One document-level keydown listener for the whole app. |
-| `tabs` | [constants.ts](../../src/features/tabs/constants.ts) | 400 | ── Tab ID constants Use these everywhere instead of raw strings. |
 | `jam` | [useJamRoomBackground.ts](../../src/features/jam/useJamRoomBackground.ts) | 300 | Jam room background controller — shared host selection and protected bytes A Jam background is room state, not a personal preference. |
 | `rooms` | [contract.ts](../../src/features/rooms/contract.ts) | 300 | The room contract. |
 | `recording` | [useRecordingController.ts](../../src/features/recording/useRecordingController.ts) | 250 | useRecordingController — sung input captured as editable notes Feeds mic frames through the shared live-pitch pipeline (@/lib/pitch-pipel... |
@@ -152,7 +152,7 @@ These are the rules that break things when ignored.
 | `merc` | [renderer.ts](../../src/lib/merc/renderer.ts) | 5.2k | Merc renderer — one canvas, one WebGL2 context, one simulated Merc mount() draws Merc into a container. |
 | `studio-fx` | [index.ts](../../src/lib/studio-fx/index.ts) | 5.1k | Studio FX — insert effect chains for Studio tracks and the master bus For a beginner, nothing needs choosing: `autoMixChain(role, clip)`... |
 | `guided-voice` | [index.ts](../../src/lib/guided-voice/index.ts) | 4.7k | Guided Voice — local assessment science and safety foundation |
-| `ear` | [banks.ts](../../src/lib/ear/banks.ts) | 4.4k | Ear Lab — identification item banks (Leap, Stack, Contour). |
+| `ear` | [banks.ts](../../src/lib/ear/banks.ts) | 4.5k | Ear Lab — identification item banks (Leap, Stack, Contour). |
 | `backgrounds` | [background-catalog.ts](../../src/lib/backgrounds/background-catalog.ts) | 3.2k | Background catalog — one typed registry for every performance environment Supporter sources are opaque protected keys, never public asset... |
 | `mirror` | [metrics.ts](../../src/lib/mirror/metrics.ts) | 2.6k | Voice Mirror — pure metrics over F0 frame streams. |
 | `transcription` | [transcription-score.ts](../../src/lib/transcription/transcription-score.ts) | 2.4k | Scoring a transcription against a tab Shared by `node scripts/transcribe-bench.mjs` and the Lab's transcription bench, so a number on scr... |
@@ -226,7 +226,7 @@ These are the rules that break things when ignored.
 | [sync-store.ts](../../src/stores/sync-store.ts) | 1.4k | ── Sync store One person, two devices, a room code between them. |
 | [drive-sync-store.ts](../../src/stores/drive-sync-store.ts) | 850 | ── Drive sync store The user's own Google Drive as the place a library survives. |
 | [settings-store.ts](../../src/stores/settings-store.ts) | 850 | Settings Store — every persisted user preference, plus its defaults `SettingsConfig` is the shape; `DEFAULT_SETTINGS` is the fallback use... |
-| [native-shell-store.ts](../../src/stores/native-shell-store.ts) | 700 | Native shell bridge — how a room and the native chrome reach each other The native shell (`apps/mercurypitch/src/shell/`) draws the botto... |
+| [native-shell-store.ts](../../src/stores/native-shell-store.ts) | 750 | Native shell bridge — how a room and the native chrome reach each other The native shell (`apps/mercurypitch/src/shell/`) draws the botto... |
 | [ear-lab-store.ts](../../src/stores/ear-lab-store.ts) | 650 | Ear Lab store — readings, ratings and calibration history. |
 | [ui-store.ts](../../src/stores/ui-store.ts) | 600 | UI Store — active tab, modal/library visibility, focus mode, first-run flags `setActiveTab` is the app's navigation primitive; `onTabTran... |
 | [karaoke-playlist-store.ts](../../src/stores/karaoke-playlist-store.ts) | 550 | Karaoke Playlist Store — persisted set lists + playback transport A playlist is a saved, reusable set list built from session groups and/... |
@@ -244,6 +244,7 @@ These are the rules that break things when ignored.
 | [annotation-store.ts](../../src/stores/annotation-store.ts) | 200 | Annotation Store — Sonic Visualiser-style annotation CRUD |
 | [walkthrough-store.ts](../../src/stores/walkthrough-store.ts) | 200 | Walkthrough Store — Track completed walkthroughs |
 | [echo-store.ts](../../src/stores/echo-store.ts) | 150 | Echo's records: the best at each level, the singer's root, the demo seen The live table of Echo's bests (its shape, its ordering and how... |
+| [experimental-features-store.ts](../../src/stores/experimental-features-store.ts) | 150 | Experimental features store — what this page shows, and the switches it reads at startup The build gives every experimental feature one d... |
 | [falling-notes-store.ts](../../src/stores/falling-notes-store.ts) | 150 | Falling Notes Store — Game state for Synthesia-style piano practice |
 | [glide-room-store.ts](../../src/stores/glide-room-store.ts) | 150 | A glide room's records: its bests, the easy note, the demo seen What each glide room keeps, made once for both (Lip roll's lip-roll-store... |
 | [practice-timer-store.ts](../../src/stores/practice-timer-store.ts) | 150 | Practice Timer Store — the voice-rest clock Off by default. |
@@ -301,7 +302,7 @@ These are the rules that break things when ignored.
 
 | Module | Entry point | LOC | What it is |
 |---|---|---|---|
-| `db-worker` | [index.ts](../../workers/db-worker/src/index.ts) | 39.6k | ── MercuryPitch DB Worker Generic CRUD REST API over Cloudflare D1, matching the contract of the frontend ServerAdapter (src/db/adapters/... |
+| `db-worker` | [index.ts](../../workers/db-worker/src/index.ts) | 39.9k | ── MercuryPitch DB Worker Generic CRUD REST API over Cloudflare D1, matching the contract of the frontend ServerAdapter (src/db/adapters/... |
 | `jam-worker` | [index.ts](../../workers/jam-worker/src/index.ts) | 1.4k | ── Jam Signaling Worker WebSocket upgrade router → Durable Object signaling relay. |
 
 <!-- END:GENERATED module-map -->
@@ -501,11 +502,11 @@ The headless preview lies in specific, repeatable ways:
 | `pnpm dev:seed:reset` | `node scripts/seed-dev-league.mjs --reset` |
 | `pnpm dev:uvr-worker` | `npx wrangler dev -c wrangler.uvr-dev.jsonc --port 8790 --var DB_API_URL:http://localhost:8788` |
 | `pnpm dev:runpod` | `cross-env VITE_OVERRIDE_ONNX_MODEL= VITE_UVR_WORKER=1 VITE_UVR_PROXY_PORT=8790 vite` |
-| `pnpm build` | `vite build && node scripts/assert-no-portable-console.mjs dist && node scripts/assert-glassworks-listing.mjs dist --unlisted && node scripts/assert-draft-lessons.mjs dist --hidden` |
-| `pnpm build:tours` | `cross-env VITE_API_BASE_URL= VITE_OVERRIDE_ONNX_MODEL= VITE_JAM_MOCK_SIGNALING=1 VITE_GOOGLE_ADS_TAG_ID= VITE_GA4_MEASUREMENT_ID= vite build && node scripts/assert-no-portable-console.mjs dist && node scripts/assert-glassworks-listing.mjs dist --unlisted && node scripts/assert-draft-lessons.mjs dist --hidden` |
-| `pnpm build:e2e` | `cross-env VITE_API_BASE_URL= VITE_E2E_LAB_ACCESS=1 VITE_JAM_MOCK_SIGNALING=1 VITE_GLASSWORKS_LISTED=1 VITE_DRAFT_LESSONS=1 VITE_GOOGLE_ADS_TAG_ID= VITE_GA4_MEASUREMENT_ID= vite build && node scripts/assert-piano-night-bundle.mjs dist && node scripts/assert-drum-night-bundle.mjs dist && node scripts/assert-first-paint-budgets.mjs dist && node scripts/assert-no-portable-console.mjs dist && node scripts/assert-glassworks-listing.mjs dist --listed && node scripts/assert-draft-lessons.mjs dist --shown` |
+| `pnpm build` | `vite build && node scripts/assert-no-portable-console.mjs dist && node scripts/assert-glassworks-listing.mjs dist --unlisted && node scripts/assert-draft-lessons.mjs dist --hidden && node scripts/assert-experimental-features.mjs dist --off` |
+| `pnpm build:tours` | `cross-env VITE_API_BASE_URL= VITE_OVERRIDE_ONNX_MODEL= VITE_JAM_MOCK_SIGNALING=1 VITE_GOOGLE_ADS_TAG_ID= VITE_GA4_MEASUREMENT_ID= vite build && node scripts/assert-no-portable-console.mjs dist && node scripts/assert-glassworks-listing.mjs dist --unlisted && node scripts/assert-draft-lessons.mjs dist --hidden && node scripts/assert-experimental-features.mjs dist --off` |
+| `pnpm build:e2e` | `cross-env VITE_API_BASE_URL= VITE_E2E_LAB_ACCESS=1 VITE_JAM_MOCK_SIGNALING=1 VITE_GLASSWORKS_LISTED=1 VITE_DRAFT_LESSONS=1 VITE_EXPERIMENTAL_FEATURES=1 VITE_GOOGLE_ADS_TAG_ID= VITE_GA4_MEASUREMENT_ID= vite build && node scripts/assert-piano-night-bundle.mjs dist && node scripts/assert-drum-night-bundle.mjs dist && node scripts/assert-first-paint-budgets.mjs dist && node scripts/assert-no-portable-console.mjs dist && node scripts/assert-glassworks-listing.mjs dist --listed && node scripts/assert-draft-lessons.mjs dist --shown && node scripts/assert-experimental-features.mjs dist --on` |
 | `pnpm build:e2e:devices` | `cross-env VITE_API_BASE_URL=http://localhost:8788 VITE_JAM_SIGNALING_URL=http://localhost:8787/api/jam VITE_GOOGLE_ADS_TAG_ID= VITE_GA4_MEASUREMENT_ID= vite build && node scripts/assert-no-portable-console.mjs dist` |
-| `pnpm build:dev` | `cross-env VITE_CONSENT_PREVIEW=true vite build --mode development && node scripts/assert-no-portable-console.mjs dist && node scripts/assert-glassworks-listing.mjs dist --listed && node scripts/assert-draft-lessons.mjs dist --shown` |
+| `pnpm build:dev` | `cross-env VITE_CONSENT_PREVIEW=true vite build --mode development && node scripts/assert-no-portable-console.mjs dist && node scripts/assert-glassworks-listing.mjs dist --listed && node scripts/assert-draft-lessons.mjs dist --shown && node scripts/assert-experimental-features.mjs dist --on` |
 | `pnpm preview` | `cross-env VITE_OVERRIDE_ONNX_MODEL= vite preview` |
 | `pnpm prod` | `cross-env VITE_OVERRIDE_ONNX_MODEL= vite build && vite preview` |
 | `pnpm test` | `vitest` |

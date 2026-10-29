@@ -29,7 +29,9 @@
 // It sends the sitemap as production lists it. public/sitemap.xml names
 // /glass-game, but the production build leaves it out of dist/sitemap.xml
 // while VITE_GLASSWORKS_LISTED is off (tools/glassworks-listing.ts), so a
-// release must not announce it either.
+// release must not announce it either. The same goes for every experimental
+// feature's page (/studio-night first) while VITE_EXPERIMENTAL_FEATURES is
+// off (tools/experimental-features.ts).
 //
 // Usage: node scripts/indexnow.mjs [--dry-run] [--since <git-ref> | <url> ...]
 
@@ -45,6 +47,8 @@ const KEY_FILE = /^([a-f0-9]{32})\.txt$/
 const SITEMAP = 'public/sitemap.xml'
 const ENV_PRODUCTION = '.env.production'
 const GLASSWORKS_URL = `${SITE}/glass-game`
+/** Every experimental feature's page: EXPERIMENTAL_ENTRY_SLUGS in tools/experimental-features.ts. */
+const EXPERIMENTAL_URLS = [`${SITE}/studio-night`]
 
 const repoRoot = resolve(fileURLToPath(new URL('..', import.meta.url)))
 
@@ -81,19 +85,30 @@ export function sitemapEntries(xml) {
   return entries
 }
 
-/** The sitemap URLs production serves but does not list, from the contents
- *  of .env.production. As in tools/glassworks-listing.ts, only "1" or "true"
- *  lists the museum; a lost variable hides it rather than advertising it. */
-export function unlistedUrls(envProduction) {
+/** Whether a build switch in .env.production is on. As in the build tools,
+ *  only "1" or "true" is: a lost variable keeps its pages unlisted. */
+function switchOn(envProduction, name) {
   const value =
-    /^[ \t]*VITE_GLASSWORKS_LISTED[ \t]*=(.*)$/m.exec(envProduction)?.[1] ?? ''
-  const listed = value
+    new RegExp(`^[ \\t]*${name}[ \\t]*=(.*)$`, 'm').exec(envProduction)?.[1] ??
+    ''
+  const normalized = value
     .trim()
     .replace(/^["']|["']$/g, '')
     .toLowerCase()
-  return listed === '1' || listed === 'true'
-    ? new Set()
-    : new Set([GLASSWORKS_URL])
+  return normalized === '1' || normalized === 'true'
+}
+
+/** The sitemap URLs production serves but does not list, from the contents
+ *  of .env.production: the museum unless VITE_GLASSWORKS_LISTED lists it,
+ *  and the experimental features' pages unless VITE_EXPERIMENTAL_FEATURES
+ *  turns them on. */
+export function unlistedUrls(envProduction) {
+  const unlisted = new Set()
+  if (!switchOn(envProduction, 'VITE_GLASSWORKS_LISTED'))
+    unlisted.add(GLASSWORKS_URL)
+  if (!switchOn(envProduction, 'VITE_EXPERIMENTAL_FEATURES'))
+    for (const url of EXPERIMENTAL_URLS) unlisted.add(url)
+  return unlisted
 }
 
 /** The sitemap as production lists it: its entries minus the unlisted URLs. */

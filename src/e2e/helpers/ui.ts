@@ -183,6 +183,17 @@ export async function expectNavTabOffered(page: Page, buttonId: string) {
   }
 }
 
+/**
+ * Assert a nav tab is offered nowhere: not in the bar, in no group's "..."
+ * overflow menu and not in the phone bar's More sheet. The same scan as
+ * expectNavTabOffered, so the two cannot disagree about where to look; on a
+ * phone it leaves the More sheet open, as the scan found it.
+ */
+export async function expectNavTabAbsent(page: Page, buttonId: string) {
+  await expect(page.locator(`#${buttonId}`)).toHaveCount(0)
+  expect(await revealNavTab(page, buttonId)).toBe('missing')
+}
+
 export async function switchTab(
   page: Page,
   tabName:

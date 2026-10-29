@@ -17,6 +17,7 @@ import { writeEntryPages } from './tools/generate-entry-pages'
 import { writeErrorPages } from './tools/generate-error-pages'
 import { glassGameAssetsPlugin } from './tools/glass-game-assets'
 import { GLASSWORKS_LISTED_ENV, glassworksListingPlugin, isGlassworksListed, unlistedEntrySlugs, } from './tools/glassworks-listing'
+import { EXPERIMENTAL_FEATURES_ENV, experimentalFeaturesPlugin, isExperimentalFeaturesOn, unlistedExperimentSlugs, } from './tools/experimental-features'
 import { HUB_DOCUMENT, learnHubPlugin } from './tools/learn-hub'
 import { lessonWaysPlugin } from './tools/lesson-ways'
 
@@ -271,16 +272,27 @@ export default defineConfig(({ command, mode }) => {
     process.env[DRAFT_LESSONS_ENV] ?? modeEnv[DRAFT_LESSONS_ENV],
   )
 
+  // This build's default for every experimental feature (Studio first): on
+  // in development mode (`pnpm dev`, `build:dev`: the dev deploy and PR
+  // previews) and in `build:e2e`, off in production mode (the `v*` tag
+  // deploy). The owner's switch overrides it at runtime either way; with it
+  // off, the feature's pages are served but listed nowhere. See
+  // tools/experimental-features.ts.
+  const experimentsOn = isExperimentalFeaturesOn(
+    process.env[EXPERIMENTAL_FEATURES_ENV] ??
+      modeEnv[EXPERIMENTAL_FEATURES_ENV],
+  )
+  const unlisted = [
+    ...unlistedEntrySlugs(glassworksListed),
+    ...unlistedExperimentSlugs(experimentsOn),
+  ]
+
   // Written before Vite resolves the inputs below, so dev, preview, build and
   // the tests all read the same documents. Git-ignored; the model is the
   // reviewable artefact.
-  const entryInputs = writeEntryPages(__dirname, {
-    unlisted: unlistedEntrySlugs(glassworksListed),
-  })
+  const entryInputs = writeEntryPages(__dirname, { unlisted })
   // The error documents, the same way, from src/error-kit/.
-  writeErrorPages(__dirname, {
-    unlisted: unlistedEntrySlugs(glassworksListed),
-  })
+  writeErrorPages(__dirname, { unlisted })
 
   const configuredApiBase =
     process.env.VITE_API_BASE_URL ?? modeEnv.VITE_API_BASE_URL
@@ -313,6 +325,7 @@ export default defineConfig(({ command, mode }) => {
       solidPlugin(),
       glassGameAssetsPlugin(),
       glassworksListingPlugin(glassworksListed),
+      experimentalFeaturesPlugin(experimentsOn),
       // Embeds TGSL shader metadata for typegpu (the glass TypeGPU renderer's
       // vertexFn/fragmentFn closures) — same setup as chaos-master.
       typegpuPlugin({}),
@@ -915,6 +928,12 @@ export default defineConfig(({ command, mode }) => {
       // (src/features/lessons/kit/draft-switch.ts).
       [`import.meta.env.${DRAFT_LESSONS_ENV}`]: JSON.stringify(
         draftsShown ? '1' : '0',
+      ),
+      // And for the experimental features' default, which the owner's
+      // switches override at runtime
+      // (src/stores/experimental-features-store.ts).
+      [`import.meta.env.${EXPERIMENTAL_FEATURES_ENV}`]: JSON.stringify(
+        experimentsOn ? '1' : '0',
       ),
     },
     optimizeDeps: {

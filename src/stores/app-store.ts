@@ -21,7 +21,7 @@
 import { createSignal, untrack } from 'solid-js'
 import type { FeatureFlag } from '@/db'
 import { getDb } from '@/db'
-import { TAB_ANALYSIS, TAB_CHALLENGES, TAB_COMMUNITY, TAB_COMPOSE, TAB_EAR_LAB, TAB_EXERCISES, TAB_GUITAR, TAB_HOME, TAB_JAM, TAB_KARAOKE, TAB_LEADERBOARD, TAB_PATH, TAB_PIANO, TAB_PROGRESS, TAB_SETTINGS, TAB_SINGING, TAB_STUDIO_NIGHT, } from '@/features/tabs/constants'
+import { isTabAvailable, TAB_ANALYSIS, TAB_CHALLENGES, TAB_COMMUNITY, TAB_COMPOSE, TAB_EAR_LAB, TAB_EXERCISES, TAB_GUITAR, TAB_HOME, TAB_JAM, TAB_KARAOKE, TAB_LEADERBOARD, TAB_PATH, TAB_PIANO, TAB_PROGRESS, TAB_SETTINGS, TAB_SINGING, TAB_STUDIO_NIGHT, } from '@/features/tabs/constants'
 import type { InstrumentType } from '@/lib/audio-engine'
 import { AudioEngine } from '@/lib/audio-engine'
 import { IS_DEV } from '@/lib/defaults'
@@ -2161,6 +2161,9 @@ export const TOURS_AVAILABLE = !IS_NATIVE_BUILD
  * Jam tab is about to show.
  */
 export function pageTourSteps(tab: ActiveTab): WalkthroughStep[] | undefined {
+  // An experimental tab whose feature is off has no room, so no tour of one:
+  // the Guide drops it and nothing can start it.
+  if (!isTabAvailable(tab)) return undefined
   if (tab === TAB_JAM && jamRoomIsOpen()) return JAM_ROOM_TOUR_STEPS
   if (tab === TAB_STUDIO_NIGHT) {
     const hasWorkspace =

@@ -418,6 +418,13 @@ export default defineConfig(({ mode, command }) => {
       // linked there. This app ships no lesson page, so every draft reads as
       // a planned lesson here.
       'import.meta.env.VITE_DRAFT_LESSONS': JSON.stringify('0'),
+      // Always "0". The web build's experimental-features switch
+      // (tools/experimental-features.ts) is the default of a feature still
+      // being built, Studio first. A store build keeps the shape it was
+      // reviewed with: the shell has no door to one, and this app never asks
+      // the db-worker for the owner's runtime switches
+      // (src/stores/experimental-features-store.ts).
+      'import.meta.env.VITE_EXPERIMENTAL_FEATURES': JSON.stringify('0'),
       __APP_CHANNEL__: JSON.stringify(
         (process.env.GITHUB_REF ?? '').startsWith('refs/tags/')
           ? 'release'
