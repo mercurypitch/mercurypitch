@@ -19,7 +19,7 @@
 import { createSignal } from 'solid-js'
 import type { JamNetReading, JamNetSample } from '@/lib/jam/jam-net-stats'
 import type { JamRollingStats } from '@/lib/jam/jam-net-stats'
-import { createRingBuffer, deriveReading, readNetSample, } from '@/lib/jam/jam-net-stats'
+import { createRingBuffer, deriveReading, describeTransport, readNetSample, } from '@/lib/jam/jam-net-stats'
 import { createPersistedSignal } from '@/lib/storage'
 
 /** How often a sample is taken while the panel is open. */
@@ -300,7 +300,7 @@ export function summariseRun(
         : `${p.reading.frameMs} ms @ ${Math.round(p.reading.packetsPerSecond ?? 0)}/s`
     if (notSending(p.reading)) silent.push(p.peerId.slice(0, 8))
     lines.push(
-      `| ${p.peerId.slice(0, 8)} | ${s.path} | ${s.codec ?? '?'} | ${frame} | ${ms(p.rttStats?.p50)} | ${ms(p.rttStats?.p95)} | ${ms(p.rttStats?.p99)} | ${ms(p.pingStats?.p50)} | ${ms(p.bufferStats?.p50)} | ${ms(p.bufferStats?.p95)} | ${ms(s.jitterMs)} | ${pct(p.reading.lossFraction)} | ${pct(p.reading.concealedFraction)} | ${ms(p.reading.inboundKbps)} | ${ms(p.reading.outboundKbps)} |`,
+      `| ${p.peerId.slice(0, 8)} | ${pathCell(s)} | ${s.codec ?? '?'} | ${frame} | ${ms(p.rttStats?.p50)} | ${ms(p.rttStats?.p95)} | ${ms(p.rttStats?.p99)} | ${ms(p.pingStats?.p50)} | ${ms(p.bufferStats?.p50)} | ${ms(p.bufferStats?.p95)} | ${ms(s.jitterMs)} | ${pct(p.reading.lossFraction)} | ${pct(p.reading.concealedFraction)} | ${ms(p.reading.inboundKbps)} | ${ms(p.reading.outboundKbps)} |`,
     )
   }
 
@@ -353,6 +353,12 @@ const CSV_COLUMNS = [
   'frameMs',
   'codec',
 ] as const
+
+/** The path, with the transport when it says something (see describeTransport). */
+function pathCell(s: JamNetSample): string {
+  const transport = describeTransport(s)
+  return transport === null ? s.path : `${s.path} over ${transport}`
+}
 
 export function exportCsv(peers: readonly JamPeerDiagnostics[]): string {
   const rows: string[] = [CSV_COLUMNS.join(',')]

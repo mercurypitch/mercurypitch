@@ -33,10 +33,11 @@ import type { Component } from 'solid-js'
 import { createMemo, createSignal, For, onCleanup, onMount, Show, } from 'solid-js'
 import { Copy, RotateCcw } from '@/components/icons'
 import { IS_DIAGNOSTIC_BUILD } from '@/lib/defaults'
-import { resolveDiagnosticsUnlock } from '@/lib/jam/jam-diagnostics-access'
+import { jamRelayOnly, resolveDiagnosticsUnlock, } from '@/lib/jam/jam-diagnostics-access'
 import type { JamBudgetTerm } from '@/lib/jam/jam-latency-budget'
 import { buildLatencyBudget, VERDICT_COPY } from '@/lib/jam/jam-latency-budget'
 import type { JamRollingStats } from '@/lib/jam/jam-net-stats'
+import { describeTransport } from '@/lib/jam/jam-net-stats'
 import type { JamPeerDiagnostics } from '@/stores/jam-diagnostics-store'
 import { exportCsv, jamDiagnostics, jamDiagnosticsEnabled, jamDiagnosticsLabel, resetJamDiagnostics, setJamDiagnosticsEnabled, setJamDiagnosticsLabel, startJamDiagnostics, stopJamDiagnostics, summariseRun, } from '@/stores/jam-diagnostics-store'
 import { jamDiagnosticsSources, jamPeers, jamRoomId } from '@/stores/jam-store'
@@ -132,6 +133,13 @@ export const JamNetworkPanel: Component = () => {
             {running() ? 'Sampling' : 'Start sampling'}
           </button>
         </header>
+
+        <Show when={jamRelayOnly()}>
+          <p class={styles.hint} data-testid="jam-relay-only">
+            Relay only (jamrelay=1): every connection goes through the TURN
+            relay. Open the room with ?jamrelay=0 to allow direct paths again.
+          </p>
+        </Show>
 
         <Show
           when={running()}
@@ -244,6 +252,7 @@ const PeerCard: Component<{ peer: JamPeerDiagnostics }> = (props) => {
   })
 
   const latest = () => props.peer.reading.latest
+  const transport = () => describeTransport(latest())
 
   /**
    * Audio arriving, none leaving: the far end cannot hear this device.
@@ -269,9 +278,10 @@ const PeerCard: Component<{ peer: JamPeerDiagnostics }> = (props) => {
         <span
           class={styles.path}
           data-path={latest().path}
-          title={`local ${latest().localCandidateType ?? '?'} / remote ${latest().remoteCandidateType ?? '?'}`}
+          title={`local ${latest().localCandidateType ?? '?'} over ${latest().relayProtocol ?? latest().localProtocol ?? '?'} / remote ${latest().remoteCandidateType ?? '?'}`}
         >
           {latest().path}
+          {transport() === null ? '' : ` over ${transport()}`}
         </span>
       </header>
 

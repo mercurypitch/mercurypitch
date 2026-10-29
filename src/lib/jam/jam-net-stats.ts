@@ -42,6 +42,14 @@ export interface JamNetSample {
   /** Raw candidate types, for when `path` is not specific enough. */
   localCandidateType: string | null
   remoteCandidateType: string | null
+  /**
+   * How OUR end's packets leave: 'udp' or 'tcp' for the local candidate,
+   * and for a relay candidate the leg to the TURN server ('udp', 'tcp' or
+   * 'tls'). On a work network this is the number that says what got
+   * through: a relay over tls means UDP and plain TCP were both refused.
+   */
+  localProtocol: string | null
+  relayProtocol: string | null
   /** Interarrival jitter on the inbound audio, in ms (RFC 3550 J). */
   jitterMs: number | null
   packetsReceived: number | null
@@ -155,6 +163,22 @@ export function classifyIcePath(
   if (local === 'host' && remote === 'host') return 'direct'
   if (local === null || remote === null) return 'unknown'
   return 'reflexive'
+}
+
+/**
+ * The transport worth naming next to the path, or null when it is the
+ * unremarkable default (direct or reflexive over UDP).
+ *
+ * A relay names its leg to the TURN server; anything else names TCP only,
+ * because UDP is what a healthy pair uses and saying so is noise.
+ */
+export function describeTransport(
+  sample: Pick<JamNetSample, 'path' | 'localProtocol' | 'relayProtocol'>,
+): string | null {
+  if (sample.path === 'relay') {
+    return sample.relayProtocol ?? sample.localProtocol
+  }
+  return sample.localProtocol === 'tcp' ? 'tcp' : null
 }
 
 type Report = Record<string, unknown>
@@ -297,10 +321,9 @@ export function readNetSample(
   const inb = inbound
   const outb = outbound
 
-  const localType =
-    p === null
-      ? null
-      : str(candidates.get(str(p.localCandidateId) ?? '')?.candidateType)
+  const localCandidate =
+    p === null ? null : candidates.get(str(p.localCandidateId) ?? '')
+  const localType = str(localCandidate?.candidateType)
   const remoteType =
     p === null
       ? null
@@ -316,6 +339,8 @@ export function readNetSample(
     path: classifyIcePath(localType, remoteType),
     localCandidateType: localType,
     remoteCandidateType: remoteType,
+    localProtocol: str(localCandidate?.protocol),
+    relayProtocol: str(localCandidate?.relayProtocol),
     jitterMs: msFromSeconds(field(inb, 'jitter')),
     packetsReceived: field(inb, 'packetsReceived'),
     packetsLost: field(inb, 'packetsLost'),
