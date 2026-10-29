@@ -247,7 +247,10 @@
           // the legend and S5's tally leave before the push (F-low would run the lower bracket on from the legend's
           // first line, critic B-01 item 5) and the legend returns as the pull lands (124.0)
           const LEGOUT = A.push - 0.35, LEGBACK = A.pull + PULL
-          const OCTUP = 0.9                                             // the octave bracket grows up the twelve rows
+          // the octave bracket grows up the twelve rows on power2.out (critic B-02 item 2: a constant rate stopped
+          // dead); octAt(f) is when its tip has drawn the fraction f of its 340 px
+          const OCTUP = 0.6
+          const octAt = (f) => A.octave + OCTUP * (1 - Math.cbrt(1 - f))
 
           /* ---------------------------------------------------------------- camera */
           const cam = L.frameRig(room, { from: 'F0' })
@@ -322,12 +325,12 @@
             L.svg('tspan', { text: c, fill: L.C.ink2 }, el)
             return el
           })
-          // the sum "2 2 1 · 2 · 2 2 1 = 12" (Outfit 600 64 px, baseline 260), each number landing when it is said (a
-          // dot with the number after it), "= 12" on "twelve". Critic B-01 item 6: with a space between them the
-          // numbers read as 221; now half an em of ground between two numbers (30 px of advance), a little more
-          // round each dot (36) and before "=" (40). That is 731 px, too long to start at HANDOFFS' x 1270, so the
-          // line ends at x 1800 (the kicker's margin mirrored) and starts at about 1069, still 92 px above stair 8
-          const sum = tokenRow(hud, ['2', '2', '1', '·', '2', '·', '2', '2', '1', '=', '12'], [0, 30, 30, 36, 36, 36, 36, 30, 30, 40, 30], { right: 1800 })
+          // the sum "2 2 1 · 2 · 2 2 1 = 12" (Outfit 600, baseline 260), each number landing when it is said (a dot
+          // with the number after it), "= 12" on "twelve". Critic B-01 item 6: with a space between them the numbers
+          // read as 221, so they keep 20 to 23 px of ink between them (16 px of advance); critic B-02 item 4: back in
+          // HANDOFFS' lane (x 1270 to 1746), so 56 px, not 64, and tighter dots (13 to 15 px of ink each side). Its
+          // ink runs x 1254 to 1737, so "= 12" at its 1.2 scale still ends by 1746 (lab/s06-groups/scratch/sum56.mjs)
+          const sum = tokenRow(hud, ['2', '2', '1', '·', '2', '·', '2', '2', '1', '=', '12'], [0, 16, 16, 12, 12, 12, 12, 16, 16, 16, 12], { right: 1739, size: 56 })
           let nk = 0
           sum.forEach((tk, k) => { tk.land = tk.ch === '·' ? null : k < 9 ? NUMS[nk++] : A.twelve })
           sum.forEach((tk, k) => { if (tk.ch === '·') tk.land = sum[k + 1].land })
@@ -347,7 +350,9 @@
           for (let n = 1; n <= 7; n++) (LITP[n + 1] = LITP[n + 1] || []).push(A.seven + 0.1 * (n - 1))
           // the twelve rows: rippling up on b15's and b16's "semitones", and lit one by one by the octave bracket's tip
           // as it grows up them (it starts at its lower tick: row k's middle is 26 k + 1 px along its 340)
-          const ROWTIP = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12].map((k) => A.octave + OCTUP * (26 * k + 1) / 340)
+          const ROWTIP = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12].map((k) => octAt((26 * k + 1) / 340))
+          // "= 1 octave" lands once the tip is past the bracket's middle (y 508, 170 px along): at y 491 (187 px)
+          const OCTLAB = octAt(187 / 340)
           const pairLit = (t, n) => (LITQ[n] || []).reduce((k, [t0, up, dn]) => Math.max(k, light(t, t0, up, dn)), LITP[n] ? light(t, LITP[n]) : 0)
           // labels a held framing would cut at the frame's edge leave before it and return as it ends: riser 6's
           // "T" (F-low puts it at the frame's top) and stair 7's "B" (off the right edge) through F-low; stair 2's
@@ -433,7 +438,7 @@
               brLow.color(inkMix(lowLit))
               brHigh.draw(P(t, A.split + 0.26, 0.5, 'power2.out'), lerp(0.6, 1, highLit) * out)
               brHigh.color(inkMix(highLit))
-              brOct.draw(P(t, A.octave, OCTUP, 'none'), (t >= A.octave ? 1 : 0) * (1 - P(t, A.octOut, 0.2)))
+              brOct.draw(P(t, A.octave, OCTUP, 'power2.out'), (t >= A.octave ? 1 : 0) * (1 - P(t, A.octOut, 0.2)))
             }
 
             // 6b: the chrome bead drops onto stair 1 before group-low, hops up a stair on each note (the hop onto
@@ -448,7 +453,8 @@
                 b = { ...L.bead4.runAt(t, steps), a: 1 - out, scale: 1 - 0.4 * out }
                 // the two semitone hops (E-F, B-C) are the small step: their apex 24 above the higher stair, not
                 // 40, and their x on power2.inOut, so the bead stays under its bracket (6.3 px) and clears the "S"
-                // (6.8 px), at a top speed no faster than a tone hop's (lab/s06-groups/item5/bracket-clear.mjs)
+                // (6.8 px; lab/s06-groups/item5/bracket-clear.mjs). Its middle frame travels 65 px on screen in F-low
+                // (a tone hop's 43); power3.inOut's 81 read as a pop
                 if (b.hopping && SEMI(b.on + 1)) {
                   const [x, y] = L.bead4.hopAt(t, steps[b.on + 1].t, steps[b.on].p, steps[b.on + 1].p, { lift: 24, ease: 'power2.inOut' })
                   b.x = x; b.y = y
@@ -461,8 +467,8 @@
 
             // type: the legend and the tally leave before the push; the legend comes back as the pull lands, as s05
             // lands it, and leaves with the brackets; the sum's numbers land as they are said, each from 1.3x over
-            // 0.4 s (a 64 px label: a counted pulse); "= 12" lands on "twelve" and scales 1.2 on o6's and b16's
-            // "twelve"; "= 1 octave" lands as its bracket starts up the rows; the sum, "= 12" and the key names leave
+            // 0.4 s (a 56 px label: a counted pulse); "= 12" lands on "twelve" and scales 1.2 on o6's and b16's
+            // "twelve"; "= 1 octave" lands once its bracket is past half way; the sum, "= 12" and the key names leave
             // at b16's end, "= 1 octave" and its bracket 0.25 s later, once Tavi has hopped out (item 7)
             legend.forEach((el, i) => {
               const back = LEGBACK + 0.3 * i, u = P(t, back, 0.65, 'power2.out')
@@ -477,8 +483,8 @@
               tokenSet(tk, P(t, tk.land, k < 9 ? 0.15 : 0.2) * out, sc, k < 9 ? tk.cx : eqC)
             })
             {
-              const u = P(t, A.octave + 0.15, 0.45, 'power3.out')
-              octT.setAttribute('opacity', (P(t, A.octave + 0.15, 0.2) * (1 - P(t, A.octOut, 0.2))).toFixed(3))
+              const u = P(t, OCTLAB, 0.45, 'power3.out')
+              octT.setAttribute('opacity', (P(t, OCTLAB, 0.2) * (1 - P(t, A.octOut, 0.2))).toFixed(3))
               octT.setAttribute('transform', `translate(${f1(-24 * (1 - u))} 0)`)
             }
           })

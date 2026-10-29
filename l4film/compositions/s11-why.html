@@ -48,7 +48,8 @@
             hop: at('o10', 'end'),                            // both Mercs hop out (merc-shots.py's exits)
             kickIn: at('b35'),                                // the kicker "AN EXPERIMENT" and the first credit
             push: word('b35', 1, 'start', 0.32),              // the push to F-chart (1.2 s)
-            heard: word('b35', 'heard'),                      // stair 1 lights ("heard a C ...")
+            heard: word('b35', 'heard'),                      // stair 1 lights ("heard a C ..."), peaking on "heard" and on "C"
+            heardC: word('b35', 'C'),
             cMajor: word('b35', 'major'),                     // the stairs light in quick turn (the board's "major scale", 300.95)
             oneMore: word('b35', 'one more'),                 // the probe bead and its "?" appear
             note: word('b35', 'note,'),                       // its echo ring
@@ -66,7 +67,8 @@
             so: word('b36', 'So', 'start', 0.06),             // 11c: the shelves spread back to 80 px (0.8 s)
             home: word('b36', 'home'),                        // do's chip scales 1.05
             seemsB: word('b36', 'seems'),                     // a lit house falls toward the top shelf ...
-            learned: word('b36', 'learned,'),                 // ... and lands beside do, which lights
+            learned: word('b36', 'learned,'),                 // ... and lands beside do, pulsing as it lands
+            learnedEnd: word('b36', 'learned,', 'end'),       // do's chip lights as the word ends
             just: word('b36', 'just'),                        // the chips scale 1.05 in turn, top shelf to bottom
             pull: at('o11', 'start', -1.35),                  // the pull to F0, landing as Tavi's fall ends
             o11: at('o11'),                                   // 11d: the kicker and credits leave; the chips fly back
@@ -250,7 +252,7 @@
           const LIGHTS = { 1: [], 2: [], 3: [], 4: [], 5: [], 6: [], 7: [], 8: [] }
           const addL = (n, t0, up = 0.4, down = 0.8) => LIGHTS[n].push([t0, up, down])
           // stair 1 (C) lights to peak on "heard" (a C), as C4 scales on it
-          addL(8, A.dohHome); addL(7, A.tee); addL(1, A.heard - 0.3, 0.3, 0.4)
+          addL(8, A.dohHome); addL(7, A.tee); addL(1, A.heard - 0.3, 0.3, 0.4); addL(1, A.heardC - 0.3, 0.3, 0.4)
           for (let n = 1; n <= 8; n++) addL(n, A.cMajor + 0.1 * (n - 1), 0.3, 0.4)
           addL(8, A.onDoh); addL(7, A.teeO); addL(7, A.labelsOut); addL(8, A.tonic)
           addL(1, A.fromD); addL(7, A.cSharp); addL(8, A.toD)
@@ -301,7 +303,7 @@
           const TIERP = [0, 1, 2, 3].map((k) => [A.studies + 0.7 * k, A.training + 0.3 * k, A.just + 0.25 * k])
           // on "weaker", with the shelves closed, the scale chips light (40 % chrome) in turn, top shelf to bottom
           const TIERL = [0, 1, 2].map((k) => A.weaker + 0.15 * k)
-          const DOL = [A.doh + 0.6, A.learned]                // do's chip lights alone: after its landing pulse, and as the house lands
+          const DOL = [A.doh + 0.6, A.learnedEnd]             // do's chip lights alone: after its landing pulse, and as "learned" ends
           const tierPulse = (tier, t) => Math.max(
             L.pulse(t, TIERP[tier], 'tile'),
             tier === 0 ? L.pulse(t, [A.doh, A.home], 'tile') : 1)
@@ -384,7 +386,7 @@
               if (c.dim) c.el.box.setAttribute('stroke-opacity', (0.35 + 0.45 * light(t, TIERP[3])).toFixed(3))
               if (!c.dim) {
                 // the tiers' scale pulses light the chips too (larger events in this span with no Merc)
-                const k = Math.max(c.tier < 3 ? light(t, TIERL[c.tier], 0.3, 0.5) : 0, c.tier === 0 ? light(t, DOL.concat([A.home])) : 0, light(t, TIERP[c.tier]))
+                const k = Math.max(c.tier < 3 ? light(t, TIERL[c.tier], 0.3, 0.6) : 0, c.tier === 0 ? light(t, DOL.concat([A.home])) : 0, light(t, TIERP[c.tier]))
                 c.el.box.setAttribute('fill', k > 0.002 ? `rgb(${[27, 35, 45].map((v, i) => Math.round(lerp(v, [195, 204, 214][i], 0.4 * k))).join(',')})` : UNLIT)
               }
               c.el.g.setAttribute('transform', `translate(${f1(s.p[0])} ${f1(s.p[1])}) scale(${sc.toFixed(4)})`)
@@ -392,7 +394,7 @@
             {
               // it falls 70 px from "seems" (accelerating, as a drop) and lands on "learned"
               const u = P(t, A.seemsB, A.learned - A.seemsB, 'power2.in')
-              shelfHouse.draw({ x: 916, y: shelfY(0, t) - 2 - 52 - 70 * (1 - u), a: P(t, A.seemsB, 0.2) * expOut, lit: 1, scale: tierPulse(0, t) })
+              shelfHouse.draw({ x: 916, y: shelfY(0, t) - 2 - 52 - 70 * (1 - u), a: P(t, A.seemsB, 0.2) * expOut, lit: 1, scale: Math.max(tierPulse(0, t), L.pulse(t, A.learned, 0.12)) })
             }
             // 11e and 11f: "leading note" (in on "leading", rising 14 px; scaling 1.2 on "note"), riding the slide;
             // the arrow (drawn on "leading to", pulsing on "leads", drawn again on "leans")

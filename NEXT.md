@@ -1427,3 +1427,35 @@ Note: the lanes' memory gate read a stale cgroup path after the 21:00 restart (f
   C-02, A-01: kit-level, mine (frames.js/lesson.js far layer), next.
 - 14:2x builder B resumed with round 3 (B-02 items 2-5). Agents now: builder D + builder B.
 - m12-blue landed 14:02:47 (8438 frames, 2958 ms/frame); whole.js refreshed by whole-watch.
+
+## 2026-10-29 ~14:45Z: B round 3 done, A fix round running, depth cue prototype
+- 14:36 builder B reported round 3 (B-02 items 2-5): octave bracket power2.out 0.6 s, label after the
+  tip passes y 508; demo T/S fade 23.94-24.14; sum at Outfit 600 56 px, ink x 1254-1736; F-low row
+  edge ramp (8 stops, shared block). Clips s05 14:26, s06 14:31; holds s05 0.1/30 s, s06 0.7/30 s.
+  check: only the 5 missing m12-orange errors (s12-s16). B-03 waits for the kit bokeh (re-render
+  s05/s06 with it, then $S/l4entr/critics/B3.txt).
+- DECISIONS 88 (s03: four labels on the staircase per the brief, not the top-left list; riser
+  event = stair-block pulse 1.06 + tread flash). STORYBOARD 3a-3c updated. Backups:
+  $S/l4entr/{STORYBOARD,DECISIONS}.before-88.md.
+- 14:4x builder A resumed ((builder)) with A-01 items 1-5, 7-9; item 6 is the kit's; told to
+  render final clips once lesson.js has `L.bokeh = `. Agents now: builder D + builder A.
+- Depth cue (task 198): near bokeh, static in the near layer (moves only with the camera, 1.6x).
+  Variant C (12 edge discs only) left the close framings empty: no cue on CU trucks. Variant D =
+  12 edge discs (r 50-120, a 0.035-0.058, F0's outer ring) + 9 inner discs (r 16-28, a 0.03-0.045,
+  lower middle; bokeh-sized in CUs). Map per framing: $S/l4entr/depth/tools/bokehD.mjs. Prototype
+  kit: $S/l4entr/depth/libD/lesson.js (L.bokeh, called from L.room). Cut-safe: every cut is F0 to F0
+  (or F-cold to F-cold, or under S2's top-layer field). Rendering s03/s05/s07 clips (bkD-*).
+- ~14:55 KIT CHANGE INSTALLED: L.bokeh in assets/lib/lesson.js, called from L.room (DECISIONS 89).
+  Variant E: 12 edge discs (r 50-120, a 3.5-5.8 %, F0's outer ring) + 9 inner (r 16-28, a 4-6 %),
+  seed 41, gradient ids from a counter (kit-bokeh<N>-<i>; the film's one document holds 16 scenes).
+  Backup: $S/l4entr/depth/lesson.before-bokeh.js. Proofs: s03 pull (D-s03-pull.png), s05 push+truck
+  (D-s05-truck.png, lift-s05.png), rest frames (E-s05-rest.png), full-film snapshots at 52/160/300/480
+  show the discs in every scene (rootsnap/lift-root.png). npm run check: 5 errors (m12-orange only),
+  78 warnings, same as B's r5 baseline. BUILD-GUIDE (kit table + Known in the kit), STORYBOARD § The
+  world updated; backups *.before-89.md. HANDOFFS: S7 "?" and S8 tally set to C's built geometry
+  (backup HANDOFFS.before-c02.md).
+- Told D (re-render s09-s11 with the bokeh before reporting) and A (render finals once L.bokeh is in).
+  C's small round message ready: $S/l4entr/C-fix2-msg.txt (send when a slot frees).
+- B-03: rendering s05/s06 with the kit bokeh into $S/l4entr/b03/<scene>/clip.mp4 (B's lab files
+  untouched); then launch B-03 with $S/l4entr/critics/B3.txt, artifacts pointed at those clips.
+- m12-orange 6750/8438 at 14:40 (~3 s/frame): lands ~16:10.

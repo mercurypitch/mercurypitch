@@ -575,3 +575,35 @@ replaced it. The builder's record: critics never read it.
     a half-frame phase plays every frame; merc-tags.py already writes every media-start half a
     frame from any edge, so no tag in this film has that phase. The film critic checks the cut
     at 60 fps.
+88. **S3's promise is four short labels on the staircase, not a list.** BRIEF (§ What must read
+    with the sound off) asks for "the promise's four parts as four short labels on the staircase";
+    storyboard v3.1 row 3a built them as a list top-left, and component critic A-01 (item 2) read
+    S3 as grey on black with a bullet list in the corner. The brief wins. Each label lands as Merc
+    names its part, beside the part it names, riding the world: "build it from its steps" over the
+    risers' run, "start it on any note" by stair 1's foot, "name its notes" under the name row,
+    "hear ti lean home" by ti and the house. Outfit 600 at 40 world px, ink, 24 px clear of the
+    stairs, their names and each other, at least 4.5:1; all four leave up fast at 46.45, as the
+    list did. The riser event (38.7 to 40.1), which A-01 found to be a ripple on 4 to 6 px bars
+    that will not read at phone size, becomes, for each riser in turn as it grows, its stair block
+    pulsing to 1.06 and its tread flashing chrome. STORYBOARD rows 3a to 3c say so.
+89. **Camera moves get a depth cue: soft near bokeh in the kit's room.** Component critics A-01
+    (item 6), B-02 and C-01/C-02 read the pushes, pulls and trucks as zooms: the far staves (3.5 %)
+    and the near dust are too faint to separate from the diagram, so the frame grows as one card
+    (shot grammar: a dolly's tell is a near object sliding against what is behind it). `L.room`
+    now calls `L.bokeh(near)`: 21 soft, faint discs of out-of-focus dust, seeded, static in the
+    near layer, so they move only with the camera, at 1.6 times the world (`L.frameRig`).
+    - Twelve large ones (radius 50 to 120 px, 3.5 to 5.8 %) sit on F0's outer ring, never over the
+      middle of the frame at rest: a push sends them out past the edges, a pull brings them in.
+    - Nine small ones (16 to 28 px, 4 to 6 %) sit over the lower middle that the close framings
+      look at: faint specks at F0, bokeh-sized at 1.8 to 2.4x, so the trucks between close
+      framings (CU-A to CU-B, F-low to F-high, the names) slide them across faster than the
+      diagram.
+    - Every framing in `L.FRAMES` shows between 1 and 16 of them (scratchpad
+      `l4entr/depth/tools/bokehD.mjs`).
+    - Their gradients take a counter's ids (as the kit's beads, houses and cards do), so the film's
+      one document never holds two with one id.
+    - They are the same in every scene, and every cut joins two frames at the same framing (F0 to
+      F0, F-cold to F-cold, or S1 to S2 under S2's top-layer field), so they never jump at a cut.
+    - Lessons 1 and 2's world (the glows, the staves at 3.5 %, the drifting dust) is unchanged.
+    - Tested in the scratchpad (`l4entr/depth/`) on S3's pull, S5's push and truck, and S7's
+      push, against the builders' clips. Clips rendered before this need rendering again.

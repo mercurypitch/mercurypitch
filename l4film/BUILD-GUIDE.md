@@ -231,7 +231,7 @@ the same list. Every maker builds once and draws per frame. World positions are 
 
 | File | What | Key calls |
 | --- | --- | --- |
-| `lesson.js` (Lessons 1 and 2) | timing, room, beads, staff, Merc layering | `L.at`, `L.word`, `L.ease(name)` (GSAP's curve), `L.dur`, `L.clock`, `L.room(root, { floor })` (far, mid, near, top, hud), `L.stage`, `L.bead(svg, { r: 22, color })`, `L.dust`, `L.merc`, `L.staff`, `L.note`, `L.afterFonts`, `L.rng` |
+| `lesson.js` (Lessons 1 and 2) | timing, room, beads, staff, Merc layering | `L.at`, `L.word`, `L.ease(name)` (GSAP's curve), `L.dur`, `L.clock`, `L.room(root, { floor })` (far, mid, near, top, hud; the near layer carries `L.bokeh`, DECISIONS 89), `L.stage`, `L.bead(svg, { r: 22, color })`, `L.dust`, `L.merc`, `L.staff`, `L.note`, `L.afterFonts`, `L.rng` |
 | `motion.js` | progress, pulses, echo rings | `L.prog(t, t0, dur, ease)`, `L.track(t, v0, moves)`, `L.env`, `L.pulse(t, times, 'tile' \| 'key' \| 'bar' \| 'label' \| 'bead')`, `L.lit(t, times)`, `L.echoRings(svg).draw(t, [{ t, x, y, r }])`; `L.rig` is Lesson 2's camera: this film uses `L.frameRig` instead |
 | `marks.js` | type and marks | `L.kicker(hud, text)`, `L.chapterCard(hud, { num, title, baseline: 480, tIn, tOut })` (`tOut` is when its 0.38 s exit starts), `L.ringTimer`, `L.pill(layer, text, ...)`, `L.spell` (labels with ♯ and ♭ paths), `L.bracket`, `L.arrow`, `L.guessRing`, `L.GUESS`, `L.INKDARK`, `L.stageOf` |
 | `tiles.js` (Lesson 2) | S4's tile row | `L.tiles(svg, opts)`, `.draw((tile) => ({ dx, dy, scale, lit, labelA, ... }), rowT)`; `L.tileBrackets(svg, row)` with `.add(ma, mb, y, labelY)` |
@@ -253,6 +253,11 @@ top house lighting, the strip with every start's keys and hairlines, and the pus
 The world geometry matched HANDOFFS § World to the pixel.
 
 Known in the kit:
+- The room's near layer carries the camera's depth cue (`L.bokeh`, DECISIONS 89): 21 faint, soft
+  discs, static in that layer, so they move only with the camera, at 1.6 times the world. They are
+  the same in every scene. Do not add a depth cue of your own, and do not hide, fade or restyle
+  `room.near` (the bokeh and the dust live there). A clip rendered before 29 Oct 14:55 does not have
+  them.
 - The black keys draw over an opaque obsidian backing, so a black key at 45 % reads as a dim black
   key over the white keys rather than a grey one (DECISIONS 70).
 - A label pool builds a label the first frame it is asked for; call `.prepare([texts])` on a pool

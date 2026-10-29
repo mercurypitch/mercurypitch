@@ -71,3 +71,28 @@ Running notes so a container restart or a usage-limit pause can resume. Builder 
   board: larger events, not more); the probe hovers on a 4 px circle (a sine bob stood still at its ends).
 - s09 folded to 300 lines (the root check's composition_file_too_large fires above 300); s11 (408) still
   warns, as in round 1.
+
+## Fix round D-01 (from 13:33; review/component-D-01/REPORT.md, items 1 to 17)
+
+Read first: DECISIONS 81, 83, 85, 86; the director retimed the S9d and S11c pulls (o9 / o11 - 1.35, 0.8 s),
+set S10's mouth to (156, 797) and re-timed the tags (merc-tags starts a running pass at 0.000).
+
+- s09: dim 0.5 s sine.inOut (13); every name switch is old out (0.12) then new in (0.18), swap2 (7); the
+  bottom house rides up with stair 1's rising outline and fades with it (10); the pill switch is old words out,
+  the box grows, new words in, over 0.6 s (4); "movable do" plain 64 px type (14); " = home" slides in from the
+  right (the 60 fps label scan caught it crossing "tonic"); hold pulses: the guess on "one" and "called", the do
+  stairs on "is." (stair 8 0.4/0.8), D4/E4/F#4 on their own words.
+- s10: "still hanging?" (s01's words, 64 px, ink, x 1200 baseline 460) on "question." to out1 (16); the ink
+  arrow pulses on "one."; both arrows' tips lifted (13 and 15 px clear of the gold corner, DECISIONS 85).
+- s11: strip and hairlines dim to 20 % over the push, back over the pull (2); flights: out top shelf first,
+  rise then slide; back bottom shelf first, slide then drop; stair 1's do fades into stair 8's (sep 140 to 220)
+  and is hidden once parked, only stair 8's flies back (3, 11); outline chips for the five outside the scale
+  (obsidian fill, 35 % rim brightening to 80 % on their pulses, ink-2 letters) (8); "leading note" centred on
+  ti (x 1018, baseline 250) with a hairline to ti's tread, riding the slide (9); credits land whole (5);
+  houses and risers hidden while the staircase is dim, back as the last chip lands (A.chipsHome) (15); the
+  kicker, credits, axis and its labels leave as the pull starts (gone by 320.43), clear of both falls (17);
+  arrow tip 15 px over the gold corner; hold work: the quick turn on "major" (the board's 300.95), stair 1
+  peaks on "heard" and "C" with C4, the sweeps on "studies" (0.7 apart) and "training" (0.3), do's light
+  after its landing and as "learned," ends, the house pulses as it lands, the weaker lights back over 0.6.
+- Proof tools: lab/s11-why/tools/overlaps.mjs (every frame: visible labels and chips touching, overlapping
+  or doubled), chip gaps via probe.mjs, lab/s09-names/tools/stills.sh (stills into a subfolder via a marker).

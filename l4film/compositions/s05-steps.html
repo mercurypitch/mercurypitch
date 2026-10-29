@@ -248,9 +248,10 @@
           const DEMO = { 1: { t0: A.asIn, dur: 0.8, fill: A.tone }, 3: { t0: A.semi, dur: 0.6, fill: A.yes } }
           const RESET = 0.35                                            // the demo bars shrink back
           // critic B-01 item 1: CU-B holds the gold E-F riser and its "S" from "Yes" to "Watch" (0.7 s); both demo
-          // measurements ride the pull with their T and S, so the legend defines what is on screen, and they reset
-          // as the bead lands on stair 1 to begin the run
-          const RESETAT = STEP(0)
+          // measurements ride the pull with their T and S, so the legend defines what is on screen; critic B-02
+          // item 3: they reset before the bead comes, their T and S gone (0.2 s) just as it starts to drop onto
+          // stair 1 (its drop is the 0.2 s before STEP(0)), their bars back by the time it lands
+          const RESETAT = STEP(0) - 0.36
 
           /* ---------------------------------------------------------------- camera */
           const cam = L.frameRig(room, { from: 'F0' })

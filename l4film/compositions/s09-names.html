@@ -60,7 +60,7 @@
             always: word('o9', 'always'),                     // the guess pulses
             fixed: word('b29', 'fixed'),                      // it turns solid: "fixed do: do = C"
             system: word('b29', 'system'),                    // the guess pulses ("In one system", on both words)
-            oneSys: word('b29', 'one'),
+            oneSys: word('b29', 'one'), called: word('b29', 'called'),
             itIs: word('b29', 'it is'),                       // it moves up and shrinks to 40 px
             isC: word('b29', 'is.'),                          // C4 and C5 scale (in fixed do, do is C)
             use: word('b29', "We'll use"),                    // the two do stairs light
@@ -206,7 +206,7 @@
           addL(1, A.dohD, 0.3, 0.5); addL(2, A.rayE, 0.3, 0.5); addL(3, A.meeF, 0.3, 0.5)   // over the key being named
           addL(1, A.homeMoves, 0.4, 0.8); addL(8, A.homeMoves, 0.4, 0.8)                     // "Home moves"
           addL(1, A.use, 0.4, 0.8); addL(8, A.use, 0.4, 0.8); addL(1, A.dohO); addL(3, A.sharp, 0.3, 0.5)   // "We'll use"; "doh moved"; "F sharp"
-          addL(1, A.isC); addL(8, A.isC)                                                      // "it is.": in fixed do, do is C
+          addL(1, A.isC); addL(8, A.isC, 0.4, 0.8)                                            // "it is.": in fixed do, do is C
           const lit = (n, t) => LIGHTS[n].reduce((k, [t0, up, dn]) => Math.max(k, light(t, t0, up, dn)), 0)
           // the names: letters (hidden while the staircase is dim), numbers on "number" (staggered), and each
           // number to its name as it is sung. A switch is the old name out (0.12 s, rising 12 px) and then the new in
@@ -313,7 +313,7 @@
                 solid: P(t, A.fixed, 0.35),
                 mix: clamp((t - A.fixed) / 0.6),
                 scale: lerp(1, 40 / 48, up), x: 1360, baseline: lerp(260, 170, up),
-                pulse: L.pulse(t, [A.always, A.oneSys, A.system], 'key'),
+                pulse: L.pulse(t, [A.always, A.oneSys, A.system, A.called], 'key'),
               })
               const mu = P(t, A.movable, 0.4, 'power2.out')
               movableT.setAttribute('opacity', (P(t, A.movable, 0.2) * out).toFixed(3))

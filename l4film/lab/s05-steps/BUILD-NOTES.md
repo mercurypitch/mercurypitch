@@ -122,6 +122,22 @@ only. Clock: Kokoro scratch, 483.73 s (cues.json = tools/board-cues.json today).
 - Stills: lab/s05-steps/stills-r4 (+ r4b after the 56 px corner, phone-34.9s.png), lab/s06-groups/stills-r4
   (+ r4b crossing before, r4c after).
 
+## Round 5: fix round for review/component-B-02 (items 2 to 5; item 1 done in the kit, DECISIONS 86)
+
+- s06 item 2: the octave bracket grows over 0.6 s on power2.out (was 0.9 s linear); the row glows follow its
+  tip (octAt); "= 1 octave" starts once the tip is at y 491, past the middle (y 508): about 0.14 s in.
+- s05 item 3: RESETAT = STEP(0) - 0.36 (23.94): the demo T and S fade 23.94 to 24.14, the bars shrink back by
+  24.29, the bead drops 24.10 to 24.30.
+- s06 item 4: the sum at Outfit 600 56 px, gaps 16 (digits), 12 (dots), 16 and 12 round "=", ending x 1739:
+  ink x 1254 to 1737, so the 1.2 pulse of "= 12" stays inside 1746 (scratch/sum56.mjs).
+- Item 5 (shared block): the row feather ramps on smootherstep (8 stops) over 180 z world px (F-low 144 world,
+  259 on screen from x 496; CU 180 world).
+- Shared block also: tokenRow takes `size`, tokens carry cy (the scale centre) for tokenSet.
+- Correction to round 4's report: the semitone hop's power2.inOut is GSAP's cubic, so its middle frame moves
+  65 px in F-low, not 46 (I had modelled a quadratic). measure.py flagged nothing there in round 4's clip.
+- Proof: clock-lint silent, shared block identical, npm run check 5 errors (m12-orange in s12 to s16 only).
+  Stills: lab/s05-steps/stills-r5 (reset-sheet.png), lab/s06-groups/stills-r5 (octave-sheet.png, 6.5 F-low).
+
 ## Status
 
 | Scene | Built | Stills | Clip | measure.py | Text sweep | clock-lint | merc-tags |

@@ -123,7 +123,9 @@ of its key (y 760). A sharp's hairline slants to its black key.
 **Tavi's white-keys staircase (S7).** On D's columns (centres 418 to 1258), heights 0, 2, 3, 5, 7,
 9, 10, 12, so treads 612 560 534 482 430 378 352 300, foot 684; every block drawn as a dashed ink-2
 outline (`L.GUESS`), filled ink-2 at 25 % where a row says so; dashed hairlines to D4 E4 F4 G4 A4
-B4 C5 D5; its "?" (Outfit 600 64 px, ink-2) centred at x 1258, baseline 250. Against D major it
+B4 C5 D5; its "?" (Outfit 600 64 px, ink-2) from x 1360, baseline 330, beside stair 8: 80 px from
+the bead at rest there and 24 px clear of its echo rings at their largest (component round C-01,
+item 3). Against D major it
 differs only at stair 3 (tread 534 against 508) and stair 7 (352 against 326).
 
 **Merc corners in F0.** Merc (110, 840) at 300: body x 30 to 190, y 648 to 840; 30 px from the rows
@@ -309,7 +311,9 @@ riser labels 2 2 1 2 2 2 1, hairlines drawn; the strip with C major's keys at fu
   letters D E F♯ G A B C♯ D, riser labels T T S T T T S, F♯4 and C♯5 lit (their names gone at
   195.7), "D major" up (it leaves in S8a, 199.4 to 199.6).
 - **S8's tally.** Outfit 600 64 px at x 140, baseline 250: "C 0 · D 2" from 207.1, "G 1" from 208.9,
-  "E 4" from 212.78 (the whole line 476 px).
+  "E 4" from 212.78, under a "BLACK KEYS" kicker (mono 30 px, 0.18 em, ink-2) at x 140, baseline 172.
+  Word spacing +0.3 em on the entries and +0.5 em round each dot, so the pairs read apart: the whole
+  line runs about x 140 to 945, clear of every start's stairs (component round C-01, item 2).
 - **S8d's slide back.** E to C over 225.2 to 226.1 (power2.inOut), its black keys going dark.
 
 ## C to D (S8 to S9 at 229.24)
