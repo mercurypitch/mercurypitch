@@ -78,6 +78,29 @@ describe('central app navigation veto', () => {
     expect(onResolved).toHaveBeenLastCalledWith(true)
   })
 
+  it('hands the blocked request what the holding surface says, or nothing when it says nothing', () => {
+    const said: (string | null)[] = []
+    const request = () =>
+      vetoNavigationDuringLocalSave({
+        onBlocked: (message) => said.push(message),
+        onResolved: () => undefined,
+      })
+
+    const releaseTake = acquireLocalSaveNavigationLock('voice take')
+    request()
+    const [message, setMessage] = createSignal('Still saving.')
+    // Read when a navigation is blocked, not tracked: the latest word stands.
+    // eslint-disable-next-line solid/reactivity
+    const releaseProject = acquireLocalSaveNavigationLock('project', message)
+    request()
+    setMessage('Could not save.')
+    request()
+    releaseProject()
+    releaseTake()
+
+    expect(said).toEqual([null, 'Still saving.', 'Could not save.'])
+  })
+
   it('drives the full-page unload guard from the same registry', () => {
     const Harness: Component = () => {
       useBeforeUnloadGuard(isLocalSaveNavigationLocked)

@@ -1345,12 +1345,20 @@ const AppShell: Component<AppProps> = (props) => {
   ): void => {
     if (
       vetoNavigationDuringLocalSave({
-        onBlocked: () =>
-          showNotification(
-            'Please wait while your changes finish saving on this device.',
-            'info',
-            { channel: 'voice-take-save' },
-          ),
+        // A voice take says nothing of its own, so it gets the wait it has
+        // always had. A surface that says why it holds (Studio's project,
+        // which a failed save holds until it is saved, copied or discarded)
+        // is quoted instead.
+        onBlocked: (message) =>
+          message === null
+            ? showNotification(
+                'Please wait while this take finishes saving on this device.',
+                'info',
+                { channel: 'voice-take-save' },
+              )
+            : showNotification(message, 'info', {
+                channel: 'local-save-held',
+              }),
         onResolved,
       })
     ) {

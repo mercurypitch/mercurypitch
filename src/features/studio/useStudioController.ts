@@ -27,6 +27,14 @@ import { listStudioSources, readStudioSourceBlob, } from './integration/source-c
 export const STUDIO_SAVE_WAIT_MS = 10_000
 const SWITCH_REFUSED =
   'Save these changes, make a copy, or discard them before opening another project.'
+const LEAVE_WHILE_IMPORTING =
+  'Studio is still adding audio to this project. Wait for it to finish, or cancel the import.'
+const LEAVE_WHILE_SAVING =
+  'Studio is still saving this project on this device. Try again in a moment.'
+const LEAVE_AFTER_FAILED_SAVE =
+  'Studio could not save your latest changes. Retry the save, make a copy, or discard the changes before you leave.'
+const LEAVE_WITHOUT_EDITING =
+  'This tab can no longer save your latest changes. Make a copy to keep them, or discard them before you leave.'
 
 export interface StudioControllerOptions {
   service?: StudioService
@@ -91,6 +99,17 @@ export function useStudioController(options: StudioControllerOptions = {}) {
   const busy = () => editBlocked() || saveState() === 'saving'
   const hasUnsavedChanges = () =>
     !!project() && !!queue && project()!.revision > queue.durableRevision()
+  /**
+   * What the app says when Studio holds a tab switch, a route or a voice
+   * command. A save in flight ends by itself; a failed save or a tab that
+   * lost editing never does, so those name the way out instead.
+   */
+  const leaveHeldMessage = (): string => {
+    if (importing()) return LEAVE_WHILE_IMPORTING
+    if (!writable()) return LEAVE_WITHOUT_EDITING
+    if (saveState() === 'error') return LEAVE_AFTER_FAILED_SAVE
+    return LEAVE_WHILE_SAVING
+  }
   const canUndo = () =>
     writable() &&
     !loading() &&
@@ -114,6 +133,7 @@ export function useStudioController(options: StudioControllerOptions = {}) {
       !disposed() &&
       (importing() || saveState() === 'saving' || hasUnsavedChanges()),
     'Studio local project',
+    leaveHeldMessage,
   )
 
   const current = (epoch: number) =>
