@@ -949,3 +949,23 @@ replaced it. The builder's record: critics never read it.
      - **S1's ti** (item 6): on "restless" ti's stair lights orange at 25 %, under do's 45 % (row 1f).
      - All four scenes rendered at 60 fps (21:18 to 21:30, on the 20:49 kit); holds s01 0.2, s02 0,
        s03 0.2, s04 0.4 s (0.5 per 30 s), longest 0.1 s; check 0 errors in S1 to S4.
+
+104. **S9 to S11 after builder D's round 4 (component critic D-03's items 2 and 4), and the
+     whole-pixel steps of slowly moving type, which stay.**
+     - **As built** (all three clips at 60 fps, on the 20:49 kit): in F-chart the strip, its
+       hairlines and key names fade out over 308.22 to 308.98, once the five dim chips have left
+       it, and come back over the pull (320.23 to 321.03), before the chips fly home at 321.58; on
+       the fourth shelf's turn of the cascade (320.05) the five dim chips rise to 50 % chrome with
+       ink letters (luma 37 to 123) in the same one pass. Holds: S9 1.5 s in 41.4 s (1.1 per 30 s
+       at 60 fps, 0.9 at 30; the longest is the card's 0.3 s), S10 0.8, S11 0.4 per 30 s. Accepted
+       as "about 1 s per 30 s" without a new beat in S9; the fresh critic D-04 judges.
+     - **Slowly moving type steps a whole pixel at a time.** Wherever text moves slowly in y (S9's
+       slow push, S11's camera landings and label rises, E's doctor lines, "wait" and the chip
+       settling), Chrome places glyph baselines on whole pixels, so a label holds and then jumps
+       about 1 px (S9: two 1 px jumps in 0.5 s on "tonic = home"). Shapes and paths move smoothly.
+       Builder D found that `text-rendering: geometricPrecision` changes nothing; a test of the
+       layers with a 1e-4 skew ($S/l4entr/snap, 31 frames of S9's push) still showed a 1.00 px
+       jump. Left as it is: the steps are 1 px, under a frame's notice at playback, and the fixes
+       left (type drawn as paths, or rasterised layers that blur under a push) cost more than they
+       buy. Where small type only rises a few px into place, its builder drops the rise and keeps
+       the fade (builder E's round 3, item 2).

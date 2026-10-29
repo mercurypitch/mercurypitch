@@ -1705,3 +1705,9 @@ Note: the lanes' memory gate read a stale cgroup path after the 21:00 restart (f
   force unsnapped glyphs); 31 consecutive 60 fps frames of S9 10.10-10.60 -> /dev/shm/l4snap.
   If it works: DECISIONS 104 + tell builders; else leave the snaps (sub-pixel) for the film critic.
   E-fix3-msg item 2 suggests geometricPrecision: REWRITE it before sending (D proved it useless).
+- 23:5x text-snap test ($S/l4entr/snap, steps.py): snapshot quantises to 30 fps frames (floor); "tonic =
+  home" jumps 1.0 px twice in 0.5 s with the current kit; the 1e-4 skew variant still jumps 1.00 px
+  once (one split 0.5+0.5). Not adopted. DECISIONS 104 (D's round 4 as built; snaps left as cosmetic;
+  small type that only rises a few px drops the rise). E-fix3-msg item 2 rewritten accordingly.
+- Queue now: critic D-04 (critics/D4.txt) -> B small (B-fix4) -> C small (C-fix2) -> E round 3
+  (E-fix3); F-03 when F reports; then B-04, C-03, E-03. Agents now: F + A-03.
