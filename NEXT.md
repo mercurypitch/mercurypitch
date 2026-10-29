@@ -1399,3 +1399,12 @@ Note: the lanes' memory gate read a stale cgroup path after the 21:00 restart (f
   whole-watch, s12/s13 stills). Verification briefs written: $S/l4entr/critics/{C2,D2,B3}.txt; builder
   B's round-3 list: $S/l4entr/B-fix-msg.txt (overwritten; items 2-5, item 1 done in the kit, 9 per
   DECISIONS 82). Slot order: C reports -> C-02; D reports -> resume B; then A-01, D-02.
+- 13:50 builder C reported fix round 1 (all 11 C-01 items fixed by its account; s07 clip 13:39:22 with
+  the new entrance, s08 13:32:25; s07 1.0 s/30 s held, longest 0.2; s08 0.8 s/30 s, longest 0.1).
+  Deviations it chose: slide names leave over the first 30 % and arrive over the last 30 % (not a
+  middle crossfade); the lane ("Predict." + pills) eases 50 px left with the F-white push (bead crossed
+  "No" by 23 px); the tally line runs x 140-945 with a "BLACK KEYS" kicker (HANDOFFS said 476 px: check
+  HANDOFFS S8 once C-02 is back); one kit dust mote at x 1904-1907 during m08's fall (world, left).
+  Its stills/sheets: lab/s07-predict/{fix1,fix1b,fix1b-slide}/, lab/s08-anywhere/{fix1,fix1-slides}/.
+- 13:51 component critic C-02 launched (fresh motion-critic, xhigh, paths only: $S/l4entr/critics/C2.txt),
+  report to review/component-C-02/REPORT.md. Agents now: builder D + C-02.
