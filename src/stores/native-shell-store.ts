@@ -391,6 +391,38 @@ export interface NativeAudioOutput {
   watchRoute?: (handler: (route: NativeAudioRoute) => void) => () => void
 }
 
+/** Whether the phone will show a reminder: 'prompt' until it has been
+ *  asked, 'unavailable' where it cannot show one at all. */
+export type NativeReminderPermission =
+  | 'granted'
+  | 'denied'
+  | 'prompt'
+  | 'unavailable'
+
+/** One reminder, for one date (packages/mobile-runtime reminders.ts). */
+export interface NativeReminder {
+  /** Unique among those pending; scheduling an id again replaces it. */
+  readonly id: number
+  readonly title: string
+  readonly body: string
+  /** Strictly in the future: iOS shows one whose time has passed at once. */
+  readonly at: Date
+}
+
+/**
+ * Notifications the phone shows by itself, at a time the app chose: the Ear
+ * Lab's, so a tap on one opens the app on the Ear Lab (native-reminders.ts).
+ * None of these rejects: a phone that cannot answers 'unavailable', or false.
+ */
+export interface NativeReminders {
+  permission: () => Promise<NativeReminderPermission>
+  /** The system's own question, which neither platform puts twice. */
+  ask: () => Promise<NativeReminderPermission>
+  schedule: (reminders: readonly NativeReminder[]) => Promise<boolean>
+  /** Those still to come, and those already shown. */
+  cancel: (ids: readonly number[]) => Promise<boolean>
+}
+
 export interface NativeDeviceApi {
   /**
    * Whether the microphone coming on takes the sound from another app, as
@@ -457,6 +489,12 @@ export interface NativeDeviceApi {
    * has no reading of it.
    */
   audioOutput?: NativeAudioOutput
+  /**
+   * Reminders the phone shows by itself: the Ear Lab's "Remind me tomorrow"
+   * (src/features/ear-lab/merc/reminder.ts). Absent from a build without the
+   * Ear Lab with Merc.
+   */
+  reminders?: NativeReminders
 }
 
 /**

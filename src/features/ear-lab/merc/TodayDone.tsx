@@ -1,7 +1,9 @@
 // ============================================================
 // The day's close: today's three are done. What each one moved, the
 // day counted (never a streak), the orb the day lit and its name, the
-// Ear Report one tap away. No medal, no seal: the headline says it.
+// Ear Report one tap away, and on a phone that can, a reminder each
+// morning from tomorrow (ReminderRow). No medal, no seal: the headline
+// says it.
 // ============================================================
 
 import type { JSX } from 'solid-js'
@@ -14,6 +16,8 @@ import { pathCount } from '@/lib/ear/path'
 import { earToday, sprintHistory, todaysSprint } from '@/stores/ear-lab-store'
 import styles from './bench.module.css'
 import { benchDays, orbLine, REPORT_LINE, TODAY_DONE } from './merc-lines'
+import { remindersOffered } from './reminder'
+import { ReminderRow } from './ReminderRow'
 import { todayMoves } from './session'
 import { mercStill } from './stills'
 
@@ -210,6 +214,10 @@ export function TodayDone(props: {
           <IconChevron size={18} />
         </button>
       </section>
+
+      <Show when={remindersOffered()}>
+        <ReminderRow />
+      </Show>
 
       <button
         type="button"

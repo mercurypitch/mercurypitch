@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- The release build shrinks away every resource nothing names
+     (app/build.gradle, shrinkResources). The Ear Lab reminder's status-bar
+     icon is named only by the page, at run time (native-reminders.ts), so
+     it is kept here. The shrinker reads this file and leaves it out. -->
+<resources xmlns:tools="http://schemas.android.com/tools"
+    tools:keep="@drawable/ic_stat_reminder" />

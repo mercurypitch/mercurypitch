@@ -51,10 +51,12 @@ describe('this app’s own composition', () => {
     },
   )
 
-  it('admits it cannot schedule a notification', async () => {
-    // `@capacitor/local-notifications` is not a dependency of this app, and
-    // this is what says so from the outside. A product feature-detects the
-    // capability through exactly this answer.
+  it('keeps its notification port the inert one', async () => {
+    // The one reminder this app sets, the Ear Lab's "Remind me tomorrow",
+    // goes through the platform wrappers (native-reminders.ts), which reach
+    // `@capacitor/local-notifications` only when a reminder is set. This
+    // port is not that way in, and says so from the outside: nothing on
+    // this object brings the plugin into the app's startup graph.
     await expect(runtime.localNotifications.checkPermission()).resolves.toBe(
       'unsupported',
     )

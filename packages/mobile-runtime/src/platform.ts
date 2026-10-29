@@ -6,8 +6,8 @@
 // tab cannot: a tap you can feel, a screen that stays lit, a status bar that
 // reads against the page behind it, the system share sheet, the app's own row
 // in Settings, the Android back button, the app going away and coming back,
-// and the picture-in-picture window (picture-in-picture.ts, re-exported
-// here).
+// a reminder the phone shows by itself later (reminders.ts), and the
+// picture-in-picture window (picture-in-picture.ts). Both re-exported here.
 //
 // THE RULE THAT SHAPES EVERY FUNCTION BELOW. A plugin module is reached only
 // from inside a `Capacitor.isNativePlatform()` branch, through `await
@@ -68,6 +68,14 @@ export {
   setTvLyricsEnabled,
   setTvStageEnabled,
 } from './picture-in-picture'
+export type { Reminder, ReminderPermission, ReminderTap } from './reminders'
+export {
+  askForReminders,
+  cancelReminders,
+  onReminderTap,
+  reminderPermission,
+  scheduleReminders,
+} from './reminders'
 
 /**
  * Which way the status bar's own text should read. The names are the

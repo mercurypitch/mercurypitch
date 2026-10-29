@@ -16,7 +16,7 @@
 // ============================================================
 
 import type { JSX } from 'solid-js'
-import { createEffect, createMemo, createSignal, For, onCleanup, onMount, Show, untrack, } from 'solid-js'
+import { createEffect, createMemo, createSignal, For, on, onCleanup, onMount, Show, untrack, } from 'solid-js'
 import { Dynamic, Portal } from 'solid-js/web'
 import { MercPresence } from '@/components/room-kit/MercPresence'
 import { VIEW_FOR_DRILL } from '@/features/ear-lab/drill-views'
@@ -38,6 +38,7 @@ import styles from './bench.module.css'
 import { Glass, practiceEstimate } from './Glass'
 import { IconQuestion } from './merc-icons'
 import { benchDays, benchLine, FIRST_RUN_HEADLINE, glassCaption, REPORT_LINE, startLabel, TASK, } from './merc-lines'
+import { renewReminders } from './reminder'
 import roomStyles from './room.module.css'
 import { litAtOpen, setRoomOrigin, takeReturn } from './session'
 import { HelpSheet } from './Sheets'
@@ -116,6 +117,10 @@ export function MercBench(props: MercBenchProps): JSX.Element {
       completeSprint()
     }
   })
+  // The morning reminders, if they were asked for: laid out again as the
+  // Ear Lab opens, and as the day closes, which takes today's away.
+  const dayClosed = createMemo(() => isSprintComplete())
+  createEffect(on(dayClosed, (closed) => void renewReminders(closed)))
 
   const line = createMemo(() =>
     firstRun() ? { ...FIRST_RUN_HEADLINE, lede: '' } : headline(),

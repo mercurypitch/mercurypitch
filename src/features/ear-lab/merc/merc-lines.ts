@@ -503,6 +503,17 @@ export const TODAY_DONE = {
   merc: 'Three readings in. Same time tomorrow?',
 }
 
+/** The day's close's reminder switch, and what the phone shows each
+ *  morning from tomorrow (reminder.ts). */
+export const REMINDER = {
+  label: 'Remind me tomorrow at 8:30',
+  title: 'Merc',
+  body: "Today's three are waiting in the Ear Lab.",
+  refused: 'Notifications are off for Mercury Pitch in Settings.',
+  unavailable: "This phone can't show reminders from Mercury Pitch.",
+  settings: 'Open Settings',
+} as const
+
 const ORDINAL_WORDS = [
   'First',
   'Second',

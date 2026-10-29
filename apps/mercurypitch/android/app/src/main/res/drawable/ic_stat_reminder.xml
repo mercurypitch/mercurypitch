@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- The Ear Lab reminder's status-bar icon (native-reminders.ts): the app's
+     mark as Android wants one there, white on clear, which the shade tints.
+     A glass, its mercury standing in a wave. Without it the plugin shows
+     the system's info icon. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp"
+    android:height="24dp"
+    android:viewportWidth="24"
+    android:viewportHeight="24">
+    <path
+        android:fillColor="#FFFFFFFF"
+        android:fillType="evenOdd"
+        android:pathData="M12,2A10,10 0,1 0,12 22A10,10 0,1 0,12 2ZM12,4A8,8 0,1 1,12 20A8,8 0,1 1,12 4Z" />
+    <path
+        android:fillColor="#FFFFFFFF"
+        android:pathData="M4,12C7,8.5 9.5,9 12,12C14.5,15 17,15.5 20,12A8,8 0,0 1,4 12Z" />
+</vector>

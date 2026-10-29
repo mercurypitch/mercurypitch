@@ -31,13 +31,17 @@
 //   chosen theme applied for the session it was chosen in and the next launch
 //   came up with the :root defaults and no data-theme attribute at all.
 //
-// Added, because neither has a browser equivalent:
+// Added, because none of these has a browser equivalent:
 //   installNativeShell()           The OS taking the whole app away, and the
 //                                  Android hardware back button. Both in
 //                                  infrastructure/native-shell.ts.
 //   installNativeHaptics()         The rooms' haptics (src/lib/haptics) on
 //                                  the device: navigator.vibrate is not in
 //                                  iOS WebKit. infrastructure/native-haptics.ts.
+//   openTabFromReminders()         A tapped Ear Lab reminder opens the app on
+//                                  the Ear Lab. Only in a build with the Ear
+//                                  Lab with Merc, the one that sets them.
+//                                  infrastructure/native-reminders.ts.
 // Added here and nowhere else, because each is a fact about a WebView:
 //
 //   installStoragePort()           `mp:userId`, `mp:deviceSecret` and
@@ -97,17 +101,19 @@ import { installChunkLoadRecovery } from '@/lib/chunk-load-recovery'
 import { registerDeveloperSection } from '@/lib/developer-sections'
 import { initDeviceTier } from '@/lib/device-tier'
 import { initGlobalErrorHandlers } from '@/lib/global-error-handler'
-import { KARAOKE_IMPORT } from '@/lib/native-build'
+import { EAR_LAB_WITH_MERC, KARAOKE_IMPORT } from '@/lib/native-build'
 import { abandonStoragePort, hydrateStoragePort, installStoragePort, } from '@/lib/storage-port'
 import { followAudioRoute } from '@/stores/audio-route-store'
 import { nativeDeviceApi, registerNativeDevice, } from '@/stores/native-shell-store'
 import { initTheme } from '@/stores/theme-store'
 import { createNativeDevice, standUnlockClipAsideForNowPlaying, } from './infrastructure/native-device'
 import { installNativeHaptics } from './infrastructure/native-haptics'
+import { openTabFromReminders } from './infrastructure/native-reminders'
 import { installNativeShell } from './infrastructure/native-shell'
 import { createPreferencesStoragePort } from './infrastructure/preferences-storage'
 import { createSocialLoginBridge } from './infrastructure/social-login'
 import { NativeShell } from './shell/NativeShell'
+import { goToTab } from './shell/shell-navigation'
 
 // Point the pitch engine at the copies scripts/sync-ort-assets.mjs vendored
 // into this bundle. Unconfigured it fetches the wasm runtime from jsDelivr
@@ -139,6 +145,10 @@ initTheme()
 installNativeShell()
 // The rooms' haptics are the device's, not navigator.vibrate (none on iOS).
 installNativeHaptics()
+// A tapped Ear Lab reminder opens the app on the Ear Lab. Before the first
+// render, and a cold start included: the plugin keeps the tap until this
+// listens. Folded out of a build without the Ear Lab with Merc.
+if (EAR_LAB_WITH_MERC) openTabFromReminders(goToTab)
 // The one AudioContext and the screen's keep-awake, for a room under `src/`
 // that cannot import either (the Karaoke room). Before the first render, so
 // a room never mounts without them.

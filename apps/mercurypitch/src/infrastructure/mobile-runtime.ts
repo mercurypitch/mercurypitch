@@ -12,21 +12,25 @@
 // `@irchiinnuss/purchase-kit` refuses to let a store build out without a
 // real platform key, or with a Test Store one.
 //
-// V1-1 SCHEDULES NOTHING. There is no reminder in this app, so there is no
-// `@capacitor/local-notifications` in its dependencies and that port is the
-// inert one.
+// ITS NOTIFICATIONS PORT IS THE INERT ONE. The one reminder this app sets,
+// the Ear Lab's "Remind me tomorrow", goes through
+// `@irchiinnuss/mobile-runtime/platform` (native-reminders.ts), whose
+// wrappers import `@capacitor/local-notifications` only when a reminder is
+// set, in a build with the Ear Lab with Merc. Nothing reads
+// `runtime.localNotifications`.
 //
 // WHY THIS COMPOSES PORT BY PORT rather than calling
 // `createCapacitorMobileRuntime`. That helper is the every-capability
 // composition, and it imports all four of its plugins at module scope — a
-// static import happens whether or not the matching option was passed. This
-// app installs three of them (`@capacitor/haptics` and RevenueCat's two), so
-// reaching the helper would bundle a notification plugin that has no native
-// half in this binary: it resolves at build time through the shared
-// package's own devDependencies, and fails first on the device as an
-// `Unimplemented` from the bridge. That is hazard 3 in the native plan. The
-// narrow subpaths below are the fix, and they are also the honest
-// description of this app.
+// static import happens whether or not the matching option was passed. That
+// put a notification plugin in a binary with no native half for it (hazard 3
+// in the native plan: it resolved at build time through the shared
+// package's own devDependencies, and failed first on the device as an
+// `Unimplemented` from the bridge). The plugin is installed now, for the Ear
+// Lab's reminder, but the helper would still put it in every build's startup
+// graph, the store build's included, where the platform wrappers keep it to
+// the build that sets one. The narrow subpaths below are the fix, and they
+// are also the honest description of this app.
 //
 // Device capabilities that are not part of this object — haptic taps that a
 // screen fires directly, keep-awake, the status bar, share, Settings, the
