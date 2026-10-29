@@ -357,6 +357,9 @@ importers:
       '@capacitor/keyboard':
         specifier: ^8.0.5
         version: 8.0.5(@capacitor/core@8.5.3)
+      '@capacitor/local-notifications':
+        specifier: ^8.2.1
+        version: 8.2.1(@capacitor/core@8.5.3)
       '@capacitor/preferences':
         specifier: ^8.0.1
         version: 8.0.1(@capacitor/core@8.5.3)

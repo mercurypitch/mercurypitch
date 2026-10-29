@@ -97,6 +97,28 @@ describe('the Ear Lab with Merc, in the sources', () => {
     }
   })
 
+  it('hands the phone its reminders, and hears their taps, only behind the switch', () => {
+    expect(
+      read('apps/mercurypitch/src/infrastructure/native-device.ts'),
+    ).toMatch(
+      /\.\.\.\(EAR_LAB_WITH_MERC \? \{ reminders: createNativeReminders\(\) \} : \{\}\)/u,
+    )
+    expect(read('apps/mercurypitch/src/main.tsx')).toMatch(
+      /\nif \(EAR_LAB_WITH_MERC\) openTabFromReminders\(goToTab\)\n/u,
+    )
+    // Nothing else reaches the plugin's reminder wrappers.
+    const callers = sources('apps/mercurypitch/src')
+      .filter((path) =>
+        /\b(?:askForReminders|scheduleReminders|onReminderTap)\b/u.test(
+          read(path),
+        ),
+      )
+      .map((path) => path.replace(/\\/gu, '/'))
+    expect(callers).toEqual([
+      'apps/mercurypitch/src/infrastructure/native-reminders.ts',
+    ])
+  })
+
   it('imports its serif in its entry and nowhere else', () => {
     const importers = [...sources('src'), ...sources('apps/mercurypitch/src')]
       .filter((path) => read(path).includes('@fontsource-variable/crimson-pro'))

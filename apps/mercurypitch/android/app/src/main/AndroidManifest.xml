@@ -73,6 +73,12 @@
     <!-- The same service posts that notification, and lint refuses a build
          targeting Android 13+ that posts one without declaring this. A media
          session's notification is exempt from the runtime permission, so
-         nothing here asks the singer for it. -->
+         the song never asks the singer for it. The Ear Lab's "Remind me
+         tomorrow" does ask, when its switch is turned on: a reminder is not
+         exempt. Its plugin (@capacitor/local-notifications) adds the boot
+         receiver that puts pending reminders back after a restart, and asks
+         for no exact alarms: without SCHEDULE_EXACT_ALARM, Android 12 and
+         later deliver each reminder on an inexact alarm, which may come a
+         little after its time. -->
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
 </manifest>

@@ -7,14 +7,16 @@
 // not depend on), and the screen's keep-awake, the system's media controls,
 // the picture-in-picture window and the phone's volume and route
 // (`@irchiinnuss/mobile-runtime/platform`, which eslint keeps out of
-// `src/`).
+// `src/`), and the Ear Lab's morning reminders (native-reminders.ts).
 // Registered once from `main.tsx` through `registerNativeDevice`; the web
 // registers nothing.
 
 import { acquireSharedAudioContext, holdSharedAudioContextInBackground, } from '@irchiinnuss/audio-io'
 import { claimNowPlaying, keepAwake, micStopsOtherApps, onAudioOutput, onAudioRoute, onMediaAction, onNowPlayingHoldsAudio, onPictureInPicture, onTvLyrics, pictureInPictureNeedsLyrics, readAudioOutput, readTvLyrics, setNowPlaying, setPictureInPictureAutoEnter, setPictureInPictureLyrics, } from '@irchiinnuss/mobile-runtime/platform'
 import { standUnlockClipAside } from '@/lib/audio-unlock'
+import { EAR_LAB_WITH_MERC } from '@/lib/native-build'
 import type { NativeDeviceApi } from '@/stores/native-shell-store'
+import { createNativeReminders } from './native-reminders'
 import { createTvStage } from './native-tv-stage'
 
 /**
@@ -86,6 +88,9 @@ export function createNativeDevice(): NativeDeviceApi {
       watch: (handler) => onAudioOutput(handler),
       watchRoute: (handler) => onAudioRoute(handler),
     },
+    // The day's close's "Remind me tomorrow", in the build that has the
+    // Ear Lab with Merc; folded out of every other with the room itself.
+    ...(EAR_LAB_WITH_MERC ? { reminders: createNativeReminders() } : {}),
   }
 }
 

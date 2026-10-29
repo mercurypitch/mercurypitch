@@ -29,6 +29,14 @@ const orientation = vi.hoisted(() => ({ lock: vi.fn(), unlock: vi.fn() }))
 const keyboard = vi.hoisted(() => ({ hide: vi.fn() }))
 const share = vi.hoisted(() => ({ share: vi.fn() }))
 const nativeSettings = vi.hoisted(() => ({ open: vi.fn() }))
+const localNotifications = vi.hoisted(() => ({
+  checkPermissions: vi.fn(),
+  requestPermissions: vi.fn(),
+  schedule: vi.fn(),
+  cancel: vi.fn(),
+  removeDeliveredNotifications: vi.fn(),
+  addListener: vi.fn(),
+}))
 const appPlugin = vi.hoisted(() => ({
   addListener: vi.fn(),
   minimizeApp: vi.fn(),
@@ -104,6 +112,11 @@ vi.mock('capacitor-native-settings', () => {
     AndroidSettings: { ApplicationDetails: 'application_details' },
     IOSSettings: { App: 'app' },
   }
+})
+
+vi.mock('@capacitor/local-notifications', () => {
+  loaded.push('@capacitor/local-notifications')
+  return { LocalNotifications: localNotifications }
 })
 
 vi.mock('@capacitor/app', () => {
@@ -196,6 +209,16 @@ describe('on the web', () => {
     ['setTvLyricsEnabled', (p: Platform) => p.setTvLyricsEnabled(true)],
     ['readTvLyrics', (p: Platform) => p.readTvLyrics()],
     ['claimNowPlaying', (p: Platform) => p.claimNowPlaying()],
+    ['reminderPermission', (p: Platform) => p.reminderPermission()],
+    ['askForReminders', (p: Platform) => p.askForReminders()],
+    [
+      'scheduleReminders',
+      (p: Platform) =>
+        p.scheduleReminders([
+          { id: 1, title: 'Merc', body: 'Hi', at: new Date(Date.now() + 1e6) },
+        ]),
+    ],
+    ['cancelReminders', (p: Platform) => p.cancelReminders([1])],
   ])('%s evaluates no plugin module at all', async (_name, call) => {
     const platform = await loadPlatform(false)
 
@@ -213,6 +236,19 @@ describe('on the web', () => {
     await expect(platform.minimizeApp()).resolves.toBe(false)
   })
 
+  it('has no reminders: none allowed, none scheduled, none cancelled', async () => {
+    const platform = await loadPlatform(false)
+
+    await expect(platform.reminderPermission()).resolves.toBe('unavailable')
+    await expect(platform.askForReminders()).resolves.toBe('unavailable')
+    await expect(
+      platform.scheduleReminders([
+        { id: 1, title: 'Merc', body: 'Hi', at: new Date(Date.now() + 1e6) },
+      ]),
+    ).resolves.toBe(false)
+    await expect(platform.cancelReminders([1])).resolves.toBe(false)
+  })
+
   it('hands back inert unsubscribes rather than nothing', async () => {
     const platform = await loadPlatform(false)
     const handler = vi.fn()
@@ -223,9 +259,11 @@ describe('on the web', () => {
     const stopWindow = platform.onPictureInPicture(handler)
     const stopHolding = platform.onNowPlayingHoldsAudio(handler)
     const stopTv = platform.onTvLyrics(handler)
+    const stopReminders = platform.onReminderTap(handler)
     await settle()
 
     expect(loaded).toEqual([])
+    expect(localNotifications.addListener).not.toHaveBeenCalled()
     expect(appPlugin.addListener).not.toHaveBeenCalled()
     expect(mediaSession.setActionHandler).not.toHaveBeenCalled()
     expect(registerPlugin).not.toHaveBeenCalled()
@@ -236,6 +274,7 @@ describe('on the web', () => {
       stopWindow()
       stopHolding()
       stopTv()
+      stopReminders()
     }).not.toThrow()
     expect(handler).not.toHaveBeenCalled()
   })
@@ -1577,6 +1616,203 @@ describe('a TV connected to an iPhone', () => {
 
     expect(state).toBeNull()
     expect(registerPlugin).not.toHaveBeenCalled()
+    expect(() => {
+      stop()
+    }).not.toThrow()
+  })
+})
+
+describe('reminders on a phone', () => {
+  const AT = new Date(2026, 9, 30, 8, 30)
+
+  it('reads the permission, and asks for it, in three words', async () => {
+    const platform = await loadPlatform(true)
+    localNotifications.checkPermissions.mockResolvedValueOnce({
+      display: 'granted',
+    })
+    localNotifications.requestPermissions
+      .mockResolvedValueOnce({ display: 'denied' })
+      .mockResolvedValueOnce({ display: 'prompt-with-rationale' })
+
+    await expect(platform.reminderPermission()).resolves.toBe('granted')
+    await expect(platform.askForReminders()).resolves.toBe('denied')
+    // Android's "ask again, with a reason": still a question to put.
+    await expect(platform.askForReminders()).resolves.toBe('prompt')
+  })
+
+  it('schedules each one for its own date, through Doze, with only what was given', async () => {
+    const platform = await loadPlatform(true)
+    localNotifications.schedule.mockResolvedValueOnce({ notifications: [] })
+
+    await expect(
+      platform.scheduleReminders([
+        {
+          id: 8301,
+          title: 'Merc',
+          body: 'Waiting.',
+          at: AT,
+          smallIcon: 'ic_stat_reminder',
+          iconColor: '#c9a45e',
+          extra: { tab: 'ear-lab' },
+        },
+        { id: 8302, title: 'Merc', body: 'Waiting.', at: AT },
+      ]),
+    ).resolves.toBe(true)
+
+    expect(localNotifications.schedule).toHaveBeenCalledTimes(1)
+    expect(localNotifications.schedule).toHaveBeenCalledWith({
+      notifications: [
+        {
+          id: 8301,
+          title: 'Merc',
+          body: 'Waiting.',
+          schedule: { at: AT, allowWhileIdle: true },
+          autoCancel: true,
+          smallIcon: 'ic_stat_reminder',
+          iconColor: '#c9a45e',
+          extra: { tab: 'ear-lab' },
+        },
+        {
+          id: 8302,
+          title: 'Merc',
+          body: 'Waiting.',
+          schedule: { at: AT, allowWhileIdle: true },
+          autoCancel: true,
+        },
+      ],
+    })
+    // Never a repeating trigger: one date each.
+    const sent = localNotifications.schedule.mock.calls[0]?.[0] as {
+      notifications: { schedule: Record<string, unknown> }[]
+    }
+    for (const notification of sent.notifications) {
+      expect(Object.keys(notification.schedule).sort()).toEqual([
+        'allowWhileIdle',
+        'at',
+      ])
+    }
+  })
+
+  it('loads nothing for an empty list', async () => {
+    const platform = await loadPlatform(true)
+
+    await expect(platform.scheduleReminders([])).resolves.toBe(true)
+    await expect(platform.cancelReminders([])).resolves.toBe(true)
+
+    expect(loaded).toEqual([])
+  })
+
+  it('cancels those to come and takes away those shown', async () => {
+    const platform = await loadPlatform(true)
+    localNotifications.cancel.mockResolvedValueOnce(undefined)
+    localNotifications.removeDeliveredNotifications.mockResolvedValueOnce(
+      undefined,
+    )
+
+    await expect(platform.cancelReminders([8301, 8302])).resolves.toBe(true)
+
+    expect(localNotifications.cancel).toHaveBeenCalledWith({
+      notifications: [{ id: 8301 }, { id: 8302 }],
+    })
+    expect(
+      localNotifications.removeDeliveredNotifications,
+    ).toHaveBeenCalledWith({
+      notifications: [
+        { id: 8301, title: '', body: '' },
+        { id: 8302, title: '', body: '' },
+      ],
+    })
+  })
+
+  it('counts a cancel done when only the shown ones could not be taken away', async () => {
+    const platform = await loadPlatform(true)
+    localNotifications.cancel.mockResolvedValueOnce(undefined)
+    localNotifications.removeDeliveredNotifications.mockRejectedValueOnce(
+      new Error('Must supply notifications to remove'),
+    )
+
+    await expect(platform.cancelReminders([8301])).resolves.toBe(true)
+  })
+
+  it('survives a phone with no reminders behind the plugin', async () => {
+    const platform = await loadPlatform(true)
+    const unimplemented = Object.assign(new Error('not implemented'), {
+      code: 'UNIMPLEMENTED',
+    })
+    localNotifications.checkPermissions.mockRejectedValueOnce(unimplemented)
+    localNotifications.requestPermissions.mockRejectedValueOnce(unimplemented)
+    localNotifications.schedule.mockRejectedValueOnce(unimplemented)
+    localNotifications.cancel.mockRejectedValueOnce(unimplemented)
+
+    await expect(platform.reminderPermission()).resolves.toBe('unavailable')
+    await expect(platform.askForReminders()).resolves.toBe('unavailable')
+    await expect(
+      platform.scheduleReminders([
+        { id: 8301, title: 'Merc', body: 'Waiting.', at: AT },
+      ]),
+    ).resolves.toBe(false)
+    await expect(platform.cancelReminders([8301])).resolves.toBe(false)
+  })
+
+  it('hears a tap with what the reminder carried, and not a dismissal', async () => {
+    const platform = await loadPlatform(true)
+    const handle = listenerHandle()
+    localNotifications.addListener.mockResolvedValueOnce(handle)
+    const handler = vi.fn()
+
+    const stop = platform.onReminderTap(handler)
+    await settle()
+
+    expect(localNotifications.addListener).toHaveBeenCalledWith(
+      'localNotificationActionPerformed',
+      expect.any(Function),
+    )
+    const emit = localNotifications.addListener.mock.calls[0]?.[1] as (action: {
+      actionId: string
+      notification: { id: number; extra?: unknown }
+    }) => void
+    emit({
+      actionId: 'tap',
+      notification: { id: 8301, extra: { tab: 'ear-lab' } },
+    })
+    emit({ actionId: 'dismiss', notification: { id: 8302 } })
+    emit({ actionId: 'tap', notification: { id: 8303 } })
+    emit({ actionId: 'tap', notification: { id: 8304, extra: ['ear-lab'] } })
+
+    expect(handler.mock.calls).toEqual([
+      [{ id: 8301, extra: { tab: 'ear-lab' } }],
+      [{ id: 8303, extra: {} }],
+      [{ id: 8304, extra: {} }],
+    ])
+
+    stop()
+    expect(handle.remove).toHaveBeenCalledTimes(1)
+  })
+
+  it('removes a tap listener unsubscribed before its handle arrived', async () => {
+    const platform = await loadPlatform(true)
+    const handle = listenerHandle()
+    localNotifications.addListener.mockResolvedValueOnce(handle)
+
+    const stop = platform.onReminderTap(vi.fn())
+    stop()
+    await settle()
+    await settle()
+
+    expect(handle.remove).toHaveBeenCalledTimes(1)
+  })
+
+  it('hears no taps from a build with no plugin behind the name', async () => {
+    const platform = await loadPlatform(true)
+    localNotifications.addListener.mockRejectedValueOnce(
+      new Error('"LocalNotifications" plugin is not implemented on android'),
+    )
+    const handler = vi.fn()
+
+    const stop = platform.onReminderTap(handler)
+    await settle()
+
+    expect(handler).not.toHaveBeenCalled()
     expect(() => {
       stop()
     }).not.toThrow()

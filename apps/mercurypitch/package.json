@@ -28,6 +28,7 @@
     "@capacitor/device": "^8.0.3",
     "@capacitor/haptics": "^8.0.2",
     "@capacitor/keyboard": "^8.0.5",
+    "@capacitor/local-notifications": "^8.2.1",
     "@capacitor/preferences": "^8.0.1",
     "@capacitor/screen-orientation": "^8.0.2",
     "@capacitor/share": "^8.0.1",
