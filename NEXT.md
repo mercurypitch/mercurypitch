@@ -1668,3 +1668,11 @@ Note: the lanes' memory gate read a stale cgroup path after the 21:00 restart (f
   As-built ladder numbers in the report: write into HANDOFFS § The ladder AFTER F-02 returns (spec
   kept stable while the critic reads it).
 - 21:1x critic F-02 launched on frozen copies ($S/l4entr/f2/). Agents now: A + F-02.
+- 21:29-21:30 builder A and critic F-02 both stopped on the 5-hour usage limit (reset 23:10 UTC). The
+  22:16 check-in was delivered at 23:12. The container restarted ~23:11 (files on / intact, /dev/shm
+  cleared, no background jobs). A had finished its edits and all four 60 fps clips before the stop
+  (s03 21:18, s04 21:21, s01 21:29, s02 21:29:59; frame counts checked: 2051, 204, 568, 1339).
+- 23:13 both resumed by message (A: measure, check, report without re-rendering; F-02: re-extract
+  what it needs from the frozen f2/ copies). Agents now: A + F-02. Queue unchanged: D round 4
+  (D-fix4-msg) -> B small (B-fix4) -> C small (C-fix2) -> E round 3 (E-fix3) -> critics A-03, D-04,
+  B-04, C-03, E-03. HANDOFFS § The ladder as-built numbers wait for F-02.

@@ -174,3 +174,25 @@ Root check: 5 errors, all missing m12-orange in s12-s16 (not ours); s01-s04 warn
 Seams: s02 3.4 vs s03 0 stills max 0; s03 end vs s04 0 stills mean 0.001; clips s01->s02 0.363
 (largest 6), s03->s04 0.363. s04 end vs s05's 14:26 clip differs only by the bokeh discs
 (s05's clip predates L.bokeh). clock-lint silent; node --check ok on all four.
+
+## Round A-02 (from 21:08; report review/component-A-02/REPORT.md: s01, s02, s04 KEEP, s03 REVISE)
+
+Edits done (21:40), clock-lint silent, node --check ok:
+- Item 1 (s03): risers are the subject. RIP_GAP 0.2 (board). Riser n: 4 -> 10 px, chrome 40 % -> full
+  ink, P(RIP0 + 0.2(n-1), 0.2, power2.out), so 38.70 to 40.10; all thin back together from
+  word('b3','steps','start',0.3) = 40.54 over 0.7 s linear (done 41.24, before "start it" 41.26).
+  Block pulses and tread flashes removed from s03 (the flash overlays are gone).
+- Item 5 (s03): "name its notes" right-aligned (anchor end) at ST.colX(8,0) + 56 = 1194, top do's right
+  edge; baseline unchanged (790 world on C).
+- Item 2 (s04): numerals 1-7 (Outfit 600 36 px, ink) centred at riserX(n), baseline tread(n+1) - 24,
+  each in with growAt(n) (60.98 + 0.07(n-1)), out with the labels at LEAVE (67.63). "bigger": the seven
+  bars brighten together (4 -> 8 px, chrome 40 % -> full ink, 0.25 s up from 66.22, linear back by
+  67.63) and take one 'bar' long pulse together; no block pulses or tread flashes on "bigger" now.
+  "measure" (68.04) keeps its in-turn ripple with block pulse and flash (not asked).
+- Item 4 (s04): C4/C5 lift 40 px from LIFT0 = at('q0','start',0.06) = 52.10 (0.4 s, power3.out) with a
+  3 px chrome outline 6 px out (own rect in each tile's group); drop from TWELVE 54.16 (0.25 s,
+  power2.in) and a tile pulse at 54.41. The A-01 top-edge glow on them is gone.
+- Item 6 (s01): ti on "restless" lit 0.25 / ST.LIT.color of the orange (25 % against do's 45 %).
+  Backup of the pre-edit s01 at lab/s01-cold-open/scratch/s01-before-r3.html.
+Next: 60 fps clips via lab/s01-cold-open/scratch/pass60.sh (old clips kept as clip-r2.mp4), measures in
+lab/<id>/measure-r3, sweeps, check, report.
