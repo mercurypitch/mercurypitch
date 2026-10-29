@@ -944,6 +944,13 @@ import handler, issue #813.
 **Rule:** an effect that writes the address from state holds off while the browser has moved somewhere the router has not read (`unreadMove`: set by the popstate, cleared by the hashchange), and its test dispatches the popstate, then changes state, then the hashchange. Do not read a popstate as "a traversal": a link fires one too.
 **See:** `holdForMove` in `src/features/routing/useHashRouter.ts`; "a move the router has not read yet" in `src/features/routing/useHashRouter.test.tsx`
 
+### Read a signal before a plain value in a memo's `&&`
+
+**Symptom:** Span's sung answer window never opened once `open` became `sungRun() && (phase() === 'answer' || ...)`.
+**Cause:** `sungRun()` reads `run.trackId()`, an accessor over a plain variable, not a signal. False at mount, it short-circuited the `&&`, so the memo read no signal at all and never ran again. A memo tracks only what its last run read.
+**Rule:** in a reactive condition, read the signal first and the plain value last (`(phase() === 'answer' || ...) && sungRun()`). An accessor's name does not say whether it is a signal: look.
+**See:** `hearingAgain` and the sung window in `src/features/ear-lab/SpanDrill.tsx`
+
 ## Performance
 
 ### Preserve physical material units when baking decoded geometry

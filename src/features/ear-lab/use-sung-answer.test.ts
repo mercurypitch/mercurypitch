@@ -1,9 +1,12 @@
 // The sung window: opens with the answer phase, fills the live strip
 // as the mic hears notes, closes itself on silence or at the ceiling,
-// and Done closes it now — judging exactly once.
+// and Done closes it now — judging exactly once. Held, it sets aside
+// what the mic hears, neither closes nor runs toward its ceiling, and
+// then carries on with the notes it had.
 
 import { createRoot, createSignal } from 'solid-js'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { sungDegrees } from '@/lib/ear/sung-notes'
 import type { PitchFrame } from '@/lib/pitch-f0-stream'
 import { SUNG_ANSWER, sungAnswerCeilingMs, useSungAnswer, } from './use-sung-answer'
 
@@ -35,19 +38,21 @@ function setUp() {
     level: () => 0.2,
   }
   const [open, setOpen] = createSignal(false)
+  const [held, setHeld] = createSignal(false)
   const onJudge = vi.fn()
   let answer!: ReturnType<typeof useSungAnswer>
   const dispose = createRoot((d) => {
     answer = useSungAnswer({
       capture: mic,
       open,
+      held,
       rootMidi: () => 60,
       phraseMs: () => 1500,
       onJudge,
     })
     return d
   })
-  return { mic, setOpen, onJudge, answer, dispose }
+  return { mic, setOpen, setHeld, onJudge, answer, dispose }
 }
 
 describe('useSungAnswer', () => {
@@ -122,6 +127,75 @@ describe('useSungAnswer', () => {
     vi.advanceTimersByTime(SUNG_ANSWER.pollMs * 5)
     expect(answer.degrees()).toEqual([])
     expect(onJudge).not.toHaveBeenCalled()
+    dispose()
+  })
+
+  it('sets aside what it hears while held, then carries on with the notes it had', () => {
+    const { mic, setOpen, setHeld, onJudge, answer, dispose } = setUp()
+    setOpen(true)
+    // Do, then a breath.
+    mic.frames = frames([
+      [60, 0, 0.35],
+      [0, 0.35, 0.9],
+    ])
+    vi.advanceTimersByTime(SUNG_ANSWER.pollMs)
+    expect(answer.degrees()).toEqual([1])
+
+    // Held: the mic hears the phrase from the speaker, then silence long
+    // past the window's own closing and its ceiling. Done waits too.
+    setHeld(true)
+    mic.frames = [
+      ...mic.frames,
+      ...frames([
+        [67, 0.9, 1.25],
+        [0, 1.25, 1.4],
+        [72, 1.4, 1.75],
+        [0, 1.75, 9],
+      ]),
+    ]
+    answer.judgeNow()
+    vi.advanceTimersByTime(sungAnswerCeilingMs(1500) * 2)
+    expect(onJudge).not.toHaveBeenCalled()
+    expect(answer.degrees()).toEqual([1])
+    expect(answer.level()).toBe(0)
+
+    // Carried on: heard afresh, and a breath after the hold is no
+    // silence of the singer's, though Do was 1.5 s before it.
+    setHeld(false)
+    expect(mic.startWindow).toHaveBeenCalledTimes(2)
+    mic.frames = frames([[0, 0, 0.9]])
+    vi.advanceTimersByTime(SUNG_ANSWER.pollMs)
+    expect(onJudge).not.toHaveBeenCalled()
+
+    // Re and Mi, then silence: judged once, Do Re Mi.
+    mic.frames = frames([
+      [0, 0, 0.9],
+      [62, 0.9, 1.25],
+      [0, 1.25, 1.4],
+      [64, 1.4, 1.75],
+      [0, 1.75, 3.1],
+    ])
+    vi.advanceTimersByTime(SUNG_ANSWER.pollMs)
+    expect(onJudge).toHaveBeenCalledTimes(1)
+    expect(sungDegrees(onJudge.mock.calls[0][0], 60)).toEqual([1, 2, 3])
+    dispose()
+  })
+
+  it('runs toward its ceiling only while it is not held', () => {
+    const { mic, setOpen, setHeld, onJudge, dispose } = setUp()
+    setOpen(true)
+    mic.frames = frames([[0, 0, 0.5]])
+    vi.advanceTimersByTime(1000)
+    setHeld(true)
+    vi.advanceTimersByTime(sungAnswerCeilingMs(1500) * 2)
+    setHeld(false)
+
+    vi.advanceTimersByTime(
+      sungAnswerCeilingMs(1500) - 1000 - SUNG_ANSWER.pollMs,
+    )
+    expect(onJudge).not.toHaveBeenCalled()
+    vi.advanceTimersByTime(SUNG_ANSWER.pollMs)
+    expect(onJudge).toHaveBeenCalledTimes(1)
     dispose()
   })
 })
