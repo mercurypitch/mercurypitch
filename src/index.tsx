@@ -2,6 +2,9 @@
 // index.tsx — Application mount point
 // ============================================================
 
+// quiet-console comes before every app module: it silences production
+// console narration before anything can log (src/lib/quiet-console.ts).
+import '@/lib/quiet-console'
 import { render } from 'solid-js/web'
 import '@/styles/app.css'
 import '@/styles/dark-stage.css'

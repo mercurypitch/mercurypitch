@@ -7,7 +7,10 @@
 // and no model weights.
 // ============================================================
 
+// quiet-console comes before every app module: it silences production
+// console narration before anything can log (src/lib/quiet-console.ts).
 import { render } from 'solid-js/web'
+import '@/lib/quiet-console'
 import './mirror.css'
 import { setupConsent } from '@/components/ConsentBanner'
 import { armDeveloperConsole } from '@/components/developer-console-arming'
