@@ -15,9 +15,9 @@
 // ITS NOTIFICATIONS PORT IS THE INERT ONE. The one reminder this app sets,
 // the Ear Lab's "Remind me tomorrow", goes through
 // `@irchiinnuss/mobile-runtime/platform` (native-reminders.ts), whose
-// wrappers import `@capacitor/local-notifications` only when a reminder is
-// set, in a build with the Ear Lab with Merc. Nothing reads
-// `runtime.localNotifications`.
+// wrappers load the package's own Capacitor adapter for the plugin
+// (capacitor/local-notifications) only when a reminder is set, in a build
+// with the Ear Lab with Merc. Nothing reads `runtime.localNotifications`.
 //
 // WHY THIS COMPOSES PORT BY PORT rather than calling
 // `createCapacitorMobileRuntime`. That helper is the every-capability

@@ -21,7 +21,7 @@ import { drawOptions } from '@/lib/ear/draw-options'
 import { findIdentificationDrill } from '@/lib/ear/drills'
 import { roveRootMidi } from '@/lib/ear/item-bank'
 import { CADENCE_BANK, degreeChordMidis } from '@/lib/ear/progressions'
-import { CADENCE_TIMING, COMPARE_TIMING } from '@/lib/ear/timing'
+import { CADENCE_TIMING, compareSequence } from '@/lib/ear/timing'
 import { EAR_LAB_WITH_MERC } from '@/lib/native-build'
 import { useEarRoom } from './ear-room-context'
 import type { PadState } from './EarStage'
@@ -64,6 +64,8 @@ export function CadenceDrill(props: { onBack: () => void }): JSX.Element {
    *  taken away; iOS holds resume() through a call) sounds nothing once
    *  the engine is ready. */
   let silenced = 0
+  /** The end of the progression sounding, which a silencing settles. */
+  let ending: ((sounded: boolean) => void) | null = null
   let rootMidi = 48
 
   function cancelAudio(): void {
@@ -73,11 +75,15 @@ export function CadenceDrill(props: { onBack: () => void }): JSX.Element {
     strummer?.cancel()
     strummer = null
     setSounding(0)
+    // Cut short, it still ends: whatever waits on it hears it did not
+    // sound out, and goes no further.
+    const cut = ending
+    ending = null
+    cut?.(false)
   }
 
   /** True once the progression has sounded to its end; false when a
-   *  silencing came while it waited on the audio. One that comes while
-   *  it sounds clears the timer it ends on, so it never resolves. */
+   *  silencing came while it waited on the audio, or cut it short. */
   async function strumProgression(
     degrees: readonly number[],
     chordMs: number,
@@ -104,12 +110,14 @@ export function CadenceDrill(props: { onBack: () => void }): JSX.Element {
         ),
       )
     })
-    await new Promise<void>((resolve) => {
+    return new Promise<boolean>((resolve) => {
+      ending = resolve
       timers.push(
         setTimeout(
           () => {
+            ending = null
             setSounding(0)
-            resolve()
+            resolve(true)
           },
           CADENCE_TIMING.leadInS * 1000 +
             degrees.length * stepMs +
@@ -117,7 +125,6 @@ export function CadenceDrill(props: { onBack: () => void }): JSX.Element {
         ),
       )
     })
-    return true
   }
 
   /** In a pair practice, the other of the two: on the pads every round,
@@ -159,23 +166,26 @@ export function CadenceDrill(props: { onBack: () => void }): JSX.Element {
             },
             // The answer's progression, then the pick's, in that key. Each
             // strum goes through the guard above; a silencing in the pause
-            // between them ends Compare there.
+            // between them moves the count from where it stood as the
+            // first ended, and ends Compare there.
             compare: async (pickedId: string): Promise<void> => {
               const picked = CADENCE_BANK.find(
                 (entry) => entry.itemId === pickedId,
               )
               if (picked === undefined) return
-              const first = await strumProgression(
-                item.payload,
-                CADENCE_TIMING.chordMs,
+              let asked = silenced
+              await compareSequence(
+                async () => {
+                  const sounded = await strumProgression(
+                    item.payload,
+                    CADENCE_TIMING.chordMs,
+                  )
+                  asked = silenced
+                  return sounded
+                },
+                () => strumProgression(picked.payload, CADENCE_TIMING.chordMs),
+                () => asked === silenced,
               )
-              if (!first) return
-              const asked = silenced
-              await new Promise((resolve) =>
-                setTimeout(resolve, COMPARE_TIMING.gapMs),
-              )
-              if (asked !== silenced) return
-              await strumProgression(picked.payload, CADENCE_TIMING.chordMs)
             },
           }
         : {}),

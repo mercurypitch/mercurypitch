@@ -17,7 +17,7 @@ import type { JSX } from 'solid-js'
 import { useEngines } from '@/contexts/EngineContext'
 import { STACK_BANK } from '@/lib/ear/banks'
 import { findIdentificationDrill } from '@/lib/ear/drills'
-import { COMPARE_TIMING, STACK_TIMING } from '@/lib/ear/timing'
+import { compareSequence, STACK_TIMING } from '@/lib/ear/timing'
 import { EAR_LAB_WITH_MERC } from '@/lib/native-build'
 import { midiToFreq } from '@/lib/scale-data'
 import { playToneFor } from './ear-sound'
@@ -96,13 +96,11 @@ export function StackDrill(props: { onBack: () => void }): JSX.Element {
               )
               if (picked === undefined) return
               const mine = ++pair
-              await playBlock(STACK_TIMING.chordMs)
-              if (mine !== pair) return
-              await new Promise((resolve) =>
-                setTimeout(resolve, COMPARE_TIMING.gapMs),
+              await compareSequence(
+                () => playBlock(STACK_TIMING.chordMs),
+                () => playBlock(STACK_TIMING.chordMs, [...picked.payload]),
+                () => mine === pair,
               )
-              if (mine !== pair) return
-              await playBlock(STACK_TIMING.chordMs, [...picked.payload])
             },
           }
         : {}),

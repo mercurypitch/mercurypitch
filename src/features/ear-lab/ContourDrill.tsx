@@ -19,7 +19,7 @@ import { createSignal } from 'solid-js'
 import { useEngines } from '@/contexts/EngineContext'
 import { CONTOUR_BANK } from '@/lib/ear/banks'
 import { findIdentificationDrill } from '@/lib/ear/drills'
-import { COMPARE_TIMING, CONTOUR_TIMING } from '@/lib/ear/timing'
+import { compareSequence, CONTOUR_TIMING, sleep } from '@/lib/ear/timing'
 import { EAR_LAB_WITH_MERC } from '@/lib/native-build'
 import { playToneFor } from './ear-sound'
 import type { IdentificationCompare } from './IdentificationDrillView'
@@ -69,9 +69,6 @@ export function ContourDrill(props: { onBack: () => void }): JSX.Element {
    *  a token only the newest pair holds cannot. */
   let pair = 0
 
-  const wait = (ms: number): Promise<void> =>
-    new Promise((resolve) => setTimeout(resolve, ms))
-
   function makeTrial(item: (typeof CONTOUR_BANK)[number]): IdentificationTrial {
     const gapCents = item.payload[0]
     const direction = DIRECTIONS[Math.floor(Math.random() * DIRECTIONS.length)]
@@ -96,7 +93,7 @@ export function ContourDrill(props: { onBack: () => void }): JSX.Element {
       setSounding(1)
       await playToneFor(audioEngine, base, toneMs)
       if (mine !== pair) return false
-      await wait(gapMs)
+      await sleep(gapMs)
       if (mine !== pair) return false
       setSounding(2)
       await playToneFor(audioEngine, secondFor(way), toneMs)
@@ -121,10 +118,11 @@ export function ContourDrill(props: { onBack: () => void }): JSX.Element {
               if (picked === null) return
               const mine = ++pair
               const { toneMs, gapMs } = CONTOUR_TIMING
-              if (!(await soundPair(direction.id, toneMs, gapMs, mine))) return
-              await wait(COMPARE_TIMING.gapMs)
-              if (mine !== pair) return
-              await soundPair(picked, toneMs, gapMs, mine)
+              await compareSequence(
+                () => soundPair(direction.id, toneMs, gapMs, mine),
+                () => soundPair(picked, toneMs, gapMs, mine),
+                () => mine === pair,
+              )
             },
           }
         : {}),

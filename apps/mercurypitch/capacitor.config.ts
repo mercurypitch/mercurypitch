@@ -44,6 +44,16 @@ const config: CapacitorConfig = {
         twitter: false,
       },
     },
+    // The Ear Lab's morning reminders, the only local notifications this
+    // app sets (src/infrastructure/native-reminders.ts). Android's
+    // status-bar icon for them is the mark, white on clear
+    // (res/drawable/ic_stat_reminder.xml, kept from the release build's
+    // resource shrinker by res/raw/keep_reminder_icon.xml), tinted in the
+    // shade with the Ear Lab's brass. iOS shows the app's own icon.
+    LocalNotifications: {
+      smallIcon: 'ic_stat_reminder',
+      iconColor: '#c9a45e',
+    },
   },
 }
 

@@ -18,7 +18,6 @@ import { createComponent, createSignal, useContext } from 'solid-js'
 import { useEngines } from '@/contexts/EngineContext'
 import { findThresholdDrill } from '@/lib/ear/drills'
 import { HAIRLINE_TIMING } from '@/lib/ear/timing'
-import { EAR_LAB_WITH_MERC } from '@/lib/native-build'
 import { latestThresholdReading } from '@/stores/ear-lab-store'
 import { playToneFor } from './ear-sound'
 import type { PadState } from './EarStage'
@@ -40,6 +39,44 @@ interface HairlineDrillProps {
 function Loupe(props: VernierLoupeProps): JSX.Element {
   const skin = useContext(StageSkinContext)
   return createComponent(skin?.VernierLoupe ?? VernierLoupe, props)
+}
+
+interface HairlinePadsProps {
+  /** Which tone is sounding: 1, 2, or 0 for neither. */
+  sounding: 0 | 1 | 2
+  state: (choice: 1 | 2) => PadState
+  armed: boolean
+  onAnswer: (choice: 1 | 2) => void
+}
+
+/** The two pads. Beside the room's upright loupe, which lights no
+ *  hairline (a lit one would show which was higher), each carries a lamp
+ *  for the tone it names; beside the web's, which lights its own, none
+ *  does. The skin the loupe comes from decides. */
+function HairlinePads(props: HairlinePadsProps): JSX.Element {
+  const upright = useContext(StageSkinContext)?.VernierLoupe !== undefined
+  const lamp = (choice: 1 | 2): boolean | undefined =>
+    upright ? props.sounding === choice : undefined
+  return (
+    <Pads columns={2} label="Which tone was higher?">
+      <StagePad
+        keycap="1"
+        label="The first"
+        state={props.state(1)}
+        lamp={lamp(1)}
+        disabled={!props.armed}
+        onClick={() => props.onAnswer(1)}
+      />
+      <StagePad
+        keycap="2"
+        label="The second"
+        state={props.state(2)}
+        lamp={lamp(2)}
+        disabled={!props.armed}
+        onClick={() => props.onAnswer(2)}
+      />
+    </Pads>
+  )
 }
 
 /** Rove the base log-uniformly across A3..A5. */
@@ -112,11 +149,6 @@ export function HairlineDrill(props: HairlineDrillProps): JSX.Element {
     run.phase() === 'stimulus' || run.replaying()
       ? (run.stimulusStep() as 0 | 1 | 2)
       : 0
-  /** The room's pads carry a lamp for the tone they name: its upright
-   *  loupe lights no hairline, which would show which was higher. The
-   *  web's loupe lights its own, and its pads stay as they were. */
-  const lamp = (choice: 1 | 2): boolean | undefined =>
-    EAR_LAB_WITH_MERC ? sounding() === choice : undefined
 
   return (
     <ThresholdDrillView
@@ -156,24 +188,12 @@ export function HairlineDrill(props: HairlineDrillProps): JSX.Element {
         />
       )}
       pads={() => (
-        <Pads columns={2} label="Which tone was higher?">
-          <StagePad
-            keycap="1"
-            label="The first"
-            state={padState(1)}
-            lamp={lamp(1)}
-            disabled={run.phase() !== 'answer'}
-            onClick={() => answer(1)}
-          />
-          <StagePad
-            keycap="2"
-            label="The second"
-            state={padState(2)}
-            lamp={lamp(2)}
-            disabled={run.phase() !== 'answer'}
-            onClick={() => answer(2)}
-          />
-        </Pads>
+        <HairlinePads
+          sounding={sounding()}
+          state={padState}
+          armed={run.phase() === 'answer'}
+          onAnswer={answer}
+        />
       )}
       keys={() => [
         { key: '1', action: () => answer(1) },

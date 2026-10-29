@@ -511,6 +511,7 @@ export const REMINDER = {
   body: "Today's three are waiting in the Ear Lab.",
   refused: 'Notifications are off for Mercury Pitch in Settings.',
   unavailable: "This phone can't show reminders from Mercury Pitch.",
+  failed: "The reminders couldn't be set. Try again.",
   settings: 'Open Settings',
 } as const
 

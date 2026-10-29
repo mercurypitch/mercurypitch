@@ -104,7 +104,7 @@ describe('the Ear Lab with Merc, in the sources', () => {
       /\.\.\.\(EAR_LAB_WITH_MERC \? \{ reminders: createNativeReminders\(\) \} : \{\}\)/u,
     )
     expect(read('apps/mercurypitch/src/main.tsx')).toMatch(
-      /\nif \(EAR_LAB_WITH_MERC\) openTabFromReminders\(goToTab\)\n/u,
+      /\nif \(EAR_LAB_WITH_MERC\) \{\n {2}openTabFromReminders\(\{\n/u,
     )
     // Nothing else reaches the plugin's reminder wrappers.
     const callers = sources('apps/mercurypitch/src')

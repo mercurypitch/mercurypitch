@@ -3,8 +3,9 @@
 // and the pads carry the lamps that say which tone is sounding, since
 // the upright loupe lights no line. The stage is a stand-in that draws
 // the instrument and the console under a skin holding the loupe alone,
-// so every other part is the web's own (drills.test.tsx holds the
-// web's Hairline to its loupe, with no lamp on a pad).
+// so every other part is the web's own; or under no skin, as a stage
+// outside the room would (drills.test.tsx holds the web's Hairline to
+// its loupe, with no lamp on a pad).
 // ============================================================
 
 import { cleanup, fireEvent, render, screen, within, } from '@solidjs/testing-library'
@@ -35,10 +36,12 @@ vi.mock('@/lib/audio-unlock', () => ({
 vi.mock('./arming-cue', () => ({ useArmingCue: () => undefined }))
 
 const SKIN = { VernierLoupe: RoomLoupe } as unknown as StageSkin
+/** Whether the stand-in stage is the room's, with its skin. */
+const stage = vi.hoisted(() => ({ room: true }))
 
 vi.mock('./stage-switch', () => ({
   EarStage: (props: EarStageProps) => (
-    <StageSkinContext.Provider value={SKIN}>
+    <StageSkinContext.Provider value={stage.room ? SKIN : null}>
       <figure>{props.instrument()}</figure>
       {props.console()}
     </StageSkinContext.Provider>
@@ -85,6 +88,7 @@ afterEach(() => {
   cleanup()
   vi.useRealTimers()
   vi.restoreAllMocks()
+  stage.room = true
 })
 
 describe('Hairline in the room', () => {
@@ -133,5 +137,22 @@ describe('Hairline in the room', () => {
     expect(screen.getByTestId('loupe-higher').textContent).toBe('The second')
     // The run's first gap, 50 cents, at twice the scale.
     expect(screen.getByTestId('loupe-magnification').textContent).toBe('×2')
+  })
+
+  it('lights no pad beside the web loupe, in a build that has the room', async () => {
+    // A stage outside the room draws the web's loupe, which lights its own
+    // hairlines: lamps on the pads would say it twice.
+    stage.room = false
+    render(() => (
+      <Stage>
+        <HairlineDrill onBack={vi.fn()} />
+      </Stage>
+    ))
+    expect(document.querySelector('[data-instrument="vernier"]')).not.toBeNull()
+
+    fireEvent.click(screen.getByRole('button', { name: /Practice run/ }))
+    await vi.advanceTimersByTimeAsync(5)
+
+    expect(lamps()).toEqual([null, null])
   })
 })

@@ -46,8 +46,9 @@ const [wanted, setWanted] = createPersistedSignal<boolean>(
 /** On: asked for, and allowed by the phone when last asked. */
 export const remindersOn = wanted
 
-/** What the row says under its switch, after an answer it has to explain. */
-export type ReminderNote = 'refused' | 'unavailable'
+/** What the row says under its switch, after an answer it has to
+ *  explain: the phone said no, cannot show them, or would not take them. */
+export type ReminderNote = 'refused' | 'unavailable' | 'failed'
 
 const [note, setNote] = createSignal<ReminderNote | null>(null)
 
@@ -111,7 +112,9 @@ function remindersAt(times: readonly Date[]): NativeReminder[] {
 
 // Each turn of the switch and each laying out takes a number. One that
 // wakes from the phone's answer to find a later one begun does nothing
-// more, so a switch turned off is never followed by a schedule.
+// more, so a switch turned off is never followed by a schedule; and one
+// whose schedule was already on its way takes them away again, should
+// the later one have turned them off.
 let turn = 0
 /** The day and the state last laid out in this run of the app, so the
  *  Ear Lab opening twice in a morning lays nothing out twice. */
@@ -121,30 +124,41 @@ function layoutOf(now: Date, todayDone: boolean): string {
   return `${dayNumber(now)}:${todayDone ? 'done' : 'to do'}`
 }
 
+/** Lay the mornings out. True once they are on the phone, now or from
+ *  earlier in this run of the app; false where the phone would not take
+ *  them, or a later turn came first. */
 async function layOut(
   phone: NativeReminders,
   mine: number,
   now: Date,
   todayDone: boolean,
-): Promise<void> {
+): Promise<boolean> {
   const key = layoutOf(now, todayDone)
-  if (laidOut === key) return
+  if (laidOut === key) return true
   if (todayDone) {
     // Today's, still to come or already in the shade, is about a day
     // that is done.
     await phone.cancel([reminderId(now)])
-    if (mine !== turn) return
+    if (mine !== turn) return false
   }
   const scheduled = await phone.schedule(
     remindersAt(reminderTimes(now, todayDone)),
   )
-  if (scheduled && mine === turn) laidOut = key
+  if (mine !== turn) {
+    // Turned off while these were on their way: off's cancel may have
+    // reached the phone first, and these after it.
+    if (!wanted()) await phone.cancel(REMINDER_IDS)
+    return false
+  }
+  if (scheduled) laidOut = key
+  return scheduled
 }
 
 /**
  * Turn them on, from the day's close: the phone's own question, then the
- * mornings from tomorrow. Off again where the phone says no. The answer,
- * or null where the switch was turned again before the phone answered.
+ * mornings from tomorrow. Off again where the phone says no, or will not
+ * take them. The answer, or null where the switch was turned again
+ * before it came.
  */
 export async function turnRemindersOn(
   now: () => Date = () => new Date(),
@@ -168,7 +182,14 @@ export async function turnRemindersOn(
   }
   setWanted(true)
   laidOut = null
-  await layOut(phone, mine, now(), true)
+  const laid = await layOut(phone, mine, now(), true)
+  if (mine !== turn) return null
+  if (!laid) {
+    // The phone allows them and took none: the switch must not say on.
+    setWanted(false)
+    setNote('failed')
+    return 'failed'
+  }
   return 'on'
 }
 
@@ -183,9 +204,10 @@ export async function turnRemindersOff(): Promise<void> {
 
 /**
  * Lay the mornings out again, as the Ear Lab opens and as a day's three
- * are done. Where the phone no longer allows them (turned off in its
- * Settings) they are turned off here too, and the day's close says where
- * to turn them back on.
+ * are done. Where the phone no longer allows them they are turned off
+ * here too. Turned off in its Settings, the day's close says so; back to
+ * asking (Android resets an unused app's permissions, and a backup can
+ * land on a new phone), nothing is said: the switch asks again.
  */
 export async function renewReminders(
   todayDone: boolean,
@@ -202,7 +224,7 @@ export async function renewReminders(
   if (permission !== 'granted') {
     laidOut = null
     setWanted(false)
-    setNote('refused')
+    setNote(permission === 'denied' ? 'refused' : null)
     await phone.cancel(REMINDER_IDS)
     return
   }

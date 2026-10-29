@@ -13,17 +13,24 @@
 // one, which the system may deliver somewhat after its time; a reminder a
 // little late is still a reminder. `allowWhileIdle` lets it through Doze. The
 // plugin's own manifest brings POST_NOTIFICATIONS (Android 13's prompt) and
-// the boot receiver that puts pending reminders back after a restart.
+// the boot receiver that puts pending reminders back after a restart. Its
+// status-bar icon is the plugin's default, which an app names in its
+// capacitor.config.ts.
 //
 // iOS keeps at most 64 pending per app, and keeps a shown one in
 // Notification Center until it is taken away, which `cancelReminders` does
 // as well.
 //
-// Like every wrapper in platform.ts, which re-exports these: the plugin
-// arrives through a dynamic import inside `attempt`, so the web evaluates
-// none of it, and a phone without its native half answers as one that
-// cannot, never by throwing.
+// These go through the package's one adapter for the plugin
+// (capacitor/local-notifications.ts), which checks ids and batches and takes
+// away only the shown ones the phone reports. Like every wrapper in
+// platform.ts, which re-exports these, it arrives through a dynamic import
+// inside `attempt`: the web evaluates none of it, nothing of it is in an
+// app's startup graph, and a phone without the plugin's native half answers
+// as one that cannot, never by throwing.
 
+import type { LocalNotificationRequest, LocalNotificationsPort, NotificationPermissionState, } from './contracts'
+import { notificationId } from './contracts'
 import type { Unsubscribe } from './native-calls'
 import { attempt, isNative, lazyListener } from './native-calls'
 
@@ -39,10 +46,6 @@ export interface Reminder {
   readonly body: string
   /** Strictly in the future: iOS shows one whose time has passed at once. */
   readonly at: Date
-  /** Android's status-bar icon: a drawable resource, white on clear. */
-  readonly smallIcon?: string
-  /** Android's tint for it, as #rrggbb. */
-  readonly iconColor?: string
   /** Handed back when the reminder is tapped. */
   readonly extra?: Readonly<Record<string, unknown>>
 }
@@ -53,8 +56,16 @@ export interface ReminderTap {
   readonly extra: Readonly<Record<string, unknown>>
 }
 
-function permissionOf(display: string): ReminderPermission {
-  if (display === 'granted' || display === 'denied') return display
+/** The plugin's adapter, loaded on a phone, when a reminder is wanted. */
+async function notifications(): Promise<LocalNotificationsPort> {
+  const { createCapacitorLocalNotificationsPort } =
+    await import('./capacitor/local-notifications')
+  return createCapacitorLocalNotificationsPort()
+}
+
+function permissionOf(state: NotificationPermissionState): ReminderPermission {
+  if (state === 'granted' || state === 'denied') return state
+  if (state === 'unsupported') return 'unavailable'
   // 'prompt' and Android's 'prompt-with-rationale' both mean: not asked
   // yet, or asked and the question may come again.
   return 'prompt'
@@ -64,9 +75,7 @@ function permissionOf(display: string): ReminderPermission {
 export async function reminderPermission(): Promise<ReminderPermission> {
   let state: ReminderPermission = 'unavailable'
   await attempt(async () => {
-    const { LocalNotifications } =
-      await import('@capacitor/local-notifications')
-    state = permissionOf((await LocalNotifications.checkPermissions()).display)
+    state = permissionOf(await (await notifications()).checkPermission())
   })
   return state
 }
@@ -79,11 +88,7 @@ export async function reminderPermission(): Promise<ReminderPermission> {
 export async function askForReminders(): Promise<ReminderPermission> {
   let state: ReminderPermission = 'unavailable'
   await attempt(async () => {
-    const { LocalNotifications } =
-      await import('@capacitor/local-notifications')
-    state = permissionOf(
-      (await LocalNotifications.requestPermissions()).display,
-    )
+    state = permissionOf(await (await notifications()).requestPermission())
   })
   return state
 }
@@ -94,29 +99,20 @@ export async function scheduleReminders(
 ): Promise<boolean> {
   return attempt(async () => {
     if (reminders.length === 0) return
-    const { LocalNotifications } =
-      await import('@capacitor/local-notifications')
-    await LocalNotifications.schedule({
-      notifications: reminders.map((reminder) => ({
-        id: reminder.id,
-        title: reminder.title,
-        body: reminder.body,
-        schedule: {
-          at: new Date(reminder.at.getTime()),
+    const port = await notifications()
+    await port.schedule(
+      reminders.map(
+        (reminder): LocalNotificationRequest => ({
+          id: notificationId(reminder.id),
+          title: reminder.title,
+          body: reminder.body,
+          schedule: { kind: 'at', at: new Date(reminder.at.getTime()) },
           allowWhileIdle: true,
-        },
-        autoCancel: true,
-        ...(reminder.smallIcon === undefined
-          ? {}
-          : { smallIcon: reminder.smallIcon }),
-        ...(reminder.iconColor === undefined
-          ? {}
-          : { iconColor: reminder.iconColor }),
-        ...(reminder.extra === undefined
-          ? {}
-          : { extra: { ...reminder.extra } }),
-      })),
-    })
+          autoCancel: true,
+          ...(reminder.extra === undefined ? {} : { extra: reminder.extra }),
+        }),
+      ),
+    )
   })
 }
 
@@ -129,18 +125,14 @@ export async function cancelReminders(
 ): Promise<boolean> {
   return attempt(async () => {
     if (ids.length === 0) return
-    const { LocalNotifications } =
-      await import('@capacitor/local-notifications')
-    await LocalNotifications.cancel({
-      notifications: ids.map((id) => ({ id })),
-    })
+    const port = await notifications()
+    const named = ids.map(notificationId)
+    await port.cancel(named)
     try {
-      await LocalNotifications.removeDeliveredNotifications({
-        notifications: ids.map((id) => ({ id, title: '', body: '' })),
-      })
+      await port.removeDelivered(named)
     } catch {
-      // None shown to take away: what was still to come is cancelled,
-      // which is what was asked.
+      // None shown to take away, or a phone that keeps no list of them:
+      // what was still to come is cancelled, which is what was asked.
     }
   })
 }
@@ -158,25 +150,12 @@ export function onReminderTap(
   return lazyListener((dispose) => {
     void (async () => {
       try {
-        const { LocalNotifications } =
-          await import('@capacitor/local-notifications')
+        const port = await notifications()
         dispose(
-          await LocalNotifications.addListener(
-            'localNotificationActionPerformed',
-            (action) => {
-              if (action.actionId !== 'tap') return
-              const extra: unknown = action.notification.extra
-              handler({
-                id: action.notification.id,
-                extra:
-                  extra !== null &&
-                  typeof extra === 'object' &&
-                  !Array.isArray(extra)
-                    ? (extra as Readonly<Record<string, unknown>>)
-                    : {},
-              })
-            },
-          ),
+          await port.addActionListener((action) => {
+            if (action.actionId !== 'tap') return
+            handler({ id: action.notificationId, extra: action.extra ?? {} })
+          }),
         )
       } catch {
         // No reminders in this build: none can be tapped.
