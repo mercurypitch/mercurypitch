@@ -71,6 +71,13 @@ export function audibility(
   return (track) => !track.mute && (!hasSolo || track.solo)
 }
 
+/** A lane's effects by id and kind: what its chain is built from. */
+function effectList(track: StudioTrack): string[] {
+  return track.fx.baseSpec.effects.map(
+    (effect) => `${effect.id}:${effect.kind}`,
+  )
+}
+
 /**
  * What a running graph is built from: the clips, and the effect list of each
  * lane that has any. Two projects with the same shape play through the same
@@ -85,13 +92,31 @@ export function graphShape(project: StudioProject): string {
     lanes: project.tracks
       .filter((track) => used.has(track.id))
       .sort(byId)
-      .map((track) => [
-        track.id,
-        track.fx.baseSpec.effects.map(
-          (effect) => `${effect.id}:${effect.kind}`,
-        ),
-      ]),
+      .map((track) => [track.id, effectList(track)]),
   })
+}
+
+/**
+ * The lanes `graph` built whose chain `after` builds from another effect
+ * list than `before` did. A lane whose track is gone has no chain to build:
+ * it only falls silent.
+ */
+export function changedChains(
+  graph: StudioGraph,
+  before: StudioProject,
+  after: StudioProject,
+): string[] {
+  const next = new Map(after.tracks.map((track) => [track.id, track]))
+  return before.tracks
+    .filter((track) => {
+      const moved = next.get(track.id)
+      return (
+        graph.hasLane(track.id) &&
+        moved !== undefined &&
+        JSON.stringify(effectList(moved)) !== JSON.stringify(effectList(track))
+      )
+    })
+    .map((track) => track.id)
 }
 
 /** Everything the running chains play with. */

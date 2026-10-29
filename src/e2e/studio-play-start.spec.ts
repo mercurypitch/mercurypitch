@@ -1,4 +1,4 @@
-// Studio Play after Pause — the graph Pause keeps sounds again sooner than a rebuilt one, and one an edit made stale is rebuilt.
+// Studio Play after Pause — the graph Pause keeps sounds again sooner than a rebuilt one, and a clip edit while paused moves it instead of rebuilding it.
 import { expect, test } from '@playwright/test'
 import { openArrangement, studioClip, studioRegion, } from './helpers/dedicatedstudio-fixture'
 import type { StudioCapture, StudioClickStamp, } from './helpers/studio-output-capture'
@@ -144,20 +144,29 @@ test.describe('Studio Play after Pause', () => {
     await untilAudioClock(page, (await audioClock(page)) + 0.5)
     await pressToggle()
 
-    // An edit while paused that moves a clip leaves the kept graph stale.
+    // A clip moved while paused re-plans the kept graph's lane.
     const pad = studioClip(page, 'Pad')
     await pad.click()
     await pad.press('Alt+ArrowRight')
     await expect(
       studio.getByText('Saved in this browser', { exact: true }),
     ).toBeVisible()
-    const rebuilt = await measurePlay('play after an edit while paused')
+    const moved = await measurePlay('play after a clip moved while paused')
+    await untilAudioClock(page, (await audioClock(page)) + 0.5)
+    await pressToggle()
+
+    // A take added while paused brings a lane the kept graph never built,
+    // so Play builds afresh. Its tone is far from the pad's and quiet.
+    await importWav(page, 'Air', steadyWav(40, [2000], 0.02))
+    const rebuilt = await measurePlay(
+      'play after a take was added while paused',
+    )
 
     // Measured in headless Chromium on Linux: the kept graph reached half
     // level 125 to 136 ms after the press, a rebuilt one 210 to 220 ms; the
     // build and its tenth-of-a-second lead are what a kept graph saves. The
     // rest is the device callback, the chains' latency and the 90 ms attack.
-    for (const kept of [warm, quiet]) {
+    for (const kept of [warm, quiet, moved]) {
       expect(kept.halfLevelMs!).toBeLessThan(rebuilt.halfLevelMs! - 50)
       expect(kept.firstSoundMs!).toBeLessThan(rebuilt.firstSoundMs! - 50)
     }

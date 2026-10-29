@@ -1,11 +1,11 @@
 // Studio transport — one borrowed clock, explicit playback intent and generation-owned graph cleanup.
 //
-// An edit the running graph cannot follow builds a new run while the old one
-// keeps playing ("held"), then hands over on the same frame with a short
-// crossfade (handoff.ts), so the song never stops for an edit. A newer edit
-// replaces a run that is not heard yet, so a burst of edits builds one run at
-// a time. Only when memory cannot hold both graphs does the song fade out and
-// restart where it was.
+// A clip edit moves only the lanes it changes on the running graph
+// (lane-replan.ts). An edit the graph cannot follow builds a new run while
+// the old one keeps playing ("held"), then hands over on the same frame with
+// a short crossfade (handoff.ts). A newer edit replaces a run not heard yet,
+// so a burst of edits builds one run at a time. Only when memory cannot hold
+// both graphs does the song fade out and restart where it was.
 import type { AudioContextLease } from '@/lib/audio-context-lease'
 import { closeEnvelope } from '@/lib/preview-player'
 import type { ChainSpec } from '@/lib/studio-fx/chain-spec'
@@ -25,7 +25,7 @@ import { buildStudioGraph, studioGraphWorkingBytes } from './graph'
 import type { StudioHandoff } from './handoff'
 import { cancelHandoff, HANDOFF_CANCEL_MARGIN_SECONDS, handoffTiming, scheduleHandoff, } from './handoff'
 import type { StudioDrafts, StudioLaneDraft } from './in-place'
-import { applyDrafts, applyMix, applySound, followMaster, followRepeat, heldMix, playInPlace, withDrafts, } from './in-place'
+import { applyDrafts, applyMix, applySound, followEdit, followMaster, followRepeat, heldMix, withDrafts, } from './in-place'
 import { createStudioKeptRun } from './kept-run'
 import type { StudioRunLayout } from './live-edit'
 import { audibility, firstThatFits, studioRunLayouts } from './live-edit'
@@ -339,7 +339,7 @@ export function createStudioTransport(options: StudioTransportOptions) {
       const from = playableStudioFrom(project, assets, startFrame, repeat)
       const resumed = handingOver
         ? null
-        : kept.take(ctx, project, from, liveSettings())
+        : kept.take(ctx, project, assets, from, liveSettings())
       if (resumed !== null) {
         active = resumed
         publish({ playing: true, pending: false, playheadFrame: from })
@@ -730,12 +730,12 @@ export function createStudioTransport(options: StudioTransportOptions) {
       assets: readonly StudioAsset[],
     ): Promise<void> {
       observeSnapshot(project)
-      if (!wantsPlayback) kept.follow(project, liveSettings())
+      if (!wantsPlayback) kept.follow(project, assets, liveSettings())
       if (!wantsPlayback || disposed) return
       if (
         active &&
         !preparing &&
-        playInPlace(active, project, liveSettings())
+        followEdit(active, project, assets, liveSettings())
       ) {
         // A run heard until its handover follows the mix too.
         for (const { from } of handoffs)
