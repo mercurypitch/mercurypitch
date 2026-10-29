@@ -22,6 +22,7 @@ afterEach(() => {
   cleanup()
   picker.open.mockReset()
   picker.sweep.mockReset()
+  vi.useRealTimers()
 })
 
 function song(id: string, title: string): StudioProjectSummary {
@@ -105,6 +106,24 @@ describe('Studio page backups', () => {
     expect(controller.openForBackup).toHaveBeenCalledWith('two')
     expect(picked.close).toHaveBeenCalled()
     expect(picked.discard).not.toHaveBeenCalled()
+  })
+
+  it('suggests a name with the date and minute, so the picker never offers the last backup by default', async () => {
+    vi.useFakeTimers({ toFake: ['Date'] })
+    vi.setSystemTime(new Date(2026, 9, 29, 11, 42))
+    mountPage('Full')
+    picker.open.mockResolvedValue(null)
+
+    fireEvent.click(screen.getByRole('button', { name: 'Save project backup' }))
+    fireEvent.click(
+      screen.getByRole('button', { name: 'Save a backup of Sketch' }),
+    )
+    await Promise.resolve()
+
+    expect(picker.open.mock.calls).toEqual([
+      ['Window seat 2026-10-29 1142.mpstudio'],
+      ['Sketch 2026-10-29 1142.mpstudio'],
+    ])
   })
 
   it("asks the open song's backup too before the save picker opens", async () => {

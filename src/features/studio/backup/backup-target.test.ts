@@ -287,11 +287,28 @@ describe('Studio backup targets', () => {
     await target.discard()
   })
 
-  it('names the file after the song, without characters a file system refuses', () => {
-    expect(studioBackupFileName('Late: night/mix?')).toBe(
-      'Late nightmix.mpstudio',
+  it('names the file after the song and the minute it was made, without characters a file system refuses', () => {
+    const at = new Date(2026, 9, 29, 11, 42, 30)
+    expect(studioBackupFileName('Late: night/mix?', at)).toBe(
+      'Late nightmix 2026-10-29 1142.mpstudio',
     )
-    expect(studioBackupFileName('***')).toBe('Studio project.mpstudio')
-    expect(studioBackupFileName(undefined)).toBe('Studio project.mpstudio')
+    expect(studioBackupFileName('***', at)).toBe(
+      'Studio project 2026-10-29 1142.mpstudio',
+    )
+    expect(studioBackupFileName(undefined, at)).toBe(
+      'Studio project 2026-10-29 1142.mpstudio',
+    )
+    // No hidden file from a leading dot, and one space where there were more.
+    expect(
+      studioBackupFileName('..Window   seat ', new Date(2026, 0, 5, 9, 7)),
+    ).toBe('Window seat 2026-01-05 0907.mpstudio')
+  })
+
+  it('suggests a new name for each backup a minute apart, so the picker never offers the last one by default', () => {
+    const first = new Date(2026, 9, 29, 11, 42)
+    const next = new Date(2026, 9, 29, 11, 43)
+    expect(studioBackupFileName('Window seat', first)).not.toBe(
+      studioBackupFileName('Window seat', next),
+    )
   })
 })

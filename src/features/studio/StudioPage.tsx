@@ -44,13 +44,13 @@ export function StudioPage() {
   // A backup asks where it goes first, while the click still counts as the
   // person's: Chromium refuses a save picker opened seconds later. Chromium
   // also empties the file picked at once, so the song is asked first whether
-  // its backup can start.
+  // its backup can start, and the name suggested is a new one each minute.
   function chooseBackupTarget(
     title: string | undefined,
   ): Promise<StudioBackupTarget | null> {
     setDownloadError(null)
     setSavedAs(null)
-    return openStudioBackupTarget(studioBackupFileName(title))
+    return openStudioBackupTarget(studioBackupFileName(title, new Date()))
   }
 
   // A backup from the list loads the song behind the list, once a save in

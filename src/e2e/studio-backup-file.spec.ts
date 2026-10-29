@@ -73,6 +73,18 @@ async function pickedBytes(page: Page, name: string): Promise<Uint8Array> {
   return Uint8Array.from(bytes)
 }
 
+/** A backup's file is named after the song and the minute it was made. */
+const WINDOW_SEAT_FILE = /^Window seat \d{4}-\d{2}-\d{2} \d{4}\.mpstudio$/
+const WINDOW_SEAT_SAVED =
+  /^Backup saved as (Window seat \d{4}-\d{2}-\d{2} \d{4}\.mpstudio)\.$/
+
+/** The file a "Backup saved as" status names. */
+function savedFile(status: string | null): string {
+  const name = WINDOW_SEAT_SAVED.exec(status ?? '')?.[1]
+  if (name === undefined) throw new Error(`No backup file in: ${status}`)
+  return name
+}
+
 /** A backup holds the song and its one take: original and canonical audio. */
 function expectBackup(bytes: Uint8Array, title: string): void {
   const entries = unzipSync(bytes)
@@ -115,13 +127,15 @@ test.describe('Studio backup files', () => {
     await namedSong(page, 'Window seat')
     const studio = studioRegion(page)
 
+    const saved = studio
+      .getByRole('status')
+      .filter({ hasText: 'Backup saved as' })
     await studio
       .getByRole('button', { name: 'Save project backup', exact: true })
       .click()
-    await expect(
-      studio.getByRole('status').filter({ hasText: 'Backup saved as' }),
-    ).toHaveText('Backup saved as Window seat.mpstudio.')
-    expectBackup(await pickedBytes(page, 'Window seat.mpstudio'), 'Window seat')
+    await expect(saved).toHaveText(WINDOW_SEAT_SAVED)
+    const first = savedFile(await saved.textContent())
+    expectBackup(await pickedBytes(page, first), 'Window seat')
 
     await studio.getByRole('button', { name: 'All songs' }).click()
     await studio
@@ -137,15 +151,15 @@ test.describe('Studio backup files', () => {
         ),
       )
       .toBe(2)
-    await expect(
-      studio.getByRole('status').filter({ hasText: 'Backup saved as' }),
-    ).toHaveText('Backup saved as Window seat.mpstudio.')
-    expectBackup(await pickedBytes(page, 'Window seat.mpstudio'), 'Window seat')
-    // Nothing went through downloads, and no private copy was made.
+    await expect(saved).toHaveText(WINDOW_SEAT_SAVED)
+    const second = savedFile(await saved.textContent())
+    expectBackup(await pickedBytes(page, second), 'Window seat')
+    // Nothing went through downloads, and no private copy was made: only the
+    // picked files, one each, or the one again when both fell in a minute.
     expect(downloads).toEqual([])
-    expect(Object.keys(await privateFiles(page))).toEqual([
-      'picked/Window seat.mpstudio',
-    ])
+    expect(Object.keys(await privateFiles(page)).sort()).toEqual(
+      [...new Set([first, second])].map((name) => `picked/${name}`).sort(),
+    )
   })
 
   test('leaves nothing behind when the picker is cancelled', async ({
@@ -196,7 +210,7 @@ test.describe('Studio backup files', () => {
       })
       .click()
     const download = await downloading
-    expect(download.suggestedFilename()).toBe('Window seat.mpstudio')
+    expect(download.suggestedFilename()).toMatch(WINDOW_SEAT_FILE)
     const path = testInfo.outputPath('window-seat.mpstudio')
     await download.saveAs(path)
     expectBackup(new Uint8Array(await readFile(path)), 'Window seat')
