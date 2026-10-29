@@ -649,3 +649,28 @@ replaced it. The builder's record: critics never read it.
     - Items E and F (the hairline across the top stair, the credit 35 px over the do chip) go to
       builder D. So does S10's 1.2 s of holds per 30 s, if a beat tied to a word brings it under 1.
     - Item G: row 10a now says what CU-C shows, fa to do, with la, ti and do as its subject.
+93. **The depth cue lifts while the camera moves: the near bokeh and the far staves brighten only
+    while they slide against the diagram.** After decision 89, component critics A-02 (item 3) and
+    D-02 (item C) still read S1's push, S3's pull and S9's push and truck as zooms and a pan: the
+    discs sit at luma 16 to 28 on a ground of 13 to 23 and the staves at 3.5 %, so on a phone no
+    layer parts from the diagram, and the diagram itself is one plane (its strip, stairs and rows
+    must stay aligned, so they cannot sit at different depths). A-02 asked for the bokeh at about
+    +20 luma during the moves. The kit now draws the discs at three times their alpha and the staves
+    at 2.5 times, and shows them at a third and two fifths of that, so every frame at rest is as
+    before (measured: 0 to 2 levels). `L.frameRig` lifts them toward full while they move:
+    - The bokeh by how fast the near layer slides against the mid one, at the frame's corners and
+      centre: none below 40 px a second, full from 400, smoothstep between. A push, pull or truck
+      lifts it. A pan moves every layer alike, so it lifts nothing (a pan has no parallax).
+    - The staves by the far layer's vertical slide only (20 to 200 px a second), since their lines
+      cannot show a sideways one: pushes and pulls lift them; trucks and pans do not.
+    - Mid-move the discs gain up to 27 levels (S3's pull at 8.0, S5's push at 11.2, S9's truck at
+      18.1, clip times). The lift rises and falls with the move's own ease, so nothing flashes, and
+      the text never sits on a brighter ground at rest.
+    - It is a function of the frame's time only, as every move is.
+    - S1's move into the house's light reads as a pass-through (A-02), and the board now calls it
+      one (row 1g and the camera table).
+    - Tested in the scratchpad (`l4entr/depth/ftest`) on S3's pull, S5's push and pan, and S9's
+      truck, against the current kit. Clips rendered before this show the old cue during moves.
+    - The full check is unchanged by it: before and after, 0 runtime errors, 59 of 59 text checks
+      at AA, and the same 79 lint warnings and 3 layout errors, all three older than it (S6 at
+      129.2 s, S11 at 328.7 s), which go to builders B and D.

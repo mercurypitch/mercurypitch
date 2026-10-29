@@ -42,13 +42,18 @@
             just: word('b41', 'Just'),                        // "Just listen along."
             sing: word('b42', 'sing'),                        // 13b: "do, re, mi or ooh,"
             doh: word('b42', 'doh,'), ray: word('b42', 'ray,'), mee: word('b42', 'mee,'),   // each lane's name lights as it is said
+            otherwise: word('b42', 'Otherwise,'), otherEnd: word('b42', 'Otherwise,', 'end'),   // a light runs the plain path, do to do, over the word
             atAbout: word('b42', 'at about'),                 // "at about speaking volume"
+            volume: word('b42', 'volume.'),                   // the line "at about speaking volume" scales 1.05 (long settle)
+            note: word('b42', 'note,'),                       // "Start on my note,": a light runs along do's segment
+            upW: word('b42', 'up.'),                          // "or an octave up.": a light runs along the top do's segment
             start: word('b42', 'Start'),                      // "Start on D3, or D4 an octave up"; the do lane's name brightens
             octave: word('b42', 'octave'),                    // "or an octave up": the top do's name brightens too
             waitW: word('b43', 'Wait'),                       // "wait on ti"; the hold's segment glows
             teeW: word('b43', 'tee,'),                        // ti's name lights
             goW: word('b43', 'go.'),                          // "where it wants to go": the top do's segment glows
             stop: word('b44', 'Stop'),                        // the stop line, carried whole
+            immediately: word('b44', 'immediately'),          // the stop line scales 1.05 (long settle) as he stresses it
             ci: at('count-in'),                               // 13c: the count-in's bead lands
             yt: at('your-turn'), ytEnd: at('your-turn', 'end'),
             tiYT: at('your-turn', 'start', 4.8),              // the cursor reaches the hold: "wait on ti" scales 1.2
@@ -134,6 +139,24 @@
           const lit = [1, 2, 3, 4, 5, 6, 7, 8].map(() => L.svg('rect', { fill: AMB, rx: 2 }, gMarks))
           // the plain path (solid chrome, 3 px at 70 %), which becomes the treads of the staircase on C
           const plain = [1, 2, 3, 4, 5, 6, 7, 8].map(() => L.svg('rect', { fill: C.chrome, opacity: 0 }, gGuide))
+          // a light running along the plain path's segments (as S12's sweeps run along its band): a mask window `w`
+          // px wide over white copies of the segments and a soft glow under them, placed where the guide has stopped
+          const sweep = (id, ns, w) => {
+            const gr = L.svg('linearGradient', { id: SID + id + 'g', gradientUnits: 'userSpaceOnUse', x1: 0, x2: w, y1: 0, y2: 0 }, defs)
+            ;[[0, 0], [0.5, 1], [1, 0]].forEach(([o, a]) => L.svg('stop', { offset: o, 'stop-color': '#fff', 'stop-opacity': a }, gr))
+            const mk = L.svg('mask', { id: SID + id, maskUnits: 'userSpaceOnUse', x: 0, y: 0, width: 1920, height: 1080 }, defs)
+            const r = L.svg('rect', { x: 0, y: 0, width: w, height: 1080, fill: `url(#${SID + id}g)` }, mk)
+            const g = L.svg('g', { mask: `url(#${SID + id})`, opacity: 0 }, gGuide)
+            const glow = L.svg('g', { filter: blurF(id + 'b', 5), opacity: 0.8 }, g)
+            for (const n of ns) {
+              const sg = segAt(n, 1, 0, 3)
+              L.svg('rect', { x: f1(sg.xa - 4), y: f1(sg.y - 5), width: f1(sg.xb - sg.xa + 8), height: 13, rx: 6, fill: C.chrome }, glow)
+              L.svg('rect', { x: f1(sg.xa), y: f1(sg.y), width: f1(sg.xb - sg.xa), height: 3, rx: 1.5, fill: '#ffffff' }, g)
+            }
+            return (x, a) => { const hx = x - w / 2; r.setAttribute('x', f1(hx)); gr.setAttribute('x1', f1(hx)); gr.setAttribute('x2', f1(hx + w)); g.setAttribute('opacity', a.toFixed(3)) }
+          }
+          const sweepAll = sweep('-sw1', [1, 2, 3, 4, 5, 6, 7, 8], 160)
+          const sweepDo = sweep('-sw2', [1], 90), sweepTop = sweep('-sw3', [8], 90)
           // the lane names, travelling with the move, then the film's plain guide's (ink-2)
           const names = SOL.map((s) => L.svg('text', { 'text-anchor': 'end', fill: C.ink2, style: "font: 600 32px 'Outfit', sans-serif", text: s }, mid))
           const waitT = L.svg('text', { x: 1166, y: 196, 'text-anchor': 'middle', fill: C.ink, style: "font: 600 40px 'Outfit', sans-serif", text: 'wait' }, mid)
@@ -197,7 +220,10 @@
           const hud = L.stageOf(room.hud)
           const chip = L.pill(room.hud, 'one octave up', { x: 600, y: 109, size: 30, anchor: 'start' })
           chip.label.style.font = "500 30px/1 'JetBrains Mono', monospace"
-          const TXT = (text, y, style, fill = C.ink) => L.svg('text', { x: 360, y, fill, opacity: 0, style: style + ' white-space: pre;', text }, hud)
+          // the care block's left edge: HANDOFFS's x 360 moved 20 px right, so Merc's talking arcs (which reach x 351)
+          // keep 20 px or more from the doctor lines' ink
+          const CX = 380
+          const TXT = (text, y, style, fill = C.ink) => L.svg('text', { x: CX, y, fill, opacity: 0, style: style + ' white-space: pre;', text }, hud)
           const yours = TXT('Your turn.', 200, "font-family: 'Instrument Serif'; font-style: italic; font-size: 120px; letter-spacing: -0.01em;")
           const O32 = "font: 500 32px 'Outfit', sans-serif;", O40 = "font: 600 40px 'Outfit', sans-serif;", I30 = "font: 400 30px 'Inter', sans-serif;"
           // the care block (HANDOFFS § The care block), each part landing as Merc says it
@@ -294,6 +320,13 @@
               el.setAttribute('x', f1(s.xa)); el.setAttribute('width', f1(s.xb - s.xa)); el.setAttribute('y', f1(s.y)); el.setAttribute('height', 3); el.setAttribute('rx', 1.5)
               el.setAttribute('fill-opacity', '0.7'); el.setAttribute('opacity', plainA.toFixed(3))
             })
+            // the lights along the plain path: do to do on "Otherwise,", do's segment on "my note,", the top do's on "up."
+            {
+              const s1 = segAt(1, 1, 0, 3), s8 = segAt(8, 1, 0, 3), dO = A.otherEnd - A.otherwise
+              sweepAll(lerp(s1.xa - 80, s8.xb + 80, P(t, A.otherwise, dO, 'power1.inOut')), 0.9 * P(t, A.otherwise - 0.04, 0.08) * (1 - P(t, A.otherEnd - 0.06, 0.12)))
+              sweepDo(lerp(s1.xa - 45, s1.xb + 45, P(t, A.note, 0.6, 'sine.inOut')), 0.9 * P(t, A.note - 0.04, 0.08) * (1 - P(t, A.note + 0.5, 0.12)))
+              sweepTop(lerp(s8.xa - 45, s8.xb + 45, P(t, A.upW, 0.6, 'sine.inOut')), 0.9 * P(t, A.upW - 0.04, 0.08) * (1 - P(t, A.upW + 0.5, 0.12)))
+            }
             // the plain path's glows: the hold's segment on "Wait on tee", the top do's on "where it wants to go"
             for (const [el, n, k] of [[glowTi, 7, L.light(t, A.waitW, 0.3, 0.9)], [glowDo, 8, L.light(t, A.goW, 0.3, 0.6)]]) {
               const s = segAt(n, 1, 0, 3)
@@ -328,9 +361,15 @@
             land(yours, A.title, 200)
             for (const c of CARE) if (c !== waitOnTi) land(c.el, c.t0, c.y)
             {
+              const sc = L.pulse(t, A.volume, 'tile', { long: true }), cy = 392 - 11
+              CARE[3].el.setAttribute('transform', `translate(${CX} ${cy}) scale(${sc.toFixed(4)}) translate(${-CX} ${-cy})`)
+              const ss = L.pulse(t, A.immediately, 'tile', { long: true }), sy = 556
+              for (const c of [CARE[6], CARE[7]]) c.el.setAttribute('transform', `translate(${CX} ${sy}) scale(${ss.toFixed(4)}) translate(${-CX} ${-sy})`)
+            }
+            {
               const sc = L.pulse(t, A.tiYT, 'label')
               land(waitOnTi.el, waitOnTi.t0, 492)
-              const cx = 360 + waitW / 2
+              const cx = CX + waitW / 2
               waitOnTi.el.setAttribute('transform', `translate(${f1(cx)} 478) scale(${sc.toFixed(4)}) translate(${f1(-cx)} -478)`)
             }
             for (const c of DOCTOR) land(c.el, c.t0, c.y)

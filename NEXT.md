@@ -1545,3 +1545,20 @@ Note: the lanes' memory gate read a stale cgroup path after the 21:00 restart (f
   (F's s16-end.html edit at 15:39 postdates the s16 clip).
 - 18:21 E and F resumed with a restart note each. Agents now: E + F. Queue unchanged: E-01/F-01 critics
   on their hand-backs -> D round 3 -> A round 2 -> C small -> B small.
+- 18:41 DECISIONS 93 installed: motion-linked lift. lesson.js (L.BOKEH_LIFT 3, L.STAVE_LIFT 2.5; room
+  returns bokeh + staves, shown at 1/LIFT at rest), lesson.css (staves alpha 0.0875), frames.js
+  (cam.slide(t, layer, axis); apply() lifts bokeh on near-vs-mid slide 40-400 px/s and staves on the
+  far layer's vertical slide 20-200 px/s, smoothstep). Rest frames identical (0-2 levels); mid-move
+  discs +25-29 levels (ftest/cmp/*.png). Backups $S/l4entr/depth/kit-before-93/. Board: S1's move is
+  now a "pass-through" (camera table, row 1g, framings note). BUILD-GUIDE, HANDOFFS, STORYBOARD notes
+  added. LEDGER rows 14 (D-02) and 15 (A-02). HANDOFFS § S3 now the four labels (backup
+  HANDOFFS.before-93.md). F told (only s14 has moves among E/F).
+- Baseline check 18:40 (before 93): lint 0 err / 79 warn; runtime 0; LAYOUT 3 ERRORS, pre-existing:
+  s06 129.21-130.02 "T" overlap (B), s11 328.68-329.49 "learned, it seems" + "one short step" (D);
+  motion 0; contrast 59/59. Added to B-fix4-msg.txt and D-fix3-msg.txt. After-check running
+  (check-after-93.log).
+- Messages ready: A-fix2-msg.txt (A round 2), B-fix4, C-fix2, D-fix3 (all updated for 93);
+  critics/E.txt and F.txt (round 1) for when E and F hand back.
+- 18:5x after-check (check-after-93.log) = baseline: same 79 lint warnings (one line count 380->383 is a
+  builder's edit), 0 runtime, the same 3 layout errors (s06, s11; B and D), 59/59 contrast. Recorded
+  in DECISIONS 93.

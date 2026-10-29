@@ -131,12 +131,37 @@
         return [(X - m.e) / m.a, (Y - m.f) / m.a]
       },
       scale(t, layer = 'mid') { return cam.matrix(t, layer).a },
+      // How fast a layer (the near one unless named) slides against the diagram, in px a second, at
+      // the worst of the frame's corners and centre (axis 'y': its vertical part only): 0 at rest
+      // and through a pan, hundreds through a push, pull or truck.
+      slide(t, layer = 'near', axis = 'xy') {
+        const d = 1 / 60
+        const A = cam.matrix(t, layer), A0 = cam.matrix(t - d, layer)
+        const M = cam.matrix(t, 'mid'), M0 = cam.matrix(t - d, 'mid')
+        let worst = 0
+        for (const [X, Y] of [[0, 0], [1920, 0], [0, 1080], [1920, 1080], [960, 540]]) {
+          const nx = (X - A.e) / A.a, ny = (Y - A.f) / A.a, mx = (X - M.e) / M.a, my = (Y - M.f) / M.a
+          const dx = A0.a * nx + A0.e - (M0.a * mx + M0.e), dy = A0.a * ny + A0.f - (M0.a * my + M0.f)
+          worst = Math.max(worst, axis === 'y' ? Math.abs(dy) : Math.hypot(dx, dy))
+        }
+        return worst / d
+      },
       apply(t) {
         const st = cam.state(t)
         for (const name of ['far', 'mid', 'near']) {
           if (!room || !room[name]) continue
           const m = cam.matrix(t, name, st)
           room[name].style.transform = `matrix(${m.a.toFixed(5)}, 0, 0, ${m.a.toFixed(5)}, ${m.e.toFixed(2)}, ${m.f.toFixed(2)})`
+        }
+        // the near bokeh lifts while it slides against the diagram (from 40 to 400 px a second),
+        // so a move's depth shows as it happens and the frames at rest stay clean
+        if (room && room.bokeh) {
+          const u = clamp((cam.slide(t) - 40) / 360), w = u * u * (3 - 2 * u)
+          room.bokeh.style.opacity = ((1 + (L.BOKEH_LIFT - 1) * w) / L.BOKEH_LIFT).toFixed(4)
+        }
+        if (room && room.staves) {
+          const u = clamp((cam.slide(t, 'far', 'y') - 20) / 180), w = u * u * (3 - 2 * u)
+          room.staves.style.opacity = ((1 + (L.STAVE_LIFT - 1) * w) / L.STAVE_LIFT).toFixed(4)
         }
         return st
       },

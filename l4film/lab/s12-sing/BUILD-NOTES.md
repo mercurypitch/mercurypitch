@@ -85,3 +85,42 @@ Running notes so a container restart or a usage-limit pause can resume. Builder 
   head pass to take over (the missing m12-orange-in), as expected. clock-lint silent on both.
 - 11:45 merc-tags --check: s12 0 stale, s13 0 stale (the tool has changed since 10:40; the stale-forever
   report on intro tags no longer happens).
+
+## Host pass (every m12 video in; kit with the long falls and the near bokeh)
+
+- 15:34 tools: hostpass.sh (waits for 1150 MB on /, nice 10, TMPDIR /dev/shm, one clip at a time, then
+  measures); seek.mjs HOSTS=1 (keeps the Merc videos, serves byte ranges, seeks each to its own media
+  time and waits for the presented frame); hostmask.py (hosts' painted extent = host still minus a
+  host-free still at the same time). No-host clips kept as clip-nohosts.mp4 and measure-nohosts/.
+- 15:41 s12 with hosts: holds 0.3 s (0.3 per 30 s), longest 0.2 (no hosts: 2.0 s, 1.9, 0.3). The old
+  jump at 2.067 s is gone. New single-frame "pop" at 19.933 s = Merc's own blink in the pass.
+- s12 falls (342.50 to 343.05, 342.62 to 343.17): every visible element of mine checked in the
+  columns x 124 to 356 and 1584 to 1816, y 0 to 840: none (only the kit's bokeh and dust, the
+  near layer); the card x 665 to 1259; the rows are world (DECISIONS 83).
+- s12 at rest: Merc's painted extent (body, glow, reflection) x 110 to 373, Tavi's 1571 to 1833:
+  146 px from the names (519), 131 px from the lanes' end (1440).
+- 15:45 s13 with hosts (first): holds 2.3 s (2.1 per 30 s), longest 0.4 (no hosts: 17.1, 15.7, 3.5).
+  13a and 13b (0 to 21.3): 2.2 s, 3.1 per 30 s.
+- Merc's talking arcs in s13 reach x 351 (61 samples, 1.0 to 31.5 s, y 600 to 800): 9 px from the
+  doctor lines' ink (x 360). Fix (mine): the care block's left edge 360 -> 380 (title, care lines,
+  doctor lines, the "wait on ti" pulse centre); longest line now ends 941 (<= 960).
+- 18:16 container restart; resumed 18:22. s13 beats added on Merc's words: a light runs the plain
+  path do to do over "Otherwise," (the turn from listening to singing); "at about speaking volume"
+  scales 1.05 on "volume."; a light runs along do's segment on "my note," and along the top do's on
+  "up." (the two starting notes).
+- Mouths: each bead lands as its host starts to sing (arcs from 0.1 s before Merc's onset at 348.19,
+  Tavi's 0.14 s after hers at 363.72, Merc's count-in arcs 0.12 s after 394.24); no bead crosses a face.
+- Handoffs with hosts at exact frames (seek HOSTS=1): S11 to S12 max 10 (no hosts on either side);
+  S12 to S13 max 144, 1597 px over 16: Merc 1261 (S12's own last step 386, S13's first 1014: he
+  starts "Now you"), Tavi 179 (steps 67 and 34), the bead pulse 157: continuous; S13 to S14 max 10,
+  none over 16. (A first run showed Tavi missing at 31.6747: a decode race in seek.mjs, fixed by
+  waiting for the presented frame.)
+- E to F with hosts: Merc's extent 26 px from the strip's left end (240); Tavi's floor light (y 800 to
+  880) 19 px from the strip's last key (1675), her body 42 px. HANDOFFS-fixed frame.
+- 18:36 s13 with hosts, care block at 380 and the four beats: holds 1.5 s (1.4 per 30 s), longest 0.3;
+  13a and 13b 1.4 s (2.0 per 30 s). Kept as clip-hosts-v2.mp4 / measure-hosts-v2.
+- 18:40 one more beat: the stop line scales 1.05 (long settle) on "immediately" (holds sat at 390.9 to
+  391.5 under it). Re-rendering.
+- Text sweep after the move: no run under 4.5:1 in either scene; doctor lines 8.50 to 8.89:1.
+- seek.mjs HOSTS=1 can still miss a head video's first frames (Merc absent in its still at 2.0000);
+  the rendered clip shows him on every frame 57 to 63, so hand-over checks use the clip.

@@ -26,7 +26,9 @@ S13, [F] S14 to S16.
 - The near layer carries the kit's bokeh (`L.bokeh`, DECISIONS 89): faint soft discs, static in
   that layer, so they part from the world on a push, pull, truck or crane and move with it on a
   pan. Being the same in every scene, they match across any cut whose two frames share a framing,
-  as every cut in this film does.
+  as every cut in this film does. While they slide against the world they brighten, as the far
+  staves do with their vertical slide (DECISIONS 93); at rest both are as before, so no handoff
+  frame changes.
 - The staircase's own labels (stair names, riser labels, key names, "tonic = home", "(sol)", the
   brackets, "leading note" and its arrow) ride the world and scale with it: 36, 40 and 34 px at
   `s = 1`. Frame-fixed type (kickers, the list, legends, tallies, sums, cards, pills, credits,
@@ -253,11 +255,16 @@ Outside these moves the camera is still. S8 holds F0 from 196.6 to 229.2 (signat
   37.5: stairs unlit, the top stair filled unlit, the house unlit), and the bead flies back into the
   top house (36.9 to 37.9, power2.inOut, ending at the house's centre (1464, 215)), lighting it at
   37.9. At 37.58 the staircase is at full, the bead in flight, no Mercs.
-- **S3.** The list at x 140, baselines 200, 260, 320 and 380 (Outfit 600 44 px; its longest line
-  410 px), 185 px or more above every tread it crosses. The arrow from ti's tread to the house is
-  ink, 3 px.
+- **S3.** Four labels on the staircase, not a list (DECISIONS 88): Outfit 600, 40 world px, ink, in
+  the mid layer, so they ride the camera and the slide (their baselines are written on C), each 24
+  px or more clear of the stairs, their names and each other. "build it from its steps" from x 242,
+  baseline 494 (32 px over stair 4's tread); "start it on any note" from x 242, baseline 790 (under
+  stair 1's foot); "name its notes" centred on x 958, baseline 790 (under the names of stairs 5 to
+  8; builder A's round 2 right-aligns it to do's right edge, so the two bottom labels read apart);
+  "hear ti lean home" ending at x 1166, baseline 254 (over ti and the house, 24 px over the roof).
+  The arrow from ti's tread to the house is ink, 3 px.
 - **S3 to S4 (47.05).** F0. The staircase on C, names do to do, the top house lit (it fades in S4a,
-  47.1 to 47.5); rows C4 to D5 already full width (x 220 to 1680, widened 46.3 to 46.9); the list
+  47.1 to 47.5); rows C4 to D5 already full width (x 220 to 1680, widened 46.3 to 46.9); the labels
   gone at 46.75.
 - **S4.** "1 octave = 12 semitones" Outfit 600 56 px at x 140, baseline 250; "in 7 steps" and then
   "in 7 steps?" at baseline 330. q0's ring timer at (164, 232), where the answer lands after it has
