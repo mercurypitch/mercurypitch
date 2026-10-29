@@ -42,6 +42,7 @@
      riser's or key's pool (st.stairs[i].names, st.risers[i].labels, kb.keys[m].names) builds
      them up front.
      L.mercBox(x, feetY, size)     a Merc's body box (HANDOFFS: 0.53 of its size wide, 0.64 tall)
+     L.MEASURE                     a step being measured: { stroke, width 2, opacity 0.55 }
 */
 ;(function () {
   const L = window.L
@@ -88,6 +89,8 @@
   const COLOR = { chrome: CHROME, blue: hex('#58a6ff'), orange: hex('#ff7448') }
 
   L.mercBox = (x, feetY, size) => ({ x0: x - 0.265 * size, x1: x + 0.265 * size, y0: feetY - 0.64 * size, y1: feetY })
+  // a step being measured (HANDOFFS § Shared formulas, Marks): a plain chrome outline, unfilled
+  L.MEASURE = { stroke: '#c3ccd6', width: 2, opacity: 0.55 }
 
   /* ---------------------------------------------------------------- labels */
   // A pool of L.spell labels keyed by text, so names cross-fade (letters, numbers, solfège)

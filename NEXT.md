@@ -1110,3 +1110,24 @@ Note: the lanes' memory gate read a stale cgroup path after the 21:00 restart (f
 - NEXT: the rest of the shared pieces (guide lanes and path, chart and chips, ladder, card panel, care block),
   a Lesson 4 BUILD-GUIDE.md on Lesson 2's model, merc-shots adaptation, then builders (at most 2 at a time)
   with a component critic per scene; S6-S8, S10 and S14's component rounds re-check round 3's items 1-3.
+
+## 2026-10-29 ~07:10Z: Lesson 4 film, build guide, Merc passes rendering, builders A and B (tasks 188-190)
+- BUILD-GUIDE.md written on Lesson 2's model (760 lines): the clock (anchors by role; one cross-cut move, the
+  bead's flight 36.9-37.9, one builder), note onsets (FACTS 68), files, skeleton, rules, motion (count a pulse
+  as 0.6 s; prove the 40 % chrome stair light), kit table, proving a scene (with trap 3's observe env vars),
+  re-voice, builder splits (A 14, B 9, C 9, D 11, E 8, F 9 points; one builder per group, two at a time),
+  scene sheets s01-s16 with anchors, handoff confirmations table.
+- tools/board-clock.py reads the frozen storyboard clock tools/board-cues.json (108 cues, 483.729 s; never
+  regenerate it). tools/merc-shots.py rewritten for Lesson 4 (NOTES table per sound; `sings`, `quiet`,
+  celebrate as a `during` state); Lesson 2's copy in l4merc/merc-shots.lesson2.py. 13 passes, 30,487 frames
+  (m12 pair 8,438 each at size 520). L.MEASURE added to stairs.js. DECISIONS 71-75, CHANGES.md entries.
+- Test pass m06a-orange: 265 frames, 225 px, 306 ms/frame; the crescent guard's leftover flags (frames 23-29,
+  245) are Merc's eyes in the top 40 %, no crescent (l4merc/frames/m06a-strip.png).
+- Passes render DETACHED (setsid nohup, trap 11) from 07:06: worker 1 = m01 pair, m04, m06b, m09, m10, m11
+  pair, m07, m08 (skips m06a); worker 2 = m12 pair. l4merc/queue.sh skips a pass whose WebM is newer than its
+  shot file; logs l4merc/logs/worker-{1,2}.log and <id>.log. After a container restart: rerun the same two
+  commands (see the queue's header).
+- Builders A (s01-s04) and B (s05-s06) spawned 07:10 (general-purpose, xhigh, background), paths-only briefs.
+- NEXT: on each report, look at the stills, record confirmed handoffs, a fresh motion-critic per scene
+  (component round, report to review/<scene>-01/REPORT.md), promote shared helpers, then wave 2 (C and D).
+  Adapt tools/chapters.py to Lesson 4's chapters before captions/chapters run.

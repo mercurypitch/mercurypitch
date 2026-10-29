@@ -1,4 +1,4 @@
-# Handoffs v3: exact frames where one builder's scene meets the next
+# Handoffs v3.1: exact frames where one builder's scene meets the next
 
 The last frame of scene N and the first frame of scene N+1 must show every carried object on the
 same pixels (within 2 px). Values marked **(provisional)** are starting values: the builders on

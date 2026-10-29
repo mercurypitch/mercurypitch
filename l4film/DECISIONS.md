@@ -378,3 +378,31 @@ replaced it. The builder's record: critics never read it.
     rim at x 241 to 242 and 353 to 354, its tread at y 664, key C4 from x 240 and y 760, riser 1 at
     x 356 to 359. The lab showed that a black key at 45 % over the white keys reads light grey, so a
     black key now has an opaque obsidian backing and dims darker, as a key outside the scale should.
+
+## Build (from 29 October)
+
+71. **The storyboard's clock is frozen as the scratch cue sheet.** STORYBOARD and HANDOFFS v3.1 are
+    timed to the Kokoro clock of 29 October (483.73 s), not to an estimate, so `tools/board-clock.py`
+    now reads `tools/board-cues.json`, a frozen copy of that `cues.json`, and maps its times onto
+    whatever clock the re-voice brings. Until then the two clocks agree and the tool only names a
+    time's anchor (`tools/CHANGES.md`, 29 October).
+72. **One builder per group, two at a time** (`BUILD-GUIDE.md` § Builder splits): A and B, then C
+    and D, then E and F, 60 points in all, the largest group A at 14. Every cross-group handoff is a
+    fixed rest frame, and every provisional value (the two mouth points, S4c's stand-up, S12a's tip
+    and S13d's reverse tip) sits inside one group, so no builder waits on another. Six fresh
+    contexts hold a scene's rows better than three long ones, and the waves let what two groups
+    write alike be promoted into the kit before the next wave.
+73. **The sung runs are named per pass.** cues.json's sound events carry no singer, so
+    `tools/merc-shots.py` takes a `sings` map per pass (cue to state, `sing`, or `ride` in S12) and a
+    NOTES table from FACTS 68: one voice entry per note at its MIDI pitch (the renderer leans him on
+    the pitch's slope in `ride`), full arcs over each run of notes, falling in sing-a's 0.6 s rest.
+    `quiet` holds both Mercs idle through `your-turn`. The celebration on the end card is a
+    `during` state from `at('end', 'start', 0.87)` for 0.85 s, so the hop lands where S16 times it
+    (479.4 to 480.0) rather than 0.2 s after the sting.
+74. **Merc's two exits to the left are mirrored passes.** The renderer's hop cycles right, back, left,
+    back, and a state always starts on the first, so a pass that hops out left is rendered facing
+    left and mirrored in its scene (`scaleX(-1)` on its box), as Lesson 2's m10-orange was: m10-blue
+    and m11-blue. On screen he faces right, toward the stairs and Tavi, and hops out of frame.
+75. **`L.MEASURE` joins the kit** (`assets/lib/stairs.js`): HANDOFFS names it for a step being
+    measured, and the riser's `measuring` state already drew it; the constant lets a scene draw the
+    same outline elsewhere.

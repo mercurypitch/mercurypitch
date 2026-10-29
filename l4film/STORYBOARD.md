@@ -1,4 +1,4 @@
-# Storyboard v3 (for storyboard critic 03): Find Your Pitch, Lesson 4, "The major scale and home"
+# Storyboard v3.1 (approved for build): Find Your Pitch, Lesson 4, "The major scale and home"
 
 1920x1080, 60 fps, 8:03.7 (483.73 s) on the scratch clock (`cues.json`, Kokoro voices), about
 8:41 to 8:50 once voiced (BRIEF, Length target). Every time below is a cue; scenes key off cue names
