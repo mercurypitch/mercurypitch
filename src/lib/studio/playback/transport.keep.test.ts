@@ -7,7 +7,7 @@ import type { StudioProject } from '../model/types'
 import { KEEP_HIDDEN_MS, KEEP_IDLE_MS } from './kept-run'
 import { PlaybackContext } from './playback.test-fixtures'
 import { RUN_OPEN_SECONDS } from './run'
-import { envelopeOf, freshGraphs, openingEnds, transportFixture, } from './transport.test-fixtures'
+import { envelopeOf, FIRST_HEARD, freshGraphs, openingEnds, transportFixture, } from './transport.test-fixtures'
 
 afterEach(() => {
   setStudioWorkingBytes(null)
@@ -68,8 +68,8 @@ describe('Studio transport kept run', () => {
     await vi.advanceTimersByTimeAsync(33)
     f.transport.pause()
     const paused = f.transport.getState().playheadFrame
-    // Heard from 0.26 s: paused 0.74 s into the song.
-    expect(framesOff(paused, 0.74 * 48000)).toBeLessThanOrEqual(1)
+    // Heard from FIRST_HEARD: paused that much short of 1 s into the song.
+    expect(framesOff(paused, (1 - FIRST_HEARD) * 48000)).toBeLessThanOrEqual(1)
     expect(f.transport.getState().playing).toBe(false)
     expect(faded(envelopeOf(f.graph))).toBe(true)
     expect(f.graph.park).not.toHaveBeenCalled()

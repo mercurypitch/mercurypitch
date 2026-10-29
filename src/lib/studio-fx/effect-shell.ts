@@ -36,6 +36,8 @@ export interface EffectUnit {
   setParams(params: Readonly<Record<string, number>>): void
   /** Current gain reduction in dB (negative), 0 for effects without dynamics. */
   readReductionDb(): number
+  /** Settle fresh compressors from `at` (settleRelease); absent without any. */
+  settle?(at: number): void
   dispose(): void
 }
 
@@ -157,6 +159,7 @@ export interface UnitParts {
     glide: boolean,
   ) => void
   readonly readReductionDb?: () => number
+  readonly settle?: (at: number) => void
   readonly onDispose?: () => void
 }
 
@@ -175,6 +178,11 @@ export function assembleUnit(parts: UnitParts): EffectUnit {
       if (!disposed) parts.apply(params, env.isLive())
     },
     readReductionDb: () => (disposed ? 0 : (parts.readReductionDb?.() ?? 0)),
+    settle:
+      parts.settle &&
+      ((at) => {
+        if (!disposed) parts.settle?.(at)
+      }),
     dispose() {
       if (disposed) return
       disposed = true
@@ -195,6 +203,29 @@ export function createNullCompressor(
   compressor.attack.value = 0.003
   compressor.release.value = 0.25
   return compressor
+}
+
+/**
+ * A new DynamicsCompressorNode starts about 10 dB down and takes some
+ * 240 ms of rendering, silence included, to come up to unity: its detector
+ * starts at zero and climbs at the release rate. With release at 1 ms for
+ * its first 40 ms, 60 ms of silence leave it within 0.02 dB in Chromium,
+ * and every role chain within 0.04 dB of one settled for 2 s (against 1.9 dB
+ * under with no settle). Live graphs settle their compressors this way, so
+ * Play need not wait a quarter second first.
+ */
+export const FAST_SETTLE_SECONDS = 0.04
+const FAST_RELEASE_SECONDS = 0.001
+
+/** Run `param` (a compressor's release) at 1 ms from `at`, then back at `release`. */
+export function settleRelease(
+  param: AudioParam,
+  at: number,
+  release: number,
+): void {
+  param.cancelScheduledValues(at)
+  param.setValueAtTime(FAST_RELEASE_SECONDS, at)
+  param.setValueAtTime(release, at + FAST_SETTLE_SECONDS)
 }
 
 export interface ShaperPath {

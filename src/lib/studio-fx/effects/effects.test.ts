@@ -5,6 +5,7 @@ import { compressorAutoMakeupGain } from '@/lib/studio-fx/compressor-curve'
 import { measureCompressorLatency, resetCompressorLatencyForTests, } from '@/lib/studio-fx/compressor-twin'
 import { EFFECT_KINDS } from '@/lib/studio-fx/effect-definitions'
 import type { EffectEnv } from '@/lib/studio-fx/effect-shell'
+import { FAST_SETTLE_SECONDS } from '@/lib/studio-fx/effect-shell'
 import type { FakeBiquad, FakeCompressor, FakeConvolver, FakeDelay, FakeGain, FakeIir, FakeNode, FakeShaper, } from '@/lib/studio-fx/fake-audio-graph.test-fixtures'
 import { createManualScheduler, FakeAudioContext, fakeImpulseRenderContext, reaches, } from '@/lib/studio-fx/fake-audio-graph.test-fixtures'
 import { createEffectUnit } from './index'
@@ -166,6 +167,51 @@ describe('latency twins once the compressor lookahead is measured', () => {
         expect(delay.delayTime.value * 48000).toBeCloseTo(288, 9)
     })
   }
+})
+
+describe('settling a fresh compressor before its first sound', () => {
+  afterEach(() => resetCompressorLatencyForTests())
+
+  const cases = ['compressor', 'dyneq', 'deesser', 'limiter'] as const
+
+  /** Release at 1 ms from `at`, then back to `release` FAST_SETTLE_SECONDS later. */
+  const settledFrom = (param: FakeCompressor['release'], at: number) => {
+    const sets = param.events.filter((e) => e.kind === 'set')
+    expect(param.events.filter((e) => e.kind === 'cancel').at(-1)?.time).toBe(
+      at,
+    )
+    expect(sets.at(-2)).toMatchObject({ time: at, value: 0.001 })
+    expect(sets.at(-1)?.time).toBeCloseTo(at + FAST_SETTLE_SECONDS, 9)
+    return sets.at(-1)!.value
+  }
+
+  for (const kind of cases) {
+    it(`${kind}: runs its compressor's release at 1 ms for 40 ms, then at its own`, async () => {
+      await measureCompressorLatency(48000, fakeImpulseRenderContext(288))
+      const { ctx, env } = setup(false)
+      const unit = createEffectUnit(ctx.asContext, spec(kind), env)
+      const [compressor] = ctx.ofType<FakeCompressor>('compressor')
+      const release = compressor.release.value
+      unit.settle?.(2)
+      expect(settledFrom(compressor.release, 2)).toBeCloseTo(release, 9)
+    })
+
+    it(`${kind}: settles null-compressor twins too, before the lookahead is measured`, () => {
+      const { ctx, env } = setup(false)
+      const unit = createEffectUnit(ctx.asContext, spec(kind), env)
+      const compressors = ctx.ofType<FakeCompressor>('compressor')
+      expect(compressors.length).toBeGreaterThan(1)
+      unit.settle?.(1)
+      for (const compressor of compressors) settledFrom(compressor.release, 1)
+    })
+  }
+
+  it('leaves a unit with no compressor without a settle', () => {
+    const { ctx, env } = setup(false)
+    expect(createEffectUnit(ctx.asContext, spec('eq'), env).settle).toBe(
+      undefined,
+    )
+  })
 })
 
 describe('de-esser', () => {

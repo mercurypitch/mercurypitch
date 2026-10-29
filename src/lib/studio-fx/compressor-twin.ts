@@ -13,7 +13,7 @@
 // compressor in an offline context at the song's rate. A clean unit impulse
 // whole frames late is required. Anything else (another engine, a resampled
 // kernel) keeps the null compressor, so a twin is never wrong, only dearer.
-import { createNullCompressor } from './effect-shell'
+import { createNullCompressor, settleRelease } from './effect-shell'
 
 type ContextFactory = (
   options: OfflineAudioContextOptions,
@@ -109,6 +109,21 @@ export function createCompressorTwin(ctx: BaseAudioContext): AudioNode {
   const delay = ctx.createDelay(seconds + 128 / ctx.sampleRate)
   delay.delayTime.value = seconds
   return delay
+}
+
+/**
+ * Settle a twin as its compressor settles (settleRelease): a null
+ * compressor starts as far down as any. A delay needs nothing.
+ */
+export function settleCompressorTwins(
+  twins: readonly AudioNode[],
+  at: number,
+): void {
+  for (const twin of twins)
+    if (twin instanceof Object && 'release' in twin) {
+      const { release } = twin as DynamicsCompressorNode
+      settleRelease(release, at, release.value)
+    }
 }
 
 /** Test seam: forget what was measured. */

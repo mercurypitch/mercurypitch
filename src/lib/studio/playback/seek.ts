@@ -14,29 +14,9 @@
 import type { StudioHandoff } from './handoff'
 import { crossSameFrames } from './handoff'
 import type { StudioRun, StudioRunTiming } from './run'
-import { RUN_LOOKAHEAD_SECONDS, runHeardPosition } from './run'
+import { RUN_LOOKAHEAD_SECONDS, runHeardPosition, seekEarliest } from './run'
 
-/** Room for this thread to finish scheduling a seek before the audio thread can reach it. */
-const SEEK_SCHEDULING_SECONDS = 0.005
-
-/**
- * The soonest a seek can begin on the audio clock: past the device callback
- * the audio thread may be rendering now (baseLatency: 512 frames, 10.7 ms,
- * in desktop Chromium on Linux), and past the scheduling itself. A source
- * started in the past plays late by however far, and lanes started a
- * callback apart would stay that far apart until the next seek.
- */
-export function seekEarliest(ctx: AudioContext): number {
-  const callback =
-    Number.isFinite(ctx.baseLatency) && ctx.baseLatency > 0
-      ? ctx.baseLatency
-      : 0.01
-  return (
-    ctx.currentTime +
-    Math.max(callback, 256 / ctx.sampleRate) +
-    SEEK_SCHEDULING_SECONDS
-  )
-}
+export { seekEarliest }
 
 /**
  * The runs a seek moves: each one heard from now on, so a handover under

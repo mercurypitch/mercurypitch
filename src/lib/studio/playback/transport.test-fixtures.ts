@@ -5,9 +5,16 @@ import { studioFixture } from '../model/model.test-fixtures'
 import type { StudioBufferCache } from './buffer-cache'
 import type { StudioChainSwap, StudioReplan } from './graph'
 import { PlaybackContext } from './playback.test-fixtures'
-import { RUN_OPEN_SECONDS } from './run'
+import { RUN_OPEN_SECONDS, RUN_SETTLE_SECONDS } from './run'
 import type { StudioTransportOptions } from './transport'
 import { createStudioTransport } from './transport'
+
+/**
+ * When the fixture's first run from silence is heard: built at 0 on the
+ * fake clock, it starts RUN_SETTLE_SECONDS later, and is heard after its
+ * 20 ms of lane and master latency.
+ */
+export const FIRST_HEARD = RUN_SETTLE_SECONDS + 0.02
 
 /** A built graph that records what the transport asks of it. */
 export function fakeStudioGraph(ctx: PlaybackContext) {
@@ -37,6 +44,8 @@ export function fakeStudioGraph(ctx: PlaybackContext) {
     repeat: vi.fn(() => true),
     stopRepeating: vi.fn(() => 0),
     park: vi.fn(),
+    settle: vi.fn(),
+    retime: vi.fn(),
     resume: vi.fn(
       (_fromFrame: number, _epoch: number, _repeat: boolean) => true,
     ),

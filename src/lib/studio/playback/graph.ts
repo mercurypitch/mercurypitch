@@ -89,6 +89,13 @@ export interface StudioGraph {
    * loop. Call scheduleUntil after it.
    */
   resume(fromFrame: number, epoch: number, repeat: boolean): boolean
+  /** Settle every new compressor in the graph from `at` (effect-shell.ts `settleRelease`). */
+  settle(at: number): void
+  /**
+   * Start a graph built but not scheduled yet at `epoch` instead: its first
+   * frame enters a lane with no compensation then. Call scheduleUntil after it.
+   */
+  retime(epoch: number): void
   readPeaks(): readonly [number, number]
   /**
    * Whether this track has a lane here. Playback builds every lane with
@@ -322,6 +329,16 @@ export function buildStudioGraph(
       if (peaks) output.connect(peaks.tap)
       restartLanes(state, fromFrame, at, false)
       return true
+    },
+    retime(epoch) {
+      if (!playing()) return
+      for (const lane of lanes) silenceLane(lane)
+      restartLanes(state, state.fromFrame, epoch, false)
+    },
+    settle(at) {
+      if (state.disposed) return
+      master?.settle(at)
+      for (const lane of lanes) lane.chain.settle(at)
     },
     hasLane: (trackId) => byId.has(trackId),
     setLaneMix(track, audible) {

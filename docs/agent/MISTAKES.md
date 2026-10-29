@@ -2419,3 +2419,14 @@ that scoped formatting and lint both pass. Do not rerun every local gate.
 **Cause:** the banner opens only in a build with a Google tag and on a Europe clock. `pnpm dev`, `build:e2e` (tag ids emptied) and CI (UTC) never show it, so nothing anchored to the foot of a phone screen was ever seen beside it.
 **Rule:** the foot of the screen is a stack (tab bar, banner, confirm-email pill, toasts); each layer publishes its room on `<html>` with `publishFootSpace` and stands on the ones below. Anything else pinned to the bottom stands on `--consent-banner-space`, and on `--verify-banner-space` where the pill can be. To see the real banner, build with a tag id set and run the browser with `timezoneId: 'Europe/Zagreb'`. On a phone, use dev.mercurypitch.com or a PR preview: `build:dev` sets `VITE_CONSENT_PREVIEW=true`, so the bar shows with no Google tag (on a Europe clock, or from Settings › About › Cookie settings) and nothing is sent to Google. Clear `mp.consent.v1` in site storage to be asked again.
 **See:** `src/lib/foot-space.ts`, `src/e2e/toast-above-confirm-bar.spec.ts`, `src/tests/foot-stack-css.test.ts`, `src/components/ConsentBanner.preview.test.tsx`
+
+## Measure the compressor lookahead before judging a chain offline
+
+An offline probe that builds a chain without first running
+`measureCompressorLatency` gets fresh null compressors as latency twins
+(compressor-twin.ts), and they dip like any new compressor. Judged that
+way, the voice chain's dynamic EQs looked 3.6 dB down 60 ms after the
+build and immune to the release settle; with the lookahead measured, as
+every live build has it, they were 0.36 dB down without the settle and
+0.01 dB with it. Call it (or render through `measureChainLatencyFrames`)
+before comparing a fresh chain with a settled one.

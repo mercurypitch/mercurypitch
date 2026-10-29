@@ -3,7 +3,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 import { setStudioWorkingBytes, studioReservedMemoryBytes, } from '../memory-budget'
 import { smoothHeardTime } from './heard-clock'
 import { heardTime } from './run'
-import { freshGraphs, transportFixture } from './transport.test-fixtures'
+import { FIRST_HEARD, freshGraphs, transportFixture, } from './transport.test-fixtures'
 
 afterEach(() => {
   setStudioWorkingBytes(null)
@@ -73,18 +73,25 @@ describe('Studio transport heard position', () => {
     const f = transportFixture()
     const { project, asset } = twoSecondSong(f)
     await f.transport.play(project, [asset], 0)
-    // Heard from 0.26 s: 0.24 s of warmup and 20 ms of chain and master latency.
+    // Heard from FIRST_HEARD: the build's settle and 20 ms of chain and
+    // master latency.
     reportLatency(f, 0.04, 0.01)
     f.ctx.currentTime = 0.5
     await vi.advanceTimersByTimeAsync(33)
     expect(
-      framesOff(f.transport.getState().playheadFrame, 9120),
+      framesOff(
+        f.transport.getState().playheadFrame,
+        (0.45 - FIRST_HEARD) * 48000,
+      ),
     ).toBeLessThanOrEqual(1)
     // A route change moves the output path while the song plays.
     reportLatency(f, 0.09, 0.01)
     await vi.advanceTimersByTimeAsync(33)
     expect(
-      framesOff(f.transport.getState().playheadFrame, 6720),
+      framesOff(
+        f.transport.getState().playheadFrame,
+        (0.4 - FIRST_HEARD) * 48000,
+      ),
     ).toBeLessThanOrEqual(1)
     await finish(f)
   })
@@ -98,7 +105,10 @@ describe('Studio transport heard position', () => {
     f.ctx.currentTime = 0.5
     await vi.advanceTimersByTimeAsync(33)
     expect(
-      framesOff(f.transport.getState().playheadFrame, 11520),
+      framesOff(
+        f.transport.getState().playheadFrame,
+        (0.5 - FIRST_HEARD) * 48000,
+      ),
     ).toBeLessThanOrEqual(1)
     await finish(f)
   })
@@ -109,10 +119,10 @@ describe('Studio transport heard position', () => {
     const { project, asset } = twoSecondSong(f)
     await f.transport.play(project, [asset], 24000)
     reportLatency(f, 0.05, 0.01)
-    f.ctx.currentTime = 0.3
+    f.ctx.currentTime = FIRST_HEARD + 0.04
     await vi.advanceTimersByTimeAsync(33)
     expect(f.transport.getState().playheadFrame).toBe(24000)
-    f.ctx.currentTime = 0.42
+    f.ctx.currentTime = FIRST_HEARD + 0.16
     await vi.advanceTimersByTimeAsync(33)
     expect(
       framesOff(f.transport.getState().playheadFrame, 24000 + 4800),
@@ -132,7 +142,9 @@ describe('Studio transport heard position', () => {
     f.transport.pause()
     const paused = f.transport.getState().playheadFrame
     expect(f.transport.getState().playing).toBe(false)
-    expect(framesOff(paused, 9600)).toBeLessThanOrEqual(1)
+    expect(framesOff(paused, (0.46 - FIRST_HEARD) * 48000)).toBeLessThanOrEqual(
+      1,
+    )
     await vi.advanceTimersByTimeAsync(1000)
     expect(await f.transport.play(project, [asset])).toBe(true)
     expect(f.transport.getState()).toMatchObject({
@@ -150,11 +162,11 @@ describe('Studio transport heard position', () => {
     const tail = f.buildGraph.mock.calls[0][1].tailFrames / 48000
     // Longer than the tail, so the speakers are still short of the end.
     reportLatency(f, tail + 0.2, 0.01)
-    // The last frame is rendered at 2.26 s and the tail after it.
-    f.ctx.currentTime = 2.25 + tail
+    // The last frame is rendered 2 s after FIRST_HEARD and the tail after it.
+    f.ctx.currentTime = FIRST_HEARD + 1.99 + tail
     await vi.advanceTimersByTimeAsync(33)
     expect(f.transport.getState().playing).toBe(true)
-    f.ctx.currentTime = 2.27 + tail
+    f.ctx.currentTime = FIRST_HEARD + 2.01 + tail
     await vi.advanceTimersByTimeAsync(33)
     expect(f.transport.getState()).toMatchObject({
       playing: false,
@@ -214,7 +226,9 @@ describe('Studio transport heard position', () => {
     // The song faded at the render clock, so it goes on from there; the
     // frame heard is 60 ms earlier.
     const { fromFrame } = f.buildGraph.mock.calls[1][4]
-    expect(framesOff(fromFrame, (1 - 0.26) * 48000)).toBeLessThanOrEqual(1)
+    expect(framesOff(fromFrame, (1 - FIRST_HEARD) * 48000)).toBeLessThanOrEqual(
+      1,
+    )
     await finish(f)
   })
 })
@@ -262,18 +276,19 @@ describe('Studio transport frame now', () => {
     f.ctx.currentTime = 0.5
     await vi.advanceTimersByTimeAsync(33)
     const ticked = f.transport.getState().playheadFrame
-    expect(framesOff(ticked, 9120)).toBeLessThanOrEqual(1)
+    const heard = (0.45 - FIRST_HEARD) * 48000
+    expect(framesOff(ticked, heard)).toBeLessThanOrEqual(1)
     // The speakers played render time 0.45 s at performance time 1000 ms.
     Object.assign(f.ctx, {
       getOutputTimestamp: () => ({ contextTime: 0.45, performanceTime: 1000 }),
     })
     const now = vi.spyOn(performance, 'now').mockReturnValue(1000)
     try {
-      expect(framesOff(f.transport.frameNow(), 9120)).toBeLessThanOrEqual(1)
+      expect(framesOff(f.transport.frameNow(), heard)).toBeLessThanOrEqual(1)
       now.mockReturnValue(1020)
-      expect(framesOff(f.transport.frameNow(), 9120 + 960)).toBeLessThanOrEqual(
-        1,
-      )
+      expect(
+        framesOff(f.transport.frameNow(), heard + 960),
+      ).toBeLessThanOrEqual(1)
       expect(f.transport.getState().playheadFrame).toBe(ticked)
     } finally {
       now.mockRestore()
