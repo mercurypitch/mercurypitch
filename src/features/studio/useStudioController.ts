@@ -2,7 +2,7 @@
 import { createSignal, onCleanup, onMount, untrack } from 'solid-js'
 import type { StudioEditorLease, StudioService, } from '@/db/services/studio-service'
 import { createStudioService } from '@/db/services/studio-service'
-import { useLocalSaveNavigationLock } from '@/lib/local-save-navigation-lock'
+import { useLocalSaveNavigationLockWithReason } from '@/lib/local-save-navigation-reason'
 import { checkImportCancelled, DEFAULT_STUDIO_IMPORT_LIMITS, } from '@/lib/studio/audio/import-limits'
 import type { prepareStudioAsset } from '@/lib/studio/audio/prepare-studio-asset'
 import { reserveStudioMemory } from '@/lib/studio/memory-budget'
@@ -125,7 +125,7 @@ export function useStudioController(options: StudioControllerOptions = {}) {
     const label = editHistory()?.futureLabels[0]
     return label === undefined ? 'Redo' : `Redo ${label}`
   }
-  useLocalSaveNavigationLock(
+  useLocalSaveNavigationLockWithReason(
     () =>
       !disposed() &&
       (importing() || saveState() === 'saving' || hasUnsavedChanges()),

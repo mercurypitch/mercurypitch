@@ -337,6 +337,7 @@ import { registerE2EBridge } from '@/lib/e2e-bridge'
 import { navigateTo, parseHash, replaceHash } from '@/lib/hash-router'
 import { lessonFromSearch } from '@/lib/lesson-marker'
 import { isLocalSaveNavigationLocked, vetoNavigationDuringLocalSave, } from '@/lib/local-save-navigation-lock'
+import { localSaveNavigationReason } from '@/lib/local-save-navigation-reason'
 import type { MidiSongNote } from '@/lib/midi-song'
 import { initDefaultOGTags, setMelodyOGTags } from '@/lib/og-tags'
 import { segmentContourToMelody } from '@/lib/pitch-pipeline'
@@ -1349,16 +1350,16 @@ const AppShell: Component<AppProps> = (props) => {
         // always had. A surface that says why it holds (Studio's project,
         // which a failed save holds until it is saved, copied or discarded)
         // is quoted instead.
-        onBlocked: (message) =>
-          message === null
-            ? showNotification(
-                'Please wait while this take finishes saving on this device.',
-                'info',
-                { channel: 'voice-take-save' },
-              )
-            : showNotification(message, 'info', {
-                channel: 'local-save-held',
-              }),
+        onBlocked: () => {
+          const reason = localSaveNavigationReason()
+          if (reason === null)
+            showNotification(
+              'Please wait while this take finishes saving on this device.',
+              'info',
+              { channel: 'voice-take-save' },
+            )
+          else showNotification(reason, 'info', { channel: 'local-save-held' })
+        },
         onResolved,
       })
     ) {
