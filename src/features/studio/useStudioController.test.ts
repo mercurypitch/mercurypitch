@@ -728,6 +728,66 @@ describe('Studio controller', () => {
     expect(service.saveProject).not.toHaveBeenCalled()
   })
 
+  describe('a backup asked about before its file is picked', () => {
+    const target = (): StudioBackupTarget => ({
+      kind: 'file',
+      name: 'Window seat 2026-10-29 1142.mpstudio',
+      keepMs: 0,
+      reserve: vi.fn(),
+      write: vi.fn(),
+      close: vi.fn(async () => null),
+      discard: vi.fn(async () => {}),
+    })
+
+    it('is refused for another song exactly when the switch behind it would be, and a save in flight is no reason', async () => {
+      const { controller, service } = mount()
+      await controller.open('one')
+      let finish!: (project: StudioProject) => void
+      vi.mocked(service.saveProject).mockImplementationOnce(
+        () =>
+          new Promise((resolve) => {
+            finish = resolve
+          }),
+      )
+      controller.rename('Saving')
+
+      expect(controller.saveState()).toBe('saving')
+      expect(controller.canBackup('two')).toBe(true)
+      const opening = controller.openForBackup('two')
+      finish(controller.project()!)
+      expect(await opening).toBe(true)
+      expect(controller.project()?.id).toBe('two')
+
+      vi.mocked(service.saveProject).mockRejectedValueOnce(
+        new StudioStorageError('quota-exceeded', 'Full'),
+      )
+      controller.rename('Unsaved')
+      await vi.waitFor(() => expect(controller.saveState()).toBe('error'))
+      expect(controller.canBackup('one')).toBe(false)
+      expect(await controller.openForBackup('one')).toBe(false)
+    })
+
+    it('is refused for the open song while another backup runs, as the backup itself would be', async () => {
+      let release!: () => void
+      const writeBackup = vi.fn(
+        () =>
+          new Promise<void>((resolve) => {
+            release = resolve
+          }),
+      )
+      const { controller } = mount({ writeBackup })
+      await controller.open('one')
+
+      expect(controller.canBackup()).toBe(true)
+      const first = controller.backup(target())
+      expect(controller.canBackup()).toBe(false)
+      expect(await controller.backup(target())).toBe(false)
+      release()
+      expect(await first).toBe(true)
+      expect(controller.canBackup()).toBe(true)
+    })
+  })
+
   describe('a tab away from view', () => {
     const TAKEN =
       'This project is no longer editable in this tab. Reload, make a copy, or take over editing.'

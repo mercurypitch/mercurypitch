@@ -49,10 +49,25 @@ type SavePicker = (options: SavePickerOptions) => Promise<FileSystemFileHandle>
 /** Chromium 110 and later can delete a file the person picked. */
 type PickedHandle = FileSystemFileHandle & { remove?: () => Promise<void> }
 
-/** A file name for a song's backup: its title without characters a file system refuses. */
-export function studioBackupFileName(title: string | undefined): string {
-  const name = (title ?? '').replace(/[^\p{L}\p{N} ._-]/gu, '').slice(0, 100)
-  return `${name || 'Studio project'}.mpstudio`
+/**
+ * A file name for a song's backup: its title without characters a file
+ * system refuses, then the local date and minute, as `Window seat 2026-10-29
+ * 1142.mpstudio`. Chromium empties the file picked as soon as it is picked,
+ * so the name the picker suggests must not be the last backup's: picking it
+ * and then failing would cost that backup.
+ */
+export function studioBackupFileName(
+  title: string | undefined,
+  at: Date,
+): string {
+  const name = (title ?? '')
+    .replace(/[^\p{L}\p{N} ._-]/gu, '')
+    .replace(/ {2,}/g, ' ')
+    .slice(0, 100)
+    .replace(/^[ .]+|[ .]+$/g, '')
+  const two = (value: number) => String(value).padStart(2, '0')
+  const day = `${at.getFullYear()}-${two(at.getMonth() + 1)}-${two(at.getDate())}`
+  return `${name || 'Studio project'} ${day} ${two(at.getHours())}${two(at.getMinutes())}.mpstudio`
 }
 
 function savePicker(): SavePicker | null {

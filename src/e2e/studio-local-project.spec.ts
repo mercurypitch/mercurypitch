@@ -114,7 +114,9 @@ test('Studio imports audio, reloads and restores a backup in a fresh browser @sm
     .getByRole('button', { name: 'Save project backup', exact: true })
     .click()
   const download = await downloadPromise
-  expect(download.suggestedFilename()).toBe('First Studio song.mpstudio')
+  expect(download.suggestedFilename()).toMatch(
+    /^First Studio song \d{4}-\d{2}-\d{2} \d{4}\.mpstudio$/,
+  )
   const backupPath = testInfo.outputPath('first-studio-song.mpstudio')
   await download.saveAs(backupPath)
   const backup = await readFile(backupPath)
