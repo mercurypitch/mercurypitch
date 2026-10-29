@@ -39,6 +39,7 @@ import { execFileSync } from 'node:child_process'
 import { readdirSync, readFileSync } from 'node:fs'
 import { join, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
+import { EXPERIMENTAL_ENTRY_SLUGS } from '../tools/experimental-features.ts'
 
 export const SITE = 'https://mercurypitch.com'
 const HOST = new URL(SITE).host
@@ -47,8 +48,10 @@ const KEY_FILE = /^([a-f0-9]{32})\.txt$/
 const SITEMAP = 'public/sitemap.xml'
 const ENV_PRODUCTION = '.env.production'
 const GLASSWORKS_URL = `${SITE}/glass-game`
-/** Every experimental feature's page: EXPERIMENTAL_ENTRY_SLUGS in tools/experimental-features.ts. */
-const EXPERIMENTAL_URLS = [`${SITE}/studio-night`]
+/** Every experimental feature's page. */
+const EXPERIMENTAL_URLS = Object.values(EXPERIMENTAL_ENTRY_SLUGS)
+  .flat()
+  .map((slug) => `${SITE}/${slug}`)
 
 const repoRoot = resolve(fileURLToPath(new URL('..', import.meta.url)))
 

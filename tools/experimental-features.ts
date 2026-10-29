@@ -33,8 +33,10 @@ export const EXPERIMENTAL_FEATURES_ENV = 'VITE_EXPERIMENTAL_FEATURES'
 /**
  * The entry pages (src/seo/entry-pages.ts slugs) each feature owns. Keyed by
  * the feature list, so adding a feature without saying which pages it owns,
- * or graduating one and leaving its pages here, does not compile.
- * scripts/assert-experimental-features.mjs names the same slugs.
+ * or graduating one and leaving its pages here, does not compile. The one
+ * list: scripts/assert-experimental-features.mjs and scripts/indexnow.mjs
+ * import it, which Node can do for this file because its only runtime
+ * imports are Node's own.
  */
 export const EXPERIMENTAL_ENTRY_SLUGS: Record<
   ExperimentalFeature,

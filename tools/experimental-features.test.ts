@@ -64,17 +64,25 @@ describe('the experimental features switch', () => {
     )
   })
 
-  it('names a page for every feature, each one an entry page, and the dist check names the same pages', () => {
+  it('names a page for every feature, each one an entry page, and the dist check and IndexNow read these pages', () => {
     const slugs = ENTRY_PAGES.map((page) => page.slug)
-    const assertScript = repoFile('scripts/assert-experimental-features.mjs')
     expect(Object.keys(EXPERIMENTAL_ENTRY_SLUGS).sort()).toEqual(
       [...EXPERIMENTAL_FEATURES].sort(),
     )
-    for (const owned of Object.values(EXPERIMENTAL_ENTRY_SLUGS)) {
-      for (const slug of owned) {
-        expect(slugs).toContain(slug)
-        expect(assertScript).toContain(`'${slug}'`)
-      }
+    for (const owned of Object.values(EXPERIMENTAL_ENTRY_SLUGS))
+      for (const slug of owned) expect(slugs).toContain(slug)
+    // The one list: neither script writes the pages out again.
+    for (const script of [
+      'scripts/assert-experimental-features.mjs',
+      'scripts/indexnow.mjs',
+    ]) {
+      const source = repoFile(script)
+      expect(source).toContain(
+        "import { EXPERIMENTAL_ENTRY_SLUGS } from '../tools/experimental-features.ts'",
+      )
+      for (const slug of Object.values(EXPERIMENTAL_ENTRY_SLUGS).flat())
+        for (const written of [`'${slug}'`, `/${slug}\``])
+          expect(source).not.toContain(written)
     }
   })
 
