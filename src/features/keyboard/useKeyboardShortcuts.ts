@@ -9,8 +9,9 @@
 //               select or [contenteditable]. Check it before any bare-letter
 //               or Space binding, or typing a lyric line triggers playback.
 //   tab      -- most shortcuts are tab-scoped. The Karaoke tab (StemMixer)
-//               drives its own audio graph, so global transport keys are
-//               explicitly excluded there rather than merely unhandled.
+//               and Studio drive their own audio graphs, so global transport
+//               keys are explicitly excluded there rather than merely
+//               unhandled.
 //
 // On a television the arrow keys are the remote's D-pad, so the speed keys
 // leave them to the page there (isTvDevice()).
@@ -18,7 +19,7 @@
 import type { Accessor, Setter } from 'solid-js'
 import { onCleanup, onMount } from 'solid-js'
 import type { ActiveTab } from '@/features/tabs/constants'
-import { TAB_COMPOSE, TAB_EXERCISES, TAB_GUITAR, TAB_KARAOKE, TAB_PIANO, TAB_SINGING, } from '@/features/tabs/constants'
+import { TAB_COMPOSE, TAB_EXERCISES, TAB_GUITAR, TAB_KARAOKE, TAB_PIANO, TAB_SINGING, TAB_STUDIO_NIGHT, } from '@/features/tabs/constants'
 import { PLAYBACK_MODE_SESSION, TAB_VOICE_HISTORY, } from '@/features/tabs/constants'
 import { isTvDevice } from '@/lib/device-tier'
 import { IS_NATIVE_BUILD } from '@/lib/native-build'
@@ -114,10 +115,13 @@ export function useKeyboardShortcuts(handlers: KeyboardShortcutHandlers): void {
 
     const tab = handlers.activeTab?.()
 
-    // ── Karaoke exclusions ────────────────────────────────────
-    // The Karaoke tab (StemMixer) handles its own audio playback graph.
-    // Skip global transport controls to avoid triggering Singing/Piano playback.
-    if (tab === TAB_KARAOKE && !isTyping) {
+    // ── Karaoke and Studio exclusions ─────────────────────────
+    // The Karaoke tab (StemMixer) and Studio handle their own audio playback
+    // graphs. Skip global transport controls to avoid triggering
+    // Singing/Piano playback. Studio's Space is its workspace's own toggle
+    // (installSpacePlaybackToggle) and its Home seeks its own song, so here
+    // the keys would only change the singing transport behind the page.
+    if ((tab === TAB_KARAOKE || tab === TAB_STUDIO_NIGHT) && !isTyping) {
       if (
         ['Space', 'Home', 'KeyR', 'KeyP', 'ArrowUp', 'ArrowDown'].includes(
           e.code,

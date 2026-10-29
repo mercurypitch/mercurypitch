@@ -1,15 +1,13 @@
 import { createRoot, createSignal } from 'solid-js'
-import { describe, expect, it, vi } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
+import type { KeyboardShortcutHandlers } from '@/features/keyboard/useKeyboardShortcuts'
 import { useKeyboardShortcuts } from '@/features/keyboard/useKeyboardShortcuts'
-import { PLAYBACK_MODE_ONCE, TAB_SINGING } from '@/features/tabs/constants'
+import { PLAYBACK_MODE_ONCE, TAB_SINGING, TAB_STUDIO_NIGHT, } from '@/features/tabs/constants'
+import { installSpacePlaybackToggle } from '@/lib/space-playback'
 import * as transportStore from '@/stores/transport-store'
 import type { PlaybackMode } from '@/types'
 
-function mountShortcuts(handlers: {
-  onVoiceToggle?: () => void
-  onShowVoiceCommands?: () => void
-  onToggleShortcutHelp?: () => void
-}) {
+function mountShortcuts(handlers: Partial<KeyboardShortcutHandlers>) {
   const [playMode, setPlayMode] = createSignal<PlaybackMode>(PLAYBACK_MODE_ONCE)
   return createRoot((disposeRoot) => {
     useKeyboardShortcuts({
@@ -31,7 +29,7 @@ function mountShortcuts(handlers: {
 
 const keydown = (init: KeyboardEventInit) =>
   document.body.dispatchEvent(
-    new KeyboardEvent('keydown', { bubbles: true, ...init }),
+    new KeyboardEvent('keydown', { bubbles: true, cancelable: true, ...init }),
   )
 
 describe('the V voice-control shortcuts', () => {
@@ -112,5 +110,69 @@ describe('the speed keys', () => {
     keydown({ code: 'ArrowDown' })
     expect(transportStore.playbackSpeed()).toBe(0.75)
     dispose()
+  })
+})
+
+// Studio drives its own audio graph, as Karaoke does: its Home seeks its own
+// song (StudioWorkspace.tsx) and its Space is its own transport
+// (installSpacePlaybackToggle). The singing transport's keys must not reach
+// through it to change modes, speed or position behind the page.
+describe('the Studio tab', () => {
+  const unmount: (() => void)[] = []
+  afterEach(() => {
+    for (const dispose of unmount.splice(0)) dispose()
+  })
+
+  async function mountOn(tab: KeyboardShortcutHandlers['activeTab']) {
+    const singing = {
+      play: vi.fn(),
+      seekToStart: vi.fn(),
+    }
+    const [playMode, setPlayMode] =
+      createSignal<PlaybackMode>(PLAYBACK_MODE_ONCE)
+    unmount.push(
+      mountShortcuts({ ...singing, activeTab: tab, playMode, setPlayMode }),
+    )
+    await Promise.resolve()
+    return { singing, playMode }
+  }
+
+  it('leaves Home, R, P, Up, Down and Space to the page', async () => {
+    transportStore.setPlaybackSpeed(1)
+    const { singing, playMode } = await mountOn(() => TAB_STUDIO_NIGHT)
+
+    const prevented = ['Home', 'KeyR', 'KeyP', 'ArrowUp', 'ArrowDown', 'Space']
+      .map((code) => keydown({ code }))
+      .map((notCancelled) => !notCancelled)
+
+    expect(prevented).toEqual([false, false, false, false, false, false])
+    expect(singing.seekToStart).not.toHaveBeenCalled()
+    expect(singing.play).not.toHaveBeenCalled()
+    expect(playMode()).toBe(PLAYBACK_MODE_ONCE)
+    expect(transportStore.playbackSpeed()).toBe(1)
+  })
+
+  it('still lets the same keys drive the singing transport on Singing', async () => {
+    transportStore.setPlaybackSpeed(1)
+    const { singing, playMode } = await mountOn(() => TAB_SINGING)
+
+    keydown({ code: 'Home' })
+    keydown({ code: 'KeyR' })
+    keydown({ code: 'ArrowUp' })
+
+    expect(singing.seekToStart).toHaveBeenCalledTimes(1)
+    expect(playMode()).toBe('repeat')
+    expect(transportStore.playbackSpeed()).toBe(1.5)
+  })
+
+  it("keeps Space for Studio's own transport toggle", async () => {
+    const { singing } = await mountOn(() => TAB_STUDIO_NIGHT)
+    const studioToggle = vi.fn()
+    unmount.push(installSpacePlaybackToggle({ toggle: studioToggle }))
+
+    keydown({ code: 'Space' })
+
+    expect(studioToggle).toHaveBeenCalledTimes(1)
+    expect(singing.play).not.toHaveBeenCalled()
   })
 })
