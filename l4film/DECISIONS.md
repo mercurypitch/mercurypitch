@@ -301,3 +301,37 @@ replaced it. The builder's record: critics never read it.
     F-recap-3 is about (300, 360), which keeps stair 1 29 px from Merc (21 px about (320, 360)).
 54. **Round 2 is a storyboard round** with `review/storyboard-01/REPORT.md` as the previous report.
     The motion rule is then checked on pixels in the component rounds (STORYBOARD § Build checks).
+
+## Storyboard v3 (after storyboard critic 02)
+
+55. **Lit chrome is a 40 % mix** (round 2, item 1). At 60 % the ink names measured 3.0:1 on a stair
+    and 3.2:1 on a black key; at 40 % they measure 4.9:1 and 5.2:1, and blue and orange at 45 %
+    give 5.7:1 and 6.1:1. S4b's dark tiles, which carry no names, keep 60 %. The lab confirms that
+    the 40 % mix still registers as a change before the large-area credit (0.7 s) is counted.
+56. **"Your turn." lands at 373.55** (round 2, item 2), once the guide's moving names have passed
+    under its place (the top do's left edge clears x 831 at 373.50); the doctor lines land at 373.9,
+    when the guide has stopped, since its names cross their right end until then.
+57. **Beads that would have to cross the diagram drop in instead** (round 2, item 3). From Tavi's
+    corner any path to stair 1 must clear stair 8 and the house and then pass under "still
+    hanging?" and its ring timer: about 1,800 px in 0.4 s, or a mouth open long before her voice.
+    Her bead drops onto stair 1 as she starts (14.79 to 14.99); her colour and her sound arcs say
+    whose it is. The guide's beads drop onto the path's start for the same reason (S12c, S12e: an
+    arc from either corner crosses the lane names, "wait", the chip or the house), the names move
+    to x 556 so a bead there keeps 22 px from them, and S13's count-in bead lands mid-segment
+    (1090, 700). Merc's arcs in S1a and S10b stay: he stands beside stair 1. HANDOFFS § Shared
+    formulas gives one drop for every bead (60 world px, 0.2 s, power2.in, a squash).
+58. **The strip follows every slide in S14** (round 2, item 4), as it does in S8: back to C major's
+    keys on 14d's slide, to G major's on 14e's.
+59. **No ring timer on the viewer's turn** (round 2, item 5). The cursor shows the time, and the
+    brief's list of what the turn's screen holds has no timer.
+60. **The push in S9 is one curve** (round 2, item 6): sine.in from F0 to F-near, then a cubic Hermite
+    to F-names-1 that starts at the first leg's rates and ends at rest (HANDOFFS § Camera moves).
+61. **Smaller items** (round 2, item 7): the bottom house fades while Merc's S10 run climbs from
+    stair 1 (281.5 to 296.3); S13's path is solid chrome, since dashes are Tavi's guesses; the hook's
+    caption ends with its line (32.78), as the SRT has it; the doctor lines break within 560 px;
+    14f fades the blocks to their treads; signature 3 cites S9f. Found while fixing them: S12's house
+    moves up 14 px (y 90 to 142) to keep 21 px over a bead on do's segment, the house leaves with
+    S12's marks at 372.94, S13's count-in bead was said to fade before its own note, and HANDOFFS
+    now gives the layer rule for a pan, which moves every layer by the same amount.
+62. **Round 3 is a storyboard verification round** with `review/storyboard-02/REPORT.md` as the
+    previous report.

@@ -1076,3 +1076,18 @@ Note: the lanes' memory gate read a stale cgroup path after the 21:00 restart (f
   film follows b803c7d43 (NHS lines via L3 FACTS 35). BRIEF length now 8:41-8:50 (8:03.7 scratch).
 - NEXT: spawn storyboard critic 02 (paths only; previous report review/storyboard-01/REPORT.md; report
   review/storyboard-02/REPORT.md), save its text, LEDGER row 05, fix, then the build (shared pieces, labs).
+
+## 2026-10-29 ~08:30Z: Lesson 4 film, storyboard v3 written (task 185)
+- Storyboard critic 02: ONE MORE PASS (review/storyboard-02/REPORT.md), round 1's nine items FIXED, seven new;
+  all taken (DECISIONS 55-62, LEDGER row 05). STORYBOARD.md + HANDOFFS.md now v3 (v2 kept in l4sb2/*.v2.md;
+  the edits are l4sb2/fixr3.py, with a code-span-safe re-wrap of the touched items).
+- Changes: lit chrome 40 % (ink names 4.9 / 5.2:1); "Your turn." 373.55, doctor lines 373.9; Tavi's cold-open
+  bead and S12's beads drop in (60 world px, 0.2 s, power2.in), guide names right-aligned at x 556, S13
+  count-in bead at (1090, 700); strip follows S14's slides; no ring timer on the turn; S9 push one curve
+  (sine.in, then Hermite to rest, exact in HANDOFFS § Camera moves); bottom house fades 281.5-296.3; S13 path
+  solid; hook caption ends 32.78; doctor lines within 560 px; 14f fades blocks to treads; S12 house y 90-142;
+  layer rule for pans in HANDOFFS § Shared formulas.
+- Checks: wordcheck 154 quoted times, 0 mismatches; rowcheck clean; no code span split across lines.
+- NEXT: storyboard critic 03 (paths only; previous review/storyboard-02/REPORT.md; report
+  review/storyboard-03/REPORT.md), save its text, LEDGER row 06; then the build if it passes or the rest is
+  cosmetic.
