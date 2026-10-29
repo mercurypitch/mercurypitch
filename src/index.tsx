@@ -25,12 +25,13 @@ import { normalizeAdminEntryRoute } from '@/lib/admin-entry-route'
 import { installChunkLoadRecovery } from '@/lib/chunk-load-recovery'
 import { initDeviceTier } from '@/lib/device-tier'
 import { configurePitchEngineAssetsFromEnv } from '@/lib/pitch-engine-assets'
+import { connectTabExperiments } from '@/features/tabs/constants'
 import { announceVoiceDiagnostics, initVoiceDiagnostics, } from '@/features/voice-control/voice-diagnostics'
 import { initGlobalErrorHandlers } from '@/lib/global-error-handler'
 import { installPwaInstallListeners } from '@/lib/pwa-install'
 import { registerServiceWorker } from '@/lib/pwa-service-worker'
 import { showActionNotification } from '@/stores/notifications-store'
-import { loadExperimentalFeatures } from '@/stores/experimental-features-store'
+import { experimentalFeatureOn, experimentalFeaturesPending, loadExperimentalFeatures, } from '@/stores/experimental-features-store'
 import { stepAsideForLesson } from '@/stores/onboarding-store'
 import { initTheme } from '@/stores/theme-store'
 import { armDeveloperConsole } from '@/components/developer-console-arming'
@@ -120,6 +121,15 @@ stepAsideForLesson(window.location.search)
 // waited on: the page renders on this build's default and follows the
 // answer when it lands. Only this entry asks; the native app stays on its
 // build's default (src/stores/experimental-features-store.ts).
+//
+// The tabs learn which features are on from the store, connected here
+// before the first render. src/features/tabs/constants.ts cannot import the
+// store itself: Playwright loads that file in plain Node, and the store
+// reads this build's `import.meta.env` as it loads.
+connectTabExperiments({
+  on: experimentalFeatureOn,
+  pending: experimentalFeaturesPending,
+})
 void loadExperimentalFeatures()
 
 const root = document.getElementById('root')

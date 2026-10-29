@@ -1,4 +1,4 @@
-import { afterEach, describe, expect, it } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 import { loadExperimentalFeatures, resetExperimentalFeaturesStoreForTests, } from '@/stores/experimental-features-store'
 import type { PracticeScope, UiMode } from './constants'
 import { isTabAvailabilityPending, isTabAvailable, isTabVisible, mobileBarTabs, TAB_HOME, TAB_ORDER, TAB_STUDIO_NIGHT, visibleTabOrder, } from './constants'
@@ -59,5 +59,38 @@ describe('an experimental tab', () => {
 
     expect([studioWaits, homeWaits]).toEqual([true, false])
     expect(isTabAvailabilityPending(TAB_STUDIO_NIGHT)).toBe(false)
+  })
+})
+
+// The web entry connects the store before it renders (src/index.tsx), and the
+// tests' shared setup does too. A module graph that never connects it, which
+// is the native app's and a Playwright spec's in plain Node, has to fail
+// closed: no experimental tab, and nothing waiting on a read nobody started.
+describe('the tab constants before the store is connected', () => {
+  it('offer no experimental tab, and no tab waits on the startup read', async () => {
+    vi.resetModules()
+    const fresh = await import('./constants')
+
+    expect(fresh.isTabAvailable(fresh.TAB_STUDIO_NIGHT)).toBe(false)
+    expect(fresh.isTabAvailabilityPending(fresh.TAB_STUDIO_NIGHT)).toBe(false)
+    expect(fresh.visibleTabOrder('all', 'advanced')).not.toContain(
+      fresh.TAB_STUDIO_NIGHT,
+    )
+    expect(fresh.isTabAvailable(fresh.TAB_COMPOSE)).toBe(true)
+  })
+
+  it('follow whatever they are connected to', async () => {
+    vi.resetModules()
+    const fresh = await import('./constants')
+    let on = false
+
+    fresh.connectTabExperiments({ on: () => on, pending: () => true })
+    const offAnswer = fresh.isTabAvailable(fresh.TAB_STUDIO_NIGHT)
+    on = true
+
+    expect(offAnswer).toBe(false)
+    expect(fresh.isTabAvailable(fresh.TAB_STUDIO_NIGHT)).toBe(true)
+    expect(fresh.isTabAvailabilityPending(fresh.TAB_STUDIO_NIGHT)).toBe(true)
+    expect(fresh.isTabAvailabilityPending(fresh.TAB_HOME)).toBe(false)
   })
 })

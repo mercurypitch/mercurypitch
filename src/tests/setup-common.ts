@@ -343,3 +343,17 @@ global.fetch = ((input: RequestInfo | URL) => {
     new Error(`Unexpected network request: ${url}. Stub fetch in this test.`),
   )
 }) as unknown as typeof fetch
+
+// The web entry connects the experimental features store to the tab
+// constants before it renders (src/index.tsx); constants.ts cannot import it
+// itself, because Playwright loads that file in plain Node. Every test gets
+// the same connection, so a tab gated on an experiment (Studio) follows the
+// store here as it does in the app. A module graph rebuilt by
+// `vi.resetModules()` starts unconnected, as a page that never connects does.
+import { connectTabExperiments } from '@/features/tabs/constants'
+import { experimentalFeatureOn, experimentalFeaturesPending, } from '@/stores/experimental-features-store'
+
+connectTabExperiments({
+  on: experimentalFeatureOn,
+  pending: experimentalFeaturesPending,
+})

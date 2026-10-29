@@ -18,10 +18,11 @@
 // flight. The route guard (App.tsx) asks it, so a deep link to a feature the
 // owner switched on is not sent Home on a default that is about to change.
 //
-// Kept free of `@/lib/defaults` on purpose: src/features/tabs/constants.ts
-// imports this store, rooms built to stand alone import that file, and
-// defaults.ts is pinned into the `pitch-core` chunk. The API base is read
-// inline for that reason, as src/index.tsx reads its portable-console flag.
+// It reads the build's env as it loads, which plain Node cannot do, and
+// Playwright loads specs in plain Node. So the tab constants, which specs
+// import, do not import this store: the web entry connects it to them before
+// the first render (src/index.tsx, connectTabExperiments). The API base is
+// read inline, as src/index.tsx reads its portable-console flag.
 
 import { createSignal } from 'solid-js'
 import type { ExperimentalFeature, FeatureOverrides, } from '@/lib/experimental-features'
