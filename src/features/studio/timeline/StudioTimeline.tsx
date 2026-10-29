@@ -1,11 +1,12 @@
 // Studio timeline — one aligned scroll surface for real audio clips, track headers and silent seeking.
 import type { JSX } from 'solid-js'
-import { createEffect, createMemo, createSignal, For, Index, on, onCleanup, Show, } from 'solid-js'
+import { createEffect, createMemo, createSignal, For, Index, on, onCleanup, Show, untrack, } from 'solid-js'
 import { Plus } from '@/components/icons'
 import type { StudioClip } from '@/lib/studio/model/types'
 import { STUDIO_SAMPLE_RATE } from '@/lib/studio/model/types'
 import { FitWidth, InfoCircle, ZoomIn, ZoomOut } from '../studio-icons'
 import { StudioViewControls } from '../StudioViewControls'
+import { createStudioPlayheadMotion } from './playhead-motion'
 import { studioSourcePresentation } from './source-presentation'
 import { StudioClipToolbar } from './StudioClipToolbar'
 import styles from './StudioTimeline.module.css'
@@ -232,6 +233,36 @@ export function StudioTimeline(props: StudioTimelineProps) {
   // it does not jump under every pointer move.
   const [scrubFrame, setScrubFrame] = createSignal<number | null>(null)
   const shownPlayhead = () => scrubFrame() ?? props.playheadFrame
+  // A playing song's line runs on the compositor, checked against the clock
+  // on every tick; dragged, or with the song stopped, it stands where its
+  // style puts it.
+  const motion = createStudioPlayheadMotion({
+    sampleRate: STUDIO_SAMPLE_RATE,
+    frameNow: () => props.playheadClock?.frameNow() ?? props.playheadFrame,
+    pixels: (frame) => frameToPixel(frame, untrack(scale)),
+    endFrame: () => untrack(endFrame),
+  })
+  const following = () =>
+    props.playing === true &&
+    scrubFrame() === null &&
+    props.playheadClock !== undefined
+  createEffect(() => {
+    if (!following()) motion.stop()
+  })
+  createEffect(on([scale, endFrame], () => motion.restart(), { defer: true }))
+  createEffect(() => {
+    const clock = props.playheadClock
+    if (!clock) return
+    onCleanup(
+      clock.ticks(() => {
+        if (untrack(following)) motion.check()
+      }),
+    )
+  })
+  const playheadStyle = () =>
+    motion.moving()
+      ? {}
+      : { transform: `translateX(${frameToPixel(shownPlayhead(), scale())}px)` }
   let press: { x: number; dragged: boolean } | null = null
 
   function rulerFrame(event: PointerEvent, ruler: HTMLElement): number {
@@ -348,6 +379,7 @@ export function StudioTimeline(props: StudioTimelineProps) {
           bottom={floor() + 12}
           docked={inDock}
           playheadFrame={props.playheadFrame}
+          frameNow={props.playheadClock?.frameNow}
           writable={props.writable}
           onCommand={props.onCommand}
           onDetails={() => props.onClipDetails(selected().id)}
@@ -472,11 +504,11 @@ export function StudioTimeline(props: StudioTimelineProps) {
                 }}
               </Index>
               <span
+                ref={(element) => onCleanup(motion.attach(element))}
                 class={styles.playheadCap}
+                data-studio-playhead="cap"
                 aria-hidden="true"
-                style={{
-                  transform: `translateX(${frameToPixel(shownPlayhead(), scale())}px)`,
-                }}
+                style={playheadStyle()}
               />
             </div>
           </div>
@@ -647,11 +679,11 @@ export function StudioTimeline(props: StudioTimelineProps) {
           </Show>
           <Show when={props.project.tracks.length > 0}>
             <div
+              ref={(element) => onCleanup(motion.attach(element))}
               class={styles.playhead}
+              data-studio-playhead="line"
               aria-hidden="true"
-              style={{
-                transform: `translateX(${frameToPixel(shownPlayhead(), scale())}px)`,
-              }}
+              style={playheadStyle()}
             />
           </Show>
         </div>

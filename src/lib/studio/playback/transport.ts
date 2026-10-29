@@ -6,7 +6,6 @@
 // on ("held"), then hands over on the same frame (handoff.ts). A newer edit
 // replaces a run not heard yet, so a burst of edits builds one run at a time.
 // Only when memory cannot hold both does the song fade out and restart there.
-import type { AudioContextLease } from '@/lib/audio-context-lease'
 import { closeEnvelope } from '@/lib/preview-player'
 import type { ChainSpec } from '@/lib/studio-fx/chain-spec'
 import type { MacroKey } from '@/lib/studio-fx/mix-macros'
@@ -15,15 +14,14 @@ import type { StudioMasterGainToken } from '../export/sound-graph'
 import { resolveStudioSoundGraph } from '../export/sound-graph'
 import { reserveStudioMemory } from '../memory-budget'
 import { createStudioLaneMeter } from '../metering/live-meter'
-import type { StudioMeterSnapshot } from '../metering/stream-meter'
 import type { StudioArrangementPlan } from '../model/arrangement-plan'
 import { compileStudioArrangement } from '../model/arrangement-plan'
 import type { StudioAsset, StudioProject } from '../model/types'
-import type { StudioBufferCache } from './buffer-cache'
 import { createStudioBufferCache } from './buffer-cache'
 import { buildStudioGraph, studioGraphWorkingBytes } from './graph'
 import type { StudioHandoff } from './handoff'
 import { cancelHandoff, HANDOFF_CANCEL_MARGIN_SECONDS, handoffTiming, heardRun, liveRunsOf, scheduleHandoff, } from './handoff'
+import { smoothHeardTime } from './heard-clock'
 import type { StudioDrafts, StudioLaneDraft } from './in-place'
 import { applyDrafts, applyMix, applySound, followEdit, followMaster, followRepeat, heldMix, previewLaneDraft, previewMacroDraft, withDrafts, } from './in-place'
 import { createStudioKeptRun } from './kept-run'
@@ -31,42 +29,23 @@ import { measureNewChains } from './lane-swap'
 import type { StudioRunLayout } from './live-edit'
 import { firstThatFits, studioRunLayouts } from './live-edit'
 import { createStudioMasterLevel } from './master-level'
-import type { StudioLatencyReader } from './prepare-plan'
 import { createLatencyCache, planAssets, planLatencySeconds, playableStudioFrom, prepareStudioMaster, prepareStudioPlan, studioFirstFrame, } from './prepare-plan'
-import type { StudioLaneLevel, StudioRun, StudioRunParts, StudioRunTiming, } from './run'
+import type { StudioRun, StudioRunParts, StudioRunTiming } from './run'
 import { buildStudioRun, openRunEnvelope, readLaneLevels, releaseRun, RUN_LOOKAHEAD_SECONDS, runEndsAt, runPosition, runWarmupSeconds, } from './run'
 import { seekInPlace, seekShownFrame, seekTiming } from './seek'
+import type { StudioTransportOptions, StudioTransportState, } from './transport-types'
 import { warmStudioPlayback } from './warm-up'
 
 export type { StudioLaneDraft } from './in-place'
 export type { StudioLaneLevel } from './run'
+export type {
+  StudioTransportOptions,
+  StudioTransportState,
+} from './transport-types'
 
 const RELEASE_MS = 240
 // A handed-over run is silent once its crossfade ends; free it a little later.
 const HANDOFF_RELEASE_SLACK_MS = 60
-
-export interface StudioTransportState {
-  playing: boolean
-  pending: boolean
-  playheadFrame: number
-  peakL: number
-  peakR: number
-  error: string | null
-  meter: StudioMeterSnapshot | null
-  masterReady: boolean
-  /** Every built lane's level while the song plays; empty when it does not. */
-  lanes: readonly StudioLaneLevel[]
-}
-
-export interface StudioTransportOptions {
-  lease: AudioContextLease
-  readCanonicalAsset(id: string): Promise<Blob>
-  changed(state: StudioTransportState): void
-  cache?: StudioBufferCache
-  measureLatencies?: StudioLatencyReader
-  buildGraph?: typeof buildStudioGraph
-  createLaneMeter?: typeof createStudioLaneMeter
-}
 
 export function createStudioTransport(options: StudioTransportOptions) {
   const cache = options.cache ?? createStudioBufferCache()
@@ -782,6 +761,22 @@ export function createStudioTransport(options: StudioTransportOptions) {
       return retired.size ? RELEASE_MS : 0
     },
     getState: () => state,
+    /**
+     * The frame heard now, read from the output clock between ticks, for a
+     * playhead that moves every display frame. A stopped song's is the
+     * frame it stands on.
+     */
+    frameNow(): number {
+      const run = active ?? held
+      if (!run || !state.playing) return state.playheadFrame
+      return seekShownFrame(
+        heard() ?? run,
+        run,
+        handoffs,
+        seekTarget,
+        (shown) => runPosition(shown, smoothHeardTime(shown.ctx)),
+      )
+    },
     dispose() {
       if (disposed) return
       pause()

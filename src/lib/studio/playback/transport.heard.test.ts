@@ -1,6 +1,7 @@
 // Studio transport heard position — the playhead shows the frame at the speakers, while every schedule keeps the render clock.
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { setStudioWorkingBytes, studioReservedMemoryBytes, } from '../memory-budget'
+import { smoothHeardTime } from './heard-clock'
 import { heardTime } from './run'
 import { freshGraphs, transportFixture } from './transport.test-fixtures'
 
@@ -214,6 +215,71 @@ describe('Studio transport heard position', () => {
     // frame heard is 60 ms earlier.
     const { fromFrame } = f.buildGraph.mock.calls[1][4]
     expect(framesOff(fromFrame, (1 - 0.26) * 48000)).toBeLessThanOrEqual(1)
+    await finish(f)
+  })
+})
+
+describe('smoothHeardTime', () => {
+  const clock = (stamp: { contextTime?: number; performanceTime?: number }) =>
+    ({
+      state: 'running',
+      currentTime: 2,
+      outputLatency: 0.04,
+      baseLatency: 0.01,
+      getOutputTimestamp: () => stamp,
+    }) as unknown as AudioContext
+
+  it('counts on from the output timestamp between callbacks, never past the render clock', () => {
+    const ctx = clock({ contextTime: 1.9, performanceTime: 1000 })
+    expect(smoothHeardTime(ctx, 1000)).toBeCloseTo(1.9, 9)
+    expect(smoothHeardTime(ctx, 1016)).toBeCloseTo(1.916, 9)
+    expect(smoothHeardTime(ctx, 1500)).toBe(2)
+  })
+
+  it('reads the clock less latency before the device has played, while suspended, or without timestamps', () => {
+    expect(
+      smoothHeardTime(clock({ contextTime: 0, performanceTime: 0 }), 50),
+    ).toBeCloseTo(1.95, 9)
+    const suspended = clock({ contextTime: 1.9, performanceTime: 1000 })
+    Object.assign(suspended, { state: 'suspended' })
+    expect(smoothHeardTime(suspended, 1100)).toBeCloseTo(1.95, 9)
+    expect(
+      smoothHeardTime(
+        { currentTime: 2, outputLatency: 0.04, baseLatency: 0.01 } as never,
+        1100,
+      ),
+    ).toBeCloseTo(1.95, 9)
+  })
+})
+
+describe('Studio transport frame now', () => {
+  it('moves between ticks by the output clock, while each tick keeps its reading', async () => {
+    vi.useFakeTimers()
+    const f = transportFixture()
+    const { project, asset } = twoSecondSong(f)
+    await f.transport.play(project, [asset], 0)
+    reportLatency(f, 0.04, 0.01)
+    f.ctx.currentTime = 0.5
+    await vi.advanceTimersByTimeAsync(33)
+    const ticked = f.transport.getState().playheadFrame
+    expect(framesOff(ticked, 9120)).toBeLessThanOrEqual(1)
+    // The speakers played render time 0.45 s at performance time 1000 ms.
+    Object.assign(f.ctx, {
+      getOutputTimestamp: () => ({ contextTime: 0.45, performanceTime: 1000 }),
+    })
+    const now = vi.spyOn(performance, 'now').mockReturnValue(1000)
+    try {
+      expect(framesOff(f.transport.frameNow(), 9120)).toBeLessThanOrEqual(1)
+      now.mockReturnValue(1020)
+      expect(framesOff(f.transport.frameNow(), 9120 + 960)).toBeLessThanOrEqual(
+        1,
+      )
+      expect(f.transport.getState().playheadFrame).toBe(ticked)
+    } finally {
+      now.mockRestore()
+    }
+    f.transport.pause()
+    expect(f.transport.frameNow()).toBe(f.transport.getState().playheadFrame)
     await finish(f)
   })
 })
