@@ -375,20 +375,33 @@ describe('Studio timeline', () => {
     expect(status).toHaveTextContent('No room on Bass at 1:00.')
   })
 
-  it('moves the ruler labels on a scroll instead of making new ones', () => {
+  it('moves the ruler labels on a scroll instead of adding or removing any', () => {
     const { container } = render(() => <StudioTimeline {...base} />)
     const ruler = screen.getByRole('slider', { name: 'Song playhead' })
     const first = within(ruler).getByText('0:00')
     const viewport = container.querySelector<HTMLElement>(
       '[data-studio-timeline-viewport]',
     )!
-    // 100 px at 20 px a second: the view now starts at 0:05.
-    Object.defineProperty(viewport, 'scrollLeft', {
-      configurable: true,
-      value: 100,
-    })
-    fireEvent.scroll(viewport)
+    const scrollTo = (left: number) => {
+      Object.defineProperty(viewport, 'scrollLeft', {
+        configurable: true,
+        value: left,
+      })
+      fireEvent.scroll(viewport)
+    }
+    const changes = new MutationObserver(() => {})
+    changes.observe(ruler, { childList: true, subtree: true })
+    // 560 px of lane at 20 px a second: six labels at 0, seven at 50 px.
+    for (const left of [50, 100, 175, 260]) scrollTo(left)
+    const added = changes
+      .takeRecords()
+      .filter(
+        (record) => record.addedNodes.length + record.removedNodes.length > 0,
+      )
+    changes.disconnect()
+    expect(added).toEqual([])
+    // 260 px is 0:13: the first label now reads 0:10.
     expect(within(ruler).queryByText('0:00')).toBeNull()
-    expect(within(ruler).getByText('0:05')).toBe(first)
+    expect(within(ruler).getByText('0:10')).toBe(first)
   })
 })
