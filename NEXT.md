@@ -1140,7 +1140,7 @@ Note: the lanes' memory gate read a stale cgroup path after the 21:00 restart (f
   characters, about 4,600 credits at one take, 9,100 at two); ledger_sync.py now knows Lesson 4's script.
 - Builders asked to keep lab/s01-cold-open/BUILD-NOTES.md and lab/s05-steps/BUILD-NOTES.md (in push-notes).
 
-## 2026-10-29 ~08:40Z: Lesson 4 wave 1 handed back, kit promoted, wave 2 running (tasks 190, 192)
+## 2026-10-29 ~08:20Z: Lesson 4 wave 1 handed back, kit promoted, wave 2 running (tasks 190, 192)
 - Builders A (s01-s04, 65 min) and B (s05-s06, 64 min) handed back: all six built, clock-lint clean, sweeps
   clean; s02, s03, s05 pass measure.py; s01/s04/s06 wait on m01-orange, m04-orange, m06b-orange. Reports'
   key facts: S1 mouth (261, 781) not (270, 664); S4c stand-up confirmed (curves in BUILD-GUIDE § Handoff
@@ -1156,7 +1156,7 @@ Note: the lanes' memory gate read a stale cgroup path after the 21:00 restart (f
 - Pass queue reordered: worker 1's bash killed after m01-blue; m01-orange's node runs on (pid 4489); then
   worker-1b (logs/worker-1b.log): m04, m06b, m07, m08, m09, m10-blue, m11 pair. m12-blue at ~2 s/frame
   (1980/8438 at 08:13), m12-orange after it. $S/l4merc/verify.py checks every pass (trap 2).
-- Builders C (s07-s08) and D (s09-s11) spawned ~08:35. Watcher b6oelrqwe fires when m01-orange, m04 and m06b
+- Builders C (s07-s08) and D (s09-s11) spawned ~08:18. Watcher b6oelrqwe fires when m01-orange, m04 and m06b
   exist. NEXT on it: verify.py, merc-whole.py, s01 clip + measure (lab.mjs s01-cold-open --clip), s04 WHOLE
   = first whole + 1 in compositions/s04-recall.html AND lab/s04-recall/s04-src.html, clip + measure, s06
   merc-tags --check + clip + measure. Then component critics A and B when C/D free the slots.
