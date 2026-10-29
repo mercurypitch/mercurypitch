@@ -1278,3 +1278,46 @@ Note: the lanes' memory gate read a stale cgroup path after the 21:00 restart (f
 - NEXT: m11-blue main -> tallcheck + s11 Merc landing stills; m12 legacy passes -> m12 heads ->
   splicecheck m12-blue/m12-orange, tallcheck m12-*-in; merc-whole.py; B's report -> verification
   critic; component critics A, C, D, E, F (fresh motion-critic each, paths only).
+- 12:04 clip queue ($S/l4entr/clipq/clips.sh, log clipq/clips.log, nice 15): fresh lab clips for
+  s01-s04, s07-s10 before their component critics (old clips kept in l4entr/oldclips/). s11 after
+  m11-blue lands; s12/s13 after m12; F's after F reports.
+- Director's own notes for later rounds (never tell a critic): s11 chips fly through each other on
+  the way back to the stairs (~321.95-322.40: re/mi, so/la, D-sharp/fa, do over G-sharp) and two "do"
+  chips overlap at ~321.80; if D's critic misses it, add it to D's fix list. m01-blue's re-render moved
+  the mouth at s01's spawn by 5 px ((262, 776) vs (261, 781)): left as is, inside the growing bead.
+
+## 2026-10-29 ~12:20Z: F done, critic briefs ready, clip queues
+- Builder F (s14-s16) finished: all three built and proved without hosts (clock-lint silent,
+  merc-tags --check clean, sweep clean; s14 holds 1.7 s in 64.7 s, longest 0.2; s15 0.1; s16 0.2).
+  Host checks (S16 hop-top clearance 25 px, bodies, S14 stairs vs Merc 38/29 px) wait on m12.
+  Its storyboard changes are DECISIONS 84 (extra word beats; 14c black keys all lit together until
+  "need?"; 14g icon traces; S16 grow-and-move layers, underline y 449-452, ink-2 lead-in). Its
+  "phone-width check still owed" is already DECISIONS 80 (card wording matches it).
+- Disk: 2.6 GB left of the session allowance at 12:09 (37 GB used; /home/user 14 GB, scratchpad
+  3.7 GB, /tmp/node-compile-cache 2.4 GB). Enough for the passes, clips and a film render; watch it,
+  and never clean up the machine.
+- Critic briefs (paths only, the B-01 form): $S/l4entr/critics/{A,C,D}.txt -> review/component-
+  {A,C,D}-01/REPORT.md. C goes when s07/s08 clips land; D when s09-s11 land; A when s01/s02 land.
+  E and F wait for the m12 passes (m12-blue ~14:05, m12-orange ~17:30-19:00 at today's rates).
+- Clip queues: clipq/clips.sh (s07, s08, s09, s10 left at 12:09); then a harness-held follow-on
+  (background task b910rmvfk): s01, s02 (cancelled earlier: render_cancelled_parent_exited when
+  the launching shell died; run them from a live parent), then s11 once m11-blue's main lands
+  (log clipq/clips2.log).
+- 12:20 m11-blue main landed (1207 frames, 1377 ms/frame). tallcheck clean (top 3 rows 0, first lit
+  row 23; hand-over frames 40-43 colour p99.9 8-11, one px over 24 at frame 41); whole.js --check
+  current. Merc's s11 landing proven on stills ($S/l4entr/s11-merc/; strip copied to
+  lab/entrances/s11-m11-merc-landing.png): first seen 321.20, lands 321.60, splat 321.70-321.75,
+  standing 322.20 (b37 at 327.93). BUILD-GUIDE "Inside D, S11c" row updated. The guard's leftover
+  crescent frame (pass frame 1187 = 340.81, same film time as m11-orange's 1220) shows nothing on
+  a still (both on their feet, footprint rings).
+- 12:24 component critic C-01 launched (s07, s08; fresh clips 12:18 and 12:23), report to
+  review/component-C-01/REPORT.md. Agents now: B (fix round) + C-01.
+- Director's own notes (never tell a critic): the floor pool's glow is cut hard at the gate box's
+  sides. Talls hold alpha 20-21 in both side columns for their first 22 frames (square rows
+  168-203: the landing pool lit before he lands); mains up to 23-24 in the right column in their
+  first ~22 and last ~16 frames (all passes alike; sidecheck.py in $S/l4entr). On screen in S11 it
+  is the edge at x 260 (Merc's box, mirrored): the first white key is tinted where the box covers it
+  (R 197-202 vs 213 past the edge) and the floor below has a faint straight edge (+8-12 levels),
+  for the fall's 0.35 s. If no critic flags it, consider a horizontal feather on L.merc's box
+  (outer ~16 px a side) before the film render, proven on stills and with the body's widest frame
+  (the splat reaches x 212 on screen, 48 px inside the edge).

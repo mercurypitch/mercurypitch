@@ -91,6 +91,26 @@ only. Clock: Kokoro scratch, 483.73 s (cues.json = tools/board-cues.json today).
   "= 12" 20 px after; ends x 1828.
 - Root check: 3 errors, all missing_local_asset (m01-orange, m04-orange, m06b-orange); mine is m06b only.
 
+## Round 4: fix round for review/component-B-01 (items 1, 2, 4 to 10; item 3 by the gate move)
+
+- Shared block (identical in both files, diffed): sequential name swap (out 0.125 s power2.in, then in
+  0.125 s power2.out, 12 px each way); riserOverlays gold = the whole 8 px gap plus a 56 x 5 px corner on the
+  upper tread; featherRows (the row field feathers 160 px at each end once the camera is zoomed);
+  tokenRow / tokenSet (tally and sum laid out by measured advance).
+- s05: CU-B holds to "Watch" (pull 1.4 s from it); the demo T and S stay through the pull and the legend and
+  reset at STEP(0); legend at pull + 1.4, lines 0.3 s apart; tally T T S T T T S at x 1240, baseline 260,
+  landing on b11's words, riding the cut.
+- s06: brackets y 460 / 278 (24 up); legend and tally out at push - 0.35, legend back at pull + 1.1 (124.0);
+  ghost under risers and labels, its riser-3 segment gold; sum gaps half an em, ends x 1800; "Exactly" lights
+  stairs 1 and 8; "Seven steps" lights them in turn; b16 "semitones" ripples the rows; the octave bracket
+  grows up the 12 rows (0.9 s) with each row glowing as its tip passes; "= 1 octave" to b16 end + 0.3.
+- Bead vs raised brackets (found on stills 8.4, 9.7, 11.15): the semitone hops (E-F, B-C) now lift 22 with
+  x on power3.inOut (bracket 6.3 px, S label 6.5, bar 20.2: lab/s06-groups/item5/bracket-clear.mjs); the
+  F-G hop has to climb out through the lower bracket's line, so the lower bracket leaves over the truck
+  (0.4 s) and comes back on "Both halves". Stills: lab/s06-groups/stills-r4c.
+- Stills: lab/s05-steps/stills-r4 (+ r4b after the 56 px corner, phone-34.9s.png), lab/s06-groups/stills-r4
+  (+ r4b crossing before, r4c after).
+
 ## Status
 
 | Scene | Built | Stills | Clip | measure.py | Text sweep | clock-lint | merc-tags |

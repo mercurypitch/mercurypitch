@@ -68,3 +68,14 @@ events in the card pause (icon pulses that register, then the address once more)
   (it is "that"), "what keeps it steady?" rises over 0.7 s, the bead's "steady?" pulse sends a second ring 0.12 s
   behind. Proxy: 0.1 s (the cut). s16 clip r1: 0.2 s at its start only (no Merc in the lab; the Mercs move from
   +0.07 in the film). Root lint in the lab project: only missing_local_asset (passes not rendered).
+- 12:05 round 4 (fa/so pulse with the joining riser; "Singing Voice Range" pulses on "voice range" and "range";
+  the gear turns one tooth on "Settings"; traces draw 0.75 s power1.inOut and fade after; the tip wavers longer on
+  "plays."). Lab clips measured (measure.py, no Merc in the lab):
+  s14 1.7 s inside (0.8 per 30 s), longest 0.2, final 0.3 (the empty F0 before the cut, Mercs only);
+  s15 0.1 s (0.4 per 30 s), longest 0.1 (the cut); s16 0.2 s at its start (1.2 per 30 s; the Mercs move from
+  +0.07 in the film). Pops: s14 28.33 is bead4's landing squash on the top stair (kit, as s10), 40.80 stair 8's
+  light starting (smooth on the dense sheet). Text sweep s14 + s15 clean (lab/s14-recap/sweep.log). Handoffs:
+  s14 64.733 vs s15 0 max 27, 0.0002 % over 24 (one dust mote); s15 8.267 vs s16 0 max 22, none over 24.
+  Root check: only missing_local_asset (m11 for s11, m12 for s12 to s16). merc-tags --check clean for all three.
+  Passes at 12:07: m12-blue and m12-orange still .part.webm, so the S16 hop-top still and every Merc-covered
+  hold are unproven.

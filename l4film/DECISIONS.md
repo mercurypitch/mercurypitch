@@ -505,3 +505,14 @@ replaced it. The builder's record: critics never read it.
     take 0.8 s, so each lands 0.55 s before the line, where decision 81's fall ends. S11c's pull as
     built (on "music", 0.9 s) landed 0.4 s after Tavi, sliding the strip's last key out from under
     her as she splatted.
+84. **S14 to S16 stand as built for their component round, extra beats included.** Builder F's first
+    S14 clip held 15.1 s (longest 1.4 s), so 14a to 14g gained beats on spoken words: pulses,
+    ripples, stairs lit again, the gear turning one tooth on "Settings". Each lands on a word its
+    line names, so the picture still says what the voice says. Three changes to what the storyboard
+    draws: in 14c all eight black keys light in turn on "black" and hold together until "need?", so
+    no scale shows before the question (a passing ripple had caught three of them lit, which read as
+    the answer); in 14g each icon's glow traces a 2 px line under its row, and the address underline
+    follows the four traces; in S16 each Merc grows and moves inside its own layer, so the gate's
+    floor patch hands over to a full floor during the move, the underline sits at y 449 to 452 (55
+    px over the heads, 25 px at the hop's top) and "Practise it free:" is in ink-2 with the address
+    in ink. Component critic F-01 judges all of it with the m12 passes in.

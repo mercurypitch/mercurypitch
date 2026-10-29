@@ -414,12 +414,15 @@
               ghost.setAttribute('transform', `translate(${f1(480 * u)} ${f1(-182 * u)})`)
             }
             // the brackets: drawn on (114.5 to 115.2), unlit; the lower lights on "each half", the upper as the
-            // bead reaches G4 (the lower dims back), both on "Both halves"; they leave with the legend
+            // bead reaches G4 (the lower has gone with the truck), both on "Both halves"; they leave with the legend
             {
               const out = 1 - P(t, A.b15, 0.3)
               const lowLit = Math.max(P(t, A.each, 0.3) * (1 - P(t, A.truck, 0.4)), P(t, A.both, 0.3))
               const highLit = P(t, A.gh, 0.3)
-              brLow.draw(P(t, A.split + 0.06, 0.5, 'power2.out'), lerp(0.6, 1, lowLit) * out)
+              // the lower one leaves as the truck starts (the bead's F-G hop climbs out through its line) and
+              // comes back on "Both halves"
+              const lowOn = Math.max(1 - P(t, A.truck, 0.4), P(t, A.both, 0.3))
+              brLow.draw(P(t, A.split + 0.06, 0.5, 'power2.out'), lerp(0.6, 1, lowLit) * lowOn * out)
               brLow.color(inkMix(lowLit))
               brHigh.draw(P(t, A.split + 0.26, 0.5, 'power2.out'), lerp(0.6, 1, highLit) * out)
               brHigh.color(inkMix(highLit))
@@ -436,6 +439,13 @@
               else if (t >= steps[0].t && t < A.ghEnd + 0.5) {
                 const out = P(t, A.ghEnd, 0.5, 'power1.in')
                 b = { ...L.bead4.runAt(t, steps), a: 1 - out, scale: 1 - 0.4 * out }
+                // the two semitone hops (E-F, B-C) are the small step: their apex 22 above the higher stair, not
+                // 40, and their x on power3.inOut, so the bead stays under the raised bracket (6.3 px) and clears
+                // the "S" (6.5 px; lab/s06-groups/item5/bracket-clear.mjs)
+                if (b.hopping && SEMI(b.on + 1)) {
+                  const [x, y] = L.bead4.hopAt(t, steps[b.on + 1].t, steps[b.on].p, steps[b.on + 1].p, { lift: 22, ease: 'power3.inOut' })
+                  b.x = x; b.y = y
+                }
               }
               L.bead4.place(bead, b)
               const r8 = ST.rest(8, 0, 0)
