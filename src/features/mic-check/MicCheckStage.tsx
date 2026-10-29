@@ -12,17 +12,24 @@
 // resize. Reduced motion keeps what carries information — the ribbon's
 // height and the lit key — and drops the rest: no wandering lobes, no
 // thrown notes.
+//
+// Two surfaces draw it. Settings shows the full strip, octaves named, and
+// labels the note that lands. First Light's waiting screen asks for `soft`
+// keys, a slim strip that stays dim until a note lands on it, and no labels:
+// there the keys are a target, not the subject, and the note's name belongs
+// to the beat's own reveal, which waits for a settled note.
 
 import { createEffect, onCleanup, onMount } from 'solid-js'
 import { createDprWatcher, syncCanvasBacking } from '@/lib/canvas-size-sync'
 import { midiToNoteName } from '@/lib/frequency-to-note'
 import type { KeyRect } from './keyboard-strip'
 import { layoutKeys, pitchToX } from './keyboard-strip'
-import styles from './MicCheckPanel.module.css'
+import type { MicCheckLive } from './live-analysis'
+import styles from './MicCheckStage.module.css'
 import { createNoteRain, emitNote, stepNoteRain } from './note-rain'
 import type { HeldNote } from './note-tracker'
-import { DARK_STAGE_INK, drawKeys, drawRainNote, drawSparks, KEY_FLASH_S, LIGHT_STAGE_INK, } from './stage-paint'
-import type { MicCheckLive } from './useMicCheckController'
+import type { StageInk } from './stage-paint'
+import { DARK_STAGE_INK, drawKeys, drawRainNote, drawSparks, KEY_FLASH_S, LIGHT_STAGE_INK, SOFT_DARK_STAGE_INK, SOFT_LIGHT_STAGE_INK, } from './stage-paint'
 import type { RibbonGeometry, RibbonLevels } from './voice-ribbon'
 import { createRibbonMotion, DARK_STAGE_RIBBON, drawRibbon, LIGHT_STAGE_RIBBON, stepRibbonMotion, } from './voice-ribbon'
 
@@ -34,10 +41,18 @@ const STAGE_MARGIN = 6
 const STILL_PHASE = 1.8
 const SILENCE: RibbonLevels = { rms: 0, peak: 0, low: 0, mid: 0, high: 0 }
 
+export type StageKeys = 'piano' | 'soft'
+
 export interface MicCheckStageProps {
   live: MicCheckLive
   /** True while the check is listening; the stage settles to rest otherwise. */
   listening: boolean
+  /** The key strip: full height with the octaves named (the default), or a
+   *  slim strip that stays dim until a note lands. Read once, at mount. */
+  keys?: StageKeys
+  /** Name the note beside the glyph that marks its onset. Default on.
+   *  Read once, at mount. */
+  labels?: boolean
 }
 
 interface StageLayout extends RibbonGeometry {
@@ -46,8 +61,15 @@ interface StageLayout extends RibbonGeometry {
 }
 
 /** Where everything sits on a stage of this size, in CSS px. */
-function layoutStage(width: number, height: number): StageLayout {
-  const keyHeight = Math.min(44, Math.max(26, height * 0.17))
+function layoutStage(
+  width: number,
+  height: number,
+  keys: StageKeys,
+): StageLayout {
+  const keyHeight =
+    keys === 'soft'
+      ? Math.min(18, Math.max(12, height * 0.09))
+      : Math.min(44, Math.max(26, height * 0.17))
   const keyTop = height - keyHeight
   return {
     keyTop,
@@ -89,6 +111,8 @@ export function MicCheckStage(props: MicCheckStageProps) {
 
     const reduceMotion =
       window.matchMedia?.('(prefers-reduced-motion: reduce)').matches === true
+    const keyStyle: StageKeys = props.keys ?? 'piano'
+    const labelled = props.labels !== false
     const motion = createRibbonMotion()
     const rain = createNoteRain()
     const flashes = new Map<number, number>()
@@ -139,7 +163,7 @@ export function MicCheckStage(props: MicCheckStageProps) {
         ceilingY: STAGE_MARGIN,
         midi: held.midi,
         level: motion.energy,
-        label: onset ? midiToNoteName(held.midi) : null,
+        label: onset && labelled ? midiToNoteName(held.midi) : null,
         random: Math.random,
       })
     }
@@ -161,9 +185,16 @@ export function MicCheckStage(props: MicCheckStageProps) {
       }
     }
 
+    const inkFor = (): StageInk => {
+      if (keyStyle === 'soft') {
+        return dark ? SOFT_DARK_STAGE_INK : SOFT_LIGHT_STAGE_INK
+      }
+      return dark ? DARK_STAGE_INK : LIGHT_STAGE_INK
+    }
+
     const paint = (layout: StageLayout, heldMidi: number | null): void => {
       const scale = dpr()
-      const ink = dark ? DARK_STAGE_INK : LIGHT_STAGE_INK
+      const ink = inkFor()
       ctx.setTransform(scale, 0, 0, scale, 0, 0)
       ctx.clearRect(0, 0, width, height)
       drawRibbon(
@@ -174,7 +205,9 @@ export function MicCheckStage(props: MicCheckStageProps) {
       )
       for (const note of rain.notes) drawRainNote(ctx, note, ink)
       const light = { held: heldMidi, flashes }
-      drawKeys(ctx, keys, layout.keyTop, layout.keyHeight, light, ink)
+      drawKeys(ctx, keys, layout.keyTop, layout.keyHeight, light, ink, {
+        octaveNames: keyStyle === 'piano',
+      })
       drawSparks(ctx, rain.sparks)
     }
 
@@ -196,7 +229,7 @@ export function MicCheckStage(props: MicCheckStageProps) {
       const live = props.live
       const listening = props.listening && live.active
       const held = listening ? live.note : null
-      const layout = layoutStage(width, height)
+      const layout = layoutStage(width, height, keyStyle)
       stepRibbonMotion(
         motion,
         listening ? live : SILENCE,

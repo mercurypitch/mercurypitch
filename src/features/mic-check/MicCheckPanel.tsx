@@ -13,16 +13,15 @@
 //
 // All the watching lives in useMicCheckController; this file is layout.
 
-import type { Component } from 'solid-js'
 import { createMemo, For, Show } from 'solid-js'
-import { Dynamic } from 'solid-js/web'
-import { Cpu, Headphones, Loop, Mic, Volume2 } from '@/components/icons'
+import { Mic, Volume2 } from '@/components/icons'
 import { MicLevelMeter } from '@/components/MicLevelMeter'
 import { midiToNoteName } from '@/lib/frequency-to-note'
 import { noteColor } from '@/lib/note-utils'
-import { CALL_GRADE_SAMPLE_RATE, describeFormat, holderName, INPUT_KIND_HINT, INPUT_KIND_LABEL, permissionWords, processingNames, } from './check-copy'
+import { describeFormat, formatWarnings, holderName, INPUT_KIND_HINT, INPUT_KIND_LABEL, permissionWords, } from './check-copy'
 import type { VerdictAction } from './check-verdict'
-import type { InputKind, RosterInput } from './mic-roster'
+import { INPUT_KIND_ICON } from './input-kind-icon'
+import type { RosterInput } from './mic-roster'
 import { defaultInput, listeningInput } from './mic-roster'
 import styles from './MicCheckPanel.module.css'
 import { MicCheckStage } from './MicCheckStage'
@@ -31,18 +30,6 @@ import { useMicCheckController } from './useMicCheckController'
 
 /** Within this many cents a held note reads as in tune. */
 const IN_TUNE_CENTS = 8
-
-const KIND_ICON: Record<InputKind, Component> = {
-  'built-in': Mic,
-  usb: Mic,
-  bluetooth: Headphones,
-  headset: Headphones,
-  camera: Mic,
-  display: Mic,
-  virtual: Cpu,
-  loopback: Loop,
-  other: Mic,
-}
 
 const clockTime = (at: number): string =>
   new Date(at).toLocaleTimeString([], {
@@ -112,27 +99,7 @@ export function MicCheckPanel() {
       ? (INPUT_KIND_HINT[input.kind] ?? null)
       : null
 
-  const formatWarnings = createMemo((): string[] => {
-    const settings = check.track()?.settings
-    if (settings === undefined) return []
-    const warnings: string[] = []
-    const processing = processingNames(settings)
-    if (processing.length > 0) {
-      warnings.push(
-        `The browser is processing this input (${processing.join(', ')}), which smooths a voice for calls and blurs its pitch.`,
-      )
-    }
-    if (
-      typeof settings.sampleRate === 'number' &&
-      settings.sampleRate > 0 &&
-      settings.sampleRate < CALL_GRADE_SAMPLE_RATE
-    ) {
-      warnings.push(
-        'This input runs at call quality. A Bluetooth headset does that while its microphone is open.',
-      )
-    }
-    return warnings
-  })
+  const warnings = createMemo(() => formatWarnings(check.track()?.settings))
 
   return (
     <div class={styles.panel} data-testid="mic-check">
@@ -244,58 +211,67 @@ export function MicCheckPanel() {
         </Show>
         <ul class={styles.devices}>
           <For each={check.roster().inputs}>
-            {(input, index) => (
-              <li
-                class={styles.device}
-                classList={{ [styles.deviceHeard]: input.isListening }}
-              >
-                <span class={styles.deviceIcon} aria-hidden="true">
-                  <Dynamic component={KIND_ICON[input.kind]} />
-                </span>
-                <span class={styles.deviceName}>
-                  {input.name === '' ? `Input ${index() + 1}` : input.name}
-                </span>
-                <span class={styles.badges}>
-                  <Show when={input.isListening}>
-                    <span class={`${styles.badge} ${styles.badgeHeard}`}>
-                      Listening
-                    </span>
-                  </Show>
-                  <Show when={input.isDefault}>
-                    <span class={`${styles.badge} ${styles.badgeDefault}`}>
-                      System default
-                    </span>
-                  </Show>
-                  <Show when={input.isCommunications && !input.isDefault}>
-                    <span class={styles.badge}>Default for calls</span>
-                  </Show>
-                  <Show when={INPUT_KIND_LABEL[input.kind] !== ''}>
-                    <span class={styles.badge}>
-                      {INPUT_KIND_LABEL[input.kind]}
-                    </span>
-                  </Show>
-                </span>
-                <Show
-                  when={
-                    listening() && check.roster().labelled && !input.isListening
-                  }
+            {(input, index) => {
+              // A plain component variable, not <Dynamic>: a row is rebuilt
+              // with the roster, so its kind never changes under it, and
+              // Dynamic's first use in the app would grow the Solid chunk
+              // every room loads on first paint.
+              const KindIcon = INPUT_KIND_ICON[input.kind]
+              return (
+                <li
+                  class={styles.device}
+                  classList={{ [styles.deviceHeard]: input.isListening }}
                 >
-                  <button
-                    type="button"
-                    class={styles.deviceAction}
-                    disabled={check.switching() || !check.canSwitch()}
-                    onClick={() => {
-                      void check.listenTo(input.deviceId)
-                    }}
+                  <span class={styles.deviceIcon} aria-hidden="true">
+                    <KindIcon />
+                  </span>
+                  <span class={styles.deviceName}>
+                    {input.name === '' ? `Input ${index() + 1}` : input.name}
+                  </span>
+                  <span class={styles.badges}>
+                    <Show when={input.isListening}>
+                      <span class={`${styles.badge} ${styles.badgeHeard}`}>
+                        Listening
+                      </span>
+                    </Show>
+                    <Show when={input.isDefault}>
+                      <span class={`${styles.badge} ${styles.badgeDefault}`}>
+                        System default
+                      </span>
+                    </Show>
+                    <Show when={input.isCommunications && !input.isDefault}>
+                      <span class={styles.badge}>Default for calls</span>
+                    </Show>
+                    <Show when={INPUT_KIND_LABEL[input.kind] !== ''}>
+                      <span class={styles.badge}>
+                        {INPUT_KIND_LABEL[input.kind]}
+                      </span>
+                    </Show>
+                  </span>
+                  <Show
+                    when={
+                      listening() &&
+                      check.roster().labelled &&
+                      !input.isListening
+                    }
                   >
-                    Listen
-                  </button>
-                </Show>
-                <Show when={hintFor(input)}>
-                  {(hint) => <p class={styles.deviceHint}>{hint()}</p>}
-                </Show>
-              </li>
-            )}
+                    <button
+                      type="button"
+                      class={styles.deviceAction}
+                      disabled={check.switching() || !check.canSwitch()}
+                      onClick={() => {
+                        void check.listenTo(input.deviceId)
+                      }}
+                    >
+                      Listen
+                    </button>
+                  </Show>
+                  <Show when={hintFor(input)}>
+                    {(hint) => <p class={styles.deviceHint}>{hint()}</p>}
+                  </Show>
+                </li>
+              )
+            }}
           </For>
         </ul>
         <Show when={listening() && pinnedInput() !== null}>
@@ -372,7 +348,7 @@ export function MicCheckPanel() {
               : check.otherHolders().map(holderName).join(', ')}
           </dd>
         </dl>
-        <For each={formatWarnings()}>
+        <For each={warnings()}>
           {(warning) => <p class={styles.warning}>{warning}</p>}
         </For>
         <p class={styles.note}>

@@ -70,6 +70,29 @@ export function layoutKeys(
 
 const keyCentre = (key: KeyRect): number => key.x + key.width / 2
 
+interface KeyIndex {
+  low: number
+  high: number
+  centres: ReadonlyMap<number, number>
+}
+
+/** One index per layout: the stage asks where a pitch sits several times a
+ *  frame, and the layout changes only on a resize. */
+const indexes = new WeakMap<readonly KeyRect[], KeyIndex>()
+
+function indexKeys(keys: readonly KeyRect[]): KeyIndex {
+  const known = indexes.get(keys)
+  if (known !== undefined) return known
+  const centres = new Map(keys.map((key) => [key.midi, keyCentre(key)]))
+  const index = {
+    low: Math.min(...centres.keys()),
+    high: Math.max(...centres.keys()),
+    centres,
+  }
+  indexes.set(keys, index)
+  return index
+}
+
 /**
  * The x position of a pitch on the strip. A fractional MIDI value lands
  * between its two neighbouring keys, so a slide moves smoothly instead of in
@@ -77,15 +100,11 @@ const keyCentre = (key: KeyRect): number => key.x + key.width / 2
  */
 export function pitchToX(midi: number, keys: readonly KeyRect[]): number {
   if (keys.length === 0) return 0
-  const byMidi = new Map(keys.map((key) => [key.midi, key]))
-  const low = Math.min(...byMidi.keys())
-  const high = Math.max(...byMidi.keys())
+  const { low, high, centres } = indexKeys(keys)
   const clamped = Math.min(high, Math.max(low, midi))
   const below = Math.floor(clamped)
-  const above = Math.ceil(clamped)
-  const from = byMidi.get(below)
-  const to = byMidi.get(above)
+  const from = centres.get(below)
+  const to = centres.get(Math.ceil(clamped))
   if (from === undefined || to === undefined) return 0
-  const t = clamped - below
-  return keyCentre(from) + (keyCentre(to) - keyCentre(from)) * t
+  return from + (to - from) * (clamped - below)
 }
