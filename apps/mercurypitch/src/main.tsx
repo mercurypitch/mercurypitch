@@ -23,6 +23,12 @@
 //                                  system browser, and the app hears about
 //                                  it through a deep link (task C8).
 //   normalizeAdminEntryRoute()     The Content Studio is not in this bundle.
+//   loadExperimentalFeatures()     The owner's switches turn experimental
+//                                  features on and off on the web deploys
+//                                  without a release. A store build changes
+//                                  through a release only, so every native
+//                                  build keeps what vite.config.ts pins for
+//                                  them: off, Studio included.
 //
 // Kept, because each one is as true on a phone as in a tab:
 //   installChunkLoadRecovery(), initGlobalErrorHandlers(), initDeviceTier(),

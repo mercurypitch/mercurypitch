@@ -6,7 +6,8 @@ vi.mock('@/lib/use-viewport', () => ({ isNarrow: () => viewport.narrow }))
 
 import { TAB_STUDIO_NIGHT } from '@/features/tabs/constants'
 import { TOUR_IDS } from '@/lib/tour-ids'
-import { endWalkthrough, PAGE_TOUR_CATALOG, pageTourKey, pageTourSteps, startPageTour, tourSteps, walkthroughActive, } from '@/stores/app-store'
+import { endWalkthrough, hasPageTour, PAGE_TOUR_CATALOG, pageTourKey, pageTourSteps, startPageTour, tourSteps, walkthroughActive, } from '@/stores/app-store'
+import { loadExperimentalFeatures, resetExperimentalFeaturesStoreForTests, } from '@/stores/experimental-features-store'
 
 function mountHooks(hooks: string[]): void {
   document.body.replaceChildren(
@@ -26,9 +27,25 @@ afterEach(() => {
   endWalkthrough()
   document.body.replaceChildren()
   viewport.narrow = false
+  resetExperimentalFeaturesStoreForTests()
 })
 
 describe('Studio tour selection', () => {
+  it('offers no tour and starts none while Studio is switched off', async () => {
+    await loadExperimentalFeatures({
+      base: 'https://api.test',
+      fetcher: async () => Response.json({ studio: false }),
+    })
+    mountHooks(['library', 'new-song', 'open-backup', 'local-note'])
+
+    startPageTour(TAB_STUDIO_NIGHT)
+
+    expect(pageTourSteps(TAB_STUDIO_NIGHT)).toBeUndefined()
+    expect(hasPageTour(TAB_STUDIO_NIGHT)).toBe(false)
+    expect(walkthroughActive()).toBe(false)
+    expect(targets()).not.toContain(selector('library'))
+  })
+
   it('can launch from Guide on another page before Studio is mounted', () => {
     expect(TAB_STUDIO_NIGHT).toBe('studio-night')
     startPageTour(TAB_STUDIO_NIGHT)

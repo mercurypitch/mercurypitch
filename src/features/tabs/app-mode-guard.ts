@@ -11,9 +11,14 @@
 // their rooms whatever "I practice" says. Under a Guitar scope the guard
 // bounced the Sing door's room back to the alley under the door's clone, with
 // the "hidden by your App Mode settings" toast.
+//
+// The one bounce both builds share is an experimental tab whose feature is
+// off (constants.ts, isTabAvailable). That is not App Mode hiding a room the
+// shell may still open: the room does not exist on this page, and its
+// address would otherwise show an empty shell.
 
 import type { ActiveTab, PracticeScope, UiMode } from './constants'
-import { isTabVisible, scopeHomeTab } from './constants'
+import { isTabAvailable, isTabVisible, scopeHomeTab } from './constants'
 
 /** The tab to send `tab` to, or null to leave it where it is. */
 export function appModeBounce(
@@ -22,6 +27,7 @@ export function appModeBounce(
   mode: UiMode,
   native: boolean,
 ): ActiveTab | null {
+  if (!isTabAvailable(tab)) return scopeHomeTab(scope)
   if (native) return null
   return isTabVisible(tab, scope, mode) ? null : scopeHomeTab(scope)
 }

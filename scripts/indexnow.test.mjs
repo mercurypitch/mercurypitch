@@ -114,21 +114,50 @@ test('the first release with a key sends every URL; later ones the changes', () 
 // listing.ts), and public/sitemap.xml still names it for the dev build.
 test('production does not list Glassworks, so no release announces it', () => {
   const museum = `${SITE}/glass-game`
+  const experimentsOn = 'VITE_EXPERIMENTAL_FEATURES=1\n'
   assert.ok(sitemapEntries(SITEMAP).has(museum))
   assert.ok(!listedEntries(SITEMAP, ENV_PRODUCTION).has(museum))
-  assert.equal(
-    listedEntries(SITEMAP, ENV_PRODUCTION).size,
-    sitemapEntries(SITEMAP).size - 1,
+  assert.deepEqual(
+    [...unlistedUrls(`VITE_GLASSWORKS_LISTED=1\n${experimentsOn}`)],
+    [],
   )
-  assert.deepEqual([...unlistedUrls('VITE_GLASSWORKS_LISTED=1')], [])
-  assert.deepEqual([...unlistedUrls('VITE_GLASSWORKS_LISTED="true"\n')], [])
+  assert.deepEqual(
+    [...unlistedUrls(`VITE_GLASSWORKS_LISTED="true"\n${experimentsOn}`)],
+    [],
+  )
   // Only an explicit yes lists it: off, unset or garbled all hide it.
   for (const env of [
     'VITE_GLASSWORKS_LISTED=0',
     '',
     'VITE_GLASSWORKS_LISTED=yes',
   ]) {
-    assert.deepEqual([...unlistedUrls(env)], [museum])
+    assert.deepEqual([...unlistedUrls(`${env}\n${experimentsOn}`)], [museum])
+  }
+})
+
+// Studio, the first experimental feature, is served in production but listed
+// nowhere until it graduates (tools/experimental-features.ts), while
+// public/sitemap.xml names it for the dev build.
+test('production does not list Studio either, so no release announces it', () => {
+  const studio = `${SITE}/studio-night`
+  const museumListed = 'VITE_GLASSWORKS_LISTED=1\n'
+  assert.ok(sitemapEntries(SITEMAP).has(studio))
+  assert.ok(!listedEntries(SITEMAP, ENV_PRODUCTION).has(studio))
+  // The museum and Studio are the only pages production holds back.
+  assert.equal(
+    listedEntries(SITEMAP, ENV_PRODUCTION).size,
+    sitemapEntries(SITEMAP).size - 2,
+  )
+  assert.deepEqual(
+    [...unlistedUrls(`${museumListed}VITE_EXPERIMENTAL_FEATURES=1`)],
+    [],
+  )
+  for (const env of [
+    'VITE_EXPERIMENTAL_FEATURES=0',
+    '',
+    'VITE_EXPERIMENTAL_FEATURES=yes',
+  ]) {
+    assert.deepEqual([...unlistedUrls(`${museumListed}${env}`)], [studio])
   }
 })
 

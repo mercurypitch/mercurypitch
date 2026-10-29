@@ -74,10 +74,18 @@ export default defineConfig({
     // (src/features/lessons/kit/page-state.test.ts and its consumers' tests)
     // and by scripts/assert-draft-lessons.mjs on every build; what the site
     // worker serves, whatever the build, is src/lesson-gate.test.ts's.
+    //
+    // Experimental features (Studio first) on by default, as on the dev
+    // deploy and in the e2e bundle: the Studio suites describe the room being
+    // built. The production default, and the owner's switch either way, are
+    // covered by src/stores/experimental-features-store.test.ts and the tab
+    // and tour gates' tests, and by scripts/assert-experimental-features.mjs
+    // on every build.
     env: {
       VITE_API_BASE_URL: '',
       VITE_GLASSWORKS_LISTED: '1',
       VITE_DRAFT_LESSONS: '1',
+      VITE_EXPERIMENTAL_FEATURES: '1',
     },
     // ALL_TESTS is one glob set for src, rather than a per-directory list. The
     // old list silently dropped whole categories: src/components/__tests__

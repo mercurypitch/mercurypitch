@@ -305,7 +305,7 @@ import { loadSharedRoutine } from '@/features/routines/use-daily-routine'
 import { useHashRouter } from '@/features/routing/useHashRouter'
 import { useSessionSequencer } from '@/features/session/useSessionSequencer'
 import { appModeBounce } from '@/features/tabs/app-mode-guard'
-import { PLAYBACK_MODE_ONCE, PLAYBACK_MODE_REPEAT, PLAYBACK_MODE_SESSION, TAB_ANALYSIS, TAB_CHALLENGES, TAB_COMMUNITY, TAB_COMPOSE, TAB_EAR_LAB, TAB_EXERCISES, TAB_GUITAR, TAB_HOME, TAB_JAM, TAB_KARAOKE, TAB_LAB, TAB_LAB_DIFF, TAB_LAB_TRANSCRIBE, TAB_LEADERBOARD, TAB_PATH, TAB_PIANO, TAB_PITCH_ALGO, TAB_PITCH_TEST, TAB_PROGRESS, TAB_SETTINGS, TAB_SINGING, TAB_STUDIO_NIGHT, TAB_VOICE_HISTORY, tabLabel, visibleTabOrder, } from '@/features/tabs/constants'
+import { isTabAvailabilityPending, isTabAvailable, PLAYBACK_MODE_ONCE, PLAYBACK_MODE_REPEAT, PLAYBACK_MODE_SESSION, TAB_ANALYSIS, TAB_CHALLENGES, TAB_COMMUNITY, TAB_COMPOSE, TAB_EAR_LAB, TAB_EXERCISES, TAB_GUITAR, TAB_HOME, TAB_JAM, TAB_KARAOKE, TAB_LAB, TAB_LAB_DIFF, TAB_LAB_TRANSCRIBE, TAB_LEADERBOARD, TAB_PATH, TAB_PIANO, TAB_PITCH_ALGO, TAB_PITCH_TEST, TAB_PROGRESS, TAB_SETTINGS, TAB_SINGING, TAB_STUDIO_NIGHT, TAB_VOICE_HISTORY, tabLabel, visibleTabOrder, } from '@/features/tabs/constants'
 import type { TourHandoff } from '@/features/tours/room-tour'
 import { hasRoomTour, provideTourHandoff, startRoomTour, } from '@/features/tours/room-tour'
 import { TourChipHost } from '@/features/tours/TourChipHost'
@@ -2169,6 +2169,9 @@ const AppShell: Component<AppProps> = (props) => {
     const mode = uiMode()
     if (walkthroughActive()) return
     if (labTab() !== null) return
+    // The owner's switches are still on their way, and they may yet open an
+    // experimental tab this build hides: a deep link to it waits for them.
+    if (isTabAvailabilityPending(activeTab())) return
     if (appModeBounce(activeTab(), scope, mode, IS_NATIVE_BUILD) === null) {
       return
     }
@@ -2177,7 +2180,9 @@ const AppShell: Component<AppProps> = (props) => {
       const m = untrack(uiMode)
       if (untrack(walkthroughActive)) return
       if (untrack(labTab) !== null) return
-      const target = appModeBounce(untrack(activeTab), s, m, IS_NATIVE_BUILD)
+      const tab = untrack(activeTab)
+      if (untrack(() => isTabAvailabilityPending(tab))) return
+      const target = appModeBounce(tab, s, m, IS_NATIVE_BUILD)
       if (target === null) return
       // Drop one-shot intents aimed at the hidden tab.
       setJamRoomToJoin(null)
@@ -2187,8 +2192,13 @@ const AppShell: Component<AppProps> = (props) => {
       setInitialUvrView(null)
       setInitialUvrSessionId(null)
       // Explain the bounce — but not during startup, where landing on the
-      // scope's home tab is the expected behavior, not a surprise.
-      if (performance.now() - appMountedAt > 2000) {
+      // scope's home tab is the expected behavior, not a surprise. An
+      // experimental tab that is off was not hidden by App Mode, so the
+      // toast would send the user looking for a setting that is not there.
+      if (
+        performance.now() - appMountedAt > 2000 &&
+        untrack(() => isTabAvailable(tab))
+      ) {
         showNotification(
           'That page is hidden by your App Mode settings (Settings → General).',
           'info',
@@ -4145,9 +4155,20 @@ const AppShell: Component<AppProps> = (props) => {
               </Show>
 
               <Show when={activeTab() === TAB_STUDIO_NIGHT}>
-                <TabErrorBoundary tabName={tabLabel(TAB_STUDIO_NIGHT)}>
-                  <StudioPage />
-                </TabErrorBoundary>
+                {/* Studio is an experimental feature (constants.ts,
+                    isTabAvailable). While it is off the room never mounts
+                    and its chunk never loads: the skeleton holds the screen
+                    until the owner's switches land or the route guard sends
+                    the address Home. Turning it off unmounts the room and
+                    leaves its projects in IndexedDB. */}
+                <Show
+                  when={isTabAvailable(TAB_STUDIO_NIGHT)}
+                  fallback={<SkeletonTabContent />}
+                >
+                  <TabErrorBoundary tabName={tabLabel(TAB_STUDIO_NIGHT)}>
+                    <StudioPage />
+                  </TabErrorBoundary>
+                </Show>
               </Show>
 
               <Show when={activeTab() === TAB_COMPOSE}>

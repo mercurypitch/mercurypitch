@@ -2,6 +2,9 @@
 // Use these everywhere instead of raw strings.
 // Renaming a tab is a single-line change here — no string-hunt needed.
 
+import type { ExperimentalFeature } from '@/lib/experimental-features'
+import { experimentalFeatureOn, experimentalFeaturesPending, } from '@/stores/experimental-features-store'
+
 export const TAB_HOME = 'home' as const
 export const TAB_PATH = 'path' as const
 export const TAB_PROGRESS = 'progress' as const
@@ -265,6 +268,32 @@ const SIMPLE_TABS: ReadonlySet<ActiveTab> = new Set<ActiveTab>([
   TAB_SETTINGS,
 ])
 
+// ── Experimental tabs ───────────────────────────────────────────────
+// A tab that IS an experimental feature (src/lib/experimental-features.ts)
+// exists only while its feature is on for this page: off by default on
+// mercurypitch.com, on for the dev deploy, previews and `pnpm dev`, and either
+// way when the owner switches it. Asked inside isTabVisible, so every bar,
+// menu, swipe order, voice command and tour that filters on visibility drops
+// it with no call site of its own, and the route guard sends its address Home.
+const TAB_EXPERIMENTS: Partial<Record<ActiveTab, ExperimentalFeature>> = {
+  [TAB_STUDIO_NIGHT]: 'studio',
+}
+
+/** Whether `tab` exists on this page at all. False only for an experimental tab whose feature is off. Reactive. */
+export function isTabAvailable(tab: ActiveTab): boolean {
+  const feature = TAB_EXPERIMENTS[tab]
+  return feature === undefined || experimentalFeatureOn(feature)
+}
+
+/**
+ * True while `tab` is experimental and the startup read of the owner's
+ * switches is still in flight: whether it exists may yet change, so nothing
+ * should send its address elsewhere. Reactive.
+ */
+export function isTabAvailabilityPending(tab: ActiveTab): boolean {
+  return TAB_EXPERIMENTS[tab] !== undefined && experimentalFeaturesPending()
+}
+
 /** Is `tab` visible under the given scope and UI mode? */
 export function isTabVisible(
   tab: ActiveTab,
@@ -273,6 +302,7 @@ export function isTabVisible(
 ): boolean {
   // Settings always stays reachable — it hosts the mode switch itself.
   if (tab === TAB_SETTINGS) return true
+  if (!isTabAvailable(tab)) return false
   if (mode === 'simple' && !SIMPLE_TABS.has(tab)) return false
   return scope === 'all' || TAB_SCOPES[tab].includes(scope)
 }
