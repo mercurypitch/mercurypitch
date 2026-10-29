@@ -17,6 +17,17 @@ canvas ("Ear rooms", 27 Oct 2026) has phone mock-ups of all four and of the Ear 
 - Asked for: a way to go on and sing the whole song in the Karaoke room from where the singer came
   in. It is offered after a landing and from the result.
 
+**The owner's word of 29 Oct 2026**, after trying the second round on TestFlight (mp-v0.8.45).
+
+- Reported: First note's read of the singer's own songs was quick but found good passages in only
+  one of three songs, all of which have a clear tune. The third round fixes what made that so (see
+  "What the read of a song of your own found", under Room 2).
+- Decided: there is no native release yet. When there is, the Ear rooms ship in it as they are on
+  TestFlight now. The web keeps its own interface; this work is the native app's.
+- For the Ear Lab with Merc: Pulse's and the Chart's round-trip check stays where it is, in their
+  "?" sheet. The three extras are approved: Compare after a miss, "Remind me tomorrow" on Today
+  done, and Hairline's loupe turned vertical.
+
 ## Why
 
 The native app sells one subscription, Mercury Pitch Cloud. It covers the Karaoke imports and five
@@ -173,17 +184,17 @@ under it the notes found by the end of the turn and the level. The best is kept 
 entries on the note, then more found, then closer entries. A run with no voice keeps nothing.
 
 **The entries.** The rules live in one module that the script and the phone both run
-(`src/features/first-note/entry-rules.ts`; it imports nothing, so Node runs it as it is). An entry
-is a line of the song that follows a breath on the vocal stem. Its note is the voice's first steady
-stretch, read by YIN, and is kept only when the song's stored notes (the mixer's, another tracker)
-name the same note, the singer sat within 30 cents of it, and it is near the song's middle note.
-The stored notes alone were not enough: the same chorus line reads as F5, C5 and D5 in its three
-choruses. The beats come from the band stem's onsets, and an entry whose lead-in shows no clear
-grid gets none.
+(`src/features/first-note/entry-rules.ts`; it imports nothing, so Node runs it as it is), and the
+beats in another beside it (`band-beats.ts`). An entry is a line of the song that follows a breath
+on the vocal stem. Its note is the voice's first steady stretch, read by YIN, and is kept only when
+the song's stored notes (the mixer's, another tracker) name the same note, the singer sat within 30
+cents of it, and it is near the song's middle note. The stored notes alone were not enough: the
+same chorus line reads as F5, C5 and D5 in its three choruses. The beats come from the band stem's
+onsets, and an entry whose lead-in shows no clear grid gets none.
 
 The examples' entries are read once from the stems and committed
 (`src/features/first-note/first-note-entries.json`, made by
-`apps/mercurypitch/scripts/generate-first-note-entries.mjs`), with each line's words. Nineteen
+`apps/mercurypitch/scripts/generate-first-note-entries.mjs`), with each line's words. Twenty-two
 entries pass, from D3 to D4. Each song records the sha256 of the vocal it was read from, and
 `apps/mercurypitch/src/first-note-entries.test.ts` fails when a stem's pin changes and the entries
 were not made again. Moving the rules into the shared module changed none of them: the script wrote
@@ -202,9 +213,10 @@ the room too. The vocal is walked chunk by chunk where the phone streams, as the
 a song too long for the walk to hold sits out ("Left out: too long for this phone to read"). Where
 the phone cannot stream, a stem is decoded whole only within the walk's ceiling (about six minutes),
 and the vocal is let go before the band is read, so the phone never holds two decoded stems. The
-lines are the song's synced lyrics, or where the voice comes in after a breath when it has none.
-Only the band's lead-ins are read for the beats, never the whole band. The rules' work runs in
-steps, and the read lets the screen draw after every line and lead-in, and inside one every 8 ms.
+lines are where the voice comes in after a breath, and the song's synced lyrics moved onto this
+recording first, with their words (below). Only the band's lead-ins are read for the beats, never
+the whole band. The rules' work runs in steps, and the read lets the screen draw after every line
+and lead-in, and inside one every 8 ms.
 
 The entries are kept on the phone (`mp_first_note_own_entries`) under the song and its stems, so a
 stem replaced in the studio is read again (`first-note-own-songs.ts`); a read is let go only when
@@ -216,6 +228,39 @@ cause goes to the log. A run shares up to six entries over the chosen songs in t
 give two each, four give two, two, one and one. A song gives no more than it has, so a run on one
 song with four entries is four rounds; a run shorter than six is kept in the history, scored
 against the entries it had, and never counts as a best.
+
+**What the read of a song of your own found** (29 Oct 2026). The owner's own songs gave good
+passages in one of three. The rules had been made on the three examples, whose lyrics are synced to
+those very stems and whose recordings sit at A440, and a song of the singer's own brings neither. A
+harness (`entry-rules.ts` on the examples' stems, changed the way a singer's song differs) showed
+three causes, in order of harm:
+
+- **Lyrics synced to another recording.** The phone's lyrics come from LRCLIB, synced to whichever
+  release the syncer had, often half a second to two seconds out of the file on the phone. A line
+  starts in the breath before the voice, so a line half a second late starts inside the voice before
+  it: no breath, no entry. Lyrics half a second late left the examples 0, 2 and 1 entries of 6, 10
+  and 3. Now the lines come from the voice itself (where it comes in after a breath), and the lyrics
+  only lend their words, after `lyricsShift` finds how far out they are (the shift that lands most
+  of their lines where the voice comes in, within three seconds). With lyrics up to two seconds out
+  either way the examples keep every entry.
+- **A recording tuned off A440.** In tune was within 30 cents of A440's note, so a song a third of a
+  semitone sharp had nearly every note out of tune: 0, 4 and 0 entries. Now the song's tuning is
+  read from its lines' notes (`songTuning`, used from 10 cents out), the lines are judged in it,
+  and the entry carries it (`cents`), so the room asks for the note as the band plays it and Merc
+  sings it there.
+- **Two trackers an octave apart, or a moment apart.** The stored notes (the room's own read) often
+  name the voice's note an octave out, or start it a moment after the other tracker settles. Both
+  now agree with it: the room hears a note in any octave, and the octave kept is the one nearer the
+  song's middle. This brought Nothing in the Dark from 3 entries to 6, each one checked against the
+  song: lines that open as the kept ones do.
+
+Separated stems were tried too: the examples' stems mixed back together and split again with
+Demucs, as a singer's song would be. They read about as well as the clean stems (5, 11 and 3
+entries by the old rules, 6, 13 and 6 now), so the separation itself was not the cause.
+
+Each read now tells the console what it looked at: how many lines, how far the lyrics were moved,
+the tuning, and why each line was left. A test build shows the console on the phone, with a Copy
+button. A read by rules the room has moved on from (`ENTRY_RULES_VERSION`) is read again.
 
 **Show the words.** The owner asked for an optional hint (28 Oct 2026); it ships off by default, our
 choice, so the room stays ear first. It is a switch in the Songs sheet, kept on the phone
@@ -242,8 +287,8 @@ room's painted theatre (`/karaoke/broadway-theater-portrait.webp`), which the na
 - No "How it works" demo, no Warm-up stop, and no account sync of the best (`mp_first_note_bests`
   is device-only), nor of the reads of the singer's songs, which belong to the phone that has the
   songs.
-- A song of the singer's own is read again only when its stems change: lyrics synced after the
-  read bring their words at the next read, not before.
+- A song of the singer's own is read again only when its stems or the rules change: lyrics synced
+  after the read bring their words at the next read, not before.
 - No paywall of its own yet. Like every premium room it rides `PREMIUM_EXERCISES` until the V1
   flip, which brings the free taste with it: three runs per room, then the paywall.
 
