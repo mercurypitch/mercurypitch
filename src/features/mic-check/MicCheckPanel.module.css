@@ -1,0 +1,460 @@
+/* ============================================================
+   MicCheckPanel — stage, verdict, inputs, facts and timeline
+   ============================================================ */
+
+.panel {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: 12px;
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  background-color: var(--bg-secondary);
+}
+
+/* The stage paints on the theme's deepest surface: the canvas reads this
+   background to choose its blend (MicCheckStage.tsx), so keep the colour on
+   this element. */
+.stage {
+  position: relative;
+  aspect-ratio: 2 / 1;
+  min-height: 210px;
+  max-height: 320px;
+  overflow: hidden;
+  border: 1px solid var(--border-subtle);
+  border-radius: 12px;
+  background-color: var(--bg-primary);
+  background-image: radial-gradient(
+    120% 90% at 50% 38%,
+    color-mix(in srgb, var(--accent) 9%, transparent) 0%,
+    transparent 70%
+  );
+  background-origin: border-box;
+  transition: border-color 0.2s ease;
+}
+
+.stageLive {
+  border-color: color-mix(in srgb, var(--accent) 45%, var(--border-subtle));
+}
+
+.canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.stageCover {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  padding: 16px;
+}
+
+.readout {
+  position: absolute;
+  top: 10px;
+  left: 14px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  pointer-events: none;
+}
+
+.readoutNote {
+  font-size: 2rem;
+  font-weight: 800;
+  line-height: 1;
+  letter-spacing: -0.02em;
+  font-variant-numeric: tabular-nums;
+}
+
+.readoutDetail {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  font-size: 0.76rem;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.readoutHz {
+  font-weight: 500;
+  font-variant-numeric: tabular-nums;
+  color: var(--text-secondary);
+}
+
+.primary,
+.secondary,
+.deviceAction {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  border: 1px solid var(--border);
+  font-family: inherit;
+  font-weight: 600;
+  white-space: nowrap;
+  cursor: pointer;
+  transition:
+    border-color 0.15s ease,
+    filter 0.15s ease;
+}
+
+.primary {
+  min-height: 42px;
+  padding: 0 20px;
+  border-color: var(--accent-fill);
+  border-radius: 999px;
+  background-color: var(--accent-fill);
+  color: var(--on-accent);
+  font-size: 0.9rem;
+  font-weight: 700;
+}
+
+.primary svg {
+  width: 17px;
+  height: 17px;
+}
+
+.primary:hover:not(:disabled) {
+  filter: brightness(1.08);
+}
+
+.secondary {
+  min-height: 34px;
+  padding: 0 14px;
+  border-radius: 8px;
+  background-color: var(--bg-card);
+  color: var(--text-primary);
+  font-size: 0.8rem;
+}
+
+.deviceAction {
+  min-height: 30px;
+  padding: 0 12px;
+  border-radius: 8px;
+  background-color: var(--bg-secondary);
+  color: var(--text-primary);
+  font-size: 0.74rem;
+}
+
+.secondary:hover:not(:disabled),
+.deviceAction:hover:not(:disabled) {
+  border-color: var(--accent);
+}
+
+.primary:focus-visible,
+.secondary:focus-visible,
+.deviceAction:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.primary:disabled,
+.secondary:disabled,
+.deviceAction:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+
+/* ── Verdict ── */
+
+/* The action sits under the words, not beside them: a button that names a
+   device can be as long as the sentence, and beside it the sentence would be
+   squeezed into a column a word wide. */
+.verdict {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: start;
+  column-gap: 10px;
+  row-gap: 8px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  background-color: var(--bg-tertiary);
+}
+
+.verdict > button {
+  grid-column: 2;
+  justify-self: start;
+}
+
+.verdict[data-tone='good'] {
+  background-color: var(--status-success-bg);
+}
+
+.verdict[data-tone='warn'] {
+  background-color: var(--status-warning-bg);
+}
+
+.verdict[data-tone='bad'] {
+  background-color: var(--status-danger-bg);
+}
+
+.verdictDot {
+  width: 9px;
+  height: 9px;
+  /* Centred on the title's first line. */
+  margin-top: 5px;
+  border-radius: 50%;
+  background-color: var(--text-muted);
+}
+
+.verdict[data-tone='good'] .verdictDot {
+  background-color: var(--status-success-fg);
+  animation: micCheckPulse 1.6s ease-in-out infinite;
+}
+
+.verdict[data-tone='warn'] .verdictDot {
+  background-color: var(--status-warning-fg);
+}
+
+.verdict[data-tone='bad'] .verdictDot {
+  background-color: var(--status-danger-fg);
+}
+
+@keyframes micCheckPulse {
+  50% {
+    opacity: 0.35;
+  }
+}
+
+.verdictText {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.verdictText strong {
+  font-size: 0.88rem;
+  color: var(--text-primary);
+}
+
+.verdictText span {
+  font-size: 0.76rem;
+  line-height: 1.45;
+  color: var(--text-secondary);
+}
+
+.meterRow {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.meter {
+  flex: 1;
+  min-width: 0;
+}
+
+/* ── Inputs, outputs, facts, timeline ── */
+
+.block {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.blockTitle {
+  margin: 0;
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+.note,
+.warning,
+.deviceHint {
+  margin: 0;
+  font-size: 0.74rem;
+  line-height: 1.45;
+  color: var(--text-muted);
+}
+
+.warning,
+.deviceHint {
+  color: var(--status-warning-fg);
+}
+
+.devices {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.device {
+  display: grid;
+  grid-template-columns: 20px minmax(0, 1fr) auto;
+  grid-template-areas:
+    'icon name action'
+    'icon badges action'
+    'hint hint hint';
+  align-items: center;
+  column-gap: 10px;
+  row-gap: 4px;
+  padding: 8px 10px;
+  border: 1px solid var(--border-subtle);
+  border-radius: 10px;
+  background-color: var(--bg-card);
+}
+
+.deviceHeard {
+  border-color: var(--accent);
+  background-color: color-mix(in srgb, var(--accent) 8%, var(--bg-card));
+}
+
+.deviceIcon {
+  grid-area: icon;
+  display: flex;
+  color: var(--text-secondary);
+}
+
+.deviceIcon svg {
+  width: 18px;
+  height: 18px;
+}
+
+.deviceHeard .deviceIcon {
+  color: var(--accent-text);
+}
+
+.deviceName {
+  grid-area: name;
+  overflow: hidden;
+  font-size: 0.82rem;
+  font-weight: 600;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  color: var(--text-primary);
+}
+
+.badges {
+  grid-area: badges;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.badges:empty {
+  display: none;
+}
+
+.badge {
+  padding: 2px 7px;
+  border-radius: 999px;
+  background-color: var(--bg-tertiary);
+  font-size: 0.64rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  color: var(--text-secondary);
+}
+
+.badgeHeard {
+  background-color: var(--accent-surface);
+  color: var(--accent-text);
+}
+
+.badgeDefault {
+  background-color: var(--status-success-bg);
+  color: var(--status-success-fg);
+}
+
+.device .deviceAction {
+  grid-area: action;
+}
+
+.deviceHint {
+  grid-area: hint;
+}
+
+.pinned {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 12px;
+  padding: 8px 10px;
+  border-radius: 10px;
+  background-color: var(--accent-surface);
+}
+
+.pinned .note {
+  flex: 1 1 220px;
+  color: var(--text-primary);
+}
+
+.facts {
+  display: grid;
+  grid-template-columns: max-content minmax(0, 1fr);
+  gap: 4px 14px;
+  margin: 0;
+  font-size: 0.76rem;
+}
+
+.facts dt {
+  color: var(--text-muted);
+}
+
+.facts dd {
+  margin: 0;
+  overflow-wrap: anywhere;
+  color: var(--text-primary);
+}
+
+.timeline {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.event {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 10px;
+  padding-left: 10px;
+  border-left: 2px solid var(--accent);
+  font-size: 0.76rem;
+  line-height: 1.4;
+  color: var(--text-primary);
+}
+
+.event[data-tone='good'] {
+  border-left-color: var(--status-success-fg);
+}
+
+.event[data-tone='warn'] {
+  border-left-color: var(--status-warning-fg);
+}
+
+.event[data-tone='bad'] {
+  border-left-color: var(--status-danger-fg);
+}
+
+.eventTime {
+  font-variant-numeric: tabular-nums;
+  color: var(--text-muted);
+}
+
+@media (max-width: 480px) {
+  .panel {
+    padding: 10px;
+  }
+
+  .readoutNote {
+    font-size: 1.6rem;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .verdict[data-tone='good'] .verdictDot {
+    animation: none;
+  }
+}

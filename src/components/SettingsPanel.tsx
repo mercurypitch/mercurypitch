@@ -77,6 +77,17 @@ const PricingPanel = CAN_TAKE_PAYMENT
     )
   : null
 
+/**
+ * The mic check: a canvas stage, a pitch detector and a device watcher that
+ * nobody needs until the Practice tab opens. Settings is in the main bundle,
+ * so the check is a chunk of its own, fetched with the tab.
+ */
+const MicCheckPanel = lazy(async () =>
+  import('@/features/mic-check/MicCheckPanel').then((m) => ({
+    default: m.MicCheckPanel,
+  })),
+)
+
 /** One row each in the Danger Zone; 'karaoke' clears in place, the three
  *  ResetScope actions run through resetAppData and reload. */
 type DangerAction = 'karaoke' | ResetScope
@@ -591,6 +602,21 @@ export const SettingsPanel: Component<SettingsPanelProps> = (props) => {
         </Show>
 
         <Show when={activeTab() === 'singing'}>
+          {/* Microphone check — first, because every setting below assumes
+              the right microphone is reaching us. */}
+          <div class={styles.settingsSection} data-tour="settings.mic-check">
+            <h3 class={styles.settingsSectionTitle}>Microphone Check</h3>
+            <div class={styles.settingsDivider} />
+            <p class={styles.settingsDesc}>
+              Hear what reaches MercuryPitch, see every connected input and
+              which one is in charge, and catch whatever takes your microphone
+              over while you watch.
+            </p>
+            <Suspense fallback={<p class={styles.settingsDesc}>Loading…</p>}>
+              <MicCheckPanel />
+            </Suspense>
+          </div>
+
           {/* Sensitivity Presets Section */}
           <div
             class={styles.settingsSection}
