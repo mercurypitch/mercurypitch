@@ -322,14 +322,19 @@
 
 /* Minimised on scroll (kit §9): only the current tab stays, the pill shrinks
    to it and sits at the right edge. Driven by the .main-content scroller —
-   never by the document, which does not scroll in this app. */
+   never by the document, which does not scroll in this app.
+
+   Shrunk, the pill is that one tab, as iOS's own tab bar minimises into a
+   single button: a circle of the bar's height that the tab's tinted plate
+   fills to the glass border. The plate kept its 52 px height inside it and
+   floated there, a ring of bare glass round it (owner, 29 Oct). */
 .mp-rail-row.is-min {
   justify-content: flex-end;
 }
 
 .mp-rail-row.is-min .mp-rail {
   flex: 0 0 auto;
-  width: auto;
+  width: var(--tabbar-height);
   padding: 0;
 }
 
@@ -338,7 +343,7 @@
 }
 
 .mp-rail-row.is-min .mp-rail__item {
-  width: 64px;
+  height: 100%;
   padding: 0 6px;
 }
 

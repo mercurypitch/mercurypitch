@@ -108,6 +108,31 @@ describe("the pill's state word", () => {
   })
 })
 
+// Minimised on scroll, the rail is its one tab. Its tinted plate kept the
+// 52 px height it has in the full pill, so it floated in the circle the pill
+// became, a ring of bare glass round it (owner, 29 Oct). Shrunk, the pill is
+// a circle of the bar's height and the tab fills it, as iOS's own tab bar
+// minimises into a single button.
+describe('the rail minimised to its one tab', () => {
+  it("is a circle of the bar's height", () => {
+    expect(declaration('.mp-rail', 'height')).toBe('var(--tabbar-height)')
+    expect(declaration('.mp-rail-row.is-min .mp-rail', 'width')).toBe(
+      'var(--tabbar-height)',
+    )
+    expect(declaration('.mp-rail-row.is-min .mp-rail', 'padding')).toBe('0')
+  })
+
+  it('fills it with the tab, its plate meeting the glass border', () => {
+    expect(declaration('.mp-rail-row.is-min .mp-rail__item', 'height')).toBe(
+      '100%',
+    )
+    expect(declaration('.mp-rail-row.is-min .mp-rail__item', 'width')).toBe(
+      null,
+    )
+    expect(declaration('.mp-rail__item', 'border-radius')).toBe('999px')
+  })
+})
+
 // Android's picture-in-picture window holds the Karaoke room's compact view
 // and nothing else: the shell's chrome goes while the room is in there.
 describe('the shell in the small window', () => {
