@@ -17,6 +17,8 @@ import { studioPanGains } from '../model/arrangement-plan'
 import type { StudioTrack } from '../model/types'
 import { STUDIO_SAMPLE_RATE } from '../model/types'
 import { scheduleStudioSegmentGain } from './edge-envelope'
+import type { StudioLaneIdle } from './lane-idle'
+import { disposeLaneIdle, LIVE_LANE, quietNewLane } from './lane-idle'
 import type { StudioLaneTimeline, StudioPlanned, StudioScheduled, } from './lane-timeline'
 import { laneCycle, laneTimeline, plannedSegments } from './lane-timeline'
 import type { StudioFadeShape, StudioLaneInput, StudioSourceSet, } from './seek-crossfade'
@@ -63,6 +65,8 @@ export interface StudioGraphLane {
   /** The newest set of sources; older ones still fading are in `sets` too. */
   current: StudioSourceSet
   readonly sets: Set<StudioSourceSet>
+  /** Whether its chain runs, drains or sits out of the mix while no one hears it (lane-idle.ts). */
+  idle: StudioLaneIdle
 }
 
 /** The broadband dynamics in a chain, whose reductions add up to the lane's. */
@@ -131,14 +135,17 @@ export function buildGraphLane(
     const fade = ctx.createGain()
     chain.output.connect(fade)
     const faders = connectFaders(ctx, lane, fade, place.output)
-    const feed = { input: chain.input, compensation: lane.compensationSeconds }
+    // The lane's inlet: what its sources feed, and what closes while it idles.
+    const inlet = ctx.createGain()
+    inlet.connect(chain.input)
+    const feed = { input: inlet, compensation: lane.compensationSeconds }
     const planned = plannedSegments(
       lane.segments,
       place.planStart,
       feed.compensation,
     )
     const current = openStudioSourceSet(ctx, feed, null)
-    return {
+    const built: StudioGraphLane = {
       trackId: lane.track.id,
       feed,
       chain,
@@ -153,7 +160,10 @@ export function buildGraphLane(
       timeline: laneTimeline(planned, place.passStart, place.fromFrame),
       current,
       sets: new Set([current]),
+      idle: LIVE_LANE,
     }
+    if (!lane.audible) quietNewLane(ctx, built)
+    return built
   } catch (error) {
     chain.dispose()
     throw error
@@ -364,6 +374,7 @@ export function disposeRetiringChain(lane: StudioGraphLane): void {
   if (!old) return
   lane.retiring = null
   dropSetsInto(lane, old.feed)
+  old.feed.input.disconnect()
   old.chain.dispose()
   old.fade.disconnect()
   old.release?.()
@@ -373,6 +384,8 @@ export function disposeRetiringChain(lane: StudioGraphLane): void {
 export function disposeGraphLane(lane: StudioGraphLane): void {
   silenceLane(lane)
   disposeRetiringChain(lane)
+  disposeLaneIdle(lane)
+  lane.feed.input.disconnect()
   lane.chain.dispose()
   lane.fade.disconnect()
   lane.release?.()

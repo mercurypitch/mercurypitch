@@ -486,6 +486,13 @@ must import the inventory in a child Node process as well as through Vitest.
 **Rule:** Compute absolute boundaries once and use `nextTime - startTime` for curve duration. Verify fractional epochs in a native AudioParam; a fake that only records calls misses this failure.
 **See:** `src/lib/studio/playback/edge-envelope.ts` and `src/e2e/studio-audio-envelope.spec.ts`.
 
+### Take a silent chain out of the graph; a zero gain in front of it saves almost nothing
+
+**Symptom:** Muting 23 of 24 Studio lanes left the audio thread at 99 % and underrunning; a gain of 0 in front of each chain only cut 15 % offline.
+**Cause:** Chromium processes every node a destination pulls, silent input or not (compressors, shapers and convolvers run on zeros). Only a node nothing pulls is free. And an AudioBufferSourceNode that nothing pulls stops advancing: measured 0.8 s behind after 0.8 s unpulled.
+**Rule:** To idle a subgraph, close its input, let it run until its tails have rung out on silence, then disconnect it from what pulls it, and keep its sources pulled through a muted gain into the destination. Reconnect before opening the input again.
+**See:** `src/lib/studio/playback/lane-idle.ts`.
+
 ## Framework
 
 ### Format CSS before verifying a standalone production build

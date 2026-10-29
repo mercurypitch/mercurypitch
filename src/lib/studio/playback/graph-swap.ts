@@ -39,6 +39,7 @@ import type { StudioGraphState } from './graph-passes'
 import { laneRun, passStart, swapping } from './graph-passes'
 import type { ReplanPlace } from './graph-replan'
 import { rebase, replanPlace } from './graph-replan'
+import { quietSwappedLane } from './lane-idle'
 import { laneTimeline, plannedSegments } from './lane-timeline'
 import { EQUAL_POWER_FADE, openStudioSourceSet, SAME_AUDIO_CROSSFADE_SECONDS, SEEK_CROSSFADE_SECONDS, } from './seek-crossfade'
 
@@ -59,11 +60,14 @@ export interface StudioChainSwap {
 interface BuiltChain {
   readonly chain: StudioFxChain
   readonly fade: GainNode
+  /** What its sources will feed, in front of it (lane-idle.ts). */
+  readonly inlet: GainNode
 }
 
 /** Take down chains built for a swap that does not happen. */
 function dropChains(built: readonly BuiltChain[]): void {
-  for (const { chain, fade } of built) {
+  for (const { chain, fade, inlet } of built) {
+    inlet.disconnect()
     fade.disconnect()
     chain.dispose()
   }
@@ -83,7 +87,9 @@ function buildChains(
       fade.gain.value = 0
       chain.output.connect(fade)
       fade.connect(lanes[index].split)
-      built.push({ chain, fade })
+      const inlet = state.ctx.createGain()
+      inlet.connect(chain.input)
+      built.push({ chain, fade, inlet })
     }
     return built
   } catch {
@@ -124,8 +130,9 @@ function crossChains(
   lane.chain = next.chain
   lane.fade = next.fade
   lane.release = swap.release
+  const idle = lane.idle
   lane.feed = {
-    input: next.chain.input,
+    input: next.inlet,
     compensation: Math.max(0, state.slowest - swap.latency),
   }
   lane.dynamics = dynamicsIds(next.chain.getSpec())
@@ -142,6 +149,7 @@ function crossChains(
   )
   lane.sets.add(lane.current)
   lane.timeline = laneTimeline(lane.planned, passStart(state), place.frame)
+  quietSwappedLane(state.ctx, lane, idle)
 }
 
 /** The lanes `swaps` name, in order; null when the graph did not build one. */
