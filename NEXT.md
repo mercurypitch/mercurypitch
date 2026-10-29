@@ -1139,3 +1139,24 @@ Note: the lanes' memory gate read a stale cgroup path after the 21:00 restart (f
 - Final voices prepared, NOT generated (owner asked 01:01Z, no answer): l4voice/BATCH.md (69 lines, 4,567
   characters, about 4,600 credits at one take, 9,100 at two); ledger_sync.py now knows Lesson 4's script.
 - Builders asked to keep lab/s01-cold-open/BUILD-NOTES.md and lab/s05-steps/BUILD-NOTES.md (in push-notes).
+
+## 2026-10-29 ~08:40Z: Lesson 4 wave 1 handed back, kit promoted, wave 2 running (tasks 190, 192)
+- Builders A (s01-s04, 65 min) and B (s05-s06, 64 min) handed back: all six built, clock-lint clean, sweeps
+  clean; s02, s03, s05 pass measure.py; s01/s04/s06 wait on m01-orange, m04-orange, m06b-orange. Reports'
+  key facts: S1 mouth (261, 781) not (270, 664); S4c stand-up confirmed (curves in BUILD-GUIDE § Handoff
+  confirmations); L.lit registers 0.4-0.6 s at 40 %, B's linear light 0.7 s; item 2 in S6b passes (lab/
+  s06-groups/item2/). A's s03/s04 are assembled from lab/s0N-*/s0N-src.html by $S/assemble.py with
+  $S/shared-a.txt and shared-tf.txt (in push-notes). A flagged: s02's "Pitch" gradient keeps Lesson 2's
+  spectrum (aqua and violet); the bead leaves m01-blue's mouth at 0.30 while it is still closed (opens ~0.6).
+- gen-root.py re-run twice: the root now loads frames.js, stairs.js, assets/merc/whole.js, hosts.js.
+- Kit: assets/lib/hosts.js (L.mercGate, L.light, L.swap, L.filmDust, L.MERC_WHOLE), identical to B's tavi()
+  on all 2,113 frames of s06 for both passes ($S/l4kit/gate-test.*). tools/merc-whole.py -> assets/merc/
+  whole.js (m01-blue 0, m06a 30). BUILD-GUIDE updated (kit row, measured light, director's tools, handoffs).
+  DECISIONS 78; CHANGES.md entry.
+- Pass queue reordered: worker 1's bash killed after m01-blue; m01-orange's node runs on (pid 4489); then
+  worker-1b (logs/worker-1b.log): m04, m06b, m07, m08, m09, m10-blue, m11 pair. m12-blue at ~2 s/frame
+  (1980/8438 at 08:13), m12-orange after it. $S/l4merc/verify.py checks every pass (trap 2).
+- Builders C (s07-s08) and D (s09-s11) spawned ~08:35. Watcher b6oelrqwe fires when m01-orange, m04 and m06b
+  exist. NEXT on it: verify.py, merc-whole.py, s01 clip + measure (lab.mjs s01-cold-open --clip), s04 WHOLE
+  = first whole + 1 in compositions/s04-recall.html AND lab/s04-recall/s04-src.html, clip + measure, s06
+  merc-tags --check + clip + measure. Then component critics A and B when C/D free the slots.

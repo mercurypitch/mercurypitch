@@ -3,18 +3,420 @@
   <head><meta charset="UTF-8" /></head>
   <body>
     <div id="s01-cold-open" data-composition-id="s01-cold-open" data-start="0" data-duration="34.183" data-width="1920" data-height="1080">
-      <div class="scene">
-        <div class="ground" data-layout-allow-overflow></div>
-        <div class="staves" data-layout-allow-overflow></div>
-        <p class="kicker" style="left:120px;top:120px">PLACEHOLDER · s01-cold-open</p>
-        <p class="serif" style="position:absolute;left:120px;top:440px;font-size:120px">Cold open: seven stairs, one short of home</p>
-      </div>
+      <div class="scene" id="s01-cold-open-scene"></div>
+      <!-- Merc passes, static (trap 4); timing written by python3 tools/merc-tags.py s01-cold-open -->
+      <video id="s01-cold-open-m01-blue" data-merc="m01-blue" class="clip" muted playsinline src="assets/merc/m01-blue-merc.webm" data-start="0.000" data-duration="33.425" data-media-start="0.008"></video>
+      <video id="s01-cold-open-m01-blue-refl" data-merc="m01-blue" data-merc-refl class="clip" muted playsinline src="assets/merc/m01-blue-merc.webm" data-start="0.000" data-duration="33.425" data-media-start="0.008"></video>
+      <video id="s01-cold-open-m01-orange" data-merc="m01-orange" class="clip" muted playsinline src="assets/merc/m01-orange-merc.webm" data-start="0.000" data-duration="33.425" data-media-start="0.008"></video>
+      <video id="s01-cold-open-m01-orange-refl" data-merc="m01-orange" data-merc-refl class="clip" muted playsinline src="assets/merc/m01-orange-merc.webm" data-start="0.000" data-duration="33.425" data-media-start="0.008"></video>
       <script>
         ;(function () {
+          // S1, the cold open (STORYBOARD rows 1a to 1g; HANDOFFS § Inside A, Cold open, S1g and S1 to S2).
+          // F-cold, the compact staircase on C, bare; Merc's blue bead climbs seven stairs and stops on ti;
+          // the staircase rises two rows to D; Tavi's orange bead drops onto stair 1 and climbs, hangs, and
+          // her last step lands: the top stair fills and the bead rises into the house. Then the hook, and the
+          // dolly through the lit house into the full-frame field the title shrinks. Every time is a cue, a
+          // word or a duration.
+          const SID = 's01-cold-open'
+          const D = L.dur(SID)
+          const at = (cue, edge, off) => L.at(SID, cue, edge, off)
+          const word = (line, which, edge, off) => L.word(SID, line, which, edge, off)
+          const root = document.getElementById(SID + '-scene')
+          const room = L.room(root, { floor: true })
           const tl = gsap.timeline({ paused: true })
-          tl.fromTo('#s01-cold-open .serif', { x: 0 }, { x: 60, duration: L.dur('s01-cold-open'), ease: 'none' }, 0)
+          const C = L.C, ST = L.ST, P = L.prog, clamp = L.clamp, lerp = L.lerp
+          const f2 = (v) => v.toFixed(2)
+
+          // ==== group A shared block (s01 to s04): identical in each ====
+          const T0 = L.scene(SID).start
+          const cueF = (id, edge = 'start', off = 0) => window.CUES.cues[id][edge] + off   // film time
+          const hexRgb = (h) => [1, 3, 5].map((i) => parseInt(h.slice(i, i + 2), 16))
+          const mixRgb = (a, b, u) => a.map((v, i) => v + (b[i] - v) * u)
+          const rgbStr = (c) => `rgb(${c.map((v) => Math.round(Math.max(0, Math.min(255, v)))).join(',')})`
+          // Dust in the near layer, drawn from film time so it never jumps at a cut (L.dust keys scene time).
+          // Lesson 2's motes and density, spread over a field larger than the frame: F-cold's near layer is
+          // scaled 1.32 and sits 157 px right of F0's, so a frame-sized field would leave its left edge bare.
+          const dustF = (parent, { n = 66, seed = 7, color = 'rgba(195,204,214,0.5)', x0 = -460, y0 = -380, w = 2840, h = 1840 } = {}) => {
+            const r = L.rng(seed)
+            const svg = L.stage(parent)
+            svg.setAttribute('data-layout-allow-overflow', '')
+            const motes = []
+            for (let i = 0; i < n; i++) {
+              const m = { x: r() * w, y: r() * h, s: 0.8 + r() * 2.2, vx: (r() - 0.5) * 14, vy: -4 - r() * 10, ph: r() * 6.28 }
+              m.el = L.svg('circle', { r: m.s, fill: color, opacity: 0.4 }, svg)
+              motes.push(m)
+            }
+            return {
+              svg,
+              draw(T) {
+                for (const m of motes) {
+                  m.el.setAttribute('cx', (((m.x + m.vx * T) % w + w) % w + x0).toFixed(1))
+                  m.el.setAttribute('cy', (((m.y + m.vy * T) % h + h) % h + y0).toFixed(1))
+                  m.el.setAttribute('opacity', (0.18 + 0.22 * (0.5 + 0.5 * Math.sin(m.ph + T * 0.9))).toFixed(3))
+                }
+              },
+            }
+          }
+          // The full-frame field (HANDOFFS § S1 to S2): chrome mixed into the ground, 75 % at the frame's centre
+          // falling linearly to 35 % at the corners (mean brightness about 117 of 255), opaque over the whole
+          // frame, breathing 2 % in brightness from film time. A smaller disc is the same field scaled down, a
+          // glow with no edge: it is opaque out to `soft` of its radius and fades to nothing at its rim (soft 0.1
+          // as it leaves the house, 0.8 once it fills the frame, where the opaque part reaches past the corners).
+          const FIELD = { R: 1500, corner: Math.hypot(960, 540), inner: 0.75, outer: 0.35, ground: hexRgb('#0d1117'), chrome: hexRgb('#c3ccd6') }
+          FIELD.mixAt = (r) => FIELD.inner - ((FIELD.inner - FIELD.outer) * r) / FIELD.corner
+          FIELD.breathe = (T) => 1 + 0.01 * Math.sin(2 * Math.PI * (T - cueF('title')))
+          const fieldDisc = (svg, id) => {
+            const defs = L.svg('defs', {}, svg)
+            const grad = L.svg('radialGradient', { id, gradientUnits: 'userSpaceOnUse', cx: 960, cy: 540, r: FIELD.R }, defs)
+            const offs = [0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, FIELD.corner / FIELD.R, 0.8, 0.85, 0.9, 0.95, 1]
+            const stops = offs.map((o) => L.svg('stop', { offset: o.toFixed(4) }, grad))
+            const disc = L.svg('circle', { cx: 960, cy: 540, r: FIELD.R, fill: `url(#${id})`, opacity: 0 }, svg)
+            return {
+              disc,
+              draw({ x = 960, y = 540, r = FIELD.R, a = 1, T, soft = 0.8 }) {
+                if (a <= 0.004 || r <= 0.5) { disc.setAttribute('opacity', '0'); return }
+                const k = FIELD.breathe(T)
+                offs.forEach((o, i) => {
+                  stops[i].setAttribute('stop-color', rgbStr(mixRgb(FIELD.ground, FIELD.chrome, FIELD.mixAt(o * FIELD.R) * k)))
+                  stops[i].setAttribute('stop-opacity', (1 - L.smooth(soft, 1, o)).toFixed(4))
+                })
+                for (const el of [grad, disc]) { el.setAttribute('cx', f2(x)); el.setAttribute('cy', f2(y)); el.setAttribute('r', f2(r)) }
+                disc.setAttribute('opacity', a.toFixed(3))
+              },
+            }
+          }
+          // Plain SVG type (no sharps in group A): Outfit 600 unless given; opacity 0 until drawn
+          const txt = (parent, str, { x = 0, y = 0, size = 64, family = 'Outfit', weight = 600, italic = false, anchor = 'start', fill = C.ink } = {}) =>
+            L.svg('text', { x, y, 'text-anchor': anchor, fill, opacity: 0, text: str, style: `font-family: '${family}'; font-weight: ${weight}; font-size: ${size}px;${italic ? ' font-style: italic;' : ''} white-space: pre;` }, parent)
+          // a label's frame: in over 0.2 s from tIn, out over `out` s from tOut, rising `up` px as it leaves
+          const fadeIO = (t, tIn, tOut, { dIn = 0.2, out = 0.2, up = 0, ease = 'power2.in', rise = 0 } = {}) => {
+            const a = P(t, tIn, dIn, 'power2.out') * (1 - P(t, tOut, out, ease))
+            return { a, dy: -up * P(t, tOut, out, ease) + rise * (1 - P(t, tIn, dIn + 0.05, 'power3.out')) }
+          }
+          const place = (el, { a, dy = 0, dx = 0 }) => {
+            el.setAttribute('opacity', a.toFixed(3))
+            el.setAttribute('transform', dx || dy ? `translate(${f2(dx)} ${f2(dy)})` : '')
+          }
+          // A curved arrow (the kit's L.arrow is straight): a quadratic from A through Q to B, drawn on from A,
+          // its head riding the tip along the curve; scale pulses it about the curve's middle
+          const curveArrow = (parent, { color = C.ink2, width = 3, head = 14 } = {}) => {
+            const g = L.svg('g', { opacity: 0 }, parent)
+            const shaft = L.svg('path', { fill: 'none', stroke: color, 'stroke-width': width, 'stroke-linecap': 'round' }, g)
+            const tip = L.svg('path', { fill: 'none', stroke: color, 'stroke-width': width, 'stroke-linecap': 'round', 'stroke-linejoin': 'round' }, g)
+            const qb = (A, Q, B, u) => [(1 - u) * (1 - u) * A[0] + 2 * u * (1 - u) * Q[0] + u * u * B[0], (1 - u) * (1 - u) * A[1] + 2 * u * (1 - u) * Q[1] + u * u * B[1]]
+            return {
+              g,
+              draw(p, a, { A, Q, B }, { scale = 1, color: col = null, width: w = null } = {}) {
+                const u = clamp(p)
+                if (a <= 0.004 || u <= 0.01) { g.setAttribute('opacity', '0'); return }
+                let d = ''
+                for (let i = 0; i <= 24; i++) { const q = qb(A, Q, B, (u * i) / 24); d += (i ? 'L' : 'M') + f2(q[0]) + ' ' + f2(q[1]) }
+                shaft.setAttribute('d', d)
+                const e = qb(A, Q, B, u), e0 = qb(A, Q, B, Math.max(0, u - 0.05))
+                const ang = Math.atan2(e[1] - e0[1], e[0] - e0[0])
+                const hx = (k) => e[0] - head * Math.cos(ang + k), hy = (k) => e[1] - head * Math.sin(ang + k)
+                tip.setAttribute('d', `M${f2(hx(0.5))} ${f2(hy(0.5))} L${f2(e[0])} ${f2(e[1])} L${f2(hx(-0.5))} ${f2(hy(-0.5))}`)
+                if (col) { shaft.setAttribute('stroke', col); tip.setAttribute('stroke', col) }
+                if (w) { shaft.setAttribute('stroke-width', w); tip.setAttribute('stroke-width', w) }
+                const m = qb(A, Q, B, 0.5)
+                g.setAttribute('transform', scale === 1 ? '' : `translate(${f2(m[0])} ${f2(m[1])}) scale(${scale.toFixed(4)}) translate(${f2(-m[0])} ${f2(-m[1])})`)
+                g.setAttribute('opacity', a.toFixed(3))
+              },
+            }
+          }
+          const SOL = ['do', 're', 'mi', 'fa', 'so', 'la', 'ti', 'do']
+          // ==== end group A shared block ====
+
+          /* ---------------------------------------------------------------- anchors */
+          // 1a: Merc's bead leaves his mouth 0.3 s before stop-c and lands on stair 1 on its first note;
+          // a note's onset is stop-c's start + 0.45 k (FACTS 68), so it lands on stair k + 1 there
+          const SPAWN = at('stop-c', 'start', -0.3)
+          const LAND_C = [0, 1, 2, 3, 4, 5, 6].map((k) => at('stop-c', 'start', 0.45 * k))
+          const KICK_OUT = at('hang-c', 'end')                    // the kicker leaves as hang-c ends (gone 0.2 s on)
+          // 1b: hang-c's arrow, then the bead's echo; o1's "waiting" and "started on C"
+          const ARROW_C = at('hang-c'), ECHO_C = at('hang-c', 'start', 0.5)
+          const WAITING = word('o1', 'waiting')
+          const GUESS = word('o1', 'started on C')
+          // 1c: on "Start on D" the bead arcs back into Merc's mouth (0.4 s) and the blue stairs and the arrow
+          // fade; the staircase rises two rows from "D" (0.8 s); "from D?" lands once "from C" has gone
+          const BACK = word('b1', 'Start')
+          const RISE = word('b1', 'D', 'start', 0.03)
+          const FROM_D = RISE + 0.7
+          const HANGING = word('b1', 'still hang')
+          const PRED0 = at('predict-d'), PRED_DUR = at('predict-d', 'end') - at('predict-d')
+          // 1d: Tavi's bead drops onto stair 1 as she starts (landing on stop-d's first note), then a hop a note
+          const LAND_D = [0, 1, 2, 3, 4, 5, 6].map((k) => at('stop-d', 'start', 0.45 * k))
+          const ARROW_D = at('hang-d'), ECHO_D = at('hang-d', 'start', 0.5)
+          // 1e: the check on "Still waiting", the arrow's pulse on "last step"; land-d: an echo on ti on its
+          // first note, the hop to the top stair landing on its second (0.45 s), the rise into the house
+          const CHECK = word('b2', 'Still')
+          const LAST = word('b2', 'last step')
+          const LANDD0 = at('land-d'), LAND8 = at('land-d', 'start', 0.45)
+          const RISE8 = LAND8 + 0.06                              // 0.3 s, power2.out, into the house's centre
+          const LIT8 = RISE8 + 0.3                                // the house lit; its echo ring
+          const OUT_1E = LIT8 + 0.1                               // "still hanging?", its check, "from D?" and the arrow fade
+          // 1f: o2's labels and the name glows
+          const MOVED = word('o2', 'home moved'), MOVED_OUT = word('o2', 'start', 'end')
+          const FINISHED = word('o2', 'finished'), RESTLESS = word('o2', 'restless')
+          // 1g: the lines leave up fast as the question ends; the Mercs slide out; the dolly; the field
+          const LINES_OUT = at('o2', 'end', 0.07)
+          const MERCS_OUT = at('o2', 'end')
+          const DOLLY = at('hook', 'start', 0.17), DOLLY_DUR = 0.93
+          const GLOW0 = DOLLY + 0.35                              // the house's glow starts toward the lens
+
+          /* ---------------------------------------------------------------- the camera */
+          const cam = L.frameRig(room, { from: 'F-cold' })
+          // the drift keeps the screen point (960, 486) still (HANDOFFS § Camera moves); it does not count as motion
+          cam.to(0, at('o2', 'end'), 'F-cold end', 'power1.inOut')
+          cam.to(DOLLY, DOLLY_DUR, 'F-house', 'power3.in')
+
+          /* ---------------------------------------------------------------- the room */
+          // the floor horizon in screen space at y 840, where the Mercs stand (room.mid would carry it with the
+          // camera to y 911 at 1.2x); it sinks with the far layer only once the dolly starts
+          const floorEl = room.mid.querySelector('.floor')
+          const floorLayer = L.el('div', { class: 'layer', 'data-layout-allow-overflow': '' })
+          root.insertBefore(floorLayer, room.mid)
+          floorLayer.appendChild(floorEl)
+          // the far staves stop above the Mercs' heads (Lesson 2's cold open)
+          const staves = root.querySelector('.staves')
+          staves.style.webkitMaskImage = staves.style.maskImage = 'linear-gradient(180deg, #000 0px, #000 670px, rgba(0,0,0,0) 720px)'
+          const vignette = root.querySelector('.vignette')
+          const dust = dustF(room.near)
+
+          /* ---------------------------------------------------------------- the world: the staircase */
+          const mid = L.stage(room.mid)
+          const st = L.stairs(mid, { x0: 230, x1: 1206, k0: 0, k1: 14 })
+          st.stairs.forEach((S, i) => S.names.prepare([SOL[i]]))
+          // the name glows ("do" and "ti", 1f): soft chrome copies under the names (accents)
+          const gNames = st.gAll.children[2]
+          const glowDefs = L.svg('defs', {}, mid)
+          const nameBlur = L.svg('filter', { id: SID + '-nameglow', x: '-60%', y: '-60%', width: '220%', height: '220%' }, glowDefs)
+          L.svg('feGaussianBlur', { stdDeviation: 5 }, nameBlur)
+          const glowG = L.svg('g', { filter: `url(#${SID}-nameglow)` }, null)
+          st.gAll.insertBefore(glowG, gNames)
+          // each glow draws a copy of its name kept in defs through a <use>, so it is a mark, not a second label
+          // (the text sweep reads text in the document; a glow is an accent and has no contrast to keep)
+          const nameGlow = (n) => {
+            const id = SID + '-glow-' + n
+            L.svg('text', { id, 'text-anchor': 'middle', fill: C.chrome, text: SOL[n - 1], style: "font-family: 'Outfit'; font-weight: 600; font-size: 36px;" }, glowDefs)
+            return L.svg('use', { href: '#' + id, opacity: 0 }, glowG)
+          }
+          const glowDo = nameGlow(8), glowTi = nameGlow(7)
+          // "from C" and "from D?" ride the world under stair 1's foot (64 px at F-cold's 1.2x)
+          const W = 1 / 1.2                                       // world units per F-cold screen pixel
+          const fromC = txt(mid, 'from C', { x: 242, y: 798, size: 64 * W })
+          const fromD = txt(mid, 'from D?', { x: 242, y: 746, size: 64 * W })
+          // Tavi's guess, drawn as a guess (L.GUESS): a dashed ink-2 ellipse round "from C", its "?" beside it
+          const guessG = L.svg('g', { opacity: 0 }, mid)
+          const guessMask = L.svg('mask', { id: SID + '-guess', maskUnits: 'userSpaceOnUse', x: 0, y: 600, width: 900, height: 400 }, guessG)
+          const guessReveal = L.svg('path', { fill: 'none', stroke: '#fff', 'stroke-width': 12, pathLength: 1, 'stroke-dasharray': '1 1' }, guessMask)
+          const guessRing = L.svg('ellipse', { fill: 'none', stroke: L.GUESS.stroke, 'stroke-width': L.GUESS.width * W, 'stroke-dasharray': `${10 * W} ${8 * W}`, 'stroke-linecap': 'round', mask: `url(#${SID}-guess)` }, guessG)
+          // its "?" in Outfit 600 48 px (on screen), ink-2, as the guesses' other "?"s, sized for a 64 px label
+          const guessQ = txt(guessG, '?', { size: 48 * W, fill: L.GUESS.stroke })
+          guessQ.setAttribute('opacity', 1)
+          const guessBox = { cx: 330, cy: 779, rx: 110, ry: 31 }
+          L.afterFonts(() => {
+            const w = fromC.getComputedTextLength ? fromC.getComputedTextLength() : 168
+            const capH = 0.7 * 64 * W
+            Object.assign(guessBox, { cx: 242 + w / 2, cy: 798 - capH / 2, rx: w / 2 + 22, ry: capH / 2 + 12 })
+            const { cx, cy, rx, ry } = guessBox
+            guessRing.setAttribute('cx', f2(cx)); guessRing.setAttribute('cy', f2(cy)); guessRing.setAttribute('rx', f2(rx)); guessRing.setAttribute('ry', f2(ry))
+            // the reveal starts at the ellipse's top and runs clockwise, as L.guessRing's does
+            guessReveal.setAttribute('d', `M${f2(cx)} ${f2(cy - ry)} A${f2(rx)} ${f2(ry)} 0 1 1 ${f2(cx)} ${f2(cy + ry)} A${f2(rx)} ${f2(ry)} 0 1 1 ${f2(cx)} ${f2(cy - ry)}`)
+            guessQ.setAttribute('x', f2(cx + rx + 10)); guessQ.setAttribute('y', f2(cy + 0.35 * 48 * W))
+          })
+          // the ink-2 arrow from the bead on ti up onto the outline top stair, left of its house (hang-c, hang-d)
+          const arrow = curveArrow(mid, { color: C.ink2, width: 3 * W, head: 14 * W })
+          const arrowAt = (s0) => {
+            const t7 = ST.tread(7, s0), t8 = ST.tread(8, s0)
+            const A = [ST.colX(7, 0) + 14, t7 - 56], B = [ST.houseBox(8, 0, s0).x - 16, t8 - 12]
+            return { A, Q: [(A[0] + B[0]) / 2 - 6, Math.min(A[1], B[1]) - 46], B }
+          }
+
+          /* ---------------------------------------------------------------- the Mercs (screen space) */
+          const mercLayer = L.el('div', { class: 'layer', 'data-layout-allow-overflow': '' })
+          root.insertBefore(mercLayer, room.top)
+          const mkWrap = () => L.el('div', { class: 'layer', 'data-layout-allow-overflow': '' }, mercLayer)
+          const wB = mkWrap(), wO = mkWrap()
+          // a soft key glow behind each Merc, breathing from film time, brighter while he sings
+          const keyGlow = (parent, x, rgb) => L.el('div', { style: { position: 'absolute', left: x - 307 + 'px', top: 840 - 113 - 307 + 'px', width: '614px', height: '614px', borderRadius: '50%', background: `radial-gradient(closest-side, rgba(${rgb},0.22), rgba(${rgb},0.07) 55%, rgba(${rgb},0) 100%)` } }, parent)
+          const glowB = keyGlow(wB, 230, '88,166,255'), glowO = keyGlow(wO, 1690, '255,116,72')
+          const MB = { x: 230, feet: 840, size: 420 }, MO = { x: 1690, feet: 840, size: 420 }
+          L.merc(wB, { pass: 'm01-blue', x: MB.x, feetY: MB.feet, size: MB.size, feet: 0.81, id: SID + '-merc-blue', video: SID + '-m01-blue', reflVideo: SID + '-m01-blue-refl' })
+          L.merc(wO, { pass: 'm01-orange', x: MO.x, feetY: MO.feet, size: MO.size, feet: 0.81, id: SID + '-merc-orange', video: SID + '-m01-orange', reflVideo: SID + '-m01-orange-refl' })
+          // Merc's mouth while he sings, measured on m01-blue's frames (the 315 px frame's (181, 211) at feet
+          // (230, 840), size 420, front view): HANDOFFS' provisional point was (270, 664)
+          const MOUTH = [261, 781]
+
+          /* ---------------------------------------------------------------- beads, rings and the field (screen space) */
+          const top = L.stage(room.top)
+          const echo = L.echoRings(top, { max: 8 })
+          const beadB = L.bead(top, { r: 22, color: C.blue })
+          const beadO = L.bead(top, { r: 22, color: C.orange })
+          const field = fieldDisc(top, SID + '-field')
+
+          /* ---------------------------------------------------------------- frame-fixed type */
+          const hud = L.stageOf(room.hud)
+          const kicker = L.kicker(room.hud, 'Find your pitch · Lesson 04')
+          const hanging = txt(hud, 'still hanging?', { x: 140, y: 300, size: 64 })
+          const timer = L.ringTimer(room.hud, { x: 610, y: 278 })
+          const checkG = L.svg('g', { opacity: 0, transform: 'translate(610 278)' }, hud)
+          const checkP = L.svg('path', { d: 'M-17 1 L-5 13 L18 -13', fill: 'none', stroke: C.ink, 'stroke-width': 5, 'stroke-linecap': 'round', 'stroke-linejoin': 'round', pathLength: 1, 'stroke-dasharray': '1 1' }, checkG)
+          const moved = txt(hud, 'home moved', { x: 1400, y: 230, size: 64, anchor: 'end' })
+          const finished = txt(hud, 'finished on do', { x: 140, y: 300, size: 110, family: 'Instrument Serif', weight: 400, italic: true })
+          const restless = txt(hud, 'restless on ti?', { x: 140, y: 420, size: 110, family: 'Instrument Serif', weight: 400, italic: true })
+
+          /* ---------------------------------------------------------------- bead paths */
+          // the flight back into Merc's mouth (1c): a cubic from the bead on ti up over the staircase and down
+          // into the mouth, in world units (it clears every tread by 28 px or more)
+          const cubic = (p, u) => {
+            const v = 1 - u
+            return [0, 1].map((i) => v * v * v * p[0][i] + 3 * v * v * u * p[1][i] + 3 * v * u * u * p[2][i] + u * u * u * p[3][i])
+          }
+          const stepsC = LAND_C.map((tt, i) => ({ t: tt, p: ST.rest(i + 1, 0, 0) }))
+          const stepsD = LAND_D.map((tt, i) => ({ t: tt, p: ST.rest(i + 1, 0, 2) })).concat([{ t: LAND8, p: ST.rest(8, 0, 2) }])
+          const blueBead = (t) => {
+            if (t < SPAWN) return null
+            const mouthW = cam.inv(MOUTH[0], MOUTH[1], t)
+            if (t < LAND_C[0]) {
+              // out of his mouth onto stair 1: a hop (0.3 s, rising before it travels), growing as it leaves him
+              const [x, y] = L.bead4.hopAt(t, LAND_C[0], mouthW, stepsC[0].p, { dur: LAND_C[0] - SPAWN, lift: 40 })
+              return { x, y, scale: lerp(0.35, 1, P(t, SPAWN, 0.12, 'power2.out')) }
+            }
+            if (t < BACK) return L.bead4.runAt(t, stepsC)
+            if (t < BACK + 0.4) {
+              const u = P(t, BACK, 0.4, 'power2.inOut')
+              const p0 = stepsC[6].p
+              const [x, y] = cubic([p0, [p0[0] - 120, p0[1] - 110], [260, 320], mouthW], u)
+              return { x, y, scale: lerp(1, 0.35, P(t, BACK + 0.22, 0.18, 'power2.in')) }
+            }
+            return null
+          }
+          const orangeBead = (t) => {
+            if (t < LAND_D[0] - 0.2) return null
+            if (t < LAND_D[0]) return L.bead4.dropAt(t, LAND_D[0], stepsD[0].p)
+            if (t < RISE8) return L.bead4.runAt(t, stepsD)
+            if (t < RISE8 + 0.3) {
+              const hb = ST.houseBox(8, 0, 2)
+              return L.bead4.riseAt(t, RISE8, stepsD[7].p, [hb.cx, hb.cy])
+            }
+            return null
+          }
+          const toScreen = (b, t) => {
+            if (!b) return null
+            const [x, y] = cam.map(b.x, b.y, t)
+            return { ...b, x, y, scale: (b.scale ?? 1) * cam.scale(t) }
+          }
+
+          L.clock(tl, D, (t) => {
+            const Tf = T0 + t
+            const camSt = cam.apply(t)
+            const cs = cam.scale(t)
+            dust.draw(Tf)
+
+            /* the Mercs: slide 360 px outward and out of frame once her question has ended (power2.in) */
+            const out = P(t, MERCS_OUT, 0.6, 'power2.in')
+            wB.style.transform = `translateX(${f2(-360 * out)}px)`
+            wO.style.transform = `translateX(${f2(360 * out)}px)`
+            const singB = L.smooth(-0.1, 0.4, t - at('stop-c')) * (1 - L.smooth(-0.3, 0.5, t - at('stop-c', 'end')))
+            const singO = Math.max(
+              L.smooth(-0.1, 0.4, t - at('stop-d')) * (1 - L.smooth(-0.3, 0.5, t - at('stop-d', 'end'))),
+              L.smooth(-0.1, 0.4, t - at('land-d')) * (1 - L.smooth(-0.3, 0.5, t - at('land-d', 'end'))))
+            glowB.style.opacity = ((0.75 + 0.1 * Math.sin(0.8 * Tf) + 0.5 * singB) * (1 - out)).toFixed(3)
+            glowO.style.opacity = ((0.75 + 0.1 * Math.sin(0.8 * Tf + 2.1) + 0.5 * singO) * (1 - out)).toFixed(3)
+            const boxes = []
+            const bB = L.mercBox(MB.x - 360 * out, MB.feet, MB.size), bO = L.mercBox(MO.x + 360 * out, MO.feet, MO.size)
+            if (bB.x1 > 0) boxes.push(bB)
+            if (bO.x0 < 1920) boxes.push(bO)
+
+            /* the floor: at y 840 while the Mercs stand on it, sinking with the far layer through the dolly */
+            const farNow = cam.matrix(t, 'far'), farD = cam.matrix(DOLLY, 'far')
+            const yF = (840 - farD.f) / farD.a
+            const floorDy = t <= DOLLY ? 0 : (farNow.a - farD.a) * yF + (farNow.f - farD.f)
+            floorEl.style.transform = floorDy ? `translateY(${f2(floorDy)}px)` : ''
+            floorEl.style.opacity = (1 - P(t, GLOW0, DOLLY + DOLLY_DUR - GLOW0, 'power1.in')).toFixed(3)
+
+            /* the staircase: C, then the rise to D (two rows on C's columns: w 0, s0 0 to 2) */
+            const s0 = 2 * P(t, RISE, 0.8, 'power2.inOut')
+            const blueOff = 1 - P(t, BACK, 0.3, 'power1.inOut')
+            const fill8 = P(t, LAND8, 0.2, 'power2.out')
+            const glowA = (tIn) => 0.75 * P(t, tIn, 0.3, 'power2.out') * (1 - P(t, DOLLY, 0.4, 'power1.in'))
+            st.draw({
+              w: 0, s0,
+              rows: { keep: { boxes, cam, t } },
+              stair: (n) => {
+                const names = [{ text: SOL[n - 1], a: 1 }]
+                if (n === 8) return { fill: 'outline', filled: fill8, lit: fill8, color: 'orange', names }
+                const orange = P(t, LAND_D[n - 1], 0.15, 'power2.out')
+                if (orange > 0) return { lit: orange, color: 'orange', names }
+                return { lit: P(t, LAND_C[n - 1], 0.15, 'power2.out') * blueOff, color: 'blue', names }
+              },
+              houses: { top: { a: 1, w: 0, lit: P(t, RISE8, 0.3, 'power2.out'), glow: 0.4 * P(t, MOVED, 0.4) * (1 - P(t, DOLLY, 0.3)) } },
+            })
+            const foot = ST.foot(s0)
+            glowDo.setAttribute('x', ST.colX(8, 0)); glowDo.setAttribute('y', f2(foot - 12)); glowDo.setAttribute('opacity', glowA(FINISHED).toFixed(3))
+            glowTi.setAttribute('x', ST.colX(7, 0)); glowTi.setAttribute('y', f2(foot - 12)); glowTi.setAttribute('opacity', glowA(RESTLESS).toFixed(3))
+
+            /* "from C", its guess ring, "from D?" (riding the world with the foot) */
+            const footDy = foot - ST.foot(0)
+            place(fromC, { a: 1 - P(t, RISE, 0.2, 'power2.in'), dy: footDy })
+            place(fromD, { a: P(t, FROM_D, 0.2, 'power2.out') * (1 - P(t, OUT_1E, 0.2, 'power2.in')), dy: footDy - (ST.foot(2) - ST.foot(0)) })
+            guessReveal.setAttribute('stroke-dashoffset', (1 - P(t, GUESS, 0.5, 'power2.out')).toFixed(4))
+            guessG.setAttribute('opacity', (P(t, GUESS, 0.12, 'power2.out') * (1 - P(t, BACK, 0.2, 'power2.in'))).toFixed(3))
+            guessQ.setAttribute('opacity', P(t, GUESS + 0.35, 0.2, 'power2.out').toFixed(3))
+
+            /* the arrow: hang-c on C (fades on "Start on D"), hang-d on D (pulses once on "last step") */
+            if (t < RISE) {
+              arrow.draw(P(t, ARROW_C, 0.5, 'power2.inOut'), 1 - P(t, BACK, 0.3, 'power1.inOut'), arrowAt(0))
+            } else {
+              const pulse = L.pulse(t, LAST, 'label') - 1
+              arrow.draw(P(t, ARROW_D, 0.5, 'power2.inOut'), 1 - P(t, OUT_1E, 0.2, 'power2.in'), arrowAt(2), { scale: 1 + pulse, color: rgbStr(mixRgb(hexRgb(C.ink2), hexRgb(C.ink), pulse / 0.2)) })
+            }
+
+            /* the beads, in screen space over the Mercs */
+            const bb = blueBead(t), bo = orangeBead(t)
+            L.bead4.place(beadB, toScreen(bb, t))
+            L.bead4.place(beadO, toScreen(bo, t))
+            const scr = (p) => cam.map(p[0], p[1], t)
+            const ti = (s) => scr(ST.rest(7, 0, s))
+            const hb8 = ST.houseBox(8, 0, 2)
+            const hc = scr([hb8.cx, hb8.cy])
+            const rB = 22 * cs
+            echo.draw(t, [
+              { t: ECHO_C, x: ti(0)[0], y: ti(0)[1], r: rB },
+              { t: WAITING, x: ti(0)[0], y: ti(0)[1], r: rB },
+              { t: ECHO_D, x: ti(2)[0], y: ti(2)[1], r: rB },
+              { t: CHECK, x: ti(2)[0], y: ti(2)[1], r: rB },
+              { t: LANDD0, x: ti(2)[0], y: ti(2)[1], r: rB },
+              { t: LIT8, x: hc[0], y: hc[1], r: 30 * cs },
+            ])
+
+            /* frame-fixed type */
+            kicker.g.setAttribute('opacity', (1 - P(t, KICK_OUT, 0.2, 'power2.in')).toFixed(3))
+            place(hanging, fadeIO(t, HANGING, OUT_1E))
+            timer.draw(t, PRED0, PRED_DUR)
+            checkG.setAttribute('opacity', (P(t, CHECK, 0.1, 'power2.out') * (1 - P(t, OUT_1E, 0.2, 'power2.in'))).toFixed(3))
+            checkP.setAttribute('stroke-dashoffset', (1 - P(t, CHECK, 0.3, 'power2.out')).toFixed(4))
+            checkG.setAttribute('transform', `translate(610 278) scale(${(0.85 + 0.15 * P(t, CHECK, 0.3, 'back.out(2)')).toFixed(4)})`)
+            place(moved, fadeIO(t, MOVED, MOVED_OUT))
+            place(finished, fadeIO(t, FINISHED, LINES_OUT, { out: 0.3, up: 60, ease: 'power3.in' }))
+            place(restless, fadeIO(t, RESTLESS, LINES_OUT, { out: 0.3, up: 60, ease: 'power3.in' }))
+
+            /* 1g: from GLOW0 the house's glow grows toward the lens, its edges blurring away, until the field
+               covers the frame at the dolly's end; then it holds, breathing, to the cut */
+            const DEND = DOLLY + DOLLY_DUR
+            const g = P(t, GLOW0, DEND - GLOW0, 'power2.in')
+            if (t >= GLOW0) {
+              const c = scr([hb8.cx, hb8.cy])
+              field.draw({ x: c[0], y: c[1], r: lerp(110 * cs / 1.2, FIELD.R, g), a: P(t, GLOW0, 0.2, 'power1.out'), T: Tf, soft: lerp(0.1, 0.8, P(t, GLOW0, DEND - GLOW0, 'power1.in')) })
+            } else field.draw({ a: 0, T: Tf })
+            const blur = P(t, GLOW0 + 0.1, DEND - GLOW0 - 0.1, 'power2.in')
+            room.mid.style.filter = blur > 0.004 ? `blur(${(14 * blur).toFixed(2)}px)` : 'none'
+            vignette.style.opacity = (1 - g).toFixed(3)
+          })
+
           window.__timelines = window.__timelines || {}
-          window.__timelines['s01-cold-open'] = tl
+          window.__timelines[SID] = tl
         })()
       </script>
     </div>

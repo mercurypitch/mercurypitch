@@ -16,3 +16,5 @@ assets/lib/lanes.js
 assets/lib/stepbars.js
 assets/lib/frames.js
 assets/lib/stairs.js
+assets/merc/whole.js
+assets/lib/hosts.js

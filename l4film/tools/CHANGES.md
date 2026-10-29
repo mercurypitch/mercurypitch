@@ -36,6 +36,14 @@ entries here; from this one on, every change is logged.
   files, 30,487 frames at 60 fps); then the passes and `merc-tags.py`.
 - **chapters.py: Lesson 4's chapters** (STORYBOARD § Scene table, twelve, each at least 10 s; the
   shortest is Next time, 13.5 s). Regenerate: `captions/chapters.json` (done).
+- **merc-whole.py: new.** Each rendered pass's first whole frame (PRODUCTION-PIPELINE trap 23),
+  for the kit's `L.mercGate`: for a pass whose first state is `drop`, the first frame, after the body
+  has touched the square's top three rows, with those rows empty again in alpha; 0 for a pass that
+  starts whole. It writes `assets/merc/whole.js` (`window.MERC_WHOLE`), now in
+  `assets/lib/scripts.txt` with `assets/lib/hosts.js`; `--check` reports a stale table. Builder A's
+  `lab/s04-recall/scratch/whole.py` is the same test, and both give m06a-orange 30. Regenerate:
+  `assets/merc/whole.js` after every pass lands, then `gen-root.py` once for the two new script tags
+  (done).
 
 ## 2026-10-17
 

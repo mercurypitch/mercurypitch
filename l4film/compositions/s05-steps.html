@@ -3,18 +3,373 @@
   <head><meta charset="UTF-8" /></head>
   <body>
     <div id="s05-steps" data-composition-id="s05-steps" data-start="0" data-duration="41.527" data-width="1920" data-height="1080">
-      <div class="scene">
-        <div class="ground" data-layout-allow-overflow></div>
-        <div class="staves" data-layout-allow-overflow></div>
-        <p class="kicker" style="left:120px;top:120px">PLACEHOLDER · s05-steps</p>
-        <p class="serif" style="position:absolute;left:120px;top:440px;font-size:120px">Count the steps</p>
-      </div>
+      <div class="scene" id="s05-steps-scene"></div>
+      <!-- Merc pass, static (trap 4); timing written by python3 tools/merc-tags.py s05-steps. m06a spans the
+           S5 to S6 cut; its first whole frame (30) falls on s06's first frame, so here it stays hidden. -->
+      <video id="s05-steps-m06a-orange" data-merc="m06a-orange" class="clip" muted playsinline src="assets/merc/m06a-orange-merc.webm" data-start="41.021" data-duration="0.500" data-media-start="0.008"></video>
+      <video id="s05-steps-m06a-orange-refl" data-merc="m06a-orange" data-merc-refl class="clip" muted playsinline src="assets/merc/m06a-orange-merc.webm" data-start="41.021" data-duration="0.500" data-media-start="0.008"></video>
       <script>
         ;(function () {
+          /* S5, Count the steps (STORYBOARD rows 5a to 5g; HANDOFFS § A to B, § Inside B, § S5 to S6).
+             In (fixed, A to B): F0, no Mercs, the kicker lane empty; the staircase on C at full, names do to
+             do, risers unmeasured, no riser labels, no house; rows C4 to G5, x 220 to 1680; no strip.
+             Out (to s06, same group): F0; Tavi's pass m06a dropping in (shown from s06's first frame); the
+             staircase on C with letters, all seven risers measured and labelled T T S T T T S, hairlines,
+             C major's keys at full, the legend at x 140; E4, F4, B4 and C5 named. */
+          const SID = 's05-steps'
+          const D = L.dur(SID)
+          const at = (cue, edge, off) => L.at(SID, cue, edge, off)
+          const word = (line, which, edge, off) => L.word(SID, line, which, edge, off)
+          const root = document.getElementById(SID + '-scene')
+          const room = L.room(root, { floor: false })
+          const S0 = L.scene(SID).start
           const tl = gsap.timeline({ paused: true })
-          tl.fromTo('#s05-steps .serif', { x: 0 }, { x: 60, duration: L.dur('s05-steps'), ease: 'none' }, 0)
+
+          /* ======================= group B's shared block (the same in s05-steps and s06-groups) */
+          const ST = L.ST, P = L.prog, clamp = L.clamp, lerp = L.lerp
+          const f1 = (v) => (Math.round(v * 100) / 100).toString()
+          const SEMI = (n) => ST.H[n] - ST.H[n - 1] === 1               // riser n (stairs n to n + 1) is a semitone
+          const CMAJ = ST.scale(0)                                       // C major's keys, semitones above C4
+          const LETTERS = ['C', 'D', 'E', 'F', 'G', 'A', 'B', 'C']
+          const SOLFA = ['do', 're', 'mi', 'fa', 'so', 'la', 'ti', 'do']
+          const KEYNAME = { 1: 'C♯', 4: 'E', 5: 'F', 11: 'B', 12: 'C' }
+          // 1. Dust in the near layer from film time (Lesson 2's filmDust: seed 7, 26 motes), so it runs on
+          //    across the cuts.
+          const filmDust = (layer) => {
+            const svg = L.stage(layer)
+            const r = L.rng(7)
+            const motes = []
+            for (let i = 0; i < 26; i++) {
+              const m = { x: r() * 1920, y: r() * 1080, s: 0.8 + r() * 2.2, vx: (r() - 0.5) * 14, vy: -4 - r() * 10, ph: r() * 6.28 }
+              m.el = L.svg('circle', { r: m.s, fill: 'rgba(195,204,214,0.5)', opacity: 0 }, svg)
+              motes.push(m)
+            }
+            return (T) => {
+              for (const m of motes) {
+                m.el.setAttribute('cx', (((m.x + m.vx * T) % 1960 + 1960) % 1960 - 20).toFixed(1))
+                m.el.setAttribute('cy', (((m.y + m.vy * T) % 1120 + 1120) % 1120 - 20).toFixed(1))
+                m.el.setAttribute('opacity', (0.18 + 0.22 * (0.5 + 0.5 * Math.sin(m.ph + T * 0.9))).toFixed(3))
+              }
+            }
+          }
+          // 2. Tavi in her F0 corner (feet (1800, 840), 300, hero view), screen space in the top layer.
+          //    Trap 23: a pass's drop comes in through the top of its square, so the box (and its reflection)
+          //    stays at 0 until the pass's first whole frame and then fades in over 0.3 s (18 frames, sine.out);
+          //    from that frame the scene eases the box down its last 60 px (0.4 s, power2.out), so the entrance
+          //    still reads as a fall. m06a's frames 6 to 29 touch the square's top row and frame 30 is the first
+          //    with rows 0 to 2 empty (measured on its alpha); the gate opens one frame later, at 31, because
+          //    HyperFrames 0.8.97 may show the frame before the one the tag's times name. Her hop out: the pass's
+          //    hop arcs right and lands inside its square, so the scene carries the box 360 px right through
+          //    the hop's time in the air (from HOP + 0.15 over 0.42 s, power1.in). A local floor patch under
+          //    her corner comes and goes with her. Returns draw(t) -> her screen body box, or null when unseen.
+          const tavi = (layer, { pass, tag, x = 1800, feetY = 840, size = 300, whole = 31, hop = null }) => {
+            const wrap = L.el('div', { class: 'clip', style: 'pointer-events:none' }, layer)
+            const floor = L.el('div', { style: 'position:absolute;left:1690px;width:230px;top:840px;height:240px;opacity:0;background:linear-gradient(180deg, rgba(120,150,190,0.10), rgba(13,17,23,0) 40%);border-top:1px solid rgba(195,204,214,0.10);-webkit-mask-image:linear-gradient(90deg, transparent, #000 45%);mask-image:linear-gradient(90deg, transparent, #000 45%)' }, wrap)
+            const vid = document.getElementById(tag)
+            if (!vid) { console.error(`[${SID}] no Merc tag #${tag}`); return () => null }
+            const m = L.merc(wrap, { pass, x, feetY, size, feet: 0.8, id: tag + '-box', video: tag, reflVideo: tag + '-refl' })
+            m.box.setAttribute('data-layout-allow-overflow', '')
+            m.box.style.opacity = '0'
+            // film frame of pass frame 0, from the static tag (merc-tags.py: media start is half a frame past
+            // the tag's first pass frame, which plays on film frame n0)
+            const ds = parseFloat(vid.getAttribute('data-start')), ms = parseFloat(vid.getAttribute('data-media-start'))
+            const dd = parseFloat(vid.getAttribute('data-duration'))
+            if (!(dd > 0)) return () => null
+            const n0 = Math.ceil((S0 + ds) * 60 - 1e-6), P0 = n0 - Math.round(ms * 60 - 0.5)
+            const tWhole = (P0 + whole) / 60 - S0                        // scene time of the gate
+            return (t) => {
+              const j = Math.floor((S0 + t) * 60 + 1e-6) - P0          // the pass frame on screen now
+              const shown = j < whole || t > ds + dd ? 0 : L.ease('sine.out')(Math.min(1, (j - whole + 1) / 18))
+              const dy = -60 * (1 - P(t, tWhole, 0.4, 'power2.out'))
+              const dx = hop == null ? 0 : 360 * P(t, hop + 0.15, 0.42, 'power1.in')
+              m.box.style.opacity = shown.toFixed(3)
+              m.box.style.transform = `translate(${f1(dx)}px, ${f1(dy)}px)`
+              floor.style.opacity = (shown * (hop == null ? 1 : 1 - P(t, hop + 0.15, 0.4))).toFixed(3)
+              return shown > 0.004 && dx < 220 ? L.mercBox(x + dx, feetY + dy, size) : null
+            }
+          }
+          // 3. A label switch (STORYBOARD § Type): the old label slides up 12 px as it fades, the new one in from
+          //    12 px below, 0.25 s, staggered 0.05 s stair by stair (k = 0 for the first).
+          const swap = (t, t0, k, from, to) => {
+            const u = P(t, t0 + 0.05 * k, 0.25, 'power2.inOut')
+            return [{ text: from, a: 1 - u, dy: -12 * u }, { text: to, a: u, dy: 12 * (1 - u) }]
+          }
+          // 4. A stair lit to 40 % chrome as a counted event: up over 0.3 s and back over 0.4 s, both linear. Measured
+          //    in lab/s05-steps/pulse (measure.py, a still F0 staircase): this shape registers 0.7 s on stairs 2 to 4,
+          //    where L.lit's own (up 0.15 s power2.out, back 0.6 s sine.inOut) registers 0.4 to 0.6 s at 40 %.
+          //    A larger light (up 0.4 s, back 0.8 to 0.9 s) is for a big stair: in a close-up, or stair 4 or 8 at F0,
+          //    where a slow ramp still changes enough of the frame to register.
+          const light = (t, times, up = 0.3, down = 0.4) => {
+            let k = 0
+            for (const t0 of [].concat(times)) k = Math.max(k, P(t, t0, up, 'none') * (1 - P(t, t0 + up, down, 'none')))
+            return k
+          }
+          // a riser label's counted pulse: it scales 1.25 about its anchor and settles over 0.8 s
+          const labelPulse = (t, times) => L.pulse(t, times, 0.25, { long: true })
+          // 5. Riser overlays, drawn over the kit's risers (below the stair names): the measuring outline drawn
+          //    on (L.MEASURE, a perimeter dash), an outline that stays while the bar fills, the dim 4 px bar
+          //    under a bar that is growing, and a measured bar shrinking back to the unmeasured 4 px.
+          const riserOverlays = (st) => {
+            const g = L.svg('g', { class: 'riser-overlays' }, null)
+            st.gAll.insertBefore(g, st.gAll.children[2])
+            return [1, 2, 3, 4, 5, 6, 7].map((n) => {
+              const under = L.svg('rect', { fill: '#c3ccd6', 'fill-opacity': 0.4, display: 'none' }, g)
+              const shrink = L.svg('rect', { display: 'none' }, g)
+              const tick = L.svg('rect', { fill: '#2a323c', height: 2, width: 12, display: 'none' }, g)
+              const ol = L.svg('rect', { fill: 'none', stroke: L.MEASURE.stroke, 'stroke-width': L.MEASURE.width, 'stroke-opacity': L.MEASURE.opacity, display: 'none' }, g)
+              const geo = (w = 0, s0 = 0) => {
+                const x = ST.riserX(n, w), yLo = ST.tread(n, s0), yHi = ST.tread(n + 1, s0)
+                return { x, yLo, yHi, h: yLo - yHi, cy: (yLo + yHi) / 2 }
+              }
+              const show = (el, on) => el.setAttribute('display', on ? 'inline' : 'none')
+              return {
+                n,
+                draw({ underA = 0, shrinkU = null, outlineA = 0, w = 0, s0 = 0 } = {}) {
+                  const q = geo(w, s0)
+                  show(under, underA > 0.004)
+                  if (underA > 0.004) {
+                    under.setAttribute('x', f1(q.x - 2)); under.setAttribute('width', 4)
+                    under.setAttribute('y', f1(q.yHi)); under.setAttribute('height', f1(q.h))
+                    under.setAttribute('opacity', underA.toFixed(3))
+                  }
+                  const sOn = shrinkU != null && shrinkU < 1
+                  show(shrink, sOn); show(tick, sOn && !SEMI(n))
+                  if (sOn) {
+                    const bw = lerp(6, 4, shrinkU)
+                    shrink.setAttribute('x', f1(q.x - bw / 2)); shrink.setAttribute('width', f1(bw))
+                    shrink.setAttribute('y', f1(q.yHi)); shrink.setAttribute('height', f1(q.h))
+                    shrink.setAttribute('fill', SEMI(n) ? L.C.gold : '#c3ccd6')
+                    shrink.setAttribute('opacity', (1 - shrinkU).toFixed(3))
+                    tick.setAttribute('x', f1(q.x - 6)); tick.setAttribute('y', f1(q.cy - 1))
+                    tick.setAttribute('opacity', (1 - shrinkU).toFixed(3))
+                  }
+                  show(ol, outlineA > 0.004)
+                  if (outlineA > 0.004) {
+                    ol.setAttribute('x', f1(q.x - 3)); ol.setAttribute('width', 6)
+                    ol.setAttribute('y', f1(q.yHi)); ol.setAttribute('height', f1(q.h))
+                    ol.setAttribute('opacity', outlineA.toFixed(3))
+                  }
+                },
+              }
+            })
+          }
+          // the kit's measuring outline drawn on over its perimeter (u 0..1), its tick (a tone's middle row line)
+          // coming in as the outline closes
+          const drawOn = (st, n, u) => {
+            const R = st.risers[n - 1]
+            const h = parseFloat(R.outline.getAttribute('height')) || 0
+            const per = 2 * (6 + h)
+            R.outline.setAttribute('stroke-dasharray', `${f1(per)} ${f1(per)}`)
+            R.outline.setAttribute('stroke-dashoffset', f1(per * (1 - clamp(u))))
+            R.tick.setAttribute('fill-opacity', (0.55 * clamp((u - 0.8) / 0.2)).toFixed(3))
+          }
+          /* ======================= end of group B's shared block */
+
+          /* ---------------------------------------------------------------- anchors */
+          const A = {
+            act1: at('act1'),
+            stripIn: at('act1', 'start', -0.1),                       // 5a: the strip slides up, 1.3 s (power3.out)
+            b8: at('b8'), b9end: at('b9', 'end'),                      // the kicker
+            doh: word('b8', 'doh', 'start', -0.06),                    // the stairs light in turn
+            fromC: word('b8', 'from C', 'start', 0.12),                // names to letters
+            white: word('b8', 'on the white keys'),                    // hairlines and the eight keys
+            major: word('b8', 'a major scale'),                        // "a major scale" lands
+            scaleW: word('b8', 'scale', 'start', -0.05),               // the stairs light again
+            sc: at('scale-c'), scEnd: at('scale-c', 'end'),            // 5b
+            now: word('b9', 'Now', 'start', 0.08),                     // 5c: push to CU-A, 1.5 s
+            asIn: word('b9', 'as in Lesson 2', 'start', 0.04),         // the C-D riser's outline, 0.8 s
+            litCD: word('b9', '2'),                                    // stairs 1 and 2 light (a large light)
+            black: word('b9', 'black key'),                            // C#4 lights
+            key: word('b9', 'key'),                                    // "C#" lands on it
+            between: word('b9', 'between'),                            // C#4 scales; its row, the riser's lower one, glows
+            tone: word('b9', "it's a tone"),                           // the C-D riser fills; "T"
+            toneW: word('b9', 'tone'),                                 // stairs 1 and 2 light again; "T" scales
+            pan: word('o4', 'with', 'start', 0.08),                    // 5d: pan to CU-B, 1.6 s
+            e: word('o4', 'E'), f: word('o4', 'F'),                    // E4 and F4 scale and are named
+            semi: word('o4', 'semitone', 'start', -0.2),               // the E-F outline; stair 3 lights (large)
+            yes: word('b10', 'Yes'),                                   // 5e: gold fill, "S"
+            pull: word('b10', 'Yes.', 'start', 0.03),                  // the pull to F0, 1.6 s
+            watch: word('b10', 'Watch'),                               // the demo risers reset
+            stc: at('steps-c'), stcEnd: at('steps-c', 'end'),          // 5f
+            steps: word('b12', 'steps'),                               // 5g: the stairs light in turn
+            aren: word('b12', "aren't"), equal: word('b12', 'equal'),
+            short: word('b12', 'two short ones'),
+            e2: word('b12', 'E'), f2: word('b12', 'F'), b2: word('b12', 'B'), c2: word('b12', 'C'),
+          }
+          const PUSH = 1.5, PAN = 1.7, PULL = 1.6
+          const landed = A.pull + PULL                                  // the pull has landed: the legend
+          const SC = (k) => at('scale-c', 'start', 0.45 * k)          // scale-c's onsets (FACTS 68)
+          const STEP = (k) => at('steps-c', 'start', 0.8 * k)         // steps-c's onsets
+          const B11 = [0, 1, 2, 3, 4, 5, 6].map((k) => word('b11', k)) // "Tone, tone, semitone. Tone, tone, tone, semitone."
+          // the two demo measurements (5c to 5e): the outline drawn on, the fill, the reset on "Watch each step"
+          const DEMO = { 1: { t0: A.asIn, dur: 0.8, fill: A.tone }, 3: { t0: A.semi, dur: 0.6, fill: A.yes } }
+          const RESET = 0.35                                            // the demo bars shrink back
+
+          /* ---------------------------------------------------------------- camera */
+          const cam = L.frameRig(room, { from: 'F0' })
+          cam.to(A.now, PUSH, 'CU-A', 'power2.inOut')
+          cam.pan(A.pan, PAN, { x: -480 }, 'sine.inOut')
+          cam.to(A.pull, PULL, 'F0', 'power2.inOut')
+
+          /* ---------------------------------------------------------------- the world (mid layer) */
+          const mid = L.stage(room.mid)
+          // accents under the stairs: C#4's shaded band (5c) glows; added behind the staircase's blocks
+          const glowDefs = L.svg('defs', {}, mid)
+          const gf = L.svg('filter', { id: SID + '-soft', x: '-20%', y: '-200%', width: '140%', height: '500%' }, glowDefs)
+          L.svg('feGaussianBlur', { stdDeviation: 6 }, gf)
+          const st = L.stairs(mid, {})
+          const rowGlow = L.svg('rect', { x: 220, width: 1460, y: ST.rowTop(1), height: 26, fill: '#c3ccd6', opacity: 0, filter: `url(#${SID}-soft)` }, null)
+          st.svg.insertBefore(rowGlow, st.gAll)
+          const ov = riserOverlays(st)
+          const kb = L.strip(mid, {})
+          // the E4 to F4 edge (no black key between them) glows: a soft chrome line on their shared edge
+          const edgeGlow = L.svg('rect', { x: 594, width: 8, y: 760, height: 120, fill: '#e6edf3', opacity: 0, filter: `url(#${SID}-soft)` }, mid)
+          const gBead = L.svg('g', {}, mid)
+          const bead = L.bead(gBead, { r: 22, color: L.C.chrome })
+          const echo = L.echoRings(mid, { dur: 0.9, grow: 3.5, width: 3 })   // larger than the kit's 0.5 s ring
+          // label pools built up front, so no frame pays for a first build
+          st.stairs.forEach((S, i) => S.names.prepare([SOLFA[i], LETTERS[i]]))
+          st.risers.forEach((R) => R.labels.prepare(['T', 'S']))
+          for (const m in KEYNAME) kb.keys[m].names.prepare([KEYNAME[m]])
+          const dust = filmDust(room.near)
+
+          /* ---------------------------------------------------------------- Tavi (top layer, screen space) */
+          const taviA = tavi(room.top, { pass: 'm06a-orange', tag: SID + '-m06a-orange' })
+
+          /* ---------------------------------------------------------------- type (hud, frame-fixed) */
+          const hud = L.stageOf(room.hud)
+          const kick = L.kicker(room.hud, '1 · Measure the steps')
+          const majorT = L.svg('text', { x: 1250, y: 300, fill: L.C.ink, opacity: 0, style: "font-family: 'Instrument Serif'; font-style: italic; font-size: 110px; letter-spacing: -0.01em; white-space: pre;", text: 'a major scale' }, hud)
+          const legend = [['T', ' = tone ', '(2 rows)', 200], ['S', ' = semitone ', '(1 row)', 252]].map(([a, b, c, y]) => {
+            const el = L.svg('text', { x: 140, y, opacity: 0, style: "font: 600 44px 'Outfit', sans-serif; white-space: pre;" }, hud)
+            L.svg('tspan', { text: a, fill: L.C.ink }, el)
+            L.svg('tspan', { text: b, fill: L.C.ink }, el)
+            L.svg('tspan', { text: c, fill: L.C.ink2 }, el)
+            return el
+          })
+
+          /* ---------------------------------------------------------------- per-frame state */
+          // when each stair lights chrome (a counted large-area event: light(), up 0.3 s, back 0.4 s)
+          const LIT = { 1: [], 2: [], 3: [], 4: [], 5: [], 6: [], 7: [], 8: [] }
+          for (let n = 1; n <= 8; n++) {
+            LIT[n].push(A.doh + 0.07 * (n - 1), A.scaleW + 0.07 * (n - 1), SC(n - 1), STEP(n - 1), A.steps + 0.06 * (n - 1))
+          }
+          // the larger lights (up 0.4 s, back 0.8 or 0.9 s): stairs 1 and 2 in CU-A, stair 3 in CU-B, and at F0 stair 4
+          // or 8 where a long pause follows (b11's two semitones, b12's "two short ones")
+          const LITL = { 1: [], 2: [], 3: [], 4: [], 5: [], 6: [], 7: [], 8: [] }
+          LITL[1].push([A.litCD, 0.8], [A.toneW, 0.9]); LITL[2].push([A.litCD, 0.8], [A.toneW, 0.9])
+          LITL[3].push([A.semi, 0.9])
+          B11.forEach((tw, k) => (SEMI(k + 1) ? LITL[k + 2].push([tw, 0.8]) : LIT[k + 2].push(tw)))  // b11: the stair above each step said
+          LIT[4].push(A.equal + 0.34); LIT[8].push(A.equal + 0.34)     // b12: the gold pair's stairs light as they grow
+          LITL[4].push([A.short, 0.8]); LITL[8].push([A.short, 0.8])
+          const lit = (t, n) => LITL[n].reduce((k, [t0, dn]) => Math.max(k, light(t, t0, 0.4, dn)), light(t, LIT[n]))
+          // riser pulses: the bar grows 15 % and its label scales 1.25 (a thin bar's growth alone barely registers)
+          const GROW = { 1: [A.toneW, A.aren], 2: [A.aren], 3: [A.equal + 0.34, A.short, A.f2], 4: [A.aren], 5: [A.aren], 6: [A.aren], 7: [A.equal + 0.34, A.short, A.c2] }
+          B11.forEach((tw, k) => GROW[k + 1].push(tw))                 // b11: each step as it is said
+          // key pulses (a key scales 1.05): C#4 on "between", E4, F4, B4 and C5 as they are named, and each of C
+          // major's keys as it comes up to full
+          const hairT = (n) => A.white + 0.06 * (n - 1)
+          const KEYUP = 0.8                                             // a key comes up to full, linear
+          const KEYP = { 1: [A.between], 4: [A.e, A.e2], 5: [A.f, A.f2], 11: [A.b2], 12: [A.c2] }
+          CMAJ.forEach((m, k) => { (KEYP[m] = KEYP[m] || []).push(hairT(k + 1) + 0.15 + KEYUP) })  // as it reaches full
+
+          L.clock(tl, D, (t) => {
+            cam.apply(t)
+            dust(S0 + t)
+            const box = taviA(t)
+
+            // the staircase
+            st.draw({
+              w: 0, s0: 0,
+              rows: { keep: { boxes: box ? [box] : [], cam, t } },
+              stair: (n) => ({
+                lit: lit(t, n),
+                names: swap(t, A.fromC, n - 1, SOLFA[n - 1], LETTERS[n - 1]),
+              }),
+              riser: (n) => {
+                const semi = SEMI(n), kind = semi ? 'semi' : 'tone', lab = semi ? 'S' : 'T'
+                const land = STEP(n)                                    // the bead lands on stair n + 1
+                const d = DEMO[n]
+                let state = 'unmeasured', grow = 1, la = 0
+                if (d && t >= d.t0 && t < d.fill) state = 'measuring'
+                else if (d && t >= d.fill && t < A.watch) { state = kind; grow = P(t, d.fill, 0.3, 'power2.out'); la = P(t, d.fill, 0.2) }
+                else if (d && t >= A.watch && t < A.watch + 0.2) la = 1 - P(t, A.watch, 0.2)
+                if (t >= land) { state = kind; grow = P(t, land, 0.25, 'power2.out'); la = P(t, land, 0.2) }
+                const labels = la > 0 ? [{ text: lab, a: la, scale: labelPulse(t, GROW[n]) }] : []
+                return { state, grow, scale: L.pulse(t, GROW[n], 'bar'), labels }
+              },
+            })
+            // overlays: the demo outlines drawn on, the outline held while the bar fills, the reset, the dim bar
+            // under each growing bar of the run
+            ov.forEach((o) => {
+              const n = o.n, d = DEMO[n], land = STEP(n)
+              let underA = 0, shrinkU = null, outlineA = 0
+              if (d) {
+                if (t >= d.t0 && t < d.fill) drawOn(st, n, P(t, d.t0, d.dur, 'power1.inOut'))
+                if (t >= d.fill && t < A.watch) outlineA = 1 - P(t, d.fill + 0.2, 0.2)
+                if (t >= A.watch && t < land) { shrinkU = P(t, A.watch, RESET, 'power2.inOut') }
+              }
+              if (t >= land && t < land + 0.25) underA = 1
+              o.draw({ underA, shrinkU, outlineA })
+            })
+            // on "in between" C#4's band, the riser's lower row, glows across the frame until the riser fills
+            rowGlow.setAttribute('opacity', (0.22 * P(t, A.between, 0.35, 'power1.inOut') * (1 - P(t, A.tone, 0.6))).toFixed(3))
+
+            // the strip: slides up from y + 240 (power3.out), fading in as it comes; the eight keys come up to
+            // full in turn as their hairlines draw; C#4 lights to 40 % chrome while it is measured
+            const sIn = P(t, A.stripIn, 1.3, 'power3.out')
+            kb.draw({
+              a: P(t, A.stripIn, 0.35, 'power2.out'),
+              dy: 240 * (1 - sIn),
+              key: (m) => {
+                const k = CMAJ.indexOf(m)
+                const full = k >= 0 ? P(t, hairT(k + 1) + 0.15, KEYUP, 'none') : 0
+                const litK = m === 1 ? P(t, A.black, 0.5, 'none') * (1 - P(t, A.watch, 0.3)) : 0
+                let na = 0, ndy = 0
+                if (m === 1) { na = P(t, A.key, 0.2) * (1 - P(t, A.watch, 0.2)); ndy = 12 * (1 - P(t, A.key, 0.5, 'power2.out')) }
+                if (m === 4) { na = Math.max(P(t, A.e, 0.2) * (1 - P(t, A.watch, 0.2)), P(t, A.e2, 0.2)); ndy = 12 * (1 - P(t, A.e, 0.5, 'power2.out')) }
+                if (m === 5) { na = Math.max(P(t, A.f, 0.2) * (1 - P(t, A.watch, 0.2)), P(t, A.f2, 0.2)); ndy = 12 * (1 - P(t, A.f, 0.5, 'power2.out')) }
+                if (m === 11) na = P(t, A.b2, 0.2)
+                if (m === 12) na = P(t, A.c2, 0.2)
+                return { full, lit: litK, scale: KEYP[m] ? L.pulse(t, KEYP[m], 'key') : 1, names: KEYNAME[m] ? [{ text: KEYNAME[m], a: na, dy: ndy }] : [] }
+              },
+              hair: { a: 1, w: 0, s0: 0, hA: (n) => P(t, hairT(n), 0.2, 'power2.out') },
+            })
+            // E4 to F4's shared edge glows (an accent)
+            edgeGlow.setAttribute('opacity', (0.5 * P(t, A.f, 0.3, 'power2.out') * (1 - P(t, A.yes + 0.4, 0.6))).toFixed(3))
+
+            // the chrome beads: scale-c's (5b) and steps-c's (5f), each dropping onto stair 1 and hopping a
+            // stair on each note; each leaves (fading and shrinking) as its sound ends
+            let b = null
+            const run = (onset, end) => {
+              const steps = [0, 1, 2, 3, 4, 5, 6, 7].map((k) => ({ t: onset(k), p: ST.rest(k + 1, 0, 0) }))
+              if (t >= steps[0].t - 0.2 && t < steps[0].t) return L.bead4.dropAt(t, steps[0].t, steps[0].p)
+              if (t >= steps[0].t && t < end + 0.5) {
+                const s = L.bead4.runAt(t, steps)
+                const out = P(t, end, 0.5, 'power1.in')
+                return { ...s, a: 1 - out, scale: 1 - 0.4 * out }
+              }
+              return null
+            }
+            b = run(SC, A.scEnd) || run(STEP, A.stcEnd)
+            L.bead4.place(bead, b)
+            const r8 = ST.rest(8, 0, 0)
+            echo.draw(t, [{ t: at('scale-c', 'start', 3.36), x: r8[0], y: r8[1], r: 22 }, { t: at('steps-c', 'start', 6.24), x: r8[0], y: r8[1], r: 22 }])
+
+            // type: the kicker lands with b8 and leaves at b9's end; "a major scale" lands on its words and
+            // leaves as scale-c ends; the legend lands once the pull has landed, line by line
+            kick.draw(t, A.b8, A.b9end, { outDur: 0.3 })
+            const mIn = P(t, A.major, 0.6, 'power2.out')
+            majorT.setAttribute('opacity', (P(t, A.major, 0.2) * (1 - P(t, A.scEnd, 0.2))).toFixed(3))
+            majorT.setAttribute('transform', `translate(0 ${f1(20 * (1 - mIn))})`)
+            legend.forEach((el, i) => {
+              const u = P(t, landed + 0.5 * i, 0.65, 'power2.out')
+              el.setAttribute('opacity', P(t, landed + 0.5 * i, 0.2).toFixed(3))
+              el.setAttribute('transform', `translate(${f1(-40 * (1 - u))} 0)`)
+            })
+          })
           window.__timelines = window.__timelines || {}
-          window.__timelines['s05-steps'] = tl
+          window.__timelines[SID] = tl
         })()
       </script>
     </div>

@@ -3,18 +3,267 @@
   <head><meta charset="UTF-8" /></head>
   <body>
     <div id="s03-promise" data-composition-id="s03-promise" data-start="0" data-duration="9.462" data-width="1920" data-height="1080">
-      <div class="scene">
-        <div class="ground" data-layout-allow-overflow></div>
-        <div class="staves" data-layout-allow-overflow></div>
-        <p class="kicker" style="left:120px;top:120px">PLACEHOLDER · s03-promise</p>
-        <p class="serif" style="position:absolute;left:120px;top:440px;font-size:120px">The promise</p>
-      </div>
+      <div class="scene" id="s03-promise-scene"></div>
       <script>
         ;(function () {
+          // S3, the promise (STORYBOARD rows 3a to 3c; HANDOFFS § S2 to S3, § S3, § S3 to S4). F-cold, the
+          // staircase on D; the title's bead settles into the top house and lights it; the list of the promise's
+          // four parts builds top left, each part done as it is said: the risers ripple, the staircase slides
+          // down two rows to C, the stairs light in turn, an ink arrow from ti's tread to the house; then the
+          // pull and pan to F0, the rows widening to the full grid as it lands. Every time is a word or a duration.
+          const SID = 's03-promise'
+          const D = L.dur(SID)
+          const at = (cue, edge, off) => L.at(SID, cue, edge, off)
+          const word = (line, which, edge, off) => L.word(SID, line, which, edge, off)
+          const root = document.getElementById(SID + '-scene')
+          const room = L.room(root, { floor: false })
           const tl = gsap.timeline({ paused: true })
-          tl.fromTo('#s03-promise .serif', { x: 0 }, { x: 60, duration: L.dur('s03-promise'), ease: 'none' }, 0)
+          const C = L.C, ST = L.ST, P = L.prog, clamp = L.clamp, lerp = L.lerp
+          const f2 = (v) => v.toFixed(2)
+
+          // ==== group A shared block (s01 to s04): identical in each ====
+          const T0 = L.scene(SID).start
+          const cueF = (id, edge = 'start', off = 0) => window.CUES.cues[id][edge] + off   // film time
+          const hexRgb = (h) => [1, 3, 5].map((i) => parseInt(h.slice(i, i + 2), 16))
+          const mixRgb = (a, b, u) => a.map((v, i) => v + (b[i] - v) * u)
+          const rgbStr = (c) => `rgb(${c.map((v) => Math.round(Math.max(0, Math.min(255, v)))).join(',')})`
+          // Dust in the near layer, drawn from film time so it never jumps at a cut (L.dust keys scene time).
+          // Lesson 2's motes and density, spread over a field larger than the frame: F-cold's near layer is
+          // scaled 1.32 and sits 157 px right of F0's, so a frame-sized field would leave its left edge bare.
+          const dustF = (parent, { n = 66, seed = 7, color = 'rgba(195,204,214,0.5)', x0 = -460, y0 = -380, w = 2840, h = 1840 } = {}) => {
+            const r = L.rng(seed)
+            const svg = L.stage(parent)
+            svg.setAttribute('data-layout-allow-overflow', '')
+            const motes = []
+            for (let i = 0; i < n; i++) {
+              const m = { x: r() * w, y: r() * h, s: 0.8 + r() * 2.2, vx: (r() - 0.5) * 14, vy: -4 - r() * 10, ph: r() * 6.28 }
+              m.el = L.svg('circle', { r: m.s, fill: color, opacity: 0.4 }, svg)
+              motes.push(m)
+            }
+            return {
+              svg,
+              draw(T) {
+                for (const m of motes) {
+                  m.el.setAttribute('cx', (((m.x + m.vx * T) % w + w) % w + x0).toFixed(1))
+                  m.el.setAttribute('cy', (((m.y + m.vy * T) % h + h) % h + y0).toFixed(1))
+                  m.el.setAttribute('opacity', (0.18 + 0.22 * (0.5 + 0.5 * Math.sin(m.ph + T * 0.9))).toFixed(3))
+                }
+              },
+            }
+          }
+          // The full-frame field (HANDOFFS § S1 to S2): chrome mixed into the ground, 75 % at the frame's centre
+          // falling linearly to 35 % at the corners (mean brightness about 117 of 255), opaque over the whole
+          // frame, breathing 2 % in brightness from film time. A smaller disc is the same field scaled down, a
+          // glow with no edge: it is opaque out to `soft` of its radius and fades to nothing at its rim (soft 0.1
+          // as it leaves the house, 0.8 once it fills the frame, where the opaque part reaches past the corners).
+          const FIELD = { R: 1500, corner: Math.hypot(960, 540), inner: 0.75, outer: 0.35, ground: hexRgb('#0d1117'), chrome: hexRgb('#c3ccd6') }
+          FIELD.mixAt = (r) => FIELD.inner - ((FIELD.inner - FIELD.outer) * r) / FIELD.corner
+          FIELD.breathe = (T) => 1 + 0.01 * Math.sin(2 * Math.PI * (T - cueF('title')))
+          const fieldDisc = (svg, id) => {
+            const defs = L.svg('defs', {}, svg)
+            const grad = L.svg('radialGradient', { id, gradientUnits: 'userSpaceOnUse', cx: 960, cy: 540, r: FIELD.R }, defs)
+            const offs = [0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, FIELD.corner / FIELD.R, 0.8, 0.85, 0.9, 0.95, 1]
+            const stops = offs.map((o) => L.svg('stop', { offset: o.toFixed(4) }, grad))
+            const disc = L.svg('circle', { cx: 960, cy: 540, r: FIELD.R, fill: `url(#${id})`, opacity: 0 }, svg)
+            return {
+              disc,
+              draw({ x = 960, y = 540, r = FIELD.R, a = 1, T, soft = 0.8 }) {
+                if (a <= 0.004 || r <= 0.5) { disc.setAttribute('opacity', '0'); return }
+                const k = FIELD.breathe(T)
+                offs.forEach((o, i) => {
+                  stops[i].setAttribute('stop-color', rgbStr(mixRgb(FIELD.ground, FIELD.chrome, FIELD.mixAt(o * FIELD.R) * k)))
+                  stops[i].setAttribute('stop-opacity', (1 - L.smooth(soft, 1, o)).toFixed(4))
+                })
+                for (const el of [grad, disc]) { el.setAttribute('cx', f2(x)); el.setAttribute('cy', f2(y)); el.setAttribute('r', f2(r)) }
+                disc.setAttribute('opacity', a.toFixed(3))
+              },
+            }
+          }
+          // Plain SVG type (no sharps in group A): Outfit 600 unless given; opacity 0 until drawn
+          const txt = (parent, str, { x = 0, y = 0, size = 64, family = 'Outfit', weight = 600, italic = false, anchor = 'start', fill = C.ink } = {}) =>
+            L.svg('text', { x, y, 'text-anchor': anchor, fill, opacity: 0, text: str, style: `font-family: '${family}'; font-weight: ${weight}; font-size: ${size}px;${italic ? ' font-style: italic;' : ''} white-space: pre;` }, parent)
+          // a label's frame: in over 0.2 s from tIn, out over `out` s from tOut, rising `up` px as it leaves
+          const fadeIO = (t, tIn, tOut, { dIn = 0.2, out = 0.2, up = 0, ease = 'power2.in', rise = 0 } = {}) => {
+            const a = P(t, tIn, dIn, 'power2.out') * (1 - P(t, tOut, out, ease))
+            return { a, dy: -up * P(t, tOut, out, ease) + rise * (1 - P(t, tIn, dIn + 0.05, 'power3.out')) }
+          }
+          const place = (el, { a, dy = 0, dx = 0 }) => {
+            el.setAttribute('opacity', a.toFixed(3))
+            el.setAttribute('transform', dx || dy ? `translate(${f2(dx)} ${f2(dy)})` : '')
+          }
+          // A curved arrow (the kit's L.arrow is straight): a quadratic from A through Q to B, drawn on from A,
+          // its head riding the tip along the curve; scale pulses it about the curve's middle
+          const curveArrow = (parent, { color = C.ink2, width = 3, head = 14 } = {}) => {
+            const g = L.svg('g', { opacity: 0 }, parent)
+            const shaft = L.svg('path', { fill: 'none', stroke: color, 'stroke-width': width, 'stroke-linecap': 'round' }, g)
+            const tip = L.svg('path', { fill: 'none', stroke: color, 'stroke-width': width, 'stroke-linecap': 'round', 'stroke-linejoin': 'round' }, g)
+            const qb = (A, Q, B, u) => [(1 - u) * (1 - u) * A[0] + 2 * u * (1 - u) * Q[0] + u * u * B[0], (1 - u) * (1 - u) * A[1] + 2 * u * (1 - u) * Q[1] + u * u * B[1]]
+            return {
+              g,
+              draw(p, a, { A, Q, B }, { scale = 1, color: col = null, width: w = null } = {}) {
+                const u = clamp(p)
+                if (a <= 0.004 || u <= 0.01) { g.setAttribute('opacity', '0'); return }
+                let d = ''
+                for (let i = 0; i <= 24; i++) { const q = qb(A, Q, B, (u * i) / 24); d += (i ? 'L' : 'M') + f2(q[0]) + ' ' + f2(q[1]) }
+                shaft.setAttribute('d', d)
+                const e = qb(A, Q, B, u), e0 = qb(A, Q, B, Math.max(0, u - 0.05))
+                const ang = Math.atan2(e[1] - e0[1], e[0] - e0[0])
+                const hx = (k) => e[0] - head * Math.cos(ang + k), hy = (k) => e[1] - head * Math.sin(ang + k)
+                tip.setAttribute('d', `M${f2(hx(0.5))} ${f2(hy(0.5))} L${f2(e[0])} ${f2(e[1])} L${f2(hx(-0.5))} ${f2(hy(-0.5))}`)
+                if (col) { shaft.setAttribute('stroke', col); tip.setAttribute('stroke', col) }
+                if (w) { shaft.setAttribute('stroke-width', w); tip.setAttribute('stroke-width', w) }
+                const m = qb(A, Q, B, 0.5)
+                g.setAttribute('transform', scale === 1 ? '' : `translate(${f2(m[0])} ${f2(m[1])}) scale(${scale.toFixed(4)}) translate(${f2(-m[0])} ${f2(-m[1])})`)
+                g.setAttribute('opacity', a.toFixed(3))
+              },
+            }
+          }
+          const SOL = ['do', 're', 'mi', 'fa', 'so', 'la', 'ti', 'do']
+          // ==== end group A shared block ====
+
+          // ==== title-to-house flight (s02, s03): identical in both ====
+          // The title's staff, its zoom and the bead's flight back into the top house, all from film time, so
+          // s02's last frame and s03's first draw the same bead (HANDOFFS § S2 to S3). The type layer zooms out
+          // 4 % over s02 (power1.out, Lesson 2's); the bead rests on the staff's middle line, riding its living
+          // displacement, until FLY0, then flies to the house's centre in F-cold over 1.0 s (power2.inOut) and
+          // shrinks into it over the last 0.3 s as the house lights.
+          const TF = { s02: L.scene('s02-title'), title: cueF('title'), YB: 696, S: 28, REST: [1060, 640], HOUSE: [1464, 215] }
+          TF.zoom = (T) => 1.04 - 0.04 * P(T, TF.s02.start, TF.s02.end - TF.s02.start, 'power1.out')   // a scale (clock-lint: ok)
+          TF.zmap = (x, y, T) => { const z = TF.zoom(T); return [960 + z * (x - 960), 540 + z * (y - 540)] }
+          TF.CHIME = (k) => TF.title + 0.05 + 0.09 * k             // the sting's five chimes, A3 E4 A4 C#5 E5
+          TF.NOTE_X = [560, 760, 960, 1160, 1360]
+          TF.FLY0 = cueF('title', 'start', 2.72)                     // the bead lifts off as the staff starts to fade
+          TF.FLY = 1.0
+          // the staff lines' living displacement at x, with a ripple from each note as it lands (Lesson 2's)
+          TF.disp = (x, T) => {
+            const u = x / 1920, pin = Math.sin(Math.PI * clamp(u))
+            let y = pin * 2.2 * Math.sin(2 * Math.PI * 1.3 * u + 0.9 * T) * (0.65 + 0.35 * Math.sin(0.6 * T))
+            TF.NOTE_X.forEach((nx, k) => {
+              const tau = T - TF.CHIME(k)
+              if (tau <= 0) return
+              const dist = Math.abs(x - nx), front = 1100 * tau
+              y += 5.5 * Math.exp(-2.4 * tau) * Math.exp(-Math.pow((dist - front) / 150, 2)) * Math.sin((2 * Math.PI * (dist - front)) / 170)
+              y += 6 * Math.exp(-Math.pow(dist / 70, 2)) * Math.exp(-7 * tau) * Math.cos(18 * tau)
+            })
+            return y
+          }
+          // the bead on screen at film time T once it has lifted off: { x, y, r, lit } (lit is the house's light)
+          TF.flight = (T) => {
+            const P0 = TF.zmap(TF.REST[0], TF.REST[1] + TF.disp(TF.REST[0], TF.FLY0), TF.FLY0)
+            const P2 = TF.HOUSE, peak = P2[1] - 120
+            const P1 = [(P0[0] + P2[0]) / 2, 2 * peak - (P0[1] + P2[1]) / 2]
+            const u = P(T, TF.FLY0, TF.FLY, 'power2.inOut'), v = 1 - u
+            const lit = P(T, TF.FLY0 + TF.FLY - 0.3, 0.3, 'power2.out')
+            return {
+              x: v * v * P0[0] + 2 * u * v * P1[0] + u * u * P2[0],
+              y: v * v * P0[1] + 2 * u * v * P1[1] + u * u * P2[1],
+              r: lerp(22 * TF.zoom(TF.FLY0), 22 * 1.2, u) * (1 - lit),
+              lit,
+            }
+          }
+          // ==== end title-to-house flight ====
+
+          /* ---------------------------------------------------------------- anchors */
+          const LIT = TF.FLY0 + TF.FLY - T0                       // the house lit by the title's bead; its echo ring
+          // 3a: "build it from its steps" lands on "you'll build"; the seven risers ripple up the staircase,
+          // one every 0.28 s from 0.08 s after "build", so the ripple spans "build a major scale from its steps"
+          const L1 = word('b3', "you'll"), RIP0 = word('b3', 'build', 'start', 0.08), RIP_GAP = 0.28
+          // 3b: "start it on any note" on "start it", the slide down two rows (0.9 s); stair 1, where it now
+          // starts, scales as the slide lands (long pulse) and lights chrome, up over 0.3 s and back over 0.4 s,
+          // both linear (group B's measured shape: L.lit's 0.15 s rise registers too little at 40 %); on "name
+          // its notes" the eight stairs light in turn, 0.1 s apart (long settle)
+          const L2 = word('b3', 'start it'), SLIDE = word('b3', 'start it', 'start', 0.04), SLIDE_DUR = 0.9
+          const LANDED = SLIDE + SLIDE_DUR
+          const L3 = word('b3', 'name its notes'), LIGHT0 = word('b3', 'name its notes', 'start', -0.02)
+          // 3c: "hear ti lean home" on "hear", the pull and pan to F0 (2.5 s); the arrow from ti's tread to the
+          // house as "tee" is said (0.6 s); the list, the arrow and the glow leave up fast as the line ends; the
+          // rows widen over the pull's last 0.6 s
+          const L4 = word('b3', 'hear'), PULL = word('b3', 'hear'), PULL_DUR = 2.5
+          const ARROW = word('b3', 'tee', 'start', 0.06)
+          const LIST_OUT = at('b3', 'end')
+          const WIDEN = PULL + PULL_DUR - 0.56
+
+          /* ---------------------------------------------------------------- the camera */
+          const cam = L.frameRig(room, { from: 'F-cold' })
+          cam.to(PULL, PULL_DUR, 'F0', 'power2.inOut')
+
+          /* ---------------------------------------------------------------- the world */
+          const dust = dustF(room.near)
+          const mid = L.stage(room.mid)
+          const st = L.stairs(mid, {})
+          st.stairs.forEach((S, i) => S.names.prepare([SOL[i]]))
+          // the ink arrow (3 px at F0) from ti's tread up to the house's left side
+          const arrow = curveArrow(mid, { color: C.ink, width: 3, head: 14 })
+          const arrowAt = (s0) => {
+            const hb = ST.houseBox(8, 0, s0)
+            const A = [ST.colX(7, 0) + 16, ST.tread(7, s0) - 12], B = [hb.x - 12, hb.cy + 4]
+            return { A, Q: [A[0] + 8, B[1] + 2], B }
+          }
+
+          /* ---------------------------------------------------------------- the bead and the house's echo (screen space) */
+          const top = L.stage(room.top)
+          const echo = L.echoRings(top, { max: 2 })
+          const bead = L.bead(top, { r: 22, color: C.chrome })
+          bead.halo.setAttribute('r', 38)
+
+          /* ---------------------------------------------------------------- the list (frame-fixed, top left) */
+          const hud = L.stageOf(room.hud)
+          const LIST = [['build it from its steps', L1], ['start it on any note', L2], ['name its notes', L3], ['hear ti lean home', L4]]
+            .map(([s, tIn], i) => ({ el: txt(hud, s, { x: 140, y: 200 + 60 * i, size: 44 }), tIn }))
+
+          L.clock(tl, D, (t) => {
+            const Tf = T0 + t
+            cam.apply(t)
+            const cs = cam.scale(t)
+            dust.draw(Tf)
+
+            /* the staircase: on D, sliding down two rows to C on "start it" (0.9 s, power2.inOut) */
+            const s0 = 2 - 2 * P(t, SLIDE, SLIDE_DUR, 'power2.inOut')
+            const fl = TF.flight(Tf)
+            const ripple = (n) => (L.pulse(t, RIP0 + RIP_GAP * (n - 1), 'bar', { long: true }) - 1) / L.PULSE.bar
+            // the ripple's brightening: up over 0.28 s and back over 0.5 s, both linear, so each riser's change
+            // carries until the next one's starts (the kit pulse's 0.15 s rise on a 4 px bar barely registers)
+            const bright = (n) => { const d = t - (RIP0 + RIP_GAP * (n - 1)); return d < 0 ? 0 : d < 0.28 ? d / 0.28 : Math.max(0, 1 - (d - 0.28) / 0.5) }
+            const start1 = clamp(Math.min((t - LANDED + 0.05) / 0.3, 1 - (t - LANDED - 0.25) / 0.4))
+            const widen = P(t, WIDEN, 0.6, 'power2.inOut')
+            const out = P(t, LIST_OUT, 0.3, 'power3.in')
+            st.draw({
+              w: 0, s0,
+              rows: { x0: lerp(230, 220, widen), x1: lerp(1206, 1680, widen), k1: 14 },
+              stair: (n) => ({
+                lit: Math.max(L.lit(t, LIGHT0 + 0.1 * (n - 1), { long: true }), n === 1 ? start1 : 0),
+                scale: n === 1 ? L.pulse(t, LANDED, 'tile', { long: true }) : 1,
+                names: [{ text: SOL[n - 1], a: 1 }],
+              }),
+              riser: (n) => ({ scale: 1 + L.PULSE.bar * ripple(n) }),
+              houses: { top: { a: 1, w: 0, lit: fl.lit, glow: 0.6 * P(t, ARROW + 0.5, 0.3, 'power2.out') * (1 - out) } },
+            })
+            // the ripple brightens each unmeasured riser as it grows (4 px chrome at 40 % to 6 px at full)
+            st.risers.forEach((Rz, i) => {
+              const k = bright(i + 1)
+              if (k <= 0.001) return
+              const x = ST.riserX(i + 1, 0), bw = 4 + 2 * k
+              Rz.bar.setAttribute('x', f2(x - bw / 2)); Rz.bar.setAttribute('width', f2(bw))
+              Rz.bar.setAttribute('fill-opacity', (0.4 + 0.6 * k).toFixed(3))
+            })
+            arrow.draw(P(t, ARROW, 0.6, 'power2.inOut'), 1 - out, arrowAt(s0), { width: 3 })
+
+            /* the title's bead, settling into the house (TF, from film time), and the house's echo ring */
+            if (t < LIT && fl.r > 0.2) {
+              bead.g.removeAttribute('display')
+              bead.g.setAttribute('transform', `translate(${f2(fl.x)} ${f2(fl.y)}) scale(${(fl.r / 22).toFixed(4)})`)
+              bead.g.setAttribute('opacity', '1')
+            } else bead.g.setAttribute('display', 'none')
+            const hb = ST.houseBox(8, 0, s0)
+            const hc = cam.map(hb.cx, hb.cy, t)
+            echo.draw(t, [{ t: LIT, x: hc[0], y: hc[1], r: 30 * cs }])
+
+            /* the list: each part lands as it is said (0.2 s, rising 12 px); all leave up fast as the line ends */
+            for (const it of LIST) place(it.el, fadeIO(t, it.tIn, LIST_OUT, { out: 0.3, up: 60, ease: 'power3.in', rise: 12 }))
+          })
+
           window.__timelines = window.__timelines || {}
-          window.__timelines['s03-promise'] = tl
+          window.__timelines[SID] = tl
         })()
       </script>
     </div>

@@ -3,18 +3,417 @@
   <head><meta charset="UTF-8" /></head>
   <body>
     <div id="s06-groups" data-composition-id="s06-groups" data-start="0" data-duration="35.216" data-width="1920" data-height="1080">
-      <div class="scene">
-        <div class="ground" data-layout-allow-overflow></div>
-        <div class="staves" data-layout-allow-overflow></div>
-        <p class="kicker" style="left:120px;top:120px">PLACEHOLDER · s06-groups</p>
-        <p class="serif" style="position:absolute;left:120px;top:440px;font-size:120px">Two groups and a joint</p>
-      </div>
+      <div class="scene" id="s06-groups-scene"></div>
+      <!-- Merc passes, static (trap 4); timing written by python3 tools/merc-tags.py s06-groups -->
+      <video id="s06-groups-m06a-orange" data-merc="m06a-orange" class="clip" muted playsinline src="assets/merc/m06a-orange-merc.webm" data-start="0.000" data-duration="3.911" data-media-start="0.508"></video>
+      <video id="s06-groups-m06a-orange-refl" data-merc="m06a-orange" data-merc-refl class="clip" muted playsinline src="assets/merc/m06a-orange-merc.webm" data-start="0.000" data-duration="3.911" data-media-start="0.508"></video>
+      <video id="s06-groups-m06b-orange" data-merc="m06b-orange" class="clip" muted playsinline src="assets/merc/m06b-orange-merc.webm" data-start="24.511" data-duration="10.250" data-media-start="0.008"></video>
+      <video id="s06-groups-m06b-orange-refl" data-merc="m06b-orange" data-merc-refl class="clip" muted playsinline src="assets/merc/m06b-orange-merc.webm" data-start="24.511" data-duration="10.250" data-media-start="0.008"></video>
       <script>
         ;(function () {
+          /* S6, Two groups and a joint (STORYBOARD rows 6a to 6d; HANDOFFS § Inside B, § S5 to S6, § B to C).
+             In (S5 to S6): F0; Tavi's m06a dropping in (feet (1800, 840), 300, hero, turned left), seen from
+             this scene's first frames; the staircase on C with letters, all seven risers measured and labelled
+             T T S T T T S, hairlines, C major's keys at full, the legend at x 140; E4, F4, B4 and C5 named.
+             Out (to s07, fixed, B to C): F0 (since the pull landed at 124.0), no Mercs (m06b ended 145.65),
+             the kicker lane empty; the staircase on C at full, letters C to C, risers measured, riser labels
+             2 2 1 2 2 2 1, hairlines; the strip with C major's keys at full and the rest at 45 %, no key names
+             (gone at 145.8); no sum, no brackets, no legend. */
+          const SID = 's06-groups'
+          const D = L.dur(SID)
+          const at = (cue, edge, off) => L.at(SID, cue, edge, off)
+          const word = (line, which, edge, off) => L.word(SID, line, which, edge, off)
+          const root = document.getElementById(SID + '-scene')
+          const room = L.room(root, { floor: false })
+          const S0 = L.scene(SID).start
           const tl = gsap.timeline({ paused: true })
-          tl.fromTo('#s06-groups .serif', { x: 0 }, { x: 60, duration: L.dur('s06-groups'), ease: 'none' }, 0)
+
+          /* ======================= group B's shared block (the same in s05-steps and s06-groups) */
+          const ST = L.ST, P = L.prog, clamp = L.clamp, lerp = L.lerp
+          const f1 = (v) => (Math.round(v * 100) / 100).toString()
+          const SEMI = (n) => ST.H[n] - ST.H[n - 1] === 1               // riser n (stairs n to n + 1) is a semitone
+          const CMAJ = ST.scale(0)                                       // C major's keys, semitones above C4
+          const LETTERS = ['C', 'D', 'E', 'F', 'G', 'A', 'B', 'C']
+          const SOLFA = ['do', 're', 'mi', 'fa', 'so', 'la', 'ti', 'do']
+          const KEYNAME = { 1: 'C♯', 4: 'E', 5: 'F', 11: 'B', 12: 'C' }
+          // 1. Dust in the near layer from film time (Lesson 2's filmDust: seed 7, 26 motes), so it runs on
+          //    across the cuts.
+          const filmDust = (layer) => {
+            const svg = L.stage(layer)
+            const r = L.rng(7)
+            const motes = []
+            for (let i = 0; i < 26; i++) {
+              const m = { x: r() * 1920, y: r() * 1080, s: 0.8 + r() * 2.2, vx: (r() - 0.5) * 14, vy: -4 - r() * 10, ph: r() * 6.28 }
+              m.el = L.svg('circle', { r: m.s, fill: 'rgba(195,204,214,0.5)', opacity: 0 }, svg)
+              motes.push(m)
+            }
+            return (T) => {
+              for (const m of motes) {
+                m.el.setAttribute('cx', (((m.x + m.vx * T) % 1960 + 1960) % 1960 - 20).toFixed(1))
+                m.el.setAttribute('cy', (((m.y + m.vy * T) % 1120 + 1120) % 1120 - 20).toFixed(1))
+                m.el.setAttribute('opacity', (0.18 + 0.22 * (0.5 + 0.5 * Math.sin(m.ph + T * 0.9))).toFixed(3))
+              }
+            }
+          }
+          // 2. Tavi in her F0 corner (feet (1800, 840), 300, hero view), screen space in the top layer.
+          //    Trap 23: a pass's drop comes in through the top of its square, so the box (and its reflection)
+          //    stays at 0 until the pass's first whole frame and then fades in over 0.3 s (18 frames, sine.out);
+          //    from that frame the scene eases the box down its last 60 px (0.4 s, power2.out), so the entrance
+          //    still reads as a fall. m06a's frames 6 to 29 touch the square's top row and frame 30 is the first
+          //    with rows 0 to 2 empty (measured on its alpha); the gate opens one frame later, at 31, because
+          //    HyperFrames 0.8.97 may show the frame before the one the tag's times name. Her hop out: the pass's
+          //    hop arcs right and lands inside its square, so the scene carries the box 360 px right through
+          //    the hop's time in the air (from HOP + 0.15 over 0.42 s, power1.in). A local floor patch under
+          //    her corner comes and goes with her. Returns draw(t) -> her screen body box, or null when unseen.
+          const tavi = (layer, { pass, tag, x = 1800, feetY = 840, size = 300, whole = 31, hop = null }) => {
+            const wrap = L.el('div', { class: 'clip', style: 'pointer-events:none' }, layer)
+            const floor = L.el('div', { style: 'position:absolute;left:1690px;width:230px;top:840px;height:240px;opacity:0;background:linear-gradient(180deg, rgba(120,150,190,0.10), rgba(13,17,23,0) 40%);border-top:1px solid rgba(195,204,214,0.10);-webkit-mask-image:linear-gradient(90deg, transparent, #000 45%);mask-image:linear-gradient(90deg, transparent, #000 45%)' }, wrap)
+            const vid = document.getElementById(tag)
+            if (!vid) { console.error(`[${SID}] no Merc tag #${tag}`); return () => null }
+            const m = L.merc(wrap, { pass, x, feetY, size, feet: 0.8, id: tag + '-box', video: tag, reflVideo: tag + '-refl' })
+            m.box.setAttribute('data-layout-allow-overflow', '')
+            m.box.style.opacity = '0'
+            // film frame of pass frame 0, from the static tag (merc-tags.py: media start is half a frame past
+            // the tag's first pass frame, which plays on film frame n0)
+            const ds = parseFloat(vid.getAttribute('data-start')), ms = parseFloat(vid.getAttribute('data-media-start'))
+            const dd = parseFloat(vid.getAttribute('data-duration'))
+            if (!(dd > 0)) return () => null
+            const n0 = Math.ceil((S0 + ds) * 60 - 1e-6), P0 = n0 - Math.round(ms * 60 - 0.5)
+            const tWhole = (P0 + whole) / 60 - S0                        // scene time of the gate
+            return (t) => {
+              const j = Math.floor((S0 + t) * 60 + 1e-6) - P0          // the pass frame on screen now
+              const shown = j < whole || t > ds + dd ? 0 : L.ease('sine.out')(Math.min(1, (j - whole + 1) / 18))
+              const dy = -60 * (1 - P(t, tWhole, 0.4, 'power2.out'))
+              const dx = hop == null ? 0 : 360 * P(t, hop + 0.15, 0.42, 'power1.in')
+              m.box.style.opacity = shown.toFixed(3)
+              m.box.style.transform = `translate(${f1(dx)}px, ${f1(dy)}px)`
+              floor.style.opacity = (shown * (hop == null ? 1 : 1 - P(t, hop + 0.15, 0.4))).toFixed(3)
+              return shown > 0.004 && dx < 220 ? L.mercBox(x + dx, feetY + dy, size) : null
+            }
+          }
+          // 3. A label switch (STORYBOARD § Type): the old label slides up 12 px as it fades, the new one in from
+          //    12 px below, 0.25 s, staggered 0.05 s stair by stair (k = 0 for the first).
+          const swap = (t, t0, k, from, to) => {
+            const u = P(t, t0 + 0.05 * k, 0.25, 'power2.inOut')
+            return [{ text: from, a: 1 - u, dy: -12 * u }, { text: to, a: u, dy: 12 * (1 - u) }]
+          }
+          // 4. A stair lit to 40 % chrome as a counted event: up over 0.3 s and back over 0.4 s, both linear. Measured
+          //    in lab/s05-steps/pulse (measure.py, a still F0 staircase): this shape registers 0.7 s on stairs 2 to 4,
+          //    where L.lit's own (up 0.15 s power2.out, back 0.6 s sine.inOut) registers 0.4 to 0.6 s at 40 %.
+          //    A larger light (up 0.4 s, back 0.8 to 0.9 s) is for a big stair: in a close-up, or stair 4 or 8 at F0,
+          //    where a slow ramp still changes enough of the frame to register.
+          const light = (t, times, up = 0.3, down = 0.4) => {
+            let k = 0
+            for (const t0 of [].concat(times)) k = Math.max(k, P(t, t0, up, 'none') * (1 - P(t, t0 + up, down, 'none')))
+            return k
+          }
+          // a riser label's counted pulse: it scales 1.25 about its anchor and settles over 0.8 s
+          const labelPulse = (t, times) => L.pulse(t, times, 0.25, { long: true })
+          // 5. Riser overlays, drawn over the kit's risers (below the stair names): the measuring outline drawn
+          //    on (L.MEASURE, a perimeter dash), an outline that stays while the bar fills, the dim 4 px bar
+          //    under a bar that is growing, and a measured bar shrinking back to the unmeasured 4 px.
+          const riserOverlays = (st) => {
+            const g = L.svg('g', { class: 'riser-overlays' }, null)
+            st.gAll.insertBefore(g, st.gAll.children[2])
+            return [1, 2, 3, 4, 5, 6, 7].map((n) => {
+              const under = L.svg('rect', { fill: '#c3ccd6', 'fill-opacity': 0.4, display: 'none' }, g)
+              const shrink = L.svg('rect', { display: 'none' }, g)
+              const tick = L.svg('rect', { fill: '#2a323c', height: 2, width: 12, display: 'none' }, g)
+              const ol = L.svg('rect', { fill: 'none', stroke: L.MEASURE.stroke, 'stroke-width': L.MEASURE.width, 'stroke-opacity': L.MEASURE.opacity, display: 'none' }, g)
+              const geo = (w = 0, s0 = 0) => {
+                const x = ST.riserX(n, w), yLo = ST.tread(n, s0), yHi = ST.tread(n + 1, s0)
+                return { x, yLo, yHi, h: yLo - yHi, cy: (yLo + yHi) / 2 }
+              }
+              const show = (el, on) => el.setAttribute('display', on ? 'inline' : 'none')
+              return {
+                n,
+                draw({ underA = 0, shrinkU = null, outlineA = 0, w = 0, s0 = 0 } = {}) {
+                  const q = geo(w, s0)
+                  show(under, underA > 0.004)
+                  if (underA > 0.004) {
+                    under.setAttribute('x', f1(q.x - 2)); under.setAttribute('width', 4)
+                    under.setAttribute('y', f1(q.yHi)); under.setAttribute('height', f1(q.h))
+                    under.setAttribute('opacity', underA.toFixed(3))
+                  }
+                  const sOn = shrinkU != null && shrinkU < 1
+                  show(shrink, sOn); show(tick, sOn && !SEMI(n))
+                  if (sOn) {
+                    const bw = lerp(6, 4, shrinkU)
+                    shrink.setAttribute('x', f1(q.x - bw / 2)); shrink.setAttribute('width', f1(bw))
+                    shrink.setAttribute('y', f1(q.yHi)); shrink.setAttribute('height', f1(q.h))
+                    shrink.setAttribute('fill', SEMI(n) ? L.C.gold : '#c3ccd6')
+                    shrink.setAttribute('opacity', (1 - shrinkU).toFixed(3))
+                    tick.setAttribute('x', f1(q.x - 6)); tick.setAttribute('y', f1(q.cy - 1))
+                    tick.setAttribute('opacity', (1 - shrinkU).toFixed(3))
+                  }
+                  show(ol, outlineA > 0.004)
+                  if (outlineA > 0.004) {
+                    ol.setAttribute('x', f1(q.x - 3)); ol.setAttribute('width', 6)
+                    ol.setAttribute('y', f1(q.yHi)); ol.setAttribute('height', f1(q.h))
+                    ol.setAttribute('opacity', outlineA.toFixed(3))
+                  }
+                },
+              }
+            })
+          }
+          // the kit's measuring outline drawn on over its perimeter (u 0..1), its tick (a tone's middle row line)
+          // coming in as the outline closes
+          const drawOn = (st, n, u) => {
+            const R = st.risers[n - 1]
+            const h = parseFloat(R.outline.getAttribute('height')) || 0
+            const per = 2 * (6 + h)
+            R.outline.setAttribute('stroke-dasharray', `${f1(per)} ${f1(per)}`)
+            R.outline.setAttribute('stroke-dashoffset', f1(per * (1 - clamp(u))))
+            R.tick.setAttribute('fill-opacity', (0.55 * clamp((u - 0.8) / 0.2)).toFixed(3))
+          }
+          /* ======================= end of group B's shared block */
+
+          /* ---------------------------------------------------------------- anchors */
+          const A = {
+            scattered: word('o5', 'scattered'),                        // 6a: the gold risers glow, the named keys scale
+            hopA: at('o5', 'end', 0.09),                               // m06a hops out right (merc-shots.py's exit)
+            split: word('b13', 'Split'),                               // the two brackets draw
+            push: word('b13', 3),                                      // the push to F-low, 1.6 s ("in")
+            each: word('b13', 'each'),                                 // the lower bracket lights; C4 to F4 in turn
+            gl: at('group-low'), gh: at('group-high'), ghEnd: at('group-high', 'end'),
+            truck: at('group-low', 'start', 1.52),                     // 6b: the truck to F-high, 1.1 s
+            pull: at('group-high', 'start', 2.07),                     // the pull to F0, 1.1 s, as C5 holds
+            both: word('b14', 'Both'),                                 // 6c
+            climb: word('b14', 'climb'),                               // the ghost lifts and travels
+            tone1: word('b14', 'tone'), tone2: word('b14', 'tone#2'), semi1: word('b14', 'semitone'),
+            semis: word('b15', 'semitones'),                           // the octave's rows glow in turn
+            oneMore: word('b14', 'One more'),                          // the ghost fades
+            tone3: word('b14', 'tone#3', 'start', -0.1), joins: word('b14', 'joins', 'start', 0.2),   // the F-G riser grows twice
+            b15: at('b15', 'start', 0.1),                              // 6d: the brackets and the legend leave
+            count: word('b15', 'count'),                               // T to 2, S to 1
+            twelve: word('o6', 'twelve'),                              // "= 12" lands
+            cAgain: word('o6', 'C again'),                             // stairs 1 and 8 light
+            seven: word('b16', 'Seven'),                               // the risers grow in turn
+            twelve2: word('b16', 'twelve'),                            // "= 12" scales
+            octave: word('b16', 'one octave'),                         // the octave bracket and "= 1 octave"
+            leave: at('b16', 'end', 0.05),                             // the sum, "= 12", "= 1 octave", the bracket, the key names
+            hopB: at('b16', 'end', -0.55),                             // m06b hops out right
+          }
+          const NUMS = [5, 6, 7, 8, 9, 10, 11].map((k) => word('b15', k))   // "Two, two, one. Two. Two, two, one."
+          const LOW = (k) => at('group-low', 'start', 0.45 * k)        // group-low's onsets (FACTS 68)
+          const HIGH = (k) => at('group-high', 'start', 0.45 * k)      // group-high's onsets
+          const PUSH = 1.6, TRUCK = 1.1, PULL = 1.1
+
+          /* ---------------------------------------------------------------- camera */
+          const cam = L.frameRig(room, { from: 'F0' })
+          cam.to(A.push, PUSH, 'F-low', 'power2.inOut')
+          cam.to(A.truck, TRUCK, 'F-high', 'power2.inOut')            // a truck: s holds at 1.8, the layers part
+          cam.to(A.pull, PULL, 'F0', 'power2.inOut')
+
+          /* ---------------------------------------------------------------- the world (mid layer) */
+          const mid = L.stage(room.mid)
+          const defs = L.svg('defs', {}, mid)
+          const soft = L.svg('filter', { id: SID + '-soft', x: '-200%', y: '-60%', width: '500%', height: '220%' }, defs)
+          L.svg('feGaussianBlur', { stdDeviation: 6 }, soft)
+          const st = L.stairs(mid, {})
+          // accents behind the staircase's blocks: the two gold risers glow (6a); the F-G riser's "T" brightens (6c)
+          const accents = L.svg('g', {}, null)
+          st.svg.insertBefore(accents, st.gAll)
+          const goldGlow = [3, 7].map((n) => L.svg('rect', { x: ST.riserX(n, 0) - 9, width: 18, y: ST.tread(n + 1, 0) - 6, height: ST.tread(n, 0) - ST.tread(n + 1, 0) + 12, rx: 9, fill: L.C.gold, opacity: 0, filter: `url(#${SID}-soft)` }, accents))
+          // "count it in semitones": the twelve rows of the octave (C#4 to C5, stair 1's tread to stair 8's) glow
+          // in turn, the unit the count is about
+          const rowGlows = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12].map((k) => L.svg('rect', { x: 220, width: 1460, y: ST.rowTop(k) + 2, height: 22, fill: '#c3ccd6', opacity: 0 }, accents))
+          const tGlow = L.svg('text', { x: ST.colX(4, 0) + 55, y: ST.tread(4, 0) - 8, 'text-anchor': 'end', fill: '#c3ccd6', opacity: 0, filter: `url(#${SID}-soft)`, style: "font: 600 40px 'Outfit', sans-serif", text: 'T' }, accents)
+          const kb = L.strip(mid, {})
+          // the ghost outline (6c): the profile of stairs 1 to 4 and their three risers (treads through the
+          // risers' centres), drawn from L.ST, lifting off them and moving by (+480, -182) onto stairs 5 to 8
+          const ghostD = (() => {
+            let d = `M${ST.colX(1, 0) - 56} ${ST.tread(1, 0)}`
+            for (let n = 1; n <= 3; n++) d += ` L${ST.riserX(n, 0)} ${ST.tread(n, 0)} L${ST.riserX(n, 0)} ${ST.tread(n + 1, 0)}`
+            return d + ` L${ST.colX(4, 0) + 56} ${ST.tread(4, 0)}`
+          })()
+          const ghost = L.svg('g', { opacity: 0 }, mid)
+          L.svg('path', { d: ghostD, fill: 'none', stroke: '#c3ccd6', 'stroke-width': 10, 'stroke-opacity': 0.35, 'stroke-linejoin': 'round', 'stroke-linecap': 'round', filter: `url(#${SID}-soft)` }, ghost)
+          L.svg('path', { d: ghostD, fill: 'none', stroke: '#c3ccd6', 'stroke-width': 3, 'stroke-opacity': 0.9, 'stroke-linejoin': 'round', 'stroke-linecap': 'round' }, ghost)
+          // the brackets (ink, ticks down, riding the world): stairs 1 to 4 at y 484, stairs 5 to 8 at y 302. Each
+          // ends 6 px short of its group's right edge (HANDOFFS has 714 and 1194): at 714 the lower bracket's end
+          // touched the F-G riser's bar (x 715 to 721, from y 482) in the lab. An 8 px tick stops the lower one's
+          // right tick 6 px above that riser's label. The two keep the same length, 480 px apart (the ghost's move)
+          const brLow = L.bracket(mid, { x1: 242, x2: 708, y: 484, dir: 'up', tick: 8, color: L.C.ink, width: 3 })
+          const brHigh = L.bracket(mid, { x1: 722, x2: 1188, y: 302, dir: 'up', tick: 8, color: L.C.ink, width: 3 })
+          // the octave bracket (chrome, vertical, x 1232, stair 1's tread to stair 8's: twelve rows), ticks left
+          const brOct = L.bracket(mid, { x1: ST.tread(1, 0), x2: ST.tread(8, 0), y: 1232, dir: 'down', tick: 14, color: L.C.chrome, width: 3, vertical: true })
+          const gBead = L.svg('g', {}, mid)
+          const bead = L.bead(gBead, { r: 22, color: L.C.chrome })
+          const echo = L.echoRings(mid, { dur: 0.9, grow: 3.5, width: 3 })   // as s05's
+          st.stairs.forEach((S, i) => S.names.prepare([LETTERS[i]]))
+          st.risers.forEach((R) => R.labels.prepare(['T', 'S', '2', '1']))
+          for (const m in KEYNAME) kb.keys[m].names.prepare([KEYNAME[m]])
+          const dust = filmDust(room.near)
+
+          /* ---------------------------------------------------------------- Tavi (top layer, screen space) */
+          const taviA = tavi(room.top, { pass: 'm06a-orange', tag: SID + '-m06a-orange', hop: A.hopA })
+          const taviB = tavi(room.top, { pass: 'm06b-orange', tag: SID + '-m06b-orange', hop: A.hopB })
+
+          /* ---------------------------------------------------------------- type (hud, frame-fixed) */
+          const hud = L.stageOf(room.hud)
+          // the legend, as s05 draws it
+          const legend = [['T', ' = tone ', '(2 rows)', 200], ['S', ' = semitone ', '(1 row)', 252]].map(([a, b, c, y]) => {
+            const el = L.svg('text', { x: 140, y, opacity: 1, style: "font: 600 44px 'Outfit', sans-serif; white-space: pre;" }, hud)
+            L.svg('tspan', { text: a, fill: L.C.ink }, el)
+            L.svg('tspan', { text: b, fill: L.C.ink }, el)
+            L.svg('tspan', { text: c, fill: L.C.ink2 }, el)
+            return el
+          })
+          // the sum (Outfit 600 64 px at x 1270, baseline 260): "2 2 1 · 2 · 2 2 1", one text per token, laid out
+          // from the whole string's own glyph positions; each number lands when it is said (a dot with the
+          // number after it), and "= 12" stands 20 px after it. Spaced so the groups read: a space between a
+          // group's numbers (16 px of ground between glyphs), a space and two hair spaces either side of a dot
+          // (about 24 px); with plain spaces the dots sat closer than the numbers (13 against 16 px)
+          const HS = '\u200a\u200a', SUM = `2 2 1 ${HS}·${HS} 2 ${HS}·${HS} 2 2 1`
+          const NUMSTYLE = "font: 600 64px 'Outfit', sans-serif; font-variant-numeric: tabular-nums; white-space: pre;"
+          const probe = L.svg('text', { x: 1270, y: 260, opacity: 0, style: NUMSTYLE, text: SUM }, hud)
+          const tokens = []
+          ;[...SUM].forEach((ch, i) => { if (!/\s/.test(ch)) tokens.push({ ch, i, el: L.svg('text', { y: 260, fill: L.C.ink, opacity: 0, 'text-anchor': 'middle', style: NUMSTYLE, text: ch }, hud) }) })
+          // token k's landing: the k-th number said; a dot lands with the number after it
+          let nk = 0
+          tokens.forEach((tk) => { tk.land = tk.ch === '·' ? null : NUMS[nk++] })
+          tokens.forEach((tk, k) => { if (tk.ch === '·') tk.land = tokens[k + 1].land })
+          const eq12 = L.svg('text', { y: 260, fill: L.C.ink, opacity: 0, style: NUMSTYLE, text: '= 12' }, hud)
+          let eqX = 1639
+          L.afterFonts(() => {
+            for (const tk of tokens) {
+              const a = probe.getStartPositionOfChar(tk.i).x, b = probe.getEndPositionOfChar(tk.i).x
+              tk.cx = (a + b) / 2
+              tk.el.setAttribute('x', f1(tk.cx))
+            }
+            eqX = 1270 + probe.getComputedTextLength() + 20
+            eq12.setAttribute('x', f1(eqX))
+          })
+          const octT = L.svg('text', { x: 1262, y: 543, fill: L.C.ink, opacity: 0, style: "font-family: 'Instrument Serif'; font-style: italic; font-size: 96px; letter-spacing: -0.01em; white-space: pre;", text: '= 1 octave' }, hud)
+
+          /* ---------------------------------------------------------------- per-frame state */
+          const LAND = [LOW(0), LOW(1), LOW(2), LOW(3), HIGH(0), HIGH(1), HIGH(2), HIGH(3)]   // the bead on stair n
+          const UNLIT = A.pull + 0.8                                    // the lit stairs go unlit (0.5 s) as the pull lands
+          const GROW = { 1: [A.tone1], 2: [A.tone2], 3: [A.semi1], 4: [A.tone3, A.joins], 5: [A.tone1], 6: [A.tone2], 7: [A.semi1] }
+          // 6c's stair lights, with the risers that grow: the stair above each pair (light()); the larger lights
+          // ([t, up, down]) for the semitone pair's stairs 4 and 8 (a pause follows), G4's stair as the F-G tone
+          // joins, and stairs 1 and 8 on "C again"
+          const LITP = { 2: [A.tone1], 6: [A.tone1], 3: [A.tone2], 7: [A.tone2] }
+          const LITQ = { 4: [[A.semi1, 0.4, 1.2]], 8: [[A.semi1, 0.4, 1.2], [A.cAgain, 0.4, 0.8]], 5: [[A.tone3, 0.4, 0.8], [A.joins, 0.4, 0.8]], 1: [[A.cAgain, 0.4, 0.8]] }
+          const pairLit = (t, n) => (LITQ[n] || []).reduce((k, [t0, up, dn]) => Math.max(k, light(t, t0, up, dn)), LITP[n] ? light(t, LITP[n]) : 0)
+          // labels a held framing would cut at the frame's edge leave before it and return as it ends: riser 6's
+          // "T" (F-low puts it at the frame's top) and stair 7's "B" (off the right edge) through F-low; stair 2's
+          // "D" (off the left edge) through F-high
+          const edgeA = (k, t) => clamp(k === 'r6' || k === 's7' ? 1 - P(t, A.push + 0.6, 0.3) + P(t, A.truck + 0.2, 0.3)
+            : k === 's2' ? 1 - P(t, A.truck + 0.3, 0.3) + P(t, A.pull + 0.3, 0.3) : 1)
+          for (let n = 1; n <= 7; n++) GROW[n].push(NUMS[n - 1], A.seven + 0.1 * (n - 1))
+          const KEYP = { 0: [A.each], 2: [A.each + 0.2], 4: [A.scattered, A.each + 0.4], 5: [A.scattered + 0.1, A.each + 0.6], 11: [A.scattered + 0.2], 12: [A.scattered + 0.3] }
+          // a bracket's ink: ink-2 at 60 % until lit, ink at full when lit
+          const inkMix = (u) => {
+            const c0 = [168, 179, 191], c1 = [230, 237, 243]
+            return `rgb(${c0.map((v, i) => Math.round(lerp(v, c1[i], u))).join(',')})`
+          }
+
+          // E4 and F4's names stay through F-low (its key letters at y 848) and leave before the truck, since
+          // F-high would cut them at the frame's foot; B4 and C5's leave before the push (F-low carries them off the
+          // right edge); all return as the pull lands and leave at b16's end
+          const keyNameA = (m, t) => {
+            const gone = m === 4 || m === 5 ? A.truck - 0.25 : A.push - 0.1
+            return Math.min(1, 1 - P(t, gone, 0.25) + P(t, UNLIT, 0.3)) * (1 - P(t, A.leave, 0.2))
+          }
+
+          L.clock(tl, D, (t) => {
+            cam.apply(t)
+            dust(S0 + t)
+            const boxes = [taviA(t), taviB(t)].filter(Boolean)
+
+            st.draw({
+              w: 0, s0: 0,
+              rows: { keep: { boxes, cam, t } },
+              stair: (n) => ({
+                // 6b: each stair lights as the bead lands and stays lit until the pull lands; o6: 1 and 8 light
+                lit: Math.max(P(t, LAND[n - 1], 0.3, 'none') * (1 - P(t, UNLIT, 0.5, 'none')), pairLit(t, n)),
+                names: [{ text: LETTERS[n - 1], a: edgeA('s' + n, t) }],
+              }),
+              riser: (n) => {
+                const semi = SEMI(n)
+                return {
+                  state: semi ? 'semi' : 'tone',
+                  scale: L.pulse(t, GROW[n], 'bar'),
+                  labels: swap(t, A.count, n - 1, semi ? 'S' : 'T', semi ? '1' : '2').map((it) => ({ ...it, a: it.a * edgeA('r' + n, t), scale: labelPulse(t, GROW[n]) })),
+                }
+              },
+            })
+            // accents
+            goldGlow.forEach((el) => el.setAttribute('opacity', (0.55 * L.env(t, A.scattered, 0.3, 0.5, 0.6)).toFixed(3)))
+            rowGlows.forEach((el, i) => el.setAttribute('opacity', (0.1 * L.env(t, A.semis + 0.1 * i, 0.15, 0.1, 0.5)).toFixed(3)))
+            tGlow.setAttribute('opacity', (0.9 * L.env(t, A.tone3, 0.25, A.joins - A.tone3 + 0.3, 0.6)).toFixed(3))
+
+            kb.draw({
+              key: (m) => ({
+                full: CMAJ.includes(m) ? 1 : 0,
+                scale: KEYP[m] ? L.pulse(t, KEYP[m], 'key') : 1,
+                names: KEYNAME[m] && m !== 1 ? [{ text: KEYNAME[m], a: keyNameA(m, t) }] : [],
+              }),
+              hair: { a: 1, w: 0, s0: 0 },
+            })
+
+            // 6c: the ghost outline lifts off stairs 1 to 4 (in over 0.2 s), travels by (+480, -182) (1.45 s,
+            // power2.inOut) onto stairs 5 to 8, landing as the first pair grows, and fades as "One more tone"
+            // begins (0.5 s, power1.in)
+            {
+              const u = P(t, A.climb + 0.05, 1.45, 'power2.inOut')
+              ghost.setAttribute('opacity', (P(t, A.climb - 0.05, 0.2) * (1 - P(t, A.oneMore, 0.5, 'power1.in'))).toFixed(3))
+              ghost.setAttribute('transform', `translate(${f1(480 * u)} ${f1(-182 * u)})`)
+            }
+            // the brackets: drawn on (114.5 to 115.2), unlit; the lower lights on "each half", the upper as the
+            // bead reaches G4 (the lower dims back), both on "Both halves"; they leave with the legend
+            {
+              const out = 1 - P(t, A.b15, 0.3)
+              const lowLit = Math.max(P(t, A.each, 0.3) * (1 - P(t, A.truck, 0.4)), P(t, A.both, 0.3))
+              const highLit = P(t, A.gh, 0.3)
+              brLow.draw(P(t, A.split + 0.06, 0.5, 'power2.out'), lerp(0.6, 1, lowLit) * out)
+              brLow.color(inkMix(lowLit))
+              brHigh.draw(P(t, A.split + 0.26, 0.5, 'power2.out'), lerp(0.6, 1, highLit) * out)
+              brHigh.color(inkMix(highLit))
+              brOct.draw(P(t, A.octave, 0.5, 'power2.out'), (t >= A.octave ? 1 : 0) * (1 - P(t, A.leave, 0.2)))
+            }
+
+            // 6b: the chrome bead drops onto stair 1 before group-low, hops up a stair on each note (the hop onto
+            // stair 5 lands on G4 once the truck has settled), sends an echo ring on the held C5, and leaves as
+            // group-high ends
+            {
+              const steps = LAND.map((tt, i) => ({ t: tt, p: ST.rest(i + 1, 0, 0) }))
+              let b = null
+              if (t >= steps[0].t - 0.2 && t < steps[0].t) b = L.bead4.dropAt(t, steps[0].t, steps[0].p)
+              else if (t >= steps[0].t && t < A.ghEnd + 0.5) {
+                const out = P(t, A.ghEnd, 0.5, 'power1.in')
+                b = { ...L.bead4.runAt(t, steps), a: 1 - out, scale: 1 - 0.4 * out }
+              }
+              L.bead4.place(bead, b)
+              const r8 = ST.rest(8, 0, 0)
+              echo.draw(t, [{ t: at('group-high', 'start', 1.57), x: r8[0], y: r8[1], r: 22 }])
+            }
+
+            // type: the legend leaves with the brackets; the sum's numbers land as they are said, each from 1.3x
+            // over 0.4 s (a 64 px label: a counted pulse); "= 12" lands on "twelve" and scales 1.2 on o6's and
+            // b16's "twelve"; "= 1 octave" lands beside the octave bracket; all leave at b16's end
+            legend.forEach((el) => el.setAttribute('opacity', (1 - P(t, A.b15, 0.3)).toFixed(3)))
+            const out = 1 - P(t, A.leave, 0.2)
+            for (const tk of tokens) {
+              const a = P(t, tk.land, 0.15) * out
+              const sc = 1 + 0.3 * (1 - P(t, tk.land, 0.4, 'power2.out'))
+              tk.el.setAttribute('opacity', a.toFixed(3))
+              const cx = tk.cx ?? 1270
+              tk.el.setAttribute('transform', `translate(${f1(cx)} 238) scale(${sc.toFixed(4)}) translate(${f1(-cx)} -238)`)
+            }
+            {
+              const sc = L.pulse(t, [A.twelve, A.twelve2], 'label')
+              eq12.setAttribute('opacity', (P(t, A.twelve, 0.2) * out).toFixed(3))
+              eq12.setAttribute('transform', `translate(${f1(eqX + 50)} 238) scale(${sc.toFixed(4)}) translate(${f1(-eqX - 50)} -238)`)
+              const u = P(t, A.octave + 0.15, 0.45, 'power3.out')
+              octT.setAttribute('opacity', (P(t, A.octave + 0.15, 0.2) * out).toFixed(3))
+              octT.setAttribute('transform', `translate(${f1(-24 * (1 - u))} 0)`)
+            }
+          })
           window.__timelines = window.__timelines || {}
-          window.__timelines['s06-groups'] = tl
+          window.__timelines[SID] = tl
         })()
       </script>
     </div>

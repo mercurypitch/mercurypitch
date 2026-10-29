@@ -421,3 +421,11 @@ replaced it. The builder's record: critics never read it.
     Chrome lifts some of its threads to nice -8, so the queue's `nice -n 10` never reached the
     renderer; a watcher sets every thread under a worker to nice 10 every 15 s, so the passes take
     only the CPU the builders leave.
+78. **Wave 1's shared helpers go into the kit as `assets/lib/hosts.js`.** Groups A and B wrote
+    the same entrance gate (s04 took a copy of s05's), the same counted light (s03 took s05's shape)
+    and the same film-time dust idea (A crossfades its own into B's over q0). `L.mercGate`,
+    `L.light`, `L.swap` and `L.filmDust` are B's code with the corner, the mirror and the fade made
+    options, and the first whole frame read from `assets/merc/whole.js` (tools/merc-whole.py) instead
+    of assumed. Checked against B's own `tavi()` on every frame of s06, both passes: identical opacity,
+    transform and body box on all 2,113 frames. Waves 2 and 3 use the kit; A's and B's scenes keep
+    their own copies, which behave the same.
