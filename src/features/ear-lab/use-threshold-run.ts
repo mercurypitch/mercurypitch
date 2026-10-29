@@ -26,11 +26,15 @@
 // often as wanted once answered (replay-policy.ts). The plate counts
 // the replays taken before an answer.
 //
-// Sound taken away mid-question (a call, headphones out) voids the
-// question in flight: holdQuestion() silences it and resumeQuestion()
-// sounds the same trial again from its start, once any of it was heard
-// (the drill has stored it by then), or a fresh one at the same level
-// if the hold came first. Answers already given stand.
+// Sound taken away before a question is answered (a call, headphones
+// out, the app put away) voids it, and its answer is shut while it is
+// held. Once the sound is back it sounds again from its start: the same
+// trial once any of it was heard (the drill has stored it by then), or a
+// fresh one at the same level if the hold came first. One heard through
+// and waiting on its answer is heard again too, since the ear no longer
+// holds it (owner, 29 Oct), and that hearing is a replay before its
+// answer: it counts as one, even on a sealed run, which otherwise has
+// none, and the plate shows it. Answers already given stand.
 // ============================================================
 
 import { batch, createSignal, onCleanup } from 'solid-js'
@@ -124,6 +128,9 @@ export function useThresholdRun(
   const [short, setShort] = createSignal(false)
   /** The question in flight was voided; it waits for resumeQuestion(). */
   const [held, setHeld] = createSignal(false)
+  /** The held question had been heard through: heard again, it is a
+   *  replay. */
+  let heardThrough = false
 
   let single: StaircaseState | null = null
   let tracks: CalibrationTrack[] = []
@@ -208,6 +215,7 @@ export function useThresholdRun(
 
   function start(runMode: ThresholdRunMode, track?: { drillId: string }): void {
     cancelled = false
+    heardThrough = false
     run += 1
     runTrackId =
       runMode === 'practice' ? (track?.drillId ?? drill.id) : drill.id
@@ -495,9 +503,11 @@ export function useThresholdRun(
     setReplaying(false)
   }
 
-  /** The sound was taken away. A question still sounding is void; a
-   *  verdict counting down waits for Next, and a replay of it stops, to
-   *  be heard whole once the sound is back. */
+  /** The sound was taken away. A question still sounding, or waiting on
+   *  its answer, is void, and back to sounding, so no answer lands while
+   *  it is held; one already held stays as it is. A verdict counting
+   *  down waits for Next, and a replay of it stops, to be heard whole
+   *  once the sound is back. */
   function holdQuestion(): void {
     if (phase() === 'reveal') {
       if (replaying()) {
@@ -511,12 +521,15 @@ export function useThresholdRun(
       pacer.pause()
       return
     }
-    if (phase() !== 'stimulus' || cancelled) return
+    const sounding = phase() === 'stimulus'
+    if ((!sounding && phase() !== 'answer') || held() || cancelled) return
     question += 1
     options?.cancelStimulus?.()
+    heardThrough = !sounding
     batch(() => {
       setReplaying(false)
       setStimulusStep(0)
+      setPhase('stimulus')
       setHeld(true)
     })
   }
@@ -525,14 +538,24 @@ export function useThresholdRun(
    *  level. Sounded again as it was once any of it was heard; a hold
    *  that came before its first step may also have come before the drill
    *  stored it (the Grid waits on the audio context first), so then it is
-   *  played fresh, never the last trial's stimulus at this level. */
+   *  played fresh, never the last trial's stimulus at this level. One
+   *  heard through and waiting on its answer counts a replay, this
+   *  question's and the run's, as Hear it again would have. */
   async function resumeQuestion(): Promise<void> {
     if (!held() || cancelled) return
     const mine = run
     question += 1
     const asked = question
     const stale = (): boolean => cancelled || mine !== run || asked !== question
-    setHeld(false)
+    batch(() => {
+      if (heardThrough) {
+        setReplaysThisTrial((n) => n + 1)
+        setReplays((n) => n + 1)
+      }
+      setHeld(false)
+      setPhase('stimulus')
+    })
+    heardThrough = false
     await playStimulus(level(), {
       step: stepper(stale),
       cancelled: stale,

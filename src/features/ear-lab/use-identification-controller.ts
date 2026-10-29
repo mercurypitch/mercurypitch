@@ -14,10 +14,14 @@
 // promises the opposite on its way out ("Nothing from it is kept"), and
 // abandon() makes it true: it puts back what the run wrote.
 //
-// Sound taken away mid-question (a call, headphones out) voids the
-// question in flight: holdQuestion() silences it and resumeQuestion()
-// plays the same prompt again from its start. A drill whose answer is
-// itself timed (Pulse's take) counts the answer as in flight too.
+// Sound taken away before a prompt is answered (a call, headphones out,
+// the app put away) voids it, and its answer is shut while it is held.
+// Once the sound is back the same prompt plays again from its start
+// (a take, Pulse's or the Chart's, from its count-in). One heard through
+// and waiting on its answer is heard again too, since the ear no longer
+// holds it (owner, 29 Oct): a rated question is otherwise heard once
+// before its answer, so that hearing counts as a replay, and the plate
+// shows it.
 //
 // Hear it again after the answer sounds the prompt to listen to: the
 // verdict and what the answer left on the stage stay. A drill whose
@@ -110,9 +114,6 @@ export interface IdentificationOptions {
   /** Read at start(): the track this run rates under, or null for
    *  the drill's own. */
   track?: () => RunTrack | null
-  /** The answer is a timed take on the prompt's clock (Pulse, The
-   *  Chart): sound taken away during it voids the round as well. */
-  timedAnswer?: boolean
 }
 
 export function useIdentificationController(
@@ -133,6 +134,12 @@ export function useIdentificationController(
   const [replaying, setReplaying] = createSignal(false)
   /** The question in flight was voided; it waits for resumeQuestion(). */
   const [held, setHeld] = createSignal(false)
+  /** The held prompt had been heard through: heard again, it is a
+   *  replay. */
+  let heardThrough = false
+  /** Prompts heard again before their answer this run: those resumed
+   *  after being heard through. */
+  const [replays, setReplays] = createSignal(0)
   /** A pair practice's two item ids, while it runs and on its plate;
    *  null for a rated run. */
   const [practice, setPractice] = createSignal<
@@ -225,8 +232,10 @@ export function useIdentificationController(
       setResult(null)
       setReplaying(false)
       setHeld(false)
+      setReplays(0)
       setRating(earPlayerRating(trackId()))
     })
+    heardThrough = false
     void playRound()
   }
 
@@ -445,9 +454,11 @@ export function useIdentificationController(
     setReplaying(false)
   }
 
-  /** The sound was taken away. A prompt still sounding (or a timed
-   *  take on it) is void; a verdict counting down waits for Next, and
-   *  a replay of it stops, to be heard whole once the sound is back. */
+  /** The sound was taken away. A prompt still sounding, or waiting on
+   *  its answer, is void, and back to playing, so no answer (a pad, a
+   *  key, a sung window, a take) lands while it is held; one already
+   *  held stays as it is. A verdict counting down waits for Next, and a
+   *  replay of it stops, to be heard whole once the sound is back. */
   function holdQuestion(): void {
     if (phase() === 'reveal') {
       const silence = options?.silenceReplay ?? options?.cancelAudio
@@ -458,16 +469,19 @@ export function useIdentificationController(
       pacer.pause()
       return
     }
-    const inFlight =
-      phase() === 'playing' ||
-      (phase() === 'answer' && options?.timedAnswer === true)
-    if (!inFlight || cancelled) return
+    const sounding = phase() === 'playing'
+    if ((!sounding && phase() !== 'answer') || held() || cancelled) return
     question += 1
     options?.cancelAudio?.()
-    setHeld(true)
+    heardThrough = !sounding
+    batch(() => {
+      setPhase('playing')
+      setHeld(true)
+    })
   }
 
-  /** The voided prompt, from its start. */
+  /** The voided prompt, from its start; one heard through counts a
+   *  replay. */
   async function resumeQuestion(): Promise<void> {
     if (!held() || cancelled || trial === null) return
     const mine = run
@@ -475,9 +489,11 @@ export function useIdentificationController(
     const asked = question
     const stale = (): boolean => cancelled || mine !== run || asked !== question
     batch(() => {
+      if (heardThrough) setReplays((n) => n + 1)
       setHeld(false)
       setPhase('playing')
     })
+    heardThrough = false
     await trial.play()
     if (stale()) return
     setPhase('answer')
@@ -507,6 +523,8 @@ export function useIdentificationController(
     rating,
     result,
     replaying,
+    /** Prompts heard again before their answer this run. */
+    replays,
     /** Auto-advance off: the run waits on the verdict for next(). */
     parked: pacer.parked,
     next: pacer.next,

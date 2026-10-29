@@ -111,17 +111,21 @@ export function verdictHaptic(correct: boolean): 'tap' | 'warning' {
   return correct ? 'tap' : 'warning'
 }
 
-/** Merc's bubble during a run: the full task on the first question,
- *  then nothing until the verdict. */
+/** Merc's bubble during a run: the full task on the first question;
+ *  after it, the question again whenever an answer is due ("Which tone
+ *  was higher, the first or the second?"), nothing while the sound
+ *  plays, and the verdict after each answer. Without the question a
+ *  sealed calibration's fortieth pair asked nothing (owner, 29 Oct). */
 export function bubbleShows(args: {
   beat: RoomBeat
   /** Questions answered so far this run. */
   answered: number
-}): 'prompt' | 'verdict' | 'none' {
+}): 'prompt' | 'ask' | 'verdict' | 'none' {
   if (args.beat === 'reveal') return 'verdict'
   if (args.beat === 'idle') return 'prompt'
   if (args.beat === 'listen' || args.beat === 'answer') {
-    return args.answered === 0 ? 'prompt' : 'none'
+    if (args.answered === 0) return 'prompt'
+    return args.beat === 'answer' ? 'ask' : 'none'
   }
   return 'none'
 }

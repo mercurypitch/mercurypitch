@@ -29,6 +29,8 @@ interface Harness {
   setBeat: (beat: RoomBeat) => void
   setTone: (tone: 'neutral' | 'right' | 'wrong') => void
   setSounding: (sounding: boolean) => void
+  /** The drill's line of the moment: its question, then its verdict. */
+  setStatus: (status: string) => void
   room: StageRoom
   onBack: ReturnType<typeof vi.fn>
 }
@@ -41,6 +43,9 @@ function mount(
   const [tone, setTone] = createSignal<'neutral' | 'right' | 'wrong'>('neutral')
   const [held, setHeld] = createSignal(false)
   const [sounding, setSounding] = createSignal(false)
+  const [status, setStatus] = createSignal(
+    'That was a perfect fifth. Listen again.',
+  )
   const onBack = vi.fn()
   // Leap's Compare: offered on a miss, the fifth against the fourth.
   const missed = (): boolean => beat() === 'reveal' && tone() === 'wrong'
@@ -91,7 +96,7 @@ function mount(
       name="Leap"
       mode="rating run"
       progress=""
-      status="That was a perfect fifth. Listen again."
+      status={status()}
       tone={tone()}
       instrument={() => <span>arc</span>}
       console={pads}
@@ -100,7 +105,7 @@ function mount(
       room={room}
     />
   ))
-  return { setBeat, setTone, setSounding, room, onBack }
+  return { setBeat, setTone, setSounding, setStatus, room, onBack }
 }
 
 beforeEach(() => {
@@ -224,6 +229,27 @@ describe('the drill room', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Resume' }))
     expect(h.room.resume).toHaveBeenCalledTimes(1)
     expect(screen.queryByTestId('merc-sound-stopped')).toBeNull()
+  })
+
+  it('asks the question again whenever an answer is due', () => {
+    const h = mount()
+    // The first question: the task in full.
+    expect(screen.getByTestId('merc-bubble')).toHaveTextContent(
+      'Two notes. Name the interval.',
+    )
+    h.setStatus('That was a perfect fifth.')
+    h.setBeat('reveal')
+    h.setStatus('Listen…')
+    h.setBeat('listen')
+    // Nothing over the next question's sound.
+    expect(screen.getByTestId('merc-bubble')).not.toHaveTextContent('Listen')
+    // Its answer due, the drill's question for it: a sealed run's
+    // fortieth pair asked nothing before (owner, 29 Oct).
+    h.setStatus('Which interval was that?')
+    h.setBeat('answer')
+    expect(screen.getByTestId('merc-bubble')).toHaveTextContent(
+      'Which interval was that?',
+    )
   })
 })
 

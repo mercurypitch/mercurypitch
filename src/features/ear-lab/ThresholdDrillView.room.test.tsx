@@ -76,4 +76,42 @@ describe("a staircase's room", () => {
       dispose()
     })
   })
+
+  it("says what a calibration is before Begin, and the drill's question once it runs", async () => {
+    const run = createRoot(() => {
+      const made = useThresholdRun(span, async () => undefined)
+      render(() => (
+        <ThresholdDrillView
+          title="Span"
+          drillId="span"
+          measures="Shape · notes held"
+          description=""
+          prompt="A phrase. Sing it back."
+          listenHint=""
+          answerHint=""
+          levelLabel={() => '4 notes'}
+          levelCaption="Length"
+          formatValue={(value) => value.toFixed(0)}
+          unitLabel="notes"
+          unitShort=" notes"
+          latestValue={() => null}
+          run={made}
+          instrument={() => null}
+          pads={() => null}
+          keys={() => []}
+          revealLine={() => ''}
+          ritual
+          onBack={() => undefined}
+        />
+      ))
+      return made
+    })
+    expect(handed.room?.prompt).toMatch(/^Three separate measurements/u)
+    run.start('calibration')
+    await Promise.resolve()
+    // A sealed calibration's questions are the drill's own: before, Merc
+    // went on describing the protocol and never said what to answer.
+    expect(handed.room?.prompt).toBe('A phrase. Sing it back.')
+    run.abandon()
+  })
 })

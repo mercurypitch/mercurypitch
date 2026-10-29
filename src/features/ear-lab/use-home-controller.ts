@@ -22,6 +22,12 @@
 // clears a newer one's flag. A sung answer is a take, not a pick, so it
 // offers no Compare.
 //
+// Sound taken away before a question is answered voids it, and it sounds
+// again from its cadence once the sound is back. One that had been heard
+// through is then heard twice before its answer (the ear no longer held
+// the note; owner, 29 Oct): that second hearing counts as a replay, and
+// the plate shows it.
+//
 // A slip on the native room's rated plate can start a pair practice
 // (pair-practice.ts): a short run over just the two degrees it mixed
 // up, which rates nothing and books nothing for Today.
@@ -145,6 +151,12 @@ export function useHomeController(
   /** The question in flight was voided (the sound was taken away); it
    *  waits for resumeQuestion(). */
   const [held, setHeld] = createSignal(false)
+  /** The held question had been heard through: heard again, it is a
+   *  replay. */
+  let heardThrough = false
+  /** Questions heard again before their answer this run: those resumed
+   *  after being heard through. */
+  const [replays, setReplays] = createSignal(0)
   /** A pair practice's two degrees, while it runs and on its plate; null
    *  for a rated run. */
   const [practice, setPractice] = createSignal<
@@ -259,8 +271,10 @@ export function useHomeController(
       setUnclear(false)
       setReplaying(false)
       setHeld(false)
+      setReplays(0)
       setRating(earPlayerRating(drillIdFor(set, runMode)))
     })
+    heardThrough = false
     void playRound()
   }
 
@@ -638,10 +652,12 @@ export function useHomeController(
     endReplay()
   }
 
-  /** The sound was taken away. The cadence or probe still sounding, or
-   *  a sung answer's window, is void; a verdict counting down waits for
-   *  Next, and a replay of it stops, to be heard whole once the sound is
-   *  back. */
+  /** The sound was taken away. The cadence or probe still sounding, or a
+   *  question waiting on its answer, tapped or sung, is void, and back to
+   *  the cadence's start, so no answer lands while it is held; one already
+   *  held stays as it is. A sung answer's windows start again with it. A
+   *  verdict counting down waits for Next, and a replay of it stops, to
+   *  be heard whole once the sound is back. */
   function holdQuestion(): void {
     if (phase() === 'reveal') {
       if (replaying()) {
@@ -651,23 +667,31 @@ export function useHomeController(
       pacer.pause()
       return
     }
-    const inFlight =
-      phase() === 'cadence' ||
-      phase() === 'probe' ||
-      (phase() === 'answer' && mode() === 'mic')
-    if (!inFlight || cancelled) return
+    const sounding = phase() === 'cadence' || phase() === 'probe'
+    if ((!sounding && phase() !== 'answer') || held() || cancelled) return
     question += 1
     clearTimeout(timer)
     options?.cancelAudio?.()
-    setHeld(true)
+    heardThrough = !sounding
+    retriedThisRound = false
+    batch(() => {
+      setUnclear(false)
+      setCadenceStep(0)
+      setPhase('cadence')
+      setHeld(true)
+    })
   }
 
   /** The voided question, from its start: the same key and the same
-   *  note. */
+   *  note. One heard through counts a replay. */
   async function resumeQuestion(): Promise<void> {
     const target = currentDegree()
     if (!held() || cancelled || target === null) return
-    setHeld(false)
+    batch(() => {
+      if (heardThrough) setReplays((n) => n + 1)
+      setHeld(false)
+    })
+    heardThrough = false
     await soundQuestion(target)
   }
 
@@ -706,6 +730,8 @@ export function useHomeController(
     replaying,
     replayAllowed,
     replay,
+    /** Questions heard again before their answer this run. */
+    replays,
     /** A tapped miss on the stage that Compare can sound. */
     comparable,
     compareAllowed,

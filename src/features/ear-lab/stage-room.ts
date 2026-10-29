@@ -132,6 +132,10 @@ export interface RatingPlate {
   right: number
   /** "named", "tapped clean". */
   rightWord?: string
+  /** Questions heard again before their answer: a rated one is heard
+   *  once, unless the sound was taken away after it was heard. None
+   *  unless given. */
+  replays?: number
   outcomes: ReadonlyArray<{
     correct: boolean
     skipped?: boolean
@@ -155,6 +159,7 @@ export interface PracticePlate {
   rounds: number
   right: number
   rightWord?: string
+  replays?: number
   outcomes: RatingPlate['outcomes']
   slips: readonly PlateSlip[]
   /** Lines about the run, as the rated plate has them: what it skipped. */
@@ -179,8 +184,17 @@ export function ratedRunPlate(
     const lines = [...(plate.lines ?? []), ...ratingLines]
     return { ...plate, kind: 'rating', lines }
   }
-  const { rating, source, rounds, right, rightWord, outcomes, slips, lines } =
-    plate
+  const {
+    rating,
+    source,
+    rounds,
+    right,
+    rightWord,
+    replays,
+    outcomes,
+    slips,
+    lines,
+  } = plate
   return {
     kind: 'practice',
     against,
@@ -189,6 +203,7 @@ export function ratedRunPlate(
     rounds,
     right,
     rightWord,
+    replays,
     outcomes,
     slips,
     lines,
