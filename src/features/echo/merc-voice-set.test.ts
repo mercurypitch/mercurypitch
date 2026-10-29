@@ -54,6 +54,11 @@ describe("Merc's voice set", () => {
     // A3 a third of a semitone sharp, a song tuned off A440: A3's sample.
     expect(sampleFor(57.35)?.sample.midi).toBe(57)
     expect(sampleFor(57.35)?.rate).toBeCloseTo(2 ** (0.35 / 12), 12)
+    // Never shifted past MAX_SHIFT: a note between two of A440's beyond
+    // either end of the reach is out of it.
+    expect(sampleFor(79.45)).toBeNull()
+    expect(sampleFor(38.6)).toBeNull()
+    expect(sampleFor(78.6)?.sample.midi).toBe(77)
   })
 
   it('plays the ends of its reach on the outer samples', () => {

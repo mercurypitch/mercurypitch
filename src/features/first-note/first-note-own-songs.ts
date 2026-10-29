@@ -44,7 +44,7 @@ import type { RoomSong } from '@/features/karaoke-room/karaoke-room-library'
 import { hydrateSong, roomLibrary, } from '@/features/karaoke-room/karaoke-room-library'
 import { createPersistedSignal } from '@/lib/storage'
 import { getUvrSession, isSessionStoreReady } from '@/stores/uvr-store'
-import { ENTRY_RULES_VERSION } from './entry-rules'
+import { ENTRY_RULES_VERSION } from './entry-rules-version'
 import type { FirstNoteSource } from './first-note-choices'
 import { OWN_SONG_MIN_ENTRIES } from './first-note-rules'
 import type { FirstNoteEntry, FirstNoteSong } from './first-note-songs'
@@ -398,9 +398,11 @@ export function readSummary(title: string, read: OwnSongRead): string {
   const shift =
     read.shift === undefined
       ? ''
-      : read.shift === null
-        ? ', no synced lyrics used'
-        : `, lyrics moved ${read.shift} s`
+      : read.shift !== null
+        ? `, lyrics moved ${read.shift} s`
+        : (read.lyricLines ?? 0) > 0
+          ? `, its ${read.lyricLines} synced lyric lines fit no shift (no words)`
+          : ', no synced lyrics'
   const tuning =
     read.tuning === undefined || read.tuning === 0
       ? ''

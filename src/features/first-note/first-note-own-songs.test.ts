@@ -41,6 +41,7 @@ const {
   ownSongs,
   playableSong,
   readOwnSongs,
+  readSummary,
   readyOwnSongs,
   resetOwnSongsForTests,
   setOwnSongReaderForTests,
@@ -49,7 +50,7 @@ const {
   waitingOwnSongs,
 } = await import('./first-note-own-songs')
 const { FIRST_NOTE_SONGS } = await import('./first-note-songs')
-const { ENTRY_RULES_VERSION } = await import('./entry-rules')
+const { ENTRY_RULES_VERSION } = await import('./entry-rules-version')
 
 const own = (sessionId: string, title: string): RoomSong => ({
   sessionId,
@@ -351,6 +352,16 @@ describe("the singer's own songs", () => {
       `[first-note] read "Scarborough Fair": 1 entries from 24 lines, lyrics moved -0.8 s, tuned +35 cents; left: 2 no steady note, 1 the room's notes name another, 1 out of tune`,
     )
     info.mockRestore()
+  })
+
+  it('tell the console lyrics no shift fits from a song with none', () => {
+    const read = { entries: [], dropped: [], lines: 9, shift: null }
+    expect(readSummary('Danny Boy', { ...read, lyricLines: 31 })).toBe(
+      '[first-note] read "Danny Boy": 0 entries from 9 lines, its 31 synced lyric lines fit no shift (no words)',
+    )
+    expect(readSummary('Danny Boy', { ...read, lyricLines: 0 })).toBe(
+      '[first-note] read "Danny Boy": 0 entries from 9 lines, no synced lyrics',
+    )
   })
 
   it('read again a song left out, once it is split again', async () => {

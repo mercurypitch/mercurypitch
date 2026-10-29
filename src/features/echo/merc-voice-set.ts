@@ -82,8 +82,10 @@ export const SAMPLE_SUSTAIN_END = 1.36
 export function sampleFor(
   midi: number,
 ): { readonly sample: VoiceSample; readonly rate: number } | null {
+  // A note between two of A440's past either end would be shifted further
+  // than MAX_SHIFT: out of reach, as the semitone beyond it is.
+  if (midi < LOWEST_MIDI || midi > HIGHEST_MIDI) return null
   const rounded = Math.round(midi)
-  if (rounded < LOWEST_MIDI || rounded > HIGHEST_MIDI) return null
   const first = MERC_SAMPLES[0].midi
   // Math.round sends a tie (k + 0.5) up: the sample above, played slower.
   const index = Math.min(

@@ -241,8 +241,10 @@ three causes, in order of harm:
   it: no breath, no entry. Lyrics half a second late left the examples 0, 2 and 1 entries of 6, 10
   and 3. Now the lines come from the voice itself (where it comes in after a breath), and the lyrics
   only lend their words, after `lyricsShift` finds how far out they are (the shift that lands most
-  of their lines where the voice comes in, within three seconds). With lyrics up to two seconds out
-  either way the examples keep every entry.
+  of their lines where the voice comes in, within three seconds, over what any shift lands by
+  chance). A lyric line synced early, in the breath before its phrase, lends that phrase its words;
+  an empty one marking a break lends nothing. With lyrics up to two seconds out either way the
+  examples keep every entry.
 - **A recording tuned off A440.** In tune was within 30 cents of A440's note, so a song a third of a
   semitone sharp had nearly every note out of tune: 0, 4 and 0 entries. Now the song's tuning is
   read from its lines' notes (`songTuning`, used from 10 cents out), the lines are judged in it,
@@ -250,17 +252,20 @@ three causes, in order of harm:
   sings it there.
 - **Two trackers an octave apart, or a moment apart.** The stored notes (the room's own read) often
   name the voice's note an octave out, or start it a moment after the other tracker settles. Both
-  now agree with it: the room hears a note in any octave, and the octave kept is the one nearer the
-  song's middle. This brought Nothing in the Dark from 3 entries to 6, each one checked against the
-  song: lines that open as the kept ones do.
+  now agree with it: the room hears a note in any octave, and the octave kept is the one nearest
+  the song's middle. A stored note that ended before the voice settled vouches for nothing. This
+  brought Nothing in the Dark from 3 entries to 6, each one checked against the song: lines that
+  open as the kept ones do.
 
 Separated stems were tried too: the examples' stems mixed back together and split again with
 Demucs, as a singer's song would be. They read about as well as the clean stems (5, 11 and 3
 entries by the old rules, 6, 13 and 6 now), so the separation itself was not the cause.
 
-Each read now tells the console what it looked at: how many lines, how far the lyrics were moved,
-the tuning, and why each line was left. A test build shows the console on the phone, with a Copy
-button. A read by rules the room has moved on from (`ENTRY_RULES_VERSION`) is read again.
+Each read now tells the console what it looked at: how many lines, how far the lyrics were moved
+(or that no shift fit them), the tuning, and why each line was left. A test build shows the console
+on the phone, with a Copy button. A read by rules the room has moved on from
+(`entry-rules-version.ts`) is read again. A line sung with you now ends before the next entry's
+voice, which it had run into by a moment.
 
 **Show the words.** The owner asked for an optional hint (28 Oct 2026); it ships off by default, our
 choice, so the room stays ear first. It is a switch in the Songs sheet, kept on the phone

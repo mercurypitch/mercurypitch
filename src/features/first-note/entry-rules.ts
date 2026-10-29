@@ -20,14 +20,15 @@
 // longer intro, is commonly a second or two out, and lines half a second
 // late already cost most of a song's entries. A line from the lyrics and
 // one from the voice within SAME_LINE_SEC are one line, with the lyrics'
-// words. The entry's note is the voice's first
-// steady stretch: STEADY_SEC of readings within STEADY_CENTS of their
-// median, read here by YIN on the vocal stem. It is kept only when the
-// song's stored notes (the mixer's, another tracker) name the same note
-// there, and when the voice sat within IN_TUNE_CENTS of it: a note two
-// trackers disagree on, or one the singer bent, is not a note to judge
-// anyone against. Nor is a note far from the song's middle note
-// (RANGE_SEMITONES): both trackers can lock onto a harmonic together.
+// words, and so is a lyric line that would read that voice's note: a line
+// synced early sits in the breath before its phrase. The entry's note is
+// the voice's first steady stretch: STEADY_SEC of readings within
+// STEADY_CENTS of their median, read here by YIN on the vocal stem. It is
+// kept only when the song's stored notes (the mixer's, another tracker)
+// name the same note there, and when the voice sat within IN_TUNE_CENTS of
+// it: a note two trackers disagree on, or one the singer bent, is not a
+// note to judge anyone against. Nor is a note far from the song's middle
+// note (RANGE_SEMITONES): both trackers can lock onto a harmonic together.
 //
 // IN TUNE is in the song's own tuning (`songTuning`): a recording a third
 // of a semitone from A440 has every note that far out, and the singer is
@@ -36,7 +37,8 @@
 //
 // THE BAND STOPS where the voiced run that holds that stretch begins, so a
 // breath or a scoop before the note is the singer's way in, not the band's.
-// The line the singer sings with you runs to the next line, or LINE_MAX_SEC.
+// The line the singer sings with you runs to the next line, or LINE_MAX_SEC,
+// and never into the next entry: it would sing that round's note first.
 //
 // THE BEATS the room counts the singer in on are the band's (band-beats.ts).
 //
@@ -50,13 +52,8 @@
 // script: so it imports nothing, and its syntax is all erasable (no enums,
 // no namespaces, no parameter properties).
 
-/**
- * The rules' version: raised whenever a change finds different entries, so
- * a phone reads a song of the singer's own again rather than keep a read
- * the rules have moved on from (first-note-own-songs.ts). 2: lines from the
- * voice, the lyrics moved onto them, and the song's own tuning.
- */
-export const ENTRY_RULES_VERSION = 2
+// A change here that finds different entries raises ENTRY_RULES_VERSION
+// (entry-rules-version.ts), so phones read the singer's songs again.
 
 /** No voice for this long before a line makes it an entry, s. */
 export const ENTRY_GAP_SEC = 1.6
@@ -91,6 +88,10 @@ const ONSET_QUIET_SEC = 0.25
 const LYRICS_MATCH_SHARE = 0.3
 /** A line from the lyrics and one from the voice this close are one line, s. */
 export const SAME_LINE_SEC = 0.5
+/** A line's note is looked for from this long before its start, s... */
+const LOOK_BEFORE_SEC = 0.6
+/** ...to this long after it. */
+const LOOK_AFTER_SEC = 1.2
 /** A song is judged in its own tuning once its notes sit this far from A440's, cents. */
 export const TUNING_MIN_CENTS = 10
 /** ...and once this many of its lines' notes say so. */
@@ -380,15 +381,15 @@ export function middleNote(notes: readonly StoredNote[]): number {
 
 /**
  * The stored notes under a steady stretch from `t`, s: the other tracker
- * cuts a note where it starts a moment either side of this one.
+ * can start the note a moment after this one settles, so a note starting by
+ * the stretch's end counts. One that ended before it is the note before.
  */
 function storedNotesUnder(
   notes: readonly StoredNote[],
   t: number,
 ): StoredNote[] {
-  const from = t - 0.15
   const to = t + STEADY_SEC + 0.05
-  return notes.filter((note) => note.startSec <= to && note.endSec >= from)
+  return notes.filter((note) => note.startSec <= to && note.endSec > t)
 }
 
 /**
@@ -443,7 +444,9 @@ function nearest(sorted: readonly number[], t: number): number {
  * How far the synced lyrics are from this recording, s: the shift, within
  * LYRICS_SHIFT_MAX_SEC, that lands their lines nearest the places the voice
  * comes in. Null when no shift lands LYRICS_MATCH_SHARE of them within
- * ONSET_MATCH_SEC of one: lyrics for another recording, or none in time.
+ * ONSET_MATCH_SEC of one, over the lines any shift lands by chance (the
+ * median shift's): lyrics for another recording, or none in time. A song
+ * sung in many short phrases lands lyrics somewhere at almost any shift.
  */
 export function lyricsShift(
   level: VoiceLevel,
@@ -454,6 +457,7 @@ export function lyricsShift(
   const step = 0.02
   const reach = Math.round(LYRICS_SHIFT_MAX_SEC / step)
   let best = { shift: 0, score: -1, landed: 0 }
+  const landings: number[] = []
   for (let k = 0; k <= 2 * reach; k++) {
     // Out from no shift, so a tie keeps the smaller.
     const shift = (k % 2 === 0 ? k / 2 : -(k + 1) / 2) * step
@@ -465,20 +469,23 @@ export function lyricsShift(
       landed += 1
       score += 1 - off / ONSET_MATCH_SEC
     }
+    landings.push(landed)
     if (score > best.score) best = { shift, score, landed }
   }
   const enough = Math.max(2, Math.ceil(lyrics.length * LYRICS_MATCH_SHARE))
-  return best.landed >= enough ? Number(best.shift.toFixed(2)) : null
+  const chance = median(landings)
+  return best.landed - chance >= enough ? Number(best.shift.toFixed(2)) : null
 }
 
 /**
  * A song's lines: where its voice comes in after a breath, and its synced
  * lyrics' lines moved onto this recording (`lyricsShift`), in order. A
  * voice's line and the lyric line nearest it within SAME_LINE_SEC are one
- * line: it starts where the voice comes in, with the lyric's words. Lyrics
- * no shift fits give no lines and no words: the voice's own lines stand.
- * `shift` is how far the lyrics were moved, or null where they were not
- * used.
+ * line, starting where the voice comes in, with the lyric's words. A lyric
+ * line left over that would read a voice's line's note (one starting from
+ * LOOK_BEFORE_SEC before it to LOOK_AFTER_SEC after) is that line too, and
+ * lends it its words if it has none. Lyrics no shift fits give no lines:
+ * the voice's own stand. `shift` is how far the lyrics moved, or null.
  */
 export function songLines(
   level: VoiceLevel,
@@ -487,25 +494,40 @@ export function songLines(
   const breaths = breathLines(level)
   const shift = lyricsShift(level, lyrics)
   if (shift === null) return { lines: breaths, shift: null }
-  const lines: SongLine[] = lyrics.map((line) => ({
+  const moved: SongLine[] = lyrics.map((line) => ({
     start: Math.max(0, line.start + shift),
     words: line.words,
   }))
-  for (const breath of breaths) {
+  const taken = new Set<number>()
+  const lines = breaths.map((breath) => {
     let at = -1
-    for (const [i, line] of lines.entries()) {
+    for (const [i, line] of moved.entries()) {
       const off = Math.abs(line.start - breath.start)
       if (
         off <= SAME_LINE_SEC &&
-        (at < 0 || off < Math.abs(lines[at].start - breath.start))
+        (at < 0 || off < Math.abs(moved[at].start - breath.start))
       ) {
         at = i
       }
     }
-    if (at < 0) lines.push(breath)
-    else lines[at] = { start: breath.start, words: lines[at].words }
+    if (at < 0) return breath
+    taken.add(at)
+    return { start: breath.start, words: moved[at].words }
+  })
+  const own: SongLine[] = []
+  for (const [i, line] of moved.entries()) {
+    if (taken.has(i)) continue
+    const led = lines.findIndex(
+      (breath) =>
+        breath.start >= line.start - LOOK_BEFORE_SEC &&
+        breath.start <= line.start + LOOK_AFTER_SEC,
+    )
+    if (led < 0) own.push(line)
+    else if (lines[led].words === '') {
+      lines[led] = { start: lines[led].start, words: line.words }
+    }
   }
-  return { lines: lines.sort((a, b) => a.start - b.start), shift }
+  return { lines: [...lines, ...own].sort((a, b) => a.start - b.start), shift }
 }
 
 export interface EntryReading {
@@ -525,13 +547,34 @@ function foldCents(cents: number): number {
 }
 
 /**
+ * Of `own` and each octave of it the stored notes `under` name, the one
+ * nearest the song's `middle`; null when they name none.
+ */
+function octaveNearest(
+  own: number,
+  under: readonly StoredNote[],
+  middle: number,
+): number | null {
+  const octaves = under.filter(
+    (note) => (((note.midi - own) % 12) + 12) % 12 === 0,
+  )
+  if (octaves.length === 0) return null
+  return octaves.reduce(
+    (best, note) =>
+      Math.abs(note.midi - middle) < Math.abs(best - middle) ? note.midi : best,
+    own,
+  )
+}
+
+/**
  * The note the voice's first steady stretch is, MIDI; or why it is not a
  * note to judge anyone against: it settles too late after the voice comes
  * in at `voiceIn`, the stored notes `under` it name another, it was sung
  * out of tune in the song's `tuning`, or it is far from the song's
  * `middle` note. The stored notes may name it an octave away (two trackers
  * can lock an octave apart, and the room hears a note in any octave): the
- * note is then the octave nearer the song's middle.
+ * note is then the octave nearest the song's middle, of the voice's and
+ * those the stored notes name.
  */
 function noteOf(
   steady: { readonly t: number; readonly midi: number },
@@ -553,17 +596,7 @@ function noteOf(
   )
     ? own
     : null
-  if (midi === null) {
-    const octave = under.find(
-      (note) => (((note.midi - own) % 12) + 12) % 12 === 0,
-    )
-    if (octave !== undefined) {
-      midi =
-        Math.abs(octave.midi - middle) < Math.abs(own - middle)
-          ? octave.midi
-          : own
-    }
-  }
+  midi ??= octaveNearest(own, under, middle)
   if (midi === null) {
     const named =
       under.length === 0
@@ -601,10 +634,18 @@ export function* lineSteps(
 ): RuleSteps<LineVoice | null> {
   const { vocal, level, lines } = reading
   const start = lines[i].start
-  // The first line follows the intro, whatever breath the stem holds.
-  const gap = i === 0 ? start : gapBefore(level, start - 0.3) + 0.3
+  // The first line follows the intro, whatever breath the stem holds; so
+  // does the first line with words, where the voice's lines begin with a
+  // blip of bleed in the intro.
+  const first = i === 0 || i === lines.findIndex((line) => line.words !== '')
+  const gap = first ? start : gapBefore(level, start - 0.3) + 0.3
   if (gap < ENTRY_GAP_SEC) return null
-  const steady = yield* firstSteady(vocal, level, start - 0.6, start + 1.2)
+  const steady = yield* firstSteady(
+    vocal,
+    level,
+    start - LOOK_BEFORE_SEC,
+    start + LOOK_AFTER_SEC,
+  )
   return {
     line: i,
     steady,
@@ -691,8 +732,11 @@ export interface SongEntries {
 /**
  * The song's lines judged, from each line's voice (`lineSteps`, null for a
  * line with no breath before it): the song's tuning from them all, then
- * each line in it. Two lines that find the same place the voice comes in
- * are one entry, the first.
+ * each line in it. Lines that find the same place the voice comes in (a
+ * blip of bleed before a phrase is a voice's line too) are one entry: the
+ * first's, with the first words any has, sung with you to the line after
+ * the last. A line sung with you ends where the next entry begins, if that
+ * comes first: it would sing the next round's note.
  */
 export function judgeSong(
   reading: EntryReading,
@@ -705,12 +749,34 @@ export function judgeSong(
   for (const voice of voices) {
     if (voice === null) continue
     const found = judgeLine(reading, voice, middle, tuning)
-    if (typeof found === 'string') dropped.push(found)
-    else if (!entries.some((entry) => Math.abs(entry.at - found.at) < 0.05)) {
-      entries.push(found)
+    if (typeof found === 'string') {
+      dropped.push(found)
+      continue
+    }
+    const same = entries.findIndex(
+      (entry) => Math.abs(entry.at - found.at) < 0.05,
+    )
+    if (same < 0) entries.push(found)
+    else {
+      const kept = entries[same]
+      entries[same] = {
+        ...kept,
+        words: kept.words === '' ? found.words : kept.words,
+        until: Math.max(kept.until, found.until),
+      }
     }
   }
-  return { entries, dropped, tuning }
+  entries.sort((a, b) => a.at - b.at)
+  return {
+    entries: entries.map((entry, i) => {
+      const next = entries[i + 1]
+      return next === undefined || entry.until <= next.at
+        ? entry
+        : { ...entry, until: next.at }
+    }),
+    dropped,
+    tuning,
+  }
 }
 
 /**
