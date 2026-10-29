@@ -10,6 +10,8 @@ import { clipEndFrame } from './timeline-geometry'
 interface StudioClipToolbarProps {
   clip: StudioClip
   playheadFrame: number
+  /** The frame heard this moment: a split while the song plays cuts there. */
+  frameNow?(): number
   writable: boolean
   /** The selected clip's track name and hue, so the bar says what it acts on. */
   label: string
@@ -61,7 +63,7 @@ export function StudioClipToolbar(props: StudioClipToolbarProps) {
           props.onCommand({
             type: 'split-clip',
             clipId: props.clip.id,
-            atFrame: props.playheadFrame,
+            atFrame: props.frameNow?.() ?? props.playheadFrame,
             newClipId: globalThis.crypto.randomUUID(),
           })
         }

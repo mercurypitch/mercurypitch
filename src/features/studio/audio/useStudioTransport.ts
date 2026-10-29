@@ -1,6 +1,6 @@
 // Studio transport hook — explicit playback and preview through the active host's borrowed clock.
 import type { Accessor } from 'solid-js'
-import { createEffect, createMemo, createSignal, onCleanup, untrack, } from 'solid-js'
+import { batch, createEffect, createMemo, createSignal, onCleanup, untrack, } from 'solid-js'
 import type { AudioContextLease } from '@/lib/audio-context-lease'
 import type { PreviewPlayer } from '@/lib/preview-player'
 import { createPreviewPlayer } from '@/lib/preview-player'
@@ -8,11 +8,13 @@ import { DEFAULT_STUDIO_IMPORT_LIMITS } from '@/lib/studio/audio/import-limits'
 import type { StudioMasterGainToken } from '@/lib/studio/export/sound-graph'
 import { reserveStudioMemory } from '@/lib/studio/memory-budget'
 import type { StudioAsset, StudioProject } from '@/lib/studio/model/types'
+import { STUDIO_SAMPLE_RATE } from '@/lib/studio/model/types'
 import type { StudioLaneDraft, StudioTransportState, } from '@/lib/studio/playback/transport'
 import { createStudioTransport } from '@/lib/studio/playback/transport'
 import type { MacroKey } from '@/lib/studio-fx/mix-macros'
 import { initAudioEngine } from '@/stores/app-store'
 import { nativeDeviceApi } from '@/stores/native-shell-store'
+import { createStudioReadoutFrame } from './readout-frame'
 import { createStudioWebLease } from './web-audio-lease'
 
 export interface UseStudioTransportOptions {
@@ -77,6 +79,21 @@ export function useStudioTransport(options: UseStudioTransportOptions) {
     masterReady: false,
     lanes: [],
   })
+  // A tick brings new levels and a new position. Whether the song plays, an
+  // error and the master change only with playback, so what shows them does
+  // not rerun on a tick.
+  const isPlaying = createMemo(() => state().playing)
+  const statePending = createMemo(() => state().pending)
+  const stateError = createMemo(() => state().error)
+  const masterReady = createMemo(() => state().masterReady)
+  const meterReady = createMemo(() => state().meter !== null)
+  const laneLevels = createMemo(
+    () => new Map(state().lanes.map((lane) => [lane.trackId, lane] as const)),
+  )
+  // The readouts follow a playing song ten times a second; the playhead
+  // line follows the clock every display frame on its own: ticks(), frameNow().
+  const readout = createStudioReadoutFrame(STUDIO_SAMPLE_RATE)
+  const ticks = new Set<() => void>()
   const [repeating, setRepeating] = createSignal(false)
   const [previewPending, setPreviewPending] = createSignal(false)
   const [previewError, setPreviewError] = createSignal<string | null>(null)
@@ -85,7 +102,12 @@ export function useStudioTransport(options: UseStudioTransportOptions) {
     lease,
     readCanonicalAsset: options.readCanonicalAsset,
     changed: (value) => {
-      if (!disposed) setState(value)
+      if (disposed) return
+      batch(() => {
+        setState(value)
+        readout.follow(value)
+      })
+      for (const tick of ticks) tick()
     },
   })
   let preview: {
@@ -264,7 +286,6 @@ export function useStudioTransport(options: UseStudioTransportOptions) {
 
   // Warm the playback cache once edits settle, so Play starts without reading.
   let warmTimer: ReturnType<typeof setTimeout> | undefined
-  const isPlaying = createMemo(() => state().playing)
   createEffect(() => {
     const project = options.project()
     const assets = options.assets()
@@ -312,16 +333,23 @@ export function useStudioTransport(options: UseStudioTransportOptions) {
       runtime.setRepeat(enabled)
       if (project) await runtime.setSnapshot(project, assets)
     },
-    playing: () => state().playing,
-    playheadFrame: () => state().playheadFrame,
+    playing: isPlaying,
+    /** The playhead for readouts: ten times a second while the song plays. */
+    playheadFrame: readout.frame,
+    /** The frame heard this moment, for an action taken now, such as a split. */
+    frameNow: () => runtime.frameNow(),
+    /** Call `tick` on every transport tick until the returned function runs. */
+    ticks(tick: () => void): () => void {
+      ticks.add(tick)
+      return () => ticks.delete(tick)
+    },
     peakL: () => state().peakL,
     peakR: () => state().peakR,
     meter: () => state().meter,
-    meterReady: () => state().meter !== null,
+    meterReady,
     /** A lane's level after its fader while the song plays; undefined when it is not heard. */
-    laneLevel: (trackId: string) =>
-      state().lanes.find((lane) => lane.trackId === trackId),
-    masterReady: () => state().masterReady,
+    laneLevel: (trackId: string) => laneLevels().get(trackId),
+    masterReady,
     resetPeakHold: () => runtime.resetPeakHold(),
     /** Play a lane's moving fader or pan without saving it; null ends it. */
     previewLane: (trackId: string, draft: StudioLaneDraft | null) =>
@@ -351,8 +379,8 @@ export function useStudioTransport(options: UseStudioTransportOptions) {
           )
       }
     },
-    pending: () => state().pending || previewPending(),
-    error: () => previewError() ?? state().error,
+    pending: () => statePending() || previewPending(),
+    error: () => previewError() ?? stateError(),
     previewing,
     previewPending,
     previewPositionSeconds: () => preview?.player.currentTime ?? 0,

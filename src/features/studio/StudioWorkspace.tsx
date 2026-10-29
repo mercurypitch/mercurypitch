@@ -199,7 +199,7 @@ export function StudioWorkspace(props: StudioWorkspaceProps) {
   const editor = createStudioEditor({
     project: () => props.studio.project(),
     writable,
-    playheadFrame: transport.playheadFrame,
+    playheadFrame: transport.frameNow,
     pixelsPerSecond: zoom,
     dispatch: (command) => props.studio.dispatch(command),
     selectClip: setSelectedClipId,
@@ -226,7 +226,7 @@ export function StudioWorkspace(props: StudioWorkspaceProps) {
     const frame = studioDropFrame(
       event.target,
       event.clientX,
-      transport.playheadFrame(),
+      transport.frameNow(),
     )
     const projectId = project().id
     const files = [...transfer.files]
@@ -280,7 +280,7 @@ export function StudioWorkspace(props: StudioWorkspaceProps) {
   }
 
   function chooseFile(): void {
-    importFrame = transport.playheadFrame()
+    importFrame = transport.frameNow()
     importTrack = selectedTrackId()
     audioInput.click()
   }
@@ -288,7 +288,7 @@ export function StudioWorkspace(props: StudioWorkspaceProps) {
   async function addTakes(
     entries: readonly StudioSourceEntry[],
   ): Promise<boolean> {
-    const frame = transport.playheadFrame()
+    const frame = transport.frameNow()
     const projectId = project().id
     await releaseFinishingAudio()
     if (props.studio.project()?.id !== projectId) return false
@@ -629,6 +629,7 @@ export function StudioWorkspace(props: StudioWorkspaceProps) {
             notice={props.studio.laneNotice()}
             onPointerEditStart={editor.cancel}
             playheadFrame={transport.playheadFrame()}
+            playheadClock={transport}
             playing={transport.playing()}
             pixelsPerSecond={zoom()}
             writable={writable()}
