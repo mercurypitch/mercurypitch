@@ -91,6 +91,9 @@ export function createStudioSaveQueue(options: StudioSaveQueueOptions) {
     flush,
     retry(): Promise<boolean> {
       failed = false
+      // Nothing left to write: the pause is over, and so is its error.
+      if (!closed && !running && latest.revision === durableRevision)
+        options.changed('saved', null)
       return flush()
     },
     pause(error: unknown): void {

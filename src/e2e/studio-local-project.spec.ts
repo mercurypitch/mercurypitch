@@ -93,20 +93,16 @@ test('Studio imports audio, reloads and restores a backup in a fresh browser @sm
     studio.getByRole('button', { name: /^First Studio song/ }),
   ).toBeEnabled()
   await studio.getByRole('button', { name: /^First Studio song/ }).click()
-  // Unload cannot guarantee an async lease release. A fresh document must
-  // explicitly take over the remaining lease instead of silently stealing it.
-  const resumeEditing = studio.getByRole('button', { name: 'Edit in this tab' })
+  // The old page let the project's lock go as it unloaded, and the reloaded
+  // one holds it, so it edits at once: no lease left to wait out and nothing
+  // to take over, whether or not the old page's release reached storage.
   await studio.getByRole('button', { name: 'Song options' }).click()
+  const reloadedTitle = studio.getByRole('textbox', { name: 'Project name' })
+  await expect(reloadedTitle).toHaveValue('First Studio song')
+  await expect(reloadedTitle).toBeEnabled()
   await expect(
-    studio.getByRole('textbox', { name: 'Project name' }),
-  ).toHaveValue('First Studio song')
-  if (await resumeEditing.isVisible()) {
-    await resumeEditing.click()
-    await expect(
-      studio.getByText('Saved in this browser', { exact: true }),
-    ).toBeVisible()
-    await studio.getByRole('button', { name: 'Song options' }).click()
-  }
+    studio.getByRole('button', { name: 'Edit in this tab' }),
+  ).toHaveCount(0)
   await expect(
     studio.getByRole('button', { name: 'Guitar idea details', exact: true }),
   ).toBeVisible()

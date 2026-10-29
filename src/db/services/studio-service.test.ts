@@ -14,6 +14,16 @@ import { STUDIO_EDITOR_LEASE_MS } from './studio-editor-lease'
 import { createStudioService } from './studio-service'
 import { STUDIO_STORES } from './studio-storage-types'
 
+/** The storage error code a call is refused with, or 'resolved'. */
+async function refusal(call: Promise<unknown>): Promise<string> {
+  try {
+    await call
+    return 'resolved'
+  } catch (error) {
+    return (error as { code?: string }).code ?? String(error)
+  }
+}
+
 describe('local Studio persistence', () => {
   let db: DexieAdapter
   let service: ReturnType<typeof createStudioService>
@@ -261,6 +271,60 @@ describe('local Studio persistence', () => {
     await service.releaseLease(empty.id, recovered)
     const next = await service.acquireLease(empty.id, 'tab-one')
     expect(next.epoch).toBe(first.epoch + 2)
+  })
+
+  it("reclaims this tab's own lapsed lease on the same epoch, so its pending saves still land", async () => {
+    const empty = await service.createProject()
+    const first = await service.acquireLease(empty.id, 'tab-one')
+    clock = first.expiresAt + 60_000
+
+    const reclaimed = await service.reclaimLease(empty.id, first)
+
+    expect(reclaimed).toMatchObject({ ownerId: 'tab-one', epoch: first.epoch })
+    expect(reclaimed.expiresAt).toBe(clock + STUDIO_EDITOR_LEASE_MS)
+    await expect(
+      service.saveProject(
+        { ...empty, revision: 1 },
+        { ...first, expectedRevision: 0 },
+      ),
+    ).resolves.toMatchObject({ revision: 1 })
+  })
+
+  it('reclaims a lease this tab released itself, when nobody has held it since', async () => {
+    const empty = await service.createProject()
+    const first = await service.acquireLease(empty.id, 'tab-one')
+    await service.releaseLease(empty.id, first)
+
+    const reclaimed = await service.reclaimLease(empty.id, first)
+
+    expect(reclaimed).toMatchObject({ ownerId: 'tab-one', epoch: first.epoch })
+    await expect(
+      service.acquireLease(empty.id, 'tab-two'),
+    ).rejects.toMatchObject({ code: 'locked' })
+  })
+
+  it('never reclaims a lease another tab has held since, lapsed or not', async () => {
+    const empty = await service.createProject()
+    const first = await service.acquireLease(empty.id, 'tab-one')
+    clock = first.expiresAt + 1
+    const second = await service.acquireLease(empty.id, 'tab-two')
+    const live = await refusal(service.reclaimLease(empty.id, first))
+    clock = second.expiresAt + 1
+    const lapsed = await refusal(service.reclaimLease(empty.id, first))
+    await service.releaseLease(empty.id, second)
+    const released = await refusal(service.reclaimLease(empty.id, first))
+
+    expect([live, lapsed, released]).toEqual([
+      'lease-lost',
+      'lease-lost',
+      'lease-lost',
+    ])
+    await expect(
+      service.saveProject(
+        { ...empty, revision: 1 },
+        { ...first, expectedRevision: 0 },
+      ),
+    ).rejects.toMatchObject({ code: 'lease-lost' })
   })
 
   it('reports quota failure and leaves the last saved revision and caller snapshot intact', async () => {

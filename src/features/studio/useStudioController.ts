@@ -12,6 +12,8 @@ import type { StudioBackupTarget } from './backup/backup-target'
 import { restoreStudioBackup, writeStudioBackup } from './backup/studio-backup'
 import type { StudioEditHistory } from './controller/edit-history'
 import { createStudioEditHistory, executeStudioEdit, travelStudioHistory, } from './controller/edit-history'
+import type { EditorPresence, EditorPresenceSource, } from './controller/editor-presence'
+import { defaultEditorPresence, EDITOR_CLAIM_WAIT_MS, } from './controller/editor-presence'
 import { createStudioImporter, studioMissedLaneText, } from './controller/imports'
 import type { StudioSaveQueue, StudioSaveState } from './controller/save-queue'
 import { createStudioSaveQueue } from './controller/save-queue'
@@ -33,6 +35,8 @@ const LEAVE_WHILE_SAVING =
   'Studio is still saving this project on this device. Try again in a moment.'
 const LEAVE_AFTER_FAILED_SAVE =
   'Studio could not save your latest changes. Retry the save, make a copy, or discard the changes before you leave.'
+const EDITING_TAKEN =
+  'This project is no longer editable in this tab. Reload, make a copy, or take over editing.'
 const LEAVE_WITHOUT_EDITING =
   'This tab can no longer save your latest changes. Make a copy to keep them, or discard them before you leave.'
 
@@ -46,6 +50,14 @@ export interface StudioControllerOptions {
   writeBackup?: typeof writeStudioBackup
   restoreBackup?: typeof restoreStudioBackup
   readSource?: typeof readStudioSourceBlob
+  /** Which live tab edits a project: Web Locks where the browser has them. */
+  presence?: EditorPresenceSource
+}
+
+/** This tab's hold on the open project: the lease that fences its writes, and its live presence. */
+interface ProjectEditor {
+  lease: StudioEditorLease
+  presence: EditorPresence
 }
 
 function message(error: unknown): string {
@@ -65,6 +77,7 @@ export function useStudioController(options: StudioControllerOptions = {}) {
   const service = options.service ?? createStudioService()
   const now = options.now ?? (() => new Date())
   const createId = options.createId ?? (() => globalThis.crypto.randomUUID())
+  const presenceSource = options.presence ?? defaultEditorPresence()
   const [project, setProject] = createSignal<StudioProject | null>(null)
   const [assets, setAssets] = createSignal<readonly StudioAsset[]>([])
   const [projects, setProjects] = createSignal<readonly StudioProjectSummary[]>(
@@ -92,8 +105,15 @@ export function useStudioController(options: StudioControllerOptions = {}) {
   let listGeneration = 0
   let queue: StudioSaveQueue | null = null
   let lease: StudioEditorLease | null = null
+  let presence: EditorPresence | null = null
+  /**
+   * True while editing is on hold but the token may still be this tab's: a
+   * save found the lease gone, or renewing it failed. The next reclaim gives
+   * editing back, with the history and the waiting saves intact.
+   */
+  let editingLapsed = false
+  let reclaiming: { epoch: number; done: Promise<void> } | null = null
   let operationAbort: AbortController | null = null
-  let renewingGeneration: number | null = null
   /** Edits wait on loading, imports and whole-song work, not on a save. */
   const editBlocked = () => loading() || working() || importing()
   const busy = () => editBlocked() || saveState() === 'saving'
@@ -160,14 +180,110 @@ export function useStudioController(options: StudioControllerOptions = {}) {
         setLaneNotice({ text: studioMissedLaneText(miss) }),
     })
 
-  function expireEditor(): void {
+  /** Stop editing here: nothing more is written, and what is not saved waits. */
+  function suspendEditor(error: unknown): void {
     setWritable(false)
     cancelImport()
-    const error = new Error(
-      'Editing expired in this tab. Reload, make a copy, or take over editing.',
-    )
     queue?.pause(error)
     report(error)
+  }
+
+  /** Another tab took the project over: this tab's token can never write again. */
+  function loseEditor(error: unknown): void {
+    const held = presence
+    lease = null
+    presence = null
+    editingLapsed = false
+    held?.release()
+    suspendEditor(error)
+  }
+
+  function watchPresence(held: EditorPresence, epoch: number): void {
+    void held.lost.then(() => {
+      if (presence !== held || !current(epoch)) return
+      loseEditor(new StudioStorageError('lease-lost', EDITING_TAKEN))
+    })
+  }
+
+  /** Whether this tab's lease ran out on its own clock. The record may still be this tab's. */
+  function leaseLapsed(): boolean {
+    return lease !== null && lease.expiresAt <= now().getTime()
+  }
+
+  /** Whether this tab edits the open project, or did until editing was put on hold. */
+  function holdsEditor(): boolean {
+    return lease !== null && !disposed() && (writable() || editingLapsed)
+  }
+
+  /**
+   * Renew this tab's lease, or win it back after it lapsed, on the same
+   * token, so the project, its history and its waiting saves stay as they
+   * are. A page lets the project's lock go on its way into the back-forward
+   * cache, so the lock is claimed again first: while this tab holds it, no
+   * other live tab can be editing. The lease is then reclaimed on its epoch,
+   * which fails only when another tab has held the project since, and
+   * editing here is over. Runs on every renewal tick, before a write that
+   * finds the lease lapsed, and as the tab comes back into view, into focus
+   * or out of the back-forward cache.
+   */
+  function reclaimEditor(): Promise<void> {
+    const token = lease
+    const epoch = generation
+    if (!token || disposed() || loading()) return Promise.resolve()
+    if (reclaiming?.epoch === epoch) return reclaiming.done
+    const entry = { epoch, done: Promise.resolve() }
+    reclaiming = entry
+    entry.done = Promise.resolve()
+      .then(() => reclaimToken(token, epoch))
+      .finally(() => {
+        if (reclaiming === entry) reclaiming = null
+      })
+    return entry.done
+  }
+
+  async function reclaimToken(
+    token: StudioEditorLease,
+    epoch: number,
+  ): Promise<void> {
+    const ours = () =>
+      current(epoch) &&
+      lease !== null &&
+      lease.ownerId === token.ownerId &&
+      lease.epoch === token.epoch
+    try {
+      if (presence === null) {
+        const claimed = await presenceSource.claim(token.projectId, {
+          waitMs: EDITOR_CLAIM_WAIT_MS,
+          steal: false,
+        })
+        if (!ours()) {
+          claimed?.release()
+          return
+        }
+        // Another live tab holds the project's lock, so it edits the project now.
+        if (claimed === null) {
+          loseEditor(new StudioStorageError('lease-lost', EDITING_TAKEN))
+          return
+        }
+        presence = claimed
+        watchPresence(claimed, epoch)
+      }
+      const renewed = await service.reclaimLease(token.projectId, token)
+      if (!ours()) return
+      lease = renewed
+      if (!editingLapsed) return
+      editingLapsed = false
+      setWritable(true)
+      void queue?.retry()
+    } catch (error) {
+      if (!ours()) return
+      if (lostOwnership(error)) {
+        loseEditor(error)
+        return
+      }
+      editingLapsed = true
+      suspendEditor(error)
+    }
   }
 
   function canEdit(): boolean {
@@ -180,11 +296,15 @@ export function useStudioController(options: StudioControllerOptions = {}) {
       !writable()
     )
       return false
-    if (lease.expiresAt <= now().getTime()) {
-      expireEditor()
-      return false
-    }
-    return true
+    if (!leaseLapsed()) return true
+    // The renewal ran late, as a hidden tab's do. While this tab holds the
+    // project's lock no other tab can be editing, so the edit goes ahead and
+    // its save waits for the reclaim. Without the lock, editing waits.
+    void reclaimEditor()
+    if (presence?.exclusive === true) return true
+    editingLapsed = true
+    setWritable(false)
+    return false
   }
 
   /** Whether switching songs now would lose edits; a save in flight counts unless `waitsForSave`. */
@@ -270,14 +390,17 @@ export function useStudioController(options: StudioControllerOptions = {}) {
     queue = null
     setEditHistory(null)
     const previous = lease
+    const held = presence
     lease = null
+    presence = null
+    editingLapsed = false
     setWritable(false)
-    if (previous) {
-      try {
-        await service.releaseLease(previous.projectId, previous)
-      } catch {
-        /* Expiry also retires this token. */
-      }
+    try {
+      if (previous) await service.releaseLease(previous.projectId, previous)
+    } catch {
+      /* Expiry also retires this token. */
+    } finally {
+      held?.release()
     }
     return epoch
   }
@@ -290,8 +413,12 @@ export function useStudioController(options: StudioControllerOptions = {}) {
     queue = createStudioSaveQueue({
       project: snapshot,
       token,
-      save: (next, writeToken, prepared) =>
-        service.saveProject(next, writeToken, prepared),
+      save: async (next, writeToken, prepared) => {
+        // A renewal that ran late leaves this tab's own lease lapsed: win it
+        // back before the write instead of failing the write.
+        if (leaseLapsed()) await reclaimEditor()
+        return service.saveProject(next, writeToken, prepared)
+      },
       changed: (state, error) => {
         if (!current(epoch)) return
         setSaveState(state)
@@ -300,6 +427,9 @@ export function useStudioController(options: StudioControllerOptions = {}) {
           if (lostOwnership(error)) {
             setWritable(false)
             cancelImport()
+            // Perhaps the lease only lapsed. The next renewal, or the tab's
+            // return to view, wins it back or finds it taken.
+            if (lease !== null) editingLapsed = true
           }
         } else if (state === 'saved') {
           setProblem(null)
@@ -309,17 +439,43 @@ export function useStudioController(options: StudioControllerOptions = {}) {
     })
   }
 
+  /**
+   * This tab's lease and presence on project `id`, or null while another
+   * live tab edits it. Holding the project's lock proves the lease's owner,
+   * if any, has gone (a reload's old document, a closed or crashed tab), so
+   * its lease is taken over at once instead of after its 30 seconds.
+   */
   async function acquireProjectEditor(
     id: string,
     takeover: boolean,
-  ): Promise<StudioEditorLease | null> {
+  ): Promise<ProjectEditor | null> {
+    const claimed = await presenceSource.claim(id, {
+      waitMs: EDITOR_CLAIM_WAIT_MS,
+      steal: takeover,
+    })
+    // Another editor is a read-only state, not a failed storage operation.
+    if (claimed === null) return null
     try {
-      return await service.acquireLease(id, createId(), { takeover })
+      const acquired = await service.acquireLease(id, createId(), {
+        takeover: takeover || claimed.exclusive,
+      })
+      return { lease: acquired, presence: claimed }
     } catch (error) {
+      claimed.release()
       if (!(error instanceof StudioStorageError) || error.code !== 'locked')
         throw error
-      // Another editor is a read-only state, not a failed storage operation.
       return null
+    }
+  }
+
+  async function releaseProjectEditor(
+    id: string,
+    editor: ProjectEditor,
+  ): Promise<void> {
+    try {
+      await service.releaseLease(id, editor.lease)
+    } finally {
+      editor.presence.release()
     }
   }
 
@@ -336,7 +492,7 @@ export function useStudioController(options: StudioControllerOptions = {}) {
     setAssets([])
     setSaveState('saved')
     setProblem(null)
-    let acquired: StudioEditorLease | null = null
+    let acquired: ProjectEditor | null = null
     try {
       await retirement
       if (!current(epoch)) return
@@ -346,21 +502,27 @@ export function useStudioController(options: StudioControllerOptions = {}) {
         service.listAssets(id),
       ])
       if (!current(epoch)) {
-        if (acquired) await service.releaseLease(id, acquired)
+        const stale = acquired
+        acquired = null
+        if (stale) await releaseProjectEditor(id, stale)
         return
       }
       const history = createStudioEditHistory(snapshot)
       setEditHistory(history)
       setProject(history.state.present)
       setAssets(metadata)
-      lease = acquired
-      if (acquired && acquired.expiresAt > now().getTime()) {
-        setWritable(true)
-        attachQueue(snapshot, acquired, epoch)
+      if (acquired) {
+        lease = acquired.lease
+        presence = acquired.presence
+        watchPresence(acquired.presence, epoch)
+        if (acquired.lease.expiresAt > now().getTime()) {
+          setWritable(true)
+          attachQueue(snapshot, acquired.lease, epoch)
+        }
       }
     } catch (error) {
-      if (acquired)
-        await service.releaseLease(id, acquired).catch(() => undefined)
+      if (acquired && presence !== acquired.presence)
+        await releaseProjectEditor(id, acquired).catch(() => undefined)
       if (current(epoch)) report(error)
     } finally {
       if (current(epoch)) setLoading(false)
@@ -589,6 +751,7 @@ export function useStudioController(options: StudioControllerOptions = {}) {
   }
 
   async function deleteProject(): Promise<void> {
+    if (leaseLapsed()) await reclaimEditor()
     if (!canEdit() || busy() || saveState() !== 'saved' || !queue || !lease)
       return
     const id = project()!.id
@@ -612,47 +775,59 @@ export function useStudioController(options: StudioControllerOptions = {}) {
     }
   }
 
+  // Every 10 seconds against a 30 second lease. A tick that runs late, as a
+  // hidden tab's do, finds the lease lapsed and reclaims it on the same epoch
+  // instead of giving editing up.
   const renewTimer = setInterval(
     () =>
       untrack(() => {
-        const token = lease
-        const epoch = generation
-        if (!token || !writable() || renewingGeneration === epoch || disposed())
-          return
-        if (token.expiresAt <= now().getTime()) {
-          expireEditor()
-          return
-        }
-        renewingGeneration = epoch
-        void service
-          .renewLease(token.projectId, token)
-          .then((renewed) => {
-            if (current(epoch) && lease === token) lease = renewed
-          })
-          .catch((error: unknown) => {
-            if (current(epoch) && lease === token) {
-              setWritable(false)
-              cancelImport()
-              queue?.pause(error)
-              report(error)
-            }
-          })
-          .finally(() => {
-            if (renewingGeneration === epoch) renewingGeneration = null
-          })
+        if (holdsEditor()) void reclaimEditor()
       }),
     10_000,
   )
+
+  // Back in view, in focus, or out of the back-forward cache: editing that
+  // lapsed meanwhile comes back here, with nothing reloaded.
+  const regain = () =>
+    untrack(() => {
+      if (holdsEditor() && (editingLapsed || leaseLapsed() || !presence))
+        void reclaimEditor()
+    })
+  const onVisibility = () => {
+    if (document.visibilityState === 'visible') regain()
+  }
+  // Leaving the page: let the project's lock go at once, so a reload or
+  // another tab can edit, and the lease too where the page lives long enough
+  // to write it. A page kept in the back-forward cache claims both back as it
+  // is shown again.
+  const onPageHide = () =>
+    untrack(() => {
+      const held = presence
+      presence = null
+      held?.release()
+      const token = lease
+      if (!token || disposed()) return
+      lease = { ...token, expiresAt: 0 }
+      void service.releaseLease(token.projectId, token).catch(() => undefined)
+    })
 
   function dispose(): void {
     if (disposed()) return
     setDisposed(true)
     clearInterval(renewTimer)
+    document.removeEventListener('visibilitychange', onVisibility)
+    window.removeEventListener('focus', regain)
+    window.removeEventListener('pageshow', regain)
+    window.removeEventListener('pagehide', onPageHide)
     void retire()
   }
   onCleanup(dispose)
   onMount(() => {
     void refreshProjects()
+    document.addEventListener('visibilitychange', onVisibility)
+    window.addEventListener('focus', regain)
+    window.addEventListener('pageshow', regain)
+    window.addEventListener('pagehide', onPageHide)
   })
 
   return {
