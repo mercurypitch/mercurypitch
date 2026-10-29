@@ -130,7 +130,9 @@ about (1676, 880), so the strip's right end and the rows' right edge never move 
   C and 184 to 246 on D. Merc's bead leaves his mouth at about (270, 664) **(provisional: the pass's
   mouth point)** and lands on stair 1's tread (456, 700) at 0.60; Tavi's leaves hers at about
   (1650, 664) and lands on stair 1 on D (456, 637) at 14.99, its arc peaking at y 140.
-- **S1 to S2 (33.18).** Full-frame warm white on both sides of the cut.
+- **S1 to S2 (33.18).** The same full-frame field on both sides of the cut: a smooth radial
+  field, chrome `#c3ccd6` at 75 % over the ground at the frame's centre falling to 35 % at the
+  corners, no edges, mean brightness 110 to 125 of 255 (Lesson 2's field peaks at 122).
 - **S2 to S3 (36.58).** The bead's flight into the house spans the cut (35.9 to 36.9, power2.inOut,
   ending at (1464, 215)); both scenes draw it from `T`. At 36.58 the staircase is on D in F-cold,
   stairs unlit, the top stair filled unlit, no Mercs.

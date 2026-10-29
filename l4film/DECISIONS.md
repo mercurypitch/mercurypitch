@@ -240,5 +240,8 @@ replaced it. The builder's record: critics never read it.
     dashed amber target to the playhead, six chrome rungs mi to do, the next two named. The sung
     line is singer violet, the app's canvas colour for a singer; no green (Lesson 3's).
 39. **Celebrations are chrome rings**: gold belongs to the two semitone steps alone (BRIEF, Brand).
-40. **Study**: the brief's style references are Lessons 1 and 2's films; the reference pass runs on
-    Lesson 2's `rc-04-60fps.mp4` into `study/lesson-02/` before the storyboard critic.
+40. **Study**: the brief's style references are Lessons 1 and 2's films; the reference pass ran on
+    Lesson 1's `rc-07-60fps.mp4` and Lesson 2's `rc-04-60fps.mp4` (`study/lesson-01/`,
+    `study/lesson-02/`, `study/RULES.md`) before the storyboard critic. One change came of it:
+    S1g's full-frame light is a radial chrome field at Lesson 2's measured level (peak mean
+    brightness 122), not a white hold, since the field takes the colour of what came through it.

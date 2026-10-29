@@ -1046,3 +1046,14 @@ Note: the lanes' memory gate read a stale cgroup path after the 21:00 restart (f
 - Reference pass on Lesson 2 rc-04 running into study/lesson-02 (the study folder was empty).
 - NEXT: fill study notes, spawn storyboard critic 01 (report review/storyboard-01/REPORT.md; previous
   report review/script-03/REPORT.md), save its text, LEDGER row 04, push-notes.
+
+## 2026-10-29 ~02:55Z: Lesson 4 film, study done, storyboard critic 01 running (task 181)
+- Reference passes: Lesson 2 rc-04 (study/lesson-02, 8 events, 0 cuts) and Lesson 1 rc-07 (study/lesson-01,
+  8 events, 0 cuts by the detector); NOTES.md for both and study/RULES.md (10 rules) written.
+- One storyboard change from the study (DECISIONS 40): S1g's full-frame light is a radial chrome field at
+  Lesson 2's measured level (peak mean brightness 122; Lesson 1's warm field peaked 190), not a white hold
+  (STORYBOARD 1g, HANDOFFS § S1 to S2).
+- Storyboard critic 01 spawned (xhigh) with paths only; report -> review/storyboard-01/REPORT.md (previous
+  report review/script-03/REPORT.md). NEXT: save its text if it could not write, LEDGER row 04, fix, round 2.
+- The old pass's background waiter matched its own command line (pgrep -f) and ran to its 30 min limit;
+  waits now use Monitor on an output file.
