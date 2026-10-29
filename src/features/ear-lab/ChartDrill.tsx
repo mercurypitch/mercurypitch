@@ -281,9 +281,6 @@ export function ChartDrill(props: { onBack: () => void }): JSX.Element {
   const controller = useIdentificationController(drill, CHART_BANK, makeTrial, {
     cancelAudio,
     silenceReplay,
-    // The take runs on the call's clock: sound taken away during it
-    // voids the round, and the call plays again from its count-in.
-    timedAnswer: true,
   })
 
   const phase = () => controller.phase()
@@ -406,6 +403,7 @@ export function ChartDrill(props: { onBack: () => void }): JSX.Element {
             rounds: result.total,
             right: result.correct,
             rightWord: 'tapped clean',
+            replays: controller.replays(),
             outcomes: result.outcomes.map((outcome) => ({
               correct: outcome.correct,
               title:

@@ -229,6 +229,7 @@ export function RatingPlateView(props: {
               props.plate.rounds,
               props.plate.right,
               props.plate.rightWord ?? 'named',
+              props.plate.replays,
             )}
           </p>
         </Show>
@@ -299,6 +300,7 @@ export function PracticePlateView(props: {
               props.plate.rounds,
               props.plate.right,
               props.plate.rightWord ?? 'named',
+              props.plate.replays,
             )}
           </p>
         </Show>

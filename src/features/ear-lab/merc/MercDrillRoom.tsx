@@ -23,9 +23,9 @@
 // sound, never over it, and nothing buzzes while a test sound plays.
 //
 // Close mid-run asks first ("End the run?") and keeps nothing; so do a
-// swipe down and Android's back. Sound taken away mid-question (a
-// call, headphones out, the app put away) pauses the run, and Resume
-// plays that question again from its start.
+// swipe down and Android's back. Sound taken away before a question is
+// answered (a call, headphones out, the app put away) pauses the run,
+// and Resume plays that question again from its start.
 //
 // A slip on a rated plate can start a pair practice on its two items
 // (pair-practice.ts): a practice run, named in Merc's first line, that
@@ -223,6 +223,9 @@ export function MercDrillRoom(props: EarStageProps): JSX.Element {
     switch (shows()) {
       case 'prompt':
         return { say: prompt(), aside: null, hint: null }
+      // The drill's own words for the answer it waits on.
+      case 'ask':
+        return { say: props.status, aside: null, hint: null }
       case 'verdict':
         return { say: props.status, aside: aside(), hint: hint() }
       case 'none':

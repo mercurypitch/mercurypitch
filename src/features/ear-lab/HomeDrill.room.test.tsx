@@ -2,7 +2,9 @@
 // offers practice on Fa against Sol. The practice runs as practice,
 // asks only Fa and Sol, leaves the rating where the rated run left it,
 // and ends on a tally of its own, which says what it skipped. A refused
-// microphone keeps the practice it stopped for "Use Tap instead".
+// microphone keeps the practice it stopped for "Use Tap instead". A
+// question the sound was taken away from sounds again on Resume, and
+// the plate counts that hearing as a replay.
 
 import { fireEvent, render } from '@solidjs/testing-library'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
@@ -230,6 +232,42 @@ describe("Home's slip", () => {
     expect(plate?.kind === 'practice' ? plate.lines : null).toEqual([
       '1 skipped (unclear)',
     ])
+  })
+})
+
+describe('the sound taken away while a tapped answer is due', () => {
+  it('shuts the answer while held, and Resume sounds the same question as a replay', async () => {
+    mountHome()
+    // The engine's calls since this run began: earlier tests' are kept.
+    const from = engine.playChord.mock.calls.length
+    const cadences = () =>
+      engine.playChord.mock.calls.slice(from).map((call) => call[0])
+    // The probe: the last tone sounded (the mock's calls are untyped).
+    const probe = (): unknown =>
+      (engine.playTone.mock.calls.at(-1) as unknown[] | undefined)?.[0]
+    room().again?.()
+    await until('answer')
+    const chords = cadences()
+    const asked = probe()
+
+    // Back from the background, a tapped answer used to wait on a
+    // cadence and a note the ear no longer held (owner, 29 Oct).
+    room().hold?.()
+    expect(room().held?.()).toBe(true)
+    // No answer lands behind the sheet.
+    expect(room().beat()).not.toBe('answer')
+    room().resume?.()
+    await until('answer')
+    expect(room().held?.()).toBe(false)
+    // The same key and the same note again, not a fresh question.
+    expect(chords).toHaveLength(4)
+    expect(cadences()).toEqual([...chords, ...chords])
+    expect(probe()).toBe(asked)
+
+    press('4')
+    stage().onStop?.()
+    await until('done')
+    expect(room().plate?.()).toMatchObject({ kind: 'rating', replays: 1 })
   })
 })
 

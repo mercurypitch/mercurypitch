@@ -428,6 +428,7 @@ export function HomeDrill(props: HomeDrillProps): JSX.Element {
                 : null,
               rounds: result.total,
               right: result.correct,
+              replays: controller.replays(),
               outcomes,
               slips,
               // What the run skipped and how the voice sat: a practice's too.

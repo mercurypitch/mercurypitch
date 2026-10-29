@@ -313,8 +313,10 @@ export function ThresholdDrillView(
       short: () => props.run.short(),
       beat: () => BEAT[phase()] ?? 'idle',
       sounding: () => phase() === 'stimulus' || props.run.replaying(),
+      // The ritual says what it is before Begin; once it runs, the task
+      // is the drill's own ("Two tones. Which one was higher?").
       get prompt() {
-        return ritual() ? RITUAL_STATUS : props.prompt
+        return ritual() && phase() === 'idle' ? RITUAL_STATUS : props.prompt
       },
       line: () => {
         if (!running()) return null

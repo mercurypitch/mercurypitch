@@ -302,6 +302,7 @@ export function IdentificationDrillView(
               rounds: result.total,
               right: result.correct,
               rightWord: props.answerVerb ?? 'named',
+              replays: props.controller.replays(),
               outcomes,
               slips,
             },

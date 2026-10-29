@@ -235,7 +235,8 @@ export type SoundStop = 'headphones' | 'route' | 'away' | 'interrupted'
 
 export function soundStoppedWords(args: {
   cause: SoundStop
-  /** A question was sounding: it plays again from its start. */
+  /** A question was sounding or waiting on its answer: it plays again
+   *  from its start. */
   voided: boolean
   /** The sound now comes from the phone's own speaker. */
   onSpeaker: boolean
@@ -378,13 +379,21 @@ export function ratingMoveLine(rating: number, before: number): string {
   return `Same as before, ${before}`
 }
 
+/** "no replays", "1 replay", "3 replays". */
+function replaysWord(replays: number): string {
+  return replays === 0
+    ? 'no replays'
+    : `${replays} replay${replays === 1 ? '' : 's'}`
+}
+
 /** "12 rounds · 9 named · no replays". */
 export function roundsLine(
   rounds: number,
   right: number,
   word: string,
+  replays = 0,
 ): string {
-  return `${rounds} round${rounds === 1 ? '' : 's'} · ${right} ${word} · no replays`
+  return `${rounds} round${rounds === 1 ? '' : 's'} · ${right} ${word} · ${replaysWord(replays)}`
 }
 
 /** "14 questions · 4 turns · 1 replay". */
@@ -393,13 +402,9 @@ export function staircaseStats(
   turns: number,
   replays: number,
 ): string {
-  const replayWord =
-    replays === 0
-      ? 'no replays'
-      : `${replays} replay${replays === 1 ? '' : 's'}`
   return `${trials} question${trials === 1 ? '' : 's'} · ${turns} turn${
     turns === 1 ? '' : 's'
-  } · ${replayWord}`
+  } · ${replaysWord(replays)}`
 }
 
 export function timesWord(count: number): string {

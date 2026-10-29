@@ -122,9 +122,16 @@ describe("Merc's lines", () => {
     ).toBe('Your first reading here')
   })
 
-  it('say a rated run in rounds, names and no replays', () => {
+  it('say a rated run in rounds, names and its replays', () => {
     expect(lines.roundsLine(12, 9, 'named')).toBe(
       '12 rounds · 9 named · no replays',
+    )
+    // A question heard again after the sound was taken away.
+    expect(lines.roundsLine(12, 9, 'named', 1)).toBe(
+      '12 rounds · 9 named · 1 replay',
+    )
+    expect(lines.roundsLine(1, 1, 'tapped clean', 2)).toBe(
+      '1 round · 1 tapped clean · 2 replays',
     )
     expect(lines.ratingMoveLine(1252, 1240)).toBe('Up 12 from 1240')
     expect(lines.ratingMoveLine(1230, 1240)).toBe('Down 10 from 1240')

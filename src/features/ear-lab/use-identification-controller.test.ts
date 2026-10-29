@@ -1,6 +1,8 @@
 // A miss's slow replay finishes before the next round starts — the two
 // would otherwise sound over each other — and Stop still cuts it short.
-// A pair practice asks only its two items and rates nothing.
+// A pair practice asks only its two items and rates nothing. A prompt
+// the sound was taken away from takes no answer while held, and plays
+// again on Resume: heard through already, that hearing is a replay.
 
 import { createRoot } from 'solid-js'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
@@ -150,6 +152,77 @@ describe('useIdentificationController on a miss', () => {
     await vi.advanceTimersByTimeAsync(REPLAY_MS + REVEAL_HOLD.defaultMs + 100)
     expect(plays).toHaveLength(1)
     expect(controller.phase()).toBe('done')
+    dispose()
+  })
+})
+
+describe('the sound taken away while an answer is due', () => {
+  beforeEach(() => {
+    vi.useFakeTimers()
+    localStorage.clear()
+    resetEarLabStore()
+  })
+  afterEach(() => vi.useRealTimers())
+
+  it('heard through, shuts its answer and plays it again as a replay', async () => {
+    const { controller, plays, dispose } = setUp()
+    controller.start()
+    await vi.advanceTimersByTimeAsync(0)
+    expect(controller.phase()).toBe('answer')
+    const asked = controller.expectedId()
+
+    // Back from the background, Resume played nothing and the ear no
+    // longer held the prompt (owner, 29 Oct).
+    controller.holdQuestion()
+    expect(controller.held()).toBe(true)
+    // No answer lands behind the sheet: not a pad, not a sung window.
+    expect(controller.phase()).toBe('playing')
+    controller.answer(asked ?? '')
+    expect(controller.phase()).toBe('playing')
+    // A second stop before Resume (the app put away, then a call) is
+    // the same hold.
+    controller.holdQuestion()
+
+    void controller.resumeQuestion()
+    await vi.advanceTimersByTimeAsync(0)
+    expect(controller.held()).toBe(false)
+    expect(controller.phase()).toBe('answer')
+    expect(controller.round()).toBe(0)
+    // The same prompt again, never a fresh one in its place: and heard
+    // twice before its answer, it is a replay, once.
+    expect(plays).toEqual([asked, asked])
+    expect(controller.replays()).toBe(1)
+    dispose()
+  })
+
+  it('still playing, plays again from its start with no replay counted', async () => {
+    const drill = findIdentificationDrill('leap')
+    if (!drill) throw new Error('leap missing')
+    const plays: string[] = []
+    let dispose: () => void = () => undefined
+    const controller = createRoot((d) => {
+      dispose = d
+      return useIdentificationController(drill, LEAP_BANK, (item) => ({
+        expectedId: item.itemId,
+        play: () => {
+          plays.push(item.itemId)
+          return wait(REPLAY_MS)
+        },
+      }))
+    })
+    controller.start()
+    await vi.advanceTimersByTimeAsync(0)
+    expect(controller.phase()).toBe('playing')
+
+    controller.holdQuestion()
+    await vi.advanceTimersByTimeAsync(REPLAY_MS)
+    // The cut prompt ending opens no answer while it is held.
+    expect(controller.phase()).toBe('playing')
+    void controller.resumeQuestion()
+    await vi.advanceTimersByTimeAsync(REPLAY_MS)
+    expect(controller.phase()).toBe('answer')
+    expect(plays).toEqual([plays[0], plays[0]])
+    expect(controller.replays()).toBe(0)
     dispose()
   })
 })
