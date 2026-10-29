@@ -6,7 +6,8 @@ import { applyStudioCommand } from '../model/commands'
 import type { StudioProject } from '../model/types'
 import { KEEP_HIDDEN_MS, KEEP_IDLE_MS } from './kept-run'
 import { PlaybackContext } from './playback.test-fixtures'
-import { envelopeOf, freshGraphs, transportFixture, } from './transport.test-fixtures'
+import { RUN_OPEN_SECONDS } from './run'
+import { envelopeOf, freshGraphs, openingEnds, transportFixture, } from './transport.test-fixtures'
 
 afterEach(() => {
   setStudioWorkingBytes(null)
@@ -87,16 +88,16 @@ describe('Studio transport kept run', () => {
     expect(f.cache.acquire).toHaveBeenCalledOnce()
     expect(f.measureLatencies).toHaveBeenCalledTimes(measured)
     // New sources a device callback (10 ms) and 5 ms of scheduling ahead,
-    // heard 20 ms of chain and master latency later through the house attack.
+    // heard 20 ms of chain and master latency later through the run's attack.
     expect(f.graph.resume).toHaveBeenCalledExactlyOnceWith(
       paused,
       expect.closeTo(3.015, 9),
       false,
     )
-    expect(envelopeOf(f.graph).gain.ramps.at(-1)).toEqual({
-      value: 1,
-      time: expect.closeTo(3.035 + 0.09, 9),
-    })
+    expect(openingEnds(envelopeOf(f.graph).gain).at(-1)).toBeCloseTo(
+      3.035 + RUN_OPEN_SECONDS,
+      9,
+    )
     expect(f.graph.scheduleUntil).toHaveBeenLastCalledWith(5)
     expect(createLaneMeter).toHaveBeenLastCalledWith(
       f.ctx.liveContext,

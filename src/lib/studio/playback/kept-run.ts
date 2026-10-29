@@ -11,8 +11,9 @@
 // Pause now keeps the newest run. Its envelope closes as before, and once it
 // is silent its sources stop and its meters go, but its chains, master and
 // leased audio stay. Play starts the same graph from the playhead: new
-// sources a device callback ahead (seekEarliest), and the house attack, so
-// the first sound comes 87 to 98 ms after the press. An edit while paused
+// sources a device callback ahead (seekEarliest), and the run's attack, so
+// the first sound comes 87 to 98 ms after the press (with the 90 ms attack it
+// replaced; see openRunEnvelope). An edit while paused
 // moves the kept graph as it would a playing one: the mix and sound in
 // place, other clips lane by lane (lane-replan.ts). One the graph cannot
 // follow lets it go, and Play builds afresh: 171 to 182 ms to the first

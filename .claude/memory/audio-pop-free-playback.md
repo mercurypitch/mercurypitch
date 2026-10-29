@@ -24,8 +24,17 @@ House envelope constants (`ENVELOPE_DEFAULTS` in
 | Transition         | Shape                                                                                             | Length                |
 | ------------------ | ------------------------------------------------------------------------------------------------- | --------------------- |
 | start / resume     | `exponentialRampToValueAtTime(1)` from the 0.0001 floor (`openEnvelope`)                          | 90 ms                 |
+| Studio run start   | raised cosine (sin²) in 64 linear segments from 0 (`openRunEnvelope`, studio/playback/run.ts)     | 10 ms                 |
 | pause / stop       | `setTargetAtTime(0, now, len/5)` (`closeEnvelope`), **then** stop the transport after len + slack | 180 ms (+60 ms slack) |
 | seek while playing | linear dip to 0 (15 ms) → move position → linear back (15 ms)                                     | 2×15 ms               |
+
+Studio's run start is shorter by maff's decision (2026-10-29): the 90 ms
+exponential reached -40 dB only 45 ms in, holding every Play back. Measured
+offline in Chromium on a full-scale 41 to 110 Hz sine opened at its peak,
+the 10 ms raised cosine leaves -74 dBFS above 1 kHz, against -52 to -60 for
+the 90 ms exponential, -51 for a 10 ms linear ramp and -47 for 10 ms equal
+power (both have a corner at full slope). The shape, not the length, decides
+the click: sin² starts and ends flat.
 
 Order matters: open the envelope only after playback is running; close it
 fully before pausing/stopping. A `play()` racing a fade-out must cancel

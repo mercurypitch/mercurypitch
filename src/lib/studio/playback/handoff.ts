@@ -13,7 +13,8 @@
 //
 // Linear is right here and only here: the crossfade sits inside continuous
 // material (.claude/memory/audio-pop-free-playback.md). A start from silence
-// keeps the exponential attack, and a stop keeps the setTargetAtTime release.
+// keeps its own attack (openRunEnvelope), and a stop keeps the setTargetAtTime
+// release.
 //
 // A seek the playing run cannot follow is the exception: it hands over to a
 // run built at the target, so the two sides are different places in the
