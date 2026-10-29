@@ -93,3 +93,46 @@ events in the card pause (icon pulses that register, then the address once more)
   Handoffs (host stills): s14 64.733 = s15 0 and s15 8.267 = s16 0, Merc boxes identical, <= 0.0013 % over 24.
   npm run check: 0 lint errors; layout 3 errors, all in s06 and s11 (not group F). Text sweep s14-s16 clean.
   18:41 kit change (bokeh/staves brighten during camera moves): s14 re-rendered.
+- 20:15-21:10 round F-01 (DECISIONS 97). Backups: lab/<s>/<s>.r5-before.html. Tools: lab/s14-recap/tools/times.cjs
+  (cue and word times), stills.mjs (seek-proxy stills at given scene times), keepout.py (Merc ink vs a box);
+  renders lab/s14-recap/hostpass5.sh (previous host clips kept as clip-h1.mp4 / measure-h1, new measure-r5).
+  1. Join: card, ladder and practise card fade 469.69-469.99 (was 0.2 s); the top rung (card time x 1454-1510,
+     y 230, 45 %) brightens to full (469.69-469.89) and slides to (560, 520) (469.89-470.69, power2.inOut =
+     GSAP cubic), condensing (470.29-470.69: a capsule shortening 52 -> 0 and thickening 4 -> 44 px, the L.bead
+     in over the last 0.15 s). carryAt(t, tc) is the same code in s14 and s15. Seek proxy: s14 at D and s15 at 0
+     identical in the rung's box (max 0). Lab clips: s14's last frame (film 470.227) rung centre (1212, 314.5),
+     s15's first (film 470.243) (1172.5, 326.5), as computed (1212.9, 314.7) and (1173.1, 327.2). On the film's
+     grid: 470.233 -> (1198.1, 319.3), 470.267 -> (1106.3, 348.2). S15: no drop; the bead from 470.69 hovers as
+     before; '"support"' on b55 "Singers" (472.15, was "support" 473.14).
+  2. Ladder large (454.0-459.4): panel 200-1720 x 140-620; x' = 200 + (x - 300) * 1.1515; playhead 884, y 248-589;
+     title (234.5, 217), ILLUSTRATION right edge 1685.5 at 217; pitches G4 557 A4 509 B4 461 C5 437 D5 389 E5 341
+     F#5 293 G5 269 (24 px a semitone); rungs at x 996.8 1109.7 1222.5 1335.4 1448.2 1561.1, 90 px, 6/4 px, 100 89 78
+     67 56 45 %; violet G4 246-545.5, A4 614.5-884; amber dash 246-884 at 509; pill 824-876 x 464-498. Ease to card
+     time 459.40-460.00 (b53 "time." + 0.05, 0.6 s power2.inOut): box 300-1620 x 150-460, G4 422 ... G5 230,
+     rungs 56 px, playhead y 220-440, pill 834-886 x 345-379. Type keeps its size. Keep-out on the clip: Merc ink
+     tops 662-667 vs the panel's foot 620 (41-47 px; body boxes 28 px).
+  3. Brackets (S6's, world y 458 / 276, ink, tick 8): lower on "Two" 417.54, upper on "groups," 417.77 (0.5 s
+     power2.out), gone with the labels at 419.62. Clip: lower 226-818 x 496-508, upper 826-1418 x 269-280; riser 4's
+     "T" 36-40 px below the lower; S labels and stair tops 80+ px. Both allowances used: card 1 and its panel leave
+     at b47 "Two" - 0.5 (417.04, gone 417.47; labels all landed by 416.55, settled 417.05); both houses leave
+     413.0-413.3 and return 419.62-419.92. Riser 4's "T" scales 1.2 (kit 'label' pulse) about its centre (anchor
+     moved 11 (s-1), 14 (s-1)); clip: T centre (800.0, 565.0) at rest, (798.5, 564.5) at the pulse.
+  4. Panel per card: in over the 0.2 s before each card's first line (card 1 407.24-407.44), rising 12 px, out
+     with its lines (0.43 s); between cards 3 and 4 it dips to 18 % and comes back. Kicker on the recap mark 405.64.
+  5. One ripple: the stairs light in turn on "steps" (408.29 + 0.07 n). Removed: stairs on "check." (406.47),
+     "scale?" (409.56), b48 "major" (420.58), o13 "major scale" (443.83); C major's keys on "major scale" (409.09);
+     all eight black keys on "black" (422.98); G major's keys on b52 "scale" (451.37); the tile ripple on
+     "pattern" (407.77); the risers' ripple on "steps"; the rungs' ripple on b53 "major scale". No beat added.
+     Proxy without hosts showed gaps of 0.5-1.3 s, all inside Merc's or Tavi's lines; with hosts none over 0.2 s.
+  6. ti home: top house unlights 433.09-433.29 as the bead drops onto ti; the bead rests on ti; on do's onset
+     (tiDo + 0.45 = 433.74; the ti-do sound's C5 onset measured 433.725-433.745) it hops (0.3 s, lift 16) into the
+     house centre, shrinking from 433.83 to nothing at 434.04, drawn under the houses; the house lights
+     433.74-434.04; one echo ring at 434.04. Clip: bead on ti centre (1302.5, 335.5) by ink, house centre (1472.5, 277).
+  7. Practise card baselines 540/610/670/730/790/850, underline 554; line 1 at 460.00, line 2 460.30, phone line on
+     the card mark 465.69; icon glows 465.80/466.60/467.40/468.20. Line 1 cap top 506 vs box foot 460: 46 px.
+     F-recap-3 on the clip: names baseline 854, "S" baseline 358, house centre (1472.5, 277), bead ~(1303, 336).
+  8. S16: the wordmark's clipPath is a mask with a 60 px (78.7 lockup units) linear feather; the edge runs 0.83 s
+     power3.inOut from x 270 until the feather clears the wordmark + 30. Clip: the fade spans about 60-70 px.
+  Holds (hosts, measure-r5): s14 0.5 s (0.2 per 30 s), longest 0.2 (405.89); s15 0.0; s16 0.1 at its start.
+  Renders: s16 20:37-20:40 and s14 20:42-20:49:52 (old bokeh), s15 20:49:52-20:51:10 (DECISIONS 100 bokeh);
+  s14 and s16 re-rendered from 20:54:48 on the new kit.

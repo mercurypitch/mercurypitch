@@ -856,7 +856,9 @@ replaced it. The builder's record: critics never read it.
        and lift as decision 93 has them. A disc that crosses a mark now passes behind it, which
        inverts its depth at that edge; the critic proposed exactly this, and the discs are too
        faint and soft for the edge to read. Backups $S/l4entr/kit-before-100/ (lesson.js,
-       frames.js, motion.js). Every clip rendered from 20:49 carries it; the builders were told.
+       frames.js, motion.js). Every clip rendered from 20:49 carries it; the builders were told. The full check after it
+       matches the one before: lint 0 errors (79 warnings), runtime 0, motion 0, contrast 59/59,
+       and one layout error, S6's at 129.21 (builder B's, known).
      - **D-03 item 2: the strip fades out in F-chart** once the five dim chips have left it (308.2
        to 308.98) and returns over the pull (320.23 to 321.03), as it does in every close framing,
        since its top edge showed along the frame's foot (y 1055 to 1080, luma 50 on 15). Builder D.

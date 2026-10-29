@@ -1653,3 +1653,4 @@ Note: the lanes' memory gate read a stale cgroup path after the 21:00 restart (f
 - D-fix4-msg.txt READY (items 2 and 4, all three clips at 60 fps). Queue: A round 2 (A-fix2-msg) ->
   D round 4 (D-fix4-msg, to the s09-s11 builder) -> F-02 when F hands back -> C small -> B small
   (s06 layout error) -> A-03, D-04, C-03, B-04.
+- 20:5x full check after the kit change = before: lint 0 err / 79 warn, runtime 0, layout 1 error (s06 129.21, B's), motion 0, contrast 59/59. Task done.
