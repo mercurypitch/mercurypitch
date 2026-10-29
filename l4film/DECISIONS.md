@@ -698,3 +698,84 @@ replaced it. The builder's record: critics never read it.
     fixed by HANDOFFS and the arcs by the pass, so nothing changes now. Component critic F-01 judges
     whether they crowd the stair; if they do, the fix is in the pass (the arcs narrower or off for
     b47), not in the framing.
+96. **S12 and S13 after component critic E-01: the guide the viewer sings to, a settle before the
+    recap, and both Mercs at 300 in S13.** E-01 judged both scenes REVISE.
+    - **S13's guide.** The critic measured the 3 px path at luma 151 against lane rules at 47: at
+      phone size they merge into one texture, and this is the line the viewer sings to. The path is
+      now 6 px solid chrome at 70 %. The lanes have no rules: the eight lanes a note of the scale
+      sits on are faint fills (chrome at about 6 %, each inset 2 px so the two touching pairs, mi and
+      fa, ti and do, stay apart), and the five others are empty, so the gaps between the bands are
+      the whole steps and the touching pairs the half steps. The segment under the cursor brightens
+      to full with the cursor's soft glow and dims back as the cursor leaves it.
+    - **S12's band becomes that path in place.** The amber band no longer leaves with S12's marks
+      (it left a beat of bare lanes at 373.19 to 373.35): it thins from 14 px to 6 px and cools from
+      amber to chrome while the guide moves (372.94 to 373.54), and the fills replace the lane rules
+      once the other marks have gone (373.24 to 373.54).
+    - **S13d settles before the cut.** The strip, the blocks, the names and the houses landed within
+      half a second of each other (404.90 to 405.42), and the cut came 0.07 s later. The reverse tip
+      now leads from inside the care-block fade (from 403.94, `at('your-turn', 'end', 0.10)`); the
+      blocks grow over 0.5 s or more each, as their treads land; the rows above, the strip, the
+      names and the houses follow in that order, and the staircase is still by about 405.15. Merc's
+      move (404.0 to 405.2) is unchanged and lands about 0.3 s before the cut. The end state, HANDOFFS
+      § E to F, is unchanged.
+    - **Both Mercs at 300 in S13.** Tavi at 240, 36 px from the frame's edge beside Merc at 300, read
+      as demoted. She now scales to 300 and stands at (1800, 840) from S13a: body x 1720 to 1880, 20 px
+      from the lanes' end (the keep-out) and 40 px from the edge, which is her recap corner, so
+      only Merc moves in the breath. Both at 270 would give her 36 px from the lanes, but would shrink
+      Merc too and leave her a move in the breath; at 300 the keep-out holds.
+    - **S12a's tip.** The gold risers of fa and the top do stayed where their stairs had been while
+      the stairs slid up to about 90 px away (344.04 to 344.94). Every riser now rides with its stair
+      and fades with the blocks, and the gold pair has gone by 343.99.
+    - **S12's beads.** Each entered the next lane about 0.19 s before the voice (348.79 against an
+      onset at 348.98, 352.79 against 352.98, 364.31 against 364.51). Each crossing now lands within
+      40 ms of the voice's onset, measured from the sung tracks, and the pulses and landing rings
+      keyed to the notes follow the same onsets. A bead parks with its right edge at x 1440 at the
+      latest, not half off the guide.
+    - **Smaller.** "wait on ti" scales from its left edge (its left edge jumped from x 380 to 366).
+      The beats the board does not name (a house ring at 359.37, sweeps at 361.94 and 377.82) stay
+      only if each is tied to a word, which the board then names; otherwise they go.
+97. **S14, S15 and S16 after component critic F-01: an object across the S14 to S15 join, a ladder
+    that fills the frame, the two groups on mute, and the caption band.** F-01 judged S14 and S15
+    REVISE and S16 KEEP.
+    - **The S14 to S15 join carries an object.** For 3.3 s (469.85 to 473.14) the frame held only the
+      Mercs, the kicker and a parked bead: the card and the ladder vanished in 0.15 s and nothing
+      crossed the cut. Now the card and the ladder fade over 469.7 to 470.0 except the ladder's top
+      rung, do, which brightens to full and slides to (560, 520) (469.9 to 470.7, power2.inOut, on one
+      curve across the cut at 470.24) and condenses into S15's bead, the one that draws the long
+      note: home's rung becomes the next lesson's long note. '"support"' lands on "Singers"
+      (472.15), a second before its word, so the quoted term is up as the sentence starts.
+    - **The ladder fills the frame until the card needs the room.** It drew in the top 40 % with
+      56 px rungs as faint as 27 %, and read as specks over an empty frame (454.4 to 460.0). It now
+      draws at x 200 to 1720, y 140 to 620 (24 px a semitone, rungs 90 px wide, their strokes from
+      100 % down to 45 %) and eases to its card-time box (x 300 to 1620, y 150 to 460) over 459.4 to
+      460.0, before the card's first line. It stays a house-style drawing: what it shows (six rungs
+      ahead of the pitch line, the dashed target to the playhead, the sung line's break; FACTS 85,
+      89) is unchanged, and its spacing and strokes are the film's.
+    - **"Two groups, joined by a tone" reads on mute.** The halves lit 0.26 s apart and ended alike,
+      and the joining riser's 15 % growth did not show. S6's two brackets return on "Two groups"
+      (417.54 and 417.8), placed for F-recap-1, and on "joined" (418.23) the joining riser's "T"
+      scales 1.2 with its riser between them. Where the card panel or the top house is in a
+      bracket's way, card 1 may leave once its answer's labels have all landed, and the top house
+      may leave and return with the bottom one.
+    - **Each card brings its panel.** The panel waited empty for 1.55 s (405.9 to 407.44). It now
+      fades in with each card (card 1: 407.24 to 407.44) and leaves with it. The kicker "QUICK CHECK"
+      lands on the recap mark (405.64), half a second before Merc says it, so the end of S13's breath
+      (decision 96) does not run into an empty second.
+    - **One ripple.** The same left-to-right ripple ran six times in 40 s, once lighting every black
+      key while card 2 asked for two. It stays on "steps" (b46) only.
+    - **ti goes home.** The bead arced through the lit house and rested over it, so "becomes its
+      light" changed nothing. The top house now unlights as the bead drops onto ti (433.09); on do's
+      onset (433.74) the bead hops from ti straight into the house's centre, and the house lights as
+      it enters, with one echo ring.
+    - **The caption band.** The practise card rises 40 px (baselines 540 to 850) and its phone line
+      lands at 465.7, after b53's captions. F-recap-3's pivot moves from (300, 360) to (300, 400)
+      (`L.FRAMES['F-recap-3']`, oy -160, installed 19:27; S14 is its only user): the world sits 16 px
+      higher in it, so the stair names are at baseline 854, not 870, under b50 and b51, and stair 1
+      keeps its 29 px from Merc (decision 53).
+    - **S16.** The lockup's wipe gets a feathered edge (about 60 px), so no frame slices the
+      wordmark. The beads bob beside the lockup rather than orbit it, and the board now says so: a
+      quieter end card, and the critic kept the scene. Its first 0.37 s holds only the Mercs, but
+      they are growing into place, so it stays.
+    - **The card pause carries the pad.** BRIEF § Audio listed the pad only in the transitions and
+      the thinking pauses; the mix also lays it under `card`, a reading pause that would otherwise
+      drop to room tone for 4 s. That is intended, and the BRIEF now lists it.

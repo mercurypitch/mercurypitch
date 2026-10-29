@@ -248,7 +248,8 @@ into the next idea (staircase, keyboard, groups, slides, names, tiers, guide, la
 ## Audio
 
 - Music: none recorded. A quiet open-fifth pad on D (FACTS 69), only in the act transitions and
-  under the dressed thinking pauses (`q0`, `predict`, `q1`, `q2`, `q4`); silent under narration,
+  under the dressed thinking pauses (`q0`, `predict`, `q1`, `q2`, `q4`) and the practise card's reading
+  pause (`card`; DECISIONS 97); silent under narration,
   under every example and sung run, and in the listening silences, `hang-c`, `predict-d`,
   `hang-d`, `wait`, `q3` and `your-turn`, which keep only the room tone (playbook rule 12: after
   a C scale a pad on D is in the wrong key, and after a D scale it sounds home before the landing

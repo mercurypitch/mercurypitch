@@ -57,19 +57,14 @@
             finished: word('b35', 'finished'),                // the probe scales 1.2
             top: word('b36', 'top'),                          // 11b: the probe fades, the staircase dims to 20 %, the names fly out
             doh: word('b36', 'doh.'),                         // do lands on the top shelf and scales 1.05
-            later: word('b36', 'Later'),                      // "later studies: ..." types on
-            studies: word('b36', 'studies'),                  // the tiers scale and light in turn, top to bottom ("studies found
-                                                              // the same kind of order"), 0.7 s apart
-            training: word('b36', 'training'),                // and again ("without training too"), 0.3 s apart
-            without: word('b36', 'without'),                  // "as summed up in Janata et al., 2003" types on
+            later: word('b36', 'Later'),                      // "later studies: ..." lands
+            without: word('b36', 'without'),                  // "as summed up in Janata et al., 2003" lands
             only: word('b36', 'only', 'start', -0.04),        // the shelves close to 64 px apart (0.8 s)
-            weaker: word('b36', 'weaker.'),                   // the tiers scale in turn again
             so: word('b36', 'So', 'start', 0.06),             // 11c: the shelves spread back to 80 px (0.8 s)
-            home: word('b36', 'home'),                        // do's chip scales 1.05
             seemsB: word('b36', 'seems'),                     // a lit house falls toward the top shelf ...
             learned: word('b36', 'learned,'),                 // ... and lands beside do, pulsing as it lands
-            learnedEnd: word('b36', 'learned,', 'end'),       // do's chip lights as the word ends
-            just: word('b36', 'just'),                        // the chips scale 1.05 in turn, top shelf to bottom
+            just: word('b36', 'just'),                        // the one cascade: the chips scale 1.05 and light in turn, top
+                                                              // shelf to bottom (DECISIONS 92)
             pull: at('o11', 'start', -1.35),                  // the pull to F0, landing as Tavi's fall ends
             o11: at('o11'),                                   // 11d: the kicker and credits leave; the chips fly back
             full: word('o11', 'finished', 'start', 0.02),     // the staircase back to full (0.4 s)
@@ -104,8 +99,26 @@
           const PULL_DUR = 0.8
 
           /* ---------------------------------------------------------------- camera */
+          // 11a's push lands on F-exp (the staircase, the probe and the axis; the stair names stay over the caption
+          // band, since the chips fly up from them). On "top", as the names fly up, the camera follows them in to
+          // F-chart, which frames the shelves and the axis, not the dimmed staircase (component critic D-02 item D),
+          // landing as do lands on "doh.". Between the push and the pull the camera floats on a 5 px circle, one
+          // turn in 6 s (5.2 px a second), so the MS stays alive between its beats (DECISIONS 92); it fades in after
+          // the push and out before the pull, so both moves start and end on their framings at rest
+          const F_EXP = { s: 1.3, ox: -252, oy: -75 }, F_CHART = L.FRAMES['F-chart']
+          const T_MS = A.push + 1.2, FLOAT_R = 5, FLOAT_W = (2 * Math.PI) / 6
+          const floatAmp = (t) => P(t, T_MS, 1.2, 'sine.inOut') * (1 - P(t, A.pull - 1.0, 1.0, 'sine.inOut'))
           const cam = L.frameRig(room, { from: 'F0' })
-          cam.to(A.push, 1.2, 'F-chart', 'power2.inOut')
+          cam.to(A.push, 1.2, F_EXP, 'power2.inOut')
+          cam.curve(T_MS, A.pull - T_MS, (u) => {
+            const t = T_MS + u * (A.pull - T_MS)
+            const k = P(t, A.top, A.doh - A.top, 'power2.inOut'), a = floatAmp(t), ph = FLOAT_W * (t - T_MS)
+            return {
+              s: lerp(F_EXP.s, F_CHART.s, k),
+              ox: lerp(F_EXP.ox, F_CHART.ox, k) + a * FLOAT_R * Math.sin(ph),
+              oy: lerp(F_EXP.oy, F_CHART.oy, k) - a * FLOAT_R * Math.cos(ph),
+            }
+          })
           cam.to(A.pull, PULL_DUR, 'F0', 'power2.inOut')
 
           /* ---------------------------------------------------------------- the world (mid layer) */
@@ -231,20 +244,29 @@
           const credit2 = L.svg('text', { x: 120, y: 205, fill: L.C.ink2, opacity: 0, style: LAB32, text: 'later studies: without training too, only weaker' }, hud)
           const credit3 = L.svg('text', { x: 120, y: 245, fill: L.C.ink2, opacity: 0, style: LAB32, text: 'as summed up in Janata et al., 2003' }, hud)
           const LAB48 = "font: 600 48px 'Outfit', sans-serif; white-space: pre;"
-          // Tavi's answer as two labels (x 1250, baselines 320 and 400), each with a soft copy behind it for the glow
+          // Tavi's answer as two labels (x 1250, baselines 320 and 400). Each glows through a filter on its own text
+          // (its blurred shape in chrome under it, the glow's strength the flood's opacity), not through a second copy
+          // of the text, so each label is one element in its own zone (the full check's content_overlap at 328.7)
+          const hdefs = L.svg('defs', {}, hud)
           const answer = ['learned, it seems', 'one short step'].map((text, i) => {
+            const id = `${SID}-hglow${i}`
+            const fl = L.svg('filter', { id, x: '-20%', y: '-60%', width: '140%', height: '220%' }, hdefs)
+            L.svg('feGaussianBlur', { in: 'SourceAlpha', stdDeviation: 7, result: 'b' }, fl)
+            const flood = L.svg('feFlood', { 'flood-color': '#c3ccd6', 'flood-opacity': 0, result: 'c' }, fl)
+            L.svg('feComposite', { in: 'c', in2: 'b', operator: 'in', result: 'g' }, fl)
+            const merge = L.svg('feMerge', {}, fl)
+            L.svg('feMergeNode', { in: 'g' }, merge)
+            L.svg('feMergeNode', { in: 'SourceGraphic' }, merge)
             const g = L.svg('g', { opacity: 0 }, hud)
-            const glow = L.svg('text', { x: 1250, y: 320 + 80 * i, fill: '#c3ccd6', opacity: 0, filter: `url(#${SID}-hglow)`, style: LAB48, text }, g)
             const el = L.svg('text', { x: 1250, y: 320 + 80 * i, fill: L.C.ink, style: LAB48, text }, g)
-            return { g, glow, el }
+            return { g, el, flood, url: `url(#${id})` }
           })
-          {
-            const hdefs = L.svg('defs', {}, hud)
-            const hg = L.svg('filter', { id: SID + '-hglow', x: '-20%', y: '-60%', width: '140%', height: '220%' }, hdefs)
-            L.svg('feGaussianBlur', { stdDeviation: 7 }, hg)
-          }
-          // the hairline from "one short step"'s left end to the ti-do riser (1078, 365), drawn on toward the riser
-          const hair = L.svg('line', { x1: 1240, y1: 383, x2: 1240, y2: 383, stroke: '#c3ccd6', 'stroke-opacity': 0.7, 'stroke-width': 1.5, 'stroke-linecap': 'round', opacity: 0 }, hud)
+          // the hairline from "one short step"'s left end to the top of the ti-do riser (1078, 352; component critic
+          // D-02 item E), drawn on toward the riser. It lies in the world between the stairs' blocks and their risers,
+          // so its end runs under the semitone's gold corner and the gold stays whole (DECISIONS 85); the camera is at
+          // F0 while it shows, so world and screen agree
+          const hair = L.svg('line', { x1: 1240, y1: 383, x2: 1240, y2: 383, stroke: '#c3ccd6', 'stroke-opacity': 0.7, 'stroke-width': 1.5, 'stroke-linecap': 'round', opacity: 0 }, null)
+          st.gAll.insertBefore(hair, st.gAll.children[1])
           const tiCs = L.spell(hud, 'ti = C♯', { x: 1360, y: 300, size: 48, family: 'Outfit', weight: 600, fill: L.C.ink })
           tiCs.g.setAttribute('opacity', '0')
 
@@ -298,15 +320,18 @@
             if (c === DO1) return P(t, A.chipsHome, 0.25)
             return t >= c.back + c.bdur ? 1 : 0
           }
-          // the tiers' counted pulses, top shelf to bottom
-          // (the tiers pulse only while the shelves stand 80 px apart, so the chips keep 8 px apart when closed)
-          const TIERP = [0, 1, 2, 3].map((k) => [A.studies + 0.7 * k, A.training + 0.3 * k, A.just + 0.25 * k])
-          // on "weaker", with the shelves closed, the scale chips light (40 % chrome) in turn, top shelf to bottom
-          const TIERL = [0, 1, 2].map((k) => A.weaker + 0.15 * k)
-          const DOL = [A.doh + 0.6, A.learnedEnd]             // do's chip lights alone: after its landing pulse, and as "learned" ends
-          const tierPulse = (tier, t) => Math.max(
-            L.pulse(t, TIERP[tier], 'tile'),
-            tier === 0 ? L.pulse(t, [A.doh, A.home], 'tile') : 1)
+          // The one cascade, on "just by hearing music" (DECISIONS 92): each tier in turn, top shelf to bottom, 0.25 s
+          // apart, scales 1.05 and lights (40 % chrome; an outline chip's rim brightens), with a 0.12 s attack (3.6
+          // frames, sine.inOut) and a 0.6 s settle, so no tier lights within one frame. The shelves stand 80 px apart
+          // by then, so the chips keep 8 px apart at 1.05
+          const CASC = [0, 1, 2, 3].map((k) => A.just + 0.25 * k)
+          const cascade = (tier, t) => {
+            const dt = t - CASC[tier]
+            if (dt < 0 || dt >= 0.72) return 0
+            return dt < 0.12 ? L.ease('sine.inOut')(dt / 0.12) : 1 - L.ease('sine.inOut')((dt - 0.12) / 0.6)
+          }
+          // do's landing on "doh." (the board's scale 1.05) stays the kit's pulse; it lands moving, so it never pops
+          const tierPulse = (tier, t) => Math.max(1 + 0.05 * cascade(tier, t), tier === 0 ? L.pulse(t, A.doh, 'tile') : 1)
 
           L.clock(tl, D, (t) => {
             cam.apply(t)
@@ -382,19 +407,16 @@
               const sc = s.s * (t >= c.out + c.dur && t < c.back ? tierPulse(c.tier, t) : 1)
               c.el.g.setAttribute('opacity', s.a.toFixed(3))
               c.el.box.setAttribute('opacity', s.box.toFixed(3))
-              // an outline chip's rim brightens on its tier's pulses (its light)
-              if (c.dim) c.el.box.setAttribute('stroke-opacity', (0.35 + 0.45 * light(t, TIERP[3])).toFixed(3))
-              if (!c.dim) {
-                // the tiers' scale pulses light the chips too (larger events in this span with no Merc)
-                const k = Math.max(c.tier < 3 ? light(t, TIERL[c.tier], 0.3, 0.6) : 0, c.tier === 0 ? light(t, DOL.concat([A.home])) : 0, light(t, TIERP[c.tier]))
-                c.el.box.setAttribute('fill', k > 0.002 ? `rgb(${[27, 35, 45].map((v, i) => Math.round(lerp(v, [195, 204, 214][i], 0.4 * k))).join(',')})` : UNLIT)
-              }
+              // the cascade lights each tier as it scales: an outline chip's rim brightens, a scale chip's fill
+              const k = cascade(c.tier, t)
+              if (c.dim) c.el.box.setAttribute('stroke-opacity', (0.35 + 0.45 * k).toFixed(3))
+              else c.el.box.setAttribute('fill', k > 0.002 ? `rgb(${[27, 35, 45].map((v, i) => Math.round(lerp(v, [195, 204, 214][i], 0.4 * k))).join(',')})` : UNLIT)
               c.el.g.setAttribute('transform', `translate(${f1(s.p[0])} ${f1(s.p[1])}) scale(${sc.toFixed(4)})`)
             }
             {
               // it falls 70 px from "seems" (accelerating, as a drop) and lands on "learned"
               const u = P(t, A.seemsB, A.learned - A.seemsB, 'power2.in')
-              shelfHouse.draw({ x: 916, y: shelfY(0, t) - 2 - 52 - 70 * (1 - u), a: P(t, A.seemsB, 0.2) * expOut, lit: 1, scale: Math.max(tierPulse(0, t), L.pulse(t, A.learned, 0.12)) })
+              shelfHouse.draw({ x: 916, y: shelfY(0, t) - 2 - 52 - 70 * (1 - u), a: P(t, A.seemsB, 0.2) * expOut, lit: 1, scale: Math.max(1 + 0.05 * cascade(0, t), L.pulse(t, A.learned, 0.12)) })
             }
             // 11e and 11f: "leading note" (in on "leading", rising 14 px; scaling 1.2 on "note"), riding the slide;
             // the arrow (drawn on "leading to", pulsing on "leads", drawn again on "leans")
@@ -437,11 +459,14 @@
               const sc = L.pulse(t, A.seems + 0.1 * i, 0.08)
               const y = 320 + 80 * i - 17
               lab.g.setAttribute('transform', `translate(1250 ${f1(y + 12 * (1 - u))}) scale(${sc.toFixed(4)}) translate(-1250 ${-y})`)
-              lab.glow.setAttribute('opacity', (0.7 * L.env(t, A.seems + 0.1 * i, 0.3, 0.5, 0.6)).toFixed(3))
+              const glow = 0.7 * L.env(t, A.seems + 0.1 * i, 0.3, 0.5, 0.6)
+              lab.flood.setAttribute('flood-opacity', glow.toFixed(3))
+              if (glow > 0.002) lab.el.setAttribute('filter', lab.url)
+              else lab.el.removeAttribute('filter')
             })
             {
               const u = P(t, A.oneShort + 0.1, 0.5, 'power2.inOut')
-              hair.setAttribute('x2', f1(lerp(1240, 1084, u))); hair.setAttribute('y2', f1(lerp(383, 365, u)))
+              hair.setAttribute('x2', f1(lerp(1240, 1078, u))); hair.setAttribute('y2', f1(lerp(383, 352, u)))
               hair.setAttribute('opacity', ((t >= A.oneShort + 0.1 ? 1 : 0) * (1 - P(t, A.labelsOut, 0.2))).toFixed(3))
             }
             {

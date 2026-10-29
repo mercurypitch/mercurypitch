@@ -1578,3 +1578,31 @@ Note: the lanes' memory gate read a stale cgroup path after the 21:00 restart (f
   (backups *.before-95.md). F's stuck waiter (pid 8501, self-matching pgrep -f) stopped by PID; F ended.
 - 19:0x critic F-01 launched (critics/F.txt + disk note) -> review/component-F-01/REPORT.md.
   Agents now: E-01 + F-01. Next slots: D round 3, then A round 2, C small, B small.
+- 19:1x critic E-01 back: REVISE s12 + s13 (path 3 px merges with lane rules at phone size; gold
+  risers left behind in S12a's tip; S13d lands everything in 0.5 s, no settle; beads 0.19 s early on
+  every lane change; amber band vanishes before the chrome path; "wait on ti" scales about its centre;
+  Tavi at 240 demoted, bead parks half off, 3 unboarded beats). Saved review/component-E-01/REPORT.md.
+- 19:1x critic F-01 back: REVISE s14 + s15, KEEP s16 (3.3 s void across the S14/S15 join; ladder in
+  top 40 % with faint rungs; "two groups" not readable on mute; panel empty 1.55 s; ripple x6;
+  bead through the lit house; caption band: phone line under b53, F-recap-3 names at 870; S16 wipe
+  slices wordmark; beads bob). Saved review/component-F-01/REPORT.md (verbatim).
+- 19:2x DECISIONS 96 (E-01): path 6 px chrome 70 %, faint fills on the 8 named lanes (inset 2 px),
+  segment under cursor lit; S12 band thins/cools into the path in place; S13d tip from 403.94, blocks
+  >= 0.5 s each, still by ~405.15, Merc's move unchanged 404.0-405.2 (0.3 s settle); risers ride/fade
+  with stairs (gold gone by 343.99); bead crossings within 40 ms of measured onsets, park inside x
+  1440; "wait on ti" from left edge; Tavi 300 at (1800, 840) from S13a (only Merc moves in the
+  breath); unboarded beats only if word-tied. Board, HANDOFFS, BUILD-GUIDE, LEDGER row 16 updated
+  (backups $S/l4entr/*.before-96.md). E-fix2-msg.txt SENT to builder E (resumed). Agents now: D + E.
+- 19:27 DECISIONS 97 (F-01): top rung carries across the 470.24 cut into S15's bead (469.9-470.7),
+  '"support"' on "Singers" (472.15); ladder large (x 200-1720, y 140-620, 24 px/semitone, rungs 90 px,
+  45 % floor), eases to card-time box (y 150-460) 459.4-460.0; S6 brackets on "Two groups", T scales on
+  "joined"; panel with each card, kicker on the recap mark 405.64; one ripple ("steps"); house unlit
+  at 433.09, bead hops straight in on do (433.74); card +40 px up (540-850), phone line 465.7;
+  KIT CHANGE: L.FRAMES['F-recap-3'] oy -144 -> -160 (pivot (300, 400); names 870 -> 854), backup
+  $S/l4entr/kit-before-97/frames.js; S16 wipe feathered ~60 px, bob on the board; card pad confirmed
+  (BRIEF § Audio lists `card`). Board, HANDOFFS, BUILD-GUIDE, BRIEF, LEDGER row 17 updated (backups
+  *.before-97.md). F-fix-msg.txt READY, not sent: send to F when D or E hands back.
+- Slot queue now: F round (F-fix-msg), A round 2 (A-fix2-msg), C small (C-fix2-msg), B small
+  (B-fix4-msg); then verification critics D-03, E-02, F-02, A-03, C-03, B-04 (each given the
+  previous report path only). Watch at integration: the S13/S14 seam hold (405.2 to the kicker at
+  405.64), and HANDOFFS F-chart row once D reports its new numbers.

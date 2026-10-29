@@ -101,3 +101,25 @@ set S10's mouth to (156, 797) and re-timed the tags (merc-tags starts a running 
   (1.3 / 30 s), longest 0.2. Text sweep: no contrast findings (s09's EDGE '6' only). Root check: 5 errors, all
   m12-orange in s12 to s16. clock-lint silent; merc-tags clean. 60 fps label scans: 0 frames in all three.
   Chip gaps: 8.0 world px closed, 12 on the flights. Report stills: lab/<scene>/fix1, fix2.
+
+## Round 3, D-02 (review/component-D-02/REPORT.md; DECISIONS 92 and 93)
+
+- s10 (A): "still hanging?" is ti's question: Outfit 500, 40 px on screen in CU-C (22.2 world px), ink-2, in
+  the world centred on ti's column (x 1018, baseline 331.7, so 165 on screen), its box 736 to 969 x 125 to 175,
+  23 px over do's tread and the gold corner; a hairline (x 852, 184 to 240 on screen) draws down to ti's tread
+  over 0.3 s as "Tee" is said; label and hairline leave from 0.1 s before "semitone" over 0.2 s (gone as
+  "1 semitone" lands). Holds: stair 7 lights again on "below" (0.4/0.8), so ti and do light in turn on
+  "below doh"; the hairline's draw and the handover sit in the old holds at 2.3 and 5.2.
+- s11 (B): one cascade, on "just" (0.25 s apart, 0.12 s sine.inOut attack, 0.6 s settle; scale 1.05 and the
+  40 % light, an outline chip's rim). The cascades on "studies", "training" and "weaker", the do-only pulse on
+  "home" and do's lights after its landing and on "learned," are gone. Between the beats the camera floats on a
+  5 px circle, a turn in 6 s, from the push's landing to the pull (in over 1.2 s, out over 1.0 s).
+- s11 (D): F-chart is now { s: 1.45, ox: -432, oy: -47 } (assets/lib/frames.js, its only entry I changed): the
+  shelves, chips, axis and labels at x 148 to 1772 and y 297 to 790 on screen. 11a's push lands on the old
+  numbers (1.3, -252, -75), inline in s11 as F_EXP, because the stair names (the chips' origins) must sit over
+  the caption band; on "top" the camera follows the names in to F-chart, landing on "doh." (307.13 to 308.22).
+- s11 (E): the hairline ends at the top of the riser (1078, 352), drawn in the world between the stairs' blocks
+  and risers so the gold corner stays whole over its end.
+- s11 (F): credit 2's foot (213) is 84 px or more over the do chip (297 at the float's top and the 1.05 scale).
+- s11 (check): the answer labels glow through a filter on their own text (a flood in the blurred alpha), not a
+  second text copy, so no two texts share a zone (the content_overlap at 328.68 to 329.49).

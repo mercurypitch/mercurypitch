@@ -38,10 +38,12 @@
           const A = {
             push: word('b32', 'Back', 'start', 0.05),        // 10a: the push to CU-C (1.5 s), the strip fading and sinking
             question: word('b32', 'question.'),               // "still hanging?" lands; do's name, then ti's, scale 1.2
+            teeH: word('b32', 'Tee', 'start', -0.15),         // the hairline from "still hanging?" reaches ti's tread on "Tee"
             tee: word('b32', 'Tee'),                          // ti's name scales 1.2 (65 px in CU-C)
             seventh: word('b32', 'seventh'),                  // stair 7 lights chrome
             sits: word('b32', 'sits'),                        // ti's stair scales 1.05
-            semitone: word('b32', 'semitone'),                // the ti-do riser grows; "1 semitone" lands
+            semitone: word('b32', 'semitone'),                // the ti-do riser grows; "1 semitone" lands; "still hanging?" leaves
+            below: word('b32', 'below'),                      // stair 7 lights again ("ti ... below"), then do on "doh:"
             dohW: word('b32', 'doh:'),                        // the top stair lights ("below doh")
             last: word('b32', 'the last step'),               // the riser grows again
             step: word('b32', 'step', 'start', -0.03),        // the ink arrow draws from ti's tread up to do's (0.6 s)
@@ -149,10 +151,14 @@
           /* ---------------------------------------------------------------- frame-fixed type (hud) */
           const hud = L.stageOf(room.hud)
           const semiT = L.svg('text', { x: 1200, y: 250, fill: L.C.ink, opacity: 0, style: "font: 600 48px 'Outfit', sans-serif; white-space: pre;", text: '1 semitone' }, hud)
-          // CU-C leaves the frame's right side bare (component critic D-01 item 16): on "Back to the opening
-          // question" the cold open's own question, "still hanging?" (s01's words, Outfit 600 64 px, ink), comes back
-          // there, under where "1 semitone" will land, so the close-up answers it; both leave before the pull
-          const hangT = L.svg('text', { x: 1200, y: 460, fill: L.C.ink, opacity: 0, style: "font: 600 64px 'Outfit', sans-serif; white-space: pre;", text: 'still hanging?' }, hud)
+          // On "Back to the opening question" the cold open's own words, "still hanging?", come back as ti's question
+          // (row 10a, DECISIONS 92): Outfit 500 40 px on screen in ink-2, so it ranks under "1 semitone" (600 48 px,
+          // ink); in the world over ti's column (it rides the push's end), baseline 165 in CU-C, 23 px over do's
+          // tread and gold corner; a hairline draws from it down to ti's tread as "Tee" is said; both leave as
+          // "1 semitone" lands
+          const HANG = { x: ST.colX(7, 0), y: (165 + 432) / 1.8, top: (184 + 432) / 1.8, foot: ST.tread(7, 0) - 8 / 1.8 }
+          const hangT = L.svg('text', { x: HANG.x, y: HANG.y, 'text-anchor': 'middle', fill: L.C.ink2, opacity: 0, style: `font: 500 ${f1(40 / 1.8)}px 'Outfit', sans-serif; white-space: pre;`, text: 'still hanging?' }, mid)
+          const hangHair = L.svg('line', { x1: HANG.x, x2: HANG.x, y1: HANG.top, y2: HANG.top, stroke: '#c3ccd6', 'stroke-opacity': 0.7, 'stroke-width': f1(1.5 / 1.8), 'stroke-linecap': 'round', opacity: 0 }, mid)
 
           /* ---------------------------------------------------------------- per-frame state */
           const GROW = [A.semitone, A.last, A.short]
@@ -190,7 +196,7 @@
                 }
                 if (t >= RUN[n - 1]) return { lit: P(t, RUN[n - 1], 0.15, 'power2.out') * blueA(t), color: 'blue', names }
                 return {
-                  lit: n === 7 ? Math.max(light(t, A.seventh, 0.4, 0.8), light(t, A.stop)) : n === 1 ? light(t, A.fromC) : 0, color: 'chrome', names,
+                  lit: n === 7 ? Math.max(light(t, A.seventh, 0.4, 0.8), light(t, A.below, 0.4, 0.8), light(t, A.stop)) : n === 1 ? light(t, A.fromC) : 0, color: 'chrome', names,
                   scale: n === 7 ? L.pulse(t, A.sits, 'tile') : 1,
                 }
               },
@@ -239,8 +245,15 @@
             // "1 semitone" (frame-fixed, in CU-C), in on "semitone" rising 12 px, out before the pull
             semiT.setAttribute('opacity', (P(t, A.semitone, 0.2) * (1 - P(t, A.out1, 0.2))).toFixed(3))
             semiT.setAttribute('transform', `translate(0 ${f1(12 * (1 - P(t, A.semitone, 0.45, 'power2.out')))})`)
-            hangT.setAttribute('opacity', (P(t, A.question, 0.2, 'power2.out') * (1 - P(t, A.out1, 0.2))).toFixed(3))
-            hangT.setAttribute('transform', `translate(0 ${f1(12 * (1 - P(t, A.question, 0.45, 'power2.out')))})`)
+            {
+              // in on "question." rising 12 px (on screen in CU-C); out from 0.1 s before "semitone", gone 0.1 s after
+              const out = 1 - P(t, A.semitone - 0.1, 0.2, 'sine.inOut')
+              hangT.setAttribute('opacity', (P(t, A.question, 0.2, 'power2.out') * out).toFixed(3))
+              hangT.setAttribute('transform', `translate(0 ${f1((12 / 1.8) * (1 - P(t, A.question, 0.45, 'power2.out')))})`)
+              const hu = P(t, A.teeH, 0.3, 'sine.inOut')
+              hangHair.setAttribute('y2', f1(lerp(HANG.top, HANG.foot, hu)))
+              hangHair.setAttribute('opacity', ((hu > 0.01 ? 1 : 0) * out).toFixed(3))
+            }
           })
           window.__timelines = window.__timelines || {}
           window.__timelines[SID] = tl

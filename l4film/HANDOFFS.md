@@ -159,12 +159,12 @@ to 1880; 40 px from the rows (1680), 44 from the strip (1676), 46 from stair 8 o
 | CU-C       | 1.8  | -980    | -432    | (1225, 540)       | S10a           | la, ti, do x 536 to 1169, names baseline 871; the ti-do riser at x 960 from y 248 to 202; the top house x 1018 to 1119, y 83 to 176; the strip faded                                                                |
 | F-chart    | 1.3  | -252    | -75     | (840, 250)        | S11a to S11c   | the tiers: do's chip x 762 to 918, y 242 to 315, the fourth shelf to y 627; the axis at x 1438 from y 289 to 653, "finishes it best" from x 1464; stair names at 866; the strip under the caption band (from y 913) |
 | F-recap-1  | 1.25 | -75     | -75     | (300, 300)        | S14a, S14b     | C's stairs x 228 to 1418 (stair 1 x 228 to 368, y 755 to 845; 38 px from Merc), the top house x 1313 to 1383, y 283 to 348, names baseline 830; the strip faded                                                     |
-| F-recap-3  | 1.4  | -120    | -144    | (300, 360)        | S14d           | la, ti, do x 1059 to 1552; the ti-do riser at x 1389 from y 385 to 349; the top house x 1434 to 1512, y 256 to 329; stair 1 x 219 (29 px from Merc), foot 886; names baseline 870; the strip faded                  |
+| F-recap-3  | 1.4  | -120    | -160    | (300, 400)        | S14d           | la, ti, do x 1059 to 1552; the ti-do riser at x 1389 from y 369 to 333; the top house x 1434 to 1512, y 240 to 313; stair 1 x 219 (29 px from Merc), foot 870; names baseline 854 (DECISIONS 97); the strip faded     |
 
 **The panel and the recap framings.** The card panel (x 120 to 1000, y 140 to 330) is frame-fixed.
 In F0 the highest tread under it is 378 (stair 6 on D, stair 3 on G), 48 px below it; in F-recap-1
 the highest is the corner of stair 6 that reaches under it (x 978 to 1000) at y 463, 133 px below
-it; in F-recap-3 nothing of the staircase under the panel rises above y 531.
+it; in F-recap-3 nothing of the staircase under the panel rises above y 515.
 
 ## Camera moves
 
@@ -394,10 +394,15 @@ risers measured (no labels), hairlines; the strip with D major's keys, F♯4 and
   840), Tavi (1700, 840), size 360: bodies x 145 to 335 and 1605 to 1795, Merc's 184 px clear of the
   names (the widest, "do", from x 519) and Tavi's 165 px of the lanes. The beads drop onto the
   path's start (600, 737), 22 px clear of the names: Merc's 348.0 to 348.19, Tavi's 363.53 to
-  363.72.
+  363.72. A bead's centre crosses into the next lane within 40 ms of the voice's onset of that
+  note, measured from the sung track (DECISIONS 96), and the pulses on the hold and the landing ring
+  key to the same onsets. A bead parks on do's segment with its right edge at x 1440 at the latest
+  (centre 1418 or left of it), never past the path's end.
 - **S12a's tip (343.7 to 345.5).** The rows D4 to D5 (world k 2 to 14) stretch onto lanes 0 to 12
   (the names carry no octave) and the other rows fade; the blocks fade (343.7 to 344.3) while each
-  tread slides and stretches onto its segment, ti's onto the hold; the top house rides to (1381,
+  tread slides and stretches onto its segment, ti's onto the hold; every riser rides with its stair
+  (no part of one stays where the stair was) and fades with the blocks, the gold pair gone by
+  343.99; the top house rides to (1381,
   116); the bottom house and the stair names fade (343.7 to 344.0); the lane names fade in (345.3 to
   345.6) **(provisional: the lab decides the curves)**.
 - **S12 to S13 (372.92).** The S12 guide with every segment lit, the orange bead on D4's segment end
@@ -406,48 +411,59 @@ risers measured (no labels), hairlines; the strip with D major's keys, F♯4 and
 - **The guide in S13.** It moves 373.0 to 373.9 (power2.inOut) to lanes x 1060 to 1700, 40 px each:
   lane k spans `y = 720 - 40 (k + 1)` to `720 - 40 k`; names right-aligned at x 1040, baselines 711,
   631, 551, 511, 431, 351, 271, 231. The names travel with the move from right-aligned 556 to 1040,
-  so the top do's left edge is at x 837 at 373.50, 37 px clear of "Your turn." (x 360 to 800, its ink
-  to 788), and at 892 when the title lands at 373.55 (power2.inOut, as measured in the S13 lab).
-  The plain path (solid chrome, 3 px at 70 %) at 74.42 px a second: D3 1060 to 1120, E3 to 1179,
-  F♯3 to 1239, G3 to 1298, A3 to 1358, B3 to 1417, the hold to 1566, the rest to 1611, D4 1611 to
-  1700. The cursor a vertical chrome line, 4 px with a soft glow,
-  spanning the lanes. The count-in's bead drops onto (1090, 700), the middle of do's segment, 28 px
+  so the top do's left edge is at x 837 at 373.50 and at 892 when the title lands at 373.55
+  (power2.inOut, as measured in the S13 lab), 72 px clear of "Your turn." (x 380 to 820).
+  The plain path (solid chrome, 6 px at 70 %; DECISIONS 96) at 74.42 px a second: D3 1060 to 1120,
+  E3 to 1179, F♯3 to 1239, G3 to 1298, A3 to 1358, B3 to 1417, the hold to 1566, the rest to 1611, D4
+  1611 to 1700. It is S12's amber band, thinned from 14 px and cooled to chrome in place (372.94 to
+  373.54). The lanes have no rules: lanes 0, 2, 4, 5, 7, 9, 11 and 12 (the eight with names) are
+  filled with chrome at about 6 %, each inset 2 px top and bottom, so 4 and 5 (mi, fa) and 11 and 12
+  (ti, do) show a 4 px gap; the other five are empty. The fills replace S12's lane rules over 373.24
+  to 373.54. The cursor a vertical chrome line, 4 px with a soft glow, spanning the lanes; the
+  segment under it at full chrome with the same glow, back to 70 % as the cursor leaves it (about
+  0.1 s each way). The count-in's bead drops onto (1090, 700), the middle of do's segment, 28 px
   clear of the names, landing at 394.24 and gone by 395.24. Merc moves to size 300 at (240, 840)
-  (body x 160 to 320); Tavi to size 240 at (1820, 840) (body x 1756 to 1884, top y 686, 56 px clear
-  of the lanes).
+  (body x 160 to 320); Tavi to size 300 at (1800, 840), her recap corner (body x 1720 to 1880, top y
+  648: 20 px clear of the lanes' end, the keep-out, and 40 px from the frame's edge).
 - **The care block (S13).** Left-aligned at x 380 (DECISIONS 94: Merc's talking arcs reach x 351),
   no line past x 960 (35 px clear of the shortest lane name), nothing below y 864, 40 px clear of
   Merc's body and about 30 px of his arcs: "Your turn." serif italic 120 px, baseline 200 (x 380 to 820),
   landing at 373.55, once the names have passed; care lines from 373.85, 0.3 s
   after it, Outfit 500 32 px, ink, baselines 262 and 302, 352 and 392, 442 (the longest 445 px);
-  "wait on ti" Outfit 600 40 px at 492; the stop line Outfit 600 40 px, ink, at 548 and 592 ("Stop
+  "wait on ti" Outfit 600 40 px at 492 (its pulse scales from its left edge, x 380); the stop line Outfit 600 40 px, ink, at 548 and 592 ("Stop
   immediately if anything" 520 px, "feels uncomfortable."); the doctor lines Inter 30 px, ink-2,
   five lines at baselines 640, 677, 714, 751 and 788, landing at 373.9 once the guide has stopped,
   broken where the font puts them within 560 px (495, 555, 542, 534 and 363 px): "If hoarseness or
   discomfort lasts more / than a couple of weeks, see a doctor (a GP / or an ear, nose and throat
   specialist). If it's / very painful, or breathing or swallowing is / hard, get help straight
   away." No ring timer: the cursor shows the time.
-- **S13d's reverse tip (404.2 to 405.4).** The plain guide's lane k (S13 geometry) narrows onto
-  row k of the staircase on C (k 0 to 12, x 220 to 1680, 26 px), and rows C♯5 to G5 fade in above
-  (405.0 to 405.4); each segment slides and shortens onto its stair's tread (column centre
-  `298 + 120 (n - 1)`), the hold onto ti's; the blocks grow down to the foot (736) from 405.0; the
-  names fade in at baseline 724 and both houses fade in lit (405.2 to 405.45); the strip rises from
-  y +240 (404.9 to 405.45, power3.out), its hairlines fading in over its last 0.2 s. The Mercs move
-  404.0 to 405.2: Merc from (240, 840) at 300 to (110, 840) at 300, Tavi from (1820, 840) at 240 to
-  (1800, 840) at 300, both clear of every row and stair as they go (the rows are masked)
-  **(provisional: the lab decides the curves)**.
+- **S13d's reverse tip (403.94 to about 405.15; DECISIONS 96).** It leads from inside the fade of
+  S13's marks (403.84 to 404.24), which takes the lane names with it. From 403.94
+  (`at('your-turn', 'end', 0.10)`) to about 404.84 the plain guide's lane k (S13 geometry) narrows
+  onto row k of the staircase on C (k 0 to 12, x 220 to 1680, 26 px), the fills giving way to the
+  rows, and each segment slides and shortens onto its stair's tread (column centre
+  `298 + 120 (n - 1)`), the hold onto ti's. The blocks grow down to the foot (736) from their treads
+  as each lands, each over 0.5 s or more; stair 1's (x 242 to 354) only while Merc's body is 20 px
+  or more clear of it. Then, in this order and overlapping: rows C♯5 to G5 fade in above; the strip
+  rises from y +240 (power3.out), its hairlines fading in over its last 0.2 s; the names fade in at
+  baseline 724; both houses fade in lit. Everything of the staircase is still by about 405.15.
+  Merc moves 404.0 to 405.2 from (240, 840) to (110, 840), at 300 throughout, clear of every row
+  and stair as he goes (the rows are masked); Tavi stays at (1800, 840). The frame settles for about
+  0.3 s before the cut, the Mercs' idle keeping it alive **(provisional: the lab decides the curves
+  within these limits)**.
 
 ## E to F (S13 to S14 at 405.49)
 
 F0. The staircase on C at full: names do to do (baseline 724), both houses lit, risers unmeasured
 (4 px chrome at 40 %), no riser labels; the strip with C major's keys at full and the rest at 45 %,
-hairlines drawn, no key names. Merc at (110, 840) and Tavi at (1800, 840), both at 300 (their move
-ended 405.2; m12 spans the cut). Every mark of S13 gone (404.24).
+hairlines drawn, no key names. Merc at (110, 840) and Tavi at (1800, 840), both at 300 (Merc's move
+ended 405.2; Tavi has stood there since S13a; m12 spans the cut). Every mark of S13 gone (404.24).
 
 ## Inside F: S14 to S16
 
-- **Recap.** The card panel x 120 to 1000, y 140 to 330 (radius 16, a chrome stroke at 25 %,
-  obsidian fill at 85 %), text Outfit 600 40 px, ink, at x 150, baselines 220 and 280 (the longest
+- **Recap.** The kicker "QUICK CHECK" lands on the recap mark (405.64). The card panel x 120 to
+  1000, y 140 to 330 (radius 16, a chrome stroke at 25 %, obsidian fill at 85 %) fades in with each
+  card (card 1: 407.24 to 407.44) and leaves with it, never empty on screen; text Outfit 600 40 px, ink, at x 150, baselines 220 and 280 (the longest
   line, "Which two black keys does it need?", 628 px); the ring timer at (950, 250). Riser labels
   and the gold fills land as 14b and 14d say; at 419.62 and 443.01 every riser returns to unmeasured
   chrome. The bottom house fades out 413.0 to 413.3, before 14b's first label, and returns lit
@@ -455,45 +471,58 @@ ended 405.2; m12 spans the cut). Every mark of S13 gone (404.24).
   with the rest, so it shows no scale until "F sharp" (427.22), when D major's keys come up to full,
   F♯4 lit and named, and C♯5 on "C sharp" (427.84). The strip follows every later slide, as in S8:
   back to C major's keys on 14d's slide (429.8 to 430.6, F♯4 and C♯5 going dark) and to G major's on
-  14e's (449.5 to 450.3, F♯5 lit, its hairline slanting to it). In 14d's F-recap-3 the chrome bead
-  rests on ti at (1305, 354), lands on the top stair at (1473, 318) at 433.74 and rises into the
-  house (centre (1473, 293)), 433.8 to 434.1; the "S" right-aligned at x 1382 (world 1073), baseline
-  374, 14 px clear of the bead on ti.
+  14e's (449.5 to 450.3, F♯5 lit, its hairline slanting to it). In 14d's F-recap-3 the top house
+  unlights as the chrome bead drops onto ti (433.09), rests on ti at (1305, 338), and on do's onset
+  (433.74) hops straight into the house's centre (1473, 277), the house lighting as it enters
+  (433.74 to 434.04) with one echo ring; the "S" right-aligned at x 1382 (world 1073), baseline 358,
+  14 px clear of the bead on ti. In 14b S6's two brackets (§ S6's brackets) return over stairs 1 to
+  4 (417.54) and 5 to 8 (417.8), placed for F-recap-1 and 12 px or more from every label, house and
+  the panel (card 1 may leave once its labels have all landed, from 416.3, and the top house may
+  leave and return with the bottom one); on "joined" (418.23) and "tone" (419.05) the F-G riser
+  grows and its "T" scales 1.2. One ripple only, on "steps" (b46).
 - **The ladder (S14f).** The strip slides out and the stair blocks, names, risers, rows, houses and
   hairlines fade (453.9 to 454.5), leaving the eight treads, which become the sung line and the
-  rungs (454.0 to 455.2). Panel x 300 to 1620, y 150 to 470; title "Scale Runner" at (330, 200),
+  rungs (454.0 to 455.2). It draws large first (DECISIONS 97): panel x 200 to 1720, y 140 to 620, pitch at 24 px a
+  semitone, rungs 90 px wide with strokes from 100 % down to 45 %; the builder sets the rest of that
+  layout in the same proportions and reports it. Over 459.4 to 460.0 it eases to its card-time box,
+  below. Card-time box: panel x 300 to 1620, y 150 to 460; title "Scale Runner" at (330, 200),
   "ILLUSTRATION" right-aligned at (1590, 200). Playhead x 894 (45 % of the panel), a chrome line 2
-  px at 35 %, y 220 to 450. Pitch at 16 px a semitone, G4 at y 430: A4 398, B4 366, C5 350, D5 318,
-  E5 286, F♯5 254, G5 238. The note being asked for, re (A4): a dashed amber line (3 px, dash 10,
-  gap 8) at y 398 from the panel's inner margin (x 340) to the playhead, as the app draws it from
+  px at 35 %, y 220 to 440. Pitch at 16 px a semitone, G4 at y 422: A4 390, B4 358, C5 342, D5 310,
+  E5 278, F♯5 246, G5 230. The note being asked for, re (A4): a dashed amber line (3 px, dash 10,
+  gap 8) at A4's height (y 390 at card time) from the panel's inner margin (x 340) to the playhead, as the app draws it from
   its left margin (`PitchOverTimeCanvas.tsx`, the target line's `moveTo(MARGIN, y)`), with its name
   "A4" (mono 26 px, ink) in a small dark pill with an amber stroke against the playhead's left. The
   sung line (violet `#a78bfa`, 4 px, round): G4 from x 340 to 600, a break to 660 while the app
   plays the next note (FACTS 38), then A4 from 660 to the playhead, over the dashed line. Six chrome
-  rungs at x 992, 1090, 1188, 1286, 1384, 1482 (98 px apart, the app's spacing for six), 56 px wide,
-  the first 6 px thick and the rest 4 px, their strokes at 100, 85, 71, 56, 42 and 27 % (the app's
-  falloff, lifted); "B4" and "C5" (mono 30 px, ink-2) 10 px above the first two; a dashed chrome
-  connector (1 px, 30 %, dash 3 gap 4) from (894, 398) through the rungs. The app draws these in
+  rungs at card time at x 992, 1090, 1188, 1286, 1384, 1482 (98 px apart, the app's spacing for
+  six), 90 px wide large and 56 px at card time, the first 6 px thick and the rest 4 px, their
+  strokes at 100, 89, 78, 67, 56 and 45 % (the app's falloff, lifted; DECISIONS 97); "B4" and "C5" (mono 30 px, ink-2) 10 px above the first two; a dashed chrome
+  connector (1 px, 30 %, dash 3 gap 4) from the target at the playhead through the rungs. The app draws these in
   green (`PitchOverTimeCanvas.tsx:442`, `:530`, `:546`); the film keeps their shapes and draws them
   in its own colours (STORYBOARD § Codes). The run starts on G4, which the app plays when the singer
   picks it on Scale Runner's Starting Note dial (FACTS 89).
-- **The practise card (S14g).** Centred at x 960, every line within x 310 to 1610: baselines 580
-  (Outfit 600 48 px, 1055 px), 650, 710, 770 and 830 (Outfit 500 40 px: about 650, 1150, 560 and
-  440 px), and 890 (Outfit 500 32 px, ink-2, about 860 px: "On a phone, Settings and Exercises are
-  under [More icon] More"). The tab icons are the app's SVGs from `src/components/AppNavTabs.tsx`
+- **The practise card (S14g).** Centred at x 960, every line within x 310 to 1610, 40 px higher
+  than first built (DECISIONS 97): baselines 540 (Outfit 600 48 px, 1055 px), 610, 670, 730 and 790
+  (Outfit 500 40 px: about 650, 1150, 560 and 440 px), and 850 (Outfit 500 32 px, ink-2, about 860
+  px: "On a phone, Settings and Exercises are under [More icon] More", landing at 465.7, after b53's
+  captions). The first line's cap top clears the ladder's card-time box (y 460) by 40 px or more. The tab icons are the app's SVGs from `src/components/AppNavTabs.tsx`
   (Settings and Exercises), drawn 36 px in ink before each tab's name, and More's three dots from
   `src/components/mobile/BottomTabBar.tsx` (`EllipsisIcon`), 28 px in ink-2; the × is the intro's
-  close glyph (`src/features/onboarding/FirstLight.tsx`), 32 px in ink. The line at 710 is the
+  close glyph (`src/features/onboarding/FirstLight.tsx`), 32 px in ink. The line at 670 is the
   widest: the builder measures it and keeps it inside x 310 to 1610.
-- **S14 to S15 (470.24).** The Mercs in the corners at 300; the ladder and the card gone (469.9).
-- **S15.** '"support"' serif italic 160 px centred, baseline 420; the long note at y 520 from x 560
-  to 1360; "what keeps it steady?" serif italic 96 px centred, baseline 680.
+- **S14 to S15 (470.24).** The Mercs in the corners at 300; the card and the ladder gone (469.7 to
+  470.0) but for the ladder's top rung, do, which brightens to full and slides from its card-time
+  place to (560, 520) over 469.9 to 470.7 (power2.inOut) on one curve that both scenes compute from
+  film time, so it sits on the same pixels on both sides of the cut; it condenses into S15's chrome
+  bead as it lands.
+- **S15.** The bead (the carried rung) at (560, 520) from 470.7; '"support"' serif italic 160 px
+  centred, baseline 420, landing on "Singers" (472.15); the long note at y 520 from x 560 to 1360; "what keeps it steady?" serif italic 96 px centred, baseline 680.
 - **S15 to S16 (478.53).** The Mercs in the corners at 300; S15's type gone (478.5).
 - **S16.** The Mercs grow to 520 at (330, 840) and (1590, 840) (478.6 to 479.2): bodies x 192 to 468
   and 1452 to 1728; at rest their glow tops at y 512 to 516 and their bodies at 516 to 530 (y 507 is
   the box's top, not the ink). One celebration hop, the pass's own, about 79 px high (479.4 to 480.0,
-  its top at 479.73, the glow then up to y 453; DECISIONS 95). Lockup y 40 to 220; "Find your pitch."
-  baseline 330; the address Outfit 600 56 px, baseline 440, its descenders and underline to y 452,
+  its top at 479.73, the glow then up to y 453; DECISIONS 95). Lockup y 40 to 220, revealed by a wipe with a feathered edge (about 60 px), the beads bobbing
+  beside it; "Find your pitch." baseline 330; the address Outfit 600 56 px, baseline 440, its descenders and underline to y 452,
   rising in from `at('end', 'start', 1.35)` (first visible at 479.93, once the heads are back below y
   518), so it is never nearer a head than 57 px, and 60 px at rest; the skip line and "then
   [Exercises icon] Exercises › Scale Runner" Outfit 500 40 px, ink-2, baselines 510 and 570, within

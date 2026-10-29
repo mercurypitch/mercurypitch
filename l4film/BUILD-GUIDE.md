@@ -675,7 +675,8 @@ the hero view, y 323) after that.
   right-aligned at x 556; the path's amber band at 35 %, lighting to full behind the bead; "wait"
   over the hold; the house at (1381, 116)); `L.bead4` (each bead drops onto the path's start (600,
   737) and rides it, stepping up a lane on each note at the onsets above, lifting and dimming in the
-  rest); `L.arrow`; the chip "one octave up" (`L.pill`, mono 30 px); `L.echoRings`.
+  rest; DECISIONS 96: each crossing within 40 ms of the voice's onset as measured from the sung
+  track, and a bead parks with its right edge at x 1440 at the latest); `L.arrow`; the chip "one octave up" (`L.pill`, mono 30 px); `L.echoRings`.
 - Merc: m12-blue (feet (240, 840)) and m12-orange (feet (1700, 840)), rendered at 520 and shown at
   360, front, turned toward each other; Merc drops in at `at('b39', 'start', -1.1)` (342.50) and
   Tavi 0.12 s after him, both under the act 4 card and down as it leaves; the card's type keeps
@@ -683,7 +684,8 @@ the hero view, y 323) after that.
 - Checks: the tip and S13d's reverse tip read as the same staircase changing shape, with no frame
   where it is absent (a 2 s clip of 343.6 to 345.6 first); the beads drop onto the path 22 px or more
   from its names; the bead on do's segment keeps 21 px under the house; the lane names fade in only
-  as the tip lands.
+  as the tip lands; no riser stays where its stair was during the tip (the gold pair gone by
+  343.99); every lane crossing within 40 ms of its onset, measured, for both beads.
 
 ### s13-your-turn: Your turn (372.92 to 405.49)
 
@@ -692,47 +694,60 @@ the hero view, y 323) after that.
 - Out (to s14): **HANDOFFS § E to F** (fixed): F0; the staircase on C at full: names do to do
   (baseline 724), both houses lit, risers unmeasured, no riser labels; the strip with C major's keys
   at full and the rest at 45 %, hairlines drawn, no key names; Merc at (110, 840) and Tavi at (1800,
-  840), both at 300 (their move ended 405.2; m12 spans the cut); every mark of S13 gone (404.24).
+  840), both at 300 (Merc's move ended 405.2; Tavi there since S13a; m12 spans the cut); every mark
+  of S13 gone (404.24).
 - Kit: the guide's move to the right half (HANDOFFS § The guide in S13: lanes x 1060 to 1700, 40 px,
   names right-aligned at x 1040; from `at('b41', 'start', 0.08)`, 0.9 s, power2.inOut) and the plain
-  guide fading in on the moving lanes (thin chrome lanes, the names in ink-2, the path a solid 3 px
-  chrome line at 70 %); "Your turn." (serif italic 120 px at x 380, baseline 200); the care block
+  guide on the moving lanes (DECISIONS 96: S12's amber band thinning and cooling in place into the
+  path, a solid 6 px chrome line at 70 %, 372.94 to 373.54; the lane rules giving way to faint fills
+  on the eight named lanes, 373.24 to 373.54; the names in ink-2); "Your turn." (serif italic 120 px at x 380, baseline 200); the care block
   (HANDOFFS § The care block: every line, size, baseline and break as given); the count-in's bead
   (dropping onto (1090, 700), landing at `at('count-in')`, gone 1.0 s later); the cursor (a vertical
-  chrome line, 4 px with a soft glow, sweeping the lanes at your-turn's onsets); the reverse tip into
-  the staircase on C (HANDOFFS § S13d's reverse tip, from `at('your-turn', 'end', 0.36)`:
-  **provisional**, the lab decides the curves); `L.strip` (rising from y +240, 404.9 to 405.45,
-  power3.out, its hairlines over its last 0.2 s).
-- Merc: m12 (both). Over the guide's move Merc scales to 300 in place and Tavi to 240, moving to
-  (1820, 840); through your-turn both idle (the passes draw no arcs); over the breath, from
-  `at('your-turn', 'end', 0.16)` for 1.2 s, Merc moves to (110, 840) at 300 and Tavi to (1800, 840) at
-  300, both clear of every row and stair as they go (the rows are masked).
+  chrome line, 4 px with a soft glow, sweeping the lanes at your-turn's onsets, the segment under it
+  at full chrome with the same glow); the reverse tip into the staircase on C (HANDOFFS § S13d's
+  reverse tip, from `at('your-turn', 'end', 0.10)`, the staircase still by about 405.15:
+  **provisional**, the lab decides the curves within its limits); `L.strip` (rising from y +240 after
+  the blocks, power3.out, its hairlines over its last 0.2 s).
+- Merc: m12 (both). Over the guide's move Merc scales to 300 in place and Tavi to 300, moving to
+  (1800, 840), her recap corner (20 px from the lanes' end, 40 px from the frame's edge); through
+  your-turn both idle (the passes draw no arcs); over the breath, from `at('your-turn', 'end', 0.16)`
+  for 1.2 s, Merc moves to (110, 840) at 300, clear of every row and stair as he goes (the rows are
+  masked); Tavi stays.
 - Checks: nothing in S13 suggests the film or the app hears the viewer (no microphone, no listening
   ring, no ring timer, no Merc listening, nothing of the app's drawing over the turn); S12's marks
-  leave first (372.94 to 373.24) and the plain guide fades in after them; "Your turn." lands at
-  373.55 once the chip has gone and the moving names have passed (a still at 373.55: the top do's
-  left edge at x 857, the title ending at 811); the care lines from 373.85, the doctor lines at 373.9
+  leave first (372.94 to 373.24) while the band thins into the path in place (no frame without a
+  path), and the fills come in after them; "Your turn." lands at 373.55 once the chip has gone and
+  the moving names have passed (a still at 373.55: HANDOFFS § The guide in S13 has the positions);
+  the path reads at phone size (a still at 400 x 225: the path and the lit segment stand clear of the
+  fills); the care lines from 373.85, the doctor lines at 373.9
   once the guide has stopped; nothing of the care block below y 864 and no line past x 960; the
-  doctor lines at 4.5:1 or better.
+  doctor lines at 4.5:1 or better; in the breath the reverse tip starts inside the care block's fade,
+  no block grows in under 0.5 s, and the frame is still (bar the Mercs' idle) for about 0.3 s before
+  the cut.
 
 ### s14-recap: Quick check (405.49 to 470.24)
 
 - Rows: 14a to 14g. Group F.
 - In: E to F (fixed, above). The scene cuts on `recap` 0.15 s before it.
-- Out (to s15, same group): HANDOFFS § S14 to S15: the Mercs in the corners at 300; the ladder and
-  the card gone (469.9).
-- Kit: `L.kicker('Quick check')`; the card panel (frame-fixed: x 120 to 1000, y 140 to 330, radius
+- Out (to s15, same group): HANDOFFS § S14 to S15: the Mercs in the corners at 300; the card and
+  the ladder gone (470.0) but for the ladder's top rung, which slides across the cut into S15's bead
+  on one curve (469.9 to 470.7; DECISIONS 97).
+- Kit: `L.kicker('Quick check')` (landing on the recap mark, 405.64; DECISIONS 97); the card panel
+  (fading in with each card and leaving with it; frame-fixed: x 120 to 1000, y 140 to 330, radius
   16, a chrome stroke at 25 %, obsidian fill at 85 %; text Outfit 600 40 px, ink, at x 150,
   baselines 220 and 280); `L.ringTimer` (q1 to q4 at (950, 250)); `L.frameRig` (F-recap-1 from
-  `at('q1', 'start', 0.43)`, 1.6 s; the pull from `at('b47', 'end', 0.08)`, 1.0 s; F-recap-3 from
+  `at('q1', 'start', 0.43)`, 1.6 s; the pull from `at('b47', 'end', 0.08)`, 1.0 s; F-recap-3, now about (300, 400), from
   `word('b50', 4, 'start', 0.59)`, 1.2 s; the pull from `at('b51', 'end', 0.09)`, 1.0 s, each
   power2.inOut); `L.strip` (sinking 60 px and fading over each push via `dy` and `a`, returning over
   each pull; S14c's behaviour below); `L.stairs` (the riser labels and gold fills of 14b and 14d,
   every riser back to unmeasured at 419.62 and 443.01; the slides to D, C and G; both do stairs and
-  houses); `L.bead4` (ti-do: the drop onto ti, 433.09 to 433.29, the hop to the top stair at 433.74,
-  the rise into the house, 433.8 to 434.1); the ladder (S14f, HANDOFFS § The ladder: the panel, the
+  houses); `L.bead4` (ti-do: the top house unlighting as the bead drops onto ti, 433.09 to 433.29; on
+  do's onset, 433.74, the hop from ti straight into the house's centre, the house lighting as it
+  enters, 433.74 to 434.04); S6's two brackets in 14b (`L.bracket`, HANDOFFS § S6's brackets, placed
+  for F-recap-1); one ripple, on "steps"; the ladder (S14f, HANDOFFS § The ladder: drawn large first
+  and eased to its card-time box over 459.4 to 460.0; the panel, the
   playhead, the dashed amber target line and its "A4" pill, the violet sung line with its break, six
-  chrome rungs at the app's spacing and falloff, "B4" and "C5", the dashed connector, "Scale Runner"
+  chrome rungs at the app's spacing and the lifted falloff (100 % down to 45 %), "B4" and "C5", the dashed connector, "Scale Runner"
   and "ILLUSTRATION"); the practise card (HANDOFFS § The practise card: the tab icons are the app's
   SVGs in `src/components/AppNavTabs.tsx` and the × the intro's close glyph in
   `src/features/onboarding/FirstLight.tsx`, read with `git show b803c7d43:<path>`); `L.arrow`;
@@ -744,7 +759,11 @@ the hero view, y 323) after that.
   keys come up on "F sharp" (427.22), F♯4 lit and named, then C♯5 on "C sharp" (427.84); the bottom
   house fades out 413.0 to 413.3 (`at('q1', 'start', 2.43)`), before 14b's first label, and returns
   lit from `at('b47', 'end')`; no later card finds its answer already drawn; in F-recap-3 the "S"
-  stands right-aligned at screen x 1382, baseline 374, 14 px clear of the bead on ti; the stairs keep
+  stands right-aligned at screen x 1382, baseline 358, 14 px clear of the bead on ti, and the stair
+  names sit at baseline 854; nothing in S14 holds still over 0.5 s from the cut to card 1 (the
+  kicker lands at 405.64); the ladder fills the frame from 455.3 and has eased into its card-time
+  box before the card's first line (460.0); the top rung lands on the same pixels either side of
+  the 470.24 cut; the stairs keep
   38 px from Merc in F-recap-1 and 29 px in F-recap-3 (HANDOFFS § Framings); the ladder shows
   nothing the app does not (six rungs ahead, only the next two named, the sung line broken between
   notes, the run on G4, labelled "Illustration"); the rung names at 4.5:1 or better; the practise
@@ -757,27 +776,29 @@ the hero view, y 323) after that.
 - In: S14 to S15 (above). The scene cuts on `next` 0.15 s before it.
 - Out (to s16, same group): HANDOFFS § S15 to S16: the Mercs in the corners at 300; S15's type gone
   (478.5).
-- Kit: `L.kicker('Next time')`; '"support"' (serif italic 160 px with its quotation marks, centred,
-  baseline 420); the long note (a chrome bead drawing a level line from x 560 to 1360 at y 520,
-  474.1 to 475.4, wavering once on "pushing"); "what keeps it steady?" (serif italic 96 px, centred,
+- Kit: `L.kicker('Next time')`; the carried rung landing as a chrome bead at (560, 520) by 470.7
+  (HANDOFFS § S14 to S15); '"support"' (serif italic 160 px with its quotation marks, centred,
+  baseline 420, landing on "Singers", 472.15); the long note (the bead drawing a level line from x
+  560 to 1360 at y 520, 474.1 to 475.4, wavering once on "pushing"); "what keeps it steady?" (serif italic 96 px, centred,
   baseline 680).
 - Merc: m12 (both, 300, in the corners): Merc talks b54 and b55, Tavi o14.
 
 ### s16-end: End card (478.53 to 483.73)
 
-- Row: 16. Group F. Adapt Lesson 2's `output/motion/lesson-02/compositions/s17-end.html` (the lockup,
-  the bead orbits) with this film's lines (STORYBOARD 16, HANDOFFS § S16): "Find your pitch." (serif
+- Row: 16. Group F. Adapt Lesson 2's `output/motion/lesson-02/compositions/s17-end.html` (the lockup;
+  here the beads bob beside it rather than orbit, and the lockup's wipe has a feathered edge of
+  about 60 px; DECISIONS 97) with this film's lines (STORYBOARD 16, HANDOFFS § S16): "Find your pitch." (serif
   italic 120 px, baseline 330); "Practise it free: mercurypitch.com/pitch-training" (Outfit 600 56
   px, baseline 440); the skip line and "then [Exercises icon] Exercises › Scale Runner" (Outfit 500
-  40 px, ink-2, baselines 510 and 570, within x 636 to 1284). Lesson 2's file keys its orbit window
+  40 px, ink-2, baselines 510 and 570, within x 636 to 1284). Lesson 2's file keys its bead window
   to its own `s16-next`; here that is `s15-next`.
 - Merc: m12 (both): they grow to 520 and move to (330, 840) and (1590, 840) from `at('end', 'start',
   0.07)` for 0.6 s; the celebration is the passes' own (one hop, sparkles off, from
   `merc-shots.py`), and the scene draws a chrome ring under each on landing; the passes run to the
   film's end (trap 15).
-- Checks: the call to action is the one hold the quality bar allows; the address keeps 55 px above
-  the Mercs' heads, and 25 px at the top of their hop (a still at the hop's top once the pass
-  exists).
+- Checks: the call to action is the one hold the quality bar allows; the address sits 60 px above the
+  Mercs' heads at rest and never nearer than 57 px, rising in only once the hop has come down
+  (DECISIONS 95); no frame of the wipe slices the wordmark.
 
 ## Handoff confirmations
 

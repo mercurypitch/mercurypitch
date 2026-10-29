@@ -41,9 +41,9 @@
     'F-names-1': { s: 2.4, ox: -235, oy: -1232 },
     'F-names-2': { s: 2.4, ox: -1431, oy: -1232 },
     'CU-C': { s: 1.8, ox: -980, oy: -432 },
-    'F-chart': { s: 1.3, ox: -252, oy: -75 },
+    'F-chart': { s: 1.45, ox: -432, oy: -47 },
     'F-recap-1': { s: 1.25, ox: -75, oy: -75 },
-    'F-recap-3': { s: 1.4, ox: -120, oy: -144 },
+    'F-recap-3': { s: 1.4, ox: -120, oy: -160 },
   }
   const frameOf = (f) => {
     const v = typeof f === 'string' ? L.FRAMES[f] : f
