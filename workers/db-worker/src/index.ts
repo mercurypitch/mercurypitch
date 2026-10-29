@@ -35,6 +35,7 @@ import { retentionConfig, sweepFunnelRetention } from './funnel-retention'
 import { handleFriendAccept, handleFriendCode, handleFriendRedeem, handleFriendRemove, handleFriendRequest, handleFriendRequests, } from './friends'
 import { handleAchievementBulk, handleBadgeBulk, handleGrantContext, } from './grants'
 import { handleGuidedExerciseRequest } from './guided-exercises'
+import { handleExperimentalFeatureRequest, isExperimentalFeaturePath, } from './experimental-feature-routes'
 import { handleLessonStateRequest, isLessonStatePath, } from './lesson-state-routes'
 import { awardForSessionRecord, awardStreakBonuses, getLeagueMe, runWeeklyLeagueCut, } from './league'
 import { cleanMirrorMetrics, lessonAnswerInBounds } from './mirror-metrics'
@@ -2981,6 +2982,26 @@ async function handleRequest(
       if (!rl.allowed) return rateLimited(rl)
     }
     return handleLessonStateRequest(request, env, url, {
+      respond,
+      admin: () =>
+        resolveAdminWithIdentity(request, env, hasAdminKey(request, env)),
+    })
+  }
+
+  // The owner's switches for experimental features: the public read every
+  // page makes at startup, and the console's admin read and write behind it
+  // (experimental-feature-routes.ts). Writes are rate-limited like the
+  // generic CRUD path.
+  if (isExperimentalFeaturePath(url.pathname)) {
+    if (request.method !== 'GET' && request.method !== 'HEAD') {
+      const rl = await checkRateLimit(
+        env.DB,
+        rateLimitSubject(request, auth),
+        'crud-write',
+      )
+      if (!rl.allowed) return rateLimited(rl)
+    }
+    return handleExperimentalFeatureRequest(request, env, url, {
       respond,
       admin: () =>
         resolveAdminWithIdentity(request, env, hasAdminKey(request, env)),

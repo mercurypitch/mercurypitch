@@ -55,6 +55,10 @@ on:
       # The lesson-state contract, for the same reason: the worker validates
       # the Content Studio's writes with it and answers the site in its shape.
       - 'src/lib/lesson-state.ts'
+      # The experimental features list, for the same reason: the worker stores
+      # and serves a switch only for a name on it, so a feature added there
+      # must reach the dev worker before the owner's console can switch it.
+      - 'src/lib/experimental-features.ts'
   workflow_dispatch:
     inputs:
       environment:
