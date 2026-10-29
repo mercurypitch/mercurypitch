@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { TAB_META } from '@/components/AppNavTabs'
 import type { ActiveTab } from '@/features/tabs/constants'
-import { isTabVisible, MAX_INLINE_GROUP_TABS, MOBILE_BAR_TAB_PRIORITY, mobileBarTabs, PRIMARY_TABS, splitGroupTabs, TAB_ANALYSIS, TAB_CHALLENGES, TAB_COMMUNITY, TAB_COMPOSE, TAB_EAR_LAB, TAB_EXERCISES, TAB_GROUPS, TAB_GUITAR, TAB_HOME, TAB_JAM, TAB_KARAOKE, TAB_LEADERBOARD, TAB_ORDER, TAB_PATH, TAB_PIANO, TAB_PROGRESS, TAB_SETTINGS, TAB_SINGING, TAB_STUDIO_NIGHT, TAB_VOICE_HISTORY, tabGroupOf, visibleTabOrder, } from '@/features/tabs/constants'
+import { isTabVisible, MAX_INLINE_GROUP_TABS, MOBILE_BAR_TAB_PRIORITY, mobileBarTabs, PRIMARY_TABS, splitGroupTabs, TAB_ANALYSIS, TAB_CHALLENGES, TAB_COMMUNITY, TAB_COMPOSE, TAB_EAR_LAB, TAB_EXERCISES, TAB_GUITAR, TAB_HOME, TAB_JAM, TAB_KARAOKE, TAB_LEADERBOARD, TAB_PATH, TAB_PIANO, TAB_PROGRESS, TAB_SETTINGS, TAB_SINGING, TAB_STUDIO_NIGHT, TAB_VOICE_HISTORY, tabGroupOf, tabGroups, tabOrder, visibleTabOrder, } from '@/features/tabs/constants'
 
 // These tests pin the single source of truth that drives BOTH the visible tab
 // bar (AppNavTabs) and the mobile swipe navigation (App.tsx). If a tab is
@@ -9,17 +9,17 @@ import { isTabVisible, MAX_INLINE_GROUP_TABS, MOBILE_BAR_TAB_PRIORITY, mobileBar
 // like Guitar/Exercises drifting out of order on swipe.
 describe('tab order', () => {
   it('flattens the groups in declared order', () => {
-    const fromGroups = TAB_GROUPS.flatMap((g) => [...g.tabs])
-    expect([...TAB_ORDER]).toEqual(fromGroups)
+    const fromGroups = tabGroups().flatMap((g) => [...g.tabs])
+    expect([...tabOrder()]).toEqual(fromGroups)
   })
 
   it('has no duplicate tabs across groups', () => {
-    expect(new Set(TAB_ORDER).size).toBe(TAB_ORDER.length)
+    expect(new Set(tabOrder()).size).toBe(tabOrder().length)
   })
 
   it('keeps Piano immediately before Guitar (the instrument selector order)', () => {
-    const guitar = TAB_ORDER.indexOf(TAB_GUITAR)
-    const piano = TAB_ORDER.indexOf(TAB_PIANO)
+    const guitar = tabOrder().indexOf(TAB_GUITAR)
+    const piano = tabOrder().indexOf(TAB_PIANO)
     expect(piano).toBeGreaterThanOrEqual(0)
     expect(guitar).toBe(piano + 1)
   })
@@ -28,21 +28,21 @@ describe('tab order', () => {
     // Regression: Exercises used to be missing from the hand-maintained swipe
     // array, so swiping skipped it entirely.
     for (const tab of [TAB_PIANO, TAB_GUITAR, TAB_EXERCISES, TAB_CHALLENGES]) {
-      expect(TAB_ORDER).toContain(tab)
+      expect(tabOrder()).toContain(tab)
     }
   })
 
   it('keeps Progress immediately after Path', () => {
-    const path = TAB_ORDER.indexOf(TAB_PATH)
-    const progress = TAB_ORDER.indexOf(TAB_PROGRESS)
+    const path = tabOrder().indexOf(TAB_PATH)
+    const progress = tabOrder().indexOf(TAB_PROGRESS)
 
     expect(path).toBeGreaterThanOrEqual(0)
     expect(progress).toBe(path + 1)
   })
 
   it('keeps Hear Yourself immediately after Progress', () => {
-    const progress = TAB_ORDER.indexOf(TAB_PROGRESS)
-    const voiceHistory = TAB_ORDER.indexOf(TAB_VOICE_HISTORY)
+    const progress = tabOrder().indexOf(TAB_PROGRESS)
+    const voiceHistory = tabOrder().indexOf(TAB_VOICE_HISTORY)
 
     expect(progress).toBeGreaterThanOrEqual(0)
     expect(voiceHistory).toBe(progress + 1)
@@ -65,7 +65,7 @@ describe('tab order', () => {
 
 describe('tab groups', () => {
   it('keeps orientation and personal records together in You', () => {
-    const you = TAB_GROUPS.find((group) => group.id === 'you')
+    const you = tabGroups().find((group) => group.id === 'you')
     expect(you?.tabs).toEqual([
       TAB_HOME,
       TAB_PATH,
@@ -76,7 +76,7 @@ describe('tab groups', () => {
   })
 
   it('keeps the Practice group an instrument selector plus drills', () => {
-    const practice = TAB_GROUPS.find((g) => g.id === 'practice')
+    const practice = tabGroups().find((g) => g.id === 'practice')
     expect(practice?.tabs).toEqual([
       TAB_SINGING,
       TAB_PIANO,
@@ -91,7 +91,7 @@ describe('tab groups', () => {
     // The vocal challenges lived in Play while they carried the Legend and
     // the trophies. Once both moved out, what remained was scored drills, and
     // a drill beside the exercise library is where a singer looks for one.
-    const play = TAB_GROUPS.find((g) => g.id === 'play')
+    const play = tabGroups().find((g) => g.id === 'play')
     expect(play?.tabs).toEqual([
       TAB_KARAOKE,
       TAB_JAM,
@@ -102,7 +102,7 @@ describe('tab groups', () => {
   })
 
   it('never lets Settings overflow — it is the way back from simple mode', () => {
-    const studio = TAB_GROUPS.find((g) => g.id === 'studio')
+    const studio = tabGroups().find((g) => g.id === 'studio')
     expect(studio).toBeDefined()
     const { inline } = splitGroupTabs(
       studio?.tabs ?? [],
@@ -113,7 +113,7 @@ describe('tab groups', () => {
   })
 
   it('gives every group a label and at least one tab', () => {
-    for (const group of TAB_GROUPS) {
+    for (const group of tabGroups()) {
       expect(group.label.length).toBeGreaterThan(0)
       expect(group.tabs.length).toBeGreaterThan(0)
     }
@@ -217,9 +217,9 @@ describe('simple mode after the regrouping', () => {
 
 describe('primary groups and phone priority', () => {
   it('derives the primary tabs from the You and Practice groups', () => {
-    const expected = TAB_GROUPS.filter((g) =>
-      ['you', 'practice'].includes(g.id),
-    ).flatMap((g) => [...g.tabs])
+    const expected = tabGroups()
+      .filter((g) => ['you', 'practice'].includes(g.id))
+      .flatMap((g) => [...g.tabs])
     expect([...PRIMARY_TABS]).toEqual(expected)
   })
 

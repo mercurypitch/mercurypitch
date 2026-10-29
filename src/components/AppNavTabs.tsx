@@ -6,7 +6,8 @@ import { BusyLink } from '@/components/shared/BusyLink'
 import type { DragGestureOptions } from '@/components/shared/drag-gesture'
 import { dragGesture } from '@/components/shared/drag-gesture'
 import { DRUM_NIGHT_PATH } from '@/features/drum-night/route'
-import { isTabVisible, MAX_INLINE_GROUP_TABS, splitGroupTabs, TAB_ANALYSIS, TAB_CHALLENGES, TAB_COMMUNITY, TAB_COMPOSE, TAB_EAR_LAB, TAB_EXERCISES, TAB_GROUPS, TAB_GUITAR, TAB_HOME, TAB_JAM, TAB_KARAOKE, TAB_LEADERBOARD, TAB_PATH, TAB_PIANO, TAB_PROGRESS, TAB_SETTINGS, TAB_SINGING, TAB_STUDIO_NIGHT, TAB_VOICE_HISTORY, } from '@/features/tabs/constants'
+import type { TabGroupDef } from '@/features/tabs/constants'
+import { isTabVisible, MAX_INLINE_GROUP_TABS, splitGroupTabs, TAB_ANALYSIS, TAB_CHALLENGES, TAB_COMMUNITY, TAB_COMPOSE, TAB_EAR_LAB, TAB_EXERCISES, TAB_GUITAR, TAB_HOME, TAB_JAM, TAB_KARAOKE, TAB_LEADERBOARD, TAB_PATH, TAB_PIANO, TAB_PROGRESS, TAB_SETTINGS, TAB_SINGING, TAB_STUDIO_NIGHT, TAB_VOICE_HISTORY, tabGroups, } from '@/features/tabs/constants'
 import { createPersistedSignal } from '@/lib/storage'
 import { practiceScope, uiMode } from '@/stores/settings-store'
 import type { ActiveTab } from '@/types'
@@ -19,7 +20,7 @@ export interface AppNavTabsProps {
 }
 
 // ── Per-tab presentation ────────────────────────────────────────────
-// Order and grouping live in TAB_GROUPS (the single source of truth shared
+// Order and grouping live in tabGroups() (the single source of truth shared
 // with the swipe navigation). This map only carries the bits that are unique
 // to each button: its DOM id, accessible label, optional test id, and icon.
 // Exported: BottomTabBar (mobile) and AppNavOverflowMenu render the same
@@ -682,7 +683,7 @@ export const AppNavTabs: Component<AppNavTabsProps> = (props) => {
   })
 
   // Scope + UI mode filter the visible tabs; groups with nothing left vanish.
-  const groupTabs = (group: (typeof TAB_GROUPS)[number]) =>
+  const groupTabs = (group: TabGroupDef) =>
     group.tabs.filter((t) => isTabVisible(t, practiceScope(), uiMode()))
 
   // Up to three inline tabs per group, the rest behind the group's "..." —
@@ -690,7 +691,7 @@ export const AppNavTabs: Component<AppNavTabsProps> = (props) => {
   // menu row rather than bar width. Filtering happens BEFORE the split, so a
   // single-instrument scope spends its slots on tabs that actually exist, and
   // the measured cap can never exceed a group's own declared ceiling.
-  const split = (group: (typeof TAB_GROUPS)[number]) =>
+  const split = (group: TabGroupDef) =>
     splitGroupTabs(
       groupTabs(group),
       props.activeTab(),
@@ -775,7 +776,7 @@ export const AppNavTabs: Component<AppNavTabsProps> = (props) => {
         'tabs-icon-only': iconOnly(),
       }}
     >
-      <For each={TAB_GROUPS}>
+      <For each={tabGroups()}>
         {(group) => (
           <Show when={groupTabs(group).length > 0}>
             <div

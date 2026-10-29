@@ -24,7 +24,7 @@ export const TAB_KARAOKE = 'karaoke' as const
 export const TAB_VOICE_HISTORY = 'voice-history' as const
 export const TAB_PITCH_TEST = 'pitch-test' as const
 export const TAB_PITCH_ALGO = 'pitch-algo' as const
-/** Hidden audio-research surface. Hash route only — never in TAB_GROUPS. */
+/** Hidden audio-research surface. Hash route only — never in tabGroups(). */
 export const TAB_LAB = 'lab' as const
 /** Hidden Lab sub-surfaces. Kept as tabs so every tool remains deep-linkable. */
 export const TAB_LAB_TRANSCRIBE = 'lab-transcribe' as const
@@ -67,6 +67,8 @@ export const DEFAULT_TAB = TAB_HOME
 // tab bar (`AppNavTabs`) and the mobile swipe navigation (`App.tsx`) derive
 // their order from here, so swapping two tabs is a one-line change that keeps
 // the bar and the swipe gesture in sync — they can no longer drift apart.
+// The last group has two shapes, one with the experimental Studio tab and
+// one without it; tabGroups() and tabOrder() hand out the one this page has.
 
 export interface TabGroupDef {
   readonly id: string
@@ -92,7 +94,8 @@ export interface TabGroupDef {
  */
 export const MAX_INLINE_GROUP_TABS = 3
 
-export const TAB_GROUPS: readonly TabGroupDef[] = [
+/** The groups both menus share, Studio available or not. */
+const COMMON_TAB_GROUPS: readonly TabGroupDef[] = [
   {
     // Where you are, not what you practice: the daily hub, guided path,
     // Progress, and the personal records you return to. Individual records
@@ -126,18 +129,53 @@ export const TAB_GROUPS: readonly TabGroupDef[] = [
     label: 'Play',
     tabs: [TAB_KARAOKE, TAB_JAM, TAB_COMMUNITY, TAB_LEADERBOARD],
   },
-  {
-    // Keep the persisted group id, but distinguish Create from its Studio tab.
-    // Settings remains among the first three destinations and in simple mode.
-    id: 'studio',
-    label: 'Create',
-    tabs: [TAB_STUDIO_NIGHT, TAB_COMPOSE, TAB_SETTINGS, TAB_ANALYSIS],
-  },
 ]
 
-/** The group a tab belongs to, or `undefined` for hash-only surfaces. */
+/** The last group while Studio is not available, which is all mercurypitch.com shows today. */
+const STUDIO_GROUP: TabGroupDef = {
+  // Power-user surfaces. Settings is last on purpose: it is the way back
+  // from simple mode, so it must never be the tab that overflows.
+  id: 'studio',
+  label: 'Studio',
+  tabs: [TAB_COMPOSE, TAB_ANALYSIS, TAB_SETTINGS],
+}
+
+/**
+ * The same group while Studio is available (an experimental feature: see
+ * TAB_EXPERIMENTS below). It keeps the persisted group id, but is named
+ * Create, so the group and its Studio tab do not share a name.
+ */
+const CREATE_GROUP: TabGroupDef = {
+  // Four tabs, one more than the bar holds, so Settings moves up to third,
+  // among the inline tabs. Simple mode shows only Studio and Settings here,
+  // so the way back from simple mode still never overflows.
+  id: 'studio',
+  label: 'Create',
+  tabs: [TAB_STUDIO_NIGHT, TAB_COMPOSE, TAB_SETTINGS, TAB_ANALYSIS],
+}
+
+const TAB_GROUPS_WITHOUT_STUDIO: readonly TabGroupDef[] = [
+  ...COMMON_TAB_GROUPS,
+  STUDIO_GROUP,
+]
+const TAB_GROUPS_WITH_STUDIO: readonly TabGroupDef[] = [
+  ...COMMON_TAB_GROUPS,
+  CREATE_GROUP,
+]
+
+/**
+ * The tab bar's groups as this page shows them: the last one is Studio
+ * while the Studio tab is not available, and Create while it is. Reactive.
+ */
+export function tabGroups(): readonly TabGroupDef[] {
+  return isTabAvailable(TAB_STUDIO_NIGHT)
+    ? TAB_GROUPS_WITH_STUDIO
+    : TAB_GROUPS_WITHOUT_STUDIO
+}
+
+/** The group a tab belongs to, or `undefined` for hash-only surfaces and for a tab that is not available. Reactive. */
 export function tabGroupOf(tab: ActiveTab): TabGroupDef | undefined {
-  return TAB_GROUPS.find((g) => g.tabs.includes(tab))
+  return tabGroups().find((g) => g.tabs.includes(tab))
 }
 
 export interface SplitGroupTabs {
@@ -175,13 +213,21 @@ export function splitGroupTabs(
   return { inline: promoted, overflow: rest }
 }
 
+const TAB_ORDER_WITHOUT_STUDIO: readonly ActiveTab[] =
+  TAB_GROUPS_WITHOUT_STUDIO.flatMap((g) => [...g.tabs])
+const TAB_ORDER_WITH_STUDIO: readonly ActiveTab[] =
+  TAB_GROUPS_WITH_STUDIO.flatMap((g) => [...g.tabs])
+
 /**
  * Flattened canonical tab order. The mobile swipe gesture steps through this
  * list, so a left/right swipe always follows the visual order of the tab bar.
+ * Follows tabGroups(), so it moves with the Studio tab's availability. Reactive.
  */
-export const TAB_ORDER: readonly ActiveTab[] = TAB_GROUPS.flatMap((g) => [
-  ...g.tabs,
-])
+export function tabOrder(): readonly ActiveTab[] {
+  return isTabAvailable(TAB_STUDIO_NIGHT)
+    ? TAB_ORDER_WITH_STUDIO
+    : TAB_ORDER_WITHOUT_STUDIO
+}
 
 // ── Practice scope & UI mode visibility ─────────────────────────────
 // Two orthogonal user settings (persisted in settings-store) drive which
@@ -221,7 +267,7 @@ const TAB_SCOPES: Record<ActiveTab, readonly PracticeScope[]> = {
   [TAB_STUDIO_NIGHT]: ['singing', 'guitar', 'piano'],
   [TAB_ANALYSIS]: ['singing'],
   [TAB_SETTINGS]: ['singing', 'guitar', 'piano'],
-  // Hidden research sub-surfaces (not in TAB_GROUPS); scoped like Analysis.
+  // Hidden research sub-surfaces (not in tabGroups()); scoped like Analysis.
   [TAB_PITCH_TEST]: ['singing'],
   [TAB_PITCH_ALGO]: ['singing'],
   [TAB_LAB]: ['singing'],
@@ -240,8 +286,8 @@ const TAB_SCOPES: Record<ActiveTab, readonly PracticeScope[]> = {
 export const PRIMARY_GROUP_IDS: readonly string[] = ['you', 'practice']
 
 /** Tabs of the primary groups, in canonical order. */
-export const PRIMARY_TABS: readonly ActiveTab[] = TAB_GROUPS.filter((g) =>
-  PRIMARY_GROUP_IDS.includes(g.id),
+export const PRIMARY_TABS: readonly ActiveTab[] = COMMON_TAB_GROUPS.filter(
+  (g) => PRIMARY_GROUP_IDS.includes(g.id),
 ).flatMap((g) => [...g.tabs])
 
 /**
@@ -352,7 +398,7 @@ export function visibleTabOrder(
   scope: PracticeScope,
   mode: UiMode,
 ): ActiveTab[] {
-  return TAB_ORDER.filter((t) => isTabVisible(t, scope, mode))
+  return tabOrder().filter((t) => isTabVisible(t, scope, mode))
 }
 
 /**

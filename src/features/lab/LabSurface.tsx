@@ -1,7 +1,7 @@
 // ============================================================
 // Lab — hidden audio-research surface
 //
-// Not in TAB_GROUPS, so it never appears in the tab bar. Reached by hash
+// Not in tabGroups(), so it never appears in the tab bar. Reached by hash
 // routes (five tool-specific hashes, including #lab) after a server-held grant
 // in every environment. Everything here used to sit on the user-facing
 // Analysis page. Server-backed Lab capabilities must enforce the same grant.

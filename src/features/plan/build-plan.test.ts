@@ -32,7 +32,7 @@ import { DRAFT_LESSONS } from '@/features/lessons/kit/drafts'
 import type { FirstStop } from '@/features/onboarding/first-stop'
 import { pickFirstStop } from '@/features/onboarding/first-stop'
 import type { ActiveTab } from '@/features/tabs/constants'
-import { isTabVisible, TAB_ORDER } from '@/features/tabs/constants'
+import { isTabVisible, tabOrder } from '@/features/tabs/constants'
 import type { MirrorResult } from '@/lib/mirror/metrics'
 import { ENTRY_PAGES } from '@/seo/entry-pages'
 import type { Plan, PlanDest, PlanStop, PlanView } from './build-plan'
@@ -1378,7 +1378,7 @@ describe('where the stops go', () => {
     const wrong = Object.entries(PLAN_DESTS).flatMap(([dest, d]) => {
       const { target } = d
       const found: string[] = []
-      if (target.kind === 'tab' && !TAB_ORDER.includes(target.tab)) {
+      if (target.kind === 'tab' && !tabOrder().includes(target.tab)) {
         found.push(`${dest}: ${target.tab} is not a tab in the menu`)
       }
       if (
