@@ -782,14 +782,24 @@ export const WALKTHROUGH_STEPS: WalkthroughStep[] = [
   },
   // ── Settings · Practice Section ──
   {
-    title: 'How much of the room to ignore',
-    targetSelector: '[data-tour="settings.room-slider"]',
+    title: 'Check your microphone',
+    targetSelector: '[data-tour="settings.mic-check"]',
     description:
-      'Start here on the Practice tab: drag between Quiet and Noisy until the meter shows your voice getting through and the room does not. The named rooms are still one tap away on the ticks.',
+      'Start here on the Practice tab. Sing into the check and watch your notes land on their keys. It lists every connected input, marks the system default and the one MercuryPitch is hearing, and logs anything that takes the microphone over: a headset that just connected, a default that moved, another app that grabbed it.',
     placement: 'left',
     section: 'settings-practice',
     requiredTab: TAB_SETTINGS,
     // The Practice sub-tab; the panel defaults to General.
+    navigate: ['[data-testid="settings-tab-singing"]'],
+  },
+  {
+    title: 'How much of the room to ignore',
+    targetSelector: '[data-tour="settings.room-slider"]',
+    description:
+      'Once the right microphone is in, drag between Quiet and Noisy until the meter shows your voice getting through and the room does not. The named rooms are still one tap away on the ticks.',
+    placement: 'left',
+    section: 'settings-practice',
+    requiredTab: TAB_SETTINGS,
     navigate: ['[data-testid="settings-tab-singing"]'],
   },
   {

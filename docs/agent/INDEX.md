@@ -105,6 +105,7 @@ These are the rules that break things when ignored.
 | `lip-roll` | [useLipController.ts](../../src/features/lip-roll/useLipController.ts) | 3.9k | useLipController: one Lip roll run, from the tap to the result The glide rooms' core (room-kit glide/useGlideRoom.ts) runs the run: the m... |
 | `warm-up` | [warm-up-store.ts](../../src/features/warm-up/warm-up-store.ts) | 3.9k | The Warm-up's store: today's run, on this device The path screen is gone while a room is up (ShellScreens draws only the top screen), so... |
 | `lab` | [LabSurface.tsx](../../src/features/lab/LabSurface.tsx) | 3.5k | Lab — hidden audio-research surface Not in tabGroups(), so it never appears in the tab bar. |
+| `mic-check` | [useMicCheckController.ts](../../src/features/mic-check/useMicCheckController.ts) | 3.2k | useMicCheckController — one mic check, from Start to cleanup Owns the check's capture and everything it watches. |
 | `piano-project` | [piano-project.ts](../../src/features/piano-project/piano-project.ts) | 3.1k | PianoProject — lossless-enough, tick-native Standard MIDI authority Source-track order and absolute ticks stay authoritative. |
 | `ng-slides` | [useNgController.ts](../../src/features/ng-slides/useNgController.ts) | 3.0k | useNgController: one Ng slides run, from the tap to the result The glide rooms' core (room-kit glide/useGlideRoom.ts) runs the run: the m... |
 | `guitar-practice` | [useGuitarPracticeController.ts](../../src/features/guitar-practice/useGuitarPracticeController.ts) | 2.9k | useGuitarPracticeController — Guitar Hero-style game logic |
@@ -408,9 +409,9 @@ Grep for the symbol and read the surrounding range instead.
 | [src/components/PitchTestingTab.tsx](../../src/components/PitchTestingTab.tsx) | 2.8k |
 | [src/features/guitar-night/GuitarNightApp.tsx](../../src/features/guitar-night/GuitarNightApp.tsx) | 2.8k |
 | [src/lib/audio-engine.ts](../../src/lib/audio-engine.ts) | 2.7k |
+| [src/components/SettingsPanel.tsx](../../src/components/SettingsPanel.tsx) | 2.6k |
 | [src/features/guitar-night/GuitarNightScoreRoom.tsx](../../src/features/guitar-night/GuitarNightScoreRoom.tsx) | 2.6k |
 | [src/stores/app-store.ts](../../src/stores/app-store.ts) | 2.6k |
-| [src/components/SettingsPanel.tsx](../../src/components/SettingsPanel.tsx) | 2.5k |
 | [src/features/admin/AdminPremiumPerksPage.tsx](../../src/features/admin/AdminPremiumPerksPage.tsx) | 2.5k |
 | [src/features/stem-mixer/useStemMixerAudioController.ts](../../src/features/stem-mixer/useStemMixerAudioController.ts) | 2.5k |
 | [src/components/PitchCanvas.tsx](../../src/components/PitchCanvas.tsx) | 2.4k |
