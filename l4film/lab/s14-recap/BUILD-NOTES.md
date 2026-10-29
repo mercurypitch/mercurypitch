@@ -79,3 +79,17 @@ events in the card pause (icon pulses that register, then the address once more)
   Root check: only missing_local_asset (m11 for s11, m12 for s12 to s16). merc-tags --check clean for all three.
   Passes at 12:07: m12-blue and m12-orange still .part.webm, so the S16 hop-top still and every Merc-covered
   hold are unproven.
+- 15:36-18:45 host pass (m12-blue 14:02, m12-orange 15:17 in; script lab/s14-recap/hostpass.sh, one render at a
+  time, nice 10, TMPDIR=/dev/shm, waits for 1150 MB). Holds with hosts: s14 0.4 s (0.2 per 30 s), longest 0.2, no
+  final hold (the empty F0 before the cut is covered: before 1.7 s + 0.3 final); s15 0.1 s at the cut (same);
+  s16 0.1 s at its first sample (before 0.2). Merc blinks show as 0.05 % single-frame pops in s14.
+  S16: the pass's celebrate hop is about 76-79 px (bright body top 539 -> 463, glow 516 -> 453 at end + 1.2),
+  not 30; with the address on end + 1.2 it rose in beside the orange head (16 px at 7 % opacity, 18 px low).
+  Fix: URL = end + 1.35 (first visible at +1.40, heads then 518-527, >= 57 px; at rest address and underline
+  bottom 452 vs glow 512-516, body 516-530: >= 60 px). A render whose first try failed lost the Mercs for its
+  first three frames (a 3.0 pop at 0.067); re-rendered clean.
+  S14: body + glow edge 189-192 vs stair 1 at 228 (F-recap-1) and 219-225 (F-recap-3): 36-39 and 30-36 px. The
+  pass's talk arcs reach x 208-217: 9-13 px from stair 1's block in F-recap-1 (b47), 21 px in F-recap-3 (b51).
+  Handoffs (host stills): s14 64.733 = s15 0 and s15 8.267 = s16 0, Merc boxes identical, <= 0.0013 % over 24.
+  npm run check: 0 lint errors; layout 3 errors, all in s06 and s11 (not group F). Text sweep s14-s16 clean.
+  18:41 kit change (bokeh/staves brighten during camera moves): s14 re-rendered.

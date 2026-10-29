@@ -696,7 +696,7 @@ the hero view, y 323) after that.
 - Kit: the guide's move to the right half (HANDOFFS § The guide in S13: lanes x 1060 to 1700, 40 px,
   names right-aligned at x 1040; from `at('b41', 'start', 0.08)`, 0.9 s, power2.inOut) and the plain
   guide fading in on the moving lanes (thin chrome lanes, the names in ink-2, the path a solid 3 px
-  chrome line at 70 %); "Your turn." (serif italic 120 px at x 360, baseline 200); the care block
+  chrome line at 70 %); "Your turn." (serif italic 120 px at x 380, baseline 200); the care block
   (HANDOFFS § The care block: every line, size, baseline and break as given); the count-in's bead
   (dropping onto (1090, 700), landing at `at('count-in')`, gone 1.0 s later); the cursor (a vertical
   chrome line, 4 px with a soft glow, sweeping the lanes at your-turn's onsets); the reverse tip into

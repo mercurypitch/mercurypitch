@@ -415,9 +415,10 @@ risers measured (no labels), hairlines; the strip with D major's keys, F♯4 and
   clear of the names, landing at 394.24 and gone by 395.24. Merc moves to size 300 at (240, 840)
   (body x 160 to 320); Tavi to size 240 at (1820, 840) (body x 1756 to 1884, top y 686, 56 px clear
   of the lanes).
-- **The care block (S13).** Left-aligned at x 360, no line past x 960 (35 px clear of the shortest
-  lane name), nothing below y 864, 40 px clear of Merc: "Your turn." serif italic 120 px, baseline
-  200 (x 360 to 800), landing at 373.55, once the names have passed; care lines from 373.85, 0.3 s
+- **The care block (S13).** Left-aligned at x 380 (DECISIONS 94: Merc's talking arcs reach x 351),
+  no line past x 960 (35 px clear of the shortest lane name), nothing below y 864, 40 px clear of
+  Merc's body and about 30 px of his arcs: "Your turn." serif italic 120 px, baseline 200 (x 380 to 820),
+  landing at 373.55, once the names have passed; care lines from 373.85, 0.3 s
   after it, Outfit 500 32 px, ink, baselines 262 and 302, 352 and 392, 442 (the longest 445 px);
   "wait on ti" Outfit 600 40 px at 492; the stop line Outfit 600 40 px, ink, at 548 and 592 ("Stop
   immediately if anything" 520 px, "feels uncomfortable."); the doctor lines Inter 30 px, ink-2,
@@ -489,8 +490,11 @@ ended 405.2; m12 spans the cut). Every mark of S13 gone (404.24).
   to 1360; "what keeps it steady?" serif italic 96 px centred, baseline 680.
 - **S15 to S16 (478.53).** The Mercs in the corners at 300; S15's type gone (478.5).
 - **S16.** The Mercs grow to 520 at (330, 840) and (1590, 840) (478.6 to 479.2): bodies x 192 to 468
-  and 1452 to 1728, heads at y 507; one hop of 30 px (479.4 to 480.0), heads at 477 at its top.
-  Lockup y 40 to 220; "Find your pitch." baseline 330; the address Outfit 600 56 px, baseline 440, its
-  descenders to y 452 (55 px above the heads, 25 px at the hop's top); the skip line and "then
+  and 1452 to 1728; at rest their glow tops at y 512 to 516 and their bodies at 516 to 530 (y 507 is
+  the box's top, not the ink). One celebration hop, the pass's own, about 79 px high (479.4 to 480.0,
+  its top at 479.73, the glow then up to y 453; DECISIONS 95). Lockup y 40 to 220; "Find your pitch."
+  baseline 330; the address Outfit 600 56 px, baseline 440, its descenders and underline to y 452,
+  rising in from `at('end', 'start', 1.35)` (first visible at 479.93, once the heads are back below y
+  518), so it is never nearer a head than 57 px, and 60 px at rest; the skip line and "then
   [Exercises icon] Exercises › Scale Runner" Outfit 500 40 px, ink-2, baselines 510 and 570, within
   x 636 to 1284, 168 px clear of both bodies.

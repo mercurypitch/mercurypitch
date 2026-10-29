@@ -124,3 +124,10 @@ Running notes so a container restart or a usage-limit pause can resume. Builder 
 - Text sweep after the move: no run under 4.5:1 in either scene; doctor lines 8.50 to 8.89:1.
 - seek.mjs HOSTS=1 can still miss a head video's first frames (Merc absent in its still at 2.0000);
   the rendered clip shows him on every frame 57 to 63, so hand-over checks use the clip.
+- 18:41 s13 final with hosts: holds 1.2 s (1.1 per 30 s), longest 0.3; 13a and 13b 1.1 s (1.5 per 30 s):
+  0.1 each at 375.92, 382.12, 384.22, 386.22, 389.82, 390.02, 0.3 at 383.22 (the long "volume."),
+  0.2 at 393.82 (the gap before the count-in); the your-turn pause none; the count-in 0.1.
+- npm run check: lint 0 errors, runtime 0; layout's 3 errors are in s06 (129.21) and s11 (328.68),
+  not mine; my scenes only warnings (nested media start, refl twins, length 341 / 383 lines).
+  clock-lint silent on both; merc-tags --check 84 tags, 0 stale.
+- lab/s12-sing/hosts/falls.png rebuilt from the rendered clip's frames (40 to 62).

@@ -674,3 +674,27 @@ replaced it. The builder's record: critics never read it.
     - The full check is unchanged by it: before and after, 0 runtime errors, 59 of 59 text checks
       at AA, and the same 79 lint warnings and 3 layout errors, all three older than it (S6 at
       129.2 s, S11 at 328.7 s), which go to builders B and D.
+94. **S13's care block sits at x 380, not 360; the hosts at the S13 to S14 cut stay as built.**
+    Builder E's host pass found Merc's talking arcs in the m12-blue pass reaching x 351, 9 px from
+    the doctor lines' ink at 360. It moved the block's left edge to 380 (the title, the care and
+    doctor lines, the "wait on ti" pulse): the arcs now clear the ink by about 30 px, the longest
+    line ends at 941 (the limit is 960), and the top do is 72 px right of the title at 373.55.
+    That is cheaper and safer than pulling the pass's arcs in, which would mean a re-render of
+    m12-blue and a new splice check. HANDOFFS § The care block, row 13a and the build guide now say
+    380. At the S13 to S14 cut, fixed by HANDOFFS and S14's first frame, Merc stands 26 px from the
+    strip's left end and Tavi's floor light 19 px from its last key (her body 42 px): nothing
+    overlaps, and the strip is world (decision 83), so it stays as built unless a critic sees the
+    hosts crowd the strip at that cut.
+95. **S16's celebration hop is the pass's own, about 79 px, and the address waits for it; S14's talk
+    arcs near stair 1 stay for the critic.** Builder F's host pass measured the end hop at size 520
+    at about 79 px, not the 30 px the board planned: at its top (479.73) the heads' glow reaches y
+    453, so the address, rising in at `end + 1.2`, would have come up 16 px from Tavi's head. F moved
+    it to `end + 1.35`: first visible at 479.93 with the heads already below y 518 (57 px or more),
+    and 60 px clear at rest. A bigger hop is the right size for the film's one celebration at that
+    scale, and a smaller one means re-rendering m12's tail for no gain, so the hop stays and the
+    board, HANDOFFS § S16 (with the heads' real ink, not the box's top at 507) and the timing follow
+    it. In S14's F-recap-1 (413.4 to 419.6, b47) Merc's talk arcs, drawn by the pass, reach x 208 to
+    217, 9 to 13 px from stair 1's block; his body and glow clear it by 36 to 39 px. The framing is
+    fixed by HANDOFFS and the arcs by the pass, so nothing changes now. Component critic F-01 judges
+    whether they crowd the stair; if they do, the fix is in the pass (the arcs narrower or off for
+    b47), not in the framing.

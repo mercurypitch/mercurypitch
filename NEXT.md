@@ -1562,3 +1562,19 @@ Note: the lanes' memory gate read a stale cgroup path after the 21:00 restart (f
 - 18:5x after-check (check-after-93.log) = baseline: same 79 lint warnings (one line count 380->383 is a
   builder's edit), 0 runtime, the same 3 layout errors (s06, s11; B and D), 59/59 contrast. Recorded
   in DECISIONS 93.
+- 18:5x builder E handed back (host pass): s12 holds 0.3/30 s, s13 1.1/30 s (longest 0.3); s13 care
+  block moved 360 -> 380 (Merc's arcs reach 351) + five word-tied beats; s12 unchanged; checks: 0 lint
+  /runtime errors, layout errors only B's and D's; clock-lint clean; tags 84/0; text sweep >= 8.5:1 for
+  the doctor lines. DECISIONS 94: x 380 accepted (HANDOFFS § The care block, row 13a, BUILD-GUIDE);
+  the E-to-F cut proximity (Merc 26 px from the strip, Tavi's floor light 19 px) left as built.
+  Before-states: clip-nohosts.mp4, clip-hosts-v1/v2.mp4 in lab/s13-your-turn.
+- 18:5x critic E-01 launched (critics/E.txt + disk note) -> review/component-E-01/REPORT.md.
+  Agents now: F + E-01. Next free slot: F-01 critic when F hands back, then D round 3 (D-fix3-msg),
+  A round 2 (A-fix2-msg), C small (C-fix2-msg), B small (B-fix4-msg).
+- 19:0x builder F handed back (host pass): S14 holds 0.2/30 s (rendered again 18:57 with the 93 kit),
+  S15 0.4/30 s (the cut), S16 0.6/30 s; S16 address now end + 1.35 (the pass's hop is ~79 px, not 30;
+  backup lab/s16-end/s16-end.r1.html); S14 talk arcs 9-13 px from stair 1 in F-recap-1 (b47) left for
+  the critic. Handoffs S13/S14/S15/S16 clean. DECISIONS 95; HANDOFFS § S16 and row 16 corrected
+  (backups *.before-95.md). F's stuck waiter (pid 8501, self-matching pgrep -f) stopped by PID; F ended.
+- 19:0x critic F-01 launched (critics/F.txt + disk note) -> review/component-F-01/REPORT.md.
+  Agents now: E-01 + F-01. Next slots: D round 3, then A round 2, C small, B small.
