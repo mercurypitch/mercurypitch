@@ -8,21 +8,14 @@
   --mic-lit: #ffd36b;
   position: relative;
   height: 100%;
-  min-height: 520px;
+  /* Never taller than the screen: the pushed screen's body does not
+     scroll, so a floor over the screen's height (an iPad window in Stage
+     Manager, a tablet on its side) cut off the room's bottom, mic and all.
+     A phone is held upright in the room (the shell's portrait-lock.ts). */
+  min-height: min(520px, 100dvh);
   overflow: hidden;
   background: #050818;
   color: var(--text-primary);
-}
-
-/* On its side the room drops that floor, whatever the screen's size, and
-   keeps to the screen's height. The body does not scroll, so on a screen
-   shorter than 520 px (a phone on its side) the floor pushed the pier and
-   the dock off it. A screen taller than that is over the floor already,
-   and nothing changes for it. */
-@media (orientation: landscape) {
-  .room {
-    min-height: 0;
-  }
 }
 
 /* The world: the whole room, behind everything else. */

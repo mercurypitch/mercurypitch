@@ -13,7 +13,11 @@
   --lip-controls-clear: 104px;
   position: relative;
   height: 100%;
-  min-height: 520px;
+  /* Never taller than the screen: the pushed screen's body does not
+     scroll, so a floor over the screen's height (an iPad window in Stage
+     Manager, a tablet on its side) cut off the room's bottom, mic and all.
+     A phone is held upright in the room (the shell's portrait-lock.ts). */
+  min-height: min(520px, 100dvh);
   padding-top: var(--pushed-top, 0px);
   padding-bottom: var(--pushed-bottom, 0px);
   overflow: hidden;

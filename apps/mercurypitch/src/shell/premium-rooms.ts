@@ -12,7 +12,9 @@
 //       railVisible). Long note included. One switch per room, below, so
 //       a room can go back under the opaque bar and keep the rail.
 //   D2  a phone holds a premium room in portrait (portrait-lock.ts); an
-//       iPad keeps turning, and the web does nothing.
+//       iPad keeps turning, and the web does nothing. So a room keeps to
+//       any screen: never taller than it, and Ng slides' bridge in a
+//       column on a wide one (src/tests/premium-rooms-screen-fit.test.ts).
 //
 // The screen ids are the stack's own (PushedScreen); a room joins by
 // adding its line here.
