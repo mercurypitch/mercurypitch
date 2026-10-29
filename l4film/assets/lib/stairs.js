@@ -23,7 +23,10 @@
                                    outline stair to a full block; names cross-fade by list
        f.riser(n) -> { a, state: 'unmeasured'|'measuring'|'tone'|'semi'|'none', grow, scale,
                        labels: [{ text, a, dy, scale }] }
-                                   riser n stands between stairs n and n + 1
+                                   riser n stands between stairs n and n + 1; a semitone's gold
+                                   fills the whole 8 px gap and, once it has grown past 0.8, turns
+                                   the corner onto the upper tread (56 px, 5 px), so it reads at
+                                   phone width (component critic B-01 item 2)
        f.houses { top: { a, lit, glow, scale, w, s0 }, bottom: { ... } }
                                    w, s0 default to the staircase's (the cold open's top house
                                    keeps C's columns: pass w 0)
@@ -194,7 +197,8 @@
       const bar = L.svg('rect', { fill: '#c3ccd6' }, g)
       const outline = L.svg('rect', { fill: 'none', stroke: '#c3ccd6', 'stroke-width': 2, 'stroke-opacity': 0.55 }, g)
       const tick = L.svg('rect', { fill: '#c3ccd6', height: 2 }, g)
-      risers.push({ n, g, bar, outline, tick, labels: labelPool(gRisers, { size: 40, family: 'Outfit', weight: 600, fill: L.C.ink, anchor: 'end' }) })
+      const corner = L.svg('path', { fill: 'none', stroke: GOLD, 'stroke-width': 5, 'stroke-linecap': 'round', 'stroke-linejoin': 'round', display: 'none' }, g)
+      risers.push({ n, g, bar, outline, tick, corner, labels: labelPool(gRisers, { size: 40, family: 'Outfit', weight: 600, fill: L.C.ink, anchor: 'end' }) })
     }
     const houses = { bottom: L.house(gHouses), top: L.house(gHouses) }
 
@@ -290,7 +294,7 @@
           const hgt = yLo - yHi, sc2 = o.scale || 1
           const cy = (yLo + yHi) / 2, h2 = hgt * sc2
           const measured = state === 'tone' || state === 'semi'
-          const bw = measured || state === 'measuring' ? 6 : 4
+          const bw = state === 'semi' ? 8 : measured || state === 'measuring' ? 6 : 4
           const grow = measured ? clamp(o.grow ?? 1) : 1
           // the bar grows from the lower tread up
           const top2 = cy + h2 / 2 - h2 * grow
@@ -298,6 +302,15 @@
           Rz.bar.setAttribute('y', f1(top2)); Rz.bar.setAttribute('height', f1(Math.max(0, h2 * grow)))
           Rz.bar.setAttribute('fill', state === 'semi' ? GOLD : '#c3ccd6')
           Rz.bar.setAttribute('fill-opacity', state === 'unmeasured' ? 0.4 : state === 'measuring' ? 0 : 1)
+          // a semitone's corner: up the bar's right edge and along the upper tread, fading in as the
+          // bar's last fifth grows
+          const showCorner = state === 'semi' && grow > 0.8
+          Rz.corner.setAttribute('display', showCorner ? 'inline' : 'none')
+          if (showCorner) {
+            const xa = x + 4
+            Rz.corner.setAttribute('d', `M${f1(xa)} ${f1(yHi + 10)} L${f1(xa)} ${f1(yHi + 6)} Q${f1(xa)} ${f1(yHi)} ${f1(xa + 6)} ${f1(yHi)} L${f1(xa + 56)} ${f1(yHi)}`)
+            Rz.corner.setAttribute('opacity', clamp((grow - 0.8) / 0.2).toFixed(3))
+          }
           Rz.outline.setAttribute('display', state === 'measuring' ? 'inline' : 'none')
           Rz.outline.setAttribute('x', f1(x - 3)); Rz.outline.setAttribute('width', 6)
           Rz.outline.setAttribute('y', f1(cy - h2 / 2)); Rz.outline.setAttribute('height', f1(h2))

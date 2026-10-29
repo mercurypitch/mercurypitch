@@ -1325,3 +1325,25 @@ Note: the lanes' memory gate read a stale cgroup path after the 21:00 restart (f
   vs s09 first) max 18, none over 24; D to E (s11 last vs s12 first, m11 passes in) max 17, none
   over 24. BUILD-GUIDE rows updated; stills in lab/entrances/seam-*.png. A to B and B to C wait for
   builder B's fix round to end. Clips: s09 done 12:29, s10 rendering, then s01, s02, s11.
+
+## 2026-10-29 ~13:00Z: B fixed, C-01 back, semitone gold in the kit
+- Builder B (s05, s06) fix round done 12:45: items 1, 2, 4-10 fixed, 3 proven on stills; checks
+  clean. Its seam worry (Tavi's landing ring at the S5 to S6 cut) is the ring's own fade: S5's last
+  two frames differ more (0.06 % over 24) than the cut does (0.03 %). Its "root lacks frames.js and
+  stairs.js" is stale (both are in index.html). B-02 verification critic launched ~12:50
+  (review/component-B-02/).
+- C-01 back (REVISE both; saved to review/component-C-01/REPORT.md; LEDGER row 08). Builder C
+  resumed ~13:00 with $S/l4entr/C-fix-msg.txt (all eleven items). FACTS 77: tally header "BLACK
+  KEYS".
+- DECISIONS 85: the semitone's gold (B-01 item 2: whole 8 px gap + 56 px corner on the upper tread)
+  moved into L.stairs for every scene (backup $S/l4entr/stairs.before-semigold.js). It mends the
+  S6 to S7 cut (the corner vanished there: max 191, 0.04 % over 24; now max 22, none over 24).
+  S14's "S" is 4 px clear of the gold at 34.0 (7 before). Cross-group cuts all checked now: A to
+  B max 19, B to C max 22, C to D max 18, D to E max 17 (BUILD-GUIDE rows).
+- Clips with the old kit: s07, s08 (C's fix round re-renders), s09, s10 (re-rendering now with s11,
+  background task bvz11flzq, log clipq/clips3.log; old ones in $S/l4entr/oldclips/pre-semigold/).
+  s11's first try was killed (it began 17 s before the kit change).
+- Mishap: my s14 still at 34.0 overwrote builder F's lab/s14-recap/frame-00-at-34s.png (same
+  name) and the marker move took it; the new-kit version is $S/l4entr/semigold/. F's measurement
+  of it stands in F's report.
+- Agents now: B-02 + builder C. Next free slot: D-01 (once s09-s11 clips land), then A-01.

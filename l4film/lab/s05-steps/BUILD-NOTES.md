@@ -113,7 +113,10 @@ only. Clock: Kokoro scratch, 483.73 s (cues.json = tools/board-cues.json today).
 - Round 4 proof: clock-lint silent (both); merc-tags --check 10 tags, 0 stale; shared block identical; root
   check 5 errors, all missing_local_asset for m12 passes (s12 to s16), none in mine; text sweep sweep-r4: no
   label under 4.5:1, EDGE only mid-move (s05 11.5, 17.75, 18.25, 18.5, 22.75; s06 5.5, 12.5); s05 clip:
-  holds 0.1 s (longest 0.1), events 4.833, 4.900, 12.067 (as before, 24.30 gone).
+  holds 0.1 s (longest 0.1), events 4.833, 4.900, 12.067 (as before, 24.30 gone); s06 clip (after the
+  final hop): holds 0.5 s (0.4 per 30 s), longest 0.2 (2.9), the 0.7 s at 29.2 gone; events 1.967, 6.400,
+  26.100 (small jumps), 23.967 (pop: Tavi's first intro frame, the gate's), 27.733, 33.100 (Tavi's face, x 1728
+  to 1792, y 738 to 794, the m06b pass).
 - Seam S5 to S6: my layers match; 3584 px differ by > 24, all Tavi's corner (her landing ring is on S5's
   last frame and not on S6's first: the intro segment hands over to the pass at the cut). The gate's.
 - Stills: lab/s05-steps/stills-r4 (+ r4b after the 56 px corner, phone-34.9s.png), lab/s06-groups/stills-r4
@@ -123,10 +126,9 @@ only. Clock: Kokoro scratch, 483.73 s (cues.json = tools/board-cues.json today).
 
 | Scene | Built | Stills | Clip | measure.py | Text sweep | clock-lint | merc-tags |
 | --- | --- | --- | --- | --- | --- | --- | --- |
-| s05-steps | all rows, round 3 | round 3 | round 3 | 0.1 s (0.1/30 s), longest 0.1: pass | round 3: pass (names on lit stairs 4.92:1 or better, C♯ 5.23:1; EDGE only mid-move) | clean | current |
-| s06-groups | all rows, round 3 (+ sum spacing) | round 3 | round 3 | 0.2 s outside m06b's span; m06b's span unproven | round 3: pass (EDGE only mid-move) | clean | current (m06b missing) |
+| s05-steps | round 4 (B-01 fixes) | stills-r4, r4b | round 4 (12:18) | 0.1 s, longest 0.1: pass | sweep-r4: pass | clean | current |
+| s06-groups | round 4 (B-01 fixes, final hop 12:30) | stills-r4, r4d | round 4 (12:33) | 0.5 s (0.4/30), longest 0.2: pass | sweep-r4: pass | clean | current |
 
 ## Next
 
-1. Reported (08:20). Root index.html still lacks frames.js and stairs.js (gen-root, the director's).
-2. When m06b-orange lands: merc-tags --check, measure its first whole frame, re-render s06's clip.
+1. Round 4 reported. Await the fresh critic.

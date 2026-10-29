@@ -516,3 +516,13 @@ replaced it. The builder's record: critics never read it.
     floor patch hands over to a full floor during the move, the underline sits at y 449 to 452 (55
     px over the heads, 25 px at the hop's top) and "Practise it free:" is in ink-2 with the address
     in ink. Component critic F-01 judges all of it with the m12 passes in.
+85. **The semitone's gold is the kit's: the whole 8 px gap, and a corner onto the upper tread.**
+    Component critic B-01 (item 2) found the kit's 6 x 26 px gold bar a 1.5 px sliver at phone
+    width, which breaks the brief's mute item "the two semitones gold", and builder B drew the fix
+    over the kit in S5 and S6 only: the gold fills the gap between the two stairs and, once its bar
+    has grown past 0.8, turns up its right edge and runs 56 px along the upper tread (5 px, round
+    caps). So the corner vanished at the S6 to S7 cut (146.10), and every later staircase kept the
+    sliver. `L.stairs` now draws a riser in state 'semi' that way in every scene; S5 and S6 keep
+    their own overlay on top, the same shape. Checked on stills: the S6 to S7 cut (none over 24
+    levels, from 0.04 % of the frame), S5's close-up at 21.9 (unchanged), and S14's "S" (4 px clear
+    of the gold at 34.0, against 7 px before).

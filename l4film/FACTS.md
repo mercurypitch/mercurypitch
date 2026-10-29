@@ -96,7 +96,8 @@ file cites is the `b803c7d43` copy's.
     changes. Only the keys under it change."; "Every start except C needs at least one black key.
     C is just the one that fits the white keys alone." | 8, 12; the staircase is the film's
     diagram, so "the shape" is a claim about the pattern (2), not about how the scales sound |
-    carried. On screen, the black keys each start needs: "C 0 · D 2 · G 1 · E 4" (10, 12, 68)
+    carried. On screen, the black keys each start needs: "C 0 · D 2 · G 1 · E 4" (10, 12, 68),
+    under the mono header "BLACK KEYS" (component critic C-01 item 2: bare, it read as pitches)
 78. "A scale's first note is its tonic: its home"; "Musicians number the notes up from home, one to
     seven: the scale degrees"; the names | 16, 17, 18, 19, 20 | carried. On screen, so carries a
     small "(sol)", as the page notes (20)
