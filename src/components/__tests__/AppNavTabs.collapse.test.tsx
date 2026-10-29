@@ -2,6 +2,7 @@ import { fireEvent, render } from '@solidjs/testing-library'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { AppNavTabs } from '@/components/AppNavTabs'
 import { TAB_HOME } from '@/features/tabs/constants'
+import { loadExperimentalFeatures, resetExperimentalFeaturesStoreForTests, } from '@/stores/experimental-features-store'
 import { setPracticeScope, setUiMode } from '@/stores/settings-store'
 
 /**
@@ -148,5 +149,75 @@ describe('AppNavTabs group collapse', () => {
     expect(labelOf(group)).toBeNull()
     expect(group.classList.contains('collapsible')).toBe(false)
     expect(group.classList.contains('collapsed')).toBe(false)
+  })
+})
+
+// The last group has two shapes (src/features/tabs/constants.ts, tabGroups):
+// while the experimental Studio tab is off it is exactly what
+// mercurypitch.com showed before Studio existed, and only while Studio is on
+// is it named Create, with Studio first.
+describe('AppNavTabs last group', () => {
+  const renderBar = () =>
+    render(() => (
+      <AppNavTabs
+        activeTab={() => TAB_HOME}
+        handleTabChange={vi.fn()}
+        tabLabel={(tab) => tab}
+      />
+    ))
+
+  const switchStudio = (enabled: boolean) =>
+    loadExperimentalFeatures({
+      base: 'https://api.test',
+      fetcher: async () => Response.json({ studio: enabled }),
+    })
+
+  const lastGroup = (c: HTMLElement) => {
+    const group = c.querySelector<HTMLElement>('[data-tab-group="studio"]')
+    return {
+      label: group
+        ?.querySelector('.tab-group-label')
+        ?.firstChild?.textContent?.trim(),
+      tabs: [
+        ...(group?.querySelectorAll<HTMLElement>('.app-tab[id]') ?? []),
+      ].map((tab) => tab.id),
+      overflows: group?.querySelector('.tab-overflow-trigger') != null,
+    }
+  }
+
+  beforeEach(() => {
+    localStorage.clear()
+    setPracticeScope('all')
+    setUiMode('advanced')
+  })
+
+  afterEach(() => {
+    resetExperimentalFeaturesStoreForTests()
+    localStorage.clear()
+  })
+
+  it('is Studio, with Compose, Analysis and Settings, while Studio is off', async () => {
+    await switchStudio(false)
+
+    const { container } = renderBar()
+
+    expect(lastGroup(container)).toEqual({
+      label: 'Studio',
+      tabs: ['tab-compose', 'tab-analysis', 'tab-settings'],
+      overflows: false,
+    })
+  })
+
+  it('is Create, with Studio first, while Studio is on, and follows the switch', async () => {
+    const { container } = renderBar()
+    const on = lastGroup(container)
+    await switchStudio(false)
+
+    expect(on).toEqual({
+      label: 'Create',
+      tabs: ['tab-studio-night', 'tab-compose', 'tab-settings'],
+      overflows: true,
+    })
+    expect(lastGroup(container).label).toBe('Studio')
   })
 })

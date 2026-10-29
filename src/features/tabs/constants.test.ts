@@ -1,7 +1,8 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { loadExperimentalFeatures, resetExperimentalFeaturesStoreForTests, } from '@/stores/experimental-features-store'
 import type { PracticeScope, UiMode } from './constants'
-import { isTabAvailabilityPending, isTabAvailable, isTabVisible, mobileBarTabs, TAB_HOME, TAB_ORDER, TAB_STUDIO_NIGHT, visibleTabOrder, } from './constants'
+import type { ActiveTab } from './constants'
+import { isTabAvailabilityPending, isTabAvailable, isTabVisible, mobileBarTabs, splitGroupTabs, TAB_ANALYSIS, TAB_CHALLENGES, TAB_COMMUNITY, TAB_COMPOSE, TAB_EAR_LAB, TAB_EXERCISES, TAB_GUITAR, TAB_HOME, TAB_JAM, TAB_KARAOKE, TAB_LEADERBOARD, TAB_PATH, TAB_PIANO, TAB_PROGRESS, TAB_SETTINGS, TAB_SINGING, TAB_STUDIO_NIGHT, TAB_VOICE_HISTORY, tabGroupOf, tabOrder, visibleTabOrder, } from './constants'
 
 const SCOPES: PracticeScope[] = ['all', 'singing', 'guitar', 'piano']
 const MODES: UiMode[] = ['simple', 'advanced']
@@ -44,11 +45,10 @@ describe('an experimental tab', () => {
     const before = visibleTabOrder('all', 'advanced')
     await switchStudio(false)
 
-    expect(visibleTabOrder('all', 'advanced')).toEqual(
-      before.filter((tab) => tab !== TAB_STUDIO_NIGHT),
+    expect([...visibleTabOrder('all', 'advanced')].sort()).toEqual(
+      before.filter((tab) => tab !== TAB_STUDIO_NIGHT).sort(),
     )
-    for (const tab of TAB_ORDER.filter((t) => t !== TAB_STUDIO_NIGHT))
-      expect(isTabAvailable(tab), tab).toBe(true)
+    for (const tab of tabOrder()) expect(isTabAvailable(tab), tab).toBe(true)
   })
 
   it('waits on the startup read, and no other tab does', async () => {
@@ -92,5 +92,114 @@ describe('the tab constants before the store is connected', () => {
     expect(fresh.isTabAvailable(fresh.TAB_STUDIO_NIGHT)).toBe(true)
     expect(fresh.isTabAvailabilityPending(fresh.TAB_STUDIO_NIGHT)).toBe(true)
     expect(fresh.isTabAvailabilityPending(fresh.TAB_HOME)).toBe(false)
+  })
+})
+
+// What mercurypitch.com showed before Studio existed, and still shows while it
+// is off: the fourth group named Studio, holding Compose, Analysis and then
+// Settings. Only while Studio is available does the group become Create.
+const ORDER_WITHOUT_STUDIO: readonly ActiveTab[] = [
+  TAB_HOME,
+  TAB_PATH,
+  TAB_PROGRESS,
+  TAB_VOICE_HISTORY,
+  TAB_SINGING,
+  TAB_PIANO,
+  TAB_GUITAR,
+  TAB_EXERCISES,
+  TAB_CHALLENGES,
+  TAB_EAR_LAB,
+  TAB_KARAOKE,
+  TAB_JAM,
+  TAB_COMMUNITY,
+  TAB_LEADERBOARD,
+  TAB_COMPOSE,
+  TAB_ANALYSIS,
+  TAB_SETTINGS,
+]
+
+describe('the Studio group while Studio is off', () => {
+  it('is the group main shows: Studio, with Compose, Analysis and Settings', async () => {
+    await switchStudio(false)
+
+    const group = tabGroupOf(TAB_COMPOSE)
+    expect(group?.id).toBe('studio')
+    expect(group?.label).toBe('Studio')
+    expect(group?.tabs).toEqual([TAB_COMPOSE, TAB_ANALYSIS, TAB_SETTINGS])
+    expect(tabGroupOf(TAB_STUDIO_NIGHT)).toBeUndefined()
+  })
+
+  it('swipes in the order main swipes', async () => {
+    await switchStudio(false)
+
+    expect(visibleTabOrder('all', 'advanced')).toEqual(ORDER_WITHOUT_STUDIO)
+  })
+
+  it('never lets Settings overflow, whichever tab is open', async () => {
+    await switchStudio(false)
+    const group = tabGroupOf(TAB_SETTINGS)
+
+    for (const mode of MODES) {
+      const shown = (group?.tabs ?? []).filter((tab) =>
+        isTabVisible(tab, 'all', mode),
+      )
+      for (const active of shown) {
+        expect(
+          splitGroupTabs(shown, active, group?.maxInline).inline,
+          `${mode} ${active}`,
+        ).toContain(TAB_SETTINGS)
+      }
+    }
+  })
+})
+
+describe('the Studio group while Studio is on', () => {
+  it('is Create, Studio first and Settings among the inline tabs', () => {
+    const group = tabGroupOf(TAB_STUDIO_NIGHT)
+
+    expect(group?.id).toBe('studio')
+    expect(group?.label).toBe('Create')
+    expect(group?.tabs).toEqual([
+      TAB_STUDIO_NIGHT,
+      TAB_COMPOSE,
+      TAB_SETTINGS,
+      TAB_ANALYSIS,
+    ])
+    expect(tabGroupOf(TAB_COMPOSE)).toBe(group)
+  })
+
+  it('swipes through Studio, Compose, Settings and then Analysis', () => {
+    expect(visibleTabOrder('all', 'advanced').slice(-4)).toEqual([
+      TAB_STUDIO_NIGHT,
+      TAB_COMPOSE,
+      TAB_SETTINGS,
+      TAB_ANALYSIS,
+    ])
+  })
+
+  it('keeps Settings in the bar in simple mode, the way back out of it', () => {
+    const group = tabGroupOf(TAB_SETTINGS)
+
+    for (const scope of SCOPES) {
+      const shown = (group?.tabs ?? []).filter((tab) =>
+        isTabVisible(tab, scope, 'simple'),
+      )
+      for (const active of shown) {
+        expect(
+          splitGroupTabs(shown, active, group?.maxInline).inline,
+          `${scope} ${active}`,
+        ).toContain(TAB_SETTINGS)
+      }
+    }
+  })
+
+  it('changes back to the Studio group when the owner switches Studio off', async () => {
+    const before = tabGroupOf(TAB_COMPOSE)?.label
+    await switchStudio(false)
+
+    expect([before, tabGroupOf(TAB_COMPOSE)?.label]).toEqual([
+      'Create',
+      'Studio',
+    ])
   })
 })
