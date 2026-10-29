@@ -283,12 +283,13 @@
           const ov = riserOverlays(st)                                  // the semitones' gold (item 2), over the risers
           st.gAll.insertBefore(ghost, st.gAll.children[1])              // over the blocks, under the risers and labels
           const feather = featherRows(st, cam)
-          // the brackets (ink, ticks down, riding the world), HANDOFFS' spans (x 242 to 714, 722 to 1194) raised 24 px
-          // to y 460 and 278 (critic B-01 item 5): at 484 the lower one's right tick sat 3 to 5 px over the F-G
-          // riser's "T" and read as one hooked shape with it; now its 8 px tick ends 29 px above that label and 14
-          // px above the riser's bar, and a bead resting on stair 4 or 8 keeps 28 px below its bracket
-          const brLow = L.bracket(mid, { x1: 242, x2: 714, y: 460, dir: 'up', tick: 8, color: L.C.ink, width: 3 })
-          const brHigh = L.bracket(mid, { x1: 722, x2: 1194, y: 278, dir: 'up', tick: 8, color: L.C.ink, width: 3 })
+          // the brackets (ink, ticks down, riding the world), HANDOFFS' spans (x 242 to 714, 722 to 1194) raised 26 px
+          // to y 458 and 276 (critic B-01 item 5 asked 24; 2 more so the semitone hops pass 6 px under them): at 484
+          // the lower one's right tick sat 3 to 5 px over the F-G riser's "T" and read as one hooked shape with it;
+          // now its 8 px tick ends 31 px above that label and 16 px above the riser's bar, and a bead resting on
+          // stair 4 or 8 keeps 30 px below its bracket
+          const brLow = L.bracket(mid, { x1: 242, x2: 714, y: 458, dir: 'up', tick: 8, color: L.C.ink, width: 3 })
+          const brHigh = L.bracket(mid, { x1: 722, x2: 1194, y: 276, dir: 'up', tick: 8, color: L.C.ink, width: 3 })
           // the octave bracket (chrome, vertical, x 1232, stair 1's tread to stair 8's: twelve rows), ticks left
           const brOct = L.bracket(mid, { x1: ST.tread(1, 0), x2: ST.tread(8, 0), y: 1232, dir: 'down', tick: 14, color: L.C.chrome, width: 3, vertical: true })
           const gBead = L.svg('g', {}, mid)
@@ -439,11 +440,11 @@
               else if (t >= steps[0].t && t < A.ghEnd + 0.5) {
                 const out = P(t, A.ghEnd, 0.5, 'power1.in')
                 b = { ...L.bead4.runAt(t, steps), a: 1 - out, scale: 1 - 0.4 * out }
-                // the two semitone hops (E-F, B-C) are the small step: their apex 22 above the higher stair, not
-                // 40, and their x on power3.inOut, so the bead stays under the raised bracket (6.3 px) and clears
-                // the "S" (6.5 px; lab/s06-groups/item5/bracket-clear.mjs)
+                // the two semitone hops (E-F, B-C) are the small step: their apex 24 above the higher stair, not
+                // 40, and their x on power2.inOut, so the bead stays under its bracket (6.3 px) and clears the "S"
+                // (6.8 px), at a top speed no faster than a tone hop's (lab/s06-groups/item5/bracket-clear.mjs)
                 if (b.hopping && SEMI(b.on + 1)) {
-                  const [x, y] = L.bead4.hopAt(t, steps[b.on + 1].t, steps[b.on].p, steps[b.on + 1].p, { lift: 22, ease: 'power3.inOut' })
+                  const [x, y] = L.bead4.hopAt(t, steps[b.on + 1].t, steps[b.on].p, steps[b.on + 1].p, { lift: 24, ease: 'power2.inOut' })
                   b.x = x; b.y = y
                 }
               }

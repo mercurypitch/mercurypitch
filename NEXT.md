@@ -1321,3 +1321,7 @@ Note: the lanes' memory gate read a stale cgroup path after the 21:00 restart (f
   for the fall's 0.35 s. If no critic flags it, consider a horizontal feather on L.merc's box
   (outer ~16 px a side) before the film render, proven on stills and with the body's widest frame
   (the splat reaches x 212 on screen, 48 px inside the edge).
+- 12:30 director re-checked the cross-group cuts the fix rounds have not touched: C to D (s08 last
+  vs s09 first) max 18, none over 24; D to E (s11 last vs s12 first, m11 passes in) max 17, none
+  over 24. BUILD-GUIDE rows updated; stills in lab/entrances/seam-*.png. A to B and B to C wait for
+  builder B's fix round to end. Clips: s09 done 12:29, s10 rendering, then s01, s02, s11.

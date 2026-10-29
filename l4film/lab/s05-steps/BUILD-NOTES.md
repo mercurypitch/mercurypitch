@@ -104,10 +104,18 @@ only. Clock: Kokoro scratch, 483.73 s (cues.json = tools/board-cues.json today).
   ghost under risers and labels, its riser-3 segment gold; sum gaps half an em, ends x 1800; "Exactly" lights
   stairs 1 and 8; "Seven steps" lights them in turn; b16 "semitones" ripples the rows; the octave bracket
   grows up the 12 rows (0.9 s) with each row glowing as its tip passes; "= 1 octave" to b16 end + 0.3.
-- Bead vs raised brackets (found on stills 8.4, 9.7, 11.15): the semitone hops (E-F, B-C) now lift 22 with
-  x on power3.inOut (bracket 6.3 px, S label 6.5, bar 20.2: lab/s06-groups/item5/bracket-clear.mjs); the
-  F-G hop has to climb out through the lower bracket's line, so the lower bracket leaves over the truck
-  (0.4 s) and comes back on "Both halves". Stills: lab/s06-groups/stills-r4c.
+- Bead vs raised brackets (found on stills 8.4, 9.7, 11.15): brackets now y 458 / 276 (26 up); the semitone
+  hops (E-F, B-C) lift 24 with x on power2.inOut (bracket 6.3 px, S label 6.8, bar 22.2, top speed 46 px a
+  frame against a tone hop's 43; lab/s06-groups/item5/bracket-clear.mjs 24 power2.inOut). First try (lift 22,
+  power3.inOut) made measure.py flag a pop at 8.40 (65 px a frame). The F-G hop has to climb out through the
+  lower bracket's line, so the lower bracket leaves over the truck (0.4 s) and comes back on "Both halves".
+  Stills: lab/s06-groups/stills-r4d (final), r4b (before), r4c (first try).
+- Round 4 proof: clock-lint silent (both); merc-tags --check 10 tags, 0 stale; shared block identical; root
+  check 5 errors, all missing_local_asset for m12 passes (s12 to s16), none in mine; text sweep sweep-r4: no
+  label under 4.5:1, EDGE only mid-move (s05 11.5, 17.75, 18.25, 18.5, 22.75; s06 5.5, 12.5); s05 clip:
+  holds 0.1 s (longest 0.1), events 4.833, 4.900, 12.067 (as before, 24.30 gone).
+- Seam S5 to S6: my layers match; 3584 px differ by > 24, all Tavi's corner (her landing ring is on S5's
+  last frame and not on S6's first: the intro segment hands over to the pass at the cut). The gate's.
 - Stills: lab/s05-steps/stills-r4 (+ r4b after the 56 px corner, phone-34.9s.png), lab/s06-groups/stills-r4
   (+ r4b crossing before, r4c after).
 
