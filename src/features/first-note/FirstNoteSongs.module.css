@@ -214,6 +214,26 @@
   opacity: 0.6;
 }
 
+/* Read again: quiet at the row's end, a full 44 pt target. */
+.again {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  margin-right: -6px;
+  padding: 0;
+  border: 0;
+  border-radius: 22px;
+  background: transparent;
+  color: var(--text-secondary);
+  cursor: pointer;
+}
+
+.again:active {
+  background: color-mix(in srgb, var(--text-primary) 8%, transparent);
+}
+
 .bar {
   flex: none;
   width: 72px;

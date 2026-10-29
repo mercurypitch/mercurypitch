@@ -703,6 +703,47 @@ describe('First note', () => {
       )
     })
 
+    it('reads a song again from its row, one an earlier read left out', async () => {
+      library.songs = [ownSong('mine', 'Shadow of the Gods')]
+      // The read before found one clear entry; the read again, three.
+      const reads = [
+        [ownEntry(20, 55)],
+        [ownEntry(20, 55), ownEntry(40, 57), ownEntry(60, 59)],
+      ]
+      setOwnSongReaderForTests(async () => ({
+        entries: reads.shift() ?? [],
+        dropped: [],
+      }))
+      render(() => <FirstNoteRoom onDone={() => undefined} />)
+      choose('yours')
+      await settle()
+
+      fireEvent.click(screen.getByTestId('first-note-songs'))
+      const row = () => within(sheet()).getByTestId('first-note-own-song')
+      expect(row().dataset.state).toBe('few')
+      fireEvent.click(
+        within(row()).getByRole('button', {
+          name: 'Read Shadow of the Gods again',
+        }),
+      )
+      await settle()
+      expect(row().dataset.state).toBe('ready')
+      expect(row().textContent).toContain('3 entries')
+    })
+
+    it('offers no read again on a song not read yet', async () => {
+      library.songs = [ownSong('mine', 'Danny Boy')]
+      setOwnSongReaderForTests(() => new Promise(() => undefined))
+      render(() => <FirstNoteRoom onDone={() => undefined} />)
+      choose('yours')
+      await settle()
+
+      fireEvent.click(screen.getByTestId('first-note-songs'))
+      const row = within(sheet()).getByTestId('first-note-own-song')
+      expect(row.dataset.state).toBe('reading')
+      expect(within(row).queryByTestId('first-note-read-again')).toBeNull()
+    })
+
     it('opens the songs instead of starting when none of the chosen can play', async () => {
       const onOwnSongs = vi.fn()
       render(() => (
@@ -820,6 +861,10 @@ describe('First note', () => {
       const toggle = within(sheet).getByRole('switch', {
         name: 'Show the words',
       })
+      // What it does, in a sentence (owner, 29 Oct).
+      expect(sheet.textContent).toContain(
+        'Shows the lyrics you sing when the music stops.',
+      )
       expect(toggle.getAttribute('aria-checked')).toBe('false')
       fireEvent.click(toggle)
       expect(toggle.getAttribute('aria-checked')).toBe('true')
