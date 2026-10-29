@@ -2,8 +2,11 @@
 // Use these everywhere instead of raw strings.
 // Renaming a tab is a single-line change here — no string-hunt needed.
 
+// No runtime imports, on purpose: Playwright loads this file in plain Node
+// (the showcase and plan specs reach it through showcase-stops.ts and
+// build-plan.ts), and every room built to stand alone imports it. See
+// "Experimental tabs" below for how it learns which features are on.
 import type { ExperimentalFeature } from '@/lib/experimental-features'
-import { experimentalFeatureOn, experimentalFeaturesPending, } from '@/stores/experimental-features-store'
 
 export const TAB_HOME = 'home' as const
 export const TAB_PATH = 'path' as const
@@ -275,14 +278,43 @@ const SIMPLE_TABS: ReadonlySet<ActiveTab> = new Set<ActiveTab>([
 // way when the owner switches it. Asked inside isTabVisible, so every bar,
 // menu, swipe order, voice command and tour that filters on visibility drops
 // it with no call site of its own, and the route guard sends its address Home.
+//
+// Which features are on is the experimental features store's to say
+// (src/stores/experimental-features-store.ts), and that store reads the
+// build's `import.meta.env` as it loads, which throws in plain Node. So this
+// file does not import it: the app's entry connects it here before the first
+// render (src/index.tsx, connectTabExperiments), and the unit tests' shared
+// setup does the same. Unconnected, an experimental tab does not exist. That
+// is what the native app gets, whose build pins every feature off anyway, and
+// what a Playwright spec computing the menu in Node gets.
 const TAB_EXPERIMENTS: Partial<Record<ActiveTab, ExperimentalFeature>> = {
   [TAB_STUDIO_NIGHT]: 'studio',
+}
+
+/** What the tabs ask the experimental features store. Both answers are reactive. */
+export interface TabExperimentSwitches {
+  /** Whether this page shows `feature`. */
+  on(feature: ExperimentalFeature): boolean
+  /** True while the startup read of the owner's switches is in flight. */
+  pending(): boolean
+}
+
+let tabExperiments: TabExperimentSwitches | null = null
+
+/**
+ * Hand the tabs the experimental features store. Call it once, before
+ * anything renders a tab or reads isTabVisible: a reactive read made while
+ * unconnected tracks nothing, so it would not follow the connection.
+ */
+export function connectTabExperiments(switches: TabExperimentSwitches): void {
+  tabExperiments = switches
 }
 
 /** Whether `tab` exists on this page at all. False only for an experimental tab whose feature is off. Reactive. */
 export function isTabAvailable(tab: ActiveTab): boolean {
   const feature = TAB_EXPERIMENTS[tab]
-  return feature === undefined || experimentalFeatureOn(feature)
+  if (feature === undefined) return true
+  return tabExperiments?.on(feature) ?? false
 }
 
 /**
@@ -291,7 +323,8 @@ export function isTabAvailable(tab: ActiveTab): boolean {
  * should send its address elsewhere. Reactive.
  */
 export function isTabAvailabilityPending(tab: ActiveTab): boolean {
-  return TAB_EXPERIMENTS[tab] !== undefined && experimentalFeaturesPending()
+  if (TAB_EXPERIMENTS[tab] === undefined) return false
+  return tabExperiments?.pending() ?? false
 }
 
 /** Is `tab` visible under the given scope and UI mode? */
