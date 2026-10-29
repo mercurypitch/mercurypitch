@@ -137,6 +137,23 @@ function profiled(name: string): boolean {
   return (process.env.STUDIO_PERF_PROFILE ?? '').split(',').includes(name)
 }
 
+/** Phases named in STUDIO_PERF_TRACE also record a Chromium trace: style, layout and what invalidated them. */
+function traced(name: string): boolean {
+  return (process.env.STUDIO_PERF_TRACE ?? '').split(',').includes(name)
+}
+
+const TRACE_CATEGORIES = [
+  'devtools.timeline',
+  'disabled-by-default-devtools.timeline',
+  'disabled-by-default-devtools.timeline.invalidationTracking',
+  'blink.user_timing',
+]
+
+function beside(name: string, extension: string): string {
+  const out = process.env.STUDIO_PERF_OUT ?? 'studio-perf.json'
+  return out.replace(/\.json$/, '') + `-${name}.${extension}`
+}
+
 /**
  * Run `action` and read what it cost the page: long tasks that started
  * during it, main-thread CPU over it, and, with `frames`, the gaps between
@@ -156,6 +173,12 @@ export async function measurePhase(
     await cdp.send('Profiler.setSamplingInterval', { interval: 200 })
     await cdp.send('Profiler.start')
   }
+  const browser = traced(name) ? page.context().browser() : null
+  if (browser)
+    await browser.startTracing(page, {
+      path: beside(name, 'trace.json'),
+      categories: TRACE_CATEGORIES,
+    })
   const before = await cpuMetrics(cdp)
   const from = await page.evaluate(() => performance.now())
   if (options.frames) await startFrames(page)
@@ -169,12 +192,9 @@ export async function measurePhase(
   const after = await cpuMetrics(cdp)
   if (profile) {
     const { profile: samples } = await cdp.send('Profiler.stop')
-    const out = process.env.STUDIO_PERF_OUT ?? 'studio-perf.json'
-    writeFileSync(
-      out.replace(/\.json$/, '') + `-${name}.cpuprofile`,
-      JSON.stringify(samples),
-    )
+    writeFileSync(beside(name, 'cpuprofile'), JSON.stringify(samples))
   }
+  if (browser) await browser.stopTracing()
   const tasks = await page.evaluate(
     ([start, end]) =>
       window.__studioPerf!.longTasks.filter(
