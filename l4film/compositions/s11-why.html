@@ -145,8 +145,8 @@
           const arrow = curveArrow(mid, { color: L.C.ink, width: 3, head: 14 })
           const arrowAt = (w, s0) => {
             // larger than s10's (that one is seen at 1.8x): its apex stands 60 px under "leading note" and 24 px over
-            // the ti-do riser; its tip 7 px over the semitone's gold corner on do's tread (DECISIONS 85)
-            const A = [ST.colX(7, w) - 18, ST.tread(7, s0) - 14], B = [ST.houseBox(8, w, s0).x - 14, ST.tread(8, s0) - 10]
+            // the ti-do riser; its tip 15 px over the semitone's gold corner on do's tread (DECISIONS 85)
+            const A = [ST.colX(7, w) - 18, ST.tread(7, s0) - 14], B = [ST.houseBox(8, w, s0).x - 14, ST.tread(8, s0) - 18]
             return { A, Q: [(A[0] + B[0]) / 2 - 2, Math.min(A[1], B[1]) - 46], B }
           }
           // "leading note" (Outfit 600 64 px, riding the world): centred over ti's column, baseline 250 on C (x 840 to

@@ -37,7 +37,7 @@
           /* ---------------------------------------------------------------- anchors */
           const A = {
             push: word('b32', 'Back', 'start', 0.05),        // 10a: the push to CU-C (1.5 s), the strip fading and sinking
-            question: word('b32', 'question.'),               // the cold open's question: do's name, then ti's, scale 1.2
+            question: word('b32', 'question.'),               // "still hanging?" lands; do's name, then ti's, scale 1.2
             tee: word('b32', 'Tee'),                          // ti's name scales 1.2 (65 px in CU-C)
             seventh: word('b32', 'seventh'),                  // stair 7 lights chrome
             sits: word('b32', 'sits'),                        // ti's stair scales 1.05
@@ -115,17 +115,18 @@
               },
             }
           }
-          // 10a's ink arrow, from ti's tread up onto do's, landing left of the house (its body starts 22 px in)
+          // 10a's ink arrow, from ti's tread up onto do's, landing left of the house (its body starts 22 px in), its tip
+          // 13 px over the semitone's gold corner on do's tread (DECISIONS 85); the ink-2 arrow's 15 px
           const inkArrow = curveArrow(mid, { color: L.C.ink, width: 2.5, head: 12 })
           const INK = (() => {
-            const A = [ST.colX(7, 0) + 10, ST.tread(7, 0) - 14], B = [ST.houseBox(8, 0, 0).x - 14, ST.tread(8, 0) - 10]
+            const A = [ST.colX(7, 0) + 10, ST.tread(7, 0) - 14], B = [ST.houseBox(8, 0, 0).x - 14, ST.tread(8, 0) - 16]
             return { A, Q: [(A[0] + B[0]) / 2 - 4, Math.min(A[1], B[1]) - 40], B }
           })()
           // 10c's ink-2 arrow, the cold open's (s01's arrowAt on C): from just above the bead on ti up onto the
           // outline top stair, left of its house
           const waitArrow = curveArrow(mid, { color: L.C.ink2, width: 3, head: 14 })
           const WAITA = (() => {
-            const A = [ST.colX(7, 0) + 14, ST.tread(7, 0) - 56], B = [ST.houseBox(8, 0, 0).x - 16, ST.tread(8, 0) - 12]
+            const A = [ST.colX(7, 0) + 14, ST.tread(7, 0) - 56], B = [ST.houseBox(8, 0, 0).x - 16, ST.tread(8, 0) - 18]
             return { A, Q: [(A[0] + B[0]) / 2 - 6, Math.min(A[1], B[1]) - 46], B }
           })()
           const dust = L.filmDust(room.near)
@@ -147,6 +148,10 @@
           /* ---------------------------------------------------------------- frame-fixed type (hud) */
           const hud = L.stageOf(room.hud)
           const semiT = L.svg('text', { x: 1200, y: 250, fill: L.C.ink, opacity: 0, style: "font: 600 48px 'Outfit', sans-serif; white-space: pre;", text: '1 semitone' }, hud)
+          // CU-C leaves the frame's right side bare (component critic D-01 item 16): on "Back to the opening
+          // question" the cold open's own question, "still hanging?" (s01's words, Outfit 600 64 px, ink), comes back
+          // there, under where "1 semitone" will land, so the close-up answers it; both leave before the pull
+          const hangT = L.svg('text', { x: 1200, y: 460, fill: L.C.ink, opacity: 0, style: "font: 600 64px 'Outfit', sans-serif; white-space: pre;", text: 'still hanging?' }, hud)
 
           /* ---------------------------------------------------------------- per-frame state */
           const GROW = [A.semitone, A.last, A.short]
@@ -233,6 +238,8 @@
             // "1 semitone" (frame-fixed, in CU-C), in on "semitone" rising 12 px, out before the pull
             semiT.setAttribute('opacity', (P(t, A.semitone, 0.2) * (1 - P(t, A.out1, 0.2))).toFixed(3))
             semiT.setAttribute('transform', `translate(0 ${f1(12 * (1 - P(t, A.semitone, 0.45, 'power2.out')))})`)
+            hangT.setAttribute('opacity', (P(t, A.question, 0.2, 'power2.out') * (1 - P(t, A.out1, 0.2))).toFixed(3))
+            hangT.setAttribute('transform', `translate(0 ${f1(12 * (1 - P(t, A.question, 0.45, 'power2.out')))})`)
           })
           window.__timelines = window.__timelines || {}
           window.__timelines[SID] = tl

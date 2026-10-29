@@ -1408,3 +1408,6 @@ Note: the lanes' memory gate read a stale cgroup path after the 21:00 restart (f
   Its stills/sheets: lab/s07-predict/{fix1,fix1b,fix1b-slide}/, lab/s08-anywhere/{fix1,fix1-slides}/.
 - 13:51 component critic C-02 launched (fresh motion-critic, xhigh, paths only: $S/l4entr/critics/C2.txt),
   report to review/component-C-02/REPORT.md. Agents now: builder D + C-02.
+- 13:53 group A clips done (exit 0 each): s04 13:44:51, s03 13:45:40, s01 13:52:36, s02 13:53:17 (lab/s0N-*/clip.mp4).
+  s04's clip carries the long fall (frames 14.40-14.95: in from the top, splat at the corner;
+  $S/l4entr/aclips/s04-fall/sheet.png). A-01 is ready to launch ($S/l4entr/critics/A.txt) when a slot frees.

@@ -144,9 +144,11 @@
           const degreesT = L.svg('text', { x: 1400, y: 420, fill: L.C.ink, opacity: 0, style: LAB56, text: 'scale degrees' }, hud)
           const solfegeT = L.svg('text', { x: 1400, y: 420, fill: L.C.ink, opacity: 0, style: LAB56, text: 'solfège' }, hud)
           // A pill in the hud, left edge at x, its text inset 0.6 of its size, its box 1.6 of its size tall and
-          // centred on the text's cap height. `items` cross-fade in place (STORYBOARD § Type's label switch) and
-          // the box's width follows them. The guess is L.GUESS (dashed ink-2), traced on from the top left; the
-          // solid rim is ink. draw({ a, reveal, solid, mix, scale, x, baseline, pulse })
+          // centred on the text's cap height. `mix` (0 to 1) switches its words in three steps, so the two never
+          // show together and the new never stands past the box (component critic D-01 item 4): the old words
+          // leave (to 0.3), the box grows to the new width (0.2 to 0.65), the new words land (0.6 to 1). The guess
+          // is L.GUESS (dashed ink-2), traced on from the top left; the solid rim is ink.
+          // draw({ a, reveal, solid, mix, scale, x, baseline, pulse })
           const makePill = (parent, { size, items, guess = false }) => {
             const inset = 0.6 * size, h = 1.6 * size
             const g = L.svg('g', { opacity: 0 }, parent)
@@ -164,16 +166,17 @@
               draw({ a = 1, reveal: rv = 1, solid = guess ? 0 : 1, mix = 0, scale = 1, x, baseline, pulse = 1 }) {
                 g.setAttribute('opacity', a.toFixed(3))
                 if (a <= 0.004) return
-                const w = lerp(widths[0], widths[Math.min(1, widths.length - 1)], mix) + 2 * inset
+                const grow = L.ease('power2.inOut')(clamp((mix - 0.2) / 0.45))
+                const w = lerp(widths[0], widths[Math.min(1, widths.length - 1)], grow) + 2 * inset
                 for (const r of [fillR, dash, solidR, reveal]) r.setAttribute('width', f1(w))
                 reveal.setAttribute('stroke-dashoffset', (1 - clamp(rv)).toFixed(4))
                 fillR.setAttribute('opacity', clamp(rv * 1.6).toFixed(3))
                 dash.setAttribute('opacity', (1 - solid).toFixed(3))
                 solidR.setAttribute('opacity', solid.toFixed(3))
                 texts.forEach((el, i) => {
-                  const u = i === 0 ? 1 - mix : mix
+                  const u = i === 0 ? 1 - clamp(mix / 0.3) : clamp((mix - 0.6) / 0.4)
                   el.setAttribute('opacity', (u * clamp(rv * 1.6)).toFixed(3))
-                  el.setAttribute('transform', `translate(0 ${f1(i === 0 ? -12 * mix : 12 * (1 - mix))})`)
+                  el.setAttribute('transform', `translate(0 ${f1(i === 0 ? -10 * (1 - u) : 10 * (1 - u))})`)
                 })
                 const cy = baseline - 0.35 * size * scale, sc = scale * pulse
                 g.setAttribute('transform', `translate(${f1(x)} ${f1(cy)}) scale(${sc.toFixed(4)})`)
@@ -183,7 +186,9 @@
           makePill.n = 0
           // "do = C?" (a guess, ink-2) turning into "fixed do: do = C" (ink): 48 px at baseline 260, then 40 px at 170
           const fixedPill = makePill(hud, { size: 48, guess: true, items: [{ text: 'do = C?', fill: L.C.ink2 }, { text: 'fixed do: do = C', fill: L.C.ink }] })
-          const movablePill = makePill(hud, { size: 64, items: [{ text: 'movable do', fill: L.C.ink }] })
+          // "movable do" is plain type, Outfit 600 64 px (HANDOFFS § Inside D), not a pill: a pill read as an answer
+          // to choose (component critic D-01 item 14)
+          const movableT = L.svg('text', { x: 1360, y: 300, fill: L.C.ink, opacity: 0, style: "font: 600 64px 'Outfit', sans-serif; white-space: pre;", text: 'movable do' }, hud)
 
           /* ---------------------------------------------------------------- per-frame state */
           // the counted lights (L.light: 40 % chrome, up 0.3 s, back 0.4 s; [t, up, down] for a larger one)
@@ -201,11 +206,17 @@
           addL(1, A.use, 0.4, 0.8); addL(8, A.use, 0.4, 0.8); addL(1, A.dohO); addL(3, A.sharp, 0.3, 0.5)   // "We'll use"; "doh moved"; "F sharp"
           const lit = (n, t) => LIGHTS[n].reduce((k, [t0, up, dn]) => Math.max(k, light(t, t0, up, dn)), 0)
           // the names: letters (hidden while the staircase is dim), numbers on "number" (staggered), and each
-          // number to its name as it is sung
+          // number to its name as it is sung. A switch is the old name out (0.12 s, rising 12 px) and then the new in
+          // (0.18 s, from 12 px below), so no frame shows two names on a stair, even at 2.4x where 12 px world is
+          // only 29 px against 86 px glyphs (component critic D-01 item 7)
+          const swap2 = (t, t0, from, to) => {
+            const uo = P(t, t0, 0.12, 'power1.in'), ui = P(t, t0 + 0.12, 0.18, 'power2.out')
+            return t < t0 + 0.12 ? [{ text: from, a: 1 - uo, dy: -12 * uo }] : [{ text: to, a: ui, dy: 12 * (1 - ui) }]
+          }
           const nameList = (n, t) => {
-            if (t >= SYL[n - 1]) return L.swap(t, SYL[n - 1], 0, NUMS[n - 1], SOL[n - 1])
-            const vis = t < A.back ? 1 - P(t, A.dim, 0.2, 'power2.in') : P(t, A.back, 0.3, 'power2.out')
-            return L.swap(t, A.number, n - 1, LETTERS[n - 1], NUMS[n - 1]).map((it) => ({ ...it, a: it.a * vis }))
+            if (t >= SYL[n - 1]) return swap2(t, SYL[n - 1], NUMS[n - 1], SOL[n - 1])
+            const vis = t < A.back ? 1 - P(t, A.dim, 0.4, 'sine.inOut') : P(t, A.back, 0.3, 'power2.out')
+            return swap2(t, A.number + 0.05 * (n - 1), LETTERS[n - 1], NUMS[n - 1]).map((it) => ({ ...it, a: it.a * vis }))
           }
           const HOUSEP = [0, 1].map((k) => [A.movDo + 0.08 * k, A.withIt + 0.08 * k])   // the houses' pulses ("movable doh", "with it")
           const KEYP = { 2: [A.dohD], 4: [A.rayE], 6: [A.meeF, A.sharp] }                // F♯ again on "sharp"
@@ -218,14 +229,20 @@
             const tb = tavi(t)
             const boxes = tb ? [tb] : []
             // the staircase (and the strip with it) at 25 % under the card
-            const dimA = 1 - 0.75 * P(t, A.dim, 0.3) + 0.75 * P(t, A.back, 0.4)
+            // (0.5 s, sine.inOut: a 0.3 s power2 dim read as a flicker, component critic D-01 item 13)
+            const dimA = 1 - 0.75 * P(t, A.dim, 0.5, 'sine.inOut') + 0.75 * P(t, A.back, 0.4)
             // the slide to D and back: w and s0 on one curve (power2.inOut)
             const uS = P(t, A.slideD, SLIDE) - P(t, A.slideC, SLIDE)
             const w = uS, s0 = 2 * uS
             // the houses: from "its home", lit, riding every slide; glowing on "Home moves"
             const hU = P(t, A.home, 0.35, 'power2.out')
+            // 9e: the bottom house rides up with stair 1's rising outline and fades with it, then lands back on stair 1
+            // as the outline goes, so the outline never rises round it (component critic D-01 item 10)
+            const g0 = A.moved - 0.05
             const house = (k) => ({
-              a: P(t, A.home + 0.08 * k, 0.15), lit: 1, dy: -26 * (1 - P(t, A.home + 0.08 * k, 0.35, 'power2.out')),
+              a: P(t, A.home + 0.08 * k, 0.15) * (k === 0 ? (t < g0 + 0.7 ? 1 - P(t, g0 + 0.4, 0.3, 'power1.in') : P(t, g0 + 0.7, 0.25)) : 1),
+              lit: 1,
+              dy: -26 * (1 - P(t, A.home + 0.08 * k, 0.35, 'power2.out')) - (k === 0 && t < g0 + 0.7 ? 52 * P(t, g0, 0.5, 'power2.inOut') : 0) + (k === 0 && t >= g0 + 0.7 ? -10 * (1 - P(t, g0 + 0.7, 0.3, 'power2.out')) : 0),
               scale: Math.max(1 + 0.06 * (L.pulse(t, A.home + 0.08 * k + 0.3, 1) - 1), L.pulse(t, HOUSEP[k], 0.14)),
               glow: L.env(t, A.homeMoves, 0.3, 0.5, 0.7),
             })
@@ -240,7 +257,7 @@
               riser: (n) => ({
                 state: SEMI(n) ? 'semi' : 'tone',
                 // the riser labels leave for good under the card
-                labels: t < A.back ? [{ text: SEMI(n) ? 'S' : 'T', a: 1 - P(t, A.dim, 0.2, 'power2.in') }] : [],
+                labels: t < A.back ? [{ text: SEMI(n) ? 'S' : 'T', a: 1 - P(t, A.dim, 0.4, 'sine.inOut') }] : [],
               }),
               houses: hU > 0 || t >= A.home ? { bottom: house(0), top: house(1) } : {},
             })
@@ -270,7 +287,8 @@
               tonicT.setAttribute('transform', `translate(0 ${f1(12 * (1 - P(t, A.tonic, 0.4, 'power2.out')))})`)
               const u = P(t, A.home + 0.05, 0.4, 'power2.out')
               homeT.setAttribute('opacity', (P(t, A.home + 0.05, 0.2) * out).toFixed(3))
-              homeT.setAttribute('transform', `translate(${f1(tonicW - 28 * (1 - u))} 0)`)
+              // from the right, so it never passes over "tonic" (it slid in from the left through its last letters)
+              homeT.setAttribute('transform', `translate(${f1(tonicW + 28 * (1 - u))} 0)`)
               solT.setAttribute('opacity', (P(t, A.solfege, 0.2) * (1 - P(t, A.solOut, 0.2))).toFixed(3))
             }
 
@@ -290,12 +308,13 @@
                 a: (t >= A.doubt ? 1 : 0) * out,
                 reveal: P(t, A.doubt, 0.5, 'power1.inOut'),
                 solid: P(t, A.fixed, 0.35),
-                mix: P(t, A.fixed, 0.35, 'power2.inOut'),
+                mix: clamp((t - A.fixed) / 0.6),
                 scale: lerp(1, 40 / 48, up), x: 1360, baseline: lerp(260, 170, up),
                 pulse: L.pulse(t, [A.always, A.system], 'key'),
               })
               const mu = P(t, A.movable, 0.4, 'power2.out')
-              movablePill.draw({ a: P(t, A.movable, 0.2) * out, x: 1360, baseline: 300 + 14 * (1 - mu) })
+              movableT.setAttribute('opacity', (P(t, A.movable, 0.2) * out).toFixed(3))
+              movableT.setAttribute('transform', `translate(0 ${f1(14 * (1 - mu))})`)
             }
           })
           window.__timelines = window.__timelines || {}
