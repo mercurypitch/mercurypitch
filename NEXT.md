@@ -1654,3 +1654,9 @@ Note: the lanes' memory gate read a stale cgroup path after the 21:00 restart (f
   D round 4 (D-fix4-msg, to the s09-s11 builder) -> F-02 when F hands back -> C small -> B small
   (s06 layout error) -> A-03, D-04, C-03, B-04.
 - 20:5x full check after the kit change = before: lint 0 err / 79 warn, runtime 0, layout 1 error (s06 129.21, B's), motion 0, contrast 59/59. Task done.
+- 21:0x critic E-02 returned: S12 KEEP, S13 KEEP (report saved review/component-E-02/REPORT.md; LEDGER
+  row 19; DECISIONS 101: do names ease back within 0.5 s; small type without whole-pixel steps; arrow
+  12 px right; rows 13a/13b take the staggered care lines). E-fix3-msg.txt READY (round 3, polish).
+- 21:0x builder A resumed with A-fix2-msg (round 2; all four scenes at 60 fps). Agents now: F + A.
+- Queue: D round 4 (D-fix4-msg) -> F-02 when F hands back -> B small (B-fix4: s06 layout error) ->
+  C small (C-fix2) -> E round 3 (E-fix3) -> verification critics A-03, D-04, B-04, C-03, E-03.

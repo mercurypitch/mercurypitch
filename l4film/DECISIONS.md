@@ -876,3 +876,22 @@ replaced it. The builder's record: critics never read it.
        the critic traces to row 10a's framing and rates KEEP; and S9's slow push (231.6 to 244.4),
        whose parallax is faint because the move is slow, which decision 93 accepts. The film critic
        judges both at 60 fps.
+
+101. **S12 and S13 after component critic E-02 (both KEEP): three small items for builder E, and
+     the board takes the build's staggered care lines.**
+     - **No do name stays lit through the turn** (E-02 item 1). Both do names brightened (383.67 on
+       "Start on my note", 385.17 on "octave") and never eased back, so through the viewer's turn
+       the top do, the run's end, sat lit beside "D4 an octave up", where it can read as "start
+       here". Each now eases back to ink-2 within 0.5 s, as every other highlight on the guide does
+       (row 13b). The cursor shows where the run starts.
+     - **Small type settles without whole-pixel steps** (item 2): the doctor lines' rise (374.04 to
+       374.20) and "wait"'s and the chip's settles in S12 (346.82, 354.27 to 354.46, 358.91 to
+       359.07, 362.51 to 362.62) step a whole pixel a frame at 60 fps. Builder E removes the steps
+       (subpixel text rendering on the moving type, or no rise on it) and proves it on consecutive
+       frames.
+     - **The arrow's tail clears Tavi's dimmed bead** (item 3, cosmetic): it starts about 12 px right
+       of the hold's end, so her bead's rest (370.69 to 371.09) does not cover it.
+     - **The care lines land one by one, as built** ("Just listen along." on "Just", 376.01; "at
+       about speaking volume" on "at about", 381.46): the critic reads that as better than the
+       board's paired lines, and rows 13a and 13b now say so.
+     - Builder E's round 3 renders both clips at 60 fps again; a fresh critic, E-03, verifies.

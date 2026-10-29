@@ -113,6 +113,7 @@
               line.g.setAttribute('opacity', (0.85 * (1 - out)).toFixed(3))
             } else line.g.setAttribute('opacity', '0')
             echo.draw(t, [{ t: A.end, x: X1, y: Y, r: 22 }, { t: A.ring2, x: X1, y: Y + lift, r: 22 }])
+            echo.g.setAttribute('opacity', (1 - out).toFixed(3))   // the last ring leaves with the type, before the cut
 
             // type: the kicker, '"support"', then "what keeps it steady?"; all leave up fast at o14's end
             kick.draw(t, A.kick, A.kickOut)
