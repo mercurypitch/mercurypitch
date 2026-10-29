@@ -6,11 +6,13 @@
       <div class="scene" id="s03-promise-scene"></div>
       <script>
         ;(function () {
-          // S3, the promise (STORYBOARD rows 3a to 3c; HANDOFFS § S2 to S3, § S3, § S3 to S4). F-cold, the
-          // staircase on D; the title's bead settles into the top house and lights it; the list of the promise's
-          // four parts builds top left, each part done as it is said: the risers ripple, the staircase slides
-          // down two rows to C, the stairs light in turn, an ink arrow from ti's tread to the house; then the
-          // pull and pan to F0, the rows widening to the full grid as it lands. Every time is a word or a duration.
+          // S3, the promise (STORYBOARD rows 3a to 3c; HANDOFFS § S2 to S3, § S3, § S3 to S4; DECISIONS 88). F-cold,
+          // the staircase on D; the title's bead settles into the top house and lights it; the promise's four parts
+          // land as four short labels on the staircase, riding the world, each beside the part it names and each
+          // done as it is said: the risers grow in turn, each stair block above one pulsing and its tread flashing;
+          // the staircase slides down two rows to C; the stairs light in turn; an ink arrow from ti's tread to the
+          // house; then the pull and pan to F0, the rows widening to the full grid as it lands. Every time is a
+          // word or a duration.
           const SID = 's03-promise'
           const D = L.dur(SID)
           const at = (cue, edge, off) => L.at(SID, cue, edge, off)
@@ -27,8 +29,9 @@
 
           /* ---------------------------------------------------------------- anchors */
           const LIT = TF.FLY0 + TF.FLY - T0                       // the house lit by the title's bead; its echo ring
-          // 3a: "build it from its steps" lands on "you'll build"; the seven risers ripple up the staircase,
-          // one every 0.28 s from 0.08 s after "build", so the ripple spans "build a major scale from its steps"
+          // 3a: "build it from its steps" lands on "you'll build" over the risers' run; the seven risers grow in
+          // turn, one every 0.28 s from 0.08 s after "build" (the board's 0.2 s left 0.6 s still before "start it"),
+          // each with the stair block above it pulsing to 1.06 and that stair's tread flashing chrome
           const L1 = word('b3', "you'll"), RIP0 = word('b3', 'build', 'start', 0.08), RIP_GAP = 0.28
           // 3b: "start it on any note" on "start it", the slide down two rows (0.9 s); stair 1, where it now
           // starts, scales as the slide lands (long pulse) and lights chrome, up over 0.3 s and back over 0.4 s,
@@ -37,9 +40,9 @@
           const L2 = word('b3', 'start it'), SLIDE = word('b3', 'start it', 'start', 0.04), SLIDE_DUR = 0.9
           const LANDED = SLIDE + SLIDE_DUR
           const L3 = word('b3', 'name its notes'), LIGHT0 = word('b3', 'name its notes', 'start', -0.02)
-          // 3c: "hear ti lean home" on "hear", the pull and pan to F0 (2.5 s); the arrow from ti's tread to the
-          // house as "tee" is said (0.6 s); the list, the arrow and the glow leave up fast as the line ends; the
-          // rows widen over the pull's last 0.6 s
+          // 3c: "hear ti lean home" on "hear", by ti and the house; the pull and pan to F0 (2.5 s); the arrow from
+          // ti's tread to the house as "tee" is said (0.6 s); the four labels, the arrow and the glow leave up fast
+          // as the line ends; the rows widen over the pull's last 0.6 s
           const L4 = word('b3', 'hear'), PULL = word('b3', 'hear'), PULL_DUR = 2.5
           const ARROW = word('b3', 'tee', 'start', 0.06)
           const LIST_OUT = at('b3', 'end')
@@ -54,6 +57,27 @@
           const mid = L.stage(room.mid)
           const st = L.stairs(mid, {})
           st.stairs.forEach((S, i) => S.names.prepare([SOL[i]]))
+          // each riser event's tread flash: a soft chrome glow and a bright core along the stair's tread, drawn over
+          // the staircase and scaled with the stair's pulse
+          const flashDefs = L.svg('defs', {}, mid)
+          const flashBlur = L.svg('filter', { id: SID + '-flash', x: '-20%', y: '-300%', width: '140%', height: '700%' }, flashDefs)
+          L.svg('feGaussianBlur', { stdDeviation: 5 }, flashBlur)
+          const flashG = L.svg('g', { class: 'tread-flash' }, mid)
+          const flashes = [1, 2, 3, 4, 5, 6, 7, 8].map(() => ({
+            glow: L.svg('path', { fill: 'none', stroke: C.chrome, 'stroke-width': 12, 'stroke-linecap': 'round', filter: `url(#${SID}-flash)`, opacity: 0 }, flashG),
+            core: L.svg('path', { fill: 'none', stroke: '#f2f5f8', 'stroke-width': 4, 'stroke-linecap': 'round', opacity: 0 }, flashG),
+          }))
+          // the four labels (DECISIONS 88): Outfit 600, 40 world px, ink, riding the world and the slide (their
+          // baselines are written on C and move with the staircase's start), each 24 px or more clear of the
+          // stairs, their names and each other: "build it from its steps" above stairs 1 to 4 (32 px over stair 4's
+          // tread), "start it on any note" under stair 1's foot and "name its notes" under the names of stairs 5 to
+          // 8 (26 px under the feet), "hear ti lean home" over ti and the house (24 px over the roof)
+          const LABELS = [
+            { text: 'build it from its steps', x: 242, y: 494, anchor: 'start', tIn: L1 },
+            { text: 'start it on any note', x: 242, y: 790, anchor: 'start', tIn: L2 },
+            { text: 'name its notes', x: 958, y: 790, anchor: 'middle', tIn: L3 },
+            { text: 'hear ti lean home', x: 1166, y: 254, anchor: 'end', tIn: L4 },
+          ].map((o) => ({ ...o, el: txt(mid, o.text, { x: o.x, y: o.y, size: 40, anchor: o.anchor }) }))
           // the ink arrow (3 px at F0) from ti's tread up to the house's left side
           const arrow = curveArrow(mid, { color: C.ink, width: 3, head: 14 })
           const arrowAt = (s0) => {
@@ -68,10 +92,6 @@
           const bead = L.bead(top, { r: 22, color: C.chrome })
           bead.halo.setAttribute('r', 38)
 
-          /* ---------------------------------------------------------------- the list (frame-fixed, top left) */
-          const hud = L.stageOf(room.hud)
-          const LIST = [['build it from its steps', L1], ['start it on any note', L2], ['name its notes', L3], ['hear ti lean home', L4]]
-            .map(([s, tIn], i) => ({ el: txt(hud, s, { x: 140, y: 200 + 60 * i, size: 44 }), tIn }))
 
           L.clock(tl, D, (t) => {
             const Tf = T0 + t
@@ -83,6 +103,10 @@
             const s0 = 2 - 2 * P(t, SLIDE, SLIDE_DUR, 'power2.inOut')
             const fl = TF.flight(Tf)
             const ripple = (n) => (L.pulse(t, RIP0 + RIP_GAP * (n - 1), 'bar', { long: true }) - 1) / L.PULSE.bar
+            // riser n's event moves the stair above it (n + 1): its block pulses to 1.06 (long) and its tread flashes,
+            // up over 0.08 s and back over 0.5 s
+            const blockPulse = (n) => (n >= 2 ? L.pulse(t, RIP0 + RIP_GAP * (n - 2), 0.06, { long: true }) : 1)
+            const flashK = (n) => { if (n < 2) return 0; const d = t - (RIP0 + RIP_GAP * (n - 2)); return d < 0 ? 0 : d < 0.08 ? d / 0.08 : Math.max(0, 1 - (d - 0.08) / 0.5) }
             // the ripple's brightening: up over 0.28 s and back over 0.5 s, both linear, so each riser's change
             // carries until the next one's starts (the kit pulse's 0.15 s rise on a 4 px bar barely registers)
             const bright = (n) => { const d = t - (RIP0 + RIP_GAP * (n - 1)); return d < 0 ? 0 : d < 0.28 ? d / 0.28 : Math.max(0, 1 - (d - 0.28) / 0.5) }
@@ -94,7 +118,7 @@
               rows: { x0: lerp(230, 220, widen), x1: lerp(1206, 1680, widen), k1: 14 },
               stair: (n) => ({
                 lit: Math.max(L.lit(t, LIGHT0 + 0.1 * (n - 1), { long: true }), n === 1 ? start1 : 0),
-                scale: n === 1 ? L.pulse(t, LANDED, 'tile', { long: true }) : 1,
+                scale: n === 1 ? L.pulse(t, LANDED, 'tile', { long: true }) : blockPulse(n),
                 names: [{ text: SOL[n - 1], a: 1 }],
               }),
               riser: (n) => ({ scale: 1 + L.PULSE.bar * ripple(n) }),
@@ -109,6 +133,17 @@
               Rz.bar.setAttribute('fill-opacity', (0.4 + 0.6 * k).toFixed(3))
             })
             arrow.draw(P(t, ARROW, 0.6, 'power2.inOut'), 1 - out, arrowAt(s0), { width: 3 })
+            // the tread flashes, along each pulsed tread (the kit scales a stair about its block's middle)
+            flashes.forEach((F, i) => {
+              const n = i + 1, k = flashK(n)
+              if (k <= 0.001) { F.glow.setAttribute('opacity', '0'); F.core.setAttribute('opacity', '0'); return }
+              const sc = blockPulse(n), cx = ST.colX(n, 0), tr = ST.tread(n, s0), my = (tr + ST.foot(s0)) / 2
+              const y = my + (tr + 1.5 - my) * sc, hw = 51 * sc
+              const d = `M${f2(cx - hw)} ${f2(y)} L${f2(cx + hw)} ${f2(y)}`
+              F.glow.setAttribute('d', d); F.core.setAttribute('d', d)
+              F.core.setAttribute('stroke-width', f2(4 * sc))
+              F.glow.setAttribute('opacity', (0.85 * k).toFixed(3)); F.core.setAttribute('opacity', k.toFixed(3))
+            })
 
             /* the title's bead, settling into the house (TF, from film time), and the house's echo ring */
             if (t < LIT && fl.r > 0.2) {
@@ -120,8 +155,12 @@
             const hc = cam.map(hb.cx, hb.cy, t)
             echo.draw(t, [{ t: LIT, x: hc[0], y: hc[1], r: 30 * cs }])
 
-            /* the list: each part lands as it is said (0.2 s, rising 12 px); all leave up fast as the line ends */
-            for (const it of LIST) place(it.el, fadeIO(t, it.tIn, LIST_OUT, { out: 0.3, up: 60, ease: 'power3.in', rise: 12 }))
+            /* the four labels: each lands as its part is said (0.2 s, rising 12 px) and rides the slide; all leave
+               up fast as the line ends */
+            for (const it of LABELS) {
+              const f = fadeIO(t, it.tIn, LIST_OUT, { out: 0.3, up: 60, ease: 'power3.in', rise: 12 })
+              place(it.el, { a: f.a, dy: f.dy - 26 * s0 })
+            }
           })
 
           window.__timelines = window.__timelines || {}

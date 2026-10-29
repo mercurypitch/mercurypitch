@@ -157,9 +157,12 @@
           const P2 = STAND + 1.0, ROWS_IN = STAND + 1.6, BACK = STAND + 1.8, NAMES_BACK = STAND + 2.0, SWAP = STAND + 2.2
           const SEVEN = word('b6', 'seven steps')
           // 4d: m04's tag starts at at('o3', 'start', -1.1) (merc-tags.py), where she drops in; on "steps?" a "?"
-          // joins; on "Let's" the two labels leave up fast; her hop out at at('b7', 'start', 0.29); on "measure"
-          // the seven risers ripple in turn (0.08 s apart), back to rest before the cut
-          const QMARK = word('o3', 'steps?')
+          // joins and pulses as she asks it; on "bigger" the seven risers grow in turn (0.08 s apart, component
+          // critic A-01 item 3); on "Let's" the two labels leave up fast; her hop out at at('b7', 'start', 0.29);
+          // on "measure" the seven risers ripple in turn (0.08 s apart), back to rest before the cut. Every riser
+          // event (here and on "seven steps") also pulses the stair above the riser to 1.06 and flashes its tread,
+          // as S3's do (DECISIONS 88: counted bars that read at phone size)
+          const QMARK = word('o3', 'steps?'), BIGGER = word('o3', 'bigger')
           const LEAVE = word('b7', "Let's")
           const HOP = at('b7', 'start', 0.29)
           const MEASURE = word('b7', 'measure')
@@ -229,7 +232,21 @@
           // a riser's brightening as it grows (4 px chrome at 40 % to 6 px at full): up over 0.28 s and back over
           // 0.5 s, both linear, so each riser's change carries until the next one's (s03's ripple, the same shape)
           const env = (d) => (d < 0 ? 0 : d < 0.28 ? d / 0.28 : Math.max(0, 1 - (d - 0.28) / 0.5))
-          const growAt = (n) => SEVEN + 0.07 * (n - 1), rippleAt = (n) => MEASURE + 0.08 * (n - 1)
+          const growAt = (n) => SEVEN + 0.07 * (n - 1), biggerAt = (n) => BIGGER + 0.08 * (n - 1), rippleAt = (n) => MEASURE + 0.08 * (n - 1)
+          // the tread flashes (S3's): a soft chrome glow and a bright core along a stair's tread, over the staircase
+          const flashDefs = L.svg('defs', {}, mid)
+          const flashBlur = L.svg('filter', { id: SID + '-flash', x: '-20%', y: '-300%', width: '140%', height: '700%' }, flashDefs)
+          L.svg('feGaussianBlur', { stdDeviation: 5 }, flashBlur)
+          const flashG = L.svg('g', { class: 'tread-flash' }, mid)
+          const flashes = [1, 2, 3, 4, 5, 6, 7, 8].map(() => ({
+            glow: L.svg('path', { fill: 'none', stroke: C.chrome, 'stroke-width': 12, 'stroke-linecap': 'round', filter: `url(#${SID}-flash)`, opacity: 0 }, flashG),
+            core: L.svg('path', { fill: 'none', stroke: '#f2f5f8', 'stroke-width': 4, 'stroke-linecap': 'round', opacity: 0 }, flashG),
+          }))
+          const flashUp = (d) => (d < 0 ? 0 : d < 0.08 ? d / 0.08 : Math.max(0, 1 - (d - 0.08) / 0.5))
+          // the "?" pulses about its own middle; its width once the fonts are in
+          let qW = 28
+          L.afterFonts(() => { qW = labQ.getComputedTextLength() || qW })
+          const CHR = hexRgb(C.chrome)
 
           L.clock(tl, D, (t) => {
             const Tf = T0 + t
@@ -253,31 +270,52 @@
             const behind = t >= P2
             if (behind !== tilesBehind) { mid.insertBefore(tileG, behind ? st.gAll : brG); tilesBehind = behind }
 
-            /* the staircase: 25 % from DIM (its names and house gone), out under the turning row in phase 1's
-               second half, back to full on the new rows (0.4 s), its names in turn */
-            const stA = t < BACK ? (1 - 0.75 * P(t, DIM, 0.4, 'power2.inOut')) * (1 - P(t, STAND + 0.5, 0.5, 'power2.in')) : P(t, BACK, 0.4, 'power2.out')
+            /* the staircase: 25 % from DIM (its names and house gone), then out as the tile row lands over it, so
+               its top stairs and feet never show round the row (component critic A-01 item 8); back to full on the
+               new rows (0.4 s), its names in turn */
+            const stA = t < BACK ? (1 - 0.75 * P(t, DIM, 0.4, 'power2.inOut')) * (1 - P(t, RISE + 0.4, 0.6, 'power2.inOut')) : P(t, BACK, 0.4, 'power2.out')
             const nameA = (n) => (t < BACK ? 1 - P(t, DIM, 0.4, 'power2.inOut') : P(t, NAMES_BACK + 0.07 * (n - 1), 0.2, 'power2.out'))
             const out12 = t < SWAP ? 1 - P(t, P2, 1.0, 'power1.inOut') : swap
+            // riser n's events move stair n + 1: a pulse to 1.06 (long, but not on "measure", which ends at rest
+            // before the cut) and a tread flash
+            const blockPulse = (n) => (n < 2 ? 1 : Math.max(L.pulse(t, growAt(n - 1), 0.06, { long: true }), L.pulse(t, biggerAt(n - 1), 0.06, { long: true }), L.pulse(t, rippleAt(n - 1), 0.06)))
+            const flashK = (n) => (n < 2 ? 0 : Math.max(flashUp(t - growAt(n - 1)), flashUp(t - biggerAt(n - 1)), flashUp(t - rippleAt(n - 1))))
             const in15 = P(t, ROWS_IN, 0.5, 'power1.inOut')
             st.draw({
               w: 0, s0: 0, a: stA,
               rows: { x0: 220, x1: 1680, k0: 0, k1: 19, kA: (k) => (k <= 12 ? out12 : k <= 14 ? 1 : in15), keep: { boxes: box ? [box] : [], cam: null, t } },
-              stair: (n) => ({ names: [{ text: SOL[n - 1], a: nameA(n) }] }),
-              riser: (n) => ({ scale: Math.max(L.pulse(t, growAt(n), 'bar', { long: true }), L.pulse(t, rippleAt(n), 'bar')) }),
+              stair: (n) => ({ scale: blockPulse(n), names: [{ text: SOL[n - 1], a: nameA(n) }] }),
+              riser: (n) => ({ scale: Math.max(L.pulse(t, growAt(n), 'bar', { long: true }), L.pulse(t, biggerAt(n), 'bar', { long: true }), L.pulse(t, rippleAt(n), 'bar')) }),
               houses: { top: { a: 1 - P(t, DIM, 0.4, 'power2.inOut'), w: 0, lit: 1 } },
             })
             edgeD5.setAttribute('opacity', (1 - in15).toFixed(3))
             st.risers.forEach((Rz, i) => {
-              const k = Math.max(env(t - growAt(i + 1)), env(t - rippleAt(i + 1)))
+              const k = Math.max(env(t - growAt(i + 1)), env(t - biggerAt(i + 1)), env(t - rippleAt(i + 1)))
               if (k <= 0.001) return
               const x = ST.riserX(i + 1, 0), bw = 4 + 2 * k
               Rz.bar.setAttribute('x', f2(x - bw / 2)); Rz.bar.setAttribute('width', f2(bw))
               Rz.bar.setAttribute('fill-opacity', (0.4 + 0.6 * k).toFixed(3))
             })
+            flashes.forEach((F, i) => {
+              const n = i + 1, k = flashK(n)
+              if (k <= 0.001) { F.glow.setAttribute('opacity', '0'); F.core.setAttribute('opacity', '0'); return }
+              const sc = blockPulse(n), cx = ST.colX(n, 0), tr = ST.tread(n, 0), my = (tr + ST.foot(0)) / 2
+              const y = my + (tr + 1.5 - my) * sc, hw = 51 * sc
+              const d = `M${f2(cx - hw)} ${f2(y)} L${f2(cx + hw)} ${f2(y)}`
+              F.glow.setAttribute('d', d); F.core.setAttribute('d', d)
+              F.core.setAttribute('stroke-width', f2(4 * sc))
+              F.glow.setAttribute('opacity', (0.85 * k * stA).toFixed(3)); F.core.setAttribute('opacity', (k * stA).toFixed(3))
+            })
 
             /* the tile row */
             const gone = t >= SWAP + 0.6
             const darkLit = (i) => { const d = t - (FIVE + 0.3 * DARK_K[i]); return clamp(Math.min(d / 0.3, 1 - (d - 0.3) / 0.7)) }
+            // q0 (component critic A-01 item 3): the octave's two ends, C4 and C5, lift 16 px through the pause, their
+            // top edges glowing, and settle back as "Twelve" lands
+            const lift = P(t, Q0, Q0_DUR, 'sine.inOut') * (1 - P(t, TWELVE, 0.4, 'power2.inOut'))
+            // the stand-up (item 7): the dark tiles take a full chrome rim and a lighter fill through the spin, so all
+            // thirteen slivers read; the fade to the row bands takes both away
+            const spin = P(t, STAND - 0.1, 0.3, 'power2.out')
             row.draw((tile) => {
               const i = tile.i
               if (gone) return { a: 0 }
@@ -290,6 +328,8 @@
               return {
                 a: P(t, RISE, 0.3, 'power2.out'),
                 scale: sc,
+                dy: i === 0 || i === 12 ? -16 * lift : 0,
+                edge: i === 0 || i === 12 ? lift : 0,
                 lit: tile.white ? 0 : darkLit(i),
                 labelA: tile.white ? P(t, NAMES_IN + NAMES_GAP * WHITE_K[i], 0.2, 'power2.out') * (1 - P(t, NAMES_OUT, 0.2, 'power2.in')) : 0,
                 shape: { x: cx - tw / 2, y: 420, w: tw, h: th, rx },
@@ -304,9 +344,10 @@
               if (t >= SWAP) o = (b * (1 - swap)) / (1 - b * swap)
               tile.rect.setAttribute('fill-opacity', o.toFixed(4))
               if (!tile.white) {
-                // the kit's fill holds the 60 % chrome light; by phase 2 that has settled, so the mix starts dark
-                if (fade > 0) tile.rect.setAttribute('fill', rgbStr(mixRgb(DARKC, INKC, fade)))
-                tile.rect.setAttribute('stroke-opacity', (0.65 * (1 - fade)).toFixed(3))
+                // the kit's fill holds the 60 % chrome light; that has settled before the spin, so the mix starts dark
+                if (spin > 0 || fade > 0) tile.rect.setAttribute('fill', rgbStr(mixRgb(mixRgb(DARKC, CHR, 0.3 * spin), INKC, fade)))
+                tile.rect.setAttribute('stroke-opacity', (lerp(0.65, 1, spin) * (1 - fade)).toFixed(3))
+                tile.rect.setAttribute('stroke-width', f2(2 + 1.5 * spin))
               }
             }
 
@@ -324,7 +365,10 @@
             const lv = { out: 0.3, up: 60, ease: 'power3.in', rise: 12 }
             place(lab1, fadeIO(t, TWELVE, LEAVE, lv))
             place(lab2, fadeIO(t, SEVEN, LEAVE, lv))
-            place(labQ, fadeIO(t, QMARK, LEAVE, lv))
+            const fq = fadeIO(t, QMARK, LEAVE, lv), qs = L.pulse(t, QMARK + 0.25, 'label', { long: true })
+            const qx = parseFloat(labQ.getAttribute('x')) + qW / 2, qy = 310
+            labQ.setAttribute('opacity', fq.a.toFixed(3))
+            labQ.setAttribute('transform', `translate(0 ${f2(fq.dy)}) translate(${f2(qx)} ${qy}) scale(${qs.toFixed(4)}) translate(${f2(-qx)} ${-qy})`)
           })
 
           window.__timelines = window.__timelines || {}

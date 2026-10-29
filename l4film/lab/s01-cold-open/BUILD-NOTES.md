@@ -127,3 +127,33 @@ Anchors (all words or cue edges; see the anchors block in the file):
   then re-assemble with the scratchpad assemble.py or edit compositions/s04-recall.html the same way),
   then the s04 clip and measure: 62-68.55 should lose its 5.3 s of holds.
 - Then hand back (SubagentHandback).
+
+## Fix round A-01 (from 14:35; report review/component-A-01/REPORT.md)
+
+Since the hand back: the director moved s04 onto L.mercGate (hosts.js) and its tag to
+at('o3','start',-1.1) with a tall intro segment (DECISIONS 81, 86); lab/s04-recall/s04-src.html was
+regenerated from the live composition at 14:40 (shared block -> placeholder). m01-blue re-rendered
+with the mouth lead (DECISIONS 79). L.bokeh landed in lesson.js at 14:42 (DECISIONS 89).
+
+Done (14:50), all clock-lint and node --check clean:
+- Item 2 (s03): the list is gone; four world labels (Outfit 600 40 world px, ink) ride the world and
+  the slide: "build it from its steps" x 242 baseline 494 (on C), "start it on any note" x 242
+  baseline 790, "name its notes" centred 958 baseline 790, "hear ti lean home" right-aligned 1166
+  baseline 254. Riser n's event also pulses stair n+1 to 1.06 (long) and flashes its tread (glow +
+  core, up 0.08 s, back 0.5 s). Riser gap kept at 0.28 s (board 0.2) for the 40.8-41.3 span.
+- Item 5 (s02/s03 TF block): the flight is a cubic P0 -> (P0x, 120) -> (1100, 40) -> house on
+  sine.out; shared-tf.txt in the scratchpad updated, s03 re-assembled.
+- Items 3, 7, 8 (s04): C4/C5 lift 16 px through q0 (edges glow), back on "Twelve"; "?" pulses at
+  QMARK+0.25 (long); risers pulse in turn on "bigger" (0.08 s apart), and every s04 riser event
+  (seven steps, bigger, measure) pulses stair n+1 and flashes its tread as in S3; dark tiles get a
+  full chrome 3.5 px rim and a 30 % chrome fill lift through the spin; the dimmed staircase fades
+  out as the tiles land (RISE+0.4, 0.6 s).
+- Items 1, 4, 9 (s01): doh/ray/mee pulse stairs 1-3 and their names; on "finished" stairs 1-7 go
+  unlit (0.4 s) and do's name pulses 1.2; on "restless" ti lights orange, its name pulses, the arrow
+  redraws (RESTLESS+0.1, 0.5 s) and leaves with the lines; the first hop is a cubic through screen
+  (390, 840) and (330, 550), the bead at 35 % until clear of his face.
+- Stills: lab/s03-promise/sheet-fix1.png, lab/s02-title/flight-fix.png, lab/s04-recall/sheet-fix1.png,
+  lab/s01-cold-open/hook-fix.png, lab/s01-cold-open/scratch/mouth/path-fix.png.
+
+Next: the four clips (nice -n 10, one at a time) into lab/<id>/measure-fix1, the four sweeps, the
+root check, then hand back.

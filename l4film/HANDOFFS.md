@@ -23,6 +23,10 @@ S13, [F] S14 to S16.
   CU-A to CU-B the far layer sits 480 px left of where CU-A put it (offset -550, not `0.25 × -760`),
   and the pull out of CU-B eases every layer from there back to F0. In `L.rig`'s terms,
   `a = 1 + (s - 1) k` and `e = (1 - a) cx + px + k tx` (§ Camera moves names which each move is).
+- The near layer carries the kit's bokeh (`L.bokeh`, DECISIONS 89): faint soft discs, static in
+  that layer, so they part from the world on a push, pull, truck or crane and move with it on a
+  pan. Being the same in every scene, they match across any cut whose two frames share a framing,
+  as every cut in this film does.
 - The staircase's own labels (stair names, riser labels, key names, "tonic = home", "(sol)", the
   brackets, "leading note" and its arrow) ride the world and scale with it: 36, 40 and 34 px at
   `s = 1`. Frame-fixed type (kickers, the list, legends, tallies, sums, cards, pills, credits,

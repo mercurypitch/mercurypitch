@@ -256,7 +256,7 @@ Known in the kit:
 - The room's near layer carries the camera's depth cue (`L.bokeh`, DECISIONS 89): 21 faint, soft
   discs, static in that layer, so they move only with the camera, at 1.6 times the world. They are
   the same in every scene. Do not add a depth cue of your own, and do not hide, fade or restyle
-  `room.near` (the bokeh and the dust live there). A clip rendered before 29 Oct 14:55 does not have
+  `room.near` (the bokeh and the dust live there). A clip rendered before 29 Oct 14:43 does not have
   them.
 - The black keys draw over an opaque obsidian backing, so a black key at 45 % reads as a dim black
   key over the white keys rather than a grey one (DECISIONS 70).

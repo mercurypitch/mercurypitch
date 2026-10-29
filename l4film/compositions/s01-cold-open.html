@@ -155,9 +155,13 @@
           const RISE8 = LAND8 + 0.06                              // 0.3 s, power2.out, into the house's centre
           const LIT8 = RISE8 + 0.3                                // the house lit; its echo ring
           const OUT_1E = LIT8 + 0.1                               // "still hanging?", its check, "from D?" and the arrow fade
-          // 1f: o2's labels and the name glows
+          // 1f: o2's labels and the name glows. On "doh ray mee" each of the three stairs and its name pulse on its
+          // own syllable; on "finished" stairs 1 to 7 go back to unlit (0.4 s) and do's name pulses to 1.2; on
+          // "restless" ti lights orange again, its name pulses and the arrow redraws from ti to the house (0.5 s,
+          // from 0.1 s after the word); it leaves with the lines (component critic A-01, items 1 and 4)
           const MOVED = word('o2', 'home moved'), MOVED_OUT = word('o2', 'start', 'end')
           const FINISHED = word('o2', 'finished'), RESTLESS = word('o2', 'restless')
+          const SYL = { 1: word('o2', 'doh'), 2: word('o2', 'ray'), 3: word('o2', 'mee') }
           // 1g: the lines leave up fast as the question ends; the Mercs slide out; the dolly; the field
           const LINES_OUT = at('o2', 'end', 0.07)
           const MERCS_OUT = at('o2', 'end')
@@ -279,9 +283,14 @@
             if (t < SPAWN) return null
             const mouthW = cam.inv(MOUTH[0], MOUTH[1], t)
             if (t < LAND_C[0]) {
-              // out of his mouth onto stair 1: a hop (0.3 s, rising before it travels), growing as it leaves him
-              const [x, y] = L.bead4.hopAt(t, LAND_C[0], mouthW, stepsC[0].p, { dur: LAND_C[0] - SPAWN, lift: 40 })
-              return { x, y, scale: lerp(0.35, 1, P(t, SPAWN, 0.12, 'power2.out')) }
+              // out of his mouth onto stair 1 (component critic A-01 item 9: the old hop rose across his right eye):
+              // a cubic that leaves the mouth to the right, under his right eye, rises past stair 1's left edge and
+              // falls onto the stair, the bead small (35 %) until it is clear of his face; 5 px or more clear of both
+              // eyes (measured on the pass's frames: x 209 to 244 and 281 to 308, y 702 to 776) and of stair 1
+              const u = clamp((t - SPAWN) / (LAND_C[0] - SPAWN))
+              const c1 = cam.inv(390, 840, t), c2 = cam.inv(330, 550, t)
+              const [x, y] = cubic([mouthW, c1, c2, stepsC[0].p], u)
+              return { x, y, scale: lerp(0.35, 1, L.smooth(0.4, 0.65, u)) }
             }
             if (t < BACK) return L.bead4.runAt(t, stepsC)
             if (t < BACK + 0.4) {
@@ -345,10 +354,17 @@
               w: 0, s0,
               rows: { keep: { boxes, cam, t } },
               stair: (n) => {
-                const names = [{ text: SOL[n - 1], a: 1 }]
+                const nameScale = n === 8 ? L.pulse(t, FINISHED, 'label', { long: true })
+                  : n === 7 ? L.pulse(t, RESTLESS, 'label', { long: true })
+                    : SYL[n] != null ? L.pulse(t, SYL[n], 'label', { long: true }) : 1
+                const names = [{ text: SOL[n - 1], a: 1, scale: nameScale }]
                 if (n === 8) return { fill: 'outline', filled: fill8, lit: fill8, color: 'orange', names }
+                const scale = SYL[n] != null ? L.pulse(t, SYL[n], 'tile', { long: true }) : 1
                 const orange = P(t, LAND_D[n - 1], 0.15, 'power2.out')
-                if (orange > 0) return { lit: orange, color: 'orange', names }
+                if (orange > 0) {
+                  const back = orange * (1 - P(t, FINISHED, 0.4, 'power2.inOut'))
+                  return { lit: n === 7 ? Math.max(back, P(t, RESTLESS, 0.3, 'power2.out')) : back, color: 'orange', names, scale }
+                }
                 return { lit: P(t, LAND_C[n - 1], 0.15, 'power2.out') * blueOff, color: 'blue', names }
               },
               houses: { top: { a: 1, w: 0, lit: P(t, RISE8, 0.3, 'power2.out'), glow: 0.4 * P(t, MOVED, 0.4) * (1 - P(t, DOLLY, 0.3)) } },
@@ -368,9 +384,12 @@
             /* the arrow: hang-c on C (fades on "Start on D"), hang-d on D (pulses once on "last step") */
             if (t < RISE) {
               arrow.draw(P(t, ARROW_C, 0.5, 'power2.inOut'), 1 - P(t, BACK, 0.3, 'power1.inOut'), arrowAt(0))
-            } else {
+            } else if (t < RESTLESS) {
               const pulse = L.pulse(t, LAST, 'label') - 1
               arrow.draw(P(t, ARROW_D, 0.5, 'power2.inOut'), 1 - P(t, OUT_1E, 0.2, 'power2.in'), arrowAt(2), { scale: 1 + pulse, color: rgbStr(mixRgb(hexRgb(C.ink2), hexRgb(C.ink), pulse / 0.2)) })
+            } else {
+              // "restless on ti?": the arrow from ti to the house again, leaving with the lines
+              arrow.draw(P(t, RESTLESS + 0.1, 0.5, 'power2.inOut'), 1 - P(t, LINES_OUT, 0.3, 'power3.in'), arrowAt(2), { scale: 1, color: C.ink2 })
             }
 
             /* the beads, in screen space over the Mercs */

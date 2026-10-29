@@ -125,8 +125,11 @@
           // The title's staff, its zoom and the bead's flight back into the top house, all from film time, so
           // s02's last frame and s03's first draw the same bead (HANDOFFS § S2 to S3). The type layer zooms out
           // 4 % over s02 (power1.out, Lesson 2's); the bead rests on the staff's middle line, riding its living
-          // displacement, until FLY0, then flies to the house's centre in F-cold over 1.0 s (power2.inOut) and
-          // shrinks into it over the last 0.3 s as the house lights.
+          // displacement, until FLY0, then flies to the house's centre in F-cold over 1.0 s and shrinks into it over
+          // the last 0.3 s as the house lights. Its path (component critic A-01, item 5) is a cubic that rises
+          // straight up out of the staff above so's tread, then arcs over la and ti into the house, on sine.out so
+          // it is above the treads before the fading-up stairs show (21 px clear of every block from a fifth of
+          // their fade).
           const TF = { s02: L.scene('s02-title'), title: cueF('title'), YB: 696, S: 28, REST: [1060, 640], HOUSE: [1464, 215] }
           TF.zoom = (T) => 1.04 - 0.04 * P(T, TF.s02.start, TF.s02.end - TF.s02.start, 'power1.out')   // a scale (clock-lint: ok)
           TF.zmap = (x, y, T) => { const z = TF.zoom(T); return [960 + z * (x - 960), 540 + z * (y - 540)] }
@@ -150,13 +153,13 @@
           // the bead on screen at film time T once it has lifted off: { x, y, r, lit } (lit is the house's light)
           TF.flight = (T) => {
             const P0 = TF.zmap(TF.REST[0], TF.REST[1] + TF.disp(TF.REST[0], TF.FLY0), TF.FLY0)
-            const P2 = TF.HOUSE, peak = P2[1] - 120
-            const P1 = [(P0[0] + P2[0]) / 2, 2 * peak - (P0[1] + P2[1]) / 2]
-            const u = P(T, TF.FLY0, TF.FLY, 'power2.inOut'), v = 1 - u
+            const P1 = [P0[0], 120], P2 = [1100, 40], P3 = TF.HOUSE
+            const u = P(T, TF.FLY0, TF.FLY, 'sine.out'), v = 1 - u
             const lit = P(T, TF.FLY0 + TF.FLY - 0.3, 0.3, 'power2.out')
+            const k0 = v * v * v, k1 = 3 * v * v * u, k2 = 3 * v * u * u, k3 = u * u * u
             return {
-              x: v * v * P0[0] + 2 * u * v * P1[0] + u * u * P2[0],
-              y: v * v * P0[1] + 2 * u * v * P1[1] + u * u * P2[1],
+              x: k0 * P0[0] + k1 * P1[0] + k2 * P2[0] + k3 * P3[0],
+              y: k0 * P0[1] + k1 * P1[1] + k2 * P2[1] + k3 * P3[1],
               r: lerp(22 * TF.zoom(TF.FLY0), 22 * 1.2, u) * (1 - lit),
               lit,
             }

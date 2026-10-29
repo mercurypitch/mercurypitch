@@ -1445,7 +1445,7 @@ Note: the lanes' memory gate read a stale cgroup path after the 21:00 restart (f
   lower middle; bokeh-sized in CUs). Map per framing: $S/l4entr/depth/tools/bokehD.mjs. Prototype
   kit: $S/l4entr/depth/libD/lesson.js (L.bokeh, called from L.room). Cut-safe: every cut is F0 to F0
   (or F-cold to F-cold, or under S2's top-layer field). Rendering s03/s05/s07 clips (bkD-*).
-- ~14:55 KIT CHANGE INSTALLED: L.bokeh in assets/lib/lesson.js, called from L.room (DECISIONS 89).
+- 14:42:49 KIT CHANGE INSTALLED: L.bokeh in assets/lib/lesson.js, called from L.room (DECISIONS 89).
   Variant E: 12 edge discs (r 50-120, a 3.5-5.8 %, F0's outer ring) + 9 inner (r 16-28, a 4-6 %),
   seed 41, gradient ids from a counter (kit-bokeh<N>-<i>; the film's one document holds 16 scenes).
   Backup: $S/l4entr/depth/lesson.before-bokeh.js. Proofs: s03 pull (D-s03-pull.png), s05 push+truck
@@ -1459,3 +1459,12 @@ Note: the lanes' memory gate read a stale cgroup path after the 21:00 restart (f
 - B-03: rendering s05/s06 with the kit bokeh into $S/l4entr/b03/<scene>/clip.mp4 (B's lab files
   untouched); then launch B-03 with $S/l4entr/critics/B3.txt, artifacts pointed at those clips.
 - m12-orange 6750/8438 at 14:40 (~3 s/frame): lands ~16:10.
+- 15:1x DISK: 1.4 GB free (97 %). Enough for component rounds. Before the 60 fps film render (+ music-only
+  render), free space ONLY from my own disposable test renders: $S/l4entr/longfall (150 MB),
+  l4entr/oldclips (42 MB), l4entr/depth (38 MB). Never touch other folders (owner: never clean up the
+  machine), never /tmp/node-compile-cache.
+- Prompts ready: $S/l4entr/critics/A2.txt (A-02), B3.txt now points at $S/l4entr/b03/<scene>/clip.mp4.
+  Slot order: D reports -> B-03 (if its clips are done) or D-02; then C small round; A -> A-02;
+  m12-orange lands -> splicecheck/tallcheck (bnnj5p42t waits) -> resume E then F for host proofs.
+- 14:57 B-03 clips rendered with the kit bokeh (s05 14:51, s06 14:56; lift 4-10 at disc centres):
+  $S/l4entr/b03/{s05-steps,s06-groups}/clip.mp4. Waiting for a slot (A and D running).
