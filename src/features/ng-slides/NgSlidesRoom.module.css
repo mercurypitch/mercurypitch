@@ -9,6 +9,9 @@
 .room {
   /* The mic's colour on the singer's turn (room kit, mic-state.ts): the lit glass's violet. */
   --mic-lit: #9a87f0;
+  /* The river's dark: the room, the screen either side of it, the scene
+     and the veils at the bridge's edges. */
+  --ng-river: #05081a;
   --ng-chip-clear: 58px;
   --ng-controls-clear: 104px;
   position: relative;
@@ -21,14 +24,17 @@
   /* No wider than five sixths of the screen's height, in the middle. The
      bridge is measured in the room's width (bridge-layout.ts), so on a
      wider screen (an iPad or a tablet on its side) the deck and Merc slid
-     under its bottom edge. The river's dark fills the screen either side. */
+     under its bottom edge. The river's dark fills the screen either side.
+     vh first: an Android WebView older than dvh (Chrome 108) drops the
+     second, and keeps the column by the first. */
+  max-width: calc(100vh * 5 / 6);
   max-width: calc(100dvh * 5 / 6);
   margin-inline: auto;
-  box-shadow: 0 0 0 100vmax #05081a;
+  box-shadow: 0 0 0 100vmax var(--ng-river);
   padding-top: var(--pushed-top, 0px);
   padding-bottom: var(--pushed-bottom, 0px);
   overflow: hidden;
-  background: #05081a;
+  background: var(--ng-river);
   color: var(--text-primary);
 }
 
@@ -38,27 +44,34 @@
   position: absolute;
   inset: 0;
   overflow: hidden;
-  background: #05081a;
+  background: var(--ng-river);
   isolation: isolate;
 }
 
-/* In its column, the bridge's edges fade into the river's dark. */
+/* In its column, the bridge's edges fade into the river's dark: a veil
+   over each edge of the scene. A veil and not a mask, so the moving scene
+   (the river, the slides, Merc) is not drawn through a mask every frame. */
 @media (min-aspect-ratio: 5 / 6) {
-  .scene {
-    -webkit-mask-image: linear-gradient(
-      to right,
-      transparent,
-      #000 5%,
-      #000 95%,
-      transparent
-    );
-    mask-image: linear-gradient(
-      to right,
-      transparent,
-      #000 5%,
-      #000 95%,
-      transparent
-    );
+  .scene::before,
+  .scene::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    /* Over the scene's layers, none of which takes a z-index. */
+    z-index: 1;
+    width: 5%;
+    pointer-events: none;
+  }
+
+  .scene::before {
+    left: 0;
+    background: linear-gradient(to right, var(--ng-river), transparent);
+  }
+
+  .scene::after {
+    right: 0;
+    background: linear-gradient(to left, var(--ng-river), transparent);
   }
 }
 
