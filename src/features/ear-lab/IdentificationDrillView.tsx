@@ -10,7 +10,10 @@
 // On a phone build with the Ear Lab with Merc it also hands the native
 // room what it draws on its own (`room`, stage-room.ts): the round line,
 // the rating's move at the verdict, the plate in numbers. A run a
-// station row or Today's button asked for starts as the room opens.
+// station row or Today's button asked for starts as the room opens. A
+// slip on the plate between two of the drill's items starts a pair
+// practice on them (pair-practice.ts), which rates nothing and ends on
+// a plate of its own.
 // ============================================================
 
 import type { JSX } from 'solid-js'
@@ -23,7 +26,7 @@ import type { PadState, StageKey } from './EarStage'
 import { EndPlate, OutcomeDots, Pads, PlateBadge, PlateDelta, PlateLine, PlayPad, StagePad, } from './EarStage'
 import { useLastCall } from './reveal-pacing'
 import { slipsOf } from './slips'
-import type { RatingPlate, StageRoom } from './stage-room'
+import type { PlateSlip, RoomPlate, StageRoom } from './stage-room'
 import { identificationBeat, takeRoomStart } from './stage-room'
 import { EarStage } from './stage-switch'
 import type { useIdentificationController } from './use-identification-controller'
@@ -175,10 +178,23 @@ export function IdentificationDrillView(
 
   useArmingCue(() => phase() === 'answer')
 
+  /** A choice as the plate names it: its sub, its label, or its reveal,
+   *  as the drill writes it. Upper-casing the first letter turned
+   *  Cadence's vi into a "Vi" that is no chord. */
+  const plateName = (id: string): string => {
+    const choice = props.choices.find((entry) => entry.id === id)
+    return choice?.sub ?? choice?.label ?? props.revealName(id)
+  }
+
   /** What the native room draws on its own; nothing on any other build. */
   const room: StageRoom | undefined = EAR_LAB_WITH_MERC
     ? {
-        run: () => 'rated',
+        run: () =>
+          props.controller.practice() === null ? 'rated' : 'practice',
+        practising: () => {
+          const pair = props.controller.practice()
+          return pair === null ? null : [plateName(pair[0]), plateName(pair[1])]
+        },
         short: () => props.controller.short(),
         beat: () => identificationBeat(phase()),
         sounding: () => phase() === 'playing' || props.controller.replaying(),
@@ -209,9 +225,43 @@ export function IdentificationDrillView(
         held: () => props.controller.held(),
         resume: () => void props.controller.resumeQuestion(),
         abandon: () => props.controller.abandon(),
-        plate: (): RatingPlate | null => {
+        plate: (): RoomPlate | null => {
           const result = props.controller.result()
           if (result === null) return null
+          const outcomes = result.outcomes.map((outcome) => ({
+            correct: outcome.correct,
+            title: `${props.revealName(outcome.expectedId)}${
+              outcome.correct
+                ? ''
+                : ` (answered ${props.revealName(outcome.answeredId)})`
+            }`,
+          }))
+          // A slip between two of the drill's items offers practice on them.
+          const slips = slipsOf(result.outcomes, plateName).map(
+            (slip): PlateSlip => {
+              const pair = props.controller.practicePair(
+                slip.expectedId,
+                slip.answeredId,
+              )
+              return pair === null
+                ? slip
+                : { ...slip, practise: () => props.controller.practise(pair) }
+            },
+          )
+          const practice = props.controller.practice()
+          if (practice !== null) {
+            return {
+              kind: 'practice',
+              against: [plateName(practice[0]), plateName(practice[1])],
+              rating: Math.round(result.rating.rating),
+              source: `${props.title} rating`,
+              rounds: result.total,
+              right: result.correct,
+              rightWord: props.answerVerb ?? 'named',
+              outcomes,
+              slips,
+            }
+          }
           return {
             kind: 'rating',
             rating: Math.round(result.rating.rating),
@@ -223,23 +273,8 @@ export function IdentificationDrillView(
             rounds: result.total,
             right: result.correct,
             rightWord: props.answerVerb ?? 'named',
-            outcomes: result.outcomes.map((outcome) => ({
-              correct: outcome.correct,
-              title: `${props.revealName(outcome.expectedId)}${
-                outcome.correct
-                  ? ''
-                  : ` (answered ${props.revealName(outcome.answeredId)})`
-              }`,
-            })),
-            // eslint-disable-next-line solid/reactivity -- runs inside plate(), which the room reads tracked
-            slips: slipsOf(result.outcomes, (id) => {
-              const choice = props.choices.find((entry) => entry.id === id)
-              return (
-                choice?.sub ??
-                choice?.label ??
-                sentenceCase(props.revealName(id))
-              )
-            }),
+            outcomes,
+            slips,
           }
         },
         again: () => start(),
@@ -257,18 +292,24 @@ export function IdentificationDrillView(
   const lastCall = useLastCall(phase, () => {
     const expected = props.controller.expectedId()
     const answered = props.controller.answeredId()
-    const move = `Rating ${Math.round(ratingBefore)} → ${Math.round(
-      props.controller.rating().rating,
-    )}`
+    // A pair practice moves no rating, so it says none.
+    const move =
+      props.controller.practice() === null
+        ? `Rating ${Math.round(ratingBefore)} → ${Math.round(
+            props.controller.rating().rating,
+          )}`
+        : undefined
     const named =
       !correct() && answered !== null && answered !== expected
-        ? `You ${props.answerVerb ?? 'named'} ${props.revealName(answered)} · `
-        : ''
+        ? `You ${props.answerVerb ?? 'named'} ${props.revealName(answered)}`
+        : undefined
     const slip = correct() ? undefined : props.slipNote?.()
     return {
       correct: correct(),
       line: status(),
-      consequence: `${named}${slip === undefined ? '' : `${slip} · `}${move}`,
+      consequence: [named, slip, move]
+        .filter((part) => part !== undefined)
+        .join(' · '),
       label: `Round ${props.controller.round() + 1}`,
     }
   })

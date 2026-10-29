@@ -12,6 +12,10 @@
 //
 // A wrong answer replays the probe and then the tonic, so the
 // ear hears the distance it just misjudged.
+//
+// A slip on the native room's rated plate can start a pair practice
+// (pair-practice.ts): a short run over just the two degrees it mixed
+// up, which rates nothing and books nothing for Today.
 // ============================================================
 
 import { batch, createSignal, onCleanup } from 'solid-js'
@@ -27,6 +31,7 @@ import { trackFirstValue } from '@/lib/first-value'
 import { midiToFreq } from '@/lib/scale-data'
 import type { RatedRunMark } from '@/stores/ear-lab-store'
 import { creditEarSession, earItemStates, earPlayerRating, markRatedRun, markSprintSegmentDone, recordIdentificationAnswer, rollBackRatedRun, takeSprintRunLength, } from '@/stores/ear-lab-store'
+import { PAIR_PRACTICE_ROUNDS, pairOrder } from './pair-practice'
 import { createRevealPacer } from './reveal-pacing'
 
 export type HomePhase =
@@ -131,6 +136,13 @@ export function useHomeController(
   /** The question in flight was voided (the sound was taken away); it
    *  waits for resumeQuestion(). */
   const [held, setHeld] = createSignal(false)
+  /** A pair practice's two degrees, while it runs and on its plate; null
+   *  for a rated run. */
+  const [practice, setPractice] = createSignal<
+    readonly [number, number] | null
+  >(null)
+  /** A pair practice's questions, in order. */
+  let practiceOrder: HomeDegree[] = []
 
   let rootMidi = 60
   let lastItemId: string | undefined
@@ -183,17 +195,42 @@ export function useHomeController(
   const [short, setShort] = createSignal(false)
 
   function start(runMode: HomeAnswerMode): void {
+    begin(runMode, null)
+  }
+
+  /** A short practice run over two degrees of the set, asked in a
+   *  balanced, shuffled order. It rates nothing (pair-practice.ts). */
+  function practise(
+    runMode: HomeAnswerMode,
+    pair: readonly [number, number],
+  ): void {
+    const first = set.degrees.find((entry) => entry.degree === pair[0])
+    const second = set.degrees.find((entry) => entry.degree === pair[1])
+    if (first === undefined || second === undefined || first === second) return
+    begin(runMode, [first, second])
+  }
+
+  function begin(
+    runMode: HomeAnswerMode,
+    pair: readonly [HomeDegree, HomeDegree] | null,
+  ): void {
     cancelled = false
     run += 1
     startedAt = performance.now()
     outcomes = []
     skipped = 0
     ratingAtStart = earPlayerRating(drillIdFor(set, runMode)).rating
-    mark = markRatedRun(drillIdFor(set, runMode))
-    const armed = takeSprintRunLength(set.tapDrillId)
+    // A practice writes nothing to put back, and leaves a length Today
+    // armed to the run it was armed for.
+    mark = pair === null ? markRatedRun(drillIdFor(set, runMode)) : null
+    const armed = pair === null ? takeSprintRunLength(set.tapDrillId) : null
+    practiceOrder = pair === null ? [] : pairOrder(pair, PAIR_PRACTICE_ROUNDS)
     batch(() => {
+      setPractice(pair === null ? null : [pair[0].degree, pair[1].degree])
       setShort(armed?.rounds !== undefined)
-      setTotalRounds(armed?.rounds ?? HOME_ROUNDS)
+      setTotalRounds(
+        pair === null ? (armed?.rounds ?? HOME_ROUNDS) : PAIR_PRACTICE_ROUNDS,
+      )
       setMode(runMode)
       setRound(0)
       setResult(null)
@@ -215,10 +252,14 @@ export function useHomeController(
       return
     }
 
-    const pick = pickHomeItem(earItemStates(), rating().rating, {
-      avoidItemId: lastItemId,
-      set,
-    })
+    const ordered = practiceOrder.at(round())
+    const pick =
+      ordered === undefined
+        ? pickHomeItem(earItemStates(), rating().rating, {
+            avoidItemId: lastItemId,
+            set,
+          })
+        : { degree: ordered, itemId: set.itemId(ordered.degree) }
     lastItemId = pick.itemId
     rootMidi = roveRootMidi()
     retriedThisRound = false
@@ -321,17 +362,20 @@ export function useHomeController(
 
     const isMic = mode() === 'mic'
     const correct = degree === target.degree
-    const itemDifficulty = homeItemState(earItemStates(), target.degree, set)
-    const nextRating = recordIdentificationAnswer({
-      drillId: drillIdFor(set, mode()),
-      itemId: set.itemId(target.degree),
-      itemDifficulty,
-      correct,
-      guessRate: isMic ? 0 : 1 / set.choices,
-      expected: `deg-${target.degree}`,
-      answered: `deg-${degree}`,
-      updateItem: !isMic,
-    })
+    // A pair practice rates nothing: the rating stays where it was.
+    const nextRating =
+      practice() !== null
+        ? rating()
+        : recordIdentificationAnswer({
+            drillId: drillIdFor(set, mode()),
+            itemId: set.itemId(target.degree),
+            itemDifficulty: homeItemState(earItemStates(), target.degree, set),
+            correct,
+            guessRate: isMic ? 0 : 1 / set.choices,
+            expected: `deg-${target.degree}`,
+            answered: `deg-${degree}`,
+            updateItem: !isMic,
+          })
     outcomes.push({
       degree: target.degree,
       answered: degree,
@@ -432,8 +476,9 @@ export function useHomeController(
     creditEarSession(performance.now() - startedAt)
     // Always the tap id: the sprint schedules the drill, not the way
     // you chose to answer it, and singing your answers is still Home. A
-    // segment counts when the run reached its end, not when abandoned.
-    if (complete) {
+    // segment counts when the run reached its end, not when abandoned,
+    // and never for a pair practice: Today asked for the drill.
+    if (complete && practice() === null) {
       markSprintSegmentDone(set.tapDrillId)
       // A run of skipped rounds (no clear sung answer) got no result.
       if (outcomes.some((o) => o.answered > 0)) trackFirstValue('ear')
@@ -555,6 +600,9 @@ export function useHomeController(
     held,
     holdQuestion,
     resumeQuestion,
+    /** The two degrees a practice runs over, or null for a rated run. */
+    practice,
+    practise,
     start,
     answer,
     stop,

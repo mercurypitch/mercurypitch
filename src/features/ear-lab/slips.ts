@@ -5,13 +5,18 @@
 // (lib/ear/confusion-report.ts). A plate has one run, a dozen
 // answers at most, and a rate over two attempts would claim more
 // than it knows; so it says what happened and how often: "Fa heard
-// as Sol, twice". The native room's rated plate reads it.
+// as Sol, twice". The native room's rated plate reads it, and a slip
+// between two of the drill's items offers practice on just those two
+// (pair-practice.ts), so each keeps the ids behind its words.
 // ============================================================
 
 export interface Slip {
   expected: string
   answered: string
   count: number
+  /** The ids behind the words, for a practice on the two. */
+  expectedId: string
+  answeredId: string
 }
 
 /** The outcomes a run keeps: what was asked, what was answered. */
@@ -44,6 +49,8 @@ export function runSlips(
       expected: nameOf(outcome.expected),
       answered: nameOf(outcome.answered),
       count: 1,
+      expectedId: outcome.expected,
+      answeredId: outcome.answered,
     })
   }
   return order

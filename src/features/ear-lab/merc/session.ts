@@ -54,11 +54,12 @@ export interface TodayMove {
 
 /** What a finished run moved, from its plate: a rating from and to, or
  *  a staircase's reading before and after, each in its unit. Null when
- *  the run measured nothing. */
+ *  the run measured nothing, as a pair practice never does. */
 export function todayMoveOf(
   drillId: string,
   plate: RoomPlate,
 ): TodayMove | null {
+  if (plate.kind === 'practice') return null
   if (plate.kind === 'rating') {
     if (plate.rounds <= 0) return null
     return {

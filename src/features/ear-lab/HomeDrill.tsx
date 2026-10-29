@@ -16,7 +16,9 @@
 // On a phone build with the Ear Lab with Merc it also hands the native
 // room what it draws on its own (`room`, stage-room.ts), says the way a
 // run answers in the room's mode line, and points a refused microphone
-// at the phone's Settings rather than a browser's.
+// at the phone's Settings rather than a browser's. Each slip on the
+// rated plate starts a pair practice on its two degrees
+// (pair-practice.ts), which rates nothing.
 // ============================================================
 
 import type { JSX } from 'solid-js'
@@ -37,7 +39,7 @@ import type { PadState, StageKey } from './EarStage'
 import { ConsoleLink, ConsoleNote, ConsoleStack, ConsoleWarning, EndPlate, ModeToggle, OutcomeDots, Pads, PlateBadge, PlateDelta, PlateLine, PlayPad, StagePad, } from './EarStage'
 import { useLastCall } from './reveal-pacing'
 import { runSlips } from './slips'
-import type { RatingPlate, RoomBeat, StageRoom } from './stage-room'
+import type { PlateSlip, RoomBeat, RoomPlate, StageRoom } from './stage-room'
 import { takeRoomStart } from './stage-room'
 import { EarStage } from './stage-switch'
 import { TuningFork } from './TuningFork'
@@ -142,11 +144,13 @@ export function HomeDrill(props: HomeDrillProps): JSX.Element {
    *  second stream and start a second run over the first. */
   let starting = false
 
-  async function handleStart(): Promise<void> {
+  /** Begin a rated run, or a pair practice on two degrees: either way
+   *  through the microphone's question when the answers are sung. */
+  async function handleStart(pair?: readonly [number, number]): Promise<void> {
     if (starting) return
     starting = true
     try {
-      await startRun()
+      await startRun(pair)
     } finally {
       starting = false
     }
@@ -158,7 +162,7 @@ export function HomeDrill(props: HomeDrillProps): JSX.Element {
     await handleStart()
   }
 
-  async function startRun(): Promise<void> {
+  async function startRun(pair?: readonly [number, number]): Promise<void> {
     setMicError('')
     if (homeAnswerMode() === 'mic' && f0 === null) {
       // The permission prompt can take a while, and a denial used to start
@@ -193,7 +197,8 @@ export function HomeDrill(props: HomeDrillProps): JSX.Element {
       // holding an open mic for a run that will never listen.
       releaseMic()
     }
-    controller.start(mode)
+    if (pair === undefined) controller.start(mode)
+    else controller.practise(mode, pair)
   }
 
   const phase = () => controller.phase()
@@ -298,10 +303,24 @@ export function HomeDrill(props: HomeDrillProps): JSX.Element {
 
   useArmingCue(() => phase() === 'answer')
 
+  /** A degree as the plate names it, its number and syllable: "4 Fa". */
+  const degreeName = (degree: number): string => {
+    const entry = set.degrees.find((candidate) => candidate.degree === degree)
+    return entry ? `${degreeLabel(entry)} ${entry.solfege}` : String(degree)
+  }
+  /** The degree a slip's id stands for: `deg-4` is 4. */
+  const degreeOf = (id: string): number => Number(id.slice('deg-'.length))
+
   /** What the native room draws on its own; nothing on any other build. */
   const room: StageRoom | undefined = EAR_LAB_WITH_MERC
     ? {
-        run: () => 'rated',
+        run: () => (controller.practice() === null ? 'rated' : 'practice'),
+        practising: () => {
+          const pair = controller.practice()
+          return pair === null
+            ? null
+            : [degreeName(pair[0]), degreeName(pair[1])]
+        },
         short: () => controller.short(),
         beat: () => BEAT[phase()] ?? 'idle',
         sounding: () =>
@@ -337,14 +356,53 @@ export function HomeDrill(props: HomeDrillProps): JSX.Element {
           (phase() === 'idle' ? homeAnswerMode() : controller.mode()) === 'mic'
             ? 'sung answers'
             : 'tapped answers',
-        plate: (): RatingPlate | null => {
+        plate: (): RoomPlate | null => {
           const result = controller.result()
           if (result === null) return null
-          const slipName = (id: string): string => {
-            const degree = set.degrees.find(
-              (entry) => `deg-${entry.degree}` === id,
-            )
-            return degree ? `${degreeLabel(degree)} ${degree.solfege}` : id
+          const source =
+            result.mode === 'mic' ? 'Voice rating' : copy.ratingUnit
+          const outcomes = result.outcomes.map((outcome) => ({
+            correct: outcome.correct,
+            skipped: !outcome.correct && outcome.answered === 0,
+            title: `Degree ${labelOf(outcome.degree)}${
+              outcome.correct
+                ? ''
+                : outcome.answered === 0
+                  ? ' (skipped)'
+                  : ` (answered ${labelOf(outcome.answered)})`
+            }`,
+          }))
+          // Every slip is between two degrees, and offers practice on them.
+          const slips = runSlips(
+            result.outcomes.map((outcome) => ({
+              correct: outcome.correct,
+              expected: `deg-${outcome.degree}`,
+              answered:
+                outcome.answered === 0 ? null : `deg-${outcome.answered}`,
+            })),
+            (id) => degreeName(degreeOf(id)),
+          ).map(
+            (slip): PlateSlip => ({
+              ...slip,
+              practise: () =>
+                void handleStart([
+                  degreeOf(slip.expectedId),
+                  degreeOf(slip.answeredId),
+                ]),
+            }),
+          )
+          const practice = controller.practice()
+          if (practice !== null) {
+            return {
+              kind: 'practice',
+              against: [degreeName(practice[0]), degreeName(practice[1])],
+              rating: Math.round(result.rating.rating),
+              source,
+              rounds: result.total,
+              right: result.correct,
+              outcomes,
+              slips,
+            }
           }
           const voice = earVsVoice()
           const lines = [
@@ -358,32 +416,14 @@ export function HomeDrill(props: HomeDrillProps): JSX.Element {
             kind: 'rating',
             rating: Math.round(result.rating.rating),
             before: Math.round(result.rating.rating - result.ratingDelta),
-            source: result.mode === 'mic' ? 'Voice rating' : copy.ratingUnit,
+            source,
             settling: isProvisional(result.rating)
               ? PROVISIONAL_ATTEMPTS - result.rating.attempts
               : null,
             rounds: result.total,
             right: result.correct,
-            outcomes: result.outcomes.map((outcome) => ({
-              correct: outcome.correct,
-              skipped: !outcome.correct && outcome.answered === 0,
-              title: `Degree ${labelOf(outcome.degree)}${
-                outcome.correct
-                  ? ''
-                  : outcome.answered === 0
-                    ? ' (skipped)'
-                    : ` (answered ${labelOf(outcome.answered)})`
-              }`,
-            })),
-            slips: runSlips(
-              result.outcomes.map((outcome) => ({
-                correct: outcome.correct,
-                expected: `deg-${outcome.degree}`,
-                answered:
-                  outcome.answered === 0 ? null : `deg-${outcome.answered}`,
-              })),
-              slipName,
-            ),
+            outcomes,
+            slips,
             lines,
           }
         },
@@ -402,17 +442,26 @@ export function HomeDrill(props: HomeDrillProps): JSX.Element {
   const lastCall = useLastCall(phase, () => {
     const answered = controller.answeredDegree()
     const degree = target()
-    const move = `Rating ${Math.round(ratingBefore)} → ${Math.round(
-      controller.rating().rating,
-    )}`
+    // A pair practice moves no rating, so it says none.
+    const practising = controller.practice() !== null
+    const move = practising
+      ? undefined
+      : `Rating ${Math.round(ratingBefore)} → ${Math.round(
+          controller.rating().rating,
+        )}`
     const named =
       answered !== null && degree && answered !== degree.degree
-        ? `You named ${labelOf(answered)} · `
-        : ''
+        ? `You named ${labelOf(answered)}`
+        : undefined
     return {
       correct: answered !== null && correct(),
       line: status(),
-      consequence: answered === null ? 'Rating untouched' : `${named}${move}`,
+      consequence:
+        answered === null
+          ? practising
+            ? ''
+            : 'Rating untouched'
+          : [named, move].filter((part) => part !== undefined).join(' · '),
       label: `Round ${controller.round() + 1}`,
     }
   })

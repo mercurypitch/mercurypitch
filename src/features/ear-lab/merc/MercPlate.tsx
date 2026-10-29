@@ -7,19 +7,22 @@
 //     Provisional, and no letter grade.
 //   - A rated run's rating: the number, "higher is surer", its move
 //     against the rating the run found, rounds and names, the dots of
-//     the run in order, and where it slipped, as counts.
+//     the run in order, and where it slipped, as counts. A slip between
+//     two of the drill's items offers a pair practice on them.
+//   - A pair practice's tally: the rounds named right, the two it was
+//     on, and the rating it left alone.
 //   - A calibration's seal: the Mercury Index, its move from the last
 //     seal, the three tracks, and the glass with the mercury rising to
 //     the new mark and the old one left faint.
 // ============================================================
 
 import type { JSX } from 'solid-js'
-import { For, Show } from 'solid-js'
+import { For, Match, Show, Switch } from 'solid-js'
 import { dateLabel } from '@/features/ear-lab/instruments'
-import type { RatingPlate, RoomPlate, ThresholdPlate, } from '@/features/ear-lab/stage-room'
+import type { PlateSlip, PracticePlate, RatingPlate, RoomPlate, ThresholdPlate, } from '@/features/ear-lab/stage-room'
 import { calibrationHistory } from '@/stores/ear-lab-store'
 import { Glass, practiceEstimate } from './Glass'
-import { comparedLine, directionWord, INDEX_MEANING, MEANING, ratingMoveLine, roundsLine, SEALED_SMALL_PRINT, sealedMoveLine, staircaseStats, timesWord, tracksLine, } from './merc-lines'
+import { comparedLine, directionWord, INDEX_MEANING, MEANING, practiseLabel, ratingMoveLine, roundsLine, SEALED_SMALL_PRINT, sealedMoveLine, staircaseStats, timesWord, tracksLine, untouchedLine, } from './merc-lines'
 import styles from './plate.module.css'
 import roomStyles from './room.module.css'
 
@@ -104,10 +107,87 @@ export function ThresholdPlateView(props: {
   )
 }
 
+/** A pair practice asked for from a slip: the room wakes the audio in
+ *  the tap, then starts it. */
+type PractiseHandler = (start: () => void) => void
+
+/** The run's answers in order, as dots: right, missed or skipped. */
+function RunDots(props: { outcomes: RatingPlate['outcomes'] }): JSX.Element {
+  return (
+    <Show when={props.outcomes.length > 0}>
+      <div class={styles.dots} role="list" aria-label="Round by round">
+        <For each={props.outcomes}>
+          {(outcome) => (
+            <span
+              class={styles.dot}
+              classList={{
+                [styles.dotMiss]: !outcome.correct && outcome.skipped !== true,
+                [styles.dotSkip]: outcome.skipped === true,
+              }}
+              role="listitem"
+              aria-label={`${outcome.title}: ${
+                outcome.correct
+                  ? 'right'
+                  : outcome.skipped === true
+                    ? 'skipped'
+                    : 'missed'
+              }`}
+            />
+          )}
+        </For>
+      </div>
+    </Show>
+  )
+}
+
+/** "Where it slipped": the run's slips, counted, each between two of the
+ *  drill's items with its offer of practice on them. */
+function SlipList(props: {
+  slips: readonly PlateSlip[]
+  onPractise?: PractiseHandler
+}): JSX.Element {
+  return (
+    <Show when={props.slips.length > 0}>
+      <section class={styles.slips} aria-labelledby="merc-slips-title">
+        <h2 id="merc-slips-title" class={styles.slipsTitle}>
+          Where it slipped
+        </h2>
+        <ul class={styles.slipList}>
+          <For each={props.slips}>
+            {(slip) => (
+              <li class={styles.slip}>
+                <span class={styles.slipName}>{slip.expected}</span>
+                heard as
+                <span class={styles.slipHeard}>{slip.answered}</span>
+                <span class={styles.slipCount}>{timesWord(slip.count)}</span>
+                <Show
+                  when={props.onPractise === undefined ? null : slip.practise}
+                >
+                  {(start) => (
+                    <button
+                      type="button"
+                      class={styles.practise}
+                      data-testid="merc-slip-practise"
+                      onClick={() => props.onPractise?.(start())}
+                    >
+                      {practiseLabel(slip.expected, slip.answered)}
+                    </button>
+                  )}
+                </Show>
+              </li>
+            )}
+          </For>
+        </ul>
+      </section>
+    </Show>
+  )
+}
+
 export function RatingPlateView(props: {
   plate: RatingPlate
   drillId: string
   short: boolean
+  onPractise?: PractiseHandler
 }): JSX.Element {
   return (
     <>
@@ -163,50 +243,68 @@ export function RatingPlateView(props: {
         <For each={props.plate.lines ?? []}>
           {(line) => <p class={styles.small}>{line}</p>}
         </For>
-        <Show when={props.plate.outcomes.length > 0}>
-          <div class={styles.dots} role="list" aria-label="Round by round">
-            <For each={props.plate.outcomes}>
-              {(outcome) => (
-                <span
-                  class={styles.dot}
-                  classList={{
-                    [styles.dotMiss]:
-                      !outcome.correct && outcome.skipped !== true,
-                    [styles.dotSkip]: outcome.skipped === true,
-                  }}
-                  role="listitem"
-                  aria-label={`${outcome.title}: ${
-                    outcome.correct
-                      ? 'right'
-                      : outcome.skipped === true
-                        ? 'skipped'
-                        : 'missed'
-                  }`}
-                />
-              )}
-            </For>
-          </div>
-        </Show>
+        <RunDots outcomes={props.plate.outcomes} />
       </section>
-      <Show when={props.plate.slips.length > 0}>
-        <section class={styles.slips} aria-labelledby="merc-slips-title">
-          <h2 id="merc-slips-title" class={styles.slipsTitle}>
-            Where it slipped
-          </h2>
-          <ul class={styles.slipList}>
-            <For each={props.plate.slips}>
-              {(slip) => (
-                <li class={styles.slip}>
-                  <span class={styles.slipName}>{slip.expected}</span>
-                  heard as
-                  <span class={styles.slipHeard}>{slip.answered}</span>
-                  <span class={styles.slipCount}>{timesWord(slip.count)}</span>
-                </li>
-              )}
-            </For>
-          </ul>
-        </section>
-      </Show>
+      <SlipList slips={props.plate.slips} onPractise={props.onPractise} />
+    </>
+  )
+}
+
+/** A pair practice's plate: how many of its rounds were named right,
+ *  the two it was on, and the rating it left alone. */
+export function PracticePlateView(props: {
+  plate: PracticePlate
+  onPractise?: PractiseHandler
+}): JSX.Element {
+  const answered = (): boolean => props.plate.rounds > 0
+  return (
+    <>
+      <section
+        class={styles.plate}
+        aria-label="Practice"
+        role="status"
+        data-testid="ear-stage-plate"
+        data-plate="practice"
+      >
+        <Screws />
+        <div class={styles.kickerRow}>
+          <p class={styles.kicker}>Practice</p>
+          <span class={styles.badge}>Nothing rated</span>
+        </div>
+        <p class={styles.value}>
+          <span class={styles.number}>
+            {answered() ? props.plate.right : '—'}
+          </span>
+          <Show when={answered()}>
+            <span class={styles.unit}>of {props.plate.rounds}</span>
+          </Show>
+        </p>
+        <p class={styles.direction}>
+          {props.plate.against[0]} against {props.plate.against[1]}
+        </p>
+        <div class={styles.rule} aria-hidden="true" />
+        <Show
+          when={answered()}
+          fallback={
+            <p class={styles.strong}>
+              Stopped before the first answer. Nothing marked.
+            </p>
+          }
+        >
+          <p class={styles.strong}>
+            {untouchedLine(props.plate.source, props.plate.rating)}
+          </p>
+          <p class={styles.stats}>
+            {roundsLine(
+              props.plate.rounds,
+              props.plate.right,
+              props.plate.rightWord ?? 'named',
+            )}
+          </p>
+        </Show>
+        <RunDots outcomes={props.plate.outcomes} />
+      </section>
+      <SlipList slips={props.plate.slips} onPractise={props.onPractise} />
     </>
   )
 }
@@ -321,8 +419,9 @@ export function GlassUnderPlate(): JSX.Element {
 // ── On the desk, and under it ───────────────────────────────────
 
 /** The plate a run ended on, where the instrument stood: a staircase's
- *  reading with the glass under it, a calibration's seal, or a rating.
- *  A drill that hands the room no plate shows its own. */
+ *  reading with the glass under it, a calibration's seal, a rating, or
+ *  a pair practice's tally. A drill that hands the room no plate shows
+ *  its own. */
 export function PlateOnDesk(props: {
   plate: RoomPlate | null
   /** The drill's own plate, for a drill with no room data. */
@@ -331,40 +430,61 @@ export function PlateOnDesk(props: {
   short: boolean
   /** The faculty a seal is said under. */
   faculty: string
+  /** A slip's offer of practice, taken. */
+  onPractise?: PractiseHandler
 }): JSX.Element {
   return (
     <Show when={props.plate} fallback={props.own}>
       {(shown) => (
-        <Show
-          when={
-            shown().kind === 'threshold' ? (shown() as ThresholdPlate) : null
-          }
-          fallback={
-            <RatingPlateView
-              plate={shown() as RatingPlate}
-              drillId={props.drillId}
-              short={props.short}
-            />
-          }
-        >
-          {(threshold) => (
-            <Show
-              when={threshold().markedIndex !== undefined}
-              fallback={
-                <>
-                  <ThresholdPlateView
-                    plate={threshold()}
-                    drillId={props.drillId}
-                    short={props.short}
-                  />
-                  <GlassUnderPlate />
-                </>
-              }
-            >
-              <SealedPlateView plate={threshold()} faculty={props.faculty} />
-            </Show>
-          )}
-        </Show>
+        <Switch>
+          <Match
+            when={
+              shown().kind === 'threshold' ? (shown() as ThresholdPlate) : null
+            }
+          >
+            {(threshold) => (
+              <Show
+                when={threshold().markedIndex !== undefined}
+                fallback={
+                  <>
+                    <ThresholdPlateView
+                      plate={threshold()}
+                      drillId={props.drillId}
+                      short={props.short}
+                    />
+                    <GlassUnderPlate />
+                  </>
+                }
+              >
+                <SealedPlateView plate={threshold()} faculty={props.faculty} />
+              </Show>
+            )}
+          </Match>
+          <Match
+            when={
+              shown().kind === 'practice' ? (shown() as PracticePlate) : null
+            }
+          >
+            {(practice) => (
+              <PracticePlateView
+                plate={practice()}
+                onPractise={props.onPractise}
+              />
+            )}
+          </Match>
+          <Match
+            when={shown().kind === 'rating' ? (shown() as RatingPlate) : null}
+          >
+            {(rating) => (
+              <RatingPlateView
+                plate={rating()}
+                drillId={props.drillId}
+                short={props.short}
+                onPractise={props.onPractise}
+              />
+            )}
+          </Match>
+        </Switch>
       )}
     </Show>
   )

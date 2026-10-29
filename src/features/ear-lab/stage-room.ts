@@ -102,6 +102,17 @@ export interface ThresholdPlate {
   replays: number
 }
 
+/** One of a run's slips, as a count: "4 Fa" heard as "5 Sol", twice. */
+export interface PlateSlip {
+  expected: string
+  answered: string
+  count: number
+  /** Start a pair practice on the two (pair-practice.ts). Absent where
+   *  the answer was not an item of the drill: a tapped-back line, a
+   *  direction. */
+  practise?: () => void
+}
+
 /** A rated run's plate. */
 export interface RatingPlate {
   kind: 'rating'
@@ -125,12 +136,28 @@ export interface RatingPlate {
     title: string
   }>
   /** This run's slips, as counts: "4 Fa" heard as "5 Sol", twice. */
-  slips: ReadonlyArray<{ expected: string; answered: string; count: number }>
+  slips: readonly PlateSlip[]
   /** Further shipped lines: the round trip, ear against voice. */
   lines?: readonly string[]
 }
 
-export type RoomPlate = ThresholdPlate | RatingPlate
+/** A pair practice's plate: the rounds named right, and the rating it
+ *  left alone. */
+export interface PracticePlate {
+  kind: 'practice'
+  /** The two items, as the drill names them. */
+  against: readonly [string, string]
+  /** The drill's rating, untouched by the run, and where it lives. */
+  rating: number
+  source: string
+  rounds: number
+  right: number
+  rightWord?: string
+  outcomes: RatingPlate['outcomes']
+  slips: readonly PlateSlip[]
+}
+
+export type RoomPlate = ThresholdPlate | RatingPlate | PracticePlate
 
 /** What a view tells the native room beyond the stage's own props. */
 export interface StageRoom {
@@ -172,6 +199,9 @@ export interface StageRoom {
   abandon: () => void
   /** "sung answers": said after the mode in the header. */
   modeNote?: () => string | null
+  /** A pair practice's two items, as the drill names them, for Merc's
+   *  first line; null for any other run. */
+  practising?: () => readonly [string, string] | null
   plate?: () => RoomPlate | null
   again?: () => void
   /** A sealed calibration of this drill, offered on a practice plate. */
