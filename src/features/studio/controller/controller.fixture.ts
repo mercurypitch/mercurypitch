@@ -4,6 +4,7 @@ import type { StudioService } from '@/db/services/studio-service'
 import type { StudioAssetInfo } from '@/lib/studio/audio/prepare-studio-asset'
 import { createStudioProject, summarizeStudioProject, } from '@/lib/studio/model/defaults'
 import type { StudioAssetData, StudioProject } from '@/lib/studio/model/types'
+import type { EditorClaim, EditorPresence, EditorPresenceSource, } from './editor-presence'
 
 export function controllerServiceFixture(): StudioService {
   const stored = new Map<string, StudioProject>(
@@ -39,6 +40,11 @@ export function controllerServiceFixture(): StudioService {
       expiresAt: Date.now() + 30000,
     })),
     renewLease: vi.fn(async (projectId, token) => ({
+      projectId,
+      ...token,
+      expiresAt: Date.now() + 30000,
+    })),
+    reclaimLease: vi.fn(async (projectId, token) => ({
       projectId,
       ...token,
       expiresAt: Date.now() + 30000,
@@ -87,5 +93,46 @@ export function preparedFixture(info: StudioAssetInfo): StudioAssetData {
     },
     original: new Blob(['abc'], { type: 'audio/wav' }),
     canonicalPcm: new Blob([new Uint8Array(40)]),
+  }
+}
+
+/**
+ * Presence as a Web Lock gives it: each claim granted and exclusive, until
+ * the test says another live tab holds the project. `lose` is that other
+ * tab stealing it.
+ */
+export function presenceFixture() {
+  const claims: {
+    projectId: string
+    release: ReturnType<typeof vi.fn>
+    lose(): void
+  }[] = []
+  let refused = false
+  const source = {
+    claim: vi.fn(
+      async (
+        projectId: string,
+        _claim: EditorClaim,
+      ): Promise<EditorPresence | null> => {
+        if (refused) return null
+        let lose!: () => void
+        const lost = new Promise<void>((resolve) => {
+          lose = resolve
+        })
+        const release = vi.fn()
+        claims.push({ projectId, release, lose })
+        return { exclusive: true, lost, release }
+      },
+    ),
+  } satisfies EditorPresenceSource
+  return {
+    source,
+    claims,
+    refuse: () => {
+      refused = true
+    },
+    grant: () => {
+      refused = false
+    },
   }
 }

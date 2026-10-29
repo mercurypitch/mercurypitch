@@ -83,6 +83,25 @@ describe('Studio revision save queue', () => {
     expect(queue.preparedAssets()).toEqual([])
   })
 
+  it('reports saved when a retry finds nothing left to write', async () => {
+    const save = vi.fn(async (project: StudioProject) => project)
+    const changed = vi.fn()
+    const queue = createStudioSaveQueue({
+      project: initial,
+      token,
+      save,
+      changed,
+    })
+    queue.stage(revision(1))
+    expect(await queue.flush()).toBe(true)
+    queue.pause(new Error('Editing expired'))
+    expect(changed).toHaveBeenLastCalledWith('error', expect.any(Error))
+
+    expect(await queue.retry()).toBe(true)
+    expect(changed).toHaveBeenLastCalledWith('saved', null)
+    expect(save).toHaveBeenCalledTimes(1)
+  })
+
   it('does not publish a stale completion after a project switch', async () => {
     let finish!: (project: StudioProject) => void
     const changed = vi.fn()

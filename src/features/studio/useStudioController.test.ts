@@ -7,7 +7,7 @@ import { studioReservedMemoryBytes } from '@/lib/studio/memory-budget'
 import { createStudioProject } from '@/lib/studio/model/defaults'
 import type { StudioAssetData, StudioProject } from '@/lib/studio/model/types'
 import type { StudioBackupTarget } from './backup/backup-target'
-import { controllerServiceFixture, preparedFixture, } from './controller/controller.fixture'
+import { controllerServiceFixture, preparedFixture, presenceFixture, } from './controller/controller.fixture'
 import type { StudioSourceEntry } from './integration/source-catalog'
 import type { StudioController, StudioControllerOptions, } from './useStudioController'
 import { useStudioController } from './useStudioController'
@@ -649,7 +649,7 @@ describe('Studio controller', () => {
     controller.rename('First')
     const first = controller.project()!
     controller.rename('Keep this edit')
-    vi.mocked(service.renewLease).mockRejectedValueOnce(
+    vi.mocked(service.reclaimLease).mockRejectedValueOnce(
       new StudioStorageError('lease-lost', 'Taken over'),
     )
     await vi.advanceTimersByTimeAsync(10000)
@@ -675,8 +675,10 @@ describe('Studio controller', () => {
     vi.useFakeTimers()
     const { controller, service } = mount()
     await controller.open('one')
-    let finish!: (lease: Awaited<ReturnType<typeof service.renewLease>>) => void
-    vi.mocked(service.renewLease).mockImplementationOnce(
+    let finish!: (
+      lease: Awaited<ReturnType<typeof service.reclaimLease>>,
+    ) => void
+    vi.mocked(service.reclaimLease).mockImplementationOnce(
       () =>
         new Promise((resolve) => {
           finish = resolve
@@ -685,7 +687,7 @@ describe('Studio controller', () => {
     await vi.advanceTimersByTimeAsync(10000)
     await controller.open('two')
     await vi.advanceTimersByTimeAsync(10000)
-    expect(service.renewLease).toHaveBeenLastCalledWith(
+    expect(service.reclaimLease).toHaveBeenLastCalledWith(
       'two',
       expect.objectContaining({ projectId: 'two' }),
     )
@@ -724,5 +726,240 @@ describe('Studio controller', () => {
     finish(preparedFixture(captured))
     await pending
     expect(service.saveProject).not.toHaveBeenCalled()
+  })
+
+  describe('a tab away from view', () => {
+    const TAKEN =
+      'This project is no longer editable in this tab. Reload, make a copy, or take over editing.'
+    /** Two minutes hidden: the renewal never ran, and the lease lapsed. */
+    const hideForTwoMinutes = () => vi.setSystemTime(Date.now() + 120_000)
+    const showAgain = () => {
+      document.dispatchEvent(new Event('visibilitychange'))
+    }
+
+    it('wins its lapsed lease back as it comes into view, keeping its history and reloading nothing', async () => {
+      vi.useFakeTimers()
+      const { controller, service } = mount()
+      await controller.open('one')
+      controller.rename('First')
+      await vi.waitFor(() => expect(controller.saveState()).toBe('saved'))
+
+      hideForTwoMinutes()
+      showAgain()
+      await vi.waitFor(() =>
+        expect(service.reclaimLease).toHaveBeenCalledWith(
+          'one',
+          expect.objectContaining({ epoch: 1 }),
+        ),
+      )
+
+      expect(controller.writable()).toBe(true)
+      expect(controller.problem()).toBeNull()
+      expect(controller.canUndo()).toBe(true)
+      expect(controller.project()?.title).toBe('First')
+      expect(service.acquireLease).toHaveBeenCalledTimes(1)
+      expect(service.loadProject).toHaveBeenCalledTimes(1)
+      expect(controller.rename('Second')).toBe(true)
+      await vi.waitFor(() => expect(controller.saveState()).toBe('saved'))
+      expect(service.saveProject).toHaveBeenCalledTimes(2)
+    })
+
+    it('wins it back on focus too, and on the late renewal tick of a throttled tab', async () => {
+      vi.useFakeTimers()
+      const { controller, service } = mount()
+      await controller.open('one')
+
+      hideForTwoMinutes()
+      window.dispatchEvent(new Event('focus'))
+      await vi.waitFor(() =>
+        expect(service.reclaimLease).toHaveBeenCalledTimes(1),
+      )
+      hideForTwoMinutes()
+      await vi.advanceTimersByTimeAsync(10_000)
+
+      expect(service.reclaimLease).toHaveBeenCalledTimes(2)
+      expect(controller.writable()).toBe(true)
+      expect(controller.problem()).toBeNull()
+    })
+
+    it('lets an edit made as it returns go ahead while it holds the lock, and saves it once the lease is back', async () => {
+      vi.useFakeTimers()
+      const presence = presenceFixture()
+      const { controller, service } = mount({ presence: presence.source })
+      await controller.open('one')
+
+      hideForTwoMinutes()
+      expect(controller.rename('Back again')).toBe(true)
+      await vi.waitFor(() => expect(controller.saveState()).toBe('saved'))
+
+      const [reclaimed] = vi.mocked(service.reclaimLease).mock
+        .invocationCallOrder
+      const [saved] = vi.mocked(service.saveProject).mock.invocationCallOrder
+      expect(reclaimed).toBeLessThan(saved)
+      expect(controller.writable()).toBe(true)
+      expect(controller.problem()).toBeNull()
+    })
+
+    it('holds edits without the lock until the lease is back, and says nothing about it', async () => {
+      vi.useFakeTimers()
+      const { controller, service } = mount()
+      await controller.open('one')
+
+      hideForTwoMinutes()
+      expect(controller.rename('Too soon')).toBe(false)
+      await vi.waitFor(() => expect(controller.writable()).toBe(true))
+
+      expect(service.reclaimLease).toHaveBeenCalledTimes(1)
+      expect(controller.problem()).toBeNull()
+      expect(controller.rename('Now')).toBe(true)
+    })
+
+    it('goes read-only, keeping its edits to copy, when another tab has held the project since', async () => {
+      vi.useFakeTimers()
+      const { controller, service } = mount()
+      await controller.open('one')
+      controller.rename('Mine')
+      await vi.waitFor(() => expect(controller.saveState()).toBe('saved'))
+      vi.mocked(service.reclaimLease).mockRejectedValueOnce(
+        new StudioStorageError('lease-lost', TAKEN),
+      )
+
+      hideForTwoMinutes()
+      showAgain()
+      await vi.waitFor(() => expect(controller.writable()).toBe(false))
+
+      expect(controller.problem()).toBe(TAKEN)
+      expect(controller.project()?.title).toBe('Mine')
+      await vi.advanceTimersByTimeAsync(30_000)
+      expect(service.reclaimLease).toHaveBeenCalledTimes(1)
+      expect(service.saveProject).toHaveBeenCalledTimes(1)
+    })
+
+    it('lets the lock and the lease go as the page hides, and wins both back as it is shown again', async () => {
+      const presence = presenceFixture()
+      const { controller, service } = mount({ presence: presence.source })
+      await controller.open('one')
+      controller.rename('Before')
+      await vi.waitFor(() => expect(controller.saveState()).toBe('saved'))
+
+      window.dispatchEvent(new Event('pagehide'))
+      expect(presence.claims[0].release).toHaveBeenCalled()
+      expect(service.releaseLease).toHaveBeenCalledWith(
+        'one',
+        expect.objectContaining({ epoch: 1 }),
+      )
+      window.dispatchEvent(new Event('pageshow'))
+      await vi.waitFor(() =>
+        expect(service.reclaimLease).toHaveBeenCalledTimes(1),
+      )
+
+      expect(presence.source.claim).toHaveBeenCalledTimes(2)
+      expect(controller.writable()).toBe(true)
+      expect(controller.canUndo()).toBe(true)
+      expect(controller.rename('After')).toBe(true)
+      await vi.waitFor(() => expect(controller.saveState()).toBe('saved'))
+      expect(service.saveProject).toHaveBeenCalledTimes(2)
+    })
+
+    it('finds the project taken when another live tab holds its lock as the page is shown again', async () => {
+      const presence = presenceFixture()
+      const { controller, service } = mount({ presence: presence.source })
+      await controller.open('one')
+
+      window.dispatchEvent(new Event('pagehide'))
+      presence.refuse()
+      window.dispatchEvent(new Event('pageshow'))
+      await vi.waitFor(() => expect(controller.writable()).toBe(false))
+
+      expect(service.reclaimLease).not.toHaveBeenCalled()
+      expect(controller.problem()).toBe(TAKEN)
+    })
+  })
+
+  describe('the project lock', () => {
+    it('opens a project for editing at once while its lock is free, whatever lease a closed page left', async () => {
+      const presence = presenceFixture()
+      const { controller, service } = mount({ presence: presence.source })
+      await controller.open('one')
+
+      expect(presence.source.claim).toHaveBeenCalledWith('one', {
+        waitMs: 1000,
+        steal: false,
+      })
+      expect(service.acquireLease).toHaveBeenCalledWith(
+        'one',
+        expect.any(String),
+        { takeover: true },
+      )
+      expect(controller.writable()).toBe(true)
+    })
+
+    it('waits out a lease another page left where the browser has no locks', async () => {
+      const { controller, service } = mount()
+      await controller.open('one')
+
+      expect(service.acquireLease).toHaveBeenCalledWith(
+        'one',
+        expect.any(String),
+        { takeover: false },
+      )
+    })
+
+    it('opens a project read-only while another live tab holds its lock, and takes it on request', async () => {
+      const presence = presenceFixture()
+      presence.refuse()
+      const { controller, service } = mount({ presence: presence.source })
+      await controller.open('one')
+
+      expect(controller.writable()).toBe(false)
+      expect(controller.problem()).toBeNull()
+      expect(service.acquireLease).not.toHaveBeenCalled()
+      presence.grant()
+      await controller.takeOver()
+      expect(presence.source.claim).toHaveBeenLastCalledWith('one', {
+        waitMs: 1000,
+        steal: true,
+      })
+      expect(service.acquireLease).toHaveBeenLastCalledWith(
+        'one',
+        expect.any(String),
+        { takeover: true },
+      )
+      expect(controller.writable()).toBe(true)
+    })
+
+    it('goes read-only at once when another tab takes the project over, and stops renewing', async () => {
+      vi.useFakeTimers()
+      const presence = presenceFixture()
+      const { controller, service } = mount({ presence: presence.source })
+      await controller.open('one')
+
+      presence.claims[0].lose()
+      await vi.waitFor(() => expect(controller.writable()).toBe(false))
+
+      expect(controller.problem()).toBe(
+        'This project is no longer editable in this tab. Reload, make a copy, or take over editing.',
+      )
+      await vi.advanceTimersByTimeAsync(30_000)
+      expect(service.reclaimLease).not.toHaveBeenCalled()
+    })
+
+    it('lets the lock go with the lease when it switches projects', async () => {
+      const presence = presenceFixture()
+      const { controller, service } = mount({ presence: presence.source })
+      await controller.open('one')
+      await controller.open('two')
+
+      expect(presence.claims.map((claim) => claim.projectId)).toEqual([
+        'one',
+        'two',
+      ])
+      expect(presence.claims[0].release).toHaveBeenCalled()
+      expect(presence.claims[1].release).not.toHaveBeenCalled()
+      expect(service.releaseLease).toHaveBeenCalledWith(
+        'one',
+        expect.objectContaining({ projectId: 'one' }),
+      )
+    })
   })
 })

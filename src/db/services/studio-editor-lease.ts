@@ -142,6 +142,53 @@ export async function renewStudioEditor(
   })
 }
 
+/**
+ * Extend this tab's own lease even after it lapsed, as long as nobody else
+ * has held the project since: the record still carries this token's epoch,
+ * and its owner is this tab, or nobody once this tab released it. Any other
+ * editor raises the epoch as it acquires, so a match means no write but this
+ * tab's can have landed in between, and the tab carries on with the project,
+ * its history and the saves it has waiting, all on the same epoch.
+ *
+ * That is the hidden tab's case: Chrome throttles a hidden tab's timers to
+ * about one a minute and a phone freezes them, so renewals run late or not
+ * at all, and a page restored from the back-forward cache released its
+ * lease on the way in.
+ */
+export async function reclaimStudioEditor(
+  db: DexieAdapter,
+  projectId: string,
+  token: StudioEditorToken,
+  clock: () => Date,
+): Promise<StudioEditorLease> {
+  return db.transaction(async () => {
+    const now = clock()
+    const previous = await db.readByIdStrict<StudioLeaseRecord>(
+      STUDIO_STORES.leases,
+      projectId,
+    )
+    if (
+      !validToken(token) ||
+      !previous ||
+      previous.epoch !== token.epoch ||
+      (previous.ownerId !== token.ownerId && previous.ownerId !== null)
+    ) {
+      throw new StudioStorageError(
+        'lease-lost',
+        'This project is no longer editable in this tab. Reload, make a copy, or take over editing.',
+      )
+    }
+    const record: StudioLeaseRecord = {
+      ...previous,
+      ownerId: token.ownerId,
+      updatedAt: now.toISOString(),
+      expiresAt: now.getTime() + STUDIO_EDITOR_LEASE_MS,
+    }
+    await db.putStrict(STUDIO_STORES.leases, record)
+    return publicLease(record)
+  })
+}
+
 export async function releaseStudioEditor(
   db: DexieAdapter,
   projectId: string,

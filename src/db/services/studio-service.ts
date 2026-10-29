@@ -10,7 +10,7 @@ import { createStudioProject, summarizeStudioProject, } from '@/lib/studio/model
 import { fitsStudioProjectStorageBudget } from '@/lib/studio/model/storage-limits'
 import type { StudioAsset, StudioAssetBytes, StudioAssetData, StudioProject, StudioProjectSummary, } from '@/lib/studio/model/types'
 import { validateStudioAsset, validateStudioProject, } from '@/lib/studio/model/validation'
-import { acquireStudioEditor, releaseStudioEditor, renewStudioEditor, requireStudioEditor, } from './studio-editor-lease'
+import { acquireStudioEditor, reclaimStudioEditor, releaseStudioEditor, renewStudioEditor, requireStudioEditor, } from './studio-editor-lease'
 import type { StudioAssetInput } from './studio-record-preparation'
 import { withPreparedStudioRecords } from './studio-record-preparation'
 import type { PreparedStudioRecords, StudioAssetRecord, StudioBlobRecord, } from './studio-records'
@@ -42,6 +42,11 @@ export interface StudioService {
     options?: { takeover?: boolean },
   ): Promise<StudioEditorLease>
   renewLease(
+    projectId: string,
+    token: StudioEditorToken,
+  ): Promise<StudioEditorLease>
+  /** Extend this tab's own lease, lapsed or released, while nobody else has held it since. */
+  reclaimLease(
     projectId: string,
     token: StudioEditorToken,
   ): Promise<StudioEditorLease>
@@ -355,6 +360,10 @@ export function createStudioService(
     renewLease: (id, token) =>
       studioStorageOperation(() =>
         renewStudioEditor(database(), id, token, now),
+      ),
+    reclaimLease: (id, token) =>
+      studioStorageOperation(() =>
+        reclaimStudioEditor(database(), id, token, now),
       ),
     releaseLease: (id, token) =>
       studioStorageOperation(() =>
