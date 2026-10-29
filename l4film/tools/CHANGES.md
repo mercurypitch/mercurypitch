@@ -34,6 +34,8 @@ entries here; from this one on, every change is logged.
   and the arcs follow each run of notes (sing-a's 0.6 s rest drops them). `quiet` holds a pass idle
   through a pause at the top priority (`your-turn`). Regenerate: `merc/shots/*.json` (done: 13
   files, 30,487 frames at 60 fps); then the passes and `merc-tags.py`.
+- **chapters.py: Lesson 4's chapters** (STORYBOARD § Scene table, twelve, each at least 10 s; the
+  shortest is Next time, 13.5 s). Regenerate: `captions/chapters.json` (done).
 
 ## 2026-10-17
 

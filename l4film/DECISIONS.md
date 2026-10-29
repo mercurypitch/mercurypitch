@@ -406,3 +406,18 @@ replaced it. The builder's record: critics never read it.
 75. **`L.MEASURE` joins the kit** (`assets/lib/stairs.js`): HANDOFFS names it for a step being
     measured, and the riser's `measuring` state already drew it; the constant lets a scene draw the
     same outline elsewhere.
+76. **Component rounds are one critic per builder group, not per scene.** At most two agents run at
+    once on this machine (PRODUCTION-PIPELINE trap 8), and a critic per scene would hold a slot for
+    sixteen rounds while the builders wait. Each group's fresh `motion-critic` takes every one of
+    its scenes' lab clips and stills, rules on each scene apart (KEEP, REVISE or REJECT), and
+    reports to `review/component-<group>-<round>/REPORT.md`. The builder who made the scenes fixes
+    them (resumed, so it keeps its context), and a fresh critic verifies before the group joins the
+    film. Lesson 2's ledger records no component round, and its first film round (LEDGER row 11)
+    found a Merc missing for minutes and one Merc seeming to speak the other's lines; this film's
+    § Build checks are meant to be caught a round earlier.
+77. **The Merc passes render detached and below the builders.** Two `queue.sh` workers run
+    `setsid nohup` (a session's own background commands stop after two hours; m12's pair takes
+    longer, trap 11): one for the m12 pair, one for the other eleven, the first groups' first.
+    Chrome lifts some of its threads to nice -8, so the queue's `nice -n 10` never reached the
+    renderer; a watcher sets every thread under a worker to nice 10 every 15 s, so the passes take
+    only the CPU the builders leave.

@@ -1126,8 +1126,16 @@ Note: the lanes' memory gate read a stale cgroup path after the 21:00 restart (f
 - Passes render DETACHED (setsid nohup, trap 11) from 07:06: worker 1 = m01 pair, m04, m06b, m09, m10, m11
   pair, m07, m08 (skips m06a); worker 2 = m12 pair. l4merc/queue.sh skips a pass whose WebM is newer than its
   shot file; logs l4merc/logs/worker-{1,2}.log and <id>.log. After a container restart: rerun the same two
-  commands (see the queue's header).
+  commands (see the queue's header), and l4merc/yield.py beside them: Chrome lifts its own threads to nice
+  -8, so the queue's nice 10 never reached the renderer; yield.py sets every thread under a worker to 10 every
+  15 s (two passes took ~3.5 cores at -8 before it). Rates warm: m01 ~0.7 s/frame, m12 ~0.7 s/frame.
 - Builders A (s01-s04) and B (s05-s06) spawned 07:10 (general-purpose, xhigh, background), paths-only briefs.
 - NEXT: on each report, look at the stills, record confirmed handoffs, a fresh motion-critic per scene
   (component round, report to review/<scene>-01/REPORT.md), promote shared helpers, then wave 2 (C and D).
   Adapt tools/chapters.py to Lesson 4's chapters before captions/chapters run.
+- 07:20Z: component rounds per builder group (DECISIONS 76: review/component-<group>-<round>/REPORT.md,
+  fresh critic, verdict per scene KEEP/REVISE/REJECT; the group's builder fixes, resumed); passes detached and
+  below the builders (DECISIONS 77). chapters.py has Lesson 4's twelve chapters (captions/chapters.json).
+- Final voices prepared, NOT generated (owner asked 01:01Z, no answer): l4voice/BATCH.md (69 lines, 4,567
+  characters, about 4,600 credits at one take, 9,100 at two); ledger_sync.py now knows Lesson 4's script.
+- Builders asked to keep lab/s01-cold-open/BUILD-NOTES.md and lab/s05-steps/BUILD-NOTES.md (in push-notes).

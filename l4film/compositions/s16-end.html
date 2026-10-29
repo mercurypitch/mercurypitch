@@ -1,0 +1,22 @@
+<!doctype html>
+<html lang="en">
+  <head><meta charset="UTF-8" /></head>
+  <body>
+    <div id="s16-end" data-composition-id="s16-end" data-start="0" data-duration="5.200" data-width="1920" data-height="1080">
+      <div class="scene">
+        <div class="ground" data-layout-allow-overflow></div>
+        <div class="staves" data-layout-allow-overflow></div>
+        <p class="kicker" style="left:120px;top:120px">PLACEHOLDER · s16-end</p>
+        <p class="serif" style="position:absolute;left:120px;top:440px;font-size:120px">End card</p>
+      </div>
+      <script>
+        ;(function () {
+          const tl = gsap.timeline({ paused: true })
+          tl.fromTo('#s16-end .serif', { x: 0 }, { x: 60, duration: L.dur('s16-end'), ease: 'none' }, 0)
+          window.__timelines = window.__timelines || {}
+          window.__timelines['s16-end'] = tl
+        })()
+      </script>
+    </div>
+  </body>
+</html>

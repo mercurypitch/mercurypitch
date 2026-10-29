@@ -2,6 +2,8 @@
 # Render Lesson 4's Merc passes one after another, niced, skipping every pass whose WebM is
 # newer than its shot file (PRODUCTION-PIPELINE § 4 trap 11). Start it detached:
 #   setsid nohup bash queue.sh [id ...] > logs/worker-N.log 2>&1 < /dev/null &
+# and yield.py beside the workers (Chrome raises its own threads to nice -8):
+#   setsid nohup python3 -I yield.py > logs/yield.log 2>&1 < /dev/null &
 #   queue.sh [id ...]   the passes to render, in order (default: all, the first builders' first)
 # Two workers run side by side: one for m12's long pair, one for the rest.
 cd /home/user/mercurypitch/output/motion/lesson-04 || exit 1

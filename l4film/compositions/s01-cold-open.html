@@ -1,0 +1,22 @@
+<!doctype html>
+<html lang="en">
+  <head><meta charset="UTF-8" /></head>
+  <body>
+    <div id="s01-cold-open" data-composition-id="s01-cold-open" data-start="0" data-duration="34.183" data-width="1920" data-height="1080">
+      <div class="scene">
+        <div class="ground" data-layout-allow-overflow></div>
+        <div class="staves" data-layout-allow-overflow></div>
+        <p class="kicker" style="left:120px;top:120px">PLACEHOLDER · s01-cold-open</p>
+        <p class="serif" style="position:absolute;left:120px;top:440px;font-size:120px">Cold open: seven stairs, one short of home</p>
+      </div>
+      <script>
+        ;(function () {
+          const tl = gsap.timeline({ paused: true })
+          tl.fromTo('#s01-cold-open .serif', { x: 0 }, { x: 60, duration: L.dur('s01-cold-open'), ease: 'none' }, 0)
+          window.__timelines = window.__timelines || {}
+          window.__timelines['s01-cold-open'] = tl
+        })()
+      </script>
+    </div>
+  </body>
+</html>

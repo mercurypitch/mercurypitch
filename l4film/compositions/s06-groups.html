@@ -1,0 +1,22 @@
+<!doctype html>
+<html lang="en">
+  <head><meta charset="UTF-8" /></head>
+  <body>
+    <div id="s06-groups" data-composition-id="s06-groups" data-start="0" data-duration="35.216" data-width="1920" data-height="1080">
+      <div class="scene">
+        <div class="ground" data-layout-allow-overflow></div>
+        <div class="staves" data-layout-allow-overflow></div>
+        <p class="kicker" style="left:120px;top:120px">PLACEHOLDER · s06-groups</p>
+        <p class="serif" style="position:absolute;left:120px;top:440px;font-size:120px">Two groups and a joint</p>
+      </div>
+      <script>
+        ;(function () {
+          const tl = gsap.timeline({ paused: true })
+          tl.fromTo('#s06-groups .serif', { x: 0 }, { x: 60, duration: L.dur('s06-groups'), ease: 'none' }, 0)
+          window.__timelines = window.__timelines || {}
+          window.__timelines['s06-groups'] = tl
+        })()
+      </script>
+    </div>
+  </body>
+</html>

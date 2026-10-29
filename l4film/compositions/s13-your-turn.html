@@ -1,0 +1,22 @@
+<!doctype html>
+<html lang="en">
+  <head><meta charset="UTF-8" /></head>
+  <body>
+    <div id="s13-your-turn" data-composition-id="s13-your-turn" data-start="0" data-duration="32.577" data-width="1920" data-height="1080">
+      <div class="scene">
+        <div class="ground" data-layout-allow-overflow></div>
+        <div class="staves" data-layout-allow-overflow></div>
+        <p class="kicker" style="left:120px;top:120px">PLACEHOLDER · s13-your-turn</p>
+        <p class="serif" style="position:absolute;left:120px;top:440px;font-size:120px">Your turn</p>
+      </div>
+      <script>
+        ;(function () {
+          const tl = gsap.timeline({ paused: true })
+          tl.fromTo('#s13-your-turn .serif', { x: 0 }, { x: 60, duration: L.dur('s13-your-turn'), ease: 'none' }, 0)
+          window.__timelines = window.__timelines || {}
+          window.__timelines['s13-your-turn'] = tl
+        })()
+      </script>
+    </div>
+  </body>
+</html>
