@@ -374,4 +374,21 @@ describe('Studio timeline', () => {
     setNotice({ text: 'No room on Bass at 1:00. Added on a new lane.' })
     expect(status).toHaveTextContent('No room on Bass at 1:00.')
   })
+
+  it('moves the ruler labels on a scroll instead of making new ones', () => {
+    const { container } = render(() => <StudioTimeline {...base} />)
+    const ruler = screen.getByRole('slider', { name: 'Song playhead' })
+    const first = within(ruler).getByText('0:00')
+    const viewport = container.querySelector<HTMLElement>(
+      '[data-studio-timeline-viewport]',
+    )!
+    // 100 px at 20 px a second: the view now starts at 0:05.
+    Object.defineProperty(viewport, 'scrollLeft', {
+      configurable: true,
+      value: 100,
+    })
+    fireEvent.scroll(viewport)
+    expect(within(ruler).queryByText('0:00')).toBeNull()
+    expect(within(ruler).getByText('0:05')).toBe(first)
+  })
 })

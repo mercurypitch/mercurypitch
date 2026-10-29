@@ -1,5 +1,11 @@
 // Studio clip surface — stable focus, viewport-bounded waveforms in the lane's hue and separate pointer handles.
-import { Show } from 'solid-js'
+//
+// Every clip of the song hears every scroll step, so what a step changes is
+// a memo of plain arithmetic, and a clip whose drawn span stays the same
+// changes nothing. The drawn span snaps outward to a 512 px grid: a clip that
+// runs off the edge of the view redraws once per 512 px of scrolling, not on
+// every step.
+import { createMemo, Show } from 'solid-js'
 import type { StudioAsset, StudioClip } from '@/lib/studio/model/types'
 import type { StudioGestureKind } from './gesture-draft'
 import styles from './StudioTimeline.module.css'
@@ -10,6 +16,26 @@ import type { StudioWaveformResource } from './waveform-resource'
 
 // The title band names the take; the file's extension adds nothing there.
 const AUDIO_EXTENSION = /\.(wav|mp3|m4a|aac|ogg|oga|opus|flac|webm|aiff?)$/i
+/** The drawn span's grid, in CSS pixels: a scroll redraws a clip once per this much. */
+export const STUDIO_WAVE_SPAN_GRID = 512
+
+/** The part of a clip to draw, from its own left edge: the view's part, widened to the grid. */
+export function studioWaveSpan(
+  clipWidth: number,
+  viewFrom: number,
+  viewTo: number,
+): { from: number; to: number } | null {
+  const from = Math.max(0, viewFrom)
+  const to = Math.min(clipWidth, viewTo)
+  if (to <= from) return null
+  return {
+    from: Math.floor(from / STUDIO_WAVE_SPAN_GRID) * STUDIO_WAVE_SPAN_GRID,
+    to: Math.min(
+      clipWidth,
+      Math.ceil(to / STUDIO_WAVE_SPAN_GRID) * STUDIO_WAVE_SPAN_GRID,
+    ),
+  }
+}
 
 interface StudioTimelineClipProps {
   clip: StudioClip
@@ -23,6 +49,8 @@ interface StudioTimelineClipProps {
   scale: number
   scroll: number
   contentWidth: number
+  /** The lane's colour: its waveform reads the drawn colour again when it changes. */
+  color?: string
   pointer: StudioPointerEditor
   resource: StudioWaveformResource
   onSelect(): void
@@ -30,20 +58,41 @@ interface StudioTimelineClipProps {
 }
 
 export function StudioTimelineClip(props: StudioTimelineClipProps) {
-  const ownDraft = () =>
-    props.pointer.draft()?.clip.id === props.clip.id
-      ? props.pointer.draft()
-      : null
-  const clip = () =>
-    ownDraft()?.clip ??
-    (props.keyboardPreview?.id === props.clip.id
-      ? props.keyboardPreview
-      : props.clip)
-  const left = () => frameToPixel(clip().startFrame, props.scale)
-  const right = () => frameToPixel(clipEndFrame(clip()), props.scale)
-  const visibleLeft = () => Math.max(left(), props.scroll)
-  const visibleRight = () =>
-    Math.min(right(), props.scroll + props.contentWidth)
+  const ownDraft = createMemo(() => {
+    const draft = props.pointer.draft()
+    return draft?.clip.id === props.clip.id ? draft : null
+  })
+  const clip = createMemo(() => {
+    const saved = props.clip
+    const preview = props.keyboardPreview
+    return ownDraft()?.clip ?? (preview?.id === saved.id ? preview : saved)
+  })
+  const left = createMemo(() => frameToPixel(clip().startFrame, props.scale))
+  const right = createMemo(() =>
+    frameToPixel(clipEndFrame(clip()), props.scale),
+  )
+  // The title stays readable at the view's left edge.
+  const visibleLeft = createMemo(() => Math.max(left(), props.scroll))
+  const span = createMemo(
+    () =>
+      studioWaveSpan(
+        right() - left(),
+        props.scroll - left(),
+        props.scroll + props.contentWidth - left(),
+      ),
+    null,
+    {
+      equals: (before, after) =>
+        before?.from === after?.from && before?.to === after?.to,
+    },
+  )
+  const sourceFrame = (pixel: number) =>
+    clip().sourceInFrame +
+    pixelToFrame(
+      pixel,
+      props.scale,
+      clip().sourceOutFrame - clip().sourceInFrame,
+    )
   const title = () => props.asset?.originalName ?? props.trackName
   const handleSize = () => (props.tablet ? 44 : 28)
   const handles = () =>
@@ -120,36 +169,26 @@ export function StudioTimelineClip(props: StudioTimelineClipProps) {
         >
           {title().replace(AUDIO_EXTENSION, '')}
         </span>
-        <Show when={visibleRight() > visibleLeft()}>
-          <span
-            class={styles.visibleWave}
-            style={{
-              left: `${visibleLeft() - left()}px`,
-              width: `${visibleRight() - visibleLeft()}px`,
-            }}
-          >
-            <StudioWaveform
-              clip={clip()}
-              asset={props.asset}
-              resource={props.resource}
-              sourceInFrame={
-                clip().sourceInFrame +
-                pixelToFrame(
-                  visibleLeft() - left(),
-                  props.scale,
-                  clip().sourceOutFrame - clip().sourceInFrame,
-                )
-              }
-              sourceOutFrame={
-                clip().sourceInFrame +
-                pixelToFrame(
-                  visibleRight() - left(),
-                  props.scale,
-                  clip().sourceOutFrame - clip().sourceInFrame,
-                )
-              }
-            />
-          </span>
+        <Show when={span()}>
+          {(drawn) => (
+            <span
+              class={styles.visibleWave}
+              style={{
+                left: `${drawn().from}px`,
+                width: `${drawn().to - drawn().from}px`,
+              }}
+            >
+              <StudioWaveform
+                clip={clip()}
+                asset={props.asset}
+                resource={props.resource}
+                width={drawn().to - drawn().from}
+                color={props.color}
+                sourceInFrame={sourceFrame(drawn().from)}
+                sourceOutFrame={sourceFrame(drawn().to)}
+              />
+            </span>
+          )}
         </Show>
       </button>
       <Show when={handles()}>
