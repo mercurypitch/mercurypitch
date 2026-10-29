@@ -53,7 +53,7 @@
             these: word('b27', 'these'),                      // the push's second leg, to rest on F-names-1
             kickOut: at('b27', 'end'),                        // the kicker leaves
             truck: at('b28'),                                 // 9d: the truck along the names
-            pull: word('b28', 'again.'),                      // the pull to F0
+            pull: word('b28', 'doh#2', 'start', 0.05),        // the pull to F0, landing as Tavi's fall ends
             dohO: word('o9', 'doh'),                          // stair 1 lights ("doh moved up")
             moved: word('o9', 'moved'),                       // 9e: stair 1's outline rises two rows
             doubt: word('o9', "isn't"),                       // "do = C?" draws, as a guess
@@ -78,7 +78,9 @@
             pillsOut: at('b31', 'end'),                       // "fixed do" and "movable do" leave
           }
           const SYL = [0, 1, 2, 3, 4, 5, 6].map((k) => word('b28', k)).concat(word('b28', 'doh#2'))   // 9d: each name as it is sung
-          A.solfege = A.pull + 0.9                            // once the pull has landed: "solfège", "(sol)"
+          // the pull starts on the second "doh" and lasts 0.8 s, so it lands (249.50) as Tavi's fall ends (STORYBOARD 9d)
+          const PULL_DUR = 0.8
+          A.solfege = A.pull + PULL_DUR                       // once the pull has landed: "solfège", "(sol)"
           A.solOut = A.doubt - 0.38                           // they leave before the guess lands
           const SLIDE = 0.8
 
@@ -94,7 +96,7 @@
           })
           cam.hermite(A.these, 1.4, 'F-names-1')
           cam.to(A.truck, 3.0, 'F-names-2', 'power1.inOut')     // a truck: s holds at 2.4, the layers part
-          cam.to(A.pull, 0.9, 'F0', 'power2.inOut')
+          cam.to(A.pull, PULL_DUR, 'F0', 'power2.inOut')
 
           /* ---------------------------------------------------------------- the world (mid layer) */
           const mid = L.stage(room.mid)

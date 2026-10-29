@@ -102,6 +102,13 @@ entries here; from this one on, every change is logged.
   builder's run); s04 to s06 left stale on purpose, since their own gates cannot place the
   segments until their builders move them onto `L.mercGate`. Regenerate: the scenes' tags after
   every `merc-shots.py` run.
+- **merc-pass.mjs: the crescent guard skips a drop's fall.** A falling body carries its eyes down
+  through the top 40 % of the square, so every drop pass flagged its frames 23 to 31, re-rendered
+  each six times without clearing it, and kept a nudged time on the two frames where the eyes
+  crossed the line (m06a-orange's tall intro, 577 s for 44 frames). The guard now skips the
+  renderer's `DROP_T` (0.55 s of simulation time) from each drop cue; every other frame is checked
+  as before, and a pass without a drop renders exactly as it did. In use from m04-orange and the
+  m06b tall intro's successors on; passes already rendered keep their files.
 
 ## 2026-10-17
 

@@ -305,12 +305,18 @@ for (const file of files) {
     return bad > 40
   }
   const NUDGES = [1, -1, 2, -2, 3, -3].map((s) => s / 240)
+  // A drop's fall carries the eyes down through the top 40 %, so every drop tripped the guard on its
+  // frames 23 to 31 and no nudge within 12 ms cleared them: six wasted renders a frame, and a nudged
+  // time where the eyes happened to cross the line. The guard skips the fall, the renderer's DROP_T
+  // (0.55 s of simulation time) from each drop cue (src/lib/merc/sim-choreo.ts).
+  const falls = (shot.cues ?? []).filter((c) => c.state === 'drop').map((c) => c.t)
+  const falling = (T) => falls.some((t0) => T >= t0 && T < t0 + 0.55)
   const t0 = Date.now()
   let fixed = 0
   for (let i = 0; i < n; i++) {
     const T = (i / fps) * k
     let buf = Buffer.from(await page.evaluate((T) => window.__frame(T), T), 'base64')
-    if (crescent(buf)) {
+    if (!falling(T) && crescent(buf)) {
       for (const d of NUDGES) {
         const alt = Buffer.from(await page.evaluate((T) => window.__frame(T), T + d * k), 'base64')
         if (!crescent(alt)) { buf = alt; fixed++; break }

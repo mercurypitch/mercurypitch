@@ -6,8 +6,10 @@
       <div class="scene" id="s05-steps-scene"></div>
       <!-- Merc pass, static (trap 4); timing written by python3 tools/merc-tags.py s05-steps. m06a spans the
            S5 to S6 cut; its first whole frame (30) falls on s06's first frame, so here it stays hidden. -->
-      <video id="s05-steps-m06a-orange" data-merc="m06a-orange" class="clip" muted playsinline src="assets/merc/m06a-orange-merc.webm" data-start="41.021" data-duration="0.500" data-media-start="0.008"></video>
-      <video id="s05-steps-m06a-orange-refl" data-merc="m06a-orange" data-merc-refl class="clip" muted playsinline src="assets/merc/m06a-orange-merc.webm" data-start="41.021" data-duration="0.500" data-media-start="0.008"></video>
+      <video id="s05-steps-m06a-orange" data-merc="m06a-orange" class="clip" muted playsinline src="assets/merc/m06a-orange-merc.webm" data-start="40.421" data-duration="1.100" data-media-start="0.008"></video>
+      <video id="s05-steps-m06a-orange-refl" data-merc="m06a-orange" data-merc-refl class="clip" muted playsinline src="assets/merc/m06a-orange-merc.webm" data-start="40.421" data-duration="1.100" data-media-start="0.008"></video>
+      <video id="s05-steps-m06a-orange-seg1" data-merc="m06a-orange" data-merc-seg="m06a-orange:1" class="clip" muted playsinline src="assets/merc/m06a-orange-tall-merc.webm" data-start="40.421" data-duration="0.700" data-media-start="0.008"></video>
+      <video id="s05-steps-m06a-orange-seg1-refl" data-merc="m06a-orange" data-merc-seg="m06a-orange:1" data-merc-refl class="clip" muted playsinline src="assets/merc/m06a-orange-tall-merc.webm" data-start="40.421" data-duration="0.700" data-media-start="0.008"></video>
       <script>
         ;(function () {
           /* S5, Count the steps (STORYBOARD rows 5a to 5g; HANDOFFS § A to B, § Inside B, § S5 to S6).
@@ -52,42 +54,12 @@
               }
             }
           }
-          // 2. Tavi in her F0 corner (feet (1800, 840), 300, hero view), screen space in the top layer.
-          //    Trap 23: a pass's drop comes in through the top of its square, so the box (and its reflection)
-          //    stays at 0 until the pass's first whole frame and then fades in over 0.3 s (18 frames, sine.out);
-          //    from that frame the scene eases the box down its last 60 px (0.4 s, power2.out), so the entrance
-          //    still reads as a fall. m06a's frames 6 to 29 touch the square's top row and frame 30 is the first
-          //    with rows 0 to 2 empty (measured on its alpha); the gate opens one frame later, at 31, because
-          //    HyperFrames 0.8.97 may show the frame before the one the tag's times name. Her hop out: the pass's
-          //    hop arcs right and lands inside its square, so the scene carries the box 360 px right through
-          //    the hop's time in the air (from HOP + 0.15 over 0.42 s, power1.in). A local floor patch under
+          // 2. Tavi in her F0 corner (feet (1800, 840), 300, hero view), screen space in the top layer, placed by
+          //    L.mercGate (assets/lib/hosts.js) as every scene places a Merc: her drop seen whole from its intro
+          //    (DECISIONS 81, the segment tags from tools/merc-tags.py); her hop out carries the box 360 px right
+          //    through the hop's time in the air (from hop + 0.15 over 0.42 s, power1.in); a local floor patch under
           //    her corner comes and goes with her. Returns draw(t) -> her screen body box, or null when unseen.
-          const tavi = (layer, { pass, tag, x = 1800, feetY = 840, size = 300, whole = (L.MERC_WHOLE[pass] ?? 30) + 1, hop = null }) => {
-            const wrap = L.el('div', { class: 'clip', style: 'pointer-events:none' }, layer)
-            const floor = L.el('div', { style: 'position:absolute;left:1690px;width:230px;top:840px;height:240px;opacity:0;background:linear-gradient(180deg, rgba(120,150,190,0.10), rgba(13,17,23,0) 40%);border-top:1px solid rgba(195,204,214,0.10);-webkit-mask-image:linear-gradient(90deg, transparent, #000 45%);mask-image:linear-gradient(90deg, transparent, #000 45%)' }, wrap)
-            const vid = document.getElementById(tag)
-            if (!vid) { console.error(`[${SID}] no Merc tag #${tag}`); return () => null }
-            const m = L.merc(wrap, { pass, x, feetY, size, feet: 0.8, id: tag + '-box', video: tag, reflVideo: tag + '-refl' })
-            m.box.setAttribute('data-layout-allow-overflow', '')
-            m.box.style.opacity = '0'
-            // film frame of pass frame 0, from the static tag (merc-tags.py: media start is half a frame past
-            // the tag's first pass frame, which plays on film frame n0)
-            const ds = parseFloat(vid.getAttribute('data-start')), ms = parseFloat(vid.getAttribute('data-media-start'))
-            const dd = parseFloat(vid.getAttribute('data-duration'))
-            if (!(dd > 0)) return () => null
-            const n0 = Math.ceil((S0 + ds) * 60 - 1e-6), P0 = n0 - Math.round(ms * 60 - 0.5)
-            const tWhole = (P0 + whole) / 60 - S0                        // scene time of the gate
-            return (t) => {
-              const j = Math.floor((S0 + t) * 60 + 1e-6) - P0          // the pass frame on screen now
-              const shown = j < whole || t > ds + dd ? 0 : L.ease('sine.out')(Math.min(1, (j - whole + 1) / 18))
-              const dy = -60 * (1 - P(t, tWhole, 0.4, 'power2.out'))
-              const dx = hop == null ? 0 : 360 * P(t, hop + 0.15, 0.42, 'power1.in')
-              m.box.style.opacity = shown.toFixed(3)
-              m.box.style.transform = `translate(${f1(dx)}px, ${f1(dy)}px)`
-              floor.style.opacity = (shown * (hop == null ? 1 : 1 - P(t, hop + 0.15, 0.4))).toFixed(3)
-              return shown > 0.004 && dx < 220 ? L.mercBox(x + dx, feetY + dy, size) : null
-            }
-          }
+          const tavi = (layer, { pass, tag, hop = null }) => L.mercGate(layer, { sid: SID, pass, tag, x: 1800, size: 300, hop })
           // 3. A label switch (STORYBOARD § Type): the old label slides up 12 px as it fades, the new one in from
           //    12 px below, 0.25 s, staggered 0.05 s stair by stair (k = 0 for the first).
           const swap = (t, t0, k, from, to) => {

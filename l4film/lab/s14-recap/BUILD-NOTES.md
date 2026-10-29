@@ -43,3 +43,19 @@ events in the card pause (icon pulses that register, then the address once more)
   the address keeps 55 / 25 px over the heads.
 - Practise card ink (s14 frame-09-at-60.5s): L1 x 436-1484, L2 640-1281, L3 (the 710 line, the widest)
   410-1509 (inside 310-1610 by 100 px each side), L4 683-1236, L5 741-1178, L6 585-1334, its descenders to y 896.
+- 10:40 s14 clip round 1 measured (lab/s14-recap/measure): 15.1 s of holds inside (7.0 per 30 s), longest 1.4 s
+  (455.5, the ladder before "Runner,"), five over 0.5 s. A proxy (lab/s14-recap/tools/holds.mjs + holds.py,
+  seeks the timeline, no Merc) reproduces measure.py's holds exactly, so fixes iterate on it.
+- 10:50 hold fixes: stairs ripple on "check.", card 2's "scale" and card 4's "major scale" (0.07 s apart); the
+  black keys light in turn on "black" (was a scale pulse too small to count); both gold glows and the S labels
+  pulse 0.55 s after "semitone."; rung names and the connector arrive on "Runner,"; the tip wavers on "sing";
+  card lines rise 20 px over 0.7 s; icons pop in 0.15 s after their line and pulse to 1.5 with a full glow.
+- 11:05 proxy round 2: 8.1 s inside (3.75 per 30 s), longest 0.5. Bar (BUILD-GUIDE): <= about 1.8 per 30 s with
+  no Merc, none over 0.5. Most holds were dead samples at a pulse's peak, or a 0.1-0.3 s gap between word beats.
+  Fixes (round 3): a label's pulse lags its bar's by 0.15 s (LAG), risers grow 0.6 s power1.out, the stairs
+  ripple also on b46 "scale?" and b48 "major", stairs 3/4/7/8 light on the semitone recap, stair 1 lights as
+  the slide to D lands and on b52 "Doh", ti/do beats in 14d are scale pulses (both are held lit there) with
+  their names lagging, card lines leave up over 0.35 s (staggered 0.08), the F#/C# names 0.15 s after, the ladder
+  title and names rise over 0.7 s, the title pulses as "Exercises > Scale Runner" lands, the rung names pulse on
+  "back," and "octave", the tip wavers on "time.", and the card pause traces each tab's path under its line
+  as its icon glows (the icon alone registered 0.1 s). Tools: lab/s14-recap/tools/where.py (what changed where).

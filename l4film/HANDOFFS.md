@@ -277,9 +277,10 @@ rows C4 to G5, x 220 to 1680, black-key rows shaded. No strip yet: it enters in 
   growing from stair 1's tread, 0.3 s); the E-F riser's outline at 89.69 and its gold fill on "Yes"
   (90.77). The legend at x 140, baselines 200 and 252 (Outfit 600 44 px), frame-fixed, landing after
   the pull (92.4).
-- **S5 to S6 (110.88).** F0. Tavi on screen since 110.78 (m06a spans the cut): feet (1800, 840),
-  size 300, body x 1720 to 1880, y 648 to 840. The staircase on C, letters, all seven risers measured
-  and labelled T T S T T T S, the legend at x 140; E4, F4, B4 and C5 named.
+- **S5 to S6 (110.88).** F0. Tavi down since 110.63 (m06a drops 109.78 to 110.63 and spans the
+  cut): feet (1800, 840), size 300, body x 1720 to 1880, y 648 to 840. The staircase on C, letters,
+  all seven risers measured and labelled T T S T T T S, the legend at x 140; E4, F4, B4 and C5
+  named.
 - **S6's brackets.** `L.bracket`, ink, ticks down, riding the world: stairs 1 to 4 from x 242 to 714
   at y 484, stairs 5 to 8 from x 722 to 1194 at y 302. The ghost outline in S6c moves by
   (+480, -182). The sum Outfit 600 64 px at x 1270, baseline 260 (to x 1615), "= 12" after it at

@@ -471,12 +471,23 @@ replaced it. The builder's record: critics never read it.
       drawn px taller above and below (352 at m12's size; 160 cut the fall's first trails) with the field of view widened to
       match, so its middle square is the pass's own picture and its column shows the whole fall.
       `L.mercGate` shows it from its first frame (a 6-frame fade, high above the corner) and
-      hands over to the pass at pass frame 40, inside the splat's hold, where nothing moves;
+      hands over to the pass at pass frame 40, inside the splat's hold, where nothing moves.
+      Tavi's seven drops at size 300 (m04, m06a, m06b, m07, m08-in, m09-in, m11) set up the same
+      first 0.93 s (variant, size, view, bias, the drop, no voice), and m06a's and m06b's intros
+      decode to the same pixels, so m07's, m08-in's, m09-in's and m11's are copies of m06a's; a
+      shot that changes is newer than its copy, and the queue renders it again;
     - the passes already rendered under the old timing (m08, m09 and the m12 pair) keep it under
       a head pass (`<id>-in`) with the new entrance, rendered to a splice in the first idle after
       the hosts' performances agree, where no arcs and no lip flutter can show a phase jump
       (o8 + 0.6, o9 + 0.6, b39 + 2.4 for Tavi and sing-a + 0.65 for Merc). Every other drop pass
       is rendered again.
     `tools/merc-shots.py` writes `merc/intros.json` and `assets/merc/intro.js`; `tools/merc-tags.py`
-    adds and times each segment's tags in every scene it meets. s04, s05 and s06 keep their own
-    gate code, which knows nothing of intros: their builders move them onto `L.mercGate`.
+    adds and times each segment's tags in every scene it meets. s04, s05 and s06 had their own
+    gate code, which knew nothing of intros; the director moved all three onto `L.mercGate` (s04
+    calls it directly, s05's and s06's helpers are one-line wrappers around it) and wrote their
+    segment tags, so their builders' fix rounds start from there.
+82. **Tavi's guess in S5 stays a voice from off.** Component critic B-01 (item 9) found o4 voiced
+    with nobody on screen. It stays: S5's close-ups give the staircase the whole frame (5a to 5f hold
+    no Merc, one of the storyboard's no-Merc stretches); Tavi was seen dropping in and talking in S4,
+    18 s before, so her voice is known; and the picture carries the line with the sound off (the E-F
+    riser's outline and stair 3 lighting on "semitone?"). She drops back in at 109.78.

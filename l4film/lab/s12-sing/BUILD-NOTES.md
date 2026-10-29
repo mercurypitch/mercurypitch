@@ -25,3 +25,47 @@ Running notes so a container restart or a usage-limit pause can resume. Builder 
   own block elements, geometry overridden until the morph lands), names ride the growing foot.
 
 ## Log
+
+- 10:10 S11 to S12 at the true film frames (seek.mjs, 45.2973 / 0.008): max 10, mean 0.041, none over 16.
+- 10:15 S12 to S13 (31.6747 / 0.0163): max 61 at the orange bead only (x 1418-1462, y 162-207). Cause:
+  the bead's own end-of-run pulse settling across the cut (scale 1.0294 then 1.0235, then 1.0184 at
+  0.033); same position (1440, 185), same paint order. With both forced to one scale: max 11, none
+  over 16. Frame-to-frame inside either scene the same pulse gives max 39 to 41. Continuous.
+- 10:16 S13's last frame (32.5663) against a kit-only F0 drawn to HANDOFFS § E to F
+  (lab/s13-your-turn/ef-ref.html): max 0, identical.
+- 10:20 holds.sh: a predictor of measure.py's holds from exact stills (0.1 s, 320 px, gray diff);
+  it matched the real clip to 0.1 s on every run.
+- 10:25 s12 hold breakers, all tied to words: ti's segment glows on b39 "tee," (L.light 0.3/0.6);
+  the house sends a ring on o12 "listen"; do's segment (the path's start) lights on b40 "Try";
+  a sweep do to do travels over b40 "octave up." (word to word end); do's segment and the house
+  glow once more as sing-a ends (0.3/0.5); the bead's and lit band's fade on "Yes." made linear;
+  the arrow's draw power1.inOut (it started too slowly to register). Long holds 0.6, 0.6, 0.8 gone.
+- 10:40 Director: the hosts' entrance moved (DECISIONS 81): drops 342.50 to 343.35 (Merc) and
+  342.62 to 343.47 (Tavi), tall intro columns from y 223 down (pad 352). merc-tags.py s12-sing
+  re-run: seg1 (tall) and seg2 (head) tags added; a second run changes nothing. merc-tags --check
+  then reports those 8 seg tags and "intro tags" stale on every run (its add_segments strips and
+  re-adds bare seg tags before comparing): a tool bug, reported, not fixed (director's tool).
+  Card type box x 665 to 1259 (y 107 to 579) at every sample 342.50 to 343.50: 329 px clear of
+  Merc's column (x 144 to 336) and 345 px of Tavi's (1604 to 1796), at any height.
+  The no-Merc stretch in S12 is now 341.24 to 342.50 only.
+- 10:50 s13 hold breakers on words: do, re and mi's names light on "doh, ray, mee"; the top do's
+  name brightens on "octave" (as the bottom do's on "Start"); ti's name lights on b43 "tee,"; the
+  top do's segment glows on "go."; the hold's glow on "Wait" made a linear ramp (no plateau).
+  13a and 13b (Merc talking) still hold in the lab clip, which has no hosts.
+- 11:00 Checks measured: beads land 22 px clear of "do" (body x 578 vs name box right 556); the
+  landing squash narrows it to 19.4 px for about 0.1 s. Bead on do (y 163 to 207) under the
+  house (box y 92 to 140; HANDOFFS 90 to 142): 21 to 23 px; at the 1.2 pulse the bead's top is
+  158.6, but the shapes never share an x (house right 1408, bead left 1413.6), 27 px apart.
+  S13 at 373.50: top do box 836.8 to 873.8 (HANDOFFS 812); at 373.55: 892 (HANDOFFS 857); title box
+  x 360 to 799.5, ink 362 to 788 (HANDOFFS 811). HANDOFFS's figures fit a quadratic in-out; GSAP's
+  power2.inOut is cubic, so the names are further right than it says (more clearance, not less).
+  Care block: right edge 921.4 (<= 960), bottom 795 (< 864).
+- 11:25 s12 lab clip (no hosts: every m12 pass still missing) measured: holds 2.0 s (1.9 per 30 s),
+  longest 0.3 s; none over 0.5. In the no-Merc stretch (341.24 to 342.50): 0.1 at 0.0 and 0.2 at
+  1.0 (the card settling before its breath). Single-frame events: four small jumps (0.03 to 0.08 %
+  of pixels) at event onsets (4.667 the sweep, 5.700 "wait", 6.000 the home glow, 21.400 the chip).
+  A 0.7 s tail on the run-end glow made a 0.5 s hold (too slow to register); back to 0.5.
+- Text sweep: clean on both scenes (one landing sample of "wait" at alpha 0.39 is the only one
+  under 4.5:1). Doctor lines 8.50 to 8.89:1. hyperframes check: only missing_local_asset for the m12
+  passes in my scenes (plus warnings shared by every scene: nested media start, refl twins, length).
+- Handoffs re-diffed after the last edits: D to E max 10; S12 to S13 max 61 (the pulse); E to F 0.

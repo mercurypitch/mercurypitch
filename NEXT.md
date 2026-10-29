@@ -1230,3 +1230,23 @@ Note: the lanes' memory gate read a stale cgroup path after the 21:00 restart (f
   zz-m07old's shot and webm; fix rounds: B (s05/s06 onto L.mercGate + critic items 1, 2, 4-10), A (s04
   onto L.mercGate), C (s07 card vs Tavi's column; s08 holds), D (9d pull timing, Tavi's column in the
   pull, m10 mouth point, 11c pull vs both columns); then component critics.
+
+## 2026-10-29 ~11:05Z: s04-s06 on the gate, faster talls
+- s04, s05, s06 moved onto L.mercGate by the director (s04 calls it; s05/s06 helpers are one-line
+  wrappers), merc-tags written and --check clean, clock-lint silent. Backups in
+  $S/l4entr/scenes-before-gate/. DECISIONS 81 tail updated; DECISIONS 82: Tavi's o4 in S5 stays a
+  voice from off (critic B-01 item 9b). HANDOFFS/BUILD-GUIDE S5 to S6: "Tavi down since 110.63".
+- s05's new entrance proven on stills ($S/l4entr/s05-entrance/corner-strip.png): fade in high up,
+  whole fall, splat, standing by 41.35 (line at 41.53).
+- merc-pass.mjs: crescent guard skips a drop's fall (0.55 s from each drop cue); it flagged frames
+  23-31 of every drop and re-rendered each 6x. Backup $S/l4entr/merc-pass.before-fallskip.mjs;
+  CHANGES.md entry. Used from m04's main and tall renders on.
+- Tavi's 7 size-300 drops share the first 0.93 s exactly; m06a and m06b talls decode to identical
+  pixels, so m07, m08-in, m09-in, m11-orange talls are copies of m06a's (the queue skips them).
+  Q3b still renders m04 (running), m10-blue, m11-blue, m12-orange-in, m12-blue-in.
+- $S/l4entr/tallcheck.py <project> <shot>: top rows, body top per frame, hand-over 40-43 vs main.
+  m06a and m06b: top clear (first lit row 23), frame 40 p99.9 8 / max 12.
+- B's resume message ready: $S/l4entr/B-fix-msg.txt (send to builder B when a slot frees).
+- NEXT: m04 main + tall -> s04 lab stills 14.3-15.6 (scene time); m06b main landed -> s06 stills
+  23.9-25.0; tallcheck each new tall vs its main once both exist (m07, m08-in, m09-in, m11-orange
+  copies too); merc-whole.py after passes land; m10-blue mouth at 283.27 for D.

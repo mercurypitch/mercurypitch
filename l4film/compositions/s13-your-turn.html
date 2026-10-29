@@ -303,8 +303,8 @@
             // the lane names: travelling with the move; do, re and mi light as Merc says them; the bottom do
             // brightens on "Start on my note" and the top do on "or an octave up"; ti lights on "Wait on tee"
             const nameK = [
-              Math.max(P(t, A.start, 0.3), L.light(t, A.doh)), L.light(t, A.ray), L.light(t, A.mee),
-              0, 0, 0, L.light(t, A.teeW), P(t, A.octave, 0.3),
+              Math.max(P(t, A.start, 0.3), L.light(t, A.doh, 0.15, 0.5)), L.light(t, A.ray, 0.15, 0.5), L.light(t, A.mee, 0.15, 0.5),
+              0, 0, 0, L.light(t, A.teeW, 0.15, 0.5), P(t, A.octave, 0.3),
             ]
             names.forEach((el, i) => {
               el.setAttribute('x', f1(lerp(556, 1040, u))); el.setAttribute('y', f1(lerp(BL12[i], BL13[i], u)))

@@ -459,7 +459,7 @@ view, y 323) down to his feet, for the drop's 0.85 s.
 
 - Rows: 5a to 5g. Group B.
 - In: A to B (fixed, above). The scene cuts on `act1` 0.15 s before it.
-- Out (to s06, same group): HANDOFFS § S5 to S6: F0; Tavi on screen since 110.78 (m06a spans the
+- Out (to s06, same group): HANDOFFS § S5 to S6: F0; Tavi down since 110.63 (m06a spans the
   cut: feet (1800, 840), 300); the staircase on C with letters, all seven risers measured and
   labelled T T S T T T S, the legend at x 140; E4, F4, B4 and C5 named.
 - Kit: `L.strip` (sliding up from y +240, 69.55 to 70.45, power3.out, via `dy`; the eight keys up to
@@ -573,7 +573,8 @@ view, y 323) down to his feet, for the drop's 0.85 s.
   to `word('b27', 'these')` as `cam.curve` with `s` on sine.in from 1 to 1.2, `ox = -420 (s - 1)`,
   `oy = -736 (s - 1)`; its second leg `cam.hermite(word('b27', 'these'), 1.4, 'F-names-1')`; the
   truck along the names `cam.to(at('b28'), 3.0, 'F-names-2', 'power1.inOut')`, the layers parting;
-  the pull `cam.to(word('b28', 'again.'), 0.9, 'F0', 'power2.inOut')`); `L.stairs` (letters to
+  the pull `cam.to(word('b28', 'doh#2', 'start', 0.05), 0.8, 'F0', 'power2.inOut')`, 248.70 to
+  249.50, which blends into the truck's last 0.14 s); `L.stairs` (letters to
   numbers to solfège through the label pools, 86 px at 2.4x; both houses from "its home"); "tonic =
   home" (riding the world); "scale degrees" and "solfège" (frame-fixed at x 1400, baseline 420);
   `L.pill` in `L.GUESS` ("do = C?"), then solid ("fixed do: do = C", moving up and shrinking to 40
@@ -781,6 +782,10 @@ lab still (still paths beside it). Until then, the HANDOFFS value is the one to 
 | C to D, 229.24 | s08's last frame against s09's first: max 10, no pixel over 16 | builder C | `lab/s08-anywhere/scratch/diff-s08-s09.png` |
 | Inside D, S10 to S11 (295.94) | s10's last frame against s11's first: max 22, no pixel over 24 | builder D | `lab/s11-why/tools/hdiff.py` |
 | D to E, 341.24 | s11's last frame: stair 1 at x 361 to 474, both houses lit, on D, F♯4 and C♯5 lit, no labels | builder D | `lab/s09-names/BUILD-NOTES.md` |
+| Inside B, S5g | Tavi's drop seen whole (m06a, 109.78 to 110.63): in high over her corner, the whole fall, the splat, standing by 110.70, before o5 (110.88) | director, s05 lab stills with the pass and its intro | `lab/entrances/s05-m06a-corner.png` |
+| Inside B, S5 to S6 (110.88) | Tavi on screen from s06's first frame (m06a's pass shown at once) | director | `lab/entrances/s06-m06b-corner.png` (first two) |
+| Inside B, S6c | m06b's drop seen whole (134.82 to 135.67), down before o6 (135.92); the sum's digits stay above y 260, 63 px over her column | director | `lab/entrances/s06-m06b-corner.png` |
+| Inside C, S7a | the act 2 card ends at x 1528, 170 px clear of Tavi's column (x 1700); the strip's last key ends at x 1675, 25 px clear; the splat's spray reaches x 1678, beside that key, for about 0.1 s at 148.02 | director, s07 lab stills (m07's old pass under the new tag, its new intro) | `lab/entrances/s07-m07-card.png`, `s07-m07-splat-zoom.png` |
 | Inside D, S10 | Merc's mouth point (130, 715): to measure on the m10-blue pass now that he drops 282.20 to 283.05 (DECISIONS 81), at the bead's launch (283.27), 0.28 s after the splat | | |
 | Inside E, S12a | the tip's curves | | |
 | Inside E, S13d | the reverse tip's curves, the Mercs' move | | |

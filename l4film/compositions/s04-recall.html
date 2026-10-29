@@ -5,8 +5,10 @@
     <div id="s04-recall" data-composition-id="s04-recall" data-start="0" data-duration="22.309" data-width="1920" data-height="1080">
       <div class="scene" id="s04-recall-scene"></div>
       <!-- Merc pass, static (trap 4); timing written by python3 tools/merc-tags.py s04-recall -->
-      <video id="s04-recall-m04-orange" data-merc="m04-orange" class="clip" muted playsinline src="assets/merc/m04-orange-merc.webm" data-start="14.947" data-duration="6.550" data-media-start="0.008"></video>
-      <video id="s04-recall-m04-orange-refl" data-merc="m04-orange" data-merc-refl class="clip" muted playsinline src="assets/merc/m04-orange-merc.webm" data-start="14.947" data-duration="6.550" data-media-start="0.008"></video>
+      <video id="s04-recall-m04-orange" data-merc="m04-orange" class="clip" muted playsinline src="assets/merc/m04-orange-merc.webm" data-start="14.397" data-duration="7.100" data-media-start="0.008"></video>
+      <video id="s04-recall-m04-orange-refl" data-merc="m04-orange" data-merc-refl class="clip" muted playsinline src="assets/merc/m04-orange-merc.webm" data-start="14.397" data-duration="7.100" data-media-start="0.008"></video>
+      <video id="s04-recall-m04-orange-seg1" data-merc="m04-orange" data-merc-seg="m04-orange:1" class="clip" muted playsinline src="assets/merc/m04-orange-tall-merc.webm" data-start="14.397" data-duration="0.700" data-media-start="0.008"></video>
+      <video id="s04-recall-m04-orange-seg1-refl" data-merc="m04-orange" data-merc-seg="m04-orange:1" data-merc-refl class="clip" muted playsinline src="assets/merc/m04-orange-tall-merc.webm" data-start="14.397" data-duration="0.700" data-media-start="0.008"></video>
       <script>
         ;(function () {
           // S4, from Lesson 2 (STORYBOARD rows 4a to 4d; HANDOFFS § S3 to S4, § S4, § S4c's stand-up, § A to B).
@@ -154,7 +156,7 @@
           const NAMES_OUT = word('b6', 'major'), STAND = word('b6', 'major', 'start', 0.04)
           const P2 = STAND + 1.0, ROWS_IN = STAND + 1.6, BACK = STAND + 1.8, NAMES_BACK = STAND + 2.0, SWAP = STAND + 2.2
           const SEVEN = word('b6', 'seven steps')
-          // 4d: m04's tag starts at at('o3', 'start', -0.55) (merc-tags.py), where she drops in; on "steps?" a "?"
+          // 4d: m04's tag starts at at('o3', 'start', -1.1) (merc-tags.py), where she drops in; on "steps?" a "?"
           // joins; on "Let's" the two labels leave up fast; her hop out at at('b7', 'start', 0.29); on "measure"
           // the seven risers ripple in turn (0.08 s apart), back to rest before the cut
           const QMARK = word('o3', 'steps?')
@@ -210,42 +212,10 @@
           const DARKC = [42, 49, 59], INKC = [230, 237, 243]
 
           /* ---------------------------------------------------------------- Tavi (screen space, top layer) */
-          // Built as group B's s05 helper builds her, so she looks the same either side of the act: trap 23's
-          // gate (her box and reflection at 0 until the pass's first frame with her whole body inside its square,
-          // then in over 18 frames on sine.out, counted from the tag's start without its media start), the scene
-          // easing the box down its last 60 px from that frame (0.4 s, power2.out), the hop carrying the box 360 px
-          // right through the hop's time in the air (from HOP + 0.15 over 0.42 s, power1.in), and a local floor
-          // patch under her corner. WHOLE: m04's first whole frame (assets/merc/whole.js, tools/merc-whole.py) plus one.
-          const WHOLE = (L.MERC_WHOLE['m04-orange'] ?? 30) + 1
-          const TAVI = { x: 1800, feetY: 840, size: 300 }
-          const taviWrap = L.el('div', { class: 'clip', style: 'pointer-events:none' }, room.top)
-          const floorPatch = L.el('div', { style: 'position:absolute;left:1690px;width:230px;top:840px;height:240px;opacity:0;background:linear-gradient(180deg, rgba(120,150,190,0.10), rgba(13,17,23,0) 40%);border-top:1px solid rgba(195,204,214,0.10);-webkit-mask-image:linear-gradient(90deg, transparent, #000 45%);mask-image:linear-gradient(90deg, transparent, #000 45%)' }, taviWrap)
-          const TAG = SID + '-m04-orange'
-          let tavi = () => null
-          const vid = document.getElementById(TAG)
-          if (!vid) console.error(`[${SID}] no Merc tag #${TAG}`)
-          else {
-            const m = L.merc(taviWrap, { pass: 'm04-orange', x: TAVI.x, feetY: TAVI.feetY, size: TAVI.size, feet: 0.8, id: TAG + '-box', video: TAG, reflVideo: TAG + '-refl' })
-            m.box.setAttribute('data-layout-allow-overflow', '')
-            m.box.style.opacity = '0'
-            const ds = parseFloat(vid.getAttribute('data-start')), ms = parseFloat(vid.getAttribute('data-media-start'))
-            const dd = parseFloat(vid.getAttribute('data-duration'))
-            if (dd > 0) {
-              // film frame of pass frame 0 (merc-tags.py: the media start is half a frame past the tag's first frame)
-              const n0 = Math.ceil((T0 + ds) * 60 - 1e-6), P0 = n0 - Math.round(ms * 60 - 0.5)
-              const tWhole = (P0 + WHOLE) / 60 - T0
-              tavi = (t) => {
-                const j = Math.floor((T0 + t) * 60 + 1e-6) - P0
-                const shown = j < WHOLE || t > ds + dd ? 0 : L.ease('sine.out')(Math.min(1, (j - WHOLE + 1) / 18))
-                const dy = -60 * (1 - P(t, tWhole, 0.4, 'power2.out'))
-                const dx = 360 * P(t, HOP + 0.15, 0.42, 'power1.in')
-                m.box.style.opacity = shown.toFixed(3)
-                m.box.style.transform = `translate(${f2(dx)}px, ${f2(dy)}px)`
-                floorPatch.style.opacity = (shown * (1 - P(t, HOP + 0.15, 0.4))).toFixed(3)
-                return shown > 0.004 && dx < 220 ? L.mercBox(TAVI.x + dx, TAVI.feetY + dy, TAVI.size) : null
-              }
-            }
-          }
+          // L.mercGate (assets/lib/hosts.js), as every scene places a Merc: her drop seen whole from its intro
+          // (DECISIONS 81, the segment tags from tools/merc-tags.py), the hop carrying the box 360 px right through
+          // the hop's time in the air (from HOP + 0.15 over 0.42 s, power1.in), and a local floor patch under her corner.
+          const tavi = L.mercGate(room.top, { sid: SID, pass: 'm04-orange', tag: SID + '-m04-orange', x: 1800, size: 300, hop: HOP })
 
           /* ---------------------------------------------------------------- frame-fixed type and marks (hud) */
           const hud = L.stageOf(room.hud)

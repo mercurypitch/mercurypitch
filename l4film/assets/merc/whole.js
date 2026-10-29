@@ -3,7 +3,12 @@
 window.MERC_WHOLE = {
  "m01-blue": 0,
  "m01-orange": 0,
+ "m04-orange": 34,
  "m06a-orange": 34,
+ "m06b-orange": 34,
+ "m07-orange": 34,
  "m08-orange": 29,
- "m09-orange-in": 34
+ "m09-orange": 28,
+ "m09-orange-in": 34,
+ "m10-blue": 34
 };
