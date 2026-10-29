@@ -1,21 +1,36 @@
-// Studio graph — shared lane processing and source scheduling for live and offline consumers.
+// ============================================================
+// Studio graph — one persistent chain per lane, each lane's sources on a timeline of its own, for live playback and offline renders
+// ============================================================
+//
+// The graph builds each lane's chain and faders once, and the master after
+// them. What a lane plays comes and goes in sets of sources (seek-crossfade.ts)
+// on that lane's own timeline (lane-timeline.ts), all timed from one shared
+// anchor (graph-passes.ts). So a seek crosses every lane to a new place, a
+// clip edit crosses only the lanes it changes (graph-replan.ts), and neither
+// touches a chain, a fader or a meter. An offline render builds the same
+// graph and schedules it once, so a render and Play agree on every lane.
 import type { StudioFxChain } from '@/lib/studio-fx/chain'
 import { createStudioFxChain } from '@/lib/studio-fx/chain'
 import type { ChainSpec } from '@/lib/studio-fx/chain-spec'
-import type { StudioArrangementPlan, StudioPlannedLane, StudioPlannedSegment, } from '../model/arrangement-plan'
-import { studioPanGains } from '../model/arrangement-plan'
+import type { StudioArrangementPlan, StudioPlannedLane, } from '../model/arrangement-plan'
 import type { StudioTrack } from '../model/types'
-import { scheduleStudioSegmentGain } from './edge-envelope'
-import type { StudioLaneInput, StudioSourceSet } from './seek-crossfade'
-import { closeStudioSourceSet, emptyStudioSourceSet, openStudioSourceSet, retireStudioSourceSet, stopStudioSource, } from './seek-crossfade'
+import { STUDIO_SAMPLE_RATE } from '../model/types'
+import type { StudioGraphLane } from './graph-lanes'
+import { buildGraphLane, disposeGraphLane, dynamicsIds, laneGains, scheduleLane, silenceLane, } from './graph-lanes'
+import type { StudioGraphState } from './graph-passes'
+import { canLoop, laneRun, MIN_LOOP_SECONDS, repeatLanes, restartLanes, seekTime, stopRepeatingLanes, } from './graph-passes'
+import type { StudioReplan } from './graph-replan'
+import { replanGraph } from './graph-replan'
+
+export type { StudioReplan } from './graph-replan'
 
 export interface StudioGraph {
   readonly output: GainNode
   scheduleUntil(time: number): void
   /**
    * When a seek asked for no sooner than `earliest` would start: then, or
-   * at the newest seek's own time while that one is not heard yet, since a
-   * newer seek takes its place there.
+   * at the newest seek's or re-plan's own time while that one is not heard
+   * yet, since a newer seek takes its place there.
    */
   seekTime(earliest: number): number
   /**
@@ -28,6 +43,16 @@ export interface StudioGraph {
    * at once.
    */
   seek(fromFrame: number, at: number): number | null
+  /**
+   * Play `plan`'s clips: each lane whose segments it changes crossfades to
+   * them from the first whole frame no sooner than `earliest`, and every
+   * other lane plays on untouched (graph-replan.ts). `plan` comes from the
+   * same first frame as the graph's, and its latencies are not read: the
+   * chains stay as they are. A parked graph takes the new segments for
+   * resume. Null, with nothing changed, when the graph cannot play `plan`.
+   * Call scheduleUntil after it.
+   */
+  replan(plan: StudioArrangementPlan, earliest: number): StudioReplan | null
   /**
    * Stop every source now, playing or waiting, and schedule nothing more.
    * The chains, master and faders stay built, silent, for resume. The peak
@@ -94,80 +119,7 @@ export interface StudioGraphOptions {
   readonly master?: { readonly spec: ChainSpec }
 }
 
-/**
- * A pass this close to its start counts as begun: the audio thread renders
- * ahead of the clock the page reads, so its first sources may already play.
- */
-const BEGUN_MARGIN_SECONDS = 0.05
-
-interface Scheduled {
-  readonly segment: StudioPlannedSegment
-  /** Its lane, as an index into the graph's lane inputs. */
-  readonly lane: number
-  readonly when: number
-}
-
-/** A segment's place in one pass: seconds after the plan's start, its lane's compensation included. */
-interface Planned {
-  readonly segment: StudioPlannedSegment
-  readonly lane: number
-  readonly base: number
-}
-
-/** Where the graph reads: frame `fromFrame` enters a lane with no compensation at `epoch`. */
-interface Timeline {
-  readonly epoch: number
-  /** Seconds from the plan's start to `fromFrame`. */
-  readonly offset: number
-  /** One pass of the whole plan, timed so the second pass starts where the first, which may begin part-way through, ends. */
-  readonly cycle: readonly Scheduled[]
-  scheduled: Scheduled[]
-  next: number
-  /** The pass being scheduled, which runs up to two seconds ahead of the one heard. */
-  pass: number
-}
-
-function timelineFrom(
-  planned: readonly Planned[],
-  plan: StudioArrangementPlan,
-  fromFrame: number,
-  epoch: number,
-): Timeline {
-  const offset = (fromFrame - plan.startFrame) / 48000
-  const cycle = planned
-    .map(({ segment, lane, base }) => ({
-      segment,
-      lane,
-      when: epoch - offset + base,
-    }))
-    .sort((a, b) => a.when - b.when)
-  return {
-    epoch,
-    offset,
-    cycle,
-    scheduled: firstPass(cycle, fromFrame),
-    next: 0,
-    pass: 0,
-  }
-}
-
-/** The broadband dynamics in a chain, whose reductions add up to the lane's. */
-function dynamicsIds(spec: ChainSpec): string[] {
-  return spec.effects
-    .filter(
-      (effect) =>
-        effect.enabled &&
-        (effect.kind === 'compressor' || effect.kind === 'limiter'),
-    )
-    .map((effect) => effect.id)
-}
-
-/** Left and right lane gains: pan law times volume and balance. */
-function laneGains(track: StudioTrack): readonly [number, number] {
-  const [left, right] = studioPanGains(track.pan)
-  const gain = Math.pow(10, (track.gainDb + track.balanceGainDb) / 20)
-  return [left * gain, right * gain]
-}
+const PEAK_SAMPLES = 4096
 
 /** The lanes a graph builds: those with clips, and only the audible ones unless silent lanes are wanted. */
 export function studioGraphLanes(
@@ -196,96 +148,70 @@ export function studioGraphWorkingBytes(
   )
 }
 
-/** What the graph keeps of each lane: its chain, its fader gains and their output. */
-interface BuiltLanes {
-  readonly mixes: Map<string, GainNode[]>
-  readonly chains: Map<string, StudioFxChain>
-  readonly outputs: Map<string, AudioNode>
-  readonly dynamics: Map<string, string[]>
-}
-
-function connectLane(
-  ctx: BaseAudioContext,
-  lane: StudioPlannedLane,
-  output: AudioNode,
-  disposers: (() => void)[],
-  built: BuiltLanes,
-): AudioNode {
-  const chain = createStudioFxChain(ctx, lane.spec)
-  built.chains.set(lane.track.id, chain)
-  built.dynamics.set(lane.track.id, dynamicsIds(chain.getSpec()))
-  disposers.push(() => chain.dispose())
-  const split = ctx.createChannelSplitter(2)
-  const merge = ctx.createChannelMerger(2)
-  const gains: GainNode[] = []
-  built.mixes.set(lane.track.id, gains)
-  built.outputs.set(lane.track.id, merge)
-  chain.output.connect(split)
-  const values = lane.audible ? laneGains(lane.track) : [0, 0]
-  for (const [index, value] of values.entries()) {
-    const gain = ctx.createGain()
-    gain.gain.value = value
-    gains.push(gain)
-    split.connect(gain, index)
-    gain.connect(merge, 0, index)
-    disposers.push(() => gain.disconnect())
-  }
-  merge.connect(output)
-  disposers.push(
-    () => split.disconnect(),
-    () => merge.disconnect(),
-  )
-  return chain.input
-}
-
 /** Two analysers on `output`, one per channel, and the splitter that taps it for them. */
 function connectPeakAnalysers(
   ctx: BaseAudioContext,
   output: AudioNode,
-  fftSize: number,
-  disposers: (() => void)[],
 ): { tap: AudioNode; analysers: AnalyserNode[] } {
   const split = ctx.createChannelSplitter(2)
   output.connect(split)
-  disposers.push(() => split.disconnect())
-  const analysers: AnalyserNode[] = []
-  for (let channel = 0; channel < 2; channel++) {
+  const analysers = [0, 1].map((channel) => {
     const analyser = ctx.createAnalyser()
-    analyser.fftSize = fftSize
+    analyser.fftSize = PEAK_SAMPLES
     analyser.smoothingTimeConstant = 0
     split.connect(analyser, channel)
-    analysers.push(analyser)
-    disposers.push(() => analyser.disconnect())
-  }
+    return analyser
+  })
   return { tap: split, analysers }
 }
 
-/** The first pass from `fromFrame`: what ends before it is skipped, what spans it starts part-way. */
-function firstPass(
-  cycle: readonly Scheduled[],
-  fromFrame: number,
-): Scheduled[] {
-  return cycle
-    .flatMap((item) => {
-      const end =
-        item.segment.startFrame +
-        item.segment.sourceOutFrame -
-        item.segment.sourceInFrame
-      if (end <= fromFrame) return []
-      const skipped = Math.max(0, fromFrame - item.segment.startFrame)
-      return [
-        {
-          ...item,
-          when: item.when + skipped / 48000,
-          segment: {
-            ...item.segment,
-            startFrame: item.segment.startFrame + skipped,
-            sourceInFrame: item.segment.sourceInFrame + skipped,
-          },
-        },
-      ]
-    })
-    .sort((a, b) => a.when - b.when)
+/** What a graph is built of. */
+interface StudioGraphParts {
+  readonly output: GainNode
+  readonly master: StudioFxChain | null
+  readonly lanes: StudioGraphLane[]
+  readonly peaks: { tap: AudioNode; analysers: AnalyserNode[] } | null
+}
+
+function disposeParts(parts: StudioGraphParts): void {
+  for (const lane of parts.lanes) disposeGraphLane(lane)
+  parts.master?.dispose()
+  parts.peaks?.tap.disconnect()
+  for (const analyser of parts.peaks?.analysers ?? []) analyser.disconnect()
+  parts.output.disconnect()
+}
+
+/** Build the master, then each lane into it, then the meters. When a step fails, what it built goes too. */
+function buildParts(
+  ctx: BaseAudioContext,
+  plan: StudioArrangementPlan,
+  epoch: number,
+  options: StudioGraphOptions,
+): StudioGraphParts {
+  const output = ctx.createGain()
+  const lanes: StudioGraphLane[] = []
+  let master: StudioFxChain | null = null
+  try {
+    if (options.master) {
+      master = createStudioFxChain(ctx, options.master.spec)
+      master.output.connect(output)
+    }
+    const fromFrame = options.fromFrame ?? plan.startFrame
+    const place = {
+      output: master?.input ?? output,
+      planStart: plan.startFrame,
+      passStart: epoch - (fromFrame - plan.startFrame) / STUDIO_SAMPLE_RATE,
+      fromFrame,
+    }
+    for (const lane of studioGraphLanes(plan, options.silentLanes))
+      lanes.push(buildGraphLane(ctx, lane, place))
+    const peaks =
+      options.metering === true ? connectPeakAnalysers(ctx, output) : null
+    return { output, master, lanes, peaks }
+  } catch (error) {
+    disposeParts({ output, master, lanes, peaks: null })
+    throw error
+  }
 }
 
 export function buildStudioGraph(
@@ -295,255 +221,105 @@ export function buildStudioGraph(
   epoch: number,
   options: StudioGraphOptions = {},
 ): StudioGraph {
-  const output = ctx.createGain()
-  const disposers: (() => void)[] = []
-  const built: BuiltLanes = {
-    mixes: new Map(),
-    chains: new Map(),
-    outputs: new Map(),
-    dynamics: new Map(),
-  }
-  const { mixes, chains } = built
-  let masterChain: StudioFxChain | null = null
-  const lanes: StudioLaneInput[] = []
-  const planned: Planned[] = []
-  const cycleSeconds = (plan.endFrame - plan.startFrame) / 48000
-  if (options.repeat === true && cycleSeconds < 0.25)
+  const loop = (plan.endFrame - plan.startFrame) / STUDIO_SAMPLE_RATE
+  if (options.repeat === true && loop < MIN_LOOP_SECONDS)
     throw new Error('A song needs at least a quarter second to repeat.')
-  let looping = options.repeat === true
-  let disposed = false
-  // Parked: every source stopped, nothing scheduled, until resume.
-  let parked = false
-  const analysers: AnalyserNode[] = []
-  let peakTap: AudioNode | null = null
-  const peakSamples = new Float32Array(4096)
-  try {
-    let laneOutput: AudioNode = output
-    if (options.master) {
-      const chain = createStudioFxChain(ctx, options.master.spec)
-      chain.output.connect(output)
-      laneOutput = chain.input
-      masterChain = chain
-      disposers.push(() => chain.dispose())
-    }
-    for (const lane of studioGraphLanes(plan, options.silentLanes)) {
-      if (lane.compensationSeconds === null)
-        throw new Error('Studio chain timing has not been measured.')
-      const input = connectLane(ctx, lane, laneOutput, disposers, built)
-      const index = lanes.push({
-        input,
-        compensation: lane.compensationSeconds,
-      })
-      for (const segment of lane.segments)
-        planned.push({
-          segment,
-          lane: index - 1,
-          base:
-            (segment.startFrame - plan.startFrame) / 48000 +
-            lane.compensationSeconds,
-        })
-    }
-    if (options.metering === true) {
-      const peaks = connectPeakAnalysers(
-        ctx,
-        output,
-        peakSamples.length,
-        disposers,
-      )
-      analysers.push(...peaks.analysers)
-      peakTap = peaks.tap
-    }
-  } catch (error) {
-    for (const dispose of disposers) dispose()
-    output.disconnect()
-    throw error
-  }
-  let timeline = timelineFrom(
-    planned,
-    plan,
-    options.fromFrame ?? plan.startFrame,
-    epoch,
+  const parts = buildParts(ctx, plan, epoch, options)
+  const { output, master, lanes, peaks } = parts
+  const byId = new Map(lanes.map((lane) => [lane.trackId, lane]))
+  const outputs = new Map<string, AudioNode>(
+    lanes.map((lane) => [lane.trackId, lane.merge]),
   )
-  // The sources of each Play and each seek still sounding; the newest is current.
-  let current = openStudioSourceSet(ctx, lanes, null)
-  const sets = new Set([current])
-  /** Whether pass `index` has begun, or is about to, on the context clock. */
-  const begun = (index: number) =>
-    (index === 0
-      ? timeline.epoch
-      : timeline.epoch - timeline.offset + index * cycleSeconds) <=
-    ctx.currentTime + BEGUN_MARGIN_SECONDS
-
-  function close(set: StudioSourceSet): void {
-    closeStudioSourceSet(set)
-    sets.delete(set)
+  const state: StudioGraphState = {
+    ctx,
+    lanes,
+    buffers,
+    planStart: plan.startFrame,
+    endFrame: plan.endFrame,
+    looping: options.repeat === true,
+    parked: false,
+    disposed: false,
+    epoch,
+    fromFrame: options.fromFrame ?? plan.startFrame,
+    pendingAt: -Infinity,
   }
-
-  function start({ segment, lane, when }: Scheduled): void {
-    if (when < ctx.currentTime - 0.02)
-      throw new Error(
-        'Studio playback could not keep up. Press Play to try again.',
-      )
-    const buffer = buffers.get(segment.assetId)
-    if (!buffer) throw new Error('Studio audio is missing.')
-    const source = ctx.createBufferSource()
-    const gain = ctx.createGain()
-    source.buffer = buffer
-    gain.channelCount = 2
-    gain.channelCountMode = 'explicit'
-    gain.channelInterpretation = 'speakers'
-    gain.gain.value = 0
-    source.connect(gain)
-    const set = current
-    gain.connect(set.fades[lane].fadeOut)
-    set.sources.set(source, { gain, pass: timeline.pass, lane, when })
-    source.onended = () => {
-      source.disconnect()
-      gain.disconnect()
-      set.sources.delete(source)
-      if (set.retired && !set.sources.size) close(set)
-    }
-    scheduleStudioSegmentGain(gain.gain, segment, when)
-    source.start(
-      when,
-      segment.sourceInFrame / 48000,
-      (segment.sourceOutFrame - segment.sourceInFrame) / 48000,
-    )
-  }
-
-  /** Whether the newest seek is still ahead of the clock, so a newer one can take its place. */
-  const unheard = () => current.at > ctx.currentTime
-  const seekTime = (earliest: number) =>
-    unheard() ? Math.max(earliest, current.at) : earliest
+  const peakSamples = new Float32Array(PEAK_SAMPLES)
+  const playing = () => !state.disposed && !state.parked
+  /** Whether the plan holds `fromFrame`: it starts no later and ends after it. */
+  const reaches = (fromFrame: number) =>
+    fromFrame >= state.planStart && fromFrame < state.endFrame
 
   return {
     output,
     scheduleUntil(time) {
-      if (disposed || parked) return
-      while (true) {
-        if (timeline.next >= timeline.scheduled.length) {
-          if (!looping || !timeline.cycle.length) break
-          timeline.pass++
-          const shift = timeline.pass * cycleSeconds
-          timeline.scheduled = timeline.cycle.map((item) => ({
-            ...item,
-            when: item.when + shift,
-          }))
-          timeline.next = 0
-        }
-        if (timeline.scheduled[timeline.next].when > time) break
-        start(timeline.scheduled[timeline.next])
-        timeline.next++
-      }
+      if (!playing()) return
+      const run = laneRun(state)
+      for (const lane of lanes) scheduleLane(ctx, lane, time, run)
     },
-    seekTime,
+    seekTime: (earliest) => seekTime(state, earliest),
     seek(fromFrame, at) {
-      if (
-        disposed ||
-        parked ||
-        fromFrame < plan.startFrame ||
-        fromFrame >= plan.endFrame
-      )
-        return null
-      const time = seekTime(at)
-      if (time === current.at && unheard()) {
-        // The last seek is not heard yet: this one takes its place.
-        emptyStudioSourceSet(current)
-      } else {
-        const last = current
-        if (!retireStudioSourceSet(last, lanes, time)) close(last)
-        current = openStudioSourceSet(ctx, lanes, time)
-        sets.add(current)
-      }
-      timeline = timelineFrom(planned, plan, fromFrame, time)
+      if (!playing() || !reaches(fromFrame)) return null
+      const time = seekTime(state, at)
+      restartLanes(state, fromFrame, time, true)
       return time
     },
+    replan: (next, earliest) => replanGraph(state, next, earliest),
     park() {
-      if (disposed || parked) return
-      parked = true
-      for (const set of sets) {
-        emptyStudioSourceSet(set)
-        closeStudioSourceSet(set)
-      }
-      sets.clear()
-      if (peakTap) output.disconnect(peakTap)
+      if (!playing()) return
+      state.parked = true
+      for (const lane of lanes) silenceLane(lane)
+      if (peaks) output.disconnect(peaks.tap)
     },
-    resume(fromFrame, epoch, repeat) {
+    resume(fromFrame, at, repeat) {
       if (
-        disposed ||
-        !parked ||
-        fromFrame < plan.startFrame ||
-        fromFrame >= plan.endFrame ||
-        (repeat && (cycleSeconds < 0.25 || !planned.length))
+        state.disposed ||
+        !state.parked ||
+        !reaches(fromFrame) ||
+        (repeat && !canLoop(state))
       )
         return false
-      parked = false
-      looping = repeat
-      if (peakTap) output.connect(peakTap)
-      current = openStudioSourceSet(ctx, lanes, null)
-      sets.add(current)
-      timeline = timelineFrom(planned, plan, fromFrame, epoch)
+      state.looping = repeat
+      state.parked = false
+      if (peaks) output.connect(peaks.tap)
+      restartLanes(state, fromFrame, at, false)
       return true
     },
-    hasLane: (trackId) => mixes.has(trackId),
+    hasLane: (trackId) => byId.has(trackId),
     setLaneMix(track, audible) {
-      const gains = mixes.get(track.id)
-      if (!gains || disposed) return
+      const lane = byId.get(track.id)
+      if (!lane || state.disposed) return
       const values = audible ? laneGains(track) : [0, 0]
       const now = ctx.currentTime
       // A 12 ms glide, so a fader release or a mute does not click.
-      for (const [index, gain] of gains.entries()) {
+      for (const [index, gain] of lane.mixes.entries()) {
         gain.gain.cancelScheduledValues(now)
         gain.gain.setTargetAtTime(values[index], now, 0.012)
       }
     },
     setLaneSpec(trackId, spec) {
-      const chain = chains.get(trackId)
-      if (disposed || !chain) return
-      chain.setSpec(spec)
-      built.dynamics.set(trackId, dynamicsIds(chain.getSpec()))
+      const lane = byId.get(trackId)
+      if (state.disposed || !lane) return
+      lane.chain.setSpec(spec)
+      lane.dynamics = dynamicsIds(lane.chain.getSpec())
     },
     setMasterSpec(spec) {
-      if (!disposed) masterChain?.setSpec(spec)
+      if (!state.disposed) master?.setSpec(spec)
     },
-    laneOutputs: () => built.outputs,
+    laneOutputs: () => outputs,
     readLaneReduction(trackId) {
-      const chain = chains.get(trackId)
-      const ids = built.dynamics.get(trackId)
-      if (disposed || !chain || ids === undefined || ids.length === 0)
-        return null
+      const lane = byId.get(trackId)
+      if (state.disposed || !lane || lane.dynamics.length === 0) return null
       let reduction = 0
-      for (const id of ids) reduction += Math.min(0, chain.readReductionDb(id))
+      for (const id of lane.dynamics)
+        reduction += Math.min(0, lane.chain.readReductionDb(id))
       return reduction
     },
-    repeat() {
-      if (disposed || cycleSeconds < 0.25 || !timeline.cycle.length)
-        return false
-      if (!looping && begun(timeline.pass + 1)) return false
-      looping = true
-      return true
-    },
-    stopRepeating() {
-      looping = false
-      let last = timeline.pass
-      while (last > 0 && !begun(last)) last--
-      if (last === timeline.pass) return last
-      // Passes queued ahead have not begun: none of them plays. The one
-      // that has began was scheduled in full before the next was queued.
-      for (const [source, entry] of current.sources) {
-        if (entry.pass <= last) continue
-        stopStudioSource(source, entry.gain)
-        current.sources.delete(source)
-      }
-      timeline.pass = last
-      timeline.scheduled = []
-      timeline.next = 0
-      return last
-    },
+    repeat: () => repeatLanes(state),
+    stopRepeating: () => stopRepeatingLanes(state),
     readPeaks() {
       return [0, 1].map((channel) => {
-        const analyser = analysers[channel]
-        if (channel >= analysers.length) return 0
+        const analyser = peaks?.analysers[channel]
+        if (!analyser) return 0
         analyser.getFloatTimeDomainData(peakSamples)
         let peak = 0
         for (const sample of peakSamples)
@@ -552,15 +328,9 @@ export function buildStudioGraph(
       }) as [number, number]
     },
     dispose() {
-      if (disposed) return
-      disposed = true
-      for (const set of sets) {
-        emptyStudioSourceSet(set)
-        closeStudioSourceSet(set)
-      }
-      sets.clear()
-      for (const dispose of disposers) dispose()
-      output.disconnect()
+      if (state.disposed) return
+      state.disposed = true
+      disposeParts(parts)
     },
   }
 }

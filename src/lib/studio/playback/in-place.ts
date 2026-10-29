@@ -3,7 +3,8 @@ import type { MacroKey } from '@/lib/studio-fx/mix-macros'
 import type { StudioMasterGain } from '../export/sound-graph'
 import { resolveStudioSoundGraph } from '../export/sound-graph'
 import { studioLaneSpec } from '../model/arrangement-plan'
-import type { StudioProject, StudioTrack } from '../model/types'
+import type { StudioAsset, StudioProject, StudioTrack } from '../model/types'
+import { keepsChains, replanLanes } from './lane-replan'
 import { audibility, graphShape, laneTailFrames, soundKey } from './live-edit'
 import type { StudioRun } from './run'
 import { RUN_LOOKAHEAD_SECONDS } from './run'
@@ -147,6 +148,27 @@ export function playInPlace(
   if (graphShape(run.project) !== graphShape(project)) return false
   if (!followRepeat(run, settings.repeat)) return false
   if (missingLane(run, project, settings.drafts)) return false
+  followInPlace(run, project, settings)
+  return true
+}
+
+/**
+ * Follow an edit on the running graph, so the song keeps playing: in place
+ * (playInPlace), or, for other clips through the same chains, by moving
+ * only the lanes they change (lane-replan.ts). False when it needs a new
+ * run: another effect list on a lane it built, or anything a re-plan
+ * cannot express.
+ */
+export function followEdit(
+  run: StudioRun,
+  project: StudioProject,
+  assets: readonly StudioAsset[],
+  settings: StudioLiveSettings,
+): boolean {
+  if (playInPlace(run, project, settings)) return true
+  if (!keepsChains(run, project) || !followRepeat(run, settings.repeat))
+    return false
+  if (!replanLanes(run, project, assets)) return false
   followInPlace(run, project, settings)
   return true
 }

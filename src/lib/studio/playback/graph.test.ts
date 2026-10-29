@@ -308,6 +308,62 @@ describe('shared Studio graph', () => {
     offline.dispose()
   })
 
+  it("renders through the graph Play builds, every source of a lane in one set at unity with no fade, into that lane's chain", () => {
+    const { project, asset, clip } = studioFixture()
+    const dry = {
+      ...project.tracks[0],
+      fx: {
+        ...project.tracks[0].fx,
+        baseSpec: { version: 1 as const, effects: [] },
+      },
+    }
+    const song = {
+      ...project,
+      tracks: [dry, { ...dry, id: 'other', order: 1 }],
+      clips: [
+        { ...clip, sourceOutFrame: 400 },
+        { ...clip, id: 'gap', startFrame: 700, sourceInFrame: 500 },
+        { ...clip, id: 'other-clip', trackId: 'other' },
+      ],
+    }
+    const plan = compileStudioArrangement(song, [asset], {
+      latencies: {
+        sampleRate: 48000,
+        framesByTrack: { 'track-1': 0, other: 0 },
+      },
+    })
+    // As offline-render.ts builds it: no master, no meters, played once.
+    const render = new PlaybackContext()
+    render.state = 'suspended'
+    const buffer = render.createBuffer(1, 1000, 48000) as unknown as AudioBuffer
+    const graph = buildStudioGraph(
+      render.asContext,
+      plan,
+      new Map([[asset.id, buffer]]),
+      0.5,
+    )
+    graph.scheduleUntil(Infinity)
+    type Gain = ReturnType<PlaybackContext['createGain']>
+    const sources = render.ofType<PlaybackSource>('source')
+    expect(sources).toHaveLength(3)
+    const sets = sources.map((source) => {
+      const edge = source.connections[0].node
+      const fadeOut = edge.connections[0].node as Gain
+      const fadeIn = fadeOut.connections[0].node as Gain
+      for (const fade of [fadeOut, fadeIn]) {
+        expect(fade.gain.value).toBe(1)
+        expect(fade.gain.events).toEqual([])
+        expect(fade.gain.curves).toEqual([])
+      }
+      return { fadeOut, chain: fadeIn.connections[0].node }
+    })
+    // The two clips of the first lane share its one set and chain.
+    expect(sets[1].fadeOut).toBe(sets[0].fadeOut)
+    expect(sets[2].fadeOut).not.toBe(sets[0].fadeOut)
+    expect(sets[2].chain).not.toBe(sets[0].chain)
+    graph.dispose()
+  })
+
   it('loops a song that started without Repeat once it is turned on, and ends after the pass that has begun once it is turned off', () => {
     const { project, asset, clip } = studioFixture()
     const longAsset = {

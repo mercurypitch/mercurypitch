@@ -105,9 +105,12 @@ declare global {
   }
 }
 
-/** Where the audio clock stood when a pointer was pressed or released. */
+/**
+ * Where the audio clock stood when a pointer was pressed or released, a key
+ * went down or up, or a control committed a change.
+ */
 export interface StudioClickStamp {
-  readonly kind: 'down' | 'up'
+  readonly kind: 'down' | 'up' | 'key' | 'keyup' | 'change'
   /** performance.now() in the capture phase, before any handler of the page. */
   readonly performanceMs: number
   /** The context's currentTime then: the render position. */
@@ -129,8 +132,8 @@ export interface StudioCapture {
 /**
  * Tap every connection to an AudioContext's destination, count the buffer
  * sources the page starts and those not yet ended, and stamp each pointer
- * press and release with the audio clock. Offline renders are left out, as
- * tapOutput does.
+ * press and release, each key press and release and each committed change
+ * with the audio clock. Offline renders are left out, as tapOutput does.
  */
 export async function captureStudioOutput(page: Page): Promise<void> {
   await page.addInitScript((frames) => {
@@ -180,7 +183,7 @@ export async function captureStudioOutput(page: Page): Promise<void> {
       }
       return source
     }
-    const stamp = (kind: 'down' | 'up') => () => {
+    const stamp = (kind: StudioClickStamp['kind']) => () => {
       const capture = window.__studioCapture
       if (!capture) return
       const performanceMs = performance.now()
@@ -198,17 +201,20 @@ export async function captureStudioOutput(page: Page): Promise<void> {
     }
     window.addEventListener('pointerdown', stamp('down'), { capture: true })
     window.addEventListener('pointerup', stamp('up'), { capture: true })
+    window.addEventListener('keydown', stamp('key'), { capture: true })
+    window.addEventListener('keyup', stamp('keyup'), { capture: true })
+    window.addEventListener('change', stamp('change'), { capture: true })
   }, CAPTURE_FRAMES)
 }
 
-/** Forget earlier pointer stamps. */
+/** Forget earlier stamps. */
 export async function clearClicks(page: Page): Promise<void> {
   await page.evaluate(() => {
     if (window.__studioCapture) window.__studioCapture.clicks = []
   })
 }
 
-/** The pointer presses and releases stamped since the last clear, in order. */
+/** The stamps since the last clear, in order. */
 export async function readClicks(page: Page): Promise<StudioClickStamp[]> {
   return page.evaluate(() => window.__studioCapture?.clicks ?? [])
 }

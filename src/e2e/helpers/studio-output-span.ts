@@ -56,7 +56,7 @@ const db = (amplitude: number) =>
   amplitude > 0 ? 20 * Math.log10(amplitude) : -120
 
 /** Amplitude of one frequency over `windowFrames` from index `at` (Goertzel), both whole frames. */
-function toneAmplitude(
+export function toneAmplitude(
   capture: StudioCapture,
   at: number,
   windowFrames: number,
@@ -77,7 +77,11 @@ function toneAmplitude(
 }
 
 /** RMS amplitude over `windowFrames` from index `at`. */
-function rms(capture: StudioCapture, at: number, windowFrames: number): number {
+export function rms(
+  capture: StudioCapture,
+  at: number,
+  windowFrames: number,
+): number {
   let sum = 0
   for (let i = at; i < at + windowFrames; i++)
     sum += capture.samples[i] * capture.samples[i]
@@ -85,7 +89,7 @@ function rms(capture: StudioCapture, at: number, windowFrames: number): number {
 }
 
 /** Whole frames for a duration, and back, at the capture's own rate. */
-function frameClock(capture: StudioCapture) {
+export function frameClock(capture: StudioCapture) {
   return {
     frames: (milliseconds: number) =>
       Math.max(1, Math.round((milliseconds * capture.sampleRate) / 1000)),
@@ -94,7 +98,11 @@ function frameClock(capture: StudioCapture) {
 }
 
 /** Throw unless the capture holds `[from, to)` as indices into its samples. */
-function requireHeld(capture: StudioCapture, from: number, to: number): void {
+export function requireHeld(
+  capture: StudioCapture,
+  from: number,
+  to: number,
+): void {
   if (from < 0 || to > capture.samples.length)
     throw new Error(
       'The capture does not hold the action and the settled level after it.',

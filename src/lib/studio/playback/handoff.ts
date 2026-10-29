@@ -2,14 +2,14 @@
 // Studio run handoff — a new run takes over a playing one on the same frame, with a 30 ms crossfade
 // ============================================================
 //
-// An edit that needs a new graph (a moved, trimmed or split clip, a fade, a
-// new effect list) used to fade the song out, build, and fade it back in:
-// about 170 ms of silence, and the song came back late by that much. A
-// handoff keeps the playing run sounding while the next one is built, starts
-// the next one on the frame the playing run reaches at that moment, and
-// crossfades the two linearly. What both runs play is the same audio on the
-// same frames, so the linear sum stays flat; only what the edit changed is
-// heard to change.
+// An edit that needs a new graph (a new effect list, or a clip edit the
+// running graph cannot re-plan: lane-replan.ts) used to fade the song out,
+// build, and fade it back in: about 170 ms of silence, and the song came
+// back late by that much. A handoff keeps the playing run sounding while the
+// next one is built, starts the next one on the frame the playing run
+// reaches at that moment, and crossfades the two linearly. What both runs
+// play is the same audio on the same frames, so the linear sum stays flat;
+// only what the edit changed is heard to change.
 //
 // Linear is right here and only here: the crossfade sits inside continuous
 // material (.claude/memory/audio-pop-free-playback.md). A start from silence

@@ -13,8 +13,10 @@
 // leased audio stay. Play starts the same graph from the playhead: new
 // sources a device callback ahead (seekEarliest), and the house attack, so
 // the first sound comes 87 to 98 ms after the press. An edit while paused
-// moves the kept graph as it would a playing one; one the graph cannot
-// follow lets it go, and Play builds afresh.
+// moves the kept graph as it would a playing one: the mix and sound in
+// place, other clips lane by lane (lane-replan.ts). One the graph cannot
+// follow lets it go, and Play builds afresh: 171 to 182 ms to the first
+// sound after a clip edit while paused, before clips moved in place.
 //
 // Left connected, a kept graph costs about two points of a core for as long
 // as it waits: the whole headless Chromium used 4.1 to 4.3 % of one core
@@ -36,9 +38,10 @@ import { closeEnvelope } from '@/lib/preview-player'
 import { registerStudioMemoryReclaimer } from '../memory-budget'
 import type { createStudioLaneMeter } from '../metering/live-meter'
 import { createStudioLiveMeter } from '../metering/live-meter'
-import type { StudioProject } from '../model/types'
-import type { StudioLiveSettings } from './in-place'
+import type { StudioAsset, StudioProject } from '../model/types'
+import type { StudioDrafts, StudioLiveSettings } from './in-place'
 import { fitsInPlace, followInPlace } from './in-place'
+import { replanLanes } from './lane-replan'
 import type { StudioRun } from './run'
 import { openRunEnvelope, releaseRun, RUN_LOOKAHEAD_SECONDS } from './run'
 import { seekEarliest } from './seek'
@@ -101,6 +104,18 @@ export function createStudioKeptRun(options: StudioKeptRunOptions) {
     idleTimer = setTimeout(letGo, hidden ? KEEP_HIDDEN_MS : KEEP_IDLE_MS)
   }
 
+  /** Whether the kept graph can play `project`: as it is, or with its lanes moved to other clips. */
+  function follows(
+    run: StudioRun,
+    project: StudioProject,
+    assets: readonly StudioAsset[],
+    drafts: StudioDrafts,
+  ): boolean {
+    return (
+      fitsInPlace(run, project, drafts) || replanLanes(run, project, assets)
+    )
+  }
+
   return {
     /** Fade `run` out and keep its graph; its sources and meters stop once it is silent. */
     keep(run: StudioRun): void {
@@ -137,6 +152,7 @@ export function createStudioKeptRun(options: StudioKeptRunOptions) {
     take(
       ctx: AudioContext,
       project: StudioProject,
+      assets: readonly StudioAsset[],
       from: number,
       settings: StudioLiveSettings,
     ): StudioRun | null {
@@ -144,7 +160,7 @@ export function createStudioKeptRun(options: StudioKeptRunOptions) {
         !kept ||
         !silent ||
         kept.ctx !== ctx ||
-        !fitsInPlace(kept, project, settings.drafts)
+        !follows(kept, project, assets, settings.drafts)
       ) {
         letGo()
         return null
@@ -175,9 +191,13 @@ export function createStudioKeptRun(options: StudioKeptRunOptions) {
       return run
     },
     /** An edit while paused: the kept graph moves with it, or goes when it cannot follow. */
-    follow(project: StudioProject, settings: StudioLiveSettings): void {
+    follow(
+      project: StudioProject,
+      assets: readonly StudioAsset[],
+      settings: StudioLiveSettings,
+    ): void {
       if (!kept) return
-      if (!fitsInPlace(kept, project, settings.drafts)) {
+      if (!follows(kept, project, assets, settings.drafts)) {
         letGo()
         return
       }
