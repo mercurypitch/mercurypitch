@@ -142,6 +142,33 @@ export function processingNames(settings: MediaTrackSettings): string[] {
  */
 export const CALL_GRADE_SAMPLE_RATE = 24000
 
+/**
+ * What the track's format says against it as a singing input: processing
+ * the browser applied, or a call-grade route. Empty when nothing does.
+ */
+export function formatWarnings(
+  settings: MediaTrackSettings | null | undefined,
+): string[] {
+  if (settings === null || settings === undefined) return []
+  const warnings: string[] = []
+  const processing = processingNames(settings)
+  if (processing.length > 0) {
+    warnings.push(
+      `The browser is processing this input (${processing.join(', ')}), which smooths a voice for calls and blurs its pitch.`,
+    )
+  }
+  if (
+    typeof settings.sampleRate === 'number' &&
+    settings.sampleRate > 0 &&
+    settings.sampleRate < CALL_GRADE_SAMPLE_RATE
+  ) {
+    warnings.push(
+      'This input runs at call quality. A Bluetooth headset does that while its microphone is open.',
+    )
+  }
+  return warnings
+}
+
 /** "48 kHz · mono · no processing", from what the track reports. */
 export function describeFormat(settings: MediaTrackSettings): string {
   const parts: string[] = []

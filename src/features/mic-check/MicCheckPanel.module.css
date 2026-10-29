@@ -37,12 +37,6 @@
   border-color: color-mix(in srgb, var(--accent) 45%, var(--border-subtle));
 }
 
-.canvas {
-  display: block;
-  width: 100%;
-  height: 100%;
-}
-
 .stageCover {
   position: absolute;
   inset: 0;

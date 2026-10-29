@@ -4,9 +4,10 @@
 //
 // Owns the check's capture and everything it watches. The capture is a voice
 // session (@/lib/voice-session) under the check's own consumer id — the
-// sequence that opens a microphone without the iOS traps — plus a small graph
-// of the check's own on the session's context: one analyser whose buffers
-// feed the level, the ribbon's bands and a YIN pass for the note.
+// sequence that opens a microphone without the iOS traps — plus a live
+// analysis of the check's own on the session's context (live-analysis.ts):
+// one analyser whose buffers feed the level, the ribbon's bands and a YIN
+// pass for the note.
 //
 // What it watches, because each is a way a microphone gets taken over
 // without anyone saying so:
@@ -35,7 +36,6 @@ import { micLockStatus, onMicLockChange } from '@/lib/mic-lock'
 import type { MicErrorKind } from '@/lib/mic-manager'
 import { BACKGROUND_HOLD_IDS, micManager } from '@/lib/mic-manager'
 import { registerMicIndicator } from '@/lib/mic-sentinel'
-import { PitchDetector } from '@/lib/pitch-detector'
 import type { OpenResult, VoiceSession } from '@/lib/voice-session'
 import { createVoiceSession } from '@/lib/voice-session'
 import { holdExclusiveCapture } from '@/stores/mic-store'
@@ -43,19 +43,17 @@ import type { CheckTone } from './check-copy'
 import { describeRosterChange, describeSwitch, holderName, inputName, permissionWords, } from './check-copy'
 import type { LostReason, Verdict } from './check-verdict'
 import { decideVerdict } from './check-verdict'
-import type { DeviceInfoLike, ListeningTrack, MicRoster } from './mic-roster'
+import { listDevices, trackIdentity, watchDeviceChanges } from './device-watch'
+import type { MicAnalysis, MicCheckLive } from './live-analysis'
+import { createMicAnalysis, createMicLive, quietMicLive } from './live-analysis'
+import type { DeviceInfoLike, MicRoster } from './mic-roster'
 import { buildRoster, defaultInput, diffRosters, EMPTY_ROSTER, listeningInput, } from './mic-roster'
-import type { HeldNote, NoteTrackerState } from './note-tracker'
-import { initialNoteTracker, trackNote } from './note-tracker'
-import { bandLevel } from './voice-ribbon'
+import type { HeldNote } from './note-tracker'
 
 export const MIC_CHECK_ID = 'mic-check'
 
-const FFT_SIZE = 2048
 /** The timeline keeps this many lines, newest first. */
 const EVENT_LIMIT = 8
-/** `devicechange` arrives in bursts while a device settles; read once after. */
-const DEVICE_SETTLE_MS = 250
 /** A live microphone never reads this low; exact silence is a mute somewhere
  *  (the same floor voice-session's probe uses). */
 const DEAD_RMS = 1e-6
@@ -81,24 +79,6 @@ export interface TrackFacts {
   muted: boolean
   ended: boolean
   settings: MediaTrackSettings
-}
-
-/**
- * The analysis of the latest frame. A plain mutable object, not signals:
- * the stage reads it every animation frame, and sixty signal writes a second
- * would re-run every effect that touches it.
- */
-export interface MicCheckLive {
-  /** True while a capture graph is feeding these numbers. */
-  active: boolean
-  rms: number
-  peak: number
-  low: number
-  mid: number
-  high: number
-  note: HeldNote | null
-  /** Counts landed notes, so a renderer can tell a new note from a held one. */
-  onsets: number
 }
 
 export interface MicCheckController {
@@ -129,13 +109,8 @@ export interface MicCheckController {
 }
 
 interface CaptureGraph {
-  context: AudioContext
-  source: MediaStreamAudioSourceNode
-  analyser: AnalyserNode
-  sink: GainNode
-  detector: PitchDetector
-  time: Float32Array<ArrayBuffer>
-  spectrum: Uint8Array<ArrayBuffer>
+  analysis: MicAnalysis
+  /** Follows the context's state, for Safari's `interrupted`. */
   onState: () => void
 }
 
@@ -169,16 +144,7 @@ export function useMicCheckController(): MicCheckController {
   )
   const [switching, setSwitching] = createSignal(false)
 
-  const live: MicCheckLive = {
-    active: false,
-    rms: 0,
-    peak: 0,
-    low: 0,
-    mid: 0,
-    high: 0,
-    note: null,
-    onsets: 0,
-  }
+  const live: MicCheckLive = createMicLive()
 
   let disposed = false
   let session: VoiceSession | null = null
@@ -187,7 +153,6 @@ export function useMicCheckController(): MicCheckController {
   let releaseExclusive: (() => void) | null = null
   let frameId = 0
   let lastUiAt = 0
-  let noteState: NoteTrackerState = initialNoteTracker()
   let healthState = initialInputHealth()
   let deadSince: number | null = null
   // While the session's probe runs, its own dead-zero rebuild may replace
@@ -215,17 +180,6 @@ export function useMicCheckController(): MicCheckController {
 
   // ── The track ─────────────────────────────────────────────
 
-  const trackIdentity = (): ListeningTrack | null => {
-    const current = watched?.track
-    if (current === undefined) return null
-    const settings = current.getSettings?.() ?? {}
-    return {
-      deviceId: settings.deviceId ?? null,
-      groupId: settings.groupId ?? null,
-      label: current.label === '' ? null : current.label,
-    }
-  }
-
   function refreshTrack(): void {
     const current = watched?.track
     if (current === undefined) {
@@ -239,7 +193,7 @@ export function useMicCheckController(): MicCheckController {
       })
     }
     // Which row is "listening" follows the track, not the device list.
-    setRoster(buildRoster(lastDevices, trackIdentity()))
+    setRoster(buildRoster(lastDevices, trackIdentity(watched?.track)))
   }
 
   function unwatchTrack(): void {
@@ -286,17 +240,10 @@ export function useMicCheckController(): MicCheckController {
   // ── The device list ───────────────────────────────────────
 
   async function refreshRoster(): Promise<void> {
-    const mediaDevices = navigator.mediaDevices
-    if (typeof mediaDevices?.enumerateDevices !== 'function') return
-    let devices: MediaDeviceInfo[]
-    try {
-      devices = await mediaDevices.enumerateDevices()
-    } catch {
-      return
-    }
-    if (disposed) return
+    const devices = await listDevices()
+    if (devices === null || disposed) return
     lastDevices = devices
-    const next = buildRoster(devices, trackIdentity())
+    const next = buildRoster(devices, trackIdentity(watched?.track))
     for (const change of diffRosters(roster(), next)) {
       const line = describeRosterChange(change)
       pushEvent(line.tone, line.text)
@@ -304,14 +251,12 @@ export function useMicCheckController(): MicCheckController {
     setRoster(next)
   }
 
-  let settleTimer: ReturnType<typeof setTimeout> | undefined
-  const onDeviceChange = (): void => {
-    clearTimeout(settleTimer)
-    settleTimer = setTimeout(() => {
-      void refreshRoster()
-    }, DEVICE_SETTLE_MS)
-  }
-  navigator.mediaDevices?.addEventListener?.('devicechange', onDeviceChange)
+  // A device event, read for the list as it stands then. Nothing here
+  // should track, as with the manager's events below.
+  // eslint-disable-next-line solid/reactivity
+  const unwatchDevices = watchDeviceChanges(() => {
+    void refreshRoster()
+  })
   // Listed before any check starts, so the panel opens on what is plugged in.
   onMount(() => {
     void refreshRoster()
@@ -408,10 +353,8 @@ export function useMicCheckController(): MicCheckController {
 
   function disposeGraph(): void {
     if (graph === null) return
-    graph.context.removeEventListener('statechange', graph.onState)
-    graph.source.disconnect()
-    graph.analyser.disconnect()
-    graph.sink.disconnect()
+    graph.analysis.context.removeEventListener('statechange', graph.onState)
+    graph.analysis.dispose()
     graph = null
     live.active = false
   }
@@ -421,19 +364,6 @@ export function useMicCheckController(): MicCheckController {
     const context = session?.context() ?? null
     const stream = micManager.getStream()
     if (context === null || stream === null) return
-    const source = context.createMediaStreamSource(stream)
-    const analyser = context.createAnalyser()
-    analyser.fftSize = FFT_SIZE
-    analyser.smoothingTimeConstant = 0.42
-    analyser.minDecibels = -85
-    analyser.maxDecibels = -15
-    source.connect(analyser)
-    // Muted sink: some WebKit versions only pull an analyser that reaches the
-    // destination (see pitch-f0-stream.ts). Zero gain keeps it silent.
-    const sink = context.createGain()
-    sink.gain.value = 0
-    analyser.connect(sink)
-    sink.connect(context.destination)
     // Safari reports a call or Siri as an `interrupted` context, a state the
     // standard types do not list.
     const onState = (): void => {
@@ -444,27 +374,8 @@ export function useMicCheckController(): MicCheckController {
       setInterrupted(isInterrupted)
     }
     context.addEventListener('statechange', onState)
-    graph = {
-      context,
-      source,
-      analyser,
-      sink,
-      detector: new PitchDetector({
-        sampleRate: context.sampleRate,
-        bufferSize: FFT_SIZE,
-        algorithm: 'yin',
-        // The settings pitch-f0-stream uses for a voice captured with AGC
-        // off: a singing range with headroom and a low amplitude gate.
-        minFrequency: 60,
-        maxFrequency: 1600,
-        minAmplitude: 0.005,
-      }),
-      time: new Float32Array(FFT_SIZE),
-      spectrum: new Uint8Array(analyser.frequencyBinCount),
-      onState,
-    }
+    graph = { analysis: createMicAnalysis(context, stream), onState }
     live.active = true
-    noteState = initialNoteTracker()
     // Armed from the first frame: opening a mic check IS the request to make
     // a sound, so six seconds of nothing is worth saying.
     healthState = armInputHealth(performance.now())
@@ -472,7 +383,7 @@ export function useMicCheckController(): MicCheckController {
   }
 
   function syncUi(now: number): void {
-    setNote(noteState.held)
+    setNote(live.note)
 
     const status = healthState.status
     if (status !== health()) {
@@ -500,36 +411,8 @@ export function useMicCheckController(): MicCheckController {
     frameId = 0
     const current = graph
     if (current === null) return
-    const { analyser, time, spectrum, context } = current
-    analyser.getFloatTimeDomainData(time)
-    let squares = 0
-    let peak = 0
-    for (let i = 0; i < time.length; i++) {
-      const sample = time[i]
-      squares += sample * sample
-      const magnitude = sample < 0 ? -sample : sample
-      if (magnitude > peak) peak = magnitude
-    }
-    const rms = Math.sqrt(squares / time.length)
-    analyser.getByteFrequencyData(spectrum)
-    live.rms = rms
-    live.peak = peak
-    live.low = bandLevel(spectrum, context.sampleRate, FFT_SIZE, 60, 350)
-    live.mid = bandLevel(spectrum, context.sampleRate, FFT_SIZE, 350, 2600)
-    live.high = bandLevel(spectrum, context.sampleRate, FFT_SIZE, 2600, 10000)
-
-    const detected = current.detector.detect(time)
-    const voiced = detected.frequency > 0
-    const step = trackNote(noteState, {
-      f0: voiced ? detected.frequency : 0,
-      clarity: voiced ? detected.clarity : 0,
-      rms,
-      at: now,
-    })
-    noteState = step.state
-    if (step.onset) live.onsets++
-    live.note = noteState.held
-
+    current.analysis.read(live, now)
+    const rms = live.rms
     healthState = observeInputLevel(healthState, rms, now)
     deadSince = rms > DEAD_RMS || probing ? null : (deadSince ?? now)
 
@@ -560,12 +443,9 @@ export function useMicCheckController(): MicCheckController {
     releaseExclusive?.()
     releaseExclusive = null
     probing = false
-    noteState = initialNoteTracker()
     healthState = initialInputHealth()
     deadSince = null
-    live.note = null
-    live.rms = 0
-    live.peak = 0
+    quietMicLive(live)
     setNote(null)
     setHealth('unknown')
     setDigitalSilence(false)
@@ -622,7 +502,7 @@ export function useMicCheckController(): MicCheckController {
         probing = false
         // The probe rebuilds the session's context when it reads dead
         // zeros (the iOS sample-rate case); follow it onto the new one.
-        if (graph?.context !== opened.context()) buildGraph()
+        if (graph?.analysis.context !== opened.context()) buildGraph()
       }
     }
   }
@@ -716,11 +596,7 @@ export function useMicCheckController(): MicCheckController {
     unregisterIndicator()
     unsubscribeManager()
     unsubscribeLock()
-    clearTimeout(settleTimer)
-    navigator.mediaDevices?.removeEventListener?.(
-      'devicechange',
-      onDeviceChange,
-    )
+    unwatchDevices()
     permissionStatus?.removeEventListener('change', onPermissionChange)
   })
 

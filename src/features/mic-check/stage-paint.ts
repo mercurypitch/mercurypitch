@@ -37,6 +37,21 @@ export const LIGHT_STAGE_INK: StageInk = {
   text: 'rgba(20, 24, 30, 0.9)',
 }
 
+/** The slim strip's keys: there, but dim until a note lights one. */
+export const SOFT_DARK_STAGE_INK: StageInk = {
+  keyLight: 'rgba(255, 255, 255, 0.075)',
+  keyDark: 'rgba(0, 0, 0, 0.42)',
+  keySeam: 'rgba(0, 0, 0, 0.4)',
+  text: DARK_STAGE_INK.text,
+}
+
+export const SOFT_LIGHT_STAGE_INK: StageInk = {
+  keyLight: 'rgba(255, 255, 255, 0.7)',
+  keyDark: 'rgba(30, 35, 42, 0.5)',
+  keySeam: 'rgba(30, 35, 42, 0.12)',
+  text: LIGHT_STAGE_INK.text,
+}
+
 /** How long a key glows after a note lands on it, in seconds. */
 export const KEY_FLASH_S = 0.35
 
@@ -85,6 +100,11 @@ function drawOctaveNames(
   }
 }
 
+export interface KeyOptions {
+  /** Name the Cs under their keys. */
+  octaveNames: boolean
+}
+
 export function drawKeys(
   ctx: CanvasRenderingContext2D,
   keys: readonly KeyRect[],
@@ -92,6 +112,7 @@ export function drawKeys(
   height: number,
   light: KeyLight,
   ink: StageInk,
+  options: KeyOptions = { octaveNames: true },
 ): void {
   for (const key of keys) {
     const keyHeight = key.black ? height * 0.62 : height
@@ -107,7 +128,7 @@ export function drawKeys(
       ctx.fillRect(key.x + key.width - 0.5, top, 1, height)
     }
   }
-  drawOctaveNames(ctx, keys, top, height)
+  if (options.octaveNames) drawOctaveNames(ctx, keys, top, height)
 }
 
 /**
