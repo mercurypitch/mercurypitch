@@ -245,3 +245,59 @@ replaced it. The builder's record: critics never read it.
     `study/lesson-02/`, `study/RULES.md`) before the storyboard critic. One change came of it:
     S1g's full-frame light is a radial chrome field at Lesson 2's measured level (peak mean
     brightness 122), not a white hold, since the field takes the colour of what came through it.
+
+## Storyboard v2 (after storyboard critic 01)
+
+41. **A camera plan, each move with one job** (round 1, item 2). v1 held F0 for 52 % of the film in
+    three long spans and moved the camera about seven times between S5 and S11. v2 has 25 framing
+    changes across 17 framings (STORYBOARD § Camera plan, HANDOFFS § Framings and § Camera moves),
+    19 of them between S5 and S11, so F0 is 46 % of the film in eleven spans, the longest 35 s.
+    The two proofs that need size get close-ups: S7g's white keys against the pattern (52 px apart
+    at 2x, not 26) and S10a's ti-do step. Medium shots each hold one beat (the halves, the white
+    keys from D, the two black keys, the names, the tiers, recap cards 1 and 3). S8 keeps a still
+    camera, since signature 2 is the keyboard not moving.
+42. **The label lane** (round 1, item 2). Frame-fixed labels in F0 stand right of the staircase on
+    C (from x 1250) and on D (from x 1340), top left on E and G and through S7. The legend, S4's
+    labels and the recap panel keep the top left.
+43. **Dashes mean Tavi's wrong guess, and nothing else** (round 1, item 9). A step being measured is
+    a plain chrome outline until it fills, so her right guess (E to F) is drawn plain.
+44. **The hook gets a beat** (round 1, item 5). A 1 s pause cue after o2 (`hook`); the two lines hold
+    still and unscaled until 32.85 and leave up fast; the Mercs slide out once her question has
+    ended (32.80 to 33.40); the dolly through the house runs 32.95 to 33.88 and the field holds
+    0.3 s to the cut, as Lesson 2's does.
+45. **A bead that lands on a do stair under a house rises into it and becomes its light** (round 1,
+    item 4), as the title's bead does at 37.6, so no bead stands over a house (S1e, S10c, S14d).
+    A bead rests on its tread (HANDOFFS § Shared formulas).
+46. **The staircase stays one object** (round 1, item 6). It tips into the guide at full brightness
+    after the act 4 card (343.7 to 345.5) and tips back out of it across the breath (404.2 to
+    405.4), with the strip and the Mercs moving around it; the title's staff fades out while the
+    staircase fades up under it (36.9 to 37.5), so no cut shows it appearing from nothing.
+47. **The recap resets between cards** (round 1, item 7). At 419.62 and 443.01 every riser returns to
+    unmeasured chrome and the stairs go unlit; the hairlines stay hidden from 411.0 until "F sharp"
+    (427.22). Card 1's "Two groups" lights stairs 1 to 4, then 5 to 8, instead of brackets: v1's
+    upper bracket crossed the card panel.
+48. **The call to action holds** (round 1, item 1). A 4 s pause after b53 (`card`) keeps the full
+    practise card on screen for about 6 s, and the end card adds "then Exercises › Scale Runner".
+    The Mercs' celebration hop is 30 px, which leaves 25 px under the address at its top.
+49. **The tiers' shelves are 80 px apart and close to 64** on "only weaker" (round 1, item 4), so the
+    56 px chips keep 8 px between them; the top shelf stays fixed and the order never changes.
+50. **The doctor lines' source** (round 1, item 8). The film follows main at `b803c7d43`, whose
+    Lesson 4 FACTS 54 carries Lesson 3 FACTS 35's lines whole (the NHS's laryngitis page and the
+    2018 hoarseness guideline). The repository root in this container is checked out at
+    `3962d2f53` (19 October), whose fact 54 is the playbook's earlier draft, "see a doctor or a
+    voice specialist". FACTS' header now says which copy binds and how to read it, and FACTS 83
+    cites it. The lines wrap into five lines at 600 px; decision 37's "six" was an estimate.
+51. **Positions the board and HANDOFFS disagreed on are set once** (round 1, item 9): the probe bead
+    at (1420, 420), "tonic" at x 150, "learned, it seems" and "one short step" at x 1250 (the lane
+    rule moved them from 1210 and 1220), "leading note" at x 660, "ti = C♯" at x 1360. The octave
+    bracket spans twelve rows, tread to tread (y 664 to 352); v1's ran from C4's floor, thirteen.
+52. **The ladder draws what the app draws** (round 1, item 9): the sung line breaks between G4 and A4
+    while the app plays the next note (FACTS 38), and the asked-for note's dashed line runs from the
+    panel's inner margin to the playhead with its name in a pill, as `PitchOverTimeCanvas.tsx` draws
+    it (`moveTo(MARGIN, y)`, the label pill tucked against the playhead).
+53. **Two push centres chosen for margins.** F-near is a push of 1.2 about (420, 736), not about the
+    staircase's centre, so "tonic = home" keeps 96 px from the frame's left edge (36 px about the
+    centre); "scale degrees" and "solfège" move to x 1400, 50 px clear of the top stair at 1.2x.
+    F-recap-3 is about (300, 360), which keeps stair 1 29 px from Merc (21 px about (320, 360)).
+54. **Round 2 is a storyboard round** with `review/storyboard-01/REPORT.md` as the previous report.
+    The motion rule is then checked on pixels in the component rounds (STORYBOARD § Build checks).

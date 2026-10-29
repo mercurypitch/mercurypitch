@@ -1057,3 +1057,22 @@ Note: the lanes' memory gate read a stale cgroup path after the 21:00 restart (f
   report review/script-03/REPORT.md). NEXT: save its text if it could not write, LEDGER row 04, fix, round 2.
 - The old pass's background waiter matched its own command line (pgrep -f) and ran to its 30 min limit;
   waits now use Monitor on an output file.
+- Preflight for the Lesson 4 build: node 22.22.0, ffmpeg has ebur128/tblend/signalstats/scdet; smoke test PASSED
+  03:00Z (scratchpad/l4-smoke: 300 identical frames in both takes, hyperframes 0.8.97).
+
+## 2026-10-29 ~05:40Z: Lesson 4 film, storyboard v2 written (tasks 182-184)
+- Storyboard critic 01: ONE MORE PASS (review/storyboard-01/REPORT.md), 9 items, all taken (DECISIONS 41-54).
+- STORYBOARD.md v2 + HANDOFFS.md v2 written: camera plan of 25 moves over 17 framings (F-cold, F-house, F0,
+  CU-A/B/C/D, F-low/high, F-white, F-keys-D, F-near (about (420, 736)), F-names-1/2, F-chart, F-recap-1/3
+  (F-recap-3 about (300, 360))); F0 46 % in 11 spans (was 52 % in 3), longest 35 s; label lane (right of the
+  staircase on C from x 1250, on D from 1340; top left on E/G and in S7); dashes only for wrong guesses;
+  beads rest on treads and rise into houses; hook pause + card pause (clock 483.73 s); tips at full brightness
+  and back; recap resets; shelves 80/64; octave bracket twelve rows (664-352); ladder target line from the
+  panel margin + "A4" pill (PitchOverTimeCanvas moveTo(MARGIN, y)); doctor lines five lines 640-788.
+- Checks run: every quoted word time = cues.json (154, 0 mismatches; scratchpad l4sb2/wordcheck.py); every
+  row boundary = a cue mark (l4sb2/rowcheck.py); widths measured with the project fonts (l4sb2/widths2.py,
+  ink.py).
+- FACTS header + 83: the round-1 critic read the repo root's old copy (3962d2f53, 19 Oct) of L4 FACTS 54; the
+  film follows b803c7d43 (NHS lines via L3 FACTS 35). BRIEF length now 8:41-8:50 (8:03.7 scratch).
+- NEXT: spawn storyboard critic 02 (paths only; previous report review/storyboard-01/REPORT.md; report
+  review/storyboard-02/REPORT.md), save its text, LEDGER row 05, fix, then the build (shared pieces, labs).

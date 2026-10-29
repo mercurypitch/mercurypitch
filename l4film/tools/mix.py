@@ -297,8 +297,9 @@ def sound_for(name, dur):
 
 # Listening silences: the scale hangs on ti, or the viewer sings. A pad on D there would be in the
 # wrong key after a C scale, and would sound home before the landing after a D one (script critic
-# 01, item 1), so these pauses keep only the room tone (FACTS 69).
-NO_BED = {'hang-c', 'predict-d', 'hang-d', 'wait', 'q3', 'your-turn'}
+# 01, item 1), so these pauses keep only the room tone (FACTS 69). `hook` is the beat after the
+# cold open's question, which runs straight into the title chime (storyboard critic 01, item 5).
+NO_BED = {'hang-c', 'predict-d', 'hang-d', 'wait', 'q3', 'your-turn', 'hook'}
 
 
 def main():

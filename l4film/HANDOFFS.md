@@ -1,4 +1,4 @@
-# Handoffs: exact frames where one builder's scene meets the next
+# Handoffs v2: exact frames where one builder's scene meets the next
 
 The last frame of scene N and the first frame of scene N+1 must show every carried object on the
 same pixels (within 2 px). Values marked **(provisional)** are starting values: the builders on
@@ -15,21 +15,44 @@ S13, [F] S14 to S16.
   from `T`, so its phase matches across a cut. Easing names are GSAP's; a curve that spans a cut is
   evaluated with GSAP's own function on both sides.
 - A framing is `x' = s x + ox`, `y' = s y + oy` from world coordinates (§ World) to the screen. A
-  push of scale `s` about `(cx, cy)` is `ox = cx (1 - s)`, `oy = cy (1 - s)`. A change of framing
-  interpolates `s`, `ox` and `oy` together on one curve. The room's far, mid and near layers follow
-  `L.rig` with factors 0.25, 1 and 1.6, so a push shows parallax and a pan moves every layer equally.
-- The staircase's own labels (stair names, riser labels, key names) scale with it: 36, 40 and 34 px
-  at `s = 1`. Frame-fixed type (kickers, the list, legends, tallies, cards) never scales.
+  push of scale `s` about the world point `(cx, cy)` is `ox = cx (1 - s)`, `oy = cy (1 - s)`, which
+  keeps that point where it is on screen. A change of framing interpolates `s`, `ox` and `oy`
+  together on one curve. The room's far, mid and near layers follow `L.rig` with factors 0.25, 1
+  and 1.6: a push or a pull scales each layer by `1 + (s - 1) k`, a truck moves each layer by its
+  factor, a pan moves every layer by the same amount (§ Camera moves names which each move is).
+- The staircase's own labels (stair names, riser labels, key names, "tonic = home", "(sol)", the
+  brackets, "leading note" and its arrow) ride the world and scale with it: 36, 40 and 34 px at
+  `s = 1`. Frame-fixed type (kickers, the list, legends, tallies, sums, cards, pills, credits,
+  "scale degrees", "solfège", "1 semitone", the hook's lines) never scales and never moves with the
+  camera.
 - Text and marks fade in over 0.2 s from their cue and out over 0.2 s from their exit cue unless a
-  row says otherwise. Counted pulses as STORYBOARD § Type.
+  row says otherwise. Counted pulses as STORYBOARD § Type. Ring timers, pills, arrows and brackets
+  are `assets/lib/marks.js`'s (Lessons 1 and 2).
 - The Mercs are placed in screen space. A Merc's body is about 0.53 of its shown size wide and 0.64
   of it tall, standing on its feet point (Lesson 1's frames): at 420 it is x ±111, 269 tall; at 360
   ±95, 230; at 300 ±80, 192; at 240 ±64, 154; at 520 ±138, 333.
-- Beads: `L.bead(svg, { r: 22, color })` in world units, so 26 px in F-cold and 44 px in a 2x
-  close-up; a bead on a stair sits on the tread at the stair's centre. Blue `#58a6ff`, orange
-  `#ff7448`, chrome `#c3ccd6`. A hop between treads is an arc 0.3 s long, landing on the note's
-  onset, peaking 40 world px above the higher tread.
-- Tavi's guesses: a dashed ink-2 `#a8b3bf` stroke (3 px, dash 10, gap 8) with a "?" (`L.GUESS`).
+- **Keep-out.** No stair, key, lane, label or mark comes within 20 px of a Merc's body box. The
+  faint semitone rows are masked instead: the rows' layer carries a screen-space mask that is clear
+  inside each on-screen Merc's body box grown by 20 px and rises linearly to full over the next
+  60 px, built every frame from the Mercs' boxes. In CU-C, F-recap-1 and F-recap-3 the keyboard
+  strip (with its hairlines and key names) would run under a Merc's feet and reflection, so it fades
+  out (and sinks) over the push into those framings and comes back over the pull out of them.
+- **Beads.** `L.bead(svg, { r: 22, color })` in world units (26 px in F-cold, 44 px in a 2x
+  close-up). A bead rests on its stair's tread: centre on the column centre, 22 world px above the
+  tread. A hop between treads is an arc 0.3 s long, landing on the note's onset, its centre peaking
+  40 world px above its resting point on the higher stair. A bead that lands on a do stair with a
+  house over it then rises into the house: from its resting point to the house's centre over 0.3 s
+  (power2.out), shrinking to nothing as the house lights (S1e 23.2 to 23.5, S10c 294.2 to 294.5,
+  S14d 433.8 to 434.1; the title's bead does the same at 37.6 to 37.9). Blue `#58a6ff`, orange
+  `#ff7448`, chrome `#c3ccd6`. An echo ring is 2 px chrome growing from the bead's edge to three
+  times its radius over 0.5 s as it fades.
+- **Marks.** Tavi's wrong guesses are dashed ink-2 `#a8b3bf` (3 px, dash 10, gap 8) with a "?"
+  (`L.GUESS`): the ring round "from C", the white-keys staircase, the "do = C?" pill. A step being
+  measured is a plain chrome outline (`L.MEASURE`: 2 px chrome at 55 %, unfilled) until it fills.
+- **Label lane** (STORYBOARD § Codes). In F0, frame-fixed labels stand right of the staircase on C
+  (from x 1250; it ends at x 1194) and on D (from x 1340; it ends at 1314, its top house at 1286),
+  and top left (from x 140) on E and G and through S7. Exceptions: the legend, S4's labels, the
+  recap panel.
 - Everything essential sits above y 896; S13's care block above y 864.
 
 ## World (F0, `s = 1`)
@@ -44,18 +67,20 @@ run x 230 to 1206.
 C4 `s0` (C 0, D 2, E 4, G 7). Stair n (1 to 8) has height `h` = 0, 2, 4, 5, 7, 9, 11, 12 above do;
 its column is centred at `x = 298 + 120 (w + n - 1)`, 112 px wide; its tread is the top of row
 `k = s0 + h`, `y = 690 - 26 (k + 1)`; the block runs from the tread down to the foot,
-`y = 736 - 26 s0` (46 px below do's row). Corner radius 6 at the tread.
+`y = 736 - 26 s0` (46 px below do's row). Corner radius 6 at the tread. Before the keyboard exists
+(S1 to S3b) the staircase on D keeps C's columns (`w` 0, `s0` 2): it rises two rows and does not
+move along.
 
-| Start | Stair centres x                              | Treads y (stairs 1 to 8)              | Foot y | Keys                                  |
-| ----- | -------------------------------------------- | ------------------------------------- | ------ | ------------------------------------- |
-| C     | 298 418 538 658 778 898 1018 1138            | 664 612 560 534 482 430 378 352       | 736    | C4 D4 E4 F4 G4 A4 B4 C5               |
-| D     | 418 538 658 778 898 1018 1138 1258           | 612 560 508 482 430 378 326 300       | 684    | D4 E4 F♯4 G4 A4 B4 C♯5 D5             |
-| E     | 538 658 778 898 1018 1138 1258 1378          | 560 508 456 430 378 326 274 248       | 632    | E4 F♯4 G♯4 A4 B4 C♯5 D♯5 E5           |
-| G     | 778 898 1018 1138 1258 1378 1498 1618        | 482 430 378 352 300 248 196 170       | 554    | G4 A4 B4 C5 D5 E5 F♯5 G5              |
+| Start | Stair centres x                       | Treads y (stairs 1 to 8)        | Foot y | Names baseline | Keys                        |
+| ----- | ------------------------------------- | ------------------------------- | ------ | -------------- | --------------------------- |
+| C     | 298 418 538 658 778 898 1018 1138     | 664 612 560 534 482 430 378 352 | 736    | 724            | C4 D4 E4 F4 G4 A4 B4 C5     |
+| D     | 418 538 658 778 898 1018 1138 1258    | 612 560 508 482 430 378 326 300 | 684    | 672            | D4 E4 F♯4 G4 A4 B4 C♯5 D5   |
+| E     | 538 658 778 898 1018 1138 1258 1378   | 560 508 456 430 378 326 274 248 | 632    | 620            | E4 F♯4 G♯4 A4 B4 C♯5 D♯5 E5 |
+| G     | 778 898 1018 1138 1258 1378 1498 1618 | 482 430 378 352 300 248 196 170 | 554    | 542            | G4 A4 B4 C5 D5 E5 F♯5 G5    |
 
 A slide interpolates `w` and `s0` together (power2.inOut unless a row says otherwise), so the shape
 never changes in flight. Fills: unlit `#1b232d` with a 2 px chrome rim at 40 % and a 3 px chrome
-tread line at 70 %; lit chrome 60 % chrome mix; lit blue or orange a 45 % mix with a rim in the
+tread line at 70 %; lit chrome a 60 % chrome mix; lit blue or orange a 45 % mix with a rim in the
 colour (35 % if the lab's stair-name contrast falls under 4.5:1); outline (the cold open's unreached
 top stair) no fill, a 2 px chrome stroke at 55 %; dimmed, every fill and stroke at 25 % (20 % in
 S11's tiers) with its labels hidden.
@@ -63,13 +88,16 @@ S11's tiers) with its labels hidden.
 **Stair names.** Outfit 600 36 px, ink, centred on the column, baseline `foot - 12`.
 
 **Risers.** Between stairs n and n+1, centred at `x = 298 + 120 (w + n - 1) + 60`, from stair n's
-tread up to stair n+1's: unmeasured 4 px chrome at 40 %; measured 6 px, chrome for a tone with a
-12 px dark tick (`#2a323c`) at its middle row line, gold `#ffd84d` for a semitone. On every start the
-gold pair is between stairs 3 and 4 and between 7 and 8. A riser label (T, S, 2, 1) is Outfit 600
-40 px, ink, right-aligned 10 px left of the riser, baseline 8 px above stair n's tread.
+tread up to stair n+1's: unmeasured 4 px chrome at 40 %; being measured, `L.MEASURE` drawn as the
+6 px bar's outline, with a 12 px chrome tick at 55 % at a tone's middle row line; measured 6 px,
+chrome for a tone with a 12 px dark tick (`#2a323c`) at its middle row line, gold `#ffd84d` for a
+semitone. On every start the gold pair is between stairs 3 and 4 and between 7 and 8. A riser label
+(T, S, 2, 1) is Outfit 600 40 px, ink, right-aligned 10 px left of the riser, baseline 8 px above
+stair n's tread.
 
-**House.** 56 x 52 px, centred on a do stair's column, its base 14 px above the tread. Unlit: a 3 px
-chrome outline at 55 %. Lit: ink fill, a 16 px soft chrome glow.
+**House.** 56 x 52 px, centred on a do stair's column, its base 14 px above the tread, so its
+centre is 40 px above the tread. Unlit: a 3 px chrome outline at 55 %. Lit: ink fill, a 16 px soft
+chrome glow.
 
 **Strip.** White keys C4 to G5, key j (0 to 11) from `x = 240 + 120 j` to `+ 116`, y 760 to 880,
 centre `298 + 120 j`; Lesson 1's fill `#e6edf3` at 92 %, corner radius 6 at the foot. Black keys 64
@@ -84,25 +112,79 @@ of its key (y 760). A sharp's hairline slants to its black key.
 
 **Tavi's white-keys staircase (S7).** On D's columns (centres 418 to 1258), heights 0, 2, 3, 5, 7,
 9, 10, 12, so treads 612 560 534 482 430 378 352 300, foot 684; every block drawn as a dashed ink-2
-outline (`L.GUESS`) over the real staircase; dashed hairlines to D4 E4 F4 G4 A4 B4 C5 D5; its "?"
-(Outfit 600 64 px, ink-2) centred at x 1258, baseline 250. Against D major it differs only at stair 3
-(tread 534 against 508) and stair 7 (352 against 326).
+outline (`L.GUESS`), filled ink-2 at 25 % where a row says so; dashed hairlines to D4 E4 F4 G4 A4
+B4 C5 D5; its "?" (Outfit 600 64 px, ink-2) centred at x 1258, baseline 250. Against D major it
+differs only at stair 3 (tread 534 against 508) and stair 7 (352 against 326).
+
+**Merc corners in F0.** Merc (110, 840) at 300: body x 30 to 190, y 648 to 840; 30 px from the rows
+(x 220), 50 from the strip (240), 52 from stair 1 on C (242). Tavi (1800, 840) at 300: body x 1720
+to 1880; 40 px from the rows (1680), 44 from the strip (1676), 46 from stair 8 on G (1674).
 
 ## Framings
 
-| Framing | s   | ox     | oy     | Used                                   | What it holds                                                                 |
-| ------- | --- | ------ | ------ | -------------------------------------- | ----------------------------------------------------------------------------- |
-| F-cold  | 1.2 | 98.4   | -97.2  | S1a to S3b (from 3c it pulls to F0)    | compact staircase centred: C's stairs x 389 to 1531, treads 700 to 325, foot 786; D's treads 637 to 263, foot 724 |
-| F0      | 1   | 0      | 0      | S3c's end to S11, S14                  | the world as drawn                                                            |
-| CU-A    | 2   | -280   | -880   | S5c                                    | a push of 2 about (280, 880): stairs 1 to 4 x 204 to 1148, keys C4 to F4, C-D riser at x 436 from y 448 to 344 |
-| CU-B    | 2   | -760   | -880   | S5d                                    | about (760, 880): E-F riser at x 436 from y 240 to 188, keys D4 to G4           |
-| CU-C    | 1.8 | -980   | -286.4 | S10a                                   | about (1225, 358): la, ti, do x 536 to 1169, ti-do riser at x 960 from y 394 to 347, house y 228 to 322 |
+| Framing    | s    | ox      | oy      | About             | Used           | What it holds (screen pixels)                                                                                                                                                                                       |
+| ---------- | ---- | ------- | ------- | ----------------- | -------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| F-cold     | 1.2  | 98.4    | -97.2   | -                 | S1, S3a, S3b   | compact staircase centred: C's stairs x 389 to 1531, treads 700 to 325, foot 786; on D treads 637 to 263, foot 724; compact rows x 374 to 1546                                                                      |
+| F-cold end | 1.22 | 84.04   | -106.92 | screen (960, 486) | 32.8           | the drift's end: stairs x 379 to 1541, rows x 365 to 1555 (24 px from both Mercs, 38 px for the stairs)                                                                                                             |
+| F-house    | 2.2  | -1543.6 | -32     | -                 | 33.88 to 34.18 | the top house on D (world centre (1138, 260)) at the frame's centre, 123 x 114 px, under the full-frame field                                                                                                       |
+| F0         | 1    | 0       | 0       | -                 | most shots     | the world as drawn                                                                                                                                                                                                  |
+| CU-A       | 2    | -280    | -880    | (280, 880)        | S5c            | stairs 1 to 5 with their treads (stair 1 x 204 to 428, tread 448; stair 5's tread at 84), keys C4 to A4 (y 640 to 880); the C-D riser at x 436 from y 448 to 344                                                    |
+| CU-B       | 2    | -760    | -880    | (760, 880)        | S5d            | a pan of 480 px: stairs 3 to 5 with their treads (stair 3 x 204 to 428, tread 240), keys E4 to C5; the E-F riser at x 436 from y 240 to 188, where CU-A held the C-D riser; stair 2 and D4 cut by the left edge     |
+| F-low      | 1.8  | 99.6    | -704    | -                 | S6a, S6b       | stairs 1 to 4 x 535 to 1385 (treads 491 to 257), the lower bracket at y 167, names baseline 599, keys C4 to F4 x 532 to 1388, y 664 to 880, key letters at 848                                                      |
+| F-high     | 1.8  | -764.4  | -450    | -                 | S6b            | stairs 5 to 8 x 535 to 1385, treads 418 to 184, the upper bracket at y 94, names baseline 853; the strip under the caption band (from y 918), carrying nothing named                                                |
+| F-white    | 1.25 | -75     | -211.5  | (300, 846)        | S7d            | the dashed staircase x 378 to 1568, treads 554 (stair 1) to 164, foot 644, its "?" at (1498, 101); the strip y 739 to 889; the top-left lane clear                                                                  |
+| CU-D       | 2    | -836    | -464    | (836, 464)        | S7g            | D's stairs 3 to 7 x 368 to 1552: real treads 552 (stair 3) and 188 (stair 7), dashed 604 and 240, 52 px apart; names baseline 880                                                                                   |
+| F-keys-D   | 1.6  | -380.8  | -528    | (634.7, 880)      | S7h            | the strip x 3 to 2301, y 688 to 880, F♯4 x 717 to 819, C♯5 x 1485 to 1587 (black-key names at 787); D's names baseline 547                                                                                          |
+| F-near     | 1.2  | -84     | -147.2  | (420, 736)        | S9b, S9c       | C's stairs x 206 to 1349, treads 650 to 275, names baseline 722; the top house x 1248 to 1315, y 196 to 258; "tonic = home" x 96 to 481, baseline 501                                                               |
+| F-names-1  | 2.4  | -235    | -1232   | -                 | S9c, S9d       | the name band: names 86 px at baseline 506, foot 534, keys y 592 to 880; stair 1 x 346 to 615 (centre 480), stairs 1 to 5 in frame                                                                                  |
+| F-names-2  | 2.4  | -1431   | -1232   | -                 | S9d            | the same band at stairs 4 to 8: stair 8 x 1166 to 1435 (centre 1300)                                                                                                                                                |
+| CU-C       | 1.8  | -980    | -432    | (1225, 540)       | S10a           | la, ti, do x 536 to 1169, names baseline 871; the ti-do riser at x 960 from y 248 to 202; the top house x 1018 to 1119, y 83 to 176; the strip faded                                                                |
+| F-chart    | 1.3  | -252    | -75     | (840, 250)        | S11a to S11c   | the tiers: do's chip x 762 to 918, y 242 to 315, the fourth shelf to y 627; the axis at x 1438 from y 289 to 653, "finishes it best" from x 1464; stair names at 866; the strip under the caption band (from y 913) |
+| F-recap-1  | 1.25 | -75     | -75     | (300, 300)        | S14a, S14b     | C's stairs x 228 to 1418 (stair 1 x 228 to 368, y 755 to 845; 38 px from Merc), the top house x 1313 to 1383, y 283 to 348, names baseline 830; the strip faded                                                     |
+| F-recap-3  | 1.4  | -120    | -144    | (300, 360)        | S14d           | la, ti, do x 1059 to 1552; the ti-do riser at x 1389 from y 385 to 349; the top house x 1434 to 1512, y 256 to 329; stair 1 x 219 (29 px from Merc), foot 886; names baseline 870; the strip faded                  |
 
-F-cold's push during S1 (a drift, 1.2 to 1.236 over 0 to 24.7, then to 1.28 by 31.4, power1.in) is
-about the screen point (960, 486); S1g's dolly from 1.28 to 2.2 is about the top house (31.4 to
-33.1, power2.in) **(provisional: the light's growth decides its end scale)**. S3c pulls F-cold to F0
-over 43.4 to 45.9 (power2.inOut), interpolating `s`, `ox`, `oy`. S6a's push to 1.05 and back is
-about (1676, 880), so the strip's right end and the rows' right edge never move toward Tavi.
+**The panel and the recap framings.** The card panel (x 120 to 1000, y 140 to 330) is frame-fixed.
+In F0 the highest tread under it is 378 (stair 6 on D, stair 3 on G), 48 px below it; in F-recap-1
+the highest is the corner of stair 6 that reaches under it (x 978 to 1000) at y 463, 133 px below
+it; in F-recap-3 nothing of the staircase under the panel rises above y 531.
+
+## Camera moves
+
+Each changes framing on one curve (`s`, `ox`, `oy` together). "Push" and "pull" scale the layers
+by their factors; "truck" moves them by their factors at a fixed scale; "pan" moves every layer
+equally.
+
+| Time          | Move         | From       | To         | Ease         | Notes                                                                                     |
+| ------------- | ------------ | ---------- | ---------- | ------------ | ----------------------------------------------------------------------------------------- |
+| 0.00-32.80    | drift (push) | F-cold     | F-cold end | power1.inOut | about the screen point (960, 486); not counted as motion                                  |
+| 32.95-33.88   | dolly (push) | F-cold end | F-house    | power3.in    | the two lines left up fast at 32.85 to 33.15; the Mercs slid out 32.80 to 33.40           |
+| 37.58         | cut          | -          | F-cold     | -            | S3 opens at 1.2                                                                           |
+| 44.40-46.90   | pull and pan | F-cold     | F0         | power2.inOut | the compact rows widen to x 220 to 1680 over 46.3 to 46.9                                 |
+| 79.80-81.30   | push         | F0         | CU-A       | power2.inOut |                                                                                           |
+| 86.60-88.20   | pan          | CU-A       | CU-B       | sine.inOut   | 480 px left                                                                               |
+| 90.80-92.40   | pull         | CU-B       | F0         | power2.inOut | the legend lands after it                                                                 |
+| 115.30-116.90 | push         | F0         | F-low      | power2.inOut | Tavi gone at 114.75                                                                       |
+| 119.60-120.70 | truck        | F-low      | F-high     | power2.inOut | up and right; the bead hops from stair 4 to stair 5 on G4, landing 120.83                 |
+| 122.90-124.00 | pull         | F-high     | F0         | power2.inOut | the lit stairs go unlit as it lands (123.6 to 124.0)                                      |
+| 159.00-163.30 | push         | F0         | F-white    | sine.inOut   | slow, from inside the predict pause                                                       |
+| 169.30-170.30 | pull         | F-white    | F0         | power2.inOut | the real staircase returns to full as it lands (169.9 to 170.3)                           |
+| 185.60-186.60 | push         | F0         | CU-D       | power2.inOut | the step rows (x 140 to 596, y 345 to 450) stay 50 px or more from every stair throughout |
+| 189.60-190.60 | crane down   | CU-D       | F-keys-D   | power2.inOut | the step rows left at 189.3 to 189.5                                                      |
+| 195.60-196.60 | pull         | F-keys-D   | F0         | power2.inOut | "D major" lands as it lands                                                               |
+| 231.60-244.40 | push         | F0         | F-near     | sine.inOut   | slow; "scale degrees" lands at 241.44, when the top stair's right edge is at x 1330       |
+| 244.60-245.80 | push         | F-near     | F-names-1  | power2.inOut | "scale degrees" and "tonic = home" left at 244.2 to 244.4                                 |
+| 245.85-248.85 | truck        | F-names-1  | F-names-2  | power1.inOut | the named stair at x 480, 719, 886, 874, 899, 974, 1108 and 1311 as each syllable starts  |
+| 248.95-249.85 | pull         | F-names-2  | F0         | power2.inOut | Tavi drops in once it lands                                                               |
+| 270.70-272.20 | push         | F0         | CU-C       | power2.inOut | the strip fades out over it                                                               |
+| 280.70-282.40 | pull         | CU-C       | F0         | power2.inOut | "1 semitone" and the arrow left at 280.5 to 280.7; the strip returns over it              |
+| 298.70-299.90 | push         | F0         | F-chart    | power2.inOut | both Mercs gone at 298.6                                                                  |
+| 320.50-321.40 | pull         | F-chart    | F0         | power2.inOut | both Mercs drop back at 321.4 to 321.8                                                    |
+| 411.00-412.60 | push         | F0         | F-recap-1  | power2.inOut | the strip and its hairlines sink 60 px and fade                                           |
+| 419.70-420.70 | pull         | F-recap-1  | F0         | power2.inOut | the strip returns without its hairlines (they draw on "F sharp", 427.22)                  |
+| 430.70-431.90 | push         | F0         | F-recap-3  | power2.inOut | the strip and its hairlines sink and fade                                                 |
+| 443.10-444.10 | pull         | F-recap-3  | F0         | power2.inOut | the strip and its hairlines return                                                        |
+
+Outside these moves the camera is still. S8 holds F0 from 196.6 to 229.2 (signature 2).
 
 ## Carried from Lessons 1 and 2 (fixed)
 
@@ -110,122 +192,158 @@ about (1676, 880), so the strip's right end and the rows' right edge never move 
   staves), glows and dust seeded as there.
 - **Chapter cards**: `L.chapterCard(hud, { num, title, baseline: 480, tIn, tOut })`, Lesson 1's card.
 - **Title card (S2)**: Lesson 2's s02 composition with the title "The major scale and home" (chrome
-  serif italic 140 px, one line, centred, baseline 380) and the kicker "LESSON 04"; its light enters
-  as S1g's full-frame light and leaves as the bead flying back into the top house (35.9 to 36.58,
-  landing at F-cold's house centre (1464, 215) on D).
+  serif italic 140 px, one line, centred, baseline 380) and the kicker "LESSON 04".
 - **End card (S16)**: Lesson 2's s17 with this film's lines (STORYBOARD 16).
 - **The tile row (S4)**: `L.tiles` for C4 to C5: 13 tiles 112 px wide on a 120 px pitch, centres
   `x = 240 + 120 i`, so x 184 to 1736, home y 420 to 700; dark tiles at i 1, 3, 6, 8, 10. Its "1"
   brackets at y 740, labels baseline 790.
-- **Kicker, ring timer, pill, bracket, arrow**: `assets/lib/marks.js`.
 
 ## Inside A: S1 to S4
 
 - **Cold open (F-cold).** Merc feet (230, 840), Tavi feet (1690, 840), size 420: bodies x 119 to 341
-  and 1579 to 1801, 33 px clear of the compact rows (374 to 1546) and 48 px of the stairs. "from C"
-  and "from D?" are Outfit 600 64 px, ink, left-aligned at x 389, baseline 860 on C and 798 on D.
-  "still hanging?" at x 140, baseline 300; its ring timer (and then its check) at (610, 278). "home
-  moved" right-aligned at x 1400, baseline 230. "finished on do" and "restless on ti?" serif italic
-  110 px at x 140, baselines 300 and 420. The house on the top stair: centre x 1464, y 246 to 308 on
-  C and 184 to 246 on D. Merc's bead leaves his mouth at about (270, 664) **(provisional: the pass's
-  mouth point)** and lands on stair 1's tread (456, 700) at 0.60; Tavi's leaves hers at about
-  (1650, 664) and lands on stair 1 on D (456, 637) at 14.99, its arc peaking at y 140.
-- **S1 to S2 (33.18).** The same full-frame field on both sides of the cut: a smooth radial
+  and 1579 to 1801, y 571 to 840; 33 px clear of the compact rows and 48 px of the stairs at 1.2
+  (24 and 38 at the drift's end). "from C" and "from D?" are Outfit 600 64 px, ink, riding the world
+  at world (242, 798) on C and (242, 746) on D, so x 389 and baselines 860 and 798 at 1.2; "from D?"
+  fades with "still hanging?" (23.6 to 23.8). "still hanging?" at x 140, baseline 300; its ring
+  timer, then its check, at (610, 278). "home moved" right-aligned at x 1400, baseline 230, 30 px
+  left of the house on D. "finished on do" and "restless on ti?" serif italic 110 px at x 140,
+  baselines 300 and 420 (x 140 to 696 and 140 to 656). The house on the top stair: centre x 1464,
+  y 246 to 308 on C and 184 to 246 on D. Beads rest on stair 1 at (456, 673) on C and (456, 611) on
+  D, on the top stair at (1464, 299) on C and (1464, 236) on D. Merc's bead leaves his mouth at about
+  (270, 664) **(provisional: the pass's mouth point)** and lands on stair 1 at 0.60; Tavi's leaves
+  hers at about (1650, 664) and lands on stair 1 on D at 14.99, its arc peaking at y 140. stop-c's
+  and stop-d's notes land 0.45 s apart (0.60 to 3.30 and 14.99 to 17.69); land-d's last hop lands on
+  the top stair at 23.14 and the bead rises into the house (23.2 to 23.5).
+- **S1g.** At 32.80 the frame is F-cold end. The two lines leave up 60 px and fade (32.85 to 33.15,
+  power3.in, unscaled). Merc slides to feet x -130 and Tavi to 2050 (32.80 to 33.40, power2.in), off
+  the frame by 19 px and more. The dolly runs 32.95 to 33.88. From 33.30 the house's glow grows
+  toward the lens, blurring the house's edges away, until the field covers the frame at 33.88; it
+  holds, breathing 2 % in brightness, to the cut.
+- **S1 to S2 (34.18).** The same full-frame field on both sides of the cut: a smooth radial
   field, chrome `#c3ccd6` at 75 % over the ground at the frame's centre falling to 35 % at the
-  corners, no edges, mean brightness 110 to 125 of 255 (Lesson 2's field peaks at 122).
-- **S2 to S3 (36.58).** The bead's flight into the house spans the cut (35.9 to 36.9, power2.inOut,
-  ending at (1464, 215)); both scenes draw it from `T`. At 36.58 the staircase is on D in F-cold,
-  stairs unlit, the top stair filled unlit, no Mercs.
-- **S3 to S4 (46.05).** F0. The staircase on C, names do to do, the top house lit (it fades in S4a,
-  46.1 to 46.5); rows C4 to D5 already full width (x 220 to 1680, widened 45.3 to 45.9); the list
-  gone at 45.65.
-- **S4c's stand-up.** Phase 1 (57.4 to 58.4): the tile row turns 90 degrees counter-clockwise about
+  corners, no edges, mean brightness 110 to 125 of 255 (Lesson 2's field peaks at 122). S2 shrinks
+  it into the bead on the staff's middle line over 34.18 to 34.48 (expo.out); the title lands from
+  34.44; the five notes hop in with the chimes at 34.23, 34.32, 34.41, 34.50 and 34.59.
+- **S2 to S3 (37.58).** Both scenes draw the staircase and the bead from the same module and from
+  `T`. The staff fades 36.9 to 37.5 while the staircase on D fades up under it in F-cold (36.9 to
+  37.5: stairs unlit, the top stair filled unlit, the house unlit), and the bead flies back into the
+  top house (36.9 to 37.9, power2.inOut, ending at the house's centre (1464, 215)), lighting it at
+  37.9. At 37.58 the staircase is at full, the bead in flight, no Mercs.
+- **S3.** The list at x 140, baselines 200, 260, 320 and 380 (Outfit 600 44 px; its longest line
+  410 px), 185 px or more above every tread it crosses. The arrow from ti's tread to the house is
+  ink, 3 px.
+- **S3 to S4 (47.05).** F0. The staircase on C, names do to do, the top house lit (it fades in S4a,
+  47.1 to 47.5); rows C4 to D5 already full width (x 220 to 1680, widened 46.3 to 46.9); the list
+  gone at 46.75.
+- **S4.** "1 octave = 12 semitones" Outfit 600 56 px at x 140, baseline 250; "in 7 steps" and then
+  "in 7 steps?" at baseline 330. q0's ring timer at (164, 232), where the answer lands after it has
+  gone.
+- **S4c's stand-up.** Phase 1 (58.4 to 59.4): the tile row turns 90 degrees counter-clockwise about
   the C4 tile's centre while its pitch shrinks from 120 to 26 px, ending as a column of 13 slivers,
   each 280 x 24, left edge x 220, centred on rows C4 to C5 (y 677 down to y 365 for C5). Phase 2
-  (58.4 to 59.4): each sliver widens to x 220 to 1680, the dark ones landing as the black-key rows;
-  the cold open's rows fade out under them (58.4 to 59.4); rows C♯5 to G5 fade in (59.0 to 59.5).
+  (59.4 to 60.4): each sliver widens to x 220 to 1680, the dark ones landing as the black-key rows;
+  the cold open's rows fade out under them (59.4 to 60.4); rows C♯5 to G5 fade in (60.0 to 60.5).
   **(provisional: the lab decides the pivot and the curves)**.
 
-## A to B (S4 to S5 at 68.35)
+## A to B (S4 to S5 at 69.35)
 
-F0, no Mercs (m04 ended 67.55), the kicker lane empty. The staircase on C at full: names do re mi fa
+F0, no Mercs (m04 ended 68.55), the kicker lane empty. The staircase on C at full: names do re mi fa
 so la ti do (36 px, baseline 724), risers unmeasured (4 px chrome 40 %), no riser labels, no house;
 rows C4 to G5, x 220 to 1680, black-key rows shaded. No strip yet: it enters in S5a from y +240
-(68.55 to 69.45, power3.out).
+(69.55 to 70.45, power3.out).
 
 ## Inside B: S5 and S6
 
-- **S5c to S5e.** CU-A from 78.8 to 80.3; the pan to CU-B 85.6 to 87.2 (sine.inOut); the pull to F0
-  89.8 to 91.4. The legend at x 140, baselines 200 and 252 (Outfit 600 44 px), frame-fixed, landing
-  after the pull (91.4).
-- **S5 to S6 (109.88).** F0. Tavi on screen since 109.78 (m06 spans the cut): feet (1800, 840), size
-  300, body x 1720 to 1880, y 648 to 840. The staircase on C, letters, all seven risers measured and
-  labelled T T S T T T S, the legend at x 140; E4, F4, B4 and C5 named.
-- **S6's brackets.** `L.bracket`, ink, ticks down: stairs 1 to 4 from x 242 to 714 at y 484, stairs 5
-  to 8 from x 722 to 1194 at y 302. The ghost outline in S6c moves by (+480, -182). The sum at x 140,
-  baseline 260; "= 1 octave" baseline 360; the octave bracket at x 1232, y 690 to 352.
+- **S5a.** "a major scale" serif italic 110 px at x 1250, baseline 300 (x 1250 to 1776).
+- **S5c to S5e.** The C-D riser's measuring outline (81.4 to 82.2) then its fill (84.94, a bar
+  growing from stair 1's tread, 0.3 s); the E-F riser's outline at 89.69 and its gold fill on "Yes"
+  (90.77). The legend at x 140, baselines 200 and 252 (Outfit 600 44 px), frame-fixed, landing after
+  the pull (92.4).
+- **S5 to S6 (110.88).** F0. Tavi on screen since 110.78 (m06a spans the cut): feet (1800, 840),
+  size 300, body x 1720 to 1880, y 648 to 840. The staircase on C, letters, all seven risers measured
+  and labelled T T S T T T S, the legend at x 140; E4, F4, B4 and C5 named.
+- **S6's brackets.** `L.bracket`, ink, ticks down, riding the world: stairs 1 to 4 from x 242 to 714
+  at y 484, stairs 5 to 8 from x 722 to 1194 at y 302. The ghost outline in S6c moves by
+  (+480, -182). The sum Outfit 600 64 px at x 1270, baseline 260 (to x 1615), "= 12" after it at
+  x 1639 (to 1746). The octave bracket, chrome, at x 1232 from stair 1's tread to stair 8's (y 664
+  to 352, twelve rows); "= 1 octave" serif italic 96 px at x 1262, baseline 543, its ink centred on
+  the bracket's middle (y 508).
 
-## B to C (S6 to S7 at 145.10)
+## B to C (S6 to S7 at 146.10)
 
-F0 (S6's push back at 1.0 since 130.6), no Mercs (m06 ended 144.65), the kicker lane empty. The
+F0 (since the pull landed at 124.0), no Mercs (m06b ended 145.65), the kicker lane empty. The
 staircase on C at full, letters C to C, risers measured (tones chrome with a notch, semitones gold),
 riser labels 2 2 1 2 2 2 1, hairlines drawn; the strip with C major's keys at full and the rest at
-45 %, no key names (gone at 144.8); no sum, no brackets, no legend.
+45 %, no key names (gone at 145.8); no sum, no brackets, no legend.
 
 ## Inside C: S7 and S8
 
 - **S7's top-left lane.** "Predict." serif italic 120 px at x 140, baseline 300; the pills at x 140,
-  baselines 400 and 480 (`L.pill`, Outfit 600 40 px); the ring timer at (620, 440); the step rows at
-  x 140, baselines 380 and 450; "D major" serif italic 120 px at x 140, baseline 300.
-- **S7 to S8 (198.36).** Tavi on screen (m07 spans the cut). The staircase on D at full, letters D E
-  F♯ G A B C♯ D, riser labels T T S T T T S, F♯4 and C♯5 lit and named, "D major" up (it leaves in
-  S8a, 198.4 to 198.6).
-- **S8's tally.** Outfit 600 64 px at x 140, baseline 250: "C 0 · D 2" from 206.1, "G 1" from 207.9,
-  "E 4" from 211.78, each entry about 170 px wide **(provisional: set from the font's tabular width)**.
+  baselines 400 and 480 (`L.pill`, Outfit 600 40 px, box from x 140, text inset 24 px); the ring
+  timer at (620, 440), radius 24, 28 px or more from every dashed stair while it is up (it leaves
+  at 161.99, the push then 79 % done); the step rows at
+  x 140, baselines 380 and 450: "WHITE KEYS" and "MAJOR" JetBrains Mono 28 px from x 140, their
+  steps Outfit 600 48 px from x 340 (to x 596); "D major" serif italic 120 px at x 140, baseline 300.
+- **S7's bead.** The chrome bead rests on the dashed treads in white-d (stair 1 at (448, 526) in
+  F-white) and on the real treads in major-d (F0).
+- **S7 to S8 (199.36).** Tavi on screen (m08 spans the cut, from 198.9). The staircase on D at full,
+  letters D E F♯ G A B C♯ D, riser labels T T S T T T S, F♯4 and C♯5 lit (their names gone at
+  195.7), "D major" up (it leaves in S8a, 199.4 to 199.6).
+- **S8's tally.** Outfit 600 64 px at x 140, baseline 250: "C 0 · D 2" from 207.1, "G 1" from 208.9,
+  "E 4" from 212.78 (the whole line 476 px).
+- **S8d's slide back.** E to C over 225.2 to 226.1 (power2.inOut), its black keys going dark.
 
-## C to D (S8 to S9 at 228.24)
+## C to D (S8 to S9 at 229.24)
 
-F0, no Mercs (m07 ended 227.25), the kicker lane empty, the tally gone (227.9). The staircase on E
-at full: letters E F♯ G♯ A B C♯ D♯ E, riser labels T T S T T T S, hairlines; the strip with E4, A4,
-B4 and E5 at full, F♯4, G♯4, C♯5 and D♯5 lit to 60 % chrome, the rest at 45 %, no key names.
+F0, no Mercs (m08 ended 228.25), the kicker lane empty, the tally gone (228.9). The staircase on C
+at full: letters C D E F G A B C, riser labels T T S T T T S, hairlines; the strip with C major's
+keys at full and the rest at 45 %, no key names.
 
 ## Inside D: S9 to S11
 
-- **S9's labels.** "tonic = home" Outfit 600 56 px at x 150, baseline 540; "scale degrees" and
-  "solfège" Outfit 600 56 px at x 1270, baseline 260; "do = C?" in a dashed pill at x 1270, baseline
-  260, then "fixed do: do = C" at 40 px, baseline 170; "movable do" Outfit 600 64 px at x 1270,
-  baseline 300; "(sol)" Outfit 500 28 px, ink-2, right-aligned at x 828, baseline 474 (so's tread on
-  C).
-- **S9 to S10 (269.63).** Tavi on screen (m09 spans the cut). The staircase on C (back from D at
-  268.4), names do to do, both houses lit, no riser labels, no key names.
-- **S10.** CU-C 269.7 to 271.2 and back to F0 279.7 to 281.4. "1 semitone" Outfit 600 48 px at x
-  1200, baseline 380 (frame-fixed, in CU-C). Merc drops in at feet (110, 840), size 300 (body x 30
-  to 190, 30 px clear of the rows), 281.5 to 281.9; his bead leaves his mouth at about (130, 715)
-  **(provisional)** and lands on stair 1 (298, 642) at 282.57.
-- **S10 to S11 (294.94).** Both Mercs on screen (m09 and m10 span the cut). The staircase on C, the
-  top stair lit blue with the blue bead on it (both fade in S11a, 294.9 to 295.3), the top house lit.
-- **S11's experiment.** Kicker "AN EXPERIMENT" at (120, 110); credits Outfit 500, ink-2, x 120:
-  "Krumhansl & Shepard, 1979" 36 px at baseline 160, "later studies: without training too, only
-  weaker" 32 px at 205, "as summed up in Janata et al., 2003" 32 px at 245. The probe bead with "?"
-  at (1420, 420). The axis at x 1300 from y 560 up to 280, "finishes it best" at x 1320, baseline
-  290, "least" at baseline 568 (Outfit 500 32 px, ink-2). Shelves (chrome 2 px at 50 %) x 400 to
-  1280 at y 300, 380, 460, 540, drawn 80 px apart and 40 px apart on "only weaker" (the top shelf
-  fixed). Chips 120 x 56, radius 12, sitting on their shelves, names Outfit 600 40 px ink: do centred
-  x 840; mi 760, so 920; re 600, fa 760, la 920, ti 1080; C♯ 520, D♯ 680, F♯ 840, G♯ 1000, A♯ 1160
-  (dim chips: chrome at 35 %, their letters ink).
-- **S11's labels.** "learned, it seems" Outfit 600 48 px at x 1220, baseline 320; "one short step"
-  at x 1220, baseline 400, a hairline from its left end to the ti-do riser (1078, 365); "leading
-  note" Outfit 600 64 px at x 660, baseline 300 on C (riding to x 780, baseline 248 on D); "ti = C♯"
-  Outfit 600 48 px at x 1340, baseline 300 on D.
+- **S9's labels.** "tonic = home" Outfit 600 56 px riding the world at x 150, baseline 540 (over
+  stairs 1 and 2, ending at x 471, short of stair 3); "scale degrees" and then "solfège" Outfit 600
+  56 px, frame-fixed at x 1400, baseline 420; "do = C?" in a dashed pill at x 1360, baseline 260,
+  then "fixed do: do = C" at 40 px, baseline 170; "movable do" Outfit 600 64 px at x 1360, baseline
+  300; "(sol)" Outfit 500 28 px, ink-2, right-aligned at x 828, baseline 474 (so's tread on C). On D
+  the top house (x 1230 to 1286) is 74 px from the pills.
+- **S9 to S10 (270.63).** Tavi on screen (m09 spans the cut). The staircase on C (back from D at
+  269.4), names do to do, both houses lit, no riser labels, no key names.
+- **S10.** "1 semitone" Outfit 600 48 px, frame-fixed at x 1200, baseline 250 in CU-C (x 1200 to
+  1426, 31 px right of the top stair). Merc drops in at feet (110, 840), size 300, 282.5 to 282.9;
+  his bead leaves his mouth at about (130, 715) **(provisional)** and lands on stair 1, resting at
+  (298, 642), at 283.57; it rests on ti at 286.27, lands on the top stair at 294.14 and rises into
+  the house (294.2 to 294.5).
+- **S10 to S11 (295.94).** Both Mercs on screen (m09 and m10 span the cut). The staircase on C, the
+  stairs lit blue (they fade in S11a, 295.9 to 296.3), no bead, both houses lit.
+- **S11's experiment.** Kicker "AN EXPERIMENT" at (120, 110); credits frame-fixed, Outfit 500,
+  ink-2, x 120: "Krumhansl & Shepard, 1979" 36 px at baseline 160, "later studies: without training
+  too, only weaker" 32 px at 205 (to x 776), "as summed up in Janata et al., 2003" 32 px at 245 (to
+  x 628). The chart rides the world and is seen through F-chart. The probe bead with "?" at
+  (1420, 420). The axis at x 1300 from y 560 up to 280, "finishes it best" at x 1320, baseline 290,
+  "least" at baseline 568 (Outfit 500 32 px, ink-2). Shelves (chrome 2 px at 50 %) x 400 to 1280 at
+  y 300, 380, 460, 540, 80 px apart; on "only weaker" the lower three close to 364, 428 and 492
+  (64 px apart, the top shelf fixed; 314.6 to 315.4) and spread back to 80 on "So that" (316.3 to
+  317.1). Chips 120 x 56, radius 12, sitting on their shelves (8 px apart at the closest), names
+  Outfit 600 40 px ink: do centred x 840; mi 760, so 920; re 600, fa 760, la 920, ti 1080; C♯ 520,
+  D♯ 680, F♯ 840, G♯ 1000, A♯ 1160 (dim chips: chrome at 35 %, their letters ink). The house beside
+  do (11c) at x 916 to 972, its base on the top shelf.
+- **S11's labels.** "learned, it seems" Outfit 600 48 px at x 1250, baseline 320; "one short step"
+  at x 1250, baseline 400, a hairline from its left end to the ti-do riser (1078, 365); "leading
+  note" Outfit 600 64 px riding the world at x 660, baseline 300 on C (x 780, baseline 248 on D);
+  "ti = C♯" Outfit 600 48 px, frame-fixed at x 1360, baseline 300 on D.
 
-## D to E (S11 to S12 at 340.24)
+## D to E (S11 to S12 at 341.24)
 
-F0, no Mercs (m09 and m10 ended 340.15), the kicker lane empty, every label gone (339.9). The
-staircase on D at full: names do to do, both houses lit (stair 1 at x 362 to 474, stair 8 at 1202 to
-1314), risers measured (no labels), hairlines; the strip with D major's keys, F♯4 and C♯5 lit.
+F0, no Mercs (m11 ended 341.15), the kicker lane empty, every label gone (340.9). The staircase on
+D at full: names do to do, both houses lit (stair 1 at x 362 to 474, stair 8 at 1202 to 1314),
+risers measured (no labels), hairlines; the strip with D major's keys, F♯4 and C♯5 lit.
 
 ## Inside E: S12 and S13
 
+- **S12a.** The staircase dims to 25 % (341.4 to 341.6); the strip slides down 240 px and out
+  (341.6 to 342.2, power2.in); the card in from 341.61, out 343.11 to 343.49; the staircase back to
+  full 343.49 to 343.69. The Mercs drop in at 343.2 to 343.6.
 - **The guide (S12).** Lanes x 600 to 1440; lane k (0 D3 to 12 D4) spans `y = 760 - 46 (k + 1)` to
   `760 - 46 k`, centre `737 - 46 k`. Names (Outfit 600 32 px, ink-2) right-aligned at x 580 on lanes
   0, 2, 4, 5, 7, 9, 11, 12 (do re mi fa so la ti do), baselines 748, 656, 564, 518, 426, 334, 242,
@@ -235,13 +353,15 @@ staircase on D at full: names do to do, both houses lit (stair 1 at x 362 to 474
   1166, baseline 196. The house centred at x 1381, y 104 to 156. The chip "one octave up" at x 600,
   baseline 120. Merc feet (240, 840), Tavi (1700, 840), size 360: bodies x 145 to 335 and 1605 to
   1795, 185 px clear of the names and 165 px of the lanes.
-- **S12a's tip.** The rows D4 to D5 (world k 2 to 14) map onto lanes 0 to 12 (the names carry no
-  octave); each stair's tread slides and stretches onto its segment, ti's onto the hold; the top
-  house onto (1381, 130) **(provisional: the lab decides the curves)**.
-- **S12 to S13 (371.92).** The S12 guide with every segment lit, the orange bead on D4's segment end
+- **S12a's tip (343.7 to 345.5).** The rows D4 to D5 (world k 2 to 14) stretch onto lanes 0 to 12
+  (the names carry no octave) and the other rows fade; the blocks fade (343.7 to 344.3) while each
+  tread slides and stretches onto its segment, ti's onto the hold; the top house rides to (1381,
+  130); the bottom house and the stair names fade (343.7 to 344.0); the lane names fade in (345.3 to
+  345.6) **(provisional: the lab decides the curves)**.
+- **S12 to S13 (372.92).** The S12 guide with every segment lit, the orange bead on D4's segment end
   (it fades in S13a), "wait", the arrow and the chip still up; Merc (240, 840) and Tavi (1700, 840)
   at 360 (m12 spans the cut).
-- **The guide in S13.** It moves 372.0 to 372.9 (power2.inOut) to lanes x 1060 to 1700, 40 px each:
+- **The guide in S13.** It moves 373.0 to 373.9 (power2.inOut) to lanes x 1060 to 1700, 40 px each:
   lane k spans `y = 720 - 40 (k + 1)` to `720 - 40 k`; names right-aligned at x 1040, baselines 711,
   631, 551, 511, 431, 351, 271, 231. The plain path (dashed chrome, 3 px) at 74.42 px a second: D3
   1060 to 1120, E3 to 1179, F♯3 to 1239, G3 to 1298, A3 to 1358, B3 to 1417, the hold to 1566, the
@@ -250,43 +370,65 @@ staircase on D at full: names do to do, both houses lit (stair 1 at x 362 to 474
   160 to 320); Tavi to size 240 at (1820, 840) (body x 1756 to 1884, top y 686, 56 px clear of the
   lanes).
 - **The care block (S13).** Left-aligned at x 360, no line past x 960 (35 px clear of the shortest
-  lane name), nothing below y 864: "Your turn." serif italic 120 px, baseline 200; care lines Outfit
-  500 32 px, ink, baselines 262 and 302, 352 and 392, 442; "wait on ti" Outfit 600 40 px at 492; the
-  stop line Outfit 600 40 px, ink, at 548 and 592; the doctor lines Inter 30 px, ink-2, six lines
-  from baseline 640, 37 px apart (to 825). The ring timer at (920, 170). **(provisional: the line
-  breaks are set from the fonts' real widths, keeping x 960 and y 864)**
+  lane name), nothing below y 864, 40 px clear of Merc: "Your turn." serif italic 120 px, baseline
+  200, landing at 373.25; care lines Outfit 500 32 px, ink, baselines 262 and 302, 352 and 392, 442
+  (the longest 445 px); "wait on ti" Outfit 600 40 px at 492; the stop line Outfit 600 40 px, ink, at
+  548 and 592 ("Stop immediately if anything" 520 px, "feels uncomfortable."); the doctor lines
+  Inter 30 px, ink-2, five lines at baselines 640, 677, 714, 751 and 788, broken where the font puts
+  them within 600 px: "If hoarseness or discomfort lasts more than a / couple of weeks, see a doctor
+  (a GP or an ear, / nose and throat specialist). If it's very painful, / or breathing or swallowing
+  is hard, get help / straight away." The ring timer at (920, 170).
+- **S13d's reverse tip (404.2 to 405.4).** The plain guide's lane k (S13 geometry) narrows onto
+  row k of the staircase on C (k 0 to 12, x 220 to 1680, 26 px), and rows C♯5 to G5 fade in above
+  (405.0 to 405.4); each dashed segment slides and shortens onto its stair's tread (column centre
+  `298 + 120 (n - 1)`), the hold onto ti's; the blocks grow down to the foot (736) from 405.0; the
+  names fade in at baseline 724 and both houses fade in lit (405.2 to 405.45); the strip rises from
+  y +240 (404.9 to 405.45, power3.out), its hairlines fading in over its last 0.2 s. The Mercs move
+  404.0 to 405.2: Merc from (240, 840) at 300 to (110, 840) at 300, Tavi from (1820, 840) at 240 to
+  (1800, 840) at 300, both clear of every row and stair as they go (the rows are masked)
+  **(provisional: the lab decides the curves)**.
 
-## E to F (S13 to S14 at 404.49)
+## E to F (S13 to S14 at 405.49)
 
-The room alone and both Mercs: Merc at (110, 840) and Tavi at (1800, 840), both at size 300 (their
-move ended 404.2; m12 spans the cut). Every mark of S13 gone (403.24). The staircase enters in S14a
-(404.5 to 405.1).
+F0. The staircase on C at full: names do to do (baseline 724), both houses lit, risers unmeasured
+(4 px chrome at 40 %), no riser labels; the strip with C major's keys at full and the rest at 45 %,
+hairlines drawn, no key names. Merc at (110, 840) and Tavi at (1800, 840), both at 300 (their move
+ended 405.2; m12 spans the cut). Every mark of S13 gone (404.24).
 
 ## Inside F: S14 to S16
 
-- **Recap.** F0; the card panel x 120 to 1000, y 140 to 330 (radius 16, a chrome stroke at 25 %,
-  obsidian fill at 85 %), text Outfit 600 40 px, ink, at x 150, baselines 220 and 280; the ring timer
-  at (950, 250). The staircase's highest point under the panel is stair 6 on D (x 962 to 1074, tread
-  352), 22 px below it.
+- **Recap.** The card panel x 120 to 1000, y 140 to 330 (radius 16, a chrome stroke at 25 %,
+  obsidian fill at 85 %), text Outfit 600 40 px, ink, at x 150, baselines 220 and 280 (the longest
+  line, "Which two black keys does it need?", 628 px); the ring timer at (950, 250). Riser labels
+  and the gold fills land as 14b and 14d say; at 419.62 and 443.01 every riser returns to
+  unmeasured chrome. In 14d's F-recap-3 the chrome bead rests on ti at (1305, 354), lands on the top
+  stair at (1473, 318) at 433.74 and rises into the house (centre (1473, 293)), 433.8 to 434.1; the
+  "S" stands at x 1375, baseline 374.
 - **The ladder (S14f).** Panel x 300 to 1620, y 150 to 470; title "Scale Runner" at (330, 200),
   "ILLUSTRATION" right-aligned at (1590, 200). Playhead x 894 (45 % of the panel), a chrome line 2 px
   at 35 %, y 220 to 450. Pitch at 16 px a semitone, G4 at y 430: A4 398, B4 366, C5 350, D5 318, E5
-  286, F♯5 254, G5 238. The sung line (violet `#a78bfa`, 4 px, round): G4 from x 340 to 600, a glide
-  to A4 by 660, A4 on to the playhead. The current target, re: a dashed amber line (3 px, dash 10,
-  gap 8) at y 398 from x 700 to 894. Six rungs at x 992, 1090, 1188, 1286, 1384, 1482 (98 px apart,
-  the app's spacing for six), 56 px wide, the first 6 px thick and the rest 4 px, their strokes at
-  100, 85, 70, 56, 42 and 27 % (the app's falloff, lifted); "B4" and "C5" (mono 30 px, ink-2) 10 px
-  above the first two; a dashed chrome connector (1 px, 30 %, dash 3 gap 4) from (894, 398) through
-  the rungs.
+  286, F♯5 254, G5 238. The note being asked for, re (A4): a dashed amber line (3 px, dash 10, gap 8)
+  at y 398 from the panel's inner margin (x 340) to the playhead, as the app draws it from its left
+  margin (`PitchOverTimeCanvas.tsx`, the target line's `moveTo(MARGIN, y)`), with its name "A4" (mono
+  26 px, ink) in a small dark pill with an amber stroke against the playhead's left. The sung line
+  (violet `#a78bfa`, 4 px, round): G4 from x 340 to 600, a break to 660 while the app plays the next
+  note (FACTS 38), then A4 from 660 to the playhead, over the dashed line. Six rungs at x 992, 1090,
+  1188, 1286, 1384, 1482 (98 px apart, the app's spacing for six), 56 px wide, the first 6 px thick
+  and the rest 4 px, their strokes at 100, 85, 71, 56, 42 and 27 % (the app's falloff, lifted);
+  "B4" and "C5" (mono 30 px, ink-2) 10 px above the first two; a dashed chrome connector (1 px,
+  30 %, dash 3 gap 4) from (894, 398) through the rungs.
 - **The practise card (S14g).** Centred at x 960, every line within x 310 to 1610: baselines 580
-  (Outfit 600 48 px), 650, 710, 770 and 830 (Outfit 500 40 px). The tab icons are the app's SVGs
-  from `src/components/AppNavTabs.tsx` (Settings and Exercises), drawn 36 px in ink before each tab's
-  name; the × is the intro's close glyph (`src/features/onboarding/FirstLight.tsx`), 32 px in ink.
-- **S14 to S15 (465.24).** The Mercs in the corners at 300; the ladder and the card gone (464.9).
+  (Outfit 600 48 px, 1055 px), 650, 710, 770 and 830 (Outfit 500 40 px: about 650, 930, 560 and
+  440 px). The tab icons are the app's SVGs from `src/components/AppNavTabs.tsx` (Settings and
+  Exercises), drawn 36 px in ink before each tab's name; the × is the intro's close glyph
+  (`src/features/onboarding/FirstLight.tsx`), 32 px in ink.
+- **S14 to S15 (470.24).** The Mercs in the corners at 300; the ladder and the card gone (469.9).
 - **S15.** '"support"' serif italic 160 px centred, baseline 420; the long note at y 520 from x 560
   to 1360; "what keeps it steady?" serif italic 96 px centred, baseline 680.
-- **S15 to S16 (473.53).** The Mercs in the corners at 300; S15's type gone (473.5).
-- **S16.** The Mercs grow to 520 at (330, 840) and (1590, 840) (473.6 to 474.2): bodies x 192 to 468
-  and 1452 to 1728, heads at y 507. Lockup y 40 to 220; "Find your pitch." baseline 330; the address
-  Outfit 600 56 px, baseline 440; the skip line Outfit 500 40 px, ink-2, baseline 510, within x 530
-  to 1390, 62 px clear of both bodies.
+- **S15 to S16 (478.53).** The Mercs in the corners at 300; S15's type gone (478.5).
+- **S16.** The Mercs grow to 520 at (330, 840) and (1590, 840) (478.6 to 479.2): bodies x 192 to 468
+  and 1452 to 1728, heads at y 507; one hop of 30 px (479.4 to 480.0), heads at 477 at its top.
+  Lockup y 40 to 220; "Find your pitch." baseline 330; the address Outfit 600 56 px, baseline 440, its
+  descenders to y 452 (55 px above the heads, 25 px at the hop's top); the skip line and "then
+  [Exercises icon] Exercises › Scale Runner" Outfit 500 40 px, ink-2, baselines 510 and 570, within
+  x 636 to 1284, 168 px clear of both bodies.

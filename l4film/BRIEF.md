@@ -9,7 +9,7 @@ audience: 'Adult and teen beginners who sing or want to, who know Lesson 2 (semi
 destination: youtube, landing-page
 aspect: 1920x1080
 sizes: 1920x1080
-length: about 8:36 to 8:45 at Lesson 2's voiced pace (script draft 3; 7:58 in the scratch voices); the series allows 6 to 9 minutes (MASTER-PLAN D6)
+length: about 8:41 to 8:50 at Lesson 2's voiced pace (script draft 3 with the storyboard's two pauses; 8:03.7 in the scratch voices); the series allows 6 to 9 minutes (MASTER-PLAN D6)
 fps: 60
 language: en-GB
 project_dir: output/motion/lesson-04
@@ -45,7 +45,7 @@ project_dir: output/motion/lesson-04
   the icon the app gives it, since a short tab bar shows icons only (FACTS 88). A typed address meets the app's intro on a
   first visit, and only a link with `?lesson=04`, the YouTube description's, skips it (FACTS 88);
   a visitor who never set a range gets the tenor preset, whose run starts on E3, below every
-  higher voice (41, 44). The skip line is on this card and again on the end card. Next-episode tease: Lesson 5's hook, ending on Tavi's "If that doesn't mean
+  higher voice (41, 44). The skip line and "then Exercises › Scale Runner" are on this card and again on the end card, and the full card holds through a 4 s pause after the line (the `card` cue). Next-episode tease: Lesson 5's hook, ending on Tavi's "If that doesn't mean
   pushing, what keeps it steady?"
 
 ## Teaching
@@ -83,7 +83,9 @@ line-by-line cuts that would meet it take out the care, the predict or the exper
 source). Draft 3 estimates 8:36 by word rate at Lesson 2's voiced pace (Merc 2.32 words a
 second, Tavi 3.08, both measured on Lesson 2's ElevenLabs takes; draft 1 was 8:37, draft 2
 8:32), and about 8:45 by Lesson 2's scratch-to-voiced ratio (6:33 scratch, 7:11 voiced, 1.097
-times) applied to draft 3's scratch length, 7:58.5. Reason: two topics (T09, T10)
+times) applied to draft 3's scratch length, 7:58.5. The storyboard adds two silent pauses, 1 s
+after the hook's question (`hook`) and 4 s on the practise card (`card`), which bring the scratch
+length to 8:03.7 and the estimates to about 8:41 and 8:50. Reason: two topics (T09, T10)
 carry five ideas (the uneven steps, the two groups, the pattern on any start, the names, the
 leading note), the film refutes one misconception three ways (C is where scales start; the same
 keys make the same scale; do is always C), and it ends on a sung checkpoint heard three times

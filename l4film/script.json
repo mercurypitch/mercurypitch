@@ -89,6 +89,12 @@
    "gap": 0.4
   },
   {
+   "id": "hook",
+   "type": "pause",
+   "dur": 1.0,
+   "gap": 0.0
+  },
+  {
    "id": "title",
    "type": "sting",
    "dur": 3.2,
@@ -755,6 +761,12 @@
    "text": "In MercuryPitch's Scale Runner, sing a major scale back, one note at a time. Set your voice range in Settings first, and sing in the octave it plays.",
    "facts": "36-38, 40, 41, 85",
    "gap": 0.5
+  },
+  {
+   "id": "card",
+   "type": "pause",
+   "dur": 4.0,
+   "gap": 0.0
   },
   {
    "id": "next",

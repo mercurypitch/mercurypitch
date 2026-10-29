@@ -1,14 +1,18 @@
 # Facts: Lesson 4 film, The major scale and home
 
 `claim | source | how it was verified`. The film's facts file. Lesson 4's facts 1 to 65
-(`docs/plans/find-your-pitch/lessons/04-major-scale/FACTS.md`, read at `b803c7d43` on main) bind
+(`docs/plans/find-your-pitch/lessons/04-major-scale/FACTS.md`, read at `b803c7d43` on main, with
+`git show b803c7d43:docs/plans/find-your-pitch/lessons/04-major-scale/FACTS.md`) bind
 the film exactly as they bind the page, by the same numbers, and every scoping note there holds
 here (above all 23, 26 and 27: "most listeners", only for C major, and only for the tradition the
 studies measured). The film adds the facts below, numbered on from 66 so they can join the
 lesson's file unchanged when the film's documents move to the docs folder. Every voiced line's
 facts are listed beside it in `SCRIPT-DRAFT.md`. Frequencies are f = 440 × 2^((m − 69) / 12) for
 MIDI note m, to two decimals, printed by a script run with `python3 -I` on 29 October 2026, which
-also checked that every run below climbs 2, 2, 1, 2, 2, 2, 1.
+also checked that every run below climbs 2, 2, 1, 2, 2, 2, 1. The repository root here is checked
+out at an older commit (`3962d2f53`, 19 October), from before the plain-language review: its copy
+of the lesson's facts differs from `b803c7d43`'s, at 54 among others, so every lesson fact this
+file cites is the `b803c7d43` copy's.
 
 ## The voice and the sung runs
 
@@ -136,7 +140,9 @@ also checked that every run below climbs 2, 2, 1, 2, 2, 2, 1.
     Move do, so the two octaves are the choice, which every app preset holds one of (52). The
     house rules pair the stop line with a referral line (TEACHING-PLAYBOOK, house rules; the owner
     waived both "immediately" and the referral for Lessons 1 and 2 only, Lesson 2 DECISIONS 74),
-    so with the full stop line the film shows the doctor lines (54) on screen, in small type under
+    so with the full stop line the film shows the doctor lines on screen (54 at `b803c7d43`, which
+    carries Lesson 3 FACTS 35 whole: the NHS's laryngitis page, reviewed 2024, and the 2018
+    hoarseness guideline's key action statement 4B), in small type under
     the stop line, from the first care line to the end of the viewer's turn, carried whole as every lesson
     that sings carries them: "If hoarseness or discomfort lasts more than a couple of weeks, see a
     doctor (a GP or an ear, nose and throat specialist). If it's very painful, or breathing or

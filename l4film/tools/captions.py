@@ -146,15 +146,19 @@ def chunks(text):
         out.append(cur)
     # a short chunk that cannot take the whole next one takes its first clauses instead:
     # "Yes. Five pairs of neighbouring letters are a tone apart," / "and each gap holds one note."
+    # Of the splits that fit, the most even one that leaves the next caption at least 12
+    # characters: taking the most clauses left "tone." alone for 0.83 s (storyboard critic 01).
     for i in range(len(out) - 1):
         if len(out[i]) >= 12:
             continue
         parts = re.split(r'(?<=[,:;])\s+', out[i + 1])
-        for n in range(len(parts) - 1, 0, -1):
-            head = out[i] + ' ' + ' '.join(parts[:n])
+        fit = []
+        for n in range(1, len(parts)):
+            head, rest = out[i] + ' ' + ' '.join(parts[:n]), ' '.join(parts[n:])
             if len(head) <= 2 * WIDTH and all(len(l) <= WIDTH for l in split_lines(head)):
-                out[i], out[i + 1] = head, ' '.join(parts[n:])
-                break
+                fit.append((len(rest) < 12, abs(len(head) - len(rest)), head, rest))
+        if fit:
+            _, _, out[i], out[i + 1] = min(fit)
     return out
 
 
