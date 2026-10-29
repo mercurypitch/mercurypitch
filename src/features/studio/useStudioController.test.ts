@@ -2,6 +2,7 @@ import { createRoot } from 'solid-js'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { StudioStorageError } from '@/db/services/studio-service'
 import { isLocalSaveNavigationLocked, vetoNavigationDuringLocalSave, } from '@/lib/local-save-navigation-lock'
+import { localSaveNavigationReason } from '@/lib/local-save-navigation-reason'
 import type { StudioAssetInfo } from '@/lib/studio/audio/prepare-studio-asset'
 import { studioReservedMemoryBytes } from '@/lib/studio/memory-budget'
 import { createStudioProject, createStudioTrack, } from '@/lib/studio/model/defaults'
@@ -34,8 +35,8 @@ afterEach(() => {
 function heldNavigation(): string | null | undefined {
   let said: string | null | undefined
   vetoNavigationDuringLocalSave({
-    onBlocked: (message) => {
-      said = message
+    onBlocked: () => {
+      said = localSaveNavigationReason()
     },
     onResolved: () => undefined,
   })
