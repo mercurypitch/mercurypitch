@@ -537,10 +537,10 @@
   container-type: inline-size;
   position: relative;
   z-index: 20;
-  /* A <header>: the app's own header rule would add padding and a flex row. */
-  display: block;
+  /* A div, not a <header>: the app's rules for its own header (padding, a
+     wrapping flex row, `!important` in a short landscape viewport) target
+     the tag. */
   flex: none;
-  padding: 0;
   border-bottom: 1px solid var(--studio-line);
   background: var(--studio-bar);
 }

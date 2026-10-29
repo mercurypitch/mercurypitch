@@ -11,8 +11,7 @@ interface BarLayout {
 
 async function barLayout(page: Page): Promise<BarLayout> {
   return studioRegion(page)
-    .locator('header')
-    .first()
+    .locator('[data-studio-top-bar]')
     .evaluate((bar) => {
       const box = (element: Element | null) => element!.getBoundingClientRect()
       const transport = box(bar.querySelector('[aria-label="Song playback"]'))
