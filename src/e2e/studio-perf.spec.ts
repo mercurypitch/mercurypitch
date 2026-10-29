@@ -18,7 +18,7 @@ import type { TrackRole } from '@/lib/studio-fx/role-chains'
 import { readStudioProject, STUDIO_RATE, studioRegion, timelineViewport, } from './helpers/dedicatedstudio-fixture'
 import { audioClock, captureStudioOutput, untilAudioClock, } from './helpers/studio-output-capture'
 import type { PhaseReading } from './helpers/studio-perf'
-import { firstSoundAfter, installPerfProbes, lastPress, measurePhase, openCpuCounters, perfTakeWav, readGlitches, } from './helpers/studio-perf'
+import { firstSoundOf, installPerfProbes, lastPress, measurePhase, openCpuCounters, perfTakeWav, readGlitches, } from './helpers/studio-perf'
 import { dismissOverlays, waitForNav } from './helpers/ui'
 
 const ROLES: readonly TrackRole[] = [
@@ -239,13 +239,13 @@ test.describe('Studio performance', () => {
 
     const toggle = studio.getByRole('button', { name: /^(Play|Pause) song$/ })
     await expect(toggle).toBeEnabled({ timeout: 60_000 })
-    let coldStart: Awaited<ReturnType<typeof firstSoundAfter>> | undefined
+    let coldStart: Awaited<ReturnType<typeof firstSoundOf>> | undefined
     readings.playStart = await measurePhase(
       page,
       cdp,
       'playStart',
       async () => {
-        coldStart = await firstSoundAfter(page, await press(page, toggle), 4000)
+        coldStart = await firstSoundOf(page, () => press(page, toggle), 4000)
       },
     )
     readings.coldFirstSound = coldStart
@@ -357,13 +357,13 @@ test.describe('Studio performance', () => {
     await press(page, toggle)
     await expect(toggle).toHaveAccessibleName('Play song')
     await untilAudioClock(page, (await audioClock(page)) + 1)
-    let keptStart: Awaited<ReturnType<typeof firstSoundAfter>> | undefined
+    let keptStart: Awaited<ReturnType<typeof firstSoundOf>> | undefined
     readings.playAgain = await measurePhase(
       page,
       cdp,
       'playAgain',
       async () => {
-        keptStart = await firstSoundAfter(page, await press(page, toggle))
+        keptStart = await firstSoundOf(page, () => press(page, toggle))
       },
     )
     readings.keptFirstSound = keptStart

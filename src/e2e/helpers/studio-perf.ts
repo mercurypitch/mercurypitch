@@ -8,7 +8,8 @@
 // first sound from what the page sent to its speakers (studio-output-capture).
 import { writeFileSync } from 'node:fs'
 import type { CDPSession, Page } from '@playwright/test'
-import { captureSpan, frameClock, rms } from './studio-output-span'
+import type { StudioCapture } from './studio-output-capture'
+import { frameClock, rms } from './studio-output-span'
 
 declare global {
   interface Window {
@@ -16,6 +17,19 @@ declare global {
       longTasks: { start: number; duration: number }[]
       frames: number[] | null
       presses: number[]
+    }
+    __studioRecorder?: {
+      /** The clock followed: the newest one the page connected to its speakers. */
+      context: AudioContext | null
+      /** The audio-clock frame of the first copied sample. */
+      startFrame: number
+      /** The frame after the last one copied. */
+      filled: number
+      parts: Float32Array[]
+      /** The first frame on this clock that was not silent, or -1. */
+      heardFrame: number
+      error: string | null
+      stopped: boolean
     }
   }
 }
@@ -255,6 +269,80 @@ export async function readGlitches(page: Page): Promise<GlitchReading> {
   })
 }
 
+/**
+ * Copy what the page sends to its speakers every 40 ms from now on, always
+ * from the newest clock it connected to them. The capture alone holds 680
+ * ms, and a first Play that makes its clock in the press keeps the page busy
+ * for longer than that before a spec's round trip comes back. Copied inside
+ * the page, only one task longer than about 600 ms loses frames, and the
+ * recorder says so.
+ */
+async function armOutputRecorder(page: Page): Promise<void> {
+  await page.evaluate(() => {
+    const recorder: NonNullable<Window['__studioRecorder']> = {
+      context: null,
+      startFrame: 0,
+      filled: 0,
+      parts: [],
+      heardFrame: -1,
+      error: null,
+      stopped: false,
+    }
+    window.__studioRecorder = recorder
+    let part = new Float32Array(0)
+    let lastTick = performance.now()
+    const stopAt = lastTick + 120_000
+    const tick = () => {
+      const now = performance.now()
+      if (recorder.stopped || now > stopAt) {
+        recorder.stopped = true
+        return
+      }
+      const capture = window.__studioCapture
+      if (capture?.context.state === 'running') {
+        const { analyser, context } = capture
+        if (part.length !== analyser.fftSize)
+          part = new Float32Array(analyser.fftSize)
+        const before = context.currentTime
+        analyser.getFloatTimeDomainData(part)
+        // The clock moves a quantum at a time: a copy it moved under waits for the next tick.
+        if (context.currentTime === before) {
+          const rate = context.sampleRate
+          const partEnd = Math.round(before * rate)
+          const partStart = partEnd - part.length
+          if (recorder.context !== context) {
+            // Nothing reached this clock's speakers before the last tick,
+            // which saw no connection to them: the copy must reach back to then.
+            const unseen = Math.round((before - (now - lastTick) / 1000) * rate)
+            recorder.context = context
+            recorder.parts = []
+            recorder.heardFrame = -1
+            recorder.error =
+              partStart > Math.max(0, unseen)
+                ? `The recorder reached the new clock ${partStart - Math.max(0, unseen)} frames late.`
+                : null
+            recorder.startFrame = recorder.filled = Math.max(0, partStart)
+          }
+          if (partStart > recorder.filled)
+            recorder.error ??= `The copies leave ${partStart - recorder.filled} frames out at frame ${recorder.filled}.`
+          else if (partEnd > recorder.filled) {
+            const fresh = part.slice(recorder.filled - partStart)
+            if (recorder.heardFrame < 0) {
+              const at = fresh.findIndex((sample) => Math.abs(sample) > 1e-4)
+              if (at >= 0) recorder.heardFrame = recorder.filled + at
+            }
+            recorder.parts.push(fresh)
+            recorder.filled = partEnd
+          }
+        }
+      }
+      lastTick = now
+      setTimeout(tick, 40)
+    }
+    tick()
+  })
+}
+
 /** The newest pointer press, on the page's performance clock. */
 export async function lastPress(page: Page): Promise<number> {
   return page.evaluate(() => window.__studioPerf!.presses.at(-1) ?? NaN)
@@ -271,41 +359,91 @@ export interface FirstSoundReading {
 }
 
 /**
- * When the song was heard after a press of Play: the press's performance
- * time placed on the audio clock through getOutputTimestamp, which says
- * which audio-clock time the speakers play at a given performance time, so
- * the reading counts the output path too. Call it right after the press:
- * the capture holds only the last 680 ms.
+ * When the song was heard after `pressPlay` pressed Play (it returns the
+ * press's performance time): the press placed on the audio clock through
+ * getOutputTimestamp, which says which audio-clock time the speakers play at
+ * a given performance time, so the reading counts the output path too. A
+ * first Play can make its clock inside the press; the press then lands
+ * before that clock's first frame, and the time before it counts as the
+ * silence it was.
  */
-export async function firstSoundAfter(
+export async function firstSoundOf(
   page: Page,
-  pressMs: number,
+  pressPlay: () => Promise<number>,
   settleMs = 1000,
 ): Promise<FirstSoundReading> {
-  await page.waitForFunction(
-    () => (window.__studioCapture?.context.currentTime ?? 0) > 0,
+  await armOutputRecorder(page)
+  const pressMs = await pressPlay()
+  const read = await page.evaluate(
+    async ({ press, settle }) => {
+      const recorder = window.__studioRecorder!
+      const wait = () => new Promise((resolve) => setTimeout(resolve, 40))
+      const deadline = performance.now() + 60_000
+      try {
+        // The clock that plays the song is the one that sounds after the press.
+        while (recorder.heardFrame < 0) {
+          if (recorder.error) return { error: recorder.error }
+          if (performance.now() > deadline)
+            return { error: 'Nothing sounded after the press.' }
+          await wait()
+        }
+        const context = recorder.context!
+        let output = context.getOutputTimestamp()
+        while (!output.performanceTime) {
+          if (performance.now() > deadline)
+            return {
+              error: 'The clock never said when it reached the speakers.',
+            }
+          await wait()
+          output = context.getOutputTimestamp()
+        }
+        const pressAt =
+          output.contextTime! - (output.performanceTime - press) / 1000
+        const rate = context.sampleRate
+        const first = Math.round(Math.max(0, pressAt - 0.03) * rate)
+        const last = Math.round((pressAt + settle / 1000 + 0.05) * rate)
+        while (recorder.filled < last) {
+          if (recorder.context !== context)
+            return { error: 'The page changed clocks while the song started.' }
+          if (recorder.error) return { error: recorder.error }
+          if (performance.now() > deadline)
+            return { error: 'The audio clock stopped before the span ended.' }
+          await wait()
+        }
+        if (recorder.error) return { error: recorder.error }
+        // Frames before the first copy were silence: zeros already.
+        const samples = new Float32Array(last - first)
+        let frame = recorder.startFrame
+        for (const part of recorder.parts) {
+          const from = Math.max(frame, first)
+          const to = Math.min(frame + part.length, last)
+          for (let at = from; at < to; at++)
+            samples[at - first] = part[at - frame]
+          frame += part.length
+        }
+        return {
+          sampleRate: rate,
+          startFrame: first,
+          samples: Array.from(samples),
+          pressAt,
+          baseLatency: context.baseLatency,
+          outputLatency: context.outputLatency,
+        }
+      } finally {
+        recorder.stopped = true
+      }
+    },
+    { press: pressMs, settle: settleMs },
   )
-  const clock = await page.evaluate((press) => {
-    const { context } = window.__studioCapture!
-    const output = context.getOutputTimestamp()
-    const contextTime = output.contextTime ?? context.currentTime
-    const performanceTime = output.performanceTime ?? performance.now()
-    return {
-      pressAt: contextTime - (performanceTime - press) / 1000,
-      sampleRate: context.sampleRate,
-      baseLatency: context.baseLatency,
-      outputLatency: context.outputLatency,
-    }
-  }, pressMs)
-  const from = Math.max(0, clock.pressAt - 0.03)
-  const capture = await captureSpan(
-    page,
-    from,
-    clock.pressAt + settleMs / 1000 + 0.05,
-  )
+  if ('error' in read) throw new Error(read.error)
+  const capture: StudioCapture = {
+    sampleRate: read.sampleRate,
+    startFrame: read.startFrame,
+    samples: Float32Array.from(read.samples),
+  }
   const { frames, toMs } = frameClock(capture)
   const pressIndex =
-    Math.round(clock.pressAt * capture.sampleRate) - capture.startFrame
+    Math.round(read.pressAt * capture.sampleRate) - capture.startFrame
   const settledIndex = pressIndex + frames(settleMs)
   const settled = rms(capture, settledIndex, frames(40))
   const window5 = frames(5)
@@ -322,9 +460,9 @@ export async function firstSoundAfter(
   return {
     firstSoundMs: settled > 0 ? arrival(0.01) : null,
     halfLevelMs: settled > 0 ? arrival(0.5) : null,
-    sampleRate: clock.sampleRate,
-    baseLatencyMs: round(clock.baseLatency * 1000),
-    outputLatencyMs: round(clock.outputLatency * 1000),
+    sampleRate: read.sampleRate,
+    baseLatencyMs: round(read.baseLatency * 1000),
+    outputLatencyMs: round(read.outputLatency * 1000),
   }
 }
 
