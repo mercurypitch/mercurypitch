@@ -3,18 +3,218 @@
   <head><meta charset="UTF-8" /></head>
   <body>
     <div id="s08-anywhere" data-composition-id="s08-anywhere" data-start="0" data-duration="29.880" data-width="1920" data-height="1080">
-      <div class="scene">
-        <div class="ground" data-layout-allow-overflow></div>
-        <div class="staves" data-layout-allow-overflow></div>
-        <p class="kicker" style="left:120px;top:120px">PLACEHOLDER · s08-anywhere</p>
-        <p class="serif" style="position:absolute;left:120px;top:440px;font-size:120px">A pattern, not a set of keys</p>
-      </div>
+      <div class="scene" id="s08-anywhere-scene"></div>
+      <!-- Merc pass, static (trap 4); timing written by python3 tools/merc-tags.py s08-anywhere. m08 spans the S7 to
+           S8 cut (from 198.9) and hops out right in S8d. -->
+      <video id="s08-anywhere-m08-orange" data-merc="m08-orange" class="clip" muted playsinline src="assets/merc/m08-orange-merc.webm" data-start="0.000" data-duration="28.882" data-media-start="0.475"></video>
+      <video id="s08-anywhere-m08-orange-refl" data-merc="m08-orange" data-merc-refl class="clip" muted playsinline src="assets/merc/m08-orange-merc.webm" data-start="0.000" data-duration="28.882" data-media-start="0.475"></video>
       <script>
         ;(function () {
+          /* S8, A pattern, not a set of keys (STORYBOARD rows 8a to 8d; HANDOFFS § S7 to S8, § Inside C, § C to D).
+             In (S7 to S8): F0; Tavi's m08 dropping in (feet (1800, 840), 300, hero, turned left); the staircase on D at
+             full, letters D E F# G A B C# D, riser labels T T S T T T S, F#4 and C#5 lit, "D major" up.
+             Out (to s09, fixed, C to D): F0, no Mercs (m08 ended 228.25), the kicker lane empty, the tally gone
+             (228.9); the staircase on C at full, letters C to C, riser labels T T S T T T S, hairlines; the strip with
+             C major's keys at full and the rest at 45 %, no key names. The camera holds F0 throughout (signature 2).
+             Every time is a cue, a word or a duration (BUILD-GUIDE, "The clock"). */
+          const SID = 's08-anywhere'
+          const D = L.dur(SID)
+          const at = (cue, edge, off) => L.at(SID, cue, edge, off)
+          const word = (line, which, edge, off) => L.word(SID, line, which, edge, off)
+          const root = document.getElementById(SID + '-scene')
+          const room = L.room(root, { floor: false })
+          const S0 = L.scene(SID).start
           const tl = gsap.timeline({ paused: true })
-          tl.fromTo('#s08-anywhere .serif', { x: 0 }, { x: 60, duration: L.dur('s08-anywhere'), ease: 'none' }, 0)
+          const ST = L.ST, P = L.prog, clamp = L.clamp, lerp = L.lerp
+          const f1 = (v) => (Math.round(v * 100) / 100).toString()
+          const SEMI = (n) => ST.H[n] - ST.H[n - 1] === 1               // riser n (stairs n to n + 1) is a semitone
+          const LET = {
+            C: ['C', 'D', 'E', 'F', 'G', 'A', 'B', 'C'],
+            D: ['D', 'E', 'F♯', 'G', 'A', 'B', 'C♯', 'D'],
+            G: ['G', 'A', 'B', 'C', 'D', 'E', 'F♯', 'G'],
+            E: ['E', 'F♯', 'G♯', 'A', 'B', 'C♯', 'D♯', 'E'],
+          }
+          const SC = { C: ST.scale(0), D: ST.scale(2), G: ST.scale(7), E: ST.scale(4) }
+          const inSet = (set, m) => (set.includes(m) ? 1 : 0)
+
+          /* ---------------------------------------------------------------- anchors */
+          const A = {
+            dmOut: word('o8', 0, 'start', 0.02),                        // 8a: "D major" leaves
+            keys8: word('o8', 'set of keys'),                           // the eight lit keys scale together
+            pattern: word('o8', 'pattern'),                             // the seven risers grow in turn
+            start: word('b23', 'Start'),                                // 8b: stair 1 (the start) lights
+            any: word('b23', 'any of the twelve notes'),                // the twelve keys C4 to B4 scale in turn
+            get: word('b23', 'you get a major scale'),                  // the tally lands: "C 0 · D 2"
+            toG: word('b23', 'scale.', 'start', -0.03),                 // the slide to G, 0.9 s; "G 1" joins as it lands
+            gEnd: at('slide-g', 'end'),
+            toE: at('slide-g', 'end', 0.02),                            // 8c: the slide to E, 0.45 s
+            e4: at('slide-e'),                                          // "E 4" joins the tally
+            eEnd: at('slide-e', 'end'),
+            shape: word('b24', 'shape never changes'),                  // 8d: the three ghost outlines
+            keys24: word('b24', 'keys under it change'),                // the four lit black keys scale
+            exceptC: word('b25', 'except C'),                           // "C 0" scales 1.2
+            one: word('b25', 'one'), black: word('b25', 'black'), key: word('b25', 'key'),   // "D 2", "G 1", "E 4" in turn
+            cJust: word('b25', 10),                                     // "C 0" again; the slide back to C (+ 0.08, 0.9 s)
+            white: word('b25', 'white keys alone'),                     // the white keys C4 to C5 scale in turn
+            hop: word('b25', 19),                                       // m08 hops out right
+            tallyOut: at('b25', 'end', 0.01),                           // the tally leaves
+          }
+          A.toC = A.cJust + 0.08
+          const SG = (k) => at('slide-g', 'start', 0.36 * k)            // slide-g's onsets (FACTS 68)
+          const SE = (k) => at('slide-e', 'start', 0.36 * k)            // slide-e's onsets
+          const TOG = 0.9, TOE = 0.45, TOC = 0.9                        // the slides' lengths (STORYBOARD 8b to 8d)
+
+          /* ---------------------------------------------------------------- the world (mid layer); F0 throughout */
+          const cam = L.frameRig(room, { from: 'F0' })
+          const mid = L.stage(room.mid)
+          const st = L.stairs(mid, {})
+          const kb = L.strip(mid, {})
+          // the three ghost outlines (8d): the staircase's silhouette drawn from L.ST on E (treads through the risers'
+          // centres, as s06's ghost), placed where it stood on C, D and G and sliding onto it
+          const outline = (w, s0) => {
+            const ft = ST.foot(s0), xa = ST.colX(1, w) - 56, xb = ST.colX(8, w) + 56
+            let d = `M${xa} ${ft} L${xa} ${ST.tread(1, s0)}`
+            for (let n = 1; n <= 7; n++) d += ` L${ST.riserX(n, w)} ${ST.tread(n, s0)} L${ST.riserX(n, w)} ${ST.tread(n + 1, s0)}`
+            return d + ` L${xb} ${ST.tread(8, s0)} L${xb} ${ft} Z`
+          }
+          const E0 = ST.START.E
+          const ghostD = outline(E0.w, E0.s0)
+          const ghosts = ['C', 'D', 'G'].map((k) => {
+            const S = ST.START[k]
+            const g = L.svg('g', { opacity: 0 }, mid)
+            L.svg('path', { d: ghostD, fill: 'none', stroke: L.C.chrome, 'stroke-width': 3, 'stroke-linejoin': 'round' }, g)
+            return { g, dx: ST.colX(1, S.w) - ST.colX(1, E0.w), dy: ST.tread(1, S.s0) - ST.tread(1, E0.s0) }
+          })
+          const gBead = L.svg('g', {}, mid)
+          const bead = L.bead(gBead, { r: 22, color: L.C.chrome })
+          st.stairs.forEach((S, i) => S.names.prepare(['C', 'D', 'G', 'E'].map((k) => LET[k][i])))
+          st.risers.forEach((R) => R.labels.prepare(['T', 'S']))
+          const dust = L.filmDust(room.near)
+
+          /* ---------------------------------------------------------------- Tavi (top layer, screen space) */
+          const tavi = L.mercGate(room.top, { sid: SID, pass: 'm08-orange', tag: SID + '-m08-orange', x: 1800, size: 300, hop: A.hop })
+
+          /* ---------------------------------------------------------------- type (hud, frame-fixed) */
+          const hud = L.stageOf(room.hud)
+          // "D major", as s07 left it (serif italic 120 px at x 140, baseline 300)
+          const SERIF = "font-family: 'Instrument Serif'; font-style: italic; font-size: 120px; letter-spacing: -0.01em; white-space: pre;"
+          const dmT = L.svg('text', { x: 140, y: 300, fill: L.C.ink, opacity: 1, style: SERIF, text: 'D major' }, hud)
+          // the tally (Outfit 600 64 px at x 140, baseline 250): "C 0 · D 2 · G 1 · E 4", one text per entry and dot,
+          // laid out from the whole line's own glyph positions; a dot lands with the entry after it
+          const TALLY = 'C 0 · D 2 · G 1 · E 4'
+          const NUMSTYLE = "font: 600 64px 'Outfit', sans-serif; font-variant-numeric: tabular-nums; white-space: pre;"
+          const tProbe = L.svg('text', { x: 140, y: 250, opacity: 0, style: NUMSTYLE, text: TALLY }, hud)
+          const ENTRIES = [
+            { text: 'C 0', i0: 0, i1: 2, land: A.get, pulse: [A.exceptC, A.cJust] },
+            { text: '·', i0: 4, i1: 4, land: A.get + 0.25 },
+            { text: 'D 2', i0: 6, i1: 8, land: A.get + 0.25, pulse: [A.one] },
+            { text: '·', i0: 10, i1: 10, land: A.toG + TOG },
+            { text: 'G 1', i0: 12, i1: 14, land: A.toG + TOG, pulse: [A.black] },
+            { text: '·', i0: 16, i1: 16, land: A.e4 },
+            { text: 'E 4', i0: 18, i1: 20, land: A.e4, pulse: [A.key] },
+          ]
+          for (const E of ENTRIES) E.el = L.svg('text', { x: 140, y: 250, fill: L.C.ink, opacity: 0, 'text-anchor': 'middle', style: NUMSTYLE, text: E.text }, hud)
+          L.afterFonts(() => {
+            for (const E of ENTRIES) {
+              E.cx = (tProbe.getStartPositionOfChar(E.i0).x + tProbe.getEndPositionOfChar(E.i1).x) / 2
+              E.el.setAttribute('x', f1(E.cx))
+            }
+          })
+
+          /* ---------------------------------------------------------------- per-frame state */
+          // stair lights (40 % chrome, L.light): stair 1 on "Start"; each stair as slide-g's and slide-e's bead lands
+          const LIT = { 1: [A.start], 2: [], 3: [], 4: [], 5: [], 6: [], 7: [], 8: [] }
+          for (let k = 0; k < 8; k++) LIT[k + 1].push(SG(k), SE(k))
+          // riser pulses (the bar grows 15 %, its label scales 1.25): in turn on "the pattern?"
+          const GROW = (n) => A.pattern + 0.1 * (n - 1)
+          const labelPulse = (t, times) => L.pulse(t, times, 0.25, { long: true })
+          // key pulses (a key scales 1.05)
+          const KEYP = {}
+          const addKey = (m, tt) => (KEYP[m] = KEYP[m] || []).push(tt)
+          SC.D.forEach((m) => addKey(m, A.keys8))                       // the eight lit keys, together
+          addKey(2, A.start)                                            // D4, under the start
+          for (let m = 0; m < 12; m++) addKey(m, A.any + 0.06 * m)      // C4 to B4 in turn
+          SC.E.filter((m) => ST.isBlack(m)).forEach((m) => addKey(m, A.keys24))   // E major's four black keys
+          SC.C.forEach((m, k) => addKey(m, A.white + 0.06 * k))         // the white keys C4 to C5 in turn
+
+          L.clock(tl, D, (t) => {
+            cam.apply(t)
+            dust(S0 + t)
+            const box = tavi(t)
+
+            // the start: D, then G, E and back to C, w and s0 on one curve per slide (power2.inOut)
+            const uG = P(t, A.toG, TOG, 'power2.inOut'), uE = P(t, A.toE, TOE, 'power2.inOut'), uC = P(t, A.toC, TOC, 'power2.inOut')
+            const w = lerp(lerp(lerp(1, 4, uG), 2, uE), 0, uC)
+            const s0 = lerp(lerp(lerp(2, 7, uG), 4, uE), 0, uC)
+            // the letters switch as each slide runs (STORYBOARD § Type's switch)
+            const names = (n) => {
+              if (t < A.toE) return L.swap(t, A.toG, n - 1, LET.D[n - 1], LET.G[n - 1])
+              if (t < A.toC) return L.swap(t, A.toE, n - 1, LET.G[n - 1], LET.E[n - 1])
+              return L.swap(t, A.toC, n - 1, LET.E[n - 1], LET.C[n - 1])
+            }
+            st.draw({
+              w, s0,
+              rows: { keep: { boxes: box ? [box] : [], cam, t } },
+              stair: (n) => ({ lit: L.light(t, LIT[n]), names: names(n) }),
+              riser: (n) => {
+                const semi = SEMI(n)
+                return { state: semi ? 'semi' : 'tone', scale: L.pulse(t, GROW(n), 'bar'), labels: [{ text: semi ? 'S' : 'T', a: 1, scale: labelPulse(t, GROW(n)) }] }
+              },
+            })
+
+            // the strip follows every slide: the scale's keys at full, its black keys lit to 40 % chrome
+            const memb = (m) => lerp(lerp(lerp(inSet(SC.D, m), inSet(SC.G, m), uG), inSet(SC.E, m), uE), inSet(SC.C, m), uC)
+            kb.draw({
+              key: (m) => {
+                const f = memb(m)
+                return { full: f, lit: ST.isBlack(m) ? f : 0, scale: KEYP[m] ? L.pulse(t, KEYP[m], 'key') : 1 }
+              },
+              hair: { a: 1, w, s0 },
+            })
+
+            // 8d: the ghost outlines appear where it stood on C, D and G (0.4 s, to 30 %), slide onto it on E (0.8 s,
+            // power2.inOut), fitting exactly, and fade (0.4 s)
+            {
+              const u = P(t, A.shape + 0.4, 0.8, 'power2.inOut')
+              const a = 0.3 * P(t, A.shape, 0.4) * (1 - P(t, A.shape + 1.25, 0.4))
+              for (const G of ghosts) {
+                G.g.setAttribute('opacity', a.toFixed(3))
+                G.g.setAttribute('display', a <= 0.004 ? 'none' : 'inline')
+                G.g.setAttribute('transform', `translate(${f1(G.dx * (1 - u))} ${f1(G.dy * (1 - u))})`)
+              }
+            }
+
+            // the chrome beads: slide-g's on G, slide-e's on E; each drops onto stair 1 (onto the moving stair when the
+            // slide is still landing), hops up a stair on each note, and leaves as its sound ends, riding the stair it
+            // stands on if the staircase slides away under it
+            const run = (onset, end, w1, s1) => {
+              const steps = [0, 1, 2, 3, 4, 5, 6, 7].map((k) => ({ t: onset(k), p: ST.rest(k + 1, w1, s1) }))
+              if (t >= steps[0].t - 0.2 && t < steps[0].t) return L.bead4.dropAt(t, steps[0].t, ST.rest(1, w, s0))
+              if (t >= steps[0].t && t < end) return L.bead4.runAt(t, steps)
+              if (t >= end && t < end + 0.5) {
+                const out = P(t, end, 0.5, 'power1.in')
+                const [x, y] = ST.rest(8, w, s0)
+                return { x, y, a: 1 - out, scale: 1 - 0.4 * out }
+              }
+              return null
+            }
+            L.bead4.place(bead, run(SG, A.gEnd, 4, 7) || run(SE, A.eEnd, 2, 4))
+
+            // type: "D major" leaves; the tally lands entry by entry, each from 1.3x over 0.4 s (a counted pulse), its
+            // entries scale 1.2 on b25's words, and it leaves at b25's end
+            dmT.setAttribute('opacity', (1 - P(t, A.dmOut, 0.2)).toFixed(3))
+            dmT.setAttribute('transform', `translate(0 ${f1(-12 * P(t, A.dmOut, 0.2, 'power2.in'))})`)
+            const out = 1 - P(t, A.tallyOut, 0.2)
+            for (const E of ENTRIES) {
+              const a = P(t, E.land, 0.15) * out
+              const sc = (1 + 0.3 * (1 - P(t, E.land, 0.4, 'power2.out'))) * (E.pulse ? L.pulse(t, E.pulse, 'label') : 1)
+              const cx = E.cx ?? 200
+              E.el.setAttribute('opacity', a.toFixed(3))
+              E.el.setAttribute('transform', `translate(${f1(cx)} 228) scale(${sc.toFixed(4)}) translate(${f1(-cx)} -228)`)
+            }
+          })
           window.__timelines = window.__timelines || {}
-          window.__timelines['s08-anywhere'] = tl
+          window.__timelines[SID] = tl
         })()
       </script>
     </div>

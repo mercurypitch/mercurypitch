@@ -117,8 +117,8 @@
           // then in over 18 frames on sine.out, counted from the tag's start without its media start), the scene
           // easing the box down its last 60 px from that frame (0.4 s, power2.out), the hop carrying the box 360 px
           // right through the hop's time in the air (from HOP + 0.15 over 0.42 s, power1.in), and a local floor
-          // patch under her corner. WHOLE: m06a's measured first whole frame (30) plus one, until m04 is measured.
-          const WHOLE = 31
+          // patch under her corner. WHOLE: m04's first whole frame (assets/merc/whole.js, tools/merc-whole.py) plus one.
+          const WHOLE = (L.MERC_WHOLE['m04-orange'] ?? 30) + 1
           const TAVI = { x: 1800, feetY: 840, size: 300 }
           const taviWrap = L.el('div', { class: 'clip', style: 'pointer-events:none' }, room.top)
           const floorPatch = L.el('div', { style: 'position:absolute;left:1690px;width:230px;top:840px;height:240px;opacity:0;background:linear-gradient(180deg, rgba(120,150,190,0.10), rgba(13,17,23,0) 40%);border-top:1px solid rgba(195,204,214,0.10);-webkit-mask-image:linear-gradient(90deg, transparent, #000 45%);mask-image:linear-gradient(90deg, transparent, #000 45%)' }, taviWrap)

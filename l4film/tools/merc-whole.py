@@ -7,8 +7,9 @@
 A pass whose first state is `drop` comes in through the top of its square: its first frames hold
 only part of the body. Its first whole frame is the first, after the body has touched the square's
 top three rows, with those rows empty again in alpha (> 8 of 255). A pass that starts in any other
-state is whole from frame 0 and gets 0. L.mercGate (assets/lib/hosts.js) reads window.MERC_WHOLE
-and opens one frame later. Only passes whose WebM is rendered and newer than its shot file count.
+state is whole from frame 0 and gets 0 from its shot file alone. L.mercGate (assets/lib/hosts.js)
+reads window.MERC_WHOLE and opens one frame later. A drop pass counts only while its WebM is rendered
+and newer than its shot file.
 Builder A's lab/s04-recall/scratch/whole.py is the same test; it gave m06a-orange 30.
 """
 import glob
@@ -46,11 +47,13 @@ def table():
     out = {}
     for shot in sorted(glob.glob(os.path.join(ROOT, 'merc', 'shots', '*.json'))):
         d = json.load(open(shot))
+        if not (d['cues'] and d['cues'][0]['state'] == 'drop'):
+            out[d['id']] = 0
+            continue
         webm = os.path.join(ROOT, 'assets', 'merc', d['id'] + '-merc.webm')
         if not os.path.exists(webm) or os.path.getmtime(webm) < os.path.getmtime(shot):
             continue
-        drops = bool(d['cues']) and d['cues'][0]['state'] == 'drop'
-        out[d['id']] = first_whole(webm) if drops else 0
+        out[d['id']] = first_whole(webm)
     return out
 
 

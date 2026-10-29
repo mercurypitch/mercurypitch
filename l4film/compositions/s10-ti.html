@@ -3,18 +3,232 @@
   <head><meta charset="UTF-8" /></head>
   <body>
     <div id="s10-ti" data-composition-id="s10-ti" data-start="0" data-duration="25.302" data-width="1920" data-height="1080">
-      <div class="scene">
-        <div class="ground" data-layout-allow-overflow></div>
-        <div class="staves" data-layout-allow-overflow></div>
-        <p class="kicker" style="left:120px;top:120px">PLACEHOLDER · s10-ti</p>
-        <p class="serif" style="position:absolute;left:120px;top:440px;font-size:120px">Ti, one short of home</p>
-      </div>
+      <div class="scene" id="s10-ti-scene"></div>
+      <!-- Merc passes, static (trap 4); timing written by python3 tools/merc-tags.py s10-ti -->
+      <video id="s10-ti-m09-orange" data-merc="m09-orange" class="clip" muted playsinline src="assets/merc/m09-orange-merc.webm" data-start="0.008" data-duration="25.300" data-media-start="20.808"></video>
+      <video id="s10-ti-m09-orange-refl" data-merc="m09-orange" data-merc-refl class="clip" muted playsinline src="assets/merc/m09-orange-merc.webm" data-start="0.008" data-duration="25.300" data-media-start="20.808"></video>
+      <video id="s10-ti-m10-blue" data-merc="m10-blue" class="clip" muted playsinline src="assets/merc/m10-blue-merc.webm" data-start="11.858" data-duration="13.450" data-media-start="0.008"></video>
+      <video id="s10-ti-m10-blue-refl" data-merc="m10-blue" data-merc-refl class="clip" muted playsinline src="assets/merc/m10-blue-merc.webm" data-start="11.858" data-duration="13.450" data-media-start="0.008"></video>
       <script>
         ;(function () {
+          /* S10, Ti, one short of home (STORYBOARD rows 10a to 10c; HANDOFFS § S9 to S10, § Inside D, § S10 to S11).
+             In (S9 to S10): Tavi on screen (m09 spans the cut, feet (1800, 840), 300, hero); F0; the staircase on C,
+             names do to do, both houses lit, no riser labels, no key names; the strip with C major's keys at
+             full, hairlines.
+             Out (to s11, same group): both Mercs on screen (m09 and m10 span the cut); F0; the staircase on C, the
+             stairs lit blue (they fade from 0.04 s before the cut, over 0.4 s, drawn alike in s11), no bead, the
+             top house lit, the bottom house returning lit over the same 0.4 s. */
+          const SID = 's10-ti'
+          const D = L.dur(SID)
+          const at = (cue, edge, off) => L.at(SID, cue, edge, off)
+          const word = (line, which, edge, off) => L.word(SID, line, which, edge, off)
+          const root = document.getElementById(SID + '-scene')
+          const room = L.room(root, { floor: false })
+          const S0 = L.scene(SID).start
           const tl = gsap.timeline({ paused: true })
-          tl.fromTo('#s10-ti .serif', { x: 0 }, { x: 60, duration: L.dur('s10-ti'), ease: 'none' }, 0)
+          const ST = L.ST, P = L.prog, clamp = L.clamp, lerp = L.lerp, light = L.light
+          const f1 = (v) => (Math.round(v * 100) / 100).toString()
+          const SEMI = (n) => ST.H[n] - ST.H[n - 1] === 1
+          const CMAJ = ST.scale(0)
+          const SOL = ['do', 're', 'mi', 'fa', 'so', 'la', 'ti', 'do']
+
+          /* ---------------------------------------------------------------- anchors */
+          const A = {
+            push: word('b32', 'Back', 'start', 0.05),        // 10a: the push to CU-C (1.5 s), the strip fading and sinking
+            question: word('b32', 'question.'),               // the cold open's question: do's name, then ti's, scale 1.2
+            tee: word('b32', 'Tee'),                          // ti's name scales 1.2 (65 px in CU-C)
+            seventh: word('b32', 'seventh'),                  // stair 7 lights chrome
+            sits: word('b32', 'sits'),                        // ti's stair scales 1.05
+            semitone: word('b32', 'semitone'),                // the ti-do riser grows; "1 semitone" lands
+            dohW: word('b32', 'doh:'),                        // the top stair lights ("below doh")
+            last: word('b32', 'the last step'),               // the riser grows again
+            step: word('b32', 'step', 'start', -0.03),        // the ink arrow draws from ti's tread up to do's (0.6 s)
+            short: word('b32', 'short'),                      // the riser grows a third time
+            pull: word('b33', 'Listen:', 'start', 0.07),      // 10b: the pull to F0 (1.7 s), the strip returning
+            empty: word('b33', 'tee', 'start', -0.1),         // the top stair empties, its house unlights, the bottom house fades
+            fromC: word('b33', 'C'),                          // "from C": stair 1 lights chrome
+            stop: word('b33', 'stop'),                        // "and stop": stair 7 (ti) lights chrome
+            launch: at('stop-c-home', 'start', -0.3),         // Merc's bead leaves his mouth
+            wait: at('wait'),                                 // 10c: the ink-2 arrow draws up to the outline
+            echo1: at('wait', 'start', 0.63),                 // an echo ring
+            most: word('b34', 'Most'),                        // ti's name scales 1.2 ("hear it waiting")
+            hear: word('b34', 'hear'),                        // the bead scales 1.2
+            waiting: word('b34', 'waiting'),                  // an echo ring
+            note: word('b34', 'note'),                        // "one more note": the outline top stair scales 1.05
+            take: word('b34', 'Take'),                        // and again on "Take"
+            oneMore: word('b34', 'one more'),                 // the arrow draws again
+            takeStep: word('b34', 'step'),                    // the arrow pulses
+            landC: at('land-c'),                              // an echo on ti
+            land8: at('land-c', 'start', 0.45),               // the hop lands on the top stair: it fills blue
+            blueOff: at('o10', 'start', -0.04),               // the blue fades, the bottom house returns (0.4 s; also in s11)
+          }
+          A.out1 = A.pull - 0.2                               // "1 semitone" and the ink arrow leave before the pull
+          A.rise = A.land8 + 0.06                             // the bead rises into the house (0.3 s)
+          A.lit8 = A.rise + 0.3                               // the house lit; its echo ring
+          A.out2 = A.lit8 + 0.1                               // the ink-2 arrow fades
+          const RUN = [0, 1, 2, 3, 4, 5, 6].map((k) => at('stop-c-home', 'start', 0.45 * k))   // onsets (FACTS 68)
+          A.held = RUN[6] + 0.6                               // an echo ring on ti halfway through its 1.2 s hold (FACTS 68)
+
+          /* ---------------------------------------------------------------- camera */
+          const cam = L.frameRig(room, { from: 'F0' })
+          cam.to(A.push, 1.5, 'CU-C', 'power2.inOut')
+          cam.to(A.pull, 1.7, 'F0', 'power2.inOut')
+
+          /* ---------------------------------------------------------------- the world (mid layer) */
+          const mid = L.stage(room.mid)
+          const defs = L.svg('defs', {}, mid)
+          const soft = L.svg('filter', { id: SID + '-soft', x: '-200%', y: '-60%', width: '500%', height: '220%' }, defs)
+          L.svg('feGaussianBlur', { stdDeviation: 6 }, soft)
+          const st = L.stairs(mid, {})
+          // the ti-do riser's glow as it grows (an accent), behind the staircase's blocks
+          const accents = L.svg('g', {}, null)
+          st.svg.insertBefore(accents, st.gAll)
+          const goldGlow = L.svg('rect', { x: ST.riserX(7, 0) - 9, width: 18, y: ST.tread(8, 0) - 6, height: ST.tread(7, 0) - ST.tread(8, 0) + 12, rx: 9, fill: L.C.gold, opacity: 0, filter: `url(#${SID}-soft)` }, accents)
+          const kb = L.strip(mid, {})
+          st.stairs.forEach((S, i) => S.names.prepare([SOL[i]]))
+          // A curved arrow (the kit's L.arrow is straight; group A's s01 draws this one): a quadratic from A through
+          // Q to B, drawn on from A, its head riding the tip; scale pulses it about the curve's middle
+          const curveArrow = (parent, { color = L.C.ink2, width = 3, head = 14 } = {}) => {
+            const g = L.svg('g', { opacity: 0 }, parent)
+            const shaft = L.svg('path', { fill: 'none', stroke: color, 'stroke-width': width, 'stroke-linecap': 'round' }, g)
+            const tip = L.svg('path', { fill: 'none', stroke: color, 'stroke-width': width, 'stroke-linecap': 'round', 'stroke-linejoin': 'round' }, g)
+            const qb = (A, Q, B, u) => [(1 - u) * (1 - u) * A[0] + 2 * u * (1 - u) * Q[0] + u * u * B[0], (1 - u) * (1 - u) * A[1] + 2 * u * (1 - u) * Q[1] + u * u * B[1]]
+            return {
+              g,
+              draw(p, a, { A, Q, B }, { scale = 1, color: col = null } = {}) {
+                const u = clamp(p)
+                if (a <= 0.004 || u <= 0.01) { g.setAttribute('opacity', '0'); return }
+                let d = ''
+                for (let i = 0; i <= 24; i++) { const q = qb(A, Q, B, (u * i) / 24); d += (i ? 'L' : 'M') + f1(q[0]) + ' ' + f1(q[1]) }
+                shaft.setAttribute('d', d)
+                const e = qb(A, Q, B, u), e0 = qb(A, Q, B, Math.max(0, u - 0.05))
+                const ang = Math.atan2(e[1] - e0[1], e[0] - e0[0])
+                const hx = (k) => e[0] - head * Math.cos(ang + k), hy = (k) => e[1] - head * Math.sin(ang + k)
+                tip.setAttribute('d', `M${f1(hx(0.5))} ${f1(hy(0.5))} L${f1(e[0])} ${f1(e[1])} L${f1(hx(-0.5))} ${f1(hy(-0.5))}`)
+                if (col) { shaft.setAttribute('stroke', col); tip.setAttribute('stroke', col) }
+                const m = qb(A, Q, B, 0.5)
+                g.setAttribute('transform', scale === 1 ? '' : `translate(${f1(m[0])} ${f1(m[1])}) scale(${scale.toFixed(4)}) translate(${f1(-m[0])} ${f1(-m[1])})`)
+                g.setAttribute('opacity', a.toFixed(3))
+              },
+            }
+          }
+          // 10a's ink arrow, from ti's tread up onto do's, landing left of the house (its body starts 22 px in)
+          const inkArrow = curveArrow(mid, { color: L.C.ink, width: 2.5, head: 12 })
+          const INK = (() => {
+            const A = [ST.colX(7, 0) + 10, ST.tread(7, 0) - 14], B = [ST.houseBox(8, 0, 0).x - 14, ST.tread(8, 0) - 10]
+            return { A, Q: [(A[0] + B[0]) / 2 - 4, Math.min(A[1], B[1]) - 40], B }
+          })()
+          // 10c's ink-2 arrow, the cold open's (s01's arrowAt on C): from just above the bead on ti up onto the
+          // outline top stair, left of its house
+          const waitArrow = curveArrow(mid, { color: L.C.ink2, width: 3, head: 14 })
+          const WAITA = (() => {
+            const A = [ST.colX(7, 0) + 14, ST.tread(7, 0) - 56], B = [ST.houseBox(8, 0, 0).x - 16, ST.tread(8, 0) - 12]
+            return { A, Q: [(A[0] + B[0]) / 2 - 6, Math.min(A[1], B[1]) - 46], B }
+          })()
+          const dust = L.filmDust(room.near)
+
+          /* ---------------------------------------------------------------- the Mercs (top layer, screen space) */
+          const tavi = L.mercGate(room.top, { sid: SID, pass: 'm09-orange', tag: SID + '-m09-orange', x: 1800 })
+          // m10-blue is rendered facing left and mirrored here (DECISIONS 74), so on screen he faces the stairs
+          const merc = L.mercGate(room.top, { sid: SID, pass: 'm10-blue', tag: SID + '-m10-blue', x: 110, mirror: true })
+          // his mouth while he sings, at feet (110, 840), size 300, hero view, mirrored: HANDOFFS' provisional
+          // point (the pass decides it); the bead leaves it where his drop has carried it at the launch
+          const MOUTH = [130, 715]
+          const mouth = (() => { const b = merc(A.launch); return [MOUTH[0], MOUTH[1] + (b ? b.y1 - 840 : 0)] })()
+
+          /* ---------------------------------------------------------------- the bead and rings (over the Mercs) */
+          const topSvg = L.stage(room.top)
+          const echo = L.echoRings(topSvg, { dur: 0.9, grow: 3.5, width: 3, max: 6 })
+          const bead = L.bead(topSvg, { r: 22, color: L.C.blue })
+
+          /* ---------------------------------------------------------------- frame-fixed type (hud) */
+          const hud = L.stageOf(room.hud)
+          const semiT = L.svg('text', { x: 1200, y: 250, fill: L.C.ink, opacity: 0, style: "font: 600 48px 'Outfit', sans-serif; white-space: pre;", text: '1 semitone' }, hud)
+
+          /* ---------------------------------------------------------------- per-frame state */
+          const GROW = [A.semitone, A.last, A.short]
+          const NAMEP8 = [A.question + 0.45], NAMEP7 = [A.question + 0.65, A.tee, A.most]   // as the push lands, on "Tee", on "Most"
+          const TOPP = [A.note, A.take]
+          const blueA = (t) => 1 - P(t, A.blueOff, 0.4)
+          const steps = RUN.map((tt, k) => ({ t: tt, p: ST.rest(k + 1, 0, 0) })).concat([{ t: A.land8, p: ST.rest(8, 0, 0) }])
+          const hb8 = ST.houseBox(8, 0, 0)
+          const beadAt = (t) => {
+            if (t < A.launch) return null
+            if (t < RUN[0]) { const [x, y] = L.bead4.hopAt(t, RUN[0], mouth, steps[0].p); return { x, y } }
+            if (t < A.rise) return L.bead4.runAt(t, steps)
+            if (t < A.rise + 0.3) return L.bead4.riseAt(t, A.rise, steps[7].p, [hb8.cx, hb8.cy])
+            return null
+          }
+
+          L.clock(tl, D, (t) => {
+            cam.apply(t)
+            dust(S0 + t)
+            const boxes = [tavi(t), merc(t)].filter(Boolean)
+            const stripU = P(t, A.push, 1.5) - P(t, A.pull, 1.7)
+            st.draw({
+              w: 0, s0: 0,
+              rows: { keep: { boxes, cam, t } },
+              stair: (n) => {
+                // CU-C cuts stair 3's name at the frame's left edge (and holds 1 and 2 outside it): their names
+                // leave over the push and return as the pull lands
+                const edge = n <= 3 ? clamp(1 - P(t, A.push + 0.3, 0.4) + P(t, A.pull + 1.2, 0.4)) : 1
+                const names = [{ text: SOL[n - 1], a: edge, scale: n === 7 ? L.pulse(t, NAMEP7, 'label') : n === 8 ? L.pulse(t, NAMEP8, 'label') : 1 }]
+                if (n === 8) {
+                  // emptied to an outline (as in the cold open), filled blue as the bead lands on it
+                  const filled = t < A.land8 ? 1 - P(t, A.empty, 0.5) : P(t, A.land8, 0.2, 'power2.out')
+                  if (t < A.empty) return { lit: light(t, A.dohW, 0.4, 0.8), color: 'chrome', names }
+                  return { fill: 'outline', filled, lit: t < A.land8 ? 0 : filled * blueA(t), color: 'blue', names, scale: L.pulse(t, TOPP, 'tile') }
+                }
+                if (t >= RUN[n - 1]) return { lit: P(t, RUN[n - 1], 0.15, 'power2.out') * blueA(t), color: 'blue', names }
+                return {
+                  lit: n === 7 ? Math.max(light(t, A.seventh, 0.4, 0.8), light(t, A.stop)) : n === 1 ? light(t, A.fromC) : 0, color: 'chrome', names,
+                  scale: n === 7 ? L.pulse(t, A.sits, 'tile') : 1,
+                }
+              },
+              riser: (n) => ({ state: SEMI(n) ? 'semi' : 'tone', scale: n === 7 ? L.pulse(t, GROW, 'bar') : 1 }),
+              houses: {
+                bottom: { a: 1 - P(t, A.empty, 0.5) + P(t, A.blueOff, 0.4), lit: 1 },
+                top: { a: 1, lit: t < A.rise ? 1 - P(t, A.empty, 0.5) : P(t, A.rise, 0.3, 'power2.out') },
+              },
+            })
+            goldGlow.setAttribute('opacity', (0.6 * Math.max(...GROW.map((g) => L.env(t, g, 0.15, 0.2, 0.6)))).toFixed(3))
+            kb.draw({
+              a: 1 - stripU, dy: 60 * stripU,
+              key: (m) => ({ full: CMAJ.includes(m) ? 1 : 0 }),
+              hair: { a: 1, w: 0, s0: 0 },
+            })
+            // the ink arrow (10a) and the ink-2 arrow (10c, drawn again on "one more", pulsing on "step")
+            inkArrow.draw(P(t, A.step, 0.6, 'power2.inOut'), 1 - P(t, A.out1, 0.2), INK)
+            {
+              const redraw = t < A.oneMore ? P(t, A.wait, 0.5, 'power2.inOut') : Math.max(1 - P(t, A.oneMore, 0.12, 'power2.in'), P(t, A.oneMore + 0.12, 0.5, 'power2.inOut'))
+              const pulse = L.pulse(t, A.takeStep, 'label') - 1
+              const ink = Math.round(lerp(168, 230, pulse / 0.2)), ink2 = Math.round(lerp(179, 237, pulse / 0.2)), ink3 = Math.round(lerp(191, 243, pulse / 0.2))
+              waitArrow.draw(redraw, 1 - P(t, A.out2, 0.2, 'power2.in'), WAITA, { scale: 1 + pulse, color: `rgb(${ink},${ink2},${ink3})` })
+            }
+            // Merc's bead: from his mouth onto stair 1 on a hop's arc, up a stair on each onset, a hop to the top
+            // stair and a rise into its house (world units, drawn in screen space over the Mercs)
+            {
+              const b = beadAt(t)
+              const cs = cam.scale(t)
+              if (b) {
+                const [x, y] = cam.map(b.x, b.y, t)
+                L.bead4.place(bead, { ...b, x, y, scale: (b.scale ?? 1) * cs * L.pulse(t, A.hear, 'bead') })
+              } else L.bead4.place(bead, null)
+              const ti = cam.map(...ST.rest(7, 0, 0), t), hc = cam.map(hb8.cx, hb8.cy, t)
+              echo.draw(t, [
+                { t: A.held, x: ti[0], y: ti[1], r: 22 * cs },
+                { t: A.echo1, x: ti[0], y: ti[1], r: 22 * cs },
+                { t: A.waiting, x: ti[0], y: ti[1], r: 22 * cs },
+                { t: A.landC, x: ti[0], y: ti[1], r: 22 * cs },
+                { t: A.lit8, x: hc[0], y: hc[1], r: 30 * cs },
+              ])
+            }
+            // "1 semitone" (frame-fixed, in CU-C), in on "semitone" rising 12 px, out before the pull
+            semiT.setAttribute('opacity', (P(t, A.semitone, 0.2) * (1 - P(t, A.out1, 0.2))).toFixed(3))
+            semiT.setAttribute('transform', `translate(0 ${f1(12 * (1 - P(t, A.semitone, 0.45, 'power2.out')))})`)
+          })
           window.__timelines = window.__timelines || {}
-          window.__timelines['s10-ti'] = tl
+          window.__timelines[SID] = tl
         })()
       </script>
     </div>

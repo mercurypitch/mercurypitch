@@ -429,3 +429,9 @@ replaced it. The builder's record: critics never read it.
     of assumed. Checked against B's own `tavi()` on every frame of s06, both passes: identical opacity,
     transform and body box on all 2,113 frames. Waves 2 and 3 use the kit; A's and B's scenes keep
     their own copies, which behave the same.
+79. **Merc's mouth opens before a bead leaves it.** Builder A found the bead S1 sends out of Merc's
+    mouth at 0.30 leaving a shut mouth: the pass opened it on stop-c's first note, 0.3 s later, and
+    S10's stop-c-home bead (283.27) does the same. The bead must leave early to land on stair 1 on
+    the note, so the passes change, not the scenes: his mouth opens 0.1 s before the bead leaves,
+    about two-thirds open, and opens fully on the note (merc-shots.py `leads`). m01-blue re-renders;
+    m10-blue was not rendered yet.

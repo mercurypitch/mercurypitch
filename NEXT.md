@@ -1160,3 +1160,20 @@ Note: the lanes' memory gate read a stale cgroup path after the 21:00 restart (f
   exist. NEXT on it: verify.py, merc-whole.py, s01 clip + measure (lab.mjs s01-cold-open --clip), s04 WHOLE
   = first whole + 1 in compositions/s04-recall.html AND lab/s04-recall/s04-src.html, clip + measure, s06
   merc-tags --check + clip + measure. Then component critics A and B when C/D free the slots.
+
+## 2026-10-29 ~09:00Z: wave-1 passes in, gates on generated data, Merc's mouth lead (tasks 189, 190)
+- m01-orange, m04-orange (33), m06b-orange (32) and m07-orange (28) landed; verify.py OK on all; crescent
+  flags at frames 23-31 and in the hops are the eyes (trap 10). whole.js regenerated after each.
+- s04 and s05/s06 gates read L.MERC_WHOLE (s04 in compositions/ AND lab/s04-recall/s04-src.html).
+  reclip.sh (task beilh319o): s06 holds 1.6 s in 35.2 s (1.4 per 30), longest 0.7 s at clip 29.2 (film
+  140.1); s04 1.1 s in 22.3 s (1.5 per 30), longest 0.4; s01 running. Left for the component critics.
+- Mouth lead (DECISIONS 79, CHANGES.md): S1's and S10's beads leave Merc's mouth 0.3 s before the run.
+  merc-shots.py `leads` opens his mouth 0.1 s before the bead leaves (level 0.45, then the note's 0.8);
+  merc-pass.mjs voice entries take edgeIn/edgeOut (0 = a step); merc-shots.py now writes only changed
+  shots and has --check (before: 13 unchanged; after: m01-blue, m10-blue only); merc-whole.py gives a
+  non-drop pass 0 without a render. Stills: $S/l4merc/leadtest/sheet2.png (old shut, new open at 0.30).
+  Old shots kept in $S/l4merc/shots-before-lead/. STORYBOARD's performance rows say when the mouth opens.
+- m01-blue re-rendering: worker 3 (logs/worker-3.log, started 08:56). When it lands: verify.py, re-clip
+  s01 (lab.mjs s01-cold-open --clip) and measure, since reclip.sh's s01 clip uses the old pass.
+- NEXT: C and D reports; when a slot frees, the component critic for group B first (s05, s06; it needs
+  nothing pending), then group A once s01 is re-clipped. Paths only (DECISIONS 76).

@@ -44,6 +44,24 @@ entries here; from this one on, every change is logged.
   `lab/s04-recall/scratch/whole.py` is the same test, and both give m06a-orange 30. Regenerate:
   `assets/merc/whole.js` after every pass lands, then `gen-root.py` once for the two new script tags
   (done).
+- **merc-shots.py: a mouth lead, and only changed shots are written.** Two scenes send a bead out
+  of Merc's mouth 0.3 s before the sung run it lands on (S1's stop-c, S10's stop-c-home), and the
+  passes kept his mouth shut until the run's first note. `leads` (cue -> seconds) opens it first: a
+  voice entry at `LEAD_LEVEL` 0.45 (the mouth 0.65 open) from `MOUTH_OPEN` 0.1 s before the bead
+  leaves, stepping up to the note's 0.8 on the note, and the `sing` state 0.15 s before that; no
+  sound arcs until the note. m01-blue and m10-blue take it. A shot file is now written only when its
+  text changes, since the pass queue and `merc-whole.py` count a pass as rendered only while its WebM
+  is newer than its shot; `--check` lists what would change and writes nothing. Tested: before the
+  lead, `--check` found all 13 shots unchanged; after it, exactly m01-blue and m10-blue. Stills of
+  m01-blue at 0.10 to 0.70 s: the mouth is shut at 0.20, open at 0.30 as the bead leaves, wider on
+  the note. Regenerate: m01-blue's pass (re-rendering), m10-blue's (not yet rendered); the tags do
+  not change (same spans).
+- **merc-pass.mjs: step edges for a sung span.** A voice entry's `edgeIn` and `edgeOut` (default
+  0.06 and 0.08 s) set its soft edges, and 0 makes a step, so a mouth lead runs into its note without
+  the mouth closing between them. An entry without them renders exactly as before.
+- **merc-whole.py: a pass that starts whole needs no render.** It gets 0 from its shot file alone,
+  so re-rendering one (m01-blue now) no longer drops it from `whole.js`. A drop pass still counts
+  only while its WebM is newer than its shot. m07-orange landed: 28. Regenerate: `whole.js` (done).
 
 ## 2026-10-17
 

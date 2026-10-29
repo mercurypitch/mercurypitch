@@ -62,7 +62,7 @@
           //    hop arcs right and lands inside its square, so the scene carries the box 360 px right through
           //    the hop's time in the air (from HOP + 0.15 over 0.42 s, power1.in). A local floor patch under
           //    her corner comes and goes with her. Returns draw(t) -> her screen body box, or null when unseen.
-          const tavi = (layer, { pass, tag, x = 1800, feetY = 840, size = 300, whole = 31, hop = null }) => {
+          const tavi = (layer, { pass, tag, x = 1800, feetY = 840, size = 300, whole = (L.MERC_WHOLE[pass] ?? 30) + 1, hop = null }) => {
             const wrap = L.el('div', { class: 'clip', style: 'pointer-events:none' }, layer)
             const floor = L.el('div', { style: 'position:absolute;left:1690px;width:230px;top:840px;height:240px;opacity:0;background:linear-gradient(180deg, rgba(120,150,190,0.10), rgba(13,17,23,0) 40%);border-top:1px solid rgba(195,204,214,0.10);-webkit-mask-image:linear-gradient(90deg, transparent, #000 45%);mask-image:linear-gradient(90deg, transparent, #000 45%)' }, wrap)
             const vid = document.getElementById(tag)

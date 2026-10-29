@@ -1,7 +1,8 @@
 """Write every Merc pass's shot file from cues.json, so his performance follows
 the narration clock exactly.
 
-  python3 tools/merc-shots.py
+  python3 tools/merc-shots.py            writes the shot files that changed
+  python3 tools/merc-shots.py --check    lists them and writes nothing (exit 1 if any)
 
 For each pass in PASSES: inside its span, Merc
   - sings (`sing`, mouth by level, full sound arcs) on his own `sing` cues,
@@ -31,12 +32,15 @@ are `sound` events with no singer in cues.json, so each pass names the ones its
 Merc sings (`sings`: cue -> state): state `sing` (`ride` for S12's sing-along)
 from 0.15 s before to 0.15 s after, full sound arcs over each run of notes, and
 one voice entry per note at its pitch (NOTES, from FACTS 68), so his mouth, his
-stretch and, in `ride`, his lean follow the run. `quiet` names a pause (the
+stretch and, in `ride`, his lean follow the run. `leads` (cue -> seconds) names
+a run whose bead the scene sends out of his mouth that long before its first
+note: his mouth opens before the bead leaves and steps up on the note (no sound
+arcs until the note). `quiet` names a pause (the
 viewer's `your-turn`) through which he idles whatever else is near: nothing in
 the film listens to the viewer.
 Anchors are cues and words (cues.json), never typed seconds.
 """
-import json, os
+import json, os, sys
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.dirname(HERE)
@@ -45,6 +49,9 @@ C = json.load(open(os.path.join(ROOT, 'cues.json')))['cues']
 FPS = 60            # the master's frame rate: Merc moves on every frame
 ARC_FADE = 0.08     # seconds: each arcs window fades in before it and out after it
 SPEECH_ARCS = 0.5   # arcs level while he talks (sung notes: 1.0)
+MOUTH_OPEN = 0.1    # seconds a lead's mouth opens before its bead leaves: the voice entry's 0.06 s edge
+                    # and the mouth spring's (11 Hz, sim-springs.ts) settling
+LEAD_LEVEL = 0.45   # a lead's voice level: the mouth 0.65 open (sing: 0.2 + level), the note's 1.0
 
 FACE = {'blue': [{'t': 0, 'yaw': 0.32, 'lookX': 0.35}], 'orange': [{'t': 0, 'yaw': -0.32, 'lookX': -0.35}]}
 CAMERA = {'blue': [{'t': 0, 'yaw': 0.0, 'lookX': 0.0}], 'orange': [{'t': 0, 'yaw': 0.0, 'lookX': 0.0}]}
@@ -122,11 +129,11 @@ def ended(exit_start, dur=HOP):
 END = json.load(open(os.path.join(ROOT, 'cues.json')))['total']
 PASSES = [
     # S1: on screen from frame 0, turned toward the stairs between them. Merc sings stop-c (the scene's
-    # bead leaves his mouth 0.3 s before it), Tavi stop-d and land-d; each talks his own lines and idles
-    # through the other's. Both slide 360 px outward and out of frame from o2's end (the scene moves
-    # them, 0.6 s, power2.in); the passes end 0.05 s after the slide.
+    # bead leaves his mouth 0.3 s before it, so his mouth opens first: `leads`), Tavi stop-d and land-d;
+    # each talks his own lines and idles through the other's. Both slide 360 px outward and out of frame
+    # from o2's end (the scene moves them, 0.6 s, power2.in); the passes end 0.05 s after the slide.
     dict(id='m01-blue', who='blue', span=(0.0, ended(cue('o2', 'end'))), size=420, bias=FACE['blue'],
-         sings={'stop-c': 'sing'}),
+         sings={'stop-c': 'sing'}, leads={'stop-c': 0.3}),
     dict(id='m01-orange', who='orange', span=(0.0, ended(cue('o2', 'end'))), size=420, bias=FACE['orange'],
          sings={'stop-d': 'sing', 'land-d': 'sing'}),
     # S4d: drops in at the bottom right before o3, talks o3, hops out right on b7's start.
@@ -149,13 +156,14 @@ PASSES = [
     # Merc's runs, talks o10, hops out right as it ends (the pass spans the S9 to S10 and S10 to S11 cuts).
     dict(id='m09-orange', who='orange', span=(cue('o9', 'start', -0.21), ended(cue('o10', 'end'))), size=300, view='hero',
          bias=TURN['left'], enter=('drop', cue('o9', 'start', -0.21)), exit=('hop', cue('o10', 'end'))),
-    # S10b to S11a: drops in at the bottom left before stop-c-home, sings it, idles through `wait`, talks
+    # S10b to S11a: drops in at the bottom left before stop-c-home, sings it (the scene's bead leaves his
+    # mouth 0.3 s before it: `leads`), idles through `wait`, talks
     # b34, sings land-c, idles through o10, and hops out left as it ends, starting b35 as he goes. The
     # renderer's first hop always arcs right, so this pass faces left and the scenes mirror it
     # (scaleX(-1), as Lesson 2's s10): on screen he faces right, toward the stairs, and hops out left.
     dict(id='m10-blue', who='blue', span=(cue('stop-c-home', 'start', -1.07), ended(cue('o10', 'end'))), size=300, view='hero',
          bias=TURN['left'], enter=('drop', cue('stop-c-home', 'start', -1.07)), exit=('hop', cue('o10', 'end')),
-         sings={'stop-c-home': 'sing', 'land-c': 'sing'}),
+         sings={'stop-c-home': 'sing', 'land-c': 'sing'}, leads={'stop-c-home': 0.3}),
     # S11d to S11f: both drop back into their corners before o11, turned toward each other; Tavi talks
     # o11, Merc b37 and b38; both hop out before the act 4 card. Merc's pass faces left and is mirrored,
     # as m10's, so his hop arcs out left.
@@ -207,6 +215,8 @@ def arc_keys(windows, dur):
 def main():
     out_dir = os.path.join(ROOT, 'merc/shots')
     os.makedirs(out_dir, exist_ok=True)
+    check = '--check' in sys.argv     # report the shots that would change; write nothing
+    changed = []
     for p in PASSES:
         # snap the span to the frame grid: frame i of the pass is film frame P + i
         t0 = round(p['span'][0] * FPS) / FPS
@@ -269,12 +279,22 @@ def main():
         # pitch, full arcs over each run of notes, the state from 0.15 s before to 0.15 s after
         for k2, st in p.get('sings', {}).items():
             a0 = C[k2]['start'] - t0
-            iv.append((a0 - 0.15, a0 + C[k2]['dur'] + 0.15, 4, st))
+            # a mouth lead (`leads`): the scene's bead leaves his mouth `lead` s before the run, so his
+            # mouth opens MOUTH_OPEN s before that, at LEAD_LEVEL, and steps up to the note's level on it
+            lead = p.get('leads', {}).get(k2, 0.0)
+            pre = lead + MOUTH_OPEN if lead else 0.0
+            iv.append((a0 - pre - 0.15, a0 + C[k2]['dur'] + 0.15, 4, st))
             notes = NOTES[k2]
+            if lead:
+                voice.append({'t0': round(a0 + notes[0][0] - pre, 3), 't1': round(a0 + notes[0][0], 3),
+                              'level': LEAD_LEVEL, 'cents': 0, 'steady': 0.92, 'midi': notes[0][2], 'edgeOut': 0})
             for i, (off, d, m) in enumerate(notes):
                 last = i == len(notes) - 1
-                voice.append({'t0': round(a0 + off, 3), 't1': round(a0 + off + d - (0 if last else 0.04), 3),
-                              'level': 0.8, 'cents': 0, 'steady': 0.92, 'midi': m})
+                e = {'t0': round(a0 + off, 3), 't1': round(a0 + off + d - (0 if last else 0.04), 3),
+                     'level': 0.8, 'cents': 0, 'steady': 0.92, 'midi': m}
+                if lead and i == 0:
+                    e['edgeIn'] = 0
+                voice.append(e)
             ra = rb = None
             for off, d, m in notes:
                 if rb is not None and off > rb + 1e-6:      # a rest: the arcs fall between the runs
@@ -336,8 +356,19 @@ def main():
             shot['timeScale'] = p['timeScale']
         if 'glideMouth' in p:
             shot['glideMouth'] = p['glideMouth']
-        json.dump(shot, open(os.path.join(out_dir, p['id'] + '.json'), 'w'), indent=1)
-        print(f"{p['id']:16s} {t0:7.2f}-{t1:7.2f} {round(dur * FPS):5d} fr {len(merged):2d} cues {len(voice):2d} voice  " + ' '.join(f"{t:.1f}:{s}" for t, s in merged))
+        # write a shot only when it changes: merc-pass.mjs's queue and tools/merc-whole.py count a pass
+        # as rendered only while its WebM is newer than its shot file
+        path = os.path.join(out_dir, p['id'] + '.json')
+        text = json.dumps(shot, indent=1)
+        same = os.path.exists(path) and open(path).read() == text
+        if not same:
+            changed.append(p['id'])
+            if not check:
+                open(path, 'w').write(text)
+        print(f"{p['id']:16s} {t0:7.2f}-{t1:7.2f} {round(dur * FPS):5d} fr {len(merged):2d} cues {len(voice):2d} voice  " + ' '.join(f"{t:.1f}:{s}" for t, s in merged) + ('' if same else '  (changed)'))
+    print(f"{len(changed)} shot{'s' if len(changed) != 1 else ''} {'would change' if check else 'written'}{': ' + ', '.join(changed) if changed else ''}")
+    if check and changed:
+        sys.exit(1)
 
 
 if __name__ == '__main__':
