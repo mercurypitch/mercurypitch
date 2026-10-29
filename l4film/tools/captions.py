@@ -39,14 +39,14 @@ SOUNDS = {
     'scale-c': '[the white keys from C up to C]',
     'steps-c': '[the same scale, slowly, step by step]',
     'group-low': '[C, D, E, F]', 'group-high': '[G, A, B, C]',
-    'predict': '[pause and predict]',
+    'predict': '[pause and predict]', 'predict-d': '[pause and predict]',
     'white-d': '[the white keys from D up to D]',
     'major-d': '[the major pattern from D]',
     'slide-g': '[a major scale from G]', 'slide-e': '[a major scale from E]',
-    'sing-a': '[Merc sings up to so and back down to do]',
+    'sing-a': '[Merc sings up to ti, waits, and lands on do]',
     'sing-b': '[Tavi sings up to ti, waits, and lands on do, an octave higher]',
     'count-in': '[one note: do]',
-    'your-turn': '[your turn: up to so and back, then up to ti, wait, and do]',
+    'your-turn': '[your turn: up to ti, wait, and do]',
     'ti-do': '[ti, then do]',
 }
 

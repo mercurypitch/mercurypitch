@@ -38,8 +38,8 @@ FILES=(
   r2fix/karaoke-fetch-retry.patch r2fix/COMMIT-MSG.txt coachfoot/PR-BODY.md release24/notes3/l12-bullet.md
   jamfix/jam-stage-layout.patch coachfoot/PR-BODY2.md coachfoot/NOTES-COMMIT-MSG.txt jamfix/COMMIT-MSG.txt r2pr/PR-BODY.md release24/OWNER-PING-final.md
   rel25/OWNER-GO.md s2/BRIEF.md s2/SEASON-2.md s2/CURRICULUM-s5.md
-  l4setup/make_script.py l4setup/setup-tts.sh
-  l4film/BRIEF.md l4film/FACTS.md l4film/script.json l4film/SCRIPT-DRAFT.md l4film/DECISIONS.md l4film/LEDGER.md
+  l4setup/make_script.py l4setup/setup-tts.sh l4check/pitch_check.py
+  l4film/BRIEF.md l4film/FACTS.md l4film/script.json l4film/SCRIPT-DRAFT.md l4film/SCRIPT.md l4film/DECISIONS.md l4film/LEDGER.md
   l4film/tools/script-draft.py l4film/tools/gen-root.py l4film/tools/mix.py l4film/tools/captions.py l4film/tools/script-md.py
   l4film/review/script-01/REPORT.md l4film/review/script-02/REPORT.md
 )

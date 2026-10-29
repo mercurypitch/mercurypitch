@@ -9,13 +9,13 @@ audience: 'Adult and teen beginners who sing or want to, who know Lesson 2 (semi
 destination: youtube, landing-page
 aspect: 1920x1080
 sizes: 1920x1080
-length: about 8:35 estimated at Lesson 2's voiced pace (script draft 1); the series allows 6 to 9 minutes (MASTER-PLAN D6)
+length: about 8:32 estimated at Lesson 2's voiced pace (script draft 2); the series allows 6 to 9 minutes (MASTER-PLAN D6)
 fps: 60
 language: en-GB
 project_dir: output/motion/lesson-04
 ---
 
-> Draft 1, 29 October 2026, written in the film's working folder. When it is approved it moves to
+> Draft 2, 29 October 2026, after script critic 01, written in the film's working folder. When it is approved it moves to
 > `docs/plans/find-your-pitch/lessons/04-major-scale/BRIEF.md`, which then becomes the source of
 > truth, as Lesson 2's did.
 
@@ -36,11 +36,13 @@ project_dir: output/motion/lesson-04
   captions on.
 - What they should do at the end: answer the recap in their head, then sing a major scale back
   one note at a time in MercuryPitch's Scale Runner. Spoken at the end of the recap: "In
-  MercuryPitch's Scale Runner, sing a major scale back, one note at a time." On screen: the
-  staircase turning into Scale Runner's ladder of notes still to come (labelled as an
-  illustration), then "Practise it free: mercurypitch.com/pitch-training", "then tap Scale
-  Runner". Next-episode tease: Lesson 5's hook, ending on Tavi's "If that doesn't mean pushing,
-  what keeps it steady?"
+  MercuryPitch's Scale Runner, sing a major scale back, one note at a time, in the octave it
+  plays." On screen: the staircase turning into Scale Runner's ladder of notes still to come
+  (labelled as an illustration), then "Practise it free: mercurypitch.com/pitch-training", "then
+  tap Scale Runner" and "First visit? Skip the intro (×)": a typed address meets the app's intro
+  on a first visit, and only a link with `?lesson=04`, the YouTube description's, skips it
+  (FACTS 88). Next-episode tease: Lesson 5's hook, ending on Tavi's "If that doesn't mean
+  pushing, what keeps it steady?"
 
 ## Teaching
 
@@ -57,10 +59,13 @@ project_dir: output/motion/lesson-04
 ### Hook
 
 The cold open is the scene Lesson 3's card promises: Merc climbs seven stairs and stops, one short
-of home. Tavi guesses it hangs "because we started on C"; Merc has her start on D; it still hangs,
-and lands home only with the last step. Tavi turns it into the series' hook question (rule 1),
-done by about 0:30: "So why does do-re-mi sound finished when it lands on do, and restless when it
-stops on ti?" The web page's title is the same question (LESSON.md, Header). The recall question
+of home. Tavi guesses it hangs "because we started on C" (the film's first question, at about
+0:06, inside rule 1's 30 seconds). Merc names the test and asks the viewer's prediction, "Start on
+D, and listen. Will it still hang?", with a 1.5 s hold, as the page's cold open asks it; it still
+hangs, and lands home only with the last step. Tavi draws the result, "So home moved with the
+start.", and turns it into the series' hook question, done by about 0:34 at the voiced pace
+(about 0:33 in the scratch voices): "Then why does do-re-mi sound finished when it lands on do,
+and restless when it stops on ti?" The web page's title is the same question (LESSON.md, Header). The recall question
 from Lesson 2 comes straight after the promise, not before the hook, as every page now orders
 them (MASTER-PLAN § 12 item 13). YouTube title variants for Test & Compare (MASTER-PLAN § 4.1):
 "Why does do-re-mi sound finished on do, but not on ti?" (54 characters); "The major scale:
@@ -69,13 +74,13 @@ major scale built?" (28).
 
 ### Length target
 
-7:30 to 8:30. Draft 1 estimates about 8:35 at Lesson 2's voiced pace (Merc 2.32 words a second,
-Tavi 3.08, both measured on Lesson 2's ElevenLabs takes), and Kokoro's scratch runs about a tenth
-shorter (Lesson 2: 6:33 scratch, 7:11 voiced). Reason: two topics (T09, T10) carry five ideas
-(the uneven steps, the two groups, the pattern on any start, the names, the leading note), the
-film refutes one misconception three ways (C is where scales start; the same keys make the same
-scale; do is always C), and it ends on the series' longest sung checkpoint, 18.2 seconds of guide,
-and a four-question recap. That sits inside the series' 6 to 9 minutes (MASTER-PLAN D6) and about
+7:30 to 8:30. Draft 2 estimates about 8:32 at Lesson 2's voiced pace (Merc 2.32 words a second,
+Tavi 3.08, both measured on Lesson 2's ElevenLabs takes; draft 1 was 8:37), and Kokoro's scratch
+runs about a tenth shorter (Lesson 2: 6:33 scratch, 7:11 voiced). Reason: two topics (T09, T10)
+carry five ideas (the uneven steps, the two groups, the pattern on any start, the names, the
+leading note), the film refutes one misconception three ways (C is where scales start; the same
+keys make the same scale; do is always C), and it ends on a sung checkpoint heard three times
+(Merc, Tavi, the viewer) and a four-question recap. That sits inside the series' 6 to 9 minutes (MASTER-PLAN D6) and about
 a minute past Lesson 2 (7:19). Nothing is cut to hit a number; if the voiced cut runs past 9:00,
 DECISIONS lists what goes first.
 
@@ -89,9 +94,9 @@ DECISIONS lists what goes first.
    other, then the picture: the dashed white-keys staircase climbs tone, semitone, tone, tone,
    tone, semitone, tone, and its third and seventh stairs sit one semitone row below the real
    ones (F under F♯, C under C♯). Tavi says the answer in her own words (o8).
-3. "So do is always C?" (o9). Half right, and Merc says so: in fixed do it is; this series uses
-   movable do, and the slide to D shows the names riding on their stairs while the letters under
-   them change.
+3. "In the opening, do moved up to D. But isn't do always C?" (o9). A sincere doubt, half right,
+   and Merc says so: in fixed do it is; this series uses movable do, and the slide to D shows the
+   names riding on their stairs while the letters under them change.
 
 ### Signature object and its transformation
 
@@ -121,17 +126,20 @@ lanes, where Merc and Tavi sing it, and then into Scale Runner's ladder.
 
 ### Checkpoint (sung)
 
-Do-re-mi-fa-so and back, then up to ti, a wait, and do (FACTS 63). Merc sings the first half (up
-to so and back, from D3); Tavi says what comes next and sings the second half an octave up, the
-climb to ti, the held ti and home (D4 to D5), which models the pull; then the viewer sings the
-whole of it (rule 16: Merc does it, Tavi does part, the viewer does it alone). The care lines come
-before the invitation: "Sore, hoarse or unwell today? Just listen along." (FACTS 50), "at about
-speaking volume" (51), and "Stop immediately if anything feels uncomfortable." (53; the short
-form approved for Lessons 1 and 2 is not used). The viewer starts on Merc's note or an octave up
-(52), and is asked to notice, when they stop on ti, where it wants to go. One soft count-in note,
-then an 18.2-second guide: a plain chrome line sweeping the path, no microphone, nothing listening
-and nothing scored, and nothing of the app's drawing on screen (as Lesson 2's DECISIONS 68). The
-bed's open fifth on D sounds under the turn and gives the starting note.
+Up to ti, a wait, and do: the second half of the page's guide (FACTS 63, 68), the part that
+carries this lesson's question. Merc sings it first, from D3 ("Listen first: up to ti, a wait,
+and home"); Tavi checks what she is to do on ti ("So on ti, I just wait, and listen for where it
+wants to go?") and sings it an octave up, from D4; then the viewer sings the same run alone
+(rule 16: Merc sings it, Tavi tries, the viewer is invited). The viewer sings nothing they have not
+just heard twice. The first half, up to so and back, stays on the page. The care lines come before
+the invitation: "Sore, hoarse or unwell today? Just listen along." (FACTS 50), "at about speaking
+volume" (51), and "Stop immediately if anything feels uncomfortable." (53; the short form
+approved for Lessons 1 and 2 is not used). The viewer starts on Merc's note or an octave up (52),
+and is asked to wait on ti and notice where it wants to go. One soft count-in note, then an
+8.6-second guide: a plain chrome line sweeping the path, no microphone, nothing listening and
+nothing scored, and nothing of the app's drawing on screen (as Lesson 2's DECISIONS 68). No bed
+under the turn: an open fifth on D would sound home while the viewer holds ti, so the turn keeps
+only the room tone, and the count-in gives the starting note.
 
 ### Practice link
 
@@ -139,37 +147,39 @@ Scale Runner (FACTS 36 to 41), reached at mercurypitch.com/pitch-training, then 
 exercises (35; free, 34). It plays a major scale one note at a time, do up to do, and the viewer
 sings each note back; it draws the notes still to come as a ladder (39), which is why the film
 ends the staircase as a ladder, labelled "Illustration". Today no link opens it at a beginner
-pace (43): the proposed `/exercises/slow-scales` never appears on screen. Two details belong on
-the page and in the YouTube description, not in the voice: it starts from the range saved in
-Settings (41), and it wants each note in the octave it plays (40). Ear Lab's Home (47) is the
-page's second drill and is not in the film.
+pace (43): the proposed `/exercises/slow-scales` never appears on screen. It wants each note in
+the octave it plays (40), so the voice says so ("in the octave it plays"), because the sing-along
+just offered either octave. It starts from the range saved in Settings (41), a detail for the page
+and the YouTube description. A first visit by a typed address meets the app's intro first, so the
+end card says how to close it, and the description's link carries `?lesson=04`, which skips it
+(FACTS 88). Ear Lab's Home (47) is the page's second drill and is not in the film.
 
 ### What must read with the sound off (captions on)
 
 - The cold open: the bare staircase, do to do, "from C" at its foot; the bead stopping on ti under
-  the unlit house; "from D" as it rises; the house lighting on the last step; "finished on do ·
-  restless on ti?".
+  the unlit house; "from D?" and "still hanging?" as it rises and the viewer predicts; the house
+  lighting on the last step, and "home moved"; "finished on do · restless on ti?".
 - The promise's four parts as four short labels on the staircase.
 - The recall: "FROM LESSON 2", "1 octave = 12 semitones", then "7 steps?".
 - Each riser measured "tone" (two rows) or "semitone" (one row), in order, the two semitones gold,
   with E–F and B–C named on the keyboard.
-- The two brackets, the same shape laid over each other, "2 2 1 · 2 · 2 2 1 = 12", "= 1 octave",
-  and "W W H W W W H" with "whole · half".
+- The two brackets, the same shape laid over each other, "2 2 1 · 2 · 2 2 1 = 12", "= 1 octave".
 - The predict: Tavi's dashed staircase with its "?", the pills "Yes: same keys" and "No: it
   changes", then the check on "No", the dashed risers labelled T S T T T S T, and the two stairs
   a row low marked against F♯ and C♯; "D major".
-- The staircase on G and on E with the black keys it needs lit; "every start but C needs a black
-  key".
+- The staircase on G and on E with the black keys it needs lit; the count of black keys each start
+  needs, "C 0 · D 2 · G 1 · E 4".
 - The labels switching letters, numbers, do-re-mi; "tonic = home" with the house glyph;
   "scale degrees 1–7"; "solfège", with "so (sol)"; "movable do" against "fixed do: do = C".
 - Ti's gold riser with "1 semitone" and an arrow up to home; "leading note"; the experiment's
-  tiers (do on top), titled as a study and credited; "from D: ti = C♯".
-- The scale guide's path, its names on the rows, Merc's half, then Tavi's an octave up; on the
-  viewer's turn only "Your turn.", "D3 or D4", the comfort line and the stop line, and the chrome
-  sweep.
+  tiers (do on top), titled as a study and credited "Krumhansl & Shepard, 1979", then "later
+  studies: without training too, only weaker", credited "Janata et al., 2003"; "from D: ti = C♯".
+- The scale guide's path, its names on the rows, Merc's run, the wait on ti marked, then Tavi's an
+  octave up; on the viewer's turn only "Your turn.", "D3 or D4", "wait on ti", the comfort line
+  and the stop line, and the chrome sweep.
 - The recap cards, each answered by the object that taught it; Scale Runner's ladder labelled
-  "Illustration", the address, "then tap Scale Runner".
-- The end card's address.
+  "Illustration", the address, "then tap Scale Runner", "sing in the octave it plays".
+- The end card's address, and "First visit? Skip the intro (×)".
 
 ## Brand
 
@@ -214,11 +224,13 @@ into the next idea (staircase, keyboard, groups, slides, names, tiers, guide, la
 
 ## Audio
 
-- Music: none recorded. A quiet open-fifth pad on D (FACTS 68), only in the act transitions and
-  under the dressed pauses (`hang-c`, `hang-d`, `q0`, `predict`, `wait`, `your-turn`, `q1` to
-  `q4`); silent under narration and under every example and sung run (playbook rule 12). Its D
-  gives the viewer the starting note in the your-turn pause. The title and end stings are Lesson
-  1's chimes.
+- Music: none recorded. A quiet open-fifth pad on D (FACTS 69), only in the act transitions and
+  under the dressed thinking pauses (`q0`, `predict`, `q1`, `q2`, `q4`); silent under narration,
+  under every example and sung run, and in the listening silences, `hang-c`, `predict-d`,
+  `hang-d`, `wait`, `q3` and `your-turn`, which keep only the room tone (playbook rule 12: after
+  a C scale a pad on D is in the wrong key, and after a D scale it sounds home before the landing
+  does). The count-in gives the viewer the starting note. The title and end stings are Lesson 1's
+  chimes.
 - Sound effects: synthesised in code (one soft whoosh per act change). The effects that matter are
   the examples.
 - Voiceover: yes, two characters, Merc (blue) teaching and Tavi (orange) asking. No line plays
@@ -254,5 +266,6 @@ into the next idea (staircase, keyboard, groups, slides, names, tiers, guide, la
 - Continuity: Lesson 3's film was made in another session and is not readable from this one, so
   the hand-over follows the written lessons: Lesson 3's next-lesson card and tease (Lesson 3
   FACTS 62), and Lesson 4's own cold open (LESSON.md).
-- Production state: script draft 1. Nothing else exists in `output/motion/lesson-04/` yet but the
-  kit copied from Lesson 2.
+- Production state: script draft 2, after script critic 01 (`review/script-01/REPORT.md`), with
+  scratch voices; the storyboard is next. Nothing else exists in `output/motion/lesson-04/` yet
+  but the kit copied from Lesson 2.

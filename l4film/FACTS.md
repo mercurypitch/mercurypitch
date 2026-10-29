@@ -35,24 +35,32 @@ also checked that every run below climbs 2, 2, 1, 2, 2, 2, 1.
     | `steps-c`                               | soft tone     | C4 to C5, 0.8 s a note, the last 1.2 s (261.63 to 523.25 Hz)                                         | 6.8 s                          | 68   |
     | `group-low`, `group-high`               | soft tone     | C4 D4 E4 F4, and G4 A4 B4 C5, 0.45 s a note, the last 0.9 s, as the page's Group brackets            | 2.25 s each                    | 65   |
     | `white-d`, `major-d`                    | soft tone     | D4 E4 F4 G4 A4 B4 C5 D5, and D4 E4 F♯4 G4 A4 B4 C♯5 D5, 0.45 s a note, the last 0.9 s               | 4.05 s each                    | 60   |
-    | `slide-g`                               | soft tone     | G3 196.00, A3 220.00, B3 246.94, C4 261.63, D4 293.66, E4 329.63, F♯4 369.99, G4 392.00; 0.36 s a note, the last 0.72 s | 3.24 s | 68 |
+    | `slide-g`                               | soft tone     | G4 392.00, A4 440.00, B4 493.88, C5 523.25, D5 587.33, E5 659.26, F♯5 739.99, G5 783.99; 0.36 s a note, the last 0.72 s | 3.24 s | 68 |
     | `slide-e`                               | soft tone     | E4 329.63, F♯4 369.99, G♯4 415.30, A4 440.00, B4 493.88, C♯5 554.37, D♯5 622.25, E5 659.26; same lengths | 3.24 s | 68 |
     | `land-c`                                | Merc's ooh    | B4 0.45 s, then C5 1.2 s                                                                             | 1.65 s                         | 58   |
-    | `sing-a`                                | Merc's ooh    | the first half of `guide-blue`: D3 E3 F♯3 G3 A3 G3 F♯3 E3 D3, 0.8 s a note, the last 1.2 s          | 7.6 s                          | 63   |
+    | `sing-a`                                | Merc's ooh    | the second half of `guide-blue`: D3 E3 F♯3 G3 A3 B3 C♯4 at 0.8 s, C♯4 held 2.0 s, 0.6 s rest, D4 1.2 s | 8.6 s                       | 63   |
     | `sing-b`                                | Tavi's ooh    | the second half of `guide-orange`: D4 E4 F♯4 G4 A4 B4 C♯5 at 0.8 s, C♯5 held 2.0 s, 0.6 s rest, D5 1.2 s | 8.6 s                      | 63   |
     | `count-in`                              | soft tone     | D3 (146.83 Hz) at half a tapped note's level, 0.8 s, then 0.2 s of silence                            | 1.0 s                          | 63   |
-    | `your-turn` (a pause)                   | none          | the guide's 18.2 s: the silent sweep, the bed under it                                                | 18.2 s                         | 63   |
+    | `your-turn` (a pause)                   | none          | the guide's second half, 8.6 s: the silent sweep up to ti, the hold, the rest and do; room tone only  | 8.6 s                          | 63   |
     | `ti-do` (recap)                         | soft tone     | B4 0.45 s, then C5 1.2 s                                                                             | 1.65 s                         | 58   |
 
     The soft tone is the films' own (`tone()` in `tools/mix.py`, partials 1, .28, .1, .04, Lesson
     1's), not the page kit's (partials 1, .3, .11, .05, .024, .012): the pitches are the same, the
     colour a little plainer | code; arithmetic. G major needs one black key (F♯) and E major four
-    (F♯, G♯, C♯, D♯), as 12 counts them; both spelled one letter a step, as 13 requires
+    (F♯, G♯, C♯, D♯), as 12 counts them; both spelled one letter a step, as 13 requires. Both
+    slides start in the octave above middle C, as every other staircase example does. The
+    sing-along is the guide's second half only (63): up to ti, the hold, the rest and home, sung by
+    Merc from D3, then by Tavi from D4, then by the viewer; the guide's first half, up to so and
+    back, stays on the page. Every pitch in this table was measured from the mixer's own output on
+    29 October 2026, each note within 5 cents of its frequency
 69. The bed: a quiet open fifth on D, D3 146.83, A3 220.00 and D4 293.66 Hz, slow detuned sines
     as Lesson 2's pad in A; only in the act transitions and under the dressed pauses, silent under
-    every line, example and sung run (playbook rule 12); under the your-turn pause it gives the
-    starting note, D3 or D4 (52). The title and end stings are Lesson 1's chimes, unchanged |
-    `tools/mix.py` (`pad`, `chime`); Lesson 2 BRIEF, Audio | code; design
+    every line, example and sung run (playbook rule 12). It is silent too in the listening
+    silences, `hang-c`, `predict-d`, `hang-d`, `wait`, `q3` and `your-turn`, which keep only the
+    room tone: after a C scale a pad on D is in the wrong key, and after a D scale it sounds home
+    before the landing does. The viewer's starting note comes from the count-in (63) and from
+    Merc's and Tavi's runs just before. The title and end stings are Lesson 1's chimes,
+    unchanged | `tools/mix.py` (`pad`, `chime`, `NO_BED`); Lesson 2 BRIEF, Audio | code; design
 
 ## Lines the lesson's facts do not already word
 
@@ -68,62 +76,82 @@ also checked that every run below climbs 2, 2, 1, 2, 2, 2, 1.
 73. "Both halves climb the same way: tone, tone, semitone. One more tone joins them" | 3 | carried
 74. "Seven steps that add up to twelve semitones: one octave"; Tavi's "Is that why it ends on C
     again, an octave up?" | 4 | arithmetic
-75. "Books often write the pattern with W and H, for whole steps and half steps" | 2 | carried
+75. Not in the film since draft 2: the W and H line ("Books often write the pattern with W and H,
+    for whole steps and half steps", 2) was cut for length, and the letters are not on screen, so
+    the film keeps one vocabulary, tone and semitone; the page carries W and H (2)
 76. "It changes. The white keys climb tone, semitone, tone, tone, tone, semitone, tone"; "the short
     steps fall in different places, and the third and seventh notes come out a semitone low";
     "Keeping the pattern takes two black keys: F sharp and C sharp. That's D major, named after its
     first note." | 9, 10, 11 | carried. The film never names the white-keys scale (11)
 77. "Start the pattern on any of the twelve notes, and you get a major scale"; "The shape never
-    changes. Only the keys under it do."; "Every start except C needs at least one black key. C is
-    just the one that fits the white keys alone." | 8, 12; the staircase is the film's diagram, so
-    "the shape" is a claim about the pattern (2), not about how the scales sound | carried
+    changes. Only the keys under it change."; "Every start except C needs at least one black key.
+    C is just the one that fits the white keys alone." | 8, 12; the staircase is the film's
+    diagram, so "the shape" is a claim about the pattern (2), not about how the scales sound |
+    carried. On screen, the black keys each start needs: "C 0 · D 2 · G 1 · E 4" (10, 12, 68)
 78. "A scale's first note is its tonic: its home"; "Musicians number the notes up from home, one to
     seven: the scale degrees"; the names | 16, 17, 18, 19, 20 | carried. On screen, so carries a
     small "(sol)", as the page notes (20)
 79. "In one system, called fixed doh, it is. We'll use movable doh: the names belong to the stairs,
     not the keys."; "Slide to D, and doh is D, ray is E, mee is F sharp."; "Home moves, and the
     names move with it." | 19, 21; LESSON.md, step 4 ("The names belong to the places in the
-    scale, not to the keys") | carried. Tavi's "So doh is always C?" is half right, and Merc says
-    so first
+    scale, not to the keys") | carried. Tavi's "In the opening, doh moved up to D. But isn't doh
+    always C?" is a sincere doubt: she heard home move in the cold open, and may know fixed do; she
+    is half right, and Merc says so first
 80. "Tee is the seventh note, and it sits just a semitone below doh: the last step is a short one";
     "Most listeners hear it waiting for one more note", said over `stop-c-home`, a C major scale |
     22, 23 | carried, and on C only (26)
 81. The experiment: "In one experiment, listeners heard a C major scale, then one more note, and
-    rated how well it finished the scale. Doh came out on top. Trained musicians show the order
-    most sharply, but listeners without training show it too, so that sense of home seems to be
-    learned, just by hearing music." | 23a, 24, 25: K&S 1979's design as its abstract gives it, do
-    heading the order; the order clearest for musical listeners (K&S 1979) and "more pronounced in
-    musicians than non-musicians", yet present "in non-expert groups" (Janata 2003, p. 4); "seems",
-    as Janata's "suggests" allows | carried. On screen the tiers carry no numbers, and the credit
-    reads "Krumhansl & Shepard, 1979"
+    rated how well it finished the scale." "Doh came out on top. Later studies found the same kind
+    of order in listeners without training too, only weaker. So that sense of home seems to be
+    learned, just by hearing music." | 23, 23a, 24, 25: K&S 1979's design as its abstract gives
+    it, do heading the order; the later studies as Janata 2003 sums them up (p. 4: "more
+    pronounced in musicians than non-musicians", and present "in non-expert groups"), not K&S
+    1979, whose less musical listeners leaned on pitch height; "seems", as Janata's "suggests"
+    allows | carried. On screen the tiers carry no numbers; the experiment is credited
+    "Krumhansl & Shepard, 1979", and the later studies "Janata et al., 2003", the review that
+    sums them up (the studies it cites were not read here, 25)
 82. "Tee is called the leading note, because it's thought of as leading to the tonic"; "It leads
     wherever home is. From D, tee is C sharp, and it leans up to D." | 22, 26 | carried, in the
-    textbooks' terms only (26). Tavi's "So tee always sits a semitone under home, wherever the
-    scale starts?" rests on 2 and 22, and Merc's "Always: the pattern's last step is a semitone"
-    on 2
-83. The sing-along's lines: "Sore, hoarse or unwell today? Just listen along."; "sing on doh, ray,
-    mee, or on ooh, at about speaking volume"; "Start on my note, or an octave up."; "When you stop
-    on tee, wait a moment, and notice where it wants to go."; "Stop immediately if anything feels
-    uncomfortable." | 50, 51, 52, 53; LESSON.md, Sing it | carried. Merc's note is D3, Tavi's D4
-    (52, 63); the film offers no Move do, so the two octaves are the choice, which every app preset
-    holds one of (52). The doctor lines (54) are in the YouTube description and on the page, not in
-    the voice
-84. The recap: "What pattern of steps makes a major scale?" (2, 3); "Start a major scale on D.
+    textbooks' terms only (26). Tavi's "So doh sounds finished because we've learned to hear it
+    as home, and tee stops one short step under it?" answers the cold open's question with the
+    page's two reasons and no others (23a, 22); Merc's "That's how it seems" keeps 23a's "seems"
+83. The sing-along's lines: "Let's sing it. Listen first: up to tee, a wait, and home."; Tavi's
+    "So on tee, I just wait, and listen for where it wants to go?" (her re-explaining question) and
+    Merc's "Yes. Try it, an octave up."; "Now you. Sore, hoarse or unwell today? Just listen
+    along."; "Otherwise, sing on doh, ray, mee, or on ooh, at about speaking volume. Start on my
+    note, or an octave up."; "Wait on tee, and notice where it wants to go."; "Stop immediately if
+    anything feels uncomfortable." | 50, 51, 52, 53, 63; LESSON.md, Sing it | carried. The run is
+    the guide's second half (63, 68). Merc's note is D3, Tavi's D4 (52, 63); the film offers no
+    Move do, so the two octaves are the choice, which every app preset holds one of (52). The
+    doctor lines (54) are in the YouTube description and on the page, not in the voice
+84. The recap: "What pattern of steps makes a major scale?" "Tone, tone, semitone, tone, tone,
+    tone, semitone. Two groups, joined by a tone." (2, 3); "Start a major scale on D.
     Which two black keys does it need?" "F sharp and C sharp." (10); "From tee up to doh: a tone,
     or a semitone?" "A semitone. Tee sits just under home, and most listeners hear it lean up."
     (22, 23, over `ti-do`, on C); Tavi's "And in a scale that starts on G, which note is doh?"
     "G. Doh is wherever the scale starts: its home." (9, 19, in movable do, 79) | carried
-85. "In MercuryPitch's Scale Runner, sing a major scale back, one note at a time." On screen:
-    "Practise it free: mercurypitch.com/pitch-training", "then tap Scale Runner" | 34, 35, 36, 37,
-    38 | code, as cited there
+85. "In MercuryPitch's Scale Runner, sing a major scale back, one note at a time, in the octave it
+    plays." On screen: "Practise it free: mercurypitch.com/pitch-training", "then tap Scale
+    Runner" | 34, 35, 36, 37, 38, 40 | code, as cited there. "In the octave it plays" because
+    Scale Runner scores a note sung an octave away as 1,200 cents off (40), while the sing-along
+    offers either octave (83)
 86. Next time: "Singers are told to support a long note." / "If that doesn't mean pushing, what
     keeps it steady?": Lesson 5's hook (31), split between Merc and Tavi | carried
 87. The cold open's lines: Tavi's "It just hangs there, waiting. Is that because we started on
-    C?" and Merc's "Start somewhere else, and listen." are LESSON.md's, word for word; Merc's
-    "Still waiting." describes `stop-d`; Tavi's "Home." names the series word (17) as she hears
-    `land-d` land; her hook question is the title (28) | LESSON.md, Cold open | carried. The cold
-    open claims no listening result: it plays two examples and lets them speak (as 26 says of the
+    C?" is LESSON.md's, word for word; Merc's "Start on D, and listen. Will it still hang?" is
+    LESSON.md's "Start somewhere else, and listen", with the start named and the page's predict
+    asked aloud, a 1.5 s hold after it (`predict-d`); Merc's "Still waiting." describes `stop-d`;
+    Tavi's "So home moved with the start." is the page's reveal (26), said as her inference from
+    `land-d`; her hook question is the title (28) | LESSON.md, Cold open | carried. The cold open
+    claims no listening result: it plays two examples and lets them speak (as 26 says of the
     page's reveal)
+88. A viewer who types mercurypitch.com/pitch-training on a first visit meets First Light, the
+    app's intro, before the Exercises tab; only a link carrying `?lesson=04` skips it. So the end
+    card adds "First visit? Skip the intro (×)", and the YouTube description's link carries
+    `?lesson=04` | 35a, 35b; at `b803c7d43`: `stepAsideForLesson` returns without stepping aside
+    when the address has no valid marker (`src/stores/onboarding-store.ts:310-316`), and
+    `src/index.tsx:117` calls it before the render; the intro's one way out is the button labelled
+    "Skip the intro" (`src/features/onboarding/FirstLight.tsx:744-745`) | code
 
 ## Illustrations without claims
 

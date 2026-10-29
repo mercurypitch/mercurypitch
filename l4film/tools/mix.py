@@ -279,12 +279,12 @@ def sound_for(name, dur):
     elif name == 'major-d':                  # FACTS 60: the pattern from D
         x = run(even(D_MAJ, 0.45, 0.9), 0.48, voice=False)
     elif name == 'slide-g':                  # FACTS 68: G major, one black key
-        x = run(even(['G3', 'A3', 'B3', 'C4', 'D4', 'E4', 'F#4', 'G4'], 0.36, 0.72), 0.48, voice=False)
+        x = run(even(['G4', 'A4', 'B4', 'C5', 'D5', 'E5', 'F#5', 'G5'], 0.36, 0.72), 0.48, voice=False)
     elif name == 'slide-e':                  # FACTS 68: E major, four black keys
         x = run(even(['E4', 'F#4', 'G#4', 'A4', 'B4', 'C#5', 'D#5', 'E5'], 0.36, 0.72), 0.48, voice=False)
-    elif name == 'sing-a':                   # FACTS 63: guide-blue's first half, from D3
-        x = run(even(['D3', 'E3', 'F#3', 'G3', 'A3', 'G3', 'F#3', 'E3', 'D3'], 0.8, 1.2), MERC + 0.02)
-    elif name == 'sing-b':                   # FACTS 63: guide-orange's second half, D4 up to ti, held, home
+    elif name == 'sing-a':                   # FACTS 63, 68: guide-blue's second half, D3 up to ti, held, home
+        x = run([(nm, 0.8) for nm in ['D3', 'E3', 'F#3', 'G3', 'A3', 'B3']] + [('C#4', 2.0), (None, 0.6), ('D4', 1.2)], MERC + 0.02)
+    elif name == 'sing-b':                   # FACTS 63, 68: guide-orange's second half, D4 up to ti, held, home
         x = run([(nm, 0.8) for nm in D_MAJ[:6]] + [('C#5', 2.0), (None, 0.6), ('D5', 1.2)], TAVI)
     elif name == 'count-in':                 # FACTS 63: do, at half a tapped note's level
         x = run([('D3', 0.8), (None, 0.2)], 0.24, voice=False)
@@ -293,6 +293,12 @@ def sound_for(name, dur):
     else:
         raise ValueError(name)
     return fit(x, dur)
+
+
+# Listening silences: the scale hangs on ti, or the viewer sings. A pad on D there would be in the
+# wrong key after a C scale, and would sound home before the landing after a D one (script critic
+# 01, item 1), so these pauses keep only the room tone (FACTS 69).
+NO_BED = {'hang-c', 'predict-d', 'hang-d', 'wait', 'q3', 'your-turn'}
 
 
 def main():
@@ -332,7 +338,7 @@ def main():
     duck = np.ones(n, dtype=np.float32)
     quiet = []
     for k, c in C.items():
-        if c['type'] in ('sound', 'sing', 'line'):
+        if c['type'] in ('sound', 'sing', 'line') or k in NO_BED:
             pre, post = (0.25, 0.35) if c['type'] == 'line' else (0.5, 0.6)
             quiet.append((c['start'] - pre, c['end'] + post))
     quiet.sort()

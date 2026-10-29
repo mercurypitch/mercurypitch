@@ -17,22 +17,22 @@ SCENES = ast.literal_eval(re.search(r'^SCENES = (\[.*?^\])', src, re.S | re.M).g
 WHO = {'blue': 'MERC', 'orange': 'TAVI'}
 SAY = {'doh': 'do', 'ray': 're', 'mee': 'mi', 'fah': 'fa', 'soh': 'so', 'lah': 'la', 'tee': 'ti'}
 PICTURE = {
-    's01-cold-open': 'The compact staircase alone in the dark room: eight stairs, do to do, names only, "from C" at its foot, the top stair under an unlit house glyph. Merc\'s blue bead climbs with each sung note and stops on ti. The whole staircase rises one tone ("from D"); Tavi\'s orange bead climbs, hangs on ti, then lands, and the house lights. The hook in type: "finished on do · restless on ti?"',
+    's01-cold-open': 'The compact staircase alone in the dark room: eight stairs, do to do, names only, "from C" at its foot, the top stair under an unlit house glyph. Merc\'s blue bead climbs with each sung note and stops on ti. The whole staircase rises one tone ("from D?"), and holds while the viewer predicts ("still hanging?"); Tavi\'s orange bead climbs, hangs on ti, then lands, and the house lights on the new top stair: "home moved". The hook in type: "finished on do · restless on ti?"',
     's02-title': 'Title sting: "Find Your Pitch · Lesson 04 · The major scale and home".',
     's03-promise': 'Four short labels land on the staircase as Merc names them.',
     's04-recall': '"FROM LESSON 2"; Lesson 2\'s row of twelve equal tiles, "1 octave = 12 semitones"; the staircase\'s seven risers over it, "7 steps?".',
     's05-steps': 'Lesson 2\'s keyboard slides in under the staircase; each stair stands over its white key on a grid of semitone rows; each riser is measured as its note sounds, "tone" two rows, "semitone" one row; the two semitones turn gold; E-F and B-C marked on the keys.',
-    's06-groups': 'Two brackets, C D E F and G A B C, light with their sounds; the lower group lifts and lays over the upper: the same shape; "2 2 1 · 2 · 2 2 1 = 12", "= 1 octave"; "W W H W W W H".',
+    's06-groups': 'Two brackets, C D E F and G A B C, light with their sounds; the lower group lifts and lays over the upper: the same shape; "2 2 1 · 2 · 2 2 1 = 12", "= 1 octave".',
     's07-predict': 'Chapter card "02 Start anywhere". Tavi\'s dashed ink-2 staircase with its "?", on the white keys from D; the two pills and the hold; the white keys from D sound under it; then the real staircase slides, whole, from C to D, and two keys under it turn black, F♯ and C♯; the dashed risers read T S T T T S T, its third and seventh stairs a row low.',
-    's08-anywhere': 'The staircase slides to G (one black key lights) and to E (four), never changing shape; "every start but C needs a black key".',
+    's08-anywhere': 'The staircase slides to G (one black key lights) and to E (four), both in the octave above middle C, never changing shape; the count of black keys each start needs, "C 0 · D 2 · G 1 · E 4".',
     's09-names': 'Chapter card "03 Name the stairs". The house on do, "tonic = home"; numbers 1 to 7 replace the letters, "scale degrees"; then do re mi fa so la ti land on their stairs with Merc\'s words, "solfège", "so (sol)"; "fixed do: do = C" set aside; the staircase slides to D: the letters change, the names ride their stairs, the house moves with do.',
     's10-ti': 'Back on C; ti\'s gold riser, "1 semitone"; the bead climbs and hangs under home; the last step taken, the house lit.',
-    's11-why': 'The experiment as a picture: the notes regroup into tiers, do on top, then mi and so, then re fa la ti, then the five outside, no numbers, "Krumhansl & Shepard, 1979"; "leading note"; the staircase on D, "ti = C♯" leaning up to D.',
-    's12-sing': 'Chapter card "04 Sing it". The staircase tips into the scale guide\'s lanes; Merc\'s amber path up to so and back, the names on the rows; Tavi\'s half an octave up, the hold on ti, home.',
-    's13-your-turn': 'The care lines in type; "Your turn."; "D3 or D4"; one count-in; the plain chrome guide sweeps the path. Nothing listens.',
-    's14-recap': 'Four recap cards, each answered by the staircase; Scale Runner\'s ladder ("Illustration"); "Practise it free: mercurypitch.com/pitch-training", "then tap Scale Runner".',
+    's11-why': 'The experiment as a picture: the notes regroup into tiers, do on top, then mi and so, then re fa la ti, then the five outside, no numbers, "Krumhansl & Shepard, 1979"; "later studies: without training too, only weaker", "Janata et al., 2003"; Tavi\'s answer as two labels, "learned home" on do and "one short step" on ti\'s gold riser; "leading note"; the staircase on D, "ti = C♯" leaning up to D.',
+    's12-sing': 'Chapter card "04 Sing it". The staircase tips into the scale guide\'s lanes; Merc\'s amber path up to ti, the names on the rows, the hold on ti marked "wait", then home; Tavi\'s the same run an octave up.',
+    's13-your-turn': 'The care lines in type; "Your turn."; "D3 or D4"; "wait on ti"; one count-in; the plain chrome guide sweeps the path, 8.6 s, room tone only. Nothing listens.',
+    's14-recap': 'Four recap cards, each answered by the staircase; Scale Runner\'s ladder ("Illustration"); "Practise it free: mercurypitch.com/pitch-training", "then tap Scale Runner", "sing in the octave it plays".',
     's15-next': '"Next time": Lesson 5\'s hook in type.',
-    's16-end': 'End card: the address, the lockup.',
+    's16-end': 'End card: the address, "First visit? Skip the intro (×)", the lockup.',
 }
 def shown(text):
     def one(m):

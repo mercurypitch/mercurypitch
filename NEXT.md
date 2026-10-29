@@ -990,3 +990,18 @@ Note: the lanes' memory gate read a stale cgroup path after the 21:00 restart (f
 - Script critic round 1 running (review/script-01/REPORT.md to be saved by me). Kokoro draft-1 voicing running.
 - Lesson 3's film is not reachable (other session); continuity follows the written lessons. Tell the owner.
 - ElevenLabs final voices wait for the owner's OK on credits.
+
+## 2026-10-29 ~01:10Z: Lesson 4 film script draft 2 (task 180)
+- Script critic 01: ONE MORE PASS (9 items; review/script-01/REPORT.md). All 9 taken in draft 2 (DECISIONS 18-21):
+  NO_BED pauses in mix.py (hang-c, predict-d, hang-d, wait, q3, your-turn: room tone only); later studies credited
+  "Janata et al., 2003" apart from K&S 1979; o9 a sincere doubt; sing-along = guide's second half three times
+  (Merc D3, Tavi D4, viewer; 8.6 s each); "in the octave it plays" + end card "First visit? Skip the intro (x)"
+  (FACTS 88, onboarding-store.ts:310 at b803c7d43); cold-open predict "Will it still hang?" + 1.5 s and Tavi's
+  "So home moved with the start"; o11 synthesis + "That's how it seems"; b8 names the major scale; s08 label
+  "C 0 . D 2 . G 1 . E 4", "change" not "do", slide-g G4-G5. Cuts: "Let's find out...", W and H line, folded b32.
+  b33 now "Climb to ti from C, and stop." (no double "Back").
+- pitch_check: every note within 5 cents (worst 4.8). FACTS 68/69/75/77/79/81-85/87 + new 88; BRIEF draft 2.
+- Kokoro re-voiced: 7:54 (69 lines, 895 words); estimate 8:32.0 at L2 voiced pace; hook done 0:32.8 Kokoro.
+- Script critic round 2 (verification) running -> save its text to review/script-02/REPORT.md, fill LEDGER row 02.
+- Then (task 181): storyboard (vertical semitone-row keyboard behind a fixed staircase; gold only on the two
+  semitone risers; house glyph = home; Tavi's dashed ink-2 "?"; guide amber -> chrome on the viewer's turn).
