@@ -12,6 +12,13 @@ about the app were read on main at `b803c7d43` (0.9.25) and cite file and line t
 marked "abstract" or "summary" were read only that far, and a claim this plan could not check is
 marked **not verified**: a writer checks it before it reaches a script.
 
+Lead review, 29 October 2026: every one of the 138 file-and-line citations was read at `b803c7d43`
+and says what this plan says it does. Five edits followed: above a drone the beats stop only at
+the pure intervals (§ 1.1, Lesson 24); the pentatonic climbs 2, 2, 3, 2, 3, so its steps are not
+even (Lesson 20); Lesson 21's hook asks why the sharps pile up, since Lesson 4 already slides the
+scale to G and D (Lessons 20 and 21); Lesson 16's refutation no longer leans on the mixed evidence
+for movable do; and Lesson 22's example extent sits inside the range the card cites.
+
 ## 1. The promise and the shape
 
 ### 1.1 What a learner can do by the end of Season 2
@@ -25,7 +32,8 @@ staccato dot, a slur, a breath mark.
 **Hear.** Tell a perfect interval from a major or a minor one, and hear the tritone. Hear harmonic
 minor's raised seventh, a dominant seventh's pull home, a chord in inversion. Hear perfect,
 imperfect, plagal and interrupted cadences, and a song's sections. Hear the beats between two held
-notes slow down and stop as the notes come into tune.
+notes slow down and stop as a unison or an octave comes into tune, and hear that above a drone the
+piano's fifth beats slowly and its major third quickly, while the pure ones are still.
 
 **Sing.** Sight-sing a short melody in movable do after hearing do: steps and the tonic triad
 first, then in time. Sing a pentatonic pattern lightly and evenly at a comfortable tempo. Hold a
@@ -139,7 +147,7 @@ splits into S11a and S11b and S20 into S20a and S20b (§ 4.1). Lessons are numbe
 | 18  | Voice            | Read and sing a whole line             | S11b (new), T32 (light) | How do singers read a tune they've never heard without stopping on every note?                                   |
 | 19  | Theory           | Threes, offbeats and syncopation       | T08                     | Six notes in a bar, grouped two ways: why does one feel like two beats and the other like three?                 |
 | 20  | Voice            | Runs and the pentatonic scale          | S18, T16                | How do singers sing a fast run without the notes smudging together?                                               |
-| 21  | Theory           | Keys and the circle of fifths          | T17, T18, T29           | Start do-re-mi on G instead of C, and one note needs a sharp. Why that one?                                       |
+| 21  | Theory           | Keys and the circle of fifths          | T17, T18, T29           | G major needs one sharp and D major two. Why does each key a fifth up keep its sharps and add one?                |
 | 22  | Voice            | Vibrato                                | S19                     | If a singer's held note swings up and down six times a second, why do we still hear one note?                     |
 | 23  | Theory           | Perfect, major, minor and the tritone  | T13                     | Which interval splits the octave exactly in half, and why does it want to move?                                   |
 | 24  | Voice            | Harmony against a drone                | S20a (new)              | Hold a note against a drone: how can you hear when the two are in tune?                                           |
@@ -153,7 +161,10 @@ splits into S11a and S11b and S20 into S20a and S20b (§ 4.1). Lessons are numbe
 answer.
 
 **Titles for YouTube** may shorten a hook (at most 100 characters, about 60 as the aim;
-MASTER-PLAN.md:124-127); each card offers one draft for the Test & Compare set.
+MASTER-PLAN.md:124-127); each card offers one draft for the Test & Compare set. Each draft, and
+each tease, was written to keep the predict's answer out of it, the season's most common review
+finding (HANDOFF § 5); the reviews still check them, with the meta description, the promise, the
+share card and the thumbnail.
 
 ## 3. Lesson cards
 
@@ -166,7 +177,7 @@ lesson has a package yet: each card is status "proposed".
 
 **Lesson 15. The staff: where notes sit** (theory; T30)
 
-- Draft YouTube title: "88 keys, five lines: how to read the staff".
+- Draft YouTube title: "88 keys, five lines: how does the staff work?"
 - Objectives: read the five lines and four spaces as letters, one letter per step; know the treble
   clef curls round G4 and the bass clef's two dots sit either side of F3; add ledger lines; find
   middle C on the one ledger line between the two staves of the grand staff; find every staff note
@@ -210,9 +221,11 @@ lesson has a package yet: each card is status "proposed".
   the staff; know that reading needs a starting note and relative pitch, not perfect pitch.
 - Misconception: "You need perfect pitch to sing from the page." (Refuted, and half right about one
   thing. Absolute pitch is rare and appears to depend on early learning, roughly before age 6
-  (Takeuchi & Hulse 1993, pedagogy-research.md:614-617), while movable-do sight-singers read
-  relationally: in four Texas high schools, movable-do students sight-sang better than fixed-do
-  students, with confounds the authors name (Demorest & May 1995, pedagogy-research.md:607-613).
+  (Takeuchi & Hulse 1993, pedagogy-research.md:614-617), while most listeners hear music
+  relationally (the same lines), so reading needs a starting note, not a stored one. Whether
+  movable or fixed do teaches sight-singing better is mixed and confounded evidence, graded Weak
+  (Demorest & May 1995 against a 2012 dissertation, pedagogy-research.md:607-613), so the lesson
+  claims nothing about methods.
   Half right: you do need a first note, which is why choirs take one from a piano and why the page
   plays do. Merc says "absolute pitch, often called perfect pitch", since the playbook asks lessons
   to keep absolute pitch, relative pitch and pitch accuracy apart, TEACHING-PLAYBOOK.md:81-82.)
@@ -245,7 +258,7 @@ lesson has a package yet: each card is status "proposed".
 
 **Lesson 17. How long is a note?** (theory; T07)
 
-- Draft YouTube title: "Why a quarter note isn't a quarter of a second".
+- Draft YouTube title: "Why isn't a quarter note a quarter of a second?"
 - Objectives: read whole, half, quarter, eighth and sixteenth notes and their rests as fractions of
   a whole note; know a dot adds half the note's value and a tie joins two notes into one sound;
   count a 4/4 bar aloud, with "and" for eighths; know the tempo (Lesson 8) sets how long a beat
@@ -276,7 +289,7 @@ lesson has a package yet: each card is status "proposed".
 
 **Lesson 18. Read and sing a whole line** (voice; S11b, new; T32 light)
 
-- Draft YouTube title: "How singers sight-read a melody".
+- Draft YouTube title: "How do singers read a song at first sight?"
 - Objectives: read a two-bar melody in time, keeping the beat going; see groups, not single notes:
   a run of steps, a repeated note, do-mi-so; take a breath at a breath mark (Lesson 14); read p, f,
   a hairpin, a staccato dot and a slur (T32, light).
@@ -311,7 +324,7 @@ lesson has a package yet: each card is status "proposed".
 
 **Lesson 19. Threes, offbeats and syncopation** (theory; T08)
 
-- Draft YouTube title: "6/8 vs 3/4: why six notes can feel like two beats".
+- Draft YouTube title: "Six notes, two ways to count them".
 - Objectives: tell simple from compound metre; feel 6/8 as two beats, each split into three, and
   3/4 as three beats, each split into two; count 6/8 as "1 and a, 2 and a" (§ 7 item 3); hear and
   read a triplet as three in the time of two; hear syncopation as an accent off the beat, and an
@@ -339,7 +352,7 @@ lesson has a package yet: each card is status "proposed".
 
 **Lesson 20. Runs and the pentatonic scale** (voice; S18, T16)
 
-- Draft YouTube title: "How to sing runs: start slow".
+- Draft YouTube title: "How do singers sing fast runs?"
 - Objectives: sing a five-note pentatonic pattern lightly and evenly; know the major pentatonic as
   do re mi so la, the major scale without fa and ti, so without its two semitones; meet minor
   pentatonic, do me fa so te in do-based minor; know that accurate repetitions at a slow tempo come
@@ -349,10 +362,11 @@ lesson has a package yet: each card is status "proposed".
   next-day retention; the proportion of correct trials did (Duke, Simmons & Cash 2009,
   pedagogy-research.md:693-695). The lesson's advice, a tempo slow enough to be accurate, nudged up,
   is an inference from that study for singing, and says so.)
-- Signature: Lesson 4's staircase loses fa and ti, and the gaps close into five even-looking steps
-  (the app's own description, "no half steps", `src/lib/scale-data.ts:118`); the run is drawn as
-  beads on a string, first spaced, then drawn together as the tempo rises, each bead still in its
-  band.
+- Signature: Lesson 4's staircase loses fa and ti, and both of its semitone risers go with them;
+  what is left climbs 2, 2, 3, 2 and 3 semitones: no half steps (the app's own description,
+  `src/lib/scale-data.ts:118`), but not even steps either, since mi to so and la to do are three
+  semitones tall; the run is drawn as beads on a string, first spaced, then drawn together as the
+  tempo rises, each bead still in its band.
 - Checkpoint (scored on the page): comfort check first, after the optional warm-up (CURRICULUM § 1
   principle 6); sing do re mi so la so mi re do on "ah" or "oo", slowly, in a comfortable octave,
   each note scored octave-folded. Then, only if that felt Easy or Workable, once a little faster,
@@ -375,12 +389,18 @@ lesson has a package yet: each card is status "proposed".
 - Go deeper: the blue note between fa and so in the blues scale (`src/lib/scale-data.ts:125-129`),
   with no syllable taught, since the app's Gravity drill names that semitone "Fi"
   (`src/lib/ear/item-bank.ts:68`).
-- Closes on: Lesson 21's hook. "Every run today started on C. Start do-re-mi on G instead, and one
-  note needs a sharp. Why that one?"
+- Closes on: Lesson 21's hook. "Every run today started on C. Lesson 4 slid the scale to G, which
+  needs one sharp, and to D, which needs two. Why does each key a fifth up keep its sharps and add
+  one?"
 
 **Lesson 21. Keys and the circle of fifths** (theory; T17, T18, T29)
 
-- Draft YouTube title: "Why G major has one sharp (and why there are 12 notes)".
+- Draft YouTube title: "Why do sharps pile up one key at a time?"
+- Builds on Lesson 4, whose page builds D major with two black keys
+  (lessons/04-major-scale/LESSON.md:122) and whose film also slides the pattern to G, which needs
+  one (its facts' fact 12; the film's label "C 0 · D 2 · G 1 · E 4"), so the hook asks what
+  Lesson 4 did not: why the sharps come in a fixed order, each key a fifth up keeping the last
+  one's sharps and adding one on its new ti.
 - Objectives: build a major scale on any note from Lesson 4's pattern (tone, tone, semitone, tone,
   tone, tone, semitone); know why G major needs F sharp and F major needs B flat; read a key
   signature of up to three sharps or flats and find do; know the order of sharps (F C G D A E B) and
@@ -416,7 +436,7 @@ lesson has a package yet: each card is status "proposed".
 
 **Lesson 22. Vibrato** (voice; S19)
 
-- Draft YouTube title: "What is vibrato? (and why it isn't out of tune)".
+- Draft YouTube title: "If vibrato wobbles, why do we hear one note?"
 - Objectives: know vibrato is a regular wave in a held note's pitch, heard as one note near its
   centre; know its two measures, rate (waves a second) and extent (how far it swings, in cents);
   read Voice Mirror's vibrato line; know a straight tone and a vibrato are both used in singing; know
@@ -436,7 +456,8 @@ lesson has a package yet: each card is status "proposed".
   doesn't, the note is just as finished." Both holds are scored only on the note's centre staying
   in the band; a vibrato inside the band counts in full, and nothing scores a vibrato's presence,
   rate or width. If the page finds one, it describes the sound ("a wave about 5.5 times a second,
-  about 20 cents either side of its centre", the ± form Voice Mirror uses). No instruction for making a vibrato appears unless the coach writes it.
+  about 50 cents either side of its centre", the ± form Voice Mirror uses; an example of the
+  wording, which reports what was measured). No instruction for making a vibrato appears unless the coach writes it.
 - Practise: Voice Mirror's hold (`/mirror?lesson=22`), which reports a vibrato's rate and extent and
   says "That's a feature, not scored against you" (`src/features/mirror/MirrorApp.tsx:2194-2199`),
   inside a 3.5 to 8.5 Hz band (`src/lib/mirror/metrics.ts:72-74`). Not linked: the Vibrato
@@ -470,7 +491,7 @@ lesson has a package yet: each card is status "proposed".
 
 **Lesson 23. Perfect, major, minor and the tritone** (theory; T13)
 
-- Draft YouTube title: "The tritone: the interval that splits the octave in half".
+- Draft YouTube title: "Which interval splits the octave in half?"
 - Objectives: name an interval by its number (letters counted, both ends included) and its quality;
   know the unison, fourth, fifth and octave are "perfect" and the seconds, thirds, sixths and
   sevenths major or minor; know a perfect interval a semitone wider is augmented and a semitone
@@ -508,10 +529,12 @@ lesson has a package yet: each card is status "proposed".
 
 **Lesson 24. Harmony against a drone** (voice; S20a, new)
 
-- Draft YouTube title: "How to hear if you're in tune: the drone trick".
-- Objectives: hold a note against a drone and listen to both; hear beats slow down and stop as the
-  two come into tune (Lesson 3's Go deeper); hold do, then so, then mi above a drone on do; know
-  that holding a harmony means listening to the other part, not shutting it out.
+- Draft YouTube title: "How can you hear when you're in tune?"
+- Objectives: hold a note against a drone and listen to both; hear beats slow down and stop as a
+  unison or an octave comes into tune (Lesson 3's Go deeper); hear that the beats above a drone stop
+  only at the pure intervals, 3:2 and 5:4, so the piano's fifth beats slowly and its major third
+  quickly; hold do, then so, then mi above a drone on do; know that holding a harmony means
+  listening to the other part, not shutting it out.
 - Misconception: "To hold your part, shut out the other voice." (Shown half right. Singing against
   another part is harder: in eight pairs of singers, "singing with the same vocal part is more
   accurate than singing with a different vocal part" and "singing solo has less pPE than singing
@@ -520,7 +543,10 @@ lesson has a package yet: each card is status "proposed".
   JASA 145, 663-675, doi:10.1121/1.5087817, abstract). Listening is what keeps the harmony.)
 - Signature: Lesson 10's beads, do, mi and so, stand over a drone band on do; the singer's violet
   line arrives; the beats are drawn as a breathing glow at the beat rate, slowing to still as the
-  line settles. Last, a second singer's chrome line joins, the next lesson's world.
+  unison settles; for so and mi the glow stills only at the pure interval, and keeps a slow pulse
+  at the piano's fifth and a fast one at its third. The beats are shown with synthesised tones,
+  where they can be heard and drawn exactly; the page never claims to hear the learner's beats.
+  Last, a second singer's chrome line joins, the next lesson's world.
 - Checkpoint (scored on the page): comfort check first; headphones (§ 6.2); the drone sounds on do;
   hold do, then so, then mi, for 5 s each, with 10 s offered for so and mi, in any octave. The band is wide enough
   that a pure interval and an equal-tempered one both land in it: a pure major third is 386.31
@@ -533,7 +559,13 @@ lesson has a package yet: each card is status "proposed".
   equal temperament, 100 less 1.5 times the cents (use-drone-intonation-controller.ts:15-16), so a
   pure third scores about 79, and the card says so. Ear Lab's Beat Hunt (`/ear-lab?lesson=24`, then
   tap Beat Hunt) asks which of two pairs beats (`src/features/ear-lab/BeatHuntDrill.tsx:1-13`).
-- Facts to check: beats (Wolfe, UNSW Physclips, as lessons/03-match-a-note/FACTS.md:83 cites him);
+- Facts to check: beats (Wolfe, UNSW Physclips, as lessons/03-match-a-note/FACTS.md:83 cites him,
+  for two tones of similar frequency); beats between harmonics above a drone, which that source does
+  not cover: on A3 (220 Hz) the equal-tempered fifth, E4 at 329.63 Hz, beats about 0.75 times a
+  second (its second harmonic, 659.26 Hz, against the drone's third, 660 Hz), and the
+  equal-tempered major third, C♯4 at 277.18 Hz, about 8.7 times a second (1,108.73 against
+  1,100 Hz), arithmetic for harmonic tones; a source on beating partials is to find and read, and
+  whether the demo voice's and a singer's harmonics make those beats audible is for the lab;
   Dai & Dixon (2019), as above; a pure major third as 5:4, 386.31 cents (arithmetic); that an a
   cappella quintet tuned "closer to equal temperament than just intonation", with major thirds
   slightly nearer just (D'Amario et al. 2018, J Voice, doi:10.1016/j.jvoice.2018.07.015; abstract),
@@ -545,7 +577,7 @@ lesson has a package yet: each card is status "proposed".
 
 **Lesson 25. Minor, properly** (theory; T15b)
 
-- Draft YouTube title: "Natural, harmonic, melodic: the three minor scales".
+- Draft YouTube title: "Why do minor keys raise one note?"
 - Objectives: know harmonic minor raises te to ti, so the chord on so is major and leads home; know
   melodic minor raises le and te going up and returns to the natural form coming down; hear te
   against ti before do; know relative keys: C major and A minor share a key signature, and in
@@ -572,12 +604,12 @@ lesson has a package yet: each card is status "proposed".
   do-based syllables (MASTER-PLAN § 12 item 12); the AP reports; the app's scale description "Sad
   and introspective" (`src/lib/scale-data.ts:88`), against Lesson 10's misconception, if it is
   shown on a screen (**not verified**).
-- Closes on: Lesson 26's hook. "A minor key bends its notes to suit the chords. A harmony line has
-  to bend too. Can you make a harmony by singing the tune a third higher?"
+- Closes on: Lesson 26's hook. "So far you've sung against a drone that never moves. Now let the
+  other part be a tune: can you make a harmony by singing the tune a third higher?"
 
 **Lesson 26. A second voice** (voice; S20b, new; T23 light)
 
-- Draft YouTube title: "How to sing harmony: thirds that stay in the key".
+- Draft YouTube title: "Can you harmonise by moving the tune up a third?"
 - Objectives: sing a part a third above or below a melody, staying in the key; know each third in a
   key is major or minor by where it falls; hear a harmony note that passes between two chord notes
   (T23, light).
@@ -603,7 +635,7 @@ lesson has a package yet: each card is status "proposed".
 
 **Lesson 27. Seventh chords and inversions** (theory; T24, T25)
 
-- Draft YouTube title: "Why a dominant seventh wants to resolve".
+- Draft YouTube title: "Which note makes a chord pull towards home?"
 - Objectives: build a seventh chord by stacking one more third; tell the dominant seventh (V7) from
   a major seventh; hear V7 pull home as its tritone, ti and fa, closes inwards to do and mi; know a
   chord keeps its name when its notes change order (root position, first and second inversion);
@@ -617,9 +649,9 @@ lesson has a package yet: each card is status "proposed".
   chord's beads rotate, bottom to top, and its name stays.
 - Checkpoint (theory, unscored sing-along): after the comfort check, sing so ti re fa slowly, then mi,
   then do: the dominant seventh's notes and where they go.
-- Practise: Chord Stacker (`/pitch-training?lesson=27`, then tap Chord Stacker), which plays a
-  maj7, min7, dom7, dim7 or maj6 chord note by note, chosen at random, and has the learner sing
-  each back (`src/features/exercises/chord-stacker/use-chord-stacker-controller.ts:13-19`, :86-99,
+- Practise: Chord Stacker (`/pitch-training?lesson=27`, then tap Chord Stacker), which plays its
+  five chords, maj7, min7, dom7, dim7 and maj6, in shuffled order, each note by note, and has the
+  learner sing each note back (`src/features/exercises/chord-stacker/use-chord-stacker-controller.ts:13-19`, :86-99,
   :145-185); Ear Lab's Stack (`/ear-lab?lesson=27`, then tap Stack), which names major, minor,
   diminished, augmented, sus4 and dominant seventh chords (`src/lib/ear/banks.ts:115-157`). Needs
   building: a chord-type field and inversions for Chord Stacker (§ 5 item 18), and the `ear-drill`
@@ -627,12 +659,12 @@ lesson has a package yet: each card is status "proposed".
 - Facts to check: seventh-chord qualities (Hooktheory II ch. 1 and Bennett L5, as the benchmark
   cites them for T24; Open Music Theory's seventh chords chapter); V7's resolution (the same, to
   check); inversions (Hooktheory I ch. 5 and OMT 1.18, as the benchmark cites them for T25).
-- Closes on: Lesson 28's hook. "V7 to I: the strongest way home. But a song can swerve at the last
-  moment. How can a song sound as if it's ending, then keep going?"
+- Closes on: Lesson 28's hook. "V7 to I: the strongest way home, and songs use it to end. So how
+  can a song sound as if it's ending, then keep going?"
 
 **Lesson 28. Cadences, form and a song in two parts** (voice and theory; T22, T31)
 
-- Draft YouTube title: "How songs end (and how they fake it)".
+- Draft YouTube title: "How can a song fake its ending?"
 - Objectives: hear and name four cadences, perfect (V to I), imperfect (ending on V), plagal (IV to
   I) and interrupted (V to vi); know a cadence ends a phrase, not only a song; hear a song's
   sections, verse, chorus and bridge, and read form as letters (A A B A); sing one part of a
@@ -901,7 +933,7 @@ compound-metre reading drills, since the app writes only 4-beat bars
    examples need rate and extent as parameters, which the demo voice already takes
    (`src/lib/demo-voice.ts:37`).
 7. **Merc performances.** New passes for reading, conducting and a two-host duet, priced by the
-   measured table (docs/plans/find-your-pitch/PRODUCTION-PIPELINE.md:93-101: 0.64 to 0.85 s a frame
+   measured table (PRODUCTION-PIPELINE.md:93-101: 0.64 to 0.85 s a frame
    alone at shot sizes 480 to 560); Lesson 1's `m18-duo` shows a duet pass is possible.
 8. **No decorative staves.** The film ground's faint five-line staves (MASTER-PLAN.md:189) come out
    of Season 2's films, and the pages' decorative clefs out of its pages: a staff on screen is always
@@ -940,8 +972,8 @@ compound-metre reading drills, since the app writes only 4-beat bars
 ### 6.3 Who sings the second part
 
 The facts: the owner holds the rights to the synthesised voices, including Merc's sung notes,
-which a voice actor replaces later; Tavi is Octavia, "as she sings an octave above Merc"
-(MASTER-PLAN § 12 item 1, MASTER-PLAN.md:475-481). Every musical example is synthesised at exact
+which a voice actor replaces later; Tavi's name comes from Octavia, "as she sings an octave above
+Merc" (MASTER-PLAN § 12 item 1, MASTER-PLAN.md:475-481). Every musical example is synthesised at exact
 pitch in code (MASTER-PLAN.md:36). No sung set for Tavi was found in the repository (a search of
 `src` finds her only in lesson copy); whether one exists on the owner's account was **not verified**.
 
@@ -965,7 +997,7 @@ The plan:
 
 MASTER-PLAN § 12 item 4 decided 1080p for Season 1 and to look at 4K again for Season 2
 (MASTER-PLAN.md:493). What has changed is the staff: staff lines, stems and ledger lines are thin
-lines that a 1080p encode softens, which no Season 1 film had to show.
+lines, which a 1080p encode may soften, and no Season 1 film had to show them.
 
 - Cost: the renderer supersamples by an integer device scale only (research/production-research.md:334),
   so 2160p is the step above 1080p and 1440p is not available by that route; a 4K supersampled
@@ -1068,7 +1100,7 @@ CURRICULUM.
 | 10  | Long lessons: 15, 21 and 28 press on the 10 minute cap                                                                                                                | Each card names what moves to Go deeper                                                                                                                                  |
 | 11  | Repertoire rights: a 6/8 song, a two-part song                                                                                                                         | Traditional tunes only in new arrangements, after a rights check; Lesson 28's song written for the lesson                                                                 |
 | 12  | Citations drift as the app changes                                                                                                                                     | `pnpm plan:cites:check` on every package (HANDOFF § 4.6)                                                                                                                 |
-| 13  | Predict answers leak in the page source or the film (HANDOFF § 5)                                                                                                     | As Season 1: answers built at run time and checked by the page tests                                                                                                    |
+| 13  | A title, tease, promise, share card or thumbnail gives the predict's answer away (HANDOFF § 5)                                                                       | The drafts here were written to that test (§ 2); every review checks each of those lines against the predict                                                            |
 | 14  | The explorer at 28 lessons and two trailers is crowded on a phone                                                                                                      | A tab per season (§ 6.2 item 1); app-check at phone width                                                                                                                 |
 | 15  | Several Season 2 sources were read only to the abstract (Mishra 2014, Henry 2004, Mitchell & Kenny 2010, Bretos & Sundberg 2003, D'Amario et al. 2018) or not at all (Shonle & Horan 1980, Nix 2014, Savage et al. 2015) | Each lesson's FACTS reads them in full before a number from them reaches a script, as Season 1's did                                                                     |
 | 16  | The app's own copy contradicts a lesson, as "Sad and introspective" for natural minor (`src/lib/scale-data.ts:88`) would Lesson 10's and 25's point                  | Checked where it is shown, and fixed in the app content track before Lesson 25 links the scale                                                                           |

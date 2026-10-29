@@ -1005,3 +1005,13 @@ Note: the lanes' memory gate read a stale cgroup path after the 21:00 restart (f
 - Script critic round 2 (verification) running -> save its text to review/script-02/REPORT.md, fill LEDGER row 02.
 - Then (task 181): storyboard (vertical semitone-row keyboard behind a fixed staircase; gold only on the two
   semitone risers; house glyph = home; Tavi's dashed ink-2 "?"; guide amber -> chrome on the viewer's turn).
+
+## 2026-10-29 ~01:40Z: Season 2 plan reviewed (task 179)
+- Planner reported: $S/s2/SEASON-2.md (1,098 lines) + CURRICULUM-s5.md. Lead review at max: all 138
+  citations printed at b803c7d43 and checked; 5 lead edits (s2review/REVIEW.md): beats stop only at pure
+  intervals (L24; ET M3 over A3 beats 8.73 Hz, ET fifth 0.745 Hz); pentatonic 2-2-3-2-3 not even (L20);
+  L21 hook now "why does each key a fifth up keep its sharps and add one?" (L4 film shows G and D);
+  L16 refutation off the Weak movable-do evidence; L22 example extent 50 c.
+- NEXT: tell the owner (5 decisions: numbering 15-28 + the app's 01-14 marker/worker bounds; treble and
+  bass; number counting + American note values; synthesised second part, learner sings it; mixed voice
+  in Season 3), offer a docs PR on a feat/ branch (do not open without their word).
