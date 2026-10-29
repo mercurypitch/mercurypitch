@@ -17,13 +17,21 @@ Running notes so a container restart or a usage-limit pause can resume. Builder 
 - m09-orange film 249.85 to 298.633 (drop, hop out at 298.0); m10-blue 282.5 to 298.633 (drop, hop
   at 298.0); m11-blue / m11-orange 321.4 to 341.15 (drop, hop at 340.51).
 
-## Status
+## Status (09:20)
 
 | Scene | Built | Stills | Clip | measure.py | Text sweep | clock-lint | merc-tags |
 | --- | --- | --- | --- | --- | --- | --- | --- |
-| s09-names | all rows, round 1 (+ word-tied events in Tavi's span) | lab/s09-names/frame-* | round 1 | 0-20.6 s (no Merc): 0.5 s, longest 0.3 | pending | clean | current (m09 missing) |
-| s10-ti | all rows, round 1 | lab/s10-ti/frame-* | rendering | | pending | clean | current (m09, m10 missing) |
-| s11-why | all rows, round 1 | lab/s11-why/frame-* | rendering | | pending | clean | current (m09, m10, m11 x2 missing) |
+| s09-names | all rows, round 2 (Tavi-span events) | lab/s09-names/frame-* | round 2 rendering | round 1: 0-20.6 s 0.5 s | 0 contrast; 1 EDGE ('6' leaving right edge in the push, 245.74-245.99) | clean | current (m09 missing) |
+| s10-ti | all rows, round 2 (+ quiet-stretch events) | lab/s10-ti/frame-* | round 1 measured; round 2 queued | round 1: 8.4 s inside, longest 1.5 | clean | clean | current (m09, m10 missing) |
+| s11-why | all rows, round 2 (+ quiet-stretch events) | lab/s11-why/frame-* | round 1 measured; round 2 queued | round 1: 9.6 s inside, longest 1.2 | clean | clean | current (m09, m10, m11 x2 missing) |
+
+- Root check (09:05): 5 errors, all missing_local_asset (m08 for s07/s08; m09, m10, m11 x2 mine);
+  warnings are the usual nested_media_start_basis / duplicate_media (the reflections) / file size.
+- Handoffs: s10 last vs s11 first: max diff 22, 0 px over 24 (lab/s11-why/tools/hdiff.py). s11 last
+  frame: stair 1 x 361-474, both houses lit, D major, F#4 and C#5 lit, no labels (HANDOFFS D to E).
+- Item 3 (s10): probe of the bead transform (lab/s11-why/tools/probe.mjs): launch 12.64 (130, 711),
+  apex y 602.1 at 12.82 over x 240.8, i.e. 39.9 px clear of stair 1's corner (242, 664) edge to
+  corner, lands (298, 642) at 12.94. Stills frame-00-at-12.79s / frame-01-at-12.834s / frame-02-at-12.94s.
 
 ## Decisions (builder D)
 
@@ -50,3 +58,10 @@ Running notes so a container restart or a usage-limit pause can resume. Builder 
   are 80 px apart; on "weaker" (closed) the scale chips light 40 % chrome instead, so the closed gap
   stays 8 px. Credits 2 and 3 type on (display none per hidden letter, trap 26). Probe bead bobs 8 px
   on a 1.2 s cycle from film time. Arrow larger than s10's (seen at 1x).
+- Round 2 quiet-stretch events (lab clip holds over 0.5 s, every one tied to a word): s10: do's then ti's
+  name scale as the push lands ("question.", +0.45 and +0.65); the top stair lights on "doh:" (below
+  doh); stair 1 lights on "C", stair 7 on "stop"; an echo ring on ti halfway through B4's 1.2 s hold
+  (RUN[6] + 0.6, FACTS 68); ti's name on "Most"; the outline top stair pulses on "note" and "Take"; the
+  bead pulses on "hear". s11: do's chip lights as "doh." ends and again as the house lands; the shelf
+  house falls 70 px from "seems" to land on "learned"; the top stair lights on "it?#2" (o11) and on
+  "is." (b38, "wherever home is"); stair 7 lights on "it's" (b37).

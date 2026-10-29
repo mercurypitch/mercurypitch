@@ -41,9 +41,51 @@ Running notes so a container restart or a usage-limit pause can resume. Builder 
 - s08: stair 1 lights (and D4 scales) on "Start"; the beads drop onto the moving stair when a slide is landing,
   and slide-g's rides stair 8 while it fades as the slide to E starts.
 
+- s07 round 2 (after the first measure): the step flashes are L-shaped (riser plus upper tread, 5 px ink with a
+  14 px glow, linear fade); the rows' letters land from 1.5x over 0.6 s; "WHITE KEYS" slides 30 px over 0.7 s; the
+  "?" grows through "changes" and fades at its end (power4.in, so it spends under 0.2 s at part-faded alphas: the
+  round-2 sweep had flagged the linear fade as LOW at 176.85 to 177.10).
+- s08 round 2 (the first s08 measure, with m08 not rendered, had 9.7 s of holds, longest 2.7 s at 219.06 to
+  221.76; every one but 228.26 (0.4 s) sits inside m08's span, so Tavi's idle carries them in the film): the eight
+  lit keys' pulse on "set of keys" and the four black keys' on "keys under it change" settle over 0.8 s, the four
+  now in turn (0.2 s apart); the ghost outlines fade over 0.7 s; the tally's pulses settle over 0.8 s; on the slide
+  back to C, E major's black keys go dark over 1.2 s from 0.3 s in, trailing the stairs.
+
+## Results
+
+- s07 round 2 clip (m07 rendered, m08 not): 2.8 s of holds inside (1.6 s per 30 s), longest 0.4 s (31.30, film
+  177.4); 2.2 s in the no-Merc stretch 153.3 to 198.9 (45.6 s), 1.45 s per 30 s; final hold 0.3 s (52.9, where m08
+  drops in). Single-frame "pops" at 39.03 (the flash on "different places", 2-frame onset) and 43.30 (the step
+  rows' 0.2 s leave, 189.3 to 189.5): both intended, checked frame by frame (frames 1166 to 1176, 1294 to 1304).
+- s07 round 3 clip: 2.7 s of holds inside (1.5 s per 30 s), longest 0.3 s; 2.1 s in the no-Merc stretch
+  (1.38 s per 30 s). m07 placed by the gate (whole.js has m07-orange 28 since 08:56): Tavi whole from 148.81,
+  hopping out right 152.7 to 153.3 (frames in lab/s07-predict/scratch/merc-sheet.png).
+- s08 round 2 clip (m08 not rendered): 9.0 s of holds, longest 2.1 s (219.66 to 221.76), all inside m08's span
+  but 28.9 (0.4 s, after Tavi has hopped out). Needs the m08 pass to prove.
+- s07 text sweep round 3: clean. s08 text sweep round 2: clean.
+- s08 last (29.873) vs s09's first still (lab/s09-names/frame-00-at-0s.png, 09:08): max 10, none over 16.
+- CU-D (40.6): the dashed and real treads at stairs 3 and 7 are one row apart (26 px world, 52 px at 2x); the
+  visible lines' centres read 49 px because L.stairs draws its tread highlight 1.5 px inside the block.
+- Handoffs: s06 last clip frame (director's 08:49 measure) vs s07 frame 0: max 36, mean 0.39, edges only
+  (draft encode). s07 53.253 vs s08 0.007 stills: max 21, 2 pixels over 16 (dust), mean 0.001.
+- Key names F# and C# settled on their 40 % chrome keys (49.1): 5.23:1 each.
+- item 2: lab/s07-predict/item2/clearance.json (numbers); stills lab/s07-predict/stills-r2/frame-03..09 (S7e hop
+  middles) and lab/s08-anywhere/stills-item2/ (S8b, S8c); sheets lab/s07-predict/scratch/item2-S7e.png,
+  lab/s08-anywhere/scratch/item2-S8b.png, item2-S8c.png.
+
 ## Status
 
 | Scene | Built | Stills | Clip | measure.py | Text sweep | clock-lint | merc-tags |
 | --- | --- | --- | --- | --- | --- | --- | --- |
-| s07-predict | all rows, round 2 | round 1 | round 1: 7.9 s holds, longest 0.8 (in 7b, m07 missing; 7f, 7h) | round 2 pending | round 1: LOW F glow copy, EDGE riser 6 pulse (both fixed) | clean | current |
-| s08-anywhere | all rows, round 1 | round 1 | not yet | | round 1: clean | clean | current |
+| s07-predict | all rows, round 3 | round 2 (stills-r2) | round 3: 2.7 s, longest 0.3 | passes both limits | round 3: clean | clean | current |
+| s08-anywhere | all rows, round 2 | rounds 1 and 2, item 2, handoff | round 2: 9.0 s, longest 2.1 (inside m08's span) | waits on m08 | round 2: clean | clean | current |
+
+## Final checks (09:25)
+
+- Root `hyperframes check`: my scenes' only errors are missing_local_asset for m08-orange (both tags), as expected
+  until the pass lands; warnings are the shared Merc-tag ones (nested_media_start_basis_ambiguous,
+  duplicate_media_discovery_risk) and composition_file_too_large on s07 (449 lines). Log: lab/s07-predict/root-check.log.
+- merc-tags --check: 6 tags, 0 stale, 0 problems. clock-lint: prints nothing on both scenes.
+- m08-orange still rendering at 09:25 (1.3 MB part file, 32 min in). Once it lands and merc-whole.py runs:
+  re-render lab s08 (and s07's last 0.5 s) and re-measure; s08's diagram-only holds (longest 2.1 s at 219.66)
+  must then be covered by Tavi's idle.

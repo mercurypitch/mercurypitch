@@ -318,13 +318,14 @@
               hair: { a: 1, w, s0 },
             })
 
-            // 11a: the probe bead with its "?" (bobbing 8 px on a 1.2 s cycle from film time), its echo, its pulse
+            // 11a: the probe bead with its "?" (hovering on a 4 px circle, a 1.2 s cycle from film time, so it never
+            // stands still in this span with no Merc), its echo, its pulse
             {
               const pa = P(t, A.oneMore, 0.2) * (1 - P(t, A.top, 0.3))
-              const bob = 4 * Math.sin((2 * Math.PI * (S0 + t)) / 1.2)
+              const ph = (2 * Math.PI * (S0 + t)) / 1.2
               const sc = L.ease('back.out(2)')(clamp((t - A.oneMore) / 0.35)) * L.pulse(t, A.finished, 'bead')
               probeG.setAttribute('opacity', pa.toFixed(3))
-              L.bead4.place(probe, pa > 0.004 ? { x: 1420, y: 420 + bob, scale: Math.max(0.01, sc) } : null)
+              L.bead4.place(probe, pa > 0.004 ? { x: 1420 + 4 * Math.cos(ph), y: 420 + 4 * Math.sin(ph), scale: Math.max(0.01, sc) } : null)
             }
             // the axis and its labels draw on "rated"; with the shelves they fade as the chips fly back
             const expOut = 1 - P(t, A.o11, 0.4)
@@ -343,7 +344,8 @@
               c.el.g.setAttribute('opacity', s.a.toFixed(3))
               c.el.box.setAttribute('opacity', s.box.toFixed(3))
               if (!c.dim) {
-                const k = Math.max(c.tier < 3 ? light(t, TIERL[c.tier], 0.3, 0.5) : 0, c.tier === 0 ? light(t, DOL) : 0)
+                // the tiers' scale pulses light the chips too (larger events in this span with no Merc)
+                const k = Math.max(c.tier < 3 ? light(t, TIERL[c.tier], 0.3, 0.5) : 0, c.tier === 0 ? light(t, DOL.concat([A.home])) : 0, light(t, TIERP[c.tier]))
                 c.el.box.setAttribute('fill', k > 0.002 ? `rgb(${[27, 35, 45].map((v, i) => Math.round(lerp(v, [195, 204, 214][i], 0.4 * k))).join(',')})` : UNLIT)
               }
               c.el.g.setAttribute('transform', `translate(${f1(s.p[0])} ${f1(s.p[1])}) scale(${sc.toFixed(4)})`)

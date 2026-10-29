@@ -60,6 +60,7 @@
             takeStep: word('b34', 'step'),                    // the arrow pulses
             landC: at('land-c'),                              // an echo on ti
             land8: at('land-c', 'start', 0.45),               // the hop lands on the top stair: it fills blue
+            release: at('land-c', 'end'),                     // C5 lets go: the lit house pulses (0.12, as S11's houses)
             blueOff: at('o10', 'start', -0.04),               // the blue fades, the bottom house returns (0.4 s; also in s11)
           }
           A.out1 = A.pull - 0.2                               // "1 semitone" and the ink arrow leave before the pull
@@ -188,7 +189,11 @@
               riser: (n) => ({ state: SEMI(n) ? 'semi' : 'tone', scale: n === 7 ? L.pulse(t, GROW, 'bar') : 1 }),
               houses: {
                 bottom: { a: 1 - P(t, A.empty, 0.5) + P(t, A.blueOff, 0.4), lit: 1 },
-                top: { a: 1, lit: t < A.rise ? 1 - P(t, A.empty, 0.5) : P(t, A.rise, 0.3, 'power2.out') },
+                top: {
+                  a: 1, lit: t < A.rise ? 1 - P(t, A.empty, 0.5) : P(t, A.rise, 0.3, 'power2.out'),
+                  // settled by the cut, so the handoff frame keeps the house at rest
+                  scale: L.pulse(t, A.release, 0.12, { settle: Math.min(0.6, D - A.release - 0.15) }),
+                },
               },
             })
             goldGlow.setAttribute('opacity', (0.6 * Math.max(...GROW.map((g) => L.env(t, g, 0.15, 0.2, 0.6)))).toFixed(3))

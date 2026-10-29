@@ -340,9 +340,10 @@
                 if (k === 2 || k === 6) e = Math.max(e, flash(t, A.places, 0.3, 0.7))
                 F.g.setAttribute('opacity', e.toFixed(3))
               })
-              // the "?": lands as the top stair has drawn, scales 1.2 on "same scale?", grows and fades on "changes"
-              const qa = P(t, DRAW(8) + 0.35, 0.25) * (1 - P(t, A.changes, 1.0, 'none'))
-              const qs = L.pulse(t, A.same, 'label') * (1 + 0.35 * P(t, A.changes, 1.0, 'power1.out'))
+              // the "?": lands as the top stair has drawn, scales 1.2 on "same scale?", grows through "changes" and
+              // fades at its end (power4.in: under 0.2 s at the part-faded alphas, so it never sits as a dim label)
+              const qa = P(t, DRAW(8) + 0.35, 0.25) * (1 - P(t, A.changes, 1.0, 'power4.in'))
+              const qs = L.pulse(t, A.same, 'label') * (1 + 0.35 * P(t, A.changes, 1.0, 'none'))
               const qdy = 12 * (1 - P(t, DRAW(8) + 0.35, 0.5, 'power2.out'))
               qG.setAttribute('opacity', qa.toFixed(3))
               qG.setAttribute('transform', `translate(${f1(qC[0])} ${f1(qC[1] + qdy)}) scale(${qs.toFixed(4)}) translate(${f1(-qC[0])} ${f1(-qC[1])})`)

@@ -764,6 +764,9 @@ lab still (still paths beside it). Until then, the HANDOFFS value is the one to 
 | World geometry | rows, stairs on C, D and G, strip, hairlines, houses | kit lab: exact | `lab/kit-stairs/` |
 | Inside A, S1 | Merc's mouth point: (261, 781) on m01-blue, not (270, 664) | builder A, on the s01 clip with the pass | `lab/s01-cold-open/scratch/mouth/sheet.png`, `full-1.0s.png` |
 | Inside A, S4c | the stand-up: pitch 120 to 26 px and width 112 to 24 px over 0.6 s from STAND (power2.inOut); the turn, and the pivot from (240, 560) to (360, 677), from STAND + 0.2 over 0.8 s; each sliver to x 220-1680 and 26 px over 1.0 s, its fill fading from + 0.3 over 0.7 s (power2.in); an exact crossfade to the kit's rows at STAND + 2.2 | builder A: reads as the row turning upright, so the fallback tip is not needed | `lab/s04-recall/scratch/standup/sheet.png`, `lab/s04-recall/frame-09` to `frame-14` |
+| B to C, 146.10 | s07's frame 0 against s06's last clip frame (with its passes): max 36 at edges, mean 0.39 | builder C | `lab/s07-predict/scratch/diff-s06-s07.png` |
+| Inside C, S7 to S8 (199.36) | s07 at 53.253 against s08 at 0.007: max 21, two pixels over 16 (dust) | builder C | `lab/s07-predict/scratch/diff-s07-s08.png` |
+| C to D, 229.24 | s08's last frame against s09's first: max 10, no pixel over 16 | builder C | `lab/s08-anywhere/scratch/diff-s08-s09.png` |
 | Inside D, S10 | Merc's mouth point (130, 715) | | |
 | Inside E, S12a | the tip's curves | | |
 | Inside E, S13d | the reverse tip's curves, the Mercs' move | | |

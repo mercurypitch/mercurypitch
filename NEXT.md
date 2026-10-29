@@ -1181,3 +1181,23 @@ Note: the lanes' memory gate read a stale cgroup path after the 21:00 restart (f
   final hold. Frames $S/l4merc/s01check/sheet.png: at 0.30 the bead sits on the old pass's shut smile (the
   new pass opens it). Detached $S/l4merc/whole-watch.sh (logs/whole-watch.log) regenerates whole.js and
   runs verify.py whenever a pass lands; it exits when the workers are done.
+
+## 2026-10-29 ~09:30Z: builder C handed back; B critic running; m12 pair in parallel (tasks 189-192)
+- Builder C (64 min): s07-predict and s08-anywhere built. s07 measure passes (2.7 s holds, 1.5 per 30,
+  longest 0.3; no-Merc stretch 1.38 per 30). s08 waits on m08-orange (9.0 s holds, longest 2.1 s at
+  219.66, all inside m08's span but one 0.4 s after). Sweep clean, clock-lint clean, merc-tags 0 stale.
+  Cut matches recorded in BUILD-GUIDE § Handoff confirmations (B to C max 36 at edges; S7 to S8 max 21;
+  C to D max 10). Kit candidates: dashed guess staircase, flash/flashLine, probe-text layout, bead drop
+  onto a moving stair, ghost outline from L.ST (s06 has one too), long settles in L.pulse (KEYLONG).
+  WHEN m08 LANDS: whole-watch does whole.js; then re-clip s08 (lab.mjs s08-anywhere --clip) + measure,
+  and s07 (its end holds m08's first 0.47 s, gated hidden).
+- Component critic B (s05, s06) spawned ~09:27, report to review/component-B-01/REPORT.md (save it
+  yourself if the critic cannot write). Then LEDGER row, resume builder B for fixes.
+- m12-orange now renders beside m12-blue: worker 2's bash (11789, "queue.sh m12-blue m12-orange") is
+  SIGSTOPped so it never starts a second m12-orange; its node (11792) runs on and stays under yield.py;
+  logs/worker-2-stop.log's watcher SIGKILLs 11789 once m12-blue's WebM lands. Worker 4: m12-orange
+  (logs/worker-4.log, from 09:24). Only S1 and S10 send a bead from a mouth (m12 needs no lead).
+- Slot plan: D still building. Next free slot: A critic once s01 is re-clipped with the new m01-blue;
+  then wave 3 builders E (s12-s13) and F (s14-s16), whose critics need the m12 pair (~13:00+).
+- push-notes now also carries tools/merc-pass.mjs, assets/merc/whole.js, l4merc/whole-watch.sh and the
+  mouth-lead sheet.

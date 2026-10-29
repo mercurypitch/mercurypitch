@@ -128,13 +128,13 @@
           // riser pulses (the bar grows 15 %, its label scales 1.25): in turn on "the pattern?"
           const GROW = (n) => A.pattern + 0.1 * (n - 1)
           const labelPulse = (t, times) => L.pulse(t, times, 0.25, { long: true })
-          // key pulses (a key scales 1.05)
-          const KEYP = {}
-          const addKey = (m, tt) => (KEYP[m] = KEYP[m] || []).push(tt)
-          SC.D.forEach((m) => addKey(m, A.keys8))                       // the eight lit keys, together
+          // key pulses (a key scales 1.05); KEYLONG's settle over 0.8 s
+          const KEYP = {}, KEYLONG = {}
+          const addKey = (m, tt, M = KEYP) => (M[m] = M[m] || []).push(tt)
+          SC.D.forEach((m) => addKey(m, A.keys8, KEYLONG))              // the eight lit keys, together
           addKey(2, A.start)                                            // D4, under the start
           for (let m = 0; m < 12; m++) addKey(m, A.any + 0.06 * m)      // C4 to B4 in turn
-          SC.E.filter((m) => ST.isBlack(m)).forEach((m) => addKey(m, A.keys24))   // E major's four black keys
+          SC.E.filter((m) => ST.isBlack(m)).forEach((m, i) => addKey(m, A.keys24 + 0.2 * i, KEYLONG))   // E major's four black keys, in turn
           SC.C.forEach((m, k) => addKey(m, A.white + 0.06 * k))         // the white keys C4 to C5 in turn
 
           L.clock(tl, D, (t) => {
@@ -162,21 +162,24 @@
               },
             })
 
-            // the strip follows every slide: the scale's keys at full, its black keys lit to 40 % chrome
-            const memb = (m) => lerp(lerp(lerp(inSet(SC.D, m), inSet(SC.G, m), uG), inSet(SC.E, m), uE), inSet(SC.C, m), uC)
+            // the strip follows every slide: the scale's keys at full, its black keys lit to 40 % chrome; on the slide
+            // back to C, E major's black keys go dark more slowly than the stairs move (1.2 s from 0.3 s in)
+            const uCb = P(t, A.toC + 0.3, 1.2, 'power2.inOut')
+            const memb = (m) => lerp(lerp(lerp(inSet(SC.D, m), inSet(SC.G, m), uG), inSet(SC.E, m), uE), inSet(SC.C, m), ST.isBlack(m) ? uCb : uC)
             kb.draw({
               key: (m) => {
                 const f = memb(m)
-                return { full: f, lit: ST.isBlack(m) ? f : 0, scale: KEYP[m] ? L.pulse(t, KEYP[m], 'key') : 1 }
+                const sc = Math.max(KEYP[m] ? L.pulse(t, KEYP[m], 'key') : 1, KEYLONG[m] ? L.pulse(t, KEYLONG[m], 'key', { long: true }) : 1)
+                return { full: f, lit: ST.isBlack(m) ? f : 0, scale: sc }
               },
               hair: { a: 1, w, s0 },
             })
 
             // 8d: the ghost outlines appear where it stood on C, D and G (0.4 s, to 30 %), slide onto it on E (0.8 s,
-            // power2.inOut), fitting exactly, and fade (0.4 s)
+            // power2.inOut), fitting exactly, and fade (0.7 s)
             {
               const u = P(t, A.shape + 0.4, 0.8, 'power2.inOut')
-              const a = 0.3 * P(t, A.shape, 0.4) * (1 - P(t, A.shape + 1.25, 0.4))
+              const a = 0.3 * P(t, A.shape, 0.4) * (1 - P(t, A.shape + 1.25, 0.7))
               for (const G of ghosts) {
                 G.g.setAttribute('opacity', a.toFixed(3))
                 G.g.setAttribute('display', a <= 0.004 ? 'none' : 'inline')
@@ -207,7 +210,7 @@
             const out = 1 - P(t, A.tallyOut, 0.2)
             for (const E of ENTRIES) {
               const a = P(t, E.land, 0.15) * out
-              const sc = (1 + 0.3 * (1 - P(t, E.land, 0.4, 'power2.out'))) * (E.pulse ? L.pulse(t, E.pulse, 'label') : 1)
+              const sc = (1 + 0.3 * (1 - P(t, E.land, 0.4, 'power2.out'))) * (E.pulse ? L.pulse(t, E.pulse, 'label', { long: true }) : 1)
               const cx = E.cx ?? 200
               E.el.setAttribute('opacity', a.toFixed(3))
               E.el.setAttribute('transform', `translate(${f1(cx)} 228) scale(${sc.toFixed(4)}) translate(${f1(-cx)} -228)`)
