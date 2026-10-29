@@ -55,7 +55,7 @@ import { analyzeVocalSamples, pitchHistoryFromNotes, VOCAL_ANALYSIS_DEFAULTS, } 
 import type { OnsetGrid } from './band-beats'
 import { BAND_RATE, beatsBefore, onsetSteps, tempoOf } from './band-beats'
 import type { EntryReading, FoundEntry, LineVoice, RuleSteps, Samples, } from './entry-rules'
-import { judgeSong, lineSteps, loudness, lyricLines, songLines, VOCAL_RATE, } from './entry-rules'
+import { judgeSong, lineSteps, loudness, lyricLines, songLines, VOCAL_RATE, voicedShare, } from './entry-rules'
 import type { FirstNoteEntry } from './first-note-songs'
 
 /** Why a song sits out before its lines are read. */
@@ -66,8 +66,14 @@ export interface OwnSongRead {
   readonly entries: FirstNoteEntry[]
   /** Each line that is not an entry, and why: for the developer's log. */
   readonly dropped: readonly string[]
+  /** What became of every line, in order (entry-rules.ts, `told`): the same log. */
+  readonly told?: readonly string[]
+  /** How many lines had no breath before them (entry-rules.ts). */
+  readonly breathless?: number
   /** How many lines were looked at. */
   readonly lines?: number
+  /** How much of the song the voice is on, 0 to 1, and how long it is, s. */
+  readonly voiced?: { readonly share: number; readonly seconds: number }
   /** How many synced lyric lines the song has: 0 without synced lyrics. */
   readonly lyricLines?: number
   /** How far the lyrics were moved onto this recording, s; null unused. */
@@ -398,16 +404,26 @@ export async function readOwnSong(
     voices.push(await paced(lineSteps(reading, i), signal))
     report(80 + (5 * (i + 1)) / lines.length)
   }
-  const { entries: found, dropped, tuning } = judgeSong(reading, voices)
-  report(85)
-  const told = {
+  const {
+    entries: found,
     dropped,
+    told,
+    breathless,
+    tuning,
+  } = judgeSong(reading, voices)
+  report(85)
+  // What the read found besides its entries, for the developer's log.
+  const about = {
+    dropped,
+    told,
+    breathless,
     lines: lines.length,
+    voiced: voicedShare(level),
     lyricLines: synced.length,
     shift,
     tuning,
   }
-  if (found.length === 0) return { entries: [], ...told }
+  if (found.length === 0) return { entries: [], ...about }
 
   const beats = await beatsOf(bandBlob, found, report, signal)
   report(100)
@@ -421,7 +437,7 @@ export async function readOwnSong(
       words: entry.words,
       ...(entry.cents === undefined ? {} : { cents: entry.cents }),
     })),
-    ...told,
+    ...about,
   }
 }
 

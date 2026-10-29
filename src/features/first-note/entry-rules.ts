@@ -22,8 +22,8 @@
 // one from the voice within SAME_LINE_SEC are one line, with the lyrics'
 // words, and so is a lyric line that would read that voice's note: a line
 // synced early sits in the breath before its phrase. The entry's note is
-// the voice's first steady stretch: STEADY_SEC of readings within
-// STEADY_CENTS of their median, read here by YIN on the vocal stem. It is
+// the voice's first steady note, read by YIN on the vocal stem
+// (voice-pitch.ts): a vibrato is the note it swings round. It is
 // kept only when the song's stored notes (the mixer's, another tracker)
 // name the same note there, and when the voice sat within IN_TUNE_CENTS of
 // it: a note two trackers disagree on, or one the singer bent, is not a
@@ -49,11 +49,25 @@
 // a song's straight through (findEntries).
 //
 // Node runs this file as it is, through its type stripping, from the
-// script: so it imports nothing, and its syntax is all erasable (no enums,
-// no namespaces, no parameter properties).
+// script: so it names its one import, voice-pitch.ts (YIN and the steady
+// note), with its extension, as Node's own loader needs, and its syntax is
+// all erasable (no enums, no namespaces, no parameter properties).
 
-// A change here that finds different entries raises ENTRY_RULES_VERSION
-// (entry-rules-version.ts), so phones read the singer's songs again.
+// A change here or in voice-pitch.ts that finds different entries raises
+// ENTRY_RULES_VERSION (entry-rules-version.ts), so phones read the singer's
+// songs again.
+
+import type { RuleSteps, Samples, SteadyNote, VoiceLevel, } from './voice-pitch.ts'
+import { firstSteady, median, STEADY_SEC, SWING_SEC } from './voice-pitch.ts'
+
+export {
+  STEADY_CENTS,
+  STEADY_SEC,
+  SWING_SEC,
+  VOCAL_RATE,
+  yinMidi,
+} from './voice-pitch.ts'
+export type { RuleSteps, Samples, VoiceLevel } from './voice-pitch.ts'
 
 /** No voice for this long before a line makes it an entry, s. */
 export const ENTRY_GAP_SEC = 1.6
@@ -63,11 +77,16 @@ export const RANGE_SEMITONES = 9
 export const VOICE_ON = 0.12
 /** A reading is taken above this share of it: quieter is breath and bleed. */
 export const VOICE_READ = 0.1
-/** A steady stretch: this long, s, inside this much of its median, cents. */
-export const STEADY_SEC = 0.2
-export const STEADY_CENTS = 40
-/** The stretch must start within this of the voice coming in, s. */
+/** The steady note must start within this of the voice coming in, s... */
 export const STEADY_WITHIN_SEC = 0.45
+/**
+ * ...and one found through its vibrato (voice-pitch.ts, `swung`) within
+ * this: anything sung for STEADY_SEC before it would be a note of its own,
+ * one too short for the medians to tell from this one, and its start is
+ * read up to half a swing late. Later, the line is left: it would ask for
+ * the note after the singer's first.
+ */
+export const SWUNG_WITHIN_SEC = STEADY_SEC + SWING_SEC / 2
 /** The singer's note sat this close to its equal-tempered note, cents. */
 export const IN_TUNE_CENTS = 30
 /** The band leads in for this long before the entry, s. */
@@ -97,21 +116,7 @@ export const TUNING_MIN_CENTS = 10
 /** ...and once this many of its lines' notes say so. */
 const TUNING_LINES_MIN = 5
 
-/** The rate the YIN frame below is sized for; the script reads at it. */
-export const VOCAL_RATE = 16_000
-
-/** YIN's settings: the voice's range, its frame at VOCAL_RATE, its dip threshold. */
-const F_MIN = 70
-const F_MAX = 1000
-const YIN_FRAME = 1024
-const YIN_THRESHOLD = 0.15
-/** Pitch readings every, s. */
-const READ_STEP_SEC = 0.01
-
 const NAMES = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B']
-
-/** Work in steps: each yield is a place a reader may let the screen draw. */
-export type RuleSteps<T> = Generator<void, T, undefined>
 
 /** `steps` run straight through: the script's way, and a test's. */
 export function runSteps<T>(steps: RuleSteps<T>): T {
@@ -138,20 +143,6 @@ export interface StoredNote {
 export interface SongLine {
   readonly start: number
   readonly words: string
-}
-
-/** Mono samples and their rate. */
-export interface Samples {
-  readonly samples: Float32Array
-  readonly rate: number
-}
-
-/** The vocal's loudness, and the levels the voice counts as on and read at. */
-export interface VoiceLevel {
-  readonly rms: readonly number[]
-  readonly hopSec: number
-  readonly on: number
-  readonly read: number
 }
 
 /** Where a singer comes in, before its beats. Seconds on the song's clock. */
@@ -221,132 +212,25 @@ export function loudness(samples: Float32Array, rate: number): VoiceLevel {
   }
 }
 
-/** YIN's difference at each lag up to `maxLag`, over `width` samples from `start`. */
-function differences(
-  samples: Float32Array,
-  start: number,
-  width: number,
-  maxLag: number,
-): Float64Array {
-  const diff = new Float64Array(maxLag + 1)
-  for (let lag = 1; lag <= maxLag; lag++) {
-    let sum = 0
-    for (let i = 0; i < width; i++) {
-      const d = samples[start + i] - samples[start + i + lag]
-      sum += d * d
-    }
-    diff[lag] = sum
-  }
-  return diff
-}
-
-/** The differences, each over the running mean of those before it. */
-function normalised(diff: Float64Array): Float64Array {
-  const norm = new Float64Array(diff.length)
-  norm[0] = 1
-  let running = 0
-  for (let lag = 1; lag < diff.length; lag++) {
-    running += diff[lag]
-    norm[lag] = running > 0 ? (diff[lag] * lag) / running : 1
-  }
-  return norm
-}
-
-/** The first lag that dips under YIN_THRESHOLD, at the dip's floor; -1 for none. */
-function firstDip(norm: Float64Array, minLag: number, maxLag: number): number {
-  for (let t = minLag; t < maxLag; t++) {
-    if (norm[t] < YIN_THRESHOLD) {
-      while (t + 1 < maxLag && norm[t + 1] < norm[t]) t++
-      return t
-    }
-  }
-  return -1
-}
-
-/**
- * One YIN reading at sample `start`, MIDI, or null where no pitch is
- * clear. The frame spans the same time at any rate as YIN_FRAME does at
- * VOCAL_RATE.
- */
-export function yinMidi(
-  samples: Float32Array,
-  start: number,
-  rate: number,
-): number | null {
-  const frame = Math.round((YIN_FRAME * rate) / VOCAL_RATE)
-  const maxLag = Math.floor(rate / F_MIN)
-  const minLag = Math.floor(rate / F_MAX)
-  const width = frame - maxLag
-  if (start < 0 || start + frame > samples.length) return null
-  const norm = normalised(differences(samples, start, width, maxLag))
-  const lag = firstDip(norm, minLag, maxLag)
-  if (lag < 1) return null
-  const a = norm[lag - 1]
-  const b = norm[lag]
-  const c = norm[lag + 1]
-  const den = a - 2 * b + c
-  const shift = den === 0 ? 0 : (0.5 * (a - c)) / den
-  return 69 + 12 * Math.log2(rate / (lag + shift) / 440)
-}
-
-function median(values: readonly number[]): number {
-  const sorted = [...values].sort((a, b) => a - b)
-  const mid = Math.floor(sorted.length / 2)
-  return sorted.length % 2 === 1
-    ? sorted[mid]
-    : (sorted[mid - 1] + sorted[mid]) / 2
-}
-
-interface Reading {
-  readonly t: number
-  readonly midi: number | null
-}
-
-/**
- * The voice's first steady stretch from `from` to `to`, s, or null. Read as
- * it goes: a stretch is judged once its last reading is in, so the first
- * that holds is the first a reading of the whole span would find. A step
- * after each reading.
- */
-function* firstSteady(
-  vocal: Samples,
-  level: VoiceLevel,
-  from: number,
-  to: number,
-): RuleSteps<{ t: number; midi: number } | null> {
-  const span = Math.round(STEADY_SEC / READ_STEP_SEC)
-  const readings: Reading[] = []
-  for (let t = from; t < to; t += READ_STEP_SEC) {
-    const frame = Math.floor(t / level.hopSec)
-    const voiced = (level.rms[frame] ?? 0) >= level.read
-    readings.push({
-      t,
-      midi: voiced
-        ? yinMidi(vocal.samples, Math.round(t * vocal.rate), vocal.rate)
-        : null,
-    })
-    yield
-    const first = readings.length - span
-    if (first < 0) continue
-    const midis: number[] = []
-    for (let i = first; i < readings.length; i++) {
-      const midi = readings[i].midi
-      if (midi === null) break
-      midis.push(midi)
-    }
-    if (midis.length < span) continue
-    const centre = median(midis)
-    const wide = midis.some(
-      (midi) => Math.abs(midi - centre) * 100 > STEADY_CENTS,
-    )
-    if (!wide) return { t: readings[first].t, midi: centre }
-  }
-  return null
-}
-
 /** Is the voice on at `t`, s? */
 function voiceOn(level: VoiceLevel, t: number): boolean {
   return (level.rms[Math.floor(t / level.hopSec)] ?? 0) >= level.on
+}
+
+/**
+ * How much of the song the voice is on (`voiceOn`'s level), 0 to 1, and
+ * how long the song is, s: a vocal stem that is voice nearly all through
+ * holds no breath to come in after (bleed, backing vocals, a long echo).
+ */
+export function voicedShare(level: VoiceLevel): {
+  share: number
+  seconds: number
+} {
+  const on = level.rms.filter((rms) => rms >= level.on).length
+  return {
+    share: level.rms.length === 0 ? 0 : on / level.rms.length,
+    seconds: level.rms.length * level.hopSec,
+  }
 }
 
 /** How long the voice was off before `t`, s, looking back to the song's start. */
@@ -354,6 +238,19 @@ function gapBefore(level: VoiceLevel, t: number): number {
   let at = t
   while (at > 0 && !voiceOn(level, at)) at -= level.hopSec
   return t - Math.max(0, at)
+}
+
+/**
+ * The breath before line `i`, s: how long the voice was off before it. The
+ * first line follows the intro, whatever breath the stem holds; so does the
+ * first line with words, where the voice's lines begin with a blip of bleed
+ * in the intro.
+ */
+export function breathBefore(reading: EntryReading, i: number): number {
+  const { level, lines } = reading
+  const start = lines[i].start
+  const first = i === 0 || i === lines.findIndex((line) => line.words !== '')
+  return first ? start : gapBefore(level, start - 0.3) + 0.3
 }
 
 /** Where the voiced run holding `t` began, s. */
@@ -380,16 +277,16 @@ export function middleNote(notes: readonly StoredNote[]): number {
 }
 
 /**
- * The stored notes under a steady stretch from `t`, s: the other tracker
- * can start the note a moment after this one settles, so a note starting by
- * the stretch's end counts. One that ended before it is the note before.
+ * The stored notes under a steady note: the other tracker can start the
+ * note a moment after this one settles, so a note starting by the steady
+ * note's end counts. One that ended before it is the note before.
  */
 function storedNotesUnder(
   notes: readonly StoredNote[],
-  t: number,
+  steady: SteadyNote,
 ): StoredNote[] {
-  const to = t + STEADY_SEC + 0.05
-  return notes.filter((note) => note.startSec <= to && note.endSec > t)
+  const to = steady.until + 0.05
+  return notes.filter((note) => note.startSec <= to && note.endSec > steady.t)
 }
 
 /**
@@ -577,7 +474,7 @@ function octaveNearest(
  * those the stored notes name.
  */
 function noteOf(
-  steady: { readonly t: number; readonly midi: number },
+  steady: SteadyNote,
   voiceIn: number,
   under: readonly StoredNote[],
   middle: number,
@@ -585,7 +482,8 @@ function noteOf(
 ): number | string {
   const sung = steady.midi - tuning / 100
   const own = Math.round(sung)
-  if (steady.t - voiceIn > STEADY_WITHIN_SEC) {
+  const within = steady.swung ? SWUNG_WITHIN_SEC : STEADY_WITHIN_SEC
+  if (steady.t - voiceIn > within) {
     return `the note settles ${(steady.t - voiceIn).toFixed(2)} s in`
   }
   // The stored notes are A440's: in a tuning near half a semitone out they
@@ -617,8 +515,8 @@ function noteOf(
 export interface LineVoice {
   /** The line's place in the song's lines. */
   readonly line: number
-  /** The voice's first steady stretch near the line, s and MIDI; null for none. */
-  readonly steady: { readonly t: number; readonly midi: number } | null
+  /** The voice's first steady note near the line (voice-pitch.ts); null for none. */
+  readonly steady: SteadyNote | null
   /** Where the voiced run holding the stretch began, s. */
   readonly voiceIn: number
 }
@@ -634,12 +532,7 @@ export function* lineSteps(
 ): RuleSteps<LineVoice | null> {
   const { vocal, level, lines } = reading
   const start = lines[i].start
-  // The first line follows the intro, whatever breath the stem holds; so
-  // does the first line with words, where the voice's lines begin with a
-  // blip of bleed in the intro.
-  const first = i === 0 || i === lines.findIndex((line) => line.words !== '')
-  const gap = first ? start : gapBefore(level, start - 0.3) + 0.3
-  if (gap < ENTRY_GAP_SEC) return null
+  if (breathBefore(reading, i) < ENTRY_GAP_SEC) return null
   const steady = yield* firstSteady(
     vocal,
     level,
@@ -698,7 +591,7 @@ export function judgeLine(
   const midi = noteOf(
     steady,
     voiceIn,
-    storedNotesUnder(notes, steady.t),
+    storedNotesUnder(notes, steady),
     middle,
     tuning,
   )
@@ -725,18 +618,47 @@ export interface SongEntries {
   readonly entries: FoundEntry[]
   /** Each line with a breath before it that is not an entry, and why. */
   readonly dropped: string[]
+  /**
+   * What became of every line, in order, for a reader's log: "12.30 entry
+   * G4", "15.02 no steady note", "16.40 no breath before it (0.6 s)".
+   */
+  readonly told: string[]
+  /** How many lines had no breath before them: never a way in. */
+  readonly breathless: number
   /** The song's tuning the lines were judged in, cents (`songTuning`). */
   readonly tuning: number
 }
 
 /**
+ * `found` among `entries`: an entry of its own, or another line of one
+ * already there (true).
+ */
+function addEntry(entries: FoundEntry[], found: FoundEntry): boolean {
+  const same = entries.findIndex(
+    (entry) => Math.abs(entry.at - found.at) < 0.05,
+  )
+  if (same < 0) {
+    entries.push(found)
+    return false
+  }
+  const kept = entries[same]
+  entries[same] = {
+    ...kept,
+    words: kept.words === '' ? found.words : kept.words,
+    until: Math.max(kept.until, found.until),
+  }
+  return true
+}
+
+/**
  * The song's lines judged, from each line's voice (`lineSteps`, null for a
- * line with no breath before it): the song's tuning from them all, then
- * each line in it. Lines that find the same place the voice comes in (a
- * blip of bleed before a phrase is a voice's line too) are one entry: the
- * first's, with the first words any has, sung with you to the line after
- * the last. A line sung with you ends where the next entry begins, if that
- * comes first: it would sing the next round's note.
+ * line with no breath before it), one voice a line and in their order:
+ * `voices[i]` is line i's. The song's tuning from them all, then each line
+ * in it. Lines that find the same place the voice comes in (a blip of bleed
+ * before a phrase is a voice's line too) are one entry: the first's, with
+ * the first words any has, sung with you to the line after the last. A line
+ * sung with you ends where the next entry begins, if that comes first: it
+ * would sing the next round's note.
  */
 export function judgeSong(
   reading: EntryReading,
@@ -746,25 +668,27 @@ export function judgeSong(
   const middle = middleNote(reading.notes)
   const entries: FoundEntry[] = []
   const dropped: string[] = []
-  for (const voice of voices) {
-    if (voice === null) continue
+  const told: string[] = []
+  for (const [i, voice] of voices.entries()) {
+    if (voice === null) {
+      const start = reading.lines[i].start.toFixed(2)
+      const breath = breathBefore(reading, i).toFixed(1)
+      told.push(`${start} no breath before it (${breath} s)`)
+      continue
+    }
     const found = judgeLine(reading, voice, middle, tuning)
     if (typeof found === 'string') {
       dropped.push(found)
+      told.push(found)
       continue
     }
-    const same = entries.findIndex(
-      (entry) => Math.abs(entry.at - found.at) < 0.05,
+    const start = reading.lines[voice.line].start.toFixed(2)
+    const note = noteName(found.midi)
+    told.push(
+      addEntry(entries, found)
+        ? `${start} entry ${note}, the one an earlier line found`
+        : `${start} entry ${note}`,
     )
-    if (same < 0) entries.push(found)
-    else {
-      const kept = entries[same]
-      entries[same] = {
-        ...kept,
-        words: kept.words === '' ? found.words : kept.words,
-        until: Math.max(kept.until, found.until),
-      }
-    }
   }
   entries.sort((a, b) => a.at - b.at)
   return {
@@ -775,6 +699,8 @@ export function judgeSong(
         : { ...entry, until: next.at }
     }),
     dropped,
+    told,
+    breathless: voices.filter((voice) => voice === null).length,
     tuning,
   }
 }

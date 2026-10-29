@@ -40,7 +40,9 @@ const {
   ownSongIds,
   ownSongs,
   playableSong,
+  readLog,
   readOwnSongs,
+  readOwnSongsAgain,
   readSummary,
   readyOwnSongs,
   resetOwnSongsForTests,
@@ -352,6 +354,70 @@ describe("the singer's own songs", () => {
       `[first-note] read "Scarborough Fair": 1 entries from 24 lines, lyrics moved -0.8 s, tuned +35 cents; left: 2 no steady note, 1 the room's notes name another, 1 out of tune`,
     )
     info.mockRestore()
+  })
+
+  it('tell the console where every line went, and how much of the song is voice', () => {
+    const told = Array.from({ length: 14 }, (_, i) =>
+      i % 2 === 0
+        ? `${i * 10}.00 no breath before it (0.4 s)`
+        : `${i * 10}.00 no steady note`,
+    )
+    const log = readLog('Shadow', {
+      entries: [],
+      dropped: told.filter((line) => line.includes('steady')),
+      told,
+      lines: 14,
+      breathless: 7,
+      voiced: { share: 0.712, seconds: 421.9 },
+      shift: 0.26,
+    })
+    expect(log[0]).toBe(
+      '[first-note] read "Shadow": 0 entries from 14 lines, lyrics moved 0.26 s; left: 7 no breath before them, 7 no steady note; voice on 71% of 422 s',
+    )
+    // Every line, a dozen to a console line.
+    expect(log.slice(1)).toEqual([
+      `[first-note]   "Shadow" lines 1-12 of 14: ${told.slice(0, 12).join(' | ')}`,
+      `[first-note]   "Shadow" lines 13-14 of 14: ${told.slice(12).join(' | ')}`,
+    ])
+  })
+
+  it('are read again, and told again, once the Developer screen lets their reads go', async () => {
+    const info = vi.spyOn(console, 'info').mockImplementation(() => undefined)
+    readOwnSongs()
+    await settle()
+    pending[0].resolve({ entries: [entry(10), entry(20)], dropped: [] })
+    await settle()
+    pending[1].resolve({ entries: [entry(10), entry(20)], dropped: [] })
+    await settle()
+    expect(states()).toEqual({ a: 'ready', b: 'ready' })
+    expect(pending).toHaveLength(2)
+
+    readOwnSongsAgain()
+    await settle()
+    // The room is asking, so the first is read again at once.
+    expect(states()).toEqual({ a: 'reading', b: 'waiting' })
+    expect(pending).toHaveLength(3)
+    pending[2].resolve({ entries: [entry(30)], dropped: [] })
+    await settle()
+    expect(states().a).toBe('few')
+    expect(info).toHaveBeenCalledWith(
+      '[first-note] read "Scarborough Fair": 1 entries',
+    )
+    info.mockRestore()
+  })
+
+  it('keep a read in flight reading until it stops, then read it again', async () => {
+    readOwnSongs()
+    await settle()
+    expect(states().a).toBe('reading')
+    readOwnSongsAgain()
+    // Not waiting while the stopped read unwinds.
+    expect(states().a).toBe('reading')
+    await settle()
+    // Stopped, it is read again from the start.
+    expect(pending).toHaveLength(2)
+    expect(pending[1].sessionId).toBe('a')
+    expect(states()).toEqual({ a: 'reading', b: 'waiting' })
   })
 
   it('tell the console lyrics no shift fits from a song with none', () => {

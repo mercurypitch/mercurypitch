@@ -252,6 +252,18 @@ if (import.meta.env.VITE_PORTABLE_CONSOLE === 'true') {
       })
     })
   }
+  // First note's reads of the singer's own songs, let go so they are read
+  // and told to the console again: the console keeps one launch, and a
+  // song that sat out said why only in the launch that read it (owner, 29
+  // Oct). Same gate, same reason.
+  void import('./shell/FirstNoteReadPanel').then((module) => {
+    const Panel = module.FirstNoteReadPanel
+    registerDeveloperSection({
+      id: 'first-note-reads',
+      title: 'First note',
+      render: () => <Panel />,
+    })
+  })
   // The console's own off switch: minimised it still leaves its dot on every
   // screen, which is in the shot when a test build is recorded for a store
   // (owner, 3 Oct). Same gate, same reason.

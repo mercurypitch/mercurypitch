@@ -250,6 +250,14 @@ describe("a song of the singer's own", () => {
 
     expect(read.entries.map((entry) => entry.midi)).toEqual([57, 60, 57])
     expect(read.entries.every((entry) => entry.words === '')).toBe(true)
+    // For the log: what became of every line, and how much is voice.
+    expect(read.told?.map((line) => line.replace(/^[\d.]+ /u, ''))).toEqual([
+      'entry A3',
+      'entry C4',
+      'entry A3',
+    ])
+    expect(read.voiced?.share).toBeGreaterThan(0)
+    expect(read.voiced?.share).toBeLessThan(1)
   })
 
   it('keeps its entries without beats when the band will not read', async () => {
