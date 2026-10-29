@@ -1,4 +1,4 @@
-// Studio transport — one borrowed clock, explicit playback intent and generation-owned graph cleanup.
+// Studio transport — one leased clock, explicit playback intent and generation-owned graph cleanup.
 //
 // A clip edit moves only the lanes it changes on the running graph
 // (lane-replan.ts), a new effect list only its lane's chain (lane-swap.ts).
