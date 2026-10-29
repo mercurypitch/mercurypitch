@@ -9,15 +9,16 @@
 // The compressor hears and acts on the top band alone, so an "s" is turned
 // down while the body of the voice is left untouched.
 //
-// The low band runs through a null compressor so both bands carry the same
+// The low band runs through a compressor twin so both bands carry the same
 // lookahead delay; without it the sum would notch right at the crossover.
 
 import type { EffectSpecOf } from '@/lib/studio-fx/chain-spec'
 import { compressorAutoMakeupGain } from '@/lib/studio-fx/compressor-curve'
+import { createCompressorTwin } from '@/lib/studio-fx/compressor-twin'
 import { WET_ONLY } from '@/lib/studio-fx/dsp'
 import type { EffectParams } from '@/lib/studio-fx/effect-definitions'
 import type { EffectEnv, EffectUnit } from '@/lib/studio-fx/effect-shell'
-import { assembleUnit, connectSeries, createButterworth, createEffectShell, createNullCompressor, writeParam, } from '@/lib/studio-fx/effect-shell'
+import { assembleUnit, connectSeries, createButterworth, createEffectShell, writeParam, } from '@/lib/studio-fx/effect-shell'
 
 const DEESSER_KNEE_DB = 3
 const DEESSER_ATTACK_SECONDS = 0.001
@@ -33,14 +34,14 @@ export function createDeesserUnit(
   const lowB = createButterworth(ctx, 'lowpass')
   const highA = createButterworth(ctx, 'highpass')
   const highB = createButterworth(ctx, 'highpass')
-  const lowTwin = createNullCompressor(ctx)
+  const lowTwin = createCompressorTwin(ctx)
   const compressor = ctx.createDynamicsCompressor()
   compressor.knee.value = DEESSER_KNEE_DB
   compressor.attack.value = DEESSER_ATTACK_SECONDS
   compressor.release.value = DEESSER_RELEASE_SECONDS
   const cancelAutoMakeup = ctx.createGain()
   const sum = ctx.createGain()
-  const dryTwin = createNullCompressor(ctx)
+  const dryTwin = createCompressorTwin(ctx)
   connectSeries([shell.input, lowA, lowB, lowTwin, sum])
   connectSeries([shell.input, highA, highB, compressor, cancelAutoMakeup, sum])
   sum.connect(shell.wet)

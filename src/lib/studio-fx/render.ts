@@ -25,6 +25,7 @@
 import { createStudioFxChain } from './chain'
 import type { ChainSpec } from './chain-spec'
 import { normalizeChainSpec } from './chain-spec'
+import { measureCompressorLatency } from './compressor-twin'
 import { delayTailSeconds } from './dsp'
 
 const TAIL_MARGIN_SECONDS = 0.05
@@ -127,6 +128,10 @@ export async function measureChainLatencyFrames(
 ): Promise<number> {
   const chainSpec = normalizeChainSpec(spec)
   if (chainSpec.effects.length === 0) return 0
+  // Every chain build follows a measurement, so twins can be plain delays.
+  // Beside this render, not before it: a twin's delay equals the lookahead
+  // either way, so the latency read here does not depend on which it is.
+  const twins = measureCompressorLatency(sampleRate)
   const bypassed = normalizeChainSpec({
     effects: chainSpec.effects.map((effect) => ({ ...effect, enabled: false })),
   })
@@ -139,6 +144,7 @@ export async function measureChainLatencyFrames(
     LATENCY_WINDOW_FRAMES,
     createContext,
   )
+  await twins
   return peakIndexFrom(rendered.getChannelData(0), preRoll) - preRoll
 }
 

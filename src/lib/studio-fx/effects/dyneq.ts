@@ -10,18 +10,19 @@
 //   out = D(x) - D(bp(x)) + (1 - m) D(bp(x)) + m C(bp(x))
 //
 // bp is a constant-peak bandpass at the band's centre, C a compressor on that
-// band (its automatic makeup divided out) and D a null compressor carrying
-// the same lookahead. While C is idle, C = D and the expression is exactly
-// D(x): flat, no phase step, nothing to notch. When C pulls the band down,
+// band (its automatic makeup divided out) and D its twin, a delay of the
+// same lookahead. While C is idle, C = D (to the compressor's own 1e-5 gain
+// rounding) and the expression is D(x): flat, no phase step, nothing to notch. When C pulls the band down,
 // only `m` of it is compressed, so the cut can never pass the range:
 // m = 1 - 10^(-range/20), and at most the band falls to 1 - m.
 
 import type { EffectSpecOf } from '@/lib/studio-fx/chain-spec'
 import { compressorAutoMakeupGain } from '@/lib/studio-fx/compressor-curve'
+import { createCompressorTwin } from '@/lib/studio-fx/compressor-twin'
 import { dbToGain, gainToDb, WET_ONLY } from '@/lib/studio-fx/dsp'
 import type { EffectParams } from '@/lib/studio-fx/effect-definitions'
 import type { EffectEnv, EffectUnit } from '@/lib/studio-fx/effect-shell'
-import { assembleUnit, connectSeries, createEffectShell, createNullCompressor, writeParam, } from '@/lib/studio-fx/effect-shell'
+import { assembleUnit, connectSeries, createEffectShell, writeParam, } from '@/lib/studio-fx/effect-shell'
 
 const DYNEQ_KNEE_DB = 4
 
@@ -33,8 +34,8 @@ export function createDynamicEqUnit(
   const shell = createEffectShell(ctx, spec.enabled, WET_ONLY)
   const band = ctx.createBiquadFilter()
   band.type = 'bandpass'
-  const wholeTwin = createNullCompressor(ctx)
-  const bandTwin = createNullCompressor(ctx)
+  const wholeTwin = createCompressorTwin(ctx)
+  const bandTwin = createCompressorTwin(ctx)
   const removeBand = ctx.createGain()
   const keptBand = ctx.createGain()
   const compressor = ctx.createDynamicsCompressor()
@@ -48,7 +49,7 @@ export function createDynamicEqUnit(
   bandTwin.connect(keptBand).connect(sum)
   connectSeries([band, compressor, cancelAutoMakeup, compressedBand, sum])
   sum.connect(shell.wet)
-  const dryTwin = createNullCompressor(ctx)
+  const dryTwin = createCompressorTwin(ctx)
   connectSeries([shell.input, dryTwin, shell.dry])
   let share = 0
 

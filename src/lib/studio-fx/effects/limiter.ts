@@ -18,11 +18,12 @@
 
 import type { EffectSpecOf } from '@/lib/studio-fx/chain-spec'
 import { compressorAutoMakeupGain } from '@/lib/studio-fx/compressor-curve'
+import { createCompressorTwin } from '@/lib/studio-fx/compressor-twin'
 import type { ShaperCurve } from '@/lib/studio-fx/dsp'
 import { createHardClampCurve, createSoftClipCurve, dbToGain, HARD_CLAMP_DOMAIN, SOFT_CLIP_DOMAIN, WET_ONLY, } from '@/lib/studio-fx/dsp'
 import type { EffectParams } from '@/lib/studio-fx/effect-definitions'
 import type { EffectEnv, EffectUnit } from '@/lib/studio-fx/effect-shell'
-import { assembleUnit, connectSeries, createEffectShell, createIdentityShaperPath, createNullCompressor, createShaperPath, writeParam, } from '@/lib/studio-fx/effect-shell'
+import { assembleUnit, connectSeries, createEffectShell, createIdentityShaperPath, createShaperPath, writeParam, } from '@/lib/studio-fx/effect-shell'
 
 const LIMITER_HEADROOM_DB = 1.5
 const LIMITER_RATIO = 20
@@ -49,7 +50,7 @@ export function createLimiterUnit(
   const cancelAutoMakeup = ctx.createGain()
   const soft = createShaperPath(ctx, limiterCurves().soft)
   const hard = createShaperPath(ctx, limiterCurves().hard, 'none')
-  const dryCompressor = createNullCompressor(ctx)
+  const dryCompressor = createCompressorTwin(ctx)
   const dryShaper = createIdentityShaperPath(ctx)
   connectSeries([shell.input, drive, compressor, cancelAutoMakeup, soft.input])
   connectSeries([soft.output, hard.input])
