@@ -124,10 +124,11 @@
             return 0
           }
           const cam = L.frameRig(room, { from: 'F0' })
-          // one curve from the push to the pull: F0 to F-exp (1.2 s), F-exp to F-chart (from "top", 1.85 s), the drift
+          const LEG = 1.85                                  // F-exp to F-chart, from "top" (307.13 to 308.98)
+          // one curve from the push to the pull: F0 to F-exp (1.2 s), F-exp to F-chart (from "top", LEG), the drift
           cam.curve(A.push, A.pull - A.push, (u) => {
             const t = A.push + u * (A.pull - A.push)
-            const k0 = P(t, A.push, 1.2, 'power2.inOut'), k = P(t, A.top, 1.85, 'power2.inOut')
+            const k0 = P(t, A.push, 1.2, 'power2.inOut'), k = P(t, A.top, LEG, 'power2.inOut')
             const f = (key) => lerp(lerp(1 * (key === 's'), F_EXP[key], k0), F_CHART[key], k)
             return { s: f('s'), ox: f('ox') + drift(t), oy: f('oy') }
           })
@@ -201,12 +202,14 @@
           // outline only (the obsidian ground, opaque over the dimmed stairs, a 35 % rim, ink-2 letters), so the bottom
           // shelf reads as the least, not as highlighted (component critic D-01 item 8)
           const UNLIT = '#1b232d'
+          const UNLIT_C = [27, 35, 45], OBSIDIAN = [13, 17, 23], CHROME = [195, 204, 214], INK = [230, 237, 243], INK2 = [168, 179, 191]
+          const mixC = (A, B, u) => `rgb(${A.map((v, i) => Math.round(lerp(v, B[i], u))).join(',')})`
           const makeChip = (text, dim) => {
             const g = L.svg('g', { opacity: 0 }, chipLayer)
             const box = L.svg('rect', { x: -60, y: -28, width: 120, height: 56, rx: 12, fill: dim ? L.C.obsidian : UNLIT, stroke: '#c3ccd6', 'stroke-width': 2, 'stroke-opacity': dim ? 0.35 : 0.55 }, g)
             const lab = L.spell(g, text, { x: 0, y: 14, size: 40, family: 'Outfit', weight: 600, fill: dim ? L.C.ink2 : L.C.ink, anchor: 'middle' })
             lab.g.querySelectorAll('text').forEach((el) => el.setAttribute('data-layout-allow-overlap', ''))
-            return { g, box, lab }
+            return { g, box, lab, letters: [...lab.g.querySelectorAll('text, path')] }
           }
           // each chip: its source (a stair's name, or a black key), its tier (0 top) and its centre x on the shelf
           const CHIPS = [
@@ -376,11 +379,13 @@
               goldGlow.setAttribute('x', f1(x - 9)); goldGlow.setAttribute('y', f1(y0 - 6)); goldGlow.setAttribute('height', f1(y1 - y0 + 12))
               goldGlow.setAttribute('opacity', (0.6 * Math.max(...GROW.map((g) => L.env(t, g, 0.15, 0.2, 0.6)))).toFixed(3))
             }
-            // the strip (and its hairlines) dims to 20 % over the push to F-chart, where it would sit bright in the
-            // caption band with no job, and returns over the pull (component critic D-01 item 2); the black keys'
-            // names still rise from it as chips
+            // the strip (and its hairlines and names) dims to 20 % over the push to F-exp, where it would sit bright in
+            // the caption band with no job (component critic D-01 item 2); the black keys' names rise from it as chips.
+            // Once they have left it, it fades out as the camera comes to rest on F-chart, so no frame of F-chart shows
+            // its edge along the frame's foot (D-03 item 2, DECISIONS 100: 308.22 to 308.98), and it returns over the
+            // pull, before the chips fly back to their keys
             kb.draw({
-              a: 1 - 0.8 * P(t, A.push, 1.2) + 0.8 * P(t, A.pull, PULL_DUR),
+              a: (1 - 0.8 * P(t, A.push, 1.2)) * (1 - P(t, A.doh, A.top + LEG - A.doh)) + P(t, A.pull, PULL_DUR),
               key: (m) => {
                 const inS = lerp(CMAJ.includes(m) ? 1 : 0, DMAJ.includes(m) ? 1 : 0, uS)
                 return {
@@ -419,10 +424,16 @@
               const sc = s.s * (t >= c.out + c.dur && t < c.back ? tierPulse(c.tier, t) : 1)
               c.el.g.setAttribute('opacity', s.a.toFixed(3))
               c.el.box.setAttribute('opacity', s.box.toFixed(3))
-              // the cascade lights each tier as it scales: an outline chip's rim brightens, a scale chip's fill
+              // the cascade lights each tier as it scales: a scale chip's fill to 40 % chrome; an outline chip's fill
+              // to 50 % chrome, its rim brightening and its letters going from ink-2 to ink, so the bottom shelf's turn
+              // reads (D-03 item 4, DECISIONS 100)
               const k = cascade(c.tier, t)
-              if (c.dim) c.el.box.setAttribute('stroke-opacity', (0.35 + 0.45 * k).toFixed(3))
-              else c.el.box.setAttribute('fill', k > 0.002 ? `rgb(${[27, 35, 45].map((v, i) => Math.round(lerp(v, [195, 204, 214][i], 0.4 * k))).join(',')})` : UNLIT)
+              if (c.dim) {
+                c.el.box.setAttribute('stroke-opacity', (0.35 + 0.45 * k).toFixed(3))
+                c.el.box.setAttribute('fill', k > 0.002 ? mixC(OBSIDIAN, CHROME, 0.5 * k) : L.C.obsidian)
+                const ink = k > 0.002 ? mixC(INK2, INK, k) : L.C.ink2
+                c.el.letters.forEach((el) => el.setAttribute('fill', ink))
+              } else c.el.box.setAttribute('fill', k > 0.002 ? mixC(UNLIT_C, CHROME, 0.4 * k) : UNLIT)
               c.el.g.setAttribute('transform', `translate(${f1(s.p[0])} ${f1(s.p[1])}) scale(${sc.toFixed(4)})`)
             }
             {

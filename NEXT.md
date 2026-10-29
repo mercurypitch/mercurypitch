@@ -1676,3 +1676,12 @@ Note: the lanes' memory gate read a stale cgroup path after the 21:00 restart (f
   what it needs from the frozen f2/ copies). Agents now: A + F-02. Queue unchanged: D round 4
   (D-fix4-msg) -> B small (B-fix4) -> C small (C-fix2) -> E round 3 (E-fix3) -> critics A-03, D-04,
   B-04, C-03, E-03. HANDOFFS § The ladder as-built numbers wait for F-02.
+- 23:2x critic F-02 returned: S14 REVISE, S15 REVISE, S16 KEEP (report saved review/component-F-02/
+  REPORT.md; LEDGER row 20; DECISIONS 102: carry 469.9-471.9; ladder ~x 240-1680, y 160-720, 30 px a
+  semitone, A4 part drawn on "sing a major scale back"; range swell from left edge; no panel dip;
+  pause ends on More; arrow to the house; F names the five stair-light words; gold corner and S16's
+  0.37 s left). Board 14d/14f/14g/15 + HANDOFFS § Recap/ladder/practise card/S14-S15/S15 updated
+  (backups $S/l4entr/b102/). F-fix2-msg.txt READY (60 fps).
+- 23:2x builder D resumed with D-fix4-msg (round 4, 60 fps). Agents now: A (finishing) + D.
+- Queue: F round 2 (F-fix2) -> B small (B-fix4) -> C small (C-fix2) -> E round 3 (E-fix3); critics
+  A-03 when A reports, D-04 when D reports, then F-03, B-04, C-03, E-03.

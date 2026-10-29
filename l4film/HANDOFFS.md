@@ -490,19 +490,27 @@ ended 405.2; Tavi has stood there since S13a; m12 spans the cut). Every mark of 
   back to C major's keys on 14d's slide (429.8 to 430.6, F♯4 and C♯5 going dark) and to G major's on
   14e's (449.5 to 450.3, F♯5 lit, its hairline slanting to it). In 14d's F-recap-3 the top house
   unlights as the chrome bead drops onto ti (433.09), rests on ti at (1305, 338), and on do's onset
-  (433.74) hops straight into the house's centre (1473, 277), the house lighting as it enters
-  (433.74 to 434.04) with one echo ring; the "S" right-aligned at x 1382 (world 1073), baseline 358,
+  (433.74) hops (0.3 s) straight into the house's centre (1473, 277), drawn under the house and
+  shrinking to nothing by 434.04, the house lighting as it enters (433.74 to 434.04) with one echo
+  ring at 434.04; the "S" right-aligned at x 1382 (world 1073), baseline 358,
   14 px clear of the bead on ti. In 14b S6's two brackets (§ S6's brackets) return over stairs 1 to
-  4 (417.54) and 5 to 8 (417.8), placed for F-recap-1 and 12 px or more from every label, house and
-  the panel (card 1 may leave once its labels have all landed, from 416.3, and the top house may
-  leave and return with the bottom one); on "joined" (418.23) and "tone" (419.05) the F-G riser
-  grows and its "T" scales 1.2. One ripple only, on "steps" (b46).
+  4 (on "Two", 417.54) and 5 to 8 (on "groups,", 417.77), drawing on over 0.5 s and both leaving at
+  419.62, placed for F-recap-1 and 12 px or more from every label, house and the panel (as built,
+  DECISIONS 102: card 1 and its panel leave once its labels have all landed, 417.04 to 417.47, and
+  the top house leaves and returns with the bottom one); on "joined" (418.23) and "tone" (419.05)
+  the F-G riser grows and its "T" scales 1.2 about its centre. One ripple only, the stairs lighting
+  in turn on "steps" (b46, 408.29, 0.07 s apart). Between two cards the panel leaves with one card's
+  lines and comes back with the next's; it never shows empty, not even for a dip.
 - **The ladder (S14f).** The strip slides out and the stair blocks, names, risers, rows, houses and
   hairlines fade (453.9 to 454.5), leaving the eight treads, which become the sung line and the
-  rungs (454.0 to 455.2). It draws large first (DECISIONS 97): panel x 200 to 1720, y 140 to 620, pitch at 24 px a
-  semitone, rungs 90 px wide with strokes from 100 % down to 45 %; the builder sets the rest of that
-  layout in the same proportions and reports it. Over 459.4 to 460.0 it eases to its card-time box,
-  below. Card-time box: panel x 300 to 1620, y 150 to 460; title "Scale Runner" at (330, 200),
+  rungs (454.0 to 455.2). It draws large first (DECISIONS 97, 102): the panel fills the frame above
+  the Mercs, about x 240 to 1680 and y 160 to 720, 20 px or more from their bodies and speech marks,
+  pitch at 30 px a semitone, rungs 90 px wide or more with strokes from 100 % down to 45 %; the
+  builder sets the rest in the same proportions and reports it (round 1's large layout, x 200 to
+  1720 and y 140 to 620 at 24 px, left the frame's lower 40 % empty). The sung line's A4 part starts
+  as a stub at the break and draws on to the playhead on "sing a major scale back" (456.51 to
+  457.74), so the panel changes while it is described. Over 459.4 to 460.0 it eases to its
+  card-time box, below. Card-time box: panel x 300 to 1620, y 150 to 460; title "Scale Runner" at (330, 200),
   "ILLUSTRATION" right-aligned at (1590, 200). Playhead x 894 (45 % of the panel), a chrome line 2
   px at 35 %, y 220 to 440. Pitch at 16 px a semitone, G4 at y 422: A4 390, B4 358, C5 342, D5 310,
   E5 278, F♯5 246, G5 230. The note being asked for, re (A4): a dashed amber line (3 px, dash 10,
@@ -526,13 +534,19 @@ ended 405.2; Tavi has stood there since S13a; m12 spans the cut). Every mark of 
   (Settings and Exercises), drawn 36 px in ink before each tab's name, and More's three dots from
   `src/components/mobile/BottomTabBar.tsx` (`EllipsisIcon`), 28 px in ink-2; the × is the intro's
   close glyph (`src/features/onboarding/FirstLight.tsx`), 32 px in ink. The line at 670 is the
-  widest: the builder measures it and keeps it inside x 310 to 1610.
+  widest: the builder measures it and keeps it inside x 310 to 1610. On "range" (461.49) its
+  "Singing Voice Range" swells 1.2 from its left edge (to x 1581 at most), never over the "›"
+  before it. As built: lines 1 and 2 at 460.00 and 460.30, the underline at y 554, the phone line at
+  465.69. Through the card pause each line's tab icon glows in turn with its line underlined (465.8,
+  466.6, 467.4, 468.2), More's last; nothing lights after More (DECISIONS 102).
 - **S14 to S15 (470.24).** The Mercs in the corners at 300; the card and the ladder gone (469.7 to
   470.0) but for the ladder's top rung, do, which brightens to full and slides from its card-time
-  place to (560, 520) over 469.9 to 470.7 (power2.inOut) on one curve that both scenes compute from
-  film time, so it sits on the same pixels on both sides of the cut; it condenses into S15's chrome
-  bead as it lands.
-- **S15.** The bead (the carried rung) at (560, 520) from 470.7; '"support"' serif italic 160 px
+  place to (560, 520) over 469.9 to 471.9 (power2.inOut; DECISIONS 102: 2.0 s, so it carries the
+  frame through "Next time." and lands just before "Singers") on one curve that both scenes compute
+  from film time (`carryAt`), so it sits on the same pixels on both sides of the cut; it condenses
+  into S15's chrome bead over its last 0.4 s.
+- **S15.** The bead (the carried rung) at (560, 520) from 471.9; S15's echo rings fade with its
+  type (from o14's end + 0.07, 0.3 s), so none crosses the cut to S16; '"support"' serif italic 160 px
   centred, baseline 420, landing on "Singers" (472.15); the long note at y 520 from x 560 to 1360; "what keeps it steady?" serif italic 96 px centred, baseline 680.
 - **S15 to S16 (478.53).** The Mercs in the corners at 300; S15's type gone (478.5).
 - **S16.** The Mercs grow to 520 at (330, 840) and (1590, 840) (478.6 to 479.2): bodies x 192 to 468

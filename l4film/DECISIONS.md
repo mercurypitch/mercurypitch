@@ -895,3 +895,37 @@ replaced it. The builder's record: critics never read it.
        about speaking volume" on "at about", 381.46): the critic reads that as better than the
        board's paired lines, and rows 13a and 13b now say so.
      - Builder E's round 3 renders both clips at 60 fps again; a fresh critic, E-03, verifies.
+
+102. **S14 to S16 after builder F's round (decision 97) and component critic F-02 (S14 REVISE, S15
+     REVISE, S16 KEEP): a slower carry across the cut, a ladder that fills the frame and changes as
+     it is described, and five small items.**
+     - **As built and kept** (builder F, 21:04): the panel with each card from 0.2 s before its first
+       line; the kicker on the recap mark; one ripple, on "steps" (408.29); both allowances used
+       (card 1 and its panel leave 417.04 to 417.47; the top house leaves and returns with the
+       bottom one); the brackets on "Two" and "groups," (417.54, 417.77), both leaving at 419.62;
+       ti's bead hopping into the house, drawn under it (433.74 to 434.04); the practise card at
+       540 to 850 with the phone line at 465.69; S15's echo rings fading with its type; S16's wipe
+       feathered. HANDOFFS records them.
+     - **The carry takes 2.0 s** (F-02 item 2): the rung glides 469.9 to 471.9 instead of 469.9 to
+       470.7, so it crosses the frame during "Next time." and lands as the bead just before
+       "Singers" (472.15); S15's first 1.5 s were a bead and a kicker in an empty frame. The peak
+       speed falls from about 60 to about 24 px a frame at 60 fps.
+     - **The ladder fills the frame above the Mercs and changes while it is described** (item 3):
+       about x 240 to 1680 and y 160 to 720 at 30 px a semitone, 20 px or more from the Mercs and
+       their speech marks (the critic's x 200 to 1720 would touch them at y 648 to 720); and the
+       sung line's A4 part draws on to the playhead on "sing a major scale back" (456.51 to 457.74),
+       where nothing on the panel changed for 2.4 s. No ripple comes back.
+     - **"Singing Voice Range" swells from its left edge** (item 1): about its centre it covered the
+       "›" before it for a second (461.06 to 462.06).
+     - **The panel never dips** (item 4): between cards 3 and 4 it showed empty for 0.25 s (443.34
+       to 443.59); it leaves with card 3's lines and returns with card 4's.
+     - **The card pause ends on More** (item 5): each line's underline sweep runs with its icon's
+       glow, More's last; the sweeps had ended on the address.
+     - **The arrow on "lean up" reaches the house** (item 5): its head stopped 40 px short (442.79);
+       it ends within 8 px of the house's outline, as S3's does (row 14d).
+     - **Beats on cue words** (item 5, 416.89, 420.49, 424.29, 446.29, 452.09): builder F names the
+       word for each; those tied to a word stay and the board names them, the rest go.
+     - **Left as they are:** the gold semitone corner that runs part way along the upper tread (the
+       kit's mark for a semitone in every scene since the start, decision 85; the film critic judges
+       it), and S16's first 0.37 s of Mercs alone (decision 97).
+     - Builder F's round 2 renders all three clips at 60 fps; a fresh critic, F-03, verifies.
