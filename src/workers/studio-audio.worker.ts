@@ -1,61 +1,24 @@
 // ============================================================
-// Studio audio worker — checks a take's canonical PCM and builds its waveform peaks away from the page's thread
+// Studio audio worker — checks a take's canonical PCM, builds its waveform peaks and checks a restore's audio away from the page's thread
 //
 // Reading a take, hashing it and scanning every sample took the main thread
-// a second and more on a large song's open. Here the page hands over the
-// stored Blob (no copy), and gets back either the checked bytes, transferred,
-// or the take's encoded peaks. The checks and the peaks live in
-// lib/studio/audio, so they are tested without a worker; this file only
-// moves messages.
+// a second and more on a large song's open, and a restore's hashes held it
+// for seconds. Here the page hands over the stored Blob (no copy), or a
+// restore's bytes (transferred both ways), and gets back the checked bytes,
+// or the take's encoded peaks. The work lives in
+// lib/studio/audio/studio-audio-jobs.ts, so it is tested without a worker;
+// this file only moves messages.
 // ============================================================
 
-import type { CanonicalPcmMetadata } from '@/lib/studio/audio/canonical-pcm'
-import { CANONICAL_PCM_HEADER_BYTES, checkCanonicalPcm, checkCanonicalPcmHash, } from '@/lib/studio/audio/canonical-pcm'
-import { buildStudioPeaks, encodeStudioPeaks, } from '@/lib/studio/audio/waveform-peaks'
-
-export interface StudioAudioRequest {
-  readonly id: number
-  /** `verify`: the checked bytes back. `peaks`: the take's encoded waveform peaks. */
-  readonly kind: 'verify' | 'peaks'
-  readonly blob: Blob
-  readonly metadata: CanonicalPcmMetadata
-}
-
-export type StudioAudioResponse =
-  | { readonly id: number; readonly ok: true; readonly bytes: ArrayBuffer }
-  | { readonly id: number; readonly ok: false; readonly message: string }
-
-async function answer(request: StudioAudioRequest): Promise<ArrayBuffer> {
-  const bytes = await request.blob.arrayBuffer()
-  const { metadata } = request
-  if (request.kind === 'verify') {
-    await checkCanonicalPcm(bytes, metadata)
-    return bytes
-  }
-  await checkCanonicalPcmHash(bytes, metadata)
-  // Building the peaks scans every sample, and refuses one that is not finite.
-  const channels = Array.from(
-    { length: metadata.channels },
-    (_, channel) =>
-      new Float32Array(
-        bytes,
-        CANONICAL_PCM_HEADER_BYTES +
-          channel * metadata.normalizedFrameCount * 4,
-        metadata.normalizedFrameCount,
-      ),
-  )
-  return encodeStudioPeaks(
-    buildStudioPeaks(channels, metadata.normalizedFrameCount),
-    metadata.canonicalPcmSha256,
-  )
-}
+import type { StudioAudioReady, StudioAudioRequest, StudioAudioResponse, } from '@/lib/studio/audio/studio-audio-jobs'
+import { answerStudioAudioJob } from '@/lib/studio/audio/studio-audio-jobs'
 
 self.onmessage = (event: MessageEvent<StudioAudioRequest>) => {
   const { id } = event.data
-  answer(event.data).then(
+  answerStudioAudioJob(event.data).then(
     (bytes) =>
       self.postMessage({ id, ok: true, bytes } satisfies StudioAudioResponse, {
-        transfer: [bytes],
+        transfer: bytes,
       }),
     (error: unknown) =>
       self.postMessage({
@@ -65,3 +28,5 @@ self.onmessage = (event: MessageEvent<StudioAudioRequest>) => {
       } satisfies StudioAudioResponse),
   )
 }
+
+self.postMessage({ ready: true } satisfies StudioAudioReady)

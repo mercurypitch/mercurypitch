@@ -216,6 +216,20 @@ describe('Studio restore and copy memory', () => {
     }
   })
 
+  it('reads a backup Studio wrote in 4 MiB pieces, where it took 16 KiB ones', async () => {
+    const archive = await backup()
+    try {
+      const slice = vi.spyOn(archive, 'slice')
+      await restoreStudioBackup(archive, service)
+      // The entries in 4 MiB reads, and the directory at the end in two.
+      const reads = Math.ceil(archive.size / (4 * MiB))
+      expect(slice.mock.calls.length).toBeLessThanOrEqual(reads + 2)
+      expect(archive.size / (16 * 1024)).toBeGreaterThan(100)
+    } finally {
+      releaseStudioResource(archive)
+    }
+  })
+
   it('copies a song holding its saved audio once, not three times over', async () => {
     const [copy, held] = await peakOf(() => service.forkProject(song))
 

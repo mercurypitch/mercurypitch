@@ -1,5 +1,5 @@
 // Studio record preparation — admit serialization and validation copies before reading audio.
-import { validatePreparedStudioAsset, validatePreparedStudioBytes, } from '@/lib/studio/audio/prepare-studio-asset'
+import { checkPreparedStudioBytes, validatePreparedStudioAsset, } from '@/lib/studio/audio/prepare-studio-asset'
 import { isStudioMemoryRefusal, reserveStudioMemory, } from '@/lib/studio/memory-budget'
 import type { StudioAsset, StudioAssetBytes, StudioAssetData, StudioProject, } from '@/lib/studio/model/types'
 import { validateStudioAsset } from '@/lib/studio/model/validation'
@@ -25,9 +25,14 @@ async function checkedBytes(
   signal?: AbortSignal,
 ): Promise<{ original: ArrayBuffer; canonical: ArrayBuffer }> {
   if (isStudioAssetBytes(input)) {
-    // Handed over: hashed in place and stored as they are, never copied.
-    await validatePreparedStudioBytes({ ...input, asset }, { signal })
-    return { original: input.original, canonical: input.canonicalPcm }
+    // Handed over: hashed in place (in the Studio's audio worker while it is
+    // open) and stored as they are, never copied. The checked buffers are
+    // the ones to store: a check in the worker hands back new references.
+    const checked = await checkPreparedStudioBytes(
+      { ...input, asset },
+      { signal },
+    )
+    return { original: checked.original, canonical: checked.canonicalPcm }
   }
   await validatePreparedStudioAsset({ ...input, asset }, { signal })
   return {

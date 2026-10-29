@@ -227,14 +227,27 @@ export async function validatePreparedStudioAsset(
   await validateCanonicalPcm(data.canonicalPcm, asset, options)
 }
 
-/**
- * The same checks for audio held as bytes. Both hashes read the bytes in
- * place, so this allocates nothing the size of the audio.
- */
-export async function validatePreparedStudioBytes(
+type BytesCheckOptions = Omit<PrepareStudioAssetOptions, 'createDecodeContext'>
+
+/** Checks handed-over audio somewhere other than this thread, and gives back the bytes to keep. */
+export type StudioBytesChecker = (
   data: StudioAssetBytes,
-  options: Omit<PrepareStudioAssetOptions, 'createDecodeContext'> = {},
-): Promise<void> {
+  options: BytesCheckOptions,
+) => Promise<StudioAssetBytes>
+
+let offThreadChecker: StudioBytesChecker | null = null
+
+/** Route checks of handed-over audio through `checker` until it is cleared with null. */
+export function setStudioBytesChecker(
+  checker: StudioBytesChecker | null,
+): void {
+  offThreadChecker = checker
+}
+
+function checkBytesSize(
+  data: StudioAssetBytes,
+  options: BytesCheckOptions,
+): StudioAsset {
   checkImportCancelled(options.signal)
   const asset = validateStudioAsset(data.asset)
   const limits = importLimits(options.limits)
@@ -243,7 +256,46 @@ export async function validatePreparedStudioBytes(
     throw new Error('This audio is empty or too large. Choose a smaller file.')
   if (size !== asset.byteLength)
     throw new Error('Original audio does not match its saved metadata')
-  if ((await sha256InPlace(data.original, options.signal)) !== asset.sha256)
+  return asset
+}
+
+/** Both hashes and every sample of audio held as bytes, read in place. */
+export async function checkStudioBytesHere(
+  data: StudioAssetBytes,
+  options: BytesCheckOptions = {},
+): Promise<void> {
+  if (
+    (await sha256InPlace(data.original, options.signal)) !== data.asset.sha256
+  )
     throw new Error('Original audio checksum failed')
-  await validateCanonicalPcmBytes(data.canonicalPcm, asset, options)
+  await validateCanonicalPcmBytes(data.canonicalPcm, data.asset, options)
+}
+
+/**
+ * The same checks for audio held as bytes. Both hashes read the bytes in
+ * place, so this allocates nothing the size of the audio.
+ */
+export async function validatePreparedStudioBytes(
+  data: StudioAssetBytes,
+  options: BytesCheckOptions = {},
+): Promise<void> {
+  const asset = checkBytesSize(data, options)
+  await checkStudioBytesHere({ ...data, asset }, options)
+}
+
+/**
+ * The same checks, giving back the bytes to store. While the Studio is open
+ * the hashes and the sample scan run in its audio worker: the bytes go there
+ * and come back without a copy, so the ones handed back are the ones to
+ * keep, and the ones handed in are no longer usable.
+ */
+export async function checkPreparedStudioBytes(
+  data: StudioAssetBytes,
+  options: BytesCheckOptions = {},
+): Promise<StudioAssetBytes> {
+  const asset = checkBytesSize(data, options)
+  if (offThreadChecker && options.limits === undefined)
+    return offThreadChecker({ ...data, asset }, options)
+  await checkStudioBytesHere({ ...data, asset }, options)
+  return { ...data, asset }
 }

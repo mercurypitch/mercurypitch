@@ -13,13 +13,20 @@ export const STUDIO_BACKUP_LIMITS = {
   manifestBytes: 2 * 1024 * 1024,
   entries: 257,
   inputChunkBytes: 16 * 1024,
+  /**
+   * An archive of stored entries (every backup Studio writes) is read this
+   * much at a time: a 297 MiB backup in 75 reads, where 16 KiB pieces took
+   * 18,990 and most of a restore's time.
+   */
+  storedChunkBytes: 4 * 1024 * 1024,
 } as const
 /**
  * Reading needs this much beyond the entries themselves. A stored entry is
- * copied straight from one 16 KiB input chunk; a deflated one can inflate a
- * chunk about a thousandfold, which the inflater hands over in one piece.
+ * copied straight from one input chunk; a deflated one can inflate a chunk
+ * about a thousandfold, which the inflater hands over in one piece, so an
+ * archive with any deflated entry is read 16 KiB at a time.
  */
-const STORED_WORKING_BYTES = 1024 * 1024
+const STORED_WORKING_BYTES = STUDIO_BACKUP_LIMITS.storedChunkBytes + 1024 * 1024
 const INFLATE_WORKING_BYTES = 20 * 1024 * 1024
 
 export class StudioBackupError extends Error {
@@ -248,17 +255,13 @@ export async function readStudioArchive(
     file.start()
   })
   unzip.register(UnzipInflate)
+  const step = deflated
+    ? STUDIO_BACKUP_LIMITS.inputChunkBytes
+    : STUDIO_BACKUP_LIMITS.storedChunkBytes
   try {
-    for (
-      let offset = 0;
-      offset < archive.size;
-      offset += STUDIO_BACKUP_LIMITS.inputChunkBytes
-    ) {
+    for (let offset = 0; offset < archive.size; offset += step) {
       checkAbort(signal)
-      const end = Math.min(
-        archive.size,
-        offset + STUDIO_BACKUP_LIMITS.inputChunkBytes,
-      )
+      const end = Math.min(archive.size, offset + step)
       const chunk = new Uint8Array(
         await archive.slice(offset, end).arrayBuffer(),
       )

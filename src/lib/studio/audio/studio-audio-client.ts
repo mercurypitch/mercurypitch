@@ -1,16 +1,22 @@
 // ============================================================
-// Studio audio client — one module worker reads and checks canonical PCM and builds waveform peaks while the Studio is open
+// Studio audio client — one module worker reads and checks canonical PCM, builds waveform peaks and checks a restore's audio while the Studio is open
 //
 // installStudioAudioWorker() routes every canonical PCM read
-// (readCanonicalPcmBytes) through the worker until its uninstall runs, which
-// also ends the worker. Where a worker cannot start, or the platform is
-// big-endian, the same work runs on this thread as it did before.
+// (readCanonicalPcmBytes) and every check of handed-over audio bytes
+// (checkPreparedStudioBytes, a restore's) through the worker until its
+// uninstall runs; the worker ends once the jobs it holds are answered.
+// Where a worker cannot start, or the platform is big-endian, the same work
+// runs on this thread as it did before.
 // ============================================================
 
-import type { StudioAudioRequest, StudioAudioResponse, } from '@/workers/studio-audio.worker'
+import { StudioMemoryError } from '@/lib/studio/memory-budget'
+import type { StudioAssetBytes } from '@/lib/studio/model/types'
 import type { CanonicalPcmMetadata, CanonicalPcmOptions } from './canonical-pcm'
 import { decodeCanonicalPcm, readCanonicalPcmBytesHere, setCanonicalPcmReader, } from './canonical-pcm'
 import { checkImportCancelled } from './import-limits'
+import type { StudioBytesChecker } from './prepare-studio-asset'
+import { checkStudioBytesHere, setStudioBytesChecker, } from './prepare-studio-asset'
+import type { StudioAudioReady, StudioAudioRequest, StudioAudioResponse, } from './studio-audio-jobs'
 import { buildStudioPeaks, encodeStudioPeaks } from './waveform-peaks'
 
 const LITTLE_ENDIAN = new Uint8Array(new Uint32Array([1]).buffer)[0] === 1
@@ -19,11 +25,13 @@ const LITTLE_ENDIAN = new Uint8Array(new Uint32Array([1]).buffer)[0] === 1
 class StudioAudioWorkerUnavailable extends Error {}
 
 interface Pending {
-  resolve(bytes: ArrayBuffer): void
+  resolve(bytes: readonly ArrayBuffer[]): void
   reject(error: unknown): void
 }
 
 let worker: Worker | null = null
+/** Settles when the worker's code has loaded, or rejects when it cannot. */
+let loaded: Promise<void> = Promise.resolve()
 let broken = !LITTLE_ENDIAN || typeof Worker === 'undefined'
 let installs = 0
 let sequence = 0
@@ -34,9 +42,21 @@ function failAll(error: unknown): void {
   pending.clear()
 }
 
+/** End a worker nobody needs: the Studio closed and every job it holds is answered. */
+function retireIfIdle(): void {
+  if (installs > 0 || pending.size > 0 || !worker) return
+  worker.terminate()
+  worker = null
+}
+
 function running(): Worker | null {
   if (broken || installs === 0) return null
   if (worker) return worker
+  let started!: { resolve(): void; reject(error: unknown): void }
+  loaded = new Promise<void>((resolve, reject) => {
+    started = { resolve, reject }
+  })
+  loaded.catch(() => undefined)
   try {
     worker = new Worker(
       new URL('../../../workers/studio-audio.worker.ts', import.meta.url),
@@ -44,20 +64,30 @@ function running(): Worker | null {
     )
   } catch {
     broken = true
+    started.reject(new StudioAudioWorkerUnavailable())
     return null
   }
-  worker.onmessage = (event: MessageEvent<StudioAudioResponse>) => {
-    const job = pending.get(event.data.id)
+  worker.onmessage = (
+    event: MessageEvent<StudioAudioResponse | StudioAudioReady>,
+  ) => {
+    const answer = event.data
+    if ('ready' in answer) {
+      started.resolve()
+      return
+    }
+    const job = pending.get(answer.id)
     if (!job) return
-    pending.delete(event.data.id)
-    if (event.data.ok) job.resolve(event.data.bytes)
-    else job.reject(new Error(event.data.message))
+    pending.delete(answer.id)
+    if (answer.ok) job.resolve(answer.bytes)
+    else job.reject(new Error(answer.message))
+    retireIfIdle()
   }
   // A worker that fails to load or dies hands its jobs back to this thread.
   const fail = () => {
     broken = true
     worker?.terminate()
     worker = null
+    started.reject(new StudioAudioWorkerUnavailable())
     failAll(new StudioAudioWorkerUnavailable())
   }
   worker.onerror = fail
@@ -65,21 +95,48 @@ function running(): Worker | null {
   return worker
 }
 
-function run(
-  kind: StudioAudioRequest['kind'],
-  blob: Blob,
-  metadata: CanonicalPcmMetadata,
+/** A plain copy: the caller's metadata may be a store proxy. */
+function plainMetadata(metadata: CanonicalPcmMetadata): CanonicalPcmMetadata {
+  return {
+    channels: metadata.channels,
+    normalizedSampleRate: metadata.normalizedSampleRate,
+    normalizedFrameCount: metadata.normalizedFrameCount,
+    canonicalPcmByteLength: metadata.canonicalPcmByteLength,
+    canonicalPcmSha256: metadata.canonicalPcmSha256,
+  }
+}
+
+type Job =
+  | { kind: 'verify' | 'peaks'; blob: Blob; metadata: CanonicalPcmMetadata }
+  | {
+      kind: 'bytes'
+      original: ArrayBuffer
+      canonical: ArrayBuffer
+      sha256: string
+      metadata: CanonicalPcmMetadata
+    }
+
+async function run(
+  job: Job,
   signal?: AbortSignal,
-): Promise<ArrayBuffer> {
-  const target = running()
-  if (!target) return Promise.reject(new StudioAudioWorkerUnavailable())
+): Promise<readonly ArrayBuffer[]> {
+  let target = running()
+  if (!target) throw new StudioAudioWorkerUnavailable()
+  if (job.kind === 'bytes') {
+    // Bytes sent to a worker that never loads are lost: wait until it has.
+    await loaded
+    if (worker !== target) target = running()
+    if (!target) throw new StudioAudioWorkerUnavailable()
+  }
   checkImportCancelled(signal)
   const id = ++sequence
-  return new Promise<ArrayBuffer>((resolve, reject) => {
+  const sent = target
+  return new Promise<readonly ArrayBuffer[]>((resolve, reject) => {
     const abort = () => {
       // The worker finishes the job; its answer finds nobody waiting.
       pending.delete(id)
       reject(signal?.reason ?? new DOMException('Aborted', 'AbortError'))
+      retireIfIdle()
     }
     signal?.addEventListener('abort', abort, { once: true })
     const settle =
@@ -90,19 +147,14 @@ function run(
       }
     pending.set(id, { resolve: settle(resolve), reject: settle(reject) })
     const request: StudioAudioRequest = {
+      ...job,
       id,
-      kind,
-      blob,
-      // A plain copy: the caller's metadata may be a store proxy.
-      metadata: {
-        channels: metadata.channels,
-        normalizedSampleRate: metadata.normalizedSampleRate,
-        normalizedFrameCount: metadata.normalizedFrameCount,
-        canonicalPcmByteLength: metadata.canonicalPcmByteLength,
-        canonicalPcmSha256: metadata.canonicalPcmSha256,
-      },
+      metadata: plainMetadata(job.metadata),
     }
-    target.postMessage(request)
+    sent.postMessage(
+      request,
+      job.kind === 'bytes' ? [job.original, job.canonical] : [],
+    )
   })
 }
 
@@ -112,7 +164,11 @@ async function readOffThread(
   options: CanonicalPcmOptions,
 ): Promise<ArrayBuffer> {
   try {
-    return await run('verify', blob, metadata, options.signal)
+    const [bytes] = await run(
+      { kind: 'verify', blob, metadata },
+      options.signal,
+    )
+    return bytes
   } catch (error) {
     if (!(error instanceof StudioAudioWorkerUnavailable)) throw error
     return readCanonicalPcmBytesHere(blob, metadata, options)
@@ -129,7 +185,8 @@ export async function buildStudioPeaksBytes(
   signal?: AbortSignal,
 ): Promise<ArrayBuffer> {
   try {
-    return await run('peaks', blob, metadata, signal)
+    const [bytes] = await run({ kind: 'peaks', blob, metadata }, signal)
+    return bytes
   } catch (error) {
     if (!(error instanceof StudioAudioWorkerUnavailable)) throw error
   }
@@ -143,10 +200,49 @@ export async function buildStudioPeaksBytes(
   )
 }
 
-/** Read canonical PCM in the worker while the Studio is open; the returned function stops it. */
+/** Whether these bytes went to a worker that died before handing them back. */
+function lost(data: StudioAssetBytes): boolean {
+  return (
+    data.original.byteLength !== data.asset.byteLength ||
+    data.canonicalPcm.byteLength !== data.asset.canonicalPcmByteLength
+  )
+}
+
+/**
+ * Both hashes and the samples of a restore's bytes, in the worker. The
+ * bytes travel there and back without a copy; a worker that never loaded
+ * leaves them where they are and the check runs here instead.
+ */
+const checkBytesOffThread: StudioBytesChecker = async (data, options) => {
+  try {
+    const [original, canonicalPcm] = await run(
+      {
+        kind: 'bytes',
+        original: data.original,
+        canonical: data.canonicalPcm,
+        sha256: data.asset.sha256,
+        metadata: data.asset,
+      },
+      options.signal,
+    )
+    return { ...data, original, canonicalPcm } satisfies StudioAssetBytes
+  } catch (error) {
+    if (!(error instanceof StudioAudioWorkerUnavailable)) throw error
+    // A worker that dies holding the bytes most likely ran out of memory.
+    if (lost(data))
+      throw new StudioMemoryError(
+        'Studio needs more memory to check this audio. Stop playback and try again.',
+      )
+    await checkStudioBytesHere(data, options)
+    return data
+  }
+}
+
+/** Read and check audio in the worker while the Studio is open; the returned function stops it. */
 export function installStudioAudioWorker(): () => void {
   installs++
   setCanonicalPcmReader(readOffThread)
+  setStudioBytesChecker(checkBytesOffThread)
   let installed = true
   return () => {
     if (!installed) return
@@ -154,8 +250,7 @@ export function installStudioAudioWorker(): () => void {
     installs--
     if (installs > 0) return
     setCanonicalPcmReader(null)
-    worker?.terminate()
-    worker = null
-    failAll(new DOMException('The Studio closed.', 'AbortError'))
+    setStudioBytesChecker(null)
+    retireIfIdle()
   }
 }
