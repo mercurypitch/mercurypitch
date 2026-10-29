@@ -91,8 +91,7 @@ export interface ThresholdRunOptions {
    *  on stop and on unmount, before the phase flips. */
   cancelStimulus?: () => void
   /** playStimulus honours `api.replay`, so a trial can be heard again.
-   *  A function when it depends on the run (Span's sung answers: a
-   *  replay in the answer window would be heard by the microphone). */
+   *  A function when it depends on the run. */
   replayable?: boolean | (() => boolean)
 }
 
@@ -356,7 +355,9 @@ export function useThresholdRun(
 
   /** Sound this trial again. Before the answer the pads wait for it, as
    *  they did the first time; after it, a hold counting down stops and
-   *  waits for Next. */
+   *  waits for Next. The phase and the flag move in one step at either
+   *  end, so a sung answer's window that waits through the replay (Span)
+   *  never sees a question neither sounding nor open. */
   async function replay(): Promise<void> {
     if (!replayAllowed()) return
     const mine = run
@@ -365,18 +366,18 @@ export function useThresholdRun(
     const token = replayToken
     const stale = (): boolean => cancelled || mine !== run || asked !== question
     const before = phase()
-    if (before === 'answer') {
-      batch(() => {
+    batch(() => {
+      if (before === 'answer') {
         setReplaysThisTrial((n) => n + 1)
         setReplays((n) => n + 1)
-        setStimulusStep(0)
         setPhase('stimulus')
-      })
-    } else {
-      pacer.pause()
+      } else {
+        pacer.pause()
+      }
       setStimulusStep(0)
-    }
-    setReplaying(true)
+      setReplaying(true)
+    })
+    const own = (): boolean => mine === run && token === replayToken
     try {
       // Replays come only once the trial has been heard through.
       await playStimulus(level(), {
@@ -384,11 +385,14 @@ export function useThresholdRun(
         cancelled: stale,
         replay: true,
       })
-    } finally {
-      if (mine === run && token === replayToken) setReplaying(false)
+    } catch (error) {
+      if (own()) setReplaying(false)
+      throw error
     }
-    if (stale()) return
-    if (before === 'answer') setPhase('answer')
+    batch(() => {
+      if (own()) setReplaying(false)
+      if (!stale() && before === 'answer') setPhase('answer')
+    })
   }
 
   function finish(complete: boolean): void {

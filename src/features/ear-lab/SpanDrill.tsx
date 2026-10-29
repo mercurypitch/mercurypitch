@@ -11,6 +11,11 @@
 // held — the longest phrase the ear carries — and it sits on the
 // Shape dial beside Contour and Leap. A sung run is practice only
 // and reads under 'span-sing'; Calibration always taps.
+//
+// Hear it again works while the answer is sung, as when it is tapped:
+// the microphone would hear the phrase, so the open window is held
+// while it sounds and a breath after it, and then carries on with the
+// notes it had (use-sung-answer.ts).
 // ============================================================
 
 import type { JSX } from 'solid-js'
@@ -81,7 +86,7 @@ export function SpanDrill(props: SpanDrillProps): JSX.Element {
     if (api.cancelled()) return
 
     // A replay sounds the same phrase in the same key, and keeps the
-    // notes already tapped back.
+    // notes already given back, tapped or sung.
     const kept = api.replay && phrase().length > 0
     const current = kept ? phrase() : randomPhrase(level)
     if (!kept) {
@@ -107,15 +112,24 @@ export function SpanDrill(props: SpanDrillProps): JSX.Element {
     }
     api.step(0)
     await wait(SPAN_TIMING.tailMs)
+    // Heard again while a sung answer waits: a breath more, so the
+    // speaker's sound has died away before the microphone is the
+    // singer's again.
+    if (hearingAgain()) await wait(SPAN_TIMING.heardTailMs)
   }
 
   const run = useThresholdRun(drill, playStimulus, {
     cancelStimulus,
-    // Never over a sung answer: the microphone would hear the replay.
-    replayable: () => !sungRun(),
+    replayable: true,
   })
   /** The run in progress reads under the voice track. */
   const sungRun = () => run.trackId() === SPAN_SING_ID
+  /** A sung answer's phrase sounding again before it is given: Hear it
+   *  again in the answer window. The phase is read first: the track is
+   *  no signal, and read alone it would leave a memo of this tracking
+   *  nothing. */
+  const hearingAgain = () =>
+    run.phase() === 'stimulus' && run.replaying() && sungRun()
 
   const tap = (degree: number) => {
     if (run.phase() !== 'answer' || sungRun()) return
@@ -134,10 +148,13 @@ export function SpanDrill(props: SpanDrillProps): JSX.Element {
   }
 
   /** The sung window: the strip fills as the mic hears notes, and it
-   *  closes itself on silence, at the ceiling, or on Done. */
+   *  closes itself on silence, at the ceiling, or on Done. Hear it again
+   *  holds it: what the mic hears of the phrase is set aside, nothing
+   *  closes it, and it carries on with the notes it had. */
   const sung = useSungAnswer({
     capture,
-    open: () => run.phase() === 'answer' && sungRun(),
+    open: () => (run.phase() === 'answer' || hearingAgain()) && sungRun(),
+    held: hearingAgain,
     rootMidi: () => rootMidi,
     phraseMs: () => spanPhraseMs(phrase().length),
     onJudge: (notes) => {

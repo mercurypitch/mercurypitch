@@ -140,6 +140,10 @@ export const SPAN_TIMING = {
    *  the phrase's own length. */
   singLeadMs: 250,
   singTailMs: 450,
+  /** Hear it again while a sung answer waits: after the phrase and its
+   *  tail, this long more before the microphone is the singer's again,
+   *  while the speaker's sound dies away in the room. */
+  heardTailMs: 400,
 } as const
 
 /** Beat Hunt — two pairs of tones, one detuned. */

@@ -2,8 +2,9 @@
 // Tests: the run engines' seams for the native room.
 //
 //   - Hear it again: a practice question replays once before its
-//     answer and the run counts it; a sealed one never does; any
-//     answered question replays freely.
+//     answer and the run counts it, the question and the replay's flag
+//     moving in one step; a sealed one never does; any answered
+//     question replays freely.
 //   - The sound taken away: the question in flight is voided and
 //     plays again from its start, the same trial, or a fresh one at the
 //     same level if none of it had sounded.
@@ -13,7 +14,7 @@
 //   - Ending mid-run keeps nothing: a rated run's answers are put back.
 // ============================================================
 
-import { createRoot } from 'solid-js'
+import { createEffect, createRoot } from 'solid-js'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { setRevealRule } from '@/features/ear-lab/reveal-pacing'
 import { useIdentificationController } from '@/features/ear-lab/use-identification-controller'
@@ -85,6 +86,35 @@ describe('Hear it again, on a staircase', () => {
       expect(run.replaysLeft()).toBeNull()
       await run.replay()
       expect(stim.calls.filter((call) => call.replay)).toHaveLength(0)
+      dispose()
+    })
+  })
+
+  it('moves the question and its replay flag in one step, before the answer', async () => {
+    await createRoot(async (dispose) => {
+      const gate: { end: (() => void) | null } = { end: null }
+      const run = useThresholdRun(
+        hairline,
+        (_level, api) =>
+          api.replay
+            ? new Promise<void>((resolve) => {
+                gate.end = resolve
+              })
+            : Promise.resolve(),
+        { replayable: true },
+      )
+      const seen: string[] = []
+      createEffect(() => seen.push(`${run.phase()} ${run.replaying()}`))
+      run.start('practice')
+      await settle()
+      seen.length = 0
+
+      void run.replay()
+      gate.end?.()
+      await settle()
+      // A sung answer's window waits through the replay (Span): it must
+      // never see the question neither sounding nor open.
+      expect(seen).toEqual(['stimulus true', 'answer false'])
       dispose()
     })
   })
