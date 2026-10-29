@@ -3,7 +3,7 @@ import { vi } from 'vitest'
 import type { StudioArrangementPlan } from '../model/arrangement-plan'
 import { studioFixture } from '../model/model.test-fixtures'
 import type { StudioBufferCache } from './buffer-cache'
-import type { StudioReplan } from './graph'
+import type { StudioChainSwap, StudioReplan } from './graph'
 import { PlaybackContext } from './playback.test-fixtures'
 import type { StudioTransportOptions } from './transport'
 import { createStudioTransport } from './transport'
@@ -15,11 +15,17 @@ export function fakeStudioGraph(ctx: PlaybackContext) {
     scheduleUntil: vi.fn(),
     seekTime: vi.fn((earliest: number) => earliest),
     seek: vi.fn((_frame: number, at: number): number | null => at),
-    // Unless a test says so, it cannot move its lanes: an edit hands over.
+    // Unless a test says so, it cannot move its lanes or swap a chain: an
+    // edit hands over.
     replan: vi.fn(
       (_plan: StudioArrangementPlan, _earliest: number): StudioReplan | null =>
         null,
     ),
+    swapChains: vi.fn(
+      (_swaps: readonly StudioChainSwap[], _earliest: number): number | null =>
+        null,
+    ),
+    swapping: vi.fn(() => false),
     readPeaks: () => [0.2, 0.4] as const,
     hasLane: vi.fn((id: string) => id === 'track-1'),
     setLaneMix: vi.fn(),

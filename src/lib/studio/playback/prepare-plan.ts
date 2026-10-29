@@ -9,19 +9,27 @@ import { studioGraphLanes } from './graph'
 
 export type StudioLatencyReader = typeof measureTrackLatencies
 
+/** A latency reader that remembers what it measured, and tells it without waiting. */
+export type StudioLatencyCache = StudioLatencyReader & {
+  /** A chain's latency in frames at `rate`, when measured before. */
+  readonly known: (spec: ChainSpec, rate: number) => number | undefined
+}
+
 /**
  * Chain latency depends on which effects there are, not on their settings,
- * so one measurement per effect list and rate serves every later Play, seek
- * and restart.
+ * so one measurement per effect list and rate serves every later Play, seek,
+ * restart and chain swap.
  */
 export function createLatencyCache(
   measure: StudioLatencyReader,
-): StudioLatencyReader {
+): StudioLatencyCache {
   const latencies = new Map<string, number>()
-  return async (specs, rate) => {
+  const keyOf = (spec: ChainSpec, rate: number) =>
+    `${rate}:${spec.effects.map((effect) => effect.kind).join(',')}`
+  const read: StudioLatencyReader = async (specs, rate) => {
     const frames: number[] = []
     for (const spec of specs) {
-      const key = `${rate}:${spec.effects.map((effect) => effect.kind).join(',')}`
+      const key = keyOf(spec, rate)
       let value = latencies.get(key)
       if (value === undefined) {
         ;[value] = await measure([spec], rate)
@@ -31,6 +39,9 @@ export function createLatencyCache(
     }
     return frames
   }
+  return Object.assign(read, {
+    known: (spec: ChainSpec, rate: number) => latencies.get(keyOf(spec, rate)),
+  })
 }
 
 /**

@@ -17,6 +17,9 @@
 // place, other clips lane by lane (lane-replan.ts). One the graph cannot
 // follow lets it go, and Play builds afresh: 171 to 182 ms to the first
 // sound after a clip edit while paused, before clips moved in place.
+// Another effect list is one: a parked graph takes no chain swap, since
+// once its tails have rung out nothing renders it (below), and a new chain
+// built then could not settle before Play (graph-swap.ts).
 //
 // Left connected, a kept graph costs about two points of a core for as long
 // as it waits: the whole headless Chromium used 4.1 to 4.3 % of one core

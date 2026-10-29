@@ -1,4 +1,4 @@
-// Studio edits while playing — a clip edit to one lane changes that lane on the running graph: the others play on untouched, and the edit is heard within a few tens of milliseconds.
+// Studio edits while playing — a clip edit or a new sound role on one lane changes that lane on the running graph: the others play on untouched, and a clip edit is heard within a few tens of milliseconds.
 import { expect, test } from '@playwright/test'
 import { openArrangement, studioClip, studioRegion, } from './helpers/dedicatedstudio-fixture'
 import type { StudioCapture, StudioClickStamp, } from './helpers/studio-output-capture'
@@ -104,7 +104,7 @@ test.describe('Studio edits while playing', () => {
     }
   })
 
-  test('a clip edit changes only its lane, heard within tens of milliseconds, a split starts nothing, and a new sound role hands over @smoke', async ({
+  test('a clip edit changes only its lane, heard within tens of milliseconds, a split starts nothing, a new sound role crosses only its lane to a new chain, and a slower chain hands over @smoke', async ({
     page,
   }) => {
     test.setTimeout(240_000)
@@ -184,11 +184,18 @@ test.describe('Studio edits while playing', () => {
       .getByRole('button', { name: 'Pad details', exact: true })
       .click()
     const role = studio.getByRole('combobox', { name: 'Sound role' })
-    const next = (await role.inputValue()) === 'voice' ? 'keys' : 'voice'
+    // Both lanes start on the all-rounder chain. Keys is as slow (288 frames
+    // at 48 kHz), so its chain swaps in on the lane; the vocal chain, at 2112
+    // frames, is slower than every lane, so it takes a new run.
+    await expect(role).toHaveValue('other')
     const sound = await measure('sound role', 'change', 900, () =>
-      role.selectOption(next),
+      role.selectOption('keys'),
     )
-    await expect(role).toHaveValue(next)
+    await expect(role).toHaveValue('keys')
+    const slower = await measure('slower sound role', 'change', 900, () =>
+      role.selectOption('voice'),
+    )
+    await expect(role).toHaveValue('voice')
     await expect(
       studio.getByRole('button', { name: 'Pause song', exact: true }),
     ).toBeVisible()
@@ -216,9 +223,27 @@ test.describe('Studio edits while playing', () => {
     expect.soft(split.sources, 'split').toBe(0)
     expect.soft(split.heardMs, 'split').toBeNull()
     expect.soft(split.editedDipDb, 'split').toBeLessThan(0.1)
-    // A new sound role brings another chain, so a new run takes the song
-    // over: with no dropout, and heard 323 to 339 ms after the change.
-    expect.soft(sound.sources, 'sound role').toBeGreaterThan(0)
-    expect.soft(sound.untouchedDipDb, 'sound role').toBeLessThan(3)
+    // A new sound role used to hand the song to a new run as well: the
+    // change to keys was heard 176.5 to 187.5 ms after it, with the untouched
+    // lane 0.88 to 1.28 dB down (three runs). Now only its lane's chain is
+    // built again, beside the old one, and one source starts, on that lane.
+    // The new chain is heard once it has settled, 0.3 s after it is built,
+    // so later than a new run was: 382.75 to 436.25 ms here (twelve runs),
+    // with the new effect list measured first, which a slower machine takes
+    // longer over.
+    expect.soft(sound.untouchedDipDb, 'sound role').toBeLessThan(0.1)
+    expect.soft(sound.clickDb, 'sound role').toBeLessThan(6)
+    expect.soft(sound.sources, 'sound role').toBe(1)
+    expect.soft(sound.heardMs, 'sound role').not.toBeNull()
+    expect.soft(sound.heardMs!, 'sound role').toBeLessThan(600)
+    // The two chains carry the lane's tone on the same frames, so it does not
+    // cancel itself as they cross. A source started late would be out of
+    // line by its lateness, and 1 ms turns the 500 Hz tone over: such a
+    // crossing read 15.5 dB down, and the handover after it 23 to 24 dB.
+    expect.soft(sound.editedDipDb, 'sound role').toBeLessThan(3)
+    // A chain slower than every lane would hold the others back: a new run
+    // takes the song over instead, with no dropout.
+    expect.soft(slower.sources, 'slower sound role').toBeGreaterThan(1)
+    expect.soft(slower.untouchedDipDb, 'slower sound role').toBeLessThan(3)
   })
 })

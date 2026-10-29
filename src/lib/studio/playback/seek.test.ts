@@ -15,6 +15,7 @@ function fakeRun(
     untilFrame?: number
     unheardSeekAt?: number
     silentUntil?: number
+    swapping?: boolean
   },
 ) {
   const pending = options.unheardSeekAt ?? -Infinity
@@ -24,6 +25,7 @@ function fakeRun(
       seekTime: vi.fn((earliest: number) => Math.max(earliest, pending)),
       seek: vi.fn((_frame: number, at: number): number | null => at),
       scheduleUntil: vi.fn(),
+      swapping: vi.fn(() => options.swapping === true),
     },
     latency: options.latency,
     firstFrame: options.firstFrame ?? 0,
@@ -120,6 +122,16 @@ describe('Studio seek', () => {
     expect(whole.graph.seek).not.toHaveBeenCalled()
     expect(short.graph.seek).not.toHaveBeenCalled()
     expect(whole.meter.restart).not.toHaveBeenCalled()
+  })
+
+  it('moves nothing while a lane of any run heard is still crossing to a new chain', () => {
+    const ctx = { currentTime: 1, sampleRate: 48000 }
+    const steady = fakeRun(ctx, { latency: 0.02 })
+    const swapping = fakeRun(ctx, { latency: 0.02, swapping: true })
+    expect(seekRuns(asRuns(steady, swapping), 24000)).toBe(false)
+    expect(steady.graph.seek).not.toHaveBeenCalled()
+    expect(swapping.graph.seek).not.toHaveBeenCalled()
+    expect(steady.meter.restart).not.toHaveBeenCalled()
   })
 
   it('lets a song that plays once end a pass after the frame, and leaves a repeating one repeating', () => {

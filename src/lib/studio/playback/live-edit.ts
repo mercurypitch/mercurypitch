@@ -78,6 +78,9 @@ function effectList(track: StudioTrack): string[] {
   )
 }
 
+const byId = <T extends { id: string }>(a: T, b: T) =>
+  a.id < b.id ? -1 : a.id > b.id ? 1 : 0
+
 /**
  * What a running graph is built from: the clips, and the effect list of each
  * lane that has any. Two projects with the same shape play through the same
@@ -85,8 +88,6 @@ function effectList(track: StudioTrack): string[] {
  */
 export function graphShape(project: StudioProject): string {
   const used = new Set(project.clips.map((clip) => clip.trackId))
-  const byId = <T extends { id: string }>(a: T, b: T) =>
-    a.id < b.id ? -1 : a.id > b.id ? 1 : 0
   return JSON.stringify({
     clips: [...project.clips].sort(byId),
     lanes: project.tracks
@@ -94,6 +95,13 @@ export function graphShape(project: StudioProject): string {
       .sort(byId)
       .map((track) => [track.id, effectList(track)]),
   })
+}
+
+/** Whether two projects play the same clips, in whatever order they list them. */
+export function sameClips(a: StudioProject, b: StudioProject): boolean {
+  const key = (project: StudioProject) =>
+    JSON.stringify([...project.clips].sort(byId))
+  return key(a) === key(b)
 }
 
 /**
