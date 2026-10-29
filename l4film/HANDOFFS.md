@@ -265,8 +265,9 @@ Outside these moves the camera is still. S8 holds F0 from 196.6 to 229.2 (signat
   the mid layer, so they ride the camera and the slide (their baselines are written on C), each 24
   px or more clear of the stairs, their names and each other. "build it from its steps" from x 242,
   baseline 494 (32 px over stair 4's tread); "start it on any note" from x 242, baseline 790 (under
-  stair 1's foot); "name its notes" centred on x 958, baseline 790 (under the names of stairs 5 to
-  8; builder A's round 2 right-aligns it to do's right edge, so the two bottom labels read apart);
+  stair 1's foot); "name its notes" right-aligned to the top do's right edge (screen x 1531 at
+  F-cold), baseline 790, under the names of stairs 5 to 8, 423 screen px from "start it on any
+  note", so the two bottom labels read apart (DECISIONS 103);
   "hear ti lean home" ending at x 1166, baseline 254 (over ti and the house, 24 px over the roof).
   The arrow from ti's tread to the house is ink, 3 px.
 - **S3 to S4 (47.05).** F0. The staircase on C, names do to do, the top house lit (it fades in S4a,

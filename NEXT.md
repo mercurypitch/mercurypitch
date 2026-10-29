@@ -1685,3 +1685,11 @@ Note: the lanes' memory gate read a stale cgroup path after the 21:00 restart (f
 - 23:2x builder D resumed with D-fix4-msg (round 4, 60 fps). Agents now: A (finishing) + D.
 - Queue: F round 2 (F-fix2) -> B small (B-fix4) -> C small (C-fix2) -> E round 3 (E-fix3); critics
   A-03 when A reports, D-04 when D reports, then F-03, B-04, C-03, E-03.
+- 23:3x builder A handed back round 2 (report $S/l4entr/A-round2-report.txt): items 1, 2, 4, 5, 6 done;
+  all four at 60 fps (21:18-21:30); holds s01 0.2, s02 0, s03 0.2, s04 0.4; check 0 errors in S1-S4.
+  Unasked: the in-turn ripple on "measure" (68.04) kept and named on the board; A-03 judges it.
+  DECISIONS 103; board 1f, 3a, 4b, 4c, 4d; HANDOFFS § S3 (backups $S/l4entr/b103/). Frozen copies in
+  $S/l4entr/a3/; prompt critics/A3.txt READY.
+- 23:3x builder F resumed with F-fix2-msg (round 2, 60 fps). Agents now: D + F.
+- Queue: critic A-03 (A3.txt) -> B small (B-fix4) -> C small (C-fix2) -> E round 3 (E-fix3); D-04 when D
+  reports, F-03 when F reports, then B-04, C-03, E-03.

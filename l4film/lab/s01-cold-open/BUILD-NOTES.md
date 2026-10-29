@@ -196,3 +196,19 @@ Edits done (21:40), clock-lint silent, node --check ok:
   Backup of the pre-edit s01 at lab/s01-cold-open/scratch/s01-before-r3.html.
 Next: 60 fps clips via lab/s01-cold-open/scratch/pass60.sh (old clips kept as clip-r2.mp4), measures in
 lab/<id>/measure-r3, sweeps, check, report.
+
+### Round A-02 results (23:25, after the 23:11 container restart; no re-render needed)
+
+60 fps clips (pass60.sh, 21:18-21:30): s03 568 frames, s04 1339, s01 2051, s02 204. Old 30 fps clips kept as
+lab/<id>/clip-r2.mp4. Measures in lab/<id>/measure-r3:
+- s01 holds 0.2 s (0.2 per 30 s), longest 0.1 (0.00, 11.50), no final. Critic A-02: 0.2, longest 0.1.
+- s02 none. Critic: none.
+- s03 0.2 s (0.6 per 30 s), longest 0.1 (1.00, 5.20), final 0.2. Critic: 0.2 + 0.2 final. Riser turns
+  show largest change 132-143 per 0.1 s sample; the thin-back 19-34 (no holds).
+- s04 0.4 s (0.5 per 30 s), longest 0.1 (0.40, 1.40, 7.00, 20.50), final 0.1. Critic: 0.3 s. Low motion
+  through q0 is now 51.15-52.05 and 52.35-54.15 (the lift breaks it at 52.10).
+Seams: stills s02 3.4 / s03 0 max 0; s03 end / s04 0 mean 0.001. Clips at 60 fps: s01->s02 0.398 (6),
+s02->s03 0.516 (bead step), s03->s04 0.431 (39).
+npm run check: 0 errors on s01-s04 (warnings only; 2 infos text_occluded at s01 26.87, the "do" names
+inside the Merc videos' transparent boxes, visible on the frame). The run fails on s06's layout error
+(builder B). Contrast 59/59. Sweep (scratch/sweep-r3-report.txt): s02-s04 clean, s01 the known EDGE at 33.75.

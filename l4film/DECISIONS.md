@@ -929,3 +929,23 @@ replaced it. The builder's record: critics never read it.
        kit's mark for a semitone in every scene since the start, decision 85; the film critic judges
        it), and S16's first 0.37 s of Mercs alone (decision 97).
      - Builder F's round 2 renders all three clips at 60 fps; a fresh critic, F-03, verifies.
+
+103. **S1 to S4 after builder A's round 2 (component critic A-02's items): the board takes the build.**
+     - **S3's riser run** (A-02 item 1): each riser bar thickens from 4 to 10 px and turns full ink in
+       turn, 0.2 s apart from 38.70, stands in ink through "steps," and thins back with the others
+       (40.54 to 41.24), before "start it"; the block pulses and tread flashes are gone from S3, so
+       it no longer looks like the chrome fills of "name its notes" three seconds later (row 3a).
+     - **The repeated ripple** (item 2): on "seven steps" an ink numeral 1 to 7 lands above each
+       riser as it grows (60.98 to 61.40; FACTS 71), the numerals leaving with the labels (67.63); on
+       "bigger" (66.22) all seven riser bars brighten together, so their unequal heights read side
+       by side (rows 4c and 4d).
+     - **The in-turn ripple on "measure" (68.04)**, which the board did not name, is tied to its word
+       and stays for now (row 4d): it points at the steps S5 measures. The fresh critic A-03 judges
+       whether it repeats "seven steps"' device too closely; if so it goes.
+     - **S4's q0** (item 4): C4 and C5 lift 40 px with a chrome outline at 52.10 and drop as the
+       brackets start (54.16 to 54.41), breaking the frame's 3 s of low motion (row 4b).
+     - **S3's bottom labels** (item 5): "name its notes" right-aligned to the top do's right edge,
+       423 screen px from "start it on any note" (HANDOFFS § S3); nothing below y 896.
+     - **S1's ti** (item 6): on "restless" ti's stair lights orange at 25 %, under do's 45 % (row 1f).
+     - All four scenes rendered at 60 fps (21:18 to 21:30, on the 20:49 kit); holds s01 0.2, s02 0,
+       s03 0.2, s04 0.4 s (0.5 per 30 s), longest 0.1 s; check 0 errors in S1 to S4.
