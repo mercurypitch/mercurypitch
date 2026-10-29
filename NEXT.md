@@ -1250,3 +1250,31 @@ Note: the lanes' memory gate read a stale cgroup path after the 21:00 restart (f
 - NEXT: m04 main + tall -> s04 lab stills 14.3-15.6 (scene time); m06b main landed -> s06 stills
   23.9-25.0; tallcheck each new tall vs its main once both exist (m07, m08-in, m09-in, m11-orange
   copies too); merc-whole.py after passes land; m10-blue mouth at 283.27 for D.
+
+## 2026-10-29 ~12:05Z: entrances proven s04-s11, two pulls re-timed, E done, B resumed
+- Old queue bash 24152 (stopped) SIGKILLed after legacy m09-orange landed (11:20).
+- s04: m04's drop proven on stills (in high, whole fall, splat 62.05, standing 62.37, line 62.54;
+  stripe field ends x 1680, 20 px clear). BUILD-GUIDE confirmation row "Inside A, S4d".
+- DECISIONS 83: a world surface may sit behind a dropping host (still or in a camera move) if the
+  host lands clear of it; the column rule is for type and marks. Pulls through a host's column land
+  as the fall ends: s09 and s11 pulls now `at('o<N>', 'start', -1.35)` for 0.8 s (land at o - 0.55).
+  s11's old pull (on "music", 0.9 s) landed 0.4 s after Tavi and slid the strip's last key out from
+  under her splat. STORYBOARD (11c, camera table), HANDOFFS (camera table), BUILD-GUIDE (s09/s11 kit
+  lines, rows S9d and S11c) updated. Backups $S/l4entr/*.before-s11pull.md, scenes-before-gate/.
+- s11 proven: strip end x 1675 (25 px clear) at Tavi's landing; axis label 23 px over her column;
+  Merc lands with the world at F0 (stair 1 and keys from x 240, 30 px clear). Tavi with her new pass:
+  splat 321.10, standing 321.40, eyes open 321.50, line 321.58. Merc's main (m11-blue) still rendering.
+- s10: Merc's mouth at the launch measured (156, 797) on the new m10-blue pass (pass frame 64, mouth
+  (78, 144) facing left); MOUTH changed in s10 (was the provisional 130, 715, on his forehead); the hop
+  clears stair 1's corner by 34 px. HANDOFFS S10 and BUILD-GUIDE updated. clock-lint silent on s09-s11.
+- Splices checked ($S/l4entr/splicecheck.py): m08 at 203.65 and m09 at 254.50 invisible (the step is a
+  normal frame's size). tallcheck clean for m08-orange-in and m11-orange. Stills and sheets for every
+  confirmation in lab/entrances/ (director-owned).
+- Builder E (s12-s13) finished: report in its hand-back (s12 holds 1.9/30 s and s13 15.7/30 s without
+  hosts: re-measure once m12 lands; HANDOFFS S13 "Your turn." figures corrected to power2.inOut's
+  837/892; kit helper ideas: rows drawer, pose() for a moving gated Merc, sweep(), seek.mjs/holds.sh).
+- Builder B resumed at 11:55 with $S/l4entr/B-fix-msg.txt (+ a DECISIONS 83 line and the marker rule).
+  Builder F still running.
+- NEXT: m11-blue main -> tallcheck + s11 Merc landing stills; m12 legacy passes -> m12 heads ->
+  splicecheck m12-blue/m12-orange, tallcheck m12-*-in; merc-whole.py; B's report -> verification
+  critic; component critics A, C, D, E, F (fresh motion-critic each, paths only).

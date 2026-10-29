@@ -187,7 +187,7 @@ equally.
 | 270.70-272.20 | push         | F0         | CU-C       | power2.inOut                    | the strip fades out over it                                                                                                                                                         |
 | 280.70-282.40 | pull         | CU-C       | F0         | power2.inOut                    | "1 semitone" and the arrow left at 280.5 to 280.7; the strip returns over it                                                                                                        |
 | 298.70-299.90 | push         | F0         | F-chart    | power2.inOut                    | both Mercs gone at 298.6                                                                                                                                                            |
-| 320.50-321.40 | pull         | F-chart    | F0         | power2.inOut                    | Tavi drops back over it                                                                                                                                                    |
+| 320.23-321.03 | pull         | F-chart    | F0         | power2.inOut                    | Tavi drops back over it                                                                                                                                                    |
 | 411.00-412.60 | push         | F0         | F-recap-1  | power2.inOut                    | the strip and its hairlines sink 60 px and fade                                                                                                                                     |
 | 419.70-420.70 | pull         | F-recap-1  | F0         | power2.inOut                    | the strip returns without its hairlines (they draw on "F sharp", 427.22)                                                                                                            |
 | 430.70-431.90 | push         | F0         | F-recap-3  | power2.inOut                    | the strip and its hairlines sink and fade                                                                                                                                           |
@@ -330,9 +330,9 @@ keys at full and the rest at 45 %, no key names.
   269.4), names do to do, both houses lit, no riser labels, no key names.
 - **S10.** "1 semitone" Outfit 600 48 px, frame-fixed at x 1200, baseline 250 in CU-C (x 1200 to
   1426, 31 px right of the top stair). Merc drops in at feet (110, 840), size 300, 282.20 to 283.05;
-  his bead leaves his mouth at about (130, 715) **(provisional)** and hops onto stair 1, resting at
-  (298, 642), at 283.57: a hop's arc (above), peaking at y 602, 72 px over the straight line at
-  mid-flight and 40 px clear of stair 1's corner (242, 664); it rests on ti at 286.27, lands on the
+  his bead leaves his mouth at (156, 797) and hops onto stair 1, resting at (298, 642), at 283.57:
+  a hop's arc (above), peaking at y 602, about 100 px over the straight line at mid-flight and 34 px
+  clear of stair 1's corner (242, 664); it rests on ti at 286.27, lands on the
   top stair at 294.14 and rises into the house (294.2 to 294.5). The bottom house fades out as the
   top one unlights (281.5 to 282.0), so the bead on stair 1 (y 620 to 664) never meets it (y 598 to
   650), and returns lit in S11a (295.9 to 296.3).
@@ -391,17 +391,18 @@ risers measured (no labels), hairlines; the strip with D major's keys, F♯4 and
 - **The guide in S13.** It moves 373.0 to 373.9 (power2.inOut) to lanes x 1060 to 1700, 40 px each:
   lane k spans `y = 720 - 40 (k + 1)` to `720 - 40 k`; names right-aligned at x 1040, baselines 711,
   631, 551, 511, 431, 351, 271, 231. The names travel with the move from right-aligned 556 to 1040,
-  so the top do's left edge is at x 812 at 373.50, 1 px clear of "Your turn." (x 360 to 811), and at
-  857 when the title lands at 373.55. The plain path (solid chrome, 3 px at 70 %) at 74.42 px a
-  second: D3 1060 to 1120, E3 to 1179, F♯3 to 1239, G3 to 1298, A3 to 1358, B3 to 1417, the hold to
-  1566, the rest to 1611, D4 1611 to 1700. The cursor a vertical chrome line, 4 px with a soft glow,
+  so the top do's left edge is at x 837 at 373.50, 37 px clear of "Your turn." (x 360 to 800, its ink
+  to 788), and at 892 when the title lands at 373.55 (power2.inOut, as measured in the S13 lab).
+  The plain path (solid chrome, 3 px at 70 %) at 74.42 px a second: D3 1060 to 1120, E3 to 1179,
+  F♯3 to 1239, G3 to 1298, A3 to 1358, B3 to 1417, the hold to 1566, the rest to 1611, D4 1611 to
+  1700. The cursor a vertical chrome line, 4 px with a soft glow,
   spanning the lanes. The count-in's bead drops onto (1090, 700), the middle of do's segment, 28 px
   clear of the names, landing at 394.24 and gone by 395.24. Merc moves to size 300 at (240, 840)
   (body x 160 to 320); Tavi to size 240 at (1820, 840) (body x 1756 to 1884, top y 686, 56 px clear
   of the lanes).
 - **The care block (S13).** Left-aligned at x 360, no line past x 960 (35 px clear of the shortest
   lane name), nothing below y 864, 40 px clear of Merc: "Your turn." serif italic 120 px, baseline
-  200 (x 360 to 811), landing at 373.55, once the names have passed; care lines from 373.85, 0.3 s
+  200 (x 360 to 800), landing at 373.55, once the names have passed; care lines from 373.85, 0.3 s
   after it, Outfit 500 32 px, ink, baselines 262 and 302, 352 and 392, 442 (the longest 445 px);
   "wait on ti" Outfit 600 40 px at 492; the stop line Outfit 600 40 px, ink, at 548 and 592 ("Stop
   immediately if anything" 520 px, "feels uncomfortable."); the doctor lines Inter 30 px, ink-2,

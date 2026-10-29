@@ -134,9 +134,9 @@
           const tavi = L.mercGate(room.top, { sid: SID, pass: 'm09-orange', tag: SID + '-m09-orange', x: 1800 })
           // m10-blue is rendered facing left and mirrored here (DECISIONS 74), so on screen he faces the stairs
           const merc = L.mercGate(room.top, { sid: SID, pass: 'm10-blue', tag: SID + '-m10-blue', x: 110, mirror: true })
-          // his mouth while he sings, at feet (110, 840), size 300, hero view, mirrored: HANDOFFS' provisional
-          // point (the pass decides it); the bead leaves it where his drop has carried it at the launch
-          const MOUTH = [130, 715]
+          // his mouth at the bead's launch, at feet (110, 840), size 300, hero view, mirrored: measured on the
+          // m10-blue pass and the lab still at the launch (BUILD-GUIDE § Handoff confirmations, Inside D, S10)
+          const MOUTH = [156, 797]
           const mouth = (() => { const b = merc(A.launch); return [MOUTH[0], MOUTH[1] + (b ? b.y1 - 840 : 0)] })()
 
           /* ---------------------------------------------------------------- the bead and rings (over the Mercs) */

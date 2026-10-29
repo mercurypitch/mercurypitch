@@ -67,7 +67,7 @@
             seemsB: word('b36', 'seems'),                     // a lit house falls toward the top shelf ...
             learned: word('b36', 'learned,'),                 // ... and lands beside do, which lights
             just: word('b36', 'just'),                        // the chips scale 1.05 in turn, top shelf to bottom
-            pull: word('b36', 33, 'start', 0.17),             // the pull to F0 (0.9 s)
+            pull: at('o11', 'start', -1.35),                  // the pull to F0, landing as Tavi's fall ends
             o11: at('o11'),                                   // 11d: the kicker and credits leave; the chips fly back
             full: word('o11', 'finished', 'start', 0.02),     // the staircase back to full (0.4 s)
             onDoh: word('o11', 'doh'),                        // the top stair lights
@@ -96,11 +96,14 @@
             hop2: at('b38', 'end', -0.19),                    // both Mercs hop out
           }
           const SLIDE = 0.8
+          // the pull lasts 0.8 s and lands at o11 - 0.55, as Tavi's fall ends (she drops 1.1 s before o11 and
+          // falls 0.55 s), so the strip's end is clear of her column when she lands (DECISIONS 83)
+          const PULL_DUR = 0.8
 
           /* ---------------------------------------------------------------- camera */
           const cam = L.frameRig(room, { from: 'F0' })
           cam.to(A.push, 1.2, 'F-chart', 'power2.inOut')
-          cam.to(A.pull, 0.9, 'F0', 'power2.inOut')
+          cam.to(A.pull, PULL_DUR, 'F0', 'power2.inOut')
 
           /* ---------------------------------------------------------------- the world (mid layer) */
           const mid = L.stage(room.mid)

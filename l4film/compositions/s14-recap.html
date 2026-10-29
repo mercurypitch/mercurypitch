@@ -55,7 +55,7 @@
             start2: word('b48', 'Start'),                       // stair 1 (the start) lights
             major2: word('b48', 'major'),                       // the stairs light in turn, 0.07 s apart
             toD: word('b48', 'on D', 'start', 0.02),            // the slide to D (0.9 s); every key to 45 %
-            black: word('b48', 'black'),                        // the eight black keys light in turn (no answer)
+            black: word('b48', 'black'),                        // the eight black keys light in turn and hold together (no answer)
             need: word('b48', 'need?'),                         // the two do stairs light
             fs: word('b49', 'F'), fs2: word('b49', 'sharp'),    // hairlines, D major's keys, F#4 lit and named
             cs: word('b49', 'C'), cs2: word('b49', 'sharp#2'),  // C#5 the same
@@ -106,10 +106,13 @@
           const PUL4 = [A.joined, A.tone47], PUL4L = LAG(PUL4), PULS = [A.twoS], PULSL = LAG(PULS)
           const PUL7 = [A.semiEnd, A.just, A.most], PUL7L = [A.semiEnd + 0.15, A.just + 0.15, A.most + 0.2]
           const STARTSL = LAG(A.starts).map((t0) => t0 + 0.15), BACKL = [A.back + 0.2, A.octave + 0.15]
+          A.blackOut = A.need + 0.3                             // all eight black keys go out together after "need?"
           A.out2n = A.out2 + 0.15                               // F# and C# names leave just after card 2's lines
           A.lit8p = A.lit8 + 0.35                               // the top stair answers the house's light
-          const PULSE_N = { 7: [A.tone50, A.tee51, A.hear], 8: [A.semi50, A.lit8p, A.home51] }
-          const NAME_N = { 1: STARTSL, 7: LAG(PULSE_N[7]), 8: LAG(PULSE_N[8]) }
+          // fa and so, the stairs the joining tone links, pulse with its riser on "joined" and "tone."
+          const PULSE_N = { 4: PUL4, 5: PUL4, 7: [A.tone50, A.tee51, A.hear], 8: [A.semi50, A.lit8p, A.home51] }
+          const NAME_N = { 1: STARTSL, 4: PUL4L, 5: PUL4L, 7: LAG(PULSE_N[7]), 8: LAG(PULSE_N[8]) }
+          const RANGEP = [A.range, word('b53', 'range')]          // "Singing Voice Range" on "voice range", again on "range"
           const BLACKS = [1, 3, 6, 8, 10, 13, 15, 18]
           const ICONP = [0, 1, 2, 3].map((k) => at('card', 'start', 0.11 + 0.8 * k))   // x, Settings, Exercises, More
           A.under2 = at('card', 'start', 3.25)                  // the address's underline draws (0.7 s)
@@ -382,7 +385,7 @@
                 const f = memb(m)
                 const names = m === 6 ? [{ text: 'F♯', a: nameA(A.fs, A.out2n) }] : m === 13 ? [{ text: 'C♯', a: nameA(A.cs, A.out2n) }] : m === 7 || m === 19 ? [{ text: 'G', a: nameA(A.toG, A.out4) }] : []
                 const bk = BLACKS.indexOf(m)
-                return { full: f, lit: ST.isBlack(m) ? Math.max(f, bk >= 0 ? light(t, A.black + 0.1 * bk) : 0) : 0, scale: KEYP[m] ? L.pulse(t, KEYP[m], 'key') : 1, names }
+                return { full: f, lit: ST.isBlack(m) ? Math.max(f, bk >= 0 ? hold(t, A.black + 0.09 * bk, A.blackOut, 0.35) : 0) : 0, scale: KEYP[m] ? L.pulse(t, KEYP[m], 'key') : 1, names }
               },
               hair: { a: t < A.pull1 || t >= A.fs ? 1 : 0, w, s0, hA: (n) => (t < A.pull1 ? 1 : P(t, A.fs + 0.06 * (n - 1), 0.3)) },
             })
@@ -419,7 +422,7 @@
               })
               rungGlow.setAttribute('opacity', (0.55 * P(t, A.note, 0.3)).toFixed(3))
               // the violet tip wavers at the playhead on "one note at a time" and again on "plays."
-              const wav = Math.max(L.env(t, A.sing1, 0.1, 0.15, 0.4), L.env(t, A.one, 0.1, 0.15, 0.4), L.env(t, A.time, 0.1, 0.3, 0.4), L.env(t, A.plays, 0.1, 0.15, 0.4))
+              const wav = Math.max(L.env(t, A.sing1, 0.1, 0.15, 0.4), L.env(t, A.one, 0.1, 0.15, 0.4), L.env(t, A.time, 0.1, 0.3, 0.4), L.env(t, A.plays, 0.1, 0.3, 0.4))
               for (const R of treads) {
                 const F = R.from, Tg = R.to
                 const k = R.n >= 3 ? R.n - 3 : -1
@@ -465,21 +468,23 @@
             icons.forEach((R, k) => {
               const times = [ICONP[k]].concat(k === 1 ? [A.settings] : [])
               const pop = lerp(0.4, 1, P(t, R.ln.tIn + 0.15, 0.5, 'back.out(2)'))
-              const s = (R.size / 24) * pop * L.pulse(t, times, 0.5, { long: true })
-              R.g.setAttribute('transform', `translate(${f1(R.cx ?? 960)} ${f1(R.cy ?? 0)}) scale(${s.toFixed(4)}) translate(-12 -12)`)
+              const s = (R.size / 24) * pop * L.pulse(t, times, 0.25, { long: true })   // 1.25: clear of its words
+              // the gear turns one tooth (45 degrees) on "Settings"
+              const rot = k === 1 ? 45 * P(t, A.settings, 0.8, 'power1.inOut') : 0
+              R.g.setAttribute('transform', `translate(${f1(R.cx ?? 960)} ${f1(R.cy ?? 0)}) rotate(${rot.toFixed(2)}) scale(${s.toFixed(4)}) translate(-12 -12)`)
               R.glow.setAttribute('opacity', Math.max(...times.map((tt) => L.env(t, tt, 0.15, 0.3, 0.6))).toFixed(3))
               const T = traces[k], x0 = (R.cx ?? 960) - R.size / 2, x1 = (R.ln.x0 ?? 960) + (R.ln.w || 0)
               T.setAttribute('x', f1(x0)); T.setAttribute('y', f1(R.ln.y + (k === 3 ? 5 : 13)))
-              T.setAttribute('width', f1(Math.max(0.01, (x1 - x0) * P(t, ICONP[k], 0.55, 'power2.inOut'))))
-              T.setAttribute('opacity', ((k === 3 ? 0.5 : 0.7) * P(t, ICONP[k], 0.1) * (1 - P(t, ICONP[k] + 0.7, 0.3)) * cOut).toFixed(3))
+              T.setAttribute('width', f1(Math.max(0.01, (x1 - x0) * P(t, ICONP[k], 0.75, 'power1.inOut'))))
+              T.setAttribute('opacity', (0.7 * P(t, ICONP[k], 0.1) * (1 - P(t, ICONP[k] + 0.75, 0.35)) * cOut).toFixed(3))
               T.setAttribute('transform', `translate(0 ${f1(-10 * P(t, A.cardEnd, 0.2, 'power2.in'))})`)
             })
             {
               const { R, Ln } = runsBy.range
-              const s = L.pulse(t, A.range, 0.1, { long: true }), cx = (R.x ?? 960) + (R.w || 0) / 2, cy = Ln.y - 14
+              const s = L.pulse(t, RANGEP, 0.1, { long: true }), cx = (R.x ?? 960) + (R.w || 0) / 2, cy = Ln.y - 14
               R.el.setAttribute('transform', `translate(${f1(cx)} ${f1(cy)}) scale(${s.toFixed(4)}) translate(${f1(-cx)} ${f1(-cy)})`)
               const U = runsBy.url.R
-              const uw = (U.w || 0) * P(t, A.under2, 0.7, 'power2.inOut')
+              const uw = (U.w || 0) * P(t, A.under2, 0.75, 'power1.inOut')
               underline.setAttribute('x', f1(U.x ?? 960)); underline.setAttribute('width', f1(Math.max(0.01, uw)))
               underline.setAttribute('opacity', (0.8 * P(t, A.under2, 0.1) * cOut).toFixed(3))
               underline.setAttribute('transform', `translate(0 ${f1(-10 * P(t, A.cardEnd, 0.2, 'power2.in'))})`)

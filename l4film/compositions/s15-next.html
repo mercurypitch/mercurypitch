@@ -34,12 +34,14 @@
             kick: word('b54', 'Next'), kickOut: at('o14', 'end'),
             support: word('b55', 'support'),              // '"support"' lands
             long: word('b55', 'long'),                    // the bead draws the level line (1.3 s)
+            that: word('o14', 'that'),                    // '"support"' pulses: "that" is support
             pushing: word('o14', 'pushing'),              // the line wavers once (0.8 s)
             what: word('o14', 'what'),                    // "what keeps it steady?" lands
             steady: word('o14', 'steady?'),               // the bead scales 1.2
             out: at('o14', 'end', 0.07),                  // the type, the line and the bead leave up fast (0.3 s)
           }
           A.end = A.long + 1.3
+          A.ring2 = A.steady + 0.12                       // the bead's pulse sends one more ring, just behind it
           const X0 = 560, X1 = 1360, Y = 520
 
           /* ---------------------------------------------------------------- the room and the Mercs */
@@ -93,15 +95,15 @@
               line.set(d)
               line.g.setAttribute('opacity', (0.85 * (1 - out)).toFixed(3))
             } else line.g.setAttribute('opacity', '0')
-            echo.draw(t, [{ t: A.end, x: X1, y: Y, r: 22 }])
+            echo.draw(t, [{ t: A.end, x: X1, y: Y, r: 22 }, { t: A.ring2, x: X1, y: Y + lift, r: 22 }])
 
             // type: the kicker, '"support"', then "what keeps it steady?"; all leave up fast at o14's end
             kick.draw(t, A.kick, A.kickOut)
-            const land = (el, t0, rise = 16) => {
+            const land = (el, t0, s = 1, cy = 0, rise = 16) => {
               el.setAttribute('opacity', (P(t, t0, 0.2) * (1 - out)).toFixed(3))
-              el.setAttribute('transform', `translate(0 ${f1(rise * (1 - P(t, t0, 0.5, 'power3.out')) + lift)})`)
+              el.setAttribute('transform', `translate(0 ${f1(rise * (1 - P(t, t0, 0.7, 'power2.out')) + lift)}) translate(960 ${cy}) scale(${s.toFixed(4)}) translate(-960 ${-cy})`)
             }
-            land(supportT, A.support)
+            land(supportT, A.support, L.pulse(t, A.that, 'label'), 370)
             land(steadyT, A.what)
           })
           window.__timelines = window.__timelines || {}

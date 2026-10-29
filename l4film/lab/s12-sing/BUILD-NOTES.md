@@ -69,3 +69,19 @@ Running notes so a container restart or a usage-limit pause can resume. Builder 
   under 4.5:1). Doctor lines 8.50 to 8.89:1. hyperframes check: only missing_local_asset for the m12
   passes in my scenes (plus warnings shared by every scene: nested media start, refl twins, length).
 - Handoffs re-diffed after the last edits: D to E max 10; S12 to S13 max 61 (the pulse); E to F 0.
+- 11:18 s13 lab clip (no hosts) measured: holds 17.1 s (15.7 per 30 s), longest 3.5; every hold
+  inside 373.85 to 394.24, where m12-blue's shot is in its 'sing' state (talking b41 to b44 and the
+  count-in, shot t 29.67 to 52.05). The your-turn pause (395.24 to 403.84): no hold at all (the
+  cursor). Count-in 0.5 s (the bead held on do while Merc sings it). A landed talking pass (m08
+  orange, over the room colour, at 50 px = 300 px in measure's 320-wide frame) breaks a hold in 35
+  of 37 talking samples and 17 of 36 idle ones: Merc's talking should fill 13a and 13b. Re-measure
+  once m12 lands.
+- 11:40 Usage pause and resume. The m12 tall intros landed (orange 11:24, blue 11:32); runtime stills
+  of the drops (lab/s12-sing/drops-sheet.png, columns marked): the card clear of both falls; after
+  the tall segment each host vanishes (head passes not rendered yet, as the director said).
+  Old pre-curve stills moved to lab/s12-sing/old-stills/.
+- 11:55 s12 lab clip with the tall intros: holds 2.0 s (1.9 per 30 s), longest 0.3; the 0.1 s hold
+  under Tavi's fall is gone. One large jump at 2.067 s (343.31): her tall segment ending with no
+  head pass to take over (the missing m12-orange-in), as expected. clock-lint silent on both.
+- 11:45 merc-tags --check: s12 0 stale, s13 0 stale (the tool has changed since 10:40; the stale-forever
+  report on intro tags no longer happens).

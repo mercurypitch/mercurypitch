@@ -59,3 +59,12 @@ events in the card pause (icon pulses that register, then the address once more)
   title and names rise over 0.7 s, the title pulses as "Exercises > Scale Runner" lands, the rung names pulse on
   "back," and "octave", the tip wavers on "time.", and the card pause traces each tab's path under its line
   as its icon glows (the icon alone registered 0.1 s). Tools: lab/s14-recap/tools/where.py (what changed where).
+- 11:35 (after a usage-limit pause; every background job re-checked) proxy round 3: 2.4 s inside (1.1 per 30 s),
+  longest 0.3 (the empty F0 before the cut, and 429.2 between cards 2 and 3). Icon pulse cut to 1.25 (at 1.5 the
+  gear touched "first:"). The black-key ripple on "black" now lights all eight in turn and holds them together
+  to "need?" + 0.3 (a still at 424.0 caught the ripple half way, C#5, D#5 and F#5 lit unevenly, which read as an
+  answer); proxy: one 0.2 s hold before "need?". s14 clip round 3 rendering.
+- s15 clip r1 measured: 0.5 s inside (1.8 per 30 s), longest 0.2. Fixes: '"support"' pulses on o14 "that"
+  (it is "that"), "what keeps it steady?" rises over 0.7 s, the bead's "steady?" pulse sends a second ring 0.12 s
+  behind. Proxy: 0.1 s (the cut). s16 clip r1: 0.2 s at its start only (no Merc in the lab; the Mercs move from
+  +0.07 in the film). Root lint in the lab project: only missing_local_asset (passes not rendered).

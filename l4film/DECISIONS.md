@@ -491,3 +491,17 @@ replaced it. The builder's record: critics never read it.
     no Merc, one of the storyboard's no-Merc stretches); Tavi was seen dropping in and talking in S4,
     18 s before, so her voice is known; and the picture carries the line with the sound off (the E-F
     riser's outline and stair 3 lighting on "semitone?"). She drops back in at 109.78.
+83. **A world surface may sit behind a dropping host, if the host lands clear of it.** Decision 81
+    keeps every mark 20 px clear of a dropping host's column. In S9d the pull to F0 (248.70 to
+    249.50, on the second "doh") carries the zoomed strip's right end left through Tavi's column
+    while she falls (about 249.02 to 249.35), with her floor light on its keys, and she lands on
+    bare floor beside its last key (x 1675). It stays: the strip is the world, sliding behind her as
+    the camera pulls back, so it reads as depth rather than a collision, and it is clear of her when
+    she lands. The column rule covers what is set in the frame (type, cards, digits, arrows and
+    other marks), not a world surface behind a host, still or moving in a camera move, as long as
+    the host lands clear of it (S12's dimmed rows sit behind both falls, and the kit's keep-out cuts
+    them around each landed box). So a pull that carries a world surface through a dropping host's
+    column lands as the fall ends: S9d's and S11c's pulls start 1.35 s before the host's line and
+    take 0.8 s, so each lands 0.55 s before the line, where decision 81's fall ends. S11c's pull as
+    built (on "music", 0.9 s) landed 0.4 s after Tavi, sliding the strip's last key out from under
+    her as she splatted.

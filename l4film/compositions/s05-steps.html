@@ -61,10 +61,13 @@
           //    her corner comes and goes with her. Returns draw(t) -> her screen body box, or null when unseen.
           const tavi = (layer, { pass, tag, hop = null }) => L.mercGate(layer, { sid: SID, pass, tag, x: 1800, size: 300, hop })
           // 3. A label switch (STORYBOARD § Type): the old label slides up 12 px as it fades, the new one in from
-          //    12 px below, 0.25 s, staggered 0.05 s stair by stair (k = 0 for the first).
+          //    12 px below, 0.25 s, staggered 0.05 s stair by stair (k = 0 for the first). § Type's "a replacement
+          //    starts once the one before has gone": the old one leaves in the first half, the new one comes in
+          //    the second, so the two never overlap (critic B-01 item 10 saw them cross mid-switch).
           const swap = (t, t0, k, from, to) => {
-            const u = P(t, t0 + 0.05 * k, 0.25, 'power2.inOut')
-            return [{ text: from, a: 1 - u, dy: -12 * u }, { text: to, a: u, dy: 12 * (1 - u) }]
+            const u = P(t, t0 + 0.05 * k, 0.25, 'none')
+            const uo = L.ease('power2.in')(clamp(u / 0.5)), ui = L.ease('power2.out')(clamp(u / 0.5 - 1))
+            return [{ text: from, a: 1 - uo, dy: -12 * uo }, { text: to, a: ui, dy: 12 * (1 - ui) }]
           }
           // 4. A stair lit to 40 % chrome as a counted event: up over 0.3 s and back over 0.4 s, both linear. Measured
           //    in lab/s05-steps/pulse (measure.py, a still F0 staircase): this shape registers 0.7 s on stairs 2 to 4,
@@ -80,7 +83,10 @@
           const labelPulse = (t, times) => L.pulse(t, times, 0.25, { long: true })
           // 5. Riser overlays, drawn over the kit's risers (below the stair names): the measuring outline drawn
           //    on (L.MEASURE, a perimeter dash), an outline that stays while the bar fills, the dim 4 px bar
-          //    under a bar that is growing, and a measured bar shrinking back to the unmeasured 4 px.
+          //    under a bar that is growing, and a measured bar shrinking back to the unmeasured 4 px. A semitone's
+          //    gold fills the whole 8 px gap between its two stairs, not the kit's 6 px, and turns the corner onto
+          //    the upper stair's tread (56 px, 5 px): at F0 the kit's 6 x 26 px bar is a 1.5 px sliver at phone
+          //    width (critic B-01 item 2). `gold` follows the kit's bar: { a, grow, scale, width }.
           const riserOverlays = (st) => {
             const g = L.svg('g', { class: 'riser-overlays' }, null)
             st.gAll.insertBefore(g, st.gAll.children[2])
@@ -89,6 +95,8 @@
               const shrink = L.svg('rect', { display: 'none' }, g)
               const tick = L.svg('rect', { fill: '#2a323c', height: 2, width: 12, display: 'none' }, g)
               const ol = L.svg('rect', { fill: 'none', stroke: L.MEASURE.stroke, 'stroke-width': L.MEASURE.width, 'stroke-opacity': L.MEASURE.opacity, display: 'none' }, g)
+              const gold = SEMI(n) ? L.svg('rect', { fill: L.C.gold, display: 'none' }, g) : null
+              const corner = SEMI(n) ? L.svg('path', { fill: 'none', stroke: L.C.gold, 'stroke-width': 5, 'stroke-linecap': 'round', 'stroke-linejoin': 'round', display: 'none' }, g) : null
               const geo = (w = 0, s0 = 0) => {
                 const x = ST.riserX(n, w), yLo = ST.tread(n, s0), yHi = ST.tread(n + 1, s0)
                 return { x, yLo, yHi, h: yLo - yHi, cy: (yLo + yHi) / 2 }
@@ -96,16 +104,29 @@
               const show = (el, on) => el.setAttribute('display', on ? 'inline' : 'none')
               return {
                 n,
-                draw({ underA = 0, shrinkU = null, outlineA = 0, w = 0, s0 = 0 } = {}) {
+                draw({ underA = 0, shrinkU = null, outlineA = 0, gold: gs = null, w = 0, s0 = 0 } = {}) {
                   const q = geo(w, s0)
+                  if (gold) {
+                    const on = gs != null && gs.a > 0.004 && (gs.grow ?? 1) > 0.002
+                    show(gold, on); show(corner, on && (gs.grow ?? 1) > 0.8)
+                    if (on) {
+                      const h2 = q.h * (gs.scale ?? 1), gr = gs.grow ?? 1, bw = gs.width ?? 8
+                      gold.setAttribute('x', f1(q.x - bw / 2)); gold.setAttribute('width', f1(bw))
+                      gold.setAttribute('y', f1(q.cy + h2 / 2 - h2 * gr)); gold.setAttribute('height', f1(h2 * gr))
+                      gold.setAttribute('opacity', gs.a.toFixed(3))
+                      const xa = q.x + 4, tr = q.yHi
+                      corner.setAttribute('d', `M${f1(xa)} ${f1(tr + 10)} L${f1(xa)} ${f1(tr + 6)} Q${f1(xa)} ${f1(tr)} ${f1(xa + 6)} ${f1(tr)} L${f1(xa + 56)} ${f1(tr)}`)
+                      corner.setAttribute('opacity', (gs.a * clamp((gr - 0.8) / 0.2)).toFixed(3))
+                    }
+                  }
                   show(under, underA > 0.004)
                   if (underA > 0.004) {
                     under.setAttribute('x', f1(q.x - 2)); under.setAttribute('width', 4)
                     under.setAttribute('y', f1(q.yHi)); under.setAttribute('height', f1(q.h))
                     under.setAttribute('opacity', underA.toFixed(3))
                   }
-                  const sOn = shrinkU != null && shrinkU < 1
-                  show(shrink, sOn); show(tick, sOn && !SEMI(n))
+                  const sOn = shrinkU != null && shrinkU < 1 && !SEMI(n)            // a semitone shrinks in its gold
+                  show(shrink, sOn); show(tick, sOn)
                   if (sOn) {
                     const bw = lerp(6, 4, shrinkU)
                     shrink.setAttribute('x', f1(q.x - bw / 2)); shrink.setAttribute('width', f1(bw))
@@ -135,6 +156,50 @@
             R.outline.setAttribute('stroke-dashoffset', f1(per * (1 - clamp(u))))
             R.tick.setAttribute('fill-opacity', (0.55 * clamp((u - 0.8) / 0.2)).toFixed(3))
           }
+          // 6. The faint rows' ends, feathered while the camera is in: a close-up shows where the rows stop, a hard
+          //    edge (critic B-01 item 10: x 160 in CU-A, x 496 in F-low). A mask on a group wrapped round the kit's
+          //    rows fades their ends over up to 160 world px as the scale grows past 1; at F0 there is no mask, so
+          //    F0's frames, and the cuts on them, are untouched.
+          const featherRows = (st, cam) => {
+            const id = SID + '-feather'
+            const defs = L.svg('defs', {}, st.svg)
+            const grad = L.svg('linearGradient', { id: id + '-g', gradientUnits: 'userSpaceOnUse', x1: 220, x2: 1680, y1: 0, y2: 0 }, defs)
+            const stops = ['#000', '#fff', '#fff', '#000'].map((c, i) => L.svg('stop', { offset: i < 2 ? 0 : 1, 'stop-color': c }, grad))
+            const mask = L.svg('mask', { id, maskUnits: 'userSpaceOnUse', x: -4000, y: -4000, width: 10000, height: 10000 }, defs)
+            L.svg('rect', { x: -4000, y: -4000, width: 10000, height: 10000, fill: `url(#${id}-g)` }, mask)
+            const wrap = L.svg('g', { class: 'rows-feather' }, null)
+            st.svg.insertBefore(wrap, st.gRows)
+            wrap.appendChild(st.gRows)
+            return (t) => {
+              const z = clamp(cam.scale(t) - 1)                          // 0 at F0, 0.8 in F-low and F-high, 1 in CU-A and CU-B
+              if (z < 0.002) { wrap.removeAttribute('mask'); return }
+              const f = (160 * z) / 1460
+              stops[1].setAttribute('offset', f.toFixed(4)); stops[2].setAttribute('offset', (1 - f).toFixed(4))
+              wrap.setAttribute('mask', `url(#${id})`)
+            }
+          }
+          // 7. A row of 64 px tokens in the right lane (Outfit 600, tabular digits, ink, baseline 260): S5's tally
+          //    "T T S T T T S" and S6's sum "2 2 1 · 2 · 2 2 1 = 12". Laid out from each token's own advance once the
+          //    fonts are in: gaps[i] px of advance before token i; 30 px leaves 32 to 35 px of ground between two
+          //    glyphs, half an em, so the numbers read as numbers, not as 221 (critic B-01 item 6). From x0, or
+          //    ending at `right`. Each token: { ch, el, x, w, cx }.
+          const TOKEN = "font: 600 64px 'Outfit', sans-serif; font-variant-numeric: tabular-nums; white-space: pre;"
+          const tokenRow = (hud, chars, gaps, { x0 = 0, right = null, y = 260 } = {}) => {
+            const row = chars.map((ch) => ({ ch, el: L.svg('text', { x: x0, y, fill: L.C.ink, opacity: 0, style: TOKEN, text: ch }, hud), x: x0, w: 0, cx: x0 }))
+            const lay = () => {
+              let x = 0
+              row.forEach((tk, i) => { x += gaps[i] || 0; tk.w = tk.el.getComputedTextLength(); tk.x = x; x += tk.w })
+              const base = right != null ? right - x : x0
+              row.forEach((tk) => { tk.x += base; tk.cx = tk.x + tk.w / 2; tk.el.setAttribute('x', f1(tk.x)) })
+            }
+            lay(); L.afterFonts(lay)
+            return row
+          }
+          // a token's alpha and its scale about (cx, the glyphs' middle: 22 px above the baseline)
+          const tokenSet = (tk, a, sc, cx = tk.cx) => {
+            tk.el.setAttribute('opacity', a.toFixed(3))
+            tk.el.setAttribute('transform', `translate(${f1(cx)} 238) scale(${sc.toFixed(4)}) translate(${f1(-cx)} -238)`)
+          }
           /* ======================= end of group B's shared block */
 
           /* ---------------------------------------------------------------- anchors */
@@ -159,16 +224,16 @@
             pan: word('o4', 'with', 'start', 0.08),                    // 5d: pan to CU-B, 1.6 s
             e: word('o4', 'E'), f: word('o4', 'F'),                    // E4 and F4 scale and are named
             semi: word('o4', 'semitone', 'start', -0.2),               // the E-F outline; stair 3 lights (large)
-            yes: word('b10', 'Yes'),                                   // 5e: gold fill, "S"
-            pull: word('b10', 'Yes.', 'start', 0.03),                  // the pull to F0, 1.6 s
-            watch: word('b10', 'Watch'),                               // the demo risers reset
+            yes: word('b10', 'Yes'),                                   // 5e: gold fill, "S", held in CU-B
+            pull: word('b10', 'Watch'),                                // the pull to F0, 1.4 s, once the gold has settled
+            watch: word('b10', 'Watch'),                               // the keys' names leave
             stc: at('steps-c'), stcEnd: at('steps-c', 'end'),          // 5f
             steps: word('b12', 'steps'),                               // 5g: the stairs light in turn
             aren: word('b12', "aren't"), equal: word('b12', 'equal'),
             short: word('b12', 'two short ones'),
             e2: word('b12', 'E'), f2: word('b12', 'F'), b2: word('b12', 'B'), c2: word('b12', 'C'),
           }
-          const PUSH = 1.5, PAN = 1.7, PULL = 1.6
+          const PUSH = 1.5, PAN = 1.7, PULL = 1.4
           const landed = A.pull + PULL                                  // the pull has landed: the legend
           const SC = (k) => at('scale-c', 'start', 0.45 * k)          // scale-c's onsets (FACTS 68)
           const STEP = (k) => at('steps-c', 'start', 0.8 * k)         // steps-c's onsets
@@ -176,6 +241,10 @@
           // the two demo measurements (5c to 5e): the outline drawn on, the fill, the reset on "Watch each step"
           const DEMO = { 1: { t0: A.asIn, dur: 0.8, fill: A.tone }, 3: { t0: A.semi, dur: 0.6, fill: A.yes } }
           const RESET = 0.35                                            // the demo bars shrink back
+          // critic B-01 item 1: CU-B holds the gold E-F riser and its "S" from "Yes" to "Watch" (0.7 s); both demo
+          // measurements ride the pull with their T and S, so the legend defines what is on screen, and they reset
+          // as the bead lands on stair 1 to begin the run
+          const RESETAT = STEP(0)
 
           /* ---------------------------------------------------------------- camera */
           const cam = L.frameRig(room, { from: 'F0' })
@@ -212,6 +281,10 @@
           const hud = L.stageOf(room.hud)
           const kick = L.kicker(room.hud, '1 · Measure the steps')
           const majorT = L.svg('text', { x: 1250, y: 300, fill: L.C.ink, opacity: 0, style: "font-family: 'Instrument Serif'; font-style: italic; font-size: 110px; letter-spacing: -0.01em; white-space: pre;", text: 'a major scale' }, hud)
+          // the tally (critic B-01 item 9: from the run to the cut the right half of the WS was empty): b11 lands one
+          // letter a word in the right lane, "T T S T T T S", where S6's sum will build; its two S's scale 1.2 on
+          // "two short ones"; it rides the cut and leaves with the legend before S6's push
+          const tally = tokenRow(hud, ['T', 'T', 'S', 'T', 'T', 'T', 'S'], [0, 30, 30, 30, 30, 30, 30], { x0: 1240 })
           const legend = [['T', ' = tone ', '(2 rows)', 200], ['S', ' = semitone ', '(1 row)', 252]].map(([a, b, c, y]) => {
             const el = L.svg('text', { x: 140, y, opacity: 0, style: "font: 600 44px 'Outfit', sans-serif; white-space: pre;" }, hud)
             L.svg('tspan', { text: a, fill: L.C.ink }, el)
@@ -236,7 +309,7 @@
           LITL[4].push([A.short, 0.8]); LITL[8].push([A.short, 0.8])
           const lit = (t, n) => LITL[n].reduce((k, [t0, dn]) => Math.max(k, light(t, t0, 0.4, dn)), light(t, LIT[n]))
           // riser pulses: the bar grows 15 % and its label scales 1.25 (a thin bar's growth alone barely registers)
-          const GROW = { 1: [A.toneW, A.aren], 2: [A.aren], 3: [A.equal + 0.34, A.short, A.f2], 4: [A.aren], 5: [A.aren], 6: [A.aren], 7: [A.equal + 0.34, A.short, A.c2] }
+          const GROW = { 1: [A.toneW, A.aren], 2: [A.aren], 3: [A.yes + 0.2, A.equal + 0.34, A.short, A.f2], 4: [A.aren], 5: [A.aren], 6: [A.aren], 7: [A.equal + 0.34, A.short, A.c2] }
           B11.forEach((tw, k) => GROW[k + 1].push(tw))                 // b11: each step as it is said
           // key pulses (a key scales 1.05): C#4 on "between", E4, F4, B4 and C5 as they are named, and each of C
           // major's keys as it comes up to full
@@ -245,8 +318,12 @@
           const KEYP = { 1: [A.between], 4: [A.e, A.e2], 5: [A.f, A.f2], 11: [A.b2], 12: [A.c2] }
           CMAJ.forEach((m, k) => { (KEYP[m] = KEYP[m] || []).push(hairT(k + 1) + 0.15 + KEYUP) })  // as it reaches full
 
+          const RS = {}                                                 // each riser's gold this frame (st.draw's riser())
+          const feather = featherRows(st, cam)
+
           L.clock(tl, D, (t) => {
             cam.apply(t)
+            feather(t)
             dust(S0 + t)
             const box = taviA(t)
 
@@ -264,11 +341,13 @@
                 const d = DEMO[n]
                 let state = 'unmeasured', grow = 1, la = 0
                 if (d && t >= d.t0 && t < d.fill) state = 'measuring'
-                else if (d && t >= d.fill && t < A.watch) { state = kind; grow = P(t, d.fill, 0.3, 'power2.out'); la = P(t, d.fill, 0.2) }
-                else if (d && t >= A.watch && t < A.watch + 0.2) la = 1 - P(t, A.watch, 0.2)
+                else if (d && t >= d.fill && t < RESETAT) { state = kind; grow = P(t, d.fill, 0.3, 'power2.out'); la = P(t, d.fill, 0.2) }
+                else if (d && t >= RESETAT && t < RESETAT + 0.2) la = 1 - P(t, RESETAT, 0.2)
                 if (t >= land) { state = kind; grow = P(t, land, 0.25, 'power2.out'); la = P(t, land, 0.2) }
                 const labels = la > 0 ? [{ text: lab, a: la, scale: labelPulse(t, GROW[n]) }] : []
-                return { state, grow, scale: L.pulse(t, GROW[n], 'bar'), labels }
+                const scale = L.pulse(t, GROW[n], 'bar')
+                RS[n] = state === 'semi' ? { a: 1, grow, scale } : null
+                return { state, grow, scale, labels }
               },
             })
             // overlays: the demo outlines drawn on, the outline held while the bar fills, the reset, the dim bar
@@ -276,13 +355,17 @@
             ov.forEach((o) => {
               const n = o.n, d = DEMO[n], land = STEP(n)
               let underA = 0, shrinkU = null, outlineA = 0
+              let gold = RS[n]
               if (d) {
                 if (t >= d.t0 && t < d.fill) drawOn(st, n, P(t, d.t0, d.dur, 'power1.inOut'))
-                if (t >= d.fill && t < A.watch) outlineA = 1 - P(t, d.fill + 0.2, 0.2)
-                if (t >= A.watch && t < land) { shrinkU = P(t, A.watch, RESET, 'power2.inOut') }
+                if (t >= d.fill && t < RESETAT) outlineA = 1 - P(t, d.fill + 0.2, 0.2)
+                if (t >= RESETAT && t < land) {
+                  shrinkU = P(t, RESETAT, RESET, 'power2.inOut')
+                  if (SEMI(n)) gold = { a: 1 - shrinkU, grow: 1, scale: 1, width: lerp(8, 4, shrinkU) }
+                }
               }
               if (t >= land && t < land + 0.25) underA = 1
-              o.draw({ underA, shrinkU, outlineA })
+              o.draw({ underA, shrinkU, outlineA, gold })
             })
             // on "in between" C#4's band, the riser's lower row, glows across the frame until the riser fills
             rowGlow.setAttribute('opacity', (0.22 * P(t, A.between, 0.35, 'power1.inOut') * (1 - P(t, A.tone, 0.6))).toFixed(3))
@@ -335,9 +418,13 @@
             majorT.setAttribute('opacity', (P(t, A.major, 0.2) * (1 - P(t, A.scEnd, 0.2))).toFixed(3))
             majorT.setAttribute('transform', `translate(0 ${f1(20 * (1 - mIn))})`)
             legend.forEach((el, i) => {
-              const u = P(t, landed + 0.5 * i, 0.65, 'power2.out')
-              el.setAttribute('opacity', P(t, landed + 0.5 * i, 0.2).toFixed(3))
+              const u = P(t, landed + 0.3 * i, 0.65, 'power2.out')
+              el.setAttribute('opacity', P(t, landed + 0.3 * i, 0.2).toFixed(3))
               el.setAttribute('transform', `translate(${f1(-40 * (1 - u))} 0)`)
+            })
+            tally.forEach((tk, k) => {
+              const sc = (1 + 0.3 * (1 - P(t, B11[k], 0.4, 'power2.out'))) * (tk.ch === 'S' ? L.pulse(t, [A.short], 'label') : 1)
+              tokenSet(tk, P(t, B11[k], 0.15), sc)
             })
           })
           window.__timelines = window.__timelines || {}

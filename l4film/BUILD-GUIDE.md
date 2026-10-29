@@ -573,8 +573,9 @@ view, y 323) down to his feet, for the drop's 0.85 s.
   to `word('b27', 'these')` as `cam.curve` with `s` on sine.in from 1 to 1.2, `ox = -420 (s - 1)`,
   `oy = -736 (s - 1)`; its second leg `cam.hermite(word('b27', 'these'), 1.4, 'F-names-1')`; the
   truck along the names `cam.to(at('b28'), 3.0, 'F-names-2', 'power1.inOut')`, the layers parting;
-  the pull `cam.to(word('b28', 'doh#2', 'start', 0.05), 0.8, 'F0', 'power2.inOut')`, 248.70 to
-  249.50, which blends into the truck's last 0.14 s); `L.stairs` (letters to
+  the pull `cam.to(at('o9', 'start', -1.35), 0.8, 'F0', 'power2.inOut')`, 248.71 to 249.51, on
+  the second "doh" and landing as Tavi's fall ends (DECISIONS 83), which blends into the truck's
+  last 0.14 s); `L.stairs` (letters to
   numbers to solfège through the label pools, 86 px at 2.4x; both houses from "its home"); "tonic =
   home" (riding the world); "scale degrees" and "solfège" (frame-fixed at x 1400, baseline 420);
   `L.pill` in `L.GUESS` ("do = C?"), then solid ("fixed do: do = C", moving up and shrinking to 40
@@ -610,8 +611,8 @@ view, y 323) down to his feet, for the drop's 0.85 s.
 - Merc: m09-orange (feet (1800, 840), 300, hero) on screen throughout, clear of the stairs in CU-C by
   its numbers; m10-blue (feet (110, 840), 300, hero, turned right) drops in at `at('stop-c-home',
   'start', -1.37)` (282.20, as the pull lands; CU-C's lower stairs fill his corner, and the pull
-  clears it of stair 1 by then); his bead leaves his mouth at about (130, 715) **(provisional: the pass's mouth
-  point)** 0.3 s before stop-c-home. The renderer's first hop always arcs right, so m10-blue (and
+  clears it of stair 1 by then); his bead leaves his mouth at (156, 797) 0.3 s before
+  stop-c-home. The renderer's first hop always arcs right, so m10-blue (and
   m11-blue in s11) is rendered facing left and the scene mirrors its box, reflection and all
   (`L.merc(...).box.style.transform = 'scaleX(-1)'`, as Lesson 2's s10): on screen he faces right,
   toward the stairs, and his hop out arcs left.
@@ -629,7 +630,8 @@ view, y 323) down to his feet, for the drop's 0.85 s.
   risers measured (no labels), hairlines; the strip with D major's keys, F♯4 and C♯5 lit.
 - Kit: `L.kicker('An experiment')` and the credits (frame-fixed, Outfit 500, ink-2, x 120);
   `L.frameRig` (F-chart `cam.to(word('b35', 1, 'start', 0.32), 1.2, 'F-chart', 'power2.inOut')`, the
-  pull `cam.to(word('b36', 33, 'start', 0.17), 0.9, 'F0', 'power2.inOut')`); the probe bead with its
+  pull `cam.to(at('o11', 'start', -1.35), 0.8, 'F0', 'power2.inOut')`, 320.23 to 321.03, landing
+  as Tavi's fall ends (DECISIONS 83)); the probe bead with its
   "?"; the axis and its labels; the shelves and chips (HANDOFFS § S11's experiment: chips 120 x 56,
   radius 12, `#1b232d` opaque with a 2 px chrome rim at 55 % and ink names; the black keys' dim chips
   chrome at 35 % with ink letters; the shelves closing to 64 px apart and spreading back);
@@ -782,10 +784,15 @@ lab still (still paths beside it). Until then, the HANDOFFS value is the one to 
 | C to D, 229.24 | s08's last frame against s09's first: max 10, no pixel over 16 | builder C | `lab/s08-anywhere/scratch/diff-s08-s09.png` |
 | Inside D, S10 to S11 (295.94) | s10's last frame against s11's first: max 22, no pixel over 24 | builder D | `lab/s11-why/tools/hdiff.py` |
 | D to E, 341.24 | s11's last frame: stair 1 at x 361 to 474, both houses lit, on D, F♯4 and C♯5 lit, no labels | builder D | `lab/s09-names/BUILD-NOTES.md` |
+| Inside A, S4d | Tavi's drop seen whole (m04, 61.45 to 62.30): in high over her corner (body from y 360), the whole fall, the splat (62.05), standing by 62.37, before o3 (62.54); the stripe field ends at x 1680, 20 px clear of her column | director, s04 lab stills with the pass and its intro | `lab/entrances/s04-m04-corner.png` |
 | Inside B, S5g | Tavi's drop seen whole (m06a, 109.78 to 110.63): in high over her corner, the whole fall, the splat, standing by 110.70, before o5 (110.88) | director, s05 lab stills with the pass and its intro | `lab/entrances/s05-m06a-corner.png` |
 | Inside B, S5 to S6 (110.88) | Tavi on screen from s06's first frame (m06a's pass shown at once) | director | `lab/entrances/s06-m06b-corner.png` (first two) |
 | Inside B, S6c | m06b's drop seen whole (134.82 to 135.67), down before o6 (135.92); the sum's digits stay above y 260, 63 px over her column | director | `lab/entrances/s06-m06b-corner.png` |
 | Inside C, S7a | the act 2 card ends at x 1528, 170 px clear of Tavi's column (x 1700); the strip's last key ends at x 1675, 25 px clear; the splat's spray reaches x 1678, beside that key, for about 0.1 s at 148.02 | director, s07 lab stills (m07's old pass under the new tag, its new intro) | `lab/entrances/s07-m07-card.png`, `s07-m07-splat-zoom.png` |
-| Inside D, S10 | Merc's mouth point (130, 715): to measure on the m10-blue pass now that he drops 282.20 to 283.05 (DECISIONS 81), at the bead's launch (283.27), 0.28 s after the splat | | |
+| Inside D, S9d | the pull to F0 (248.71 to 249.51, 0.8 s from o9 - 1.35 on the second "doh", power2.inOut) lands as Tavi's fall ends (m09-in drops 248.96 to 249.81, down before o9 at 250.06); the strip's keys pass behind her column from about 249.02 to 249.35 (DECISIONS 83) and she lands on bare floor beside its last key (x 1675) | director, s09 lab stills with m09-in's intro | `lab/entrances/s09-m09-pull.png`, `s09-m09-column-zoom.png` |
+| Inside D, S11c | the pull to F0 (320.23 to 321.03, 0.8 s from o11 - 1.35, power2.inOut) lands as Tavi's fall ends (m11 drops 320.48 to 321.33: the splat at 321.10, standing by 321.40, eyes open by 321.50, before o11 at 321.58); the strip's right end passes behind her column from about 320.50 to 320.89 and is at x 1675, 25 px clear, when she lands (DECISIONS 83); the axis label "finishes it best" keeps 23 px over her column's top and leaves its x range by 320.60; Merc drops 321.03 to 321.88 with the world at F0: stair 1 and the keys from x 240, 30 px clear of his column (x 10 to 210) | director, s11 lab stills with both intros (Merc's main was still rendering) | `lab/entrances/s11-m11-tavi-corner.png`, `s11-m11-tavi-landing.png`, `s11-m11-merc-corner.png` |
+| Inside C, S7 to S8: m08's splice (203.65) | m08-orange-in hands over to m08-orange at film frame 12219: the same film frame differs by p99.9 8, max 15, no pixel over 24; the step seen there (p99.9 8, max 101, 5 pixels over 24) is the size of either pass's own step | director, both passes decoded | `lab/entrances/splices.txt` |
+| Inside D, S9: m09's splice (254.50) | m09-orange-in hands over to m09-orange at film frame 15270: the same film frame differs by p99.9 11, 9 edge pixels over 24 (encoding noise on the outline); the step seen there (p99.9 10, 6 pixels over 24) is the size of the head's own step | director, both passes decoded | `lab/entrances/splices.txt`, `m09-splice.png` |
+| Inside D, S10 | Merc's mouth point (156, 797), not the provisional (130, 715), at the bead's launch (283.27) on the m10-blue pass (he drops 282.20 to 283.05, DECISIONS 81; pass frame 64, mouth at (78, 144) facing left, mirrored at feet (110, 840), size 300); the hop to stair 1 then peaks at y 602 and clears stair 1's corner (242, 664) by 34 px | director, the pass decoded and the s10 lab still at the launch | `lab/entrances/s10-m10-mouth.png`, `s10-m10-hop.png` (283.27 to 283.63) |
 | Inside E, S12a | the tip's curves | | |
 | Inside E, S13d | the reverse tip's curves, the Mercs' move | | |
