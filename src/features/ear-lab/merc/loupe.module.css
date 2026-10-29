@@ -1,0 +1,90 @@
+/* Hairline's loupe, upright (RoomLoupe.tsx). Sized in the drawing's own
+   units, which the room's figure shows at about one to one on a phone:
+   the words in the glass stay at 13 px or more there. */
+
+.loupe {
+  display: block;
+  width: 100%;
+  height: auto;
+  overflow: visible;
+  font-variant-numeric: tabular-nums;
+}
+
+.rail {
+  stroke: var(--merc-brass, #c9a45e);
+  stroke-width: 2;
+  stroke-linecap: round;
+}
+
+.tick {
+  stroke: var(--merc-brass, #c9a45e);
+  stroke-width: 1.2;
+  stroke-linecap: round;
+}
+
+.tickMajor {
+  stroke-width: 2;
+}
+
+.caption {
+  font: 500 14px var(--merc-sans, 'Inter Variable', system-ui, sans-serif);
+  fill: var(--merc-muted, #b9b1a4);
+}
+
+.lead {
+  stroke: rgb(239 230 214 / 18%);
+  stroke-width: 1;
+  stroke-dasharray: 3 4;
+}
+
+.hair {
+  stroke: var(--merc-mercury, #c5ced8);
+  stroke-width: 2.5;
+  stroke-linecap: round;
+}
+
+.magnified {
+  stroke-width: 3;
+}
+
+.higher {
+  stroke: var(--merc-brass-bright, #e7c67d);
+}
+
+.mover {
+  transition: transform 260ms var(--merc-ease, ease);
+}
+
+.disc {
+  fill: #0f1216;
+  fill-opacity: 0.96;
+  stroke: var(--merc-brass, #c9a45e);
+  stroke-width: 3;
+}
+
+.glass {
+  stroke: rgb(201 164 94 / 35%);
+  stroke-width: 1;
+}
+
+.readout {
+  font-family: var(--merc-serif, Georgia, serif);
+  font-size: 20px;
+  fill: var(--merc-mercury, #c5ced8);
+}
+
+.tag {
+  font: 600 15px var(--merc-sans, 'Inter Variable', system-ui, sans-serif);
+  fill: var(--merc-brass-bright, #e7c67d);
+}
+
+.magnification {
+  font: 600 15px var(--merc-sans, 'Inter Variable', system-ui, sans-serif);
+  fill: var(--merc-muted, #b9b1a4);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .mover {
+    transition: none;
+  }
+}

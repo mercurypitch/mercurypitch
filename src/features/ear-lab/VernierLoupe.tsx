@@ -13,7 +13,7 @@ import { createMemo, For } from 'solid-js'
 import styles from './EarInstruments.module.css'
 import { useCompactStage } from './use-compact-stage'
 
-interface VernierLoupeProps {
+export interface VernierLoupeProps {
   /** The current gap, in cents (always positive). */
   gap: number
   /** Which hairline is sounding: 1, 2, or 0 for neither. */

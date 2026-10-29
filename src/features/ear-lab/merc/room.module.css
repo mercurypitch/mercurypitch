@@ -742,6 +742,11 @@
   box-shadow: 0 0 10px rgb(231 198 125 / 70%);
 }
 
+/* The lamp sits where the caption starts: the caption steps aside. */
+.pads:not([data-shape='ladder'], [data-shape='grid34']) .padLamp + .padCaption {
+  padding-left: 14px;
+}
+
 /* The small keys (the ladder, the twelve): no caption line at rest (a
    keycap means nothing on a phone), and once the answer is out the
    caption takes the second line's place under the name, with no mark

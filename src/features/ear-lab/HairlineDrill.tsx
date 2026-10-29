@@ -8,19 +8,24 @@
 // The instrument is a vernier under a loupe: the two tones are two
 // hairlines whose gap is the difficulty (shown openly — it is not
 // the answer). Which tone was higher stays hidden until the reveal.
+// The native room draws it upright, higher on screen for higher, its
+// hairlines unnamed until the reveal; there the pads' lamps say which
+// tone is sounding (merc/RoomLoupe.tsx).
 // ============================================================
 
 import type { JSX } from 'solid-js'
-import { createSignal } from 'solid-js'
+import { createComponent, createSignal, useContext } from 'solid-js'
 import { useEngines } from '@/contexts/EngineContext'
 import { findThresholdDrill } from '@/lib/ear/drills'
 import { HAIRLINE_TIMING } from '@/lib/ear/timing'
+import { EAR_LAB_WITH_MERC } from '@/lib/native-build'
 import { latestThresholdReading } from '@/stores/ear-lab-store'
 import { playToneFor } from './ear-sound'
 import type { PadState } from './EarStage'
-import { Pads, StagePad } from './EarStage'
+import { Pads, StagePad, StageSkinContext } from './EarStage'
 import { ThresholdDrillView } from './ThresholdDrillView'
 import { useThresholdRun } from './use-threshold-run'
+import type { VernierLoupeProps } from './VernierLoupe'
 import { VernierLoupe } from './VernierLoupe'
 
 interface HairlineDrillProps {
@@ -28,6 +33,13 @@ interface HairlineDrillProps {
   /** The bench's amber control: open in the sealed protocol — the
    *  pendulums at rest, Begin instead of Practice. */
   ritual?: boolean
+}
+
+/** The loupe as the stage draws it: the room's own where it has one,
+ *  the web's everywhere else. */
+function Loupe(props: VernierLoupeProps): JSX.Element {
+  const skin = useContext(StageSkinContext)
+  return createComponent(skin?.VernierLoupe ?? VernierLoupe, props)
 }
 
 /** Rove the base log-uniformly across A3..A5. */
@@ -100,6 +112,11 @@ export function HairlineDrill(props: HairlineDrillProps): JSX.Element {
     run.phase() === 'stimulus' || run.replaying()
       ? (run.stimulusStep() as 0 | 1 | 2)
       : 0
+  /** The room's pads carry a lamp for the tone they name: its upright
+   *  loupe lights no hairline, which would show which was higher. The
+   *  web's loupe lights its own, and its pads stay as they were. */
+  const lamp = (choice: 1 | 2): boolean | undefined =>
+    EAR_LAB_WITH_MERC ? sounding() === choice : undefined
 
   return (
     <ThresholdDrillView
@@ -132,7 +149,7 @@ export function HairlineDrill(props: HairlineDrillProps): JSX.Element {
       ritual={props.ritual}
       run={run}
       instrument={() => (
-        <VernierLoupe
+        <Loupe
           gap={run.level()}
           sounding={sounding()}
           reveal={run.phase() === 'reveal' ? higherWord() : null}
@@ -144,6 +161,7 @@ export function HairlineDrill(props: HairlineDrillProps): JSX.Element {
             keycap="1"
             label="The first"
             state={padState(1)}
+            lamp={lamp(1)}
             disabled={run.phase() !== 'answer'}
             onClick={() => answer(1)}
           />
@@ -151,6 +169,7 @@ export function HairlineDrill(props: HairlineDrillProps): JSX.Element {
             keycap="2"
             label="The second"
             state={padState(2)}
+            lamp={lamp(2)}
             disabled={run.phase() !== 'answer'}
             onClick={() => answer(2)}
           />

@@ -474,6 +474,8 @@ const KARAOKE_STAGE_2 = [
   // the room, and with them the bridge that schedules it (native-device.ts).
   ['Remind me tomorrow at 8:30', "the day's close's reminder switch"],
   ["Today's three are waiting in the Ear Lab.", "Merc's morning reminder"],
+  // Hairline's loupe as the room draws it, upright (merc/RoomLoupe.tsx).
+  ['upright-loupe', "the room's upright loupe for Hairline"],
   [
     /\/crimson-pro-latin-wght-normal-[\w-]{8}\.woff2$/u,
     "Merc's serif (Crimson Pro)",
