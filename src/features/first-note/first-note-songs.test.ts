@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { ENTRIES_PER_SONG, FIRST_NOTE_ROUNDS } from './first-note-rules'
 import type { FirstNoteSong } from './first-note-songs'
-import { FIRST_NOTE_SONGS, LINE_SHARES, pickEntries, planRun, shareRun, SING_ON_LEAD_SEC, singOnFrom, songsOfRun, } from './first-note-songs'
+import { entryPitch, FIRST_NOTE_SONGS, LINE_SHARES, pickEntries, planRun, shareRun, SING_ON_LEAD_SEC, singOnFrom, songsOfRun, } from './first-note-songs'
 
 /** A seeded random source, the same run every time. */
 function seeded(seed = 7): () => number {
@@ -139,5 +139,14 @@ describe("First note's songs", () => {
       expect(round.lineShare).toBeLessThanOrEqual(LINE_SHARES.high)
     }
     expect(new Set(rounds.map((round) => round.lineShare)).size).toBe(6)
+  })
+})
+
+describe("an entry's pitch", () => {
+  it("is its note as the band plays it: in tune with A440, or its song's tuning out", () => {
+    const entry = { at: 10, midi: 57, from: 2, until: 14, beats: [] }
+    expect(entryPitch(entry)).toBe(57)
+    expect(entryPitch({ ...entry, cents: 35 })).toBeCloseTo(57.35, 10)
+    expect(entryPitch({ ...entry, cents: -20 })).toBeCloseTo(56.8, 10)
   })
 })

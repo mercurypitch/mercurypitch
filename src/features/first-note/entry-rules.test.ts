@@ -5,21 +5,14 @@
 // The rules (entry-rules.ts) are the script's and the phone's both. The
 // script's own check is that it writes the committed entries again
 // unchanged (first-note-entries.json); these hold each rule to a song whose
-// answer is known: a voice of pure notes at known places, and a band of
-// clicks at a known tempo.
+// answer is known: a voice of pure notes at known places (the band's beats
+// are band-beats.test.ts's). A song of the singer's own brings what the
+// examples never did: lyrics synced to another recording, a recording tuned
+// off A440, and stored notes an octave out or cut a moment either side.
 
 import { describe, expect, it } from 'vitest'
 import type { SongLine, StoredNote } from './entry-rules'
-import { BAND_RATE, beatsBefore, breathLines, entrySteps, findEntries, findEntry, loudness, lyricLines, middleNote, onsets, onsetSteps, runSteps, tempoOf, VOCAL_RATE, yinMidi, } from './entry-rules'
-
-/** A seeded random source, the same every run. */
-function seeded(seed = 11): () => number {
-  let state = seed
-  return () => {
-    state = (state * 16807) % 2147483647
-    return (state - 1) / 2147483646
-  }
-}
+import { breathLines, findEntries, judgeLine, lineSteps, loudness, lyricLines, lyricsShift, middleNote, runSteps, songLines, songTuning, VOCAL_RATE, yinMidi, } from './entry-rules'
 
 const hz = (midi: number): number => 440 * 2 ** ((midi - 69) / 12)
 
@@ -159,7 +152,7 @@ describe('the entries', () => {
     expect(last.until).toBeCloseTo(last.at + 6.45, 2)
   })
 
-  it('reads a line in steps, a step a pitch reading, to the same entry', () => {
+  it("reads a line's voice in steps, a step a pitch reading", () => {
     const { vocal, level } = song([
       { from: 2, to: 4, midi: 57 },
       { from: 6.5, to: 8, midi: 60 },
@@ -170,20 +163,21 @@ describe('the entries', () => {
       notes: [stored(57, 2, 4), stored(60, 6.5, 8)],
       lines: [line(2, 'First line'), line(6.5, 'Second')],
     }
-    const steps = entrySteps(reading, 1, 58)
+    const steps = lineSteps(reading, 1)
     let taken = 0
     let step = steps.next()
     while (step.done !== true) {
       taken += 1
       step = steps.next()
     }
-    expect(step.value).toEqual(findEntry(reading, 1, 58))
-    expect(step.value).toMatchObject({ midi: 60, words: 'Second' })
+    expect(step.value?.line).toBe(1)
+    expect(step.value?.steady?.midi).toBeCloseTo(60, 0)
     // The note steadies a fifth of a second in: twenty readings at least.
     expect(taken).toBeGreaterThanOrEqual(20)
-    expect(runSteps(entrySteps(reading, 0, 58))).toEqual(
-      findEntry(reading, 0, 58),
-    )
+    expect(findEntries(reading).entries[1]).toMatchObject({
+      midi: 60,
+      words: 'Second',
+    })
   })
 
   it('leaves out a line with no breath before it', () => {
@@ -262,99 +256,145 @@ describe('the entries', () => {
   })
 })
 
-/** A band of clicks every `period` s from `phase`, over a little noise. */
-function clicks(seconds: number, period: number, phase: number): Float32Array {
-  const random = seeded()
-  const rate = BAND_RATE
-  const samples = new Float32Array(Math.round(seconds * rate))
-  for (let i = 0; i < samples.length; i++) {
-    samples[i] = 0.01 * (random() * 2 - 1)
-  }
-  for (let t = phase; t < seconds; t += period) {
-    const at = Math.round(t * rate)
-    for (let i = 0; i < 220 && at + i < samples.length; i++) {
-      samples[at + i] += 0.8 * (random() * 2 - 1) * Math.exp(-i / 40)
+describe("a song of the singer's own", () => {
+  /** Five phrases two seconds long, three seconds' breath between them. */
+  const phrases = (cents = 0) =>
+    [2, 7, 12, 17, 22].map((from, i) => ({
+      from,
+      to: from + 2,
+      midi: [57, 60, 57, 62, 59][i],
+      cents,
+    }))
+  const sung = (cents = 0) => {
+    const samples = voice(VOCAL_RATE, 26, phrases(cents))
+    return {
+      vocal: { samples, rate: VOCAL_RATE },
+      level: loudness(samples, VOCAL_RATE),
     }
   }
-  return samples
-}
-
-describe('the beats', () => {
-  const band = clicks(30, 0.5, 0.25)
-  const whole = onsets({ samples: band, rate: BAND_RATE })
-
-  it("reads the band's tempo from its onsets", () => {
-    expect(Math.abs(tempoOf([whole]) - 120)).toBeLessThanOrEqual(1)
-  })
-
-  it('reads the onsets in steps, a step a spectrum, to the same grid', () => {
-    const stretch = { samples: band.slice(0, 4 * BAND_RATE), rate: BAND_RATE }
-    const steps = onsetSteps(stretch, 2)
-    let taken = 0
-    let step = steps.next()
-    while (step.done !== true) {
-      taken += 1
-      step = steps.next()
+  const storedOf = () =>
+    phrases().map((phrase) => stored(phrase.midi, phrase.from, phrase.to))
+  const words = ['One', 'Two', 'Three', 'Four', 'Five']
+  /** One note sung from 2 to 4 s. */
+  const song = (
+    notes: readonly { from: number; to: number; midi: number }[],
+  ) => {
+    const samples = voice(VOCAL_RATE, 12, notes)
+    return {
+      vocal: { samples, rate: VOCAL_RATE },
+      level: loudness(samples, VOCAL_RATE),
     }
-    expect(step.value).toEqual(onsets(stretch, 2))
-    expect(taken).toBe(step.value.flux.length)
-  })
+  }
 
-  it('reads the same tempo from the lead-ins alone', () => {
-    const rate = BAND_RATE
-    const stretch = (from: number, to: number) =>
-      onsets(
-        {
-          samples: band.slice(Math.round(from * rate), Math.round(to * rate)),
-          rate,
-        },
-        from,
-      )
-    const leadIns = [
-      stretch(1.7, 10.3),
-      stretch(11.7, 20.3),
-      stretch(19.7, 28.3),
-    ]
-    expect(Math.abs(tempoOf(leadIns) - 120)).toBeLessThanOrEqual(1)
-    // A stretch keeps its place on the song's clock.
-    const beats = beatsBefore(leadIns[1], 120, 12, 20)
-    expect(beats).toHaveLength(4)
-    for (let i = 1; i < beats.length; i++) {
-      expect(beats[i] - beats[i - 1]).toBeCloseTo(0.5, 1)
+  it('moves lyrics synced to another recording onto this one', () => {
+    const { vocal, level } = sung()
+    // Lyrics a song's other release put eight tenths of a second later.
+    const late = phrases().map((phrase, i) => line(phrase.from + 0.8, words[i]))
+    expect(lyricsShift(level, late)).toBeCloseTo(-0.8, 1)
+    const { lines, shift } = songLines(level, late)
+    expect(shift).toBeCloseTo(-0.8, 1)
+    // Where the voice comes in, with the lyrics' words.
+    expect(lines.map((one) => one.words)).toEqual(words)
+    for (const [i, one] of lines.entries()) {
+      expect(Math.abs(one.start - phrases()[i].from)).toBeLessThan(0.05)
     }
-    expect(beats[3]).toBeLessThan(20)
-    expect(beats[3]).toBeGreaterThan(19.3)
-  })
-
-  it('counts the last four before the entry, on the grid', () => {
-    const beats = beatsBefore(whole, 120, 20, 28)
-    expect(beats).toHaveLength(4)
-    for (let i = 1; i < beats.length; i++) {
-      expect(beats[i] - beats[i - 1]).toBeCloseTo(0.5, 1)
-    }
-    // On the clicks (a little ahead of them: an onset reads as its window
-    // starts), never after the entry.
-    for (const beat of beats) {
-      const off = (((beat - 0.25) % 0.5) + 0.5) % 0.5
-      expect(Math.min(off, 0.5 - off)).toBeLessThan(0.06)
-      expect(beat).toBeLessThan(28)
-    }
-  })
-
-  it('counts none where the beats carry no more onset than the rest', () => {
-    // As busy between the beats as on them: no grid to count.
-    const flat = { flux: new Array<number>(1200).fill(1), fps: 100, start: 0 }
-    expect(beatsBefore(flat, 120, 2, 10)).toEqual([])
-    // Nothing at all: a lead-in with no onsets.
-    const silence = onsets({
-      samples: new Float32Array(12 * BAND_RATE),
-      rate: BAND_RATE,
+    const found = findEntries({ vocal, level, notes: storedOf(), lines })
+    expect(found.entries.map((entry) => entry.words)).toEqual(words)
+    // Read at the lyrics' own times, every line lands inside the voice
+    // before it: no breath before any of them, and no entry.
+    const asSynced = findEntries({
+      vocal,
+      level,
+      notes: storedOf(),
+      lines: late,
     })
-    expect(beatsBefore(silence, 120, 2, 10)).toEqual([])
+    expect(asSynced.entries.length).toBeLessThanOrEqual(1)
   })
 
-  it('counts none without a tempo', () => {
-    expect(beatsBefore(whole, 0, 20, 28)).toEqual([])
-    expect(tempoOf([])).toBe(0)
+  it("keeps the voice's own lines where no shift fits the lyrics", () => {
+    const { level } = sung()
+    const elsewhere = [line(0.4, 'A'), line(4.9, 'B'), line(9.1, 'C')]
+    expect(lyricsShift(level, elsewhere)).toBeNull()
+    const { lines, shift } = songLines(level, elsewhere)
+    expect(shift).toBeNull()
+    expect(lines).toEqual(breathLines(level))
+  })
+
+  it('judges a song in its own tuning, and says how far out it is', () => {
+    // A recording a third of a semitone sharp of A440, sung in tune with it.
+    const { vocal, level } = sung(35)
+    const found = findEntries({
+      vocal,
+      level,
+      notes: storedOf(),
+      lines: breathLines(level),
+    })
+    expect(found.tuning).toBeGreaterThanOrEqual(30)
+    expect(found.tuning).toBeLessThanOrEqual(40)
+    expect(found.dropped).toEqual([])
+    expect(found.entries.map((entry) => entry.midi)).toEqual([
+      57, 60, 57, 62, 59,
+    ])
+    expect(found.entries.every((entry) => entry.cents === found.tuning)).toBe(
+      true,
+    )
+    // In A440 every note is out of tune.
+    const reading = {
+      vocal,
+      level,
+      notes: storedOf(),
+      lines: breathLines(level),
+    }
+    for (let i = 0; i < 5; i++) {
+      const voice = runSteps(lineSteps(reading, i))
+      expect(voice).not.toBeNull()
+      if (voice === null) continue
+      expect(judgeLine(reading, voice, middleNote(storedOf()), 0)).toMatch(
+        /cents off/u,
+      )
+    }
+  })
+
+  it('keeps A440 for a song within ten cents of it, or with too few notes to tell', () => {
+    const { vocal, level } = sung(6)
+    const found = findEntries({
+      vocal,
+      level,
+      notes: storedOf(),
+      lines: breathLines(level),
+    })
+    expect(found.tuning).toBe(0)
+    expect(found.entries.every((entry) => entry.cents === undefined)).toBe(true)
+    const few = [36, 34, 35, 37].map((cents) => ({
+      line: 0,
+      steady: { t: 1, midi: 57 + cents / 100 },
+      voiceIn: 1,
+    }))
+    expect(songTuning(few)).toBe(0)
+    expect(songTuning([...few, { ...few[2], line: 4 }])).toBe(35)
+  })
+
+  it('takes stored notes an octave out, in the octave nearer the song', () => {
+    const { vocal, level } = song([{ from: 2, to: 4, midi: 57 }])
+    // The other tracker heard A4; the song sits around A3.
+    const notes = [stored(69, 2, 4), stored(57, 5, 20)]
+    const low = findEntries({ vocal, level, notes, lines: [line(2)] })
+    expect(low.entries.map((entry) => entry.midi)).toEqual([57])
+    // Around A4, the same voice is A4.
+    const high = findEntries({
+      vocal,
+      level,
+      notes: [stored(69, 2, 4), stored(69, 5, 20)],
+      lines: [line(2)],
+    })
+    expect(high.entries.map((entry) => entry.midi)).toEqual([69])
+  })
+
+  it('takes a stored note the other tracker starts a moment after the voice settles', () => {
+    const { vocal, level } = song([{ from: 2, to: 4, midi: 57 }])
+    // A pickup it heard first, then the note itself from 2.15 s.
+    const notes = [stored(48, 1.95, 2.12), stored(57, 2.15, 4)]
+    const found = findEntries({ vocal, level, notes, lines: [line(2)] })
+    expect(found.entries.map((entry) => entry.midi)).toEqual([57])
   })
 })

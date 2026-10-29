@@ -68,7 +68,7 @@ import { BETWEEN_ROUNDS_MS, ENTRY_MS, ENTRY_RUN_GAP_SEC, ENTRY_STEADY_CENTS, FIR
 import type { FirstNoteSummary } from './first-note-run'
 import { keepFirstNoteRun, resultMoment, summarizeRun } from './first-note-run'
 import type { FirstNoteRound, FirstNoteSong } from './first-note-songs'
-import { planRun, songsOfRun } from './first-note-songs'
+import { entryPitch, planRun, songsOfRun } from './first-note-songs'
 import type { FirstLineFields, FirstMoment } from './merc-lines'
 import { createFirstLines } from './merc-lines'
 import type { SongPlayer, SongPlayerFactory, SongSound } from './song-player'
@@ -234,7 +234,9 @@ export function useFirstNoteController(
   const songOf = (round: FirstNoteRound): FirstNoteSong =>
     playing.get(round.song.slug) ?? round.song
   const phraseOf = (round: FirstNoteRound): Phrase => ({
-    notes: [{ midi: round.entry.midi, at: 0, seconds: MERC_NOTE_SECONDS }],
+    notes: [
+      { midi: entryPitch(round.entry), at: 0, seconds: MERC_NOTE_SECONDS },
+    ],
   })
 
   const loop = createFrameLoop(screenFrame, {
@@ -351,7 +353,7 @@ export function useFirstNoteController(
   const listenForEntry = (round: FirstNoteRound): void => {
     if (untrack(state).entry !== null) return
     const steady = firstSteadyNote(heard, {
-      targetMidi: round.entry.midi,
+      targetMidi: entryPitch(round.entry),
       tolCents: ENTRY_STEADY_CENTS,
       landMs: ENTRY_MS,
       octaveFold: true,
@@ -371,7 +373,7 @@ export function useFirstNoteController(
 
   /** The singer's voice against the note: the trail, the band, Merc. */
   const hearVoice = (frame: PitchFrame, round: FirstNoteRound): void => {
-    const target = round.entry.midi
+    const target = entryPitch(round.entry)
     const point = trailPoint(frame, target)
     points.push(point)
     const off = offTarget(frame, target)
@@ -486,7 +488,7 @@ export function useFirstNoteController(
   /** After a miss: Merc sings the note, then the singer comes in. */
   const mercSingsTheNote = (round: FirstNoteRound): void => {
     const ctx = audio
-    const midi = round.entry.midi
+    const midi = entryPitch(round.entry)
     if (ctx !== null) {
       mercSound = voiceOfMerc.sing(
         ctx,

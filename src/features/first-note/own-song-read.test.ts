@@ -9,7 +9,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { MergedNote } from '@/lib/midi-generator'
 import type { VocalAnalysis } from '@/lib/pitch-pipeline'
-import { BAND_RATE } from './entry-rules'
+import { BAND_RATE } from './band-beats'
 import type { BandSpan, BandStretch, OwnSongReadSeams } from './own-song-read'
 import { keepNear, readOwnSong, setOwnSongReadSeams } from './own-song-read'
 
@@ -224,6 +224,24 @@ describe("a song of the singer's own", () => {
     expect(read.entries).toEqual([])
     expect(edges.keepNotes).not.toHaveBeenCalled()
     expect(edges.band).not.toHaveBeenCalled()
+  })
+
+  it('moves lyrics synced to another recording of the song onto this one', async () => {
+    // The same lines eight tenths of a second later, as another release has them.
+    const late = LINES.map(
+      (line) =>
+        `[00:${(line.from + 0.8).toFixed(2).padStart(5, '0')}] ${line.words}`,
+    ).join('\n')
+    seams({ syncedLyrics: vi.fn(async () => late) })
+    const read = await readOwnSong('mine')
+
+    expect(read.shift).toBeCloseTo(-0.8, 1)
+    expect(read.entries.map((entry) => entry.midi)).toEqual([57, 60, 57])
+    expect(read.entries.map((entry) => entry.words)).toEqual(
+      LINES.map((line) => line.words),
+    )
+    expect(read.lines).toBe(3)
+    expect(read.tuning).toBe(0)
   })
 
   it('finds its lines where the voice comes in after a breath when its lyrics are not synced', async () => {

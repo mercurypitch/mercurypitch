@@ -31,7 +31,12 @@
 // The kept reads live under `mp_first_note_own_entries` (the `mp_` prefix
 // keeps them out of the settings sync: they are this phone's songs). A read
 // is let go only with its song: when the session is gone from this phone,
-// not while it is out of the library separating again.
+// not while it is out of the library separating again. A read by rules the
+// room has moved on from (ENTRY_RULES_VERSION) is read again.
+//
+// Each finished read is told to the console, which a test build shows on
+// the phone with a Copy button: how many lines it looked at, how far the
+// lyrics were moved, the song's tuning, and why each line was left.
 
 import type { Accessor, Signal } from 'solid-js'
 import { createMemo, createRoot, createSignal, untrack } from 'solid-js'
@@ -39,6 +44,7 @@ import type { RoomSong } from '@/features/karaoke-room/karaoke-room-library'
 import { hydrateSong, roomLibrary, } from '@/features/karaoke-room/karaoke-room-library'
 import { createPersistedSignal } from '@/lib/storage'
 import { getUvrSession, isSessionStoreReady } from '@/stores/uvr-store'
+import { ENTRY_RULES_VERSION } from './entry-rules'
 import type { FirstNoteSource } from './first-note-choices'
 import { OWN_SONG_MIN_ENTRIES } from './first-note-rules'
 import type { FirstNoteEntry, FirstNoteSong } from './first-note-songs'
@@ -72,6 +78,8 @@ interface KeptRead {
   /** The stems it was read from (`stemsKey`). */
   readonly stems: string
   readonly entries: readonly FirstNoteEntry[]
+  /** The rules it was read by (ENTRY_RULES_VERSION); absent before 2. */
+  readonly rules?: number
 }
 
 type KeptReads = Readonly<Record<string, KeptRead>>
@@ -89,7 +97,8 @@ function isEntry(value: unknown): value is FirstNoteEntry {
     isNumber(entry.until) &&
     Array.isArray(entry.beats) &&
     entry.beats.every(isNumber) &&
-    (entry.words === undefined || typeof entry.words === 'string')
+    (entry.words === undefined || typeof entry.words === 'string') &&
+    (entry.cents === undefined || isNumber(entry.cents))
   )
 }
 
@@ -101,7 +110,8 @@ function isKeptReads(value: unknown): value is KeptReads {
     return (
       typeof read.stems === 'string' &&
       Array.isArray(read.entries) &&
-      read.entries.every(isEntry)
+      read.entries.every(isEntry) &&
+      (read.rules === undefined || isNumber(read.rules))
     )
   })
 }
@@ -156,7 +166,11 @@ function stateOf(song: RoomSong): OwnSongState {
     return { kind: 'failed', why: now.failed }
   }
   const read = keptSignal()[0]()[song.sessionId]
-  if (read === undefined || read.stems !== stemsKey(song.sessionId)) {
+  if (
+    read === undefined ||
+    read.stems !== stemsKey(song.sessionId) ||
+    read.rules !== ENTRY_RULES_VERSION
+  ) {
     return { kind: 'waiting' }
   }
   return read.entries.length < OWN_SONG_MIN_ENTRIES
@@ -353,9 +367,47 @@ function keep(sessionId: string, stems: string, read: OwnSongRead): void {
     for (const [id, one] of Object.entries(reads)) {
       if (!storeRead || getUvrSession(id) !== undefined) next[id] = one
     }
-    next[sessionId] = { stems, entries: read.entries }
+    next[sessionId] = {
+      stems,
+      entries: read.entries,
+      rules: ENTRY_RULES_VERSION,
+    }
     return next
   })
+}
+
+/** Why lines were left, counted: "3 no steady note, 2 notes differ". */
+function droppedCounts(dropped: readonly string[]): string {
+  const kinds: Array<[RegExp, string]> = [
+    [/no steady note/u, 'no steady note'],
+    [/settles/u, 'settled late'],
+    [/notes /u, "the room's notes name another"],
+    [/cents off/u, 'out of tune'],
+    [/far from/u, 'far from the song'],
+  ]
+  const counts = new Map<string, number>()
+  for (const why of dropped) {
+    const kind = kinds.find(([match]) => match.test(why))?.[1] ?? why
+    counts.set(kind, (counts.get(kind) ?? 0) + 1)
+  }
+  return [...counts].map(([kind, count]) => `${count} ${kind}`).join(', ')
+}
+
+/** A finished read, for the console: what was looked at and why lines left. */
+export function readSummary(title: string, read: OwnSongRead): string {
+  const shift =
+    read.shift === undefined
+      ? ''
+      : read.shift === null
+        ? ', no synced lyrics used'
+        : `, lyrics moved ${read.shift} s`
+  const tuning =
+    read.tuning === undefined || read.tuning === 0
+      ? ''
+      : `, tuned ${read.tuning > 0 ? '+' : ''}${read.tuning} cents`
+  const lines = read.lines === undefined ? '' : ` from ${read.lines} lines`
+  const left = droppedCounts(read.dropped)
+  return `[first-note] read "${title}": ${read.entries.length} entries${lines}${shift}${tuning}${left === '' ? '' : `; left: ${left}`}`
 }
 
 async function readNext(): Promise<void> {
@@ -381,6 +433,7 @@ async function readNext(): Promise<void> {
       return
     }
     if (read.out === undefined) {
+      console.info(readSummary(next.title, read))
       keep(sessionId, stems, read)
       setLiveFor(sessionId, null)
     } else {

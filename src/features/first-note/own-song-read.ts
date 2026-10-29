@@ -17,11 +17,14 @@
 //               mixer walks it (streamed-vocal-samples.ts), and decoded
 //               whole where it cannot; the rules read the voice's level and
 //               its pitch (YIN) at each line
-//   its lines   the synced lyrics' lines, with their words, where the song
-//               has them; otherwise where the voice comes in after a breath
+//   its lines   where the voice comes in after a breath, and the synced
+//               lyrics' lines moved onto this recording first, with their
+//               words (entry-rules.ts, songLines): lyrics synced to another
+//               release are commonly a second or two out
 //   its beats   the band's onsets in the lead-in before each entry, and the
-//               tempo from those lead-ins together; none where the grid is
-//               unclear. The band is never decoded whole where it streams
+//               tempo from those lead-ins together (band-beats.ts); none
+//               where the grid is unclear. The band is never decoded whole
+//               where it streams
 //
 // MEMORY. A decoded song is what iOS killed the app for (about 180 MiB,
 // stem-memory.ts), so the read holds one stem at a time and no more of it
@@ -32,8 +35,9 @@
 // VOCAL_RATE goes on.
 //
 // THE SCREEN. The rules' work runs on the thread that draws the screen, in
-// steps (entry-rules.ts), and the read lets the screen draw after every line
-// and lead-in, and inside one each time SLICE_MS of work has gone by.
+// steps (entry-rules.ts, band-beats.ts), and the read lets the screen draw
+// after every line and lead-in, and inside one each time SLICE_MS of work
+// has gone by.
 //
 // Nothing plays. The reads are the impure edges, swappable (OwnSongReadSeams)
 // so a test can run the whole read on samples of its own.
@@ -48,8 +52,10 @@ import { DECODE_RATE, decodeAudioBytes } from '@/lib/decode-audio-to-mono'
 import type { MergedNote } from '@/lib/midi-generator'
 import type { VocalAnalysis } from '@/lib/pitch-pipeline'
 import { analyzeVocalSamples, pitchHistoryFromNotes, VOCAL_ANALYSIS_DEFAULTS, } from '@/lib/pitch-pipeline'
-import type { EntryReading, FoundEntry, OnsetGrid, RuleSteps, Samples, } from './entry-rules'
-import { BAND_RATE, beatsBefore, breathLines, entrySteps, loudness, lyricLines, middleNote, onsetSteps, tempoOf, VOCAL_RATE, } from './entry-rules'
+import type { OnsetGrid } from './band-beats'
+import { BAND_RATE, beatsBefore, onsetSteps, tempoOf } from './band-beats'
+import type { EntryReading, FoundEntry, LineVoice, RuleSteps, Samples, } from './entry-rules'
+import { judgeSong, lineSteps, loudness, lyricLines, songLines, VOCAL_RATE, } from './entry-rules'
 import type { FirstNoteEntry } from './first-note-songs'
 
 /** Why a song sits out before its lines are read. */
@@ -60,6 +66,12 @@ export interface OwnSongRead {
   readonly entries: FirstNoteEntry[]
   /** Each line that is not an entry, and why: for the developer's log. */
   readonly dropped: readonly string[]
+  /** How many lines were looked at. */
+  readonly lines?: number
+  /** How far the lyrics were moved onto this recording, s; null without them. */
+  readonly shift?: number | null
+  /** The song's tuning the lines were judged in, cents from A440's notes. */
+  readonly tuning?: number
   /**
    * Why the song sits out with nothing read: too long for this phone to
    * hold, or no voice to read. Absent for a song that was read.
@@ -375,24 +387,21 @@ export async function readOwnSong(
   const level = loudness(voice.samples, voice.rate)
   const lyrics = await seams.syncedLyrics(sessionId)
   throwIfAborted(signal)
-  const synced = lyrics === null ? [] : lyricLines(lyrics)
-  const reading: EntryReading = {
-    vocal: voice,
+  const { lines, shift } = songLines(
     level,
-    notes,
-    lines: synced.length > 0 ? synced : breathLines(level),
+    lyrics === null ? [] : lyricLines(lyrics),
+  )
+  const reading: EntryReading = { vocal: voice, level, notes, lines }
+  // Each line read on its own, so the screen draws after every one.
+  const voices: (LineVoice | null)[] = []
+  for (let i = 0; i < lines.length; i++) {
+    voices.push(await paced(lineSteps(reading, i), signal))
+    report(80 + (5 * (i + 1)) / lines.length)
   }
-  const middle = middleNote(notes)
-  const found: FoundEntry[] = []
-  const dropped: string[] = []
-  for (let i = 0; i < reading.lines.length; i++) {
-    const entry = await paced(entrySteps(reading, i, middle), signal)
-    if (typeof entry === 'string') dropped.push(entry)
-    else if (entry !== null) found.push(entry)
-    report(80 + (5 * (i + 1)) / reading.lines.length)
-  }
+  const { entries: found, dropped, tuning } = judgeSong(reading, voices)
   report(85)
-  if (found.length === 0) return { entries: [], dropped }
+  const told = { dropped, lines: lines.length, shift, tuning }
+  if (found.length === 0) return { entries: [], ...told }
 
   const beats = await beatsOf(bandBlob, found, report, signal)
   report(100)
@@ -404,8 +413,9 @@ export async function readOwnSong(
       until: entry.until,
       beats: beats[i],
       words: entry.words,
+      ...(entry.cents === undefined ? {} : { cents: entry.cents }),
     })),
-    dropped,
+    ...told,
   }
 }
 

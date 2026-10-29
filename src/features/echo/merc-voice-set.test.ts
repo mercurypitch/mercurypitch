@@ -50,6 +50,12 @@ describe("Merc's voice set", () => {
     expect(sampleFor(43)?.sample.midi).toBe(45)
   })
 
+  it("sings a note between two of A440's where it is, on the nearest sample", () => {
+    // A3 a third of a semitone sharp, a song tuned off A440: A3's sample.
+    expect(sampleFor(57.35)?.sample.midi).toBe(57)
+    expect(sampleFor(57.35)?.rate).toBeCloseTo(2 ** (0.35 / 12), 12)
+  })
+
   it('plays the ends of its reach on the outer samples', () => {
     expect(sampleFor(39)).toMatchObject({ sample: { midi: 41 } })
     expect(sampleFor(39)?.rate).toBeCloseTo(0.8909, 4)

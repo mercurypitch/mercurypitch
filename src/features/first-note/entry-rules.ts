@@ -14,8 +14,13 @@
 //
 // AN ENTRY is a line of the song that follows a breath: at least
 // ENTRY_GAP_SEC with no voice on the vocal stem before it. A song's lines
-// are its synced lyrics' lines where it has them, and otherwise where the
-// voice comes in after such a breath. The entry's note is the voice's first
+// are where its voice comes in after such a breath, and its synced lyrics'
+// lines (`songLines`). The lyrics are moved onto this recording first
+// (`lyricsShift`): a file synced to another release, or to a mix with a
+// longer intro, is commonly a second or two out, and lines half a second
+// late already cost most of a song's entries. A line from the lyrics and
+// one from the voice within SAME_LINE_SEC are one line, with the lyrics'
+// words. The entry's note is the voice's first
 // steady stretch: STEADY_SEC of readings within STEADY_CENTS of their
 // median, read here by YIN on the vocal stem. It is kept only when the
 // song's stored notes (the mixer's, another tracker) name the same note
@@ -24,26 +29,34 @@
 // anyone against. Nor is a note far from the song's middle note
 // (RANGE_SEMITONES): both trackers can lock onto a harmonic together.
 //
+// IN TUNE is in the song's own tuning (`songTuning`): a recording a third
+// of a semitone from A440 has every note that far out, and the singer is
+// asked for the note as the band plays it. The entry carries that tuning
+// (`cents`) so the room judges the singer against the band, not A440.
+//
 // THE BAND STOPS where the voiced run that holds that stretch begins, so a
 // breath or a scoop before the note is the singer's way in, not the band's.
 // The line the singer sings with you runs to the next line, or LINE_MAX_SEC.
 //
-// THE BEATS are the last four before the entry, on the band's own grid: its
-// tempo from the instrumental's onsets, its phase from the onsets in the
-// lead-in. An entry whose lead-in does not show the grid clearly gets none,
-// and the room shows only the countdown. The script reads the whole band;
-// the phone reads only the lead-ins, and the tempo from them together.
+// THE BEATS the room counts the singer in on are the band's (band-beats.ts).
 //
-// THE WORK COMES IN STEPS. A line's note (a YIN reading every 10 ms) and a
-// lead-in's onsets (an FFT every 10 ms) are most of a read, and a phone reads
-// on the thread that draws its screen. So both are generators that yield
-// after each reading (entrySteps, onsetSteps): the phone lets the screen draw
-// between slices of them, and the script runs them straight through
-// (findEntry, onsets).
+// THE WORK COMES IN STEPS. A line's note (a YIN reading every 10 ms) is most
+// of a read, and a phone reads on the thread that draws its screen. So a
+// line is read by a generator that yields after each reading (lineSteps):
+// the phone lets the screen draw between lines' slices, and the script runs
+// a song's straight through (findEntries).
 //
 // Node runs this file as it is, through its type stripping, from the
 // script: so it imports nothing, and its syntax is all erasable (no enums,
 // no namespaces, no parameter properties).
+
+/**
+ * The rules' version: raised whenever a change finds different entries, so
+ * a phone reads a song of the singer's own again rather than keep a read
+ * the rules have moved on from (first-note-own-songs.ts). 2: lines from the
+ * voice, the lyrics moved onto them, and the song's own tuning.
+ */
+export const ENTRY_RULES_VERSION = 2
 
 /** No voice for this long before a line makes it an entry, s. */
 export const ENTRY_GAP_SEC = 1.6
@@ -67,15 +80,24 @@ export const STOP_LEAD_SEC = 0.05
 /** The line sung with you runs at least and at most this long, s. */
 export const LINE_MIN_SEC = 2.5
 export const LINE_MAX_SEC = 6.5
-/** Beats shown before the entry. */
-export const BEATS_SHOWN = 4
-/** A lead-in shows its grid when beats carry this much more onset than the mean. */
-export const GRID_CLEAR = 1.4
+
+/** The lyrics are looked for this far either side of their own times, s. */
+export const LYRICS_SHIFT_MAX_SEC = 3
+/** A lyric line sits on a place the voice comes in within this, s. */
+const ONSET_MATCH_SEC = 0.2
+/** Quiet before the voice that makes a place it comes in, s. */
+const ONSET_QUIET_SEC = 0.25
+/** The lyrics are moved only when this share of their lines lands on the voice. */
+const LYRICS_MATCH_SHARE = 0.3
+/** A line from the lyrics and one from the voice this close are one line, s. */
+export const SAME_LINE_SEC = 0.5
+/** A song is judged in its own tuning once its notes sit this far from A440's, cents. */
+export const TUNING_MIN_CENTS = 10
+/** ...and once this many of its lines' notes say so. */
+const TUNING_LINES_MIN = 5
 
 /** The rate the YIN frame below is sized for; the script reads at it. */
 export const VOCAL_RATE = 16_000
-/** The rate the onset frames below are sized for; the script reads at it. */
-export const BAND_RATE = 22_050
 
 /** YIN's settings: the voice's range, its frame at VOCAL_RATE, its dip threshold. */
 const F_MIN = 70
@@ -84,8 +106,6 @@ const YIN_FRAME = 1024
 const YIN_THRESHOLD = 0.15
 /** Pitch readings every, s. */
 const READ_STEP_SEC = 0.01
-/** The onsets' hop at BAND_RATE, samples: about a hundred a second. */
-const ONSET_HOP = 220
 
 const NAMES = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B']
 
@@ -145,6 +165,11 @@ export interface FoundEntry {
   readonly until: number
   /** The line's words, '' where the song has no synced lyrics. */
   readonly words: string
+  /**
+   * The song's tuning, cents from A440's notes (`songTuning`): the band
+   * plays the note this far out. Absent for a song in tune with A440.
+   */
+  readonly cents?: number
 }
 
 const TIME_TAG = /\[(\d+):(\d+(?:\.\d+)?)\]/gu
@@ -353,16 +378,17 @@ export function middleNote(notes: readonly StoredNote[]): number {
   return weighted[weighted.length - 1]?.midi ?? 60
 }
 
-/** The stored note that covers `t`, or null. */
-function storedNoteAt(
+/**
+ * The stored notes under a steady stretch from `t`, s: the other tracker
+ * cuts a note where it starts a moment either side of this one.
+ */
+function storedNotesUnder(
   notes: readonly StoredNote[],
   t: number,
-): StoredNote | null {
-  return (
-    notes.find(
-      (note) => note.startSec - 0.15 <= t && t <= note.endSec + 0.05,
-    ) ?? null
-  )
+): StoredNote[] {
+  const from = t - 0.15
+  const to = t + STEADY_SEC + 0.05
+  return notes.filter((note) => note.startSec <= to && note.endSec >= from)
 }
 
 /**
@@ -385,6 +411,103 @@ export function breathLines(level: VoiceLevel): SongLine[] {
   return lines
 }
 
+/** Where the voice comes in after ONSET_QUIET_SEC of quiet, s: each phrase. */
+function voiceOnsets(level: VoiceLevel): number[] {
+  const onsets: number[] = []
+  let quietSince = 0
+  let on = false
+  for (let frame = 0; frame < level.rms.length; frame++) {
+    const t = frame * level.hopSec
+    const now = level.rms[frame] >= level.on
+    if (now && !on && t - quietSince >= ONSET_QUIET_SEC) onsets.push(t)
+    if (!now && on) quietSince = t
+    on = now
+  }
+  return onsets
+}
+
+/** How far `t` is from the nearest of `sorted`, s. */
+function nearest(sorted: readonly number[], t: number): number {
+  let low = 0
+  let high = sorted.length - 1
+  while (low < high) {
+    const mid = (low + high) >> 1
+    if (sorted[mid] < t) low = mid + 1
+    else high = mid
+  }
+  const after = Math.abs(sorted[low] - t)
+  return low > 0 ? Math.min(after, Math.abs(t - sorted[low - 1])) : after
+}
+
+/**
+ * How far the synced lyrics are from this recording, s: the shift, within
+ * LYRICS_SHIFT_MAX_SEC, that lands their lines nearest the places the voice
+ * comes in. Null when no shift lands LYRICS_MATCH_SHARE of them within
+ * ONSET_MATCH_SEC of one: lyrics for another recording, or none in time.
+ */
+export function lyricsShift(
+  level: VoiceLevel,
+  lyrics: readonly SongLine[],
+): number | null {
+  const onsets = voiceOnsets(level)
+  if (lyrics.length === 0 || onsets.length === 0) return null
+  const step = 0.02
+  const reach = Math.round(LYRICS_SHIFT_MAX_SEC / step)
+  let best = { shift: 0, score: -1, landed: 0 }
+  for (let k = 0; k <= 2 * reach; k++) {
+    // Out from no shift, so a tie keeps the smaller.
+    const shift = (k % 2 === 0 ? k / 2 : -(k + 1) / 2) * step
+    let score = 0
+    let landed = 0
+    for (const line of lyrics) {
+      const off = nearest(onsets, line.start + shift)
+      if (off > ONSET_MATCH_SEC) continue
+      landed += 1
+      score += 1 - off / ONSET_MATCH_SEC
+    }
+    if (score > best.score) best = { shift, score, landed }
+  }
+  const enough = Math.max(2, Math.ceil(lyrics.length * LYRICS_MATCH_SHARE))
+  return best.landed >= enough ? Number(best.shift.toFixed(2)) : null
+}
+
+/**
+ * A song's lines: where its voice comes in after a breath, and its synced
+ * lyrics' lines moved onto this recording (`lyricsShift`), in order. A
+ * voice's line and the lyric line nearest it within SAME_LINE_SEC are one
+ * line: it starts where the voice comes in, with the lyric's words. Lyrics
+ * no shift fits give no lines and no words: the voice's own lines stand.
+ * `shift` is how far the lyrics were moved, or null where they were not
+ * used.
+ */
+export function songLines(
+  level: VoiceLevel,
+  lyrics: readonly SongLine[],
+): { lines: SongLine[]; shift: number | null } {
+  const breaths = breathLines(level)
+  const shift = lyricsShift(level, lyrics)
+  if (shift === null) return { lines: breaths, shift: null }
+  const lines: SongLine[] = lyrics.map((line) => ({
+    start: Math.max(0, line.start + shift),
+    words: line.words,
+  }))
+  for (const breath of breaths) {
+    let at = -1
+    for (const [i, line] of lines.entries()) {
+      const off = Math.abs(line.start - breath.start)
+      if (
+        off <= SAME_LINE_SEC &&
+        (at < 0 || off < Math.abs(lines[at].start - breath.start))
+      ) {
+        at = i
+      }
+    }
+    if (at < 0) lines.push(breath)
+    else lines[at] = { start: breath.start, words: lines[at].words }
+  }
+  return { lines: lines.sort((a, b) => a.start - b.start), shift }
+}
+
 export interface EntryReading {
   /** The vocal stem, mono. */
   readonly vocal: Samples
@@ -396,66 +519,151 @@ export interface EntryReading {
   readonly lines: readonly SongLine[]
 }
 
+/** `cents` folded into one semitone's span, -50 to 50. */
+function foldCents(cents: number): number {
+  return ((((cents + 50) % 100) + 100) % 100) - 50
+}
+
 /**
- * Why the voice's first steady stretch is not a note to judge anyone
- * against, or null when it is: it settles too late after the voice comes
- * in at `voiceIn`, the stored notes name another note, it was sung out of
- * tune, or it is far from the song's `middle` note.
+ * The note the voice's first steady stretch is, MIDI; or why it is not a
+ * note to judge anyone against: it settles too late after the voice comes
+ * in at `voiceIn`, the stored notes `under` it name another, it was sung
+ * out of tune in the song's `tuning`, or it is far from the song's
+ * `middle` note. The stored notes may name it an octave away (two trackers
+ * can lock an octave apart, and the room hears a note in any octave): the
+ * note is then the octave nearer the song's middle.
  */
-function whyNot(
+function noteOf(
   steady: { readonly t: number; readonly midi: number },
   voiceIn: number,
-  stored: StoredNote | null,
+  under: readonly StoredNote[],
   middle: number,
-): string | null {
-  const midi = Math.round(steady.midi)
+  tuning: number,
+): number | string {
+  const sung = steady.midi - tuning / 100
+  const own = Math.round(sung)
   if (steady.t - voiceIn > STEADY_WITHIN_SEC) {
     return `the note settles ${(steady.t - voiceIn).toFixed(2)} s in`
   }
-  if (stored === null || stored.midi !== midi) {
-    const named =
-      stored === null ? 'none' : (stored.noteName ?? noteName(stored.midi))
-    return `YIN ${noteName(midi)}, notes ${named}`
+  // The stored notes are A440's: in a tuning near half a semitone out they
+  // may round either way.
+  const raw = Math.round(steady.midi)
+  let midi: number | null = under.some(
+    (note) => note.midi === own || note.midi === raw,
+  )
+    ? own
+    : null
+  if (midi === null) {
+    const octave = under.find(
+      (note) => (((note.midi - own) % 12) + 12) % 12 === 0,
+    )
+    if (octave !== undefined) {
+      midi =
+        Math.abs(octave.midi - middle) < Math.abs(own - middle)
+          ? octave.midi
+          : own
+    }
   }
-  if (Math.abs(steady.midi - midi) * 100 > IN_TUNE_CENTS) {
-    return `${Math.round((steady.midi - midi) * 100)} cents off ${noteName(midi)}`
+  if (midi === null) {
+    const named =
+      under.length === 0
+        ? 'none'
+        : under.map((note) => note.noteName ?? noteName(note.midi)).join(' ')
+    return `YIN ${noteName(own)}, notes ${named}`
+  }
+  if (Math.abs(sung - own) * 100 > IN_TUNE_CENTS) {
+    return `${Math.round((sung - own) * 100)} cents off ${noteName(own)}`
   }
   if (Math.abs(midi - middle) > RANGE_SEMITONES) {
     return `${noteName(midi)} is far from the song's ${noteName(middle)}`
   }
-  return null
+  return midi
+}
+
+/** What a line's voice gave: its first steady stretch, and where it came in. */
+export interface LineVoice {
+  /** The line's place in the song's lines. */
+  readonly line: number
+  /** The voice's first steady stretch near the line, s and MIDI; null for none. */
+  readonly steady: { readonly t: number; readonly midi: number } | null
+  /** Where the voiced run holding the stretch began, s. */
+  readonly voiceIn: number
 }
 
 /**
- * Line `i` of the song as an entry; why it is not one ("the note settles
- * 0.64 s in"); or null for a line with no breath before it. `middle` is the
- * song's middle note (`middleNote`). In steps, a step after each pitch
+ * Line `i`'s voice, or null for a line with no breath before it: the
+ * reading, the most of a song's read. In steps, a step after each pitch
  * reading, so a reader on a phone can let the screen draw inside a line.
  */
-export function* entrySteps(
+export function* lineSteps(
   reading: EntryReading,
   i: number,
-  middle: number,
-): RuleSteps<FoundEntry | string | null> {
-  const { vocal, level, notes, lines } = reading
-  const line = lines[i]
-  const start = line.start
+): RuleSteps<LineVoice | null> {
+  const { vocal, level, lines } = reading
+  const start = lines[i].start
   // The first line follows the intro, whatever breath the stem holds.
   const gap = i === 0 ? start : gapBefore(level, start - 0.3) + 0.3
   if (gap < ENTRY_GAP_SEC) return null
   const steady = yield* firstSteady(vocal, level, start - 0.6, start + 1.2)
-  if (steady === null) return `${start.toFixed(2)} no steady note`
-  const voiceIn = runStart(level, steady.t)
-  const midi = Math.round(steady.midi)
-  const why = whyNot(
+  return {
+    line: i,
+    steady,
+    voiceIn: steady === null ? start : runStart(level, steady.t),
+  }
+}
+
+/**
+ * The song's tuning, cents from A440's notes: where its lines' notes sit
+ * between two of them, the one offset nearest all of them round the
+ * semitone. 0 with fewer than TUNING_LINES_MIN notes, or within
+ * TUNING_MIN_CENTS of A440, where a singer's own drift would be all it read.
+ */
+export function songTuning(voices: readonly (LineVoice | null)[]): number {
+  const offsets: number[] = []
+  for (const voice of voices) {
+    const steady = voice?.steady
+    if (steady === null || steady === undefined) continue
+    offsets.push(foldCents((steady.midi - Math.round(steady.midi)) * 100))
+  }
+  if (offsets.length < TUNING_LINES_MIN) return 0
+  let best = { cents: 0, cost: Infinity }
+  // Out from A440, so a tie keeps the nearer.
+  for (let k = 0; k < 100; k++) {
+    const cents = k % 2 === 0 ? k / 2 : -(k + 1) / 2
+    const cost = offsets.reduce(
+      (sum, offset) => sum + Math.abs(foldCents(offset - cents)),
+      0,
+    )
+    if (cost < best.cost) best = { cents, cost }
+  }
+  return Math.abs(best.cents) < TUNING_MIN_CENTS ? 0 : best.cents
+}
+
+/**
+ * Line `voice.line` as an entry, or why it is not one ("the note settles
+ * 0.64 s in"), in the song's `tuning` (`songTuning`). `middle` is the
+ * song's middle note (`middleNote`).
+ */
+export function judgeLine(
+  reading: EntryReading,
+  voice: LineVoice,
+  middle: number,
+  tuning: number,
+): FoundEntry | string {
+  const { notes, lines } = reading
+  const line = lines[voice.line]
+  const { steady, voiceIn } = voice
+  if (steady === null) return `${line.start.toFixed(2)} no steady note`
+  const midi = noteOf(
     steady,
     voiceIn,
-    storedNoteAt(notes, steady.t + 0.1),
+    storedNotesUnder(notes, steady.t),
     middle,
+    tuning,
   )
-  if (why !== null) return `${start.toFixed(2)} ${why}`
+  if (typeof midi === 'string') return `${line.start.toFixed(2)} ${midi}`
   const at = Math.max(0, voiceIn - STOP_LEAD_SEC)
-  const next = lines[i + 1]?.start ?? at + LINE_MAX_SEC
+  const next = lines[voice.line + 1]?.start ?? at + LINE_MAX_SEC
   const until = Math.min(
     at + LINE_MAX_SEC,
     Math.max(at + LINE_MIN_SEC, next - 0.05),
@@ -467,208 +675,57 @@ export function* entrySteps(
     from: Number(from.toFixed(3)),
     until: Number(until.toFixed(3)),
     words: line.words,
+    ...(tuning === 0 ? {} : { cents: tuning }),
   }
 }
 
-/** Line `i` as an entry (`entrySteps`), read straight through. */
-export function findEntry(
-  reading: EntryReading,
-  i: number,
-  middle: number,
-): FoundEntry | string | null {
-  return runSteps(entrySteps(reading, i, middle))
+/** What a song's read found. */
+export interface SongEntries {
+  readonly entries: FoundEntry[]
+  /** Each line with a breath before it that is not an entry, and why. */
+  readonly dropped: string[]
+  /** The song's tuning the lines were judged in, cents (`songTuning`). */
+  readonly tuning: number
 }
 
-/** A song's entries, and why each line that is not one was dropped. */
-export function findEntries(reading: EntryReading): {
-  entries: FoundEntry[]
-  dropped: string[]
-} {
+/**
+ * The song's lines judged, from each line's voice (`lineSteps`, null for a
+ * line with no breath before it): the song's tuning from them all, then
+ * each line in it. Two lines that find the same place the voice comes in
+ * are one entry, the first.
+ */
+export function judgeSong(
+  reading: EntryReading,
+  voices: readonly (LineVoice | null)[],
+): SongEntries {
+  const tuning = songTuning(voices)
   const middle = middleNote(reading.notes)
   const entries: FoundEntry[] = []
   const dropped: string[] = []
-  for (let i = 0; i < reading.lines.length; i++) {
-    const found = findEntry(reading, i, middle)
+  for (const voice of voices) {
+    if (voice === null) continue
+    const found = judgeLine(reading, voice, middle, tuning)
     if (typeof found === 'string') dropped.push(found)
-    else if (found !== null) entries.push(found)
-  }
-  return { entries, dropped }
-}
-
-// ---- The band's beats ------------------------------------------------------
-
-/** The band's onset strength over a stretch of it, from `start`, s. */
-export interface OnsetGrid {
-  readonly flux: readonly number[]
-  /** Onset readings a second. */
-  readonly fps: number
-  /** Where the stretch starts on the song's clock, s. */
-  readonly start: number
-}
-
-const twiddles = new Map<number, { cos: Float64Array; sin: Float64Array }>()
-
-/** The rotations one FFT stage of `len` uses: worked out once a size. */
-function twiddlesOf(len: number): { cos: Float64Array; sin: Float64Array } {
-  const known = twiddles.get(len)
-  if (known !== undefined) return known
-  const angle = (-2 * Math.PI) / len
-  const half = len / 2
-  const cos = new Float64Array(half)
-  const sin = new Float64Array(half)
-  for (let k = 0; k < half; k++) {
-    cos[k] = Math.cos(angle * k)
-    sin[k] = Math.sin(angle * k)
-  }
-  const made = { cos, sin }
-  twiddles.set(len, made)
-  return made
-}
-
-/** An in-place radix-2 FFT over `re` and `im`. */
-function fft(re: Float64Array, im: Float64Array): void {
-  const n = re.length
-  for (let i = 1, j = 0; i < n; i++) {
-    let bit = n >> 1
-    for (; j & bit; bit >>= 1) j ^= bit
-    j ^= bit
-    if (i < j) {
-      ;[re[i], re[j]] = [re[j], re[i]]
-      ;[im[i], im[j]] = [im[j], im[i]]
+    else if (!entries.some((entry) => Math.abs(entry.at - found.at) < 0.05)) {
+      entries.push(found)
     }
   }
-  for (let len = 2; len <= n; len <<= 1) {
-    const { cos, sin } = twiddlesOf(len)
-    for (let i = 0; i < n; i += len) {
-      for (let k = 0; k < len / 2; k++) {
-        const a = i + k
-        const b = a + len / 2
-        const tr = re[b] * cos[k] - im[b] * sin[k]
-        const ti = re[b] * sin[k] + im[b] * cos[k]
-        re[b] = re[a] - tr
-        im[b] = im[a] - ti
-        re[a] += tr
-        im[a] += ti
-      }
-    }
-  }
+  return { entries, dropped, tuning }
 }
 
 /**
- * The band's onset strength, about a hundred a second: log-spectral flux,
- * its local mean taken off. `start` places the stretch on the song's clock.
- * In steps, a step after each spectrum.
+ * A song's entries: every line's voice read first (`lineSteps`), then the
+ * song judged (`judgeSong`). In steps.
  */
-export function* onsetSteps(band: Samples, start = 0): RuleSteps<OnsetGrid> {
-  const size = band.rate > 32_000 ? 2048 : 1024
-  const hop = Math.round((ONSET_HOP * band.rate) / BAND_RATE)
-  const window = Float64Array.from(
-    { length: size },
-    (_, i) => 0.5 - 0.5 * Math.cos((2 * Math.PI * i) / (size - 1)),
-  )
-  const samples = band.samples
-  const flux: number[] = []
-  let previous: Float64Array | null = null
-  for (let at = 0; at + size <= samples.length; at += hop) {
-    const re = new Float64Array(size)
-    const im = new Float64Array(size)
-    for (let i = 0; i < size; i++) re[i] = samples[at + i] * window[i]
-    fft(re, im)
-    const mags = new Float64Array(size / 2)
-    for (let k = 0; k < size / 2; k++) {
-      mags[k] = Math.log1p(10 * Math.hypot(re[k], im[k]))
-    }
-    let sum = 0
-    if (previous !== null) {
-      for (let k = 0; k < mags.length; k++) {
-        sum += Math.max(0, mags[k] - previous[k])
-      }
-    }
-    flux.push(sum)
-    previous = mags
-    yield
+export function* songSteps(reading: EntryReading): RuleSteps<SongEntries> {
+  const voices: (LineVoice | null)[] = []
+  for (let i = 0; i < reading.lines.length; i++) {
+    voices.push(yield* lineSteps(reading, i))
   }
-  const smooth = 50
-  const out = flux.map((value, i) => {
-    let local = 0
-    let count = 0
-    for (
-      let j = Math.max(0, i - smooth / 2);
-      j < Math.min(flux.length, i + smooth / 2);
-      j++
-    ) {
-      local += flux[j]
-      count += 1
-    }
-    return Math.max(0, value - local / count)
-  })
-  return { flux: out, fps: band.rate / hop, start }
+  return judgeSong(reading, voices)
 }
 
-/** The band's onset strength (`onsetSteps`), read straight through. */
-export function onsets(band: Samples, start = 0): OnsetGrid {
-  return runSteps(onsetSteps(band, start))
-}
-
-/**
- * The band's tempo, bpm, from stretches of it read at one rate: their
- * autocorrelations together, the best lag and its double. 0 with none.
- */
-export function tempoOf(grids: readonly OnsetGrid[]): number {
-  if (grids.length === 0) return 0
-  const fps = grids[0].fps
-  const maxLag = Math.ceil((120 / 60) * fps) + 2
-  const ac = new Float64Array(maxLag + 1)
-  for (const { flux } of grids) {
-    for (let lag = 0; lag <= maxLag; lag++) {
-      let sum = 0
-      for (let i = 0; i + lag < flux.length; i++) sum += flux[i] * flux[i + lag]
-      ac[lag] += sum
-    }
-  }
-  const at = (lag: number): number => {
-    const low = Math.floor(lag)
-    const share = lag - low
-    return ac[low] * (1 - share) + (ac[low + 1] ?? 0) * share
-  }
-  let best = { bpm: 0, score: -Infinity }
-  for (let bpm = 60; bpm <= 190; bpm += 0.5) {
-    const lag = (60 / bpm) * fps
-    const score = at(lag) + 0.5 * at(2 * lag)
-    if (score > best.score) best = { bpm, score }
-  }
-  return best.bpm
-}
-
-/** The last BEATS_SHOWN beats before `at`, s, on the band's grid, or []. */
-export function beatsBefore(
-  grid: OnsetGrid,
-  bpm: number,
-  from: number,
-  at: number,
-): number[] {
-  if (!(bpm > 0)) return []
-  const period = 60 / bpm
-  const strength = (t: number): number =>
-    grid.flux[Math.round((t - grid.start) * grid.fps)] ?? 0
-  let best = { phase: 0, score: -Infinity }
-  for (let phase = 0; phase < period; phase += 0.01) {
-    let score = 0
-    for (let t = from + phase; t < at; t += period) score += strength(t)
-    if (score > best.score) best = { phase, score }
-  }
-  const beats: number[] = []
-  for (let t = from + best.phase; t < at - 0.08; t += period) beats.push(t)
-  let mean = 0
-  let count = 0
-  for (let t = from; t < at; t += 1 / grid.fps) {
-    mean += strength(t)
-    count += 1
-  }
-  mean /= Math.max(1, count)
-  const onGrid = beats.reduce((sum, t) => sum + strength(t), 0) / beats.length
-  if (beats.length < BEATS_SHOWN || mean <= 0 || onGrid / mean < GRID_CLEAR) {
-    return []
-  }
-  return beats.slice(-BEATS_SHOWN).map((t) => Number(t.toFixed(3)))
+/** A song's entries (`songSteps`), read straight through. */
+export function findEntries(reading: EntryReading): SongEntries {
+  return runSteps(songSteps(reading))
 }

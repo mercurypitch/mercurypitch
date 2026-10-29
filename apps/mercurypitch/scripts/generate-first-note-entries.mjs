@@ -12,9 +12,10 @@
 // songs' notes are (generate-karaoke-example-notes.mjs).
 //
 // THE RULES are not here: they are src/features/first-note/entry-rules.ts,
-// which the phone also reads a singer's own songs by, so the two cannot
-// drift. Node runs that file as it is (its type stripping). This script
-// decodes the stems (ffmpeg's), hands them over, and writes what comes back.
+// and the beats band-beats.ts beside it, which the phone also reads a
+// singer's own songs by, so the two cannot drift. Node runs those files as
+// they are (its type stripping). This script decodes the stems (ffmpeg's),
+// hands them over, and writes what comes back.
 // The stored notes the rules check against are the mixer's (notes.json): the
 // stored notes alone are not enough, as the same chorus line reads as F5, C5
 // and D5 in its three choruses.
@@ -30,7 +31,8 @@ import { readFileSync, writeFileSync } from 'node:fs'
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import prettier from 'prettier'
-import { BAND_RATE, beatsBefore, findEntries, loudness, lyricLines, noteName, onsets, tempoOf, VOCAL_RATE, } from '../../../src/features/first-note/entry-rules.ts'
+import { BAND_RATE, beatsBefore, onsets, tempoOf, } from '../../../src/features/first-note/band-beats.ts'
+import { findEntries, loudness, lyricLines, noteName, songLines, VOCAL_RATE, } from '../../../src/features/first-note/entry-rules.ts'
 import { checkKaraokeExamples, KARAOKE_EXAMPLE_PINS, NATIVE_ONLY_DIR, } from './fetch-karaoke-examples.mjs'
 
 const here = dirname(fileURLToPath(import.meta.url))
@@ -70,14 +72,18 @@ function decodeMono(path, rate) {
 function entriesOf(song, vocal, band, notes) {
   const grid = onsets({ samples: band, rate: BAND_RATE })
   const bpm = tempoOf([grid])
-  const { entries, dropped } = findEntries({
+  const level = loudness(vocal, VOCAL_RATE)
+  const { lines, shift } = songLines(level, lyricLines(song.lyricsText))
+  const { entries, dropped, tuning } = findEntries({
     vocal: { samples: vocal, rate: VOCAL_RATE },
-    level: loudness(vocal, VOCAL_RATE),
+    level,
     notes,
-    lines: lyricLines(song.lyricsText),
+    lines,
   })
   return {
     bpm,
+    shift,
+    tuning,
     // The words last: a hint the room shows only when the singer asks for
     // it (owner, 28 Oct 2026).
     entries: entries.map((entry) => ({
@@ -87,6 +93,7 @@ function entriesOf(song, vocal, band, notes) {
       until: entry.until,
       beats: beatsBefore(grid, bpm, entry.from, entry.at),
       words: entry.words,
+      ...(entry.cents === undefined ? {} : { cents: entry.cents }),
     })),
     dropped,
   }
@@ -124,7 +131,7 @@ async function main() {
       join(NATIVE_ONLY_DIR, song.stems.instrumental.replace(/^\//u, '')),
       BAND_RATE,
     )
-    const { bpm, entries, dropped } = entriesOf(
+    const { bpm, shift, tuning, entries, dropped } = entriesOf(
       song,
       vocal,
       band,
@@ -141,7 +148,7 @@ async function main() {
       entries,
     })
     console.log(
-      `[first-note] ${song.slug}: ${bpm} bpm, ${entries.length} entries: ${entries
+      `[first-note] ${song.slug}: ${bpm} bpm, lyrics moved ${shift} s, tuning ${tuning} cents, ${entries.length} entries: ${entries
         .map(
           (entry) =>
             `${entry.at.toFixed(2)} ${noteName(entry.midi)}${entry.beats.length > 0 ? '' : ' (no beats)'}`,

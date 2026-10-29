@@ -45,6 +45,17 @@ export interface FirstNoteEntry {
    * them; '' or absent where the song has no synced lyrics.
    */
   readonly words?: string
+  /**
+   * The song's tuning, cents from A440's notes: the band plays `midi` this
+   * far out, and the singer is judged against the band. Absent for a song
+   * in tune with A440 (entry-rules.ts, songTuning).
+   */
+  readonly cents?: number
+}
+
+/** The pitch the singer is asked for, MIDI: the note as the band plays it. */
+export function entryPitch(entry: FirstNoteEntry): number {
+  return entry.midi + (entry.cents ?? 0) / 100
 }
 
 export interface FirstNoteSong {
