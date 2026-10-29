@@ -1,4 +1,4 @@
-// Studio transport hook — explicit playback and preview through the active host's borrowed clock.
+// Studio transport hook — explicit playback and preview on the Studio's own clock on the web, or the clock a native host lends.
 import type { Accessor } from 'solid-js'
 import { batch, createEffect, createMemo, createSignal, onCleanup, untrack, } from 'solid-js'
 import type { AudioContextLease } from '@/lib/audio-context-lease'
@@ -12,7 +12,6 @@ import { STUDIO_SAMPLE_RATE } from '@/lib/studio/model/types'
 import type { StudioLaneDraft, StudioTransportState, } from '@/lib/studio/playback/transport'
 import { createStudioTransport } from '@/lib/studio/playback/transport'
 import type { MacroKey } from '@/lib/studio-fx/mix-macros'
-import { initAudioEngine } from '@/stores/app-store'
 import { nativeDeviceApi } from '@/stores/native-shell-store'
 import { createStudioReadoutFrame } from './readout-frame'
 import { createStudioWebLease } from './web-audio-lease'
@@ -59,15 +58,12 @@ export function useStudioTransport(options: UseStudioTransportOptions) {
   const nativeLease = native?.acquireAudio('studio', {
     prepareToSuspend: () => prepareToSuspend(),
   })
-  const [hostReady, setHostReady] = createSignal(
-    !!(options.audioLease ?? nativeLease),
-  )
+  // On the web the Studio plays on a clock of its own (web-audio-lease.ts);
+  // a host that lends one, the native app's or a caller's, keeps its own.
+  const webLease =
+    (options.audioLease ?? nativeLease) ? null : createStudioWebLease()
   const lease: AudioContextLease =
-    options.audioLease ??
-    nativeLease ??
-    createStudioWebLease(initAudioEngine(), (ready) => {
-      if (!disposed) setHostReady(ready)
-    })
+    options.audioLease ?? nativeLease ?? webLease!
   const [state, setState] = createSignal<StudioTransportState>({
     playing: false,
     pending: false,
@@ -290,8 +286,7 @@ export function useStudioTransport(options: UseStudioTransportOptions) {
     const project = options.project()
     const assets = options.assets()
     clearTimeout(warmTimer)
-    if (!hostReady() || !project || project.clips.length === 0 || isPlaying())
-      return
+    if (!project || project.clips.length === 0 || isPlaying()) return
     warmTimer = setTimeout(() => {
       if (!disposed) void runtime.warm(project, assets)
     }, 400)
@@ -317,12 +312,11 @@ export function useStudioTransport(options: UseStudioTransportOptions) {
     void releaseAudio().finally(() => {
       runtime.dispose()
       nativeLease?.release()
+      void webLease?.close()
     })
   }
   onCleanup(dispose)
-  const ready = createMemo(
-    () => hostReady() && (options.project()?.clips.length ?? 0) > 0,
-  )
+  const ready = createMemo(() => (options.project()?.clips.length ?? 0) > 0)
   return {
     ready,
     repeating,
