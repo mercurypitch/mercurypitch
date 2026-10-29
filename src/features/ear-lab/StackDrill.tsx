@@ -8,26 +8,50 @@
 //
 // The instrument is a gear train seen end-on: the chord's tones are
 // wheels on one axle, and the reveal sets them at their intervals.
+//
+// In the native room a miss offers Compare: the answer's chord, then
+// the pick's, both stacked on the question's root.
 // ============================================================
 
 import type { JSX } from 'solid-js'
 import { useEngines } from '@/contexts/EngineContext'
 import { STACK_BANK } from '@/lib/ear/banks'
 import { findIdentificationDrill } from '@/lib/ear/drills'
-import { STACK_TIMING } from '@/lib/ear/timing'
+import { COMPARE_TIMING, STACK_TIMING } from '@/lib/ear/timing'
+import { EAR_LAB_WITH_MERC } from '@/lib/native-build'
 import { midiToFreq } from '@/lib/scale-data'
 import { playToneFor } from './ear-sound'
 import { GearTrain } from './GearTrain'
+import type { IdentificationCompare } from './IdentificationDrillView'
 import { IdentificationDrillView } from './IdentificationDrillView'
 import type { IdentificationTrial } from './use-identification-controller'
 import { useIdentificationController } from './use-identification-controller'
+
+/** A chord's quality as it is said: "major chord", "dominant seventh
+ *  chord". */
+function spokenChord(itemId: string): string {
+  const name = STACK_BANK.find((item) => item.itemId === itemId)?.name ?? itemId
+  return `${name
+    .replace(/\b4th\b/u, 'fourth')
+    .replace(/\b7th\b/u, 'seventh')
+    .toLowerCase()} chord`
+}
+
+/** Compare's words, for the native room alone. */
+const STACK_COMPARE: IdentificationCompare | undefined = EAR_LAB_WITH_MERC
+  ? {
+      names: (answerId, pickId) => ({
+        answer: `the ${spokenChord(answerId)}`,
+        pick: spokenChord(pickId),
+      }),
+    }
+  : undefined
 
 export function StackDrill(props: { onBack: () => void }): JSX.Element {
   const { audioEngine } = useEngines()
   const drill = findIdentificationDrill('stack')
   if (!drill) throw new Error('stack drill missing from catalogue')
 
-  /** Set by Stop; the broken replay in flight reads it between notes. */
   /** Which pair (or replay) is the live one. A flag reset at the top of
    *  every pair let a pair still sounding when Stop and Begin came within
    *  a second pass its check and play its second tone over the new run;
@@ -41,8 +65,8 @@ export function StackDrill(props: { onBack: () => void }): JSX.Element {
 
     // Waited out, so the pads arm once the chord has rung and the
     // broken replay sounds one note at a time instead of all at once.
-    const playBlock = (ms: number) =>
-      playToneFor(audioEngine, rootFreq, ms, intervals)
+    const playBlock = (ms: number, members: number[] = intervals) =>
+      playToneFor(audioEngine, rootFreq, ms, members)
 
     return {
       expectedId: item.itemId,
@@ -63,6 +87,25 @@ export function StackDrill(props: { onBack: () => void }): JSX.Element {
         if (mine !== pair) return
         await playBlock(STACK_TIMING.replayChordMs)
       },
+      ...(EAR_LAB_WITH_MERC
+        ? {
+            // The answer's chord, then the pick's, on the same root.
+            compare: async (pickedId: string): Promise<void> => {
+              const picked = STACK_BANK.find(
+                (entry) => entry.itemId === pickedId,
+              )
+              if (picked === undefined) return
+              const mine = ++pair
+              await playBlock(STACK_TIMING.chordMs)
+              if (mine !== pair) return
+              await new Promise((resolve) =>
+                setTimeout(resolve, COMPARE_TIMING.gapMs),
+              )
+              if (mine !== pair) return
+              await playBlock(STACK_TIMING.chordMs, [...picked.payload])
+            },
+          }
+        : {}),
     }
   }
 
@@ -93,6 +136,7 @@ export function StackDrill(props: { onBack: () => void }): JSX.Element {
       columns={3}
       controller={controller}
       revealName={(id) => itemOf(id)?.name ?? id}
+      compare={STACK_COMPARE}
       instrument={() => {
         const expected = () => itemOf(controller.expectedId())
         return (

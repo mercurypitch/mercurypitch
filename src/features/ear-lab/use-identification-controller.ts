@@ -25,6 +25,12 @@
 // the trial a replay() that only sounds. The next question, Stop and
 // the sound taken away each silence a replay still sounding.
 //
+// Compare, after a miss, sounds the answer and then the pick, from the
+// question's own root, key or register. It is a replay in every other
+// way: listen-only, as often as wanted, never over a sound, and
+// silenced by the same things. Only a drill whose pick is a sound of
+// its own gives the trial a compare(); a take (Pulse, the Chart) is not.
+//
 // A slip on the native room's rated plate can start a pair practice
 // (pair-practice.ts): a short run over just the two items it mixed up,
 // which rates nothing and books nothing for Today.
@@ -61,6 +67,11 @@ export interface IdentificationTrial {
    *  answer opens and the verdict's stage stays. Resolves when the
    *  sound has ended. Without one, Hear it again calls play(). */
   replay?: () => Promise<void>
+  /** After a miss: the answer, then the pick, side by side, from the
+   *  reference the question was asked from (its root, key or register).
+   *  Listen-only, like replay(); resolves when the sound has ended.
+   *  Without one, a miss offers no Compare. */
+  compare?: (pickedId: string) => Promise<void>
 }
 
 export interface IdentificationOutcome {
@@ -332,10 +343,40 @@ export function useIdentificationController(
 
   async function replay(): Promise<void> {
     if (!replayAllowed() || trial === null) return
+    await listenAgain(trial.replay ?? trial.play)
+  }
+
+  /** The verdict on the stage is a miss whose pick can be sounded. */
+  function comparable(): boolean {
+    const picked = answeredId()
+    return (
+      phase() === 'reveal' &&
+      trial?.compare !== undefined &&
+      picked !== null &&
+      picked !== expectedId()
+    )
+  }
+
+  /** Compare, as often as wanted after a miss, never over a sound. */
+  function compareAllowed(): boolean {
+    return comparable() && !replaying()
+  }
+
+  /** The answer, then the pick, side by side. */
+  async function compare(): Promise<void> {
+    const picked = answeredId()
+    const sound = trial?.compare
+    if (!compareAllowed() || sound === undefined || picked === null) return
+    await listenAgain(() => sound(picked))
+  }
+
+  /** A sound after the answer, to listen to only (Hear it again,
+   *  Compare): a hold counting down waits for Next, and the flag goes
+   *  when it ends, unless something newer silenced it first. */
+  async function listenAgain(sound: () => Promise<void>): Promise<void> {
     const mine = run
     replayToken += 1
     const token = replayToken
-    const sound = trial.replay ?? trial.play
     pacer.pause()
     setReplaying(true)
     try {
@@ -473,6 +514,10 @@ export function useIdentificationController(
     pause: pacer.pause,
     replayAllowed,
     replay,
+    /** A miss on the stage that Compare can sound. */
+    comparable,
+    compareAllowed,
+    compare,
     /** A Today's short run. */
     short,
     held,

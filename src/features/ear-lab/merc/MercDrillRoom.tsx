@@ -13,7 +13,9 @@
 //     (stations.ts); Wild keeps the glasshouse.
 //   - The console: Merc and his bubble (the task in full on the first
 //     question, then nothing until the verdict), the drill's own pads,
-//     and the pinned row: Hear it again, and the lamp or Next.
+//     and the pinned row: Hear it again, Compare on a miss whose pick
+//     the drill can sound (the answer, then the pick), and the lamp or
+//     Next.
 //
 // Merc listens while the sound plays, waits while the singer answers,
 // nods at a right answer and gives a wrong one nothing; he celebrates
@@ -31,15 +33,15 @@
 // ============================================================
 
 import type { JSX } from 'solid-js'
-import { createEffect, createMemo, createSignal, For, on, onCleanup, onMount, Show, untrack, useContext, } from 'solid-js'
+import { createEffect, createMemo, createSignal, on, onCleanup, onMount, Show, untrack, useContext, } from 'solid-js'
 import { MercPresence } from '@/components/room-kit/MercPresence'
 import { EngineContext } from '@/contexts/EngineContext'
 import { VIEW_FOR_DRILL } from '@/features/ear-lab/drill-views'
-import { IconClose, IconPlay } from '@/features/ear-lab/ear-icons'
+import { IconClose } from '@/features/ear-lab/ear-icons'
 import type { EarStageProps, ModeToggleProps, } from '@/features/ear-lab/EarStage'
 import { StageSkinContext, useStageKeys } from '@/features/ear-lab/EarStage'
 import { setRevealRule } from '@/features/ear-lab/reveal-pacing'
-import type { RoomBeat, RoomPlate, ThresholdPlate, } from '@/features/ear-lab/stage-room'
+import type { RoomBeat, RoomCompare, RoomPlate, ThresholdPlate, } from '@/features/ear-lab/stage-room'
 import { requestRoomStart } from '@/features/ear-lab/stage-room'
 import { FACULTY_LABEL, findThresholdDrill } from '@/lib/ear/drills'
 import { haptics } from '@/lib/haptics'
@@ -50,10 +52,11 @@ import { removeNotificationsByChannel, TOUR_OFFER_CHANNEL, } from '@/stores/noti
 import { setPendingEarDrill } from '@/stores/ui-store'
 import { useWakeAudio } from './audio-wake'
 import { practiceEstimate } from './Glass'
-import { IconQuestion, IconReplay } from './merc-icons'
+import { IconQuestion } from './merc-icons'
 import type { SoundStop } from './merc-lines'
-import { calibrationBefore, exitWords, modeWords, onceLines, practiceLine, practicePlateLine, ratingPlateLine, sealedPlateLine, soundStoppedWords, thresholdPlateLine, } from './merc-lines'
+import { calibrationBefore, compareHint, exitWords, modeWords, practiceLine, practicePlateLine, ratingPlateLine, sealedPlateLine, soundStoppedWords, thresholdPlateLine, } from './merc-lines'
 import { PlateNext, PlateOnDesk } from './MercPlate'
+import { PinnedRow } from './PinnedRow'
 import plateStyles from './plate.module.css'
 import styles from './room.module.css'
 import type { RoomState } from './room-context'
@@ -199,13 +202,29 @@ export function MercDrillRoom(props: EarStageProps): JSX.Element {
     return pair === null ? (room?.prompt ?? props.status) : practiceLine(pair)
   }
 
+  /** Compare, while a miss whose pick it can sound is on the stage. */
+  const compare = (): RoomCompare | null =>
+    room?.compare !== undefined && room.compare.offered() ? room.compare : null
+
+  /** Under that miss: what the two differ by, where the drill can say,
+   *  and that Compare plays them side by side. */
+  const hint = (): string | null => {
+    if (beat() !== 'reveal') return null
+    const offered = compare()
+    return offered === null ? null : compareHint(offered.difference?.() ?? null)
+  }
+
   const shows = () => bubbleShows({ beat: beat(), answered: answered() })
-  const bubble = (): { say: string; aside: string | null } | null => {
+  const bubble = (): {
+    say: string
+    aside: string | null
+    hint: string | null
+  } | null => {
     switch (shows()) {
       case 'prompt':
-        return { say: prompt(), aside: null }
+        return { say: prompt(), aside: null, hint: null }
       case 'verdict':
-        return { say: props.status, aside: aside() }
+        return { say: props.status, aside: aside(), hint: hint() }
       case 'none':
         return null
     }
@@ -250,7 +269,7 @@ export function MercDrillRoom(props: EarStageProps): JSX.Element {
         setHeard(props.status)
         return
       case 'reveal':
-        setHeard([props.status, aside()].filter(Boolean).join(' '))
+        setHeard([props.status, aside(), hint()].filter(Boolean).join(' '))
         return
       case 'idle':
         setHeard(prompt())
@@ -434,25 +453,6 @@ export function MercDrillRoom(props: EarStageProps): JSX.Element {
   const facultyOf = (): string => {
     const faculty = findThresholdDrill(props.drillId)?.faculty
     return faculty === undefined ? 'Resolution' : FACULTY_LABEL[faculty]
-  }
-
-  // ── The pinned row ────────────────────────────────────────────
-
-  const replayLabel = (): string => {
-    const left = room?.replay?.left?.() ?? null
-    if (left === null || beat() === 'reveal') return 'Hear it again'
-    return `Hear it again · ${left} left`
-  }
-
-  const pinnedWords = (): readonly string[] => {
-    const own = room?.pinned?.() ?? null
-    if (own !== null) return [own]
-    if (beat() === 'reveal') return ['Next in a moment']
-    if (run() !== 'practice' && (beat() === 'listen' || beat() === 'answer')) {
-      return onceLines(run() === 'sealed' ? 'sealed' : 'rated')
-    }
-    if (beat() === 'listen') return ['Listening']
-    return ['Your call']
   }
 
   // ── The skin's view of the room ───────────────────────────────
@@ -666,6 +666,13 @@ export function MercDrillRoom(props: EarStageProps): JSX.Element {
                   <Show when={bubble()?.aside}>
                     {(line) => <p class={styles.move}>{line()}</p>}
                   </Show>
+                  <Show when={bubble()?.hint}>
+                    {(line) => (
+                      <p class={styles.aside} data-testid="merc-compare-hint">
+                        {line()}
+                      </p>
+                    )}
+                  </Show>
                 </div>
               </div>
 
@@ -674,47 +681,12 @@ export function MercDrillRoom(props: EarStageProps): JSX.Element {
               </div>
 
               <Show when={running()}>
-                <div class={styles.bottomRow} data-testid="merc-pinned">
-                  <Show when={room?.replay}>
-                    {(replay) => (
-                      <button
-                        type="button"
-                        class={styles.again}
-                        disabled={!replay().allowed()}
-                        data-testid="merc-replay"
-                        onClick={() => replay().play()}
-                      >
-                        <IconReplay size={18} />
-                        {replayLabel()}
-                      </button>
-                    )}
-                  </Show>
-                  <Show
-                    when={room?.parked() === true}
-                    fallback={
-                      <p class={styles.status} data-testid="merc-status">
-                        <For each={pinnedWords()}>
-                          {(line, i) => (
-                            <>
-                              {i() > 0 ? <br /> : null}
-                              {line}
-                            </>
-                          )}
-                        </For>
-                      </p>
-                    }
-                  >
-                    <button
-                      type="button"
-                      class={styles.next}
-                      data-testid="merc-next"
-                      onClick={() => room?.next()}
-                    >
-                      Next
-                      <IconPlay size={16} />
-                    </button>
-                  </Show>
-                </div>
+                <PinnedRow
+                  room={room}
+                  beat={beat()}
+                  run={run()}
+                  compare={compare()}
+                />
               </Show>
             </section>
           </Show>

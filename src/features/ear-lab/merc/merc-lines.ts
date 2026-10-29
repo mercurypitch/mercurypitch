@@ -168,6 +168,19 @@ export function tracksLine(
     .join(' · ')
 }
 
+/** Compare's name for a screen reader: "Compare: the fifth, then your
+ *  fourth", in the drill's own words for the answer and the pick. */
+export function compareLabel(names: { answer: string; pick: string }): string {
+  return `Compare: ${names.answer}, then your ${names.pick}`
+}
+
+/** Under a miss Compare can sound, after what the two differ by when
+ *  the drill can say it: "Two semitones wider. Compare plays..." */
+export function compareHint(difference: string | null): string {
+  const hint = 'Compare plays the two side by side.'
+  return difference === null ? hint : `${difference} ${hint}`
+}
+
 /** The pinned row's right side, before an answer, when Hear it again
  *  is held back. */
 export function onceLines(run: 'rated' | 'sealed'): readonly string[] {

@@ -195,6 +195,22 @@ export function ratedRunPlate(
   }
 }
 
+/** Compare, as the room offers it on a miss. */
+export interface RoomCompare {
+  /** A miss is on the stage, and its pick can be sounded. */
+  offered: () => boolean
+  /** And nothing is sounding: never over a sound. */
+  allowed: () => boolean
+  play: () => void
+  /** The drill's own names for what it compares, the answer's first:
+   *  "the fifth" and "fourth" make "Compare: the fifth, then your
+   *  fourth". Null while nothing is offered. */
+  names: () => { answer: string; pick: string } | null
+  /** What the two differ by, said before the room's hint: "Two
+   *  semitones wider." Null where the drill has no measure for it. */
+  difference?: () => string | null
+}
+
 /** What a view tells the native room beyond the stage's own props. */
 export interface StageRoom {
   /** The honesty rules the run is under. */
@@ -219,6 +235,9 @@ export interface StageRoom {
     /** Replays still open before this answer, where they are counted. */
     left?: () => number | null
   }
+  /** Compare, on a miss: the answer, then the pick, side by side. Absent
+   *  when the drill's pick is not a sound of its own (a take). */
+  compare?: RoomCompare
   /** The verdict waits for Next. */
   parked: () => boolean
   next: () => void
