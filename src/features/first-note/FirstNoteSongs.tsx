@@ -8,9 +8,11 @@
 // singer's own songs with what the phone knows of each (the Ear rooms
 // canvas, C1): the entries it found, how far a read has got, or that a
 // song sits out, and why, in plain words (too few clear entries, too long
-// for the phone to read, no voice in it). A singer with no song of their
-// own split yet is told how one comes to be here, with the way to it when
-// the shell offers one (A2: the Karaoke room's songs, where Import is).
+// for the phone to read, no voice in it). A song read already can be read
+// again from its row: one an older read left out, say (owner, 29 Oct). A
+// singer with no song of their own split yet is told how one comes to be
+// here, with the way to it when the shell offers one (A2: the Karaoke
+// room's songs, where Import is).
 //
 // Last, "Show the words": the optional hint the owner asked for (28 Oct
 // 2026), which puts the words of the line the singer comes in on over the
@@ -21,13 +23,13 @@
 import type { Component, JSX } from 'solid-js'
 import { createMemo, For, Show } from 'solid-js'
 import { Dynamic } from 'solid-js/web'
-import { CheckSmall, ChevronDown, Music, StageCurtains, X, } from '@/components/icons'
+import { CheckSmall, ChevronDown, Music, RotateCcw, StageCurtains, X, } from '@/components/icons'
 import { Sheet } from '@/components/mobile/Sheet'
 import { thisDeviceLower } from '@/lib/device-noun'
 import type { FirstNoteSource } from './first-note-choices'
 import { FIRST_NOTE_SOURCES, firstNoteShowsWords, firstNoteSource, setFirstNoteShowsWords, setFirstNoteSource, } from './first-note-choices'
 import type { OwnSong, OwnSongFailure, OwnSongState, } from './first-note-own-songs'
-import { ownSong, ownSongIds, ownSongs } from './first-note-own-songs'
+import { ownSong, ownSongIds, ownSongs, readOwnSongAgain, } from './first-note-own-songs'
 import { OWN_SONG_MIN_ENTRIES } from './first-note-rules'
 import { FIRST_NOTE_SONGS } from './first-note-songs'
 import styles from './FirstNoteSongs.module.css'
@@ -262,8 +264,7 @@ export function FirstNoteSongsSheet(
             <span class={styles.songText}>
               <span class={styles.hintName}>Show the words</span>
               <span class={styles.hintLine}>
-                The words of the line you come in on, while the band counts in
-                and in your turn. Off, you come in by ear alone.
+                Shows the lyrics you sing when the music stops.
               </span>
             </span>
             <button
@@ -294,6 +295,8 @@ function SongRow(props: { sessionId: string }): JSX.Element {
   const title = (): string => song()?.title ?? ''
   const state = (): OwnSongState => song()?.state ?? { kind: 'waiting' }
   const out = (): boolean => state().kind === 'few' || state().kind === 'failed'
+  /** Read already, well or not: it can be read again. */
+  const settled = (): boolean => out() || state().kind === 'ready'
   /** How far its read has got, or null while it is not being read. */
   const progress = (): number | null => {
     const now = state()
@@ -331,6 +334,17 @@ function SongRow(props: { sessionId: string }): JSX.Element {
           </Show>
         </span>
       </span>
+      <Show when={settled()}>
+        <button
+          type="button"
+          class={styles.again}
+          aria-label={`Read ${title()} again`}
+          onClick={() => readOwnSongAgain(props.sessionId)}
+          data-testid="first-note-read-again"
+        >
+          <RotateCcw size={18} />
+        </button>
+      </Show>
     </li>
   )
 }

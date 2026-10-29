@@ -39,7 +39,9 @@
 // lyrics were moved, the song's tuning, how much of the song the voice is
 // on, why lines were left, then what became of every line (`readLog`). The
 // Developer screen can let go of every read, so the songs are read and
-// told again (`readOwnSongsAgain`).
+// told again (`readOwnSongsAgain`), and the Songs sheet of one song's
+// (`readOwnSongAgain`): a song an older read left out, say, read now rather
+// than when the rules next move on.
 
 import type { Accessor, Signal } from 'solid-js'
 import { createMemo, createRoot, createSignal, untrack } from 'solid-js'
@@ -530,6 +532,24 @@ export function readOwnSongsAgain(): void {
     }
     return next
   })
+  void readNext()
+}
+
+/**
+ * Read one song again: what the phone kept of it, or why its read failed,
+ * is let go, and it is read the next time the room asks (now, if it is
+ * asking). The Songs sheet offers it on a song read already. A song being
+ * read is left to its read.
+ */
+export function readOwnSongAgain(sessionId: string): void {
+  if (inFlight?.sessionId === sessionId) return
+  keptSignal()[1]((reads) => {
+    if (!(sessionId in reads)) return reads
+    const next = { ...reads }
+    delete next[sessionId]
+    return next
+  })
+  setLiveFor(sessionId, null)
   void readNext()
 }
 

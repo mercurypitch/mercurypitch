@@ -41,6 +41,7 @@ const {
   ownSongs,
   playableSong,
   readLog,
+  readOwnSongAgain,
   readOwnSongs,
   readOwnSongsAgain,
   readSummary,
@@ -418,6 +419,61 @@ describe("the singer's own songs", () => {
     expect(pending).toHaveLength(2)
     expect(pending[1].sessionId).toBe('a')
     expect(states()).toEqual({ a: 'reading', b: 'waiting' })
+  })
+
+  it('read one song again from its row, the others kept as they were', async () => {
+    readOwnSongs()
+    await settle()
+    pending[0].resolve({ entries: [entry(10)], dropped: [] })
+    await settle()
+    pending[1].resolve({ entries: [entry(10), entry(20)], dropped: [] })
+    await settle()
+    expect(states()).toEqual({ a: 'few', b: 'ready' })
+
+    // A song an older read left out, read now (owner, 29 Oct).
+    readOwnSongAgain('a')
+    await settle()
+    expect(states()).toEqual({ a: 'reading', b: 'ready' })
+    expect(pending).toHaveLength(3)
+    expect(pending[2].sessionId).toBe('a')
+    pending[2].resolve({ entries: [entry(10), entry(30)], dropped: [] })
+    await settle()
+    expect(states()).toEqual({ a: 'ready', b: 'ready' })
+    // Kept as any read is.
+    const kept = JSON.parse(
+      localStorage.getItem(FIRST_NOTE_OWN_ENTRIES_KEY) ?? '{}',
+    ) as Record<string, { entries: unknown[] }>
+    expect(kept.a.entries).toHaveLength(2)
+    expect(kept.b.entries).toHaveLength(2)
+  })
+
+  it('read a song whose read failed again now, not at the next launch', async () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => undefined)
+    readOwnSongs()
+    await settle()
+    pending[0].reject(new Error('decode failed'))
+    await settle()
+    expect(states().a).toBe('failed')
+    stopReadingOwnSongs()
+    warn.mockRestore()
+
+    // Waiting while the room is not asking, read once it asks.
+    readOwnSongAgain('a')
+    expect(states().a).toBe('waiting')
+    readOwnSongs()
+    await settle()
+    expect(states().a).toBe('reading')
+    expect(pending.at(-1)?.sessionId).toBe('a')
+  })
+
+  it('leave a song being read to its read', async () => {
+    readOwnSongs()
+    await settle()
+    expect(states().a).toBe('reading')
+    readOwnSongAgain('a')
+    await settle()
+    expect(states().a).toBe('reading')
+    expect(pending).toHaveLength(1)
   })
 
   it('tell the console lyrics no shift fits from a song with none', () => {
