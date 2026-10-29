@@ -1,9 +1,11 @@
 import { cleanup, fireEvent, render, screen } from '@solidjs/testing-library'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { MERC_FEET } from '@/components/room-kit/MercView'
 import type * as CaptureModule from '@/components/room-kit/useExerciseCapture'
 import { midiToF0 } from '@/lib/glass/test-frames'
 import type { PitchFrame } from '@/lib/pitch-f0-stream'
 import { setExerciseLevel } from '@/stores/exercise-level'
+import { LANDSCAPE_PLATE_MEDIA, layoutHarbour } from './harbour-layout'
 import type { HomeRound } from './home-note-round'
 import type { HomeNoteLevel } from './home-note-rules'
 import { BETWEEN_ROUNDS_MS, HOME_NOTE_ROUNDS } from './home-note-rules'
@@ -350,5 +352,37 @@ describe('Home note', () => {
     render(() => <HomeNoteRoom onDone={() => undefined} />)
     await startRun()
     expect(band.intros[0].level).toBe('I IV V I')
+  })
+
+  it('stands Merc on the plate the picture shows, as the screen turns', () => {
+    // An upright screen whose room is a little wider than tall: the
+    // picture's media query says portrait, the room's own box does not.
+    let sideways = false
+    const turned: (() => void)[] = []
+    vi.stubGlobal('matchMedia', (query: string) => ({
+      media: query,
+      get matches() {
+        return query === LANDSCAPE_PLATE_MEDIA && sideways
+      },
+      addEventListener: (_type: string, listener: () => void) => {
+        turned.push(listener)
+      },
+      removeEventListener: () => undefined,
+    }))
+    vi.spyOn(HTMLElement.prototype, 'clientWidth', 'get').mockReturnValue(700)
+    vi.spyOn(HTMLElement.prototype, 'clientHeight', 'get').mockReturnValue(680)
+    render(() => <HomeNoteRoom onDone={() => undefined} />)
+    const size = (): string =>
+      (screen.getByTestId('home-note-merc').parentElement as HTMLElement).style
+        .width
+    const on = (landscape: boolean): string =>
+      `${layoutHarbour(700, 680, MERC_FEET, landscape).merc.size.toFixed(1)}px`
+    expect(on(false)).not.toBe(on(true))
+    expect(size()).toBe(on(false))
+
+    // The screen turns on its side: the landscape plate, and his place on it.
+    sideways = true
+    for (const listener of turned) listener()
+    expect(size()).toBe(on(true))
   })
 })

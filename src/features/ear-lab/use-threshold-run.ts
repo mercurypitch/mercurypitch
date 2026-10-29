@@ -90,9 +90,8 @@ export interface ThresholdRunOptions {
   /** Silence anything already committed to the audio clock. Called
    *  on stop and on unmount, before the phase flips. */
   cancelStimulus?: () => void
-  /** playStimulus honours `api.replay`, so a trial can be heard again.
-   *  A function when it depends on the run. */
-  replayable?: boolean | (() => boolean)
+  /** playStimulus honours `api.replay`, so a trial can be heard again. */
+  replayable?: boolean
 }
 
 export function useThresholdRun(
@@ -331,14 +330,7 @@ export function useThresholdRun(
 
   /** Whether Hear it again would sound now (replay-policy.ts). */
   function replayAllowed(): boolean {
-    const replayable = options?.replayable
-    if (
-      replayable === undefined ||
-      replayable === false ||
-      (typeof replayable === 'function' && !replayable())
-    ) {
-      return false
-    }
+    if (options?.replayable !== true) return false
     const now = phase()
     return canReplay({
       run: mode() === 'calibration' ? 'sealed' : 'practice',
@@ -603,9 +595,8 @@ export function useThresholdRun(
       mode() === 'practice' && phase() !== 'reveal'
         ? Math.max(0, PRACTICE_REPLAYS_PER_QUESTION - replaysThisTrial())
         : null,
-    /** The drill can sound a trial again at all (some runs of it). */
-    replayable:
-      options?.replayable !== undefined && options.replayable !== false,
+    /** The drill can sound a trial again at all. */
+    replayable: options?.replayable === true,
     /** A Today's short run. */
     short,
     held,

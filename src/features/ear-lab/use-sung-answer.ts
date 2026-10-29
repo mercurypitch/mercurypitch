@@ -75,9 +75,11 @@ export function useSungAnswer(options: SungAnswerOptions) {
   const isOpen = createMemo(() => options.open())
   const isHeld = createMemo(() => options.held?.() ?? false)
 
-  /** The take so far: what was kept, then what the mic heard since. */
-  function heard(frames: readonly PitchFrame[]): PitchFrame[] {
-    if (kept.length === 0 && offsetS === 0) return [...frames]
+  /** The take so far: what was kept, then what the mic heard since. The
+   *  capture hands over a fresh array each read, so with nothing kept it
+   *  is the take as it comes, uncopied, every poll. */
+  function heard(frames: PitchFrame[]): PitchFrame[] {
+    if (kept.length === 0 && offsetS === 0) return frames
     return [
       ...kept,
       ...frames.map((frame) => ({ ...frame, t: frame.t + offsetS })),

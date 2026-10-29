@@ -6,9 +6,16 @@
 
 import { createRoot, createSignal } from 'solid-js'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { sungDegrees } from '@/lib/ear/sung-notes'
+import type * as SungNotes from '@/lib/ear/sung-notes'
+import { segmentSungNotes, sungDegrees } from '@/lib/ear/sung-notes'
 import type { PitchFrame } from '@/lib/pitch-f0-stream'
 import { SUNG_ANSWER, sungAnswerCeilingMs, useSungAnswer, } from './use-sung-answer'
+
+// The segmenter as it is, watched: which frames each poll hands it.
+vi.mock('@/lib/ear/sung-notes', async (importOriginal) => {
+  const actual = await importOriginal<typeof SungNotes>()
+  return { ...actual, segmentSungNotes: vi.fn(actual.segmentSungNotes) }
+})
 
 const midiToFreq = (midi: number) => 440 * 2 ** ((midi - 69) / 12)
 
@@ -196,6 +203,28 @@ describe('useSungAnswer', () => {
     expect(onJudge).not.toHaveBeenCalled()
     vi.advanceTimersByTime(SUNG_ANSWER.pollMs)
     expect(onJudge).toHaveBeenCalledTimes(1)
+    dispose()
+  })
+
+  it('reads the frames as the capture hands them over, with nothing held', () => {
+    const { mic, setOpen, dispose } = setUp()
+    // A fresh array each read, as the capture's are.
+    const handed: PitchFrame[][] = []
+    mic.peekFrames = () => {
+      const fresh = mic.frames.slice()
+      handed.push(fresh)
+      return fresh
+    }
+    setOpen(true)
+    mic.frames = frames([[60, 0, 0.35]])
+    vi.advanceTimersByTime(SUNG_ANSWER.pollMs * 3)
+    const read = vi.mocked(segmentSungNotes).mock.calls.map((call) => call[0])
+    expect(handed).toHaveLength(3)
+    // Each poll cuts the very array it was handed: no copy every 100 ms.
+    expect(read.slice(-3)).toEqual(handed)
+    for (const [i, frames] of handed.entries()) {
+      expect(read.at(i - 3)).toBe(frames)
+    }
     dispose()
   })
 })

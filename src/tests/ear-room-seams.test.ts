@@ -15,9 +15,10 @@
 // ============================================================
 
 import { createEffect, createRoot } from 'solid-js'
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, expectTypeOf, it, vi, } from 'vitest'
 import { setRevealRule } from '@/features/ear-lab/reveal-pacing'
 import { useIdentificationController } from '@/features/ear-lab/use-identification-controller'
+import type { ThresholdRunOptions } from '@/features/ear-lab/use-threshold-run'
 import { useThresholdRun } from '@/features/ear-lab/use-threshold-run'
 import { LEAP_BANK } from '@/lib/ear/banks'
 import { findIdentificationDrill, findThresholdDrill } from '@/lib/ear/drills'
@@ -123,6 +124,25 @@ describe('Hear it again, on a staircase', () => {
     await createRoot(async (dispose) => {
       const stim = recordedStimulus()
       const run = useThresholdRun(hairline, stim.play)
+      run.start('practice')
+      await settle()
+      expect(run.replayable).toBe(false)
+      expect(run.replayAllowed()).toBe(false)
+      dispose()
+    })
+  })
+
+  it('replays only for a plain true: the option has no form that asks the run', async () => {
+    // Span once asked "only when tapped" with a function; it replays sung
+    // answers too now, and nothing asks any more.
+    expectTypeOf<ThresholdRunOptions['replayable']>().toEqualTypeOf<
+      boolean | undefined
+    >()
+    await createRoot(async (dispose) => {
+      const stim = recordedStimulus()
+      const run = useThresholdRun(hairline, stim.play, {
+        replayable: (() => true) as unknown as boolean,
+      })
       run.start('practice')
       await settle()
       expect(run.replayable).toBe(false)

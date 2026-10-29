@@ -302,6 +302,9 @@ export function PracticePlateView(props: {
             )}
           </p>
         </Show>
+        <For each={props.plate.lines ?? []}>
+          {(line) => <p class={styles.small}>{line}</p>}
+        </For>
         <RunDots outcomes={props.plate.outcomes} />
       </section>
       <SlipList slips={props.plate.slips} onPractise={props.onPractise} />
