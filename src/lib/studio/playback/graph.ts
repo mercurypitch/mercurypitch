@@ -25,6 +25,7 @@ import type { StudioReplan } from './graph-replan'
 import { replanGraph } from './graph-replan'
 import type { StudioChainSwap } from './graph-swap'
 import { finishSwaps, settleSwaps, swapChains } from './graph-swap'
+import { quietLane, settleIdleLanes, wakeLane } from './lane-idle'
 
 export type { StudioReplan } from './graph-replan'
 export type { StudioChainSwap } from './graph-swap'
@@ -287,6 +288,7 @@ export function buildStudioGraph(
     scheduleUntil(time) {
       if (!playing()) return
       settleSwaps(state)
+      settleIdleLanes(ctx, lanes)
       const run = laneRun(state)
       for (const lane of lanes) scheduleLane(ctx, lane, time, run)
     },
@@ -324,7 +326,10 @@ export function buildStudioGraph(
     hasLane: (trackId) => byId.has(trackId),
     setLaneMix(track, audible) {
       const lane = byId.get(track.id)
-      if (lane && !state.disposed) mixLane(ctx, lane, track, audible)
+      if (!lane || state.disposed) return
+      mixLane(ctx, lane, track, audible)
+      if (audible) wakeLane(ctx, lane)
+      else quietLane(ctx, lane)
     },
     setLaneSpec(trackId, spec) {
       const lane = byId.get(trackId)
