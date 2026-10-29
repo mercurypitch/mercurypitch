@@ -1,11 +1,12 @@
-import { describe, expect, it, vi } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 import type { EffectSpec } from '@/lib/studio-fx/chain-spec'
 import { normalizeChainSpec } from '@/lib/studio-fx/chain-spec'
 import { compressorAutoMakeupGain } from '@/lib/studio-fx/compressor-curve'
+import { measureCompressorLatency, resetCompressorLatencyForTests, } from '@/lib/studio-fx/compressor-twin'
 import { EFFECT_KINDS } from '@/lib/studio-fx/effect-definitions'
 import type { EffectEnv } from '@/lib/studio-fx/effect-shell'
 import type { FakeBiquad, FakeCompressor, FakeConvolver, FakeDelay, FakeGain, FakeIir, FakeNode, FakeShaper, } from '@/lib/studio-fx/fake-audio-graph.test-fixtures'
-import { createManualScheduler, FakeAudioContext, reaches, } from '@/lib/studio-fx/fake-audio-graph.test-fixtures'
+import { createManualScheduler, FakeAudioContext, fakeImpulseRenderContext, reaches, } from '@/lib/studio-fx/fake-audio-graph.test-fixtures'
 import { createEffectUnit } from './index'
 
 function spec(
@@ -140,6 +141,31 @@ describe('compressor', () => {
     expect(low).toBeCloseTo(0.3, 12)
     expect(high).toBeCloseTo(0.7, 12)
   })
+})
+
+describe('latency twins once the compressor lookahead is measured', () => {
+  afterEach(() => resetCompressorLatencyForTests())
+
+  // [kind, compressors that shape the sound, paths that only need the delay]
+  const cases = [
+    ['compressor', 1, 1],
+    ['dyneq', 1, 3],
+    ['deesser', 1, 2],
+    ['limiter', 1, 1],
+  ] as const
+
+  for (const [kind, working, twins] of cases) {
+    it(`${kind}: every path beside its compressor is a plain delay`, async () => {
+      await measureCompressorLatency(48000, fakeImpulseRenderContext(288))
+      const { ctx, env } = setup(false)
+      createEffectUnit(ctx.asContext, spec(kind), env)
+      expect(ctx.ofType<FakeCompressor>('compressor')).toHaveLength(working)
+      const delays = ctx.ofType<FakeDelay>('delay')
+      expect(delays).toHaveLength(twins)
+      for (const delay of delays)
+        expect(delay.delayTime.value * 48000).toBeCloseTo(288, 9)
+    })
+  }
 })
 
 describe('de-esser', () => {

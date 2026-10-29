@@ -275,6 +275,36 @@ export class FakeOfflineAudioContext extends FakeAudioContext {
   }
 }
 
+/**
+ * An offline-context factory whose render answers an impulse with `response`
+ * starting `delay` frames after it: how a compressor lookahead is measured.
+ */
+export function fakeImpulseRenderContext(
+  delay: number,
+  response: readonly number[] = [0.99998],
+) {
+  return (options: OfflineAudioContextOptions): OfflineAudioContext => {
+    const ctx = new FakeOfflineAudioContext(options.sampleRate)
+    let impulseAt = -1
+    const source = Object.assign(new FakeNode('source'), {
+      buffer: null as FakeBuffer | null,
+      start: () => {
+        impulseAt = source.buffer?.getChannelData(0).indexOf(1) ?? -1
+      },
+    })
+    return Object.assign(ctx, {
+      createBufferSource: () => source,
+      startRendering: () => {
+        const out = new FakeBuffer(1, options.length, options.sampleRate)
+        response.forEach((value, i) => {
+          out.getChannelData(0)[impulseAt + delay + i] = value
+        })
+        return Promise.resolve(out)
+      },
+    }) as unknown as OfflineAudioContext
+  }
+}
+
 /** True when audio entering `from` can reach `to` along connections. */
 export function reaches(from: FakeNode, to: FakeNode): boolean {
   const seen = new Set<FakeNode>()

@@ -469,8 +469,8 @@ must import the inventory in a child Node process as well as through Vitest.
 
 **Symptom:** a 50 % parallel compressor notched by 24 dB; a split-band de-esser would notch its own crossover.
 **Cause:** DynamicsCompressorNode has 6 ms of lookahead and a 4x WaveShaperNode 4 ms of resampling delay (Chrome 153, 48 kHz); neither is reported, so an undelayed parallel path comb-filters.
-**Rule:** run the parallel path through a compressor that never compresses (ratio 1, threshold 0) or an identity-curve shaper with the same oversample. Feedback cycles add a further quantum (128 frames) per pass in Chrome.
-**See:** `createNullCompressor` and `createIdentityShaperPath` in `src/lib/studio-fx/effect-shell.ts`.
+**Rule:** run the parallel path through `createCompressorTwin` (a DelayNode of the measured lookahead, 288 frames at 48 kHz and 264 at 44.1 kHz in Chrome 148; a null compressor until measured) or an identity-curve shaper with the same oversample. A null compressor is not a free twin: it costs a full detector per sample, starts about 17 dB down, and even settled passes 0.99998 (-0.00013 dB). The DelayNode is bit-exact. Feedback cycles add a further quantum (128 frames) per pass in Chrome.
+**See:** `src/lib/studio-fx/compressor-twin.ts`, and `createIdentityShaperPath` in `src/lib/studio-fx/effect-shell.ts`.
 
 ### Do not build a decibel-domain envelope from a plain rectifier
 

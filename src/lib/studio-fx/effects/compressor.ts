@@ -8,15 +8,16 @@
 // with like instead of rewarding the louder side.
 //
 // Mix blends in the unprocessed signal for parallel ("New York") compression.
-// That path runs through a null compressor, so it carries the same lookahead
-// delay as the compressed path and the two sum without comb filtering.
+// That path runs through a compressor twin (the measured lookahead as a
+// delay), so the two sum without comb filtering.
 
 import type { EffectSpecOf } from '@/lib/studio-fx/chain-spec'
 import { compressorAutoMakeupGain } from '@/lib/studio-fx/compressor-curve'
+import { createCompressorTwin } from '@/lib/studio-fx/compressor-twin'
 import { dbToGain, linearMix } from '@/lib/studio-fx/dsp'
 import type { EffectParams } from '@/lib/studio-fx/effect-definitions'
 import type { EffectEnv, EffectUnit } from '@/lib/studio-fx/effect-shell'
-import { assembleUnit, connectSeries, createEffectShell, createNullCompressor, writeParam, } from '@/lib/studio-fx/effect-shell'
+import { assembleUnit, connectSeries, createEffectShell, writeParam, } from '@/lib/studio-fx/effect-shell'
 
 export function createCompressorUnit(
   ctx: BaseAudioContext,
@@ -31,7 +32,7 @@ export function createCompressorUnit(
   const compressor = ctx.createDynamicsCompressor()
   const cancelAutoMakeup = ctx.createGain()
   const makeup = ctx.createGain()
-  const dryTwin = createNullCompressor(ctx)
+  const dryTwin = createCompressorTwin(ctx)
   connectSeries([shell.input, compressor, cancelAutoMakeup, makeup, shell.wet])
   connectSeries([shell.input, dryTwin, shell.dry])
 

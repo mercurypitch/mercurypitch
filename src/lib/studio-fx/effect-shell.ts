@@ -11,8 +11,9 @@
 // a resampling delay, and neither is reported. Summing a delayed path with an
 // undelayed one comb-filters — parallel compression turns phasey and a split
 // de-esser notches its own crossover. So any path that runs beside a
-// compressor runs through a compressor that never compresses, and any path
-// beside an oversampled shaper runs through an identical shaper with a
+// compressor runs through its twin (`compressor-twin.ts`: the measured
+// lookahead as a DelayNode, a null compressor until it is measured), and any
+// path beside an oversampled shaper runs through an identical shaper with a
 // straight-line curve: whatever the browser's delay is, both paths get it.
 
 import type { MixGains, ShaperCurve } from './dsp'
