@@ -1637,3 +1637,19 @@ Note: the lanes' memory gate read a stale cgroup path after the 21:00 restart (f
   lab/s13-your-turn/clip.mp4 to $S/l4entr/e2/<scene>/clip.mp4 first; critics/E2.txt), F-02 when F
   hands back (f2/; F2.txt), C small (C-fix2-msg), B small (B-fix4-msg), then A-03, C-03, B-04.
   When D-03 returns: save its text verbatim to review/component-D-03/REPORT.md, LEDGER row, triage.
+- 20:3x critic D-03 returned (report saved review/component-D-03/REPORT.md; LEDGER row 18): s09 REVISE
+  (near bokeh over the keys: violet disc on F#4 as "fa" is named, 247.44), s10 KEEP, s11 KEEP + polish.
+- 20:4x critic E-02 launched on frozen 60 fps copies ($S/l4entr/e2/). Agents now: F + E-02.
+- 20:49:04 KIT CHANGE (DECISIONS 100): L.room puts the bokeh in a new layer room.under (between far and
+  mid), driven with the near factor by L.frameRig, L.rig and L.camera; tints chrome only. Backups
+  $S/l4entr/kit-before-100/ (lesson.js, frames.js, motion.js). Proven on s09 ($S/l4entr/b100/
+  old-s09 vs new-s09, snapshots in /dev/shm/l4b100): at 247.44 the key is 17,21,27 again (was
+  44,40,63); rest frames differ <= 13 levels. F told by message. Full check running
+  ($S/l4entr/b100/check-after-100.log; baseline = 3 layout errors before D's round 3 fixed s11's two).
+- Board: rows 9e, 10a, 10b, 11a (stair 1 on "heard a C"; kicker exit 320.34), 11b (strip fades in
+  F-chart 308.2-308.98), 11c (dim chips to ~50 % on their cascade turn; strip back over the pull), 11d,
+  room note; HANDOFFS strip rule + near bokeh bullet; BUILD-GUIDE kit note (backups
+  $S/l4entr/b100/*.before-100.md). A-fix2-msg updated with the 20:49 note.
+- D-fix4-msg.txt READY (items 2 and 4, all three clips at 60 fps). Queue: A round 2 (A-fix2-msg) ->
+  D round 4 (D-fix4-msg, to the s09-s11 builder) -> F-02 when F hands back -> C small -> B small
+  (s06 layout error) -> A-03, D-04, C-03, B-04.

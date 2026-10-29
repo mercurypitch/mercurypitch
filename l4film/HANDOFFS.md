@@ -45,7 +45,11 @@ S13, [F] S14 to S16.
   inside each on-screen Merc's body box grown by 20 px and rises linearly to full over the next
   60 px, built every frame from the Mercs' boxes. In CU-C, F-recap-1 and F-recap-3 the keyboard
   strip (with its hairlines and key names) would run under a Merc's feet and reflection, so it fades
-  out (and sinks) over the push into those framings and comes back over the pull out of them.
+  out (and sinks) over the push into those framings and comes back over the pull out of them. In
+  F-chart its top edge would show along the frame's foot, so it fades out once the five dim chips
+  have left it (308.2 to 308.98) and comes back over the pull (320.23 to 321.03; DECISIONS 100).
+- **The near bokeh** lies in the room's under layer, between far and mid, moved as the near layer
+  (1.6x), so every mark of the diagram covers it; its discs are chrome only (DECISIONS 100).
 - **Beads.** `L.bead(svg, { r: 22, color })` in world units (26 px in F-cold, 44 px in a 2x
   close-up). A bead rests on its stair's tread: centre on the column centre, 22 world px above the
   tread. A hop between treads is an arc 0.3 s long, landing on the note's onset, its centre peaking

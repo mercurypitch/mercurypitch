@@ -840,3 +840,37 @@ replaced it. The builder's record: critics never read it.
       S13 0.5 s inside plus the 0.3 s settle (0.7 per 30 s), longest 0.1, from 1.2 s; S12 to S13
       1440 px over 16, all of it the hosts (the guide region 0); S11 to S12 and S13 to S14 at most
       10. The fresh critic E-02 verifies all of it.
+
+100. **S9 to S11 after component critic D-03 (S9 REVISE, S10 and S11 KEEP): the near bokeh goes
+     under the diagram and turns chrome, and three small items for builder D.**
+     - **The near bokeh no longer passes over the diagram** (D-03 item 1, installed 20:49:04). In
+       S9's truck (247.4) a violet disc sat on F♯4 just as "fa" was named (44, 40, 64 against the
+       key's 15, 19, 25), and others on A♯4 at 245.2 and 246.7: a key that seems to light, in the
+       sung line's colour. L.room now draws the bokeh in its own layer, `room.under`, between far
+       and mid; L.frameRig, L.rig and L.camera move it with the near factor, so its parallax is as
+       before, and the stairs, the keys and every other mark cover it. Its discs are chrome only:
+       blue is a bead or a lit stair here and violet the sung line, so neither may drift across the
+       diagram. Proven on S9 (before and after, the same frames): at 247.44 the key under the disc
+       is its own 17, 21, 27 again and the stair above it 27, 35, 45; at rest (231.2, 254.2) frames
+       change by 13 levels at most (the discs' colour); over the empty ground the discs still slide
+       and lift as decision 93 has them. A disc that crosses a mark now passes behind it, which
+       inverts its depth at that edge; the critic proposed exactly this, and the discs are too
+       faint and soft for the edge to read. Backups $S/l4entr/kit-before-100/ (lesson.js,
+       frames.js, motion.js). Every clip rendered from 20:49 carries it; the builders were told.
+     - **D-03 item 2: the strip fades out in F-chart** once the five dim chips have left it (308.2
+       to 308.98) and returns over the pull (320.23 to 321.03), as it does in every close framing,
+       since its top edge showed along the frame's foot (y 1055 to 1080, luma 50 on 15). Builder D.
+     - **D-03 item 3: the kicker, the credits and the axis leave as the pull starts** (320.34 to
+       320.44), as built, 1.2 s before the board's 321.6; leaving early keeps F0 from crowding
+       (D-02 item F). Rows 11a and 11d now say so.
+     - **D-03 item 4: the cascade reaches the bottom shelf.** On their turn the five dim chips lift
+       to about 50 % chrome and settle back (row 11c); before, their turn raised luma by 1. Builder
+       D.
+     - **Beats the board did not name, all tied to words, now named:** S9 do's stairs and the C keys
+       on "it is" (256.6 to 258.4) and the white keys' pulse on "keys." (262.0 to 262.8) (row 9e);
+       S10 ti's swell on "sits" (275.13) (row 10a) and stair 1 on "from C," then ti on "stop."
+       (282.1 to 283.1) (row 10b); S11 stair 1 on "heard a C" (300.28) (row 11a).
+     - **Left as they are:** S10's empty rows right of the stairs in CU-C (271.8 to 276.0), which
+       the critic traces to row 10a's framing and rates KEEP; and S9's slow push (231.6 to 244.4),
+       whose parallax is faint because the move is slow, which decision 93 accepts. The film critic
+       judges both at 60 fps.

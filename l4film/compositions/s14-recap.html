@@ -15,7 +15,9 @@
              In (E to F, fixed): F0; the staircase on C at full, names do to do, both houses lit, risers unmeasured,
              no riser labels; the strip with C major's keys at full and the rest at 45 %, hairlines, no key names;
              Merc (110, 840) and Tavi (1800, 840) at 300 (m12 spans the cut). Out (to s15): the Mercs in the
-             corners at 300; the ladder and the card gone (469.9). Every time is a cue, a word or a duration. */
+             corners at 300; the ladder and the card gone (469.7 to 470.0) but for the ladder's top rung, do,
+             sliding to (560, 520) on one curve in film time (carryAt, the same in s15-next). Every time is a cue,
+             a word or a duration. */
           const SID = 's14-recap'
           const D = L.dur(SID)
           const at = (cue, edge, off) => L.at(SID, cue, edge, off)
@@ -37,25 +39,19 @@
 
           /* ---------------------------------------------------------------- anchors (by role) */
           const A = {
-            panel: at('recap'),                                 // 14a: the empty card panel arrives on the recap mark (0.5 s)
-            kick: word('b45', 'Quick'), kickOut: at('b52', 'end'),
-            check: word('b45', 'check.'),                       // the stairs light in turn, 0.07 s apart
-            c1a: at('b46'), c1b: word('b46', 'makes'),          // card 1, line by line
-            pattern: word('b46', 'pattern'),                    // the stairs scale in turn
-            steps: word('b46', 'steps'),                        // the seven risers grow in turn
-            scale1: word('b46', 'major scale'),                 // C major's keys scale in turn
-            scaleQ: word('b46', 'scale?'),                      // the stairs light in turn as the question ends
+            kick: at('recap'), kickOut: at('b52', 'end'),       // 14a: "QUICK CHECK" lands on the recap mark
+            c1a: at('b46'), c1b: word('b46', 'makes'),          // card 1, line by line, its panel 0.2 s ahead
+            steps: word('b46', 'steps'),                        // the scene's one ripple: the stairs light in turn, 0.07 s apart
             push1: at('q1', 'start', 0.43),                     // F-recap-1 (1.6 s), the strip sinking and fading
-            bhOut: at('q1', 'start', 2.43),                     // the bottom house fades out before riser 1's "T"
-            two: word('b47', 'Two'), groups: word('b47', 'groups,'),   // 14b: stairs 1-4, then 5-8, lit to the card's exit
-            joined: word('b47', 'joined'), tone47: word('b47', 12),    // the F-G riser grows, twice
-            out1: at('b47', 'end'),                             // card 1, labels, lights out; risers unmeasured; house back
+            bhOut: at('q1', 'start', 2.43),                     // both houses fade out before riser 1's "T" (and the upper bracket)
+            c1Out: word('b47', 'Two', 'start', -0.5),           // card 1 and its panel leave, its labels landed, before the brackets
+            two: word('b47', 'Two'), groups: word('b47', 'groups,'),   // 14b: stairs 1-4, then 5-8, lit and bracketed
+            joined: word('b47', 'joined'), tone47: word('b47', 12),    // the F-G riser grows and its "T" scales 1.2, twice
+            out1: at('b47', 'end'),                             // labels, brackets, lights out; risers unmeasured; houses back
             pull1: at('b47', 'end', 0.08),                      // F0 (1.0 s), the strip back without its hairlines
             c2a: at('b48'), c2b: word('b48', 'Which'),          // 14c: card 2
             start2: word('b48', 'Start'),                       // stair 1 (the start) lights
-            major2: word('b48', 'major'),                       // the stairs light in turn, 0.07 s apart
             toD: word('b48', 'on D', 'start', 0.02),            // the slide to D (0.9 s); every key to 45 %
-            black: word('b48', 'black'),                        // the eight black keys light in turn and hold together (no answer)
             need: word('b48', 'need?'),                         // the two do stairs light
             fs: word('b49', 'F'), fs2: word('b49', 'sharp'),    // hairlines, D major's keys, F#4 lit and named
             cs: word('b49', 'C'), cs2: word('b49', 'sharp#2'),  // C#5 the same
@@ -65,7 +61,7 @@
             toC: word('b50', 'tee', 'start', 0.1),              // the slide back to C (0.8 s)
             push2: word('b50', 4, 'start', 0.59),               // F-recap-3 (1.2 s)
             tone50: word('b50', 'tone,'), semi50: word('b50', 'semitone?'),   // ti scales; the ti-do riser to measuring
-            tiDo: at('ti-do'),                                  // the chrome bead on ti (dropping 0.2 s before)
+            tiDo: at('ti-do'),                                  // the chrome bead on ti (dropping 0.2 s before, as the top house unlights)
             semi51: word('b51', 'A semitone'),                  // the riser grows gold and "S" lands
             semiEnd: word('b51', 'semitone.', 'end', -0.55),    // the riser and "S" pulse as the word ends
             tee51: word('b51', 'Tee'), just: word('b51', 'just'), under: word('b51', 'under'), most: word('b51', 'most'),
@@ -73,48 +69,46 @@
             hear: word('b51', 'hear'), lean: word('b51', 'lean'),   // the ink arrow from ti to do (0.6 s)
             out3: at('b51', 'end'), pull2: at('b51', 'end', 0.09),
             c4a: at('o13'), c4b: word('o13', 'which'),          // 14e: card 4 (Tavi asks)
-            maj4: word('o13', 'major scale'), g4: word('o13', 'G,'), doh4: word('o13', 'doh?'),   // stairs in turn; G4 and G5; the do stairs
+            g4: word('o13', 'G,'), doh4: word('o13', 'doh?'),   // G4 and G5 scale; the do stairs
             note4: word('o13', 'note'),                         // the top stair lights
             toG: word('b52', 'G.', 'start', 0.01),              // the slide to G (0.8 s); G4 and G5 named
             doh52: word('b52', 'Doh'),                          // stair 1, now G, lights
             wherever: word('b52', 'wherever'),                  // both do stairs light, the houses glow
-            scale52: word('b52', 'scale'), starts: word('b52', 'starts:'), home: word('b52', 'home.'),   // G major's keys in turn; stair 1
-            out4: at('b52', 'end'),                             // card 4, the names, the panel and the kicker leave
-            lad: at('b53', 'start', -0.04),                     // 14f: the staircase becomes the ladder
+            starts: word('b52', 'starts:'), home: word('b52', 'home.'),   // stair 1; both do stairs and houses
+            out4: at('b52', 'end'),                             // card 4, its panel, the names and the kicker leave
+            lad: at('b53', 'start', -0.04),                     // 14f: the staircase becomes the ladder, large
             sr: word('b53', 'Scale Runner'), runner: word('b53', 'Runner,'), sing1: word('b53', 'sing'),   // title; names, connector; waver
             maj53: word('b53', 'major scale'), back: word('b53', 'back,'),
             one: word('b53', 'one note'), note: word('b53', 'note'), time: word('b53', 'time.'),
+            toCard: word('b53', 'time.', 'start', 0.05),        // 14g: the ladder eases to its card-time box (0.6 s), before line 1
             set: word('b53', 'Set'), range: word('b53', 'voice range'), settings: word('b53', 'Settings'),
             first: word('b53', 'first,'), sing: word('b53', 'sing in the octave'),
             octave: word('b53', 'octave'), plays: word('b53', 'plays.'),
-            card: at('card'), cardEnd: at('card', 'end'),       // the card pause; the card and the ladder leave
+            card: at('card'), cardEnd: at('card', 'end'),       // the card pause (the phone line lands); the card and the ladder fade
           }
           const W47 = [0, 1, 2, 3, 4, 5, 6].map((k) => word('b47', k))   // T T S T T T S, a riser on each word
-          A.rise = A.tiDo + 0.45 + 0.06                         // the bead rises into the top house (0.3 s)
-          A.lit8 = A.rise + 0.2                                 // the house sends its echo ring; stair 8 lights slowly
-          A.morph = A.lad + 0.1                                 // the treads travel to the ladder (1.2 s, power2.inOut)
-          A.l1 = A.set - 0.69; A.l2 = A.set - 0.34              // the card's first two lines land before "Set"
+          A.doOn = A.tiDo + 0.45                                // do's onset in the ti-do sound: the bead hops into the top house (0.3 s)
+          A.inHouse = A.doOn + 0.3                              // it is inside: the house lit, its one echo ring
+          A.morph = A.lad + 0.1                                 // the treads travel to the large ladder (1.2 s, power2.inOut)
+          A.l1 = A.toCard + 0.6; A.l2 = A.l1 + 0.3              // the card's first two lines, once the ladder has made room
           A.twoS = W47[6] + 0.5                                 // both semitones (labels, bars, glows, their stairs) pulse as "semitone." ends
           A.landD = A.toD + 0.8                                 // stair 1 lights as the slide to D lands
           A.ask50 = A.semi50 + 0.35                             // the ti-do riser's outline pulses, being asked about
           A.trace = A.first + 0.4                               // the ladder's title pulses as its path lands on the card
-          A.phone = A.sing + 0.19                               // the small phone line, as the card completes
-          // the stairs light in turn, 0.07 s apart, on "check.", on card 2's "scale" and on card 4's "major scale"
-          const RIPPLE = [1, 2, 3, 4, 5, 6, 7, 8].map((n) => [A.check, A.scaleQ, A.major2, A.maj4].map((t0) => t0 + 0.07 * (n - 1)))
+          // the scene's one ripple: on "steps" the stairs light in turn, left to right, 0.07 s apart
+          const RIPPLE = [1, 2, 3, 4, 5, 6, 7, 8].map((n) => A.steps + 0.07 * (n - 1))
           // a label's pulse 0.15 s after its bar's, so the one's turn is the other's move (no dead sample at a peak)
           const LAG = (times) => [].concat(times).map((t0) => t0 + 0.15)
           const PUL4 = [A.joined, A.tone47], PUL4L = LAG(PUL4), PULS = [A.twoS], PULSL = LAG(PULS)
           const PUL7 = [A.semiEnd, A.just, A.most], PUL7L = [A.semiEnd + 0.15, A.just + 0.15, A.most + 0.2]
           const STARTSL = LAG(A.starts).map((t0) => t0 + 0.15), BACKL = [A.back + 0.2, A.octave + 0.15]
-          A.blackOut = A.need + 0.3                             // all eight black keys go out together after "need?"
           A.out2n = A.out2 + 0.15                               // F# and C# names leave just after card 2's lines
-          A.lit8p = A.lit8 + 0.35                               // the top stair answers the house's light
+          A.lit8p = A.inHouse + 0.35                            // the top stair answers the house's light
           // fa and so, the stairs the joining tone links, pulse with its riser on "joined" and "tone."
           const PULSE_N = { 4: PUL4, 5: PUL4, 7: [A.tone50, A.tee51, A.hear], 8: [A.semi50, A.lit8p, A.home51] }
           const NAME_N = { 1: STARTSL, 4: PUL4L, 5: PUL4L, 7: LAG(PULSE_N[7]), 8: LAG(PULSE_N[8]) }
           const RANGEP = [A.range, word('b53', 'range')]          // "Singing Voice Range" on "voice range", again on "range"
-          const BLACKS = [1, 3, 6, 8, 10, 13, 15, 18]
-          const ICONP = [0, 1, 2, 3].map((k) => at('card', 'start', 0.11 + 0.8 * k))   // x, Settings, Exercises, More
+          const ICONP = [0, 1, 2, 3].map((k) => at('card', 'start', 0.11 + 0.8 * k))   // x, Settings, Exercises, More: 465.8 to 468.2
           A.under2 = at('card', 'start', 3.25)                  // the address's underline draws (0.7 s)
 
           /* ---------------------------------------------------------------- camera (HANDOFFS § Camera moves) */
@@ -166,46 +160,105 @@
             return { A, Q: [(A[0] + B[0]) / 2 - 4, Math.min(A[1], B[1]) - 40], B }
           })()
           const echo = L.echoRings(mid, { dur: 0.9, grow: 3.5, width: 3, max: 3 })
-          const bead = L.bead(L.svg('g', {}, mid), { r: 22, color: C.chrome })
+          // 14d's chrome bead, drawn under the houses, so it goes into the top house rather than over it
+          const beadG = L.svg('g', {}, null)
+          st.gAll.insertBefore(beadG, st.houses.top.g.parentNode)
+          const bead = L.bead(beadG, { r: 22, color: C.chrome })
           const hb8 = ST.houseBox(8, 0, 0)
+          // it drops onto ti as the top house unlights, rests there, and on do's onset hops from ti straight into
+          // the house's centre (0.3 s), shrinking to nothing as the house lights round it: it never rests over the house
           const beadAt = (t) => {
-            const p7 = ST.rest(7, 0, 0), p8 = ST.rest(8, 0, 0)
+            const p7 = ST.rest(7, 0, 0), hc = [hb8.cx, hb8.cy]
             if (t >= A.tiDo - 0.2 && t < A.tiDo) return L.bead4.dropAt(t, A.tiDo, p7)
-            if (t >= A.tiDo && t < A.rise) return L.bead4.runAt(t, [{ t: A.tiDo, p: p7 }, { t: A.tiDo + 0.45, p: p8 }])
-            if (t >= A.rise && t < A.rise + 0.3) return L.bead4.riseAt(t, A.rise, p8, [hb8.cx, hb8.cy])
+            if (t >= A.tiDo && t < A.doOn) { const [sx, sy] = L.bead4.squash(t, A.tiDo); return { x: p7[0], y: p7[1], sx, sy } }
+            if (t >= A.doOn && t < A.inHouse) {
+              const [x, y] = L.bead4.hopAt(t, A.inHouse, p7, hc, { dur: 0.3, lift: 16 })
+              return { x, y, scale: 1 - P(t, A.doOn + 0.09, 0.21, 'power2.in') }
+            }
             return null
           }
+          // 14b: S6's brackets (HANDOFFS § S6's brackets: ink, ticks down, riding the world, at S6's y 458 and 276),
+          // over stairs 1 to 4 on "Two" and 5 to 8 on "groups,"; in F-recap-1 they sit at y 497.5 and 270, the
+          // card panel and the top house out of their way (both allowances: card 1 leaves at c1Out, the top house
+          // with the bottom one)
+          const brLow = L.bracket(mid, { x1: 242, x2: 714, y: 458, dir: 'up', tick: 8, color: C.ink, width: 3 })
+          const brHigh = L.bracket(mid, { x1: 722, x2: 1194, y: 276, dir: 'up', tick: 8, color: C.ink, width: 3 })
 
           /* ---------------------------------------------------------------- the ladder (14f; HANDOFFS § The ladder), F0 */
+          // Two layouts of one drawing (DECISIONS 97). Large through 14f: the panel x 200 to 1720, y 140 to 620, 24 px a
+          // semitone, rungs 90 px wide. The card-time box from 460.0: x 300 to 1620, y 150 to 460, 16 px a semitone, G4
+          // at 422, rungs 56 px. The large layout is the card-time one in the same proportions: x maps the box's x 300 to
+          // 1620 onto 200 to 1720 (1.1515), so the playhead stays at 45 % (884) and the rungs keep the app's spacing for
+          // six (112.8 px apart); the pitch band sits where the box puts it (G4 557, G5 269); the title and the playhead's
+          // ends keep their places in the panel (y 217; 248 to 589). Type keeps its size; strokes and their opacities
+          // (100, 89, 78, 67, 56, 45 %) are the same in both. The ease between them: 459.4 to 460.0, power2.inOut.
           const VIOLET = '#a78bfa', AMB = '#f59e0b'
-          const RX = [992, 1090, 1188, 1286, 1384, 1482], RY = [366, 350, 318, 286, 254, 238], RO = [1, 0.85, 0.71, 0.56, 0.42, 0.27]
+          const RX = [992, 1090, 1188, 1286, 1384, 1482]          // the rungs' card-time centres, 98 px apart
+          const RS = [4, 5, 7, 9, 11, 12]                         // their pitches, semitones above G4: B4 C5 D5 E5 F#5 G5
+          const RO = [1, 0.89, 0.78, 0.67, 0.56, 0.45]            // their strokes, fading with distance
+          const LADC = { x: 300, y: 150, w: 1320, h: 310, g4: 422, semi: 16, rung: 56, ty: 200, p0: 220, p1: 440 }
+          const LADL = { x: 200, y: 140, w: 1520, h: 480, g4: 557, semi: 24, rung: 90, ty: 217, p0: 248, p1: 589 }
+          const lay = (e) => {
+            const v = (k) => lerp(LADL[k], LADC[k], e), kx = LADL.w / LADC.w
+            return {
+              X: (x) => lerp(LADL.x + (x - LADC.x) * kx, x, e),               // a card-time x in this layout
+              Y: (s) => lerp(LADL.g4 - LADL.semi * s, LADC.g4 - LADC.semi * s, e),   // a pitch, semitones above G4
+              x: v('x'), y: v('y'), w: v('w'), h: v('h'), rung: v('rung'), ty: v('ty'), p0: v('p0'), p1: v('p1'),
+            }
+          }
           const gLad = L.svg('g', { display: 'none' }, mid)
-          const ladPanel = L.svg('rect', { x: 300, y: 150, width: 1320, height: 320, rx: 16, fill: C.obsidian, 'fill-opacity': 0.55, stroke: C.chrome, 'stroke-opacity': 0.25, 'stroke-width': 2, opacity: 0 }, gLad)
-          const ladTitle = L.svg('text', { x: 330, y: 200, fill: C.ink, opacity: 0, style: "font: 600 40px 'Outfit', sans-serif; white-space: pre;", text: 'Scale Runner' }, gLad)
-          const ladIllu = L.svg('text', { x: 1590, y: 200, fill: C.ink2, opacity: 0, 'text-anchor': 'end', style: "font: 500 28px 'JetBrains Mono', monospace; letter-spacing: 0.12em; white-space: pre;", text: 'ILLUSTRATION' }, gLad)
-          const playhead = L.svg('line', { x1: 894, x2: 894, y1: 220, y2: 450, stroke: C.chrome, 'stroke-opacity': 0.35, 'stroke-width': 2, opacity: 0 }, gLad)
+          const ladPanel = L.svg('rect', { rx: 16, fill: C.obsidian, 'fill-opacity': 0.55, stroke: C.chrome, 'stroke-opacity': 0.25, 'stroke-width': 2, opacity: 0 }, gLad)
+          const ladTitle = L.svg('text', { fill: C.ink, opacity: 0, style: "font: 600 40px 'Outfit', sans-serif; white-space: pre;", text: 'Scale Runner' }, gLad)
+          const ladIllu = L.svg('text', { fill: C.ink2, opacity: 0, 'text-anchor': 'end', style: "font: 500 28px 'JetBrains Mono', monospace; letter-spacing: 0.12em; white-space: pre;", text: 'ILLUSTRATION' }, gLad)
+          const playhead = L.svg('line', { stroke: C.chrome, 'stroke-opacity': 0.35, 'stroke-width': 2, opacity: 0 }, gLad)
           const gTarget = L.svg('g', { opacity: 0 }, gLad)
           // the connector draws on from the playhead through the rungs on "Runner," (a clip, so its dashes stay put)
           const cc = L.svg('clipPath', { id: SID + '-conn' }, defs)
-          const connClip = L.svg('rect', { x: 890, y: 200, width: 0, height: 220 }, cc)
-          L.svg('path', { d: `M894 398 ${RX.map((x, i) => `L${x} ${RY[i]}`).join(' ')}`, fill: 'none', stroke: C.chrome, 'stroke-opacity': 0.3, 'stroke-width': 1, 'stroke-dasharray': '3 4', 'clip-path': `url(#${SID}-conn)` }, gLad)
-          L.svg('line', { x1: 340, x2: 894, y1: 398, y2: 398, stroke: AMB, 'stroke-width': 3, 'stroke-dasharray': '10 8' }, gTarget)
+          const connClip = L.svg('rect', { x: 0, y: 0, width: 0, height: 1080 }, cc)
+          const conn = L.svg('path', { fill: 'none', stroke: C.chrome, 'stroke-opacity': 0.3, 'stroke-width': 1, 'stroke-dasharray': '3 4', 'clip-path': `url(#${SID}-conn)` }, gLad)
+          const target = L.svg('line', { stroke: AMB, 'stroke-width': 3, 'stroke-dasharray': '10 8' }, gTarget)
           const gPill = L.svg('g', {}, gLad)
-          L.svg('rect', { x: 834, y: 353, width: 52, height: 34, rx: 17, fill: '#161b22', 'fill-opacity': 0.95, stroke: AMB, 'stroke-width': 2 }, gPill)
-          L.svg('text', { x: 860, y: 379, fill: C.ink, 'text-anchor': 'middle', style: "font: 500 26px 'JetBrains Mono', monospace; white-space: pre;", text: 'A4' }, gPill)
-          const rungNames = [['B4', 0], ['C5', 1]].map(([s, i]) => L.svg('text', { x: RX[i], y: RY[i] - (i ? 2 : 3) - 10, fill: C.ink2, opacity: 0, 'text-anchor': 'middle', style: "font: 500 30px 'JetBrains Mono', monospace; white-space: pre;", text: s }, gLad))
-          const rungGlow = L.svg('line', { x1: RX[0] - 28, x2: RX[0] + 28, y1: RY[0], y2: RY[0], stroke: C.chrome, 'stroke-width': 10, 'stroke-linecap': 'round', opacity: 0, filter: `url(#${SID}-soft)` }, gLad)
+          const pillR = L.svg('rect', { width: 52, height: 34, rx: 17, fill: '#161b22', 'fill-opacity': 0.95, stroke: AMB, 'stroke-width': 2 }, gPill)
+          const pillT = L.svg('text', { fill: C.ink, 'text-anchor': 'middle', style: "font: 500 26px 'JetBrains Mono', monospace; white-space: pre;", text: 'A4' }, gPill)
+          const rungNames = ['B4', 'C5'].map((s) => L.svg('text', { fill: C.ink2, opacity: 0, 'text-anchor': 'middle', style: "font: 500 30px 'JetBrains Mono', monospace; white-space: pre;", text: s }, gLad))
+          const rungGlow = L.svg('line', { stroke: C.chrome, 'stroke-width': 10, 'stroke-linecap': 'round', opacity: 0, filter: `url(#${SID}-soft)` }, gLad)
           // the eight treads: each starts as the kit's tread line on G (3 px chrome at 70 %, 5 px in from each corner)
           const treads = [1, 2, 3, 4, 5, 6, 7, 8].map((n) => {
             const cx = ST.colX(n, 4), y = ST.tread(n, 7) + 1.5
-            const to = n === 1 ? { x0: 340, x1: 600, y: 430, w: 4, op: 1, violet: 1 }
-              : n === 2 ? { x0: 660, x1: 894, y: 398, w: 4, op: 1, violet: 1 }
-              : { x0: RX[n - 3] - 28 + (n === 3 ? 3 : 2), x1: RX[n - 3] + 28 - (n === 3 ? 3 : 2), y: RY[n - 3], w: n === 3 ? 6 : 4, op: RO[n - 3], violet: 0 }
-            return { n, from: { x0: cx - 51, x1: cx + 51, y, w: 3, op: 0.7 }, to, el: L.svg('path', { fill: 'none', 'stroke-linecap': 'round' }, gLad) }
+            return { n, k: n - 3, from: { x0: cx - 51, x1: cx + 51, y, w: 3, op: 0.7 }, el: L.svg('path', { fill: 'none', 'stroke-linecap': 'round' }, gLad) }
           })
-          // the rungs scale in turn on "major scale"; the first again on "note" (it brightens) and "time."
-          const RUNGP = RX.map((x, k) => (k === 0 ? [A.maj53, A.note, A.time] : [A.maj53 + 0.12 * k]))
+          // where a tread ends up in a layout: G4 and A4 (a break between) in violet, the six rungs (inset by their caps)
+          const treadTo = (R, Ly) => (R.n === 1 ? { x0: Ly.X(340), x1: Ly.X(600), y: Ly.Y(0), w: 4, op: 1, violet: 1 }
+            : R.n === 2 ? { x0: Ly.X(660), x1: Ly.X(894), y: Ly.Y(2), w: 4, op: 1, violet: 1 }
+            : { x0: Ly.X(RX[R.k]) - Ly.rung / 2 + (R.k ? 2 : 3), x1: Ly.X(RX[R.k]) + Ly.rung / 2 - (R.k ? 2 : 3), y: Ly.Y(RS[R.k]), w: R.k ? 4 : 6, op: RO[R.k], violet: 0 })
+          // the first rung scales on "major scale", on "note" (it brightens) and on "time."
+          const RUNG0P = [A.maj53, A.note, A.time]
           const mixC = (u) => `rgb(${Math.round(lerp(195, 167, u))},${Math.round(lerp(204, 139, u))},${Math.round(lerp(214, 250, u))})`
+
+          /* ---------------------------------------------------------------- S14 to S15: the top rung carried across the cut */
+          // HANDOFFS § S14 to S15. The ladder's top rung, do (card time: x 1454 to 1510 at y 230, 4 px, 45 %), brightens
+          // to full as the rest fades (469.7 to 469.9) and slides to (560, 520) (469.9 to 470.7, power2.inOut),
+          // condensing into the chrome bead as it lands (a capsule shortening and thickening to the bead's 44 px, the bead
+          // itself in over the last 0.15 s). carryAt is the same function in s15-next, of scene time and the card's end in
+          // that scene's time, so both scenes draw it from film time on the same pixels on either side of the cut.
+          const carryAt = (t, tc) => {
+            if (t < tc) return null
+            const br = P(t, tc, 0.2, 'none'), u = P(t, tc + 0.2, 0.8, 'power2.inOut'), c = P(t, tc + 0.6, 0.4, 'power2.in')
+            return { x: lerp(1482, 560, u), y: lerp(230, 520, u), len: 52 * (1 - c), th: lerp(4, 44, c), op: lerp(0.45, 1, br), bead: P(t, tc + 0.85, 0.15, 'none') }
+          }
+          const gCarry = L.svg('g', {}, mid)
+          const capsule = L.svg('rect', { fill: C.chrome, display: 'none' }, gCarry)
+          const carryBead = L.bead(gCarry, { r: 22, color: C.chrome })
+          const drawCarry = (s) => {
+            if (!s || s.bead >= 1) capsule.setAttribute('display', 'none')
+            else {
+              capsule.removeAttribute('display')
+              capsule.setAttribute('x', f1(s.x - s.len / 2 - s.th / 2)); capsule.setAttribute('width', f1(s.len + s.th))
+              capsule.setAttribute('y', f1(s.y - s.th / 2)); capsule.setAttribute('height', f1(s.th)); capsule.setAttribute('rx', f1(s.th / 2))
+              capsule.setAttribute('opacity', (s.op * (1 - s.bead)).toFixed(3))
+            }
+            L.bead4.place(carryBead, s && s.bead > 0 ? { x: s.x, y: s.y, a: s.bead, scale: s.th / 44 } : null)
+          }
 
           /* ---------------------------------------------------------------- the Mercs (top layer, screen space) */
           const merc = L.mercGate(room.top, { sid: SID, pass: 'm12-blue', tag: SID + '-m12-blue', x: 110, size: 300, feet: 0.81 })
@@ -219,7 +272,7 @@
           L.svg('rect', { x: 120, y: 140, width: 880, height: 190, rx: 16, fill: C.obsidian, 'fill-opacity': 0.85, stroke: C.chrome, 'stroke-opacity': 0.25, 'stroke-width': 2 }, gPanel)
           const CARD_T = "font: 600 40px 'Outfit', sans-serif; white-space: pre;"
           const CARDS = [
-            { lines: ['What pattern of steps', 'makes a major scale?'], tIn: [A.c1a, A.c1b], tOut: A.out1, q: 'q1' },
+            { lines: ['What pattern of steps', 'makes a major scale?'], tIn: [A.c1a, A.c1b], tOut: A.c1Out, q: 'q1' },
             { lines: ['Start a major scale on D.', 'Which two black keys does it need?'], tIn: [A.c2a, A.c2b], tOut: A.out2, q: 'q2' },
             { lines: ['From ti up to do:', 'a tone, or a semitone?'], tIn: [A.c3a, A.c3b], tOut: A.out3, q: 'q3' },
             { lines: ['In a major scale from G,', 'which note is do?'], tIn: [A.c4a, A.c4b], tOut: A.out4, q: 'q4' },
@@ -247,13 +300,15 @@
             return g
           }
           const ink = C.ink, ink2 = C.ink2
+          // 40 px above the caption band (DECISIONS 97): line 1's cap top (506) is 46 px under the ladder's card-time box
           const LINES = [
-            { y: 580, size: 48, weight: 600, fill: ink, tIn: A.l1, runs: ['Practise it free: ', { text: 'mercurypitch.com/pitch-training', key: 'url' }] },
-            { y: 650, size: 40, weight: 500, fill: ink, tIn: A.l2, runs: ['First visit? Skip the intro: ', { icon: 'x', size: 32, key: 0 }, ' › Yes, skip'] },
-            { y: 710, size: 40, weight: 500, fill: ink, tIn: A.set, runs: ['Set your range first: ', { icon: 'gear', size: 36, key: 1 }, ' Settings › Practice › ', { text: 'Singing Voice Range', key: 'range' }] },
-            { y: 770, size: 40, weight: 500, fill: ink, tIn: A.first, runs: ['then ', { icon: 'bell', size: 36, key: 2 }, ' Exercises › Scale Runner'] },
-            { y: 830, size: 40, weight: 500, fill: ink, tIn: A.sing, runs: ['sing in the octave it plays'] },
-            { y: 890, size: 32, weight: 500, fill: ink2, tIn: A.phone, runs: ['On a phone, Settings and Exercises are under ', { icon: 'dots', size: 28, key: 3, color: ink2 }, ' More'] },
+            { y: 540, size: 48, weight: 600, fill: ink, tIn: A.l1, runs: ['Practise it free: ', { text: 'mercurypitch.com/pitch-training', key: 'url' }] },
+            { y: 610, size: 40, weight: 500, fill: ink, tIn: A.l2, runs: ['First visit? Skip the intro: ', { icon: 'x', size: 32, key: 0 }, ' › Yes, skip'] },
+            { y: 670, size: 40, weight: 500, fill: ink, tIn: A.set, runs: ['Set your range first: ', { icon: 'gear', size: 36, key: 1 }, ' Settings › Practice › ', { text: 'Singing Voice Range', key: 'range' }] },
+            { y: 730, size: 40, weight: 500, fill: ink, tIn: A.first, runs: ['then ', { icon: 'bell', size: 36, key: 2 }, ' Exercises › Scale Runner'] },
+            { y: 790, size: 40, weight: 500, fill: ink, tIn: A.sing, runs: ['sing in the octave it plays'] },
+            // the phone line as the card pause begins, once b53's captions have gone
+            { y: 850, size: 32, weight: 500, fill: ink2, tIn: A.card, runs: ['On a phone, Settings and Exercises are under ', { icon: 'dots', size: 28, key: 3, color: ink2 }, ' More'] },
           ]
           const icons = [], runsBy = {}
           for (const Ln of LINES) {
@@ -276,7 +331,7 @@
           const hdefs = L.svg('defs', {}, hud)
           const ig = L.svg('filter', { id: SID + '-iglow', x: '-60%', y: '-60%', width: '220%', height: '220%' }, hdefs)
           L.svg('feGaussianBlur', { stdDeviation: 1.6 }, ig)
-          const underline = L.svg('rect', { x: 0, y: 594, width: 0, height: 3, rx: 1.5, fill: C.chrome, opacity: 0 }, hud)
+          const underline = L.svg('rect', { x: 0, y: 554, width: 0, height: 3, rx: 1.5, fill: C.chrome, opacity: 0 }, hud)
           // the card pause traces each tab's path in turn under its line, from the icon to the line's end (0.55 s),
           // as the icon glows: the icon alone is too small to read as a beat
           const traces = [0, 1, 2, 3].map(() => L.svg('rect', { x: 0, y: 0, width: 0, height: 2, rx: 1, fill: C.chrome, opacity: 0 }, hud))
@@ -299,11 +354,9 @@
           const GROW1 = (n) => W47[n - 1]                       // 14b: riser n measured on b47's word n - 1
           const KEYP = {}
           const addKey = (m, tt) => (KEYP[m] = KEYP[m] || []).push(tt)
-          SC.C.forEach((m, k) => addKey(m, A.scale1 + 0.06 * k))
           addKey(6, A.fs); addKey(6, A.fs2); addKey(13, A.cs); addKey(13, A.cs2)
           addKey(7, A.g4); addKey(7, A.toG); addKey(19, A.toG)
           addKey(19, A.g4)
-          SC.G.forEach((m, k) => addKey(m, A.scale52 + 0.06 * k))
           const back = (t, t0) => (t >= t0 && t < t0 + 0.3 ? P(t, t0 + 0.15, 0.15) : 1)   // a riser back to unmeasured: a dip
 
           L.clock(tl, D, (t) => {
@@ -315,12 +368,13 @@
             const uD = P(t, A.toD, 0.9), uC = P(t, A.toC, 0.8), uG = P(t, A.toG, 0.8)
             const w = lerp(lerp(lerp(0, 1, uD), 0, uC), 4, uG), s0 = lerp(lerp(lerp(0, 2, uD), 0, uC), 7, uG)
             const gone = 1 - P(t, A.lad, 0.6)                   // 14f: everything but the treads fades
+            const houseA = t < A.out1 ? 1 - P(t, A.bhOut, 0.3) : P(t, A.out1, 0.3)
             st.draw({
               w, s0, a: gone,
               rows: { a: gone, keep: { boxes, cam, t } },
               stair: (n) => {
                 const lit = Math.max(
-                  light(t, RIPPLE[n - 1]),
+                  light(t, RIPPLE[n - 1]),                      // the one ripple, on "steps"
                   hold(t, n <= 4 ? A.two : A.groups, A.out1, 0.45),
                   n === 1 ? Math.max(light(t, A.start2), light(t, A.landD), light(t, A.starts), light(t, A.doh52)) : 0,
                   n === 1 || n === 8 ? Math.max(light(t, A.need), light(t, A.doh4), light(t, A.wherever, 0.4, 0.8), light(t, A.home)) : 0,
@@ -331,7 +385,7 @@
                 )
                 // 14d holds ti and do lit, so their beats there are scale pulses, each with its name 0.15 s behind
                 const pulses = PULSE_N[n] || []
-                const sc = Math.max(pulses.length ? L.pulse(t, pulses, 'tile', { long: true }) : 1, L.pulse(t, A.pattern + 0.06 * (n - 1), 'tile'))
+                const sc = pulses.length ? L.pulse(t, pulses, 'tile', { long: true }) : 1
                 return { lit, scale: sc, names: [{ text: SOL[n - 1], a: 1, scale: NAME_N[n] ? labelPulse(t, NAME_N[n]) : 1 }] }
               },
               riser: (n) => {
@@ -340,9 +394,14 @@
                 if (t >= GROW1(n) && t < A.out1 + 0.15) {
                   const pul = n === 4 ? PUL4 : semi ? PULS : [], pulL = n === 4 ? PUL4L : semi ? PULSL : []
                   const tL = GROW1(n) + 0.1                       // the label lands as its riser grows (0.6 s)
+                  // the joining tone's "T" scales 1.2 about its own centre (the kit scales a label about its anchor, the
+                  // right end of its baseline: the "T" is about 22 px wide and 28 px tall, so the centre is held by
+                  // moving the anchor half the growth right and down)
+                  const lp = n === 4 ? L.pulse(t, pulL, 'label', { long: true }) : labelPulse(t, pulL)
+                  const cdx = n === 4 ? 11 * (lp - 1) : 0, cdy = n === 4 ? 14 * (lp - 1) : 0
                   return {
                     state, grow: P(t, GROW1(n), 0.6, 'power1.out'), a: 1 - P(t, A.out1, 0.15), scale: L.pulse(t, pul, 'bar', { long: true }),
-                    labels: [{ text: semi ? 'S' : 'T', a: P(t, tL, 0.2) * (1 - P(t, A.out1, 0.2)), scale: landScale(t, tL) * labelPulse(t, pulL) }],
+                    labels: [{ text: semi ? 'S' : 'T', a: P(t, tL, 0.2) * (1 - P(t, A.out1, 0.2)), scale: landScale(t, tL) * lp, dx: cdx, dy: cdy }],
                   }
                 }
                 // 14d: ti-do, measuring on "semitone?", gold on "A semitone", back at the card's exit
@@ -354,14 +413,16 @@
                     labels: [{ text: 'S', a: P(t, tS, 0.15) * (1 - P(t, A.out3, 0.2)), scale: landScale(t, tS) * labelPulse(t, PUL7L) }],
                   }
                 }
-                return { state: 'unmeasured', a: back(t, A.out1) * (n === 7 ? back(t, A.out3) : 1), scale: L.pulse(t, A.steps + 0.08 * (n - 1), 'bar') }
+                return { state: 'unmeasured', a: back(t, A.out1) * (n === 7 ? back(t, A.out3) : 1) }
               },
+              // both houses leave before 14b's first label (and the upper bracket) and return lit as the labels leave;
+              // the top one unlights as the bead drops onto ti and lights again as the bead goes in (433.74 to 434.04)
               houses: {
-                bottom: { a: t < A.out1 ? 1 - P(t, A.bhOut, 0.3) : P(t, A.out1, 0.3), lit: 1, glow: Math.max(L.env(t, A.wherever, 0.2, 0.3, 0.6), L.env(t, A.home, 0.15, 0.2, 0.6)), scale: L.pulse(t, A.home, 0.12) },
+                bottom: { a: houseA, lit: 1, glow: Math.max(L.env(t, A.wherever, 0.2, 0.3, 0.6), L.env(t, A.home, 0.15, 0.2, 0.6)), scale: L.pulse(t, A.home, 0.12) },
                 top: {
-                  a: 1, lit: 1,
-                  glow: Math.max(L.env(t, A.rise, 0.3, 0.2, 0.6), L.env(t, A.under, 0.15, 0.3, 0.6), L.env(t, A.wherever, 0.2, 0.3, 0.6), L.env(t, A.home, 0.15, 0.2, 0.6)),
-                  scale: L.pulse(t, [A.lit8, A.under, A.home], 0.12),
+                  a: houseA, lit: t < A.doOn ? 1 - P(t, A.tiDo - 0.2, 0.2) : P(t, A.doOn, 0.3, 'power1.inOut'),
+                  glow: Math.max(L.env(t, A.doOn, 0.3, 0.2, 0.6), L.env(t, A.under, 0.15, 0.3, 0.6), L.env(t, A.wherever, 0.2, 0.3, 0.6), L.env(t, A.home, 0.15, 0.2, 0.6)),
+                  scale: L.pulse(t, [A.inHouse, A.under, A.home], 0.12),
                 },
               },
             })
@@ -384,49 +445,75 @@
               key: (m) => {
                 const f = memb(m)
                 const names = m === 6 ? [{ text: 'F♯', a: nameA(A.fs, A.out2n) }] : m === 13 ? [{ text: 'C♯', a: nameA(A.cs, A.out2n) }] : m === 7 || m === 19 ? [{ text: 'G', a: nameA(A.toG, A.out4) }] : []
-                const bk = BLACKS.indexOf(m)
-                return { full: f, lit: ST.isBlack(m) ? Math.max(f, bk >= 0 ? hold(t, A.black + 0.09 * bk, A.blackOut, 0.35) : 0) : 0, scale: KEYP[m] ? L.pulse(t, KEYP[m], 'key') : 1, names }
+                return { full: f, lit: ST.isBlack(m) ? f : 0, scale: KEYP[m] ? L.pulse(t, KEYP[m], 'key') : 1, names }
               },
               hair: { a: t < A.pull1 || t >= A.fs ? 1 : 0, w, s0, hA: (n) => (t < A.pull1 ? 1 : P(t, A.fs + 0.06 * (n - 1), 0.3)) },
             })
 
-            // 14d: the chrome bead, the house's echo ring, the ink arrow
+            // 14d: the chrome bead, the house's echo ring as the bead is in, the ink arrow
             L.bead4.place(bead, beadAt(t))
-            echo.draw(t, [{ t: A.lit8, x: hb8.cx, y: hb8.cy, r: 30 }])
+            echo.draw(t, [{ t: A.inHouse, x: hb8.cx, y: hb8.cy, r: 30 }])
             inkArrow.draw(P(t, A.lean, 0.65, 'power2.inOut'), 1 - P(t, A.out3, 0.2), INK)
+            // 14b: the brackets, drawn on from the left (0.5 s) as their halves light, gone with the labels
+            {
+              const bo = 1 - P(t, A.out1, 0.3)
+              brLow.draw(P(t, A.two, 0.5, 'power2.out'), P(t, A.two, 0.05, 'none') * bo)
+              brHigh.draw(P(t, A.groups, 0.5, 'power2.out'), P(t, A.groups, 0.05, 'none') * bo)
+            }
 
-            // 14f: the ladder
+            // 14f: the ladder, large, then (14g) in its card-time box
             const show = t >= A.lad && t < A.cardEnd + 0.3
             gLad.setAttribute('display', show ? 'inline' : 'none')
             if (show) {
-              const u = P(t, A.morph, 1.2, 'power2.inOut'), out = 1 - P(t, A.cardEnd, 0.2)
+              const u = P(t, A.morph, 1.2, 'power2.inOut'), out = 1 - P(t, A.cardEnd, 0.3)
+              const Ly = lay(P(t, A.toCard, 0.6, 'power2.inOut'))
               gLad.setAttribute('opacity', out.toFixed(3))
-              gLad.setAttribute('transform', `translate(0 ${f1(-10 * P(t, A.cardEnd, 0.2, 'power2.in'))})`)
+              gLad.setAttribute('transform', `translate(0 ${f1(-10 * P(t, A.cardEnd, 0.3, 'power2.in'))})`)
               const frame = P(t, A.morph + 0.2, 0.6)
+              ladPanel.setAttribute('x', f1(Ly.x)); ladPanel.setAttribute('y', f1(Ly.y)); ladPanel.setAttribute('width', f1(Ly.w)); ladPanel.setAttribute('height', f1(Ly.h))
               ladPanel.setAttribute('opacity', frame.toFixed(3)); playhead.setAttribute('opacity', frame.toFixed(3))
+              const phx = Ly.X(894), ya4 = Ly.Y(2)
+              playhead.setAttribute('x1', f1(phx)); playhead.setAttribute('x2', f1(phx)); playhead.setAttribute('y1', f1(Ly.p0)); playhead.setAttribute('y2', f1(Ly.p1))
+              target.setAttribute('x1', f1(Ly.X(340))); target.setAttribute('x2', f1(phx)); target.setAttribute('y1', f1(ya4)); target.setAttribute('y2', f1(ya4))
+              conn.setAttribute('d', `M${f1(phx)} ${f1(ya4)} ${RX.map((x, i) => `L${f1(Ly.X(x))} ${f1(Ly.Y(RS[i]))}`).join(' ')}`)
               const tgt = P(t, A.morph + 1.0, 0.3)
               gTarget.setAttribute('opacity', tgt.toFixed(3))
               gPill.setAttribute('opacity', tgt.toFixed(3))
-              const pp = L.pulse(t, [A.back, A.octave], 0.2)
-              gPill.setAttribute('transform', `translate(860 370) scale(${pp.toFixed(4)}) translate(-860 -370)`)
+              // the "A4" pill against the playhead's left (8 px), its foot 11 px over the dashed line
+              const pcx = phx - 34, pcy = ya4 - 28, pp = L.pulse(t, [A.back, A.octave], 0.2)
+              pillR.setAttribute('x', f1(pcx - 26)); pillR.setAttribute('y', f1(pcy - 17))
+              pillT.setAttribute('x', f1(pcx)); pillT.setAttribute('y', f1(pcy + 9))
+              gPill.setAttribute('transform', `translate(${f1(pcx)} ${f1(pcy)}) scale(${pp.toFixed(4)}) translate(${f1(-pcx)} ${f1(-pcy)})`)
               rungNames.forEach((el, i) => {
-                const t0 = A.runner + 0.2 * i, cx = RX[i], cy = RY[i] - 22, ns = labelPulse(t, BACKL)
+                const t0 = A.runner + 0.2 * i, cx = Ly.X(RX[i]), by = Ly.Y(RS[i]) - (i ? 2 : 3) - 10, cy = by - 9, ns = labelPulse(t, BACKL)
+                el.setAttribute('x', f1(cx)); el.setAttribute('y', f1(by))
                 el.setAttribute('opacity', P(t, t0, 0.3).toFixed(3))
-                el.setAttribute('transform', `translate(0 ${f1(12 * (1 - P(t, t0, 0.7, 'power2.out')))}) translate(${cx} ${cy}) scale(${ns.toFixed(4)}) translate(${-cx} ${-cy})`)
+                el.setAttribute('transform', `translate(0 ${f1(12 * (1 - P(t, t0, 0.7, 'power2.out')))}) translate(${f1(cx)} ${f1(cy)}) scale(${ns.toFixed(4)}) translate(${f1(-cx)} ${f1(-cy)})`)
               })
-              connClip.setAttribute('width', f1(Math.max(0.01, 640 * P(t, A.runner, 0.8, 'power2.inOut'))))
+              connClip.setAttribute('x', f1(Ly.X(890)))
+              connClip.setAttribute('width', f1(Math.max(0.01, (Ly.X(1530) - Ly.X(890)) * P(t, A.runner, 0.8, 'power2.inOut'))))
+              const tx = Ly.X(330), ty = Ly.ty
+              ladTitle.setAttribute('x', f1(tx)); ladTitle.setAttribute('y', f1(ty))
+              ladIllu.setAttribute('x', f1(Ly.X(1590))); ladIllu.setAttribute('y', f1(ty))
               ;[ladTitle, ladIllu].forEach((el, i) => {
                 const t0 = A.sr + 0.15 * i, ts = i ? 1 : L.pulse(t, A.trace, 'label', { long: true })
                 el.setAttribute('opacity', P(t, t0, 0.3).toFixed(3))
-                el.setAttribute('transform', `translate(0 ${f1(16 * (1 - P(t, t0, 0.7, 'power2.out')))}) translate(330 186) scale(${ts.toFixed(4)}) translate(-330 -186)`)
+                el.setAttribute('transform', `translate(0 ${f1(16 * (1 - P(t, t0, 0.7, 'power2.out')))}) translate(${f1(tx)} ${f1(ty - 14)}) scale(${ts.toFixed(4)}) translate(${f1(-tx)} ${f1(14 - ty)})`)
               })
-              rungGlow.setAttribute('opacity', (0.55 * P(t, A.note, 0.3)).toFixed(3))
+              {
+                const gx = Ly.X(RX[0]), gy = Ly.Y(RS[0])
+                rungGlow.setAttribute('x1', f1(gx - Ly.rung / 2)); rungGlow.setAttribute('x2', f1(gx + Ly.rung / 2))
+                rungGlow.setAttribute('y1', f1(gy)); rungGlow.setAttribute('y2', f1(gy))
+                rungGlow.setAttribute('opacity', (0.55 * P(t, A.note, 0.3)).toFixed(3))
+              }
               // the violet tip wavers at the playhead on "one note at a time" and again on "plays."
               const wav = Math.max(L.env(t, A.sing1, 0.1, 0.15, 0.4), L.env(t, A.one, 0.1, 0.15, 0.4), L.env(t, A.time, 0.1, 0.3, 0.4), L.env(t, A.plays, 0.1, 0.3, 0.4))
               for (const R of treads) {
-                const F = R.from, Tg = R.to
-                const k = R.n >= 3 ? R.n - 3 : -1
-                const sc = k >= 0 ? L.pulse(t, RUNGP[k], 0.25, { long: true }) : 1
+                // the top rung is carried from the card's end (drawCarry)
+                if (R.n === 8 && t >= A.cardEnd) { R.el.setAttribute('d', ''); continue }
+                const F = R.from, Tg = treadTo(R, Ly)
+                const k = R.k
+                const sc = k === 0 ? L.pulse(t, RUNG0P, 0.25, { long: true }) : 1
                 const x0 = lerp(F.x0, Tg.x0, u), x1 = lerp(F.x1, Tg.x1, u), y = lerp(F.y, Tg.y, u)
                 const cx = (x0 + x1) / 2, hw = ((x1 - x0) / 2) * sc
                 let d = `M${f1(cx - hw)} ${f1(y)} L${f1(cx + hw)} ${f1(y)}`
@@ -444,10 +531,20 @@
               }
             }
 
-            // type (hud): the panel, the kicker, the four cards and their ring timers
-            const pIn = P(t, A.panel, 0.8, 'power2.out')
-            gPanel.setAttribute('opacity', (P(t, A.panel, 0.55, 'power1.out') * (1 - P(t, A.out4, 0.45))).toFixed(3))
-            gPanel.setAttribute('transform', `translate(0 ${f1(24 * (1 - pIn))})`)
+            // S14 to S15: the top rung, carried
+            drawCarry(carryAt(t, A.cardEnd))
+
+            // type (hud): the kicker, the four cards and their ring timers; each card brings its panel (in over the
+            // 0.2 s before its first line, rising 12 px) and takes it as its lines leave (0.43 s)
+            {
+              let pa = 0, pdy = 0
+              for (const K of CARDS) {
+                const k = P(t, K.tIn[0] - 0.2, 0.2, 'power1.out') * (1 - P(t, K.tOut, 0.43))
+                if (k > pa) { pa = k; pdy = 12 * (1 - P(t, K.tIn[0] - 0.2, 0.5, 'power2.out')) }
+              }
+              gPanel.setAttribute('opacity', pa.toFixed(3))
+              gPanel.setAttribute('transform', `translate(0 ${f1(pdy)})`)
+            }
             kick.draw(t, A.kick, A.kickOut)
             for (const K of CARDS) {
               K.els.forEach((el, i) => {
@@ -458,12 +555,12 @@
               K.ring.draw(t, at(K.q), cue(K.q).dur)
             }
 
-            // the practise card: top line first, each line in over 0.2 s, rising 12 px; the icons pulse in turn in
-            // the card pause, More's last, then the address's underline draws; all leave with the ladder
-            const cOut = 1 - P(t, A.cardEnd, 0.2)
+            // the practise card: top line first, each line in over 0.2 s, rising 20 px; the icons pulse in turn in
+            // the card pause, More's last, then the address's underline draws; all fade with the ladder (0.3 s)
+            const cOut = 1 - P(t, A.cardEnd, 0.3), cLift = -10 * P(t, A.cardEnd, 0.3, 'power2.in')
             for (const Ln of LINES) {
               Ln.g.setAttribute('opacity', (P(t, Ln.tIn, 0.2) * cOut).toFixed(3))
-              Ln.g.setAttribute('transform', `translate(0 ${f1(20 * (1 - P(t, Ln.tIn, 0.7, 'power3.out')) - 10 * P(t, A.cardEnd, 0.2, 'power2.in'))})`)
+              Ln.g.setAttribute('transform', `translate(0 ${f1(20 * (1 - P(t, Ln.tIn, 0.7, 'power3.out')) + cLift)})`)
             }
             icons.forEach((R, k) => {
               const times = [ICONP[k]].concat(k === 1 ? [A.settings] : [])
@@ -477,7 +574,7 @@
               T.setAttribute('x', f1(x0)); T.setAttribute('y', f1(R.ln.y + (k === 3 ? 5 : 13)))
               T.setAttribute('width', f1(Math.max(0.01, (x1 - x0) * P(t, ICONP[k], 0.75, 'power1.inOut'))))
               T.setAttribute('opacity', (0.7 * P(t, ICONP[k], 0.1) * (1 - P(t, ICONP[k] + 0.75, 0.35)) * cOut).toFixed(3))
-              T.setAttribute('transform', `translate(0 ${f1(-10 * P(t, A.cardEnd, 0.2, 'power2.in'))})`)
+              T.setAttribute('transform', `translate(0 ${f1(cLift)})`)
             })
             {
               const { R, Ln } = runsBy.range
@@ -487,7 +584,7 @@
               const uw = (U.w || 0) * P(t, A.under2, 0.75, 'power1.inOut')
               underline.setAttribute('x', f1(U.x ?? 960)); underline.setAttribute('width', f1(Math.max(0.01, uw)))
               underline.setAttribute('opacity', (0.8 * P(t, A.under2, 0.1) * cOut).toFixed(3))
-              underline.setAttribute('transform', `translate(0 ${f1(-10 * P(t, A.cardEnd, 0.2, 'power2.in'))})`)
+              underline.setAttribute('transform', `translate(0 ${f1(cLift)})`)
             }
           })
           window.__timelines = window.__timelines || {}

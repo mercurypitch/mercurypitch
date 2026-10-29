@@ -253,11 +253,13 @@ top house lighting, the strip with every start's keys and hairlines, and the pus
 The world geometry matched HANDOFFS § World to the pixel.
 
 Known in the kit:
-- The room's near layer carries the camera's depth cue (`L.bokeh`, DECISIONS 89): 21 faint, soft
-  discs, static in that layer, so they move only with the camera, at 1.6 times the world. They are
-  the same in every scene. Do not add a depth cue of your own, and do not hide, fade or restyle
-  `room.near` (the bokeh and the dust live there). A clip rendered before 29 Oct 14:43 does not have
-  them.
+- The room carries the camera's depth cue (`L.bokeh`, DECISIONS 89): 21 faint, soft chrome discs,
+  static in the room's under layer (`room.under`, between far and mid since DECISIONS 100), which
+  the rigs move as the near layer, so they move only with the camera, at 1.6 times the world, and
+  every mark of the diagram covers them. They are the same in every scene. Do not add a depth cue of
+  your own, and do not hide, fade or restyle `room.under` or `room.near` (the dust lives there). A
+  clip rendered before 29 Oct 14:43 does not have them; one rendered before 20:49 draws them over
+  the diagram, some in blue or violet.
 - While the camera slides them against the diagram, the bokeh and the far staves brighten (DECISIONS
   93; `L.frameRig` does it, from the moves you already write), and every frame at rest is as before.
   Do not set the opacity of `room.bokeh` or `room.staves`. A clip rendered before 29 Oct 18:42 shows

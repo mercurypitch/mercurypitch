@@ -61,7 +61,7 @@
     const K = { far, mid: 1, near }
     const v0 = frameOf(from)
     const moves = []
-    for (const name of ['far', 'mid', 'near']) {
+    for (const name of ['far', 'under', 'mid', 'near']) {
       if (room && room[name]) {
         room[name].style.transformOrigin = '0 0'
         room[name].setAttribute('data-layout-allow-overflow', '')
@@ -148,9 +148,10 @@
       },
       apply(t) {
         const st = cam.state(t)
-        for (const name of ['far', 'mid', 'near']) {
+        // the under layer (the near bokeh, DECISIONS 100) moves as the near one
+        for (const [name, k] of [['far', 'far'], ['under', 'near'], ['mid', 'mid'], ['near', 'near']]) {
           if (!room || !room[name]) continue
-          const m = cam.matrix(t, name, st)
+          const m = cam.matrix(t, k, st)
           room[name].style.transform = `matrix(${m.a.toFixed(5)}, 0, 0, ${m.a.toFixed(5)}, ${m.e.toFixed(2)}, ${m.f.toFixed(2)})`
         }
         // the near bokeh lifts while it slides against the diagram (from 40 to 400 px a second),

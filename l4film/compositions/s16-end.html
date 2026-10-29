@@ -61,8 +61,14 @@
           const halo = grad('halo', [['0', '#58a6ff', 0.22], ['0.55', '#2dd4bf', 0.07], ['1', '#0d1117', 0]], { r: '0.5', cx: '0.5', cy: '0.5' })
           const orbClip = sv('clipPath', { id: ID('orb') }, defs)
           sv('circle', { cx: 130, cy: 130, r: 118 }, orbClip)
-          const wordClip = sv('clipPath', { id: ID('word') }, defs)
-          const wordRect = sv('rect', { x: 270, y: 0, width: 0, height: 260 }, wordClip)
+          // the wordmark's wipe: a mask whose edge is feathered over FEATHER lockup units (60 px on screen at the
+          // lockup's scale, 180 / 236), so no frame slices a letter with a hard edge
+          const FEATHER = 60 * 236 / 180
+          const wordMask = sv('mask', { id: ID('word'), maskUnits: 'userSpaceOnUse', x: 200, y: -60, width: 1400, height: 380 }, defs)
+          const wipeGrad = sv('linearGradient', { id: ID('wipe'), gradientUnits: 'userSpaceOnUse', x1: 270 - FEATHER, y1: 0, x2: 270, y2: 0 }, defs)
+          sv('stop', { offset: '0', 'stop-color': '#ffffff' }, wipeGrad)
+          sv('stop', { offset: '1', 'stop-color': '#000000' }, wipeGrad)
+          sv('rect', { x: 200, y: -60, width: 1400, height: 380, fill: `url(#${ID('wipe')})` }, wordMask)
           const glowE = sv('ellipse', { cx: 960, cy: 130, rx: 700, ry: 200, fill: halo, opacity: 0 }, mid)
           const lock = sv('g', {}, mid)
           const orbG = sv('g', {}, lock)
@@ -72,9 +78,9 @@
           const wave = sv('path', { d: 'M12,130 C54,86 86,86 130,130 S206,174 248,130', fill: 'none', stroke: spectrum, 'stroke-width': 11, 'stroke-linecap': 'round', 'stroke-dasharray': '300 300', 'stroke-dashoffset': 300 }, orbIn)
           const spec = sv('ellipse', { cx: 94, cy: 69, rx: 25, ry: 12.5, fill: '#ffffff', opacity: 0, transform: 'rotate(-20 94 69)' }, orbIn)
           sv('circle', { cx: 130, cy: 130, r: 118, fill: 'none', stroke: '#c3ccd6', 'stroke-opacity': 0.35, 'stroke-width': 2 }, orbG)
-          const wordG = sv('g', { 'clip-path': `url(#${ID('word')})` }, lock)
+          const wordG = sv('g', { mask: `url(#${ID('word')})` }, lock)
           // the wordmark as two runs, "Mercury" chrome-white and "Pitch" in the spectrum (BRAND.md), each shown
-          // only once the wipe reaches it (hidden behind the clip it would read as a label at 1:1)
+          // only once the wipe's leading edge reaches it (hidden behind the mask it would read as a label at 1:1)
           const wStyle = 'font-family:Outfit;font-weight:600;font-size:118px;letter-spacing:-2px'
           const word = sv('text', { x: 292, y: 172, fill: '#e6edf3', opacity: 0, style: wStyle, text: 'Mercury' }, wordG)
           const word2 = sv('text', { x: 292, y: 172, fill: spectrum, opacity: 0, style: wStyle, text: 'Pitch' }, wordG)
@@ -189,10 +195,11 @@
             orbG.setAttribute('opacity', P(t, ORB_IN, 0.22).toFixed(3))
             wave.setAttribute('stroke-dashoffset', f2(300 * (1 - P(t, WAVE, 0.7, 'power3.inOut'))))
             spec.setAttribute('opacity', (0.85 * P(t, ORB_IN + 0.47, 0.3)).toFixed(3))
-            const wipe = (content - 270 + 30) * P(t, WORD, 0.83, 'power3.inOut')
-            wordRect.setAttribute('width', f2(wipe))
-            word.setAttribute('opacity', L.clamp((270 + wipe - 292) / 6).toFixed(3))
-            word2.setAttribute('opacity', L.clamp((270 + wipe - 292 - w1) / 6).toFixed(3))
+            // the wipe's leading edge runs from x 270 until its feather has cleared the wordmark's end (+ 30)
+            const wipe = (content - 270 + 30 + FEATHER) * P(t, WORD, 0.83, 'power3.inOut'), edge = 270 + wipe
+            wipeGrad.setAttribute('x1', f2(edge - FEATHER)); wipeGrad.setAttribute('x2', f2(edge))
+            word.setAttribute('opacity', L.clamp((edge - 292) / 6).toFixed(3))
+            word2.setAttribute('opacity', L.clamp((edge - 292 - w1) / 6).toFixed(3))
             glowE.setAttribute('opacity', (P(t, ORB_IN, 0.9) * (0.85 + 0.15 * Math.sin(TAU * T / 3.2))).toFixed(3))
             const fu = P(t, TAG, 0.65, 'power3.out')
             tag.setAttribute('opacity', fu.toFixed(3))
