@@ -12,7 +12,7 @@ import type { StudioBackupTarget } from './backup/backup-target'
 import { restoreStudioBackup, writeStudioBackup } from './backup/studio-backup'
 import type { StudioEditHistory } from './controller/edit-history'
 import { createStudioEditHistory, executeStudioEdit, travelStudioHistory, } from './controller/edit-history'
-import type { EditorPresence, EditorPresenceSource, } from './controller/editor-presence'
+import type { EditorPresence, EditorPresenceSource, ProjectOpenHold, } from './controller/editor-presence'
 import { defaultEditorPresence, EDITOR_CLAIM_WAIT_MS, } from './controller/editor-presence'
 import { createStudioImporter, studioMissedLaneText, } from './controller/imports'
 import type { StudioSaveQueue, StudioSaveState } from './controller/save-queue'
@@ -106,6 +106,8 @@ export function useStudioController(options: StudioControllerOptions = {}) {
   let queue: StudioSaveQueue | null = null
   let lease: StudioEditorLease | null = null
   let presence: EditorPresence | null = null
+  /** The open song, held as loaded in this tab: no tab deletes its audio meanwhile. */
+  let openHold: ProjectOpenHold | null = null
   /**
    * True while editing is on hold but the token may still be this tab's: a
    * save found the lease gone, or renewing it failed. The next reclaim gives
@@ -391,8 +393,10 @@ export function useStudioController(options: StudioControllerOptions = {}) {
     setEditHistory(null)
     const previous = lease
     const held = presence
+    const opened = openHold
     lease = null
     presence = null
+    openHold = null
     editingLapsed = false
     setWritable(false)
     try {
@@ -401,6 +405,7 @@ export function useStudioController(options: StudioControllerOptions = {}) {
       /* Expiry also retires this token. */
     } finally {
       held?.release()
+      opened?.release()
     }
     return epoch
   }
@@ -479,6 +484,33 @@ export function useStudioController(options: StudioControllerOptions = {}) {
     }
   }
 
+  /**
+   * Delete the song's audio that no clip uses, as it opens: takes removed in
+   * an earlier session stop counting against its audio limit. Only a tab that
+   * edits the song and holds its lock asks, and only once it is proven that
+   * no other tab has the song loaded: another tab's history, unsaved edits
+   * or copy may still want that audio. A failure keeps everything.
+   */
+  async function pruneUnused(
+    id: string,
+    token: StudioEditorLease,
+    snapshot: StudioProject,
+    opened: ProjectOpenHold,
+    metadata: StudioAsset[],
+  ): Promise<StudioAsset[]> {
+    const used = new Set(snapshot.clips.map((clip) => clip.assetId))
+    if (metadata.every((asset) => used.has(asset.id))) return metadata
+    try {
+      if (!(await opened.alone())) return metadata
+      return await service.pruneUnusedAssets(id, {
+        ...token,
+        expectedRevision: snapshot.revision,
+      })
+    } catch {
+      return metadata
+    }
+  }
+
   async function openProject(
     id: string,
     force = false,
@@ -492,39 +524,52 @@ export function useStudioController(options: StudioControllerOptions = {}) {
     setAssets([])
     setSaveState('saved')
     setProblem(null)
+    let opened: ProjectOpenHold | null = null
     let acquired: ProjectEditor | null = null
+    let adopted = false
     try {
       await retirement
       if (!current(epoch)) return
+      // Held from before the song is read until this tab lets it go: while
+      // any tab holds it, no tab deletes the song's unused audio.
+      opened = await presenceSource.open(id)
+      if (!current(epoch)) return
       acquired = await acquireProjectEditor(id, takeover)
-      const [snapshot, metadata] = await Promise.all([
+      const [snapshot, loaded] = await Promise.all([
         service.loadProject(id),
         service.listAssets(id),
       ])
-      if (!current(epoch)) {
-        const stale = acquired
-        acquired = null
-        if (stale) await releaseProjectEditor(id, stale)
-        return
-      }
+      if (!current(epoch)) return
+      const editing =
+        acquired !== null && acquired.lease.expiresAt > now().getTime()
+      const metadata =
+        acquired !== null && editing && acquired.presence.exclusive
+          ? await pruneUnused(id, acquired.lease, snapshot, opened, loaded)
+          : loaded
+      if (!current(epoch)) return
       const history = createStudioEditHistory(snapshot)
       setEditHistory(history)
       setProject(history.state.present)
       setAssets(metadata)
+      openHold = opened
+      adopted = true
       if (acquired) {
         lease = acquired.lease
         presence = acquired.presence
         watchPresence(acquired.presence, epoch)
-        if (acquired.lease.expiresAt > now().getTime()) {
+        if (editing) {
           setWritable(true)
           attachQueue(snapshot, acquired.lease, epoch)
         }
       }
     } catch (error) {
-      if (acquired && presence !== acquired.presence)
-        await releaseProjectEditor(id, acquired).catch(() => undefined)
       if (current(epoch)) report(error)
     } finally {
+      if (!adopted) {
+        opened?.release()
+        if (acquired)
+          await releaseProjectEditor(id, acquired).catch(() => undefined)
+      }
       if (current(epoch)) setLoading(false)
     }
   }

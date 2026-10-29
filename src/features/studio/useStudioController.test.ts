@@ -4,7 +4,7 @@ import { StudioStorageError } from '@/db/services/studio-service'
 import { isLocalSaveNavigationLocked, vetoNavigationDuringLocalSave, } from '@/lib/local-save-navigation-lock'
 import type { StudioAssetInfo } from '@/lib/studio/audio/prepare-studio-asset'
 import { studioReservedMemoryBytes } from '@/lib/studio/memory-budget'
-import { createStudioProject } from '@/lib/studio/model/defaults'
+import { createStudioProject, createStudioTrack, } from '@/lib/studio/model/defaults'
 import type { StudioAssetData, StudioProject } from '@/lib/studio/model/types'
 import type { StudioBackupTarget } from './backup/backup-target'
 import { controllerServiceFixture, preparedFixture, presenceFixture, } from './controller/controller.fixture'
@@ -253,9 +253,9 @@ describe('Studio controller', () => {
     expect(isLocalSaveNavigationLocked()).toBe(false)
   })
 
-  it('rejects an over-limit import before staging an unsavable revision', async () => {
-    const service = controllerServiceFixture()
-    const retained = Array.from({ length: 128 }, (_, index) => ({
+  /** 128 takes saved with song `one`, the most a song holds. */
+  const fullSong = () =>
+    Array.from({ length: 128 }, (_, index) => ({
       ...preparedFixture({
         id: `old-${index}`,
         projectId: 'one',
@@ -264,7 +264,10 @@ describe('Studio controller', () => {
       }).asset,
       sha256: 'c'.repeat(64),
     }))
-    vi.mocked(service.listAssets).mockResolvedValueOnce(retained)
+
+  it('rejects an over-limit import before staging an unsavable revision, and points removed takes at a copy', async () => {
+    const service = controllerServiceFixture()
+    vi.mocked(service.listAssets).mockResolvedValueOnce(fullSong())
     const { controller } = mount({
       service,
       prepareFile: async (_blob, info) => preparedFixture(info),
@@ -276,9 +279,50 @@ describe('Studio controller', () => {
     expect(controller.project()?.revision).toBe(0)
     expect(controller.project()?.clips).toEqual([])
     expect(controller.assets()).toHaveLength(128)
-    expect(controller.problem()).toContain('local audio limit')
+    // No clip plays any of the 128: removed takes fill the song.
+    expect(controller.problem()).toBe(
+      "Takes you removed still count toward this song's audio limit. Make a copy, which keeps only the takes in use, and add this take there.",
+    )
     expect(service.saveProject).not.toHaveBeenCalled()
     expect(isLocalSaveNavigationLocked()).toBe(false)
+  })
+
+  it('says a song is full when the takes it plays fill it', async () => {
+    const service = controllerServiceFixture()
+    const takes = fullSong()
+    const playing = createStudioProject({
+      id: 'one',
+      now: '2026-10-26T10:00:00.000Z',
+    })
+    vi.mocked(service.loadProject).mockResolvedValueOnce({
+      ...playing,
+      tracks: [createStudioTrack({ id: 'lane', name: 'Voice', order: 0 })],
+      clips: takes.map((take, index) => ({
+        id: `clip-${index}`,
+        trackId: 'lane',
+        assetId: take.id,
+        startFrame: index * 2,
+        sourceInFrame: 0,
+        sourceOutFrame: 2,
+        gainDb: 0,
+        fades: { curve: 'linear-amplitude' },
+      })),
+    })
+    vi.mocked(service.listAssets).mockResolvedValueOnce(takes)
+    const { controller } = mount({
+      service,
+      prepareFile: async (_blob, info) => preparedFixture(info),
+    })
+    await controller.open('one')
+    await controller.addFile(
+      new File(['abc'], 'New.wav', { type: 'audio/wav' }),
+    )
+
+    expect(controller.problem()).toBe(
+      'This project has reached its local audio limit. Add this take to another project.',
+    )
+    expect(controller.project()?.clips).toHaveLength(128)
+    expect(service.saveProject).not.toHaveBeenCalled()
   })
 
   it('queues a file picked while the last import is still saving', async () => {
@@ -933,6 +977,158 @@ describe('Studio controller', () => {
 
       expect(service.reclaimLease).not.toHaveBeenCalled()
       expect(controller.problem()).toBe(TAKEN)
+    })
+  })
+
+  describe('audio no clip uses', () => {
+    /** Two takes saved with song `one`, which plays neither: both were removed. */
+    function removedTakes(
+      service: ReturnType<typeof controllerServiceFixture>,
+    ) {
+      const takes = ['gone-one', 'gone-two'].map(
+        (id) =>
+          preparedFixture({
+            id,
+            projectId: 'one',
+            provenance: {
+              kind: 'file',
+              importedAt: '2026-10-26T10:00:00.000Z',
+            },
+          }).asset,
+      )
+      vi.mocked(service.listAssets).mockResolvedValue(takes)
+      return takes
+    }
+
+    it('is deleted as a song opens in the one tab that has it loaded, and only the audio left is listed', async () => {
+      const presence = presenceFixture()
+      const service = controllerServiceFixture()
+      removedTakes(service)
+      const { controller } = mount({ service, presence: presence.source })
+      await controller.open('one')
+
+      expect(service.pruneUnusedAssets).toHaveBeenCalledWith(
+        'one',
+        expect.objectContaining({ epoch: 1, expectedRevision: 0 }),
+      )
+      expect(controller.assets()).toEqual([])
+      expect(controller.writable()).toBe(true)
+      const [opened] = presence.source.open.mock.invocationCallOrder
+      const [read] = vi.mocked(service.loadProject).mock.invocationCallOrder
+      expect(opened).toBeLessThan(read)
+    })
+
+    it('stays while another tab has the song loaded: its history or copy may still want it', async () => {
+      const presence = presenceFixture()
+      presence.shared()
+      const service = controllerServiceFixture()
+      const takes = removedTakes(service)
+      const { controller } = mount({ service, presence: presence.source })
+      await controller.open('one')
+
+      expect(service.pruneUnusedAssets).not.toHaveBeenCalled()
+      expect(controller.assets()).toEqual(takes)
+    })
+
+    it('stays where the browser has no locks to prove the song is loaded nowhere else', async () => {
+      const service = controllerServiceFixture()
+      removedTakes(service)
+      const { controller } = mount({ service })
+      await controller.open('one')
+
+      expect(service.pruneUnusedAssets).not.toHaveBeenCalled()
+      expect(controller.assets()).toHaveLength(2)
+    })
+
+    it('stays when the song opens read-only', async () => {
+      const presence = presenceFixture()
+      presence.refuse()
+      const service = controllerServiceFixture()
+      removedTakes(service)
+      const { controller } = mount({ service, presence: presence.source })
+      await controller.open('one')
+
+      expect(controller.writable()).toBe(false)
+      expect(service.pruneUnusedAssets).not.toHaveBeenCalled()
+    })
+
+    it('is not asked about when every take is in use', async () => {
+      const presence = presenceFixture()
+      const { controller, service } = mount({ presence: presence.source })
+      await controller.open('one')
+
+      expect(service.pruneUnusedAssets).not.toHaveBeenCalled()
+      expect(presence.opens[0].alone).not.toHaveBeenCalled()
+    })
+
+    it('stays, and the song opens as usual, when deleting it fails', async () => {
+      const presence = presenceFixture()
+      const service = controllerServiceFixture()
+      const takes = removedTakes(service)
+      vi.mocked(service.pruneUnusedAssets).mockRejectedValueOnce(
+        new StudioStorageError('quota-exceeded', 'Full'),
+      )
+      const { controller } = mount({ service, presence: presence.source })
+      await controller.open('one')
+
+      expect(controller.assets()).toEqual(takes)
+      expect(controller.writable()).toBe(true)
+      expect(controller.problem()).toBeNull()
+    })
+
+    it('stays while a backup runs here: nothing can open the song again until it ends', async () => {
+      const presence = presenceFixture()
+      const service = controllerServiceFixture()
+      removedTakes(service)
+      let release!: () => void
+      const writeBackup = vi.fn(
+        () =>
+          new Promise<void>((resolve) => {
+            release = resolve
+          }),
+      )
+      const { controller } = mount({
+        service,
+        presence: presence.source,
+        writeBackup,
+      })
+      await controller.open('one')
+      const running = controller.backup({
+        kind: 'file',
+        name: 'Window seat 2026-10-29 1142.mpstudio',
+        keepMs: 0,
+        reserve: vi.fn(),
+        write: vi.fn(),
+        close: vi.fn(async () => null),
+        discard: vi.fn(async () => {}),
+      })
+
+      await controller.open('one')
+      await controller.takeOver()
+      await controller.discardAndReload()
+      await controller.openForBackup('two')
+      release()
+      expect(await running).toBe(true)
+
+      expect(service.loadProject).toHaveBeenCalledTimes(1)
+      expect(service.pruneUnusedAssets).toHaveBeenCalledTimes(1)
+    })
+
+    it('is protected for as long as the song is loaded here, and the song is let go with the lease', async () => {
+      const presence = presenceFixture()
+      const { controller } = mount({ presence: presence.source })
+      await controller.open('one')
+      await controller.open('two')
+
+      expect(presence.opens.map((open) => open.projectId)).toEqual([
+        'one',
+        'two',
+      ])
+      expect(presence.opens[0].release).toHaveBeenCalled()
+      expect(presence.opens[1].release).not.toHaveBeenCalled()
+      controller.dispose()
+      await Promise.resolve()
+      expect(presence.opens[1].release).toHaveBeenCalled()
     })
   })
 

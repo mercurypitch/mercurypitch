@@ -63,17 +63,28 @@ function sameAudio(a: StudioAsset, b: StudioAsset): boolean {
   )
 }
 
+const SONG_FULL =
+  'This project has reached its local audio limit. Add this take to another project.'
+/** The way out when only removed takes stand in the way: a copy takes only the takes in use. */
+const REMOVED_TAKES_FULL =
+  "Takes you removed still count toward this song's audio limit. Make a copy, which keeps only the takes in use, and add this take there."
+
 function retainNewAudio(
   data: StudioAssetData,
   known: readonly StudioAsset[],
+  inUse: ReadonlySet<string>,
   retained: ReturnType<typeof createRetainedStudioAudio>,
 ): StudioAsset {
   const existing = known.find((asset) => sameAudio(asset, data.asset))
   if (existing !== undefined) return existing
-  if (!fitsStudioProjectStorageBudget([...known, data.asset]))
+  if (!fitsStudioProjectStorageBudget([...known, data.asset])) {
+    const playing = known.filter((asset) => inUse.has(asset.id))
     throw new Error(
-      'This project has reached its local audio limit. Add this take to another project.',
+      fitsStudioProjectStorageBudget([...playing, data.asset])
+        ? REMOVED_TAKES_FULL
+        : SONG_FULL,
     )
+  }
   retained.retain([data])
   return data.asset
 }
@@ -210,11 +221,17 @@ export function createStudioImporter(options: ImportControllerOptions) {
         )
         checkImportCancelled(abort.signal)
         if (!options.current(epoch) || !options.canEdit()) return false
-        const known = [
-          ...options.assets(),
-          ...retained.values().map((value) => value.asset),
-        ]
-        selected.push({ item, asset: retainNewAudio(data, known, retained) })
+        const adding = retained.values().map((value) => value.asset)
+        const known = [...options.assets(), ...adding]
+        // The takes the song plays, and the ones this import is adding.
+        const inUse = new Set([
+          ...(options.project()?.clips ?? []).map((clip) => clip.assetId),
+          ...adding.map((asset) => asset.id),
+        ])
+        selected.push({
+          item,
+          asset: retainNewAudio(data, known, inUse, retained),
+        })
       }
       const currentProject = options.project()
       if (currentProject === null || !options.current(epoch)) return false

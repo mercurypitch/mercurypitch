@@ -56,6 +56,14 @@ export interface StudioService {
     token: StudioWriteToken,
     assets?: readonly StudioAssetData[],
   ): Promise<StudioProject>
+  /**
+   * Delete the song's audio that no clip uses, blobs and all, and return the
+   * audio that stays. Only the lease's holder may, on the revision it opened.
+   */
+  pruneUnusedAssets(
+    projectId: string,
+    token: StudioWriteToken,
+  ): Promise<StudioAsset[]>
   forkProject(
     project: StudioProject,
     assets?: readonly StudioAssetData[],
@@ -420,6 +428,42 @@ export function createStudioService(
             return snapshot
           },
         )
+      }),
+    // A take removed from the arrangement stays saved, so undo can bring it
+    // back in the session that removed it, and it counts against the song's
+    // audio limit until this lets it go. The controller asks only as the song
+    // opens, from the one tab that has it loaded, so no history and no copy
+    // in any tab still wants it.
+    pruneUnusedAssets: (id, token) =>
+      studioStorageOperation(async () => {
+        const db = database()
+        return db.transaction(async () => {
+          await requireStudioEditor(db, id, token, now().getTime())
+          const project = await readProject(id)
+          if (project.revision !== token.expectedRevision)
+            throw new StudioStorageError(
+              'conflict',
+              'The saved project has changed.',
+            )
+          // A clip of any song keeps its audio, not only this song's clips:
+          // takes belong to one song, and this holds even where one did not.
+          const used = new Set<string>()
+          for (const stored of await db.readAllStrict<StudioProject>(
+            STUDIO_STORES.projects,
+          ))
+            for (const clip of stored.clips) used.add(clip.assetId)
+          const assets = await listAssets(id)
+          for (const asset of assets) {
+            if (used.has(asset.id)) continue
+            await db.deleteByIndexStrict(
+              STUDIO_STORES.blobs,
+              'assetId',
+              asset.id,
+            )
+            await db.deleteByIdStrict(STUDIO_STORES.assets, asset.id)
+          }
+          return assets.filter((asset) => used.has(asset.id))
+        })
       }),
     restoreProject: (project, assets, options = {}) =>
       studioStorageOperation(() =>

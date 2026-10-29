@@ -4,7 +4,7 @@ import type { StudioService } from '@/db/services/studio-service'
 import type { StudioAssetInfo } from '@/lib/studio/audio/prepare-studio-asset'
 import { createStudioProject, summarizeStudioProject, } from '@/lib/studio/model/defaults'
 import type { StudioAssetData, StudioProject } from '@/lib/studio/model/types'
-import type { EditorClaim, EditorPresence, EditorPresenceSource, } from './editor-presence'
+import type { EditorClaim, EditorPresence, EditorPresenceSource, ProjectOpenHold, } from './editor-presence'
 
 export function controllerServiceFixture(): StudioService {
   const stored = new Map<string, StudioProject>(
@@ -54,6 +54,7 @@ export function controllerServiceFixture(): StudioService {
       stored.set(project.id, structuredClone(project))
       return project
     }),
+    pruneUnusedAssets: vi.fn(async () => []),
     forkProject: vi.fn(async (project) => {
       const copy = { ...project, id: 'copy', revision: 0 }
       stored.set(copy.id, copy)
@@ -99,7 +100,8 @@ export function preparedFixture(info: StudioAssetInfo): StudioAssetData {
 /**
  * Presence as a Web Lock gives it: each claim granted and exclusive, until
  * the test says another live tab holds the project. `lose` is that other
- * tab stealing it.
+ * tab stealing it. Each song this tab loads is alone in it until the test
+ * says another tab has it loaded too.
  */
 export function presenceFixture() {
   const claims: {
@@ -107,8 +109,19 @@ export function presenceFixture() {
     release: ReturnType<typeof vi.fn>
     lose(): void
   }[] = []
+  const opens: {
+    projectId: string
+    release: ReturnType<typeof vi.fn>
+    alone: ReturnType<typeof vi.fn>
+  }[] = []
   let refused = false
+  let alone = true
   const source = {
+    open: vi.fn(async (projectId: string): Promise<ProjectOpenHold> => {
+      const hold = { alone: vi.fn(async () => alone), release: vi.fn() }
+      opens.push({ projectId, ...hold })
+      return hold
+    }),
     claim: vi.fn(
       async (
         projectId: string,
@@ -128,11 +141,16 @@ export function presenceFixture() {
   return {
     source,
     claims,
+    opens,
     refuse: () => {
       refused = true
     },
     grant: () => {
       refused = false
+    },
+    /** Another tab has the song loaded as well. */
+    shared: () => {
+      alone = false
     },
   }
 }
