@@ -1177,3 +1177,7 @@ Note: the lanes' memory gate read a stale cgroup path after the 21:00 restart (f
   s01 (lab.mjs s01-cold-open --clip) and measure, since reclip.sh's s01 clip uses the old pass.
 - NEXT: C and D reports; when a slot frees, the component critic for group B first (s05, s06; it needs
   nothing pending), then group A once s01 is re-clipped. Paths only (DECISIONS 76).
+- 09:05Z: reclip.sh done. s01 (with m01-orange, old m01-blue): holds 0.3 s (0.3 per 30), longest 0.1, no
+  final hold. Frames $S/l4merc/s01check/sheet.png: at 0.30 the bead sits on the old pass's shut smile (the
+  new pass opens it). Detached $S/l4merc/whole-watch.sh (logs/whole-watch.log) regenerates whole.js and
+  runs verify.py whenever a pass lands; it exits when the workers are done.

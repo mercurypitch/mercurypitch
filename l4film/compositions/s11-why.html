@@ -52,6 +52,7 @@
             finished: word('b35', 'finished'),                // the probe scales 1.2
             top: word('b36', 'top'),                          // 11b: the probe fades, the staircase dims to 20 %, the names fly out
             doh: word('b36', 'doh.'),                         // do lands on the top shelf and scales 1.05
+            dohEnd: word('b36', 'doh.', 'end'),               // and lights (40 % chrome) as the word ends
             later: word('b36', 'Later'),                      // "later studies: ..." types on
             order: word('b36', 'same'),                       // the tiers scale in turn, top to bottom ("the same kind of order")
             without: word('b36', 'without'),                  // "as summed up in Janata et al., 2003" types on
@@ -59,7 +60,8 @@
             weaker: word('b36', 'weaker.'),                   // the tiers scale in turn again
             so: word('b36', 'So', 'start', 0.06),             // 11c: the shelves spread back to 80 px (0.8 s)
             home: word('b36', 'home'),                        // do's chip scales 1.05
-            learned: word('b36', 'learned,'),                 // a lit house lands beside do
+            seemsB: word('b36', 'seems'),                     // a lit house falls toward the top shelf ...
+            learned: word('b36', 'learned,'),                 // ... and lands beside do, which lights
             just: word('b36', 'just'),                        // the chips scale 1.05 in turn, top shelf to bottom
             pull: word('b36', 33, 'start', 0.17),             // the pull to F0 (0.9 s)
             o11: at('o11'),                                   // 11d: the kicker and credits leave; the chips fly back
@@ -70,14 +72,17 @@
             teeO: word('o11', 'tee'),                         // stair 7 lights
             oneShort: word('o11', 'one short step'),          // the ti-do riser grows; "one short step" and its hairline
             under: word('o11', 'under'),                      // the riser grows again
+            itQ: word('o11', 'it?#2'),                        // the top stair lights ("under it?")
             seems: word('b37', 'how'),                        // 11e: both labels glow
             labelsOut: word('b37', 'Tee'),                    // they leave; stair 7 lights
             leading: word('b37', 'leading'),                  // "leading note" lands above ti
             noteW: word('b37', 'note,'),                      // it scales 1.2
+            its: word('b37', "it's"),                         // stair 7 lights ("because it's thought of as leading")
             leadingTo: word('b37', 'leading#2'),              // the ink arrow curves from ti's tread up to do's (0.6 s)
             tonic: word('b37', 'tonic.'),                     // the top stair lights
             leads: word('b38', 'leads'),                      // 11f: the arrow pulses
             slide: word('b38', 'wherever', 'start', 0.06),    // the slide to D (0.8 s), "leading note" and the arrow riding
+            homeIs: word('b38', 'is.'),                       // the top stair lights ("wherever home is")
             fromD: word('b38', 'From'),                       // D4 scales, stair 1 lights
             teeCs: word('b38', 'tee'),                        // C♯5 scales and is named; "ti = C♯" lands
             cSharp: word('b38', 'C sharp'),                   // stair 7 lights
@@ -232,6 +237,7 @@
           for (let n = 1; n <= 8; n++) addL(n, A.cMajor + 0.1 * (n - 1), 0.3, 0.4)
           addL(8, A.onDoh); addL(7, A.teeO); addL(7, A.labelsOut); addL(8, A.tonic)
           addL(1, A.fromD); addL(7, A.cSharp); addL(8, A.toD)
+          addL(8, A.itQ, 0.3, 0.4); addL(7, A.its, 0.3, 0.4); addL(8, A.homeIs, 0.3, 0.4)
           const litC = (n, t) => LIGHTS[n].reduce((k, [t0, up, dn]) => Math.max(k, light(t, t0, up, dn)), 0)
           const GROW = [A.oneShort, A.under]
           const gap = (t) => 80 - 16 * (P(t, A.only, 0.8) - P(t, A.so, 0.8))
@@ -263,6 +269,7 @@
           const TIERP = [0, 1, 2, 3].map((k) => [A.order + 0.3 * k, A.just + 0.25 * k])
           // on "weaker", with the shelves closed, the scale chips light (40 % chrome) in turn, top shelf to bottom
           const TIERL = [0, 1, 2].map((k) => A.weaker + 0.15 * k)
+          const DOL = [A.dohEnd, A.learned]                   // do's chip lights alone
           const tierPulse = (tier, t) => Math.max(
             L.pulse(t, TIERP[tier], 'tile'),
             tier === 0 ? L.pulse(t, [A.doh, A.home], 'tile') : 1)
@@ -336,14 +343,15 @@
               c.el.g.setAttribute('opacity', s.a.toFixed(3))
               c.el.box.setAttribute('opacity', s.box.toFixed(3))
               if (!c.dim) {
-                const k = c.tier < 3 ? light(t, TIERL[c.tier], 0.3, 0.5) : 0
+                const k = Math.max(c.tier < 3 ? light(t, TIERL[c.tier], 0.3, 0.5) : 0, c.tier === 0 ? light(t, DOL) : 0)
                 c.el.box.setAttribute('fill', k > 0.002 ? `rgb(${[27, 35, 45].map((v, i) => Math.round(lerp(v, [195, 204, 214][i], 0.4 * k))).join(',')})` : UNLIT)
               }
               c.el.g.setAttribute('transform', `translate(${f1(s.p[0])} ${f1(s.p[1])}) scale(${sc.toFixed(4)})`)
             }
             {
-              const u = P(t, A.learned, 0.35, 'power2.out')
-              shelfHouse.draw({ x: 916, y: shelfY(0, t) - 2 - 52 - 26 * (1 - u), a: P(t, A.learned, 0.15) * expOut, lit: 1, scale: tierPulse(0, t) })
+              // it falls 70 px from "seems" (accelerating, as a drop) and lands on "learned"
+              const u = P(t, A.seemsB, A.learned - A.seemsB, 'power2.in')
+              shelfHouse.draw({ x: 916, y: shelfY(0, t) - 2 - 52 - 70 * (1 - u), a: P(t, A.seemsB, 0.2) * expOut, lit: 1, scale: tierPulse(0, t) })
             }
             // 11e and 11f: "leading note" (in on "leading", rising 14 px; scaling 1.2 on "note"), riding the slide;
             // the arrow (drawn on "leading to", pulsing on "leads", drawn again on "leans")
