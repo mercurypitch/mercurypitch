@@ -79,6 +79,28 @@ export const COMPARE_TIMING = {
   gapMs: 650,
 } as const
 
+/** A pause between two sounds of a drill. */
+export function sleep(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms))
+}
+
+/**
+ * Compare's one shape, for every drill that offers it: the answer, the
+ * breath between, then the pick. It goes no further at the first check
+ * that finds it silenced: after the answer, which may also say it did not
+ * sound out, and after the breath.
+ */
+export async function compareSequence(
+  answer: () => Promise<unknown>,
+  pick: () => Promise<unknown>,
+  live: () => boolean,
+): Promise<void> {
+  if ((await answer()) === false || !live()) return
+  await sleep(COMPARE_TIMING.gapMs)
+  if (!live()) return
+  await pick()
+}
+
 /** The verdict's hold before the next trial, when auto-advance is on.
  *  A preference rather than a number — the rack's Sound panel has the
  *  slider — so what lives here is its range. Identification drills

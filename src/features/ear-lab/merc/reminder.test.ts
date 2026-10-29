@@ -152,6 +152,17 @@ describe('turning it on', () => {
     expect(remindersOn()).toBe(false)
     expect(phone.schedule).not.toHaveBeenCalled()
   })
+
+  it('goes back off when the phone allows them and takes none', async () => {
+    const phone = onThePhone(fakePhone('granted'))
+    phone.schedule.mockResolvedValueOnce(false)
+
+    await expect(turnRemindersOn(at(EARLY))).resolves.toBe('failed')
+
+    expect(remindersOn()).toBe(false)
+    expect(localStorage.getItem(REMINDER_KEY)).toBe('false')
+    expect(reminderNote()).toBe('failed')
+  })
 })
 
 describe('turning it off', () => {
@@ -166,6 +177,35 @@ describe('turning it off', () => {
     expect(localStorage.getItem(REMINDER_KEY)).toBe('false')
     expect(phone.cancel.mock.calls).toEqual([[REMINDER_IDS]])
     expect(REMINDER_IDS).toHaveLength(32)
+  })
+
+  it('wins over a laying out already on its way to the phone', async () => {
+    const phone = onThePhone(fakePhone())
+    await turnRemindersOn(at(LATE))
+    resetRemindersForTests()
+    phone.cancel.mockClear()
+    let arrive: (taken: boolean) => void = () => undefined
+    phone.schedule.mockImplementationOnce(
+      async () =>
+        new Promise<boolean>((resolve) => {
+          arrive = resolve
+        }),
+    )
+
+    // The next morning the Ear Lab opens, and the schedule sets off.
+    const renewing = renewReminders(false, at(new Date(2026, 9, 30, 7, 15)))
+    await vi.waitFor(() => expect(phone.schedule).toHaveBeenCalledTimes(2))
+    // Off, while it travels: its cancel may reach the phone first.
+    await turnRemindersOff()
+    arrive(true)
+    await renewing
+
+    expect(remindersOn()).toBe(false)
+    // Taken away again once the schedule had landed: off is the last word.
+    expect(phone.cancel.mock.calls).toEqual([[REMINDER_IDS], [REMINDER_IDS]])
+    const scheduled = phone.schedule.mock.invocationCallOrder[1] ?? 0
+    const cancels = phone.cancel.mock.invocationCallOrder
+    expect(cancels[1]).toBeGreaterThan(scheduled)
   })
 })
 
@@ -239,6 +279,22 @@ describe('as the Ear Lab opens', () => {
     expect(reminderNote()).toBe('refused')
     expect(phone.cancel.mock.calls).toEqual([[REMINDER_IDS]])
     expect(phone.schedule).not.toHaveBeenCalled()
+  })
+
+  it('turns itself off, saying nothing, where the phone has gone back to asking', async () => {
+    // Android resets an unused app's permissions; a backup can land on a
+    // new phone. The system can still ask: Settings is not the way back.
+    const phone = onThePhone(fakePhone())
+    await turnRemindersOn(at(EARLY))
+    resetRemindersForTests()
+    phone.permission.mockResolvedValueOnce('prompt')
+    phone.cancel.mockClear()
+
+    await renewReminders(false, at(new Date(2026, 9, 30, 7, 15)))
+
+    expect(remindersOn()).toBe(false)
+    expect(reminderNote()).toBeNull()
+    expect(phone.cancel.mock.calls).toEqual([[REMINDER_IDS]])
   })
 
   it('is offered only on a phone that can set one', () => {

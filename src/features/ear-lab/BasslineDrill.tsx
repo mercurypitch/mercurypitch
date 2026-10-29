@@ -22,7 +22,7 @@ import { roveRootMidi } from '@/lib/ear/item-bank'
 import type { PhraseVerdict } from '@/lib/ear/phrase'
 import { judgePhrase } from '@/lib/ear/phrase'
 import { BASSLINE_BANK, bassRootMidi, degreeChordMidis, progressionName, romanOf, } from '@/lib/ear/progressions'
-import { BASSLINE_TIMING, COMPARE_TIMING, LADDER_TIMING, } from '@/lib/ear/timing'
+import { BASSLINE_TIMING, compareSequence, LADDER_TIMING, } from '@/lib/ear/timing'
 import { EAR_LAB_WITH_MERC } from '@/lib/native-build'
 import { BeadChain } from './BeadChain'
 import { useEarRoom } from './ear-room-context'
@@ -67,6 +67,8 @@ export function BasslineDrill(props: { onBack: () => void }): JSX.Element {
    *  away; iOS holds resume() through a call) sounds nothing once the
    *  engine is ready. */
   let silenced = 0
+  /** The end of the line sounding, which a silencing settles. */
+  let ending: ((sounded: boolean) => void) | null = null
   let rootMidi = 48
 
   function cancelAudio(): void {
@@ -76,11 +78,15 @@ export function BasslineDrill(props: { onBack: () => void }): JSX.Element {
     strummer?.cancel()
     strummer = null
     setSounding(0)
+    // Cut short, it still ends: whatever waits on it hears it did not
+    // sound out, and goes no further.
+    const cut = ending
+    ending = null
+    cut?.(false)
   }
 
   /** True once the line has sounded to its end; false when a silencing
-   *  came while it waited on the audio. One that comes while it sounds
-   *  clears the timer it ends on, so it never resolves. */
+   *  came while it waited on the audio, or cut it short. */
   async function playLine(
     degrees: readonly number[],
     rootMs: number,
@@ -111,18 +117,19 @@ export function BasslineDrill(props: { onBack: () => void }): JSX.Element {
         ),
       )
     })
-    await new Promise<void>((resolve) => {
+    return new Promise<boolean>((resolve) => {
+      ending = resolve
       timers.push(
         setTimeout(
           () => {
+            ending = null
             setSounding(0)
-            resolve()
+            resolve(true)
           },
           BASSLINE_TIMING.leadInS * 1000 + heldMs + BASSLINE_TIMING.tailMs,
         ),
       )
     })
-    return true
   }
 
   function makeTrial(item: EarBankItem): IdentificationTrial {
@@ -147,21 +154,24 @@ export function BasslineDrill(props: { onBack: () => void }): JSX.Element {
             },
             // The line, then the one tapped, under the same tonic. Each
             // goes through the guard above; a silencing in the pause
-            // between them ends Compare there.
+            // between them moves the count from where it stood as the
+            // first ended, and ends Compare there.
             compare: async (): Promise<void> => {
               const tapped = [...answered()]
               if (tapped.length === 0) return
-              const first = await playLine(
-                item.payload,
-                BASSLINE_TIMING.rootMs,
+              let asked = silenced
+              await compareSequence(
+                async () => {
+                  const sounded = await playLine(
+                    item.payload,
+                    BASSLINE_TIMING.rootMs,
+                  )
+                  asked = silenced
+                  return sounded
+                },
+                () => playLine(tapped, BASSLINE_TIMING.rootMs),
+                () => asked === silenced,
               )
-              if (!first) return
-              const asked = silenced
-              await new Promise((resolve) =>
-                setTimeout(resolve, COMPARE_TIMING.gapMs),
-              )
-              if (asked !== silenced) return
-              await playLine(tapped, BASSLINE_TIMING.rootMs)
             },
           }
         : {}),

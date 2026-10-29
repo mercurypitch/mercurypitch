@@ -39,8 +39,9 @@
 //                                  the device: navigator.vibrate is not in
 //                                  iOS WebKit. infrastructure/native-haptics.ts.
 //   openTabFromReminders()         A tapped Ear Lab reminder opens the app on
-//                                  the Ear Lab. Only in a build with the Ear
-//                                  Lab with Merc, the one that sets them.
+//                                  the Ear Lab, unless it is there already.
+//                                  Only in a build with the Ear Lab with
+//                                  Merc, the one that sets them.
 //                                  infrastructure/native-reminders.ts.
 // Added here and nowhere else, because each is a fact about a WebView:
 //
@@ -104,7 +105,7 @@ import { initGlobalErrorHandlers } from '@/lib/global-error-handler'
 import { EAR_LAB_WITH_MERC, KARAOKE_IMPORT } from '@/lib/native-build'
 import { abandonStoragePort, hydrateStoragePort, installStoragePort, } from '@/lib/storage-port'
 import { followAudioRoute } from '@/stores/audio-route-store'
-import { nativeDeviceApi, registerNativeDevice, } from '@/stores/native-shell-store'
+import { nativeDeviceApi, nativeShellApi, registerNativeDevice, } from '@/stores/native-shell-store'
 import { initTheme } from '@/stores/theme-store'
 import { createNativeDevice, standUnlockClipAsideForNowPlaying, } from './infrastructure/native-device'
 import { installNativeHaptics } from './infrastructure/native-haptics'
@@ -113,6 +114,7 @@ import { installNativeShell } from './infrastructure/native-shell'
 import { createPreferencesStoragePort } from './infrastructure/preferences-storage'
 import { createSocialLoginBridge } from './infrastructure/social-login'
 import { NativeShell } from './shell/NativeShell'
+import { currentTab } from './shell/run-shell-store'
 import { goToTab } from './shell/shell-navigation'
 
 // Point the pitch engine at the copies scripts/sync-ort-assets.mjs vendored
@@ -145,10 +147,18 @@ initTheme()
 installNativeShell()
 // The rooms' haptics are the device's, not navigator.vibrate (none on iOS).
 installNativeHaptics()
-// A tapped Ear Lab reminder opens the app on the Ear Lab. Before the first
-// render, and a cold start included: the plugin keeps the tap until this
-// listens. Folded out of a build without the Ear Lab with Merc.
-if (EAR_LAB_WITH_MERC) openTabFromReminders(goToTab)
+// A tapped Ear Lab reminder opens the app on the Ear Lab, unless it is
+// there already, where going again would park a run. Before the first
+// render, a cold start included: the plugin keeps the tap until this
+// listens, and the tap waits for the shell to draw. Folded out of a build
+// without the Ear Lab with Merc.
+if (EAR_LAB_WITH_MERC) {
+  openTabFromReminders({
+    open: goToTab,
+    current: currentTab,
+    ready: () => nativeShellApi() !== null,
+  })
+}
 // The one AudioContext and the screen's keep-awake, for a room under `src/`
 // that cannot import either (the Karaoke room). Before the first render, so
 // a room never mounts without them.

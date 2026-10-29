@@ -408,6 +408,29 @@ describe('Cadence in the room', () => {
     ).toEqual(pads)
   })
 
+  it('lets a miss wait for Next when the sound is taken away during its slow strum', async () => {
+    vi.spyOn(Math, 'random').mockReturnValue(0.25)
+    mount(() => <CadenceDrill onBack={vi.fn()} />)
+    room().again?.()
+    await advance(strumMs(4, CADENCE_TIMING.chordMs))
+    const wrong = CADENCE_BANK.find(
+      (item) =>
+        item.itemId !== 'cadence:I-V-vi-IV' &&
+        screen.queryByText(item.label) !== null,
+    )
+    if (!wrong) throw new Error('no other progression on the pads')
+    press(wrong.label)
+    await advance(CADENCE_TIMING.leadInS * 1000 + 100)
+    expect(room().sounding()).toBe(true)
+
+    room().hold?.()
+    await advance(0)
+
+    // Cut short, the strum still ended: the verdict waits for Next.
+    expect(room().sounding()).toBe(false)
+    expect(room().parked()).toBe(true)
+  })
+
   it('strums nothing once the room closes while the audio wakes', async () => {
     await cadenceMiss()
     let wake = (): void => undefined
@@ -466,6 +489,22 @@ describe('Bassline in the room', () => {
       ...bassLine(48, [1, 4, 5, 1]),
       ...bassLine(48, [1, 4, 6, 1]),
     ])
+  })
+
+  it('lets a miss wait for Next when the sound is taken away during its slow line', async () => {
+    mount(() => <BasslineDrill onBack={vi.fn()} />)
+    room().again?.()
+    await advance(lineMs(BASSLINE_TIMING.rootMs))
+    for (const degree of ['1', '4', '6', '1']) key(degree)
+    await advance(BASSLINE_TIMING.leadInS * 1000 + 100)
+    expect(room().sounding()).toBe(true)
+
+    room().hold?.()
+    await advance(0)
+
+    // Cut short, the line still ended: the verdict waits for Next.
+    expect(room().sounding()).toBe(false)
+    expect(room().parked()).toBe(true)
   })
 
   it('hears the line again in the same key', async () => {

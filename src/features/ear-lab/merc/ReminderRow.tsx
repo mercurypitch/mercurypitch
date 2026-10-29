@@ -35,7 +35,7 @@ export function ReminderRow(): JSX.Element {
   const said = (): string | null => {
     const note = reminderNote()
     if (note === null || asking()) return null
-    return note === 'refused' ? REMINDER.refused : REMINDER.unavailable
+    return REMINDER[note]
   }
   const settings = (): (() => Promise<boolean>) | null =>
     reminderNote() === 'refused' && !asking()

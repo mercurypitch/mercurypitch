@@ -34,6 +34,7 @@ const localNotifications = vi.hoisted(() => ({
   requestPermissions: vi.fn(),
   schedule: vi.fn(),
   cancel: vi.fn(),
+  getDeliveredNotifications: vi.fn(),
   removeDeliveredNotifications: vi.fn(),
   addListener: vi.fn(),
 }))
@@ -65,7 +66,11 @@ const registerPlugin = vi.hoisted(() =>
   vi.fn((_name: string) => pictureInPicture),
 )
 
-vi.mock('@capacitor/core', () => ({ Capacitor: capacitor, registerPlugin }))
+vi.mock('@capacitor/core', () => ({
+  Capacitor: capacitor,
+  registerPlugin,
+  ExceptionCode: { Unimplemented: 'UNIMPLEMENTED', Unavailable: 'UNAVAILABLE' },
+}))
 
 vi.mock('@capacitor/haptics', () => {
   loaded.push('@capacitor/haptics')
@@ -1651,8 +1656,6 @@ describe('reminders on a phone', () => {
           title: 'Merc',
           body: 'Waiting.',
           at: AT,
-          smallIcon: 'ic_stat_reminder',
-          iconColor: '#c9a45e',
           extra: { tab: 'ear-lab' },
         },
         { id: 8302, title: 'Merc', body: 'Waiting.', at: AT },
@@ -1668,8 +1671,6 @@ describe('reminders on a phone', () => {
           body: 'Waiting.',
           schedule: { at: AT, allowWhileIdle: true },
           autoCancel: true,
-          smallIcon: 'ic_stat_reminder',
-          iconColor: '#c9a45e',
           extra: { tab: 'ear-lab' },
         },
         {
@@ -1693,6 +1694,24 @@ describe('reminders on a phone', () => {
     }
   })
 
+  it('schedules nothing for an id outside 32 bits, or twice in one batch', async () => {
+    // The package's adapter checks both (validation.ts).
+    const platform = await loadPlatform(true)
+
+    await expect(
+      platform.scheduleReminders([
+        { id: 2 ** 31, title: 'Merc', body: 'Waiting.', at: AT },
+      ]),
+    ).resolves.toBe(false)
+    await expect(
+      platform.scheduleReminders([
+        { id: 8301, title: 'Merc', body: 'Waiting.', at: AT },
+        { id: 8301, title: 'Merc', body: 'Waiting.', at: AT },
+      ]),
+    ).resolves.toBe(false)
+    expect(localNotifications.schedule).not.toHaveBeenCalled()
+  })
+
   it('loads nothing for an empty list', async () => {
     const platform = await loadPlatform(true)
 
@@ -1702,9 +1721,13 @@ describe('reminders on a phone', () => {
     expect(loaded).toEqual([])
   })
 
-  it('cancels those to come and takes away those shown', async () => {
+  it('cancels those to come and takes away those shown, as the phone reports them', async () => {
     const platform = await loadPlatform(true)
+    const shown = { id: 8301, title: 'Merc', body: 'Waiting.' }
     localNotifications.cancel.mockResolvedValueOnce(undefined)
+    localNotifications.getDeliveredNotifications.mockResolvedValueOnce({
+      notifications: [shown, { id: 42, title: 'Other', body: 'Not ours.' }],
+    })
     localNotifications.removeDeliveredNotifications.mockResolvedValueOnce(
       undefined,
     )
@@ -1714,24 +1737,23 @@ describe('reminders on a phone', () => {
     expect(localNotifications.cancel).toHaveBeenCalledWith({
       notifications: [{ id: 8301 }, { id: 8302 }],
     })
+    // Only a shown one of these, and as the phone has it.
     expect(
       localNotifications.removeDeliveredNotifications,
-    ).toHaveBeenCalledWith({
-      notifications: [
-        { id: 8301, title: '', body: '' },
-        { id: 8302, title: '', body: '' },
-      ],
-    })
+    ).toHaveBeenCalledWith({ notifications: [shown] })
   })
 
   it('counts a cancel done when only the shown ones could not be taken away', async () => {
     const platform = await loadPlatform(true)
     localNotifications.cancel.mockResolvedValueOnce(undefined)
-    localNotifications.removeDeliveredNotifications.mockRejectedValueOnce(
-      new Error('Must supply notifications to remove'),
+    localNotifications.getDeliveredNotifications.mockRejectedValueOnce(
+      new Error('not implemented'),
     )
 
     await expect(platform.cancelReminders([8301])).resolves.toBe(true)
+    expect(
+      localNotifications.removeDeliveredNotifications,
+    ).not.toHaveBeenCalled()
   })
 
   it('survives a phone with no reminders behind the plugin', async () => {

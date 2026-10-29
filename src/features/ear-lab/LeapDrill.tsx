@@ -19,7 +19,7 @@ import { createSignal } from 'solid-js'
 import { useEngines } from '@/contexts/EngineContext'
 import { LEAP_BANK } from '@/lib/ear/banks'
 import { findIdentificationDrill } from '@/lib/ear/drills'
-import { COMPARE_TIMING, LEAP_TIMING } from '@/lib/ear/timing'
+import { compareSequence, LEAP_TIMING, sleep } from '@/lib/ear/timing'
 import { EAR_LAB_WITH_MERC } from '@/lib/native-build'
 import { midiToFreq } from '@/lib/scale-data'
 import { playToneFor } from './ear-sound'
@@ -107,9 +107,6 @@ export function LeapDrill(props: { onBack: () => void }): JSX.Element {
    *  a token only the newest pair holds cannot. */
   let pair = 0
 
-  const wait = (ms: number): Promise<void> =>
-    new Promise((resolve) => setTimeout(resolve, ms))
-
   function makeTrial(item: (typeof LEAP_BANK)[number]): IdentificationTrial {
     const root = 48 + Math.floor(Math.random() * 22) // C3..A4
     const ascending = Math.random() < 0.5
@@ -132,7 +129,7 @@ export function LeapDrill(props: { onBack: () => void }): JSX.Element {
       setSounding(1)
       await playToneFor(audioEngine, midiToFreq(start), toneMs)
       if (mine !== pair) return false
-      await wait(gapMs)
+      await sleep(gapMs)
       if (mine !== pair) return false
       setSounding(2)
       await playToneFor(
@@ -161,10 +158,11 @@ export function LeapDrill(props: { onBack: () => void }): JSX.Element {
               if (picked === null) return
               const mine = ++pair
               const { toneMs, gapMs } = LEAP_TIMING
-              if (!(await soundLeap(semitones, toneMs, gapMs, mine))) return
-              await wait(COMPARE_TIMING.gapMs)
-              if (mine !== pair) return
-              await soundLeap(picked, toneMs, gapMs, mine)
+              await compareSequence(
+                () => soundLeap(semitones, toneMs, gapMs, mine),
+                () => soundLeap(picked, toneMs, gapMs, mine),
+                () => mine === pair,
+              )
             },
           }
         : {}),
