@@ -207,6 +207,24 @@ describe('the entries', () => {
     expect(dropped).toEqual([])
   })
 
+  it('tells what became of every line, the breath of one with too little', () => {
+    const { vocal, level } = song([
+      { from: 2, to: 4, midi: 57 },
+      { from: 4.3, to: 6, midi: 59 },
+      { from: 8, to: 9, midi: 64 },
+    ])
+    const { told } = findEntries({
+      vocal,
+      level,
+      notes: [stored(57, 2, 4), stored(59, 4.3, 6), stored(60, 8, 9)],
+      lines: [line(2), line(4.3), line(8)],
+    })
+    expect(told).toHaveLength(3)
+    expect(told[0]).toBe('2.00 entry A3')
+    expect(told[1]).toMatch(/^4\.30 no breath before it \(0\.\d s\)$/u)
+    expect(told[2]).toBe('8.00 YIN E4, notes C4')
+  })
+
   it('drops a note the stored notes name differently', () => {
     const { vocal, level } = song([{ from: 2, to: 4, midi: 57 }])
     const { entries, dropped } = findEntries({
@@ -378,7 +396,7 @@ describe("a song of the singer's own", () => {
     expect(found.entries.every((entry) => entry.cents === undefined)).toBe(true)
     const few = [36, 34, 35, 37].map((cents) => ({
       line: 0,
-      steady: { t: 1, midi: 57 + cents / 100 },
+      steady: { t: 1, until: 1.2, midi: 57 + cents / 100, swung: false },
       voiceIn: 1,
     }))
     expect(songTuning(few)).toBe(0)

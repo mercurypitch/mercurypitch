@@ -19,9 +19,9 @@
       "bpm": 120,
       "entries": [
         {
-          "at": 23.14,
+          "at": 23.13,
           "midi": 50,
-          "from": 15.14,
+          "from": 15.13,
           "until": 27.38,
           "beats": [21.24, 21.74, 22.24, 22.74],
           "words": "Yeah, I will try to do my best to keep you safe inside this nest"
@@ -41,6 +41,14 @@
           "until": 70.19,
           "beats": [61.71, 62.21, 62.71, 63.21],
           "words": "It's true, this spring is coming to an end"
+        },
+        {
+          "at": 71.09,
+          "midi": 50,
+          "from": 63.09,
+          "until": 75.3,
+          "beats": [69.23, 69.73, 70.23, 70.73],
+          "words": "You're not that fragile anymore, I know what's there behind that door"
         },
         {
           "at": 135.67,
@@ -110,9 +118,9 @@
           "words": "And the cigarette you bummed from me is almost burning out"
         },
         {
-          "at": 40.3,
+          "at": 40.31,
           "midi": 52,
-          "from": 32.3,
+          "from": 32.31,
           "until": 45.25,
           "beats": [37.841, 38.547, 39.253, 39.959],
           "words": "Even after everything we've seen"

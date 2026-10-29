@@ -1,6 +1,6 @@
 // First note loads its pitch read only when it reads a song of the
 // singer's own: the read (own-song-read.ts), the rules it reads by
-// (entry-rules.ts) and the beats (band-beats.ts) are a dynamic import away
+// (entry-rules.ts, voice-pitch.ts) and the beats (band-beats.ts) are a dynamic import away
 // from the room, so a singer of the examples alone never loads them. The
 // check walks what the room imports statically, file by file, as the
 // bundler resolves it (`@/` is src/, a relative path is relative, packages
@@ -17,6 +17,7 @@ const STATIC =
 const READ = [
   'src/features/first-note/own-song-read.ts',
   'src/features/first-note/entry-rules.ts',
+  'src/features/first-note/voice-pitch.ts',
   'src/features/first-note/band-beats.ts',
 ]
 

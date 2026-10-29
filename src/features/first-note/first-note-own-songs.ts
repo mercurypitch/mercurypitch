@@ -36,7 +36,10 @@
 //
 // Each finished read is told to the console, which a test build shows on
 // the phone with a Copy button: how many lines it looked at, how far the
-// lyrics were moved, the song's tuning, and why each line was left.
+// lyrics were moved, the song's tuning, how much of the song the voice is
+// on, why lines were left, then what became of every line (`readLog`). The
+// Developer screen can let go of every read, so the songs are read and
+// told again (`readOwnSongsAgain`).
 
 import type { Accessor, Signal } from 'solid-js'
 import { createMemo, createRoot, createSignal, untrack } from 'solid-js'
@@ -393,6 +396,24 @@ function droppedCounts(dropped: readonly string[]): string {
   return [...counts].map(([kind, count]) => `${count} ${kind}`).join(', ')
 }
 
+/** Why lines were left: the lines with no breath before them first. */
+function leftCounts(read: OwnSongRead): string {
+  const breathless = read.breathless ?? 0
+  return [
+    breathless > 0 ? `${breathless} no breath before them` : '',
+    droppedCounts(read.dropped),
+  ]
+    .filter((part) => part !== '')
+    .join(', ')
+}
+
+/** How much of the song the voice is on: "; voice on 71% of 422 s". */
+function voicedPart(read: OwnSongRead): string {
+  if (read.voiced === undefined) return ''
+  const { share, seconds } = read.voiced
+  return `; voice on ${Math.round(share * 100)}% of ${Math.round(seconds)} s`
+}
+
 /** A finished read, for the console: what was looked at and why lines left. */
 export function readSummary(title: string, read: OwnSongRead): string {
   const shift =
@@ -408,8 +429,28 @@ export function readSummary(title: string, read: OwnSongRead): string {
       ? ''
       : `, tuned ${read.tuning > 0 ? '+' : ''}${read.tuning} cents`
   const lines = read.lines === undefined ? '' : ` from ${read.lines} lines`
-  const left = droppedCounts(read.dropped)
-  return `[first-note] read "${title}": ${read.entries.length} entries${lines}${shift}${tuning}${left === '' ? '' : `; left: ${left}`}`
+  const left = leftCounts(read)
+  return `[first-note] read "${title}": ${read.entries.length} entries${lines}${shift}${tuning}${left === '' ? '' : `; left: ${left}`}${voicedPart(read)}`
+}
+
+/** Lines of the song to a console line: a console line holds 2,000 characters. */
+const TOLD_PER_LOG_LINE = 12
+
+/**
+ * A finished read for the console: its summary, then what became of every
+ * line of the song, a dozen to a console line, so a pasted log says where
+ * each line went and why.
+ */
+export function readLog(title: string, read: OwnSongRead): string[] {
+  const log = [readSummary(title, read)]
+  const told = read.told ?? []
+  for (let i = 0; i < told.length; i += TOLD_PER_LOG_LINE) {
+    const part = told.slice(i, i + TOLD_PER_LOG_LINE)
+    log.push(
+      `[first-note]   "${title}" lines ${i + 1}-${i + part.length} of ${told.length}: ${part.join(' | ')}`,
+    )
+  }
+  return log
 }
 
 async function readNext(): Promise<void> {
@@ -435,7 +476,7 @@ async function readNext(): Promise<void> {
       return
     }
     if (read.out === undefined) {
-      console.info(readSummary(next.title, read))
+      for (const line of readLog(next.title, read)) console.info(line)
       keep(sessionId, stems, read)
       setLiveFor(sessionId, null)
     } else {
@@ -469,6 +510,27 @@ export function readOwnSongs(): void {
 export function stopReadingOwnSongs(): void {
   wanted = false
   inFlight?.controller.abort()
+}
+
+/**
+ * Read every song of the singer's own again: what the phone kept of each
+ * is let go, and each is read the next time the room asks (now, if it is
+ * asking), telling the console what it found. A test build's way to a fresh
+ * read's log, from the Developer screen (FirstNoteReadPanel.tsx).
+ */
+export function readOwnSongsAgain(): void {
+  inFlight?.controller.abort()
+  keptSignal()[1]({})
+  // The failures go with the reads. A read in flight says it is reading
+  // until it has stopped, and the songs are read from there.
+  setLive((now) => {
+    const next: Record<string, LiveRead> = {}
+    for (const [id, read] of Object.entries(now)) {
+      if ('reading' in read) next[id] = read
+    }
+    return next
+  })
+  void readNext()
 }
 
 /** Tests only: nothing read, nothing kept, nothing reading, no list built. */
