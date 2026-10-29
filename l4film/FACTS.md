@@ -40,7 +40,7 @@ also checked that every run below climbs 2, 2, 1, 2, 2, 2, 1.
     | `land-c`                                | Merc's ooh    | B4 0.45 s, then C5 1.2 s                                                                             | 1.65 s                         | 58   |
     | `sing-a`                                | Merc's ooh    | the second half of `guide-blue`: D3 E3 F♯3 G3 A3 B3 C♯4 at 0.8 s, C♯4 held 2.0 s, 0.6 s rest, D4 1.2 s | 8.6 s                       | 63   |
     | `sing-b`                                | Tavi's ooh    | the second half of `guide-orange`: D4 E4 F♯4 G4 A4 B4 C♯5 at 0.8 s, C♯5 held 2.0 s, 0.6 s rest, D5 1.2 s | 8.6 s                      | 63   |
-    | `count-in`                              | soft tone     | D3 (146.83 Hz) at half a tapped note's level, 0.8 s, then 0.2 s of silence                            | 1.0 s                          | 63   |
+    | `count-in`                              | Merc's ooh    | D3 (146.83 Hz), 0.8 s, then 0.2 s of silence: Merc gives the starting note                            | 1.0 s                          | 63   |
     | `your-turn` (a pause)                   | none          | the guide's second half, 8.6 s: the silent sweep up to ti, the hold, the rest and do; room tone only  | 8.6 s                          | 63   |
     | `ti-do` (recap)                         | soft tone     | B4 0.45 s, then C5 1.2 s                                                                             | 1.65 s                         | 58   |
 
@@ -51,7 +51,11 @@ also checked that every run below climbs 2, 2, 1, 2, 2, 2, 1.
     slides start in the octave above middle C, as every other staircase example does. The
     sing-along is the guide's second half only (63): up to ti, the hold, the rest and home, sung by
     Merc from D3, then by Tavi from D4, then by the viewer; the guide's first half, up to so and
-    back, stays on the page. Every pitch in this table was measured from the mixer's own output on
+    back, stays on the page. The page counts in with the soft tone at half a tapped note's level
+    (63); the film has Merc sing the starting note instead, because a phone speaker loses D3's
+    fundamental and the soft tone has little above it: above 300 Hz Merc's sung D3 carries 13.5 dB
+    more than the soft tone at half level (−24.9 against −38.4 dBFS RMS, measured on the mixer's
+    output on 29 October 2026). Every pitch in this table was measured from the mixer's own output on
     29 October 2026, each note within 5 cents of its frequency
 69. The bed: a quiet open fifth on D, D3 146.83, A3 220.00 and D4 293.66 Hz, slow detuned sines
     as Lesson 2's pad in A; only in the act transitions and under the dressed pauses, silent under
@@ -99,11 +103,14 @@ also checked that every run below climbs 2, 2, 1, 2, 2, 2, 1.
     is half right, and Merc says so first
 80. "Tee is the seventh note, and it sits just a semitone below doh: the last step is a short one";
     "Most listeners hear it waiting for one more note", said over `stop-c-home`, a C major scale |
-    22, 23 | carried, and on C only (26)
+    22, 23 | carried, and on C only (26). Merc's "Listen: up to tee from C, and stop." brings in
+    `stop-c-home` (58) and claims nothing; it opens on "Listen" because no one is singing with the
+    viewer yet, so it must not read as a cue to sing
 81. The experiment: "In one experiment, listeners heard a C major scale, then one more note, and
-    rated how well it finished the scale." "Doh came out on top. Later studies found the same kind
+    rated how well it finished the scale." "The top rating went to doh. Later studies found the same kind
     of order in listeners without training too, only weaker. So that sense of home seems to be
-    learned, just by hearing music." | 23, 23a, 24, 25: K&S 1979's design as its abstract gives
+    learned, just by hearing music." (draft 3 opens the second line "The top rating went to doh.",
+    so a muted caption cannot read "Do came out" as the verb) | 23, 23a, 24, 25: K&S 1979's design as its abstract gives
     it, do heading the order; the later studies as Janata 2003 sums them up (p. 4: "more
     pronounced in musicians than non-musicians", and present "in non-expert groups"), not K&S
     1979, whose less musical listeners leaned on pitch height; "seems", as Janata's "suggests"
@@ -112,9 +119,11 @@ also checked that every run below climbs 2, 2, 1, 2, 2, 2, 1.
     sums them up (the studies it cites were not read here, 25)
 82. "Tee is called the leading note, because it's thought of as leading to the tonic"; "It leads
     wherever home is. From D, tee is C sharp, and it leans up to D." | 22, 26 | carried, in the
-    textbooks' terms only (26). Tavi's "So doh sounds finished because we've learned to hear it
-    as home, and tee stops one short step under it?" answers the cold open's question with the
-    page's two reasons and no others (23a, 22); Merc's "That's how it seems" keeps 23a's "seems"
+    textbooks' terms only (26). Tavi's "So it sounds finished on doh because we've learned that
+    doh is home, and tee stops one short step under it?" answers the cold open's question with the
+    page's two reasons and no others (23a, 22); Merc's "That's how it seems" keeps 23a's "seems".
+    Tavi's question before the experiment, "But why is doh home, and not tee?", is the page's own
+    (23a)
 83. The sing-along's lines: "Let's sing it. Listen first: up to tee, a wait, and home."; Tavi's
     "So on tee, I just wait, and listen for where it wants to go?" (her re-explaining question) and
     Merc's "Yes. Try it, an octave up."; "Now you. Sore, hoarse or unwell today? Just listen
@@ -123,18 +132,31 @@ also checked that every run below climbs 2, 2, 1, 2, 2, 2, 1.
     anything feels uncomfortable." | 50, 51, 52, 53, 63; LESSON.md, Sing it | carried. The run is
     the guide's second half (63, 68). Merc's note is D3, Tavi's D4 (52, 63); the film offers no
     Move do, so the two octaves are the choice, which every app preset holds one of (52). The
-    doctor lines (54) are in the YouTube description and on the page, not in the voice
+    house rules pair the stop line with a referral line (TEACHING-PLAYBOOK, house rules; the owner
+    waived both "immediately" and the referral for Lessons 1 and 2 only, Lesson 2 DECISIONS 74),
+    so with the full stop line the film shows the doctor lines (54) on screen, in small type under
+    the stop line, from the first care line to the end of the viewer's turn, carried whole as every lesson
+    that sings carries them: "If hoarseness or discomfort lasts more than a couple of weeks, see a
+    doctor (a GP or an ear, nose and throat specialist). If it's very painful, or breathing or
+    swallowing is hard, get help straight away." They are also in the YouTube description and on
+    the page; the vocal coach decides the wording (54)
 84. The recap: "What pattern of steps makes a major scale?" "Tone, tone, semitone, tone, tone,
     tone, semitone. Two groups, joined by a tone." (2, 3); "Start a major scale on D.
     Which two black keys does it need?" "F sharp and C sharp." (10); "From tee up to doh: a tone,
     or a semitone?" "A semitone. Tee sits just under home, and most listeners hear it lean up."
-    (22, 23, over `ti-do`, on C); Tavi's "And in a scale that starts on G, which note is doh?"
-    "G. Doh is wherever the scale starts: its home." (9, 19, in movable do, 79) | carried
-85. "In MercuryPitch's Scale Runner, sing a major scale back, one note at a time, in the octave it
-    plays." On screen: "Practise it free: mercurypitch.com/pitch-training", "then tap Scale
-    Runner" | 34, 35, 36, 37, 38, 40 | code, as cited there. "In the octave it plays" because
-    Scale Runner scores a note sung an octave away as 1,200 cents off (40), while the sing-along
-    offers either octave (83)
+    (22, 23, over `ti-do`, on C); Tavi's "And in a major scale that starts on G, which note is
+    doh?" "G. Doh is wherever a major scale starts: its home." (9, 19, in movable do, 79; "a major
+    scale", since 19's source speaks of major scales) | carried
+85. "In MercuryPitch's Scale Runner, sing a major scale back, one note at a time. Set your voice
+    range in Settings first, and sing in the octave it plays." On screen: "Practise it free:
+    mercurypitch.com/pitch-training", "then tap Scale Runner", "Set your range first: Settings ›
+    Singing Voice Range", "First visit? Skip the intro (×)" | 34, 35, 36, 37, 38, 40, 41, 88 |
+    code, as cited there. "In the octave it plays" because Scale Runner scores a note sung an
+    octave away as 1,200 cents off (40), while the sing-along offers either octave (83); "set your
+    voice range first" because it plays in the saved range, and a visitor who never set one gets
+    the tenor preset, which starts it on E3, below every higher voice's range (41, 44), as the
+    page's practice card says. Its ladder shows at most six notes still to come (39), so the
+    film's ladder has six rungs ahead of a pitch line that has passed do and re
 86. Next time: "Singers are told to support a long note." / "If that doesn't mean pushing, what
     keeps it steady?": Lesson 5's hook (31), split between Merc and Tavi | carried
 87. The cold open's lines: Tavi's "It just hangs there, waiting. Is that because we started on

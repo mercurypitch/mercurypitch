@@ -45,7 +45,7 @@ SOUNDS = {
     'slide-g': '[a major scale from G]', 'slide-e': '[a major scale from E]',
     'sing-a': '[Merc sings up to ti, waits, and lands on do]',
     'sing-b': '[Tavi sings up to ti, waits, and lands on do, an octave higher]',
-    'count-in': '[one note: do]',
+    'count-in': '[Merc sings the starting note, do]',
     'your-turn': '[your turn: up to ti, wait, and do]',
     'ti-do': '[ti, then do]',
 }

@@ -286,8 +286,8 @@ def sound_for(name, dur):
         x = run([(nm, 0.8) for nm in ['D3', 'E3', 'F#3', 'G3', 'A3', 'B3']] + [('C#4', 2.0), (None, 0.6), ('D4', 1.2)], MERC + 0.02)
     elif name == 'sing-b':                   # FACTS 63, 68: guide-orange's second half, D4 up to ti, held, home
         x = run([(nm, 0.8) for nm in D_MAJ[:6]] + [('C#5', 2.0), (None, 0.6), ('D5', 1.2)], TAVI)
-    elif name == 'count-in':                 # FACTS 63: do, at half a tapped note's level
-        x = run([('D3', 0.8), (None, 0.2)], 0.24, voice=False)
+    elif name == 'count-in':                 # FACTS 68: Merc sings the starting note, D3, in his ooh, whose
+        x = run([('D3', 0.8), (None, 0.2)], MERC)   # harmonics carry on a phone speaker (script critic 02)
     elif name == 'ti-do':                    # FACTS 68: the recap's step, in the soft tone
         x = run([('B4', 0.45), ('C5', 1.2)], 0.48, voice=False)
     else:

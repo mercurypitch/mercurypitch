@@ -991,7 +991,7 @@ Note: the lanes' memory gate read a stale cgroup path after the 21:00 restart (f
 - Lesson 3's film is not reachable (other session); continuity follows the written lessons. Tell the owner.
 - ElevenLabs final voices wait for the owner's OK on credits.
 
-## 2026-10-29 ~01:10Z: Lesson 4 film script draft 2 (task 180)
+## 2026-10-29 ~00:40Z: Lesson 4 film script draft 2 (task 180)
 - Script critic 01: ONE MORE PASS (9 items; review/script-01/REPORT.md). All 9 taken in draft 2 (DECISIONS 18-21):
   NO_BED pauses in mix.py (hang-c, predict-d, hang-d, wait, q3, your-turn: room tone only); later studies credited
   "Janata et al., 2003" apart from K&S 1979; o9 a sincere doubt; sing-along = guide's second half three times
@@ -1006,7 +1006,7 @@ Note: the lanes' memory gate read a stale cgroup path after the 21:00 restart (f
 - Then (task 181): storyboard (vertical semitone-row keyboard behind a fixed staircase; gold only on the two
   semitone risers; house glyph = home; Tavi's dashed ink-2 "?"; guide amber -> chrome on the viewer's turn).
 
-## 2026-10-29 ~01:40Z: Season 2 plan reviewed (task 179)
+## 2026-10-29 ~00:45Z: Season 2 plan reviewed (task 179)
 - Planner reported: $S/s2/SEASON-2.md (1,098 lines) + CURRICULUM-s5.md. Lead review at max: all 138
   citations printed at b803c7d43 and checked; 5 lead edits (s2review/REVIEW.md): beats stop only at pure
   intervals (L24; ET M3 over A3 beats 8.73 Hz, ET fifth 0.745 Hz); pentatonic 2-2-3-2-3 not even (L20);
@@ -1015,3 +1015,18 @@ Note: the lanes' memory gate read a stale cgroup path after the 21:00 restart (f
 - NEXT: tell the owner (5 decisions: numbering 15-28 + the app's 01-14 marker/worker bounds; treble and
   bass; number counting + American note values; synthesised second part, learner sings it; mixed voice
   in Season 3), offer a docs PR on a feat/ branch (do not open without their word).
+
+## 2026-10-29 ~01:00Z: Lesson 4 film script draft 3 (task 180)
+- Script critic 02: ONE MORE PASS; all 9 of round 1 FIXED; 9 new items, all taken in draft 3 (DECISIONS 22-24):
+  b53 "Set your voice range in Settings first" + card line (tenor preset starts E3, below F3/A3/C4 bottoms of
+  alto/mezzo/soprano, VOCAL_RANGES at b803c7d43); doctor lines (lesson FACTS 54, carried whole) on screen in
+  small type under the stop line, first care line to end of turn (L2 DECISIONS 74 waiver was L1-L2 only);
+  "a major scale" in o13/b52; recap gap 1.8; six rungs past do and re (MAX_UPCOMING 6); skip line on s14 card
+  AND s16 end card; b36 "The top rating went to doh."; o11 "So it sounds finished on doh..."; o10 the page's
+  own question; b33 "Listen: up to tee from C, and stop."; s09 slides back E->C under the card; target 7:30-9:00;
+  b17 "Predict: the white keys from D, up to the next D. Is it still doh ray mee?" (no double "first").
+- Count-in = Merc's ooh D3 (above 300 Hz -24.9 vs soft tone -38.4 dBFS RMS). pitch_check all within 5 c.
+- Kokoro: 478.47 s (7:58.5); estimate 8:36.1 word rate, ~8:45 by L2 ratio 1.097. Merc 55/709 words, Tavi 14/193.
+- Scratch mix built (assets/audio/full.wav etc.: -16.0 LUFS, TP -1.4). FACTS, BRIEF, DECISIONS, LEDGER 02 done.
+- Script critic 03 running -> save its text to review/script-03/REPORT.md, fill LEDGER row 03.
+- Owner message pending: Season 2's 5 decisions + docs-PR offer; Lesson 3 film unreachable; ElevenLabs OK.

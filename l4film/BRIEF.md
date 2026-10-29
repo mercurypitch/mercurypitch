@@ -9,13 +9,13 @@ audience: 'Adult and teen beginners who sing or want to, who know Lesson 2 (semi
 destination: youtube, landing-page
 aspect: 1920x1080
 sizes: 1920x1080
-length: about 8:32 estimated at Lesson 2's voiced pace (script draft 2); the series allows 6 to 9 minutes (MASTER-PLAN D6)
+length: about 8:36 to 8:45 at Lesson 2's voiced pace (script draft 3; 7:58 in the scratch voices); the series allows 6 to 9 minutes (MASTER-PLAN D6)
 fps: 60
 language: en-GB
 project_dir: output/motion/lesson-04
 ---
 
-> Draft 2, 29 October 2026, after script critic 01, written in the film's working folder. When it is approved it moves to
+> Draft 3, 29 October 2026, after script critics 01 and 02, written in the film's working folder. When it is approved it moves to
 > `docs/plans/find-your-pitch/lessons/04-major-scale/BRIEF.md`, which then becomes the source of
 > truth, as Lesson 2's did.
 
@@ -36,12 +36,15 @@ project_dir: output/motion/lesson-04
   captions on.
 - What they should do at the end: answer the recap in their head, then sing a major scale back
   one note at a time in MercuryPitch's Scale Runner. Spoken at the end of the recap: "In
-  MercuryPitch's Scale Runner, sing a major scale back, one note at a time, in the octave it
-  plays." On screen: the staircase turning into Scale Runner's ladder of notes still to come
-  (labelled as an illustration), then "Practise it free: mercurypitch.com/pitch-training", "then
-  tap Scale Runner" and "First visit? Skip the intro (×)": a typed address meets the app's intro
-  on a first visit, and only a link with `?lesson=04`, the YouTube description's, skips it
-  (FACTS 88). Next-episode tease: Lesson 5's hook, ending on Tavi's "If that doesn't mean
+  MercuryPitch's Scale Runner, sing a major scale back, one note at a time. Set your voice range
+  in Settings first, and sing in the octave it plays." On screen: the staircase turning into
+  Scale Runner's ladder of notes still to come (labelled as an illustration), then the practise
+  card in the order a visitor meets its steps: "Practise it free: mercurypitch.com/pitch-training",
+  "First visit? Skip the intro (×)", "Set your range first: Settings › Singing Voice Range", "then
+  tap Scale Runner" and "sing in the octave it plays". A typed address meets the app's intro on a
+  first visit, and only a link with `?lesson=04`, the YouTube description's, skips it (FACTS 88);
+  a visitor who never set a range gets the tenor preset, whose run starts on E3, below every
+  higher voice (41, 44). The skip line is on this card and again on the end card. Next-episode tease: Lesson 5's hook, ending on Tavi's "If that doesn't mean
   pushing, what keeps it steady?"
 
 ## Teaching
@@ -69,14 +72,17 @@ and restless when it stops on ti?" The web page's title is the same question (LE
 from Lesson 2 comes straight after the promise, not before the hook, as every page now orders
 them (MASTER-PLAN § 12 item 13). YouTube title variants for Test & Compare (MASTER-PLAN § 4.1):
 "Why does do-re-mi sound finished on do, but not on ti?" (54 characters); "The major scale:
-why do-re-mi wants to land on do" (48); search-style, in the audience's own words, "How is a
-major scale built?" (28).
+why do-re-mi wants to land on do" (49); search-style, in the audience's own words, "How is a
+major scale built?" (27).
 
 ### Length target
 
-7:30 to 8:30. Draft 2 estimates about 8:32 at Lesson 2's voiced pace (Merc 2.32 words a second,
-Tavi 3.08, both measured on Lesson 2's ElevenLabs takes; draft 1 was 8:37), and Kokoro's scratch
-runs about a tenth shorter (Lesson 2: 6:33 scratch, 7:11 voiced). Reason: two topics (T09, T10)
+7:30 to 9:00 (draft 2 set 7:30 to 8:30; script critic 02 found the film past it, and the
+line-by-line cuts that would meet it take out the care, the predict or the experiment's second
+source). Draft 3 estimates 8:36 by word rate at Lesson 2's voiced pace (Merc 2.32 words a
+second, Tavi 3.08, both measured on Lesson 2's ElevenLabs takes; draft 1 was 8:37, draft 2
+8:32), and about 8:45 by Lesson 2's scratch-to-voiced ratio (6:33 scratch, 7:11 voiced, 1.097
+times) applied to draft 3's scratch length, 7:58.5. Reason: two topics (T09, T10)
 carry five ideas (the uneven steps, the two groups, the pattern on any start, the names, the
 leading note), the film refutes one misconception three ways (C is where scales start; the same
 keys make the same scale; do is always C), and it ends on a sung checkpoint heard three times
@@ -135,23 +141,30 @@ just heard twice. The first half, up to so and back, stays on the page. The care
 the invitation: "Sore, hoarse or unwell today? Just listen along." (FACTS 50), "at about speaking
 volume" (51), and "Stop immediately if anything feels uncomfortable." (53; the short form
 approved for Lessons 1 and 2 is not used). The viewer starts on Merc's note or an octave up (52),
-and is asked to wait on ti and notice where it wants to go. One soft count-in note, then an
-8.6-second guide: a plain chrome line sweeping the path, no microphone, nothing listening and
+and is asked to wait on ti and notice where it wants to go. The house rules pair the stop line
+with the doctor lines (54), and the owner waived both "immediately" and the doctor lines for
+Lessons 1 and 2 only (Lesson 2 DECISIONS 74), so the doctor lines are on screen in small type
+under the stop line, carried whole, from the first care line to the end of the viewer's turn, as
+well as in the YouTube description. Merc sings the starting note (the count-in, his ooh on D3: a
+phone speaker loses D3's fundamental, and the page's soft count-in tone has little above it,
+FACTS 68), then an 8.6-second guide: a plain chrome line sweeping the path, no microphone, nothing listening and
 nothing scored, and nothing of the app's drawing on screen (as Lesson 2's DECISIONS 68). No bed
 under the turn: an open fifth on D would sound home while the viewer holds ti, so the turn keeps
-only the room tone, and the count-in gives the starting note.
+only the room tone, and Merc's sung count-in gives the starting note.
 
 ### Practice link
 
 Scale Runner (FACTS 36 to 41), reached at mercurypitch.com/pitch-training, then tapped in the
 exercises (35; free, 34). It plays a major scale one note at a time, do up to do, and the viewer
-sings each note back; it draws the notes still to come as a ladder (39), which is why the film
-ends the staircase as a ladder, labelled "Illustration". Today no link opens it at a beginner
+sings each note back; it draws the notes still to come as a ladder, at most six of them (39),
+which is why the film ends the staircase as a ladder, labelled "Illustration", with six rungs
+ahead of a pitch line that has already passed do and re. Today no link opens it at a beginner
 pace (43): the proposed `/exercises/slow-scales` never appears on screen. It wants each note in
 the octave it plays (40), so the voice says so ("in the octave it plays"), because the sing-along
-just offered either octave. It starts from the range saved in Settings (41), a detail for the page
-and the YouTube description. A first visit by a typed address meets the app's intro first, so the
-end card says how to close it, and the description's link carries `?lesson=04`, which skips it
+just offered either octave. It starts from the range saved in Settings (41), and a visitor who
+never set one gets the tenor preset, which starts the run on E3 (44), below the alto, mezzo and
+soprano ranges, so the voice and the card say to set the range first. A first visit by a typed address meets the app's intro first, so the
+practise card and the end card say how to close it, and the description's link carries `?lesson=04`, which skips it
 (FACTS 88). Ear Lab's Home (47) is the page's second drill and is not in the film.
 
 ### What must read with the sound off (captions on)
@@ -169,16 +182,17 @@ end card says how to close it, and the description's link carries `?lesson=04`, 
   a row low marked against F♯ and C♯; "D major".
 - The staircase on G and on E with the black keys it needs lit; the count of black keys each start
   needs, "C 0 · D 2 · G 1 · E 4".
-- The labels switching letters, numbers, do-re-mi; "tonic = home" with the house glyph;
+- The staircase back on C under the third chapter card; the labels switching letters, numbers, do-re-mi; "tonic = home" with the house glyph;
   "scale degrees 1–7"; "solfège", with "so (sol)"; "movable do" against "fixed do: do = C".
 - Ti's gold riser with "1 semitone" and an arrow up to home; "leading note"; the experiment's
   tiers (do on top), titled as a study and credited "Krumhansl & Shepard, 1979", then "later
   studies: without training too, only weaker", credited "Janata et al., 2003"; "from D: ti = C♯".
 - The scale guide's path, its names on the rows, Merc's run, the wait on ti marked, then Tavi's an
-  octave up; on the viewer's turn only "Your turn.", "D3 or D4", "wait on ti", the comfort line
-  and the stop line, and the chrome sweep.
+  octave up; on the viewer's turn only "Your turn.", "D3 or D4", "wait on ti", the comfort line,
+  the stop line with the doctor lines in small type under it, and the chrome sweep.
 - The recap cards, each answered by the object that taught it; Scale Runner's ladder labelled
-  "Illustration", the address, "then tap Scale Runner", "sing in the octave it plays".
+  "Illustration", six rungs ahead; the address, "First visit? Skip the intro (×)", "Set your range
+  first: Settings › Singing Voice Range", "then tap Scale Runner", "sing in the octave it plays".
 - The end card's address, and "First visit? Skip the intro (×)".
 
 ## Brand
@@ -229,7 +243,7 @@ into the next idea (staircase, keyboard, groups, slides, names, tiers, guide, la
   under every example and sung run, and in the listening silences, `hang-c`, `predict-d`,
   `hang-d`, `wait`, `q3` and `your-turn`, which keep only the room tone (playbook rule 12: after
   a C scale a pad on D is in the wrong key, and after a D scale it sounds home before the landing
-  does). The count-in gives the viewer the starting note. The title and end stings are Lesson 1's
+  does). Merc's sung count-in gives the viewer the starting note. The title and end stings are Lesson 1's
   chimes.
 - Sound effects: synthesised in code (one soft whoosh per act change). The effects that matter are
   the examples.
@@ -250,7 +264,8 @@ into the next idea (staircase, keyboard, groups, slides, names, tiers, guide, la
   says groups); "bright", "happy" or "the most common scale" (Unverified).
 - Any claim or picture that the film or the app hears or checks the viewer's singing (no
   microphone, no listening ring, no Merc listening to the viewer, and nothing of the app's drawing
-  over the viewer's turn); that Scale Runner scores octave-up singing as right.
+  over the viewer's turn); that Scale Runner scores octave-up singing as right; a Scale Runner
+  ladder with more than six rungs ahead (the app draws at most six, 39).
 - A link that does not exist yet (no `/exercises/...` slug on screen).
 
 ## Notes
@@ -266,6 +281,7 @@ into the next idea (staircase, keyboard, groups, slides, names, tiers, guide, la
 - Continuity: Lesson 3's film was made in another session and is not readable from this one, so
   the hand-over follows the written lessons: Lesson 3's next-lesson card and tease (Lesson 3
   FACTS 62), and Lesson 4's own cold open (LESSON.md).
-- Production state: script draft 2, after script critic 01 (`review/script-01/REPORT.md`), with
-  scratch voices; the storyboard is next. Nothing else exists in `output/motion/lesson-04/` yet
+- Production state: script draft 3, after script critics 01 and 02 (`review/script-01/` and
+  `review/script-02/REPORT.md`), with scratch voices; script critic 03 checks it, then the
+  storyboard. Nothing else exists in `output/motion/lesson-04/` yet
   but the kit copied from Lesson 2.

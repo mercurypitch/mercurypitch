@@ -20,8 +20,9 @@ replaced it. The builder's record: critics never read it.
 4. **Four acts with three chapter cards**, as Lesson 2: act 1 the steps and the groups, act 2 the
    start on D and any start (card "02 Start anywhere"), act 3 the names, then ti and why do is
    home (card "03 Name the stairs"), act 4 the sing-along (card "04 Sing it").
-5. **Length target 7:30 to 8:30**, inside the series' 6 to 9 minutes. Draft 1 estimated 8:37 at
-   Lesson 2's voiced pace; draft 2 estimates 8:32. Draft 2 took three cuts: Merc's "Let's find
+5. **Length target 7:30 to 9:00** since draft 3 (it was 7:30 to 8:30; 22.9), inside the series'
+   6 to 9 minutes. Draft 1 estimated 8:37 at Lesson 2's voiced pace, draft 2 8:32, and draft 3
+   8:36 by word rate or 8:45 by Lesson 2's scratch-to-voiced ratio (BRIEF, Length target). Draft 2 took three cuts: Merc's "Let's find
    out, one step at a time" after the hook question (the title answers it), the W and H line
    (FACTS 75; the letters are not on screen either, so the film keeps one vocabulary), and "Now,
    back to the question we started with", folded into the line after it. If a voiced cut runs
@@ -62,14 +63,17 @@ replaced it. The builder's record: critics never read it.
     `stop-d`), so the only difference the ear gets is where the scale starts.
 13. **The sing-along is the guide's second half, three times** (rule 16: Merc sings it, Tavi
     tries, the viewer is invited): up to ti, the hold, the rest and home, 8.6 s, Merc from D3,
-    Tavi from D4, then the viewer after one count-in note. Draft 1 split the guide (Merc the first
+    Tavi from D4, then the viewer after Merc sings the starting note (23). Draft 1 split the guide (Merc the first
     half, Tavi the second) and had the viewer sing all 18.2 s, a whole nobody had sung; now the
     viewer sings only what they have heard twice, and the part they sing is the lesson's question.
-    The first half stays on the page. No bed under the turn (18): the count-in gives the note.
-14. **The care lines are voiced; the doctor lines are not.** "Sore, hoarse or unwell today? Just
-    listen along.", "at about speaking volume" and "Stop immediately if anything feels
-    uncomfortable." come before the turn, in full (the short form was for Lessons 1 and 2 only);
-    the doctor lines go in the YouTube description and stay on the page.
+    The first half stays on the page. No bed under the turn (18): Merc's sung count-in gives the
+   note.
+14. **The care lines are voiced; the doctor lines are on screen** (since draft 3, 22.2; draft 2
+    kept them off screen). "Sore, hoarse or unwell today? Just listen along.", "at about speaking
+    volume" and "Stop immediately if anything feels uncomfortable." come before the turn, in full
+    (the short form was for Lessons 1 and 2 only). The doctor lines (FACTS 54, carried whole) sit
+    in small type under the stop line from the first care line to the end of the turn, and are
+    also in the YouTube description and on the page.
 15. **Solfège is spelled for the voice** ("doh, ray, mee, fah, soh, lah, tee"), written as the
     picture writes it in captions (FACTS 66).
 16. **Scratch voices first, final voices on the owner's word.** Kokoro voices every draft; the
@@ -79,8 +83,9 @@ replaced it. The builder's record: critics never read it.
 ## Practice link
 
 17. **Scale Runner at mercurypitch.com/pitch-training**, "then tap Scale Runner". No slug opens it
-    at a beginner pace yet, so none appears on screen. Its range and octave details belong on the
-    page and in the description, not in the voice.
+    at a beginner pace yet, so none appears on screen. Draft 1 left its range and octave details
+    to the page and the description; the octave went into the voice in draft 2 (18.5) and the
+    range in draft 3 (22.1), because each one, missed, sends a viewer's run out of their voice.
 
 ## Script critic 01
 
@@ -111,3 +116,47 @@ replaced it. The builder's record: critics never read it.
     suggestion, "Then past so to ti, a semitone under home, and wait?", fitted draft 1's split,
     where Merc stopped at so. In draft 2 Merc has already sung up to ti, so Tavi asks what to do
     on ti instead: "So on ti, I just wait, and listen for where it wants to go?"
+
+## Script critic 02
+
+22. **Every item of `review/script-02/REPORT.md` was taken**, in draft 3:
+    1. Set the range first. b53: "In MercuryPitch's Scale Runner, sing a major scale back, one
+       note at a time. Set your voice range in Settings first, and sing in the octave it plays.";
+       the card: "Set your range first: Settings › Singing Voice Range" (FACTS 85). A first
+       visitor gets the tenor preset, whose run starts on E3 (41, 44), below the alto, mezzo and
+       soprano ranges (F3, A3 and C4 up, `VOCAL_RANGES` at `b803c7d43`). The critic's card text,
+       "First: Settings › …", became an instruction that reads without the voice.
+    2. The doctor lines on screen (14), in small type under the stop line, from the first care
+       line to the end of the turn, carried whole as every lesson that sings carries them (FACTS
+       54, 83). The owner's waiver (Lesson 2 DECISIONS 74) covered Lessons 1 and 2 only, and this
+       film says the full stop line, so the house rules' pair comes back whole. They are not
+       voiced: the care block is already the longest the series has spoken before a turn. If the
+       owner waives them for this film too, the small type goes and nothing else moves.
+    3. "And in a major scale that starts on G, which note is doh?" and "G. Doh is wherever a major
+       scale starts: its home." (FACTS 84; 19's source speaks of major scales).
+    4. The recap mark's gap is 1.8 s, so the viewer's do has room to finish before the whoosh.
+    5. Scale Runner's ladder has six rungs ahead of a pitch line that has passed do and re (FACTS
+       39, 85; the s14 picture note). The skip line, which the brief put on the practise card and
+       the s14 note left out, is on both the practise card and the end card: the practise card is
+       where the steps are read in order, and the end card is the frame a viewer pauses on.
+    6. "The top rating went to doh." (b36) and "So it sounds finished on doh because we've learned
+       that doh is home, and tee stops one short step under it?" (o11), so neither caption reads
+       "do" as a verb. o10 now asks the page's own question, "But why is doh home, and not tee?"
+       (FACTS 82).
+    7. b33: "Listen: up to tee from C, and stop." (FACTS 80).
+    8. s09: the staircase slides back from E to C under the chapter card (the picture note), so
+       the names start on C.
+    9. Length: the target is restated as 7:30 to 9:00 (5), and b17 is four words shorter: "Before
+       you listen, predict. Start on D, play only white keys, up to the next D. Is it still doh
+       ray mee?" became "Predict: the white keys from D, up to the next D. Is it still doh ray
+       mee?", which also keeps "first" for the line after it ("First, the white keys from D.").
+23. **The count-in is Merc's sung D3** (FACTS 68), answering the critic's not-judgeable item on
+    phone speakers by measurement: above 300 Hz, where a phone speaker begins, the page's soft
+    tone at half level gives −38.4 dBFS RMS on the mixer's output, and Merc's ooh on D3 −24.9, the
+    level of his sung D3 in `sing-a` (−24.4). Full level would have closed only 6 dB of the 13.5
+    (about −32.4, by arithmetic, not measured): the soft tone's partials fall away above its
+    fundamental, which is the part a phone loses. Caption
+    "[Merc sings the starting note, do]". The whole mix still goes through the phone-speaker check
+    before delivery (20).
+24. **The critic's other not-judgeable items stay with the storyboard** (20): where the hosts
+    stand, and the final voices' delivery, which waits for the owner's word on the credits (16).

@@ -293,7 +293,7 @@
    "id": "b17",
    "type": "line",
    "who": "blue",
-   "text": "Before you listen, predict. Start on D, play only white keys, up to the next D. Is it still doh ray mee?",
+   "text": "Predict: the white keys from D, up to the next D. Is it still doh ray mee?",
    "facts": "LESSON.md step 3",
    "gap": 0.4
   },
@@ -476,7 +476,7 @@
    "id": "b33",
    "type": "line",
    "who": "blue",
-   "text": "Climb to tee from C, and stop.",
+   "text": "Listen: up to tee from C, and stop.",
    "facts": "58, 80",
    "gap": 0.5
   },
@@ -512,8 +512,8 @@
    "id": "o10",
    "type": "line",
    "who": "orange",
-   "text": "But why does doh feel like home, and not tee?",
-   "facts": "- (a question)",
+   "text": "But why is doh home, and not tee?",
+   "facts": "- (a question; the page's own, FACTS 23a)",
    "gap": 0.6
   },
   {
@@ -528,7 +528,7 @@
    "id": "b36",
    "type": "line",
    "who": "blue",
-   "text": "Doh came out on top. Later studies found the same kind of order in listeners without training too, only weaker. So that sense of home seems to be learned, just by hearing music.",
+   "text": "The top rating went to doh. Later studies found the same kind of order in listeners without training too, only weaker. So that sense of home seems to be learned, just by hearing music.",
    "facts": "23a, 24, 25, 81",
    "gap": 0.35
   },
@@ -536,7 +536,7 @@
    "id": "o11",
    "type": "line",
    "who": "orange",
-   "text": "So doh sounds finished because we've learned to hear it as home, and tee stops one short step under it?",
+   "text": "So it sounds finished on doh because we've learned that doh is home, and tee stops one short step under it?",
    "facts": "22, 23a, 82 (her synthesis)",
    "gap": 0.6
   },
@@ -647,7 +647,7 @@
   {
    "id": "recap",
    "type": "mark",
-   "gap": 0.7
+   "gap": 1.8
   },
   {
    "id": "b45",
@@ -731,7 +731,7 @@
    "id": "o13",
    "type": "line",
    "who": "orange",
-   "text": "And in a scale that starts on G, which note is doh?",
+   "text": "And in a major scale that starts on G, which note is doh?",
    "facts": "19, 84",
    "gap": 0.5
   },
@@ -745,15 +745,15 @@
    "id": "b52",
    "type": "line",
    "who": "blue",
-   "text": "G. Doh is wherever the scale starts: its home.",
+   "text": "G. Doh is wherever a major scale starts: its home.",
    "facts": "9, 19, 84"
   },
   {
    "id": "b53",
    "type": "line",
    "who": "blue",
-   "text": "In MercuryPitch's Scale Runner, sing a major scale back, one note at a time, in the octave it plays.",
-   "facts": "36-38, 40, 85",
+   "text": "In MercuryPitch's Scale Runner, sing a major scale back, one note at a time. Set your voice range in Settings first, and sing in the octave it plays.",
+   "facts": "36-38, 40, 41, 85",
    "gap": 0.5
   },
   {

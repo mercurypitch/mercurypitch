@@ -1,5 +1,6 @@
 """Write output/motion/lesson-04/script.json (Lesson 4 film).
 
+Draft 3: script critic round 2's items (review/script-02/REPORT.md) on top of draft 2.
 Draft 2: script critic round 1's nine items (review/script-01/REPORT.md), Lesson 2's 2.2 s
 chapter breaths after the act 2, 3 and 4 marks, and three cuts for length (DECISIONS 5): Merc's
 tag after the hook, the W and H line (the letters stay on screen) and the "back to the question"
@@ -93,7 +94,7 @@ line(B, "Exactly. Seven steps that add up to twelve semitones: one octave.", 0.3
 # s07 act 2: predict, the white keys from D
 mark("act2", 0.7)
 line(O, "Same white keys, just starting on D. Surely that's the same scale?", BREATH, "mix-up card (her belief)")
-line(B, "Before you listen, predict. Start on D, play only white keys, up to the next D. Is it still doh ray mee?", 0.4, "LESSON.md step 3")
+line(B, "Predict: the white keys from D, up to the next D. Is it still doh ray mee?", 0.4, "LESSON.md step 3")
 pause("predict", 3.0, 0.4)
 line(B, "First, the white keys from D.", 0.35, "60")
 sound("white-d", "white-d", 4.05, 0.35)
@@ -120,16 +121,16 @@ line(B, "Slide to D, and doh is D, ray is E, mee is F sharp.", 0.5, "21, 79")
 line(B, "Home moves, and the names move with it.", 0.35, "19, 79")
 # s10 ti, one short of home
 line(B, "Back to the opening question. Tee is the seventh note, and it sits just a semitone below doh: the last step is a short one.", 0.7, "22, 80")
-line(B, "Climb to tee from C, and stop.", 0.5, "58, 80")
+line(B, "Listen: up to tee from C, and stop.", 0.5, "58, 80")
 sound("stop-c-home", "stop-c", 3.9, 0.35)
 pause("wait", 1.2, 0.0)
 line(B, "Most listeners hear it waiting for one more note. Take that step.", 0.2, "23, 80 (on C)")
 sound("land-c", "land-c", 1.65, 0.35)
-line(O, "But why does doh feel like home, and not tee?", 0.6, "- (a question)")
+line(O, "But why is doh home, and not tee?", 0.6, "- (a question; the page's own, FACTS 23a)")
 # s11 why do is home
 line(B, "In one experiment, listeners heard a C major scale, then one more note, and rated how well it finished the scale.", 0.35, "24, 81")
-line(B, "Doh came out on top. Later studies found the same kind of order in listeners without training too, only weaker. So that sense of home seems to be learned, just by hearing music.", 0.35, "23a, 24, 25, 81")
-line(O, "So doh sounds finished because we've learned to hear it as home, and tee stops one short step under it?", 0.6, "22, 23a, 82 (her synthesis)")
+line(B, "The top rating went to doh. Later studies found the same kind of order in listeners without training too, only weaker. So that sense of home seems to be learned, just by hearing music.", 0.35, "23a, 24, 25, 81")
+line(O, "So it sounds finished on doh because we've learned that doh is home, and tee stops one short step under it?", 0.6, "22, 23a, 82 (her synthesis)")
 line(B, "That's how it seems. Tee is called the leading note, because it's thought of as leading to the tonic.", 0.35, "22, 23a, 82")
 line(B, "It leads wherever home is. From D, tee is C sharp, and it leans up to D.", 0.35, "26, 82 (textbook terms)")
 # s12 act 4: sing it, Merc then Tavi
@@ -147,7 +148,7 @@ line(B, "Stop immediately if anything feels uncomfortable.", 0.35, "53, 83")
 sound("count-in", "count-in", 1.0, 0.6)
 pause("your-turn", 8.6, 0.0)
 # s14 recap
-mark("recap", 0.7)
+mark("recap", 1.8)   # a breath after the viewer's turn: anyone singing behind the guide finishes first
 line(B, "Quick check.", 0.5)
 line(B, "What pattern of steps makes a major scale?", 0.35, "2, 84")
 pause("q1", 2.5, 0.35)
@@ -159,10 +160,10 @@ line(B, "From tee up to doh: a tone, or a semitone?", 0.6, "22, 84")
 sound("ti-do", "ti-do", 1.65, 0.35)
 pause("q3", 1.8, 0.35)
 line(B, "A semitone. Tee sits just under home, and most listeners hear it lean up.", None, "22, 23, 84 (on C)")
-line(O, "And in a scale that starts on G, which note is doh?", 0.5, "19, 84")
+line(O, "And in a major scale that starts on G, which note is doh?", 0.5, "19, 84")
 pause("q4", 1.8, 0.35)
-line(B, "G. Doh is wherever the scale starts: its home.", None, "9, 19, 84")
-line(B, "In MercuryPitch's Scale Runner, sing a major scale back, one note at a time, in the octave it plays.", 0.5, "36-38, 40, 85")
+line(B, "G. Doh is wherever a major scale starts: its home.", None, "9, 19, 84")
+line(B, "In MercuryPitch's Scale Runner, sing a major scale back, one note at a time. Set your voice range in Settings first, and sing in the octave it plays.", 0.5, "36-38, 40, 41, 85")
 # s15 next
 mark("next", 0.7)
 line(B, "Next time.", 0.3)
