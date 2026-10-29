@@ -68,7 +68,9 @@ export interface OwnSongRead {
   readonly dropped: readonly string[]
   /** How many lines were looked at. */
   readonly lines?: number
-  /** How far the lyrics were moved onto this recording, s; null without them. */
+  /** How many synced lyric lines the song has: 0 without synced lyrics. */
+  readonly lyricLines?: number
+  /** How far the lyrics were moved onto this recording, s; null unused. */
   readonly shift?: number | null
   /** The song's tuning the lines were judged in, cents from A440's notes. */
   readonly tuning?: number
@@ -387,10 +389,8 @@ export async function readOwnSong(
   const level = loudness(voice.samples, voice.rate)
   const lyrics = await seams.syncedLyrics(sessionId)
   throwIfAborted(signal)
-  const { lines, shift } = songLines(
-    level,
-    lyrics === null ? [] : lyricLines(lyrics),
-  )
+  const synced = lyrics === null ? [] : lyricLines(lyrics)
+  const { lines, shift } = songLines(level, synced)
   const reading: EntryReading = { vocal: voice, level, notes, lines }
   // Each line read on its own, so the screen draws after every one.
   const voices: (LineVoice | null)[] = []
@@ -400,7 +400,13 @@ export async function readOwnSong(
   }
   const { entries: found, dropped, tuning } = judgeSong(reading, voices)
   report(85)
-  const told = { dropped, lines: lines.length, shift, tuning }
+  const told = {
+    dropped,
+    lines: lines.length,
+    lyricLines: synced.length,
+    shift,
+    tuning,
+  }
   if (found.length === 0) return { entries: [], ...told }
 
   const beats = await beatsOf(bandBlob, found, report, signal)

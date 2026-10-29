@@ -14,6 +14,15 @@ import { describe, expect, it } from 'vitest'
 import type { SongLine, StoredNote } from './entry-rules'
 import { breathLines, findEntries, judgeLine, lineSteps, loudness, lyricLines, lyricsShift, middleNote, runSteps, songLines, songTuning, VOCAL_RATE, yinMidi, } from './entry-rules'
 
+/** A seeded random source, the same every run. */
+function seeded(seed = 11): () => number {
+  let state = seed
+  return () => {
+    state = (state * 16807) % 2147483647
+    return (state - 1) / 2147483646
+  }
+}
+
 const hz = (midi: number): number => 440 * 2 ** ((midi - 69) / 12)
 
 /** A voice: pure notes, `cents` off their MIDI note where asked, silence between. */
@@ -141,14 +150,16 @@ describe('the entries', () => {
       'Second',
       'Last',
     ])
-    const [first, , last] = entries
+    const [first, second, last] = entries
     expect(first.at).toBeGreaterThan(1.85)
     expect(first.at).toBeLessThanOrEqual(2)
     // The band leads in for eight seconds, or from the song's start.
     expect(first.from).toBe(0)
     expect(last.from).toBeCloseTo(last.at - 8, 2)
-    // The line sung with you runs to the next line, or six and a half seconds.
-    expect(first.until).toBeCloseTo(6.45, 2)
+    // The line sung with you runs to the next line, ending before its voice
+    // comes in, or six and a half seconds.
+    expect(first.until).toBeCloseTo(6.45, 1)
+    expect(first.until).toBeLessThanOrEqual(second.at)
     expect(last.until).toBeCloseTo(last.at + 6.45, 2)
   })
 
@@ -396,5 +407,132 @@ describe("a song of the singer's own", () => {
     const notes = [stored(48, 1.95, 2.12), stored(57, 2.15, 4)]
     const found = findEntries({ vocal, level, notes, lines: [line(2)] })
     expect(found.entries.map((entry) => entry.midi)).toEqual([57])
+  })
+
+  it('takes no word from a stored note that ended before the voice settled', () => {
+    const { vocal, level } = song([{ from: 2, to: 4, midi: 57 }])
+    // The other tracker heard A3 end just before, and C4 under the voice.
+    const notes = [stored(57, 1, 1.98), stored(60, 2, 4)]
+    const found = findEntries({ vocal, level, notes, lines: [line(2)] })
+    expect(found.entries).toEqual([])
+    expect(found.dropped).toEqual([expect.stringMatching(/YIN A3, notes C4/u)])
+  })
+
+  it('takes the octave nearest the song, of every one the stored notes name', () => {
+    const { vocal, level } = song([{ from: 2, to: 4, midi: 57 }])
+    // A2 for a moment, then A4, in a song around A4.
+    const notes = [stored(45, 2, 2.1), stored(69, 2.1, 4), stored(69, 5, 20)]
+    const found = findEntries({ vocal, level, notes, lines: [line(2)] })
+    expect(found.entries.map((entry) => entry.midi)).toEqual([69])
+  })
+
+  /** A voice of `notes` over `seconds`, as a reading's vocal and level. */
+  const take = (
+    seconds: number,
+    notes: readonly { from: number; to: number; midi: number }[],
+  ) => {
+    const samples = voice(VOCAL_RATE, seconds, notes)
+    return {
+      vocal: { samples, rate: VOCAL_RATE },
+      level: loudness(samples, VOCAL_RATE),
+    }
+  }
+
+  it("gives a lyric line synced early, with no breath before it, its phrase's words", () => {
+    // The second phrase runs on, so the third's breath is 2.2 s, and its
+    // lyric line, a second early, starts 1.2 s after the voice stops.
+    const sungHere = phrases().map((phrase, i) =>
+      i === 1 ? { ...phrase, to: 9.8 } : phrase,
+    )
+    const { vocal, level } = take(26, sungHere)
+    const early = phrases().map((phrase, i) =>
+      line(i === 2 ? phrase.from - 1 : phrase.from, words[i]),
+    )
+    const { lines, shift } = songLines(level, early)
+    expect(shift).toBeCloseTo(0, 1)
+    expect(lines.map((one) => one.words)).toEqual(words)
+    const notes = sungHere.map((one) => stored(one.midi, one.from, one.to))
+    const found = findEntries({ vocal, level, notes, lines })
+    expect(found.entries.map((entry) => entry.words)).toEqual(words)
+  })
+
+  it("lets no empty lyric line take a phrase's words or cut its line short", () => {
+    const { vocal, level } = sung()
+    // An empty line marks the break, 0.8 s before the third phrase.
+    const marked = phrases().map((phrase, i) => line(phrase.from, words[i]))
+    marked.splice(2, 0, line(11.2))
+    const { lines } = songLines(level, marked)
+    const found = findEntries({ vocal, level, notes: storedOf(), lines })
+    expect(found.entries.map((entry) => entry.words)).toEqual(words)
+    // The third phrase's line is sung with you to the fourth's.
+    expect(found.entries[2].until).toBeCloseTo(16.95, 1)
+  })
+
+  it('keeps the first sung line an entry when bleed comes just before it', () => {
+    // Bleed in the intro: a blip at 1 s, and two just before the first line.
+    const { vocal, level } = take(24, [
+      { from: 1, to: 1.1, midi: 57 },
+      { from: 8.4, to: 8.5, midi: 57 },
+      { from: 9, to: 9.1, midi: 57 },
+      { from: 9.6, to: 11.6, midi: 57 },
+      { from: 14.6, to: 16.6, midi: 60 },
+      { from: 19.6, to: 21.6, midi: 57 },
+    ])
+    const lyrics = [
+      line(9.6, 'First'),
+      line(14.6, 'Second'),
+      line(19.6, 'Third'),
+    ]
+    const { lines } = songLines(level, lyrics)
+    // The voice's lines begin with the bleed's, ahead of the lyrics.
+    expect(lines[0].words).toBe('')
+    const notes = [stored(57, 9.6, 11.6), stored(60, 14.6, 16.6)]
+    notes.push(stored(57, 19.6, 21.6))
+    const found = findEntries({ vocal, level, notes, lines })
+    expect(found.entries.map((entry) => entry.words)).toEqual([
+      'First',
+      'Second',
+      'Third',
+    ])
+  })
+
+  it("ends a line sung with you before the next entry's voice", () => {
+    // A short phrase, then the next entry 1.7 s later: less than the
+    // shortest line sung with you.
+    const { vocal, level } = take(8, [
+      { from: 2, to: 2.4, midi: 57 },
+      { from: 4.1, to: 6, midi: 60 },
+    ])
+    const notes = [stored(57, 2, 2.4), stored(60, 4.1, 6)]
+    const found = findEntries({
+      vocal,
+      level,
+      notes,
+      lines: breathLines(level),
+    })
+    const [first, second] = found.entries
+    expect(found.entries).toHaveLength(2)
+    expect(first.until).toBe(second.at)
+  })
+
+  it('moves no lyrics onto a song of many short phrases by chance', () => {
+    // A phrase about every second: lyrics land somewhere at almost any shift.
+    const random = seeded(5)
+    const many: { from: number; to: number; midi: number }[] = []
+    for (let at = 1; at < 39; ) {
+      const to = at + 0.3 + 0.4 * random()
+      many.push({ from: at, to, midi: 57 })
+      at = to + 0.3 + 0.3 * random()
+    }
+    const { level } = take(41, many)
+    const other = Array.from({ length: 40 }, (_, i) =>
+      line(1 + 38 * random(), `Line ${i}`),
+    ).sort((a, b) => a.start - b.start)
+    expect(lyricsShift(level, other)).toBeNull()
+    // Lyrics that do fit it still move: every third phrase, 0.3 s late.
+    const fit = many
+      .filter((_, i) => i % 3 === 0)
+      .map((one, i) => line(one.from + 0.3, `Line ${i}`))
+    expect(lyricsShift(level, fit)).toBeCloseTo(-0.3, 1)
   })
 })
