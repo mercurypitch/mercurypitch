@@ -49,16 +49,17 @@
             kickIn: at('b35'),                                // the kicker "AN EXPERIMENT" and the first credit
             push: word('b35', 1, 'start', 0.32),              // the push to F-chart (1.2 s)
             heard: word('b35', 'heard'),                      // stair 1 lights ("heard a C ...")
-            cMajor: word('b35', 'C'),                         // the stairs light in quick turn
+            cMajor: word('b35', 'major'),                     // the stairs light in quick turn (the board's "major scale", 300.95)
             oneMore: word('b35', 'one more'),                 // the probe bead and its "?" appear
             note: word('b35', 'note,'),                       // its echo ring
             rated: word('b35', 'rated'),                      // the axis draws, "least" and "finishes it best"
             finished: word('b35', 'finished'),                // the probe scales 1.2
             top: word('b36', 'top'),                          // 11b: the probe fades, the staircase dims to 20 %, the names fly out
             doh: word('b36', 'doh.'),                         // do lands on the top shelf and scales 1.05
-            dohEnd: word('b36', 'doh.', 'end'),               // and lights (40 % chrome) as the word ends
             later: word('b36', 'Later'),                      // "later studies: ..." types on
-            order: word('b36', 'same'),                       // the tiers scale in turn, top to bottom ("the same kind of order")
+            studies: word('b36', 'studies'),                  // the tiers scale and light in turn, top to bottom ("studies found
+                                                              // the same kind of order"), 0.7 s apart
+            training: word('b36', 'training'),                // and again ("without training too"), 0.3 s apart
             without: word('b36', 'without'),                  // "as summed up in Janata et al., 2003" types on
             only: word('b36', 'only', 'start', -0.04),        // the shelves close to 64 px apart (0.8 s)
             weaker: word('b36', 'weaker.'),                   // the tiers scale in turn again
@@ -248,7 +249,8 @@
           /* ---------------------------------------------------------------- per-frame state */
           const LIGHTS = { 1: [], 2: [], 3: [], 4: [], 5: [], 6: [], 7: [], 8: [] }
           const addL = (n, t0, up = 0.4, down = 0.8) => LIGHTS[n].push([t0, up, down])
-          addL(8, A.dohHome); addL(7, A.tee); addL(1, A.heard)
+          // stair 1 (C) lights to peak on "heard" (a C), as C4 scales on it
+          addL(8, A.dohHome); addL(7, A.tee); addL(1, A.heard - 0.3, 0.3, 0.4)
           for (let n = 1; n <= 8; n++) addL(n, A.cMajor + 0.1 * (n - 1), 0.3, 0.4)
           addL(8, A.onDoh); addL(7, A.teeO); addL(7, A.labelsOut); addL(8, A.tonic)
           addL(1, A.fromD); addL(7, A.cSharp); addL(8, A.toD)
@@ -280,6 +282,7 @@
               }
               return { p: f.p, box: clamp(u / 0.35), s: lerp(s0, 1, f.ex), a }
             }
+            if (c === DO1 && t >= c.out + c.dur) return null   // it has become stair 8's: one do on the top shelf
             if (t < c.back) return { p: slotOf(c, t), box: 1, s: 1, a: 1 }
             if (c === DO1 || t >= c.back + c.bdur) return null
             const u = clamp((t - c.back) / c.bdur)
@@ -295,10 +298,10 @@
           }
           // the tiers' counted pulses, top shelf to bottom
           // (the tiers pulse only while the shelves stand 80 px apart, so the chips keep 8 px apart when closed)
-          const TIERP = [0, 1, 2, 3].map((k) => [A.order + 0.3 * k, A.just + 0.25 * k])
+          const TIERP = [0, 1, 2, 3].map((k) => [A.studies + 0.7 * k, A.training + 0.3 * k, A.just + 0.25 * k])
           // on "weaker", with the shelves closed, the scale chips light (40 % chrome) in turn, top shelf to bottom
           const TIERL = [0, 1, 2].map((k) => A.weaker + 0.15 * k)
-          const DOL = [A.dohEnd, A.learned]                   // do's chip lights alone
+          const DOL = [A.doh + 0.6, A.learned]                // do's chip lights alone: after its landing pulse, and as the house lands
           const tierPulse = (tier, t) => Math.max(
             L.pulse(t, TIERP[tier], 'tile'),
             tier === 0 ? L.pulse(t, [A.doh, A.home], 'tile') : 1)
@@ -343,7 +346,7 @@
                 const inS = lerp(CMAJ.includes(m) ? 1 : 0, DMAJ.includes(m) ? 1 : 0, uS)
                 return {
                   full: inS, lit: ST.isBlack(m) ? inS : 0,
-                  scale: m === 13 ? L.pulse(t, A.teeCs, 'key') : m === 2 ? L.pulse(t, A.fromD, 'key') : 1,
+                  scale: m === 13 ? L.pulse(t, A.teeCs, 'key') : m === 2 ? L.pulse(t, A.fromD, 'key') : m === 0 ? L.pulse(t, A.heard, 'key') : 1,
                   names: m === 13 ? [{ text: 'C♯', a: P(t, A.teeCs, 0.25) * (1 - P(t, A.allOut, 0.2)), dy: 10 * (1 - P(t, A.teeCs, 0.45, 'power2.out')) }] : [],
                 }
               },
@@ -377,6 +380,8 @@
               const sc = s.s * (t >= c.out + c.dur && t < c.back ? tierPulse(c.tier, t) : 1)
               c.el.g.setAttribute('opacity', s.a.toFixed(3))
               c.el.box.setAttribute('opacity', s.box.toFixed(3))
+              // an outline chip's rim brightens on its tier's pulses (its light)
+              if (c.dim) c.el.box.setAttribute('stroke-opacity', (0.35 + 0.45 * light(t, TIERP[3])).toFixed(3))
               if (!c.dim) {
                 // the tiers' scale pulses light the chips too (larger events in this span with no Merc)
                 const k = Math.max(c.tier < 3 ? light(t, TIERL[c.tier], 0.3, 0.5) : 0, c.tier === 0 ? light(t, DOL.concat([A.home])) : 0, light(t, TIERP[c.tier]))

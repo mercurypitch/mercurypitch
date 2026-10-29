@@ -46,6 +46,7 @@
             last: word('b32', 'the last step'),               // the riser grows again
             step: word('b32', 'step', 'start', -0.03),        // the ink arrow draws from ti's tread up to do's (0.6 s)
             short: word('b32', 'short'),                      // the riser grows a third time
+            oneW: word('b32', 'one.'),                        // the ink arrow pulses ("a short one")
             pull: word('b33', 'Listen:', 'start', 0.07),      // 10b: the pull to F0 (1.7 s), the strip returning
             empty: word('b33', 'tee', 'start', -0.1),         // the top stair empties, its house unlights, the bottom house fades
             fromC: word('b33', 'C'),                          // "from C": stair 1 lights chrome
@@ -210,7 +211,7 @@
               hair: { a: 1, w: 0, s0: 0 },
             })
             // the ink arrow (10a) and the ink-2 arrow (10c, drawn again on "one more", pulsing on "step")
-            inkArrow.draw(P(t, A.step, 0.6, 'power2.inOut'), 1 - P(t, A.out1, 0.2), INK)
+            inkArrow.draw(P(t, A.step, 0.6, 'power2.inOut'), 1 - P(t, A.out1, 0.2), INK, { scale: L.pulse(t, A.oneW, 'label') })
             {
               const redraw = t < A.oneMore ? P(t, A.wait, 0.5, 'power2.inOut') : Math.max(1 - P(t, A.oneMore, 0.12, 'power2.in'), P(t, A.oneMore + 0.12, 0.5, 'power2.inOut'))
               const pulse = L.pulse(t, A.takeStep, 'label') - 1

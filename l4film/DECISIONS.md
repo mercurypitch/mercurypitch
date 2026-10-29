@@ -560,3 +560,18 @@ replaced it. The builder's record: critics never read it.
       in Merc's column through m11-blue's fall (25.10 to 25.65), now in that scene's fix round.
       S09's strip is a world surface (decision 83); S10's "do" chip clears Merc's column by 30 px,
       and S05's "S" riser label clears Tavi's body by about 30 px.
+87. **Tavi's pass runs straight across the S07/S08 cut; nothing changes there.** Component critic
+    C-02 (N1) saw her landing ring and spark dots vanish and her outline jump from stretched to
+    squashed between S07's last lab frame and S08's first. Measured: the head pass
+    (m08-orange-in) is continuous there (frame-to-frame change 4.1, 3.5, 2.8 over its frames 63
+    to 66, inside its rebound's own range; a fresh render of its first 70 frames is bit-identical,
+    and the renderer's stills agree with it with or without the sing cue at 1.05). What ends there
+    is the pass's own content: the splash droplets land and are removed, and the floor ring fades
+    out, as the rebound settles. By the tag model in tools/merc-tags.py, film frame 11961 (S07's
+    last) shows pass frame 65 and 11962 (S08's first) shows 66, so the 60 fps film has no held or
+    skipped frame at the cut; the 30 fps lab clips compare frames 2.2 pass frames apart. Also
+    measured, for the record: a video whose media-start lands exactly on a source frame's time
+    repeats and skips a frame every third frame at 60 fps (the webm's millisecond timestamps), and
+    a half-frame phase plays every frame; merc-tags.py already writes every media-start half a
+    frame from any edge, so no tag in this film has that phase. The film critic checks the cut
+    at 60 fps.

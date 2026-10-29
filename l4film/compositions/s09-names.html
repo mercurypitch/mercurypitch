@@ -59,7 +59,8 @@
             doubt: word('o9', "isn't"),                       // "do = C?" draws, as a guess
             always: word('o9', 'always'),                     // the guess pulses
             fixed: word('b29', 'fixed'),                      // it turns solid: "fixed do: do = C"
-            system: word('b29', 'system'),                    // the guess pulses ("one system")
+            system: word('b29', 'system'),                    // the guess pulses ("In one system", on both words)
+            oneSys: word('b29', 'one'),
             itIs: word('b29', 'it is'),                       // it moves up and shrinks to 40 px
             isC: word('b29', 'is.'),                          // C4 and C5 scale (in fixed do, do is C)
             use: word('b29', "We'll use"),                    // the two do stairs light
@@ -70,6 +71,7 @@
             keys: word('b29', 'keys'),                        // the scale's keys scale in turn
             slideD: word('b30', 'Slide', 'start', 0.08),      // 9f: the slide to D (0.8 s)
             dohD: word('b30', 'doh'), rayE: word('b30', 'ray'), meeF: word('b30', 'mee'),
+            isD: word('b30', 'D#2'), isE: word('b30', 'E'), isF: word('b30', 'F'),   // each key scales again as it is said
             sharp: word('b30', 'sharp'),                      // mi's stair scales and lights on "sharp", F♯ scales
             homeMoves: word('b31', 'Home'),                   // both houses glow, both do stairs light
             keysOut: word('b31', 'and', 'start', -0.2),       // the key names fade
@@ -204,6 +206,7 @@
           addL(1, A.dohD, 0.3, 0.5); addL(2, A.rayE, 0.3, 0.5); addL(3, A.meeF, 0.3, 0.5)   // over the key being named
           addL(1, A.homeMoves, 0.4, 0.8); addL(8, A.homeMoves, 0.4, 0.8)                     // "Home moves"
           addL(1, A.use, 0.4, 0.8); addL(8, A.use, 0.4, 0.8); addL(1, A.dohO); addL(3, A.sharp, 0.3, 0.5)   // "We'll use"; "doh moved"; "F sharp"
+          addL(1, A.isC); addL(8, A.isC)                                                      // "it is.": in fixed do, do is C
           const lit = (n, t) => LIGHTS[n].reduce((k, [t0, up, dn]) => Math.max(k, light(t, t0, up, dn)), 0)
           // the names: letters (hidden while the staircase is dim), numbers on "number" (staggered), and each
           // number to its name as it is sung. A switch is the old name out (0.12 s, rising 12 px) and then the new in
@@ -219,7 +222,7 @@
             return swap2(t, A.number + 0.05 * (n - 1), LETTERS[n - 1], NUMS[n - 1]).map((it) => ({ ...it, a: it.a * vis }))
           }
           const HOUSEP = [0, 1].map((k) => [A.movDo + 0.08 * k, A.withIt + 0.08 * k])   // the houses' pulses ("movable doh", "with it")
-          const KEYP = { 2: [A.dohD], 4: [A.rayE], 6: [A.meeF, A.sharp] }                // F♯ again on "sharp"
+          const KEYP = { 2: [A.dohD, A.isD], 4: [A.rayE, A.isE], 6: [A.meeF, A.isF, A.sharp] }   // on the name, and on the key's own word
           CMAJ.forEach((m, i) => { (KEYP[m] = KEYP[m] || []).push(A.keys + 0.08 * i) })   // "not the keys"
           KEYP[0].push(A.isC); KEYP[12].push(A.isC + 0.08)                                // "it is": do on C
 
@@ -310,7 +313,7 @@
                 solid: P(t, A.fixed, 0.35),
                 mix: clamp((t - A.fixed) / 0.6),
                 scale: lerp(1, 40 / 48, up), x: 1360, baseline: lerp(260, 170, up),
-                pulse: L.pulse(t, [A.always, A.system], 'key'),
+                pulse: L.pulse(t, [A.always, A.oneSys, A.system], 'key'),
               })
               const mu = P(t, A.movable, 0.4, 'power2.out')
               movableT.setAttribute('opacity', (P(t, A.movable, 0.2) * out).toFixed(3))

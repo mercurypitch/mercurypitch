@@ -1411,3 +1411,19 @@ Note: the lanes' memory gate read a stale cgroup path after the 21:00 restart (f
 - 13:53 group A clips done (exit 0 each): s04 13:44:51, s03 13:45:40, s01 13:52:36, s02 13:53:17 (lab/s0N-*/clip.mp4).
   s04's clip carries the long fall (frames 14.40-14.95: in from the top, splat at the corner;
   $S/l4entr/aclips/s04-fall/sheet.png). A-01 is ready to launch ($S/l4entr/critics/A.txt) when a slot frees.
+
+## 2026-10-29 ~14:30Z: C-02 KEEP, A-01 REVISE, B round 3, N1 settled
+- C-02 (verification): s07 KEEP, s08 KEEP; all 11 C-01 items FIXED. New N1-N6 (cosmetic; N1 "must be
+  fixed before joining"). Saved to review/component-C-02/REPORT.md.
+- N1 (ring vanishes at the S07/S08 cut) is NOT a bug: DECISIONS 87. Tests in $S/l4entr/ringtest/
+  (stills vs fresh video render, scratch copy merc-pass-scratch.mjs writes to ringtest/out) and
+  $S/l4entr/xrule/ (60 fps MP4 phase test: exact-integer media phase dups/skips every 3rd frame,
+  half-frame phase is clean; merc-tags already writes half-frame phases). No tag change needed.
+- A-01: group REVISE (s01 REVISE, s02 KEEP, s03 REVISE, s04 REVISE), 9 items; saved to
+  review/component-A-01/REPORT.md. Builder A = (builder) (resume with the fix list when a slot
+  frees). Director calls: s03's top-left list was the storyboard's (row 3a) against the brief's "four
+  short labels on the staircase": take the brief (labels beside the parts they name); update
+  STORYBOARD 3a-3c. Item 6 (moves read as zooms: far staves/dust too faint) recurs in B-02, C-01,
+  C-02, A-01: kit-level, mine (frames.js/lesson.js far layer), next.
+- 14:2x builder B resumed with round 3 (B-02 items 2-5). Agents now: builder D + builder B.
+- m12-blue landed 14:02:47 (8438 frames, 2958 ms/frame); whole.js refreshed by whole-watch.

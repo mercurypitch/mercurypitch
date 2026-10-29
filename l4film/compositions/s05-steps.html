@@ -164,7 +164,12 @@
             const id = SID + '-feather'
             const defs = L.svg('defs', {}, st.svg)
             const grad = L.svg('linearGradient', { id: id + '-g', gradientUnits: 'userSpaceOnUse', x1: 220, x2: 1680, y1: 0, y2: 0 }, defs)
-            const stops = ['#000', '#fff', '#fff', '#000'].map((c, i) => L.svg('stop', { offset: i < 2 ? 0 : 1, 'stop-color': c }, grad))
+            // each end ramps on smootherstep (8 stops), so the field has no visible first column (critic B-02 item 5)
+            const K = [0, 1, 2, 3, 4, 5, 6, 7].map((i) => i / 7)
+            const ramp = (u) => u * u * u * (u * (6 * u - 15) + 10)
+            const grey = (v) => { const c = Math.round(255 * v).toString(16).padStart(2, '0'); return `#${c}${c}${c}` }
+            const stops = K.map((u) => L.svg('stop', { offset: 0, 'stop-color': grey(ramp(u)) }, grad))
+              .concat(K.slice().reverse().map((u) => L.svg('stop', { offset: 1, 'stop-color': grey(ramp(u)) }, grad)))
             const mask = L.svg('mask', { id, maskUnits: 'userSpaceOnUse', x: -4000, y: -4000, width: 10000, height: 10000 }, defs)
             L.svg('rect', { x: -4000, y: -4000, width: 10000, height: 10000, fill: `url(#${id}-g)` }, mask)
             const wrap = L.svg('g', { class: 'rows-feather' }, null)
@@ -173,19 +178,20 @@
             return (t) => {
               const z = clamp(cam.scale(t) - 1)                          // 0 at F0, 0.8 in F-low and F-high, 1 in CU-A and CU-B
               if (z < 0.002) { wrap.removeAttribute('mask'); return }
-              const f = (160 * z) / 1460
-              stops[1].setAttribute('offset', f.toFixed(4)); stops[2].setAttribute('offset', (1 - f).toFixed(4))
+              const f = (180 * z) / 1460                                 // 144 world px in F-low (259 on screen), 180 in CU
+              K.forEach((u, i) => { stops[i].setAttribute('offset', (f * u).toFixed(4)); stops[15 - i].setAttribute('offset', (1 - f * u).toFixed(4)) })
               wrap.setAttribute('mask', `url(#${id})`)
             }
           }
-          // 7. A row of 64 px tokens in the right lane (Outfit 600, tabular digits, ink, baseline 260): S5's tally
-          //    "T T S T T T S" and S6's sum "2 2 1 · 2 · 2 2 1 = 12". Laid out from each token's own advance once the
-          //    fonts are in: gaps[i] px of advance before token i; 30 px leaves 32 to 35 px of ground between two
-          //    glyphs, half an em, so the numbers read as numbers, not as 221 (critic B-01 item 6). From x0, or
-          //    ending at `right`. Each token: { ch, el, x, w, cx }.
-          const TOKEN = "font: 600 64px 'Outfit', sans-serif; font-variant-numeric: tabular-nums; white-space: pre;"
-          const tokenRow = (hud, chars, gaps, { x0 = 0, right = null, y = 260 } = {}) => {
-            const row = chars.map((ch) => ({ ch, el: L.svg('text', { x: x0, y, fill: L.C.ink, opacity: 0, style: TOKEN, text: ch }, hud), x: x0, w: 0, cx: x0 }))
+          // 7. A row of tokens in the right lane (Outfit 600, `size` px, default 64, tabular digits, ink, baseline
+          //    260): S5's tally "T T S T T T S" (64 px) and S6's sum "2 2 1 · 2 · 2 2 1 = 12" (56 px). Laid out from
+          //    each token's own advance once the fonts are in: gaps[i] px of advance before token i; at 64 px, 30 px
+          //    leaves 32 to 35 px of ground between two glyphs, half an em, so the numbers read as numbers, not as
+          //    221 (critic B-01 item 6). From x0, or ending at `right`. Each token: { ch, el, x, w, cx, cy }.
+          const TOKEN = (size) => `font: 600 ${size}px 'Outfit', sans-serif; font-variant-numeric: tabular-nums; white-space: pre;`
+          const tokenRow = (hud, chars, gaps, { x0 = 0, right = null, y = 260, size = 64 } = {}) => {
+            const cy = y - (22 * size) / 64                              // the glyphs' middle, for tokenSet's scale
+            const row = chars.map((ch) => ({ ch, el: L.svg('text', { x: x0, y, fill: L.C.ink, opacity: 0, style: TOKEN(size), text: ch }, hud), x: x0, w: 0, cx: x0, cy }))
             const lay = () => {
               let x = 0
               row.forEach((tk, i) => { x += gaps[i] || 0; tk.w = tk.el.getComputedTextLength(); tk.x = x; x += tk.w })
@@ -195,10 +201,10 @@
             lay(); L.afterFonts(lay)
             return row
           }
-          // a token's alpha and its scale about (cx, the glyphs' middle: 22 px above the baseline)
+          // a token's alpha and its scale about (cx, the glyphs' middle: 22 px above the baseline at 64 px)
           const tokenSet = (tk, a, sc, cx = tk.cx) => {
             tk.el.setAttribute('opacity', a.toFixed(3))
-            tk.el.setAttribute('transform', `translate(${f1(cx)} 238) scale(${sc.toFixed(4)}) translate(${f1(-cx)} -238)`)
+            tk.el.setAttribute('transform', `translate(${f1(cx)} ${f1(tk.cy)}) scale(${sc.toFixed(4)}) translate(${f1(-cx)} ${f1(-tk.cy)})`)
           }
           /* ======================= end of group B's shared block */
 
