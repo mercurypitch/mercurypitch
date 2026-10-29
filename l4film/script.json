@@ -1,0 +1,805 @@
+{
+ "title": "Find Your Pitch, Lesson 4: The major scale and home",
+ "voices": {
+  "blue": {
+   "voice": "am_michael",
+   "speed": 0.84
+  },
+  "orange": {
+   "voice": "af_heart",
+   "speed": 0.9
+  }
+ },
+ "gap": 0.3,
+ "events": [
+  {
+   "id": "open",
+   "type": "mark",
+   "gap": 0.6
+  },
+  {
+   "id": "stop-c",
+   "type": "sound",
+   "sound": "stop-c",
+   "dur": 3.9,
+   "gap": 0.0
+  },
+  {
+   "id": "hang-c",
+   "type": "pause",
+   "dur": 0.9,
+   "gap": 0.0
+  },
+  {
+   "id": "o1",
+   "type": "line",
+   "who": "orange",
+   "text": "It just hangs there, waiting. Is that because we started on C?",
+   "gap": 0.2,
+   "facts": "87 (her guess)"
+  },
+  {
+   "id": "b1",
+   "type": "line",
+   "who": "blue",
+   "text": "Start somewhere else, and listen.",
+   "gap": 0.35,
+   "facts": "87"
+  },
+  {
+   "id": "stop-d",
+   "type": "sound",
+   "sound": "stop-d",
+   "dur": 3.9,
+   "gap": 0.4
+  },
+  {
+   "id": "hang-d",
+   "type": "pause",
+   "dur": 0.9,
+   "gap": 0.0
+  },
+  {
+   "id": "b2",
+   "type": "line",
+   "who": "blue",
+   "text": "Still waiting. Now take the last step.",
+   "gap": 0.2,
+   "facts": "59, 87"
+  },
+  {
+   "id": "land-d",
+   "type": "sound",
+   "sound": "land-d",
+   "dur": 1.65,
+   "gap": 0.35
+  },
+  {
+   "id": "o2",
+   "type": "line",
+   "who": "orange",
+   "text": "Home. So why does doh ray mee sound finished when it lands on doh, and restless when it stops on tee?",
+   "gap": 0.4,
+   "facts": "17, 28, 66, 87"
+  },
+  {
+   "id": "b3",
+   "type": "line",
+   "who": "blue",
+   "text": "Let's find out, one step at a time.",
+   "gap": 0.35,
+   "facts": "-"
+  },
+  {
+   "id": "title",
+   "type": "sting",
+   "dur": 3.2,
+   "gap": 0.4
+  },
+  {
+   "id": "b4",
+   "type": "line",
+   "who": "blue",
+   "text": "By the end, you'll build a major scale from its steps, start it on any note, name its notes, and hear tee lean towards home.",
+   "gap": 0.2,
+   "facts": "LESSON.md promise; 23 (\"hear ti lean towards home\", no reason given)"
+  },
+  {
+   "id": "b5",
+   "type": "line",
+   "who": "blue",
+   "text": "First, one from Lesson 2. How many semitones make an octave?",
+   "gap": 0.6,
+   "facts": "30, 70"
+  },
+  {
+   "id": "q0",
+   "type": "pause",
+   "dur": 1.8,
+   "gap": 0.35
+  },
+  {
+   "id": "b6",
+   "type": "line",
+   "who": "blue",
+   "text": "Twelve. Seven letters, and five notes between them.",
+   "facts": "70"
+  },
+  {
+   "id": "b7",
+   "type": "line",
+   "who": "blue",
+   "text": "But a major scale climbs that octave in just seven steps.",
+   "gap": 0.35,
+   "facts": "71"
+  },
+  {
+   "id": "o3",
+   "type": "line",
+   "who": "orange",
+   "text": "Twelve semitones in seven steps? Then some steps must be bigger than others?",
+   "gap": 0.5,
+   "facts": "71 (her guess)"
+  },
+  {
+   "id": "b8",
+   "type": "line",
+   "who": "blue",
+   "text": "Let's measure them.",
+   "gap": 0.35,
+   "facts": "-"
+  },
+  {
+   "id": "act1",
+   "type": "mark",
+   "gap": 0.6
+  },
+  {
+   "id": "b9",
+   "type": "line",
+   "who": "blue",
+   "text": "Here's the scale from C, on the white keys, up to the next C.",
+   "gap": 0.5,
+   "facts": "6, 57"
+  },
+  {
+   "id": "scale-c",
+   "type": "sound",
+   "sound": "scale-c",
+   "dur": 4.05,
+   "gap": 0.35
+  },
+  {
+   "id": "b10",
+   "type": "line",
+   "who": "blue",
+   "text": "Now measure each step, as in Lesson 2. With a black key in between, it's a tone.",
+   "gap": 0.4,
+   "facts": "6, 72"
+  },
+  {
+   "id": "o4",
+   "type": "line",
+   "who": "orange",
+   "text": "And with no black key in between, like E to F, it's a semitone?",
+   "gap": 0.5,
+   "facts": "72 (her guess)"
+  },
+  {
+   "id": "b11",
+   "type": "line",
+   "who": "blue",
+   "text": "Yes. Watch each step as you listen.",
+   "gap": 0.35,
+   "facts": "-"
+  },
+  {
+   "id": "steps-c",
+   "type": "sound",
+   "sound": "steps-c",
+   "dur": 6.8,
+   "gap": 0.35
+  },
+  {
+   "id": "b12",
+   "type": "line",
+   "who": "blue",
+   "text": "Tone, tone, semitone. Tone, tone, tone, semitone.",
+   "gap": 0.4,
+   "facts": "2"
+  },
+  {
+   "id": "b13",
+   "type": "line",
+   "who": "blue",
+   "text": "The steps aren't equal. The two short ones are E to F, and B to C.",
+   "gap": 0.35,
+   "facts": "6"
+  },
+  {
+   "id": "o5",
+   "type": "line",
+   "who": "orange",
+   "text": "The short steps look scattered. Is there a pattern to them?",
+   "gap": 0.6,
+   "facts": "- (a question)"
+  },
+  {
+   "id": "b14",
+   "type": "line",
+   "who": "blue",
+   "text": "Split the scale in two, and listen to each half.",
+   "gap": 0.35,
+   "facts": "3, 65"
+  },
+  {
+   "id": "group-low",
+   "type": "sound",
+   "sound": "group-low",
+   "dur": 2.25,
+   "gap": 0.35
+  },
+  {
+   "id": "group-high",
+   "type": "sound",
+   "sound": "group-high",
+   "dur": 2.25,
+   "gap": 0.5
+  },
+  {
+   "id": "b15",
+   "type": "line",
+   "who": "blue",
+   "text": "Both halves climb the same way: tone, tone, semitone. One more tone joins them.",
+   "gap": 0.4,
+   "facts": "3, 73"
+  },
+  {
+   "id": "b16",
+   "type": "line",
+   "who": "blue",
+   "text": "Now count it in semitones. Two, two, one. Two. Two, two, one.",
+   "gap": 0.35,
+   "facts": "4"
+  },
+  {
+   "id": "o6",
+   "type": "line",
+   "who": "orange",
+   "text": "That's twelve. Is that why it ends on C again, an octave up?",
+   "gap": 0.5,
+   "facts": "4, 74 (her guess)"
+  },
+  {
+   "id": "b17",
+   "type": "line",
+   "who": "blue",
+   "text": "Exactly. Seven steps that add up to twelve semitones: one octave.",
+   "gap": 0.35,
+   "facts": "4, 74"
+  },
+  {
+   "id": "b18",
+   "type": "line",
+   "who": "blue",
+   "text": "Books often write the pattern with W and H, for whole steps and half steps.",
+   "gap": 0.35,
+   "facts": "2, 75"
+  },
+  {
+   "id": "act2",
+   "type": "mark",
+   "gap": 0.6
+  },
+  {
+   "id": "o7",
+   "type": "line",
+   "who": "orange",
+   "text": "Same white keys, just starting on D. Surely that's the same scale?",
+   "gap": 0.5,
+   "facts": "mix-up card (her belief)"
+  },
+  {
+   "id": "b19",
+   "type": "line",
+   "who": "blue",
+   "text": "Before you listen, predict. Start on D, play only white keys, up to the next D. Is it still doh ray mee?",
+   "gap": 0.4,
+   "facts": "LESSON.md step 3"
+  },
+  {
+   "id": "predict",
+   "type": "pause",
+   "dur": 3.0,
+   "gap": 0.4
+  },
+  {
+   "id": "b20",
+   "type": "line",
+   "who": "blue",
+   "text": "First, the white keys from D.",
+   "gap": 0.35,
+   "facts": "60"
+  },
+  {
+   "id": "white-d",
+   "type": "sound",
+   "sound": "white-d",
+   "dur": 4.05,
+   "gap": 0.35
+  },
+  {
+   "id": "b21",
+   "type": "line",
+   "who": "blue",
+   "text": "Now the major pattern, from D.",
+   "gap": 0.5,
+   "facts": "10, 60"
+  },
+  {
+   "id": "major-d",
+   "type": "sound",
+   "sound": "major-d",
+   "dur": 4.05,
+   "gap": 0.35
+  },
+  {
+   "id": "b22",
+   "type": "line",
+   "who": "blue",
+   "text": "It changes. The white keys climb tone, semitone, tone, tone, tone, semitone, tone.",
+   "gap": 0.5,
+   "facts": "11, 76"
+  },
+  {
+   "id": "b23",
+   "type": "line",
+   "who": "blue",
+   "text": "The short steps fall in different places, and the third and seventh notes come out a semitone low.",
+   "gap": 0.35,
+   "facts": "11, 76"
+  },
+  {
+   "id": "b24",
+   "type": "line",
+   "who": "blue",
+   "text": "Keeping the pattern takes two black keys: F sharp and C sharp. That's D major, named after its first note.",
+   "gap": 0.4,
+   "facts": "9, 10, 76"
+  },
+  {
+   "id": "o8",
+   "type": "line",
+   "who": "orange",
+   "text": "So a major scale isn't a set of keys at all. It's the pattern?",
+   "gap": 0.6,
+   "facts": "mix-up card's better idea (her words)"
+  },
+  {
+   "id": "b25",
+   "type": "line",
+   "who": "blue",
+   "text": "Yes. Start the pattern on any of the twelve notes, and you get a major scale.",
+   "gap": 0.35,
+   "facts": "8, 77"
+  },
+  {
+   "id": "slide-g",
+   "type": "sound",
+   "sound": "slide-g",
+   "dur": 3.24,
+   "gap": 0.4
+  },
+  {
+   "id": "slide-e",
+   "type": "sound",
+   "sound": "slide-e",
+   "dur": 3.24,
+   "gap": 0.5
+  },
+  {
+   "id": "b26",
+   "type": "line",
+   "who": "blue",
+   "text": "The shape never changes. Only the keys under it do.",
+   "gap": 0.4,
+   "facts": "77"
+  },
+  {
+   "id": "b27",
+   "type": "line",
+   "who": "blue",
+   "text": "Every start except C needs at least one black key. C is just the one that fits the white keys alone.",
+   "gap": 0.35,
+   "facts": "12, 77"
+  },
+  {
+   "id": "act3",
+   "type": "mark",
+   "gap": 0.6
+  },
+  {
+   "id": "b28",
+   "type": "line",
+   "who": "blue",
+   "text": "Now, names for the stairs. A scale's first note is its tonic: its home.",
+   "gap": 0.5,
+   "facts": "16, 17, 78"
+  },
+  {
+   "id": "b29",
+   "type": "line",
+   "who": "blue",
+   "text": "Musicians number the notes up from home, one to seven: the scale degrees. And they sing them with these names.",
+   "gap": 0.4,
+   "facts": "18, 19, 78"
+  },
+  {
+   "id": "b30",
+   "type": "line",
+   "who": "blue",
+   "text": "Doh, ray, mee, fah, soh, lah, tee, and doh again.",
+   "gap": 0.35,
+   "facts": "19, 20, 66, 78"
+  },
+  {
+   "id": "o9",
+   "type": "line",
+   "who": "orange",
+   "text": "So doh is always C?",
+   "gap": 0.6,
+   "facts": "79 (her guess)"
+  },
+  {
+   "id": "b31",
+   "type": "line",
+   "who": "blue",
+   "text": "In one system, called fixed doh, it is. We'll use movable doh: the names belong to the stairs, not the keys.",
+   "gap": 0.35,
+   "facts": "19, 79"
+  },
+  {
+   "id": "b32",
+   "type": "line",
+   "who": "blue",
+   "text": "Slide to D, and doh is D, ray is E, mee is F sharp.",
+   "gap": 0.5,
+   "facts": "21, 79"
+  },
+  {
+   "id": "b33",
+   "type": "line",
+   "who": "blue",
+   "text": "Home moves, and the names move with it.",
+   "gap": 0.35,
+   "facts": "19, 79"
+  },
+  {
+   "id": "b34",
+   "type": "line",
+   "who": "blue",
+   "text": "Now, back to the question we started with.",
+   "gap": 0.7,
+   "facts": "-"
+  },
+  {
+   "id": "b35",
+   "type": "line",
+   "who": "blue",
+   "text": "Tee is the seventh note, and it sits just a semitone below doh: the last step is a short one.",
+   "gap": 0.35,
+   "facts": "22, 80"
+  },
+  {
+   "id": "b36",
+   "type": "line",
+   "who": "blue",
+   "text": "Back on C. Climb to tee, and stop.",
+   "gap": 0.5,
+   "facts": "58, 80"
+  },
+  {
+   "id": "stop-c-home",
+   "type": "sound",
+   "sound": "stop-c",
+   "dur": 3.9,
+   "gap": 0.35
+  },
+  {
+   "id": "wait",
+   "type": "pause",
+   "dur": 1.2,
+   "gap": 0.0
+  },
+  {
+   "id": "b37",
+   "type": "line",
+   "who": "blue",
+   "text": "Most listeners hear it waiting for one more note. Take that step.",
+   "gap": 0.2,
+   "facts": "23, 80 (on C)"
+  },
+  {
+   "id": "land-c",
+   "type": "sound",
+   "sound": "land-c",
+   "dur": 1.65,
+   "gap": 0.35
+  },
+  {
+   "id": "o10",
+   "type": "line",
+   "who": "orange",
+   "text": "But why does doh feel like home, and not tee?",
+   "gap": 0.6,
+   "facts": "- (a question)"
+  },
+  {
+   "id": "b38",
+   "type": "line",
+   "who": "blue",
+   "text": "In one experiment, listeners heard a C major scale, then one more note, and rated how well it finished the scale.",
+   "gap": 0.35,
+   "facts": "24, 81"
+  },
+  {
+   "id": "b39",
+   "type": "line",
+   "who": "blue",
+   "text": "Doh came out on top. Trained musicians show the order most sharply, but listeners without training show it too, so that sense of home seems to be learned, just by hearing music.",
+   "gap": 0.4,
+   "facts": "23a, 24, 25, 81"
+  },
+  {
+   "id": "o11",
+   "type": "line",
+   "who": "orange",
+   "text": "So tee always sits a semitone under home, wherever the scale starts?",
+   "gap": 0.6,
+   "facts": "2, 22, 82 (her guess)"
+  },
+  {
+   "id": "b40",
+   "type": "line",
+   "who": "blue",
+   "text": "Always: the pattern's last step is a semitone. Tee is called the leading note, because it's thought of as leading to the tonic.",
+   "gap": 0.35,
+   "facts": "2, 22, 82"
+  },
+  {
+   "id": "b41",
+   "type": "line",
+   "who": "blue",
+   "text": "It leads wherever home is. From D, tee is C sharp, and it leans up to D.",
+   "gap": 0.35,
+   "facts": "26, 82 (textbook terms)"
+  },
+  {
+   "id": "act4",
+   "type": "mark",
+   "gap": 0.6
+  },
+  {
+   "id": "b42",
+   "type": "line",
+   "who": "blue",
+   "text": "Let's sing it. Listen first: up to soh, and back down to doh.",
+   "gap": 0.5,
+   "facts": "63, 83"
+  },
+  {
+   "id": "sing-a",
+   "type": "sound",
+   "sound": "sing-a",
+   "dur": 7.6,
+   "gap": 0.4
+  },
+  {
+   "id": "o12",
+   "type": "line",
+   "who": "orange",
+   "text": "Then all the way up to tee, and wait? I'll try that part, an octave up.",
+   "gap": 0.6,
+   "facts": "63, 83"
+  },
+  {
+   "id": "sing-b",
+   "type": "sound",
+   "sound": "sing-b",
+   "dur": 8.6,
+   "gap": 0.4
+  },
+  {
+   "id": "b43",
+   "type": "line",
+   "who": "blue",
+   "text": "Now you. Sore, hoarse or unwell today? Just listen along.",
+   "gap": 0.6,
+   "facts": "50, 83"
+  },
+  {
+   "id": "b44",
+   "type": "line",
+   "who": "blue",
+   "text": "Otherwise, sing on doh, ray, mee, or on ooh, at about speaking volume. Start on my note, or an octave up.",
+   "gap": 0.35,
+   "facts": "51, 52, 83"
+  },
+  {
+   "id": "b45",
+   "type": "line",
+   "who": "blue",
+   "text": "When you stop on tee, wait a moment, and notice where it wants to go.",
+   "gap": 0.35,
+   "facts": "83; LESSON.md Sing it"
+  },
+  {
+   "id": "b46",
+   "type": "line",
+   "who": "blue",
+   "text": "Stop immediately if anything feels uncomfortable.",
+   "gap": 0.35,
+   "facts": "53, 83"
+  },
+  {
+   "id": "count-in",
+   "type": "sound",
+   "sound": "count-in",
+   "dur": 1.0,
+   "gap": 0.6
+  },
+  {
+   "id": "your-turn",
+   "type": "pause",
+   "dur": 18.2,
+   "gap": 0.0
+  },
+  {
+   "id": "recap",
+   "type": "mark",
+   "gap": 0.6
+  },
+  {
+   "id": "b47",
+   "type": "line",
+   "who": "blue",
+   "text": "Quick check.",
+   "gap": 0.5,
+   "facts": "-"
+  },
+  {
+   "id": "b48",
+   "type": "line",
+   "who": "blue",
+   "text": "What pattern of steps makes a major scale?",
+   "gap": 0.35,
+   "facts": "2, 84"
+  },
+  {
+   "id": "q1",
+   "type": "pause",
+   "dur": 2.5,
+   "gap": 0.35
+  },
+  {
+   "id": "b49",
+   "type": "line",
+   "who": "blue",
+   "text": "Tone, tone, semitone, tone, tone, tone, semitone. Two groups, joined by a tone.",
+   "facts": "2, 3, 84"
+  },
+  {
+   "id": "b50",
+   "type": "line",
+   "who": "blue",
+   "text": "Start a major scale on D. Which two black keys does it need?",
+   "gap": 0.6,
+   "facts": "10, 84"
+  },
+  {
+   "id": "q2",
+   "type": "pause",
+   "dur": 1.8,
+   "gap": 0.35
+  },
+  {
+   "id": "b51",
+   "type": "line",
+   "who": "blue",
+   "text": "F sharp and C sharp.",
+   "facts": "10, 84"
+  },
+  {
+   "id": "b52",
+   "type": "line",
+   "who": "blue",
+   "text": "From tee up to doh: a tone, or a semitone?",
+   "gap": 0.6,
+   "facts": "22, 84"
+  },
+  {
+   "id": "ti-do",
+   "type": "sound",
+   "sound": "ti-do",
+   "dur": 1.65,
+   "gap": 0.35
+  },
+  {
+   "id": "q3",
+   "type": "pause",
+   "dur": 1.8,
+   "gap": 0.35
+  },
+  {
+   "id": "b53",
+   "type": "line",
+   "who": "blue",
+   "text": "A semitone. Tee sits just under home, and most listeners hear it lean up.",
+   "facts": "22, 23, 84 (on C)"
+  },
+  {
+   "id": "o13",
+   "type": "line",
+   "who": "orange",
+   "text": "And in a scale that starts on G, which note is doh?",
+   "gap": 0.5,
+   "facts": "19, 84"
+  },
+  {
+   "id": "q4",
+   "type": "pause",
+   "dur": 1.8,
+   "gap": 0.35
+  },
+  {
+   "id": "b54",
+   "type": "line",
+   "who": "blue",
+   "text": "G. Doh is wherever the scale starts: its home.",
+   "facts": "9, 19, 84"
+  },
+  {
+   "id": "b55",
+   "type": "line",
+   "who": "blue",
+   "text": "In MercuryPitch's Scale Runner, sing a major scale back, one note at a time.",
+   "gap": 0.5,
+   "facts": "36-38, 85"
+  },
+  {
+   "id": "next",
+   "type": "mark",
+   "gap": 0.7
+  },
+  {
+   "id": "b56",
+   "type": "line",
+   "who": "blue",
+   "text": "Next time.",
+   "gap": 0.3,
+   "facts": "-"
+  },
+  {
+   "id": "b57",
+   "type": "line",
+   "who": "blue",
+   "text": "Singers are told to support a long note.",
+   "gap": 0.35,
+   "facts": "31, 86"
+  },
+  {
+   "id": "o14",
+   "type": "line",
+   "who": "orange",
+   "text": "If that doesn't mean pushing, what keeps it steady?",
+   "gap": 0.4,
+   "facts": "31, 86"
+  },
+  {
+   "id": "end",
+   "type": "sting",
+   "dur": 5.0,
+   "gap": 0.4
+  }
+ ]
+}

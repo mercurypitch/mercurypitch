@@ -976,3 +976,17 @@ Note: the lanes' memory gate read a stale cgroup path after the 21:00 restart (f
 - Tag runs (23:02:15): Build & Deploy 40784428886 (queued at first), Release Tours 40784428892 (run 19). Check-in send_later at ~23:14Z. Then report once.
 - 23:16Z v0.9.25 TAG RUNS ALL GREEN (task #178 done): Build & Deploy 40784428886 success 23:02-23:06 (seller details set; site to prod 23:04:37-23:06:15, "Uploaded 449 files (1832 already uploaded)", env.LESSON_DRAFTS "0", version d66de4ff; Jam worker deployed 23:04; DB worker: Time Travel bookmark + copy into mercurypitch-db-backup, "No migrations to apply!", deployed 23:06; IndexNow "Nothing changed in the sitemap since v0.9.24."). Release Tours 40784428892 (run 19) success 23:02-23:09: desktop 144/0/0/4 skipped/11 known wide, mobile 127/0/0/4/9 (logs tag25/). Every CI log warns "deprecated pnpm@11.12.0: This release is broken. Please upgrade to v11.13.1 or newer" (seen at 12:28 today too, so not new; pinned in package.json packageManager, .github/actions/setup/action.yml and build.yml): an optional follow-up for the owner.
 - Nothing in flight. Leftover queue (owner's call): Lesson 12 run 3 (F# halo in G, names switch on Step 4); Lesson 4's 64 B headroom; four Jam specs with no R2 route (jam-lyric-progress, jam-lyric-versions, jam-song-picker-mobile, shared-drag-gesture); MISTAKES.md entry (Chromium makes a scroll box with no control a Tab stop); the chip at 320 (recommended: keep); pnpm 11.12.0 -> 11.13.1+.
+
+## 2026-10-29 ~00:20Z: Lesson 4 film pre-production (task 180)
+- Container restart had wiped the Kokoro env: rebuilt $S/tts-venv (kokoro-onnx, soundfile, numpy) and
+  /root/.cache/hyperframes/tts/{models/kokoro-v1.0.onnx sha 7d5df8ec..., voices/voices-v1.0.bin sha bca610b8...}
+  via $S/l4setup/setup-tts.sh.
+- Scaffolded output/motion/lesson-04 from lesson-02's kit (config, assets/{lib,brand,vendor,merc-lib,fonts}, tools).
+  Adapted: tools/mix.py (Lesson 4 sounds, bed on D; pitch check $S/l4check/pitch_check.py: tones exact, ooh held
+  notes 0 c, 0.45 s notes +5 c from vibrato phase only), captions.py (MERC/TAVI, solfege map, lesson-04 files),
+  script-md.py, gen-root.py (16 scenes), web-video.sh; new tools/script-draft.py.
+- Wrote BRIEF.md, FACTS.md (film facts 66-87 on top of lesson facts 1-65), script.json draft 1 (71 lines,
+  est 8:37 at L2 voiced pace; source $S/l4setup/make_script.py), SCRIPT-DRAFT.md, DECISIONS.md (1-17), LEDGER.md.
+- Script critic round 1 running (review/script-01/REPORT.md to be saved by me). Kokoro draft-1 voicing running.
+- Lesson 3's film is not reachable (other session); continuity follows the written lessons. Tell the owner.
+- ElevenLabs final voices wait for the owner's OK on credits.
