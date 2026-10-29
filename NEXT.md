@@ -1077,7 +1077,7 @@ Note: the lanes' memory gate read a stale cgroup path after the 21:00 restart (f
 - NEXT: spawn storyboard critic 02 (paths only; previous report review/storyboard-01/REPORT.md; report
   review/storyboard-02/REPORT.md), save its text, LEDGER row 05, fix, then the build (shared pieces, labs).
 
-## 2026-10-29 ~08:30Z: Lesson 4 film, storyboard v3 written (task 185)
+## 2026-10-29 ~05:05Z: Lesson 4 film, storyboard v3 written (task 185)
 - Storyboard critic 02: ONE MORE PASS (review/storyboard-02/REPORT.md), round 1's nine items FIXED, seven new;
   all taken (DECISIONS 55-62, LEDGER row 05). STORYBOARD.md + HANDOFFS.md now v3 (v2 kept in l4sb2/*.v2.md;
   the edits are l4sb2/fixr3.py, with a code-span-safe re-wrap of the touched items).
@@ -1091,3 +1091,22 @@ Note: the lanes' memory gate read a stale cgroup path after the 21:00 restart (f
 - NEXT: storyboard critic 03 (paths only; previous review/storyboard-02/REPORT.md; report
   review/storyboard-03/REPORT.md), save its text, LEDGER row 06; then the build if it passes or the rest is
   cosmetic.
+
+## 2026-10-29 ~06:40Z: Lesson 4 film, storyboard v3.1 and the first kit modules (tasks 186, 187)
+- Storyboard critic 03 (it hit the 5-hour usage limit at ~05:50Z and was resumed with SendMessage after the
+  reset): SHIP to the build once items 1-3 are edited; no fourth storyboard round
+  (review/storyboard-03/REPORT.md, LEDGER row 06). All taken in v3.1 (DECISIONS 63-70; edits in
+  l4sb3/fixr4.py, v3 kept as l4sb2/*.v3.md): card 2's strip fades to 45 % on the slide to D and D major's keys
+  come up on "F sharp"; riser labels right-aligned at column centre + 55 and hops' x on sine.inOut (height a
+  parabola in linear time): 8 px at rest, 6-7 px in flight; 14b's bottom house fades 413.0-413.3, back
+  419.62-419.92; S10b's bead hops (40 px clear of stair 1); FACTS 89 new (Scale Runner's Starting Note dial
+  offers G4: ScaleRunnerExercise.tsx:141-146, vocal-range.ts:140-147); the ladder's colours stated as the
+  film's (the app's ladder is green, PitchOverTimeCanvas.tsx:442/:530/:546; no app canvas uses #f59e0b); care
+  lines 373.85; S11b chip fill; 812 not 831; 12a narrow; 1g wording; key letters 9.3:1.
+- Kit: assets/lib/frames.js (L.FRAMES, L.frameRig: to, pan, hermite, curve, map/inv/apply) and
+  assets/lib/stairs.js (L.ST, L.stairs, L.strip, L.house, L.mercBox, L.bead4), both in scripts.txt; lab
+  lab/kit-src/stairs.html (node tools/lab.mjs kit:stairs <times>). Stills match HANDOFFS § World to the pixel;
+  black keys got an opaque obsidian backing (at 45 % they read light grey over the white keys).
+- NEXT: the rest of the shared pieces (guide lanes and path, chart and chips, ladder, card panel, care block),
+  a Lesson 4 BUILD-GUIDE.md on Lesson 2's model, merc-shots adaptation, then builders (at most 2 at a time)
+  with a component critic per scene; S6-S8, S10 and S14's component rounds re-check round 3's items 1-3.

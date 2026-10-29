@@ -196,6 +196,17 @@ file cites is the `b803c7d43` copy's.
     it shows icons only, the name then in the tooltip (`AppNavTabs.tsx:436-450`, `:523-532`), so
     the card draws each tab's own icon beside its name. Whether a phone shows the names was not
     checked in a browser | code
+89. The ladder's run starts on G4, a start note the app plays: Scale Runner's setup screen has a
+    "Starting Note" dial offering every note of the saved range, and a note picked there is used
+    as it is ("a note picked on the dial afterwards is the singer's own choice"); G4 is in every
+    preset's range but the bass's (soprano C4 to C6, mezzo-soprano A3 to A5, alto F3 to F5, tenor
+    C3 to C5, baritone G2 to G4, bass E2 to E4). With nothing picked it starts on the preset's
+    anchor (44) | at `b803c7d43`: the dial (`src/features/exercises/scale-runner/
+    ScaleRunnerExercise.tsx:141-146`, `NoteDial` with `notes={getNoteOptions(vocalRangePreset())}`
+    and `onChange={setStartNote}`), the comment at `:42-43`; `getNoteOptions` lists every MIDI
+    note from the preset's `lowMidi` to its `highMidi` (`src/lib/vocal-range.ts:140-147`, with
+    `getComfortableMidiRange`); the ranges in `VOCAL_RANGES` (`src/stores/settings-store.ts:91-152`)
+    | code
 
 ## Illustrations without claims
 
@@ -204,9 +215,10 @@ file cites is the `b803c7d43` copy's.
   about a real piano.
 - Tavi's dashed ink-2 staircase with its "?": her belief, not a fact (MASTER-PLAN § 5).
 - The experiment's tiers: an illustration of the order in 24, with no numbers.
-- The scale guide's rows, names and path: a house-style drawing in the app's canvas colours,
+- The scale guide's rows, names and path: a house-style drawing in the film's colours,
   labelled as a guide; on the viewer's turn, plain chrome. Nothing listens, and no line on it is
   the viewer's.
 - Scale Runner's ladder: a house-style drawing of the notes still to come ahead of a pitch line
-  (39), labelled "Illustration", never a screenshot passed off as the app.
+  (39), in the film's colours rather than the app's green, labelled "Illustration", never a
+  screenshot passed off as the app. Its run starts on G4, a start the app offers (89).
 - The house glyph labels home (17); it is not a claim.

@@ -335,3 +335,46 @@ replaced it. The builder's record: critics never read it.
     now gives the layer rule for a pan, which moves every layer by the same amount.
 62. **Round 3 is a storyboard verification round** with `review/storyboard-02/REPORT.md` as the
     previous report.
+
+## Storyboard v3.1 (after storyboard critic 03)
+
+63. **Round 3's verdict is SHIP to the build once items 1 to 3 are edited**, so there is no fourth
+    storyboard round: the component rounds for S6 to S8, S10 and S14 check items 1 to 3 on pixels,
+    as the critic proposed.
+64. **Card 2's strip shows no scale while its question stands** (round 3, item 1). As the staircase
+    slides to D (421.4 to 422.3) the eight lit keys fade to 45 % with the rest; D major's keys come
+    up on "F sharp" (427.22), F♯4 lit and named, and C♯5 on "C sharp" (427.84). Before, C major's
+    white keys stayed lit under D's stairs, which drew the very misconception the card asks about.
+65. **Riser labels stand 2 px from the bar, and a hop rises before it travels** (round 3, item 2). A
+    label is right-aligned at the column centre + 55 (it was + 47), and a hop's x eases sine.inOut
+    while its height is a parabola in linear time. Modelled: 8 px from a resting bead, and in flight,
+    up or down, at least 7 px on a tone and 6 px on a semitone (it was up to 7 px of overlap), 28 px
+    or more from the bar. The kit's hop and label placement follow it.
+66. **The bottom house leaves while 14b's riser labels stand** (found while fixing item 2). Both
+    houses were lit in 14b as riser 1's "T" landed: 6 px into the bottom house under the old rule,
+    2 px from it and inside its glow under the new one. It fades out 413.0 to 413.3 and returns lit
+    419.62 to 419.92. No other scene has the bottom house and riser labels together (S5 to S8 have
+    no houses, S9 to S13 no riser labels, and 14d's "S" stands 37 px from the top house).
+67. **Merc's S10b bead hops onto stair 1** (round 3, item 3) from (130, 715), on a hop's arc peaking
+    at y 602: 72 px over the straight line at mid-flight and 40 px clear of stair 1's corner, where
+    the straight line passed 2 px from it.
+68. **The ladder's G4 start is one the app plays** (round 3, item 4). Scale Runner's setup has a
+    Starting Note dial that offers every note of the saved range and uses the pick as it is; G4 is in
+    every preset's range but the bass's (FACTS 89, new). The critic's other route, tipping from C4,
+    needs a slide back to C right after "Doh is wherever a major scale starts", which would read as
+    do = C. The ladder's colours were already the film's (no green anywhere); the board now says so
+    plainly, citing the app's green (`PitchOverTimeCanvas.tsx:442`, `:530`, `:546`), and no longer
+    calls amber "the app's canvas set": no canvas in the app uses `#f59e0b`, so the guide's line in
+    FACTS § Illustrations now says "the film's colours" too.
+69. **Smaller items** (round 3, item 5). S13's care lines land from 373.85, 0.3 s after "Your turn.",
+    which now lands alone. S11b's seven scale chips get an unlit stair's fill, opaque, with a 2 px
+    chrome rim at 55 % (ink names 13.4:1), so they read over the stairs dimmed to 20 %. The top do's
+    left edge is at x 812 at 373.50 and 857 at 373.55: decision 56's 831 was wrong, and the title
+    still lands 46 px clear. 12a's rows narrow, not widen. 1g now says what happens: the lines leave
+    as the question ends. White-key letters measure 9.3:1 on the key's 92 % fill, not 11:1.
+70. **The kit's first two modules are drafted**: `assets/lib/frames.js` (the framings as a camera)
+    and `assets/lib/stairs.js` (rows, stairs, risers, names, houses, strip, hairlines, bead paths),
+    with the lab `lab/kit-src/stairs.html`. Its stills match HANDOFFS § World to the pixel: stair 1's
+    rim at x 241 to 242 and 353 to 354, its tread at y 664, key C4 from x 240 and y 760, riser 1 at
+    x 356 to 359. The lab showed that a black key at 45 % over the white keys reads light grey, so a
+    black key now has an opaque obsidian backing and dims darker, as a key outside the scale should.

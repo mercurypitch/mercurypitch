@@ -1,0 +1,18 @@
+# The kit's scripts, in load order. tools/gen-root.py, tools/lab.mjs and tools/text-sweep.mjs
+# each write one <script src> per line, so the film, a lab and the text sweep load the same kit.
+assets/vendor/gsap-3.14.2.min.js
+assets/cues.js
+assets/scenes.js
+assets/lib/glyphs.js
+assets/lib/lesson.js
+assets/lib/motion.js
+assets/lib/marks.js
+assets/lib/spiral.js
+assets/lib/keyboard.js
+assets/lib/tiles.js
+assets/lib/ruler.js
+assets/lib/monitor.js
+assets/lib/lanes.js
+assets/lib/stepbars.js
+assets/lib/frames.js
+assets/lib/stairs.js

@@ -1,0 +1,113 @@
+<!doctype html>
+<html lang="en">
+  <head><meta charset="UTF-8" /></head>
+  <body>
+    <div id="kit-stairs" data-composition-id="kit-stairs" data-start="0" data-duration="12" data-width="1920" data-height="1080">
+      <div class="scene" id="kit-stairs-scene"></div>
+      <script>
+        ;(function () {
+          // Lab: stairs.js and frames.js, in F0 unless noted (HANDOFFS § World).
+          // 0-1.4 s C major, every stair unlit, letter names, risers unmeasured, the strip and its
+          // hairlines; Merc's and Tavi's F0 corners hold keep-out boxes (outlined in the hud: body
+          // box, +20 and +80). 1.4-1.8 s letters cross-fade to numbers. 1.8-2.0 s a chrome bead drops
+          // onto stair 1; hops land at 2.35 to 4.45, each lighting its stair and measuring the riser
+          // below it (T or S). 4.6-4.9 s it rises into the top house, which lights. 5.0-5.4 s the
+          // lights go out; 5.4-6.6 s the staircase slides C to D (power2.inOut), the strip and the
+          // hairlines with it; 6.6 s letter names on D. 7.2-8.6 s push to CU-D, 9.4-10.6 s back to
+          // F0. 10.2-11.4 s slide D to G; from 11.4 s stair 1 lit blue, stair 8 lit orange, stair 5
+          // an outline.
+          const ID = 'kit-stairs', D = 12
+          const root = document.getElementById(ID + '-scene')
+          const room = L.room(root, { floor: false })
+          const tl = gsap.timeline({ paused: true })
+          const mid = L.stage(room.mid)
+          const hud = L.stage(room.hud)
+          const ST = L.ST
+          const st = L.stairs(mid, {})
+          const kb = L.strip(mid, {})
+          const gBeads = L.svg('g', {}, mid)
+          const bead = L.bead(gBeads, { r: 22, color: L.C.chrome })
+          const cam = L.frameRig(room, { from: 'F0' })
+          cam.to(7.2, 1.4, 'CU-D').to(9.4, 1.2, 'F0')
+
+          // the two Mercs' F0 corners (HANDOFFS § World): keep-out boxes, outlined for checking
+          const boxes = [L.mercBox(110, 840, 300), L.mercBox(1800, 840, 300)]
+          for (const b of boxes) {
+            for (const [g, op] of [[0, 0.9], [20, 0.5], [80, 0.3]]) {
+              L.svg('rect', { x: b.x0 - g, y: b.y0 - g, width: b.x1 - b.x0 + 2 * g, height: b.y1 - b.y0 + 2 * g, fill: 'none', stroke: '#ffd84d', 'stroke-width': 1, 'stroke-opacity': op, 'stroke-dasharray': g ? '6 6' : null }, hud)
+            }
+          }
+
+          const LET = { C: ['C', 'D', 'E', 'F', 'G', 'A', 'B', 'C'], D: ['D', 'E', 'F♯', 'G', 'A', 'B', 'C♯', 'D'], G: ['G', 'A', 'B', 'C', 'D', 'E', 'F♯', 'G'] }
+          const KEYN = ['C', 'C♯', 'D', 'D♯', 'E', 'F', 'F♯', 'G', 'G♯', 'A', 'A♯', 'B']
+          const LAND = [2.0, 2.35, 2.7, 3.05, 3.4, 3.75, 4.1, 4.45]
+          const T_RISE = 4.6, T_OFF = 5.0, T_CD = 5.4, T_DG = 10.2, T_COL = 11.4
+
+          L.clock(tl, D, (t) => {
+            cam.apply(t)
+            // the start: C, then D, then G, w and s0 on one curve
+            const uCD = L.prog(t, T_CD, 1.2), uDG = L.prog(t, T_DG, 1.2)
+            const w = L.lerp(L.lerp(0, 1, uCD), 4, uDG), s0 = L.lerp(L.lerp(0, 2, uCD), 7, uDG)
+            const key = uDG > 0.5 ? 'G' : uCD > 0.5 ? 'D' : 'C'
+            const off = 1 - L.prog(t, T_OFF, 0.4)
+            const numA = L.prog(t, 1.4, 0.4) * (1 - L.prog(t, T_CD - 0.4, 0.3))
+            const letA = (1 - L.prog(t, 1.4, 0.4)) + L.prog(t, T_CD + 1.2, 0.3)
+            const nameDip = 1 - L.env(t, T_DG - 0.2, 0.2, 1.2, 0.2)
+            st.draw({
+              w, s0,
+              rows: { keep: { boxes, cam, t } },
+              stair: (n) => {
+                const landed = t < T_OFF + 0.4 ? L.prog(t, LAND[n - 1], 0.15, 'power2.out') * off : 0
+                let color = 'chrome', lit = landed, fill = 'unlit', filled = 1
+                if (t >= T_COL && n === 1) { color = 'blue'; lit = L.prog(t, T_COL, 0.3) }
+                if (t >= T_COL && n === 8) { color = 'orange'; lit = L.prog(t, T_COL, 0.3) }
+                if (t >= T_COL && n === 5) { fill = 'outline'; filled = 1 - L.prog(t, T_COL, 0.3) }
+                return {
+                  fill, filled, lit, color,
+                  scale: L.pulse(t, LAND[n - 1], 'tile'),
+                  names: [
+                    { text: LET[key][n - 1], a: Math.min(1, letA) * nameDip },
+                    { text: String(n), a: numA },
+                  ],
+                }
+              },
+              riser: (n) => {
+                const semi = ST.H[n] - ST.H[n - 1] === 1
+                const t0 = LAND[n - 1], t1 = LAND[n]
+                const state = t < t0 ? 'unmeasured' : t < t1 - 0.3 ? 'measuring' : semi ? 'semi' : 'tone'
+                return { state, grow: L.prog(t, t1 - 0.3, 0.3, 'power2.out'), labels: [{ text: semi ? 'S' : 'T', a: L.prog(t, t1, 0.2) * nameDip }] }
+              },
+              houses: {
+                // the bottom house is never up with riser 1's label (HANDOFFS § World, Risers)
+                bottom: { a: 1 - L.prog(t, 2.0, 0.3) },
+                top: { a: 1, lit: L.prog(t, T_RISE, 0.3) * (1 - L.prog(t, T_OFF, 0.4)), glow: 0 },
+              },
+            })
+            // the strip: in-scale keys full, others at 45 %, a black key in the scale lit to 40 % chrome
+            const inC = ST.scale(0), inD = ST.scale(2), inG = ST.scale(7)
+            const mem = (m) => L.lerp(L.lerp(inC.includes(m) ? 1 : 0, inD.includes(m) ? 1 : 0, uCD), inG.includes(m) ? 1 : 0, uDG)
+            kb.draw({
+              key: (m) => {
+                const f = mem(m)
+                return { full: f, lit: ST.isBlack(m) ? f : 0, names: [{ text: KEYN[m % 12], a: f }] }
+              },
+              hair: { a: 1, w, s0 },
+            })
+            // the bead: a drop onto stair 1, hops up, a rise into the top house
+            const steps = LAND.map((tt, i) => ({ t: tt, p: ST.rest(i + 1, 0, 0) }))
+            let b = null
+            if (t >= LAND[0] - 0.2 && t < LAND[0]) b = L.bead4.dropAt(t, LAND[0], steps[0].p)
+            else if (t >= LAND[0] && t < T_RISE) b = L.bead4.runAt(t, steps)
+            else if (t >= T_RISE && t < T_RISE + 0.3) {
+              const hb = ST.houseBox(8, 0, 0)
+              b = L.bead4.riseAt(t, T_RISE, steps[7].p, [hb.cx, hb.cy])
+            }
+            L.bead4.place(bead, b)
+          })
+          window.__timelines = window.__timelines || {}
+          window.__timelines[ID] = tl
+        })()
+      </script>
+    </div>
+  </body>
+</html>
