@@ -34,6 +34,7 @@ import styles from './EarStage.module.css'
 import { InstrumentCard } from './InstrumentCard'
 import { formatKeyHint, keyMatches } from './key-hint'
 import type { StageRoom } from './stage-room'
+import type { VernierLoupeProps } from './VernierLoupe'
 
 export type StageTone = 'neutral' | 'right' | 'wrong'
 
@@ -287,7 +288,8 @@ export function useStageKeys(
   return swallowed
 }
 
-/** The console parts the room draws in its own way. */
+/** The console parts the room draws in its own way, and the one
+ *  instrument it draws its own way: Hairline's loupe, upright. */
 export interface StageSkin {
   PlayPad: Component<PlayPadProps>
   StagePad: Component<StagePadProps>
@@ -295,6 +297,7 @@ export interface StageSkin {
   TapPad: Component<TapPadProps>
   EndPlate: Component<EndPlateProps>
   ModeToggle: Component<ModeToggleProps<string>>
+  VernierLoupe?: Component<VernierLoupeProps>
 }
 
 /** Provided by the room only; the web's stage never sees one. */

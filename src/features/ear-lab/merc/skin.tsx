@@ -13,6 +13,7 @@
 //     answer", in words as well as colour.
 //   - The tap pad ticks under the thumb.
 //   - The answer-mode toggle moves out of the console into "?".
+//   - Hairline's loupe stands upright (RoomLoupe.tsx).
 // ============================================================
 
 import type { JSX } from 'solid-js'
@@ -25,6 +26,7 @@ import { StageSkinContext } from '@/features/ear-lab/EarStage'
 import { useWakeAudio } from './audio-wake'
 import styles from './room.module.css'
 import { spokenLabel, useRoom } from './room-context'
+import { RoomLoupe } from './RoomLoupe'
 
 /** Wake the audio inside the tap, as the web's lead pad does: iOS only
  *  un-suspends a context from a gesture. */
@@ -242,4 +244,5 @@ export const ROOM_SKIN: StageSkin = {
   TapPad: RoomTapPad,
   EndPlate: RoomEndPlate,
   ModeToggle: RoomModeToggle,
+  VernierLoupe: RoomLoupe,
 }

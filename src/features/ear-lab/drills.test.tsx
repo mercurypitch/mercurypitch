@@ -371,6 +371,30 @@ describe('Hairline', () => {
     expect(document.body.textContent).not.toContain('—')
   })
 
+  it("keeps the web's loupe lighting its own hairline, and no lamp on a pad", async () => {
+    // The native room draws the loupe upright and lamps its pads
+    // (HairlineDrill.room.test.tsx); the web's stage is as it was.
+    render(() => (
+      <Stage>
+        <HairlineDrill onBack={vi.fn()} />
+      </Stage>
+    ))
+    fireEvent.click(screen.getByRole('button', { name: /Practice run/ }))
+    await vi.advanceTimersByTimeAsync(5)
+
+    const loupe = document.querySelector('[data-instrument="vernier"]')
+    expect(loupe?.getAttribute('aria-label')).toBe(
+      'Vernier scale under a loupe: two hairlines 50.0¢ apart',
+    )
+    expect(
+      document.querySelector('[data-instrument="upright-loupe"]'),
+    ).toBeNull()
+    expect(pads().map((pad) => pad.getAttribute('data-lamp'))).toEqual([
+      null,
+      null,
+    ])
+  })
+
   it('parks a threshold run the same way, Next sounding the next pair', async () => {
     setEarAutoAdvance(false)
     render(() => (
