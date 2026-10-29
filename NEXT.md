@@ -1393,3 +1393,9 @@ Note: the lanes' memory gate read a stale cgroup path after the 21:00 restart (f
   l4merc/logs/m12-blue.log instead. Worker 1 (11372, queue.sh m12-orange) untouched; whole-watch.sh
   regenerates whole.js when m12-blue lands. Lesson: a queue that may start the next pass must be stopped
   before the current one ends, never after.
+- 13:45 group A clips re-rendering with the current kit (harness job btwpvxes5, $S/l4entr/aclips/run.sh,
+  nice 15, s04 then s03, s01, s02, into lab/s0N-*/clip.mp4; builder A is finished). Harness job
+  bc1onho8h waits for m12-blue to land (then: splicecheck m12-blue, tallcheck m12-blue-in, whole.js via
+  whole-watch, s12/s13 stills). Verification briefs written: $S/l4entr/critics/{C2,D2,B3}.txt; builder
+  B's round-3 list: $S/l4entr/B-fix-msg.txt (overwritten; items 2-5, item 1 done in the kit, 9 per
+  DECISIONS 82). Slot order: C reports -> C-02; D reports -> resume B; then A-01, D-02.

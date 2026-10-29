@@ -144,15 +144,17 @@
           // 11e's arrow from ti's tread up onto the top do's, left of its house, as s10's ink arrow; it rides the slide
           const arrow = curveArrow(mid, { color: L.C.ink, width: 3, head: 14 })
           const arrowAt = (w, s0) => {
-            // larger than s10's (that one is seen at 1.8x): its apex stands 24 px under "leading note"'s baseline,
-            // right of the label's end, and 24 px over the ti-do riser
+            // larger than s10's (that one is seen at 1.8x): its apex stands 60 px under "leading note" and 24 px over
+            // the ti-do riser; its tip 7 px over the semitone's gold corner on do's tread (DECISIONS 85)
             const A = [ST.colX(7, w) - 18, ST.tread(7, s0) - 14], B = [ST.houseBox(8, w, s0).x - 14, ST.tread(8, s0) - 10]
             return { A, Q: [(A[0] + B[0]) / 2 - 2, Math.min(A[1], B[1]) - 46], B }
           }
-          // "leading note" (Outfit 600 64 px, riding the world: x 660, baseline 300 on C; x 780, baseline 248 on D)
-          const leadT = L.svg('text', { x: 660, y: 300, fill: L.C.ink, opacity: 0, style: "font: 600 64px 'Outfit', sans-serif; white-space: pre;", text: 'leading note' }, mid)
-          let leadW = 384
-          L.afterFonts(() => { leadW = leadT.getComputedTextLength() })
+          // "leading note" (Outfit 600 64 px, riding the world): centred over ti's column, baseline 250 on C (x 840 to
+          // 1196, its descender 23 px over the top house and 60 px over the arrow), 120 right and 52 up on D; a hairline
+          // from under it down to ti's tread, 20 px left of the arrow's foot (component critic D-01 item 9)
+          const LEAD = { x: ST.colX(7, 0), y: 250 }
+          const leadT = L.svg('text', { x: LEAD.x, y: LEAD.y, 'text-anchor': 'middle', fill: L.C.ink, opacity: 0, style: "font: 600 64px 'Outfit', sans-serif; white-space: pre;", text: 'leading note' }, mid)
+          const leadHair = L.svg('line', { stroke: '#c3ccd6', 'stroke-opacity': 0.7, 'stroke-width': 1.5, 'stroke-linecap': 'round', opacity: 0 }, mid)
 
           // the experiment, riding the world (HANDOFFS § S11's experiment): the probe bead and its "?", the axis
           // and its labels, the four shelves, the chips and the house beside do
@@ -167,35 +169,47 @@
           const shelves = [0, 1, 2, 3].map(() => L.svg('rect', { x: 400, width: 0, height: 2, fill: '#c3ccd6', 'fill-opacity': 0.5, opacity: 0 }, exp))
           const chipLayer = L.svg('g', {}, exp)
           const shelfHouse = L.house(chipLayer)
-          const UNLIT = '#1b232d', DIMCHIP = 'rgb(77,83,90)'     // the dim chips: an opaque 35 % chrome mix over obsidian
+          // a scale chip is an unlit stair's fill with a 55 % chrome rim, ink letters; a chip from outside the scale is
+          // outline only (the obsidian ground, opaque over the dimmed stairs, a 35 % rim, ink-2 letters), so the bottom
+          // shelf reads as the least, not as highlighted (component critic D-01 item 8)
+          const UNLIT = '#1b232d'
           const makeChip = (text, dim) => {
             const g = L.svg('g', { opacity: 0 }, chipLayer)
-            const box = L.svg('rect', { x: -60, y: -28, width: 120, height: 56, rx: 12, fill: dim ? DIMCHIP : UNLIT, stroke: '#c3ccd6', 'stroke-width': 2, 'stroke-opacity': dim ? 0 : 0.55 }, g)
-            const lab = L.spell(g, text, { x: 0, y: 14, size: 40, family: 'Outfit', weight: 600, fill: L.C.ink, anchor: 'middle' })
+            const box = L.svg('rect', { x: -60, y: -28, width: 120, height: 56, rx: 12, fill: dim ? L.C.obsidian : UNLIT, stroke: '#c3ccd6', 'stroke-width': 2, 'stroke-opacity': dim ? 0.35 : 0.55 }, g)
+            const lab = L.spell(g, text, { x: 0, y: 14, size: 40, family: 'Outfit', weight: 600, fill: dim ? L.C.ink2 : L.C.ink, anchor: 'middle' })
             lab.g.querySelectorAll('text').forEach((el) => el.setAttribute('data-layout-allow-overlap', ''))
             return { g, box, lab }
           }
-          // each chip: its source (a stair's name, or a black key), its tier (0 top) and its centre x on the shelf;
-          // the flights out (staggered, 307.2 to 308.2 with do landing on "doh") and back (from o11)
+          // each chip: its source (a stair's name, or a black key), its tier (0 top) and its centre x on the shelf
           const CHIPS = [
             { text: 'do', tier: 0, x: 840, n: 1 }, { text: 'do', tier: 0, x: 840, n: 8 },
             { text: 'mi', tier: 1, x: 760, n: 3 }, { text: 'so', tier: 1, x: 920, n: 5 },
             { text: 're', tier: 2, x: 600, n: 2 }, { text: 'fa', tier: 2, x: 760, n: 4 }, { text: 'la', tier: 2, x: 920, n: 6 }, { text: 'ti', tier: 2, x: 1080, n: 7 },
             { text: 'C♯', tier: 3, x: 520, m: 1 }, { text: 'D♯', tier: 3, x: 680, m: 3 }, { text: 'F♯', tier: 3, x: 840, m: 6 }, { text: 'G♯', tier: 3, x: 1000, m: 8 }, { text: 'A♯', tier: 3, x: 1160, m: 10 },
           ]
-          const FLY = 0.7
+          // The flights (component critic D-01 items 3 and 11). Out, top shelf first: each chip rises in its own column
+          // to its shelf's height, then slides to its slot, so it never enters a shelf above its own and no two paths
+          // cross; in a shelf the slides keep their order, the chip in front leaving first. Back (from o11, 321.6 to
+          // 322.6), bottom shelf first: each slides to its column, then drops onto its stair (a dim chip toward its key,
+          // gone before the names' row). The two do chips: stair 1's fades into stair 8's before they meet, and only
+          // stair 8's flies back, stair 1's name fading in as it lands.
+          const OUT0 = [A.top + 0.12, A.top + 0.25, A.top + 0.36, A.top + 0.66], OUTD = 0.75, OUTST = [0, 0.06, 0.06, 0.07]
+          const BACK0 = [A.o11 + 0.44, A.o11 + 0.3, A.o11 + 0.16, A.o11], BACKD = [0.55, 0.6, 0.6, 0.55], BACKST = 0.04
           CHIPS.forEach((c, i) => {
             c.el = makeChip(c.text, c.m != null)
             c.el.g.setAttribute('data-tier', c.tier)
             c.dim = c.m != null
-            if (c.tier === 0) c.out = A.doh - FLY
-            else if (c.tier === 1) c.out = A.top + 0.28 + 0.06 * (i - 2)
-            else if (c.tier === 2) c.out = A.top + 0.08 + 0.06 * (i - 4)
-            else c.out = A.top + 0.63 + 0.1 * (i - 8)
-            c.back = A.o11 + 0.04 * i                          // lands back by A.o11 + 0.04 * 12 + FLY (322.76)
+            const row = CHIPS.filter((k) => k.tier === c.tier)
+            const fromRight = row.filter((k) => k.x > c.x || (k.x === c.x && k.n > c.n)).length
+            c.out = OUT0[c.tier] + OUTST[c.tier] * (c.tier === 0 ? 0 : fromRight)
+            c.dur = c.tier === 0 ? A.doh - c.out : OUTD        // do lands on "doh"
+            c.back = BACK0[c.tier] + (c.tier === 0 ? 0 : BACKST * (row.length - 1 - fromRight))
+            c.bdur = BACKD[c.tier]
             // where it starts: a stair's name (its cap centre, at 0.9 so the 40 px name is the 36 px one) or the key
             c.home = c.dim ? [ST.keyX(c.m), 798] : [ST.colX(c.n, 0), ST.foot(0) - 12 - 0.9 * 14]
           })
+          const DO1 = CHIPS[0], DO8 = CHIPS[1]
+          A.chipsHome = DO8.back + DO8.bdur                   // the last chip lands: the houses and stair 1's name return
           const dust = L.filmDust(room.near)
 
           /* ---------------------------------------------------------------- the Mercs (top layer, screen space) */
@@ -209,16 +223,10 @@
           /* ---------------------------------------------------------------- frame-fixed type (hud) */
           const hud = L.stageOf(room.hud)
           const kicker = L.kicker(room.hud, 'An experiment')
-          // the credits, Outfit 500 ink-2 at x 120; the two later lines type on, a letter at a time (a hidden letter
-          // is display: none, so nothing invisible is left in the layout)
+          // the credits, Outfit 500 ink-2 at x 120, each landing whole (0.2 s, from 18 px left, as the kicker)
           const credit1 = L.svg('text', { x: 120, y: 160, fill: L.C.ink2, opacity: 0, style: "font: 500 36px 'Outfit', sans-serif; white-space: pre;", text: 'Krumhansl & Shepard, 1979' }, hud)
-          const typed = (text, y) => {
-            const el = L.svg('text', { x: 120, y, fill: L.C.ink2, style: LAB32 }, hud)
-            const spans = [...text].map((ch) => L.svg('tspan', { text: ch, display: 'none' }, el))
-            return { el, spans, n: spans.length }
-          }
-          const credit2 = typed('later studies: without training too, only weaker', 205)
-          const credit3 = typed('as summed up in Janata et al., 2003', 245)
+          const credit2 = L.svg('text', { x: 120, y: 205, fill: L.C.ink2, opacity: 0, style: LAB32, text: 'later studies: without training too, only weaker' }, hud)
+          const credit3 = L.svg('text', { x: 120, y: 245, fill: L.C.ink2, opacity: 0, style: LAB32, text: 'as summed up in Janata et al., 2003' }, hud)
           const LAB48 = "font: 600 48px 'Outfit', sans-serif; white-space: pre;"
           // Tavi's answer as two labels (x 1250, baselines 320 and 400), each with a soft copy behind it for the glow
           const answer = ['learned, it seems', 'one short step'].map((text, i) => {
@@ -249,27 +257,41 @@
           const GROW = [A.oneShort, A.under]
           const gap = (t) => 80 - 16 * (P(t, A.only, 0.8) - P(t, A.so, 0.8))
           const shelfY = (k, t) => 300 + gap(t) * k
-          // a chip's place at t: flying out on an arc, on its shelf, or flying back
-          const qb = (a, q, b, u) => [(1 - u) * (1 - u) * a[0] + 2 * u * (1 - u) * q[0] + u * u * b[0], (1 - u) * (1 - u) * a[1] + 2 * u * (1 - u) * q[1] + u * u * b[1]]
-          const chipAt = (c, t) => {
-            if (t < c.out || t >= c.back + FLY) return null
-            const slot = [c.x, shelfY(c.tier, t) - 2 - 28]
-            const q = (a, b) => [(a[0] + b[0]) / 2, Math.min(a[1], b[1]) - 70]
-            if (t < c.out + FLY) {
-              const u = P(t, c.out, FLY, 'power2.inOut')
-              return { p: qb(c.home, q(c.home, slot), slot, u), box: clamp(u / 0.35), s: lerp(c.dim ? 0.7 : 0.9, 1, u), a: c.dim ? clamp(u / 0.3) : 1 }
-            }
-            if (t >= c.back) {
-              const u = P(t, c.back, FLY, 'power2.inOut')
-              // a dim chip is gone by the middle of its flight back, before it crosses the stairs' names
-              return { p: qb(slot, q(c.home, slot), c.home, u), box: clamp((1 - u) / 0.35), s: lerp(1, c.dim ? 0.7 : 0.9, u), a: c.dim ? clamp(1 - u / 0.45) : 1 }
-            }
-            return { p: slot, box: 1, s: 1, a: 1 }
+          // a flight's place: out, the rise (first 60 %) then the slide (last 60 %); back, the slide then the drop.
+          // The chip keeps its small size (a name's) until it slides, so chips rising side by side stay 12 px apart
+          const ease2 = L.ease('power2.inOut')
+          const flight = (F, T, u, back) => {
+            const a = ease2(clamp(u / 0.6)), b = ease2(clamp((u - 0.4) / 0.6))
+            const ex = back ? a : b, ey = back ? b : a
+            return { p: [lerp(F[0], T[0], ex), lerp(F[1], T[1], ey)], ex }
           }
-          // a stair's name is the chip while its chip is away
+          const slotOf = (c, t) => [c.x, shelfY(c.tier, t) - 2 - 28]
+          const chipAt = (c, t) => {
+            const s0 = c.dim ? 0.7 : 0.9
+            if (t < c.out) return null
+            if (t < c.out + c.dur) {
+              const u = clamp((t - c.out) / c.dur)
+              const f = flight(c.home, slotOf(c, t), u, false)
+              let a = c.dim ? clamp(u / 0.25) : 1
+              if (c === DO1) {
+                // stair 1's do fades into stair 8's before they meet (gone 20 px before their boxes would touch)
+                const o = flight(DO8.home, slotOf(DO8, t), u, false)
+                a = clamp((Math.abs(o.p[0] - f.p[0]) - 140) / 80)
+              }
+              return { p: f.p, box: clamp(u / 0.35), s: lerp(s0, 1, f.ex), a }
+            }
+            if (t < c.back) return { p: slotOf(c, t), box: 1, s: 1, a: 1 }
+            if (c === DO1 || t >= c.back + c.bdur) return null
+            const u = clamp((t - c.back) / c.bdur)
+            const f = flight(slotOf(c, t), c.home, u, true)
+            return { p: f.p, box: clamp((1 - u) / 0.35), s: lerp(1, s0, f.ex), a: c.dim ? 1 - clamp((u - 0.5) / 0.3) : 1 }
+          }
+          // a stair's name is the chip while its chip is away (stair 1's comes back as the last chip lands)
           const nameA = (n, t) => {
             const c = CHIPS.find((k) => k.n === n)
-            return t < c.out ? 1 : t >= c.back + FLY ? 1 : 0
+            if (t < c.out) return 1
+            if (c === DO1) return P(t, A.chipsHome, 0.25)
+            return t >= c.back + c.bdur ? 1 : 0
           }
           // the tiers' counted pulses, top shelf to bottom
           // (the tiers pulse only while the shelves stand 80 px apart, so the chips keep 8 px apart when closed)
@@ -280,10 +302,6 @@
           const tierPulse = (tier, t) => Math.max(
             L.pulse(t, TIERP[tier], 'tile'),
             tier === 0 ? L.pulse(t, [A.doh, A.home], 'tile') : 1)
-          const typeOn = (ty, t, t0, dur) => {
-            const k = Math.floor(clamp((t - t0) / dur) * ty.n + 1e-6)
-            ty.spans.forEach((sp, i) => sp.setAttribute('display', i < k ? 'inline' : 'none'))
-          }
 
           L.clock(tl, D, (t) => {
             cam.apply(t)
@@ -294,6 +312,9 @@
             const blue = 1 - P(t, A.blueOff, 0.4)
             // the staircase dims to 20 % (its names leave as chips) and returns to full as the chips land
             const stA = 1 - 0.8 * P(t, A.top, 0.4) + 0.8 * P(t, A.full, 0.4)
+            // its houses and risers leave while it is dim, so no shelf crosses a house and no gold shows between the
+            // chips (component critic D-01 item 15); they return as the last chip lands
+            const hideA = 1 - P(t, A.top, 0.2) + P(t, A.chipsHome, 0.3)
             st.draw({
               w, s0, a: stA,
               rows: { keep: { boxes, cam, t } },
@@ -302,10 +323,10 @@
                 if (blue > 0.002) return { lit: blue, color: 'blue', names }
                 return { lit: litC(n, t), color: 'chrome', names }
               },
-              riser: (n) => ({ state: SEMI(n) ? 'semi' : 'tone', scale: n === 7 ? L.pulse(t, GROW, 'bar') : 1 }),
+              riser: (n) => ({ a: hideA, state: SEMI(n) ? 'semi' : 'tone', scale: n === 7 ? L.pulse(t, GROW, 'bar') : 1 }),
               houses: {
-                bottom: { a: P(t, A.blueOff, 0.4), lit: 1, scale: L.pulse(t, A.isHome, 0.12) },
-                top: { a: 1, lit: 1, glow: L.env(t, A.dohHome, 0.3, 0.4, 0.6), scale: L.pulse(t, A.isHome + 0.08, 0.12) },
+                bottom: { a: P(t, A.blueOff, 0.4) * hideA, lit: 1, scale: L.pulse(t, A.isHome, 0.12) },
+                top: { a: hideA, lit: 1, glow: L.env(t, A.dohHome, 0.3, 0.4, 0.6), scale: L.pulse(t, A.isHome + 0.08, 0.12) },
               },
             })
             {
@@ -313,7 +334,11 @@
               goldGlow.setAttribute('x', f1(x - 9)); goldGlow.setAttribute('y', f1(y0 - 6)); goldGlow.setAttribute('height', f1(y1 - y0 + 12))
               goldGlow.setAttribute('opacity', (0.6 * Math.max(...GROW.map((g) => L.env(t, g, 0.15, 0.2, 0.6)))).toFixed(3))
             }
+            // the strip (and its hairlines) dims to 20 % over the push to F-chart, where it would sit bright in the
+            // caption band with no job, and returns over the pull (component critic D-01 item 2); the black keys'
+            // names still rise from it as chips
             kb.draw({
+              a: 1 - 0.8 * P(t, A.push, 1.2) + 0.8 * P(t, A.pull, PULL_DUR),
               key: (m) => {
                 const inS = lerp(CMAJ.includes(m) ? 1 : 0, DMAJ.includes(m) ? 1 : 0, uS)
                 return {
@@ -334,11 +359,13 @@
               probeG.setAttribute('opacity', pa.toFixed(3))
               L.bead4.place(probe, pa > 0.004 ? { x: 1420 + 4 * Math.cos(ph), y: 420 + 4 * Math.sin(ph), scale: Math.max(0.01, sc) } : null)
             }
-            // the axis and its labels draw on "rated"; with the shelves they fade as the chips fly back
-            const expOut = 1 - P(t, A.o11, 0.4)
-            axis.draw(P(t, A.rated, 0.6, 'power2.inOut'), (t >= A.rated ? 1 : 0) * expOut)
-            leastT.setAttribute('opacity', (P(t, A.rated + 0.05, 0.2) * expOut).toFixed(3))
-            bestT.setAttribute('opacity', (P(t, A.rated + 0.5, 0.2) * expOut).toFixed(3))
+            // the axis and its labels draw on "rated" and leave as the pull starts, with the kicker and credits: the
+            // pull carries "finishes it best" into Tavi's column while she falls (DECISIONS 86); the shelves fade as
+            // the chips fly back
+            const expOut = 1 - P(t, A.o11, 0.4), axOut = 1 - P(t, A.pull, 0.2)
+            axis.draw(P(t, A.rated, 0.6, 'power2.inOut'), (t >= A.rated ? 1 : 0) * axOut)
+            leastT.setAttribute('opacity', (P(t, A.rated + 0.05, 0.2) * axOut).toFixed(3))
+            bestT.setAttribute('opacity', (P(t, A.rated + 0.5, 0.2) * axOut).toFixed(3))
             shelves.forEach((el, k) => {
               el.setAttribute('y', f1(shelfY(k, t) - 1))
               el.setAttribute('width', f1(880 * P(t, A.top + 0.05 * k, 0.45, 'power2.out')))
@@ -347,7 +374,7 @@
             for (const c of CHIPS) {
               const s = chipAt(c, t)
               if (!s) { c.el.g.setAttribute('opacity', '0'); continue }
-              const sc = s.s * (t >= c.out + FLY && t < c.back ? tierPulse(c.tier, t) : 1)
+              const sc = s.s * (t >= c.out + c.dur && t < c.back ? tierPulse(c.tier, t) : 1)
               c.el.g.setAttribute('opacity', s.a.toFixed(3))
               c.el.box.setAttribute('opacity', s.box.toFixed(3))
               if (!c.dim) {
@@ -366,11 +393,19 @@
             // the arrow (drawn on "leading to", pulsing on "leads", drawn again on "leans")
             {
               const out = 1 - P(t, A.allOut, 0.2)
-              const dx = 120 * w, dy = -26 * s0 + 14 * (1 - P(t, A.leading, 0.45, 'power2.out'))
+              const dx = 120 * w, ride = -26 * s0, dy = ride + 14 * (1 - P(t, A.leading, 0.45, 'power2.out'))
               const sc = L.pulse(t, A.noteW, 'label')
-              const cx = 660 + leadW / 2
+              const cy = LEAD.y - 22
               leadT.setAttribute('opacity', (P(t, A.leading, 0.2) * out).toFixed(3))
-              leadT.setAttribute('transform', `translate(${f1(dx + cx)} ${f1(dy + 278)}) scale(${sc.toFixed(4)}) translate(${f1(-cx)} -278)`)
+              leadT.setAttribute('transform', `translate(${f1(dx + LEAD.x)} ${f1(dy + cy)}) scale(${sc.toFixed(4)}) translate(${f1(-LEAD.x)} ${f1(-cy)})`)
+              {
+                // the hairline draws down to ti's tread once the label has landed, and rides the slide with it
+                const hx = ST.colX(7, w) - 38, y1 = LEAD.y + 20 + ride, y2 = ST.tread(7, s0) - 6
+                const hu = P(t, A.leading + 0.2, 0.3, 'power2.out')
+                leadHair.setAttribute('x1', f1(hx)); leadHair.setAttribute('x2', f1(hx))
+                leadHair.setAttribute('y1', f1(y1)); leadHair.setAttribute('y2', f1(lerp(y1, y2, hu)))
+                leadHair.setAttribute('opacity', ((hu > 0.01 ? 1 : 0) * out).toFixed(3))
+              }
               const p = t < A.leans ? P(t, A.leadingTo, 0.6, 'power2.inOut') : Math.max(1 - P(t, A.leans, 0.12, 'power2.in'), P(t, A.leans + 0.12, 0.5, 'power2.inOut'))
               arrow.draw(p, out, arrowAt(w, s0), { scale: L.pulse(t, A.leads, 'label') })
             }
@@ -381,12 +416,13 @@
             }
 
             // frame-fixed type
-            kicker.draw(t, A.kickIn, A.o11)
-            credit1.setAttribute('opacity', (P(t, A.kickIn, 0.2) * (1 - P(t, A.o11, 0.2))).toFixed(3))
-            credit1.setAttribute('transform', `translate(${f1(-18 * (1 - P(t, A.kickIn, 0.45, 'power3.out')))} 0)`)
-            typeOn(credit2, t, A.later, 1.4)
-            typeOn(credit3, t, A.without, 1.4)
-            for (const c of [credit2, credit3]) c.el.setAttribute('opacity', (1 - P(t, A.o11, 0.2)).toFixed(3))
+            // the kicker and the credits leave as the pull starts (gone by 320.43), clear of Merc's column before his
+            // fall from above the frame (321.03 to 321.58, DECISIONS 86; component critic D-01 item 17)
+            kicker.draw(t, A.kickIn, A.pull)
+            for (const [el, t0] of [[credit1, A.kickIn], [credit2, A.later], [credit3, A.without]]) {
+              el.setAttribute('opacity', (P(t, t0, 0.2, 'power2.out') * (1 - P(t, A.pull, 0.2, 'power2.in'))).toFixed(3))
+              el.setAttribute('transform', `translate(${f1(-18 * (1 - P(t, t0, 0.45, 'power3.out')))} 0)`)
+            }
             answer.forEach((lab, i) => {
               const t0 = i === 0 ? A.learnedO : A.oneShort
               const u = P(t, t0, 0.45, 'power2.out')

@@ -77,8 +77,8 @@ Running notes so a container restart or a usage-limit pause can resume. Builder 
 
 | Scene | Built | Stills | Clip | measure.py | Text sweep | clock-lint | merc-tags |
 | --- | --- | --- | --- | --- | --- | --- | --- |
-| s07-predict | all rows, round 3 | round 2 (stills-r2) | round 3: 2.7 s, longest 0.3 | passes both limits | round 3: clean | clean | current |
-| s08-anywhere | all rows, round 2 | rounds 1 and 2, item 2, handoff | round 2: 9.0 s, longest 2.1 (inside m08's span) | waits on m08 | round 2: clean | clean | current |
+| s07-predict | fix round 1 | fix1, fix1-slide, fix1b, fix1b-slide | fix 1 (13:39): 1.0 s per 30 s, longest 0.2 | passes both limits | fix 1: clean | clean | current |
+| s08-anywhere | fix round 1 | fix1, fix1-slides | fix 1: 0.8 s per 30 s, longest 0.1 | passes both limits | fix 1: clean | clean | current |
 
 ## Final checks (09:25)
 
@@ -126,3 +126,26 @@ the director tagged them: m07 from 147.34 with its tall intro, m08-in from 198.2
   (gap and corner, as the real staircase comes to full); S8's ghosts and rim are cut clear of E's golds.
 - For the holds (about 1 s per 30 s with Tavi): S7's stair 3 and 7 letters scale and their keys flash on
   "changes" (+0.45 s); F#4 and C#5 flash on "black" and "keys" instead of scaling.
+- Holds, last pass (S7): every riser grows in turn on "the major pattern" (b19, 0.1 s apart, as the real staircase
+  is back on C); stairs 3 and 7 light with F#4 and C#5 on "black" and "keys" (their flashes to 75 %, back in 0.35 s);
+  the strip dims over 0.8 s (was 1.0) so it settles as the card lands.
+- Director's 13:29 note (L.mercGate's tall intro now falls from above the frame): s07 re-rendered after it (clip
+  13:39:22). Column rule from y 0 for each fall (m07 1.25 to 1.80, m08 52.17 to 52.72), every 1/30 s
+  (lab/s07-predict/scratch/column.sh): nothing of mine inside x 1680 to 1920. Only two things reach it: the kit's
+  staircase rows, which end at x 1680 (their own keep cut), and one L.filmDust mote at x 1904 to 1907, y 201 to 209
+  (alpha 0.38) during m08's fall. That dust is the kit's, not a mark of mine, so it is left as it is.
+
+## Fix round 1 results (13:50)
+
+- measure.py, fresh clips with Tavi in: s07 (13:39:22, new entrance) 1.8 s inside, 1.0 s per 30 s, longest 0.2 s;
+  s08 (13:32:25) 0.8 s inside, 0.8 s per 30 s, longest 0.1 s, final hold 0.2 s (exempt). The 13:27 s07 clip (old
+  entrance) measured the same (scratch/measure-1327-old-entrance.md).
+- Text sweep: clean on both (lab/<scene>/sweep-report.txt). clock-lint silent on both. merc-tags --check: 14 tags,
+  0 stale, 0 problems. Root check: 5 errors, all missing m12 passes in s12 to s16; my scenes carry only the shared
+  Merc-tag warnings and composition_file_too_large (lab/s07-predict/root-check.log).
+- names-check.py: PASS on all four slides after the last edits. Dense stills of S7's slide retaken
+  (lab/s07-predict/fix1b-slide/, sheet scratch/fix1b-dense-slide.png).
+- Handoffs: s06 clip last vs s07 clip first: max 53, mean 0.48, edges only (draft encodes). s08 clip last vs s09
+  clip first (s09's 12:56 clip; its frame-00-at-0s still is gone): max 60, mean 0.46, edges only. s07 53.253 still
+  vs s08 0.007 still: max 166, all on Tavi (m08 moving through the cut); across the clip cut her region changes by
+  mean 4.38, as much as her own frame-to-frame change just before it (3.99, 4.09), so it is her motion, not a jump.
