@@ -75,6 +75,11 @@ export function useStudioController(options: StudioControllerOptions = {}) {
   const [working, setWorking] = createSignal(false)
   const [importing, setImporting] = createSignal(false)
   const [saveState, setSaveState] = createSignal<StudioSaveState>('saved')
+  // Waveform peaks of takes drawn before their save landed, by take.
+  const waitingPeaks = new Map<
+    string,
+    { asset: StudioAsset; bytes: ArrayBuffer }
+  >()
   const [writable, setWritable] = createSignal(false)
   const [problem, setProblem] = createSignal<string | null>(null)
   // Where a take went when its lane had no room: a fresh object per miss, so
@@ -304,6 +309,7 @@ export function useStudioController(options: StudioControllerOptions = {}) {
         } else if (state === 'saved') {
           setProblem(null)
           void refreshProjects()
+          keepWaitingPeaks()
         }
       },
     })
@@ -320,6 +326,7 @@ export function useStudioController(options: StudioControllerOptions = {}) {
     setLoading(true)
     setProject(null)
     setAssets([])
+    waitingPeaks.clear()
     setSaveState('saved')
     setProblem(null)
     let claim: StudioSongClaim | null = null
@@ -413,6 +420,38 @@ export function useStudioController(options: StudioControllerOptions = {}) {
     if (!current(epoch))
       throw new DOMException('The project changed.', 'AbortError')
     return blob
+  }
+
+  // Peaks are a cache of saved audio. A take drawn before its save lands
+  // keeps its peaks in waitingPeaks until that save does; another song's
+  // take has none.
+  const staged = (assetId: string) =>
+    queue?.preparedAssets().some((data) => data.asset.id === assetId) === true
+
+  function keepWaitingPeaks(): void {
+    const snapshot = project()
+    if (snapshot === null) return
+    for (const [id, entry] of waitingPeaks) {
+      if (staged(id)) continue
+      waitingPeaks.delete(id)
+      void service
+        .writeAssetPeaks(snapshot.id, entry.asset, entry.bytes)
+        .catch(() => undefined)
+    }
+  }
+  const assetPeaks = {
+    read: async (asset: StudioAsset): Promise<ArrayBuffer | null> => {
+      const snapshot = project()
+      return snapshot === null
+        ? null
+        : service.readAssetPeaks(snapshot.id, asset)
+    },
+    write: async (asset: StudioAsset, bytes: ArrayBuffer): Promise<void> => {
+      const snapshot = project()
+      if (snapshot === null) return
+      if (staged(asset.id)) waitingPeaks.set(asset.id, { asset, bytes })
+      else await service.writeAssetPeaks(snapshot.id, asset, bytes)
+    },
   }
 
   async function readSourcePreview(
@@ -637,6 +676,7 @@ export function useStudioController(options: StudioControllerOptions = {}) {
     addTake,
     addTakes,
     readCanonicalAsset,
+    assetPeaks,
     readSourcePreview,
     canUndo,
     canRedo,

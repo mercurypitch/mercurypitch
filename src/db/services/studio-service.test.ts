@@ -365,6 +365,62 @@ describe('local Studio persistence', () => {
     ).resolves.toMatchObject({ asset: { id: 'asset-one' } })
   })
 
+  it("keeps a take's waveform peaks beside its two files, and lets them go with the take", async () => {
+    const saved = await savedArrangement()
+    const other = await studioAssetFixture(saved.project.id, 'asset-two', 0.3)
+    const project = await service.saveProject(
+      { ...saved.project, revision: 2 },
+      { ...saved.lease, expectedRevision: 1 },
+      [other],
+    )
+    const [one, two] = await service.listAssets(project.id)
+    const peaks = (value: number) => new Uint8Array([value, 2, 3, 4]).buffer
+    await service.writeAssetPeaks(project.id, one, peaks(1))
+    await service.writeAssetPeaks(project.id, two, peaks(9))
+    expect(
+      new Uint8Array((await service.readAssetPeaks(project.id, two))!),
+    ).toEqual(new Uint8Array(peaks(9)))
+    // Rows listed by a take's id are still exactly its two files, as every
+    // earlier version expects: peaks never break an older reader.
+    expect(await blobsOf('asset-one')).toHaveLength(2)
+    await expect(
+      service.readAssetBuffers(project.id, 'asset-one'),
+    ).resolves.toMatchObject({ asset: { id: 'asset-one' } })
+
+    await service.pruneUnusedAssets(project.id, {
+      ...saved.lease,
+      expectedRevision: 2,
+    })
+
+    expect(await service.readAssetPeaks(project.id, two)).toBeNull()
+    expect(
+      new Uint8Array((await service.readAssetPeaks(project.id, one))!),
+    ).toEqual(new Uint8Array(peaks(1)))
+    await service.deleteProject(project.id, {
+      ...saved.lease,
+      expectedRevision: 2,
+    })
+    expect(await db.readAllStrict(STUDIO_STORES.blobs)).toEqual([])
+  })
+
+  it('keeps no peaks for a take that is not saved, or saved in another song', async () => {
+    const { project, data } = await savedArrangement()
+    const unsaved = await studioAssetFixture(project.id, 'asset-unsaved', 0.3)
+    await service.writeAssetPeaks(project.id, unsaved.asset, new ArrayBuffer(8))
+    await service.writeAssetPeaks(
+      'another-song',
+      data.asset,
+      new ArrayBuffer(8),
+    )
+    expect(await service.readAssetPeaks(project.id, unsaved.asset)).toBeNull()
+    expect(await service.readAssetPeaks('another-song', data.asset)).toBeNull()
+    expect(
+      (await db.readAllStrict<StudioBlobRecord>(STUDIO_STORES.blobs)).map(
+        (row) => row.kind,
+      ),
+    ).not.toContain('peaks')
+  })
+
   it('deletes nothing without the live lease, or on a revision other than the one it opened', async () => {
     const { project, lease } = await arrangementWithRemovedTake()
     const unchanged = async () =>

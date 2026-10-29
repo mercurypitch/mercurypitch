@@ -1,6 +1,7 @@
 // Studio page — local song entry, save recovery and an integrated arrangement workspace.
-import { createSignal, onMount, Show } from 'solid-js'
+import { createSignal, onCleanup, onMount, Show } from 'solid-js'
 import { ConfirmDialog } from '@/components/ConfirmDialog'
+import { installStudioAudioWorker } from '@/lib/studio/audio/studio-audio-client'
 import type { StudioBackupTarget } from './backup/backup-target'
 import { downloadStudioBackup, openStudioBackupTarget, studioBackupFileName, sweepStudioBackupCopies, } from './backup/backup-target'
 import styles from './StudioPage.module.css'
@@ -9,6 +10,9 @@ import { StudioWorkspace } from './StudioWorkspace'
 import { useStudioController } from './useStudioController'
 
 export function StudioPage() {
+  // Takes are read, checked and turned into waveform peaks off the page's
+  // thread while the Studio is open; leaving it ends the worker.
+  onCleanup(installStudioAudioWorker())
   const studio = useStudioController()
   const [downloadError, setDownloadError] = createSignal<string | null>(null)
   const [savedAs, setSavedAs] = createSignal<string | null>(null)

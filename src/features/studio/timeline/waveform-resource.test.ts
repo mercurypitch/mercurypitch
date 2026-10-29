@@ -1,10 +1,13 @@
-// Studio waveform tests — real samples, sequential ownership reads and bounded retained envelopes.
+// Studio waveform tests — stored peaks first, a missing pyramid built once from checked audio, two reads at a time and bounded memory.
 import { Blob as NodeBlob } from 'node:buffer'
 import { webcrypto } from 'node:crypto'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { studioAssetFixture } from '@/db/services/studio.fixture'
+import { buildStudioPeaks, decodeStudioPeaks, encodeStudioPeaks, studioPeaksByteLength, } from '@/lib/studio/audio/waveform-peaks'
 import { reserveStudioMemory, studioReservedMemoryBytes, studioWorkingBytes, } from '@/lib/studio/memory-budget'
-import { buildStudioWaveform, createStudioWaveformResource, STUDIO_WAVEFORM_BUCKETS, } from './waveform-resource'
+import type { StudioAsset } from '@/lib/studio/model/types'
+import type { StudioWaveformPeaksStore } from './waveform-resource'
+import { createStudioWaveformResource } from './waveform-resource'
 
 beforeEach(() => {
   vi.stubGlobal('Blob', NodeBlob)
@@ -15,46 +18,83 @@ afterEach(() => {
   vi.unstubAllGlobals()
 })
 
+function memoryStore(initial: Record<string, ArrayBuffer> = {}) {
+  const rows = new Map(Object.entries(initial))
+  return {
+    rows,
+    read: vi.fn(async (asset: StudioAsset) => rows.get(asset.id) ?? null),
+    write: vi.fn(async (asset: StudioAsset, bytes: ArrayBuffer) => {
+      rows.set(asset.id, bytes)
+    }),
+  } satisfies StudioWaveformPeaksStore & { rows: Map<string, ArrayBuffer> }
+}
+
 describe('Studio waveform resource', () => {
-  it('keeps actual stereo amplitude and silence within a fixed envelope allocation', async () => {
-    const left = new Float32Array(20000)
-    const right = new Float32Array(20000)
-    left[100] = -0.25
-    right[100] = 0.5
-    const wave = await buildStudioWaveform({
-      sampleRate: 48000,
-      numberOfChannels: 2,
-      length: left.length,
-      getChannelData: (channel) => (channel === 0 ? left : right),
+  it('draws a take from its stored peaks without reading its audio', async () => {
+    const data = await studioAssetFixture('song')
+    const samples = Float32Array.from({ length: 64 }, (_, frame) =>
+      frame === 5 ? 0.5 : 0,
+    )
+    const store = memoryStore({
+      [data.asset.id]: encodeStudioPeaks(
+        buildStudioPeaks([samples], 64),
+        data.asset.canonicalPcmSha256,
+      ),
     })
-    expect(wave.minima.length).toBeLessThanOrEqual(STUDIO_WAVEFORM_BUCKETS)
-    expect(Math.min(...wave.minima)).toBe(-0.25)
-    expect(Math.max(...wave.maxima)).toBe(0.5)
-    expect(wave.maxima[0]).toBe(0)
-    expect(wave.rms[0]).toBe(0)
-    expect(Math.max(...wave.rms)).toBeGreaterThan(0)
-    expect(Math.max(...wave.rms)).toBeLessThanOrEqual(0.5)
+    const read = vi.fn(() => Promise.resolve(data.canonicalPcm))
+    const resource = createStudioWaveformResource(read, store)
+    const peaks = await resource.get(data.asset)
+    expect(read).not.toHaveBeenCalled()
+    expect(peaks.levels[0].maxima[0] * peaks.scale).toBeCloseTo(0.5, 4)
+    expect(store.write).not.toHaveBeenCalled()
+    resource.dispose()
   })
 
-  it('serializes canonical reads and shares one result between duplicate clips', async () => {
-    const first = await studioAssetFixture('song', 'one')
-    const second = await studioAssetFixture('song', 'two')
-    let release!: (blob: Blob) => void
-    const held = new Promise<Blob>((resolve) => {
-      release = resolve
-    })
-    const read = vi.fn((id: string) =>
-      id === 'one' ? held : Promise.resolve(second.canonicalPcm),
+  it('builds missing or damaged peaks once from the checked audio and keeps them', async () => {
+    const data = await studioAssetFixture('song')
+    const store = memoryStore({ [data.asset.id]: new ArrayBuffer(40) })
+    const read = vi.fn(() => Promise.resolve(data.canonicalPcm))
+    const resource = createStudioWaveformResource(read, store)
+    const peaks = await resource.get(data.asset)
+    expect(read).toHaveBeenCalledTimes(1)
+    expect(peaks.frameCount).toBe(data.asset.normalizedFrameCount)
+    await vi.waitFor(() => expect(store.write).toHaveBeenCalledTimes(1))
+    expect(
+      decodeStudioPeaks(store.rows.get(data.asset.id)!, data.asset),
+    ).not.toBeNull()
+    // The fixture is a 0.2 sine: its peaks say so.
+    expect(Math.max(...peaks.levels[0].maxima) * peaks.scale).toBeCloseTo(
+      0.2,
+      2,
+    )
+    resource.dispose()
+  })
+
+  it('reads at most two takes at once and shares one result between duplicate clips', async () => {
+    const takes = await Promise.all(
+      ['one', 'two', 'three'].map((id) => studioAssetFixture('song', id)),
+    )
+    const releases = new Map<string, () => void>()
+    const read = vi.fn(
+      (id: string) =>
+        new Promise<Blob>((resolve) =>
+          releases.set(id, () =>
+            resolve(takes.find((take) => take.asset.id === id)!.canonicalPcm),
+          ),
+        ),
     )
     const resource = createStudioWaveformResource(read)
-    const a = resource.get(first.asset)
-    expect(resource.get(first.asset)).toBe(a)
-    const b = resource.get(second.asset)
-    await Promise.resolve()
-    expect(read).toHaveBeenCalledTimes(1)
-    release(first.canonicalPcm)
-    await Promise.all([a, b])
+    const first = resource.get(takes[0].asset)
+    expect(resource.get(takes[0].asset)).toBe(first)
+    const rest = takes.slice(1).map((take) => resource.get(take.asset))
+    await vi.waitFor(() => expect(read).toHaveBeenCalledTimes(2))
     expect(read.mock.calls).toEqual([['one'], ['two']])
+    releases.get('one')!()
+    await first
+    await vi.waitFor(() => expect(read).toHaveBeenCalledTimes(3))
+    releases.get('two')!()
+    releases.get('three')!()
+    await Promise.all(rest)
     resource.dispose()
   })
 
@@ -75,7 +115,7 @@ describe('Studio waveform resource', () => {
     ).rejects.toMatchObject({ name: 'AbortError' })
   })
 
-  it('admits waveform memory before reading and retains only the bounded envelope afterward', async () => {
+  it('admits waveform memory before reading and retains only the peaks afterward', async () => {
     const data = await studioAssetFixture('song')
     const read = vi.fn(() => Promise.resolve(data.canonicalPcm))
     const resource = createStudioWaveformResource(read)
@@ -89,11 +129,9 @@ describe('Studio waveform resource', () => {
     } finally {
       releaseOtherAudio()
     }
-    const result = await resource.get(data.asset)
+    await resource.get(data.asset)
     expect(studioReservedMemoryBytes()).toBe(
-      result.minima.byteLength +
-        result.maxima.byteLength +
-        result.rms.byteLength,
+      studioPeaksByteLength(data.asset.normalizedFrameCount),
     )
     resource.dispose()
     expect(studioReservedMemoryBytes()).toBe(0)
@@ -110,7 +148,7 @@ describe('Studio waveform resource', () => {
     )
     const resource = createStudioWaveformResource(read)
     const request = resource.get(data.asset)
-    await Promise.resolve()
+    await vi.waitFor(() => expect(read).toHaveBeenCalled())
     const reserved = studioReservedMemoryBytes()
     expect(reserved).toBeGreaterThan(data.canonicalPcm.size)
     resource.dispose()

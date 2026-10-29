@@ -6,10 +6,12 @@ import type { StudioAssetData, StudioProject } from '@/lib/studio/model/types'
 export async function studioAssetFixture(
   projectId: string,
   id = 'asset-one',
+  /** A different level makes different audio, with its own canonical hash. */
+  level = 0.2,
 ): Promise<StudioAssetData> {
   const samples = Float32Array.from(
     { length: 64 },
-    (_, frame) => Math.sin(frame * 0.1) * 0.2,
+    (_, frame) => Math.sin(frame * 0.1) * level,
   )
   const original = new Blob(['fixture original audio'], { type: 'audio/wav' })
   const canonicalPcm = await encodeCanonicalPcm({

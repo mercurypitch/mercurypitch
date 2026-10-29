@@ -223,6 +223,65 @@ async function checkSamples(
   }
 }
 
+/** Reads canonical PCM somewhere other than this thread: the Studio's audio worker, while the Studio is open. */
+export type CanonicalPcmReader = (
+  blob: Blob,
+  metadata: CanonicalPcmMetadata,
+  options: CanonicalPcmOptions,
+) => Promise<ArrayBuffer>
+
+let offThreadReader: CanonicalPcmReader | null = null
+
+/** Route canonical PCM reads through `reader` until it is cleared with null. */
+export function setCanonicalPcmReader(reader: CanonicalPcmReader | null): void {
+  offThreadReader = reader
+}
+
+/**
+ * Header and hash of canonical PCM already read. The sample scan is left to
+ * the caller, which may scan them anyway while it builds something from them.
+ */
+export async function checkCanonicalPcmHash(
+  bytes: ArrayBuffer,
+  metadata: CanonicalPcmMetadata,
+  options: CanonicalPcmOptions = {},
+): Promise<DataView> {
+  const limits = importLimits(options.limits)
+  checkCanonicalSize(bytes.byteLength, metadata, limits)
+  const view = validateHeader(bytes, metadata, limits)
+  if ((await sha256Bytes(bytes)) !== metadata.canonicalPcmSha256)
+    throw new Error('Studio audio checksum failed')
+  checkImportCancelled(options.signal)
+  return view
+}
+
+/** Header, hash and every sample of canonical PCM already read. */
+export async function checkCanonicalPcm(
+  bytes: ArrayBuffer,
+  metadata: CanonicalPcmMetadata,
+  options: CanonicalPcmOptions = {},
+): Promise<void> {
+  const view = await checkCanonicalPcmHash(bytes, metadata, options)
+  await checkSamples(bytes, view, options.signal)
+}
+
+/** The bytes of a take's canonical PCM, read and checked on this thread. */
+export async function readCanonicalPcmBytesHere(
+  blob: Blob,
+  metadata: CanonicalPcmMetadata,
+  options: CanonicalPcmOptions = {},
+): Promise<ArrayBuffer> {
+  const bytes = await blob.arrayBuffer()
+  checkImportCancelled(options.signal)
+  await checkCanonicalPcm(bytes, metadata, options)
+  return bytes
+}
+
+/**
+ * The bytes of a take's canonical PCM, checked: header, hash and every
+ * sample. While the Studio is open the reading and checking happen in its
+ * audio worker, and the checked bytes are handed back without a copy.
+ */
 export async function readCanonicalPcmBytes(
   blob: Blob,
   metadata: CanonicalPcmMetadata,
@@ -232,14 +291,7 @@ export async function readCanonicalPcmBytes(
   const limits = importLimits(options.limits)
   checkCanonicalSize(blob.size, metadata, limits)
   admitWorkingBytes(blob.size * 3, limits)
-  const bytes = await blob.arrayBuffer()
-  checkImportCancelled(options.signal)
-  const view = validateHeader(bytes, metadata, limits)
-  if ((await sha256Bytes(bytes)) !== metadata.canonicalPcmSha256)
-    throw new Error('Studio audio checksum failed')
-  checkImportCancelled(options.signal)
-  await checkSamples(bytes, view, options.signal)
-  return bytes
+  return (offThreadReader ?? readCanonicalPcmBytesHere)(blob, metadata, options)
 }
 
 /**

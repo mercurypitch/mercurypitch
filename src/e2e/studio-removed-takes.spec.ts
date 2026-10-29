@@ -8,10 +8,13 @@
 import { expect, test, type Page } from '@playwright/test'
 import { importStudioAudio, openArrangement, studioClip, studioRegion, } from './helpers/dedicatedstudio-fixture'
 
-/** How many takes, and how many of their stored files, this browser keeps for Studio. */
+/**
+ * How many takes, how many of their stored files and how many waveform
+ * peaks (kept beside a take's two files) this browser keeps for Studio.
+ */
 async function storedTakes(
   page: Page,
-): Promise<{ takes: number; files: number }> {
+): Promise<{ takes: number; files: number; peaks: number }> {
   return page.evaluate(async () => {
     const database = await new Promise<IDBDatabase>((resolve, reject) => {
       const request = indexedDB.open('MercuryPitchDB')
@@ -27,10 +30,22 @@ async function storedTakes(
         request.onsuccess = () => resolve(request.result)
         request.onerror = () => reject(request.error)
       })
+    const kinds = () =>
+      new Promise<string[]>((resolve, reject) => {
+        const request = database
+          .transaction('studioAssetBlobs', 'readonly')
+          .objectStore('studioAssetBlobs')
+          .getAll()
+        request.onsuccess = () =>
+          resolve(request.result.map((row: { kind: string }) => row.kind))
+        request.onerror = () => reject(request.error)
+      })
     try {
+      const rows = await kinds()
       return {
         takes: await count('studioAssets'),
-        files: await count('studioAssetBlobs'),
+        files: rows.filter((kind) => kind !== 'peaks').length,
+        peaks: rows.filter((kind) => kind === 'peaks').length,
       }
     } finally {
       database.close()
@@ -47,7 +62,10 @@ test('a take deleted from the song is let go once the song opens again, and the 
   const studio = studioRegion(page)
   const saved = studio.getByText('Saved in this browser', { exact: true })
   await expect(saved).toBeVisible()
-  expect(await storedTakes(page)).toEqual({ takes: 2, files: 4 })
+  // Each take's peaks are kept once its waveform is drawn.
+  await expect
+    .poll(() => storedTakes(page))
+    .toEqual({ takes: 2, files: 4, peaks: 2 })
 
   await studioClip(page, 'Second').click()
   await studio
@@ -57,11 +75,13 @@ test('a take deleted from the song is let go once the song opens again, and the 
   await expect(studioClip(page, 'Second')).toHaveCount(0)
   await expect(saved).toBeVisible()
   // Undo can still bring the clip back in this session, so its take stays.
-  expect(await storedTakes(page)).toEqual({ takes: 2, files: 4 })
+  expect(await storedTakes(page)).toEqual({ takes: 2, files: 4, peaks: 2 })
 
   await page.reload()
   await studio.getByRole('button', { name: /^Untitled song/ }).click()
   await expect(studioClip(page, 'Phrase')).toBeVisible()
-  await expect.poll(() => storedTakes(page)).toEqual({ takes: 1, files: 2 })
+  await expect
+    .poll(() => storedTakes(page))
+    .toEqual({ takes: 1, files: 2, peaks: 1 })
   await expect(studioClip(page, 'Second')).toHaveCount(0)
 })

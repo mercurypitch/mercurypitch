@@ -33,6 +33,8 @@ export function controllerServiceFixture(): StudioService {
     readCanonicalAsset: vi.fn(async () => {
       throw new Error('No saved audio')
     }),
+    readAssetPeaks: vi.fn(async () => null),
+    writeAssetPeaks: vi.fn(async () => {}),
     acquireLease: vi.fn(async (projectId, ownerId) => ({
       projectId,
       ownerId,
