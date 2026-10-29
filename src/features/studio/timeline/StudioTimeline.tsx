@@ -1,7 +1,8 @@
 // Studio timeline — one aligned scroll surface for real audio clips, track headers and silent seeking.
 import type { JSX } from 'solid-js'
-import { createEffect, createMemo, createSignal, For, on, onCleanup, Show, } from 'solid-js'
+import { createEffect, createMemo, createSignal, For, Index, on, onCleanup, Show, } from 'solid-js'
 import { Plus } from '@/components/icons'
+import type { StudioClip } from '@/lib/studio/model/types'
 import { STUDIO_SAMPLE_RATE } from '@/lib/studio/model/types'
 import { FitWidth, InfoCircle, ZoomIn, ZoomOut } from '../studio-icons'
 import { StudioViewControls } from '../StudioViewControls'
@@ -59,29 +60,50 @@ export function StudioTimeline(props: StudioTimelineProps) {
     props.phone ? 104 : props.tablet === true ? 232 : 240
   // With the desk open, zoom and the clip bar leave the lanes for a dock.
   const docked = () => !props.phone && props.deskOpen === true
-  const contentWidth = () => Math.max(1, width() - headerWidth())
-  const contentEnd = () => studioContentEnd(props.project.clips)
-  const endFrame = () =>
+  const contentWidth = createMemo(() => Math.max(1, width() - headerWidth()))
+  // Memos, not functions: every clip reads the scale and its own record on
+  // every scroll step and in every waveform draw, and each read of a plain
+  // function walked every clip of the song again.
+  const contentEnd = createMemo(() => studioContentEnd(props.project.clips))
+  const endFrame = createMemo(() =>
     props.phone
       ? // An empty song spans 30 s, so its ruler counts whole seconds.
         Math.max(STUDIO_SAMPLE_RATE, contentEnd() || 30 * STUDIO_SAMPLE_RATE)
       : Math.max(
           60 * STUDIO_SAMPLE_RATE,
           contentEnd() + 10 * STUDIO_SAMPLE_RATE,
-        )
-  const scale = () =>
+        ),
+  )
+  const scale = createMemo(() =>
     props.phone
       ? // The end keeps room for the last ruler label.
         (contentWidth() - 32) / (endFrame() / STUDIO_SAMPLE_RATE)
       : Math.min(
           studioPixelsPerSecond(props.pixelsPerSecond),
           8_000_000 / (endFrame() / STUDIO_SAMPLE_RATE),
-        )
-  const timeWidth = () =>
-    Math.max(contentWidth(), frameToPixel(endFrame(), scale()))
+        ),
+  )
+  const timeWidth = createMemo(() =>
+    Math.max(contentWidth(), frameToPixel(endFrame(), scale())),
+  )
   const assets = createMemo(
     () => new Map(props.assets.map((asset) => [asset.id, asset])),
   )
+  const tracks = createMemo(
+    () => new Map(props.project.tracks.map((track) => [track.id, track])),
+  )
+  const clips = createMemo(
+    () => new Map(props.project.clips.map((clip) => [clip.id, clip])),
+  )
+  const laneClips = createMemo(() => {
+    const lanes = new Map<string, StudioClip[]>()
+    for (const clip of props.project.clips) {
+      const lane = lanes.get(clip.trackId)
+      if (lane) lane.push(clip)
+      else lanes.set(clip.trackId, [clip])
+    }
+    return lanes
+  })
   const projectId = createMemo(() => props.project.id)
   const trackIds = createMemo(() =>
     [...props.project.tracks]
@@ -104,15 +126,19 @@ export function StudioTimeline(props: StudioTimelineProps) {
       : undefined
   }
   // A muted lane, or any lane outside an active solo, draws dimmed.
-  const anySolo = () => props.project.tracks.some((track) => track.solo)
-  const ticks = () =>
+  const anySolo = createMemo(() =>
+    props.project.tracks.some((track) => track.solo),
+  )
+  // Read three times a scroll step: the labels, the grid and its minor ticks.
+  const ticks = createMemo(() =>
     studioRulerTicks(
       scroll(),
       contentWidth(),
       scale(),
       endFrame(),
       props.project.ruler === 'bars' ? props.project.tempoBpm : undefined,
-    )
+    ),
+  )
   // Grid and minor ticks are drawn by CSS from the major tick spacing.
   const major = () => {
     const [first, second] = ticks()
@@ -403,17 +429,18 @@ export function StudioTimeline(props: StudioTimelineProps) {
                 }
               }}
             >
-              <For each={ticks()}>
+              {/* By position: a scroll moves the same labels, it does not make new ones. */}
+              <Index each={ticks()}>
                 {(tick) => (
                   <span
                     class={styles.tick}
-                    style={{ left: `${tick.pixel}px` }}
+                    style={{ left: `${tick().pixel}px` }}
                     aria-hidden="true"
                   >
-                    {tick.label}
+                    {tick().label}
                   </span>
                 )}
-              </For>
+              </Index>
               <span
                 class={styles.playheadCap}
                 aria-hidden="true"
@@ -425,13 +452,22 @@ export function StudioTimeline(props: StudioTimelineProps) {
           </div>
           <For each={trackIds()}>
             {(id, index) => {
-              const track = () =>
-                props.project.tracks.find((item) => item.id === id)!
-              const clips = () =>
-                props.project.clips.filter((clip) => clip.trackId === id)
+              const track = () => tracks().get(id)!
+              const lane = () => laneClips().get(id) ?? []
+              const color = createMemo(() =>
+                studioTrackColor(studioTrackHue(track(), index())),
+              )
               const source = () =>
-                studioSourcePresentation(assets().get(clips()[0]?.assetId))
-              const clipIds = createMemo(() => clips().map((clip) => clip.id))
+                studioSourcePresentation(assets().get(lane()[0]?.assetId))
+              const clipIds = createMemo(
+                () => lane().map((clip) => clip.id),
+                [],
+                {
+                  equals: (before, after) =>
+                    before.length === after.length &&
+                    before.every((clipId, at) => clipId === after[at]),
+                },
+              )
               return (
                 <div
                   class={styles.lane}
@@ -443,11 +479,7 @@ export function StudioTimeline(props: StudioTimelineProps) {
                       ? ''
                       : undefined
                   }
-                  style={{
-                    '--studio-track': studioTrackColor(
-                      studioTrackHue(track(), index()),
-                    ),
-                  }}
+                  style={{ '--studio-track': color() }}
                 >
                   <div class={styles.trackHeader}>
                     <Show
@@ -488,10 +520,7 @@ export function StudioTimeline(props: StudioTimelineProps) {
                   >
                     <For each={clipIds()}>
                       {(clipId) => {
-                        const clip = () =>
-                          props.project.clips.find(
-                            (item) => item.id === clipId,
-                          )!
+                        const clip = () => clips().get(clipId)!
                         return (
                           <StudioTimelineClip
                             clip={clip()}
@@ -505,6 +534,7 @@ export function StudioTimeline(props: StudioTimelineProps) {
                             scale={scale()}
                             scroll={scroll()}
                             contentWidth={contentWidth()}
+                            color={color()}
                             pointer={pointer}
                             resource={resource()}
                             onSelect={() => props.onSelectClip(clipId)}
