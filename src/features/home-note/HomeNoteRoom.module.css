@@ -14,6 +14,14 @@
   color: var(--text-primary);
 }
 
+/* A phone on its side is shorter than that, and the body does not scroll:
+   the room keeps to the screen, so the pier and the dock stay on it. */
+@media (orientation: landscape) {
+  .room {
+    min-height: 0;
+  }
+}
+
 /* The world: the whole room, behind everything else. */
 .stage {
   position: absolute;

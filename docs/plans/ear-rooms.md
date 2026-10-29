@@ -109,7 +109,9 @@ portraits, the best cropped so its lantern sits exactly at 84% / 44%. Its pier s
 feet fall on a phone (the room crops the painting to the screen around the lantern, so his 20%
 across lands near 31% of the painting), so Nano Banana 2 lengthened it in a masked edit and only the
 pier was blended back. The landscape was made from the portrait (GPT Image 2.5, the portrait as
-its reference) and given the same jetty.
+its reference) and given the same jetty. The room stands Merc on each plate's own planks
+(`harbour-layout.ts`): his feet on a spot of the plate and his size a share of it, carried through
+the same crop as the picture, so a new plate needs its spot read off again.
 
 The prompt, in the house style of the other room paintings (Echo's rooftops, Lip roll's
 bay, the Karaoke room's theatre: painted, cinematic, deep navy with warm gold light, a quiet sky):
