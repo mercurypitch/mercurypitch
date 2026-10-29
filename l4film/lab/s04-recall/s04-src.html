@@ -45,7 +45,10 @@
           // left 0.4 s still before "five"); from "five" the five dark tiles light to 60 % chrome in turn, 0.3 s
           // apart, each up over 0.3 s and back over 0.7 s, both linear (a large-area change that registers all
           // the way, across "five notes between them"); the kicker leaves as b5 ends, the brackets over 0.45 s
-          const Q0 = at('q0'), Q0_DUR = at('q0', 'end') - at('q0')
+          // q0 (component critic A-02 item 4): C4 and C5, the octave's two ends, lift 40 px with a chrome outline
+          // as the pause opens (0.06 s in, 0.4 s, power3.out), hold through it, and drop as "Twelve" lands and the
+          // brackets start (0.25 s, power2.in), each settling with a tile pulse
+          const Q0 = at('q0'), Q0_DUR = at('q0', 'end') - at('q0'), LIFT0 = at('q0', 'start', 0.06)
           const TWELVE = word('b5', 'Twelve'), BR0 = word('b5', 'Twelve', 'start', 0.04)
           const SEVEN_L = word('b5', 'Seven')
           const FIVE = word('b5', 'five')
@@ -59,11 +62,13 @@
           const P2 = STAND + 1.0, ROWS_IN = STAND + 1.6, BACK = STAND + 1.8, NAMES_BACK = STAND + 2.0, SWAP = STAND + 2.2
           const SEVEN = word('b6', 'seven steps')
           // 4d: m04's tag starts at at('o3', 'start', -1.1) (merc-tags.py), where she drops in; on "steps?" a "?"
-          // joins and pulses as she asks it; on "bigger" the seven risers grow in turn (0.08 s apart, component
-          // critic A-01 item 3); on "Let's" the two labels leave up fast; her hop out at at('b7', 'start', 0.29);
-          // on "measure" the seven risers ripple in turn (0.08 s apart), back to rest before the cut. Every riser
-          // event (here and on "seven steps") also pulses the stair above the riser to 1.06 and flashes its tread,
-          // as S3's do (DECISIONS 88: counted bars that read at phone size)
+          // joins and pulses as she asks it; on "bigger" the seven riser bars brighten together (component critic
+          // A-02 item 2: 4 to 8 px, chrome at 40 % to full ink, 0.25 s, then back by "Let's", linear) and grow
+          // together, so their unequal heights read side by side; on "Let's" the two labels and the numerals leave
+          // up fast; her hop out at at('b7', 'start', 0.29); on "measure" the seven risers ripple in turn (0.08 s
+          // apart), back to rest before the cut. On "seven steps" and on "measure" each riser's event also pulses
+          // the stair above it to 1.06 and flashes its tread (DECISIONS 88), and on "seven steps" an ink numeral,
+          // 1 to 7, lands above each riser as it flashes (A-02 item 2, FACTS 71)
           const QMARK = word('o3', 'steps?'), BIGGER = word('o3', 'bigger')
           const LEAVE = word('b7', "Let's")
           const HOP = at('b7', 'start', 0.29)
@@ -134,7 +139,14 @@
           // a riser's brightening as it grows (4 px chrome at 40 % to 6 px at full): up over 0.28 s and back over
           // 0.5 s, both linear, so each riser's change carries until the next one's (s03's ripple, the same shape)
           const env = (d) => (d < 0 ? 0 : d < 0.28 ? d / 0.28 : Math.max(0, 1 - (d - 0.28) / 0.5))
-          const growAt = (n) => SEVEN + 0.07 * (n - 1), biggerAt = (n) => BIGGER + 0.08 * (n - 1), rippleAt = (n) => MEASURE + 0.08 * (n - 1)
+          const growAt = (n) => SEVEN + 0.07 * (n - 1), rippleAt = (n) => MEASURE + 0.08 * (n - 1)
+          // the numerals 1 to 7 (Outfit 600 30 px, ink), centred over each riser, 24 px above its top (the upper
+          // stair's tread), clear of that stair's pulse
+          const numerals = [1, 2, 3, 4, 5, 6, 7].map((n) => txt(mid, String(n), { x: ST.riserX(n, 0), y: ST.tread(n + 1, 0) - 24, size: 30, anchor: 'middle' }))
+          // C4's and C5's outline through q0: a 3 px chrome rim 6 px out from the tile, in the tile's own group so
+          // it rides the lift
+          const qOut = [row.tiles[0], row.tiles[12]].map((x) => L.svg('rect', { x: f2(x.x - 6), y: f2(x.y - 6), width: x.w + 12, height: x.h + 12, rx: 15, fill: 'none', stroke: C.chrome, 'stroke-width': 3, opacity: 0 }, x.g))
+          const INK = hexRgb(C.ink)
           // the tread flashes (S3's): a soft chrome glow and a bright core along a stair's tread, over the staircase
           const flashDefs = L.svg('defs', {}, mid)
           const flashBlur = L.svg('filter', { id: SID + '-flash', x: '-20%', y: '-300%', width: '140%', height: '700%' }, flashDefs)
@@ -178,26 +190,31 @@
             const stA = t < BACK ? (1 - 0.75 * P(t, DIM, 0.4, 'power2.inOut')) * (1 - P(t, RISE + 0.4, 0.6, 'power2.inOut')) : P(t, BACK, 0.4, 'power2.out')
             const nameA = (n) => (t < BACK ? 1 - P(t, DIM, 0.4, 'power2.inOut') : P(t, NAMES_BACK + 0.07 * (n - 1), 0.2, 'power2.out'))
             const out12 = t < SWAP ? 1 - P(t, P2, 1.0, 'power1.inOut') : swap
-            // riser n's events move stair n + 1: a pulse to 1.06 (long, but not on "measure", which ends at rest
-            // before the cut) and a tread flash
-            const blockPulse = (n) => (n < 2 ? 1 : Math.max(L.pulse(t, growAt(n - 1), 0.06, { long: true }), L.pulse(t, biggerAt(n - 1), 0.06, { long: true }), L.pulse(t, rippleAt(n - 1), 0.06)))
-            const flashK = (n) => (n < 2 ? 0 : Math.max(flashUp(t - growAt(n - 1)), flashUp(t - biggerAt(n - 1)), flashUp(t - rippleAt(n - 1))))
+            // riser n's events on "seven steps" and "measure" move stair n + 1: a pulse to 1.06 (long, but not on
+            // "measure", which ends at rest before the cut) and a tread flash
+            const blockPulse = (n) => (n < 2 ? 1 : Math.max(L.pulse(t, growAt(n - 1), 0.06, { long: true }), L.pulse(t, rippleAt(n - 1), 0.06)))
+            const flashK = (n) => (n < 2 ? 0 : Math.max(flashUp(t - growAt(n - 1)), flashUp(t - rippleAt(n - 1))))
+            // "bigger": all seven bars together, up over 0.25 s and back by "Let's", linear
+            const big = P(t, BIGGER, 0.25, 'power2.out') * (1 - P(t, BIGGER + 0.25, LEAVE - BIGGER - 0.25, 'none'))
             const in15 = P(t, ROWS_IN, 0.5, 'power1.inOut')
             st.draw({
               w: 0, s0: 0, a: stA,
               rows: { x0: 220, x1: 1680, k0: 0, k1: 19, kA: (k) => (k <= 12 ? out12 : k <= 14 ? 1 : in15), keep: { boxes: box ? [box] : [], cam: null, t } },
               stair: (n) => ({ scale: blockPulse(n), names: [{ text: SOL[n - 1], a: nameA(n) }] }),
-              riser: (n) => ({ scale: Math.max(L.pulse(t, growAt(n), 'bar', { long: true }), L.pulse(t, biggerAt(n), 'bar', { long: true }), L.pulse(t, rippleAt(n), 'bar')) }),
+              riser: (n) => ({ scale: Math.max(L.pulse(t, growAt(n), 'bar', { long: true }), L.pulse(t, BIGGER, 'bar', { long: true }), L.pulse(t, rippleAt(n), 'bar')) }),
               houses: { top: { a: 1 - P(t, DIM, 0.4, 'power2.inOut'), w: 0, lit: 1 } },
             })
             edgeD5.setAttribute('opacity', (1 - in15).toFixed(3))
             st.risers.forEach((Rz, i) => {
-              const k = Math.max(env(t - growAt(i + 1)), env(t - biggerAt(i + 1)), env(t - rippleAt(i + 1)))
-              if (k <= 0.001) return
-              const x = ST.riserX(i + 1, 0), bw = 4 + 2 * k
+              const k = Math.max(env(t - growAt(i + 1)), env(t - rippleAt(i + 1)))
+              if (k <= 0.001 && big <= 0.001) return
+              const x = ST.riserX(i + 1, 0), bw = Math.max(4 + 2 * k, 4 + 4 * big)
               Rz.bar.setAttribute('x', f2(x - bw / 2)); Rz.bar.setAttribute('width', f2(bw))
-              Rz.bar.setAttribute('fill-opacity', (0.4 + 0.6 * k).toFixed(3))
+              Rz.bar.setAttribute('fill', rgbStr(mixRgb(CHR, INK, big)))
+              Rz.bar.setAttribute('fill-opacity', (0.4 + 0.6 * Math.max(k, big)).toFixed(3))
             })
+            // the numerals: each lands (0.2 s, rising 8 px) as its riser grows on "seven steps"; all leave with the labels
+            numerals.forEach((el, i) => place(el, fadeIO(t, growAt(i + 1), LEAVE, { out: 0.3, up: 60, ease: 'power3.in', rise: 8 })))
             flashes.forEach((F, i) => {
               const n = i + 1, k = flashK(n)
               if (k <= 0.001) { F.glow.setAttribute('opacity', '0'); F.core.setAttribute('opacity', '0'); return }
@@ -212,9 +229,9 @@
             /* the tile row */
             const gone = t >= SWAP + 0.6
             const darkLit = (i) => { const d = t - (FIVE + 0.3 * DARK_K[i]); return clamp(Math.min(d / 0.3, 1 - (d - 0.3) / 0.7)) }
-            // q0 (component critic A-01 item 3): the octave's two ends, C4 and C5, lift 16 px through the pause, their
-            // top edges glowing, and settle back as "Twelve" lands
-            const lift = P(t, Q0, Q0_DUR, 'sine.inOut') * (1 - P(t, TWELVE, 0.4, 'power2.inOut'))
+            // q0: C4 and C5 up 40 px with their outlines, and down as "Twelve" lands
+            const lift = P(t, LIFT0, 0.4, 'power3.out') * (1 - P(t, TWELVE, 0.25, 'power2.in'))
+            qOut.forEach((el) => el.setAttribute('opacity', lift.toFixed(3)))
             // the stand-up (item 7): the dark tiles take a full chrome rim and a lighter fill through the spin, so all
             // thirteen slivers read; the fade to the row bands takes both away
             const spin = P(t, STAND - 0.1, 0.3, 'power2.out')
@@ -224,14 +241,13 @@
               const cx = 240 + pitch * i
               const sc = Math.max(
                 L.pulse(t, SEMIS + (SEMIS_DUR * i) / 12, 'tile'),
-                i === 0 || i === 12 ? L.pulse(t, OCT, 'tile', { long: true }) : 1,
+                i === 0 || i === 12 ? Math.max(L.pulse(t, OCT, 'tile', { long: true }), L.pulse(t, TWELVE + 0.25, 'tile')) : 1,
                 tile.white && WHITE_K[i] < 7 ? L.pulse(t, SEVEN_L + 0.15 * WHITE_K[i], 'tile', { long: true }) : 1,
               )
               return {
                 a: P(t, RISE, 0.3, 'power2.out'),
                 scale: sc,
-                dy: i === 0 || i === 12 ? -16 * lift : 0,
-                edge: i === 0 || i === 12 ? lift : 0,
+                dy: i === 0 || i === 12 ? -40 * lift : 0,
                 lit: tile.white ? 0 : darkLit(i),
                 labelA: tile.white ? P(t, NAMES_IN + NAMES_GAP * WHITE_K[i], 0.2, 'power2.out') * (1 - P(t, NAMES_OUT, 0.2, 'power2.in')) : 0,
                 shape: { x: cx - tw / 2, y: 420, w: tw, h: th, rx },

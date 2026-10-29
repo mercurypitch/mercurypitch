@@ -9,8 +9,8 @@
           // S3, the promise (STORYBOARD rows 3a to 3c; HANDOFFS § S2 to S3, § S3, § S3 to S4; DECISIONS 88). F-cold,
           // the staircase on D; the title's bead settles into the top house and lights it; the promise's four parts
           // land as four short labels on the staircase, riding the world, each beside the part it names and each
-          // done as it is said: the risers grow in turn, each stair block above one pulsing and its tread flashing;
-          // the staircase slides down two rows to C; the stairs light in turn; an ink arrow from ti's tread to the
+          // done as it is said: the seven risers are the subject, each thickening into full ink in turn; the
+          // staircase slides down two rows to C; the stairs light in turn; an ink arrow from ti's tread to the
           // house; then the pull and pan to F0, the rows widening to the full grid as it lands. Every time is a
           // word or a duration.
           const SID = 's03-promise'
@@ -29,10 +29,14 @@
 
           /* ---------------------------------------------------------------- anchors */
           const LIT = TF.FLY0 + TF.FLY - T0                       // the house lit by the title's bead; its echo ring
-          // 3a: "build it from its steps" lands on "you'll build" over the risers' run; the seven risers grow in
-          // turn, one every 0.28 s from 0.08 s after "build" (the board's 0.2 s left 0.6 s still before "start it"),
-          // each with the stair block above it pulsing to 1.06 and that stair's tread flashing chrome
-          const L1 = word('b3', "you'll"), RIP0 = word('b3', 'build', 'start', 0.08), RIP_GAP = 0.28
+          // 3a: "build it from its steps" lands on "you'll build" over the risers' run. The risers are the subject
+          // (component critic A-02 item 1): from 0.08 s after "build", one every 0.2 s, each riser bar grows (the
+          // kit's bar pulse, long) and thickens from 4 to 10 px into full ink (0.2 s, power2.out), so the seven
+          // stand in ink through "steps,"; they thin back together to the kit's 4 px chrome at 40 % from 0.3 s
+          // into "steps," (0.7 s, linear), done before "start it". Ink bars, not the chrome fills of "name its
+          // notes" three seconds later
+          const L1 = word('b3', "you'll"), RIP0 = word('b3', 'build', 'start', 0.08), RIP_GAP = 0.2
+          const THIN = word('b3', 'steps', 'start', 0.3), THIN_DUR = 0.7
           // 3b: "start it on any note" on "start it", the slide down two rows (0.9 s); stair 1, where it now
           // starts, scales as the slide lands (long pulse) and lights chrome, up over 0.3 s and back over 0.4 s,
           // both linear (group B's measured shape: L.lit's 0.15 s rise registers too little at 40 %); on "name
@@ -57,25 +61,19 @@
           const mid = L.stage(room.mid)
           const st = L.stairs(mid, {})
           st.stairs.forEach((S, i) => S.names.prepare([SOL[i]]))
-          // each riser event's tread flash: a soft chrome glow and a bright core along the stair's tread, drawn over
-          // the staircase and scaled with the stair's pulse
-          const flashDefs = L.svg('defs', {}, mid)
-          const flashBlur = L.svg('filter', { id: SID + '-flash', x: '-20%', y: '-300%', width: '140%', height: '700%' }, flashDefs)
-          L.svg('feGaussianBlur', { stdDeviation: 5 }, flashBlur)
-          const flashG = L.svg('g', { class: 'tread-flash' }, mid)
-          const flashes = [1, 2, 3, 4, 5, 6, 7, 8].map(() => ({
-            glow: L.svg('path', { fill: 'none', stroke: C.chrome, 'stroke-width': 12, 'stroke-linecap': 'round', filter: `url(#${SID}-flash)`, opacity: 0 }, flashG),
-            core: L.svg('path', { fill: 'none', stroke: '#f2f5f8', 'stroke-width': 4, 'stroke-linecap': 'round', opacity: 0 }, flashG),
-          }))
+          // the riser bars' colours, from the kit's chrome to ink
+          const CHR = hexRgb(C.chrome), INK = hexRgb(C.ink)
           // the four labels (DECISIONS 88): Outfit 600, 40 world px, ink, riding the world and the slide (their
           // baselines are written on C and move with the staircase's start), each 24 px or more clear of the
           // stairs, their names and each other: "build it from its steps" above stairs 1 to 4 (32 px over stair 4's
-          // tread), "start it on any note" under stair 1's foot and "name its notes" under the names of stairs 5 to
-          // 8 (26 px under the feet), "hear ti lean home" over ti and the house (24 px over the roof)
+          // tread), "start it on any note" under stair 1's foot, flush with the staircase's left, and "name its
+          // notes" under the names of stairs 6 to 8, right-aligned to top do's right edge (component critic A-02
+          // item 5: centred at 958 the two bottom labels read as one caption; the baseline stays, nothing goes
+          // lower), both 26 px under the feet; "hear ti lean home" over ti and the house (24 px over the roof)
           const LABELS = [
             { text: 'build it from its steps', x: 242, y: 494, anchor: 'start', tIn: L1 },
             { text: 'start it on any note', x: 242, y: 790, anchor: 'start', tIn: L2 },
-            { text: 'name its notes', x: 958, y: 790, anchor: 'middle', tIn: L3 },
+            { text: 'name its notes', x: ST.colX(8, 0) + 56, y: 790, anchor: 'end', tIn: L3 },
             { text: 'hear ti lean home', x: 1166, y: 254, anchor: 'end', tIn: L4 },
           ].map((o) => ({ ...o, el: txt(mid, o.text, { x: o.x, y: o.y, size: 40, anchor: o.anchor }) }))
           // the ink arrow (3 px at F0) from ti's tread up to the house's left side
@@ -103,13 +101,8 @@
             const s0 = 2 - 2 * P(t, SLIDE, SLIDE_DUR, 'power2.inOut')
             const fl = TF.flight(Tf)
             const ripple = (n) => (L.pulse(t, RIP0 + RIP_GAP * (n - 1), 'bar', { long: true }) - 1) / L.PULSE.bar
-            // riser n's event moves the stair above it (n + 1): its block pulses to 1.06 (long) and its tread flashes,
-            // up over 0.08 s and back over 0.5 s
-            const blockPulse = (n) => (n >= 2 ? L.pulse(t, RIP0 + RIP_GAP * (n - 2), 0.06, { long: true }) : 1)
-            const flashK = (n) => { if (n < 2) return 0; const d = t - (RIP0 + RIP_GAP * (n - 2)); return d < 0 ? 0 : d < 0.08 ? d / 0.08 : Math.max(0, 1 - (d - 0.08) / 0.5) }
-            // the ripple's brightening: up over 0.28 s and back over 0.5 s, both linear, so each riser's change
-            // carries until the next one's starts (the kit pulse's 0.15 s rise on a 4 px bar barely registers)
-            const bright = (n) => { const d = t - (RIP0 + RIP_GAP * (n - 1)); return d < 0 ? 0 : d < 0.28 ? d / 0.28 : Math.max(0, 1 - (d - 0.28) / 0.5) }
+            // riser n in ink: up as it grows, held, and all seven thinning back together
+            const inked = (n) => P(t, RIP0 + RIP_GAP * (n - 1), 0.2, 'power2.out') * (1 - P(t, THIN, THIN_DUR, 'none'))
             const start1 = clamp(Math.min((t - LANDED + 0.05) / 0.3, 1 - (t - LANDED - 0.25) / 0.4))
             const widen = P(t, WIDEN, 0.6, 'power2.inOut')
             const out = P(t, LIST_OUT, 0.3, 'power3.in')
@@ -118,32 +111,22 @@
               rows: { x0: lerp(230, 220, widen), x1: lerp(1206, 1680, widen), k1: 14 },
               stair: (n) => ({
                 lit: Math.max(L.lit(t, LIGHT0 + 0.1 * (n - 1), { long: true }), n === 1 ? start1 : 0),
-                scale: n === 1 ? L.pulse(t, LANDED, 'tile', { long: true }) : blockPulse(n),
+                scale: n === 1 ? L.pulse(t, LANDED, 'tile', { long: true }) : 1,
                 names: [{ text: SOL[n - 1], a: 1 }],
               }),
               riser: (n) => ({ scale: 1 + L.PULSE.bar * ripple(n) }),
               houses: { top: { a: 1, w: 0, lit: fl.lit, glow: 0.6 * P(t, ARROW + 0.5, 0.3, 'power2.out') * (1 - out) } },
             })
-            // the ripple brightens each unmeasured riser as it grows (4 px chrome at 40 % to 6 px at full)
+            // each unmeasured riser in turn: the kit's 4 px chrome bar at 40 % to a 10 px bar in full ink
             st.risers.forEach((Rz, i) => {
-              const k = bright(i + 1)
+              const k = inked(i + 1)
               if (k <= 0.001) return
-              const x = ST.riserX(i + 1, 0), bw = 4 + 2 * k
+              const x = ST.riserX(i + 1, 0), bw = 4 + 6 * k
               Rz.bar.setAttribute('x', f2(x - bw / 2)); Rz.bar.setAttribute('width', f2(bw))
+              Rz.bar.setAttribute('fill', rgbStr(mixRgb(CHR, INK, k)))
               Rz.bar.setAttribute('fill-opacity', (0.4 + 0.6 * k).toFixed(3))
             })
             arrow.draw(P(t, ARROW, 0.6, 'power2.inOut'), 1 - out, arrowAt(s0), { width: 3 })
-            // the tread flashes, along each pulsed tread (the kit scales a stair about its block's middle)
-            flashes.forEach((F, i) => {
-              const n = i + 1, k = flashK(n)
-              if (k <= 0.001) { F.glow.setAttribute('opacity', '0'); F.core.setAttribute('opacity', '0'); return }
-              const sc = blockPulse(n), cx = ST.colX(n, 0), tr = ST.tread(n, s0), my = (tr + ST.foot(s0)) / 2
-              const y = my + (tr + 1.5 - my) * sc, hw = 51 * sc
-              const d = `M${f2(cx - hw)} ${f2(y)} L${f2(cx + hw)} ${f2(y)}`
-              F.glow.setAttribute('d', d); F.core.setAttribute('d', d)
-              F.core.setAttribute('stroke-width', f2(4 * sc))
-              F.glow.setAttribute('opacity', (0.85 * k).toFixed(3)); F.core.setAttribute('opacity', k.toFixed(3))
-            })
 
             /* the title's bead, settling into the house (TF, from film time), and the house's echo ring */
             if (t < LIT && fl.r > 0.2) {

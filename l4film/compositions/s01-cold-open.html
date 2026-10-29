@@ -157,11 +157,13 @@
           const OUT_1E = LIT8 + 0.1                               // "still hanging?", its check, "from D?" and the arrow fade
           // 1f: o2's labels and the name glows. On "doh ray mee" each of the three stairs and its name pulse on its
           // own syllable; on "finished" stairs 1 to 7 go back to unlit (0.4 s) and do's name pulses to 1.2; on
-          // "restless" ti lights orange again, its name pulses and the arrow redraws from ti to the house (0.5 s,
-          // from 0.1 s after the word); it leaves with the lines (component critic A-01, items 1 and 4)
+          // "restless" ti lights orange again, at 25 % where do is at 45 % (component critic A-02 item 6, so
+          // "restless" reads apart from "finished"), its name pulses and the arrow redraws from ti to the house
+          // (0.5 s, from 0.1 s after the word); it leaves with the lines (component critic A-01, items 1 and 4)
           const MOVED = word('o2', 'home moved'), MOVED_OUT = word('o2', 'start', 'end')
           const FINISHED = word('o2', 'finished'), RESTLESS = word('o2', 'restless')
           const SYL = { 1: word('o2', 'doh'), 2: word('o2', 'ray'), 3: word('o2', 'mee') }
+          const TI_REST = 0.25 / ST.LIT.color                     // ti's light on "restless", as a share of the kit's 45 %
           // 1g: the lines leave up fast as the question ends; the Mercs slide out; the dolly; the field
           const LINES_OUT = at('o2', 'end', 0.07)
           const MERCS_OUT = at('o2', 'end')
@@ -363,7 +365,7 @@
                 const orange = P(t, LAND_D[n - 1], 0.15, 'power2.out')
                 if (orange > 0) {
                   const back = orange * (1 - P(t, FINISHED, 0.4, 'power2.inOut'))
-                  return { lit: n === 7 ? Math.max(back, P(t, RESTLESS, 0.3, 'power2.out')) : back, color: 'orange', names, scale }
+                  return { lit: n === 7 ? Math.max(back, TI_REST * P(t, RESTLESS, 0.3, 'power2.out')) : back, color: 'orange', names, scale }
                 }
                 return { lit: P(t, LAND_C[n - 1], 0.15, 'power2.out') * blueOff, color: 'blue', names }
               },

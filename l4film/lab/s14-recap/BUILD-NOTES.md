@@ -136,3 +136,13 @@ events in the card pause (icon pulses that register, then the address once more)
   Holds (hosts, measure-r5): s14 0.5 s (0.2 per 30 s), longest 0.2 (405.89); s15 0.0; s16 0.1 at its start.
   Renders: s16 20:37-20:40 and s14 20:42-20:49:52 (old bokeh), s15 20:49:52-20:51:10 (DECISIONS 100 bokeh);
   s14 and s16 re-rendered from 20:54:48 on the new kit.
+  Re-renders on the DECISIONS 100 kit: s14 20:54:48-21:02:07 (holds 0.6 s, 0.3 per 30 s, longest 0.2: 405.89,
+  423.99, 432.99, 451.69, 466.49), s16 21:02-21:03:11 (0.1 at its start). S15's second echo ring (477.72, 0.9 s)
+  was still at 12 % at the cut and vanished across it: the rings now fade with S15's exit (o14 end + 0.07, 0.3 s);
+  s15 re-rendered 21:04:06-21:04:40 (holds 0.0).
+  Handoffs (lab frames): S13 (E's 20:10 clip, last 60 fps frame) -> S14: Merc boxes within 5 px, 0.03 % over 24,
+  max 41 outside the Mercs. S14 -> S15: the Mercs identical (<= 4 px), outside them only the rung's own motion
+  between the two lab frames (0.016 s of film apart): 1212,314.5 -> 1172.5,326.5. S15 -> S16: 0.011 % over 24,
+  max 20 outside the Mercs. npm run check: lint 0 errors; layout 1 error, s06 129.21-130.02 (not group F);
+  contrast 59/59. clock-lint clean; merc-tags --check s14 s15 s16: 12 tags, 0 stale. Text sweep s14-s16 clean
+  (lab/s14-recap/sweep-r5.log). Scratch frames in /dev/shm deleted.

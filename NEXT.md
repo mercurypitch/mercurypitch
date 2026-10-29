@@ -1660,3 +1660,11 @@ Note: the lanes' memory gate read a stale cgroup path after the 21:00 restart (f
 - 21:0x builder A resumed with A-fix2-msg (round 2; all four scenes at 60 fps). Agents now: F + A.
 - Queue: D round 4 (D-fix4-msg) -> F-02 when F hands back -> B small (B-fix4: s06 layout error) ->
   C small (C-fix2) -> E round 3 (E-fix3) -> verification critics A-03, D-04, B-04, C-03, E-03.
+- 21:1x builder F handed back the F-01 round (report $S/l4entr/F-round-report.txt): all nine items in;
+  clips 30 fps (s14 20:54-21:02, s15 21:04, s16 21:02-21:03, all on the 20:49 kit); holds s14 0.6 s
+  (0.3/30), s15 0, s16 0.1; seams S13-S14 0.03 % >24, S14-S15 rung only, S15-S16 0.011 % (S15's
+  second echo ring now fades with its type); used BOTH allowances (card 1 leaves 417.04-417.47;
+  houses out 413.0-413.3, back 419.62-419.92); rung slide 469.89-470.69 peaks ~120 px a 30 fps frame.
+  As-built ladder numbers in the report: write into HANDOFFS § The ladder AFTER F-02 returns (spec
+  kept stable while the critic reads it).
+- 21:1x critic F-02 launched on frozen copies ($S/l4entr/f2/). Agents now: A + F-02.
