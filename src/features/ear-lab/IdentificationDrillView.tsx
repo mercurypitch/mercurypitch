@@ -9,11 +9,12 @@
 //
 // On a phone build with the Ear Lab with Merc it also hands the native
 // room what it draws on its own (`room`, stage-room.ts): the round line,
-// the rating's move at the verdict, the plate in numbers. A run a
-// station row or Today's button asked for starts as the room opens. A
-// slip on the plate between two of the drill's items starts a pair
-// practice on them (pair-practice.ts), which rates nothing and ends on
-// a plate of its own.
+// the rating's move at the verdict, the plate in numbers, and Compare on
+// a miss for a drill whose pick is a sound of its own. A run a station
+// row or Today's button asked for starts as the room opens. A slip on
+// the plate between two of the drill's items starts a pair practice on
+// them (pair-practice.ts), which rates nothing and ends on a plate of
+// its own.
 // ============================================================
 
 import type { JSX } from 'solid-js'
@@ -26,7 +27,7 @@ import type { PadState, StageKey } from './EarStage'
 import { EndPlate, OutcomeDots, Pads, PlateBadge, PlateDelta, PlateLine, PlayPad, StagePad, } from './EarStage'
 import { useLastCall } from './reveal-pacing'
 import { slipsOf } from './slips'
-import type { PlateSlip, RoomPlate, StageRoom } from './stage-room'
+import type { PlateSlip, RoomCompare, RoomPlate, StageRoom } from './stage-room'
 import { identificationBeat, ratedRunPlate, takeRoomStart } from './stage-room'
 import { EarStage } from './stage-switch'
 import type { useIdentificationController } from './use-identification-controller'
@@ -78,6 +79,16 @@ interface IdentificationDrillViewProps {
   onBack: () => void
   /** The back control's label when back is not the bench. */
   backLabel?: string
+  /** Compare on a miss, in the native room only: the drill's names for
+   *  the answer and the pick, and what the two differ by where it can
+   *  say. For a drill whose trials can sound a pick (trial.compare). */
+  compare?: IdentificationCompare
+}
+
+/** A drill's words for Compare (stage-room.ts RoomCompare). */
+export interface IdentificationCompare {
+  names: (answerId: string, pickId: string) => { answer: string; pick: string }
+  difference?: (answerId: string, pickId: string) => string | null
 }
 
 /** The same text with its first letter upper case. */
@@ -186,6 +197,33 @@ export function IdentificationDrillView(
     return choice?.sub ?? choice?.label ?? props.revealName(id)
   }
 
+  /** Compare, for a drill that offers it: the miss on the stage, named. */
+  function roomCompare(words: IdentificationCompare): RoomCompare {
+    const miss = (): { answer: string; pick: string } | null => {
+      const answer = props.controller.expectedId()
+      const pick = props.controller.answeredId()
+      if (!props.controller.comparable() || answer === null || pick === null) {
+        return null
+      }
+      return { answer, pick }
+    }
+    return {
+      offered: () => props.controller.comparable(),
+      allowed: () => props.controller.compareAllowed(),
+      play: () => void props.controller.compare(),
+      names: () => {
+        const ids = miss()
+        return ids === null ? null : words.names(ids.answer, ids.pick)
+      },
+      difference: () => {
+        const ids = miss()
+        return ids === null || words.difference === undefined
+          ? null
+          : words.difference(ids.answer, ids.pick)
+      },
+    }
+  }
+
   /** What the native room draws on its own; nothing on any other build. */
   const room: StageRoom | undefined = EAR_LAB_WITH_MERC
     ? {
@@ -218,6 +256,10 @@ export function IdentificationDrillView(
           allowed: () => props.controller.replayAllowed(),
           play: () => void props.controller.replay(),
         },
+        // A drill offers Compare or it does not, for the stage's life.
+        compare:
+          // eslint-disable-next-line solid/reactivity -- read once, as the stage mounts
+          props.compare === undefined ? undefined : roomCompare(props.compare),
         parked: () => props.controller.parked(),
         next: () => props.controller.next(),
         pause: () => props.controller.pause(),

@@ -16,9 +16,10 @@
 // On a phone build with the Ear Lab with Merc it also hands the native
 // room what it draws on its own (`room`, stage-room.ts), says the way a
 // run answers in the room's mode line, and points a refused microphone
-// at the phone's Settings rather than a browser's. Each slip on the
-// rated plate starts a pair practice on its two degrees
-// (pair-practice.ts), which rates nothing.
+// at the phone's Settings rather than a browser's. A tapped miss offers
+// Compare there: the answer's note, then the pick's, in the round's key.
+// Each slip on the rated plate starts a pair practice on its two
+// degrees (pair-practice.ts), which rates nothing.
 // ============================================================
 
 import type { JSX } from 'solid-js'
@@ -354,6 +355,20 @@ export function HomeDrill(props: HomeDrillProps): JSX.Element {
         replay: {
           allowed: () => controller.replayAllowed(),
           play: () => void controller.replay(),
+        },
+        // A tapped miss: the answer's note, then the pick's, by name.
+        compare: {
+          offered: () => controller.comparable(),
+          allowed: () => controller.compareAllowed(),
+          play: () => void controller.compare(),
+          names: () => {
+            const degree = target()
+            const picked = set.degrees.find(
+              (entry) => entry.degree === controller.answeredDegree(),
+            )
+            if (!controller.comparable() || !degree || !picked) return null
+            return { answer: degree.solfege, pick: picked.solfege }
+          },
         },
         parked: () => controller.parked(),
         next: () => controller.next(),

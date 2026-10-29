@@ -13,6 +13,15 @@
 // A wrong answer replays the probe and then the tonic, so the
 // ear hears the distance it just misjudged.
 //
+// After the answer the native room can sound the round again (Hear it
+// again: the probe falling home) and, after a tapped miss, Compare it
+// (the answer's probe, then the pick's, in the round's key). Both are
+// replays, as in use-identification-controller.ts: listen-only, never
+// over a sound, and silenced by the next round, Stop, the sound taken
+// away and the room closing, each with a token so a silenced one never
+// clears a newer one's flag. A sung answer is a take, not a pick, so it
+// offers no Compare.
+//
 // A slip on the native room's rated plate can start a pair practice
 // (pair-practice.ts): a short run over just the two degrees it mixed
 // up, which rates nothing and books nothing for Today.
@@ -26,7 +35,7 @@ import type { Rating } from '@/lib/ear/elo'
 import type { HomeDegree } from '@/lib/ear/item-bank'
 import type { DegreeSet } from '@/lib/ear/item-bank'
 import { cadenceChordMidis, HOME_SET, homeItemState, pickHomeItem, probeMidi, roveRootMidi, } from '@/lib/ear/item-bank'
-import { HOME_TIMING } from '@/lib/ear/timing'
+import { COMPARE_TIMING, HOME_TIMING } from '@/lib/ear/timing'
 import { trackFirstValue } from '@/lib/first-value'
 import { midiToFreq } from '@/lib/scale-data'
 import type { RatedRunMark } from '@/stores/ear-lab-store'
@@ -161,6 +170,10 @@ export function useHomeController(
    *  run was stopped and started again must not carry on into the new
    *  run once its await resolves. */
   let run = 0
+  /** Bumped by every replay (a miss's resolution, Hear it again,
+   *  Compare) and by whatever silences one: only the latest one's end
+   *  clears the flag, and a silenced one stops between its notes. */
+  let replayToken = 0
   let timer: ReturnType<typeof setTimeout> | undefined
   const pacer = createRevealPacer(
     () => {
@@ -174,6 +187,14 @@ export function useHomeController(
     return new Promise((resolve) => {
       timer = setTimeout(resolve, ms)
     })
+  }
+
+  /** A replay's own wait. Not the question's timer: the next round
+   *  starting its cadence would otherwise take that timer over, and a
+   *  Stop that cleared it would leave the replay waiting for good. A
+   *  silenced replay checks its token when this ends. */
+  function rest(ms: number): Promise<void> {
+    return new Promise((resolve) => setTimeout(resolve, ms))
   }
 
   /** The chord as a chord: every member a full voice of the engine's
@@ -247,6 +268,12 @@ export function useHomeController(
     const mine = run
     const stale = (): boolean => cancelled || mine !== run
     if (stale()) return
+    // A replay of the last verdict still sounding stops: the next
+    // question is not asked over it.
+    if (replaying()) {
+      options?.cancelAudio?.()
+      endReplay()
+    }
     if (round() >= totalRounds()) {
       finish(true)
       return
@@ -389,22 +416,28 @@ export function useHomeController(
         : { label: 'Missed', className: 'missed' },
     )
 
+    // A miss hears the probe fall home first; the hold — and the next
+    // round — count from the end of that, or the two would overlap. It
+    // is a replay while it sounds: nothing else plays over it.
+    replayToken += 1
+    const token = replayToken
     batch(() => {
       setRating(nextRating)
       setAnsweredDegree(degree)
       setLastCents(centsOff ?? null)
       setUnclear(false)
+      setReplaying(!correct)
       setPhase('reveal')
     })
 
-    // A miss hears the probe fall home first; the hold — and the next
-    // round — count from the end of that, or the two would overlap.
     const resolution = correct
       ? Promise.resolve()
-      : playResolution(target.degree)
+      : playResolution(target.degree, token)
     void resolution
       .catch(() => undefined)
       .then(() => {
+        // A stale run's resolution must not flick the new run's flag.
+        if (mine === run && token === replayToken) setReplaying(false)
         if (cancelled || mine !== run) return
         pacer.hold(correct)
       })
@@ -420,16 +453,62 @@ export function useHomeController(
   async function replay(): Promise<void> {
     const target = currentDegree()
     if (!replayAllowed() || target === null) return
+    await listenAgain((token) => playResolution(target.degree, token))
+  }
+
+  /** The verdict on the stage is a tapped miss: its pick is a note of
+   *  the key, and can be sounded. A sung answer is a take. */
+  function comparable(): boolean {
+    const target = currentDegree()
+    const picked = answeredDegree()
+    return (
+      phase() === 'reveal' &&
+      mode() === 'tap' &&
+      target !== null &&
+      picked !== null &&
+      picked !== target.degree
+    )
+  }
+
+  /** Compare, as often as wanted after a tapped miss, never over a
+   *  sound. */
+  function compareAllowed(): boolean {
+    return comparable() && !replaying()
+  }
+
+  /** The answer's probe, then the pick's, in the round's key. */
+  async function compare(): Promise<void> {
+    const target = currentDegree()
+    const picked = answeredDegree()
+    if (!compareAllowed() || target === null || picked === null) return
+    await listenAgain((token) => playCompare(target.degree, picked, token))
+  }
+
+  /** A sound after the answer, to listen to only: a hold counting down
+   *  waits for Next, and the flag goes when it ends, unless something
+   *  newer silenced it first. */
+  async function listenAgain(
+    sound: (token: number) => Promise<void>,
+  ): Promise<void> {
     const mine = run
+    replayToken += 1
+    const token = replayToken
     pacer.pause()
     setReplaying(true)
     try {
-      await playResolution(target.degree)
+      await sound(token)
     } catch {
       // A probe that failed to sound is no reason to strand the verdict.
     } finally {
-      if (mine === run) setReplaying(false)
+      if (mine === run && token === replayToken) setReplaying(false)
     }
+  }
+
+  /** A replay silenced from outside may never end on its own: its flag
+   *  goes now, and its end, if it comes, finds a newer token. */
+  function endReplay(): void {
+    replayToken += 1
+    setReplaying(false)
   }
 
   /** Tap answer (the seven buttons). */
@@ -439,19 +518,43 @@ export function useHomeController(
   }
 
   /** Replay the probe, then land on the tonic — the distance the ear
-   *  just misjudged, heard once more with the answer known. */
-  async function playResolution(degree: number): Promise<void> {
+   *  just misjudged, heard once more with the answer known. Stops
+   *  between its notes once `token` is no longer the latest replay's. */
+  async function playResolution(degree: number, token: number): Promise<void> {
     await audioEngine.playTone(
       midiToFreq(probeMidi(rootMidi, degree, set)),
       HOME_TIMING.resolutionProbeMs,
     )
-    await wait(HOME_TIMING.resolutionProbeMs)
-    if (cancelled) return
+    await rest(HOME_TIMING.resolutionProbeMs)
+    if (cancelled || token !== replayToken) return
     await audioEngine.playTone(
       midiToFreq(rootMidi),
       HOME_TIMING.resolutionTonicMs,
     )
-    await wait(HOME_TIMING.resolutionTonicMs)
+    await rest(HOME_TIMING.resolutionTonicMs)
+  }
+
+  /** The answer's probe, then the pick's, as long as the question's,
+   *  in its key and register. Stops between them once silenced. */
+  async function playCompare(
+    expected: number,
+    picked: number,
+    token: number,
+  ): Promise<void> {
+    const live = (): boolean => !cancelled && token === replayToken
+    await audioEngine.playTone(
+      midiToFreq(probeMidi(rootMidi, expected, set)),
+      HOME_TIMING.probeMs,
+    )
+    await rest(HOME_TIMING.probeMs)
+    if (!live()) return
+    await rest(COMPARE_TIMING.gapMs)
+    if (!live()) return
+    await audioEngine.playTone(
+      midiToFreq(probeMidi(rootMidi, picked, set)),
+      HOME_TIMING.probeMs,
+    )
+    await rest(HOME_TIMING.probeMs)
   }
 
   function finish(complete: boolean): void {
@@ -497,6 +600,7 @@ export function useHomeController(
     clearTimeout(timer)
     pacer.cancel()
     options?.cancelAudio?.()
+    endReplay()
     if (outcomes.length === 0 && skipped === 0) {
       // Nothing answered: the end card reports an empty run, and no sprint
       // segment, session or streak is booked for it.
@@ -519,6 +623,7 @@ export function useHomeController(
   function reset(): void {
     clearTimeout(timer)
     pacer.cancel()
+    endReplay()
     setPhase('idle')
     setResult(null)
     setCurrentDegree(null)
@@ -530,13 +635,19 @@ export function useHomeController(
     clearTimeout(timer)
     pacer.cancel()
     options?.cancelAudio?.()
+    endReplay()
   }
 
   /** The sound was taken away. The cadence or probe still sounding, or
    *  a sung answer's window, is void; a verdict counting down waits for
-   *  Next. */
+   *  Next, and a replay of it stops, to be heard whole once the sound is
+   *  back. */
   function holdQuestion(): void {
     if (phase() === 'reveal') {
+      if (replaying()) {
+        options?.cancelAudio?.()
+        endReplay()
+      }
       pacer.pause()
       return
     }
@@ -595,6 +706,10 @@ export function useHomeController(
     replaying,
     replayAllowed,
     replay,
+    /** A tapped miss on the stage that Compare can sound. */
+    comparable,
+    compareAllowed,
+    compare,
     /** A Today's short run. */
     short,
     held,

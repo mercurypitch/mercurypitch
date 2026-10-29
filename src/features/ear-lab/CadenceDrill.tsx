@@ -7,6 +7,10 @@
 // same twice. The going train turns one wheel per chord and says
 // nothing else until the reveal engraves the numerals. A miss
 // strums the progression again, slower.
+//
+// In the native room Hear it again strums the same progression in the
+// same key, the four pads left as they were, and a miss offers
+// Compare: the answer's progression, then the pick's, in that key.
 // ============================================================
 
 import type { JSX } from 'solid-js'
@@ -17,16 +21,32 @@ import { drawOptions } from '@/lib/ear/draw-options'
 import { findIdentificationDrill } from '@/lib/ear/drills'
 import { roveRootMidi } from '@/lib/ear/item-bank'
 import { CADENCE_BANK, degreeChordMidis } from '@/lib/ear/progressions'
-import { CADENCE_TIMING } from '@/lib/ear/timing'
+import { CADENCE_TIMING, COMPARE_TIMING } from '@/lib/ear/timing'
+import { EAR_LAB_WITH_MERC } from '@/lib/native-build'
 import { useEarRoom } from './ear-room-context'
 import type { PadState } from './EarStage'
 import { Pads, StagePad } from './EarStage'
 import type { Strummer } from './guitar-chords'
 import { createStrummer } from './guitar-chords'
+import type { IdentificationCompare } from './IdentificationDrillView'
 import { IdentificationDrillView } from './IdentificationDrillView'
 import { ProgressionTrain } from './ProgressionTrain'
 import type { IdentificationTrial } from './use-identification-controller'
 import { useIdentificationController } from './use-identification-controller'
+
+const nameOf = (choiceId: string): string =>
+  CADENCE_BANK.find((item) => item.itemId === choiceId)?.name ?? choiceId
+
+/** Compare's words, for the native room alone: the numerals the reveal
+ *  engraves. */
+const CADENCE_COMPARE: IdentificationCompare | undefined = EAR_LAB_WITH_MERC
+  ? {
+      names: (answerId, pickId) => ({
+        answer: nameOf(answerId),
+        pick: nameOf(pickId),
+      }),
+    }
+  : undefined
 
 export function CadenceDrill(props: { onBack: () => void }): JSX.Element {
   const { audioEngine } = useEngines()
@@ -55,15 +75,18 @@ export function CadenceDrill(props: { onBack: () => void }): JSX.Element {
     setSounding(0)
   }
 
+  /** True once the progression has sounded to its end; false when a
+   *  silencing came while it waited on the audio. One that comes while
+   *  it sounds clears the timer it ends on, so it never resolves. */
   async function strumProgression(
     degrees: readonly number[],
     chordMs: number,
-  ): Promise<void> {
+  ): Promise<boolean> {
     const asked = silenced
     await audioEngine.init()
     await audioEngine.resume()
     const ctx = audioEngine.getAudioContext()
-    if (!ctx || asked !== silenced) return
+    if (!ctx || asked !== silenced) return false
     cancelAudio()
     strummer = createStrummer(ctx, room.volume() * audioEngine.getVolume())
     const stepMs = chordMs + CADENCE_TIMING.gapMs
@@ -94,6 +117,7 @@ export function CadenceDrill(props: { onBack: () => void }): JSX.Element {
         ),
       )
     })
+    return true
   }
 
   /** In a pair practice, the other of the two: on the pads every round,
@@ -123,8 +147,38 @@ export function CadenceDrill(props: { onBack: () => void }): JSX.Element {
         )
         await strumProgression(item.payload, CADENCE_TIMING.chordMs)
       },
-      replayOnWrong: () =>
-        strumProgression(item.payload, CADENCE_TIMING.replayChordMs),
+      replayOnWrong: async () => {
+        await strumProgression(item.payload, CADENCE_TIMING.replayChordMs)
+      },
+      ...(EAR_LAB_WITH_MERC
+        ? {
+            // The same progression in the same key: play() would rove the
+            // key and draw the pads afresh under the verdict.
+            replay: async (): Promise<void> => {
+              await strumProgression(item.payload, CADENCE_TIMING.chordMs)
+            },
+            // The answer's progression, then the pick's, in that key. Each
+            // strum goes through the guard above; a silencing in the pause
+            // between them ends Compare there.
+            compare: async (pickedId: string): Promise<void> => {
+              const picked = CADENCE_BANK.find(
+                (entry) => entry.itemId === pickedId,
+              )
+              if (picked === undefined) return
+              const first = await strumProgression(
+                item.payload,
+                CADENCE_TIMING.chordMs,
+              )
+              if (!first) return
+              const asked = silenced
+              await new Promise((resolve) =>
+                setTimeout(resolve, COMPARE_TIMING.gapMs),
+              )
+              if (asked !== silenced) return
+              await strumProgression(picked.payload, CADENCE_TIMING.chordMs)
+            },
+          }
+        : {}),
     }
   }
 
@@ -145,9 +199,6 @@ export function CadenceDrill(props: { onBack: () => void }): JSX.Element {
     return null
   }
 
-  const nameOf = (choiceId: string) =>
-    CADENCE_BANK.find((item) => item.itemId === choiceId)?.name ?? choiceId
-
   return (
     <IdentificationDrillView
       title="Cadence"
@@ -161,6 +212,7 @@ export function CadenceDrill(props: { onBack: () => void }): JSX.Element {
       columns={2}
       controller={controller}
       revealName={nameOf}
+      compare={CADENCE_COMPARE}
       answerConsole={() => (
         <Pads columns={2} label="Which progression was that?">
           <For each={options()}>

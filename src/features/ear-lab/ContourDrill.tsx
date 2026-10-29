@@ -8,6 +8,10 @@
 //
 // The instrument is a drum recorder's stylus: it draws the first
 // tone level and waits — the second segment is the answer.
+//
+// In the native room a miss offers Compare: the pair as it went, then
+// the pair the pick names, from the same first tone and by the same
+// gap.
 // ============================================================
 
 import type { JSX } from 'solid-js'
@@ -15,8 +19,10 @@ import { createSignal } from 'solid-js'
 import { useEngines } from '@/contexts/EngineContext'
 import { CONTOUR_BANK } from '@/lib/ear/banks'
 import { findIdentificationDrill } from '@/lib/ear/drills'
-import { CONTOUR_TIMING } from '@/lib/ear/timing'
+import { COMPARE_TIMING, CONTOUR_TIMING } from '@/lib/ear/timing'
+import { EAR_LAB_WITH_MERC } from '@/lib/native-build'
 import { playToneFor } from './ear-sound'
+import type { IdentificationCompare } from './IdentificationDrillView'
 import { IdentificationDrillView } from './IdentificationDrillView'
 import type { ContourDirection } from './StylusTrace'
 import { StylusTrace } from './StylusTrace'
@@ -33,6 +39,23 @@ function asDirection(id: string | null): ContourDirection | null {
   return id === 'up' || id === 'down' || id === 'same' ? id : null
 }
 
+/** A pair by the way it went, as it is said. */
+const SPOKEN: Readonly<Record<ContourDirection, string>> = {
+  up: 'rise',
+  down: 'fall',
+  same: 'repeated note',
+}
+
+/** Compare's words, for the native room alone. */
+const CONTOUR_COMPARE: IdentificationCompare | undefined = EAR_LAB_WITH_MERC
+  ? {
+      names: (answerId, pickId) => ({
+        answer: `the ${SPOKEN[asDirection(answerId) ?? 'same']}`,
+        pick: SPOKEN[asDirection(pickId) ?? 'same'],
+      }),
+    }
+  : undefined
+
 export function ContourDrill(props: { onBack: () => void }): JSX.Element {
   const { audioEngine } = useEngines()
   const drill = findIdentificationDrill('contour')
@@ -40,36 +63,49 @@ export function ContourDrill(props: { onBack: () => void }): JSX.Element {
 
   const [sounding, setSounding] = createSignal<0 | 1 | 2>(0)
 
-  /** Set by Stop; the pair in flight reads it between its tones. */
   /** Which pair (or replay) is the live one. A flag reset at the top of
    *  every pair let a pair still sounding when Stop and Begin came within
    *  a second pass its check and play its second tone over the new run;
    *  a token only the newest pair holds cannot. */
   let pair = 0
 
+  const wait = (ms: number): Promise<void> =>
+    new Promise((resolve) => setTimeout(resolve, ms))
+
   function makeTrial(item: (typeof CONTOUR_BANK)[number]): IdentificationTrial {
     const gapCents = item.payload[0]
     const direction = DIRECTIONS[Math.floor(Math.random() * DIRECTIONS.length)]
     const base = 220 * 2 ** (Math.random() * 1.5)
-    const second =
-      direction.id === 'same'
+    /** Where the second tone lands for a way of going, by this gap. */
+    const secondFor = (way: ContourDirection): number =>
+      way === 'same'
         ? base
-        : base * 2 ** (((direction.id === 'up' ? 1 : -1) * gapCents) / 1200)
+        : base * 2 ** (((way === 'up' ? 1 : -1) * gapCents) / 1200)
 
-    const playPair = async (toneMs: number, gapMs: number) => {
-      // Both tones whole: playTone resolves on scheduling and the second
-      // note would otherwise cut the first at the gap. Stop lands between
-      // the awaits: stopTone silences the tone sounding now, and the
-      // check keeps the second from sounding after it.
-      const mine = ++pair
+    /** One pair, both tones whole, while `mine` is the live pair.
+     *  playTone resolves on scheduling and the second note would
+     *  otherwise cut the first at the gap. Stop lands between the
+     *  awaits: stopTone silences the tone sounding now, and the check
+     *  keeps the next from sounding after it. False once silenced. */
+    const soundPair = async (
+      way: ContourDirection,
+      toneMs: number,
+      gapMs: number,
+      mine: number,
+    ): Promise<boolean> => {
       setSounding(1)
       await playToneFor(audioEngine, base, toneMs)
-      if (mine !== pair) return
-      await new Promise((resolve) => setTimeout(resolve, gapMs))
-      if (mine !== pair) return
+      if (mine !== pair) return false
+      await wait(gapMs)
+      if (mine !== pair) return false
       setSounding(2)
-      await playToneFor(audioEngine, second, toneMs)
+      await playToneFor(audioEngine, secondFor(way), toneMs)
       setSounding(0)
+      return mine === pair
+    }
+
+    const playPair = async (toneMs: number, gapMs: number): Promise<void> => {
+      await soundPair(direction.id, toneMs, gapMs, ++pair)
     }
 
     return {
@@ -77,6 +113,21 @@ export function ContourDrill(props: { onBack: () => void }): JSX.Element {
       play: () => playPair(CONTOUR_TIMING.toneMs, CONTOUR_TIMING.gapMs),
       replayOnWrong: () =>
         playPair(CONTOUR_TIMING.replayToneMs, CONTOUR_TIMING.replayGapMs),
+      ...(EAR_LAB_WITH_MERC
+        ? {
+            // The pair as it went, then as the pick says it went.
+            compare: async (pickedId: string): Promise<void> => {
+              const picked = asDirection(pickedId)
+              if (picked === null) return
+              const mine = ++pair
+              const { toneMs, gapMs } = CONTOUR_TIMING
+              if (!(await soundPair(direction.id, toneMs, gapMs, mine))) return
+              await wait(COMPARE_TIMING.gapMs)
+              if (mine !== pair) return
+              await soundPair(picked, toneMs, gapMs, mine)
+            },
+          }
+        : {}),
     }
   }
 
@@ -106,6 +157,7 @@ export function ContourDrill(props: { onBack: () => void }): JSX.Element {
       columns={3}
       controller={controller}
       revealName={(id) => DIRECTIONS.find((d) => d.id === id)?.name ?? id}
+      compare={CONTOUR_COMPARE}
       instrument={() => (
         <StylusTrace
           sounding={controller.phase() === 'playing' ? sounding() : 0}

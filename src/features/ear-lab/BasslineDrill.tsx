@@ -7,6 +7,10 @@
 // first root is always the tonic, so the line has a floor to be
 // heard from. Judged like Echo — the whole line at once — and drawn
 // on the bead chain, heights hidden until the reveal.
+//
+// In the native room Hear it again walks the same line in the same key
+// and leaves the chain as the answer drew it, and a miss offers
+// Compare: the line, then the one tapped, under the same held tonic.
 // ============================================================
 
 import type { JSX } from 'solid-js'
@@ -18,17 +22,33 @@ import { roveRootMidi } from '@/lib/ear/item-bank'
 import type { PhraseVerdict } from '@/lib/ear/phrase'
 import { judgePhrase } from '@/lib/ear/phrase'
 import { BASSLINE_BANK, bassRootMidi, degreeChordMidis, progressionName, romanOf, } from '@/lib/ear/progressions'
-import { BASSLINE_TIMING, LADDER_TIMING } from '@/lib/ear/timing'
+import { BASSLINE_TIMING, COMPARE_TIMING, LADDER_TIMING, } from '@/lib/ear/timing'
+import { EAR_LAB_WITH_MERC } from '@/lib/native-build'
 import { BeadChain } from './BeadChain'
 import { useEarRoom } from './ear-room-context'
 import type { Strummer } from './guitar-chords'
 import { createStrummer } from './guitar-chords'
+import type { IdentificationCompare } from './IdentificationDrillView'
 import { IdentificationDrillView } from './IdentificationDrillView'
 import { PhraseConsole } from './PhraseConsole'
 import type { IdentificationTrial } from './use-identification-controller'
 import { useIdentificationController } from './use-identification-controller'
 
 const BASS_DEGREES: readonly number[] = [1, 2, 3, 4, 5, 6, 7]
+
+const nameOf = (choiceId: string): string =>
+  BASSLINE_BANK.find((item) => item.itemId === choiceId)?.name ?? choiceId
+
+/** Compare's words, for the native room alone: the line in numerals,
+ *  and a slip as the line that was tapped (the pick's id is its name). */
+const BASSLINE_COMPARE: IdentificationCompare | undefined = EAR_LAB_WITH_MERC
+  ? {
+      names: (answerId, pickId) => ({
+        answer: nameOf(answerId),
+        pick: pickId,
+      }),
+    }
+  : undefined
 
 export function BasslineDrill(props: { onBack: () => void }): JSX.Element {
   const { audioEngine } = useEngines()
@@ -58,15 +78,18 @@ export function BasslineDrill(props: { onBack: () => void }): JSX.Element {
     setSounding(0)
   }
 
+  /** True once the line has sounded to its end; false when a silencing
+   *  came while it waited on the audio. One that comes while it sounds
+   *  clears the timer it ends on, so it never resolves. */
   async function playLine(
     degrees: readonly number[],
     rootMs: number,
-  ): Promise<void> {
+  ): Promise<boolean> {
     const asked = silenced
     await audioEngine.init()
     await audioEngine.resume()
     const ctx = audioEngine.getAudioContext()
-    if (!ctx || asked !== silenced) return
+    if (!ctx || asked !== silenced) return false
     cancelAudio()
     strummer = createStrummer(ctx, room.volume() * audioEngine.getVolume())
     const start = ctx.currentTime + BASSLINE_TIMING.leadInS
@@ -99,6 +122,7 @@ export function BasslineDrill(props: { onBack: () => void }): JSX.Element {
         ),
       )
     })
+    return true
   }
 
   function makeTrial(item: EarBankItem): IdentificationTrial {
@@ -111,7 +135,36 @@ export function BasslineDrill(props: { onBack: () => void }): JSX.Element {
         setVerdict(null)
         await playLine(item.payload, BASSLINE_TIMING.rootMs)
       },
-      replayOnWrong: () => playLine(item.payload, BASSLINE_TIMING.replayRootMs),
+      replayOnWrong: async () => {
+        await playLine(item.payload, BASSLINE_TIMING.replayRootMs)
+      },
+      ...(EAR_LAB_WITH_MERC
+        ? {
+            // The same line in the same key: play() would rove the key
+            // and wipe the chain the answer drew.
+            replay: async (): Promise<void> => {
+              await playLine(item.payload, BASSLINE_TIMING.rootMs)
+            },
+            // The line, then the one tapped, under the same tonic. Each
+            // goes through the guard above; a silencing in the pause
+            // between them ends Compare there.
+            compare: async (): Promise<void> => {
+              const tapped = [...answered()]
+              if (tapped.length === 0) return
+              const first = await playLine(
+                item.payload,
+                BASSLINE_TIMING.rootMs,
+              )
+              if (!first) return
+              const asked = silenced
+              await new Promise((resolve) =>
+                setTimeout(resolve, COMPARE_TIMING.gapMs),
+              )
+              if (asked !== silenced) return
+              await playLine(tapped, BASSLINE_TIMING.rootMs)
+            },
+          }
+        : {}),
     }
   }
 
@@ -154,9 +207,6 @@ export function BasslineDrill(props: { onBack: () => void }): JSX.Element {
     setAnswered((list) => list.slice(0, -1))
   }
 
-  const nameOf = (choiceId: string) =>
-    BASSLINE_BANK.find((item) => item.itemId === choiceId)?.name ?? choiceId
-
   return (
     <IdentificationDrillView
       title="Bassline"
@@ -171,6 +221,7 @@ export function BasslineDrill(props: { onBack: () => void }): JSX.Element {
       controller={controller}
       revealName={nameOf}
       answerVerb="tapped"
+      compare={BASSLINE_COMPARE}
       slipNote={() => {
         const result = verdict()
         return result !== null && !result.correct && result.firstMiss !== null

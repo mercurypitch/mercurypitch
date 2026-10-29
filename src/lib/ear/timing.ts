@@ -72,6 +72,13 @@ export const CONTOUR_TIMING = {
   replayGapMs: 180,
 } as const
 
+/** Compare, on a miss in the native room: the answer, then the pick,
+ *  each sounded as its drill sounds the question. This is the breath
+ *  between the two, long enough to hear them as two things. */
+export const COMPARE_TIMING = {
+  gapMs: 650,
+} as const
+
 /** The verdict's hold before the next trial, when auto-advance is on.
  *  A preference rather than a number — the rack's Sound panel has the
  *  slider — so what lives here is its range. Identification drills

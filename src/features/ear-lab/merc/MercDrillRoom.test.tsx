@@ -1,9 +1,11 @@
 // The drill room around a drill: Close mid-run asks first and keeps
 // nothing; the pinned row holds the replay back on a rated question and
-// says why; the pads say "Your pick" and "The answer" in words; Android's
-// back goes through the same question; the sound taken away pauses the
-// run and Resume plays the question again. A slip on a rated plate
-// offers a pair practice, which Merc names and the plate tallies.
+// says why; the pads say "Your pick" and "The answer" in words; a miss
+// offers Compare beside Hear it again, named in the drill's words and
+// held back while a sound plays; Android's back goes through the same
+// question; the sound taken away pauses the run and Resume plays the
+// question again. A slip on a rated plate offers a pair practice, which
+// Merc names and the plate tallies.
 
 import { cleanup, fireEvent, render, screen, within, } from '@solidjs/testing-library'
 import type { JSX } from 'solid-js'
@@ -26,6 +28,7 @@ vi.mock('@/lib/haptics', () => ({
 interface Harness {
   setBeat: (beat: RoomBeat) => void
   setTone: (tone: 'neutral' | 'right' | 'wrong') => void
+  setSounding: (sounding: boolean) => void
   room: StageRoom
   onBack: ReturnType<typeof vi.fn>
 }
@@ -37,14 +40,24 @@ function mount(
   const [beat, setBeat] = createSignal<RoomBeat>('answer')
   const [tone, setTone] = createSignal<'neutral' | 'right' | 'wrong'>('neutral')
   const [held, setHeld] = createSignal(false)
+  const [sounding, setSounding] = createSignal(false)
   const onBack = vi.fn()
+  // Leap's Compare: offered on a miss, the fifth against the fourth.
+  const missed = (): boolean => beat() === 'reveal' && tone() === 'wrong'
   const room: StageRoom = {
     run: () => run,
     beat,
-    sounding: () => false,
+    sounding,
     prompt: 'Two notes. Name the interval.',
     line: () => ({ kind: 'rounds', round: 3, total: 12, answered: 2 }),
     replay: { allowed: () => beat() === 'reveal', play: vi.fn() },
+    compare: {
+      offered: missed,
+      allowed: () => missed() && !sounding(),
+      play: vi.fn(),
+      names: () => (missed() ? { answer: 'the fifth', pick: 'fourth' } : null),
+      difference: () => (missed() ? 'Two semitones wider.' : null),
+    },
     parked: () => false,
     next: vi.fn(),
     pause: vi.fn(),
@@ -87,7 +100,7 @@ function mount(
       room={room}
     />
   ))
-  return { setBeat, setTone, room, onBack }
+  return { setBeat, setTone, setSounding, room, onBack }
 }
 
 beforeEach(() => {
@@ -153,6 +166,43 @@ describe('the drill room', () => {
       screen.getByRole('button', { name: 'Perfect fifth. The answer' }),
     ).toBeInTheDocument()
     expect(screen.getByTestId('merc-replay')).toBeEnabled()
+  })
+
+  it('offers Compare on a miss only, named in the drill own words', () => {
+    const h = mount()
+    expect(screen.queryByTestId('merc-compare')).toBeNull()
+    h.setBeat('reveal')
+    h.setTone('right')
+    expect(screen.queryByTestId('merc-compare')).toBeNull()
+    expect(screen.queryByTestId('merc-compare-hint')).toBeNull()
+
+    h.setTone('wrong')
+    const compare = screen.getByRole('button', {
+      name: 'Compare: the fifth, then your fourth',
+    })
+    expect(compare).toHaveTextContent(/^Compare$/u)
+    expect(compare).toBeEnabled()
+    // In the pinned row, beside Hear it again.
+    expect(screen.getByTestId('merc-pinned')).toContainElement(compare)
+    expect(screen.getByTestId('merc-compare-hint')).toHaveTextContent(
+      'Two semitones wider. Compare plays the two side by side.',
+    )
+    expect(screen.getByTestId('ear-stage-status')).toHaveTextContent(
+      'That was a perfect fifth. Listen again. Two semitones wider. Compare plays the two side by side.',
+    )
+
+    fireEvent.click(compare)
+    expect(h.room.compare?.play).toHaveBeenCalledTimes(1)
+  })
+
+  it('holds Compare back while a sound plays', () => {
+    const h = mount()
+    h.setBeat('reveal')
+    h.setTone('wrong')
+    h.setSounding(true)
+    expect(screen.getByTestId('merc-compare')).toBeDisabled()
+    h.setSounding(false)
+    expect(screen.getByTestId('merc-compare')).toBeEnabled()
   })
 
   it('pauses when the sound is taken away, and Resume plays it again', () => {
