@@ -7,6 +7,10 @@
       <!-- Merc passes, static (trap 4); timing written by python3 tools/merc-tags.py s09-names -->
       <video id="s09-names-m09-orange" data-merc="m09-orange" class="clip" muted playsinline src="assets/merc/m09-orange-merc.webm" data-start="20.602" data-duration="20.800" data-media-start="0.008"></video>
       <video id="s09-names-m09-orange-refl" data-merc="m09-orange" data-merc-refl class="clip" muted playsinline src="assets/merc/m09-orange-merc.webm" data-start="20.602" data-duration="20.800" data-media-start="0.008"></video>
+      <video id="s09-names-m09-orange-seg1" data-merc="m09-orange-in" data-merc-seg="m09-orange:1" class="clip" muted playsinline src="assets/merc/m09-orange-in-tall-merc.webm" data-start="19.718" data-duration="0.700" data-media-start="0.008"></video>
+      <video id="s09-names-m09-orange-seg1-refl" data-merc="m09-orange-in" data-merc-seg="m09-orange:1" data-merc-refl class="clip" muted playsinline src="assets/merc/m09-orange-in-tall-merc.webm" data-start="19.718" data-duration="0.700" data-media-start="0.008"></video>
+      <video id="s09-names-m09-orange-seg2" data-merc="m09-orange-in" data-merc-seg="m09-orange:2" class="clip" muted playsinline src="assets/merc/m09-orange-in-merc.webm" data-start="20.368" data-duration="4.917" data-media-start="0.658"></video>
+      <video id="s09-names-m09-orange-seg2-refl" data-merc="m09-orange-in" data-merc-seg="m09-orange:2" data-merc-refl class="clip" muted playsinline src="assets/merc/m09-orange-in-merc.webm" data-start="20.368" data-duration="4.917" data-media-start="0.658"></video>
       <script>
         ;(function () {
           /* S9, Name the stairs (STORYBOARD rows 9a to 9f; HANDOFFS § C to D, § Inside D, § S9 to S10).
@@ -191,8 +195,7 @@
           for (let n = 1; n <= 7; n++) addL(n, A.oneTo + 0.1 * (n - 1))   // "one to seven"
           addL(1, A.dohD, 0.3, 0.5); addL(2, A.rayE, 0.3, 0.5); addL(3, A.meeF, 0.3, 0.5)   // over the key being named
           addL(1, A.homeMoves, 0.4, 0.8); addL(8, A.homeMoves, 0.4, 0.8)                     // "Home moves"
-          addL(1, A.use, 0.4, 0.8); addL(8, A.use, 0.4, 0.8)                                 // "We'll use (movable doh)"
-          addL(1, A.dohO); addL(3, A.sharp, 0.3, 0.5)                                         // "doh moved up"; "F sharp"
+          addL(1, A.use, 0.4, 0.8); addL(8, A.use, 0.4, 0.8); addL(1, A.dohO); addL(3, A.sharp, 0.3, 0.5)   // "We'll use"; "doh moved"; "F sharp"
           const lit = (n, t) => LIGHTS[n].reduce((k, [t0, up, dn]) => Math.max(k, light(t, t0, up, dn)), 0)
           // the names: letters (hidden while the staircase is dim), numbers on "number" (staggered), and each
           // number to its name as it is sung
@@ -202,10 +205,9 @@
             return L.swap(t, A.number, n - 1, LETTERS[n - 1], NUMS[n - 1]).map((it) => ({ ...it, a: it.a * vis }))
           }
           const HOUSEP = [0, 1].map((k) => [A.movDo + 0.08 * k, A.withIt + 0.08 * k])   // the houses' pulses ("movable doh", "with it")
-          const KEYP = { 2: [A.dohD], 4: [A.rayE], 6: [A.meeF] }
+          const KEYP = { 2: [A.dohD], 4: [A.rayE], 6: [A.meeF, A.sharp] }                // F♯ again on "sharp"
           CMAJ.forEach((m, i) => { (KEYP[m] = KEYP[m] || []).push(A.keys + 0.08 * i) })   // "not the keys"
           KEYP[0].push(A.isC); KEYP[12].push(A.isC + 0.08)                                // "it is": do on C
-          KEYP[6].push(A.sharp)                                                           // "F sharp"
 
           L.clock(tl, D, (t) => {
             cam.apply(t)

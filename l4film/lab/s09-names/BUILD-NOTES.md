@@ -17,15 +17,15 @@ Running notes so a container restart or a usage-limit pause can resume. Builder 
 - m09-orange film 249.85 to 298.633 (drop, hop out at 298.0); m10-blue 282.5 to 298.633 (drop, hop
   at 298.0); m11-blue / m11-orange 321.4 to 341.15 (drop, hop at 340.51).
 
-## Status (09:20)
+## Status (final, round 3)
 
-| Scene | Built | Stills | Clip | measure.py | Text sweep | clock-lint | merc-tags |
-| --- | --- | --- | --- | --- | --- | --- | --- |
-| s09-names | all rows, round 2 (Tavi-span events) | lab/s09-names/frame-* | round 2 rendering | round 1: 0-20.6 s 0.5 s | 0 contrast; 1 EDGE ('6' leaving right edge in the push, 245.74-245.99) | clean | current (m09 missing) |
-| s10-ti | all rows, round 2 (+ quiet-stretch events) | lab/s10-ti/frame-* | round 1 measured; round 2 queued | round 1: 8.4 s inside, longest 1.5 | clean | clean | current (m09, m10 missing) |
-| s11-why | all rows, round 2 (+ quiet-stretch events) | lab/s11-why/frame-* | round 1 measured; round 2 queued | round 1: 9.6 s inside, longest 1.2 | clean | clean | current (m09, m10, m11 x2 missing) |
+| Scene | Clip | measure.py (lab, no Merc rendered) | Text sweep | clock-lint | merc-tags |
+| --- | --- | --- | --- | --- | --- |
+| s09-names | lab/s09-names/clip.mp4 | 4.9 s inside (3.6 / 30 s), longest 0.8 at 21.0 (Tavi's drop window); 0-20.6 s (no Merc in the film): 0.5 s, longest 0.3 | 0 contrast; 1 EDGE ('6' leaving the right edge in the push, 245.74-245.99) | clean | current (m09 missing) |
+| s10-ti | lab/s10-ti/clip.mp4 | 4.0 s inside (4.7 / 30 s), longest 0.4, final 0.1 | clean | clean | current (m09, m10 missing) |
+| s11-why | lab/s11-why/clip.mp4 | 5.7 s inside (3.8 / 30 s), longest 0.4; the no-Merc stretch 2.6-25.46 s (298.6-321.4): 2.8 s in 22.9 s (3.7 / 30 s) | clean | clean | current (m09, m10, m11 x2 missing) |
 
-- Root check (09:05): 5 errors, all missing_local_asset (m08 for s07/s08; m09, m10, m11 x2 mine);
+- Root check (09:05, again after round 3): 5 errors, all missing_local_asset (m08 for s07/s08; m09, m10, m11 x2 mine);
   warnings are the usual nested_media_start_basis / duplicate_media (the reflections) / file size.
 - Handoffs: s10 last vs s11 first: max diff 22, 0 px over 24 (lab/s11-why/tools/hdiff.py). s11 last
   frame: stair 1 x 361-474, both houses lit, D major, F#4 and C#5 lit, no labels (HANDOFFS D to E).
@@ -65,3 +65,9 @@ Running notes so a container restart or a usage-limit pause can resume. Builder 
   bead pulses on "hear". s11: do's chip lights as "doh." ends and again as the house lands; the shelf
   house falls 70 px from "seems" to land on "learned"; the top stair lights on "it?#2" (o11) and on
   "is." (b38, "wherever home is"); stair 7 lights on "it's" (b37).
+- Round 3: s09 the stair-1 light moves to "We'll use", stair 1 lights on o9's "doh", stair 3 lights and F#4
+  scales on "sharp". s10 the lit top house pulses 0.12 as C5 lets go (at('land-c','end')), settled by the
+  cut. s11 the tiers' scale pulses ("same", "just", do on "home") also light the chips 40 % chrome (the
+  board: larger events, not more); the probe hovers on a 4 px circle (a sine bob stood still at its ends).
+- s09 folded to 300 lines (the root check's composition_file_too_large fires above 300); s11 (408) still
+  warns, as in round 1.

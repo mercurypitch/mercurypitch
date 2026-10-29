@@ -183,11 +183,11 @@ equally.
 | 195.60-196.60 | pull         | F-keys-D   | F0         | power2.inOut                    | "D major" lands as it lands                                                                                                                                                         |
 | 231.60-245.80 | push         | F0         | F-names-1  | sine.in, then a Hermite to rest | one curve through F-near (s 1.2 at 244.40; below); "scale degrees" lands at 241.44, at s 1.129, the top stair's right edge at x 1294; it and "tonic = home" leave at 244.2 to 244.4 |
 | 245.85-248.85 | truck        | F-names-1  | F-names-2  | power1.inOut                    | the named stair at x 480, 719, 886, 874, 899, 974, 1108 and 1311 as each syllable starts                                                                                            |
-| 248.95-249.85 | pull         | F-names-2  | F0         | power2.inOut                    | Tavi drops in once it lands                                                                                                                                                         |
+| 248.70-249.50 | pull         | F-names-2  | F0         | power2.inOut                    | Tavi drops in over it                                                                                                                                                               |
 | 270.70-272.20 | push         | F0         | CU-C       | power2.inOut                    | the strip fades out over it                                                                                                                                                         |
 | 280.70-282.40 | pull         | CU-C       | F0         | power2.inOut                    | "1 semitone" and the arrow left at 280.5 to 280.7; the strip returns over it                                                                                                        |
 | 298.70-299.90 | push         | F0         | F-chart    | power2.inOut                    | both Mercs gone at 298.6                                                                                                                                                            |
-| 320.50-321.40 | pull         | F-chart    | F0         | power2.inOut                    | both Mercs drop back at 321.4 to 321.8                                                                                                                                              |
+| 320.50-321.40 | pull         | F-chart    | F0         | power2.inOut                    | Tavi drops back over it                                                                                                                                                    |
 | 411.00-412.60 | push         | F0         | F-recap-1  | power2.inOut                    | the strip and its hairlines sink 60 px and fade                                                                                                                                     |
 | 419.70-420.70 | pull         | F-recap-1  | F0         | power2.inOut                    | the strip returns without its hairlines (they draw on "F sharp", 427.22)                                                                                                            |
 | 430.70-431.90 | push         | F0         | F-recap-3  | power2.inOut                    | the strip and its hairlines sink and fade                                                                                                                                           |
@@ -304,7 +304,7 @@ riser labels 2 2 1 2 2 2 1, hairlines drawn; the strip with C major's keys at fu
   steps Outfit 600 48 px from x 340 (to x 596); "D major" serif italic 120 px at x 140, baseline 300.
 - **S7's bead.** The chrome bead rests on the dashed treads in white-d (stair 1 at (448, 526) in
   F-white) and on the real treads in major-d (F0).
-- **S7 to S8 (199.36).** Tavi on screen (m08 spans the cut, from 198.9). The staircase on D at full,
+- **S7 to S8 (199.36).** Tavi on screen (m08 spans the cut, from 198.27). The staircase on D at full,
   letters D E F♯ G A B C♯ D, riser labels T T S T T T S, F♯4 and C♯5 lit (their names gone at
   195.7), "D major" up (it leaves in S8a, 199.4 to 199.6).
 - **S8's tally.** Outfit 600 64 px at x 140, baseline 250: "C 0 · D 2" from 207.1, "G 1" from 208.9,
@@ -328,7 +328,7 @@ keys at full and the rest at 45 %, no key names.
 - **S9 to S10 (270.63).** Tavi on screen (m09 spans the cut). The staircase on C (back from D at
   269.4), names do to do, both houses lit, no riser labels, no key names.
 - **S10.** "1 semitone" Outfit 600 48 px, frame-fixed at x 1200, baseline 250 in CU-C (x 1200 to
-  1426, 31 px right of the top stair). Merc drops in at feet (110, 840), size 300, 282.5 to 282.9;
+  1426, 31 px right of the top stair). Merc drops in at feet (110, 840), size 300, 282.20 to 283.05;
   his bead leaves his mouth at about (130, 715) **(provisional)** and hops onto stair 1, resting at
   (298, 642), at 283.57: a hop's arc (above), peaking at y 602, 72 px over the straight line at
   mid-flight and 40 px clear of stair 1's corner (242, 664); it rests on ti at 286.27, lands on the
@@ -366,7 +366,7 @@ risers measured (no labels), hairlines; the strip with D major's keys, F♯4 and
 
 - **S12a.** The staircase dims to 25 % (341.4 to 341.6); the strip slides down 240 px and out
   (341.6 to 342.2, power2.in); the card in from 341.61, out 343.11 to 343.49; the staircase back to
-  full 343.49 to 343.69. The Mercs drop in at 343.2 to 343.6.
+  full 343.49 to 343.69. Merc drops in at 342.50 to 343.35 and Tavi at 342.62 to 343.47, under the card.
 - **The guide (S12).** Lanes x 600 to 1440; lane k (0 D3 to 12 D4) spans `y = 760 - 46 (k + 1)` to
   `760 - 46 k`, centre `737 - 46 k`. Names (Outfit 600 32 px, ink-2) right-aligned at x 556 on lanes
   0, 2, 4, 5, 7, 9, 11, 12 (do re mi fa so la ti do), baselines 748, 656, 564, 518, 426, 334,
@@ -460,10 +460,13 @@ ended 405.2; m12 spans the cut). Every mark of S13 gone (404.24).
   in its own colours (STORYBOARD § Codes). The run starts on G4, which the app plays when the singer
   picks it on Scale Runner's Starting Note dial (FACTS 89).
 - **The practise card (S14g).** Centred at x 960, every line within x 310 to 1610: baselines 580
-  (Outfit 600 48 px, 1055 px), 650, 710, 770 and 830 (Outfit 500 40 px: about 650, 930, 560 and
-  440 px). The tab icons are the app's SVGs from `src/components/AppNavTabs.tsx` (Settings and
-  Exercises), drawn 36 px in ink before each tab's name; the × is the intro's close glyph
-  (`src/features/onboarding/FirstLight.tsx`), 32 px in ink.
+  (Outfit 600 48 px, 1055 px), 650, 710, 770 and 830 (Outfit 500 40 px: about 650, 1150, 560 and
+  440 px), and 890 (Outfit 500 32 px, ink-2, about 860 px: "On a phone, Settings and Exercises are
+  under [More icon] More"). The tab icons are the app's SVGs from `src/components/AppNavTabs.tsx`
+  (Settings and Exercises), drawn 36 px in ink before each tab's name, and More's three dots from
+  `src/components/mobile/BottomTabBar.tsx` (`EllipsisIcon`), 28 px in ink-2; the × is the intro's
+  close glyph (`src/features/onboarding/FirstLight.tsx`), 32 px in ink. The line at 710 is the
+  widest: the builder measures it and keeps it inside x 310 to 1610.
 - **S14 to S15 (470.24).** The Mercs in the corners at 300; the ladder and the card gone (469.9).
 - **S15.** '"support"' serif italic 160 px centred, baseline 420; the long note at y 520 from x 560
   to 1360; "what keeps it steady?" serif italic 96 px centred, baseline 680.

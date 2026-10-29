@@ -48,9 +48,8 @@ keys off cues and words follows untouched; a scene with a typed second goes wron
   nearest anchor and prints the call (`board-clock.py 84.94` prints `word('b9', 14)`).
   `python3 tools/board-clock.py --scene <id>` lists every cue and word of a scene with its times.
 - **Choose the anchor by the moment's role, not by the nearest word.** board-clock names the
-  nearest cue or word, which is not always the one the moment belongs to. Tavi's drop at 62.0 falls
-  inside Merc's b6 (`word('b6', 10, 'start', 0.56)`), but it is there for her line, so it keys off
-  that: `at('o3', 'start', -0.55)`. An entrance keys off the line or sound it serves, an exit off
+  nearest cue or word, which is not always the one the moment belongs to. Tavi's drop at 61.45 falls
+  inside Merc's b6, but it is there for her line, so it keys off that: `at('o3', 'start', -1.1)`. An entrance keys off the line or sound it serves, an exit off
   the end of the line it closes, a reaction off the word it answers.
 - Gaps and sound lengths are the same on both clocks, so an offset inside a sound or a pause, or
   after a cue's end, is exact. Inside a line, key to the word.
@@ -237,7 +236,7 @@ the same list. Every maker builds once and draws per frame. World positions are 
 | `marks.js` | type and marks | `L.kicker(hud, text)`, `L.chapterCard(hud, { num, title, baseline: 480, tIn, tOut })` (`tOut` is when its 0.38 s exit starts), `L.ringTimer`, `L.pill(layer, text, ...)`, `L.spell` (labels with ♯ and ♭ paths), `L.bracket`, `L.arrow`, `L.guessRing`, `L.GUESS`, `L.INKDARK`, `L.stageOf` |
 | `tiles.js` (Lesson 2) | S4's tile row | `L.tiles(svg, opts)`, `.draw((tile) => ({ dx, dy, scale, lit, labelA, ... }), rowT)`; `L.tileBrackets(svg, row)` with `.add(ma, mb, y, labelY)` |
 | **`frames.js`** (new) | the camera as framings (HANDOFFS § Framings, § Camera moves) | `L.FRAMES` (every named framing), `L.frameRig(room, { from })`: `.to(at, dur, 'CU-A' \| { s, ox, oy }, ease)` (push, pull, truck and crane: the layers part), `.pan(at, dur, { x, y }, ease)` (every layer alike), `.curve(at, dur, fn)`, `.hermite(at, dur, to)` (from the moves so far, at their rates, to rest: S9's second leg), `.apply(t)`, `.map`, `.inv`, `.scale`, `.state`, `.matrix` |
-| **`hosts.js`** (wave 1) | the hosts and counted events, promoted from groups A and B | `L.mercGate(room.top, { sid, pass, tag, x, feetY, size, hop, hopDx, mirror, floor, fade })` (a pass placed for trap 23: hidden until its first whole frame, faded in while eased down its last 60 px, carried through a hop out; returns the body box for `rows.keep.boxes`), `L.light(t, times, up, down)` (the counted 40 % light), `L.swap` (§ Type's label switch), `L.filmDust(layer)` (draw it from film time), `L.MERC_WHOLE` (from `assets/merc/whole.js`) |
+| **`hosts.js`** (wave 1) | the hosts and counted events, promoted from groups A and B | `L.mercGate(room.top, { sid, pass, tag, x, feetY, size, hop, hopDx, mirror, floor, fade })` (a pass placed for trap 23: a drop pass with an intro, DECISIONS 81, plays its segments first, the tall render of the whole fall from its first frame with a 6-frame fade and then any head, and shows the pass from the intro's last frame; a pass without one is hidden until its first whole frame and faded in while eased down its last 60 px; either is carried through a hop out; returns the body box for `rows.keep.boxes`), `L.light(t, times, up, down)` (the counted 40 % light), `L.swap` (§ Type's label switch), `L.filmDust(layer)` (draw it from film time), `L.MERC_WHOLE` (from `assets/merc/whole.js`), `L.MERC_INTRO` (from `assets/merc/intro.js`) |
 | **`stairs.js`** (new) | the staircase world (HANDOFFS § World) | `L.ST` (geometry: `.H`, `.colX(n, w)`, `.tread(n, s0)`, `.foot(s0)`, `.rest(n, w, s0)`, `.houseBox`, `.keyX(m)`, `.scale(s0)`, `.START`); `L.stairs(svg, { x0, x1, k0, k1 })`: `.draw({ w, s0, a, rows, stair(n), riser(n), houses })`; `L.strip(svg)`: `.draw({ a, dy, key(m), hair })`; `L.house(parent)`; `L.bead4` (`.hopAt`, `.squash`, `.dropAt`, `.riseAt`, `.runAt`, `.place`); `L.mercBox`; `L.MEASURE` |
 
 `spiral.js`, `keyboard.js`, `ruler.js`, `monitor.js`, `lanes.js` and `stepbars.js` are Lessons 1 and
@@ -351,9 +350,13 @@ and `assets/scenes.js` is the truth after any re-time. Rows are the storyboard's
 storyboard's § Build checks and the critic's items, as storyboard time and then the anchor
 `tools/board-clock.py` gives for it: write the anchor, never the time. Merc placement: feet point and
 shown size; a hero-view Merc's feet line is 0.80 of his square, a front-view one's 0.81 (`L.merc`).
-Every drop takes 0.4 s with the scene easing the Merc's frame down 60 px into place (power2.out); every
-hop out takes 0.6 s (STORYBOARD § Merc performances). `L.mercGate` does all of it, the trap 23 gate
-included: give it the scene id, the pass, its tag's id, the corner and the hop's start.
+Every drop takes 0.85 s, the renderer's whole fall and splat, starting 1.1 s before its host's first
+word, and is shown whole from high above its corner by its intro (DECISIONS 81); every hop out takes
+0.6 s (STORYBOARD § Merc performances). `L.mercGate` does all of it, the trap 23 gate and the intro
+included: give it the scene id, the pass, its tag's id, the corner and the hop's start, and run
+`tools/merc-tags.py <scene-id>` so the intro's segment tags are there. Keep every mark 20 px clear of
+a dropping Merc's column, his body's width from the top of the intro's box (at size 300 in the hero
+view, y 323) down to his feet, for the drop's 0.85 s.
 
 ### s01-cold-open: Cold open, seven stairs, one short of home (0.00 to 34.18)
 
@@ -447,8 +450,8 @@ included: give it the scene id, the pass, its tag's id, the corner and the hop's
   than the row turning upright, the row tips about its left end over 1.5 s instead); "1 octave = 12
   semitones" and "in 7 steps" / "in 7 steps?" (frame-fixed, top left).
 - Merc: m04-orange (feet (1800, 840), 300, hero, turned left) drops in at `at('o3', 'start',
-  -0.55)`, talks o3, listens to b7, and hops out right at `at('b7', 'start', 0.29)`.
-- Checks: S4a to S4c (47.0 to 62.0) with no Merc: the tiles, the brackets, the stand-up; S4c reads
+  -1.1)` (61.45, during b6), talks o3, listens to b7, and hops out right at `at('b7', 'start', 0.29)`.
+- Checks: S4a to S4c (47.0 to 61.45) with no Merc: the tiles, the brackets, the stand-up; S4c reads
   as the row turning upright into the rows (a 3 s clip of 58.4 to 61.4 first); the labels keep the
   top left after the stand-up.
 
@@ -471,7 +474,8 @@ included: give it the scene id, the pass, its tag's id, the corner and the hop's
   runs at their onsets); `L.echoRings`; `L.pulse`; `L.kicker('1 · Measure the steps')`; "a major
   scale" (serif italic 110 px at x 1250, baseline 300); the legend (frame-fixed, top left, after the
   pull).
-- Merc: m06a-orange drops in at `at('o5', 'start', -0.5)`.
+- Merc: m06a-orange drops in at `at('o5', 'start', -1.1)` (109.78, as b12 ends); its pass spans
+  the S5 to S6 cut.
 - Checks: the tightest spans, 74.8 to 75.24 (`word('b8', 13, 'start', 0.46)` to `at('scale-c')`),
   82.2 to 82.5 (`word('b9', 7)` to `word('b9', 7, 'start', 0.29)`), 92.4 to 93.3 (`word('b10', 3,
   'start', 0.28)` to `at('b10', 'end')`) and 106.76 to 107.15 (`word('b12', 3, 'start', 0.70)` to
@@ -498,7 +502,7 @@ included: give it the scene id, the pass, its tag's id, the corner and the hop's
   octave bracket (chrome, vertical, x 1232, y 664 to 352) and "= 1 octave" (serif italic 96 px at x
   1262, baseline 543); `L.pulse`; `L.echoRings`.
 - Merc: m06a-orange talks o5 and hops out right at `at('o5', 'end', 0.09)`; m06b-orange drops in at
-  `at('o6', 'start', -0.53)`, talks o6, listens to b16, and hops out right at `at('b16', 'end',
+  `at('o6', 'start', -1.1)` (134.82, as b15 ends), talks o6, listens to b16, and hops out right at `at('b16', 'end',
   -0.55)`.
 - Checks: S6a to S6c (114.8 to 130.5) with no Merc: the push, the truck, the pull; S6b's truck reads
   as a truck (the layers part), not a pan; **critic 03 item 2**: the bead's hops in S6b keep clear of
@@ -509,7 +513,7 @@ included: give it the scene id, the pass, its tag's id, the corner and the hop's
 
 - Rows: 7a to 7h. Group C.
 - In: B to C (fixed, above). Under the card the riser labels return to T and S, unseen.
-- Out (to s08, same group): HANDOFFS § S7 to S8: Tavi on screen (m08 from 198.9); the staircase on D
+- Out (to s08, same group): HANDOFFS § S7 to S8: Tavi on screen (m08 from 198.27); the staircase on D
   at full, letters D E F♯ G A B C♯ D, riser labels T T S T T T S, F♯4 and C♯5 lit (their names gone
   at 195.7), "D major" up (it leaves in S8a, 199.4 to 199.6).
 - Kit: `L.chapterCard(hud, { num: 2, title: 'Start anywhere', baseline: 480, tIn: at('act2', 'start',
@@ -526,9 +530,10 @@ included: give it the scene id, the pass, its tag's id, the corner and the hop's
   ones); the step rows (frame-fixed, "WHITE KEYS" and "MAJOR" JetBrains Mono 28 px from x 140, the
   steps Outfit 600 48 px from x 340); `L.arrow` (the two small ink arrows); "Predict." and "D major"
   (serif italic 120 px at x 140, baseline 300); `L.pulse`; `L.echoRings`.
-- Merc: m07-orange drops in at `at('o7', 'start', -0.1)`, talks o7, and hops out right at `at('o7',
-  'end', 0.07)`; m08-orange drops in at `at('o8', 'start', -0.46)`, once the pull has landed.
-- Checks: S7c to S7h (153.3 to 198.9) with no Merc: the predict, the push, the close-up, the crane;
+- Merc: m07-orange drops in at `at('o7', 'start', -1.1)` (147.35, under the act 2 card, down as it
+  leaves), talks o7, and hops out right at `at('o7', 'end', 0.07)`; m08-orange drops in at
+  `at('o8', 'start', -1.1)` (198.27), once the pull has landed.
+- Checks: S7c to S7h (153.3 to 198.27) with no Merc: the predict, the push, the close-up, the crane;
   the tightest spans 163.3 to 163.83 (`word('b18', 2, 'start', 0.37)` to `word('b18', 5)`) and 188.75
   to 188.93 (`word('b21', 14, 'start', 0.02)` to `word('b21', 15)`); the ring timer stays 28 px or
   more from every dashed stair while it is up; at CU-D the dashed treads lie 52 px below the real ones
@@ -575,12 +580,14 @@ included: give it the scene id, the pass, its tag's id, the corner and the hop's
   px); "movable do"; "(sol)" (riding the world, right-aligned at x 828, baseline 474); the stair-1
   outline rising two rows; the slides to D and back (263.2 to 264.0, 268.6 to 269.4); `L.strip` (D4,
   E4 and F♯4 named in turn).
-- Merc: m09-orange drops in at `at('o9', 'start', -0.21)`, once the pull has landed.
-- Checks: S9a to S9d (229.2 to 249.9) with no Merc: the slow push and the truck; the push never stops
+- Merc: m09-orange drops in at `at('o9', 'start', -1.1)` (248.97) as the pull out runs, and lands
+  with it: the pull runs 248.70 to 249.50, so it lands as her fall ends (249.52).
+- Checks: S9a to S9d (229.2 to 248.97) with no Merc: the slow push and the truck; the push never stops
   between F-near and F-names-1 (s, ox and oy each move one way only: plot them from the lab or print
   them from `cam.state(t)` at 0.05 s steps); "scale degrees" lands at 241.44 with the top stair's
-  right edge at x 1294; the truck in S9d is a truck (the layers part); "solfège" lands at 249.85 once
-  the pull has landed; "do = C?" at 252.58 once "solfège" has gone; "movable do" under the moved
+  right edge at x 1294; the truck in S9d is a truck (the layers part); "solfège" lands at 249.50 once
+  the pull has landed; nothing comes within 20 px of Tavi's column (x 1700 to 1900, from y 323 down)
+  in any frame of the pull; "do = C?" at 252.58 once "solfège" has gone; "movable do" under the moved
   "fixed do"; on D the top house stops 74 px short of the pills.
 
 ### s10-ti: Ti, one short of home (270.63 to 295.94)
@@ -601,7 +608,8 @@ included: give it the scene id, the pass, its tag's id, the corner and the hop's
   hop onto the top stair at 294.14 and the rise into the house, 294.2 to 294.5); `L.echoRings`.
 - Merc: m09-orange (feet (1800, 840), 300, hero) on screen throughout, clear of the stairs in CU-C by
   its numbers; m10-blue (feet (110, 840), 300, hero, turned right) drops in at `at('stop-c-home',
-  'start', -1.07)`; his bead leaves his mouth at about (130, 715) **(provisional: the pass's mouth
+  'start', -1.37)` (282.20, as the pull lands; CU-C's lower stairs fill his corner, and the pull
+  clears it of stair 1 by then); his bead leaves his mouth at about (130, 715) **(provisional: the pass's mouth
   point)** 0.3 s before stop-c-home. The renderer's first hop always arcs right, so m10-blue (and
   m11-blue in s11) is rendered facing left and the scene mirrors its box, reflection and all
   (`L.merc(...).box.style.transform = 'scaleX(-1)'`, as Lesson 2's s10): on screen he faces right,
@@ -630,8 +638,10 @@ included: give it the scene id, the pass, its tag's id, the corner and the hop's
   arrow; the slide to D (335.6 to 336.4) with "leading note" and the arrow riding; "ti = C♯";
   `L.strip`.
 - Merc: m09-orange and m10-blue in the corners for o10, both hopping out at `at('o10', 'end')` (Merc
-  starting b35 as he goes); m11-blue and m11-orange drop back into the corners at `at('o11', 'start',
-  -0.18)`, once the pull has landed, and hop out at `at('b38', 'end', -0.19)`. m10-blue and m11-blue
+  starting b35 as he goes); m11-orange drops back into her corner at `at('o11', 'start', -1.1)` (320.48), as
+  the pull out runs, and m11-blue into his at `at('b36', 'end', 0.05)` (321.03), as his own line
+  ends; nothing comes within 20 px of either column (Tavi x 1700 to 1900, Merc x 10 to 210, from y
+  323 down) in any frame of the pull; both hop out at `at('b38', 'end', -0.19)`. m10-blue and m11-blue
   are mirrored in the scene, as in s10.
 - Checks: the dim chips' letters on the fourth shelf at 4.5:1 or better; the chips 8 px apart at the
   closest and never touching, in every frame of the shelves' close and spread; no numbers anywhere on
@@ -654,7 +664,9 @@ included: give it the scene id, the pass, its tag's id, the corner and the hop's
   737) and rides it, stepping up a lane on each note at the onsets above, lifting and dimming in the
   rest); `L.arrow`; the chip "one octave up" (`L.pill`, mono 30 px); `L.echoRings`.
 - Merc: m12-blue (feet (240, 840)) and m12-orange (feet (1700, 840)), rendered at 520 and shown at
-  360, front, turned toward each other; both drop in at `at('b39', 'start', -0.39)`.
+  360, front, turned toward each other; Merc drops in at `at('b39', 'start', -1.1)` (342.50) and
+  Tavi 0.12 s after him, both under the act 4 card and down as it leaves; the card's type keeps
+  20 px from both columns (Merc x 144 to 336, Tavi x 1604 to 1796, from y 223 down).
 - Checks: the tip and S13d's reverse tip read as the same staircase changing shape, with no frame
   where it is absent (a 2 s clip of 343.6 to 345.6 first); the beads drop onto the path 22 px or more
   from its names; the bead on do's segment keeps 21 px under the house; the lane names fade in only
@@ -767,6 +779,8 @@ lab still (still paths beside it). Until then, the HANDOFFS value is the one to 
 | B to C, 146.10 | s07's frame 0 against s06's last clip frame (with its passes): max 36 at edges, mean 0.39 | builder C | `lab/s07-predict/scratch/diff-s06-s07.png` |
 | Inside C, S7 to S8 (199.36) | s07 at 53.253 against s08 at 0.007: max 21, two pixels over 16 (dust) | builder C | `lab/s07-predict/scratch/diff-s07-s08.png` |
 | C to D, 229.24 | s08's last frame against s09's first: max 10, no pixel over 16 | builder C | `lab/s08-anywhere/scratch/diff-s08-s09.png` |
-| Inside D, S10 | Merc's mouth point (130, 715) | | |
+| Inside D, S10 to S11 (295.94) | s10's last frame against s11's first: max 22, no pixel over 24 | builder D | `lab/s11-why/tools/hdiff.py` |
+| D to E, 341.24 | s11's last frame: stair 1 at x 361 to 474, both houses lit, on D, F♯4 and C♯5 lit, no labels | builder D | `lab/s09-names/BUILD-NOTES.md` |
+| Inside D, S10 | Merc's mouth point (130, 715): to measure on the m10-blue pass now that he drops 282.20 to 283.05 (DECISIONS 81), at the bead's launch (283.27), 0.28 s after the splat | | |
 | Inside E, S12a | the tip's curves | | |
 | Inside E, S13d | the reverse tip's curves, the Mercs' move | | |

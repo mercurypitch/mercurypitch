@@ -17,4 +17,5 @@ assets/lib/stepbars.js
 assets/lib/frames.js
 assets/lib/stairs.js
 assets/merc/whole.js
+assets/merc/intro.js
 assets/lib/hosts.js

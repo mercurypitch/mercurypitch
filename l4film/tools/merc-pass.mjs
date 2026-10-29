@@ -4,6 +4,11 @@
 //   node tools/merc-pass.mjs merc/shots/<id>.json --stills=1.2,3.4
 //        (lab: PNGs of those shot times over the room's obsidian, in
 //        lab/merc/<id>-<t>.png; no video is written)
+//   node tools/merc-pass.mjs merc/shots/<id>.json --tall [--until=<frame>]
+//        a drop seen whole: the same camera on a canvas TALL_PAD drawn px
+//        taller above and below, its field of view widened to match, so its
+//        middle square is the pass's own picture, pixel for pixel
+//        (<id>-tall-merc.webm, frames 0 to <frame> - 1)
 //
 // The app's renderer draws Merc with premultiplied alpha, and his light (the
 // bloom, the floor pool, the sparkles) is additive: it carries colour where
@@ -47,6 +52,15 @@ const args = process.argv.slice(2)
 const draft = args.includes('--draft')
 const stillsArg = args.find((a) => a.startsWith('--stills='))
 const stills = stillsArg ? stillsArg.slice('--stills='.length).split(',').map(Number).sort((a, b) => a - b) : null
+const tall = args.includes('--tall')
+const untilArg = args.find((a) => a.startsWith('--until='))
+const until = untilArg ? Number(untilArg.slice('--until='.length)) : Infinity
+// A tall render's padding in drawn px above and below the pass's square: a multiple of 8, so its
+// quarter- and eighth-size glow buffers keep their grid. At a 225 px square it holds a drop's whole
+// fall from the renderer's DROP_Y0 (1.75 units) above the view's top edge, with the fall's trails:
+// the body's top climbs to 159 px above the square in the fall's first frames and the trails reach
+// 26 px above that, so 0.71 (160 px) cut them for 14 frames; 0.91 (208 px) leaves about 20 to spare.
+const TALL_PAD_SHARE = 0.91
 const files = args.filter((a) => !a.startsWith('--'))
 if (!files.length) {
   console.error('usage: node tools/merc-pass.mjs <shot.json>... [--draft]')
@@ -80,31 +94,46 @@ for (const file of files) {
   }
   const quality = draft ? 'low' : (shot.quality ?? 'medium')
   const fps = shot.fps ?? 30
-  const n = Math.round(shot.duration * fps)
+  const n = Math.min(Math.round(shot.duration * fps), until)
   const outDir = join(ROOT, 'assets/merc')
   mkdirSync(outDir, { recursive: true })
-  const base = join(outDir, shot.id + (draft ? '-draft' : ''))
+  const base = join(outDir, shot.id + (tall ? '-tall' : '') + (draft ? '-draft' : ''))
+  // The drawn square (quality's scale times size) and, for a tall render, the canvas whose middle
+  // square it is: the same camera, its field of view widened so a drawn pixel covers the same ray.
+  const scaleQ = { low: 0.5, medium: 0.75, high: 1, ultra: 1 }[quality] ?? 0.75
+  const drawn = Math.round(shot.size * scaleQ)
+  const padY = tall ? 8 * Math.round((TALL_PAD_SHARE * drawn) / 8) : 0
+  const drawnH = drawn + 2 * padY
+  // The container's CSS size: the renderer draws round(css * scale) px (pixelRatio 1). A pass that
+  // is not tall keeps the fixed-size square it always had.
+  let cssH = Math.ceil(drawnH / scaleQ)
+  while (Math.round(cssH * scaleQ) > drawnH) cssH--
+  while (Math.round(cssH * scaleQ) < drawnH) cssH++
 
-  const page = await browser.newPage({ viewport: { width: shot.size + 20, height: shot.size + 20 } })
+  const page = await browser.newPage({ viewport: { width: shot.size + 20, height: (tall ? cssH : shot.size) + 20 } })
   page.on('pageerror', (e) => console.error('pageerror', e.message))
   await page.setContent('<!doctype html><html><body style="margin:0;background:transparent"><div id="a"></div></body></html>')
   await page.addScriptTag({ path: join(ROOT, `assets/merc-lib/merc-${shot.variant}.js`) })
   const [w, h] = await page.evaluate(
-    ({ shot, quality }) => {
+    ({ shot, quality, cssH, widen }) => {
       const el = document.getElementById('a')
       el.style.width = shot.size + 'px'
-      el.style.height = shot.size + 'px'
+      el.style.height = (widen === 1 ? shot.size : cssH) + 'px'
       const L = window.MercLib
+      // the field of view is vertical: a canvas `widen` times taller sees `widen` times the tangent
+      const view0 = L.VIEWS[shot.view ?? 'hero']
+      const fov = (2 * Math.atan(widen * Math.tan((view0.fov * Math.PI) / 360)) * 180) / Math.PI
       const cues = [...(shot.cues ?? [{ t: 0, state: 'idle' }])].sort((a, b) => a.t - b.t)
       const m = L.mount(el, {
         capture: true,
         continuous: true,
         transparent: true,
-        size: shot.size,
+        // a tall canvas follows its container (W x H); every other pass is the fixed square
+        size: widen === 1 ? shot.size : 0,
         pixelRatio: 1,
         quality,
         state: cues[0].state,
-        view: shot.view ?? 'hero',
+        view: widen === 1 ? (shot.view ?? 'hero') : { ...view0, fov },
         sparkles: shot.sparkles === 'none' ? 'around' : (shot.sparkles ?? 'around'),
         rings: shot.rings ?? true,
         // Lesson 2: `ride`'s mouth ('open' is the "ooh"); a shot without it keeps the renderer's default
@@ -213,8 +242,11 @@ for (const file of files) {
       }
       return [W, H]
     },
-    { shot, quality },
+    { shot, quality, cssH, widen: drawnH / drawn },
   )
+  if (w !== drawn || h !== drawnH) throw new Error(`${shot.id}: drew ${w}x${h}, expected ${drawn}x${drawnH}`)
+  // the pass's own square inside the canvas (all of it, for a pass that is not tall)
+  const pad = padY
 
   if (stills) {
     // Lab stills: straight-alpha frames composited over #0d1117, flipped upright.
@@ -265,7 +297,7 @@ for (const file of files) {
   // top of the picture is the end of the buffer.
   const crescent = (buf) => {
     let bad = 0
-    for (let y = Math.floor(h * 0.6); y < h; y++) {
+    for (let y = pad + Math.floor(drawn * 0.6); y < pad + drawn; y++) {
       for (let x = 0, o = (y * w) * 4; x < w; x++, o += 4) {
         if (buf[o + 3] > 200 && buf[o] < 25 && buf[o + 1] < 25 && buf[o + 2] < 25) bad++
       }

@@ -1,0 +1,151 @@
+{
+ "m04-orange": [
+  {
+   "drawn": 225,
+   "frames": 44,
+   "from": 3687,
+   "pad": 208,
+   "shot": "m04-orange",
+   "tall": true,
+   "until": 3727
+  }
+ ],
+ "m06a-orange": [
+  {
+   "drawn": 225,
+   "frames": 44,
+   "from": 6587,
+   "pad": 208,
+   "shot": "m06a-orange",
+   "tall": true,
+   "until": 6627
+  }
+ ],
+ "m06b-orange": [
+  {
+   "drawn": 225,
+   "frames": 44,
+   "from": 8089,
+   "pad": 208,
+   "shot": "m06b-orange",
+   "tall": true,
+   "until": 8129
+  }
+ ],
+ "m07-orange": [
+  {
+   "drawn": 225,
+   "frames": 44,
+   "from": 8841,
+   "pad": 208,
+   "shot": "m07-orange",
+   "tall": true,
+   "until": 8881
+  }
+ ],
+ "m08-orange": [
+  {
+   "drawn": 225,
+   "frames": 44,
+   "from": 11896,
+   "pad": 208,
+   "shot": "m08-orange-in",
+   "tall": true,
+   "until": 11936
+  },
+  {
+   "frames": 329,
+   "from": 11936,
+   "shot": "m08-orange-in",
+   "tall": false,
+   "until": 12219
+  }
+ ],
+ "m09-orange": [
+  {
+   "drawn": 225,
+   "frames": 44,
+   "from": 14938,
+   "pad": 208,
+   "shot": "m09-orange-in",
+   "tall": true,
+   "until": 14978
+  },
+  {
+   "frames": 338,
+   "from": 14978,
+   "shot": "m09-orange-in",
+   "tall": false,
+   "until": 15270
+  }
+ ],
+ "m10-blue": [
+  {
+   "drawn": 225,
+   "frames": 44,
+   "from": 16932,
+   "pad": 208,
+   "shot": "m10-blue",
+   "tall": true,
+   "until": 16972
+  }
+ ],
+ "m11-blue": [
+  {
+   "drawn": 225,
+   "frames": 44,
+   "from": 19262,
+   "pad": 208,
+   "shot": "m11-blue",
+   "tall": true,
+   "until": 19302
+  }
+ ],
+ "m11-orange": [
+  {
+   "drawn": 225,
+   "frames": 44,
+   "from": 19229,
+   "pad": 208,
+   "shot": "m11-orange",
+   "tall": true,
+   "until": 19269
+  }
+ ],
+ "m12-blue": [
+  {
+   "drawn": 390,
+   "frames": 44,
+   "from": 20550,
+   "pad": 352,
+   "shot": "m12-blue-in",
+   "tall": true,
+   "until": 20590
+  },
+  {
+   "frames": 903,
+   "from": 20590,
+   "shot": "m12-blue-in",
+   "tall": false,
+   "until": 21447
+  }
+ ],
+ "m12-orange": [
+  {
+   "drawn": 390,
+   "frames": 44,
+   "from": 20557,
+   "pad": 352,
+   "shot": "m12-orange-in",
+   "tall": true,
+   "until": 20597
+  },
+  {
+   "frames": 209,
+   "from": 20597,
+   "shot": "m12-orange-in",
+   "tall": false,
+   "until": 20760
+  }
+ ]
+}

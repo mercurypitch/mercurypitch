@@ -158,8 +158,9 @@ file cites is the `b803c7d43` copy's.
 85. "In MercuryPitch's Scale Runner, sing a major scale back, one note at a time. Set your voice
     range in Settings first, and sing in the octave it plays." On screen, in the order a visitor
     meets them: "Practise it free: mercurypitch.com/pitch-training", "First visit? Skip the
-    intro: × › Yes, skip", "Set your range first: Settings › Singing Voice Range", "then
-    Exercises › Scale Runner", "sing in the octave it plays" | 34, 35, 36, 37, 38, 39, 40, 41, 88 |
+    intro: × › Yes, skip", "Set your range first: Settings › Practice › Singing Voice Range",
+    "then Exercises › Scale Runner", "sing in the octave it plays", and in small type "On a
+    phone, Settings and Exercises are under More" (88) | 34, 35, 36, 37, 38, 39, 40, 41, 88 |
     code, as cited there. "In the octave it plays" because Scale Runner scores a note sung an
     octave away as 1,200 cents off (40), while the sing-along offers either octave (83); "set your
     voice range first" because it plays in the saved range, and a visitor who never set one gets
@@ -194,8 +195,16 @@ file cites is the `b803c7d43` copy's.
     "Settings" and "Exercises", `src/features/tabs/constants.ts:365`, `:377`), so a viewer who
     sets the range goes back to Exercises for Scale Runner; where the tab bar runs short of room
     it shows icons only, the name then in the tooltip (`AppNavTabs.tsx:436-450`, `:523-532`), so
-    the card draws each tab's own icon beside its name. Whether a phone shows the names was not
-    checked in a browser | code
+    the card draws each tab's own icon beside its name. Walked in a browser on 29 October, on a
+    local build of the 0.9.25 release's code (DECISIONS 80), as a first visit: at 390 × 844 the
+    bottom bar holds Home, Path, Progress, Singing and More, and Settings and Exercises are rows
+    of More's sheet, each with its tab's icon (`src/components/mobile/BottomTabBar.tsx:191-205`,
+    the More button with its three-dot icon); at 1440 × 900 the bar names every tab, Exercises
+    and Settings among them. Settings opens on its General tab, and Singing Voice Range is on its
+    Practice tab (`src/components/SettingsPanel.tsx:325-350`, the tabs `account` "General" and
+    `singing` "Practice"; `:593-617`), so the card names Practice between them. After the skip
+    the visitor is already on Singing Exercises (`#/exercises`), where Scale Runner's card opens
+    its setup screen | code; the browser walk
 89. The ladder's run starts on G4, a start note the app plays: Scale Runner's setup screen has a
     "Starting Note" dial offering every note of the saved range, and a note picked there is used
     as it is ("a note picked on the dial afterwards is the singer's own choice"); G4 is in every

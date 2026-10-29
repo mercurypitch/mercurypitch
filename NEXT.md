@@ -1201,3 +1201,32 @@ Note: the lanes' memory gate read a stale cgroup path after the 21:00 restart (f
   then wave 3 builders E (s12-s13) and F (s14-s16), whose critics need the m12 pair (~13:00+).
 - push-notes now also carries tools/merc-pass.mjs, assets/merc/whole.js, l4merc/whole-watch.sh and the
   mouth-lead sheet.
+
+## 2026-10-29 ~10:55Z: entrances, every drop seen whole (task 195; DECISIONS 81)
+- Root cause (critic B-01 item 3): the 0.4 s drop cut the renderer's 0.55 s fall mid-air (no splat),
+  and the gate hid the frames above the square. Now DROP 0.85, LAND 1.1 before the host's first word
+  (splat over 0.32-0.34 s before it); tall intros (merc-pass.mjs --tall, pad share 0.91 = 208 px at
+  225, 352 at 390; 0.71 clipped the trails for 14 frames); heads (-in) under the four legacy passes.
+- Measured: tall middle square = the pass (p99.9 <= 12 levels; m06a hand-over frame 40: p99.9 8);
+  m09 head vs legacy at the splice (15270): codec noise only. m06a-orange's new pass shows the fall
+  and a real splat ($S/l4entr/cmp/a-tall-strip.png).
+- m10-blue: CU-C's mi/fa blocks fill his corner (lab/s10-ti/frame-03-at-5.6s.png), so he drops
+  282.20-283.05 as the pull lands, over b33's last words ("and stop"): the one own-voice exception,
+  logged in DECISIONS 81 with the fix for the final voices (stop-c-home gap 0.35 -> ~1.45 s).
+- Docs: STORYBOARD rows + performance table + camera table (9d pull now 248.70-249.50, lands with
+  Tavi); HANDOFFS; BUILD-GUIDE (sheets, kit row, drop rule, columns, confirmations for D);
+  tools/CHANGES.md (merc-shots, merc-pass, merc-tags). gen-root re-run (root loads intro.js only).
+- merc-tags: stale-check bug fixed (compares the file to be written). s07-s11 written, --check clean;
+  E re-tagged s12 itself (current). s04-s06 deliberately NOT tagged: their own gates would leave the
+  segment tags unplaced (full-frame clips). A and B move them onto L.mercGate in their fix rounds.
+- E told twice (m12 entrance under the act 4 card; columns from y 223). F unaffected (no intros in
+  s13-s16).
+- Queues: Q1 (m06b, m04, m07, m08-orange-in), Q2 (m10-blue running from 10:33 with the new shot, then
+  m11-orange, m11-blue, m12-orange-in, m12-blue-in), Q3b tall intros (all 11, from 10:38; logs
+  l4entr/q/logs/q3b.log). Old 160-pad m06a tall set aside in l4entr/tall160/. Legacy m12-blue,
+  m12-orange, m09-orange, m01-blue still rendering in their old workers.
+- NEXT: as each tall/head lands, check it (fall inside the column, hand-over at 40, head splices for
+  m08 and m12 when their legacy passes land); measure m10-blue's mouth at 283.27 for D's bead; delete
+  zz-m07old's shot and webm; fix rounds: B (s05/s06 onto L.mercGate + critic items 1, 2, 4-10), A (s04
+  onto L.mercGate), C (s07 card vs Tavi's column; s08 holds), D (9d pull timing, Tavi's column in the
+  pull, m10 mouth point, 11c pull vs both columns); then component critics.

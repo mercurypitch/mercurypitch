@@ -3,18 +3,109 @@
   <head><meta charset="UTF-8" /></head>
   <body>
     <div id="s15-next" data-composition-id="s15-next" data-start="0" data-duration="8.286" data-width="1920" data-height="1080">
-      <div class="scene">
-        <div class="ground" data-layout-allow-overflow></div>
-        <div class="staves" data-layout-allow-overflow></div>
-        <p class="kicker" style="left:120px;top:120px">PLACEHOLDER · s15-next</p>
-        <p class="serif" style="position:absolute;left:120px;top:440px;font-size:120px">Next time</p>
-      </div>
+      <div class="scene" id="s15-next-scene"></div>
+      <!-- Merc passes, static (trap 4); timing written by python3 tools/merc-tags.py s15-next -->
+      <video id="s15-next-m12-blue" data-merc="m12-blue" class="clip" muted playsinline src="assets/merc/m12-blue-merc.webm" data-start="0.000" data-duration="8.282" data-media-start="127.058"></video>
+      <video id="s15-next-m12-blue-refl" data-merc="m12-blue" data-merc-refl class="clip" muted playsinline src="assets/merc/m12-blue-merc.webm" data-start="0.000" data-duration="8.282" data-media-start="127.058"></video>
+      <video id="s15-next-m12-orange" data-merc="m12-orange" class="clip" muted playsinline src="assets/merc/m12-orange-merc.webm" data-start="0.000" data-duration="8.282" data-media-start="127.058"></video>
+      <video id="s15-next-m12-orange-refl" data-merc="m12-orange" data-merc-refl class="clip" muted playsinline src="assets/merc/m12-orange-merc.webm" data-start="0.000" data-duration="8.282" data-media-start="127.058"></video>
       <script>
         ;(function () {
+          /* S15, Next time (STORYBOARD row 15; HANDOFFS § S14 to S15, § S15, § S15 to S16): Lesson 5's hook.
+             In: the Mercs in the corners at 300, the ladder and the card gone. Out (to s16): the Mercs in the
+             corners at 300; S15's type gone (478.5). Merc talks b54 and b55, Tavi o14. A chrome bead drops in on
+             the next mark and hovers (from film time) where the long note will start; on "a long note" it draws
+             a level line from x 560 to 1360 at y 520; the line wavers once on "pushing". Every time is a cue, a
+             word or a duration. */
+          const SID = 's15-next'
+          const D = L.dur(SID)
+          const at = (cue, edge, off) => L.at(SID, cue, edge, off)
+          const word = (line, which, edge, off) => L.word(SID, line, which, edge, off)
+          const root = document.getElementById(SID + '-scene')
+          const room = L.room(root, { floor: false })
+          const S0 = L.scene(SID).start
           const tl = gsap.timeline({ paused: true })
-          tl.fromTo('#s15-next .serif', { x: 0 }, { x: 60, duration: L.dur('s15-next'), ease: 'none' }, 0)
+          const P = L.prog, lerp = L.lerp, C = L.C
+          const f1 = (v) => (Math.round(v * 100) / 100).toString()
+
+          /* ---------------------------------------------------------------- anchors (by role) */
+          const A = {
+            drop: at('next', 'start', 0.2),               // the bead lands where the long note starts (dropping 0.2 s)
+            kick: word('b54', 'Next'), kickOut: at('o14', 'end'),
+            support: word('b55', 'support'),              // '"support"' lands
+            long: word('b55', 'long'),                    // the bead draws the level line (1.3 s)
+            pushing: word('o14', 'pushing'),              // the line wavers once (0.8 s)
+            what: word('o14', 'what'),                    // "what keeps it steady?" lands
+            steady: word('o14', 'steady?'),               // the bead scales 1.2
+            out: at('o14', 'end', 0.07),                  // the type, the line and the bead leave up fast (0.3 s)
+          }
+          A.end = A.long + 1.3
+          const X0 = 560, X1 = 1360, Y = 520
+
+          /* ---------------------------------------------------------------- the room and the Mercs */
+          const dust = L.filmDust(room.near)
+          const merc = L.mercGate(room.top, { sid: SID, pass: 'm12-blue', tag: SID + '-m12-blue', x: 110, size: 300, feet: 0.81 })
+          const tavi = L.mercGate(room.top, { sid: SID, pass: 'm12-orange', tag: SID + '-m12-orange', x: 1800, size: 300, feet: 0.81 })
+
+          /* ---------------------------------------------------------------- the long note (mid layer; F0 throughout) */
+          const mid = L.stage(room.mid)
+          const gNote = L.svg('g', {}, mid)
+          const line = L.glowPath(gNote, { color: C.chrome, width: 4, glow: 16 })
+          const echo = L.echoRings(gNote, { dur: 0.9, grow: 3.5, width: 3, max: 2 })
+          const bead = L.bead(gNote, { r: 22, color: C.chrome })
+
+          /* ---------------------------------------------------------------- type (hud, frame-fixed) */
+          const hud = L.stageOf(room.hud)
+          const kick = L.kicker(room.hud, 'Next time')
+          const SERIF = (px) => `font-family: 'Instrument Serif'; font-style: italic; font-size: ${px}px; letter-spacing: -0.01em; white-space: pre;`
+          const supportT = L.svg('text', { x: 960, y: 420, 'text-anchor': 'middle', fill: C.ink, opacity: 0, style: SERIF(160), text: '“support”' }, hud)
+          const steadyT = L.svg('text', { x: 960, y: 680, 'text-anchor': 'middle', fill: C.ink, opacity: 0, style: SERIF(96), text: 'what keeps it steady?' }, hud)
+
+          L.clock(tl, D, (t) => {
+            const T = S0 + t
+            dust(T)
+            merc(t); tavi(t)
+            const out = P(t, A.out, 0.3, 'power3.in')
+            const lift = -40 * out
+
+            // the bead: drops in, hovers on a 4 px circle (from film time) until the long note, which it draws level;
+            // it holds the line's end, sways with the waver, and scales 1.2 on "steady?"
+            const hover = P(t, A.drop + 0.25, 0.4) * (1 - P(t, A.long - 0.2, 0.2))
+            const th = (2 * Math.PI * T) / 1.6
+            const ux = P(t, A.long, 1.3, 'power1.inOut')
+            const bx = lerp(X0, X1, ux)
+            const wav = L.env(t, A.pushing, 0.12, 0.1, 0.6)
+            const wave = (x) => wav * 16 * Math.sin(2 * Math.PI * ((x - X0) / 260 - 1.4 * (t - A.pushing))) * Math.sin(Math.PI * (x - X0) / (X1 - X0))
+            let b = null
+            if (t >= A.drop - 0.2 && t < A.drop) b = L.bead4.dropAt(t, A.drop, [X0, Y])
+            else if (t >= A.drop) {
+              const [sx, sy] = L.bead4.squash(t, A.drop)
+              b = { x: bx + 4 * hover * Math.cos(th), y: Y + 4 * hover * Math.sin(th) + wave(bx - 1) + lift, sx, sy, a: 1 - out, scale: L.pulse(t, A.steady, 'bead') }
+            }
+            L.bead4.place(bead, b)
+            // the level line, from the start to the bead
+            if (ux > 0.001) {
+              let d = ''
+              for (let i = 0; i <= 80; i++) {
+                const x = lerp(X0, bx, i / 80)
+                d += (i ? 'L' : 'M') + f1(x) + ' ' + f1(Y + wave(x) + lift)
+              }
+              line.set(d)
+              line.g.setAttribute('opacity', (0.85 * (1 - out)).toFixed(3))
+            } else line.g.setAttribute('opacity', '0')
+            echo.draw(t, [{ t: A.end, x: X1, y: Y, r: 22 }])
+
+            // type: the kicker, '"support"', then "what keeps it steady?"; all leave up fast at o14's end
+            kick.draw(t, A.kick, A.kickOut)
+            const land = (el, t0, rise = 16) => {
+              el.setAttribute('opacity', (P(t, t0, 0.2) * (1 - out)).toFixed(3))
+              el.setAttribute('transform', `translate(0 ${f1(rise * (1 - P(t, t0, 0.5, 'power3.out')) + lift)})`)
+            }
+            land(supportT, A.support)
+            land(steadyT, A.what)
+          })
           window.__timelines = window.__timelines || {}
-          window.__timelines['s15-next'] = tl
+          window.__timelines[SID] = tl
         })()
       </script>
     </div>

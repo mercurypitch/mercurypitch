@@ -25,9 +25,16 @@ Times in the shot files are relative to the pass start (shot time).
 
 Lesson 4 (STORYBOARD § Merc performances and its notes for this tool): every
 entrance and exit is a named state with a start and a fixed length (`enter`: a
-`drop` of 0.4 s; `exit`: a `hop` of 0.6 s; the slides out of S1 and every move
+`drop` of DROP; `exit`: a `hop` of 0.6 s; the slides out of S1 and every move
 in S13 and S16 are the scene moving his box), and each pass ends 0.05 s after
-its exit ends; m12, which has no exit, runs past the film's end. The sung runs
+its exit ends; m12, which has no exit, runs past the film's end. A drop starts
+LAND before its host's first word, so the fall and the splat are over before
+he speaks (DECISIONS 81), and every drop pass has a tall intro (merc-pass.mjs
+--tall) that shows the fall whole: `intros` below, read by tools/merc-tags.py
+and the scenes' L.mercGate. The passes rendered before that decision (m08, m09
+and m12) keep their 0.4 s drop (`drop`) under a head pass (`<id>-in`) with the
+new entrance, which hands over to them once the two performances agree
+(`splice`). The sung runs
 are `sound` events with no singer in cues.json, so each pass names the ones its
 Merc sings (`sings`: cue -> state): state `sing` (`ride` for S12's sing-along)
 from 0.15 s before to 0.15 s after, full sound arcs over each run of notes, and
@@ -89,7 +96,15 @@ def word(cid, which, off=0.0):
     raise KeyError(f'{cid} does not say {which!r}')
 
 
-DROP, HOP = 0.4, 0.6        # an entrance's and an exit's length (STORYBOARD: Notes for merc-shots.py)
+# An entrance's and an exit's length. The renderer's drop falls for 0.55 s (DROP_T in
+# src/lib/merc/sim-choreo.ts) and holds its splat for 0.24 s (SPLAT.hold); a state that starts
+# sooner cuts the fall in mid-air (the first passes' 0.4 s did: critic B-01 item 3).
+DROP, HOP = 0.85, 0.6
+DROP_OLD = 0.4      # the drop of the passes rendered before DECISIONS 81 (m08, m09, m12), kept under their heads
+LAND = 1.1          # a drop starts this long before its host's first word: fall and splat over 0.26 s before it
+TALL_FRAMES = 44    # a drop's tall intro (merc-pass.mjs --tall --until): its first 44 frames, the fall and the splat
+SWITCH = 40         # the pass frame where a pass takes over from its tall intro: inside the splat's hold (0.61 to
+                    # 0.79 s), where he is still, so the hand-over cannot show even if a tag runs a frame early
 
 
 def run(midis, step, last):
@@ -137,40 +152,48 @@ PASSES = [
     dict(id='m01-orange', who='orange', span=(0.0, ended(cue('o2', 'end'))), size=420, bias=FACE['orange'],
          sings={'stop-d': 'sing', 'land-d': 'sing'}),
     # S4d: drops in at the bottom right before o3, talks o3, hops out right on b7's start.
-    dict(id='m04-orange', who='orange', span=(cue('o3', 'start', -0.55), ended(cue('b7', 'start', 0.29))), size=300, view='hero',
-         bias=TURN['left'], enter=('drop', cue('o3', 'start', -0.55)), exit=('hop', cue('b7', 'start', 0.29))),
+    dict(id='m04-orange', who='orange', span=(cue('o3', 'start', -LAND), ended(cue('b7', 'start', 0.29))), size=300, view='hero',
+         bias=TURN['left'], enter=('drop', cue('o3', 'start', -LAND)), exit=('hop', cue('b7', 'start', 0.29))),
     # S5g to S6a: drops in before o5 (the pass spans the S5 to S6 cut), talks o5, hops out right after it.
-    dict(id='m06a-orange', who='orange', span=(cue('o5', 'start', -0.5), ended(cue('o5', 'end', 0.09))), size=300, view='hero',
-         bias=TURN['left'], enter=('drop', cue('o5', 'start', -0.5)), exit=('hop', cue('o5', 'end', 0.09))),
+    dict(id='m06a-orange', who='orange', span=(cue('o5', 'start', -LAND), ended(cue('o5', 'end', 0.09))), size=300, view='hero',
+         bias=TURN['left'], enter=('drop', cue('o5', 'start', -LAND)), exit=('hop', cue('o5', 'end', 0.09))),
     # S6d: drops in before o6, talks o6, idles through b16, hops out right at its end.
-    dict(id='m06b-orange', who='orange', span=(cue('o6', 'start', -0.53), ended(cue('b16', 'end', -0.55))), size=300, view='hero',
-         bias=TURN['left'], enter=('drop', cue('o6', 'start', -0.53)), exit=('hop', cue('b16', 'end', -0.55))),
+    dict(id='m06b-orange', who='orange', span=(cue('o6', 'start', -LAND), ended(cue('b16', 'end', -0.55))), size=300, view='hero',
+         bias=TURN['left'], enter=('drop', cue('o6', 'start', -LAND)), exit=('hop', cue('b16', 'end', -0.55))),
     # S7b: drops in before o7, talks o7, hops out right after it.
-    dict(id='m07-orange', who='orange', span=(cue('o7', 'start', -0.1), ended(cue('o7', 'end', 0.07))), size=300, view='hero',
-         bias=TURN['left'], enter=('drop', cue('o7', 'start', -0.1)), exit=('hop', cue('o7', 'end', 0.07))),
+    dict(id='m07-orange', who='orange', span=(cue('o7', 'start', -LAND), ended(cue('o7', 'end', 0.07))), size=300, view='hero',
+         bias=TURN['left'], enter=('drop', cue('o7', 'start', -LAND)), exit=('hop', cue('o7', 'end', 0.07))),
     # S7h to S8d: drops in once the pull has landed, talks o8, idles through b23 to b25 and the slides,
     # hops out right on b25's "keys" (the pass spans the S7 to S8 cut).
     dict(id='m08-orange', who='orange', span=(cue('o8', 'start', -0.46), ended(word('b25', 19))), size=300, view='hero',
-         bias=TURN['left'], enter=('drop', cue('o8', 'start', -0.46)), exit=('hop', word('b25', 19))),
+         bias=TURN['left'], enter=('drop', cue('o8', 'start', -0.46)), exit=('hop', word('b25', 19)), drop=DROP_OLD),
+    # its head: the drop LAND before o8, then the same performance; m08 takes over in the idle after o8
+    dict(id='m08-orange-in', who='orange', span=(cue('o8', 'start', -LAND), cue('o8', 'end', 0.7)), size=300, view='hero',
+         bias=TURN['left'], enter=('drop', cue('o8', 'start', -LAND)), splice=('m08-orange', cue('o8', 'end', 0.6))),
     # S9e to S11a: drops in once the pull has landed, talks o9, idles through b29 to b34 and both of
     # Merc's runs, talks o10, hops out right as it ends (the pass spans the S9 to S10 and S10 to S11 cuts).
     dict(id='m09-orange', who='orange', span=(cue('o9', 'start', -0.21), ended(cue('o10', 'end'))), size=300, view='hero',
-         bias=TURN['left'], enter=('drop', cue('o9', 'start', -0.21)), exit=('hop', cue('o10', 'end'))),
-    # S10b to S11a: drops in at the bottom left before stop-c-home, sings it (the scene's bead leaves his
-    # mouth 0.3 s before it: `leads`), idles through `wait`, talks
-    # b34, sings land-c, idles through o10, and hops out left as it ends, starting b35 as he goes. The
-    # renderer's first hop always arcs right, so this pass faces left and the scenes mirror it
-    # (scaleX(-1), as Lesson 2's s10): on screen he faces right, toward the stairs, and hops out left.
-    dict(id='m10-blue', who='blue', span=(cue('stop-c-home', 'start', -1.07), ended(cue('o10', 'end'))), size=300, view='hero',
-         bias=TURN['left'], enter=('drop', cue('stop-c-home', 'start', -1.07)), exit=('hop', cue('o10', 'end')),
+         bias=TURN['left'], enter=('drop', cue('o9', 'start', -0.21)), exit=('hop', cue('o10', 'end')), drop=DROP_OLD),
+    dict(id='m09-orange-in', who='orange', span=(cue('o9', 'start', -LAND), cue('o9', 'end', 0.7)), size=300, view='hero',
+         bias=TURN['left'], enter=('drop', cue('o9', 'start', -LAND)), splice=('m09-orange', cue('o9', 'end', 0.6))),
+    # S10b to S11a: drops in at the bottom left as the pull out of CU-C lands (CU-C's lower stairs fill
+    # his corner, so he cannot stand there before it; by 282.2 the pull has cleared it), down 0.28 s
+    # before his bead leaves his mouth. That fall runs over b33's last words, the one drop that does
+    # (DECISIONS 81). Sings stop-c-home (the scene's bead leaves his mouth 0.3 s before it: `leads`),
+    # idles through `wait`, talks b34, sings land-c, idles through o10, and hops out left as it ends,
+    # starting b35 as he goes. The renderer's first hop always arcs right, so this pass faces left and
+    # the scenes mirror it (scaleX(-1), as Lesson 2's s10): on screen he faces right, toward the
+    # stairs, and hops out left.
+    dict(id='m10-blue', who='blue', span=(cue('stop-c-home', 'start', -1.37), ended(cue('o10', 'end'))), size=300, view='hero',
+         bias=TURN['left'], enter=('drop', cue('stop-c-home', 'start', -1.37)), exit=('hop', cue('o10', 'end')),
          sings={'stop-c-home': 'sing', 'land-c': 'sing'}, leads={'stop-c-home': 0.3}),
-    # S11d to S11f: both drop back into their corners before o11, turned toward each other; Tavi talks
-    # o11, Merc b37 and b38; both hop out before the act 4 card. Merc's pass faces left and is mirrored,
-    # as m10's, so his hop arcs out left.
-    dict(id='m11-blue', who='blue', span=(cue('o11', 'start', -0.18), ended(cue('b38', 'end', -0.19))), size=300, view='hero',
-         bias=TURN['left'], enter=('drop', cue('o11', 'start', -0.18)), exit=('hop', cue('b38', 'end', -0.19))),
-    dict(id='m11-orange', who='orange', span=(cue('o11', 'start', -0.18), ended(cue('b38', 'end', -0.19))), size=300, view='hero',
-         bias=TURN['left'], enter=('drop', cue('o11', 'start', -0.18)), exit=('hop', cue('b38', 'end', -0.19))),
+    # S11d to S11f: both drop back into their corners, turned toward each other: Tavi LAND before o11,
+    # Merc as b36 ends (not while his own voice runs); Tavi talks o11, Merc b37 and b38; both hop out
+    # before the act 4 card. Merc's pass faces left and is mirrored, as m10's, so his hop arcs out left.
+    dict(id='m11-blue', who='blue', span=(cue('b36', 'end', 0.05), ended(cue('b38', 'end', -0.19))), size=300, view='hero',
+         bias=TURN['left'], enter=('drop', cue('b36', 'end', 0.05)), exit=('hop', cue('b38', 'end', -0.19))),
+    dict(id='m11-orange', who='orange', span=(cue('o11', 'start', -LAND), ended(cue('b38', 'end', -0.19))), size=300, view='hero',
+         bias=TURN['left'], enter=('drop', cue('o11', 'start', -LAND)), exit=('hop', cue('b38', 'end', -0.19))),
     # S12 to S16: one unbroken pass each, from the drop before b39 to past the film's end (trap 15),
     # rendered at 520; the scenes move and scale their boxes (360 in S12, 300 and 240 in S13, 300 in S14
     # and S15, 520 in S16). Merc rides sing-a and sings the count-in; Tavi rides sing-b; both idle
@@ -178,10 +201,21 @@ PASSES = [
     # storyboard times (end + 0.87, 0.6 s, inside the 0.85 s state).
     dict(id='m12-blue', who='blue', span=(cue('b39', 'start', -0.39), round(END + 0.1, 3)), size=520, bias=FACE['blue'],
          enter=('drop', cue('b39', 'start', -0.39)), sings={'sing-a': 'ride', 'count-in': 'sing'}, quiet={'your-turn'},
-         glideMouth='open', during=[('celebrate', cue('end', 'start', 0.87), cue('end', 'start', 1.72))], sparkles='none'),
+         glideMouth='open', during=[('celebrate', cue('end', 'start', 0.87), cue('end', 'start', 1.72))], sparkles='none',
+         drop=DROP_OLD),
     dict(id='m12-orange', who='orange', span=(cue('b39', 'start', -0.39), round(END + 0.1, 3)), size=520, bias=FACE['orange'],
          enter=('drop', cue('b39', 'start', -0.39)), sings={'sing-b': 'ride'}, quiet={'your-turn'},
-         glideMouth='open', during=[('celebrate', cue('end', 'start', 0.87), cue('end', 'start', 1.72))], sparkles='none'),
+         glideMouth='open', during=[('celebrate', cue('end', 'start', 0.87), cue('end', 'start', 1.72))], sparkles='none',
+         drop=DROP_OLD),
+    # their heads: both drop during the act 4 card, Tavi 0.12 s after Merc. Merc talks b39 and rides
+    # sing-a before m12-blue takes over, in the first idle with no arcs (a splice under the arcs or the
+    # lip flutter would jump their phases); Tavi idles through b39, so m12-orange takes over in it.
+    dict(id='m12-blue-in', who='blue', span=(cue('b39', 'start', -LAND), cue('sing-a', 'end', 0.75)), size=520, bias=FACE['blue'],
+         enter=('drop', cue('b39', 'start', -LAND)), sings={'sing-a': 'ride'}, glideMouth='open', sparkles='none',
+         splice=('m12-blue', cue('sing-a', 'end', 0.65))),
+    dict(id='m12-orange-in', who='orange', span=(cue('b39', 'start', -LAND + 0.12), cue('b39', 'start', 2.5)), size=520, bias=FACE['orange'],
+         enter=('drop', cue('b39', 'start', -LAND + 0.12)), glideMouth='open', sparkles='none',
+         splice=('m12-orange', cue('b39', 'start', 2.4))),
 ]
 
 
@@ -269,7 +303,7 @@ def main():
         rel = lambda at: 0.0 if at - t0 < 0.02 else at - t0   # an entrance on the pass's first frame starts it
         if 'enter' in p:
             st, at = p['enter']
-            iv.append((rel(at), rel(at) + DROP, 5, st))
+            iv.append((rel(at), rel(at) + p.get('drop', DROP), 5, st))
         if 'exit' in p:
             st, at = p['exit']
             iv.append((rel(at), rel(at) + HOP + 0.06, 5, st))
@@ -367,6 +401,38 @@ def main():
                 open(path, 'w').write(text)
         print(f"{p['id']:16s} {t0:7.2f}-{t1:7.2f} {round(dur * FPS):5d} fr {len(merged):2d} cues {len(voice):2d} voice  " + ' '.join(f"{t:.1f}:{s}" for t, s in merged) + ('' if same else '  (changed)'))
     print(f"{len(changed)} shot{'s' if len(changed) != 1 else ''} {'would change' if check else 'written'}{': ' + ', '.join(changed) if changed else ''}")
+    # Each drop pass's intro, the videos that play before the pass itself, in film frames: its tall intro
+    # from its first frame to SWITCH, then (a pass under a head) the head from SWITCH to the splice.
+    # tools/merc-tags.py writes their tags, and L.mercGate (assets/lib/hosts.js) shows each in turn.
+    frame = lambda t: round(t * FPS)
+
+    def tall(p):
+        # a tall render's drawn square and its padding above and below, as merc-pass.mjs draws them
+        # (quality's scale times size; TALL_PAD_SHARE 0.91 of it, to a multiple of 8): L.mercGate needs both
+        drawn = round(p['size'] * {'low': 0.5, 'medium': 0.75, 'high': 1.0, 'ultra': 1.0}[p.get('quality', 'medium')])
+        return {'drawn': drawn, 'pad': 8 * round(0.91 * drawn / 8)}
+    intros = {}
+    for p in PASSES:
+        if p.get('enter', (None,))[0] != 'drop' or p.get('drop', DROP) != DROP:
+            continue
+        P0 = frame(p['span'][0])
+        if 'splice' in p:
+            main_id, at = p['splice']
+            N = round((round(p['span'][1] * FPS) - P0))
+            intros[main_id] = [
+                {'shot': p['id'], 'tall': True, 'from': P0, 'until': P0 + SWITCH, 'frames': TALL_FRAMES, **tall(p)},
+                {'shot': p['id'], 'tall': False, 'from': P0 + SWITCH, 'until': frame(at), 'frames': N},
+            ]
+        else:
+            intros[p['id']] = [{'shot': p['id'], 'tall': True, 'from': P0, 'until': P0 + SWITCH, 'frames': TALL_FRAMES, **tall(p)}]
+    text = json.dumps(intros, indent=1, sort_keys=True)
+    js = ('// Generated by tools/merc-shots.py. Do not edit.\n// Each drop pass: the videos that play before it, '
+          'in film frames (see merc-shots.py and L.mercGate).\nwindow.MERC_INTRO = ' + text + ';\n')
+    for path, body in ((os.path.join(ROOT, 'merc/intros.json'), text + '\n'), (os.path.join(ROOT, 'assets/merc/intro.js'), js)):
+        same = os.path.exists(path) and open(path).read() == body
+        if not same and not check:
+            open(path, 'w').write(body)
+        print(f"{os.path.relpath(path, ROOT)}: {len(intros)} intros{'' if same else (' would change' if check else ' written')}")
     if check and changed:
         sys.exit(1)
 

@@ -1,0 +1,53 @@
+You are a scene builder for Lesson 4's film, "The major scale and home": a motion video made entirely in code with HyperFrames 0.8.97 (HTML scenes, one seekable GSAP timeline per scene). You build group E, two scenes: s12-sing and s13-your-turn.
+
+Project folder: /home/user/mercurypitch/output/motion/lesson-04 (gitignored output, never committed).
+SKILL_DIR: /home/user/mercurypitch/.claude/skills/motion-designer. The pipeline is in SKILL.md there; your part is § 5 Build.
+
+Read these first, in this order:
+1. BUILD-GUIDE.md, all of it. It binds you, and its § Scene sheets holds your two sheets (s12 and s13). Read § The kit (above all the hosts.js row: L.mercGate places every Merc), § Motion (the measured 40 % light), § Your files and § Handoff confirmations.
+2. STORYBOARD.md:
+   - your rows, under § Shots › "Act 4: sing it, your turn [E]";
+   - the sections the guide names: § The world, § Camera plan, § Persistent actors, § Codes and § Type;
+   - § Build checks, which is binding;
+   - § Merc performances, for m12-blue and m12-orange, and § Sounds and captions for the sung runs.
+3. HANDOFFS.md: § Shared formulas, § World, § Framings, § Camera moves, § Carried from Lessons 1 and 2, § D to E (your first frame), § Inside E (the guide, the tips, the care block), and § E to F (your last frame).
+4. FACTS.md and BRIEF.md.
+5. /home/user/mercurypitch/docs/plans/find-your-pitch/PRODUCTION-PIPELINE.md § 3, and the § 4 traps the guide names.
+6. The kit in assets/lib: scripts.txt for the load order, and the header of every module you call (above all frames.js, stairs.js and hosts.js). lab/kit-src/stairs.html is a complete working example.
+7. Working examples, all read-only:
+   - this film's finished scenes s01 to s11 in compositions/, with their notes in lab/s01-cold-open/BUILD-NOTES.md, lab/s05-steps/BUILD-NOTES.md, lab/s07-predict/BUILD-NOTES.md and lab/s09-names/BUILD-NOTES.md;
+   - Lesson 2's scenes in /home/user/mercurypitch/output/motion/lesson-02/compositions/, above all s14-sing.html, its sing-along with the riding bead and the guide.
+
+What you own:
+- compositions/s12-sing.html and s13-your-turn.html, which are placeholders now;
+- lab/s12-sing/ and lab/s13-your-turn/. Put all your scratch files inside these lab folders, and your running notes in lab/s12-sing/BUILD-NOTES.md.
+- Everything else in the project is read-only to you (BUILD-GUIDE § Your files). Another builder will work on s14 to s16 at the same time; never touch their files.
+
+Rules for this machine:
+- **Git and installs.** Never run a git command that changes anything (no commit, stash, checkout, reset or clean). Never run pnpm or npm install.
+- **The director's tools are off limits:** cues.py, mix.py, gen-root.py, merc-shots.py, merc-pass.mjs, merc-whole.py, captions.py and chapters.py. You may run tools/merc-tags.py, but only with your own scene ids.
+- **Merc passes are rendering in the background** as detached merc-pass.mjs processes on the same 4 cores. Never stop or restart them. Your lab renders will be slower than usual while they run.
+  - Your passes are m12-blue and m12-orange: one 8,438-frame pass each, spanning S12 to the film's end, rendered at 520 and shown at the sizes your sheets give. Both are still rendering (`ls assets/merc/`; a .part.webm is not finished), and neither is likely to land before you finish, so build and prove everything else first, with the tags in place.
+  - Place both Mercs with L.mercGate. Until the director adds a landed pass to assets/merc/whole.js, the gate warns and uses 30; that is expected.
+  - If the passes are still missing when everything else is done, say so in your report rather than waiting on them.
+- **Holds.** The scenes before yours met the hold limits in stretches with no Merc on screen only by tying more events to words; plan your no-Merc stretches (and the your-turn pause, where both Mercs idle) with that in mind, and measure them.
+- **Long renders.** A 30 s scene's lab clip can run past the Bash tool's 10-minute foreground limit. Run it with the Bash tool's run_in_background and wait for it. If a render ever has to be detached, set HYPERFRAMES_RENDER_DETACHED=1 (trap 11).
+- **Never type a second** (BUILD-GUIDE § The clock): clock-lint must print nothing on each of your scenes.
+- **No emojis** anywhere.
+- **Keep running notes** in lab/s12-sing/BUILD-NOTES.md, so a container restart or a usage-limit pause can be resumed. Update them each time you finish a row or prove a scene.
+
+Order of work:
+1. s12. Prove the tip into the guide first, with the 2 s clip the sheet asks for (343.6 to 345.6): it is provisional in HANDOFFS, and the lab decides its curves.
+2. s13. Its reverse tip is provisional too; it ends on the fixed E to F frame.
+
+Prove each scene as BUILD-GUIDE § Proving a scene says, and look at your own stills.
+
+Your final message is your report; only the director reads it. For each scene, give:
+- the files you wrote;
+- the anchor you chose for each row, and why;
+- anything you could not build, or built differently from the storyboard, and why;
+- the paths of your stills and your lab clip;
+- measure.py's numbers against both limits, the text sweep's result and clock-lint's output;
+- the stills that prove the sheet's Checks;
+- the provisional HANDOFFS values you settled (S12a's tip, S13d's reverse tip and the Mercs' move), with the stills that show them;
+- any helper you wrote inside a scene that the kit could take.

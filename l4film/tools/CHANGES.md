@@ -62,6 +62,46 @@ entries here; from this one on, every change is logged.
 - **merc-whole.py: a pass that starts whole needs no render.** It gets 0 from its shot file alone,
   so re-rendering one (m01-blue now) no longer drops it from `whole.js`. A drop pass still counts
   only while its WebM is newer than its shot. m07-orange landed: 28. Regenerate: `whole.js` (done).
+- **merc-shots.py: every drop seen whole, and down before its host speaks (DECISIONS 81).** A drop
+  lasted 0.4 s, but the renderer's fall takes 0.55 s (`DROP_T`) and its splat holds 0.24 s more, so
+  the next state cut every fall in mid-air and no pass had a splat. Now:
+  - `DROP` is 0.85 s and an entrance starts `LAND` (1.1 s) before its host's first word, so the
+    splat is over 0.32 to 0.34 s before it (measured on the word timings). m04, m06a, m06b, m07,
+    m10-blue and the m11 pair are timed this way; m10-blue drops as the pull out of CU-C lands
+    (282.20), since CU-C's lower stairs fill his corner.
+  - The four passes already rendered under the old timing (m08, m09, m12-blue, m12-orange) keep it
+    (`drop=DROP_OLD`) under a head: `<id>-in`, the new entrance and the same performance, with
+    `splice=(pass, time)` naming where the pass takes over, in an idle after the performances agree.
+  - After the shots it writes the intros table, `merc/intros.json` and `assets/merc/intro.js`
+    (`window.MERC_INTRO`): per drop pass, its segments in film frames: the tall render from the
+    pass's first frame to `SWITCH` (40, inside the splat's hold), then for a pass under a head the
+    head from there to the splice, each with its drawn square and padding (`tall()`, as
+    merc-pass.mjs draws them). `assets/lib/scripts.txt` loads `intro.js` after `whole.js`.
+  - Tested: the head m09-orange-in against the legacy m09-orange at its splice (film frame 15270):
+    codec noise only (premultiplied p99.9 11 levels, 7 pixels over 40, all on edges).
+  Regenerate: `merc/shots/` (done: 11 shots written, the four legacy ones unchanged), the passes
+  and their tall intros (queued), `merc-tags.py`, then `gen-root.py` for the new script (done).
+- **merc-pass.mjs: `--tall` and `--until`.** `--tall` renders a shot on a canvas `TALL_PAD` drawn
+  px taller above and below its square (`TALL_PAD_SHARE` 0.91 of the drawn size, to a multiple of
+  8: 208 px at 225, 352 at 390), with the vertical field of view widened by the same ratio, so the
+  middle square is the pass's own picture and the column above it holds the whole fall; the
+  crescent guard scans the square's rows only. `--until=<frame>` stops after that many frames. It
+  writes `<id>-tall-merc.webm`. Tested: a 48-frame tall render of the old m07 shot against
+  m07-orange: premultiplied p99.9 within 12 levels everywhere but the square's top 10 rows during
+  the fall, where the square pass itself is cut; m06a-orange's at the hand-over frame (40): p99.9 8,
+  max 13. A first share of 0.71 (160 px) clipped the fall's trails for its first 14 frames (they
+  reach 26 px above the body, whose top climbs to 159 px above the square), so 0.91. Output for
+  shots without `--tall` is unchanged.
+- **merc-tags.py: intro segment tags.** For a scene holding a drop pass, it adds one tag per intro
+  segment after the pass's own (`<tag>-seg<i>`, a `-refl` twin beside a reflection, marked
+  `data-merc-seg="<pass>:<i>"`) and times each from a frame before the segment shows to a frame
+  after it hands over (`seg_window`, the same half-frame grid as `window`); a segment that no longer
+  meets the scene loses its tag. The stale test compares the file as it would be written with the
+  file as it is, tag by tag (the first version rebuilt the segment tags before comparing, so a
+  current file read as stale). Tested: s07 to s11 written and `--check` clean; s12 current (its
+  builder's run); s04 to s06 left stale on purpose, since their own gates cannot place the
+  segments until their builders move them onto `L.mercGate`. Regenerate: the scenes' tags after
+  every `merc-shots.py` run.
 
 ## 2026-10-17
 

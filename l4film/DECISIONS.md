@@ -122,7 +122,8 @@ replaced it. The builder's record: critics never read it.
 22. **Every item of `review/script-02/REPORT.md` was taken**, in draft 3:
     1. Set the range first. b53: "In MercuryPitch's Scale Runner, sing a major scale back, one
        note at a time. Set your voice range in Settings first, and sing in the octave it plays.";
-       the card: "Set your range first: Settings › Singing Voice Range" (FACTS 85). A first
+       the card: "Set your range first: Settings › Singing Voice Range" (FACTS 85; Practice
+       added by decision 80). A first
        visitor gets the tenor preset, whose run starts on E3 (41, 44), below the alto, mezzo and
        soprano ranges (F3, A3 and C4 up, `VOCAL_RANGES` at `b803c7d43`). The critic's card text,
        "First: Settings › …", became an instruction that reads without the voice.
@@ -435,3 +436,47 @@ replaced it. The builder's record: critics never read it.
     the note, so the passes change, not the scenes: his mouth opens 0.1 s before the bead leaves,
     about two-thirds open, and opens fully on the note (merc-shots.py `leads`). m01-blue re-renders;
     m10-blue was not rendered yet.
+80. **The practise card names Practice, and says where a phone keeps the tabs.** Decision 27's
+    check, walked in a browser on 29 October on a local copy of the 0.9.25 release's build (the
+    files on the path are unchanged from v0.9.24 to `b803c7d43`), with every request off 127.0.0.1
+    aborted: the address, the intro's × and "Yes, skip" all hold as FACTS 88 says, but Settings
+    opens on General and Singing Voice Range is on its Practice tab, and on a phone (390 × 844)
+    the bottom bar holds Home, Path, Progress, Singing and More, with Settings and Exercises in
+    More's sheet. So the card's range line becomes "Set your range first: Settings › Practice ›
+    Singing Voice Range", and a small sixth line, "On a phone, Settings and Exercises are under
+    More", lands as the card completes (FACTS 85 and 88, STORYBOARD 14g, HANDOFFS § The practise
+    card). The end card keeps its lines: after the skip the visitor is already on Singing
+    Exercises. The written lessons say "in Settings, under Singing Voice Range" too; that is for
+    the owner (a page change, not the film's).
+81. **Every drop is seen whole, and it is over before its host speaks.** Component critic B-01
+    item 3 saw Tavi fade in where she stands, after her lines had started (110.88 and 135.93),
+    and it holds for every drop pass. Two causes: `merc-shots.py` gave each drop 0.4 s, but the
+    renderer's fall takes 0.55 s (`DROP_T`, `src/lib/merc/sim-choreo.ts`) and its splat holds
+    0.24 s more, so the next state cut every fall in mid-air (stills: the scratchpad's
+    `l4entr/m07-stills.png`); and the gate hid the frames where the body is above its square, so
+    the fall itself was never on screen. Now:
+    - a drop lasts 0.85 s (`DROP`), and it starts 1.1 s before its host's first word (`LAND`),
+      so the fall and the splat are over 0.3 s before it (0.32 to 0.34 s before the first word,
+      measured on the word timings). A drop says nothing, so it does not fall while its host's
+      own voice runs, with one exception: Merc's in S10. He cannot stand in his corner in CU-C,
+      whose lower stairs (mi and fa) fill it (the s10 lab still at 5.6 s), nor through the pull
+      out, which sweeps stair 1 across it until 282.2, and he must be down before his bead leaves
+      his mouth (283.27). So he drops 282.20 to 283.05, over b33's last words ("and stop", the
+      splat on "stop"), as near as the storyboard's 282.5. (Dropping him in the gap before b32
+      instead puts him in CU-C, and that gap is 0.70 s, shorter than a drop.) When the final
+      voices are placed, stop-c-home's `gap` in `script.json` grows from 0.35 s to about 1.45 s,
+      so the drop starts after b33 and falls in silence. In S11 he drops as b36 ends (321.03),
+      0.55 s after Tavi;
+    - every drop has a tall intro: `merc-pass.mjs --tall` renders the same shot on a canvas 208
+      drawn px taller above and below (352 at m12's size; 160 cut the fall's first trails) with the field of view widened to
+      match, so its middle square is the pass's own picture and its column shows the whole fall.
+      `L.mercGate` shows it from its first frame (a 6-frame fade, high above the corner) and
+      hands over to the pass at pass frame 40, inside the splat's hold, where nothing moves;
+    - the passes already rendered under the old timing (m08, m09 and the m12 pair) keep it under
+      a head pass (`<id>-in`) with the new entrance, rendered to a splice in the first idle after
+      the hosts' performances agree, where no arcs and no lip flutter can show a phase jump
+      (o8 + 0.6, o9 + 0.6, b39 + 2.4 for Tavi and sing-a + 0.65 for Merc). Every other drop pass
+      is rendered again.
+    `tools/merc-shots.py` writes `merc/intros.json` and `assets/merc/intro.js`; `tools/merc-tags.py`
+    adds and times each segment's tags in every scene it meets. s04, s05 and s06 keep their own
+    gate code, which knows nothing of intros: their builders move them onto `L.mercGate`.

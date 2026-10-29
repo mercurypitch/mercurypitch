@@ -3,18 +3,340 @@
   <head><meta charset="UTF-8" /></head>
   <body>
     <div id="s13-your-turn" data-composition-id="s13-your-turn" data-start="0" data-duration="32.577" data-width="1920" data-height="1080">
-      <div class="scene">
-        <div class="ground" data-layout-allow-overflow></div>
-        <div class="staves" data-layout-allow-overflow></div>
-        <p class="kicker" style="left:120px;top:120px">PLACEHOLDER · s13-your-turn</p>
-        <p class="serif" style="position:absolute;left:120px;top:440px;font-size:120px">Your turn</p>
-      </div>
+      <div class="scene" id="s13-your-turn-scene"></div>
+      <!-- Merc passes, static (trap 4); timing written by python3 tools/merc-tags.py s13-your-turn -->
+      <video id="s13-your-turn-m12-blue" data-merc="m12-blue" class="clip" muted playsinline src="assets/merc/m12-blue-merc.webm" data-start="0.008" data-duration="32.567" data-media-start="29.742"></video>
+      <video id="s13-your-turn-m12-blue-refl" data-merc="m12-blue" data-merc-refl class="clip" muted playsinline src="assets/merc/m12-blue-merc.webm" data-start="0.008" data-duration="32.567" data-media-start="29.742"></video>
+      <video id="s13-your-turn-m12-orange" data-merc="m12-orange" class="clip" muted playsinline src="assets/merc/m12-orange-merc.webm" data-start="0.008" data-duration="32.567" data-media-start="29.742"></video>
+      <video id="s13-your-turn-m12-orange-refl" data-merc="m12-orange" data-merc-refl class="clip" muted playsinline src="assets/merc/m12-orange-merc.webm" data-start="0.008" data-duration="32.567" data-media-start="29.742"></video>
       <script>
         ;(function () {
+          /* S13, Your turn (STORYBOARD rows 13a to 13d; HANDOFFS § S12 to S13, § The guide in S13, § The care block,
+             § S13d's reverse tip, § E to F). In: S12's guide, every segment lit, the orange bead on do's segment end,
+             "wait", the arrow, the chip and the house; both Mercs at 360. Out (E to F, fixed): F0; the staircase on
+             C at full, names, both houses lit, risers unmeasured; the strip with C major's keys, hairlines; Merc
+             (110, 840) and Tavi (1800, 840) at 300. Nothing here listens: no microphone, no ring timer, no listening
+             Merc, nothing of the app's drawing from "Now you". The reverse tip (provisional, the lab's curves): the
+             lanes narrow onto C's rows and the segments onto C's treads, then the blocks grow down from them, the
+             names riding the growing foot, as S12a's blocks folded up into theirs. */
+          const SID = 's13-your-turn'
+          const D = L.dur(SID)
+          const at = (cue, edge, off) => L.at(SID, cue, edge, off)
+          const word = (line, which, edge, off) => L.word(SID, line, which, edge, off)
+          const root = document.getElementById(SID + '-scene')
+          const room = L.room(root, { floor: false })
+          const S0 = L.scene(SID).start
           const tl = gsap.timeline({ paused: true })
-          tl.fromTo('#s13-your-turn .serif', { x: 0 }, { x: 60, duration: L.dur('s13-your-turn'), ease: 'none' }, 0)
+          const ST = L.ST, P = L.prog, clamp = L.clamp, lerp = L.lerp, C = L.C
+          const f1 = (v) => (Math.round(v * 100) / 100).toString()
+          const CMAJ = ST.scale(0)
+          const SOL = ['do', 're', 'mi', 'fa', 'so', 'la', 'ti', 'do']
+          const AMB = '#f59e0b'
+
+          /* ---------------------------------------------------------------- anchors */
+          const A = {
+            bEnd: at('sing-b', 'end'),                        // S12: Tavi's bead scales 1.2 as her run ends (across the cut)
+            now: word('b41', 'Now'),                          // 13a: S12's marks leave (0.3 s)
+            move: at('b41', 'start', 0.08),                   // the guide moves to the right half (0.9 s, power2.inOut)
+            sore: word('b41', 'Sore,'),
+            just: word('b41', 'Just'),                        // "Just listen along."
+            sing: word('b42', 'sing'),                        // 13b: "do, re, mi or ooh,"
+            doh: word('b42', 'doh,'), ray: word('b42', 'ray,'), mee: word('b42', 'mee,'),   // each lane's name lights as it is said
+            atAbout: word('b42', 'at about'),                 // "at about speaking volume"
+            start: word('b42', 'Start'),                      // "Start on D3, or D4 an octave up"; the do lane's name brightens
+            octave: word('b42', 'octave'),                    // "or an octave up": the top do's name brightens too
+            waitW: word('b43', 'Wait'),                       // "wait on ti"; the hold's segment glows
+            teeW: word('b43', 'tee,'),                        // ti's name lights
+            goW: word('b43', 'go.'),                          // "where it wants to go": the top do's segment glows
+            stop: word('b44', 'Stop'),                        // the stop line, carried whole
+            ci: at('count-in'),                               // 13c: the count-in's bead lands
+            yt: at('your-turn'), ytEnd: at('your-turn', 'end'),
+            tiYT: at('your-turn', 'start', 4.8),              // the cursor reaches the hold: "wait on ti" scales 1.2
+            mercs: at('your-turn', 'end', 0.16),              // 13d: the Mercs move to the recap corners (1.2 s)
+            rev: at('your-turn', 'end', 0.36),                // the reverse tip (1.2 s)
+          }
+          A.plain = A.now + 0.3                               // the plain guide, once S12's marks have gone (0.3 s)
+          A.title = A.move + 0.55                             // "Your turn.", once the moving names have passed under it
+          A.care = Math.max(A.sore, A.title + 0.3)            // the first care lines, 0.3 s after the title
+          A.doctor = A.move + 0.9                             // the doctor lines, once the guide has stopped
+          const REV = 1.2, GROW = A.rev + 0.8                 // the blocks grow down from 405.0 (0.4 s)
+          const STRIP = A.rev + 0.7, STRIPD = 0.55            // the strip rises 404.9 to 405.45
+
+          /* ---------------------------------------------------------------- the guide (HANDOFFS § Inside E) */
+          const RUN = 8.6, ON = [0, 0.8, 1.6, 2.4, 3.2, 4.0, 4.8, 7.4], OFF = [0.8, 1.6, 2.4, 3.2, 4.0, 4.8, 6.8, RUN]
+          const px12 = (s) => 600 + 840 * s / RUN
+          const LANE = ST.H
+          const BL12 = [748, 656, 564, 518, 426, 334, 242, 196], BL13 = [711, 631, 551, 511, 431, 351, 271, 231]
+          // S12's guide to S13's (x 600-1440 onto 1060-1700, 46 px lanes onto 40 px) on the move's curve
+          const uMove = (t) => P(t, A.move, 0.9, 'power2.inOut')
+          const X = (x, u) => lerp(x, 1060 + (x - 600) * 640 / 840, u)
+          const Y = (y, u) => lerp(y, 700 - 40 * (737 - y) / 46, u)
+          // S13's lanes onto C's rows (lane k onto row k), on the reverse tip's curve
+          const vRev = (t) => P(t, A.rev, REV, 'power2.inOut')
+          const laneTop = (k, u, v) => lerp(Y(760 - 46 * (k + 1), u), ST.rowTop(k), v)
+          const laneBot = (k, u, v) => lerp(Y(760 - 46 * k, u), ST.rowBot(k), v)
+          // a segment, S12 to S13 to C's tread (h: its height while it is the band, 14, or the plain line, 3)
+          const segAt = (n, u, v, h) => {
+            const x0 = X(px12(ON[n - 1]), u), x1 = X(px12(OFF[n - 1]), u), cy = Y(737 - 46 * LANE[n - 1], u)
+            const cx = ST.colX(n, 0)
+            return { xa: lerp(x0, cx - 52.5, v), xb: lerp(x1, cx + 52.5, v), y: lerp(cy - h / 2, ST.tread(n, 0), v), h }
+          }
+
+          /* ---------------------------------------------------------------- the world (mid layer) */
+          const cam = L.frameRig(room, { from: 'F0' })
+          const mid = L.stage(room.mid)
+          const defs = L.svg('defs', {}, mid)
+          const blurF = (id, sd) => { const f = L.svg('filter', { id: SID + id, x: '-60%', y: '-300%', width: '220%', height: '700%' }, defs); L.svg('feGaussianBlur', { stdDeviation: sd }, f); return `url(#${SID + id})` }
+          // the semitone rows as the kit draws them (stairs.js, with its keep-out mask), placed per frame: S12's lanes,
+          // S13's, then C's rows; the lines turn chrome for the plain guide and back
+          const rows = (() => {
+            const mask = L.svg('mask', { id: SID + '-keep', maskUnits: 'userSpaceOnUse', x: -4000, y: -4000, width: 10000, height: 10000 }, defs)
+            L.svg('rect', { x: -4000, y: -4000, width: 10000, height: 10000, fill: '#fff' }, mask)
+            const blur = L.svg('filter', { id: SID + '-kblur', filterUnits: 'userSpaceOnUse', x: 0, y: 0, width: 1, height: 1 }, defs)
+            L.svg('feGaussianBlur', { stdDeviation: 17.6 }, blur)
+            const holes = L.svg('g', { filter: `url(#${SID}-kblur)` }, mask)
+            const holeRects = [0, 1, 2].map(() => L.svg('rect', { fill: '#000', display: 'none' }, holes))
+            const g = L.svg('g', { mask: `url(#${SID}-keep)` }, mid)
+            const bands = [], lines = []
+            for (let k = 0; k <= 19; k++) {
+              bands.push(L.svg('rect', { fill: '#e6edf3', 'fill-opacity': ST.blackRow(k) ? 0.06 : 0.025 }, g))
+              lines.push(L.svg('rect', { height: 1, fill: '#e6edf3', 'fill-opacity': 0.06 }, g))
+            }
+            lines.push(L.svg('rect', { height: 1, fill: '#e6edf3', 'fill-opacity': 0.06 }, g))
+            const set = (el, o) => { for (const k in o) el.setAttribute(k, o[k]) }
+            return (band, line, boxes, show = true) => {
+              g.setAttribute('display', show ? 'inline' : 'none')
+              if (!show) return
+              bands.forEach((el, k) => { const b = band(k); set(el, { x: f1(b.x0), width: f1(b.x1 - b.x0), y: f1(b.y0), height: f1(b.y1 - b.y0), opacity: b.a.toFixed(3), 'fill-opacity': b.fo.toFixed(4) }) })
+              lines.forEach((el, k) => { const b = line(k); set(el, { x: f1(b.x0), width: f1(b.x1 - b.x0), y: f1(b.y - 0.5), opacity: b.a.toFixed(3), fill: b.fill, 'fill-opacity': b.fo.toFixed(3) }) })
+              const u = { x0: Infinity, y0: Infinity, x1: -Infinity, y1: -Infinity }
+              holeRects.forEach((el, i) => {
+                const b = boxes[i]
+                if (!b) { el.setAttribute('display', 'none'); return }
+                const ax = b.x0 - 50, ay = b.y0 - 50, bx = b.x1 + 50, by = b.y1 + 50
+                el.removeAttribute('display')
+                set(el, { x: f1(ax), y: f1(ay), width: f1(bx - ax), height: f1(by - ay) })
+                u.x0 = Math.min(u.x0, ax); u.y0 = Math.min(u.y0, ay); u.x1 = Math.max(u.x1, bx); u.y1 = Math.max(u.y1, by)
+              })
+              holes.setAttribute('display', boxes.length ? 'inline' : 'none')
+              if (boxes.length) set(blur, { x: f1(u.x0 - 70.4), y: f1(u.y0 - 70.4), width: f1(u.x1 - u.x0 + 140.8), height: f1(u.y1 - u.y0 + 140.8) })
+            }
+          })()
+          const st = L.stairs(mid, {})
+          st.stairs.forEach((S, i) => S.names.prepare([SOL[i]]))
+          const kb = L.strip(mid, {})
+          const gGuide = L.svg('g', {}, mid)
+          const glowTi = L.svg('rect', { rx: 8, fill: C.chrome, opacity: 0, filter: blurF('-g1', 7) }, gGuide)
+          const glowDo = L.svg('rect', { rx: 8, fill: C.chrome, opacity: 0, filter: blurF('-g2', 7) }, gGuide)
+          // S12's band (35 %) and its lit copy (full), carried in and leaving with S12's marks
+          const gMarks = L.svg('g', {}, gGuide)
+          const band = [1, 2, 3, 4, 5, 6, 7, 8].map(() => L.svg('rect', { fill: AMB, 'fill-opacity': 0.35, rx: 2 }, gMarks))
+          const lit = [1, 2, 3, 4, 5, 6, 7, 8].map(() => L.svg('rect', { fill: AMB, rx: 2 }, gMarks))
+          // the plain path (solid chrome, 3 px at 70 %), which becomes the treads of the staircase on C
+          const plain = [1, 2, 3, 4, 5, 6, 7, 8].map(() => L.svg('rect', { fill: C.chrome, opacity: 0 }, gGuide))
+          // the lane names, travelling with the move, then the film's plain guide's (ink-2)
+          const names = SOL.map((s) => L.svg('text', { 'text-anchor': 'end', fill: C.ink2, style: "font: 600 32px 'Outfit', sans-serif", text: s }, mid))
+          const waitT = L.svg('text', { x: 1166, y: 196, 'text-anchor': 'middle', fill: C.ink, style: "font: 600 40px 'Outfit', sans-serif", text: 'wait' }, mid)
+          // S12's ink arrow (the hold's end up onto do's segment), riding the move as it leaves
+          const arrow = (() => {
+            const g = L.svg('g', {}, mid)
+            const shaft = L.svg('path', { fill: 'none', stroke: C.ink, 'stroke-width': 3, 'stroke-linecap': 'round' }, g)
+            const tip = L.svg('path', { fill: 'none', stroke: C.ink, 'stroke-width': 3, 'stroke-linecap': 'round', 'stroke-linejoin': 'round' }, g)
+            const Q0 = [[1248, 212], [1288, 146], [1320, 170]]
+            return (a, u) => {
+              if (a <= 0.004) { g.setAttribute('opacity', '0'); return }
+              const Q = Q0.map(([x, y]) => [X(x, u), Y(y, u)])
+              const qb = (s) => [0, 1].map((i) => (1 - s) * (1 - s) * Q[0][i] + 2 * s * (1 - s) * Q[1][i] + s * s * Q[2][i])
+              let d = ''
+              for (let i = 0; i <= 20; i++) { const q = qb(i / 20); d += (i ? 'L' : 'M') + f1(q[0]) + ' ' + f1(q[1]) }
+              shaft.setAttribute('d', d)
+              const e = qb(1), e0 = qb(0.95), ang = Math.atan2(e[1] - e0[1], e[0] - e0[0])
+              const hx = (k) => e[0] - 14 * Math.cos(ang + k), hy = (k) => e[1] - 14 * Math.sin(ang + k)
+              tip.setAttribute('d', `M${f1(hx(0.5))} ${f1(hy(0.5))} L${f1(e[0])} ${f1(e[1])} L${f1(hx(-0.5))} ${f1(hy(-0.5))}`)
+              g.setAttribute('opacity', a.toFixed(3))
+            }
+          })()
+          const beadO = L.bead(mid, { r: 22, color: C.orange })
+          const beadB = L.bead(mid, { r: 22, color: C.blue })
+          // the cursor: a vertical chrome line, 4 px with a soft glow, spanning the lanes (y 200 to 720)
+          const cursor = L.svg('g', { opacity: 0 }, mid)
+          {
+            const f = L.svg('filter', { id: SID + '-cur', x: '-300%', y: '-10%', width: '700%', height: '120%' }, defs)
+            L.svg('feGaussianBlur', { stdDeviation: 6 }, f)
+          }
+          L.svg('rect', { x: -7, y: 186, width: 14, height: 548, rx: 7, fill: C.chrome, 'fill-opacity': 0.3, filter: `url(#${SID}-cur)` }, cursor)
+          L.svg('rect', { x: -2, y: 190, width: 4, height: 540, rx: 2, fill: C.chrome }, cursor)
+          const dust = L.filmDust(room.near)
+
+          /* ---------------------------------------------------------------- the Mercs (top layer, screen space) */
+          // m12 spans the cut: the gate shows both at once; each frame poses the box (and its reflection and floor
+          // patch) at its size and feet point (front view, feet at 0.81 of the square)
+          const MERC = [
+            { tag: SID + '-m12-blue', pass: 'm12-blue', x0: 240, s0: 360 },
+            { tag: SID + '-m12-orange', pass: 'm12-orange', x0: 1700, s0: 360 },
+          ]
+          MERC.forEach((m) => {
+            m.gate = L.mercGate(room.top, { sid: SID, pass: m.pass, tag: m.tag, x: m.x0, size: m.s0, feet: 0.81 })
+            m.box = document.getElementById(m.tag + '-box')
+          })
+          const poseAt = (i, t) => {
+            const u = uMove(t), w = P(t, A.mercs, 1.2, 'power2.inOut')
+            return i === 0 ? { x: lerp(240, 110, w), size: lerp(360, 300, u) } : { x: lerp(lerp(1700, 1820, u), 1800, w), size: lerp(lerp(360, 240, u), 300, w) }
+          }
+          const pose = (m, { x, size }) => {
+            if (!m.box) return
+            const b = m.box.style
+            b.left = f1(x - size / 2) + 'px'; b.top = f1(840 - 0.81 * size) + 'px'; b.width = f1(size) + 'px'; b.height = f1(size) + 'px'
+            const r = m.box.querySelector('.refl-box')
+            if (r) { r.style.width = f1(size) + 'px'; r.style.height = f1(size) + 'px'; r.style.top = f1(size * 1.62 - size) + 'px' }
+            const patch = m.box.parentElement.firstElementChild
+            if (patch && patch !== m.box) patch.style.left = f1(x - 110) + 'px'
+          }
+
+          /* ---------------------------------------------------------------- frame-fixed type (hud) */
+          const hud = L.stageOf(room.hud)
+          const chip = L.pill(room.hud, 'one octave up', { x: 600, y: 109, size: 30, anchor: 'start' })
+          chip.label.style.font = "500 30px/1 'JetBrains Mono', monospace"
+          const TXT = (text, y, style, fill = C.ink) => L.svg('text', { x: 360, y, fill, opacity: 0, style: style + ' white-space: pre;', text }, hud)
+          const yours = TXT('Your turn.', 200, "font-family: 'Instrument Serif'; font-style: italic; font-size: 120px; letter-spacing: -0.01em;")
+          const O32 = "font: 500 32px 'Outfit', sans-serif;", O40 = "font: 600 40px 'Outfit', sans-serif;", I30 = "font: 400 30px 'Inter', sans-serif;"
+          // the care block (HANDOFFS § The care block), each part landing as Merc says it
+          const CARE = [
+            ['Sore, hoarse or unwell today?', 262, O32, A.care], ['Just listen along.', 302, O32, A.just],
+            ['do, re, mi or ooh,', 352, O32, A.sing], ['at about speaking volume', 392, O32, A.atAbout],
+            ['Start on D3, or D4 an octave up', 442, O32, A.start], ['wait on ti', 492, O40, A.waitW],
+            ['Stop immediately if anything', 548, O40, A.stop], ['feels uncomfortable.', 592, O40, A.stop],
+          ].map(([s, y, f, t0]) => ({ el: TXT(s, y, f), y, t0 }))
+          const waitOnTi = CARE[5]
+          let waitW = 190
+          L.afterFonts(() => { waitW = waitOnTi.el.getComputedTextLength() || 190 })
+          // the doctor lines, carried whole (Inter 30 px, ink-2), broken as HANDOFFS breaks them within 560 px
+          const DOCTOR = ['If hoarseness or discomfort lasts more', 'than a couple of weeks, see a doctor (a GP', "or an ear, nose and throat specialist). If it's", 'very painful, or breathing or swallowing is', 'hard, get help straight away.']
+            .map((s, i) => ({ el: TXT(s, 640 + 37 * i, I30, C.ink2), y: 640 + 37 * i, t0: A.doctor }))
+
+          L.clock(tl, D, (t) => {
+            cam.apply(t)
+            dust(S0 + t)
+            const u = uMove(t), v = vRev(t), reversing = t >= A.rev, settled = t >= A.rev + REV
+            const boxes = MERC.map((m, i) => { const p = poseAt(i, t); pose(m, p); return m.gate(t) ? L.mercBox(p.x, 840, p.size) : null }).filter(Boolean)
+            const marks = 1 - P(t, A.now, 0.3)                // S12's marks leave
+            const plainA = P(t, A.plain, 0.3)                 // the plain guide comes in
+            const typeOut = 1 - P(t, A.ytEnd, 0.4)            // the type, the names and the cursor leave together
+            const above = P(t, GROW, 0.4)                     // rows C♯5 to G5 return above
+            const grow = P(t, GROW, 0.4, 'power2.out'), blockA = P(t, GROW, 0.15)
+            const backA = P(t, A.rev + 1.0, 0.25)             // the names and both houses, lit
+
+            // the rows: S12's lanes, S13's, then C's rows (the kit's own once the tip has landed)
+            const rx0 = lerp(lerp(600, 1060, u), 220, v), rx1 = lerp(lerp(1440, 1700, u), 1680, v)
+            const lineFo = lerp(0.06, 0.28, plainA * (1 - v))
+            // the lanes' shading: D's rows in S12, plain for the plain guide, then C's rows again
+            const fo = (k) => (ST.blackRow(k) ? 0.06 : 0.025)
+            rows(
+              (k) => k <= 12
+                ? { x0: rx0, x1: rx1, y0: laneTop(k, u, v), y1: laneBot(k, u, v), a: 1, fo: lerp(lerp(fo(k + 2), 0.025, plainA), fo(k), v) }
+                : { x0: rx0, x1: rx1, y0: ST.rowTop(k), y1: ST.rowBot(k), a: above, fo: fo(k) },
+              (b) => b <= 13
+                ? { x0: rx0, x1: rx1, y: lerp(Y(760 - 46 * b, u), ST.rowBot(b), v), a: 1, fill: lineFo > 0.06 ? '#c3ccd6' : '#e6edf3', fo: lineFo }
+                : { x0: rx0, x1: rx1, y: b === 20 ? ST.rowTop(19) : ST.rowBot(b), a: above, fill: '#e6edf3', fo: 0.06 },
+              boxes, !settled)
+
+            // the staircase on C: only S12's house until the reverse tip; then the blocks grow down from the treads
+            const TR = [1, 2, 3, 4, 5, 6, 7, 8].map((n) => segAt(n, 1, v, 3))
+            const foot = ST.foot(0)
+            const ftAt = (n) => lerp(TR[n - 1].y, foot, grow)
+            const cxAt = (n) => (TR[n - 1].xa + TR[n - 1].xb) / 2
+            const ride = (n) => ({ dx: cxAt(n) - ST.colX(n, 0), dy: TR[n - 1].y - ST.tread(n, 0) })
+            st.draw({
+              w: 0, s0: 0, a: 1,
+              rows: { a: settled ? 1 : 0, keep: { boxes, cam, t } },
+              stair: (n) => ({ a: blockA, names: [{ text: SOL[n - 1], a: backA, dx: ride(n).dx, dy: ftAt(n) - foot }] }),
+              riser: () => ({ a: blockA, state: 'unmeasured' }),
+              houses: reversing
+                ? { bottom: { a: backA, lit: 1, ...ride(1) }, top: { a: backA, lit: 1, ...ride(8) } }
+                : { top: { a: marks, lit: 1, dx: X(1381, u) - ST.colX(8, 0), dy: Y(116, u) - ST.houseBox(8, 0, 0).cy } },
+            })
+            if (reversing && !settled) {
+              st.stairs.forEach((S, i) => {
+                const r = TR[i], xa = r.xa - 3.5, xb = r.xb + 3.5, tr = r.y, ft = ftAt(i + 1), rr = Math.min(6, (ft - tr) / 2)
+                S.block.setAttribute('d', `M${f1(xa)} ${f1(ft)} L${f1(xa)} ${f1(tr + rr)} Q${f1(xa)} ${f1(tr)} ${f1(xa + rr)} ${f1(tr)} L${f1(xb - rr)} ${f1(tr)} Q${f1(xb)} ${f1(tr)} ${f1(xb)} ${f1(tr + rr)} L${f1(xb)} ${f1(ft)} Z`)
+                S.treadLine.setAttribute('stroke-opacity', '0')
+              })
+              st.risers.forEach((Rz, i) => {
+                const lo = TR[i], hi = TR[i + 1], x = (lo.xb + hi.xa) / 2
+                Rz.bar.setAttribute('x', f1(x - 2)); Rz.bar.setAttribute('y', f1(hi.y)); Rz.bar.setAttribute('height', f1(Math.max(0, lo.y - hi.y)))
+              })
+            }
+            // the strip rises back from 240 px below (power3.out), its hairlines over its last 0.2 s
+            const sIn = P(t, STRIP, STRIPD, 'power3.out')
+            kb.draw({
+              a: P(t, STRIP, 0.3), dy: 240 * (1 - sIn),
+              key: (m) => ({ full: CMAJ.includes(m) ? 1 : 0 }),
+              hair: { a: P(t, STRIP + STRIPD - 0.2, 0.2), w: 0, s0: 0 },
+            })
+
+            // S12's marks: the band and its lit copy, the bead, "wait", the arrow, the chip and the house
+            gMarks.setAttribute('opacity', marks.toFixed(3))
+            gMarks.setAttribute('display', marks > 0.004 ? 'inline' : 'none')
+            for (let n = 1; n <= 8; n++) {
+              const s = segAt(n, u, 0, 14)
+              for (const el of [band[n - 1], lit[n - 1]]) { el.setAttribute('x', f1(s.xa)); el.setAttribute('width', f1(s.xb - s.xa)); el.setAttribute('y', f1(s.y)); el.setAttribute('height', 14) }
+            }
+            L.bead4.place(beadO, marks > 0.004 ? { x: X(1440, u), y: Y(185, u), a: marks, scale: L.pulse(t, A.bEnd, 'bead') } : null)
+            waitT.setAttribute('opacity', marks.toFixed(3))
+            waitT.setAttribute('transform', `translate(${f1(X(1166, u) - 1166)} ${f1(Y(196, u) - 196)})`)
+            arrow(marks, u)
+            chip.draw({ alpha: marks })
+
+            // the plain path: in after S12's marks, then onto C's treads (the kit's own tread lines once landed)
+            plain.forEach((el, i) => {
+              if (settled) { el.setAttribute('opacity', '0'); return }
+              const s = reversing ? TR[i] : segAt(i + 1, u, 0, 3)
+              el.setAttribute('x', f1(s.xa)); el.setAttribute('width', f1(s.xb - s.xa)); el.setAttribute('y', f1(s.y)); el.setAttribute('height', 3); el.setAttribute('rx', 1.5)
+              el.setAttribute('fill-opacity', '0.7'); el.setAttribute('opacity', plainA.toFixed(3))
+            })
+            // the plain path's glows: the hold's segment on "Wait on tee", the top do's on "where it wants to go"
+            for (const [el, n, k] of [[glowTi, 7, L.light(t, A.waitW, 0.3, 0.9)], [glowDo, 8, L.light(t, A.goW, 0.3, 0.6)]]) {
+              const s = segAt(n, 1, 0, 3)
+              el.setAttribute('x', f1(s.xa - 6)); el.setAttribute('y', f1(s.y - 7)); el.setAttribute('width', f1(s.xb - s.xa + 12)); el.setAttribute('height', 17)
+              el.setAttribute('opacity', (0.8 * k).toFixed(3))
+            }
+            // the lane names: travelling with the move; do, re and mi light as Merc says them; the bottom do
+            // brightens on "Start on my note" and the top do on "or an octave up"; ti lights on "Wait on tee"
+            const nameK = [
+              Math.max(P(t, A.start, 0.3), L.light(t, A.doh)), L.light(t, A.ray), L.light(t, A.mee),
+              0, 0, 0, L.light(t, A.teeW), P(t, A.octave, 0.3),
+            ]
+            names.forEach((el, i) => {
+              el.setAttribute('x', f1(lerp(556, 1040, u))); el.setAttribute('y', f1(lerp(BL12[i], BL13[i], u)))
+              el.setAttribute('opacity', typeOut.toFixed(3))
+              el.setAttribute('fill', `rgb(${[168, 179, 191].map((c, j) => Math.round(lerp(c, [230, 237, 243][j], nameK[i]))).join(',')})`)
+            })
+            // the count-in's bead: dropping onto do's segment (1090, 700), landing on the note, held 0.8 s, gone 0.2 s later
+            {
+              const b = t < A.ci ? L.bead4.dropAt(t, A.ci, [1090, 700]) : { x: 1090, y: 700, a: 1 - P(t, A.ci + 0.8, 0.2), sx: L.bead4.squash(t, A.ci)[0], sy: L.bead4.squash(t, A.ci)[1] }
+              L.bead4.place(beadB, t >= A.ci - 0.2 && t < A.ci + 1 ? b : null)
+            }
+            // the cursor sweeps the lanes in your-turn's time (74.42 px a second)
+            cursor.setAttribute('opacity', (P(t, A.yt - 0.2, 0.2) * typeOut).toFixed(3))
+            cursor.setAttribute('transform', `translate(${f1(1060 + 640 * clamp((t - A.yt) / RUN))} 0)`)
+
+            // frame-fixed type: "Your turn.", the care block, the doctor lines
+            const land = (el, t0, y) => {
+              el.setAttribute('opacity', (P(t, t0, 0.2) * typeOut).toFixed(3))
+              el.setAttribute('y', f1(y + 12 * (1 - P(t, t0, 0.45, 'power2.out'))))
+            }
+            land(yours, A.title, 200)
+            for (const c of CARE) if (c !== waitOnTi) land(c.el, c.t0, c.y)
+            {
+              const sc = L.pulse(t, A.tiYT, 'label')
+              land(waitOnTi.el, waitOnTi.t0, 492)
+              const cx = 360 + waitW / 2
+              waitOnTi.el.setAttribute('transform', `translate(${f1(cx)} 478) scale(${sc.toFixed(4)}) translate(${f1(-cx)} -478)`)
+            }
+            for (const c of DOCTOR) land(c.el, c.t0, c.y)
+          })
           window.__timelines = window.__timelines || {}
-          window.__timelines['s13-your-turn'] = tl
+          window.__timelines[SID] = tl
         })()
       </script>
     </div>

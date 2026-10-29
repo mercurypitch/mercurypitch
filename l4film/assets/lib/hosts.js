@@ -26,10 +26,20 @@
 //       0.42 s, power1.in): +360 out to the right, -360 out to the left. `mirror` flips a pass rendered
 //       facing left (DECISIONS 74). `floor` lays a local floor patch under the corner for an F0 scene
 //       with no room floor. `tag` is the static video's id (its reflection is tag + '-refl').
+//       A pass with an intro (L.MERC_INTRO) enters differently (DECISIONS 81): its drop is seen whole.
+//       Each intro segment is its own box: a tall render of the drop, whose middle square lands on
+//       the pass's own pixels and whose column above shows the fall, and for a pass under a head the
+//       head itself. Each plays from its `from` film frame to its `until`, the first fading in over
+//       its first 6 frames, high above the corner where the fall starts; the pass then shows at once
+//       from the last `until`, with no fade and no ease. merc-tags.py writes the segments' tags,
+//       tag + '-seg1', tag + '-seg1-refl' and so on, into every scene they meet.
 //       Returns draw(t): the body box on screen (for rows.keep.boxes), or null while he is unseen.
 //   L.MERC_WHOLE
 //       { pass: first whole frame of its drop, or 0 for a pass that starts whole }, from
 //       assets/merc/whole.js. A pass missing from it gets 30 (m06a's) and a console warning.
+//   L.MERC_INTRO
+//       { pass: [{ shot, tall, from, until, frames, drawn, pad }] }, from assets/merc/intro.js
+//       (tools/merc-shots.py): the videos that play before each drop pass, in film frames.
 ;(function () {
   const L = (window.L = window.L || {})
   const f1 = (v) => (Math.round(v * 100) / 100).toString()
@@ -64,6 +74,41 @@
   }
 
   L.MERC_WHOLE = window.MERC_WHOLE || {}
+  L.MERC_INTRO = window.MERC_INTRO || {}
+  const INTRO_FADE = 6   // frames: the first segment's fade in, where the fall starts
+
+  // One intro segment's two boxes in `parent`, placed so the render's own square sits on the pass's
+  // square (left x - size / 2, top feetY - size * feet): a tall render's padding goes above and below
+  // it, and the box shows the column from the padding's top to the square's foot. Its reflection is
+  // L.merc's, from the same square only.
+  const segBoxes = (parent, { x, feetY, size, feet, seg, video, refl }) => {
+    const top = feetY - size * feet
+    const k = size / (seg.drawn || size)                   // screen px per drawn px
+    const pad = seg.tall ? seg.pad * k : 0
+    const fit = (v, box) => {
+      v.muted = true
+      Object.assign(v.style, { position: 'absolute', left: '0', top: -pad + 'px', width: size + 'px', height: size + 2 * pad + 'px' })
+      box.appendChild(v)
+    }
+    const box = L.el('div', { class: 'merc' }, parent)
+    Object.assign(box.style, { position: 'absolute', left: x - size / 2 + 'px', top: top - pad + 'px', width: size + 'px', height: pad + size + 'px', overflow: 'hidden', opacity: '0' })
+    box.setAttribute('data-layout-allow-overflow', '')
+    // the video's top sits at the box's top: no padding to skip above
+    fit(video, box)
+    video.style.top = '0'
+    let rbox = null
+    if (refl) {
+      rbox = L.el('div', { class: 'refl-box' }, parent)
+      Object.assign(rbox.style, {
+        position: 'absolute', left: x - size / 2 + 'px', top: feetY + size * feet - size + 'px', width: size + 'px', height: size + 'px',
+        overflow: 'hidden', transform: 'scaleY(-1)', opacity: '0', filter: 'blur(3px)',
+        webkitMaskImage: 'linear-gradient(0deg, #000 28%, transparent 60%)', maskImage: 'linear-gradient(0deg, #000 28%, transparent 60%)',
+      })
+      rbox.setAttribute('data-layout-allow-overflow', '')
+      fit(refl, rbox)
+    }
+    return { box, rbox }
+  }
 
   L.mercGate = (layer, { sid, pass, tag, x, feetY = 840, size = 300, feet = 0.8, hop = null, hopDx = 360, mirror = false, floor = true, fade = 18 } = {}) => {
     const P = L.prog
@@ -91,6 +136,37 @@
     const whole = drops ? first + 1 : 0
     const tWhole = (P0 + whole) / 60 - S0
     const flip = mirror ? ' scaleX(-1)' : ''
+    // a drop seen whole (DECISIONS 81): the intro's segments, those whose tags this scene holds
+    const intro = L.MERC_INTRO[pass] || []
+    const segs = intro.map((seg, i) => {
+      const v = document.getElementById(`${tag}-seg${i + 1}`)
+      if (!v) return null
+      const b = segBoxes(wrap, { x, feetY, size, feet, seg, video: v, refl: document.getElementById(`${tag}-seg${i + 1}-refl`) })
+      if (mirror) { b.box.style.transform = 'scaleX(-1)'; if (b.rbox) b.rbox.style.transform = 'scaleY(-1) scaleX(-1)' }
+      return { ...seg, ...b }
+    })
+    if (intro.length) {
+      const from = intro[0].from, until = intro[intro.length - 1].until
+      return (t) => {
+        const n = Math.floor((S0 + t) * 60 + 1e-6)              // the film frame on screen now
+        let any = 0
+        segs.forEach((sg, i) => {
+          if (!sg) return
+          const a = n >= sg.from && n < sg.until ? (i === 0 ? L.ease('power1.out')(Math.min(1, (n - sg.from + 1) / INTRO_FADE)) : 1) : 0
+          sg.box.style.opacity = a.toFixed(3)
+          if (sg.rbox) sg.rbox.style.opacity = (0.16 * a).toFixed(3)
+          any = Math.max(any, a)
+        })
+        const inSpan = t >= ds && t <= ds + dd
+        const shown = inSpan && n >= until ? 1 : 0
+        const dx = hop == null ? 0 : hopDx * P(t, hop + 0.15, 0.42, 'power1.in')
+        m.box.style.opacity = shown.toFixed(3)
+        m.box.style.transform = `translate(${f1(dx)}px, 0px)${flip}`
+        const seen = Math.max(any, shown)
+        if (patch) patch.style.opacity = (n >= from ? seen * (hop == null ? 1 : 1 - P(t, hop + 0.15, 0.4)) : 0).toFixed(3)
+        return seen > 0.004 && Math.abs(dx) < 220 ? L.mercBox(x + dx, feetY, size) : null
+      }
+    }
     return (t) => {
       const j = Math.floor((S0 + t) * 60 + 1e-6) - P0          // the pass frame on screen now
       const inSpan = t >= ds && t <= ds + dd
