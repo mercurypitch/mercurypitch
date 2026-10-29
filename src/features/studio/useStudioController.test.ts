@@ -1,7 +1,7 @@
 import { createRoot } from 'solid-js'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { StudioStorageError } from '@/db/services/studio-service'
-import { isLocalSaveNavigationLocked } from '@/lib/local-save-navigation-lock'
+import { isLocalSaveNavigationLocked, vetoNavigationDuringLocalSave, } from '@/lib/local-save-navigation-lock'
 import type { StudioAssetInfo } from '@/lib/studio/audio/prepare-studio-asset'
 import { studioReservedMemoryBytes } from '@/lib/studio/memory-budget'
 import { createStudioProject } from '@/lib/studio/model/defaults'
@@ -29,6 +29,18 @@ afterEach(() => {
   for (const cleanup of cleanups.splice(0)) cleanup()
   vi.useRealTimers()
 })
+
+/** What the app is told when it asks to leave Studio now, or undefined when it may leave. */
+function heldNavigation(): string | null | undefined {
+  let said: string | null | undefined
+  vetoNavigationDuringLocalSave({
+    onBlocked: (message) => {
+      said = message
+    },
+    onResolved: () => undefined,
+  })
+  return said
+}
 
 function mount(options: StudioControllerOptions = {}): {
   controller: StudioController
@@ -461,6 +473,47 @@ describe('Studio controller', () => {
       ],
     )
     expect(isLocalSaveNavigationLocked()).toBe(false)
+  })
+
+  it('says why it holds navigation: a wait while saving, the way out once a save fails', async () => {
+    const { controller, service } = mount()
+    await controller.open('one')
+    let fail!: (error: unknown) => void
+    vi.mocked(service.saveProject).mockImplementationOnce(
+      () =>
+        new Promise((_resolve, reject) => {
+          fail = reject
+        }),
+    )
+    const free = heldNavigation()
+
+    controller.rename('First title')
+    const whileSaving = heldNavigation()
+    fail(new StudioStorageError('quota-exceeded', 'Full'))
+    await vi.waitFor(() => expect(controller.saveState()).toBe('error'))
+
+    expect(free).toBeUndefined()
+    expect(whileSaving).toBe(
+      'Studio is still saving this project on this device. Try again in a moment.',
+    )
+    expect(heldNavigation()).toBe(
+      'Studio could not save your latest changes. Retry the save, make a copy, or discard the changes before you leave.',
+    )
+  })
+
+  it('says a tab that lost editing cannot save, and what keeps the changes', async () => {
+    const { controller, service } = mount()
+    await controller.open('one')
+    vi.mocked(service.saveProject).mockRejectedValueOnce(
+      new StudioStorageError('lease-lost', 'Another tab is editing.'),
+    )
+
+    controller.rename('Unsaved title')
+    await vi.waitFor(() => expect(controller.writable()).toBe(false))
+
+    expect(heldNavigation()).toBe(
+      'This tab can no longer save your latest changes. Make a copy to keep them, or discard them before you leave.',
+    )
   })
 
   it('discards cancelled late import results after switching projects', async () => {
