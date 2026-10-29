@@ -15,7 +15,9 @@
 // made him fill the screen above the pier. So he is placed on the plate
 // the room shows, through the same cover and pin as the picture: his feet
 // on a spot of its planks, his size a share of the plate as shown, which
-// is the pier's own scale.
+// is the pier's own scale. Which plate shows is the picture's own choice,
+// the screen's orientation (LANDSCAPE_PLATE_MEDIA), not the room's shape:
+// the two part whenever the room is not the screen's shape.
 //
 // Pure, in px, so a test can hold the places to the room's size: the
 // trail's head must stay left of the lamp, the reach must leave the head
@@ -24,6 +26,9 @@
 
 import type { TrailGeometry } from '@/components/room-kit/voice-trail'
 import { TRAIL_REACH_CENTS } from '@/components/room-kit/voice-trail'
+
+/** When the picture shows its landscape plate: its `<source>`'s media. */
+export const LANDSCAPE_PLATE_MEDIA = '(orientation: landscape)'
 
 /** A plate of the painting, and where Merc stands on its pier. */
 interface HarbourPlate {
@@ -90,17 +95,19 @@ export interface HarbourLayout {
   readonly trail: TrailGeometry
 }
 
-/** The harbour for a room `width` x `height` px; `mercFeet` is MercView's. */
+/**
+ * The harbour for a room `width` x `height` px; `mercFeet` is MercView's,
+ * and `landscape` whether the picture shows its landscape plate (the
+ * screen matches LANDSCAPE_PLATE_MEDIA).
+ */
 export function layoutHarbour(
   width: number,
   height: number,
   mercFeet: number,
+  landscape: boolean,
 ): HarbourLayout {
   const beamY = height * BEAM_Y
-  // The plate the picture shows: its `(orientation: landscape)` source on
-  // a screen wider than tall. The room is the whole screen.
-  const plate: HarbourPlate =
-    width > height ? PLATES.landscape : PLATES.portrait
+  const plate: HarbourPlate = landscape ? PLATES.landscape : PLATES.portrait
   // Shown as `object-fit: cover` at `object-position: 84% 44%` shows it.
   const scale = Math.max(width / plate.width, height / plate.height)
   const left = (width - plate.width * scale) * LAMP_X

@@ -33,6 +33,7 @@ import { createMemo, createSignal, For, onMount, Show } from 'solid-js'
 import harbourLandscape from './art/harbour-landscape.webp'
 import harbourPortrait from './art/harbour-portrait.webp'
 import type { HarbourLayout } from './harbour-layout'
+import { LANDSCAPE_PLATE_MEDIA } from './harbour-layout'
 import styles from './HarbourScene.module.css'
 
 /** The harbour's painting, upright and on its side. */
@@ -241,10 +242,7 @@ export function HarbourScene(props: HarbourSceneProps): JSX.Element {
       <Show when={art()}>
         {(plate) => (
           <picture class={styles.painting}>
-            <source
-              media="(orientation: landscape)"
-              srcset={plate().landscape}
-            />
+            <source media={LANDSCAPE_PLATE_MEDIA} srcset={plate().landscape} />
             <img
               ref={paintingEl}
               class={styles.paintingImage}

@@ -27,7 +27,7 @@ import { EndPlate, OutcomeDots, Pads, PlateBadge, PlateDelta, PlateLine, PlayPad
 import { useLastCall } from './reveal-pacing'
 import { slipsOf } from './slips'
 import type { PlateSlip, RoomPlate, StageRoom } from './stage-room'
-import { identificationBeat, takeRoomStart } from './stage-room'
+import { identificationBeat, ratedRunPlate, takeRoomStart } from './stage-room'
 import { EarStage } from './stage-switch'
 import type { useIdentificationController } from './use-identification-controller'
 
@@ -249,33 +249,24 @@ export function IdentificationDrillView(
             },
           )
           const practice = props.controller.practice()
-          if (practice !== null) {
-            return {
-              kind: 'practice',
-              against: [plateName(practice[0]), plateName(practice[1])],
+          return ratedRunPlate(
+            {
               rating: Math.round(result.rating.rating),
+              before: Math.round(result.rating.rating - result.ratingDelta),
               source: `${props.title} rating`,
+              settling: isProvisional(result.rating)
+                ? PROVISIONAL_ATTEMPTS - result.rating.attempts
+                : null,
               rounds: result.total,
               right: result.correct,
               rightWord: props.answerVerb ?? 'named',
               outcomes,
               slips,
-            }
-          }
-          return {
-            kind: 'rating',
-            rating: Math.round(result.rating.rating),
-            before: Math.round(result.rating.rating - result.ratingDelta),
-            source: `${props.title} rating`,
-            settling: isProvisional(result.rating)
-              ? PROVISIONAL_ATTEMPTS - result.rating.attempts
-              : null,
-            rounds: result.total,
-            right: result.correct,
-            rightWord: props.answerVerb ?? 'named',
-            outcomes,
-            slips,
-          }
+            },
+            practice === null
+              ? null
+              : [plateName(practice[0]), plateName(practice[1])],
+          )
         },
         again: () => start(),
       }

@@ -33,7 +33,8 @@ import { createRoomShell, RoomShell, ShellBarEnd, ShellBubble, ShellDock, ShellH
 import surface from '@/components/room-kit/RoomSurface.module.css'
 import type { RoundVoice } from '@/components/room-kit/round-voice'
 import { headOf, trailPath, trailY } from '@/components/room-kit/voice-trail'
-import { bandHalfHeight, layoutHarbour } from './harbour-layout'
+import { createReactiveMatch } from '@/lib/use-viewport'
+import { bandHalfHeight, LANDSCAPE_PLATE_MEDIA, layoutHarbour, } from './harbour-layout'
 import { HarbourScene } from './HarbourScene'
 import type { HomeNotePhase } from './home-note-machine'
 import type { HomeNoteSummary } from './home-note-run'
@@ -106,13 +107,16 @@ export function HomeNoteRoom(props: HomeNoteRoomProps): JSX.Element {
     () => stageEl,
     (el) => ({ width: el.clientWidth, height: el.clientHeight }),
   )
+  // The plate the picture shows, asked as the picture asks it: the screen's
+  // orientation, which the room's own box need not share.
+  const landscape = createReactiveMatch(LANDSCAPE_PLATE_MEDIA)
   const layout = createMemo(() => {
     const measured = size()
     const { width, height } =
       measured === undefined || measured === null || measured.width === 0
         ? FALLBACK_SIZE
         : measured
-    return layoutHarbour(width, height, MERC_FEET)
+    return layoutHarbour(width, height, MERC_FEET, landscape())
   })
 
   // The trail is written straight to its path every frame of the turn.

@@ -14,8 +14,11 @@
   color: var(--text-primary);
 }
 
-/* A phone on its side is shorter than that, and the body does not scroll:
-   the room keeps to the screen, so the pier and the dock stay on it. */
+/* On its side the room drops that floor, whatever the screen's size, and
+   keeps to the screen's height. The body does not scroll, so on a screen
+   shorter than 520 px (a phone on its side) the floor pushed the pier and
+   the dock off it. A screen taller than that is over the floor already,
+   and nothing changes for it. */
 @media (orientation: landscape) {
   .room {
     min-height: 0;

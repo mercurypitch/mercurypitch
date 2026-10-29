@@ -240,6 +240,7 @@ describe('a pair practice', () => {
         slips: [
           { expected: PAIR[0], answered: PAIR[1], count: 2, practise: vi.fn() },
         ],
+        lines: ['1 skipped (unclear)'],
       }),
     })
     h.setBeat('done')
@@ -250,6 +251,8 @@ describe('a pair practice', () => {
     expect(plate).toHaveTextContent('Minor 6th against Perfect 5th')
     expect(plate).toHaveTextContent('Nothing rated: Leap rating stays 1210')
     expect(plate).toHaveTextContent('8 rounds · 6 named · no replays')
+    // Its lines about the run, as a rated plate draws them.
+    expect(plate).toHaveTextContent('1 skipped (unclear)')
     expect(screen.getByTestId('ear-stage-status')).toHaveTextContent(
       '6 of 8. Minor 6th slipped to Perfect 5th twice.',
     )

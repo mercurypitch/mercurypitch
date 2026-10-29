@@ -40,7 +40,7 @@ import { ConsoleLink, ConsoleNote, ConsoleStack, ConsoleWarning, EndPlate, ModeT
 import { useLastCall } from './reveal-pacing'
 import { runSlips } from './slips'
 import type { PlateSlip, RoomBeat, RoomPlate, StageRoom } from './stage-room'
-import { takeRoomStart } from './stage-room'
+import { ratedRunPlate, takeRoomStart } from './stage-room'
 import { EarStage } from './stage-switch'
 import { TuningFork } from './TuningFork'
 import type { HomeAnswerMode, SingCapture } from './use-home-controller'
@@ -156,14 +156,19 @@ export function HomeDrill(props: HomeDrillProps): JSX.Element {
     }
   }
 
+  /** The pair practice a refused microphone stopped: "Use Tap instead"
+   *  starts that practice, not a rated run. Any other start drops it. */
+  let refusedPair: readonly [number, number] | undefined
+
   async function useTapInstead(): Promise<void> {
     setHomeAnswerMode('tap')
     setMicError('')
-    await handleStart()
+    await handleStart(refusedPair)
   }
 
   async function startRun(pair?: readonly [number, number]): Promise<void> {
     setMicError('')
+    refusedPair = undefined
     if (homeAnswerMode() === 'mic' && f0 === null) {
       // The permission prompt can take a while, and a denial used to start
       // the run in tap mode with "Sing or play" still selected and nothing
@@ -183,6 +188,11 @@ export function HomeDrill(props: HomeDrillProps): JSX.Element {
           throw error
         }
       } catch {
+        refusedPair = pair
+        // A start from the plate (Practise, Run again) leaves it for the
+        // bench, where the refusal and the way to tap are: no console is
+        // drawn under a plate, so the refusal would say nothing at all.
+        if (controller.phase() === 'done') controller.reset()
         setMicError(MIC_REFUSED)
         return
       } finally {
@@ -392,40 +402,35 @@ export function HomeDrill(props: HomeDrillProps): JSX.Element {
             }),
           )
           const practice = controller.practice()
-          if (practice !== null) {
-            return {
-              kind: 'practice',
-              against: [degreeName(practice[0]), degreeName(practice[1])],
+          const voice = earVsVoice()
+          return ratedRunPlate(
+            {
               rating: Math.round(result.rating.rating),
+              before: Math.round(result.rating.rating - result.ratingDelta),
               source,
+              settling: isProvisional(result.rating)
+                ? PROVISIONAL_ATTEMPTS - result.rating.attempts
+                : null,
               rounds: result.total,
               right: result.correct,
               outcomes,
               slips,
-            }
-          }
-          const voice = earVsVoice()
-          const lines = [
-            result.skipped > 0 ? `${result.skipped} skipped (unclear)` : null,
-            result.medianAbsCents !== null
-              ? `Voice typically ${result.medianAbsCents}¢ off when right`
-              : null,
-            voice,
-          ].filter((line): line is string => line !== null)
-          return {
-            kind: 'rating',
-            rating: Math.round(result.rating.rating),
-            before: Math.round(result.rating.rating - result.ratingDelta),
-            source,
-            settling: isProvisional(result.rating)
-              ? PROVISIONAL_ATTEMPTS - result.rating.attempts
-              : null,
-            rounds: result.total,
-            right: result.correct,
-            outcomes,
-            slips,
-            lines,
-          }
+              // What the run skipped and how the voice sat: a practice's too.
+              lines: [
+                result.skipped > 0
+                  ? `${result.skipped} skipped (unclear)`
+                  : null,
+                result.medianAbsCents !== null
+                  ? `Voice typically ${result.medianAbsCents}¢ off when right`
+                  : null,
+              ].filter((line): line is string => line !== null),
+            },
+            practice === null
+              ? null
+              : [degreeName(practice[0]), degreeName(practice[1])],
+            // Ear against voice weighs two ratings: the rated plate's alone.
+            voice === null ? [] : [voice],
+          )
         },
         again: () => void handleStart(),
       }

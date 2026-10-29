@@ -12,8 +12,10 @@
 // room's version of itself.
 //
 // Types only, plus the one-shot start request a station row or Today's
-// button leaves for the drill it opens: the runtime is the room's. The
-// skin's contract is EarStage.tsx's, beside the parts it names.
+// button leaves for the drill it opens, and the builder of the plates a
+// drill with pair practice ends on, so its practice plate and its rated
+// plate cannot part: the runtime is the room's. The skin's contract is
+// EarStage.tsx's, beside the parts it names.
 // ============================================================
 
 import { createSignal } from 'solid-js'
@@ -155,9 +157,43 @@ export interface PracticePlate {
   rightWord?: string
   outcomes: RatingPlate['outcomes']
   slips: readonly PlateSlip[]
+  /** Lines about the run, as the rated plate has them: what it skipped. */
+  lines?: readonly string[]
 }
 
 export type RoomPlate = ThresholdPlate | RatingPlate | PracticePlate
+
+/**
+ * The plate a run of a drill with pair practice ends on: the rated plate,
+ * or for a pair practice (`against`, the two it was on) the practice
+ * plate. Both show the run's rounds, dots, slips and lines about it; the
+ * move, the settling and the lines about the rating (`ratingLines`) are
+ * the rated plate's alone, since a practice leaves the rating where it was.
+ */
+export function ratedRunPlate(
+  plate: Omit<RatingPlate, 'kind'>,
+  against: readonly [string, string] | null,
+  ratingLines: readonly string[] = [],
+): RatingPlate | PracticePlate {
+  if (against === null) {
+    const lines = [...(plate.lines ?? []), ...ratingLines]
+    return { ...plate, kind: 'rating', lines }
+  }
+  const { rating, source, rounds, right, rightWord, outcomes, slips, lines } =
+    plate
+  return {
+    kind: 'practice',
+    against,
+    rating,
+    source,
+    rounds,
+    right,
+    rightWord,
+    outcomes,
+    slips,
+    lines,
+  }
+}
 
 /** What a view tells the native room beyond the stage's own props. */
 export interface StageRoom {

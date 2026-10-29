@@ -7,7 +7,7 @@ import { afterEach, describe, expect, it } from 'vitest'
 import { layoutHarbour } from './harbour-layout'
 import { HARBOUR_ART, HarbourScene } from './HarbourScene'
 
-const layout = layoutHarbour(390, 844, 0.9)
+const layout = layoutHarbour(390, 844, 0.9, false)
 
 function scene(art?: { portrait: string; landscape: string } | null) {
   return render(() => (
