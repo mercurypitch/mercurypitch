@@ -47,6 +47,8 @@ export interface StudioFxChain {
   setEffectParams(id: string, params: ParamValues): void
   /** Gain reduction of a dynamics effect in dB (negative), else 0. */
   readReductionDb(id: string): number
+  /** Settle every new compressor from `at` (effect-shell.ts `settleRelease`). */
+  settle(at: number): void
   dispose(): void
 }
 
@@ -190,6 +192,9 @@ export function createStudioFxChain(
       slot.unit.setParams(merged)
     },
     readReductionDb: (id) => findSlot(id)?.unit.readReductionDb() ?? 0,
+    settle(at) {
+      for (const { unit } of slots) unit.settle?.(at)
+    },
     dispose() {
       if (disposed) return
       disposed = true

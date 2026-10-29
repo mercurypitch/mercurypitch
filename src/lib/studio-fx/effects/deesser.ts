@@ -14,11 +14,11 @@
 
 import type { EffectSpecOf } from '@/lib/studio-fx/chain-spec'
 import { compressorAutoMakeupGain } from '@/lib/studio-fx/compressor-curve'
-import { createCompressorTwin } from '@/lib/studio-fx/compressor-twin'
+import { createCompressorTwin, settleCompressorTwins, } from '@/lib/studio-fx/compressor-twin'
 import { WET_ONLY } from '@/lib/studio-fx/dsp'
 import type { EffectParams } from '@/lib/studio-fx/effect-definitions'
 import type { EffectEnv, EffectUnit } from '@/lib/studio-fx/effect-shell'
-import { assembleUnit, connectSeries, createButterworth, createEffectShell, writeParam, } from '@/lib/studio-fx/effect-shell'
+import { assembleUnit, connectSeries, createButterworth, createEffectShell, settleRelease, writeParam, } from '@/lib/studio-fx/effect-shell'
 
 const DEESSER_KNEE_DB = 3
 const DEESSER_ATTACK_SECONDS = 0.001
@@ -68,5 +68,9 @@ export function createDeesserUnit(
     nodes: [...crossover, lowTwin, compressor, cancelAutoMakeup, sum, dryTwin],
     apply: (params, glide) => apply(params as EffectParams<'deesser'>, glide),
     readReductionDb: () => compressor.reduction,
+    settle: (at) => {
+      settleRelease(compressor.release, at, DEESSER_RELEASE_SECONDS)
+      settleCompressorTwins([lowTwin, dryTwin], at)
+    },
   })
 }

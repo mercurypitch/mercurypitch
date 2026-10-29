@@ -4,12 +4,12 @@ import { setStudioWorkingBytes, studioReservedMemoryBytes, } from '../memory-bud
 import type { StudioArrangementPlan } from '../model/arrangement-plan'
 import { compileStudioArrangement } from '../model/arrangement-plan'
 import type { StudioProject } from '../model/types'
-import { crossfadeRamps, envelopeOf, freshGraphs, transportFixture, } from './transport.test-fixtures'
+import { RUN_SETTLE_SECONDS } from './run'
+import { crossfadeRamps, envelopeOf, FIRST_HEARD, freshGraphs, transportFixture, } from './transport.test-fixtures'
 
-// The fixture's first run: frame 0 is heard at 0.26 s, after 0.24 s of
-// warmup and 20 ms of lane and master latency.
-const FIRST_HEARD = 0.26
-const GRAPH_EPOCH = 0.24
+// The fixture's first run: its sources start at GRAPH_EPOCH, and frame 0
+// is heard at FIRST_HEARD, after 20 ms of lane and master latency.
+const GRAPH_EPOCH = RUN_SETTLE_SECONDS
 
 type Fixture = ReturnType<typeof transportFixture>
 

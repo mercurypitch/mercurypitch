@@ -5,11 +5,10 @@ import type { StudioArrangementPlan } from '../model/arrangement-plan'
 import { applyStudioCommand } from '../model/commands'
 import type { StudioProject } from '../model/types'
 import type { StudioBufferLease } from './buffer-cache'
-import { crossfadeRamps, envelopeOf, freshGraphs, openingEnds, transportFixture, } from './transport.test-fixtures'
+import { crossfadeRamps, envelopeOf, FIRST_HEARD, freshGraphs, openingEnds, transportFixture, } from './transport.test-fixtures'
 
-// The fixture's first run: frame 0 is heard at 0.26 s, after 0.24 s of
-// warmup and 20 ms of lane and master latency, and fully open at 0.35 s.
-const FIRST_HEARD = 0.26
+// The fixture's first run: frame 0 is heard at FIRST_HEARD, 20 ms of lane
+// and master latency after its sources start.
 const LATENCY = 0.02
 
 /** The song with its clip moved: an edit only a new graph can play. */

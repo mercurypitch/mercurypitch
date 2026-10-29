@@ -22,13 +22,44 @@ export { openRunEnvelope, RUN_OPEN_SECONDS } from './open-envelope'
 /** Studio's timeline rate: frames are counted at 48 kHz on every device. */
 export const STUDIO_RUN_RATE = 48000
 
+/** Room for this thread to finish scheduling a seek before the audio thread can reach it. */
+const SEEK_SCHEDULING_SECONDS = 0.005
+
+/**
+ * The soonest a run, a seek or a swap can begin on the audio clock: past
+ * the device callback the audio thread may be rendering now (baseLatency:
+ * 512 frames, 10.7 ms, in desktop Chromium on Linux), and past the
+ * scheduling itself. A source started in the past plays late by however
+ * far, and lanes started a callback apart would stay that far apart until
+ * the next seek.
+ */
+export function seekEarliest(ctx: AudioContext): number {
+  const callback =
+    Number.isFinite(ctx.baseLatency) && ctx.baseLatency > 0
+      ? ctx.baseLatency
+      : 0.01
+  return (
+    ctx.currentTime +
+    Math.max(callback, 256 / ctx.sampleRate) +
+    SEEK_SCHEDULING_SECONDS
+  )
+}
+
 /** How far ahead of the clock a run schedules its clips. */
 export const RUN_LOOKAHEAD_SECONDS = 2
 
 /**
- * Lead time between building a run's graph and its first sound. It follows
- * how long the last build took, so a fast machine starts in about a tenth of
- * a second and a slow one still schedules ahead of its clock.
+ * How long a new graph renders silence before its first frame: its
+ * compressors settle within this (FAST_SETTLE_SECONDS, then 20 ms more).
+ */
+export const RUN_SETTLE_SECONDS = 0.06
+
+/**
+ * Lead time a handover plans between building a run's graph and the frame
+ * it takes over on. It follows how long the last build took, so a fast
+ * machine hands over in about a tenth of a second and a slow one still
+ * schedules ahead of its clock. A run from silence needs no guess: it
+ * starts once it is built (startAfterBuild).
  */
 export function runWarmupSeconds(buildSeconds: number): number {
   return Math.min(0.5, Math.max(0.1, buildSeconds * 2 + 0.04))
@@ -204,12 +235,44 @@ export interface StudioRunParts {
 }
 
 /**
+ * The soonest a run from silence can start: RUN_SETTLE_SECONDS out, so its
+ * compressors settle on silence first, and a device callback out at least.
+ * Returns the graph's epoch, when its first frame enters a lane.
+ */
+function soonestStart(ctx: AudioContext): number {
+  return Math.max(ctx.currentTime + RUN_SETTLE_SECONDS, seekEarliest(ctx))
+}
+
+/**
+ * A run from silence starts once its graph is built, not after a lead
+ * guessed before the build: when the audio clock ran on through the build,
+ * the graph starts that much later, never with its first frames cut.
+ * Returns the graph's epoch.
+ */
+function startAfterBuild(
+  ctx: AudioContext,
+  graph: StudioGraph,
+  epoch: number,
+): number {
+  const soonest = soonestStart(ctx)
+  if (soonest <= epoch) return epoch
+  graph.retime(soonest)
+  return soonest
+}
+
+/**
  * Build a run's graph, envelope and meters, and open it. When a step fails,
  * what this built is freed; the audio and memory stay the caller's to free
  * until it returns.
  */
 export function buildStudioRun(parts: StudioRunParts): StudioRun {
-  const { ctx, plan, timing } = parts
+  const { ctx, plan, latency } = parts
+  const timing = parts.fromSilence
+    ? {
+        fromFrame: parts.timing.fromFrame,
+        audibleEpoch: soonestStart(ctx) + latency,
+      }
+    : parts.timing
   let graph: StudioGraph | undefined
   let envelope: GainNode | undefined
   let meter: StudioRun['meter'] = null
@@ -219,7 +282,7 @@ export function buildStudioRun(parts: StudioRunParts): StudioRun {
       ctx,
       plan,
       parts.buffers.buffers,
-      timing.audibleEpoch - parts.latency,
+      timing.audibleEpoch - latency,
       {
         metering: true,
         fromFrame: timing.fromFrame,
@@ -232,15 +295,17 @@ export function buildStudioRun(parts: StudioRunParts): StudioRun {
     envelope.gain.value = 0
     graph.output.connect(envelope)
     envelope.connect(ctx.destination)
+    // Fresh compressors start well down: they settle on the silence before
+    // the first frame, a handover's as much as a Play's.
+    graph.settle(ctx.currentTime)
+    const audibleEpoch = parts.fromSilence
+      ? startAfterBuild(ctx, graph, timing.audibleEpoch - latency) + latency
+      : timing.audibleEpoch
     graph.scheduleUntil(ctx.currentTime + RUN_LOOKAHEAD_SECONDS)
-    meter = createStudioLiveMeter(ctx, envelope, timing.audibleEpoch)
-    laneMeter = parts.createLaneMeter(
-      ctx,
-      graph.laneOutputs(),
-      timing.audibleEpoch,
-    )
+    meter = createStudioLiveMeter(ctx, envelope, audibleEpoch)
+    laneMeter = parts.createLaneMeter(ctx, graph.laneOutputs(), audibleEpoch)
     // Last, once nothing can fail: a handoff commits the held run to fading.
-    const openAt = parts.open(envelope, timing.audibleEpoch)
+    const openAt = parts.open(envelope, audibleEpoch)
     return {
       ctx,
       graph,
@@ -259,10 +324,10 @@ export function buildStudioRun(parts: StudioRunParts): StudioRun {
       startFrame: timing.fromFrame,
       endFrame: plan.endFrame,
       firstFrame: plan.startFrame,
-      audibleEpoch: timing.audibleEpoch,
-      latency: parts.latency,
+      audibleEpoch,
+      latency,
       openAt,
-      silentUntil: parts.fromSilence ? timing.audibleEpoch : -Infinity,
+      silentUntil: parts.fromSilence ? audibleEpoch : -Infinity,
       untilFrame: parts.repeat ? Infinity : plan.endFrame,
       tailFrames: plan.tailFrames,
       canLoop: plan.startFrame === 0,

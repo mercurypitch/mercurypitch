@@ -18,12 +18,12 @@
 
 import type { EffectSpecOf } from '@/lib/studio-fx/chain-spec'
 import { compressorAutoMakeupGain } from '@/lib/studio-fx/compressor-curve'
-import { createCompressorTwin } from '@/lib/studio-fx/compressor-twin'
+import { createCompressorTwin, settleCompressorTwins, } from '@/lib/studio-fx/compressor-twin'
 import type { ShaperCurve } from '@/lib/studio-fx/dsp'
 import { createHardClampCurve, createSoftClipCurve, dbToGain, HARD_CLAMP_DOMAIN, SOFT_CLIP_DOMAIN, WET_ONLY, } from '@/lib/studio-fx/dsp'
 import type { EffectParams } from '@/lib/studio-fx/effect-definitions'
 import type { EffectEnv, EffectUnit } from '@/lib/studio-fx/effect-shell'
-import { assembleUnit, connectSeries, createEffectShell, createIdentityShaperPath, createShaperPath, writeParam, } from '@/lib/studio-fx/effect-shell'
+import { assembleUnit, connectSeries, createEffectShell, createIdentityShaperPath, createShaperPath, settleRelease, writeParam, } from '@/lib/studio-fx/effect-shell'
 
 const LIMITER_HEADROOM_DB = 1.5
 const LIMITER_RATIO = 20
@@ -58,7 +58,9 @@ export function createLimiterUnit(
   connectSeries([shell.input, dryCompressor, dryShaper.input])
   dryShaper.output.connect(shell.dry)
 
+  let release = spec.params.releaseMs / 1000
   const apply = (p: EffectParams<'limiter'>, glide: boolean): void => {
+    release = p.releaseMs / 1000
     const write = (param: AudioParam, value: number): void =>
       writeParam(param, value, ctx, glide)
     const threshold = p.ceilingDb - LIMITER_HEADROOM_DB
@@ -92,5 +94,9 @@ export function createLimiterUnit(
     ],
     apply: (params, glide) => apply(params as EffectParams<'limiter'>, glide),
     readReductionDb: () => compressor.reduction,
+    settle: (at) => {
+      settleRelease(compressor.release, at, release)
+      settleCompressorTwins([dryCompressor], at)
+    },
   })
 }

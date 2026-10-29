@@ -9,7 +9,8 @@ import { applyStudioCommand } from '../model/commands'
 import { createStudioTrack } from '../model/defaults'
 import type { StudioBufferLease } from './buffer-cache'
 import type { PlaybackContext } from './playback.test-fixtures'
-import { openingEnds, transportFixture, withQuietLane, } from './transport.test-fixtures'
+import { RUN_OPEN_SECONDS, RUN_SETTLE_SECONDS } from './run'
+import { FIRST_HEARD, openingEnds, transportFixture, withQuietLane, } from './transport.test-fixtures'
 
 afterEach(() => vi.useRealTimers())
 
@@ -409,7 +410,7 @@ describe('Studio borrowed transport', () => {
     expect(studioReservedMemoryBytes()).toBe(0)
   })
 
-  it('does not autoplay and schedules its attack after the first warmup plus measured 44.1k latency', async () => {
+  it('does not autoplay, and starts a Play from silence once its graph is built and settled, after measured 44.1k latency', async () => {
     vi.useFakeTimers()
     const f = transportFixture()
     expect(f.unlock).not.toHaveBeenCalled()
@@ -420,11 +421,19 @@ describe('Studio borrowed transport', () => {
     const envelope = f.ctx.created
       .filter((node) => node.nodeType === 'gain')
       .at(-1) as ReturnType<PlaybackContext['createGain']>
-    // Heard from 0.26 s; the 10 ms attack is full at 0.27 s.
-    expect(openingEnds(envelope.gain)).toEqual([expect.closeTo(0.27, 9)])
-    f.ctx.currentTime = 0.27
+    // Built at 0: its compressors settle from then, its sources start
+    // 60 ms later, and it is heard 20 ms after that, fully open 10 ms on.
+    expect(f.buildGraph.mock.calls[0][3]).toBeCloseTo(RUN_SETTLE_SECONDS, 9)
+    expect(f.graph.settle).toHaveBeenCalledWith(0)
+    expect(f.graph.retime).not.toHaveBeenCalled()
+    expect(openingEnds(envelope.gain)).toEqual([
+      expect.closeTo(FIRST_HEARD + RUN_OPEN_SECONDS, 9),
+    ])
+    f.ctx.currentTime = FIRST_HEARD + 0.01
     await vi.advanceTimersByTimeAsync(33)
-    expect(f.transport.getState().playheadFrame).toBe(480)
+    expect(
+      Math.abs(f.transport.getState().playheadFrame - 480),
+    ).toBeLessThanOrEqual(1)
     expect(f.transport.getState()).toMatchObject({ peakL: 0.2, peakR: 0.4 })
     const released = f.transport.releaseAudio()
     expect(f.graph.dispose).not.toHaveBeenCalled()
@@ -438,29 +447,26 @@ describe('Studio borrowed transport', () => {
     expect(studioReservedMemoryBytes()).toBe(0)
   })
 
-  it('lengthens the next warmup after a build that missed its start', async () => {
+  it('starts a Play whose build outlasted its lead after the build, never with its first frames cut', async () => {
     vi.useFakeTimers()
     const f = transportFixture()
-    let clock = 0
-    const now = vi.spyOn(performance, 'now').mockImplementation(() => clock)
     f.buildGraph.mockImplementationOnce(() => {
-      clock += 300
-      return {
-        ...f.graph,
-        scheduleUntil: () => {
-          throw new Error('Studio playback could not keep up.')
-        },
-      }
+      // A slow device: the audio clock runs on 0.3 s while the graph is built.
+      f.ctx.currentTime = 0.3
+      return f.graph
     })
-    expect(await f.transport.play(f.project, [f.asset])).toBe(false)
-    expect(f.transport.getState().error).toMatch(/keep up/)
     expect(await f.transport.play(f.project, [f.asset])).toBe(true)
     const envelope = f.ctx.created
       .filter((node) => node.nodeType === 'gain')
       .at(-1) as ReturnType<PlaybackContext['createGain']>
-    // 0.5 s warmup (the cap) instead of the first guess's 0.24 s.
-    expect(openingEnds(envelope.gain)).toEqual([expect.closeTo(0.53, 9)])
-    now.mockRestore()
+    expect(f.graph.settle).toHaveBeenCalledWith(0.3)
+    const [[epoch]] = f.graph.retime.mock.calls
+    expect(epoch).toBeCloseTo(0.3 + RUN_SETTLE_SECONDS, 9)
+    expect(openingEnds(envelope.gain)).toEqual([
+      expect.closeTo(0.3 + RUN_SETTLE_SECONDS + 0.02 + RUN_OPEN_SECONDS, 9),
+    ])
+    expect(f.transport.getState()).toMatchObject({ playing: true, error: null })
+    f.ctx.currentTime = 0.4
     const released = f.transport.releaseAudio()
     await vi.advanceTimersByTimeAsync(240)
     await released
@@ -569,7 +575,7 @@ describe('Studio borrowed transport', () => {
       fromFrame: 48000,
       repeat: true,
     })
-    f.ctx.currentTime = 2.76
+    f.ctx.currentTime = FIRST_HEARD + 2.5
     await vi.advanceTimersByTimeAsync(33)
     expect(f.transport.getState().playing).toBe(true)
     expect(f.transport.getState().playheadFrame).toBe(72000)
@@ -591,13 +597,13 @@ describe('Studio borrowed transport', () => {
       repeat: false,
     })
     const plan = f.buildGraph.mock.calls[0][1] as StudioArrangementPlan
-    // The first pass is heard from 0.26 s: 2 s of song, then its tail.
+    // The first pass is heard from FIRST_HEARD: 2 s of song, then its tail.
     const tail = plan.tailFrames / 48000
     f.ctx.currentTime = 1.5
     f.transport.setRepeat(true)
     expect(f.graph.repeat).toHaveBeenCalledOnce()
     await f.transport.setSnapshot(project, [asset])
-    f.ctx.currentTime = 2.26 + tail + 0.5
+    f.ctx.currentTime = FIRST_HEARD + 2 + tail + 0.5
     await vi.advanceTimersByTimeAsync(33)
     expect(f.transport.getState()).toMatchObject({
       playing: true,
@@ -608,10 +614,10 @@ describe('Studio borrowed transport', () => {
     f.graph.stopRepeating.mockReturnValue(1)
     f.transport.setRepeat(false)
     await f.transport.setSnapshot(project, [asset])
-    f.ctx.currentTime = 4.25 + tail
+    f.ctx.currentTime = FIRST_HEARD + 3.99 + tail
     await vi.advanceTimersByTimeAsync(33)
     expect(f.transport.getState().playing).toBe(true)
-    f.ctx.currentTime = 4.27 + tail
+    f.ctx.currentTime = FIRST_HEARD + 4.01 + tail
     await vi.advanceTimersByTimeAsync(33)
     expect(f.transport.getState()).toMatchObject({
       playing: false,
@@ -631,7 +637,7 @@ describe('Studio borrowed transport', () => {
     const { project, asset } = twoSecondSong(f)
     await f.transport.play(project, [asset], 0)
     f.graph.repeat.mockReturnValue(false)
-    f.ctx.currentTime = 2.3
+    f.ctx.currentTime = FIRST_HEARD + 2.04
     f.transport.setRepeat(true)
     await f.transport.setSnapshot(project, [asset])
     expect(f.buildGraph).toHaveBeenCalledTimes(2)

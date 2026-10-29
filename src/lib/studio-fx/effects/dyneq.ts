@@ -18,11 +18,11 @@
 
 import type { EffectSpecOf } from '@/lib/studio-fx/chain-spec'
 import { compressorAutoMakeupGain } from '@/lib/studio-fx/compressor-curve'
-import { createCompressorTwin } from '@/lib/studio-fx/compressor-twin'
+import { createCompressorTwin, settleCompressorTwins, } from '@/lib/studio-fx/compressor-twin'
 import { dbToGain, gainToDb, WET_ONLY } from '@/lib/studio-fx/dsp'
 import type { EffectParams } from '@/lib/studio-fx/effect-definitions'
 import type { EffectEnv, EffectUnit } from '@/lib/studio-fx/effect-shell'
-import { assembleUnit, connectSeries, createEffectShell, writeParam, } from '@/lib/studio-fx/effect-shell'
+import { assembleUnit, connectSeries, createEffectShell, settleRelease, writeParam, } from '@/lib/studio-fx/effect-shell'
 
 const DYNEQ_KNEE_DB = 4
 
@@ -52,8 +52,10 @@ export function createDynamicEqUnit(
   const dryTwin = createCompressorTwin(ctx)
   connectSeries([shell.input, dryTwin, shell.dry])
   let share = 0
+  let release = spec.params.releaseMs / 1000
 
   const apply = (p: EffectParams<'dyneq'>, glide: boolean): void => {
+    release = p.releaseMs / 1000
     const write = (param: AudioParam, value: number): void =>
       writeParam(param, value, ctx, glide)
     share = 1 - dbToGain(-p.rangeDb)
@@ -94,5 +96,9 @@ export function createDynamicEqUnit(
     // inner compressor's own reduction.
     readReductionDb: () =>
       gainToDb(1 - share + share * dbToGain(compressor.reduction)),
+    settle: (at) => {
+      settleRelease(compressor.release, at, release)
+      settleCompressorTwins([wholeTwin, bandTwin, dryTwin], at)
+    },
   })
 }

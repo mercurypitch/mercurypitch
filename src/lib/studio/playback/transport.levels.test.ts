@@ -3,7 +3,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 import { resolveStudioSoundGraph } from '../export/sound-graph'
 import { studioReservedMemoryBytes } from '../memory-budget'
 import type { StudioBufferLease } from './buffer-cache'
-import { freshGraphs, transportFixture } from './transport.test-fixtures'
+import { FIRST_HEARD, freshGraphs, transportFixture, } from './transport.test-fixtures'
 
 afterEach(() => vi.useRealTimers())
 
@@ -201,7 +201,7 @@ describe('Studio transport levels', () => {
     expect(createLaneMeter).toHaveBeenCalledExactlyOnceWith(
       f.ctx.liveContext,
       outputs,
-      expect.closeTo(0.26, 9),
+      expect.closeTo(FIRST_HEARD, 9),
     )
     expect(f.transport.getState().lanes).toEqual([])
 

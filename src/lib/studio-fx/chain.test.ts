@@ -195,6 +195,19 @@ describe('createStudioFxChain', () => {
     expect(chain.getSpec()).toEqual(VOCAL)
   })
 
+  it('settles every unit that has compressors from the time asked', () => {
+    const { units, build } = harness()
+    const settled: [string, number][] = []
+    const chain = build(VOCAL)
+    for (const unit of units)
+      if (unit.kind === 'compressor')
+        Object.assign(unit, {
+          settle: (at: number) => settled.push([unit.id, at]),
+        })
+    chain.settle(1.5)
+    expect(settled).toEqual([[units[1].id, 1.5]])
+  })
+
   it('cancels a pending re-patch and disposes every effect on dispose', () => {
     const { build, units, scheduler } = harness()
     const chain = build(VOCAL)

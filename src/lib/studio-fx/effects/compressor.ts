@@ -13,11 +13,11 @@
 
 import type { EffectSpecOf } from '@/lib/studio-fx/chain-spec'
 import { compressorAutoMakeupGain } from '@/lib/studio-fx/compressor-curve'
-import { createCompressorTwin } from '@/lib/studio-fx/compressor-twin'
+import { createCompressorTwin, settleCompressorTwins, } from '@/lib/studio-fx/compressor-twin'
 import { dbToGain, linearMix } from '@/lib/studio-fx/dsp'
 import type { EffectParams } from '@/lib/studio-fx/effect-definitions'
 import type { EffectEnv, EffectUnit } from '@/lib/studio-fx/effect-shell'
-import { assembleUnit, connectSeries, createEffectShell, writeParam, } from '@/lib/studio-fx/effect-shell'
+import { assembleUnit, connectSeries, createEffectShell, settleRelease, writeParam, } from '@/lib/studio-fx/effect-shell'
 
 export function createCompressorUnit(
   ctx: BaseAudioContext,
@@ -36,7 +36,9 @@ export function createCompressorUnit(
   connectSeries([shell.input, compressor, cancelAutoMakeup, makeup, shell.wet])
   connectSeries([shell.input, dryTwin, shell.dry])
 
+  let release = spec.params.releaseMs / 1000
   const apply = (p: EffectParams<'compressor'>, glide: boolean): void => {
+    release = p.releaseMs / 1000
     const write = (param: AudioParam, value: number): void =>
       writeParam(param, value, ctx, glide)
     write(compressor.threshold, p.thresholdDb)
@@ -61,5 +63,9 @@ export function createCompressorUnit(
     apply: (params, glide) =>
       apply(params as EffectParams<'compressor'>, glide),
     readReductionDb: () => compressor.reduction,
+    settle: (at) => {
+      settleRelease(compressor.release, at, release)
+      settleCompressorTwins([dryTwin], at)
+    },
   })
 }
