@@ -86,9 +86,9 @@ export function PulseDrill(props: { onBack: () => void }): JSX.Element {
   let scheduled: ScheduledClick[] = []
   let timers: Array<ReturnType<typeof setTimeout>> = []
   let trialCancelled = false
-  /** Bumped by every silencing. A replay still waiting on the audio
-   *  engine when it comes (the room closed, the run stopped, the sound
-   *  taken away) sounds nothing once the engine is ready. */
+  /** Bumped by every silencing. A call or a replay still waiting on the
+   *  audio engine when it comes (the room closed, the run stopped, the
+   *  sound taken away) sounds nothing once the engine is ready. */
   let silenced = 0
   let takeHandle: AnchoredTake | null = null
   /** The round's first onset, in ms: the place a take is anchored
@@ -172,10 +172,11 @@ export function PulseDrill(props: { onBack: () => void }): JSX.Element {
     return {
       expectedId: item.itemId,
       play: async () => {
+        const asked = silenced
         await audioEngine.init()
         await audioEngine.resume()
         const ctx = audioEngine.getAudioContext()
-        if (!ctx) return
+        if (!ctx || asked !== silenced) return
         cancelAudio()
         trialCancelled = false
         setTake(null)

@@ -2,7 +2,8 @@
 // PullDrill on a fake engine: the cadence plants the key, the two
 // degrees sound in a coin-flipped order with the beam level, the
 // answer names the leaning degree, and a miss replays the lean and
-// its resolution.
+// its resolution. Stop silences it all, even while the audio is still
+// waking.
 // ============================================================
 
 import { cleanup, fireEvent, render, screen } from '@solidjs/testing-library'
@@ -35,7 +36,7 @@ vi.mock('@/lib/ear/banks', async (importOriginal) => {
 
 const engine = {
   init: vi.fn(async () => undefined),
-  resume: vi.fn(async () => undefined),
+  resume: vi.fn(async (): Promise<void> => undefined),
   getAudioContext: () => ({ currentTime: 1 }),
   getVolume: () => 0.8,
   setToneTrim: vi.fn(),
@@ -172,5 +173,43 @@ describe('PullDrill', () => {
     const calls = engine.playTone.mock.calls.length
     await vi.advanceTimersByTimeAsync(CADENCE + PROBES)
     expect(engine.playTone.mock.calls.length).toBe(calls)
+  })
+
+  it('sounds nothing once stopped while it waits on the audio', async () => {
+    vi.spyOn(Math, 'random').mockReturnValue(0.3)
+    render(() => (
+      <Stage>
+        <PullDrill onBack={vi.fn()} />
+      </Stage>
+    ))
+    // The audio is slow to wake (iOS after a call).
+    let wake = (): void => undefined
+    engine.resume.mockImplementationOnce(
+      () =>
+        new Promise<void>((resolve) => {
+          wake = resolve
+        }),
+    )
+    fireEvent.click(screen.getByRole('button', { name: /Begin/ }))
+    await vi.advanceTimersByTimeAsync(0)
+    fireEvent.click(screen.getByRole('button', { name: 'Stop' }))
+
+    wake()
+    await vi.advanceTimersByTimeAsync(CADENCE + PROBES)
+    expect(engine.playChord).not.toHaveBeenCalled()
+    expect(engine.playTone).not.toHaveBeenCalled()
+  })
+
+  it('keeps the resolution quiet after a Stop during the lean', async () => {
+    await beginAndListen()
+    fireEvent.click(screen.getByRole('button', { name: /The second/ }))
+    // The lean, Ti, sounding again.
+    expect(engine.playTone).toHaveBeenCalledTimes(3)
+
+    fireEvent.click(screen.getByRole('button', { name: 'Stop' }))
+    await vi.advanceTimersByTimeAsync(
+      2 * PULL_TIMING.replayMs + PULL_TIMING.probeGapMs,
+    )
+    expect(engine.playTone).toHaveBeenCalledTimes(3)
   })
 })

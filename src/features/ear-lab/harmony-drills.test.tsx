@@ -3,7 +3,8 @@
 // mocked: the progression strums chord by chord with the train
 // turning, four pads are drawn with the answer among them, the
 // reveal engraves the numerals; the bass line rings under a held
-// tonic and comes back on a seven-rung ladder.
+// tonic and comes back on a seven-rung ladder. Stopped while the audio
+// is still waking, neither sounds at all.
 // ============================================================
 
 import { cleanup, fireEvent, render, screen, within, } from '@solidjs/testing-library'
@@ -70,11 +71,24 @@ const ctx = {
 }
 const engine = {
   init: vi.fn(async () => undefined),
-  resume: vi.fn(async () => undefined),
+  resume: vi.fn(async (): Promise<void> => undefined),
   getAudioContext: () => ctx,
   getVolume: () => 0.8,
   setToneTrim: vi.fn(),
   stopTone: vi.fn(),
+}
+
+/** The audio slow to wake for the next sound (iOS after a call): it
+ *  wakes when the returned function is called. */
+function holdTheAudio(): () => void {
+  let wake = (): void => undefined
+  engine.resume.mockImplementationOnce(
+    () =>
+      new Promise<void>((resolve) => {
+        wake = resolve
+      }),
+  )
+  return () => wake()
 }
 
 function Stage(props: { children: JSX.Element }): JSX.Element {
@@ -196,6 +210,22 @@ describe('CadenceDrill', () => {
       'Round 2 of 12',
     )
   })
+
+  it('strums nothing once stopped while it waits on the audio', async () => {
+    render(() => (
+      <Stage>
+        <CadenceDrill onBack={vi.fn()} />
+      </Stage>
+    ))
+    const wake = holdTheAudio()
+    fireEvent.click(screen.getByRole('button', { name: /Begin/ }))
+    await vi.advanceTimersByTimeAsync(0)
+    fireEvent.click(screen.getByRole('button', { name: 'Stop' }))
+
+    wake()
+    await vi.advanceTimersByTimeAsync(LEAD + 4 * STEP + CADENCE_TIMING.tailMs)
+    expect(struck).toHaveLength(0)
+  })
 })
 
 describe('BasslineDrill', () => {
@@ -246,5 +276,21 @@ describe('BasslineDrill', () => {
     await vi.advanceTimersByTimeAsync(0)
     // Four tapped rungs strummed their roots, then the slow replay.
     expect(struck).toHaveLength(20)
+  })
+
+  it('rings nothing once stopped while it waits on the audio', async () => {
+    render(() => (
+      <Stage>
+        <BasslineDrill onBack={vi.fn()} />
+      </Stage>
+    ))
+    const wake = holdTheAudio()
+    fireEvent.click(screen.getByRole('button', { name: /Begin/ }))
+    await vi.advanceTimersByTimeAsync(0)
+    fireEvent.click(screen.getByRole('button', { name: 'Stop' }))
+
+    wake()
+    await vi.advanceTimersByTimeAsync(LEAD + HELD + BASSLINE_TIMING.tailMs)
+    expect(struck).toHaveLength(0)
   })
 })

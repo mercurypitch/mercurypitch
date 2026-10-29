@@ -38,8 +38,14 @@ export function SubdivideDrill(props: { onBack: () => void }): JSX.Element {
   const [lit, setLit] = createSignal(0)
   let master: GainNode | null = null
   let timers: Array<ReturnType<typeof setTimeout>> = []
+  /** Bumped by every silencing. Bars still waiting on the audio engine
+   *  when it comes (the run stopped, the room closed, the sound taken
+   *  away; iOS holds resume() through a call) sound nothing once the
+   *  engine is ready. */
+  let silenced = 0
 
   function cancelAudio(): void {
+    silenced += 1
     for (const timer of timers) clearTimeout(timer)
     timers = []
     if (master) {
@@ -65,10 +71,11 @@ export function SubdivideDrill(props: { onBack: () => void }): JSX.Element {
     current: MetrePattern,
     quarterMs: number,
   ): Promise<void> {
+    const asked = silenced
     await audioEngine.init()
     await audioEngine.resume()
     const ctx = audioEngine.getAudioContext()
-    if (!ctx) return
+    if (!ctx || asked !== silenced) return
     cancelAudio()
     master = ctx.createGain()
     master.gain.value = room.volume() * audioEngine.getVolume()

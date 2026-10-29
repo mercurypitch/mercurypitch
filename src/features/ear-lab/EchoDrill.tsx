@@ -67,7 +67,12 @@ export function EchoDrill(props: { onBack: () => void }): JSX.Element {
   const [answerMode, setAnswerMode] = createSignal<AnswerMode>('tap')
   const [micError, setMicError] = createSignal('')
   const capture = useSingCapture(audioEngine, 'ear-echo-drill')
-  let cancelled = false
+  /** Bumped by every silencing. A sound notes it as it starts and stops
+   *  at the first await that finds it moved: a Stop, a closed room or the
+   *  sound taken away while it waited on the audio engine (iOS holds
+   *  resume() through a call) sounds nothing once the engine wakes, and
+   *  no later sound can undo it, as resetting a flag did. */
+  let silenced = 0
   let rootMidi = 48
 
   function wait(ms: number): Promise<void> {
@@ -75,16 +80,16 @@ export function EchoDrill(props: { onBack: () => void }): JSX.Element {
   }
 
   function cancelAudio(): void {
-    cancelled = true
+    silenced += 1
     audioEngine.stopTone(60)
     setSounding(0)
   }
 
   /** Chords are parallel playTone calls: the engine's chordIntervals
    *  are colour on one note, not voices. */
-  async function plant(): Promise<void> {
+  async function plant(asked: number): Promise<void> {
     for (const chord of cadenceChordMidis(rootMidi)) {
-      if (cancelled) return
+      if (asked !== silenced) return
       await audioEngine.playChord(chord.map(midiToFreq), ECHO_TIMING.chordMs)
       await wait(ECHO_TIMING.chordMs + ECHO_TIMING.chordGapMs)
     }
@@ -95,10 +100,11 @@ export function EchoDrill(props: { onBack: () => void }): JSX.Element {
     degrees: readonly number[],
     noteMs: number,
     gapMs: number,
+    asked: number,
   ): Promise<void> {
     const midis = phraseMidis(rootMidi, degrees)
     for (const [i, midi] of midis.entries()) {
-      if (cancelled) return
+      if (asked !== silenced) return
       setSounding(i + 1)
       // playTone resolves once the note is scheduled, not when it ends.
       await audioEngine.playTone(midiToFreq(midi), noteMs)
@@ -112,22 +118,23 @@ export function EchoDrill(props: { onBack: () => void }): JSX.Element {
     return {
       expectedId: item.itemId,
       play: async () => {
+        const asked = silenced
         await audioEngine.init()
         await audioEngine.resume()
-        cancelled = false
+        if (asked !== silenced) return
         rootMidi = roveRootMidi()
         setPhrase(item.payload)
         setAnswered([])
         setVerdict(null)
-        await plant()
-        await sound(item.payload, ECHO_TIMING.noteMs, ECHO_TIMING.gapMs)
+        await plant(asked)
+        await sound(item.payload, ECHO_TIMING.noteMs, ECHO_TIMING.gapMs, asked)
       },
       replayOnWrong: async () => {
-        cancelled = false
         await sound(
           item.payload,
           ECHO_TIMING.replayNoteMs,
           ECHO_TIMING.replayGapMs,
+          silenced,
         )
       },
     }

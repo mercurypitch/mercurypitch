@@ -9,6 +9,7 @@
 
 import { createRoot } from 'solid-js'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import type { StimulusApi } from '@/features/ear-lab/use-threshold-run'
 import { useThresholdRun } from '@/features/ear-lab/use-threshold-run'
 import { CALIBRATION_STAIRCASE } from '@/lib/ear/calibration'
 import { findThresholdDrill } from '@/lib/ear/drills'
@@ -146,6 +147,31 @@ describe('stopping mid-stimulus', () => {
     stim.release()
     await settle()
     expect(run!.phase()).toBe('stimulus')
+  })
+})
+
+describe('a stimulus still waiting on the audio engine', () => {
+  // The drills await init() and resume() before they schedule anything
+  // (iOS holds resume() through a call) and check api.cancelled() once
+  // those return: every way a run is silenced must reach that check.
+  it.each<[string, (run: ReturnType<typeof useThresholdRun>) => void]>([
+    ['Stop', (run) => run.stop()],
+    ['closing the room', (run) => run.abandon()],
+    ['the sound taken away', (run) => run.holdQuestion()],
+  ])('is told it was cancelled on %s', (_way, silence) => {
+    createRoot((dispose) => {
+      const asked: StimulusApi[] = []
+      const run = useThresholdRun(drill, (_level, api) => {
+        asked.push(api)
+        return new Promise<void>(() => undefined)
+      })
+      run.start('practice')
+      expect(asked[0]?.cancelled()).toBe(false)
+
+      silence(run)
+      expect(asked[0]?.cancelled()).toBe(true)
+      dispose()
+    })
   })
 })
 

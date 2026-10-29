@@ -38,7 +38,7 @@ vi.mock('@/lib/ear/banks', async (importOriginal) => {
 
 const engine = {
   init: vi.fn(async () => undefined),
-  resume: vi.fn(async () => undefined),
+  resume: vi.fn(async (): Promise<void> => undefined),
   getAudioContext: () => ({ currentTime: 1 }),
   getVolume: () => 0.8,
   setToneTrim: vi.fn(),
@@ -195,6 +195,32 @@ describe('EchoDrill', () => {
     await vi.advanceTimersByTimeAsync(ECHO_PHRASE(6))
     expect(engine.playTone.mock.calls.length).toBe(calls)
     expect(screen.getByTestId('ear-stage-plate')).toBeTruthy()
+  })
+
+  it('sounds nothing once stopped while it waits on the audio', async () => {
+    render(() => (
+      <Stage>
+        <EchoDrill onBack={vi.fn()} />
+      </Stage>
+    ))
+    // The audio is slow to wake (iOS after a call).
+    let wake = (): void => undefined
+    engine.resume.mockImplementationOnce(
+      () =>
+        new Promise<void>((resolve) => {
+          wake = resolve
+        }),
+    )
+    fireEvent.click(screen.getByRole('button', { name: /Begin/ }))
+    await vi.advanceTimersByTimeAsync(0)
+    fireEvent.click(screen.getByRole('button', { name: 'Stop' }))
+
+    wake()
+    await vi.advanceTimersByTimeAsync(
+      CADENCE + ECHO_TIMING.restMs + ECHO_PHRASE(3),
+    )
+    expect(engine.playChord).not.toHaveBeenCalled()
+    expect(engine.playTone).not.toHaveBeenCalled()
   })
 })
 
