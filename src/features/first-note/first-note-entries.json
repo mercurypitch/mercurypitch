@@ -22,7 +22,7 @@
           "at": 23.14,
           "midi": 50,
           "from": 15.14,
-          "until": 27.42,
+          "until": 27.38,
           "beats": [21.24, 21.74, 22.24, 22.74],
           "words": "Yeah, I will try to do my best to keep you safe inside this nest"
         },
@@ -89,7 +89,7 @@
           "at": 11.69,
           "midi": 52,
           "from": 3.69,
-          "until": 17.22,
+          "until": 17.31,
           "beats": [9.181, 9.887, 10.593, 11.299],
           "words": "I'll be right behind you, Josephine"
         },
@@ -97,7 +97,7 @@
           "at": 17.32,
           "midi": 52,
           "from": 9.32,
-          "until": 22.48,
+          "until": 22.45,
           "beats": [14.961, 15.667, 16.373, 17.079],
           "words": "I won't leave you waiting in between"
         },
@@ -105,7 +105,7 @@
           "at": 22.46,
           "midi": 54,
           "from": 14.46,
-          "until": 28.39,
+          "until": 28.37,
           "beats": [20.001, 20.707, 21.413, 22.119],
           "words": "And the cigarette you bummed from me is almost burning out"
         },
@@ -113,7 +113,7 @@
           "at": 40.3,
           "midi": 52,
           "from": 32.3,
-          "until": 45.16,
+          "until": 45.25,
           "beats": [37.841, 38.547, 39.253, 39.959],
           "words": "Even after everything we've seen"
         },
@@ -121,7 +121,7 @@
           "at": 85.71,
           "midi": 52,
           "from": 77.71,
-          "until": 91.25,
+          "until": 91.43,
           "beats": [83.291, 83.997, 84.703, 85.409],
           "words": "I'll be right behind you, Josephine"
         },
@@ -129,7 +129,7 @@
           "at": 91.43,
           "midi": 52,
           "from": 83.43,
-          "until": 96.63,
+          "until": 96.61,
           "beats": [88.951, 89.657, 90.363, 91.069],
           "words": "I won't leave you waiting in this dream"
         },
@@ -137,7 +137,7 @@
           "at": 114.22,
           "midi": 52,
           "from": 106.22,
-          "until": 119.03,
+          "until": 119.01,
           "beats": [111.927, 112.633, 113.339, 114.045],
           "words": "Just like I was when we were seventeen"
         },
@@ -145,7 +145,7 @@
           "at": 182.29,
           "midi": 52,
           "from": 174.29,
-          "until": 187.58,
+          "until": 187.91,
           "beats": [179.841, 180.547, 181.253, 181.959],
           "words": "I'll be right behind you, Josephine"
         },
@@ -153,7 +153,7 @@
           "at": 187.93,
           "midi": 52,
           "from": 179.93,
-          "until": 193,
+          "until": 192.98,
           "beats": [185.491, 186.197, 186.903, 187.609],
           "words": "Even when my soul's an amputee"
         },
@@ -161,7 +161,7 @@
           "at": 192.89,
           "midi": 54,
           "from": 184.89,
-          "until": 198.21,
+          "until": 198.19,
           "beats": [190.441, 191.147, 191.853, 192.559],
           "words": "And my bleeding heart is sinking in the lake inside my chest"
         }
@@ -188,9 +188,25 @@
           "at": 41.83,
           "midi": 56,
           "from": 33.83,
-          "until": 46.93,
+          "until": 47.03,
           "beats": [39.597, 40.25, 40.902, 41.554],
           "words": "Fear of what the messenger is showing"
+        },
+        {
+          "at": 67.78,
+          "midi": 56,
+          "from": 59.78,
+          "until": 72.97,
+          "beats": [65.68, 66.332, 66.984, 67.636],
+          "words": "Shaded by the shadow of a doubt"
+        },
+        {
+          "at": 73.16,
+          "midi": 56,
+          "from": 65.16,
+          "until": 78.23,
+          "beats": [70.907, 71.56, 72.212, 72.864],
+          "words": "Painted by the colors fading out"
         },
         {
           "at": 78.23,
@@ -206,6 +222,14 @@
           "from": 96.25,
           "until": 106.86,
           "beats": [102.2, 102.852, 103.504, 104.156],
+          "words": "Run away from what is hiding"
+        },
+        {
+          "at": 187.41,
+          "midi": 61,
+          "from": 179.41,
+          "until": 190.27,
+          "beats": [185.037, 185.69, 186.342, 186.994],
           "words": "Run away from what is hiding"
         }
       ]

@@ -49,6 +49,7 @@ const {
   waitingOwnSongs,
 } = await import('./first-note-own-songs')
 const { FIRST_NOTE_SONGS } = await import('./first-note-songs')
+const { ENTRY_RULES_VERSION } = await import('./entry-rules')
 
 const own = (sessionId: string, title: string): RoomSong => ({
   sessionId,
@@ -311,6 +312,45 @@ describe("the singer's own songs", () => {
     library.meta.a = { ...library.meta.a, vocal: { size: 101, duration: 200 } }
     library.setSongs?.([own('a', 'Scarborough Fair'), own('b', 'Danny Boy')])
     expect(states().a).toBe('waiting')
+  })
+
+  it('are read again once the rules have moved on from their read', async () => {
+    // Kept by the rules before the second (no version), for the stems of now.
+    localStorage.setItem(
+      FIRST_NOTE_OWN_ENTRIES_KEY,
+      JSON.stringify({
+        a: { stems: '100/200|90/-', entries: [entry(10), entry(20)] },
+        b: {
+          stems: '200/180|80/-',
+          entries: [entry(10), entry(20)],
+          rules: ENTRY_RULES_VERSION,
+        },
+      }),
+    )
+    expect(states()).toEqual({ a: 'waiting', b: 'ready' })
+  })
+
+  it("tell the console what each read found, for a test build's console", async () => {
+    const info = vi.spyOn(console, 'info').mockImplementation(() => undefined)
+    readOwnSongs()
+    await settle()
+    pending[0].resolve({
+      entries: [entry(10)],
+      dropped: [
+        '31.20 no steady note',
+        '40.10 no steady note',
+        '52.00 YIN A3, notes C4',
+        '61.00 42 cents off A3',
+      ],
+      lines: 24,
+      shift: -0.8,
+      tuning: 35,
+    })
+    await settle()
+    expect(info).toHaveBeenCalledWith(
+      `[first-note] read "Scarborough Fair": 1 entries from 24 lines, lyrics moved -0.8 s, tuned +35 cents; left: 2 no steady note, 1 the room's notes name another, 1 out of tune`,
+    )
+    info.mockRestore()
   })
 
   it('read again a song left out, once it is split again', async () => {

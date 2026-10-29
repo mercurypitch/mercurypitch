@@ -91,5 +91,6 @@ export function sampleFor(
     Math.max(0, Math.round((rounded - first) / SPACING)),
   )
   const sample = MERC_SAMPLES[index]
-  return { sample, rate: 2 ** ((rounded - sample.midi) / 12) }
+  // A note between two of A440's (a song tuned off it) is sung where it is.
+  return { sample, rate: 2 ** ((midi - sample.midi) / 12) }
 }
