@@ -207,3 +207,38 @@ replaced it. The builder's record: critics never read it.
     or a mix setting, and the storyboard round reads all three. Its critic gets
     `review/script-03/REPORT.md` as the previous report.
 
+
+## Storyboard v1
+
+30. **One wide shot holds every start.** F0 draws the semitone rows from C4 to G5 and the strip from
+    C4 to G5, so the staircase on C, D, E and G all fit at scale 1, and every slide is the
+    staircase moving along a still keyboard (signature 2), never a camera move. Close-ups (CU-A,
+    CU-B, CU-C) are pushes on that same world, so a carried object keeps its formula.
+31. **Each stair stands over its letter's white key** (one letter a step, FACTS 13), on a 120 px
+    pitch: the shape is the same on every start, and a sharp's hairline slants to its black key.
+32. **Risers carry T and S, then 2 and 1.** A label stands on the lower stair's tread against its
+    riser (a semitone riser is one 26 px row, too short to hold a label inside it). The legend
+    "T = tone (2 rows)", "S = semitone (1 row)" lands in F0 after the close-ups, where the top-left
+    is free. S6 switches the labels to numbers for the count, and they switch back under the act 2
+    card for S7's "T S T T T S T" comparison.
+33. **The stairs' names follow the lesson**: do-re-mi in the cold open (the hook is about do and
+    ti), letters from S5a ("from C, on the white keys"), numbers in S9c, do-re-mi from S9d. Keys
+    carry a name only when it is named, so the letters are never shown twice.
+34. **The house** sits over the top stair only in S1 to S3 (the stair the climb heads for), is
+    hidden through the measuring and the slides (S4 to S9a), and stands over both do stairs from
+    "its home" (S9b).
+35. **Tavi is on screen for her questions wherever F0 leaves her corner clear** (feet (1800, 840),
+    size 300: 40 px from the rows, 44 px from the strip), never in a close-up. Passes that stay on
+    across a cut are one pass (m07, m09, m10, m12), so no boundary falls on a cut.
+36. **The experiment's tiers** are the staircase's names regrouped, with C major's five black keys as
+    the bottom shelf's chips, rising from the strip. "Only weaker" is drawn as the shelves closing
+    up with the order unchanged, and no numbers anywhere (BRIEF, Must never appear).
+37. **S13 splits the frame**: the plain guide moves to the right half and the care block takes the
+    left, so the stop line and the doctor lines (carried whole, six lines at 30 px) end above
+    y 864; Merc stays at 300, Tavi shrinks to 240 in her corner, both idle through the turn.
+38. **The ladder is drawn on G**, where card 4 leaves the staircase: do held, the line on re, re's
+    dashed amber target to the playhead, six chrome rungs mi to do, the next two named. The sung
+    line is singer violet, the app's canvas colour for a singer; no green (Lesson 3's).
+39. **Celebrations are chrome rings**: gold belongs to the two semitone steps alone (BRIEF, Brand).
+40. **Study**: the brief's style references are Lessons 1 and 2's films; the reference pass runs on
+    Lesson 2's `rc-04-60fps.mp4` into `study/lesson-02/` before the storyboard critic.
