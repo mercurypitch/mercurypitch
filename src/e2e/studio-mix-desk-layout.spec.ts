@@ -169,7 +169,9 @@ test('Mix keeps lanes in view, moves nothing above it, and its top edge drags to
   const studio = studioRegion(page)
   const above = () =>
     studio
-      .locator('header, [aria-label="Song playhead"], [data-studio-track]')
+      .locator(
+        '[data-studio-top-bar], [aria-label="Song playhead"], [data-studio-track]',
+      )
       .evaluateAll((elements) =>
         elements.slice(0, 3).map((element) => {
           const box = element.getBoundingClientRect()

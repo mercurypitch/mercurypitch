@@ -454,7 +454,7 @@ export function StudioWorkspace(props: StudioWorkspaceProps) {
           <Plus size={18} /> Drop on a lane, or below the lanes for a new one
         </div>
       </Show>
-      <header class={styles.topBar}>
+      <div class={styles.topBar} data-studio-top-bar>
         <div class={styles.topBarRow}>
           <div class={styles.songIdentity}>
             <button
@@ -562,7 +562,7 @@ export function StudioWorkspace(props: StudioWorkspaceProps) {
             </button>
           </div>
         </div>
-      </header>
+      </div>
       <Show
         when={
           finishing() &&
