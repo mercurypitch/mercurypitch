@@ -11,6 +11,7 @@ import { fitsStudioProjectStorageBudget, STUDIO_PROJECT_STORAGE_LIMITS, } from '
 import type { StudioProject } from '@/lib/studio/model/types'
 import { studioArrangementFixture, studioAssetFixture } from './studio.fixture'
 import { STUDIO_EDITOR_LEASE_MS } from './studio-editor-lease'
+import type { StudioBlobRecord } from './studio-records'
 import { createStudioService } from './studio-service'
 import { STUDIO_STORES } from './studio-storage-types'
 
@@ -325,6 +326,137 @@ describe('local Studio persistence', () => {
         { ...first, expectedRevision: 0 },
       ),
     ).rejects.toMatchObject({ code: 'lease-lost' })
+  })
+
+  /** A song whose saved revision keeps `asset-two` though no clip uses it, as a removed take is kept. */
+  async function arrangementWithRemovedTake() {
+    const saved = await savedArrangement()
+    const removed = await studioAssetFixture(saved.project.id, 'asset-two')
+    const project = await service.saveProject(
+      { ...saved.project, revision: 2 },
+      { ...saved.lease, expectedRevision: 1 },
+      [removed],
+    )
+    return { ...saved, project }
+  }
+  const blobsOf = async (assetId: string) =>
+    (await db.readAllStrict<StudioBlobRecord>(STUDIO_STORES.blobs))
+      .filter((row) => row.assetId === assetId)
+      .map((row) => row.id)
+
+  it('deletes the audio no clip uses, blobs and all, and keeps the audio clips play', async () => {
+    const { project, lease } = await arrangementWithRemovedTake()
+    expect(await blobsOf('asset-two')).toHaveLength(2)
+
+    const kept = await service.pruneUnusedAssets(project.id, {
+      ...lease,
+      expectedRevision: 2,
+    })
+
+    expect(kept.map((asset) => asset.id)).toEqual(['asset-one'])
+    expect(
+      (await service.listAssets(project.id)).map((asset) => asset.id),
+    ).toEqual(['asset-one'])
+    expect(await blobsOf('asset-two')).toEqual([])
+    expect(await blobsOf('asset-one')).toHaveLength(2)
+    expect(await service.loadProject(project.id)).toEqual(project)
+    await expect(
+      service.readAssetBuffers(project.id, 'asset-one'),
+    ).resolves.toMatchObject({ asset: { id: 'asset-one' } })
+  })
+
+  it('deletes nothing without the live lease, or on a revision other than the one it opened', async () => {
+    const { project, lease } = await arrangementWithRemovedTake()
+    const unchanged = async () =>
+      expect(
+        (await service.listAssets(project.id)).map((asset) => asset.id).sort(),
+      ).toEqual(['asset-one', 'asset-two'])
+
+    expect(
+      await refusal(
+        service.pruneUnusedAssets(project.id, {
+          ...lease,
+          expectedRevision: 1,
+        }),
+      ),
+    ).toBe('conflict')
+    await unchanged()
+    clock += STUDIO_EDITOR_LEASE_MS
+    const taken = await service.acquireLease(project.id, 'tab-two')
+    expect(
+      await refusal(
+        service.pruneUnusedAssets(project.id, {
+          ...lease,
+          expectedRevision: 2,
+        }),
+      ),
+    ).toBe('lease-lost')
+    await unchanged()
+    expect(await blobsOf('asset-two')).toHaveLength(2)
+    expect(taken.epoch).toBeGreaterThan(lease.epoch)
+  })
+
+  it("never deletes another song's audio, nor audio any song's clip still names", async () => {
+    const { project, lease } = await arrangementWithRemovedTake()
+    const other = await service.createProject('Other')
+    const otherLease = await service.acquireLease(other.id, 'tab-one')
+    const otherRemoved = await studioAssetFixture(other.id, 'other-removed')
+    await service.saveProject(
+      { ...other, revision: 1 },
+      { ...otherLease, expectedRevision: 0 },
+      [otherRemoved],
+    )
+    // A song from an older build whose clip names this song's removed take.
+    await db.putStrict(STUDIO_STORES.projects, {
+      ...studioArrangementFixture(other, 'asset-two'),
+      id: 'legacy',
+    })
+
+    const kept = await service.pruneUnusedAssets(project.id, {
+      ...lease,
+      expectedRevision: 2,
+    })
+
+    expect(kept.map((asset) => asset.id).sort()).toEqual([
+      'asset-one',
+      'asset-two',
+    ])
+    expect(await blobsOf('asset-two')).toHaveLength(2)
+    expect(
+      (await service.listAssets(other.id)).map((asset) => asset.id),
+    ).toEqual(['other-removed'])
+    expect(await blobsOf('other-removed')).toHaveLength(2)
+  })
+
+  it('keeps every take of a restored song and of a copy, and the source keeps its own', async () => {
+    const { project, data, lease } = await arrangementWithRemovedTake()
+    const restored = await service.restoreProject(
+      studioArrangementFixture({ ...project, revision: 0 }),
+      [data],
+    )
+    const copy = await service.forkProject(project)
+    const restoredLease = await service.acquireLease(restored.id, 'tab-one')
+    const copyLease = await service.acquireLease(copy.id, 'tab-one')
+
+    expect(
+      await service.pruneUnusedAssets(restored.id, {
+        ...restoredLease,
+        expectedRevision: restored.revision,
+      }),
+    ).toHaveLength(1)
+    expect(
+      await service.pruneUnusedAssets(copy.id, {
+        ...copyLease,
+        expectedRevision: copy.revision,
+      }),
+    ).toHaveLength(1)
+    await service.pruneUnusedAssets(project.id, {
+      ...lease,
+      expectedRevision: 2,
+    })
+    expect(await service.listAssets(restored.id)).toHaveLength(1)
+    expect(await service.listAssets(copy.id)).toHaveLength(1)
+    expect(await service.listAssets(project.id)).toHaveLength(1)
   })
 
   it('reports quota failure and leaves the last saved revision and caller snapshot intact', async () => {

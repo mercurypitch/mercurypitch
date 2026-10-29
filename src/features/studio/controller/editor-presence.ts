@@ -11,9 +11,15 @@
 // project's lock therefore knows no other live tab edits that project, and
 // may take over whatever lease the clock still shows.
 //
+// Every tab that loads a song also holds a second lock on it, shared, from
+// before it reads the song until it lets the song go. A song's unused audio
+// is deleted only by a tab that finds no other tab holding that lock: any
+// other tab's history, unsaved edits or stale copy may still want that audio.
+//
 // Where navigator.locks is missing, or refuses this page, every claim is
 // granted and proves nothing: the lease's expiry is then the only sign
-// another tab has gone, as it was before.
+// another tab has gone, as it was before, and no tab is ever proven alone
+// with a song, so nothing is deleted.
 
 /** How long a claim waits on a tab that may be leaving before it calls the project another tab's. */
 export const EDITOR_CLAIM_WAIT_MS = 1000
@@ -33,9 +39,18 @@ export interface EditorClaim {
   steal: boolean
 }
 
+/** A song loaded in this tab. */
+export interface ProjectOpenHold {
+  /** True only when it is proven that no other tab has the song loaded. */
+  alone(): Promise<boolean>
+  release(): void
+}
+
 export interface EditorPresenceSource {
   /** This tab's presence on `projectId`, or null while another live tab holds it past the wait. */
   claim(projectId: string, claim: EditorClaim): Promise<EditorPresence | null>
+  /** Hold song `projectId` as loaded in this tab, until the hold is released. */
+  open(projectId: string): Promise<ProjectOpenHold>
 }
 
 const UNPROVEN: EditorPresence = {
@@ -44,14 +59,25 @@ const UNPROVEN: EditorPresence = {
   release: () => undefined,
 }
 
+const UNPROVEN_OPEN: ProjectOpenHold = {
+  alone: () => Promise.resolve(false),
+  release: () => undefined,
+}
+
 /** No Web Locks: every claim is granted, proves nothing, and is never taken away. */
 export const UNPROVEN_EDITOR_PRESENCE: EditorPresenceSource = {
   claim: () => Promise.resolve(UNPROVEN),
+  open: () => Promise.resolve(UNPROVEN_OPEN),
 }
 
-/** The lock's name: one per project, for this origin. */
+/** The editor lock's name: one per project, for this origin. */
 export function editorLockName(projectId: string): string {
   return `mercurypitch-studio-editor:${projectId}`
+}
+
+/** The name of the lock every tab that has the song loaded shares. */
+export function openLockName(projectId: string): string {
+  return `mercurypitch-studio-open:${projectId}`
 }
 
 /** Presence held as an exclusive Web Lock on the project. */
@@ -92,6 +118,34 @@ export function lockEditorPresence(locks: LockManager): EditorPresenceSource {
             // Refused outright, as an opaque origin is: the lease alone decides.
             else resolve(UNPROVEN)
           })
+      })
+    },
+    open(projectId) {
+      const name = openLockName(projectId)
+      return new Promise<ProjectOpenHold>((resolve) => {
+        let releaseHeld = (): void => undefined
+        const held = new Promise<void>((release) => {
+          releaseHeld = release
+        })
+        // Granted at once: no tab ever asks for this lock exclusively.
+        locks
+          .request(name, { mode: 'shared' }, () => {
+            resolve({
+              async alone() {
+                try {
+                  const { held: holders = [] } = await locks.query()
+                  return (
+                    holders.filter((lock) => lock.name === name).length === 1
+                  )
+                } catch {
+                  return false
+                }
+              },
+              release: releaseHeld,
+            })
+            return held
+          })
+          .catch(() => resolve(UNPROVEN_OPEN))
       })
     },
   }
