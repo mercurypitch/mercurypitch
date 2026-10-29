@@ -1,6 +1,8 @@
 """Write output/motion/lesson-04/script.json (Lesson 4 film).
 
 Draft 3: script critic round 2's items (review/script-02/REPORT.md) on top of draft 2.
+Draft 3 also takes round 3's one voice-line item (review/script-03/REPORT.md): "support" in
+quotation marks, as Lesson 5's hook has it.
 Draft 2: script critic round 1's nine items (review/script-01/REPORT.md), Lesson 2's 2.2 s
 chapter breaths after the act 2, 3 and 4 marks, and three cuts for length (DECISIONS 5): Merc's
 tag after the hook, the W and H line (the letters stay on screen) and the "back to the question"
@@ -167,7 +169,7 @@ line(B, "In MercuryPitch's Scale Runner, sing a major scale back, one note at a 
 # s15 next
 mark("next", 0.7)
 line(B, "Next time.", 0.3)
-line(B, "Singers are told to support a long note.", 0.35, "31, 86")
+line(B, 'Singers are told to "support" a long note.', 0.35, "31, 86")
 line(O, "If that doesn't mean pushing, what keeps it steady?", 0.4, "31, 86")
 sting("end", 5.0, 0.4)
 

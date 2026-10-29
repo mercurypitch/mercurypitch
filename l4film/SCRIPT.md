@@ -145,9 +145,9 @@ captions and the picture write them as on screen ("do, re, mi").
 ## s15-next: Next time (7:45.2)
 
 - `7:45.7` **MERC:** Next time.
-- `7:47.1` **MERC:** Singers are told to support a long note.
-- `7:50.2` **TAVI:** If that doesn't mean pushing, what keeps it steady?
+- `7:47.1` **MERC:** Singers are told to "support" a long note.
+- `7:50.5` **TAVI:** If that doesn't mean pushing, what keeps it steady?
 
-## s16-end: End card (7:53.3)
+## s16-end: End card (7:53.5)
 
-- `7:53.3` *Sting: end.*
+- `7:53.5` *Sting: end.*

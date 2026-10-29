@@ -42,11 +42,12 @@ FILES=(
   l4film/BRIEF.md l4film/FACTS.md l4film/script.json l4film/SCRIPT-DRAFT.md l4film/SCRIPT.md l4film/DECISIONS.md l4film/LEDGER.md
   l4film/tools/script-draft.py l4film/tools/gen-root.py l4film/tools/mix.py l4film/tools/captions.py l4film/tools/script-md.py
   l4film/review/script-01/REPORT.md l4film/review/script-02/REPORT.md l4film/review/script-03/REPORT.md
+  l4film/STORYBOARD.md l4film/HANDOFFS.md l4film/review/storyboard-01/REPORT.md
 )
 
 # The Lesson 4 film's text files live in its gitignored working folder; copy them in first.
 L4=/home/user/mercurypitch/output/motion/lesson-04
-for f in BRIEF.md FACTS.md script.json SCRIPT-DRAFT.md SCRIPT.md DECISIONS.md LEDGER.md tools/script-draft.py tools/gen-root.py tools/mix.py tools/captions.py tools/script-md.py review/script-01/REPORT.md review/script-02/REPORT.md review/script-03/REPORT.md; do
+for f in BRIEF.md FACTS.md script.json SCRIPT-DRAFT.md SCRIPT.md DECISIONS.md LEDGER.md tools/script-draft.py tools/gen-root.py tools/mix.py tools/captions.py tools/script-md.py review/script-01/REPORT.md review/script-02/REPORT.md review/script-03/REPORT.md STORYBOARD.md HANDOFFS.md review/storyboard-01/REPORT.md; do
   if [ -f "$L4/$f" ]; then mkdir -p "$S/l4film/$(dirname "$f")" && cp "$L4/$f" "$S/l4film/$f"; fi
 done
 

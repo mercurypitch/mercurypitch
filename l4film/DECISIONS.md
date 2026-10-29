@@ -160,3 +160,50 @@ replaced it. The builder's record: critics never read it.
     before delivery (20).
 24. **The critic's other not-judgeable items stay with the storyboard** (20): where the hosts
     stand, and the final voices' delivery, which waits for the owner's word on the credits (16).
+
+## Script critic 03
+
+25. **Every item of `review/script-03/REPORT.md` was taken**, in draft 3 (the voice changed by
+    one pair of quotation marks):
+    1. Tavi's answer on screen keeps the hedge: "learned, it seems" on do, beside "one short step"
+       on ti's riser (FACTS 82; the brief's mute list).
+    2. The ladder is drawn as the app draws it: the pitch line past do and on re, re a dashed
+       line that stops at the playhead, six rungs ahead, mi up to do (FACTS 85, read at
+       `b803c7d43`: `scaleNotes.slice(noteIndex + 1)` and the dashed current line).
+    3. Captions name the speaker after a sung run: a run is its host's turn (`SUNG` in
+       `tools/captions.py`), so "Still waiting." and "Now you." read as Merc's on mute.
+    4. The practise card and the end card show the two taps a typed address needs: "First visit?
+       Skip the intro: × › Yes, skip", and "then Exercises › Scale Runner" after the Settings line
+       (FACTS 88, read at `b803c7d43`: the × asks first, and Settings is a tab of its own). Each tab
+       is drawn with its own icon beside its name, because a short tab bar shows icons only; whether
+       a phone shows the names is checked in a local build before the card is drawn (27).
+    5. The care block sits above the caption band, nothing below y 864, with the doctor lines at
+       30 px or more (the s13 note; the brief).
+    6. No pad under the chimes. Their A major chord carries C♯, this film's ti, over the D pad; the
+       chimes stay the series' own, so the pad drops out under both (`tools/mix.py`; measured −240
+       dB in the bed stem under both). Moving the chimes to D was the other fix: it would make
+       this film's chimes differ from every other lesson's.
+    7. The small fixes: the count-in caption is "[Merc sings do]"; "support" keeps Lesson 5's
+       quotation marks (b55, FACTS 86); the later studies are credited "as summed up in Janata et
+       al., 2003" (FACTS 81); the slides start "in middle C's own octave" (FACTS 68, the s08 note).
+       The captions' 43-character lines came from the speaker label, which was added after the
+       line was cut; the label is now cut with its line. The same pass breaks a two-line caption
+       after a sentence or a clause before anywhere else, never leaves one word of a sentence
+       alone on its line, and never ends a line on a little word ("MERC: Now you." / "Sore,
+       hoarse or unwell today?", where it had "Now you. Sore," / "hoarse ..."): 123 captions,
+       longest line 42, peak 20.0 characters a second.
+26. **The count-in keeps the page's timing**, 0.8 s of Merc's D3, then 0.2 s before the guide
+    (FACTS 63, 68), so the film and the page train the same entry; nothing is scored, so a late
+    entry costs nothing.
+27. **Checks before the end cards are built**: the practise path at phone width in a local build
+    of `b803c7d43` or later (the address, the intro's skip, Settings › Singing Voice Range, then
+    Exercises › Scale Runner), never on production; and the chimes and the count-in on a phone
+    speaker, by ear, in the owner's listen.
+28. **The vocal coach signs off the sing-along before the final voices**: the care lines, the
+    invitation, the stop line and the doctor lines on screen (TEACHING-PLAYBOOK; FACTS 54 leaves
+    the wording to the coach). The owner is asked to send them.
+29. **Script critic 03's items are verified in the storyboard round, not a fourth script round.**
+    The voice changed by one pair of quotation marks; every other item is a picture note, a caption
+    or a mix setting, and the storyboard round reads all three. Its critic gets
+    `review/script-03/REPORT.md` as the previous report.
+

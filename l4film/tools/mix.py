@@ -338,7 +338,9 @@ def main():
     duck = np.ones(n, dtype=np.float32)
     quiet = []
     for k, c in C.items():
-        if c['type'] in ('sound', 'sing', 'line') or k in NO_BED:
+        # nor under the chimes: their A major chord carries C sharp, this film's ti, over the D
+        # pad (script critic 03, item 6); the chimes stay the series' own
+        if c['type'] in ('sound', 'sing', 'line', 'sting') or k in NO_BED:
             pre, post = (0.25, 0.35) if c['type'] == 'line' else (0.5, 0.6)
             quiet.append((c['start'] - pre, c['end'] + post))
     quiet.sort()

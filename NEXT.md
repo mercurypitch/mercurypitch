@@ -1030,3 +1030,19 @@ Note: the lanes' memory gate read a stale cgroup path after the 21:00 restart (f
 - Scratch mix built (assets/audio/full.wav etc.: -16.0 LUFS, TP -1.4). FACTS, BRIEF, DECISIONS, LEDGER 02 done.
 - Script critic 03 running -> save its text to review/script-03/REPORT.md, fill LEDGER row 03.
 - Owner message pending: Season 2's 5 decisions + docs-PR offer; Lesson 3 film unreachable; ElevenLabs OK.
+
+## 2026-10-29 ~02:30Z: Lesson 4 film storyboard v1 (task 181)
+- Script critic 03: ONE MORE PASS, 7 new items, all taken (DECISIONS 25-29): "learned, it seems"; ladder =
+  line past do and on re + six rungs mi..do (slice(noteIndex+1)); sung runs set the caption speaker;
+  card path "First visit? Skip the intro: × › Yes, skip" + "then Exercises › Scale Runner" (FACTS 88);
+  care block above y 864, doctor lines >= 30 px; pad silent under both chimes (C♯ over D); 42-char
+  captions, "[Merc sings do]", "support" quoted, Janata credit wording, G4/E4 "middle C's own octave".
+  123 captions, longest 42, peak 20.0 cps; mix -16.0 LUFS TP -1.4. No 4th script round: the storyboard
+  critic verifies script-03's items (DECISIONS 29).
+- Wrote STORYBOARD.md v1 + HANDOFFS.md (output/motion/lesson-04): world F0 (rows C4-G5 26 px, stairs over
+  their letters' white keys on a 120 px pitch, strip C4-G5), framings F-cold 1.2x / CU-A,B 2x / CU-C 1.8x,
+  the guide (S12) and guide-right (S13), recap panel, ladder panel, practise card; 7 Merc passes (m12 duo
+  137 s from S12 to the end).
+- Reference pass on Lesson 2 rc-04 running into study/lesson-02 (the study folder was empty).
+- NEXT: fill study notes, spawn storyboard critic 01 (report review/storyboard-01/REPORT.md; previous
+  report review/script-03/REPORT.md), save its text, LEDGER row 04, push-notes.

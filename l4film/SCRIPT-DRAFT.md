@@ -86,7 +86,7 @@ _Picture:_ Chapter card "02 Start anywhere". Tavi's dashed ink-2 staircase with 
 
 ## s08-anywhere: A pattern, not a set of keys (~3:28.9)
 
-_Picture:_ The staircase slides to G (one black key lights) and to E (four), both in the octave above middle C, never changing shape; the count of black keys each start needs, "C 0 · D 2 · G 1 · E 4".
+_Picture:_ The staircase slides to G (one black key lights) and to E (four), both starting in middle C's own octave (G4, E4), as every other example does, never changing shape; the count of black keys each start needs, "C 0 · D 2 · G 1 · E 4".
 
 - `3:29.5` **TAVI:** So a major scale isn't a set of keys at all. It's the pattern? _[mix-up card's better idea (her words)]_
 - `3:34.4` **MERC:** Yes. Start the pattern on any of the twelve notes, and you get a major scale. _[8, 77]_
@@ -120,7 +120,7 @@ _Picture:_ Back on C; ti's gold riser, "1 semitone"; the bead climbs and hangs u
 
 ## s11-why: Why do is home (~5:18.2)
 
-_Picture:_ The experiment as a picture: the notes regroup into tiers, do on top, then mi and so, then re fa la ti, then the five outside, no numbers, "Krumhansl & Shepard, 1979"; "later studies: without training too, only weaker", "Janata et al., 2003"; Tavi's answer as two labels, "learned home" on do and "one short step" on ti's gold riser; "leading note"; the staircase on D, "ti = C♯" leaning up to D.
+_Picture:_ The experiment as a picture: the notes regroup into tiers, do on top, then mi and so, then re fa la ti, then the five outside, no numbers, "Krumhansl & Shepard, 1979"; "later studies: without training too, only weaker", "as summed up in Janata et al., 2003"; Tavi's answer as two labels, "learned, it seems" on do and "one short step" on ti's gold riser; "leading note"; the staircase on D, "ti = C♯" leaning up to D.
 
 - `5:18.8` **TAVI:** But why is do home, and not ti? _[- (a question; the page's own, FACTS 23a)]_
 - `5:21.8` **MERC:** In one experiment, listeners heard a C major scale, then one more note, and rated how well it finished the scale. _[24, 81]_
@@ -141,7 +141,7 @@ _Picture:_ Chapter card "04 Sing it". The staircase tips into the scale guide's 
 
 ## s13-your-turn: Your turn (~6:43.6)
 
-_Picture:_ The care lines in type as they are said; at their foot, from the first ("Sore, hoarse or unwell today?"), the doctor lines in small type, carried whole (FACTS 54, 83), with the stop line landing above them; "Your turn."; "D3 or D4"; "wait on ti"; Merc sings the starting note; the plain chrome guide sweeps the path, 8.6 s, room tone only; the care block and the doctor lines stay up to the end of the turn. Nothing listens.
+_Picture:_ The care lines in type as they are said; at their foot, from the first ("Sore, hoarse or unwell today?"), the doctor lines in small type, carried whole (FACTS 54, 83), with the stop line landing above them; "Your turn."; "D3 or D4"; "wait on ti"; Merc sings the starting note; the plain chrome guide sweeps the path, 8.6 s, room tone only; the care block and the doctor lines stay up to the end of the turn, all of it above the caption band (nothing below y 864, the bottom fifth of the frame), the doctor lines at 30 px or more. Nothing listens.
 
 - `6:44.2` **MERC:** Now you. Sore, hoarse or unwell today? Just listen along. _[50, 83]_
 - `6:48.9` **MERC:** Otherwise, sing on do, re, mi, or on ooh, at about speaking volume. Start on my note, or an octave up. _[51, 52, 83]_
@@ -152,7 +152,7 @@ _Picture:_ The care lines in type as they are said; at their foot, from the firs
 
 ## s14-recap: Quick check (~7:15.7)
 
-_Picture:_ Four recap cards, each answered by the staircase; the staircase becomes Scale Runner's ladder ("Illustration"): the pitch line has already passed do and re, and six rungs wait ahead of it, as the app draws at most six notes still to come (FACTS 39); the practise card, in the order a visitor meets them: "Practise it free: mercurypitch.com/pitch-training", "First visit? Skip the intro (×)", "Set your range first: Settings › Singing Voice Range", "then tap Scale Runner", "sing in the octave it plays".
+_Picture:_ Four recap cards, each answered by the staircase; the staircase becomes Scale Runner's ladder ("Illustration"): the pitch line has sung do and is on re, whose dashed target line stops at the playhead, and six rungs wait ahead of it, mi up to do, since the app draws only the notes after the one being asked for, at most six (FACTS 39, 85); the practise card, in the order a visitor meets them: "Practise it free: mercurypitch.com/pitch-training", "First visit? Skip the intro: × › Yes, skip", "Set your range first: Settings › Singing Voice Range", "then Exercises › Scale Runner", "sing in the octave it plays", each tab drawn with the app's own icon for it beside its name (FACTS 88).
 
 - `7:18.0` **MERC:** Quick check. _[-]_
 - `7:19.3` **MERC:** What pattern of steps makes a major scale? _[2, 84]_
@@ -175,12 +175,12 @@ _Picture:_ Four recap cards, each answered by the staircase; the staircase becom
 _Picture:_ "Next time": Lesson 5's hook in type.
 
 - `8:22.7` **MERC:** Next time. _[-]_
-- `8:23.9` **MERC:** Singers are told to support a long note. _[31, 86]_
+- `8:23.9` **MERC:** Singers are told to "support" a long note. _[31, 86]_
 - `8:27.8` **TAVI:** If that doesn't mean pushing, what keeps it steady? _[31, 86]_
 
 ## s16-end: End card (~8:30.7)
 
-_Picture:_ End card: the address, "First visit? Skip the intro (×)", the lockup.
+_Picture:_ End card: the address, "First visit? Skip the intro: × › Yes, skip", the lockup.
 
 - `8:31.1` _Sting: end (5.0 s)._
 

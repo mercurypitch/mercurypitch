@@ -48,7 +48,8 @@ also checked that every run below climbs 2, 2, 1, 2, 2, 2, 1.
     1's), not the page kit's (partials 1, .3, .11, .05, .024, .012): the pitches are the same, the
     colour a little plainer | code; arithmetic. G major needs one black key (F♯) and E major four
     (F♯, G♯, C♯, D♯), as 12 counts them; both spelled one letter a step, as 13 requires. Both
-    slides start in the octave above middle C, as every other staircase example does. The
+    slides start in middle C's own octave, C4 to B4 (on G4 and E4), as every other staircase
+    example does. The
     sing-along is the guide's second half only (63): up to ti, the hold, the rest and home, sung by
     Merc from D3, then by Tavi from D4, then by the viewer; the guide's first half, up to so and
     back, stays on the page. The page counts in with the soft tone at half a tapped note's level
@@ -115,15 +116,16 @@ also checked that every run below climbs 2, 2, 1, 2, 2, 2, 1.
     pronounced in musicians than non-musicians", and present "in non-expert groups"), not K&S
     1979, whose less musical listeners leaned on pitch height; "seems", as Janata's "suggests"
     allows | carried. On screen the tiers carry no numbers; the experiment is credited
-    "Krumhansl & Shepard, 1979", and the later studies "Janata et al., 2003", the review that
-    sums them up (the studies it cites were not read here, 25)
+    "Krumhansl & Shepard, 1979", and the later studies "as summed up in Janata et al., 2003",
+    since that is the review that sums them up (the studies it cites were not read here, 25)
 82. "Tee is called the leading note, because it's thought of as leading to the tonic"; "It leads
     wherever home is. From D, tee is C sharp, and it leans up to D." | 22, 26 | carried, in the
     textbooks' terms only (26). Tavi's "So it sounds finished on doh because we've learned that
     doh is home, and tee stops one short step under it?" answers the cold open's question with the
     page's two reasons and no others (23a, 22); Merc's "That's how it seems" keeps 23a's "seems".
     Tavi's question before the experiment, "But why is doh home, and not tee?", is the page's own
-    (23a)
+    (23a). On screen her answer is two labels, "learned, it seems" on do and "one short step" on
+    ti's gold riser: the first keeps 23a's "seems", which the label must not drop
 83. The sing-along's lines: "Let's sing it. Listen first: up to tee, a wait, and home."; Tavi's
     "So on tee, I just wait, and listen for where it wants to go?" (her re-explaining question) and
     Merc's "Yes. Try it, an octave up."; "Now you. Sore, hoarse or unwell today? Just listen
@@ -148,17 +150,22 @@ also checked that every run below climbs 2, 2, 1, 2, 2, 2, 1.
     doh?" "G. Doh is wherever a major scale starts: its home." (9, 19, in movable do, 79; "a major
     scale", since 19's source speaks of major scales) | carried
 85. "In MercuryPitch's Scale Runner, sing a major scale back, one note at a time. Set your voice
-    range in Settings first, and sing in the octave it plays." On screen: "Practise it free:
-    mercurypitch.com/pitch-training", "then tap Scale Runner", "Set your range first: Settings ›
-    Singing Voice Range", "First visit? Skip the intro (×)" | 34, 35, 36, 37, 38, 40, 41, 88 |
+    range in Settings first, and sing in the octave it plays." On screen, in the order a visitor
+    meets them: "Practise it free: mercurypitch.com/pitch-training", "First visit? Skip the
+    intro: × › Yes, skip", "Set your range first: Settings › Singing Voice Range", "then
+    Exercises › Scale Runner", "sing in the octave it plays" | 34, 35, 36, 37, 38, 39, 40, 41, 88 |
     code, as cited there. "In the octave it plays" because Scale Runner scores a note sung an
     octave away as 1,200 cents off (40), while the sing-along offers either octave (83); "set your
     voice range first" because it plays in the saved range, and a visitor who never set one gets
     the tenor preset, which starts it on E3, below every higher voice's range (41, 44), as the
-    page's practice card says. Its ladder shows at most six notes still to come (39), so the
-    film's ladder has six rungs ahead of a pitch line that has passed do and re
-86. Next time: "Singers are told to support a long note." / "If that doesn't mean pushing, what
-    keeps it steady?": Lesson 5's hook (31), split between Merc and Tavi | carried
+    page's practice card says (LESSON.md, Practise it). Its ladder shows the notes after the one
+    being asked for, at most six (39: `getUpcomingMidi` returns `scaleNotes.slice(noteIndex + 1)`,
+    `use-scale-runner-controller.ts:228-231`), and the note being asked for is a dashed line that
+    stops at the playhead (`src/components/PitchOverTimeCanvas.tsx:436-447`), so the film draws
+    the pitch line past do and on re, and six rungs ahead of it, mi up to do
+86. Next time: "Singers are told to "support" a long note." / "If that doesn't mean pushing,
+    what keeps it steady?": Lesson 5's hook (31), split between Merc and Tavi, with its quotation
+    marks on "support", a word the series uses only in quotation marks | carried
 87. The cold open's lines: Tavi's "It just hangs there, waiting. Is that because we started on
     C?" is LESSON.md's, word for word; Merc's "Start on D, and listen. Will it still hang?" is
     LESSON.md's "Start somewhere else, and listen", with the start named and the page's predict
@@ -168,12 +175,21 @@ also checked that every run below climbs 2, 2, 1, 2, 2, 2, 1.
     claims no listening result: it plays two examples and lets them speak (as 26 says of the
     page's reveal)
 88. A viewer who types mercurypitch.com/pitch-training on a first visit meets First Light, the
-    app's intro, before the Exercises tab; only a link carrying `?lesson=04` skips it. So the end
-    card adds "First visit? Skip the intro (×)", and the YouTube description's link carries
+    app's intro, before the Exercises tab; only a link carrying `?lesson=04` skips it. So the
+    practise card and the end card add "First visit? Skip the intro: × › Yes, skip", and the
+    YouTube description's link carries
     `?lesson=04` | 35a, 35b; at `b803c7d43`: `stepAsideForLesson` returns without stepping aside
     when the address has no valid marker (`src/stores/onboarding-store.ts:310-316`), and
-    `src/index.tsx:117` calls it before the render; the intro's one way out is the button labelled
-    "Skip the intro" (`src/features/onboarding/FirstLight.tsx:744-745`) | code
+    `src/index.tsx:117` calls it before the render; on its first screen the intro's way out is the
+    × button labelled "Skip the intro" (`src/features/onboarding/FirstLight.tsx:740-746`), which
+    asks first: "Skip the intro?", with "Keep going" and "Yes, skip"
+    (`src/features/onboarding/skip-confirm.tsx:45-52`, asked on that first screen, `:59-63`).
+    Settings is a tab of its own (`src/components/AppNavTabs.tsx:385-388`; the tab names are
+    "Settings" and "Exercises", `src/features/tabs/constants.ts:365`, `:377`), so a viewer who
+    sets the range goes back to Exercises for Scale Runner; where the tab bar runs short of room
+    it shows icons only, the name then in the tooltip (`AppNavTabs.tsx:436-450`, `:523-532`), so
+    the card draws each tab's own icon beside its name. Whether a phone shows the names was not
+    checked in a browser | code
 
 ## Illustrations without claims
 

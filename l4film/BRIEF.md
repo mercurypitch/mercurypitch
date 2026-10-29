@@ -40,8 +40,9 @@ project_dir: output/motion/lesson-04
   in Settings first, and sing in the octave it plays." On screen: the staircase turning into
   Scale Runner's ladder of notes still to come (labelled as an illustration), then the practise
   card in the order a visitor meets its steps: "Practise it free: mercurypitch.com/pitch-training",
-  "First visit? Skip the intro (×)", "Set your range first: Settings › Singing Voice Range", "then
-  tap Scale Runner" and "sing in the octave it plays". A typed address meets the app's intro on a
+  "First visit? Skip the intro: × › Yes, skip", "Set your range first: Settings › Singing Voice
+  Range", "then Exercises › Scale Runner" and "sing in the octave it plays", each tab drawn with
+  the icon the app gives it, since a short tab bar shows icons only (FACTS 88). A typed address meets the app's intro on a
   first visit, and only a link with `?lesson=04`, the YouTube description's, skips it (FACTS 88);
   a visitor who never set a range gets the tenor preset, whose run starts on E3, below every
   higher voice (41, 44). The skip line is on this card and again on the end card. Next-episode tease: Lesson 5's hook, ending on Tavi's "If that doesn't mean
@@ -157,14 +158,15 @@ only the room tone, and Merc's sung count-in gives the starting note.
 Scale Runner (FACTS 36 to 41), reached at mercurypitch.com/pitch-training, then tapped in the
 exercises (35; free, 34). It plays a major scale one note at a time, do up to do, and the viewer
 sings each note back; it draws the notes still to come as a ladder, at most six of them (39),
-which is why the film ends the staircase as a ladder, labelled "Illustration", with six rungs
-ahead of a pitch line that has already passed do and re. Today no link opens it at a beginner
+which is why the film ends the staircase as a ladder, labelled "Illustration": the pitch line
+past do and on re, whose dashed target line stops at the playhead, and six rungs ahead of it, mi
+up to do, since the app's ladder holds only the notes after the one being asked for (FACTS 85). Today no link opens it at a beginner
 pace (43): the proposed `/exercises/slow-scales` never appears on screen. It wants each note in
 the octave it plays (40), so the voice says so ("in the octave it plays"), because the sing-along
 just offered either octave. It starts from the range saved in Settings (41), and a visitor who
 never set one gets the tenor preset, which starts the run on E3 (44), below the alto, mezzo and
 soprano ranges, so the voice and the card say to set the range first. A first visit by a typed address meets the app's intro first, so the
-practise card and the end card say how to close it, and the description's link carries `?lesson=04`, which skips it
+practise card and the end card say how to close it (the × asks first, "Yes, skip"), and the description's link carries `?lesson=04`, which skips it
 (FACTS 88). Ear Lab's Home (47) is the page's second drill and is not in the film.
 
 ### What must read with the sound off (captions on)
@@ -186,14 +188,19 @@ practise card and the end card say how to close it, and the description's link c
   "scale degrees 1–7"; "solfège", with "so (sol)"; "movable do" against "fixed do: do = C".
 - Ti's gold riser with "1 semitone" and an arrow up to home; "leading note"; the experiment's
   tiers (do on top), titled as a study and credited "Krumhansl & Shepard, 1979", then "later
-  studies: without training too, only weaker", credited "Janata et al., 2003"; "from D: ti = C♯".
+  studies: without training too, only weaker", credited "as summed up in Janata et al., 2003";
+  Tavi's answer as two labels, "learned, it seems" on do and "one short step" on ti's riser;
+  "from D: ti = C♯".
 - The scale guide's path, its names on the rows, Merc's run, the wait on ti marked, then Tavi's an
   octave up; on the viewer's turn only "Your turn.", "D3 or D4", "wait on ti", the comfort line,
-  the stop line with the doctor lines in small type under it, and the chrome sweep.
+  the stop line with the doctor lines in small type under it, and the chrome sweep. The whole
+  care block sits above the caption band (nothing below y 864, the bottom fifth of the frame),
+  the doctor lines at 30 px or more, since captions are on for 31 s of it.
 - The recap cards, each answered by the object that taught it; Scale Runner's ladder labelled
-  "Illustration", six rungs ahead; the address, "First visit? Skip the intro (×)", "Set your range
-  first: Settings › Singing Voice Range", "then tap Scale Runner", "sing in the octave it plays".
-- The end card's address, and "First visit? Skip the intro (×)".
+  "Illustration", the line on re and six rungs ahead; the address, "First visit? Skip the intro:
+  × › Yes, skip", "Set your range first: Settings › Singing Voice Range", "then Exercises › Scale
+  Runner", "sing in the octave it plays".
+- The end card's address, and "First visit? Skip the intro: × › Yes, skip".
 
 ## Brand
 
@@ -244,7 +251,8 @@ into the next idea (staircase, keyboard, groups, slides, names, tiers, guide, la
   `hang-d`, `wait`, `q3` and `your-turn`, which keep only the room tone (playbook rule 12: after
   a C scale a pad on D is in the wrong key, and after a D scale it sounds home before the landing
   does). Merc's sung count-in gives the viewer the starting note. The title and end stings are Lesson 1's
-  chimes.
+  chimes, kept as the series' sound; the pad drops out under both, since their A major chord
+  carries C♯, this film's ti, and over a D pad it would sound unfinished.
 - Sound effects: synthesised in code (one soft whoosh per act change). The effects that matter are
   the examples.
 - Voiceover: yes, two characters, Merc (blue) teaching and Tavi (orange) asking. No line plays

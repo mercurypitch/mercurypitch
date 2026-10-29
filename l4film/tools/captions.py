@@ -45,10 +45,14 @@ SOUNDS = {
     'slide-g': '[a major scale from G]', 'slide-e': '[a major scale from E]',
     'sing-a': '[Merc sings up to ti, waits, and lands on do]',
     'sing-b': '[Tavi sings up to ti, waits, and lands on do, an octave higher]',
-    'count-in': '[Merc sings the starting note, do]',
+    'count-in': '[Merc sings do]',
     'your-turn': '[your turn: up to ti, wait, and do]',
     'ti-do': '[ti, then do]',
 }
+# Who sings each sung run (FACTS 68): a run is that host's turn, so the next line names its
+# speaker when it is the other host (script critic 03, item 3: "Still waiting." after Tavi's run).
+SUNG = {'stop-c': 'blue', 'stop-c-home': 'blue', 'land-c': 'blue', 'sing-a': 'blue', 'count-in': 'blue',
+        'stop-d': 'orange', 'land-d': 'orange', 'sing-b': 'orange'}
 
 
 def tidy(text):
@@ -62,20 +66,47 @@ def tidy(text):
     return text
 
 
+LITTLE = {'a', 'an', 'the', 'of', 'to', 'and', 'or', 'in', 'on', 'at', 'for', 'with', 'from', 'by', 'up'}
+
+
+def orphan(text, c):
+    """True when a break at c leaves one word of a sentence alone on its line."""
+    before, after = text[:c].strip(), text[c:].strip()
+    if re.search(r'[.?!]$', before):
+        return False
+    head = re.split(r'(?<=[.?!])\s+', before)[-1]
+    tail = re.split(r'(?<=[.?!])\s+', after)[0]
+    return len(head.split()) < 2 or len(tail.split()) < 2
+
+
+def best_break(text, width=WIDTH):
+    """Where to break a two-line caption, and whether that is at a punctuation mark: after a
+    sentence first, then after a clause mark, near the middle, never leaving one word of a
+    sentence alone on its line; else the space nearest the middle that fits."""
+    mid = len(text) // 2
+    fits = lambda c: len(text[:c].strip()) <= width and len(text[c:].strip()) <= width
+    for marks in (r'[.?!] ', r'[,:;] '):
+        cands = [m.end() for m in re.finditer(marks, text)]
+        cands = [c for c in cands if 12 <= c <= len(text) - 8 and fits(c) and not orphan(text, c)]
+        if cands:
+            return min(cands, key=lambda c: abs(c - mid)), True
+    cands = [i + 1 for i, ch in enumerate(text) if ch == ' ' and fits(i + 1)]
+    # nor a line that ends on a little word ("wherever a" / "major scale")
+    cands = [c for c in cands if not orphan(text, c) and
+             text[:c].split()[-1].lower() not in LITTLE] or [c for c in cands if not orphan(text, c)] or cands
+    if not cands:
+        cands = [i + 1 for i, ch in enumerate(text) if ch == ' ']
+    return min(cands, key=lambda c: abs(c - mid)), False
+
+
+def tidy_break(text):
+    return best_break(text)[1]
+
+
 def split_lines(text, width=WIDTH):
     if len(text) <= width:
         return [text]
-    # prefer a break after punctuation near the middle, else the space nearest the middle;
-    # either way both lines must fit the width
-    mid = len(text) // 2
-    fits = lambda c: len(text[:c].strip()) <= width and len(text[c:].strip()) <= width
-    cands = [m.end() for m in re.finditer(r'[,.?:;] ', text)]
-    cands = [c for c in cands if 12 <= c <= len(text) - 8 and fits(c)]
-    if not cands:
-        cands = [i + 1 for i, ch in enumerate(text) if ch == ' ' and fits(i + 1)]
-    if not cands:
-        cands = [i + 1 for i, ch in enumerate(text) if ch == ' ']
-    cut = min(cands, key=lambda c: abs(c - mid))
+    cut, _ = best_break(text, width)
     return [text[:cut].strip(), text[cut:].strip()]
 
 
@@ -102,7 +133,10 @@ def chunks(text):
     out, cur = [], ''
     for sen in pieces:
         trial = (cur + ' ' + sen).strip()
-        if len(trial) <= 2 * WIDTH and all(len(l) <= WIDTH for l in split_lines(trial)):
+        # two pieces share a caption only where its line break falls at a punctuation mark and
+        # leaves no word alone with its line ("MERC: Now you. Sore," / "hoarse ...")
+        if len(trial) <= 2 * WIDTH and all(len(l) <= WIDTH for l in split_lines(trial)) and \
+                (len(trial) <= WIDTH or tidy_break(trial) or min(len(cur), len(sen)) < 12):
             cur = trial
         else:
             if cur:
@@ -171,14 +205,18 @@ def main():
     for k, c in sorted(C.items(), key=lambda kv: kv[1]['start']):
         if c['type'] == 'line':
             text = tidy(c['text'])
-            parts = chunks(text)
+            # label the speaker only when it changes (the usual caption convention); the label
+            # is chunked with its line, so it counts towards the 42 characters
+            label = f"{SPEAKER[c['who']]}: " if c['who'] != last_who else ''
+            parts = chunks(label + text)
             # each chunk starts on its own first word: the voice's word times (cues.json `words`,
-            # tools/tts.py), so a caption change lands on the word; without them, by length
+            # tools/tts.py), so a caption change lands on the word; without them, by length.
+            # The label is not one of the voice's words.
             spoken = c['text'].split()
             starts, k = [], 0
-            for p in parts:
+            for i, p in enumerate(parts):
                 starts.append(k)
-                k += len(p.split())
+                k += len(p.split()) - (1 if (i == 0 and label) else 0)
             W = c.get('words') if c.get('words') and len(c['words']) == len(spoken) and k == len(spoken) else None
             total = sum(len(p) for p in parts)
             t = c['start']
@@ -189,9 +227,7 @@ def main():
                 else:
                     a = t
                     b = t + (c['end'] - c['start']) * len(p) / total
-                # label the speaker only when it changes (the usual caption convention)
-                label = f"{SPEAKER[c['who']]}: " if (i == 0 and c['who'] != last_who) else ''
-                speech.append((a, b, split_lines(label + p)))
+                speech.append((a, b, split_lines(p)))
                 t = b
             last_who = c['who']
         elif k in SOUNDS:
@@ -203,6 +239,8 @@ def main():
             else:
                 # a description longer than a line wraps like speech (Lesson 2 has three over 42)
                 sounds.append((c['start'], max(c['end'], c['start'] + 1.2), split_lines(s_)))
+            if k in SUNG:
+                last_who = SUNG[k]
     # a sound description goes only where nobody is speaking: the first free
     # window of at least 0.6 s inside the sound's own span, else it is dropped
     busy = sorted((a, b) for a, b, _ in speech)
