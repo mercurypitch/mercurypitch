@@ -81,7 +81,7 @@
             maj53: word('b53', 'major scale'), back: word('b53', 'back,'),
             one: word('b53', 'one note'), note: word('b53', 'note'), time: word('b53', 'time.'),
             toCard: word('b53', 'time.', 'start', 0.05),        // 14g: the ladder eases to its card-time box (0.6 s), before line 1
-            set: word('b53', 'Set'), range: word('b53', 'voice range'), settings: word('b53', 'Settings'),
+            set: word('b53', 'Set'), settings: word('b53', 'Settings'),
             first: word('b53', 'first,'), sing: word('b53', 'sing in the octave'),
             octave: word('b53', 'octave'), plays: word('b53', 'plays.'),
             card: at('card'), cardEnd: at('card', 'end'),       // the card pause (the phone line lands); the card and the ladder fade
@@ -107,9 +107,9 @@
           // fa and so, the stairs the joining tone links, pulse with its riser on "joined" and "tone."
           const PULSE_N = { 4: PUL4, 5: PUL4, 7: [A.tone50, A.tee51, A.hear], 8: [A.semi50, A.lit8p, A.home51] }
           const NAME_N = { 1: STARTSL, 4: PUL4L, 5: PUL4L, 7: LAG(PULSE_N[7]), 8: LAG(PULSE_N[8]) }
-          const RANGEP = [A.range, word('b53', 'range')]          // "Singing Voice Range" on "voice range", again on "range"
+          A.rangeW = word('b53', 'range')                       // "Singing Voice Range" swells 1.2 from its left edge
+          // the card pause: each tab icon glows in turn with its line's underline sweep, More's last; nothing after
           const ICONP = [0, 1, 2, 3].map((k) => at('card', 'start', 0.11 + 0.8 * k))   // x, Settings, Exercises, More: 465.8 to 468.2
-          A.under2 = at('card', 'start', 3.25)                  // the address's underline draws (0.7 s)
 
           /* ---------------------------------------------------------------- camera (HANDOFFS § Camera moves) */
           const cam = L.frameRig(room, { from: 'F0' })
@@ -153,11 +153,14 @@
               },
             }
           }
-          // 14d's ink arrow, from ti's tread up onto do's, landing left of the house (as s10's)
+          // 14d's ink arrow on "lean up", from ti's tread to the top house (as S3's)
           const inkArrow = curveArrow(mid, { color: C.ink, width: 2.5, head: 12 })
           const INK = (() => {
-            const A = [ST.colX(7, 0) + 10, ST.tread(7, 0) - 14], B = [ST.houseBox(8, 0, 0).x - 14, ST.tread(8, 0) - 10]
-            return { A, Q: [(A[0] + B[0]) / 2 - 4, Math.min(A[1], B[1]) - 40], B }
+            // as S3's: up from ti's tread, then across into the house's left wall (x 1118, under the eave); the tip's
+            // stroke ends about 3 px from the wall (4 px on screen in F-recap-3)
+            const hb = ST.houseBox(8, 0, 0)
+            const A = [ST.colX(7, 0) + 10, ST.tread(7, 0) - 14], B = [hb.x + 8 - 4, hb.cy + 4]
+            return { A, Q: [A[0] + 8, B[1] + 2], B }
           })()
           const echo = L.echoRings(mid, { dur: 0.9, grow: 3.5, width: 3, max: 3 })
           // 14d's chrome bead, drawn under the houses, so it goes into the top house rather than over it
@@ -185,19 +188,22 @@
           const brHigh = L.bracket(mid, { x1: 722, x2: 1194, y: 276, dir: 'up', tick: 8, color: C.ink, width: 3 })
 
           /* ---------------------------------------------------------------- the ladder (14f; HANDOFFS § The ladder), F0 */
-          // Two layouts of one drawing (DECISIONS 97). Large through 14f: the panel x 200 to 1720, y 140 to 620, 24 px a
-          // semitone, rungs 90 px wide. The card-time box from 460.0: x 300 to 1620, y 150 to 460, 16 px a semitone, G4
-          // at 422, rungs 56 px. The large layout is the card-time one in the same proportions: x maps the box's x 300 to
-          // 1620 onto 200 to 1720 (1.1515), so the playhead stays at 45 % (884) and the rungs keep the app's spacing for
-          // six (112.8 px apart); the pitch band sits where the box puts it (G4 557, G5 269); the title and the playhead's
-          // ends keep their places in the panel (y 217; 248 to 589). Type keeps its size; strokes and their opacities
-          // (100, 89, 78, 67, 56, 45 %) are the same in both. The ease between them: 459.4 to 460.0, power2.inOut.
+          // Two layouts of one drawing (DECISIONS 97, 102). Large through 14f, filling the frame above the Mercs: the panel
+          // x 240 to 1672, y 160 to 720, 30 px a semitone, rungs 90 px wide. Its sides keep 20 px or more from the Mercs'
+          // bodies and speech marks as measured on the clip (Merc's marks reach x 217 at y 734 to 776, Tavi's x 1692 at
+          // y 735 to 792; the panel's corners are 27 and 25 px from them). The card-time box from 460.0: x 300 to 1620,
+          // y 150 to 460, 16 px a semitone, G4 at 422, rungs 56 px. The large layout is the card-time one in the same
+          // proportions: x maps the box's x 300 to 1620 onto 240 to 1672 (1.0848), so the playhead stays at 45 % (884.4)
+          // and the rungs keep the app's spacing for six (106.3 px apart); y keeps the box's proportions (1.8065): the
+          // title at 250, the playhead 286 to 684, the pitch band centred where the box puts it (G4 658, G5 298). Type
+          // keeps its size; strokes and their opacities (100, 89, 78, 67, 56, 45 %) are the same in both. The ease
+          // between them: 459.4 to 460.0, power2.inOut.
           const VIOLET = '#a78bfa', AMB = '#f59e0b'
           const RX = [992, 1090, 1188, 1286, 1384, 1482]          // the rungs' card-time centres, 98 px apart
           const RS = [4, 5, 7, 9, 11, 12]                         // their pitches, semitones above G4: B4 C5 D5 E5 F#5 G5
           const RO = [1, 0.89, 0.78, 0.67, 0.56, 0.45]            // their strokes, fading with distance
           const LADC = { x: 300, y: 150, w: 1320, h: 310, g4: 422, semi: 16, rung: 56, ty: 200, p0: 220, p1: 440 }
-          const LADL = { x: 200, y: 140, w: 1520, h: 480, g4: 557, semi: 24, rung: 90, ty: 217, p0: 248, p1: 589 }
+          const LADL = { x: 240, y: 160, w: 1432, h: 560, g4: 658, semi: 30, rung: 90, ty: 250, p0: 286, p1: 684 }
           const lay = (e) => {
             const v = (k) => lerp(LADL[k], LADC[k], e), kx = LADL.w / LADC.w
             return {
@@ -227,24 +233,28 @@
             const cx = ST.colX(n, 4), y = ST.tread(n, 7) + 1.5
             return { n, k: n - 3, from: { x0: cx - 51, x1: cx + 51, y, w: 3, op: 0.7 }, el: L.svg('path', { fill: 'none', 'stroke-linecap': 'round' }, gLad) }
           })
-          // where a tread ends up in a layout: G4 and A4 (a break between) in violet, the six rungs (inset by their caps)
-          const treadTo = (R, Ly) => (R.n === 1 ? { x0: Ly.X(340), x1: Ly.X(600), y: Ly.Y(0), w: 4, op: 1, violet: 1 }
-            : R.n === 2 ? { x0: Ly.X(660), x1: Ly.X(894), y: Ly.Y(2), w: 4, op: 1, violet: 1 }
+          // where a tread ends up in a layout: G4 and A4 (a break between) in violet, the six rungs (inset by their caps).
+          // A4 lands as a 20 px stub at the break and draws on to the playhead on "sing a major scale back" (sing = d 0,
+          // back = d 1): the singing the line stands for, while Merc describes it
+          const STUB = 20
+          const treadTo = (R, Ly, d = 1) => (R.n === 1 ? { x0: Ly.X(340), x1: Ly.X(600), y: Ly.Y(0), w: 4, op: 1, violet: 1 }
+            : R.n === 2 ? { x0: Ly.X(660), x1: lerp(Ly.X(660) + STUB, Ly.X(894), d), y: Ly.Y(2), w: 4, op: 1, violet: 1 }
             : { x0: Ly.X(RX[R.k]) - Ly.rung / 2 + (R.k ? 2 : 3), x1: Ly.X(RX[R.k]) + Ly.rung / 2 - (R.k ? 2 : 3), y: Ly.Y(RS[R.k]), w: R.k ? 4 : 6, op: RO[R.k], violet: 0 })
-          // the first rung scales on "major scale", on "note" (it brightens) and on "time."
-          const RUNG0P = [A.maj53, A.note, A.time]
+          // the first rung scales on "note" (it brightens) and on "time."
+          const RUNG0P = [A.note, A.time]
           const mixC = (u) => `rgb(${Math.round(lerp(195, 167, u))},${Math.round(lerp(204, 139, u))},${Math.round(lerp(214, 250, u))})`
 
           /* ---------------------------------------------------------------- S14 to S15: the top rung carried across the cut */
           // HANDOFFS § S14 to S15. The ladder's top rung, do (card time: x 1454 to 1510 at y 230, 4 px, 45 %), brightens
-          // to full as the rest fades (469.7 to 469.9) and slides to (560, 520) (469.9 to 470.7, power2.inOut),
-          // condensing into the chrome bead as it lands (a capsule shortening and thickening to the bead's 44 px, the bead
-          // itself in over the last 0.15 s). carryAt is the same function in s15-next, of scene time and the card's end in
-          // that scene's time, so both scenes draw it from film time on the same pixels on either side of the cut.
+          // to full as the rest fades (469.7 to 469.9) and glides to (560, 520) (469.9 to 471.9, 2.0 s, power2.inOut;
+          // DECISIONS 102), so it carries the frame through "Next time." and lands just before "Singers", condensing into
+          // the chrome bead over its last 0.4 s (a capsule shortening and thickening to the bead's 44 px, the bead itself
+          // in over the last 0.15 s). carryAt is the same function in s15-next, of scene time and the card's end in that
+          // scene's time, so both scenes draw it from film time on the same pixels on either side of the cut.
           const carryAt = (t, tc) => {
             if (t < tc) return null
-            const br = P(t, tc, 0.2, 'none'), u = P(t, tc + 0.2, 0.8, 'power2.inOut'), c = P(t, tc + 0.6, 0.4, 'power2.in')
-            return { x: lerp(1482, 560, u), y: lerp(230, 520, u), len: 52 * (1 - c), th: lerp(4, 44, c), op: lerp(0.45, 1, br), bead: P(t, tc + 0.85, 0.15, 'none') }
+            const br = P(t, tc, 0.2, 'none'), u = P(t, tc + 0.2, 2.0, 'power2.inOut'), c = P(t, tc + 1.8, 0.4, 'power2.in')
+            return { x: lerp(1482, 560, u), y: lerp(230, 520, u), len: 52 * (1 - c), th: lerp(4, 44, c), op: lerp(0.45, 1, br), bead: P(t, tc + 2.05, 0.15, 'none') }
           }
           const gCarry = L.svg('g', {}, mid)
           const capsule = L.svg('rect', { fill: C.chrome, display: 'none' }, gCarry)
@@ -272,10 +282,10 @@
           L.svg('rect', { x: 120, y: 140, width: 880, height: 190, rx: 16, fill: C.obsidian, 'fill-opacity': 0.85, stroke: C.chrome, 'stroke-opacity': 0.25, 'stroke-width': 2 }, gPanel)
           const CARD_T = "font: 600 40px 'Outfit', sans-serif; white-space: pre;"
           const CARDS = [
-            { lines: ['What pattern of steps', 'makes a major scale?'], tIn: [A.c1a, A.c1b], tOut: A.c1Out, q: 'q1' },
-            { lines: ['Start a major scale on D.', 'Which two black keys does it need?'], tIn: [A.c2a, A.c2b], tOut: A.out2, q: 'q2' },
-            { lines: ['From ti up to do:', 'a tone, or a semitone?'], tIn: [A.c3a, A.c3b], tOut: A.out3, q: 'q3' },
-            { lines: ['In a major scale from G,', 'which note is do?'], tIn: [A.c4a, A.c4b], tOut: A.out4, q: 'q4' },
+            { lines: ['What pattern of steps', 'makes a major scale?'], tIn: [A.c1a, A.c1b], tOut: A.c1Out, q: 'q1', lead: 0.2 },
+            { lines: ['Start a major scale on D.', 'Which two black keys does it need?'], tIn: [A.c2a, A.c2b], tOut: A.out2, q: 'q2', lead: 0.2 },
+            { lines: ['From ti up to do:', 'a tone, or a semitone?'], tIn: [A.c3a, A.c3b], tOut: A.out3, q: 'q3', lead: 0 },
+            { lines: ['In a major scale from G,', 'which note is do?'], tIn: [A.c4a, A.c4b], tOut: A.out4, q: 'q4', lead: 0 },
           ]
           for (const K of CARDS) {
             K.els = K.lines.map((s, i) => L.svg('text', { x: 150, y: 220 + 60 * i, fill: C.ink, opacity: 0, style: CARD_T, text: s }, hud))
@@ -331,7 +341,6 @@
           const hdefs = L.svg('defs', {}, hud)
           const ig = L.svg('filter', { id: SID + '-iglow', x: '-60%', y: '-60%', width: '220%', height: '220%' }, hdefs)
           L.svg('feGaussianBlur', { stdDeviation: 1.6 }, ig)
-          const underline = L.svg('rect', { x: 0, y: 554, width: 0, height: 3, rx: 1.5, fill: C.chrome, opacity: 0 }, hud)
           // the card pause traces each tab's path in turn under its line, from the icon to the line's end (0.55 s),
           // as the icon glows: the icon alone is too small to read as a beat
           const traces = [0, 1, 2, 3].map(() => L.svg('rect', { x: 0, y: 0, width: 0, height: 2, rx: 1, fill: C.chrome, opacity: 0 }, hud))
@@ -507,11 +516,12 @@
                 rungGlow.setAttribute('opacity', (0.55 * P(t, A.note, 0.3)).toFixed(3))
               }
               // the violet tip wavers at the playhead on "one note at a time" and again on "plays."
-              const wav = Math.max(L.env(t, A.sing1, 0.1, 0.15, 0.4), L.env(t, A.one, 0.1, 0.15, 0.4), L.env(t, A.time, 0.1, 0.3, 0.4), L.env(t, A.plays, 0.1, 0.3, 0.4))
+              const wav = Math.max(L.env(t, A.one, 0.1, 0.15, 0.4), L.env(t, A.time, 0.1, 0.3, 0.4), L.env(t, A.plays, 0.1, 0.3, 0.4))
+              const sungD = P(t, A.sing1, A.back - A.sing1, 'power1.inOut')   // A4 draws on, "sing" to "back," (1.23 s)
               for (const R of treads) {
                 // the top rung is carried from the card's end (drawCarry)
                 if (R.n === 8 && t >= A.cardEnd) { R.el.setAttribute('d', ''); continue }
-                const F = R.from, Tg = treadTo(R, Ly)
+                const F = R.from, Tg = treadTo(R, Ly, sungD)
                 const k = R.k
                 const sc = k === 0 ? L.pulse(t, RUNG0P, 0.25, { long: true }) : 1
                 const x0 = lerp(F.x0, Tg.x0, u), x1 = lerp(F.x1, Tg.x1, u), y = lerp(F.y, Tg.y, u)
@@ -534,13 +544,16 @@
             // S14 to S15: the top rung, carried
             drawCarry(carryAt(t, A.cardEnd))
 
-            // type (hud): the kicker, the four cards and their ring timers; each card brings its panel (in over the
-            // 0.2 s before its first line, rising 12 px) and takes it as its lines leave (0.43 s)
+            // type (hud): the kicker, the four cards and their ring timers; each card brings its panel and takes it as
+            // its lines leave (0.43 s, ending with its second line). Cards 1 and 2 bring it over the 0.2 s before their
+            // first line, rising 12 px; cards 3 and 4 follow a card that left half a second before, so their panel
+            // comes in with their first line, on its curve, and never shows empty between two cards
             {
               let pa = 0, pdy = 0
               for (const K of CARDS) {
-                const k = P(t, K.tIn[0] - 0.2, 0.2, 'power1.out') * (1 - P(t, K.tOut, 0.43))
-                if (k > pa) { pa = k; pdy = 12 * (1 - P(t, K.tIn[0] - 0.2, 0.5, 'power2.out')) }
+                const tp = K.tIn[0] - K.lead
+                const k = (K.lead ? P(t, tp, 0.2, 'power1.out') : P(t, tp, 0.2)) * (1 - P(t, K.tOut, 0.43))
+                if (k > pa) { pa = k; pdy = 12 * (1 - P(t, tp, 0.5, 'power2.out')) }
               }
               gPanel.setAttribute('opacity', pa.toFixed(3))
               gPanel.setAttribute('transform', `translate(0 ${f1(pdy)})`)
@@ -556,7 +569,7 @@
             }
 
             // the practise card: top line first, each line in over 0.2 s, rising 20 px; the icons pulse in turn in
-            // the card pause, More's last, then the address's underline draws; all fade with the ladder (0.3 s)
+            // the card pause with each line's underline sweep, More's last; all fade with the ladder (0.3 s)
             const cOut = 1 - P(t, A.cardEnd, 0.3), cLift = -10 * P(t, A.cardEnd, 0.3, 'power2.in')
             for (const Ln of LINES) {
               Ln.g.setAttribute('opacity', (P(t, Ln.tIn, 0.2) * cOut).toFixed(3))
@@ -578,13 +591,9 @@
             })
             {
               const { R, Ln } = runsBy.range
-              const s = L.pulse(t, RANGEP, 0.1, { long: true }), cx = (R.x ?? 960) + (R.w || 0) / 2, cy = Ln.y - 14
+              // from its left edge, so it grows away from the "›" before it (to x 1581 at most at 1.2)
+              const s = L.pulse(t, A.rangeW, 'label', { long: true }), cx = R.x ?? 960, cy = Ln.y - 14
               R.el.setAttribute('transform', `translate(${f1(cx)} ${f1(cy)}) scale(${s.toFixed(4)}) translate(${f1(-cx)} ${f1(-cy)})`)
-              const U = runsBy.url.R
-              const uw = (U.w || 0) * P(t, A.under2, 0.75, 'power1.inOut')
-              underline.setAttribute('x', f1(U.x ?? 960)); underline.setAttribute('width', f1(Math.max(0.01, uw)))
-              underline.setAttribute('opacity', (0.8 * P(t, A.under2, 0.1) * cOut).toFixed(3))
-              underline.setAttribute('transform', `translate(0 ${f1(cLift)})`)
             }
           })
           window.__timelines = window.__timelines || {}

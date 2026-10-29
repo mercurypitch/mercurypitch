@@ -130,3 +130,16 @@ set S10's mouth to (156, 797) and re-timed the tags (merc-tags starts a running 
   longest 0.1; s09 19:32, 1.2 s (0.9 / 30 s), longest 0.3; s11 20:03, 0.4 s (0.3 / 30 s), longest 0.1, no
   single-frame events in 3.9 to 24.4. Full check 20:05: 0 lint errors, layout 1 error (S6's), S9 to S11 none.
   Stills: lab/<scene>/r3. Lab tools: lab/s11-why/tools/frames.mjs (screenshots of a variant file).
+
+## Round 4, D-03 (review/component-D-03/REPORT.md; DECISIONS 100)
+
+- s11 (item 2): the strip, its hairlines and names fade from 20 % to 0 from "doh." (308.22) as the camera comes to
+  rest on F-chart (308.98), and return 0 to full over the pull (320.23 to 321.03), before the chips fly back
+  (321.58). Probed: the strip and its hairlines are display none on all 675 frames from 13.05 to 24.30 (60 fps).
+- s11 (item 4): on the fourth shelf's turn (320.05, the same linear 4-frame attack and 0.6 s settle) the outline
+  chips' fill goes to 50 % chrome, their rim to 80 %, their letters from ink-2 to ink; a chip's luma goes from
+  about 37 to 123 (stills 24.12 and 24.25).
+- Items 1 (the kit's bokeh under the diagram), 3 and 5: no change of mine.
+- Clips at 60 fps (lab/s09-names/tools/clips60.sh, a copy of builder E's hostpass60.sh): s11 23:32, 0.6 s inside
+  (0.4 / 30 s), longest 0.2; s10 23:37, 0.7 s (0.8 / 30 s), longest 0.1; s09 23:44, 1.5 s (1.1 / 30 s),
+  longest 0.3 (the card at 0.9). The 30 fps round 3 clips are clip-r3.mp4, their measures measure-r3.log.

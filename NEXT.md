@@ -1693,3 +1693,15 @@ Note: the lanes' memory gate read a stale cgroup path after the 21:00 restart (f
 - 23:3x builder F resumed with F-fix2-msg (round 2, 60 fps). Agents now: D + F.
 - Queue: critic A-03 (A3.txt) -> B small (B-fix4) -> C small (C-fix2) -> E round 3 (E-fix3); D-04 when D
   reports, F-03 when F reports, then B-04, C-03, E-03.
+- 23:4x builder D handed back round 4 (report $S/l4entr/D-round4-report.txt): strip out of F-chart
+  (fade 308.22-308.98, back 320.23-321.03 from 0); dim chips to 50 % chrome on their cascade turn
+  (luma 37 -> 123); all three at 60 fps (s11 23:32, s10 23:37, s09 23:44). Holds s09 1.1/30 s at
+  60 fps (1.5 s inside, longest 0.3 = the card), s10 0.8, s11 0.4. check 0 errors in S9-S11.
+  D found: whole-pixel baseline snaps wherever text moves slowly vertically (S9's slow push every
+  ~0.2 s, S11's landings, 12 px label rises, S10 4.8-5.6); text-rendering: geometricPrecision did
+  nothing. Frozen copies $S/l4entr/d4/; critics/D4.txt READY.
+- 23:4x critic A-03 launched (frozen $S/l4entr/a3/). Agents now: F + A-03.
+- Kit experiment running: $S/l4entr/snap/{cur,rot}-s09 (rot = layer matrix with a 1e-4 skew pair, to
+  force unsnapped glyphs); 31 consecutive 60 fps frames of S9 10.10-10.60 -> /dev/shm/l4snap.
+  If it works: DECISIONS 104 + tell builders; else leave the snaps (sub-pixel) for the film critic.
+  E-fix3-msg item 2 suggests geometricPrecision: REWRITE it before sending (D proved it useless).

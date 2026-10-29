@@ -13,8 +13,8 @@
         ;(function () {
           /* S15, Next time (STORYBOARD row 15; HANDOFFS § S14 to S15, § S15, § S15 to S16): Lesson 5's hook.
              In: the Mercs in the corners at 300; the ladder and the card gone but for the ladder's top rung, do,
-             sliding to (560, 520) on one curve in film time (carryAt, the same in s14-recap), where it condenses
-             into the chrome bead (470.7). Out (to s16): the Mercs in the corners at 300; S15's type gone (478.5).
+             gliding to (560, 520) on one curve in film time (carryAt, the same in s14-recap) through "Next time.",
+             where it condenses into the chrome bead (471.9), just before "Singers". Out (to s16): the Mercs in the corners at 300; S15's type gone (478.5).
              Merc talks b54 and b55, Tavi o14. The bead hovers (from film time) where the long note starts; on "a
              long note" it draws a level line from x 560 to 1360 at y 520; the line wavers once on "pushing".
              Every time is a cue, a word or a duration. */
@@ -32,7 +32,7 @@
           /* ---------------------------------------------------------------- anchors (by role) */
           const A = {
             cardEnd: at('card', 'end'),                   // S14's card fades; its top rung is carried (carryAt)
-            land: at('card', 'end', 1.0),                 // the rung lands at (560, 520) as the chrome bead
+            land: at('card', 'end', 2.2),                 // the rung lands at (560, 520) as the chrome bead
             kick: word('b54', 'Next'), kickOut: at('o14', 'end'),
             support: word('b55', 'Singers'),              // '"support"' lands as the sentence starts, a second before its word
             long: word('b55', 'long'),                    // the bead draws the level line (1.3 s)
@@ -56,14 +56,14 @@
           const gNote = L.svg('g', {}, mid)
           const line = L.glowPath(gNote, { color: C.chrome, width: 4, glow: 16 })
           const echo = L.echoRings(gNote, { dur: 0.9, grow: 3.5, width: 3, max: 2 })
-          // S14 to S15 (HANDOFFS § S14 to S15): the ladder's top rung, do, brightens to full (469.7 to 469.9) and slides
-          // to (560, 520) (469.9 to 470.7, power2.inOut), condensing into the bead as it lands. carryAt is the same
-          // function in s14-recap, of scene time and the card's end in that scene's time, so both scenes draw it from
-          // film time on the same pixels on either side of the cut.
+          // S14 to S15 (HANDOFFS § S14 to S15): the ladder's top rung, do, brightens to full (469.7 to 469.9) and glides
+          // to (560, 520) (469.9 to 471.9, 2.0 s, power2.inOut; DECISIONS 102), condensing into the bead over its last
+          // 0.4 s. carryAt is the same function in s14-recap, of scene time and the card's end in that scene's time, so
+          // both scenes draw it from film time on the same pixels on either side of the cut.
           const carryAt = (t, tc) => {
             if (t < tc) return null
-            const br = P(t, tc, 0.2, 'none'), u = P(t, tc + 0.2, 0.8, 'power2.inOut'), c = P(t, tc + 0.6, 0.4, 'power2.in')
-            return { x: lerp(1482, 560, u), y: lerp(230, 520, u), len: 52 * (1 - c), th: lerp(4, 44, c), op: lerp(0.45, 1, br), bead: P(t, tc + 0.85, 0.15, 'none') }
+            const br = P(t, tc, 0.2, 'none'), u = P(t, tc + 0.2, 2.0, 'power2.inOut'), c = P(t, tc + 1.8, 0.4, 'power2.in')
+            return { x: lerp(1482, 560, u), y: lerp(230, 520, u), len: 52 * (1 - c), th: lerp(4, 44, c), op: lerp(0.45, 1, br), bead: P(t, tc + 2.05, 0.15, 'none') }
           }
           const capsule = L.svg('rect', { fill: C.chrome, display: 'none' }, gNote)
           const bead = L.bead(gNote, { r: 22, color: C.chrome })
