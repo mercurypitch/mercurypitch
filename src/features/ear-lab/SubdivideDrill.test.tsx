@@ -58,7 +58,7 @@ const ctx = {
 }
 const engine = {
   init: vi.fn(async () => undefined),
-  resume: vi.fn(async () => undefined),
+  resume: vi.fn(async (): Promise<void> => undefined),
   getAudioContext: () => ctx,
   getVolume: () => 0.8,
   setToneTrim: vi.fn(),
@@ -175,5 +175,28 @@ describe('SubdivideDrill', () => {
     expect(master?.disconnect).toHaveBeenCalled()
     // The stage is on its plate now; the lattice, if still drawn, is dark.
     expect(lattice()?.querySelector('[data-lit="true"]') ?? null).toBeNull()
+  })
+
+  it('plays nothing once stopped while it waits on the audio', async () => {
+    render(() => (
+      <Stage>
+        <SubdivideDrill onBack={vi.fn()} />
+      </Stage>
+    ))
+    // The audio is slow to wake (iOS after a call).
+    let wake = (): void => undefined
+    engine.resume.mockImplementationOnce(
+      () =>
+        new Promise<void>((resolve) => {
+          wake = resolve
+        }),
+    )
+    fireEvent.click(screen.getByRole('button', { name: /Begin/ }))
+    await vi.advanceTimersByTimeAsync(0)
+    fireEvent.click(screen.getByRole('button', { name: 'Stop' }))
+
+    wake()
+    await vi.advanceTimersByTimeAsync(LEAD + 2 * BAR + SUBDIVIDE_TIMING.tailMs)
+    expect(hits).toHaveLength(0)
   })
 })

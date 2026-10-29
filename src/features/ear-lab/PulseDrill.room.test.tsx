@@ -2,7 +2,8 @@
 // Pulse's Hear it again in the native room, on a fake engine: a replay
 // still waiting on the audio engine when the room closes sounds nothing
 // once the engine is ready, and a replay sounding when the sound is
-// taken away stops with its lamps while the verdict stays.
+// taken away stops with its lamps while the verdict stays. The call
+// itself, closed while it waits, sounds nothing either.
 // ============================================================
 
 import { cleanup, render } from '@solidjs/testing-library'
@@ -142,6 +143,31 @@ afterEach(() => {
   setRevealRule('switch')
   handed.room = undefined
   vi.useRealTimers()
+})
+
+describe("Pulse's call", () => {
+  it('sounds nothing once the room closes while it waits on the audio', async () => {
+    const { unmount } = render(() => (
+      <Stage>
+        <PulseDrill onBack={vi.fn()} />
+      </Stage>
+    ))
+    // The audio is slow to wake (iOS after a call).
+    let wake = (): void => undefined
+    engine.resume.mockImplementationOnce(
+      () =>
+        new Promise<void>((resolve) => {
+          wake = resolve
+        }),
+    )
+    room().again?.()
+    await vi.advanceTimersByTimeAsync(0)
+
+    unmount()
+    wake()
+    await vi.advanceTimersByTimeAsync(LEAD + 2 * BAR)
+    expect(ctx.createOscillator).not.toHaveBeenCalled()
+  })
 })
 
 describe("Pulse's Hear it again", () => {

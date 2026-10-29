@@ -39,9 +39,15 @@ export function CadenceDrill(props: { onBack: () => void }): JSX.Element {
   const [sounding, setSounding] = createSignal(0)
   let strummer: Strummer | null = null
   let timers: Array<ReturnType<typeof setTimeout>> = []
+  /** Bumped by every silencing. A progression still waiting on the audio
+   *  engine when it comes (the run stopped, the room closed, the sound
+   *  taken away; iOS holds resume() through a call) sounds nothing once
+   *  the engine is ready. */
+  let silenced = 0
   let rootMidi = 48
 
   function cancelAudio(): void {
+    silenced += 1
     for (const timer of timers) clearTimeout(timer)
     timers = []
     strummer?.cancel()
@@ -53,10 +59,11 @@ export function CadenceDrill(props: { onBack: () => void }): JSX.Element {
     degrees: readonly number[],
     chordMs: number,
   ): Promise<void> {
+    const asked = silenced
     await audioEngine.init()
     await audioEngine.resume()
     const ctx = audioEngine.getAudioContext()
-    if (!ctx) return
+    if (!ctx || asked !== silenced) return
     cancelAudio()
     strummer = createStrummer(ctx, room.volume() * audioEngine.getVolume())
     const stepMs = chordMs + CADENCE_TIMING.gapMs

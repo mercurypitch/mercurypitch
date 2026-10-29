@@ -33,19 +33,24 @@ export function CritiqueDrill(props: DeskDrillProps): JSX.Element {
   const [fault, setFault] = createSignal<DeskFault | null>(null)
   const [playing, setPlaying] = createSignal(false)
   let handle: ExcerptHandle | null = null
-  let cancelled = false
+  /** Bumped by every silencing. A sound notes it as it starts and stops
+   *  at the first await that finds it moved: a Stop, a closed room or the
+   *  sound taken away while it waited on the audio engine (iOS holds
+   *  resume() through a call) sounds nothing once the engine wakes, and
+   *  no later sound can undo it, as resetting a flag did. */
+  let silenced = 0
   const level = () => room.volume() * audioEngine.getVolume()
 
   function cancelAudio(): void {
-    cancelled = true
+    silenced += 1
     handle?.cancel()
     handle = null
     setPlaying(false)
   }
 
-  async function sound(current: DeskFault): Promise<void> {
+  async function sound(current: DeskFault, asked: number): Promise<void> {
     const ctx = audioEngine.getAudioContext()
-    if (!ctx || cancelled) return
+    if (!ctx || asked !== silenced) return
     const buffer = props.source.buffer
     const start = randomSliceStart(buffer.duration, DESK_TIMING.sliceS)
     const render = await renderFault(
@@ -54,7 +59,7 @@ export function CritiqueDrill(props: DeskDrillProps): JSX.Element {
       DESK_TIMING.sliceS,
       current.spec,
     )
-    if (cancelled) return
+    if (asked !== silenced) return
     setPlaying(true)
     handle = playExcerpt(
       ctx,
@@ -64,6 +69,9 @@ export function CritiqueDrill(props: DeskDrillProps): JSX.Element {
       level(),
     )
     await handle.done
+    // Silenced, its handle is gone already, and a newer one may stand in
+    // its place.
+    if (asked !== silenced) return
     handle = null
     setPlaying(false)
     await wait(DESK_TIMING.tailMs)
@@ -75,15 +83,15 @@ export function CritiqueDrill(props: DeskDrillProps): JSX.Element {
     return {
       expectedId: item.itemId,
       play: async () => {
+        const asked = silenced
         await audioEngine.init()
         await audioEngine.resume()
-        cancelled = false
+        if (asked !== silenced) return
         setFault(current)
-        await sound(current)
+        await sound(current, asked)
       },
       replayOnWrong: async () => {
-        cancelled = false
-        await sound(current)
+        await sound(current, silenced)
       },
     }
   }

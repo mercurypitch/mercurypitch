@@ -3,7 +3,8 @@
 // before a single beat sounds, only the count-in and the wait rail
 // are scheduled — the chart is read, not heard — and the take runs
 // on the same anchor as Pulse's: the first tap starts the bar
-// wherever the player places it.
+// wherever the player places it. Stopped while the audio is still
+// waking, it counts nothing in.
 // ============================================================
 
 import { cleanup, fireEvent, render, screen } from '@solidjs/testing-library'
@@ -61,7 +62,7 @@ const ctx = {
 }
 const engine = {
   init: vi.fn(async () => undefined),
-  resume: vi.fn(async () => undefined),
+  resume: vi.fn(async (): Promise<void> => undefined),
   getAudioContext: () => ctx,
   getVolume: () => 0.8,
   setToneTrim: vi.fn(),
@@ -202,5 +203,28 @@ describe('ChartDrill', () => {
     )
     expect(status()).toBe('Not quite: 2 onsets missed, 1 extra tap.')
     expect(earPlayerRating('chart').rating).toBeLessThan(before)
+  })
+
+  it('counts nothing in once stopped while it waits on the audio', async () => {
+    render(() => (
+      <Stage>
+        <ChartDrill onBack={vi.fn()} />
+      </Stage>
+    ))
+    // The audio is slow to wake (iOS after a call).
+    let wake = (): void => undefined
+    engine.resume.mockImplementationOnce(
+      () =>
+        new Promise<void>((resolve) => {
+          wake = resolve
+        }),
+    )
+    fireEvent.click(screen.getByRole('button', { name: /Begin/ }))
+    await vi.advanceTimersByTimeAsync(0)
+    fireEvent.click(screen.getByRole('button', { name: 'Stop' }))
+
+    wake()
+    await vi.advanceTimersByTimeAsync(LEAD + 2 * COUNT)
+    expect(ctx.createOscillator).not.toHaveBeenCalled()
   })
 })

@@ -1,6 +1,7 @@
 // ============================================================
 // The mixing desk: its source, and Colour, Weight and Critique
 // rated on the desk's own ids — the Column's estimate untouched.
+// Critique stopped while the audio is still waking plays nothing.
 // ============================================================
 
 import { fireEvent, render, screen } from '@solidjs/testing-library'
@@ -12,9 +13,10 @@ import { REVEAL_HOLD } from '@/lib/ear/timing'
 import type { PlaybackRuntime } from '@/lib/playback-runtime'
 import type { PracticeEngine } from '@/lib/practice-engine'
 import { earPlayerRating, latestThresholdReading, practiceIndexEstimate, resetEarLabStore, } from '@/stores/ear-lab-store'
-import { renderHouseLoop } from './desk-render'
+import { renderFault, renderHouseLoop } from './desk-render'
 import { primeDeskSource, resetDeskStore } from './desk-store'
 import { DeskView } from './DeskView'
+import { playExcerpt } from './wild-player'
 
 const fake = vi.hoisted(() => {
   const data = new Float32Array(8)
@@ -78,11 +80,11 @@ function fakeEngine(): AudioEngine {
   } as unknown as AudioEngine
 }
 
-function mount() {
+function mount(engine: AudioEngine = fakeEngine()) {
   return render(() => (
     <EngineContext.Provider
       value={{
-        audioEngine: fakeEngine(),
+        audioEngine: engine,
         practiceEngine: {} as PracticeEngine,
         playbackRuntime: {} as PlaybackRuntime,
         ready: () => true,
@@ -178,5 +180,31 @@ describe('the desk', () => {
     expect(status()).toContain('Yes. Mud: a build-up around 250 Hz.')
     expect(earPlayerRating('desk-critique').attempts).toBe(1)
     expect(earPlayerRating('stack').attempts).toBe(0)
+  })
+
+  it('Critique plays nothing once stopped while it waits on the audio', async () => {
+    primeDeskSource({ buffer: fake.buffer, label: 'the house loop' })
+    const engine = fakeEngine()
+    mount(engine)
+    fireEvent.click(screen.getByRole('button', { name: /^Critique/ }))
+    await vi.advanceTimersByTimeAsync(0)
+    // The audio is slow to wake (iOS after a call).
+    let wake = (): void => undefined
+    vi.mocked(engine.resume).mockImplementationOnce(
+      () =>
+        new Promise<void>((resolve) => {
+          wake = resolve
+        }),
+    )
+    const rendered = vi.mocked(renderFault).mock.calls.length
+    const played = vi.mocked(playExcerpt).mock.calls.length
+    fireEvent.click(screen.getByRole('button', { name: /Begin/ }))
+    await vi.advanceTimersByTimeAsync(0)
+    fireEvent.click(screen.getByRole('button', { name: 'Stop' }))
+
+    wake()
+    await vi.advanceTimersByTimeAsync(10_000)
+    expect(vi.mocked(renderFault).mock.calls.length).toBe(rendered)
+    expect(vi.mocked(playExcerpt).mock.calls.length).toBe(played)
   })
 })

@@ -6,7 +6,8 @@
 // right answer rates up and a miss rates down (and replays slowly),
 // the same item never comes twice in a row, twelve rounds end in a
 // tally, and Stop cancels the RUN: a prompt still sounding must not
-// re-arm the answer when it finally resolves.
+// re-arm the answer when it finally resolves. Closing the room and the
+// sound taken away reach the drill's silencing the same way.
 // ============================================================
 
 import { createRoot } from 'solid-js'
@@ -257,6 +258,39 @@ describe('stopping', () => {
       dispose()
     })
   })
+
+  // A drill's prompt awaits the audio engine before it sounds (iOS holds
+  // resume() through a call), and goes quiet if it was silenced in that
+  // wait: every way a run is silenced must reach the drill's silencing.
+  it.each<
+    [string, (run: ReturnType<typeof useIdentificationController>) => void]
+  >([
+    ['closing the room', (run) => run.abandon()],
+    ['the sound taken away', (run) => run.holdQuestion()],
+  ])(
+    'mid-prompt, %s silences the audio and opens nothing',
+    async (_way, silence) => {
+      await createRoot(async (dispose) => {
+        const pending = pendingTrial()
+        const cancelAudio = vi.fn()
+        const run = useIdentificationController(
+          drill,
+          CONTOUR_BANK,
+          pending.makeTrial,
+          { cancelAudio },
+        )
+        run.start()
+        expect(run.phase()).toBe('playing')
+
+        silence(run)
+        expect(cancelAudio).toHaveBeenCalledTimes(1)
+        pending.release()
+        await flush()
+        expect(run.phase()).toBe('playing')
+        dispose()
+      })
+    },
+  )
 
   it('does nothing when idle or already done', async () => {
     await createRoot(async (dispose) => {

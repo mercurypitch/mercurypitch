@@ -43,7 +43,12 @@ export function PullDrill(props: { onBack: () => void }): JSX.Element {
     side: 1 | 2
     degree: number
   } | null>(null)
-  let cancelled = false
+  /** Bumped by every silencing. A sound notes it as it starts and stops
+   *  at the first await that finds it moved: a Stop, a closed room or the
+   *  sound taken away while it waited on the audio engine (iOS holds
+   *  resume() through a call) sounds nothing once the engine wakes, and
+   *  no later sound can undo it, as resetting a flag did. */
+  let silenced = 0
   let rootMidi = 48
 
   function wait(ms: number): Promise<void> {
@@ -51,7 +56,7 @@ export function PullDrill(props: { onBack: () => void }): JSX.Element {
   }
 
   function cancelAudio(): void {
-    cancelled = true
+    silenced += 1
     audioEngine.stopTone(60)
     setSounding(0)
   }
@@ -64,9 +69,9 @@ export function PullDrill(props: { onBack: () => void }): JSX.Element {
     await wait(ms)
   }
 
-  async function plant(): Promise<void> {
+  async function plant(asked: number): Promise<void> {
     for (const chord of cadenceChordMidis(rootMidi)) {
-      if (cancelled) return
+      if (asked !== silenced) return
       await audioEngine.playChord(chord.map(midiToFreq), PULL_TIMING.chordMs)
       await wait(PULL_TIMING.chordMs + PULL_TIMING.chordGapMs)
     }
@@ -81,14 +86,15 @@ export function PullDrill(props: { onBack: () => void }): JSX.Element {
     return {
       expectedId: side === 1 ? 'first' : 'second',
       play: async () => {
+        const asked = silenced
         await audioEngine.init()
         await audioEngine.resume()
-        cancelled = false
+        if (asked !== silenced) return
         rootMidi = roveRootMidi()
         setLeaning({ side, degree: harder })
-        await plant()
+        await plant(asked)
         for (const [i, degree] of order.entries()) {
-          if (cancelled) return
+          if (asked !== silenced) return
           setSounding((i + 1) as 1 | 2)
           await tone(degree, PULL_TIMING.probeMs)
           setSounding(0)
@@ -96,13 +102,16 @@ export function PullDrill(props: { onBack: () => void }): JSX.Element {
         }
         await wait(PULL_TIMING.tailMs)
       },
-      // The pull, then where it goes: the lean resolved.
+      // The pull, then where it goes: the lean resolved. A Stop between
+      // the two keeps the resolution quiet.
       replayOnWrong: async () => {
-        cancelled = false
+        const asked = silenced
         setSounding(side)
         await tone(harder, PULL_TIMING.replayMs)
+        if (asked !== silenced) return
         setSounding(0)
         await wait(PULL_TIMING.probeGapMs)
+        if (asked !== silenced) return
         await tone(resolvesTo(harder), PULL_TIMING.replayMs)
       },
     }
