@@ -9,7 +9,7 @@ import { applyStudioCommand } from '../model/commands'
 import { createStudioTrack } from '../model/defaults'
 import type { StudioBufferLease } from './buffer-cache'
 import type { PlaybackContext } from './playback.test-fixtures'
-import { transportFixture, withQuietLane } from './transport.test-fixtures'
+import { openingEnds, transportFixture, withQuietLane, } from './transport.test-fixtures'
 
 afterEach(() => vi.useRealTimers())
 
@@ -420,7 +420,8 @@ describe('Studio borrowed transport', () => {
     const envelope = f.ctx.created
       .filter((node) => node.nodeType === 'gain')
       .at(-1) as ReturnType<PlaybackContext['createGain']>
-    expect(envelope.gain.ramps).toEqual([{ value: 1, time: 0.35 }])
+    // Heard from 0.26 s; the 10 ms attack is full at 0.27 s.
+    expect(openingEnds(envelope.gain)).toEqual([expect.closeTo(0.27, 9)])
     f.ctx.currentTime = 0.27
     await vi.advanceTimersByTimeAsync(33)
     expect(f.transport.getState().playheadFrame).toBe(480)
@@ -458,7 +459,7 @@ describe('Studio borrowed transport', () => {
       .filter((node) => node.nodeType === 'gain')
       .at(-1) as ReturnType<PlaybackContext['createGain']>
     // 0.5 s warmup (the cap) instead of the first guess's 0.24 s.
-    expect(envelope.gain.ramps).toEqual([{ value: 1, time: 0.61 }])
+    expect(openingEnds(envelope.gain)).toEqual([expect.closeTo(0.53, 9)])
     now.mockRestore()
     const released = f.transport.releaseAudio()
     await vi.advanceTimersByTimeAsync(240)

@@ -5,6 +5,7 @@ import { studioFixture } from '../model/model.test-fixtures'
 import type { StudioBufferCache } from './buffer-cache'
 import type { StudioChainSwap, StudioReplan } from './graph'
 import { PlaybackContext } from './playback.test-fixtures'
+import { RUN_OPEN_SECONDS } from './run'
 import type { StudioTransportOptions } from './transport'
 import { createStudioTransport } from './transport'
 
@@ -156,4 +157,42 @@ export function envelopeOf(graph: ReturnType<typeof fakeStudioGraph>) {
     PlaybackContext['createGain']
   >
   return output.targets[0] as ReturnType<PlaybackContext['createGain']>
+}
+
+/**
+ * When each of an envelope's openings from silence reached full level: the
+ * last of the opening's closely spaced linear segments, not a crossfade's.
+ */
+export function openingEnds(param: {
+  linearRamps: { value: number; time: number }[]
+}): number[] {
+  const step = RUN_OPEN_SECONDS / 64
+  return param.linearRamps
+    .filter(
+      (ramp, i, all) =>
+        ramp.value === 1 &&
+        i > 0 &&
+        Math.abs(ramp.time - all[i - 1].time - step) < 1e-9,
+    )
+    .map((ramp) => ramp.time)
+}
+
+/** An envelope's linear ramps without the segments of its openings from silence: its crossfades. */
+export function crossfadeRamps(param: {
+  linearRamps: { value: number; time: number }[]
+}): { value: number; time: number }[] {
+  const ends = new Set(openingEnds(param))
+  const opening = new Set<number>()
+  param.linearRamps.forEach((ramp, i) => {
+    if (isOpeningEnd(ramp, ends))
+      for (let k = 0; k < 64; k++) opening.add(i - k)
+  })
+  return param.linearRamps.filter((_, i) => !opening.has(i))
+}
+
+function isOpeningEnd(
+  ramp: { value: number; time: number },
+  ends: Set<number>,
+): boolean {
+  return ramp.value === 1 && ends.has(ramp.time)
 }

@@ -7,7 +7,7 @@ import type { StartReading } from './helpers/studio-output-span'
 import { captureSpan, readStart } from './helpers/studio-output-span'
 import { steadyWav } from './helpers/studio-output'
 
-/** A capture of silence, then a 330 Hz tone opening over 90 ms from `startMs` after the press. */
+/** A capture of silence, then a 330 Hz tone opening over 10 ms from `startMs` after the press. */
 function syntheticStart(
   sampleRate: number,
   startMs: number | null,
@@ -18,14 +18,14 @@ function syntheticStart(
     startMs === null
       ? Infinity
       : pressIndex + Math.round((startMs / 1000) * sampleRate)
-  const attack = Math.round(0.09 * sampleRate)
+  const attack = Math.round(0.01 * sampleRate)
   const samples = Float32Array.from({ length: 65536 }, (_, index) => {
     if (index < openIndex) return 0
-    // The house attack: exponential from the 1e-4 floor to full in 90 ms.
+    // Studio's attack from silence: a raised cosine to full in 10 ms.
     const gain =
       index - openIndex >= attack
         ? 1
-        : 1e-4 ** (1 - (index - openIndex) / attack)
+        : Math.sin((Math.PI / 2) * ((index - openIndex) / attack)) ** 2
     return 0.3 * gain * Math.sin((2 * Math.PI * 330 * index) / sampleRate)
   })
   const contextTime = (startFrame + pressIndex) / sampleRate
@@ -54,10 +54,10 @@ test.describe('Studio Play after Pause', () => {
       const start = readStart(capture, press, 330, 600)
       expect(start.settledDb).toBeCloseTo(-10.5, 0)
       expect(start.beforeDb).toBeLessThan(-100)
-      // -40 dB is half way up the attack, -6 dB at 83 ms into it, each read
-      // at the middle of a 5 ms window: within a couple of milliseconds.
-      expect(Math.abs(start.firstSoundMs! - 165)).toBeLessThan(3)
-      expect(Math.abs(start.halfLevelMs! - 203)).toBeLessThan(3)
+      // -40 dB comes 0.65 ms into the attack and -6 dB 8.3 ms into it, each
+      // read at the middle of a 5 ms window: within a couple of milliseconds.
+      expect(Math.abs(start.firstSoundMs! - 119.5)).toBeLessThan(3)
+      expect(Math.abs(start.halfLevelMs! - 124.7)).toBeLessThan(3)
 
       const silent = syntheticStart(rate, null)
       expect(() => readStart(silent.capture, silent.press, 330, 600)).toThrow(

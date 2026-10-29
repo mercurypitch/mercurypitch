@@ -5,7 +5,7 @@ import type { StudioArrangementPlan } from '../model/arrangement-plan'
 import { applyStudioCommand } from '../model/commands'
 import type { StudioProject } from '../model/types'
 import type { StudioBufferLease } from './buffer-cache'
-import { envelopeOf, freshGraphs, transportFixture, } from './transport.test-fixtures'
+import { crossfadeRamps, envelopeOf, freshGraphs, openingEnds, transportFixture, } from './transport.test-fixtures'
 
 // The fixture's first run: frame 0 is heard at 0.26 s, after 0.24 s of
 // warmup and 20 ms of lane and master latency, and fully open at 0.35 s.
@@ -49,7 +49,7 @@ describe('Studio transport handoff', () => {
     expect(start).toMatchObject({ kind: 'set', value: 0 })
     expect(at).toBeGreaterThan(1)
     expect(faded(first)).toBe(false)
-    expect(first.gain.linearRamps).toEqual([{ value: 0, time: at + 0.03 }])
+    expect(crossfadeRamps(first.gain)).toEqual([{ value: 0, time: at + 0.03 }])
     expect(next.gain.linearRamps).toEqual([{ value: 1, time: at + 0.03 }])
     // The new run starts on the frame the playing run reaches at `at`.
     const [, , , epoch, options] = f.buildGraph.mock.calls[1]
@@ -155,8 +155,9 @@ describe('Studio transport handoff', () => {
     const { fromFrame } = f.buildGraph.mock.calls[1][4]
     expect(Math.abs(fromFrame - (1 - FIRST_HEARD) * 48000)).toBeLessThan(1)
     const restarted = envelopeOf(graphs[1])
-    expect(restarted.gain.linearRamps).toEqual([])
-    expect(restarted.gain.ramps).toHaveLength(1)
+    // Opened from silence, with no crossfade beside it.
+    expect(openingEnds(restarted.gain)).toHaveLength(1)
+    expect(restarted.gain.linearRamps).toHaveLength(64)
     expect(f.transport.getState()).toMatchObject({
       playing: true,
       pending: false,

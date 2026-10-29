@@ -5,7 +5,7 @@ import type { StudioArrangementPlan } from '../model/arrangement-plan'
 import type { StudioProject } from '../model/types'
 import type { StudioBufferLease } from './buffer-cache'
 import { RUN_LOOKAHEAD_SECONDS, STUDIO_RUN_RATE } from './run'
-import { envelopeOf, freshGraphs, transportFixture, } from './transport.test-fixtures'
+import { crossfadeRamps, envelopeOf, freshGraphs, openingEnds, transportFixture, } from './transport.test-fixtures'
 
 // The fixture's chains: 10 ms of lane and 10 ms of master latency.
 const LATENCY = 0.02
@@ -85,7 +85,7 @@ async function playsOnPastHeldEnd(
   const built = f.buildGraph.mock.calls.at(-1)!
   expect(built[4].fromFrame).toBe(frame)
   // From silence: the held run has gone, so there is nothing to cross.
-  expect(envelopeOf(graphs.at(-1)!).gain.ramps).toHaveLength(1)
+  expect(openingEnds(envelopeOf(graphs.at(-1)!).gain)).toHaveLength(1)
   expect(f.transport.getState()).toMatchObject({
     playing: true,
     pending: false,
@@ -130,7 +130,7 @@ describe('Studio transport seek', () => {
     const [, , , epoch] = f.buildGraph.mock.calls[0]
     // The run's envelope opens from silence when frame 0 would be heard.
     const opens = epoch + LATENCY
-    const attack = envelopeOf(f.graph).gain.ramps.slice()
+    const attack = envelopeOf(f.graph).gain.linearRamps.slice()
     f.ctx.currentTime = opens - 0.1
 
     await f.transport.seek(48000, f.project, [f.asset])
@@ -138,7 +138,7 @@ describe('Studio transport seek', () => {
     // The new frame enters as the envelope opens, so none of it plays
     // into a closed envelope, and the envelope opens as it was going to.
     expect(f.graph.seek).toHaveBeenCalledExactlyOnceWith(48000, epoch)
-    expect(envelopeOf(f.graph).gain.ramps).toEqual(attack)
+    expect(envelopeOf(f.graph).gain.linearRamps).toEqual(attack)
     expect(f.transport.getState()).toMatchObject({
       playing: true,
       playheadFrame: 48000,
@@ -260,13 +260,12 @@ describe('Studio transport seek', () => {
     expect(faded(held)).toBe(false)
     // The two places are unrelated: they cross at equal power, as a seek
     // in place does, so the level holds through the 30 ms.
-    expect(held.gain.linearRamps.at(-1)).toEqual({ value: 0, time: at + 0.03 })
+    const out = crossfadeRamps(held.gain)
+    expect(out.at(-1)).toEqual({ value: 0, time: at + 0.03 })
     expect(next.gain.linearRamps.at(-1)).toEqual({ value: 1, time: at + 0.03 })
-    const halfway = held.gain.linearRamps.find(
-      ({ time }) => Math.abs(time - (at + 0.015)) < 1e-9,
-    )
+    const halfway = out.find(({ time }) => Math.abs(time - (at + 0.015)) < 1e-9)
     expect(halfway?.value).toBeCloseTo(Math.SQRT1_2, 9)
-    for (const [index, { value }] of held.gain.linearRamps.entries())
+    for (const [index, { value }] of out.entries())
       expect(value ** 2 + next.gain.linearRamps[index].value ** 2).toBeCloseTo(
         1,
         12,

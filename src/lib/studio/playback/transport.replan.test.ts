@@ -4,7 +4,7 @@ import { setStudioWorkingBytes, studioReservedMemoryBytes, } from '../memory-bud
 import type { StudioArrangementPlan } from '../model/arrangement-plan'
 import { compileStudioArrangement } from '../model/arrangement-plan'
 import type { StudioProject } from '../model/types'
-import { envelopeOf, freshGraphs, transportFixture, } from './transport.test-fixtures'
+import { crossfadeRamps, envelopeOf, freshGraphs, transportFixture, } from './transport.test-fixtures'
 
 // The fixture's first run: frame 0 is heard at 0.26 s, after 0.24 s of
 // warmup and 20 ms of lane and master latency.
@@ -81,7 +81,7 @@ describe('Studio transport re-plan', () => {
     expect(plan.endFrame).toBe(48100)
     expect(earliest).toBeCloseTo(1.015, 9)
     expect(graphs[0].scheduleUntil).toHaveBeenLastCalledWith(3)
-    expect(envelopeOf(graphs[0]).gain.linearRamps).toEqual([])
+    expect(crossfadeRamps(envelopeOf(graphs[0]).gain)).toEqual([])
     expect(f.transport.getState()).toMatchObject({
       playing: true,
       pending: false,
