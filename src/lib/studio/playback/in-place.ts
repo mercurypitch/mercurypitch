@@ -5,6 +5,8 @@ import { resolveStudioSoundGraph } from '../export/sound-graph'
 import { studioLaneSpec } from '../model/arrangement-plan'
 import type { StudioAsset, StudioProject, StudioTrack } from '../model/types'
 import { keepsChains, replanLanes } from './lane-replan'
+import type { StudioKnownLatency } from './lane-swap'
+import { swapLanes } from './lane-swap'
 import { audibility, graphShape, laneTailFrames, soundKey } from './live-edit'
 import type { StudioRun } from './run'
 import { RUN_LOOKAHEAD_SECONDS } from './run'
@@ -24,6 +26,8 @@ export interface StudioLiveSettings {
   readonly repeat: boolean
   /** The newest measured master gain, or null to keep the run's own. */
   readonly masterGain: StudioMasterGain | null
+  /** What a new chain's latency was measured as: a lane swaps to one only once it is known. */
+  readonly chainLatency: StudioKnownLatency
 }
 
 /** The project as it sounds now: saved values under the controls still moving. */
@@ -122,6 +126,37 @@ export function followRepeat(run: StudioRun, repeat: boolean): boolean {
   return true
 }
 
+/**
+ * Hear a lane's volume or pan on each run while its control moves, without
+ * saving. Null ends the preview and returns the lane to its saved values.
+ */
+export function previewLaneDraft(
+  runs: readonly StudioRun[],
+  drafts: StudioDrafts,
+  trackId: string,
+  draft: StudioLaneDraft | null,
+): void {
+  if (draft === null) drafts.lanes.delete(trackId)
+  else drafts.lanes.set(trackId, { ...draft })
+  for (const run of runs) {
+    const live = withDrafts(run.project, drafts)
+    const track = live.tracks.find((item) => item.id === trackId)
+    if (track) run.graph.setLaneMix(track, audibility(live)(track))
+  }
+}
+
+/** The same for a sound macro: each run's chains follow a moving dial. */
+export function previewMacroDraft(
+  runs: readonly StudioRun[],
+  drafts: StudioDrafts,
+  name: MacroKey,
+  value: number | null,
+): void {
+  if (value === null) drafts.macros.delete(name)
+  else drafts.macros.set(name, value)
+  for (const run of runs) applySound(run, withDrafts(run.project, drafts))
+}
+
 /** A control moved while the song was getting ready: start as it sounds. */
 export function applyDrafts(run: StudioRun, drafts: StudioDrafts): void {
   if (!drafts.lanes.size && !drafts.macros.size) return
@@ -154,10 +189,10 @@ export function playInPlace(
 
 /**
  * Follow an edit on the running graph, so the song keeps playing: in place
- * (playInPlace), or, for other clips through the same chains, by moving
- * only the lanes they change (lane-replan.ts). False when it needs a new
- * run: another effect list on a lane it built, or anything a re-plan
- * cannot express.
+ * (playInPlace); for other clips through the same chains, by moving only
+ * the lanes they change (lane-replan.ts); for another effect list, by
+ * crossing only its lane to a new chain (lane-swap.ts). False when it needs
+ * a new run: anything a re-plan or a swap cannot express.
  */
 export function followEdit(
   run: StudioRun,
@@ -166,9 +201,11 @@ export function followEdit(
   settings: StudioLiveSettings,
 ): boolean {
   if (playInPlace(run, project, settings)) return true
-  if (!keepsChains(run, project) || !followRepeat(run, settings.repeat))
-    return false
-  if (!replanLanes(run, project, assets)) return false
+  if (!followRepeat(run, settings.repeat)) return false
+  const followed = keepsChains(run, project)
+    ? replanLanes(run, project, assets)
+    : swapLanes(run, project, settings.chainLatency)
+  if (!followed) return false
   followInPlace(run, project, settings)
   return true
 }

@@ -7,8 +7,10 @@
 // on that lane's own timeline (lane-timeline.ts), all timed from one shared
 // anchor (graph-passes.ts). So a seek crosses every lane to a new place, a
 // clip edit crosses only the lanes it changes (graph-replan.ts), and neither
-// touches a chain, a fader or a meter. An offline render builds the same
-// graph and schedules it once, so a render and Play agree on every lane.
+// touches a chain, a fader or a meter. A new effect list builds only its
+// lane's new chain, beside the old one, and crosses the lane to it
+// (graph-swap.ts). An offline render builds the same graph and schedules it
+// once, so a render and Play agree on every lane.
 import type { StudioFxChain } from '@/lib/studio-fx/chain'
 import { createStudioFxChain } from '@/lib/studio-fx/chain'
 import type { ChainSpec } from '@/lib/studio-fx/chain-spec'
@@ -16,13 +18,16 @@ import type { StudioArrangementPlan, StudioPlannedLane, } from '../model/arrange
 import type { StudioTrack } from '../model/types'
 import { STUDIO_SAMPLE_RATE } from '../model/types'
 import type { StudioGraphLane } from './graph-lanes'
-import { buildGraphLane, disposeGraphLane, dynamicsIds, laneGains, scheduleLane, silenceLane, } from './graph-lanes'
+import { buildGraphLane, disposeGraphLane, dynamicsIds, mixLane, scheduleLane, silenceLane, } from './graph-lanes'
 import type { StudioGraphState } from './graph-passes'
-import { canLoop, laneRun, MIN_LOOP_SECONDS, repeatLanes, restartLanes, seekTime, stopRepeatingLanes, } from './graph-passes'
+import { canLoop, laneRun, MIN_LOOP_SECONDS, repeatLanes, restartLanes, seekTime, stopRepeatingLanes, swapping, } from './graph-passes'
 import type { StudioReplan } from './graph-replan'
 import { replanGraph } from './graph-replan'
+import type { StudioChainSwap } from './graph-swap'
+import { finishSwaps, settleSwaps, swapChains } from './graph-swap'
 
 export type { StudioReplan } from './graph-replan'
+export type { StudioChainSwap } from './graph-swap'
 
 export interface StudioGraph {
   readonly output: GainNode
@@ -38,9 +43,9 @@ export interface StudioGraph {
    * the new ones (seek-crossfade.ts); the chains, master and meters play on.
    * The frame enters a lane with no compensation at the returned time:
    * seekTime(at), so pass a time from seekTime to keep two graphs in step.
-   * Null when the plan starts after `fromFrame` or ends before it, or the
-   * graph is parked. Call scheduleUntil after it, as the new sources start
-   * at once.
+   * Null when the plan starts after `fromFrame` or ends before it, the
+   * graph is parked, or a lane is still crossing to a new chain. Call
+   * scheduleUntil after it, as the new sources start at once.
    */
   seek(fromFrame: number, at: number): number | null
   /**
@@ -53,6 +58,20 @@ export interface StudioGraph {
    * Call scheduleUntil after it.
    */
   replan(plan: StudioArrangementPlan, earliest: number): StudioReplan | null
+  /**
+   * Build a new chain for each lane `swaps` names, beside the one it plays,
+   * and cross the lane to it at the chain outputs (graph-swap.ts): its
+   * sources go to the new chain from the first whole frame no sooner than
+   * `earliest`, and the new chain is heard from the returned time, a
+   * settling time after it is built. Every other lane plays on untouched.
+   * Null, with nothing changed, when the graph cannot: parked, played out,
+   * a lane it did not build, a chain slower than its slowest lane, or a swap
+   * still crossing. Each swap's release is called when its chain goes. Call
+   * scheduleUntil after it.
+   */
+  swapChains(swaps: readonly StudioChainSwap[], earliest: number): number | null
+  /** Whether a lane is still crossing to a new chain: until then the graph seeks, re-plans and swaps nothing. */
+  swapping(): boolean
   /**
    * Stop every source now, playing or waiting, and schedule nothing more.
    * The chains, master and faders stay built, silent, for resume. The peak
@@ -75,7 +94,11 @@ export interface StudioGraph {
    * clips, silent ones at zero gain; a render builds only what it hears.
    */
   hasLane(trackId: string): boolean
-  /** Glide a built lane's volume and pan, or silence it, while it plays. */
+  /**
+   * Glide a built lane's volume and pan, or silence it, while it plays. A
+   * lane crossing to a new chain keeps its old balance until the new chain
+   * is heard.
+   */
   setLaneMix(track: StudioTrack, audible: boolean): void
   /**
    * Move a built lane's chain to new settings while it plays. The chain sends
@@ -131,6 +154,9 @@ export function studioGraphLanes(
   )
 }
 
+/** What one effect holds at `rate`: its delay lines and node overhead. */
+const effectBytes = (rate: number) => rate * 2 * 8 + 128 * 1024
+
 export function studioGraphWorkingBytes(
   plan: StudioArrangementPlan,
   rate: number,
@@ -143,9 +169,12 @@ export function studioGraphWorkingBytes(
   )
   // Includes the engine's bounded eight-impulse cache, generation copies,
   // delay lines and node overhead. Browser-private native allocations vary.
-  return Math.ceil(
-    8 * rate * 8 * 4 * 2 * 2 + count * (rate * 2 * 8 + 128 * 1024),
-  )
+  return Math.ceil(8 * rate * 8 * 4 * 2 * 2 + count * effectBytes(rate))
+}
+
+/** What a chain a swap builds beside a graph's needs: its effects, the graph's impulse cache already counted. */
+export function studioChainWorkingBytes(spec: ChainSpec, rate: number): number {
+  return Math.ceil(spec.effects.length * effectBytes(rate))
 }
 
 /** Two analysers on `output`, one per channel, and the splitter that taps it for them. */
@@ -235,6 +264,10 @@ export function buildStudioGraph(
     lanes,
     buffers,
     planStart: plan.startFrame,
+    slowest: Math.max(
+      0,
+      ...plan.lanes.map((lane) => lane.chainLatencySeconds ?? 0),
+    ),
     endFrame: plan.endFrame,
     looping: options.repeat === true,
     parked: false,
@@ -253,21 +286,25 @@ export function buildStudioGraph(
     output,
     scheduleUntil(time) {
       if (!playing()) return
+      settleSwaps(state)
       const run = laneRun(state)
       for (const lane of lanes) scheduleLane(ctx, lane, time, run)
     },
     seekTime: (earliest) => seekTime(state, earliest),
     seek(fromFrame, at) {
-      if (!playing() || !reaches(fromFrame)) return null
+      if (!playing() || !reaches(fromFrame) || swapping(state)) return null
       const time = seekTime(state, at)
       restartLanes(state, fromFrame, time, true)
       return time
     },
     replan: (next, earliest) => replanGraph(state, next, earliest),
+    swapChains: (swaps, earliest) => swapChains(state, swaps, earliest),
+    swapping: () => swapping(state),
     park() {
       if (!playing()) return
       state.parked = true
       for (const lane of lanes) silenceLane(lane)
+      finishSwaps(state)
       if (peaks) output.disconnect(peaks.tap)
     },
     resume(fromFrame, at, repeat) {
@@ -287,14 +324,7 @@ export function buildStudioGraph(
     hasLane: (trackId) => byId.has(trackId),
     setLaneMix(track, audible) {
       const lane = byId.get(track.id)
-      if (!lane || state.disposed) return
-      const values = audible ? laneGains(track) : [0, 0]
-      const now = ctx.currentTime
-      // A 12 ms glide, so a fader release or a mute does not click.
-      for (const [index, gain] of lane.mixes.entries()) {
-        gain.gain.cancelScheduledValues(now)
-        gain.gain.setTargetAtTime(values[index], now, 0.012)
-      }
+      if (lane && !state.disposed) mixLane(ctx, lane, track, audible)
     },
     setLaneSpec(trackId, spec) {
       const lane = byId.get(trackId)

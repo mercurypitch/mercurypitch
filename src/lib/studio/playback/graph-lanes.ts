@@ -7,6 +7,8 @@
 // (seek-crossfade.ts) on a timeline of its own (lane-timeline.ts), so a seek
 // or a clip edit changes what the lane reads and never what it runs
 // through: its effect tails ring on, and every other lane plays on as it was.
+// Only another effect list changes the chain, and then only this lane's: a
+// new one is built beside it and the lane crosses to it (graph-swap.ts).
 import type { StudioFxChain } from '@/lib/studio-fx/chain'
 import { createStudioFxChain } from '@/lib/studio-fx/chain'
 import type { ChainSpec } from '@/lib/studio-fx/chain-spec'
@@ -20,11 +22,34 @@ import { laneCycle, laneTimeline, plannedSegments } from './lane-timeline'
 import type { StudioFadeShape, StudioLaneInput, StudioSourceSet, } from './seek-crossfade'
 import { closeStudioSourceSet, emptyStudioSourceSet, openStudioSourceSet, retireStudioSourceSet, stopStudioSource, } from './seek-crossfade'
 
+/** A chain a lane is crossing away from, kept until its output has faded out. */
+export interface StudioRetiringChain {
+  readonly chain: StudioFxChain
+  readonly fade: GainNode
+  /** Where its sources went: the sets still feeding it. */
+  readonly feed: StudioLaneInput
+  readonly release: (() => void) | null
+  /** When the new chain starts to be heard, and the lane's balance changes with it. */
+  readonly at: number
+  /** The old chain's balance in dB, which the lane keeps until `at`. */
+  readonly balanceDb: number
+  /** When its output and its sources have faded out, so it can go. */
+  readonly silentAt: number
+}
+
 export interface StudioGraphLane {
   readonly trackId: string
   /** Where its sources go, and how much later than the slowest lane they start. */
-  readonly feed: StudioLaneInput
-  readonly chain: StudioFxChain
+  feed: StudioLaneInput
+  chain: StudioFxChain
+  /** The gain after the chain: at unity, but while a swap crosses it (graph-swap.ts). */
+  fade: GainNode
+  /** Frees the memory a chain swapped in holds; null for one the graph was built with. */
+  release: (() => void) | null
+  /** The chain a swap is crossing from, until it goes. */
+  retiring: StudioRetiringChain | null
+  /** The balance its faders play at, in dB: the newest mix's. */
+  balanceDb: number
   /** Its broadband dynamics, whose reductions add up to the lane's. */
   dynamics: string[]
   /** Left and right fader gains, after the chain. */
@@ -67,11 +92,11 @@ export interface StudioLanePlace {
   readonly fromFrame: number
 }
 
-/** A lane's faders after `chain`, into `output`: split, a gain per side, merge. */
+/** A lane's faders after `fade`, into `output`: split, a gain per side, merge. */
 function connectFaders(
   ctx: BaseAudioContext,
   lane: StudioPlannedLane,
-  chain: StudioFxChain,
+  fade: GainNode,
   output: AudioNode,
 ) {
   const split = ctx.createChannelSplitter(2)
@@ -84,7 +109,7 @@ function connectFaders(
     gain.connect(merge, 0, index)
     return gain
   })
-  chain.output.connect(split)
+  fade.connect(split)
   merge.connect(output)
   return { split, merge, mixes }
 }
@@ -103,7 +128,9 @@ export function buildGraphLane(
     throw new Error('Studio chain timing has not been measured.')
   const chain = createStudioFxChain(ctx, lane.spec)
   try {
-    const faders = connectFaders(ctx, lane, chain, place.output)
+    const fade = ctx.createGain()
+    chain.output.connect(fade)
+    const faders = connectFaders(ctx, lane, fade, place.output)
     const feed = { input: chain.input, compensation: lane.compensationSeconds }
     const planned = plannedSegments(
       lane.segments,
@@ -115,6 +142,10 @@ export function buildGraphLane(
       trackId: lane.track.id,
       feed,
       chain,
+      fade,
+      release: null,
+      retiring: null,
+      balanceDb: lane.track.balanceGainDb,
       dynamics: dynamicsIds(chain.getSpec()),
       ...faders,
       segments: lane.segments,
@@ -135,6 +166,47 @@ function closeLaneSet(lane: StudioGraphLane, set: StudioSourceSet): void {
   lane.sets.delete(set)
 }
 
+/** Stop every source a lane sends into `feed`, and take their sets out. */
+export function dropSetsInto(
+  lane: StudioGraphLane,
+  feed: StudioLaneInput,
+): void {
+  for (const set of lane.sets) {
+    if (set.lane !== feed) continue
+    emptyStudioSourceSet(set)
+    closeLaneSet(lane, set)
+  }
+}
+
+/** A 12 ms glide, so a fader release or a mute does not click. */
+const MIX_GLIDE_SECONDS = 0.012
+
+/**
+ * Glide a lane's faders to `track`'s volume, pan and balance, or to
+ * silence. While a swap crosses the lane to a new chain, the old chain's
+ * balance holds until the new chain is heard, which brings its own: a new
+ * balance on the old chain would jump the lane's level before its sound.
+ */
+export function mixLane(
+  ctx: BaseAudioContext,
+  lane: StudioGraphLane,
+  track: StudioTrack,
+  audible: boolean,
+): void {
+  const now = ctx.currentTime
+  const held = lane.retiring && now < lane.retiring.at ? lane.retiring : null
+  const gains = (balanceGainDb: number) =>
+    audible ? laneGains({ ...track, balanceGainDb }) : [0, 0]
+  const values = gains(held?.balanceDb ?? track.balanceGainDb)
+  const next = gains(track.balanceGainDb)
+  for (const [index, gain] of lane.mixes.entries()) {
+    gain.gain.cancelScheduledValues(now)
+    gain.gain.setTargetAtTime(values[index], now, MIX_GLIDE_SECONDS)
+    if (held) gain.gain.setTargetAtTime(next[index], held.at, MIX_GLIDE_SECONDS)
+  }
+  lane.balanceDb = track.balanceGainDb
+}
+
 /**
  * Cross a lane from what it plays to a new set of sources at `time`. A set
  * opened for a change not heard yet, at the same time, takes the new
@@ -151,9 +223,19 @@ export function crossLane(
     emptyStudioSourceSet(last)
     return
   }
-  if (!retireStudioSourceSet(last, time, shape)) closeLaneSet(lane, last)
+  retireLaneSet(lane, last, time, shape)
   lane.current = openStudioSourceSet(ctx, lane.feed, time, shape)
   lane.sets.add(lane.current)
+}
+
+/** Fade a lane's set out from `time` (retireStudioSourceSet); one with nothing left goes at once. */
+export function retireLaneSet(
+  lane: StudioGraphLane,
+  set: StudioSourceSet,
+  time: number,
+  shape: StudioFadeShape,
+): void {
+  if (!retireStudioSourceSet(set, time, shape)) closeLaneSet(lane, set)
 }
 
 /** Open a set for sources that play at full level from their first frame, as after Play. */
@@ -276,10 +358,24 @@ export function silenceLane(lane: StudioGraphLane): void {
   lane.sets.clear()
 }
 
-/** Take a lane down: its sources, its chain and its faders. */
+/** Take a chain a swap left behind down now: its sources, the chain, its fade and its memory. */
+export function disposeRetiringChain(lane: StudioGraphLane): void {
+  const old = lane.retiring
+  if (!old) return
+  lane.retiring = null
+  dropSetsInto(lane, old.feed)
+  old.chain.dispose()
+  old.fade.disconnect()
+  old.release?.()
+}
+
+/** Take a lane down: its sources, its chains and its faders. */
 export function disposeGraphLane(lane: StudioGraphLane): void {
   silenceLane(lane)
+  disposeRetiringChain(lane)
   lane.chain.dispose()
+  lane.fade.disconnect()
+  lane.release?.()
   for (const gain of lane.mixes) gain.disconnect()
   lane.split.disconnect()
   lane.merge.disconnect()

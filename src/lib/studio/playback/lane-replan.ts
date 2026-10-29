@@ -11,11 +11,12 @@
 // sounds follow the new plan. A run Pause kept takes the edit the same way,
 // so the next Play still starts it without a build.
 //
-// What a re-plan cannot express goes to a new run as before, each for its
-// own reason: another effect list on a lane the graph built (its chain, and
-// maybe its latency, change), audio the run does not hold, a lane heard now
-// that the graph has no chain for, a place the new plan does not reach, and
-// a loop length that changes while the next pass may already be rendering.
+// Another effect list on a lane the graph built is a chain swap's instead
+// (lane-swap.ts). What a re-plan cannot express goes to a new run as before,
+// each for its own reason: audio the run does not hold, a lane heard now
+// that the graph has no chain for, a place the new plan does not reach, a
+// loop length that changes while the next pass may already be rendering,
+// and a lane still crossing to a new chain.
 import { compileStudioArrangement } from '../model/arrangement-plan'
 import type { StudioAsset, StudioProject } from '../model/types'
 import { changedChains } from './live-edit'

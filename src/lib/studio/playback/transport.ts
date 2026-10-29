@@ -1,11 +1,11 @@
 // Studio transport — one borrowed clock, explicit playback intent and generation-owned graph cleanup.
 //
 // A clip edit moves only the lanes it changes on the running graph
-// (lane-replan.ts). An edit the graph cannot follow builds a new run while
-// the old one keeps playing ("held"), then hands over on the same frame with
-// a short crossfade (handoff.ts). A newer edit replaces a run not heard yet,
-// so a burst of edits builds one run at a time. Only when memory cannot hold
-// both graphs does the song fade out and restart where it was.
+// (lane-replan.ts), a new effect list only its lane's chain (lane-swap.ts).
+// An edit the graph cannot follow builds a new run while the old one plays
+// on ("held"), then hands over on the same frame (handoff.ts). A newer edit
+// replaces a run not heard yet, so a burst of edits builds one run at a time.
+// Only when memory cannot hold both does the song fade out and restart there.
 import type { AudioContextLease } from '@/lib/audio-context-lease'
 import { closeEnvelope } from '@/lib/preview-player'
 import type { ChainSpec } from '@/lib/studio-fx/chain-spec'
@@ -23,12 +23,13 @@ import type { StudioBufferCache } from './buffer-cache'
 import { createStudioBufferCache } from './buffer-cache'
 import { buildStudioGraph, studioGraphWorkingBytes } from './graph'
 import type { StudioHandoff } from './handoff'
-import { cancelHandoff, HANDOFF_CANCEL_MARGIN_SECONDS, handoffTiming, scheduleHandoff, } from './handoff'
+import { cancelHandoff, HANDOFF_CANCEL_MARGIN_SECONDS, handoffTiming, heardRun, liveRunsOf, scheduleHandoff, } from './handoff'
 import type { StudioDrafts, StudioLaneDraft } from './in-place'
-import { applyDrafts, applyMix, applySound, followEdit, followMaster, followRepeat, heldMix, withDrafts, } from './in-place'
+import { applyDrafts, applyMix, applySound, followEdit, followMaster, followRepeat, heldMix, previewLaneDraft, previewMacroDraft, withDrafts, } from './in-place'
 import { createStudioKeptRun } from './kept-run'
+import { measureNewChains } from './lane-swap'
 import type { StudioRunLayout } from './live-edit'
-import { audibility, firstThatFits, studioRunLayouts } from './live-edit'
+import { firstThatFits, studioRunLayouts } from './live-edit'
 import { createStudioMasterLevel } from './master-level'
 import type { StudioLatencyReader } from './prepare-plan'
 import { createLatencyCache, planAssets, planLatencySeconds, playableStudioFrom, prepareStudioMaster, prepareStudioPlan, studioFirstFrame, } from './prepare-plan'
@@ -101,7 +102,14 @@ export function createStudioTransport(options: StudioTransportOptions) {
   // Where the render clock was when the song last fell silent.
   let stoppedAt = 0
   const drafts: StudioDrafts = { lanes: new Map(), macros: new Map() }
-  const liveSettings = () => ({ drafts, repeat, masterGain: master.fresh() })
+  const liveSettings = () => ({
+    drafts,
+    repeat,
+    masterGain: master.fresh(),
+    chainLatency: measureLatencies.known,
+  })
+  // The newest project setSnapshot was given.
+  let latest: StudioProject | null = null
   // The run Pause kept, for Play to start again without a build.
   const kept = createStudioKeptRun({
     retire,
@@ -126,20 +134,10 @@ export function createStudioTransport(options: StudioTransportOptions) {
   }
 
   /** Every run heard or about to be: fading out in a handover, held, newest. */
-  function liveRuns(): StudioRun[] {
-    const runs = handoffs.map(({ from }) => from)
-    if (held) runs.push(held)
-    if (active) runs.push(active)
-    return runs
-  }
+  const liveRuns = () => liveRunsOf(handoffs, held, active)
 
   /** The run heard now: the newest one whose handover has begun. */
-  function heard(): StudioRun | null {
-    const run = active ?? held
-    if (!run) return null
-    const now = run.ctx.currentTime
-    return handoffs.find(({ at }) => now < at)?.from ?? run
-  }
+  const heard = () => heardRun(handoffs, active ?? held)
 
   /** Where the playhead stands: the frame at the speakers, or a seek's frame from the click on. */
   const shownFrame = (run: StudioRun) =>
@@ -661,6 +659,41 @@ export function createStudioTransport(options: StudioTransportOptions) {
     return run
   }
 
+  async function setSnapshot(
+    project: StudioProject,
+    assets: readonly StudioAsset[],
+  ): Promise<void> {
+    latest = project
+    observeSnapshot(project)
+    if (!wantsPlayback) kept.follow(project, assets, liveSettings())
+    if (!wantsPlayback || disposed) return
+    // A new effect list is measured first, so its lane swaps chains at once;
+    // the edit is then followed as if it came now, unless a newer one has.
+    const measuring =
+      active && measureNewChains(active, project, measureLatencies)
+    if (measuring && (await measuring)) {
+      if (latest === project) await setSnapshot(project, assets)
+      return
+    }
+    if (
+      active &&
+      !preparing &&
+      followEdit(active, project, assets, liveSettings())
+    ) {
+      // A run heard until its handover follows the mix too.
+      for (const { from } of handoffs)
+        applyMix(from, heldMix(from, withDrafts(project, drafts)))
+      return
+    }
+    const token = ++restartGeneration
+    const frame = hold(project)
+    // A held run plays on, and a faded one fades on its own, while the
+    // last preparation settles.
+    await preparationDone
+    if (wantsPlayback && !disposed && token === restartGeneration)
+      await start(project, assets, frame)
+  }
+
   return {
     play,
     warm,
@@ -689,20 +722,11 @@ export function createStudioTransport(options: StudioTransportOptions) {
      * it after the gesture's own commit.
      */
     previewLane(trackId: string, draft: StudioLaneDraft | null): void {
-      if (draft === null) drafts.lanes.delete(trackId)
-      else drafts.lanes.set(trackId, { ...draft })
-      for (const run of liveRuns()) {
-        const live = withDrafts(run.project, drafts)
-        const track = live.tracks.find((item) => item.id === trackId)
-        if (track) run.graph.setLaneMix(track, audibility(live)(track))
-      }
+      previewLaneDraft(liveRuns(), drafts, trackId, draft)
     },
     /** The same for a sound macro: the running chains follow a moving dial. */
     previewMacro(name: MacroKey, value: number | null): void {
-      if (value === null) drafts.macros.delete(name)
-      else drafts.macros.set(name, value)
-      for (const run of liveRuns())
-        applySound(run, withDrafts(run.project, drafts))
+      previewMacroDraft(liveRuns(), drafts, name, value)
     },
     /** The newest run keeps its graph for Play, less long with the page hidden. */
     pause: () => pause(false, true),
@@ -725,31 +749,7 @@ export function createStudioTransport(options: StudioTransportOptions) {
       await waitForRelease()
       cache.clear()
     },
-    async setSnapshot(
-      project: StudioProject,
-      assets: readonly StudioAsset[],
-    ): Promise<void> {
-      observeSnapshot(project)
-      if (!wantsPlayback) kept.follow(project, assets, liveSettings())
-      if (!wantsPlayback || disposed) return
-      if (
-        active &&
-        !preparing &&
-        followEdit(active, project, assets, liveSettings())
-      ) {
-        // A run heard until its handover follows the mix too.
-        for (const { from } of handoffs)
-          applyMix(from, heldMix(from, withDrafts(project, drafts)))
-        return
-      }
-      const token = ++restartGeneration
-      const frame = hold(project)
-      // A held run plays on, and a faded one fades on its own, while the
-      // last preparation settles.
-      await preparationDone
-      if (wantsPlayback && !disposed && token === restartGeneration)
-        await start(project, assets, frame)
-    },
+    setSnapshot,
     async seek(
       frame: number,
       project: StudioProject,

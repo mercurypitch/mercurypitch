@@ -25,7 +25,7 @@ import { STUDIO_SAMPLE_RATE } from '../model/types'
 import type { StudioGraphLane } from './graph-lanes'
 import { crossLane, dropPassesAfter, rebaseLane } from './graph-lanes'
 import type { StudioGraphState } from './graph-passes'
-import { BEGUN_MARGIN_SECONDS, furthestPass, MIN_LOOP_SECONDS, passStart, } from './graph-passes'
+import { BEGUN_MARGIN_SECONDS, furthestPass, MIN_LOOP_SECONDS, passStart, swapping, } from './graph-passes'
 import { laneTimeline, plannedSegments, sameAudioAt, sameSegments, } from './lane-timeline'
 import { EQUAL_POWER_FADE, LINEAR_FADE } from './seek-crossfade'
 
@@ -38,8 +38,8 @@ export interface StudioReplan {
   readonly epoch: number
 }
 
-/** Where a re-plan crosses: the time, the pass it falls in and the plan frame there. */
-interface ReplanPlace {
+/** Where a re-plan or a swap crosses: the time, the pass it falls in and the plan frame there. */
+export interface ReplanPlace {
   readonly at: number
   readonly pass: number
   readonly frame: number
@@ -75,7 +75,7 @@ function laneChanges(
  * than a change not heard yet. Null once a song that plays once has played
  * its last pass out.
  */
-function replanPlace(
+export function replanPlace(
   state: StudioGraphState,
   earliest: number,
 ): ReplanPlace | null {
@@ -98,7 +98,7 @@ function replanPlace(
 }
 
 /** Count passes from `pass`, which keeps its start: the anchor moves to its first frame. */
-function rebase(state: StudioGraphState, pass: number): void {
+export function rebase(state: StudioGraphState, pass: number): void {
   if (pass === 0) return
   const start = passStart(state, pass)
   state.epoch = start
@@ -158,12 +158,16 @@ function replanParked(
   return anchor(state, null)
 }
 
-/** Whether `plan` can play on this graph at all: from its first frame, and long enough to loop while it loops. */
+/**
+ * Whether `plan` can play on this graph at all: from its first frame, long
+ * enough to loop while it loops, and with no lane crossing to a new chain.
+ */
 function canTake(
   state: StudioGraphState,
   plan: StudioArrangementPlan,
 ): boolean {
   if (state.disposed || plan.startFrame !== state.planStart) return false
+  if (swapping(state)) return false
   const loop = (plan.endFrame - plan.startFrame) / STUDIO_SAMPLE_RATE
   return !state.looping || loop >= MIN_LOOP_SECONDS
 }
@@ -178,7 +182,8 @@ function dropQueuedPasses(state: StudioGraphState): void {
  * Move the lanes whose segments `plan` changes to them, no sooner than
  * `earliest`; see the header. Null, with nothing changed, when the graph
  * cannot: a plan from another first frame, a lane or audio it lacks, a
- * place the new plan does not reach, a loop too short or too close to move.
+ * place the new plan does not reach, a loop too short or too close to move,
+ * or a lane still crossing to a new chain (graph-swap.ts).
  */
 export function replanGraph(
   state: StudioGraphState,

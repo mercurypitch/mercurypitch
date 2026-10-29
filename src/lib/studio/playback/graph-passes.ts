@@ -29,6 +29,8 @@ export interface StudioGraphState {
   readonly buffers: ReadonlyMap<string, AudioBuffer>
   /** The plan's first frame: where every pass starts but the first. */
   readonly planStart: number
+  /** The slowest lane chain's latency in seconds, which every lane is aligned to. */
+  readonly slowest: number
   endFrame: number
   looping: boolean
   /** Every source stopped, nothing scheduled, until resume. */
@@ -106,6 +108,17 @@ export function restartLanes(
     lane.timeline = laneTimeline(lane.planned, start, fromFrame)
   }
   state.pendingAt = cross ? epoch : -Infinity
+}
+
+/**
+ * Whether a lane is still crossing to a new chain (graph-swap.ts). Until
+ * it is done, the graph seeks, re-plans and swaps nothing.
+ */
+export function swapping(state: StudioGraphState): boolean {
+  const now = state.ctx.currentTime
+  return state.lanes.some(
+    (lane) => lane.retiring !== null && now < lane.retiring.silentAt,
+  )
 }
 
 /** Whether the plan can loop: long enough, with something to play. */

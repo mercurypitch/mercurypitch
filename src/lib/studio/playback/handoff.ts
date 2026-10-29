@@ -2,10 +2,10 @@
 // Studio run handoff — a new run takes over a playing one on the same frame, with a 30 ms crossfade
 // ============================================================
 //
-// An edit that needs a new graph (a new effect list, or a clip edit the
-// running graph cannot re-plan: lane-replan.ts) used to fade the song out,
-// build, and fade it back in: about 170 ms of silence, and the song came
-// back late by that much. A handoff keeps the playing run sounding while the
+// An edit that needs a new graph (an effect list the running graph cannot
+// swap in, lane-swap.ts, or a clip edit it cannot re-plan, lane-replan.ts)
+// used to fade the song out, build, and fade it back in: about 170 ms of
+// silence, and the song came back late by that much. A handoff keeps the playing run sounding while the
 // next one is built, starts the next one on the frame the playing run
 // reaches at that moment, and crossfades the two linearly. What both runs
 // play is the same audio on the same frames, so the linear sum stays flat;
@@ -64,6 +64,27 @@ export function handoffTiming(
     audibleEpoch:
       held.audibleEpoch + (frame - held.startFrame) / STUDIO_RUN_RATE,
   }
+}
+
+/** Every run heard or about to be: those handing over, then each of `newest` there is. */
+export function liveRunsOf(
+  handoffs: readonly StudioHandoff[],
+  ...newest: (StudioRun | null)[]
+): StudioRun[] {
+  return [
+    ...handoffs.map(({ from }) => from),
+    ...newest.filter((run): run is StudioRun => run !== null),
+  ]
+}
+
+/** Which of `newest` and the runs handing over to it is heard now: the newest whose handover has begun. */
+export function heardRun(
+  handoffs: readonly StudioHandoff[],
+  newest: StudioRun | null,
+): StudioRun | null {
+  if (!newest) return null
+  const now = newest.ctx.currentTime
+  return handoffs.find(({ at }) => now < at)?.from ?? newest
 }
 
 /** The crossfade from `time`: linear, or equal-power for two unrelated places. */

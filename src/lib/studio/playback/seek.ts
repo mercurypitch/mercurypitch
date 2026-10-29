@@ -57,16 +57,15 @@ function runsToSeek(
 /**
  * Move every run heard now, or about to be, to `frame`, heard from one
  * shared moment, so a handover between two of them stays sample-aligned.
- * False, with nothing moved, when any plan does not reach `frame`: one built
- * from a later frame because memory was short, or one of a shorter song
- * that an edit is replacing.
+ * False, with nothing moved, when any plan does not reach `frame` (one
+ * built from a later frame because memory was short, or one of a shorter
+ * song that an edit is replacing), or a lane is still crossing to a new
+ * chain (graph-swap.ts).
  */
 export function seekRuns(runs: readonly StudioRun[], frame: number): boolean {
-  if (
-    !runs.length ||
-    !runs.every((run) => frame >= run.firstFrame && frame < run.endFrame)
-  )
-    return false
+  const reaches = (run: StudioRun) =>
+    frame >= run.firstFrame && frame < run.endFrame && !run.graph.swapping()
+  if (!runs.length || !runs.every(reaches)) return false
   const ctx = runs[0].ctx
   const earliest = seekEarliest(ctx)
   // When the new frame is heard: no run's graph can bring it in sooner,
