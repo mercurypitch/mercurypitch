@@ -19,6 +19,7 @@ import { PathViewToggle } from '@/features/path/PathViewToggle'
 import { PathWeekGuide } from '@/features/path/PathWeekGuide'
 import { PlainPathView } from '@/features/path/PlainPathView'
 import { IS_DEV } from '@/lib/defaults'
+import { walkthroughActive } from '@/stores/app-store'
 import styles from './PathPage.module.css'
 
 /** Serpentine horizontal offset per week order (multiplies --amp). */
@@ -124,7 +125,11 @@ const PathPage: Component = () => {
       window.matchMedia?.('(prefers-reduced-motion: reduce)').matches === true
     const currentOrb = (): Element | null =>
       pageEl?.querySelector('.path-orb-current') ?? null
+    // A tour showing the page scrolls to what it points at (the Path tour
+    // turns the Ascent on from the list): landing under it slid the trail
+    // its first stop rings under the header.
     const land = (behavior: ScrollBehavior): void => {
+      if (untrack(walkthroughActive)) return
       currentOrb()?.scrollIntoView({ block: 'center', behavior })
     }
 

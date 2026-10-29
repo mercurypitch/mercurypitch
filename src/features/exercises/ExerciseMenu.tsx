@@ -239,6 +239,11 @@ const CARDS: ExerciseCardDef[] = [
 /** How many drills the library offers: what the onboarding map card counts. */
 export const LIBRARY_EXERCISE_COUNT = CARDS.length
 
+/** A drill's name as its card shows it ("Long Note"); none for one off the menu. */
+export function exerciseTitle(type: ExerciseType): string | undefined {
+  return CARDS.find((card) => card.type === type)?.title
+}
+
 function gradeLabel(score: number): JSX.Element {
   if (score >= 90)
     return (

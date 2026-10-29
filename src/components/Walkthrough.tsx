@@ -6,6 +6,8 @@ import type { Component } from 'solid-js'
 import { createEffect, createMemo, createUniqueId, Index, onCleanup, Show, untrack, } from 'solid-js'
 import { IconArrowLeft, IconArrowRight, } from '@/components/hidden-features-icons'
 import { applyPersistedValue } from '@/lib/storage'
+import type { TourSettingName } from '@/lib/tour-screen'
+import { applyTourSettings, undoTourSettings } from '@/lib/tour-screen'
 import { useFocusTrap } from '@/lib/use-focus-trap'
 import { isNarrow } from '@/lib/use-viewport'
 import type { WalkthroughStep } from '@/stores/app-store'
@@ -14,6 +16,7 @@ import { tourSteps, walkthroughActive } from '@/stores/app-store'
 import { endWalkthrough, GUIDE_SECTIONS, nextWalkthroughStep, prevWalkthroughStep, skipSection, startWalkthrough, } from '@/stores/app-store'
 import { activeTab, setActiveTab, setSidebarCollapsed, setSidebarOpen, sidebarCollapsed, } from '@/stores/ui-store'
 import styles from './Walkthrough.module.css'
+import { scrollTargetIntoView, shutToggle } from './walkthrough-dom'
 import { IconCheck, IconClose, IconSkipForward } from './walkthrough-icons'
 
 type Placement = 'top' | 'bottom' | 'left' | 'right'
@@ -192,10 +195,12 @@ export const Walkthrough: Component = () => {
     pendingRetries.clear()
   })
 
+  // `onMiss` runs after each look that finds nothing, before the next.
   const waitForTarget = (
     selector: string,
     maxAttempts = 20,
     intervalMs = 50,
+    onMiss?: () => void,
   ): Promise<boolean> =>
     new Promise((resolve) => {
       let attempts = 0
@@ -208,6 +213,7 @@ export const Walkthrough: Component = () => {
           resolve(true)
           return
         }
+        onMiss?.()
         attempts++
         if (attempts < maxAttempts) {
           const timer = setTimeout(() => {
@@ -259,31 +265,7 @@ export const Walkthrough: Component = () => {
     )
       return
     const el = queryVisible(step.targetSelector)
-    if (!el) return
-
-    const margin = 80
-    const r = el.getBoundingClientRect()
-    const needsScrollV =
-      r.top < -margin || r.bottom > window.innerHeight + margin
-    // Horizontally-scrolling containers (e.g. the overflow-x control bar on
-    // mobile/narrow screens) can park a target off to the side while it's still
-    // vertically in view. Detect that too so scrollIntoView reels in the right
-    // scroll ancestor — otherwise toolbar steps (BPM, Volume, play modes) would
-    // highlight an off-screen element.
-    const needsScrollH =
-      r.left < -margin || r.right > window.innerWidth + margin
-    if (!needsScrollV && !needsScrollH) return
-
-    // Targets taller than most of the viewport (e.g. a full card grid) look
-    // wrong centered — it scrolls past their top. Align those to the top
-    // instead; center everything else. Instant scroll so highlight/tooltip
-    // update immediately.
-    const tall = r.height > window.innerHeight * 0.8
-    el.scrollIntoView({
-      behavior: 'auto',
-      block: tall ? 'start' : 'center',
-      inline: 'center',
-    })
+    if (!el || !scrollTargetIntoView(el)) return
     // Re-position after scroll (needs one frame for layout)
     requestAnimationFrame(() => {
       updateHighlight()
@@ -443,6 +425,9 @@ export const Walkthrough: Component = () => {
   // Control bars the tour un-hid (ControlOverlay persists a hidden flag per
   // tab); re-hidden when the tour ends so the user's choice is respected.
   const tourShownControlBars = new Set<string>()
+  // How the tour set the page for its steps (step.screen: Compose's Piano
+  // Roll, Path's Ascent), put back the way the singer had it when it ends.
+  const tourSettings = new Map<TourSettingName, () => void>()
 
   // The floating control bars (Singing / Piano / Guitar) can be dismissed via
   // their hide chevron, which unmounts every control the toolbar steps target.
@@ -487,6 +472,20 @@ export const Walkthrough: Component = () => {
       await wait(120) // let the sidebar re-flow before measuring
     }
 
+    // The page set as this step needs it, with a moment to draw it: the
+    // steps about Compose's piano roll pointed at nothing from Sheet Music.
+    if (applyTourSettings(step.screen, tourSettings)) await wait(140)
+    if (gen !== prepGen) return
+
+    // A group an earlier step opened, and this one does not name, goes shut
+    // again. Left open, the Singing bar's sliders kept the bar wider than its
+    // stage for every step after them, and its ends slid under the sidebar.
+    for (const sel of [...tourExpandedReveals]) {
+      if (sel === step.reveal) continue
+      shutToggle(sel)
+      tourExpandedReveals.delete(sel)
+    }
+
     // Un-hide a dismissed control bar when the step's target — or the
     // collapse toggle the step needs first (step.reveal) — lives in it.
     revealHiddenControlBar(
@@ -526,7 +525,17 @@ export const Walkthrough: Component = () => {
     }
 
     if (gen !== prepGen) return
-    const found = await waitForTarget(step.targetSelector)
+    // A page that loads with the step (Path's, after the tab switch) says
+    // how to set itself only once its code is in: set it then.
+    const screen = step.screen
+    const found = await waitForTarget(
+      step.targetSelector,
+      20,
+      50,
+      screen === undefined
+        ? undefined
+        : () => applyTourSettings(screen, tourSettings),
+    )
     if (gen !== prepGen) return
     preparing = false
     if (!found) {
@@ -573,18 +582,8 @@ export const Walkthrough: Component = () => {
       setSidebarCollapsed(true)
       tourExpandedSidebarRail = false
     }
-    if (tourExpandedReveals.size > 0) {
-      for (const sel of tourExpandedReveals) {
-        const toggle = document.querySelector(sel)
-        if (
-          toggle instanceof HTMLElement &&
-          toggle.getAttribute('aria-expanded') === 'true'
-        ) {
-          toggle.click()
-        }
-      }
-      tourExpandedReveals.clear()
-    }
+    for (const sel of tourExpandedReveals) shutToggle(sel)
+    tourExpandedReveals.clear()
     if (tourShownControlBars.size > 0) {
       // Persisted-flag write works even when the bar's tab has unmounted.
       for (const prefix of tourShownControlBars) {
@@ -592,6 +591,7 @@ export const Walkthrough: Component = () => {
       }
       tourShownControlBars.clear()
     }
+    undoTourSettings(tourSettings)
   })
 
   // Count steps in current section

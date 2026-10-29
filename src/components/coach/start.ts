@@ -30,6 +30,11 @@
 //   names it meanwhile, so nothing lands in the gap; ended meanwhile (a tab
 //   change), or with steps that did not arrive, it never shows, and focus
 //   goes back as it would have.
+// - How the page was set for the steps (a step's `screen`: Melody, not
+//   Notation) is put back once the tour ends, and not between a tour and the
+//   one "Show me more" starts, which would set it again a moment later: one
+//   record goes down the chain, put back when its last tour goes, or when
+//   the next does not come.
 //
 // The coach is shared UI: the app's tours, the plan's showcase and Karaoke
 // Night, a document of its own, all run tours on it, so it lives in
@@ -37,6 +42,8 @@
 
 import { coachActive, setCoachActive } from '@/lib/coach-state'
 import type { CoachHandoff, CoachMore, CoachTour } from '@/lib/coach-types'
+import type { TourSettingName } from '@/lib/tour-screen'
+import { undoTourSettings } from '@/lib/tour-screen'
 import type { CoachEnd } from './runner'
 
 export interface CoachHandle {
@@ -190,6 +197,9 @@ const over = (result: CoachEnd, onEnd?: (r: CoachEnd) => void): CoachHandle => {
   return { end: () => undefined, ended: Promise.resolve(result) }
 }
 
+/** How a chain of tours set the page for its steps, to put back at its end. */
+type ScreenRecord = Map<TourSettingName, () => void>
+
 export async function startCoachTour(
   tour: CoachTour,
   opts: CoachStartOptions = {},
@@ -199,14 +209,19 @@ export async function startCoachTour(
     tour,
     opts,
     focusedNow() ?? (running !== null ? runningFocus : null),
+    new Map(),
   )
 }
 
-/** Starts `tour`, giving focus back to `before` when its layer goes. */
+/**
+ * Starts `tour`, giving focus back to `before` when its layer goes, with
+ * `settings` the chain's record of how its steps set the page.
+ */
 async function runTour(
   tour: CoachTour,
   opts: CoachStartOptions,
   before: HTMLElement | null,
+  settings: ScreenRecord,
 ): Promise<CoachHandle> {
   running?.end()
   running = null
@@ -218,15 +233,20 @@ async function runTour(
     modules = await loadCoach()
   } catch (error) {
     if (mine === generation) setCoachActive(null)
+    undoTourSettings(settings)
     throw error
   }
   // Another tour was asked for while this one loaded: it never shows.
-  if (mine !== generation) return over('exit', opts.onEnd)
+  if (mine !== generation) {
+    undoTourSettings(settings)
+    return over('exit', opts.onEnd)
+  }
   const [{ createCoachRunner }, { mountCoachLayer }] = modules
 
   const runner = createCoachRunner(tour, { phone: opts.phone })
   if (runner.ended() !== null) {
     setCoachActive(null)
+    undoTourSettings(settings)
     return over(runner.ended() ?? 'done', opts.onEnd)
   }
 
@@ -260,8 +280,11 @@ async function runTour(
       unmount()
       root.remove()
       if (next !== null && mine === generation) {
-        goOn(next.steps, opts, ours ? before : null)
-      } else if (ours) giveFocusBack(before)
+        goOn(next.steps, opts, ours ? before : null, settings)
+      } else {
+        undoTourSettings(settings)
+        if (ours) giveFocusBack(before)
+      }
     })
     // How the tour itself ended: done, even after a hand-over the singer
     // put off; an exit, if it never got that far.
@@ -287,6 +310,7 @@ async function runTour(
     // Done gives the hand-over; "Show me more" hands on to its tour instead.
     handoff: () => (goingOn === null ? (opts.handoff?.() ?? null) : null),
     onClose: close,
+    settings,
     ...(more === undefined
       ? {}
       : {
@@ -312,6 +336,7 @@ function goOn(
   steps: Promise<CoachTour>,
   opts: CoachStartOptions,
   before: HTMLElement | null,
+  settings: ScreenRecord,
 ): void {
   const asked = generation
   const gaveUp = (): void => {
@@ -319,11 +344,16 @@ function goOn(
   }
   void steps.then(
     (next) => {
-      if (asked !== generation) return
-      // runTour lets go of coachActive itself if the coach does not load.
-      void runTour(next, opts, before).catch(gaveUp)
+      if (asked !== generation) {
+        undoTourSettings(settings)
+        return
+      }
+      // runTour lets go of coachActive, and puts the page back, itself if
+      // the coach does not load.
+      void runTour(next, opts, before, settings).catch(gaveUp)
     },
     () => {
+      undoTourSettings(settings)
       if (asked !== generation) return
       setCoachActive(null)
       gaveUp()

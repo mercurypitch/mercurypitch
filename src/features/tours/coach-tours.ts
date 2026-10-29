@@ -16,12 +16,15 @@ import type { ActiveTab } from '@/types'
 
 export interface CoachTourEntry {
   key: TourKey
+  /** The tour as a question before it names it: "Merc's Singing tour". */
+  name: string
   load: () => Promise<CoachTour>
 }
 
 const WEB_TOURS: Partial<Record<ActiveTab, CoachTourEntry>> = {
   singing: {
     key: 'sing',
+    name: "Merc's Singing tour",
     load: async () =>
       import('@/features/practice/sing-tour').then((m) => m.SING_TOUR),
   },

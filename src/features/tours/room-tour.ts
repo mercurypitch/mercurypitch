@@ -32,12 +32,17 @@
 //   close a loop. It loads beside the tour and is read only at the tour's
 //   end, so the tour never waits for it; one that has not loaded by then, or
 //   never does, offers nothing.
+// - Something open over the tab (a drill, Zen) would hide what Merc points
+//   at: the door asks before it closes it, and a Merc tour starts on a yes,
+//   as the Guide's kind does through startTour (src/lib/tour-screen.ts).
 
 import { coachActive, setCoachActive } from '@/lib/coach-state'
 import type { CoachHandoff } from '@/lib/coach-types'
+import { startWhenClear } from '@/lib/tour-screen'
 import { isNarrow } from '@/lib/use-viewport'
 import { hasGuideRoomTour, hasPageTour, startGuideRoomTour } from '@/stores'
 import type { ActiveTab } from '@/types'
+import type { CoachTourEntry } from './coach-tours'
 import { COACH_TOURS } from './coach-tours'
 
 /** The tab's offer key, as the corner toast wrote it and the chip still does. */
@@ -124,6 +129,19 @@ export function startRoomTour(
     startGuideRoomTour(tab)
     return true
   }
+  startWhenClear([tab], entry.name, () => {
+    startMercTour(tab, entry, still, failed)
+  })
+  return true
+}
+
+/** Loads `tab`'s Merc tour and the coach, and starts it unless it is not wanted. */
+function startMercTour(
+  tab: ActiveTab,
+  entry: CoachTourEntry,
+  still: () => boolean,
+  failed?: () => void,
+): void {
   const mine = {}
   pending = mine
   setCoachActive(entry.key)
@@ -158,5 +176,4 @@ export function startRoomTour(
       letGo()
       failed?.()
     })
-  return true
 }

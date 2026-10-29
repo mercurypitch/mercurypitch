@@ -269,6 +269,7 @@ import { adoptAfterGoogleSignup, syncLocalVoiceprints, } from '@/db/services/voi
 import { clearChallengeAttempt } from '@/features/challenges/challenge-attempt'
 import { useEditorController } from '@/features/editor/useEditorController'
 import { usePianoRollEvents } from '@/features/events/usePianoRollEvents'
+import { exerciseTitle } from '@/features/exercises/ExerciseMenu'
 import { EXERCISE_SLUG_PATH, EXERCISE_SLUGS, } from '@/features/exercises/slug-map'
 import type { ExerciseConfig, ExerciseType } from '@/features/exercises/types'
 import { useFallingNotesController } from '@/features/falling-notes/useFallingNotesController'
@@ -309,6 +310,7 @@ import { isTabAvailabilityPending, isTabAvailable, PLAYBACK_MODE_ONCE, PLAYBACK_
 import type { TourHandoff } from '@/features/tours/room-tour'
 import { hasRoomTour, provideTourHandoff, startRoomTour, } from '@/features/tours/room-tour'
 import { TourChipHost } from '@/features/tours/TourChipHost'
+import { TourScreenHost } from '@/features/tours/TourScreenHost'
 import { leaveVoiceConstellation } from '@/features/voice-constellation/navigation'
 import { useVoiceConstellationIsolation } from '@/features/voice-constellation/useVoiceConstellationIsolation'
 import { bottomHudVisible } from '@/features/voice-control/hud-placement'
@@ -351,6 +353,7 @@ import { buildFingerprintIndex, loadStemFingerprints, } from '@/lib/shazam/melod
 import { createPersistedSignal } from '@/lib/storage'
 import { applyPersistedValue, storageGet } from '@/lib/storage'
 import { surveyMomentOk, surveyUsageEarned } from '@/lib/survey-timing'
+import { provideTourDetour, provideTourLeave } from '@/lib/tour-screen'
 import { useBeforeUnloadGuard } from '@/lib/use-before-unload-guard'
 import { useFileDropZone } from '@/lib/use-file-drop-zone'
 import { useMidiSongPicker } from '@/lib/use-midi-song-picker'
@@ -732,6 +735,24 @@ const AppShell: Component<AppProps> = (props) => {
     resetExerciseLaunchState()
     if (guidedReturn !== null) setActiveTab(TAB_VOICE_HISTORY)
   }
+  // An open drill hides the list the Exercises tour walks, so a tour asks
+  // before it closes the drill (src/lib/tour-screen.ts). It closes as the
+  // sidebar's way out does: a guided launch ends, with no trip back to
+  // Voice History, since the tour is about to show Exercises.
+  onCleanup(
+    // eslint-disable-next-line solid/reactivity -- tracked where the tour offer reads it
+    provideTourDetour((tab) => {
+      const open = selectedExercise()
+      if (tab !== TAB_EXERCISES || open === null) return null
+      return {
+        name: exerciseTitle(open) ?? 'this exercise',
+        close: () => {
+          returnFromGuidedPractice()
+          resetExerciseLaunchState()
+        },
+      }
+    }),
+  )
   const handleQuickStart = (type: ExerciseType, config?: ExerciseConfig) => {
     // A targeted drill carries a one-shot difficulty / target note; a normal
     // launch passes no config, which clears any stale override. The forced
@@ -1387,6 +1408,16 @@ const AppShell: Component<AppProps> = (props) => {
     }
     onResolved(true)
   }
+  // A tour that will leave this tab asks as a tab change does: a take still
+  // saving holds it, and Voice History asks before its capture goes.
+  onCleanup(
+    provideTourLeave((tabs, done) => {
+      const here = untrack(activeTab)
+      const away = tabs.find((tab) => tab !== here)
+      if (away === undefined) done(true)
+      else requestActiveTabChange(away, done)
+    }),
+  )
 
   const [roomDoorFor, setRoomDoorFor] = createSignal<RoomInstrument | null>(
     null,
@@ -3613,6 +3644,8 @@ const AppShell: Component<AppProps> = (props) => {
 
         {/* Guide Tour — Interactive spotlight overlay */}
         <Walkthrough />
+        {/* What a tour asks before it closes a drill or a stage */}
+        <TourScreenHost />
 
         <Show when={sidebarOpen() === true && labTab() === null}>
           <div class="sidebar-backdrop" onClick={closeSidebar} />
@@ -4224,6 +4257,7 @@ const AppShell: Component<AppProps> = (props) => {
                                     editorView() === 'piano-roll',
                                 }}
                                 aria-selected={editorView() === 'piano-roll'}
+                                data-testid="view-piano-roll"
                                 onClick={() => setEditorView('piano-roll')}
                                 title="Piano Roll"
                               >

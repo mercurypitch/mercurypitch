@@ -78,6 +78,8 @@ import { prefersReducedMotion } from '@/components/room-kit/reduced-motion'
 import type { CoachAside, CoachCorner, CoachHandoff, CoachStep, CoachStepRun, } from '@/lib/coach-types'
 import type { MercState } from '@/lib/merc/constants'
 import { stillFor } from '@/lib/merc/stills'
+import type { TourSettingName } from '@/lib/tour-screen'
+import { applyTourSettings } from '@/lib/tour-screen'
 import styles from './CoachLayer.module.css'
 import { findTarget } from './find-target'
 import type { HoldTone } from './hold-tone'
@@ -110,6 +112,11 @@ export interface CoachLayerProps {
   onClose: () => void
   /** The tour's offer of another, beside Done on its last stop (start.ts). */
   more?: { label: string; go: () => void }
+  /**
+   * How the tour set the page for its steps (step.screen), kept by start.ts
+   * so it is put back once the tour, and any it hands on to, has ended.
+   */
+  settings?: Map<TourSettingName, () => void>
 }
 
 interface Box {
@@ -366,6 +373,12 @@ export function CoachLayer(props: CoachLayerProps): JSX.Element {
       }
       // A step's words start at its title, wherever the last one's were.
       if (words !== undefined) words.scrollTop = 0
+      // The page set as the step needs it (Melody, not Notation); it draws
+      // after this effect, so the target is looked for again once it has.
+      const set =
+        props.settings !== undefined &&
+        applyTourSettings(shown.screen, props.settings)
+      let live = true
       const scrolled = new Set<HTMLElement>()
       const track = (): void => {
         const found = sight(shown, scrolled)
@@ -377,6 +390,11 @@ export function CoachLayer(props: CoachLayerProps): JSX.Element {
         measureBubble()
       }
       track()
+      if (set) {
+        queueMicrotask(() => {
+          if (live) track()
+        })
+      }
       focusBubble()
       // What the step runs while it shows, stopped as it goes.
       const running = shown.run?.() ?? null
@@ -385,6 +403,7 @@ export function CoachLayer(props: CoachLayerProps): JSX.Element {
       window.addEventListener('resize', track)
       window.addEventListener('scroll', track, { capture: true, passive: true })
       onCleanup(() => {
+        live = false
         clearInterval(timer)
         window.removeEventListener('resize', track)
         window.removeEventListener('scroll', track, { capture: true })

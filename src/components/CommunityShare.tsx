@@ -27,6 +27,7 @@ import { generateId } from '@/lib/id'
 import { copyShareUrl, encodeMelodyForShare, generateShareFullUrl, } from '@/lib/share-codec'
 import { encodeSharedRunResult, parseSharedRunResult, } from '@/lib/shared-run-result'
 import { storageGet, storageSet } from '@/lib/storage'
+import { provideTourSetting } from '@/lib/tour-screen'
 import { bpm, getSessionHistory, keyName, melodyStore, scaleType, } from '@/stores'
 import { getAllMelodies } from '@/stores/melody-store'
 import { showNotification } from '@/stores/notifications-store'
@@ -247,6 +248,16 @@ export const CommunityShare: Component = () => {
   const [activeTab, setActiveTab] = createSignal<
     'melodies' | 'sessions' | 'profile'
   >('melodies')
+  // The tour's search and feed steps need a feed: from Profile it opens
+  // Melodies, and Profile comes back once the tour ends (tour-screen.ts).
+  onCleanup(
+    // eslint-disable-next-line solid/reactivity -- read once, untracked, as a step shows
+    provideTourSetting('community.feed', () => {
+      if (activeTab() !== 'profile') return null
+      setActiveTab('melodies')
+      return () => setActiveTab('profile')
+    }),
+  )
   const [searchQuery, setSearchQuery] = createSignal('')
   const [sortBy, setSortBy] = createSignal<'recent' | 'popular' | 'highest'>(
     'recent',
