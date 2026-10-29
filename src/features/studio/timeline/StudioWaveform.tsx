@@ -7,6 +7,7 @@
 // when the theme or the lane's colour changes, and a canvas out of the
 // timeline's view is drawn once it comes into view.
 import { createEffect, createSignal, onCleanup, onMount, untrack, } from 'solid-js'
+import { studioPeakLevel } from '@/lib/studio/audio/waveform-peaks'
 import { studioClipGainAtSourceFrame } from '@/lib/studio/model/arrangement-plan'
 import type { StudioAsset, StudioClip } from '@/lib/studio/model/types'
 import styles from './StudioTimeline.module.css'
@@ -25,7 +26,11 @@ export interface StudioWaveformProps {
   color?: string
 }
 
-/** Column extremes and loudness, gain applied, ready to draw as two fills. */
+/**
+ * Column extremes and loudness, gain applied, ready to draw as two fills:
+ * from the coarsest level of the take's peaks that still has a peak for
+ * every column, so a whole song and the closest zoom read about as many.
+ */
 function envelopeColumns(
   wave: StudioWaveformEnvelope,
   clip: StudioClip,
@@ -37,23 +42,22 @@ function envelopeColumns(
   const low = new Float32Array(width)
   const body = new Float32Array(width)
   const duration = sourceOutFrame - sourceInFrame
+  const level = studioPeakLevel(wave, duration / Math.max(1, width))
+  const { framesPerPeak, minima, maxima, rms } = level
   for (let x = 0; x < width; x++) {
     const from = sourceInFrame + (x / width) * duration
     const to = sourceInFrame + ((x + 1) / width) * duration
-    const first = Math.floor(from / wave.framesPerBucket)
-    const last = Math.min(
-      wave.minima.length - 1,
-      Math.floor(to / wave.framesPerBucket),
-    )
+    const first = Math.floor(from / framesPerPeak)
+    const last = Math.min(minima.length - 1, Math.floor(to / framesPerPeak))
     let top = 0
     let bottom = 0
     let loud = 0
-    for (let bucket = first; bucket <= last; bucket++) {
-      bottom = Math.min(bottom, wave.minima[bucket])
-      top = Math.max(top, wave.maxima[bucket])
-      loud = Math.max(loud, wave.rms[bucket])
+    for (let peak = first; peak <= last; peak++) {
+      if (minima[peak] < bottom) bottom = minima[peak]
+      if (maxima[peak] > top) top = maxima[peak]
+      if (rms[peak] > loud) loud = rms[peak]
     }
-    const gain = studioClipGainAtSourceFrame(clip, (from + to) / 2)
+    const gain = studioClipGainAtSourceFrame(clip, (from + to) / 2) * wave.scale
     high[x] = Math.min(1, top * gain)
     low[x] = Math.max(-1, bottom * gain)
     body[x] = Math.min(high[x], -low[x], loud * gain)

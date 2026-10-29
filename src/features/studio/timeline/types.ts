@@ -1,6 +1,7 @@
 // Studio timeline contracts — view state and edit callbacks stay outside persistence.
 import type { StudioCommand } from '@/lib/studio/model/commands'
 import type { StudioAsset, StudioClip, StudioProject, } from '@/lib/studio/model/types'
+import type { StudioWaveformPeaksStore } from './waveform-resource'
 
 /** A sentence for the timeline's status pill; a new object shows it again. */
 export interface StudioTimelineNotice {
@@ -43,4 +44,6 @@ export interface StudioTimelineProps {
   onClipDetails(id: string): void
   onTrackDetails(id: string): void
   readCanonicalAsset(assetId: string): Promise<Blob>
+  /** Where each take's waveform peaks are kept between visits. */
+  assetPeaks?: StudioWaveformPeaksStore
 }

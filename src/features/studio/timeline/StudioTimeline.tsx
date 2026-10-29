@@ -176,7 +176,7 @@ export function StudioTimeline(props: StudioTimelineProps) {
   const resource = createMemo(() => {
     void projectId()
     const read = props.readCanonicalAsset
-    const value = createStudioWaveformResource(read)
+    const value = createStudioWaveformResource(read, props.assetPeaks)
     onCleanup(value.dispose)
     return value
   })

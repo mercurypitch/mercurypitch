@@ -14,6 +14,7 @@ import { acquireStudioEditor, reclaimStudioEditor, releaseStudioEditor, renewStu
 import type { StudioAssetInput } from './studio-record-preparation'
 import { withPreparedStudioRecords } from './studio-record-preparation'
 import type { PreparedStudioRecords, StudioAssetRecord, StudioBlobRecord, } from './studio-records'
+import { studioPeaksRowId } from './studio-records'
 import type { StudioEditorLease, StudioEditorToken, StudioWriteToken, } from './studio-storage-types'
 import { STUDIO_STORES, StudioStorageError, studioStorageOperation, } from './studio-storage-types'
 
@@ -36,6 +37,17 @@ export interface StudioService {
     assetId: string,
   ): Promise<StudioAssetBytes>
   readCanonicalAsset(projectId: string, assetId: string): Promise<Blob>
+  /** A take's stored waveform peaks, or null when none were kept: a cache the Studio fills as it draws. */
+  readAssetPeaks(
+    projectId: string,
+    asset: StudioAsset,
+  ): Promise<ArrayBuffer | null>
+  /** Keep a take's waveform peaks with it; a take that is gone, or not saved yet, keeps none. */
+  writeAssetPeaks(
+    projectId: string,
+    asset: StudioAsset,
+    peaks: ArrayBuffer,
+  ): Promise<void>
   acquireLease(
     projectId: string,
     ownerId: string,
@@ -361,6 +373,44 @@ export function createStudioService(
           return new Blob([row.data], { type: CANONICAL_PCM_MIME })
         }),
       ),
+    readAssetPeaks: (projectId, asset) =>
+      studioStorageOperation(async () => {
+        const row = await database().readByIdStrict<StudioBlobRecord>(
+          STUDIO_STORES.blobs,
+          studioPeaksRowId(projectId, asset.canonicalPcmSha256),
+        )
+        return row?.projectId === projectId && row.kind === 'peaks'
+          ? row.data
+          : null
+      }),
+    // No editor lease: peaks are a cache of audio already saved, so any tab
+    // that has drawn a take may keep them, while the take is still there.
+    writeAssetPeaks: (projectId, asset, peaks) =>
+      studioStorageOperation(() =>
+        database().transaction(async () => {
+          const db = database()
+          const row = await db.readByIdStrict<StudioAssetRecord>(
+            STUDIO_STORES.assets,
+            asset.id,
+          )
+          if (
+            row?.projectId !== projectId ||
+            row.asset.canonicalPcmSha256 !== asset.canonicalPcmSha256
+          )
+            return
+          const id = studioPeaksRowId(projectId, asset.canonicalPcmSha256)
+          const stamp = now().toISOString()
+          await db.putStrict<StudioBlobRecord>(STUDIO_STORES.blobs, {
+            id,
+            projectId,
+            assetId: id,
+            kind: 'peaks',
+            data: peaks,
+            createdAt: stamp,
+            updatedAt: stamp,
+          })
+        }),
+      ),
     acquireLease: (id, ownerId, options = {}) =>
       studioStorageOperation(() =>
         acquireStudioEditor(database(), id, ownerId, now, options.takeover),
@@ -453,6 +503,12 @@ export function createStudioService(
           ))
             for (const clip of stored.clips) used.add(clip.assetId)
           const assets = await listAssets(id)
+          // Peaks are kept per song and hash: two takes of the same audio share them.
+          const keptAudio = new Set(
+            assets
+              .filter((asset) => used.has(asset.id))
+              .map((asset) => asset.canonicalPcmSha256),
+          )
           for (const asset of assets) {
             if (used.has(asset.id)) continue
             await db.deleteByIndexStrict(
@@ -460,6 +516,11 @@ export function createStudioService(
               'assetId',
               asset.id,
             )
+            if (!keptAudio.has(asset.canonicalPcmSha256))
+              await db.deleteByIdStrict(
+                STUDIO_STORES.blobs,
+                studioPeaksRowId(id, asset.canonicalPcmSha256),
+              )
             await db.deleteByIdStrict(STUDIO_STORES.assets, asset.id)
           }
           return assets.filter((asset) => used.has(asset.id))

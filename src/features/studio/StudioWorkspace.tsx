@@ -652,6 +652,7 @@ export function StudioWorkspace(props: StudioWorkspaceProps) {
               openPanel('track')
             }}
             readCanonicalAsset={props.studio.readCanonicalAsset}
+            assetPeaks={props.studio.assetPeaks}
           />
           <Show when={deskOpen()}>
             <StudioMixDesk
