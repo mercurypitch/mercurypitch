@@ -440,6 +440,37 @@ export function sealedPlateLine(index: number): string {
   return `The glass is marked: ${index}.`
 }
 
+// ── A pair practice (pair-practice.ts) ──────────────────────────
+
+/** A slip's offer on the plate. */
+export function practiseLabel(expected: string, answered: string): string {
+  return `Practise ${expected} against ${answered}`
+}
+
+/** Merc's first line in a pair practice. */
+export function practiceLine(pair: readonly [string, string]): string {
+  return `Only ${pair[0]} and ${pair[1]} this time. Name each one.`
+}
+
+/** Under a practice's tally: the rating it left alone. */
+export function untouchedLine(source: string, rating: number): string {
+  return `Nothing rated: ${source} stays ${rating}`
+}
+
+/** Over a practice's plate. */
+export function practicePlateLine(args: {
+  right: number
+  rounds: number
+  slip: { expected: string; answered: string; count: number } | null
+}): string {
+  if (args.rounds === 0) return 'Nothing kept. Start again when you like.'
+  const head = `${args.right} of ${args.rounds}.`
+  if (args.slip !== null) {
+    return `${head} ${args.slip.expected} slipped to ${args.slip.answered} ${timesWord(args.slip.count)}.`
+  }
+  return args.right === args.rounds ? `${head} Clean.` : head
+}
+
 /** "Up 8 from 243, sealed 21 Oct", or a first mark. */
 export function sealedMoveLine(
   index: number,

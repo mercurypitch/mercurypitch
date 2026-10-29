@@ -52,6 +52,12 @@ function everything(): string[] {
       lowerIsBetter: true,
     }),
   )
+  out.push(lines.practiseLabel('4 Fa', '5 Sol'))
+  out.push(lines.practiceLine(['4 Fa', '5 Sol']))
+  out.push(lines.untouchedLine('Function rating', 1252))
+  for (const right of [0, 6, 8]) {
+    out.push(lines.practicePlateLine({ right, rounds: 8, slip: null }))
+  }
   return out
 }
 
@@ -137,6 +143,29 @@ describe("Merc's lines", () => {
     expect(lines.modeWords('practice', true)).toBe("today's short run")
     expect(lines.modeWords('rated', false)).toBe('rated run')
     expect(lines.modeWords('sealed', false)).toBe('sealed calibration')
+  })
+
+  it('offer a slip as practice, and tally it without a rating', () => {
+    expect(lines.practiseLabel('4 Fa', '5 Sol')).toBe(
+      'Practise 4 Fa against 5 Sol',
+    )
+    expect(lines.untouchedLine('Function rating', 1252)).toBe(
+      'Nothing rated: Function rating stays 1252',
+    )
+    const slip = { expected: '4 Fa', answered: '5 Sol', count: 2 }
+    expect(lines.practicePlateLine({ right: 6, rounds: 8, slip })).toBe(
+      '6 of 8. 4 Fa slipped to 5 Sol twice.',
+    )
+    expect(lines.practicePlateLine({ right: 8, rounds: 8, slip: null })).toBe(
+      '8 of 8. Clean.',
+    )
+    // Rounds skipped unclear are no slip, and no clean run either.
+    expect(lines.practicePlateLine({ right: 6, rounds: 8, slip: null })).toBe(
+      '6 of 8.',
+    )
+    expect(lines.practicePlateLine({ right: 0, rounds: 0, slip: null })).toBe(
+      'Nothing kept. Start again when you like.',
+    )
   })
 })
 

@@ -2,7 +2,8 @@
 // nothing; the pinned row holds the replay back on a rated question and
 // says why; the pads say "Your pick" and "The answer" in words; Android's
 // back goes through the same question; the sound taken away pauses the
-// run and Resume plays the question again.
+// run and Resume plays the question again. A slip on a rated plate
+// offers a pair practice, which Merc names and the plate tallies.
 
 import { cleanup, fireEvent, render, screen, within, } from '@solidjs/testing-library'
 import type { JSX } from 'solid-js'
@@ -29,7 +30,10 @@ interface Harness {
   onBack: ReturnType<typeof vi.fn>
 }
 
-function mount(run: 'practice' | 'rated' = 'rated'): Harness {
+function mount(
+  run: 'practice' | 'rated' = 'rated',
+  more: Partial<StageRoom> = {},
+): Harness {
   const [beat, setBeat] = createSignal<RoomBeat>('answer')
   const [tone, setTone] = createSignal<'neutral' | 'right' | 'wrong'>('neutral')
   const [held, setHeld] = createSignal(false)
@@ -48,6 +52,7 @@ function mount(run: 'practice' | 'rated' = 'rated'): Harness {
     held,
     resume: vi.fn(() => setHeld(false)),
     abandon: vi.fn(),
+    ...more,
   }
   const pads = (): JSX.Element => (
     <Pads columns={2} label="Which one?">
@@ -169,5 +174,84 @@ describe('the drill room', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Resume' }))
     expect(h.room.resume).toHaveBeenCalledTimes(1)
     expect(screen.queryByTestId('merc-sound-stopped')).toBeNull()
+  })
+})
+
+describe('a pair practice', () => {
+  const PAIR = ['Minor 6th', 'Perfect 5th'] as const
+
+  it('is offered on a slip between two items, and the tap starts it', () => {
+    const practise = vi.fn()
+    const h = mount('rated', {
+      plate: () => ({
+        kind: 'rating',
+        rating: 1210,
+        before: 1200,
+        source: 'Leap rating',
+        settling: null,
+        rounds: 12,
+        right: 9,
+        outcomes: [],
+        slips: [
+          { expected: PAIR[0], answered: PAIR[1], count: 2, practise },
+          // A direction is no item: nothing to practise.
+          { expected: 'Up', answered: 'Level', count: 1 },
+        ],
+      }),
+    })
+    h.setBeat('done')
+
+    const offers = screen.getAllByRole('button', { name: /^Practise/ })
+    expect(offers).toHaveLength(1)
+    expect(offers[0]).toHaveAccessibleName(
+      'Practise Minor 6th against Perfect 5th',
+    )
+    // The rest of the plate reads as it did.
+    expect(screen.getByRole('status', { name: 'Reading' })).toHaveTextContent(
+      'Up 10 from 1200',
+    )
+    expect(screen.getByText('Where it slipped')).toBeInTheDocument()
+    fireEvent.click(offers[0])
+    expect(practise).toHaveBeenCalledTimes(1)
+  })
+
+  it('opens with Merc naming the two', () => {
+    const h = mount('practice', { practising: () => PAIR })
+    h.setBeat('listen')
+    // His bubble is drawn for the eye; the live region speaks after the
+    // sound, so the bubble is the place to read the first line.
+    expect(screen.getByTestId('merc-bubble')).toHaveTextContent(
+      'Only Minor 6th and Perfect 5th this time. Name each one.',
+    )
+    expect(screen.getByTestId('merc-mode')).toHaveTextContent('practice run')
+  })
+
+  it('ends on a tally that leaves the rating alone', () => {
+    const h = mount('practice', {
+      practising: () => PAIR,
+      plate: () => ({
+        kind: 'practice',
+        against: PAIR,
+        rating: 1210,
+        source: 'Leap rating',
+        rounds: 8,
+        right: 6,
+        outcomes: [],
+        slips: [
+          { expected: PAIR[0], answered: PAIR[1], count: 2, practise: vi.fn() },
+        ],
+      }),
+    })
+    h.setBeat('done')
+
+    const plate = screen.getByRole('status', { name: 'Practice' })
+    expect(plate).toHaveTextContent('Nothing rated')
+    expect(plate).toHaveTextContent('6of 8')
+    expect(plate).toHaveTextContent('Minor 6th against Perfect 5th')
+    expect(plate).toHaveTextContent('Nothing rated: Leap rating stays 1210')
+    expect(plate).toHaveTextContent('8 rounds · 6 named · no replays')
+    expect(screen.getByTestId('ear-stage-status')).toHaveTextContent(
+      '6 of 8. Minor 6th slipped to Perfect 5th twice.',
+    )
   })
 })

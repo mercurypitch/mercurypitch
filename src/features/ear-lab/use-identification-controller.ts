@@ -24,6 +24,10 @@
 // play() also opens its answer (Pulse's and the Chart's takes) gives
 // the trial a replay() that only sounds. The next question, Stop and
 // the sound taken away each silence a replay still sounding.
+//
+// A slip on the native room's rated plate can start a pair practice
+// (pair-practice.ts): a short run over just the two items it mixed up,
+// which rates nothing and books nothing for Today.
 // ============================================================
 
 import { batch, createSignal, onCleanup } from 'solid-js'
@@ -36,6 +40,7 @@ import type { Rating } from '@/lib/ear/elo'
 import { trackFirstValue } from '@/lib/first-value'
 import type { RatedRunMark } from '@/stores/ear-lab-store'
 import { creditEarSession, earItemStates, earPlayerRating, markRatedRun, markSprintSegmentDone, recordIdentificationAnswer, rollBackRatedRun, takeSprintRunLength, } from '@/stores/ear-lab-store'
+import { PAIR_PRACTICE_ROUNDS, pairOrder } from './pair-practice'
 import { createRevealPacer } from './reveal-pacing'
 
 export type IdentificationPhase =
@@ -117,6 +122,13 @@ export function useIdentificationController(
   const [replaying, setReplaying] = createSignal(false)
   /** The question in flight was voided; it waits for resumeQuestion(). */
   const [held, setHeld] = createSignal(false)
+  /** A pair practice's two item ids, while it runs and on its plate;
+   *  null for a rated run. */
+  const [practice, setPractice] = createSignal<
+    readonly [string, string] | null
+  >(null)
+  /** A pair practice's questions, in order. */
+  let practiceOrder: EarBankItem[] = []
 
   let currentItem: EarBankItem | null = null
   let trial: IdentificationTrial | null = null
@@ -152,17 +164,52 @@ export function useIdentificationController(
   const [short, setShort] = createSignal(false)
 
   function start(): void {
+    begin(null)
+  }
+
+  /** The two items a slip names, as a pair practice takes them: null
+   *  unless both are items of this bank. A tapped-back line, a direction
+   *  or "the first" is an answer, not an item, and has no practice. */
+  function practicePair(
+    expectedId: string,
+    answeredId: string,
+  ): readonly [string, string] | null {
+    const has = (id: string): boolean => bank.some((item) => item.itemId === id)
+    return expectedId !== answeredId && has(expectedId) && has(answeredId)
+      ? [expectedId, answeredId]
+      : null
+  }
+
+  /** A short practice run over two items of the bank, asked in a
+   *  balanced, shuffled order. It rates nothing (pair-practice.ts). */
+  function practise(pair: readonly [string, string]): void {
+    if (practicePair(pair[0], pair[1]) === null) return
+    begin(pair)
+  }
+
+  function begin(pair: readonly [string, string] | null): void {
     cancelled = false
     run += 1
     startedAt = performance.now()
     outcomes = []
     runTrack = options?.track?.() ?? null
     ratingAtStart = earPlayerRating(trackId()).rating
-    mark = markRatedRun(trackId())
-    const armed = takeSprintRunLength(drill.id)
+    // A practice writes nothing to put back, and leaves a length Today
+    // armed to the run it was armed for.
+    mark = pair === null ? markRatedRun(trackId()) : null
+    const armed = pair === null ? takeSprintRunLength(drill.id) : null
+    practiceOrder =
+      pair === null
+        ? []
+        : pairOrder([itemOf(pair[0]), itemOf(pair[1])], PAIR_PRACTICE_ROUNDS)
     batch(() => {
+      setPractice(pair)
       setShort(armed?.rounds !== undefined)
-      setTotalRounds(armed?.rounds ?? IDENTIFICATION_ROUNDS)
+      setTotalRounds(
+        pair === null
+          ? (armed?.rounds ?? IDENTIFICATION_ROUNDS)
+          : PAIR_PRACTICE_ROUNDS,
+      )
       setRound(0)
       setResult(null)
       setReplaying(false)
@@ -170,6 +217,13 @@ export function useIdentificationController(
       setRating(earPlayerRating(trackId()))
     })
     void playRound()
+  }
+
+  /** An item of the bank, by id; practicePair() has vouched for it. */
+  function itemOf(id: string): EarBankItem {
+    const found = bank.find((item) => item.itemId === id)
+    if (found === undefined) throw new Error(`${id} is not in the bank`)
+    return found
   }
 
   async function playRound(): Promise<void> {
@@ -189,10 +243,12 @@ export function useIdentificationController(
       return
     }
 
-    currentItem = pickBankItem(bank, earItemStates(), rating().rating, {
-      avoidItemId: lastItemId,
-      guessRate: guessRate(drill),
-    })
+    currentItem =
+      practiceOrder[round()] ??
+      pickBankItem(bank, earItemStates(), rating().rating, {
+        avoidItemId: lastItemId,
+        guessRate: guessRate(drill),
+      })
     lastItemId = currentItem.itemId
     trial = makeTrial(currentItem)
 
@@ -218,16 +274,20 @@ export function useIdentificationController(
     if (!item || expected === undefined) return
 
     const correct = choiceId === expected
-    const nextRating = recordIdentificationAnswer({
-      drillId: trackId(),
-      itemId: item.itemId,
-      itemDifficulty: bankItemState(earItemStates(), item),
-      correct,
-      guessRate: runTrack?.guessRate ?? guessRate(drill),
-      expected,
-      answered: choiceId,
-      ...(runTrack ? { updateItem: runTrack.updateItem } : {}),
-    })
+    // A pair practice rates nothing: the rating stays where it was.
+    const nextRating =
+      practice() !== null
+        ? rating()
+        : recordIdentificationAnswer({
+            drillId: trackId(),
+            itemId: item.itemId,
+            itemDifficulty: bankItemState(earItemStates(), item),
+            correct,
+            guessRate: runTrack?.guessRate ?? guessRate(drill),
+            expected,
+            answered: choiceId,
+            ...(runTrack ? { updateItem: runTrack.updateItem } : {}),
+          })
     outcomes.push({ expectedId: expected, answeredId: choiceId, correct })
 
     playTierSfx(
@@ -298,8 +358,9 @@ export function useIdentificationController(
     })
     creditEarSession(performance.now() - startedAt)
     // A segment counts when the run reached its end, not when it was
-    // abandoned part-way.
-    if (complete) {
+    // abandoned part-way, and never for a pair practice: Today asked for
+    // the drill, not for two of its items.
+    if (complete && practice() === null) {
       markSprintSegmentDone(drill.id)
       trackFirstValue('ear')
     }
@@ -418,6 +479,10 @@ export function useIdentificationController(
     holdQuestion,
     resumeQuestion,
     track: () => runTrack,
+    /** The pair a practice runs over, or null for a rated run. */
+    practice,
+    practicePair,
+    practise,
     start,
     answer,
     stop,

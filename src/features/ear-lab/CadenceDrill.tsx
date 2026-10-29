@@ -96,13 +96,31 @@ export function CadenceDrill(props: { onBack: () => void }): JSX.Element {
     })
   }
 
+  /** In a pair practice, the other of the two: on the pads every round,
+   *  so the menu never says which of the two it was. */
+  const partnerOf = (item: EarBankItem): EarBankItem | undefined => {
+    const pair = controller.practice()
+    if (pair === null) return undefined
+    const other = pair[0] === item.itemId ? pair[1] : pair[0]
+    return CADENCE_BANK.find((entry) => entry.itemId === other)
+  }
+
   function makeTrial(item: EarBankItem): IdentificationTrial {
     return {
       expectedId: item.itemId,
       play: async () => {
         rootMidi = roveRootMidi()
         setCurrent(item)
-        setOptions(drawOptions(item, CADENCE_BANK, (entry) => entry.itemId))
+        setOptions(
+          drawOptions(
+            item,
+            CADENCE_BANK,
+            (entry) => entry.itemId,
+            4,
+            Math.random,
+            partnerOf(item),
+          ),
+        )
         await strumProgression(item.payload, CADENCE_TIMING.chordMs)
       },
       replayOnWrong: () =>

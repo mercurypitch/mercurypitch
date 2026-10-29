@@ -281,6 +281,24 @@
   color: #b9b1a4;
 }
 
+/* A slip's offer: a pair practice on its two. A row of its own under the
+   slip, the whole row a tap target. */
+.practise {
+  flex-basis: 100%;
+  min-height: 44px;
+  padding: 0 12px;
+  border-radius: 10px;
+  border: 1px solid rgb(239 230 214 / 18%);
+  background: none;
+  color: #efe6d6;
+  font:
+    600 14px/1.25 'Inter Variable',
+    'Inter',
+    sans-serif;
+  text-align: left;
+  cursor: pointer;
+}
+
 /* The console under a plate: what next. */
 .next {
   display: grid;

@@ -146,6 +146,34 @@ describe('drawOptions', () => {
       expect(new Set(drawn.map((item) => item.itemId)).size).toBe(4)
     }
   })
+
+  it('keeps a second item on the menu every time, at no telling slot', () => {
+    let seed = 5
+    const random = () => {
+      seed = (seed * 48271) % 2147483647
+      return seed / 2147483647
+    }
+    const slots = new Set<string>()
+    for (let i = 0; i < 60; i++) {
+      const drawn = drawOptions(
+        CADENCE_BANK[2],
+        CADENCE_BANK,
+        (entry) => entry.itemId,
+        4,
+        random,
+        CADENCE_BANK[5],
+      )
+      expect(drawn).toHaveLength(4)
+      expect(new Set(drawn.map((item) => item.itemId)).size).toBe(4)
+      const asked = drawn.indexOf(CADENCE_BANK[2])
+      const other = drawn.indexOf(CADENCE_BANK[5])
+      expect(asked).toBeGreaterThanOrEqual(0)
+      expect(other).toBeGreaterThanOrEqual(0)
+      slots.add(`${asked} ${other}`)
+    }
+    // All twelve ways the two can stand: neither's slot names the other.
+    expect(slots.size).toBe(12)
+  })
 })
 
 describe('CadenceDrill', () => {

@@ -6,11 +6,13 @@
 // rate 'home' and refine the item; a miss replays the probe and lands
 // on the tonic. Mic answers come from the sung frames, rate
 // 'home-sing' and leave the items untouched; two unclear takes skip
-// the round. Stop cancels the run mid-cadence.
+// the round. Stop cancels the run mid-cadence. A pair practice asks
+// only its two degrees and rates nothing.
 // ============================================================
 
 import { createRoot } from 'solid-js'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { PAIR_PRACTICE_ROUNDS } from '@/features/ear-lab/pair-practice'
 import type { SingCapture } from '@/features/ear-lab/use-home-controller'
 import { HOME_ROUNDS, useHomeController, } from '@/features/ear-lab/use-home-controller'
 import type { SungFrame } from '@/lib/ear/degree-detect'
@@ -213,6 +215,56 @@ describe('a sung round', () => {
       expect(result?.total).toBe(1)
       expect(result?.outcomes[0]).toMatchObject({ answered: 0, correct: false })
 
+      dispose()
+    })
+  })
+})
+
+describe('a pair practice', () => {
+  it('asks only the two degrees, as often each, and rates nothing', async () => {
+    await createRoot(async (dispose) => {
+      const home = useHomeController(audio)
+      const rating = earPlayerRating(HOME_DRILL_ID)
+      const items = earItemStates()
+      const asked: number[] = []
+
+      home.practise('tap', [4, 5])
+      expect(home.practice()).toEqual([4, 5])
+      expect(home.totalRounds).toBe(PAIR_PRACTICE_ROUNDS)
+      for (let round = 0; round < PAIR_PRACTICE_ROUNDS; round++) {
+        await vi.advanceTimersByTimeAsync(CADENCE_MS + HOME_TIMING.probeMs)
+        const degree = home.currentDegree()?.degree as number
+        asked.push(degree)
+        // Fa for Sol and Sol for Fa: rated, every one would move the
+        // rating and the items.
+        home.answer(degree === 4 ? 5 : 4)
+        await vi.advanceTimersByTimeAsync(
+          HOME_TIMING.resolutionProbeMs +
+            HOME_TIMING.resolutionTonicMs +
+            REVEAL_HOLD.defaultMs,
+        )
+      }
+
+      expect(home.phase()).toBe('done')
+      expect(asked.filter((degree) => degree === 4)).toHaveLength(4)
+      expect(asked.filter((degree) => degree === 5)).toHaveLength(4)
+      expect(home.result()).toMatchObject({
+        total: PAIR_PRACTICE_ROUNDS,
+        correct: 0,
+        ratingDelta: 0,
+      })
+      expect(earPlayerRating(HOME_DRILL_ID)).toEqual(rating)
+      expect(earItemStates()).toEqual(items)
+      dispose()
+    })
+  })
+
+  it('takes no degree outside the set', () => {
+    createRoot((dispose) => {
+      const home = useHomeController(audio)
+      home.practise('tap', [4, 9])
+      expect(home.phase()).toBe('idle')
+      expect(home.practice()).toBeNull()
       dispose()
     })
   })

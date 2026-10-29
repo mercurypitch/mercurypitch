@@ -24,6 +24,10 @@
 // swipe down and Android's back. Sound taken away mid-question (a
 // call, headphones out, the app put away) pauses the run, and Resume
 // plays that question again from its start.
+//
+// A slip on a rated plate can start a pair practice on its two items
+// (pair-practice.ts): a practice run, named in Merc's first line, that
+// ends on a tally rather than a rating.
 // ============================================================
 
 import type { JSX } from 'solid-js'
@@ -48,7 +52,7 @@ import { useWakeAudio } from './audio-wake'
 import { practiceEstimate } from './Glass'
 import { IconQuestion, IconReplay } from './merc-icons'
 import type { SoundStop } from './merc-lines'
-import { calibrationBefore, exitWords, modeWords, onceLines, ratingPlateLine, sealedPlateLine, soundStoppedWords, thresholdPlateLine, } from './merc-lines'
+import { calibrationBefore, exitWords, modeWords, onceLines, practiceLine, practicePlateLine, ratingPlateLine, sealedPlateLine, soundStoppedWords, thresholdPlateLine, } from './merc-lines'
 import { PlateNext, PlateOnDesk } from './MercPlate'
 import plateStyles from './plate.module.css'
 import styles from './room.module.css'
@@ -76,9 +80,10 @@ function todaySegments(): TodaySegment[] {
 }
 
 /** The plate worth a celebration: a seal, a first reading, a better
- *  one, a rating that rose. */
+ *  one, a rating that rose. A practice moves nothing to celebrate. */
 function plateWorthIt(plate: RoomPlate | null): boolean {
   if (plate === null) return false
+  if (plate.kind === 'practice') return false
   if (plate.kind === 'rating')
     return plate.rounds > 0 && plate.rating > plate.before
   if (plate.markedIndex !== undefined) return true
@@ -188,11 +193,17 @@ export function MercDrillRoom(props: EarStageProps): JSX.Element {
     return props.lastCall?.()?.consequence ?? null
   }
 
+  /** The task in full: a pair practice names its two. */
+  const prompt = (): string => {
+    const pair = room?.practising?.() ?? null
+    return pair === null ? (room?.prompt ?? props.status) : practiceLine(pair)
+  }
+
   const shows = () => bubbleShows({ beat: beat(), answered: answered() })
   const bubble = (): { say: string; aside: string | null } | null => {
     switch (shows()) {
       case 'prompt':
-        return { say: room?.prompt ?? props.status, aside: null }
+        return { say: prompt(), aside: null }
       case 'verdict':
         return { say: props.status, aside: aside() }
       case 'none':
@@ -203,6 +214,13 @@ export function MercDrillRoom(props: EarStageProps): JSX.Element {
   const plateLine = (): string => {
     const now = plate()
     if (now === null) return props.status
+    if (now.kind === 'practice') {
+      return practicePlateLine({
+        right: now.right,
+        rounds: now.rounds,
+        slip: now.slips[0] ?? null,
+      })
+    }
     if (now.kind === 'rating') {
       return ratingPlateLine({
         rating: now.rating,
@@ -235,7 +253,7 @@ export function MercDrillRoom(props: EarStageProps): JSX.Element {
         setHeard([props.status, aside()].filter(Boolean).join(' '))
         return
       case 'idle':
-        setHeard(room?.prompt ?? props.status)
+        setHeard(prompt())
         return
       case 'done':
         setHeard(plateLine())
@@ -523,6 +541,12 @@ export function MercDrillRoom(props: EarStageProps): JSX.Element {
                     drillId={props.drillId}
                     short={short()}
                     faculty={facultyOf()}
+                    onPractise={(start) => {
+                      // Inside the tap, as Run again: iOS lets the audio
+                      // wake only there.
+                      wake()
+                      start()
+                    }}
                   />
                 </div>
               }
