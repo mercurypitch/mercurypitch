@@ -35,7 +35,9 @@
           const WAVE = at('end', 'start', 0.4)            // its waterline draws (0.7 s)
           const WORD = at('end', 'start', 0.42)           // the wordmark wipes in (0.83 s)
           const TAG = at('end', 'start', 0.85)            // "Find your pitch." (0.65 s)
-          const URL = at('end', 'start', 1.2)             // the address (0.65 s), underlined from 1.55 (0.75 s)
+          // the address (0.65 s, rising 18 px), underlined 0.35 s later (0.75 s); it waits for the hop's top (the pass
+          // reaches it at end + 1.2, heads at y 456 to 459) so it never rises in beside a head
+          const URL = at('end', 'start', 1.35)
           const SKIP = at('end', 'start', 1.6)            // the skip line, then the Scale Runner path, 0.25 s apart
           const FLY = at('end', 'start', 0.5)             // the beads rise from behind their Mercs (0.95 s)
           const LAND = at('end', 'start', 0.87 + 0.58)    // the celebration (end + 0.87, merc-shots.py) lands its hop 0.58 s in

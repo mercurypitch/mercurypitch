@@ -96,3 +96,8 @@ set S10's mouth to (156, 797) and re-timed the tags (merc-tags starts a running 
   after its landing and as "learned," ends, the house pulses as it lands, the weaker lights back over 0.6.
 - Proof tools: lab/s11-why/tools/overlaps.mjs (every frame: visible labels and chips touching, overlapping
   or doubled), chip gaps via probe.mjs, lab/s09-names/tools/stills.sh (stills into a subfolder via a marker).
+- Final (bokeh kit, DECISIONS 89; clips niced, one at a time): s09 clip 14:54 UTC, 1.1 s inside (0.8 / 30 s),
+  longest 0.3, final 0.3; s10 clip 14:59, 1.0 s (1.2 / 30 s), longest 0.1, final 0.1; s11 clip 15:05, 1.9 s
+  (1.3 / 30 s), longest 0.2. Text sweep: no contrast findings (s09's EDGE '6' only). Root check: 5 errors, all
+  m12-orange in s12 to s16. clock-lint silent; merc-tags clean. 60 fps label scans: 0 frames in all three.
+  Chip gaps: 8.0 world px closed, 12 on the flights. Report stills: lab/<scene>/fix1, fix2.

@@ -1468,3 +1468,80 @@ Note: the lanes' memory gate read a stale cgroup path after the 21:00 restart (f
   m12-orange lands -> splicecheck/tallcheck (bnnj5p42t waits) -> resume E then F for host proofs.
 - 14:57 B-03 clips rendered with the kit bokeh (s05 14:51, s06 14:56; lift 4-10 at disc centres):
   $S/l4entr/b03/{s05-steps,s06-groups}/clip.mp4. Waiting for a slot (A and D running).
+- 15:07 builder D reported fix round D-01: all 17 items addressed (in its hand-back; notes in
+  lab/s09-names/BUILD-NOTES.md "Fix round D-01"). Fresh post-bokeh clips: s09 14:54, s10 14:59,
+  s11 15:05. Holds: s09 0.8/30 s, s10 1.2/30 s (ten single 0.1 s samples; over the 1 s bar), s11
+  1.3/30 s; longest 0.3 s. Root check: only the m12-orange errors. Item 16 added "still hanging?"
+  (s01's own words) in s10's empty right side; item 17: kicker/credits/axis leave on the pull start
+  (24.298). Its fix2 stills for s09/s10 are pre-bokeh (content same).
+- 15:08 component critic B-03 launched (fresh motion-critic, xhigh, paths only: critics/B3.txt with
+  the b03 clips) -> review/component-B-03/REPORT.md. Agents now: builder A + B-03. D-02 next slot
+  ($S/l4entr/critics/D2.txt, artifacts = D's lab clips).
+- 15:15 builder A reported fix round A-01: items 1, 4, 5, 7, 8, 9 done; s03 labels per DECISIONS 88
+  ("build it from its steps" x 242 bl 494; "start it on any note" x 242 bl 790; "name its notes"
+  centred 958 bl 790; "hear ti lean home" right-aligned 1166 bl 254); riser gap kept 0.28 s (board
+  says 0.2); s04 holds 0.4/30 s (was 1.2). All four clips post-bokeh, 0 check errors on s01-s04.
+  A warns: the renderer refuses to start below 1024 MB free (system temp AND output folder); its
+  workaround lab/s01-cold-open/scratch/requeue.sh waits for 1150 MB and sets TMPDIR=/dev/shm.
+- 15:15 component critic D-02 launched (fresh motion-critic, xhigh, paths only: critics/D2.txt) ->
+  review/component-D-02/REPORT.md. Agents now: B-03 + D-02. Next slot: A-02 (critics/A2.txt) or C's
+  small round ($S/l4entr/C-fix2-msg.txt), whichever frees first; then the other.
+- 15:14 disk 1292 MB free on /, /dev/shm 16 GB. m12-orange part 15.5 MB at 15:14.
+- 15:18 m12-orange landed (16.4 MB). tallcheck m12-orange-in clean. SPLICE NOT CLEAN: head vs pass
+  500-680 px over 24 around 346.000; the step at the splice 464 px against 21-51 for each video's own
+  step. Cause: the idle's glances and blinks run on tau (time since the state began); the head's idle
+  began at 343.467 (drop 0.85), the pass's at 343.600 (drop 0.4), so at 346.0 both are inside the
+  first glance (tau 2.2-3.1), 0.133 s apart. m12-blue was clean because its ride/idle cues fall on the
+  pass's own film times. FIX (DECISIONS 90): merc-shots.py `align='m12-orange'` on m12-orange-in: the
+  idle starts at 343.600 (cue 0.983333). Only that shot changed (--check before: 0; after: 1); intros,
+  tags (84, 0 stale) unchanged. Backups: $S/l4entr/merc-shots.before-align.py,
+  $S/l4entr/oldclips/m12-orange-in-merc.before-align.webm. Re-render started 15:25:44 via
+  $S/l4entr/q/queue.sh m12-orange-in (log q/logs/q-align.log; ~14 min). Waiter bfsu3xsyx runs
+  splicecheck, merc-whole.py and merc-tags --check when it lands. Tall intro not re-rendered (frames
+  0-43 unchanged). whole.js left as is until then (it already lists m12-orange 28 and -in 34).
+- 15:22 B-03 returned: KEEP / KEEP (report saved). Item 1 stays (DECISIONS 86/91); items 2-4 to builder
+  B as a small round: $S/l4entr/B-fix4-msg.txt (resume B (builder) when a slot frees).
+  LEDGER rows 09-13 written (backup $S/l4entr/LEDGER.before-r09.md). DECISIONS 90, 91 (backup
+  DECISIONS.before-90.md).
+- 15:24 component critic A-02 launched (critics/A2.txt + disk note) -> review/component-A-02/REPORT.md.
+  Agents now: D-02 + A-02. Slot order next: C small round (C-fix2-msg.txt) -> E resume (host proofs
+  s12-s13, after the head lands and splices clean) -> F resume (s14-s16) -> B small round -> D/A next
+  rounds per D-02/A-02.
+- Film render plan (disk): L1's 60 fps film was 214 MB, L2's 144 MB; L4 ~483 s, expect ~200-250 MB.
+  Render with TMPDIR=/dev/shm and --output /dev/shm/l4film/<name>.mp4 (the 1024 MB floor is checked at
+  the temp and output folders), then move it into renders/. Music-only = mux of
+  assets/audio/music-only.wav (as render-l2.sh did: 18 s, no second render). Template:
+  $S/render-l2.sh. Free my disposable test renders first if / is under ~1.5 GB.
+- Builder ids (from the transcript): A (builder) (s01-s04), B (builder) (s05-s06),
+  C (builder) (s07-s08), D (builder) (s09-s11), E (builder) (s12-s13),
+  F (builder) (s14-s16). Resume each with SendMessage to its id.
+- 15:29 head re-render landed (209 frames, 859 ms/frame). splicecheck m12-orange now clean: head vs pass
+  p99.9 9-10, 0-2 px over 24; step at the splice 57 px vs own steps 51 and 44. Frames 0-50 bit-identical
+  to the old head; steps through the hold smooth (no spike at 59). whole.js current (17 passes), tags
+  84/0 stale. NOTE: my waiter bfsu3xsyx spun forever because `pgrep -f "merc-pass.mjs ..."` matched its
+  own bash command line; stopped it. Lesson: never pgrep -f a pattern that appears in the waiter itself.
+- 15:31 D-02 returned: s09 KEEP, s10 REVISE (A: "still hanging?" 64 px beside do), s11 REVISE (B: tier
+  cascade four times). Minor: C s09 no parallax read (storyboard amended), D F-chart frames dead space,
+  E hairline across top stair, F credit 35 px over do chip, G row 10a text. Report saved.
+  DECISIONS 92; STORYBOARD 9b, 9d, 10a updated (backup $S/l4entr/STORYBOARD.before-92.md).
+  D round 3 message: $S/l4entr/D-fix3-msg.txt (D may edit only L.FRAMES['F-chart']).
+- 15:33 builder E resumed ((builder)) with $S/l4entr/E-hosts-msg.txt: S12/S13 host pass.
+  Agents now: A-02 + E. Queue: F host pass (write msg) -> D round 3 -> C small -> B small.
+- 15:3x A-02 returned (report saved; triage in DECISIONS/notes): A round 2 = s03 items 1 (risers 4->10 px,
+  full ink, 0.2 s apart), 2 (vary the device: numerals 1-7 at 60.98, all risers together at 66.22), 5
+  ("start it on any note" / "name its notes" apart, out of the caption band y >= 864), 6 (ti at 25 % in
+  s01 31.0-32.8); s04 item 4 (q0: lift C4/C5 40 px with a chrome outline at 52.1, drop at 54.16). Item 3
+  (moves read as zooms) is the kit's or the board's; item 7 is mine. Message still to write.
+- 15:3x builder F resumed with $S/l4entr/F-hosts-msg.txt (S14-S16 host pass).
+- Depth cue prototype: $S/l4entr/depth/libF (copy of assets/lib): near bokeh lifted 3x while the near layer
+  slides against mid (cam.slide(t), smoothstep 40-360 px/s), 1/3 at rest. Test projects:
+  $S/l4entr/depth/ftest/{cur,new}-{s03,s05,s09} (mkproj.sh; compositions COPIED: `snapshot` skips a
+  symlinked composition as "empty"); stills via ftest/snaps.sh -> /dev/shm/l4ftest.
+  Moves (clip time): s03 pull 6.780-9.280; s05 push 10.442-11.942, pan 17.243-18.943, pull 22.113-23.513;
+  s09 truck 16.597-19.597, pull from 19.472.
+- 15:44 / 15:47 builders E and F stopped on the 5-hour usage limit (reset 16:30). 18:16 the container
+  restarted: files on / intact, /dev/shm cleared, every background job died. Check-ins of 16:18 and 18:16
+  were delivered together at 18:19. Clips whole: s12 15:40, s13 15:45, s14 15:46, s15 15:38, s16 15:37
+  (F's s16-end.html edit at 15:39 postdates the s16 clip).
+- 18:21 E and F resumed with a restart note each. Agents now: E + F. Queue unchanged: E-01/F-01 critics
+  on their hand-backs -> D round 3 -> A round 2 -> C small -> B small.

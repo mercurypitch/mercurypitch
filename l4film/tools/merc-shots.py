@@ -210,12 +210,14 @@ PASSES = [
     # their heads: both drop during the act 4 card, Tavi 0.12 s after Merc. Merc talks b39 and rides
     # sing-a before m12-blue takes over, in the first idle with no arcs (a splice under the arcs or the
     # lip flutter would jump their phases); Tavi idles through b39, so m12-orange takes over in it.
+    # The idle's sway, blinks and glances run on the time since it began, so Tavi's head holds the
+    # landing until m12-orange's own drop ends (`align`): both idles start on the same film time.
     dict(id='m12-blue-in', who='blue', span=(cue('b39', 'start', -LAND), cue('sing-a', 'end', 0.75)), size=520, bias=FACE['blue'],
          enter=('drop', cue('b39', 'start', -LAND)), sings={'sing-a': 'ride'}, glideMouth='open', sparkles='none',
          splice=('m12-blue', cue('sing-a', 'end', 0.65))),
     dict(id='m12-orange-in', who='orange', span=(cue('b39', 'start', -LAND + 0.12), cue('b39', 'start', 2.5)), size=520, bias=FACE['orange'],
          enter=('drop', cue('b39', 'start', -LAND + 0.12)), glideMouth='open', sparkles='none',
-         splice=('m12-orange', cue('b39', 'start', 2.4))),
+         splice=('m12-orange', cue('b39', 'start', 2.4)), align='m12-orange'),
 ]
 
 
@@ -369,6 +371,13 @@ def main():
                     continue
                 out.append(r)
             merged = [(round(max(0.0, r[0]), 3), r[1]) for r in out]
+        # a head that splices into its pass's first idle starts that idle where the pass's own drop
+        # ends, to the frame (the pass's drop starts on its first frame), not on the 0.01 s grid
+        if 'align' in p:
+            q = next(q for q in PASSES if q['id'] == p['align'])
+            end = round(q['span'][0] * FPS) / FPS + q.get('drop', DROP)
+            assert merged[0][1] == 'drop' and merged[1][1] == 'idle' and merged[1][0] <= end - t0, p['id']
+            merged[1] = (round(end - t0, 6), 'idle')
         # fixed passes have no voiced windows; their states draw no scaled arcs
         arcs = arc_keys(windows, dur) if 'fixed' not in p else [{'t': 0.0, 'v': 1.0}]
         shot = {

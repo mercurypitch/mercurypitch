@@ -157,3 +157,20 @@ Done (14:50), all clock-lint and node --check clean:
 
 Next: the four clips (nice -n 10, one at a time) into lab/<id>/measure-fix1, the four sweeps, the
 root check, then hand back.
+
+### Fix round A-01 results (15:15)
+
+All four clips re-rendered one at a time (nice -n 10, TMPDIR=/dev/shm; the s03 clip first failed the
+renderer's 1024 MB free-disk preflight and went again through scratch/requeue.sh). L.bokeh was in
+lesson.js for every render. Measures in lab/<id>/measure-fix1:
+- s01: inside 0.2 s (0.2 per 30 s), longest 0.1 (0.00, 11.50); final none. Critic before: 0.3 s.
+- s02: none. Critic before: none. Jumps at 1.300/1.767 as before.
+- s03: inside 0.2 s (0.6 per 30 s), longest 0.1 (1.00, 5.20); final 0.2. Critic before: 0.4 s.
+  New pop at 1.433 s is riser 2's event (mi block pulse + tread flash onset), seen on a crop sheet.
+- s04: inside 0.3 s (0.4 per 30 s), longest 0.1 (1.40, 7.00, 20.50); final 0.1. Critic before 0.9 s
+  (1.2 per 30 s).
+Sweeps: s02, s03, s04 clean; s01 only the known EDGE at 33.75 (names leaving in the dolly).
+Root check: 5 errors, all missing m12-orange in s12-s16 (not ours); s01-s04 warnings only.
+Seams: s02 3.4 vs s03 0 stills max 0; s03 end vs s04 0 stills mean 0.001; clips s01->s02 0.363
+(largest 6), s03->s04 0.363. s04 end vs s05's 14:26 clip differs only by the bokeh discs
+(s05's clip predates L.bokeh). clock-lint silent; node --check ok on all four.

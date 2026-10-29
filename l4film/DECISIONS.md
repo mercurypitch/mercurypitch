@@ -607,3 +607,45 @@ replaced it. The builder's record: critics never read it.
     - Lessons 1 and 2's world (the glows, the staves at 3.5 %, the drifting dust) is unchanged.
     - Tested in the scratchpad (`l4entr/depth/`) on S3's pull, S5's push and truck, and S7's
       push, against the builders' clips. Clips rendered before this need rendering again.
+90. **A head that hands over in its pass's first idle starts that idle on the pass's own film
+    time.** The splice check on m12-orange (landed 15:17) found Tavi's head and her pass 500 to 680
+    px apart around the hand-over (346.000 s), so the viewer would see a 464 px step there, against
+    21 to 51 for either video's own step. The idle's sway, blinks and glances run on the time since
+    the state began (the renderer's `tau`), and the two idles began 0.133 s apart: the head's at
+    343.467, after its 0.85 s drop, the pass's at 343.600, after its 0.4 s one. At 346.0 both were
+    in the idle's first glance (2.2 to 3.1 s in), so her eyes would jump. `tools/merc-shots.py` now
+    takes `align` on a head: it holds the landing until the pass's own drop ends, so both idles start
+    at 343.600 (the landing's grin now runs its full 0.4 s and her eyes open two frames before the
+    idle). Only the head's frames from 59 on change: its tall intro (frames 0 to 43) and the hand
+    over at 40 stand, and no tag, intro or other shot changes. m12-blue's head needed nothing, because
+    its ride and idle start on the pass's own film times (348.05 and 356.95), and its splice check
+    shows codec noise only.
+91. **B-03's polish: the landing stays, the rest goes to builder B.** Component critic B-03 kept
+    both S5 and S6. Its item 1 (Tavi settles 0.05 s before her lines) is decision 86's rebound,
+    judged as that decision asked: the fall and the splat end 0.26 s before each line, and what runs
+    into it is the renderer's own follow-through, the same in every drop of the film. It stays, and
+    the film critic sees it at 60 fps. Its carried item 9 (o4 voiced from off) is decision 82.
+    Items 2 to 4 go to builder B as a small round: the tally clears Tavi's falling column by at least
+    60 px (it now passes 41 px from her body), the sum's dots get room, and the bead's F-high hops
+    pass under the upper bracket with room to spare.
+92. **D-02's calls: the s10 callback shrinks onto ti, the s11 chart gets one cascade and a fuller
+    frame, and the board says what S9's moves are.** Component critic D-02 kept S9 and asked for one
+    more pass on S10 and S11.
+    - Item A: "still hanging?" stays, because b32 opens with "Back to the opening question." and
+      these are the cold open's own words (BRIEF). But it must not outrank the answer or point at
+      the wrong stair: Outfit 500 40 px in ink-2, attached to ti (beside it, or with a hairline to
+      its tread), and gone as "1 semitone" lands. Row 10a now carries it.
+    - Item B: the tiers cascade once, on "just by hearing music", as the board has it, with an
+      attack of 3 to 4 frames. The three earlier cascades and the do-only pulse go. The gaps keep
+      the frame alive with something slow and continuous, not repeats of the beat.
+    - Item C: S9's push and truck stand as built. The diagram moves as one plane, and only the
+      faint near bokeh (1.6 times) and the far staves (0.25 times) part from it, so on a phone the
+      push reads close to a zoom and the truck close to a pan. Rows 9b and 9d now say so. Whether
+      the kit's depth cue is strong enough is a question for the whole film (decision 89): the film
+      critic judges it there.
+    - Item D: F-chart frames the chart, not the dimmed staircase under it. Its only user is S11,
+      so builder D may change that one entry in `assets/lib/frames.js`. HANDOFFS § Framings and row
+      11a follow its new numbers.
+    - Items E and F (the hairline across the top stair, the credit 35 px over the do chip) go to
+      builder D. So does S10's 1.2 s of holds per 30 s, if a beat tied to a word brings it under 1.
+    - Item G: row 10a now says what CU-C shows, fa to do, with la, ti and do as its subject.
