@@ -647,6 +647,13 @@
   color: var(--text-secondary, #8b949e);
 }
 
+.peerFailedHint {
+  color: var(--text-secondary, #8b949e);
+  font-size: 0.8125rem;
+  line-height: 1.4;
+  margin: 8px 0 0;
+}
+
 .peerLatency {
   font-size: 0.78rem;
   font-family:

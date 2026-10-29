@@ -14,6 +14,7 @@ import { decideIceRestart, DISCONNECTED_GRACE_MS } from './ice-recovery'
 import { FALLBACK_ICE_SERVERS, getIceServers, resetIceServers, } from './ice-servers'
 import type { JamAudioProfile } from './jam-audio-source'
 import { captureConstraints, describeCapture } from './jam-audio-source'
+import { jamRelayOnly } from './jam-diagnostics-access'
 import { readNetSample } from './jam-net-stats'
 import { capSendBitrate, requestLowPlayout, shapeOpusSdp } from './jam-sdp'
 import { micErrorMessage, micPermissionState } from './media-errors'
@@ -68,6 +69,11 @@ export function createJamService(callbacks: JamCallbacks) {
    * look, rather than being constructed with nothing.
    */
   let iceServers: RTCIceServer[] = FALLBACK_ICE_SERVERS
+  /** `?jamrelay=1` (jam-diagnostics-access) forces every pair through TURN. */
+  const peerConfig = (): RTCConfiguration => ({
+    iceServers,
+    iceTransportPolicy: jamRelayOnly() ? 'relay' : 'all',
+  })
   let disposed = false
   let videoEnabled = false
   let localDisplayName = ''
@@ -581,7 +587,7 @@ export function createJamService(callbacks: JamCallbacks) {
     if (disposed || peerConnections.has(peer.id)) return
 
     console.info('[jam:service] initiating connection to', peer.id)
-    const pc = new RTCPeerConnection({ iceServers: iceServers })
+    const pc = new RTCPeerConnection(peerConfig())
 
     addLocalTracks(pc)
 
@@ -612,7 +618,7 @@ export function createJamService(callbacks: JamCallbacks) {
     if (disposed) return null
     const raced = peerConnections.get(from)
     if (raced) return { pc: raced, existed: true }
-    const pc = new RTCPeerConnection({ iceServers: iceServers })
+    const pc = new RTCPeerConnection(peerConfig())
     addLocalTracks(pc)
     setupPeerHandlers(pc, from)
     peerConnections.set(from, pc)

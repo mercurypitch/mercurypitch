@@ -6,7 +6,7 @@
 // show you why.
 
 import { describe, expect, it, vi } from 'vitest'
-import { DIAGNOSTICS_STORAGE_KEY, readDiagnosticsParam, resolveDiagnosticsUnlock, } from '@/lib/jam/jam-diagnostics-access'
+import { DIAGNOSTICS_STORAGE_KEY, readDiagnosticsParam, RELAY_ONLY_STORAGE_KEY, resolveDiagnosticsUnlock, resolveRelayOnly, } from '@/lib/jam/jam-diagnostics-access'
 
 /** A localStorage stand-in that records what was asked of it. */
 function fakeStorage(initial: Record<string, string> = {}) {
@@ -108,5 +108,26 @@ describe('resolveDiagnosticsUnlock', () => {
   it('works with no storage at all', () => {
     expect(resolveDiagnosticsUnlock('?jamdiag=1', null)).toBe(true)
     expect(resolveDiagnosticsUnlock('', null)).toBe(false)
+  })
+})
+
+describe('resolveRelayOnly', () => {
+  it('turns on from the URL and is remembered', () => {
+    const storage = fakeStorage()
+    expect(resolveRelayOnly('?jamrelay=1', storage)).toBe(true)
+    expect(storage.has(RELAY_ONLY_STORAGE_KEY)).toBe(true)
+    expect(resolveRelayOnly('', storage)).toBe(true)
+  })
+
+  it('turns off again with ?jamrelay=0', () => {
+    const storage = fakeStorage({ [RELAY_ONLY_STORAGE_KEY]: '1' })
+    expect(resolveRelayOnly('?jamrelay=0', storage)).toBe(false)
+    expect(storage.has(RELAY_ONLY_STORAGE_KEY)).toBe(false)
+  })
+
+  it('is independent of the diagnostics flag', () => {
+    const storage = fakeStorage()
+    expect(resolveRelayOnly('?jamdiag=1', storage)).toBe(false)
+    expect(resolveDiagnosticsUnlock('?jamrelay=1', storage)).toBe(false)
   })
 })

@@ -14,7 +14,7 @@ const STATE_LABELS: Record<JamPeer['connectionState'], string> = {
   connecting: 'connecting...',
   connected: 'connected',
   disconnected: 'disconnected',
-  failed: 'failed',
+  failed: "couldn't connect",
 }
 
 const peerItemStates: Record<JamPeer['connectionState'], string> = {
@@ -61,6 +61,12 @@ export const JamPeerList: Component<JamPeerListProps> = (props) => {
             </div>
           )}
         </For>
+        <Show when={props.peers.some((p) => p.connectionState === 'failed')}>
+          <p class={styles.peerFailedHint} data-testid="jam-peer-failed-hint">
+            A firewall on either side can block the audio link. Trying another
+            network, such as a phone hotspot, shows which side it is.
+          </p>
+        </Show>
       </Show>
     </div>
   )

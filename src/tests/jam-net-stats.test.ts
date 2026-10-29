@@ -7,7 +7,7 @@
 
 import { describe, expect, it } from 'vitest'
 import type { JamNetSample } from '@/lib/jam/jam-net-stats'
-import { classifyIcePath, createRingBuffer, deriveReading, nearestOpusFrameMs, readNetSample, rollingStats, } from '@/lib/jam/jam-net-stats'
+import { classifyIcePath, createRingBuffer, deriveReading, describeTransport, nearestOpusFrameMs, readNetSample, rollingStats, } from '@/lib/jam/jam-net-stats'
 
 /** A getStats()-shaped object over a plain array of reports. */
 const report = (rows: Array<Record<string, unknown>>) => ({
@@ -496,5 +496,66 @@ describe('sample shape', () => {
     // The panel's export writes these straight to JSON for a test log.
     const s: JamNetSample = readNetSample(report([]))
     expect(JSON.parse(JSON.stringify(s))).toMatchObject({ path: 'unknown' })
+  })
+})
+
+describe('candidate transport', () => {
+  it('reads the local protocol and the relay leg from the pair in use', () => {
+    const s = readNetSample(
+      report([
+        pair(),
+        {
+          type: 'local-candidate',
+          id: 'lc1',
+          candidateType: 'relay',
+          protocol: 'udp',
+          relayProtocol: 'tls',
+        },
+        { type: 'remote-candidate', id: 'rc1', candidateType: 'srflx' },
+      ]),
+    )
+    expect(s.localProtocol).toBe('udp')
+    expect(s.relayProtocol).toBe('tls')
+    expect(describeTransport(s)).toBe('tls')
+  })
+
+  it('reads null where the browser says nothing', () => {
+    const s = readNetSample(
+      report([
+        pair(),
+        { type: 'local-candidate', id: 'lc1', candidateType: 'host' },
+        { type: 'remote-candidate', id: 'rc1', candidateType: 'host' },
+      ]),
+    )
+    expect(s.localProtocol).toBeNull()
+    expect(s.relayProtocol).toBeNull()
+    expect(describeTransport(s)).toBeNull()
+  })
+
+  it('names tcp on a direct path but stays quiet about udp', () => {
+    expect(
+      describeTransport({
+        path: 'direct',
+        localProtocol: 'tcp',
+        relayProtocol: null,
+      }),
+    ).toBe('tcp')
+    expect(
+      describeTransport({
+        path: 'reflexive',
+        localProtocol: 'udp',
+        relayProtocol: null,
+      }),
+    ).toBeNull()
+  })
+
+  it('falls back to the local protocol for a relay that hides its leg', () => {
+    expect(
+      describeTransport({
+        path: 'relay',
+        localProtocol: 'udp',
+        relayProtocol: null,
+      }),
+    ).toBe('udp')
   })
 })
