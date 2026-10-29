@@ -17,84 +17,143 @@ behaviour), **WHERE** (optional feature), otherwise ubiquitous ("shall").
 ## Presentation — `REQ-WALK-001..005`
 
 ### REQ-WALK-001 — Offered to new users
+
 **WHEN** the app loads for a user who has not completed the introductory
 walkthrough, the app **shall** offer it.
 
 ### REQ-WALK-002 — Spotlight on a real element
+
 **WHILE** a step is active, the app **shall** highlight the element matched by
 that step's `targetSelector`.
 
 ### REQ-WALK-003 — Selector must resolve
+
 **IF** a step's `targetSelector` matches no visible element, **THEN** the tour
 **shall** not present that step as spotlighted on empty space.
 
 ### REQ-WALK-004 — Sequential
+
 Steps **shall** be presented in their declared order.
 
 ### REQ-WALK-005 — Progress is visible
+
 **WHILE** a walkthrough is active, the app **shall** show the current step
 position and the total, and mark already-visited steps.
 
 ## Navigation — `REQ-WALK-006..010`
 
 ### REQ-WALK-006 — Forward and back
+
 The user **shall** be able to move to the next and previous step.
 
 ### REQ-WALK-007 — Skip a step
+
 The user **shall** be able to skip the current step and advance.
 
 ### REQ-WALK-008 — Finish early
+
 The user **shall** be able to complete a walkthrough before reaching its last
 step.
 
 ### REQ-WALK-009 — Dismiss without completing
+
 **WHEN** the user closes a walkthrough, the app **shall** dismiss it without
 marking it complete.
 
 ### REQ-WALK-010 — Navigation across pages
+
 **WHERE** a step declares a `navigate` target, the tour **shall** move to that
 page before spotlighting.
 
 ## Completion — `REQ-WALK-011..014`
 
 ### REQ-WALK-011 — Explicit completion
+
 **WHEN** the user activates the finish control, the app **shall** mark the
 walkthrough complete.
 
 ### REQ-WALK-012 — Completion persists
+
 Completion state **shall** persist across sessions.
 
 ### REQ-WALK-013 — Not re-offered
+
 **WHILE** a walkthrough is marked complete, the app **shall** not offer it
 unprompted again.
 
 ### REQ-WALK-014 — Count visible
+
 The number of completed walkthroughs **shall** be visible to the user.
 
 ## Content — `REQ-WALK-015..018`
 
 ### REQ-WALK-015 — Title and description
+
 Each step **shall** carry a title and a description stating what to do.
 
 ### REQ-WALK-016 — One feature per walkthrough
+
 Each walkthrough **shall** target one coherent feature area.
 
 ### REQ-WALK-017 — Coverage
+
 A page's tour **shall** cover at least 80% of that page's user-visible
 features.
 
 ### REQ-WALK-018 — Kept in step with the UI
+
 **WHEN** a feature is added to a page that has a tour, that tour **shall** be
 updated in the same change.
 
 ## Re-running — `REQ-WALK-019..020`
 
 ### REQ-WALK-019 — Help entry point
+
 The app **shall** provide a help affordance that opens the walkthrough
 catalogue.
 
 ### REQ-WALK-020 — Replay
+
 The user **shall** be able to re-run any walkthrough, including completed ones.
+
+## The page under the tour — `REQ-WALK-021..025`
+
+These hold for the Guide's spotlight tours and Merc's coach tours alike.
+**Source:** `src/lib/tour-screen.ts`, `src/features/tours/TourScreenHost.tsx`.
+**Tests:** `src/lib/tour-screen.test.ts`,
+`src/features/tours/TourScreenHost.test.tsx`,
+`src/tests/walkthrough-tour-screen.test.tsx`,
+`src/components/coach/start.test.ts`.
+
+### REQ-WALK-021 — Unsaved work asks first
+
+**WHEN** a tour would leave the tab on screen, the app **shall** ask as any
+tab change does: a take still saving holds the tour, and Voice History asks
+before its open capture goes. **IF** the user stays, **THEN** the tour
+**shall** not start.
+
+### REQ-WALK-022 — A detour asks before it closes
+
+**WHILE** something is open over the page a tour shows (a drill, Zen, a
+challenge stage, focus mode, an Ear Lab drill), starting that tour **shall**
+ask before closing it, and **shall** start the tour only on a yes.
+
+### REQ-WALK-023 — No offer inside a detour
+
+**WHILE** something is open over a tab's page, the app **shall** not offer
+that tab's first-visit tour.
+
+### REQ-WALK-024 — A step sets the view it needs
+
+**WHERE** a step names the view it needs (`screen`: Melody rather than
+Notation, Compose's piano roll, Path's Ascent, Community's feed, the Singing
+bar shown), the tour **shall** set that view as the step shows, and **shall**
+put each view back the way the user had it once the tour ends.
+
+### REQ-WALK-025 — A stage ends the tour it covers
+
+**WHEN** Zen, a challenge stage or focus mode opens while a tour runs, the
+tour **shall** end.
 
 ## Verification note
 

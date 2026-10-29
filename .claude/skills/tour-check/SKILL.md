@@ -84,8 +84,12 @@ does exactly that and exits non-zero if any step's spotlight misses.
   collapsed rail (`inSidebar`), click through sub-navigation (`navigate:
 string[]`), expand an `aria-expanded` collapse toggle (`reveal`), and
   auto-un-hide a dismissed floating control bar (via the persisted
-  `mp-<prefix>-control-hidden` flag). Everything it opens is restored when
-  the tour ends. Targets only count when genuinely visible
+  `mp-<prefix>-control-hidden` flag), and set the view it needs (`screen`:
+  Melody not Notation, Compose's piano roll, Path's Ascent; the page that
+  owns a view says how in `src/lib/tour-screen.ts`). Everything it opens
+  is restored when the tour ends. A tour asks before it closes a drill or
+  stage open over its page (`provideTourDetour`), and before it leaves a
+  tab with unsaved work. Targets only count when genuinely visible
   (`checkVisibility`); a missing target hides the spotlight and centres the
   tooltip.
 - **Stable hooks**: prefer `data-tour="<page>.<thing>"` attributes (or
