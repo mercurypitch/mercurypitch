@@ -131,3 +131,28 @@ Running notes so a container restart or a usage-limit pause can resume. Builder 
   not mine; my scenes only warnings (nested media start, refl twins, length 341 / 383 lines).
   clock-lint silent on both; merc-tags --check 84 tags, 0 stale.
 - lab/s12-sing/hosts/falls.png rebuilt from the rendered clip's frames (40 to 62).
+
+## Round 2 (component critic E-01, DECISIONS 96)
+
+- 19:28 onsets measured from the stems (tools/onsets.py; tools/cues.mjs resolves anchors without a
+  browser): note changes on FACTS 68 within 4 ms; attacks out of silence (first note, do) 14 / 30 / 46 ms
+  after FACTS at 2 / 10 / 25 % of peak, so keyed at +20 ms (ATTACK).
+- S12 ride rewritten: 0.18 s hops (kit hopAt, lift 10) placed so the middle of the passage into the
+  note's lane lands on the onset (semitone: its one crossing on it; tone: the lane between -21 ms, the
+  note's lane +21 ms); the rest a power2.in rise from ti's end crossing into do's lane on do's attack;
+  on do an ease to x 1418 (k 1.21 so the speed carries in); the end-of-run bead pulse and the cue-only
+  run-end glow (sing-a's end) removed; do's echo rings on do's attack.
+- S12 risers: bar, tick and the gold corner ride the treads; the gold pair fades 343.70 to 343.99, the
+  tone risers with the blocks. Clip: no gold pixel from 343.942.
+- S13 rebuilt: one path (S12's band thinning 14 -> 6 px and cooling amber -> chrome, full -> 70 %, 372.94
+  to 373.54, with S12's 35 % layer under it while it cools so the seam matches), fills on lanes 0 2 4 5
+  7 9 11 12 (chrome 6 %, inset 2), lane rules out 373.24 to 373.54; the segment under the cursor to full
+  with the cursor's glow (0.1 s each way); Tavi on the guide's move to (1800, 840) at 300; Merc's breath
+  curve 6p^2 - 8p^3 + 3p^4 (clears stair 1 at 404.656); the breath re-timed (see the report).
+- Still checks: path luma 150, lit 202, fill 27, empty 16.5 (at 400 x 225: 132, 201, 27, 16); "wait on
+  ti" at its peak ink y 461 to 495 from x 380, 12 px under the line above, 22 px over the stop line.
+- 19:52 S12 at 60 fps with hosts: holds 0.3 s, longest 0.2. Crossings (clip, interpolated) -23 to +31
+  ms; do's crossing exact on its attack (scene state; the clip's colour mask loses Tavi's dimmed bead).
+- Handoffs (seek HOSTS=1 exact frames): S11 to S12 max 10; S12 to S13 1440 px over 16, all hosts
+  (Merc 1261, Tavi 179), the guide 0; S13 to S14 max 10.
+- Text sweep: no run under 4.5:1 in either scene. merc-tags --check: 16 tags, 0 stale.

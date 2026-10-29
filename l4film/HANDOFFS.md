@@ -157,7 +157,8 @@ to 1880; 40 px from the rows (1680), 44 from the strip (1676), 46 from stair 8 o
 | F-names-1  | 2.4  | -235    | -1232   | -                 | S9c, S9d       | the name band: names 86 px at baseline 506, foot 534, keys y 592 to 880; stair 1 x 346 to 615 (centre 480), stairs 1 to 5 in frame                                                                                  |
 | F-names-2  | 2.4  | -1431   | -1232   | -                 | S9d            | the same band at stairs 4 to 8: stair 8 x 1166 to 1435 (centre 1300)                                                                                                                                                |
 | CU-C       | 1.8  | -980    | -432    | (1225, 540)       | S10a           | la, ti, do x 536 to 1169, names baseline 871; the ti-do riser at x 960 from y 248 to 202; the top house x 1018 to 1119, y 83 to 176; the strip faded                                                                |
-| F-chart    | 1.3  | -252    | -75     | (840, 250)        | S11a to S11c   | the tiers: do's chip x 762 to 918, y 242 to 315, the fourth shelf to y 627; the axis at x 1438 from y 289 to 653, "finishes it best" from x 1464; stair names at 866; the strip under the caption band (from y 913) |
+| F-exp      | 1.3  | -252    | -75     | (840, 250)        | S11a, S11b to 307.13 | the chart as the chips take off: do's chip x 762 to 918, y 242 to 315, the fourth shelf to y 627; the axis at x 1438 from y 289 to 653; stair names at 866; the strip under the caption band (from y 913); in s11 as `F_EXP`, not in `L.FRAMES` (DECISIONS 98) |
+| F-chart    | 1.45 | -432    | -47     | (960, 104)        | S11b from 308.98, S11c | the chart fills the frame: shelves, chips, axis and labels x 148 to 1772, y 297 to 790 ("least" to 790); the kicker and credits end at y 253, the top shelf at 382 or lower; the stair names and the strip below the frame |
 | F-recap-1  | 1.25 | -75     | -75     | (300, 300)        | S14a, S14b     | C's stairs x 228 to 1418 (stair 1 x 228 to 368, y 755 to 845; 38 px from Merc), the top house x 1313 to 1383, y 283 to 348, names baseline 830; the strip faded                                                     |
 | F-recap-3  | 1.4  | -120    | -160    | (300, 400)        | S14d           | la, ti, do x 1059 to 1552; the ti-do riser at x 1389 from y 369 to 333; the top house x 1434 to 1512, y 240 to 313; stair 1 x 219 (29 px from Merc), foot 870; names baseline 854 (DECISIONS 97); the strip faded     |
 
@@ -194,7 +195,8 @@ equally.
 | 248.70-249.50 | pull         | F-names-2  | F0         | power2.inOut                    | Tavi drops in over it                                                                                                                                                               |
 | 270.70-272.20 | push         | F0         | CU-C       | power2.inOut                    | the strip fades out over it                                                                                                                                                         |
 | 280.70-282.40 | pull         | CU-C       | F0         | power2.inOut                    | "1 semitone" and the arrow left at 280.5 to 280.7; the strip returns over it                                                                                                        |
-| 298.70-299.90 | push         | F0         | F-chart    | power2.inOut                    | both Mercs gone at 298.6                                                                                                                                                            |
+| 298.70-299.90 | push         | F0         | F-exp      | power2.inOut                    | both Mercs gone at 298.6; then a sideways drift of about 5 px a second, turning only inside beats, to 320.23 (DECISIONS 98)                                                                                                                                                            |
+| 307.13-308.98 | push         | F-exp      | F-chart    | power2.inOut                    | from "top": the camera follows the stair names in as the chips fly up, at rest as the last chips land                                                                                                                                                                                  |
 | 320.23-321.03 | pull         | F-chart    | F0         | power2.inOut                    | Tavi drops back over it                                                                                                                                                    |
 | 411.00-412.60 | push         | F0         | F-recap-1  | power2.inOut                    | the strip and its hairlines sink 60 px and fade                                                                                                                                     |
 | 419.70-420.70 | pull         | F-recap-1  | F0         | power2.inOut                    | the strip returns without its hairlines (they draw on "F sharp", 427.22)                                                                                                            |
@@ -357,7 +359,7 @@ keys at full and the rest at 45 %, no key names.
 - **S11's experiment.** Kicker "AN EXPERIMENT" at (120, 110); credits frame-fixed, Outfit 500,
   ink-2, x 120: "Krumhansl & Shepard, 1979" 36 px at baseline 160, "later studies: without training
   too, only weaker" 32 px at 205 (to x 776), "as summed up in Janata et al., 2003" 32 px at 245 (to
-  x 628). The chart rides the world and is seen through F-chart. The probe bead with "?" at
+  x 628). The chart rides the world and is seen through F-exp, then F-chart (DECISIONS 98). The probe bead with "?" at
   (1420, 420). The axis at x 1300 from y 560 up to 280, "finishes it best" at x 1320, baseline 290, "least"
   at baseline 568 (Outfit 500 32 px, ink-2). Shelves (chrome 2 px at 50 %) x 400 to 1280 at y 300,
   380, 460, 540, 80 px apart; on "only weaker" the lower three close to 364, 428 and 492 (64 px
@@ -368,7 +370,7 @@ keys at full and the rest at 45 %, no key names.
   ink names, 13.4:1, so they read over the staircase dimmed to 20 %; dim chips: chrome at 35 %,
   their letters ink). The house beside do (11c) at x 916 to 972, its base on the top shelf.
 - **S11's labels.** "learned, it seems" Outfit 600 48 px at x 1250, baseline 320; "one short step"
-  at x 1250, baseline 400, a hairline from its left end to the ti-do riser (1078, 365); "leading
+  at x 1250, baseline 400, a hairline from its left end to the ti-do riser's top (1078, 352), drawn between the stair blocks and the risers so the gold corner stays whole; "leading
   note" Outfit 600 64 px riding the world at x 660, baseline 300 on C (x 780, baseline 248 on D);
   "ti = C♯" Outfit 600 48 px, frame-fixed at x 1360, baseline 300 on D.
 

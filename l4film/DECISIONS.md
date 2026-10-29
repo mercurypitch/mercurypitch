@@ -779,3 +779,34 @@ replaced it. The builder's record: critics never read it.
     - **The card pause carries the pad.** BRIEF § Audio listed the pad only in the transitions and
       the thinking pauses; the mix also lays it under `card`, a reading pause that would otherwise
       drop to room tone for 4 s. That is intended, and the BRIEF now lists it.
+98. **S9 to S11 after builder D's round 3 (component critic D-02's items): a chart that fills the
+    frame, reached in two legs, and a slow drift.**
+    - **F-chart is now 1.45x about (960, 104)** (`L.FRAMES['F-chart']` `{ s: 1.45, ox: -432, oy: -47 }`,
+      builder D's one kit edit). The shelves, chips, axis and labels fill x 148 to 1772, y 297 to
+      790; the kicker and credits end at y 253 and the top shelf sits at 382 or lower. Before, the
+      chart filled only y 240 to 660.
+    - **S11a's push lands on the old framing, now called F-exp** (1.3x about (840, 250); in s11 as
+      `F_EXP`). The chips fly up from the stair names, and any framing that fills the frame with the
+      chart puts the names in the caption band or off the frame. From "top" (307.13 to 308.98,
+      power2.inOut) the camera follows the names in from F-exp to F-chart and comes to rest as the
+      last chips land; that pace also keeps the strip in frame while the five dim chips leave it.
+    - **The medium shot drifts.** Between the push and the pull the camera drifts sideways at about
+      5 px a second, turning only inside a beat that already moves something (each turn eased over
+      0.35 s): 299.60 (0), 303.24 (+15 px), 307.68 (-5.5), 309.56 (+2), 312.91 (-13), 316.70 (+4),
+      318.31 (-6), and 0 at rest on F-chart as the pull starts (320.23). It is horizontal only: any
+      vertical part moved every baseline by a whole pixel at once (7 jumps in 2 s), the horizontal
+      drift none. At 5 px a second it is far below the depth cue's 40 px (decision 93), so it lifts
+      nothing.
+    - **Left for the next critic.** The five dim chips cross the caption band for about 0.2 s as
+      they rise from the strip, which lies in it; they are moving marks, never text to read, and the
+      old framing did the same. The hairline from "one short step" now ends at the riser's top
+      (1078, 352), but the label's fixed place (x 1250, baseline 400) still sends it across the top
+      stair's upper-right corner. If D-03 reads that as crossing the stair, the label moves, not the
+      line.
+    - **S10 and S11, as asked.** "still hanging?" is ti's question as row 10a says (Outfit 500 40 px,
+      ink-2, over ti's column with a hairline to its tread, gone as "1 semitone" lands at 275.93),
+      and one word-tied beat was added (ti lights again on "below", 276.63): holds 0.9 s per 30 s.
+      S11's tiers cascade once, on "just" (319.30 to 320.05, four frames' attack a tier), the other
+      cascades and pulses gone: holds 0.3 s per 30 s. The credit clears the chips by 86 px. Each
+      answer label's glow is now a filter on its own text, not a blurred copy of it, so the full
+      check finds no layout errors in S9 to S11.

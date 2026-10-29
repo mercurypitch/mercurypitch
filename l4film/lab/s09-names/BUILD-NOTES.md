@@ -106,20 +106,27 @@ set S10's mouth to (156, 797) and re-timed the tags (merc-tags starts a running 
 
 - s10 (A): "still hanging?" is ti's question: Outfit 500, 40 px on screen in CU-C (22.2 world px), ink-2, in
   the world centred on ti's column (x 1018, baseline 331.7, so 165 on screen), its box 736 to 969 x 125 to 175,
-  23 px over do's tread and the gold corner; a hairline (x 852, 184 to 240 on screen) draws down to ti's tread
+  22 px over do's tread and the gold corner; a hairline (x 852, 184 to 240 on screen) draws down to ti's tread
   over 0.3 s as "Tee" is said; label and hairline leave from 0.1 s before "semitone" over 0.2 s (gone as
   "1 semitone" lands). Holds: stair 7 lights again on "below" (0.4/0.8), so ti and do light in turn on
   "below doh"; the hairline's draw and the handover sit in the old holds at 2.3 and 5.2.
-- s11 (B): one cascade, on "just" (0.25 s apart, 0.12 s sine.inOut attack, 0.6 s settle; scale 1.05 and the
+- s11 (B): one cascade, on "just" (0.25 s apart, linear 4-frame attack, 0.6 s sine settle; scale 1.05 and the
   40 % light, an outline chip's rim). The cascades on "studies", "training" and "weaker", the do-only pulse on
-  "home" and do's lights after its landing and on "learned," are gone. Between the beats the camera floats on a
-  5 px circle, a turn in 6 s, from the push's landing to the pull (in over 1.2 s, out over 1.0 s).
+  "home" and do's lights after its landing and on "learned," are gone. Between the beats the camera drifts
+  sideways at 5 px a second (one curve from the push to the pull), turning only inside beats; horizontal only,
+  because a vertical drift snaps every text baseline by a whole pixel at once (measured: 7 jumps of 0.24 % in
+  2 s for a 5 px circle, none for the horizontal drift).
 - s11 (D): F-chart is now { s: 1.45, ox: -432, oy: -47 } (assets/lib/frames.js, its only entry I changed): the
   shelves, chips, axis and labels at x 148 to 1772 and y 297 to 790 on screen. 11a's push lands on the old
   numbers (1.3, -252, -75), inline in s11 as F_EXP, because the stair names (the chips' origins) must sit over
-  the caption band; on "top" the camera follows the names in to F-chart, landing on "doh." (307.13 to 308.22).
+  the caption band; from "top" the camera follows the names in to F-chart over 1.85 s (307.13 to 308.98), slow
+  enough that the strip is still in frame when the five dim chips leave it.
 - s11 (E): the hairline ends at the top of the riser (1078, 352), drawn in the world between the stairs' blocks
   and risers so the gold corner stays whole over its end.
-- s11 (F): credit 2's foot (213) is 84 px or more over the do chip (297 at the float's top and the 1.05 scale).
+- s11 (F): credit 2's box foot (213) is 85.9 px or more over any chip under it.
 - s11 (check): the answer labels glow through a filter on their own text (a flood in the blurred alpha), not a
   second text copy, so no two texts share a zone (the content_overlap at 328.68 to 329.49).
+- Final clips (kit of 18:41, niced, TMPDIR=/dev/shm, one at a time): s10 19:30, 0.8 s inside (0.9 / 30 s),
+  longest 0.1; s09 19:32, 1.2 s (0.9 / 30 s), longest 0.3; s11 20:03, 0.4 s (0.3 / 30 s), longest 0.1, no
+  single-frame events in 3.9 to 24.4. Full check 20:05: 0 lint errors, layout 1 error (S6's), S9 to S11 none.
+  Stills: lab/<scene>/r3. Lab tools: lab/s11-why/tools/frames.mjs (screenshots of a variant file).

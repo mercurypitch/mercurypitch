@@ -639,8 +639,11 @@ the hero view, y 323) after that.
   empty, every label gone (340.9); the staircase on D at full: names do to do, both houses lit,
   risers measured (no labels), hairlines; the strip with D major's keys, F♯4 and C♯5 lit.
 - Kit: `L.kicker('An experiment')` and the credits (frame-fixed, Outfit 500, ink-2, x 120);
-  `L.frameRig` (F-chart `cam.to(word('b35', 1, 'start', 0.32), 1.2, 'F-chart', 'power2.inOut')`, the
-  pull `cam.to(at('o11', 'start', -1.35), 0.8, 'F0', 'power2.inOut')`, 320.23 to 321.03, landing
+  `L.frameRig` (the push to F-exp `cam.to(word('b35', 1, 'start', 0.32), 1.2, F_EXP, 'power2.inOut')`,
+  F-exp being the old F-chart, 1.3x about (840, 250), kept in s11; from "top" (307.13, 1.85 s,
+  power2.inOut) on to F-chart, 1.45x about (960, 104), following the stair names in; a sideways
+  drift of about 5 px a second between, horizontal only, turning only inside beats (DECISIONS 98);
+  the pull `cam.to(at('o11', 'start', -1.35), 0.8, 'F0', 'power2.inOut')`, 320.23 to 321.03, landing
   as Tavi's fall ends (DECISIONS 83)); the probe bead with its
   "?"; the axis and its labels; the shelves and chips (HANDOFFS § S11's experiment: chips 120 x 56,
   radius 12, `#1b232d` opaque with a 2 px chrome rim at 55 % and ink names; the black keys' dim chips

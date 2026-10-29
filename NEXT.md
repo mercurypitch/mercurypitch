@@ -1606,3 +1606,17 @@ Note: the lanes' memory gate read a stale cgroup path after the 21:00 restart (f
   (B-fix4-msg); then verification critics D-03, E-02, F-02, A-03, C-03, B-04 (each given the
   previous report path only). Watch at integration: the S13/S14 seam hold (405.2 to the kicker at
   405.64), and HANDOFFS F-chart row once D reports its new numbers.
+- 20:0x builder D handed back round 3 (D-02 items): s10 "still hanging?" as ti's question + one beat
+  ("below", 276.63), holds 0.9/30 s; s11 one cascade on "just", holds 0.3/30 s, credit 86 px clear,
+  check's two s11 layout errors fixed (glow as a filter); F-chart now { s 1.45, ox -432, oy -47 }
+  (1.45x about (960, 104)); s11a lands on the old framing kept in s11 as F_EXP ("F-exp"), then from
+  "top" 307.13-308.98 a follow push to F-chart; horizontal drift ~5 px/s with turns inside beats.
+  Caveats left for D-03: dim chips cross the caption band ~0.2 s; the "one short step" hairline ends
+  at the riser top (1078, 352) but crosses the top stair's upper-right corner (label fixed at x 1250,
+  baseline 400). s09 unchanged, re-rendered 19:32. Full check: 0 lint err, runtime 0, 1 layout error
+  (s06, B's), contrast 59/59. DECISIONS 98; HANDOFFS framings (F-exp + F-chart rows, follow move row,
+  hairline end), board 11a/11b + camera list/table, BUILD-GUIDE s11 (backups *.before-98.md).
+- 20:0x F-fix-msg SENT to builder F (resumed). Agents now: E + F.
+- Next slots, in order: A round 2 (A-fix2-msg), critic D-03 (critics/D3.txt; first copy the three
+  clips to $S/l4entr/d3/<scene>/clip.mp4), then E-02 / F-02 as E and F hand back (E2.txt, F2.txt,
+  copies in e2/ and f2/), C small (C-fix2-msg), B small (B-fix4-msg), then A-03, C-03, B-04.

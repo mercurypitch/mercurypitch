@@ -102,22 +102,34 @@
           // 11a's push lands on F-exp (the staircase, the probe and the axis; the stair names stay over the caption
           // band, since the chips fly up from them). On "top", as the names fly up, the camera follows them in to
           // F-chart, which frames the shelves and the axis, not the dimmed staircase (component critic D-02 item D),
-          // landing as do lands on "doh.". Between the push and the pull the camera floats on a 5 px circle, one
-          // turn in 6 s (5.2 px a second), so the MS stays alive between its beats (DECISIONS 92); it fades in after
-          // the push and out before the pull, so both moves start and end on their framings at rest
+          // coming to rest as the last chips land (1.85 s: slow enough that the strip is still in frame when the five
+          // dim chips leave it, so no chip enters across the frame's edge).
+          // Between the push and the pull the camera drifts sideways, 5 px a second, so the MS stays alive between
+          // its beats (DECISIONS 92): a slow truck, so the bokeh and staves part from the diagram by a few px. It
+          // turns only inside a beat that moves something else (the probe's arrival, the names' flight, each credit
+          // landing, the shelves spreading, the house landing), each turn eased over 0.35 s, and it is back on
+          // F-chart, at rest, as the pull starts. It is horizontal only: a vertical drift moves every text
+          // baseline by a whole pixel at once, which reads as a judder
           const F_EXP = { s: 1.3, ox: -252, oy: -75 }, F_CHART = L.FRAMES['F-chart']
-          const T_MS = A.push + 1.2, FLOAT_R = 5, FLOAT_W = (2 * Math.PI) / 6
-          const floatAmp = (t) => P(t, T_MS, 1.2, 'sine.inOut') * (1 - P(t, A.pull - 1.0, 1.0, 'sine.inOut'))
-          const cam = L.frameRig(room, { from: 'F0' })
-          cam.to(A.push, 1.2, F_EXP, 'power2.inOut')
-          cam.curve(T_MS, A.pull - T_MS, (u) => {
-            const t = T_MS + u * (A.pull - T_MS)
-            const k = P(t, A.top, A.doh - A.top, 'power2.inOut'), a = floatAmp(t), ph = FLOAT_W * (t - T_MS)
-            return {
-              s: lerp(F_EXP.s, F_CHART.s, k),
-              ox: lerp(F_EXP.ox, F_CHART.ox, k) + a * FLOAT_R * Math.sin(ph),
-              oy: lerp(F_EXP.oy, F_CHART.oy, k) - a * FLOAT_R * Math.cos(ph),
+          // (the drift sets off 0.3 s before the push lands, so the landing never stands still)
+          const RAMP = 0.35
+          const DRIFT = [[A.push + 0.9, 0], [A.oneMore + 0.66, 15], [A.top + 0.55, -5.5], [A.later + 0.08, 2], [A.without + 0.1, -13],
+            [A.so + 0.4, 4], [A.learned - 0.05, -6], [A.pull, 0]]
+          const trap = (u, r) => u < r ? (u * u) / (2 * r * (1 - r)) : u > 1 - r ? 1 - ((1 - u) * (1 - u)) / (2 * r * (1 - r)) : (u - r / 2) / (1 - r)
+          const drift = (t) => {
+            for (let i = 0; i + 1 < DRIFT.length; i++) {
+              const [t0, x0] = DRIFT[i], [t1, x1] = DRIFT[i + 1]
+              if (t < t1) return lerp(x0, x1, trap(clamp((t - t0) / (t1 - t0)), RAMP / (t1 - t0)))
             }
+            return 0
+          }
+          const cam = L.frameRig(room, { from: 'F0' })
+          // one curve from the push to the pull: F0 to F-exp (1.2 s), F-exp to F-chart (from "top", 1.85 s), the drift
+          cam.curve(A.push, A.pull - A.push, (u) => {
+            const t = A.push + u * (A.pull - A.push)
+            const k0 = P(t, A.push, 1.2, 'power2.inOut'), k = P(t, A.top, 1.85, 'power2.inOut')
+            const f = (key) => lerp(lerp(1 * (key === 's'), F_EXP[key], k0), F_CHART[key], k)
+            return { s: f('s'), ox: f('ox') + drift(t), oy: f('oy') }
           })
           cam.to(A.pull, PULL_DUR, 'F0', 'power2.inOut')
 
@@ -321,14 +333,14 @@
             return t >= c.back + c.bdur ? 1 : 0
           }
           // The one cascade, on "just by hearing music" (DECISIONS 92): each tier in turn, top shelf to bottom, 0.25 s
-          // apart, scales 1.05 and lights (40 % chrome; an outline chip's rim brightens), with a 0.12 s attack (3.6
-          // frames, sine.inOut) and a 0.6 s settle, so no tier lights within one frame. The shelves stand 80 px apart
-          // by then, so the chips keep 8 px apart at 1.05
+          // apart, scales 1.05 and lights (40 % chrome; an outline chip's rim brightens), with a linear 4-frame attack
+          // (0.133 s, so no frame changes a chip by more than 17 levels) and a 0.6 s settle. The shelves stand 80 px
+          // apart by then, so the chips keep 21 px apart at 1.05
           const CASC = [0, 1, 2, 3].map((k) => A.just + 0.25 * k)
           const cascade = (tier, t) => {
             const dt = t - CASC[tier]
-            if (dt < 0 || dt >= 0.72) return 0
-            return dt < 0.12 ? L.ease('sine.inOut')(dt / 0.12) : 1 - L.ease('sine.inOut')((dt - 0.12) / 0.6)
+            if (dt < 0 || dt >= 0.4 / 3 + 0.6) return 0
+            return dt < 0.4 / 3 ? dt / (0.4 / 3) : 1 - L.ease('sine.inOut')((dt - 0.4 / 3) / 0.6)
           }
           // do's landing on "doh." (the board's scale 1.05) stays the kit's pulse; it lands moving, so it never pops
           const tierPulse = (tier, t) => Math.max(1 + 0.05 * cascade(tier, t), tier === 0 ? L.pulse(t, A.doh, 'tile') : 1)

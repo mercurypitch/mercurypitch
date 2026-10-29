@@ -22,10 +22,12 @@
           /* S12, Sing it: Merc, then Tavi (STORYBOARD rows 12a to 12e; HANDOFFS § D to E, § Inside E, § S12 to S13).
              In (D to E, fixed): F0, no Mercs; the staircase on D at full, names, both houses lit, risers measured;
              the strip with D major's keys, F♯4 and C♯5 lit. Out (to s13): the guide with every segment lit, the
-             orange bead on do's segment end, "wait", the arrow, the chip and the house; both Mercs at 360.
-             The tip (provisional, the lab's curves): the rows stretch onto the lanes on one affine map, each tread
-             slides and stretches into its segment, the blocks fold up into their treads as they fade, the names
-             and the bottom house ride their stairs as they fade, the top house rides to the path's end. */
+             orange bead parked on do's segment (its right edge at x 1440), "wait", the arrow, the chip and the
+             house; both Mercs at 360.
+             The tip (the lab's curves): the rows stretch onto the lanes on one affine map, each tread slides and
+             stretches into its segment, the blocks fold up into their treads as they fade, every riser riding its
+             stair (the gold pair gone by 343.99), the names and the bottom house ride their stairs as they fade, the
+             top house rides to the path's end. */
           const SID = 's12-sing'
           const D = L.dur(SID)
           const at = (cue, edge, off) => L.at(SID, cue, edge, off)
@@ -57,7 +59,6 @@
             wait: word('b39', 'a wait'),                      // "wait" lands over the hold
             home: word('b39', 'home.'),                       // do's segment and the house glow
             sa: at('sing-a'), sb: at('sing-b'),               // 12c, 12e: the beads land on the path's start
-            saEnd: at('sing-a', 'end'),                       // Merc's run ends: do's segment and the house glow once more (a hold breaker)
             tee: word('o12', 'tee,'),                         // 12d: the hold's segment glows
             waitO: word('o12', 'wait,'),                      // "wait" scales 1.2
             listen: word('o12', 'listen'),                    // "listen for where": the house sends a ring (a hold breaker)
@@ -81,8 +82,12 @@
           const NAME_BL = [748, 656, 564, 518, 426, 334, 242, 196]
           const HOUSE = [1381, 116]                            // the house at the path's end (centre)
           const seg = (n) => ({ x: px(ON[n - 1]), w: px(OFF[n - 1]) - px(ON[n - 1]), y: laneY(LANE[n - 1]) - 7, h: 14 })
-          const TI = [at('sing-a', 'start', ON[6]), at('sing-b', 'start', ON[6])]       // ti's onsets
-          const DO = [at('sing-a', 'start', ON[7]), at('sing-b', 'start', ON[7])]       // do's onsets
+          // the voice's onsets, measured from the sung tracks (lab/s12-sing/tools/onsets.py on the stems): each
+          // note change lands on FACTS 68's onset (within 4 ms); an attack out of silence (the first note, and do
+          // after the rest) reaches its note 20 ms after it (14 to 46 ms by the threshold), so it is keyed there
+          const ATTACK = 0.02
+          const TI = [at('sing-a', 'start', ON[6]), at('sing-b', 'start', ON[6])]                     // ti's onsets
+          const DO = [at('sing-a', 'start', ON[7] + ATTACK), at('sing-b', 'start', ON[7] + ATTACK)]   // do's attacks
           const WAITP = [TI[0], at('sing-a', 'start', ON[6] + 1), A.waitO, TI[1]]       // "wait" scales 1.2
 
           /* ---------------------------------------------------------------- the tip's curves */
@@ -206,25 +211,46 @@
           chip.label.style.font = "500 30px/1 'JetBrains Mono', monospace"
 
           /* ---------------------------------------------------------------- a bead riding the path */
-          // dropping onto the path's start (600, 737) to land on the run's first onset; x in time (97.67 px a second);
-          // a step up to each note's lane landing on its onset (0.3 s); over the rest it lifts and dims, landing on do;
-          // then it rests on do's segment end, scaling 1.2 as the sound ends
+          // dropping onto the path's start (600, 737), landing on the first note's attack; x in time (97.67 px a
+          // second); a 0.18 s step up to each note's lane (the kit's hop, lift 10) whose centre passes into that
+          // lane on the note's onset (DECISIONS 96): a semitone's one crossing (a lane's lower edge, 23 px below its
+          // centre) on the onset, a tone's two (the lane between, then the note's) either side of it, 21 ms each
+          // way; it lands just after. Over the rest it rises, accelerating, and dims, crossing into do's lane on
+          // do's attack; on do it eases to its stop with its right edge at x 1440, its speed carried in
+          const HOP = 0.18, LIFT = 10, PARK = 1440 - 22
+          const hop = (s, s1, k0, k1) => L.bead4.hopAt(s, s1, [0, laneY(k0)], [0, laneY(k1)], { dur: HOP, lift: LIFT })[1]
+          const cross = (dk, j) => {          // the hop's progress at which its centre reaches lane j (of dk)
+            let lo = 0, hi = 1
+            for (let k = 0; k < 40; k++) { const m = (lo + hi) / 2; if (hop(m * HOP, HOP, 0, dk) > laneY(j) + 23) lo = m; else hi = m }
+            return (lo + hi) / 2
+          }
+          const STEPS = ON.slice(1).map((on, j) => {
+            const i = j + 1, dk = LANE[i] - LANE[i - 1]
+            if (i < 7) { const s0 = on - (cross(dk, 1) + cross(dk, dk)) / 2 * HOP; return { i, s0, s1: s0 + HOP } }
+            // the rest: from ti's end, rising on power2.in (u cubed), half a lane at do's attack
+            return { i, s0: OFF[6], s1: OFF[6] + (on + ATTACK - OFF[6]) / Math.cbrt(0.5), rest: true }
+          })
+          const TON = ON[7] + ATTACK, XON = px(ON[7]), PK = (840 / RUN) * (RUN - TON) / (PARK - XON)
           const ride = (t, t0) => {
-            if (t < t0 - 0.2) return null
-            if (t < t0) return L.bead4.dropAt(t, t0, [600, laneY(0)])
-            const s = Math.min(t - t0, RUN)
-            let i = ON.length - 1
-            while (i > 0 && s < ON[i]) i--
-            let y = laneY(LANE[i]), a = 1
-            if (i < 7) {
-              const dur = i === 6 ? 0.6 : 0.3
-              if (s >= ON[i + 1] - dur) {
-                y = L.bead4.hopAt(s, ON[i + 1], [0, laneY(LANE[i])], [0, laneY(LANE[i + 1])], { dur, lift: i === 6 ? 16 : 12 })[1]
-                if (i === 6) a = 1 - 0.55 * Math.sin(Math.PI * clamp((s - ON[7] + dur) / dur))
+            const t1 = t0 + ATTACK
+            if (t < t1 - 0.2) return null
+            if (t < t1) return L.bead4.dropAt(t, t1, [600, laneY(0)])
+            const s = t - t0
+            const x = s < TON ? px(s - ATTACK) : lerp(XON, PARK, 1 - Math.pow(1 - clamp((s - TON) / (RUN - TON)), PK))
+            let y = laneY(0), a = 1, land = ATTACK
+            for (const p of STEPS) {
+              if (s < p.s0) break
+              if (s < p.s1) {
+                const u = (s - p.s0) / (p.s1 - p.s0)
+                if (p.rest) { y = lerp(laneY(LANE[6]), laneY(LANE[7]), L.ease('power2.in')(u)); a = 1 - 0.55 * Math.sin(Math.PI * u) }
+                else y = hop(s, p.s1, LANE[p.i - 1], LANE[p.i])
+                land = null
+                break
               }
+              y = laneY(LANE[p.i]); land = p.s1
             }
-            const [sx, sy] = L.bead4.squash(s, ON[i])
-            return { x: px(s), y, a, sx, sy, scale: L.pulse(t, t0 + RUN, 'bead') }
+            const [sx, sy] = land === null ? [1, 1] : L.bead4.squash(s, land)
+            return { x, y, a, sx, sy }
           }
 
           L.clock(tl, D, (t) => {
@@ -254,7 +280,8 @@
                 lit: n === 8 ? L.light(t, A.s11Light, 0.4, 0.8) : 0,
                 names: [{ text: SOL[n - 1], a: nameA, dx: tipped ? (TR[n - 1].xa + TR[n - 1].xb) / 2 - ST.colX(n, 1) : 0, dy: ftAt(n) - foot }],
               }),
-              riser: (n) => ({ a: blockA(t), state: SEMI(n) ? 'semi' : 'tone' }),
+              // every riser rides its stair (below) and fades with the blocks; the gold pair goes first, by 343.99
+              riser: (n) => ({ a: SEMI(n) ? 1 - P(t, A.tip0, 0.29) : blockA(t), state: SEMI(n) ? 'semi' : 'tone' }),
               houses: {
                 bottom: { a: 1 - P(t, A.tip0, 0.3), lit: 1, dx: tipped ? (TR[0].xa + TR[0].xb) / 2 - ST.colX(1, 1) : 0, dy: tipped ? TR[0].y - ST.tread(1, 2) : 0 },
                 top: { a: 1, lit: 1, dx: (HOUSE[0] - ST.colX(8, 1)) * u, dy: (HOUSE[1] - ST.houseBox(8, 1, 2).cy) * u, glow: L.env(t, A.home, 0.3, 0.4, 0.6), scale: L.pulse(t, [A.home, A.go], 0.12) },
@@ -268,9 +295,12 @@
                 S.treadLine.setAttribute('stroke-opacity', '0')
               })
               st.risers.forEach((Rz, i) => {
-                const lo = TR[i], hi = TR[i + 1], x = (lo.xb + hi.xa) / 2
-                Rz.bar.setAttribute('x', f1(x - 3)); Rz.bar.setAttribute('y', f1(hi.y)); Rz.bar.setAttribute('height', f1(Math.max(0, lo.y - hi.y)))
+                const lo = TR[i], hi = TR[i + 1], x = (lo.xb + hi.xa) / 2, bw = SEMI(Rz.n) ? 8 : 6
+                Rz.bar.setAttribute('x', f1(x - bw / 2)); Rz.bar.setAttribute('y', f1(hi.y)); Rz.bar.setAttribute('height', f1(Math.max(0, lo.y - hi.y)))
                 Rz.tick.setAttribute('x', f1(x - 6)); Rz.tick.setAttribute('y', f1((lo.y + hi.y) / 2 - 1))
+                // a semitone's gold corner, up the bar and along the upper tread, rides with that tread (stairs.js's shape)
+                const xa = x + 4, y = hi.y
+                Rz.corner.setAttribute('d', `M${f1(xa)} ${f1(y + 10)} L${f1(xa)} ${f1(y + 6)} Q${f1(xa)} ${f1(y)} ${f1(xa + 6)} ${f1(y)} L${f1(xa + 56)} ${f1(y)}`)
               })
             }
             // the strip dims with the staircase, then slides down and out; its hairlines go first
@@ -305,7 +335,7 @@
               el.setAttribute('x', f1(s.x - 8)); el.setAttribute('y', f1(s.y - 8)); el.setAttribute('width', f1(s.w + 16)); el.setAttribute('height', f1(s.h + 16))
               el.setAttribute('opacity', (0.85 * k).toFixed(3))
             }
-            glow(glowDo, 8, Math.max(L.env(t, A.home, 0.3, 0.4, 0.6), L.light(t, A.go), L.light(t, A.saEnd, 0.3, 0.5)))
+            glow(glowDo, 8, Math.max(L.env(t, A.home, 0.3, 0.4, 0.6), L.light(t, A.go)))
             glow(glowTi, 7, Math.max(L.light(t, A.teeB, 0.3, 0.6), L.env(t, A.tee, 0.3, 0.5, 0.6)))
             glow(glowStart, 1, L.light(t, A.try))
 
