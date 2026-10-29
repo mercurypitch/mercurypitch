@@ -130,12 +130,12 @@ export function HarbourScene(props: HarbourSceneProps): JSX.Element {
     return `M${lampX - w * 0.6} ${seaY + 18} Q${lampX - w * 0.3} ${seaY - 4} ${lampX} ${seaY} Q${lampX + w * 0.35} ${seaY - 6} ${width + 4} ${seaY + 4} L${width + 4} ${seaY + 26} Z`
   }
   const pier = () => {
-    const { width, height, seaY } = L()
-    const deckY = height * 0.735
+    const { height, seaY } = L()
+    const { deckY, end } = L().pier
     return {
-      deck: `M-4 ${deckY} L${width * 0.34} ${deckY} L${width * 0.34} ${deckY + 7} L-4 ${deckY + 7} Z`,
-      posts: [0.04, 0.14, 0.24, 0.32].map((share) => ({
-        x: width * share,
+      deck: `M-4 ${deckY} L${end} ${deckY} L${end} ${deckY + 7} L-4 ${deckY + 7} Z`,
+      posts: [0.12, 0.41, 0.7, 0.94].map((share) => ({
+        x: end * share,
         y: deckY + 7,
         h: Math.max(8, seaY + (height - seaY) * 0.62 - deckY),
       })),
