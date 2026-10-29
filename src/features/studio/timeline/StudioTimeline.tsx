@@ -11,6 +11,7 @@ import { StudioClipToolbar } from './StudioClipToolbar'
 import styles from './StudioTimeline.module.css'
 import { StudioTimelineClip } from './StudioTimelineClip'
 import { StudioTrackControls } from './StudioTrackControls'
+import type { StudioRulerTick } from './timeline-geometry'
 import { formatStudioTime, frameToPixel, pixelToFrame, studioContentEnd, studioPixelsPerSecond, studioRulerTicks, } from './timeline-geometry'
 import { studioTrackColor, studioTrackHue } from './track-hues'
 import type { StudioTimelineProps } from './types'
@@ -139,11 +140,32 @@ export function StudioTimeline(props: StudioTimelineProps) {
       props.project.ruler === 'bars' ? props.project.tempoBpm : undefined,
     ),
   )
-  // Grid and minor ticks are drawn by CSS from the major tick spacing.
-  const major = () => {
+  // Grid and minor ticks are drawn by CSS from the major tick spacing: from
+  // the step in frames, so it stays the same number at every scroll position.
+  const major = createMemo(() => {
     const [first, second] = ticks()
-    return second === undefined ? 80 : second.pixel - first.pixel
-  }
+    return second === undefined
+      ? 80
+      : frameToPixel(second.frame - first.frame, scale())
+  })
+  // A fixed set of label slots for the zoom: a scroll fills them again and
+  // hides the spare ones. It never adds or removes an element, because each
+  // one costs a style pass over the whole page (a :has() rule in the app's
+  // stylesheets watches every insertion).
+  const tickSlots = createMemo(
+    () =>
+      Array.from(
+        {
+          length: Math.min(
+            100,
+            Math.max(ticks().length, Math.floor(contentWidth() / major()) + 2),
+          ),
+        },
+        (_, slot) => slot,
+      ),
+    [],
+    { equals: (before, after) => before.length === after.length },
+  )
   const minorCount = () => {
     const [first, second] = ticks()
     if (props.project.ruler === 'bars' || second === undefined) return 4
@@ -429,17 +451,25 @@ export function StudioTimeline(props: StudioTimelineProps) {
                 }
               }}
             >
-              {/* By position: a scroll moves the same labels, it does not make new ones. */}
-              <Index each={ticks()}>
-                {(tick) => (
-                  <span
-                    class={styles.tick}
-                    style={{ left: `${tick().pixel}px` }}
-                    aria-hidden="true"
-                  >
-                    {tick().label}
-                  </span>
-                )}
+              {/* By slot: a scroll moves the same labels, it does not make new ones. */}
+              <Index each={tickSlots()}>
+                {(slot) => {
+                  const tick = (): StudioRulerTick | undefined =>
+                    ticks()[slot()]
+                  return (
+                    <span
+                      class={styles.tick}
+                      style={{
+                        left: `${tick()?.pixel ?? 0}px`,
+                        display: tick() === undefined ? 'none' : undefined,
+                      }}
+                      aria-hidden="true"
+                    >
+                      {/* Never empty: an empty label would be a new text node. */}
+                      {tick()?.label ?? ' '}
+                    </span>
+                  )
+                }}
               </Index>
               <span
                 class={styles.playheadCap}
