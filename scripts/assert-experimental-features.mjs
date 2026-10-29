@@ -23,6 +23,7 @@
 
 import { existsSync, readdirSync, readFileSync } from 'node:fs'
 import { join } from 'node:path'
+import { EXPERIMENTAL_ENTRY_SLUGS } from '../tools/experimental-features.ts'
 
 const root = process.argv[2] ?? 'dist'
 const mode = process.argv[3]
@@ -34,8 +35,8 @@ if (mode !== '--on' && mode !== '--off') {
 }
 const on = mode === '--on'
 
-/** Every experimental feature's pages: EXPERIMENTAL_ENTRY_SLUGS in tools/experimental-features.ts. */
-const SLUGS = ['studio-night']
+/** Every experimental feature's pages. */
+const SLUGS = Object.values(EXPERIMENTAL_ENTRY_SLUGS).flat()
 
 const failures = []
 const read = (file) => readFileSync(join(root, file), 'utf8')
