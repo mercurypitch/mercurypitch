@@ -168,6 +168,14 @@ As built, both in one PR:
 iPhone SE to Pro Max and a small Android, reduced motion, VoiceOver and
 TalkBack, and the short-phone media query the rooms already carry.
 
+Begun with phase 3's PR. At 375 by 667 and 360 by 640 an instrument ran
+under Merc's row and the console: neither the stage nor the instrument's
+figure had a track of its own size, so the instrument's `max-height: 100%`
+resolved to nothing. Both have one now. The instrument scales down to the
+stage and the plate scrolls inside it, and under 700 px the plate's number
+and staircase are smaller. Still to do: the devices themselves, VoiceOver
+and TalkBack.
+
 ## How each PR is checked
 
 - The repo's checks: `pnpm check`, the native app's `check`, `pnpm arch`,

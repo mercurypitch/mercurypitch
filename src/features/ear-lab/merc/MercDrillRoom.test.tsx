@@ -380,6 +380,9 @@ describe("the Field Book's page", () => {
       />
     ))
     expect(screen.getByTestId('merc-chip')).toHaveTextContent('Keyreading')
+    const pill = (): Element | null =>
+      screen.getByTestId('merc-chip').firstElementChild
+    expect(pill()).not.toHaveAttribute('data-settled')
     expect(screen.getByTestId('ear-stage')).toHaveAttribute(
       'data-station',
       'wild',
@@ -392,5 +395,7 @@ describe("the Field Book's page", () => {
 
     setKey('E minor')
     expect(screen.getByTestId('merc-chip')).toHaveTextContent('KeyE minor')
+    // The key found, the chip rings once.
+    expect(pill()).toHaveAttribute('data-settled')
   })
 })

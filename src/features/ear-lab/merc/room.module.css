@@ -148,6 +148,10 @@
   position: relative;
   min-height: 0;
   display: grid;
+  /* One track the stage's own size, so the instrument's and the plate's
+     100% is the stage's height: a short phone scales the instrument down
+     and scrolls the plate, rather than either running under the console. */
+  grid-template: minmax(0, 1fr) / minmax(0, 1fr);
   place-items: center;
 }
 
@@ -161,6 +165,8 @@
   height: 100%;
   max-height: 100%;
   display: grid;
+  /* A track the figure's own size, for the instrument's max-height. */
+  grid-template: minmax(0, 1fr) / minmax(0, 1fr);
   place-items: center;
   padding: 4px 0 8px;
   box-sizing: border-box;
@@ -262,6 +268,21 @@
 
 .pillWrong {
   border-color: rgb(255 106 92 / 60%);
+}
+
+/* A chip that has settled (the Field Book's key, found) rings once. */
+.pill[data-settled] {
+  animation: chip-settle 700ms var(--room-ease);
+}
+
+@keyframes chip-settle {
+  from {
+    box-shadow: 0 0 0 0 rgb(154 135 240 / 60%);
+  }
+
+  to {
+    box-shadow: 0 0 0 14px rgb(154 135 240 / 0%);
+  }
 }
 
 .level {
@@ -729,7 +750,7 @@
 }
 
 :is(.primary:has(~ .primary), .primary ~ .primary):disabled .leadChevron {
-  visibility: hidden;
+  color: rgb(244 241 255 / 32%);
 }
 
 /* ── Answer pads ───────────────────────────────────────────── */
@@ -1550,6 +1571,10 @@
 @media (prefers-reduced-motion: reduce) {
   .sheet {
     animation: fade-in 160ms ease both;
+  }
+
+  .pill[data-settled] {
+    animation: none;
   }
 
   .pad[data-look='waiting'] {
