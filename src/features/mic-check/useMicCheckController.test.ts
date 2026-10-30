@@ -13,7 +13,7 @@ import type { MicState } from '@/lib/mic-manager'
 import { micManager } from '@/lib/mic-manager'
 import type { OpenResult, ProbeResult, VoiceSession } from '@/lib/voice-session'
 import type { FakeCapture, FakeMediaDevices } from './fake-capture.fixture'
-import { audioInput, fakeCapture, fakeMediaDevices, fakeStream, fakeTrack, } from './fake-capture.fixture'
+import { audioInput, fakeCapture, fakeMediaDevices, fakeStream, fakeTrack, sine, } from './fake-capture.fixture'
 import type { MicCheckController } from './useMicCheckController'
 import { MIC_CHECK_ID, useMicCheckController } from './useMicCheckController'
 
@@ -23,13 +23,14 @@ const voice = vi.hoisted(() => ({
   /** The inputs the session was asked to switch to. */
   picked: [] as string[],
   close: vi.fn(),
+  probe: (): Promise<ProbeResult> => Promise.resolve('ok'),
 }))
 
 vi.mock('@/lib/voice-session', () => ({
   createVoiceSession: (): VoiceSession =>
     ({
       open: (): Promise<OpenResult> => Promise.resolve(voice.opened),
-      probe: (): Promise<ProbeResult> => Promise.resolve('ok' as ProbeResult),
+      probe: (): Promise<ProbeResult> => voice.probe(),
       context: () => voice.context,
       useDevice: (deviceId: string): Promise<ProbeResult> => {
         voice.picked.push(deviceId)
@@ -55,6 +56,7 @@ beforeEach(() => {
   voice.opened = { ok: true }
   voice.picked = []
   voice.close.mockClear()
+  voice.probe = () => Promise.resolve('ok')
   capture = fakeCapture()
   voice.context = capture.context
   devices = fakeMediaDevices([SCARLETT, BUILT_IN])
@@ -219,6 +221,104 @@ describe('useMicCheckController', () => {
     expect(voice.picked).toEqual([])
     expect(check.canSwitch()).toBe(false)
     expect(lines(check)).toContain('Karaoke started using the microphone')
+    check.dispose()
+  })
+
+  it('stops cleanly while its first probe is still running', async () => {
+    // Arrange: a probe that fails once the session closes under it.
+    let fail: (reason: unknown) => void = () => undefined
+    voice.probe = () =>
+      new Promise<ProbeResult>((_resolve, reject) => {
+        fail = reject
+      })
+    const unhandled: unknown[] = []
+    const onUnhandled = (reason: unknown): void => {
+      unhandled.push(reason)
+    }
+    process.on('unhandledRejection', onUnhandled)
+    const check = await listening()
+
+    // Act
+    check.stop()
+    fail(new TypeError("Cannot read properties of null (reading 'takeFrames')"))
+    await new Promise((resolve) => setTimeout(resolve, 0))
+
+    // Assert
+    process.off('unhandledRejection', onUnhandled)
+    expect(unhandled).toEqual([])
+    expect(check.phase()).toBe('idle')
+    check.dispose()
+  })
+
+  it('does not blame the input when MercuryPitch let go of it', async () => {
+    // Arrange: the manager stops the track itself when another tab asks for
+    // the microphone or the page goes to the background, so it reads ended.
+    const check = await listening()
+    Object.assign(track, { readyState: 'ended' })
+
+    // Act: the manager drops every hold, the check's with them.
+    tellConsumers([])
+
+    // Assert
+    expect(check.phase()).toBe('idle')
+    expect(check.events()[0]?.text).toBe(
+      'The microphone was closed under the check',
+    )
+    check.dispose()
+  })
+
+  it('says the input went away when the device ended it', async () => {
+    // Arrange
+    const check = await listening()
+    Object.assign(track, { readyState: 'ended' })
+    vi.mocked(micManager.getStream).mockReturnValue(null)
+
+    // Act: the stream is gone, the check's hold is kept.
+    tellConsumers([MIC_CHECK_ID])
+
+    // Assert
+    expect(check.events()[0]?.text).toBe('The microphone went away')
+    check.dispose()
+  })
+
+  it('gives the microphone lock back when it closes during a handoff', async () => {
+    // Arrange
+    let answer: (won: boolean) => void = () => undefined
+    vi.spyOn(micManager, 'takeOverFromOtherTab').mockReturnValue(
+      new Promise<boolean>((resolve) => {
+        answer = resolve
+      }),
+    )
+    const release = vi
+      .spyOn(micManager, 'releaseTakeoverIfUnused')
+      .mockResolvedValue()
+    const check = mounted()
+    const handoff = check.takeOver()
+
+    // Act: Settings closes before the other tab answers.
+    check.dispose()
+    answer(true)
+    await handoff
+
+    // Assert
+    expect(release).toHaveBeenCalledTimes(1)
+  })
+
+  it('keeps saying it hears singing between held notes', async () => {
+    // Arrange: a held A3 lands on its key.
+    const check = await listening()
+    capture.play(sine(220, 0.3))
+    let at = 1_000
+    for (; at < 1_400; at += 16) tick(at)
+    expect(check.verdict().kind).toBe('singing')
+
+    // Act: a breath, long enough for the note to let go.
+    capture.play(sine(220, 0))
+    for (; at < 1_800; at += 16) tick(at)
+
+    // Assert
+    expect(check.note()).toBeNull()
+    expect(check.verdict().kind).toBe('singing')
     check.dispose()
   })
 

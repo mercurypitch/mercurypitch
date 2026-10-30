@@ -785,7 +785,7 @@ export const WALKTHROUGH_STEPS: WalkthroughStep[] = [
     title: 'Check your microphone',
     targetSelector: '[data-tour="settings.mic-check"]',
     description:
-      'Start here on the Practice tab. Sing into the check and watch your notes land on their keys. It lists every connected input, marks the system default and the one MercuryPitch is hearing, and logs anything that takes the microphone over: a headset that just connected, a default that moved, another app that grabbed it.',
+      'Start here on the Practice tab. Sing into the check and watch your notes land on their keys. It lists every connected input, marks the system default and the one MercuryPitch is hearing, and logs whatever changes what it hears: a headset that just connected, a default that moved, an input your system paused.',
     placement: 'left',
     section: 'settings-practice',
     requiredTab: TAB_SETTINGS,

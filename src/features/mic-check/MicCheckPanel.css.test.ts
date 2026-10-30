@@ -11,6 +11,11 @@
 // way, so the browser suite never saw it. `min-width: 0` drops the minimum
 // WebKit carries over (WebKitGTK 2.54.2: 258 px at 320, 328 px at 390).
 //
+// The rest of the panel's phone contract: controls a fingertip tall on a
+// touch screen, a note name that keeps 3:1 on a light stage, and device
+// names shown whole, since the end of a long name is what tells two of a
+// kind apart.
+//
 // jsdom applies no CSS, so this reads the sheets as text.
 
 import { readFileSync } from 'node:fs'
@@ -36,6 +41,17 @@ function rules(css: string): { selector: string; body: Map<string, string> }[] {
         .filter(([property]) => property !== ''),
     ),
   }))
+}
+
+const PANEL = 'src/features/mic-check/MicCheckPanel.module.css'
+const FIRST_LIGHT = 'src/features/onboarding/beats/FirstLightMic.module.css'
+
+/** The part of `css` inside its touch-screen query. */
+function touch(css: string): string {
+  const at = css.indexOf('@media (pointer: coarse) {')
+  if (at < 0) return ''
+  const end = css.indexOf('@media', at + 1)
+  return css.slice(at, end < 0 ? undefined : end)
 }
 
 /** The sheets that draw the stage, in Settings and in First Light. */
@@ -71,4 +87,32 @@ describe("the mic check's stage", () => {
       expect(risky.map((rule) => rule.selector)).toEqual([])
     },
   )
+})
+
+describe("the mic check's controls and words", () => {
+  it('makes every control a fingertip tall on a touch screen', () => {
+    const controls = rules(touch(sheet(PANEL))).find(
+      (rule) => rule.selector === '.primary, .secondary, .deviceAction',
+    )
+    expect(controls?.body.get('min-height')).toBe('44px')
+  })
+
+  it("mixes the note's colour toward the text colour", () => {
+    const readout = rules(sheet(PANEL)).find(
+      (rule) => rule.selector === '.readoutNote',
+    )
+    expect(readout?.body.get('color')).toBe(
+      'color-mix(in oklab, var(--note) 55%, var(--text-primary))',
+    )
+  })
+
+  it.each([
+    [PANEL, '.deviceName'],
+    [FIRST_LIGHT, '.inputName'],
+  ])('shows a device name whole in %s', (file, selector) => {
+    const name = rules(sheet(file)).find((rule) => rule.selector === selector)
+    expect(name?.body.get('overflow-wrap')).toBe('anywhere')
+    expect(name?.body.has('text-overflow')).toBe(false)
+    expect(name?.body.get('white-space')).toBeUndefined()
+  })
 })

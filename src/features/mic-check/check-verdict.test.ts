@@ -122,6 +122,24 @@ describe('decideVerdict while not listening', () => {
     })
   })
 
+  it('tells a prompt closed without an answer from a blocked site', () => {
+    const refused = (permission: VerdictFacts['permission']) =>
+      decideVerdict(
+        idle({
+          permission,
+          openError: { kind: 'permission-denied', message: 'raw message' },
+        }),
+      )
+    expect(refused('prompt')).toMatchObject({
+      tone: 'warn',
+      title: 'The microphone prompt closed without an answer',
+      action: 'start',
+    })
+    expect(refused('denied').title).toBe(
+      'The microphone is blocked for this site',
+    )
+  })
+
   it('says another tab took the microphone, and what for', () => {
     const verdict = decideVerdict(
       idle({ lost: 'other-tab', otherTabLabel: 'the Karaoke room' }),

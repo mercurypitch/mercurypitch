@@ -247,7 +247,10 @@ export function MicCheckStage(props: MicCheckStageProps) {
       advanceRain(dt, layout)
       paint(layout, held?.midi ?? null, listening)
 
-      if (settled(listening)) {
+      // Park only once the check is off. While it listens, an input switch
+      // empties `live` for a moment, and nothing would wake a parked loop
+      // when the new input comes in.
+      if (settled(props.listening)) {
         lastAt = 0
         return
       }

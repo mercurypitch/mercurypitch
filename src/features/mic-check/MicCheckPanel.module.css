@@ -58,12 +58,16 @@
   pointer-events: none;
 }
 
+/* The note's own colour, mixed toward the text colour: alone, the bright
+   palette falls to 1.45:1 on the light stage (D, yellow); at this share the
+   worst note reads 3.8:1 there and 6.9:1 or better on the dark stages. */
 .readoutNote {
   font-size: 2rem;
   font-weight: 800;
   line-height: 1;
   letter-spacing: -0.02em;
   font-variant-numeric: tabular-nums;
+  color: color-mix(in oklab, var(--note) 55%, var(--text-primary));
 }
 
 .readoutDetail {
@@ -321,13 +325,13 @@
   color: var(--accent-text);
 }
 
+/* Whole, wrapping when it must: a phone cut "Scarlett 4i4 USB Analog
+   Surround 5.1 (1235:8212)" before the part that tells two of them apart. */
 .deviceName {
   grid-area: name;
-  overflow: hidden;
   font-size: 0.82rem;
   font-weight: 600;
-  white-space: nowrap;
-  text-overflow: ellipsis;
+  overflow-wrap: anywhere;
   color: var(--text-primary);
 }
 
@@ -438,6 +442,15 @@
 .eventTime {
   font-variant-numeric: tabular-nums;
   color: var(--text-muted);
+}
+
+/* Touch screens: every control as tall as a fingertip needs. */
+@media (pointer: coarse) {
+  .primary,
+  .secondary,
+  .deviceAction {
+    min-height: 44px;
+  }
 }
 
 @media (max-width: 480px) {
