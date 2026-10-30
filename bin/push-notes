@@ -120,11 +120,13 @@ EOF
 tree=$(git -C "$R" write-tree)
 parent=$(git -C "$R" rev-parse -q --verify "$REF" || true)
 if [ -n "$parent" ] && [ "$(git -C "$R" rev-parse "$parent^{tree}")" = "$tree" ]; then
+  # still push: a run cut off after its commit leaves the local ref ahead of the remote
   echo "notes unchanged (${parent:0:9})"
-  exit 0
+  c=$parent
+else
+  c=$(git -C "$R" commit-tree "$tree" ${parent:+-p "$parent"} -m "docs: lead notes, $(date -u '+%Y-%m-%d %H:%M') UTC")
+  git -C "$R" update-ref "$REF" "$c" ${parent:+"$parent"}
 fi
-c=$(git -C "$R" commit-tree "$tree" ${parent:+-p "$parent"} -m "docs: lead notes, $(date -u '+%Y-%m-%d %H:%M') UTC")
-git -C "$R" update-ref "$REF" "$c" ${parent:+"$parent"}
 for i in 1 2 3 4 5; do
   if git -C "$R" push -q -u origin "$REF:$REF"; then echo "notes pushed: ${c:0:9}"; exit 0; fi
   sleep $((2 ** i))
