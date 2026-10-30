@@ -24,12 +24,46 @@ export interface StudioFxProfile {
    * late as at 4x.
    */
   readonly oversample: Readonly<Record<StudioShaperEffect, OverSampleType>>
+  /**
+   * Reverbs that are not ducked send to one of three shared spaces
+   * (REVERB_SPACES) instead of each convolving on its own. Each keeps its
+   * own pre-delay, cuts and mix; its decay picks the space.
+   */
+  readonly reverbBus: boolean
 }
 
 /** Every effect as export renders it. */
 export const FULL_FX_PROFILE: StudioFxProfile = {
   id: 'full',
   oversample: { saturation: '4x', exciter: '4x', limiter: '4x' },
+  reverbBus: false,
+}
+
+/** The shared reverb spaces a reverb bus offers, by decay. */
+export type StudioReverbSpace = 'room' | 'hall' | 'long'
+
+/**
+ * Each space's impulse, from the role chains' reverbs: drums (0.8 s) and
+ * electric guitar (1.2 s) in the room, acoustic guitar (1.5 s), other
+ * (1.6 s) and piano (2.2 s) in the hall, keys (2.6 s) and backing vocals
+ * (2.8 s) in the long space. The voice's reverb is ducked, so it keeps its
+ * own.
+ */
+export const REVERB_SPACES: Readonly<
+  Record<
+    StudioReverbSpace,
+    { readonly decayS: number; readonly damping: number }
+  >
+> = {
+  room: { decayS: 1, damping: 60 },
+  hall: { decayS: 1.8, damping: 45 },
+  long: { decayS: 2.7, damping: 50 },
+}
+
+/** The shared space a reverb of `decayS` seconds sends to. */
+export function reverbSpace(decayS: number): StudioReverbSpace {
+  if (decayS < 1.35) return 'room'
+  return decayS < 2.4 ? 'hall' : 'long'
 }
 
 /** The oversampling `profile` asks of `effect`'s shapers; 4x without a profile. */

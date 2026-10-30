@@ -180,7 +180,9 @@ export function playInPlace(
   project: StudioProject,
   settings: StudioLiveSettings,
 ): boolean {
-  if (graphShape(run.project) !== graphShape(project)) return false
+  const profile = run.graph.profile()
+  if (graphShape(run.project, profile) !== graphShape(project, profile))
+    return false
   if (!followRepeat(run, settings.repeat)) return false
   if (missingLane(run, project, settings.drafts)) return false
   followInPlace(run, project, settings)
@@ -237,7 +239,8 @@ export function fitsInPlace(
   drafts: StudioDrafts,
 ): boolean {
   return (
-    graphShape(run.project) === graphShape(project) &&
+    graphShape(run.project, run.graph.profile()) ===
+      graphShape(project, run.graph.profile()) &&
     !missingLane(run, project, drafts)
   )
 }

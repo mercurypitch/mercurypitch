@@ -1,4 +1,6 @@
 // Studio live edits — which lanes a playing graph builds, who is heard, and what an edit changes.
+import type { StudioFxProfile } from '@/lib/studio-fx/fx-profile'
+import { FULL_FX_PROFILE, reverbSpace } from '@/lib/studio-fx/fx-profile'
 import { estimateTailSeconds } from '@/lib/studio-fx/render'
 import { StudioMemoryError } from '../memory-budget'
 import { studioLaneSpec } from '../model/arrangement-plan'
@@ -71,11 +73,26 @@ export function audibility(
   return (track) => !track.mute && (!hasSolo || track.solo)
 }
 
-/** A lane's effects by id and kind: what its chain is built from. */
-function effectList(track: StudioTrack): string[] {
-  return track.fx.baseSpec.effects.map(
-    (effect) => `${effect.id}:${effect.kind}`,
-  )
+/**
+ * A lane's effects by id and kind: what its chain is built from. On a
+ * reverb bus (graph-reverb-bus.ts) a reverb's shared space and whether it
+ * is ducked count too: a reverb cannot change either in place there, so a
+ * Space move that crosses into another space builds the lane a new chain.
+ */
+function effectList(
+  track: StudioTrack,
+  macros: StudioProject['mix']['macros'],
+  profile: StudioFxProfile,
+): string[] {
+  const played = profile.reverbBus ? studioLaneSpec(track, macros).effects : []
+  return track.fx.baseSpec.effects.map((effect) => {
+    const key = `${effect.id}:${effect.kind}`
+    const live = played.find((item) => item.id === effect.id)
+    if (live?.kind !== 'reverb') return key
+    return live.params.duck === 0
+      ? `${key}:${reverbSpace(live.params.decayS)}`
+      : `${key}:own`
+  })
 }
 
 const byId = <T extends { id: string }>(a: T, b: T) =>
@@ -86,14 +103,20 @@ const byId = <T extends { id: string }>(a: T, b: T) =>
  * lane that has any. Two projects with the same shape play through the same
  * graph; mix and sound settings move it in place.
  */
-export function graphShape(project: StudioProject): string {
+export function graphShape(
+  project: StudioProject,
+  profile: StudioFxProfile = FULL_FX_PROFILE,
+): string {
   const used = new Set(project.clips.map((clip) => clip.trackId))
   return JSON.stringify({
     clips: [...project.clips].sort(byId),
     lanes: project.tracks
       .filter((track) => used.has(track.id))
       .sort(byId)
-      .map((track) => [track.id, effectList(track)]),
+      .map((track) => [
+        track.id,
+        effectList(track, project.mix.macros, profile),
+      ]),
   })
 }
 
@@ -115,13 +138,16 @@ export function changedChains(
   after: StudioProject,
 ): string[] {
   const next = new Map(after.tracks.map((track) => [track.id, track]))
+  const profile = graph.profile()
+  const list = (track: StudioTrack, project: StudioProject) =>
+    JSON.stringify(effectList(track, project.mix.macros, profile))
   return before.tracks
     .filter((track) => {
       const moved = next.get(track.id)
       return (
         graph.hasLane(track.id) &&
         moved !== undefined &&
-        JSON.stringify(effectList(moved)) !== JSON.stringify(effectList(track))
+        list(moved, after) !== list(track, before)
       )
     })
     .map((track) => track.id)

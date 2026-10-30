@@ -25,8 +25,10 @@ import type { StudioGraphState } from './graph-passes'
 import { canLoop, laneRun, MIN_LOOP_SECONDS, repeatLanes, restartLanes, seekTime, stopRepeatingLanes, swapping, } from './graph-passes'
 import type { StudioReplan } from './graph-replan'
 import { replanGraph } from './graph-replan'
+import type { StudioReverbBuses } from './graph-reverb-bus'
+import { createReverbBuses, retrimLaneSends, sendTrim, } from './graph-reverb-bus'
 import type { StudioChainSwap } from './graph-swap'
-import { finishSwaps, settleSwaps, swapChains } from './graph-swap'
+import { finishSwaps, laneCrossing, settleSwaps, swapChains, } from './graph-swap'
 import { quietLane, settleIdleLanes, wakeLane } from './lane-idle'
 
 export type { StudioReplan } from './graph-replan'
@@ -217,10 +219,12 @@ interface StudioGraphParts {
   readonly master: StudioFxChain | null
   readonly lanes: StudioGraphLane[]
   readonly peaks: { tap: AudioNode; analysers: AnalyserNode[] } | null
+  readonly buses: StudioReverbBuses | null
 }
 
 function disposeParts(parts: StudioGraphParts): void {
   for (const lane of parts.lanes) disposeGraphLane(lane)
+  parts.buses?.dispose()
   parts.master?.dispose()
   parts.peaks?.tap.disconnect()
   for (const analyser of parts.peaks?.analysers ?? []) analyser.disconnect()
@@ -237,6 +241,7 @@ function buildParts(
   const output = ctx.createGain()
   const lanes: StudioGraphLane[] = []
   let master: StudioFxChain | null = null
+  let buses: StudioReverbBuses | null = null
   try {
     if (options.master) {
       master = createStudioFxChain(ctx, options.master.spec)
@@ -249,14 +254,19 @@ function buildParts(
       passStart: epoch - (fromFrame - plan.startFrame) / STUDIO_SAMPLE_RATE,
       fromFrame,
       profile: options.profile ?? FULL_FX_PROFILE,
+      buses: undefined as StudioReverbBuses | undefined,
+    }
+    if (place.profile.reverbBus) {
+      buses = createReverbBuses(ctx, place.output)
+      place.buses = buses
     }
     for (const lane of studioGraphLanes(plan, options.silentLanes))
       lanes.push(buildGraphLane(ctx, lane, place))
     const peaks =
       options.metering === true ? connectPeakAnalysers(ctx, output) : null
-    return { output, master, lanes, peaks }
+    return { output, master, lanes, peaks, buses }
   } catch (error) {
-    disposeParts({ output, master, lanes, peaks: null })
+    disposeParts({ output, master, lanes, peaks: null, buses })
     throw error
   }
 }
@@ -294,6 +304,7 @@ export function buildStudioGraph(
     fromFrame: options.fromFrame ?? plan.startFrame,
     pendingAt: -Infinity,
     profile: options.profile ?? FULL_FX_PROFILE,
+    buses: parts.buses,
   }
   const peakSamples = new Float32Array(PEAK_SAMPLES)
   const playing = () => !state.disposed && !state.parked
@@ -365,6 +376,8 @@ export function buildStudioGraph(
       if (state.disposed || !lane) return
       lane.chain.setSpec(spec)
       lane.dynamics = dynamicsIds(lane.chain.getSpec())
+      const trim = sendTrim(lane.chain.getSpec())
+      retrimLaneSends(ctx, lane.sends, trim, laneCrossing(lane))
     },
     setMasterSpec(spec) {
       if (!state.disposed) master?.setSpec(spec)
