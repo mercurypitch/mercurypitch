@@ -163,12 +163,14 @@ test.describe('Studio Play after Pause', () => {
     )
 
     // Measured in headless Chromium on Linux: the kept graph reached half
-    // level 125 to 136 ms after the press, a rebuilt one 210 to 220 ms; the
-    // build and its tenth-of-a-second lead are what a kept graph saves. The
-    // rest is the device callback, the chains' latency and the 90 ms attack.
+    // level 47 to 68 ms after the press, a rebuilt one 112 to 134 ms, both
+    // in steps of one device callback (10.7 ms). A rebuilt graph starts
+    // 60 ms after its build, so its new compressors settle first (run.ts),
+    // where a kept one starts a callback out (seekEarliest): 44 ms apart
+    // plus the build, a callback less when the steps fall against it.
     for (const kept of [warm, quiet, moved]) {
-      expect(kept.halfLevelMs!).toBeLessThan(rebuilt.halfLevelMs! - 50)
-      expect(kept.firstSoundMs!).toBeLessThan(rebuilt.firstSoundMs! - 50)
+      expect(kept.halfLevelMs!).toBeLessThan(rebuilt.halfLevelMs! - 25)
+      expect(kept.firstSoundMs!).toBeLessThan(rebuilt.firstSoundMs! - 25)
     }
   })
 })
