@@ -2000,3 +2000,20 @@ Note: the lanes' memory gate read a stale cgroup path after the 21:00 restart (f
   Freed /dev/shm: extract cache (4.4 GB) and the fallbacks (old film, l4fix) deleted; cgroup 1.2 GB.
   11:4x FILM1 critic launched (fresh motion-critic, xhigh, paths + disk note only; report to
   P/review/film-01/REPORT.md). Rate limit allowed. One agent running.
+- 12:2x FILM1 reported: ONE MORE PASS (P/review/film-01/REPORT.md, saved verbatim; LEDGER row 30;
+  DECISIONS 122 = the triage, corrected so the film does NOT grow now). Ten items: (1) the recall's
+  tiles pop on at 47.617 (12.8 % of pixels in one frame); (2) an empty frame before the tease,
+  469.85-471.0; (3) the end card complete for only 2.7 s, lower lines 34 px; (4) the brackets are
+  never laid over each other (2:04-2:12); (5) the same fall entrance six times; (6) the predict ring
+  floats at (620, 440); (7) tangled ghost outlines at 3:37; (8) the tile stack at 8 % of the frame,
+  58.8-59.7; (9) the zoom-in/climb/zoom-out pattern six times; (10) the tone rise at 10.4 unmarked.
+  Numbers: holds 11.4 s (0.7/30 s), longest 0.5 s; -16.0 LUFS, LRA 5.2, TP -1.5. Triage by group:
+  A = 1, 8, 10 + held A2, A3; B = 4, 9 + held B2, B3; C = 6, 7 + held C1, C2, C4; D = held D1-D3;
+  E = held E1, E2; F = 2, 3 + held F3; mine = 5 in part (Tavi's s05 and s06 falls become floor-level
+  leaps in from the right, 0.25 s earlier; an opt-in kit entrance in hosts.js). The end card's 5 s
+  hold waits for the re-voice: the m12 host passes end 0.08 s after S16's last frame (140.634 s),
+  so S16 stays 5.2 s now; group F completes the card by s16 0.87 and the end sting in script.json
+  grows 5.0 -> 6.5 s at the re-voice (in DELIVERY). YouTube's end screen starts on "Next time".
+  Polish round: $S/l4entr/polish/ (BRIEF-common.md, make-briefs.py, items-<G>.md -> BRIEF-<G>.md).
+  Waves (two at a time, xhigh): A + F, then B + C (after my leap entry), then D + E. Then a fresh
+  frozen copy, film-02 with the new render-l4.sh (seam loop), fresh critic FILM2.

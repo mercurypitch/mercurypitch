@@ -1330,3 +1330,44 @@ replaced it. The builder's record: critics never read it.
        - Item 3: the label masks leave 15 to 20 px stubs of the ghost's treads floating just before
          an "S" and a "T" (14.2 and 14.4): a tread segment that would end within 24 px of a label
          is dropped instead of clipped.
+
+122. **Film round 1 (critic FILM1, ONE MORE PASS): the polish round, by group.**
+     - The render: film-01 from the 08:17 frozen copy. Pieces 9 and 10 first came out with blank
+       first frames, then a frame of the opening (a new browser capturing before its seek lands),
+       and were re-rendered; `render-l4.sh` now checks every seam and re-renders a bad piece after
+       its predecessor on one browser. The critic judged the repaired film.
+     - Group A: FILM1 1 (the tile row's rise fades in from 0, eased over at least 8 frames, and
+       starts by 47.5 so the 0.3 s still goes; the design stays S4a's retrieval over the dimmed
+       staircase, not a fold), 8 (S4c's stand-up keeps the subject large: rotate at a larger scale
+       or start the stretch earlier, so it never shrinks to about 8 % of the frame), 10 (a 2-row
+       tick beside do as the staircase rises, 10.4 to 10.9); held items 2 and 3 (decision 118).
+     - Group B: FILM1 4 (the brief's mute item: the C-F group lifts and sets over G-C, the shared
+       shape laid over itself, for about 1 s at 2:04 to 2:12), 9 (S6's measuring stays at F0: no
+       push to F-low, no truck to F-high, no pull at 115.3 to 124.0, so the zoom, climb and zoom-out
+       pattern does not run twice in 35 s); held items 2 (only where a framing over 1.5x remains)
+       and 3 (decision 121).
+     - Group C: FILM1 6 (the predict ring docks at the pills' right end, as the recap cards'; this
+       replaces held item 3), 7 (3:37.3 to 3:39: one offset ghost with a "same shape" label, or
+       none); held items 1, 2 and 4 (decision 119).
+     - Group D: held items 1 to 3 (decision 107). FILM1 names nothing in D.
+     - Group E: held items 1 and 2 (decision 111).
+     - Group F: FILM1 2 (the practise card exits over 0.3 s or more, the travelling rung grows
+       about 2.5x, as held item 2 proposed, and "NEXT TIME" and "support" land within 0.3 s), 3 (the
+       end card is complete by 480.2 and its two lower lines measure at least 44 px tall); held
+       item 3 (decision 115).
+     - Mine: FILM1 5, in part: Tavi's two falls through the top-right labels (1:50 and 2:15, s05
+       and s06) become floor-level leaps in from the right edge, each starting 0.25 s earlier, as
+       held B item 1 asked; the kit gets the leap as an opt-in entry and the other four falls stay.
+       FILM1 3's hold, not now: S16 is 5.2 s and the m12 host passes end 0.08 s after its last
+       frame (140.634 s), so lengthening the film would leave the hosts without frames. Group F
+       completes the card about 0.9 s into S16 instead (a full hold of about 4.3 s), and at the
+       re-voice, which re-times the film and re-renders every host pass anyway, the end sting in
+       script.json grows from 5.0 to 6.5 s (a full hold of about 5.8 s). The YouTube end screen
+       starts on "Next time" (YOUTUBE.md), so none of its elements waits on the card.
+     - Dropped, not named by the film critic: held A item 1 (S4's empty lower third), held D item 5
+       (the dust motes) and held F item 1 (the gold corner).
+     - For a human, in DELIVERY.md: the viewer's-turn silence (6:38 to 6:45) on YouTube; the
+       whooshes by ear; phone speakers; the final voices (the scratch takes are still in); captions.
+     - Not actionable: audio.md's "harsh" flags (the music-only render holds only the pad, so the
+       narration counts as an effect); the zooms that read as zooms, not dollies, which the kit's
+       depth cues (decisions 89, 93 and 106) were meant to answer, noted for the next film.

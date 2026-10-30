@@ -24,10 +24,16 @@ SEGF=${SEGF:-1500}
 # about 2.2 GB in s12-s13: four workers were killed twice and three once on 30 Oct (dmesg;
 # memory.oom_control oom_kill), which the renderer reports as a capture stall. Two is the default.
 WORKERS=${WORKERS:-2}
-# Seams: a fresh browser can capture a piece's first frames before its seek lands (blank frames, then
-# a frame of the film's opening: film-01's pieces 9 and 10 on 30 Oct). seamcheck.py finds such pieces;
-# each is dropped from the piece list and re-rendered with --resume, at most SEAM_TRIES times.
+# Seams: a browser that is new (recycled every 3 pieces by default) and jumps straight to a piece's
+# start can capture its first frames before the seek lands: blank frames, then a frame of the film's
+# opening (film-01 pieces 9, 10, 11 followed the first recycles on 30 Oct; 9 and 10 broke, and piece
+# 10 broke again on a fresh browser in the repair). Warm browsers jumping ahead were always clean.
+# seamcheck.py finds such pieces. Each bad piece and the one before it are dropped from the piece
+# list and re-rendered with --resume on one browser that is never recycled, so the bad piece follows
+# its predecessor without a jump; at most SEAM_TRIES rounds.
 SEAM_TRIES=${SEAM_TRIES:-3}
+RUN_WORKERS=$WORKERS
+RECYCLE=${HF_SEGMENT_BROWSER_RECYCLE:-3}
 SEAMCHECK=/tmp/claude-0/-home-user-mercurypitch/12ae313e-03fe-590a-b304-88d38ce9e159/scratchpad/seamcheck.py
 EXTRA="--keep-segments"
 [ "${RESUME:-0}" = 1 ] && EXTRA="$EXTRA --resume"
@@ -44,13 +50,13 @@ fi
 tries=0
 while :; do
   (cd "$SRC" && TMPDIR=/dev/shm HF_SEGMENTED_CAPTURE=true HF_SEGMENT_FRAMES=$SEGF \
-    HYPERFRAMES_RENDER_DETACHED=1 HYPERFRAMES_SKIP_SKILLS=1 HYPERFRAMES_NO_TELEMETRY=1 \
-    npx --yes hyperframes@0.8.97 render --fps "$FPS" --quality "$Q" --workers "$WORKERS" --strict $EXTRA \
+    HF_SEGMENT_BROWSER_RECYCLE=$RECYCLE HYPERFRAMES_RENDER_DETACHED=1 HYPERFRAMES_SKIP_SKILLS=1 HYPERFRAMES_NO_TELEMETRY=1 \
+    npx --yes hyperframes@0.8.97 render --fps "$FPS" --quality "$Q" --workers "$RUN_WORKERS" --strict $EXTRA \
     --output $OUT/$NAME.mp4) >> renders/$NAME.log 2>&1
   code=$?
   echo "$(date -u +%T) render end exit $code" >> $ST
   [ $code -eq 0 ] || break
-  seams=$(cd /dev/shm && python3 -I "$SEAMCHECK" $OUT/$NAME.mp4 --seg $SEGF --fps $FPS 2>&1 | tee renders/$NAME.seams | tail -1)
+  seams=$(cd /dev/shm && python3 -I "$SEAMCHECK" $OUT/$NAME.mp4 --seg $SEGF --fps $FPS 2>&1 | tee /home/user/mercurypitch/output/motion/lesson-04/renders/$NAME.seams | tail -1)
   echo "$(date -u +%T) seams: $seams" >> $ST
   case "$seams" in
     CLEAN) break ;;
@@ -61,7 +67,9 @@ while :; do
   if [ $tries -gt $SEAM_TRIES ]; then
     code=4; echo "$(date -u +%T) seams still bad after $SEAM_TRIES re-renders; pieces kept" >> $ST; break
   fi
-  python3 -I - "$SRC/renders/.hf-segments" ${seams#BAD } >> $ST 2>&1 <<'PY'
+  drop=""
+  for k in ${seams#BAD }; do drop="$drop $((k - 1)) $k"; done
+  python3 -I - "$SRC/renders/.hf-segments" $drop >> $ST 2>&1 <<'PY'
 import glob, json, os, sys
 root, bad = sys.argv[1], {int(x) for x in sys.argv[2:]}
 for mf in glob.glob(os.path.join(root, "*", "segments.json")):
@@ -73,8 +81,11 @@ for mf in glob.glob(os.path.join(root, "*", "segments.json")):
     json.dump(m, open(mf, "w"), indent=2)
     print(f"dropped pieces {sorted(bad)} from {os.path.basename(os.path.dirname(mf))}, {len(m['completed'])} kept")
 PY
-  echo "=== seam re-render $tries $(date -u +%T)" >> renders/$NAME.log
+  echo "=== seam re-render $tries $(date -u +%T): pieces$drop, 1 worker, no recycling" >> renders/$NAME.log
+  echo "$(date -u +%T) seam re-render $tries: pieces$drop, 1 worker, no recycling" >> $ST
   EXTRA="--keep-segments --resume"
+  RUN_WORKERS=1
+  RECYCLE=0
 done
 if [ $code -eq 0 ]; then
   want=$(grep -o '"durationSeconds":[0-9.]*' renders/$NAME.log | tail -1 | cut -d: -f2)
