@@ -7,12 +7,15 @@
 // that is the question. At the reveal the detuned pair's second bob
 // hangs out of phase with the first, and the nameplate says how fast
 // the beats ran.
+//
+// The native room draws it its own way (instrument-skin.ts).
 // ============================================================
 
 import type { JSX } from 'solid-js'
 import { For, Show } from 'solid-js'
 import { beatWord } from '@/lib/ear/beat'
 import styles from './EarInstruments.module.css'
+import { skinnable } from './instrument-skin'
 
 export interface BeatReveal {
   /** Which dyad was detuned. */
@@ -20,7 +23,7 @@ export interface BeatReveal {
   rateHz: number
 }
 
-interface BeatPendulumsProps {
+export interface BeatPendulumsProps {
   /** The dyad sounding now: 1, 2, or 0 for none. */
   sounding: 0 | 1 | 2
   reveal: BeatReveal | null
@@ -35,7 +38,7 @@ function bobX(cx: number, offset: number, swing: number): number {
   return cx + offset + swing
 }
 
-export function BeatPendulums(props: BeatPendulumsProps): JSX.Element {
+function DrawnBeatPendulums(props: BeatPendulumsProps): JSX.Element {
   const label = () =>
     props.reveal
       ? `Beat pendulums: the ${props.reveal.pair === 1 ? 'first' : 'second'} pair was beating, ${beatWord(props.reveal.rateHz)}`
@@ -120,3 +123,5 @@ export function BeatPendulums(props: BeatPendulumsProps): JSX.Element {
     </svg>
   )
 }
+
+export const BeatPendulums = skinnable('BeatPendulums', DrawnBeatPendulums)
