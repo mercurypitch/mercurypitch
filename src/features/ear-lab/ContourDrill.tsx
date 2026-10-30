@@ -21,6 +21,7 @@ import { CONTOUR_BANK } from '@/lib/ear/banks'
 import { findIdentificationDrill } from '@/lib/ear/drills'
 import { compareSequence, CONTOUR_TIMING, sleep } from '@/lib/ear/timing'
 import { EAR_LAB_WITH_MERC } from '@/lib/native-build'
+import { IconDown, IconSame, IconUp } from './ear-icons'
 import { playToneFor } from './ear-sound'
 import type { IdentificationCompare } from './IdentificationDrillView'
 import { IdentificationDrillView } from './IdentificationDrillView'
@@ -30,9 +31,9 @@ import type { IdentificationTrial } from './use-identification-controller'
 import { useIdentificationController } from './use-identification-controller'
 
 const DIRECTIONS = [
-  { id: 'up', label: 'Up', name: 'Up' },
-  { id: 'down', label: 'Down', name: 'Down' },
-  { id: 'same', label: 'Same', name: 'The same' },
+  { id: 'up', label: 'Up', name: 'Up', icon: () => <IconUp /> },
+  { id: 'down', label: 'Down', name: 'Down', icon: () => <IconDown /> },
+  { id: 'same', label: 'Same', name: 'The same', icon: () => <IconSame /> },
 ] as const
 
 function asDirection(id: string | null): ContourDirection | null {
@@ -62,6 +63,8 @@ export function ContourDrill(props: { onBack: () => void }): JSX.Element {
   if (!drill) throw new Error('contour drill missing from catalogue')
 
   const [sounding, setSounding] = createSignal<0 | 1 | 2>(0)
+  /** The pair's gap in cents, for the reveal. */
+  const [gap, setGap] = createSignal(0)
 
   /** Which pair (or replay) is the live one. A flag reset at the top of
    *  every pair let a pair still sounding when Stop and Begin came within
@@ -102,6 +105,7 @@ export function ContourDrill(props: { onBack: () => void }): JSX.Element {
     }
 
     const playPair = async (toneMs: number, gapMs: number): Promise<void> => {
+      setGap(gapCents)
       await soundPair(direction.id, toneMs, gapMs, ++pair)
     }
 
@@ -151,7 +155,11 @@ export function ContourDrill(props: { onBack: () => void }): JSX.Element {
       prompt="Two quick tones. Which way did the second one go?"
       listenHint="Listen…"
       answerHint="Which way did it move?"
-      choices={DIRECTIONS.map((d) => ({ id: d.id, label: d.label }))}
+      choices={DIRECTIONS.map((d) => ({
+        id: d.id,
+        label: d.label,
+        icon: d.icon,
+      }))}
       columns={3}
       controller={controller}
       revealName={(id) => DIRECTIONS.find((d) => d.id === id)?.name ?? id}
@@ -169,6 +177,7 @@ export function ContourDrill(props: { onBack: () => void }): JSX.Element {
                     controller.answeredId() !== controller.expectedId()
                       ? asDirection(controller.answeredId())
                       : null,
+                  cents: gap(),
                 }
               : null
           }

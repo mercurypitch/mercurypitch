@@ -36,6 +36,8 @@ export interface IdentificationChoice {
   id: string
   label: string
   sub?: string
+  /** Drawn over the name in the native room (StagePad's icon). */
+  icon?: () => JSX.Element
 }
 
 interface IdentificationDrillViewProps {
@@ -424,6 +426,7 @@ export function IdentificationDrillView(
                       keycap={keycap(i())}
                       label={choice.label}
                       sub={choice.sub}
+                      icon={choice.icon?.()}
                       state={padState(choice.id)}
                       lamp={props.padLamp?.(choice.id)}
                       disabled={phase() !== 'answer'}

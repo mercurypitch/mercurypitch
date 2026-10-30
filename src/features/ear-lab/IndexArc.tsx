@@ -12,8 +12,9 @@
 import type { JSX } from 'solid-js'
 import { For, Show } from 'solid-js'
 import styles from './EarInstruments.module.css'
+import { skinnable } from './instrument-skin'
 
-interface IndexArcProps {
+export interface IndexArcProps {
   /** Which note is sounding: 1, 2, or 0. */
   sounding: 0 | 1 | 2
   /** The second note has sounded and the answer is open. */
@@ -43,7 +44,7 @@ function degrees(semitones: number): number {
   return (semitones / 12) * 180
 }
 
-export function IndexArc(props: IndexArcProps): JSX.Element {
+function DrawnIndexArc(props: IndexArcProps): JSX.Element {
   const label = () =>
     props.reveal
       ? `Index arc swept ${props.reveal.semitones} semitones from the root: ${props.reveal.name}`
@@ -149,3 +150,5 @@ export function IndexArc(props: IndexArcProps): JSX.Element {
     </svg>
   )
 }
+
+export const IndexArc = skinnable('IndexArc', DrawnIndexArc)
