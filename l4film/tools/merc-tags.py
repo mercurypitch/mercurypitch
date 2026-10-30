@@ -27,10 +27,14 @@ n as floor((n / FPS - start) * FPS) into frames extracted from media-start
 written in frames: the clip starts half a frame before its first film frame
 (or at the scene's own start, when the pass is already running there, so a
 lab render's frame at scene time 0, which is no film frame, shows it too) and
-ends half a frame after its last, and media-start sits half a frame past the
-wanted source frame. Every value is then half a frame from any rounding
-edge, three-decimal rounding cannot tip it, and film frame n shows pass frame
-n - P exactly, across scene cuts too (no repeated or skipped frame).
+ends half a frame after its last (or after the film frame that follows the
+scene, when the pass plays on past it: that frame is the next scene's, where
+this scene no longer shows, and a lab render's last frame, which can fall
+between the scene's last film frame and its end, shows it too), and
+media-start sits half a frame past the wanted source frame. Every value is
+then half a frame from any rounding edge, three-decimal rounding cannot tip
+it, and film frame n shows pass frame n - P exactly, across scene cuts too
+(no repeated or skipped frame).
 
 A drop pass has an intro (merc/intros.json, from merc-shots.py): the videos
 that play before it, each from its `from` to its `until` film frame (a tall
@@ -82,15 +86,16 @@ def window(pass_id, scene_id, lead=0.0):
     k = round(lead * fps)                           # lead, in pass frames
     s0 = math.ceil(sc['start'] * fps - 1e-6)        # the scene's first film frame
     s1 = math.ceil(sc['end'] * fps - 1e-6) - 1      # and its last
+    last = P + N - 1 - k                             # the film frame of the pass's last frame
     n0 = max(s0, P - k)
-    n1 = min(s1, P + N - 1 - k)
+    n1 = min(s1, last)
     if n1 - n0 + 1 < 2:
         return None
     start = sc['start'] if n0 == s0 else (n0 - 0.5) / fps   # half a frame before n0, or the scene's start
     ds = round(start - sc['start'], 3)
     vc = math.ceil((sc['start'] + ds) * fps - 1e-6)  # the film frame the renderer counts from
     assert vc == n0, (pass_id, scene_id, vc, n0)
-    dur = round((n1 + 0.5) / fps - (sc['start'] + ds), 3)
+    dur = round((min(s1 + 1, last) + 0.5) / fps - (sc['start'] + ds), 3)   # see the docstring
     media = round((n0 - P + k + 0.5) / fps, 3)
     return ds, dur, media
 
@@ -105,15 +110,16 @@ def seg_window(seg, scene_id):
     P = round(shot['filmStart'] * fps)              # film frame of the video's frame 0
     s0 = math.ceil(sc['start'] * fps - 1e-6)
     s1 = math.ceil(sc['end'] * fps - 1e-6) - 1
+    last = min(P + seg['frames'] - 1, seg['until'] + 1)
     n0 = max(s0, P, seg['from'] - 1)
-    n1 = min(s1, P + seg['frames'] - 1, seg['until'] + 1)
+    n1 = min(s1, last)
     if n1 - n0 + 1 < 2:
         return None
     start = sc['start'] if n0 == s0 else (n0 - 0.5) / fps
     ds = round(start - sc['start'], 3)
     vc = math.ceil((sc['start'] + ds) * fps - 1e-6)
     assert vc == n0, (seg['shot'], scene_id, vc, n0)
-    dur = round((n1 + 0.5) / fps - (sc['start'] + ds), 3)
+    dur = round((min(s1 + 1, last) + 0.5) / fps - (sc['start'] + ds), 3)
     media = round((n0 - P + 0.5) / fps, 3)
     return ds, dur, media
 

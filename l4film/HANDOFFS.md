@@ -180,7 +180,7 @@ equally.
 | Time          | Move         | From       | To         | Ease                            | Notes                                                                                                                                                                               |
 | ------------- | ------------ | ---------- | ---------- | ------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | 0.00-32.80    | drift (push) | F-cold     | F-cold end | power1.inOut                    | about the screen point (960, 486); not counted as motion                                                                                                                            |
-| 32.95-33.88   | dolly (push) | F-cold end | F-house    | power3.in                       | the two lines left up fast at 32.85 to 33.15; the Mercs slid out 32.80 to 33.40                                                                                                     |
+| 32.95-33.88   | pass-through | F-cold end | F-house    | power3.in                       | the two lines left up fast at 32.85 to 33.15; the Mercs slid out 32.80 to 33.40                                                                                                     |
 | 37.58         | cut          | -          | F-cold     | -                               | S3 opens at 1.2                                                                                                                                                                     |
 | 44.40-46.90   | pull and pan | F-cold     | F0         | power2.inOut                    | the compact rows widen to x 220 to 1680 over 46.3 to 46.9                                                                                                                           |
 | 79.80-81.30   | push         | F0         | CU-A       | power2.inOut                    |                                                                                                                                                                                     |
@@ -240,21 +240,23 @@ Outside these moves the camera is still. S8 holds F0 from 196.6 to 229.2 (signat
   left of the house on D. "finished on do" and "restless on ti?" serif italic 110 px at x 140,
   baselines 300 and 420 (x 140 to 696 and 140 to 656). The house on the top stair: centre x 1464, y
   246 to 308 on C and 184 to 246 on D. Beads rest on stair 1 at (456, 673) on C and (456, 611) on D,
-  on the top stair at (1464, 299) on C and (1464, 236) on D. Merc's bead leaves his mouth at about
-  (270, 664) **(provisional: the pass's mouth point)** and lands on stair 1 at 0.60; Tavi's drops
+  on the top stair at (1464, 299) on C and (1464, 236) on D. Merc's bead leaves his mouth at
+  (261, 781) on m01-blue (builder A's confirmed point; BUILD-GUIDE § Handoff confirmations) and
+  lands on stair 1 at 0.60; Tavi's drops
   onto stair 1 on D (14.79 to 14.99, § Shared formulas), so it crosses neither the staircase nor the
   house, nor passes under "still hanging?" and its fading ring timer. stop-c's and stop-d's notes
   land 0.45 s apart (0.60 to 3.30 and 14.99 to 17.69); land-d's last hop lands on the top stair at
   23.14 and the bead rises into the house (23.2 to 23.5).
 - **S1g.** At 32.80 the frame is F-cold end. The two lines leave up 60 px and fade (32.85 to 33.15,
   power3.in, unscaled). Merc slides to feet x -130 and Tavi to 2050 (32.80 to 33.40, power2.in), off
-  the frame by 19 px and more. The dolly runs 32.95 to 33.88. From 33.30 the house's glow grows
+  the frame by 19 px and more. The pass-through runs 32.95 to 33.88. From 33.30 the house's glow grows
   toward the lens, blurring the house's edges away, until the field covers the frame at 33.88; it
   holds, breathing 2 % in brightness, to the cut.
 - **S1 to S2 (34.18).** The same full-frame field on both sides of the cut: a smooth radial
   field, chrome `#c3ccd6` at 75 % over the ground at the frame's centre falling to 35 % at the
   corners, no edges, mean brightness 110 to 125 of 255 (Lesson 2's field peaks at 122). S2 shrinks
-  it into the bead on the staff's middle line over 34.18 to 34.48 (expo.out); the title lands from
+  it into the bead on the staff's middle line over 34.18 to 34.48 (power2.out, Lesson 2's curve;
+  DECISIONS 106); the title lands from
   34.44; the five notes hop in with the chimes at 34.23, 34.32, 34.41, 34.50 and 34.59.
 - **S2 to S3 (37.58).** Both scenes draw the staircase and the bead from the same module and from
   `T`. The staff fades 36.9 to 37.5 while the staircase on D fades up under it in F-cold (36.9 to
@@ -281,7 +283,8 @@ Outside these moves the camera is still. S8 holds F0 from 196.6 to 229.2 (signat
   each 280 x 24, left edge x 220, centred on rows C4 to C5 (y 677 down to y 365 for C5). Phase 2
   (59.4 to 60.4): each sliver widens to x 220 to 1680, the dark ones landing as the black-key rows;
   the cold open's rows fade out under them (59.4 to 60.4); rows C♯5 to G5 fade in (60.0 to 60.5).
-  **(provisional: the lab decides the pivot and the curves)**.
+  As built, the pivot moves from (240, 560) to (360, 677), and the curves are as BUILD-GUIDE §
+  Handoff confirmations records them.
 
 ## A to B (S4 to S5 at 69.35)
 
@@ -376,7 +379,8 @@ keys at full and the rest at 45 %, no key names.
   their letters ink). The house beside do (11c) at x 916 to 972, its base on the top shelf.
 - **S11's labels.** "learned, it seems" Outfit 600 48 px at x 1250, baseline 320; "one short step"
   at x 1250, baseline 400, a hairline from its left end to the ti-do riser's top (1078, 352), drawn between the stair blocks and the risers so the gold corner stays whole; "leading
-  note" Outfit 600 64 px riding the world at x 660, baseline 300 on C (x 780, baseline 248 on D);
+  note" Outfit 600 64 px riding the world, centred over ti with a hairline down to its tread (as
+  built, DECISIONS 107: x 840 to 1195, baseline about 250 on C; it rides the slide to D);
   "ti = C♯" Outfit 600 48 px, frame-fixed at x 1360, baseline 300 on D.
 
 ## D to E (S11 to S12 at 341.24)
@@ -501,16 +505,21 @@ ended 405.2; Tavi has stood there since S13a; m12 spans the cut). Every mark of 
   the top house leaves and returns with the bottom one); on "joined" (418.23) and "tone" (419.05)
   the F-G riser grows and its "T" scales 1.2 about its centre. One ripple only, the stairs lighting
   in turn on "steps" (b46, 408.29, 0.07 s apart). Between two cards the panel leaves with one card's
-  lines and comes back with the next's; it never shows empty, not even for a dip.
+  lines and comes back with the next's; it never shows empty, not even for a dip (as built,
+  DECISIONS 105: card 3's panel leaves 443.01 to 443.44 and card 4's comes in 443.51 to 443.71;
+  card 3's arrives at 429.24, while card 2's is still fading).
 - **The ladder (S14f).** The strip slides out and the stair blocks, names, risers, rows, houses and
   hairlines fade (453.9 to 454.5), leaving the eight treads, which become the sung line and the
   rungs (454.0 to 455.2). It draws large first (DECISIONS 97, 102): the panel fills the frame above
-  the Mercs, about x 240 to 1680 and y 160 to 720, 20 px or more from their bodies and speech marks,
-  pitch at 30 px a semitone, rungs 90 px wide or more with strokes from 100 % down to 45 %; the
-  builder sets the rest in the same proportions and reports it (round 1's large layout, x 200 to
-  1720 and y 140 to 620 at 24 px, left the frame's lower 40 % empty). The sung line's A4 part starts
-  as a stub at the break and draws on to the playhead on "sing a major scale back" (456.51 to
-  457.74), so the panel changes while it is described. Over 459.4 to 460.0 it eases to its
+  the Mercs, x 240 to 1672 and y 160 to 720, 20 px or more from their bodies and speech marks (as
+  built, DECISIONS 105: Tavi's marks reach x 1692, Merc's come no closer than 32 px), pitch at 30
+  px a semitone (G4 at y 658, A4 598, B4 538, C5 508, D5 448, E5 388, F♯5 328, G5 298), the
+  playhead at x 884.4 (y 286 to 684), six rungs 90 px wide at x 990.7 to 1522.3 (106.3 px apart)
+  with strokes from 100 % down to 45 %, the title at (272.5, 250) and "ILLUSTRATION" right-aligned
+  to x 1639.5 (round 1's large layout, x 200 to 1720 and y 140 to 620 at 24 px, left the frame's
+  lower 40 % empty). The sung line's A4 part starts as a stub at the break (20 px, from x 630.5)
+  and draws on to the playhead on "sing a major scale back" (456.51 to 457.74), so the panel
+  changes while it is described. Over 459.4 to 460.0 it eases to its
   card-time box, below. Card-time box: panel x 300 to 1620, y 150 to 460; title "Scale Runner" at (330, 200),
   "ILLUSTRATION" right-aligned at (1590, 200). Playhead x 894 (45 % of the panel), a chrome line 2
   px at 35 %, y 220 to 440. Pitch at 16 px a semitone, G4 at y 422: A4 390, B4 358, C5 342, D5 310,
@@ -539,13 +548,17 @@ ended 405.2; Tavi has stood there since S13a; m12 spans the cut). Every mark of 
   "Singing Voice Range" swells 1.2 from its left edge (to x 1581 at most), never over the "›"
   before it. As built: lines 1 and 2 at 460.00 and 460.30, the underline at y 554, the phone line at
   465.69. Through the card pause each line's tab icon glows in turn with its line underlined (465.8,
-  466.6, 467.4, 468.2), More's last; nothing lights after More (DECISIONS 102).
+  466.6, 467.4, 468.2), More's last; nothing lights after More (DECISIONS 102; as built, decision
+  105: the address has no sweep of its own, and the pause's longest hold is 0.4 s, 469.19 to
+  469.59, the Mercs idling).
 - **S14 to S15 (470.24).** The Mercs in the corners at 300; the card and the ladder gone (469.7 to
   470.0) but for the ladder's top rung, do, which brightens to full and slides from its card-time
   place to (560, 520) over 469.9 to 471.9 (power2.inOut; DECISIONS 102: 2.0 s, so it carries the
   frame through "Next time." and lands just before "Singers") on one curve that both scenes compute
   from film time (`carryAt`), so it sits on the same pixels on both sides of the cut; it condenses
-  into S15's chrome bead over its last 0.4 s.
+  into S15's chrome bead over its last 0.4 s. As built (DECISIONS 105): its centre is at (1463.8,
+  235.7) on S14's last film frame (470.233) and (1461.0, 236.6) on S15's first (470.250); its peak
+  speed is 24 px a frame at 60 fps (470.88).
 - **S15.** The bead (the carried rung) at (560, 520) from 471.9; S15's echo rings fade with its
   type (from o14's end + 0.07, 0.3 s), so none crosses the cut to S16; '"support"' serif italic 160 px
   centred, baseline 420, landing on "Singers" (472.15); the long note at y 520 from x 560 to 1360; "what keeps it steady?" serif italic 96 px centred, baseline 680.

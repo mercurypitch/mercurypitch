@@ -969,3 +969,87 @@ replaced it. The builder's record: critics never read it.
        left (type drawn as paths, or rasterised layers that blur under a push) cost more than they
        buy. Where small type only rises a few px into place, its builder drops the rise and keeps
        the fade (builder E's round 3, item 2).
+
+105. **S14 to S16 after builder F's round 2 (component critic F-02's items), and Merc tags that
+     ended before a lab clip's last frame.**
+     - **As built** (all three clips at 60 fps, on the 20:49 kit; report
+       $S/l4entr/F-round2-report.txt):
+       - The carry runs 469.89 to 471.89 on `carryAt` in both scenes and lands as the bead at (560,
+         520) at 471.89. Its centre is (1463.8, 235.7) on S14's last film frame and (1461.0, 236.6)
+         on S15's first; its peak speed is 24 px a frame at 60 fps (60.4 at the old 0.8 s).
+       - The ladder's large layout: panel x 240 to 1672 and y 160 to 720 (the right edge 20 px from
+         Tavi's speech marks, which reach x 1692; Merc's come no closer than 32 px), 30 px a
+         semitone, the playhead at x 884.4, the rungs at x 990.7 to 1522.3. The A4 line lands as a
+         20 px stub at the break and draws on to the playhead over 456.51 to 457.74. Kept: the
+         waver on "one note at a time" and the first rung's brightening on "note". Dropped: the
+         waver on "sing" and the first rung's pulse on "major scale" (the draw-on is the beat
+         there).
+       - "Singing Voice Range" swells 1.2 from its left edge on "range" (461.49), to x 1580; the
+         "›" before it is untouched.
+       - The panel never shows empty: card 3's leaves 443.01 to 443.44 and card 4's arrives 443.51
+         to 443.71; card 3's arrives at 429.24, while card 2's is still fading.
+       - The card pause: each line's sweep runs with its icon's glow (465.80, 466.60, 467.40,
+         468.20), More's last; the address's own sweep (468.94) is gone. The longest hold is 0.4 s
+         (469.19 to 469.59).
+       - The arrow on "lean up" has S3's shape and ends 4 px from the house's wall.
+       - The five stair lights are each on a word (416.89 "semitone.", 420.49 "Start", 424.29
+         "need?", 446.29 "note", 452.09 "starts:"), so all five stay.
+       - Holds: S14 0.9 s (0.4 per 30 s, longest 0.4 s), S15 0.1 s, S16 0.1 s; check 0 errors in S14
+         to S16. Rows 14f and the carried-objects table, HANDOFFS § Recap, § The ladder, § The
+         practise card and § S14 to S15, and the s14 and s15 sheets now say the same.
+     - **Merc tags** (`tools/merc-tags.py`, 30 Oct 00:12). A tag whose pass plays on past its scene
+       now runs to half a frame after the film frame that follows the scene (the next scene's first,
+       where this one no longer shows) instead of half a frame after the scene's last film frame.
+       Builder F found S15's lab clip without the Mercs on its last frame (lab 8.283 s), which falls
+       between the scene's last film frame (8.274) and its end (8.286). The film's frames do not
+       change: no film frame inside any scene is newly covered, a tag now ends 1.5 frames after its
+       scene's last film frame and 0.9 frames or more after its lab clip's last frame, and every
+       pass has the frames it needs. 32 tags in 9 scenes were regenerated (S5, S7, S9, S10 and S12 to
+       S16); only tag attributes changed (backups in $S/l4entr/b105/). Each builder's next clips
+       carry it with no change of theirs.
+     - **The frozen S15 clip for critic F-03** is the director's re-render of F's lab project with
+       the new tags, made from a copy (F's lab files untouched): its frames 0 to 496 and its audio
+       are identical to F's clip, and its last frame, 497, now shows the Mercs.
+
+106. **S1 to S4 after component critic A-03 (S1 and S3 KEEP, S2 and S4 REVISE), and the near
+     bokeh's lift on gentle moves.**
+     - **The lift (A-03 item 3; kit, 30 Oct 00:21).** The near bokeh now lifts from 10 px a second
+       of slide against the diagram, full at 160, instead of from 40 to 400 (`frames.js`,
+       `apply`). In S3's pull (44.4 to 46.9) the discs' brightest pixels (p99) rise from 46 to 59
+       to 59 to 63, about S1's pass-through (57 to 62). Frames at rest, the slow drifts (S1 at 10
+       and 20 s) and S9's slow push (5, 9 and 13 s) do not change; S1's pass-through gains at most
+       9 levels at 33.3 and none at 33.6. Test projects in $S/l4entr/b106 (stills in
+       /dev/shm/l4b106).
+     - **Taken, for builder A's round 3:**
+       - Item 1 (S4): on "measure" (68.04) the stairs light in turn as row 4d says, each fill to
+         40 % chrome, 0.1 s apart, and all go back to unlit over 68.95 to 69.30, so S4 still ends
+         as § A to B has it. The lights replace the tread flash, which does not read at phone size.
+       - Item 2 (S2): the field's collapse into the bead eases power2.out over the same 34.18 to
+         34.48 (Lesson 2's curve), not expo.out.
+       - Item 4 (S3): stair 1 stays lit from the slide's landing until the naming wave reaches it,
+         instead of going out three frames before the wave lights it again.
+     - **Declined:** item 5 (S4's lower third without the strip for 9 s). The floor is the hosts'
+       stage (Tavi stands on it to 68.5, and Merc's corner is there), and the strip's entrance is
+       S5a's (B-03 KEEP). Bringing it in on "measure" would move the A to B handoff for a framing
+       every F0 scene shares. Item 1's lights fill the still stretch the item pointed at.
+     - **The board takes the build:** the white and the dark tiles count one at a time (row 4b,
+       as A-03 read them), stair 1's light (row 3b), the "measure" lights (row 4d), and S2's curve
+       (row 2, HANDOFFS § S1 to S2, the s02 sheet). HANDOFFS § Camera moves and § S1g call S1g's
+       move a pass-through, and § Inside A carries builder A's confirmed values (Merc's mouth
+       point (261, 781); the stand-up's pivot) in place of its two provisional marks.
+
+107. **S9 to S11 after component critic D-04 (all three KEEP).**
+     - **Items 1 to 3 are polish for builder D's next round,** which follows the film critic's
+       first round so that one round carries both: S10's "do re mi" fade in as each column clears
+       the frame's left edge during the pull, all by about 281.5 (they come at 281.98 now, after
+       their stairs); S11's sharps are at rest by 320.23, when the pull starts (they are still
+       lifted at 320.39); S9's pill widens with "fixed do: do = C" clipped inside it, so it never
+       shows empty (255.82 to 256.04).
+     - **Item 4:** the board takes the build. Row 9e records the bottom house riding up with stair
+       1's outline and fading back in on stair 1 (251.2 to 252.1), which carries "moved up to D".
+     - **Item 5** (dust motes about 10 px across at 2.4x, one on C♯5's face at 248.2 and one on the
+       F♯ chip at 319.9) stays: the dust is the room's and cosmetic at that size; the film critic
+       judges it.
+     - The board also records S10's lights as built (ti, then do, 276.8 to 278.0; row 10a) and
+       S11's "leading note" (centred over ti with a hairline down to its tread, x 840 to 1195,
+       baseline about 250 on C; row 11e and HANDOFFS § S11's labels).

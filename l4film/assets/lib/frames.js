@@ -154,10 +154,10 @@
           const m = cam.matrix(t, k, st)
           room[name].style.transform = `matrix(${m.a.toFixed(5)}, 0, 0, ${m.a.toFixed(5)}, ${m.e.toFixed(2)}, ${m.f.toFixed(2)})`
         }
-        // the near bokeh lifts while it slides against the diagram (from 40 to 400 px a second),
-        // so a move's depth shows as it happens and the frames at rest stay clean
+        // the near bokeh lifts while it slides against the diagram (from 10 to 160 px a second, so
+        // a gentle pull shows its depth too; DECISIONS 106), and the frames at rest stay clean
         if (room && room.bokeh) {
-          const u = clamp((cam.slide(t) - 40) / 360), w = u * u * (3 - 2 * u)
+          const u = clamp((cam.slide(t) - 10) / 150), w = u * u * (3 - 2 * u)
           room.bokeh.style.opacity = ((1 + (L.BOKEH_LIFT - 1) * w) / L.BOKEH_LIFT).toFixed(4)
         }
         if (room && room.staves) {

@@ -1711,3 +1711,27 @@ Note: the lanes' memory gate read a stale cgroup path after the 21:00 restart (f
   small type that only rises a few px drops the rise). E-fix3-msg item 2 rewritten accordingly.
 - Queue now: critic D-04 (critics/D4.txt) -> B small (B-fix4) -> C small (C-fix2) -> E round 3
   (E-fix3); F-03 when F reports; then B-04, C-03, E-03. Agents now: F + A-03.
+- 00:0x builder F handed back round 2 ($S/l4entr/F-round2-report.txt): every item in, 60 fps, holds S14 0.4/30 s
+  (longest 0.4), S15 0.1, S16 0.1; check 0 errors S14-S16. F found merc-tags left S15's lab clip without
+  Mercs on its last frame (lab 8.283 s, between the last film frame and the scene's end).
+- 00:12 tools/merc-tags.py fixed (DECISIONS 105): a tag whose pass plays on past its scene now ends half a
+  frame after the film frame that follows the scene. 32 tags in 9 scenes regenerated (backups $S/l4entr/b105/);
+  film frames unchanged (checked: no film frame newly covered; margins 1.5 frames film, >= 0.9 lab).
+  Frozen S15 clip for F-03 re-rendered by me from a copy of F's proj: frames 0-496 + audio identical,
+  frame 497 now has the Mercs. Docs aligned to F's round 2 as built (rows 14f + carried table; HANDOFFS
+  § Recap, § The ladder, § The practise card, § S14 to S15; s14/s15 sheets: carry 469.9-471.9).
+- 00:0x critic A-03 (saved): KEEP s01, s03; REVISE s02, s04. D-04 (saved): KEEP x3, polish only.
+- 00:1x critic F-03 launched (frozen $S/l4entr/f3/, prompt critics/F3.txt). E round 3 sent (E-fix3-msg +
+  105 + restart/PLAYWRIGHT_MODULE note). Agents now: F-03 + E.
+- 00:21 KIT: near bokeh lift ramp 10->160 px/s (was 40->400) in frames.js apply() (DECISIONS 106; test
+  $S/l4entr/b106: S3 pull disc p99 46-59 -> 59-63; drifts, S9 slow push unchanged). Full check running
+  ($S/l4entr/b106/check-after-106.log); baseline = lint 0/79, runtime 0, layout 1 error (s06 129.21), contrast 59/59.
+- DECISIONS 106 (A-03: items 1, 2, 4 to A; 5 declined; board rows 2, 3b, 4b, 4d; HANDOFFS § Camera moves,
+  § S1g, § S1 to S2, § Inside A provisional marks resolved) and 107 (D-04: items 1-3 wait for D's round
+  after the film critic's first; 4 + S10 ti-do lights + S11 "leading note" to the board; 5 stays).
+  LEDGER rows 21 (A-03), 22 (D-04). Backups $S/l4entr/b106/*.before-106.md.
+- Messages READY: A-fix3-msg.txt (new), B-fix4-msg.txt and C-fix2-msg.txt (both now carry 105, 106,
+  restart and PLAYWRIGHT_MODULE notes, disk 1.6 GB).
+- Queue: B small (B-fix4) -> A round 3 (A-fix3) -> C small (C-fix2); E-03 when E reports; F round 3 if
+  F-03 asks; then B-04, A-04, C-03. D's polish round after the film critic's first round. Then
+  integration + 60 fps film render.

@@ -5,10 +5,10 @@
     <div id="s13-your-turn" data-composition-id="s13-your-turn" data-start="0" data-duration="32.577" data-width="1920" data-height="1080">
       <div class="scene" id="s13-your-turn-scene"></div>
       <!-- Merc passes, static (trap 4); timing written by python3 tools/merc-tags.py s13-your-turn -->
-      <video id="s13-your-turn-m12-blue" data-merc="m12-blue" class="clip" muted playsinline src="assets/merc/m12-blue-merc.webm" data-start="0.000" data-duration="32.575" data-media-start="29.742"></video>
-      <video id="s13-your-turn-m12-blue-refl" data-merc="m12-blue" data-merc-refl class="clip" muted playsinline src="assets/merc/m12-blue-merc.webm" data-start="0.000" data-duration="32.575" data-media-start="29.742"></video>
-      <video id="s13-your-turn-m12-orange" data-merc="m12-orange" class="clip" muted playsinline src="assets/merc/m12-orange-merc.webm" data-start="0.000" data-duration="32.575" data-media-start="29.742"></video>
-      <video id="s13-your-turn-m12-orange-refl" data-merc="m12-orange" data-merc-refl class="clip" muted playsinline src="assets/merc/m12-orange-merc.webm" data-start="0.000" data-duration="32.575" data-media-start="29.742"></video>
+      <video id="s13-your-turn-m12-blue" data-merc="m12-blue" class="clip" muted playsinline src="assets/merc/m12-blue-merc.webm" data-start="0.000" data-duration="32.591" data-media-start="29.742"></video>
+      <video id="s13-your-turn-m12-blue-refl" data-merc="m12-blue" data-merc-refl class="clip" muted playsinline src="assets/merc/m12-blue-merc.webm" data-start="0.000" data-duration="32.591" data-media-start="29.742"></video>
+      <video id="s13-your-turn-m12-orange" data-merc="m12-orange" class="clip" muted playsinline src="assets/merc/m12-orange-merc.webm" data-start="0.000" data-duration="32.591" data-media-start="29.742"></video>
+      <video id="s13-your-turn-m12-orange-refl" data-merc="m12-orange" data-merc-refl class="clip" muted playsinline src="assets/merc/m12-orange-merc.webm" data-start="0.000" data-duration="32.591" data-media-start="29.742"></video>
       <script>
         ;(function () {
           /* S13, Your turn (STORYBOARD rows 13a to 13d; HANDOFFS § S12 to S13, § The guide in S13, § The care block,
@@ -50,8 +50,8 @@
             volEnd: word('b42', 'volume.', 'end'),            //   the word out (9.45 to 10.52 in scene time), easing back as it ends
             note: word('b42', 'note,'),                       // "Start on my note,": a light runs along do's segment
             upW: word('b42', 'up.'),                          // "or an octave up.": a light runs along the top do's segment
-            start: word('b42', 'Start'),                      // "Start on D3, or D4 an octave up"; the do lane's name brightens
-            octave: word('b42', 'octave'),                    // "or an octave up": the top do's name brightens too
+            start: word('b42', 'Start'),                      // "Start on D3, or D4 an octave up"; the do lane's name lights
+            octave: word('b42', 'octave'),                    // "or an octave up": the top do's name lights
             waitW: word('b43', 'Wait'),                       // "wait on ti"; the hold's segment glows
             teeW: word('b43', 'tee,'),                        // ti's name lights
             goW: word('b43', 'go.'),                          // "where it wants to go": the top do's segment glows
@@ -182,7 +182,7 @@
             const g = L.svg('g', {}, mid)
             const shaft = L.svg('path', { fill: 'none', stroke: C.ink, 'stroke-width': 3, 'stroke-linecap': 'round' }, g)
             const tip = L.svg('path', { fill: 'none', stroke: C.ink, 'stroke-width': 3, 'stroke-linecap': 'round', 'stroke-linejoin': 'round' }, g)
-            const Q0 = [[1248, 212], [1288, 146], [1320, 170]]
+            const Q0 = [[1276, 200], [1294, 150], [1320, 170]]   // S12's arrow (DECISIONS 101)
             return (a, u) => {
               if (a <= 0.004) { g.setAttribute('opacity', '0'); return }
               const Q = Q0.map(([x, y]) => [X(x, u), Y(y, u)])
@@ -377,11 +377,13 @@
               el.setAttribute('x', f1(sg.xa - 6)); el.setAttribute('y', f1(sg.y - 7)); el.setAttribute('width', f1(sg.xb - sg.xa + 12)); el.setAttribute('height', 20)
               el.setAttribute('opacity', (0.8 * k).toFixed(3))
             }
-          // the lane names: travelling with the move; do, re and mi light as Merc says them; the bottom do
-            // brightens on "Start on my note" and the top do on "or an octave up"; ti lights on "Wait on tee"
+            // the lane names: travelling with the move; do, re and mi light as Merc says them; the bottom do lights
+            // on "Start on my note" and the top do on "or an octave up"; ti lights on "Wait on tee". Each eases back to
+            // ink-2 0.65 s after its word starts, as every highlight on the guide does (DECISIONS 101: the do names had
+            // stayed lit through the turn, and the top do, the run's end, read as "start here")
             const nameK = [
-              Math.max(P(t, A.start, 0.3), L.light(t, A.doh, 0.15, 0.5)), L.light(t, A.ray, 0.15, 0.5), L.light(t, A.mee, 0.15, 0.5),
-              0, 0, 0, L.light(t, A.teeW, 0.15, 0.5), P(t, A.octave, 0.3),
+              L.light(t, [A.doh, A.start], 0.15, 0.5), L.light(t, A.ray, 0.15, 0.5), L.light(t, A.mee, 0.15, 0.5),
+              0, 0, 0, L.light(t, A.teeW, 0.15, 0.5), L.light(t, A.octave, 0.15, 0.5),
             ]
             names.forEach((el, i) => {
               el.setAttribute('x', f1(lerp(556, 1040, u))); el.setAttribute('y', f1(lerp(BL12[i], BL13[i], u)))
@@ -401,12 +403,14 @@
             cursor.setAttribute('opacity', (P(t, A.yt - 0.2, 0.2) * typeOut).toFixed(3))
             cursor.setAttribute('transform', `translate(${f1(1060 + 640 * clamp((t - A.yt) / RUN))} 0)`)
 
-            // frame-fixed type: "Your turn.", the care block, the doctor lines
-            const land = (el, t0, y) => {
+            // frame-fixed type: "Your turn." fades in rising 12 px; the care lines, "wait on ti" and the doctor lines
+            // fade in where they sit (DECISIONS 104: small type that only rose a few px into place stepped a whole
+            // pixel a frame as it settled at 60 fps, Chrome putting baselines on whole pixels)
+            const land = (el, t0, y, rise = 0) => {
               el.setAttribute('opacity', (P(t, t0, 0.2) * typeOut).toFixed(3))
-              el.setAttribute('y', f1(y + 12 * (1 - P(t, t0, 0.45, 'power2.out'))))
+              el.setAttribute('y', f1(y + rise * (1 - P(t, t0, 0.45, 'power2.out'))))
             }
-            land(yours, A.title, 200)
+            land(yours, A.title, 200, 12)
             for (const c of CARE) if (c !== waitOnTi) land(c.el, c.t0, c.y)
             {
               // up as the pulses go (0.15 s, power2.out), held while the word lasts, back over its last 0.5 s (sine.in,

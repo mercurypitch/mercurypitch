@@ -5,14 +5,14 @@
     <div id="s12-sing" data-composition-id="s12-sing" data-start="0" data-duration="31.675" data-width="1920" data-height="1080">
       <div class="scene" id="s12-sing-scene"></div>
       <!-- Merc passes, static (trap 4); timing written by python3 tools/merc-tags.py s12-sing -->
-      <video id="s12-sing-m12-blue" data-merc="m12-blue" class="clip" muted playsinline src="assets/merc/m12-blue-merc.webm" data-start="1.950" data-duration="29.733" data-media-start="0.008"></video>
-      <video id="s12-sing-m12-blue-refl" data-merc="m12-blue" data-merc-refl class="clip" muted playsinline src="assets/merc/m12-blue-merc.webm" data-start="1.950" data-duration="29.733" data-media-start="0.008"></video>
+      <video id="s12-sing-m12-blue" data-merc="m12-blue" class="clip" muted playsinline src="assets/merc/m12-blue-merc.webm" data-start="1.950" data-duration="29.750" data-media-start="0.008"></video>
+      <video id="s12-sing-m12-blue-refl" data-merc="m12-blue" data-merc-refl class="clip" muted playsinline src="assets/merc/m12-blue-merc.webm" data-start="1.950" data-duration="29.750" data-media-start="0.008"></video>
       <video id="s12-sing-m12-blue-seg1" data-merc="m12-blue-in" data-merc-seg="m12-blue:1" class="clip" muted playsinline src="assets/merc/m12-blue-in-tall-merc.webm" data-start="1.250" data-duration="0.700" data-media-start="0.008"></video>
       <video id="s12-sing-m12-blue-seg1-refl" data-merc="m12-blue-in" data-merc-seg="m12-blue:1" data-merc-refl class="clip" muted playsinline src="assets/merc/m12-blue-in-tall-merc.webm" data-start="1.250" data-duration="0.700" data-media-start="0.008"></video>
       <video id="s12-sing-m12-blue-seg2" data-merc="m12-blue-in" data-merc-seg="m12-blue:2" class="clip" muted playsinline src="assets/merc/m12-blue-in-merc.webm" data-start="1.900" data-duration="14.333" data-media-start="0.658"></video>
       <video id="s12-sing-m12-blue-seg2-refl" data-merc="m12-blue-in" data-merc-seg="m12-blue:2" data-merc-refl class="clip" muted playsinline src="assets/merc/m12-blue-in-merc.webm" data-start="1.900" data-duration="14.333" data-media-start="0.658"></video>
-      <video id="s12-sing-m12-orange" data-merc="m12-orange" class="clip" muted playsinline src="assets/merc/m12-orange-merc.webm" data-start="1.950" data-duration="29.733" data-media-start="0.008"></video>
-      <video id="s12-sing-m12-orange-refl" data-merc="m12-orange" data-merc-refl class="clip" muted playsinline src="assets/merc/m12-orange-merc.webm" data-start="1.950" data-duration="29.733" data-media-start="0.008"></video>
+      <video id="s12-sing-m12-orange" data-merc="m12-orange" class="clip" muted playsinline src="assets/merc/m12-orange-merc.webm" data-start="1.950" data-duration="29.750" data-media-start="0.008"></video>
+      <video id="s12-sing-m12-orange-refl" data-merc="m12-orange" data-merc-refl class="clip" muted playsinline src="assets/merc/m12-orange-merc.webm" data-start="1.950" data-duration="29.750" data-media-start="0.008"></video>
       <video id="s12-sing-m12-orange-seg1" data-merc="m12-orange-in" data-merc-seg="m12-orange:1" class="clip" muted playsinline src="assets/merc/m12-orange-in-tall-merc.webm" data-start="1.366" data-duration="0.700" data-media-start="0.008"></video>
       <video id="s12-sing-m12-orange-seg1-refl" data-merc="m12-orange-in" data-merc-seg="m12-orange:1" data-merc-refl class="clip" muted playsinline src="assets/merc/m12-orange-in-tall-merc.webm" data-start="1.366" data-duration="0.700" data-media-start="0.008"></video>
       <video id="s12-sing-m12-orange-seg2" data-merc="m12-orange-in" data-merc-seg="m12-orange:2" class="clip" muted playsinline src="assets/merc/m12-orange-in-merc.webm" data-start="2.016" data-duration="2.767" data-media-start="0.658"></video>
@@ -176,12 +176,14 @@
           const names = SOL.map((s, i) => L.svg('text', { x: 556, y: NAME_BL[i], 'text-anchor': 'end', fill: C.ink2, opacity: 0, style: "font: 600 32px 'Outfit', sans-serif", text: s }, mid))
           // "wait" over the hold
           const waitT = L.svg('text', { x: 1166, y: 196, 'text-anchor': 'middle', fill: C.ink, opacity: 0, style: "font: 600 40px 'Outfit', sans-serif", text: 'wait' }, mid)
-          // 12d's ink arrow from the hold's end up onto do's segment (a quadratic, drawn on from the hold)
+          // 12d's ink arrow from the hold's end up onto do's segment (a quadratic, drawn on from the hold); it starts
+          // 12 px right of the hold's end (1264) and 31 px above ti's lane centre, so Tavi's bead, held and then rising
+          // dimmed over the rest, keeps 8 px or more from it (DECISIONS 101; it touched the tail at (1248, 212))
           const arrow = (() => {
             const g = L.svg('g', { opacity: 0 }, mid)
             const shaft = L.svg('path', { fill: 'none', stroke: C.ink, 'stroke-width': 3, 'stroke-linecap': 'round' }, g)
             const tip = L.svg('path', { fill: 'none', stroke: C.ink, 'stroke-width': 3, 'stroke-linecap': 'round', 'stroke-linejoin': 'round' }, g)
-            const Q = [[1248, 212], [1288, 146], [1320, 170]]
+            const Q = [[1276, 200], [1294, 150], [1320, 170]]
             const qb = (u) => [0, 1].map((i) => (1 - u) * (1 - u) * Q[0][i] + 2 * u * (1 - u) * Q[1][i] + u * u * Q[2][i])
             return (p, a) => {
               const u = clamp(p)
@@ -351,16 +353,18 @@
             // the lane names as the tip lands; "wait"; the arrow
             names.forEach((el) => el.setAttribute('opacity', P(t, A.tip1 - 0.2, 0.3).toFixed(3)))
             {
-              const sc = L.pulse(t, WAITP, 'label'), dy = 10 * (1 - P(t, A.wait, 0.45, 'power2.out'))
+              // "wait" fades in where it sits (DECISIONS 104: small type that only rose a few px into place stepped a
+              // whole pixel a frame as it settled, so it no longer rises); its word-tied 1.2 pulses stay
+              const sc = L.pulse(t, WAITP, 'label')
               waitT.setAttribute('opacity', P(t, A.wait, 0.2).toFixed(3))
-              waitT.setAttribute('transform', `translate(1166 ${f1(182 + dy)}) scale(${sc.toFixed(4)}) translate(-1166 -182)`)
+              waitT.setAttribute('transform', `translate(1166 182) scale(${sc.toFixed(4)}) translate(-1166 -182)`)
             }
             arrow(P(t, A.where, 0.6, 'power1.inOut'), t >= A.where ? 1 : 0)
 
             // frame-fixed type
             card.draw(t)
             kicker.draw(t, A.kickIn, A.kickOut)
-            chip.draw({ alpha: P(t, A.octave, 0.2), dy: 10 * (1 - P(t, A.octave, 0.45, 'power2.out')) })
+            chip.draw({ alpha: P(t, A.octave, 0.2) })        // a fade only, no rise (DECISIONS 104)
           })
           window.__timelines = window.__timelines || {}
           window.__timelines[SID] = tl

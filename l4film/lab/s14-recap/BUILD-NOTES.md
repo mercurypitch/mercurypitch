@@ -146,3 +146,39 @@ events in the card pause (icon pulses that register, then the address once more)
   max 20 outside the Mercs. npm run check: lint 0 errors; layout 1 error, s06 129.21-130.02 (not group F);
   contrast 59/59. clock-lint clean; merc-tags --check s14 s15 s16: 12 tags, 0 stale. Text sweep s14-s16 clean
   (lab/s14-recap/sweep-r5.log). Scratch frames in /dev/shm deleted.
+- 23:28-00:05 round F-02 (DECISIONS 102). Backups lab/<s>/<s>.r6-before.html; round-1 clips kept as clip-r5.mp4.
+  60 fps renders with lab/s14-recap/tools/hostpass60.sh (a copy of E's): s14 23:34:46-23:48:09, s15 23:49:31-
+  23:51:02, s16 23:51:15-23:52:01; measures in lab/<s>/measure-r6.
+  1. Carry 2.0 s: carryAt u over tc + 0.2 .. + 2.2 (469.89-471.89), condensing over the last 0.4 s, bead in over
+     the last 0.15; S15 lands at at('card', 'end', 2.2). Peak 24.0 px a frame at 60 fps (470.88), was 60.4. Rung:
+     S14's last lab frame (film 470.227) (1464.5, 235.0), S15's first (470.243) (1461.5, 235.5) measured; computed
+     (1464.8, 235.4) and (1462.2, 236.2); film grid 470.233 (1463.8, 235.7), 470.250 (1461.0, 236.6).
+  2. Speech marks (S15 r5 clip, every frame): Merc's reach x 217 (y 734-776), Tavi's x 1692 (y 735-792). Large
+     layout: panel 240-1672 x 160-720 (right edge narrowed from 1680: 1680 would be 19 px from Tavi's marks);
+     x' = 240 + (x - 300) * 1.0848; playhead 884.4, y 286-684; title (272.5, 250); ILLUSTRATION right 1639.5 at
+     250; G4 658 A4 598 B4 538 C5 508 D5 448 E5 388 F#5 328 G5 298 (30 px); rungs 990.7 1097.0 1203.3 1309.6
+     1416.0 1522.3, 90 px, 6/4 px, 100-45 %; violet G4 283.4-565.5, A4 630.5 + 20 px stub, drawn on to 884.4 over
+     456.51-457.74 (sing -> back,, power1.inOut); amber 283.4-884.4 at 598; pill 824.4-876.4 x 553-587. Removed the
+     waver on "sing" and the first rung's pulse on "major scale" (the draw-on is the beat there). Clip: A4 violet
+     630-651 at 456.49, 630-755 at 457.09, 630-883 from 457.79; panel 239-1672, foot 720; Merc's marks 31.8 px from
+     the panel at their closest during b53 (458.88); bodies 44+ px.
+  3. "Singing Voice Range": one 1.2 swell (kit 'label') on "range" 461.49, from its left edge. Clip 461.64: ends at
+     x 1580, "Singing" stays at 1156, "›" 1137-1143 untouched.
+  4. Cards 3 and 4 bring their panel with their first line (lead 0, on the line's curve); it leaves with the lines
+     (0.43 s). 3 -> 4: out 443.01-443.44, in 443.51-443.71. The same dip between 2 and 3 (428.84-429.27, back from
+     429.24) is gone too.
+  5. The address underline (468.94) removed: the pause ends on More's sweep and glow (468.2). Pause holds: 466.49
+     0.1 s and 469.19-469.59 0.4 s.
+  6. The arrow: S3's shape (Q = A + 8 px, B's height), tip at world (1114, 316); clip: ink to x 1440, wall at 1445.
+  7. Stair lights: 416.89 stairs 3/4/7/8 on b47 "semitone." (twoS, 416.75), 420.49 stair 1 on b48 "Start"
+     (420.25), 424.29 stairs 1/8 on b48 "need?" (424.18), 446.29 stair 8 on o13 "note" (446.18), 452.09 stair 1
+     on b52 "starts:" (451.77). All on words; none removed.
+  Holds (60 fps): s14 0.9 s (0.4 per 30 s), longest 0.4 (469.19), 0.1 at 405.99 423.99 429.29 432.99 466.49;
+  s15 0.1 (472.04); s16 0.1 at its start. Pops at 417.21, 460.79, 462.79, 465.93 are card lines leaving/landing.
+  Handoffs: S13 (E's 20:10 clip) -> S14 0.0068 % over 24, max 43; S14 -> S15 0.0148 %, outside the Mercs only the
+  rung (3 px between the two lab frames); S15 -> S16 compared on S15's last film frame (lab frame 496, 8.267):
+  0.0057 % over 24, max 56. The lab clip's own last frame (8.283, not a film frame) has no Mercs: the tags end half
+  a frame after S15's last film frame (8.274). Lab-only; reported (merc-tags could end a pass at the scene's end
+  when it runs past it, as it does at the start).
+  Checks: clock-lint clean; merc-tags --check 12 tags 0 stale; npm run check lint 0 errors, layout 1 error in s06
+  (129.21-130.02), contrast 59/59, none in S14-S16; text sweep clean (sweep-r6.log). /dev/shm scratch deleted.
