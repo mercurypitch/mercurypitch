@@ -554,8 +554,10 @@ ended 405.2; Tavi has stood there since S13a; m12 spans the cut). Every mark of 
   465.69. Through the card pause each line's tab icon glows in turn with its line underlined (465.8,
   466.6, 467.4, 468.2), More's last, each icon scaling 1.15 and keeping 8 px or more from the type
   beside it; nothing lights after More (DECISIONS 102 and 108; as built, decision
-  105: the address has no sweep of its own, and the pause's longest hold is 0.4 s, 469.19 to
-  469.59, the Mercs idling).
+  105: the address has no sweep of its own). Round 3 as built (DECISIONS 114): the gear's slot is
+  2 px wider on the left and 1 px on the right, More's 1 px on each side; at the glows' peaks the
+  closest approach to the type is 14 px (×), 8.5 to 8.9 px (gear), 10 px (Exercises) and 9 px
+  (More); the pause's longest hold is 0.1 s (469.19 and 469.39).
 - **S14 to S15 (470.24).** The Mercs in the corners at 300; the card and the ladder gone (469.7 to
   470.0) but for the ladder's top rung, do, which brightens to full and slides from its card-time
   place to (560, 520) over 469.9 to 471.9 (power2.inOut; DECISIONS 102: 2.0 s, so it carries the
@@ -563,9 +565,11 @@ ended 405.2; Tavi has stood there since S13a; m12 spans the cut). Every mark of 
   from film time (`carryAt`), so it sits on the same pixels on both sides of the cut; it condenses
   into S15's chrome bead over its last 0.4 s. From round 3 (DECISIONS 108) the curve keeps 24 px or
   more from '"support"''s ink once the word lands (470.71): down the right side, then left along y
-  520 to the bead. Round 2 as built (DECISIONS 105): its centre is at (1463.8,
-  235.7) on S14's last film frame (470.233) and (1461.0, 236.6) on S15's first (470.250); its peak
-  speed is 24 px a frame at 60 fps (470.88).
+  520 to the bead. Round 3 as built (DECISIONS 114): straight down the right side from (1482,
+  230), curving onto y 520 at x 1000, then along y 520 to (560, 520), 1038 px in all, the ease
+  read by arc length; its centre is at (1479.2, 250.2) on S14's last film frame (470.233) and
+  (1478.4, 253.3) on S15's first (470.250); its nearest approach to '"support"''s ink is 53 px
+  (471.09, under the "pp"); its peak speed is 25.7 px a frame at 60 fps (470.88).
 - **S15.** The bead (the carried rung) at (560, 520) from 471.9; S15's echo rings fade with its
   type (from o14's end + 0.07, 0.3 s), so none crosses the cut to S16; '"support"' serif italic 160 px
   centred, baseline 420, landing with the kicker on "Next" (470.71) and scaling 1.2 once on its word (473.14; DECISIONS 108); the long note at y 520 from x 560 to 1360; "what keeps it steady?" serif italic 96 px centred, baseline 680.

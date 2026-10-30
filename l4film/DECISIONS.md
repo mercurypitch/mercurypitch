@@ -1173,3 +1173,28 @@ replaced it. The builder's record: critics never read it.
        finds only S1's known EDGE at 33.75.
      - Critic A-04 verifies all four from frozen copies: S1, S3 and S4 as rendered for round 3, and
        the new S2.
+
+114. **S14 to S16 after builder F's round 3 (component critic F-03's items 1, 2 and 4), as built.**
+     - **S15's opening:** '"support"' lands with the kicker on "Next" (470.71) instead of on
+       "Singers" (472.15), and scales 1.2 once on its word (473.14); the pulse on o14's "that" is
+       gone. The rung keeps its times (469.89 to 471.89, power2.inOut) and its landing, on a new
+       path: straight down the right side from (1482, 230), curving onto y 520 at x 1000, then
+       along y 520 to (560, 520). The path is 1038 px (the straight one was 966) and the ease is
+       read by arc length. Both scenes share the path code, so the rung sits on the same pixels
+       either side of the cut: centre (1479.2, 250.2) on S14's last film frame, (1478.4, 253.3) on
+       S15's first. Its nearest approach to the word's ink is 53.4 px (471.09, under the "pp"
+       descenders; 24 px asked); its peak speed is 25.7 px a frame at 60 fps (24.0 before).
+     - **Cards 1 and 2:** their panels come in with their first lines, on the line's curve, as
+       cards 3 and 4 do (card 1's text from 407.44, its stroke from 407.54; card 2's both from
+       420.26). Before, the panels showed empty for 0.17 s and 0.22 s.
+     - **Icon glows:** the icons pulse to 1.15 (1.25 before). At 1.15 the gear still came within
+       7 px of "first:"'s colon, so its slot widened 2 px on the left and 1 px on the right, More's
+       1 px on each side; closest approaches at the peaks are now 8.5 to 14 px (gear 2 px and
+       Exercises 3 px before).
+     - The gold semitone corner stays (decision 85).
+     - Holds: S14 0.5 s (0.2 per 30 s), longest 0.1 s (0.9 s and 0.4 s before); S15 0.2 s, two
+       0.1 s holds (at 471.94, the bead just landed, and 476.14). Handoffs S13 to S14 0.0064 %,
+       S14 to S15 0.0201 % (the rung's own 3 px of motion), S15 to S16 0.0042 % of pixels over 24.
+       Check 0 errors, clock-lint, merc-tags (12 tags, 0 stale) and the text sweep are clean.
+     - Critic F-04 verifies all three from frozen copies (S14 and S15 new; S16 round 2's, as F-03
+       saw it).

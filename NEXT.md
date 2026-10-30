@@ -1782,3 +1782,10 @@ Note: the lanes' memory gate read a stale cgroup path after the 21:00 restart (f
   (C-fix2, 60 fps). Agents now: F + C. Disk 1.49 GB.
 - Queue: critic B-04 (B4.txt) and A-04 (A4.txt) as slots free; F-04 after F (freeze new S14, S15;
   S16 from f3); C-03 after C (freeze c3/). Then the film render (no builder rendering).
+- 01:4x builder F handed back round 3 ($S/l4entr/F-round3-report.txt): "support" on "Next" (470.71),
+  pulse 473.14; rung path down the right side then along y 520 (1038 px, arc-length ease; 53 px
+  from the word's ink; peak 25.7 px/frame); cards 1-2 panels with their first lines; icons 1.15
+  (closest 8.5-14 px). DECISIONS 114; HANDOFFS § practise card and § S14 to S15 as built (backup
+  b114/). Frozen f4/ (S14, S15 new; S16 = f3). Critic F-04 launched (critics/F4.txt).
+  Agents now: C (rendering) + critic F-04.
+- Queue: B-04 (B4.txt), A-04 (A4.txt) as slots free; C-03 after C (freeze c3/; C3.txt ready).

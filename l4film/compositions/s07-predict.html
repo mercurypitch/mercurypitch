@@ -182,6 +182,8 @@
           const gBead = L.svg('g', {}, mid)
           const bead = L.bead(gBead, { r: 22, color: L.C.chrome })
           const echo = L.echoRings(mid, { dur: 0.9, grow: 3.5, width: 3 })   // as s05's and s06's
+          // major-d's ring on the real stair 8 grows to 2.5 bead radii, not 3.5, so it clears riser 7's "S" (C-02 N4)
+          const echo8 = L.echoRings(mid, { dur: 0.9, grow: 2.5, width: 3 })
           st.stairs.forEach((S, i) => S.names.prepare([LET_C[i], LET_D[i]]))
           st.risers.forEach((R) => R.labels.prepare(['T', 'S', '2', '1']))
           kb.keys[6].names.prepare(['F♯']); kb.keys[13].names.prepare(['C♯'])
@@ -253,6 +255,8 @@
             if (n <= 5) GROWL[n].push(A.keeping + 0.15 * (n - 1))     // risers 6 and 7 sit at F-keys-D's top edge
           }
           const labelPulse = (t, times) => L.pulse(t, times, 0.25, { long: true })
+          // a flash's envelope with an even rise (C-02 N2): up over `up` (power1.out), held, back over `down` (power2.in)
+          const flashEnv = (t, t0, up, hold, down) => (t < t0 ? 0 : t < t0 + up ? L.ease('power1.out')((t - t0) / up) : 1 - P(t, t0 + up + hold, down, 'power2.in'))
           // key pulses (a key scales 1.05): the white keys D to D with their dashed stairs as they fill (7c) and in a
           // ripple on "white keys" (7d); D4, E4 and F4 on "doh ray mee"; D4 on "D."; F#4 and C#5 on "black keys";
           // D4, the first note's key, on "note"
@@ -276,8 +280,10 @@
           // the strip (items 9 and 10): dimmed with the staircase under the card, back to full as the card leaves (Tavi's
           // "Same white keys" is about it); gone through CU-D, where only its tops showed in the caption band, and back
           // with the crane onto the keys
-          // (from the staircase's dim, over 0.8 s, power1.in, so it is still settling as the card lands)
-          const stripA = (t) => (1 - 0.75 * P(t, A.act2, 0.8, 'power1.in') * (1 - P(t, A.cardOut + 0.1, 0.45))) * (1 - P(t, A.push, 1.0, 'power2.inOut') * (1 - P(t, A.crane, 1.0, 'power2.inOut')))
+          // (C-02 N5: most of it with the staircase's dim, from "act2" over 0.3 s, so the card lands on a dimmed strip;
+          // the last fifth settles over the next 0.8 s, which keeps the frame moving until Tavi falls in)
+          const stripDim = (t) => 0.8 * P(t, A.act2, 0.3) + 0.2 * P(t, A.act2 + 0.3, 0.8, 'sine.inOut')
+          const stripA = (t) => (1 - 0.75 * stripDim(t) * (1 - P(t, A.cardOut + 0.1, 0.45))) * (1 - P(t, A.push, 1.0, 'power2.inOut') * (1 - P(t, A.crane, 1.0, 'power2.inOut')))
           // the top-left lane ("Predict." and the pills) eases 50 px left with the push into F-white and back with the pull
           // out (item 5): there white-d's bead drops onto the dashed stair 1 and rises off it 27 px from "No: it changes"
           const laneDx = (t) => -50 * P(t, A.pz, 4.3, 'sine.inOut') * (1 - P(t, A.now, 1.0, 'power2.inOut'))
@@ -353,9 +359,10 @@
               hair: { a: stA, w, s0 },
             })
             // F#4 and C#5 flash with their letters on "changes" (to 50 %), and with their stairs on "black" and "keys"
-            // (to 75 %: up 0.15 s, held 0.1 s, back 0.35 s)
+            // (to 75 %: up 0.15 s, held 0.1 s, back 0.35 s). C-02 N2: the rise is power1.out, not L.env's power2.out,
+            // whose first 1/60 s carries 30 % of the rise and read as a one-frame snap on a key this large
             for (const [m, t0] of [[6, A.black], [13, A.keys22]]) {
-              const e = Math.max(0.75 * L.env(t, t0, 0.15, 0.1, 0.35), 0.5 * L.env(t, A.changes + 0.45, 0.15, 0.1, 0.6)) * sA
+              const e = Math.max(0.75 * flashEnv(t, t0, 0.15, 0.1, 0.35), 0.5 * flashEnv(t, A.changes + 0.45, 0.15, 0.1, 0.6)) * sA
               keyFlash[m].setAttribute('opacity', e.toFixed(3))
               keyFlash[m].setAttribute('display', e <= 0.004 ? 'none' : 'inline')
             }
@@ -401,8 +408,9 @@
               qG.setAttribute('transform', `translate(${f1(qC[0])} ${f1(qC[1] + qdy)}) scale(${qs.toFixed(4)}) translate(${f1(-qC[0])} ${f1(-qC[1])})`)
             }
             // 7g's two arrows, rising on "a semitone low", gone with the dashed staircase
-            // stair 7's leaves before the crane, which would cut it at the frame's top edge (item 9)
-            arrows.forEach((ar, i) => ar.draw(P(t, A.low, 0.35, 'power2.out'), (t >= A.low ? 1 : 0) * gA * (i ? 1 - P(t, A.crane - 0.35, 0.3) : 1)))
+            // both leave before the crane: stair 7's would be cut at the frame's top edge (item 9), and stair 3's alone
+            // would make one of the two named keys look special (C-02 N3)
+            arrows.forEach((ar) => ar.draw(P(t, A.low, 0.35, 'power2.out'), (t >= A.low ? 1 : 0) * gA * (1 - P(t, A.crane - 0.35, 0.3))))
 
             // the chrome beads: white-d's on the dashed treads (7d), major-d's on the real ones (7e); each drops onto
             // stair 1, hops up a stair on each note, sends an echo ring on its held D5 and leaves as its sound ends
@@ -418,10 +426,11 @@
             }
             const b = run(WD, A.wdEnd, (n) => [dX(n), dTread(n) - 22]) || run(MD, A.mdEnd, (n) => ST.rest(n, 1, 2))
             L.bead4.place(bead, b)
-            echo.draw(t, [
-              { t: WD(7) + 0.34, x: dX(8), y: dTread(8) - 22, r: 22 },
-              { t: MD(7) + 0.34, x: ST.colX(8, 1), y: ST.tread(8, 2) - 22, r: 22 },
-            ])
+            // white-d's bead drops onto the dashed stair 1, 28 px from "No: it changes" in F-white: its glow at half there,
+            // back to full over its hop to stair 2 (C-02 N6); major-d's keeps its full glow
+            bead.halo.setAttribute('opacity', (t < MD(0) - 0.2 ? 0.5 + 0.5 * P(t, WD(1) - 0.3, 0.3, 'power1.inOut') : 1).toFixed(3))
+            echo.draw(t, [{ t: WD(7) + 0.34, x: dX(8), y: dTread(8) - 22, r: 22 }])
+            echo8.draw(t, [{ t: MD(7) + 0.34, x: ST.colX(8, 1), y: ST.tread(8, 2) - 22, r: 22 }])
 
             // type: the card; the kicker with o7 to b17's end; "Predict." and the pills, the check on "changes", all
             // leaving on "The white keys climb"; the ring timer over the predict pause; the step rows; "D major"

@@ -149,3 +149,27 @@ the director tagged them: m07 from 147.34 with its tall intro, m08-in from 198.2
   clip first (s09's 12:56 clip; its frame-00-at-0s still is gone): max 60, mean 0.46, edges only. s07 53.253 still
   vs s08 0.007 still: max 166, all on Tavi (m08 moving through the cut); across the clip cut her region changes by
   mean 4.38, as much as her own frame-to-frame change just before it (3.99, 4.09), so it is her motion, not a jump.
+
+## Fix round 2 (component critic C-02, review/component-C-02/REPORT.md: both KEEP), 30 Oct from 01:30
+
+N1 (the cut) needs no change (DECISIONS 87). HANDOFFS now records the "?" and the tally. The depth cue, the near
+bokeh and the Merc tags past a scene's end are the kit's and the director's; nothing of mine changes for them.
+
+- N2 (one-frame snaps): S7's F#4 and C#5 flashes on "black" and "keys" (and on "changes") rise over 0.15 s with
+  power1.out instead of L.env's power2.out: GSAP's power2 is cubic, so its first 1/60 s carries 30 % of the rise
+  (0.22 of the key's 0.75, about 28 luma on the lit key), which measure.py reads as a jump; power1.out's first frame
+  carries 21 % (0.16, about 20 luma) and each frame after it less. S8's rim flash rises over 0.15 s (power2.out, as
+  asked) instead of 0.06 s.
+- N3: stair 3's "semitone low" arrow fades with stair 7's, over 0.3 s from 0.35 s before the crane (43.4).
+- N4: major-d's echo ring on stair 8 grows to 2.5 bead radii (55 px) instead of 3.5 (77 px), from its own pool
+  (white-d's ring in F-white keeps 3.5, as s05's and s06's). Probe: at its largest the ring's geometry ends 10 px
+  from riser 7's "S" box (8.5 px with the 3 px stroke); before, it crossed the box by about 13 px.
+- N5: the strip's dim starts at "act2" (0.15) with the staircase's: 80 % of it over the staircase's 0.3 s, the
+  last 20 % over the next 0.8 s (sine.inOut), so the frame keeps moving until Tavi falls in. Strip brightness as the
+  card lands (0.37): 0.94 before, 0.45 now; at 0.6: 0.76 before, 0.39 now; settled at 0.25 by 1.25.
+- N6: white-d's bead has its halo at half opacity from its drop (18.42) until its first hop, back to full over that
+  hop (18.77 to 19.07); major-d's bead keeps its full glow.
+- Checks before rendering: clock-lint silent, node --check passes on both scenes' scripts, merc-tags --check
+  14 tags, 0 stale, 0 problems. The r3 clips are kept as lab/<sid>/clip-r3.mp4 (measures in measure-r3/).
+- Renders: 60 fps drafts from lab/<sid>/proj with the pinned CLI (lab/s07-predict/scratch/hostpass60.sh, my copy
+  of builder E's), nice 10, TMPDIR=/dev/shm, waiting for 1150 MB free on /.

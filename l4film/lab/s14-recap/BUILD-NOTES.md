@@ -182,3 +182,24 @@ events in the card pause (icon pulses that register, then the address once more)
   when it runs past it, as it does at the start).
   Checks: clock-lint clean; merc-tags --check 12 tags 0 stale; npm run check lint 0 errors, layout 1 error in s06
   (129.21-130.02), contrast 59/59, none in S14-S16; text sweep clean (sweep-r6.log). /dev/shm scratch deleted.
+- 01:09-01:45 round F-03 (DECISIONS 108). Backups lab/<s>/<s>.r7-before.html; round 2's clips kept as clip-r6.mp4;
+  renders (60 fps, tools/hostpass60.sh with KEEP/MEAS): s14 01:16:46-01:29:45, s15 01:30:54-01:32:08; measures in
+  lab/<s>/measure-r7. S16 not re-rendered (unchanged).
+  1. S15: '"support"' lands with the kicker on b54 "Next" (470.71; was b55 "Singers" 472.15) and scales 1.2 once
+     (kit 'label') on b55 "support" (473.14; the pulse on o14 "that" is gone). The carry keeps its times and
+     power2.inOut but follows a path read by arc length (CARRY, the same code in both scenes): a cubic from
+     (1482, 230) via (1482, 330) and (1250, 520) to (1000, 520), then y 520 to (560, 520); 1038 px (was 966).
+     Peak 25.7 px a frame at 60 fps (470.88; was 24.0). Nearest the word's ink from 470.71 (ink > 40, its rise
+     included): 53.4 px (471.09, under "pp"); 55 px on proxy stills. Centre: S14 last film frame (470.233)
+     (1479.2, 250.2), S15 first (470.250) (1478.4, 253.3); lab frames 470.227 (1479.5, 249.2) and 470.243
+     (1478.7, 251.9); clip 1479.0, 248.5 and 1478.0, 251.5. Proxy: s14 at D = s15 at 0 (max 0 in the rung box).
+  2. Every card's panel comes in with its first line on the line's curve (0.2 s): clip, card 1 text from 407.44,
+     stroke from 407.54; card 2 text from 420.26, stroke from 420.26. Before: panel 0.17 and 0.22 s ahead.
+  3. Icon pulse 1.25 -> 1.15; the gear's slot +2 px left, +1 right, More's +1 each side (the range swell still ends
+     at x 1581). Closest glow/icon ink (> 45) to type at the peaks (proxy, against a rest still): x 14 px, gear
+     8.9 (466.70) and 8.5 on "Settings" (462.41), Exercises 10, More 9. Before (1.25, no pad): gear 7, More 8.
+  Holds: s14 0.5 s (0.2 per 30 s), longest 0.1 (405.99, 423.99, 429.29, 469.19, 469.39); s15 0.2 s (471.94,
+  476.14). Handoffs: S13 (E's 00:35 clip) -> S14 0.0064 % over 24, max 50; S14 -> S15 0.0201 %, outside the Mercs
+  only the rung (3 px between the lab frames); S15 -> S16 (round 2's s16 clip) 0.0042 %, max 45, the Mercs now on
+  S15's last lab frame. Checks: clock-lint clean, merc-tags 12 tags 0 stale, npm run check 0 errors (contrast 59/59),
+  text sweep clean (sweep-r7.log). Scratch in /dev/shm deleted.
