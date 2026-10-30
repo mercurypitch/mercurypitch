@@ -19,6 +19,8 @@
 import type { MixGains, ShaperCurve } from './dsp'
 import { BUTTERWORTH_Q_DB, BUTTERWORTH4_Q_DB, createIdentityCurve, DRY_ONLY, IDENTITY_DOMAIN, } from './dsp'
 import type { EffectKind } from './effect-definitions'
+import type { StudioFxProfile } from './fx-profile'
+import { shaperRun } from './shaper-delay'
 
 /** What the chain lends each effect. */
 export interface EffectEnv {
@@ -26,6 +28,8 @@ export interface EffectEnv {
   readonly isLive: () => boolean
   /** Deferred work, such as a reverb impulse swap; returns a cancel. */
   readonly schedule: (callback: () => void, delayMs: number) => () => void
+  /** How much work a live chain does (fx-profile.ts); full quality when absent. */
+  readonly profile?: StudioFxProfile
 }
 
 export interface EffectUnit {
@@ -250,25 +254,44 @@ export interface ShaperPath {
   readonly nodes: readonly AudioNode[]
 }
 
-/** Pre-gain, shaper, post-gain — the scaled-domain wrapper. */
+/**
+ * Pre-gain, shaper, post-gain — the scaled-domain wrapper. An oversampled
+ * shaper runs at `oversample`, 4x at full quality (fx-profile.ts), and
+ * always as late as at 4x: a lower rate makes the difference up with a
+ * delay (shaper-delay.ts), so the effect's latency does not change with
+ * it. `null` is a shaper never oversampled, at any quality.
+ */
 export function createShaperPath(
   ctx: BaseAudioContext,
   curve: ShaperCurve,
-  oversample: OverSampleType = '4x',
+  oversample: OverSampleType | null = '4x',
 ): ShaperPath {
   const input = ctx.createGain()
   const shaper = ctx.createWaveShaper()
   const output = ctx.createGain()
   shaper.curve = curve
-  shaper.oversample = oversample
+  const run =
+    oversample === null
+      ? { oversample: 'none' as const, makeUpFrames: 0 }
+      : shaperRun(ctx.sampleRate, oversample)
+  shaper.oversample = run.oversample
   input.connect(shaper)
-  shaper.connect(output)
-  return { input, output, shaper, nodes: [input, shaper, output] }
+  if (run.makeUpFrames === 0) {
+    shaper.connect(output)
+    return { input, output, shaper, nodes: [input, shaper, output] }
+  }
+  const makeUp = ctx.createDelay((run.makeUpFrames + 128) / ctx.sampleRate)
+  makeUp.delayTime.value = run.makeUpFrames / ctx.sampleRate
+  shaper.connect(makeUp).connect(output)
+  return { input, output, shaper, nodes: [input, shaper, makeUp, output] }
 }
 
-/** The latency twin of any 4x shaper: the same resampling, a straight line. */
-export function createIdentityShaperPath(ctx: BaseAudioContext): ShaperPath {
-  const path = createShaperPath(ctx, createIdentityCurve())
+/** The latency twin of an oversampled shaper: the same resampling, a straight line. */
+export function createIdentityShaperPath(
+  ctx: BaseAudioContext,
+  oversample: OverSampleType = '4x',
+): ShaperPath {
+  const path = createShaperPath(ctx, createIdentityCurve(), oversample)
   path.input.gain.value = 1 / IDENTITY_DOMAIN
   path.output.gain.value = IDENTITY_DOMAIN
   return path

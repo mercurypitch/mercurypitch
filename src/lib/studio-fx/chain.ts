@@ -34,6 +34,7 @@ import { CHAIN_SPEC_VERSION, normalizeChainSpec, normalizeEffectParams, } from '
 import type { EffectEnv, EffectUnit } from './effect-shell'
 import { isRealtimeRunning, writeParam } from './effect-shell'
 import { createEffectUnit } from './effects'
+import type { StudioFxProfile } from './fx-profile'
 
 const DUCK_MS = 40
 const DUCK_TIME_CONSTANT = 0.006
@@ -65,6 +66,8 @@ export interface StudioFxChainOptions {
     spec: EffectSpec,
     env: EffectEnv,
   ) => EffectUnit
+  /** How much work the chain's effects do (fx-profile.ts); full quality when absent. */
+  readonly profile?: StudioFxProfile
 }
 
 interface Slot {
@@ -99,6 +102,7 @@ export function createStudioFxChain(
   const env: EffectEnv = {
     isLive: () => isRealtimeRunning(ctx),
     schedule: options.schedule ?? defaultSchedule,
+    profile: options.profile,
   }
   const createUnit = options.createUnit ?? createEffectUnit
   const input = ctx.createGain()

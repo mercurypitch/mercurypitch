@@ -305,6 +305,38 @@ export function fakeImpulseRenderContext(
   }
 }
 
+/**
+ * An offline context that renders an impulse through its one shaper as a
+ * browser would: `delays[oversample]` frames late, at 0.992 of its height.
+ */
+export function fakeShaperRenderContext(
+  delays: Readonly<Record<OverSampleType, number>>,
+) {
+  return (options: OfflineAudioContextOptions): OfflineAudioContext => {
+    const ctx = new FakeOfflineAudioContext(options.sampleRate)
+    let impulseAt = -1
+    let height = 0
+    const source = Object.assign(new FakeNode('source'), {
+      buffer: null as FakeBuffer | null,
+      start: () => {
+        const data = source.buffer?.getChannelData(0) ?? new Float32Array()
+        impulseAt = data.findIndex((value) => value !== 0)
+        height = data[impulseAt] ?? 0
+      },
+    })
+    return Object.assign(ctx, {
+      createBufferSource: () => source,
+      startRendering: () => {
+        const [shaper] = ctx.ofType<FakeShaper>('shaper')
+        const out = new FakeBuffer(1, options.length, options.sampleRate)
+        out.getChannelData(0)[impulseAt + delays[shaper.oversample]] =
+          height * 0.992
+        return Promise.resolve(out)
+      },
+    }) as unknown as OfflineAudioContext
+  }
+}
+
 /** True when audio entering `from` can reach `to` along connections. */
 export function reaches(from: FakeNode, to: FakeNode): boolean {
   const seen = new Set<FakeNode>()

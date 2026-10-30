@@ -8,6 +8,7 @@
 // A loop is the plan from its start to its end; pass 0 is the one the anchor
 // falls in, so a seek, a resume or a re-plan that moves the loop's length
 // counts passes again from the one playing.
+import type { StudioFxProfile } from '@/lib/studio-fx/fx-profile'
 import { STUDIO_SAMPLE_RATE } from '../model/types'
 import type { StudioGraphLane, StudioLaneRun } from './graph-lanes'
 import { crossLane, dropPassesAfter, openLane } from './graph-lanes'
@@ -41,6 +42,8 @@ export interface StudioGraphState {
   fromFrame: number
   /** When the newest seek or re-plan crosses its lanes; -Infinity for Play's. */
   pendingAt: number
+  /** How much work its lane chains do (fx-profile.ts); a swap builds with it. */
+  profile: StudioFxProfile
 }
 
 /** How long one pass of the plan lasts. */

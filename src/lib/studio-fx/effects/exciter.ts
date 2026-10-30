@@ -21,6 +21,7 @@ import { createEvenHarmonicCurve, dbToGain, SATURATION_DOMAIN, } from '@/lib/stu
 import type { EffectParams } from '@/lib/studio-fx/effect-definitions'
 import type { EffectEnv, EffectUnit } from '@/lib/studio-fx/effect-shell'
 import { assembleUnit, connectSeries, createButterworth, createEffectShell, createIdentityShaperPath, createShaperPath, writeParam, } from '@/lib/studio-fx/effect-shell'
+import { shaperOversample } from '@/lib/studio-fx/fx-profile'
 
 const HARMONIC_CEILING_HZ = 18000
 
@@ -41,10 +42,11 @@ export function createExciterUnit(
     wet: spec.params.amount / 100,
   })
   const bandIn = createButterworth(ctx, 'highpass')
-  const harmonics = createShaperPath(ctx, exciterCurve())
+  const oversample = shaperOversample(env.profile, 'exciter')
+  const harmonics = createShaperPath(ctx, exciterCurve(), oversample)
   const bandOut = createButterworth(ctx, 'highpass')
   const ceiling = createButterworth(ctx, 'lowpass')
-  const dryTwin = createIdentityShaperPath(ctx)
+  const dryTwin = createIdentityShaperPath(ctx, oversample)
   connectSeries([shell.input, bandIn, harmonics.input])
   connectSeries([harmonics.output, bandOut, ceiling, shell.wet])
   shell.input.connect(dryTwin.input)

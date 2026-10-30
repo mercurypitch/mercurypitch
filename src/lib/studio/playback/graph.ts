@@ -14,6 +14,8 @@
 import type { StudioFxChain } from '@/lib/studio-fx/chain'
 import { createStudioFxChain } from '@/lib/studio-fx/chain'
 import type { ChainSpec } from '@/lib/studio-fx/chain-spec'
+import type { StudioFxProfile } from '@/lib/studio-fx/fx-profile'
+import { FULL_FX_PROFILE } from '@/lib/studio-fx/fx-profile'
 import type { StudioArrangementPlan, StudioPlannedLane, } from '../model/arrangement-plan'
 import type { StudioTrack } from '../model/types'
 import { STUDIO_SAMPLE_RATE } from '../model/types'
@@ -91,6 +93,8 @@ export interface StudioGraph {
   resume(fromFrame: number, epoch: number, repeat: boolean): boolean
   /** Settle every new compressor in the graph from `at` (effect-shell.ts `settleRelease`). */
   settle(at: number): void
+  /** The profile its lane chains run (fx-profile.ts). */
+  profile(): StudioFxProfile
   /**
    * Start a graph built but not scheduled yet at `epoch` instead: its first
    * frame enters a lane with no compensation then. Call scheduleUntil after it.
@@ -148,6 +152,11 @@ export interface StudioGraphOptions {
    */
   readonly silentLanes?: boolean
   readonly master?: { readonly spec: ChainSpec }
+  /**
+   * How much work the lane chains do (fx-profile.ts); full quality when
+   * absent. The master always runs at full quality.
+   */
+  readonly profile?: StudioFxProfile
 }
 
 const PEAK_SAMPLES = 4096
@@ -239,6 +248,7 @@ function buildParts(
       planStart: plan.startFrame,
       passStart: epoch - (fromFrame - plan.startFrame) / STUDIO_SAMPLE_RATE,
       fromFrame,
+      profile: options.profile ?? FULL_FX_PROFILE,
     }
     for (const lane of studioGraphLanes(plan, options.silentLanes))
       lanes.push(buildGraphLane(ctx, lane, place))
@@ -283,6 +293,7 @@ export function buildStudioGraph(
     epoch,
     fromFrame: options.fromFrame ?? plan.startFrame,
     pendingAt: -Infinity,
+    profile: options.profile ?? FULL_FX_PROFILE,
   }
   const peakSamples = new Float32Array(PEAK_SAMPLES)
   const playing = () => !state.disposed && !state.parked
@@ -335,6 +346,7 @@ export function buildStudioGraph(
       for (const lane of lanes) silenceLane(lane)
       restartLanes(state, state.fromFrame, epoch, false)
     },
+    profile: () => state.profile,
     settle(at) {
       if (state.disposed) return
       master?.settle(at)
