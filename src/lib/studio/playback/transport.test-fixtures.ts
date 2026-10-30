@@ -1,11 +1,11 @@
 // Studio transport test fixture — a real transport over a fake clock, buffer cache and graph builder.
 import { vi } from 'vitest'
-import { FULL_FX_PROFILE } from '@/lib/studio-fx/fx-profile'
 import type { StudioArrangementPlan } from '../model/arrangement-plan'
 import { studioFixture } from '../model/model.test-fixtures'
 import type { StudioBufferCache } from './buffer-cache'
 import type { StudioChainSwap, StudioReplan } from './graph'
 import { PlaybackContext } from './playback.test-fixtures'
+import { livePlaybackProfile } from './playback-quality'
 import { RUN_OPEN_SECONDS, RUN_SETTLE_SECONDS } from './run'
 import type { StudioTransportOptions } from './transport'
 import { createStudioTransport } from './transport'
@@ -47,8 +47,8 @@ export function fakeStudioGraph(ctx: PlaybackContext) {
     park: vi.fn(),
     settle: vi.fn(),
     retime: vi.fn(),
-    // Built at full quality, as every graph is until a lighter tier asks.
-    profile: vi.fn(() => FULL_FX_PROFILE),
+    // Built at the playback quality live playback wants.
+    profile: vi.fn(() => livePlaybackProfile()),
     resume: vi.fn(
       (_fromFrame: number, _epoch: number, _repeat: boolean) => true,
     ),

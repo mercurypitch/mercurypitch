@@ -159,6 +159,18 @@ export interface StudioGraphOptions {
    * absent. The master always runs at full quality.
    */
   readonly profile?: StudioFxProfile
+  /**
+   * Live playback's quality (playback-quality.ts), told of every schedule
+   * tick while the graph plays, to watch for underruns. A graph keeps the
+   * profile it was built with; a new tier takes the next run.
+   */
+  readonly quality?: StudioGraphQuality
+}
+
+/** What a playing graph tells live playback quality. */
+export interface StudioGraphQuality {
+  /** A tick while playing, for underrun watching. */
+  tick(ctx: BaseAudioContext): void
 }
 
 const PEAK_SAMPLES = 4096
@@ -318,6 +330,7 @@ export function buildStudioGraph(
       if (!playing()) return
       settleSwaps(state)
       settleIdleLanes(ctx, lanes)
+      options.quality?.tick(ctx)
       const run = laneRun(state)
       for (const lane of lanes) scheduleLane(ctx, lane, time, run)
     },
