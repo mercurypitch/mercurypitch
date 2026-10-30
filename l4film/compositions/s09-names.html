@@ -148,10 +148,10 @@
           // A pill in the hud, left edge at x, its text inset 0.6 of its size, its box 1.6 of its size tall and
           // centred on the text's cap height. `mix` (0 to 1) switches its words inside the pill's own shape (a clip),
           // so the two never overlap, nothing stands past the box (component critic D-01 item 4) and the pill is
-          // never empty (D-04 item 3, DECISIONS 107): the words roll one line (1.25 of the size) up, the old out
-          // through the pill's top and the new in from its foot (0 to 0.5), while the box widens to the new words
-          // (0.1 to 1, so the switch moves to its end), clipping them until it has. The guess is L.GUESS (dashed
-          // ink-2), traced on from the top left; the solid rim is ink.
+          // never empty (D-04 item 3, DECISIONS 107): the box first widens to the new words (0 to 0.45), then the
+          // words roll one line (1.25 of the size) up, the old out through the pill's top and the new in from its
+          // foot (0.45 to 1), so the box's growing edge never cuts a letter (film round 2, item 6). The guess is
+          // L.GUESS (dashed ink-2), traced on from the top left; the solid rim is ink.
           // draw({ a, reveal, solid, mix, scale, x, baseline, pulse })
           const makePill = (parent, { size, items, guess = false }) => {
             const inset = 0.6 * size, h = 1.6 * size, roll = 1.25 * size
@@ -174,17 +174,17 @@
               draw({ a = 1, reveal: rv = 1, solid = guess ? 0 : 1, mix = 0, scale = 1, x, baseline, pulse = 1 }) {
                 g.setAttribute('opacity', a.toFixed(3))
                 if (a <= 0.004) return
-                const grow = L.ease('power2.inOut')(clamp((mix - 0.1) / 0.9))
+                const grow = L.ease('power2.inOut')(clamp(mix / 0.45))
                 const w = lerp(widths[0], widths[Math.min(1, widths.length - 1)], grow) + 2 * inset
                 for (const r of [fillR, dash, solidR, reveal, clipR]) r.setAttribute('width', f1(w))
                 reveal.setAttribute('stroke-dashoffset', (1 - clamp(rv)).toFixed(4))
                 fillR.setAttribute('opacity', clamp(rv * 1.6).toFixed(3))
                 dash.setAttribute('opacity', (1 - solid).toFixed(3))
                 solidR.setAttribute('opacity', solid.toFixed(3))
-                const u = L.ease('power2.inOut')(clamp(mix / 0.5))
+                const u = L.ease('power2.inOut')(clamp((mix - 0.45) / 0.55))
                 texts.forEach((el, i) => {
                   // the old words show until they have rolled out, the new from the first frame of the roll
-                  const on = i === 0 ? u < 1 : mix > 0
+                  const on = i === 0 ? u < 1 : u > 0
                   el.setAttribute('opacity', ((on ? 1 : 0) * clamp(rv * 1.6)).toFixed(3))
                   el.setAttribute('transform', `translate(0 ${f1(i === 0 ? -roll * u : roll * (1 - u))})`)
                 })

@@ -243,3 +243,26 @@ Scratch in lab/s06-groups/polish/ (harness.mjs runs a JS body in a page with the
 - check (root, 14:02): passed, 0 errors; my scenes' warnings are the same kinds as round 6 (too large,
   duplicate media, nested media start for the Merc tags), four fewer (the intro seg tags went). 80-sample check
   on lab/s06-groups/proj: layout 0 issues, contrast 128/128. merc-tags --check: 2 and 4 tags, 0 stale.
+
+## Polish round 2 (30 Oct, from 22:00): film round 2 item 4 (DECISIONS 130), S6 only
+
+Brief: /tmp/claude-0/-home-user-mercurypitch/12ae313e-03fe-590a-b304-88d38ce9e159/scratchpad/l4entr/polish2/BRIEF-B.md.
+Scratch in lab/s06-groups/polish2/; renders into /dev/shm/l4lab-B/ (TMPDIR /dev/shm, 1 worker), clips moved to lab.
+Before: the 13:52 clip's frames and measure copied to /dev/shm/l4lab-B/before/ (old-*.png, measure-old/).
+
+- Plan: a local framing F_GRP { s 1.4, ox -44, oy -248 } (about world (110, 620)): the content box (upper bracket's
+  line top 268, the copy's halo to 749, x 229 to 1207) lands at screen x 277 to 1646, y 127 to 801. Push from
+  "Both" (A.both) to "climb" (dur A.climb - A.both = 0.75 s), power2.inOut; pull from b14's end (A.pull, 130.15)
+  over min(0.8, semis - 0.2 - pull) = 0.8 s, power2.inOut, at rest 130.95. Key names E F B C leave over 0.2 s from
+  the push (in F_GRP their baseline is y 963, the text sweep's BAND) and return over 0.2 s from the pull's landing.
+- Built (22:05): s06 lines: anchors `pull`; camera block (F_GRP, PUSH, PULL, two cam.to); keyNameA. clock-lint
+  silent on both. s05 untouched.
+- Framing check (22:03, lab/s06-groups/polish2/framing.js, out in framing.out.json; the scene seeked at 60/s, the mid
+  layer's real transform, the real paths and labels): held F_GRP holds stairs x 295 to 1628, y 245 to 782; brackets
+  lower x 292 to 958, y 382 to 402, upper x 963 to 1630, y 127 to 147; the copy with its halo x 277 to 1646, y 227 to
+  801; riser labels (em boxes, pulses included) x 406 to 1458, y 200 to 688; stair names y 716 to 779. Legend (hud)
+  x 140 to 524, y 156 to 263: 119 px above the lower bracket. Key names: alpha over 0.3 only while their box ends
+  above y 870. The rig: 1.0 at 123.50, 1.24 at 123.90, 1.40 by 124.25; pull 130.15 to 130.95.
+- Stills (22:02, snapshot into /dev/shm then sheets): lab/s06-groups/polish2/push-sheet.jpg, hold-sheet.jpg,
+  pull-sheet.jpg, fgrp-at-13.37s.jpg, fgrp-at-14.5s.jpg, fgrp-at-18.8s.jpg, before-after-14.5s.jpg.
+- Clip render started 22:05 (polish2/render.sh, 1 worker, 60 fps).

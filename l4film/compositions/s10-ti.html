@@ -9,8 +9,6 @@
       <video id="s10-ti-m09-orange-refl" data-merc="m09-orange" data-merc-refl class="clip" muted playsinline src="assets/merc/m09-orange-merc.webm" data-start="0.000" data-duration="25.324" data-media-start="20.808"></video>
       <video id="s10-ti-m10-blue" data-merc="m10-blue" class="clip" muted playsinline src="assets/merc/m10-blue-merc.webm" data-start="11.558" data-duration="13.766" data-media-start="0.008"></video>
       <video id="s10-ti-m10-blue-refl" data-merc="m10-blue" data-merc-refl class="clip" muted playsinline src="assets/merc/m10-blue-merc.webm" data-start="11.558" data-duration="13.766" data-media-start="0.008"></video>
-      <video id="s10-ti-m10-blue-seg1" data-merc="m10-blue" data-merc-seg="m10-blue:1" class="clip" muted playsinline src="assets/merc/m10-blue-tall-merc.webm" data-start="11.558" data-duration="0.700" data-media-start="0.008"></video>
-      <video id="s10-ti-m10-blue-seg1-refl" data-merc="m10-blue" data-merc-seg="m10-blue:1" data-merc-refl class="clip" muted playsinline src="assets/merc/m10-blue-tall-merc.webm" data-start="11.558" data-duration="0.700" data-media-start="0.008"></video>
       <script>
         ;(function () {
           /* S10, Ti, one short of home (STORYBOARD rows 10a to 10c; HANDOFFS § S9 to S10, § Inside D, § S10 to S11).
@@ -148,8 +146,10 @@
 
           /* ---------------------------------------------------------------- the Mercs (top layer, screen space) */
           const tavi = L.mercGate(room.top, { sid: SID, pass: 'm09-orange', tag: SID + '-m09-orange', x: 1800 })
-          // m10-blue is rendered facing left and mirrored here (DECISIONS 74), so on screen he faces the stairs
-          const merc = L.mercGate(room.top, { sid: SID, pass: 'm10-blue', tag: SID + '-m10-blue', x: 110, mirror: true })
+          // m10-blue is rendered facing left and mirrored here (DECISIONS 74), so on screen he faces the stairs. It
+          // opens on his leap in from the left edge, the box held 300 px off his corner (film round 2, item 1;
+          // DECISIONS 131)
+          const merc = L.mercGate(room.top, { sid: SID, pass: 'm10-blue', tag: SID + '-m10-blue', x: 110, mirror: true, leap: true, leapDx: -300 })
           // his mouth at the bead's launch, at feet (110, 840), size 300, hero view, mirrored: measured on the
           // m10-blue pass and the lab still at the launch (BUILD-GUIDE § Handoff confirmations, Inside D, S10)
           const MOUTH = [156, 797]

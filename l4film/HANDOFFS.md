@@ -200,7 +200,7 @@ equally.
 | 280.70-282.40 | pull         | CU-C       | F0         | power2.inOut                    | "1 semitone" and the arrow left at 280.5 to 280.7; the strip returns over it                                                                                                        |
 | 298.70-299.90 | push         | F0         | F-exp      | power2.inOut                    | both Mercs gone at 298.6; then a sideways drift of about 5 px a second, turning only inside beats, to 320.23 (DECISIONS 98)                                                                                                                                                            |
 | 307.13-308.98 | push         | F-exp      | F-chart    | power2.inOut                    | from "top": the camera follows the stair names in as the chips fly up, at rest as the last chips land                                                                                                                                                                                  |
-| 320.23-321.03 | pull         | F-chart    | F0         | power2.inOut                    | Tavi drops back over it                                                                                                                                                    |
+| 320.23-321.03 | pull         | F-chart    | F0         | power2.inOut                    | Tavi leaps back in over it                                                                                                                                                    |
 | 411.00-412.60 | push         | F0         | F-recap-1  | power2.inOut                    | the strip and its hairlines sink 60 px and fade                                                                                                                                     |
 | 419.70-420.70 | pull         | F-recap-1  | F0         | power2.inOut                    | the strip returns without its hairlines (they draw on "F sharp", 427.22)                                                                                                            |
 | 430.70-431.90 | push         | F0         | F-recap-3  | power2.inOut                    | the strip and its hairlines sink and fade                                                                                                                                           |
@@ -348,7 +348,7 @@ riser labels 2 2 1 2 2 2 1, hairlines drawn; the strip with C major's keys at fu
   steps Outfit 600 48 px from x 340 (to x 596); "D major" serif italic 120 px at x 140, baseline 300.
 - **S7's bead.** The chrome bead rests on the dashed treads in white-d (stair 1 at (448, 526) in
   F-white) and on the real treads in major-d (F0).
-- **S7 to S8 (199.36).** Tavi on screen (m08 spans the cut, from 198.27). The staircase on D at full,
+- **S7 to S8 (199.36).** Tavi on screen (m08 spans the cut: her leap in from the right edge, 197.98, settled by 198.78). The staircase on D at full,
   letters D E F♯ G A B C♯ D, riser labels T T S T T T S, F♯4 and C♯5 lit (their names gone at
   195.7), "D major" up (it leaves in S8a, 199.4 to 199.6).
 - **S8's tally.** Outfit 600 64 px at x 140, baseline 250: "C 0 · D 2" from 207.1, "G 1" from 208.9,
@@ -374,7 +374,7 @@ keys at full and the rest at 45 %, no key names.
 - **S9 to S10 (270.63).** Tavi on screen (m09 spans the cut). The staircase on C (back from D at
   269.4), names do to do, both houses lit, no riser labels, no key names.
 - **S10.** "1 semitone" Outfit 600 48 px, frame-fixed at x 1200, baseline 250 in CU-C (x 1200 to
-  1426, 31 px right of the top stair). Merc drops in at feet (110, 840), size 300, 282.20 to 283.05;
+  1426, 31 px right of the top stair). Merc leaps in from beyond the left edge to feet (110, 840), size 300 (in the air 282.35 to 282.78, settled by 283.00);
   his bead leaves his mouth at (156, 797) and hops onto stair 1, resting at (298, 642), at 283.57:
   a hop's arc (above), peaking at y 602, about 100 px over the straight line at mid-flight and 34 px
   clear of stair 1's corner (242, 664); it rests on ti at 286.27, lands on the

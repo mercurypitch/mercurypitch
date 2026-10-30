@@ -2160,3 +2160,20 @@ Note: the lanes' memory gate read a stale cgroup path after the 21:00 restart (f
   Two agents running. Lead now: pill (s09), then the leaps (merc-shots.py, 4 pass renders, gates s07,
   s10, s11). Next: review B and F once each, docs, full check, freeze film03proj, film-03, FILM3 critic
   (critics/FILM2.txt shape; previous report review/film-02/REPORT.md).
+- 22:1x Lead's part of polish round 2 under way.
+  - Pill done (s09 makePill: box widens 0-0.45, words roll 0.45-1; proof lab/s09-names/polish2/pill-before-after.png).
+  - Leaps: merc-shots.py edited (m08-orange, m10-blue, m11-blue, m11-orange enter `celebrate`, LEAP 1.38 before
+    the first sound, m11-blue at b36 end + 0.05; m08-orange-in dropped). Passes rendering one by one (bryrq26pz,
+    logs l4entr/polish2/lead/pass-*.log): m10-blue done 22:03; m11-orange, m11-blue, m08-orange after.
+    The frozen copies symlink assets/, so the old m11/m08 passes were saved to l4entr/polish2/lead/old-passes/
+    first (the old m10-blue was already overwritten).
+  - Gates: s07 (m08 leap), s10 and s11 (Merc leapDx -300). merc-whole.py and merc-tags.py run (10 tags
+    updated; s08 m08-orange-in seg tags and the m10/m11 intro tags gone). clock-lint silent on s07, s08, s10, s11.
+  - m10 checked: leap sheet lab/entrances/s10-m10-leap.jpg; mouth at the launch (pass frame 64) within 2 px of
+    the old (78, 144), so s10's MOUTH (156, 797) stands (lab/entrances/s10-m10-launch.jpg).
+  - Docs done: STORYBOARD 7h, 10b, 11c, 11d, pass rows m08/m10/m11, the entrances note; BUILD-GUIDE s07,
+    s10, s11 Merc lines; HANDOFFS § Camera moves 320.23, § S7 to S8, § S10; tools/CHANGES.md.
+    Backups l4entr/polish2/lead/*.before-leaps.
+  - To do: s11 and s07 stills (script l4entr/polish2/lead/leap-stills.sh) once m11 and m08 render; the
+    BUILD-GUIDE confirmation rows (S10, S11c, the m08 splice row); DECISIONS 131 (draft
+    l4entr/polish2/lead/DECISIONS-131.draft.md). Builders B and F still running.

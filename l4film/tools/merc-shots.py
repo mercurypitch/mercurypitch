@@ -25,8 +25,9 @@ Times in the shot files are relative to the pass start (shot time).
 
 Lesson 4 (STORYBOARD § Merc performances and its notes for this tool): every
 entrance and exit is a named state with a start and a fixed length (`enter`: a
-`drop` of DROP, or for Tavi's two leaps in from the right edge a `celebrate` of
-LEAP_LEN, given as the pass's `drop`; `exit`: a `hop` of 0.6 s; the slides out of S1 and every move
+`drop` of DROP, or for a leap in from the frame's edge (Tavi's two in S5 and S6, and since film
+round 2 m08, m10 and both m11s: a fall opens a chapter, a leap returns within one) a `celebrate`
+of LEAP_LEN, given as the pass's `drop`; `exit`: a `hop` of 0.6 s; the slides out of S1 and every move
 in S13 and S16 are the scene moving his box), and each pass ends 0.05 s after
 its exit ends; m12, which has no exit, runs past the film's end. A drop starts
 LAND before its host's first word, so the fall and the splat are over before
@@ -172,37 +173,38 @@ PASSES = [
     # S7b: drops in before o7, talks o7, hops out right after it.
     dict(id='m07-orange', who='orange', span=(cue('o7', 'start', -LAND), ended(cue('o7', 'end', 0.07))), size=300, view='hero',
          bias=TURN['left'], enter=('drop', cue('o7', 'start', -LAND)), exit=('hop', cue('o7', 'end', 0.07))),
-    # S7h to S8d: drops in once the pull has landed, talks o8, idles through b23 to b25 and the slides,
-    # hops out right on b25's "keys" (the pass spans the S7 to S8 cut).
-    dict(id='m08-orange', who='orange', span=(cue('o8', 'start', -0.46), ended(word('b25', 19))), size=300, view='hero',
-         bias=TURN['left'], enter=('drop', cue('o8', 'start', -0.46)), exit=('hop', word('b25', 19)), drop=DROP_OLD),
-    # its head: the drop LAND before o8, then the same performance; m08 takes over in the idle after o8
-    dict(id='m08-orange-in', who='orange', span=(cue('o8', 'start', -LAND), cue('o8', 'end', 0.7)), size=300, view='hero',
-         bias=TURN['left'], enter=('drop', cue('o8', 'start', -LAND)), splice=('m08-orange', cue('o8', 'end', 0.6))),
+    # S7h to S8d: leaps in from the right edge once the pull has landed, talks o8, idles through b23 to b25
+    # and the slides, hops out right on b25's "keys" (the pass spans the S7 to S8 cut). A leap, not a drop:
+    # she returns within chapter 2, and a fall opens a chapter (film round 2, item 1; DECISIONS 131). One
+    # pass from the leap, so the head m08-orange-in is no longer played.
+    dict(id='m08-orange', who='orange', span=(cue('o8', 'start', -LEAP), ended(word('b25', 19))), size=300, view='hero',
+         bias=TURN['left'], enter=('celebrate', cue('o8', 'start', -LEAP)), drop=LEAP_LEN, exit=('hop', word('b25', 19))),
     # S9e to S11a: drops in once the pull has landed, talks o9, idles through b29 to b34 and both of
     # Merc's runs, talks o10, hops out right as it ends (the pass spans the S9 to S10 and S10 to S11 cuts).
     dict(id='m09-orange', who='orange', span=(cue('o9', 'start', -0.21), ended(cue('o10', 'end'))), size=300, view='hero',
          bias=TURN['left'], enter=('drop', cue('o9', 'start', -0.21)), exit=('hop', cue('o10', 'end')), drop=DROP_OLD),
     dict(id='m09-orange-in', who='orange', span=(cue('o9', 'start', -LAND), cue('o9', 'end', 0.7)), size=300, view='hero',
          bias=TURN['left'], enter=('drop', cue('o9', 'start', -LAND)), splice=('m09-orange', cue('o9', 'end', 0.6))),
-    # S10b to S11a: drops in at the bottom left as the pull out of CU-C lands (CU-C's lower stairs fill
-    # his corner, so he cannot stand there before it; by 282.2 the pull has cleared it), down 0.28 s
-    # before his bead leaves his mouth. That fall runs over b33's last words, the one drop that does
-    # (DECISIONS 81). Sings stop-c-home (the scene's bead leaves his mouth 0.3 s before it: `leads`),
+    # S10b to S11a: leaps in from the left edge at floor level as the pull out of CU-C lands (CU-C's lower
+    # stairs fill his corner, so he cannot stand there before it; by 282.2 the pull has cleared it),
+    # landing 0.5 s before his bead leaves his mouth; a leap, not a drop (film round 2, item 1; DECISIONS
+    # 131). The leap runs over b33's last words, as the drop did (DECISIONS 81). Sings stop-c-home (the scene's bead leaves his mouth 0.3 s before it: `leads`),
     # idles through `wait`, talks b34, sings land-c, idles through o10, and hops out left as it ends,
     # starting b35 as he goes. The renderer's first hop always arcs right, so this pass faces left and
     # the scenes mirror it (scaleX(-1), as Lesson 2's s10): on screen he faces right, toward the
     # stairs, and hops out left.
-    dict(id='m10-blue', who='blue', span=(cue('stop-c-home', 'start', -1.37), ended(cue('o10', 'end'))), size=300, view='hero',
-         bias=TURN['left'], enter=('drop', cue('stop-c-home', 'start', -1.37)), exit=('hop', cue('o10', 'end')),
+    dict(id='m10-blue', who='blue', span=(cue('stop-c-home', 'start', -LEAP), ended(cue('o10', 'end'))), size=300, view='hero',
+         bias=TURN['left'], enter=('celebrate', cue('stop-c-home', 'start', -LEAP)), drop=LEAP_LEN, exit=('hop', cue('o10', 'end')),
          sings={'stop-c-home': 'sing', 'land-c': 'sing'}, leads={'stop-c-home': 0.3}),
-    # S11d to S11f: both drop back into their corners, turned toward each other: Tavi LAND before o11,
-    # Merc as b36 ends (not while his own voice runs); Tavi talks o11, Merc b37 and b38; both hop out
-    # before the act 4 card. Merc's pass faces left and is mirrored, as m10's, so his hop arcs out left.
+    # S11d to S11f: both leap back into their corners at floor level, each from its own edge, turned
+    # toward each other: Tavi LEAP before o11, Merc as b36 ends (not while his own voice runs); Tavi talks
+    # o11, Merc b37 and b38; both hop out before the act 4 card. Leaps, not drops: they return within
+    # chapter 3 (film round 2, item 1; DECISIONS 131). Merc's pass faces left and is mirrored, as m10's,
+    # so his hop arcs out left.
     dict(id='m11-blue', who='blue', span=(cue('b36', 'end', 0.05), ended(cue('b38', 'end', -0.19))), size=300, view='hero',
-         bias=TURN['left'], enter=('drop', cue('b36', 'end', 0.05)), exit=('hop', cue('b38', 'end', -0.19))),
-    dict(id='m11-orange', who='orange', span=(cue('o11', 'start', -LAND), ended(cue('b38', 'end', -0.19))), size=300, view='hero',
-         bias=TURN['left'], enter=('drop', cue('o11', 'start', -LAND)), exit=('hop', cue('b38', 'end', -0.19))),
+         bias=TURN['left'], enter=('celebrate', cue('b36', 'end', 0.05)), drop=LEAP_LEN, exit=('hop', cue('b38', 'end', -0.19))),
+    dict(id='m11-orange', who='orange', span=(cue('o11', 'start', -LEAP), ended(cue('b38', 'end', -0.19))), size=300, view='hero',
+         bias=TURN['left'], enter=('celebrate', cue('o11', 'start', -LEAP)), drop=LEAP_LEN, exit=('hop', cue('b38', 'end', -0.19))),
     # S12 to S16: one unbroken pass each, from the drop before b39 to past the film's end (trap 15),
     # rendered at 520; the scenes move and scale their boxes (360 in S12, 300 and 240 in S13, 300 in S14
     # and S15, 520 in S16). Merc rides sing-a and sings the count-in; Tavi rides sing-b; both idle

@@ -256,3 +256,22 @@ events in the card pause (icon pulses that register, then the address once more)
   identical to F-03's. check 0 errors (group F's warnings as F-03: duplicate_media x3, s14 file length), contrast
   59/59; clock-lint silent; merc-tags 12 tags, 0 stale; text sweep clean (lab/s14-recap/sweep-p1.log).
   Stills: lab/s14-recap/polish/, lab/s15-next/polish/, lab/s16-end/polish/.
+
+## Polish round 2 (30 Oct, film critic FILM2 item 3; DECISIONS 130; brief polish2/BRIEF-F.md)
+
+- One item: S15's bead flies across the cut into the end card's blue bead (which no longer rises from
+  Merc); no frame 478.2 to 479.0 holds only the Mercs; the card complete by 479.85 as now; HANDOFFS.md not
+  edited (the report lists the new values). S14 is not touched.
+- Backups: lab/s15-next/s15-next.p2-before.html, lab/s16-end/s16-end.p2-before.html (the polish-round files).
+- 21:59-22:15 built (no render yet). Tools (lab/s16-end/tools/): probe.mjs (each visible bead's centre, scale,
+  opacity and colour per scene time on the seek proxy; EVAL= adds an expression), flightsim.py (a candidate path
+  against the type's ink boxes, opacities and rises per 60 fps frame), flightgap.py (the same on probe output, as
+  drawn), sheet.py (a contact sheet labelled with film times).
+  S15: A.fly = at('o14', 'end') (478.13), A.flyEnd = at('end', 'start', 0.95) (479.479); from A.fly the bead is
+  on FLIGHT at full (no lift, no fade); the type, line and rings leave as before (o14 end + 0.07, 0.3 s).
+  FLIGHT (both scenes, identical): two cubics (1360,520) (1180,455) (900,440) (700,432) | (560,425) (505,300)
+  (482,106), 401 points, read by arc length, sine.inOut over A.fly..A.flyEnd; 1099 px.
+  S16: the blue bead = FLIGHT + w (orbit point - FEND), scale lerp(1, orbit scale, w), w = P(t, 0, FLYE,
+  power2.inOut); tint chrome -> blue over FLYE - 0.6 (0.5 s, sine.inOut); squash at FLYE as before; opacity 1
+  from 0. Orange unchanged. Proxy: S15 at D = S16 at 0, (1145.0, 468.8) scale 1, chrome; from 0.95 the blue
+  bead and every card pixel as before.

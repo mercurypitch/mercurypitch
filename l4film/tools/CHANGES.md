@@ -235,3 +235,11 @@ entries here; from this one on, every change is logged.
   carries the jump in from beyond the right edge. Rendered with the container's Playwright
   (`PLAYWRIGHT_MODULE=/opt/node-tools/node_modules/playwright/index.mjs`) on the same Chromium 1194:
   the repo's node_modules is gone from this container.
+- **merc-shots.py: four more leaps** (DECISIONS 130 and 131: a fall opens a chapter, a leap
+  returns within one). m08-orange, m10-blue, m11-blue and m11-orange enter with the same
+  `celebrate` jump as m06a and m06b: m08-orange, m10-blue and m11-orange open LEAP (1.38 s) before
+  their host's first sound, m11-blue as b36 ends (+0.05). m08-orange is one pass again, with no
+  head, so `merc/shots/m08-orange-in.json` and `assets/merc/m08-orange-in-merc.webm` are no longer
+  read; the intros are now m04, m07, m09 and both m12s. `L.mercGate` takes Merc's leaps from the
+  left with `leapDx: -300` (s10 and s11). Regenerate: the four passes (`merc-pass.mjs`), then
+  `merc-whole.py` and `merc-tags.py`.

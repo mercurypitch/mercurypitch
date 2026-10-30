@@ -13,8 +13,10 @@
         ;(function () {
           /* S16, the end card (STORYBOARD row 16; HANDOFFS § S15 to S16, § S16), adapted from Lesson 2's s17-end:
              the MercuryPitch lockup forms, "Find your pitch." and the address land above the Mercs' heads, the skip
-             line and the Scale Runner path between their bodies; the blue and orange beads rise from behind their
-             Mercs into small orbits beside the lockup. The Mercs grow from 300 in the corners to 520 at (330, 840)
+             line and the Scale Runner path between their bodies; the orange bead rises from behind Tavi into a small
+             orbit beside the lockup, and the blue one arrives from S15: S15's chrome bead, in flight across the cut
+             (FLIGHT, the same code in s15-next; polish round 2, DECISIONS 130), turns blue as it rises and lands in
+             the blue orbit's place with the squash the rise had. The Mercs grow from 300 in the corners to 520 at (330, 840)
              and (1590, 840); their celebration (one hop, sparkles off) is the passes' own, and the scene draws one
              chrome ring under each as it lands. The passes run to the film's end (trap 15). The call to action is
              the film's one hold: since film round 1 (DECISIONS 122) the card is complete by end + 1.37 (479.9), as
@@ -43,10 +45,12 @@
           // enough (URL_Y) that the hop's top keeps 20 px or more from it (DECISIONS 95, 122), so it need not wait
           const URL = at('end', 'start', 0.55)
           const SKIP = at('end', 'start', 0.75)           // the skip line, then the Scale Runner path, 0.12 s apart (0.45 s)
-          // the beads rise from behind their Mercs as they start to move, and pass the address's ends (y 370 to 426)
-          // by end + 0.4, before it lands; in orbit by end + 0.95 and settled by end + 1.2
+          // the orange bead rises from behind Tavi as he starts to move, and passes the address's end (y 370 to 426)
+          // by end + 0.4, before it lands; in orbit by end + 0.95 and settled by end + 1.2. The blue bead is S15's, in
+          // flight since o14's end (FLY0), and lands at the same moment (FLY + FLYD), settled by end + 1.2 as before
           const FLY = at('end', 'start', 0.15)
           const FLYD = 0.8
+          const FLY0 = at('o14', 'end'), FLYE = at('end', 'start', 0.95)
           const LAND = at('end', 'start', 0.87 + 0.58)    // the celebration (end + 0.87, merc-shots.py) lands its hop 0.58 s in
           // the card's layout (film round 1): the lockup as Lesson 2's (y 40 to 220), "Find your pitch." (serif italic),
           // the address (Outfit 600 56 px) and the two lower lines (Outfit 500, LPX, ink-2) between the Mercs
@@ -141,9 +145,48 @@
             }
           })
 
-          /* ---------------------------------------------------------------- the beads: rise, then orbit beside the lockup */
+          /* ---------------------------------------------------------------- the beads: arrive, then orbit beside the lockup */
+          // S15 to S16 (polish round 2, DECISIONS 130): the bead's flight from the long note's end (1360, 520) into the end
+          // card's blue bead, the same code in s15-next, so both scenes draw it from film time on the same pixels on either
+          // side of the cut. It lifts off the line and goes left at about y 440, under the space '"support"' leaves and
+          // above where the end card's lower lines will stand, then turns up left of "Find your pitch." and rises to the
+          // blue bead's place, left of the lockup's orb (FEND; s16-end adds the last few pixels to its orbit). Each part
+          // passes before the type that lands there; a polyline of 401 points read by arc length, on sine.inOut.
+          const FEND = [482, 106]
+          const FLIGHT = (() => {
+            const SEG = [[[1360, 520], [1180, 455], [900, 440], [700, 432]], [[700, 432], [560, 425], [505, 300], FEND]], N = 200
+            const pts = []
+            SEG.forEach(([p0, p1, p2, p3], k) => {
+              for (let i = k ? 1 : 0; i <= N; i++) {
+                const s = i / N, a = (1 - s) ** 3, b = 3 * (1 - s) ** 2 * s, c = 3 * (1 - s) * s * s, d = s ** 3
+                pts.push([a * p0[0] + b * p1[0] + c * p2[0] + d * p3[0], a * p0[1] + b * p1[1] + c * p2[1] + d * p3[1]])
+              }
+            })
+            const cum = [0]
+            for (let i = 1; i < pts.length; i++) cum.push(cum[i - 1] + Math.hypot(pts[i][0] - pts[i - 1][0], pts[i][1] - pts[i - 1][1]))
+            const total = cum[cum.length - 1]
+            return (u) => {
+              const s = L.clamp(u) * total
+              let i = 1
+              while (i < cum.length - 1 && cum[i] < s) i++
+              const f = (s - cum[i - 1]) / (cum[i] - cum[i - 1] || 1)
+              return [L.lerp(pts[i - 1][0], pts[i][0], f), L.lerp(pts[i - 1][1], pts[i][1], f)]
+            }
+          })()
+          const flightAt = (t, t0, t1) => (t < t0 ? null : FLIGHT(P(t, t0, t1 - t0, 'sine.inOut')))
           const beadLayer = sv('g', {}, mid)
           const BB = L.bead(beadLayer, { r: 22, color: C.blue }), OB = L.bead(beadLayer, { r: 22, color: C.orange })
+          // the blue bead comes in as S15's chrome one and turns blue as it rises (a scene helper: the kit's L.bead takes
+          // its colour once; this re-tints its body gradient's middle stop, its halo's two stops and its rim)
+          const tintOf = (b) => { const st = b.g.querySelectorAll('stop'); return [st[1], st[3], st[4]] }
+          const BBT = tintOf(BB), BBR = BB.body.children[1]
+          const rgbOf = (h) => [1, 3, 5].map((i) => parseInt(h.slice(i, i + 2), 16))
+          const CHR = rgbOf(C.chrome), BLU = rgbOf(C.blue)
+          const tint = (c) => {
+            const col = c >= 1 ? C.blue : c <= 0 ? C.chrome : `rgb(${CHR.map((v, i) => Math.round(lerp(v, BLU[i], c))).join(',')})`
+            for (const s of BBT) s.setAttribute('stop-color', col)
+            BBR.setAttribute('stroke', col)
+          }
           const squash = (b, sx, sy) => b.body.setAttribute('transform', `translate(0 ${b.r}) scale(${sx.toFixed(3)} ${sy.toFixed(3)}) translate(0 ${-b.r})`)
           // Lesson 1's orbit: a speed that slows to a drift, integrated from the arrival; blue goes round once while
           // orange goes twice
@@ -244,8 +287,22 @@
               const a = t - (FLY + FLYD), sq = a < 0 || a > 0.25 ? 0 : Math.sin(Math.PI * a / 0.25) * Math.exp(-a * 5)
               squash(b, 1 - 0.18 * sq, 1 + 0.28 * sq)
             }
-            fly(BB, 'b', lerp(POSE[0].x0, POSE[0].x1, mu), 1.75 * Math.PI, WB)
             fly(OB, 'o', lerp(POSE[1].x0, POSE[1].x1, mu), 1.25 * Math.PI, WO)
+            // the blue bead: S15's, on its flight (from FLY0, before the cut) until it lands (FLYE = FLY + FLYD); from the
+            // cut it is drawn the last few pixels onto its orbit's moving place (as the rise was) and from 1 to the orbit's
+            // scale, both on power2.inOut from 0, so the cut's frames are S15's curve; it turns from chrome to blue over
+            // its rise (FLYE - 0.6, 0.5 s) and squashes as it lands, as the rise did
+            {
+              const o = ORB.b, th = 1.75 * Math.PI + WB * angle(t)
+              const op = { x: o.cx + o.rx * Math.cos(th), y: o.cy + o.ry * Math.sin(th), z: Math.sin(th) }
+              const w = P(t, 0, FLYE, 'power2.inOut'), [fx, fy] = flightAt(t, FLY0, FLYE)
+              const s = lerp(1, 0.86 + 0.24 * (op.z + 1) / 2, w)
+              BB.g.setAttribute('transform', `translate(${f2(fx + w * (op.x - FEND[0]))} ${f2(fy + w * (op.y - FEND[1]))}) scale(${s.toFixed(3)})`)
+              BB.g.setAttribute('opacity', '1')
+              tint(P(t, FLYE - 0.6, 0.5, 'sine.inOut'))
+              const a = t - FLYE, sq = a < 0 || a > 0.25 ? 0 : Math.sin(Math.PI * a / 0.25) * Math.exp(-a * 5)
+              squash(BB, 1 - 0.18 * sq, 1 + 0.28 * sq)
+            }
 
             // one chrome ring under each Merc as the celebration's hop lands (Lesson 1's ring; gold is the semitones')
             const ra = t - LAND, ru = L.clamp(ra / 0.9), on = ra < 0 || ra > 0.9 ? 0 : 1

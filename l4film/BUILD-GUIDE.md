@@ -542,9 +542,10 @@ the hero view, y 323) after that.
   steps Outfit 600 48 px from x 340); `L.arrow` (the two small ink arrows); "Predict." and "D major"
   (serif italic 120 px at x 140, baseline 300); `L.pulse`; `L.echoRings`.
 - Merc: m07-orange drops in at `at('o7', 'start', -1.1)` (147.35, under the act 2 card, down as it
-  leaves), talks o7, and hops out right at `at('o7', 'end', 0.07)`; m08-orange drops in at
-  `at('o8', 'start', -1.1)` (198.27), once the pull has landed.
-- Checks: S7c to S7h (153.3 to 198.27) with no Merc: the predict, the push, the close-up, the crane;
+  leaves), talks o7, and hops out right at `at('o7', 'end', 0.07)`; m08-orange leaps in from the
+  right edge (`leap: true`, DECISIONS 131): its pass opens 1.38 s before o8 (197.98; in the air
+  198.13 to 198.56, settled by 198.78), once the pull has landed.
+- Checks: S7c to S7h (153.3 to 198.13) with no Merc: the predict, the push, the close-up, the crane;
   the tightest spans 163.3 to 163.83 (`word('b18', 2, 'start', 0.37)` to `word('b18', 5)`) and 188.75
   to 188.93 (`word('b21', 14, 'start', 0.02)` to `word('b21', 15)`); the ring timer stays 28 px or
   more from every dashed stair (81 px since the polish round) and 16 px or more from the pills' text
@@ -623,9 +624,10 @@ the hero view, y 323) after that.
   line and 40 px clear of stair 1's corner (242, 664); the run at stop-c-home's onsets; land-c's
   hop onto the top stair at 294.14 and the rise into the house, 294.2 to 294.5); `L.echoRings`.
 - Merc: m09-orange (feet (1800, 840), 300, hero) on screen throughout, clear of the stairs in CU-C by
-  its numbers; m10-blue (feet (110, 840), 300, hero, turned right) drops in at `at('stop-c-home',
-  'start', -1.37)` (282.20, as the pull lands; CU-C's lower stairs fill his corner, and the pull
-  clears it of stair 1 by then); his bead leaves his mouth at (156, 797) 0.3 s before
+  its numbers; m10-blue (feet (110, 840), 300, hero, turned right) leaps in from the left edge
+  (`leap: true, leapDx: -300`, DECISIONS 131): its pass opens 1.38 s before stop-c-home (282.20; in
+  the air 282.35 to 282.78, settled by 283.00, as the pull lands; CU-C's lower stairs fill his
+  corner, and the pull clears it of stair 1 by then); his bead leaves his mouth at (156, 797) 0.3 s before
   stop-c-home. The renderer's first hop always arcs right, so m10-blue (and
   m11-blue in s11) is rendered facing left and the scene mirrors its box, reflection and all
   (`L.merc(...).box.style.transform = 'scaleX(-1)'`, as Lesson 2's s10): on screen he faces right,
@@ -658,10 +660,12 @@ the hero view, y 323) after that.
   arrow; the slide to D (335.6 to 336.4) with "leading note" and the arrow riding; "ti = C♯";
   `L.strip`.
 - Merc: m09-orange and m10-blue in the corners for o10, both hopping out at `at('o10', 'end')` (Merc
-  starting b35 as he goes); m11-orange drops back into her corner at `at('o11', 'start', -1.1)` (320.48), as
-  the pull out runs, and m11-blue into his at `at('b36', 'end', 0.05)` (321.03), as his own line
-  ends; nothing comes within 20 px of either column (Tavi x 1700 to 1900, Merc x 10 to 210, from the
-  frame's top down) in any frame of the pull or the falls; both hop out at `at('b38', 'end', -0.19)`.
+  starting b35 as he goes); m11-orange leaps back into her corner from the right edge (`leap: true`,
+  DECISIONS 131): its pass opens 1.38 s before o11 (320.20; in the air 320.35 to 320.78), as the
+  pull out runs; m11-blue leaps into his from the left edge (`leap: true, leapDx: -300`) at
+  `at('b36', 'end', 0.05)` (321.03; in the air 321.18 to 321.61), as his own line ends; nothing comes
+  within 20 px of either column (Tavi x 1700 to 1900, Merc x 10 to 210, from the frame's top down)
+  in any frame of the pull or the leaps; both hop out at `at('b38', 'end', -0.19)`.
   m10-blue and m11-blue are mirrored in the scene, as in s10.
 - Checks: the dim chips' letters on the fourth shelf at 4.5:1 or better; the chips 8 px apart at the
   closest and never touching, in every frame of the shelves' close and spread; no numbers anywhere on

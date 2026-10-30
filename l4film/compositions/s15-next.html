@@ -15,7 +15,9 @@
              In: the Mercs in the corners at 300; the ladder and the card gone but for the ladder's top rung, do,
              gliding to (560, 520) on one curve in film time (carryAt, the same in s14-recap) through "Next time.",
              down the right side and along y 520, under '"support"', which lands with the kicker on the next mark; it
-             condenses into the chrome bead (471.9), just before "Singers". Out (to s16): the Mercs in the corners at 300; S15's type gone (478.5).
+             condenses into the chrome bead (471.9), just before "Singers". Out (to s16): the Mercs in the corners at 300; S15's type gone (478.5),
+             and the bead in flight (polish round 2, DECISIONS 130): it sets off from the long note's end as o14 ends
+             and crosses the cut on one curve (FLIGHT, the same code in s16-end) into the end card's blue bead.
              Merc talks b54 and b55, Tavi o14. The bead hovers (from film time) where the long note starts; on "a
              long note" it draws a level line from x 560 to 1360 at y 520; the line wavers once on "pushing".
              Every time is a cue, a word or a duration. */
@@ -43,7 +45,11 @@
             pushing: word('o14', 'pushing'),              // the line wavers once (0.8 s)
             what: word('o14', 'what'),                    // "what keeps it steady?" lands
             steady: word('o14', 'steady?'),               // the bead scales 1.2
-            out: at('o14', 'end', 0.07),                  // the type, the line and the bead leave up fast (0.3 s)
+            out: at('o14', 'end', 0.07),                  // the type and the line leave up fast (0.3 s)
+            // polish round 2 (DECISIONS 130): the bead does not leave with them. As Tavi's question ends it sets off
+            // from the long note's end on its flight across the cut, and lands as the end card's blue bead where that
+            // bead settles beside the lockup (s16-end's FLY + FLYD), so no frame of the cut holds only the Mercs
+            fly: at('o14', 'end'), flyEnd: at('end', 'start', 0.95),
           }
           A.end = A.long + 1.3
           A.ring2 = A.steady + 0.12                       // the bead's pulse sends one more ring, just behind it
@@ -95,6 +101,34 @@
             const [x, y] = CARRY(u)
             return { x, y, len: 52 * g * (1 - c), th: lerp(4 * g, 44, c), op: lerp(0.45, 1, br), bead: P(t, tc + 2.05, 0.15, 'none') }
           }
+          // S15 to S16 (polish round 2, DECISIONS 130): the bead's flight from the long note's end (1360, 520) into the end
+          // card's blue bead, the same code in s16-end, so both scenes draw it from film time on the same pixels on either
+          // side of the cut. It lifts off the line and goes left at about y 440, under the space '"support"' leaves and
+          // above where the end card's lower lines will stand, then turns up left of "Find your pitch." and rises to the
+          // blue bead's place, left of the lockup's orb (FEND; s16-end adds the last few pixels to its orbit). Each part
+          // passes before the type that lands there; a polyline of 401 points read by arc length, on sine.inOut.
+          const FEND = [482, 106]
+          const FLIGHT = (() => {
+            const SEG = [[[1360, 520], [1180, 455], [900, 440], [700, 432]], [[700, 432], [560, 425], [505, 300], FEND]], N = 200
+            const pts = []
+            SEG.forEach(([p0, p1, p2, p3], k) => {
+              for (let i = k ? 1 : 0; i <= N; i++) {
+                const s = i / N, a = (1 - s) ** 3, b = 3 * (1 - s) ** 2 * s, c = 3 * (1 - s) * s * s, d = s ** 3
+                pts.push([a * p0[0] + b * p1[0] + c * p2[0] + d * p3[0], a * p0[1] + b * p1[1] + c * p2[1] + d * p3[1]])
+              }
+            })
+            const cum = [0]
+            for (let i = 1; i < pts.length; i++) cum.push(cum[i - 1] + Math.hypot(pts[i][0] - pts[i - 1][0], pts[i][1] - pts[i - 1][1]))
+            const total = cum[cum.length - 1]
+            return (u) => {
+              const s = L.clamp(u) * total
+              let i = 1
+              while (i < cum.length - 1 && cum[i] < s) i++
+              const f = (s - cum[i - 1]) / (cum[i] - cum[i - 1] || 1)
+              return [L.lerp(pts[i - 1][0], pts[i][0], f), L.lerp(pts[i - 1][1], pts[i][1], f)]
+            }
+          })()
+          const flightAt = (t, t0, t1) => (t < t0 ? null : FLIGHT(P(t, t0, t1 - t0, 'sine.inOut')))
           const capsule = L.svg('rect', { fill: C.chrome, display: 'none' }, gNote)
           const bead = L.bead(gNote, { r: 22, color: C.chrome })
 
@@ -113,7 +147,8 @@
             const lift = -40 * out
 
             // the bead: the carried rung until it lands; then it hovers on a 4 px circle (from film time) until the long
-            // note, which it draws level; it holds the line's end, sways with the waver, and scales 1.2 on "steady?"
+            // note, which it draws level; it holds the line's end, sways with the waver, and scales 1.2 on "steady?"; from
+            // o14's end it flies (FLIGHT) across the cut, at full, while the type and the line leave without it
             const hover = P(t, A.land + 0.25, 0.4) * (1 - P(t, A.long - 0.2, 0.2))
             const th = (2 * Math.PI * T) / 1.6
             const ux = P(t, A.long, 1.3, 'power1.inOut')
@@ -129,7 +164,9 @@
               capsule.setAttribute('y', f1(s.y - s.th / 2)); capsule.setAttribute('height', f1(s.th)); capsule.setAttribute('rx', f1(s.th / 2))
               capsule.setAttribute('opacity', (s.op * (1 - s.bead)).toFixed(3))
             }
+            const fl = flightAt(t, A.fly, A.flyEnd)          // from o14's end: in flight, at full, over the cut
             if (s) b = s.bead > 0 ? { x: s.x, y: s.y, a: s.bead, scale: s.th / 44 } : null
+            else if (fl) b = { x: fl[0], y: fl[1], a: 1, scale: L.pulse(t, A.steady, 'bead') }
             else b = { x: bx + 4 * hover * Math.cos(th), y: Y + 4 * hover * Math.sin(th) + wave(bx - 1) + lift, a: 1 - out, scale: L.pulse(t, A.steady, 'bead') }
             L.bead4.place(bead, b)
             // the level line, from the start to the bead

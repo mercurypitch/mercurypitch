@@ -10,19 +10,15 @@
       <video id="s07-predict-m07-orange-refl" data-merc="m07-orange" data-merc-refl class="clip" muted playsinline src="assets/merc/m07-orange-merc.webm" data-start="1.245" data-duration="6.000" data-media-start="0.008"></video>
       <video id="s07-predict-m07-orange-seg1" data-merc="m07-orange" data-merc-seg="m07-orange:1" class="clip" muted playsinline src="assets/merc/m07-orange-tall-merc.webm" data-start="1.245" data-duration="0.700" data-media-start="0.008"></video>
       <video id="s07-predict-m07-orange-seg1-refl" data-merc="m07-orange" data-merc-seg="m07-orange:1" data-merc-refl class="clip" muted playsinline src="assets/merc/m07-orange-tall-merc.webm" data-start="1.245" data-duration="0.700" data-media-start="0.008"></video>
-      <video id="s07-predict-m08-orange" data-merc="m08-orange" class="clip" muted playsinline src="assets/merc/m08-orange-merc.webm" data-start="52.795" data-duration="0.483" data-media-start="0.008"></video>
-      <video id="s07-predict-m08-orange-refl" data-merc="m08-orange" data-merc-refl class="clip" muted playsinline src="assets/merc/m08-orange-merc.webm" data-start="52.795" data-duration="0.483" data-media-start="0.008"></video>
-      <video id="s07-predict-m08-orange-seg1" data-merc="m08-orange-in" data-merc-seg="m08-orange:1" class="clip" muted playsinline src="assets/merc/m08-orange-in-tall-merc.webm" data-start="52.161" data-duration="0.700" data-media-start="0.008"></video>
-      <video id="s07-predict-m08-orange-seg1-refl" data-merc="m08-orange-in" data-merc-seg="m08-orange:1" data-merc-refl class="clip" muted playsinline src="assets/merc/m08-orange-in-tall-merc.webm" data-start="52.161" data-duration="0.700" data-media-start="0.008"></video>
-      <video id="s07-predict-m08-orange-seg2" data-merc="m08-orange-in" data-merc-seg="m08-orange:2" class="clip" muted playsinline src="assets/merc/m08-orange-in-merc.webm" data-start="52.811" data-duration="0.467" data-media-start="0.658"></video>
-      <video id="s07-predict-m08-orange-seg2-refl" data-merc="m08-orange-in" data-merc-seg="m08-orange:2" data-merc-refl class="clip" muted playsinline src="assets/merc/m08-orange-in-merc.webm" data-start="52.811" data-duration="0.467" data-media-start="0.658"></video>
+      <video id="s07-predict-m08-orange" data-merc="m08-orange" class="clip" muted playsinline src="assets/merc/m08-orange-merc.webm" data-start="51.878" data-duration="1.400" data-media-start="0.008"></video>
+      <video id="s07-predict-m08-orange-refl" data-merc="m08-orange" data-merc-refl class="clip" muted playsinline src="assets/merc/m08-orange-merc.webm" data-start="51.878" data-duration="1.400" data-media-start="0.008"></video>
       <script>
         ;(function () {
           /* S7, Predict: the white keys from D (STORYBOARD rows 7a to 7h; HANDOFFS § B to C, § Inside C, § S7 to S8).
              In (fixed, B to C): F0, no Mercs, the kicker lane empty; the staircase on C at full, letters C to C,
              risers measured, riser labels 2 2 1 2 2 2 1, hairlines; the strip with C major's keys at full and the
              rest at 45 %, no key names; no sum, brackets or legend.
-             Out (to s08, same group): F0; Tavi's m08 dropping in (shown from s08's first frames); the staircase on D
+             Out (to s08, same group): F0; Tavi's m08 landed in her corner (her leap in, 198.13 to 198.56); the staircase on D
              at full, letters D E F# G A B C# D, riser labels T T S T T T S, F#4 and C#5 lit (their names gone),
              "D major" up. Every time is a cue, a word or a duration (BUILD-GUIDE, "The clock").
              Component critic C-01: Tavi's "?" stands beside the top stair (item 3); the names switch out, then in, on
@@ -195,7 +191,9 @@
 
           /* ---------------------------------------------------------------- Tavi (top layer, screen space) */
           const taviA = L.mercGate(room.top, { sid: SID, pass: 'm07-orange', tag: SID + '-m07-orange', x: 1800, size: 300, hop: A.hopOut })
-          const taviB = L.mercGate(room.top, { sid: SID, pass: 'm08-orange', tag: SID + '-m08-orange', x: 1800, size: 300 })
+          // m08 opens on her leap in from the right edge (film round 2, item 1; DECISIONS 131): she returns within
+          // chapter 2, and a fall opens a chapter
+          const taviB = L.mercGate(room.top, { sid: SID, pass: 'm08-orange', tag: SID + '-m08-orange', x: 1800, size: 300, leap: true })
 
           /* ---------------------------------------------------------------- type (hud, frame-fixed) */
           const hud = L.stageOf(room.hud)

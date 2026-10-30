@@ -11,12 +11,8 @@
       <video id="s11-why-m10-blue-refl" data-merc="m10-blue" data-merc-refl class="clip" muted playsinline src="assets/merc/m10-blue-merc.webm" data-start="0.000" data-duration="2.689" data-media-start="13.758"></video>
       <video id="s11-why-m11-blue" data-merc="m11-blue" class="clip" muted playsinline src="assets/merc/m11-blue-merc.webm" data-start="25.089" data-duration="20.117" data-media-start="0.008"></video>
       <video id="s11-why-m11-blue-refl" data-merc="m11-blue" data-merc-refl class="clip" muted playsinline src="assets/merc/m11-blue-merc.webm" data-start="25.089" data-duration="20.117" data-media-start="0.008"></video>
-      <video id="s11-why-m11-blue-seg1" data-merc="m11-blue" data-merc-seg="m11-blue:1" class="clip" muted playsinline src="assets/merc/m11-blue-tall-merc.webm" data-start="25.089" data-duration="0.700" data-media-start="0.008"></video>
-      <video id="s11-why-m11-blue-seg1-refl" data-merc="m11-blue" data-merc-seg="m11-blue:1" data-merc-refl class="clip" muted playsinline src="assets/merc/m11-blue-tall-merc.webm" data-start="25.089" data-duration="0.700" data-media-start="0.008"></video>
-      <video id="s11-why-m11-orange" data-merc="m11-orange" class="clip" muted playsinline src="assets/merc/m11-orange-merc.webm" data-start="24.539" data-duration="20.667" data-media-start="0.008"></video>
-      <video id="s11-why-m11-orange-refl" data-merc="m11-orange" data-merc-refl class="clip" muted playsinline src="assets/merc/m11-orange-merc.webm" data-start="24.539" data-duration="20.667" data-media-start="0.008"></video>
-      <video id="s11-why-m11-orange-seg1" data-merc="m11-orange" data-merc-seg="m11-orange:1" class="clip" muted playsinline src="assets/merc/m11-orange-tall-merc.webm" data-start="24.539" data-duration="0.700" data-media-start="0.008"></video>
-      <video id="s11-why-m11-orange-seg1-refl" data-merc="m11-orange" data-merc-seg="m11-orange:1" data-merc-refl class="clip" muted playsinline src="assets/merc/m11-orange-tall-merc.webm" data-start="24.539" data-duration="0.700" data-media-start="0.008"></video>
+      <video id="s11-why-m11-orange" data-merc="m11-orange" class="clip" muted playsinline src="assets/merc/m11-orange-merc.webm" data-start="24.256" data-duration="20.950" data-media-start="0.008"></video>
+      <video id="s11-why-m11-orange-refl" data-merc="m11-orange" data-merc-refl class="clip" muted playsinline src="assets/merc/m11-orange-merc.webm" data-start="24.256" data-duration="20.950" data-media-start="0.008"></video>
       <script>
         ;(function () {
           /* S11, Why do is home (STORYBOARD rows 11a to 11f; HANDOFFS § S10 to S11, § Inside D, § D to E).
@@ -246,8 +242,9 @@
           /* ---------------------------------------------------------------- the Mercs (top layer, screen space) */
           const tavi9 = L.mercGate(room.top, { sid: SID, pass: 'm09-orange', tag: SID + '-m09-orange', x: 1800, hop: A.hop })
           const merc10 = L.mercGate(room.top, { sid: SID, pass: 'm10-blue', tag: SID + '-m10-blue', x: 110, mirror: true, hop: A.hop, hopDx: -360 })
-          const merc11 = L.mercGate(room.top, { sid: SID, pass: 'm11-blue', tag: SID + '-m11-blue', x: 110, mirror: true, hop: A.hop2, hopDx: -360 })
-          const tavi11 = L.mercGate(room.top, { sid: SID, pass: 'm11-orange', tag: SID + '-m11-orange', x: 1800, hop: A.hop2 })
+          // m11: both leap back in, each from its own edge (film round 2, item 1; DECISIONS 131)
+          const merc11 = L.mercGate(room.top, { sid: SID, pass: 'm11-blue', tag: SID + '-m11-blue', x: 110, mirror: true, hop: A.hop2, hopDx: -360, leap: true, leapDx: -300 })
+          const tavi11 = L.mercGate(room.top, { sid: SID, pass: 'm11-orange', tag: SID + '-m11-orange', x: 1800, hop: A.hop2, leap: true })
           const topSvg = L.stage(room.top)
           const echo = L.echoRings(topSvg, { dur: 0.9, grow: 3.5, width: 3, max: 4 })
 

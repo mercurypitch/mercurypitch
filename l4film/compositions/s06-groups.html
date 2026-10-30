@@ -15,7 +15,7 @@
              In (S5 to S6): F0; Tavi in her corner (feet (1800, 840), 300, hero, turned left), landed in S5 from
              her leap in (pass m06a); the staircase on C with letters, all seven risers measured and labelled
              T T S T T T S, hairlines, C major's keys at full, the legend at x 140; E4, F4, B4 and C5 named.
-             Out (to s07, fixed, B to C): F0 (since the pull landed at 124.0), no Mercs (m06b ended 145.65),
+             Out (to s07, fixed, B to C): F0 (since the copy's pull landed at 130.95), no Mercs (m06b ended 145.65),
              the kicker lane empty; the staircase on C at full, letters C to C, risers measured, riser labels
              2 2 1 2 2 2 1, hairlines; the strip with C major's keys at full and the rest at 45 %, no key names
              (gone at 145.8); no sum, no brackets, no legend. */
@@ -235,6 +235,7 @@
             copyOut: word('b14', 'semitone', 'start', 0.35),           // the copy fades (0.3 s, gone by about 127.6)
             semis: word('b15', 'semitones'),                           // the octave's rows glow in turn
             tone3: word('b14', 'tone#3', 'start', -0.1), joins: word('b14', 'joins', 'start', 0.2),   // the F-G riser grows twice
+            pull: at('b14', 'end'),                                    // the pull back to F0 for the count and the sum
             b15: at('b15', 'start', 0.1),                              // 6d: the brackets and the legend leave
             count: word('b15', 'count'),                               // T to 2, S to 1
             twelve: word('o6', 'twelve'),                              // "= 12" lands
@@ -258,9 +259,25 @@
 
           /* ---------------------------------------------------------------- camera */
           // S6 measures at F0 (film critic item 9, polish round item 2): the push to F-low, the truck to F-high and
-          // the pull back are gone, so the zoom, climb and zoom-out of S5 is not played a second time. The rig stays
-          // (at F0) for the rows' keep-out and the feather, which does nothing at 1x.
+          // the pull back are gone, so the zoom, climb and zoom-out of S5 is not played a second time. One push
+          // remains, for the key picture (film round 2 item 4, DECISIONS 130; polish round 2): from "Both" (123.50)
+          // to F_GRP, landing on "climb" (124.25) as the copy lifts, on one power2.inOut curve; held through the
+          // copy's travel, its landing and fade and "One more tone joins them" (the F-G riser's two grows); then a
+          // 0.8 s pull back to F0 from b14's end (130.15 to 130.95), at rest before "semitones" (131.35), so the
+          // count and the sum play at F0 as before. F_GRP is a local framing, as s11's F_EXP (DECISIONS 98), not
+          // in L.FRAMES: s 1.4 about the world point (110, 620). It holds stairs 1 to 8 (x 242 to 1194, treads
+          // 664 to 352, foot 736), both brackets (y 452 and 270, the upper's line from y 268), the copy's whole
+          // path with its halo (x 229 to 1207, y 339 to 749) and every riser label and stair name: on screen x
+          // 277 to 1646, y 127 to 801, so 40 px or more inside the frame and 117 px or more above the caption
+          // band (y 918). The strip's key names would sit at y 963, in the band, so they leave over the push and
+          // come back as the pull lands (below). The near bokeh and the stave lift follow the rig, as in S5.
+          const F_GRP = { s: 1.4, ox: -44, oy: -248 }
+          const PUSH = { at: A.both, dur: A.climb - A.both }
+          // at rest 0.2 s or more before "semitones", so a faster re-voice cannot push the pull into the count
+          const PULL = { at: A.pull, dur: Math.min(0.8, A.semis - 0.2 - A.pull) }
           const cam = L.frameRig(room, { from: 'F0' })
+            .to(PUSH.at, PUSH.dur, F_GRP, 'power2.inOut')
+            .to(PULL.at, PULL.dur, 'F0', 'power2.inOut')
 
           /* ---------------------------------------------------------------- the world (mid layer) */
           const mid = L.stage(room.mid)
@@ -448,8 +465,10 @@
             return `rgb(${c0.map((v, i) => Math.round(lerp(v, c1[i], u))).join(',')})`
           }
 
-          // E4, F4, B4 and C5's names (from S5) stay, at F0 now, and leave at b16's end
-          const keyNameA = (m, t) => 1 - P(t, A.leave, 0.2)
+          // E4, F4, B4 and C5's names (from S5) stay, at F0, and leave at b16's end. In F_GRP their baseline would
+          // be at y 963, in the caption band, so they fade over 0.2 s as the push starts (gone with the baseline at
+          // 876) and back over 0.2 s once the pull has landed (polish round 2)
+          const keyNameA = (m, t) => (1 - P(t, A.leave, 0.2)) * (1 - P(t, PUSH.at, 0.2) * (1 - P(t, PULL.at + PULL.dur, 0.2)))
 
           const RS = {}                                                 // the semitones' gold this frame
           // a semitone's hop under its bracket: up nearly straight (power2.out over its first 35 %), across flat at
