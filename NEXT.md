@@ -1924,3 +1924,16 @@ Note: the lanes' memory gate read a stale cgroup path after the 21:00 restart (f
   Savage 2015: pentatonic not a universal; Henry 2004 has no control group. Takeuchi & Hulse read to
   the abstract only, so "no prevalence figure" is about the abstract (the body may cite Bachem's
   1 in 10,000): keep AP prevalence unverified. Arc D still running.
+- 09:3x Arc D planner reported: s2/lessons/22-28 RESEARCH.md + ARTICLE-PLAN.md and ARC-D-REPORT.md
+  (3,050 lines with the report). Lead spot-check: no model names or paths; the only non-ASCII
+  symbols in either arc are the flat, natural and sharp signs (an earlier grep -P range check was
+  invalid; redone in python); beat rates recomputed on A3 (M3 8.731, fifth 0.745 per second);
+  src/lib/jam/jam-modes.ts:100-107 quoted correctly. Findings: five checkpoints (L22's wide
+  vibrato, L24, L26, L28) cannot be scored with today's kit; two missing from SEASON-2 § 5: a
+  centre-line hold reader (L22) and a page recorder (L26, L28); L24 needs headphones (turns don't
+  work with a drone); dropped claims: "fa and ti lean hardest" (OMT: ti and le), the Kodaly claim,
+  "songs usually end on a perfect cadence"; British "imperfect" vs American "imperfect authentic"
+  trap; Fux 1725 p. 52 "mi contra fa" a proverb, no church ban; an original 8-bar two-part song in
+  G drafted for L28; L25/L28 recalls quote Arc C's planned checks (re-take once written). No agents
+  running now. Next: FILM1 critic when film-01's post-steps end (~10:10); lead's full read of both
+  arcs when the owner wants the articles written.
