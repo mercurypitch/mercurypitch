@@ -468,9 +468,15 @@ alongside lint, units, workers and Beside Cue instead of behind them.
 superseded PR push is dropped but a `main` run never is — every `main` commit's
 coverage is distinct and cancelling one loses it permanently.
 
-The `@smoke` tags stay in the specs. They no longer select what CI runs; they
-are a local convenience for `test:e2e --grep @smoke` when you want a fast pass
-before pushing. 153 tests across 42 of 70 files carry one.
+**Reversed for pull requests, 30 Oct 2026, by maff's decision.** A pull
+request runs the `@smoke` set again (`e2e-smoke`, two shards: 513 of 1,957
+tests in 139 of 224 files on that day), and the full suite runs on `main` and
+on a dispatch. The Beside Cue browser suites and the adventure matrix moved to
+`main` with it. The reason was cost: a pull request with Beside Cue in scope
+started 74 to 85 jobs and 250 to 300 Linux runner minutes. The hole described above
+is open again for tests outside the `@smoke` set, and that was accepted as the
+trade-off. `docs/agent/TESTING.md` ("E2E is expensive") has the numbers, and
+`scripts/ci-tiers.test.mjs` holds the split.
 
 Full plan and outcome log: `docs/plans/pr-gate-hardening.md`.
 

@@ -152,11 +152,13 @@ from a production bundle.
 
 ### Verifying on a device
 
-Sideload the `beside-cue-debug-apk` artifact from any pull request. It is built
-against the Test Store, so the whole loop works on a phone with no Play products
-and no Play installation: check that the paywall presents, a purchase flips
-Deluxe on, Customer Center opens, **Restore purchases** works, and the entitlement
-survives a force-quit.
+Sideload the `beside-cue-debug-apk` artifact from a Beside Cue Mobile run. Every
+push to main that touches the app builds one, and
+`gh workflow run beside-cue-mobile.yml --ref <branch>` builds one for a branch;
+pull requests do not run the workflow. It is built against the Test Store, so
+the whole loop works on a phone with no Play products and no Play installation:
+check that the paywall presents, a purchase flips Deluxe on, Customer Center
+opens, **Restore purchases** works, and the entitlement survives a force-quit.
 
 A **sideloaded build cannot reach Play Billing** — Play only serves an app it
 installed itself. Testing against real products therefore has to wait for an
@@ -218,10 +220,15 @@ contract.
 versions independently of MercuryPitch, so it uses `bc-v*` tags rather
 than the `v*` tags that deploy the web app.
 
-| Trigger                       | Produces                                                                         |
-| ----------------------------- | -------------------------------------------------------------------------------- |
-| Pull request touching the app | `beside-cue-debug-apk`, an iOS simulator build, lint and unit test reports       |
-| `bc-v*` tag                   | The above, plus a release AAB and APK, and an IPA when Apple secrets are present |
+| Trigger                       | Produces                                                                                              |
+| ----------------------------- | ----------------------------------------------------------------------------------------------------- |
+| Push to main touching the app | `beside-cue-debug-apk`, lint and unit test reports, and an iOS archive that is not uploaded           |
+| Dispatch on a branch          | The same, plus an iOS simulator build                                                                 |
+| `bc-v*` tag                   | The above, plus a release AAB and APK, a TestFlight upload, and an IPA when Apple secrets are present |
+
+Pull requests do not run this workflow, and TestFlight builds come only from
+`bc-v*` tags (decision of 30 Oct 2026). PR Gate's `Beside Cue` job checks,
+tests and builds the web app on every pull request that touches it.
 
 Artifacts are on the workflow run's summary page. `bc-v0.2.0` gives
 `versionName` 0.2.0; `versionCode` is the workflow run number, because Play

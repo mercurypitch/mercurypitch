@@ -72,6 +72,20 @@ already understands it, or the link lands on a page that ignores it.
    - If the tag already exists (locally or remotely), **stop and report**: the
      release is already cut. Bump the version + changelog first.
 
+3b. **Confirm PR Gate passed on `main` at that commit** (release gate). Since
+30 Oct 2026 a pull request runs only PR Gate's smoke tier. The full browser
+suite, the Beside Cue browser suites and the adventure matrix run on the
+push to `main`, so a regression only they catch shows there and nowhere
+else. A production tag goes only on a commit whose own push run passed:
+
+- `gh run list --workflow pr-gate.yml --branch main --event push --commit "$(git rev-parse HEAD)" --json status,conclusion,url`
+- It must list the run with `"status": "completed"` and
+  `"conclusion": "success"`. If the run is still in progress, failed, was
+  cancelled, or is not listed at all, **stop and report** with its `url`
+  instead of tagging.
+- This gates the production tag only. `dev` deploys from every push to
+  `main` whatever PR Gate says, and that is intended (maff, 30 Oct 2026).
+
 4. **Walk the guided tours** (release gate — per CLAUDE.md this full walk
    runs at release time, not per PR). CI walks them in the **Release Tours**
    workflow (`.github/workflows/release-tours.yml`), desktop and phone in

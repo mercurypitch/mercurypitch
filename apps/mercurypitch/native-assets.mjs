@@ -29,9 +29,9 @@
 //     not reach into `legends/mid/`; a single `*` never crosses a `/`.
 //   - Say WHY in one line, and name the module that reads it. A manifest whose
 //     entries cannot be traced back to a caller cannot be pruned later.
-//   - Add the source prefix to `.github/workflows/mercurypitch-mobile.yml`
-//     (both the `paths:` filter and `changed-paths-regex`), or a change to the
-//     art will not re-run the build that asserts the art is there.
+//   - Add the source prefix to `changed-paths-regex` in
+//     `.github/workflows/mercurypitch-mobile.yml`, or a change to the art
+//     will not re-run the build that asserts the art is there.
 //
 // NOT here, on purpose: a fetched tier. Everything below is bundled, which is
 // what makes a cold offline first run show the same pictures as a warm one.

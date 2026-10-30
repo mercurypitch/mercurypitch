@@ -3,43 +3,15 @@ name: Beside Cue Games Native
 # Fast unsigned native-profile smoke tests for the optional Glassworks campaign.
 # The distribution workflow uses the same profile for non-tag owner builds;
 # this workflow never release-signs or publishes packages.
+#
+# Dispatch only, since 30 Oct 2026 (maff's decision):
+# `gh workflow run beside-cue-games-native.yml --ref <branch>`. It builds the
+# same `native:games` profile that beside-cue-mobile.yml's Android and iOS jobs
+# build on every push to main that touches the app, and it failed none of its
+# 268 runs in the four weeks before. It stays for the androidTest APK: the
+# other workflow assembles one but keeps only the debug APK, and this is the
+# only run that uploads both.
 on:
-  pull_request:
-    branches: [main]
-    paths:
-      - 'apps/beside-cue/**'
-      - 'packages/audio-io/**'
-      - 'packages/beside-cue-core/**'
-      - 'packages/glass-game/**'
-      - 'packages/ios-audio-session/**'
-      - 'packages/mobile-runtime/**'
-      - 'packages/pitch-engine/**'
-      - 'packages/purchase-kit/**'
-      - 'gradle/signing.gradle'
-      - '.gitattributes'
-      - 'package.json'
-      - 'pnpm-lock.yaml'
-      - '.github/actions/setup/**'
-      - '.github/actions/lfs-pull/**'
-      - '.github/workflows/beside-cue-games-native.yml'
-  push:
-    branches: [main]
-    paths:
-      - 'apps/beside-cue/**'
-      - 'packages/audio-io/**'
-      - 'packages/beside-cue-core/**'
-      - 'packages/glass-game/**'
-      - 'packages/ios-audio-session/**'
-      - 'packages/mobile-runtime/**'
-      - 'packages/pitch-engine/**'
-      - 'packages/purchase-kit/**'
-      - 'gradle/signing.gradle'
-      - '.gitattributes'
-      - 'package.json'
-      - 'pnpm-lock.yaml'
-      - '.github/actions/setup/**'
-      - '.github/actions/lfs-pull/**'
-      - '.github/workflows/beside-cue-games-native.yml'
   workflow_dispatch:
 
 permissions:

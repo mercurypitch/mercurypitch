@@ -14,34 +14,20 @@ name: Beside Cue Mobile
 # Non-tag builds are owner testing builds and include the optional games. A
 # `bc-v*` tag remains the future public-release boundary and uses the canonical
 # games-off manifests and web bundle.
+#
+# Since 30 Oct 2026 (maff's decision) no pull request runs this, and
+# TestFlight builds come from `bc-v*` tags only, as Mercury Pitch's come from
+# `mp-v*`. A push to main that touches the app still builds Android and
+# archives iOS, which proves the compile, the signature and the profile, but
+# uploads nothing. In the week to 30 Oct, 15 merges uploaded a Beside Cue
+# build, five of them only because a web release bumped the root
+# package.json. For an installable APK from a branch, dispatch this workflow
+# on it. No `bc-v*` tag had been pushed by then, so the first one is also the
+# first run of the release path: store purchase mode, the games-off
+# manifests and the 90/150 MB size gates. Its MARKETING_VERSION comes from
+# the tag, so the tag must be numeric, for example bc-v1.2.3.
 
 on:
-  pull_request:
-    branches: [main]
-    paths:
-      - 'apps/beside-cue/**'
-      - 'packages/audio-io/**'
-      - 'packages/beside-cue-core/**'
-      - 'packages/glass-game/**'
-      - 'packages/mobile-runtime/**'
-      - 'packages/pitch-engine/**'
-      - 'packages/ios-audio-session/**'
-      - 'packages/purchase-kit/**'
-      - 'gradle/signing.gradle'
-      - '.gitattributes'
-      - 'src/components/PortableConsole.tsx'
-      - 'src/components/icons.tsx'
-      - 'src/lib/portable-console.ts'
-      - 'src/styles/PortableConsole.module.css'
-      - 'scripts/assert-no-portable-console.mjs'
-      - 'package.json'
-      - 'pnpm-lock.yaml'
-      # The size gate's measurement lives in a script, not inline in the
-      # workflow -- a change to it that no native build ran is a gate nobody
-      # checked.
-      - '.github/scripts/**'
-      - '.github/workflows/beside-cue-mobile.yml'
-      - '.github/workflows/capacitor-app.yml'
   # No `paths:` here on purpose, matching build.yml and pr-gate.yml. A path
   # filter on a trigger that also carries tags can skip a release: the filter
   # is evaluated against the commits the push contains, and a tag placed on a
@@ -56,9 +42,10 @@ on:
 permissions:
   contents: read
 
-# A superseded pull-request run is wasted work and cancelling it is free. A
-# superseded main or tag run is an upload in flight, and cancelling that burns
-# a build number on a build nobody ever sees, so those queue instead.
+# A superseded pull-request run, should that trigger come back, is wasted
+# work and cancelling it is free. A superseded tag run is an upload in flight,
+# and cancelling that burns a build number on a build nobody ever sees, so tag
+# and main runs queue instead.
 concurrency:
   group: beside-cue-mobile-${{ github.event.pull_request.number || github.ref }}
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
@@ -77,8 +64,13 @@ jobs:
       tag-prefix: bc-v
       signing-env-prefix: BESIDE_CUE
       profile-build-setting: BESIDE_CUE_PROFILE
-      # Kept in step with the pull_request `paths:` filter above.
-      changed-paths-regex: '^(apps/beside-cue/|packages/(audio-io|beside-cue-core|glass-game|mobile-runtime|pitch-engine|ios-audio-session|purchase-kit)/|src/(components/(PortableConsole|icons)\.tsx|lib/portable-console\.ts|styles/PortableConsole\.module\.css)$|scripts/assert-no-portable-console\.mjs$|gradle/signing\.gradle$|\.gitattributes$|package\.json$|pnpm-lock\.yaml$|\.github/scripts/|\.github/workflows/(beside-cue-mobile|capacitor-app)\.yml$)'
+      # Which pushes to main build. Root package.json is not in it: it changes
+      # with every web release, and in the week to 30 Oct 2026 five of the 14
+      # Beside Cue builds on main matched only through it. A dependency change
+      # still builds through pnpm-lock.yaml. The size gate's measurement lives
+      # in .github/scripts/, and a change to it that no native build ran is a
+      # gate nobody checked.
+      changed-paths-regex: '^(apps/beside-cue/|packages/(audio-io|beside-cue-core|glass-game|mobile-runtime|pitch-engine|ios-audio-session|purchase-kit)/|src/(components/(PortableConsole|icons)\.tsx|lib/portable-console\.ts|styles/PortableConsole\.module\.css)$|scripts/assert-no-portable-console\.mjs$|gradle/signing\.gradle$|\.gitattributes$|pnpm-lock\.yaml$|\.github/scripts/|\.github/workflows/(beside-cue-mobile|capacitor-app)\.yml$)'
       # The hash of the store reviewer's unlock code. Not a secret (it is a
       # digest), so it lives in a repository variable; the code itself is in
       # the vault and is only ever typed into App Store Connect and Play.
@@ -86,7 +78,8 @@ jobs:
       distribution-env-name: VITE_BESIDE_CUE_DISTRIBUTION
       platform-env-name: VITE_BESIDE_CUE_NATIVE_PLATFORM
       testflight-purchase-mode: ${{ vars.BESIDE_CUE_TESTFLIGHT_PURCHASES || 'mock' }}
-      testflight-upload-from: main-and-tags
+      # Release tags only, as Mercury Pitch (see the header).
+      testflight-upload-from: tags
       ios-export-method: ${{ vars.BESIDE_CUE_IOS_EXPORT_METHOD || 'release-testing' }}
       # The native games command owns the build, provenance stamp, Capacitor
       # sync and byte-for-byte verification. The paired platform arguments

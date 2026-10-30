@@ -285,10 +285,11 @@ describe("the pictures the Karaoke room's stage draws", () => {
 
 describe('the native build, when a shipped file changes', () => {
   // The manifest's header asks for every file it ships to be in the mobile
-  // workflow's `paths:` filter and in its `changed-paths-regex`, or a change
-  // to the art never runs the build that asserts the art is there. Both list
-  // the Ear Lab's pictures one by one, so a new room there has to be added
-  // to both, and nothing checked that it was.
+  // workflow's `changed-paths-regex`, or a change to the art never runs the
+  // build that asserts the art is there. It lists the Ear Lab's pictures one
+  // by one, so a new room there has to be added to it, and nothing checked
+  // that it was. Pull requests no longer run that workflow (30 Oct 2026), so
+  // its pull_request `paths:` filter, once checked here too, is gone.
   const workflow = readFileSync(WORKFLOW, 'utf8')
   const files = [
     ...publicFiles.map((file) => `public/${file}`),
@@ -298,17 +299,6 @@ describe('the native build, when a shipped file changes', () => {
   it('has files to check', () => {
     expect(files.length).toBeGreaterThan(entries.length)
     expect(files.some((file) => file.startsWith('apps/'))).toBe(true)
-  })
-
-  it("runs for every one of them, by the pull request's paths filter", () => {
-    const list = /^ {4}paths:\n((?: {6}(?:- '[^']+'|#.*)\n)+)/mu.exec(workflow)
-    expect(list).not.toBeNull()
-    const globs = [...list![1].matchAll(/- '([^']+)'/gu)].map(
-      (match) => globToRegExp(match[1]) as RegExp,
-    )
-    expect(
-      files.filter((file) => !globs.some((glob) => glob.test(file))),
-    ).toEqual([])
   })
 
   it('runs for every one of them, by changed-paths-regex', () => {
