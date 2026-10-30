@@ -1,0 +1,119 @@
+/* ============================================================
+   The lit instruments (docs/plans/ear-lab-native-look.md): lit glass in
+   the station's two colours (--room-a, --room-b, set by the room), white
+   light for what sounds, teal for the answer and red for a miss. Words
+   in Inter, never under 11 px in the drawing's own units, which the room
+   shows at about one to one on a phone.
+   ============================================================ */
+
+.instrument {
+  display: block;
+  width: 100%;
+  height: auto;
+  max-height: 100%;
+  overflow: visible;
+  font-variant-numeric: tabular-nums;
+}
+
+/* The station's light, for the gradients' stops. */
+.stopA {
+  stop-color: var(--room-a, #9a87f0);
+}
+
+.stopB {
+  stop-color: var(--room-b, #5d8cff);
+}
+
+/* A lit stroke: a wide faint halo under a thin bright core. */
+.glow path {
+  fill: none;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.halo {
+  opacity: 0.2;
+}
+
+.glass {
+  stroke: rgb(255 255 255 / 10%);
+}
+
+.rail {
+  stroke: rgb(200 205 235 / 50%);
+}
+
+.faint {
+  stroke: rgb(255 255 255 / 5%);
+}
+
+.caption {
+  font:
+    500 12px 'Inter Variable',
+    'Inter',
+    system-ui,
+    sans-serif;
+  fill: #a9b2c8;
+}
+
+.small {
+  font:
+    500 11px 'Inter Variable',
+    'Inter',
+    system-ui,
+    sans-serif;
+  fill: #8d96ad;
+}
+
+.name {
+  font:
+    600 13px 'Inter Variable',
+    'Inter',
+    system-ui,
+    sans-serif;
+  fill: #e7e3f7;
+}
+
+.number {
+  font:
+    600 15px 'Inter Variable',
+    'Inter',
+    system-ui,
+    sans-serif;
+  fill: #f4f1ff;
+}
+
+.readout {
+  font:
+    600 22px 'Inter Variable',
+    'Inter',
+    system-ui,
+    sans-serif;
+  fill: #ffffff;
+}
+
+.teal {
+  fill: #8ff5e3;
+}
+
+.red {
+  fill: #ffb1a8;
+}
+
+/* Words over lit glass keep a dark edge, so they read on any light. */
+.edged {
+  paint-order: stroke;
+  stroke: rgb(5 8 24 / 85%);
+  stroke-width: 5px;
+  stroke-linejoin: round;
+}
+
+.fade {
+  transition: opacity 180ms ease;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .fade {
+    transition: none;
+  }
+}

@@ -1,13 +1,8 @@
-/* Hairline's loupe, upright (RoomLoupe.tsx). Sized in the drawing's own
-   units, which the room's figure shows at about one to one on a phone:
-   the words in the glass stay at 13 px or more there. Lit glass in the
-   room's language: a violet rim, white hairlines, teal for the answer. */
+/* Hairline's lens, upright (RoomLoupe.tsx), in lit glass. Sized in the
+   drawing's own units, which the room's figure shows at about one to
+   one on a phone: the words in the glass stay at 13 px or more there. */
 
 .loupe {
-  display: block;
-  width: 100%;
-  height: auto;
-  overflow: visible;
   font-variant-numeric: tabular-nums;
 }
 
@@ -28,8 +23,12 @@
 }
 
 .caption {
-  font: 500 14px var(--room-sans, 'Inter Variable', system-ui, sans-serif);
-  fill: var(--room-text-3, #a9b2c8);
+  font:
+    500 13px 'Inter Variable',
+    'Inter',
+    system-ui,
+    sans-serif;
+  fill: #a9b2c8;
 }
 
 .lead {
@@ -38,53 +37,69 @@
   stroke-dasharray: 3 4;
 }
 
+/* A hairline: white light, a thin core over a wide faint halo. */
 .hair {
   stroke: #eef0ff;
-  stroke-width: 2.5;
+  stroke-width: 2.6;
   stroke-linecap: round;
 }
 
+.halo {
+  stroke: #eef0ff;
+  stroke-width: 10;
+  stroke-linecap: round;
+  opacity: 0.2;
+}
+
 .magnified {
-  stroke-width: 3;
+  stroke-width: 2.6;
 }
 
+/* The higher line, named at the reveal: teal. */
 .higher {
-  stroke: var(--room-right-pale, #8ff5e3);
+  stroke: #8ff5e3;
 }
 
-.mover {
-  transition: transform 260ms var(--room-ease, ease);
-}
-
-.disc {
-  fill: #0a1029;
-  fill-opacity: 0.96;
-  stroke: var(--room-lit, #9a87f0);
-  stroke-width: 3;
+.mover,
+.pulse {
+  transition: transform 260ms cubic-bezier(0.2, 0.8, 0.2, 1);
 }
 
 .glass {
-  stroke: rgb(154 135 240 / 35%);
+  stroke: rgb(255 255 255 / 7%);
   stroke-width: 1;
 }
 
 .readout {
-  font: 600 20px var(--room-sans, 'Inter Variable', system-ui, sans-serif);
+  font:
+    600 22px 'Inter Variable',
+    'Inter',
+    system-ui,
+    sans-serif;
   fill: #ffffff;
 }
 
 .tag {
-  font: 600 15px var(--room-sans, 'Inter Variable', system-ui, sans-serif);
-  fill: var(--room-right-pale, #8ff5e3);
+  font:
+    600 14px 'Inter Variable',
+    'Inter',
+    system-ui,
+    sans-serif;
+  fill: #8ff5e3;
 }
 
 .magnification {
-  font: 600 15px var(--room-sans, 'Inter Variable', system-ui, sans-serif);
-  fill: var(--room-text-3, #a9b2c8);
+  font:
+    600 14px 'Inter Variable',
+    'Inter',
+    system-ui,
+    sans-serif;
+  fill: #a9b2c8;
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .mover {
+  .mover,
+  .pulse {
     transition: none;
   }
 }

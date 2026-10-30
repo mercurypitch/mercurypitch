@@ -4,7 +4,7 @@
 
 import { cleanup, render, screen } from '@solidjs/testing-library'
 import { afterEach, describe, expect, it } from 'vitest'
-import { loupeMagnification, RoomLoupe } from './RoomLoupe'
+import { LOUPE_MIDDLE, loupeMagnification, RoomLoupe } from './RoomLoupe'
 
 afterEach(cleanup)
 
@@ -62,7 +62,7 @@ describe("Hairline's loupe, upright", () => {
       const tag = textAt('loupe-higher')
       expect(tag.textContent).toBe(name)
       // Level with the upper line in the glass, not the lower.
-      const middle = 118
+      const middle = LOUPE_MIDDLE
       expect(Number(tag.getAttribute('y'))).toBeCloseTo(
         middle + offset('upper-magnified'),
         5,
@@ -97,14 +97,14 @@ describe("Hairline's loupe, upright", () => {
     render(() => <RoomLoupe gap={0.5} sounding={0} reveal="first" />)
 
     const tag = Number(textAt('loupe-higher').getAttribute('y'))
-    expect(tag).toBeLessThan(118 + offset('upper-magnified'))
+    expect(tag).toBeLessThan(LOUPE_MIDDLE + offset('upper-magnified'))
   })
 
   it('puts its words between the lines once even x1 cannot hold them apart', () => {
     render(() => <RoomLoupe gap={150} sounding={0} reveal="second" />)
 
-    const upper = 118 + offset('upper-magnified')
-    const lower = 118 + offset('lower-magnified')
+    const upper = LOUPE_MIDDLE + offset('upper-magnified')
+    const lower = LOUPE_MIDDLE + offset('lower-magnified')
     for (const id of ['loupe-higher', 'loupe-readout', 'loupe-magnification']) {
       const y = Number(textAt(id).getAttribute('y'))
       expect(y, id).toBeGreaterThan(upper)
