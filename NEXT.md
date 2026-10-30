@@ -2146,3 +2146,17 @@ Note: the lanes' memory gate read a stale cgroup path after the 21:00 restart (f
   review/film-02/REPORT.md). Rate limit allowed. One agent running.
   Next: save its report verbatim, LEDGER row, DECISIONS 130 (triage); SHIP -> DELIVERY from
   l4entr/DELIVERY.draft.md; ONE MORE PASS -> polish round 2 per its items (two builders at xhigh).
+- 21:4x FILM2 reported: ONE MORE PASS ("small and cheap: the entrances and the end card"; nothing new
+  broken). Saved verbatim to review/film-02/REPORT.md (the critic did not write it). LEDGER row 31,
+  DECISIONS 130 (triage; backups l4entr/polish2/*.before-*). Taken: (1) entrances by rule, a fall opens
+  a chapter and a leap returns within one: m08, m10 and both m11s become leaps (Merc from the left,
+  leapDx -300), m04/m07/m09 stay falls, m12's stagger at the re-voice: LEAD; (3) S15's bead crosses
+  the cut into the end card's blue bead, no hosts-only frame 478.2-479.0: builder F; (4) one push to
+  ~1.4x at "Both"/"climb" (123.5-124.25), held to "joins them", at F0 by 131.35: builder B; (6) the
+  "fixed do" pill widens before its words roll: LEAD. Not now: (2) card hold at the re-voice (122),
+  (5) recall design kept, (7) cosmetic, crane/zoom tells noted.
+  Extract cache cleared again (4.4 GB; cgroup 2.3 GB). 21:5x builders B and F launched (general-purpose,
+  xhigh, background; briefs l4entr/polish2/BRIEF-B.md and BRIEF-F.md from make-briefs.py, --workers 1).
+  Two agents running. Lead now: pill (s09), then the leaps (merc-shots.py, 4 pass renders, gates s07,
+  s10, s11). Next: review B and F once each, docs, full check, freeze film03proj, film-03, FILM3 critic
+  (critics/FILM2.txt shape; previous report review/film-02/REPORT.md).

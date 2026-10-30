@@ -1550,3 +1550,43 @@ replaced it. The builder's record: critics never read it.
      0 stale. STORYBOARD § Type names the exception to "each about its own centre", row 13b the
      volume line's rise; HANDOFFS (§ Inside E: the guide, the care block) carries the origins. The
      kit's header in motion.js describes the default and is not touched.
+
+130. **Film round 2 (critic FILM2, ONE MORE PASS): the second polish round.**
+     - The render: film-02, from the 16:50 frozen copy, with the six groups' polish rounds and the
+       lead's stop line in. Its first pass ran on 2 workers. It left dark first frames (luma 15
+       against 29 to 36, one to four frames each) on pieces 6, 12, 13 and 18: the same capture race
+       as film-01's pieces 9 and 10. `render-l4.sh` re-rendered pieces 5, 6, 11, 12, 13, 17 and 18
+       on one worker, then pieces 4 and 5, and the seams came out clean at 21:12. The critic judged
+       that film (483.733 s).
+     - FILM2 marks FILM1's items 2, 4, 6, 7, 8 and 10 FIXED, and 1, 3, 5 and 9 PARTLY; nothing new
+       broke.
+     - Taken now:
+       - **Item 1 (the same fall seven times), the director's.** The entrances follow one rule: a
+         fall opens a chapter, and a leap returns within one.
+         - These stay falls, each Tavi's first entrance of its chapter: m04 (1:02, chapter 1), m07
+           (2:28, chapter 2) and m09 (4:09, chapter 3).
+         - These become floor-level leaps: m08 (Tavi, 3:18), m10 (Merc, 4:42) and both m11s (5:20
+           and 5:21).
+         - Tavi leaps in from the right edge, as in decision 123. Merc leaps in from the left, with
+           `leapDx` -300, which the kit already takes.
+         - Both m12s (5:43, chapter 4) stay falls. They are staggered at the re-voice, which
+           re-renders m12 anyway.
+       - **Item 3 (the dropped bead and the near-empty frame at the cut to S16), group F.** S15's
+         bead crosses the cut and becomes the end card's blue bead. No frame from 478.2 to 479.0
+         holds only the hosts.
+       - **Item 4 (66 s at F0, with the staircase about a fifth of the frame), group B.** One push
+         to about 1.4x, from "Both" to "climb" (123.5 to 124.25). It holds through the copy's
+         travel and "One more tone joins them", and is back at F0 before the sum (by 131.35).
+       - **Item 6 (the "fixed do" pill slicing its new words), the director's.** The pill widens
+         first, then the words roll.
+     - Not now:
+       - **Item 2 (the card complete for 4.1 s; 5 s asked).** As decision 122 has it, the end
+         sting grows at the re-voice.
+       - **Item 5 (the recall still a replacement).** Decision 122 keeps S4a's retrieval over the
+         dimmed staircase. Its 0.3 s still at 46.8 is inside the bar.
+       - **Item 7 (the title's blur to sharp).** Cosmetic.
+       - **The camera's tells.** The crane down at 3:10 reads as a zoom with a tilt, and the zooms
+         at 1:20, 2:39, 3:06, 4:05 and 4:32 read as zooms (item 9, PARTLY). As in decision 122,
+         these are noted for the next film.
+     - For a human, in DELIVERY.md, as decision 122: the whooshes by ear, the viewer's-turn
+       silence, phone speakers, the final voices and captions.
