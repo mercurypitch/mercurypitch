@@ -15,4 +15,10 @@
 export interface AudioContextLease {
   ensure(): AudioContext | null
   unlock(): Promise<boolean>
+  /**
+   * The rate its context runs at, where the lease knows it before that
+   * context exists (the Studio's own 48 kHz clock on the web), so work done
+   * ahead of the first press is done for that rate alone.
+   */
+  readonly sampleRate?: number
 }

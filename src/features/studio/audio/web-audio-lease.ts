@@ -41,6 +41,9 @@ export function createStudioWebLease(
   let closed = false
   return {
     ensure: () => context,
+    get sampleRate() {
+      return context?.sampleRate ?? STUDIO_SAMPLE_RATE
+    },
     unlock() {
       if (closed) return Promise.resolve(false)
       let ctx: AudioContext | null

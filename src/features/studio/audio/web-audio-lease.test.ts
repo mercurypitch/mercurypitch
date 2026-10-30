@@ -77,6 +77,18 @@ describe('Studio web audio lease', () => {
     expect(await lease.unlock()).toBe(false)
   })
 
+  it('says its rate before the clock exists, so the warm-up measures for that rate alone', async () => {
+    const refused = { ...fakeContext(), sampleRate: 44100 }
+    const lease = createStudioWebLease(
+      () => refused as unknown as AudioContext,
+      (ensure) => ensure(),
+    )
+    expect(lease.sampleRate).toBe(48000)
+    await lease.unlock()
+    // A browser that refused 48 kHz plays at the device's rate: that is the rate then.
+    expect(lease.sampleRate).toBe(44100)
+  })
+
   it('asks for 48 kHz with playback buffers, and takes the device rate where 48 kHz is refused', () => {
     const make = vi.fn((options: AudioContextOptions) => {
       if (options.sampleRate !== undefined)
