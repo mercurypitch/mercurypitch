@@ -19,6 +19,10 @@
 // a source: the caller owns transport envelopes, as with every other audio
 // surface (see .claude/memory/audio-pop-free-playback.md).
 //
+// Dynamic EQs next to each other run side by side (effects/dyneq.ts): each
+// after the first takes its band from the run's input, so a run of four
+// bands adds one compressor lookahead to the chain, not four.
+//
 // A compressor-based effect (compressor, de-esser, limiter) fades in when it
 // is created: DynamicsCompressorNode starts ~17 dB down and settles over
 // ~300 ms. Its latency twin does the same, so the fade is smooth and bypass
@@ -115,8 +119,13 @@ export function createStudioFxChain(
     input.disconnect()
     for (const unit of wired) unit.output.disconnect()
     let previous: AudioNode = input
+    let runInput: AudioNode | null = null
     for (const { unit } of slots) {
       previous.connect(unit.input)
+      if (unit.follow) {
+        unit.follow(runInput)
+        runInput ??= previous
+      } else runInput = null
       previous = unit.output
     }
     previous.connect(duck)

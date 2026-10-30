@@ -38,6 +38,15 @@ export interface EffectUnit {
   readReductionDb(): number
   /** Settle fresh compressors from `at` (settleRelease); absent without any. */
   settle?(at: number): void
+  /**
+   * Run beside the effect before it rather than after it (dynamic EQ,
+   * chain.ts): take the detected signal from `source`, the input of the
+   * first effect in the run, and pass this effect's own input through with
+   * no delay. Null leads a run of its own. The chain calls it on every patch,
+   * after it has cut every unit's output, so a tap from `source` is wired
+   * afresh each time.
+   */
+  follow?(source: AudioNode | null): void
   dispose(): void
 }
 
@@ -160,6 +169,7 @@ export interface UnitParts {
   ) => void
   readonly readReductionDb?: () => number
   readonly settle?: (at: number) => void
+  readonly follow?: (source: AudioNode | null) => void
   readonly onDispose?: () => void
 }
 
@@ -178,6 +188,11 @@ export function assembleUnit(parts: UnitParts): EffectUnit {
       if (!disposed) parts.apply(params, env.isLive())
     },
     readReductionDb: () => (disposed ? 0 : (parts.readReductionDb?.() ?? 0)),
+    follow:
+      parts.follow &&
+      ((source) => {
+        if (!disposed) parts.follow?.(source)
+      }),
     settle:
       parts.settle &&
       ((at) => {

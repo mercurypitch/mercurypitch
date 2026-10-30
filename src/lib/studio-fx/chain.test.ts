@@ -40,6 +40,14 @@ function harness(options: { offline?: boolean } = {}) {
         unit.disposed = true
       },
     }
+    if (spec.kind === 'dyneq') {
+      Object.assign(unit, {
+        follow(source: AudioNode | null) {
+          const from = source as unknown as FakeNode | null
+          unit.calls.push(`follow:${from === null ? 'lead' : from.nodeType}`)
+        },
+      })
+    }
     units.push(unit)
     return unit
   }
@@ -81,6 +89,42 @@ describe('createStudioFxChain', () => {
       'eq',
       'compressor',
       'reverb',
+    ])
+  })
+
+  it('runs dynamic EQs next to each other side by side, each after the first fed from the run input', () => {
+    const { build, units } = harness({ offline: true })
+    const chain = build(
+      normalizeChainSpec({
+        effects: [
+          { id: 'eq', kind: 'eq' },
+          { id: 'mud', kind: 'dyneq' },
+          { id: 'box', kind: 'dyneq' },
+          { id: 'character', kind: 'compressor' },
+          { id: 'nasal', kind: 'dyneq' },
+          { id: 'harsh', kind: 'dyneq' },
+        ],
+      }),
+    )
+    const follows = (id: string) =>
+      units
+        .find((unit) => unit.id === id)!
+        .calls.filter((call) => call.startsWith('follow:'))
+    expect(follows('mud')).toEqual(['follow:lead'])
+    expect(follows('box')).toEqual(['follow:eq:out'])
+    expect(follows('nasal')).toEqual(['follow:lead'])
+    expect(follows('harsh')).toEqual(['follow:character:out'])
+    // With the compressor moved out from between them, all four are one run.
+    chain.setSpec(moveEffect(chain.getSpec(), 'character', 5))
+    expect(follows('nasal')).toEqual(['follow:lead', 'follow:eq:out'])
+    expect(follows('harsh').at(-1)).toBe('follow:eq:out')
+    expect(signalOrder(chain.input, units)).toEqual([
+      'eq',
+      'mud',
+      'box',
+      'nasal',
+      'harsh',
+      'character',
     ])
   })
 

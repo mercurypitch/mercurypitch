@@ -280,6 +280,26 @@ describe('EQ and filters', () => {
 })
 
 describe('dynamic EQ', () => {
+  it('runs beside the band before it: detects the run input and passes its own input through undelayed', () => {
+    const { ctx, env } = setup(false)
+    const unit = createEffectUnit(ctx.asContext, spec('dyneq'), env)
+    const input = unit.input as unknown as FakeNode
+    const band = ctx.ofType<FakeBiquad>('biquad')[0]
+    const runInput = ctx.createGain()
+    unit.follow!(runInput as unknown as AudioNode)
+    expect(runInput.targets).toEqual([band])
+    // Straight to the sum and the dry side: no twin delays it.
+    expect(input.targets).toHaveLength(2)
+    expect(input.targets.every((node) => node.nodeType === 'gain')).toBe(true)
+    // The chain cut the run input's outputs before patching again.
+    runInput.disconnect()
+    unit.follow!(runInput as unknown as AudioNode)
+    expect(runInput.targets).toEqual([band])
+    unit.follow!(null)
+    expect(input.targets).toContain(band)
+    expect(input.targets).toHaveLength(3)
+  })
+
   it('compresses only the share of the band that its range allows', () => {
     const { ctx, env } = setup(false)
     createEffectUnit(ctx.asContext, spec('dyneq', { rangeDb: 6 }), env)

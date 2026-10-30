@@ -15,6 +15,17 @@
 // rounding) and the expression is D(x): flat, no phase step, nothing to notch. When C pulls the band down,
 // only `m` of it is compressed, so the cut can never pass the range:
 // m = 1 - 10^(-range/20), and at most the band falls to 1 - m.
+//
+// Bands run side by side, not one after another (chain.ts): in a run of
+// dynamic EQs, each band after the first detects and corrects the run's own
+// input x, and passes the signal it is handed through with no delay of its
+// own. The run then adds one lookahead, not one per band:
+//
+//   out = D(x) + sum over bands of m (C(bp(x)) - D(bp(x)))
+//
+// While no band compresses this is D(x), as in series. When two bands cut at
+// once, each measures x rather than what the band before it left, which
+// differs from series only where their bandpasses overlap.
 
 import type { EffectSpecOf } from '@/lib/studio-fx/chain-spec'
 import { compressorAutoMakeupGain } from '@/lib/studio-fx/compressor-curve'
@@ -51,6 +62,30 @@ export function createDynamicEqUnit(
   sum.connect(shell.wet)
   const dryTwin = createCompressorTwin(ctx)
   connectSeries([shell.input, dryTwin, shell.dry])
+  let following = false
+  const follow = (source: AudioNode | null): void => {
+    const next = source !== null
+    if (next !== following) {
+      if (following) {
+        shell.input.disconnect(sum)
+        shell.input.disconnect(shell.dry)
+        shell.input.connect(band)
+        connectSeries([shell.input, wholeTwin, sum])
+        connectSeries([shell.input, dryTwin, shell.dry])
+      } else {
+        shell.input.disconnect(band)
+        shell.input.disconnect(wholeTwin)
+        shell.input.disconnect(dryTwin)
+        wholeTwin.disconnect()
+        dryTwin.disconnect()
+        // What it is handed is already late by the run's lookahead.
+        shell.input.connect(sum)
+        shell.input.connect(shell.dry)
+      }
+      following = next
+    }
+    source?.connect(band)
+  }
   let share = 0
   let release = spec.params.releaseMs / 1000
 
@@ -96,6 +131,7 @@ export function createDynamicEqUnit(
     // inner compressor's own reduction.
     readReductionDb: () =>
       gainToDb(1 - share + share * dbToGain(compressor.reduction)),
+    follow,
     settle: (at) => {
       settleRelease(compressor.release, at, release)
       settleCompressorTwins([wholeTwin, bandTwin, dryTwin], at)
