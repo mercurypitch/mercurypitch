@@ -1,5 +1,5 @@
 // ============================================================
-// The More sheet's You group: Account and Settings
+// The More sheet: its groups, its rows, and where each row goes
 // ============================================================
 
 import { afterEach, describe, expect, it, vi } from 'vitest'
@@ -18,7 +18,61 @@ afterEach(() => {
   view = null
 })
 
+function openSheet(): void {
+  view = renderShell(() => (
+    <MoreSheet
+      open={() => true}
+      onClose={vi.fn()}
+      onPushSettings={vi.fn()}
+      onPushAccount={vi.fn()}
+      onPushDeveloper={vi.fn()}
+    />
+  ))
+}
+
 describe('the More sheet', () => {
+  it('lists Rooms, then You, with Settings last', () => {
+    openSheet()
+
+    const groups = [...document.querySelectorAll('.mp-more-group__title')]
+    expect(groups.map((title) => title.textContent)).toEqual(['Rooms', 'You'])
+    const rows = [...document.querySelectorAll('[data-more-item]')]
+    expect(rows.map((row) => row.getAttribute('data-more-item'))).toEqual([
+      'karaoke',
+      'piano',
+      'guitar',
+      'account',
+      'developer',
+      'settings',
+    ])
+  })
+
+  // Together's rows each wait on a build switch that does not exist yet
+  // (docs/plans/native-more-and-community.md), and an empty group is no group.
+  it('draws no Together group while none of its switches is on', () => {
+    openSheet()
+
+    expect(document.querySelector('.mp-more-group--together')).toBeNull()
+  })
+
+  it('gives every row a name, one line of state and a chevron', () => {
+    openSheet()
+
+    for (const row of document.querySelectorAll('[data-more-item]')) {
+      expect(row.querySelector('.mp-more-row__name')?.textContent).not.toBe('')
+      expect(row.querySelector('.mp-more-row__state')?.textContent).not.toBe('')
+      expect(row.querySelector('.mp-more-row__chev')).not.toBeNull()
+    }
+  })
+
+  it('asks a phone with no account to sign in, on the Account row', () => {
+    openSheet()
+
+    expect(
+      tile('account')?.querySelector('.mp-more-row__state')?.textContent,
+    ).toBe('Sign in to keep your runs')
+  })
+
   it('sends the Account tile to Account, and closes on the way', () => {
     const onClose = vi.fn()
     const onPushAccount = vi.fn()

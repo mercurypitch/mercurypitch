@@ -64,7 +64,9 @@ const storeBinary = args.includes(STORE_BINARY_FLAG)
  * (apps/mercurypitch/src/shell/audio-census.ts), by the event it records
  * for each mic track, and the subscription's timer
  * (apps/mercurypitch/src/shell/subscription-timing.ts), by the line it
- * writes to the console for each flow.
+ * writes to the console for each flow. And the More sheet's Developer row,
+ * by the words of its line (developerLine, apps/mercurypitch/src/shell/
+ * more-lines.ts): its ternary folds away, and the line goes with it.
  */
 const FINGERPRINTS = [
   'MercuryPitch portable console',
@@ -84,6 +86,7 @@ const FINGERPRINTS = [
   'mic-opened',
   'dev-cloud-timings',
   '[subscription] ',
+  'production server',
 ]
 
 /**
