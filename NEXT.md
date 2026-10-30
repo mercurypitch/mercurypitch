@@ -1944,3 +1944,9 @@ Note: the lanes' memory gate read a stale cgroup path after the 21:00 restart (f
   RESUME=1 WORKERS=1 (only piece 15 left; pieces are on disk under $S/l4film01proj/renders/), then
   the post-steps. Waiter re-armed at log offset 1338348. For FILM2: 2 workers (or 3 with the s12-s13
   pieces re-run at 1), the extract cache is unavoidable.
+- 10:07:35 film-01 run 3 ended exit 1 on the hung piece as expected (19 of 20 on disk, missing
+  index 14 = frames 21000-22499). 10:08:12 resumed: RESUME=1 WORKERS=1 from $S/l4film01proj
+  (compositions.md5 OK), only piece 15/20 streams, ~1.5 frames/s, so ~10:26 for the piece; cgroup
+  7.3 of 13.4 GB, oom_kill 1 (the 09:36 one). Waiter re-armed at log offset 1825886, quiet 300 s.
+  Rules learned: never edit render-l4.sh while it runs (bash reads the script as it goes, as with
+  queue.sh); between runs set its WORKERS default to 2 for full-film renders (3 OOMs in s12-s13).
