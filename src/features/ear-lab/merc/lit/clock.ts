@@ -9,7 +9,8 @@
 // ============================================================
 
 import type { Accessor } from 'solid-js'
-import { batch, createEffect, createSignal, on, onCleanup } from 'solid-js'
+import { batch, createEffect, createSignal, on, onCleanup, untrack, } from 'solid-js'
+import type { FrameLoop } from '@/components/room-kit/frame-loop'
 import { createFrameLoop } from '@/components/room-kit/frame-loop'
 import { prefersReducedMotion } from '@/components/room-kit/reduced-motion'
 import type { RoomBeat } from '@/features/ear-lab/stage-room'
@@ -32,6 +33,21 @@ export interface StageClock {
 /** A question is on the stage, and its instrument moves with it. */
 function moving(beat: RoomBeat): boolean {
   return beat === 'listen' || beat === 'answer' || beat === 'reveal'
+}
+
+/**
+ * Starts `loop` again when the screen comes back, if it is still `wanted`.
+ * A loop stops asking for frames while the screen is away; without this,
+ * one put away mid-beat stayed still until the beat changed, and holding
+ * a question does not change it.
+ */
+export function startWhenShown(loop: FrameLoop, wanted: () => boolean): void {
+  if (typeof document === 'undefined') return
+  const back = (): void => {
+    if (document.visibilityState !== 'hidden' && untrack(wanted)) loop.start()
+  }
+  document.addEventListener('visibilitychange', back)
+  onCleanup(() => document.removeEventListener('visibilitychange', back))
 }
 
 export function useStageClock(): StageClock {
@@ -68,6 +84,7 @@ export function useStageClock(): StageClock {
       if (moving(beat)) loop.start()
     }),
   )
+  startWhenShown(loop, () => !reduced && moving(room.beat()))
 
   onCleanup(() => {
     alive = false
