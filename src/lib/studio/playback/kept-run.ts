@@ -117,7 +117,7 @@ export function createStudioKeptRun(options: StudioKeptRunOptions) {
     drafts: StudioDrafts,
   ): boolean {
     // A graph built at another playback quality is built again (playback-quality.ts).
-    if (run.graph.profile() !== livePlaybackProfile()) return false
+    if (run.graph.profile() !== livePlaybackProfile(project)) return false
     return (
       fitsInPlace(run, project, drafts) || replanLanes(run, project, assets)
     )

@@ -177,7 +177,7 @@ export function StudioSoundPanel(props: StudioSoundPanelProps) {
           )}
         </Show>
       </section>
-      <StudioPlaybackQuality />
+      <StudioPlaybackQuality song={props.project} />
     </div>
   )
 }

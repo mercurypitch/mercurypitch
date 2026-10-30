@@ -1,7 +1,8 @@
 // Studio playback benchmark tests — Auto's device benchmark runs once, after Studio opens, never while playing.
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { resetPlaybackBenchmarkForTests, schedulePlaybackBenchmark, } from './playback-benchmark'
-import { needsPlaybackBenchmark, playbackQualityState, readStoredBenchmark, resetPlaybackQualityForTests, } from './playback-quality'
+import { autoPlaybackTier, needsPlaybackBenchmark, readStoredBenchmark, resetPlaybackQualityForTests, } from './playback-quality'
+import { roleSong, SMALL_SONG } from './song.test-fixtures'
 
 /** A wait that holds its callbacks until `fire` runs them. */
 function manualWait() {
@@ -29,7 +30,7 @@ beforeEach(() => {
 afterEach(() => localStorage.clear())
 
 describe('the playback benchmark schedule', () => {
-  it('waits while Studio plays, then measures once and keeps the result for the next session', async () => {
+  it('waits while Studio plays, then measures once, keeps the result and sizes songs with it', async () => {
     const timer = manualWait()
     let playing = true
     const run = vi.fn(async () => 40)
@@ -44,10 +45,8 @@ describe('the playback benchmark schedule', () => {
     expect(run).toHaveBeenCalledTimes(1)
     await vi.waitFor(() => expect(needsPlaybackBenchmark()).toBe(false))
     expect(readStoredBenchmark()).toBe(40)
-    // This session plays on at the tier it started with; the next uses it.
-    expect(playbackQualityState().autoTier).toBe('balanced')
-    resetPlaybackQualityForTests({ cores: 16, memoryGb: 8 })
-    expect(playbackQualityState().autoTier).toBe('best')
+    // Auto sizes the song with it from the next Play: Best for four lanes here.
+    expect(autoPlaybackTier(roleSong(SMALL_SONG))).toBe('best')
     // A second Studio open this session measures nothing more.
     const again = manualWait()
     schedulePlaybackBenchmark({ busy: () => false, run, wait: again.wait })
@@ -78,6 +77,6 @@ describe('the playback benchmark schedule', () => {
     timer.fire()
     await vi.waitFor(() => expect(run).toHaveBeenCalled())
     expect(needsPlaybackBenchmark()).toBe(true)
-    expect(playbackQualityState().autoTier).toBe('balanced')
+    expect(autoPlaybackTier(roleSong(SMALL_SONG))).toBe('balanced')
   })
 })

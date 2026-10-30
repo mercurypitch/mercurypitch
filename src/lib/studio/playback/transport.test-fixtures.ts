@@ -1,11 +1,12 @@
 // Studio transport test fixture — a real transport over a fake clock, buffer cache and graph builder.
 import { vi } from 'vitest'
+import type { StudioFxProfile } from '@/lib/studio-fx/fx-profile'
+import { FULL_FX_PROFILE } from '@/lib/studio-fx/fx-profile'
 import type { StudioArrangementPlan } from '../model/arrangement-plan'
 import { studioFixture } from '../model/model.test-fixtures'
 import type { StudioBufferCache } from './buffer-cache'
 import type { StudioChainSwap, StudioReplan } from './graph'
 import { PlaybackContext } from './playback.test-fixtures'
-import { livePlaybackProfile } from './playback-quality'
 import { RUN_OPEN_SECONDS, RUN_SETTLE_SECONDS } from './run'
 import type { StudioTransportOptions } from './transport'
 import { createStudioTransport } from './transport'
@@ -47,13 +48,23 @@ export function fakeStudioGraph(ctx: PlaybackContext) {
     park: vi.fn(),
     settle: vi.fn(),
     retime: vi.fn(),
-    // Built at the playback quality live playback wants.
-    profile: vi.fn(() => livePlaybackProfile()),
+    // The profile its options built it with (builtWith).
+    profile: vi.fn((): StudioFxProfile => FULL_FX_PROFILE),
     resume: vi.fn(
       (_fromFrame: number, _epoch: number, _repeat: boolean) => true,
     ),
     dispose: vi.fn(),
   }
+}
+
+/** A fake graph reports the profile its options built it with, as the real one does. */
+function builtWith(
+  graph: ReturnType<typeof fakeStudioGraph>,
+  options: unknown,
+): ReturnType<typeof fakeStudioGraph> {
+  const built = (options as { profile?: StudioFxProfile } | undefined)?.profile
+  graph.profile.mockReturnValue(built ?? FULL_FX_PROFILE)
+  return graph
 }
 
 export function transportFixture(
@@ -88,7 +99,10 @@ export function transportFixture(
     dispose: vi.fn(),
   } as unknown as StudioBufferCache
   const graph = fakeStudioGraph(ctx)
-  const buildGraph = vi.fn().mockReturnValue(graph)
+  const buildGraph = vi.fn()
+  buildGraph.mockImplementation((...args: unknown[]) =>
+    builtWith(graph, args[4]),
+  )
   const unlock = vi.fn().mockResolvedValue(true)
   const changed = vi.fn()
   const measureLatencies = vi.fn().mockResolvedValue([441])
@@ -139,7 +153,7 @@ export function withQuietLane(f: ReturnType<typeof transportFixture>) {
         )
         .map((lane) => lane.track.id)
       f.graph.hasLane.mockImplementation((id: string) => built.includes(id))
-      return f.graph
+      return builtWith(f.graph, options)
     },
   )
   return {
@@ -155,10 +169,10 @@ export function withQuietLane(f: ReturnType<typeof transportFixture>) {
 /** Each build returns a graph of its own, so a test can tell the runs apart. */
 export function freshGraphs(f: ReturnType<typeof transportFixture>) {
   const graphs: ReturnType<typeof fakeStudioGraph>[] = []
-  f.buildGraph.mockImplementation(() => {
+  f.buildGraph.mockImplementation((...args: unknown[]) => {
     const graph = fakeStudioGraph(f.ctx)
     graphs.push(graph)
-    return graph
+    return builtWith(graph, args[4])
   })
   return graphs
 }

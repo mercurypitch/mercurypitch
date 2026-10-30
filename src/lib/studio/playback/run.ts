@@ -16,7 +16,8 @@ import type { StudioArrangementPlan } from '../model/arrangement-plan'
 import type { StudioProject } from '../model/types'
 import type { StudioBufferLease } from './buffer-cache'
 import type { buildStudioGraph, StudioGraph, StudioGraphQuality } from './graph'
-import { livePlaybackProfile, notePlayout } from './playback-quality'
+import type { StudioPlaybackTier } from './playback-quality'
+import { livePlaybackTier, notePlayout, TIER_PROFILES, } from './playback-quality'
 
 export { openRunEnvelope, RUN_OPEN_SECONDS } from './open-envelope'
 
@@ -46,9 +47,9 @@ export function seekEarliest(ctx: AudioContext): number {
   )
 }
 
-/** A playing run's ticks watch for underruns (playback-quality.ts). */
-const LIVE_QUALITY: StudioGraphQuality = {
-  tick: (ctx) => notePlayout(ctx, performance.now()),
+/** A playing run's ticks watch for underruns at its tier (playback-quality.ts). */
+function liveQuality(tier: StudioPlaybackTier): StudioGraphQuality {
+  return { tick: (ctx) => notePlayout(ctx, performance.now(), tier) }
 }
 
 /** How far ahead of the clock a run schedules its clips. */
@@ -273,6 +274,7 @@ function startAfterBuild(
  */
 export function buildStudioRun(parts: StudioRunParts): StudioRun {
   const { ctx, plan, latency } = parts
+  const tier = livePlaybackTier(parts.project)
   const timing = parts.fromSilence
     ? {
         fromFrame: parts.timing.fromFrame,
@@ -295,8 +297,8 @@ export function buildStudioRun(parts: StudioRunParts): StudioRun {
         repeat: parts.repeat,
         silentLanes: parts.silentLanes,
         master: { spec: parts.master },
-        profile: livePlaybackProfile(),
-        quality: LIVE_QUALITY,
+        profile: TIER_PROFILES[tier],
+        quality: liveQuality(tier),
       },
     )
     envelope = ctx.createGain()

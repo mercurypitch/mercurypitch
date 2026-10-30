@@ -77,6 +77,14 @@ test.describe('Studio Play after Pause', () => {
     page,
   }) => {
     test.setTimeout(180_000)
+    // Hold the playback tier. Under Auto, the device benchmark that lands a
+    // few seconds in moves the tier from the next Play (playback-quality.ts),
+    // and a graph of another tier is built afresh, so a kept graph would be
+    // rebuilt with no edit at all. Balanced is the tier the timings below
+    // were measured at.
+    await page.addInitScript(() =>
+      localStorage.setItem('mercurypitch.studio.playbackQuality', 'balanced'),
+    )
     await captureStudioOutput(page)
     await openArrangement(page)
     const studio = studioRegion(page)
@@ -163,7 +171,7 @@ test.describe('Studio Play after Pause', () => {
     )
 
     // Measured in headless Chromium on Linux: the kept graph reached half
-    // level 47 to 68 ms after the press, a rebuilt one 112 to 134 ms, both
+    // level 46 to 68 ms after the press, a rebuilt one 101 to 134 ms, both
     // in steps of one device callback (10.7 ms). A rebuilt graph starts
     // 60 ms after its build, so its new compressors settle first (run.ts),
     // where a kept one starts a callback out (seekEarliest): 44 ms apart
