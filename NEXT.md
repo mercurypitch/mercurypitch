@@ -1846,3 +1846,11 @@ Note: the lanes' memory gate read a stale cgroup path after the 21:00 restart (f
   the baseline, swell 0.3 s), F 115 (gold corner -> film critic, near-empty cut, gear halo).
 - film-01: frame 5232/29024 at 04:48 (~370 frames/min): render ends about 05:50, then music-only,
   sheet, measure. A background waiter re-invokes me when the status says done.
+- 06:2x check-in: film-01's 4-worker capture ran ~370 frames/min, then stalled at frame 20921/29024
+  (film 348.7 s = s12 local 7.44 s) at 05:32; HyperFrames fell back to a 1-worker screenshot
+  capture from frame 0 (~95 frames/min, would end ~10:30). Stopped it 06:26 (renders/film-01-try1.*).
+  render-l4.sh now renders in segments (HF_SEGMENTED_CAPTURE, 1500 frames, 4 workers, browsers
+  recycled every 3 pieces, --keep-segments; RESUME=1 adds --resume = only unfinished pieces).
+  film-01 restarted 06:27:39 from the same frozen copy (checksums OK). Waiter fires on done, a
+  stall, a fallback or 5 min of log quiet. If segment 14/20 (frames 19500-20999) stalls again:
+  RESUME=1 with screenshot capture for the rest.
