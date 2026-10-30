@@ -259,7 +259,10 @@ Outside these moves the camera is still. S8 holds F0 from 196.6 to 229.2 (signat
   corners, no edges, mean brightness 110 to 125 of 255 (Lesson 2's field peaks at 122). S2 shrinks
   it into the bead on the staff's middle line over 34.18 to 34.64, as Lesson 2's own S2 does (the
   radius on power2.out, the centre on power3.out; DECISIONS 112); the title lands from
-  34.44; the five notes hop in with the chimes at 34.23, 34.32, 34.41, 34.50 and 34.59.
+  34.44; the five notes hop in with the chimes at 34.23, 34.32, 34.41, 34.50 and 34.59. Over its
+  first 0.1 s the disc closes crisp (since the polish round): its soft rim narrows from 20 % of the
+  radius to Lesson 2's 5 % and the radius it shrinks from eases from 1,500 to Lesson 2's 1,200,
+  done by 34.28; S1's last frame and S2's first are unchanged.
 - **S2 to S3 (37.58).** Both scenes draw the staircase and the bead from the same module and from
   `T`. The staff fades 36.9 to 37.5 while the staircase on D fades up under it in F-cold (36.9 to
   37.5: stairs unlit, the top stair filled unlit, the house unlit), and the bead flies back into the
@@ -280,13 +283,16 @@ Outside these moves the camera is still. S8 holds F0 from 196.6 to 229.2 (signat
 - **S4.** "1 octave = 12 semitones" Outfit 600 56 px at x 140, baseline 250; "in 7 steps" and then
   "in 7 steps?" at baseline 330. q0's ring timer at (164, 232), where the answer lands after it has
   gone.
-- **S4c's stand-up.** Phase 1 (58.4 to 59.4): the tile row turns 90 degrees counter-clockwise about
-  the C4 tile's centre while its pitch shrinks from 120 to 26 px, ending as a column of 13 slivers,
-  each 280 x 24, left edge x 220, centred on rows C4 to C5 (y 677 down to y 365 for C5). Phase 2
-  (59.4 to 60.4): each sliver widens to x 220 to 1680, the dark ones landing as the black-key rows;
+- **S4c's stand-up.** One move of 2.0 s from STAND (58.4 to 60.4, sine.inOut; since the polish
+  round, for film round 1's eighth item): the tile row turns 90 degrees counter-clockwise about
+  its middle tile (F♯4) at full scale, its pitch closing from 120 to 26 px as it turns
+  (26 + 94 (1 - u)^2.23) while each tile stretches from 280 to 1,460 px as it comes upright
+  (u^4.04), its gaps closing with the stretch; F♯4's centre travels a cubic from (960, 560)
+  through (890, 422) and (1090, 675) to (950, 521). The row never falls below about a fifth of the
+  frame (19.7 % at its smallest, 59.53; 21 % at rest) and keeps 26 px from "1 octave = 12
+  semitones"; its lowest point is y 886. It ends as before: 13 bands, x 220 to 1680, centred on
+  rows C4 to C5 (y 677 for C4 up to y 365 for C5), the dark ones landing as the black-key rows;
   the cold open's rows fade out under them (59.4 to 60.4); rows C♯5 to G5 fade in (60.0 to 60.5).
-  As built, the pivot moves from (240, 560) to (360, 677), and the curves are as BUILD-GUIDE §
-  Handoff confirmations records them.
 
 ## A to B (S4 to S5 at 69.35)
 

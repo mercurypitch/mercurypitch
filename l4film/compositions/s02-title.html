@@ -169,10 +169,11 @@
           /* ---------------------------------------------------------------- anchors */
           const TT = at('title')
           const SHRINK = 0.46                                     // the field shrinks into the bead: Lesson 2's own curve (DECISIONS 112)
-          // its edge closes crisp (component critic A-04 item 3, polish item 5): the soft rim narrows from S1's 20 % of
-          // the radius to Lesson 2's 5 % over the first 0.1 s (power1.out), then holds, so the disc closes as a
-          // hard-edged disc onto the staff (it was a glow whose halo washed over the third note and the sharp)
-          const CRISP = 0.1, CRISP_SOFT = 0.95
+          // its edge closes crisp (component critic A-04 item 3, polish item 5): over the first 0.1 s (power1.out) the
+          // soft rim narrows from S1's 20 % of the radius to Lesson 2's 5 % and the radius it shrinks from eases from
+          // the field's 1500 to Lesson 2's 1200, so from then on the disc is Lesson 2's own, a hard-edged disc closing
+          // onto the staff (it was a glow whose halo washed over the third note and the sharp)
+          const CRISP = 0.1, CRISP_SOFT = 0.95, CRISP_R = 1200
           const TITLE_IN = at('title', 'start', 0.26)             // the title and its kicker land as it settles
           const FYP_IN = at('title', 'start', 0.76)               // "Find Your Pitch" under the title
           const CHIME = (k) => TF.CHIME(k) - T0                   // scene time
@@ -366,9 +367,10 @@
             const rest = TF.zmap(TF.REST[0], TF.REST[1] + TF.disp(TF.REST[0], Tf), Tf)
             const rBead = 22 * z
             let bx = lerp(960, rest[0], uc), by = lerp(540, rest[1], uc)
-            let br = lerp(FIELD.R, rBead, u)
+            const crisp = P(t, 0, CRISP, 'power1.out')
+            let br = lerp(lerp(FIELD.R, CRISP_R, crisp), rBead, u)
             if (t >= BACK) { const f = TF.flight(Tf); bx = f.x; by = f.y; br = f.r }
-            field.draw({ x: bx, y: by, r: br, a: smooth(26, 80, br), T: Tf, soft: lerp(0.8, CRISP_SOFT, P(t, 0, CRISP, 'power1.out')) })
+            field.draw({ x: bx, y: by, r: br, a: smooth(26, 80, br), T: Tf, soft: lerp(0.8, CRISP_SOFT, crisp) })
             if (br <= 0.2) bead.g.setAttribute('display', 'none')
             else {
               bead.g.removeAttribute('display')

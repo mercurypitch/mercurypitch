@@ -110,6 +110,9 @@
           A.rangeW = word('b53', 'range')                       // "Singing Voice Range" swells 1.2 from its left edge
           // the card pause: each tab icon glows in turn with its line's underline sweep, More's last; nothing after
           const ICONP = [0, 1, 2, 3].map((k) => at('card', 'start', 0.11 + 0.8 * k))   // x, Settings, Exercises, More: 465.8 to 468.2
+          // the card and the ladder leave over 0.5 s from the card pause's end (469.69 to 470.19; film round 1: the 0.3 s
+          // exit read as a vanish), before the cut (470.24)
+          const CARD_OUT = 0.5
 
           /* ---------------------------------------------------------------- camera (HANDOFFS § Camera moves) */
           const cam = L.frameRig(room, { from: 'F0' })
@@ -275,11 +278,14 @@
               return [L.lerp(pts[i - 1][0], pts[i][0], f), L.lerp(pts[i - 1][1], pts[i][1], f)]
             }
           })()
+          // film round 1 (DECISIONS 122): it grows 2.5 times as it sets off (56 x 4 px to 140 x 10, over the glide's
+          // first 0.7 s), so it reads as an object carried across the emptied frame, and condenses from that size
           const carryAt = (t, tc) => {
             if (t < tc) return null
             const br = P(t, tc, 0.2, 'none'), u = P(t, tc + 0.2, 2.0, 'power2.inOut'), c = P(t, tc + 1.8, 0.4, 'power2.in')
+            const g = 1 + 1.5 * P(t, tc + 0.2, 0.7, 'power2.inOut')
             const [x, y] = CARRY(u)
-            return { x, y, len: 52 * (1 - c), th: lerp(4, 44, c), op: lerp(0.45, 1, br), bead: P(t, tc + 2.05, 0.15, 'none') }
+            return { x, y, len: 52 * g * (1 - c), th: lerp(4 * g, 44, c), op: lerp(0.45, 1, br), bead: P(t, tc + 2.05, 0.15, 'none') }
           }
           const gCarry = L.svg('g', {}, mid)
           const capsule = L.svg('rect', { fill: C.chrome, display: 'none' }, gCarry)
@@ -335,11 +341,14 @@
             return g
           }
           const ink = C.ink, ink2 = C.ink2
-          // 40 px above the caption band (DECISIONS 97): line 1's cap top (506) is 46 px under the ladder's card-time box
+          // 40 px above the caption band (DECISIONS 97): line 1's cap top (506) is 46 px under the ladder's card-time box.
+          // The gear's slot is 6 px wider on the left and 4 on the right, and its glow tighter (film round 1, component
+          // critic F-04's item 3: its halo at the pulse's peak had come within 6 px of "first:" and "Settings", 8 asked,
+          // as the clip measures it); More's 1 px on each side
           const LINES = [
             { y: 540, size: 48, weight: 600, fill: ink, tIn: A.l1, runs: ['Practise it free: ', { text: 'mercurypitch.com/pitch-training', key: 'url' }] },
             { y: 610, size: 40, weight: 500, fill: ink, tIn: A.l2, runs: ['First visit? Skip the intro: ', { icon: 'x', size: 32, key: 0 }, ' › Yes, skip'] },
-            { y: 670, size: 40, weight: 500, fill: ink, tIn: A.set, runs: ['Set your range first: ', { icon: 'gear', size: 36, key: 1, padL: 2, padR: 1 }, ' Settings › Practice › ', { text: 'Singing Voice Range', key: 'range' }] },
+            { y: 670, size: 40, weight: 500, fill: ink, tIn: A.set, runs: ['Set your range first: ', { icon: 'gear', size: 36, key: 1, padL: 6, padR: 4 }, ' Settings › Practice › ', { text: 'Singing Voice Range', key: 'range' }] },
             { y: 730, size: 40, weight: 500, fill: ink, tIn: A.first, runs: ['then ', { icon: 'bell', size: 36, key: 2 }, ' Exercises › Scale Runner'] },
             { y: 790, size: 40, weight: 500, fill: ink, tIn: A.sing, runs: ['sing in the octave it plays'] },
             // the phone line as the card pause begins, once b53's captions have gone
@@ -353,7 +362,7 @@
               const R = typeof r === 'string' ? { text: r } : r
               if (R.icon) {
                 R.g = L.svg('g', {}, Ln.g)
-                R.glow = glyph(R.g, R.icon, C.chrome); R.glow.setAttribute('filter', `url(#${SID}-iglow)`); R.glow.setAttribute('opacity', '0')
+                R.glow = glyph(R.g, R.icon, C.chrome); R.glow.setAttribute('filter', `url(#${SID}-${R.icon === 'gear' ? 'iglow-tight' : 'iglow'})`); R.glow.setAttribute('opacity', '0')
                 glyph(R.g, R.icon, R.color || ink)
                 R.ln = Ln; icons[R.key] = R
               } else {
@@ -366,6 +375,9 @@
           const hdefs = L.svg('defs', {}, hud)
           const ig = L.svg('filter', { id: SID + '-iglow', x: '-60%', y: '-60%', width: '220%', height: '220%' }, hdefs)
           L.svg('feGaussianBlur', { stdDeviation: 1.6 }, ig)
+          // the gear's glow is tighter (its teeth fill its 24-unit box, where the other icons' strokes sit well inside it)
+          const igT = L.svg('filter', { id: SID + '-iglow-tight', x: '-60%', y: '-60%', width: '220%', height: '220%' }, hdefs)
+          L.svg('feGaussianBlur', { stdDeviation: 1.1 }, igT)
           // the card pause traces each tab's path in turn under its line, from the icon to the line's end (0.55 s),
           // as the icon glows: the icon alone is too small to read as a beat
           const traces = [0, 1, 2, 3].map(() => L.svg('rect', { x: 0, y: 0, width: 0, height: 2, rx: 1, fill: C.chrome, opacity: 0 }, hud))
@@ -496,13 +508,13 @@
             }
 
             // 14f: the ladder, large, then (14g) in its card-time box
-            const show = t >= A.lad && t < A.cardEnd + 0.3
+            const show = t >= A.lad && t < A.cardEnd + CARD_OUT
             gLad.setAttribute('display', show ? 'inline' : 'none')
             if (show) {
-              const u = P(t, A.morph, 1.2, 'power2.inOut'), out = 1 - P(t, A.cardEnd, 0.3)
+              const u = P(t, A.morph, 1.2, 'power2.inOut'), out = 1 - P(t, A.cardEnd, CARD_OUT, 'sine.inOut')
               const Ly = lay(P(t, A.toCard, 0.6, 'power2.inOut'))
               gLad.setAttribute('opacity', out.toFixed(3))
-              gLad.setAttribute('transform', `translate(0 ${f1(-10 * P(t, A.cardEnd, 0.3, 'power2.in'))})`)
+              gLad.setAttribute('transform', `translate(0 ${f1(-10 * P(t, A.cardEnd, CARD_OUT, 'power2.in'))})`)
               const frame = P(t, A.morph + 0.2, 0.6)
               ladPanel.setAttribute('x', f1(Ly.x)); ladPanel.setAttribute('y', f1(Ly.y)); ladPanel.setAttribute('width', f1(Ly.w)); ladPanel.setAttribute('height', f1(Ly.h))
               ladPanel.setAttribute('opacity', frame.toFixed(3)); playhead.setAttribute('opacity', frame.toFixed(3))
@@ -592,12 +604,14 @@
             }
 
             // the practise card: top line first, each line in over 0.2 s, rising 20 px; the icons pulse in turn in
-            // the card pause with each line's underline sweep, More's last; all fade with the ladder (0.3 s)
-            const cOut = 1 - P(t, A.cardEnd, 0.3), cLift = -10 * P(t, A.cardEnd, 0.3, 'power2.in')
-            for (const Ln of LINES) {
-              Ln.g.setAttribute('opacity', (P(t, Ln.tIn, 0.2) * cOut).toFixed(3))
-              Ln.g.setAttribute('transform', `translate(0 ${f1(20 * (1 - P(t, Ln.tIn, 0.7, 'power3.out')) + cLift)})`)
-            }
+            // the card pause with each line's underline sweep, More's last; as the ladder fades the lines leave up in
+            // turn from the top (0.4 s each, 0.02 s apart: gone CARD_OUT after the pause)
+            LINES.forEach((Ln, k) => {
+              const tO = A.cardEnd + 0.02 * k
+              Ln.out = 1 - P(t, tO, 0.4, 'sine.inOut'); Ln.lift = -16 * P(t, tO, 0.4, 'power2.in')
+              Ln.g.setAttribute('opacity', (P(t, Ln.tIn, 0.2) * Ln.out).toFixed(3))
+              Ln.g.setAttribute('transform', `translate(0 ${f1(20 * (1 - P(t, Ln.tIn, 0.7, 'power3.out')) + Ln.lift)})`)
+            })
             icons.forEach((R, k) => {
               const times = [ICONP[k]].concat(k === 1 ? [A.settings] : [])
               const pop = lerp(0.4, 1, P(t, R.ln.tIn + 0.15, 0.5, 'back.out(2)'))
@@ -609,8 +623,8 @@
               const T = traces[k], x0 = (R.cx ?? 960) - R.size / 2, x1 = (R.ln.x0 ?? 960) + (R.ln.w || 0)
               T.setAttribute('x', f1(x0)); T.setAttribute('y', f1(R.ln.y + (k === 3 ? 5 : 13)))
               T.setAttribute('width', f1(Math.max(0.01, (x1 - x0) * P(t, ICONP[k], 0.75, 'power1.inOut'))))
-              T.setAttribute('opacity', (0.7 * P(t, ICONP[k], 0.1) * (1 - P(t, ICONP[k] + 0.75, 0.35)) * cOut).toFixed(3))
-              T.setAttribute('transform', `translate(0 ${f1(cLift)})`)
+              T.setAttribute('opacity', (0.7 * P(t, ICONP[k], 0.1) * (1 - P(t, ICONP[k] + 0.75, 0.35)) * R.ln.out).toFixed(3))
+              T.setAttribute('transform', `translate(0 ${f1(R.ln.lift)})`)
             })
             {
               const { R, Ln } = runsBy.range

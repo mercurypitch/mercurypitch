@@ -14,7 +14,7 @@
           /* S15, Next time (STORYBOARD row 15; HANDOFFS § S14 to S15, § S15, § S15 to S16): Lesson 5's hook.
              In: the Mercs in the corners at 300; the ladder and the card gone but for the ladder's top rung, do,
              gliding to (560, 520) on one curve in film time (carryAt, the same in s14-recap) through "Next time.",
-             down the right side and along y 520, under '"support"', which lands with the kicker on "Next"; it
+             down the right side and along y 520, under '"support"', which lands with the kicker on the next mark; it
              condenses into the chrome bead (471.9), just before "Singers". Out (to s16): the Mercs in the corners at 300; S15's type gone (478.5).
              Merc talks b54 and b55, Tavi o14. The bead hovers (from film time) where the long note starts; on "a
              long note" it draws a level line from x 560 to 1360 at y 520; the line wavers once on "pushing".
@@ -34,8 +34,10 @@
           const A = {
             cardEnd: at('card', 'end'),                   // S14's card fades; its top rung is carried (carryAt)
             land: at('card', 'end', 2.2),                 // the rung lands at (560, 520) as the chrome bead
-            kick: word('b54', 'Next'), kickOut: at('o14', 'end'),
-            support: word('b54', 'Next'),                 // '"support"' lands with the kicker: the next lesson's word
+            // film round 1 (DECISIONS 122): the kicker and '"support"' land together on the mark the scene cuts on
+            // (0.15 s after the cut, 0.32 s before "Next"), so the frame the card leaves is filled at once
+            kick: at('next'), kickOut: at('o14', 'end'),
+            support: at('next'),                          // '"support"' lands with the kicker: the next lesson's word
             supportW: word('b55', 'support'),             // it scales 1.2 once as it is said
             long: word('b55', 'long'),                    // the bead draws the level line (1.3 s)
             pushing: word('o14', 'pushing'),              // the line wavers once (0.8 s)
@@ -84,11 +86,14 @@
               return [L.lerp(pts[i - 1][0], pts[i][0], f), L.lerp(pts[i - 1][1], pts[i][1], f)]
             }
           })()
+          // film round 1 (DECISIONS 122): it grows 2.5 times as it sets off (56 x 4 px to 140 x 10, over the glide's
+          // first 0.7 s), so it reads as an object carried across the emptied frame, and condenses from that size
           const carryAt = (t, tc) => {
             if (t < tc) return null
             const br = P(t, tc, 0.2, 'none'), u = P(t, tc + 0.2, 2.0, 'power2.inOut'), c = P(t, tc + 1.8, 0.4, 'power2.in')
+            const g = 1 + 1.5 * P(t, tc + 0.2, 0.7, 'power2.inOut')
             const [x, y] = CARRY(u)
-            return { x, y, len: 52 * (1 - c), th: lerp(4, 44, c), op: lerp(0.45, 1, br), bead: P(t, tc + 2.05, 0.15, 'none') }
+            return { x, y, len: 52 * g * (1 - c), th: lerp(4 * g, 44, c), op: lerp(0.45, 1, br), bead: P(t, tc + 2.05, 0.15, 'none') }
           }
           const capsule = L.svg('rect', { fill: C.chrome, display: 'none' }, gNote)
           const bead = L.bead(gNote, { r: 22, color: C.chrome })
@@ -142,11 +147,11 @@
 
             // type: the kicker, '"support"', then "what keeps it steady?"; all leave up fast at o14's end
             kick.draw(t, A.kick, A.kickOut)
-            const land = (el, t0, s = 1, cy = 0, rise = 16) => {
-              el.setAttribute('opacity', (P(t, t0, 0.2) * (1 - out)).toFixed(3))
+            const land = (el, t0, s = 1, cy = 0, rise = 16, ease = 'power2.inOut') => {
+              el.setAttribute('opacity', (P(t, t0, 0.2, ease) * (1 - out)).toFixed(3))
               el.setAttribute('transform', `translate(0 ${f1(rise * (1 - P(t, t0, 0.7, 'power2.out')) + lift)}) translate(960 ${cy}) scale(${s.toFixed(4)}) translate(-960 ${-cy})`)
             }
-            land(supportT, A.support, L.pulse(t, A.supportW, 'label'), 370)
+            land(supportT, A.support, L.pulse(t, A.supportW, 'label'), 370, 16, 'power2.out')   // in on the kicker's curve
             land(steadyT, A.what)
           })
           window.__timelines = window.__timelines || {}

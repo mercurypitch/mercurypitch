@@ -32,15 +32,15 @@
 
           /* ---------------------------------------------------------------- anchors */
           // 4a: "First," the kicker lands and the staircase dims to 25 %, its names and house fading (0.4 s);
-          // 0.3 s into the dim, as it settles, the tile row rises from 300 px below (1.0 s, power3.out) and fades
-          // in from 0 over 0.45 s (sine.inOut), so the retrieval follows the dim with no still between them and
-          // no frame where the row jumps on (film critic 01 item 1: it popped on at a quarter in one frame, after
-          // 0.3 s with nothing moving; keyed off the dim it serves, so a longer pause before "one" cannot bring
-          // the still back); on "2." the white
+          // 0.3 s into the dim, as it settles, the tile row rises from 300 px below (1.2 s, power3.out, so it
+          // still lands as the board has it, as the names start) and fades in from 0 over 0.45 s (sine.inOut), so
+          // the retrieval follows the dim with no still between them and no frame where the row jumps on (film
+          // critic 01 item 1: it popped on at a quarter in one frame, after 0.3 s with nothing moving; keyed off
+          // the dim it serves, so a longer pause before "one" cannot bring the still back); on "2." the white
           // tiles' names land in turn, 0.14 s apart; on "semitones" the thirteen tiles scale in turn over 0.8 s;
           // on "octave?" C4 and C5 scale together (long pulse)
           const DIM = word('b4', 'First', 'start', 0.02)
-          const RISE = DIM + 0.3, RISE_FADE = 0.45
+          const RISE = DIM + 0.3, RISE_DUR = 1.2, RISE_FADE = 0.45
           const NAMES_IN = word('b4', '2'), NAMES_GAP = 0.14
           const SEMIS = word('b4', 'semitones'), SEMIS_DUR = 0.8
           const OCT = word('b4', 'octave')
@@ -75,8 +75,8 @@
           // up fast; her hop out at at('b7', 'start', 0.29); on "measure" a sweep runs along the seven riser bars,
           // left to right, the steps S5 measures (component critic A-04 item 2, polish item 4: the stair lights
           // repeated S3's naming wave): each bar flares from 4 px chrome at 40 % to 8 px full ink (0.12 s,
-          // power2.out) and settles back (0.45 s, sine.inOut), 0.1 s apart, so the last is back 0.15 s before the
-          // cut and the last frame is HANDOFFS § A to B's (risers unmeasured). On "seven steps" each riser's event also
+          // power2.out) and settles back (0.55 s, sine.inOut), 0.1 s apart, so the last settles into the cut (back
+          // 0.04 s before it) and the last frame is HANDOFFS § A to B's (risers unmeasured). On "seven steps" each riser's event also
           // pulses the stair above it to 1.06 and flashes its tread (DECISIONS 88), and an ink numeral, 1 to 7,
           // lands above each riser as it flashes (A-02 item 2, FACTS 71)
           const QMARK = word('o3', 'steps?'), BIGGER = word('o3', 'bigger')
@@ -192,7 +192,7 @@
             const swap = P(t, SWAP, 0.6, 'none')
             const pitch = 26 + 94 * Math.pow(sv, 2.23), tw = pitch * lerp(112 / 120, 1, sL), th = lerp(280, 1460, sL)
             const rx = lerp(Math.min(10, 0.25 * tw), 0, sL)
-            const rise = P(t, RISE, 1.0, 'power3.out')
+            const rise = P(t, RISE, RISE_DUR, 'power3.out')
             const bez = (a, b, c, d) => sv * sv * sv * a + 3 * sv * sv * su * b + 3 * sv * su * su * c + su * su * su * d
             const rowT = { s: 1, rot: -90 * su, cx: 240 + 6 * pitch, cy: 420 + th / 2, x: bez(960, 890, 1090, 950), y: bez(560, 422, 675, 521), dy: 300 * (1 - rise) }
             const behind = t >= P2
@@ -208,7 +208,10 @@
             const blockPulse = (n) => (n < 2 ? 1 : L.pulse(t, growAt(n - 1), 0.06, { long: true }))
             const flashK = (n) => (n < 2 ? 0 : flashUp(t - growAt(n - 1)))
             // "measure": a sweep along the riser bars, riser n flaring 0.1 s after riser n - 1
-            const sweep = (n) => { const t0 = MEASURE + SWEEP_GAP * (n - 1); return P(t, t0, 0.12, 'power2.out') * (1 - P(t, t0 + 0.12, 0.45, 'sine.inOut')) }
+            // (should a re-voice bring "measure" so near the cut that the last bar would still be settling, every bar is
+            // eased to rest over the last 0.3 s, so the last frame stays HANDOFFS § A to B's)
+            const sweepEnd = MEASURE + SWEEP_GAP * 6 + 0.12 + 0.55, sweepGuard = sweepEnd > D - 0.04 ? 1 - P(t, D - 0.3, 0.26, 'sine.inOut') : 1
+            const sweep = (n) => { const t0 = MEASURE + SWEEP_GAP * (n - 1); return sweepGuard * P(t, t0, 0.12, 'power2.out') * (1 - P(t, t0 + 0.12, 0.55, 'sine.inOut')) }
             // "bigger": all seven bars together, up over 0.25 s and back by "Let's", linear
             const big = P(t, BIGGER, 0.25, 'power2.out') * (1 - P(t, BIGGER + 0.25, LEAVE - BIGGER - 0.25, 'none'))
             const in15 = P(t, ROWS_IN, 0.5, 'power1.inOut')

@@ -1407,3 +1407,24 @@ replaced it. The builder's record: critics never read it.
        0.2 s) and reads as her own glow; if it reads as a floating light, the long fall's mask is the
        fix. The S5 to S6 cut is two consecutive pass frames (mean difference 0.08).
 
+
+124. **Group A's polish round (s01 to s04, film round 1's items 1, 8 and 10, held A2 and A3): all
+     five items in, accepted on the builder's numbers and the lead's look at its sheets.**
+     (1) The recall's tiles: the rise starts from the dim (47.40, DIM + 0.3) instead of "one", runs
+     1.2 s so it still lands at 48.60, and fades in from 0 over 0.45 s (27 frames, at most 5.8 %
+     opacity a frame); the largest one-frame change in the entrance fell from 12.0 % to 1.25 %, and
+     the still before the row is gone (s04 holds 0.4 to 0.3 s). (2) The stand-up is one 2.0 s turn
+     about F♯4 at full scale instead of a shrink about C4 (HANDOFFS § S4c's stand-up has the curves):
+     the smallest box went from 4.6 % to 19.7 % of the frame, which is short of the "about a
+     quarter" asked; the row at rest is 21 %, and a large turn about C4 sweeps through "1 octave =
+     12 semitones", so a fifth is accepted. (3) A two-row ink tick beside do marks the tone rise,
+     visible 10.25 to 11.70, 23 px from Merc. (4) "measure" flares the riser bars in turn (8 px full
+     ink, 0.1 s apart, 68.13 to 68.73, all at rest by 69.31) instead of lighting the stairs, so it
+     does not repeat S3a's riser gesture. (5) S2's disc closes crisp by 34.28 (the rim from 20 % to
+     Lesson 2's 5 %, the radius from 1,500 to Lesson 2's 1,200); its edge now falls 46 to 84 luma
+     within 24 px (13 to 71 before; Lesson 2's about 47). All four cuts unchanged (s01 last and s02
+     first identical; s04 first and last identical; S4 to S5 mean 0.250). check 0 errors, no new
+     warnings; clock-lint silent on all four (rechecked by the lead). STORYBOARD 1c, 4a, 4c, 4d and
+     § Build checks, HANDOFFS § S1 to S2 and § S4c's stand-up, and BUILD-GUIDE's s04 sheet and
+     confirmation row are updated to match. New small jumps at 48.26 and 48.30 (0.36 % and 0.04 %,
+     whole-pixel snaps in the rise's tail) are left for the film critic.

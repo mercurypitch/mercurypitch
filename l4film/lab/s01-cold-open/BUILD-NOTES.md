@@ -257,3 +257,61 @@ go there, then mv into lab/<id>/). s03 and s04 compositions still equal their la
 12:25), so s04 edits go into lab/s04-recall/s04-src.html first, then assemble.py.
 Before numbers (lab clip r4, 60 fps): s04 tile entrance: frames 0.43 to 0.55 s near still (mean change under
 0.01), hold sample at 0.40 s; the pop frame 0.583 s (47.628) changes 12.0 % of pixels (4.0 % the next).
+Edits done (12:55), clock-lint silent, node --check ok on all three (backups: lab/s04-recall/polish/s04-src-before-polish.html,
+lab/s01-cold-open/scratch/s01-before-polish.html, lab/s02-title/s02-before-polish.html):
+- Item 1 (s04): RISE = DIM + 0.3 (47.40, was "one" + 0.025 = 47.605); the row's opacity P(RISE, 0.45, sine.inOut)
+  (was 0.3 s power2.out from a quarter in one frame); rise 300 px power3.out 1.0 s as before; stA's fade-out stays
+  RISE + 0.4.
+- Item 2 (s04): stand-up rebuilt as one 2.0 s move from STAND (sine.inOut su): turn about the middle tile F#4,
+  pitch 26 + 94 (1-su)^2.23, length 280 -> 1460 by su^4.04, the F#4 centre on a cubic (960,560) (890,422) (1090,675)
+  (950,521). Modelled in lab/s04-recall/polish/standup-sim.py (bez.py, bez2.py searched it): box never under 20 %
+  (old 4.5 %), 25 px or more from lab1, bottom 892 or above. A turn about C4 cannot stay large: lab1 blocks the
+  top-left (best found about 17 %). Stills lab/s04-recall/polish/standup/ and standup-sheet-1.png. Before-measure
+  from the r4 clip: lab/s04-recall/polish/standup-box-before.txt (min 4.5 % at 59.31; under 10 % 58.78-59.81).
+- Item 4 (s04): measure lights removed; riser sweep sweep(n) = P(MEASURE + 0.1(n-1), 0.12, power2.out) x
+  (1 - P(+0.12, 0.45, sine.inOut)), 4 -> 8 px, chrome 40 % -> full ink; last back at 69.21.
+- Item 3 (s01): two-row tick (ink, 4 px) at world x 225 to 237 beside stair 1, spine following the tread, ticks
+  at rows 0, 1, 2 as the tread reaches them; TICK_OUT = RISE + 1.2, 0.3 s; gone 11.70. Stills lab/s01-cold-open/polish/.
+- Item 5 (s02): crisp = P(0, 0.1, power1.out); soft lerp(0.8, 0.95, crisp); radius from lerp(1500, 1200, crisp) to the
+  bead (Lesson 2's 1200 and 5 % rim). Stills lab/s02-title/polish/before|after.
+Next: lab/s01-cold-open/scratch/polish60.sh s04-recall s02-title s01-cold-open (60 fps, workers 2, /dev/shm), then
+measure, sweeps, check.
+First clips (13:00): s04 measure-polish: holds 0.5 s, a new 0.3 s hold at 1.20 s (48.25-48.55: the earlier rise had
+settled before the names); final 0.2 s. Fixed in the source: RISE_DUR 1.2 (lands 48.60, the board's end of 4a) and the
+sweep's settle 0.55 s (last bar back 69.31) plus a guard that eases all bars to rest over D - 0.3 if a re-voice ever
+pushes the sweep into the cut (inactive now). s04 needs one more clip. Entrance on the first clip: largest frame
+change 1.27 % of pixels (was 12.0 %), no single-frame event. Stand-up on the clip (polish/subject-box.py): box min
+19.7 % at 12.48 (59.53), was 4.6 %; lit pixels min 10.1 %, was 4.5 %; label gap min 26 px (polish/label-gap.py).
+s02 clip: no holds; edge (polish/edge.py, up the column from the disc's centre): 10-90 fall 44-54 px with a 45-84
+steepest 24 px drop at 0.15-0.30 s, was 95-134 px and 13-39; mean luma 116.5 86.3 55.2 35.5 26.2 (was 116.5 91.7
+56.4 34.3 25.3; Lesson 2 122 93 61 38). s02 last clip frame differs from r5's by encoding noise only: lossless stills
+of the old and new compositions at 1.667 and 3.383 are identical (max 0).
+Sweep (scratch/sweep-polish-report.txt): s02, s04 clean; s01 the known EDGE at 33.75 only.
+s01 clip (12:56): holds 0.1 s (0.1/30), longest 0.1 (0.00); the 11.50 hold of r4 is gone (the tick's fade covers it).
+Tick on the clip: ink x 364-382, y 636-702, from 10.25, gone at 11.70; 23 px from Merc's body box (x 341).
+Sheet lab/s01-cold-open/polish/tick-clip-crops.png. s01 clip frames 0, 600, 1500 and the last equal r5's bit for bit;
+s01 last vs s02 first: mean 0.253, max 4 (same as r5 against r5). s04 second clip rendering (13:00).
+s04 second clip (12:59): holds 0.3 s (0.4/30), longest 0.1 (1.40, 7.00, 20.50), final 0.1 (r4: 0.4 s with 0.40 and 1.40,
+final 0.1). Entrance: largest frame change 1.25 % at 0.567 (r4 12.0 % at 0.583); new small jumps at 1.217 (0.36 %)
+and 1.250 (0.04 %) are whole-pixel snaps of the tile edges in the rise's slow tail (r4 had one at 1.300, 0.25 %).
+Stand-up box min 19.7 % (r4 4.6 %), label gap min 26 px. Sweep peaks 236-245 luma, 8 px, 21.08 to 21.68 in turn;
+stairs stay unlit (fill max 35; r4 lit to about 100). s04 frames 0 and last: lossless stills of old and new
+compositions identical (max 0); last clip frame vs s05's first: mean 0.250, max 26, 2 px over 24 (r5: 0.275, 32, 7).
+Old clips r2 to r5 deleted (latest only). check running (13:05).
+check (13:10, scratch/check-polish.log): passed, 0 errors; s01-s04 warnings the same kinds and count as round 5
+(4 file-size, 2 duplicate-media, 4 nested-media-start), the 2 infos at s01 26.87 as before; contrast 59/59.
+merc-tags --check s01 and s04: 0 stale. /dev/shm/l4lab-A removed. Left in place (outside my folders): my renders'
+frames in the renderer's shared cache /dev/shm/hyperframes-extract-cache-0 (hfcache-v6-85801aed09b41408 and
+-c84d58f7c5b05ff2, 2006 frames each, s01's m01 passes, about 550 MB; -054169f8ac673059 and -51f68186c82d41cf,
+s04's m04, about 40 MB).
+
+### Polish round status (13:12): all five items in; round done
+
+| Scene | Items | Clip (60 fps) | Holds | Sweep | clock-lint |
+| --- | --- | --- | --- | --- | --- |
+| s01 | 3 | lab/s01-cold-open/clip.mp4 | 0.1 s, longest 0.1 | known EDGE 33.75 only | silent |
+| s02 | 5 | lab/s02-title/clip.mp4 | none | clean | silent |
+| s03 | none | unchanged (01:08 clip) | as round 4 | as before | silent |
+| s04 | 1, 2, 4 | lab/s04-recall/clip.mp4 | 0.3 s (0.4/30), longest 0.1, final 0.1 | clean | silent |
+For the director: STORYBOARD 4c and HANDOFFS § Inside A "S4c's stand-up" (and its confirmations row) still describe
+the C4-pivot, comb-at-the-left stand-up; the new curves are in the s04 comment at the stand-up.

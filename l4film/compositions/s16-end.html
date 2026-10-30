@@ -33,21 +33,24 @@
 
           /* ---------------------------------------------------------------- anchors (from the end cue) */
           const MOVE = at('end', 'start', 0.07)           // the Mercs grow and move (0.6 s, power2.inOut)
-          const ORB_IN = at('end', 'start', 0.28)         // the orb opens (0.82 s, expo.out)
-          const WAVE = at('end', 'start', 0.4)            // its waterline draws (0.7 s)
-          const WORD = at('end', 'start', 0.42)           // the wordmark wipes in (0.83 s)
-          const TAG = at('end', 'start', 0.55)            // "Find your pitch." (0.6 s)
-          // the address (in over 0.3 s, rising 18 px over 0.45 s), underlined from 0.25 s later (0.5 s): at rest by
-          // end + 1.07 (479.6), before the hop lifts the heads (its top at end + 1.2, 479.73); it stands high enough
-          // (URL_Y) that the hop's top keeps 20 px or more from it (DECISIONS 95, 122), so it need not wait for the hop
-          const URL = at('end', 'start', 0.62)
-          const SKIP = at('end', 'start', 0.8)            // the skip line, then the Scale Runner path, 0.1 s apart (0.45 s)
-          const FLY = at('end', 'start', 0.3)             // the beads rise from behind their Mercs (FLYD)
-          const FLYD = 0.8                                // their flight, so they are in orbit (and settled) by end + 1.35
+          // the lockup first (film round 1: its letters show from end + 0.4, before "Find your pitch.", whole by + 1.08)
+          const ORB_IN = at('end', 'start', 0.15)         // the orb opens (0.82 s, expo.out)
+          const WAVE = at('end', 'start', 0.27)           // its waterline draws (0.7 s)
+          const WORD = at('end', 'start', 0.25)           // the wordmark wipes in (0.83 s)
+          const TAG = at('end', 'start', 0.45)            // "Find your pitch." (0.6 s)
+          // the address (in over 0.3 s, rising 18 px over 0.45 s), its underline drawn from 0.12 s later (0.4 s): both at
+          // rest by end + 1.07 (479.6), before the hop lifts the heads (its top at end + 1.2, 479.73); it stands high
+          // enough (URL_Y) that the hop's top keeps 20 px or more from it (DECISIONS 95, 122), so it need not wait
+          const URL = at('end', 'start', 0.55)
+          const SKIP = at('end', 'start', 0.75)           // the skip line, then the Scale Runner path, 0.12 s apart (0.45 s)
+          // the beads rise from behind their Mercs as they start to move, and pass the address's ends (y 370 to 426)
+          // by end + 0.4, before it lands; in orbit by end + 0.95 and settled by end + 1.2
+          const FLY = at('end', 'start', 0.15)
+          const FLYD = 0.8
           const LAND = at('end', 'start', 0.87 + 0.58)    // the celebration (end + 0.87, merc-shots.py) lands its hop 0.58 s in
           // the card's layout (film round 1): the lockup as Lesson 2's (y 40 to 220), "Find your pitch." (serif italic),
           // the address (Outfit 600 56 px) and the two lower lines (Outfit 500, LPX, ink-2) between the Mercs
-          const TAG_Y = 326, TAG_PX = 112, URL_Y = 412, LPX = 52, LINE_Y = [494, 560]
+          const TAG_Y = 326, TAG_PX = 112, URL_Y = 412, LPX = 54, LINE_Y = [496, 564]
 
           /* ---------------------------------------------------------------- the room */
           const dust = L.filmDust(room.near)
@@ -99,8 +102,8 @@
           // the underline crosses the descenders' tips (its foot at URL_Y + 12, theirs)
           const under = sv('rect', { x: 0, y: URL_Y + 9, width: 0, height: 3, rx: 1.5, fill: spectrum, opacity: 0 }, mid)
 
-          // the skip line and the Scale Runner path between the Mercs, Outfit 500 LPX px (52: about 44 px of ink, cap
-          // to descender, where 40 px gave 34), ink-2, each icon the app's own at b803c7d43 (the intro's close glyph,
+          // the skip line and the Scale Runner path between the Mercs, Outfit 500 LPX px (54: 1.35 times the 40 px
+          // whose lines measured about 34 px, so about 46), ink-2, each icon the app's own at b803c7d43 (the intro's close glyph,
           // src/components/icons.tsx X; Exercises, src/components/AppNavTabs.tsx TAB_META), drawn in the line's ink-2
           // and scaled with the type (32 and 36 px at 40 px)
           const ICONS = {
@@ -110,7 +113,7 @@
           const LSTYLE = `font-family: 'Outfit'; font-weight: 500; font-size: ${LPX}px; white-space: pre;`
           const LINES = [
             { y: LINE_Y[0], tIn: SKIP, runs: ['First visit? Skip the intro: ', { icon: 'x', size: 32 * LPX / 40 }, ' › Yes, skip'] },
-            { y: LINE_Y[1], tIn: SKIP + 0.1, runs: ['then ', { icon: 'bell', size: 36 * LPX / 40 }, ' Exercises › Scale Runner'] },
+            { y: LINE_Y[1], tIn: SKIP + 0.12, runs: ['then ', { icon: 'bell', size: 36 * LPX / 40 }, ' Exercises › Scale Runner'] },
           ]
           for (const Ln of LINES) {
             Ln.g = sv('g', { opacity: 0 }, mid)
@@ -217,8 +220,8 @@
             url.setAttribute('transform', `translate(0 ${f2(18 * (1 - uu))})`)
             const uw = url.getComputedTextLength ? url.getComputedTextLength() : 1230
             const u2w = u2.getComputedTextLength ? u2.getComputedTextLength() : 870
-            under.setAttribute('x', f2(960 + uw / 2 - u2w)); under.setAttribute('width', f2(Math.max(0.01, u2w * P(t, URL + 0.25, 0.5, 'power3.inOut'))))
-            under.setAttribute('opacity', (0.9 * P(t, URL + 0.25, 0.15)).toFixed(3))
+            under.setAttribute('x', f2(960 + uw / 2 - u2w)); under.setAttribute('width', f2(Math.max(0.01, u2w * P(t, URL + 0.12, 0.4, 'power3.inOut'))))
+            under.setAttribute('opacity', (0.9 * P(t, URL + 0.12, 0.15)).toFixed(3))
             for (const Ln of LINES) {
               Ln.g.setAttribute('opacity', P(t, Ln.tIn, 0.3).toFixed(3))
               Ln.g.setAttribute('transform', `translate(0 ${f2(12 * (1 - P(t, Ln.tIn, 0.45, 'power3.out')))})`)

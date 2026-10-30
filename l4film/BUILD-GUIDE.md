@@ -454,12 +454,11 @@ the hero view, y 323) after that.
   black-key rows shaded; no strip.
 - Kit: `L.kicker('From Lesson 2')`; `L.stairs` (dimmed to 25 % with its labels and house faded, 47.1
   to 47.5; back to full on the new rows, 60.2 to 60.6; the seven risers growing in turn on "seven
-  steps"); `L.tiles` (Lesson 2's row, C4 to C5, HANDOFFS § Carried, rising from 300 px below, 47.6
-  to 48.6, power3.out; the tiles scaling in turn, the dark ones lit to 60 % chrome);
+  steps"); `L.tiles` (Lesson 2's row, C4 to C5, HANDOFFS § Carried, rising from 300 px below, 47.4
+  to 48.6, power3.out, faded in over its first 0.45 s; the tiles scaling in turn, the dark ones lit to 60 % chrome);
   `L.tileBrackets` (the twelve "1" brackets, y 740, labels at 790); `L.ringTimer` (q0 at (164,
-  232)); the stand-up (HANDOFFS § S4c's stand-up, scene-built from the tiles' geometry:
-  **provisional**, the lab decides the pivot and the curves; if the lab shows tiles vanishing rather
-  than the row turning upright, the row tips about its left end over 1.5 s instead); "1 octave = 12
+  232)); the stand-up (HANDOFFS § S4c's stand-up, scene-built from the tiles' geometry: one 2.0 s turn
+  about F♯4 at full scale since the polish round); "1 octave = 12
   semitones" and "in 7 steps" / "in 7 steps?" (frame-fixed, top left).
 - Merc: m04-orange (feet (1800, 840), 300, hero, turned left) drops in at `at('o3', 'start',
   -1.1)` (61.45, during b6), talks o3, listens to b7, and hops out right at `at('b7', 'start', 0.29)`.
@@ -817,7 +816,7 @@ lab still (still paths beside it). Until then, the HANDOFFS value is the one to 
 | --- | --- | --- | --- |
 | World geometry | rows, stairs on C, D and G, strip, hairlines, houses | kit lab: exact | `lab/kit-stairs/` |
 | Inside A, S1 | Merc's mouth point: (261, 781) on m01-blue, not (270, 664) | builder A, on the s01 clip with the pass | `lab/s01-cold-open/scratch/mouth/sheet.png`, `full-1.0s.png` |
-| Inside A, S4c | the stand-up: pitch 120 to 26 px and width 112 to 24 px over 0.6 s from STAND (power2.inOut); the turn, and the pivot from (240, 560) to (360, 677), from STAND + 0.2 over 0.8 s; each sliver to x 220-1680 and 26 px over 1.0 s, its fill fading from + 0.3 over 0.7 s (power2.in); an exact crossfade to the kit's rows at STAND + 2.2 | builder A: reads as the row turning upright, so the fallback tip is not needed | `lab/s04-recall/scratch/standup/sheet.png`, `lab/s04-recall/frame-09` to `frame-14` |
+| Inside A, S4c | the stand-up (polish round): one move from STAND over 2.0 s, sine.inOut, keyed by u; the turn of 90 degrees counter-clockwise about F♯4 at full scale; the pitch 26 + 94 (1 - u)^2.23 px; the tiles 280 to 1,460 px wide by u^4.04, their gaps closing with the stretch; F♯4's centre on the cubic (960, 560), (890, 422), (1090, 675), (950, 521); the fill fade, the rows, the staircase's return and the crossfade at their old times | builder A: the smallest box 19.7 % of the frame at 59.53 (4.6 % before), 26 px from the label, lowest y 886; the end state at 60.40 and "seven steps" unchanged | `lab/s04-recall/polish/standup-sheet-1.png`, `standup-after-10fps.jpg`, `standup-box-after.txt` |
 | A to B, 69.35 | s04's last frame against s05's first (29 Oct, after both fix rounds' gate moves): max 19, 0.003 % over 8, none over 24 | director | `lab/entrances/seam-s04-last.png`, `seam-s05-first.png` |
 | B to C, 146.10 | s07's frame 0 against s06's last clip frame (with its passes): max 36 at edges, mean 0.39; after B's fix round the semitones' gold corner (B-01 item 2) vanished at the cut until the kit drew it too (DECISIONS 85), then max 22, none over 24 | builder C; director | `lab/s07-predict/scratch/diff-s06-s07.png`, `lab/entrances/seam-s06-last.png`, `seam-s07-first.png` |
 | Inside C, S7 to S8 (199.36) | s07 at 53.253 against s08 at 0.007: max 21, two pixels over 16 (dust) | builder C | `lab/s07-predict/scratch/diff-s07-s08.png` |

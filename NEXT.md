@@ -2047,3 +2047,12 @@ Note: the lanes' memory gate read a stale cgroup path after the 21:00 restart (f
   FILM2 critic template l4entr/critics/FILM2.txt (verification vs film-01; RENDERNAME, DISKNOTE).
   2-hourly check-in prompt rewritten: the polish round is in flight on the owner's 29 Oct ask;
   voices, Season 2 decisions and Sing covers wait on the owner. Tasks 187 and 189 closed (stale).
+- 13:1x group A reported (all five items; DECISIONS 124): tiles fade over 0.45 s from 47.40 (pop
+  12.0 % -> 1.25 %); stand-up = one 2.0 s turn about F#4 at full scale (min box 4.6 -> 19.7 %,
+  accepted short of a quarter); two-row tick 10.25-11.70; "measure" flares the riser bars in turn;
+  S2 crisp by 34.28 (radius 1500 -> 1200). Cuts unchanged. Lead looked at the stand-up, tick and
+  sweep sheets; clock-lint silent. STORYBOARD 1c/4a/4c/4d/§ Build checks, HANDOFFS § S1 to S2 and
+  § S4c's stand-up, BUILD-GUIDE s04 sheet + confirmation row updated (backups l4entr/polishA/).
+  A's four extract-cache entries (590 MB) removed. 13:2x group B builder started (xhigh, BRIEF-B;
+  rate limit allowed; memory 9.8 GB with F rendering). Running: F, B. Next: C when F reports,
+  then D + E; F's report -> HANDOFFS § S16.
