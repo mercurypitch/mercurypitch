@@ -1882,3 +1882,12 @@ Note: the lanes' memory gate read a stale cgroup path after the 21:00 restart (f
   compositionHash 2b127710dea46d91 as every earlier try. Waiter re-armed (wait-l4.sh film-01 0 300).
   After any restart: warm Chrome first (run its --version once), then RESUME=1.
 - 08:2x check-in: nothing due besides film-01; the leftover queue still waits on the owner.
+- 08:49 owner asked for research and article plans for Season 2 while the film renders. Two agents
+  at xhigh (the two slots; rate limit "allowed"): Arc C (Lessons 15-21) and Arc D (22-28), each
+  researching its cards' "Facts to check" and writing s2/lessons/NN-slug/RESEARCH.md and
+  ARTICLE-PLAN.md, then s2/lessons/ARC-C-REPORT.md / ARC-D-REPORT.md. Briefs:
+  s2/BRIEF-articles-common.md, s2/BRIEF-arc-c.md, s2/BRIEF-arc-d.md. They plan on SEASON-2 § 7's
+  recommendations and mark decision-dependent spots. Read-only on the repo (l10-page worktree,
+  b803c7d43). Film critic FILM1 waits for a free slot (two-agent policy) unless the owner allows a
+  third. film-01 at 08:48: pieces 4-6 in progress (~370 frames/min with 3 workers; memory 12.0 GB
+  of 13.36 GB, of which ~9.75 GB rss+shmem), capture ends ~09:45, post-steps ~10:00.
