@@ -41,6 +41,41 @@ export const FIRST_LIGHT_AUTO_START =
 /** The meter's caption once the level reads as a voice. */
 export const FIRST_LIGHT_METER_LIVE = 'Merc can hear you'
 
+/**
+ * In place of the auto-start line once nothing has been heard for a while:
+ * the usual cause, which the microphone list under the stage then answers.
+ */
+export const FIRST_LIGHT_NUDGE =
+  "Still nothing. If you're singing, the browser is probably listening to a different microphone."
+
+/** The fixes under "Mic not behaving?", in the order worth trying them. */
+export const FIRST_LIGHT_FIX_PICK =
+  "Tap the microphone's name above to switch to the one you're singing into."
+export const FIRST_LIGHT_FIX_MUTED =
+  "Check it isn't muted: a switch on the mic or headset, your system's sound settings, or the gain on an audio interface."
+export const FIRST_LIGHT_FIX_APPS =
+  'Close anything that may be holding the microphone: meeting, recording or streaming apps, and any other MercuryPitch tab.'
+
+/** Under the fixes: what a browser cannot see. */
+export const FIRST_LIGHT_FIX_LIMIT =
+  "Your browser can't see other apps, so it can't say when one of them has the microphone."
+
+/** Beside an input that opened and sent nothing at all. */
+export const FIRST_LIGHT_SILENT_PICK =
+  'No sound came from this one, not even room noise. Try another.'
+
+/** When the input picked would not open. */
+export const FIRST_LIGHT_PICK_FAILED =
+  "That input would not open. Pick another, or check that it's connected."
+
+/** Over the screen when the input opened carries nothing at all: there is a
+ *  microphone, so not "No microphone". */
+export const FIRST_LIGHT_DEAD_EYEBROW = 'No signal'
+
+/** Why, under that eyebrow. "Room noise", as on a silent pick's row. */
+export const FIRST_LIGHT_DEAD_INPUT =
+  "That input is sending nothing, not even room noise. It's likely muted at the system level, or your browser is listening to a different microphone."
+
 /** The eyebrow over the note Merc heard. */
 export const FIRST_LIGHT_HEARD_EYEBROW = 'Merc heard you'
 

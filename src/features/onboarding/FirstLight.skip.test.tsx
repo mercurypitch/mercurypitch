@@ -29,6 +29,9 @@ vi.mock('@/features/mirror/TaskDemo', async () =>
 vi.mock('@/features/mirror/LiveViz', async () =>
   (await import('./FirstLight.fixture')).fake.liveViz(),
 )
+vi.mock('@/features/mic-check/MicCheckStage', async () =>
+  (await import('./FirstLight.fixture')).fake.micStage(),
+)
 vi.mock('@/features/mirror/voiceprint-share', async () =>
   (await import('./FirstLight.fixture')).fake.voiceprintCard(),
 )

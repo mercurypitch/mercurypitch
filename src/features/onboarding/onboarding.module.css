@@ -291,6 +291,58 @@
     padding-top: calc(max(53.3vw, 30dvh) - 34px);
   }
 
+  /* First Light's Merc and his reflection end at 31% of its tall cut's
+     height: below it, under 2% of the middle's pixels pass 90 of 255
+     (measured 30 Oct 2026). The picture covers the frame from the top, so
+     that is max(55vw, 31dvh) down the screen, and the padding carries the
+     words past it plus 16 px of clear sky, less the 62 px the rail and the
+     frame's padding give, as the welcome's does. The wait's stage lifted
+     its words onto him on a phone before, eyebrow to headline. */
+  .beat[data-beat='first-light'] {
+    gap: 14px;
+    padding-top: calc(max(55vw, 31vh) - 46px);
+    padding-top: calc(max(55vw, 31dvh) - 46px);
+  }
+
+  /* The words scroll and the picture does not: with the help open, a phone
+     scrolls to "Try again", and scrolled words crossed Merc's feet at
+     about 1.05:1. The frame fades them out in the strip of sky between his
+     reflection and where the words start (that start is max(55vw, 31dvh)
+     less 6 px down the frame), and its foot fades too, so a list that runs
+     past the fold shows there is more. A pinned button was tried first: its
+     band read as a box over the sky, and at 390x664 it hid the inputs, the
+     screen's real fix, behind "Try again". */
+  .frame:has(> [data-beat='first-light']) {
+    -webkit-mask-image: linear-gradient(
+      to bottom,
+      transparent calc(max(55vw, 31vh) - 42px),
+      #000 calc(max(55vw, 31vh) - 10px),
+      #000 calc(100% - 32px),
+      transparent
+    );
+    -webkit-mask-image: linear-gradient(
+      to bottom,
+      transparent calc(max(55vw, 31dvh) - 42px),
+      #000 calc(max(55vw, 31dvh) - 10px),
+      #000 calc(100% - 32px),
+      transparent
+    );
+    mask-image: linear-gradient(
+      to bottom,
+      transparent calc(max(55vw, 31vh) - 42px),
+      #000 calc(max(55vw, 31vh) - 10px),
+      #000 calc(100% - 32px),
+      transparent
+    );
+    mask-image: linear-gradient(
+      to bottom,
+      transparent calc(max(55vw, 31dvh) - 42px),
+      #000 calc(max(55vw, 31dvh) - 10px),
+      #000 calc(100% - 32px),
+      transparent
+    );
+  }
+
   /* Merc is above the copy here, so the scrim starts below him. */
   .plateArt::after {
     background: linear-gradient(
@@ -774,40 +826,94 @@
   outline-offset: 2px;
 }
 
-/* ── Beat 2: mic meter, readout ──────────────────────────────── */
-
-.meter {
-  width: min(280px, 80%);
-  height: 4px;
-  border-radius: 3px;
-  background: var(--ob-rule);
-  overflow: hidden;
+/* A screen's action and, under it, the way on without the microphone. One
+   dominant action (owner rule): the way on is offered on every mic screen,
+   never beside the action as its equal. */
+.actionStack {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  margin-top: 4px;
 }
 
-/* Wrapper for the shared MicTroubleshooting note. It brings its own look;
-   this only gives it the beat's column width and a little air. */
-.micHelp {
-  width: min(360px, 92%);
-  margin-top: 18px;
+.quietAction {
+  /* Text, not a pill, at the full 44 px tap target, in --ob-ink-2 as
+     "Not now" is: a way out has to be readable over the picture. */
+  min-height: 44px;
+  padding: 10px 18px;
+  border: 0;
+  border-radius: 999px;
+  font: inherit;
+  font-size: 0.88rem;
+  font-weight: 500;
+  color: var(--ob-ink-2);
+  text-decoration: underline;
+  text-decoration-color: color-mix(in srgb, var(--ob-ink-3) 45%, transparent);
+  text-underline-offset: 3px;
+  background: transparent;
+  cursor: pointer;
+  transition: color 0.2s var(--ob-ease);
 }
 
-.meterFill {
-  height: 100%;
-  border-radius: 3px;
-  background: linear-gradient(90deg, var(--ob-blue), var(--ob-teal));
-  transition: width 0.08s linear;
+.quietAction:hover {
+  color: var(--ob-ink);
 }
 
-/* The bar that answers "is it listening?". The 4px hairline above reads
-   as a rule rather than an instrument, and someone waiting to be told
-   when to sing scanned straight past it. */
-.meterBig {
-  width: min(320px, 86%);
-  height: 12px;
-  border-radius: 7px;
-  background: var(--ob-rule);
-  overflow: hidden;
-  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.04);
+.quietAction:focus-visible {
+  outline: 2px solid var(--ob-blue);
+  outline-offset: 2px;
+}
+
+/* ── Beat 2: the stage, readout ──────────────────────────────── */
+
+/* What answers "is it listening?": the Settings mic check's ribbon, its
+   falling notes and a slim key strip (MicCheckStage). It paints straight
+   onto the plate, not into a box, so the voice lights the sky Merc listens
+   from, and both ends fade into it. A level bar came before it, and a 4 px
+   hairline before that: read as a rule rather than an instrument, the
+   hairline was scanned straight past by someone waiting to be told when to
+   sing. */
+.stage {
+  position: relative;
+  flex: none;
+  width: min(100%, 560px);
+  /* Waiting, a quiet room shows only the resting line, and a taller band
+     read as empty; the take (.stageTake) gives the voice the room. */
+  height: clamp(112px, 15vh, 160px);
+  /* Whole pixels: the canvas's backing store is rounded, so at 126.6 px it
+     was stretched over the box and its last device row painted bright
+     across the keys (390x844, 30 Oct 2026). Older browsers keep the line
+     above. */
+  height: round(down, clamp(112px, 15vh, 160px), 1px);
+  -webkit-mask-image: linear-gradient(
+    90deg,
+    transparent,
+    #000 9%,
+    #000 91%,
+    transparent
+  );
+  mask-image: linear-gradient(
+    90deg,
+    transparent,
+    #000 9%,
+    #000 91%,
+    transparent
+  );
+}
+
+/* When the nudge opens the help, the stage gives it room: at 200 px the
+   list of inputs pushed "Start the take now" and the way on under the fold
+   of a 1440x900 desktop. */
+.stageCompact {
+  height: clamp(96px, 12vh, 112px);
+  height: round(down, clamp(96px, 12vh, 112px), 1px);
+}
+
+/* The take: the voice has been heard, and the stage opens up for it. */
+.stageTake {
+  height: clamp(160px, 26vh, 220px);
+  height: round(down, clamp(160px, 26vh, 220px), 1px);
 }
 
 .meterCaption {
@@ -828,13 +934,6 @@
   font-weight: 500;
   font-variant-numeric: tabular-nums;
   color: var(--ob-teal);
-}
-
-.deviceList {
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: center;
-  gap: 8px;
 }
 
 /* ── Beat 4: demo stage, countdown ───────────────────────────── */
@@ -1793,7 +1892,7 @@
     transform: none;
   }
 
-  .meterFill {
+  .quietAction {
     transition: none;
   }
 
@@ -1850,6 +1949,16 @@
 
   .actions .primary,
   .actions .secondary {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .actionStack {
+    width: 100%;
+  }
+
+  .actionStack .primary,
+  .actionStack .secondary {
     width: 100%;
     justify-content: center;
   }
