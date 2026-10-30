@@ -1913,3 +1913,14 @@ Note: the lanes' memory gate read a stale cgroup path after the 21:00 restart (f
   does); the ban is on assistant model names and attribution. Next: when the owner allows the
   generate tool, a fresh agent runs PLAN.md from § 2 (generation needs no memory; pnpm only after
   the film is done). Slot freed: the FILM1 critic can take it.
+- 09:2x Arc C planner reported: s2/lessons/15-21 RESEARCH.md + ARTICLE-PLAN.md (2,814 lines) and
+  ARC-C-REPORT.md. Lead spot-check: no emojis, model names or paths in lesson files; cites verified
+  (SightSingingExercise.tsx:348-350 "Hold {note} to continue"; settings-store soprano C4-C6,
+  tenor C3-C5; lesson-marker.ts SEASON_1_LESSON 01-14); L15 plan in Season 1's LESSON order with
+  predict, Tavi, recall, words, steps. Findings for SEASON-2 when the owner answers: ABRSM theory
+  Grade 2 = two ledger lines + majors to 3 sharps/flats, 6/8 at Grade 3 (§ 1.1, § 7 item 13 can say
+  so); 6/8 counting "1 la li" in texts ("la" clashes with solfege, a new reason for numbers);
+  Sight-Singing shows the answer (tracker, target band, named next notes, hold label: § 5 item 10e);
+  Savage 2015: pentatonic not a universal; Henry 2004 has no control group. Takeuchi & Hulse read to
+  the abstract only, so "no prevalence figure" is about the abstract (the body may cite Bachem's
+  1 in 10,000): keep AP prevalence unverified. Arc D still running.
