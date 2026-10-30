@@ -1937,3 +1937,10 @@ Note: the lanes' memory gate read a stale cgroup path after the 21:00 restart (f
   G drafted for L28; L25/L28 recalls quote Arc C's planned checks (re-take once written). No agents
   running now. Next: FILM1 critic when film-01's post-steps end (~10:10); lead's full read of both
   arcs when the owner wants the articles written.
+- 09:36:09 OOM kill again with 3 workers: one chrome renderer (anon 1.69 GB + shmem 0.48 GB) on
+  piece 15/20 (frames 21000-22499, s12). Renderers grow to ~2.1-2.2 GB in s12-s13; 3 of them +
+  4.4 GB extract cache + 3 x 0.58 GB x264 encoders + node ~0.7 GB reach the 13.36 GiB cap. The other
+  two workers carry on; the render will fail on the stall once they finish (~10:09). Then:
+  RESUME=1 WORKERS=1 (only piece 15 left; pieces are on disk under $S/l4film01proj/renders/), then
+  the post-steps. Waiter re-armed at log offset 1338348. For FILM2: 2 workers (or 3 with the s12-s13
+  pieces re-run at 1), the extract cache is unavoidable.
