@@ -57,10 +57,8 @@ export function LitOrbs(props: ProgressionTrainProps): JSX.Element {
     return lerp(LEVEL, degreeY(degree), lift)
   }
   const pathD = (): string => {
-    const points: Point[] = Array.from({ length: count() }, (_, k) => [
-      orbX(k),
-      orbY(k),
-    ])
+    const points: Point[] = []
+    for (let k = 0; k < count(); k++) points.push([orbX(k), orbY(k)])
     return props.reveal === null ? polyD(points) : smoothD(points)
   }
 
