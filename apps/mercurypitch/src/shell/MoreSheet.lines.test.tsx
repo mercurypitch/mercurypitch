@@ -60,6 +60,7 @@ function openSheet(): void {
       onPushSettings={vi.fn()}
       onPushAccount={vi.fn()}
       onPushDeveloper={vi.fn()}
+      onPushLeagues={vi.fn()}
     />
   ))
 }

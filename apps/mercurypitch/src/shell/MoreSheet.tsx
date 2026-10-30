@@ -14,10 +14,10 @@
 // sheet mounts its rows only while open (Sheet wraps them in a Show), so the
 // reads cost nothing while it is closed and follow their stores while open.
 //
-// TOGETHER IS NOT HERE YET. Leagues, This week's challenge and Community form
-// a group between Rooms and You, each row behind a build switch in
-// src/lib/native-build.ts (docs/plans/native-more-and-community.md). With no
-// switch on, the group is not drawn at all, so this ships without it.
+// TOGETHER, ON ITS SWITCHES. Leagues, This week's challenge and Community
+// form a group between Rooms and You, each row behind a build switch in
+// src/lib/native-build.ts (docs/plans/native-more-and-community.md). Leagues
+// rides NATIVE_LEAGUES; with no switch on, the group is not drawn at all.
 //
 // A test build also gets Developer, because a TestFlight build has no
 // devtools and a panel only a keyboard can reach is a panel the tester does
@@ -42,11 +42,12 @@ import { importsInFlight, karaokeNewSongs, } from '@/features/karaoke-room/karao
 import { roomLibrary } from '@/features/karaoke-room/karaoke-room-library'
 import { TAB_GUITAR, TAB_KARAOKE, TAB_PIANO } from '@/features/tabs/constants'
 import { API_BASE_URL, COMMIT_SHA } from '@/lib/defaults'
-import { KARAOKE_IMPORT } from '@/lib/native-build'
+import { KARAOKE_IMPORT, NATIVE_LEAGUES } from '@/lib/native-build'
 import { gameState, selectedSongName } from '@/stores/falling-notes-store'
 import { savedMidiSongs } from '@/stores/saved-midi-songs-store'
-import { AccountIcon, ChevronIcon, ConsoleIcon, GearIcon, GuitarIcon, KaraokeIcon, PianoIcon, } from './icons'
-import { accountLine, developerLine, guitarLine, karaokeLine, pianoLine, settingsLine, } from './more-lines'
+import { AccountIcon, ChevronIcon, ConsoleIcon, GearIcon, GuitarIcon, KaraokeIcon, PianoIcon, TrophyIcon, } from './icons'
+import { leagueCard, leagueReadThisWeek } from './leagues/league-store'
+import { accountLine, developerLine, guitarLine, karaokeLine, leaguesLine, pianoLine, settingsLine, } from './more-lines'
 import { accountCard, accountProviderLine, accountSignedIn, } from './settings/account-state'
 import { knownInput } from './settings/level-check'
 import { goToTab } from './shell-navigation'
@@ -58,6 +59,8 @@ export interface MoreSheetProps {
   /** Account, with Settings under it. */
   onPushAccount: () => void
   onPushDeveloper: () => void
+  /** Leagues, on a build with them (NATIVE_LEAGUES). */
+  onPushLeagues: () => void
 }
 
 const DEVELOPER_AVAILABLE = import.meta.env.VITE_PORTABLE_CONSOLE === 'true'
@@ -193,6 +196,27 @@ export const MoreSheet: Component<MoreSheetProps> = (props) => {
             onPress={() => leaveTo(() => goToTab(TAB_GUITAR))}
           />
         </MoreGroup>
+
+        {/* Together, on a build with any of its rows: a ternary, as
+            Developer's is, so a store build carries no group, no row and
+            no read of the league the row names (league-store.ts). The
+            row's line is worked out inside the branch for the same
+            reason: a closure outside it would keep the store alive. */}
+        {NATIVE_LEAGUES ? (
+          <MoreGroup title="Together" tint="together">
+            <MoreRow
+              id="leagues"
+              icon={<TrophyIcon />}
+              name="Leagues"
+              line={leaguesLine({
+                signedIn: accountSignedIn(),
+                me: leagueCard(),
+                thisWeek: leagueReadThisWeek(),
+              })}
+              onPress={() => leaveTo(props.onPushLeagues)}
+            />
+          </MoreGroup>
+        ) : null}
 
         <MoreGroup title="You" tint="you">
           <MoreRow

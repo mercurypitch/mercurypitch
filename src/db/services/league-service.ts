@@ -7,6 +7,7 @@
 // state. The ladder (the 7 rungs + trophy art) is public config, read
 // straight from the generic CRUD API (leagues is an admin-read table).
 
+import { handleAuthErrorResponse } from '@/db/services/auth-service'
 import { getAuthHeaders } from '@/db/services/user-service'
 import { API_BASE_URL } from '@/lib/defaults'
 
@@ -64,16 +65,61 @@ export async function fetchLeagueLadder(): Promise<LeagueRung[]> {
 }
 
 /**
- * The signed-in user's league state, or null when signed out / unreachable
- * (the view falls back to the locked ladder-only presentation).
+ * What reading the league came back with, and WHY when it has none.
+ *
+ * `refused` is a session the server would not take: a 401, or the 403 a
+ * suspended account gets. Any other 403 is no answer, as for every data
+ * read (db/index.ts signs out on a 401 only), so a block somewhere on the
+ * way never signs a singer out. `unreachable` is a network or a server
+ * that could not answer. The native shell tells the two apart, as the
+ * account card does (auth-me-service.ts `readMe`): a refused session is
+ * asked to sign in again, not told to check the connection.
  */
-export async function fetchLeagueMe(): Promise<LeagueMe | null> {
+export type LeagueMeRead =
+  | { status: 'ok'; me: LeagueMe }
+  | { status: 'refused' }
+  | { status: 'unreachable' }
+
+/** One GET of /api/league/me: its response, or null with no answer. */
+async function requestLeagueMe(): Promise<Response | null> {
   if (base() === '') return null
   try {
-    const res = await fetch(`${base()}/api/league/me`, {
+    return await fetch(`${base()}/api/league/me`, {
       headers: getAuthHeaders(),
     })
-    if (!res.ok) return null
+  } catch {
+    return null
+  }
+}
+
+/** The signed-in user's league state, or why there is none. */
+export async function readLeagueMe(): Promise<LeagueMeRead> {
+  const res = await requestLeagueMe()
+  if (res === null) return { status: 'unreachable' }
+  if (!res.ok) {
+    // A suspended account is told so here as on every other read.
+    const body = await res.text().catch(() => '')
+    const suspended = handleAuthErrorResponse(res.status, body)
+    return res.status === 401 || suspended
+      ? { status: 'refused' }
+      : { status: 'unreachable' }
+  }
+  try {
+    return { status: 'ok', me: (await res.json()) as LeagueMe }
+  } catch {
+    return { status: 'unreachable' }
+  }
+}
+
+/**
+ * The signed-in user's league state, or null when signed out / unreachable
+ * (the view falls back to the locked ladder-only presentation). A passive
+ * read: whatever the answer, it changes nothing about the session.
+ */
+export async function fetchLeagueMe(): Promise<LeagueMe | null> {
+  const res = await requestLeagueMe()
+  if (res === null || !res.ok) return null
+  try {
     return (await res.json()) as LeagueMe
   } catch {
     return null
