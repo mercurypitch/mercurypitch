@@ -1796,3 +1796,13 @@ Note: the lanes' memory gate read a stale cgroup path after the 21:00 restart (f
   Agents now: C (rendering) + critic B-04.
 - Queue: A-04 (A4.txt) when a slot frees; C-03 after C (freeze c3/; C3.txt ready). Groups now:
   D KEEP x3, E KEEP x2, F KEEP x3; A, B, C verifying. Then the film render (no builder rendering).
+- 02:2x critic B-04 (saved): KEEP S5, REVISE S6. DECISIONS 116: B round 5 on S6 (names ride out
+  of frame; upper bracket world y 280+ / screen 54+, hop peaks capped, bead 20 px under; ghost
+  beneath the labels); Tavi's landing (86/91) and the drop past the tally (69 px) stay. Docs:
+  HANDOFFS § World gold L (85), § S6's brackets, F-low/F-high rows, rows 6a/6d (row glow on
+  "semitones" 131.4-132.5, 143.13-144.2), s06 sheet. LEDGER 26. Backups b116/. B-fix5 sent.
+- 02:2x builder C handed back the small round ($S/l4entr/C-small2-report.txt): N2-N6 done (power1.out
+  rises, arrow fade, ring 2.5 radii, strip dim from 0.15, bead glow halved). DECISIONS 117. Frozen
+  c3/. Critic A-04 launched (A4.txt). Agents now: B (round 5) + critic A-04.
+- Queue: C-03 (C3.txt, c3/) when a slot frees; B-05 after B (freeze b5/: S5 from b4, new S6).
+  Groups: D, E, F closed (KEEP); A, B, C verifying. Then the film render (no builder rendering).

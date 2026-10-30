@@ -504,13 +504,13 @@ the hero view, y 323) after that.
   ended 145.65), the kicker lane empty; the staircase on C at full, letters C to C, risers measured,
   riser labels 2 2 1 2 2 2 1, hairlines drawn; the strip with C major's keys at full and the rest at
   45 %, no key names (gone at 145.8); no sum, brackets or legend.
-- Kit: `L.bracket` (ink, ticks down, riding the world: stairs 1 to 4 x 242 to 714 at y 484, stairs
-  5 to 8 x 722 to 1194 at y 302); `L.frameRig` (F-low `cam.to(word('b13', 3), 1.6, 'F-low',
+- Kit: `L.bracket` (ink, ticks down, riding the world: stairs 1 to 4 x 242 to 714, stairs 5 to 8
+  x 722 to 1194, at the heights HANDOFFS § S6's brackets gives); `L.frameRig` (F-low `cam.to(word('b13', 3), 1.6, 'F-low',
   'power2.inOut')`; the truck to F-high from `at('group-low', 'start', 1.52)`, 1.1 s, a `to` so the
   layers part; the pull to F0 from `at('group-high', 'start', 2.07)`, 1.1 s); `L.bead4` (group-low
   and group-high; the hop from stair 4 to stair 5 lands on G4, 120.83, once the truck has settled);
-  the ghost outline (stairs 1 to 4 and their risers, drawn from `L.ST`, moving by (+480, -182),
-  124.3 to 125.6, power2.inOut); the sum (Outfit 600 50 px at x 1270, baseline 260; DECISIONS 110) and "= 12"; the
+  the ghost outline (stairs 1 to 4 and their risers, drawn from `L.ST` beneath the riser labels,
+  moving by (+480, -182), 124.3 to 125.6, power2.inOut); the sum (Outfit 600 50 px at x 1270, baseline 260; DECISIONS 110) and "= 12"; the
   octave bracket (chrome, vertical, x 1232, y 664 to 352) and "= 1 octave" (serif italic 96 px at x
   1262, baseline 543); `L.pulse`; `L.echoRings`.
 - Merc: m06a-orange talks o5 and hops out right at `at('o5', 'end', 0.09)`; m06b-orange drops in at

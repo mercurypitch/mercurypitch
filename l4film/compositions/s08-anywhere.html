@@ -280,7 +280,9 @@
 
             // 8d: the ghosts, one at a time: each appears where it stood on C, D or G (0.2 s, to 40 %), slides onto E
             // (0.6 s, power2.inOut), fits exactly, and fades (0.3 s) as the rim flashes (up 0.15 s, back 0.35 s; C-02 N2:
-            // a 0.06 s rise snapped on in one frame)
+            // a 0.06 s rise snapped on in one frame). The rise is power1.out: with L.env's power2.out (GSAP's cubic) one
+            // 1/60 s frame still carried a quarter of the third flash, alone in a still frame, and measure.py read it as
+            // a jump at 19.000
             ghosts.forEach((G, i) => {
               const u = P(t, GH(i) + 0.1, GSLIDE, 'power2.inOut')
               const a = 0.4 * P(t, GH(i), 0.2) * (1 - P(t, FIT(i), 0.3))
@@ -289,7 +291,8 @@
               G.g.setAttribute('transform', `translate(${f1(G.dx * (1 - u))} ${f1(G.dy * (1 - u))})`)
             })
             {
-              const e = Math.max(...[0, 1, 2].map((i) => L.env(t, FIT(i), 0.15, 0, 0.35)))
+              const rise = (t0) => (t < t0 ? 0 : t < t0 + 0.15 ? L.ease('power1.out')((t - t0) / 0.15) : 1 - P(t, t0 + 0.15, 0.35, 'power2.in'))
+              const e = Math.max(...[0, 1, 2].map((i) => rise(FIT(i))))
               rim.setAttribute('opacity', (0.85 * e).toFixed(3))
               rim.setAttribute('display', e <= 0.004 ? 'none' : 'inline')
             }

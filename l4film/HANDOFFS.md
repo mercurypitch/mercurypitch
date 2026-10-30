@@ -110,7 +110,9 @@ dimmed, every fill and stroke at 25 % (20 % in S11's tiers) with its labels hidd
 tread up to stair n+1's: unmeasured 4 px chrome at 40 %; being measured, `L.MEASURE` drawn as the
 6 px bar's outline, with a 12 px chrome tick at 55 % at a tone's middle row line; measured 6 px,
 chrome for a tone with a 12 px dark tick (`#2a323c`) at its middle row line, gold `#ffd84d` for a
-semitone. On every start the gold pair is between stairs 3 and 4 and between 7 and 8. A riser label
+semitone, which fills the whole 8 px gap between the two stairs and, once its bar has grown past
+0.8, turns up its right edge to run 56 px along the upper tread (5 px, round caps; DECISIONS 85).
+On every start the gold pair is between stairs 3 and 4 and between 7 and 8. A riser label
 (T, S, 2, 1) is Outfit 600 40 px, ink, right-aligned 2 px left of the measured bar (at the column
 centre + 55), baseline 8 px above stair n's tread. Beside a house on stair 1 a "T" would stand 2 px
 from it, so the bottom house is never up while riser 1's label is (S14b).
@@ -152,8 +154,8 @@ to 1880; 40 px from the rows (1680), 44 from the strip (1676), 46 from stair 8 o
 | F0         | 1    | 0       | 0       | -                 | most shots     | the world as drawn                                                                                                                                                                                                  |
 | CU-A       | 2    | -280    | -880    | (280, 880)        | S5c            | stairs 1 to 5 with their treads (stair 1 x 204 to 428, tread 448; stair 5's tread at 84), keys C4 to A4 (y 640 to 880); the C-D riser at x 436 from y 448 to 344                                                    |
 | CU-B       | 2    | -760    | -880    | (760, 880)        | S5d            | a pan of 480 px: stairs 3 to 5 with their treads (stair 3 x 204 to 428, tread 240), keys E4 to C5; the E-F riser at x 436 from y 240 to 188, where CU-A held the C-D riser; stair 2 and D4 cut by the left edge     |
-| F-low      | 1.8  | 99.6    | -704    | -                 | S6a, S6b       | stairs 1 to 4 x 535 to 1385 (treads 491 to 257), the lower bracket at y 167, names baseline 599, keys C4 to F4 x 532 to 1388, y 664 to 880, key letters at 848                                                      |
-| F-high     | 1.8  | -764.4  | -450    | -                 | S6b            | stairs 5 to 8 x 535 to 1385, treads 418 to 184, the upper bracket at y 94, names baseline 853; the strip under the caption band (from y 918), carrying nothing named                                                |
+| F-low      | 1.8  | 99.6    | -704    | -                 | S6a, S6b       | stairs 1 to 4 x 535 to 1385 (treads 491 to 257), the lower bracket (§ S6's brackets), names baseline 599, keys C4 to F4 x 532 to 1388, y 664 to 880, key letters at 848                                             |
+| F-high     | 1.8  | -764.4  | -450    | -                 | S6b            | stairs 5 to 8 x 535 to 1385, treads 418 to 184, the upper bracket (§ S6's brackets), names baseline 853; the strip under the caption band (from y 918), carrying nothing named                                      |
 | F-white    | 1.25 | -75     | -211.5  | (300, 846)        | S7d            | the dashed staircase x 378 to 1568, treads 554 (stair 1) to 164, foot 644, its "?" at (1498, 101); the strip y 739 to 889; the top-left lane clear                                                                  |
 | CU-D       | 2    | -836    | -464    | (836, 464)        | S7g            | D's stairs 3 to 7 x 368 to 1552: real treads 552 (stair 3) and 188 (stair 7), dashed 604 and 240, 52 px apart; names baseline 880                                                                                   |
 | F-keys-D   | 1.6  | -380.8  | -528    | (634.7, 880)      | S7h            | the strip x 3 to 2301, y 688 to 880, F♯4 x 717 to 819, C♯5 x 1485 to 1587 (black-key names at 787); D's names baseline 547                                                                                          |
@@ -308,7 +310,10 @@ rows C4 to G5, x 220 to 1680, black-key rows shaded. No strip yet: it enters in 
   110).
 - **S6's brackets.** `L.bracket`, ink, ticks down, riding the world: stairs 1 to 4 from x 242 to 714
   at y 448, stairs 5 to 8 from x 722 to 1194 at y 266, drawn over the bead's glow and echo rings
-  (as built, DECISIONS 110). The ghost outline in S6c moves by (+480, -182). The sum Outfit 600 50
+  (as built, DECISIONS 110). From round 5 (DECISIONS 116) the upper bracket's line sits at world y
+  280 or lower (54 px or more inside the frame's top in F-high), the two brackets the same height
+  above their stairs, the bead and its glow 20 px or more below each. The ghost outline in S6c
+  moves by (+480, -182) beneath the riser labels. The sum Outfit 600 50
   px at x 1270, baseline 260, 12 px between digits and 19 px either side of each dot, its ink x 1280
   to 1737 at rest; "= 12" reaches x 1746 at its 1.2 pulse (as built, DECISIONS 110). The octave bracket, chrome, at x 1232 from stair 1's tread to stair 8's (y 664
   to 352, twelve rows); "= 1 octave" serif italic 96 px at x 1262, baseline 543, its ink centred on

@@ -1213,3 +1213,50 @@ replaced it. The builder's record: critics never read it.
          critic's fix is to scale the travelling rung up about 2.5 times so it reads as an object.
        - Item 3: the gear's faint halo (luma over 30) comes within 6 px of "first:" and of
          "Settings" (8 px asked); widen its slot 2 px on each side or shrink the halo.
+
+116. **S5 and S6 after component critic B-04 (S5 KEEP, S6 REVISE): builder B's round 5, S6 only.**
+     - B-03's items 3 and 4 FIXED; 2 PARTLY (Tavi's body passes 69 px from the tally, past the
+       60 px asked, but she still falls through its band); 1 and carried 9 STILL PRESENT, as
+       decided (decisions 91 and 82).
+     - Round 5 takes three items in S6:
+       - Item 1: stair names fade mid-move while a name further out still shows: in the push to
+         F-low "B" and its "T" fade over 5.10 to 5.30 while "C" rides out at 5.45 ("A _ C"); in the
+         truck "D" fades over 9.15 to 9.30 while "C" stays to 9.40 ("C _ E"); the pull reverses
+         both. The names ride out of frame with the world, as S5's do; a name that must fade does
+         so only after its outer neighbour has left the frame.
+       - Item 3: the upper bracket, raised to world y 266 in round 4, sits at screen y 26 to 30 in
+         F-high, inside a 5 % title-safe margin and under the player's top bar. Its line goes to
+         world y 280 or lower (screen 54 or more), both brackets keep the same height above their
+         stairs, and the 6-7 and 7-8 hop peaks are capped so the bead and its glow stay 20 px or
+         more below it.
+       - Item 5: the ghost outline (S6c) draws beneath the riser labels, so its tread lines no
+         longer strike through five T and S labels.
+     - Items 2 and 4 stay: Tavi talks out of her landing's follow-through (decisions 86 and 91; the
+       film critic judges it with the sound), and her drop passes the tally 69 px clear (decision
+       86 brings every Merc in from above).
+     - Docs now say what is built where B-04 could not find it: HANDOFFS § World describes the
+       semitone's gold as decision 85 made it (the whole 8 px gap and a 56 px run along the upper
+       tread), and row 6d records the builder's row glow on "semitones" (131.4 to 132.5 and 143.13
+       to 144.2: the octave's twelve rows, low to high), which supports "count it in semitones" on
+       mute. Row 6a, the s06 sheet and the F-low and F-high rows point to § S6's brackets instead of
+       giving stale heights.
+
+117. **S7 and S8 after builder C's small round (component critic C-02's N2 to N6), as built.**
+     - N2: the F♯4 and C♯5 flashes keep their 0.15 s rise on power1.out (power2.out put 30 % of the
+       rise in the first 60 fps frame, which the measure reads as a jump; power1.out puts 21 %
+       there); no frame from 46.03 to 46.80 (clip) changes over 0.01 % of the pixels by more than
+       24. S8's third rim flash rises over 0.15 s (0.06 s before), also power1.out; 19.000 is no
+       longer an event.
+     - N3: stair 3's "semitone low" arrow fades with stair 7's, over 0.3 s from 43.4 (it stayed
+       44.5 to 49.3).
+     - N4: stair 8's echo ring in D major grows to 2.5 bead radii (55 px; 3.5 before) and ends 10 px
+       from the "S" label's box; the white staircase's ring keeps 3.5, as S5's and S6's.
+     - N5: the strip starts dimming with the staircase at 0.15: 80 % of it over the staircase's
+       0.3 s, the last fifth over the next 0.8 s (sine.inOut), so the frame keeps moving until Tavi
+       falls in (strip level 0.45 as the card lands at 0.37; 0.94 before).
+     - N6: the white staircase's bead glows at half strength from its drop (18.42) and back to full
+       over its first hop (18.77 to 19.07); the halo's alpha at the pill's edge is about 0.10.
+     - Holds at 60 fps: S7 1.5 s (0.8 per 30 s), longest 0.2; S8 0.7 s, longest 0.1, plus its 0.2 s
+       final hold. The S7 to S8 handoff outside Tavi: largest change 21. Check 0 errors,
+       clock-lint silent, merc-tags 14 tags and 0 stale, the text sweep clean. Critic C-03 verifies
+       both from frozen copies (c3/).

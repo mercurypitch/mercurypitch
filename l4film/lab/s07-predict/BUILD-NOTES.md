@@ -173,3 +173,22 @@ bokeh and the Merc tags past a scene's end are the kit's and the director's; not
   14 tags, 0 stale, 0 problems. The r3 clips are kept as lab/<sid>/clip-r3.mp4 (measures in measure-r3/).
 - Renders: 60 fps drafts from lab/<sid>/proj with the pinned CLI (lab/s07-predict/scratch/hostpass60.sh, my copy
   of builder E's), nice 10, TMPDIR=/dev/shm, waiting for 1150 MB free on /.
+- S8's rim, second pass: at 60 fps the 0.15 s power2.out rise still left one frame (19.000, 0.24 % of pixels) alone in
+  a still frame after the third ghost lands, so its rise is power1.out too (the same as S7's key flashes).
+
+## Fix round 2 results (30 Oct 02:05)
+
+- s07 (lab/s07-predict/clip.mp4, 60 fps, 01:50): holds 1.5 s inside, 0.8 s per 30 s, longest 0.2 s (r3 at 30 fps:
+  1.0 s per 30 s, longest 0.2). Single-frame events: 46.133 and 46.533 (0.61 % each in r3) are gone; per frame at
+  60 fps through both flashes no frame changes more than 0.01 % of pixels by over 24. The events left are 0.1 to
+  0.5 %: the chapter card's own steps (0.733, 0.833, 2.000 with Tavi's landing), and whole-pixel snaps of moving type
+  (7.27 to 7.55 the kicker, 25.433 the D names landing, 30.53 to 30.80 "Yes" and the "?" leaving, 50.77 to 50.93
+  "D major").
+- s08 (lab/s08-anywhere/clip.mp4, 60 fps, 02:00:48): holds 0.7 s inside, 0.7 s per 30 s, longest 0.1 s, final hold
+  0.2 s (exempt). 19.000 (1.04 % in r3; 0.24 % with power2.out at 60 fps) is gone. The events left are 0.03 to
+  0.10 %: the tally's label pulses (22.75 to 25.48, L.pulse) and 1.833 (0.05 %, the strip under Tavi).
+- Text sweep clean on both. clock-lint silent, node --check passes, merc-tags --check 14 tags, 0 stale,
+  0 problems. Root check: 0 errors, 79 warnings (lab/s07-predict/root-check.log).
+- Stills: lab/s07-predict/fix2/ (33) and lab/s08-anywhere/fix2/ (15).
+  Sheets: lab/s07-predict/scratch/fix2-N5.png, fix2-N6.png, fix2-N3-N4.png; lab/s08-anywhere/scratch/fix2-rims.png.
+- The s07 53.25 to s08 0.0 handoff outside Tavi's box: max 21, 2 pixels over 16.
