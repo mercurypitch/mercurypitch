@@ -3,7 +3,7 @@
 // three and grids of two or three centred, and the keys on their own.
 
 import { describe, expect, it } from 'vitest'
-import { padsCentred, padShape } from './skin'
+import { keyLayout, padsCentred, padShape } from './skin'
 
 describe("The room's pads", () => {
   it('stands The Grid four in one row and a row of three as three', () => {
@@ -13,6 +13,13 @@ describe("The room's pads", () => {
     expect(padShape(6, false)).toEqual({ shape: 'grid34', cols: 4 })
     expect(padShape(7, false).shape).toBe('ladder')
     expect(padShape(3, true).shape).toBe('ladder')
+  })
+
+  it("stands Gravity's twelve keys as an octave, other keys as a ladder", () => {
+    expect(keyLayout('ladder', 12)).toBe('octave')
+    expect(keyLayout('ladder', 7)).toBe('ladder')
+    expect(keyLayout('ladder', 8)).toBe('ladder')
+    expect(keyLayout('grid34', 12)).toBe('grid34')
   })
 
   it('centres every pad but the big pair and the keys', () => {

@@ -11,6 +11,7 @@
 import type { JSX } from 'solid-js'
 import { For, Show } from 'solid-js'
 import styles from './EarInstruments.module.css'
+import { skinnable } from './instrument-skin'
 
 export interface PullReveal {
   /** Which pan holds the degree that leans harder. */
@@ -19,19 +20,26 @@ export interface PullReveal {
   pull: number
   /** "Ti leaning to Do′". */
   word: string
+  /** The other note's words, "Mi at rest", for the room's other pan. */
+  rest?: string
+  /** Which way the leaning note wants to go, for the room's arrow. */
+  toward?: 'up' | 'down'
 }
 
-interface PullBeamProps {
+export interface PullBeamProps {
   /** The note sounding now: 1, 2, or 0 for none. */
   sounding: 0 | 1 | 2
   reveal: PullReveal | null
+  /** For the room's cadence lamps: the 1-based chord of the cadence
+   *  sounding, 0 for none. */
+  cadence?: number
 }
 
 const PIVOT_X = 260
 const PIVOT_Y = 118
 const HALF = 150
 
-export function PullBeam(props: PullBeamProps): JSX.Element {
+function DrawnPullBeam(props: PullBeamProps): JSX.Element {
   // Tilt toward the leaning side: positive drops the second pan.
   const tilt = () =>
     props.reveal
@@ -128,3 +136,5 @@ export function PullBeam(props: PullBeamProps): JSX.Element {
     </svg>
   )
 }
+
+export const PullBeam = skinnable('PullBeam', DrawnPullBeam)

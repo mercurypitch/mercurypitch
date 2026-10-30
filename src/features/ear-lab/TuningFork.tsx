@@ -10,26 +10,34 @@
 
 import type { JSX } from 'solid-js'
 import { For, Show } from 'solid-js'
+import type { HomeDegree } from '@/lib/ear/item-bank'
 import styles from './EarInstruments.module.css'
+import { skinnable } from './instrument-skin'
 
-interface TuningForkProps {
+export interface TuningForkProps {
   /** Cadence chords landed so far, 0–4. */
   cadenceStep: number
   /** The probe is sounding. */
   ringing: boolean
   /** The microphone window is open. */
   listening: boolean
-  /** The degree, once told; `correct` is null for a skipped round. */
+  /** The degree, once told; `correct` is null for a skipped round. The
+   *  room also places it, and a wrong pick, on its scale by semitone. */
   reveal: {
     degree: number | string
     solfege: string
     correct: boolean | null
+    semitone?: number
+    picked?: number | null
   } | null
+  /** The degrees asked over, for the room's scale column (Home's seven,
+   *  Gravity's twelve); Home's seven when absent. */
+  scale?: readonly HomeDegree[]
 }
 
 const CADENCE = ['I', 'IV', 'V', 'I']
 
-export function TuningFork(props: TuningForkProps): JSX.Element {
+function DrawnTuningFork(props: TuningForkProps): JSX.Element {
   const label = () => {
     if (props.reveal) {
       return `Tuning fork on its box, engraved ${props.reveal.solfege}, degree ${props.reveal.degree}`
@@ -121,3 +129,5 @@ export function TuningFork(props: TuningForkProps): JSX.Element {
     </svg>
   )
 }
+
+export const TuningFork = skinnable('TuningFork', DrawnTuningFork)

@@ -42,7 +42,11 @@ export function PullDrill(props: { onBack: () => void }): JSX.Element {
   const [leaning, setLeaning] = createSignal<{
     side: 1 | 2
     degree: number
+    /** The other note, the one at rest or leaning less. */
+    other: number
   } | null>(null)
+  /** The cadence's chord sounding, 1-based; 0 for none. */
+  const [cadence, setCadence] = createSignal(0)
   /** Bumped by every silencing. A sound notes it as it starts and stops
    *  at the first await that finds it moved: a Stop, a closed room or the
    *  sound taken away while it waited on the audio engine (iOS holds
@@ -59,6 +63,7 @@ export function PullDrill(props: { onBack: () => void }): JSX.Element {
     silenced += 1
     audioEngine.stopTone(60)
     setSounding(0)
+    setCadence(0)
   }
 
   async function tone(degree: number, ms: number): Promise<void> {
@@ -70,11 +75,13 @@ export function PullDrill(props: { onBack: () => void }): JSX.Element {
   }
 
   async function plant(asked: number): Promise<void> {
-    for (const chord of cadenceChordMidis(rootMidi)) {
+    for (const [i, chord] of cadenceChordMidis(rootMidi).entries()) {
       if (asked !== silenced) return
+      setCadence(i + 1)
       await audioEngine.playChord(chord.map(midiToFreq), PULL_TIMING.chordMs)
       await wait(PULL_TIMING.chordMs + PULL_TIMING.chordGapMs)
     }
+    setCadence(0)
     await wait(PULL_TIMING.restMs)
   }
 
@@ -91,7 +98,11 @@ export function PullDrill(props: { onBack: () => void }): JSX.Element {
         await audioEngine.resume()
         if (asked !== silenced) return
         rootMidi = roveRootMidi()
-        setLeaning({ side, degree: harder })
+        setLeaning({
+          side,
+          degree: harder,
+          other: order[side === 1 ? 1 : 0],
+        })
         await plant(asked)
         for (const [i, degree] of order.entries()) {
           if (asked !== silenced) return
@@ -151,12 +162,19 @@ export function PullDrill(props: { onBack: () => void }): JSX.Element {
       instrument={() => (
         <PullBeam
           sounding={sounding()}
+          cadence={cadence()}
           reveal={
             phase() === 'reveal' && leaning()
               ? {
                   side: leaning()?.side ?? 1,
                   pull: pullOf(leaning()?.degree ?? 1),
                   word: leaningWord(leaning()?.degree ?? 1),
+                  rest: leaningWord(leaning()?.other ?? 1),
+                  toward:
+                    resolvesTo(leaning()?.degree ?? 1) >=
+                    (leaning()?.degree ?? 1)
+                      ? 'up'
+                      : 'down',
                 }
               : null
           }
