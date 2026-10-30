@@ -413,9 +413,11 @@
             land(yours, A.title, 200, 12)
             for (const c of CARE) if (c !== waitOnTi) land(c.el, c.t0, c.y)
             {
-              // up as the pulses go (0.15 s, power2.out), held while the word lasts, back over its last 0.5 s (sine.in,
-              // so the line is still moving as the word ends: the pause after it held the frame for 0.3 s)
-              const sc = 1 + L.PULSE.tile * P(t, A.volume, 0.15, 'power2.out') * (1 - P(t, A.volEnd - 0.5, 0.5, 'sine.in')), cy = 392 - 11
+              // up over 0.3 s, eased in and out (E-03: up over 0.15 s, power2.out, it was full in 0.12 s, a punch on a
+              // line asking for a moderate voice), held while the word lasts, back over its last 0.5 s (sine.in, so the
+              // line is still moving as the word ends: the pause after it held the frame for 0.3 s); about its left
+              // bottom, on its baseline (380, 392), so the baseline Chrome puts on whole pixels never moves (E-03's twitch)
+              const sc = 1 + L.PULSE.tile * P(t, A.volume, 0.3, 'sine.inOut') * (1 - P(t, A.volEnd - 0.5, 0.5, 'sine.in')), cy = 392
               CARE[3].el.setAttribute('transform', `translate(${CX} ${cy}) scale(${sc.toFixed(4)}) translate(${-CX} ${-cy})`)
               const ss = L.pulse(t, A.immediately, 'tile', { long: true }), sy = 556
               for (const c of [CARE[6], CARE[7]]) c.el.setAttribute('transform', `translate(${CX} ${sy}) scale(${ss.toFixed(4)}) translate(${-CX} ${-sy})`)
@@ -423,8 +425,9 @@
             {
               const sc = L.pulse(t, A.tiYT, 'label')
               land(waitOnTi.el, waitOnTi.t0, 492)
-              // about its left edge (x 380) at mid-height, so the edge stays where the block's edge is
-              waitOnTi.el.setAttribute('transform', `translate(${CX} 478) scale(${sc.toFixed(4)}) translate(${-CX} -478)`)
+              // about its left bottom, on its baseline (380, 492): the edge stays where the block's edge is, and the
+              // baseline Chrome puts on whole pixels never moves (about mid-height it stepped: E-03's 1 px twitch)
+              waitOnTi.el.setAttribute('transform', `translate(${CX} 492) scale(${sc.toFixed(4)}) translate(${-CX} -492)`)
             }
             for (const c of DOCTOR) land(c.el, c.t0, c.y)
           })

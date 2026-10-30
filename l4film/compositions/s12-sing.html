@@ -354,10 +354,12 @@
             names.forEach((el) => el.setAttribute('opacity', P(t, A.tip1 - 0.2, 0.3).toFixed(3)))
             {
               // "wait" fades in where it sits (DECISIONS 104: small type that only rose a few px into place stepped a
-              // whole pixel a frame as it settled, so it no longer rises); its word-tied 1.2 pulses stay
+              // whole pixel a frame as it settled, so it no longer rises); its word-tied 1.2 pulses stay, each about the
+              // label's centre bottom on its baseline (1166, 196), so the baseline Chrome puts on whole pixels never
+              // moves (about mid-height it slid 2.8 px and stepped a whole pixel at a time: E-03's 1 px twitch)
               const sc = L.pulse(t, WAITP, 'label')
               waitT.setAttribute('opacity', P(t, A.wait, 0.2).toFixed(3))
-              waitT.setAttribute('transform', `translate(1166 182) scale(${sc.toFixed(4)}) translate(-1166 -182)`)
+              waitT.setAttribute('transform', `translate(1166 196) scale(${sc.toFixed(4)}) translate(-1166 -196)`)
             }
             arrow(P(t, A.where, 0.6, 'power1.inOut'), t >= A.where ? 1 : 0)
 

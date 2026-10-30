@@ -2088,3 +2088,11 @@ Note: the lanes' memory gate read a stale cgroup path after the 21:00 restart (f
   rolled, never empty. Lead re-ran clock-lint (silent). No spec text changes. 15:1x group E started
   (xhigh; rate limit allowed). Running: C, E. Next: when both report, full check, frozen copy,
   film-02 (render-l4.sh, WORKERS=2), fresh FILM2 critic (critics/FILM2.txt: RENDERNAME, DISKNOTE).
+- 15:1x prep for film-02: l4entr/freeze.sh <dir> (copies root files + compositions/, symlinks assets
+  and .transcode-cache, compositions.md5 relative, kit.md5 = all 148 assets files but voice/; film-01's
+  kit.md5 had only assets/audio). Live vs film-01 freeze: s03, s12, s13 unchanged so far (E is on
+  s12/s13), root files identical, assets/audio unchanged; m06a/m06b passes are new (12:24, leaps).
+  Disk: / has 1111 MB free, so render-l4.sh will keep film-02 in /dev/shm/l4film (needs 1366 to
+  move): RAM, lost on a restart. Plan: freeze to $S/l4film02proj, clear the whole extract cache once
+  C and E are done (no builder running), full check, then
+  WORKERS=2 setsid nohup bash render-l4.sh film-02 60 high $S/l4film02proj >/dev/null 2>&1 &
