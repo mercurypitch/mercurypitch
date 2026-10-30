@@ -9,6 +9,412 @@ The short, user-facing summary rendered in the app's Changelog modal lives in
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.9.26] - 2026-10-31
+
+165 commits since `v0.9.25` (b803c7d43), from 20 PRs: #1219 (92 commits),
+#1266 (14), #1263 (10), #1264 (6), #1265 (6), #1250 (5), #1253 (5), #1251
+(4), #1249 (3), #1260 (3), #1261 (3), #1252 (2), #1255 (2), #1259 (2),
+#1262 (2), #1269 (2), #1254 (1), #1257 (1), #1258 (1) and #1268 (1). #1261
+and #1269 came in with merge commits of their own. Every commit came through
+a PR.
+
+On the web:
+
+- **Every tour starts on the page it shows** (#1261).
+  - A tour pointed at its page as it usually stands, wherever the singer
+    was. A scripted run of every tour from 37 starting screens (a drill
+    open, another view, the control bar hidden, a stage opened mid-tour)
+    found 19 with broken steps: the Exercises tour started inside Long Note
+    pointed all four steps at a drill list not on screen; Merc's Sing tour
+    from Notation described a pitch line not drawn there; from Sheet Music
+    or the Session Editor, 7 of 14 Compose steps and all 7 Effects steps
+    missed the piano roll; Zen or focus mode opened mid-tour left the tour
+    floating over the stage. A tour also switched tabs without the check a
+    tab change makes, so a take not kept in Hear Yourself was dropped
+    without a question.
+  - A tour now asks before it closes what is open over its page ("Leave
+    Long Note for the Exercises tour?", with Take the tour or Not now): an
+    exercise, an Ear Lab drill or calibration, Zen, a challenge stage or
+    focus mode. A tour that would leave the tab runs the tab change's own
+    check: a take still saving holds it, and Hear Yourself asks "Discard
+    this temporary take?". Cancel keeps the take and starts no tour.
+  - Steps name the view they need (`screen`): Melody rather than Notation,
+    the Singing bar shown, Compose's piano roll, Path's Ascent, Community's
+    feed. The tour sets it as the step shows and puts back the singer's
+    view when it ends. A stage opening mid-tour ends the tour.
+  - The spotlight let a target run 80 px past the window's edge, and knew
+    nothing of bars pinned over the page (on a phone, Home's The Ascent
+    step rang a card under the tab bar). It now scrolls a target until it
+    shows whole, clear of the tab bar and Path's view switch, including a
+    target its own scrolling box hides.
+  - `src/lib/tour-screen.ts` is a registry: each page names what it can
+    have open (a detour) and how to set a view (a setting), so the stores,
+    both tour engines and the pages do not import one another.
+    `TourScreenHost.tsx` draws the question. Walkthrough's scroll helpers
+    move to `walkthrough-dom.ts`, keeping the component under 800 lines.
+  - Tests: 32 new unit cases (`tour-screen`, `TourScreenHost`,
+    `walkthrough-tour-screen`, `walkthrough-dom`, `coach/start`) and
+    `src/e2e/tour-screen.spec.ts` (4). `scripts/walk-tours.mjs` finds every
+    spotlight in 144 steps on desktop and 127 at 390x844, and every tour
+    started away from its page (38 screens on desktop, 25 on a phone) comes
+    back clean but the cloud-only steps, which need account data.
+- **A Microphone Check in Settings, and First Light shows what it hears**
+  (#1253).
+  - Settings > Practice opens on a Microphone Check
+    (`src/features/mic-check/`, a lazy chunk). A ribbon of three mirrored
+    lobes follows the level, its top half the voice's body (350-2600 Hz),
+    its bottom half the low end. A held note (90 ms of one pitch, moving on
+    only past 65 cents) leans the lobes towards its key on a C2-C6 strip,
+    names the note, the cents and the hertz, and throws eighth-note glyphs
+    that land on the key. Reduced motion keeps the height and the lit key.
+  - Every input and output gets a row, marked Listening, System default and
+    Default for calls (Windows), and tagged by kind from its name
+    (Bluetooth, headset, webcam, virtual, loopback, USB and more).
+    Chromium's `default` and `communications` pseudo-entries fold into the
+    devices they name.
+  - While the panel is open it watches `devicechange`, the track's `mute`,
+    `unmute` and `ended`, exact digital silence for 1.5 s, the permission,
+    other surfaces holding the mic, another MercuryPitch tab taking it and
+    Safari's `interrupted` context. The last eight changes land in a
+    timeline, and one ranked verdict (`check-verdict.ts`) names the one that
+    matters with its fix: Listen to the new default, Reopen the microphone
+    or Use it here. Listen tries another input through `voice-session`'s
+    `useDevice` for this visit only. The check takes
+    `holdExclusiveCapture()`, so voice control stands down while it runs.
+    The Settings tour gains a first Practice step for it.
+  - First Light's wait for a first note had "Still nothing on the meter"
+    over a level bar. The same ribbon and falling notes replace it, with two
+    chips under them: Microphone in use, with the input's name, and Mic not
+    behaving?. After nine seconds of nothing the help opens by itself: the
+    other inputs when there is one (Use this), else the fixes. An input that
+    opens and carries nothing says No signal (it said No microphone).
+    Continue without the mic becomes a quiet link under the main action
+    (owner rule UI-03).
+  - From review: `Dynamic`, the app's first use of it, grew the shared
+    Solid chunk to 521,309 B against Drum Night's 520,000 B first-paint
+    budget. It is gone (519,957 B). `live-analysis.ts` and
+    `device-watch.ts` let First Light feed the stage from its own voice
+    session without running YIN twice. `layering.crossFeatureImports` goes
+    from 555 to 565, all onboarding importing the mic check.
+  - Fixes from review before the merge: Stop, or leaving Settings, during
+    the first probe no longer opens the crash screen, and a close during an
+    input switch no longer leaves the microphone, an AudioContext and an f0
+    loop running. When MercuryPitch lets go of the mic itself (another tab,
+    the page in the background) the check says it closed the microphone,
+    not that it was unplugged. "Hearing you sing" holds until the check
+    stops; touch controls are 44 px; the note readout keeps 3.8:1 on a light
+    stage. WebKit no longer stretches the stage to 420 px on an iPhone, which
+    scrolled Settings sideways.
+  - Tests: 50 new unit cases, each failing against a deliberate break, and
+    every First Light browser spec passes. Not tried: a real microphone,
+    Safari, iOS or Android.
+- **Jam rooms tell a blocked network from certificate trouble** (#1254).
+  - A failed room socket on mercurypitch.com said "this is usually the
+    certificate", advice that fits only a LAN dev server. The message now
+    depends on the host (`src/lib/jam/signaling-errors.ts`): the
+    certificate advice for a LAN host over `wss://`, whether `pnpm dev:jam`
+    is running for `ws://` on localhost, and on a public host "Work and
+    school networks
+    often block this kind of connection, so try another network, such as
+    a phone hotspot." Room creation's bare "Signaling connection failed"
+    goes through the same function.
+  - A failed peer says "couldn't connect", with a hint that a firewall on
+    either side can block the audio link, rather than "failed".
+  - The network panel's badge and the copied summary read "relay over tls"
+    or "direct over tcp" (the local candidate's `protocol` and
+    `relayProtocol`). `?jamrelay=1` forces `iceTransportPolicy: 'relay'` to
+    test the TURN path on any network, remembered like `?jamdiag` and
+    cleared with `?jamrelay=0`. Connection behaviour is otherwise unchanged.
+    The audit behind it is `docs/plans/windows-and-restricted-networks.md`.
+  - Tests: `jam-signaling-errors.test.ts` and new cases in `jam-net-stats`
+    and `jam-diagnostics-access` (125 pass). Not yet run on a real
+    restricted network.
+- **An Ear Lab drill's sound stays silent after Stop** (#1250).
+  - A sound that waited on the audio engine (iOS holds `resume()` through a
+    call) could play after Stop or after leaving the drill. The Pull, Echo
+    and Critique cleared their `cancelled` flag once the engine woke, which
+    undid a Stop made in the wait, so the cadence and the question played
+    over the end card. Bassline, Cadence and Subdivide had no check, and
+    Pulse's and the Chart's own calls reset theirs. Each now notes a count
+    every silencing bumps (`silenced`) and returns at the first await that
+    finds it moved. Leap, Contour, Stack, Home, Gravity, the Wild drills and
+    the threshold drills were checked and left.
+  - In Home, a Run again that the microphone refused left the end card up,
+    with no console under it to show the refusal or the way to tap. The
+    drill now goes back to its start, where both are.
+  - Tests: a contract test per engine (`ear-identification-run.test.ts`,
+    `ear-threshold-run.test.ts`), and a test per guarded drill that fails
+    without its guard.
+- **Contour's miss reads as one sentence** (#1265). A miss in the Ear Lab's
+  Contour drill said "That was Down. Listen again." or "That was The
+  same.": its names now follow "That was" in lower case. The end card's
+  outcome dots open their titles with a capital in every drill that names
+  its answers. The rest of #1265 is the native room's.
+
+Nothing else changes on the web that a visitor sees. Studio (#1219, below)
+ships switched off on mercurypitch.com, but two of its pieces reach every
+web visitor: the local database goes to Dexie version 13, which adds five
+empty Studio stores, and the app asks the DB worker for the owner's switches
+at start (`GET /api/features`, given 2.5 s before the build's default
+stands). The Ear Lab's native look reaches the web's drills only as seams:
+#1262, #1264 and #1265 wrap the web's instruments and the Field Book's page
+in `skinnable` and pass props only the room draws (the bench's pads ignore
+#1264's new `icon`), and #1260 adds `data-*` hooks to the tap pad and the
+phrase strip. The web's bench draws as before. #1258's held question is
+reached only from the native room's sound-stop handler.
+
+Studio, switched off on mercurypitch.com (on for the dev deploy, PR
+previews, `build:e2e` and the unit tests, and on production only when an
+admin sets its switch):
+
+- **#1219: Studio, a local multitrack arranger with FX and WAV export.**
+  - At `/studio-night`: bring kept vocal and instrument takes or upload MP3
+    and WAV audio, arrange a song in lanes, choose its sound, and download
+    a measured 48 kHz stereo 16-bit WAV. Projects, owned audio and editable
+    `.mpstudio` backups stay in the browser. Clips move, trim, split,
+    duplicate and fade, with volume, pan, Mute, Solo, undo, repeat and drag
+    and drop; source recordings stay unchanged. Writer leases, revision
+    checks and a Web Lock per project protect reloads and competing tabs.
+  - Sound: role chains, flavours and five macros (Space, Tone, Punch,
+    Warmth, Width) drive live playback and export alike. Compare prepares
+    matched Before and After audio. Live meters show stereo peaks and
+    momentary and short-term LUFS; true peak is labelled an estimate, with
+    a conservative export margin. A Mix drawer holds a strip per lane (pan,
+    a fader to +12 dB, Mute, Solo, a meter after the fader) and the master;
+    `X` toggles it. The interface is built on the app's theme tokens, so
+    all nine presets apply, with 44 px targets on a tablet and a docked
+    transport on a phone.
+  - Playback never stops for an edit: an edit while playing crossfades into
+    its new graph over 30 ms (dips of 37 to 67 dB with 166 to 570 ms gaps
+    fell to at most 1.5 dB with no gap). A seek moves the read position on
+    the live graph with a 10 ms equal-power crossfade: the dip went from
+    36.7 to 38.7 dB to at most 0.9 dB, and press to sound from 206 to 217
+    ms to 29 to 46 ms. Pause keeps the graph (`kept-run.ts`), so Play's
+    first sound comes in 87 to 98 ms, not 172 to 208. The playhead shows the
+    frame at the speakers (`currentTime - outputLatency - baseLatency`).
+  - Memory: each import reserved a five-minute decode (about 430 MB of a
+    512 MB budget), so a second import failed with "Studio needs more
+    memory". Imports reserve their real length, and desktops the app gives
+    2 GiB or more of decoded audio get a 1 GiB Studio budget (phones keep
+    512 MiB).
+    Restore and copy hold a song's audio once (was 3.2 to 4.2 times). A
+    backup streams one take at a time to the picked file (Chrome, Edge),
+    else a private file then downloaded (Firefox, Safari 26): for two
+    4-minute takes Studio's peak budget fell from 401.1 MB to 100.0 MB.
+  - The switch: `src/lib/experimental-features.ts` lists Studio, and the
+    build switch `VITE_EXPERIMENTAL_FEATURES` sets its default; the native
+    app never reads it. With Studio off, the tab is hidden, the route holds
+    a skeleton until the switches land and the route guard sends it Home,
+    and `/studio-night` is served `noindex, follow` and left out of
+    `sitemap.xml`, `llms.txt`, the other pages' prelude nav and IndexNow
+    (`scripts/assert-experimental-features.mjs --off` checks the production
+    build). The service worker installs only `index.html`'s first-paint
+    assets, so a visitor with Studio off never downloads its chunks.
+  - The DB worker serves public `GET /api/features` (only switches that are
+    set), admin `GET /api/admin/features` and
+    `PUT /api/admin/features/:name` with `{"enabled": true|false|null}`,
+    stored in the existing `featureFlags` table under `experiment:<name>`.
+  - Shared code it touches, inert while Studio is off: the toast floor
+    counts a page's docked transport (`--page-dock-space`); the singing
+    transport's Space, Home, R, P and arrow keys leave Studio alone, as they
+    leave Karaoke; a navigation held by a local save quotes Studio's own
+    reason; the Studio tour's permanent id is 20 (19 went to Sing's Show me
+    more).
+  - Tests: on head `faaabe295` the four browser shards ran 1,936 tests, and
+    29,252 unit tests ran locally. Still open: physical tablets and phones,
+    Safari and WebKit, long use of a large project, and listening on
+    headphones and speakers. MIDI, recording, cloud projects and MP3 export
+    are deferred.
+- **#1255: an edit while playing moves only the lane it changes.** Clip
+  edits re-plan the edited lane's sources in place (`lane-replan.ts`); a new
+  sound role builds its chain beside the old one, settles it for 0.3 s and
+  crosses over (`lane-swap.ts`). Everything else rebuilds the whole graph,
+  as before. Measured by `studio-edit-while-playing.spec.ts`: a -6 dB clip
+  gain is heard in 58 to 68 ms (was 144 to 150), and the untouched lane dips
+  0.000 to 0.003 dB (was 0.55 to 0.71). A role change is heard about 200 ms
+  later than a full rebuild, at 383 to 436 ms, for the settle: a freshly
+  built `DynamicsCompressorNode` starts far below its settled level (the
+  voice chain read 14 dB under at 0.1 s). The exported WAV is
+  byte-identical before and after.
+- **#1263: scroll, reopen and restore without stalls, on Studio's own 48
+  kHz clock.**
+  - On synthetic fixtures: scrolling a large song (24 lanes, 150 clips)
+    drops 0% of frames (was 85%), Undo paints in 40 to 43 ms (was 738), the
+    large song reopens in 121 to 164 ms (was 2.7 to 4.5 s), and a 297 MiB
+    backup restores in 3.0 to 3.9 s (was 18.7 to 30.0 s).
+  - Waveforms redraw only on real change; a `:has()` rule that restyled 935
+    elements per ruler label change now restyles 14. Peaks are stored once
+    per take (`peaks-v1:<projectId>:<sha256>` rows, no Dexie bump), built in
+    a new `src/workers/studio-audio.worker.ts`, which also does restore's
+    CRC-32, SHA-256 and sample scan on 4 MiB reads (was 16 KiB).
+  - Rule change: on the web, Studio plays on its own context
+    (`web-audio-lease.ts`), at 48 kHz with playback latency, made in the
+    first press that plays. It had borrowed the app's engine context, which
+    runs at the device's rate, so at 44.1 kHz every 48 kHz take was
+    resampled. Play or seek sounds 7 to 19 ms later (reported output
+    latency 40 to 56 ms, now 80 to 88). The native app's host still lends
+    its context.
+- **#1266: a lighter audio graph, and Playback quality.**
+  - A compressor's dry and wet paths are `DelayNode`s, a lane nobody can
+    hear detaches its chain once its tail rings out, adjacent dynamic EQ
+    bands run side by side (voice chain latency 2,112 to 1,536 frames), and
+    lanes leave limiting to the master. Play opens over a 10 ms raised
+    cosine, not a 90 ms exponential, once its graph is built and settled. A
+    clip due behind the clock starts just past it: Chromium had moved the
+    late automation event and the next `setValueAtTime` threw, as it still
+    does on main.
+  - Playback quality (Auto, Best, Balanced, Light), stored per device;
+    export always renders at Best. Auto estimates the song's load from a
+    one-time offline benchmark and takes the best tier under 55%, else
+    Light; underruns step the session down a tier from the next Play.
+  - On a Ryzen 9 5900X, Play on a kept graph went from 131.9 to 140.5 ms to
+    70.8 to 71.0 ms, and chain latency from 64 to 45 ms. The 24-lane fixture
+    still underruns at every tier there. No phone has been measured.
+
+In the native app only. All but the native shell's rail and Karaoke icon are
+in its test builds only (`PREMIUM_EXERCISES` and `EAR_LAB_WITH_MERC`, off on
+the web and in the store build):
+
+- **First note reads the singer's own songs** (#1249, #1257, #1259).
+  - #1249: on TestFlight (mp-v0.8.45) the owner's songs gave good passages
+    in one song of three. A harness that changed the examples the way a
+    singer's song differs found three causes: lyrics synced to another
+    recording (0.5 s late, the examples gave 0, 2 and 1 entries of 6, 10
+    and 3), a recording tuned off A440 (35 cents sharp: 0, 4, 0), and the
+    two pitch trackers an octave or a moment apart. Lines now come from the
+    voice, the synced lyrics lending their words once `lyricsShift` finds
+    how far out they are; a song is judged in its own tuning (`songTuning`);
+    the trackers may agree an octave apart. Those cases give 6, 10, 6 and
+    5, 10, 5. A kept read carries `ENTRY_RULES_VERSION`, so songs are read
+    again, and the console says why each line was left.
+  - #1257: Bruce Dickinson's _Shadow of the Gods_ sat out ("0 entries from
+    58 lines"). The steady note asked for 0.2 s within 40 cents of its
+    median, and a rock singer's vibrato swings a semitone or so.
+    `voice-pitch.ts` hears a note through its vibrato (a running median
+    over 0.15 s holding within 40 cents for 0.2 s); with a 90-cent vibrato
+    laid over the examples, 0 entries became 11 (15 split by Demucs), none
+    on a wrong note. `ENTRY_RULES_VERSION` goes to 3, and the Developer
+    screen gains First note, Read my songs again.
+  - #1259: Show the words is explained in one sentence ("Shows the lyrics
+    you sing when the music stops."), and every song read already has a
+    Read again button at the end of its row (`readOwnSongAgain`).
+- **The Ear Lab with Merc** (#1250, #1251, #1258, #1260, #1262, #1264,
+  #1265).
+  - #1250: a slip between two items offers "Practise Fa against Sol" on the
+    plate, eight questions of those two (`pair-practice.ts`), recording the
+    session's minutes and nothing else. Span's Hear it again works on a
+    sung answer, holding the sung window through the replay.
+  - #1251: Compare on a miss plays the answer, then the pick
+    (`compareSequence` in `src/lib/ear/timing.ts`). Remind me tomorrow at
+    8:30, a switch on the day's close, schedules one notification per date
+    for 28 days through `@capacitor/local-notifications` 8.2.1. Its JS is
+    folded out of the store build, but the plugin's native code is in the
+    store binary too, and its manifest adds `RECEIVE_BOOT_COMPLETED` and
+    `WAKE_LOCK`. Hairline's loupe stands upright (`merc/RoomLoupe.tsx`).
+  - #1258: Merc's bubble asks the drill's own question on every answer beat
+    (`room-policy.ts`). A question heard through and waiting on its answer
+    is void when the sound is taken away: Resume plays it again, and that
+    hearing counts as a replay on the plate ("1 replay").
+  - #1260: the drill room in the native app's language. The five station
+    paintings go; the stage is a dark ground lit in each station's two
+    colours, and pads, keys and sheets take the room kit's glass and violet
+    (phase 1 of `docs/plans/ear-lab-native-look.md`).
+  - #1262: the seam (`instrument-skin.ts`, `skinnable(name, drawn)`) through
+    which a room draws an instrument its own way, and the lit kit
+    (`merc/lit/`): Hairline's lens and Beat Hunt's strings of light. The
+    stage clock starts again when the screen comes back.
+  - #1264: phase 2's other four stations, through the same seam. Time: the
+    Grid's glass rods, Drift's pendulum, Subdivide's kit on three lanes
+    grouped at the reveal (7/8 as 2 + 2 + 3, `metreGroups`), and one glass
+    lane for Pulse and The Chart. Colour: the desk with an EQ bell over the
+    boosted band, Stack's discs, Cadence's chord orbs, and a phrase ladder
+    for Bassline, Span and Echo. Shape: Contour's pen and Leap's
+    twelve-semitone dial. Function: Home's and Gravity's glass orb and the
+    Pull's beam on a fulcrum. The pads take the mock-ups' layout, and every
+    reveal is drawn whole inside the room's 1.5 s hold.
+  - #1265: phase 3. The plate stands on the stage: a practice run's
+    staircase on a log scale with its turns and misses lit
+    (`TracePoint.correct`), a rated run's dots filling as the number moves,
+    and a seal's three tracks drawn from the calibration's own trace
+    (`TracePoint.track`). The Field Book is the Wild's room: the key on the
+    room's chip, the page as the song's timeline, and the glasshouse at
+    night behind it (24 KB, kept out of the store build and named in
+    `assert-bundle.mjs`). At 375x667 and 360x640 the instrument and the
+    plate had run under Merc's row and the console; they fit the stage now.
+- **Every premium room fits the screen** (#1250, #1252). Home note stands
+  Merc on the painted pier upright or on its side (`harbour-layout.ts`). A
+  phone holds the rooms upright, but an iPad or an Android tablet turns:
+  Long note, Echo, Lip roll, Ng slides, First note and Home note kept a 520
+  px floor in a body that does not scroll, now `min(520px, 100dvh)`, and Ng
+  slides keeps its bridge in a centred column. Pinned by
+  `src/tests/premium-rooms-screen-fit.test.ts` (7 cases).
+- **The minimised rail's tab fills its circle** (#1259), in every native
+  build. The minimised pill kept a 64 by 52 plate inside a 66 by 64 shape;
+  it is a 64 by 64 circle with a 62 by 62 plate inside its 1 px border, as
+  iOS 26's own tab bar minimises (`apps/mercurypitch/src/shell/shell.css`).
+- **Karaoke's icon is the Karaoke Night stage** (#1265). The native shell's
+  More sheet, Settings and account offer drew Karaoke as a microphone on a
+  stick, which read as a lollipop; they draw the web's `StageCurtains` now
+  (`apps/mercurypitch/src/shell/icons.tsx`).
+
+Builds and tests only:
+
+- **#1268:** on 30 Oct the organisation's LFS budget stopped CI. Every job
+  that needed the Glassworks assets pulled the whole set (58 objects, 301
+  MB), 64 times in one PR Gate run with Beside Cue in scope. A composite
+  action, `.github/actions/lfs-pull`, replaces all 11 `git lfs pull` steps
+  and keeps the objects in the Actions cache, keyed by the set's sorted LFS
+  object ids; a miss fetches only the changed objects, and PR Gate's scope
+  job fills the cache before the fan-out. In the steady state a run takes 0
+  bytes from LFS. `scripts/lfs-pull-action.test.mjs` (9 tests).
+- **#1269:** CI tiers, the owner's decision of 30 Oct. A pull request runs a
+  smoke tier (validate, lint, metrics, units, browser smoke x2 with
+  `--grep @smoke`, 513 of 1,957 tests, workers, the Beside Cue checks and
+  the Mercury Pitch bundle), and a push to main runs everything scope
+  selects (the full browser suite x4, Beside Cue browser x2, adventure
+  x57). In a sample of 30 failed PR runs, 16 of the 20 real defects were
+  first caught by jobs the smoke tier keeps. The mobile workflows no longer
+  run on pull requests, and Beside Cue uploads to TestFlight only from
+  `bc-v*` tags. A PR's scope diffs from `HEAD^1`, the first parent of
+  GitHub's test merge, since `pull_request.base.sha` can be older than main.
+  The trade-off, accepted: a regression only the heavy suites catch shows on
+  main after the merge. `scripts/ci-tiers.test.mjs` (13 tests).
+
+### Release steps
+
+1. **Migrations:** none. Nothing under `workers/db-worker/migrations`
+   changed since `v0.9.25`; the owner's switches use the existing
+   `featureFlags` table.
+2. **Secrets, variables and bindings:** none new. No `wrangler*` file
+   changed. `.env.production` and `.env.development` gain the build switch
+   `VITE_EXPERIMENTAL_FEATURES` (#1219), off for production and on for
+   development. Neither #1268's `.github/actions/lfs-pull` nor #1269's
+   workflow changes read a new secret or variable.
+3. **Worker code:** the DB worker changes. `workers/db-worker/src/index.ts`
+   and the new `experimental-feature-routes.ts` serve the switches, and it
+   takes `src/lib/experimental-features.ts`, which joins `deploy-db.yml`'s
+   paths. On production the switch works once this tag deploys the worker;
+   until then the app keeps the build's default, off. Traced with esbuild
+   from each `wrangler` `main`, no changed file is in the site worker's
+   graph or the Jam worker's.
+4. **Local database:** Dexie goes from version 12 to 13 (#1219), adding
+   `studioProjects`, `studioProjectSummaries`, `studioAssets`,
+   `studioAssetBlobs` and `studioEditorLeases`. Every web visitor's
+   database upgrades on the first load, whatever the switch.
+5. **Links into about.mercurypitch.com** (prod-upd step 0c): none new.
+6. **What's New** is untouched: 0.9.26 is a patch.
+7. **Version files:** `package.json` goes from 0.9.25 to 0.9.26.
+8. **Tag gate** (#1269): `prod-upd` now asks for a green PR Gate push run on
+   main at the commit it tags. Dev keeps deploying from main whatever PR
+   Gate says.
+9. **Native:** `apps/mercurypitch` gains `@capacitor/local-notifications`
+   8.2.1 (`Package.swift`, both Gradle files, an Android status-bar icon
+   with a keep rule), the reminder's tap listener, First note's Developer
+   row and the rail's circle (#1251, #1257, #1259), and Karaoke's icon
+   (#1265). The bundle check no longer asks for the station paintings
+   (#1260) and fails a store build that carries the Wild's glasshouse
+   (#1265).
+
 ## [0.9.25] - 2026-10-28
 
 24 commits since `v0.9.24` (5155a5663), from 5 PRs: #1245 (10 commits),
