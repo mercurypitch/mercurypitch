@@ -323,6 +323,8 @@
             [765, 698, 791, 725], [885.1, 698, 911.1, 724], [1008.6, 698, 1028.6, 724], [1126.7, 698, 1149.7, 725],
           ]
           const COPY = { tIn: A.climb - 0.25, t0: A.climb + 0.05, dur: 1.3, dx: 480, dy: -182 }
+          // the fill: 28 % as it comes up on stairs 1 to 4 (a group picked up), easing to 23 % in flight (while the
+          // outline is out) and 15 % laid over stairs 5 to 8
           const copyHide = (() => {
             const RATE = 240, N = Math.ceil(COPY.dur * RATE), K = CSEG.length, MERGE = Math.round(0.3 * RATE)
             const gap = (b, x, y) => Math.hypot(Math.max(b[0] - x, 0, x - b[2]), Math.max(b[1] - y, 0, y - b[3]))
@@ -416,6 +418,7 @@
           /* ---------------------------------------------------------------- per-frame state */
           const LAND = [LOW(0), LOW(1), LOW(2), LOW(3), HIGH(0), HIGH(1), HIGH(2), HIGH(3)]   // the bead on stair n
           const UNLIT = A.both                                          // the lit stairs go unlit over 0.5 s, by 124.0
+          const RING = at('group-high', 'start', 1.57)                  // the held C5's echo ring (122.40)
           const GROW = { 1: [A.tone1], 2: [A.tone2], 3: [A.semi1], 4: [A.tone3, A.joins], 5: [A.tone1], 6: [A.tone2], 7: [A.semi1] }
           // 6c's stair lights, with the risers that grow: the stair above each pair (light()); the larger lights
           // ([t, up, down]) for the semitone pair's stairs 4 and 8 (a pause follows), G4's stair as the F-G tone
@@ -426,8 +429,9 @@
           // "Exactly" stairs 1 and 8 light again, and on "Seven steps" each step's upper stair lights with its riser
           for (let n = 1; n <= 7; n++) (LITP[n + 1] = LITP[n + 1] || []).push(A.seven + 0.1 * (n - 1))
           // "in two," (polish round item 2, where the push to F-low was): the lower half's four stairs light
-          // together, then the upper half's, so the split reads on the staircase as well as in the brackets
-          for (let n = 1; n <= 8; n++) (LITP[n] = LITP[n] || []).push(A.two + (n > 4 ? 0.35 : 0))
+          // together, then the upper half's, so the split reads on the staircase as well as in the brackets; a long
+          // light (back over 0.9 s: four stairs at once register by their area) carries the pause to "each half"
+          for (let n = 1; n <= 8; n++) (LITQ[n] = LITQ[n] || []).push([A.two + (n > 4 ? 0.35 : 0), 0.3, 0.9])
           // the twelve rows: rippling up on b15's and b16's "semitones", and lit one by one by the octave bracket's tip
           // as it grows up them (it starts at its lower tick: row k's middle is 26 k + 1 px along its 340)
           const ROWTIP = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12].map((k) => octAt((26 * k + 1) / 340))
@@ -507,7 +511,7 @@
             // semitone" (each pair of matching risers grows under it) and fades by 127.60 (0.3 s, power1.in)
             {
               const u = P(t, COPY.t0, COPY.dur, 'power2.inOut')
-              const a = P(t, COPY.tIn, 0.25) * (1 - P(t, A.copyOut, 0.3, 'power1.in'))
+              const a = P(t, COPY.tIn, 0.25, 'none') * (1 - P(t, A.copyOut, 0.3, 'power1.in'))
               ghost.setAttribute('display', a > 0.002 ? 'inline' : 'none')
               if (a > 0.002) {
                 ghost.setAttribute('opacity', a.toFixed(3))
@@ -519,7 +523,7 @@
                   halo.setAttribute('display', sa > 0.002 ? 'inline' : 'none'); line.setAttribute('display', sa > 0.002 ? 'inline' : 'none')
                   halo.setAttribute('stroke-opacity', (0.35 * sa).toFixed(3)); line.setAttribute('stroke-opacity', (0.9 * sa).toFixed(3))
                 })
-                copyFill.setAttribute('fill-opacity', (0.15 + 0.08 * (1 - mean)).toFixed(3))
+                copyFill.setAttribute('fill-opacity', (0.15 + 0.08 * (1 - mean) + 0.13 * (1 - P(t, COPY.tIn + 0.25, 0.4, 'none'))).toFixed(3))
               }
             }
             // the brackets: drawn on (114.5 to 115.2), unlit; the lower lights on "each half"; as F4 holds the upper
@@ -545,7 +549,9 @@
               if (t >= steps[0].t - 0.2 && t < steps[0].t) b = L.bead4.dropAt(t, steps[0].t, steps[0].p)
               else if (t >= steps[0].t && t < A.ghEnd + 0.5) {
                 const out = P(t, A.ghEnd, 0.5, 'power1.in')
-                b = { ...L.bead4.runAt(t, steps), a: 1 - out, scale: 1 - 0.4 * out }
+                // on the held C5 it scales 1.2 (the kit's bead pulse) as it sends its ring: the ring is held to 2x at
+                // F0 (below), so the bead carries the rest of the hold, where the pull out to F0 used to
+                b = { ...L.bead4.runAt(t, steps), a: 1 - out, scale: (1 - 0.4 * out) * L.pulse(t, [RING], 'bead') }
                 // the hops under a bracket keep the bead 20 px or more below its line (critic B-04 item 3): the two
                 // tones (D-E, A-B) peak 30 above the higher stair, not 40; the two semitones (E-F, B-C) on
                 // semiHopAt, 15 above, flat across the top, so the bead clears the "S" it passes over (3.8 px) and,
@@ -558,7 +564,7 @@
               }
               L.bead4.place(bead, b)
               const r8 = ST.rest(8, 0, 0)
-              echo.draw(t, [{ t: at('group-high', 'start', 1.57), x: r8[0], y: r8[1], r: 22 }])
+              echo.draw(t, [{ t: RING, x: r8[0], y: r8[1], r: 22 }])
             }
 
             // type: the legend stays from S5 and leaves with the brackets; S5's tally leaves as the brackets draw (it
@@ -567,7 +573,7 @@
             // "twelve"; "= 1 octave" lands once its bracket is past half way; the sum, "= 12" and the key names leave
             // at b16's end, "= 1 octave" and its bracket 0.25 s later, once Tavi has hopped out (item 7)
             legend.forEach((el) => el.setAttribute('opacity', (1 - P(t, A.b15, 0.3)).toFixed(3)))
-            tally.forEach((tk) => tokenSet(tk, 1 - P(t, A.tallyOut, 0.25), tk.ch === 'S' ? L.pulse(t, [A.scattered], 'label') : 1))
+            tally.forEach((tk) => tokenSet(tk, 1 - P(t, A.tallyOut, 0.5, 'none'), tk.ch === 'S' ? L.pulse(t, [A.scattered], 'label') : 1))
             const out = 1 - P(t, A.leave, 0.2)
             const eqC = (sum[9].x + sum[10].x + sum[10].w) / 2, pulse12 = L.pulse(t, [A.twelve, A.twelve2], 'label')
             sum.forEach((tk, k) => {

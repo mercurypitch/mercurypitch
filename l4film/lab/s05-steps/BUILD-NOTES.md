@@ -175,12 +175,12 @@ only. Clock: Kokoro scratch, 483.73 s (cues.json = tools/board-cues.json today).
 
 | Scene | Built | Stills | Clip | measure.py | Text sweep | clock-lint | merc-tags |
 | --- | --- | --- | --- | --- | --- | --- | --- |
-| s05-steps | round 4 (B-01 fixes) | stills-r4, r4b | round 4 (12:18) | 0.1 s, longest 0.1: pass | sweep-r4: pass | clean | current |
-| s06-groups | round 4 (B-01 fixes, final hop 12:30) | stills-r4, r4d | round 4 (12:33) | 0.5 s (0.4/30), longest 0.2: pass | sweep-r4: pass | clean | current |
+| s05-steps | polish round (30 Oct) | polish/leap-sheet.jpg | 60 fps, 13:55 | 0.4 s (0.3/30), longest 0.1: pass | polish: as round 4 | clean | current (2 tags) |
+| s06-groups | polish round (30 Oct) | polish/*.jpg | 60 fps, 13:52 | 0.8 s (0.7/30), longest 0.2: pass | polish: clean | clean | current (4 tags) |
 
 ## Next
 
-1. Round 4 reported. Await the fresh critic.
+1. Polish round reported to the director (30 Oct, 14:10). Await the film critic.
 
 ## Polish round (30 Oct, from 13:30): film-01 items 4 and 9, B-05 items 2 and 3, decision 123's check
 
@@ -207,3 +207,39 @@ Scratch in lab/s06-groups/polish/ (harness.mjs runs a JS body in a page with the
 - Plan, item 3 (shared block, both scenes): echo rings through a helper that caps the growth at 2x when the
   camera passes 1.5x during the ring's life. s05's two rings are at F0 (78.60 and 99.90; CU-A starts 79.80,
   the first ring has faded by 79.50), so nothing changes on screen today; it guards a re-voice.
+- Built (13:40): s06 copy as planned; brackets 452 / 270, 4 px, ticks 10; ring 2x; anchors two, tallyOut, turn,
+  copyOut; legend stays; key names stay; edgeA gone. Drop engine: touch = line within 3 px of a label's ink;
+  free end = the joined segment dropped (after merging runs closer than 0.3 s) and the end within 24 px;
+  iterated to a fixed point. polish/verify-copy.js (the real scene seeked at 240/s): outline on stairs 1 to 4
+  until 124.42 (gone 124.48), F back 124.87, RS 124.97, all back 125.54 to 125.60; no drawn segment touches a
+  label and no free end of any segment comes within 24 px of one. (A first try that widened the free-end test
+  by the ramp's length crept back to the travel's first frame: two segments sharing a corner by a label
+  dropped each other a ramp earlier each pass.)
+- polish/hop-bracket.js: bead edge to the 4 px lines at F0: 20.8 px (semitone hops), 31.8 (tone hops), 35.8 at
+  rest; at 462 / 280 it would be 10.8. Ring (2x) 12.5 px under the upper line, 21.2 from riser 7's "S". Lower
+  right tick ends 18 px above the F-G bar, 33 above its "T".
+- Text sweep (13:43, both): s05 as round 4 (EDGE 'C' 11.50 to 22.75 and 'T' 18.50, mid-move only); s06 clean,
+  nothing flagged (no camera moves, so no EDGE).
+- s06 clip 1 (13:46): holds 1.7 s (1.4 per 30 s), longest 0.3: 4.30 (0.3), 5.70 (0.3), 12.10 (0.2), 13.30
+  (0.2), 18.70 (0.1) in the no-Merc stretch, 1.1 s in 19.3 s (1.7 per 30 s, at the limit). Fixes: the tally
+  fades over 0.5 s linear (was 0.25); the group lights go back over 0.9 s (four stairs register by area);
+  the bead scales 1.2 as it sends the C5 ring; the copy fades in linear and comes up at 28 % fill on stairs
+  1 to 4, easing to the flight's 23 % over 124.25 to 124.65. Re-rendering.
+- s06 clip 2 (13:52, lab/s06-groups/clip.mp4, 60 fps): holds 0.8 s (0.7 per 30 s), longest 0.2: 2.90 (0.2, Tavi
+  talking), 12.10 (0.1), 18.70 (0.1), then 28.9 to 34.9 with Tavi on screen; the no-Merc stretch 4.4 to 23.66
+  has 0.2 s. Events: small jumps only (1.40, 1.58, 25.58 to 32.38, all with Tavi on screen); the old 6.78 is gone.
+- s05 clip (13:55, lab/s05-steps/clip.mp4, 60 fps): holds 0.4 s (0.3 per 30 s), longest 0.1; events as B-05 listed
+  (4.68 to 4.90, 12.05, 16.92, 19.37 to 19.93, 38.13 to 38.42), nothing new from Tavi's leap at 40.30.
+- Rings (polish/verify-rings.js, the scenes seeked at 60/s): s05 78.60 to 79.49 and 99.90 to 100.79 at F0, 3.5x
+  (75.5 px); s06 122.41 to 123.30 at F0, 2.0x (42.5 px). The guard (polish/ring-cap-test.js, s05's camera and
+  the helper verbatim): a ring at 80.30, 82.80, 87.10 or 92.07 grows to 2.0x; at 78.60, 79.30 or 93.07, 3.5x.
+- Seams: s04/s05 (s05 frame 0 new against old) identical, max 0. S5/S6: outside the corners max 51, 181 px over
+  24, all on "S" edges (the gold S labels and the tally's S's; round 7 had 168, B-05 328); Tavi's box (x 1640 to
+  1920, y 560 to 900) mean 1.66, max 64, consecutive pass frames, polish/seams/cut-s05-s06-corner.jpg. s06 last,
+  new against old: max 27, 1 px over 24 (B to C unchanged).
+- Tavi (decision 123): s05 40.2 to 41.5 stills and s06 23.70 to 24.45 at 20 fps: she comes in at floor level,
+  body x 1720 or more once in frame; the tally (ink to x 1668, y 214 to 260) and the sum (y 224 to 260) are far
+  above her path; the strip ends at 1676; the rows are masked round her box. Nothing of mine on her path.
+- check (root, 14:02): passed, 0 errors; my scenes' warnings are the same kinds as round 6 (too large,
+  duplicate media, nested media start for the Merc tags), four fewer (the intro seg tags went). 80-sample check
+  on lab/s06-groups/proj: layout 0 issues, contrast 128/128. merc-tags --check: 2 and 4 tags, 0 stale.

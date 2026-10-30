@@ -154,8 +154,8 @@ to 1880; 40 px from the rows (1680), 44 from the strip (1676), 46 from stair 8 o
 | F0         | 1    | 0       | 0       | -                 | most shots     | the world as drawn                                                                                                                                                                                                  |
 | CU-A       | 2    | -280    | -880    | (280, 880)        | S5c            | stairs 1 to 5 with their treads (stair 1 x 204 to 428, tread 448; stair 5's tread at 84), keys C4 to A4 (y 640 to 880); the C-D riser at x 436 from y 448 to 344                                                    |
 | CU-B       | 2    | -760    | -880    | (760, 880)        | S5d            | a pan of 480 px: stairs 3 to 5 with their treads (stair 3 x 204 to 428, tread 240), keys E4 to C5; the E-F riser at x 436 from y 240 to 188, where CU-A held the C-D riser; stair 2 and D4 cut by the left edge     |
-| F-low      | 1.8  | 99.6    | -704    | -                 | S6a, S6b       | stairs 1 to 4 x 535 to 1385 (treads 491 to 257), the lower bracket (§ S6's brackets), names baseline 599, keys C4 to F4 x 532 to 1388, y 664 to 880, key letters at 848                                             |
-| F-high     | 1.8  | -764.4  | -450    | -                 | S6b            | stairs 5 to 8 x 535 to 1385, treads 418 to 184, the upper bracket (§ S6's brackets), names baseline 853; the strip under the caption band (from y 918), carrying nothing named                                      |
+| F-low      | 1.8  | 99.6    | -704    | -                 | none (polish)  | stairs 1 to 4 x 535 to 1385 (treads 491 to 257), the lower bracket (§ S6's brackets), names baseline 599, keys C4 to F4 x 532 to 1388, y 664 to 880, key letters at 848                                             |
+| F-high     | 1.8  | -764.4  | -450    | -                 | none (polish)  | stairs 5 to 8 x 535 to 1385, treads 418 to 184, the upper bracket (§ S6's brackets), names baseline 853; the strip under the caption band (from y 918), carrying nothing named                                      |
 | F-white    | 1.25 | -75     | -211.5  | (300, 846)        | S7d            | the dashed staircase x 378 to 1568, treads 554 (stair 1) to 164, foot 644, its "?" at (1498, 101); the strip y 739 to 889; the top-left lane clear                                                                  |
 | CU-D       | 2    | -836    | -464    | (836, 464)        | S7g            | D's stairs 3 to 7 x 368 to 1552: real treads 552 (stair 3) and 188 (stair 7), dashed 604 and 240, 52 px apart; names baseline 880                                                                                   |
 | F-keys-D   | 1.6  | -380.8  | -528    | (634.7, 880)      | S7h            | the strip x 3 to 2301, y 688 to 880, F♯4 x 717 to 819, C♯5 x 1485 to 1587 (black-key names at 787); D's names baseline 547                                                                                          |
@@ -188,9 +188,6 @@ equally.
 | 79.80-81.30   | push         | F0         | CU-A       | power2.inOut                    |                                                                                                                                                                                     |
 | 86.60-88.20   | pan          | CU-A       | CU-B       | sine.inOut                      | 480 px left                                                                                                                                                                         |
 | 90.80-92.40   | pull         | CU-B       | F0         | power2.inOut                    | the legend lands after it                                                                                                                                                           |
-| 115.30-116.90 | push         | F0         | F-low      | power2.inOut                    | Tavi gone at 114.75                                                                                                                                                                 |
-| 119.60-120.70 | truck        | F-low      | F-high     | power2.inOut                    | up and right; the bead hops from stair 4 to stair 5 on G4, landing 120.83                                                                                                           |
-| 122.90-124.00 | pull         | F-high     | F0         | power2.inOut                    | the lit stairs go unlit as it lands (123.6 to 124.0)                                                                                                                                |
 | 159.00-163.30 | push         | F0         | F-white    | sine.inOut                      | slow, from inside the predict pause                                                                                                                                                 |
 | 169.30-170.30 | pull         | F-white    | F0         | power2.inOut                    | the real staircase returns to full as it lands (169.9 to 170.3)                                                                                                                     |
 | 185.60-186.60 | push         | F0         | CU-D       | power2.inOut                    | the step rows (x 140 to 596, y 345 to 450) stay 50 px or more from every stair throughout                                                                                           |
@@ -315,12 +312,17 @@ rows C4 to G5, x 220 to 1680, black-key rows shaded. No strip yet: it enters in 
   pixels either side of the cut, and well clear of Tavi, who comes in at floor level (DECISIONS
   110, 123).
 - **S6's brackets.** `L.bracket`, ink, ticks down, riding the world: stairs 1 to 4 from x 242 to 714
-  at y 462, stairs 5 to 8 from x 722 to 1194 at y 280, each 72 px above its group's top tread and
-  drawn over the bead's glow and echo rings (as built, DECISIONS 110 and 120): the upper line at
-  screen y 52 to 55 in F-high, the lower at 125 to 129 in F-low. The tone hops under a bracket peak
+  at y 452, stairs 5 to 8 from x 722 to 1194 at y 270, each 82 px above its group's top tread, 4 px
+  ink with 10 px ticks, drawn over the bead's glow and echo rings (polish round, DECISIONS 126: S6
+  plays at F0 throughout, so F-low and F-high are no longer used; they stay in `L.FRAMES`). The tone hops under a bracket peak
   30 px above the higher stair and the semitone hops cross flat 15 px above it, so the bead's edge
-  keeps 21 px or more below each line (its glow, 57 px from its centre, still reaches the line).
-  The ghost outline in S6c moves by (+480, -182), masked out around each riser label. The sum Outfit 600 50
+  keeps 20.8 px or more below each line (31.8 px on the tone hops) (its glow, 57 px from its centre, still reaches the line).
+  S6c's copy of stairs 1 to 4 is one closed shape (a 4 px chrome outline over a soft 10 px halo, a
+  15 % chrome fill, its E-F riser gold; over the blocks, under the risers and every label): it comes
+  up on stairs 1 to 4 at 124.0, moves by (+480, -182) over 124.3 to 125.6 (power2.inOut), lies on
+  stairs 5 to 8 through 126.95 and fades over 127.3 to 127.6; a segment of its outline drops out
+  whole while it is within 3 px of a label's ink or has a free end within 24 px of one, so nothing
+  is clipped and the fill carries most of the flight. The sum Outfit 600 50
   px at x 1270, baseline 260, 12 px between digits and 19 px either side of each dot, its ink x 1280
   to 1737 at rest; "= 12" reaches x 1746 at its 1.2 pulse (as built, DECISIONS 110). The octave bracket, chrome, at x 1232 from stair 1's tread to stair 8's (y 664
   to 352, twelve rows); "= 1 octave" serif italic 96 px at x 1262, baseline 543, its ink centred on
@@ -328,7 +330,7 @@ rows C4 to G5, x 220 to 1680, black-key rows shaded. No strip yet: it enters in 
 
 ## B to C (S6 to S7 at 146.10)
 
-F0 (since the pull landed at 124.0), no Mercs (m06b ended 145.65), the kicker lane empty. The
+F0 (throughout S6 since the polish round), no Mercs (m06b ended 145.65), the kicker lane empty. The
 staircase on C at full, letters C to C, risers measured (tones chrome with a notch, semitones gold),
 riser labels 2 2 1 2 2 2 1, hairlines drawn; the strip with C major's keys at full and the rest at
 45 %, no key names (gone at 145.8); no sum, no brackets, no legend.

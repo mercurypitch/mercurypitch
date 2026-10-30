@@ -1453,3 +1453,31 @@ replaced it. The builder's record: critics never read it.
      changes. check 0 errors, no new warnings; clock-lint silent; merc-tags 12 tags, 0 stale. HANDOFFS
      § The practise card, § S14 to S15, § S15 and § S16, STORYBOARD 14g, 15 and 16, and BUILD-GUIDE's
      s15 and s16 sheets are updated to match.
+
+126. **Group B's polish round (s05 and s06, film round 1's items 4, 5 and 9, held B2 and B3): all
+     four items in, accepted on the builder's numbers and the lead's look at the copy's dense
+     sheet; S6 now measures at F0.** (1) The same shape laid over itself: S6c's copy of stairs 1 to
+     4 is one closed shape with a 4 px chrome outline, a soft halo and a 15 % fill (E-F gold), up on
+     stairs 1 to 4 at 124.0, across in 1.3 s as row 6c says (124.3 to 125.6; the old build took
+     1.45 s), laid over stairs 5 to 8 through the three riser pairs and gone by 127.6. Because it
+     travels along the staircase's own slope, its treads slide through the riser labels for most of
+     the flight, so under the 24 px rule its outline is out from 124.48 to about 125.54 and the fill
+     carries the flight; checked at 240 seeks a second, no segment touches a label and no free end
+     comes within 24 px of one (15 to 20 px stubs before). Accepted: in the air it reads as a
+     translucent staircase moving, and it lands whole. (2) The zoom pattern: the push to F-low, the
+     truck to F-high and the pull back (115.3 to 124.0) are removed, so S6 plays at F0; in their
+     place the halves light in turn on "two", the upper bracket lights and G4 to C5 pulse in turn
+     as F4 holds, the bead scales 1.2 as it sends the C5 ring, and S5's tally fades, which brought
+     the clip's holds back to 0.8 s (0.7 per 30 s, longest 0.2 s) from the first F0 render's 1.7 s.
+     The brackets went to 4 px with 10 px ticks and up 10 px (y 452 and 270), so the bead keeps
+     20.8 px under each line at 1x. All type is 36 px or more except the world's 34 px key names,
+     which carry across the S5 to S6 cut and stay. F-low and F-high are unused now (still in
+     `L.FRAMES`). (3) Echo rings: a guard in both files holds a ring to twice its bead's radius when
+     the camera passes 1.5x during its life (no ring on screen changes today), and S6's C5 ring is
+     held to 2x at F0 too (12.5 px under the bracket, 21.2 px from the "S"). (4) Tavi's leaps:
+     nothing of B's is on her path; the S5 to S6 cut matches with her in her corner (mean 1.66 in
+     her box, two consecutive pass frames); the 181 px over 24 outside it are the "S" glyphs' edges,
+     as before the round. check 0 errors, four fewer warnings (the intro tags); clock-lint silent.
+     HANDOFFS § Framings (F-low, F-high), § Camera (three rows removed), § S6's brackets and § B to
+     C, STORYBOARD § Camera plan, rows 6a to 6c and § Build checks, and BUILD-GUIDE's s06 sheet are
+     updated to match.

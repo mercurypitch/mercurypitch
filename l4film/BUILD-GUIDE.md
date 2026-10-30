@@ -500,24 +500,23 @@ the hero view, y 323) after that.
 
 - Rows: 6a to 6d. Group B.
 - In: S5 to S6 (above).
-- Out (to s07): **HANDOFFS § B to C** (fixed): F0 (since the pull landed at 124.0), no Mercs (m06b
+- Out (to s07): **HANDOFFS § B to C** (fixed): F0 (throughout S6 since the polish round), no Mercs (m06b
   ended 145.65), the kicker lane empty; the staircase on C at full, letters C to C, risers measured,
   riser labels 2 2 1 2 2 2 1, hairlines drawn; the strip with C major's keys at full and the rest at
   45 %, no key names (gone at 145.8); no sum, brackets or legend.
 - Kit: `L.bracket` (ink, ticks down, riding the world: stairs 1 to 4 x 242 to 714, stairs 5 to 8
-  x 722 to 1194, at the heights HANDOFFS § S6's brackets gives); `L.frameRig` (F-low `cam.to(word('b13', 3), 1.6, 'F-low',
-  'power2.inOut')`; the truck to F-high from `at('group-low', 'start', 1.52)`, 1.1 s, a `to` so the
-  layers part; the pull to F0 from `at('group-high', 'start', 2.07)`, 1.1 s); `L.bead4` (group-low
-  and group-high; the hop from stair 4 to stair 5 lands on G4, 120.83, once the truck has settled);
-  the ghost outline (stairs 1 to 4 and their risers, drawn from `L.ST` beneath the riser labels,
-  moving by (+480, -182), 124.3 to 125.6, power2.inOut); the sum (Outfit 600 50 px at x 1270, baseline 260; DECISIONS 110) and "= 12"; the
+  x 722 to 1194, at the heights HANDOFFS § S6's brackets gives); `L.frameRig` (F0 throughout since the polish round: no push,
+  truck or pull; DECISIONS 126); `L.bead4` (group-low
+  and group-high; the hop from stair 4 to stair 5 lands on G4, 120.83);
+  the copy of stairs 1 to 4 (one closed shape drawn from `L.ST` under the risers and labels, as
+  HANDOFFS § S6's brackets has it, moving by (+480, -182), 124.3 to 125.6, power2.inOut); the sum (Outfit 600 50 px at x 1270, baseline 260; DECISIONS 110) and "= 12"; the
   octave bracket (chrome, vertical, x 1232, y 664 to 352) and "= 1 octave" (serif italic 96 px at x
   1262, baseline 543); `L.pulse`; `L.echoRings`.
 - Merc: m06a-orange talks o5 and hops out right at `at('o5', 'end', 0.09)`; m06b-orange leaps in from
   the right edge (`leap: true`, DECISIONS 123: its pass opens 1.38 s before o6, 134.55; in the air 134.70 to 135.13), talks o6, listens to b16, and hops out right at `at('b16', 'end',
   -0.55)`.
-- Checks: S6a to S6c (114.8 to 130.5) with no Merc: the push, the truck, the pull; S6b's truck reads
-  as a truck (the layers part), not a pan; **critic 03 item 2**: the bead's hops in S6b keep clear of
+- Checks: S6a to S6c (114.8 to 130.5) with no Merc, at F0: every mark sized to read at 1x (type 36 px
+  or more, the world's 34 px key names aside) and the stretch within both hold limits; **critic 03 item 2**: the bead's hops in S6b keep clear of
   the riser labels (stills at the middle of every hop from 118.1 to 123.5: 7 px or more from a
   tone's label, 6 px from a semitone's, 28 px or more from a riser's bar).
 

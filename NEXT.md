@@ -2067,3 +2067,14 @@ Note: the lanes' memory gate read a stale cgroup path after the 21:00 restart (f
   re-voice hold now 5.38 s. F's eight extract-cache entries (1.7 GB) removed; B's kept. Memory 1.8 GB.
   13:45 rate limit read allowed_warning (window resets 14:10), so group C waits: one-shot
   trig_01RsdsafkzxVthpP1kPgqVBr at 14:13 starts C if the status is "allowed". Running: B only.
+- 14:0x group B reported (all four items; DECISIONS 126): S6 at F0 throughout (push/truck/pull
+  115.3-124.0 removed; halves light on "two", G4-C5 pulse as F4 holds, bead 1.2 on the C5 ring,
+  tally fades; holds 0.8 s, 0.7/30 s); copy of stairs 1-4 = one closed shape (4 px outline, halo,
+  15 % fill), 124.3-125.6, laid over to 127.3, gone 127.6; its outline drops out in flight under
+  the 24 px label rule (fill carries it; lead looked at the dense sheet, accepted); brackets 4 px
+  at y 452/270, bead 20.8 px under; echo-ring guard (2x radius above 1.5x) + S6's C5 ring 2x.
+  Leap checked, cut matches. HANDOFFS § Framings/§ Camera/§ S6's brackets/§ B to C, STORYBOARD §
+  Camera plan (10 F0 spans, ~232 s, 48 %), rows 6a-6c, § Build checks, BUILD-GUIDE s06 sheet
+  updated (backups l4entr/polishB/). B's cache entries removed. Nothing running.
+  14:09 rate limit still allowed_warning (resets 14:10): at the 14:13 one-shot, start C AND D (B
+  is done, so two at a time = C + D), then E when one of them reports.
