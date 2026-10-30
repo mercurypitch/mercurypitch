@@ -1950,3 +1950,53 @@ Note: the lanes' memory gate read a stale cgroup path after the 21:00 restart (f
   7.3 of 13.4 GB, oom_kill 1 (the 09:36 one). Waiter re-armed at log offset 1825886, quiet 300 s.
   Rules learned: never edit render-l4.sh while it runs (bash reads the script as it goes, as with
   queue.sh); between runs set its WORKERS default to 2 for full-film renders (3 OOMs in s12-s13).
+- 10:25:47 film-01 DONE: the resumed piece rendered in 17.5 min at 1 worker (no OOM; cgroup peak
+  under 8 GB), exit 0; film 483.733 s vs composition 483.729 s; pieces removed; music-only made;
+  both films moved into P/renders/ (film-01.mp4 110 MB, film-01-music-only.mp4 106 MB; / then had
+  1421 MB free, now ~1190); contact sheet renders/contact-sheet-film-01.jpg (lead glance: all 16
+  scenes present, hosts throughout, the re-rendered 350-375 s matches its neighbours, last row black
+  = the end fade, for the critic). measure.py render + audio running (status ends " done").
+  Next: when done, set render-l4.sh WORKERS default 2, delete /dev/shm/hyperframes-extract-cache-0
+  (4.4 GB of the cap; re-extract costs ~65 s on the next render), update FILM1-ready.txt's note,
+  launch the fresh FILM1 critic.
+- 10:3x RENDER FAULT found before the critic: measure.py's largest single-frame event was at 250.000 s,
+  and motion.csv spiked at 225.0 and 250.0, both piece seams. Frame-level look: piece 9 (frame
+  13500) opens with 3 blank frames (luma 15), then one frame of the film's OPENING shot (s01 "from
+  C"), then the right scene; piece 10 (frame 15000) has 1 blank + 1 half frame. Cause: a fresh
+  browser captures a piece's first frames before its seek lands (HyperFrames 0.8.97 segmented
+  capture; captureSegmentFrames has no settle step; no readiness warning in the log). All 17 other
+  seams clean. New $S/seamcheck.py (37 s per film; flags a frame after a seam that differs from both
+  the frame before the seam and one 7 frames after; exit 3 + "BAD <pieces>"). render-l4.sh rewritten
+  (backup render-l4.before-seams.sh): WORKERS default 2; after each successful render it runs the
+  seam check and, on BAD, drops those pieces from segments.json and re-renders them with --resume
+  (SEAM_TRIES 3), pieces kept until clean. Repair of film-01: pieces rebuilt from the film by stream
+  copy (each piece is one 1500-frame GOP: lockGopForChunkConcat; ffmpeg -f segment -segment_frames),
+  segments.json written with 18 entries (resume validates planHash 2f29dd5d3ba32849, bytes, and
+  round(stream duration x fps)), pieces 9 and 10 left out; old films + pieces 9/10 kept in
+  /dev/shm/l4film-old/ as fallback. 10:42:32 RESUME=1 WORKERS=2: "skipped 18", rendering 9 and 10.
+  Waiter at offset 2061781, quiet 1500 s. measure of the faulty film (holds 0.7 s/30 s, longest
+  0.5 s; -16.0 LUFS, TP -1.5) stands except the seam events; the post-steps re-measure.
+- 10:58 repair render 1 (2 workers, pieces 9+10 on two fresh browsers) came back with format duration
+  1612 s: the renderer's pieces are timebase 1/90000, my stream-copied ones 1/15360, and its concat
+  demuxer (-f concat -c copy) copies pts unscaled across files. Duration check kept the pieces;
+  the "CLEAN" seam verdict was on mistimed frames. seamcheck.py now refuses an unevenly timed film
+  (BADTIME, exit 2; tested on the broken file). Rewrapped 9+10 to 15360 and joined by hand
+  (/dev/shm/l4fix/film-01.mp4, 483.733 s, even): piece 9 now clean, piece 10 bad AGAIN (3 blank +
+  1 half at 250.0 s). So the race hits a piece that starts a fresh browser with a time jump (the
+  renderer warms up 60 ticks only per session, never per piece); piece 10 has failed both fresh
+  starts. 11:09:50 repair render 2: the 18 kept pieces rewrapped to 1/90000 (bytes updated in
+  segments.json), 9 and 10 dropped, WORKERS=1, so 10 follows 9 on the same browser without a jump
+  (only 9's start is at risk; the seam loop retries). ~34 min + post-steps. Fallbacks in
+  /dev/shm/l4film-old (original film; r2-good piece 9) and /dev/shm/l4fix (9 good, 10 bad).
+  For film-02: render with WORKERS=1 or 2 and let the seam loop repair; or consider a per-piece
+  warm-up patch to the renderer.
+- 11:37:50 repair render 2 (1 worker, 9 then 10 on one browser) exit 0; 11:38:26 seams CLEAN (re-run
+  by hand: renders/film-01.seams, pieces 9 and 10 steady at luma 33/35); 483.733 s, even timing;
+  pieces removed; music-only; films in renders/ (free then 1395, needed 1355); contact sheet.
+  The hypothesis held: piece 10 after piece 9 on the same browser is clean. measure render+audio
+  re-running in render-l4.sh (do not edit it until "done"). Then swap in render-l4.next.sh
+  (contiguous repair: drop k-1 and k, 1 worker, HF_SEGMENT_BROWSER_RECYCLE=0; seams file path fixed
+  to absolute; keep render-l4.sh as render-l4.before-contig.sh).
+  Freed /dev/shm: extract cache (4.4 GB) and the fallbacks (old film, l4fix) deleted; cgroup 1.2 GB.
+  11:4x FILM1 critic launched (fresh motion-critic, xhigh, paths + disk note only; report to
+  P/review/film-01/REPORT.md). Rate limit allowed. One agent running.

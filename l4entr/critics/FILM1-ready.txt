@@ -12,4 +12,4 @@ Write your report to: /home/user/mercurypitch/output/motion/lesson-04/review/fil
 
 If you cannot write files, return the full report as your final message.
 
-Operational note: free disk on / is about 1.25 GB and memory is capped at about 13 GB for everything you run (files in /dev/shm count against it, and about 5 GB is already taken), so keep extracted frames and dumps in /dev/shm under about 3 GB at any time and delete them when you are done.
+Operational note: free disk on / is about 1.2 GB and memory is capped at about 13 GB for everything you run (files in /dev/shm count against it, and about 1 GB is already taken), so keep extracted frames and dumps in /dev/shm under about 4 GB at any time and delete them when you are done. For the first quarter of an hour another measurement job may be reading the same film, so your first commands can run a little slower.
