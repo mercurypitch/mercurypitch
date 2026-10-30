@@ -39,6 +39,11 @@ vi.mock('@/lib/jam/media-errors', () => ({
   micPermissionState: (): Promise<string> => Promise.resolve(mic.permission),
 }))
 
+// jsdom cannot draw: the mic beat's stage is left out.
+vi.mock('@/features/mic-check/MicCheckStage', () => ({
+  MicCheckStage: () => null,
+}))
+
 vi.mock('@/lib/voice-session', () => ({
   createVoiceSession: (): VoiceSession => {
     let open = false

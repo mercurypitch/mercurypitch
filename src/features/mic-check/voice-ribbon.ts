@@ -315,15 +315,22 @@ function ribbonGradient(
   return gradient
 }
 
-/** Paint one frame of the ribbon, or its resting line when it is quiet. */
+/**
+ * Paint one frame of the ribbon, or its resting line when it is quiet. At
+ * rest the line is a short dash, the ribbon put away; while the stage is
+ * `awake` (listening) it runs the ribbon's whole width, so a quiet room
+ * reads as a live line waiting for a voice, not as a stray mark.
+ */
 export function drawRibbon(
   ctx: CanvasRenderingContext2D,
   motion: RibbonMotion,
   geometry: RibbonGeometry,
   palette: RibbonPalette,
+  awake = false,
 ): void {
   if (motion.energy < RIBBON_REST_ENERGY) {
-    drawLine(ctx, geometry, geometry.halfWidth * 0.08, palette.line)
+    const rest = awake ? 1 : 0.08
+    drawLine(ctx, geometry, geometry.halfWidth * rest, palette.line)
     return
   }
   drawLine(ctx, geometry, geometry.halfWidth, palette.line)

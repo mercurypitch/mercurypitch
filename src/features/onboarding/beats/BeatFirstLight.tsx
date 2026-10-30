@@ -32,27 +32,41 @@
 // The denied path is a designed route, not an error screen. It offers
 // a retry, a device picker when the input is genuinely dead, and a way
 // onward that still ends somewhere useful. "Continue without the mic"
-// stays beside "Try again" although the flow otherwise keeps one way out
+// stays with "Try again" although the flow otherwise keeps one way out
 // (owner decision V1): with no working microphone there is no voiceprint
-// to skip, and the Map is the one place left to go.
+// to skip, and the Map is the one place left to go. It sits under the
+// retry as a quiet link, not beside it as its equal, so the retry reads as
+// the way forward.
 //
 // Merc listens from the plate behind this beat (plates.ts), so the beat
 // no longer draws its own small mascot.
+//
+// Where the wait and the take used to show a level bar, they show the
+// Settings mic check's stage: the ribbon answers the level, and a held note
+// throws notes that land on its key (mic-check/MicCheckStage.tsx). It never
+// names the note; that claim waits for `settledNote`, for the reason above.
+// Under it, a chip names the input Merc is hearing and opens every input
+// with its role and a way to switch, and a second opens the fixes
+// (FirstLightMic.tsx). When the nudge comes, the list opens by itself: the
+// usual answer is a different microphone.
 
 import type { Component } from 'solid-js'
-import { createSignal, For, onCleanup, onMount, Show, untrack } from 'solid-js'
-import { MicTroubleshooting } from '@/components/MicTroubleshooting'
+import { createSignal, onCleanup, onMount, Show, untrack } from 'solid-js'
+import { MicCheckStage } from '@/features/mic-check/MicCheckStage'
 import type { MicPermissionState } from '@/lib/jam/media-errors'
 import { micPermissionState } from '@/lib/jam/media-errors'
+import { micManager } from '@/lib/mic-manager'
 import { registerMicIndicator } from '@/lib/mic-sentinel'
 import { noteArticle } from '@/lib/note-utils'
 import type { PitchFrame } from '@/lib/pitch-f0-stream'
 import type { VoiceSession } from '@/lib/voice-session'
 import { createVoiceSession } from '@/lib/voice-session'
-import { FIRST_LIGHT_ASK, FIRST_LIGHT_ASK_ALLOWED, FIRST_LIGHT_AUTO_START, FIRST_LIGHT_HEADLINE, FIRST_LIGHT_HEARD, FIRST_LIGHT_HEARD_EYEBROW, FIRST_LIGHT_METER_LIVE, FIRST_LIGHT_PRIVACY, } from '../copy'
+import { FIRST_LIGHT_ASK, FIRST_LIGHT_ASK_ALLOWED, FIRST_LIGHT_AUTO_START, FIRST_LIGHT_DEAD_EYEBROW, FIRST_LIGHT_DEAD_INPUT, FIRST_LIGHT_HEADLINE, FIRST_LIGHT_HEARD, FIRST_LIGHT_HEARD_EYEBROW, FIRST_LIGHT_METER_LIVE, FIRST_LIGHT_NUDGE, FIRST_LIGHT_PICK_FAILED, FIRST_LIGHT_PRIVACY, } from '../copy'
 import styles from '../onboarding.module.css'
 import type { SettledNote } from '../settled-note'
 import { settledNote } from '../settled-note'
+import { createStageFeed, useInputRoster } from './first-light-mic'
+import { FirstLightMic } from './FirstLightMic'
 
 /** Long enough for a median to settle, short enough not to be a chore. */
 const LISTEN_SEC = 4
@@ -119,13 +133,20 @@ export const BeatFirstLight: Component<BeatFirstLightProps> = (props) => {
   )
   const [error, setError] = createSignal<string | null>(null)
   const [picker, setPicker] = createSignal(false)
+  // The input opened and carries nothing at all. Not a missing microphone:
+  // the screen and the input's row both say "No signal".
+  const [deadInput, setDeadInput] = createSignal(false)
   const [hint, setHint] = createSignal<string | null>(null)
   const [nudged, setNudged] = createSignal(false)
   const [manual, setManual] = createSignal(false)
   const [note, setNote] = createSignal<SettledNote | null>(null)
   const [level, setLevel] = createSignal(0)
   const [remaining, setRemaining] = createSignal(LISTEN_SEC)
-  const [devices, setDevices] = createSignal<MediaDeviceInfo[]>([])
+  const [switching, setSwitching] = createSignal<string | null>(null)
+  const [silentPick, setSilentPick] = createSignal<string | null>(null)
+
+  const stage = createStageFeed()
+  const inputs = useInputRoster()
 
   let session: VoiceSession | null = null
   let meter = 0
@@ -175,19 +196,22 @@ export const BeatFirstLight: Component<BeatFirstLightProps> = (props) => {
     unregisterIndicator()
     cancelAnimationFrame(meter)
     clearInterval(ticker)
+    stage.stop()
     session?.close()
     session = null
     props.onLevel?.(0)
   })
 
-  const fail = (message: string, offerPicker: boolean) => {
+  const fail = (message: string, offerPicker: boolean, dead = false) => {
     cancelAnimationFrame(meter)
     props.onLevel?.(0)
     clearInterval(ticker)
+    stage.stop()
     setError(message)
     setPicker(offerPicker)
+    setDeadInput(dead)
     setPhase('blocked')
-    if (offerPicker) void session?.devices().then(setDevices)
+    if (offerPicker) void inputs.refresh()
   }
 
   /** The take itself, once we know someone is actually singing. */
@@ -217,6 +241,7 @@ export const BeatFirstLight: Component<BeatFirstLightProps> = (props) => {
 
     cancelAnimationFrame(meter)
     props.onLevel?.(0)
+    stage.stop()
     session.close()
     session = null
     setNote(heard)
@@ -238,7 +263,7 @@ export const BeatFirstLight: Component<BeatFirstLightProps> = (props) => {
 
     if (!nudged() && elapsed > NUDGE_MS) {
       setNudged(true)
-      void session?.devices().then(setDevices)
+      void inputs.refresh()
     }
 
     const bar = Math.min(
@@ -252,10 +277,11 @@ export const BeatFirstLight: Component<BeatFirstLightProps> = (props) => {
     void capture()
   }
 
-  const pump = () => {
+  const pump = (now: number) => {
     const value = session?.level() ?? 0
     setLevel(value)
     props.onLevel?.(value)
+    stage.read(session, now)
     if (phase() === 'waiting') watchForVoice(value)
     meter = requestAnimationFrame(pump)
   }
@@ -271,6 +297,8 @@ export const BeatFirstLight: Component<BeatFirstLightProps> = (props) => {
     setNudged(false)
     setPhase('waiting')
     session?.arm()
+    // Names arrive with the grant, and the input heard is the one opened.
+    void inputs.refresh()
     cancelAnimationFrame(meter)
     meter = requestAnimationFrame(pump)
   }
@@ -306,10 +334,7 @@ export const BeatFirstLight: Component<BeatFirstLightProps> = (props) => {
       const result = await session.probe()
       probed = true
       if (result === 'silent' || result === 'no-session') {
-        fail(
-          "That input is carrying no signal at all, not even room tone. It's likely muted at the system level, or your browser is listening to a different microphone.",
-          true,
-        )
+        fail(FIRST_LIGHT_DEAD_INPUT, true, true)
         return
       }
     }
@@ -318,11 +343,30 @@ export const BeatFirstLight: Component<BeatFirstLightProps> = (props) => {
   }
 
   const pickDevice = async (deviceId: string): Promise<void> => {
-    const result = await session?.useDevice(deviceId)
-    if (result !== 'ok' && result !== 'quiet') return
+    const current = session
+    if (current === null || switching() !== null) return
+    setSwitching(deviceId)
+    setSilentPick(null)
+    let result: Awaited<ReturnType<VoiceSession['useDevice']>>
+    try {
+      result = await current.useDevice(deviceId)
+    } finally {
+      setSwitching(null)
+    }
+    // Closed under the switch: the beat is gone, or the singer moved on.
+    if (session !== current) return
+    if (micManager.getStream() === null) {
+      // The new input would not open, and the old one is closed already.
+      fail(FIRST_LIGHT_PICK_FAILED, true)
+      return
+    }
     setError(null)
     setHint(null)
     probed = true
+    // An input with no signal at all is still the one being heard: say so
+    // on its row, and keep the meter live for the next pick. Going quiet
+    // here was the old bug, a switch that changed nothing on screen.
+    if (result === 'silent' || result === 'no-session') setSilentPick(deviceId)
     wait()
   }
 
@@ -330,12 +374,13 @@ export const BeatFirstLight: Component<BeatFirstLightProps> = (props) => {
     cancelAnimationFrame(meter)
     props.onLevel?.(0)
     clearInterval(ticker)
+    stage.stop()
     session?.close()
     session = null
     props.onDenied()
   }
 
-  const meterWidth = () => Math.min(100, level() * 1200)
+  const meterValue = () => Math.round(Math.min(1, level() * 12) * 100)
 
   return (
     <div class={styles.beat} data-beat="first-light">
@@ -374,72 +419,89 @@ export const BeatFirstLight: Component<BeatFirstLightProps> = (props) => {
         <h1 class={styles.headline}>
           Sing <span class={styles.lit}>ahh</span> whenever you're ready
         </h1>
+        {/* The hardest mic failure is the one that does NOT error: another
+            tab holding the device leaves us a granted stream that carries
+            almost no signal, so the stage stays flat and nothing here can
+            say why. After nine seconds of nothing, the likely cause takes
+            the instructions' place, and the list of inputs opens under the
+            stage the singer is watching, rather than waiting to fail them
+            first. */}
         <Show
-          when={manual()}
-          fallback={<p class={styles.sub}>{FIRST_LIGHT_AUTO_START}</p>}
+          when={!nudged()}
+          fallback={<p class={styles.sub}>{FIRST_LIGHT_NUDGE}</p>}
         >
-          <p class={styles.sub}>
-            Any note at all, held for a few seconds. Take a breath, then press
-            start and sing.
-          </p>
+          <Show
+            when={manual()}
+            fallback={<p class={styles.sub}>{FIRST_LIGHT_AUTO_START}</p>}
+          >
+            <p class={styles.sub}>
+              Any note at all, held for a few seconds. Take a breath, then press
+              start and sing.
+            </p>
+          </Show>
         </Show>
+      </Show>
 
+      <Show when={phase() === 'listening'}>
+        <p class={styles.recordingTag}>Recording</p>
+        <h1 class={styles.headline}>
+          Hold it: <span class={styles.lit}>{remaining()}s</span>
+        </h1>
+      </Show>
+
+      {/* One stage for the wait and the take, so the note that starts the
+          take keeps flying when the screen turns to "Hold it". */}
+      <Show when={phase() === 'waiting' || phase() === 'listening'}>
         <div
-          class={styles.meterBig}
+          class={styles.stage}
+          classList={{
+            [styles.stageCompact]: phase() === 'waiting' && nudged(),
+            [styles.stageTake]: phase() === 'listening',
+          }}
           role="progressbar"
           aria-label="Microphone level"
           aria-valuemin={0}
           aria-valuemax={100}
-          aria-valuenow={Math.round(Math.min(1, level() * 12) * 100)}
+          aria-valuenow={meterValue()}
         >
-          <div class={styles.meterFill} style={{ width: `${meterWidth()}%` }} />
+          <MicCheckStage
+            live={stage.live}
+            listening
+            keys="soft"
+            labels={false}
+          />
         </div>
-        <p
-          class={`${styles.meterCaption} ${
-            level() > AUDIBLE_RMS ? styles.meterCaptionLive : ''
-          }`}
-        >
-          {level() > AUDIBLE_RMS
-            ? FIRST_LIGHT_METER_LIVE
-            : 'Microphone is on and listening'}
-        </p>
+      </Show>
+
+      <Show when={phase() === 'waiting'}>
+        {/* Once nudged, the line above already says what this would. */}
+        <Show when={!nudged()}>
+          <p
+            class={`${styles.meterCaption} ${
+              level() > AUDIBLE_RMS ? styles.meterCaptionLive : ''
+            }`}
+          >
+            {level() > AUDIBLE_RMS
+              ? FIRST_LIGHT_METER_LIVE
+              : 'Microphone is on and listening'}
+          </p>
+        </Show>
 
         <Show when={hint() !== null}>
           <p class={styles.recordHint}>{hint()}</p>
         </Show>
 
-        {/* The hardest mic failure is the one that does NOT error: another
-            tab holding the device leaves us a granted stream that carries
-            almost no signal, so the meter sits flat and nothing here can
-            say why. After nine seconds of nothing, put the recovery steps
-            where the singer is actually stuck — next to the meter they
-            are watching — rather than waiting to fail them first. */}
-        <Show when={nudged()}>
-          <p class={styles.recordHint}>
-            Still nothing on the meter. If you are singing, the browser is
-            probably listening to a different microphone.
-          </p>
-          <Show when={devices().length > 1}>
-            <div class={styles.deviceList}>
-              <For each={devices()}>
-                {(device) => (
-                  <button
-                    type="button"
-                    class={styles.sideDoor}
-                    onClick={() => void pickDevice(device.deviceId)}
-                  >
-                    {device.label !== '' ? device.label : 'Microphone'}
-                  </button>
-                )}
-              </For>
-            </div>
-          </Show>
-          <div class={styles.micHelp}>
-            <MicTroubleshooting />
-          </div>
-        </Show>
+        <FirstLightMic
+          roster={inputs.roster()}
+          settings={inputs.settings()}
+          helpDue={nudged()}
+          showInputs
+          switching={switching()}
+          silentPick={silentPick()}
+          onPick={(deviceId) => void pickDevice(deviceId)}
+        />
 
-        <div class={styles.actions}>
+        <div class={styles.actionStack}>
           <button
             type="button"
             class={manual() ? styles.primary : styles.secondary}
@@ -448,27 +510,10 @@ export const BeatFirstLight: Component<BeatFirstLightProps> = (props) => {
             {manual() ? 'Start the take' : 'Start the take now'}
           </button>
           <Show when={nudged()}>
-            <button type="button" class={styles.secondary} onClick={giveUp}>
+            <button type="button" class={styles.quietAction} onClick={giveUp}>
               Continue without the mic
             </button>
           </Show>
-        </div>
-      </Show>
-
-      <Show when={phase() === 'listening'}>
-        <p class={styles.recordingTag}>Recording</p>
-        <h1 class={styles.headline}>
-          Hold it: <span class={styles.lit}>{remaining()}s</span>
-        </h1>
-        <div
-          class={styles.meterBig}
-          role="progressbar"
-          aria-label="Microphone level"
-          aria-valuemin={0}
-          aria-valuemax={100}
-          aria-valuenow={Math.round(Math.min(1, level() * 12) * 100)}
-        >
-          <div class={styles.meterFill} style={{ width: `${meterWidth()}%` }} />
         </div>
       </Show>
 
@@ -497,31 +542,28 @@ export const BeatFirstLight: Component<BeatFirstLightProps> = (props) => {
       </Show>
 
       <Show when={phase() === 'blocked'}>
-        <p class={styles.eyebrow}>No microphone</p>
+        <p class={styles.eyebrow}>
+          {deadInput() ? FIRST_LIGHT_DEAD_EYEBROW : 'No microphone'}
+        </p>
         <h1 class={styles.headline}>Merc can't hear you yet</h1>
         <p class={styles.sub}>{error()}</p>
 
-        <div class={styles.micHelp}>
-          <MicTroubleshooting />
-        </div>
+        {/* The same chips as the wait: the inputs, open, when the input
+            carried nothing (the picker), and the fixes either way. A
+            blocked permission keeps them closed, since its fix is the
+            site settings the line above names. */}
+        <FirstLightMic
+          roster={inputs.roster()}
+          settings={inputs.settings()}
+          helpDue={picker()}
+          showInputs={picker()}
+          listeningSilent={deadInput()}
+          switching={switching()}
+          silentPick={silentPick()}
+          onPick={(deviceId) => void pickDevice(deviceId)}
+        />
 
-        <Show when={picker() && devices().length > 1}>
-          <div class={styles.deviceList}>
-            <For each={devices()}>
-              {(device) => (
-                <button
-                  type="button"
-                  class={styles.sideDoor}
-                  onClick={() => void pickDevice(device.deviceId)}
-                >
-                  {device.label !== '' ? device.label : 'Microphone'}
-                </button>
-              )}
-            </For>
-          </div>
-        </Show>
-
-        <div class={styles.actions}>
+        <div class={styles.actionStack}>
           <button
             type="button"
             class={styles.primary}
@@ -529,7 +571,7 @@ export const BeatFirstLight: Component<BeatFirstLightProps> = (props) => {
           >
             Try again
           </button>
-          <button type="button" class={styles.secondary} onClick={giveUp}>
+          <button type="button" class={styles.quietAction} onClick={giveUp}>
             Continue without the mic
           </button>
         </div>

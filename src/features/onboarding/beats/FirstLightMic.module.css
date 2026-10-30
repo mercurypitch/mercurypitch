@@ -1,0 +1,294 @@
+/* ============================================================
+   First Light's microphone: the chips under the stage, and what they open
+   ============================================================
+
+   On the onboarding palette (the --ob-* tokens FirstLight sets on its
+   overlay), so it reads as part of the sky beat, not as a settings card
+   dropped into it. One card at most is open, and its rows are separated by
+   space and a tint, not by boxes of their own. */
+
+.mic {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  width: min(100%, 520px);
+}
+
+.chips {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 8px;
+  max-width: 100%;
+}
+
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  max-width: 100%;
+  /* A 44 px tap target (owner rule). */
+  min-height: 44px;
+  padding: 0 14px 0 12px;
+  /* A tint, not an outline: an outline pill is the beat's own secondary
+     action ("Start the take now"), and the chips are not actions. */
+  border: 1px solid transparent;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--ob-ink) 7%, transparent);
+  color: var(--ob-ink-2);
+  font: inherit;
+  font-size: 0.86rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition:
+    border-color 0.2s var(--ob-ease),
+    background 0.2s var(--ob-ease),
+    color 0.2s var(--ob-ease);
+}
+
+.chip:hover {
+  background: color-mix(in srgb, var(--ob-ink) 11%, transparent);
+  color: var(--ob-ink);
+}
+
+.chip[aria-expanded='true'] {
+  border-color: color-mix(in srgb, var(--ob-teal) 40%, transparent);
+  background: color-mix(in srgb, var(--ob-teal) 12%, transparent);
+  color: var(--ob-ink);
+}
+
+.chip:focus-visible {
+  outline: 2px solid var(--ob-blue);
+  outline-offset: 2px;
+}
+
+.chip svg {
+  display: block;
+  width: 16px;
+  height: 16px;
+}
+
+.chipIcon {
+  display: flex;
+  flex: none;
+  color: var(--ob-teal);
+}
+
+/* A device name can be as long as a sentence ("Scarlett 4i4 USB Analog
+   Surround 5.1"); the chip keeps one line and the list shows it whole. */
+.chipName {
+  min-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.chevron {
+  display: flex;
+  flex: none;
+  color: var(--ob-ink-3);
+  transition: transform 0.2s var(--ob-ease);
+}
+
+.chevron svg {
+  width: 14px;
+  height: 14px;
+}
+
+.chip[aria-expanded='true'] .chevron {
+  transform: rotate(180deg);
+}
+
+.panel {
+  width: 100%;
+  padding: 6px;
+  border: 1px solid color-mix(in srgb, var(--ob-rule) 80%, transparent);
+  border-radius: 18px;
+  background: color-mix(in srgb, var(--ob-card-solid) 88%, transparent);
+  text-align: start;
+  animation: panelIn 0.28s var(--ob-ease) both;
+}
+
+@keyframes panelIn {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+}
+
+.inputs {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+/* The name and its badges are one block, centred on the row's button; the
+   notes run under both. Named and badges in rows of their own, the name sat
+   at the top of a row the button made taller. */
+.input {
+  display: grid;
+  grid-template-columns: 20px minmax(0, 1fr) auto;
+  grid-template-areas:
+    'icon text use'
+    '. notes notes';
+  align-items: center;
+  column-gap: 12px;
+  padding: 10px 8px 10px 12px;
+  border-radius: 12px;
+}
+
+.inputHeard {
+  background: color-mix(in srgb, var(--ob-teal) 9%, transparent);
+}
+
+.inputIcon {
+  grid-area: icon;
+  display: flex;
+  color: var(--ob-ink-3);
+}
+
+.inputHeard .inputIcon {
+  color: var(--ob-teal);
+}
+
+.inputIcon svg {
+  width: 18px;
+  height: 18px;
+}
+
+.inputText {
+  grid-area: text;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+
+.inputName {
+  overflow: hidden;
+  font-size: 0.9rem;
+  font-weight: 600;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  color: var(--ob-ink);
+}
+
+.badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.badges:empty {
+  display: none;
+}
+
+.badge {
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--ob-ink) 8%, transparent);
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  color: var(--ob-ink-2);
+}
+
+.badgeHeard {
+  background: color-mix(in srgb, var(--ob-teal) 18%, transparent);
+  color: var(--ob-teal);
+}
+
+.badgeSilent {
+  background: color-mix(in srgb, #f6c46b 16%, transparent);
+  color: #f6c46b;
+}
+
+.use {
+  grid-area: use;
+  min-height: 44px;
+  padding: 0 16px;
+  border: 1px solid var(--ob-rule);
+  border-radius: 999px;
+  background: transparent;
+  color: var(--ob-ink);
+  font: inherit;
+  font-size: 0.84rem;
+  font-weight: 600;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: border-color 0.2s var(--ob-ease);
+}
+
+.use:hover:not(:disabled) {
+  border-color: var(--ob-blue);
+}
+
+.use:disabled {
+  opacity: 0.55;
+  cursor: default;
+}
+
+.use:focus-visible {
+  outline: 2px solid var(--ob-blue);
+  outline-offset: 2px;
+}
+
+/* What explains a bad take by itself: a Bluetooth headset in call mode, an
+   input that carries nothing, processing the browser applied. */
+.inputNotes {
+  grid-area: notes;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.inputNotes:empty {
+  display: none;
+}
+
+.inputNote {
+  margin: 6px 0 0;
+  font-size: 0.8rem;
+  line-height: 1.45;
+  color: #f6c46b;
+}
+
+.panelNote {
+  margin: 6px 12px 6px;
+  font-size: 0.8rem;
+  line-height: 1.45;
+  color: var(--ob-ink-3);
+}
+
+.fixes {
+  display: grid;
+  gap: 8px;
+  margin: 0;
+  padding: 10px 14px 4px 34px;
+  font-size: 0.88rem;
+  line-height: 1.5;
+  color: var(--ob-ink-2);
+}
+
+.srOnly {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .panel {
+    animation: none;
+  }
+
+  .chevron {
+    transition: none;
+  }
+}

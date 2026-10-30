@@ -192,7 +192,11 @@ export function MicCheckStage(props: MicCheckStageProps) {
       return dark ? DARK_STAGE_INK : LIGHT_STAGE_INK
     }
 
-    const paint = (layout: StageLayout, heldMidi: number | null): void => {
+    const paint = (
+      layout: StageLayout,
+      heldMidi: number | null,
+      listening: boolean,
+    ): void => {
       const scale = dpr()
       const ink = inkFor()
       ctx.setTransform(scale, 0, 0, scale, 0, 0)
@@ -202,6 +206,7 @@ export function MicCheckStage(props: MicCheckStageProps) {
         motion,
         layout,
         dark ? DARK_STAGE_RIBBON : LIGHT_STAGE_RIBBON,
+        listening,
       )
       for (const note of rain.notes) drawRainNote(ctx, note, ink)
       const light = { held: heldMidi, flashes }
@@ -240,7 +245,7 @@ export function MicCheckStage(props: MicCheckStageProps) {
       if (held !== null && !reduceMotion) throwNotes(held, layout, now)
       seenOnsets = live.onsets
       advanceRain(dt, layout)
-      paint(layout, held?.midi ?? null)
+      paint(layout, held?.midi ?? null, listening)
 
       if (settled(listening)) {
         lastAt = 0

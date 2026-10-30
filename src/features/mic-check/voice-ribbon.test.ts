@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
-import { bandLevel, createRibbonMotion, stepRibbonMotion } from './voice-ribbon'
+import type { RibbonPalette } from './voice-ribbon'
+import { bandLevel, createRibbonMotion, drawRibbon, stepRibbonMotion, } from './voice-ribbon'
 
 const FRAME = 1 / 60
 
@@ -19,6 +20,27 @@ function settle(
 const SINGING = { rms: 0.05, peak: 0.2, low: 0.5, mid: 0.6, high: 0.2 }
 const SILENT = { rms: 0, peak: 0, low: 0, mid: 0, high: 0 }
 
+const GEOMETRY = { centreX: 200, centreY: 60, halfWidth: 150, maxAmplitude: 40 }
+const PALETTE: RibbonPalette = {
+  stops: [],
+  blend: 'source-over',
+  alpha: 1,
+  line: '#888',
+}
+
+/** A canvas context that keeps where each rectangle was filled. */
+function recordingContext() {
+  const fills: { x: number; width: number }[] = []
+  const ctx = {
+    fillStyle: '',
+    createLinearGradient: () => ({ addColorStop: () => {} }),
+    fillRect: (x: number, _y: number, width: number) => {
+      fills.push({ x, width })
+    },
+  } as unknown as CanvasRenderingContext2D
+  return { ctx, fills }
+}
+
 describe('bandLevel', () => {
   it('averages the bins between two frequencies', () => {
     // 48 kHz over a 2048-point FFT is 23.4375 Hz a bin, so 60-350 Hz reads
@@ -31,6 +53,30 @@ describe('bandLevel', () => {
 
   it('answers zero for nothing to read', () => {
     expect(bandLevel(new Uint8Array(0), 48000, 2048, 60, 350)).toBe(0)
+  })
+})
+
+describe('drawRibbon', () => {
+  it("runs its resting line the ribbon's whole width while the stage listens", () => {
+    // Arrange
+    const { ctx, fills } = recordingContext()
+
+    // Act
+    drawRibbon(ctx, createRibbonMotion(), GEOMETRY, PALETTE, true)
+
+    // Assert
+    expect(fills).toEqual([{ x: 50, width: 300 }])
+  })
+
+  it('puts itself away to a short dash on an idle stage', () => {
+    // Arrange
+    const { ctx, fills } = recordingContext()
+
+    // Act
+    drawRibbon(ctx, createRibbonMotion(), GEOMETRY, PALETTE)
+
+    // Assert
+    expect(fills).toEqual([{ x: 188, width: 24 }])
   })
 })
 

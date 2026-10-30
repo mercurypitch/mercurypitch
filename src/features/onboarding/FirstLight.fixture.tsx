@@ -97,6 +97,9 @@ export const fake = {
   /** So is its live trace. */
   liveViz: () => ({ LiveViz: () => null }),
 
+  /** And the mic check's stage, which First Light's mic beat listens with. */
+  micStage: () => ({ MicCheckStage: () => null }),
+
   /** And the prints' cards. */
   voiceprintCard: () => ({
     renderVoiceprintCard: async () => null,
