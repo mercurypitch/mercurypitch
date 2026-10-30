@@ -2096,3 +2096,10 @@ Note: the lanes' memory gate read a stale cgroup path after the 21:00 restart (f
   move): RAM, lost on a restart. Plan: freeze to $S/l4film02proj, clear the whole extract cache once
   C and E are done (no builder running), full check, then
   WORKERS=2 setsid nohup bash render-l4.sh film-02 60 high $S/l4film02proj >/dev/null 2>&1 &
+- 15:3x group C reported (all five items; DECISIONS 128; handoff frames identical): ring docked at the
+  pills (484, 425), riding the lane; one ghost (E's step profile, lifted 66-92 px, "same shape" at
+  x 1466 b 166) instead of three outlines; top "S" stays on; F-keys-D oy -440 set in s07 (kit's
+  L.FRAMES keeps -528, unread); "Predict."/"D major" fade in place (s07 holds 1.1/30 s, left to the
+  critic). Lead: clock-lint silent, proofs viewed (ring 14.2 s, ghost 18.3 s, crane 46 s). Docs
+  updated: HANDOFFS § Framings + § Inside C, STORYBOARD 7c/8d/signature 2, BUILD-GUIDE s07/s08
+  (backups l4entr/polishC/*.before-C). Extract cache 998 MB, left until E is done. Running: E only.

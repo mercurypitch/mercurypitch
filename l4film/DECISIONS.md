@@ -1497,3 +1497,31 @@ replaced it. The builder's record: critics never read it.
      never empty (it was empty 26.60 to 26.78) and nothing stands past the box. Holds as round 4 in
      all three; check 0 errors with the same warnings; clock-lint silent (rechecked by the lead).
      STORYBOARD and HANDOFFS carry none of the changed timings, so neither changes.
+
+128. **Group C's polish round (s07 and s08: FILM1 items 6 and 7, C-03 items 1, 2 and 4): all five
+     items in, accepted on the builder's numbers and the lead's look at the proofs; no fixed handoff
+     frame moved (s07's first and last frames and s08's identical to film-01's, max 0, Mercs
+     aside).** (1) S7's predict ring docks at the pills' right end, centred (484, 425) at F0, and
+     rides the lane with them (about 42 px left, at (442, 425), when it has gone at 162.19): 16 px
+     from the "Yes" pill's box and 30.6 px from its text, 81 px from the nearest dashed stair (27
+     before). (2) S8's three ghost outlines become one copy of E's step profile, lifted 66 to 92 px
+     off it with "same shape" (Outfit 600 40 px, ink, x 1466, baseline 166) beside its top step,
+     then dropped back as it fades while the staircase's own profile flashes. No label is within
+     24 px of its ink (95 of 102 samples were, before; the nearest is now 27 px). The copy is an
+     open profile, not a closed outline: every closed copy the frame can hold crosses E's blocks or
+     labels. The rim's flash runs along the staircase's treads 8 px under the riser labels, where it
+     ran before the round (decision 85): it is the staircase's own edge light, not the ghost, so
+     the ghost's 24 px rule does not reach it; the film critic sees it in film-02. (3) S7's top "S"
+     (riser 7) stays at full through the crane and the pull. (4) F-keys-D's oy is -440 (was -528),
+     set in S7 itself: stairs 7 and 8 and the top "S" are in frame (baseline 69, ink from y 22), the
+     black-key names at baseline 875. The kit's `L.FRAMES` entry keeps -528 (no scene reads it, and
+     the kit is not touched while builders render). It moves only the crane's end and the pull's
+     start, at the same times; riser 6's label rejoins the "Keeping the pattern" ripple, and riser
+     7's "S" stays unscaled (scaled 1.25, its ink would reach y 12). (5) "Predict." and "D major"
+     fade in place over 0.3 s (decision 104), so the 12 single-frame events of their settle are
+     gone. The cost is a 0.3 s hold at s07 7.20 and 0.2 s at 50.80: s07's clip holds 2.0 s (1.1
+     per 30 s, the longest 0.3 s; 1.18 per 30 s over the stretch with no Merc, against 0.86), inside
+     the bar's limits and close to its 1 s per 30 s guide, left to the film critic. s08 holds 0.8 s.
+     check 0 errors, 75 warnings (these scenes' 14 unchanged); clock-lint silent (rechecked by the
+     lead); merc-tags 10 + 4, 0 stale. HANDOFFS (§ Framings, F-keys-D; § Inside C), STORYBOARD (7c,
+     8d, signature 2) and BUILD-GUIDE (s07, s08) carry the new values.

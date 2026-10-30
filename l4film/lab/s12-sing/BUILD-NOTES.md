@@ -195,3 +195,23 @@ Running notes so a container restart or a usage-limit pause can resume. Builder 
   S13 to S14 max 10. Keep-outs as round 2. npm run check passes (0 errors; mine only warnings). Text
   sweep clean; merc-tags --check 16 tags, 0 stale; clock-lint silent.
 - Round 2 kept as clip-r2.mp4 / measure-r2 and compositions backed up as lab/*/s1?-r2.html.bak.
+
+## Polish round (30 Oct 2026; brief l4entr/polish/BRIEF-E.md: E-03's held items, DECISIONS 111)
+
+- Item 1 (the 40 px pulsing labels twitch): each pulse now scales about the label's baseline. S12 "wait"
+  about (1166, 196), centre bottom (was (1166, 182)); S13 "wait on ti" about (380, 492), left bottom (was
+  (380, 478)); S13 "at about speaking volume" about (380, 392), left bottom (was (380, 381)).
+- Item 2: S13's "volume." swell rises over 0.3 s, sine.inOut (was 0.15 s, power2.out); its fall unchanged.
+- Tools (lab/s12-sing/tools): pulsestills.mjs (seek.mjs with a screenshot clip), twitch.py (each frame's
+  vertical residual against an exact scale of the rest frame's ink profile, and the ink's bottom edge),
+  twitchrun.sh (60 fps exact stills + twitch.py), twitchclip.sh (the same on a rendered clip's frames);
+  lab/s13-your-turn/boxchange.py (frame-to-frame change in a box). The pre-polish compositions, rebuilt
+  from the live ones with only these values reverted, are in lab/*/polish/before/ (for the before runs).
+- Seek stills, 60 fps, residual frame steps >= 0.5 px (before -> after): S12 "wait" 5, 5, 5, 6 -> 0 on
+  its four pulses (baseline range 3.0 -> 0.0 px); "wait on ti" 4 -> 0 (3.0 -> 0.0); "at about speaking
+  volume" 2 -> 0 (1.0 -> 0.0). The round-3 clips give the same before counts, at E-03's frames.
+- Volume swell: 90 % at +0.086 s -> +0.253 s, full at +0.136 -> +0.303 s; largest scale step a frame 0.0143
+  -> 0.0044. Clearances at the peaks: "wait on ti" ink 458 to 492 (was 461 to 495), 16 px under the line
+  above (was 19), 26 px over the stop line (was 23); the volume line 11 px under the line above (was 12).
+- Not an item, measured only: the stop line's second line ("feels uncomfortable.", 1.05 about (380, 556))
+  steps 1 px three times (S13 17.70, 18.00, 18.30); not changed.

@@ -158,7 +158,7 @@ to 1880; 40 px from the rows (1680), 44 from the strip (1676), 46 from stair 8 o
 | F-high     | 1.8  | -764.4  | -450    | -                 | none (polish)  | stairs 5 to 8 x 535 to 1385, treads 418 to 184, the upper bracket (§ S6's brackets), names baseline 853; the strip under the caption band (from y 918), carrying nothing named                                      |
 | F-white    | 1.25 | -75     | -211.5  | (300, 846)        | S7d            | the dashed staircase x 378 to 1568, treads 554 (stair 1) to 164, foot 644, its "?" at (1498, 101); the strip y 739 to 889; the top-left lane clear                                                                  |
 | CU-D       | 2    | -836    | -464    | (836, 464)        | S7g            | D's stairs 3 to 7 x 368 to 1552: real treads 552 (stair 3) and 188 (stair 7), dashed 604 and 240, 52 px apart; names baseline 880                                                                                   |
-| F-keys-D   | 1.6  | -380.8  | -528    | (634.7, 880)      | S7h            | the strip x 3 to 2301, y 688 to 880, F♯4 x 717 to 819, C♯5 x 1485 to 1587 (black-key names at 787); D's names baseline 547                                                                                          |
+| F-keys-D   | 1.6  | -380.8  | -440    | (634.7, 733.3)    | S7h            | the strip x 3 to 2301, y 776 to 968 (black keys to 898), F♯4 x 717 to 819, C♯5 x 1485 to 1587 (black-key names at 875, above the caption band); D's names baseline 635; stairs 7 and 8 in frame (the real stair 7's tread y 82, the dashed one's 123; stair 8's tread y 40, x 1734 to 1914) and the top "S" at baseline 69 (ink y 22 to 70). oy -440 since the polish round, set in S7 itself: the kit's `L.FRAMES` entry still reads -528 and no scene reads it |
 | F-near     | 1.2  | -84     | -147.2  | (420, 736)        | S9b, S9c       | C's stairs x 206 to 1349, treads 650 to 275, names baseline 722; the top house x 1248 to 1315, y 196 to 258; "tonic = home" x 96 to 481, baseline 501                                                               |
 | F-names-1  | 2.4  | -235    | -1232   | -                 | S9c, S9d       | the name band: names 86 px at baseline 506, foot 534, keys y 592 to 880; stair 1 x 346 to 615 (centre 480), stairs 1 to 5 in frame                                                                                  |
 | F-names-2  | 2.4  | -1431   | -1232   | -                 | S9d            | the same band at stairs 4 to 8: stair 8 x 1166 to 1435 (centre 1300)                                                                                                                                                |
@@ -339,8 +339,11 @@ riser labels 2 2 1 2 2 2 1, hairlines drawn; the strip with C major's keys at fu
 
 - **S7's top-left lane.** "Predict." serif italic 120 px at x 140, baseline 300; the pills at x 140,
   baselines 400 and 480 (`L.pill`, Outfit 600 40 px, box from x 140, text inset 24 px); the ring
-  timer at (620, 440), radius 24, 28 px or more from every dashed stair while it is up (it leaves
-  at 161.99, the push then 79 % done); the step rows at
+  timer, radius 24, docked at the pills' right end: centred (484, 425) at F0, midway between the
+  boxes' 417 and 433, 16 px from the "Yes" pill's cap and 30 px or more from both pills' text, 81 px
+  or more from every dashed stair while it is up; it rides the lane with the pills (it leaves at
+  161.99, the push then 79 % done, and is gone by 162.19, about 42 px left, at (442, 425)); the step
+  rows at
   x 140, baselines 380 and 450: "WHITE KEYS" and "MAJOR" JetBrains Mono 28 px from x 140, their
   steps Outfit 600 48 px from x 340 (to x 596); "D major" serif italic 120 px at x 140, baseline 300.
 - **S7's bead.** The chrome bead rests on the dashed treads in white-d (stair 1 at (448, 526) in

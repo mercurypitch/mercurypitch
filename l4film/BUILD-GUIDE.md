@@ -532,10 +532,10 @@ the hero view, y 323) after that.
   `L.kicker('2 · Start anywhere')`; Tavi's dashed staircase (HANDOFFS § World, Tavi's white-keys
   staircase: D's columns, heights 0 2 3 5 7 9 10 12, `L.GUESS`, dashed hairlines to the white keys,
   its "?"), filled ink-2 at 25 % where the rows say; `L.pill` (the two pills, the check on
-  "changes"); `L.ringTimer` (predict, at (620, 440), r 24); `L.frameRig` (the slow push to F-white
+  "changes"); `L.ringTimer` (predict, r 24, docked at the pills' right end: (484, 425), riding the lane with them); `L.frameRig` (the slow push to F-white
   `cam.to(at('predict'), 4.3, 'F-white', 'sine.inOut')`; the pull `cam.to(word('b19', 'Now'), 1.0,
   'F0')`; CU-D from `word('b21', 6, 'start', 0.17)`, 1.0 s; the crane to F-keys-D from `word('b21',
-  16, 'start', 0.52)`, 1.0 s; the pull from `word('b22', 11, 'start', 0.66)`, 1.0 s); `L.stairs` (the
+  16, 'start', 0.52)`, 1.0 s, with oy -440 set in the scene (HANDOFFS § Framings); the pull from `word('b22', 11, 'start', 0.66)`, 1.0 s); `L.stairs` (the
   real staircase back to full on C as the pull lands, its slide to D, 170.7 to 171.6); `L.strip`
   (F♯4 and C♯5 lit to 40 % chrome); `L.bead4` (white-d on the dashed treads, major-d on the real
   ones); the step rows (frame-fixed, "WHITE KEYS" and "MAJOR" JetBrains Mono 28 px from x 140, the
@@ -547,7 +547,8 @@ the hero view, y 323) after that.
 - Checks: S7c to S7h (153.3 to 198.27) with no Merc: the predict, the push, the close-up, the crane;
   the tightest spans 163.3 to 163.83 (`word('b18', 2, 'start', 0.37)` to `word('b18', 5)`) and 188.75
   to 188.93 (`word('b21', 14, 'start', 0.02)` to `word('b21', 15)`); the ring timer stays 28 px or
-  more from every dashed stair while it is up; at CU-D the dashed treads lie 52 px below the real ones
+  more from every dashed stair (81 px since the polish round) and 16 px or more from the pills' text
+  while it is up; at CU-D the dashed treads lie 52 px below the real ones
   (a still at 186.6); S7e's dashed and solid staircases differ only at stairs 3 and 7; "D major" lands
   at 196.6 once the dashed staircase has gone and the pull has landed; **critic 03 item 2**: the bead's
   hops in S7e (171.8 to 175.8) keep clear of the riser labels (stills at the middle of every hop).
@@ -562,8 +563,10 @@ the hero view, y 323) after that.
 - Kit: `L.stairs` (the slides, interpolating `w` and `s0` together, power2.inOut: D to G 208.0 to
   208.9, G to E 212.30 to 212.75, E to C 225.2 to 226.1; the letters switching as each slide runs);
   `L.strip` (the scale's keys and lit black keys following every slide; `hair` with the slide's `w`
-  and `s0`); the three ghost outlines (the staircase's outline drawn from `L.ST` at 30 % where it
-  stood on C, D and G, sliding onto E, 216.6 to 217.8); the tally (Outfit 600 64 px at x 140,
+  and `s0`); the ghost (one copy of E's step profile from `L.ST`, a 4 px chrome line over a soft halo,
+  lifted 66 to 92 px off it 216.63 to 217.73 and dropped back to 66 px as it fades, 217.73 to 218.18;
+  its label "same shape", Outfit 600 40 px ink at x 1466, baseline 166, from "never"; the rim, the
+  staircase's own profile, flashing from 218.03, cut clear of the two golds); the tally (Outfit 600 64 px at x 140,
   baseline 250); `L.bead4` (slide-g and slide-e, 0.36 s a note); `L.pulse`.
 - Merc: m08-orange (feet (1800, 840), 300) through 8d, listening to b23 to b25, and hops out right at
   `word('b25', 19)`.

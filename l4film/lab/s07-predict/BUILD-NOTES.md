@@ -233,3 +233,26 @@ As built (15:00), before the clips:
   composition_file_too_large). The fix-2 measures moved to lab/<sid>/measure-fix2 (the "before" numbers); the r3
   clips are deleted.
 - s07 clip rendering from 14:57 (scratch/polish/render.sh, workers 2).
+
+Results (15:30):
+- s07 clip (lab/s07-predict/clip.mp4, 60 fps, 15:04): holds 2.0 s inside (1.1 s per 30 s), longest 0.3 s (7.20, after
+  "Predict." has faded in); fix 2 had 1.5 s (0.8), longest 0.2. In the no-Merc stretch (7.2 to 52.8) 1.8 s in 45.6 s,
+  1.18 per 30 s (fix 2: 1.3 s, 0.86). Single-frame events: the twelve title snaps (7.267 to 7.550, 50.767 to 50.933)
+  are gone; every other event is as in fix 2 (same times, same shares).
+- s08 clip (lab/s08-anywhere/clip.mp4, 60 fps, 15:13; second render after retiming the ghost): holds 0.8 s (0.8 per
+  30 s), longest 0.1 s, final 0.2 s (fix 2: 0.7 s, longest 0.1). The first render (lift power2.out 0.9 s, label 0.3 s,
+  rim back power2.in) had 1.1 s and three label-fade "jumps"; now the lift runs sine.inOut to the drop, the label fades
+  over 0.4 s sine.inOut and the rim goes back linearly over 0.5 s. New events 17.47 to 18.55 (0.06 to 0.21 %) are the
+  ghost's lift: its line moves 0.2 to 0.7 px every frame (centroid measured frame by frame), no whole-pixel steps.
+- Text sweeps clean on both (final code). clock-lint silent, merc-tags --check 10 + 4 tags, 0 stale, 0 problems.
+- Handoffs: probe before/after max 0 at s07 0 and 53.253, s08 0.007 and 29.873. HyperFrames stills: s07 0 vs the
+  director's seam-s07-first max 11; s06's seam-last vs s07 0 max 23, none over 24; s07 53.253 vs s08 0.007 outside
+  Tavi's box max 21, two pixels over 16 (as before); s08 29.873 vs fix 2's 29.87 still max 0.
+- Stills: lab/s07-predict/polish/ (23), lab/s08-anywhere/polish/ (11); sheets there; dense sheets in polish/dense/.
+
+## Status (polish round)
+
+| Scene | Built | Stills | Clip | measure.py | Text sweep | clock-lint | merc-tags |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| s07-predict | polish round | polish/ | 15:04, 60 fps: 1.1 s per 30 s, longest 0.3 | passes both limits | clean | clean | current |
+| s08-anywhere | polish round | polish/ | 15:13, 60 fps: 0.8 s per 30 s, longest 0.1 | passes both limits | clean | clean | current |
