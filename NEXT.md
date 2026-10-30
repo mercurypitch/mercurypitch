@@ -1876,3 +1876,9 @@ Note: the lanes' memory gate read a stale cgroup path after the 21:00 restart (f
   Waiter: bash wait-l4.sh film-01 0 300 (it finds the memory cgroup itself; the path changed with
   the restart). Expect about 100 min of capture. If a piece is lost to an OOM kill: RESUME=1
   WORKERS=2. After a restart: re-arm the waiter, and RESUME=1 if the render died.
+- 08:22 correction: the 08:20:22 start died at once ("Chrome cannot start": its --version check
+  timed out reading the 195 MB binary from a cold disk after the restart; renders/film-01-try3.*).
+  Ran the binary by hand (0.9 s, then 0.02 s) and restarted: film-01 08:22:32, 3 workers, the same
+  compositionHash 2b127710dea46d91 as every earlier try. Waiter re-armed (wait-l4.sh film-01 0 300).
+  After any restart: warm Chrome first (run its --version once), then RESUME=1.
+- 08:2x check-in: nothing due besides film-01; the leftover queue still waits on the owner.
