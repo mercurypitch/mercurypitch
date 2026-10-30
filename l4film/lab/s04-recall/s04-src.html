@@ -32,11 +32,15 @@
 
           /* ---------------------------------------------------------------- anchors */
           // 4a: "First," the kicker lands and the staircase dims to 25 %, its names and house fading (0.4 s);
-          // on "one from Lesson 2" the tile row rises from 300 px below (1.0 s, power3.out); on "2." the white
+          // 0.3 s into the dim, as it settles, the tile row rises from 300 px below (1.0 s, power3.out) and fades
+          // in from 0 over 0.45 s (sine.inOut), so the retrieval follows the dim with no still between them and
+          // no frame where the row jumps on (film critic 01 item 1: it popped on at a quarter in one frame, after
+          // 0.3 s with nothing moving; keyed off the dim it serves, so a longer pause before "one" cannot bring
+          // the still back); on "2." the white
           // tiles' names land in turn, 0.14 s apart; on "semitones" the thirteen tiles scale in turn over 0.8 s;
           // on "octave?" C4 and C5 scale together (long pulse)
           const DIM = word('b4', 'First', 'start', 0.02)
-          const RISE = word('b4', 'one', 'start', 0.025)
+          const RISE = DIM + 0.3, RISE_FADE = 0.45
           const NAMES_IN = word('b4', '2'), NAMES_GAP = 0.14
           const SEMIS = word('b4', 'semitones'), SEMIS_DUR = 0.8
           const OCT = word('b4', 'octave')
@@ -54,29 +58,31 @@
           const SEVEN_L = word('b5', 'Seven')
           const FIVE = word('b5', 'five')
           const B5_END = at('b5', 'end')
-          // 4c: on "major" the tiles' names fade (0.2 s) and the stand-up starts 0.04 s later; its phases are
-          // durations from that start (one move, anchored by its start): phase 1 (1.0 s) the row turns upright
-          // into a column of slivers, phase 2 (1.0 s) each sliver stretches into its row; the rows above C5 fade
-          // in from 1.6 s; the staircase returns from 1.8 s, its names in turn from 2.0 s. On "seven steps" the
+          // 4c: on "major" the tiles' names fade (0.2 s) and the stand-up starts 0.04 s later, one move of 2.0 s
+          // anchored by its start (film critic 01 item 8, polish item 2: the row no longer shrinks to a small comb
+          // at the left of an empty frame): the row turns upright about its middle tile at full scale, closing its
+          // pitch as it turns and stretching its tiles into the row bands as it comes upright, so it lands as the
+          // thirteen bands at x 220 to 1680 at 2.0 s, as before; the slivers' fill fades from 1.3 s; the rows above
+          // C5 fade in from 1.6 s; the staircase returns from 1.8 s, its names in turn from 2.0 s. On "seven steps" the
           // seven risers grow in turn (0.07 s apart) and "in 7 steps" lands
           const NAMES_OUT = word('b6', 'major'), STAND = word('b6', 'major', 'start', 0.04)
-          const P2 = STAND + 1.0, ROWS_IN = STAND + 1.6, BACK = STAND + 1.8, NAMES_BACK = STAND + 2.0, SWAP = STAND + 2.2
+          const SU_DUR = 2.0, P2 = STAND + 1.0, ROWS_IN = STAND + 1.6, BACK = STAND + 1.8, NAMES_BACK = STAND + 2.0, SWAP = STAND + 2.2
           const SEVEN = word('b6', 'seven steps')
           // 4d: m04's tag starts at at('o3', 'start', -1.1) (merc-tags.py), where she drops in; on "steps?" a "?"
           // joins and pulses as she asks it; on "bigger" the seven riser bars brighten together (component critic
           // A-02 item 2: 4 to 8 px, chrome at 40 % to full ink, 0.25 s, then back by "Let's", linear) and grow
           // together, so their unequal heights read side by side; on "Let's" the two labels and the numerals leave
-          // up fast; her hop out at at('b7', 'start', 0.29); on "measure" the eight stairs light in turn, left to
-          // right, the steps about to be measured: each fill to 40 % chrome (0.2 s, power2.out), 0.1 s apart, and
-          // all back to unlit from 0.05 s after b7 ends (0.35 s, power2.inOut), done 0.05 s before the cut, so the
-          // last frame is HANDOFFS § A to B's (component critic A-03 item 1, row 4d, DECISIONS 106: the lights
-          // replace the tread flash, which did not read at phone size). On "seven steps" each riser's event also
+          // up fast; her hop out at at('b7', 'start', 0.29); on "measure" a sweep runs along the seven riser bars,
+          // left to right, the steps S5 measures (component critic A-04 item 2, polish item 4: the stair lights
+          // repeated S3's naming wave): each bar flares from 4 px chrome at 40 % to 8 px full ink (0.12 s,
+          // power2.out) and settles back (0.45 s, sine.inOut), 0.1 s apart, so the last is back 0.15 s before the
+          // cut and the last frame is HANDOFFS § A to B's (risers unmeasured). On "seven steps" each riser's event also
           // pulses the stair above it to 1.06 and flashes its tread (DECISIONS 88), and an ink numeral, 1 to 7,
           // lands above each riser as it flashes (A-02 item 2, FACTS 71)
           const QMARK = word('o3', 'steps?'), BIGGER = word('o3', 'bigger')
           const LEAVE = word('b7', "Let's")
           const HOP = at('b7', 'start', 0.29)
-          const MEASURE = word('b7', 'measure'), UNLIGHT = at('b7', 'end', 0.05)
+          const MEASURE = word('b7', 'measure'), SWEEP_GAP = 0.1
 
           /* ---------------------------------------------------------------- the room */
           // the dust: this group's (dustF) at the open, crossfaded over q0 into group B's (Lesson 2's filmDust,
@@ -173,18 +179,22 @@
             dustB.draw(Tf); dustB.svg.setAttribute('opacity', xd.toFixed(3))
             const box = tavi(t)
 
-            /* the stand-up's curves (HANDOFFS § S4c, decided in the lab): the pitch shrinks first (120 to 26 px,
-               tiles 112 to 24 px wide, 0.6 s), while the turn and the pivot's move run from 0.2 s (0.8 s), so the
-               short comb turns clear of the label above it; phase 2 stretches each sliver to x 220 to 1680 and 26 px
-               (1.0 s) while its fill fades from the tile's to its row band's (from 0.3 s, 0.7 s, power2.in, so the
-               stretch is seen before the fade) */
-            const up = P(t, STAND, 0.6, 'power2.inOut'), ur = P(t, STAND + 0.2, 0.8, 'power2.inOut')
-            const v = P(t, P2, 1.0, 'power2.inOut'), fade = P(t, P2 + 0.3, 0.7, 'power2.in')
+            /* the stand-up (polish item 2; modelled in lab/s04-recall/polish/standup-sim.py): one progress su over
+               2.0 s (sine.inOut) turns the row 90 degrees anticlockwise about its middle tile (F#4) and carries that
+               tile's centre on a cubic from the row's centre (960, 560) to the bands' centre (950, 521), bowing up
+               then right and down, so the turning block keeps 25 px or more from "1 octave = 12 semitones" and above
+               y 892; the pitch closes from 120 to 26 px as it turns (26 + 94 (1 - su)^2.23) and the tiles stretch
+               from 280 to 1460 px as it comes upright (su^4.04), their gaps closing with the stretch. The block's
+               box never falls below 20 % of the frame (the row at rest is 21 %, the bands 24 %; it was 4.5 % for a
+               second); the slivers' fill fades from the tile's to its row band's from 1.3 s (0.7 s, power2.in) */
+            const su = P(t, STAND, SU_DUR, 'sine.inOut'), sL = Math.pow(su, 4.04), sv = 1 - su
+            const fade = P(t, P2 + 0.3, 0.7, 'power2.in')
             const swap = P(t, SWAP, 0.6, 'none')
-            const pitch = lerp(120, 26, up), tw = lerp(lerp(112, 24, up), 26, v), th = lerp(280, 1460, v)
-            const rx = lerp(lerp(10, 6, up), 0, v)
+            const pitch = 26 + 94 * Math.pow(sv, 2.23), tw = pitch * lerp(112 / 120, 1, sL), th = lerp(280, 1460, sL)
+            const rx = lerp(Math.min(10, 0.25 * tw), 0, sL)
             const rise = P(t, RISE, 1.0, 'power3.out')
-            const rowT = { s: 1, rot: -90 * ur, cx: 240, cy: 560, x: lerp(240, 360, ur), y: lerp(560, 677, ur), dy: 300 * (1 - rise) }
+            const bez = (a, b, c, d) => sv * sv * sv * a + 3 * sv * sv * su * b + 3 * sv * su * su * c + su * su * su * d
+            const rowT = { s: 1, rot: -90 * su, cx: 240 + 6 * pitch, cy: 420 + th / 2, x: bez(960, 890, 1090, 950), y: bez(560, 422, 675, 521), dy: 300 * (1 - rise) }
             const behind = t >= P2
             if (behind !== tilesBehind) { mid.insertBefore(tileG, behind ? st.gAll : brG); tilesBehind = behind }
 
@@ -197,26 +207,26 @@
             // riser n's event on "seven steps" moves stair n + 1: a pulse to 1.06 (long) and a tread flash
             const blockPulse = (n) => (n < 2 ? 1 : L.pulse(t, growAt(n - 1), 0.06, { long: true }))
             const flashK = (n) => (n < 2 ? 0 : flashUp(t - growAt(n - 1)))
-            // "measure": stair n lit to 40 % chrome in turn, all back to unlit together
-            const measureLit = (n) => P(t, MEASURE + 0.1 * (n - 1), 0.2, 'power2.out') * (1 - P(t, UNLIGHT, 0.35, 'power2.inOut'))
+            // "measure": a sweep along the riser bars, riser n flaring 0.1 s after riser n - 1
+            const sweep = (n) => { const t0 = MEASURE + SWEEP_GAP * (n - 1); return P(t, t0, 0.12, 'power2.out') * (1 - P(t, t0 + 0.12, 0.45, 'sine.inOut')) }
             // "bigger": all seven bars together, up over 0.25 s and back by "Let's", linear
             const big = P(t, BIGGER, 0.25, 'power2.out') * (1 - P(t, BIGGER + 0.25, LEAVE - BIGGER - 0.25, 'none'))
             const in15 = P(t, ROWS_IN, 0.5, 'power1.inOut')
             st.draw({
               w: 0, s0: 0, a: stA,
               rows: { x0: 220, x1: 1680, k0: 0, k1: 19, kA: (k) => (k <= 12 ? out12 : k <= 14 ? 1 : in15), keep: { boxes: box ? [box] : [], cam: null, t } },
-              stair: (n) => ({ scale: blockPulse(n), lit: measureLit(n), names: [{ text: SOL[n - 1], a: nameA(n) }] }),
+              stair: (n) => ({ scale: blockPulse(n), names: [{ text: SOL[n - 1], a: nameA(n) }] }),
               riser: (n) => ({ scale: Math.max(L.pulse(t, growAt(n), 'bar', { long: true }), L.pulse(t, BIGGER, 'bar', { long: true })) }),
               houses: { top: { a: 1 - P(t, DIM, 0.4, 'power2.inOut'), w: 0, lit: 1 } },
             })
             edgeD5.setAttribute('opacity', (1 - in15).toFixed(3))
             st.risers.forEach((Rz, i) => {
-              const k = env(t - growAt(i + 1))
-              if (k <= 0.001 && big <= 0.001) return
-              const x = ST.riserX(i + 1, 0), bw = Math.max(4 + 2 * k, 4 + 4 * big)
+              const k = env(t - growAt(i + 1)), ink = Math.max(big, sweep(i + 1))
+              if (k <= 0.001 && ink <= 0.001) return
+              const x = ST.riserX(i + 1, 0), bw = Math.max(4 + 2 * k, 4 + 4 * ink)
               Rz.bar.setAttribute('x', f2(x - bw / 2)); Rz.bar.setAttribute('width', f2(bw))
-              Rz.bar.setAttribute('fill', rgbStr(mixRgb(CHR, INK, big)))
-              Rz.bar.setAttribute('fill-opacity', (0.4 + 0.6 * Math.max(k, big)).toFixed(3))
+              Rz.bar.setAttribute('fill', rgbStr(mixRgb(CHR, INK, ink)))
+              Rz.bar.setAttribute('fill-opacity', (0.4 + 0.6 * Math.max(k, ink)).toFixed(3))
             })
             // the numerals: each lands (0.2 s, rising 8 px) as its riser grows on "seven steps"; all leave with the labels
             numerals.forEach((el, i) => place(el, fadeIO(t, growAt(i + 1), LEAVE, { out: 0.3, up: 60, ease: 'power3.in', rise: 8 })))
@@ -250,7 +260,7 @@
                 tile.white && WHITE_K[i] < 7 ? L.pulse(t, SEVEN_L + 0.15 * WHITE_K[i], 'tile', { long: true }) : 1,
               )
               return {
-                a: P(t, RISE, 0.3, 'power2.out'),
+                a: P(t, RISE, RISE_FADE, 'sine.inOut'),
                 scale: sc,
                 dy: i === 0 || i === 12 ? -40 * lift : 0,
                 lit: tile.white ? 0 : darkLit(i),

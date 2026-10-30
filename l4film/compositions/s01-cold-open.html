@@ -142,6 +142,10 @@
           const BACK = word('b1', 'Start')
           const RISE = word('b1', 'D', 'start', 0.03)
           const FROM_D = RISE + 0.7
+          // the rise's two-row tick (film critic 01 item 10, polish item 3: on mute the rise went unmarked): an ink
+          // bracket beside do from the tread's old height, its spine rising with the tread, a tick at each row it
+          // passes (one, two); it leaves 1.2 s after the rise starts (0.3 s, power2.in), gone 0.5 s before "Will"
+          const TICK_OUT = RISE + 1.2
           const HANGING = word('b1', 'still hang')
           const PRED0 = at('predict-d'), PRED_DUR = at('predict-d', 'end') - at('predict-d')
           // 1d: Tavi's bead drops onto stair 1 as she starts (landing on stop-d's first note), then a hop a note
@@ -212,6 +216,13 @@
           const W = 1 / 1.2                                       // world units per F-cold screen pixel
           const fromC = txt(mid, 'from C', { x: 242, y: 798, size: 64 * W })
           const fromD = txt(mid, 'from D?', { x: 242, y: 746, size: 64 * W })
+          // the two-row tick, in world units left of stair 1 (world x 242), 4 px strokes on screen: spine at x 225,
+          // ticks to 237, so 23 px or more from Merc's body box (screen x 341) and 4 px clear of the stair at the
+          // drift's scale (1.204 at the rise)
+          const tickG = L.svg('g', { opacity: 0, fill: 'none', stroke: C.ink, 'stroke-width': 4 * W, 'stroke-linecap': 'round' }, mid)
+          const TICK = { x0: 225, x1: 237 }
+          const tickSpine = L.svg('path', {}, tickG)
+          const ticks = [0, 1, 2].map(() => L.svg('path', {}, tickG))
           // Tavi's guess, drawn as a guess (L.GUESS): a dashed ink-2 ellipse round "from C", its "?" beside it
           const guessG = L.svg('g', { opacity: 0 }, mid)
           const guessMask = L.svg('mask', { id: SID + '-guess', maskUnits: 'userSpaceOnUse', x: 0, y: 600, width: 900, height: 400 }, guessG)
@@ -382,6 +393,20 @@
             guessReveal.setAttribute('stroke-dashoffset', (1 - P(t, GUESS, 0.5, 'power2.out')).toFixed(4))
             guessG.setAttribute('opacity', (P(t, GUESS, 0.12, 'power2.out') * (1 - P(t, BACK, 0.2, 'power2.in'))).toFixed(3))
             guessQ.setAttribute('opacity', P(t, GUESS + 0.35, 0.2, 'power2.out').toFixed(3))
+
+            /* the two-row tick: the spine follows stair 1's tread up from its old height; the tick at row k grows
+               from the spine as the tread reaches it (the first as the rise starts) */
+            const tickA = P(t, RISE, 0.12, 'power2.out') * (1 - P(t, TICK_OUT, 0.3, 'power2.in'))
+            tickG.setAttribute('opacity', tickA.toFixed(3))
+            if (tickA > 0.004) {
+              const yTop = ST.tread(1, s0)
+              tickSpine.setAttribute('d', `M${TICK.x0} ${f2(ST.tread(1, 0))} L${TICK.x0} ${f2(yTop)}`)
+              ticks.forEach((el, k) => {
+                const g = k === 0 ? P(t, RISE, 0.15, 'power2.out') : clamp((s0 - (k - 0.3)) / 0.3)
+                const y = ST.tread(1, k)
+                el.setAttribute('d', g > 0.01 ? `M${TICK.x0} ${f2(y)} L${f2(lerp(TICK.x0, TICK.x1, g))} ${f2(y)}` : '')
+              })
+            }
 
             /* the arrow: hang-c on C (fades on "Start on D"), hang-d on D (pulses once on "last step") */
             if (t < RISE) {

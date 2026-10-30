@@ -17,7 +17,9 @@
              Mercs into small orbits beside the lockup. The Mercs grow from 300 in the corners to 520 at (330, 840)
              and (1590, 840); their celebration (one hop, sparkles off) is the passes' own, and the scene draws one
              chrome ring under each as it lands. The passes run to the film's end (trap 15). The call to action is
-             the film's one hold. Every time is the end cue plus a duration. */
+             the film's one hold: since film round 1 (DECISIONS 122) the card is complete by end + 1.37 (479.9), as
+             soon as the hosts' celebration hop allows, every element landing over 0.3 s or more, so it holds 3.8 s.
+             Every time is the end cue plus a duration. */
           const SID = 's16-end'
           const D = L.dur(SID)
           const at = (cue, edge, off) => L.at(SID, cue, edge, off)
@@ -34,13 +36,18 @@
           const ORB_IN = at('end', 'start', 0.28)         // the orb opens (0.82 s, expo.out)
           const WAVE = at('end', 'start', 0.4)            // its waterline draws (0.7 s)
           const WORD = at('end', 'start', 0.42)           // the wordmark wipes in (0.83 s)
-          const TAG = at('end', 'start', 0.85)            // "Find your pitch." (0.65 s)
-          // the address (0.65 s, rising 18 px), underlined 0.35 s later (0.75 s); it waits for the hop's top (the pass
-          // reaches it at end + 1.2, heads at y 456 to 459) so it never rises in beside a head
-          const URL = at('end', 'start', 1.35)
-          const SKIP = at('end', 'start', 1.6)            // the skip line, then the Scale Runner path, 0.25 s apart
-          const FLY = at('end', 'start', 0.5)             // the beads rise from behind their Mercs (0.95 s)
+          const TAG = at('end', 'start', 0.55)            // "Find your pitch." (0.6 s)
+          // the address (in over 0.3 s, rising 18 px over 0.45 s), underlined from 0.25 s later (0.5 s): at rest by
+          // end + 1.07 (479.6), before the hop lifts the heads (its top at end + 1.2, 479.73); it stands high enough
+          // (URL_Y) that the hop's top keeps 20 px or more from it (DECISIONS 95, 122), so it need not wait for the hop
+          const URL = at('end', 'start', 0.62)
+          const SKIP = at('end', 'start', 0.8)            // the skip line, then the Scale Runner path, 0.1 s apart (0.45 s)
+          const FLY = at('end', 'start', 0.3)             // the beads rise from behind their Mercs (FLYD)
+          const FLYD = 0.8                                // their flight, so they are in orbit (and settled) by end + 1.35
           const LAND = at('end', 'start', 0.87 + 0.58)    // the celebration (end + 0.87, merc-shots.py) lands its hop 0.58 s in
+          // the card's layout (film round 1): the lockup as Lesson 2's (y 40 to 220), "Find your pitch." (serif italic),
+          // the address (Outfit 600 56 px) and the two lower lines (Outfit 500, LPX, ink-2) between the Mercs
+          const TAG_Y = 326, TAG_PX = 112, URL_Y = 412, LPX = 52, LINE_Y = [494, 560]
 
           /* ---------------------------------------------------------------- the room */
           const dust = L.filmDust(room.near)
@@ -84,26 +91,26 @@
           const wStyle = 'font-family:Outfit;font-weight:600;font-size:118px;letter-spacing:-2px'
           const word = sv('text', { x: 292, y: 172, fill: '#e6edf3', opacity: 0, style: wStyle, text: 'Mercury' }, wordG)
           const word2 = sv('text', { x: 292, y: 172, fill: spectrum, opacity: 0, style: wStyle, text: 'Pitch' }, wordG)
-          // "Find your pitch." and the address, above the Mercs' heads (y 507)
-          const tag = sv('text', { x: 960, y: 330, 'text-anchor': 'middle', fill: C.ink, opacity: 0, style: "font-family: 'Instrument Serif'; font-style: italic; font-size: 120px; letter-spacing: -0.01em", text: 'Find your pitch.' }, mid)
-          const url = sv('text', { x: 960, y: 440, 'text-anchor': 'middle', opacity: 0, style: "font-family: 'Outfit'; font-weight: 600; font-size: 56px; letter-spacing: -0.01em; white-space: pre" }, mid)
+          // "Find your pitch." and the address, above the Mercs' heads (their glow at y 512 at rest, 443 at the hop's top)
+          const tag = sv('text', { x: 960, y: TAG_Y, 'text-anchor': 'middle', fill: C.ink, opacity: 0, style: `font-family: 'Instrument Serif'; font-style: italic; font-size: ${TAG_PX}px; letter-spacing: -0.01em`, text: 'Find your pitch.' }, mid)
+          const url = sv('text', { x: 960, y: URL_Y, 'text-anchor': 'middle', opacity: 0, style: "font-family: 'Outfit'; font-weight: 600; font-size: 56px; letter-spacing: -0.01em; white-space: pre" }, mid)
           sv('tspan', { fill: C.ink2, text: 'Practise it free: ' }, url)
           const u2 = sv('tspan', { fill: C.ink, text: 'mercurypitch.com/pitch-training' }, url)
-          // the underline crosses the descenders' tips (its foot at y 452, theirs), so the address keeps HANDOFFS' 55 px
-          // over the heads and 25 px at the hop's top
-          const under = sv('rect', { x: 0, y: 449, width: 0, height: 3, rx: 1.5, fill: spectrum, opacity: 0 }, mid)
+          // the underline crosses the descenders' tips (its foot at URL_Y + 12, theirs)
+          const under = sv('rect', { x: 0, y: URL_Y + 9, width: 0, height: 3, rx: 1.5, fill: spectrum, opacity: 0 }, mid)
 
-          // the skip line and the Scale Runner path between the Mercs (x 636 to 1284), Outfit 500 40 px, ink-2, each
-          // icon the app's own at b803c7d43 (the intro's close glyph, src/components/icons.tsx X; Exercises,
-          // src/components/AppNavTabs.tsx TAB_META), drawn in the line's ink-2
+          // the skip line and the Scale Runner path between the Mercs, Outfit 500 LPX px (52: about 44 px of ink, cap
+          // to descender, where 40 px gave 34), ink-2, each icon the app's own at b803c7d43 (the intro's close glyph,
+          // src/components/icons.tsx X; Exercises, src/components/AppNavTabs.tsx TAB_META), drawn in the line's ink-2
+          // and scaled with the type (32 and 36 px at 40 px)
           const ICONS = {
             x: { sw: 2, paths: ['M18 6 L6 18', 'M6 6 L18 18'] },
             bell: { sw: 1.9, paths: ['M6.2 7.8v8.4M3.4 9.6v4.8M17.8 7.8v8.4M20.6 9.6v4.8M6.2 12h11.6'] },
           }
-          const LSTYLE = "font-family: 'Outfit'; font-weight: 500; font-size: 40px; white-space: pre;"
+          const LSTYLE = `font-family: 'Outfit'; font-weight: 500; font-size: ${LPX}px; white-space: pre;`
           const LINES = [
-            { y: 510, tIn: SKIP, runs: ['First visit? Skip the intro: ', { icon: 'x', size: 32 }, ' › Yes, skip'] },
-            { y: 570, tIn: SKIP + 0.25, runs: ['then ', { icon: 'bell', size: 36 }, ' Exercises › Scale Runner'] },
+            { y: LINE_Y[0], tIn: SKIP, runs: ['First visit? Skip the intro: ', { icon: 'x', size: 32 * LPX / 40 }, ' › Yes, skip'] },
+            { y: LINE_Y[1], tIn: SKIP + 0.1, runs: ['then ', { icon: 'bell', size: 36 * LPX / 40 }, ' Exercises › Scale Runner'] },
           ]
           for (const Ln of LINES) {
             Ln.g = sv('g', { opacity: 0 }, mid)
@@ -123,7 +130,7 @@
               let x = 960 - Ln.parts.reduce((s, R) => s + R.w, 0) / 2
               Ln.x0 = x
               for (const R of Ln.parts) {
-                if (R.icon) R.g.setAttribute('transform', `translate(${f2(x + R.size / 2)} ${f2(Ln.y - 14)}) scale(${(R.size / 24).toFixed(4)}) translate(-12 -12)`)
+                if (R.icon) R.g.setAttribute('transform', `translate(${f2(x + R.size / 2)} ${f2(Ln.y - 0.35 * LPX)}) scale(${(R.size / 24).toFixed(4)}) translate(-12 -12)`)
                 else R.el.setAttribute('x', f2(x))
                 x += R.w
               }
@@ -137,9 +144,9 @@
           const squash = (b, sx, sy) => b.body.setAttribute('transform', `translate(0 ${b.r}) scale(${sx.toFixed(3)} ${sy.toFixed(3)}) translate(0 ${-b.r})`)
           // Lesson 1's orbit: a speed that slows to a drift, integrated from the arrival; blue goes round once while
           // orange goes twice
-          const speed = (t) => 0.32 + 0.68 * (1 - L.smooth(FLY + 1.25, D, t))
+          const speed = (t) => 0.32 + 0.68 * (1 - L.smooth(FLY + FLYD + 0.3, D, t))
           const angle = (t) => {
-            const a = FLY + 0.95
+            const a = FLY + FLYD
             if (t <= a) return t - a
             let acc = 0
             for (let i = 0; i < 48; i++) acc += speed(a + (t - a) * (i + 0.5) / 48)
@@ -172,12 +179,13 @@
               const fx = lerp(M.x0, M.x1, u)
               M.layer.style.transform = u <= 0 ? '' : `matrix(${k.toFixed(5)}, 0, 0, ${k.toFixed(5)}, ${f2(fx - k * M.x0)}, ${f2(840 - k * 840)})`
             }
+            return u
           }
 
           L.clock(tl, D, (t) => {
             const T = S0 + t
             dust(T)
-            placeMercs(t)
+            const mu = placeMercs(t)                     // the Mercs' move, 0 to 1: the beads leave from where they are
             // hold with drift: the card's layer eases in 1 % over the card (an accent; the end card may hold)
             const dr = 1 + 0.01 * P(t, 0, D, 'sine.inOut')
             room.mid.style.transform = dr === 1 ? '' : `scale(${dr.toFixed(5)})`
@@ -201,16 +209,16 @@
             word.setAttribute('opacity', L.clamp((edge - 292) / 6).toFixed(3))
             word2.setAttribute('opacity', L.clamp((edge - 292 - w1) / 6).toFixed(3))
             glowE.setAttribute('opacity', (P(t, ORB_IN, 0.9) * (0.85 + 0.15 * Math.sin(TAU * T / 3.2))).toFixed(3))
-            const fu = P(t, TAG, 0.65, 'power3.out')
+            const fu = P(t, TAG, 0.6, 'power3.out')
             tag.setAttribute('opacity', fu.toFixed(3))
             tag.setAttribute('transform', `translate(0 ${f2(22 * (1 - fu))})`)
-            const uu = P(t, URL, 0.65, 'power3.out')
-            url.setAttribute('opacity', uu.toFixed(3))
+            const uu = P(t, URL, 0.45, 'power3.out')
+            url.setAttribute('opacity', P(t, URL, 0.3, 'power2.out').toFixed(3))
             url.setAttribute('transform', `translate(0 ${f2(18 * (1 - uu))})`)
             const uw = url.getComputedTextLength ? url.getComputedTextLength() : 1230
             const u2w = u2.getComputedTextLength ? u2.getComputedTextLength() : 870
-            under.setAttribute('x', f2(960 + uw / 2 - u2w)); under.setAttribute('width', f2(Math.max(0.01, u2w * P(t, URL + 0.35, 0.75, 'power3.inOut'))))
-            under.setAttribute('opacity', (0.9 * P(t, URL + 0.35, 0.15)).toFixed(3))
+            under.setAttribute('x', f2(960 + uw / 2 - u2w)); under.setAttribute('width', f2(Math.max(0.01, u2w * P(t, URL + 0.25, 0.5, 'power3.inOut'))))
+            under.setAttribute('opacity', (0.9 * P(t, URL + 0.25, 0.15)).toFixed(3))
             for (const Ln of LINES) {
               Ln.g.setAttribute('opacity', P(t, Ln.tIn, 0.3).toFixed(3))
               Ln.g.setAttribute('transform', `translate(0 ${f2(12 * (1 - P(t, Ln.tIn, 0.45, 'power3.out')))})`)
@@ -220,19 +228,21 @@
             // 70 px clear of the lockup's ends
             const left = X + 12 * k, right = X + content * k
             const ORB = { b: { cx: left - 70 - 130, cy: 130, rx: 130, ry: 34 }, o: { cx: right + 70 + 130, cy: 130, rx: 130, ry: 34 } }
+            // each leaves from inside its Merc as he moves (x, and y 0.385 of his size above his feet: y 640 at 520)
+            const fromY = 840 - 0.385 * lerp(300, 520, mu)
             const fly = (b, which, fromX, base, w) => {
               const o = ORB[which], th = base + w * angle(t)
               const op = { x: o.cx + o.rx * Math.cos(th), y: o.cy + o.ry * Math.sin(th), z: Math.sin(th) }
-              const u = P(t, FLY, 0.95, 'none'), e = L.easeInOut(u)
-              const p = { x: lerp(fromX, op.x, e), y: lerp(640, op.y, e) - 120 * Math.sin(Math.PI * u) }
+              const u = P(t, FLY, FLYD, 'none'), e = L.easeInOut(u)
+              const p = { x: lerp(fromX, op.x, e), y: lerp(fromY, op.y, e) - 120 * Math.sin(Math.PI * u) }
               const s = lerp(0.7, 0.86 + 0.24 * (op.z + 1) / 2, e)
               b.g.setAttribute('transform', `translate(${f2(p.x)} ${f2(p.y)}) scale(${s.toFixed(3)})`)
               b.g.setAttribute('opacity', P(t, FLY, 0.25).toFixed(3))
-              const a = t - (FLY + 0.95), sq = a < 0 || a > 0.3 ? 0 : Math.sin(Math.PI * a / 0.3) * Math.exp(-a * 5)
+              const a = t - (FLY + FLYD), sq = a < 0 || a > 0.25 ? 0 : Math.sin(Math.PI * a / 0.25) * Math.exp(-a * 5)
               squash(b, 1 - 0.18 * sq, 1 + 0.28 * sq)
             }
-            fly(BB, 'b', 330, 1.75 * Math.PI, WB)
-            fly(OB, 'o', 1590, 1.25 * Math.PI, WO)
+            fly(BB, 'b', lerp(POSE[0].x0, POSE[0].x1, mu), 1.75 * Math.PI, WB)
+            fly(OB, 'o', lerp(POSE[1].x0, POSE[1].x1, mu), 1.25 * Math.PI, WO)
 
             // one chrome ring under each Merc as the celebration's hop lands (Lesson 1's ring; gold is the semitones')
             const ra = t - LAND, ru = L.clamp(ra / 0.9), on = ra < 0 || ra > 0.9 ? 0 : 1

@@ -2041,3 +2041,9 @@ Note: the lanes' memory gate read a stale cgroup path after the 21:00 restart (f
   push-notes now carries polish/items-*.md, BRIEF-*.md, make-briefs.py, leap/DECISION-123.md.
   Next: A and F reports -> review each, HANDOFFS § S16 from F, DECISIONS; then wave 2 (B + C),
   then D + E; then frozen copy, film-02 (render-l4.sh, WORKERS=2, seam loop), fresh FILM2 critic.
+- 12:4x while A and F build: DELIVERY drafted (l4entr/DELIVERY.draft.md: Lesson 2's shape, {fill}
+  marks for the passing master; the Merc bundle is byte-identical to Lesson 2's; voices still
+  Kokoro, 55 Merc am_michael 0.84 + 14 Tavi af_heart 0.9; § At the re-voice lists the five steps).
+  FILM2 critic template l4entr/critics/FILM2.txt (verification vs film-01; RENDERNAME, DISKNOTE).
+  2-hourly check-in prompt rewritten: the polish round is in flight on the owner's 29 Oct ask;
+  voices, Season 2 decisions and Sing covers wait on the owner. Tasks 187 and 189 closed (stale).

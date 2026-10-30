@@ -1,0 +1,16 @@
+Round type: full film, round 2 (verification). Mark every item of the previous report FIXED, PARTLY or STILL PRESENT, hunt the whole film for anything new that broke, rank the problems you find with film timestamps, and end with SHIP or ONE MORE PASS.
+
+Project folder: /home/user/mercurypitch/output/motion/lesson-04
+Artifact: /home/user/mercurypitch/output/motion/lesson-04/renders/RENDERNAME.mp4 (1920 x 1080, 60 fps, with the full mix)
+Music-only render: /home/user/mercurypitch/output/motion/lesson-04/renders/RENDERNAME-music-only.mp4 (the same picture with the music bed alone)
+Previous report: /home/user/mercurypitch/output/motion/lesson-04/review/film-01/REPORT.md
+Spec: /home/user/mercurypitch/output/motion/lesson-04/STORYBOARD.md and /home/user/mercurypitch/output/motion/lesson-04/HANDOFFS.md
+Brief: /home/user/mercurypitch/output/motion/lesson-04/BRIEF.md
+Facts: /home/user/mercurypitch/output/motion/lesson-04/FACTS.md
+Reference study folder: /home/user/mercurypitch/output/motion/lesson-04/study
+SKILL_DIR: /home/user/mercurypitch/.claude/skills/motion-designer
+Write your report to: /home/user/mercurypitch/output/motion/lesson-04/review/film-02/REPORT.md
+
+If you cannot write files, return the full report as your final message.
+
+Operational note: DISKNOTE
