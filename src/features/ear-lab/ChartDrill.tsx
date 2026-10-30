@@ -496,7 +496,9 @@ export function ChartDrill(props: { onBack: () => void }): JSX.Element {
           }
         >
           <Show
-            when={parked()}
+            // In the room Next stands in the pinned row, so the pad stays
+            // on as the verdict while the run waits for it.
+            when={parked() && !EAR_LAB_WITH_MERC}
             fallback={
               <TapPad
                 label={
@@ -512,7 +514,9 @@ export function ChartDrill(props: { onBack: () => void }): JSX.Element {
                   phase() === 'answer'
                     ? 'first tap starts your bar'
                     : phase() === 'reveal'
-                      ? 'next chart coming'
+                      ? parked()
+                        ? undefined
+                        : 'next chart coming'
                       : 'count-in'
                 }
                 keycap="Space"

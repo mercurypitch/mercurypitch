@@ -35,6 +35,10 @@ export function easeOutBack(t: number): number {
 /** A number to a tenth, for an attribute. */
 export const tenth = (value: number): number => Math.round(value * 10) / 10
 
+/** A number to a hundredth, for an opacity. */
+export const hundredth = (value: number): number =>
+  Math.round(value * 100) / 100
+
 export type Point = readonly [number, number]
 
 export function lineD(x1: number, y1: number, x2: number, y2: number): string {

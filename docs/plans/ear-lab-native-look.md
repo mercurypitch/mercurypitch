@@ -115,6 +115,12 @@ The other drills that draw one of these instruments (Critique and Weight on
 the desk, the Wild drills on the bead chain, the progression train and the
 fork) take the lit version with it, and their screenshots go in the same PR.
 
+A station's PR also brings its drills' pads to the mock-ups where the room's
+skin left them. The Time PR did it for every station: each pad but the big
+pair stands with its words centred, The Grid's four in one row, Drift's with
+its three icons, and Pulse's and The Chart's tap pad stays on at the reveal
+as the verdict, teal or red.
+
 ### Phase 3: the Field Book and the plate
 
 1. **The Field Book** (`FieldBookPage.tsx`, `FieldBookView.tsx`,

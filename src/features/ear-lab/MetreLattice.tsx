@@ -10,14 +10,19 @@
 
 import type { JSX } from 'solid-js'
 import { For, Show } from 'solid-js'
+import type { MetrePattern } from '@/lib/ear/metre'
 import styles from './EarInstruments.module.css'
+import { skinnable } from './instrument-skin'
 
-interface MetreLatticeProps {
+export interface MetreLatticeProps {
   /** Steps in the bar. */
   steps: number
   /** 1-based step sounding now (within the bar); 0 for none. */
   lit: number
   reveal: { name: string } | null
+  /** The bars' hits, for a stage that draws each drum on its own lane
+   *  (the room's). The lattice here draws only the steps. */
+  pattern?: MetrePattern | null
 }
 
 const TOP_Y = 84
@@ -28,7 +33,7 @@ function palletX(i: number, count: number): number {
   return 260 - span / 2 + (count <= 1 ? 0 : (i / (count - 1)) * span)
 }
 
-export function MetreLattice(props: MetreLatticeProps): JSX.Element {
+function DrawnMetreLattice(props: MetreLatticeProps): JSX.Element {
   const count = () => Math.max(1, props.steps)
   const label = () =>
     props.reveal
@@ -103,3 +108,5 @@ export function MetreLattice(props: MetreLatticeProps): JSX.Element {
     </svg>
   )
 }
+
+export const MetreLattice = skinnable('MetreLattice', DrawnMetreLattice)

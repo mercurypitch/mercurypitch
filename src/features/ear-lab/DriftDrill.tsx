@@ -22,6 +22,7 @@ import { DRIFT_TIMING } from '@/lib/ear/timing'
 import { latestThresholdReading } from '@/stores/ear-lab-store'
 import type { ScheduledClick } from './click-synth'
 import { scheduleClick } from './click-synth'
+import { IconFaster, IconSlower, IconSteady } from './ear-icons'
 import { useEarRoom } from './ear-room-context'
 import type { PadState } from './EarStage'
 import { Pads, StagePad } from './EarStage'
@@ -34,10 +35,15 @@ interface DriftDrillProps {
   onBack: () => void
 }
 
-const WAYS: ReadonlyArray<{ way: DriftWay; label: string; key: string }> = [
-  { way: 'steady', label: 'Steady', key: '1' },
-  { way: 'faster', label: 'Faster', key: '2' },
-  { way: 'slower', label: 'Slower', key: '3' },
+const WAYS: ReadonlyArray<{
+  way: DriftWay
+  label: string
+  key: string
+  icon: () => JSX.Element
+}> = [
+  { way: 'steady', label: 'Steady', key: '1', icon: () => <IconSteady /> },
+  { way: 'faster', label: 'Faster', key: '2', icon: () => <IconFaster /> },
+  { way: 'slower', label: 'Slower', key: '3', icon: () => <IconSlower /> },
 ]
 
 const CLICKS = DRIFT_TIMING.steadyClicks + DRIFT_TIMING.driftClicks
@@ -171,6 +177,7 @@ export function DriftDrill(props: DriftDrillProps): JSX.Element {
               <StagePad
                 keycap={choice.key}
                 label={choice.label}
+                icon={choice.icon()}
                 state={padState(choice.way)}
                 disabled={run.phase() !== 'answer'}
                 onClick={() => answer(choice.way)}

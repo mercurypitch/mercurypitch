@@ -65,6 +65,15 @@
   fill: #8d96ad;
 }
 
+.label {
+  font:
+    500 13px 'Inter Variable',
+    'Inter',
+    system-ui,
+    sans-serif;
+  fill: #a9b2c8;
+}
+
 .name {
   font:
     600 13px 'Inter Variable',
@@ -106,6 +115,27 @@
   stroke: rgb(5 8 24 / 85%);
   stroke-width: 5px;
   stroke-linejoin: round;
+}
+
+/* A written bar (RhythmScore paints in currentColor from these): the
+   ink of the room, lilac as the sweep reaches a note, teal where an onset
+   was met and a red ring where one was missed. */
+.score {
+  --inst-brass: #e9e6f8;
+  --inst-brass-bright: #c9bcff;
+  --inst-garnet: #ff8d81;
+  --inst-muted: #8d96ad;
+  --inst-serif: 'Inter Variable', 'Inter', system-ui, sans-serif;
+}
+
+.score [data-met='true'] {
+  color: #8ff5e3;
+}
+
+.score [data-met='false'] [data-part='note-head'] {
+  fill: none;
+  stroke: currentcolor;
+  stroke-width: 1.8;
 }
 
 .fade {

@@ -93,3 +93,39 @@ export function useStageClock(): StageClock {
 
   return { beat: room.beat, t, ambient, reduced }
 }
+
+/**
+ * When each sound of a train arrived, in the clock's ambient ms, in the
+ * order they came. `lit` counts the train's sounds from 1 as the drill
+ * lights them, and the train starts again when it comes back from rest
+ * (0) to 1; a bar that starts again at 1 without resting runs on.
+ */
+export function useArrivals(
+  lit: Accessor<number>,
+  clock: StageClock,
+): Accessor<readonly number[]> {
+  const [arrivals, setArrivals] = createSignal<readonly number[]>([])
+  createEffect(
+    on(lit, (now, before) => {
+      if (now <= 0) return
+      const at = untrack(clock.ambient)
+      setArrivals((list) => ((before ?? 0) <= 0 ? [at] : [...list, at]))
+    }),
+  )
+  return arrivals
+}
+
+/**
+ * Ms since the train's `index`th sound arrived (from 0), or null before
+ * it has. Under reduced motion the latest has only just arrived and every
+ * earlier one long since, so each instrument draws a still of the moment.
+ */
+export function arrivalAge(
+  arrivals: readonly number[],
+  index: number,
+  clock: StageClock,
+): number | null {
+  if (index < 0 || index >= arrivals.length) return null
+  if (clock.reduced) return index === arrivals.length - 1 ? 0 : STILL_MS
+  return Math.max(0, clock.ambient() - arrivals[index])
+}

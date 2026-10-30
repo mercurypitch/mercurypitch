@@ -183,6 +183,7 @@ export function SubdivideDrill(props: { onBack: () => void }): JSX.Element {
         <MetreLattice
           steps={pattern()?.metre.beats ?? 4}
           lit={lit()}
+          pattern={pattern()}
           reveal={
             phase() === 'reveal' && pattern()
               ? { name: metreName(pattern()?.metre ?? { beats: 4, unit: 4 }) }

@@ -29,6 +29,7 @@ import { createMemo, For, Show } from 'solid-js'
 import { beamGroups, gridFractions, readRhythm, tupletSpans, } from '@/lib/ear/rhythm-notation'
 import type { Subdivision } from '@/lib/ear/rhythm-take'
 import styles from './EarInstruments.module.css'
+import { skinnable } from './instrument-skin'
 import { RhythmScore, ScorePreface } from './RhythmScore'
 
 export type DrumBar = 'count' | 'call' | 'response' | null
@@ -44,7 +45,7 @@ export interface DrumReveal {
   correct: boolean
 }
 
-interface RhythmDrumProps {
+export interface RhythmDrumProps {
   bar: DrumBar
   /** 1-based beat of the bar sounding now; 0 for none. */
   beat: number
@@ -95,7 +96,7 @@ const BAR_WORD: Record<Exclude<DrumBar, null>, string> = {
   response: 'Yours',
 }
 
-export function RhythmDrum(props: RhythmDrumProps): JSX.Element {
+function DrawnRhythmDrum(props: RhythmDrumProps): JSX.Element {
   const beats = () => props.beats ?? 4
   /** Two bars of notation on the same paper are written smaller. */
   const scale = () => (beats() === 8 ? 0.82 : 1)
@@ -384,3 +385,5 @@ export function RhythmDrum(props: RhythmDrumProps): JSX.Element {
     </svg>
   )
 }
+
+export const RhythmDrum = skinnable('RhythmDrum', DrawnRhythmDrum)

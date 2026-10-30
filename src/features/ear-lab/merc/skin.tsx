@@ -19,7 +19,7 @@
 // ============================================================
 
 import type { JSX } from 'solid-js'
-import { createComponent, onMount, Show } from 'solid-js'
+import { children, createComponent, onMount, Show } from 'solid-js'
 import { IconCheck, IconClose } from '@/features/ear-lab/ear-icons'
 import type { EndPlateProps, ModeToggleProps, PadsProps, PlayPadProps, StagePadProps, TapPadProps, } from '@/features/ear-lab/EarStage'
 import type { StageSkin } from '@/features/ear-lab/EarStage'
@@ -146,6 +146,11 @@ function RoomStagePad(props: StagePadProps): JSX.Element {
       <span class={styles.padCaption} aria-hidden="true">
         {caption() ?? ''}
       </span>
+      <Show when={props.icon}>
+        <span class={styles.padIcon} aria-hidden="true">
+          {props.icon}
+        </span>
+      </Show>
       <span class={styles.padLabel} aria-hidden="true">
         {props.label}
       </span>
@@ -172,28 +177,40 @@ function RoomStagePad(props: StagePadProps): JSX.Element {
 export function padShape(
   columns: number,
   compact: boolean,
-): { shape: 'two' | 'three' | 'quad' | 'grid34' | 'ladder'; cols: number } {
+): { shape: 'two' | 'three' | 'row4' | 'grid34' | 'ladder'; cols: number } {
   if (compact || columns >= 7) {
     return { shape: 'ladder', cols: Math.min(columns, 8) }
   }
   if (columns >= 5) return { shape: 'grid34', cols: 4 }
-  if (columns === 4) return { shape: 'quad', cols: 2 }
+  if (columns === 4) return { shape: 'row4', cols: 4 }
   if (columns === 3) return { shape: 'three', cols: 3 }
   return { shape: 'two', cols: 2 }
 }
 
+/** Whether a drill's pads stand with their words centred: all but the
+ *  big pair ("The first", "The second") and the small keys, which lay
+ *  out their own. */
+export function padsCentred(shape: string, count: number): boolean {
+  if (shape === 'two') return count > 2
+  return shape === 'three' || shape === 'row4'
+}
+
 function RoomPads(props: PadsProps): JSX.Element {
   const grid = () => padShape(props.columns, props.compact === true)
+  const pads = children(() => props.children)
   return (
     <div
       class={styles.pads}
       data-shape={grid().shape}
+      data-centred={
+        padsCentred(grid().shape, pads.toArray().length) ? '' : undefined
+      }
       style={{ '--cols': String(grid().cols) }}
       role="group"
       aria-label={props.label}
       data-testid="ear-stage-pads"
     >
-      {props.children}
+      {pads()}
     </div>
   )
 }
@@ -203,7 +220,13 @@ function RoomPads(props: PadsProps): JSX.Element {
 function RoomTapPad(props: TapPadProps): JSX.Element {
   const room = useRoom()
   return (
-    <div class={styles.tapHost} data-merc="tap">
+    <div
+      class={styles.tapHost}
+      data-merc="tap"
+      data-verdict={
+        room.beat() === 'reveal' ? (room.verdict() ?? undefined) : undefined
+      }
+    >
       <StageSkinContext.Provider value={null}>
         {createComponent(TapPad, {
           get label() {

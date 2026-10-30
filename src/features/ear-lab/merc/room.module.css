@@ -691,6 +691,16 @@
   --pad-h: 84px;
 }
 
+/* Two rows of three (Color, Stack) are a grid, not a row. */
+.pads[data-shape='three']:has(> :nth-child(4)) {
+  --pad-h: 64px;
+}
+
+/* The Grid's four, in one row. */
+.pads[data-shape='row4'] {
+  --pad-h: 80px;
+}
+
 .pads[data-shape='grid34'] {
   --pad-h: 52px;
 }
@@ -785,6 +795,69 @@
 .pads[data-shape='grid34'] .pad {
   justify-content: center;
   border-radius: 16px;
+}
+
+/* A row or a grid of pads (all but the big pair): the words centred, an
+   icon over the name, and once the answer is out "Your pick" or "The
+   answer" under the name in place of its second line. */
+.pads[data-centred] .pad {
+  justify-content: center;
+  align-items: center;
+  gap: 3px;
+  padding: 6px 4px;
+  text-align: center;
+}
+
+.pads[data-centred] .padIcon {
+  order: 0;
+}
+
+.pads[data-centred] .padLabel {
+  order: 1;
+}
+
+.pads[data-centred] .padSub {
+  order: 2;
+}
+
+.pads[data-centred] .padCaption {
+  order: 3;
+  min-height: 0;
+  font-size: 12px;
+}
+
+.pads[data-centred] .padCaption:empty {
+  display: none;
+}
+
+.pads[data-centred]
+  .pad:is(
+    [data-look='picked-right'],
+    [data-look='truth'],
+    [data-look='picked-wrong']
+  )
+  .padSub {
+  display: none;
+}
+
+.pads[data-centred] .padMark {
+  top: 6px;
+  right: 6px;
+}
+
+.pads[data-centred] .padMark :global(svg) {
+  width: 16px;
+  height: 16px;
+}
+
+.padIcon {
+  display: grid;
+  margin-bottom: 3px;
+}
+
+.padIcon :global(svg) {
+  width: 26px;
+  height: 26px;
 }
 
 .pad:disabled {
@@ -1031,6 +1104,22 @@
   border-color: #c4b6ff;
   background: rgb(154 135 240 / 36%);
   box-shadow: 0 0 24px rgb(154 135 240 / 35%);
+}
+
+/* The take judged: the pad says it ("Clean", "Not quite") in the
+   verdict's colour, as the answer pads do. */
+.tapHost[data-verdict='right'] :global([data-testid='ear-tap-pad']) {
+  border: 2px solid var(--room-right);
+  background: rgb(46 230 201 / 15%);
+  color: var(--room-text);
+  opacity: 1;
+}
+
+.tapHost[data-verdict='wrong'] :global([data-testid='ear-tap-pad']) {
+  border: 2px solid var(--room-wrong);
+  background: rgb(255 106 92 / 15%);
+  color: var(--room-text);
+  opacity: 1;
 }
 
 /* ── Sheets: Close's question and the "?" ──────────────────── */
