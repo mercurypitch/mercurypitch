@@ -22,6 +22,17 @@
   overscroll-behavior: contain;
 }
 
+/* More of the plate below the stage's edge, on a short phone: the edge
+   fades, so no line is cut through without a sign of the rest. */
+.wrap[data-more] {
+  -webkit-mask-image: linear-gradient(
+    180deg,
+    #000 calc(100% - 40px),
+    transparent
+  );
+  mask-image: linear-gradient(180deg, #000 calc(100% - 40px), transparent);
+}
+
 .plate {
   position: relative;
   width: min(100%, 342px);
@@ -155,8 +166,22 @@
   box-shadow: none;
 }
 
+/* A miss is crossed as well as red: never the colour alone. */
 .dotMiss {
-  background: var(--room-wrong);
+  background:
+    linear-gradient(
+      45deg,
+      transparent 42%,
+      rgb(28 8 12 / 85%) 42% 58%,
+      transparent 58%
+    ),
+    linear-gradient(
+      -45deg,
+      transparent 42%,
+      rgb(28 8 12 / 85%) 42% 58%,
+      transparent 58%
+    ),
+    var(--room-wrong);
   box-shadow: none;
 }
 

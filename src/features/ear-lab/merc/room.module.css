@@ -157,7 +157,10 @@
 }
 
 /* The instrument takes the stage's whole width, as the mock-ups draw it
-   (390 units a phone's width), and scales down to fit a short phone. */
+   (390 units a phone's width), and scales down to fit a short phone. It
+   stands at the top of the stage, under the run line, as the mock-ups
+   place it: when Merc's bubble grows at the reveal it grows into the
+   room under the instrument, which stays where it was. */
 .figure {
   position: relative;
   z-index: 1;
@@ -168,7 +171,7 @@
   display: grid;
   /* A track the figure's own size, for the instrument's max-height. */
   grid-template: minmax(0, 1fr) / minmax(0, 1fr);
-  place-items: center;
+  place-items: start center;
   padding: 4px 0 8px;
   box-sizing: border-box;
 }
@@ -342,7 +345,8 @@
   display: flex;
   flex-direction: column;
   gap: 10px;
-  padding: 4px 16px calc(12px + env(safe-area-inset-bottom, 0px));
+  /* The home bar's own inset is margin enough under the pinned row. */
+  padding: 4px 16px max(12px, env(safe-area-inset-bottom, 0px));
 }
 
 .mercRow {
@@ -520,6 +524,47 @@
   color: var(--room-text-3);
 }
 
+/* Bassline's notes are the roots it walks. */
+:global([data-ear-drill$='bassline'])
+  .controls
+  :global([data-testid='ear-phrase-strip']:not(:has([data-chip]))::before) {
+  content: 'Your roots';
+}
+
+/* Take one back, a room control in the strip, not the web's link: lit
+   words on a small glass pill, its 44px of touch reaching past the
+   strip's edges so the strip never grows when it comes. */
+.controls :global([data-testid='ear-phrase-strip'] button) {
+  position: relative;
+  isolation: isolate;
+  flex: none;
+  min-height: 44px;
+  margin: -9px -6px -9px 0;
+  padding: 0 12px;
+  border: 0;
+  background: none;
+  color: var(--room-lit-pale);
+  font: 600 13px/1 var(--room-sans);
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.controls :global([data-testid='ear-phrase-strip'] button)::before {
+  content: '';
+  position: absolute;
+  inset: 9px 0;
+  z-index: -1;
+  border-radius: 13px;
+  border: 1px solid rgb(190 170 255 / 30%);
+  background: rgb(154 135 240 / 14%);
+}
+
+.controls :global([data-testid='ear-phrase-strip'] button:focus-visible) {
+  outline: 2px solid var(--room-lit-pale);
+  outline-offset: -6px;
+  border-radius: 16px;
+}
+
 .controls :global([data-testid='ear-mic-lamp']) {
   border-color: rgb(255 255 255 / 15%);
   background: var(--room-glass);
@@ -536,11 +581,12 @@
 
 /* ── The pinned row: Hear it again, Compare, the run's words ─ */
 
+/* Hear it again, Compare and Next stand in one row on a 390 phone. */
 .bottomRow {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: 8px 10px;
+  gap: 8px;
   min-height: 44px;
 }
 
@@ -549,8 +595,8 @@
   height: 44px;
   display: inline-flex;
   align-items: center;
-  gap: 8px;
-  padding: 0 15px 0 12px;
+  gap: 6px;
+  padding: 0 13px 0 11px;
   border-radius: 22px;
   border: 1px solid rgb(255 255 255 / 18%);
   background: var(--room-glass-deep);
@@ -566,6 +612,11 @@
   cursor: default;
 }
 
+/* Compare is the move a miss suggests: lit at its edge. */
+.compare {
+  border-color: var(--room-lit-edge);
+}
+
 .status {
   flex: 1 1 0;
   min-width: 0;
@@ -578,12 +629,12 @@
 .next {
   margin-left: auto;
   height: 44px;
-  min-width: 96px;
+  min-width: 88px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
   gap: 6px;
-  padding: 0 20px;
+  padding: 0 16px;
   border-radius: 22px;
   border: 0;
   background: var(--room-lit-fill);
@@ -782,9 +833,12 @@
   --pad-h: 64px;
 }
 
-/* The Grid's four, in one row. */
+/* The Grid's four, in one row, a little closer, so "The answer" stands
+   clear of a pad's edge on a 360 phone. */
 .pads[data-shape='row4'] {
   --pad-h: 80px;
+
+  gap: 6px;
 }
 
 .pads[data-shape='grid34'] {
@@ -798,6 +852,14 @@
 
   align-items: end;
   gap: 3px;
+}
+
+/* Eight keys stand edge to edge, each at least 44px across: the bar
+   reaches into the console's margins on a phone narrower than 390.
+   Seven keep their gaps; they are wide enough with them. */
+.pads[data-shape='ladder']:has(> :nth-child(8)):not(:has(> :nth-child(9))) {
+  gap: 0;
+  margin-inline: min(0px, (100% - 352px) / 2);
 }
 
 .pads[data-shape='ladder'] > :nth-child(2) {
@@ -996,7 +1058,9 @@
 .pads[data-centred] .padCaption {
   order: 3;
   min-height: 0;
-  font-size: 12px;
+  /* One line, into the pad's padding if it must: "The answer" on the
+     Grid's four at 360 wide. */
+  white-space: nowrap;
 }
 
 .pads[data-centred] .padCaption:empty {
@@ -1172,13 +1236,6 @@
   opacity: 0;
 }
 
-/* The lamp sits where the caption starts: the caption steps aside. */
-.pads:not([data-shape='ladder'], [data-shape='octave'], [data-shape='grid34'])
-  .padLamp
-  + .padCaption {
-  padding-left: 16px;
-}
-
 /* The small keys (the ladder, the twelve): no caption line at rest (a
    keycap means nothing on a phone), and once the answer is out the
    mark stands over the name in place of the second line. */
@@ -1255,6 +1312,9 @@
   min-height: 112px;
   justify-content: center;
   justify-items: center;
+  /* The word and its line under it stand together in the middle, as
+     the mock-ups set them, not each in half the pad. */
+  align-content: center;
   grid-template-columns: auto;
   border: 1px solid rgb(255 255 255 / 13%);
   border-radius: 28px;

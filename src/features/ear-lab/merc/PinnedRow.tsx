@@ -10,7 +10,7 @@ import { For, Show } from 'solid-js'
 import { IconPlay } from '@/features/ear-lab/ear-icons'
 import type { ReplayRun } from '@/features/ear-lab/replay-policy'
 import type { RoomBeat, RoomCompare, StageRoom, } from '@/features/ear-lab/stage-room'
-import { IconReplay } from './merc-icons'
+import { IconCompare, IconReplay } from './merc-icons'
 import { compareLabel, onceLines } from './merc-lines'
 import styles from './room.module.css'
 
@@ -69,12 +69,13 @@ export function PinnedRow(props: PinnedRowProps): JSX.Element {
         {(offered) => (
           <button
             type="button"
-            class={styles.again}
+            class={`${styles.again} ${styles.compare}`}
             disabled={!offered().allowed()}
             aria-label={compareName(offered())}
             data-testid="merc-compare"
             onClick={() => offered().play()}
           >
+            <IconCompare size={18} />
             Compare
           </button>
         )}

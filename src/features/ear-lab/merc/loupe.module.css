@@ -51,6 +51,20 @@
   opacity: 0.2;
 }
 
+/* A tone's mark on the rail: a glowing pill across it. */
+.mark {
+  stroke: #eef0ff;
+  stroke-width: 5;
+  stroke-linecap: round;
+}
+
+.markHalo {
+  stroke: #eef0ff;
+  stroke-width: 13;
+  stroke-linecap: round;
+  opacity: 0.22;
+}
+
 .magnified {
   stroke-width: 2.6;
 }

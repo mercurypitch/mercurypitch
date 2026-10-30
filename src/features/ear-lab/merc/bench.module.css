@@ -236,15 +236,20 @@
   height: auto;
 }
 
+/* The glass is drawn on the bench and on the drill room's sealed plate,
+   which has none of the bench's ink: there its words take the room's
+   grey and Inter, or they fell back to black on the stage. */
 .glassScale {
-  font: 400 13px var(--merc-sans);
-  fill: var(--merc-muted);
+  font: 400 13px
+    var(--merc-sans, 'Inter Variable', 'Inter', ui-sans-serif, sans-serif);
+  fill: var(--merc-muted, #a9b2c8);
 }
 
 .glassEmpty {
-  font: 600 13px var(--merc-sans);
+  font: 600 13px
+    var(--merc-sans, 'Inter Variable', 'Inter', ui-sans-serif, sans-serif);
   letter-spacing: 0.08em;
-  fill: var(--merc-dim);
+  fill: var(--merc-dim, #a9b2c8);
 }
 
 .mercury {
