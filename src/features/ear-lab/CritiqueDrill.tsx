@@ -103,6 +103,13 @@ export function CritiqueDrill(props: DeskDrillProps): JSX.Element {
     { cancelAudio },
   )
   const nameOf = (choiceId: string) => faultOf(choiceId)?.name ?? choiceId
+  /** The strip of a wrong pick, for the desk to edge at the reveal. */
+  const wrongPick = (): number | undefined => {
+    const pick = controller.answeredId()
+    if (pick === null || pick === controller.expectedId()) return undefined
+    const at = DESK_FAULTS.findIndex((entry) => `critique:${entry.id}` === pick)
+    return at < 0 ? undefined : at
+  }
 
   return (
     <IdentificationDrillView
@@ -132,6 +139,7 @@ export function CritiqueDrill(props: DeskDrillProps): JSX.Element {
                     (entry) => entry.id === fault()?.id,
                   ),
                   name: fault()?.name ?? '',
+                  picked: wrongPick(),
                 }
               : null
           }

@@ -64,6 +64,8 @@ export function EchoDrill(props: { onBack: () => void }): JSX.Element {
   const [answered, setAnswered] = createSignal<number[]>([])
   const [verdict, setVerdict] = createSignal<PhraseVerdict | null>(null)
   const [sounding, setSounding] = createSignal(0)
+  /** The cadence's chord sounding, 1-based; 0 for none. */
+  const [cadence, setCadence] = createSignal(0)
   const [answerMode, setAnswerMode] = createSignal<AnswerMode>('tap')
   const [micError, setMicError] = createSignal('')
   const capture = useSingCapture(audioEngine, 'ear-echo-drill')
@@ -83,16 +85,19 @@ export function EchoDrill(props: { onBack: () => void }): JSX.Element {
     silenced += 1
     audioEngine.stopTone(60)
     setSounding(0)
+    setCadence(0)
   }
 
   /** Chords are parallel playTone calls: the engine's chordIntervals
    *  are colour on one note, not voices. */
   async function plant(asked: number): Promise<void> {
-    for (const chord of cadenceChordMidis(rootMidi)) {
+    for (const [i, chord] of cadenceChordMidis(rootMidi).entries()) {
       if (asked !== silenced) return
+      setCadence(i + 1)
       await audioEngine.playChord(chord.map(midiToFreq), ECHO_TIMING.chordMs)
       await wait(ECHO_TIMING.chordMs + ECHO_TIMING.chordGapMs)
     }
+    setCadence(0)
     await wait(ECHO_TIMING.restMs)
   }
 
@@ -363,6 +368,7 @@ export function EchoDrill(props: { onBack: () => void }): JSX.Element {
         <BeadChain
           count={phrase().length || 4}
           sounding={sounding()}
+          cadence={cadence()}
           reveal={
             phase() === 'reveal' && verdict()
               ? {

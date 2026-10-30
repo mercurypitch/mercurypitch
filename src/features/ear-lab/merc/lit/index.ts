@@ -7,13 +7,21 @@
 // ============================================================
 
 import type { Component } from 'solid-js'
+import type { BeadChainProps } from '@/features/ear-lab/BeadChain'
 import type { BeatPendulumsProps } from '@/features/ear-lab/BeatPendulums'
 import type { EscapementLatticeProps } from '@/features/ear-lab/EscapementLattice'
+import type { GearTrainProps } from '@/features/ear-lab/GearTrain'
 import type { InstrumentSkin } from '@/features/ear-lab/instrument-skin'
 import type { MetreLatticeProps } from '@/features/ear-lab/MetreLattice'
 import type { MetronomeColumnProps } from '@/features/ear-lab/MetronomeColumn'
+import type { MixingDeskProps } from '@/features/ear-lab/MixingDesk'
+import type { ProgressionTrainProps } from '@/features/ear-lab/ProgressionTrain'
 import type { RhythmDrumProps } from '@/features/ear-lab/RhythmDrum'
+import { LitChain } from './LitChain'
+import { LitDesk } from './LitDesk'
+import { LitDiscs } from './LitDiscs'
 import { LitLanes } from './LitLanes'
+import { LitOrbs } from './LitOrbs'
 import { LitPendulum } from './LitPendulum'
 import { LitRhythm } from './LitRhythm'
 import { LitRods } from './LitRods'
@@ -27,4 +35,10 @@ export const LIT_INSTRUMENTS = {
   MetronomeColumn: LitPendulum satisfies Component<MetronomeColumnProps>,
   MetreLattice: LitLanes satisfies Component<MetreLatticeProps>,
   RhythmDrum: LitRhythm satisfies Component<RhythmDrumProps>,
+  // Colour
+  MixingDesk: LitDesk satisfies Component<MixingDeskProps>,
+  GearTrain: LitDiscs satisfies Component<GearTrainProps>,
+  ProgressionTrain: LitOrbs satisfies Component<ProgressionTrainProps>,
+  // Colour and Shape: Bassline, Span and Echo share the ladder
+  BeadChain: LitChain satisfies Component<BeadChainProps>,
 } as const satisfies InstrumentSkin

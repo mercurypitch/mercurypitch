@@ -12,8 +12,9 @@ import type { JSX } from 'solid-js'
 import { For, Show } from 'solid-js'
 import { romanOf } from '@/lib/ear/progressions'
 import styles from './EarInstruments.module.css'
+import { skinnable } from './instrument-skin'
 
-interface ProgressionTrainProps {
+export interface ProgressionTrainProps {
   /** Chords in the progression (3 or 4). */
   count: number
   /** 1-based index of the chord sounding; 0 for none. */
@@ -43,7 +44,7 @@ function toothPath(cx: number, cy: number): string {
   return parts.join('')
 }
 
-export function ProgressionTrain(props: ProgressionTrainProps): JSX.Element {
+function DrawnProgressionTrain(props: ProgressionTrainProps): JSX.Element {
   const count = () => Math.max(1, props.reveal?.degrees.length ?? props.count)
   const label = () =>
     props.reveal
@@ -109,3 +110,8 @@ export function ProgressionTrain(props: ProgressionTrainProps): JSX.Element {
     </svg>
   )
 }
+
+export const ProgressionTrain = skinnable(
+  'ProgressionTrain',
+  DrawnProgressionTrain,
+)
