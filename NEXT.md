@@ -2121,3 +2121,9 @@ Note: the lanes' memory gate read a stale cgroup path after the 21:00 restart (f
   renders/film-02.status; watcher wait-l4.sh film-02 0 900). Next: on done, a fresh FILM2 critic from
   critics/FILM2.txt (rate limit "allowed"). push-notes now pushes even when the tree is unchanged (a run cut
   off after its commit had left the local ref ahead; pushed 5c9b4bdae).
+- 18:2x check-in: film-02 at 63% (pieces 13-14 of 20; a pair every ~13.5 min), so render end ~19:05 and
+  done ~19:25. Watcher re-armed early (the old one would hit its 2 h limit at 18:51). wait-l4.sh now also
+  counts the status file and review/measure-<name>.log as activity: the steps after the render write only
+  those, and the measure step runs ~14 min, so a quiet window on the log alone fired before done. Now
+  wait-l4.sh film-02 1380220 1200 (backup wait-l4.sh.before-status-quiet). Next: unchanged (a fresh FILM2
+  critic on done, rate limit "allowed").
