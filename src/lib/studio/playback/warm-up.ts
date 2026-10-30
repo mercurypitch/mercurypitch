@@ -29,8 +29,9 @@ export async function warmStudioPlayback(
   signal: AbortSignal,
   options: StudioWarmupOptions,
 ): Promise<void> {
-  // Before the first gesture the app has no AudioContext yet. Buffers are
-  // not tied to one, and the device rate is one of the two common ones.
+  // Before the first gesture there is no AudioContext yet. Buffers are not
+  // tied to one, and the rate is the one the lease says its context will
+  // run at, or else one of the two common device rates.
   const live = options.lease.ensure()
   const factory =
     live ??
@@ -38,7 +39,12 @@ export async function warmStudioPlayback(
       ? null
       : new OfflineAudioContext(1, 1, 48000))
   if (!factory) return
-  const rates = live ? [live.sampleRate] : [48000, 44100]
+  const leased = options.lease.sampleRate
+  const rates = live
+    ? [live.sampleRate]
+    : leased !== undefined
+      ? [leased]
+      : [48000, 44100]
   if (live) await prepareStudioLiveMeter(live)
   const plans: Awaited<ReturnType<typeof prepareStudioPlan>>[] = []
   for (const rate of rates) {
