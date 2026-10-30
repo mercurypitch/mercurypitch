@@ -224,10 +224,14 @@ export const GuitarIcon: Component<ShellIconProps> = (props) => (
   </svg>
 )
 
+/** Karaoke: the Karaoke Night stage, its curtains drawn back (the web's
+ *  `StageCurtains`). The scalloped pelmet says theatre, the short line
+ *  between the curtains is the stage floor. */
 export const KaraokeIcon: Component<ShellIconProps> = (props) => (
   <svg {...base(props)}>
-    <circle cx="12" cy="7" r="4" />
-    <path d="M12 11v8M8 21h8M9.5 7h5" />
+    <path d="M3 5h18" />
+    <path d="M3 5v3a2.6 2.6 0 0 0 4.5 0 2.6 2.6 0 0 0 4.5 0 2.6 2.6 0 0 0 4.5 0 2.6 2.6 0 0 0 4.5 0V5" />
+    <path d="M5 9v12M19 9v12M9 17h6" />
   </svg>
 )
 
