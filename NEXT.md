@@ -1822,3 +1822,12 @@ Note: the lanes' memory gate read a stale cgroup path after the 21:00 restart (f
   4th arg SRC (backup render-l4.before-src.sh). Full check running on the copy
   (renders/film-01-check.log); then: setsid nohup bash $S/render-l4.sh film-01 60 high
   /dev/shm/l4film01proj. If the container restarts mid-render, /dev/shm (copy + output) is lost.
+- 04:3x full check on the frozen copy passed with --timeout=60000 (the first try hit a 10 s
+  navigation timeout on cold caches): lint 0 errors/79 warnings, runtime 0, layout 0 (2 info),
+  motion 0, contrast 59/59 (renders/film-01-check.log). film-01 render started 04:32:28
+  (renders/film-01.status, .log; output /dev/shm/l4film).
+- 04:3x critic C-03 (saved): KEEP S7, S8; group C closes. DECISIONS 119 (four cosmetic items for
+  the polish round: S7's top "S" rides out; F-keys-D oy -528 -> about -440; ring timer at 15.6 or
+  (600, 425); title settle steps). Rows 8a/8b take the build's lighting. LEDGER 28.
+- Now: B finishing round 5 (S6); then B-05 (freeze b5/: S5 from b4, new S6). Film-01 -> critic
+  FILM1 (critics/FILM1.txt; RENDERNAME film-01; music-only film-01-music-only.mp4).

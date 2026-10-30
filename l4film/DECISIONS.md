@@ -1274,3 +1274,22 @@ replaced it. The builder's record: critics never read it.
        2's closes as a hard-edged disc (66 to 19 within about 24 px), and its halo crosses note 3
        and the ♯ (34.35 to 34.43). S2 is the series' title card, so the field's blur reaches 0 by
        about 34.28 and the disc closes crisp, as Lesson 2's does.
+
+119. **S7 and S8 after component critic C-03 (both KEEP): group C's component rounds close.**
+     - All six of C-02's items FIXED, and both clips run at a true 60 fps. Rows 8a and 8b now say
+       what the build lights (D major's white keys scale and its black keys flash on "set of keys";
+       stair 1 lights on "Start" and the light climbs on "pattern"; the twelve keys light in turn),
+       where C-03 found the board saying "scale".
+     - Four cosmetic items wait for the polish round after the film critic's first round:
+       - Item 1: the top "S" (the C♯-D riser) fades before the crane (43.55, clip) and returns only
+         partway through the pull (50.15), so that gold step goes unlabelled while F♯-G keeps its
+         "S". It stays on and rides out of frame with the world, as decision 116 has S6's names do.
+       - Item 2: F-keys-D crops stairs 7 and 8 (stair 7's real tread at y about -6), so the C♯-D
+         gold riser is out of frame while C♯ is named. The framing's oy goes from -528 to about
+         -440 (the top "S" near y 40, the black-key names at baseline 873, above the caption band).
+       - Item 3: the frame-fixed ring timer comes within 18 px of dashed stair 3's corner as the
+         push enlarges the world (15.5 to 15.89; HANDOFFS asks 28): it ends at 15.6 or moves to
+         (600, 425).
+       - Item 4: "Predict." (7.12 to 7.55) and "D major" (50.62 to 51.02) settle their last 8 px
+         in whole-pixel steps (decision 104's snap): less travel, or the rise on a sub-pixel
+         (composited) transform.
