@@ -1019,7 +1019,9 @@ replaced it. The builder's record: critics never read it.
        to 59 to 63, about S1's pass-through (57 to 62). Frames at rest, the slow drifts (S1 at 10
        and 20 s) and S9's slow push (5, 9 and 13 s) do not change; S1's pass-through gains at most
        9 levels at 33.3 and none at 33.6. Test projects in $S/l4entr/b106 (stills in
-       /dev/shm/l4b106).
+       /dev/shm/l4b106). The full check after the change (00:21 to 00:27) matches the one before it:
+       lint 0 errors (78 warnings), runtime 0, layout 1 error (S6 at 129.21, builder B's, in their
+       round), motion 0, contrast 59/59.
      - **Taken, for builder A's round 3:**
        - Item 1 (S4): on "measure" (68.04) the stairs light in turn as row 4d says, each fill to
          40 % chrome, 0.1 s apart, and all go back to unlit over 68.95 to 69.30, so S4 still ends
@@ -1053,3 +1055,27 @@ replaced it. The builder's record: critics never read it.
      - The board also records S10's lights as built (ti, then do, 276.8 to 278.0; row 10a) and
        S11's "leading note" (centred over ti with a hairline down to its tread, x 840 to 1195,
        baseline about 250 on C; row 11e and HANDOFFS § S11's labels).
+
+108. **S14 to S16 after component critic F-03 (S14 and S16 KEEP, S15 REVISE).**
+     - **Item 1, S15's opening (469.94 to 472.14).** For 2.2 s the frame held only the carried
+       rung (56 by 4 px), the 30 px kicker and the Mercs. '"support"' now lands with the kicker on
+       "Next" (470.71), so "Next time." names the next lesson's word on screen, and it scales 1.2
+       once when it is spoken (473.14, in b55). The rung keeps its times (469.89 to 471.89) and its
+       landing (the bead at (560, 520)) but takes a curve that stays 24 px or more from the word's
+       ink, quotation marks included, once the word lands: down the right side, then left along y
+       520, the line the long note draws at 474.1. Both scenes still compute it from film time.
+       The critic's other way (a rung scaled to 3x in flight) keeps the empty frame and only
+       enlarges the dash.
+     - **Item 2:** cards 1 and 2 bring their panels in with their first lines, on the line's curve,
+       as cards 3 and 4 do (the panels showed empty for 0.17 and 0.22 s, 407.29 and 420.04).
+     - **Item 4:** the tab icons' glows scale 1.15 instead of about 1.3, so each keeps 8 px or more
+       from the type beside it (the gear came within 2 px of "first:", Exercises' within 3 px of
+       its "E").
+     - **Item 3 stays:** the gold corner along the upper tread is the kit's semitone mark in every
+       scene since S5 (decision 85). Ending it at the riser's top would bring back the 1.5 px
+       sliver B-01 found at phone width; it is the same shape everywhere, so it reads as a mark.
+       The film critic judges it in context, with the S16 end card's last 1.7 s of room tone
+       (F-03 could not judge it from the clip).
+     - Board rows 14a, 14g and 15, HANDOFFS § Recap, § The practise card, § S14 to S15 and § S15,
+       and the s14 and s15 sheets now say the same. Builder F's round 3 renders S14 and S15 again
+       (S16 is unchanged); a fresh critic, F-04, verifies.

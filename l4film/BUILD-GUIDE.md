@@ -736,7 +736,8 @@ the hero view, y 323) after that.
 - Rows: 14a to 14g. Group F.
 - In: E to F (fixed, above). The scene cuts on `recap` 0.15 s before it.
 - Out (to s15, same group): HANDOFFS § S14 to S15: the Mercs in the corners at 300; the card and
-  the ladder gone (470.0) but for the ladder's top rung, which slides across the cut into S15's bead
+  the ladder gone (470.0) but for the ladder's top rung, which slides across the cut, below S15's
+  '"support"' (DECISIONS 108), into S15's bead
   on one curve (469.9 to 471.9; DECISIONS 102).
 - Kit: `L.kicker('Quick check')` (landing on the recap mark, 405.64; DECISIONS 97); the card panel
   (fading in with each card and leaving with it; frame-fixed: x 120 to 1000, y 140 to 330, radius
@@ -784,7 +785,7 @@ the hero view, y 323) after that.
   (478.5).
 - Kit: `L.kicker('Next time')`; the carried rung landing as a chrome bead at (560, 520) by 471.9
   (HANDOFFS § S14 to S15); '"support"' (serif italic 160 px with its quotation marks, centred,
-  baseline 420, landing on "Singers", 472.15); the long note (the bead drawing a level line from x
+  baseline 420, landing with the kicker on "Next", 470.71, and scaling 1.2 once on its word, 473.14; DECISIONS 108); the long note (the bead drawing a level line from x
   560 to 1360 at y 520, 474.1 to 475.4, wavering once on "pushing"); "what keeps it steady?" (serif italic 96 px, centred,
   baseline 680).
 - Merc: m12 (both, 300, in the corners): Merc talks b54 and b55, Tavi o14.

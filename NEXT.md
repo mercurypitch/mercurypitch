@@ -1735,3 +1735,15 @@ Note: the lanes' memory gate read a stale cgroup path after the 21:00 restart (f
 - Queue: B small (B-fix4) -> A round 3 (A-fix3) -> C small (C-fix2); E-03 when E reports; F round 3 if
   F-03 asks; then B-04, A-04, C-03. D's polish round after the film critic's first round. Then
   integration + 60 fps film render.
+- 00:27 full check after the kit change = baseline (lint 0 err/78 warn, runtime 0, layout 1 error s06
+  129.21, motion 0, contrast 59/59). Task #203 done; DECISIONS 106 records it.
+- 00:3x critic F-03 (saved): KEEP S14, S16; REVISE S15. DECISIONS 108: '"support"' lands with the kicker
+  on "Next" (470.71) + pulses on its word (473.14), the rung's curve passes below it (down the right
+  side, then along y 520); cards 1 and 2 bring panels with first lines; icon glows 1.15. Gold corner
+  stays (decision 85; film critic). LEDGER row 23. Board rows 14a, 14g, 15; HANDOFFS § Recap,
+  § The practise card, § S14 to S15, § S15; s14/s15 sheets. Backups $S/l4entr/b108/. F-fix3-msg READY.
+- 00:3x builder B: my first resume sent "PLACEHOLDER" by mistake; B answered it (no change); the real
+  B-fix4 brief went right after (B running now). Agents now: B + E.
+- Queue: A round 3 (A-fix3) -> F round 3 (F-fix3) -> C small (C-fix2); E-03 when E reports; B-04
+  when B reports; then A-04, F-04 (frozen S16 from f3), C-03. D's polish after the film critic's
+  first round. Then integration + 60 fps film render.

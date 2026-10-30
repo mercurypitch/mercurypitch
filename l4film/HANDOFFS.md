@@ -485,7 +485,8 @@ ended 405.2; Tavi has stood there since S13a; m12 spans the cut). Every mark of 
 
 - **Recap.** The kicker "QUICK CHECK" lands on the recap mark (405.64). The card panel x 120 to
   1000, y 140 to 330 (radius 16, a chrome stroke at 25 %, obsidian fill at 85 %) fades in with each
-  card (card 1: 407.24 to 407.44) and leaves with it, never empty on screen; text Outfit 600 40 px, ink, at x 150, baselines 220 and 280 (the longest
+  card's first line, on that line's curve (card 1 from 407.44; DECISIONS 108), and leaves with it,
+  never empty on screen; text Outfit 600 40 px, ink, at x 150, baselines 220 and 280 (the longest
   line, "Which two black keys does it need?", 628 px); the ring timer at (950, 250). Riser labels
   and the gold fills land as 14b and 14d say; at 419.62 and 443.01 every riser returns to unmeasured
   chrome. The bottom house fades out 413.0 to 413.3, before 14b's first label, and returns lit
@@ -548,7 +549,8 @@ ended 405.2; Tavi has stood there since S13a; m12 spans the cut). Every mark of 
   "Singing Voice Range" swells 1.2 from its left edge (to x 1581 at most), never over the "›"
   before it. As built: lines 1 and 2 at 460.00 and 460.30, the underline at y 554, the phone line at
   465.69. Through the card pause each line's tab icon glows in turn with its line underlined (465.8,
-  466.6, 467.4, 468.2), More's last; nothing lights after More (DECISIONS 102; as built, decision
+  466.6, 467.4, 468.2), More's last, each icon scaling 1.15 and keeping 8 px or more from the type
+  beside it; nothing lights after More (DECISIONS 102 and 108; as built, decision
   105: the address has no sweep of its own, and the pause's longest hold is 0.4 s, 469.19 to
   469.59, the Mercs idling).
 - **S14 to S15 (470.24).** The Mercs in the corners at 300; the card and the ladder gone (469.7 to
@@ -556,12 +558,14 @@ ended 405.2; Tavi has stood there since S13a; m12 spans the cut). Every mark of 
   place to (560, 520) over 469.9 to 471.9 (power2.inOut; DECISIONS 102: 2.0 s, so it carries the
   frame through "Next time." and lands just before "Singers") on one curve that both scenes compute
   from film time (`carryAt`), so it sits on the same pixels on both sides of the cut; it condenses
-  into S15's chrome bead over its last 0.4 s. As built (DECISIONS 105): its centre is at (1463.8,
+  into S15's chrome bead over its last 0.4 s. From round 3 (DECISIONS 108) the curve keeps 24 px or
+  more from '"support"''s ink once the word lands (470.71): down the right side, then left along y
+  520 to the bead. Round 2 as built (DECISIONS 105): its centre is at (1463.8,
   235.7) on S14's last film frame (470.233) and (1461.0, 236.6) on S15's first (470.250); its peak
   speed is 24 px a frame at 60 fps (470.88).
 - **S15.** The bead (the carried rung) at (560, 520) from 471.9; S15's echo rings fade with its
   type (from o14's end + 0.07, 0.3 s), so none crosses the cut to S16; '"support"' serif italic 160 px
-  centred, baseline 420, landing on "Singers" (472.15); the long note at y 520 from x 560 to 1360; "what keeps it steady?" serif italic 96 px centred, baseline 680.
+  centred, baseline 420, landing with the kicker on "Next" (470.71) and scaling 1.2 once on its word (473.14; DECISIONS 108); the long note at y 520 from x 560 to 1360; "what keeps it steady?" serif italic 96 px centred, baseline 680.
 - **S15 to S16 (478.53).** The Mercs in the corners at 300; S15's type gone (478.5).
 - **S16.** The Mercs grow to 520 at (330, 840) and (1590, 840) (478.6 to 479.2): bodies x 192 to 468
   and 1452 to 1728; at rest their glow tops at y 512 to 516 and their bodies at 516 to 530 (y 507 is
