@@ -296,8 +296,11 @@ export function useMicCheckController(): MicCheckController {
     setLockHolder(status === 'other' ? holder : null)
   })
 
-  function handleLost(): void {
-    const ended = watched?.track.readyState === 'ended'
+  function handleLost(released = false): void {
+    // The manager stops the tracks itself when it lets go (another tab asked
+    // for the mic, or the page went to the background), so they read 'ended'
+    // then too. Only a hold the manager kept can have been ended by the device.
+    const ended = !released && watched?.track.readyState === 'ended'
     const reason: LostReason =
       micLockStatus() === 'other' ? 'other-tab' : ended ? 'ended' : 'closed'
     endCapture()
@@ -338,11 +341,9 @@ export function useMicCheckController(): MicCheckController {
       holdersKnown = true
       setHolders(others)
       if (phase() !== 'listening' || switching()) return
-      if (
-        micManager.getStream() === null ||
-        !state.consumers.includes(MIC_CHECK_ID)
-      ) {
-        handleLost()
+      const released = !state.consumers.includes(MIC_CHECK_ID)
+      if (micManager.getStream() === null || released) {
+        handleLost(released)
         return
       }
       watchStream()
@@ -497,6 +498,10 @@ export function useMicCheckController(): MicCheckController {
   async function followProbe(opened: VoiceSession): Promise<void> {
     try {
       await opened.probe()
+    } catch {
+      // The session closed under the probe (Stop, or leaving Settings).
+      // Nothing is left to follow, and a rejection here would reach the
+      // app's crash screen.
     } finally {
       if (session === opened) {
         probing = false
@@ -527,7 +532,12 @@ export function useMicCheckController(): MicCheckController {
 
   async function takeOver(): Promise<void> {
     const won = await micManager.takeOverFromOtherTab()
-    if (disposed) return
+    if (disposed) {
+      // Gone while the other tab handed over: give the lock back rather than
+      // keep it with nothing open, as the guitar controller does.
+      if (won) void micManager.releaseTakeoverIfUnused()
+      return
+    }
     if (!won) {
       pushEvent(
         'warn',
@@ -601,7 +611,14 @@ export function useMicCheckController(): MicCheckController {
   })
 
   // A boolean, so a note moving by a few cents does not re-decide anything.
-  const singing = createMemo(() => note() !== null)
+  // It stays true from the first held note until the check stops or changes
+  // input: the verdict is a live region, and flipping between "hearing you
+  // sing" and "now hold a note" with every breath would make it chatter.
+  const singing = createMemo<boolean>(
+    (sang) =>
+      phase() === 'listening' && !switching() && (sang || note() !== null),
+    false,
+  )
   const verdict = createMemo(
     () =>
       decideVerdict({

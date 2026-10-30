@@ -609,8 +609,8 @@ export const SettingsPanel: Component<SettingsPanelProps> = (props) => {
             <div class={styles.settingsDivider} />
             <p class={styles.settingsDesc}>
               Hear what reaches MercuryPitch, see every connected input and
-              which one is in charge, and catch whatever takes your microphone
-              over while you watch.
+              which one is in charge, and catch the moment your input switches,
+              pauses or drops out.
             </p>
             <Suspense fallback={<p class={styles.settingsDesc}>Loading…</p>}>
               <MicCheckPanel />

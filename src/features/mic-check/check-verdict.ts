@@ -119,6 +119,17 @@ function idleVerdict(facts: VerdictFacts): Verdict {
   if (error !== null) {
     switch (error.kind) {
       case 'permission-denied':
+        // A prompt closed without an answer is refused the same way, but
+        // leaves the permission at "ask": nothing is blocked yet.
+        if (facts.permission === 'prompt') {
+          return {
+            kind: 'denied',
+            tone: 'warn',
+            title: 'The microphone prompt closed without an answer',
+            detail: 'Start again, and choose Allow when your browser asks.',
+            action: 'start',
+          }
+        }
         return {
           kind: 'denied',
           tone: 'bad',

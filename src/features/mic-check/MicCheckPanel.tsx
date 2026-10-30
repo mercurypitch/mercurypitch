@@ -13,7 +13,7 @@
 //
 // All the watching lives in useMicCheckController; this file is layout.
 
-import { createMemo, For, Show } from 'solid-js'
+import { createEffect, createMemo, For, on, Show } from 'solid-js'
 import { Mic, Volume2 } from '@/components/icons'
 import { MicLevelMeter } from '@/components/MicLevelMeter'
 import { midiToNoteName } from '@/lib/frequency-to-note'
@@ -22,7 +22,7 @@ import { describeFormat, formatWarnings, holderName, INPUT_KIND_HINT, INPUT_KIND
 import type { VerdictAction } from './check-verdict'
 import { INPUT_KIND_ICON } from './input-kind-icon'
 import type { RosterInput } from './mic-roster'
-import { defaultInput, listeningInput } from './mic-roster'
+import { listeningInput } from './mic-roster'
 import styles from './MicCheckPanel.module.css'
 import { MicCheckStage } from './MicCheckStage'
 import type { MicCheckEvent } from './useMicCheckController'
@@ -49,7 +49,30 @@ export function MicCheckPanel() {
 
   const listening = (): boolean => check.phase() === 'listening'
   const heard = createMemo(() => listeningInput(check.roster()))
-  const systemDefault = createMemo(() => defaultInput(check.roster()))
+
+  // Start and Stop swap places as the check starts and stops. When the one
+  // that had focus goes, its counterpart takes the focus, so a keyboard user
+  // is not dropped at the top of the page; a check that will not open hands
+  // it back to Start.
+  let startButton: HTMLButtonElement | undefined
+  let stopButton: HTMLButtonElement | undefined
+  let focusNext = false
+  const handOff = (button: HTMLButtonElement): void => {
+    focusNext = document.activeElement === button
+  }
+  createEffect(
+    on(
+      check.phase,
+      (phase) => {
+        if (!focusNext || phase === 'opening') return
+        focusNext = false
+        queueMicrotask(() => {
+          ;(phase === 'listening' ? stopButton : startButton)?.focus()
+        })
+      },
+      { defer: true },
+    ),
+  )
   const pinnedInput = createMemo(() => {
     const id = check.pinnedDeviceId()
     return id === null
@@ -86,10 +109,12 @@ export function MicCheckPanel() {
       case 'take-over':
         void check.takeOver()
         return
-      case 'listen-to-default': {
-        const target = systemDefault()
-        if (target !== null) void check.listenTo(target.deviceId)
-      }
+      case 'listen-to-default':
+        // Reopen on the default as it is now, still following it. Picking
+        // the device by id would pin it: the panel would then advise making
+        // it the default, which it already is, and stop flagging later moves.
+        check.restart()
+        return
     }
   }
 
@@ -111,7 +136,7 @@ export function MicCheckPanel() {
             <div class={styles.readout} aria-hidden="true">
               <span
                 class={styles.readoutNote}
-                style={{ color: noteColor(note().midi) }}
+                style={{ '--note': noteColor(note().midi) }}
               >
                 {midiToNoteName(note().midi)}
               </span>
@@ -126,11 +151,13 @@ export function MicCheckPanel() {
         <Show when={check.phase() !== 'listening'}>
           <div class={styles.stageCover}>
             <button
+              ref={startButton}
               type="button"
               class={styles.primary}
               data-testid="mic-check-start"
               disabled={check.phase() === 'opening'}
-              onClick={() => {
+              onClick={(event) => {
+                handOff(event.currentTarget)
                 check.start()
               }}
             >
@@ -179,10 +206,12 @@ export function MicCheckPanel() {
             <MicLevelMeter compact />
           </div>
           <button
+            ref={stopButton}
             type="button"
             class={styles.secondary}
             data-testid="mic-check-stop"
-            onClick={() => {
+            onClick={(event) => {
+              handOff(event.currentTarget)
               check.stop()
             }}
           >

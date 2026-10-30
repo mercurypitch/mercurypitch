@@ -119,6 +119,8 @@ export function createVoiceSession(consumerId: string): VoiceSession {
   let audioContext: AudioContext | null = null
   let f0: F0Stream | null = null
   let opening = false
+  /** Set by close(): an await that lands after it builds nothing. */
+  let closed = false
 
   function teardownAudio(): void {
     f0?.dispose()
@@ -146,18 +148,24 @@ export function createVoiceSession(consumerId: string): VoiceSession {
     void audioContext?.close().catch(() => undefined)
     audioContext = null
     const stream = micManager.getStream()
-    if (stream === null) return
-    audioContext = new AudioContext()
-    if (audioContext.state === 'suspended') await audioContext.resume()
-    f0 = createF0Stream(audioContext, stream)
+    // A closed session builds nothing: the manager may still be lingering
+    // on a stream it no longer holds for us.
+    if (closed || stream === null) return
+    const context = new AudioContext()
+    audioContext = context
+    if (context.state === 'suspended') await context.resume()
+    // close() during the resume has already closed this context.
+    if (closed || audioContext !== context) return
+    f0 = createF0Stream(context, stream)
   }
 
   async function probeLevel(ms: number): Promise<number> {
     if (f0 === null) return 0
     f0.startTask()
     await sleep(ms)
-    // Drain the probe frames so they can't leak into the next take.
-    f0.takeFrames()
+    // Drain the probe frames so they can't leak into the next take. f0 is
+    // gone if the session closed while we waited (Stop, or leaving the page).
+    f0?.takeFrames()
     return f0?.maxLevel() ?? 0
   }
 
@@ -165,6 +173,7 @@ export function createVoiceSession(consumerId: string): VoiceSession {
     async open(): Promise<OpenResult> {
       if (opening) return { ok: false, message: DEFAULT_DENIED_MESSAGE }
       opening = true
+      closed = false
       try {
         await buildGraph()
         return { ok: true }
@@ -189,6 +198,7 @@ export function createVoiceSession(consumerId: string): VoiceSession {
     async probe(): Promise<ProbeResult> {
       if (f0 === null) return 'no-session'
       const level = await probeLevel(PROBE_MS)
+      if (closed) return 'no-session'
       if (level > QUIET_RMS) return 'ok'
       // Merely quiet is not a verdict — the room is quiet because we
       // have not asked for a note yet. Only a dead zero is diagnostic,
@@ -197,6 +207,7 @@ export function createVoiceSession(consumerId: string): VoiceSession {
       if (level > SILENCE_RMS) return 'quiet'
       await rebuildAudio()
       const second = await probeLevel(PROBE_MS)
+      if (closed) return 'no-session'
       if (second > QUIET_RMS) return 'ok'
       return second > SILENCE_RMS ? 'quiet' : 'silent'
     },
@@ -231,10 +242,18 @@ export function createVoiceSession(consumerId: string): VoiceSession {
     async useDevice(deviceId: string): Promise<ProbeResult> {
       try {
         await micManager.setPreferredDevice(deviceId === '' ? null : deviceId)
+        if (closed) return 'no-session'
         await micManager.acquire(consumerId)
+        // Closed while the input opened (Stop, or leaving the page): the
+        // hold just taken is nobody's, and nothing may be built on it.
+        if (closed) {
+          micManager.release(consumerId)
+          return 'no-session'
+        }
         await rebuildAudio()
         if (f0 === null) return 'no-session'
         const level = await probeLevel(PROBE_MS)
+        if (closed) return 'no-session'
         if (level > QUIET_RMS) return 'ok'
         return level > SILENCE_RMS ? 'quiet' : 'silent'
       } catch {
@@ -243,6 +262,7 @@ export function createVoiceSession(consumerId: string): VoiceSession {
     },
 
     close(): void {
+      closed = true
       teardownAudio()
     },
   }
