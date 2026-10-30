@@ -111,6 +111,10 @@ export const ACCOUNT_ROW = {
   signedOutValue: 'Sign in',
 } as const
 
+/** The More sheet's Account row with no account on the phone: the owner's
+ *  words. "Keep" is Keep's sense, the account offer's, not "or lose them". */
+export const MORE_ACCOUNT_SIGNED_OUT = 'Sign in to keep your runs'
+
 /** The card on the Account screen with no account on the phone. */
 export const ACCOUNT_SIGNED_OUT = {
   title: 'No account yet',

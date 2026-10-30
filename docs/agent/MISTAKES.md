@@ -993,6 +993,13 @@ import handler, issue #813.
 **Rule:** in a reactive condition, read the signal first and the plain value last (`(phase() === 'answer' || ...) && sungRun()`). An accessor's name does not say whether it is a signal: look.
 **See:** `hearingAgain` and the sung window in `src/features/ear-lab/SpanDrill.tsx`
 
+### Theme a portalled sheet with tokens at its anchor, never a theme selector on the portal
+
+**Symptom:** caught in review of the native More sheet: with the phone following the system theme, flipping it while the sheet was open would turn its cards white and leave its text white (about 1:1).
+**Cause:** the kit's `Sheet` portals to <body> and copies every custom property that resolves on its in-place anchor onto the portal as it opens (`createPortalSkinBridge`), inks included, and does not copy again until it reopens. A `:root[data-theme='light'] [role='dialog'].x` rule on the portalled panel follows the live attribute while the inks stay the snapshot.
+**Rule:** declare a sheet's theme-dependent values as custom properties on an ancestor of its anchor (the shell, the stage), dark and light, and have the panel read them; they then change with the inks, at the next open. `apps/mercurypitch/src/more-sheet-css.test.ts` holds the More sheet to it.
+**See:** `src/components/portal-skin.ts`, the More sheet's tokens in `apps/mercurypitch/src/shell/shell.css`
+
 ## Performance
 
 ### Preserve physical material units when baking decoded geometry

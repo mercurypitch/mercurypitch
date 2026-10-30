@@ -1052,52 +1052,230 @@
   -webkit-touch-callout: default;
 }
 
-/* ---------- the More sheet's tiles ---------- */
+/* ---------- the More sheet: an inset grouped list ----------
 
-.mp-itile-grid {
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 8px;
+   Rows that can grow, where the tiles could not: four to a row, 11 px
+   labels, and a third of the sheet empty with six of them. A row is a 30 px
+   chip tinted by its group, the name at 17 px, one 13 px line of what is
+   true now, and a chevron. 56 px tall, so the whole row is the target.
+
+   THE SHEET IS THE GLASS; THE ROWS ARE NOT. The kit's glass is for floating
+   chrome, never glass on glass (native-feel-research.md §3), so the panel
+   takes the glass and each group is an opaque card on it: the words are
+   measured against the card, whatever the room behind the sheet is.
+
+   THE DETENT IS THE CONTENT. The sheet sizes to its list, up to the large
+   detent under the status bar. Rooms and You come to about half of a
+   390 x 844 phone, the medium detent; each group the build switches add
+   grows it towards large, and a list taller than that scrolls inside it.
+
+   Nothing here moves. A press changes the row's ground, which reduced
+   motion has no reason to take away. */
+
+/* THE GROUNDS ARE TOKENS ON THE SHELL, NOT RULES ON THE PANEL. The sheet
+   copies every custom property that resolves on its anchor (inside
+   `.mp-shell`) onto its portal as it opens, the inks among them, so its
+   grounds have to travel the same way: a theme selector on the portalled
+   panel would follow a theme the phone switched while the sheet was open,
+   and draw the old theme's ink on the new theme's card. */
+.mp-shell {
+  --mp-more-sheet: var(--glass-bg);
+  --mp-more-card: color-mix(in srgb, var(--bg-tertiary) 94%, transparent);
+  --mp-more-press: color-mix(in srgb, var(--text-primary) 8%, transparent);
+  --mp-more-rule: color-mix(in srgb, var(--text-primary) 10%, transparent);
 }
 
-.mp-itile {
+/* Light: the card is the lighter one, as a grouped list is in light. And the
+   glass is thicker. At the kit's 72 % a light sheet over a dark room (the
+   alley, a stage) turns a muddy grey, and the group titles, the one ink
+   drawn on the glass itself, fall to 4.35:1 there; at 92 % they hold AA
+   over a black room, the worst there is behind the scrim. */
+:root[data-theme='light'] .mp-shell {
+  --mp-more-sheet: color-mix(in srgb, var(--bg-secondary) 92%, transparent);
+  --mp-more-card: color-mix(in srgb, #ffffff 92%, transparent);
+  --mp-more-press: color-mix(in srgb, var(--text-primary) 6%, transparent);
+}
+
+[role='dialog'].mp-more {
+  --sheet-bg: var(--mp-more-sheet);
+  --sheet-border: var(--glass-border);
+  --sheet-max-h: calc(100dvh - var(--safe-top, 0px) - 8px);
+}
+
+.mp-more-body {
   display: flex;
   flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 6px;
-  min-height: 72px;
-  padding: 10px 4px 8px;
-  border: 0;
-  border-radius: 12px;
-  background: var(--bg-tertiary);
-  color: var(--text-primary);
-  font: 500 11px/13px var(--font-body, sans-serif);
-  text-align: center;
-  cursor: pointer;
+  gap: 20px;
 }
 
-.mp-itile svg {
-  width: 24px;
-  height: 24px;
+/* On its side the groups stand in two columns, so the whole list fits under
+   the status bar of a phone held sideways, as Settings does. */
+@media (orientation: landscape) and (min-width: 640px) {
+  .mp-more-body {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    gap: 16px;
+    align-items: start;
+  }
+}
+
+/* A tablet held upright: a list 900 px wide is a list nobody reads across. */
+@media (orientation: portrait) and (min-width: 700px) {
+  [role='dialog'].mp-more {
+    width: min(100%, 600px);
+    margin-inline: auto;
+  }
+}
+
+/* One tint per group, each a fill white monoline reads on at 3:1 or more in
+   either theme (WCAG 1.4.11): Rooms violet 4.8:1, Together teal 4.0:1, You
+   slate 4.7:1. Fixed, not themed: a chip is the same thing in the dark. */
+.mp-more-group--rooms {
+  --mp-more-tint: #7c4dff;
+}
+
+.mp-more-group--together {
+  --mp-more-tint: #0e8f7f;
+}
+
+.mp-more-group--you {
+  --mp-more-tint: #64748b;
+}
+
+.mp-more-group {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+  margin: 0;
+}
+
+/* 13 px, the floor, and the secondary ink: the muted one misses AA on the
+   card in the dark. */
+.mp-more-group__title {
+  margin: 0;
+  padding: 0 16px;
+  font: 500 13px/18px var(--font-body, sans-serif);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
   color: var(--text-secondary);
 }
 
-.mp-itile--settings svg {
-  color: var(--accent);
-}
-
-.mp-sheet-group {
+.mp-more-list {
   display: flex;
   flex-direction: column;
-  gap: 8px;
-  padding-bottom: 12px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  border-radius: 14px;
+  background: var(--mp-more-card, var(--bg-tertiary));
+  overflow: hidden;
 }
 
-.mp-sheet-group__title {
-  font: 500 11px/14px var(--font-body, sans-serif);
-  letter-spacing: 0.05em;
-  text-transform: uppercase;
+.mp-more-list > li {
+  position: relative;
+  margin: 0;
+}
+
+/* The rule between rows starts at the name, as a grouped list's does: the
+   chips stand in one column of their own. */
+.mp-more-list > li + li::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  right: 0;
+  left: 58px;
+  height: 1px;
+  background: var(--mp-more-rule, var(--border-subtle));
+  pointer-events: none;
+}
+
+.mp-more-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  min-height: 56px;
+  margin: 0;
+  padding: 8px 12px 8px 16px;
+  border: 0;
+  background: transparent;
+  color: var(--text-primary);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.mp-more-row:active {
+  background: var(--mp-more-press, var(--bg-hover));
+}
+
+@media (hover: hover) {
+  .mp-more-row:hover {
+    background: var(--mp-more-press, var(--bg-hover));
+  }
+}
+
+/* Inside the card, which clips: the ring goes inside the row. */
+.mp-more-row:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: -2px;
+}
+
+.mp-more-row__chip {
+  display: inline-flex;
+  flex: 0 0 auto;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  border-radius: 8px;
+  background: var(--mp-more-tint);
+  color: #ffffff;
+}
+
+.mp-more-row__chip svg {
+  width: 20px;
+  height: 20px;
+}
+
+.mp-more-row__text {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.mp-more-row__name,
+.mp-more-row__state {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.mp-more-row__name {
+  font: 500 17px/22px var(--font-body, sans-serif);
+  color: var(--text-primary);
+}
+
+.mp-more-row__state {
+  font: 400 13px/18px var(--font-body, sans-serif);
+  color: var(--text-secondary);
+}
+
+/* Something new on the other side of the row, and nothing to count. */
+.mp-more-row__dot {
+  flex: 0 0 auto;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--accent);
+}
+
+.mp-more-row__chev {
+  flex: 0 0 auto;
   color: var(--text-muted);
 }
 
