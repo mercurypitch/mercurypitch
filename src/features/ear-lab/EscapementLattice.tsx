@@ -10,13 +10,15 @@
 import type { JSX } from 'solid-js'
 import { For } from 'solid-js'
 import styles from './EarInstruments.module.css'
+import { skinnable } from './instrument-skin'
 
-interface EscapementLatticeProps {
+export interface EscapementLatticeProps {
   /** 1-based index of the click sounding now; 0 for none. */
   lit: number
   running: boolean
-  /** The displaced click, once told: 0-based index and direction. */
-  reveal: { index: number; early: boolean } | null
+  /** The displaced click, once told: 0-based index, direction, and how
+   *  far it was nudged in ms (the room writes it beside the rod). */
+  reveal: { index: number; early: boolean; ms?: number } | null
 }
 
 const PALLETS = [0, 1, 2, 3, 4, 5]
@@ -26,7 +28,7 @@ function palletX(i: number): number {
   return 56 + i * 78
 }
 
-export function EscapementLattice(props: EscapementLatticeProps): JSX.Element {
+function DrawnEscapementLattice(props: EscapementLatticeProps): JSX.Element {
   const label = () =>
     props.reveal
       ? `Six pallets on a lattice; the ${ORDINALS[props.reveal.index]} is ${
@@ -100,3 +102,8 @@ export function EscapementLattice(props: EscapementLatticeProps): JSX.Element {
     </svg>
   )
 }
+
+export const EscapementLattice = skinnable(
+  'EscapementLattice',
+  DrawnEscapementLattice,
+)

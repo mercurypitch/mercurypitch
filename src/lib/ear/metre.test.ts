@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { METRE_BANK, METRE_PATTERNS, metreName, METRES, patternOf, stepMs, } from './metre'
+import { METRE_BANK, METRE_PATTERNS, metreGroups, metreName, METRES, patternOf, stepMs, } from './metre'
 
 describe('metre', () => {
   it('names the five metres and banks two patterns of each, the accent on one', () => {
@@ -30,5 +30,24 @@ describe('metre', () => {
     expect(patternOf('nope')).toBeUndefined()
     expect(stepMs({ beats: 4, unit: 4 }, 500)).toBe(500)
     expect(stepMs({ beats: 7, unit: 8 }, 500)).toBe(250)
+  })
+
+  it('groups an eighths bar where its kick and snare open a run, and a quarters bar whole', () => {
+    const groups = (id: string) => {
+      const pattern = patternOf(id)
+      if (!pattern) throw new Error(id)
+      return metreGroups(pattern)
+    }
+    expect(groups('metre:7-8:a')).toEqual([2, 2, 3])
+    expect(groups('metre:7-8:b')).toEqual([3, 2, 2])
+    // The sidestick on 6/8's third eighth opens nothing.
+    expect(groups('metre:6-8:a')).toEqual([3, 3])
+    expect(groups('metre:6-8:b')).toEqual([3, 3])
+    expect(groups('metre:3-4:b')).toEqual([3])
+    expect(groups('metre:5-4:a')).toEqual([5])
+    for (const pattern of METRE_PATTERNS) {
+      const sum = metreGroups(pattern).reduce((a, b) => a + b, 0)
+      expect(sum).toBe(pattern.metre.beats)
+    }
   })
 })
