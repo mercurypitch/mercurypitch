@@ -184,7 +184,7 @@
             }
           }
           // 7. A row of tokens in the right lane (Outfit 600, `size` px, default 64, tabular digits, ink, baseline
-          //    260): S5's tally "T T S T T T S" (64 px) and S6's sum "2 2 1 · 2 · 2 2 1 = 12" (56 px). Laid out from
+          //    260): S5's tally "T T S T T T S" (64 px) and S6's sum "2 2 1 · 2 · 2 2 1 = 12" (50 px). Laid out from
           //    each token's own advance once the fonts are in: gaps[i] px of advance before token i; at 64 px, 30 px
           //    leaves 32 to 35 px of ground between two glyphs, half an em, so the numbers read as numbers, not as
           //    221 (critic B-01 item 6). From x0, or ending at `right`. Each token: { ch, el, x, w, cx, cy }.
@@ -290,8 +290,11 @@
           const majorT = L.svg('text', { x: 1250, y: 300, fill: L.C.ink, opacity: 0, style: "font-family: 'Instrument Serif'; font-style: italic; font-size: 110px; letter-spacing: -0.01em; white-space: pre;", text: 'a major scale' }, hud)
           // the tally (critic B-01 item 9: from the run to the cut the right half of the WS was empty): b11 lands one
           // letter a word in the right lane, "T T S T T T S", where S6's sum will build; its two S's scale 1.2 on
-          // "two short ones"; it rides the cut and leaves with the legend before S6's push
-          const tally = tokenRow(hud, ['T', 'T', 'S', 'T', 'T', 'T', 'S'], [0, 30, 30, 30, 30, 30, 30], { x0: 1240 })
+          // "two short ones"; it rides the cut and leaves with the legend before S6's push. Critic B-03 item 2: it sat
+          // 41 px from Tavi's falling body (x 1734 at its height); now 21 px of advance between letters (23 to 24 px
+          // of ink, 0.37 em) from x 1270, the sum's lane, so its ink runs x 1271 to 1668, 66 px clear of her
+          // (lab/s06-groups/scratch/sum-fit.mjs with CHARS=T,T,S,T,T,T,S)
+          const tally = tokenRow(hud, ['T', 'T', 'S', 'T', 'T', 'T', 'S'], [0, 21, 21, 21, 21, 21, 21], { x0: 1270 })
           const legend = [['T', ' = tone ', '(2 rows)', 200], ['S', ' = semitone ', '(1 row)', 252]].map(([a, b, c, y]) => {
             const el = L.svg('text', { x: 140, y, opacity: 0, style: "font: 600 44px 'Outfit', sans-serif; white-space: pre;" }, hud)
             L.svg('tspan', { text: a, fill: L.C.ink }, el)

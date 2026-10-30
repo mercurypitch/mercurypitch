@@ -170,3 +170,28 @@ Running notes so a container restart or a usage-limit pause can resume. Builder 
 - Clips: lab/s12-sing/clip.mp4, lab/s13-your-turn/clip.mp4 (60 fps, hosts); round 1 kept as clip-r1.mp4
   and measure-r1. Sheets: lab/s12-sing/tip-sheet.png, lab/s13-your-turn/handover-sheet.png,
   rev-sheet.png, phone-400x225.png.
+
+## Round 3 (component critic E-02: both KEEP; DECISIONS 101, 104, 105)
+
+- 00:10 S13 do names: L.light(word, 0.15 up, 0.5 down) on [doh, Start] for the bottom do and on "octave" for
+  the top do (they had stayed lit to the end of the turn). Clip: bottom do 249 at 383.79, back to ink-2
+  (196) by 384.29; top do 249 at 385.29, back (196) by 385.79; both 190 through the turn (round 2: 249).
+- Small type fades in where it sits (DECISIONS 104): S12 "wait"'s landing and the chip; S13's care lines,
+  "wait on ti" and the doctor lines. "Your turn." keeps its 12 px rise (large type); the "wait" pulses stay.
+  Probe: tools/textsteps.py (vertical profile of the type's own ink matched against the last frame).
+  Round 2 -> 3, frames moving 0.5 px or more once a quarter in: doctor lines 4 -> 0 (374.050 to 374.200,
+  1 px each), "Just listen along." 4 -> 0, "at about speaking volume" 5 -> 0, "wait on ti" 5 row steps
+  (386.52 to 386.68) -> fixed rows from 386.517, S12 "wait" 4 -> 0 (346.79 to 346.94), chip 4 -> 0
+  (362.48 to 362.63).
+- S12's arrow starts at (1276, 200), control (1294, 150), head (1320, 170) unchanged (S13's copy too):
+  Tavi's bead keeps 8.7 px from its first half (centre 30.7 px) through the hold and the rest; 2.4 px
+  from the head as it lands on do (unchanged). Sheet: lab/s12-sing/arrow-sheet.png.
+- 00:30 / 00:36 renders (60 fps, hosts, the 20:49 kit and the 00:12 tags): S12 holds 0.3 s, longest 0.2;
+  S13 0.5 s inside, longest 0.1, final 0.3 (the settle). Single-frame events: S12 0.250 (the act 4 dim)
+  and 17.667 / 17.833 ("wait"'s pulse on o12 "wait,", kept); S13 10.167 only (round 2 also had the care
+  and stop lines' landings, 1.17 to 1.28, 3.25 to 3.40, 5.68 to 5.75, 8.73 to 8.85, 10.88 to 11.02,
+  17.43 to 17.55).
+- Handoffs: S11 to S12 max 10; S12 to S13 1441 px over 16, hosts only (Merc 1262, Tavi 179), guide 0;
+  S13 to S14 max 10. Keep-outs as round 2. npm run check passes (0 errors; mine only warnings). Text
+  sweep clean; merc-tags --check 16 tags, 0 stale; clock-lint silent.
+- Round 2 kept as clip-r2.mp4 / measure-r2 and compositions backed up as lab/*/s1?-r2.html.bak.

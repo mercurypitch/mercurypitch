@@ -1747,3 +1747,10 @@ Note: the lanes' memory gate read a stale cgroup path after the 21:00 restart (f
 - Queue: A round 3 (A-fix3) -> F round 3 (F-fix3) -> C small (C-fix2); E-03 when E reports; B-04
   when B reports; then A-04, F-04 (frozen S16 from f3), C-03. D's polish after the film critic's
   first round. Then integration + 60 fps film render.
+- 00:5x builder E handed back round 3 ($S/l4entr/E-round3-report.txt): do names ease back; small type
+  fades in place (no rise) incl. care lines + "wait on ti"; S12 arrow from (1276, 200); check 0 errors
+  (whole project layout 0 then). Frozen $S/l4entr/e3/; DECISIONS 109; critics/E3.txt READY.
+- 00:5x builder A resumed ((builder)) with A-fix3-msg. Agents now: B + A.
+- Queue: critic E-03 (E3.txt) -> F round 3 (F-fix3) -> C small (C-fix2); B-04 when B reports;
+  A-04 when A reports; F-04 (frozen S16 from f3) and C-03 after theirs. D's polish after the film
+  critic's first round. Then integration + 60 fps film render.

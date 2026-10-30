@@ -1079,3 +1079,21 @@ replaced it. The builder's record: critics never read it.
      - Board rows 14a, 14g and 15, HANDOFFS § Recap, § The practise card, § S14 to S15 and § S15,
        and the s14 and s15 sheets now say the same. Builder F's round 3 renders S14 and S15 again
        (S16 is unchanged); a fresh critic, F-04, verifies.
+
+109. **S12 and S13 after builder E's round 3 (component critic E-02's three items), as built.**
+     - Both do names light for 0.15 s and ease back to ink-2 over 0.5 s (bottom do on "doh," and
+       "Start", top do on "octave"), so neither stays lit through the turn; the lights along the
+       segments are unchanged.
+     - Small type fades in where it sits, with no rise (decision 104): S12's "wait" landing and
+       the chip; S13's doctor lines, care lines and "wait on ti". "Your turn." (120 px) keeps its
+       12 px rise, and the word-tied 1.2 pulses on "wait" stay. Builder E's probe
+       (lab/s12-sing/tools/textsteps.py) finds no settling move of 0.5 px or more left in any of
+       them; S13's one-frame events fall from 21 to 1 (the "volume." swell easing back, 383.08).
+     - S12's arrow starts at (1276, 200), 12 px right of the hold's end, its head unchanged at
+       (1320, 170); Tavi's resting bead keeps 8.7 px or more from it (it touched the tail before).
+       S13's copy matches, so the cut shows no change in the guide.
+     - Holds S12 0.3 s, S13 0.5 s per 30 s (plus S13's 0.3 s settle before the cut); handoffs S11
+       to S12 and S13 to S14 max 10 levels, S12 to S13 changes only in the hosts; check 0 errors
+       in S12 and S13. The rows already say the type lands (fades in, § Type), so they stand.
+     - Frozen copies for critic E-03 in $S/l4entr/e3/ (rendered 00:30 and 00:35, after the
+       00:21 kit change, which does not touch these two scenes: their camera never moves).

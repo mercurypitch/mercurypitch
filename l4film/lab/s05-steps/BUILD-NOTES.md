@@ -138,6 +138,22 @@ only. Clock: Kokoro scratch, 483.73 s (cues.json = tools/board-cues.json today).
 - Proof: clock-lint silent, shared block identical, npm run check 5 errors (m12-orange in s12 to s16 only).
   Stills: lab/s05-steps/stills-r5 (reset-sheet.png), lab/s06-groups/stills-r5 (octave-sheet.png, 6.5 F-low).
 
+## Round 6: small round for review/component-B-03 (items 2, 3, 4) and the full check's layout error
+
+- Item 2 (both scenes, the same call): the tally at x 1270 (the sum's lane), baseline 260, Outfit 600 64 px,
+  21 px of advance between letters (23 to 24 px of ink): ink x 1271 to 1668 (was 1241 to 1692). Stills: Tavi's
+  body min x 1734 to 1738 through 40.6 to 40.9; nearest tally ink to her body 73 px (was 41). Tally band at
+  s05 41.5 against s06 0: max difference 5 levels.
+- Item 3 (s06): the sum at 50 px, advance gaps 12 (digits), 19 (dots), 15 and 12 round "=", ending x 1739:
+  ink x 1280 to 1737, gaps 15 to 18 / 20 to 22 / 20 and 17; "= 12" at 1.2 ends 1746; first "2" landing from
+  1.3x starts about 1276 (scratch/sum-fit.mjs).
+- Item 4 (s06): both brackets 10 more up (y 448, 266); the bead's top keeps 16.3 world px (29 on screen in
+  F-low and F-high) under them; brackets drawn over the bead's glow and the echo rings. The glow itself (70 px
+  halo; +16 levels out to about 57 world px) cannot clear the line in F-high: see the report.
+- Layout error (s06 17.86 to 19.73): the F-G "T"'s glow was a second, blurred "T" text; now a soft 28 x 31 box
+  (0.45 peak). Layout check on both lab projects, 80 samples: 0 errors.
+- 60 fps: lab/s05-steps/tools/hostpass60.sh (a copy of builder E's); round 5's 30 fps clips kept as clip-r3.mp4.
+
 ## Status
 
 | Scene | Built | Stills | Clip | measure.py | Text sweep | clock-lint | merc-tags |

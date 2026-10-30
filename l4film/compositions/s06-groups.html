@@ -187,7 +187,7 @@
             }
           }
           // 7. A row of tokens in the right lane (Outfit 600, `size` px, default 64, tabular digits, ink, baseline
-          //    260): S5's tally "T T S T T T S" (64 px) and S6's sum "2 2 1 · 2 · 2 2 1 = 12" (56 px). Laid out from
+          //    260): S5's tally "T T S T T T S" (64 px) and S6's sum "2 2 1 · 2 · 2 2 1 = 12" (50 px). Laid out from
           //    each token's own advance once the fonts are in: gaps[i] px of advance before token i; at 64 px, 30 px
           //    leaves 32 to 35 px of ground between two glyphs, half an em, so the numbers read as numbers, not as
           //    221 (critic B-01 item 6). From x0, or ending at `right`. Each token: { ch, el, x, w, cx, cy }.
@@ -271,7 +271,9 @@
           // "count it in semitones": the twelve rows of the octave (C#4 to C5, stair 1's tread to stair 8's) glow
           // in turn, the unit the count is about
           const rowGlows = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12].map((k) => L.svg('rect', { x: 220, width: 1460, y: ST.rowTop(k) + 2, height: 22, fill: '#c3ccd6', opacity: 0 }, accents))
-          const tGlow = L.svg('text', { x: ST.colX(4, 0) + 55, y: ST.tread(4, 0) - 8, 'text-anchor': 'end', fill: '#c3ccd6', opacity: 0, filter: `url(#${SID}-soft)`, style: "font: 600 40px 'Outfit', sans-serif", text: 'T' }, accents)
+          // (the F-G "T"'s glow is a soft box behind the label, not a second "T": two texts in one place read as an
+          // overlap to the layout check, which the full check flagged at 129.2)
+          const tGlow = L.svg('rect', { x: ST.colX(4, 0) + 55 - 27, y: ST.tread(4, 0) - 8 - 30, width: 28, height: 31, rx: 6, fill: '#c3ccd6', opacity: 0, filter: `url(#${SID}-soft)` }, accents)
           const kb = L.strip(mid, {})
           // the ghost outline (6c): the profile of stairs 1 to 4 and their three risers (treads through the
           // risers' centres), drawn from L.ST, lifting off them and moving by (+480, -182) onto stairs 5 to 8
@@ -292,18 +294,22 @@
           const ov = riserOverlays(st)                                  // the semitones' gold (item 2), over the risers
           st.gAll.insertBefore(ghost, st.gAll.children[1])              // over the blocks, under the risers and labels
           const feather = featherRows(st, cam)
-          // the brackets (ink, ticks down, riding the world), HANDOFFS' spans (x 242 to 714, 722 to 1194) raised 26 px
-          // to y 458 and 276 (critic B-01 item 5 asked 24; 2 more so the semitone hops pass 6 px under them): at 484
-          // the lower one's right tick sat 3 to 5 px over the F-G riser's "T" and read as one hooked shape with it;
-          // now its 8 px tick ends 31 px above that label and 16 px above the riser's bar, and a bead resting on
-          // stair 4 or 8 keeps 30 px below its bracket
-          const brLow = L.bracket(mid, { x1: 242, x2: 714, y: 458, dir: 'up', tick: 8, color: L.C.ink, width: 3 })
-          const brHigh = L.bracket(mid, { x1: 722, x2: 1194, y: 276, dir: 'up', tick: 8, color: L.C.ink, width: 3 })
+          // the brackets (ink, ticks down, riding the world), HANDOFFS' spans (x 242 to 714, 722 to 1194) raised 36 px
+          // to y 448 and 266: at 484 the lower one's right tick sat 3 to 5 px over the F-G riser's "T" and read as one
+          // hooked shape with it (critic B-01 item 5); critic B-03 item 4 found the bead 16 px (on screen, F-high)
+          // under the upper one at the top of the B-C hop, its glow over the line, so 10 more (F-high puts the upper
+          // line 29 px below the frame's top). Its 8 px tick ends 41 px above the F-G "T" and 26 px above that
+          // riser's bar; a bead resting on stair 4 or 8 keeps 40 px below its bracket, a hop's top at least 16
+          const brLow = L.bracket(mid, { x1: 242, x2: 714, y: 448, dir: 'up', tick: 8, color: L.C.ink, width: 3 })
+          const brHigh = L.bracket(mid, { x1: 722, x2: 1194, y: 266, dir: 'up', tick: 8, color: L.C.ink, width: 3 })
           // the octave bracket (chrome, vertical, x 1232, stair 1's tread to stair 8's: twelve rows), ticks left
           const brOct = L.bracket(mid, { x1: ST.tread(1, 0), x2: ST.tread(8, 0), y: 1232, dir: 'down', tick: 14, color: L.C.chrome, width: 3, vertical: true })
           const gBead = L.svg('g', {}, mid)
           const bead = L.bead(gBead, { r: 22, color: L.C.chrome })
           const echo = L.echoRings(mid, { dur: 0.9, grow: 3.5, width: 3 })   // as s05's
+          // the two brackets draw over the bead's glow and the echo rings (critic B-03 item 4): the glow (70 px)
+          // still reaches their lines from a hop's top, but passes behind them, so it never washes a line out
+          ;[brLow, brHigh].forEach((br) => br.path.parentNode.appendChild(br.path))
           st.stairs.forEach((S, i) => S.names.prepare([LETTERS[i]]))
           st.risers.forEach((R) => R.labels.prepare(['T', 'S', '2', '1']))
           for (const m in KEYNAME) kb.keys[m].names.prepare([KEYNAME[m]])
@@ -315,8 +321,9 @@
 
           /* ---------------------------------------------------------------- type (hud, frame-fixed) */
           const hud = L.stageOf(room.hud)
-          // S5's tally, as s05 lays it out, landed; its S's scale 1.2 on "scattered"; it leaves with the legend
-          const tally = tokenRow(hud, ['T', 'T', 'S', 'T', 'T', 'T', 'S'], [0, 30, 30, 30, 30, 30, 30], { x0: 1240 })
+          // S5's tally, as s05 lays it out (x 1270, gaps 21: ink x 1271 to 1668), landed; its S's scale 1.2 on
+          // "scattered"; it leaves with the legend
+          const tally = tokenRow(hud, ['T', 'T', 'S', 'T', 'T', 'T', 'S'], [0, 21, 21, 21, 21, 21, 21], { x0: 1270 })
           // the legend, as s05 draws it
           const legend = [['T', ' = tone ', '(2 rows)', 200], ['S', ' = semitone ', '(1 row)', 252]].map(([a, b, c, y]) => {
             const el = L.svg('text', { x: 140, y, opacity: 1, style: "font: 600 44px 'Outfit', sans-serif; white-space: pre;" }, hud)
@@ -327,10 +334,11 @@
           })
           // the sum "2 2 1 · 2 · 2 2 1 = 12" (Outfit 600, baseline 260), each number landing when it is said (a dot
           // with the number after it), "= 12" on "twelve". Critic B-01 item 6: with a space between them the numbers
-          // read as 221, so they keep 20 to 23 px of ink between them (16 px of advance); critic B-02 item 4: back in
-          // HANDOFFS' lane (x 1270 to 1746), so 56 px, not 64, and tighter dots (13 to 15 px of ink each side). Its
-          // ink runs x 1254 to 1737, so "= 12" at its 1.2 scale still ends by 1746 (lab/s06-groups/scratch/sum56.mjs)
-          const sum = tokenRow(hud, ['2', '2', '1', '·', '2', '·', '2', '2', '1', '=', '12'], [0, 16, 16, 12, 12, 12, 12, 16, 16, 16, 12], { right: 1739, size: 56 })
+          // read as 221, so they keep ground between them; critic B-02 item 4: inside HANDOFFS' lane (x 1270 to 1746);
+          // critic B-03 item 3: the dots get room. At 50 px: 15 to 18 px of ink between digits, 20 to 22 either side
+          // of each dot and 20 and 17 round "=". Its ink runs x 1280 to 1737; "= 12" at its 1.2 scale ends at 1746
+          // and the first "2" landing from 1.3x starts at about 1276 (lab/s06-groups/scratch/sum-fit.mjs)
+          const sum = tokenRow(hud, ['2', '2', '1', '·', '2', '·', '2', '2', '1', '=', '12'], [0, 12, 12, 19, 19, 19, 19, 12, 12, 15, 12], { right: 1739, size: 50 })
           let nk = 0
           sum.forEach((tk, k) => { tk.land = tk.ch === '·' ? null : k < 9 ? NUMS[nk++] : A.twelve })
           sum.forEach((tk, k) => { if (tk.ch === '·') tk.land = sum[k + 1].land })
@@ -406,7 +414,7 @@
             goldGlow.forEach((el) => el.setAttribute('opacity', (0.55 * L.env(t, A.scattered, 0.3, 0.5, 0.6)).toFixed(3)))
             rowGlows.forEach((el, i) => el.setAttribute('opacity', Math.max(0.1 * L.env(t, A.semis + 0.1 * i, 0.15, 0.1, 0.5),
               0.1 * L.env(t, A.semis2 + 0.1 * i, 0.15, 0.1, 0.5), 0.12 * L.env(t, ROWTIP[i], 0.1, 0.15, 0.5)).toFixed(3)))
-            tGlow.setAttribute('opacity', (0.9 * L.env(t, A.tone3, 0.25, A.joins - A.tone3 + 0.3, 0.6)).toFixed(3))
+            tGlow.setAttribute('opacity', (0.45 * L.env(t, A.tone3, 0.25, A.joins - A.tone3 + 0.3, 0.6)).toFixed(3))
 
             kb.draw({
               key: (m) => ({
@@ -452,7 +460,7 @@
                 const out = P(t, A.ghEnd, 0.5, 'power1.in')
                 b = { ...L.bead4.runAt(t, steps), a: 1 - out, scale: 1 - 0.4 * out }
                 // the two semitone hops (E-F, B-C) are the small step: their apex 24 above the higher stair, not
-                // 40, and their x on power2.inOut, so the bead stays under its bracket (6.3 px) and clears the "S"
+                // 40, and their x on power2.inOut, so the bead stays under its bracket (16.3 px) and clears the "S"
                 // (6.8 px; lab/s06-groups/item5/bracket-clear.mjs). Its middle frame travels 65 px on screen in F-low
                 // (a tone hop's 43); power3.inOut's 81 read as a pop
                 if (b.hopping && SEMI(b.on + 1)) {
@@ -467,7 +475,7 @@
 
             // type: the legend and the tally leave before the push; the legend comes back as the pull lands, as s05
             // lands it, and leaves with the brackets; the sum's numbers land as they are said, each from 1.3x over
-            // 0.4 s (a 56 px label: a counted pulse); "= 12" lands on "twelve" and scales 1.2 on o6's and b16's
+            // 0.4 s (a 50 px label: a counted pulse); "= 12" lands on "twelve" and scales 1.2 on o6's and b16's
             // "twelve"; "= 1 octave" lands once its bracket is past half way; the sum, "= 12" and the key names leave
             // at b16's end, "= 1 octave" and its bracket 0.25 s later, once Tavi has hopped out (item 7)
             legend.forEach((el, i) => {
