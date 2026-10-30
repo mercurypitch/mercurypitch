@@ -93,6 +93,19 @@ export const NATIVE_ONBOARDING: boolean = KARAOKE_IMPORT
 export const EAR_LAB_WITH_MERC: boolean = KARAOKE_IMPORT
 
 /**
+ * Whether this build carries Leagues and the weekly challenge on the phone
+ * (docs/plans/native-more-and-community.md, slices 2 and 3): the More
+ * sheet's Together group, the Leagues screen and the league the group's row
+ * names. On in a native test build, TestFlight among them, so the owner can
+ * try it before it ships, and off in the store build until the owner flips
+ * it. Folded like `KARAOKE_IMPORT`, so the store build carries none of it
+ * (assert-bundle.mjs STAGE 2): the screen is a lazy chunk behind this
+ * constant (NativeShell.tsx), and the store the row reads is free of side
+ * effects in the native config, so nothing reaches it there.
+ */
+export const NATIVE_LEAGUES: boolean = KARAOKE_IMPORT
+
+/**
  * The origin `/api/uvr/*` is asked on. Empty on the web, whose page is on
  * the worker that serves it. A native page is on capacitor://localhost, so
  * a native build names the web host that goes with its db-worker.

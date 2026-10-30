@@ -3,7 +3,8 @@
 // ============================================================
 
 import { describe, expect, it } from 'vitest'
-import { accountLine, developerLine, guitarLine, karaokeLine, pianoLine, settingsLine, } from './more-lines'
+import type { LeagueMe } from '@/db/services/league-service'
+import { accountLine, developerLine, guitarLine, karaokeLine, leaguesLine, pianoLine, settingsLine, } from './more-lines'
 
 describe('the Karaoke line', () => {
   it('counts the songs ready on a fresh install', () => {
@@ -108,5 +109,62 @@ describe('the Developer line', () => {
       'Build abc, 127.0.0.1:8787',
     )
     expect(developerLine('abc', undefined)).toBe('Build abc, no server')
+  })
+})
+
+describe('the Leagues line', () => {
+  const league: LeagueMe = {
+    eligible: true,
+    weekStart: '2026-10-26T00:00:00.000Z',
+    league: {
+      id: 'l2',
+      rank: 2,
+      name: 'Sparkwing',
+      trophyAsset: '/leagues/l2.webp',
+      badgeAsset: null,
+      isMystery: false,
+      promoteCount: 10,
+      relegateCount: 10,
+    },
+    points: 120,
+    rank: 4,
+    cohortSize: 23,
+    standings: [],
+  }
+
+  it('asks a phone with no account to sign in', () => {
+    expect(leaguesLine({ signedIn: false, me: league, thisWeek: true })).toBe(
+      'Sign in to climb',
+    )
+  })
+
+  it('names the rung and the place this week', () => {
+    expect(leaguesLine({ signedIn: true, me: league, thisWeek: true })).toBe(
+      'Sparkwing, 4th of 23',
+    )
+  })
+
+  it('says when there are no points yet this week', () => {
+    expect(
+      leaguesLine({
+        signedIn: true,
+        me: { ...league, rank: null, points: 0 },
+        thisWeek: true,
+      }),
+    ).toBe('Sparkwing, no points yet this week')
+  })
+
+  it('names no rung it has not read this week, or at all', () => {
+    for (const facts of [
+      { signedIn: true, me: league, thisWeek: false },
+      { signedIn: true, me: null, thisWeek: false },
+      {
+        signedIn: true,
+        me: { eligible: false, reason: 'unavailable' as const },
+        thisWeek: true,
+      },
+    ]) {
+      expect(leaguesLine(facts)).toBe('A rung higher every week')
+    }
   })
 })

@@ -58,6 +58,7 @@
 import { createEffect, createMemo, createRoot, createSignal, on, untrack, } from 'solid-js'
 import type { ActiveTab } from '@/features/tabs/constants'
 import { TAB_EAR_LAB, TAB_GUITAR, TAB_PIANO } from '@/features/tabs/constants'
+import { NATIVE_LEAGUES } from '@/lib/native-build'
 import { exerciseHoldsFocus, markRunParked, nativeRunControls, roomArrivalHeld, } from '@/stores/native-shell-store'
 import { playbackState } from '@/stores/playback-state-store'
 import type { SettingsSection } from '@/stores/settings-section'
@@ -81,7 +82,8 @@ export type RailVariant = 'r1' | 'r2'
  * Settings is the root of a stack of them: it is a short grouped list whose
  * rows push screens of their own (S6, decision D1 A), and each of those can
  * push again. Developer stands on its own, reached from More, and so does the
- * Karaoke studio, reached from the Karaoke room's Options (S8 §11, D8 A).
+ * Karaoke studio, reached from the Karaoke room's Options (S8 §11, D8 A), and
+ * Leagues, reached from More's Together group (NATIVE_LEAGUES).
  */
 export type PushedScreen =
   | 'settings'
@@ -105,6 +107,7 @@ export type PushedScreen =
   | 'home-note'
   | 'first-note'
   | 'developer'
+  | 'leagues'
 
 /** How long an untouched tab column stays open (brief §6). */
 export const COLUMN_IDLE_MS = 4000
@@ -461,6 +464,8 @@ const DEVELOPER_AVAILABLE = import.meta.env.VITE_PORTABLE_CONSOLE === 'true'
  */
 export function pushScreen(screen: PushedScreen): void {
   if (screen === 'developer' && !DEVELOPER_AVAILABLE) return
+  // Leagues the same way, on a build without them (NATIVE_LEAGUES).
+  if (screen === 'leagues' && !NATIVE_LEAGUES) return
   closeColumn()
   closeMore()
   setPushedStack((stack) => {
@@ -482,6 +487,7 @@ export type SettingsChild = Exclude<
   | 'lip-roll'
   | 'ng-slides'
   | 'warm-up'
+  | 'leagues'
 >
 
 /**

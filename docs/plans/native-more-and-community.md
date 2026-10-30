@@ -1,7 +1,9 @@
 # The native More sheet as a list, and Together on the phone
 
-Status: slice 1 built and shown to the owner (screenshots in its PR); slices
-2 to 4 planned, each its own PR, merged before the next starts.
+Status: slice 1 approved by the owner (30 Oct 2026, from the screenshots
+shared in its session; PR #1267); slice 2 built (Leagues, read-only),
+stacked on slice 1's PR; slices 3 and 4 planned. Each slice is its own PR,
+stacked on the one before until that one merges.
 
 The native app's More sheet (`apps/mercurypitch/src/shell/MoreSheet.tsx`) was
 six square tiles in a four-column grid: 11 px labels, a third of the sheet
@@ -183,9 +185,10 @@ its theme with the sheet open (MISTAKES.md).
 
 ---
 
-## Slice 2: Leagues, read-only
+## Slice 2: Leagues, read-only (built)
 
-A pushed screen, `'leagues'`, from the Together group's Leagues row.
+A pushed screen, `'leagues'`, from the Together group's Leagues row
+(`apps/mercurypitch/src/shell/leagues/`).
 
 ### What it shows
 
@@ -196,10 +199,12 @@ A pushed screen, `'leagues'`, from the Together group's Leagues row.
    3 days"; never `formatCutCountdown`'s "3d 4h").
 2. **This week's standings.** The top 50 the worker sends, with the
    promotion and relegation lines where the web draws them, your row marked
-   You. The zone cut is lifted from `CommunityLeaderboard.tsx` (437-471) into
-   a pure module with its tests, zero-point trim included; the Progress
-   page's `leagueZone()` skips that trim, and the two must not disagree on
-   the phone.
+   You. The zone cut lives in one pure module, `src/lib/league-board.ts`,
+   mirroring the server's (`league-cut.ts`): only members with points move
+   up. The Progress card reads its zone from the same module, so a singer in
+   the top ten with no points is in the holding zone on both; before, the
+   card called that the promotion zone, which the cut would not honour.
+   The web's Leaderboard keeps its own copy of the cut, which agrees.
 3. **The ladder.** The seven rungs, yours marked, those above you veiled
    ("Reach Highnova to unveil its trophy"), the mystery rung "Coming soon".
 
@@ -210,39 +215,70 @@ A pushed screen, `'leagues'`, from the Together group's Leagues row.
 | Not signed in, or an anonymous identity | The ladder, and a card: "Leagues are for registered singers", Sign in (`openSignIn()`)        |
 | Signed in, loading                      | The ladder at once, then the rest                                                             |
 | Signed in, the fetch failed             | "Could not load your league", Try again (the web has no error state; DevicesScreen's pattern) |
+| Signed in, the server refused           | The session is asked to sign in again (`handleCloudSessionRejected`), as the account card is  |
+| Signed in, the week turned              | The new week's league is read; the ladder keeps the rungs already unveiled meanwhile          |
 | `reason: 'unavailable'`                 | A plain note that leagues are not on this server yet                                          |
 | Eligible                                | The three parts above                                                                         |
 
 Signed in is `accountSignedIn()`, never `hasValidToken()`, which is true for
 an anonymous identity and hid the web's sign-up for exactly those singers.
-The screen refetches on `authVersion()`, so signing in from its card fills
-it.
+The screen reads again when `accountSignedIn()` turns true, so signing in
+from its card fills it. Try again stays on screen, `aria-disabled` rather
+than `disabled`, while its read is out, and hands focus to the league's
+name once one lands: a removed or disabled button drops the focus it has.
+`readLeagueMe` (league-service.ts) tells a refused session (a 401, or the
+403 a suspended account gets) from no answer, as `readMe` does; any other
+403 is no answer, as for every data read, so it signs nobody out.
+`fetchLeagueMe` stays the web's passive read.
 
 ### Names
 
 Every name on the board is the worker's: `readLeagueMe` already shows a
 member's display name only when `leaderboardOptIn` is on, and a weekly
 pseudonym ("Singer-3fa2c1") otherwise. The phone adds no name of its own
-and caches none. One consent for every board; slice 2 asks for none, because
-it publishes nothing.
+and keeps none in storage: the kept league drops the standings, which stay
+in memory for the screen that showed them. One consent for every board;
+slice 2 asks for none, because it publishes nothing.
 
 ### The More row's line
 
-There is no league store today. Slice 2 adds `league-store.ts`: the last
-`LeagueMe` for the account the token names (`currentAccountId()`), cleared
-on an `authVersion` change, filled by the Leagues screen and on the app's
-return to the foreground, never by the sheet. The line: "Sparkwing, 4th of
-23"; "Sparkwing, no points yet this week"; "Sign in to climb"; and "A rung
-higher every week" before anything is known.
+`league-store.ts` keeps the last `LeagueMe` for the account the token names
+(`currentAccountId()`), with the public ladder: let go when the phone signs
+out or changes hands, read again for an account that signs in, filled by
+the Leagues screen and on the app's return to the front at most every
+quarter of an hour (`LEAGUE_FRESH_MS`), never by the sheet. Asks that
+overlap share one read, and a cold start reads once, from the account
+watcher's first run. The line: "Sparkwing, 4th of 23"; "Sparkwing, no
+points yet this week"; "Sign in to climb"; and "A rung higher every week"
+before anything is known. A league kept from an earlier week is not named:
+the Monday cut may have moved the singer since. Which week a league is
+from is judged by when the phone read it (`leagueReadThisWeek`), on its own
+clock at both ends, not against the week the server named: a phone whose
+clock is a day out still shows what it read a moment ago.
 
 ### The switch and the proof
 
 `NATIVE_LEAGUES` in `native-build.ts`; the screen is a lazy import behind it
 in `NativeShell.tsx`, and `pushScreen('leagues')` refuses without it, as it
 refuses `'developer'`. STAGE 2 markers: the row's line ("A rung higher
-every week"), the screen's test id, and one line of its copy. New shell
-icon: none
-(`TrophyIcon` exists).
+every week"), the screen's test id (`shell-leagues`), its signed-out
+heading ("Climb a rung every week") and the store's key (`mp:league-card`).
+The store is in the native config's side-effect-free list, the More sheet
+reads it only inside its folded Together group, and
+`apps/mercurypitch/src/leagues-fold.test.ts` holds the sources to all of
+it. New shell icon: none (`TrophyIcon` exists).
+
+### Found while building it
+
+- The Settings stack titles its groups at 11 px; the Leagues screen lifts
+  its own to 13, and Settings keeps its.
+- The kit's primary button (`.mp-set-button`) set its label in the inverse
+  ink, 4.4:1 on the light theme's accent. It is a shell token now
+  (`--mp-button-ink`), white in light (5.2:1), for every screen and sheet
+  that uses the button.
+- DevicesScreen and AccountScreen remove their retry button while its read
+  is out, so focus drops to the page; the Leagues screen does not copy
+  that. A follow-up for those two, not this slice.
 
 ---
 
@@ -418,6 +454,12 @@ Each is applied as written unless the owner says otherwise.
    changes: a member of the closed `ContactTopic` union in
    `src/lib/contact-links.ts` ("anything else is ignored on arrival"), and
    the form on the landing site, outside this repository.
+10. **One cut for every surface on the phone** (slice 2):
+    `src/lib/league-board.ts`, read by the Leagues screen and the Progress
+    card, so the card no longer promises a promotion the cut would not
+    make. That changes the web's card too, for the same singers.
+11. **The phone keeps no board** (slice 2): the singer's own league and
+    place for the More row, never the other members' names.
 
 ## Open, for the owner
 
@@ -429,13 +471,13 @@ Each is applied as written unless the owner says otherwise.
 
 ## Order
 
-| PR  | What                                        | Switch             |
-| --- | ------------------------------------------- | ------------------ |
-| 1   | This plan, and the More sheet as a list     | none               |
-| 2   | Leagues, read-only                          | `NATIVE_LEAGUES`   |
-| 3   | The weekly challenge as a room              | `NATIVE_LEAGUES`   |
-| 4a  | Reports, blocks, the name filter (worker)   | none (worker)      |
-| 4b  | Report and Block on the phone, contact line | none               |
-| 4c  | Community                                   | `NATIVE_COMMUNITY` |
+| PR  | What                                            | Switch             |
+| --- | ----------------------------------------------- | ------------------ |
+| 1   | This plan, and the More sheet as a list (#1267) | none               |
+| 2   | Leagues, read-only                              | `NATIVE_LEAGUES`   |
+| 3   | The weekly challenge as a room                  | `NATIVE_LEAGUES`   |
+| 4a  | Reports, blocks, the name filter (worker)       | none (worker)      |
+| 4b  | Report and Block on the phone, contact line     | none               |
+| 4c  | Community                                       | `NATIVE_COMMUNITY` |
 
 4a does not wait for 2 and 3: it can start beside them.

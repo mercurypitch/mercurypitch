@@ -13,6 +13,8 @@
 // never carries a count that asks nothing of the reader, and it never says
 // a percentage.
 
+import type { LeagueMe } from '@/db/services/league-service'
+import { ordinal } from '@/lib/league-board'
 import { MORE_ACCOUNT_SIGNED_OUT } from './settings/account-copy'
 
 /** "1 song", "3 songs". */
@@ -81,6 +83,41 @@ export function accountLine(facts: AccountFacts): string {
   if (!facts.signedIn) return MORE_ACCOUNT_SIGNED_OUT
   const name = facts.name.trim()
   return name !== '' ? `Signed in as ${name}` : facts.provider
+}
+
+export interface LeagueFacts {
+  signedIn: boolean
+  /** The league the phone kept for this account (league-store.ts). */
+  me: LeagueMe | null
+  /** Whether that league is this week's: the cut moves people each Monday. */
+  thisWeek: boolean
+}
+
+/**
+ * Leagues: the rung and the place this week, from the league the phone
+ * kept. A league kept from an earlier week is not named: the Monday cut may
+ * have moved the singer since, and the next read says where to.
+ */
+export function leaguesLine(facts: LeagueFacts): string {
+  if (!facts.signedIn) return 'Sign in to climb'
+  const me = facts.me
+  if (
+    me === null ||
+    !me.eligible ||
+    me.league === undefined ||
+    !facts.thisWeek
+  ) {
+    return 'A rung higher every week'
+  }
+  const rung = me.league.name
+  if (
+    me.rank === null ||
+    me.rank === undefined ||
+    me.cohortSize === undefined
+  ) {
+    return `${rung}, no points yet this week`
+  }
+  return `${rung}, ${ordinal(me.rank)} of ${me.cohortSize}`
 }
 
 /** Settings: a microphone the phone refused is the one thing to say. */

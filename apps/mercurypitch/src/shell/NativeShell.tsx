@@ -25,7 +25,7 @@ import { createEffect, createMemo, createSignal, lazy, onCleanup, onMount, Show,
 import { Portal } from 'solid-js/web'
 import './shell.css'
 import { TAB_HOME } from '@/features/tabs/constants'
-import { KARAOKE_IMPORT, NATIVE_ONBOARDING, PREMIUM_EXERCISES, } from '@/lib/native-build'
+import { KARAOKE_IMPORT, NATIVE_LEAGUES, NATIVE_ONBOARDING, PREMIUM_EXERCISES, } from '@/lib/native-build'
 import { exposeForE2E } from '@/lib/test-utils'
 import { nativeRunControls, registerShellApi, setShellOwnsTransport, } from '@/stores/native-shell-store'
 import { onUnlockShown, setNotificationPresenter, showActionNotification, showNotification, } from '@/stores/notifications-store'
@@ -38,6 +38,7 @@ import { Dock } from './Dock'
 import { installHistoryDepth } from './history-depth'
 import { installKaraokeImport } from './karaoke-import-wiring'
 import { KeepAlert } from './KeepAlert'
+import { installLeagueRefresh } from './leagues/league-store'
 import { MoreSheet } from './MoreSheet'
 import { NoticePill } from './NoticePill'
 import { installPortraitLock } from './portrait-lock'
@@ -151,6 +152,19 @@ const FirstNoteScreen: Component = PREMIUM_EXERCISES
   : () => null
 
 /**
+ * Leagues (slice 2 of docs/plans/native-more-and-community.md), on a build
+ * with them (`NATIVE_LEAGUES`) and no other: the same ternary as Long
+ * note's, so the store build keeps no chunk.
+ */
+const LeaguesScreen: Component = NATIVE_LEAGUES
+  ? lazy(async () =>
+      import('./leagues/LeaguesScreen').then((module) => ({
+        default: module.LeaguesScreen,
+      })),
+    )
+  : () => null
+
+/**
  * The native onboarding (src/onboarding), on a build with it
  * (`NATIVE_ONBOARDING`) and no other: the same ternary as Long note's. It
  * loads when it first opens, on a new install's first Sing door, so a phone
@@ -219,6 +233,10 @@ export const NativeShell: Component = () => {
     // Import (karaoke-import-wiring.ts).
     const karaoke = installKaraokeImport()
     onCleanup(karaoke.stop)
+
+    // The league the More sheet's Leagues row names, kept current from the
+    // foreground (league-store.ts). A store build folds it away.
+    if (NATIVE_LEAGUES) onCleanup(installLeagueRefresh())
 
     // The shell's half of the bridge: a room's own options sheet ends with an
     // "All settings" row, and this is the only way it can reach a screen the
@@ -471,6 +489,7 @@ export const NativeShell: Component = () => {
             warmUp={PREMIUM_EXERCISES ? WarmUpScreen : undefined}
             homeNote={PREMIUM_EXERCISES ? HomeNoteScreen : undefined}
             firstNote={PREMIUM_EXERCISES ? FirstNoteScreen : undefined}
+            leagues={NATIVE_LEAGUES ? LeaguesScreen : undefined}
           />
 
           {/* Inside the root, not beside it: the sheet copies the custom
@@ -488,6 +507,9 @@ export const NativeShell: Component = () => {
             }}
             onPushDeveloper={() => {
               pushScreen('developer')
+            }}
+            onPushLeagues={() => {
+              pushScreen('leagues')
             }}
           />
 

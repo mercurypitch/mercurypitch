@@ -285,6 +285,21 @@
 
 /* ---------- the kit's capsule button ---------- */
 
+/* The label's ink, as a token on the shell rather than a theme rule on the
+   button: the sign-in sheet and Keep carry these buttons in a portal that
+   takes its custom properties as a snapshot (MISTAKES.md, "Theme a
+   portalled sheet with tokens at its anchor"). In light the accent is a
+   deep blue, and its inverse ink on it came to 4.4:1, short of AA for a
+   17 px label; white makes 5.2:1. The dark theme keeps its inverse ink
+   (6.3:1). */
+.mp-shell {
+  --mp-button-ink: var(--text-inverse);
+}
+
+:root[data-theme='light'] .mp-shell {
+  --mp-button-ink: #ffffff;
+}
+
 .mp-set-button {
   display: flex;
   align-items: center;
@@ -296,7 +311,7 @@
   border: 0;
   border-radius: 999px;
   background: var(--accent);
-  color: var(--text-inverse);
+  color: var(--mp-button-ink, var(--text-inverse));
   font: 600 17px/1 var(--font-body, sans-serif);
   white-space: nowrap;
   cursor: pointer;
@@ -308,9 +323,16 @@
   transform: scale(0.98);
 }
 
-.mp-set-button:disabled {
+/* `aria-disabled` for a button that must keep its focus while it waits
+   (the Leagues screen's Try again): `disabled` would drop it. */
+.mp-set-button:disabled,
+.mp-set-button[aria-disabled='true'] {
   opacity: 0.4;
   cursor: default;
+}
+
+.mp-set-button[aria-disabled='true']:active {
+  transform: none;
 }
 
 .mp-set-button--secondary {

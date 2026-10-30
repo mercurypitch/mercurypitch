@@ -94,6 +94,10 @@ const KARAOKE_STAGE_2 = [
   // shell imports statically.
   '/apps/mercurypitch/src/onboarding/onboarding-layer.ts',
   '/apps/mercurypitch/src/onboarding/onboarding-flag.ts',
+  // Leagues on the phone ride the same switch too (NATIVE_LEAGUES): the
+  // league the More sheet's row names, which the sheet and the shell import
+  // statically and which reads storage as it is made.
+  '/apps/mercurypitch/src/shell/leagues/league-store.ts',
 ]
 
 function isKaraokeStage2(id: string): boolean {

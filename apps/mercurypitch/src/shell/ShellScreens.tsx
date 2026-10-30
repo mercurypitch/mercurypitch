@@ -61,6 +61,11 @@ export interface ShellScreensProps {
   homeNote?: Component
   /** First note, the second Ear room, passed in as Long note is. */
   firstNote?: Component
+  /**
+   * Leagues, on a build with them (NATIVE_LEAGUES): passed in as Developer
+   * is, so a store build carries no chunk for it.
+   */
+  leagues?: Component
 }
 
 const TITLES: Record<Exclude<PushedScreenId, 'this-phone'>, string> = {
@@ -84,6 +89,7 @@ const TITLES: Record<Exclude<PushedScreenId, 'this-phone'>, string> = {
   'home-note': 'Home note',
   'first-note': 'First note',
   developer: 'Developer',
+  leagues: 'Leagues',
 }
 
 /** The device's own screen is named for what it is: "This iPad" on an iPad. */
@@ -151,6 +157,10 @@ export function ShellScreens(props: ShellScreensProps): JSX.Element {
       case 'developer': {
         const Developer = props.developer
         return Developer === undefined ? null : <Developer />
+      }
+      case 'leagues': {
+        const Leagues = props.leagues
+        return Leagues === undefined ? null : <Leagues />
       }
     }
   }

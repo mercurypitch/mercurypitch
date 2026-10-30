@@ -1,0 +1,251 @@
+/* ============================================================
+   The Leagues screen (slice 2, docs/plans/native-more-and-community.md)
+   ============================================================
+
+   The Settings stack's grouped list (settings.css) with three parts of its
+   own: the hero for the singer's rung, the standings' rows and the lines
+   where a zone ends, and the ladder's rungs. Tokens only, so dark, light
+   and every preset carry over. Nothing under 13 px, and no word in a colour
+   alone: a zone is its line's words; the tints only repeat them.
+
+   Loaded by the screen's lazy chunk alone, so a store build carries none. */
+
+/* The Settings stack titles its groups at 11 px; here, as on the More
+   sheet, nothing is under 13. Longhands over the shorthand, by specificity,
+   so Settings' own screens keep theirs. */
+.mp-league .mp-set-group__title {
+  font-size: 13px;
+  line-height: 18px;
+  color: var(--text-secondary);
+}
+
+.mp-league-hero {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 16px;
+  border-radius: 12px;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-subtle);
+}
+
+/* The trophies are painted on their own dark ground: a rounded corner
+   makes that ground a tile rather than a cut-out. */
+.mp-league-hero__trophy {
+  flex: 0 0 auto;
+  width: 88px;
+  height: 88px;
+  border-radius: 14px;
+  object-fit: cover;
+}
+
+.mp-league-hero__text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.mp-league-hero__eyebrow {
+  margin: 0;
+  font: 500 13px/18px var(--font-body, sans-serif);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--text-secondary);
+}
+
+.mp-league-hero__name {
+  margin: 0;
+  font: 700 24px/30px var(--font-body, sans-serif);
+  color: var(--text-primary);
+  overflow-wrap: anywhere;
+}
+
+.mp-league-hero__place {
+  margin: 0;
+  font: 400 15px/20px var(--font-body, sans-serif);
+  color: var(--text-secondary);
+  font-variant-numeric: tabular-nums;
+}
+
+/* ---------- signed out ---------- */
+
+.mp-league-invite {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 8px;
+  padding: 16px;
+  border-radius: 12px;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-subtle);
+}
+
+.mp-league-invite__icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
+  background: #0e8f7f;
+  color: #ffffff;
+}
+
+.mp-league-invite__title {
+  margin: 4px 0 0;
+  font: 600 17px/22px var(--font-body, sans-serif);
+  color: var(--text-primary);
+}
+
+.mp-league-invite__body {
+  margin: 0 0 8px;
+  font: 400 15px/20px var(--font-body, sans-serif);
+  color: var(--text-secondary);
+}
+
+/* ---------- the standings ---------- */
+
+.mp-league-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-height: 48px;
+  padding: 8px 14px;
+  border-bottom: 1px solid var(--border-subtle);
+  font: 400 15px/20px var(--font-body, sans-serif);
+  color: var(--text-primary);
+}
+
+.mp-league-row:last-child {
+  border-bottom: 0;
+}
+
+.mp-league-row[data-you='on'] {
+  background: color-mix(in srgb, var(--accent) 10%, transparent);
+}
+
+.mp-league-row__rank {
+  display: inline-flex;
+  flex: 0 0 auto;
+  align-items: center;
+  justify-content: center;
+  min-width: 30px;
+  height: 30px;
+  padding: 0 6px;
+  border-radius: 15px;
+  background: var(--bg-tertiary);
+  color: var(--text-primary);
+  font: 600 13px/1 var(--font-body, sans-serif);
+  font-variant-numeric: tabular-nums;
+}
+
+.mp-league-row[data-zone='promote'] .mp-league-row__rank {
+  background: color-mix(in srgb, var(--teal) 24%, var(--bg-secondary));
+}
+
+.mp-league-row[data-zone='demote'] .mp-league-row__rank {
+  background: color-mix(in srgb, var(--red) 20%, var(--bg-secondary));
+}
+
+/* A long name gives way, the You chip beside it never does. */
+.mp-league-row__name {
+  display: flex;
+  flex: 1 1 auto;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
+.mp-league-row__text {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.mp-league-row__you {
+  flex: 0 0 auto;
+  padding: 1px 8px;
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--accent) 22%, var(--bg-secondary));
+  color: var(--text-primary);
+  font: 600 13px/18px var(--font-body, sans-serif);
+}
+
+.mp-league-row__points {
+  flex: 0 0 auto;
+  color: var(--text-secondary);
+  font-size: 14px;
+  font-variant-numeric: tabular-nums;
+}
+
+/* The line across the board where a zone ends: its words say which. */
+.mp-league-line {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 36px;
+  padding: 6px 14px;
+  border-bottom: 1px solid var(--border-subtle);
+  background: color-mix(in srgb, var(--text-primary) 4%, transparent);
+  font: 600 13px/18px var(--font-body, sans-serif);
+  color: var(--text-secondary);
+}
+
+.mp-league-line svg {
+  flex: 0 0 auto;
+}
+
+.mp-league-line[data-zone='promote'] svg {
+  transform: rotate(-90deg);
+  color: var(--teal);
+}
+
+.mp-league-line[data-zone='demote'] svg {
+  transform: rotate(90deg);
+  color: var(--red);
+}
+
+/* ---------- the ladder ---------- */
+
+.mp-league-rung {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-height: 56px;
+  padding: 8px 14px;
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.mp-league-rung:last-child {
+  border-bottom: 0;
+}
+
+.mp-league-rung[data-current='on'] {
+  background: color-mix(in srgb, var(--accent) 10%, transparent);
+}
+
+.mp-league-rung__art {
+  flex: 0 0 auto;
+  width: 40px;
+  height: 40px;
+  border-radius: 8px;
+  object-fit: cover;
+}
+
+.mp-league-rung__text {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.mp-league-rung__name {
+  font: 500 15px/20px var(--font-body, sans-serif);
+  color: var(--text-primary);
+}
+
+.mp-league-rung__sub {
+  font: 400 13px/18px var(--font-body, sans-serif);
+  color: var(--text-secondary);
+}

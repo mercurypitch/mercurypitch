@@ -487,6 +487,17 @@ const KARAOKE_STAGE_2 = [
     /\/(?:merc-(?:point|listen|celebrate)|glasshouse-night)-[\w-]{8}\.webp$/u,
     "Merc's stills and the Wild's glasshouse in the Ear Lab with Merc",
   ],
+  // Leagues on the phone, on the same switch until the owner flips it
+  // (NATIVE_LEAGUES, src/lib/native-build.ts): the screen is a lazy chunk
+  // behind it (NativeShell.tsx), the league the More sheet's row names is
+  // free of side effects in the native config, and the row's line is
+  // worked out inside the More sheet's folded Together group. A row is
+  // found by its words, never by `data-more-item`: the sheet sets that
+  // from a prop, so no bundle spells it out.
+  ['shell-leagues', 'the Leagues screen'],
+  ['Climb a rung every week', "the Leagues screen's way in, signed out"],
+  ['mp:league-card', "the league the More sheet's row names"],
+  ['A rung higher every week', "the More sheet's Leagues row"],
 ]
 
 /**
