@@ -1891,3 +1891,13 @@ Note: the lanes' memory gate read a stale cgroup path after the 21:00 restart (f
   b803c7d43). Film critic FILM1 waits for a free slot (two-agent policy) unless the owner allows a
   third. film-01 at 08:48: pieces 4-6 in progress (~370 frames/min with 3 workers; memory 12.0 GB
   of 13.36 GB, of which ~9.75 GB rss+shmem), capture ends ~09:45, post-steps ~10:00.
+- 09:0x owner asked for a third agent: more Sing page covers (free and premium), Higgsfield, best
+  model, at most 200 credits, and a PR. Agent running at xhigh, brief sing-art/BRIEF.md: plan and
+  prompts in sing-art/PLAN.md, credits in sing-art/LEDGER.md, worktree presses (clean; its branch
+  merged) -> feat/sing-room-covers from origin/main; free covers to public/sing/ (4 files each, as
+  sing-retro-analog-studio) + catalog; premium as master-ready supporter rooms (protectedSource
+  'sing'; server admits the surface since migration 0044), masters out of git for Premium Studio.
+  BLOCKER: this session's Higgsfield connector has no generate tool (catalog and balance only:
+  1,057 credits, Plus). Owner told to allow it at claude.ai/customize/connectors. The agent stops
+  after PLAN.md if the tool is still missing; resume or respawn it once the tool appears.
+  No pnpm from it until film-01.status ends in "done".
