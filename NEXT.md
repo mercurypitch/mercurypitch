@@ -1754,3 +1754,10 @@ Note: the lanes' memory gate read a stale cgroup path after the 21:00 restart (f
 - Queue: critic E-03 (E3.txt) -> F round 3 (F-fix3) -> C small (C-fix2); B-04 when B reports;
   A-04 when A reports; F-04 (frozen S16 from f3) and C-03 after theirs. D's polish after the film
   critic's first round. Then integration + 60 fps film render.
+- 01:0x builder B handed back the small round ($S/l4entr/B-small-report.txt): tally to x 1270 baseline
+  260 (ink 1271-1668, 73 px from Tavi), sum 50 px (ink 1280-1737), brackets up 10 (y 448, 266) and
+  drawn over the glow (glow still reaches the line from behind: ACCEPTED, DECISIONS 110), S6 "T" glow
+  now a box -> project check 0 errors everywhere. Frozen $S/l4entr/b4/; critics/B4.txt READY.
+- 01:0x critic E-03 launched (frozen e3/). Agents now: A + E-03.
+- Queue: F round 3 (F-fix3) -> C small (C-fix2); critic B-04 (B4.txt); A-04 when A reports; F-04
+  (frozen S16 from f3) and C-03 after their rounds. D's polish after the film critic's first round.

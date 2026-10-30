@@ -510,7 +510,7 @@ the hero view, y 323) after that.
   layers part; the pull to F0 from `at('group-high', 'start', 2.07)`, 1.1 s); `L.bead4` (group-low
   and group-high; the hop from stair 4 to stair 5 lands on G4, 120.83, once the truck has settled);
   the ghost outline (stairs 1 to 4 and their risers, drawn from `L.ST`, moving by (+480, -182),
-  124.3 to 125.6, power2.inOut); the sum (Outfit 600 64 px at x 1270, baseline 260) and "= 12"; the
+  124.3 to 125.6, power2.inOut); the sum (Outfit 600 50 px at x 1270, baseline 260; DECISIONS 110) and "= 12"; the
   octave bracket (chrome, vertical, x 1232, y 664 to 352) and "= 1 octave" (serif italic 96 px at x
   1262, baseline 543); `L.pulse`; `L.echoRings`.
 - Merc: m06a-orange talks o5 and hops out right at `at('o5', 'end', 0.09)`; m06b-orange drops in at

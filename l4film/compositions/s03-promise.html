@@ -179,9 +179,12 @@
           const L1 = word('b3', "you'll"), RIP0 = word('b3', 'build', 'start', 0.08), RIP_GAP = 0.2
           const THIN = word('b3', 'steps', 'start', 0.3), THIN_DUR = 0.7
           // 3b: "start it on any note" on "start it", the slide down two rows (0.9 s); stair 1, where it now
-          // starts, scales as the slide lands (long pulse) and lights chrome, up over 0.3 s and back over 0.4 s,
-          // both linear (group B's measured shape: L.lit's 0.15 s rise registers too little at 40 %); on "name
-          // its notes" the eight stairs light in turn, 0.1 s apart (long settle)
+          // starts, scales as the slide lands (long pulse) and lights chrome, up over 0.3 s, linear (group B's
+          // measured shape: L.lit's 0.15 s rise registers too little at 40 %), and stays lit until the naming
+          // wave reaches it (component critic A-03 item 4, DECISIONS 106: it went out three frames before the
+          // wave lit it again); its name "do" swells 1.2 as it lands (long pulse), which keeps the held light from
+          // reading as a still frame before the wave; on "name its notes" the eight stairs light in turn, 0.1 s
+          // apart (long settle), the wave running on from a lit stair 1
           const L2 = word('b3', 'start it'), SLIDE = word('b3', 'start it', 'start', 0.04), SLIDE_DUR = 0.9
           const LANDED = SLIDE + SLIDE_DUR
           const L3 = word('b3', 'name its notes'), LIGHT0 = word('b3', 'name its notes', 'start', -0.02)
@@ -244,7 +247,9 @@
             const ripple = (n) => (L.pulse(t, RIP0 + RIP_GAP * (n - 1), 'bar', { long: true }) - 1) / L.PULSE.bar
             // riser n in ink: up as it grows, held, and all seven thinning back together
             const inked = (n) => P(t, RIP0 + RIP_GAP * (n - 1), 0.2, 'power2.out') * (1 - P(t, THIN, THIN_DUR, 'none'))
-            const start1 = clamp(Math.min((t - LANDED + 0.05) / 0.3, 1 - (t - LANDED - 0.25) / 0.4))
+            // stair 1's light: up from the landing, held until the wave's own light on it is full (L.lit's 0.15 s
+            // rise), where the wave takes over at the same level
+            const start1 = t < LIGHT0 + 0.15 ? clamp((t - LANDED + 0.05) / 0.3) : 0
             const widen = P(t, WIDEN, 0.6, 'power2.inOut')
             const out = P(t, LIST_OUT, 0.3, 'power3.in')
             st.draw({
@@ -253,7 +258,7 @@
               stair: (n) => ({
                 lit: Math.max(L.lit(t, LIGHT0 + 0.1 * (n - 1), { long: true }), n === 1 ? start1 : 0),
                 scale: n === 1 ? L.pulse(t, LANDED, 'tile', { long: true }) : 1,
-                names: [{ text: SOL[n - 1], a: 1 }],
+                names: [{ text: SOL[n - 1], a: 1, scale: n === 1 ? L.pulse(t, LANDED, 'label', { long: true }) : 1 }],
               }),
               riser: (n) => ({ scale: 1 + L.PULSE.bar * ripple(n) }),
               houses: { top: { a: 1, w: 0, lit: fl.lit, glow: 0.6 * P(t, ARROW + 0.5, 0.3, 'power2.out') * (1 - out) } },

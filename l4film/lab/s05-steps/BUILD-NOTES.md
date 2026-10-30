@@ -153,6 +153,8 @@ only. Clock: Kokoro scratch, 483.73 s (cues.json = tools/board-cues.json today).
 - Layout error (s06 17.86 to 19.73): the F-G "T"'s glow was a second, blurred "T" text; now a soft 28 x 31 box
   (0.45 peak). Layout check on both lab projects, 80 samples: 0 errors.
 - 60 fps: lab/s05-steps/tools/hostpass60.sh (a copy of builder E's); round 5's 30 fps clips kept as clip-r3.mp4.
+- Results (60 fps, 00:45 and 00:51): s05 holds 0.4 s (0.3 per 30 s), longest 0.1; s06 0.7 s (0.6 per 30 s),
+  longest 0.2. npm run check: passed, 0 errors (lint 0, layout 0, 2 infos in s01), contrast 59/59.
 
 ## Status
 

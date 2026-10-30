@@ -1097,3 +1097,26 @@ replaced it. The builder's record: critics never read it.
        in S12 and S13. The rows already say the type lands (fades in, § Type), so they stand.
      - Frozen copies for critic E-03 in $S/l4entr/e3/ (rendered 00:30 and 00:35, after the
        00:21 kit change, which does not touch these two scenes: their camera never moves).
+
+110. **S5 and S6 after builder B's small round (component critic B-03's items 2 to 4 and S6's
+     layout error), as built.**
+     - **Item 2:** the tally moved into the sum's lane: x 1270, baseline 260, Outfit 600 64 px,
+       letters 21 px apart, ink x 1271 to 1668 (was x 1240, ink to 1692). Tavi's falling body never
+       comes left of x 1734, so the nearest ink is 73 px from it (41 before), and the tally sits on
+       the same pixels either side of the S5 to S6 cut (5 levels at most).
+     - **Item 3:** the sum is 50 px (56 before), 12 px between digits and 19 px either side of each
+       dot, ink x 1280 to 1737 at rest; "= 12" reaches 1746 at its pulse. The dots now have 20 to
+       22 px of space on each side (13 to 15 before).
+     - **Item 4:** both brackets went up 10 world px (y 448 and 266) and are drawn over the bead's
+       glow and echo rings. At the top of each semitone hop the bead's body is 29 px under the
+       upper bracket on screen (11 before). Its glow still reaches the line from behind: the halo
+       is 70 world px wide, and clearing it by 12 px would put the line off the top of F-high.
+       Accepted: the line stays whole over the glow, which reads as light passing behind it. A
+       smaller glow for this bead in S6 alone would change it across the S5 to S6 cut, and taking
+       the upper bracket out of F-high would drop half of what the shot shows.
+     - **S6's layout error** (129.21 to 130.02): the F-G riser's "T" glow was a second, blurred
+       "T", so check saw two texts in one place; it is now a soft box behind the label. The project
+       check reports 0 errors in every section.
+     - Holds S5 0.3 and S6 0.6 s per 30 s at 60 fps, longest 0.2 s. HANDOFFS § S5 to S6 and § S6's
+       brackets and the s06 sheet now say the same. Frozen copies for critic B-04 in
+       $S/l4entr/b4/.

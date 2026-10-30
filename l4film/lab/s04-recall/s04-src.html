@@ -15,8 +15,9 @@
           // F0 throughout. The staircase dims; Lesson 2's row of thirteen tiles, C4 to C5, rises over it and is
           // asked about afresh; q0's ring timer; the answer on the row (the twelve "1" brackets, the seven white
           // tiles, the five dark ones); then the row stands up into the staircase's rows and the staircase
-          // returns on them, its seven risers growing in turn; Tavi drops in, asks, and hops out; the risers
-          // ripple on "measure" and the scene ends on the A to B rest frame. Every time is a word or a duration.
+          // returns on them, its seven risers growing in turn; Tavi drops in, asks, and hops out; the stairs light
+          // in turn on "measure" and go back to unlit, so the scene ends on the A to B rest frame. Every time is a
+          // word or a duration.
           const SID = 's04-recall'
           const D = L.dur(SID)
           const at = (cue, edge, off) => L.at(SID, cue, edge, off)
@@ -65,14 +66,17 @@
           // joins and pulses as she asks it; on "bigger" the seven riser bars brighten together (component critic
           // A-02 item 2: 4 to 8 px, chrome at 40 % to full ink, 0.25 s, then back by "Let's", linear) and grow
           // together, so their unequal heights read side by side; on "Let's" the two labels and the numerals leave
-          // up fast; her hop out at at('b7', 'start', 0.29); on "measure" the seven risers ripple in turn (0.08 s
-          // apart), back to rest before the cut. On "seven steps" and on "measure" each riser's event also pulses
-          // the stair above it to 1.06 and flashes its tread (DECISIONS 88), and on "seven steps" an ink numeral,
-          // 1 to 7, lands above each riser as it flashes (A-02 item 2, FACTS 71)
+          // up fast; her hop out at at('b7', 'start', 0.29); on "measure" the eight stairs light in turn, left to
+          // right, the steps about to be measured: each fill to 40 % chrome (0.2 s, power2.out), 0.1 s apart, and
+          // all back to unlit from 0.05 s after b7 ends (0.35 s, power2.inOut), done 0.05 s before the cut, so the
+          // last frame is HANDOFFS § A to B's (component critic A-03 item 1, row 4d, DECISIONS 106: the lights
+          // replace the tread flash, which did not read at phone size). On "seven steps" each riser's event also
+          // pulses the stair above it to 1.06 and flashes its tread (DECISIONS 88), and an ink numeral, 1 to 7,
+          // lands above each riser as it flashes (A-02 item 2, FACTS 71)
           const QMARK = word('o3', 'steps?'), BIGGER = word('o3', 'bigger')
           const LEAVE = word('b7', "Let's")
           const HOP = at('b7', 'start', 0.29)
-          const MEASURE = word('b7', 'measure')
+          const MEASURE = word('b7', 'measure'), UNLIGHT = at('b7', 'end', 0.05)
 
           /* ---------------------------------------------------------------- the room */
           // the dust: this group's (dustF) at the open, crossfaded over q0 into group B's (Lesson 2's filmDust,
@@ -136,10 +140,10 @@
           const labQ = txt(hud, '?', { x: 400, y: 330, size: 56 })
           L.afterFonts(() => { labQ.setAttribute('x', f2(140 + lab2.getComputedTextLength())) })
 
-          // a riser's brightening as it grows (4 px chrome at 40 % to 6 px at full): up over 0.28 s and back over
-          // 0.5 s, both linear, so each riser's change carries until the next one's (s03's ripple, the same shape)
+          // a riser's brightening as it grows on "seven steps" (4 px chrome at 40 % to 6 px at full): up over 0.28 s
+          // and back over 0.5 s, both linear, so each riser's change carries until the next one's
           const env = (d) => (d < 0 ? 0 : d < 0.28 ? d / 0.28 : Math.max(0, 1 - (d - 0.28) / 0.5))
-          const growAt = (n) => SEVEN + 0.07 * (n - 1), rippleAt = (n) => MEASURE + 0.08 * (n - 1)
+          const growAt = (n) => SEVEN + 0.07 * (n - 1)
           // the numerals 1 to 7 (Outfit 600 36 px, ink, the stair names' size), centred over each riser, 24 px above its top (the upper
           // stair's tread), clear of that stair's pulse
           const numerals = [1, 2, 3, 4, 5, 6, 7].map((n) => txt(mid, String(n), { x: ST.riserX(n, 0), y: ST.tread(n + 1, 0) - 24, size: 36, anchor: 'middle' }))
@@ -190,23 +194,24 @@
             const stA = t < BACK ? (1 - 0.75 * P(t, DIM, 0.4, 'power2.inOut')) * (1 - P(t, RISE + 0.4, 0.6, 'power2.inOut')) : P(t, BACK, 0.4, 'power2.out')
             const nameA = (n) => (t < BACK ? 1 - P(t, DIM, 0.4, 'power2.inOut') : P(t, NAMES_BACK + 0.07 * (n - 1), 0.2, 'power2.out'))
             const out12 = t < SWAP ? 1 - P(t, P2, 1.0, 'power1.inOut') : swap
-            // riser n's events on "seven steps" and "measure" move stair n + 1: a pulse to 1.06 (long, but not on
-            // "measure", which ends at rest before the cut) and a tread flash
-            const blockPulse = (n) => (n < 2 ? 1 : Math.max(L.pulse(t, growAt(n - 1), 0.06, { long: true }), L.pulse(t, rippleAt(n - 1), 0.06)))
-            const flashK = (n) => (n < 2 ? 0 : Math.max(flashUp(t - growAt(n - 1)), flashUp(t - rippleAt(n - 1))))
+            // riser n's event on "seven steps" moves stair n + 1: a pulse to 1.06 (long) and a tread flash
+            const blockPulse = (n) => (n < 2 ? 1 : L.pulse(t, growAt(n - 1), 0.06, { long: true }))
+            const flashK = (n) => (n < 2 ? 0 : flashUp(t - growAt(n - 1)))
+            // "measure": stair n lit to 40 % chrome in turn, all back to unlit together
+            const measureLit = (n) => P(t, MEASURE + 0.1 * (n - 1), 0.2, 'power2.out') * (1 - P(t, UNLIGHT, 0.35, 'power2.inOut'))
             // "bigger": all seven bars together, up over 0.25 s and back by "Let's", linear
             const big = P(t, BIGGER, 0.25, 'power2.out') * (1 - P(t, BIGGER + 0.25, LEAVE - BIGGER - 0.25, 'none'))
             const in15 = P(t, ROWS_IN, 0.5, 'power1.inOut')
             st.draw({
               w: 0, s0: 0, a: stA,
               rows: { x0: 220, x1: 1680, k0: 0, k1: 19, kA: (k) => (k <= 12 ? out12 : k <= 14 ? 1 : in15), keep: { boxes: box ? [box] : [], cam: null, t } },
-              stair: (n) => ({ scale: blockPulse(n), names: [{ text: SOL[n - 1], a: nameA(n) }] }),
-              riser: (n) => ({ scale: Math.max(L.pulse(t, growAt(n), 'bar', { long: true }), L.pulse(t, BIGGER, 'bar', { long: true }), L.pulse(t, rippleAt(n), 'bar')) }),
+              stair: (n) => ({ scale: blockPulse(n), lit: measureLit(n), names: [{ text: SOL[n - 1], a: nameA(n) }] }),
+              riser: (n) => ({ scale: Math.max(L.pulse(t, growAt(n), 'bar', { long: true }), L.pulse(t, BIGGER, 'bar', { long: true })) }),
               houses: { top: { a: 1 - P(t, DIM, 0.4, 'power2.inOut'), w: 0, lit: 1 } },
             })
             edgeD5.setAttribute('opacity', (1 - in15).toFixed(3))
             st.risers.forEach((Rz, i) => {
-              const k = Math.max(env(t - growAt(i + 1)), env(t - rippleAt(i + 1)))
+              const k = env(t - growAt(i + 1))
               if (k <= 0.001 && big <= 0.001) return
               const x = ST.riserX(i + 1, 0), bw = Math.max(4 + 2 * k, 4 + 4 * big)
               Rz.bar.setAttribute('x', f2(x - bw / 2)); Rz.bar.setAttribute('width', f2(bw))

@@ -168,7 +168,7 @@
 
           /* ---------------------------------------------------------------- anchors */
           const TT = at('title')
-          const SHRINK = 0.3                                      // the field shrinks into the bead (expo.out)
+          const SHRINK = 0.3                                      // the field shrinks into the bead (power2.out, Lesson 2's curve; DECISIONS 106)
           const TITLE_IN = at('title', 'start', 0.26)             // the title and its kicker land as it settles
           const FYP_IN = at('title', 'start', 0.76)               // "Find Your Pitch" under the title
           const CHIME = (k) => TF.CHIME(k) - T0                   // scene time
@@ -354,9 +354,10 @@
             lockBox.style.opacity = (fIn * (1 - fOut)).toFixed(3)
             lockBox.style.transform = `translateY(${(22 * (1 - fIn) - 60 * fOut).toFixed(2)}px)`
 
-            /* the field: S1's last frame, shrinking (expo.out) into a chrome bead on the staff's middle line; the
-               vignette comes back as it goes; from FLY0 the bead flies back into the house (TF, from film time) */
-            const u = P(t, 0, SHRINK, 'expo.out')
+            /* the field: S1's last frame, shrinking into a chrome bead on the staff's middle line (power2.out, as
+               Lesson 2's field does: component critic A-03 item 2); the vignette comes back as it goes; from FLY0
+               the bead flies back into the house (TF, from film time) */
+            const u = P(t, 0, SHRINK, 'power2.out')
             const rest = TF.zmap(TF.REST[0], TF.REST[1] + TF.disp(TF.REST[0], Tf), Tf)
             const rBead = 22 * z
             let bx = lerp(960, rest[0], u), by = lerp(540, rest[1], u)
