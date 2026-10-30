@@ -286,7 +286,9 @@ describe('Studio graph park', () => {
     graph.scheduleUntil(1)
     ctx.currentTime = 1.3
     graph.park()
-    ctx.currentTime = 5
+    // Ahead of the clock, as the app resumes (seekEarliest): a source due on
+    // the clock itself would start two render quanta late (graph-lanes.ts).
+    ctx.currentTime = 4.98
     expect(graph.resume(72000, 5, true)).toBe(true)
     graph.scheduleUntil(8)
     const lane = sources()

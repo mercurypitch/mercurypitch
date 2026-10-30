@@ -280,14 +280,30 @@ export function openLane(ctx: BaseAudioContext, lane: StudioGraphLane): void {
   lane.sets.add(lane.current)
 }
 
+/** Two render quanta: how far past the clock a late source starts. */
+const LATE_SOURCE_FRAMES = 256
+
+/**
+ * When a source due at `due` starts. The browser moves an automation event
+ * set for a time already gone up to its clock, and a value curve moved there
+ * keeps its length and runs over the event after it, which the browser
+ * refuses: the Play fails with nothing heard. So a source due behind the
+ * clock, or too near it to finish scheduling first, starts a little past
+ * it instead, whole, its edge envelope moved with it. Started in the past,
+ * it would have played that late anyway.
+ */
+function sourceStart(ctx: BaseAudioContext, due: number): number {
+  return Math.max(due, ctx.currentTime + LATE_SOURCE_FRAMES / ctx.sampleRate)
+}
+
 /** Start one scheduled source on the lane's newest set. */
 function startLaneSource(
   ctx: BaseAudioContext,
   lane: StudioGraphLane,
-  { segment, when }: StudioScheduled,
+  { segment, when: due }: StudioScheduled,
   buffers: ReadonlyMap<string, AudioBuffer>,
 ): void {
-  if (when < ctx.currentTime - 0.02)
+  if (due < ctx.currentTime - 0.02)
     throw new Error(
       'Studio playback could not keep up. Press Play to try again.',
     )
@@ -303,6 +319,8 @@ function startLaneSource(
   source.connect(gain)
   const set = lane.current
   gain.connect(set.fadeOut)
+  // The clock is read last, right before the envelope that depends on it.
+  const when = sourceStart(ctx, due)
   set.sources.set(source, { gain, pass: lane.timeline.pass, when })
   source.onended = () => {
     source.disconnect()
